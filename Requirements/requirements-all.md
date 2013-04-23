@@ -2,8 +2,8 @@ Major Visions
 =============
 * Faciliate easy sharing of all requirements.
 
-Major Features (what)
-=====================
+Feature Brainstorm
+==================
 
 * V&S
   * Catalog major features.
@@ -66,6 +66,23 @@ Major Features (what)
   * Have a status per item (team-scoped).
     ie. Unimplemented -> Implemented -> Verified
   * Arch/Design docs should be separate from req docs.
+
+Major Features (what)
+=====================
+* Requirement Storage
+* Req Artifact Storage
+* Requirement Organisation
+* Version Scoping
+* Use Case Editor
+* Doc generation
+  * By version
+  * Grouped reqs
+
+* Collaboration
+  * Notification
+  * Change management
+  * Approval
+  * Cross-product, cross-team
 
 Benefits (why)
 ==============
