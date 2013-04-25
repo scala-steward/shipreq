@@ -254,12 +254,53 @@ Chapter 12
 
 Chapter 13
 ==========
+* Iterable -> (Seq,Set,Map)
+* (Iterable|Set|SortedSet|Seq|IndexedSeq)(1,2,3)
+* http://docs.scala-lang.org/overviews/collections/overview.html
+* Pg 163-167
+* Streams are lazily evaluated Lists. Use #:: instead of :: to create. force()
+  to eval.
+* Lazy views. i.view.map(expensive _)
+* Java <-> Scala conversions: pg 176
+* Parallel operation. i.par.sum
 
 Chapter 14
 ==========
+* Pattern matching is an expression and returns values like in Ruby
+* val x = v match {
+    case '+' => "plus"
+    case _ if Character.isDigit(v) => "digit"
+    case e : Int => "int "+e
+    case Array(a,b) => "a,b"
+    case Array(a,_*) => "a ..."
+    case x :: y :: Nil => x+" "+y
+    case x :: y :: tail => "x y ..."
+    case _ => "dunno"
+* Patterns can be used in variable decl. var Array(a,b,_*) = array
+* Patterns can be used in for comps. for ((k,"") <- System.getProperties)
+* case classes and object get apply,unapply,equals,hashCode,copy,toString
+* case class variables are val by default
+* case Array(a,b) can be written as case a Array b. Eg. case class ::
+* Use @ to bind a variable in a case stmt
+    case Package(_,_,_,amt @ Amount(_),_) => amt.toString
+* `sealed abstract` classes can only be extended in the current file
+* for (v <- None) thisIsNeverInvoked()
+* Partial function = block of case stmts = PartialFunction[Input,Output]
 
 Chapter 15
 ==========
+* To annotate primary constructor: class Omg @Inject() (val name:String){}
+* @transient, @volatile, @strictfp, @native
+* Use @cloneable instead of extending Cloneable
+* @SerialVersionID(long)
+* @throws and @varargs for Java interop
+* @tailrec
+* (n: @switch) match {case...} to ensure compiled into jump-table
+* @(no)inline
+* @elidable to annotated methods that the compiler can omit from compilation
+* def omg[@specialized T](x:T)={...} generates seperate copies for T=int,long,etc
+* def renamedParam(@deprecatedName('n) name: String) generates warning for n=?
+* @deprecated(message="asd") def ...
 
 Chapter 16
 ==========
@@ -338,9 +379,50 @@ Chapter 16
 
 Chapter 17
 ==========
+* In terms of upper/lower bounds, imagine heirarchy with super @ top, sub @ bot
+* T <: X = Upper bound of X = X and subclasses.
+* T >: X = Lower bound of X = X and superclasses.
+* T <% X = View bound of X = Convertable to X via implicit conversion.
+* T : X  = Context bound. Requires implicit value of X[T]. Use implicit param to
+           access. Commonly, X is Manifest.
+* 0..1 upper/lower bounds allowed.
+* 0..n traits, view bounds, ctx bounds allowed.
+* Implicit evidence parameters can place type restrictions on methods rather
+  than on T which affects the whole class. Constraints become:
+    <: becomes <:<
+    >: becomes >:>
+    <% becomes <%<
+     : becomes =:=
+  Example
+    class Pair[T](val a:T, val b:T) {
+      def isSorted(implicit ev: T <:< Ordered[T]) = a < b
+    }
+* Covariance. Generic type and target class vary in the same direction.
+  class Pair[+T] means if A extends B, Pair[A] extends Pair[B].
+* Contravariance = opposite of above. Pair[-T]
+* Generally: fn input = contra, fn result = co. If a class produces & consumes
+  it's usually invariant.
+* _ can be used when a type ref isn't needed.
+  class Blah[_ <: Person]
 
 Chapter 18
 ==========
+* Singleton types: Use this.type as the explicit return type to return
+  subclass-aware this (for method chaining)
+* Singleton types: Use Object.type to reference an object.
+    object Title {}
+    class A{ def set(t:Title.type) {} }
+* C++ style typedefs: type Index = HashMap[String, (Int,Int)]
+* Type(def)s can be abstract in abstract classes & traits.
+* Abstract type(def)s can have bounds (<:, :> etc)
+* Infix types: Map[String, Int] = String Map Int
+* Existential types: don't care.
+* Self types: this: Exception with Serializable =>
+* DI cake pattern: Abstract traits for components, nested traits for DI
+  interfaces, abstract vals (in component) for DI refs, self-types for
+  inter-component dependencies.
+* Higher-kinded types: Types with type params that nest a dynamic inner type.
+  trait Iterable[E, C[_]]. C[_] is a type constructor, Iterable is higher-kinded.
 
 Chapter 19
 ==========
