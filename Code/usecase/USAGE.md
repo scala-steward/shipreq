@@ -1,3 +1,6 @@
+* Generate Eclipse files
+    sbt eclipse
+
 * Start WebServer
     sbt container:start
 

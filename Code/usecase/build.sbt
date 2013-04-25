@@ -16,3 +16,13 @@ libraryDependencies ++= {
     "org.eclipse.jetty.orbit" %  "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar")
   )
 }
+
+EclipseKeys.executionEnvironment := Some(EclipseExecutionEnvironment.JavaSE16)
+
+EclipseKeys.withSource := true
+
+// Prevent src/main/java appearing in .classpath
+unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
+
+// Prevent src/test/java appearing in .classpath
+unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
