@@ -21,8 +21,7 @@ object UCEditor {
   case class Step(text: String)
   case class StepNode(level: Int, position: String, id: String, children: List[StepNode])
 
-  // TODO laziness here is temporary
-  lazy val StepTemplate = ClearClearable(Templates("_step_form" :: Nil).open_!)
+  val StepTemplate = ClearClearable(Templates("_step_form" :: Nil).open_!)
 
   def flattenNodes(nodes: List[StepNode]): List[StepNode] = nodes match {
     case h :: t => h :: flattenNodes(h.children ::: t)

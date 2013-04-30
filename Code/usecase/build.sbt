@@ -32,3 +32,6 @@ unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
 
 // Prevent src/test/java appearing in .classpath
 unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
+
+// Put webapp on test classpath so templates load
+unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
