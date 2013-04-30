@@ -8,11 +8,20 @@ import org.openqa.selenium.internal.{ FindsByCssSelector, FindsById, FindsByLink
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, Suite }
 
 /**
+ * @since 30/04/2013
+ */
+object SeleniumTestSupport {
+  type SeleniumDriver = WebDriver with JavascriptExecutor with FindsById with FindsByLinkText with FindsByXPath with FindsByName with FindsByCssSelector with FindsByTagName with HasInputDevices
+}
+
+/**
  * Brings up Jetty and provides a managed Selenium helper.
  *
  * @since 30/04/2013
  */
 trait SeleniumTestSupport extends BeforeAndAfterAll with BeforeAndAfterEach { this: Suite =>
+  
+  import SeleniumTestSupport.SeleniumDriver
 
   override def beforeAll() {
     Jetty.start
@@ -33,7 +42,7 @@ trait SeleniumTestSupport extends BeforeAndAfterAll with BeforeAndAfterEach { th
   }
 
   var newSeleniumPerTest = false
-  private var selenium: WebDriver with JavascriptExecutor with FindsById with FindsByLinkText with FindsByXPath with FindsByName with FindsByCssSelector with FindsByTagName with HasInputDevices = null
+  private var selenium: SeleniumDriver = null
 
   def newSelenium() {
     releaseSelenium
