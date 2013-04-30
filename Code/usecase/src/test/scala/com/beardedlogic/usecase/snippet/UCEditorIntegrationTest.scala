@@ -1,7 +1,7 @@
-package com.beardedlogic.usecase.integration
+package com.beardedlogic.usecase.snippet
 
 import com.beardedlogic.usecase.test.SeleniumDSL
-import org.scalatest.{ Finders, FreeSpec }
+import org.scalatest.FreeSpec
 import org.scalatest.matchers.ShouldMatchers
 
 /**
@@ -9,7 +9,7 @@ import org.scalatest.matchers.ShouldMatchers
  *
  * @since 29/04/2013
  */
-class UCEditorTest extends FreeSpec with ShouldMatchers with SeleniumDSL {
+class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with SeleniumDSL {
 
   "The editor page" - {
     "when first loaded" - {

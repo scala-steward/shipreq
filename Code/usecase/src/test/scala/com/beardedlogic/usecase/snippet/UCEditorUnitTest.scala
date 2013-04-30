@@ -3,7 +3,7 @@ package com.beardedlogic.usecase.snippet
 import org.scalatest.{ Finders, WordSpec }
 import org.scalatest.matchers.ShouldMatchers
 
-class UCEditorTest extends WordSpec with ShouldMatchers {
+class UCEditorUnitTest extends WordSpec with ShouldMatchers {
   import UCEditor._
 
   "flattenNodes() " should {
