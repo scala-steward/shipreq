@@ -19,12 +19,12 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should have a top-level step" - {
         "which is blank" in { uce.stepText(0) should be("") }
         "which is numbered 1.0" in { uce.stepPosition(0) should be("1.0.") }
-        "which is top-level" in { uce.stepLevel(0) should be (0) }
+        "which is top-level" in { uce.stepLevel(0) should be(0) }
       }
       "should have a second-level step" - {
         "which is blank" in { uce.stepText(1) should be("") }
         "which is numbered 1" in { uce.stepPosition(1) should be("1.") }
-        "which is a child of 1.0" in { uce.stepLevel(1) should be (1) }
+        "which is a child of 1.0" in { uce.stepLevel(1) should be(1) }
       }
       "should have 2 add-step buttons in total" in pending
       "should have an add-step button between 1.0 and 1.0.1" in pending
@@ -36,7 +36,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     "when edited" - {
       "should cause the normal-course step text" - {
         "to match the use case title" - {
-          "when previously empty" in pending
+          "when previously empty" in { uce.setUseCaseTitle("hehe cool").eventuallyAssertStepText(0, "hehe cool") }
           "when previously matched" in pending
         }
         "not to change" - {

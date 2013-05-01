@@ -5,7 +5,7 @@ package com.beardedlogic.usecase.test
  */
 trait TestHelpers {
 
-  def expectSoon(cond: => Any) {
+  def eventually(cond: => Any) {
     val test = (sleep: Int) => try { cond; true } catch { case _ => Thread.sleep(sleep); false }
     if (!test(50))
       if (!test(100))

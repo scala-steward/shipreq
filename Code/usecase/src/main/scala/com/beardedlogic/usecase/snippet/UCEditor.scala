@@ -43,8 +43,8 @@ class UCEditor extends StatefulSnippet {
   val courses: List[StepNode] = init
 
   def init = {
-    val step01 = ("a", Step(""))
-    val step0 = ("b", Step(""))
+    val step01 = (nextFuncName, Step(""))
+    val step0 = (nextFuncName, Step(""))
     steps += (step0, step01)
     val step0Children: List[StepNode] = StepNode(1, "1", step01._1, Nil) :: Nil
     StepNode(0, s"${id}.0", step0._1, step0Children) :: Nil
@@ -53,13 +53,10 @@ class UCEditor extends StatefulSnippet {
   override def dispatch = { case _ => render }
 
   def render =
-    "#uc_id_num" #> id &
-      "@title" #> SHtml.ajaxText(title, onTitleChange(_)) &
-      "#steps *" #> StepTemplate andThen
-      ".step" #> renderSteps(courses)
-
-  private def renderSteps(nodes: List[StepNode]) =
-    flattenNodes(nodes).map(renderStep)
+    "#steps *" #> StepTemplate andThen
+      ".step" #> renderSteps(courses) &
+      "#uc_id_num" #> id &
+      "@title" #> SHtml.ajaxText(title, onTitleChange(_))
 
   private def renderStep(n: StepNode) = {
     val s = steps(n.id)
@@ -67,31 +64,14 @@ class UCEditor extends StatefulSnippet {
     ".step [id]" #> id &
       ".step [class+]" #> s"lvl-${n.level}" &
       ".posTarget" #> n.position.toString &
-      "@text" #> SHtml.textarea(s.text, todo = _, "rows" -> "4")
+      "@text" #> SHtml.textarea(s.text, todo = _, "rows" -> "4", "id" -> stepTextId(n))
   }
 
-  def onTitleChange(title: String): JsCmd = JsCmds.Noop
+  private def renderSteps(nodes: List[StepNode]) =
+    flattenNodes(nodes).map(renderStep)
 
-  //  private def renderStep(s: Step) = {
-  //    val id = nextFuncName
-  //    var desc = ""
-  //    ".step [id]" #> id &
-  //      "@desc" #> SHtml.textarea(s.desc, desc = _, "rows" -> "4") &
-  //      "@add" #> SHtml.ajaxSubmit("Add", () => addStep()) &
-  //      "@del" #> SHtml.ajaxSubmit("Del", () => deleteStep(id))
-  //  }
-  //
-  //  private def addStep(): JsCmd = {
-  //    stepCount += 1
-  //    val newStepHtml: NodeSeq = renderStep(NewStep)(StepTemplate)
-  //    JqJsCmds.AppendHtml("uce", newStepHtml) & updateStepCount
-  //  }
-  //
-  //  private def deleteStep(id: String): JsCmd = {
-  //    stepCount -= 1
-  //    JsCmds.SetHtml(id, NodeSeq.Empty) &
-  //      (if (stepCount == 0) addStep else JsCmds.Noop) &
-  //      updateStepCount
-  //  }
+  private def stepTextId(n: StepNode) = s"${n.id}-t"
 
+  def onTitleChange(title: String): JsCmd =
+    JsCmds.SetHtml(stepTextId(courses.head), Text(title))
 }
