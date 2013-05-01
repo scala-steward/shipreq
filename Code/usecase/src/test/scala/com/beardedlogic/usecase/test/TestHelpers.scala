@@ -6,7 +6,7 @@ package com.beardedlogic.usecase.test
 trait TestHelpers {
 
   def eventually(cond: => Any) {
-    val test = (sleep: Int) => try { cond; true } catch { case _ => Thread.sleep(sleep); false }
+    val test = (sleep: Int) => try { cond; true } catch { case _: Throwable => Thread.sleep(sleep); false }
     if (!test(50))
       if (!test(100))
         if (!test(100))
@@ -14,9 +14,6 @@ trait TestHelpers {
             if (!test(500))
               if (!test(1000))
                 if (!test(1000))
-                  if (!test(1000))
-                    if (!test(1000))
-                      if (!test(1000))
-                        cond
+                  cond
   }
 }
