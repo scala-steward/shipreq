@@ -54,23 +54,27 @@ object SeleniumDSL {
 
     reload
 
-    // Action
+    // Internal --------------------------------------------------------------------------------------------------------
+
+    private val lvlClassPrefix = "lvl-"
+    private def titleElem = s.findElementByName("title")
+    private def steps = s.findElementsByCssSelector(".step")
+    private def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
+
+    // Action ----------------------------------------------------------------------------------------------------------
+
     def reload = { s.get(Jetty.URL); this }
     def setUseCaseTitle(title: String) = { titleElem.typeInto(title); steps(0).click; this }
     def setStepText(row: Int, title: String) = { stepTextElem(row).typeInto(title); titleElem.click; this }
     def eventuallyAssertStepText(row: Int, txt: String) = { eventually { stepText(row) should equal(txt) }; this }
 
-    // Inspection
-    private def titleElem = s.findElementByName("title")
-    private def steps = s.findElementsByCssSelector(".step")
-    private def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
+    // Inspection ------------------------------------------------------------------------------------------------------
+
     def useCaseId = s.findElementById("uc_id").getText
     def useCaseTitle = titleElem.value
     def stepCount = steps.size
     def stepText(row: Int) = stepTextElem(row).value
     def stepPosition(row: Int) = steps(row).findElement(By.cssSelector(".pos")).getText
-
-    val lvlClassPrefix = "lvl-"
     def stepLevel(row: Int) = {
       val lvls = for (
         l <- steps(row).getAttribute("class").split("\\s+") if l.startsWith(lvlClassPrefix)
