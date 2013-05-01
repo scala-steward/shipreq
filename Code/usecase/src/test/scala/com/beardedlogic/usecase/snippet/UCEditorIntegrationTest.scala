@@ -13,22 +13,13 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
 
   "The editor page" - {
     "when first loaded" - {
-      "should have a pre-populated UC ID" in { uce.useCaseId should be("UC-1") }
-      "should have an empty title" in { uce.useCaseTitle should be("") }
-      "should have 2 steps in total" in { uce.stepCount should be(2) }
-      "should have a top-level step" - {
-        "which is blank" in { uce.stepText(0) should be("") }
-        "which is numbered 1.0" in { uce.stepPosition(0) should be("1.0.") }
-        "which is top-level" in { uce.stepLevel(0) should be(0) }
-      }
-      "should have a second-level step" - {
-        "which is blank" in { uce.stepText(1) should be("") }
-        "which is numbered 1" in { uce.stepPosition(1) should be("1.") }
-        "which is a child of 1.0" in { uce.stepLevel(1) should be(1) }
-      }
-      "should have 2 add-step buttons in total" in pending
-      "should have an add-step button between 1.0 and 1.0.1" in pending
-      "should have an add-step button after 1.0.1" in pending
+      lazy val u = uce
+      "should have a pre-populated UC ID" in { u.useCaseId should be("UC-1") }
+      "should have an empty title" in { u.useCaseTitle should be("") }
+      "should have 2 steps" in { u.stepCount should be(2) }
+      "should have a step: 1.0" in { u.assertStep(0)(0, "1.0.", "") }
+      "should have a step: 1.0.1" in { u.assertStep(1)(1, "1.", "") }
+      "should have 2 Add buttons" in { u.addButtonCount should be(2) }
     }
   }
 
@@ -37,15 +28,15 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should cause the normal-course step text" - {
         "to match the use case title" - {
           "when previously empty" in {
-            uce.setUseCaseTitle("hehe cool").eventuallyAssertStepText(0, "hehe cool")
+            uce.setUseCaseTitle("hehe cool").assertStepText(0, "hehe cool")
           }
           "when previously matched automatically" in {
-            uce.setUseCaseTitle("hehe cool").eventuallyAssertStepText(0, "hehe cool")
-              .setUseCaseTitle("noo").eventuallyAssertStepText(0, "noo")
+            uce.setUseCaseTitle("hehe cool").assertStepText(0, "hehe cool")
+              .setUseCaseTitle("noo").assertStepText(0, "noo")
           }
           "when previously matched manually" in {
             uce.setStepText(0, "override").setUseCaseTitle("hehe cool").setStepText(0, "hehe cool")
-              .setUseCaseTitle("noo").eventuallyAssertStepText(0, "noo")
+              .setUseCaseTitle("noo").assertStepText(0, "noo")
           }
         }
         "not to change" - {
@@ -67,6 +58,24 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
         "should add a new step" in pending
         "should move focus to 1.0.2" in pending
       }
+    }
+  }
+
+  "The Add button" - {
+    "when pressed between 1.0 and 1.0.1" - {
+      lazy val u = uce.setStepText(0, "NC").setStepText(1, "blah").clickAdd(0)
+      "should not affect 1.0" in { u.assertStep(0)(0, "1.0.", "NC") }
+      "should renumber 1.0.1 to 1.0.2" in { u.assertStep(2)(1, "2.", "blah") }
+      "should add a new step: 1.0.1" in { u.assertStep(1)(1, "1.", "") }
+      "should add a new add button" in { u.assertAddButtonCount(3) }
+    }
+
+    "when pressed after 1.0.1" - {
+      lazy val u = uce.setStepText(0, "NC").setStepText(1, "blah").clickAdd(1)
+      "should not affect 1.0" in { u.assertStep(0)(0, "1.0.", "NC") }
+      "should not affect 1.0.1" in { u.assertStep(1)(1, "1.", "blah") }
+      "should add a new step: 1.0.2" in { u.assertStep(2)(1, "2.", "") }
+      "should add a new add button" in { u.assertAddButtonCount(3) }
     }
   }
 }

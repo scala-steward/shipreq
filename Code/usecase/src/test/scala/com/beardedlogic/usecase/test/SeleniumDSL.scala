@@ -41,8 +41,10 @@ object SeleniumDSL {
    *
    * @since 1/05/2013
    */
-  trait BaseDSL extends ShouldMatchers with TestHelpers {
+  trait BaseDSL extends ShouldMatchers {
     def waitShort(): this.type = { Thread.sleep(100); this }
+    def eventually(cond: => Any): this.type = { TestHelpers.eventually(cond); this }
+    def eventually(cond: (this.type) => Any): this.type = { TestHelpers.eventually { cond(this) }; this }
   }
 
   /**
@@ -60,13 +62,22 @@ object SeleniumDSL {
     private def titleElem = s.findElementByName("title")
     private def steps = s.findElementsByCssSelector(".step")
     private def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
+    private def addButtons = s.findElementsByCssSelector(".add button")
+    private def addButton(row: Int) = steps(row).findElement(By.cssSelector(".add button"))
 
     // Action ----------------------------------------------------------------------------------------------------------
 
     def reload = { s.get(Jetty.URL); this }
     def setUseCaseTitle(title: String) = { titleElem.typeInto(title); steps(0).click; this }
     def setStepText(row: Int, title: String) = { stepTextElem(row).typeInto(title); titleElem.click; this }
-    def eventuallyAssertStepText(row: Int, txt: String) = { eventually { stepText(row) should equal(txt) }; this }
+    def assertStepText(row: Int, txt: String) = eventually { stepText(row) should equal(txt) }
+    def assertAddButtonCount(expected: Int) = eventually { addButtonCount should equal(expected) }
+    def clickAdd(row: Int) = { addButton(row).click(); this }
+    def assertStep(row: Int)(lvl: Int, label: String, txt: String) = eventually {
+      stepLevel(row) should equal(lvl)
+      stepPosition(row) should equal(label)
+      stepText(row) should equal(txt)
+    }
 
     // Inspection ------------------------------------------------------------------------------------------------------
 
@@ -84,6 +95,7 @@ object SeleniumDSL {
       lvl should fullyMatch regex ("\\d+")
       lvl.toInt
     }
+    def addButtonCount = addButtons.size
   }
 }
 
