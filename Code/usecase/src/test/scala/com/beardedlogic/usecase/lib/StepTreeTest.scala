@@ -38,6 +38,8 @@ trait NodeUtils {
       inspectTree(t, indent, res ::: s :: ch)
   }
 
+  def printTree(tree:List[StepNode]) { inspectTree(tree).foreach{ println(_) } }
+
   def printTrees(title1:String, nodes1:List[StepNode], title2:String, nodes2:List[StepNode]) {
     val t1 = inspectTree(nodes1).toIndexedSeq
     val t2 = inspectTree(nodes2).toIndexedSeq
@@ -84,8 +86,8 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
           "2" ~> $("a" ~> $("i","ii","iii"), "b", "c" ~> $("i","ii")),
           "3" ~> $("a" ~> $("i"), "b"),
           "4"),
-        "2.0" ~> $("1","2","3"),
-        "2.1" ~> $("1","2")
+        "1.1" ~> $("1","2","3"),
+        "1.2" ~> $("1","2")
       ).toStepNodes
     val N = Step("N")
   }
@@ -180,19 +182,19 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
               "3/Step:2" ~> $("a" ~> $("i","ii","iii"), "b", "c" ~> $("i","ii")),
               "4/Step:3" ~> $("a" ~> $("i"), "b"),
               "5/Step:4"),
-            "2.0" ~> $("1","2","3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3"),
+            "1.2" ~> $("1","2")
           ))}
 
-      "inserting after 2.0 (lvl 0) should create 2.0.1" in {
-        test("2.0", BigTree, $(
+      "inserting after 1.1 (lvl 0) should create 1.1.1" in {
+        test("1.1", BigTree, $(
             "1.0" ~> $(
               "1",
               "2" ~> $("a" ~> $("i","ii","iii"), "b", "c" ~> $("i","ii")),
               "3" ~> $("a" ~> $("i"), "b"),
               "4"),
-            "2.0" ~> $("1/N","2/Step:1","3/Step:2","4/Step:3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1/N","2/Step:1","3/Step:2","4/Step:3"),
+            "1.2" ~> $("1","2")
           ))}
 
       "inserting after 1.0.2 (lvl 1) should create 1.0.3" in {
@@ -203,19 +205,19 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
               "3/N",
               "4/Step:3" ~> $("a" ~> $("i"), "b"),
               "5/Step:4"),
-            "2.0" ~> $("1","2","3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3"),
+            "1.2" ~> $("1","2")
           ))}
 
-      "inserting after 2.0.2 (lvl 1) should create 2.0.3" in {
-        test("2.0.2", BigTree, $(
+      "inserting after 1.1.2 (lvl 1) should create 1.1.3" in {
+        test("1.1.2", BigTree, $(
             "1.0" ~> $(
               "1",
               "2" ~> $("a" ~> $("i","ii","iii"), "b", "c" ~> $("i","ii")),
               "3" ~> $("a" ~> $("i"), "b"),
               "4"),
-            "2.0" ~> $("1","2","3/N","4/Step:3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3/N","4/Step:3"),
+            "1.2" ~> $("1","2")
           ))}
 
       "inserting after 1.0.2.a (lvl 2) should create 1.0.2.b" in {
@@ -225,8 +227,8 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
               "2" ~> $("a" ~> $("i","ii","iii"), "b/N", "c/Step:b", "d/Step:c" ~> $("i","ii")),
               "3" ~> $("a" ~> $("i"), "b"),
               "4"),
-            "2.0" ~> $("1","2","3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3"),
+            "1.2" ~> $("1","2")
           ))}
 
       "inserting after 1.0.2.a.i (lvl 3) should create 1.0.2.a.ii" in {
@@ -236,8 +238,8 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
               "2" ~> $("a" ~> $("i","ii/N", "iii/Step:ii","iv/Step:iii"), "b", "c" ~> $("i","ii")),
               "3" ~> $("a" ~> $("i"), "b"),
               "4"),
-            "2.0" ~> $("1","2","3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3"),
+            "1.2" ~> $("1","2")
           ))}
 
       "inserting after 1.0.2.c.ii (lvl 3) should create 1.0.2.c.iii" in {
@@ -247,9 +249,48 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
               "2" ~> $("a" ~> $("i","ii","iii"), "b", "c" ~> $("i","ii", "iii/N")),
               "3" ~> $("a" ~> $("i"), "b"),
               "4"),
-            "2.0" ~> $("1","2","3"),
-            "2.1" ~> $("1","2")
+            "1.1" ~> $("1","2","3"),
+            "1.2" ~> $("1","2")
           ))}
     }
   }
+
+  /*
+    --    1.0. Step:1.0
+    --      1. Step:1
+    ?>      2. Step:2
+    <-        a. Step:a
+    <-          i. Step:i
+    <>          ii. Step:ii
+    <>          iii. Step:iii
+    <>        b. Step:b
+    <>        c. Step:c
+    <-          i. Step:i
+    <>          ii. Step:ii
+    ?>      3. Step:3
+    <-        a. Step:a
+    <-          i. Step:i
+    <>        b. Step:b
+    ?>      4. Step:4
+    -?    1.1. Step:1.1
+    ?-      1. Step:1
+    ?>      2. Step:2
+    ?>      3. Step:3
+    -?    1.2. Step:1.2
+    ?-      1. Step:1
+    ?>      2. Step:2
+
+    Rules for increasing indent
+      + Not first child
+      + Not top level (probably... allow 1.1 to become 1.0.5? 1.2 to become 1.1.4?)
+
+    Rules for decreasing indent
+      + Not top-level
+      + Not 1.0.1 (1.0 always needs a step?)
+      + Not 2nd-level (probably... allow 1.0.3 to become 1.1? 1.1.1 to become 1.2?)
+
+    Allow 1st<->2nd level? Yes.
+    Allow 1.0 without 1.0.1? Yes.
+
+   */
 }
