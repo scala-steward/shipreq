@@ -130,7 +130,12 @@ object StepTree {
         var childIndex = 0
         val childLevel = h.level + 1
         val childLabelPrefix = c.children.headOption.map(_.labelPrefix) getOrElse None
-        val newChildren = (c.children ::: sibRight).map { n =>
+        val levelChangeFn = levelChange(-1)
+        val cL = c.children.map { n =>
+          childIndex += 1
+          n.copy(level = childLevel, labelPrefix = childLabelPrefix, labelIndex = childIndex, children = n.deepCopyChildren(levelChangeFn))
+        }
+        val newChildren = cL ::: sibRight.map { n =>
           childIndex += 1
           n.copy(level = childLevel, labelPrefix = childLabelPrefix, labelIndex = childIndex)
         }
@@ -143,12 +148,11 @@ object StepTree {
             t.map(_.incrementPosition)
         (r, true)
 
-      case None =>
-        val (childrenResults, childrenFound) = indentDecrease(id, h.children)
-        if (childrenFound)
-          (results ::: h.copy(children = childrenResults) :: t, true)
-        else
-          _indentDecrease(id, t, results :+ h, found)
+      // Not found. Check children then siblings.
+      case None => indentDecrease(id, h.children) match {
+        case (childrenResults, true) => (results ::: h.copy(children = childrenResults) :: t, true)
+        case _                       => _indentDecrease(id, t, results :+ h, found)
+      }
     }
   }
 
@@ -192,13 +196,14 @@ object StepTree {
       val p2 = p.copy(children = p.children :+ c2)
       (results ::: p2 :: t.map(_.decrementPosition), true)
 
+    // Not found. Check children then siblings.
     case h :: t => indentIncrease(id, h.children) match {
       case (childrenResults, true) => (results ::: h.copy(children = childrenResults) :: t, true)
       case _                       => _indentIncrease(id, found, results :+ h, t)
     }
   }
 
-  private def levelChange(offset: Int)(n: StepNode, ch: List[StepNode]) = {
+  private def levelChange(offset: Int) = (n: StepNode, ch: List[StepNode]) => {
     n.copy(children = ch, level = n.level + offset)
   }
 }

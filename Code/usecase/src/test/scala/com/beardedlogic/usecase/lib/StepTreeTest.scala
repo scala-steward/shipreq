@@ -654,6 +654,34 @@ Test indent of 1.1.3
     """)
     }
 
+    "decreasing 1.0.2" in {
+      test("1.0.2", """
+        1.0. Step:1.0
+          1. Step:1
+        1.1. Step:2
+          1. Step:a
+            a. Step:i
+            b. Step:ii
+            c. Step:iii
+          2. Step:b
+          3. Step:c
+            a. Step:i
+            b. Step:ii
+          4. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+          5. Step:4
+        1.2. Step:1.1
+          1. Step:1
+          2. Step:2
+          3. Step:3
+        1.3. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
   } // indentDecrease()
 
   "indentIncrease()" when {
