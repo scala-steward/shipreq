@@ -384,13 +384,13 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
       $(".inc").show()
       $(".lvl-0 .inc").hide()
 
-Test indent of 1.1.3
-Test indent of 1.1.2
-Test indent of 1.0.4
-Test indent of 1.0.3.b
-Test indent of 1.0.3
-Test indent of 1.1
 Test indent of 1.0.2
+Test indent of 1.0.3
+Test indent of 1.0.3.b
+Test indent of 1.0.4
+Test indent of 1.1
+Test indent of 1.1.2
+Test indent of 1.1.3
    */
 
   "indentDecrease()" when {
@@ -654,5 +654,212 @@ Test indent of 1.0.2
     """)
     }
 
-  }
+  } // indentDecrease()
+
+  "indentIncrease()" when {
+
+    def test(id: String, expectedTreeTxt: String) {
+      val expected = parseStepTree(expectedTreeTxt)
+      val actual = indentIncrease(id, Steps.BigTree)
+      actual._2 should be(true)
+      actual._1 should matchTree(expected)
+    }
+
+    "increasing 1.0.2" in {
+      test("1.0.2", """
+        1.0. Step:1.0
+          1. Step:1
+            a. Step:2
+              i. Step:a
+                1. Step:i
+                2. Step:ii
+                3. Step:iii
+              ii. Step:b
+              iii. Step:c
+                1. Step:i
+                2. Step:ii
+          2. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+          3. Step:4
+        1.1. Step:1.1
+          1. Step:1
+          2. Step:2
+          3. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.0.3" in {
+      test("1.0.3", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+            d. Step:3
+              i. Step:a
+                1. Step:i
+              ii. Step:b
+          3. Step:4
+        1.1. Step:1.1
+          1. Step:1
+          2. Step:2
+          3. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.0.3.b" in {
+      test("1.0.3.b", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+          3. Step:3
+            a. Step:a
+              i. Step:i
+              ii. Step:b
+          4. Step:4
+        1.1. Step:1.1
+          1. Step:1
+          2. Step:2
+          3. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.0.4" in {
+      test("1.0.4", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+          3. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+            c. Step:4
+        1.1. Step:1.1
+          1. Step:1
+          2. Step:2
+          3. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.1" in {
+      test("1.1", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+          3. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+          4. Step:4
+          5. Step:1.1
+            a. Step:1
+            b. Step:2
+            c. Step:3
+        1.1. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.1.2" in {
+      test("1.1.2", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+          3. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+          4. Step:4
+        1.1. Step:1.1
+          1. Step:1
+            a. Step:2
+          2. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+    "increasing 1.1.3" in {
+      test("1.1.3", """
+        1.0. Step:1.0
+          1. Step:1
+          2. Step:2
+            a. Step:a
+              i. Step:i
+              ii. Step:ii
+              iii. Step:iii
+            b. Step:b
+            c. Step:c
+              i. Step:i
+              ii. Step:ii
+          3. Step:3
+            a. Step:a
+              i. Step:i
+            b. Step:b
+          4. Step:4
+        1.1. Step:1.1
+          1. Step:1
+          2. Step:2
+            a. Step:3
+        1.2. Step:1.2
+          1. Step:1
+          2. Step:2
+    """)
+    }
+
+  } // indentIncrease()
 }

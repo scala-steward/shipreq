@@ -39,7 +39,7 @@ object StepTree {
     val label = labelPrefix map (_ + labelSuffix) getOrElse labelSuffix
 
     /**
-     * Increments the position of a single node.
+     * Increments the position of this node.
      *
      * Examples:
      *   1.0.1      --> 1.0.2
@@ -47,8 +47,20 @@ object StepTree {
      */
     @inline def incrementPosition() = copy(labelIndex = this.labelIndex + 1)
 
+    /**
+     * Decrements the position of this node.
+     *
+     * Examples:
+     *   1.0.2      --> 1.0.1
+     *   1.3.a.iv   --> 1.3.a.iii
+     */
+    @inline def decrementPosition() = copy(labelIndex = this.labelIndex - 1)
+
     @inline def labelId = id + "-l"
     @inline def stepTextId = id + "-t"
+
+    def deepCopy(fn: (StepNode, List[StepNode]) => StepNode): StepNode = fn(this, deepCopyChildren(fn))
+    @inline def deepCopyChildren(fn: (StepNode, List[StepNode]) => StepNode) = children.map { _.deepCopy(fn) }
   }
 
   def NewStep = Step("")
@@ -156,5 +168,37 @@ object StepTree {
     case Nil                  => None
     case h :: t if h.id == id => Some(ChildAndSiblings(siblingsLeft, h, t))
     case h :: t               => findChild(id, t, siblingsLeft :+ h)
+  }
+
+  /**
+   * Increases the indent/level of a node in a tree.
+   *
+   * Examples:
+   *   1.0.2      --> 1.0.1.a
+   *   1.3.4.b    --> 1.3.4.a.ii
+   */
+  @inline def indentIncrease(id: String, nodes: List[StepNode]) = _indentIncrease(id, false, Nil, nodes)
+
+  @tailrec private def _indentIncrease(id: String, found: Boolean, results: List[StepNode], nodes: List[StepNode]): Tuple2[List[StepNode], Boolean] = nodes match {
+    case Nil => (results, found)
+
+    case p :: c :: t if c.id == id =>
+      val c2 = c.copy(
+        level = c.level + 1,
+        labelPrefix = None,
+        labelIndex = p.children.size + 1,
+        children = c.deepCopyChildren(levelChange(1))
+      )
+      val p2 = p.copy(children = p.children :+ c2)
+      (results ::: p2 :: t.map(_.decrementPosition), true)
+
+    case h :: t => indentIncrease(id, h.children) match {
+      case (childrenResults, true) => (results ::: h.copy(children = childrenResults) :: t, true)
+      case _                       => _indentIncrease(id, found, results :+ h, t)
+    }
+  }
+
+  private def levelChange(offset: Int)(n: StepNode, ch: List[StepNode]) = {
+    n.copy(children = ch, level = n.level + offset)
   }
 }
