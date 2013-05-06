@@ -1,72 +1,16 @@
 package com.beardedlogic.usecase.lib
 
-import StepTree.{ Step, StepNode, flattenNodes, incrementPosition, insertStep }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.MatchResult
+import scala.collection.mutable.StringBuilder
+import com.beardedlogic.usecase.test.TestHelpers
 
-trait NodeUtils {
-
-  /**
-   * Recursively sets all IDs to null.
-   */
-  def removeIds(l: List[StepNode]): List[StepNode] = l.map((n) => n.copy(id = null, children = removeIds(n.children)))
-
-  case class NC(val node: String, val children: List[NC])
-  def $(nodes: NC*) = nodes.toList
-  implicit def nodeWithoutChildren(n: String) = NC(n, Nil)
-  implicit class StringAsNode(val s: String) { def ~>(children: List[NC]) = NC(s, children) }
-  implicit class NCListExt(val ncs: List[NC]) {
-    val regex = """^(\S+?)/(\S+)$""".r
-    def toStepNodes: List[StepNode] = toStepNodes(0, "", true)
-    def toStepNodesN: List[StepNode] = toStepNodes(0, "", false)
-    def toStepNodes(lvl: Int, idPrefix: String, genIds: Boolean): List[StepNode] = ncs.map { nc =>
-      val (lbl, txt) = if (regex.pattern.matcher(nc.node).matches) {
-        val regex(l, t) = nc.node; (l, t)
-      } else
-        (nc.node, "Step:" + nc.node)
-      val id = idPrefix + lbl
-      val ch = nc.children.toStepNodes(lvl + 1, id + ".", genIds)
-      StepNode(if (genIds) id else null, lvl, lbl, Step(txt), ch)
-    }
-  }
-
-  def inspectTree(tree: List[StepNode], indent: String = "", res: List[String] = Nil): List[String] = tree match {
-    case Nil => res
-    case h :: t =>
-      val s = s"${indent}${h.label}. ${h.step.text}"
-      val ch = inspectTree(h.children, indent + "  ")
-      inspectTree(t, indent, res ::: s :: ch)
-  }
-
-  def printTree(tree: List[StepNode]) { inspectTree(tree).foreach { println(_) } }
-
-  def printTrees(title1: String, nodes1: List[StepNode], title2: String, nodes2: List[StepNode]) {
-    val t1 = inspectTree(nodes1).toIndexedSeq
-    val t2 = inspectTree(nodes2).toIndexedSeq
-    val t1Size = t1 map (_.length) max
-    val fmt = s"%-${t1Size}s | %s\n"
-    val size = Vector(t1.size, t2.size).max
-    def x(l: IndexedSeq[String], i: Int) = if (i >= l.size) "" else l(i)
-    printf(fmt, title1, title2)
-    println("-" * t1Size + "-+-" + "-" * (t2 map (_.length) max))
-    for (i <- 0 until size) printf(fmt, x(t1, i), x(t2, i))
-  }
-
-  type NodeChange = Tuple2[String, List[NC]]
-
-  def changeChildren(nodes: List[StepNode], changes: NodeChange*): List[StepNode] = nodes.map { n =>
-    val matches = for ((id, c) <- changes if id == n.id) yield c
-    val ch = if (matches.isEmpty) n.children else matches(0).toStepNodes
-    n.copy(children = changeChildren(ch, changes: _*))
-  }
-
-  def fixLevels(nodes: List[StepNode], lvl: Int = 0): List[StepNode] = nodes.map { n =>
-    n.copy(level = lvl, children = fixLevels(n.children, lvl + 1))
-  }
-}
-
-class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
+class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
+  import NodeUtils._
   import StepTree._
+  import TestHelpers.TreeDSL._
 
   /**
    * StepNode test data.
@@ -92,12 +36,10 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
    */
   object Steps {
     val InitialTree = $("1.0" ~> $("1")).toStepNodes
+    val BT_102 = $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii"))
+    val BT_103 = $("a" ~> $("i"), "b")
     val BigTree = $(
-      "1.0" ~> $(
-        "1",
-        "2" ~> $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii")),
-        "3" ~> $("a" ~> $("i"), "b"),
-        "4"),
+      "1.0" ~> $("1", "2" ~> BT_102, "3" ~> BT_103, "4"),
       "1.1" ~> $("1", "2", "3"),
       "1.2" ~> $("1", "2")
     ).toStepNodes
@@ -168,13 +110,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
     def test(afterId: String, nodes: List[StepNode], changes: NodeChange*) {
       val expected = removeIds(fixLevels(changeChildren(nodes, changes: _*)))
       val r = insertStep(N, afterId, nodes)
-      val actual = removeIds(r._1)
-      try { actual should be(expected) }
-      catch {
-        case e: Throwable =>
-          printTrees("EXPECTED", expected, "ACTUAL", actual)
-          throw e
-      }
+      removeIds(r._1) should matchTree(expected)
     }
 
     "tree is in initial state (1.0 & 1.0.1)" should {
@@ -192,8 +128,8 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
         test("1.0", BigTree, "1.0" -> $(
           "1/N",
           "2/Step:1",
-          "3/Step:2" ~> $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii")),
-          "4/Step:3" ~> $("a" ~> $("i"), "b"),
+          "3/Step:2" ~> BT_102,
+          "4/Step:3" ~> BT_103,
           "5/Step:4"))
       }
 
@@ -204,9 +140,9 @@ class StepTreeTest extends WordSpec with ShouldMatchers with NodeUtils {
       "inserting after 1.0.2 (lvl 1) should create 1.0.3" in {
         test("1.0.2", BigTree, "1.0" -> $(
           "1",
-          "2" ~> $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii")),
+          "2" ~> BT_102,
           "3/N",
-          "4/Step:3" ~> $("a" ~> $("i"), "b"),
+          "4/Step:3" ~> BT_103,
           "5/Step:4"))
       }
 
