@@ -80,7 +80,7 @@ class UCEditor extends StatefulSnippet {
   /**
    * Adds a new step, shuffling down subsequent steps and renumbering if necessary.
    */
-  def onAddStep(preceedingNodeId: String): JsCmd = insertStep(NewStep, preceedingNodeId, courses) match {
+  def onAddStep(preceedingNodeId: String): JsCmd = stepInsert(NewStep, preceedingNodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       courses = newCourses
       val fn = ".step" #> renderStep(newNode)

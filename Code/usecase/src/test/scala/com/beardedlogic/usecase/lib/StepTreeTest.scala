@@ -113,12 +113,12 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
   // ------------------------------------------------------------------------------------------------------------------
 
-  "insertStep()" when {
+  "stepInsert()" when {
     import Steps._
 
     def test(afterId: String, nodes: List[StepNode], expectedTreeTxt: String) {
       val expected = parseStepTree(expectedTreeTxt)
-      val actual = insertStep(N, afterId, nodes)
+      val actual = stepInsert(N, afterId, nodes)
       actual._1 should matchTree(expected)
     }
 
@@ -344,7 +344,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
         """)
       }
     }
-  }
+  } // stepInsert()
 
   /*
     --    1.0. Step:1.0
@@ -383,14 +383,6 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
     Buttons always exist. Control visibility with JS.
       $(".inc").show()
       $(".lvl-0 .inc").hide()
-
-Test indent of 1.0.2
-Test indent of 1.0.3
-Test indent of 1.0.3.b
-Test indent of 1.0.4
-Test indent of 1.1
-Test indent of 1.1.2
-Test indent of 1.1.3
    */
 
   "indentDecrease()" when {

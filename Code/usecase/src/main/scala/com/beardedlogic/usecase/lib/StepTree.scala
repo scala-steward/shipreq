@@ -83,12 +83,15 @@ object StepTree {
    * @param nodes The node tree before insertion.
    * @return A tuple of 1) the new tree, 2) the new node (if inserted)
    */
-  def insertStep(
+  @inline def stepInsert(step: Step, afterId: String, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
+    _stepInsert(step, afterId, nodes, Nil, None)
+
+  @tailrec private def _stepInsert(
     step: Step,
     afterId: String,
     nodes: List[StepNode],
-    results: List[StepNode] = Nil,
-    resultNode: Option[StepNode] = None): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
+    results: List[StepNode],
+    resultNode: Option[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
 
     case Nil => (results, resultNode)
 
@@ -104,12 +107,10 @@ object StepTree {
       (results ::: h :: n :: t.map(_.incrementPosition), Some(n))
 
     // Not found. Check children then siblings.
-    case h :: t =>
-      val (c, n) = insertStep(step, afterId, h.children, Nil, resultNode)
-      if (n.isDefined)
-        (results ::: h.copy(children = c) :: t, n)
-      else
-        insertStep(step, afterId, t, results :+ h, None)
+    case h :: t => stepInsert(step, afterId, h.children) match {
+      case (c, n @ Some(_)) => (results ::: h.copy(children = c) :: t, n)
+      case _                => _stepInsert(step, afterId, t, results :+ h, None)
+    }
   }
 
   /**
@@ -118,6 +119,8 @@ object StepTree {
    * Examples:
    *   1.0.2.a      --> 1.0.3
    *   1.3.4.b.iii  --> 1.3.4.c
+   *
+   * @return A tuple of 1) the new tree, 2) whether any changes were made.
    */
   @inline def indentDecrease(id: String, nodes: List[StepNode]) = _indentDecrease(id, nodes, Nil, false)
 
@@ -180,6 +183,8 @@ object StepTree {
    * Examples:
    *   1.0.2      --> 1.0.1.a
    *   1.3.4.b    --> 1.3.4.a.ii
+   *
+   * @return A tuple of 1) the new tree, 2) whether any changes were made.
    */
   @inline def indentIncrease(id: String, nodes: List[StepNode]) = _indentIncrease(id, false, Nil, nodes)
 
