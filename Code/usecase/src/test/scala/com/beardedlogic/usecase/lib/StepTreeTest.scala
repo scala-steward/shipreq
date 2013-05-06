@@ -170,35 +170,6 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
         """)
       }
 
-      "inserting after 1.1 (lvl 0) should create 1.1.1" in {
-        test("1.1", BigTree, """
-          1.0. Step:1.0
-            1. Step:1
-            2. Step:2
-              a. Step:a
-                i. Step:i
-                ii. Step:ii
-                iii. Step:iii
-              b. Step:b
-              c. Step:c
-                i. Step:i
-                ii. Step:ii
-            3. Step:3
-              a. Step:a
-                i. Step:i
-              b. Step:b
-            4. Step:4
-          1.1. Step:1.1
-            1. N
-            2. Step:1
-            3. Step:2
-            4. Step:3
-          1.2. Step:1.2
-            1. Step:1
-            2. Step:2
-        """)
-      }
-
       "inserting after 1.0.2 (lvl 1) should create 1.0.2.a" in {
         test("1.0.2", BigTree, """
           1.0. Step:1.0
@@ -222,35 +193,6 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
             1. Step:1
             2. Step:2
             3. Step:3
-          1.2. Step:1.2
-            1. Step:1
-            2. Step:2
-        """)
-      }
-
-      "inserting after 1.1.2 (lvl 1) should create 1.1.3" in {
-        test("1.1.2", BigTree, """
-          1.0. Step:1.0
-            1. Step:1
-            2. Step:2
-              a. Step:a
-                i. Step:i
-                ii. Step:ii
-                iii. Step:iii
-              b. Step:b
-              c. Step:c
-                i. Step:i
-                ii. Step:ii
-            3. Step:3
-              a. Step:a
-                i. Step:i
-              b. Step:b
-            4. Step:4
-          1.1. Step:1.1
-            1. Step:1
-            2. Step:2
-            3. N
-            4. Step:3
           1.2. Step:1.2
             1. Step:1
             2. Step:2
@@ -338,6 +280,64 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
             1. Step:1
             2. Step:2
             3. Step:3
+          1.2. Step:1.2
+            1. Step:1
+            2. Step:2
+        """)
+      }
+
+      "inserting after 1.1 (lvl 0) should create 1.1.1" in {
+        test("1.1", BigTree, """
+          1.0. Step:1.0
+            1. Step:1
+            2. Step:2
+              a. Step:a
+                i. Step:i
+                ii. Step:ii
+                iii. Step:iii
+              b. Step:b
+              c. Step:c
+                i. Step:i
+                ii. Step:ii
+            3. Step:3
+              a. Step:a
+                i. Step:i
+              b. Step:b
+            4. Step:4
+          1.1. Step:1.1
+            1. N
+            2. Step:1
+            3. Step:2
+            4. Step:3
+          1.2. Step:1.2
+            1. Step:1
+            2. Step:2
+        """)
+      }
+
+      "inserting after 1.1.2 (lvl 1) should create 1.1.3" in {
+        test("1.1.2", BigTree, """
+          1.0. Step:1.0
+            1. Step:1
+            2. Step:2
+              a. Step:a
+                i. Step:i
+                ii. Step:ii
+                iii. Step:iii
+              b. Step:b
+              c. Step:c
+                i. Step:i
+                ii. Step:ii
+            3. Step:3
+              a. Step:a
+                i. Step:i
+              b. Step:b
+            4. Step:4
+          1.1. Step:1.1
+            1. Step:1
+            2. Step:2
+            3. N
+            4. Step:3
           1.2. Step:1.2
             1. Step:1
             2. Step:2
