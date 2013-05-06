@@ -78,4 +78,28 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should add a new add button" in { u.assertAddButtonCount(3) }
     }
   }
+
+  "The << button" - {
+    lazy val u = uce
+    "when page is first loaded" - {
+      "should not be visible for 1.0" in { u.indentDecButtonVisibility(0) should be(false) }
+      "should be visible for 1.0.1" in { u.indentDecButtonVisibility(1) should be(true) }
+    }
+    "when pressed for 1.0.2 (out of 1.0.3)" - {
+      lazy val u = uce.clickAdd(1).clickAdd(1).assertStepCount(4).clickIndentDec(2)
+      "should turn 1.0.2 into 1.1" in { u.assertStep(2)(0, "1.1") }
+      "should turn 1.0.3 into 1.1.1" in { u.assertStep(3)(1, "1") }
+      "should not be visible for 1.0.2" in { u.indentDecButtonVisibility(2) should be(false) }
+      "should be visible for 1.0.3" in { u.indentDecButtonVisibility(3) should be(true) }
+    }
+    "when pressed for 1.0.2 then 1.0.1 (out of 1.0.3)" - {
+      lazy val u = uce.clickAdd(1).clickAdd(1).assertStepCount(4).clickIndentDec(2).clickIndentDec(1)
+      "should turn 1.0.1 into 1.1" in { u.assertStep(1)(0, "1.1") }
+      "should turn 1.1 into 1.2" in { u.assertStep(2)(0, "1.2") }
+      "should turn 1.1.1 into 1.2.1" in { u.assertStep(3)(1, "1") }
+      "should not be visible for 1.1" in { u.indentDecButtonVisibility(1) should be(false) }
+      "should not be visible for 1.2" in { u.indentDecButtonVisibility(2) should be(false) }
+      "should be visible for 1.0.3" in { u.indentDecButtonVisibility(3) should be(true) }
+    }
+  }
 }

@@ -3,7 +3,12 @@ $indent: 1cm
 .step
   margin: 10px
   background: #eee
+  form
+    display: inline
+
+.step[data-lvl="0"] .indentDec
+  display: none
 
 @for $i from 0 through 8
-  .lvl-#{$i}
+  [data-lvl="#{$i}"]
     padding-left: $i * $indent

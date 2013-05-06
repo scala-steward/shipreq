@@ -1,13 +1,13 @@
 package com.beardedlogic.usecase
 package snippet
 
-import lib.JsExt.{ JqAfter, JqHide, JqId, JqSlideDownFast }
-import lib.StepLabels.LabelMakers
-import lib.StepTree.{ NewStep, StepNode, flattenNodes, insertStep }
 import net.liftweb.http.{ StatefulSnippet, Templates }
 import net.liftweb.http.SHtml
+import net.liftweb.http.SHtml.ElemAttr.pairToBasic
 import net.liftweb.http.js.{ JE, JsCmd, JsCmds }
 import net.liftweb.http.js.JsCmds.jsExpToJsCmd
+import net.liftweb.http.js.JsExp.strToJsExp
+import net.liftweb.http.js.jquery.JqJE
 import net.liftweb.util.ClearClearable
 import net.liftweb.util.Helpers._
 import scala.xml.Text
@@ -22,6 +22,8 @@ object UCEditor {
     val index = Templates("index" :: Nil).open_!
     ExtractStepTemplate(ClearClearable(index))
   }
+
+  val AttrLevel = "data-lvl"
 }
 
 /**
@@ -30,6 +32,8 @@ object UCEditor {
  */
 class UCEditor extends StatefulSnippet {
   import UCEditor._
+  import lib.StepTree._
+  import lib.JsExt._
 
   override def dispatch = { case _ => render }
 
@@ -51,11 +55,12 @@ class UCEditor extends StatefulSnippet {
 
   private def renderStep(n: StepNode) = (
     ".step [id]" #> n.id
-    & ".step [class+]" #> s"lvl-${n.level}"
+    & s".step [$AttrLevel]" #> n.level
     & ".label *" #> n.label
     & ".label [id]" #> n.labelId
-    & "@text" #> SHtml.textarea(n.step.text, (_) => (), "rows" -> "4", "id" -> n.stepTextId)
-    & ".add *" #> SHtml.ajaxButton("Add", () => onAddStep(n.id))
+    & "@text" #> SHtml.textarea(n.step.text, (_) => (), "rows" -> "2", "id" -> n.stepTextId)
+    & ".add" #> SHtml.ajaxButton("Add", () => onAddStep(n.id))
+    & ".indentDec" #> SHtml.ajaxButton("<<", () => onIndentDecrease(n.id))
   )
 
   /**
@@ -75,18 +80,47 @@ class UCEditor extends StatefulSnippet {
   /**
    * Adds a new step, shuffling down subsequent steps and renumbering if necessary.
    */
-  def onAddStep(preceedingNodeId: String): JsCmd = {
-    val (newCourses, newNode) = insertStep(NewStep, preceedingNodeId, courses)
-    if (newNode.isEmpty) JsCmds.Noop
-    else {
+  def onAddStep(preceedingNodeId: String): JsCmd = insertStep(NewStep, preceedingNodeId, courses) match {
+    case (newCourses, Some(newNode)) =>
       courses = newCourses
-      val n = newNode.get
-      val fn = ".step" #> renderStep(n)
+      val fn = ".step" #> renderStep(newNode)
       (
         JqId(preceedingNodeId) ~> JqAfter(fn(StepTemplate))
-        & JqId(n.id) ~> JqHide ~> JqSlideDownFast
-        & (for (n <- flattenNodes(courses)) yield JsCmds.SetHtml(n.labelId, Text(n.label)))
+        & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
+        & UpdateLabels(flattenNodes(courses))
       )
-    }
+    case _ => JsCmds.Noop
   }
+
+  /**
+   * Decreases the indentation level of a given step.
+   */
+  def onIndentDecrease(nodeId: String): JsCmd = indentDecrease(nodeId, courses) match {
+    case (newCourses, true) =>
+      courses = newCourses
+      val flattenedCourses = flattenNodes(courses)
+      (
+        UpdateIndentation(flattenedCourses)
+        & UpdateLabels(flattenedCourses)
+      )
+    case _ => JsCmds.Noop
+  }
+
+  /**
+   * Creates Javascript to update the indentation levels of all given nodes.
+   */
+  private def UpdateIndentation(nodes: Iterable[StepNode]): JsCmd = JsCmds.Run(
+    (for (n <- nodes) yield (
+      JqId(n.id) ~> JqJE.JqAttr(AttrLevel, n.level.toString) toJsCmd
+    )) mkString ";\n"
+  )
+
+  /**
+   * Creates Javascript to update the label text of all given nodes.
+   */
+  private def UpdateLabels(nodes: Iterable[StepNode]): JsCmd = JsCmds.Run(
+    (for (n <- nodes) yield (
+      JsCmds.SetHtml(n.labelId, Text(n.label)).toJsCmd
+    )) mkString "\n"
+  )
 }
