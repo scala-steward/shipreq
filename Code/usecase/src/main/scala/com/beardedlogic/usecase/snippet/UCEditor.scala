@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package snippet
 
 import lib.JsExt.{ JqAfter, JqHide, JqId, JqSlideDownFast }
-import lib.StepLabels.LABEL_MAKERS
+import lib.StepLabels.LabelMakers
 import lib.StepTree.{ NewStep, StepNode, flattenNodes, insertStep }
 import net.liftweb.http.{ StatefulSnippet, Templates }
 import net.liftweb.http.SHtml

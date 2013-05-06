@@ -28,11 +28,11 @@ object StepTree {
              step: Step,
              children: List[StepNode] = Nil) = this(id, 0, Some(label._1), label._2, step, children)
 
-    import StepLabels.LABEL_MAKERS
-    @inline def labelMaker = LABEL_MAKERS(level)
+    import StepLabels.LabelMakers
+    @inline def labelMaker = LabelMakers(level)
 
     require(level >= 0, s"Level (${level}) must be 0 or larger.")
-    require(level < LABEL_MAKERS.size, s"Level (${level}) must be less than ${LABEL_MAKERS.size}.")
+    require(level < LabelMakers.size, s"Level (${level}) must be less than ${LabelMakers.size}.")
     require(labelIndex >= labelMaker.min, s"Label index (${labelIndex}) at level (${level}) must be ${labelMaker.min} or larger.")
 
     @inline def labelSuffix = labelMaker(labelIndex)

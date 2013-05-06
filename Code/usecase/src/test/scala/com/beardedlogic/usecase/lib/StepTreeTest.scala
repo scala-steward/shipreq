@@ -11,7 +11,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
   import NodeUtils._
   import StepTree._
   import TestHelpers.TreeDSL._
-  import StepLabels.LABEL_MAKERS
+  import StepLabels.LabelMakers
 
   /**
    * StepNode test data.
@@ -82,8 +82,8 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
   "incrementPosition()" should {
     val test = (lvl: Int, before: String, after: String) => {
-      val beforeIndex = LABEL_MAKERS(lvl)(before)
-      val afterIndex = LABEL_MAKERS(lvl)(after)
+      val beforeIndex = LabelMakers(lvl)(before)
+      val afterIndex = LabelMakers(lvl)(after)
       val B = new StepNode("blah", lvl, beforeIndex, null)
       val A = new StepNode("blah", lvl, afterIndex, null)
       B.incrementPosition() should be(A)

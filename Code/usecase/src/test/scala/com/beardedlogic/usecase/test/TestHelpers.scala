@@ -41,7 +41,7 @@ object TestHelpers extends TestHelpers {
    * Old way of generating trees.
    */
   object TreeDSL {
-    import lib.StepLabels.LABEL_MAKERS
+    import lib.StepLabels.LabelMakers
 
     case class NC(val node: String, val children: List[NC])
     def $(nodes: NC*) = nodes.toList
@@ -60,7 +60,7 @@ object TestHelpers extends TestHelpers {
         val id = idPrefix + lbl
         val ch = nc.children.toStepNodes(lvl + 1, id + ".", genIds)
         val labelSplit(lblPrefix, lblSuffix) = lbl
-        val lblIndex = LABEL_MAKERS(lvl)(lblSuffix)
+        val lblIndex = LabelMakers(lvl)(lblSuffix)
         val id2 = if (genIds) id else null
         StepNode(id2, lvl, Option(lblPrefix), lblIndex, Step(txt), ch)
       }

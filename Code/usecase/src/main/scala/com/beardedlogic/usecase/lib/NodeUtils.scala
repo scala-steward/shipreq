@@ -8,7 +8,7 @@ import scala.collection.mutable.{ Map => MutableMap }
  */
 object NodeUtils {
   import StepTree.{ Step, StepNode }
-  import StepLabels.LABEL_MAKERS
+  import StepLabels.LabelMakers
 
   /**
    * Parses a textual representation of a tree.
@@ -39,13 +39,13 @@ object NodeUtils {
       val n =
         if (indent == 0) {
           val topLevelLabel(labelPrefix,labelSuffix) = label
-          val labelIndex = LABEL_MAKERS(0)(labelSuffix)
+          val labelIndex = LabelMakers(0)(labelSuffix)
           val n = new StepNode(label, (labelPrefix, labelIndex), Step(stepText))
           nodes += n
           n
         } else {
           val p = parents(indent - 1)
-          val labelIndex = LABEL_MAKERS(indent)(label)
+          val labelIndex = LabelMakers(indent)(label)
           val n = new StepNode(s"${p.id}.${label}", indent, labelIndex, Step(stepText))
           children(p) += n
           n

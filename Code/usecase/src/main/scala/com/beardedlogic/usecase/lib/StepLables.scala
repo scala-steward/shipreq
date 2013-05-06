@@ -8,7 +8,7 @@ import scala.collection.mutable.{ Map => MutableMap }
 object StepLabels {
 
   // TODO Enforce max steps/level
-  val MAX_STEPS_PER_LEVEL = 99
+  val MaxStepsPerLevel = 99
 
   private def toNumeric(i: Int) = i.toString
 
@@ -22,15 +22,19 @@ object StepLabels {
 
   private def toRoman(i: Int) = RomanNumeral(i)
 
+  /**
+   * Bidirectional map of labels ("ii","vii","c") to their indices (which are usually one-based).
+   */
   final class LabelMaker private (val min: Int, val label: Map[Int, String], val index: Map[String, Int]) {
     def apply(i: Int) = label(i)
     def apply(l: String) = index(l)
   }
-  object LabelMaker {
+
+  private object LabelMaker {
     def apply(min: Int, fn: (Int) => String) = {
       val labels = MutableMap[Int, String]()
       val indices = MutableMap[String, Int]()
-      for (i <- min to MAX_STEPS_PER_LEVEL) {
+      for (i <- min to MaxStepsPerLevel) {
         val l = fn(i)
         labels(i) = l
         indices(l) = i
@@ -46,5 +50,5 @@ object StepLabels {
 
   // TODO Enforce max depth
   // (1.)0.1.a.i.4
-  val LABEL_MAKERS = Vector(NUMERIC_0, NUMERIC, ALPHA, ROMAN, NUMERIC)
+  val LabelMakers = Vector(NUMERIC_0, NUMERIC, ALPHA, ROMAN, NUMERIC)
 }
