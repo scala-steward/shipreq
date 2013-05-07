@@ -52,8 +52,7 @@
 	display: none;
 }
 
-
-#uce {margin:0 1cm 0 1cm}
+#uce {margin:1cm 1cm 0 1cm}
 
 #uce .title {width:100%}
 #uce .title * {font-size:x-large; font-weight:bold; vertical-align:middle}
@@ -62,19 +61,21 @@
 #uce .title td input {width:100%}
 
 table.ucdata  { margin-top:1cm; width:100%}
-table.ucdata  th,table.ucdata  td {  padding-bottom: 2em; __border-top: solid 2px #f2f2f2; __padding-top: 0.2cm;}
+table.ucdata  th,table.ucdata  td {  padding-bottom: 2em}
 table.ucdata  th { __padding-right:1.5ex; width: 20ex; text-align: left; vertical-align: top}
 table.ucdata  td {	__width: 100%}
 table.ucdata  textarea { font-family: sans-serif}
 
-table.ucdata tr:not(.nc):not(.altc):not(.exceptions) textarea { width:100% }
+table.ucdata tr:not(.steps) textarea { width:100% }
 
 textarea {
 	border:solid 1px #888; padding:1px
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
 	border-radius: 2px;
-	background: #f4f6f9
+	background: #f4f6f9;
+	resize: none;
+	overflow: auto; /* removes scrollbars in Internet Explorer */
 }
 
 .step {overflow: hidden}
@@ -82,64 +83,27 @@ textarea {
 .step .label {float:left; __background-color: #ddf; padding-right:1ex; padding-top:0px}
 .step .txt {float:none; width:auto; __background-color: #dfd; overflow: hidden;}
 .step .txt textarea {width:100%}
+.step + .step {margin-top:1ex}
 .step[data-lvl="0"] .label, .step[data-lvl="0"] .txt textarea {font-weight:bold}
 .step .ctl {float:right; __background-color: #fdd; width:148px; text-align:right; padding-bottom:1px}
-.step .add {text-align: center; position: relative; padding:0.6ex}
 
-xxx.step .add {display:none}
-.step .add div {display:none}
-xxx.step .add div {
-	position: absolute;
-	overflow:hidden;
-  left: 0;
-  top: 50%;
-  height: 0.5px;
-  background: #ddd;
-  width: 100%;
-  font-size:0.1px;
-  display: block;
-  z-index:-1;
+
+
+table.ucdata th, table.ucdata td {
+	border-top: solid 2px #ddd;
+	padding-top: 6px;
 }
-
-__textarea {
-  transition: height 0.1s;
-  -webkit-transition: height 0.1s;
+textarea {
+	border: dashed 1px #ccc;
+	background: #fff;
+	padding:4px;
+	outline:none;
 }
-
-/*
-.step .add        { min-height: 6px }
-.step .add button { display:none }
-.step .add div    { background: #fff; }
-.step .add:hover        { padding:1ex }
-.step .add:hover div    { background: #888; }
-.step .add:hover button { display:inline-block }
-*/
-
-
-__body {
-	background-image:url('/tmp/paper_fibers.png');
-	background-repeat:repeat;
+textarea:hover {
+	border: solid 1px #ccc;
+	background: #eee
 }
-
-.step .ctl button {
-	width:30px; height:30px
+textarea:focus {
+	border: solid 1px #373;
+	background: #f8fff8
 }
-.step .ctl .delete {
-	background-image: url('noun_project_6188_delete.svg');
-    background-size:26px;
-	background-repeat:no-repeat;
-	background-position: center;
-}
-.step .ctl .add {
-	background-image: url('noun_project_8394_add.svg');
-    background-size:21px;
-	background-repeat:no-repeat;
-	background-position: center;
-}
-
-
-
-
-
-
-
