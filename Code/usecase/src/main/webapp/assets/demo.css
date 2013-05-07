@@ -52,13 +52,10 @@
 	display: none;
 }
 
-table,td,th,tr {
-	border-collapse: collapse;
-}
 
 #uce {margin:0 1cm 0 1cm}
 
-#uce .title {border-collapse:collapse; width:100%}
+#uce .title {width:100%}
 #uce .title * {font-size:x-large; font-weight:bold; vertical-align:middle}
 #uce .title th {padding-right:0.5em}
 #uce .title td {width:100%}
