@@ -56,13 +56,13 @@ table,td,th,tr {
 	border-collapse: collapse;
 }
 
-.uce {margin:0 1cm 0 1cm}
+#uce {margin:0 1cm 0 1cm}
 
-.uce .title {border-collapse:collapse; width:100%}
-.uce .title * {font-size:x-large; font-weight:bold; vertical-align:middle}
-.uce .title th {padding-right:0.5em}
-.uce .title td {width:100%}
-.uce .title td input {width:100%}
+#uce .title {border-collapse:collapse; width:100%}
+#uce .title * {font-size:x-large; font-weight:bold; vertical-align:middle}
+#uce .title th {padding-right:0.5em}
+#uce .title td {width:100%}
+#uce .title td input {width:100%}
 
 table.ucdata  { margin-top:1cm; width:100%}
 table.ucdata  th,table.ucdata  td {  padding-bottom: 2em; __border-top: solid 2px #f2f2f2; __padding-top: 0.2cm;}
