@@ -5,6 +5,7 @@ import org.openqa.selenium.{ By, Keys, WebElement }
 import org.scalatest.Suite
 import org.scalatest.matchers.ShouldMatchers
 import scala.collection.JavaConversions._
+import com.beardedlogic.usecase.lib.field.CourseAndExceptionFields
 
 /**
  * Provides tests with Selenium-based DSLs.
@@ -67,10 +68,10 @@ object SeleniumDSL {
 
     // Action ----------------------------------------------------------------------------------------------------------
 
-    def reload = { s.get(Jetty.URL); this }
+    def reload = { s.get(Jetty.URL + "/uce"); this }
     def setUseCaseTitle(title: String) = { titleElem.typeInto(title); steps(0).click; this }
     def setStepText(row: Int, text: String) = { stepTextElem(row).typeInto(text); titleElem.click; this }
-    def setStepText(args : Tuple2[Int, String]*) = { for ((row,text) <- args) stepTextElem(row).typeInto(text); titleElem.click; this }
+    def setStepText(args: Tuple2[Int, String]*) = { for ((row, text) <- args) stepTextElem(row).typeInto(text); titleElem.click; this }
     def assertStepText(row: Int, txt: String) = eventually { stepText(row) should equal(txt) }
     def assertStepCount(expected: Int) = eventually { stepCount should equal(expected) }
     def assertAddButtonCount(expected: Int) = eventually { addButtonCount should equal(expected) }
@@ -86,13 +87,13 @@ object SeleniumDSL {
 
     // Inspection ------------------------------------------------------------------------------------------------------
 
-    def useCaseId = s.findElementById("uc_id").getText
+    def useCaseId = s.findElementById("uc-id").getText
     def useCaseTitle = titleElem.value
     def stepCount = steps.size
     def stepText(row: Int) = stepTextElem(row).value
     def stepLabel(row: Int) = steps(row).findElement(By.cssSelector(".label")).getText
     def stepLevel(row: Int) = {
-      val lvl = steps(row).getAttribute(UCEditor.AttrLevel)
+      val lvl = steps(row).getAttribute(CourseAndExceptionFields.AttrLevel)
       lvl should fullyMatch regex ("^\\d+$")
       lvl.toInt
     }

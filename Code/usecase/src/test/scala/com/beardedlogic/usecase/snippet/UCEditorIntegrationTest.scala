@@ -15,7 +15,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     "when first loaded" - {
       lazy val u = uce
       "should have a pre-populated UC ID" in { u.useCaseId should be("UC-1") }
-      "should have an empty title" in { u.useCaseTitle should be("") }
+      "should have a title of 'Untitled'" in { u.useCaseTitle should be("Untitled") }
       "should have 2 steps" in { u.stepCount should be(2) }
       "should have a step: 1.0" in { u.assertStep(0)(0, "1.0", "") }
       "should have a step: 1.0.1" in { u.assertStep(1)(1, "1", "") }
