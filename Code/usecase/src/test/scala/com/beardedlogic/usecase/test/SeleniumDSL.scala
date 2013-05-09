@@ -95,6 +95,12 @@ object SeleniumDSL {
     }
     def clickIndentDec(row: Int) = { indentDecButton(row).click(); this }
     def clickIndentInc(row: Int) = { indentIncButton(row).click(); this }
+    def assertButtons(row: Int, indent: Tuple2[Boolean, Boolean], del: Boolean = true) = {
+      indentDecButtonVisibility(row) should be(indent._1)
+      indentIncButtonVisibility(row) should be(indent._2)
+      deleteButtonVisibility(row) should be(del)
+      this
+    }
 
     // Inspection ------------------------------------------------------------------------------------------------------
 

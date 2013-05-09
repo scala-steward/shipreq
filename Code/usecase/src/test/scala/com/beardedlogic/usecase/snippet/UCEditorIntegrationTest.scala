@@ -122,27 +122,32 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
   }
 
   "The << button" - {
+
     "when page is first loaded" - {
       lazy val u = uce.expectDelays(false)
       "should not be visible for 1.0" in { u.indentDecButtonVisibility(0) should be(false) }
       "should be visible for 1.0.1" in { u.indentDecButtonVisibility(1) should be(true) }
     }
-    "when pressed for 1.0.2 (out of 1.0.3)" - {
-      lazy val u = startWith103.clickIndentDec(2).oneOffDelay(100)
-      "should leave 2 rows in NC" in { u.nc.assertStepCount(2) }
-      "should create 2 rows in AC" in { u.ac.assertStepCount(2) }
-      "should turn 1.0.2 into AC:1.1" in { u.ac.assertStep(0)(0, "1.1") }
-      "should turn 1.0.3 into AC:1.1.1" in { u.ac.assertStep(1)(1, "1") }
-      "should not be visible for 1.1" in { u.indentDecButtonVisibility(2) should be(false) }
-      "should be visible for 1.1.1" in { u.indentDecButtonVisibility(3) should be(true) }
+
+    "when pressed for 1.0.1.a" in {
+      val u = startWith103
+        .clickIndentInc(2).assertStep(2)(2, "a") // 1.0.2 --> 1.0.1.a
+        .clickIndentDec(2).assertStep(2)(1, "2") // 1.0.2 <-- 1.0.1.a
+        .assertStep(3)(1, "3")
+        .ac.assertStepCount(0)
     }
-    "when pressed for 1.0.2.a" - {
-      lazy val u = startWith103.clickIndentInc(2).assertStep(2)(2, "a").clickIndentDec(2).oneOffDelay(100)
-      "should turn 1.0.2.a into 1.0.2" in { u.assertStep(2)(1, "2") }
-      "should turn 1.0.2 into 1.0.3" in { u.assertStep(3)(1, "3") }
-      "should not add any rows to AC" in { u.ac.assertStepCount(0) }
+
+    "when pressed for 1.0.2 (without children)" in {
+      val u = startWith103.clickIndentDec(2) // 1.1 <-- 1.0.2 moves down to AC
+        .nc.assertStepCount(2) // NC should have 1.0 and 1.0.1
+        .ac.assertStepCount(2) // AC should have 1.1 and 1.1.1
+        .assertStep(0)(0, "1.1")
+        .assertStep(1)(1, "1")
+        .assertButtons(0, (false, true))
+        .assertButtons(1, (true, false))
     }
-    "when pressed for 1.0.2 then 1.0.3/1.1.2 (out of 1.0.[23].a)" in {
+
+    "when pressed for 1.0.2 (w/ children) then 1.1.2" in {
       val u = startWith102a3a
 
       u.clickIndentDec(2).assertStep(2)(0, "1.1") // 1.1 <-- 1.0.2 moves down to AC
@@ -154,9 +159,11 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
         .assertStep(1)(1, "1")
         .assertStep(2)(0, "1.2")
         .assertStep(3)(1, "1")
+        .assertButtons(0, (false, true))
+        .assertButtons(1, (true, false))
+        .assertButtons(2, (false, true))
+        .assertButtons(3, (true, false))
     }
-
-    // TODO test << visibility
   }
 
   "The >> button" - {

@@ -9,7 +9,7 @@ for f in $sd/*.s?ss; do
   s=$sd/$sf
   t=$td/$tf
   echo "$s -> $t"
-  sass $s --style compressed > $t
+  sass $s --style compact > $t
 done
 
 echo
