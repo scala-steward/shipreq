@@ -33,8 +33,7 @@ abstract class CourseFields extends Field {
   /**
    * Renders a list of steps and their trees of children.
    *
-   * @param addTailStepFn If non-null, then a button will be provided in the absence of any steps that allows the user
-   * to create the first step.
+   * @param addTailStepFn If non-null, then a button will be provided that adds top-level steps to the end of the list.
    */
   protected def renderSteps(steps: List[StepNode], addTailStepFn: () => JsCmd = null) = {
     val renderedSteps = ".step" #> flattenNodes(steps).map(renderSingleStep)

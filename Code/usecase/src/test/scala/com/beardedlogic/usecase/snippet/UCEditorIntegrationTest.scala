@@ -3,13 +3,14 @@ package com.beardedlogic.usecase.snippet
 import com.beardedlogic.usecase.test.SeleniumDSL
 import org.scalatest.FreeSpec
 import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.GivenWhenThen
 
 /**
  * Tests the use case editor.
  *
  * @since 29/04/2013
  */
-class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with SeleniumDSL {
+class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with SeleniumDSL with GivenWhenThen {
 
   /**
    * Turns an new UC into this:
@@ -247,25 +248,23 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
   }
 
   "The Alternate Courses addTailStep button" - {
-    "should be visible when page first loaded" in {
-      uce.ac.assertHasAddTailStepButton
+    "should be visible when there are no AC steps" in {
+      Given("A page with no AC steps yet"); val u = uce.ac.assertStepCount(0)
+      Then("it should be visible"); u.assertHasAddTailStepButton
     }
-    "when pressed" - {
-      lazy val u = uce.ac.clickAddTailStepButton
-      "should create 1.1" in { u.assertStep(0)(0, "1.1") }
-      "should disappear" in { u.assertNoAddTailStepButton }
+
+    "should create 1.1 first" in {
+      Given("A page with no AC steps yet"); val u = uce.ac.assertStepCount(0)
+      When("clicked"); u.clickAddTailStepButton
+      Then("it should create 1.1"); u.assertStep(0)(0, "1.1")
+      And("remain visible"); u.assertHasAddTailStepButton
     }
-    "should disappear when 1.0.1 indented to 1.1" in {
-      uce.clickIndentDec(1).ac.assertStepCount(1).assertNoAddTailStepButton
-    }
-    "should reappear when 1.1 deleted" in {
-      uce.clickIndentDec(1).ac.assertStepCount(1).clickDelete(0).assertStepCount(0).assertHasAddTailStepButton
-    }
-    "should reappear when 1.1 indented back to 1.0.1" in {
-    	uce.clickIndentDec(1).ac.assertStepCount(1).clickIndentInc(0).assertStepCount(0).assertHasAddTailStepButton
-    }
-    "should create 1.1 when clicked and only 1.0 exists" in {
-    	uce.clickDelete(1).assertStepCount(1).ac.clickAddTailStepButton.assertStepCount(1).assertStep(0)(0, "1.1")
+
+    "should create 1.2 when 1.1 exists" in {
+      Given("A page with 1.1"); val u = uce.clickIndentDec(1).ac.assertStepCount(1)
+      When("clicked"); u.clickAddTailStepButton
+      Then("it should create 1.2"); u.assertStep(1)(0, "1.2")
+      And("remain visible"); u.assertHasAddTailStepButton
     }
   }
 

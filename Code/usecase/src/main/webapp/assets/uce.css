@@ -52,4 +52,3 @@
 .step[data-lvl="0"] .label, .step[data-lvl="0"] textarea { font-weight: bold; }
 
 .addTailStep { text-align: right; }
-.step + .addTailStep { display: none; }

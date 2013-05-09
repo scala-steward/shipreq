@@ -42,23 +42,20 @@ class NormalAndAlternateCourseFields extends CourseFields {
 
   def render = (
     renderSteps(courses.head :: Nil)(NormalCourseTemplate) ++
-    renderSteps(courses.tail, onFirstAddAlternateCourse _)(AlternateCourseTemplate)
+    renderSteps(courses.tail, onAddTailStep _)(AlternateCourseTemplate)
   )
 
   /**
-   * Adds the first alternate course. (ie. X.1.)
-   *
-   * The button that invokes this will only be visible (via a CSS rule) when the alternate course section is empty.
+   * Adds a new top-level step to the end of the list.
    */
-  def onFirstAddAlternateCourse(): JsCmd =
-    if (courses.size == 1) {
-      val newNode = StepNode(nextFuncName, 0, ncLabelPrefix, 1, NewStep, Nil)
-      courses = courses :+ newNode
-      (
-        JqExpr(s"#${AlternateCourseId} .${AddTailStepClass}") ~> JqBefore(renderSingleStepXml(newNode))
-        & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
-      )
-    } else JsCmds.Noop
+  def onAddTailStep(): JsCmd = {
+    val newNode = StepNode(nextFuncName, 0, ncLabelPrefix, courses.size, NewStep, Nil)
+    courses = courses :+ newNode
+    (
+      JqExpr(s"#${AlternateCourseId} .${AddTailStepClass}") ~> JqBefore(renderSingleStepXml(newNode))
+      & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
+    )
+  }
 
   protected override def customiseIndentDecreaseJs(nodeId: String, updateJs: JsCmd): JsCmd =
     courses match {
