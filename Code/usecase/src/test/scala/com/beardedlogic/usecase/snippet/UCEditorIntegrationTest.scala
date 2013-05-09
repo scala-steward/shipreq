@@ -111,7 +111,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
   }
 
   "The Add button" - {
-    "when pressed between 1.0 and 1.0.1" - {
+    "when pressed for 1.0" - {
       lazy val u = uce.setStepText(0, "NC").setStepText(1, "blah").clickAdd(0)
       "should not affect 1.0" in { u.assertStep(0)(0, "1.0", "NC") }
       "should renumber 1.0.1 to 1.0.2" in { u.assertStep(2)(1, "2", "blah") }
@@ -119,7 +119,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should add a new add button" in { u.assertAddButtonCount(3) }
     }
 
-    "when pressed after 1.0.1" - {
+    "when pressed for 1.0.1" - {
       lazy val u = uce.setStepText(0, "NC").setStepText(1, "blah").clickAdd(1)
       "should not affect 1.0" in { u.assertStep(0)(0, "1.0", "NC") }
       "should not affect 1.0.1" in { u.assertStep(1)(1, "1", "blah") }
@@ -127,9 +127,10 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should add a new add button" in { u.assertAddButtonCount(3) }
     }
 
-    "when pressed after 1.1" in {
-      uce.clickIndentDec(1).assertStep(1)(0, "1.1")
-        .clickAdd(1).assertStep(2)(0, "1.2")
+    "when pressed for 1.1" in {
+      Given("1.1 exists"); val u = uce.clickIndentDec(1).assertStep(1)(0, "1.1")
+      When("1.1's add button is clicked"); u.clickAdd(1)
+      Then("it should create 1.1.1"); u.assertStep(2)(1, "1")
     }
   }
 

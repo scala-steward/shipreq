@@ -37,6 +37,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
    */
   object Steps {
     val InitialTree = $("1.0" ~> $("1")).toStepNodes
+    val Tree_10_11 = $("1.0", "1.1").toStepNodes
     val BT_102 = $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii"))
     val BT_103 = $("a" ~> $("i"), "b")
     val BigTree = $(
@@ -119,6 +120,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
     def test(afterId: String, nodes: List[StepNode], expectedTreeTxt: String) {
       val expected = parseStepTree(expectedTreeTxt)
       val actual = stepInsert(N, afterId, nodes)
+      actual._2.isDefined should be(true)
       actual._1 should matchTree(expected)
     }
 
@@ -137,6 +139,24 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
             1. Step:1
             2. N
             """)
+      }
+    }
+
+    "tree is in state: 1.0 & 1.1" should {
+      "creates 1.0.1 after 1.0" in {
+        test("1.0", Tree_10_11, """
+			1.0. Step:1.0
+			  1. N
+			1.1. Step:1.1
+			""")
+      }
+
+      "creates 1.1.1 after 1.1" in {
+        test("1.1", Tree_10_11, """
+			1.0. Step:1.0
+			1.1. Step:1.1
+			  1. N
+			""")
       }
     }
 
