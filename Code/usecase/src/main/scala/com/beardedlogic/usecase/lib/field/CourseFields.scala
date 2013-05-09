@@ -32,17 +32,20 @@ abstract class CourseFields extends Field {
 
   /**
    * Renders a list of steps and their trees of children.
+   *
+   * @param addFirstStepFn If non-null, then a button will be provided in the absence of any steps that allows the user
+   * to create the first step.
    */
-  protected def renderSteps(steps: List[StepNode], addFirstStepFn: () => JsCmd = null) =
-    if (steps.isEmpty && addFirstStepFn != null) (
-      // TODO NEEDED ANYWAY FOR AC -- change this
-      ".step" #> AddFirstStepTemplate andThen
-      ".step [class!]" #> "step" &
-      "button" #> SHtml.ajaxButton("+", addFirstStepFn)
-    )
-    else (
-      ".step" #> flattenNodes(steps).map(renderSingleStep)
-    )
+  protected def renderSteps(steps: List[StepNode], addFirstStepFn: () => JsCmd = null) = {
+    val renderedSteps = ".step" #> flattenNodes(steps).map(renderSingleStep)
+    if (addFirstStepFn == null) {
+      renderedSteps
+    } else {
+      val t = "button" #> SHtml.ajaxButton("+", addFirstStepFn)
+      val addFirstStep = t(AddFirstStepTemplate)
+      renderedSteps andThen ".steps *+" #> addFirstStep // Append to .steps, after each .step
+    }
+  }
 
   /**
    * Renders a single step. Does not render step children.
