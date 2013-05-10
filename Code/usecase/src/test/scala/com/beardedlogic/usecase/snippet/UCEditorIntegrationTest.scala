@@ -44,6 +44,22 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
    *
    * [0] 1.0
    * [1]   +- 1
+   * [2]   +- 2
+   * [3]   |  +- a
+   * [4]   |     +- i
+   *       |
+   * [5]   +- 3
+   * [6]      +- a
+   */
+  def startWith102ai3a = startWith102a3a
+    .clickAdd(3).assertStepCount(7)
+    .clickIndentInc(4).assertStep(4)(3, "i")
+
+  /**
+   * Turns an new UC into this:
+   *
+   * [0] 1.0
+   * [1]   +- 1
    * [2] 1.1
    * [3]   +- 1
    * [4]   |  +- a
@@ -140,6 +156,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should not be visible for 1.0" in { u.deleteButtonVisibility(0) should be(false) }
       "should be visible for 1.0.1" in { u.deleteButtonVisibility(1) should be(true) }
     }
+
     "when pressed for 1.0.2 (out of 1.0.3)" - {
       lazy val u = startWith103.setStepText(0 -> "head", 1 -> "pre", 2 -> "del", 3 -> "post").clickDelete(2)
       "should remove 1.0.2" in { u.assertStepCount(3) }
@@ -147,10 +164,21 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       "should not affect 1.0.1" in { u.assertStep(1)(1, "1", "pre") }
       "should turn 1.0.3 into 1.0.2" in { u.assertStep(2)(1, "2", "post") }
     }
+
+    "should remove node's children too" in {
+      Given("tree depths are 1.0.2.a.i and 1.0.3.a"); val u = startWith102ai3a.setStepText(5 -> "old 103", 6 -> "old 103a")
+      When("1.0.2 is deleted"); u.clickDelete(2)
+      Then("there should be 4 steps left"); u.assertStepCount(4)
+      And("1.0.3 should now be 1.0.2"); u.assertStep(2)(1, "2", "old 103")
+      And("1.0.3.a should now be 1.0.2.a"); u.assertStep(3)(2, "a", "old 103a")
+    }
+
+    "should not work for 1.0" in pending
+    "should work for 1.1" in pending
+    "should work for 1.E.1" in pending
   }
 
   "The << button" - {
-
     "when page is first loaded" - {
       lazy val u = uce.expectDelays(false)
       "should not be visible for 1.0" in { u.indentDecButtonVisibility(0) should be(false) }

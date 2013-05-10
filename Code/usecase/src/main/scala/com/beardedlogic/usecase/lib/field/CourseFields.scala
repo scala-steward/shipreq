@@ -22,6 +22,9 @@ object CourseFields {
   val AddStepTemplate = ".steps * " #> StepTemplate
   val AddTailStepTemplate = Template("template-courses-addTailStep")
   val AddTailStepClass = "addTailStep"
+
+  def ExprForNodeAndChildren(n: StepNode) = (n :: flattenNodes(n.children)).map("#" + _.id).mkString(",")
+  @inline def JqExprForNodeAndChildren(n: StepNode) = JqExpr(ExprForNodeAndChildren(n))
 }
 
 abstract class CourseFields extends Field {
@@ -104,9 +107,9 @@ abstract class CourseFields extends Field {
    * Removes a new step and all its children, shuffling up following steps and renumbering if necessary.
    */
   def onStepRemove(id: String): JsCmd = stepRemove(id, courses) match {
-    case (newCourses, true) =>
+    case (newCourses, Some(node)) =>
       courses = newCourses
-      FadeOut(JqId(id), 240)(
+      FadeOut(JqExprForNodeAndChildren(node), 240)(
         _ ~> JqJE.JqRemove() & UpdateLabels(flattenNodes(courses))
       )
     case _ => JsCmds.Noop

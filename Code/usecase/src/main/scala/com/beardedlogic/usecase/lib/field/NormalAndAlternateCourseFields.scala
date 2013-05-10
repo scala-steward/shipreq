@@ -66,9 +66,7 @@ class NormalAndAlternateCourseFields extends CourseFields {
     oldCourses match {
       // Move steps from AC to NC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
-        val movedToNc = newNode :: flattenNodes(newNode.children)
-        val ids = movedToNc.map("#" + _.id).mkString(",")
-        JsCmds.Run(s"ac_to_nc('${ids}', ${JE.AnonFunc(updateJs).toJsCmd})")
+        JsCmds.Run(s"ac_to_nc('${ExprForNodeAndChildren(newNode)}', ${JE.AnonFunc(updateJs).toJsCmd})")
 
       // Apply indent normally
       case _ => updateJs

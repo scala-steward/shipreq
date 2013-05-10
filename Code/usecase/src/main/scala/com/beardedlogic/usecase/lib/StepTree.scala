@@ -120,20 +120,24 @@ object StepTree {
    *
    * @return A tuple of 1) the new tree, 2) whether any changes were made.
    */
-  @inline def stepRemove(id: String, nodes: List[StepNode]): Tuple2[List[StepNode], Boolean] =
-    _stepRemove(id, nodes, Nil, false)
+  @inline def stepRemove(id: String, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
+    _stepRemove(id, nodes, Nil, None)
 
-  @tailrec private def _stepRemove(id: String, nodes: List[StepNode], results: List[StepNode], found: Boolean): Tuple2[List[StepNode], Boolean] = nodes match {
+  @tailrec private def _stepRemove(
+    id: String,
+    nodes: List[StepNode],
+    results: List[StepNode],
+    found: Option[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
     case Nil => (results, found)
 
     // Found.
     case h :: t if h.id == id =>
-      (results ::: t.map(_.decrementPosition), true)
+      (results ::: t.map(_.decrementPosition), Some(h))
 
     // Not found. Check children then siblings.
     case h :: t => stepRemove(id, h.children) match {
-      case (newChildren, true) => (results ::: h.copy(children = newChildren) :: t, true)
-      case _                   => _stepRemove(id, t, results :+ h, false)
+      case (newChildren, f @ Some(_)) => (results ::: h.copy(children = newChildren) :: t, f)
+      case _                          => _stepRemove(id, t, results :+ h, None)
     }
   }
 
