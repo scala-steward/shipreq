@@ -99,8 +99,8 @@ object SeleniumDSL {
       stepLabel(row) should equal(label)
       stepText(row) should equal(txt)
     }
-    def clickIndentDec(row: Int) = { indentDecButton(row).click(); this }
-    def clickIndentInc(row: Int) = { indentIncButton(row).click(); this }
+    def click_<<(row: Int) = { indentDecButton(row).click(); this }
+    def click_>>(row: Int) = { indentIncButton(row).click(); this }
     def assertButtons(row: Int, indent: Tuple2[Boolean, Boolean], del: Boolean = true) = {
       indentDecButtonVisibility(row) should be(indent._1)
       indentIncButtonVisibility(row) should be(indent._2)

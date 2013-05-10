@@ -10,7 +10,7 @@ import org.scalatest.GivenWhenThen
  */
 class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL with GivenWhenThen {
 
-  def startWith_11 = uce.clickIndentDec(1).assertStep(1)(0, "1.1")
+  def startWith_11 = uce.click_<<(1).assertStep(1)(0, "1.1")
 
   def given_1E1_exists = uce.ec.clickAddTailStepButton.assertStepCount(1)
 
@@ -38,8 +38,8 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
   def startWith102a3a = startWith103
     .clickAdd(3).assertStepCount(5)
     .clickAdd(4).assertStepCount(6)
-    .clickIndentInc(3).assertStep(3)(2, "a")
-    .clickIndentInc(5).assertStep(5)(2, "a")
+    .click_>>(3).assertStep(3)(2, "a")
+    .click_>>(5).assertStep(5)(2, "a")
 
   /**
    * Turns an new UC into this:
@@ -55,7 +55,7 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
    */
   def startWith102ai3a = startWith102a3a
     .clickAdd(3).assertStepCount(7)
-    .clickIndentInc(4).assertStep(4)(3, "i")
+    .click_>>(4).assertStep(4)(3, "i")
 
   /**
    * Turns an new UC into this:
@@ -74,9 +74,9 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
     .clickAdd(4).assertStepCount(6)
     .clickAdd(5).assertStepCount(7)
     .clickAdd(6).assertStepCount(8)
-    .clickIndentDec(2).assertStep(2)(0, "1.1")
-    .clickIndentInc(4).assertStep(4)(2, "a")
-    .clickIndentDec(6).assertStep(6)(0, "1.2")
+    .click_<<(2).assertStep(2)(0, "1.1")
+    .click_>>(4).assertStep(4)(2, "a")
+    .click_<<(6).assertStep(6)(0, "1.2")
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -159,14 +159,14 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
 
     "when pressed for 1.0.1.a" in {
       val u = startWith103
-        .clickIndentInc(2).assertStep(2)(2, "a") // 1.0.2 --> 1.0.1.a
-        .clickIndentDec(2).assertStep(2)(1, "2") // 1.0.2 <-- 1.0.1.a
+        .click_>>(2).assertStep(2)(2, "a") // 1.0.2 --> 1.0.1.a
+        .click_<<(2).assertStep(2)(1, "2") // 1.0.2 <-- 1.0.1.a
         .assertStep(3)(1, "3")
         .ac.assertStepCount(0)
     }
 
     "when pressed for 1.0.2 (without children)" in {
-      val u = startWith103.clickIndentDec(2) // 1.1 <-- 1.0.2 moves down to AC
+      val u = startWith103.click_<<(2) // 1.1 <-- 1.0.2 moves down to AC
         .nc.assertStepCount(2) // NC should have 1.0 and 1.0.1
         .ac.assertStepCount(2) // AC should have 1.1 and 1.1.1
         .assertStep(0)(0, "1.1")
@@ -178,11 +178,11 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
     "when pressed for 1.0.2 (w/ children) then 1.1.2" in {
       val u = startWith102a3a
 
-      u.clickIndentDec(2).assertStep(2)(0, "1.1") // 1.1 <-- 1.0.2 moves down to AC
+      u.click_<<(2).assertStep(2)(0, "1.1") // 1.1 <-- 1.0.2 moves down to AC
         .nc.assertStepCount(2) // NC should have 1.0 and 1.0.1
         .ac.assertStepCount(4) // AC should have 1.1 and 1.1.[1-3]
 
-      u.clickIndentDec(4).ac // 1.2 <-- 1.1.2
+      u.click_<<(4).ac // 1.2 <-- 1.1.2
         .assertStep(0)(0, "1.1")
         .assertStep(1)(1, "1")
         .assertStep(2)(0, "1.2")
@@ -203,14 +203,14 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
       "should be visible for 1.0.1" in { u.indentIncButtonVisibility(1) should be(false) }
     }
     "when pressed for 1.0.2 (out of 1.0.3)" - {
-      lazy val u = startWith103.clickIndentInc(2)
+      lazy val u = startWith103.click_>>(2)
       "should turn 1.0.2 into 1.0.1.a" in { u.assertStep(2)(2, "a") }
       "should turn 1.0.3 into 1.0.2" in { u.assertStep(3)(1, "2") }
       "should not be visible for 1.0.1.a" in { u.indentIncButtonVisibility(2) should be(false) }
       "should be visible for 1.0.2" in { u.indentIncButtonVisibility(3) should be(true) }
     }
     "when pressed for 1.0.3 then 1.0.2 (out of 1.0.3)" - {
-      lazy val u = startWith103.clickIndentInc(3).clickIndentInc(2)
+      lazy val u = startWith103.click_>>(3).click_>>(2)
       "should leave 1.0 as is" in { u.assertStep(0)(0, "1.0") }
       "should leave 1.0.1 as is" in { u.assertStep(1)(1, "1") }
       "should turn 1.0.2 into 1.0.1.a" in { u.assertStep(2)(2, "a") }
@@ -231,7 +231,7 @@ class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL 
     // [7]   +- 1
     "when pressed for 1.1" in {
       val u = startWith_10_11x_12
-        .clickIndentInc(2).assertStep(2)(1, "2") // 1.1 --> 1.0.2
+        .click_>>(2).assertStep(2)(1, "2") // 1.1 --> 1.0.2
         .nc.assertStepCount(6)
         .assertStep(3)(2, "a")
         .assertStep(4)(3, "i")
