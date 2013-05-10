@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.snippet
+package com.beardedlogic.usecase.integration
 
 import com.beardedlogic.usecase.test.SeleniumDSL
 import org.scalatest.FreeSpec
@@ -6,11 +6,9 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.GivenWhenThen
 
 /**
- * Tests the use case editor.
- *
  * @since 29/04/2013
  */
-class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with SeleniumDSL with GivenWhenThen {
+class TreeCompositionTest extends FreeSpec with ShouldMatchers with SeleniumDSL with GivenWhenThen {
 
   def startWith_11 = uce.clickIndentDec(1).assertStep(1)(0, "1.1")
 
@@ -80,55 +78,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     .clickIndentInc(4).assertStep(4)(2, "a")
     .clickIndentDec(6).assertStep(6)(0, "1.2")
 
-  "The editor page" - {
-    "when first loaded" - {
-      lazy val u = uce.expectDelays(false)
-      "should have a pre-populated UC ID" in { u.useCaseId should be("UC-1") }
-      "should have a title of 'Untitled'" in { u.useCaseTitle should be("Untitled") }
-      "should have 2 steps" in { u.stepCount should be(2) }
-      "should have a step: 1.0" in { u.assertStep(0)(0, "1.0", "") }
-      "should have a step: 1.0.1" in { u.assertStep(1)(1, "1", "") }
-      "should have 2 Add buttons" in { u.addButtonCount should be(2) }
-    }
-  }
-
-  "The use case title" - {
-    "when edited" - {
-      "should cause the normal-course step text" - {
-        "to match the use case title" - {
-          "when previously empty" in {
-            uce.setUseCaseTitle("hehe cool").assertStepText(0, "hehe cool")
-          }
-          "when previously matched automatically" in {
-            uce.setUseCaseTitle("hehe cool").assertStepText(0, "hehe cool")
-              .setUseCaseTitle("noo").assertStepText(0, "noo")
-          }
-          "when previously matched manually" in {
-            uce.setStepText(0, "override").setUseCaseTitle("hehe cool").setStepText(0, "hehe cool")
-              .setUseCaseTitle("noo").assertStepText(0, "noo")
-          }
-        }
-        "not to change" - {
-          "when previously overridden" in {
-            uce.setStepText(0, "what").setUseCaseTitle("noo").assertStepText(0, "what")
-          }
-        }
-      }
-    }
-  }
-
-  "The step editor" - {
-    "when Enter is pressed" - {
-      "and editing 1.0" - {
-        "should not add a new step" in pending
-        "should move focus to 1.0.1" in pending
-      }
-      "and editing 1.1" - {
-        "should add a new step" in pending
-        "should move focus to 1.0.2" in pending
-      }
-    }
-  }
+  // -------------------------------------------------------------------------------------------------------------------
 
   "The Add button" - {
     "when pressed for 1.0" - {
@@ -198,6 +148,8 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   "The << button" - {
     "when page is first loaded" - {
       lazy val u = uce.expectDelays(false)
@@ -241,6 +193,8 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
         .assertButtons(3, (true, false))
     }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   "The >> button" - {
     "when page is first loaded" - {
@@ -297,6 +251,8 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     "should be disabled for 1.E.1" in { given_1E1_exists.indentIncButtonVisibility(0) should be(false) }
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   "The Alternate Courses addTailStep button" - {
     "should be visible when there are no AC steps" in {
       Given("A page with no AC steps yet"); val u = uce.ac.assertStepCount(0)
@@ -317,6 +273,8 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       And("remain visible"); u.assertHasAddTailStepButton
     }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   "The Exceptions addTailStep button" - {
     "should be visible when there are no exception steps" in {
