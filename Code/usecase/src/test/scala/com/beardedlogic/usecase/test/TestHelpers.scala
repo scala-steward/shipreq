@@ -14,12 +14,12 @@ trait TestHelpers {
 
   def eventually(cond: => Any) {
     val test = (sleep: Int) => try { cond; true } catch { case _: Throwable => Thread.sleep(sleep); false }
-    if (!test(50))
-      if (!test(50))
-        if (!test(100))
-          if (!test(100))
-            if (!test(200))
-              if (!test(500))
+    if (!test(10))
+      if (!test(10))
+        if (!test(20))
+          if (!test(20))
+            if (!test(50))
+              if (!test(100))
                 cond
   }
 

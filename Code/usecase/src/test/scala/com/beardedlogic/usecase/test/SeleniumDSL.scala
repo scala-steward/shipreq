@@ -110,6 +110,11 @@ object SeleniumDSL {
     def assertHasAddTailStepButton() = { addTailStepButton.isDisplayed should be(true); this }
     def assertNoAddTailStepButton() = { addTailStepButton.isDisplayed should be(false); this }
     def clickAddTailStepButton() = { addTailStepButton.click(); this }
+    def addButtons(count: Int) = {
+      var before = stepCount
+      for (i <- 1 to count){ clickAdd(before-1) }
+      assertStepCount(before + count)
+    }
 
     // Inspection ------------------------------------------------------------------------------------------------------
 
