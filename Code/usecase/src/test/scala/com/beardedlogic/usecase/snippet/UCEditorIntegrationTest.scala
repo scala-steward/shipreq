@@ -12,6 +12,10 @@ import org.scalatest.GivenWhenThen
  */
 class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with SeleniumDSL with GivenWhenThen {
 
+  def startWith_11 = uce.clickIndentDec(1).assertStep(1)(0, "1.1")
+
+  def given_1E1_exists = uce.ec.clickAddTailStepButton.assertStepCount(1)
+
   /**
    * Turns an new UC into this:
    *
@@ -144,7 +148,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
 
     "when pressed for 1.1" in {
-      Given("1.1 exists"); val u = uce.clickIndentDec(1).assertStep(1)(0, "1.1")
+      Given("1.1 exists"); val u = startWith_11
       When("1.1's add button is clicked"); u.clickAdd(1)
       Then("it should create 1.1.1"); u.assertStep(2)(1, "1")
     }
@@ -178,7 +182,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
 
     "should work for 1.1" in {
-      Given("A page with 1.1"); val u = uce.clickIndentDec(1).ac.assertStepCount(1)
+      Given("A page with 1.1"); val u = startWith_11.ac
       And("it's visible for 1.1"); u.deleteButtonVisibility(0) should be(true)
       When("clicked"); u.clickDelete(0)
       Then("1.1 should disappear"); u.assertStepCount(0)
@@ -186,7 +190,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
 
     "should work for 1.E.1" in {
-      Given("A page with 1.E.1"); val u = uce.ec.clickAddTailStepButton.assertStepCount(1)
+      Given("A page with 1.E.1"); val u = given_1E1_exists
       And("it's visible for 1.E.1"); u.deleteButtonVisibility(0) should be(true)
       When("clicked"); u.clickDelete(0)
       Then("1.E.1 should disappear"); u.assertStepCount(0)
@@ -288,6 +292,9 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
         .assertButtons(0, (false, true))
         .assertButtons(1, (true, false))
     }
+
+    "should be enabled for 1.1" in { startWith_11.ac.indentIncButtonVisibility(0) should be(true) }
+    "should be disabled for 1.E.1" in { given_1E1_exists.indentIncButtonVisibility(0) should be(false) }
   }
 
   "The Alternate Courses addTailStep button" - {
@@ -304,7 +311,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
 
     "should create 1.2 when 1.1 exists" in {
-      Given("A page with 1.1"); val u = uce.clickIndentDec(1).ac.assertStepCount(1)
+      Given("A page with 1.1"); val u = startWith_11.ac
       When("clicked"); u.clickAddTailStepButton
       Then("it should create 1.2"); u.assertStep(1)(0, "1.2")
       And("remain visible"); u.assertHasAddTailStepButton
@@ -316,7 +323,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
       Given("A page with no exceptions yet"); val u = uce.ec.assertStepCount(0)
       Then("it should be visible"); u.assertHasAddTailStepButton
     }
-    
+
     "should create 1.E.1 first" in {
       Given("A page with no exceptions yet"); val u = uce.ec.assertStepCount(0)
       When("clicked"); u.clickAddTailStepButton
@@ -325,7 +332,7 @@ class UCEditorIntegrationTest extends FreeSpec with ShouldMatchers with Selenium
     }
 
     "should create 1.E.2 when 1.E.1 exists" in {
-      Given("A page with 1.E.1"); val u = uce.ec.clickAddTailStepButton.assertStepCount(1)
+      Given("A page with 1.E.1"); val u = given_1E1_exists
       When("clicked"); u.clickAddTailStepButton
       Then("it should create 1.E.2"); u.assertStep(1)(0, "1.E.2")
       And("remain visible"); u.assertHasAddTailStepButton
