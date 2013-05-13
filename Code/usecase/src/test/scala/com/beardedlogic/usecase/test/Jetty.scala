@@ -4,6 +4,7 @@ import net.liftweb.util.TimeHelpers._
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.nio.SelectChannelConnector
 import org.eclipse.jetty.webapp.WebAppContext
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Starts up an instance of Jetty than runs the webapp.
@@ -12,11 +13,21 @@ import org.eclipse.jetty.webapp.WebAppContext
  */
 object Jetty {
 
+  private val jetty = new JettyInstance
+
+  def start() {
+    jetty.start
+  }
+
+  def stop() {
+    jetty.stop
+  }
+
   val PORT = 8090
   val MAX_IDLE = 10 seconds
-  val URL = "http://localhost:" + PORT + "/"
+  val URL = "http://localhost:" + PORT
 
-  private val server: Server = {
+  def newServer = {
     val svr = new Server
 
     val connector = new SelectChannelConnector
@@ -36,25 +47,39 @@ object Jetty {
     context.setServer(svr)
     svr
   }
+}
+
+private class JettyInstance {
+
+  import Jetty._
+
+  private val refCount = new AtomicInteger(0)
+  private val serverLock = new Object()
+  private var server: Server = null
 
   def start() {
-    //    if (!server.isStarted) {
-    server.start
-    //    server.setStopAtShutdown(true)
-    //      Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
-    //        override def run() {
-    //          println("Here")
-    //          if (server.isStarted()) {
-    //            server.stop
-    //            server.join
-    //          }
-    //        }
-    //      }, "Stop Jetty Hook"));
-    //    }
+    if (refCount.getAndIncrement == 0) {
+      serverLock.synchronized {
+        // println("Starting Jetty...")
+        server = newServer
+        server.start
+      }
+    }
   }
 
   def stop() {
-    server.stop
-    server.join
+    new Thread(new Runnable {
+      def run() {
+        Thread.sleep(1000)
+        if (refCount.decrementAndGet == 0) {
+          serverLock.synchronized {
+            // println("Stopping Jetty...")
+            server.stop
+            server.join
+            server = null
+          }
+        }
+      }
+    }).start()
   }
 }
