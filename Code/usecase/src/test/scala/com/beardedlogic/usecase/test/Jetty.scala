@@ -4,7 +4,6 @@ import net.liftweb.util.TimeHelpers._
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.nio.SelectChannelConnector
 import org.eclipse.jetty.webapp.WebAppContext
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Starts up an instance of Jetty than runs the webapp.
@@ -13,21 +12,17 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 object Jetty {
 
-  private val jetty = new JettyInstance
+  private val jetty = SharedGlobal(Some(1000L), newServer _) { s => s.stop; s.join }
 
-  def start() {
-    jetty.start
-  }
+  def acquire(): Server = jetty.acquire
 
-  def stop() {
-    jetty.stop
-  }
+  def release(): Server = jetty.release
 
   val PORT = 8090
   val MAX_IDLE = 10 seconds
   val URL = "http://localhost:" + PORT
 
-  def newServer = {
+  def newServer: Server = {
     val svr = new Server
 
     val connector = new SelectChannelConnector
@@ -45,41 +40,7 @@ object Jetty {
     svr.setHandler(context)
 
     context.setServer(svr)
+    svr.start
     svr
-  }
-}
-
-private class JettyInstance {
-
-  import Jetty._
-
-  private val refCount = new AtomicInteger(0)
-  private val serverLock = new Object()
-  private var server: Server = null
-
-  def start() {
-    if (refCount.getAndIncrement == 0) {
-      serverLock.synchronized {
-        // println("Starting Jetty...")
-        server = newServer
-        server.start
-      }
-    }
-  }
-
-  def stop() {
-    new Thread(new Runnable {
-      def run() {
-        Thread.sleep(1000)
-        if (refCount.decrementAndGet == 0) {
-          serverLock.synchronized {
-            // println("Stopping Jetty...")
-            server.stop
-            server.join
-            server = null
-          }
-        }
-      }
-    }).start()
   }
 }
