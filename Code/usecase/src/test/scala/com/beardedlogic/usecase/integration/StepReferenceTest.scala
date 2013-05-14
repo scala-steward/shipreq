@@ -45,7 +45,7 @@ class StepReferenceTest
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def init =  {
+  def init = {
     u = uce // load page
     mapSteps("1.0", "1.0.1")
     u
@@ -162,12 +162,39 @@ class StepReferenceTest
         eventually { referring.value should be(refText("1.0.5?")) }
       }
     }
+  }
 
-    // should change when referenced in
-    // - text
-    // - NC
-    // - AC
-    // - EC
+  def refsAreParsed(setup: => Any, field: => WebElement, fieldAfterInsert: => WebElement = null) = {
+    it("should transform on edit") {
+      u = uce
+      setup
+      field.typeInto("I am [  1.0.1]\t")
+      eventually { field.value should be("I am [1.0.1]") }
+    }
+
+    it("should update as refs change") {
+      u = uce
+      setup
+      field.typeInto("I like [1.0.1]\t")
+      u.clickAdd(0)
+      eventually {
+        var f = fieldAfterInsert
+        if (f == null) f = field
+        f.value should be("I like [1.0.2]")
+      }
+    }
+  }
+
+  describe("NC fields (existing)") {
+    it should behave like refsAreParsed({}, u.stepTextElem(0))
+  }
+
+  describe("NC fields (new)") {
+    it should behave like refsAreParsed(u.clickAdd(1).assertStepCount(3), u.stepTextElem(1), u.stepTextElem(2))
+  }
+
+  describe("EC fields") {
+    it should behave like refsAreParsed(u.ec.clickAddTailStepButton.assertStepCount(1), u.ec.stepTextElem(0))
   }
 
   //describe("Multiple step refs") {

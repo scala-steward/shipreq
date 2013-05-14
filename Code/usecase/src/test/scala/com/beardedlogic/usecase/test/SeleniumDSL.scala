@@ -74,7 +74,6 @@ object SeleniumDSL {
     private def titleElem = s.findElement(By.name("title"))
     private def steps = courseRoot.findElements(By.cssSelector(".step")).asScala
     private def addButtons = courseRoot.findElements(By.cssSelector("button.add"))
-    private def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
     private def addButton(row: Int) = steps(row).findElement(By.cssSelector("button.add"))
     private def delButton(row: Int) = steps(row).findElement(By.cssSelector("button.delete"))
     private def indentDecButton(row: Int) = steps(row).findElement(By.cssSelector("button.indentDec"))
@@ -121,6 +120,7 @@ object SeleniumDSL {
     def useCaseTitle = titleElem.value
     def stepCount = steps.size
     def stepText(row: Int) = stepTextElem(row).value
+    def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
     def stepLabel(row: Int) = steps(row).findElement(By.cssSelector(".label span")).getText
     def stepLevel(row: Int) = {
       val lvl = steps(row).getAttribute(AttrLevel)

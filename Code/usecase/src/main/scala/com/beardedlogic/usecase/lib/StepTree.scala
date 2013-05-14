@@ -8,6 +8,7 @@ import scala.annotation.tailrec
  */
 object StepTree {
 
+  // TODO Step.text not being used. Maybe Step itself is useless. Step node ids and an external map probably better.
   case class Step(text: String)
 
   case class StepNode(id: String,
@@ -85,6 +86,7 @@ object StepTree {
     case Nil => Map.empty
   }
 
+  // TODO replace flattenNodes() with a recursive-map fn
   /**
    * Flattens a list of step nodes with children, into a single list that contains all recursive contents.
    */

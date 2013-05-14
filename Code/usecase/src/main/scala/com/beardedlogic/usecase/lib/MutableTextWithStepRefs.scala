@@ -41,14 +41,15 @@ object MutableTextWithStepRefs {
  * obvious.</li>
  * <li>References to steps are updated when their labels change, and the updated text is pushed back to the client.</li>
  * </ul>
+ *
+ * Make sure you call <code>init()</code> before use.
  */
 class MutableTextWithStepRefs(val msgCentre: MessageCentre,
-                              refLookupProvider: () => Map[String, String]
+                              refLookupProvider: () => Map[String, String],
+                              val id: String = nextFuncName
                                ) extends LiftActor {
 
   import MutableTextWithStepRefs._
-
-  val id = nextFuncName
 
   private[lib] var curRefsInUse = Map.empty[String, String]
   private[lib] var curRefLookup = Map.empty[String, String]

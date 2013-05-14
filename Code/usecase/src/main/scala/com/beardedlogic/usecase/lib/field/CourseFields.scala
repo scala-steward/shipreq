@@ -55,7 +55,36 @@ abstract class CourseFields extends Field {
     _stepLabelMap
   }
 
-  override def init() {}
+  private[this] var textFields: Map[String, MutableTextWithStepRefs] = Map.empty
+
+  override def init() {
+    for (n <- flattenNodes(courses)) createAndRegisterTextField(n)
+  }
+
+  private[this] def createAndRegisterTextField(n:StepNode) {
+    val f = new MutableTextWithStepRefs(msgCentre, state.stepLabelMapProvider, n.stepTextId)
+    f.init
+    textFields += (n.id -> f)
+  }
+
+  //  private[this] def syncTextFieldMap() {
+  //    val oldTextFields = textFields
+  //    textFields = Map.empty
+  //    for (n <- flattenNodes(courses)) {
+  //      val id = n.id
+  //      val f = if (oldTextFields.contains(id))
+  //        oldTextFields(id)
+  //      else
+  //        newTextField(n, _initCalled)
+  //      textFields += (id -> f)
+  //    }
+  //  }
+
+//  @inline private[this] def newTextField(n:StepNode, init: Boolean) = {
+//    val f = new MutableTextWithStepRefs(msgCentre, state.stepLabelMapProvider, n.stepTextId)
+//    if (init) f.init
+//    f
+//  }
 
   /**
    * Renders a list of steps and their trees of children.
@@ -87,7 +116,7 @@ abstract class CourseFields extends Field {
     & IfCssSel(prohibitRemoval(n.id)) { ".step [class+]" #> "noDel" }
     & ".label span *" #> n.label
     & ".label span [id]" #> n.labelId
-    & "@text" #> SHtml.textarea(n.step.text, (_) => (), "rows" -> "1", "id" -> n.stepTextId)
+    & "@text" #> textFields(n.id).renderTextarea
     & ".add" #> SHtml.ajaxButton("+", () => onStepAdd(n.id))
     & ".delete" #> SHtml.ajaxButton("-", () => onStepRemove(n.id))
     & ".indentDec" #> SHtml.ajaxButton("«", () => onIndentDecrease(n.id))
@@ -108,6 +137,7 @@ abstract class CourseFields extends Field {
   private def onAddTailStep(addTailStepCss: String, newStepFn: () => StepNode): JsCmd = {
     val newNode = newStepFn()
     courses = courses :+ newNode
+    createAndRegisterTextField(newNode)
     (
       JqExpr(addTailStepCss) ~> JqBefore(renderSingleStepXml(newNode))
       & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
@@ -120,6 +150,7 @@ abstract class CourseFields extends Field {
   def onStepAdd(preceedingNodeId: String): JsCmd = stepInsert(NewStep, preceedingNodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       courses = newCourses
+      createAndRegisterTextField(newNode)
       (
         JqId(preceedingNodeId) ~> JqAfter(renderSingleStepXml(newNode))
         & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
