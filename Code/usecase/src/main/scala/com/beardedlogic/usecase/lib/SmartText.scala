@@ -14,7 +14,7 @@ import JsExt._
 import field.CourseFields.StepChangeMsg
 import msg.{MessageCentre, PushToClient}
 
-object MutableTextWithStepRefs {
+object SmartText {
 
   val RefBraceL = '['
   val RefBraceR = ']'
@@ -41,7 +41,8 @@ object MutableTextWithStepRefs {
   val FlowToArrowGoodReplacement = "→"
 
   /**
-   * My Little Pony here expresses the syntax that enables various special features to sprout from plain UC text.
+   * My Little <strike>Pony</strike> Parser here expresses the syntax that enables various special features to sprout
+   * from plain UC text.
    *
    * @since 15/05/2013
    */
@@ -142,12 +143,12 @@ object MutableTextWithStepRefs {
  *
  * @since 12/05/2013
  */
-class MutableTextWithStepRefs(val msgCentre: MessageCentre,
-                              val refAndIdLookupProvider: () => Map[String, String],
-                              val id: String = nextFuncName
-                               ) extends LiftActor {
+class SmartText(val msgCentre: MessageCentre,
+                val refAndIdLookupProvider: () => Map[String, String],
+                val id: String = nextFuncName
+                 ) extends LiftActor {
 
-  import MutableTextWithStepRefs._
+  import SmartText._
   import MyLittleParser._
 
   private[this] val writeLock = new Object

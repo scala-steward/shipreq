@@ -15,7 +15,7 @@ import org.scalacheck.Prop._
 import org.scalacheck.Gen
 import com.beardedlogic.usecase.lib.msg.PushToClient
 
-object MutableTextWithStepRefsTest extends MockitoSugar {
+object SmartTextTest extends MockitoSugar {
 
   val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5",
                         "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5")
@@ -24,7 +24,7 @@ object MutableTextWithStepRefsTest extends MockitoSugar {
                         "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F")
 
   def subjectWithText(text: String) = {
-    val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+    val m = new SmartText(mock[MessageCentre], () => StepState1)
     m.init
     m.text = text
     m
@@ -34,23 +34,23 @@ object MutableTextWithStepRefsTest extends MockitoSugar {
 // =====================================================================================================================
 
 /**
- * Unit test for MutableTextWithStepRefs.
+ * Unit test for SmartText.
  *
  * @since 12/05/2013
  */
-class MutableTextWithStepRefsTest
+class SmartTextTest
   extends FunSpec
           with ShouldMatchers
           with PropertyChecks
           with Checkers
-          with MutableTextWithStepRefsCheck
+          with SmartTextChecks
           with MockitoSugar {
 
-  import MutableTextWithStepRefsTest._
+  import SmartTextTest._
 
   class RefLookupProvider(var value: Map[String, String])
 
-  implicit class Ext(m: MutableTextWithStepRefs) {
+  implicit class Ext(m: SmartText) {
     def sendStepChangeMsg() {
       m.messageHandler.applyOrElse[Any, Unit](StepChangeMsg, _ => ())
     }
@@ -69,7 +69,7 @@ class MutableTextWithStepRefsTest
   describe("When first created and initialised") {
     it("should register itself as a listener") {
       val msgCentre = mock[MessageCentre]
-      val m = new MutableTextWithStepRefs(msgCentre, () => StepState2)
+      val m = new SmartText(msgCentre, () => StepState2)
       m.init()
       verify(msgCentre).register(m)
     }
@@ -80,14 +80,14 @@ class MutableTextWithStepRefsTest
   describe("text=(newText)") {
     describe("internal state") {
       it("should examine the text for step refs and create map of refs -> ids") {
-        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.text = "Umm [S.1] & [S.3] ah and [S.1]!"
         m.refsInText should be(Map("S.1" -> "X1", "S.3" -> "X3"))
       }
 
       it("should remove previous matches") {
-        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "Umm [S.1] only"
@@ -95,7 +95,7 @@ class MutableTextWithStepRefsTest
       }
 
       it("should clear the label<->id map when no matches") {
-        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "nothing"
@@ -107,7 +107,7 @@ class MutableTextWithStepRefsTest
 
     describe("transformations") {
       def test(input: String, expectedOutput: String = null) {
-        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.text = input
         m.text should be(if (expectedOutput == null) input else expectedOutput)
@@ -140,7 +140,7 @@ class MutableTextWithStepRefsTest
   // -------------------------------------------------------------------------------------------------------------------
 
   describe("MyLittleParser") {
-    import MutableTextWithStepRefs.{MyLittleParser => P}
+    import SmartText.{MyLittleParser => P}
 
     it("should parse StepLabel") {
       val examples = Table(("EXAMPLE", "PASS")
@@ -294,9 +294,9 @@ class MutableTextWithStepRefsTest
 
   describe("Receiving a StepChangeMsg") {
 
-    def assertMessageDoesNothing(setup: MutableTextWithStepRefs => Unit) {
+    def assertMessageDoesNothing(setup: SmartText => Unit) {
       val msgCentre = mock[MessageCentre]
-      val m = new MutableTextWithStepRefs(msgCentre, () => StepState2)
+      val m = new SmartText(msgCentre, () => StepState2)
       setup(m)
       m.sendStepChangeMsg
       verifyNoMoreInteractions(msgCentre)
@@ -331,7 +331,7 @@ class MutableTextWithStepRefsTest
     def newSubject(initialText: String, initialRefsInUse: Map[String, String]) = {
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
-      val m = new MutableTextWithStepRefs(msgCentre, () => StepState2)
+      val m = new SmartText(msgCentre, () => StepState2)
       m._text = initialText
       m.refsInText = initialRefsInUse
       m.refAndIdLookup = StepState1
@@ -339,7 +339,7 @@ class MutableTextWithStepRefsTest
       m
     }
 
-    def textWasUpdated(subject: => MutableTextWithStepRefs, newText: String, newRefsInUse: Map[String, String]) {
+    def textWasUpdated(subject: => SmartText, newText: String, newRefsInUse: Map[String, String]) {
       it("should update the text") {
         subject.text should be(newText)
       }
@@ -376,7 +376,7 @@ class MutableTextWithStepRefsTest
       val refLookupProvider = new RefLookupProvider(StepState1)
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
-      val m = new MutableTextWithStepRefs(msgCentre, refLookupProvider.value _)
+      val m = new SmartText(msgCentre, refLookupProvider.value _)
       m.init
       m.text = before
       m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
@@ -410,13 +410,13 @@ class MutableTextWithStepRefsTest
 // =====================================================================================================================
 
 /**
- * ScalaCheck generators and checks for MutableTextWithStepRefs.
+ * ScalaCheck generators and checks for SmartText.
  *
  * @since 15/05/2013
  */
-trait MutableTextWithStepRefsCheck {
+trait SmartTextChecks {
 
-  import MutableTextWithStepRefsTest._
+  import SmartTextTest._
 
   val text: Gen[String] = Gen.alphaStr suchThat (s => !s.contains("-->") && !s.contains("→"))
   val nothing: Gen[String] = ""

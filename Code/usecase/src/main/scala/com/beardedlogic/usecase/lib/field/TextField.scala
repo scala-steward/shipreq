@@ -29,7 +29,7 @@ object TextField {
 class TextField(val fd: TextFieldDef, val state: UCEditorState) extends Field {
   import TextField._
 
-  val value = new MutableTextWithStepRefs(state.msgCentre, state.stepLabelMapProvider)
+  val value = new SmartText(state.msgCentre, state.stepLabelMapProvider)
 
   override def init() {
     value.init()
