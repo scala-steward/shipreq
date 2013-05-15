@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.lib
 
+import scala.collection.immutable.TreeSet
 import net.liftweb.actor.LiftActor
 import net.liftweb.common.Logger
 import net.liftweb.http.js.{JsCmds, JsCmd}
@@ -27,11 +28,25 @@ object MutableTextWithStepRefs {
 
   @inline def MakeRef(ref: String) = "[" + ref + "]"
 
+  val UnRefRegex = "^\\[(.+)\\]$".r
+
+  @inline def UnRef(ref: String) = ref match {
+    case UnRefRegex(label) => label
+    case _                 => ref
+  }
+
+  @inline def IsInvalidStepLabel(label: String) = label.indexOf('.') == -1
+
   @inline def InvalidStepRef(label: String) = label + "?"
 
   @inline def NormaliseStepRef(label: String) = DotWithWhitespaceRegex.replaceAllIn(label.trim, ".")
 
   val DeletedRef = MakeRef("DELETED")
+
+  val ArrowRegex = "-->|→".r
+  val ArrowSplitRegex = s"^(.*)(?:$ArrowRegex)(.+)$$".r
+  val ArrowBad = "->"
+  val ArrowGood = "→"
 }
 
 /**
@@ -51,14 +66,16 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
 
   import MutableTextWithStepRefs._
 
-  private[lib] var curRefsInUse = Map.empty[String, String]
   private[lib] var curRefLookup = Map.empty[String, String]
+  private[lib] var refsInText = Map.empty[String, String]
+  private[lib] var refsInLinkNext = Map.empty[String, String]
 
   private[lib] var _text = ""
 
   def text = _text
 
-  def text_=(newValue: String) {
+  def text_=(newValueRaw: String) {
+    val newValue = newValueRaw.trim
     if (text != newValue) {
       _text = parseText(newValue)
     }
@@ -89,14 +106,28 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
    * Removes whitespace from references.
    * Appends a ? to invalid references.
    */
-  private def parseText(text: String): String = {
+  private def parseText(origText: String): String = {
+
+    var (text,textSuffix) = parseTextLinkNext(origText)
+
+    text = parsePlainText(text)
+
+    List(text, textSuffix).filterNot(_.isEmpty).mkString(" ")
+  }
+
+  /**
+   * Parses a plan text.
+   * Step refs are normalised in text, and recorded in curRefLookup.
+   */
+  private def parsePlainText(text: String) : String = {
     val refLookup = refLookupProvider()
-    curRefsInUse = Map.empty
+    refsInText = Map.empty
+
     val newText = StepRefRegex.replaceAllIn(text, m => {
 
       // Inspect ref
       val rawLabel = m.matched
-      if (rawLabel.indexOf('.') == -1)
+      if (IsInvalidStepLabel(rawLabel))
         rawLabel // ignore refs without dots
 
       else {
@@ -104,7 +135,7 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
         if (refLookup.contains(label)) {
 
           // Match found
-          if (!curRefsInUse.contains(label)) curRefsInUse += (label -> refLookup(label))
+          if (!refsInText.contains(label)) refsInText += (label -> refLookup(label))
           label
         } else
           InvalidStepRef(label)
@@ -114,23 +145,55 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
     newText
   }
 
+  /**
+   * Scans a text string for an optional "--> 1.0.2" suffix.
+   * If found (and valid), the suffix is extracted and normalised.
+   */
+  private def parseTextLinkNext(text: String) : Tuple2[String,String] = {
+    var (left,suffix) = (text,"")
+    text match {
+      case ArrowSplitRegex(l,r) =>
+        val refLookup = refLookupProvider()
+        var good = true
+        var validLabels = TreeSet.empty[String]
+        for (rawLabel <- r.replaceAll("]","],").split(",") if good) {
+          val label = UnRef(NormaliseStepRef(rawLabel))
+          if (!label.isEmpty) {
+            if (IsInvalidStepLabel(label) || !refLookup.contains(label)) {
+              good = false
+            } else {
+              validLabels += label
+            }
+          }
+        }
+        if (good && validLabels.nonEmpty) {
+          val labels = validLabels.mkString(", ")
+          left = l.trim
+          suffix = s"$ArrowGood $labels"
+        }
+      case _ =>
+    }
+    left = ArrowRegex.replaceAllIn(left, ArrowBad)
+    (left, suffix)
+  }
+
   override def messageHandler = {
-    case StepChangeMsg if curRefsInUse.nonEmpty =>
+    case StepChangeMsg if refsInText.nonEmpty =>
 
       // Ignore changes if already processed
       val newRefLookup = refLookupProvider()
       if (newRefLookup != curRefLookup) {
 
         // Update step references
-        var newRefsInUse = Map.empty[String, String]
+        var newRefsInText = Map.empty[String, String]
         var newText = text
-        for ((oldLabel, id) <- curRefsInUse) {
+        for ((oldLabel, id) <- refsInText) {
 
           // Lookup each existing reference
           newRefLookup.get(id).map { newLabel =>
             if (oldLabel != newLabel)
               newText = newText.replace(MakeRef(oldLabel), MakeRef(newLabel))
-            if (!newRefsInUse.contains(newLabel)) newRefsInUse += (newLabel -> id)
+            if (!newRefsInText.contains(newLabel)) newRefsInText += (newLabel -> id)
           } orElse {
             newText = newText.replace(MakeRef(oldLabel), DeletedRef)
             None
@@ -140,7 +203,7 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
         // Save and publish text changes
         if (newText != text) {
           _text = newText
-          curRefsInUse = newRefsInUse
+          refsInText = newRefsInText
           msgCentre ! PushToClient(updateTextJs)
         }
 

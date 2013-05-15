@@ -7,19 +7,45 @@ import org.scalatest.mock.MockitoSugar
 import com.beardedlogic.usecase.lib.field.CourseFields.StepChangeMsg
 import org.mockito.Mockito._
 import net.liftweb.http.CometActor
-import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.PropertyChecks
+import scala.collection.immutable.TreeSet
 
-class MutableTextWithStepRefsTest
-  extends FunSpec
-          with ShouldMatchers
-          with TableDrivenPropertyChecks
-          with MockitoSugar {
+import org.scalacheck.Arbitrary._
+import org.scalacheck.Prop._
+import org.scalatest.prop.Checkers
+import org.scalacheck.Gen
+
+object MutableTextWithStepRefsTest {
 
   val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5",
                         "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5")
 
   val StepState2 = Map("S.A" -> "X1", "S.2" -> "X2", "S.4" -> "X4", "S.F" -> "X5",
                         "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F")
+
+  def subjectWithText(text: String) = {
+    val m = new MutableTextWithStepRefs(null, () => StepState1)
+    m.text = text
+    m
+  }
+}
+
+// =====================================================================================================================
+
+/**
+ * Unit test for MutableTextWithStepRefs.
+ *
+ * @since 12/05/2013
+ */
+class MutableTextWithStepRefsTest
+  extends FunSpec
+          with ShouldMatchers
+          with PropertyChecks
+          with Checkers
+          with MutableTextWithStepRefsCheck
+          with MockitoSugar {
+
+  import MutableTextWithStepRefsTest._
 
   class RefLookupProvider(var value: Map[String, String])
 
@@ -30,6 +56,12 @@ class MutableTextWithStepRefsTest
   }
 
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
+
+  override def checkTextParsing(text: String, expected: String) = {
+    val actual = subjectWithText(text).text
+    actual should be(expected)
+    true
+  }
 
   describe("When first created and initialised") {
     it("should register itself as a listener") {
@@ -52,21 +84,21 @@ class MutableTextWithStepRefsTest
       it("should examine the text for step refs and create map of refs -> ids") {
         val m = new MutableTextWithStepRefs(null, () => StepState1)
         m.text = "Umm [S.1] & [S.3] ah and [S.1]!"
-        m.curRefsInUse should be(Map("S.1" -> "X1", "S.3" -> "X3"))
+        m.refsInText should be(Map("S.1" -> "X1", "S.3" -> "X3"))
       }
 
       it("should remove previous matches") {
         val m = new MutableTextWithStepRefs(null, () => StepState1)
-        m.curRefsInUse = Map("S.1" -> "X1", "S.3" -> "X3")
+        m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "Umm [S.1] only"
-        m.curRefsInUse should be(Map("S.1" -> "X1"))
+        m.refsInText should be(Map("S.1" -> "X1"))
       }
 
       it("should clear the label<->id map when no matches") {
         val m = new MutableTextWithStepRefs(null, () => StepState1)
-        m.curRefsInUse = Map("S.1" -> "X1", "S.3" -> "X3")
+        m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "nothing"
-        m.curRefsInUse should be('empty)
+        m.refsInText should be('empty)
       }
     }
 
@@ -101,6 +133,81 @@ class MutableTextWithStepRefsTest
     }
   }
 
+  describe("-->") {
+    // statement:
+    // - text, nothing, whitespace
+    // - arrow
+    // - ref list
+
+    // ref list:
+    // - separator
+    // - duplicates
+    // - order
+
+    // ref:
+    // - valid
+    // - optional braces
+    // - optional whitespace
+
+    def testText(a: String, b: String) {
+      subjectWithText(a).text should be(b)
+      subjectWithText(a.replaceAll("-->", "→")).text should be(b)
+    }
+
+    it("should transform when invalid") {
+      val examples = Table(("Before", "After")
+                            , ("--> blah", "-> blah")
+                            , ("blarr --> blah", "blarr -> blah")
+                            , ("blarr -->", "blarr ->")
+                            , ("--> [S.0]", "-> [S.0?]")
+                            , ("--> S.0", "-> S.0")
+                            , ("--> S.1, S.0", "-> S.1, S.0")
+                            , ("--> [S.1], [S.0]", "-> [S.1], [S.0?]")
+                            , ("--> S.1 bullshit", "-> S.1 bullshit")
+                            , ("--> X1", "-> X1")
+                          )
+      forAll(examples) { testText _ }
+    }
+
+    it("should parse a single valid ref") {
+      val examples = Table(("Before", "After")
+                            , ("--> S.1", "→ S.1")
+                            , ("--> [S.1]", "→ S.1")
+                            , ("  -->   S.1  ", "→ S.1")
+                            , ("great --> S.1", "great → S.1")
+                            , ("great-->S.1", "great → S.1")
+                            , ("-->S.1", "→ S.1")
+                            , ("-->[S.1]", "→ S.1")
+                          )
+      forAll(examples) { testText _ }
+    }
+
+    it("should parse a multiple valid refs") {
+      val examples = Table(("Before", "After")
+                            , ("-->S.1,S.1", "→ S.1")
+                            , ("--> S.1, S.2", "→ S.1, S.2")
+                            , ("--> S.1,S.2", "→ S.1, S.2")
+                            , ("--> S.1, [S.2]", "→ S.1, S.2")
+                            , ("--> [S.1] [S.2]", "→ S.1, S.2")
+                            , ("--> S.2, S.1", "→ S.1, S.2")
+                            , ("--> S.2, S.1, S.1", "→ S.1, S.2")
+                            , ("--> S.1, S.3, S.1", "→ S.1, S.3")
+                          )
+      forAll(examples) { testText _ }
+    }
+
+    it("should transform a multiple valid & invalid refs") {
+      val examples = Table(("Before", "After")
+                            , ("--> [S.0], [S.1]", "-> [S.0?], [S.1]")
+                            , ("--> S.1, X1", "-> S.1, X1")
+                          )
+      forAll(examples) { testText _ }
+    }
+
+    it("should parse random valid statements") { check(validStatementProp) }
+    it("should transform random invalid statements") { check(invalidStatementProp) }
+  }
+
   describe("Receiving a StepChangeMsg") {
 
     def assertMessageDoesNothing(setup: MutableTextWithStepRefs => Unit) {
@@ -119,18 +226,20 @@ class MutableTextWithStepRefsTest
 
     describe("when there are steps referenced but none are affected") {
       it("should do nothing") {
-        assertMessageDoesNothing { m =>
-          m.curRefsInUse = Map("S.2" -> "X2")
-          m.curRefLookup = StepState1
+        assertMessageDoesNothing {
+          m =>
+            m.refsInText = Map("S.2" -> "X2")
+            m.curRefLookup = StepState1
         }
       }
     }
 
     describe("when the ref lookup table is already up-to-date") {
       it("should do nothing") {
-        assertMessageDoesNothing { m =>
-          m.curRefsInUse = Map("S.1" -> "X1")
-          m.curRefLookup = StepState2
+        assertMessageDoesNothing {
+          m =>
+            m.refsInText = Map("S.1" -> "X1")
+            m.curRefLookup = StepState2
         }
       }
     }
@@ -140,7 +249,7 @@ class MutableTextWithStepRefsTest
       val msgCentre = new MessageCentre(comet)
       val m = new MutableTextWithStepRefs(msgCentre, () => StepState2)
       m._text = initialText
-      m.curRefsInUse = initialRefsInUse
+      m.refsInText = initialRefsInUse
       m.curRefLookup = StepState1
       m.sendStepChangeMsg
       m
@@ -151,7 +260,7 @@ class MutableTextWithStepRefsTest
         subject.text should be(newText)
       }
       it("should update the internal ref->id map") {
-        subject.curRefsInUse should be(newRefsInUse)
+        subject.refsInText should be(newRefsInUse)
       }
       it("should record the last used ref lookup table") {
         subject.curRefLookup should be theSameInstanceAs (StepState2)
@@ -183,7 +292,7 @@ class MutableTextWithStepRefsTest
       val msgCentre = new MessageCentre(comet)
       val m = new MutableTextWithStepRefs(msgCentre, refLookupProvider.value _)
       m.text = before
-      m.text.replaceAll("\\s+","") should be(before.replaceAll("\\s+",""))
+      m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
       refLookupProvider.value = StepState2
       m.sendStepChangeMsg
       m.text should be(expectedAfter)
@@ -208,5 +317,67 @@ class MutableTextWithStepRefsTest
                           )
       forAll(examples)(testTransformation _)
     }
+  }
+}
+
+// =====================================================================================================================
+
+/**
+ * ScalaCheck generators and checks for MutableTextWithStepRefs.
+ *
+ * @since 15/05/2013
+ */
+trait MutableTextWithStepRefsCheck {
+  import MutableTextWithStepRefsTest._
+
+  val text: Gen[String] = Gen.alphaStr suchThat (s => !s.contains("-->") && !s.contains("→"))
+  val nothing: Gen[String] = ""
+  val whitespace: Gen[String] = Gen.listOf(Gen.oneOf(' ', '\t')).map(_.mkString)
+  val left: Gen[String] = text | nothing | whitespace
+
+  val optionalWhitespace: Gen[String] = nothing | whitespace
+
+  val arrow = for {
+    w1 <- optionalWhitespace
+    a <- Gen.oneOf("-->", "→")
+    w2 <- optionalWhitespace
+  } yield w1 + a + w2
+
+  def optionalBraces(gen: Gen[String]): Gen[String] = for {
+    wrap <- Gen.oneOf(true, false)
+    label <- gen
+  } yield (if (wrap) s"[$label]" else label)
+
+  val validStep = optionalBraces(Gen.oneOf("S.1", "S.2", "S.3", "S.5"))
+  val invalidStep = Gen.oneOf("S.0", ".1", "X1", "")
+
+  val invalidStatement = for {
+    l <- left
+    a <- arrow
+    r <- Gen.listOf(invalidStep | nothing).map(_.mkString(","))
+  } yield l + a + r
+
+  val validStatement = (for {
+    l <- left
+    a <- arrow
+    r <- Gen.listOf1(validStep)
+  } yield (l, a, r))
+
+  val invalidStatementProp = forAll(invalidStatement) { t =>
+    val exp = t.trim.replaceAll("-->|→", "->")
+    checkTextParsing(t, exp)
+  }
+
+  val validStatementProp = forAll(validStatement) { x =>
+    val (l, a, steps) = x
+    val t = l + a + steps.mkString(",")
+    val end = if (steps.isEmpty) "" else "→ " + TreeSet(steps: _*).map { _.replace("[", "").replace("]", "") }.mkString(", ")
+    val exp = List(l.trim, end).filter(_.nonEmpty).mkString(" ")
+    checkTextParsing(t, exp)
+  }
+
+  def checkTextParsing(text: String, expected: String) = {
+    val actual = subjectWithText(text).text
+    (actual == expected) :| s"'$text' should parse into '$expected', not '$actual'"
   }
 }
