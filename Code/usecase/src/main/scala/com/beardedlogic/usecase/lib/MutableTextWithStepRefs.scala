@@ -143,14 +143,15 @@ object MutableTextWithStepRefs {
  * @since 12/05/2013
  */
 class MutableTextWithStepRefs(val msgCentre: MessageCentre,
-                              val refLookupProvider: () => Map[String, String],
+                              val refAndIdLookupProvider: () => Map[String, String],
                               val id: String = nextFuncName
                                ) extends LiftActor {
 
   import MutableTextWithStepRefs._
   import MyLittleParser._
 
-  private[lib] var curRefLookup = Map.empty[String, String]
+  private[this] val writeLock = new Object
+  private[lib] var refAndIdLookup = Map.empty[String, String]
   private[lib] var refsInText = Map.empty[String, String]
   private[lib] var refsInLinkNext = Map.empty[String, String]
 
@@ -167,6 +168,7 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
 
   def init() {
     msgCentre.register(this)
+    refAndIdLookup = refAndIdLookupProvider()
     _text = parseText(_text)
   }
 
@@ -175,7 +177,8 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
   /**
    * Callback when the user changes the text.
    */
-  def onTextChange(newValue: String): JsCmd = {
+  def onTextChange(newValue: String): JsCmd = writeLock.synchronized {
+    refAndIdLookup = refAndIdLookupProvider() // StepChangeMsg only updates if we have refs
     text = newValue
     if (text != newValue)
       updateTextJs
@@ -200,7 +203,6 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
    * Appends a ? to invalid references.
    */
   private def parsePlainText(text: String): String = {
-    val refLookup = refLookupProvider()
     val newText = new StringBuilder
     refsInText = Map.empty
 
@@ -211,8 +213,8 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
 
       // Check label validity
       val label = r.get._2.get
-      if (refLookup.contains(label)) {
-        if (!refsInText.contains(label)) refsInText += (label -> refLookup(label))
+      if (refAndIdLookup.contains(label)) {
+        if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup(label))
         MakeRef(newText, label)
       } else
         MakeRef(newText, MakeInvalidRef(label))
@@ -222,7 +224,6 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
     }
     newText ++= r.get._1
 
-    curRefLookup = refLookup
     newText.toString
   }
 
@@ -250,16 +251,15 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
   }
 
   @inline private def areAllLabelsValid(labels: Seq[String]): Boolean = {
-    val refLookup = refLookupProvider()
-    labels.find(!refLookup.contains(_)).isEmpty
+    labels.find(!refAndIdLookup.contains(_)).isEmpty
   }
 
   override def messageHandler = {
     case StepChangeMsg if refsInText.nonEmpty =>
 
       // Ignore changes if already processed
-      val newRefLookup = refLookupProvider()
-      if (newRefLookup != curRefLookup) {
+      val newRefLookup = refAndIdLookupProvider()
+      if (newRefLookup != refAndIdLookup) writeLock.synchronized {
 
         // Update step references
         var newRefsInText = Map.empty[String, String]
@@ -284,8 +284,7 @@ class MutableTextWithStepRefs(val msgCentre: MessageCentre,
           msgCentre ! PushToClient(updateTextJs)
         }
 
-        // Record ref lookup table so that we avoid re-processing when nothing upstream changes
-        curRefLookup = newRefLookup
+        refAndIdLookup = newRefLookup
       }
   }
 

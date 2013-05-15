@@ -15,7 +15,7 @@ import org.scalacheck.Prop._
 import org.scalacheck.Gen
 import com.beardedlogic.usecase.lib.msg.PushToClient
 
-object MutableTextWithStepRefsTest {
+object MutableTextWithStepRefsTest extends MockitoSugar {
 
   val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5",
                         "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5")
@@ -24,7 +24,8 @@ object MutableTextWithStepRefsTest {
                         "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F")
 
   def subjectWithText(text: String) = {
-    val m = new MutableTextWithStepRefs(null, () => StepState1)
+    val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+    m.init
     m.text = text
     m
   }
@@ -78,28 +79,24 @@ class MutableTextWithStepRefsTest
 
   describe("text=(newText)") {
     describe("internal state") {
-      it("should record the label<->id map used to check for refs") {
-        val m = new MutableTextWithStepRefs(null, () => StepState1)
-        m.curRefLookup = StepState2
-        m.text = "x"
-        m.curRefLookup should be theSameInstanceAs (StepState1)
-      }
-
       it("should examine the text for step refs and create map of refs -> ids") {
-        val m = new MutableTextWithStepRefs(null, () => StepState1)
+        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        m.init
         m.text = "Umm [S.1] & [S.3] ah and [S.1]!"
         m.refsInText should be(Map("S.1" -> "X1", "S.3" -> "X3"))
       }
 
       it("should remove previous matches") {
-        val m = new MutableTextWithStepRefs(null, () => StepState1)
+        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "Umm [S.1] only"
         m.refsInText should be(Map("S.1" -> "X1"))
       }
 
       it("should clear the label<->id map when no matches") {
-        val m = new MutableTextWithStepRefs(null, () => StepState1)
+        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
         m.text = "nothing"
         m.refsInText should be('empty)
@@ -110,7 +107,8 @@ class MutableTextWithStepRefsTest
 
     describe("transformations") {
       def test(input: String, expectedOutput: String = null) {
-        val m = new MutableTextWithStepRefs(null, () => StepState1)
+        val m = new MutableTextWithStepRefs(mock[MessageCentre], () => StepState1)
+        m.init
         m.text = input
         m.text should be(if (expectedOutput == null) input else expectedOutput)
       }
@@ -315,7 +313,7 @@ class MutableTextWithStepRefsTest
         assertMessageDoesNothing {
           m =>
             m.refsInText = Map("S.2" -> "X2")
-            m.curRefLookup = StepState1
+            m.refAndIdLookup = StepState1
         }
       }
     }
@@ -325,7 +323,7 @@ class MutableTextWithStepRefsTest
         assertMessageDoesNothing {
           m =>
             m.refsInText = Map("S.1" -> "X1")
-            m.curRefLookup = StepState2
+            m.refAndIdLookup = StepState2
         }
       }
     }
@@ -336,7 +334,7 @@ class MutableTextWithStepRefsTest
       val m = new MutableTextWithStepRefs(msgCentre, () => StepState2)
       m._text = initialText
       m.refsInText = initialRefsInUse
-      m.curRefLookup = StepState1
+      m.refAndIdLookup = StepState1
       m.sendStepChangeMsg
       m
     }
@@ -349,7 +347,7 @@ class MutableTextWithStepRefsTest
         subject.refsInText should be(newRefsInUse)
       }
       it("should record the last used ref lookup table") {
-        subject.curRefLookup should be theSameInstanceAs (StepState2)
+        subject.refAndIdLookup should be theSameInstanceAs (StepState2)
       }
       it("should push an update") {
         verify(subject.msgCentre.cometActor).!(any[PushToClient])
@@ -379,6 +377,7 @@ class MutableTextWithStepRefsTest
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
       val m = new MutableTextWithStepRefs(msgCentre, refLookupProvider.value _)
+      m.init
       m.text = before
       m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
       refLookupProvider.value = StepState2
