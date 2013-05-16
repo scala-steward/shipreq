@@ -39,11 +39,14 @@ object SmartText {
 
   val FlowToArrowRegex = "-{2,}>|[→➡⇨⇒⇾]".r
   val FlowToArrowBadReplacement = "->"
-  val FlowToArrowGoodReplacement = "➡"
+  val FlowToArrow = "➡"
 
   val FlowFromArrowRegex = "<-{2,}|[←⬅⇦⇐⇽]".r
   val FlowFromArrowBadReplacement = "<-"
-  val FlowFromArrowGoodReplacement = "⬅"
+  val FlowFromArrow = "⬅"
+
+  @inline def MakeFlowText(arrow: String, labels: TreeSet[String]) =
+    arrow + " " + labels.mkString(", ")
 
   /**
    * My Little <strike>Pony</strike> Parser here expresses the syntax that enables various special features to sprout
@@ -124,13 +127,9 @@ object SmartText {
 
     val FlowRefList: Parser[List[String]] = rep1sep(OptionallyBracedRef, "," ?)
 
-    val FlowFromArrow: Parser[String] = FlowFromArrowRegex
+    val FlowFromClause: Parser[List[String]] = FlowFromArrowRegex ~> FlowRefList
 
-    val FlowToArrow: Parser[String] = FlowToArrowRegex
-
-    val FlowFromClause: Parser[List[String]] = FlowFromArrow ~> FlowRefList
-
-    val FlowToClause: Parser[List[String]] = FlowToArrow ~> FlowRefList
+    val FlowToClause: Parser[List[String]] = FlowToArrowRegex ~> FlowRefList
 
     val TextAndFlow: Parser[(String, FlowParseResult)] =
       AnyTextThen(false,
@@ -249,37 +248,53 @@ class SmartText(val msgCentre: MessageCentre,
   }
 
   override def messageHandler = {
-    case StepChangeMsg if refsInText.nonEmpty =>
+
+    case StepChangeMsg if haveAnyRefs =>
 
       // Ignore changes if already processed
       val newRefLookup = refAndIdLookupProvider()
       if (newRefLookup != refAndIdLookup) writeLock.synchronized {
 
-        // Update step references
-        var newRefsInText = Map.empty[String, String]
-        var newText = text
-        for ((oldLabel, id) <- refsInText) {
-
-          // Lookup each existing reference
-          newRefLookup.get(id).map { newLabel =>
-            if (oldLabel != newLabel)
-              newText = newText.replace(MakeRef(oldLabel), MakeRef(newLabel))
-            if (!newRefsInText.contains(newLabel)) newRefsInText += (newLabel -> id)
-          } orElse {
-            newText = newText.replace(MakeRef(oldLabel), DeletedRef)
-            None
-          }
-        }
+        // Update refs
+        refAndIdLookup = newRefLookup
+        val newText = updateStepReferences()
 
         // Save and publish text changes
         if (newText != text) {
           _text = newText
-          refsInText = newRefsInText
           msgCentre ! PushToClient(updateTextJs)
         }
-
-        refAndIdLookup = newRefLookup
       }
+  }
+
+  /** Checks if this field has any step references */
+  protected def haveAnyRefs = refsInText.nonEmpty
+
+  /** Updates `refsInText` and creates a copy of `text` in which all references are up-to-date. */
+  protected def updateStepReferences(): String = updateStepReferences(text)
+
+  /**
+   * Updates `refsInText` and creates a copy of given text in which all references are up-to-date.
+   */
+  protected def updateStepReferences(text: String): String = {
+    var newRefsInText = Map.empty[String, String]
+    var newText = text
+    for ((oldLabel, id) <- refsInText) {
+
+      // Lookup each existing reference
+      refAndIdLookup.get(id).map { newLabel =>
+        if (oldLabel != newLabel)
+          newText = newText.replace(MakeRef(oldLabel), MakeRef(newLabel))
+        if (!newRefsInText.contains(newLabel))
+          newRefsInText += (newLabel -> id)
+      } orElse {
+        newText = newText.replace(MakeRef(oldLabel), DeletedRef)
+        None
+      }
+    }
+
+    refsInText = newRefsInText
+    newText
   }
 
   private def updateTextJs(): JsCmd = JqId(textareaId) ~> JqSetValue(text, false)
@@ -303,15 +318,22 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
   private[lib] var flowFromRefs = Set.empty[String]
   private[lib] var flowToRefs = Set.empty[String]
+  private[lib] var textWithoutFlow = ""
+  private[lib] var flowFromText = ""
+  private[lib] var flowToText = ""
 
   /**
    * Parses text submitted by user.
    */
   override protected def parseText(origText: String): String = {
-    var (text, flowFromText, flowToText) = parseTextForFlow(origText)
-    text = parsePlainText(text)
-    List(text, flowFromText, flowToText).filterNot(_.isEmpty).mkString(" ")
+    val (text, flowFromText2, flowToText2) = parseTextForFlow(origText)
+    textWithoutFlow = parsePlainText(text)
+    flowFromText = flowFromText2
+    flowToText = flowToText2
+    buildFullText
   }
+
+  def buildFullText = List(textWithoutFlow, flowFromText, flowToText).filterNot(_.isEmpty).mkString(" ")
 
   /**
    * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
@@ -332,11 +354,11 @@ class SmartStepText(override val msgCentre: MessageCentre,
     if (p.successful) {
       val (actualText, flowResult) = p.get
 
-      processFlowParseResult(flowResult.from, FlowFromArrowGoodReplacement) match {
+      processFlowParseResult(flowResult.from, FlowFromArrow) match {
         case (_, _, false) =>
         case (flowFromRefs2, flowFromText2, _) =>
 
-          processFlowParseResult(flowResult.to, FlowToArrowGoodReplacement) match {
+          processFlowParseResult(flowResult.to, FlowToArrow) match {
             case (_, _, false) =>
             case (flowToRefs2, flowToText2, _) =>
 
@@ -358,16 +380,15 @@ class SmartStepText(override val msgCentre: MessageCentre,
     (text, flowFromText, flowToText)
   }
 
-  @inline private def processFlowParseResult(labelsOp: Option[List[String]], refJoin: String) = {
+  @inline private def processFlowParseResult(labelsOp: Option[List[String]], arrow: String) = {
     var (refs, text, allGood) = (Set.empty[String], "", true)
     if (labelsOp.isDefined) {
       val labels = labelsOp.get
       if (areAllLabelsValid(labels)) {
 
         // Success!
-        val sortedLabels = TreeSet(labels: _*).mkString(", ")
         refs = labels.map(refAndIdLookup(_)).toSet
-        text = s"$refJoin $sortedLabels"
+        text = MakeFlowText(arrow, TreeSet(labels: _*))
 
       } else
         // Invalid labels found
@@ -376,8 +397,55 @@ class SmartStepText(override val msgCentre: MessageCentre,
     (refs, text, allGood)
   }
 
+  override protected def haveAnyRefs = super.haveAnyRefs || flowFromRefs.nonEmpty || flowToRefs.nonEmpty
+
+  override protected def updateStepReferences(): String = {
+
+    val (newFlowFromText, newRefsFrom) = updateFlowReferences(flowFromRefs, FlowFromArrow)
+    flowFromRefs = newRefsFrom
+    flowFromText = newFlowFromText
+
+    val (newFlowToText, newRefsTo) = updateFlowReferences(flowToRefs, FlowToArrow)
+    flowToRefs = newRefsTo
+    flowToText = newFlowToText
+
+    textWithoutFlow = updateStepReferences(textWithoutFlow)
+
+    buildFullText
+  }
+
+  /**
+   * Removes invalid references and creates a new flow clause (text).
+   */
+  private def updateFlowReferences(curRefs: Set[String], arrow: String) = {
+      var flowText = ""
+      var newRefs = curRefs
+      if (curRefs.nonEmpty) {
+
+        // Look for changes before rewriting
+
+        var newLabels = TreeSet.empty[String]
+        newRefs = Set.empty[String]
+        for (id <- curRefs) {
+          if (refAndIdLookup.contains(id)) {
+            newRefs += id
+            newLabels += refAndIdLookup(id)
+          } else {
+            // step deleted, just omit
+          }
+        }
+
+        // TODO always rewriting - ineffecient
+        if (newLabels.nonEmpty)
+          flowText = MakeFlowText(arrow, newLabels)
+      }
+
+      (flowText, newRefs)
+    }
+
   override def messageHandler = thisMessageHandler orElse super.messageHandler
+
   private val thisMessageHandler: PartialFunction[Any, Unit] = {
-    case FlowToChangeMsg =>
+    case FlowToChangeMsg => // placeholder
   }
 }

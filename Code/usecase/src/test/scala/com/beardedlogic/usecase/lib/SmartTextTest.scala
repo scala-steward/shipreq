@@ -16,11 +16,11 @@ import msg.Messages._
 
 object SmartTextTest extends MockitoSugar {
 
-  val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5",
-                        "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5")
+  val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5", "S.6" -> "X6",
+                        "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5", "X6" -> "S.6")
 
-  val StepState2 = Map("S.A" -> "X1", "S.2" -> "X2", "S.4" -> "X4", "S.F" -> "X5",
-                        "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F")
+  val StepState2 = Map("S.A" -> "X1", "S.2" -> "X2", "S.4" -> "X4", "S.F" -> "X5", "S.6" -> "X6",
+                        "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F", "X6" -> "S.6")
 
   val StepStateX2 = Map("1.0" -> "X1", "1.2" -> "X2", "1.3" -> "X3", "3.E.1" -> "X3E1", "3.E.2" -> "X3E2",
                         "X1" -> "1.0", "X2" -> "1.2", "X3" -> "1.3", "X3E1" -> "3.E.1", "X3E2" -> "3.E.2")
@@ -77,10 +77,17 @@ class SmartTextTest
 
   class RefLookupProvider(var value: Map[String, String])
 
-  implicit class Ext(m: SmartText) {
+  implicit class SmartTextExt(m: SmartText) {
     def sendStepChangeMsg() {
       m.messageHandler.applyOrElse[Any, Unit](StepChangeMsg, _ => ())
     }
+  }
+
+  implicit class StringFlowExt(s: String) {
+    def fixArrows(from: Boolean) = if (from)
+      s.replace("-->", "<--").replace("➡", "⬅").replace("->", "<-")
+    else
+      s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
   }
 
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
@@ -249,13 +256,6 @@ class SmartTextTest
 
   describe("Flow parsing") {
 
-    implicit class StringFlowExt(s: String) {
-      def fixArrows(from: Boolean) = if (from)
-        s.replace("-->", "<--").replace("➡", "⬅").replace("->", "<-")
-      else
-        s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
-    }
-
     it("should only run on step fields (ie. you can't flow from steps into normal text fields like Actors)") {
       val input = "--> S.1,S.1"
       stepFieldWithText(input).text should be("➡ S.1")
@@ -264,11 +264,11 @@ class SmartTextTest
 
     it("should record flow ref IDs") {
       // Manual test
-	  val s2 = stepFieldWithText("manual test --> 1.0 <-- 1.2", refLookup = StepStateX2)
-	  s2.flowFromRefs should be(Set("X2"))
-	  s2.flowToRefs should be(Set("X1"))
+      val s2 = stepFieldWithText("manual test --> 1.0 <-- 1.2", refLookup = StepStateX2)
+      s2.flowFromRefs should be(Set("X2"))
+      s2.flowToRefs should be(Set("X1"))
 
-	  // Use shared examples + id lookup
+      // Use shared examples + id lookup
       forAll(TextWithFlowExamples) { (input, expText, expRefsFrom, expRefsTo) =>
         val s = stepFieldWithText(input, refLookup = StepStateX2)
         s.flowFromRefs should be(expRefsFrom.map(StepStateX2(_)).toSet)
@@ -392,7 +392,7 @@ class SmartTextTest
     }
 
     describe(s"$FlowToChangeMsg broadcasting") {
-    	it should behave like flowChange(false)
+      it should behave like flowChange(false)
     }
   }
 
@@ -437,15 +437,22 @@ class SmartTextTest
     def newSubject(initialText: String, initialRefsInUse: Map[String, String], useSmartStepText: Boolean = false) = {
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
-      val m = if (useSmartStepText)
-        new SmartStepText(msgCentre, () => StepState2, "", "")
-      else
+      val m = if (useSmartStepText) {
+        val s2 = new SmartStepText(msgCentre, () => StepState2, "", "")
+        // dont put flow stuff here
+        s2.textWithoutFlow = initialText
+        s2
+      } else
         new SmartText(msgCentre, () => StepState2)
       m._text = initialText
       m.refsInText = initialRefsInUse
       m.refAndIdLookup = StepState1
       m.sendStepChangeMsg
       m
+    }
+
+    def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
+      verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
     }
 
     def textWasUpdated(subject: => SmartText, newText: String, newRefsInUse: Map[String, String]) {
@@ -459,11 +466,11 @@ class SmartTextTest
         subject.refAndIdLookup should be theSameInstanceAs (StepState2)
       }
       it("should push an update") {
-        verify(subject.msgCentre.cometActor).!(any[PushToClient])
+        assertClientUpdated(subject)
       }
     }
 
-    describe(s"when referenced steps change (with $SmartText)") {
+    describe("when referenced steps change (with SmartText)") {
       def subject = newSubject("Umm [S.1] & [S.2] ah and [S.1]!",
                                 Map("S.1" -> "X1", "S.2" -> "X2"))
       it should behave like textWasUpdated(subject,
@@ -471,7 +478,7 @@ class SmartTextTest
                                             Map("S.A" -> "X1", "S.2" -> "X2"))
     }
 
-    describe(s"when referenced steps change (with ${classOf[SmartStepText]})") {
+    describe("when referenced steps change (with SmartStepText)") {
       def subject = newSubject("Umm [S.1] & [S.2] ah and [S.1]!",
                                 Map("S.1" -> "X1", "S.2" -> "X2"), true)
       it should behave like textWasUpdated(subject,
@@ -482,6 +489,69 @@ class SmartTextTest
     describe("when referenced steps are deleted") {
       def subject = newSubject("Watch [S.3] go.", Map("S.3" -> "X3"))
       it should behave like textWasUpdated(subject, "Watch [DELETED] go.", Map.empty)
+    }
+
+    def updateFlowRefs(from: Boolean) {
+
+      def testSubject(_initialText: String) = {
+        val initialText = _initialText.fixArrows(from)
+        val comet = mock[CometActor]
+        val msgCentre = new MessageCentre(comet)
+        val m = new SmartStepText(msgCentre, () => StepState2, "", "")
+        m.refAndIdLookup = StepState1
+        m.text = initialText
+        m.text should be (initialText)
+        m.sendStepChangeMsg
+        m
+      }
+
+      def test(_initialText: String, _expectedText: String, expectedRefs: Set[String]) {
+        val initialText = _initialText.fixArrows(from)
+        val expectedText = _expectedText.fixArrows(from)
+        val changeExpected = (initialText != expectedText)
+        val s = testSubject(initialText)
+        val refs = if (from) s.flowFromRefs else s.flowToRefs
+        if (changeExpected) s.refAndIdLookup should be theSameInstanceAs(StepState2)
+        refs should be(expectedRefs)
+        s.text should be(expectedText)
+        assertClientUpdated(s, changeExpected)
+      }
+
+      def testWithText(_initialText: String, _expectedText: String, expectedRefs: Set[String]) {
+        test(_initialText, _expectedText, expectedRefs)
+        test("cool " + _initialText, if (_expectedText.isEmpty()) "cool" else "cool " + _expectedText, expectedRefs)
+      }
+
+      it("should update refs") {
+        testWithText("➡ S.2, S.5" ,"➡ S.2, S.F", Set("X2","X5"))
+      }
+      it("should reorder when updating") {
+        testWithText("➡ S.1, S.2" ,"➡ S.2, S.A", Set("X2","X1"))
+      }
+      it("should remove one") {
+        testWithText("➡ S.2, S.3" ,"➡ S.2", Set("X2"))
+        testWithText("➡ S.3, S.6" ,"➡ S.6", Set("X6"))
+      }
+      it("should remove only") {
+        testWithText("➡ S.3" ,"", Set())
+      }
+      it("should ignore non-changing") {
+        testWithText("➡ S.2" ,"➡ S.2", Set("X2"))
+      }
+      it("should ignore when unaffected") {
+        test("haha","haha", Set())
+      }
+    }
+
+    describe("Flow-from refs") {
+      it should behave like updateFlowRefs(true)
+    }
+    describe("Flow-to refs") {
+      it should behave like updateFlowRefs(false)
+    }
+    ignore("Flow-from & -to refs") {
+//      it should behave like updateFlowRefs(false)
+      // test refs & from & to
     }
   }
 
