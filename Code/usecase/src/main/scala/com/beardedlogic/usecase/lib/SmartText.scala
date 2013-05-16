@@ -37,9 +37,13 @@ object SmartText {
 
   val DeletedRef = MakeRef("DELETED")
 
-  val FlowToArrowRegex = "-->|[→➡]".r
+  val FlowToArrowRegex = "-->|[→➡⇨⇒⇾]".r
   val FlowToArrowBadReplacement = "->"
   val FlowToArrowGoodReplacement = "➡"
+
+  val FlowFromArrowRegex = "<--|[←⬅⇦⇐⇽]".r
+  val FlowFromArrowBadReplacement = "<-"
+  val FlowFromArrowGoodReplacement = "⬅"
 
   /**
    * My Little <strike>Pony</strike> Parser here expresses the syntax that enables various special features to sprout
@@ -118,16 +122,28 @@ object SmartText {
 
     val OptionallyBracedRef: Parser[String] = BracedRef | StepLabel
 
+    val FlowRefList: Parser[List[String]] = rep1sep(OptionallyBracedRef, "," ?)
+
+    val FlowFromArrow: Parser[String] = FlowFromArrowRegex
+
     val FlowToArrow: Parser[String] = FlowToArrowRegex
 
-    val FlowToRefList: Parser[List[String]] = rep1sep(OptionallyBracedRef, "," ?)
+    val FlowFromClause: Parser[List[String]] = FlowFromArrow ~> FlowRefList
 
-    val TextAndFlowToTargets: Parser[(String, List[String])] = AnyTextThen(false, FlowToArrow ~> FlowToRefList)
+    val FlowToClause: Parser[List[String]] = FlowToArrow ~> FlowRefList
+
+    val TextAndFlow: Parser[(String, FlowParseResult)] =
+      AnyTextThen(false,
+                   FlowFromClause ~ opt(FlowToClause) ^^ { case from ~ to => FlowParseResult(Some(from), to) } |
+                     FlowToClause ~ opt(FlowFromClause) ^^ { case to ~ from => FlowParseResult(from, Some(to)) }
+                 )
 
     /**
      * Matches Text and the first step reference. If no refs, then matches the entire input as Text.
      */
     val TextAndPossibleRef: Parser[(String, Option[String])] = AnyTextThenOptional(true, BracedRef)
+
+    case class FlowParseResult(from: Option[List[String]], to: Option[List[String]])
   }
 
 }
@@ -291,30 +307,34 @@ class SmartStepText(override val msgCentre: MessageCentre,
    * Parses text submitted by user.
    */
   override protected def parseText(origText: String): String = {
-    var (text, textSuffix) = parseTextForFlowTo(origText)
+    var (text, textSuffix) = parseTextForFlow(origText)
     text = parsePlainText(text)
     List(text, textSuffix).filterNot(_.isEmpty).mkString(" ")
   }
 
   /**
-   * Scans input for an optional "--> 1.0.2" suffix indicating to which steps the current step can flow.
+   * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
    *
-   * If found (and valid), the suffix is extracted and normalised.
+   * If found (and valid), they are extracted and normalised.
    */
-  private def parseTextForFlowTo(input: String): (String, String) = {
+  private def parseTextForFlow(input: String): (String, String) = {
     var (text, suffix) = (input, "")
 
     val prevFlowToRefs = flowToRefs
     flowToRefs = Set.empty
 
-    val p = parseAll(TextAndFlowToTargets, input)
+    val p = parseAll(TextAndFlow, input)
     if (p.successful) {
-      val (actualText, labels) = p.get
-      if (areAllLabelsValid(labels)) {
-        flowToRefs = labels.map(refAndIdLookup(_)).toSet
-        val sortedLabels = TreeSet(labels: _*).mkString(", ")
-        text = actualText.trim
-        suffix = s"$FlowToArrowGoodReplacement $sortedLabels"
+      val (actualText, flowResult) = p.get
+
+      if (flowResult.to.isDefined) {
+        val labels = flowResult.to.get
+        if (areAllLabelsValid(labels)) {
+          flowToRefs = labels.map(refAndIdLookup(_)).toSet
+          val sortedLabels = TreeSet(labels: _*).mkString(", ")
+          text = actualText.trim
+          suffix = s"$FlowToArrowGoodReplacement $sortedLabels"
+        }
       }
     }
 

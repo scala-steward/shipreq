@@ -207,24 +207,29 @@ class SmartTextTest
                             , ("[1.0] 1.2. a, [1.3] [1.1]", true)
                             , ("", false)
                           )
-      test(P.FlowToRefList, examples) {
+      test(P.FlowRefList, examples) {
         _.replace("[", ",[").replace("]", "],").replaceAll("[\\s\\[\\]]+", "").split(",+").filter(_.nonEmpty).toList
       }
     }
 
-    it("should parse TextAndFlowToTargets") {
-
-      val examples = Table(("EXAMPLE", "TEXT", "REFS")
-                            , ("omg --> 1.0", "omg", List("1.0"))
-                            , ("hehe sweet! --> 1.3 [1.0]", "hehe sweet!", List("1.3", "1.0"))
-                            , ("excellent yo --> 3.E.1,3.E.2", "excellent yo", List("3.E.1", "3.E.2"))
-                            , ("excellent --> yo --> 1.0", "excellent --> yo", List("1.0"))
-                          )
-      forAll(examples) { (input, expText, expRefs) =>
-        val r = P.parseAll(P.TextAndFlowToTargets, input)
+    it("should parse TextAndFlow") {
+      val examples = Table[String, String, List[String], List[String]](
+        ("EXAMPLE", "TEXT", "REFS-FROM", "REFS-TO")
+        , ("omg --> 1.0", "omg", Nil, List("1.0"))
+        , ("omg <-- 1.0", "omg", List("1.0"), Nil)
+        , ("omg --> 1.0 <-- 1.2", "omg", List("1.2"), List("1.0"))
+        , ("omg <-- 1.0 --> 1.2", "omg", List("1.0"), List("1.2"))
+        , ("hehe sweet! --> 1.3 [1.0]", "hehe sweet!", Nil, List("1.3", "1.0"))
+        , ("excellent yo --> 3.E.1,3.E.2", "excellent yo", Nil, List("3.E.1", "3.E.2"))
+        , ("excellent --> yo --> 1.0", "excellent --> yo", Nil, List("1.0"))
+      )
+      forAll(examples) { (input, expText, expRefsFrom, expRefsTo) =>
+        val r = P.parseAll(P.TextAndFlow, input)
         r.successful should be(true)
         r.get._1 should be(expText)
-        r.get._2 should be(expRefs)
+        val flowResults = r.get._2
+        flowResults.from should be(if (expRefsFrom.isEmpty) None else Some(expRefsFrom))
+        flowResults.to should be(if (expRefsTo.isEmpty) None else Some(expRefsTo))
       }
     }
 
