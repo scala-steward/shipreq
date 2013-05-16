@@ -48,6 +48,9 @@ object SmartText {
   @inline def MakeFlowText(arrow: String, labels: TreeSet[String]) =
     arrow + " " + labels.mkString(", ")
 
+  @inline def MakeFlowTextOrEmpty(arrow: String, labels: TreeSet[String]) =
+    if (labels.isEmpty) "" else MakeFlowText(arrow, labels)
+
   /**
    * My Little <strike>Pony</strike> Parser here expresses the syntax that enables various special features to sprout
    * from plain UC text.
@@ -316,132 +319,147 @@ class SmartStepText(override val msgCentre: MessageCentre,
   import SmartText._
   import MyLittleParser._
 
-  private[lib] var flowFromRefs = Set.empty[String]
-  private[lib] var flowToRefs = Set.empty[String]
+  /**
+   * Common interface for providing step-flow functionality.
+   * Stores data for a single flow.
+   * Allows for flow-agnostic logic.
+   */
+  sealed trait Flow {
+    var refs = Set.empty[String]
+    var text = ""
+    def arrow : String
+    def arrowReplacement : String
+    def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
+    def broadcast():Unit
+    final def clear() {refs = Set.empty[String]; text = ""}
+    final def broadcastIfChanges[T](block: => T): T = {
+      val prevRefs = refs
+      val r = block
+      if (prevRefs != refs) broadcast
+      r
+    }
+    final def clearAndBroadcast() {
+      if (refs.nonEmpty) {
+        clear()
+        broadcast
+      }
+    }
+  }
+
+  /** Indicates which steps flow into this step. */
+  final class FlowFrom extends Flow {
+    override def arrow = FlowFromArrow
+    override def arrowReplacement = FlowFromArrowBadReplacement
+    override def get(pr : ParseResult[FlowParseResult]) = pr.get.from
+    override def broadcast() { msgCentre ! FlowFromChangeMsg(refs, stepId) }
+  }
+
+  /** Indicates into which steps this step flows. */
+  final class FlowTo extends Flow {
+    override def arrow = FlowToArrow
+    override def arrowReplacement = FlowToArrowBadReplacement
+    override def get(pr : ParseResult[FlowParseResult]) = pr.get.to
+    override def broadcast() { msgCentre ! FlowToChangeMsg(stepId, refs) }
+  }
+
   private[lib] var textWithoutFlow = ""
-  private[lib] var flowFromText = ""
-  private[lib] var flowToText = ""
+  private[lib] val flowFrom = new FlowFrom
+  private[lib] val flowTo = new FlowTo
 
   /**
    * Parses text submitted by user.
    */
   override protected def parseText(origText: String): String = {
-    val (text, flowFromText2, flowToText2) = parseTextForFlow(origText)
-    textWithoutFlow = parsePlainText(text)
-    flowFromText = flowFromText2
-    flowToText = flowToText2
+    val plainText = parseTextForFlow(origText)
+    textWithoutFlow = parsePlainText(plainText)
     buildFullText
   }
 
-  def buildFullText = List(textWithoutFlow, flowFromText, flowToText).filterNot(_.isEmpty).mkString(" ")
+  /** Combines text & flow clauses to generate `text`. */
+  def buildFullText = List(textWithoutFlow, flowFrom.text, flowTo.text).filterNot(_.isEmpty).mkString(" ")
 
   /**
    * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
    *
    * If found (and valid), they are extracted and normalised.
    */
-  private def parseTextForFlow(input: String): (String, String, String) = {
-    var (text, flowFromText, flowToText) = (input, "", "")
+  private def parseTextForFlow(input: String) = {
+    var text = input
 
-    // Backup and clear flow-refs
-    val prevFlowFromRefs = flowFromRefs
-    val prevFlowToRefs = flowToRefs
-    flowFromRefs = Set.empty
-    flowToRefs = Set.empty
+    // Attempt to parse flow clauses
+    val pr = parseAll(TextAndFlow, input)
+    if (pr.successful) {
 
-    // Attempt parse with flow clauses
-    val p = parseAll(TextAndFlow, input)
-    if (p.successful) {
-      val (actualText, flowResult) = p.get
+      // Clauses exist. Validate.
+      val (actualText, flowResult) = pr.get
+      val fn1 = processFlowParseResult(flowResult.from, flowFrom)
+      val fn2 = if (fn1.isEmpty) None else processFlowParseResult(flowResult.to, flowTo)
+      if (fn2.isDefined) {
 
-      processFlowParseResult(flowResult.from, FlowFromArrow) match {
-        case (_, _, false) =>
-        case (flowFromRefs2, flowFromText2, _) =>
-
-          processFlowParseResult(flowResult.to, FlowToArrow) match {
-            case (_, _, false) =>
-            case (flowToRefs2, flowToText2, _) =>
-
-              // From & To clauses are valid
-              text = actualText.trim
-              flowFromRefs = flowFromRefs2
-              flowToRefs = flowToRefs2
-              flowFromText = flowFromText2
-              flowToText = flowToText2
-          }
+        // No errors in From or To clauses. Apply.
+        text = actualText.trim
+        (fn1.get)()
+        (fn2.get)()
       }
+
+    } else {
+      // Wipe previous flow refs
+      flowFrom.clearAndBroadcast
+      flowTo.clearAndBroadcast
     }
 
-    if (flowFromRefs != prevFlowFromRefs) msgCentre ! FlowFromChangeMsg(flowFromRefs, stepId)
-    if (flowToRefs != prevFlowToRefs) msgCentre ! FlowToChangeMsg(stepId, flowToRefs)
     text = FlowFromArrowRegex.replaceAllIn(text, FlowFromArrowBadReplacement)
     text = FlowToArrowRegex.replaceAllIn(text, FlowToArrowBadReplacement)
-
-    (text, flowFromText, flowToText)
+    text
   }
 
-  @inline private def processFlowParseResult(labelsOp: Option[List[String]], arrow: String) = {
-    var (refs, text, allGood) = (Set.empty[String], "", true)
-    if (labelsOp.isDefined) {
-      val labels = labelsOp.get
-      if (areAllLabelsValid(labels)) {
+  private def processFlowParseResult(labelsOp: Option[List[String]], f: Flow): Option[Function0[Unit]] =
+    labelsOp match {
+      case None =>
+        Some(f.clearAndBroadcast _)
 
-        // Success!
-        refs = labels.map(refAndIdLookup(_)).toSet
-        text = MakeFlowText(arrow, TreeSet(labels: _*))
+      case Some(labels) if (areAllLabelsValid(labels)) =>
+        Some(() => f.broadcastIfChanges {
+          f.refs = labels.map(refAndIdLookup(_)).toSet
+          f.text = MakeFlowText(f.arrow, TreeSet(labels: _*))
+        })
 
-      } else
-        // Invalid labels found
-        allGood = false
+      case _ => None // Labels are invalid
     }
-    (refs, text, allGood)
-  }
 
-  override protected def haveAnyRefs = super.haveAnyRefs || flowFromRefs.nonEmpty || flowToRefs.nonEmpty
+  override protected def haveAnyRefs = super.haveAnyRefs || flowFrom.refs.nonEmpty || flowTo.refs.nonEmpty
 
   override protected def updateStepReferences(): String = {
-
-    val (newFlowFromText, newRefsFrom) = updateFlowReferences(flowFromRefs, FlowFromArrow)
-    flowFromRefs = newRefsFrom
-    flowFromText = newFlowFromText
-
-    val (newFlowToText, newRefsTo) = updateFlowReferences(flowToRefs, FlowToArrow)
-    flowToRefs = newRefsTo
-    flowToText = newFlowToText
-
+    updateFlowReferences(flowFrom)
+    updateFlowReferences(flowTo)
     textWithoutFlow = updateStepReferences(textWithoutFlow)
-
     buildFullText
   }
 
   /**
    * Removes invalid references and creates a new flow clause (text).
    */
-  private def updateFlowReferences(curRefs: Set[String], arrow: String) = {
-      var flowText = ""
-      var newRefs = curRefs
-      if (curRefs.nonEmpty) {
+  private def updateFlowReferences(f: Flow) {
+    if (f.refs.nonEmpty) {
 
-        // Look for changes before rewriting
+      // TODO Look for changes before rewriting
 
-        var newLabels = TreeSet.empty[String]
-        newRefs = Set.empty[String]
-        for (id <- curRefs) {
-          if (refAndIdLookup.contains(id)) {
-            newRefs += id
-            newLabels += refAndIdLookup(id)
-          } else {
-            // step deleted, just omit
-          }
+      var newLabels = TreeSet.empty[String]
+      var newRefs = Set.empty[String]
+      for (id <- f.refs) {
+        if (refAndIdLookup.contains(id)) {
+          newRefs += id
+          newLabels += refAndIdLookup(id)
+        } else {
+          // step deleted, just omit
         }
-
-        // TODO always rewriting - ineffecient
-        if (newLabels.nonEmpty)
-          flowText = MakeFlowText(arrow, newLabels)
       }
 
-      (flowText, newRefs)
+      // TODO always rewriting - ineffecient
+      f.refs = newRefs
+      f.text = MakeFlowTextOrEmpty(f.arrow, newLabels)
     }
+  }
 
   override def messageHandler = thisMessageHandler orElse super.messageHandler
 
