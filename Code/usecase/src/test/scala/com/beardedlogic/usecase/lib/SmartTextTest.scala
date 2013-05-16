@@ -265,14 +265,14 @@ class SmartTextTest
     it("should record flow ref IDs") {
       // Manual test
       val s2 = stepFieldWithText("manual test --> 1.0 <-- 1.2", refLookup = StepStateX2)
-      s2.flowFrom.refs should be(Set("X2"))
-      s2.flowTo.refs should be(Set("X1"))
+      s2.flowFrom.refs should be(Map("X2" -> "1.2"))
+      s2.flowTo.refs should be(Map("X1" -> "1.0"))
 
       // Use shared examples + id lookup
       forAll(TextWithFlowExamples) { (input, expText, expRefsFrom, expRefsTo) =>
         val s = stepFieldWithText(input, refLookup = StepStateX2)
-        s.flowFrom.refs should be(expRefsFrom.map(StepStateX2(_)).toSet)
-        s.flowTo.refs should be(expRefsTo.map(StepStateX2(_)).toSet)
+        s.flowFrom.refs should be(expRefsFrom.map(l => (StepStateX2(l), l)).toMap)
+        s.flowTo.refs should be(expRefsTo.map(l => (StepStateX2(l), l)).toMap)
       }
     }
 
@@ -505,21 +505,21 @@ class SmartTextTest
         m
       }
 
-      def test(_initialText: String, _expectedText: String, expectedRefs: Set[String]) {
+      def test(_initialText: String, _expectedText: String, expectedIds: Set[String]) {
         val initialText = _initialText.fixArrows(from)
         val expectedText = _expectedText.fixArrows(from)
         val changeExpected = (initialText != expectedText)
         val s = testSubject(initialText)
         val refs = if (from) s.flowFrom.refs else s.flowTo.refs
         if (changeExpected) s.refAndIdLookup should be theSameInstanceAs(StepState2)
-        refs should be(expectedRefs)
+        refs should be(expectedIds.map(id => (id, StepState2(id))).toMap)
         s.text should be(expectedText)
         assertClientUpdated(s, changeExpected)
       }
 
-      def testWithText(_initialText: String, _expectedText: String, expectedRefs: Set[String]) {
-        test(_initialText, _expectedText, expectedRefs)
-        test("cool " + _initialText, if (_expectedText.isEmpty()) "cool" else "cool " + _expectedText, expectedRefs)
+      def testWithText(_initialText: String, _expectedText: String, expectedIds: Set[String]) {
+        test(_initialText, _expectedText, expectedIds)
+        test("cool " + _initialText, if (_expectedText.isEmpty()) "cool" else "cool " + _expectedText, expectedIds)
       }
 
       it("should update refs") {

@@ -325,13 +325,13 @@ class SmartStepText(override val msgCentre: MessageCentre,
    * Allows for flow-agnostic logic.
    */
   sealed trait Flow {
-    var refs = Set.empty[String]
+    var refs = Map.empty[String, String]
     var text = ""
     def arrow : String
     def arrowReplacement : String
     def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
     def broadcast():Unit
-    final def clear() {refs = Set.empty[String]; text = ""}
+    final def clear() {refs = Map.empty[String, String]; text = ""}
     final def broadcastIfChanges[T](block: => T): T = {
       val prevRefs = refs
       val r = block
@@ -351,7 +351,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     override def arrow = FlowFromArrow
     override def arrowReplacement = FlowFromArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.from
-    override def broadcast() { msgCentre ! FlowFromChangeMsg(refs, stepId) }
+    override def broadcast() { msgCentre ! FlowFromChangeMsg(refs.keySet, stepId) }
   }
 
   /** Indicates into which steps this step flows. */
@@ -359,7 +359,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     override def arrow = FlowToArrow
     override def arrowReplacement = FlowToArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.to
-    override def broadcast() { msgCentre ! FlowToChangeMsg(stepId, refs) }
+    override def broadcast() { msgCentre ! FlowToChangeMsg(stepId, refs.keySet) }
   }
 
   private[lib] var textWithoutFlow = ""
@@ -420,7 +420,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
       case Some(labels) if (areAllLabelsValid(labels)) =>
         Some(() => f.broadcastIfChanges {
-          f.refs = labels.map(refAndIdLookup(_)).toSet
+          f.refs = labels.map(l => (refAndIdLookup(l), l)).toMap
           f.text = MakeFlowText(f.arrow, TreeSet(labels: _*))
         })
 
@@ -440,22 +440,21 @@ class SmartStepText(override val msgCentre: MessageCentre,
    * Removes invalid references and creates a new flow clause (text).
    */
   private def updateFlowReferences(f: Flow) {
-    if (f.refs.nonEmpty) {
-
-      // TODO Look for changes before rewriting
-
+    val changeFound = f.refs.nonEmpty && f.refs.exists { kp =>
+      refAndIdLookup.get(kp._1).map(_ != kp._2).getOrElse(true)
+    }
+    if (changeFound) {
       var newLabels = TreeSet.empty[String]
-      var newRefs = Set.empty[String]
-      for (id <- f.refs) {
+      var newRefs = Map.empty[String, String]
+      for ((id,_) <- f.refs) {
         if (refAndIdLookup.contains(id)) {
-          newRefs += id
-          newLabels += refAndIdLookup(id)
+          val l = refAndIdLookup(id)
+          newRefs += (id -> l)
+          newLabels += l
         } else {
           // step deleted, just omit
         }
       }
-
-      // TODO always rewriting - ineffecient
       f.refs = newRefs
       f.text = MakeFlowTextOrEmpty(f.arrow, newLabels)
     }
