@@ -1,15 +1,17 @@
 package com.beardedlogic.usecase.lib
 
+import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.TreeSet
+import net.liftweb.http.CometActor
+
+import org.mockito.Mockito._
+import org.scalacheck.Prop._
+import org.scalacheck.Gen
 import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import net.liftweb.http.CometActor
-import org.scalatest.prop.{TableFor2, PropertyChecks, Checkers}
-import scala.collection.immutable.TreeSet
+import org.scalatest.prop._
 
-import org.scalacheck.Prop._
-import org.scalacheck.Gen
 import msg.MessageCentre
 import msg.Messages._
 
@@ -21,8 +23,22 @@ object SmartTextTest extends MockitoSugar {
   val StepState2 = Map("S.A" -> "X1", "S.2" -> "X2", "S.4" -> "X4", "S.F" -> "X5",
                         "X1" -> "S.A", "X2" -> "S.2", "X4" -> "S.4", "X5" -> "S.F")
 
-  def subjectWithText(text: String) = {
+  class MsgCollector extends MessageCentre(mock[CometActor]) {
+    val sent = new ListBuffer[Any]
+    override def !(msg: Any) {
+      sent += msg
+    }
+  }
+
+  def textFieldWithText(text: String) = {
     val m = new SmartText(mock[MessageCentre], () => StepState1)
+    m.init
+    m.text = text
+    m
+  }
+
+  def stepFieldWithText(text: String, stepId: String = "SUBJ") = {
+    val m = new SmartText(mock[MessageCentre], () => StepState1, stepId = Some(stepId))
     m.init
     m.text = text
     m
@@ -57,7 +73,7 @@ class SmartTextTest
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
 
   override def checkTextParsing(text: String, expected: String) = {
-    val actual = subjectWithText(text).text
+    val actual = stepFieldWithText(text).text
     actual should be(expected)
     true
   }
@@ -226,71 +242,115 @@ class SmartTextTest
   describe("Flow-to parsing") {
 
     def testText(a: String, b: String) {
-      subjectWithText(a).text should be(b)
-      subjectWithText(a.replaceAll("-->", "→")).text should be(b)
+      stepFieldWithText(a).text should be(b)
+      stepFieldWithText(a.replaceAll("-->", "→")).text should be(b)
     }
 
-    it("should transform when invalid") {
-      val examples = Table(("Before", "After")
-                            , ("--> blah", "-> blah")
-                            , ("blarr --> blah", "blarr -> blah")
-                            , ("blarr -->", "blarr ->")
-                            , ("--> [S.0]", "-> [S.0?]")
-                            , ("--> S.0", "-> S.0")
-                            , ("--> S.1, S.0", "-> S.1, S.0")
-                            , ("--> [S.1], [S.0]", "-> [S.1], [S.0?]")
-                            , ("--> S.1 bullshit", "-> S.1 bullshit")
-                            , ("--> X1", "-> X1")
-                          )
-      forAll(examples)(testText _)
+    it("should only run on step fields (ie. you can't flow from steps into normal text fields like Actors)") {
+      val input = "--> S.1,S.1"
+      stepFieldWithText(input).text should be("→ S.1")
+      textFieldWithText(input).text should be(input)
     }
 
-    it("should parse a single valid ref") {
-      val examples = Table(("Before", "After")
-                            , ("--> S.1", "→ S.1")
-                            , ("--> [S.1]", "→ S.1")
-                            , ("  -->   S.1  ", "→ S.1")
-                            , ("great --> S.1", "great → S.1")
-                            , ("great-->S.1", "great → S.1")
-                            , ("-->S.1", "→ S.1")
-                            , ("-->[S.1]", "→ S.1")
-                          )
-      forAll(examples)(testText _)
+    describe("text transformation") {
+      it("should transform when invalid") {
+        val examples = Table(("Before", "After")
+                              , ("--> blah", "-> blah")
+                              , ("blarr --> blah", "blarr -> blah")
+                              , ("blarr -->", "blarr ->")
+                              , ("--> [S.0]", "-> [S.0?]")
+                              , ("--> S.0", "-> S.0")
+                              , ("--> S.1, S.0", "-> S.1, S.0")
+                              , ("--> [S.1], [S.0]", "-> [S.1], [S.0?]")
+                              , ("--> S.1 bullshit", "-> S.1 bullshit")
+                              , ("--> X1", "-> X1")
+                            )
+        forAll(examples)(testText _)
+      }
+
+      it("should parse a single valid ref") {
+        val examples = Table(("Before", "After")
+                              , ("--> S.1", "→ S.1")
+                              , ("--> [S.1]", "→ S.1")
+                              , ("  -->   S.1  ", "→ S.1")
+                              , ("great --> S.1", "great → S.1")
+                              , ("great-->S.1", "great → S.1")
+                              , ("-->S.1", "→ S.1")
+                              , ("-->[S.1]", "→ S.1")
+                            )
+        forAll(examples)(testText _)
+      }
+
+      it("should parse a multiple valid refs") {
+        val examples = Table(("Before", "After")
+                              , ("-->S.1,S.1", "→ S.1")
+                              , ("--> S.1, S.2", "→ S.1, S.2")
+                              , ("--> S.1,S.2", "→ S.1, S.2")
+                              , ("--> S.1, [S.2]", "→ S.1, S.2")
+                              , ("--> [S.1] [S.2]", "→ S.1, S.2")
+                              , ("--> S.2, S.1", "→ S.1, S.2")
+                              , ("--> S.2, S.1, S.1", "→ S.1, S.2")
+                              , ("--> S.1, S.3, S.1", "→ S.1, S.3")
+                            )
+        forAll(examples)(testText _)
+      }
+
+      it("should transform a multiple valid & invalid refs") {
+        val examples = Table(("Before", "After")
+                              , ("--> [S.0], [S.1]", "-> [S.0?], [S.1]")
+                              , ("--> S.1, X1", "-> S.1, X1")
+                            )
+        forAll(examples)(testText _)
+      }
+
+      it("should parse random valid statements") {
+        check(validStatementProp)
+      }
+      it("should transform random invalid statements") {
+        check(invalidStatementProp)
+      }
     }
 
-    it("should parse a multiple valid refs") {
-      val examples = Table(("Before", "After")
-                            , ("-->S.1,S.1", "→ S.1")
-                            , ("--> S.1, S.2", "→ S.1, S.2")
-                            , ("--> S.1,S.2", "→ S.1, S.2")
-                            , ("--> S.1, [S.2]", "→ S.1, S.2")
-                            , ("--> [S.1] [S.2]", "→ S.1, S.2")
-                            , ("--> S.2, S.1", "→ S.1, S.2")
-                            , ("--> S.2, S.1, S.1", "→ S.1, S.2")
-                            , ("--> S.1, S.3, S.1", "→ S.1, S.3")
-                          )
-      forAll(examples)(testText _)
-    }
+    describe(s"$FlowToChangeMsg broadcasting") {
+      def test(textBefore: String, newText: String, expectedToIds: Option[Set[String]]) {
+        val m = new MsgCollector
+        val s = new SmartText(m, () => StepState1, stepId = Some("SUBJ"))
+        s.init()
+        if (textBefore.nonEmpty) s.text = textBefore
+        m.sent.clear()
+        s.text = newText
+        val exp = if (expectedToIds.isEmpty) {
+          List.empty
+        } else {
+          FlowToChangeMsg(expectedToIds.get, "SUBJ") :: Nil
+        }
+        m.sent should be(exp)
+      }
 
-    it("should transform a multiple valid & invalid refs") {
-      val examples = Table(("Before", "After")
-                            , ("--> [S.0], [S.1]", "-> [S.0?], [S.1]")
-                            , ("--> S.1, X1", "-> S.1, X1")
-                          )
-      forAll(examples)(testText _)
-    }
-
-    it("should parse random valid statements") {
-      check(validStatementProp)
-    }
-    it("should transform random invalid statements") {
-      check(invalidStatementProp)
+      it("should broadcast when steps first added") {
+        test("", "--> S.1, S.1, S.2", Some(Set("X1", "X2")))
+      }
+      it("should broadcast when more steps added") {
+        test("--> S.1, S.1, S.2", "--> S.1, S.2, S.3", Some(Set("X1", "X2", "X3")))
+      }
+      it("should broadcast when a step removed") {
+        test("--> S.1, S.1, S.2", "--> S.2", Some(Set("X2")))
+      }
+      it("should broadcast when all steps removed") {
+        test("--> S.1, S.1, S.2", "blah", Some(Set()))
+      }
+      it("should not broadcast when no changes and has steps") {
+        test("blah --> S.1", "blah and stuff --> S.1", None)
+      }
+      it("should not broadcast when no changes and no steps") {
+        test("blah", "blah and stuff", None)
+      }
     }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  describe("Receiving a StepChangeMsg") {
+  describe(s"Receiving a $StepChangeMsg") {
 
     def assertMessageDoesNothing(setup: SmartText => Unit) {
       val msgCentre = mock[MessageCentre]
@@ -463,7 +523,7 @@ trait SmartTextChecks {
   }
 
   def checkTextParsing(text: String, expected: String) = {
-    val actual = subjectWithText(text).text
+    val actual = stepFieldWithText(text).text
     (actual == expected) :| s"'$text' should parse into '$expected', not '$actual'"
   }
 }

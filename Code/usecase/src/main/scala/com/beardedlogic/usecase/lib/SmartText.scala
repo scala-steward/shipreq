@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import scala.annotation.tailrec
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable.{Set, TreeSet}
 import scala.util.parsing.combinator.RegexParsers
 import net.liftweb.actor.LiftActor
 import net.liftweb.http.js.{JsCmds, JsCmd}
@@ -144,7 +144,8 @@ object SmartText {
  */
 class SmartText(val msgCentre: MessageCentre,
                 val refAndIdLookupProvider: () => Map[String, String],
-                val id: String = nextFuncName
+                val textareaId: String = nextFuncName,
+                val stepId: Option[String] = None
                  ) extends LiftActor {
 
   import SmartText._
@@ -154,6 +155,7 @@ class SmartText(val msgCentre: MessageCentre,
   private[lib] var refAndIdLookup = Map.empty[String, String]
   private[lib] var refsInText = Map.empty[String, String]
   private[lib] var refsInLinkNext = Map.empty[String, String]
+  private[lib] var flowToRefs = Set.empty[String]
 
   private[lib] var _text = ""
 
@@ -172,7 +174,7 @@ class SmartText(val msgCentre: MessageCentre,
     _text = parseText(_text)
   }
 
-  def renderTextarea = SHtml.ajaxTextarea(text, onTextChange _, "id" -> id)
+  def renderTextarea = SHtml.ajaxTextarea(text, onTextChange _, "id" -> textareaId)
 
   /**
    * Callback when the user changes the text.
@@ -190,9 +192,13 @@ class SmartText(val msgCentre: MessageCentre,
    * Parses text submitted by user.
    */
   private def parseText(origText: String): String = {
-    var (text, textSuffix) = parseTextForFlowTo(origText)
-    text = parsePlainText(text)
-    List(text, textSuffix).filterNot(_.isEmpty).mkString(" ")
+    if (stepId.isEmpty) {
+      parsePlainText(origText)
+    } else {
+      var (text, textSuffix) = parseTextForFlowTo(origText)
+      text = parsePlainText(text)
+      List(text, textSuffix).filterNot(_.isEmpty).mkString(" ")
+    }
   }
 
   /**
@@ -235,10 +241,14 @@ class SmartText(val msgCentre: MessageCentre,
   private def parseTextForFlowTo(input: String): (String, String) = {
     var (text, suffix) = (input, "")
 
+    val prevFlowToRefs = flowToRefs
+    flowToRefs = Set.empty
+
     val p = parseAll(TextAndFlowToTargets, input)
     if (p.successful) {
       val (actualText, labels) = p.get
       if (areAllLabelsValid(labels)) {
+        flowToRefs = labels.map(refAndIdLookup(_)).toSet
         val sortedLabels = TreeSet(labels: _*).mkString(", ")
         text = actualText.trim
         suffix = s"$FlowToArrowGoodReplacement $sortedLabels"
@@ -246,6 +256,10 @@ class SmartText(val msgCentre: MessageCentre,
     }
 
     text = FlowToArrowRegex.replaceAllIn(text, FlowToArrowBadReplacement)
+
+    if (flowToRefs != prevFlowToRefs) {
+      msgCentre ! FlowToChangeMsg(flowToRefs, stepId.get)
+    }
 
     (text, suffix)
   }
@@ -288,5 +302,5 @@ class SmartText(val msgCentre: MessageCentre,
       }
   }
 
-  private def updateTextJs(): JsCmd = JqId(id) ~> JqSetValue(text, false)
+  private def updateTextJs(): JsCmd = JqId(textareaId) ~> JqSetValue(text, false)
 }

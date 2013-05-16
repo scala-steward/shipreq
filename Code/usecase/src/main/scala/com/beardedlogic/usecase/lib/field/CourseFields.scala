@@ -58,7 +58,7 @@ abstract class CourseFields extends Field {
   }
 
   private[this] def createAndRegisterTextField(n:StepNode) {
-    val f = new SmartText(msgCentre, state.stepLabelMapProvider, n.stepTextId)
+    val f = new SmartText(msgCentre, state.stepLabelMapProvider, n.stepTextId, Some(n.id))
     f.init
     textFields += (n.id -> f)
   }
