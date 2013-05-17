@@ -212,7 +212,7 @@ class SmartText(val msgCentre: MessageCentre,
    * Callback when the user changes the text.
    */
   def onTextChange(newValue: String): JsCmd = writeLock.synchronized {
-    refAndIdLookup = refAndIdLookupProvider() // StepChangeMsg only updates if we have refs
+    refAndIdLookup = refAndIdLookupProvider() // Shouldn't be needed but no harm and provides extra safety
     setTextFromUser(newValue)
     if (text != newValue)
       updateTextJs
@@ -265,19 +265,19 @@ class SmartText(val msgCentre: MessageCentre,
 
   override def messageHandler = {
 
-    case StepChangeMsg if haveAnyRefs =>
+    case StepChangeMsg =>
 
       // Ignore changes if already processed
       val newRefLookup = refAndIdLookupProvider()
-      if (newRefLookup != refAndIdLookup) writeLock.synchronized {
+      if (newRefLookup != refAndIdLookup) {
 
-        // Update refs
+        // Save new steps
         refAndIdLookup = newRefLookup
-        val newText = updateStepReferences()
 
-        // Save and publish text changes
-        if (newText != text) {
-          internalSetTextAndPush(newText)
+        // Update references and push changes
+        if (haveAnyRefs) writeLock.synchronized {
+          val newText = updateStepReferences()
+          if (newText != text) internalSetTextAndPush(newText)
         }
       }
   }
