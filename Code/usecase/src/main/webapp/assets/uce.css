@@ -53,7 +53,7 @@
 
 .addTailStep { text-align: right; }
 
-#legend { margin: 0.5cm auto 1cm auto; border: solid 1px #888; background: #ffd; padding: 1ex; width: 400px; }
+#legend { margin: 0.5cm auto 1cm auto; border: solid 1px #888; background: #ffd; padding: 1ex; width: 500px; }
 #legend dl { margin: 0; }
-#legend dt { float: left; width: 160px; }
+#legend dt { float: left; width: 170px; }
 #legend dd:not(:last-of-type) { padding-bottom: 0.8ex; }
