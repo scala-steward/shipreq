@@ -291,6 +291,10 @@ class SmartTextTest
         stepFieldWithText(a.replaceAll("-->", "➡").fixArrows(from)).text should be(b.fixArrows(from))
       }
 
+      it("should allow links to self") {
+        stepFieldWithText("--> S.1".fixArrows(from), "X1").text should be("➡ S.1".fixArrows(from))
+      }
+
       it("should transform when invalid") {
         val examples = Table(("Before", "After")
                               , ("--> blah", "-> blah")
@@ -591,6 +595,18 @@ class SmartTextTest
         , ("hehe ⬅ S.1, S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // remove some
         , ("hehe ⬅ S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // ignore
         )
+
+    it("should not mirror links to self") {
+      for (txt <- List("➡ S.1","⬅ S.1")) {
+        val s = new SmartStepText(new MsgCollector, () => StepState1, "X1", "")
+        val mc = s.msgCentre.asInstanceOf[MsgCollector]
+        s.init
+        s.text = txt
+        mc.sent.size should be(1)
+        s !!! mc.sent.head
+        s.text should be (txt)
+      }
+    }
 
     it("update flow-from text") {
       forAll(examples){ (textBefore, flowToTargets, textAfter, refsAfter) =>

@@ -482,6 +482,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
   private val thisMessageHandler: PartialFunction[Any, Unit] = {
 
     // Add or Remove flow references
+    case FlowFromChangeMsg(_, id) if id == stepId => // Ignore self-ref
+    case FlowToChangeMsg(id, _) if id == stepId => // Ignore self-ref
     case FlowToChangeMsg(id, toIds) if (toIds.contains(stepId) && !flowFrom.refs.contains(id)) => addRef(flowFrom, id)
     case FlowToChangeMsg(id, toIds) if (!toIds.contains(stepId) && flowFrom.refs.contains(id)) => removeRef(flowFrom, id)
     case FlowFromChangeMsg(fromIds, id) if (fromIds.contains(stepId) && !flowTo.refs.contains(id)) => addRef(flowTo, id)
