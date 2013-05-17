@@ -572,12 +572,10 @@ class SmartTextTest
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  describe(s"Receiving a $FlowToChangeMsg") {
+  describe(s"Receiving FlowChangeMsgs") {
 
     def testSubject(initialText: String) = {
-      val comet = mock[CometActor]
-      val msgCentre = new MessageCentre(comet)
-      val s = new SmartStepText(msgCentre, () => StepState1, "SUBJ", "")
+      val s = new SmartStepText(new MsgCollector, () => StepState1, "SUBJ", "")
       s.init
       s.text = initialText
       s.text should be (initialText)
@@ -598,12 +596,15 @@ class SmartTextTest
       forAll(examples){ (textBefore, flowToTargets, textAfter, refsAfter) =>
         def test(flowToTargets: Set[String]) {
           val s = testSubject(textBefore)
+          val mc = s.msgCentre.asInstanceOf[MsgCollector]
           val flowToBefore = s.flowTo
+          mc.sent.clear
           s !!! FlowToChangeMsg("X1", flowToTargets)
           s.text should be (textAfter)
           s.flowFrom.refs should be(refsAfter.map(id => (id,StepState1(id))).toMap)
           s.flowTo should be(flowToBefore)
           assertClientUpdated(s, textBefore != textAfter)
+          mc.sent should be ('empty)
         }
         test(flowToTargets)
         test(flowToTargets ++ Set("X2","X3","X5","X6"))
@@ -614,12 +615,15 @@ class SmartTextTest
       forAll(examples){ (textBefore, flowFromSources, textAfter, refsAfter) =>
         def test(flowToTargets: Set[String]) {
           val s = testSubject(textBefore.fixArrows(false))
+          val mc = s.msgCentre.asInstanceOf[MsgCollector]
           val flowFromBefore = s.flowFrom
+          mc.sent.clear
           s !!! FlowFromChangeMsg(flowFromSources, "X1")
           s.text should be (textAfter.fixArrows(false))
           s.flowTo.refs should be(refsAfter.map(id => (id,StepState1(id))).toMap)
           s.flowFrom should be(flowFromBefore)
           assertClientUpdated(s, textBefore != textAfter)
+          mc.sent should be ('empty)
         }
         test(flowFromSources)
         test(flowFromSources ++ Set("X2","X3","X5","X6"))
