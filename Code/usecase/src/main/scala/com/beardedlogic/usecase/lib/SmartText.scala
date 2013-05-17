@@ -180,13 +180,6 @@ class SmartText(val msgCentre: MessageCentre,
 
   def text = _text
 
-  def text_=(newValueRaw: String) {
-    val newValue = newValueRaw.trim
-    if (text != newValue) {
-      _text = parseText(newValue)
-    }
-  }
-
   def init() {
     msgCentre.register(this)
     refAndIdLookup = refAndIdLookupProvider()
@@ -196,11 +189,31 @@ class SmartText(val msgCentre: MessageCentre,
   def renderTextarea = SHtml.ajaxTextarea(text, onTextChange _, "id" -> textareaId)
 
   /**
+   * Normalises and parses text from the user.
+   */
+  def setTextFromUser(newValueRaw: String) {
+    val newValue = newValueRaw.trim
+    if (text != newValue) {
+      _text = parseText(newValue)
+    }
+  }
+
+  /**
+   * Sets the full text value and pushes the new text to the client.
+   *
+   * Unlike `setTextFromUser()` this doesn't perform any parsing. The only variable this changes is `_text`.
+   */
+  @inline protected def internalSetTextAndPush(newText: String) {
+    _text = newText
+    msgCentre ! PushToClient(updateTextJs)
+  }
+
+  /**
    * Callback when the user changes the text.
    */
   def onTextChange(newValue: String): JsCmd = writeLock.synchronized {
     refAndIdLookup = refAndIdLookupProvider() // StepChangeMsg only updates if we have refs
-    text = newValue
+    setTextFromUser(newValue)
     if (text != newValue)
       updateTextJs
     else
@@ -264,8 +277,7 @@ class SmartText(val msgCentre: MessageCentre,
 
         // Save and publish text changes
         if (newText != text) {
-          _text = newText
-          msgCentre ! PushToClient(updateTextJs)
+          internalSetTextAndPush(newText)
         }
       }
   }
@@ -300,7 +312,7 @@ class SmartText(val msgCentre: MessageCentre,
     newText
   }
 
-  private def updateTextJs(): JsCmd = JqId(textareaId) ~> JqSetValue(text, false)
+  protected def updateTextJs(): JsCmd = JqId(textareaId) ~> JqSetValue(text, false)
 }
 
 // =====================================================================================================================
@@ -344,6 +356,12 @@ class SmartStepText(override val msgCentre: MessageCentre,
         broadcast
       }
     }
+    final def sortedLabels: TreeSet[String] = {
+      var s = TreeSet.empty[String]
+      for (lbl <- refs.values) s += lbl
+      s
+    }
+    final def rebuildText() { text = MakeFlowTextOrEmpty(arrow, sortedLabels) }
   }
 
   /** Indicates which steps flow into this step. */
@@ -421,7 +439,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
       case Some(labels) if (areAllLabelsValid(labels)) =>
         Some(() => f.broadcastIfChanges {
           f.refs = labels.map(l => (refAndIdLookup(l), l)).toMap
-          f.text = MakeFlowText(f.arrow, TreeSet(labels: _*))
+          f.rebuildText
         })
 
       case _ => None // Labels are invalid
@@ -461,8 +479,24 @@ class SmartStepText(override val msgCentre: MessageCentre,
   }
 
   override def messageHandler = thisMessageHandler orElse super.messageHandler
-
   private val thisMessageHandler: PartialFunction[Any, Unit] = {
-    case FlowToChangeMsg => // placeholder
+
+    // Add or Remove flow references
+    case FlowToChangeMsg(id, toIds) if (toIds.contains(stepId) && !flowFrom.refs.contains(id)) => addRef(flowFrom, id)
+    case FlowToChangeMsg(id, toIds) if (!toIds.contains(stepId) && flowFrom.refs.contains(id)) => removeRef(flowFrom, id)
+    case FlowFromChangeMsg(fromIds, id) if (fromIds.contains(stepId) && !flowTo.refs.contains(id)) => addRef(flowTo, id)
+    case FlowFromChangeMsg(fromIds, id) if (!fromIds.contains(stepId) && flowTo.refs.contains(id)) => removeRef(flowTo, id)
+  }
+
+  private def addRef(f: Flow, id: String) {
+    f.refs += (id -> refAndIdLookup(id))
+    f.rebuildText
+    internalSetTextAndPush(buildFullText)
+  }
+
+  private def removeRef(f: Flow, id: String) {
+    f.refs -= id
+    f.rebuildText
+    internalSetTextAndPush(buildFullText)
   }
 }

@@ -36,6 +36,23 @@ object SmartTextTest extends MockitoSugar {
     , ("excellent --> yo --> 1.0", "excellent --> yo", Nil, List("1.0"))
   )
 
+  implicit class SmartTextExt(m: SmartText) {
+    def text_=(txt: String) = m.setTextFromUser(txt)
+    def sendStepChangeMsg() {
+      m.messageHandler.applyOrElse[Any, Unit](StepChangeMsg, _ => ())
+    }
+    def !!!(msg: Any) {
+      m.messageHandler.applyOrElse[Any, Unit](msg, _ => ())
+    }
+  }
+
+  implicit class StringFlowExt(s: String) {
+    def fixArrows(from: Boolean) = if (from)
+      s.replace("-->", "<--").replace("➡", "⬅").replace("->", "<-")
+    else
+      s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
+  }
+
   class MsgCollector extends MessageCentre(mock[CometActor]) {
     val sent = new ListBuffer[Any]
     override def !(msg: Any) {
@@ -77,20 +94,11 @@ class SmartTextTest
 
   class RefLookupProvider(var value: Map[String, String])
 
-  implicit class SmartTextExt(m: SmartText) {
-    def sendStepChangeMsg() {
-      m.messageHandler.applyOrElse[Any, Unit](StepChangeMsg, _ => ())
-    }
-  }
-
-  implicit class StringFlowExt(s: String) {
-    def fixArrows(from: Boolean) = if (from)
-      s.replace("-->", "<--").replace("➡", "⬅").replace("->", "<-")
-    else
-      s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
-  }
-
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
+
+  def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
+    verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
+  }
 
   override def checkTextParsing(text: String, expected: String) = {
     val actual = stepFieldWithText(text).text
@@ -451,10 +459,6 @@ class SmartTextTest
       m
     }
 
-    def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
-      verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
-    }
-
     def textWasUpdated(subject: => SmartText, newText: String, newRefsInUse: Map[String, String]) {
       it("should update the text") {
         subject.text should be(newText)
@@ -565,6 +569,66 @@ class SmartTextTest
       }
     }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  describe(s"Receiving a $FlowToChangeMsg") {
+
+    def testSubject(initialText: String) = {
+      val comet = mock[CometActor]
+      val msgCentre = new MessageCentre(comet)
+      val s = new SmartStepText(msgCentre, () => StepState1, "SUBJ", "")
+      s.init
+      s.text = initialText
+      s.text should be (initialText)
+      s
+    }
+
+    val ToMe = Set("SUBJ")
+    val ToNone = Set.empty[String]
+    val examples = Table(("Text Before", "S.1's new Flow-To Targets", "Text After", "FlowFrom Refs After")
+        , ("hehe", ToMe, "hehe ⬅ S.1", Set("X1")) // add first
+        , ("hehe ⬅ S.2", ToMe, "hehe ⬅ S.1, S.2", Set("X1","X2")) // append
+        , ("hehe ⬅ S.1", ToNone, "hehe", Set()) // remove only
+        , ("hehe ⬅ S.1, S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // remove some
+        , ("hehe ⬅ S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // ignore
+        )
+
+    it("update flow-from text") {
+      forAll(examples){ (textBefore, flowToTargets, textAfter, refsAfter) =>
+        def test(flowToTargets: Set[String]) {
+          val s = testSubject(textBefore)
+          val flowToBefore = s.flowTo
+          s !!! FlowToChangeMsg("X1", flowToTargets)
+          s.text should be (textAfter)
+          s.flowFrom.refs should be(refsAfter.map(id => (id,StepState1(id))).toMap)
+          s.flowTo should be(flowToBefore)
+          assertClientUpdated(s, textBefore != textAfter)
+        }
+        test(flowToTargets)
+        test(flowToTargets ++ Set("X2","X3","X5","X6"))
+      }
+    }
+
+    it("update flow-to text") {
+      forAll(examples){ (textBefore, flowFromSources, textAfter, refsAfter) =>
+        def test(flowToTargets: Set[String]) {
+          val s = testSubject(textBefore.fixArrows(false))
+          val flowFromBefore = s.flowFrom
+          s !!! FlowFromChangeMsg(flowFromSources, "X1")
+          s.text should be (textAfter.fixArrows(false))
+          s.flowTo.refs should be(refsAfter.map(id => (id,StepState1(id))).toMap)
+          s.flowFrom should be(flowFromBefore)
+          assertClientUpdated(s, textBefore != textAfter)
+        }
+        test(flowFromSources)
+        test(flowFromSources ++ Set("X2","X3","X5","X6"))
+      }
+    }
+  }
+
+  // TODO test cyclic flow references
+  // TODO test flow to/from self
 
   // -------------------------------------------------------------------------------------------------------------------
 
