@@ -15,16 +15,37 @@
 </script>
 <style media="screen" type="text/css">
 
-#features {margin: 1cm auto 0 auto; width:1000px; background:#f8f8f8}
+#dim {
+	height:100%;
+	width:100%;
+	position:fixed;
+	left:0;
+	top:0;
+	z-index:1 !important;
+	background-color:black;
+	filter: alpha(opacity=50); /* internet explorer */
+	-khtml-opacity: 0.5;      /* khtml, old safari */
+	-moz-opacity: 0.5;       /* mozilla, netscape */
+	opacity: .5;           /* fx, safari, opera */
+	display:none
+}
+/*#dim[data-on="1"] {display:block}
+.demo  {position:relative; z-index:2; background:white; padding:1ex}
+*/
+
+h1 {text-align:center; font-family:serif; font-size:260%}
+#features {margin: 2cm auto 0 auto; width:1000px}
 #features .feature {margin-bottom: 3em; overflow:hidden; width:100%}
 #features .feature .title {font-size:150%; font-family: serif; font-weight:bold; margin-bottom:1ex}
-#features .feature .desc,
-#features .feature .demo {_isplay:inline-block; vertical-align:top}
+#features .feature .desc, #features .feature .demo {vertical-align:top}
 #features .feature .desc {float:left; width:410px; background:#ccf}
-#features .feature .demo {float:right; padding:1ex; width:550px}
+.demo {float:right; width:550px}
 .demo * {font-size:96%; cursor:pointer}
-.demo[data-running="0"] {opacity:0.6; border:solid 1px #555}
-.demo[data-running="1"] {opacity:1; border:solid 1px #900}
+.demo[data-running="0"] .demo-f {opacity:0.5; border:solid 1px #555}
+.demo[data-running="1"] .demo-f {opacity:1; border:solid 1px #900}
+.demo-f {padding:1ex;}
+.demo-i {text-align:right; padding:0.6ex; padding-right:0}
+
 .demo #uce {margin:0 !important}
 .demo #courses-n th, .demo #courses-n td {border:none !important}
 .demo .ucdata th {width:100px}
@@ -37,6 +58,9 @@
 </style>
 </head>
 <body>
+    <div id="dim"></div>
+
+    <h1>Create Better Use Cases, Faster and Easier</h1>
 
 	<div id="features">
 
@@ -49,6 +73,7 @@
 				PENALTY: Word numbers is fickle and annoying. If manual, easy to number steps wrong; tedious anyway.
 			</div>
 			<div class="demo" data-running="0" id="d1">
+			<div class="demo-f">
 				<table class="ucdata" id="uce">
                 <tr id="courses-n">
                     <th>Normal<br />Course
@@ -137,6 +162,8 @@
                 </tr>
 				</table>
 			</div>
+			<div class="demo-i" id="d1-i">Click to start demo</div>
+			</div>
 		</div>
 
         <div class="feature">
@@ -166,21 +193,30 @@
 	</div>
 
 	<script type="text/javascript" data-lift="tail">
-var preActionDelay = 1000
-var postActionDelay = 1600
+var readInfoTime = 1500
+var highlightTime = 2000
+var preActionDelay = 1200
+var postActionDelay = 2000
+
+function demoFeature(text, cssSel, andThen) {
+	$('#d1-i').html(text)
+	window.setTimeout(function(){ 
+		highlight(cssSel)
+		window.setTimeout(andThen, preActionDelay)
+	}, readInfoTime)
+}
 
 function highlight(cssSel) {
 	$(cssSel).effect({
 		effect : 'highlight',
 		easing : 'easeInCubic',
-		duration : 2000,
+		duration : highlightTime,
 		color : 'orange'
 	})
 }
 
 function insert_after_101() {
-	highlight('#d1-101 .add')
-	window.setTimeout(function() {
+	demoFeature('Insert steps anywhere.', '#d1-101 .add', function() {
 		$('#d1-101').after($('#d1-101a').clone().attr("id", "d1-101aNew"))
 		$('#d1-101aNew textarea').val('')
 		$('#d1-101aNew').hide().slideDown('slow', function() {
@@ -188,50 +224,48 @@ function insert_after_101() {
 			$('#d1-101b .label').html('c.')
 			window.setTimeout(dec_102, postActionDelay)
 		})
-	}, preActionDelay)
+	})
 }
 
 function dec_102() {
-	highlight('#d1-102 .indentDec')
-	window.setTimeout(function() {
+	demoFeature('Easily change indents.', '#d1-102 .indentDec', function() {
 		nc_to_ac('d1-102', function() {
 			$('#d1-102').attr('data-lvl', '0').find('.label span').html('1.1.');
 			$('#d1-11 .label').html('1.2')
 			window.setTimeout(inc_new_11, postActionDelay)
 		})
-	}, preActionDelay)
+	})
 }
 
 function inc_new_11() {
-	highlight('#d1-102 .indentInc')
-	window.setTimeout(function() {
+	demoFeature('Move between Normal and Alternate Courses.', '#d1-102 .indentInc', function() {
 		ac_to_nc('#d1-102', function() {
 			$('#d1-102').attr('data-lvl', '1').find('.label span').html('2.');
 			$('#d1-11 .label').html('1.1')
 			window.setTimeout(delete_new_101a, postActionDelay)
 		})
-	}, preActionDelay)
+	})
 }
 
 function delete_new_101a() {
-	highlight('#d1-101aNew .delete')
-	window.setTimeout(function() {
+	demoFeature('Notice steps are renumbered automatically.', '#d1-101aNew .delete', function() {
 		$('#d1-101aNew').fadeOut('slow', function() {
 			$('#d1-101aNew').remove()
 			$('#d1-101a .label').html('a.')
 			$('#d1-101b .label').html('b.')
 			window.setTimeout(d1_finish, postActionDelay)
 		})
-	}, preActionDelay)
+	})
 }
 
 function d1_finish() {
+	$('#d1-i').html('Click to start demo')
     $('#d1').attr('data-running', '0')
 }
 
 $(document).ready(function() {
 	$('textarea').autosize();
-	$('.demo, .demo *').click(function() {
+	$('#d1,#d1 *').click(function() {
 		if ($('#d1').attr('data-running') == "0") {
 			$('#d1').attr('data-running', '1')
 			window.setTimeout(insert_after_101, 800)
