@@ -647,9 +647,6 @@ class SmartTextTest
     }
   }
 
-  // TODO test cyclic flow references
-  // TODO test flow to/from self
-
   // -------------------------------------------------------------------------------------------------------------------
 
   describe("Step recognition and transformation") {
