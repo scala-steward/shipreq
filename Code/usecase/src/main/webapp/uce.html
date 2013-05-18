@@ -9,17 +9,17 @@
 
 <script type="text/javascript" class="clearable">
 	function dec_103_core() {
-		$('#s103').attr('data-lvl','0').find('.label span').html('1.1.');
-		$('#s104 .label').html('2.');
-		$('#s11 .label').html('1.2.');
+		$('#s103').attr('data-lvl','0').find('.label span').html('1.1');
+		$('#s104 .label span').html('2');
+		$('#s11 .label span').html('1.2');
 	}
 	function dec_103_jqui() {
 		nc_to_ac('#uce', 's103', dec_103_core);
 	}
 
 	function inc_11_core() {
-		$('#s11').attr('data-lvl','1').find('.label span').html('5.');
-		$('#s12 .label').html('6.');
+		$('#s11').attr('data-lvl','1').find('.label span').html('5');
+		$('#s12 .label span').html('6');
 	}
 	function inc_11_jqui() {
 		ac_to_nc('#uce', '#s11,#s12', inc_11_core);

@@ -202,8 +202,8 @@ function insert_after_101() {
 		$('#d1-101').after($('#d1-101a').clone().attr("id", "d1-101aNew"))
 		$('#d1-101aNew textarea').val('')
 		$('#d1-101aNew').hide().slideDown('slow', function() {
-			$('#d1-101a .label').html('b.')
-			$('#d1-101b .label').html('c.')
+			$('#d1-101a .label span').html('b')
+			$('#d1-101b .label span').html('c')
 			window.setTimeout(dec_102, postActionDelay)
 		})
 	})
@@ -212,8 +212,8 @@ function insert_after_101() {
 function dec_102() {
 	demoFeature('Easily change indents.', '#d1-102 .indentDec', function() {
 		nc_to_ac('#d1', 'd1-102', function() {
-			$('#d1-102').attr('data-lvl', '0').find('.label span').html('1.1.');
-			$('#d1-11 .label').html('1.2')
+			$('#d1-102').attr('data-lvl', '0').find('.label span').html('1.1');
+			$('#d1-11 .label span').html('1.2')
 			window.setTimeout(inc_new_11, postActionDelay)
 		})
 	})
@@ -222,19 +222,19 @@ function dec_102() {
 function inc_new_11() {
 	demoFeature('Move between Normal and Alternate Courses.', '#d1-102 .indentInc', function() {
 		ac_to_nc('#d1', '#d1-102', function() {
-			$('#d1-102').attr('data-lvl', '1').find('.label span').html('2.');
-			$('#d1-11 .label').html('1.1')
+			$('#d1-102').attr('data-lvl', '1').find('.label span').html('2');
+			$('#d1-11 .label span').html('1.1')
 			window.setTimeout(delete_new_101a, postActionDelay)
 		})
 	})
 }
 
 function delete_new_101a() {
-	demoFeature('Notice steps are renumbered automatically.', '#d1-101aNew .delete', function() {
+	demoFeature('Notice that steps are renumbered automatically.', '#d1-101aNew .delete', function() {
 		$('#d1-101aNew').fadeOut('slow', function() {
 			$('#d1-101aNew').remove()
-			$('#d1-101a .label').html('a.')
-			$('#d1-101b .label').html('b.')
+			$('#d1-101a .label span').html('a')
+			$('#d1-101b .label span').html('b')
 			window.setTimeout(d1_finish, postActionDelay)
 		})
 	})
