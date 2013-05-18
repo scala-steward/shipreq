@@ -13,7 +13,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:postf
 scalacOptions in Test ++= Seq("-language:reflectiveCalls")
 
 libraryDependencies ++= {
-  val liftVersion = "2.5-RC5"
+  val liftVersion = "2.5-RC6"
   Seq(
     "net.liftweb"             %% "lift-webkit"            % liftVersion,
     "net.liftmodules"         %% "lift-jquery-module_2.5" % "2.3",
