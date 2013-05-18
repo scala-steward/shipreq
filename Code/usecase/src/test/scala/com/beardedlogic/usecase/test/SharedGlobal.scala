@@ -1,5 +1,7 @@
 package com.beardedlogic.usecase.test
 
+import net.liftweb.common.Logger
+
 object SharedGlobal {
   def apply[T >: Null](releaseDelay: Option[Long], startFn: () => T)(shutdownFn: (T) => Unit) =
     new SharedGlobal[T](releaseDelay, startFn, shutdownFn)
@@ -15,7 +17,7 @@ object SharedGlobal {
  * @tparam T The resource type.
  * @since 13/05/2013
  */
-class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () => T, shutdownFn: (T) => Unit) {
+class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () => T, shutdownFn: (T) => Unit) extends Logger {
 
   private val serverLock = new Object()
   private var refCount = 0
@@ -26,7 +28,7 @@ class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () =>
       def run() {
         serverLock.synchronized {
           if (refCount != 0) {
-            println(s"Force-shutting down: $instance ($refCount)")
+            warn(s"Force-shutting down: $instance ($refCount)")
             refCount = 0
             shutdown
           }
@@ -40,12 +42,11 @@ class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () =>
    */
   def acquire(): T = {
     serverLock.synchronized {
-      // println(s"Started: $refCount $instance")
       if (refCount == 0) {
         instance = startFn()
-        // println(s"Started: $instance")
+        debug(s"Created new: $instance")
       }
-      // println(s"Acquired $refCount -> ${refCount + 1}: $instance")
+      debug(s"Acquired $refCount -> ${refCount + 1}: $instance")
       refCount += 1
       instance
     }
@@ -57,7 +58,7 @@ class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () =>
    * @return Always returns null. Allows the caller to release and nullify their reference on one-line.
    */
   def release(): T = {
-    // serverLock.synchronized { println(s"release() for $instance ($refCount)") }
+    serverLock.synchronized { debug(s"Received release request: $instance ($refCount)") }
     if (releaseDelay.isEmpty)
       releaseNow
     else
@@ -75,7 +76,7 @@ class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () =>
    */
   private[this] def releaseNow {
     serverLock.synchronized {
-      // println(s"Releasing $refCount -> ${refCount - 1}: $instance")
+      debug(s"Releasing: $instance ($refCount -> ${refCount - 1})")
       refCount -= 1
       if (refCount == 0) shutdown
     }
@@ -85,10 +86,10 @@ class SharedGlobal[T >: Null] private(releaseDelay: Option[Long], startFn: () =>
    * Shuts down the resource.
    */
   private[this] def shutdown {
-    // println("Stopping NOW: " + instance)
+    debug("Stopping NOW: " + instance)
     try shutdownFn(instance)
     catch {
-      case e: Throwable => println(s"Error shutting down $instance"); e.printStackTrace
+      case e: Throwable => warn(s"Error shutting down $instance", e)
     }
     instance = null
   }

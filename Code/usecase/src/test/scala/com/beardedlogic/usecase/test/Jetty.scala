@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.test
 
+import net.liftweb.common.Logger
 import net.liftweb.util.TimeHelpers._
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.nio.SelectChannelConnector
@@ -10,9 +11,9 @@ import org.eclipse.jetty.webapp.WebAppContext
  *
  * @since 29/04/2013
  */
-object Jetty {
+object Jetty extends Logger {
 
-  private val jetty = SharedGlobal(Some(1000L), newServer _) { s => s.stop; s.join }
+  private val jetty = SharedGlobal(Some(15000L), newServer _)(stopServer(_))
 
   def acquire(): Server = jetty.acquire
 
@@ -23,6 +24,7 @@ object Jetty {
   val URL = "http://localhost:" + PORT
 
   def newServer: Server = {
+    info("Starting Jetty")
     val svr = new Server
 
     val connector = new SelectChannelConnector
@@ -42,5 +44,10 @@ object Jetty {
     context.setServer(svr)
     svr.start
     svr
+  }
+
+  def stopServer(s: Server) {
+    info("Stopping Jetty")
+    s.stop; s.join
   }
 }
