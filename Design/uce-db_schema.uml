@@ -1,5 +1,71 @@
 @startuml
 
+class Data {
+  id
+  type
+}
+class Value {
+  id
+  data_id
+  rev
+}
+class VersionAnn {
+  value_id
+  user_id
+  date
+  comment
+}
+class UseCase {
+  title
+  number
+  field_list_id
+}
+class FieldKey {
+  type
+  data
+}
+class FieldValue {
+  field_def_id
+}
+class Text {
+  text
+}
+class Step {
+  text_id
+  label
+}
+class File {
+  filename
+  blob
+}
+class Relation {
+  from_id
+  type
+  index
+  to_id
+}
+
+enum DataType {
+  UseCase
+  FieldList
+  FieldKey
+  FieldValue
+  Text
+  Step
+  File
+}
+enum DataRelationType {
+  has
+  references
+  flows-from
+  flows-to
+}
+enum FieldKeyType {
+  Text
+  NC/AC
+  EC
+}
+
 Data *- Value : has 1..n >
 Value *- VersionAnn : has 0..1 >
 
@@ -12,10 +78,6 @@ FieldValue --|> Value
 Text --|> Value
 Step --|> Value
 File --|> Value
-
-enum DataType
-enum DataRelationType
-enum FieldKeyType
 
 Data o- DataType
 Relation o- DataRelationType
