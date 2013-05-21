@@ -1,10 +1,11 @@
 package com.beardedlogic.usecase.lib
 
+import ch.qos.logback.classic.Level
+import com.googlecode.flyway.core.Flyway
+import net.liftweb.common.Logger
 import net.liftweb.util.Props
 import org.postgresql.ds.PGSimpleDataSource
 import scala.slick.session.Database
-import ch.qos.logback.classic.Level
-import net.liftweb.common.Logger
 
 /**
  * Database connectivity.
@@ -49,14 +50,24 @@ object DB extends Logger {
     ds
   }
 
-  private def newDatabase() = {
+  val DataSource = {
     val ds = loadDataSource().openOrThrowException("A database connection is mandatory.")
     debug("Connecting to database: " + ds.getDatabaseName)
     ds.getConnection.close() // test the data source validity
-    Database.forDataSource(ds)
+    ds
   }
 
-  val Slick = newDatabase()
+  val Slick = Database.forDataSource(DataSource)
 
-  def init() {} // Nothing to do. Connection is val.
+  def performPendingMigrations() {
+    val flyway = new Flyway
+    flyway.setLocations("db_migrations")
+    flyway.setDataSource(DataSource)
+    flyway.setSqlMigrationPrefix("v")
+    flyway.migrate()
+  }
+
+  def init() {
+    performPendingMigrations()
+  }
 }
