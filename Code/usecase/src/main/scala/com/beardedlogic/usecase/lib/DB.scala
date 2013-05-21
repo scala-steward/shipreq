@@ -1,7 +1,6 @@
 package com.beardedlogic.usecase.lib
 
 import ch.qos.logback.classic.Level
-import com.googlecode.flyway.core.Flyway
 import com.googlecode.flyway.core.util.logging.{Log, LogCreator, LogFactory}
 import net.liftweb.common.Logger
 import net.liftweb.util.Props
@@ -59,29 +58,26 @@ object DB extends Logger {
     ds
   }
 
-  val Slick = Database.forDataSource(DataSource)
-
-  def performPendingMigrations() {
-    FlyWayLogger.enable()
-    val flyway = new Flyway
+  val Flyway = {
+    LogFactory.setLogCreator(new LogCreator {
+      def createLogger(clazz: Class[_]): Log = new FlyWayLogger(clazz)
+    })
+    val flyway = new com.googlecode.flyway.core.Flyway
     flyway.setLocations("db_migrations")
     flyway.setDataSource(DataSource)
     flyway.setSqlMigrationPrefix("v")
-    flyway.migrate()
+    flyway
   }
+
+  val Slick = Database.forDataSource(DataSource)
+
+  def performPendingMigrations() = Flyway.migrate()
 
   def init() {
     performPendingMigrations()
   }
 }
 
-object FlyWayLogger {
-  def enable() {
-    LogFactory.setLogCreator(new LogCreator {
-      def createLogger(clazz: Class[_]): Log = new FlyWayLogger(clazz)
-    })
-  }
-}
 class FlyWayLogger(clazz: Class[_]) extends com.googlecode.flyway.core.util.logging.Log {
   val log = LoggerFactory.getLogger(Logger.loggerNameFor(clazz))
   def debug(message: String) {log.debug(message)}
