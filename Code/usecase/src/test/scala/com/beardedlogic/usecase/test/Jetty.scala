@@ -5,6 +5,7 @@ import net.liftweb.util.TimeHelpers._
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.nio.SelectChannelConnector
 import org.eclipse.jetty.webapp.WebAppContext
+import com.beardedlogic.usecase.lib.Misc
 
 /**
  * Starts up an instance of Jetty than runs the webapp.
@@ -12,6 +13,8 @@ import org.eclipse.jetty.webapp.WebAppContext
  * @since 29/04/2013
  */
 object Jetty extends Logger {
+
+  Misc.ensureTestModeDuringTests()
 
   private val jetty = SharedGlobal(Some(15000L), newServer _)(stopServer(_))
 
@@ -25,14 +28,13 @@ object Jetty extends Logger {
 
   def newServer: Server = {
     info("Starting Jetty")
-    System.setProperty("run.mode", "test")
     val svr = new Server
 
     val connector = new SelectChannelConnector
     connector.setPort(PORT)
     connector.setMaxIdleTime(MAX_IDLE.millis.toInt)
     connector.setServer(svr)
-    svr.setConnectors(Array(connector));
+    svr.setConnectors(Array(connector))
 
     val context = new WebAppContext
     context.setContextPath("/")
