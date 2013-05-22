@@ -1,28 +1,12 @@
-package com.beardedlogic.usecase.model
+package com.beardedlogic.usecase
+package model
 
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.{StaticQuery => Q}
-import com.beardedlogic.usecase.lib.db.DatabaseEnum
-import com.beardedlogic.usecase.lib.EnumValue
-import Q.interpolation
+import lib.db._
+import DBHelpers._
 
-object BullshitImplicits {
-
-  @inline implicit def enumToShort(enum: EnumValue): Short = enum.ordinal
-  @inline implicit def shortToDataType(ordinal:Short): DataType = DataType(ordinal)
-  @inline implicit def shortToRelationType(ordinal:Short): RelationType = RelationType(ordinal)
-  @inline implicit def shortToFieldKeyType(ordinal:Short): FieldKeyType = FieldKeyType(ordinal)
-}
-
-import BullshitImplicits._
-
-trait BullshitTable {
-  val TableName: String
-
-  def count(implicit s: Session) = Q.queryNA[Int](s"SELECT COUNT(1) FROM $TableName").first
-}
-
-object Data extends BullshitTable  {
+object Data extends DBTable {
   override val TableName = "data"
 
   def create[T <: DataType](dataType: T)(implicit s: Session): Data[T] = {
@@ -36,6 +20,4 @@ object Data extends BullshitTable  {
   }
 }
 
-case class Data[T <: DataType](
-  id: Long,
-  dataType: T)
+case class Data[T <: DataType](id: Long, dataType: T)
