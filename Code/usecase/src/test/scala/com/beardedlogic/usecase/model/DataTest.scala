@@ -19,10 +19,10 @@ class DataTest extends FunSpec with ShouldMatchers {
   describe("Data") {
 
     it("should insert and read back") { implicit db: Session =>
-      val id1 = DataTable.insert(DataType.UseCase).id
-      val id2 = DataTable.insert(DataType.FieldList).id
-      DataTable(id1) should be(Data(id1, DataType.UseCase))
-      DataTable(id2) should be(Data(id2, DataType.FieldList))
+      val id1 = Data.create(DataType.UseCase).id
+      val id2 = Data.create(DataType.FieldList).id
+      Data.find(id1) should be(Data(id1, DataType.UseCase): Data[_])
+      Data.find(id2) should be(Data(id2, DataType.FieldList): Data[_])
     }
   }
 }

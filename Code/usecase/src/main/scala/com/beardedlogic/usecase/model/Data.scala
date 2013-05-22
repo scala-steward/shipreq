@@ -1,21 +1,41 @@
 package com.beardedlogic.usecase.model
 
 import scala.slick.driver.PostgresDriver.simple._
+import scala.slick.jdbc.{StaticQuery => Q}
+import com.beardedlogic.usecase.lib.db.DatabaseEnum
+import com.beardedlogic.usecase.lib.EnumValue
+import Q.interpolation
 
-case class Data(id: Long,
-                data_type: DataType)
+object BullshitImplicits {
 
-object DataTable extends Table[Data]("data") {
-  implicit val typeMapper = MappedTypeMapper.base[DataType, Short](_.ordinal, DataType(_))
-  def id = column[Long]("id")
-  def data_type = column[DataType]("type_id")
-  def * = id ~ data_type <>(Data, Data.unapply _)
+  @inline implicit def enumToShort(enum: EnumValue): Short = enum.ordinal
+  @inline implicit def shortToDataType(ordinal:Short): DataType = DataType(ordinal)
+  @inline implicit def shortToRelationType(ordinal:Short): RelationType = RelationType(ordinal)
+  @inline implicit def shortToFieldKeyType(ordinal:Short): FieldKeyType = FieldKeyType(ordinal)
+}
 
-  def insert(dataType: DataType)(implicit s: Session) = {
-    val newId = data_type.returning(id).insert(dataType)
-    Data(newId, dataType)
+import BullshitImplicits._
+
+trait BullshitTable {
+  val TableName: String
+
+  def count(implicit s: Session) = Q.queryNA[Int](s"SELECT COUNT(1) FROM $TableName").first
+}
+
+object Data extends BullshitTable  {
+  override val TableName = "data"
+
+  def create[T <: DataType](dataType: T)(implicit s: Session): Data[T] = {
+    val id = Q.query[Short, Int](s"INSERT INTO $TableName(type_id) VALUES(?) RETURNING id").first(dataType)
+    Data(id, dataType)
   }
 
-  val QueryByID = for {id <- Parameters[Long]; r <- this if r.id is id} yield r
-  def apply(id: Long)(implicit s: Session): Data = QueryByID(id).first
+  def find(id: Long)(implicit s: Session): Data[_ <: DataType] = {
+    val typeId = Q.query[Long, Short](s"SELECT type_id FROM $TableName WHERE id=?").first(id)
+    Data(id, typeId)
+  }
 }
+
+case class Data[T <: DataType](
+  id: Long,
+  dataType: T)
