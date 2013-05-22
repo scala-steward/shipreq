@@ -1,5 +1,7 @@
 package com.beardedlogic.usecase.model
 
+import com.beardedlogic.usecase.lib.db.DatabaseEnum
+
 /**
  * Represents each possible type of relationship that can exist between two data values.
  *

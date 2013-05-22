@@ -1,5 +1,7 @@
 package com.beardedlogic.usecase.model
 
+import com.beardedlogic.usecase.lib.db.DatabaseEnum
+
 /**
  * Represents each possible type of data that can be stored in the `data` table.
  *

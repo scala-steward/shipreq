@@ -1,5 +1,7 @@
 package com.beardedlogic.usecase.model
 
+import com.beardedlogic.usecase.lib.db.DatabaseEnum
+
 /**
  * Represents types of fields that a use case (or something else) can have.
  *

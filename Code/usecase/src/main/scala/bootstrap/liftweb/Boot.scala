@@ -2,7 +2,7 @@ package bootstrap.liftweb
 
 import net.liftweb.http.{ Html5Properties, LiftRules, Req }
 import net.liftweb.sitemap.{ Menu, SiteMap }
-import com.beardedlogic.usecase.lib.DB
+import com.beardedlogic.usecase.lib.db.DB
 
 
 /**

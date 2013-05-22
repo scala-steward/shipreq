@@ -1,12 +1,12 @@
-package com.beardedlogic.usecase.model
+package com.beardedlogic.usecase
+package lib.db
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FunSpec
-import com.beardedlogic.usecase.lib.DB
 import scala.slick.session.Session
-
-import scala.slick.jdbc.{GetResult, StaticQuery => Q}
+import scala.slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
+import model.DataType
 
 class DatabaseEnumTest extends FunSpec with ShouldMatchers {
 

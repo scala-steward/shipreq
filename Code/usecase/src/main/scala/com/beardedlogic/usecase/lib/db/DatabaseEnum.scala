@@ -1,9 +1,8 @@
-package com.beardedlogic.usecase
-package model
+package com.beardedlogic.usecase.lib
+package db
 
-import scala.slick.session.Session
 import scala.slick.jdbc.{StaticQuery => Q}
-import lib.{Enum, EnumValue}
+import scala.slick.session.Session
 
 /**
  * Enum with a corresponding database table.

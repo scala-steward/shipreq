@@ -1,4 +1,5 @@
 package com.beardedlogic.usecase.lib
+package db
 
 import ch.qos.logback.classic.Level
 import com.googlecode.flyway.core.util.logging.{Log, LogCreator, LogFactory}
