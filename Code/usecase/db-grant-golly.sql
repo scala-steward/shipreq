@@ -1,0 +1,15 @@
+CREATE USER golly PASSWORD 'g';
+
+\c usecase_dev
+GRANT CONNECT ON DATABASE usecase_dev TO golly;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO golly;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO golly;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO golly;
+
+\c usecase_test
+GRANT CONNECT ON DATABASE usecase_test TO golly;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO golly;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO golly;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO golly;
+
+
