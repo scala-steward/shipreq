@@ -15,9 +15,6 @@ class Boot {
     // App package path
     LiftRules.addToPackages("com.beardedlogic.usecase")
 
-    // Init DB connection
-    DB.init()
-
     // Build SiteMap
     def sitemap(): SiteMap = SiteMap(
       Menu.i("Home") / "index"
@@ -28,5 +25,8 @@ class Boot {
 
     // Force requests to be UTF-8
     //LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
+
+    // Init DB connection
+    DB.init()
   }
 }

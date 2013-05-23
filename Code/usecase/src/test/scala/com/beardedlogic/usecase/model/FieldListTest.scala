@@ -13,6 +13,7 @@ class FieldListTest extends FunSpec with ShouldMatchers {
   type FixtureParam = Session
 
   override protected def withFixture(test: OneArgTest) = {
+    (new bootstrap.liftweb.Boot).boot
     //DB.wipe_!.init
     DB.Slick.withTransaction { implicit db: Session =>
       try withFixture(test.toNoArgTest(db))

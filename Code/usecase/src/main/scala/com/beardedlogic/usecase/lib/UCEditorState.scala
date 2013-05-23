@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import net.liftweb.http.CometActor
-import field.Fields.DefaultFields
+import field.Defaults.DefaultFields
 import field.{CourseFields, NormalAndAlternateCourseFields => NCAC}
 import msg.MessageCentre
 
