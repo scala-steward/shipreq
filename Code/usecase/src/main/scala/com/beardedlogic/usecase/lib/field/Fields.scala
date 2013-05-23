@@ -18,35 +18,3 @@ object Fields {
     r
   }
 }
-
-// TODO Move elsewhere
-object Defaults {
-
-  //  val DateCreated = TextFieldDef("Date Created")
-  //  val DateLastUpdated = TextFieldDef("Date Last Updated")
-  val Actors = TextFieldDef("Actors")
-  val PreConditions = TextFieldDef("Pre-Conditions")
-  val PostConditions = TextFieldDef("Post-Conditions")
-  val UseCaseRelationships = TextFieldDef("Use Case Relationships")
-  val ConstraintsAndBusinessRules = TextFieldDef("Constraints and Business Rules")
-  val FrequencyOfUse = TextFieldDef("Frequency of Use")
-  val SpecialRequirements = TextFieldDef("Special Requirements")
-  val Assumptions = TextFieldDef("Assumptions")
-  val NotesAndIssues = TextFieldDef("Notes and Issues")
-
-  // TODO Rename Defaults.DefaultFields
-  val DefaultFields: List[FieldDef] =
-    Actors ::
-      PreConditions ::
-      PostConditions ::
-      NormalAndAlternateCourseFields ::
-      ExceptionCourseFields ::
-      UseCaseRelationships ::
-      ConstraintsAndBusinessRules ::
-      FrequencyOfUse ::
-      SpecialRequirements ::
-      Assumptions ::
-      NotesAndIssues ::
-      Nil
-
-}

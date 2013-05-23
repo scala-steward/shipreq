@@ -1,7 +1,6 @@
 package com.beardedlogic.usecase.lib
 
 import net.liftweb.http.CometActor
-import field.Defaults.DefaultFields
 import field.{CourseFields, NormalAndAlternateCourseFields => NCAC}
 import msg.MessageCentre
 
@@ -16,7 +15,7 @@ class UCEditorState(cometActor: CometActor) {
 
   val msgCentre = new MessageCentre(cometActor)
 
-  val fields = DefaultFields.map(_.newFieldInstance(this))
+  val fields = Defaults.Fields.map(_.newFieldInstance(this))
 
   val courseFields: List[CourseFields] = fields.collect { case f: CourseFields => f }
 
