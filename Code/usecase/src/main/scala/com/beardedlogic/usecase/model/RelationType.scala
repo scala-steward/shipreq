@@ -17,12 +17,14 @@ object RelationType extends DatabaseEnum[RelationType] {
    * B is a part of A.
    */
   case object Has extends RelationType(200)
+  type Has = Has.type
 
   /**
    * A refers to B.
    * A knows of B's existence and depends on, or is interested in its value.
    */
   case object References extends RelationType(201)
+  type References = References.type
 
   val Values = List(Has, References)
 }

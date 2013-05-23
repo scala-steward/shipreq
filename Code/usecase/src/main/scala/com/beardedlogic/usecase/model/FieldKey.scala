@@ -2,13 +2,13 @@ package com.beardedlogic.usecase
 package model
 
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.{StaticQuery => Q, GetResult}
+import scala.slick.jdbc.{StaticQuery => Q}
 import lib.db._
 import DBHelpers._
 import FieldKey.FieldKeyData
 
-case class FieldKey(value: PlainValue[DataType.FieldKey.type], fieldKeyType: FieldKeyType, data: FieldKeyData)
-  extends ValueExt[DataType.FieldKey.type]
+case class FieldKey(value: PlainValue[DataType.FieldKey], fieldKeyType: FieldKeyType, data: FieldKeyData)
+  extends ValueExt[DataType.FieldKey]
 
 object FieldKey extends DBTable {
   override val TableName = "field_key"

@@ -21,6 +21,7 @@ object DataType extends DatabaseEnum[DataType] {
    * Example: `UC-1: User logs in.`
    */
   case object UseCase extends DataType(100)
+  type UseCase = UseCase.type
 
   /**
    * An ordered list of a fields.
@@ -32,6 +33,7 @@ object DataType extends DatabaseEnum[DataType] {
    * - Notes and Issues
    */
   case object FieldList extends DataType(101)
+  type FieldList = FieldList.type
 
   /**
    * A single or composite field definition. A collection of these would make a template.
@@ -42,16 +44,19 @@ object DataType extends DatabaseEnum[DataType] {
    * - Normal Courses & Alternate Courses
    */
   case object FieldKey extends DataType(102)
+  type FieldKey = FieldKey.type
 
   /**
    * A single or composite value to a corresponding [[com.beardedlogic.usecase.model.DataType.FieldKey]].
    */
   case object FieldValue extends DataType(103)
+  type FieldValue = FieldValue.type
 
   /**
    * A simple text value.
    */
   case object Text extends DataType(104)
+  type Text = Text.type
 
   /**
    * A single node in a tree of steps.
@@ -59,6 +64,7 @@ object DataType extends DatabaseEnum[DataType] {
    * Children are specified using [[com.beardedlogic.usecase.model.RelationType.Has]]
    */
   case object Step extends DataType(105)
+  type Step = Step.type
 
   val Values = List(UseCase, FieldList, FieldKey, FieldValue, Text, Step)
 }

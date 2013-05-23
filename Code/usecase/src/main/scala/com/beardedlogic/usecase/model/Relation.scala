@@ -6,7 +6,6 @@ import scala.slick.jdbc.{StaticQuery => Q}
 import lib.db._
 import DBHelpers._
 
-
 object Relation extends DBTable {
   override val TableName = "relation"
 
@@ -17,8 +16,8 @@ object Relation extends DBTable {
 
   // FieldList --[Has]--> FieldKey
   @inline def create(
-    from: Value[DataType.FieldList.type],
-    relationType: RelationType.Has.type, index: Short,
-    to: Value[DataType.FieldKey.type]
+    from: Value[DataType.FieldList],
+    relationType: RelationType.Has, index: Short,
+    to: Value[DataType.FieldKey]
     )(implicit s: Session) = createUnchecked(from, relationType, index, to)
 }
