@@ -53,18 +53,12 @@ object DataType extends DatabaseEnum[DataType] {
   type FieldValue = FieldValue.type
 
   /**
-   * A simple text value.
-   */
-  case object Text extends DataType(104)
-  type Text = Text.type
-
-  /**
    * A single node in a tree of steps.
    *
    * Children are specified using [[com.beardedlogic.usecase.model.RelationType.Has]]
    */
-  case object Step extends DataType(105)
+  case object Step extends DataType(104)
   type Step = Step.type
 
-  val Values = List(UseCase, FieldList, FieldKey, FieldValue, Text, Step)
+  val Values = List(UseCase, FieldList, FieldKey, FieldValue, Step)
 }

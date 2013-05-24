@@ -64,6 +64,7 @@ CREATE TABLE field_key (
 CREATE TABLE field_value (
     id              BIGINT      PRIMARY KEY REFERENCES value DEFERRABLE INITIALLY DEFERRED
     ,field_key_id   BIGINT      NOT NULL REFERENCES field_key
+    ,text           TEXT        NULL
 );
 
 CREATE TABLE usecase (
@@ -73,12 +74,7 @@ CREATE TABLE usecase (
     ,field_list_id  BIGINT      NOT NULL REFERENCES value DEFERRABLE
 );
 
-CREATE TABLE text (
-    id              BIGINT      PRIMARY KEY REFERENCES value DEFERRABLE INITIALLY DEFERRED
-    ,text           TEXT        NOT NULL
-);
-
 CREATE TABLE step (
     id              BIGINT      PRIMARY KEY REFERENCES value DEFERRABLE INITIALLY DEFERRED
-    ,text_id        BIGINT      NOT NULL REFERENCES text DEFERRABLE
+    ,text           TEXT        NOT NULL
 );
