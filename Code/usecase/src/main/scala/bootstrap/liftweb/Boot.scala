@@ -2,8 +2,9 @@ package bootstrap.liftweb
 
 import net.liftweb.http.{ Html5Properties, LiftRules, Req }
 import net.liftweb.sitemap.{ Menu, SiteMap }
-import com.beardedlogic.usecase.lib.db.DB
-import com.beardedlogic.usecase.lib.Misc
+import com.beardedlogic.usecase.lib
+import lib.db.DB
+import lib.{Misc, Defaults}
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -28,7 +29,7 @@ class Boot {
     // Force requests to be UTF-8
     //LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
 
-    // Init DB connection
     DB.init()
+    Defaults.init()
   }
 }

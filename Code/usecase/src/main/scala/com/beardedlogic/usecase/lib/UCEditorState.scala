@@ -15,7 +15,7 @@ class UCEditorState(cometActor: CometActor) {
 
   val msgCentre = new MessageCentre(cometActor)
 
-  val fields = Defaults.Fields.map(_.newFieldInstance(this))
+  val fields = Defaults.FieldList.fieldDefs.map(_.newFieldInstance(this))
 
   val courseFields: List[CourseFields] = fields.collect { case f: CourseFields => f }
 
