@@ -29,9 +29,8 @@ object TestDatabaseSupport {
 trait TestDatabaseSupport extends ShouldMatchers with Logger {
   self: Suite =>
 
-  TestDatabaseSupport.init()
-
   override protected def withFixture(test: NoArgTest): Outcome = {
+    TestDatabaseSupport.init()
     DB.Slick.withTransaction { s: Session =>
       this.dbVar = s
       try test()

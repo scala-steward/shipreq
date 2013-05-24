@@ -45,3 +45,13 @@ Running and Developing
   1. Edit SASS in src/main/sass
   2. Run `bin/generate-css.sh`
   3. Optionally spot-check new CSS in src/main/webapp/assets
+
+Testing
+=======
+
+* Running quick tests
+    sbt test
+
+* Running Selenium tests
+    sbt selenium:test
+

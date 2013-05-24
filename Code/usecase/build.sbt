@@ -49,6 +49,3 @@ unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
 
 // Put webapp on test classpath so templates load
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
-
-// Can't make multiple Seleniums running at once
-parallelExecution in Test := false
