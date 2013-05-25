@@ -48,12 +48,37 @@ trait TestDatabaseSupport extends ShouldMatchers with Logger {
 
   def countRowsIn(table: String) = Q.queryNA[Int](s"select count(*) from $table").first
 
+  val Tables = List(
+    "data_type",
+    "relation_type",
+    "field_key_type",
+    "data",
+    "value",
+    "relation",
+    "field_key",
+    "field_value",
+    "usecase",
+    "step"
+  )
+
   def assertTableDiffs[T](expectations: (String, Int)*)(block: => T) = {
-    def count = expectations.map { case (t, _) => (t -> countRowsIn(t)) }.toMap
+    val specTables = expectations.map(_._1)
+    val unspecTables = Tables.filter(!specTables.contains(_)).map((_,0))
+    val fullExp = expectations ++ unspecTables
+    val fullExpMap = fullExp.toMap
+
+    def count = fullExp.map { case (t, _) => (t -> countRowsIn(t)) }.toMap
     val before = count
     val result = block
     val after = count.map { case (t, newCount) => (t, newCount - before(t)) }.toMap
-    after should be(expectations.toMap)
+
+    if (after != fullExp) {
+      val badKeys = after.keys.filter(k=> after(k) != fullExpMap(k)).toSet
+      val a = after.filter(e => badKeys.contains(e._1))
+      val e= fullExpMap.filter(e => badKeys.contains(e._1))
+      a should be(e)
+    }
+
     result
   }
 
