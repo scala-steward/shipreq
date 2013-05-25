@@ -88,8 +88,7 @@ trait TestDatabaseSupport extends ShouldMatchers with Logger {
       table.toLowerCase.trim match {
         case "data_type"      => truncate("data")
         case "data"           => truncate("value")
-        case "value"          => truncate("relation", "field_key", "field_value", "text", "usecase")
-        case "text"           => truncate("step")
+        case "value"          => truncate("relation", "field_key", "field_value", "usecase")
         case "relation_type"  => truncate("relation")
         case "field_key_type" => truncate("field_key")
         case _                =>
