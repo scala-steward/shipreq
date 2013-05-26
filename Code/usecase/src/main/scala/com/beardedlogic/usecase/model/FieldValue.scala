@@ -25,7 +25,7 @@ trait FieldValueAccessor extends DatabaseAccessor {
 
   import FieldValueAccessor._
 
-  def createFieldValue(fields: List[Field]): List[FieldValue] = db.withTransaction {
+  def createInitialFieldValue(fields: List[Field]): List[FieldValue] = db.withTransaction {
     val saveCtx = new FieldSaveCtx(this)
 
     // Pre-Save (data & value tables)
