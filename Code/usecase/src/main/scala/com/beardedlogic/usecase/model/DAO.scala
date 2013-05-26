@@ -24,11 +24,13 @@ trait DatabaseAccessor {
 class DAO(_session: Session)
   extends DataAccessor
           with ValueAccessor
-          with RelationAccessor
           with FieldKeyAccessor
           with FieldValueAccessor
           with FieldListAccessor
-          with StepAccessor {
+          with StepAccessor
+          with UseCaseAccessor
+          with RelationAccessor {
+
   override implicit val db = _session
 
   def withTransaction[T](f: => T): T = db.withTransaction(f)

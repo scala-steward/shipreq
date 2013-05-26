@@ -52,7 +52,6 @@ CREATE TABLE relation (
     ,type_id        INT2        NOT NULL REFERENCES relation_type
     ,index          INT2        NOT NULL DEFAULT(-1)
     ,to_id          BIGINT      NOT NULL REFERENCES value DEFERRABLE
-    ,CONSTRAINT relation_uniqueness UNIQUE(from_id,type_id,index)
 );
 
 CREATE TABLE field_key (
