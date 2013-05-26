@@ -14,7 +14,11 @@ object Fields {
     var t = s"#$id ^^" #> ""
     if (id.startsWith("template-")) t = t & s"#$id [id]" #> (None: Option[String])
     val r = t(TemplateSource)
-    if (r.isEmpty) throw new Exception(s"Failed to load template: $id\nTemplateSource.length = ${TemplateSource.length}")
+    if (r.isEmpty) {
+      val e = new Exception(s"Failed to load template: $id\nTemplateSource.length = ${TemplateSource.length}")
+      // e.printStackTrace()
+      throw e
+    }
     r
   }
 }
