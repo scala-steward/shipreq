@@ -30,7 +30,7 @@ trait FieldValueAccessor extends DatabaseAccessor {
 
     // Pre-Save (data & value tables)
     for (field <- fields if field.save_?) {
-      val value = createValueWithNewData(DataType.FieldValue)
+      val value = createInitialValue(DataType.FieldValue)
       saveCtx.fieldValues += (field -> value)
       field.presave(saveCtx)
     }

@@ -1,7 +1,6 @@
 package com.beardedlogic.usecase
 package model
 
-import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.{StaticQuery => Q}
 import lib.db._
 import DBHelpers._

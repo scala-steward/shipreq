@@ -2,8 +2,6 @@ package com.beardedlogic.usecase
 package model
 
 import lib.field._
-import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.{StaticQuery => Q}
 
 /**
  * Corresponds to the data type [[com.beardedlogic.usecase.model.DataType.FieldList]], which basically boils down to a
@@ -20,23 +18,18 @@ case class FieldList(value: PlainValue[DataType.FieldList], fieldKeys: List[Fiel
 trait FieldListAccessor extends DatabaseAccessor {
   self:DataAccessor with ValueAccessor with RelationAccessor with FieldKeyAccessor =>
 
-  def createFieldListWithNewData(fields: List[FieldDef], idOpt: Option[Long] = None) = {
+  def createInitialFieldList(fields: List[FieldDef], idOpt: Option[Long] = None) = db.withTransaction {
     val data = createData(DataType.FieldList, idOpt)
-    createFieldList(data, fields, ExactRev(1), false)
+    createFieldList(data, fields, ExactRev(1))
   }
 
-  def createFieldList(
-    data: Data[DataType.FieldList],
-    fields: List[FieldDef],
-    rev: Revision = LatestRev,
-    reuseFieldKeys: Boolean = true): FieldList = {
-
+  def createFieldList(data: Data[DataType.FieldList], fields: List[FieldDef], rev: Revision = LatestRev): FieldList = db.withTransaction {
     val value = createValue(data, rev)
 
     var fieldKeys = List.empty[FieldKey]
     var index = 0
     for (f <- fields) {
-      val fieldKey = createFieldKey(f.fieldKeyType, f.fieldKeyData, reuseFieldKeys)
+      val fieldKey = findOrCreateInitialFieldKey(f.fieldKeyType, f.fieldKeyData)
       fieldList_has_fieldKey(value, index.toShort, fieldKey)
       fieldKeys :+= fieldKey
       index += 1
@@ -47,7 +40,7 @@ trait FieldListAccessor extends DatabaseAccessor {
 
   def findFieldList(data: Data[DataType.FieldList], rev: Revision): Option[FieldList] = {
     findValue(data, rev).map { value =>
-      val fieldKeys = listFieldKeysByFieldList(value)
+      val fieldKeys = findAllFieldKeysByFieldList(value)
       FieldList(value, fieldKeys)
     }
   }
@@ -63,7 +56,7 @@ trait FieldListAccessor extends DatabaseAccessor {
     val latestOp = dataOp.flatMap(findFieldList(_, LatestRev))
 
     (dataOp, latestOp) match {
-      case (None, _)                                       => createFieldListWithNewData(fields, Some(id))
+      case (None, _)                                       => createInitialFieldList(fields, Some(id))
       case (_, Some(latest)) if latest.fieldDefs == fields => latest
       case (Some(data), _)                                 => createFieldList(data, fields)
     }

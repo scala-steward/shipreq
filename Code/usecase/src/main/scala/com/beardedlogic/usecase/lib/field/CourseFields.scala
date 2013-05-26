@@ -64,7 +64,7 @@ abstract class CourseFields extends Field {
 
   override def presave(ctx:FieldSaveCtx) {
     for (n <- flattenNodes(courses)) {
-      val value = ctx.db.createValueWithNewData(DataType.Step)
+      val value = ctx.db.createInitialValue(DataType.Step)
       ctx.stepValues += (n.id -> value)
     }
   }

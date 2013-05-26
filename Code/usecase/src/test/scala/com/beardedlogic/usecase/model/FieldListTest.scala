@@ -29,7 +29,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
       val fieldList = fl1
       val newValues = fieldList.size + 1
       val saved = assertTableDiffs("data" -> newValues, "value" -> newValues, "relation" -> fieldList.size) {
-        db.createFieldListWithNewData(fieldList)
+        db.createInitialFieldList(fieldList)
       }
       val loaded = db.findFieldList(saved.data, LatestRev)
       loaded.get.fieldDefs should be(fieldList)
@@ -44,7 +44,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
       }
 
       it("should use existing when already saved") {
-        val save1 = db.createFieldListWithNewData(fl1)
+        val save1 = db.createInitialFieldList(fl1)
         assertTableDiffs("data" -> 0, "value" -> 0, "relation" -> 0) {
           val save2 = db.syncFieldList(save1.dataId, fl1)
           save2 should be(save1)
@@ -53,7 +53,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
 
       it("should save differences when it differs") {
         info("-"*80)
-        val save1 = db.createFieldListWithNewData(fl1)
+        val save1 = db.createInitialFieldList(fl1)
         // expect: 1 new field key (data+value)
         // expect: 1 new field list value (value)
         // expect: 5 new relations

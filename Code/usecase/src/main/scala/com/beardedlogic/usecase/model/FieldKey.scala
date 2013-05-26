@@ -39,26 +39,19 @@ trait FieldKeyAccessor extends DatabaseAccessor {
 
   import FieldKeyAccessor._
 
-  def createFieldKey(
-    fieldKeyType: FieldKeyType,
-    fieldKeyData: FieldKeyData,
-    reuseFieldKeys: Boolean = true) = {
-
-    if (reuseFieldKeys)
-      SelectIdToReuse.firstOption(fieldKeyType, fieldKeyData)
-      .map(FieldKey(_, fieldKeyType, fieldKeyData))
-      .getOrElse(createFieldKeyWithNewData(fieldKeyType, fieldKeyData))
-    else
-      createFieldKeyWithNewData(fieldKeyType, fieldKeyData)
+  def findOrCreateInitialFieldKey(fieldKeyType: FieldKeyType, fieldKeyData: FieldKeyData) = db.withTransaction {
+    SelectIdToReuse.firstOption(fieldKeyType, fieldKeyData)
+    .map(FieldKey(_, fieldKeyType, fieldKeyData))
+    .getOrElse(createInitialFieldKey(fieldKeyType, fieldKeyData))
   }
 
-  def createFieldKeyWithNewData(fieldKeyType: FieldKeyType, fieldKeyData: FieldKeyData) = {
-    val fkv = createValueWithNewData(DataType.FieldKey)
+  def createInitialFieldKey(fieldKeyType: FieldKeyType, fieldKeyData: FieldKeyData) = {
+    val fkv = createInitialValue(DataType.FieldKey)
     Insert.first(fkv.valueId, fieldKeyType, fieldKeyData)
     FieldKey(fkv.valueId, fieldKeyType, fieldKeyData)
   }
 
-  def listFieldKeysByFieldList(fieldList: Value[DataType.FieldList]): List[FieldKey] =
+  def findAllFieldKeysByFieldList(fieldList: Value[DataType.FieldList]): List[FieldKey] =
     SelectByFieldList.list(fieldList.valueId, RelationType.Has)
 }
 

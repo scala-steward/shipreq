@@ -38,7 +38,7 @@ trait ValueAccessor extends DatabaseAccessor {
 
   import ValueAccessor._
 
-  def createValueWithNewData[T <: DataType](dataType: T): PlainValue[T] =
+  def createInitialValue[T <: DataType](dataType: T): PlainValue[T] =
     createValue(createData(dataType), ExactRev(1))
 
   def createValue[T <: DataType](data: Data[T], rev: Revision): PlainValue[T] = rev match {
