@@ -5,16 +5,19 @@ package field
 import net.liftweb.util.Helpers._
 import StepTree._
 import model.{FieldKey, FieldKeyType}
+import CourseFields._
 
-object ExceptionCourseFields extends FieldDef {
+object ExceptionCourseFields extends FieldDef[CourseFieldState] {
   import Fields.Template
-  import CourseFields._
 
   override def newFieldInstance(state: UCEditorState, fieldKey: FieldKey) =
     new ExceptionCourseFields(state, fieldKey)
 
   override def fieldKeyType = FieldKeyType.ExceptionCourses
   override def fieldKeyData = None
+
+  def EC_StartingLabelIndices = StartingLabelIndicesAt1
+  override def stateLoader(fieldKey: FieldKey) = new CourseFieldStateLoader(fieldKey, EC_StartingLabelIndices)
 
   val ExceptionTemplate = AddStepTemplate(Template("template-courses-e"))
   val AddTailStepCss = s".courses-e .$AddTailStepClass"
@@ -27,7 +30,7 @@ class ExceptionCourseFields(override val uceState: UCEditorState, override val f
   import ExceptionCourseFields._
 
   override val rootLabelPrefix = Some(s"${uceState.ucNumber}.E.")
-  override def firstLabelIndexForLevel(level: Int) = 1
+  override def startingLabelIndices = EC_StartingLabelIndices
 
   override def render = (
     renderSteps(courses, AddTailStepCss, newTailStep _)(ExceptionTemplate)

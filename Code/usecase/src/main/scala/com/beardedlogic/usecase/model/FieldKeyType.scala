@@ -11,7 +11,7 @@ import FieldKey.FieldKeyData
  * @since 22/05/2013
  */
 sealed abstract class FieldKeyType(val ordinal: Short) extends FieldKeyType.Value {
-  def fieldDef(data: FieldKeyData): FieldDef
+  def fieldDef(data: FieldKeyData): FieldDef[_]
 }
 
 object FieldKeyType extends DatabaseEnum[FieldKeyType] {

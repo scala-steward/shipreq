@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package lib
 
 import net.liftweb.http.CometActor
-import field.{CourseFields, TextField, NormalAndAlternateCourseFields => NCAC, ExceptionCourseFields => EC}
+import field.{Field, CourseFields, TextField, NormalAndAlternateCourseFields => NCAC, ExceptionCourseFields => EC}
 import msg.MessageCentre
 import model.DAO
 
@@ -19,7 +19,7 @@ class UCEditorState(
 
   val fieldList = Defaults.FieldList
 
-  val fields = fieldList.fieldKeys.map(k => k.fieldDef.newFieldInstance(this, k))
+  val fields: List[Field[_]] = fieldList.fieldKeys.map(k => k.fieldDef.newFieldInstance(this, k))
 
   val courseFields: List[CourseFields] = fields.collect { case f: CourseFields => f }
 

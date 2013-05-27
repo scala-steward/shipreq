@@ -50,16 +50,16 @@ trait FieldValueAccessor extends DatabaseAccessor {
     val saveCtx = new FieldSaveCtx(this)
 
     // Pre-Save (data & value tables)
-    for (field <- fields.asInstanceOf[List[Field[Any]]] if field.stateDao.save_?(field.state)) {
+    for (field <- fields.asInstanceOf[List[Field[Any]]] if field.stateSaver.save_?(field.state)) {
       val value = createInitialValue(DataType.FieldValue)
       saveCtx.fieldValues += (field -> value)
-      field.stateDao.presave(field.state, saveCtx)
+      field.stateSaver.presave(field.state, saveCtx)
     }
 
     // Save (value-ext & relation tables)
     var results = List.empty[FieldValue]
     for ((field, value) <- saveCtx.fieldValues) {
-      val data = field.asInstanceOf[Field[Any]].stateDao.save(field.state, saveCtx)
+      val data = field.asInstanceOf[Field[Any]].stateSaver.save(field.state, saveCtx)
       val fv = FieldValue(value.valueId, field.fieldKey.valueId, data)
       Insert.execute(fv)
       results :+= fv

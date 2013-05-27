@@ -33,6 +33,18 @@ object CourseFields {
   def IfCssSel(cond: => Boolean)(expr: => CssSel): CssSel = if (cond) expr else PassThru
 
   type CourseFieldState = List[StepNode]
+
+  trait StartingLabelIndices {
+    def startingLabelIndex(level: Int): Int
+  }
+
+  object StartingRootLabelIndexAt0 extends StartingLabelIndices {
+    override def startingLabelIndex(level: Int) = if (level == 0) 0 else 1
+  }
+
+  object StartingLabelIndicesAt1 extends StartingLabelIndices {
+    override def startingLabelIndex(level: Int) = 1
+  }
 }
 
 abstract class CourseFields extends Field[CourseFieldState] {
@@ -58,13 +70,13 @@ abstract class CourseFields extends Field[CourseFieldState] {
   }
 
   def rootLabelPrefix: Option[String]
-  def firstLabelIndexForLevel(level: Int): Int
   @inline def labelPrefixForLevel(level: Int) = if (level==0) rootLabelPrefix else None
   @inline def labelFor(node: StepNode) = labelPrefixForLevel(node.level).map(_ + node.label).getOrElse(node.label)
+  def startingLabelIndices: StartingLabelIndices
 
   override def state = courses
   override def state_=(newState: CourseFieldState) = courses = newState
-  override val stateDao = new CourseFieldStateMiniDao(this)
+  override val stateSaver = new CourseFieldStateSaver(this)
 
 
   private[this] def createAndRegisterTextField(n:StepNode) {

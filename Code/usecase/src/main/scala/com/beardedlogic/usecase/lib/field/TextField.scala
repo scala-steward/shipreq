@@ -4,19 +4,22 @@ package field
 
 import net.liftweb.util.Helpers._
 import model._
-import FieldValue.FieldValueData
+import TextField._
+
 
 /**
  * Text field definition.
  *
  * @param title Name/title of the field. E.g. "Pre-Conditions"
  */
-case class TextFieldDef(title: String) extends FieldDef {
+case class TextFieldDef(title: String) extends FieldDef[String] {
 
   override def newFieldInstance(state: UCEditorState, fieldKey: FieldKey) = new TextField(this, state, fieldKey)
 
   override def fieldKeyType = FieldKeyType.Text
   override def fieldKeyData = Some(title)
+
+  override def stateLoader(fieldKey: FieldKey) = new StateLoader(fieldKey)
 }
 
 object TextField {
@@ -25,10 +28,12 @@ object TextField {
 
   val TextTemplate = Template("template-text")
 
-  class StateDao(val fieldKey: FieldKey) extends FieldStateMiniDao[String] {
+  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[String] {
     override def load(ctx: FieldLoadCtx) =
       ctx.fieldValues.get(fieldKey.valueId).map(_.fieldData).flatten.getOrElse("")
+  }
 
+  object StateSaver extends FieldStateSaver[String] {
     override def save_?(state: String): Boolean = state.nonEmpty
     override def presave(state: String, ctx: FieldSaveCtx) {}
     override def save(state: String, ctx: FieldSaveCtx) = Some(state)
@@ -45,8 +50,6 @@ object TextField {
 class TextField(val fd: TextFieldDef, override val uceState: UCEditorState, override val fieldKey: FieldKey)
   extends Field[String] {
 
-  import TextField._
-
   val value = new SmartText(uceState.msgCentre, uceState.stepLabelMapProvider)
 
   override def init() {
@@ -62,5 +65,5 @@ class TextField(val fd: TextFieldDef, override val uceState: UCEditorState, over
 
   override def state = value.text
   override def state_=(newState: String) = value.setTextFromUser(newState)
-  override val stateDao = new StateDao(fieldKey)
+  override def stateSaver = StateSaver
 }

@@ -5,12 +5,12 @@ import model.{FieldSaveCtx, FieldLoadCtx}
 import model.FieldValue.FieldValueData
 
 /**
- * Bridge between a field's single state object, and the database.
+ * Loads a field's state to the database.
  *
  * @tparam S Field state type.
  * @since 27/05/2013
  */
-trait FieldStateMiniDao[S] {
+trait FieldStateLoader[S] {
 
   /**
    * Sets this object's state to a previously saved state, as provided by the load context.
@@ -18,6 +18,15 @@ trait FieldStateMiniDao[S] {
    * @param ctx A big blob of data for all fields, from which this field should find and use its own data.
    */
   def load(ctx: FieldLoadCtx): S
+}
+
+/**
+ * Saves a field's state to the database.
+ *
+ * @tparam S Field state type.
+ * @since 27/05/2013
+ */
+trait FieldStateSaver[S] {
 
   /**
    * Gives a field a chance to opt-out of storing a value in the database.

@@ -4,19 +4,21 @@ package field
 
 import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import net.liftweb.util.Helpers._
-
 import StepTree._
 import model.{FieldKey, FieldKeyType}
+import CourseFields._
 
-object NormalAndAlternateCourseFields extends FieldDef {
+object NormalAndAlternateCourseFields extends FieldDef[CourseFieldState] {
   import Fields.Template
-  import CourseFields._
 
   override def newFieldInstance(state: UCEditorState, fieldKey: FieldKey) =
     new NormalAndAlternateCourseFields(state, fieldKey)
 
   override def fieldKeyType = FieldKeyType.NormalAndAlternateCourses
   override def fieldKeyData = None
+
+  def NCAC_StartingLabelIndices = StartingRootLabelIndexAt0
+  override def stateLoader(fieldKey: FieldKey) = new CourseFieldStateLoader(fieldKey, NCAC_StartingLabelIndices)
 
   val NormalCourseTemplate = AddStepTemplate(Template("template-courses-n"))
   val AlternateCourseTemplate = AddStepTemplate(Template("template-courses-a"))
@@ -30,7 +32,6 @@ object NormalAndAlternateCourseFields extends FieldDef {
  */
 class NormalAndAlternateCourseFields(override val uceState: UCEditorState, override val fieldKey: FieldKey) extends CourseFields {
   import NormalAndAlternateCourseFields._
-  import CourseFields._
 
   // This will do for now but if this is moved into init() it will cause problems with TextFields due to the stepRefMap
   courses =
@@ -39,7 +40,7 @@ class NormalAndAlternateCourseFields(override val uceState: UCEditorState, overr
     ) :: Nil
 
   override val rootLabelPrefix = Some(s"${uceState.ucNumber}.")
-  override def firstLabelIndexForLevel(level: Int) = if (level==0) 0 else 1
+  override def startingLabelIndices = NCAC_StartingLabelIndices
 
   override def render = (
     renderSteps(courses.head :: Nil)(NormalCourseTemplate) ++

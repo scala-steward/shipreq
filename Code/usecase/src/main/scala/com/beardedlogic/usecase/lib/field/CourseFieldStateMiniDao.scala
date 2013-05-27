@@ -5,17 +5,17 @@ package field
 import StepTree._
 import model._
 import FieldValue.FieldValueData
-import CourseFields.CourseFieldState
+import CourseFields._
 
 /**
  * Loads and saves courses.
  */
-class CourseFieldStateMiniDao(val field: CourseFields) extends FieldStateMiniDao[CourseFieldState] {
+class CourseFieldStateLoader(val fieldKey: FieldKey, val li: StartingLabelIndices) extends FieldStateLoader[CourseFieldState] {
 
   override def load(ctx: FieldLoadCtx) =
     (
       for {
-        fv <- ctx.fieldValues.get(field.fieldKey.valueId)
+        fv <- ctx.fieldValues.get(fieldKey.valueId)
         has <- ctx.relations.get(RelationType.Has)
       } yield unpackSteps(fv.valueId, 0, has, ctx.stepData)
     )
@@ -29,7 +29,7 @@ class CourseFieldStateMiniDao(val field: CourseFields) extends FieldStateMiniDao
   private def unpackSteps(parentId: Long, level: Int, relations: Map[Long, List[Long]], stepData: Map[Long, String]): List[StepNode] = {
     relations.get(parentId)
     .map { ids =>
-      var labelIndex = field.firstLabelIndexForLevel(level)
+      var labelIndex = li.startingLabelIndex(level)
       ids.map { id =>
         val children = unpackSteps(id, level + 1, relations, stepData)
         val step = Step(stepData.getOrElse(id, ""))
@@ -39,6 +39,9 @@ class CourseFieldStateMiniDao(val field: CourseFields) extends FieldStateMiniDao
       }
     }.getOrElse(List.empty[StepNode])
   }
+}
+
+class CourseFieldStateSaver(val field: CourseFields) extends FieldStateSaver[CourseFieldState] {
 
   override def save_?(state: CourseFieldState): Boolean = state.nonEmpty
 

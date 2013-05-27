@@ -20,7 +20,7 @@ object Defaults extends Logger {
   val FieldList = dao.withTransaction {
     //  val DateCreated = TextFieldDef("Date Created")
     //  val DateLastUpdated = TextFieldDef("Date Last Updated")
-    val fields: List[FieldDef] =
+    val fields: List[FieldDef[_]] =
       TextFieldDef("Actors") ::
         TextFieldDef("Pre-Conditions") ::
         TextFieldDef("Post-Conditions") ::

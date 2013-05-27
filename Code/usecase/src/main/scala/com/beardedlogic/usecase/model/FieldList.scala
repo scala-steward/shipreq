@@ -18,12 +18,12 @@ case class FieldList(value: PlainValue[DataType.FieldList], fieldKeys: List[Fiel
 trait FieldListAccessor extends DatabaseAccessor {
   self:DataAccessor with ValueAccessor with RelationAccessor with FieldKeyAccessor =>
 
-  def createInitialFieldList(fields: List[FieldDef], idOpt: Option[Long] = None) = db.withTransaction {
+  def createInitialFieldList(fields: List[FieldDef[_]], idOpt: Option[Long] = None) = db.withTransaction {
     val data = createData(DataType.FieldList, idOpt)
     createFieldList(data, fields, ExactRev(1))
   }
 
-  def createFieldList(data: Data[DataType.FieldList], fields: List[FieldDef], rev: Revision = LatestRev): FieldList = db.withTransaction {
+  def createFieldList(data: Data[DataType.FieldList], fields: List[FieldDef[_]], rev: Revision = LatestRev): FieldList = db.withTransaction {
     val value = createValue(data, rev)
 
     var fieldKeys = List.empty[FieldKey]
@@ -51,7 +51,7 @@ trait FieldListAccessor extends DatabaseAccessor {
    * @param id The data ID for the field list.
    * @param fields The field list to save.
    */
-  def syncFieldList(id: Long, fields: List[FieldDef]): FieldList = db.withTransaction {
+  def syncFieldList(id: Long, fields: List[FieldDef[_]]): FieldList = db.withTransaction {
     val dataOp = findData(id, DataType.FieldList)
     val latestOp = dataOp.flatMap(findFieldList(_, LatestRev))
 

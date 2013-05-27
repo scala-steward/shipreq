@@ -6,9 +6,9 @@ import scala.xml.NodeSeq
 import model.{FieldLoadCtx, FieldKey, FieldKeyType}
 import FieldKey.FieldKeyData
 
-trait FieldDef {
+trait FieldDef[S] {
 
-  def newFieldInstance(state: UCEditorState, fieldKey: FieldKey): Field[_]
+  def newFieldInstance(state: UCEditorState, fieldKey: FieldKey): Field[S]
 
   def fieldKeyType: FieldKeyType
 
@@ -16,6 +16,8 @@ trait FieldDef {
    * The arbitrary data stored in the database that comprises this field key's state.
    */
   def fieldKeyData: FieldKeyData
+
+  def stateLoader(fieldKey: FieldKey): FieldStateLoader[S]
 }
 
 /**
@@ -41,8 +43,8 @@ trait Field[S] {
 
   def state: S
   def state_=(newState: S): Unit
-  def stateDao: FieldStateMiniDao[S]
+  def stateSaver: FieldStateSaver[S]
 
-  // TODO remove?
-  def load(ctx: FieldLoadCtx) { state = stateDao.load(ctx) }
+  // TODO remove
+  def load(ctx: FieldLoadCtx) { state = fieldKey.fieldDef.stateLoader(fieldKey).load(ctx).asInstanceOf[S] }
 }
