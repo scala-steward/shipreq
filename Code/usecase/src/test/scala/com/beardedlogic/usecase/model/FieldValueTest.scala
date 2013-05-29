@@ -21,6 +21,7 @@ class FieldValueTest extends FunSpec with TestDatabaseSupport {
   def ecFieldKey = getFieldKey(FieldKeyType.ExceptionCourses)
   def newEcField = ecFieldKey.fieldDef.newFieldInstance(new UseCaseCtx(null), ecFieldKey).asInstanceOf[ExceptionCourseFields]
 
+  /*
   describe("Text fields") {
     it("should insert when has text") {
       val tf = newTextField
@@ -71,4 +72,5 @@ class FieldValueTest extends FunSpec with TestDatabaseSupport {
       fv should be('empty)
     }
   }
+  */
 }

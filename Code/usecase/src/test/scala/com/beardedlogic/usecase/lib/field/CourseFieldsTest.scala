@@ -13,6 +13,7 @@ import test.TestHelpers
 
 class CourseFieldsTest extends FunSpec with ShouldMatchers with MockitoSugar with TestHelpers {
 
+  /*
   describe("Loading") {
     val Key_NC = new FieldKey(1, FieldKeyType.NormalAndAlternateCourses, None)
     val Key_EC = new FieldKey(2, FieldKeyType.ExceptionCourses, None)
@@ -55,4 +56,5 @@ class CourseFieldsTest extends FunSpec with ShouldMatchers with MockitoSugar wit
       ec.courses should be(expected)
     }
   }
+  */
 }

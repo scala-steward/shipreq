@@ -10,6 +10,7 @@ import lib.StepTree.{Step => Step2, _}
 
 class UseCaseTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
+  /*
   // TODO Share sample courses. Create TestData or something.
   val NcSteps =
    StepNode(nextFuncName, 0, 0, Step2("I'm the title"), (
@@ -98,6 +99,5 @@ class UseCaseTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       // TODO fails due to IDs -- loaded.currentState should be(saved.currentState)
     }
   }
+  */
 }
-
-

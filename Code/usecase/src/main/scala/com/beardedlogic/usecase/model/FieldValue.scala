@@ -18,6 +18,43 @@ object FieldValue {
   type FieldValueData = Option[String]
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
+class FieldSaveCtx(val db: DAO) {
+
+  /**
+   * `Value` instances for all fields that will be saved in the current transaction.
+   */
+  val fieldValues = MutableMap.empty[Field[_], Value[DataType.FieldValue]]
+
+  /**
+   * Key is the step node ID.
+   */
+  val stepValues = MutableMap.empty[String, Value[DataType.Step]]
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+class FieldLoadCtx(
+
+  /**
+   * A map of field key IDs to field values.
+   */
+  val fieldValues: Map[Long, FieldValue],
+
+  /**
+   * For each relation type, a map of from-IDs to to-IDs (in the order specified in the `index` column).
+   */
+  val relations: Map[RelationType, Map[Long, List[Long]]],
+
+  /**
+   * A map of step IDs to step `text`.
+   */
+  val stepData: Map[Long, String]
+  )
+
+// ---------------------------------------------------------------------------------------------------------------------
+
 object FieldValueAccessor {
 
   implicit val GetResultFieldValue = GetResult(r => FieldValue(r.<<, r.<<, r.<<))
@@ -46,26 +83,10 @@ trait FieldValueAccessor extends DatabaseAccessor {
 
   import FieldValueAccessor._
 
-  def createInitialFieldValues(fields: List[Field[_]]): List[FieldValue] = db.withTransaction {
-    val saveCtx = new FieldSaveCtx(this)
-
-    // Pre-Save (data & value tables)
-    for (field <- fields.asInstanceOf[List[Field[Any]]] if field.stateSaver.save_?(field.state)) {
-      val value = createInitialValue(DataType.FieldValue)
-      saveCtx.fieldValues += (field -> value)
-      field.stateSaver.presave(field.state, saveCtx)
-    }
-
-    // Save (value-ext & relation tables)
-    var results = List.empty[FieldValue]
-    for ((field, value) <- saveCtx.fieldValues) {
-      val data = field.asInstanceOf[Field[Any]].stateSaver.save(field.state, saveCtx)
-      val fv = FieldValue(value.valueId, field.fieldKey.valueId, data)
-      Insert.execute(fv)
-      results :+= fv
-    }
-
-    results
+  def createFieldValue(value: Value[DataType.FieldValue], fieldKey: FieldKey, data: FieldValueData) = {
+    val fv = FieldValue(value.valueId, fieldKey.valueId, data)
+    Insert.execute(fv)
+    fv
   }
 
   def getFieldLoadCtxFor(ownerId: Long): FieldLoadCtx = {
@@ -88,34 +109,3 @@ trait FieldValueAccessor extends DatabaseAccessor {
     new FieldLoadCtx(fieldValues, relations, stepData)
   }
 }
-
-class FieldSaveCtx(val db: DAO) {
-
-  /**
-   * `Value` instances for all fields that will be saved in the current transaction.
-   */
-  val fieldValues = MutableMap.empty[Field[_], Value[DataType.FieldValue]]
-
-  /**
-   * Key is the step node ID.
-   */
-  val stepValues = MutableMap.empty[String, Value[DataType.Step]]
-}
-
-class FieldLoadCtx(
-
-  /**
-   * A map of field key IDs to field values.
-   */
-  val fieldValues: Map[Long, FieldValue],
-
-  /**
-   * For each relation type, a map of from-IDs to to-IDs (in the order specified in the `index` column).
-   */
-  val relations: Map[RelationType, Map[Long, List[Long]]],
-
-  /**
-   * A map of step IDs to step `text`.
-   */
-  val stepData: Map[Long, String]
-)

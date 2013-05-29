@@ -32,8 +32,6 @@ object CourseFields {
   val PassThru = "dpp_recommends_this_oh_well" #> ""
   def IfCssSel(cond: => Boolean)(expr: => CssSel): CssSel = if (cond) expr else PassThru
 
-  type CourseFieldState = List[StepNode]
-
   trait StartingLabelIndices {
     def startingLabelIndex(level: Int): Int
   }
@@ -45,6 +43,8 @@ object CourseFields {
   object StartingLabelIndicesAt1 extends StartingLabelIndices {
     override def startingLabelIndex(level: Int) = 1
   }
+
+  type CourseFieldState = List[StepNode] // TODO TMP
 }
 
 abstract class CourseFields extends Field[CourseFieldState] {
@@ -73,11 +73,6 @@ abstract class CourseFields extends Field[CourseFieldState] {
   @inline def labelPrefixForLevel(level: Int) = if (level==0) rootLabelPrefix else None
   @inline def labelFor(node: StepNode) = labelPrefixForLevel(node.level).map(_ + node.label).getOrElse(node.label)
   def startingLabelIndices: StartingLabelIndices
-
-  override def state = courses
-  override def state_=(newState: CourseFieldState) = courses = newState
-  override val stateSaver = new CourseFieldStateSaver(this)
-
 
   private[this] def createAndRegisterTextField(n:StepNode) {
     val f = new SmartStepText(msgCentre, ucCtx.stepLabelMapProvider, n.id, n.stepTextId)

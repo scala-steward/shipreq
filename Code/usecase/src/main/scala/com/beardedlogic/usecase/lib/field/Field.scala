@@ -6,6 +6,9 @@ import scala.xml.NodeSeq
 import model.{FieldLoadCtx, FieldKey, FieldKeyType}
 import FieldKey.FieldKeyData
 
+/**
+ * @tparam S Field State type.
+ */
 trait FieldDef[S] {
 
   def newFieldInstance(ucCtx: UseCaseCtx, fieldKey: FieldKey): Field[S]
@@ -23,7 +26,7 @@ trait FieldDef[S] {
 /**
  * Stateful instance of a Use Case Editor field (or fields).
  *
- * @tparam S Type of the field state object.
+ * @tparam S Field State type.
  */
 trait Field[S] {
 
@@ -40,11 +43,4 @@ trait Field[S] {
   def init(): Unit
 
   def render(): NodeSeq
-
-  def state: S
-  def state_=(newState: S): Unit
-  def stateSaver: FieldStateSaver[S]
-
-  // TODO remove
-  def load(ctx: FieldLoadCtx) { state = fieldKey.fieldDef.stateLoader(fieldKey).load(ctx).asInstanceOf[S] }
 }

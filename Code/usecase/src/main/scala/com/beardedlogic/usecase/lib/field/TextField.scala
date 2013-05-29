@@ -32,14 +32,6 @@ object TextField {
     override def load(ctx: FieldLoadCtx) =
       ctx.fieldValues.get(fieldKey.valueId).map(_.fieldData).flatten.getOrElse("")
   }
-
-  object StateSaver extends FieldStateSaver[String] {
-    override def save_?(state: String): Boolean = state.nonEmpty
-    override def presave(state: String, ctx: FieldSaveCtx) {}
-    override def save(state: String, ctx: FieldSaveCtx) = Some(state)
-    // TODO Change references
-    // TODO References
-  }
 }
 
 /**
@@ -62,8 +54,4 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
     "th *" #> fd.title
       & "textarea" #> value.renderTextarea
     )
-
-  override def state = value.text
-  override def state_=(newState: String) = value.setTextFromUser(newState)
-  override def stateSaver = StateSaver
 }
