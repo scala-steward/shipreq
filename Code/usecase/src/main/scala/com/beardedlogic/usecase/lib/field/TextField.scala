@@ -5,6 +5,7 @@ package field
 import net.liftweb.util.Helpers._
 import model._
 import TextField._
+import TypeTags._
 
 
 /**
@@ -12,7 +13,7 @@ import TextField._
  *
  * @param title Name/title of the field. E.g. "Pre-Conditions"
  */
-case class TextFieldDef(title: String) extends FieldDef[String] {
+case class TextFieldDef(title: String) extends FieldDef[String @@ NormalisedRefs] {
 
   override def newFieldInstance(ucCtx: UseCaseCtx, fieldKey: FieldKey) = new TextField(this, ucCtx, fieldKey)
 
@@ -28,9 +29,9 @@ object TextField {
 
   val TextTemplate = Template("template-text")
 
-  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[String] {
+  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[String @@ NormalisedRefs] {
     override def load(ctx: FieldLoadCtx) =
-      ctx.fieldValues.get(fieldKey).map(_.fieldData).flatten.getOrElse("")
+      ctx.fieldValues.get(fieldKey).map(_.fieldData).flatten.getOrElse("").hasNormalisedRefs
   }
 }
 
@@ -40,7 +41,7 @@ object TextField {
  * @param fd Identity of this text field.
  */
 class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override val fieldKey: FieldKey)
-  extends Field[String] {
+  extends Field[String @@ NormalisedRefs] {
 
   val value = new SmartText(ucCtx.msgCentre, ucCtx.stepLabelMapProvider)
 
@@ -54,4 +55,8 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
     "th *" #> fd.title
       & "textarea" #> value.renderTextarea
     )
+
+  override def setState(newState: String @@ NormalisedRefs): () => Unit = {
+    () => value.setTextFromLoad(newState, ucCtx.savedSteps)
+  }
 }

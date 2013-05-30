@@ -5,9 +5,42 @@ package field
 import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
 import model.{FieldValue, FieldLoadCtx, FieldKeyType, FieldKey}
+import msg.MessageCentre
+import TypeTags._
 
 class TextFieldTest extends FunSpec with ShouldMatchers with MockitoSugar {
+
+  describe("Setting state") {
+    it("should accept simple text") {
+      val ucCtx = mock[UseCaseCtx]
+      when(ucCtx.msgCentre).thenReturn(mock[MessageCentre])
+      when(ucCtx.stepLabelMapProvider).thenReturn(() => Map.empty[String, String])
+      val tf = new TextField(mock[TextFieldDef], ucCtx, mock[FieldKey])
+      tf.value.refsInText += ("A" -> "B")
+
+      tf.setState("Hehe!".hasNormalisedRefs)()
+
+      tf.value.text should be("Hehe!")
+      tf.value.refsInText should be('empty)
+    }
+
+    it("should accept text with normalised refs") {
+      val ucCtx = mock[UseCaseCtx]
+      when(ucCtx.msgCentre).thenReturn(mock[MessageCentre])
+      when(ucCtx.stepLabelMapProvider).thenReturn(() => ucCtx.stepLabelMap)
+      val tf = new TextField(mock[TextFieldDef], ucCtx, mock[FieldKey])
+
+      val fn = tf.setState("Hehe! [D.100]".hasNormalisedRefs)
+      when(ucCtx.savedSteps).thenReturn(Map(tag[StepId](100) -> "X1"))
+      when(ucCtx.stepLabelMap).thenReturn(Map("X1" -> "5.4", "5.4" -> "X1"))
+      fn()
+
+      tf.value.text should be("Hehe! [5.4]")
+      tf.value.refsInText should be(Map("5.4" -> "X1"))
+    }
+  }
 
   /*
   describe("Loading") {

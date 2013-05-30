@@ -12,6 +12,7 @@ import net.liftweb.util.Helpers._
 import JsExt._
 import msg.MessageCentre
 import msg.Messages._
+import TypeTags._
 
 // =====================================================================================================================
 
@@ -27,13 +28,16 @@ object SmartText {
     sb += RefBraceR
   }
 
-  @inline def MakeInvalidRef(label: String) = label + "?"
+  @inline def MakeInvalidLabel(label: String) = label + "?"
   @inline def MakeInvalidRef(sb: StringBuilder, label: String) = {
     sb += RefBraceL
     sb ++= label
     sb += '?'
     sb += RefBraceR
   }
+
+  val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
+  def InvalidNormalisedRef(dataId: String) = MakeRef("D." + dataId)
 
   val DeletedRef = MakeRef("DELETED")
 
@@ -177,6 +181,7 @@ class SmartText(val msgCentre: MessageCentre,
   protected[lib] var refsInText = Map.empty[String, String]
 
   protected[lib] var _text = ""
+  protected[lib] var _textWithNormalisedRefs = "".hasNormalisedRefs
 
   def text = _text
 
@@ -196,6 +201,27 @@ class SmartText(val msgCentre: MessageCentre,
     if (text != newValue) {
       _text = parseText(newValue)
     }
+  }
+
+  /**
+   * Restores internal state to a previous state. Usually called when loading from DB.
+   *
+   * @param newValueWithNRefs A text value with all step references normalised with DB data IDs instead of
+   *                          human-readable labels.
+   * @param savedSteps A map of step data-to-node ids.
+   */
+  def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: Map[Long_StepId, String]) {
+    refAndIdLookup = refAndIdLookupProvider()
+    _textWithNormalisedRefs = newValueWithNRefs
+
+    val newValue = NormalisedRefRegex.replaceAllIn(newValueWithNRefs, { m =>
+      val dataIdText = m.group(1)
+      val dataId = dataIdText.toLong.tag[StepId]
+      savedSteps.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_))
+      .getOrElse(InvalidNormalisedRef(dataIdText))
+    })
+
+    _text = parseText(newValue)
   }
 
   /**
@@ -249,7 +275,7 @@ class SmartText(val msgCentre: MessageCentre,
         if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup(label))
         MakeRef(newText, label)
       } else
-        MakeRef(newText, MakeInvalidRef(label))
+        MakeInvalidRef(newText, label)
 
       // Continue parsing
       r = parse(TextAndPossibleRef, r.next)

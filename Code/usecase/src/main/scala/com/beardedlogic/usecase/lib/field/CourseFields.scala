@@ -48,6 +48,7 @@ object CourseFields {
 }
 
 abstract class CourseFields extends Field[CourseFieldState] {
+  override def setState(newState: CourseFieldState) = ???
 
   private[this] var _courses: List[StepNode] = Nil
   def courses_=(newCourses: List[StepNode]) {

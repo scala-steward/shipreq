@@ -11,6 +11,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.Tables.Table
 import org.scalatest.prop._
 
+import TypeTags._
 import msg.MessageCentre
 import msg.Messages._
 
@@ -104,6 +105,35 @@ class SmartTextTest
     val actual = stepFieldWithText(text).text
     actual should be(expected)
     true
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  describe("Setting text with normalised refs") {
+
+    it("should set simple text") {
+      val m = new SmartText(mock[MessageCentre], () => StepState1)
+      m.init()
+      m.refsInText += ("A" -> "B")
+      m.setTextFromLoad("Hehe".hasNormalisedRefs, Map.empty)
+      m.text should be("Hehe")
+      m._textWithNormalisedRefs should be("Hehe")
+      m.refsInText should be('empty)
+    }
+
+    it("should set text with normalised refs") {
+      val msgCentre = mock[MessageCentre]
+      val m = new SmartText(msgCentre, () => StepState1)
+      m.init()
+      m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepId] -> "X2"))
+      m.text should be("Hehe [S.2]")
+      m._textWithNormalisedRefs should be("Hehe [D.100]")
+      m.refsInText should be(Map("S.2" -> "X2"))
+      verify(msgCentre, never).!(any[Any])
+    }
+
+    // TODO doesn't test parsing on text change
+    // TODO doesn't test parsing of flow refs
   }
 
   // -------------------------------------------------------------------------------------------------------------------

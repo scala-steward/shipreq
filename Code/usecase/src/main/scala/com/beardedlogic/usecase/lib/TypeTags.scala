@@ -14,9 +14,18 @@ object TypeTags {
   type @@[O, T <: TypeTag] = O with T
   @inline final def tag[T <: TypeTag](long: JLong) = long.asInstanceOf[JLong @@ T]
   @inline final def tag[T <: TypeTag](long: scala.Long) = JLong.valueOf(long).asInstanceOf[JLong @@ T]
+  @inline final def tag[T <: TypeTag](long: Int) = JLong.valueOf(long).asInstanceOf[JLong @@ T]
+
+  implicit class StringTypeExt(val s: String) extends AnyVal {
+    def hasNormalisedRefs = s.asInstanceOf[String @@ NormalisedRefs]
+  }
+
+  implicit class LongTypeExt(val x: Long) extends AnyVal {
+    def tag[T <: TypeTag] = JLong.valueOf(x).asInstanceOf[JLong @@ T]
+  }
 
   trait NormalisedRefs extends TypeTag
-  @inline final def TextWithNormalisedRefs(text: String) = text.asInstanceOf[String @@ NormalisedRefs]
+  //@inline final def TextWithNormalisedRefs(text: String) = text.asInstanceOf[String @@ NormalisedRefs]
 
   trait FieldKeyId extends TypeTag
   type Long_FieldKeyId = JLong @@ FieldKeyId

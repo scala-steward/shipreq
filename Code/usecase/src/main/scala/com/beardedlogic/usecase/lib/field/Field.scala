@@ -43,4 +43,11 @@ trait Field[S] {
   def init(): Unit
 
   def render(): NodeSeq
+
+  /**
+   * Restores internal state to a previous state. Usually called when loading from DB.
+   *
+   * @return A function to be invoked after all fields have had their states similarly set.
+   */
+  def setState(newState: S): () => Unit
 }
