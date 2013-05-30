@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib
 
 import net.liftweb.util.Helpers._
 import scala.annotation.tailrec
+import TypeTags._
 
 /**
  * @since 2/05/2013
@@ -11,7 +12,7 @@ object StepTree {
   // TODO Step.text not being used. Maybe Step itself is useless. Step node ids and an external map probably better.
   case class Step(text: String)
 
-  case class StepNode(id: String,
+  case class StepNode(id: String @@ LocalStepId,
                       level: Int,
                       labelIndex: Int,
                       step: Step,
@@ -92,12 +93,12 @@ object StepTree {
    * @param nodes The node tree before insertion.
    * @return A tuple of 1) the new tree, 2) the new node (if inserted)
    */
-  @inline def stepInsert(step: Step, afterId: String, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
+  @inline def stepInsert(step: Step, afterId: String @@ LocalStepId, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
     _stepInsert(step, afterId, nodes, Nil, None)
 
   @tailrec private def _stepInsert(
     step: Step,
-    afterId: String,
+    afterId: String @@ LocalStepId,
     nodes: List[StepNode],
     results: List[StepNode],
     resultNode: Option[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
@@ -108,12 +109,12 @@ object StepTree {
     case h :: t if h.id == afterId =>
       if (h.level == 0 || h.children.nonEmpty) {
         // Add to found node's children
-        val n = new StepNode(nextFuncName, h.level + 1, 1, step)
+        val n = StepNode(newLocalStepId, h.level + 1, 1, step)
         val c = n :: h.children.map(_.incrementPosition)
         (results ::: h.copy(children = c) :: t, Some(n))
       } else {
         // Add at the same level
-        val n = StepNode(nextFuncName, h.level, h.labelIndex + 1, step, Nil)
+        val n = StepNode(newLocalStepId, h.level, h.labelIndex + 1, step, Nil)
         (results ::: h :: n :: t.map(_.incrementPosition), Some(n))
       }
 
@@ -124,16 +125,18 @@ object StepTree {
     }
   }
 
+  @inline final def newLocalStepId = nextFuncName.asLocalStepId
+
   /**
    * Removes a step and its children from a node tree.
    *
    * @return A tuple of 1) the new tree, 2) whether any changes were made.
    */
-  @inline def stepRemove(id: String, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
+  @inline def stepRemove(id: String @@ LocalStepId, nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] =
     _stepRemove(id, nodes, Nil, None)
 
   @tailrec private def _stepRemove(
-    id: String,
+    id: String @@ LocalStepId,
     nodes: List[StepNode],
     results: List[StepNode],
     found: Option[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
@@ -159,10 +162,10 @@ object StepTree {
    *
    * @return A tuple of 1) the new tree, 2) the new node (if any change was made).
    */
-  @inline def indentDecrease(id: String, nodes: List[StepNode]) = _indentDecrease(id, nodes, Nil, None)
+  @inline def indentDecrease(id: String @@ LocalStepId, nodes: List[StepNode]) = _indentDecrease(id, nodes, Nil, None)
 
   @tailrec private def _indentDecrease(
-    id: String,
+    id: String @@ LocalStepId,
     nodes: List[StepNode],
     results: List[StepNode],
     newNode: Option[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {
@@ -213,7 +216,7 @@ object StepTree {
    * siblings.
    */
   @tailrec private def findChild(
-    id: String,
+    id: String @@ LocalStepId,
     nodes: List[StepNode],
     siblingsLeft: List[StepNode] = Nil): Option[ChildAndSiblings] = nodes match {
     case Nil                  => None
@@ -230,10 +233,10 @@ object StepTree {
    *
    * @return A tuple of 1) the new tree, 2) the new node (if any change was made).
    */
-  @inline def indentIncrease(id: String, nodes: List[StepNode]) = _indentIncrease(id, None, Nil, nodes)
+  @inline def indentIncrease(id: String @@ LocalStepId, nodes: List[StepNode]) = _indentIncrease(id, None, Nil, nodes)
 
   @tailrec private def _indentIncrease(
-    id: String,
+    id: String @@ LocalStepId,
     newNode: Option[StepNode],
     results: List[StepNode],
     nodes: List[StepNode]): Tuple2[List[StepNode], Option[StepNode]] = nodes match {

@@ -34,7 +34,7 @@ class FieldSaveCtx(val db: DAO) {
   /**
    * Key is the step node ID.
    */
-  val stepValues = MutableMap.empty[String, Value[DataType.Step]]
+  val stepValues = MutableMap.empty[String @@ LocalStepId, Value[DataType.Step]]
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

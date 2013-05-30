@@ -2,18 +2,16 @@ package com.beardedlogic.usecase.lib
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.matchers.Matcher
-import org.scalatest.matchers.MatchResult
-import scala.collection.mutable.StringBuilder
 import com.beardedlogic.usecase.test.TestHelpers
-import net.liftweb.util.Helpers._
-import scala.Some
+import TypeTags._
 
 class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
   import NodeUtils._
   import StepTree._
   import TestHelpers.TreeDSL._
   import StepLabels.LabelMakers
+
+  implicit def autoTagLocalStepIds(s: String) = s.asLocalStepId
 
   /**
    * StepNode test data.

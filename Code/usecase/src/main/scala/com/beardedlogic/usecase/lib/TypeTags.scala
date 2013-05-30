@@ -18,6 +18,7 @@ object TypeTags {
 
   implicit class StringTypeExt(val s: String) extends AnyVal {
     def hasNormalisedRefs = s.asInstanceOf[String @@ NormalisedRefs]
+    def asLocalStepId = s.asInstanceOf[String @@ LocalStepId]
   }
 
   implicit class LongTypeExt(val x: Long) extends AnyVal {
@@ -25,7 +26,7 @@ object TypeTags {
   }
 
   trait NormalisedRefs extends TypeTag
-  //@inline final def TextWithNormalisedRefs(text: String) = text.asInstanceOf[String @@ NormalisedRefs]
+  trait LocalStepId extends TypeTag
 
   trait FieldKeyId extends TypeTag
   type Long_FieldKeyId = JLong @@ FieldKeyId

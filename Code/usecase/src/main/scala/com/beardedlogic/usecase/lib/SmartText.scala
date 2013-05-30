@@ -7,7 +7,7 @@ import net.liftweb.actor.LiftActor
 import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.SHtml
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.nextFuncName
 
 import JsExt._
 import msg.MessageCentre
@@ -179,7 +179,7 @@ class SmartText(val msgCentre: MessageCentre,
 
   protected val writeLock = new Object
   protected[lib] var refAndIdLookup = Map.empty[String, String]
-  protected[lib] var refsInText = Map.empty[String, String]
+  protected[lib] var refsInText = Map.empty[String, String @@ LocalStepId]
 
   protected[lib] var _text = ""
   protected[lib] var _textWithNormalisedRefs = "".hasNormalisedRefs
@@ -287,7 +287,7 @@ class SmartText(val msgCentre: MessageCentre,
       // Check label validity
       val label = r.get._2.get
       if (refAndIdLookup.contains(label)) {
-        if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup(label))
+        if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup(label).asLocalStepId)
         MakeRef(newText, label)
       } else
         MakeInvalidRef(newText, label)
@@ -333,7 +333,7 @@ class SmartText(val msgCentre: MessageCentre,
    * Updates `refsInText` and creates a copy of given text in which all references are up-to-date.
    */
   protected def updateStepReferences(text: String): String = {
-    var newRefsInText = Map.empty[String, String]
+    var newRefsInText = Map.empty[String, String @@ LocalStepId]
     var newText = text
     for ((oldLabel, id) <- refsInText) {
 
@@ -365,7 +365,7 @@ class SmartText(val msgCentre: MessageCentre,
  */
 class SmartStepText(override val msgCentre: MessageCentre,
                     override val refAndIdLookupProvider: () => Map[String, String],
-                    val stepId: String,
+                    val stepId: String @@ LocalStepId,
                     override val textareaId: String
                      ) extends SmartText(msgCentre, refAndIdLookupProvider, textareaId) {
 
@@ -378,13 +378,13 @@ class SmartStepText(override val msgCentre: MessageCentre,
    * Allows for flow-agnostic logic.
    */
   sealed trait Flow {
-    var refs = Map.empty[String, String]
+    var refs = Map.empty[String @@ LocalStepId, String]
     var text = ""
     def arrow : String
     def arrowReplacement : String
     def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
     def broadcast():Unit
-    final def clear() {refs = Map.empty[String, String]; text = ""}
+    final def clear() {refs = Map.empty[String @@ LocalStepId, String]; text = ""}
     final def broadcastIfChanges[T](block: => T): T = {
       val prevRefs = refs
       val r = block
@@ -479,7 +479,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
       case Some(labels) if (areAllLabelsValid(labels)) =>
         Some(() => f.broadcastIfChanges {
-          f.refs = labels.map(l => (refAndIdLookup(l), l)).toMap
+          f.refs = labels.map(l => (refAndIdLookup(l).asLocalStepId, l)).toMap
           f.rebuildText
         })
 
@@ -504,7 +504,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     }
     if (changeFound) {
       var newLabels = TreeSet.empty[String]
-      var newRefs = Map.empty[String, String]
+      var newRefs = Map.empty[String @@ LocalStepId, String]
       for ((id,_) <- f.refs) {
         if (refAndIdLookup.contains(id)) {
           val l = refAndIdLookup(id)
@@ -531,13 +531,13 @@ class SmartStepText(override val msgCentre: MessageCentre,
     case FlowFromChangeMsg(fromIds, id) if (!fromIds.contains(stepId) && flowTo.refs.contains(id)) => removeRef(flowTo, id)
   }
 
-  private def addRef(f: Flow, id: String) {
+  private def addRef(f: Flow, id: String @@ LocalStepId) {
     f.refs += (id -> refAndIdLookup(id))
     f.rebuildText
     internalSetTextAndPush(buildFullText)
   }
 
-  private def removeRef(f: Flow, id: String) {
+  private def removeRef(f: Flow, id: String @@ LocalStepId) {
     f.refs -= id
     f.rebuildText
     internalSetTextAndPush(buildFullText)

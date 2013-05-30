@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib
 
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{ Map => MutableMap }
+import TypeTags._
 
 /**
  * @since 06/05/2013
@@ -10,6 +11,7 @@ object NodeUtils {
   import StepTree.{ Step, StepNode }
   import StepLabels.LabelMakers
 
+  // TODO This shouldn't be here
   /**
    * Parses a textual representation of a tree.
    *
@@ -40,13 +42,13 @@ object NodeUtils {
         if (indent == 0) {
           val topLevelLabel(labelPrefix, labelSuffix) = label
           val labelIndex = LabelMakers(0)(labelSuffix)
-          val n = new StepNode(label, 0, labelIndex, Step(stepText))
+          val n = new StepNode(label.asLocalStepId, 0, labelIndex, Step(stepText))
           nodes += n
           n
         } else {
           val p = parents(indent - 1)
           val labelIndex = LabelMakers(indent)(label)
-          val n = new StepNode(s"${p.id}.${label}", indent, labelIndex, Step(stepText))
+          val n = new StepNode(s"${p.id}.${label}".asLocalStepId, indent, labelIndex, Step(stepText))
           children(p) += n
           n
         }

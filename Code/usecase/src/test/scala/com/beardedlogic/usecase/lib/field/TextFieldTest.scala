@@ -18,7 +18,7 @@ class TextFieldTest extends FunSpec with ShouldMatchers with MockitoSugar {
       when(ucCtx.msgCentre).thenReturn(mock[MessageCentre])
       when(ucCtx.stepLabelMapProvider).thenReturn(() => Map.empty[String, String])
       val tf = new TextField(mock[TextFieldDef], ucCtx, mock[FieldKey])
-      tf.value.refsInText += ("A" -> "B")
+      tf.value.refsInText += ("A" -> "B".asLocalStepId)
 
       tf.setState("Hehe!".hasNormalisedRefs)()
 

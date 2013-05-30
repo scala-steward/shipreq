@@ -40,5 +40,5 @@ class ExceptionCourseFields(override val ucCtx: UseCaseCtx, override val fieldKe
    * Creates a new top-level step to add to the end of the list.
    */
   private def newTailStep() =
-    StepNode(nextFuncName, 0, courses.size + 1, NewStep, Nil)
+    StepNode(newLocalStepId, 0, courses.size + 1, NewStep, Nil)
 }

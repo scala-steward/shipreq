@@ -7,10 +7,11 @@ import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import net.liftweb.http.js.JsCmds.jsExpToJsCmd
 import net.liftweb.http.js.jquery.JqJE
 import net.liftweb.util.CssSel
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.{strToSuperArrowAssoc => _, _}
 import scala.xml._
 import JsExt._
 import StepTree._
+import TypeTags._
 import msg.Messages._
 import CourseFields._
 
@@ -64,7 +65,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
     _stepLabelMap
   }
 
-  private[this] var textFields: Map[String, SmartStepText] = Map.empty
+  private[this] var textFields: Map[String @@ LocalStepId, SmartStepText] = Map.empty
 
   override def init() {
     for (n <- flattenNodes(courses)) createAndRegisterTextField(n)
@@ -161,7 +162,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Adds a new step, shuffling down subsequent steps and renumbering if necessary.
    */
-  def onStepAdd(preceedingNodeId: String): JsCmd = stepInsert(NewStep, preceedingNodeId, courses) match {
+  def onStepAdd(preceedingNodeId: String @@ LocalStepId): JsCmd = stepInsert(NewStep, preceedingNodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       courses = newCourses
       createAndRegisterTextField(newNode)
@@ -173,12 +174,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
     case _ => JsCmds.Noop
   }
 
-  def prohibitRemoval(id: String) = false
+  def prohibitRemoval(id: String @@ LocalStepId) = false
 
   /**
    * Removes a new step and all its children, shuffling up following steps and renumbering if necessary.
    */
-  def onStepRemove(id: String): JsCmd =
+  def onStepRemove(id: String @@ LocalStepId): JsCmd =
     if (prohibitRemoval(id))
       JsCmds.Noop
     else
@@ -194,7 +195,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Decreases the indentation level of a given step.
    */
-  def onIndentDecrease(nodeId: String): JsCmd = indentDecrease(nodeId, courses) match {
+  def onIndentDecrease(nodeId: String @@ LocalStepId): JsCmd = indentDecrease(nodeId, courses) match {
     case (newCourses, Some(_)) =>
       courses = newCourses
       val flattenedCourses = flattenNodes(courses)
@@ -207,12 +208,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Allows customisation of the ajax response of a successful indent decrease.
    */
-  protected def customiseIndentDecreaseJs(nodeId: String, updateJs: JsCmd): JsCmd = updateJs
+  protected def customiseIndentDecreaseJs(nodeId: String @@ LocalStepId, updateJs: JsCmd): JsCmd = updateJs
 
   /**
    * Increases the indentation level of a given step.
    */
-  def onIndentIncrease(nodeId: String): JsCmd = indentIncrease(nodeId, courses) match {
+  def onIndentIncrease(nodeId: String @@ LocalStepId): JsCmd = indentIncrease(nodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       val oldCourses = courses
       courses = newCourses
@@ -226,7 +227,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Allows customisation of the ajax response of a successful indent increase.
    */
-  protected def customiseIndentIncreaseJs(nodeId: String,
+  protected def customiseIndentIncreaseJs(nodeId: String @@ LocalStepId,
                                           newNode: StepNode,
                                           oldCourses: List[StepNode],
                                           updateJs: JsCmd): JsCmd = updateJs

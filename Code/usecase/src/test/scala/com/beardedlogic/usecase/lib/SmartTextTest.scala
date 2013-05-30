@@ -17,6 +17,10 @@ import msg.Messages._
 
 object SmartTextTest extends MockitoSugar {
 
+  implicit def autoTagLocalStepId(s: String) = s.asLocalStepId
+  implicit def autoTagLocalStepId(s: Set[String]) = s.asInstanceOf[Set[String @@ LocalStepId]]
+  implicit def autoTagLocalStepId(m: Map[String, String]) = m.asInstanceOf[Map[String, String @@ LocalStepId]]
+
   val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5", "S.6" -> "X6",
                         "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5", "X6" -> "S.6")
 

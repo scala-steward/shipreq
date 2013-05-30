@@ -5,7 +5,7 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.MatchResult
 import lib.NodeUtils._
 import lib.StepTree._
-import org.scalatest.matchers.ShouldMatchers
+import lib.TypeTags._
 
 /**
  * @since 30/04/2013
@@ -64,7 +64,7 @@ object TestHelpers extends TestHelpers {
         val labelSplit(lblPrefix, lblSuffix) = lbl
         val lblIndex = LabelMakers(lvl)(lblSuffix)
         val id2 = if (genIds) id else null
-        StepNode(id2, lvl, lblIndex, Step(txt), ch)
+        StepNode(id2.asLocalStepId, lvl, lblIndex, Step(txt), ch)
       }
     }
 

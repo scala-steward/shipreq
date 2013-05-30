@@ -3,8 +3,8 @@ package lib
 package field
 
 import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
-import net.liftweb.util.Helpers._
 import StepTree._
+import TypeTags._
 import model.{FieldKey, FieldKeyType}
 import CourseFields._
 
@@ -35,8 +35,8 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
 
   // This will do for now but if this is moved into init() it will cause problems with TextFields due to the stepRefMap
   courses =
-    StepNode(nextFuncName, 0, 0, NewStep,
-      new StepNode(nextFuncName, 1, 1, NewStep) :: Nil
+    StepNode(newLocalStepId, 0, 0, NewStep,
+      StepNode(newLocalStepId, 1, 1, NewStep) :: Nil
     ) :: Nil
 
   override val rootLabelPrefix = Some(s"${ucCtx.number}.")
@@ -51,14 +51,14 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
    * Creates a new top-level step to add to the end of the list.
    */
   private def newTailStep() =
-    StepNode(nextFuncName, 0, courses.size, NewStep, Nil)
+    StepNode(newLocalStepId, 0, courses.size, NewStep, Nil)
 
   /**
    * Prevent removal of the normal course head, ie. 1.0.
    */
-  override def prohibitRemoval(id: String) = (id == courses.head.id)
+  override def prohibitRemoval(id: String @@ LocalStepId) = (id == courses.head.id)
 
-  protected override def customiseIndentDecreaseJs(nodeId: String, updateJs: JsCmd): JsCmd =
+  protected override def customiseIndentDecreaseJs(nodeId: String @@ LocalStepId, updateJs: JsCmd): JsCmd =
     courses match {
       // Move steps from NC to AC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
@@ -68,7 +68,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
       case _ => updateJs
     }
 
-  protected override def customiseIndentIncreaseJs(nodeId: String, newNode: StepNode, oldCourses: List[StepNode], updateJs: JsCmd): JsCmd =
+  protected override def customiseIndentIncreaseJs(nodeId: String @@ LocalStepId, newNode: StepNode, oldCourses: List[StepNode], updateJs: JsCmd): JsCmd =
     oldCourses match {
       // Move steps from AC to NC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
