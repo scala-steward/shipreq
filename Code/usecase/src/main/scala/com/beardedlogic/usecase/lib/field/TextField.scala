@@ -30,7 +30,7 @@ object TextField {
 
   class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[String] {
     override def load(ctx: FieldLoadCtx) =
-      ctx.fieldValues.get(fieldKey.valueId).map(_.fieldData).flatten.getOrElse("")
+      ctx.fieldValues.get(fieldKey).map(_.fieldData).flatten.getOrElse("")
   }
 }
 

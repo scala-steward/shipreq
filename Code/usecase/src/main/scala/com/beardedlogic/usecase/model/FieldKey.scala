@@ -3,12 +3,15 @@ package model
 
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import lib.db._
+import lib.TypeTags._
 import DBHelpers._
 import FieldKey.FieldKeyData
 
 case class FieldKey(valueId: Long, fieldKeyType: FieldKeyType, fieldKeyData: FieldKeyData)
   extends Value[DataType.FieldKey] {
+
   def fieldDef = fieldKeyType.fieldDef(fieldKeyData)
+  def taggedId = tag[FieldKeyId](valueId)
 }
 
 object FieldKey {

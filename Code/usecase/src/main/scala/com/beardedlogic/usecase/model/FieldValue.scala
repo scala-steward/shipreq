@@ -7,12 +7,16 @@ import scala.slick.session.PositionedParameters
 import lib.db.DBHelpers._
 import lib.field.Field
 import FieldValue.FieldValueData
+import lib.TypeTags._
 
 case class FieldValue(
   valueId: Long,
   fieldKeyId: Long,
   fieldData: FieldValueData
-  ) extends Value[DataType.FieldValue]
+  ) extends Value[DataType.FieldValue] {
+
+  def fieldKeyIdTagged = tag[FieldKeyId](fieldKeyId)
+}
 
 object FieldValue {
   type FieldValueData = Option[String]
@@ -40,7 +44,7 @@ class FieldLoadCtx(
   /**
    * A map of field key IDs to field values.
    */
-  val fieldValues: Map[Long, FieldValue],
+  val fieldValues: Map[Long_FieldKeyId, FieldValue],
 
   /**
    * For each relation type, a map of from-IDs to to-IDs (in the order specified in the `index` column).
@@ -50,7 +54,7 @@ class FieldLoadCtx(
   /**
    * A map of step IDs to step `text`.
    */
-  val stepData: Map[Long, String]
+  val stepData: Map[Long_StepId, String]
   )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -92,9 +96,9 @@ trait FieldValueAccessor extends DatabaseAccessor {
   def getFieldLoadCtxFor(ownerId: Long): FieldLoadCtx = {
 
     // Load field values
-    var fieldValues = Map.empty[Long, FieldValue]
+    var fieldValues = Map.empty[Long_FieldKeyId, FieldValue]
     SelectByOwner.foreach(ownerId, { fv =>
-      fieldValues += (fv.fieldKeyId -> fv)
+      fieldValues += (fv.fieldKeyIdTagged -> fv)
     })
 
     // Load relations and extended field value data (ie. steps)
