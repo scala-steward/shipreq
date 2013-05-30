@@ -8,6 +8,7 @@ import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers.nextFuncName
+import net.liftweb.common.Logger
 
 import JsExt._
 import msg.MessageCentre
@@ -172,7 +173,7 @@ object SmartText {
 class SmartText(val msgCentre: MessageCentre,
                 val refAndIdLookupProvider: () => Map[String, String],
                 val textareaId: String = nextFuncName
-                 ) extends LiftActor {
+                 ) extends LiftActor with Logger {
 
   import SmartText._
   import MyLittleParser._
@@ -222,8 +223,10 @@ class SmartText(val msgCentre: MessageCentre,
     val newValue = NormalisedRefRegex.replaceAllIn(newValueWithNRefs, { m =>
       val dataIdText = m.group(1)
       val dataId = dataIdText.toLong.tag[StepId]
-      savedSteps.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_))
-      .getOrElse(MakeInvalidNormalisedRef(dataIdText))
+      savedSteps.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_)).getOrElse{
+        warn(s"Unable to realise normalised step reference. ❚ Text: $newValueWithNRefs ❚ DataId: $dataId ❚ SavedSteps: $savedSteps ❚ RefAndIdLookup: $refAndIdLookup")
+        MakeInvalidNormalisedRef(dataIdText)
+      }
     })
 
     // Parse text as normal

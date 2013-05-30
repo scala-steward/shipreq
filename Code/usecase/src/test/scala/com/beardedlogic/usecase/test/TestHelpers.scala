@@ -1,16 +1,21 @@
 package com.beardedlogic.usecase
 package test
 
-import org.scalatest.matchers.Matcher
-import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.{ShouldMatchers, Matcher, MatchResult}
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
 import lib.NodeUtils._
 import lib.StepTree._
 import lib.TypeTags._
+import lib.UseCaseCtx
+import lib.msg.MessageCentre
 
 /**
  * @since 30/04/2013
  */
-trait TestHelpers {
+trait TestHelpers extends MockitoSugar with ShouldMatchers {
+
+  (new bootstrap.liftweb.Boot).configureLift
 
   def eventually(cond: => Any) {
     val test = (sleep: Int) => try { cond; true } catch { case _: Throwable => Thread.sleep(sleep); false }
@@ -26,6 +31,20 @@ trait TestHelpers {
   def eventuallyIf(wait: Boolean)(cond: => Any) { if (wait) eventually(cond) else cond }
 
   def matchTree(expected: List[StepNode]) = TestHelpers.TreeMatcher(expected)
+
+  def mockUseCaseCtx: UseCaseCtx = {
+    val u = mock[UseCaseCtx]
+    when(u.msgCentre).thenReturn(mock[MessageCentre])
+    when(u.stepLabelMapProvider).thenReturn(() => Option(u.stepLabelMap).getOrElse(Map.empty[String,String]))
+    when(u.number).thenReturn(1: Short)
+    u
+  }
+
+  def mockUseCaseCtx(stepLabelMap: Map[String,String]): UseCaseCtx = {
+    val u = mockUseCaseCtx
+    when(u.stepLabelMap).thenReturn(stepLabelMap)
+    u
+  }
 }
 
 object TestHelpers extends TestHelpers {

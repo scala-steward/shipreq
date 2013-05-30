@@ -28,7 +28,7 @@ class UseCaseCtx(cometActor: CometActor) {
 
   val normalCourseTitleId = ncacField.get.courses.head.stepTextId
 
-  private[lib] var _savedSteps = Map.empty[Long_StepId, String]
+  private[lib] var _savedSteps = Map.empty[Long_StepId, String @@ LocalStepId]
   def savedSteps =  _savedSteps
 
   // -------------------------------------------------------------------------------------------------------------------

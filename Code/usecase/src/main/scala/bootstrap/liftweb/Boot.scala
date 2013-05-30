@@ -12,7 +12,11 @@ import lib.{Misc, Defaults}
  */
 class Boot {
   def boot {
+    configureLift
+    initDatabase
+  }
 
+  def configureLift() {
     Misc.ensureTestModeDuringTests()
 
     // App package path
@@ -28,7 +32,9 @@ class Boot {
 
     // Force requests to be UTF-8
     //LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
+  }
 
+  def initDatabase() {
     DB.init()
     Defaults.init()
   }

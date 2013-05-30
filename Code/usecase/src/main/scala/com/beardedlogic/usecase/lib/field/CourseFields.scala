@@ -13,7 +13,9 @@ import JsExt._
 import StepTree._
 import TypeTags._
 import msg.Messages._
+import TypeTags._
 import CourseFields._
+import scala.annotation.tailrec
 
 object CourseFields {
   import Fields.Template
@@ -45,17 +47,15 @@ object CourseFields {
     override def startingLabelIndex(level: Int) = 1
   }
 
-  type CourseFieldState = List[StepNode] // TODO TMP
 }
 
 abstract class CourseFields extends Field[CourseFieldState] {
-  override def setState(newState: CourseFieldState) = ???
 
   private[this] var _courses: List[StepNode] = Nil
   def courses_=(newCourses: List[StepNode]) {
     _courses = newCourses
     _stepLabelMap = null
-      msgCentre ! StepChangeMsg
+    msgCentre ! StepChangeMsg
   }
   def courses = _courses
 
@@ -66,40 +66,35 @@ abstract class CourseFields extends Field[CourseFieldState] {
   }
 
   private[this] var textFields: Map[String @@ LocalStepId, SmartStepText] = Map.empty
+  def test__textFields = textFields
 
   override def init() {
     for (n <- flattenNodes(courses)) createAndRegisterTextField(n)
   }
 
   def rootLabelPrefix: Option[String]
-  @inline def labelPrefixForLevel(level: Int) = if (level==0) rootLabelPrefix else None
+  @inline def labelPrefixForLevel(level: Int) = if (level == 0) rootLabelPrefix else None
   @inline def labelFor(node: StepNode) = labelPrefixForLevel(node.level).map(_ + node.label).getOrElse(node.label)
   def startingLabelIndices: StartingLabelIndices
 
-  private[this] def createAndRegisterTextField(n:StepNode) {
+  private[this] def createAndRegisterTextField(n: StepNode) {
     val f = new SmartStepText(msgCentre, ucCtx.stepLabelMapProvider, n.id, n.stepTextId)
     f.init
     textFields += (n.id -> f)
   }
 
-  //  private[this] def syncTextFieldMap() {
-  //    val oldTextFields = textFields
-  //    textFields = Map.empty
-  //    for (n <- flattenNodes(courses)) {
-  //      val id = n.id
-  //      val f = if (oldTextFields.contains(id))
-  //        oldTextFields(id)
-  //      else
-  //        newTextField(n, _initCalled)
-  //      textFields += (id -> f)
-  //    }
-  //  }
-
-//  @inline private[this] def newTextField(n:StepNode, init: Boolean) = {
-//    val f = new SmartText(msgCentre, state.stepLabelMapProvider, n.stepTextId)
-//    if (init) f.init
-//    f
-//  }
+  private[this] def syncTextFieldMap() {
+    val oldTextFields = textFields
+    textFields = Map.empty
+    for (n <- flattenNodes(courses)) {
+      val id = n.id
+      if (oldTextFields.contains(id)) {
+        textFields += (id -> oldTextFields(id))
+      } else {
+        createAndRegisterTextField(n)
+      }
+    }
+  }
 
   /**
    * Renders a list of steps and their trees of children.
@@ -249,4 +244,29 @@ abstract class CourseFields extends Field[CourseFieldState] {
       JsCmds.SetHtml(n.labelId, Text(labelFor(n))).toJsCmd
     )) mkString "\n"
   )
+
+  override def setState(newState: CourseFieldState) = {
+    courses = buildNodesFromState(newState.courses, 0)
+    syncTextFieldMap
+    () => {
+      val stepMap = newState.stepMap
+      val savedSteps = ucCtx.savedSteps
+      for ((id, tf) <- textFields) {
+        val txt = stepMap(id).text
+        tf.setTextFromLoad(txt, savedSteps)
+        // TODO The Step() instances in courses keep their normalised refs. Is this good? Bad? Is Step() even needed?
+      }
+    }
+  }
+
+  private def buildNodesFromState(state: List[StepState], level: Int): List[StepNode] = {
+    @tailrec def iter(state: List[StepState], level: Int, labelIndex: Int, results: List[StepNode]): List[StepNode] = state match {
+      case Nil    => results
+      case h :: t =>
+        val children = buildNodesFromState(h.children, level + 1)
+        val node = StepNode(h.id, level, labelIndex, Step(h.text), children)
+        iter(t, level, labelIndex + 1, results :+ node)
+    }
+    iter(state, level, startingLabelIndices.startingLabelIndex(level), Nil)
+  }
 }
