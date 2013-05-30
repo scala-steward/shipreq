@@ -296,7 +296,7 @@ class SmartTextTest
 
     it("should only run on step fields (ie. you can't flow from steps into normal text fields like Actors)") {
       val input = "--> S.1,S.1"
-      stepFieldWithText(input).text should be("➡ S.1")
+      stepFieldWithText(input).text should be("➡ [S.1]")
       textFieldWithText(input).text should be(input)
     }
 
@@ -322,7 +322,7 @@ class SmartTextTest
       }
 
       it("should allow links to self") {
-        stepFieldWithText("--> S.1".fixArrows(from), "X1").text should be("➡ S.1".fixArrows(from))
+        stepFieldWithText("--> S.1".fixArrows(from), "X1").text should be("➡ [S.1]".fixArrows(from))
       }
 
       it("should transform when invalid") {
@@ -342,27 +342,27 @@ class SmartTextTest
 
       it("should parse a single valid ref") {
         val examples = Table(("Before", "After")
-                              , ("--> S.1", "➡ S.1")
-                              , ("--> [S.1]", "➡ S.1")
-                              , ("  -->   S.1  ", "➡ S.1")
-                              , ("great --> S.1", "great ➡ S.1")
-                              , ("great-->S.1", "great ➡ S.1")
-                              , ("-->S.1", "➡ S.1")
-                              , ("-->[S.1]", "➡ S.1")
+                              , ("--> S.1", "➡ [S.1]")
+                              , ("--> [S.1]", "➡ [S.1]")
+                              , ("  -->   S.1  ", "➡ [S.1]")
+                              , ("great --> S.1", "great ➡ [S.1]")
+                              , ("great-->S.1", "great ➡ [S.1]")
+                              , ("-->S.1", "➡ [S.1]")
+                              , ("-->[S.1]", "➡ [S.1]")
                             )
         forAll(examples)(testText _)
       }
 
       it("should parse a multiple valid refs") {
         val examples = Table(("Before", "After")
-                              , ("-->S.1,S.1", "➡ S.1")
-                              , ("--> S.1, S.2", "➡ S.1, S.2")
-                              , ("--> S.1,S.2", "➡ S.1, S.2")
-                              , ("--> S.1, [S.2]", "➡ S.1, S.2")
-                              , ("--> [S.1] [S.2]", "➡ S.1, S.2")
-                              , ("--> S.2, S.1", "➡ S.1, S.2")
-                              , ("--> S.2, S.1, S.1", "➡ S.1, S.2")
-                              , ("--> S.1, S.3, S.1", "➡ S.1, S.3")
+                              , ("-->S.1,S.1", "➡ [S.1]")
+                              , ("--> S.1, S.2", "➡ [S.1] [S.2]")
+                              , ("--> S.1,S.2", "➡ [S.1] [S.2]")
+                              , ("--> S.1, [S.2]", "➡ [S.1] [S.2]")
+                              , ("--> [S.1] [S.2]", "➡ [S.1] [S.2]")
+                              , ("--> S.2, S.1", "➡ [S.1] [S.2]")
+                              , ("--> S.2, S.1, S.1", "➡ [S.1] [S.2]")
+                              , ("--> S.1, S.3, S.1", "➡ [S.1] [S.3]")
                             )
         forAll(examples)(testText _)
       }
@@ -559,20 +559,20 @@ class SmartTextTest
       }
 
       it("should update refs") {
-        testWithText("➡ S.2, S.5" ,"➡ S.2, S.F", Set("X2","X5"))
+        testWithText("➡ [S.2] [S.5]" ,"➡ [S.2] [S.F]", Set("X2","X5"))
       }
       it("should reorder when updating") {
-        testWithText("➡ S.1, S.2" ,"➡ S.2, S.A", Set("X2","X1"))
+        testWithText("➡ [S.1] [S.2]" ,"➡ [S.2] [S.A]", Set("X2","X1"))
       }
       it("should remove one") {
-        testWithText("➡ S.2, S.3" ,"➡ S.2", Set("X2"))
-        testWithText("➡ S.3, S.6" ,"➡ S.6", Set("X6"))
+        testWithText("➡ [S.2] [S.3]" ,"➡ [S.2]", Set("X2"))
+        testWithText("➡ [S.3] [S.6]" ,"➡ [S.6]", Set("X6"))
       }
       it("should remove only") {
-        testWithText("➡ S.3" ,"", Set())
+        testWithText("➡ [S.3]" ,"", Set())
       }
       it("should ignore non-changing") {
-        testWithText("➡ S.2" ,"➡ S.2", Set("X2"))
+        testWithText("➡ [S.2]" ,"➡ [S.2]", Set("X2"))
       }
       it("should ignore when unaffected") {
         test("haha","haha", Set())
@@ -589,11 +589,11 @@ class SmartTextTest
     describe("Mixed clauses") {
       it("should update all clauses and broadcast once") {
         val examples = Table(("Before", "After")
-                            , ("Blah [S.5]. ⬅ S.2 ➡ S.6", "Blah [S.F]. ⬅ S.2 ➡ S.6")
-                            , ("Blah [S.5]. ⬅ S.1 ➡ S.5", "Blah [S.F]. ⬅ S.A ➡ S.F")
-                            , ("Blah [S.3]. ⬅ S.1 ➡ S.3", "Blah [DELETED]. ⬅ S.A")
-                            , ("Blah [S.3]. ⬅ S.3 ➡ S.1", "Blah [DELETED]. ➡ S.A")
-                            , ("Blah [S.3]. ⬅ S.3 ➡ S.3", "Blah [DELETED].")
+                            , ("Blah [S.5]. ⬅ [S.2] ➡ [S.6]", "Blah [S.F]. ⬅ [S.2] ➡ [S.6]")
+                            , ("Blah [S.5]. ⬅ [S.1] ➡ [S.5]", "Blah [S.F]. ⬅ [S.A] ➡ [S.F]")
+                            , ("Blah [S.3]. ⬅ [S.1] ➡ [S.3]", "Blah [DELETED]. ⬅ [S.A]")
+                            , ("Blah [S.3]. ⬅ [S.3] ➡ [S.1]", "Blah [DELETED]. ➡ [S.A]")
+                            , ("Blah [S.3]. ⬅ [S.3] ➡ [S.3]", "Blah [DELETED].")
                           )
         forAll(examples){ (b,a) =>
           val s = testSubject2(b)
@@ -619,15 +619,15 @@ class SmartTextTest
     val ToMe = Set("SUBJ")
     val ToNone = Set.empty[String]
     val examples = Table(("Text Before", "S.1's new Flow-To Targets", "Text After", "FlowFrom Refs After")
-        , ("hehe", ToMe, "hehe ⬅ S.1", Set("X1")) // add first
-        , ("hehe ⬅ S.2", ToMe, "hehe ⬅ S.1, S.2", Set("X1","X2")) // append
-        , ("hehe ⬅ S.1", ToNone, "hehe", Set()) // remove only
-        , ("hehe ⬅ S.1, S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // remove some
-        , ("hehe ⬅ S.2", ToNone, "hehe ⬅ S.2", Set("X2")) // ignore
+        , ("hehe", ToMe, "hehe ⬅ [S.1]", Set("X1")) // add first
+        , ("hehe ⬅ [S.2]", ToMe, "hehe ⬅ [S.1] [S.2]", Set("X1","X2")) // append
+        , ("hehe ⬅ [S.1]", ToNone, "hehe", Set()) // remove only
+        , ("hehe ⬅ [S.1] [S.2]", ToNone, "hehe ⬅ [S.2]", Set("X2")) // remove some
+        , ("hehe ⬅ [S.2]", ToNone, "hehe ⬅ [S.2]", Set("X2")) // ignore
         )
 
     it("should not mirror links to self") {
-      for (txt <- List("➡ S.1","⬅ S.1")) {
+      for (txt <- List("➡ [S.1]","⬅ [S.1]")) {
         val s = new SmartStepText(new MsgCollector, () => StepState1, "X1", "")
         val mc = s.msgCentre.asInstanceOf[MsgCollector]
         s.init
@@ -770,7 +770,7 @@ trait SmartTextChecks {
   val validStatementProp = forAll(validStatement) { x =>
     val (l, a, steps) = x
     val t = l + a + steps.mkString(",")
-    val end = if (steps.isEmpty) "" else "➡ " + TreeSet(steps: _*).map { _.replace("[", "").replace("]", "") }.mkString(", ")
+    val end = if (steps.isEmpty) "" else "➡ " + TreeSet(steps: _*).map { _.replaceFirst("^\\[?", "[").replaceFirst("\\]?$", "]") }.mkString(" ")
     val exp = List(l.trim, end).filter(_.nonEmpty).mkString(" ")
     checkTextParsing(t, exp)
   }

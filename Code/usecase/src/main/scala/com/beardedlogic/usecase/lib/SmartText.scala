@@ -50,7 +50,7 @@ object SmartText {
   val FlowFromArrow = "⬅"
 
   @inline def MakeFlowText(arrow: String, labels: TreeSet[String]) =
-    arrow + " " + labels.mkString(", ")
+    arrow + " " + labels.map(MakeRef(_)).mkString(" ")
 
   @inline def MakeFlowTextOrEmpty(arrow: String, labels: TreeSet[String]) =
     if (labels.isEmpty) "" else MakeFlowText(arrow, labels)
@@ -67,7 +67,7 @@ object SmartText {
     @inline private def gobbleWhitespace(sb: StringBuilder, _in: Input) = {
       var in = _in
       while (!in.atEnd && Character.isWhitespace(in.first)) {
-        sb += in.first;
+        sb += in.first
         in = in.rest
       }
       in

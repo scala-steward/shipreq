@@ -7,7 +7,6 @@ FUNC TODO
 
 * [S.3.0] Keyboard shortcuts for step editing (ie. nav & indent)
 * [S.4.2] Allow step reordering, probably via drag-n-drop.
-* [S.2.2] Use braces in flow refs for consistency.
 * [S.1.2] Flow parsing fails both sides if either side has an error.
 * [S.1.2] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [ . . ] 

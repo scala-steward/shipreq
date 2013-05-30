@@ -212,22 +212,22 @@ class StepReferenceTest
     they("should generally work") {
       given_103_exists
       when_type("1.0.3", "-->1.0.1")
-      then_step_should_be("1.0.3", "➡ 1.0.1")
-      _and_step_should_be("1.0.1", "⬅ 1.0.3")
+      then_step_should_be("1.0.3", "➡ [1.0.1]")
+      _and_step_should_be("1.0.1", "⬅ [1.0.3]")
 
       when_type("1.0.2", "--> 1.0.1, 1.0.3")
-      then_step_should_be("1.0.2", "➡ 1.0.1, 1.0.3")
-      _and_step_should_be("1.0.1", "⬅ 1.0.2, 1.0.3")
-      _and_step_should_be("1.0.3", "⬅ 1.0.2 ➡ 1.0.1")
+      then_step_should_be("1.0.2", "➡ [1.0.1] [1.0.3]")
+      _and_step_should_be("1.0.1", "⬅ [1.0.2] [1.0.3]")
+      _and_step_should_be("1.0.3", "⬅ [1.0.2] ➡ [1.0.1]")
 
       when_<<("1.0.3"); mapSteps("1.0", "1.0.1", "1.0.2", "1.1")
-      then_step_should_be("1.0.1", "⬅ 1.0.2, 1.1")
-      _and_step_should_be("1.0.2", "➡ 1.0.1, 1.1")
-      _and_step_should_be("1.1", "⬅ 1.0.2 ➡ 1.0.1")
+      then_step_should_be("1.0.1", "⬅ [1.0.2] [1.1]")
+      _and_step_should_be("1.0.2", "➡ [1.0.1] [1.1]")
+      _and_step_should_be("1.1", "⬅ [1.0.2] ➡ [1.0.1]")
 
       when_-("1.0.2"); mapSteps("1.0", "1.0.1", "1.1")
-      then_step_should_be("1.0.1", "⬅ 1.1")
-      _and_step_should_be("1.1", "➡ 1.0.1")
+      then_step_should_be("1.0.1", "⬅ [1.1]")
+      _and_step_should_be("1.1", "➡ [1.0.1]")
     }
   }
 }
