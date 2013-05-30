@@ -203,6 +203,11 @@ class SmartTextTest
         test("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist.")
       }
 
+      it("should not recognise normalised DB refs") {
+        val id = tag[StepId](100)
+        test(s"${SmartText.MakeNormalisedRef(id)} doesn't exist.", "[D.100?] doesn't exist.")
+      }
+
       it("should ignore existing invalid step refs") {
         test("[1.0.9?] doesn't exist.")
       }

@@ -37,7 +37,8 @@ object SmartText {
   }
 
   val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
-  def InvalidNormalisedRef(dataId: String) = MakeRef("D." + dataId)
+  def MakeNormalisedRef(dataId: Long_StepId) = MakeRef("D." + dataId)
+  def MakeInvalidNormalisedRef(dataId: String) = MakeRef("D." + dataId)
 
   val DeletedRef = MakeRef("DELETED")
 
@@ -222,7 +223,7 @@ class SmartText(val msgCentre: MessageCentre,
       val dataIdText = m.group(1)
       val dataId = dataIdText.toLong.tag[StepId]
       savedSteps.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_))
-      .getOrElse(InvalidNormalisedRef(dataIdText))
+      .getOrElse(MakeInvalidNormalisedRef(dataIdText))
     })
 
     // Parse text as normal
