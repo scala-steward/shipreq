@@ -215,7 +215,7 @@ class SmartText(val msgCentre: MessageCentre,
    *                          human-readable labels.
    * @param savedSteps A map of step data-to-node ids.
    */
-  def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: Map[Long_StepDataId, String]) {
+  def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: BiMap[Long_StepDataId, String @@ LocalStepId]) {
     refAndIdLookup = refAndIdLookupProvider()
     _textWithNormalisedRefs = newValueWithNRefs
 
@@ -223,7 +223,7 @@ class SmartText(val msgCentre: MessageCentre,
     val newValue = NormalisedRefRegex.replaceAllIn(newValueWithNRefs, { m =>
       val dataIdText = m.group(1)
       val dataId = dataIdText.toLong.tag[StepDataId]
-      savedSteps.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_)).getOrElse{
+      savedSteps.ab.get(dataId).flatMap(nodeId => refAndIdLookup.get(nodeId)).map(MakeRef(_)).getOrElse{
         warn(s"Unable to realise normalised step reference. ❚ Text: $newValueWithNRefs ❚ DataId: $dataId ❚ SavedSteps: $savedSteps ❚ RefAndIdLookup: $refAndIdLookup")
         MakeInvalidNormalisedRef(dataIdText)
       }

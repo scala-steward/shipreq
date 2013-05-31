@@ -28,7 +28,7 @@ class UseCaseCtx(cometActor: CometActor) {
 
   val normalCourseTitleId = ncacField.get.courses.head.stepTextId
 
-  private[lib] var _savedSteps = Map.empty[Long_StepDataId, String @@ LocalStepId]
+  private[lib] var _savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalStepId]
   def savedSteps = _savedSteps
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -53,9 +53,9 @@ class UseCaseCtx(cometActor: CometActor) {
     }
 
 //    Build ucCtx . map of stepDataId  →  Step Node ID
-    _savedSteps = checkpoint.saveCtx.stepValues.map{
+    _savedSteps = BiMap(checkpoint.saveCtx.stepValues.map{
       case (localStepId, stepValue) => (stepValue.taggedDataId -> localStepId)
-    }.toMap
+    })
 
     for (fn <- finaliseStateFns) fn()
   }

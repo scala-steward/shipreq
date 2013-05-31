@@ -5,7 +5,6 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.slick.jdbc.{GetResult, SetParameter, StaticQuery => Q}
 import scala.slick.session.PositionedParameters
 import lib.db.DBHelpers._
-import lib.field.Field
 import FieldValue.FieldValueData
 import lib.TypeTags._
 

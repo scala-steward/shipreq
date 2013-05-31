@@ -20,6 +20,7 @@ object SmartTextTest extends MockitoSugar {
   implicit def autoTagLocalStepId(s: String) = s.asLocalStepId
   implicit def autoTagLocalStepId(s: Set[String]) = s.asInstanceOf[Set[String @@ LocalStepId]]
   implicit def autoTagLocalStepId(m: Map[String, String]) = m.asInstanceOf[Map[String, String @@ LocalStepId]]
+  implicit def autoBiMap[A,B](m: Map[A, B]) = BiMap(m)
 
   val StepState1 = Map("S.1" -> "X1", "S.2" -> "X2", "S.3" -> "X3", "S.5" -> "X5", "S.6" -> "X6",
                         "X1" -> "S.1", "X2" -> "S.2", "X3" -> "S.3", "X5" -> "S.5", "X6" -> "S.6")
@@ -119,7 +120,7 @@ class SmartTextTest
       val m = new SmartText(mock[MessageCentre], () => StepState1)
       m.init()
       m.refsInText += ("A" -> "B")
-      m.setTextFromLoad("Hehe".hasNormalisedRefs, Map.empty)
+      m.setTextFromLoad("Hehe".hasNormalisedRefs, BiMap.empty)
       m.text should be("Hehe")
       m._textWithNormalisedRefs should be("Hehe")
       m.refsInText should be('empty)
@@ -129,7 +130,7 @@ class SmartTextTest
       val msgCentre = mock[MessageCentre]
       val m = new SmartText(msgCentre, () => StepState1)
       m.init()
-      m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2"))
+      m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalStepId))
       m.text should be("Hehe [S.2]")
       m._textWithNormalisedRefs should be("Hehe [D.100]")
       m.refsInText should be(Map("S.2" -> "X2"))
@@ -140,7 +141,7 @@ class SmartTextTest
       val msgCentre = mock[MessageCentre]
       val m = new SmartStepText(msgCentre, () => StepState1, "XX", "XXt")
       m.init()
-      val savedSteps = Map(100.tag[StepDataId] -> "X2", 104.tag[StepDataId] -> "X1", 108.tag[StepDataId] -> "X3")
+      val savedSteps = BiMap(100.tag[StepDataId] -> "X2".asLocalStepId, 104.tag[StepDataId] -> "X1".asLocalStepId, 108.tag[StepDataId] -> "X3".asLocalStepId)
       val ntext = "He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs
       m.setTextFromLoad(ntext, savedSteps)
       m.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
