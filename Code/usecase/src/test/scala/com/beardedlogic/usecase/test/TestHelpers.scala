@@ -31,6 +31,8 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
 
   def eventuallyIf(wait: Boolean)(cond: => Any) { if (wait) eventually(cond) else cond }
 
+  def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
+
   def matchTree(expected: List[StepNode]) = TestHelpers.TreeMatcher(expected)
 
   def mockUseCaseCtx: UseCaseCtx = {

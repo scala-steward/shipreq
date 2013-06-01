@@ -18,12 +18,13 @@ object NodeUtils {
    * Each line must match the format "<indent><label>. <step text>"
    * Indents must be spaces in multiples of 2.
    */
-  def parseStepTree(txt: String): List[StepNode] = {
+  def parseStepTree(txt: String, useTextAsId: Boolean = false): List[StepNode] = {
     val nodes = new MutableList[StepNode]
     val parents = MutableMap[Int, StepNode]()
     val children = MutableMap[StepNode, MutableList[StepNode]]()
     val lineRegex = """^\s*(\S+?)\. (\S[^\r\n]*?)\s*$""".r
     val topLevelLabel = """^(\S+\.)(\d+)$""".r
+    val manualIdRegex = "^(.+)(?:\\|id=(.+))\\s*$".r
 
     val lines = txt.split("""\s*[\r\n]+""").map(_.replaceFirst("\\s+$", "")).filter(!_.isEmpty)
     val commonIndentSize = lines.map(_.replaceFirst("\\S.+", "").length).min
@@ -35,20 +36,28 @@ object NodeUtils {
       val indentSize = line.replaceFirst("\\S.+", "").length
       if (indentSize % 2 != 0) throw new RuntimeException("Odd indent size: " + line)
       val indent = indentSize >> 1
-      val lineRegex(label, stepText) = line
+      var lineRegex(label, stepText) = line
+
+      // Parse manual id, eg. "1.0. Root|id=6"
+      val manualIdMatcher = manualIdRegex.pattern.matcher(stepText)
+      val idOverride = if (manualIdMatcher.matches) {
+        stepText = manualIdMatcher.group(1)
+        Some(manualIdMatcher.group(2))
+      } else if (useTextAsId) Some(stepText)
+      else None
 
       // Create node
       val n =
         if (indent == 0) {
           val topLevelLabel(labelPrefix, labelSuffix) = label
           val labelIndex = LabelMakers(0)(labelSuffix)
-          val n = new StepNode(label.asLocalStepId, 0, labelIndex, Step(stepText))
+          val n = new StepNode(idOverride.getOrElse(label).asLocalStepId, 0, labelIndex, Step(stepText))
           nodes += n
           n
         } else {
           val p = parents(indent - 1)
           val labelIndex = LabelMakers(indent)(label)
-          val n = new StepNode(s"${p.id}.${label}".asLocalStepId, indent, labelIndex, Step(stepText))
+          val n = new StepNode(idOverride.getOrElse(s"${p.id}.${label}").asLocalStepId, indent, labelIndex, Step(stepText))
           children(p) += n
           n
         }

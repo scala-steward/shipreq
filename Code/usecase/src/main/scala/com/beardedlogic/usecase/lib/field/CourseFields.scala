@@ -49,7 +49,74 @@ object CourseFields {
     override def startingLabelIndex(level: Int) = 1
   }
 
+  /** Converts StepStates to a node tree. */
+  def buildNodes(state: List[StepState], startingIndexForLevel: Int => Int): List[StepNode] =
+    convertNodeTree[StepState, StepNode](state, {
+      case (node, level, index, children) => StepNode(node.id, level, index, Step(node.text), children)
+    }, startingIndexForLevel)
+
+  /** Builds StepStates from a node tree. */
+  def buildState(nodes: List[StepNode], startingIndexForLevel: Int => Int): List[StepState] =
+    convertNodeTree[StepNode, StepState](nodes, {
+      // TODO ss.step.text.hasNormalisedRefs = bullshit?
+      case (ss, level, index, children) => StepState(ss.id, ss.step.text.hasNormalisedRefs, children)
+    }, startingIndexForLevel)
+
+  /**
+   * Compares old and current states. When a difference is discovered a new `value` is inserted and stored in
+   * `saveCtx.stepValues`. Where a step can be reused, it is.
+   *
+   * SIDE EFFECTS:
+   * - `saveCtx.stepValues` << new & updated steps
+   * - `dao` << new & updated steps
+   *
+   * @return Whether any changes were discovered.
+   */
+  def compareAndSaveChanges(
+    oldState: CourseFieldState,
+    oldStepValues: Map[String @@ LocalStepId, PlainValue[DataType.Step]],
+    newState: List[StepState],
+    saveCtx: MutableFieldSaveCtx,
+    dao: DAO
+    ): Boolean = {
+
+    val oldStateMap = oldState.stepMap
+    def iter(newState: List[StepState]): Boolean = newState match {
+      case curStep :: nextSiblings =>
+
+        // Check children first
+        var changeDetected = iter(curStep.children)
+
+        // Check current node
+        val oldStep = oldStateMap.get(curStep.id)
+        val reusable = !changeDetected && oldStep.isDefined && oldStep.get == curStep
+        // println(s"${curStep.text}(${curStep.id}) vs ${oldStep.map(_.text)}(${oldStep.map(_.id).getOrElse("")}) => reusable: ${reusable}")
+        if (!reusable) {
+          val newValue = oldStep.flatMap(ss => oldStepValues.get(ss.id)) match {
+            case Some(oldStepValue) => dao.createValue(oldStepValue, LatestRev) // update
+            case None               => dao.createInitialValue(DataType.Step) // insert new
+          }
+          saveCtx.stepValues += (curStep.id -> newValue)
+          changeDetected = true
+        }
+
+        // Check next sibling
+        if (iter(nextSiblings)) changeDetected = true
+
+        changeDetected
+
+      case Nil => false
+    }
+
+    var changedDetected = iter(newState)
+    changedDetected || {
+      // Top-level order could be different and no changes would otherwise be detected
+      oldState.courses != newState
+    }
+  }
 }
+
+// =====================================================================================================================
 
 abstract class CourseFields extends Field[CourseFieldState] {
 
@@ -249,7 +316,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
 
   override def setState(newState: CourseFieldState) = {
     _rootLabelPrefix = recalcRootLabelPrefix
-    courses = buildNodesFromState(newState.courses, 0)
+    courses = buildNodes(newState.courses, startingLabelIndices.startingLabelIndex _)
     syncTextFieldMap
     () => {
       val stepMap = newState.stepMap
@@ -262,28 +329,43 @@ abstract class CourseFields extends Field[CourseFieldState] {
     }
   }
 
-  private def buildNodesFromState(state: List[StepState], level: Int): List[StepNode] = {
-    @tailrec def iter(state: List[StepState], level: Int, labelIndex: Int, results: List[StepNode]): List[StepNode] = state match {
-      case Nil    => results
-      case h :: t =>
-        val children = buildNodesFromState(h.children, level + 1)
-        val node = StepNode(h.id, level, labelIndex, Step(h.text), children)
-        iter(t, level, labelIndex + 1, results :+ node)
-    }
-    iter(state, level, startingLabelIndices.startingLabelIndex(level), Nil)
-  }
-
-  override def save_? : Boolean = ???
+  override def save_? : Boolean = courses.nonEmpty
 
   override def presave(
     lastSave: Option[(FieldSaveCtx, CourseFieldState)],
     saveCtx: MutableFieldSaveCtx,
     dao: DAO
-    ): Boolean = ???
+    ): Boolean = {
+
+    stateCache = getState
+    textFields.foreach(_._2.recalcTextWithNormalisedRefs(ucCtx.savedSteps.ba))
+    lastSave match {
+
+      // No previous save, add everything for first time
+      case None =>
+        courses.foreachNode { n =>
+          val v = dao.createInitialValue(DataType.Step)
+          saveCtx.stepValues += (n.id -> v)
+        }
+        true
+
+      // Compare to previous and save deltas
+      case Some((oldSaveCtx, oldFieldState)) =>
+        compareAndSaveChanges(oldFieldState, oldSaveCtx.stepValues, stateCache.courses, saveCtx, dao)
+    }
+  }
 
   override def save(
     combinedSaveCtx: FieldSaveCtx,
     newSaveCtx: FieldSaveCtx,
     dao: DAO
     ): (FieldValueData, CourseFieldState) = ???
+
+  /**
+   * A snapshot of the current state. Required in both presave() and save(). Rather than passing it back out and in
+   * again we just store it here in presave() and using it during save().
+   */
+  var stateCache: CourseFieldState = null
+
+  def getState = CourseFieldState(buildState(courses, startingLabelIndices.startingLabelIndex _))
 }

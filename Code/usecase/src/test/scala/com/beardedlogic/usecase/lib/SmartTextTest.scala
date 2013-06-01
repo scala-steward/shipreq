@@ -1,4 +1,5 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase
+package lib
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.TreeSet
@@ -6,7 +7,6 @@ import net.liftweb.http.CometActor
 
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.Tables.Table
 import org.scalatest.prop._
@@ -14,6 +14,7 @@ import org.scalatest.prop._
 import TypeTags._
 import msg.MessageCentre
 import msg.Messages._
+import test.TestHelpers
 
 object SmartTextTest extends MockitoSugar {
 
@@ -90,17 +91,14 @@ object SmartTextTest extends MockitoSugar {
  */
 class SmartTextTest
   extends FunSpec
-          with ShouldMatchers
-          with PropertyChecks
-          with Checkers
-          with SmartTextChecks
-          with MockitoSugar {
+  with PropertyChecks
+  with Checkers
+  with SmartTextChecks
+  with TestHelpers {
 
   import SmartTextTest._
 
   class RefLookupProvider(var value: Map[String, String])
-
-  def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
 
   def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
     verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])

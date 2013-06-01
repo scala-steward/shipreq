@@ -279,4 +279,28 @@ object StepTree {
   private def levelChange(offset: Int) = (n: StepNode, ch: List[StepNode]) => {
     n.copy(children = ch, level = n.level + offset)
   }
+
+  /**
+   * Converts a tree of type-A nodes, into a tree of type-B nodes, maintaining the tree structure.
+   * @param input A list of type-A nodes.
+   * @param fn The function to convert a type-A to a type-B node.
+   *           It should take arguments: node, level, labelIndex, children.
+   * @return A list of type-B nodes.
+   */
+  def convertNodeTree[A <: TreeNodeLike[A], B <: TreeNodeLike[B]](
+    input: List[A],
+    fn: (A, Int, Int, List[B]) => B,
+    startingIndexForLevel: Int => Int,
+    level: Int = 0): List[B] = {
+
+    @tailrec def iter(input: List[A], level: Int, labelIndex: Int, results: List[B]): List[B] = input match {
+      case Nil    => results
+      case h :: t =>
+        val children = convertNodeTree(h.children, fn, startingIndexForLevel, level + 1)
+        val node = fn(h, level, labelIndex, children)
+        iter(t, level, labelIndex + 1, results :+ node)
+    }
+
+    iter(input, level, startingIndexForLevel(level), Nil)
+  }
 }

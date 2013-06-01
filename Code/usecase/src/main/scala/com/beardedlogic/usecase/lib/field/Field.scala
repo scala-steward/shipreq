@@ -62,6 +62,8 @@ trait Field[S] {
 
   /**
    * Saves `Data` and `Value` rows for any additional data required.
+   *
+   * @return Whether the field's state has changed since the last save.
    */
   def presave(
     lastSave: Option[(FieldSaveCtx, S)],
