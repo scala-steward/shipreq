@@ -31,12 +31,22 @@ class MutableFieldSaveCtx {
   def immutable = new FieldSaveCtx(fieldValues.result, stepValues.result)
 }
 
-class FieldSaveCtx(
+case class FieldSaveCtx(
   val fieldValues: Map[FieldKey, PlainValue[DataType.FieldValue]],
   val stepValues: Map[String @@ LocalStepId, PlainValue[DataType.Step]]
-  )
+  ) {
 
-class FieldLoadCtx(
+  /**
+   * Merges this and another to form a new instance with all values combined.
+   * In the case of conflicts, `this` will override `that`.
+   */
+  def combineWith(that: FieldSaveCtx) = FieldSaveCtx(
+    that.fieldValues ++ this.fieldValues,
+    that.stepValues ++ this.stepValues
+  )
+}
+
+case class FieldLoadCtx(
   val fieldValues: Map[Long_FieldKeyId, FieldValue],
   /** For each relation type, a map of from-IDs to to-IDs (in the order specified in the `index` column). */
   val relations: Map[RelationType, Map[Long, List[Long]]],

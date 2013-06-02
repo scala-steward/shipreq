@@ -19,6 +19,8 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
 
   implicit def autoTagLocalStepIds(s: String) = s.asLocalStepId
   implicit def autoTagNormalisedRefs(s: String) = s.hasNormalisedRefs
+  implicit def autoTypeStepValues(m: Map[String, PlainValue[DataType.Step]]) = m.asInstanceOf[Map[String @@ LocalStepId, PlainValue[DataType.Step]]]
+  def SVMap(pairs: (String,PlainValue[DataType.Step])*) = autoTypeStepValues(Map(pairs:_*))
 
   val Key_NC = new FieldKey(1, FieldKeyType.NormalAndAlternateCourses, None)
   val Key_EC = new FieldKey(2, FieldKeyType.ExceptionCourses, None)
@@ -253,6 +255,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       val cf = new ExceptionCourseFields(new UseCaseCtx(mock[CometActor]), Key_EC)
       cf.courses = courses
       cf.init
+      cf.recalcCurrentState()
       cf
     }
 
@@ -276,7 +279,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       it("should NOP do return false when no differences") {
         val (saveCtx, dao) = mockSaveCtxAndDao
         val cf = sampleCF(NodeTree1)
-        cf.presave(lastSaveFor(cf.getState), saveCtx, dao) should be(false)
+        cf.presave(lastSaveFor(cf.currentState), saveCtx, dao) should be(false)
         verifyZeroInteractions(dao)
         saveCtx.stepValues.result.size should be(0)
       }
@@ -294,7 +297,65 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     }
 
     // TODO check presave() with data refs
+    // TODO check save() with data refs
     // TODO check compare() with new steps
+    // TODO check compare() with deleted steps
+
+    describe("save()") {
+      it("should create step & relation rows") {
+        val cf = sampleCF(NodeTree1)
+        val (stepValues, mockStepValuesByName) = lastSave2For(cf.currentState)
+        val fieldValues = Map(cf.fieldKey -> mock[PlainValue[DataType.FieldValue]])
+        val saveCtx = FieldSaveCtx(fieldValues, stepValues)
+        val dao = mock[DAO]
+
+        val (fd,state) = cf.save(saveCtx, saveCtx, dao)
+
+        fd should be (None)
+        state should be(cf.currentState)
+        for ((name, v) <- mockStepValuesByName) verify(dao).createStep(v, name)
+        verify(dao, times(8)).relate_stepParent_has_step(any[Value[_ <: StepParent]], any[Short], any[Value[DataType.Step]])
+        verifyNoMoreInteractions(dao)
+      }
+
+      it("should link to reusable steps") {
+        val treeBefore = Tree1Text
+        val treeAfter = """
+              1.0. Other
+              1.1. New!!
+              1.2. RootX|id=Root
+                1. T1000|id=T1
+                  a. T2
+                  b. T3
+                2. T4
+                  a. T5
+                  b. T6 """
+        val sliFn = StartingRootLabelIndexAt0.startingLabelIndex _
+        val before = buildState(parseStepTree(treeBefore, true), sliFn)
+        val after = buildState(parseStepTree(treeAfter, true), sliFn)
+        val cf = sampleCF(buildNodes(after, sliFn))
+        val (oldStepValues, mockStepValuesByName) = lastSave2For(CourseFieldState(before))
+        val oldSaveCtx = FieldSaveCtx(Map.empty, oldStepValues)
+
+        val newFieldValues = Map(cf.fieldKey -> mock[PlainValue[DataType.FieldValue]])
+        val newStepValues = SVMap(
+          "New!!" -> new PlainValue[DataType.Step](90,90,1),
+          "Root" -> new PlainValue[DataType.Step](91,92,2),
+          "T1" -> new PlainValue[DataType.Step](91,92,2)
+        )
+        val saveCtx = FieldSaveCtx(newFieldValues, newStepValues)
+        val dao = mock[DAO]
+
+        val (fd,state) = cf.save(saveCtx.combineWith(oldSaveCtx), saveCtx, dao)
+
+        fd should be (None)
+        state should be(cf.currentState)
+        for ((id, v) <- newStepValues) verify(dao).createStep(v, if (id=="Root") "RootX" else if (id=="T1") "T1000" else id)
+        verify(dao, times(3 + 2 + 2)) // FV->[Other,New,RootX] + RootX->[T1000,T4] + T1000->[T2,T3]
+          .relate_stepParent_has_step(any[Value[_ <: StepParent]], any[Short], any[Value[DataType.Step]])
+        verifyNoMoreInteractions(dao)
+      }
+    }
   }
 
   /*

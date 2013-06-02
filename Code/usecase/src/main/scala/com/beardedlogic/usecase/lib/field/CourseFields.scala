@@ -337,7 +337,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
     dao: DAO
     ): Boolean = {
 
-    stateCache = getState
+    recalcCurrentState()
     textFields.foreach(_._2.recalcTextWithNormalisedRefs(ucCtx.savedSteps.ba))
     lastSave match {
 
@@ -351,7 +351,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
 
       // Compare to previous and save deltas
       case Some((oldSaveCtx, oldFieldState)) =>
-        compareAndSaveChanges(oldFieldState, oldSaveCtx.stepValues, stateCache.courses, saveCtx, dao)
+        compareAndSaveChanges(oldFieldState, oldSaveCtx.stepValues, currentState.courses, saveCtx, dao)
     }
   }
 
@@ -359,13 +359,35 @@ abstract class CourseFields extends Field[CourseFieldState] {
     combinedSaveCtx: FieldSaveCtx,
     newSaveCtx: FieldSaveCtx,
     dao: DAO
-    ): (FieldValueData, CourseFieldState) = ???
+    ): (FieldValueData, CourseFieldState) = {
+
+    // Create steps
+    for {
+      (localId, v) <- newSaveCtx.stepValues
+      ss <- currentState.stepMap.get(localId)
+    } {
+      dao.createStep(v, ss.text)
+      for {
+        (childState, i) <- ss.children.zipWithIndex
+        childValue <- combinedSaveCtx.stepValues.get(childState.id)
+      } dao.relate_stepParent_has_step(v, i.toShort, childValue)
+    }
+
+    // Link FV to top-level
+    val fv = newSaveCtx.fieldValues(fieldKey)
+    for {
+      (ss,i) <- currentState.courses.zipWithIndex
+      stepValue <- combinedSaveCtx.stepValues.get(ss.id)
+    } dao.relate_stepParent_has_step(fv, i.toShort, stepValue)
+
+    (None, currentState)
+  }
 
   /**
    * A snapshot of the current state. Required in both presave() and save(). Rather than passing it back out and in
    * again we just store it here in presave() and using it during save().
    */
-  var stateCache: CourseFieldState = null
-
-  def getState = CourseFieldState(buildState(courses, startingLabelIndices.startingLabelIndex _))
+  private[this] var _stateCache: CourseFieldState = null
+  @inline final def currentState = _stateCache
+  def recalcCurrentState() {_stateCache = CourseFieldState(buildState(courses, startingLabelIndices.startingLabelIndex _)) }
 }
