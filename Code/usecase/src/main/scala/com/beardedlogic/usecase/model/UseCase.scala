@@ -28,8 +28,8 @@ object UseCaseAccessor {
   implicit val GetResultUseCase = GetResult(r => UseCase(r.<<, r.<<, r.<<, r.<<))
   implicit val GetResultUseCaseWithValue = GetResult(r => UseCaseWithValue(GetResultPlainValue(r), r.<<, r.<<, r.<<))
 
-  implicit object SetParameterUseCase extends SetParameter[UseCase] {
-    def apply(v: UseCase, pp: PositionedParameters) {
+  implicit object SetParameterUseCaseWithValue extends SetParameter[UseCaseWithValue] {
+    def apply(v: UseCaseWithValue, pp: PositionedParameters) {
       pp.setLong(v.valueId)
       pp.setString(v.title)
       pp.setShort(v.number)
@@ -37,7 +37,7 @@ object UseCaseAccessor {
     }
   }
 
-  val Insert = Q.update[UseCase]("INSERT INTO usecase VALUES(?,?,?,?)")
+  val Insert = Q.update[UseCaseWithValue]("INSERT INTO usecase VALUES(?,?,?,?)")
   val Select = Q.query[Long, UseCase]("SELECT id, title, number, field_list_id FROM usecase WHERE id=?")
   val SelectWithValue = Q.query[Long, UseCaseWithValue](s"""
     SELECT v.${ValueAccessor.*}, title, number, field_list_id
@@ -51,11 +51,14 @@ trait UseCaseAccessor extends DatabaseAccessor {
 
   import UseCaseAccessor._
 
-  def createUseCase(data: Data[DataType.UseCase], uc: UseCaseCtx, rev: Revision = LatestRev): UseCase = db.withTransaction {
-    val value = createValue(data, rev)
-    val ucModel = UseCase(value.valueId, uc.title, uc.number, uc.fieldList.valueId)
-    Insert.execute(ucModel)
-    ucModel
+  def createUseCase(value: PlainValue[DataType.UseCase],
+    title: String,
+    number: Short,
+    fieldList: FieldList): UseCaseWithValue = {
+
+    val uc = UseCaseWithValue(value, title, number, fieldList.valueId)
+    Insert.execute(uc)
+    uc
   }
 
   def findUseCase(valueId: Long): Option[UseCase] = Select.firstOption(valueId)

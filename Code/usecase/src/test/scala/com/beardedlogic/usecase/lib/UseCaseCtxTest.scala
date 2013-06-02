@@ -1,16 +1,20 @@
 package com.beardedlogic.usecase
 package lib
 
+import net.liftweb.util.Helpers.nextFuncName
 import org.scalatest.FunSpec
+import scala.slick.jdbc.{StaticQuery => Q}
+import Q.interpolation
 import test.{TestHelpers, TestDatabaseSupport}
 import field._
+import TypeTags._
 import model._
 import NodeUtils._
 import StepTree.{Step => Step2, _}
-import scala.slick.jdbc.{StaticQuery => Q}
-import Q.interpolation
 
 class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
+
+  implicit def autoTagLocalStepId(s: String) = s.asLocalStepId
 
   describe("Loading") {
     it("should load a simple, manually-saved UC") {
@@ -91,56 +95,163 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
     }
   }
 
-  /*
-  val Steps1A =
-    StepNode("1E1", 0, 1, Step("EC 1E1"), List(StepNode("1E1.1", 1, 1, Step("EC 1E11")))) ::
-      StepNode("1E2", 0, 2, Step("EC 1E2")) ::
+  // -------------------------------------------------------------------------------------------------------------------
+
+  // TODO Share sample courses. Create TestData or something.
+  val NcSteps =
+    StepNode(nextFuncName, 0, 0, Step2("I'm the title"), (
+      StepNode(nextFuncName, 1, 1, Step2("First")) ::
+        StepNode(nextFuncName, 1, 2, NewStep) ::
+        StepNode(nextFuncName, 1, 3, Step2("Finally"), (
+          StepNode(nextFuncName, 2, 1, Step2("Sweet")) :: Nil
+          )) :: Nil
+      )) :: Nil
+
+  val EcSteps =
+    StepNode(nextFuncName, 0, 1, Step2("EC 1E1"), List(StepNode(nextFuncName, 1, 1, Step2("EC 1E11")))) ::
+      StepNode(nextFuncName, 0, 2, Step2("EC 1E2")) ::
       Nil
 
-  val Steps1B =
-    StepNode("v10", 0, 1, Step("EC 1E1"), List(StepNode("v12", 1, 1, Step("EC 1E11")))) ::
-      StepNode("v11", 0, 2, Step("EC 1E2")) ::
-      Nil
+  def sampleCtx = {
+    val uc = new UseCaseCtx(null)
+    uc.title = "YES!"
+    uc.textFields(0).value.setTextFromUser("blah")
+    uc.textFields(2).value.setTextFromUser("hehe")
+    uc.ncacField.get.courses = NcSteps
+    uc.ecField.get.courses = EcSteps
+    uc
+  }
 
-  val Steps2_TextChange =
-    StepNode("v10", 0, 1, Step("EC 1E1"), List(StepNode("v12", 1, 1, Step("i differ")))) ::
-      StepNode("v11", 0, 2, Step("EC 1E2")) ::
-      Nil
-
-  val Steps2_OrderChange =
-    StepNode("v11", 0, 2, Step("EC 1E2")) ::
-      StepNode("v10", 0, 1, Step("EC 1E1"), List(StepNode("v12", 1, 1, Step("EC 1E11")))) ::
-      Nil
-
-  def fs(courses: List[StepNode]) = Map(FieldKey(5, FieldKeyType.NormalAndAlternateCourses, None) -> courses)
-  def ucs(number: Short, title: String, courses: List[StepNode]) = UseCaseState(number, title, fs(courses))
-*/
-  /*
-  describe("UseCaseState comparison") {
-    it("should match when content is the same") {
-      val a = ucs(2, "Hehe", Steps1B)
-      val b = ucs(2, "Hehe", Steps1B.map(_.copy()))
-      val c = a.copy(number = 2, title = "Hehe")
-      a.sameContentAs(a) should be(true)
-      a.sameContentAs(b) should be(true)
-      a.sameContentAs(c) should be(true)
+  describe("Saving (first-time)") {
+    it("should set lastSave (on first save)") {
+      val uc = new UseCaseCtx(null)
+      uc.lastSave should be('empty)
+      uc.save(db)
+      uc.lastSave should not be ('empty)
     }
 
-    it("should differ when simple content changes") {
-      val a = ucs(2, "Hehe", Steps1B)
-      val b = a.copy(number = 3)
-      val c = a.copy(title = "What")
-      a.sameContentAs(b) should be(false)
-      a.sameContentAs(c) should be(false)
+    it("should save when empty") {
+      val uc = new UseCaseCtx(null)
+      uc.courseFields.foreach(_.courses = Nil)
+      assertTableDiffs("usecase" -> 1, "data" -> 1, "value" -> 1) { uc.save(db) }
     }
 
-    it("should differ when course content changes") {
-      val a = ucs(2, "Hehe", Steps1B)
-      val b = a.copy(number = 3)
-      val c = a.copy(title = "What")
-      a.sameContentAs(b) should be(false)
-      a.sameContentAs(c) should be(false)
+    it("should save with 2 text fields") {
+      val uc = sampleCtx
+      uc.courseFields.foreach(_.courses = Nil)
+      assertTableDiffs("usecase" -> 1, "data" -> 3, "value" -> 3, "field_value" -> 2, "relation" -> 2) { uc.save(db) }
     }
   }
-  */
+
+  describe("Updating") {
+    def testUpdate(test: UseCaseCtx => Any, expectUpdate: Boolean = true) {
+      val uc = sampleCtx
+      uc.save(db)
+      uc.lastSave should not be ('empty)
+      val lastSave = uc.lastSave
+      test(uc)
+      uc.lastSave should (if (expectUpdate) (not be (lastSave)) else be(lastSave))
+    }
+
+    def FVs = 4
+    def FVsPlus(plus: Int) = FVs + plus
+
+    it("should do nothing when no changes") {
+      testUpdate(expectUpdate = false, test = { uc =>
+        assertTableDiffs() { uc.save(db) }
+      })
+    }
+
+    it("should save a title change") {
+      testUpdate { uc =>
+        uc.title = "zzzzzzzzz"
+        assertTableDiffs("usecase" -> 1, "value" -> 1, "relation" -> FVs) { uc.save(db) }
+      }
+    }
+
+    it("should save a UC-number change") {
+      testUpdate { uc =>
+        uc.number = 666
+        assertTableDiffs("usecase" -> 1, "value" -> 1, "relation" -> FVs) { uc.save(db) }
+      }
+    }
+
+    it("should save a text update") {
+      testUpdate { uc =>
+        uc.textFields(0).value.setTextFromUser("jjjjjjjjjj")
+        assertTableDiffs("usecase" -> 1, "field_value" -> 1, "value" -> 2, "relation" -> FVs) { uc.save(db) }
+      }
+    }
+
+    it("should save a text removal") {
+      testUpdate { uc =>
+        uc.textFields(0).value.setTextFromUser("")
+        assertTableDiffs("usecase" -> 1, "value" -> 1, "relation" -> FVsPlus(-1)) { uc.save(db) }
+      }
+    }
+
+    it("should save a new text") {
+      testUpdate { uc =>
+        uc.textFields(3).value.setTextFromUser("jjjjjjjjjj")
+        assertTableDiffs("usecase" -> 1, "field_value" -> 1, "value" -> 2, "data" -> 1, "relation" -> FVsPlus(1)) { uc.save(db) }
+      }
+    }
+
+    it("should behave the same on updates after updates") {
+      val uc = sampleCtx
+      uc.save(db)
+      assertTableDiffs() { uc.save(db) }
+      assertTableDiffs() { uc.save(db) }
+
+      uc.title = "zzzzzzzzz"
+      assertTableDiffs("usecase" -> 1, "value" -> 1, "relation" -> FVs) { uc.save(db) }
+
+      assertTableDiffs() { uc.save(db) }
+      assertTableDiffs() { uc.save(db) }
+
+      uc.textFields(0).value.setTextFromUser("jjjjjjjjjj")
+      assertTableDiffs("usecase" -> 1, "field_value" -> 1, "value" -> 2, "relation" -> FVs) { uc.save(db) }
+
+      assertTableDiffs() { uc.save(db) }
+      assertTableDiffs() { uc.save(db) }
+
+      uc.textFields(0).value.setTextFromUser("")
+      assertTableDiffs("usecase" -> 1, "value" -> 1, "relation" -> FVsPlus(-1)) { uc.save(db) }
+
+      assertTableDiffs() { uc.save(db) }
+      assertTableDiffs() { uc.save(db) }
+    }
+
+    // TODO save when 1 step text change
+
+    // TODO save when step order change
+  }
+
+  describe("Saving then Loading") {
+    it("should load in full after saving") {
+      // Save first
+      val saved = sampleCtx
+      val valueRows = countRowsIn("value")
+      saved.save(db)
+      (countRowsIn("value") - valueRows) should be > 10
+      val valueId = saved.lastSave.get.uc.valueId
+
+      // Then load back
+      val loaded = new UseCaseCtx(null)
+      load(loaded, valueId)
+      loaded.title should be(saved.title)
+      loaded.number should be(saved.number)
+      loaded.textFields(0).value.text should be("blah")
+      loaded.textFields(1).value.text should be("")
+      loaded.textFields(2).value.text should be("hehe")
+      loaded.ncacField.get.courses should matchTree(NcSteps)
+      loaded.ecField.get.courses should matchTree(EcSteps)
+    }
+  }
+
+  def load(ucCtx: UseCaseCtx, valueId: Long) {
+    val checkpoint = UseCaseLoader.loadCheckpoint(valueId, db)
+    checkpoint should not be (None)
+    ucCtx.restoreCheckpoint(checkpoint.get)
+  }
 }
