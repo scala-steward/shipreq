@@ -180,7 +180,7 @@ class SmartText(val msgCentre: MessageCentre,
 
   protected val writeLock = new Object
   protected[lib] var refAndIdLookup = BiMap.empty[String @@ LocalId, String @@ Label]
-  protected[lib] var refsInText = Map.empty[String @@ Label, String @@ LocalId]
+  protected[lib] var refsInText = Map.empty[String @@ LocalId, String @@ Label]
 
   protected[lib] var _text = ""
 
@@ -243,11 +243,11 @@ class SmartText(val msgCentre: MessageCentre,
   protected def normaliseRefs(
     text: String,
     savedSteps: Map[String @@ LocalId, Long_StepDataId],
-    refs: Map[String @@ Label, String @@ LocalId]): String @@ NormalisedRefs = {
+    refs: Map[String @@ LocalId, String @@ Label]): String @@ NormalisedRefs = {
 
     var r = text
     for {
-      (label, localId) <- refs
+      (localId, label) <- refs
       dataId <- savedSteps.get(localId)
     } r = r.replace(MakeRef(label), MakeNormalisedRef(dataId))
     r.hasNormalisedRefs
@@ -308,7 +308,8 @@ class SmartText(val msgCentre: MessageCentre,
       // Check label validity
       val label = r.get._2.get.asLabel
       if (refAndIdLookup.ba.contains(label)) {
-        if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup.ba(label))
+        val id = refAndIdLookup.ba(label)
+        if (!refsInText.contains(id)) refsInText += (id -> label)
         MakeRef(newText, label)
       } else
         MakeInvalidRef(newText, label)
@@ -354,16 +355,16 @@ class SmartText(val msgCentre: MessageCentre,
    * Updates `refsInText` and creates a copy of given text in which all references are up-to-date.
    */
   protected def updateStepReferences(text: String): String = {
-    var newRefsInText = Map.empty[String @@ Label, String @@ LocalId]
+    var newRefsInText = Map.empty[String @@ LocalId, String @@ Label]
     var newText = text
-    for ((oldLabel, id) <- refsInText) {
+    for ((id, oldLabel) <- refsInText) {
 
       // Lookup each existing reference
       refAndIdLookup.ab.get(id).map { newLabel =>
         if (oldLabel != newLabel)
           newText = newText.replace(MakeRef(oldLabel), MakeRef(newLabel))
-        if (!newRefsInText.contains(newLabel))
-          newRefsInText += (newLabel -> id)
+        if (!newRefsInText.contains(id))
+          newRefsInText += (id -> newLabel)
       } orElse {
         newText = newText.replace(MakeRef(oldLabel), DeletedRef)
         None

@@ -126,7 +126,7 @@ class SmartTextTest
     it("should set simple text") {
       val m = new SmartText(mock[MessageCentre], () => StepState1)
       m.init()
-      m.refsInText += ("A".asLabel -> "B".asLocalId)
+      m.refsInText += ("A".asLocalId -> "B".asLabel)
       m.setTextFromLoad("Hehe".hasNormalisedRefs, BiMap.empty)
       m.text should be("Hehe")
       m.refsInText should be('empty)
@@ -138,7 +138,7 @@ class SmartTextTest
       m.init()
       m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalId))
       m.text should be("Hehe [S.2]")
-      m.refsInText should be(Map("S.2" -> "X2"))
+      m.refsInText should be(Map("X2" -> "S.2"))
       verify(msgCentre, never).!(any[Any])
     }
 
@@ -150,7 +150,7 @@ class SmartTextTest
       val ntext = "He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs
       m.setTextFromLoad(ntext, savedSteps)
       m.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
-      m.refsInText should be(Map("S.3" -> "X3"))
+      m.refsInText should be(Map("X3" -> "S.3"))
       m.flowFrom.refs should be(Map("X2" -> "S.2"))
       m.flowTo.refs should be(Map("X1" -> "S.1"))
       verify(msgCentre, never).!(any[Any])
@@ -178,21 +178,21 @@ class SmartTextTest
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m setTextFromUser "Umm [S.1] & [S.3] ah and [S.1]!"
-        m.refsInText should be(Map("S.1" -> "X1", "S.3" -> "X3"))
+        m.refsInText should be(Map("X1" -> "S.1", "X3" -> "S.3"))
       }
 
       it("should remove previous matches") {
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
-        m.refsInText = Map("S.1".asLabel -> "X1".asLocalId, "S.3".asLabel -> "X3".asLocalId)
+        m.refsInText = Map("X1".asLocalId -> "S.1".asLabel, "X3".asLocalId -> "S.3".asLabel)
         m setTextFromUser "Umm [S.1] only"
-        m.refsInText should be(Map("S.1" -> "X1"))
+        m.refsInText should be(Map("X1" -> "S.1"))
       }
 
       it("should clear the label<->id map when no matches") {
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
-        m.refsInText = Map("S.1".asLabel -> "X1".asLocalId, "S.3".asLabel -> "X3".asLocalId)
+        m.refsInText = Map("X1".asLocalId -> "S.1".asLabel, "X3".asLocalId -> "S.3".asLabel)
         m setTextFromUser "nothing"
         m.refsInText should be('empty)
       }
@@ -488,7 +488,7 @@ class SmartTextTest
       it("should do nothing") {
         assertMessageDoesNothing {
           m =>
-            m.refsInText = Map("S.2".asLabel -> "X2".asLocalId)
+            m.refsInText = Map("X2".asLocalId -> "S.2".asLabel)
             m.refAndIdLookup = StepState1
         }
       }
@@ -498,13 +498,13 @@ class SmartTextTest
       it("should do nothing") {
         assertMessageDoesNothing {
           m =>
-            m.refsInText = Map("S.1".asLabel -> "X1".asLocalId)
+            m.refsInText = Map("X1".asLocalId -> "S.1".asLabel)
             m.refAndIdLookup = StepState2
         }
       }
     }
 
-    def newSubject(initialText: String, initialRefsInUse: Map[String @@ Label, String @@ LocalId], useSmartStepText: Boolean = false) = {
+    def newSubject(initialText: String, initialRefsInUse: Map[String @@ LocalId, String @@ Label], useSmartStepText: Boolean = false) = {
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
       val m = if (useSmartStepText) {
@@ -542,22 +542,22 @@ class SmartTextTest
 
     describe("when referenced steps change (with SmartText)") {
       def subject = newSubject("Umm [S.1] & [S.2] ah and [S.1]!",
-                                Map("S.1".asLabel -> "X1".asLocalId, "S.2".asLabel -> "X2".asLocalId))
+        Map("X1".asLocalId -> "S.1".asLabel, "X2".asLocalId -> "S.2".asLabel))
       it should behave like textWasUpdated(subject,
                                             "Umm [S.A] & [S.2] ah and [S.A]!",
-                                            Map("S.A" -> "X1", "S.2" -> "X2"))
+                                            Map("X1" -> "S.A", "X2" -> "S.2"))
     }
 
     describe("when referenced steps change (with SmartStepText)") {
       def subject = newSubject("Umm [S.1] & [S.2] ah and [S.1]!",
-                                Map("S.1".asLabel -> "X1".asLocalId, "S.2".asLabel -> "X2".asLocalId), true)
+        Map("X1".asLocalId -> "S.1".asLabel, "X2".asLocalId -> "S.2".asLabel), true)
       it should behave like textWasUpdated(subject,
                                             "Umm [S.A] & [S.2] ah and [S.A]!",
-                                            Map("S.A" -> "X1", "S.2" -> "X2"))
+                                            Map("X1" -> "S.A", "X2" -> "S.2"))
     }
 
     describe("when referenced steps are deleted") {
-      def subject = newSubject("Watch [S.3] go.", Map("S.3".asLabel -> "X3".asLocalId))
+      def subject = newSubject("Watch [S.3] go.", Map("X3".asLocalId -> "S.3".asLabel))
       it should behave like textWasUpdated(subject, "Watch [DELETED] go.", Map.empty)
     }
 

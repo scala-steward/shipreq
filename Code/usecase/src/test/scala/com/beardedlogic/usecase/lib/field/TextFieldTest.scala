@@ -22,7 +22,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
   describe("Setting state") {
     it("should accept simple text") {
       val tf = sampleTextField
-      tf.value.refsInText += ("A".asLabel -> "B".asLocalId)
+      tf.value.refsInText += ("B".asLocalId -> "A".asLabel)
 
       tf.setState("Hehe!".hasNormalisedRefs)()
 
@@ -38,7 +38,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
       fn()
 
       tf.value.text should be("Hehe! [5.4]")
-      tf.value.refsInText should be(Map("5.4" -> "X1"))
+      tf.value.refsInText should be(Map("X1" -> "5.4"))
     }
   }
 
