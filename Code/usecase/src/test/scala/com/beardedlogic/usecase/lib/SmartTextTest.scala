@@ -120,7 +120,6 @@ class SmartTextTest
       m.refsInText += ("A" -> "B")
       m.setTextFromLoad("Hehe".hasNormalisedRefs, BiMap.empty)
       m.text should be("Hehe")
-      m._textWithNormalisedRefs should be("Hehe")
       m.refsInText should be('empty)
     }
 
@@ -130,7 +129,6 @@ class SmartTextTest
       m.init()
       m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalStepId))
       m.text should be("Hehe [S.2]")
-      m._textWithNormalisedRefs should be("Hehe [D.100]")
       m.refsInText should be(Map("S.2" -> "X2"))
       verify(msgCentre, never).!(any[Any])
     }
@@ -143,7 +141,6 @@ class SmartTextTest
       val ntext = "He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs
       m.setTextFromLoad(ntext, savedSteps)
       m.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
-      m._textWithNormalisedRefs should be(ntext)
       m.refsInText should be(Map("S.3" -> "X3"))
       m.flowFrom.refs should be(Map("X2" -> "S.2"))
       m.flowTo.refs should be(Map("X1" -> "S.1"))

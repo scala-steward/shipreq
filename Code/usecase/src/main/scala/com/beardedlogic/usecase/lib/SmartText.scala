@@ -183,8 +183,6 @@ class SmartText(val msgCentre: MessageCentre,
   protected[lib] var refsInText = Map.empty[String, String @@ LocalStepId]
 
   protected[lib] var _text = ""
-  protected[lib] var _textWithNormalisedRefs = "".hasNormalisedRefs
-  def textWithNormalisedRefs: String @@ NormalisedRefs = _textWithNormalisedRefs
 
   def text = _text
   private var _allowBroadcasting = false
@@ -218,9 +216,8 @@ class SmartText(val msgCentre: MessageCentre,
    */
   def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: BiMap[Long_StepDataId, String @@ LocalStepId]) {
     refAndIdLookup = refAndIdLookupProvider()
-    _textWithNormalisedRefs = newValueWithNRefs
 
-    // Realised normalised refs
+    // Realise normalised refs
     val newValue = NormalisedRefRegex.replaceAllIn(newValueWithNRefs, { m =>
       val dataIdText = m.group(1)
       val dataId = dataIdText.toLong.tag[StepDataId]
@@ -236,9 +233,11 @@ class SmartText(val msgCentre: MessageCentre,
     }
   }
 
-  def recalcTextWithNormalisedRefs(savedSteps: Map[String @@ LocalStepId, Long_StepDataId]) {
-    _textWithNormalisedRefs = normaliseRefs(text, savedSteps, refsInText)
-  }
+  @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): String @@ NormalisedRefs =
+    textWithNormalisedRefs(ucCtx.savedSteps.ba)
+
+  @inline final def textWithNormalisedRefs(savedSteps: Map[String @@ LocalStepId, Long_StepDataId]): String @@ NormalisedRefs =
+    normaliseRefs(text, savedSteps, refsInText)
 
   // TODO doesn't normalise flow refs
   protected def normaliseRefs(

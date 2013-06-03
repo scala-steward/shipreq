@@ -327,8 +327,6 @@ abstract class CourseFields extends Field[CourseFieldState] {
     dao: DAO
     ): Boolean = {
 
-    // TODO recalcTextWithNormalisedRefs in both presave() and save()
-    textFields.foreach(_._2.recalcTextWithNormalisedRefs(ucCtx.savedSteps.ba))
     recalcCurrentState()
 
     lastSave match {
@@ -353,8 +351,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
     dao: DAO
     ): (FieldValueData, CourseFieldState) = {
 
-    // TODO copy&paste
-    textFields.foreach(_._2.recalcTextWithNormalisedRefs(ucCtx.savedSteps.ba))
+    // Required again because normalised refs may be different after presave
     recalcCurrentState()
 
     // Create steps
@@ -385,11 +382,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
    */
   private[this] var _stateCache: CourseFieldState = null
   @inline final def currentState = _stateCache
+
   def recalcCurrentState() { _stateCache = CourseFieldState(buildStateList) }
 
   /** Builds StepStates from a node tree. */
-  def buildStateList: List[StepState] =
+  def buildStateList(): List[StepState] =
     convertNodeTree[StepNode, StepState](courses, { case (ss, level, index, children) =>
-      StepState(ss.id, textFields(ss.id).textWithNormalisedRefs, children)
+      StepState(ss.id, textFields(ss.id).textWithNormalisedRefs(ucCtx), children)
     }, startingLabelIndices.startingLabelIndex _)
 }

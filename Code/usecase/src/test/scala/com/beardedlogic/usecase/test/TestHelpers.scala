@@ -67,7 +67,8 @@ object TestHelpers extends TestHelpers {
 
     def coursesWithText: List[StepNodeWithText] = convertNodeTree[StepNode, StepNodeWithText](cf.courses, {
       case (n, lvl, lbl, children) =>
-        val txt = cf.test__textFields.get(n.id).map(_.textWithNormalisedRefs).getOrElse("".hasNormalisedRefs)
+        val savedSteps = try cf.ucCtx.savedSteps.ba catch {case _: Throwable => Map.empty[String @@ LocalStepId, Long_StepDataId]}
+        val txt = cf.test__textFields.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
         StepNodeWithText(n.id, lvl, lbl, txt, children)
     }, cf.startingLabelIndices.startingLabelIndex _)
 
