@@ -18,31 +18,31 @@ import test.TestHelpers
 
 object SmartTextTest extends MockitoSugar {
 
-  implicit def autoTagLocalStepId(s: String) = s.asLocalStepId
-  implicit def autoTagLocalStepId(s: Set[String]) = s.asInstanceOf[Set[String @@ LocalStepId]]
-  implicit def autoTagLocalStepId(m: Map[String, String]) = m.asInstanceOf[Map[String, String @@ LocalStepId]]
+  implicit def autoTagLocalStepId(s: String) = s.asLocalId
+  implicit def autoTagLocalStepId(s: Set[String]) = s.asInstanceOf[Set[String @@ LocalId]]
+  implicit def autoTagLocalStepId(m: Map[String, String]) = m.asInstanceOf[Map[String, String @@ LocalId]]
   implicit def autoBiMap[A,B](m: Map[A, B]) = BiMap(m)
 
   val StepState1 = BiMap(
-    "X1".asLocalStepId -> "S.1",
-    "X2".asLocalStepId -> "S.2",
-    "X3".asLocalStepId -> "S.3",
-    "X5".asLocalStepId -> "S.5",
-    "X6".asLocalStepId -> "S.6")
+    "X1".asLocalId -> "S.1",
+    "X2".asLocalId -> "S.2",
+    "X3".asLocalId -> "S.3",
+    "X5".asLocalId -> "S.5",
+    "X6".asLocalId -> "S.6")
 
   val StepState2 = BiMap(
-    "X1".asLocalStepId -> "S.A",
-    "X2".asLocalStepId -> "S.2",
-    "X4".asLocalStepId -> "S.4",
-    "X5".asLocalStepId -> "S.F",
-    "X6".asLocalStepId -> "S.6")
+    "X1".asLocalId -> "S.A",
+    "X2".asLocalId -> "S.2",
+    "X4".asLocalId -> "S.4",
+    "X5".asLocalId -> "S.F",
+    "X6".asLocalId -> "S.6")
 
   val StepStateX2 = BiMap(
-    "X1".asLocalStepId -> "1.0",
-    "X2".asLocalStepId -> "1.2",
-    "X3".asLocalStepId -> "1.3",
-    "X3E1".asLocalStepId -> "3.E.1",
-    "X3E2".asLocalStepId -> "3.E.2")
+    "X1".asLocalId -> "1.0",
+    "X2".asLocalId -> "1.2",
+    "X3".asLocalId -> "1.3",
+    "X3E1".asLocalId -> "3.E.1",
+    "X3E2".asLocalId -> "3.E.2")
 
   val TextWithFlowExamples = Table[String, String, List[String], List[String]](
     ("EXAMPLE", "TEXT", "REFS-FROM", "REFS-TO")
@@ -86,7 +86,7 @@ object SmartTextTest extends MockitoSugar {
     m
   }
 
-  def stepFieldWithText(text: String, stepId: String = "SUBJ", refLookup: BiMap[String @@ LocalStepId, String] = StepState1) = {
+  def stepFieldWithText(text: String, stepId: String = "SUBJ", refLookup: BiMap[String @@ LocalId, String] = StepState1) = {
     val m = new SmartStepText(mock[MessageCentre], () => refLookup, stepId, stepId + "-t")
     m.init
     m.setTextFromUser(text)
@@ -110,7 +110,7 @@ class SmartTextTest
 
   import SmartTextTest._
 
-  class RefLookupProvider(var value: BiMap[String @@ LocalStepId, String])
+  class RefLookupProvider(var value: BiMap[String @@ LocalId, String])
 
   def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
     verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
@@ -139,7 +139,7 @@ class SmartTextTest
       val msgCentre = mock[MessageCentre]
       val m = new SmartText(msgCentre, () => StepState1)
       m.init()
-      m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalStepId))
+      m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalId))
       m.text should be("Hehe [S.2]")
       m.refsInText should be(Map("S.2" -> "X2"))
       verify(msgCentre, never).!(any[Any])
@@ -149,7 +149,7 @@ class SmartTextTest
       val msgCentre = mock[MessageCentre]
       val m = new SmartStepText(msgCentre, () => StepState1, "XX", "XXt")
       m.init()
-      val savedSteps = BiMap(100.tag[StepDataId] -> "X2".asLocalStepId, 104.tag[StepDataId] -> "X1".asLocalStepId, 108.tag[StepDataId] -> "X3".asLocalStepId)
+      val savedSteps = BiMap(100.tag[StepDataId] -> "X2".asLocalId, 104.tag[StepDataId] -> "X1".asLocalId, 108.tag[StepDataId] -> "X3".asLocalId)
       val ntext = "He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs
       m.setTextFromLoad(ntext, savedSteps)
       m.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")

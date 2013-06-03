@@ -37,7 +37,7 @@ class CourseFieldStateLoader(val fieldKey: FieldKey, val li: StartingLabelIndice
       ids.map { stepValueId =>
         val (stepValue, text) = stepData(stepValueId.tag[StepValueId])
         val children = unpackSteps(stepValueId, level + 1, relations, stepData, saveCtx)
-        val localStepId = s"s$stepValueId".asLocalStepId
+        val localStepId = s"s$stepValueId".asLocalId
         val ss = StepState(localStepId, text.hasNormalisedRefs, children)
         saveCtx.stepValues += (localStepId -> stepValue)
         labelIndex += 1
@@ -48,11 +48,11 @@ class CourseFieldStateLoader(val fieldKey: FieldKey, val li: StartingLabelIndice
 }
 
 case class CourseFieldState(courses: List[StepState]) {
-  val stepMap: Map[String @@ LocalStepId, StepState] = courses.mapEachNode(ss => (ss.id -> ss)).toMap
+  val stepMap: Map[String @@ LocalId, StepState] = courses.mapEachNode(ss => (ss.id -> ss)).toMap
 }
 
 case class StepState(
-  id: String @@ LocalStepId,
+  id: String @@ LocalId,
   text: String @@ NormalisedRefs,
   children: List[StepState])
   extends TreeNodeLike[StepState] {

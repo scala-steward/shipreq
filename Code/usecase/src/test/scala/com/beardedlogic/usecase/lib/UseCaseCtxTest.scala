@@ -13,7 +13,7 @@ import model._
 
 class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
-  implicit def autoTagLocalStepId(s: String) = s.asLocalStepId
+  implicit def autoTagLocalStepId(s: String) = s.asLocalId
 
   describe("Loading") {
     it("should load a simple, manually-saved UC") {

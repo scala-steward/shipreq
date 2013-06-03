@@ -60,7 +60,7 @@ object CourseFields {
    */
   def compareAndSaveChanges(
     oldState: CourseFieldState,
-    oldStepValues: Map[String @@ LocalStepId, PlainValue[DataType.Step]],
+    oldStepValues: Map[String @@ LocalId, PlainValue[DataType.Step]],
     newState: List[StepState],
     saveCtx: MutableFieldSaveCtx,
     dao: DAO
@@ -114,13 +114,13 @@ abstract class CourseFields extends Field[CourseFieldState] {
   }
   def courses = _courses
 
-  private[this] var _stepLabelMap: Map[String @@ LocalStepId, String] = Map.empty
+  private[this] var _stepLabelMap: Map[String @@ LocalId, String] = Map.empty
   def stepLabelMap = {
     if (_stepLabelMap == null) _stepLabelMap = mapIdsToFullLabels(courses, rootLabelPrefix.getOrElse(""))
     _stepLabelMap
   }
 
-  private[this] var textFields: Map[String @@ LocalStepId, SmartStepText] = Map.empty
+  private[this] var textFields: Map[String @@ LocalId, SmartStepText] = Map.empty
   def test__textFields = textFields
 
   override def init() {
@@ -214,7 +214,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Adds a new step, shuffling down subsequent steps and renumbering if necessary.
    */
-  def onStepAdd(preceedingNodeId: String @@ LocalStepId): JsCmd = stepInsert(preceedingNodeId, courses, StepNodeBuilder) match {
+  def onStepAdd(preceedingNodeId: String @@ LocalId): JsCmd = stepInsert(preceedingNodeId, courses, StepNodeBuilder) match {
     case (newCourses, Some(newNode)) =>
       courses = newCourses
       createAndRegisterTextField(newNode)
@@ -226,12 +226,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
     case _ => JsCmds.Noop
   }
 
-  def prohibitRemoval(id: String @@ LocalStepId) = false
+  def prohibitRemoval(id: String @@ LocalId) = false
 
   /**
    * Removes a new step and all its children, shuffling up following steps and renumbering if necessary.
    */
-  def onStepRemove(id: String @@ LocalStepId): JsCmd =
+  def onStepRemove(id: String @@ LocalId): JsCmd =
     if (prohibitRemoval(id))
       JsCmds.Noop
     else
@@ -247,7 +247,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Decreases the indentation level of a given step.
    */
-  def onIndentDecrease(nodeId: String @@ LocalStepId): JsCmd = indentDecrease(nodeId, courses) match {
+  def onIndentDecrease(nodeId: String @@ LocalId): JsCmd = indentDecrease(nodeId, courses) match {
     case (newCourses, Some(_)) =>
       courses = newCourses
       val updateJs = UpdateIndentation(courses) & UpdateLabels(courses)
@@ -259,12 +259,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Allows customisation of the ajax response of a successful indent decrease.
    */
-  protected def customiseIndentDecreaseJs(nodeId: String @@ LocalStepId, updateJs: JsCmd): JsCmd = updateJs
+  protected def customiseIndentDecreaseJs(nodeId: String @@ LocalId, updateJs: JsCmd): JsCmd = updateJs
 
   /**
    * Increases the indentation level of a given step.
    */
-  def onIndentIncrease(nodeId: String @@ LocalStepId): JsCmd = indentIncrease(nodeId, courses) match {
+  def onIndentIncrease(nodeId: String @@ LocalId): JsCmd = indentIncrease(nodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       val oldCourses = courses
       courses = newCourses
@@ -277,7 +277,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Allows customisation of the ajax response of a successful indent increase.
    */
-  protected def customiseIndentIncreaseJs(nodeId: String @@ LocalStepId,
+  protected def customiseIndentIncreaseJs(nodeId: String @@ LocalId,
                                           newNode: StepNode,
                                           oldCourses: List[StepNode],
                                           updateJs: JsCmd): JsCmd = updateJs

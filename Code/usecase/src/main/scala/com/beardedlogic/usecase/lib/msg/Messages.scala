@@ -32,7 +32,7 @@ object Messages {
    * @param fromIds The IDs of all steps that now flow to the target.
    * @param toId The ID of the step that issued the change, the step to which the from-steps now flow.
    */
-  case class FlowFromChangeMsg(fromIds: Set[String @@ LocalStepId], toId: String @@ LocalStepId)
+  case class FlowFromChangeMsg(fromIds: Set[String @@ LocalId], toId: String @@ LocalId)
 
   /**
    * Indicates that a step's flow-to list has changed.
@@ -46,5 +46,5 @@ object Messages {
    * @param fromId The ID of the step that issued the change, the step from which steps now flow out.
    * @param toIds The IDs of all steps that the source step now flows to.
    */
-  case class FlowToChangeMsg(fromId: String @@ LocalStepId, toIds: Set[String @@ LocalStepId])
+  case class FlowToChangeMsg(fromId: String @@ LocalId, toIds: Set[String @@ LocalId])
 }

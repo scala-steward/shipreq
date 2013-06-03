@@ -7,13 +7,13 @@ import tree.TreeNode
 import StepLabels._
 
 case class StepNodeWithText(
-  id: String @@ LocalStepId,
+  id: String @@ LocalId,
   level: Int,
   labelIndex: Int,
   text: String,
   children: List[StepNodeWithText] = Nil) extends TreeNode[StepNodeWithText] {
 
-  override def copy(id: String @@ LocalStepId = this.id,
+  override def copy(id: String @@ LocalId = this.id,
     level: Int = this.level,
     labelIndex: Int = this.labelIndex,
     children: List[StepNodeWithText] = this.children

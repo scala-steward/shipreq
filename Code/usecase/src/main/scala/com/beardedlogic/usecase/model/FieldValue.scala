@@ -25,15 +25,15 @@ object FieldValue {
 
 class MutableFieldSaveCtx {
   //  val fieldValues = MutableMap.empty[FieldKey, PlainValue[DataType.FieldValue]]
-  //  val stepValues = MutableMap.empty[String @@ LocalStepId, PlainValue[DataType.Step]]
+  //  val stepValues = MutableMap.empty[String @@ LocalId, PlainValue[DataType.Step]]
   val fieldValues = Map.newBuilder[FieldKey, PlainValue[DataType.FieldValue]]
-  val stepValues = Map.newBuilder[String @@ LocalStepId, PlainValue[DataType.Step]]
+  val stepValues = Map.newBuilder[String @@ LocalId, PlainValue[DataType.Step]]
   def immutable = new FieldSaveCtx(fieldValues.result, stepValues.result)
 }
 
 case class FieldSaveCtx(
   val fieldValues: Map[FieldKey, PlainValue[DataType.FieldValue]],
-  val stepValues: Map[String @@ LocalStepId, PlainValue[DataType.Step]]
+  val stepValues: Map[String @@ LocalId, PlainValue[DataType.Step]]
   ) {
 
   /**

@@ -42,7 +42,7 @@ object TreeOps {
    * FD93E    -> 1.E.1
    * F93A3    -> 1.E.1.a
    */
-  def mapIdsToFullLabels[T <: TreeNode[T]](nodes: List[T], prefix: String = ""): Map[String @@ LocalStepId, String] = nodes match {
+  def mapIdsToFullLabels[T <: TreeNode[T]](nodes: List[T], prefix: String = ""): Map[String @@ LocalId, String] = nodes match {
     case h :: t =>
       val lbl = prefix + h.label
       mapIdsToFullLabels(t, prefix) ++
@@ -62,7 +62,7 @@ object TreeOps {
    * @return A tuple of 1) the new tree, 2) the new node (if inserted)
    */
   @inline def stepInsert[T <: TreeNode[T]](
-    afterId: String @@ LocalStepId,
+    afterId: String @@ LocalId,
     nodes: List[T],
     nodeBuilder: TreeNodeBuilder[T]): (List[T], Option[T]) = {
 
@@ -100,11 +100,11 @@ object TreeOps {
    *
    * @return A tuple of 1) the new tree, 2) whether any changes were made.
    */
-  @inline def stepRemove[T <: TreeNode[T]](id: String @@ LocalStepId, nodes: List[T]): (List[T], Option[T]) =
+  @inline def stepRemove[T <: TreeNode[T]](id: String @@ LocalId, nodes: List[T]): (List[T], Option[T]) =
     _stepRemove(id, nodes, Nil, None)
 
   @tailrec private def _stepRemove[T <: TreeNode[T]](
-    id: String @@ LocalStepId,
+    id: String @@ LocalId,
     nodes: List[T],
     results: List[T],
     found: Option[T]): (List[T], Option[T]) = nodes match {
@@ -130,10 +130,10 @@ object TreeOps {
    *
    * @return A tuple of 1) the new tree, 2) the new node (if any change was made).
    */
-  @inline def indentDecrease[T <: TreeNode[T]](id: String @@ LocalStepId, nodes: List[T]) = _indentDecrease(id, nodes, Nil, None)
+  @inline def indentDecrease[T <: TreeNode[T]](id: String @@ LocalId, nodes: List[T]) = _indentDecrease(id, nodes, Nil, None)
 
   @tailrec private def _indentDecrease[T <: TreeNode[T]](
-    id: String @@ LocalStepId,
+    id: String @@ LocalId,
     nodes: List[T],
     results: List[T],
     newNode: Option[T]): (List[T], Option[T]) = nodes match {
@@ -184,7 +184,7 @@ object TreeOps {
    * siblings.
    */
   @tailrec private def findChild[T <: TreeNode[T]](
-    id: String @@ LocalStepId,
+    id: String @@ LocalId,
     nodes: List[T],
     siblingsLeft: List[T] = Nil): Option[ChildAndSiblings[T]] = nodes match {
     case Nil                  => None
@@ -201,10 +201,10 @@ object TreeOps {
    *
    * @return A tuple of 1) the new tree, 2) the new node (if any change was made).
    */
-  @inline def indentIncrease[T <: TreeNode[T]](id: String @@ LocalStepId, nodes: List[T]) = _indentIncrease(id, None, Nil, nodes)
+  @inline def indentIncrease[T <: TreeNode[T]](id: String @@ LocalId, nodes: List[T]) = _indentIncrease(id, None, Nil, nodes)
 
   @tailrec private def _indentIncrease[T <: TreeNode[T]](
-    id: String @@ LocalStepId,
+    id: String @@ LocalId,
     newNode: Option[T],
     results: List[T],
     nodes: List[T]): (List[T], Option[T]) = nodes match {

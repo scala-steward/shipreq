@@ -14,7 +14,7 @@ import StepLabels.LabelMakers
 
 class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
-  implicit def autoTagLocalStepIds(s: String) = s.asLocalStepId
+  implicit def autoTagLocalStepIds(s: String) = s.asLocalId
 
   /**
    * StepNode test data.

@@ -15,9 +15,9 @@ import tree.TreeOps._
 
 class CourseFieldsTest extends FunSpec with TestHelpers {
 
-  implicit def autoTagLocalStepIds(s: String) = s.asLocalStepId
+  implicit def autoTagLocalStepIds(s: String) = s.asLocalId
   implicit def autoTagNormalisedRefs(s: String) = s.hasNormalisedRefs
-  implicit def autoTypeStepValues(m: Map[String, PlainValue[DataType.Step]]) = m.asInstanceOf[Map[String @@ LocalStepId, PlainValue[DataType.Step]]]
+  implicit def autoTypeStepValues(m: Map[String, PlainValue[DataType.Step]]) = m.asInstanceOf[Map[String @@ LocalId, PlainValue[DataType.Step]]]
   def SVMap(pairs: (String,PlainValue[DataType.Step])*) = autoTypeStepValues(Map(pairs:_*))
 
   val Key_NC = new FieldKey(1, FieldKeyType.NormalAndAlternateCourses, None)
@@ -88,7 +88,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       val ucCtx = mockUseCaseCtx
       val cf = new NormalAndAlternateCourseFields(ucCtx, Key_NC)
       val fn = cf.setState(CourseFieldState(Tree2))
-      when(ucCtx.savedSteps).thenReturn(BiMap(800.tag[StepDataId] -> "X8".asLocalStepId))
+      when(ucCtx.savedSteps).thenReturn(BiMap(800.tag[StepDataId] -> "X8".asLocalId))
       when(ucCtx.stepLabelMap).thenReturn(BiMap(cf.stepLabelMap))
       fn()
       val tf = cf.test__textFields
@@ -104,10 +104,10 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
   }
 
   def lastSave2For(state: CourseFieldState) = {
-    val oldStepValuesB = Map.newBuilder[String @@ LocalStepId, PlainValue[DataType.Step]]
+    val oldStepValuesB = Map.newBuilder[String @@ LocalId, PlainValue[DataType.Step]]
     val mockStepValuesByNameB = Map.newBuilder[String @@ NormalisedRefs, PlainValue[DataType.Step]]
     var i = 0
-    //val savedSteps = new BiMapBuilder[Long_StepDataId, String @@ LocalStepId]
+    //val savedSteps = new BiMapBuilder[Long_StepDataId, String @@ LocalId]
     state.courses.foreachNode { ss =>
       i += 1
       val dataId = (i * 1000).tag[StepDataId]

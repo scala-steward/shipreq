@@ -49,7 +49,7 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     u
   }
 
-  def mockUseCaseCtx(stepLabelMap: Map[String @@ LocalStepId,String]): UseCaseCtx = {
+  def mockUseCaseCtx(stepLabelMap: Map[String @@ LocalId,String]): UseCaseCtx = {
     val u = mockUseCaseCtx
     when(u.stepLabelMap).thenReturn(BiMap(stepLabelMap))
     u
@@ -67,7 +67,7 @@ object TestHelpers extends TestHelpers {
 
     def coursesWithText: List[StepNodeWithText] = convertNodeTree[StepNode, StepNodeWithText](cf.courses, {
       case (n, lvl, lbl, children) =>
-        val savedSteps = try cf.ucCtx.savedSteps.ba catch {case _: Throwable => Map.empty[String @@ LocalStepId, Long_StepDataId]}
+        val savedSteps = try cf.ucCtx.savedSteps.ba catch {case _: Throwable => Map.empty[String @@ LocalId, Long_StepDataId]}
         val txt = cf.test__textFields.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
         StepNodeWithText(n.id, lvl, lbl, txt, children)
     }, cf.startingLabelIndices.startingLabelIndex _)
@@ -75,7 +75,7 @@ object TestHelpers extends TestHelpers {
     def setCoursesWithTextAndInit(nodes: List[StepNodeWithText]) {
       cf.courses = nodes.map(_.toStepNode)
       cf.init
-      val savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalStepId]
+      val savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalId]
       nodes.foreachNode(n => cf.test__textFields(n.id).setTextFromLoad(n.text.hasNormalisedRefs, savedSteps))
     }
 
@@ -123,7 +123,7 @@ object TestHelpers extends TestHelpers {
         val labelSplit(lblPrefix, lblSuffix) = lbl
         val lblIndex = LabelMakers(lvl)(lblSuffix)
         val id2 = if (genIds) id else null
-        StepNodeWithText(id2.asLocalStepId, lvl, lblIndex, txt, ch)
+        StepNodeWithText(id2.asLocalId, lvl, lblIndex, txt, ch)
       }
     }
 
