@@ -57,6 +57,19 @@ object SmartText {
   @inline def MakeFlowTextOrEmpty(arrow: String, labels: TreeSet[String @@ Label]) =
     if (labels.isEmpty) "" else MakeFlowText(arrow, labels)
 
+  def normaliseRefs(
+    text: String,
+    savedSteps: Map[String @@ LocalId, Long_StepDataId],
+    refs: Map[String @@ LocalId, String @@ Label]): String @@ NormalisedRefs = {
+
+    var r = text
+    for {
+      (localId, label) <- refs
+      dataId <- savedSteps.get(localId)
+    } r = r.replace(MakeRef(label), MakeNormalisedRef(dataId))
+    r.hasNormalisedRefs
+  }
+
   /**
    * My Little <strike>Pony</strike> Parser here expresses the syntax that enables various special features to sprout
    * from plain UC text.
@@ -236,22 +249,8 @@ class SmartText(val msgCentre: MessageCentre,
   @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): String @@ NormalisedRefs =
     textWithNormalisedRefs(ucCtx.savedSteps.ba)
 
-  @inline final def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs =
+  def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs =
     normaliseRefs(text, savedSteps, refsInText)
-
-  // TODO doesn't normalise flow refs
-  protected def normaliseRefs(
-    text: String,
-    savedSteps: Map[String @@ LocalId, Long_StepDataId],
-    refs: Map[String @@ LocalId, String @@ Label]): String @@ NormalisedRefs = {
-
-    var r = text
-    for {
-      (localId, label) <- refs
-      dataId <- savedSteps.get(localId)
-    } r = r.replace(MakeRef(label), MakeNormalisedRef(dataId))
-    r.hasNormalisedRefs
-  }
 
   def disableBroadcasting[T](block: => T) = {
     val i = _allowBroadcasting
@@ -563,5 +562,12 @@ class SmartStepText(override val msgCentre: MessageCentre,
     f.refs -= id
     f.rebuildText
     internalSetTextAndPush(buildFullText)
+  }
+
+  override def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs = {
+    var txt = super.textWithNormalisedRefs(savedSteps)
+    txt = normaliseRefs(txt, savedSteps, flowFrom.refs)
+    txt = normaliseRefs(txt, savedSteps, flowTo.refs)
+    txt
   }
 }

@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase
 package lib
 
+import net.liftweb.http.CometActor
 import org.scalatest.FunSpec
 import scala.slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
@@ -111,7 +112,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       1.E.2. EC-1E2 """)
 
   def sampleCtx = {
-    val uc = new UseCaseCtx(null)
+    val uc = new UseCaseCtx(mock[CometActor])
     uc.title = "YES!"
     uc.textFields(0).value.setTextFromUser("blah")
     uc.textFields(2).value.setTextFromUser("hehe")
@@ -248,7 +249,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       loaded.ecField.get.coursesWithText should matchTree(EcSteps)
     }
 
-    it("should normalise and de-normalise refs") {
+    it("should normalise and de-normalise refs in text") {
       // Save first
       val saved = sampleCtx
       saved.textFields(0).value.setTextFromUser("Text like [1.0]")
@@ -271,6 +272,31 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       loaded.ecField.get.coursesWithText should matchTree(EcSteps)
       val stepTexts = loaded.ncacField.get.test__textFields.values.map(_.text)
       stepTexts.filter(_.startsWith("Step like")).headOption should be(Some("Step like [1.0.1]"))
+    }
+
+    it("should normalise and de-normalise refs in flow") {
+      // Save first
+      val saved = sampleCtx
+      saved.msgCentre.enabled = true
+      saved.ncacField.get.test__textFields.values.filter(_.text == "Sweet").head.setTextFromUser("Flow like --> [1.0.1]")
+      saved.save(db)
+      saved.lastSave.get.fieldStates.toString should include("➡")
+      saved.lastSave.get.fieldStates.toString should include("⬅")
+      val valueId = saved.lastSave.get.uc.valueId
+
+      // Confirm stored normalised in DB
+      sql"select text from step where text like ${"%⬅%"}".as[String].first should not include("[1.")
+      sql"select text from step where text like ${"%➡%"}".as[String].first should not include("[1.")
+
+      // Then load back
+      val loaded = new UseCaseCtx(null)
+      load(loaded, valueId)
+      loaded.title should be(saved.title)
+      loaded.number should be(saved.number)
+      loaded.ecField.get.coursesWithText should matchTree(EcSteps)
+      val stepTexts = loaded.ncacField.get.test__textFields.values.map(_.text)
+      stepTexts.filter(_.contains("➡")).headOption should be(Some("Flow like ➡ [1.0.1]"))
+      stepTexts.filter(_.contains("⬅")).headOption should be(Some("First ⬅ [1.1]"))
     }
   }
 
