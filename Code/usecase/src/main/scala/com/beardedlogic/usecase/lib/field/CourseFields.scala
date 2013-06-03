@@ -7,7 +7,7 @@ import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import net.liftweb.http.js.JsCmds.jsExpToJsCmd
 import net.liftweb.http.js.jquery.JqJE
 import net.liftweb.util.CssSel
-import net.liftweb.util.Helpers.{strToSuperArrowAssoc => _, _}
+import net.liftweb.util.Helpers.strToCssBindPromoter
 import scala.xml._
 
 import JsExt._
