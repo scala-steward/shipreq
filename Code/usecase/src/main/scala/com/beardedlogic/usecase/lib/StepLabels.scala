@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import scala.collection.mutable.{ Map => MutableMap }
+import TypeTags._
 
 /**
  * @since 2/05/2013
@@ -26,7 +27,7 @@ object StepLabels {
    * Bidirectional map of labels ("ii","vii","c") to their indices (which are usually one-based).
    */
   final class LabelMaker private (val min: Int, val label: Map[Int, String], val index: Map[String, Int]) {
-    def apply(i: Int) = label(i)
+    def apply(i: Int) = label(i).asLabel
     def apply(l: String) = index(l)
   }
 

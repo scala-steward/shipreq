@@ -26,7 +26,8 @@ class UseCaseCtx(cometActor: CometActor) {
   def ncacField: Option[NCAC] = courseFields.collectFirst { case f: NCAC => f }
   def ecField: Option[EC] = courseFields.collectFirst { case f: EC => f }
   // TODO inefficient UCEditorState.stepLabelMap
-  def stepLabelMap: BiMap[String @@ LocalId, String] = BiMap(courseFields.foldLeft(Map.empty[String @@ LocalId, String]) { _ ++ _.stepLabelMap })
+  def stepLabelMap: BiMap[String @@ LocalId, String @@ Label] =
+    BiMap(courseFields.foldLeft(Map.empty[String @@ LocalId, String @@ Label]) { _ ++ _.stepLabelMap })
   def stepLabelMapProvider = () => stepLabelMap
 
   val normalCourseTitleId = ncacField.get.courses.head.stepTextId

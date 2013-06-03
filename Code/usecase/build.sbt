@@ -8,7 +8,8 @@ scalaVersion := "2.10.1"
 
 seq(com.github.siasia.WebPlugin.webSettings :_*)
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions",
+  "-language:higherKinds")
 
 scalacOptions in Test ++= Seq("-language:reflectiveCalls")
 

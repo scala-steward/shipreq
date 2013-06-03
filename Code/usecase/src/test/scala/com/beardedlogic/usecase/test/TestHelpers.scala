@@ -49,7 +49,7 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     u
   }
 
-  def mockUseCaseCtx(stepLabelMap: Map[String @@ LocalId,String]): UseCaseCtx = {
+  def mockUseCaseCtx(stepLabelMap: Map[String @@ LocalId, String @@ Label]): UseCaseCtx = {
     val u = mockUseCaseCtx
     when(u.stepLabelMap).thenReturn(BiMap(stepLabelMap))
     u

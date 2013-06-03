@@ -51,10 +51,10 @@ object SmartText {
   val FlowFromArrowBadReplacement = "<-"
   val FlowFromArrow = "⬅"
 
-  @inline def MakeFlowText(arrow: String, labels: TreeSet[String]) =
+  @inline def MakeFlowText(arrow: String, labels: TreeSet[String @@ Label]) =
     arrow + " " + labels.map(MakeRef(_)).mkString(" ")
 
-  @inline def MakeFlowTextOrEmpty(arrow: String, labels: TreeSet[String]) =
+  @inline def MakeFlowTextOrEmpty(arrow: String, labels: TreeSet[String @@ Label]) =
     if (labels.isEmpty) "" else MakeFlowText(arrow, labels)
 
   /**
@@ -171,7 +171,7 @@ object SmartText {
  * @since 12/05/2013
  */
 class SmartText(val msgCentre: MessageCentre,
-                val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String],
+                val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String @@ Label],
                 val textareaId: String = nextFuncName
                  ) extends LiftActor with Logger {
 
@@ -179,8 +179,8 @@ class SmartText(val msgCentre: MessageCentre,
   import MyLittleParser._
 
   protected val writeLock = new Object
-  protected[lib] var refAndIdLookup = BiMap.empty[String @@ LocalId, String]
-  protected[lib] var refsInText = Map.empty[String, String @@ LocalId]
+  protected[lib] var refAndIdLookup = BiMap.empty[String @@ LocalId, String @@ Label]
+  protected[lib] var refsInText = Map.empty[String @@ Label, String @@ LocalId]
 
   protected[lib] var _text = ""
 
@@ -243,7 +243,7 @@ class SmartText(val msgCentre: MessageCentre,
   protected def normaliseRefs(
     text: String,
     savedSteps: Map[String @@ LocalId, Long_StepDataId],
-    refs: Map[String, String @@ LocalId]): String @@ NormalisedRefs = {
+    refs: Map[String @@ Label, String @@ LocalId]): String @@ NormalisedRefs = {
 
     var r = text
     for {
@@ -306,7 +306,7 @@ class SmartText(val msgCentre: MessageCentre,
       newText ++= r.get._1
 
       // Check label validity
-      val label = r.get._2.get
+      val label = r.get._2.get.asLabel
       if (refAndIdLookup.ba.contains(label)) {
         if (!refsInText.contains(label)) refsInText += (label -> refAndIdLookup.ba(label))
         MakeRef(newText, label)
@@ -321,7 +321,7 @@ class SmartText(val msgCentre: MessageCentre,
     newText.toString
   }
 
-  @inline protected final def areAllLabelsValid(labels: Seq[String]): Boolean = {
+  @inline protected final def areAllLabelsValid(labels: Seq[String @@ Label]): Boolean = {
     labels.find(!refAndIdLookup.ba.contains(_)).isEmpty
   }
 
@@ -354,7 +354,7 @@ class SmartText(val msgCentre: MessageCentre,
    * Updates `refsInText` and creates a copy of given text in which all references are up-to-date.
    */
   protected def updateStepReferences(text: String): String = {
-    var newRefsInText = Map.empty[String, String @@ LocalId]
+    var newRefsInText = Map.empty[String @@ Label, String @@ LocalId]
     var newText = text
     for ((oldLabel, id) <- refsInText) {
 
@@ -385,7 +385,7 @@ class SmartText(val msgCentre: MessageCentre,
  * @param stepId The ID of the owning step.
  */
 class SmartStepText(override val msgCentre: MessageCentre,
-                    override val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String],
+                    override val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String @@ Label],
                     val stepId: String @@ LocalId,
                     override val textareaId: String
                      ) extends SmartText(msgCentre, refAndIdLookupProvider, textareaId) {
@@ -399,13 +399,13 @@ class SmartStepText(override val msgCentre: MessageCentre,
    * Allows for flow-agnostic logic.
    */
   sealed trait Flow {
-    var refs = Map.empty[String @@ LocalId, String]
+    var refs = Map.empty[String @@ LocalId, String @@ Label]
     var text = ""
     def arrow : String
     def arrowReplacement : String
     def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
     def broadcast():Unit
-    final def clear() {refs = Map.empty[String @@ LocalId, String]; text = ""}
+    final def clear() {refs = Map.empty[String @@ LocalId, String @@ Label]; text = ""}
     final def broadcastIfChanges[T](block: => T): T = {
       val prevRefs = refs
       val r = block
@@ -418,8 +418,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
         broadcast
       }
     }
-    final def sortedLabels: TreeSet[String] = {
-      var s = TreeSet.empty[String]
+    final def sortedLabels: TreeSet[String @@ Label] = {
+      var s = TreeSet.empty[String @@ Label]
       for (lbl <- refs.values) s += lbl
       s
     }
@@ -472,8 +472,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
       // Clauses exist. Validate.
       val (actualText, flowResult) = pr.get
-      val fn1 = processFlowParseResult(flowResult.from, flowFrom)
-      val fn2 = if (fn1.isEmpty) None else processFlowParseResult(flowResult.to, flowTo)
+      val fn1 = processFlowParseResult(flowResult.from.asLabels, flowFrom)
+      val fn2 = if (fn1.isEmpty) None else processFlowParseResult(flowResult.to.asLabels, flowTo)
       if (fn2.isDefined) {
 
         // No errors in From or To clauses. Apply.
@@ -493,7 +493,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     text
   }
 
-  private def processFlowParseResult(labelsOp: Option[List[String]], f: Flow): Option[Function0[Unit]] =
+  private def processFlowParseResult(labelsOp: Option[List[String @@ Label]], f: Flow): Option[Function0[Unit]] =
     labelsOp match {
       case None =>
         Some(f.clearAndBroadcast _)
@@ -524,8 +524,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
       refAndIdLookup.ab.get(kp._1).map(_ != kp._2).getOrElse(true)
     }
     if (changeFound) {
-      var newLabels = TreeSet.empty[String]
-      var newRefs = Map.empty[String @@ LocalId, String]
+      var newLabels = TreeSet.empty[String @@ Label]
+      var newRefs = Map.empty[String @@ LocalId, String @@ Label]
       for ((id,_) <- f.refs) {
         if (refAndIdLookup.ab.contains(id)) {
           val l = refAndIdLookup.ab(id)

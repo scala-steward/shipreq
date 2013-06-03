@@ -114,7 +114,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   }
   def courses = _courses
 
-  private[this] var _stepLabelMap: Map[String @@ LocalId, String] = Map.empty
+  private[this] var _stepLabelMap: Map[String @@ LocalId, String @@ Label] = Map.empty
   def stepLabelMap = {
     if (_stepLabelMap == null) _stepLabelMap = mapIdsToFullLabels(courses, rootLabelPrefix.getOrElse(""))
     _stepLabelMap

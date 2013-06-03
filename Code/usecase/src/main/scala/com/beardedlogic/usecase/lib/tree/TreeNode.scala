@@ -15,7 +15,7 @@ trait TreeNode[T <: TreeNode[T]] extends TreeNodeLike[T] {
   val level: Int
   val labelIndex: Int
 
-  def label: String
+  def label: String @@ Label
 
   def copy(id: String @@ LocalId = this.id,
     level: Int = this.level,
