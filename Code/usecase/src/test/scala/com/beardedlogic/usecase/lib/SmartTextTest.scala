@@ -70,14 +70,14 @@ object SmartTextTest extends MockitoSugar {
   def textFieldWithText(text: String) = {
     val m = new SmartText(mock[MessageCentre], () => StepState1)
     m.init
-    m.text = text
+    m.setTextFromUser(text)
     m
   }
 
   def stepFieldWithText(text: String, stepId: String = "SUBJ", refLookup: Map[String,String] = StepState1) = {
     val m = new SmartStepText(mock[MessageCentre], () => refLookup, stepId, stepId + "-t")
     m.init
-    m.text = text
+    m.setTextFromUser(text)
     m
   }
 }
@@ -171,7 +171,7 @@ class SmartTextTest
       it("should examine the text for step refs and create map of refs -> ids") {
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
-        m.text = "Umm [S.1] & [S.3] ah and [S.1]!"
+        m setTextFromUser "Umm [S.1] & [S.3] ah and [S.1]!"
         m.refsInText should be(Map("S.1" -> "X1", "S.3" -> "X3"))
       }
 
@@ -179,7 +179,7 @@ class SmartTextTest
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
-        m.text = "Umm [S.1] only"
+        m setTextFromUser "Umm [S.1] only"
         m.refsInText should be(Map("S.1" -> "X1"))
       }
 
@@ -187,7 +187,7 @@ class SmartTextTest
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
         m.refsInText = Map("S.1" -> "X1", "S.3" -> "X3")
-        m.text = "nothing"
+        m setTextFromUser "nothing"
         m.refsInText should be('empty)
       }
     }
@@ -198,7 +198,7 @@ class SmartTextTest
       def test(input: String, expectedOutput: String = null) {
         val m = new SmartText(mock[MessageCentre], () => StepState1)
         m.init
-        m.text = input
+        m setTextFromUser input
         m.text should be(if (expectedOutput == null) input else expectedOutput)
       }
 
@@ -418,9 +418,9 @@ class SmartTextTest
         val m = new MsgCollector
         val s = new SmartStepText(m, () => StepState1, "SUBJ", "SUBJ-t")
         s.init()
-        if (textBefore.nonEmpty) s.text = textBefore.fixArrows(from)
+        if (textBefore.nonEmpty) s setTextFromUser textBefore.fixArrows(from)
         m.sent.clear()
-        s.text = newText.fixArrows(from)
+        s setTextFromUser newText.fixArrows(from)
         val exp = if (expectedToIds.isEmpty) {
           List.empty
         } else if (from) {
@@ -561,7 +561,7 @@ class SmartTextTest
       val s = new SmartStepText(msgCentre, () => StepState2, "", "")
       s.init
       s.refAndIdLookup = StepState1
-      s.text = initialText
+      s setTextFromUser initialText
       s.text should be (initialText)
       s.sendStepChangeMsg
       s
@@ -638,7 +638,7 @@ class SmartTextTest
     def testSubject(initialText: String) = {
       val s = new SmartStepText(new MsgCollector, () => StepState1, "SUBJ", "")
       s.init
-      s.text = initialText
+      s setTextFromUser initialText
       s.text should be (initialText)
       s
     }
@@ -658,7 +658,7 @@ class SmartTextTest
         val s = new SmartStepText(new MsgCollector, () => StepState1, "X1", "")
         val mc = s.msgCentre.asInstanceOf[MsgCollector]
         s.init
-        s.text = txt
+        s setTextFromUser txt
         mc.sent.size should be(1)
         s !!! mc.sent.head
         s.text should be (txt)
@@ -714,7 +714,7 @@ class SmartTextTest
       val msgCentre = new MessageCentre(comet)
       val m = new SmartText(msgCentre, refLookupProvider.value _)
       m.init
-      m.text = before
+      m setTextFromUser before
       m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
       refLookupProvider.value = StepState2
       m.sendStepChangeMsg
