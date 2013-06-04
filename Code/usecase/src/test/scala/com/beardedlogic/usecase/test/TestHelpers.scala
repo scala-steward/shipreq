@@ -5,16 +5,15 @@ import net.liftweb.http.LiftRules
 import org.scalatest.matchers.{ShouldMatchers, Matcher, MatchResult}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import lib.{BiMap, StepNode}
+import lib.{CachedFunction, CachedFunction1, BiMap, StepNode, UseCaseCtx}
 import NodeUtils._
 import lib.tree._
 import lib.field._
 import TreeOps._
 import lib.field.CourseFields
 import lib.TypeTags._
-import lib.UseCaseCtx
 import lib.msg.MessageCentre
-import model.FieldKey
+import model.{FieldSaveCtx, FieldKey}
 
 /**
  * @since 30/04/2013
@@ -43,15 +42,16 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
 
   def mockUseCaseCtx: UseCaseCtx = {
     val u = mock[UseCaseCtx]
+    when(u.savedSteps).thenReturn(CachedFunction.static1[FieldSaveCtx, BiMap[Long_StepDataId, String @@ LocalId]](BiMap.empty))
+    when(u.stepLabelMap).thenReturn(CachedFunction.lazy0(BiMap.empty[String @@ LocalId, String @@ Label]))
     when(u.msgCentre).thenReturn(mock[MessageCentre])
-    when(u.stepLabelMapProvider).thenReturn(() => Option(u.stepLabelMap).getOrElse(BiMap.empty))
     when(u.number).thenReturn(1: Short)
     u
   }
 
   def mockUseCaseCtx(stepLabelMap: Map[String @@ LocalId, String @@ Label]): UseCaseCtx = {
     val u = mockUseCaseCtx
-    when(u.stepLabelMap).thenReturn(BiMap(stepLabelMap))
+    when(u.stepLabelMap).thenReturn(CachedFunction.lazy0(BiMap(stepLabelMap)))
     u
   }
 
@@ -67,7 +67,7 @@ object TestHelpers extends TestHelpers {
 
     def coursesWithText: List[StepNodeWithText] = convertNodeTree[StepNode, StepNodeWithText](cf.courses, {
       case (n, lvl, lbl, children) =>
-        val savedSteps = try cf.ucCtx.savedSteps.ba catch {case _: Throwable => Map.empty[String @@ LocalId, Long_StepDataId]}
+        val savedSteps = try cf.ucCtx.savedSteps.get.ba catch {case _: Throwable => Map.empty[String @@ LocalId, Long_StepDataId]}
         val txt = cf.test__textFields.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
         StepNodeWithText(n.id, lvl, lbl, txt, children)
     }, cf.startingLabelIndices.startingLabelIndex _)

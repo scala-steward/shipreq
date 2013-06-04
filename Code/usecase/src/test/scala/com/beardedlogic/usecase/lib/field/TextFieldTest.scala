@@ -12,9 +12,10 @@ import test.TestHelpers
 class TextFieldTest extends FunSpec with TestHelpers {
 
   def sampleTextField = {
-    val tf = new TextField(mock[TextFieldDef], mockUseCaseCtx, mock[FieldKey])
-    when(tf.ucCtx.savedSteps).thenReturn(BiMap(111.tag[StepDataId] -> "X1".asLocalId, 222.tag[StepDataId] -> "X2".asLocalId))
-    when(tf.ucCtx.stepLabelMap).thenReturn(BiMap("X1".asLocalId -> "4.1".asLabel, "X2".asLocalId -> "4.2".asLabel))
+    val ucCtx = mockUseCaseCtx
+    when(ucCtx.savedSteps).thenReturn(CachedFunction.static1(BiMap(111.tag[StepDataId] -> "X1".asLocalId, 222.tag[StepDataId] -> "X2".asLocalId)))
+    when(ucCtx.stepLabelMap).thenReturn(CachedFunction.lazy0(BiMap("X1".asLocalId -> "4.1".asLabel, "X2".asLocalId -> "4.2".asLabel)))
+    val tf = new TextField(mock[TextFieldDef], ucCtx, mock[FieldKey])
     tf.init
     tf
   }
@@ -33,8 +34,8 @@ class TextFieldTest extends FunSpec with TestHelpers {
     it("should accept text with normalised refs") {
       val tf = sampleTextField
       val fn = tf.setState("Hehe! [D.100]".hasNormalisedRefs)
-      when(tf.ucCtx.savedSteps).thenReturn(BiMap(100.tag[StepDataId] -> "X1".asLocalId))
-      when(tf.ucCtx.stepLabelMap).thenReturn(BiMap("X1".asLocalId -> "5.4".asLabel))
+      tf.ucCtx.savedSteps << BiMap(100.tag[StepDataId] -> "X1".asLocalId)
+      tf.ucCtx.stepLabelMap << BiMap("X1".asLocalId -> "5.4".asLabel)
       fn()
 
       tf.value.text should be("Hehe! [5.4]")

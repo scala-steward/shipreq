@@ -16,6 +16,11 @@ class UseCaseCtx(cometActor: CometActor) {
   var number = 1: Short
   var title = "Untitled"
 
+  // This needs to be before fields as they reference it immediately to hand to SmartText
+  val stepLabelMap = CachedFunction.lazy0(
+    BiMap(courseFields.foldLeft(Map.empty[String @@ LocalId, String @@ Label]) { _ ++ _.stepLabelMap.get })
+  )
+
   // TODO hardcoded fieldlist
   val fieldList = Defaults.FieldList
   val fields = fieldList.fieldKeys.map(k => k.fieldDef.newFieldInstance(this, k))
@@ -25,20 +30,15 @@ class UseCaseCtx(cometActor: CometActor) {
   def textFields = fields.collect { case f: TextField => f }
   def ncacField: Option[NCAC] = courseFields.collectFirst { case f: NCAC => f }
   def ecField: Option[EC] = courseFields.collectFirst { case f: EC => f }
-  // TODO inefficient UCEditorState.stepLabelMap
-  def stepLabelMap: BiMap[String @@ LocalId, String @@ Label] =
-    BiMap(courseFields.foldLeft(Map.empty[String @@ LocalId, String @@ Label]) { _ ++ _.stepLabelMap })
-  def stepLabelMapProvider = () => stepLabelMap
 
   val normalCourseTitleId = ncacField.get.courses.head.stepTextId
 
-  private[lib] var _savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalId]
-  def savedSteps = _savedSteps
-  def recalcSavedSteps(saveCtx: FieldSaveCtx) {
-    _savedSteps = BiMap(saveCtx.stepValues.map {
-      case (localStepId, stepValue) => (stepValue.taggedDataId -> localStepId)
-    })
-  }
+  val savedSteps = CachedFunction.eager1WithInitial[FieldSaveCtx, BiMap[Long_StepDataId, String @@ LocalId]](
+    (saveCtx: FieldSaveCtx) => {
+      BiMap(saveCtx.stepValues.map {
+        case (localStepId, stepValue) => (stepValue.taggedDataId -> localStepId)
+      })
+    })(BiMap.empty)
 
   def init() { fields.foreach(_.init) }
 
@@ -48,6 +48,7 @@ class UseCaseCtx(cometActor: CometActor) {
     // TODO restoreCheckpoint only works before init. Undo not yet supported because no HTML is updated.
 
     // Set the number & title
+    // (Must be done before setting fields)
     this.number = checkpoint.uc.number
     this.title = checkpoint.uc.title
 
@@ -63,7 +64,7 @@ class UseCaseCtx(cometActor: CometActor) {
     }
 
     // Build ucCtx . map of stepDataId  →  Step Node ID
-    recalcSavedSteps(checkpoint.saveCtx)
+    savedSteps.refresh(checkpoint.saveCtx)
 
     for (fn <- finaliseStateFns) fn()
 
@@ -120,7 +121,7 @@ class UseCaseCtx(cometActor: CometActor) {
     if (changesDetected) {
       val saveCtx2 = saveCtx1.immutable
       val combinedSaveCtx = if (lastSave.isEmpty) saveCtx2 else saveCtx2.combineWith(lastSave.get.saveCtx)
-      recalcSavedSteps(combinedSaveCtx)
+      savedSteps.refresh(combinedSaveCtx)
 
       // Create new usecase
       val ucValue = if (lastSave.isEmpty)

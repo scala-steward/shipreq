@@ -15,6 +15,7 @@ import tree.TreeOps._
 
 class CourseFieldsTest extends FunSpec with TestHelpers {
 
+  implicit def CachedFunctionDelegation[R](c : CachedFunctionLike[R]): R = c.get
   implicit def autoTagLocalStepIds(s: String) = s.asLocalId
   implicit def autoTagNormalisedRefs(s: String) = s.hasNormalisedRefs
   implicit def autoTypeStepValues(m: Map[String, PlainValue[DataType.Step]]) = m.asInstanceOf[Map[String @@ LocalId, PlainValue[DataType.Step]]]
@@ -88,8 +89,8 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       val ucCtx = mockUseCaseCtx
       val cf = new NormalAndAlternateCourseFields(ucCtx, Key_NC)
       val fn = cf.setState(CourseFieldState(Tree2))
-      when(ucCtx.savedSteps).thenReturn(BiMap(800.tag[StepDataId] -> "X8".asLocalId))
-      when(ucCtx.stepLabelMap).thenReturn(BiMap(cf.stepLabelMap))
+      ucCtx.savedSteps << BiMap(800.tag[StepDataId] -> "X8".asLocalId)
+      ucCtx.stepLabelMap << BiMap(cf.stepLabelMap.get)
       fn()
       val tf = cf.test__textFields
       tf.keySet should be(Set("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8"))
@@ -251,7 +252,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     def sampleCF(courses: List[StepNodeWithText]) = {
       val cf = new ExceptionCourseFields(new UseCaseCtx(mock[CometActor]), Key_EC)
       cf.setCoursesWithTextAndInit(courses)
-      cf.recalcCurrentState()
+      cf.state.refresh
       cf
     }
 
@@ -275,7 +276,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       it("should NOP do return false when no differences") {
         val (saveCtx, dao) = mockSaveCtxAndDao
         val cf = sampleCF(NodeTree1)
-        cf.presave(lastSaveFor(cf.currentState), saveCtx, dao) should be(false)
+        cf.presave(lastSaveFor(cf.state.get), saveCtx, dao) should be(false)
         verifyZeroInteractions(dao)
         saveCtx.stepValues.result.size should be(0)
       }
@@ -300,7 +301,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     describe("save()") {
       it("should create step & relation rows") {
         val cf = sampleCF(NodeTree1)
-        val (stepValues, mockStepValuesByName) = lastSave2For(cf.currentState)
+        val (stepValues, mockStepValuesByName) = lastSave2For(cf.state.get)
         val fieldValues = Map(cf.fieldKey -> mock[PlainValue[DataType.FieldValue]])
         val saveCtx = FieldSaveCtx(fieldValues, stepValues)
         val dao = mock[DAO]
@@ -308,7 +309,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
         val (fd,state) = cf.save(saveCtx, saveCtx, dao)
 
         fd should be (None)
-        state should be(cf.currentState)
+        state should be(cf.state.get)
         for ((name, v) <- mockStepValuesByName) verify(dao).createStep(v, name)
         verify(dao, times(8)).relate_stepParent_has_step(any[Value[_ <: StepParent]], any[Short], any[Value[DataType.Step]])
         verifyNoMoreInteractions(dao)
@@ -344,7 +345,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
         val (fd,state) = cf.save(saveCtx.combineWith(oldSaveCtx), saveCtx, dao)
 
         fd should be (None)
-        state should be(cf.currentState)
+        state should be(cf.state.get)
         for ((id, v) <- newStepValues) verify(dao).createStep(v, if (id=="Root") "RootX" else if (id=="T1") "T1000" else id)
         verify(dao, times(3 + 2 + 2)) // FV->[Other,New,RootX] + RootX->[T1000,T4] + T1000->[T2,T3]
           .relate_stepParent_has_step(any[Value[_ <: StepParent]], any[Short], any[Value[DataType.Step]])

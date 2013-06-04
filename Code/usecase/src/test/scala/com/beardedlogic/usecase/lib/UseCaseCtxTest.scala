@@ -42,6 +42,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
       // Load
       val loaded = new UseCaseCtx(null)
+      loaded.init // TODO why do i need to call init myself all the time?
       val cp = UseCaseLoader.loadCheckpoint(uc_id, db)
       loaded.restoreCheckpoint(cp.get)
 
@@ -79,6 +80,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
       // Load
       val loaded = new UseCaseCtx(null)
+      loaded.init // TODO why do i need to call init myself all the time?
       val cp = UseCaseLoader.loadCheckpoint(uc_id, db)
       loaded.restoreCheckpoint(cp.get)
 
@@ -90,8 +92,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       nc.test__textFields(nc.courses(0).id).text should be("Root")
       nc.test__textFields(nc.courses(0)(0).id).text should be("Child [3.0]")
       nc.test__textFields(nc.courses(1).id).text should be("Other [3.0.1]")
-      // loaded.ncacField.get.courses should matchTree(parseStepTree("3.0. Root\n  1. Child [3.0]\n3.1. Other [3.0.1]"))
-      // TODO courses.step.text contains normalised refs. Good/bad?
+      //loaded.ncacField.get.coursesWithText should matchTree(parseStepTree("3.0. Root\n  1. Child [3.0]\n3.1. Other [3.0.1]"))
     }
   }
 

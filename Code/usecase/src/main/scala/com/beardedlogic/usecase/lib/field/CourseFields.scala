@@ -109,33 +109,33 @@ abstract class CourseFields extends Field[CourseFieldState] {
   private[this] var _courses: List[StepNode] = Nil
   def courses_=(newCourses: List[StepNode]) {
     _courses = newCourses
-    _stepLabelMap = null
+    stepLabelMap.invalidate
+    ucCtx.stepLabelMap.invalidate
     msgCentre ! StepChangeMsg
   }
   def courses = _courses
 
-  private[this] var _stepLabelMap: Map[String @@ LocalId, String @@ Label] = Map.empty
-  def stepLabelMap = {
-    if (_stepLabelMap == null) _stepLabelMap = mapIdsToFullLabels(courses, rootLabelPrefix.getOrElse(""))
-    _stepLabelMap
-  }
+  val stepLabelMap = CachedFunction.lazy0(
+    mapIdsToFullLabels(courses, rootLabelPrefix.get.getOrElse(""))
+  )
 
+  // TODO fields aren't being removed
   private[this] var textFields: Map[String @@ LocalId, SmartStepText] = Map.empty
   def test__textFields = textFields
 
   override def init() {
     syncTextFieldMap
+    courses = _courses
   }
 
   protected def recalcRootLabelPrefix: Option[String]
-  private [this] var _rootLabelPrefix = recalcRootLabelPrefix
-  final def rootLabelPrefix = _rootLabelPrefix
-  @inline def labelPrefixForLevel(level: Int) = if (level == 0) rootLabelPrefix else None
+  val rootLabelPrefix = CachedFunction.eager0(recalcRootLabelPrefix)
+  @inline def labelPrefixForLevel(level: Int) = if (level == 0) rootLabelPrefix.get else None
   @inline def labelFor(node: StepNode) = labelPrefixForLevel(node.level).map(_ + node.label).getOrElse(node.label)
   def startingLabelIndices: StartingLabelIndices
 
   private[this] def createAndRegisterTextField(n: StepNode) {
-    val t = new SmartStepText(msgCentre, ucCtx.stepLabelMapProvider, n.id, n.stepTextId)
+    val t = new SmartStepText(msgCentre, ucCtx.stepLabelMap, n.id, n.stepTextId)
     t.init
     textFields += (n.id -> t)
   }
@@ -301,7 +301,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   )
 
   override def setState(newState: CourseFieldState) = {
-    _rootLabelPrefix = recalcRootLabelPrefix
+    rootLabelPrefix.refresh
 
     courses = convertNodeTree[StepState, StepNode](newState.courses, { case (node, level, index, children) =>
       StepNode(node.id, level, index, children)
@@ -311,7 +311,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
 
     () => {
       val stepMap = newState.stepMap
-      val savedSteps = ucCtx.savedSteps
+      val savedSteps = ucCtx.savedSteps.get
       for ((id, tf) <- textFields) {
         val txt = stepMap(id).text
         tf.setTextFromLoad(txt, savedSteps)
@@ -327,7 +327,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
     dao: DAO
     ): Boolean = {
 
-    recalcCurrentState()
+    state.refresh
 
     lastSave match {
 
@@ -341,7 +341,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
 
       // Compare to previous and save deltas
       case Some((oldSaveCtx, oldFieldState)) =>
-        compareAndSaveChanges(oldFieldState, oldSaveCtx.stepValues, currentState.courses, saveCtx, dao)
+        compareAndSaveChanges(oldFieldState, oldSaveCtx.stepValues, state.get.courses, saveCtx, dao)
     }
   }
 
@@ -352,12 +352,12 @@ abstract class CourseFields extends Field[CourseFieldState] {
     ): (FieldValueData, CourseFieldState) = {
 
     // Required again because normalised refs may be different after presave
-    recalcCurrentState()
+    state.refresh
 
     // Create steps
     for {
       (localId, v) <- newSaveCtx.stepValues
-      ss <- currentState.stepMap.get(localId)
+      ss <- state.get.stepMap.get(localId)
     } {
       dao.createStep(v, ss.text)
       for {
@@ -369,25 +369,19 @@ abstract class CourseFields extends Field[CourseFieldState] {
     // Link FV to top-level
     val fv = newSaveCtx.fieldValues(fieldKey)
     for {
-      (ss,i) <- currentState.courses.zipWithIndex
+      (ss,i) <- state.get.courses.zipWithIndex
       stepValue <- combinedSaveCtx.stepValues.get(ss.id)
     } dao.relate_stepParent_has_step(fv, i.toShort, stepValue)
 
-    (None, currentState)
+    (None, state.get)
   }
 
-  /**
-   * A snapshot of the current state. Required in both presave() and save(). Rather than passing it back out and in
-   * again we just store it here in presave() and using it during save().
-   */
-  private[this] var _stateCache: CourseFieldState = null
-  @inline final def currentState = _stateCache
-
-  def recalcCurrentState() { _stateCache = CourseFieldState(buildStateList) }
-
-  /** Builds StepStates from a node tree. */
-  def buildStateList(): List[StepState] =
-    convertNodeTree[StepNode, StepState](courses, { case (ss, level, index, children) =>
-      StepState(ss.id, textFields(ss.id).textWithNormalisedRefs(ucCtx), children)
-    }, startingLabelIndices.startingLabelIndex _)
+  val state = CachedFunction.eager0WithInitial({
+    val stepStateList = convertNodeTree[StepNode, StepState](
+      courses, { (ss, level, index, children) =>
+          StepState(ss.id, textFields(ss.id).textWithNormalisedRefs(ucCtx), children)
+      }, startingLabelIndices.startingLabelIndex _
+    )
+    CourseFieldState(stepStateList)
+  })(null)
 }

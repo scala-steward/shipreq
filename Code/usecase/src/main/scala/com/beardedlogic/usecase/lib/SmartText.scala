@@ -184,15 +184,16 @@ object SmartText {
  * @since 12/05/2013
  */
 class SmartText(val msgCentre: MessageCentre,
-                val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String @@ Label],
+                masterRefAndIdLookup: CachedFunctionLike[BiMap[String @@ LocalId, String @@ Label]],
                 val textareaId: String = nextFuncName
                  ) extends LiftActor with Logger {
 
   import SmartText._
   import MyLittleParser._
 
+  // TODO check this. I doubt I've kept this class thread-safe properly
   protected val writeLock = new Object
-  protected[lib] var refAndIdLookup = BiMap.empty[String @@ LocalId, String @@ Label]
+  protected[lib] val refAndIdLookup = masterRefAndIdLookup.dependentCopyLazy
   protected[lib] var refsInText = Map.empty[String @@ LocalId, String @@ Label]
 
   protected[lib] var _text = ""
@@ -204,7 +205,7 @@ class SmartText(val msgCentre: MessageCentre,
   def init() {
     msgCentre.register(this)
     _allowBroadcasting = true
-    refAndIdLookup = refAndIdLookupProvider()
+    refAndIdLookup.invalidate
     _text = parseText(_text)
   }
 
@@ -228,13 +229,13 @@ class SmartText(val msgCentre: MessageCentre,
    * @param savedSteps A map of step data-to-node ids.
    */
   def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: BiMap[Long_StepDataId, String @@ LocalId]) {
-    refAndIdLookup = refAndIdLookupProvider()
+    refAndIdLookup.invalidate
 
     // Realise normalised refs
     val newValue = NormalisedRefRegex.replaceAllIn(newValueWithNRefs, { m =>
       val dataIdText = m.group(1)
       val dataId = dataIdText.toLong.tag[StepDataId]
-      savedSteps.ab.get(dataId).flatMap(nodeId => refAndIdLookup.ab.get(nodeId)).map(MakeRef(_)).getOrElse{
+      savedSteps.ab.get(dataId).flatMap(nodeId => refAndIdLookup.get.ab.get(nodeId)).map(MakeRef(_)).getOrElse{
         warn(s"Unable to realise normalised step reference. ❚ Text: $newValueWithNRefs ❚ DataId: $dataId ❚ SavedSteps: $savedSteps ❚ RefAndIdLookup: $refAndIdLookup")
         MakeInvalidNormalisedRef(dataIdText)
       }
@@ -247,7 +248,7 @@ class SmartText(val msgCentre: MessageCentre,
   }
 
   @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): String @@ NormalisedRefs =
-    textWithNormalisedRefs(ucCtx.savedSteps.ba)
+    textWithNormalisedRefs(ucCtx.savedSteps.get.ba)
 
   def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs =
     normaliseRefs(text, savedSteps, refsInText)
@@ -273,7 +274,7 @@ class SmartText(val msgCentre: MessageCentre,
    * Callback when the user changes the text.
    */
   def onTextChange(newValue: String): JsCmd = writeLock.synchronized {
-    refAndIdLookup = refAndIdLookupProvider() // Shouldn't be needed but no harm and provides extra safety
+    refAndIdLookup.invalidate // Shouldn't be needed but no harm and provides extra safety
     setTextFromUser(newValue)
     if (text != newValue)
       updateTextJs
@@ -306,9 +307,9 @@ class SmartText(val msgCentre: MessageCentre,
 
       // Check label validity
       val label = r.get._2.get.asLabel
-      if (refAndIdLookup.ba.contains(label)) {
-        val id = refAndIdLookup.ba(label)
-        if (!refsInText.contains(id)) refsInText += (id -> label)
+      val id = refAndIdLookup.get.ba.get(label)
+      if (id.isDefined) {
+        if (!refsInText.contains(id.get)) refsInText += (id.get -> label)
         MakeRef(newText, label)
       } else
         MakeInvalidRef(newText, label)
@@ -322,21 +323,15 @@ class SmartText(val msgCentre: MessageCentre,
   }
 
   @inline protected final def areAllLabelsValid(labels: Seq[String @@ Label]): Boolean = {
-    labels.find(!refAndIdLookup.ba.contains(_)).isEmpty
+    labels.find(!refAndIdLookup.get.ba.contains(_)).isEmpty
   }
 
   override def messageHandler = {
 
     case StepChangeMsg =>
 
-      // Ignore changes if already processed
-      val newRefLookup = refAndIdLookupProvider()
-      if (newRefLookup != refAndIdLookup) {
-
-        // Save new steps
-        refAndIdLookup = newRefLookup
-
-        // Update references and push changes
+      // Update references and push changes
+      refAndIdLookup.ifStale {
         if (haveAnyRefs) writeLock.synchronized {
           val newText = updateStepReferences()
           if (newText != text) internalSetTextAndPush(newText)
@@ -359,7 +354,7 @@ class SmartText(val msgCentre: MessageCentre,
     for ((id, oldLabel) <- refsInText) {
 
       // Lookup each existing reference
-      refAndIdLookup.ab.get(id).map { newLabel =>
+      refAndIdLookup.get.ab.get(id).map { newLabel =>
         if (oldLabel != newLabel)
           newText = newText.replace(MakeRef(oldLabel), MakeRef(newLabel))
         if (!newRefsInText.contains(id))
@@ -385,10 +380,10 @@ class SmartText(val msgCentre: MessageCentre,
  * @param stepId The ID of the owning step.
  */
 class SmartStepText(override val msgCentre: MessageCentre,
-                    override val refAndIdLookupProvider: () => BiMap[String @@ LocalId, String @@ Label],
+                    masterRefAndIdLookup: CachedFunctionLike[BiMap[String @@ LocalId, String @@ Label]],
                     val stepId: String @@ LocalId,
                     override val textareaId: String
-                     ) extends SmartText(msgCentre, refAndIdLookupProvider, textareaId) {
+                     ) extends SmartText(msgCentre, masterRefAndIdLookup, textareaId) {
 
   import SmartText._
   import MyLittleParser._
@@ -500,7 +495,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
       case Some(labels) if (areAllLabelsValid(labels)) =>
         Some(() => f.broadcastIfChanges {
-          f.refs = labels.map(l => (refAndIdLookup.ba(l), l)).toMap
+          f.refs = labels.map(l => (refAndIdLookup.get.ba(l), l)).toMap
           f.rebuildText
         })
 
@@ -521,19 +516,17 @@ class SmartStepText(override val msgCentre: MessageCentre,
    */
   private def updateFlowReferences(f: Flow) {
     val changeFound = f.refs.nonEmpty && f.refs.exists { kp =>
-      refAndIdLookup.ab.get(kp._1).map(_ != kp._2).getOrElse(true)
+      refAndIdLookup.get.ab.get(kp._1).map(_ != kp._2).getOrElse(true)
     }
     if (changeFound) {
       var newLabels = TreeSet.empty[String @@ Label]
       var newRefs = Map.empty[String @@ LocalId, String @@ Label]
       for ((id,_) <- f.refs) {
-        if (refAndIdLookup.ab.contains(id)) {
-          val l = refAndIdLookup.ab(id)
+        refAndIdLookup.get.ab.get(id).map { l =>
           newRefs += (id -> l)
           newLabels += l
-        } else {
-          // step deleted, just omit
         }
+        // orElse: step deleted, just omit
       }
       f.refs = newRefs
       f.text = MakeFlowTextOrEmpty(f.arrow, newLabels)
@@ -553,7 +546,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
   }
 
   private def addRef(f: Flow, id: String @@ LocalId) {
-    f.refs += (id -> refAndIdLookup.ab(id))
+    f.refs += (id -> refAndIdLookup.get.ab(id))
     f.rebuildText
     internalSetTextAndPush(buildFullText)
   }

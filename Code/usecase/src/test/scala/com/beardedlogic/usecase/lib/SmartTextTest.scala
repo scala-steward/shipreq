@@ -77,14 +77,14 @@ object SmartTextTest extends MockitoSugar {
   }
 
   def textFieldWithText(text: String) = {
-    val m = new SmartText(mock[MessageCentre], () => StepState1)
+    val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
     m.init
     m.setTextFromUser(text)
     m
   }
 
   def stepFieldWithText(text: String, stepId: String @@ LocalId = "SUBJ".asLocalId, refLookup: BiMap[String @@ LocalId, String @@ Label] = StepState1) = {
-    val m = new SmartStepText(mock[MessageCentre], () => refLookup, stepId, stepId + "-t")
+    val m = new SmartStepText(mock[MessageCentre], CachedFunction.eager0(refLookup), stepId, stepId + "-t")
     m.init
     m.setTextFromUser(text)
     m
@@ -107,8 +107,6 @@ class SmartTextTest
 
   import SmartTextTest._
 
-  class RefLookupProvider(var value: BiMap[String @@ LocalId, String @@ Label])
-
   def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
     verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
   }
@@ -124,7 +122,7 @@ class SmartTextTest
   describe("Setting text with normalised refs") {
 
     it("should set simple text") {
-      val m = new SmartText(mock[MessageCentre], () => StepState1)
+      val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
       m.init()
       m.refsInText += ("A".asLocalId -> "B".asLabel)
       m.setTextFromLoad("Hehe".hasNormalisedRefs, BiMap.empty)
@@ -134,7 +132,7 @@ class SmartTextTest
 
     it("should set text with normalised refs") {
       val msgCentre = mock[MessageCentre]
-      val m = new SmartText(msgCentre, () => StepState1)
+      val m = new SmartText(msgCentre, CachedFunction.eager0(StepState1))
       m.init()
       m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalId))
       m.text should be("Hehe [S.2]")
@@ -144,7 +142,7 @@ class SmartTextTest
 
     it("should set text with normalised flow refs") {
       val msgCentre = mock[MessageCentre]
-      val m = new SmartStepText(msgCentre, () => StepState1, "XX".asLocalId, "XXt")
+      val m = new SmartStepText(msgCentre, CachedFunction.eager0(StepState1), "XX".asLocalId, "XXt")
       m.init()
       val savedSteps = BiMap(100.tag[StepDataId] -> "X2".asLocalId, 104.tag[StepDataId] -> "X1".asLocalId, 108.tag[StepDataId] -> "X3".asLocalId)
       val ntext = "He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs
@@ -164,7 +162,7 @@ class SmartTextTest
   describe("When first created and initialised") {
     it("should register itself as a listener") {
       val msgCentre = mock[MessageCentre]
-      val m = new SmartText(msgCentre, () => StepState2)
+      val m = new SmartText(msgCentre, CachedFunction.eager0(StepState2))
       m.init()
       verify(msgCentre).register(m)
     }
@@ -175,14 +173,14 @@ class SmartTextTest
   describe("Plain text parsing") {
     describe("internal state") {
       it("should examine the text for step refs and create map of refs -> ids") {
-        val m = new SmartText(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
         m.init
         m setTextFromUser "Umm [S.1] & [S.3] ah and [S.1]!"
         m.refsInText should be(Map("X1" -> "S.1", "X3" -> "S.3"))
       }
 
       it("should remove previous matches") {
-        val m = new SmartText(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
         m.init
         m.refsInText = Map("X1".asLocalId -> "S.1".asLabel, "X3".asLocalId -> "S.3".asLabel)
         m setTextFromUser "Umm [S.1] only"
@@ -190,7 +188,7 @@ class SmartTextTest
       }
 
       it("should clear the label<->id map when no matches") {
-        val m = new SmartText(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
         m.init
         m.refsInText = Map("X1".asLocalId -> "S.1".asLabel, "X3".asLocalId -> "S.3".asLabel)
         m setTextFromUser "nothing"
@@ -202,7 +200,7 @@ class SmartTextTest
 
     describe("transformations") {
       def test(input: String, expectedOutput: String = null) {
-        val m = new SmartText(mock[MessageCentre], () => StepState1)
+        val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
         m.init
         m setTextFromUser input
         m.text should be(if (expectedOutput == null) input else expectedOutput)
@@ -422,7 +420,7 @@ class SmartTextTest
     def flowChange(from:Boolean) = {
       def test(textBefore: String, newText: String, expectedToIds: Option[Set[String]]) {
         val m = new MsgCollector
-        val s = new SmartStepText(m, () => StepState1, "SUBJ".asLocalId, "SUBJ-t")
+        val s = new SmartStepText(m, CachedFunction.eager0(StepState1), "SUBJ".asLocalId, "SUBJ-t")
         s.init()
         if (textBefore.nonEmpty) s setTextFromUser textBefore.fixArrows(from)
         m.sent.clear()
@@ -472,7 +470,7 @@ class SmartTextTest
 
     def assertMessageDoesNothing(setup: SmartText => Unit) {
       val msgCentre = mock[MessageCentre]
-      val m = new SmartText(msgCentre, () => StepState2)
+      val m = new SmartText(msgCentre, CachedFunction.eager0(StepState2))
       setup(m)
       m.sendStepChangeMsg
       verifyNoMoreInteractions(msgCentre)
@@ -489,7 +487,7 @@ class SmartTextTest
         assertMessageDoesNothing {
           m =>
             m.refsInText = Map("X2".asLocalId -> "S.2".asLabel)
-            m.refAndIdLookup = StepState1
+            m.refAndIdLookup << StepState1
         }
       }
     }
@@ -499,7 +497,7 @@ class SmartTextTest
         assertMessageDoesNothing {
           m =>
             m.refsInText = Map("X1".asLocalId -> "S.1".asLabel)
-            m.refAndIdLookup = StepState2
+            m.refAndIdLookup << StepState2
         }
       }
     }
@@ -508,19 +506,19 @@ class SmartTextTest
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
       val m = if (useSmartStepText) {
-        val s2 = new SmartStepText(msgCentre, () => StepState2, "".asLocalId, "")
+        val s2 = new SmartStepText(msgCentre, CachedFunction.eager0(StepState2), "".asLocalId, "")
         s2.init
         // dont put flow stuff here
         s2.textWithoutFlow = initialText
         s2
       } else {
-        val m = new SmartText(msgCentre, () => StepState2)
+        val m = new SmartText(msgCentre, CachedFunction.eager0(StepState2))
         m.init
         m
       }
       m._text = initialText
       m.refsInText = initialRefsInUse
-      m.refAndIdLookup = StepState1
+      m.refAndIdLookup << StepState1
       m.sendStepChangeMsg
       m
     }
@@ -533,7 +531,7 @@ class SmartTextTest
         subject.refsInText should be(newRefsInUse)
       }
       it("should record the last used ref lookup table") {
-        subject.refAndIdLookup should be theSameInstanceAs (StepState2)
+        subject.refAndIdLookup.get should be theSameInstanceAs (StepState2)
       }
       it("should push an update") {
         assertClientUpdated(subject)
@@ -564,9 +562,9 @@ class SmartTextTest
     def testSubject2(initialText: String) = {
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
-      val s = new SmartStepText(msgCentre, () => StepState2, "".asLocalId, "")
+      val s = new SmartStepText(msgCentre, CachedFunction.eager0(StepState2), "".asLocalId, "")
       s.init
-      s.refAndIdLookup = StepState1
+      s.refAndIdLookup << StepState1
       s setTextFromUser initialText
       s.text should be (initialText)
       s.sendStepChangeMsg
@@ -580,7 +578,7 @@ class SmartTextTest
         val changeExpected = (initialText != expectedText)
         val s = testSubject2(initialText)
         val refs = if (from) s.flowFrom.refs else s.flowTo.refs
-        if (changeExpected) s.refAndIdLookup should be theSameInstanceAs(StepState2)
+        if (changeExpected) s.refAndIdLookup.get should be theSameInstanceAs(StepState2)
         refs should be(expectedIds.asLocalIds.map(id => (id, StepState2.ab(id))).toMap)
         s.text should be(expectedText)
         assertClientUpdated(s, changeExpected)
@@ -642,7 +640,7 @@ class SmartTextTest
   describe(s"Receiving FlowChangeMsgs") {
 
     def testSubject(initialText: String) = {
-      val s = new SmartStepText(new MsgCollector, () => StepState1, "SUBJ".asLocalId, "")
+      val s = new SmartStepText(new MsgCollector, CachedFunction.eager0(StepState1), "SUBJ".asLocalId, "")
       s.init
       s setTextFromUser initialText
       s.text should be (initialText)
@@ -661,7 +659,7 @@ class SmartTextTest
 
     it("should not mirror links to self") {
       for (txt <- List("➡ [S.1]","⬅ [S.1]")) {
-        val s = new SmartStepText(new MsgCollector, () => StepState1, "X1".asLocalId, "")
+        val s = new SmartStepText(new MsgCollector, CachedFunction.eager0(StepState1), "X1".asLocalId, "")
         val mc = s.msgCentre.asInstanceOf[MsgCollector]
         s.init
         s setTextFromUser txt
@@ -715,14 +713,14 @@ class SmartTextTest
   describe("Step recognition and transformation") {
 
     def testTransformation(before: String, expectedAfter: String) {
-      val refLookupProvider = new RefLookupProvider(StepState1)
       val comet = mock[CometActor]
       val msgCentre = new MessageCentre(comet)
-      val m = new SmartText(msgCentre, refLookupProvider.value _)
+      val cfn = CachedFunction.eager0(StepState1)
+      val m = new SmartText(msgCentre, cfn)
       m.init
       m setTextFromUser before
       m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
-      refLookupProvider.value = StepState2
+      cfn << StepState2
       m.sendStepChangeMsg
       m.text should be(expectedAfter)
       if (before == expectedAfter) verifyZeroInteractions(comet)

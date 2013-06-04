@@ -43,7 +43,7 @@ object TextField {
 class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override val fieldKey: FieldKey)
   extends Field[String @@ NormalisedRefs] {
 
-  val value = new SmartText(ucCtx.msgCentre, ucCtx.stepLabelMapProvider)
+  val value = new SmartText(ucCtx.msgCentre, ucCtx.stepLabelMap)
 
   override def init() {
     value.init()
@@ -57,7 +57,7 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
     )
 
   override def setState(newState: String @@ NormalisedRefs): () => Unit = {
-    () => value.setTextFromLoad(newState, ucCtx.savedSteps)
+    () => value.setTextFromLoad(newState, ucCtx.savedSteps.get)
   }
 
   override def save_? : Boolean = value.text.nonEmpty

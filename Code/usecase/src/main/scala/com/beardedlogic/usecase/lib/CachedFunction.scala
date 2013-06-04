@@ -1,61 +1,90 @@
 package com.beardedlogic.usecase.lib
 
-trait InitialValue[T] {
-  def apply(): T
+object CachedFunction {
+  def lazy0[R](fn: => R) = new LazyCachedFunction[R](fn)
+  def eager0[R](fn: => R) = new EagerCachedFunction[R](fn, fn)
+  def eager0WithInitial[R](fn: => R)(initial: R) = new EagerCachedFunction[R](initial, fn)
+
+  def eager1[T, R](fn: T => R)(arg: T) = new CachedFunction1[T, R](fn(arg), fn)
+  def eager1WithInitial[T, R](fn: T => R)(initial: R) = new CachedFunction1[T, R](initial, fn)
+  def static1[T, R](staticValue: R) = new CachedFunction1[T, R](staticValue, (_: T) => staticValue)
 }
 
-object InitialValue {
-  def apply[T](t: T) = new InitialValue[T] {def apply = t}
-}
+// TODO Could squeeze much more reuse out of CachedFunction classes
 
-object InitialValues {
-  implicit def InitialValueBiMap[A, B] = InitialValue[BiMap[A, B]](BiMap.empty)
-  implicit def InitialValueMap[A, B] = InitialValue[Map[A, B]](Map.empty)
-  implicit def InitialValueList[T] = InitialValue[List[T]](List.empty)
-  def InitiallyNull[T >: Null] = InitialValue[T](null)
-}
+// =====================================================================================================================
 
 trait CachedFunctionLike[R] {
-  protected var cache: R
 
-  @inline final def get: R = cache
+  def get: R
 
   /**
    * Creates a copy one step removed from the original function. Instead the copy will depend on this class's cached
    * value.
    */
-  def dependentCopy = new CachedFunctionDependent[R](this)
+  def dependentCopyEager = new EagerCachedFunctionDependent[R](this)
 
-  /** Manually sets the underlying cache value. */
-  def <<(newValue: R) { cache = newValue }
+  /**
+   * Creates a copy one step removed from the original function. Instead the copy will depend on this class's cached
+   * value.
+   */
+  def dependentCopyLazy = new LazyCachedFunctionDependent[R](this)
 }
 
-/**
- * @since 4/06/2013
- */
-object CachedFunction {
-  def apply[R](fn: => R)(implicit initialValue: InitialValue[R]) = new CachedFunction[R](initialValue(), fn)
-  def eager[R](fn: => R) = new CachedFunction[R](fn, fn)
-}
-
-object CachedFunction1 {
-  def apply[T, R](fn: T => R)(implicit initialValue: InitialValue[R]) = new CachedFunction1[T, R](initialValue(), fn)
-  def eager[T, R](fn: T => R)(arg: T) = new CachedFunction1[T, R](fn(arg), fn)
-  def static[T, R](staticValue: R) = new CachedFunction1[T, R](staticValue, (_: T) => staticValue)
-}
+// =====================================================================================================================
 
 /**
  * Caches the result of a zero-arg function, and allows manual invalidation.
  *
  * @since 4/06/2013
  */
-class CachedFunction[R](initialValue: R, fn: => R) extends CachedFunctionLike[R] {
+class LazyCachedFunction[R](fn: => R) extends CachedFunctionLike[R] {
+  private var cache: Option[R] = None
 
-  override protected var cache: R = initialValue
+  @inline final def get: R = {
+    if (cache.isEmpty) cache = Some(fn)
+    cache.get
+  }
+
+  @inline final def invalidate() { cache = None }
+
+  override def toString = s"LazyCachedFunction($get)"
+
+  @inline final def ifStale(block: => Any): Unit = {
+    val newValue = Some(fn)
+    if (newValue != cache) {
+      cache = newValue
+      block
+    }
+  }
+
+  /** Creates an independent copy of this class. */
+  def copy = {
+    val c = new LazyCachedFunction[R](fn)
+    c.cache = cache
+    c
+  }
+
+  /** Manually sets the underlying cache value. */
+  def <<(newValue: R) { cache = Some(newValue) }
+}
+
+// =====================================================================================================================
+
+/**
+ * Caches the result of a zero-arg function, and allows manual invalidation.
+ *
+ * @since 4/06/2013
+ */
+class EagerCachedFunction[R](initialValue: R, fn: => R) extends CachedFunctionLike[R] {
+
+  private var cache: R = initialValue
+
+  @inline final def get: R = cache
 
   @inline final def refresh: R = { cache = fn; cache }
 
-  override def toString = s"CachedFunction($get)"
+  override def toString = s"EagerCachedFunction($get)"
 
   @inline final def ifStale(block: => Any): Unit = {
     val newValue = fn
@@ -66,15 +95,27 @@ class CachedFunction[R](initialValue: R, fn: => R) extends CachedFunctionLike[R]
   }
 
   /** Creates an independent copy of this class. */
-  def copy = new CachedFunction[R](get, fn)
+  def copy = new EagerCachedFunction[R](get, fn)
+
+  /** Manually sets the underlying cache value. */
+  def <<(newValue: R) { cache = newValue }
 }
 
-class CachedFunctionDependent[R](val dependingOn: CachedFunctionLike[R])
-  extends CachedFunction[R](dependingOn.get, dependingOn.get)
+// =====================================================================================================================
+
+class EagerCachedFunctionDependent[R](val dependingOn: CachedFunctionLike[R])
+  extends EagerCachedFunction[R](dependingOn.get, dependingOn.get)
+
+class LazyCachedFunctionDependent[R](val dependingOn: CachedFunctionLike[R])
+  extends LazyCachedFunction[R](dependingOn.get)
+
+// =====================================================================================================================
 
 class CachedFunction1[-T, R](initialValue: R, fn: T => R) extends CachedFunctionLike[R] {
 
-  override protected var cache: R = initialValue
+  private var cache: R = initialValue
+
+  @inline final def get: R = cache
 
   @inline final def refresh(arg: T): R = { cache = fn(arg); cache }
 
@@ -90,4 +131,7 @@ class CachedFunction1[-T, R](initialValue: R, fn: T => R) extends CachedFunction
 
   /** Creates an independent copy of this class. */
   def copy = new CachedFunction1[T, R](get, fn)
+
+  /** Manually sets the underlying cache value. */
+  def <<(newValue: R) { cache = newValue }
 }
