@@ -2,13 +2,14 @@ package com.beardedlogic.usecase
 package test
 
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.{Outcome, Suite}
+import org.scalatest.{Exceptional, Outcome, Suite}
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
 import lib.db.DB
 import scala.util.Random
 import net.liftweb.common.Logger
 import com.beardedlogic.usecase.model.DAO
+import java.sql.Connection
 
 object TestDatabaseSupport {
 
@@ -32,16 +33,27 @@ trait TestDatabaseSupport extends ShouldMatchers with Logger {
 
   override protected def withFixture(test: NoArgTest): Outcome = {
     TestDatabaseSupport.init()
-    DB.Slick.withTransaction { s: Session =>
-      this.sessionVar = s
-      this.dbVar = new DAO(s)
-      try test()
-      finally {
-        s.rollback()
-        this.sessionVar = null
-        this.dbVar = null
+    debug(s"DB Test start: ${test.name}")
+    try {
+      val outcome = DB.Slick.withTransaction { s: Session =>
+        this.sessionVar = s
+        this.dbVar = new DAO(s)
+        s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
+        try test()
+        finally {
+          s.rollback()
+          this.sessionVar = null
+          this.dbVar = null
+        }
       }
+      outcome match {
+        case Exceptional(e) => debug("Test failure.", e)
+        case _ =>
+      }
+      outcome
     }
+    catch {case e: Throwable => error("Test error.", e); throw e }
+    finally debug(s"DB Test end: ${test.name}")
   }
 
   var sessionVar: Session = null

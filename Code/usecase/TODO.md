@@ -18,7 +18,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [M.1.5] [FAIL] Tests fail in parallel due to DB deadlock.
 * [M.0.5] [FAIL] UseCaseCtx intermittent failure. See below.
 
 * [S.1.1] [TEST] Change CourseField step manipulations into pure + web funcs.
@@ -32,6 +31,7 @@ TECH TODO
 * [C.0.0] [ARCH] Title-to-NC sync should be done via msging.
 * [C.0.0] [ARCH] Replace SmartText.disableBroadcast with better design?
 * [C.0.0] [ARCH] Should internal field msgs really be asynchronous?
+* [C.0.0] [FAIL] DatabaseEnumTest disabled due to DB deadlocks.
 
 
 NOTES

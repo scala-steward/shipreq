@@ -9,7 +9,8 @@ import model.DataType
 
 class DatabaseEnumTest extends FunSpec with TestDatabaseSupport {
 
-  describe("DatabaseEnum.init()") {
+  // TODO DatabaseEnum disabled cos it's wiping all tables and causing DB deadlocks
+  ignore("DatabaseEnum.init()") {
 
     def count = countRowsIn("data_type")
 
