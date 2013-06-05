@@ -15,6 +15,10 @@ import tree.TreeOps._
 
 class CourseFieldsTest extends FunSpec with TestHelpers {
 
+  // Covered in UseCaseTest: presave() with data refs
+  // Covered in UseCaseTest: save() with data refs
+  // Covered in UseCaseTest: compare() with new steps
+
   implicit def CachedFunctionDelegation[R](c : CachedFunctionLike[R]): R = c.get
   implicit def autoTagLocalStepIds(s: String) = s.asLocalId
   implicit def autoTagNormalisedRefs(s: String) = s.hasNormalisedRefs
@@ -293,9 +297,6 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       }
     }
 
-    // TODO check presave() with data refs
-    // TODO check save() with data refs
-    // TODO check compare() with new steps
     // TODO check compare() with deleted steps
 
     describe("save()") {

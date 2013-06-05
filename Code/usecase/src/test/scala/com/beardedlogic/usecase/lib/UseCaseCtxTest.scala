@@ -260,6 +260,10 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
     ncac.courses = fixTopLevelIndices(ncac.courses.reverse)
     eventually(uc.textFields(0).value.text should be("New step is [1.0]"))
     testUpdate("usecase" -> 1, "field_value" -> 1, "value" -> 2, "relation" -> FVsPlus(ncac.courses.size))
+
+    // NOP update to text with ref
+    uc.textFields(0).value.setTextFromUser("New step is [1.0]")
+    testUpdate()
   }
 
   describe("Saving then Loading") {
