@@ -164,12 +164,10 @@ abstract class CourseFields extends Field[CourseFieldState] {
    * Also renders an addTailStep button.
    *
    * @param addTailStepCss The CSS selector that will locate the addTailStep container.
-   * @param newStepFn A function that will create a new StepNode when called.
    */
   protected def renderSteps(steps: List[StepNode],
-                            addTailStepCss: String,
-                            newStepFn: () => StepNode): Function1[NodeSeq, NodeSeq] = {
-    val t = "button" #> SHtml.ajaxButton("+", () => onAddTailStep(addTailStepCss, newStepFn))
+                            addTailStepCss: String): NodeSeq => NodeSeq = {
+    val t = "button" #> SHtml.ajaxButton("+", () => onAddTailStep(addTailStepCss))
     val addTailStep = t(AddTailStepTemplate)
     renderSteps(steps) andThen ".steps *+" #> addTailStep // Append to .steps, after all the .step tags
   }
@@ -198,13 +196,22 @@ abstract class CourseFields extends Field[CourseFieldState] {
     fn(StepTemplate)
   }
 
-  /**
-   * Adds a new top-level step to the end of the list.
-   */
-  private def onAddTailStep(addTailStepCss: String, newStepFn: () => StepNode): JsCmd = {
-    val newNode = newStepFn()
+  /** Creates a new top-level step to add to the end of the list. */
+  protected def newTailStep(): StepNode
+
+  // TODO change all CourseField step manipulations into pure + web funcs (and rename to improve consistency)
+
+  /** Adds a new top-level step to the end of the list. */
+  def addTailStep(): StepNode = {
+    val newNode = newTailStep()
     courses = courses :+ newNode
     createAndRegisterTextField(newNode)
+    newNode
+  }
+
+  /** Callback for user to add a new top-level step to the end of the list. */
+  protected def onAddTailStep(addTailStepCss: String): JsCmd = {
+    val newNode = addTailStep
     (
       JqExpr(addTailStepCss) ~> JqBefore(renderSingleStepXml(newNode))
       & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
@@ -214,24 +221,26 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Adds a new step, shuffling down subsequent steps and renumbering if necessary.
    */
-  def onStepAdd(preceedingNodeId: String @@ LocalId): JsCmd = stepInsert(preceedingNodeId, courses, StepNodeBuilder) match {
-    case (newCourses, Some(newNode)) =>
+  def stepAdd[R](preceedingNodeId: String @@ LocalId): Option[StepNode] = stepInsert(preceedingNodeId, courses, StepNodeBuilder) match {
+    case (newCourses, r @ Some(newNode)) =>
       courses = newCourses
       createAndRegisterTextField(newNode)
-      (
-        JqId(preceedingNodeId) ~> JqAfter(renderSingleStepXml(newNode))
+      r
+    case _ => None
+  }
+  protected def onStepAdd(preceedingNodeId: String @@ LocalId): JsCmd =
+    stepAdd(preceedingNodeId) map (newNode =>
+      JqId(preceedingNodeId) ~> JqAfter(renderSingleStepXml(newNode))
         & JqId(newNode.id) ~> JqHide ~> JqSlideDownFast
         & UpdateLabels(courses)
-      )
-    case _ => JsCmds.Noop
-  }
+      ) getOrElse JsCmds.Noop
 
   def prohibitRemoval(id: String @@ LocalId) = false
 
   /**
    * Removes a new step and all its children, shuffling up following steps and renumbering if necessary.
    */
-  def onStepRemove(id: String @@ LocalId): JsCmd =
+  protected def onStepRemove(id: String @@ LocalId): JsCmd =
     if (prohibitRemoval(id))
       JsCmds.Noop
     else
@@ -247,14 +256,15 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Decreases the indentation level of a given step.
    */
-  def onIndentDecrease(nodeId: String @@ LocalId): JsCmd = indentDecrease(nodeId, courses) match {
-    case (newCourses, Some(_)) =>
-      courses = newCourses
+  def stepIndentDecrease(nodeId: String @@ LocalId): Boolean = indentDecrease(nodeId, courses) match {
+    case (newCourses, Some(_)) => courses = newCourses; true
+    case _                     => false
+  }
+  protected def onIndentDecrease(nodeId: String @@ LocalId): JsCmd =
+    if (stepIndentDecrease(nodeId)) {
       val updateJs = UpdateIndentation(courses) & UpdateLabels(courses)
       customiseIndentDecreaseJs(nodeId, updateJs)
-
-    case _ => JsCmds.Noop
-  }
+    } else JsCmds.Noop
 
   /**
    * Allows customisation of the ajax response of a successful indent decrease.
@@ -264,7 +274,7 @@ abstract class CourseFields extends Field[CourseFieldState] {
   /**
    * Increases the indentation level of a given step.
    */
-  def onIndentIncrease(nodeId: String @@ LocalId): JsCmd = indentIncrease(nodeId, courses) match {
+  protected def onIndentIncrease(nodeId: String @@ LocalId): JsCmd = indentIncrease(nodeId, courses) match {
     case (newCourses, Some(newNode)) =>
       val oldCourses = courses
       courses = newCourses

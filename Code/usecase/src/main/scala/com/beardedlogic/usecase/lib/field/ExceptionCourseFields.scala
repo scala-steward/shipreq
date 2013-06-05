@@ -31,11 +31,8 @@ class ExceptionCourseFields(override val ucCtx: UseCaseCtx, override val fieldKe
   override def startingLabelIndices = EC_StartingLabelIndices
 
   override def render = (
-    renderSteps(courses, AddTailStepCss, newTailStep _)(ExceptionTemplate)
+    renderSteps(courses, AddTailStepCss)(ExceptionTemplate)
   )
 
-  /**
-   * Creates a new top-level step to add to the end of the list.
-   */
-  private def newTailStep() = StepNodeBuilder(0, courses.size + 1)
+  override protected def newTailStep() = StepNodeBuilder(0, courses.size + 1)
 }

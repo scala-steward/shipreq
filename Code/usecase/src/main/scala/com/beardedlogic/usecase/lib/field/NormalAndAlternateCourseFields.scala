@@ -41,13 +41,10 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
 
   override def render = (
     renderSteps(courses.head :: Nil)(NormalCourseTemplate) ++
-    renderSteps(courses.tail, AddTailStepCss, newTailStep _)(AlternateCourseTemplate)
+    renderSteps(courses.tail, AddTailStepCss)(AlternateCourseTemplate)
   )
 
-  /**
-   * Creates a new top-level step to add to the end of the list.
-   */
-  private def newTailStep() = StepNodeBuilder(0, courses.size)
+  override protected def newTailStep() = StepNodeBuilder(0, courses.size)
 
   /**
    * Prevent removal of the normal course head, ie. 1.0.

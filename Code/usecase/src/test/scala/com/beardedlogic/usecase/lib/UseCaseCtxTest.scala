@@ -243,6 +243,16 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
     // FV has 2 steps          --     V:1 R:2
     // Usecase + value         --     V:1
     testUpdate("usecase" -> 1, "field_value" -> 1, "step" -> 2, "value" -> 4, "relation" -> FVsPlus(5))
+
+    // Ref to new (empty) step
+    ncac.addTailStep()
+    ncac.courses.size should be(3)
+    uc.textFields(0).value.setTextFromUser("New step is [1.2]")
+    // 1.2: New step  -- S:1 V:1 D:1
+    // Text update    --     V:1     FV:1
+    // FV has 3 steps --     V:1     FV:1 R:3
+    // UC             --     V:1          R:FVs
+    testUpdate("usecase" -> 1, "field_value" -> 2, "step" -> 1, "value" -> 4, "data" -> 1, "relation" -> FVsPlus(3))
   }
 
   describe("Saving then Loading") {
