@@ -1,11 +1,10 @@
 package com.beardedlogic.usecase.lib
 package msg
 
-import net.liftweb.http.js.JsCmd
 import TypeTags._
 
-/** Marks a message that is meant for a [[net.liftweb.http.CometActor]] only. */
-trait CometMessage
+/** Marks an object as being a valid message. */
+trait Message
 
 /**
  * Registry of available messages that actors can choose to respond to.
@@ -14,11 +13,8 @@ trait CometMessage
  */
 object Messages {
 
-  /** Push a Javascript command to the client. */
-  case class PushToClient(cmd: JsCmd) extends CometMessage
-
   /** Indicates that one or more steps have changed. */
-  case object StepChangeMsg
+  case object StepChangeMsg extends Message
 
   /**
    * Indicates that a step's flow-from list has changed.
@@ -32,7 +28,7 @@ object Messages {
    * @param fromIds The IDs of all steps that now flow to the target.
    * @param toId The ID of the step that issued the change, the step to which the from-steps now flow.
    */
-  case class FlowFromChangeMsg(fromIds: Set[String @@ LocalId], toId: String @@ LocalId)
+  case class FlowFromChangeMsg(fromIds: Set[String @@ LocalId], toId: String @@ LocalId) extends Message
 
   /**
    * Indicates that a step's flow-to list has changed.
@@ -46,5 +42,5 @@ object Messages {
    * @param fromId The ID of the step that issued the change, the step from which steps now flow out.
    * @param toIds The IDs of all steps that the source step now flows to.
    */
-  case class FlowToChangeMsg(fromId: String @@ LocalId, toIds: Set[String @@ LocalId])
+  case class FlowToChangeMsg(fromId: String @@ LocalId, toIds: Set[String @@ LocalId]) extends Message
 }

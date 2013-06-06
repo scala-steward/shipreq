@@ -1,10 +1,13 @@
 package com.beardedlogic.usecase.lib.msg
 
-import net.liftweb.http.CometActor
-import net.liftweb.common.SimpleActor
+/** Listens and reacts to messages. */
+trait MessageListener {
+  def messageHandler: PartialFunction[(Message, Reactor), Unit]
+}
 
 /**
- * A simple hub for message traffic that sits between publishers and subscribers, thus decoupling them.
+ * A hub for synchronous message traffic between decoupled components, with dynamic yet specialised reactions
+ * (ie. results).
  *
  * This is initially disabled, during which messages are discarded rather than broadcast.
  *
@@ -14,34 +17,36 @@ import net.liftweb.common.SimpleActor
  *
  * @since 11/05/2013
  */
-class MessageCentre(val cometActor: CometActor) {
-  type Subscriber = SimpleActor[Any]
+class MessageCentre {
 
-  @volatile private[this] var subscribers: List[Subscriber] = Nil
+  @volatile private[this] var listeners: List[MessageListener] = Nil
   @volatile var enabled: Boolean = false
 
   /**
    * Registers an actor so that it receives a copy of all messages that pass through.
    */
-  def register(subscriber: Subscriber) {
-    subscribers ::= subscriber
+  def register(listener: MessageListener) {
+    listeners :+= listener
   }
 
   /**
    * Removes a subscribed actor so that it no longer receives messages from here.
    */
-  def unregister(subscriber: Subscriber) {
-    subscribers = subscribers.filter(_ ne subscriber)
+  def unregister(listener: MessageListener) {
+    listeners = listeners.filter(_ ne listener)
   }
 
-  /**
-   * Simply routes received messages to a subscribed listeners.
-   */
-  def !(msg: Any) {
-    if (enabled) subscribers foreach (_ ! msg)
+  def send[R](msg: Message, r: ReactionBuilder[R]): R = {
+    this ! ((msg, r.reactor))
+    r.result
   }
 
-  @inline final def !(msg: CometMessage): Unit = {
-    cometActor ! msg
+  def !(msgAndReactor: (Message, Reactor)): Unit = {
+    if (enabled) {
+      listeners foreach { l =>
+        val pf = l.messageHandler
+        if (pf.isDefinedAt(msgAndReactor)) pf.apply(msgAndReactor)
+      }
+    }
   }
 }
