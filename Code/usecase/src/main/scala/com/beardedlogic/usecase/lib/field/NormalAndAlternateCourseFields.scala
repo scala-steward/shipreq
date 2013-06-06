@@ -6,6 +6,7 @@ import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import TypeTags._
 import model.{FieldKey, FieldKeyType}
 import CourseFields._
+import msg.NoReactionOrNewMessages
 
 object NormalAndAlternateCourseFields extends FieldDef[CourseFieldState] {
   import Fields.Template
@@ -33,8 +34,9 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
   import NormalAndAlternateCourseFields._
 
   // TODO This will do for now but if this is moved into init() it will cause problems with TextFields due to the stepRefMap
-  courses =
+  setCourses(
     StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil
+  )(NoReactionOrNewMessages)
 
   override def recalcRootLabelPrefix = Some(s"${ucCtx.number}.")
   override def startingLabelIndices = NCAC_StartingLabelIndices

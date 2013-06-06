@@ -5,11 +5,13 @@ package field
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
 import model._
-import msg.MessageCentre
+import msg._
 import TypeTags._
 import test.TestHelpers
 
 class TextFieldTest extends FunSpec with TestHelpers {
+
+  implicit def reactor = NoReaction
 
   def sampleTextField = {
     val ucCtx = mockUseCaseCtx

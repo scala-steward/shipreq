@@ -8,7 +8,6 @@ import model._
 import test._
 import test.NodeUtils._
 import TestHelpers._
-import CourseFields._
 import TypeTags._
 import net.liftweb.http.CometActor
 import tree.TreeOps._
