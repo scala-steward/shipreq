@@ -18,8 +18,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [M.0.5] [FAIL] UseCaseCtx intermittent failure. See below.
-
 * [S.1.1] [TEST] Change CourseField step manipulations into pure + web funcs.
 * [S.0.4] [FAIL] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
 * [S.0.5] [FAIL] When converting LoadCtx into a SaveCtx, fieldValues isn't being converted. (Will affect in-place loading.)
@@ -29,18 +27,11 @@ TECH TODO
 * [C.1.1] [TEST] Remove UseCaseCtx.init().
 * [C.1.0] [RUSE] Improve reusability of CachedFunction classes (and switch tests back on).
 * [C.0.0] [ARCH] Title-to-NC sync should be done via msging.
-* [C.0.0] [ARCH] Replace SmartText.disableBroadcast with better design?
-* [C.0.0] [ARCH] Should internal field msgs really be asynchronous?
 * [C.0.0] [FAIL] DatabaseEnumTest disabled due to DB deadlocks.
 
 
 NOTES
 =====
-
-1. UseCaseCtx intermittent failure.
-  [info] - should behave the same on updates after updates *** FAILED ***
-  [info]   "New step is [1.[2?]]" was not equal to "New step is [1.[0]]" (UseCaseCtxTest.scala:261)
-
 
 Legend: [M/S/C] [Benefit 0-none,5-max] [Penalty 0-none,5-severe]
 
