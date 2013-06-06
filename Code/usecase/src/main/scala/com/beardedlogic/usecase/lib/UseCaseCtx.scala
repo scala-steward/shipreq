@@ -7,9 +7,10 @@ import model._
 import msg.MessageCentre
 import TypeTags._
 
-class UseCaseCtx(cometActor: CometActor) {
+// TODO Does UseCaseCtx need a cometActor ref anymore?
+class UseCaseCtx(val cometActor: CometActor) {
 
-  val msgCentre = new MessageCentre(cometActor)
+  val msgCentre = new MessageCentre
 
   var lastSave: Option[UseCaseSaveCheckpoint] = None
 

@@ -2,12 +2,11 @@ package com.beardedlogic.usecase
 package comet
 
 import scala.xml.NodeSeq
-import net.liftweb.http.{CometActor, SHtml, StatefulSnippet}
+import net.liftweb.http.{CometActor, SHtml}
 import net.liftweb.http.js.{JE, JsCmd, JsCmds}
 import net.liftweb.http.js.JsExp.strToJsExp
 import lib.field.Field
 import lib.UseCaseCtx
-import lib.msg.Messages._
 
 import net.liftweb.common.Logger
 
@@ -43,10 +42,5 @@ class UCEditor extends CometActor with Logger {
           JE.JsEq(JE.ValById(state.normalCourseTitleId), "")),
         JsCmds.SetValById(state.normalCourseTitleId, newTitle))
       )
-  }
-
-  override def lowPriority = {
-    case PushToClient(cmd) if cmd != JsCmds.Noop =>
-      partialUpdate(cmd)
   }
 }

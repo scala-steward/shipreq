@@ -2,7 +2,7 @@ package com.beardedlogic.usecase.lib.msg
 
 /** Listens and reacts to messages. */
 trait MessageListener {
-  def messageHandler: PartialFunction[(Message, Reactor), Unit]
+  def messageHandler(reactor: Reactor): PartialFunction[Message, Unit]
 }
 
 /**
@@ -36,16 +36,20 @@ class MessageCentre {
     listeners = listeners.filter(_ ne listener)
   }
 
-  def send[R](msg: Message, r: ReactionBuilder[R]): R = {
-    this ! ((msg, r.reactor))
-    r.result
+  def send[R](msg: Message, rb: ReactionBuilder[R]): R = {
+    sendMessage(msg, rb.reactor)
+    rb.result
   }
 
-  def !(msgAndReactor: (Message, Reactor)): Unit = {
-    if (enabled) {
+  @inline final def sendMessage(msg: Message, reactor: Reactor): Unit = this.!(msg)(reactor)
+
+  def !(msg: Message)(implicit reactor: Reactor): Unit = {
+    if (enabled && reactor != NoReactionOrNewMessages) {
+      // TODO Benchmark and determine penalty for reconstructing PF on every call (bc 'react' is a param)
+      // TODO Benchmark and determine which is faster: isDefinedAt() + apply() or catching MatchError
       listeners foreach { l =>
-        val pf = l.messageHandler
-        if (pf.isDefinedAt(msgAndReactor)) pf.apply(msgAndReactor)
+        val pf = l.messageHandler(reactor)
+        if (pf.isDefinedAt(msg)) pf.apply(msg)
       }
     }
   }

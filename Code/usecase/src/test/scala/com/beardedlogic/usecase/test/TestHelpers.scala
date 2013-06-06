@@ -12,8 +12,8 @@ import lib.field._
 import TreeOps._
 import lib.field.CourseFields
 import lib.TypeTags._
-import lib.msg.MessageCentre
-import com.beardedlogic.usecase.model._
+import lib.msg._
+import model._
 
 /**
  * @since 30/04/2013
@@ -89,7 +89,7 @@ object TestHelpers extends TestHelpers {
     }, cf.startingLabelIndices.startingLabelIndex _)
 
     def setCoursesWithTextAndInit(nodes: List[StepNodeWithText]) {
-      cf.courses = nodes.map(_.toStepNode)
+      cf.setCourses(nodes.map(_.toStepNode))(NoReactionOrNewMessages)
       cf.init
       val savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalId]
       nodes.foreachNode(n => cf.test__textFields(n.id).setTextFromLoad(n.text.hasNormalisedRefs, savedSteps))

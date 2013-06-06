@@ -1,9 +1,8 @@
 package com.beardedlogic.usecase.lib
 
 import scala.annotation.tailrec
-import scala.collection.immutable.{Set, TreeSet}
+import scala.collection.immutable.TreeSet
 import scala.util.parsing.combinator.RegexParsers
-import net.liftweb.actor.LiftActor
 import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.SHtml
@@ -11,8 +10,8 @@ import net.liftweb.util.Helpers.nextFuncName
 import net.liftweb.common.Logger
 
 import JsExt._
-import msg.MessageCentre
-import msg.Messages._
+import msg._
+import Messages._
 import TypeTags._
 
 // =====================================================================================================================
@@ -186,7 +185,7 @@ object SmartText {
 class SmartText(val msgCentre: MessageCentre,
                 masterRefAndIdLookup: CachedFunctionLike[BiMap[String @@ LocalId, String @@ Label]],
                 val textareaId: String = nextFuncName
-                 ) extends LiftActor with Logger {
+                 ) extends MessageListener with Logger {
 
   import SmartText._
   import MyLittleParser._
@@ -199,14 +198,11 @@ class SmartText(val msgCentre: MessageCentre,
   protected[lib] var _text = ""
 
   def text = _text
-  private var _allowBroadcasting = false
-  final def allowBroadcasting_? = _allowBroadcasting
 
   def init() {
     msgCentre.register(this)
-    _allowBroadcasting = true
     refAndIdLookup.invalidate
-    _text = parseText(_text)
+    _text = parseText(_text)(NoReactionOrNewMessages)
   }
 
   def renderTextarea = SHtml.ajaxTextarea(text, onTextChange _, "id" -> textareaId)
@@ -214,10 +210,11 @@ class SmartText(val msgCentre: MessageCentre,
   /**
    * Normalises and parses text from the user.
    */
-  def setTextFromUser(newValueRaw: String) {
+  def setTextFromUser(newValueRaw: String)(implicit reactor: Reactor) {
     val newValue = newValueRaw.trim
     if (text != newValue) {
       _text = parseText(newValue)
+      if (text != newValue) reactToTextUpdate
     }
   }
 
@@ -242,9 +239,7 @@ class SmartText(val msgCentre: MessageCentre,
     })
 
     // Parse text as normal
-    disableBroadcasting {
-      _text = parseText(newValue)
-    }
+    _text = parseText(newValue)(NoReactionOrNewMessages)
   }
 
   @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): String @@ NormalisedRefs =
@@ -253,39 +248,18 @@ class SmartText(val msgCentre: MessageCentre,
   def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs =
     normaliseRefs(text, savedSteps, refsInText)
 
-  def disableBroadcasting[T](block: => T) = {
-    val i = _allowBroadcasting
-    _allowBroadcasting = false
-    try block
-    finally _allowBroadcasting = i
-  }
-
-  /**
-   * Sets the full text value and pushes the new text to the client.
-   *
-   * Unlike `setTextFromUser()` this doesn't perform any parsing. The only variable this changes is `_text`.
-   */
-  @inline protected def internalSetTextAndPush(newText: String) {
-    _text = newText
-    if (allowBroadcasting_?) msgCentre ! PushToClient(updateTextJs)
-  }
-
   /**
    * Callback when the user changes the text.
    */
   def onTextChange(newValue: String): JsCmd = writeLock.synchronized {
     refAndIdLookup.invalidate // Shouldn't be needed but no harm and provides extra safety
-    setTextFromUser(newValue)
-    if (text != newValue)
-      updateTextJs
-    else
-      JsCmds.Noop
+    JavaScriptReaction { setTextFromUser(newValue)(_) }
   }
 
   /**
    * Parses text submitted by user.
    */
-  protected def parseText(origText: String): String = {
+  protected def parseText(origText: String)(implicit reactor: Reactor): String = {
     parsePlainText(origText)
   }
 
@@ -326,17 +300,26 @@ class SmartText(val msgCentre: MessageCentre,
     labels.find(!refAndIdLookup.get.ba.contains(_)).isEmpty
   }
 
-  override def messageHandler = {
+  override def messageHandler(reactor: Reactor): PartialFunction[Message, Unit] = {
 
+    // Update step references when they change
     case StepChangeMsg =>
-
-      // Update references and push changes
       refAndIdLookup.ifStale {
         if (haveAnyRefs) writeLock.synchronized {
           val newText = updateStepReferences()
-          if (newText != text) internalSetTextAndPush(newText)
+          if (newText != text) internalSetTextAndReact(newText)(reactor)
         }
       }
+  }
+
+  /**
+   * Sets the full text value and pushes the new text to the client.
+   *
+   * Unlike `setTextFromUser()` this doesn't perform any parsing. The only variable this changes is `_text`.
+   */
+  @inline final protected def internalSetTextAndReact(newText: String)(implicit reactor: Reactor) {
+    _text = newText
+    reactToTextUpdate
   }
 
   /** Checks if this field has any step references */
@@ -370,6 +353,10 @@ class SmartText(val msgCentre: MessageCentre,
   }
 
   protected def updateTextJs(): JsCmd = JqId(textareaId) ~> JqSetValue(text, false)
+
+  @inline final protected def reactToTextUpdate(implicit reactor: Reactor) {
+    reactor(JavaScript)(updateTextJs)
+  }
 }
 
 // =====================================================================================================================
@@ -399,15 +386,16 @@ class SmartStepText(override val msgCentre: MessageCentre,
     def arrow : String
     def arrowReplacement : String
     def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
-    def broadcast():Unit
+    def flowChangeMsg: Message
+    final def broadcast(implicit reactor: Reactor) { msgCentre ! flowChangeMsg }
     final def clear() {refs = Map.empty[String @@ LocalId, String @@ Label]; text = ""}
-    final def broadcastIfChanges[T](block: => T): T = {
+    final def broadcastIfChanges[T](block: => T)(implicit reactor: Reactor): T = {
       val prevRefs = refs
       val r = block
       if (prevRefs != refs) broadcast
       r
     }
-    final def clearAndBroadcast() {
+    final def clearAndBroadcast(implicit reactor: Reactor) {
       if (refs.nonEmpty) {
         clear()
         broadcast
@@ -426,7 +414,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     override def arrow = FlowFromArrow
     override def arrowReplacement = FlowFromArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.from
-    override def broadcast() { if (allowBroadcasting_?) msgCentre ! FlowFromChangeMsg(refs.keySet, stepId) }
+    override def flowChangeMsg = FlowFromChangeMsg(refs.keySet, stepId)
   }
 
   /** Indicates into which steps this step flows. */
@@ -434,7 +422,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     override def arrow = FlowToArrow
     override def arrowReplacement = FlowToArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.to
-    override def broadcast() { if (allowBroadcasting_?) msgCentre ! FlowToChangeMsg(stepId, refs.keySet) }
+    override def flowChangeMsg = FlowToChangeMsg(stepId, refs.keySet)
   }
 
   private[lib] var textWithoutFlow = ""
@@ -444,21 +432,21 @@ class SmartStepText(override val msgCentre: MessageCentre,
   /**
    * Parses text submitted by user.
    */
-  override protected def parseText(origText: String): String = {
+  override protected def parseText(origText: String)(implicit reactor: Reactor): String = {
     val plainText = parseTextForFlow(origText)
     textWithoutFlow = parsePlainText(plainText)
     buildFullText
   }
 
   /** Combines text & flow clauses to generate `text`. */
-  def buildFullText = List(textWithoutFlow, flowFrom.text, flowTo.text).filterNot(_.isEmpty).mkString(" ")
+  def buildFullText() = List(textWithoutFlow, flowFrom.text, flowTo.text).filterNot(_.isEmpty).mkString(" ")
 
   /**
    * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
    *
    * If found (and valid), they are extracted and normalised.
    */
-  private def parseTextForFlow(input: String) = {
+  private def parseTextForFlow(input: String)(implicit reactor: Reactor) = {
     var text = input
 
     // Attempt to parse flow clauses
@@ -473,8 +461,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
 
         // No errors in From or To clauses. Apply.
         text = actualText.trim
-        (fn1.get)()
-        (fn2.get)()
+        (fn1.get)(reactor)
+        (fn2.get)(reactor)
       }
 
     } else {
@@ -488,16 +476,17 @@ class SmartStepText(override val msgCentre: MessageCentre,
     text
   }
 
-  private def processFlowParseResult(labelsOp: Option[List[String @@ Label]], f: Flow): Option[Function0[Unit]] =
+  // TODO Does reactor need to be made explicit here?
+  private def processFlowParseResult(labelsOp: Option[List[String @@ Label]], f: Flow): Option[Reactor => Unit] =
     labelsOp match {
       case None =>
-        Some(f.clearAndBroadcast _)
+        Some(reactor => f.clearAndBroadcast(reactor))
 
       case Some(labels) if (areAllLabelsValid(labels)) =>
-        Some(() => f.broadcastIfChanges {
+        Some(reactor => f.broadcastIfChanges {
           f.refs = labels.map(l => (refAndIdLookup.get.ba(l), l)).toMap
           f.rebuildText
-        })
+        }(reactor))
 
       case _ => None // Labels are invalid
     }
@@ -533,8 +522,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
     }
   }
 
-  override def messageHandler = thisMessageHandler orElse super.messageHandler
-  private val thisMessageHandler: PartialFunction[Any, Unit] = {
+  override def messageHandler(reactor: Reactor) = subMessageHandler(reactor) orElse super.messageHandler(reactor)
+  private def subMessageHandler(implicit reactor: Reactor): PartialFunction[Message, Unit] = {
 
     // Add or Remove flow references
     case FlowFromChangeMsg(_, id) if id == stepId => // Ignore self-ref
@@ -545,16 +534,16 @@ class SmartStepText(override val msgCentre: MessageCentre,
     case FlowFromChangeMsg(fromIds, id) if (!fromIds.contains(stepId) && flowTo.refs.contains(id)) => removeRef(flowTo, id)
   }
 
-  private def addRef(f: Flow, id: String @@ LocalId) {
+  private def addRef(f: Flow, id: String @@ LocalId)(implicit reactor: Reactor) {
     f.refs += (id -> refAndIdLookup.get.ab(id))
     f.rebuildText
-    internalSetTextAndPush(buildFullText)
+    internalSetTextAndReact(buildFullText)
   }
 
-  private def removeRef(f: Flow, id: String @@ LocalId) {
+  private def removeRef(f: Flow, id: String @@ LocalId)(implicit reactor: Reactor) {
     f.refs -= id
     f.rebuildText
-    internalSetTextAndPush(buildFullText)
+    internalSetTextAndReact(buildFullText)
   }
 
   override def textWithNormalisedRefs(savedSteps: Map[String @@ LocalId, Long_StepDataId]): String @@ NormalisedRefs = {

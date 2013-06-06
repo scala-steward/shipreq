@@ -3,7 +3,6 @@ package lib
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.TreeSet
-import net.liftweb.http.CometActor
 
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
@@ -12,8 +11,8 @@ import org.scalatest.prop.Tables.Table
 import org.scalatest.prop._
 
 import TypeTags._
-import msg.MessageCentre
-import msg.Messages._
+import msg._
+import Messages._
 import test.TestHelpers
 
 object SmartTextTest extends MockitoSugar {
@@ -53,12 +52,12 @@ object SmartTextTest extends MockitoSugar {
   )
 
   implicit class SmartTextExt(m: SmartText) {
-    def text_=(txt: String) = m.setTextFromUser(txt)
-    def sendStepChangeMsg() {
-      m.messageHandler.applyOrElse[Any, Unit](StepChangeMsg, _ => ())
+    def text_=(txt: String) = m.setTextFromUser(txt)(NoReaction)
+    def sendStepChangeMsg(implicit reactor: Reactor) {
+      m.messageHandler(reactor)(StepChangeMsg)
     }
-    def !!!(msg: Any) {
-      m.messageHandler.applyOrElse[Any, Unit](msg, _ => ())
+    def sendMsg(msg: Message)(implicit reactor: Reactor) {
+      m.messageHandler(reactor).applyOrElse[Message, Unit](msg, _ => ())
     }
   }
 
@@ -69,24 +68,32 @@ object SmartTextTest extends MockitoSugar {
       s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
   }
 
-  class MsgCollector extends MessageCentre(mock[CometActor]) {
-    val sent = new ListBuffer[Any]
-    override def !(msg: Any) {
-      sent += msg
+  class ReactionCollector extends Reactor {
+    val reactions = new ListBuffer[Any]
+    override def apply[R](t: ReactionType[R])(f: => R) {
+      reactions += f
     }
+  }
+
+  class MsgCollector extends MessageCentre {
+    val sent = new ListBuffer[Message]
+    override def !(msg: Message)(implicit reactor: Reactor): Unit = {
+      if (reactor != NoReactionOrNewMessages) sent += msg
+    }
+    val reactionCollector = new ReactionCollector
   }
 
   def textFieldWithText(text: String) = {
     val m = new SmartText(mock[MessageCentre], CachedFunction.eager0(StepState1))
     m.init
-    m.setTextFromUser(text)
+    m.setTextFromUser(text)(NoReaction)
     m
   }
 
   def stepFieldWithText(text: String, stepId: String @@ LocalId = "SUBJ".asLocalId, refLookup: BiMap[String @@ LocalId, String @@ Label] = StepState1) = {
     val m = new SmartStepText(mock[MessageCentre], CachedFunction.eager0(refLookup), stepId, stepId + "-t")
     m.init
-    m.setTextFromUser(text)
+    m.setTextFromUser(text)(NoReaction)
     m
   }
 }
@@ -107,8 +114,11 @@ class SmartTextTest
 
   import SmartTextTest._
 
-  def assertClientUpdated(subject: SmartText, expected: Boolean = true) {
-    verify(subject.msgCentre.cometActor, if (expected) times(1) else never).!(any[PushToClient])
+  def assertReaction(subject: SmartText, expected: Boolean = true) {
+    subject.msgCentre match {
+      case m : MsgCollector => m.reactionCollector.reactions should have size(if (expected) 1 else 0)
+      //case m : _ => verify(m, if (expected) times(1) else never).!(any[PushToClient])
+    }
   }
 
   override def checkTextParsing(text: String, expected: String) = {
@@ -116,6 +126,8 @@ class SmartTextTest
     actual should be(expected)
     true
   }
+
+  implicit def reactor = NoReaction
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -131,17 +143,17 @@ class SmartTextTest
     }
 
     it("should set text with normalised refs") {
-      val msgCentre = mock[MessageCentre]
+      val msgCentre = new MsgCollector
       val m = new SmartText(msgCentre, CachedFunction.eager0(StepState1))
       m.init()
       m.setTextFromLoad("Hehe [D.100]".hasNormalisedRefs, Map(100.tag[StepDataId] -> "X2".asLocalId))
       m.text should be("Hehe [S.2]")
       m.refsInText should be(Map("X2" -> "S.2"))
-      verify(msgCentre, never).!(any[Any])
+      msgCentre.sent.size should be(0)
     }
 
     it("should set text with normalised flow refs") {
-      val msgCentre = mock[MessageCentre]
+      val msgCentre = new MsgCollector
       val m = new SmartStepText(msgCentre, CachedFunction.eager0(StepState1), "XX".asLocalId, "XXt")
       m.init()
       val savedSteps = BiMap(100.tag[StepDataId] -> "X2".asLocalId, 104.tag[StepDataId] -> "X1".asLocalId, 108.tag[StepDataId] -> "X3".asLocalId)
@@ -151,7 +163,7 @@ class SmartTextTest
       m.refsInText should be(Map("X3" -> "S.3"))
       m.flowFrom.refs should be(Map("X2" -> "S.2"))
       m.flowTo.refs should be(Map("X1" -> "S.1"))
-      verify(msgCentre, never).!(any[Any])
+      msgCentre.sent.size should be(0)
     }
 
     // TODO doesn't test parsing on text change
@@ -419,6 +431,7 @@ class SmartTextTest
 
     def flowChange(from:Boolean) = {
       def test(textBefore: String, newText: String, expectedToIds: Option[Set[String]]) {
+        implicit val reactor = NoReaction
         val m = new MsgCollector
         val s = new SmartStepText(m, CachedFunction.eager0(StepState1), "SUBJ".asLocalId, "SUBJ-t")
         s.init()
@@ -503,8 +516,7 @@ class SmartTextTest
     }
 
     def newSubject(initialText: String, initialRefsInUse: Map[String @@ LocalId, String @@ Label], useSmartStepText: Boolean = false) = {
-      val comet = mock[CometActor]
-      val msgCentre = new MessageCentre(comet)
+      val msgCentre = new MsgCollector
       val m = if (useSmartStepText) {
         val s2 = new SmartStepText(msgCentre, CachedFunction.eager0(StepState2), "".asLocalId, "")
         s2.init
@@ -519,7 +531,7 @@ class SmartTextTest
       m._text = initialText
       m.refsInText = initialRefsInUse
       m.refAndIdLookup << StepState1
-      m.sendStepChangeMsg
+      m.sendStepChangeMsg(msgCentre.reactionCollector)
       m
     }
 
@@ -533,8 +545,8 @@ class SmartTextTest
       it("should record the last used ref lookup table") {
         subject.refAndIdLookup.get should be theSameInstanceAs (StepState2)
       }
-      it("should push an update") {
-        assertClientUpdated(subject)
+      it("should react with JavaScript") {
+        assertReaction(subject)
       }
     }
 
@@ -560,14 +572,13 @@ class SmartTextTest
     }
 
     def testSubject2(initialText: String) = {
-      val comet = mock[CometActor]
-      val msgCentre = new MessageCentre(comet)
+      val msgCentre = new MsgCollector
       val s = new SmartStepText(msgCentre, CachedFunction.eager0(StepState2), "".asLocalId, "")
       s.init
       s.refAndIdLookup << StepState1
       s setTextFromUser initialText
       s.text should be (initialText)
-      s.sendStepChangeMsg
+      s.sendStepChangeMsg(msgCentre.reactionCollector)
       s
     }
 
@@ -581,7 +592,7 @@ class SmartTextTest
         if (changeExpected) s.refAndIdLookup.get should be theSameInstanceAs(StepState2)
         refs should be(expectedIds.asLocalIds.map(id => (id, StepState2.ab(id))).toMap)
         s.text should be(expectedText)
-        assertClientUpdated(s, changeExpected)
+        assertReaction(s, changeExpected)
       }
 
       def testWithText(_initialText: String, _expectedText: String, expectedIds: Set[String]) {
@@ -629,7 +640,7 @@ class SmartTextTest
         forAll(examples){ (b,a) =>
           val s = testSubject2(b)
           s.text should be(a)
-          assertClientUpdated(s)
+          assertReaction(s)
         }
       }
     }
@@ -664,7 +675,7 @@ class SmartTextTest
         s.init
         s setTextFromUser txt
         mc.sent.size should be(1)
-        s !!! mc.sent.head
+        s.sendMsg(mc.sent.head)(mc.reactionCollector)
         s.text should be (txt)
       }
     }
@@ -676,11 +687,11 @@ class SmartTextTest
           val mc = s.msgCentre.asInstanceOf[MsgCollector]
           val flowToBefore = s.flowTo
           mc.sent.clear
-          s !!! FlowToChangeMsg("X1".asLocalId, flowToTargets.asLocalIds)
+          s.sendMsg(FlowToChangeMsg("X1".asLocalId, flowToTargets.asLocalIds))(mc.reactionCollector)
           s.text should be (textAfter)
           s.flowFrom.refs should be(idsAfter.asInstanceOf[Set[String @@ LocalId]].map(id => (id,StepState1.ab(id))).toMap)
           s.flowTo should be(flowToBefore)
-          assertClientUpdated(s, textBefore != textAfter)
+          assertReaction(s, textBefore != textAfter)
           mc.sent should be ('empty)
         }
         test(flowToTargets)
@@ -695,11 +706,11 @@ class SmartTextTest
           val mc = s.msgCentre.asInstanceOf[MsgCollector]
           val flowFromBefore = s.flowFrom
           mc.sent.clear
-          s !!! FlowFromChangeMsg(flowFromSources.asLocalIds, "X1".asLocalId)
+          s .sendMsg(FlowFromChangeMsg(flowFromSources.asLocalIds, "X1".asLocalId))(mc.reactionCollector)
           s.text should be (textAfter.fixArrows(false))
           s.flowTo.refs should be(idsAfter.asInstanceOf[Set[String @@ LocalId]].map(id => (id,StepState1.ab(id))).toMap)
           s.flowFrom should be(flowFromBefore)
-          assertClientUpdated(s, textBefore != textAfter)
+          assertReaction(s, textBefore != textAfter)
           mc.sent should be ('empty)
         }
         test(flowFromSources)
@@ -713,18 +724,16 @@ class SmartTextTest
   describe("Step recognition and transformation") {
 
     def testTransformation(before: String, expectedAfter: String) {
-      val comet = mock[CometActor]
-      val msgCentre = new MessageCentre(comet)
+      val msgCentre = new MsgCollector
       val cfn = CachedFunction.eager0(StepState1)
       val m = new SmartText(msgCentre, cfn)
       m.init
       m setTextFromUser before
       m.text.replaceAll("\\s+", "") should be(before.replaceAll("\\s+", ""))
       cfn << StepState2
-      m.sendStepChangeMsg
+      m.sendStepChangeMsg(msgCentre.reactionCollector)
       m.text should be(expectedAfter)
-      if (before == expectedAfter) verifyZeroInteractions(comet)
-      else verify(comet).!(any[PushToClient])
+      assertReaction(m, before != expectedAfter)
     }
 
     it("should work as per examples") {
