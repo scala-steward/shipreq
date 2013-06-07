@@ -1,3 +1,11 @@
+FEATURE TODO
+============
+
+* [M] User management.
+* [M] Use Case CRUD interface.
+* [M] Usage limits per user (or team, etc).
+* [S] Subscriptions.
+
 FUNC TODO
 =========
 
