@@ -15,7 +15,7 @@ FUNC TODO
 * [S.1.2] Flow parsing fails both sides if either side has an error.
 * [S.1.2] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 
-* [C.3.3] Support in-place updating (ie. no history disabled)
+* [C.3.3] Support in-place DB updating (ie. no history disabled)
 * [C.1.1] View step references. (Eg. Who has refs to 1.0.4?)
 * [C.1.0] While typing, click on step/label to insert a reference.
 
@@ -23,7 +23,8 @@ FUNC TODO
 TECH TODO
 =========
 
-* [S.1.1] [TEST] Change CourseField step manipulations into pure + web funcs.
+* [S.2.4] [PERF] DB connection pooling.
+* [S.1.1] [DEMO] Show flow deletion in flow demo.
 * [S.0.5] [SAFE] Thread-safety of SmartText (and possibly Field) is a worry.
 * [S.0.5] [FAIL] When converting LoadCtx into a SaveCtx, fieldValues isn't being converted. (Will affect in-place loading.)
 * [S.0.4] [FAIL] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
