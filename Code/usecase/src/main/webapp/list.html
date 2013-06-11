@@ -1,0 +1,55 @@
+<html>
+<head>
+<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+<link type="text/css" rel="stylesheet" href="assets/normalize.css" />
+<link type="text/css" rel="stylesheet" href="assets/common.css" />
+<link type="text/css" rel="stylesheet" href="assets/list.css" />
+<script type="text/javascript" src="assets/jquery.js"></script>
+<script type="text/javascript" src="assets/jquery-ui.js"></script>
+<script type="text/javascript" src="assets/jquery-autosize.js"></script>
+<script type="text/javascript" src="assets/jquery-timeago.js"></script>
+
+<script type="text/javascript" class="clearable">
+</script>
+<style media="screen" type="text/css">
+</style>
+</head>
+<body data-lift-content-id="main">
+	<div id="main" data-lift="surround?with=default;at=content">
+
+		<link type="text/css" rel="stylesheet" href="/assets/list.css" data-lift="head" />
+		<script type="text/javascript" data-lift="head" src="assets/jquery-timeago.js"></script>
+		<script type="text/javascript" data-lift="tail">
+			$(document).ready(function() {
+				$("abbr.timeago").timeago();
+				$('textarea').autosize();
+			});
+		</script>
+
+
+		<div data-lift="List">
+			<div class="new_uc">
+				<button>+ New UC</button>
+			</div>
+
+			<div class="uc_list">
+				<div class="uc">
+					<a href="uce">UC-1: Eat food</a>
+					<div class="last_updated">Last updated <abbr class="timeago" title="2013-06-10T16:55:00+10:00"></abbr>.</div>
+				</div>
+				<div class="uc clearable">
+					<a href="uce">UC-2: Drink stuff</a>
+					<div class="last_updated">Last updated <abbr class="timeago" title="2013-06-08T12:55:00+10:00"></abbr>.</div>
+				</div>
+				<div class="uc edit clearable">
+					<span class="num">UC-3:</span>
+					<input class="save" type="submit" value="Save"/>
+					<div class="title"><textarea rows="1">Untitled</textarea></div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+</body>
+</html>

@@ -46,12 +46,9 @@ $maxStepDepth: 4;
 		border-radius: $borderRadius;
 		-moz-border-radius: $borderRadius;
 		-webkit-border-radius: $borderRadius;
-		resize: none;
-		overflow: auto; /* removes scrollbars in Internet Explorer */
 		border: dashed 1px #ccc;
 		background: #fff;
 		padding: 4px;
-		outline: none;
 		width: 100%;
 		&:hover {
 			border: solid 1px #ccc;

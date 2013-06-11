@@ -1,0 +1,3 @@
+textarea { resize: none; overflow: auto; /* removes scrollbars in Internet Explorer */ outline: none; }
+
+abbr.timeago[title] { border-bottom: none !important; }

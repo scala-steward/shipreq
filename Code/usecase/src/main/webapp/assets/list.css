@@ -1,0 +1,13 @@
+.new_uc { text-align: center; margin: 1em auto 1em auto; }
+
+.uc_list { margin-left: auto; margin-right: auto; width: 700px; }
+.uc_list .uc + .uc { margin-top: 1.5em; }
+.uc_list .uc a { font-size: 200%; }
+.uc_list .uc .last_updated { font-size: 70%; color: #222; }
+.uc_list .uc.edit { overflow: hidden; }
+.uc_list .uc.edit .num { float: left; }
+.uc_list .uc.edit .save { float: right; }
+.uc_list .uc.edit .title { width: auto; float: none; overflow: hidden; }
+.uc_list .uc.edit .title textarea { width: 100%; }
+.uc_list .uc.edit .num, .uc_list .uc.edit .title { font-size: 200%; }
+.uc_list .uc.edit .title { padding-left: 0.5ex; padding-right: 0.5ex; }

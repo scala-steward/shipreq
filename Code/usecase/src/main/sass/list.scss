@@ -1,0 +1,30 @@
+.new_uc {text-align:center; margin: 1em auto 1em auto}
+
+.uc_list {
+  margin-left:auto;
+  margin-right:auto;
+  width:700px;
+
+  .uc+.uc {margin-top:1.5em}
+
+  .uc {
+    a {
+      font-size: 200%;
+    }
+    .last_updated {
+      font-size: 70%;
+      color: #222;
+    }
+  }
+
+  .uc.edit {
+    overflow:hidden;
+    .num {float:left}
+    .save {float:right}
+    .title {width:auto; float:none; overflow:hidden}
+    .title textarea {width:100%}
+
+    .num, .title { font-size: 200%; }
+    .title { padding-left: 0.5ex; padding-right: 0.5ex; }
+  }
+}

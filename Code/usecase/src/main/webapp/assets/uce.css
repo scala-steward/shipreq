@@ -25,7 +25,7 @@
 /* General styles */
 .uce { margin: 1cm 1cm 0 1cm; }
 .uce form { display: inline; }
-.uce textarea { border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px; resize: none; overflow: auto; /* removes scrollbars in Internet Explorer */ border: dashed 1px #ccc; background: #fff; padding: 4px; outline: none; width: 100%; }
+.uce textarea { border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px; border: dashed 1px #ccc; background: #fff; padding: 4px; width: 100%; }
 .uce textarea:hover { border: solid 1px #ccc; background: #eee; }
 .uce textarea:focus { border: solid 1px #373; background: #f8fff8; }
 
