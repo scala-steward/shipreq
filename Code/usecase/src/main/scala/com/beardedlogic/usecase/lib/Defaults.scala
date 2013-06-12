@@ -15,6 +15,9 @@ object ReservedIds {
 
 object Defaults extends Logger {
 
+  /** Default title of new use cases. */
+  val Title = "Untitled"
+
   /** This is only exposed for tests */
   val FieldListDefs: List[FieldDef[_]] =
     TextFieldDef("Actors") ::

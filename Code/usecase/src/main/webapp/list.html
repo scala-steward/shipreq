@@ -15,12 +15,12 @@
 </head>
 <body data-lift-content-id="main">
 	<div id="main" data-lift="surround?with=default;at=content">
+		<div data-lift="UseCaseIndex">
 
-		<link type="text/css" rel="stylesheet" href="/assets/list.css" data-lift="head" />
-		<script type="text/javascript" data-lift="head" src="assets/jquery-timeago.js"></script>
+			<link type="text/css" rel="stylesheet" href="/assets/list.css" data-lift="head" />
+			<script type="text/javascript" data-lift="head" src="/assets/jquery-timeago.js"></script>
+			<script type="text/javascript" data-lift="head" src="/assets/knockout.js"></script>
 
-
-		<div data-lift="List">
 			<div class="new_uc">
 				<button>+ New UC</button>
 			</div>
@@ -45,27 +45,28 @@
 				<div class="title"><textarea rows="1">Untitled</textarea></div>
 			</div>
 			-->
-		</div>
 
-		<script type="text/javascript" data-lift="tail">
-			function UseCaseIndexModel(ucs) {
-				this.useCases = ko.observableArray(ucs)
-				this.noUseCases = ko.computed(function(){ return this.useCases().length == 0 }, this);
-				this.someUseCases = ko.computed(function(){ return !this.noUseCases() }, this);
-			}
-			$(document).ready(function() {
-				$("abbr.timeago").timeago();
-				$('textarea').autosize();
-			});
-		</script>
-		<script type="text/javascript" class="clearable">
-			ko.applyBindings(new UseCaseIndexModel([
-				{ number: 1, title: "Eat meat", updatedAt: "2013-06-10T16:55:00+10:00" },
-				{ number: 2, title: "Drink beer", updatedAt: "2013-06-12T10:21:00+10:00" },
-				{ number: 3, title: "Get warm", updatedAt: "2013-01-01T10:21:00+10:00" },
-			]))
-			// ko.applyBindings(new UseCaseIndexModel([]))
-		</script>
+			<script type="text/javascript">
+				function UseCaseIndexModel(ucs) {
+					this.useCases = ko.observableArray(ucs)
+					this.noUseCases = ko.computed(function(){ return this.useCases().length == 0 }, this);
+					this.someUseCases = ko.computed(function(){ return !this.noUseCases() }, this);
+				}
+				$(document).ready(function() {
+					$("abbr.timeago").timeago();
+					$('textarea').autosize();
+				});
+			</script>
+			<script type="text/javascript" id="modelInit">
+				ko.applyBindings(new UseCaseIndexModel([
+					{ number: 1, title: "Eat meat", updatedAt: "2013-06-10T16:55:00+10:00" },
+					{ number: 2, title: "Drink beer", updatedAt: "2013-06-12T10:21:00+10:00" },
+					{ number: 3, title: "Get warm", updatedAt: "2013-01-01T10:21:00+10:00" },
+				]))
+				// ko.applyBindings(new UseCaseIndexModel([]))
+			</script>
+
+		</div>
 	</div>
 </body>
 </html>
