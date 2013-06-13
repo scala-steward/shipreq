@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tgt=src/main/webapp/assets/jquery-ui.js
+tgt=src/main/javascript/vendor/jquery-ui.js
 > $tgt
 
 echo "Adding:"

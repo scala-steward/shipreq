@@ -3,11 +3,9 @@
 <meta content="text/html; charset=UTF-8" http-equiv="content-type">
 <link type="text/css" rel="stylesheet" href="assets/normalize.css" />
 <link type="text/css" rel="stylesheet" href="assets/common.css" />
-<script type="text/javascript" src="assets/jquery.js"></script>
-<script type="text/javascript" src="assets/jquery-ui.js"></script>
-<script type="text/javascript" src="assets/jquery-autosize.js"></script>
-<script type="text/javascript" src="assets/jquery-timeago.js"></script>
-<script type="text/javascript" src="assets/common.js"></script>
+<script type="text/javascript" src="../../../target/scala-2.10/resource_managed/main/js/application.js"></script>
+<script type="text/javascript" src="../../../target/scala-2.10/resource_managed/main/js/knockout.js"></script>
+<script type="text/javascript" src="../javascript/list.js"></script>
 
 <style media="screen" type="text/css">
 </style>
@@ -17,9 +15,8 @@
 		<div data-lift="UseCaseIndex" class="ucindex">
 
 			<link type="text/css" rel="stylesheet" href="assets/list.css" data-lift="head" />
-			<script type="text/javascript" data-lift="head" src="assets/knockout.js"></script>
-			<script type="text/javascript" data-lift="head" src="assets/knockout-mapping.js"></script>
-			<script type="text/javascript" data-lift="head" src="assets/list.js"></script>
+			<script type="text/javascript" data-lift="head" src="/js/knockout.js"></script>
+			<script type="text/javascript" data-lift="head" src="/js/list.js"></script>
 
 			<div class="new_uc">
 				<button onClick="$(document).trigger('new-uc',{'number':9,'title':'NEW','updatedAt':'1980-09-11T00:00:00Z'})">+ New UC</button>

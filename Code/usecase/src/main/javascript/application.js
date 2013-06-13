@@ -1,3 +1,8 @@
+// require "vendor/jquery.js"
+// require "vendor/jquery-ui.js"
+// require "vendor/jquery-autosize.js"
+// require "vendor/jquery-timeago.js"
+
 function enterSubmitsFormHandler(e) {
     if (e.which === 13) {
         e.preventDefault();

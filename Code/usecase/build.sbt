@@ -50,3 +50,23 @@ unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
 
 // Put webapp on test classpath so templates load
 unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Javascript
+
+seq(jsSettings : _*)
+
+// Minify JS as part of compile task
+(compile in Compile) <<= compile in Compile dependsOn (JsKeys.js in Compile)
+
+// Minify JS in src/main/javascript
+(sourceDirectory in (Compile, JsKeys.js)) <<= (sourceDirectory in Compile)(_ / "javascript")
+
+// Put minified JS in js/
+(resourceManaged in (Compile,JsKeys.js)) <<= (resourceManaged in Compile)( _ / "js")
+
+// Put Javascript in WAR root
+(webappResources in Compile) <+= (resourceManaged in Compile)
+
+// Puts Javascript in WEB-INF/classes
+// (resourceGenerators in Compile) <+= (JsKeys.js in Compile)

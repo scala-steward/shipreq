@@ -14,3 +14,8 @@ addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.1.2")
 // SBT IntelliJ Idea
 addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.4.0")
 
+// SBT Javascript Plugin
+resolvers += Resolver.url("sbt-plugin-releases",url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+
+// SBT Javascript Plugin
+addSbtPlugin("com.untyped" %% "sbt-js" % "0.5")
