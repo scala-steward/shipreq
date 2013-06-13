@@ -3,67 +3,58 @@
 <meta content="text/html; charset=UTF-8" http-equiv="content-type">
 <link type="text/css" rel="stylesheet" href="assets/normalize.css" />
 <link type="text/css" rel="stylesheet" href="assets/common.css" />
-<link type="text/css" rel="stylesheet" href="assets/list.css" />
 <script type="text/javascript" src="assets/jquery.js"></script>
 <script type="text/javascript" src="assets/jquery-ui.js"></script>
 <script type="text/javascript" src="assets/jquery-autosize.js"></script>
 <script type="text/javascript" src="assets/jquery-timeago.js"></script>
-<script type="text/javascript" src="assets/knockout.js"></script>
+<script type="text/javascript" src="assets/common.js"></script>
 
 <style media="screen" type="text/css">
 </style>
 </head>
 <body data-lift-content-id="main">
 	<div id="main" data-lift="surround?with=default;at=content">
-		<div data-lift="UseCaseIndex">
+		<div data-lift="UseCaseIndex" class="ucindex">
 
-			<link type="text/css" rel="stylesheet" href="/assets/list.css" data-lift="head" />
-			<script type="text/javascript" data-lift="head" src="/assets/jquery-timeago.js"></script>
-			<script type="text/javascript" data-lift="head" src="/assets/knockout.js"></script>
+			<link type="text/css" rel="stylesheet" href="assets/list.css" data-lift="head" />
+			<script type="text/javascript" data-lift="head" src="assets/knockout.js"></script>
+			<script type="text/javascript" data-lift="head" src="assets/knockout-mapping.js"></script>
+			<script type="text/javascript" data-lift="head" src="assets/list.js"></script>
 
 			<div class="new_uc">
-				<button>+ New UC</button>
+				<button onClick="$(document).trigger('new-uc',{'number':9,'title':'NEW','updatedAt':'1980-09-11T00:00:00Z'})">+ New UC</button>
 			</div>
 
-			<div class="no_ucs" data-bind="visible: noUseCases">
+			<div class="no_ucs" data-bind="ifnot: populated">
 				No use cases defined yet. Add some!
 			</div>
 
-			<div class="some_ucs" data-bind="visible: someUseCases">
+			<div class="some_ucs" data-bind="if: populated">
 				<div class="uc_list" data-bind="foreach: useCases">
-					<div class="uc">
-						<a href="uce">UC-<span data-bind="text: number"></span>: <span data-bind="text: title"></span></a>
-						<div class="last_updated">Last updated <abbr class="timeago" data-bind="attr: {title:updatedAt}"></abbr>.</div>
+
+					<div class="uc" data-bind="visible: !$data.edit()">
+						<a href="uce">UC-<span data-bind="text: $data.number"></span>: <span data-bind="text: $data.title"></span></a>
+						<div class="last_updated">Last updated <abbr class="timeago" data-bind="attr: {title:$data.updatedAt}"></abbr>.</div>
 					</div>
+
+					<div class="uc edit" data-bind="visible: $data.edit, css: cssClass">
+						<form data-bind="submit: $data.save">
+							<span class="num">UC-<span data-bind="text: $data.number"></span>:</span>
+							<input class="save" type="submit" value="Save"/>
+							<div class="title"><textarea class="enterSubmitsForm" rows="1" data-bind="value: $data.title"></textarea></div>
+						</form>
+					</div>
+
 				</div>
 			</div>
 
-			<!--
-			<div class="uc edit clearable">
-				<span class="num">UC-3:</span>
-				<input class="save" type="submit" value="Save"/>
-				<div class="title"><textarea rows="1">Untitled</textarea></div>
-			</div>
-			-->
-
-			<script type="text/javascript">
-				function UseCaseIndexModel(ucs) {
-					this.useCases = ko.observableArray(ucs)
-					this.noUseCases = ko.computed(function(){ return this.useCases().length == 0 }, this);
-					this.someUseCases = ko.computed(function(){ return !this.noUseCases() }, this);
-				}
-				$(document).ready(function() {
-					$("abbr.timeago").timeago();
-					$('textarea').autosize();
-				});
-			</script>
-			<script type="text/javascript" id="modelInit">
-				ko.applyBindings(new UseCaseIndexModel([
-					{ number: 1, title: "Eat meat", updatedAt: "2013-06-10T16:55:00+10:00" },
-					{ number: 2, title: "Drink beer", updatedAt: "2013-06-12T10:21:00+10:00" },
-					{ number: 3, title: "Get warm", updatedAt: "2013-01-01T10:21:00+10:00" },
-				]))
-				// ko.applyBindings(new UseCaseIndexModel([]))
+			<script type="text/javascript" id="initVM">
+				var VM = new UseCaseIndexModel([
+					{ vid: 10, number: 1, title: "Eat meat so that my body absorbs other animals' bodies giving them a taste of humanity when I have a taste of them", updatedAt: "2013-06-10T16:55:00+10:00" },
+					{ vid: 20, number: 2, title: "Drink beer", updatedAt: "2013-06-12T10:21:00+10:00" },
+					{ vid: 30, number: 3, title: "Get warm", updatedAt: "2013-01-01T10:21:00+10:00" },
+				])
+				// VM = new UseCaseIndexModel([])
 			</script>
 
 		</div>

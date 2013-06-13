@@ -8,3 +8,6 @@ v=2.2.1
 echo "Downloading v$v of knockout.js -- http://knockoutjs.com/"
 curl -s http://knockoutjs.com/downloads/knockout-$v.js -o src/main/webapp/assets/knockout.js
 
+v=2.4.1
+echo "Downloading v$v of ko mapping -- https://github.com/SteveSanderson/knockout.mapping/tree/master/build/output"
+curl -s https://raw.github.com/SteveSanderson/knockout.mapping/$v/build/output/knockout.mapping-latest.js -o src/main/webapp/assets/knockout-mapping.js

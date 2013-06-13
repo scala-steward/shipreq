@@ -13,9 +13,9 @@ trait SnippetHelpers {
 
   type JsCallback = () => JsCmd
 
-  def jsCallback(f: Reactor => Any): JsCallback = () => JavaScriptReaction(f(_))
+  def jsCallback(f: => Reactor => Any): JsCallback = () => JavaScriptReaction(f(_))
 
-  def jsCallbackWithDao(f: (Reactor, DAO) => Any): JsCallback =
+  def jsCallbackWithDao(f: => (Reactor, DAO) => Any): JsCallback =
     jsCallback(r =>
       DAO.withTransaction(dao =>
         f(r, dao)

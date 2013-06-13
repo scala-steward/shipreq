@@ -21,10 +21,11 @@ case class UseCaseWithValue(
   final def valueId = value.valueId
 }
 
+// These fields names need to match the attributes in list.html
 case class UseCaseSummary(
+  vid: Long,
   number: Short,
   title: String,
-  rev: Int,
   updatedAt: String
 )
 
@@ -64,7 +65,7 @@ object UseCaseAccessor {
       from value v
       where data_id in (select id from data where type_id = ${DataType.UseCase.ordinal})
     )
-    select number, title, rev, to_iso8601_str(updated_at)
+    select v.id, number, title, to_iso8601_str(updated_at)
     from usecase u, value v
     where u.id in (select id from t1 where rn = 1)
       and u.id=v.id

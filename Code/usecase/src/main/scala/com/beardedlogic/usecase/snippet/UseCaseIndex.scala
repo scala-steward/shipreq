@@ -2,61 +2,65 @@ package com.beardedlogic.usecase
 package snippet
 
 import net.liftweb.util.Helpers._
-import net.liftweb.util.ClearClearable
+import net.liftweb.util.{CssSel, ClearClearable}
 import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.http.SHtml
 import com.beardedlogic.usecase.lib.msg.{JavaScript, Reactor, JavaScriptReaction}
 import com.beardedlogic.usecase.lib.db.DB
 import com.beardedlogic.usecase.model.{PlainValue, UseCaseSummary, UseCaseWithValue, DAO}
-import com.beardedlogic.usecase.lib.{KnockoutJs, TemplateCache, SnippetHelpers, Defaults}
+import com.beardedlogic.usecase.lib._
 import TemplateCache._
 import com.beardedlogic.usecase.lib.JsExt._
 import net.liftweb.json.Serialization.{write => jsonWrite}
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json._
 import scala.xml.Node
+import org.joda.time.format.ISODateTimeFormat
+import net.liftweb.http.js.jquery.JqJE
+import java.util.TimeZone
+import java.text.SimpleDateFormat
+import com.beardedlogic.usecase.lib.JsExt.JqId
+import com.beardedlogic.usecase.model.UseCaseSummary
+import com.beardedlogic.usecase.lib.JsExt.JqAfter
+import com.beardedlogic.usecase.lib.JsExt.JqExpr
+import com.beardedlogic.usecase.model.PlainValue
+import com.beardedlogic.usecase.model.UseCaseWithValue
 
 object UseCaseIndex extends SnippetHelpers {
 
-  //  val EditTemplate = UseCaseIndexTemplate.extract("template-edit")
+//  val EditTemplateId = "template-edit"
+//  val EditTemplateCss = "#" + EditTemplateId
+//  val EditTemplate = UseCaseIndexTemplate.extract(EditTemplateId)
 
   private implicit val jsonFormats = Serialization.formats(NoTypeHints)
-  def modelInit(knockoutModelName: String, model: AnyRef): Node = {
+//  def modelInit(knockoutModelName: String, model: AnyRef): Node = {
+//    val json = jsonWrite(model)
+//    val js = KnockoutJs.ApplyBindings(knockoutModelName, json)
+//    JsCmds.Script(js)
+//  }
+
+  /** Invokes a JavaScript trigger. */
+  def JsTriggerJson(triggerName: String, data: AnyRef): JsCmd =
+    JsCmds.Run(s"$$(document).trigger('$triggerName',${jsonWrite(data)})")
+
+  def InitVM(vmClassName: String, model: AnyRef): CssSel = {
     val json = jsonWrite(model)
-    val js = KnockoutJs.ApplyBindings(knockoutModelName, json)
-    JsCmds.Script(js)
+    val js = JsCmds.Run(s"var VM=new $vmClassName($json)")
+    "#initVM" #> JsCmds.Script(js)
   }
 
   def render = DAO.withSession(dao =>
     ClearClearable
-      & "#modelInit" #> modelInit("UseCaseIndexModel", dao.findAllUseCaseSummaries)
+//      & EditTemplateCss #> ""
+      & InitVM("UseCaseIndexModel", dao.findAllUseCaseSummaries)
       & ".new_uc button" #> SHtml.ajaxButton("+ New UC", jsCallbackWithDao(createNewUseCase))
   )
 
-  def createNewUseCase(reactor: Reactor, dao: DAO): UseCaseWithValue = {
+  def createNewUseCase(reactor: Reactor, dao: DAO): UseCaseSummary = {
     val uc = dao.createInitialUseCase(Defaults.Title, Defaults.FieldList.get)
-    //    val uc = UseCaseWithValue(PlainValue(1, 2, 3), "Ahh", 4, 1000)
-    reactor(JavaScript)(
-      //      JqExpr(".uc_list") ~> JqAppend(renderUseCaseEditor(uc)(EditTemplate))
-      //        & JqId(editorId(uc)) ~> JqHide ~> JqFadeIn()
-      // System appends new UC to UC list.
-      // Title is a text input box, and focused.
-    )
-    uc
+//    val uc = UseCaseWithValue(PlainValue(1, 2, 3), "UNTITLED", 4, 1000)
+    val ucs = UseCaseSummary(uc.valueId, uc.number, uc.title, Misc.currentTimeAsIso8601Str)
+    reactor(JavaScript)(JsTriggerJson("new-uc", ucs))
+    ucs
   }
-
-  //  def renderUseCaseEditor(uc: UseCaseWithValue) = {
-  //    var title = uc.title
-  //    (".UC-num" #> uc.number.toString
-  //      & ".title textarea" #> SHtml.textarea(title, title = _)
-  //      & ".save" #> SHtml.ajaxButton("Save", jsCallbackWithDao(updateUseCase(uc, title)))
-  //      & ".edit [id]" #> editorId(uc)
-  //      )
-  //  }
-  //
-  //  def editorId(uc: UseCaseWithValue) = "u" + uc.valueId
-  //
-  //  def updateUseCase(uc: UseCaseWithValue, newTitle: String)(reactor: Reactor, dao: DAO): Unit = {
-  //    reactor(JavaScript)(JsCmds.Alert(s"From '${uc.title}' to '$newTitle}'"))
-  //  }
 }
