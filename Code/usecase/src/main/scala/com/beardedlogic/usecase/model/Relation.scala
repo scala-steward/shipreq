@@ -4,8 +4,7 @@ package model
 import scala.slick.jdbc.{StaticQuery => Q}
 import lib.db.DBHelpers._
 
-trait RelationAccessor extends DatabaseAccessor {
-
+object RelationAccessor {
   /**
    * This value is used in the `relation.index` field to indicate N/A, ie. the relationship doesn't require an index.
    */
@@ -31,6 +30,16 @@ trait RelationAccessor extends DatabaseAccessor {
     "SELECT from_id, to_id FROM tmp ORDER BY index")
 
   val DropTmpTable = Q.updateNA("DROP TABLE tmp")
+
+  val Propagate = Q.update[(Long, Long)]( s"""
+    insert into relation
+    select ?, type_id, index, to_id
+    from relation where from_id = ?
+  """.sql)
+}
+
+trait RelationAccessor extends DatabaseAccessor {
+  import RelationAccessor._
 
   def createRelationUnchecked(from: Value[_], relationType: RelationType, index: Short, to: Value[_]) {
     Q.update[(Long, Short, Short, Long)]("INSERT INTO relation VALUES(?,?,?,?)")
@@ -84,4 +93,6 @@ trait RelationAccessor extends DatabaseAccessor {
 
     result
   }
+
+  def propagateRelations[T <: DataType](from: Value[T], to: Value[T]): Unit = Propagate.execute(to.valueId, from.valueId)
 }

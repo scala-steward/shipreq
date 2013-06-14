@@ -9,14 +9,96 @@ import Q.interpolation
 
 class UseCaseTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
+  lazy val FL = Defaults.FieldList.get
+
   describe("findUseCase") {
     it("should load when found") {
       val value = db.createInitialValue(DataType.UseCase)
       val vid = value.valueId
-      sqlu"INSERT INTO usecase VALUES(${vid}, 'ah', 7, ${Defaults.FieldList.get.valueId})".execute
+      sqlu"INSERT INTO usecase VALUES(${vid}, 'ah', 7, ${FL.valueId})".execute
 
       val uc = db.findUseCase(vid).get
       uc should be(UseCase(value, "ah", 7.toShort, Defaults.FieldList.get.valueId))
+    }
+  }
+
+  describe("updateUseCaseHeader") {
+    def assertUC(id: Long, expected: UseCase, revOffset: Int) {
+      val uc = db.findUseCase(id).get
+      uc.value.dataId should be(expected.value.dataId)
+      uc.value.rev should be(expected.value.rev + revOffset)
+      uc.title should be(expected.title)
+      uc.number should be(expected.number)
+      uc.fieldListId should be(expected.fieldListId)
+    }
+
+    def assertAuditedUpdate(src: UseCase, relationRows: Int = 0): UseCase = {
+      assertTableDiffs('value -> 1, 'usecase -> 1, 'relation -> relationRows) {
+        val tgt = src.copy(title = "omg")
+        val (res, newUc) = db.updateUseCaseHeader(tgt)
+        res should be(DbOpResult.NewRevision)
+        newUc should not be ('empty)
+        assertUC(newUc.get.valueId, tgt, 1)
+        newUc.get
+      }
+    }
+
+    def assertNOP(uc: UseCase, expected: UseCase) {
+      val (res, newUc) = assertTableDiffs() {db.updateUseCaseHeader(uc)}
+      res should be(DbOpResult.AlreadyUpToDate)
+      newUc should be(Some(expected))
+    }
+
+    def createTwoRevs = {
+      val rev1 = db.createInitialUseCase("Haha", FL)
+      val (_, rev2_) = db.updateUseCaseHeader(rev1.copy(title = "wow"))
+      val rev2 = db.findUseCase(rev2_.get.valueId).get
+      (rev1, rev2)
+    }
+
+    it("should do a direct update when rev #1 and title default") {
+      val rev1 = db.createInitialUseCase(Defaults.Title, FL)
+      val tgt = rev1.copy(title = "omg")
+      val (res, newUc) = assertTableDiffs() {db.updateUseCaseHeader(tgt)}
+      res should be(DbOpResult.DirectUpdate)
+      newUc should be(Some(tgt))
+      assertUC(newUc.get.valueId, tgt, 0)
+    }
+
+    it("should do an audited update when rev #1 and non-default title changes") {
+      assertAuditedUpdate(db.createInitialUseCase("Haha", FL))
+    }
+
+    it("should do an audited update when rev #2+") {
+      val (rev1, rev2) = createTwoRevs
+      assertAuditedUpdate(rev2)
+    }
+
+    it("should copy relationships when performing an audited update") {
+      val rev1 = db.createInitialUseCase("Haha", FL)
+      db.createRelationUnchecked(rev1, RelationType.Has, 7, FL)
+      val rev2 = assertAuditedUpdate(rev1, 1)
+      val r = sql"select type_id,index,to_id from relation where from_id=${rev2.valueId}".as[(Short, Short, Long)].list
+      r should be(List((RelationType.Has.ordinal, 7: Short, FL.valueId)))
+    }
+
+    it("should do nothing when rev #1 and no change") {
+      val rev1 = db.createInitialUseCase(Defaults.Title, FL)
+      assertNOP(rev1, rev1)
+      assertNOP(rev1.copy(title = ""), rev1)
+    }
+
+    it("should do nothing when rev #2 and no change") {
+      val (rev1, rev2) = createTwoRevs
+      assertNOP(rev2, rev2)
+      assertNOP(rev2.copy(title = rev2.title + "  "), rev2)
+    }
+
+    it("should stop when target UC is not the latest revision available") {
+      val (rev1, rev2) = createTwoRevs
+      val (res, ucId) = assertTableDiffs() {db.updateUseCaseHeader(rev1.copy(title = "aahh"))}
+      res should be(DbOpResult.StaleRevision)
+      ucId should be(None)
     }
   }
 }
