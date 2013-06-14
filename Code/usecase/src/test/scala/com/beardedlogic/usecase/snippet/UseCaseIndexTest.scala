@@ -3,7 +3,7 @@ package com.beardedlogic.usecase.snippet
 import org.scalatest.FunSpec
 import com.beardedlogic.usecase.test.TestDatabaseSupport
 import com.beardedlogic.usecase.lib.msg.NoReaction
-import com.beardedlogic.usecase.model.{UseCaseSummary, UseCaseWithValue}
+import com.beardedlogic.usecase.model.{UseCaseSummary, UseCase}
 
 class UseCaseIndexTest extends FunSpec with TestDatabaseSupport {
 

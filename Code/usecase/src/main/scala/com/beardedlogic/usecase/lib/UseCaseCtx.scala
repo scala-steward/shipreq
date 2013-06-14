@@ -159,7 +159,7 @@ class UseCaseCtx(val cometActor: CometActor) {
 }
 
 case class UseCaseSaveCheckpoint(
-  uc: UseCaseWithValue,
+  uc: UseCase,
   saveCtx: FieldSaveCtx,
   fieldStates: Map[FieldKey, Any]
   )
@@ -169,7 +169,7 @@ object UseCaseLoader {
   def loadCheckpoint(valueId: Long, dao: DAO): Option[UseCaseSaveCheckpoint] = {
 
     // Load use case
-    dao.findUseCaseWithValue(valueId).map { uc =>
+    dao.findUseCase(valueId).map { uc =>
       val fieldList = Defaults.FieldList.get // TODO hardcoded fieldlist
 
       val saveCtx = new MutableFieldSaveCtx

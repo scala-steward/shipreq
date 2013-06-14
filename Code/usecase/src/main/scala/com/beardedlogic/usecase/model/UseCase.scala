@@ -7,12 +7,6 @@ import lib._
 import db.DBHelpers._
 
 case class UseCase(
-  valueId: Long,
-  title: String,
-  number: Short,
-  fieldListId: Long) extends Value[DataType.UseCase]
-
-case class UseCaseWithValue(
   value: PlainValue[DataType.UseCase],
   title: String,
   number: Short,
@@ -33,12 +27,11 @@ case class UseCaseSummary(
 
 object UseCaseAccessor {
   implicit val GetResultPlainValue = ValueAccessor.GetValueResult[DataType.UseCase]
-  implicit val GetResultUseCase = GetResult(r => UseCase(r.<<, r.<<, r.<<, r.<<))
-  implicit val GetResultUseCaseWithValue = GetResult(r => UseCaseWithValue(GetResultPlainValue(r), r.<<, r.<<, r.<<))
+  implicit val GetResultUseCase = GetResult(r => UseCase(GetResultPlainValue(r), r.<<, r.<<, r.<<))
   implicit val GetResultUseCaseSummary = GetResult(r => UseCaseSummary(r.<<, r.<<, r.<<, r.<<))
 
-  implicit object SetParameterUseCaseWithValue extends SetParameter[UseCaseWithValue] {
-    def apply(v: UseCaseWithValue, pp: PositionedParameters) {
+  implicit object SetParameterUseCase extends SetParameter[UseCase] {
+    def apply(v: UseCase, pp: PositionedParameters) {
       pp.setLong(v.valueId)
       pp.setString(v.title)
       pp.setShort(v.number)
@@ -46,14 +39,12 @@ object UseCaseAccessor {
     }
   }
 
-  val Insert = Q.update[UseCaseWithValue]("INSERT INTO usecase VALUES(?,?,?,?)")
+  val Insert = Q.update[UseCase]("INSERT INTO usecase VALUES(?,?,?,?)")
 
   val NextNumber = "select coalesce(max(number),0)+1 from usecase"
   val InsertNext = Q.query[(Long, String, Long), Short](s"INSERT INTO usecase VALUES(?,?,($NextNumber),?) RETURNING number")
 
-  val Select = Q.query[Long, UseCase]("SELECT id, title, number, field_list_id FROM usecase WHERE id=?")
-
-  val SelectWithValue = Q.query[Long, UseCaseWithValue](s"""
+  val Select = Q.query[Long, UseCase](s"""
     SELECT v.${ValueAccessor.*}, title, number, field_list_id
     FROM value v, usecase u
     WHERE u.id=? AND v.id = u.id
@@ -81,9 +72,9 @@ trait UseCaseAccessor extends DatabaseAccessor {
   def createUseCase(value: PlainValue[DataType.UseCase],
     title: String,
     number: Short,
-    fieldList: FieldList): UseCaseWithValue = {
+    fieldList: FieldList): UseCase = {
 
-    val uc = UseCaseWithValue(value, title, number, fieldList.valueId)
+    val uc = UseCase(value, title, number, fieldList.valueId)
     Insert.execute(uc)
     uc
   }
@@ -91,14 +82,13 @@ trait UseCaseAccessor extends DatabaseAccessor {
   // TODO New-UC has GLOBAL scope.
   // TODO New-UC: Use table locking for mutex?
   // TODO New-UC: Lacking appropriate number uniqueness constraint
-  def createInitialUseCase(title: String, fieldList: FieldList): UseCaseWithValue = {
+  def createInitialUseCase(title: String, fieldList: FieldList): UseCase = {
     val v = createInitialValue(DataType.UseCase)
     val number = InsertNext.first(v.valueId, title, fieldList.valueId)
-    UseCaseWithValue(v, title, number, fieldList.valueId)
+    UseCase(v, title, number, fieldList.valueId)
   }
 
   def findUseCase(valueId: Long): Option[UseCase] = Select.firstOption(valueId)
-  def findUseCaseWithValue(valueId: Long): Option[UseCaseWithValue] = SelectWithValue.firstOption(valueId)
 
   def findAllUseCaseSummaries(): List[UseCaseSummary] = SelectSummaries.list
 }

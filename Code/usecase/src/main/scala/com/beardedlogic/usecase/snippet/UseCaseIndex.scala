@@ -7,7 +7,7 @@ import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.http.SHtml
 import com.beardedlogic.usecase.lib.msg.{JavaScript, Reactor, JavaScriptReaction}
 import com.beardedlogic.usecase.lib.db.DB
-import com.beardedlogic.usecase.model.{PlainValue, UseCaseSummary, UseCaseWithValue, DAO}
+import com.beardedlogic.usecase.model.{PlainValue, UseCaseSummary, UseCase, DAO}
 import com.beardedlogic.usecase.lib._
 import TemplateCache._
 import com.beardedlogic.usecase.lib.JsExt._
@@ -24,7 +24,7 @@ import com.beardedlogic.usecase.model.UseCaseSummary
 import com.beardedlogic.usecase.lib.JsExt.JqAfter
 import com.beardedlogic.usecase.lib.JsExt.JqExpr
 import com.beardedlogic.usecase.model.PlainValue
-import com.beardedlogic.usecase.model.UseCaseWithValue
+import com.beardedlogic.usecase.model.UseCase
 
 object UseCaseIndex extends SnippetHelpers {
 
@@ -58,7 +58,7 @@ object UseCaseIndex extends SnippetHelpers {
 
   def createNewUseCase(reactor: Reactor, dao: DAO): UseCaseSummary = {
     val uc = dao.createInitialUseCase(Defaults.Title, Defaults.FieldList.get)
-//    val uc = UseCaseWithValue(PlainValue(1, 2, 3), "UNTITLED", 4, 1000)
+//    val uc = UseCase(PlainValue(1, 2, 3), "UNTITLED", 4, 1000)
     val ucs = UseCaseSummary(uc.valueId, uc.number, uc.title, Misc.currentTimeAsIso8601Str)
     reactor(JavaScript)(JsTriggerJson("new-uc", ucs))
     ucs
