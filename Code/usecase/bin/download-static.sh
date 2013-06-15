@@ -19,3 +19,8 @@ v=2.4.1
 echo "Downloading v$v of ko mapping -- https://github.com/SteveSanderson/knockout.mapping/tree/master/build/output"
 curl -s https://raw.github.com/SteveSanderson/knockout.mapping/$v/build/output/knockout.mapping-latest.js -o src/main/javascript/vendor/knockout-mapping.js
 echo $?
+
+v=2.0.2
+echo "Downloading v$v of jquery.serializeObject.js -- http://plugins.jquery.com/serializeObject/"
+curl -s https://raw.github.com/hongymagic/jQuery.serializeObject/$v/jquery.serializeObject.js -o src/main/javascript/vendor/jquery-serializeObject.js
+echo $?

@@ -29,16 +29,16 @@
 			<div class="some_ucs" data-bind="if: populated">
 				<div class="uc_list" data-bind="foreach: useCases">
 
-					<div class="uc" data-bind="visible: !$data.edit()">
+					<div class="uc" data-bind="visible: !$data.editMode()">
 						<a href="uce">UC-<span data-bind="text: $data.number"></span>: <span data-bind="text: $data.title"></span></a>
 						<div class="last_updated">Last updated <abbr class="timeago" data-bind="attr: {title:$data.updatedAt}"></abbr>.</div>
 					</div>
 
-					<div class="uc edit" data-bind="visible: $data.edit, css: cssClass">
+					<div class="uc edit" data-bind="visible: $data.editMode, css: cssClass">
 						<form data-bind="submit: $data.save">
 							<span class="num">UC-<span data-bind="text: $data.number"></span>:</span>
 							<input class="save" type="submit" value="Save"/>
-							<div class="title"><textarea class="enterSubmitsForm" rows="1" data-bind="value: $data.title"></textarea></div>
+							<div class="title"><textarea class="enterSubmitsForm" rows="1" data-bind="value: $data.title" name="title"></textarea></div>
 						</form>
 					</div>
 

@@ -1,10 +1,17 @@
 function modelise(uc) {
-    uc.edit = false
-    uc.save = function(form) {
-        this.edit(false)
-    }
-    uc.cssClass = "u"+uc.vid
-    return ko.mapping.fromJS(uc)
+    var m = ko.mapping.fromJS(uc)
+
+    m.cssClass = "u"+uc.vid
+
+    m.editMode = ko.observable(false)
+
+    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.vid), 'PUT', function(result) {
+        var n = modelise(result)
+        VM.useCases.replace(m,n)
+        $(document).enhanceDom()
+    })
+
+    return m
 }
 
 function UseCaseIndexModel(ucs) {
@@ -19,8 +26,8 @@ $(document).ready(function() {
 
 $(document).on('new-uc', function(event, data) {
     var m = modelise(data)
-    m.edit(true)
+    m.editMode(true)
     VM.useCases.push(m)
     $(document).enhanceDom();
-    $("."+m.cssClass()+" textarea").select().focus()
+    $("."+m.cssClass+" textarea").select().focus()
 });
