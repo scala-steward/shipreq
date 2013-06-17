@@ -1,12 +1,12 @@
-function modelise(uc) {
+function UseCaseSummary(uc) {
     var m = ko.mapping.fromJS(uc)
 
-    m.cssClass = "u"+uc.vid
+    m.cssClass = "u"+uc.valueId
 
     m.editMode = ko.observable(false)
 
-    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.vid), 'PUT', function(result) {
-        var n = modelise(result)
+    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.valueId), 'PUT', function(result) {
+        var n = UseCaseSummary(result)
         VM.useCases.replace(m,n)
         $(document).enhanceDom()
     })
@@ -14,8 +14,8 @@ function modelise(uc) {
     return m
 }
 
-function UseCaseIndexModel(ucs) {
-    this.useCases = ko.observableArray($.map(ucs,modelise))
+function UCIViewModel(ucs) {
+    this.useCases = ko.observableArray($.map(ucs,UseCaseSummary))
     this.populated = ko.computed(function(){ return this.useCases().length > 0 }, this);
 }
 
@@ -25,7 +25,7 @@ $(document).ready(function() {
 });
 
 $(document).on('new-uc', function(event, data) {
-    var m = modelise(data)
+    var m = UseCaseSummary(data)
     m.editMode(true)
     VM.useCases.push(m)
     $(document).enhanceDom();

@@ -1,30 +1,17 @@
 package com.beardedlogic.usecase
 package snippet
 
+import net.liftweb.http.SHtml
+import net.liftweb.http.js.{JsCmds, JsCmd}
+import net.liftweb.json.Serialization.{write => jsonWrite}
+import net.liftweb.json._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{CssSel, ClearClearable}
-import net.liftweb.http.js.{JsCmds, JsCmd}
-import net.liftweb.http.SHtml
-import com.beardedlogic.usecase.lib.msg.{JavaScript, Reactor, JavaScriptReaction}
-import com.beardedlogic.usecase.lib.db.DB
-import com.beardedlogic.usecase.model.{PlainValue, UseCaseSummary, UseCase, DAO}
-import com.beardedlogic.usecase.lib._
-import TemplateCache._
-import com.beardedlogic.usecase.lib.JsExt._
-import net.liftweb.json.Serialization.{write => jsonWrite}
-import net.liftweb.json.JsonDSL._
-import net.liftweb.json._
-import scala.xml.Node
-import org.joda.time.format.ISODateTimeFormat
-import net.liftweb.http.js.jquery.JqJE
-import java.util.TimeZone
-import java.text.SimpleDateFormat
-import com.beardedlogic.usecase.lib.JsExt.JqId
-import com.beardedlogic.usecase.model.UseCaseSummary
-import com.beardedlogic.usecase.lib.JsExt.JqAfter
-import com.beardedlogic.usecase.lib.JsExt.JqExpr
-import com.beardedlogic.usecase.model.PlainValue
-import com.beardedlogic.usecase.model.UseCase
+
+import lib._
+import msg.{JavaScript, Reactor}
+import model.DAO
+import model.UseCaseSummary
 
 object UseCaseIndex extends SnippetHelpers {
 
@@ -52,7 +39,7 @@ object UseCaseIndex extends SnippetHelpers {
   def render = DAO.withSession(dao =>
     ClearClearable
 //      & EditTemplateCss #> ""
-      & InitVM("UseCaseIndexModel", dao.findAllUseCaseSummaries)
+      & InitVM("UCIViewModel", dao.findAllUseCaseSummaries)
       & ".new_uc button" #> SHtml.ajaxButton("+ New UC", jsCallbackWithDao(createNewUseCase))
   )
 

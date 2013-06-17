@@ -60,7 +60,7 @@ class UseCaseApiTest extends FunSpec with ApiTest with PropertyChecks {
       DAO.withSession(dao => {
         val uc1 = dao.createInitialUseCase(Defaults.Title, Defaults.FieldList.get)
         val uc2s = testSuccess2(dao, uc1, "hello", "hello").get
-        val uc2 = dao.findUseCase(uc2s.vid).get
+        val uc2 = dao.findUseCase(uc2s.valueId).get
         testSuccess2(dao, uc2, uc2.title, uc2.title)
         // TODO timestamp should be old
       })

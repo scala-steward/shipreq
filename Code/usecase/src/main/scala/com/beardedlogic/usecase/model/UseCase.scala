@@ -24,7 +24,7 @@ case class UseCase(
 
 // These fields names need to match the attributes in list.html
 case class UseCaseSummary(
-  vid: Long,
+  valueId: Long,
   number: Short,
   title: String,
   updatedAt: String
