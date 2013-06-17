@@ -45,7 +45,8 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
           if (!test(20))
             if (!test(50))
               if (!test(100))
-                cond
+                if (!test(1000))
+                  cond
   }
 
   def eventuallyIf(wait: Boolean)(cond: => Any) { if (wait) eventually(cond) else cond }

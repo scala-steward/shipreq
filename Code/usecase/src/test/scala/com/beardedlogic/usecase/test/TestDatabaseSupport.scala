@@ -35,13 +35,13 @@ trait TestDatabaseSupport extends ShouldMatchers with Logger {
     TestDatabaseSupport.init()
     debug(s"DB Test start: ${test.name}")
     try {
-      val outcome = DB.Slick.withTransaction { s: Session =>
+      val outcome = DB.withInstance(wrapTestsInTransaction) { s: Session =>
         this.sessionVar = s
         this.dbVar = new DAO(s)
         s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
         try test()
         finally {
-          s.rollback()
+          if (wrapTestsInTransaction) s.rollback()
           this.sessionVar = null
           this.dbVar = null
         }
@@ -55,6 +55,8 @@ trait TestDatabaseSupport extends ShouldMatchers with Logger {
     catch {case e: Throwable => error("Test error.", e); throw e }
     finally debug(s"DB Test end: ${test.name}")
   }
+
+  val wrapTestsInTransaction = true
 
   var sessionVar: Session = null
   implicit def session = sessionVar

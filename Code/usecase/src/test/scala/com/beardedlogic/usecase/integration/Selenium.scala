@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.integration
 
-import com.beardedlogic.usecase.test.{SharedGlobal, Jetty}
+import com.beardedlogic.usecase.test.{TestDatabaseSupport, SharedGlobal, Jetty}
 import org.openqa.selenium.firefox.FirefoxDriver
 import org.openqa.selenium.{HasInputDevices, JavascriptExecutor, WebDriver}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
@@ -34,6 +34,7 @@ trait SeleniumTestSupport extends BeforeAndAfterAll with BeforeAndAfterEach { th
   import SeleniumTestSupport._
 
   override def beforeAll() {
+    TestDatabaseSupport.init()
     SeleniumJetty.acquire
     _s = SeleniumDriverRef.acquire
   }

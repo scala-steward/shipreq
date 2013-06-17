@@ -78,6 +78,10 @@ object DB extends Logger {
 
   val Slick = Database.forDataSource(DataSource)
 
+  def withInstance[T](transaction: Boolean)(block: Session => T): T = {
+    if (transaction) Slick.withTransaction(block) else Slick.withSession(block)
+  }
+
   def performPendingMigrations() = Flyway.migrate()
 
   def syncEnums(implicit s: Session) = DatabaseEnum.init(DataType, FieldKeyType, RelationType)

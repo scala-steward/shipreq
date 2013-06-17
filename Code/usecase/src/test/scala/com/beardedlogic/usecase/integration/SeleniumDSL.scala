@@ -6,6 +6,8 @@ import org.scalatest.Suite
 import org.scalatest.matchers.ShouldMatchers
 import scala.collection.JavaConverters._
 import test.TestHelpers
+import org.openqa.selenium.remote.RemoteWebElement
+import org.openqa.selenium.interactions.Actions
 
 /**
  * Provides tests with Selenium-based DSLs.
@@ -17,6 +19,8 @@ trait SeleniumDSL extends SeleniumTestSupport { this: Suite =>
   import SeleniumDSL._
 
   def uce = new UCEditorDSL(s).tap { _.reload }
+
+  def listDsl = new UseCaseIndexDSL(s).tap { _.reload }
 }
 
 /**
@@ -45,6 +49,9 @@ object SeleniumDSL {
   trait BaseDSL extends ShouldMatchers {
     var expectDelays = true
 
+    def s: SeleniumDriver
+
+    def findVisible(css: String): List[WebElement] = s.findElements(By.cssSelector(css)).asScala.filter(_.isDisplayed).toList
     def oneOffDelay(waitTime: Long): this.type = { Thread.sleep(waitTime); expectDelays = false; this }
     def expectDelays(v: Boolean): this.type = { expectDelays = v; this }
     def eventually(cond: => Any): this.type = { TestHelpers.eventuallyIf(expectDelays)(cond); this }
@@ -52,6 +59,8 @@ object SeleniumDSL {
   }
 
   type Finder = { def findElements(by: By): java.util.List[WebElement]; def findElement(by: By): WebElement }
+
+  // ===================================================================================================================
 
   /**
    * DSL for the Use Case Editor.
@@ -132,5 +141,31 @@ object SeleniumDSL {
     def indentDecButtonVisibility(row: Int) = indentDecButton(row).isDisplayed
     def indentIncButtonVisibility(row: Int) = indentIncButton(row).isDisplayed
   }
-}
 
+  // ===================================================================================================================
+
+  class UseCaseIndexDSL(val s: SeleniumDriver) extends BaseDSL {
+    def reload = { s.getRel("/list").ensureNoTestFuncIds.disableJqueryEffects; this }
+
+    def assertItemCount(totalCount: Int, editableCount: Int = 0) = eventually {
+      val actual = List(".no_ucs", ".some_ucs .uc", ".some_ucs .uc.edit").map(findVisible(_).size)
+      actual should be(List(if (totalCount == 0) 1 else 0, totalCount, editableCount))
+      this
+    }
+
+    def clickNewUc() = { s.findElement(By.cssSelector(".new_uc button")).click; this }
+
+    def row(row: Int) = new Row(row)
+
+    class Row(row: Int) {
+      def elem = findVisible(".some_ucs .uc")(row)
+      def link = elem.findElement(By.tagName("a"))
+      def editTextarea = elem.findElement(By.tagName("textarea"))
+      def assertLinkText(txt: String) = { eventually {link.getText should be(txt)}; this }
+      def assertEditText(txt: String) = { eventually {editTextarea.value should be(txt)}; this }
+//      def enterText(txt: String) = { println("ready?"); Thread.sleep(3000); new Actions(s).moveToElement(elem).click().perform(); println("done"); Thread.sleep(3000);elem.sendKeys(txt + "\n"); UseCaseIndexDSL.this }
+    }
+
+  }
+
+}

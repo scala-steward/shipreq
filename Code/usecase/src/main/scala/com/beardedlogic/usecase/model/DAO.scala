@@ -40,6 +40,10 @@ class DAO(_session: Session)
 
 object DAO {
 
+  def withInstance[T](transaction: Boolean)(block: DAO => T): T = {
+    if (transaction) withTransaction(block) else withSession(block)
+  }
+
   def withSession[T](block: DAO => T): T = {
     DB.Slick.withSession { db => block(new DAO(db)) }
   }
