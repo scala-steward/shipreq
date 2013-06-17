@@ -14,7 +14,7 @@ import ApiTestHelpers._
 trait ApiTest extends TestHelpers with TestKit with ApiTestHelpers with BeforeAndAfterAll {
   self: Suite =>
 
-  override def baseUrl = Jetty.URL
+  override def baseUrl = Jetty.Default.url
 
   implicit val reportError = new ReportFailure {
     def fail(msg: String): Nothing = self.fail(s"Error: '$msg'")
@@ -22,11 +22,11 @@ trait ApiTest extends TestHelpers with TestKit with ApiTestHelpers with BeforeAn
 
   override def beforeAll() {
     TestDatabaseSupport.init()
-    Jetty.acquire
+    Jetty.Default.acquire
   }
 
   override def afterAll() {
-    Jetty.release
+    Jetty.Default.release
   }
 }
 

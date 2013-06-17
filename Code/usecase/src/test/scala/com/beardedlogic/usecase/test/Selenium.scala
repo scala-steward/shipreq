@@ -11,9 +11,11 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 object SeleniumTestSupport {
   type SeleniumDriver = WebDriver with JavascriptExecutor with HasInputDevices
 
+  val SeleniumJetty = new Jetty(8091)
+
   implicit class SeleniumDriverExt(d: SeleniumDriver) {
     def disableJqueryEffects() = { d.executeScript("jQuery.fx.off = true"); d }
-    def getRel(page: String) = { d.get(Jetty.URL + page); d }
+    def getRel(page: String) = { d.get(SeleniumJetty.url + page); d }
     def ensureNoTestFuncIds() = { if (d.getPageSource.contains("lift_ajaxHandler(&quot;f0000000")) throw new IllegalStateException("FFS. Test func IDs are on again :("); d }
   }
 
@@ -32,13 +34,13 @@ trait SeleniumTestSupport extends BeforeAndAfterAll with BeforeAndAfterEach { th
   import SeleniumTestSupport._
 
   override def beforeAll() {
-    Jetty.acquire
+    SeleniumJetty.acquire
     _s = SeleniumDriverRef.acquire
   }
 
   override def afterAll() {
     _s = SeleniumDriverRef.release
-    Jetty.release
+    SeleniumJetty.release
   }
 
   private var _s : SeleniumDriver = null

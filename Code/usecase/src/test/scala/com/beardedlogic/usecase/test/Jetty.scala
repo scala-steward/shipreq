@@ -9,26 +9,27 @@ import com.beardedlogic.usecase.lib.Misc
 import java.io.File
 import org.apache.commons.io.FileUtils
 
+object Jetty {
+  val Default = new Jetty(8090)
+}
+
 /**
  * Starts up an instance of Jetty than runs the webapp.
  *
  * @since 29/04/2013
  */
-object Jetty extends Logger {
+class Jetty(val port: Int) extends Logger {
 
   Misc.ensureTestModeDuringTests()
 
-  private val jetty = SharedGlobal(Some(15000L), newServer _)(stopServer(_))
+  private val instance = SharedGlobal(Some(15000L), newServer _)(stopServer(_))
+  val maxIdle = 10 seconds
+  val url = "http://localhost:" + port
 
-  def acquire(): Server = jetty.acquire
+  def acquire() = instance.acquire()
+  def release() = instance.release()
 
-  def release(): Server = jetty.release
-
-  val PORT = 8090
-  val MAX_IDLE = 10 seconds
-  val URL = "http://localhost:" + PORT
-
-  def newServer: Server = {
+  private def newServer: Server = {
     // Manually create an exploded WAR
     // Could use sbt or a real WAR but then we can't easily/quickly run single tests from IDE
     val tmpWarDir = TestHelpers.createTempDir("usecase-test-war")
@@ -39,8 +40,8 @@ object Jetty extends Logger {
     val svr = new Server
 
     val connector = new SelectChannelConnector
-    connector.setPort(PORT)
-    connector.setMaxIdleTime(MAX_IDLE.millis.toInt)
+    connector.setPort(port)
+    connector.setMaxIdleTime(maxIdle.millis.toInt)
     connector.setServer(svr)
     svr.setConnectors(Array(connector))
 
@@ -54,7 +55,7 @@ object Jetty extends Logger {
     svr
   }
 
-  def stopServer(s: Server) {
+  private def stopServer(s: Server) {
     info("Stopping Jetty")
     s.stop; s.join
   }
