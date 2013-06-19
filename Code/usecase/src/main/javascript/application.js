@@ -11,6 +11,10 @@ var apiUrls = new function() {
     this.updateUseCaseHeader = function(id){ return {url: "/api/usecase/"+id, type: 'PUT' }}
 }
 
+var urls = new function() {
+    this.viewUseCase = function(id){ return "/usecase/"+id }
+}
+
 function ajaxErrorHandler(xhr, textStatus, errorThrown) {
     var msg = "Something went wrong. Please try again."
         + "\nIf the problem persists, reload the page and give it another try."

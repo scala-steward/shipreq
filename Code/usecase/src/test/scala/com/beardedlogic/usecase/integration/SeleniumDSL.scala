@@ -160,6 +160,7 @@ object SeleniumDSL {
     class Row(row: Int) {
       def elem = findVisible(".some_ucs .uc")(row)
       def link = elem.findElement(By.tagName("a"))
+      def linkUrl = link.getAttribute("href")
       def editTextarea = elem.findElement(By.tagName("textarea"))
       def assertLinkText(txt: String) = { eventually {link.getText should be(txt)}; this }
       def assertEditText(txt: String) = { eventually {editTextarea.value should be(txt)}; this }

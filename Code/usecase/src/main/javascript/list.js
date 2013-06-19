@@ -1,17 +1,19 @@
 function UseCaseSummary(uc) {
     var m = ko.mapping.fromJS(uc)
 
-    m.cssClass = "uc-"+uc.id
+    m.cssClass = "uc-"+uc.dataEid
 
     m.editMode = ko.observable(false)
 
     m.enterEditMode = function(){ m.editMode(true); $("."+m.cssClass+" textarea").select().focus() }
 
-    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.id), function(result) {
+    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.valueEid), function(result) {
         var n = UseCaseSummary(result)
         VM.useCases.replace(m,n)
         $(document).enhanceDom()
     })
+
+    m.viewUrl = urls.viewUseCase(uc.dataEid)
 
     return m
 }

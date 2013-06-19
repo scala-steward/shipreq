@@ -46,4 +46,5 @@ trait SeleniumTestSupport extends BeforeAndAfterAll with BeforeAndAfterEach { th
 
   private var _s : SeleniumDriver = null
   def s = _s
+  def baseUrl = SeleniumJetty.url
 }

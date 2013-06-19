@@ -11,6 +11,8 @@ object ExternalId {
   @inline private final def joinInts(a: Int, b: Int): Long = (a.toLong << 32L) | (b & 0xffffffffL)
   @inline private final def xorness(b: Int) = b ^ ((b & 0x7e7) << 12)
 
+  @inline final def apply(internal: Long): String = toExternal(internal)
+
   def toExternal(internal: Long): String = {
     var (a, b) = splitLong(internal)
     b = xorness(b)

@@ -6,6 +6,7 @@ import scala.slick.session.PositionedParameters
 import lib._
 import db.DBHelpers._
 import DbOpResult._
+import ExternalId.{toExternal, toInternal}
 
 case class UseCase(
   value: PlainValue[DataType.UseCase],
@@ -19,23 +20,24 @@ case class UseCase(
     this.title == that.title &&
     this.number == that.number &&
     this.fieldListId == that.fieldListId
-
-  def toSummary(updatedAt: String) = UseCaseSummary(valueId, number, title, updatedAt)
 }
 
 // These fields names need to match the attributes in list.html
 case class UseCaseSummary(
-  id: String,
+  dataEid: String,
+  valueEid: String,
   number: Short,
   title: String,
   updatedAt: String) {
-  def valueId = ExternalId.toInternal(id)
+  def dataId = toInternal(dataEid)
+  def valueId = toInternal(valueEid)
 }
 object UseCaseSummary {
-  def apply(valueId: Long,
+  def apply(dataId: Long,
+    valueId: Long,
     number: Short,
     title: String,
-    updatedAt: String) = new UseCaseSummary(ExternalId.toExternal(valueId), number, title, updatedAt)
+    updatedAt: String) = new UseCaseSummary(toExternal(dataId), toExternal(valueId), number, title, updatedAt)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -43,7 +45,7 @@ object UseCaseSummary {
 object UseCaseAccessor {
   implicit val GetResultPlainValue = ValueAccessor.GetValueResult[DataType.UseCase]
   implicit val GetResultUseCase = GetResult(r => UseCase(GetResultPlainValue(r), r.<<, r.<<, r.<<))
-  implicit val GetResultUseCaseSummary = GetResult(r => UseCaseSummary(r.nextLong, r.nextShort, r.nextString, r.nextString))
+  implicit val GetResultUseCaseSummary = GetResult(r => UseCaseSummary(r.nextLong, r.nextLong, r.nextShort, r.nextString, r.nextString))
 
   implicit object SetParameterUseCase extends SetParameter[UseCase] {
     def apply(v: UseCase, pp: PositionedParameters) {
@@ -86,7 +88,7 @@ object UseCaseAccessor {
     val latestRevs = new LatestRevSubquery().where(innerCond).withTableAlias("t")
     s"""
       ${latestRevs.toWithClause}
-      select v.id, number, title, to_iso8601_str(updated_at)
+      select data_id, v.id, number, title, to_iso8601_str(updated_at)
       from usecase u, value v
       where ${latestRevs.applyWithTableAsValueIdFilter("u.id")}
       and u.id=v.id
