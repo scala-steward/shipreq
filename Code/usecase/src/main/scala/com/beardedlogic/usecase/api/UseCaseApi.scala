@@ -19,16 +19,18 @@ object UseCaseApi extends RestHelper with Logger {
 
   case class UpdateUseCaseInput(title: String)
 
-  def updateUseCase(valueId: Long, json: JValue): Either[LiftResponse, LiftResponse] =
-    for {
+  def updateUseCase(valueId: Long, json: JValue): LiftResponse =
+    (for {
       input <- json.parseInput[UpdateUseCaseInput]
-      dao <- DAO.forSessionRight
-      uc <- dao.findUseCase(valueId) ~> NotFoundResponse()
-    } yield Locks.UseCase.withWriteLockAndTransaction(uc.dataId, dao) {
-      val tgt = uc.copy(title = input.title)
-      dao.updateUseCaseHeader(tgt) match {
-        case Success(_, uc) => dao.findUseCaseSummary(uc).get.toJsonResponse
-        case StaleRevision => PreconditionRequiredResponse()
-      }
-    }
+      dao   <- DAO.forSessionRight
+      uc    <- dao.findUseCase(valueId) ~> NotFoundResponse()
+      lock  <- Locks.UseCase.forWriteRight(uc.dataId)
+    } yield dao.withTransaction {
+        val tgt = uc.copy(title = input.title) // TODO this isn't safe, should lock for write before first read
+        dao.updateUseCaseHeader(tgt) match {
+          case Success(_, uc) => Right(dao.findUseCaseSummary(uc).get)
+          case StaleRevision => Left(PreconditionRequiredResponse())
+        }
+      })
+    .fold(r => r, _.toJsonResponse)
 }

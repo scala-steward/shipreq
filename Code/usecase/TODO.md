@@ -23,7 +23,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [M.0.5] [FAIL] API fails when same op performed concurrently.
 * [M.0.3] [FAIL] Edit 2 UC headers, press Enter on one and it sends 8 ajax requests.
 
 * [S.3.0] [PERF] Use pickling for JSON serialisation.

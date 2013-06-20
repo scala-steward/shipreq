@@ -45,8 +45,8 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       // Load
       val loaded = new UseCaseCtx(null)
       loaded.init // TODO why do i need to call init myself all the time?
-      val cp = UseCaseLoader.loadCheckpoint(uc_id, db)
-      loaded.restoreCheckpoint(cp.get)
+      val cp = loadCheckpoint(uc_id)
+      loaded.restoreCheckpoint(cp)
 
       // Verify
       loaded.title should be("ahh")
@@ -83,8 +83,8 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
       // Load
       val loaded = new UseCaseCtx(null)
       loaded.init // TODO why do i need to call init myself all the time?
-      val cp = UseCaseLoader.loadCheckpoint(uc_id, db)
-      loaded.restoreCheckpoint(cp.get)
+      val cp = loadCheckpoint(uc_id)
+      loaded.restoreCheckpoint(cp)
 
       // Verify
       loaded.title should be("ahh")
@@ -343,10 +343,13 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
   def valueIdOf(uc: UseCaseCtx) = uc.lastSave.get.uc.valueId
 
-  def load(target: UseCaseCtx, valueId: Long) {
-    val checkpoint = UseCaseLoader.loadCheckpoint(valueId, db)
+  def loadCheckpoint(ucValueId: Long): UseCaseSaveCheckpoint = loadCheckpoint(db.findUseCase(ucValueId).get)
+  def loadCheckpoint(uc: UseCase): UseCaseSaveCheckpoint = Locks.UseCase.withReadLockToken(uc.dataId)(UseCaseLoader.loadCheckpoint(uc, db, _))
+
+  def load(target: UseCaseCtx, ucValueId: Long) {
+    val checkpoint = loadCheckpoint(ucValueId)
     checkpoint should not be (None)
-    target.restoreCheckpoint(checkpoint.get)
+    target.restoreCheckpoint(checkpoint)
   }
 
   def loadAndAssertShallow(saved: UseCaseCtx) = {

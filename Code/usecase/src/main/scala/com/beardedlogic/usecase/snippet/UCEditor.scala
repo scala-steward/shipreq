@@ -28,9 +28,10 @@ class UCEditor extends StatefulSnippet with SnippetHelpers {
     (for {
       idStr  <- S.param(ParamId)
       dataId <- ExternalId.parse(idStr) ~> BadResponse()
+      lock   <- Locks.UseCase.forRead(dataId)
       dao    <- DAO.forTransaction
       uc     <- Box(dao.findLatestUseCaseByDataId(dataId)) ~> NotFoundResponse()
-    } yield UseCaseLoader.loadCheckpoint(uc, dao))
+    } yield UseCaseLoader.loadCheckpoint(uc, dao, lock))
     match {
       case Full(cp)                               => state.restoreCheckpoint(cp)
       case ParamFailure(_, _, _, r: LiftResponse) => responseImmediately(r)
