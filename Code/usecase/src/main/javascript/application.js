@@ -15,16 +15,34 @@ var urls = new function() {
     this.viewUseCase = function(id){ return "/usecase/"+id }
 }
 
+function fullStop(sentence) {
+    if (sentence.match('\\.$') == null) return sentence + ".";
+    return sentence
+}
+
 function ajaxErrorHandler(xhr, textStatus, errorThrown) {
-    var msg = "Something went wrong. Please try again."
+    var genericMsgNeeded = true
+    var genericMsg = "Something went wrong. Please try again."
         + "\nIf the problem persists, reload the page and give it another try."
-        + "\n\nError " + xhr.status + ": " + errorThrown + "."
+        + "\n\n"
+
+    var msg = "Error " + xhr.status
+
+    var err = null
+    if (xhr.status != errorThrown) err = errorThrown
+    else if (textStatus != "error") err = textStatus
+    if (err != null) msg += ": " + fullStop(err)
+
     if ([409,412,422,423,428].indexOf(xhr.status) >= 0 && xhr.responseText != "") {
-        var limit = 50
-        var r = xhr.responseText
+        var limit = 160
+        var r = fullStop(xhr.responseText)
         if (r.length > limit) r = r.substring(0, limit) + "..."
-        msg += "\nFeedback: " + r
+        msg += (err == null ? ": " : "\nFeedback: ") + r
+        genericMsgNeeded = false
     }
+
+    if (genericMsgNeeded) msg = genericMsg + msg
+
     alert(msg)
 }
 
