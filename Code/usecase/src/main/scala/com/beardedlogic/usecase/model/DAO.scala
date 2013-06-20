@@ -35,8 +35,7 @@ class DAO(_session: Session)
   override implicit val db = _session
 
   def conn = db.conn
-  def setTransactionIsolation() = conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
-  def withTransaction[T](f: => T): T = db.withTransaction {setTransactionIsolation(); f}
+  def withTransaction[T](f: => T): T = db.withTransaction(f)
   def close() = db.close
   def rollback() = db.rollback
 }
@@ -47,16 +46,12 @@ object DAO {
     if (transaction) withTransaction(block) else withSession(block)
   }
 
-  def withSession[T](block: DAO => T): T = {
-    DB.Slick.withSession { s => block(new DAO(s)) }
-  }
+  def withSession[T](block: DAO => T): T = DB.Slick.withSession(initConnAndExec(_, block))
+  def withTransaction[T](block: DAO => T): T = DB.Slick.withTransaction(initConnAndExec(_, block))
 
-  def withTransaction[T](block: DAO => T): T = {
-    DB.Slick.withTransaction(s => {
-      val dao = new DAO(s)
-      dao.setTransactionIsolation()
-      block(dao)
-    })
+  @inline private def initConnAndExec[T](s: Session, block: DAO => T): T = {
+    s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
+    block(new DAO(s))
   }
 
   def get = new DAO(DB.Slick.createSession())
