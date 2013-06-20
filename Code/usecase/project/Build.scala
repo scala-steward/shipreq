@@ -10,6 +10,7 @@ object B extends Build {
     .settings(
       testOptions in Test := Seq(Tests.Filter(normalTestFilter)),
       testOptions in SeleniumTest := Seq(Tests.Filter(seleniumTestFilter)),
+      parallelExecution in Test := false,
       parallelExecution in SeleniumTest := false
     )
 
