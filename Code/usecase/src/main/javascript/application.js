@@ -80,18 +80,18 @@ function submitJsonForm(apiUrl, successCallback) {
     }
 }
 
-function enterSubmitsFormHandler(e) {
-    if (e.which === 13) {
+// Add a global event handler to make Enter submit the current form, for any elements with class 'enterSubmitsForm'.
+$(document).keypress(function (e) {
+    if (e.which === 13 && e.target.classList.contains('enterSubmitsForm')) {
         e.preventDefault();
         e.stopPropagation();
-        $(e.target).parents("form").find("input[type=submit]").focus().click();
+        $(e.target).parents("form").find("input[type=submit]:visible:first").focus().click();
     }
-}
+})
 
 DomEnhancements = [
-    {css: "abbr.timeago",      fn: function(x){ x.timeago() }},
-    {css: "textarea",          fn: function(x){ x.autosize() }},
-    {css: ".enterSubmitsForm", fn: function(x){ x.keypress(enterSubmitsFormHandler) }}
+    {css: "abbr.timeago", apply: function(x){ x.timeago() }},
+    {css: "textarea",     apply: function(x){ x.autosize() }}
 ];
 
 // Apply DomEnhancements via LiveQuery
@@ -101,7 +101,7 @@ for (var i = 0; i < DomEnhancements.length; i++) {
     $(e.css).livequery(function (ee) {
         return function () {
             // console.debug("LQ calling: "+ ee.css)
-            ee.fn($(this))
+            ee.apply($(this))
         }
     }(e))
 }
@@ -112,7 +112,7 @@ function enhanceDom() { $(document).enhanceDom() }
     $.fn.enhanceDom = function () {
         for (var i=0; i < DomEnhancements.length; i++) {
             var e = DomEnhancements[i]
-            e.fn(this.find(e.css))
+            e.apply(this.find(e.css))
         }
         return this;
     };

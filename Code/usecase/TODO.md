@@ -23,8 +23,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [M.0.3] [FAIL] Edit 2 UC headers, press Enter on one and it sends 8 ajax requests.
-
 * [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
 * [S.1.1] [DEMO] Show flow deletion in flow demo.
