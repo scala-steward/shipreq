@@ -9,15 +9,17 @@ FEATURE TODO
 FUNC TODO
 =========
 
-* [S.4.2] Allow step reordering, probably via drag-n-drop.
-* [S.3.0] Keyboard shortcuts for step editing (ie. nav & indent)
-* [S.1.3] Text field values shouldn't lose audit trail when text is cleared.
-* [S.1.2] Flow parsing fails both sides if either side has an error.
-* [S.1.2] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
+* [S.4.4] [UCE ] Keyboard shortcuts for step editing (ie. nav & indent)
+* [S.3.2] [UCE ] New UCs should have the normal course head set to the UC title.
+* [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
+* [S.1.3] [UCE ] Text field values shouldn't lose audit trail when text is cleared.
+* [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
+* [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 
-* [C.3.3] Support in-place DB updating (ie. no history disabled)
-* [C.1.1] View step references. (Eg. Who has refs to 1.0.4?)
-* [C.1.0] While typing, click on step/label to insert a reference.
+* [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
+* [C.3.3] [UCE ] Support in-place DB updating (ie. no history disabled)
+* [C.1.1] [UCE ] View step references. (Eg. Who has refs to 1.0.4?)
+* [C.1.0] [UCE ] While typing, click on step/label to insert a reference.
 
 
 TECH TODO
@@ -26,10 +28,10 @@ TECH TODO
 * [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
 * [S.1.1] [DEMO] Show flow deletion in flow demo.
-* [S.1.1] [FAIL] Ajax 428 error message was 428.
 * [S.0.5] [SAFE] Thread-safety of SmartText (and possibly Field) is a worry.
 * [S.0.5] [FAIL] When converting LoadCtx into a SaveCtx, fieldValues isn't being converted. (Will affect in-place loading.)
 * [S.0.4] [FAIL] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
+* [S.0.1] [SAFE] PUT /api/usecase/ID should acquire write-lock earlier.
 
 * [C.2.0] [PERF] DAO should cache certain actions and execute in bulk.
 * [C.1.1] [TEST] Remove UseCaseCtx.init().
