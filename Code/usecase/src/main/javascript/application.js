@@ -72,18 +72,32 @@ function enterSubmitsFormHandler(e) {
     }
 }
 
+DomEnhancements = [
+    {css: "abbr.timeago",      fn: function(x){ x.timeago() }},
+    {css: "textarea",          fn: function(x){ x.autosize() }},
+    {css: ".enterSubmitsForm", fn: function(x){ x.keypress(enterSubmitsFormHandler) }}
+];
+
+// Apply DomEnhancements via LiveQuery
+for (var i = 0; i < DomEnhancements.length; i++) {
+    var e = DomEnhancements[i]
+    // console.debug("Registering LQ: "+ e.css)
+    $(e.css).livequery(function (ee) {
+        return function () {
+            // console.debug("LQ calling: "+ ee.css)
+            ee.fn($(this))
+        }
+    }(e))
+}
+
+// Provide JQuery fns to apply DomEnhancements
+function enhanceDom() { $(document).enhanceDom() }
 (function ($) {
     $.fn.enhanceDom = function () {
-        this.find("abbr.timeago").timeago();
-        this.find('textarea').autosize();
-        this.find('.enterSubmitsForm').keypress(enterSubmitsFormHandler);
+        for (var i=0; i < DomEnhancements.length; i++) {
+            var e = DomEnhancements[i]
+            e.fn(this.find(e.css))
+        }
         return this;
     };
 }(jQuery));
-function enhanceDom() { $(document).enhanceDom() }
-
-$(document).ready(function () {
-    $("abbr.timeago").livequery(function(){ $(this).timeago() });
-    $('textarea').livequery(function(){ $(this).autosize() });
-    $('.enterSubmitsForm').livequery(function(){ $(this).keypress(enterSubmitsFormHandler) });
-});
