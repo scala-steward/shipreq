@@ -10,7 +10,6 @@ function UseCaseSummary(uc) {
     m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.valueEid), function(result) {
         var n = UseCaseSummary(result)
         VM.useCases.replace(m,n)
-        $(document).enhanceDom()
     })
 
     m.viewUrl = urls.viewUseCase(uc.dataEid)
@@ -25,13 +24,11 @@ function UCIViewModel(ucs) {
 
 $(document).ready(function() {
     ko.applyBindings(VM)
-    $(document).enhanceDom()
 });
 
 $(document).on('new-uc', function(event, data) {
     var m = UseCaseSummary(data)
     m.editMode(true)
     VM.useCases.push(m)
-    $(document).enhanceDom();
     m.enterEditMode()
 });

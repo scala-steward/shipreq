@@ -6,6 +6,7 @@
 // require "vendor/jquery-autosize.js"
 // require "vendor/jquery-timeago.js"
 // require "vendor/jquery-serializeObject.js"
+// require "vendor/jquery-livequery.js"
 
 var apiUrls = new function() {
     this.updateUseCaseHeader = function(id){ return {url: "/api/usecase/"+id, type: 'PUT' }}
@@ -79,7 +80,10 @@ function enterSubmitsFormHandler(e) {
         return this;
     };
 }(jQuery));
+function enhanceDom() { $(document).enhanceDom() }
 
 $(document).ready(function () {
-    $(document).enhanceDom();
+    $("abbr.timeago").livequery(function(){ $(this).timeago() });
+    $('textarea').livequery(function(){ $(this).autosize() });
+    $('.enterSubmitsForm').livequery(function(){ $(this).keypress(enterSubmitsFormHandler) });
 });

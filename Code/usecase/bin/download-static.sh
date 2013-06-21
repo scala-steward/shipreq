@@ -24,3 +24,8 @@ v=2.0.2
 echo "Downloading v$v of jquery.serializeObject.js -- http://plugins.jquery.com/serializeObject/"
 curl -s https://raw.github.com/hongymagic/jQuery.serializeObject/$v/jquery.serializeObject.js -o src/main/javascript/vendor/jquery-serializeObject.js
 echo $?
+
+v=1.3.4
+echo "Downloading v$v of jquery.liveQuery.js -- http://plugins.jquery.com/livequery/"
+curl -s https://raw.github.com/hazzik/livequery/$v/jquery.livequery.min.js -o src/main/javascript/vendor/jquery-livequery.js
+echo $?

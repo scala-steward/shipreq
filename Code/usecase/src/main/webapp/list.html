@@ -28,7 +28,7 @@
 			</div>
 
 			<div class="some_ucs" data-bind="if: populated">
-				<div class="uc_list" data-bind="foreach: useCases">
+				<div class="uc_list" data-bind="foreach: {data: useCases, afterAdd: enhanceDom }">
 
 					<div class="uc" data-bind="visible: !$data.editMode()">
 						<div class="ctls">

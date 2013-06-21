@@ -103,9 +103,6 @@ object JsExt {
   def FadeOutThen(idExpr: JsExp, duration: JqDurationExpr = DefaultDuration)(onComplete: JsExp => JsCmd): JsCmd =
     JsCmds.Run(s"${idExpr.toJsCmd}.fadeOut(${duration.asOptionalNonLastArg}function(){${onComplete(idExpr).toJsCmd}});")
 
-  /** Custom function added in common.js. Used to enrich new DOM with features. */
-  object EnhanceDom extends JsExp with JsMember {override val toJsCmd = "enhanceDom()"}
-
   /** Gives an element keyboard focus. */
   object JqFocus extends JsExp with JsMember {override val toJsCmd = "focus()"}
 
