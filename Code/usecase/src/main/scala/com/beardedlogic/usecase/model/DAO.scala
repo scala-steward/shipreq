@@ -31,7 +31,8 @@ class DAO(_session: Session)
           with FieldListAccessor
           with StepAccessor
           with UseCaseAccessor
-          with RelationAccessor {
+          with RelationAccessor
+          with UserAccessor {
 
   override implicit val db = _session
 
