@@ -8,6 +8,14 @@ abbr.timeago[title] {
   border-bottom: none !important
 }
 
+#notices {
+  margin: 1cm auto 1cm auto;
+  width: 550px;
+  padding: 1.5ex;
+  border: solid 1px black;
+  text-align: center;
+}
+
 #login {
   width: 260px;
   margin-left: auto;
@@ -32,3 +40,4 @@ abbr.timeago[title] {
     margin-top: 1em
   }
 }
+
