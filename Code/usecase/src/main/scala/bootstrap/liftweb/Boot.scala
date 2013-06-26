@@ -1,12 +1,12 @@
 package bootstrap.liftweb
 
 import net.liftweb.http._
-import net.liftweb.sitemap.{ Menu, SiteMap }
 import com.beardedlogic.usecase._
-import lib.db.DB
 import lib.{ExternalIdStr, Misc, Defaults}
+import lib.db.DB
+import lib.security.Oshiro
 import api.UseCaseApi
-import com.beardedlogic.usecase.snippet.UCEditor
+import snippet.UCEditor
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -19,20 +19,19 @@ class Boot {
   }
 
   def configureLift() {
+
     Misc.ensureTestModeDuringTests()
+
+    Oshiro.init()
 
     // App package path
     LiftRules.addToPackages("com.beardedlogic.usecase")
-
-    // Build SiteMap
-    def sitemap(): SiteMap = SiteMap(
-      Menu.i("Home") / "index"
-    )
 
     // Register APIs
     LiftRules.statelessDispatch.append(UseCaseApi)
 
     // Routing
+    // TODO should be done via sitemap
     LiftRules.statelessRewrite.append {
       case RewriteRequest(ParsePath("usecase" :: ExternalIdStr(id) :: Nil, "", true, false), GetRequest, _) =>
         RewriteResponse("uce" :: Nil, Map(UCEditor.ParamId -> id))

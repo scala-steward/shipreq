@@ -1,10 +1,9 @@
 package com.beardedlogic.usecase.lib.security
 
 import org.apache.shiro.SecurityUtils
-import org.apache.shiro.authc.credential.HashedCredentialsMatcher
+import org.apache.shiro.config.IniSecurityManagerFactory
 import org.apache.shiro.crypto.SecureRandomNumberGenerator
-import org.apache.shiro.crypto.hash.{SimpleHash, Sha512Hash}
-import org.apache.shiro.mgt.DefaultSecurityManager
+import org.apache.shiro.crypto.hash.SimpleHash
 import org.apache.shiro.util.ByteSource
 
 /**
@@ -12,21 +11,17 @@ import org.apache.shiro.util.ByteSource
  */
 object Oshiro {
 
-  val HashingAlgorithm = Sha512Hash.ALGORITHM_NAME
-  val HashingIterations = 1007
+  private val factory = new IniSecurityManagerFactory("classpath:shiro.ini")
+  private val ini = factory.getIni
 
-  val RNG = new SecureRandomNumberGenerator()
+  final val HashingAlgorithm = ini.getSection("main").get("cm.hashAlgorithmName")
+  final val HashingIterations = ini.getSection("main").get("cm.hashIterations").toInt
+
+  final val RNG = new SecureRandomNumberGenerator()
 
   def init() {
-    val CredentialsManager = new HashedCredentialsMatcher(HashingAlgorithm)
-    CredentialsManager.setHashIterations(HashingIterations)
-    CredentialsManager.setStoredCredentialsHexEncoded(false)
-
-    val Realm = new AppSecurityRealm
-    Realm.setCredentialsMatcher(CredentialsManager)
-
-    val SecurityManager = new DefaultSecurityManager(Realm)
-    SecurityUtils.setSecurityManager(SecurityManager)
+    val securityManager = factory.getInstance
+    SecurityUtils.setSecurityManager(securityManager)
   }
 
   def hash(password: String, salt: ByteSource) = new SimpleHash(HashingAlgorithm, password, salt, HashingIterations)
