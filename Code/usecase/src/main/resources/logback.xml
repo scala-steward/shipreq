@@ -27,6 +27,7 @@
         </filter>
     </appender>
 
+    <logger name="org.apache.commons" level="WARN" />
     <logger name="scala.slick.compiler" level="WARN" />
     <logger name="scala.slick.session" level="DEBUG" />
     <logger name="com.beardedlogic" level="DEBUG" />
