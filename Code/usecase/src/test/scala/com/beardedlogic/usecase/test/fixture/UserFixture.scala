@@ -4,13 +4,18 @@ package test.fixture
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
 import lib.db.DB
-import lib.security.Oshiro
+import lib.security.PasswordAndSalt
 import test.TestDatabaseSupport
+import com.beardedlogic.usecase.model.UserDescriptor
 
 trait UserFixture {
 
   case class TestUser(username: String, email: String, password: String) {
-    val (hashedPassword, salt) = Oshiro.hashWithRandomSalt(password)
+    var id = 0L
+    val pws = PasswordAndSalt.hashWithRandomSalt(password)
+    def hashedPassword = pws.hashedPassword
+    def salt = pws.salt
+    def toUserDescriptor = UserDescriptor(id, username, email)
   }
 
   case class PendingTestUser(email: String, token: String)
@@ -29,8 +34,8 @@ trait UserFixture {
 
   def initUserFixture(db: Session) {
     // Insert mock users (registered)
-    val i1 = Q.update[(String, String, String, String)]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,NOW(),NOW(),NOW())")
-    users.foreach(u => i1.execute(u.username, u.email, u.hashedPassword, u.salt)(db))
+    val i1 = Q.query[(String, String, String, String), Int]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,NOW(),NOW(),NOW()) RETURNING id")
+    for (u <- users) u.id = i1.first(u.username, u.email, u.hashedPassword, u.salt)(db)
 
     // Insert mock users (pending confirmation)
     val i2 = Q.update[(String, String)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")

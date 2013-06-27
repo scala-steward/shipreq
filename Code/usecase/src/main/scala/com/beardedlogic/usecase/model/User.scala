@@ -1,26 +1,39 @@
-package com.beardedlogic.usecase.model
+package com.beardedlogic.usecase
+package model
 
+import scala.slick.jdbc.{StaticQuery => Q, GetResult}
+import lib.security.PasswordAndSalt
 import UserAccessor._
-import scala.slick.jdbc.{StaticQuery => Q}
+
+case class UserDescriptor(
+  id: Long,
+  username: String,
+  email: String)
 
 /**
  * @since 26/06/2013
  */
 object UserAccessor {
 
-  val GetPasswordAndSaltByUsername = Q.query[String, (String, String)]("SELECT password, password_salt FROM usr WHERE username=?")
-  val GetPasswordAndSaltByEmail = Q.query[String, (String, String)]("SELECT password, password_salt FROM usr WHERE email=? AND password IS NOT NULL")
+  implicit val GetResultUserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
+  implicit val GetResultPasswordAndSalt = GetResult(r => PasswordAndSalt(r.nextString, r.nextString))
+
+  val UserDescCols = "id,username,email"
+  val PwdAndSaltCols = "password, password_salt"
+
+  val GetDescAndCredentialsByUsername = Q.query[String, (UserDescriptor, PasswordAndSalt)](s"SELECT $UserDescCols,$PwdAndSaltCols FROM usr WHERE username=?")
+  val GetDescAndCredentialsByEmail = Q.query[String, (UserDescriptor, PasswordAndSalt)](s"SELECT $UserDescCols,$PwdAndSaltCols FROM usr WHERE email=? AND password IS NOT NULL")
 }
 
 trait UserAccessor extends DatabaseAccessor {
 
-  def findUserPasswordAndSalt(usernameOrEmail: String) =
+  def findUserDescAndCredentials(usernameOrEmail: String): Option[(UserDescriptor, PasswordAndSalt)] =
     if (usernameOrEmail.indexOf('@') == -1)
-      findUserPasswordAndSaltByUsername(usernameOrEmail)
+      findUserDescAndCredentialsByUsername(usernameOrEmail)
     else
-      findUserPasswordAndSaltByEmail(usernameOrEmail)
+      findUserDescAndCredentialsByEmail(usernameOrEmail)
 
-  def findUserPasswordAndSaltByUsername(username: String): Option[(String, String)] = GetPasswordAndSaltByUsername.firstOption(username)
+  def findUserDescAndCredentialsByUsername(username: String) = GetDescAndCredentialsByUsername.firstOption(username)
 
-  def findUserPasswordAndSaltByEmail(email: String): Option[(String, String)] = GetPasswordAndSaltByEmail.firstOption(email)
+  def findUserDescAndCredentialsByEmail(email: String) = GetDescAndCredentialsByEmail.firstOption(email)
 }

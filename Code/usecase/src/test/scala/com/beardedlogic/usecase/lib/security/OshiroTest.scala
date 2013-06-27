@@ -6,6 +6,7 @@ import org.apache.shiro.authc._
 import org.scalatest.{BeforeAndAfterAll, FunSpec}
 import test.TestDatabaseSupport
 import test.fixture.UserFixture
+import com.beardedlogic.usecase.model.UserDescriptor
 
 class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll with UserFixture {
 
@@ -16,11 +17,13 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
     initUserFixture()
   }
 
-  describe("Authentication") {
-    def login(username: String, password: String) {
-      SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password))
-    }
+  def subject = SecurityUtils.getSubject
 
+  def login(username: String, password: String) {
+    subject.login(new UsernamePasswordToken(username, password))
+  }
+
+  describe("Authentication") {
     it("should allow users by username") {
       login(user1.username, user1.password)
     }
@@ -39,6 +42,18 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
 
     it("should deny when user hasnt completed registration") {
       intercept[UnknownAccountException](login(pendingUser1.email, ""))
+    }
+  }
+
+  describe("loggedInUser") {
+    it("should return None when no user logged in") {
+      subject.logout
+      Oshiro.loggedInUser should be(None)
+    }
+
+    it("should return user details when logged in") {
+      login(user1.username, user1.password)
+      Oshiro.loggedInUser should be(Some(user1.toUserDescriptor))
     }
   }
 }
