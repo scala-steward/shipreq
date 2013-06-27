@@ -69,7 +69,7 @@ class ScamlJadeRenderer extends TemplateEngine with Loggable {
   def realPath(uri: String): String = {
     LiftRules.context match {
       case http: HTTPServletContext => http.ctx.getRealPath(uri)
-      case c => logger.warn("Do not know how to get the real path of: " + uri + " for context: " + c); uri
+      case c => uri //logger.warn("Do not know how to get the real path of: " + uri + " for context: " + c); uri
     }
   }
 
