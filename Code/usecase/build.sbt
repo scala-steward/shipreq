@@ -14,7 +14,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:postf
 scalacOptions in Test ++= Seq("-language:reflectiveCalls")
 
 libraryDependencies ++= {
-  val liftVersion = "2.5-golly-1"
+  val liftVersion = "2.5.1-golly-2"
   val shiroVersion = "1.2.2"
   Seq(
     "net.liftweb"              %% "lift-webkit"            % liftVersion,
