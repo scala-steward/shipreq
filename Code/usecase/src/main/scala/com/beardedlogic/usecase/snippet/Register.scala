@@ -23,7 +23,7 @@ class Register1 extends StatefulSnippet with SnippetHelpers {
   var emailInput = ""
 
   def render = (
-    "#email" #> SHtml.text(emailInput, emailInput = _, "id" -> "email")
+    "#email" #> SHtml.onSubmit(emailInput = _)
       // & "form *+" #> SHtml.hidden(jsCallback(onSubmit(_)))
       & ":submit" #> SHtml.ajaxSubmit("Create Account", jsCallback(onSubmit(_)))
     )
