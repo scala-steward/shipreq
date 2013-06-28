@@ -1,11 +1,13 @@
 Getting Started
 ===============
 
-* Generate Eclipse files
-    sbt eclipse
+### Building
 
-* Generate IDEA files
-    sbt gen-idea
+* Building local fork of Lift.
+    Check out git@github.com:japgolly/framework.git or git://github.com/japgolly/framework.git somewhere.
+    ./golly
+
+### Database
 
 * Install PostgreSQL
     sudo pacman -Sy --needed postgresql
@@ -27,9 +29,13 @@ Getting Started
     sudo -u postgres psql < db-create-dev.sql
     sudo -u postgres psql < db-create-test.sql
 
-* Building local fork of Lift.
-    Check out git@github.com:japgolly/framework.git or git://github.com/japgolly/framework.git somewhere.
-    ./golly
+### IDE
+
+* Generate Eclipse files
+    sbt eclipse
+
+* Generate IDEA files
+    sbt gen-idea
 
 Running and Developing
 ======================
