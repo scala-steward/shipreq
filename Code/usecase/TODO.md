@@ -18,6 +18,7 @@ FUNC TODO
 
 * [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
 * [C.3.3] [UCE ] Support in-place DB updating (ie. no history disabled)
+* [C.2.1] [ACCT] Add JS email corrector/validator like mailcheck.js.
 * [C.1.1] [UCE ] View step references. (Eg. Who has refs to 1.0.4?)
 * [C.1.0] [UCE ] While typing, click on step/label to insert a reference.
 
