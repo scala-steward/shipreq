@@ -12,8 +12,14 @@ object AppConfig {
   /** Number of characters in tokens used for email & reset-password verification. */
   final val ConfirmationTokenLength = 49
 
-  val MailFromAddress = Props.get("mail.from").openOrThrowException("Property not specified: mail.from")
+  final val MailFromAddress = Props.get("mail.from").openOrThrowException("Property not specified: mail.from")
+
+  /** Passwords' min & max lengths. */
+  final val PasswordLength = 8 to 128
 
   /** How long confirmation tokens are valid for after issuing. */
   final val TokenLifespan = 3 days
+
+  /** Usernames' min & max lengths. */
+  final val UsernameLength = 3 to 32
 }

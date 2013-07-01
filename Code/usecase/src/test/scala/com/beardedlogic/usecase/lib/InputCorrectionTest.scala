@@ -12,4 +12,10 @@ class InputCorrectionTest extends FunSpec with ShouldMatchers with Misc {
       email(" he  he ") should be("hehe")
     }
   }
+
+  describe("#username") {
+    it("should trim & make lowercase") {
+      username(" Hehe ") should be("hehe")
+    }
+  }
 }

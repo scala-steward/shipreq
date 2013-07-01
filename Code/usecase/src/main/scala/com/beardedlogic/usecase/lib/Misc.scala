@@ -32,4 +32,6 @@ trait Misc {
   def randomConfirmationToken = randomString(ConfirmationTokenLength)
 
   def randomString(length: Int): String = RNG.alphanumeric.take(length).mkString
+
+  def removeAllWhitespace(input: String) = WhitespaceRegex.replaceAllIn(input, "")
 }

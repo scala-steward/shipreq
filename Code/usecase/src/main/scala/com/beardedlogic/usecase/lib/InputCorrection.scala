@@ -11,7 +11,11 @@ object InputCorrection {
 
   def correct(uc: UseCase) = uc.copy(title = useCaseTitle(uc.title))
 
-  def email(email: String) = WhitespaceRegex.replaceAllIn(email, "")
+  def email(input: String) = removeAllWhitespace(input)
+
+  def password(input: String) = input
+
+  def username(input: String) = input.trim.toLowerCase
 
   def useCaseTitle(title: String) = {
     var t = normaliseWhitespaceInSingleLineString(title)

@@ -30,19 +30,19 @@ class Register1 extends SingleOpStatefulSnippet {
 
   def onSubmit(implicit reactor: Reactor) {
     val email = InputCorrection.email(emailInput)
-    if (!Validate.email(email)) {
-      error("Please enter a valid email address.")
-    } else {
-      val mail: Mail = daoProvider.withTransaction(dao =>
-        dao.findUserRegistrationInfo(email) match {
-          case None => onNewUser(email, dao)
-          case Some(UserRegistrationInfo(_, _, _, Some(_))) => onAlreadyRegistered()
-          case Some(UserRegistrationInfo(_, Some(token), Some(issued), _)) if !isConfirmationTokenExpired_?(issued) => onTokenReusable(token)
-          case Some(UserRegistrationInfo(id, _, _, _)) => onTokenExpired(id, dao)
-        }
-      )
-      reactor(JavaScript)(JqExpr("#emailSent,#register1Form") ~> JqToggle)
-      sendMail(mail, To(email))
+    Validate.email(email) match {
+      case Some(errmsg) => error(errmsg)
+      case None =>
+        val mail: Mail = daoProvider.withTransaction(dao =>
+          dao.findUserRegistrationInfo(email) match {
+            case None => onNewUser(email, dao)
+            case Some(UserRegistrationInfo(_, _, _, Some(_))) => onAlreadyRegistered()
+            case Some(UserRegistrationInfo(_, Some(token), Some(issued), _)) if !isConfirmationTokenExpired_?(issued) => onTokenReusable(token)
+            case Some(UserRegistrationInfo(id, _, _, _)) => onTokenExpired(id, dao)
+          }
+        )
+        reactor(JavaScript)(JqExpr("#emailSent,#register1Form") ~> JqToggle)
+        sendMail(mail, To(email))
     }
   }
 

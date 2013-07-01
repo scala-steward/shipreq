@@ -48,7 +48,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
   describe("Register1.onSubmit") {
     it("when email is invalid -- should reject request") {
       new Reg1Tester().submit("not_an_email", 0)
-      .assertJsAlert(Some("valid email"))
+      .assertJsAlert(Some("Email"))
       .assertEmail(None)
     }
 
