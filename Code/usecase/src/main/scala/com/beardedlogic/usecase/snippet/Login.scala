@@ -5,6 +5,7 @@ import net.liftweb.http.{S, StatefulSnippet, SHtml}
 import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc._
+import app.AppSiteMap
 import lib.SnippetHelpers
 import model.DAO
 
@@ -45,6 +46,6 @@ class Login extends StatefulSnippet with SnippetHelpers {
 
   def onSuccessfulLogin() {
     DAO.withSession(_.updateUserOnLogin(loggedInUser.get.id, clientIp_Or_?))
-    S.redirectTo("/")
+    S.redirectTo(AppSiteMap.HomeRelativeUrl)
   }
 }

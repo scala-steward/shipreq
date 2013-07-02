@@ -6,10 +6,18 @@ import net.liftweb.sitemap.Loc._
 import com.beardedlogic.usecase.model.{UseCaseSummary, UseCase}
 import com.beardedlogic.usecase.lib.ExternalId
 import AppConfig.BaseUrl
+import net.liftweb.http.{RedirectResponse, LiftResponse}
+import org.apache.shiro.SecurityUtils
 
 object AppSiteMap {
 
+  val HomeRelativeUrl = "/"
+
+  val Home = Menu.i("Home") / "index"
+
   val Login = Menu.i("Login") / "login"
+
+  val Logout = Menu.i("Logout") / "logout" >> EarlyResponse(logout)
 
   val Register1 = Menu(Loc("Register1", List("register"), "Register"))
 
@@ -19,7 +27,14 @@ object AppSiteMap {
 
   val UseCaseEditor = Menu.i("Use Case Editor") / "uce"
 
-  val sitemap = SiteMap(Login, Register1, Register2, UseCaseIndex, UseCaseEditor)
+  // -------------------------------------------------------------------------------------------------------------------
+
+  val sitemap = SiteMap(Home, Login, Logout, Register1, Register2, UseCaseIndex, UseCaseEditor)
+
+  def logout(): Box[LiftResponse] = {
+    SecurityUtils.getSubject.logout()
+    Full(RedirectResponse(HomeRelativeUrl))
+  }
 
   object Urls {
     // TODO viewUseCase() should be UseCaseEditor() and should use a Loc
@@ -36,7 +51,8 @@ object AppSiteMap {
     }
 
     implicit class MenuableExt(val menu: Menu.Menuable) extends AnyVal {
-      def relativeUrl: String = menu.loc.calcDefaultHref
+      // TODO Gross hack for Home -> / instead of /index
+      def relativeUrl: String = if (menu == Home) "/" else menu.loc.calcDefaultHref
       def absoluteUrl: String = BaseUrl + relativeUrl
     }
 
