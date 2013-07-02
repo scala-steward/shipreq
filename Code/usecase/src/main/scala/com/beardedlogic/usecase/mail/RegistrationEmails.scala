@@ -18,7 +18,7 @@ object RegistrationEmails {
 Your email address has been used to register a $AppName account.
 
 To continue your registration, simply click on the following link:
-$BaseUrl${Urls.completeRegistration(token)}
+$BaseUrl${Register2.calcHref(token)}
 
 If you were not expecting this message, please ignore and delete it.
 
