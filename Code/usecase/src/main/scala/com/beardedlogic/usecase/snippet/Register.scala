@@ -35,7 +35,7 @@ class Register1 extends SingleOpStatefulSnippet {
   def onSubmit(implicit reactor: Reactor) {
     val email = InputCorrection.email(emailInput)
     Validate.email(email) match {
-      case Some(errmsg) => error(errmsg)
+      case Some(errmsg) => reactWithError(errmsg)
       case None =>
         val mail: Mail = daoProvider.withTransaction(dao =>
           dao.findUserRegistrationInfo(email) match {
@@ -48,10 +48,6 @@ class Register1 extends SingleOpStatefulSnippet {
         reactor(JavaScript)(JqExpr("#emailSent,#register1Form") ~> JqToggle)
         sendMail(mail, To(email))
     }
-  }
-
-  private def error(errMsg: String)(implicit reactor: Reactor) {
-    reactor(JavaScript)(JsCmds.Alert(errMsg))
   }
 
   private def onNewUser(email: String, dao: DAO): Mail = {
@@ -113,13 +109,13 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
     ).filter(_.isDefined).map(_.get)
 
     if (failures.nonEmpty)
-      error(failures.mkString("\n"))
+      reactWithError(failures)
     else {
       // Update user
       val ps = PasswordAndSalt.hashWithRandomSalt(password1)
       daoProvider.withSession(_.registerUser(token)(username, ps, clientIp_Or_?)) match {
-        case ConstraintViolation => error("Username is already taken.")
-        case NothingUpdated => error("Username is already taken.")
+        case ConstraintViolation => reactWithError("Username is already taken.")
+        case NothingUpdated => reactWithError("Username is already taken.")
         case Success(_,_) =>
           // Login on success
           SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password1))
@@ -128,7 +124,4 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
     }
   }
 
-  private def error(errMsg: String)(implicit reactor: Reactor) {
-    reactor(JavaScript)(JsCmds.Alert(errMsg))
-  }
 }
