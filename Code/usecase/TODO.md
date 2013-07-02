@@ -29,6 +29,7 @@ FUNC TODO
 TECH TODO
 =========
 
+* [S.3.5] [PERF] Add proper DB indexes.
 * [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
 * [S.1.1] [DEMO] Show flow deletion in flow demo.
