@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.lib.msg
 
+// TODO WTF is Reactor et al doing in .msg?
 /**
  * Interface through which message handlers provide reactions to messages.
  */

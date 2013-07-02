@@ -9,6 +9,8 @@ FEATURE TODO
 FUNC TODO
 =========
 
+* [M.1.5] [LEGL] Add terms of service.
+
 * [S.4.4] [UCE ] Keyboard shortcuts for step editing (ie. nav & indent)
 * [S.3.2] [UCE ] New UCs should have the normal course head set to the UC title.
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
@@ -17,6 +19,7 @@ FUNC TODO
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 
 * [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
+* [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).
 * [C.3.3] [UCE ] Support in-place DB updating (ie. no history disabled)
 * [C.2.1] [ACCT] Add JS email corrector/validator like mailcheck.js.
 * [C.1.1] [UCE ] View step references. (Eg. Who has refs to 1.0.4?)
