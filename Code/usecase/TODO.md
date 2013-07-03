@@ -14,9 +14,11 @@ FUNC TODO
 * [S.4.4] [UCE ] Keyboard shortcuts for step editing (ie. nav & indent)
 * [S.3.2] [UCE ] New UCs should have the normal course head set to the UC title.
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
+* [S.2.1] [ACCT] Change username & password (when logged in).
 * [S.1.3] [UCE ] Text field values shouldn't lose audit trail when text is cleared.
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
+* [S.0.5] [ACCT] Password reset (when not logged in).
 
 * [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
 * [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).
