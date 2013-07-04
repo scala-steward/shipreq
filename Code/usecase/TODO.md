@@ -34,6 +34,7 @@ TECH TODO
 * [S.3.5] [PERF] Add proper DB indexes.
 * [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
+* [S.1.3] [PERF] Shiro caching.
 * [S.1.1] [DEMO] Show flow deletion in flow demo.
 * [S.0.5] [SAFE] Thread-safety of SmartText (and possibly Field) is a worry.
 * [S.0.5] [FAIL] When converting LoadCtx into a SaveCtx, fieldValues isn't being converted. (Will affect in-place loading.)
