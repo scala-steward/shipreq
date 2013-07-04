@@ -2,9 +2,9 @@ package com.beardedlogic.usecase
 package snippet
 
 import org.scalatest.FunSpec
-import lib.NoReaction
 import model.UseCaseSummary
 import test.TestDatabaseSupport
+import com.beardedlogic.usecase.util.NoReaction
 
 class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport {
 

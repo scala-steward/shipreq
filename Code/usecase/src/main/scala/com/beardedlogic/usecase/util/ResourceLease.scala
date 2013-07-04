@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
 trait ResourceLeaseFunctor[Resource] {
   protected def exec[T](f: Resource => T): T

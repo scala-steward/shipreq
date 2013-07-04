@@ -9,6 +9,7 @@ import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.strToCssBindPromoter
 import scala.xml._
 
+import util._
 import HtmlTransformExt._
 import JsExt._
 import tree.TreeOps._
@@ -18,6 +19,7 @@ import Messages.StepChangeMsg
 import model._
 import FieldValue.FieldValueData
 import StepLabels.{MaxStepsPerLevel, MaxStepDepth}
+
 
 object CourseFields {
   import TemplateCache._

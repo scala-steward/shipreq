@@ -4,6 +4,7 @@ package field
 
 import model.{FieldKey, FieldKeyType}
 import CourseFields._
+import com.beardedlogic.usecase.util.TemplateCache
 
 object ExceptionCourseFields extends FieldDef[CourseFieldState] {
   import TemplateCache._

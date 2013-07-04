@@ -4,6 +4,7 @@ package lib
 import field.{NormalAndAlternateCourseFields => NCAC, ExceptionCourseFields => EC, _}
 import model._
 import TypeTags._
+import util.{MessageCentre, CachedFunction, BiMap}
 
 // TODO Remove cometActor from UseCaseCtx
 class UseCaseCtx(val cometActor: AnyRef = null) {

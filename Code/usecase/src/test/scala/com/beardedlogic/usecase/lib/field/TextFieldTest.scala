@@ -7,6 +7,7 @@ import org.mockito.Mockito._
 import model._
 import TypeTags._
 import test.TestHelpers
+import com.beardedlogic.usecase.util.{NoReaction, CachedFunction, BiMap}
 
 class TextFieldTest extends FunSpec with TestHelpers {
 

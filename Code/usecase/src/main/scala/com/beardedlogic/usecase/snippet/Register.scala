@@ -15,6 +15,7 @@ import mail.RegistrationEmails
 import model.DbOpResult.{NothingUpdated, ConstraintViolation, Success}
 import model.{DAO, UserRegistrationInfo}
 import security.PasswordAndSalt
+import util.{JsExt, Reactor, JavaScript}
 import JsExt._
 
 /**

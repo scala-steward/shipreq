@@ -3,6 +3,7 @@ package lib
 package db
 
 import model.DAO
+import util.{ResourceLeaseMonadL, ResourceLeaseMonadR, ResourceLeaseMonad1}
 
 trait DaoProvider {
 

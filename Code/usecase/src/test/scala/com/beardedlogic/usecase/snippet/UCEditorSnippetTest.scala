@@ -4,8 +4,8 @@ package snippet
 import org.scalatest.FunSpec
 import test.{LiveTestHelpers, LiveTest}
 import app.AppSiteMap.Urls
-import lib.NoReaction
 import LiveTestHelpers._
+import com.beardedlogic.usecase.util.NoReaction
 
 class UCEditorSnippetTest extends FunSpec with LiveTest {
 

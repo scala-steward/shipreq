@@ -11,6 +11,7 @@ import net.liftweb.util.{CssSel, ClearClearable}
 import lib._
 import model.DAO
 import model.UseCaseSummary
+import com.beardedlogic.usecase.util.{Reactor, JavaScript}
 
 object UseCaseIndex extends SnippetHelpers {
 

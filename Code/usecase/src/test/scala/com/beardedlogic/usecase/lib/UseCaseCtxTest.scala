@@ -11,6 +11,7 @@ import TestHelpers._
 import field._
 import TypeTags._
 import model._
+import com.beardedlogic.usecase.util.NoReaction
 
 class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 

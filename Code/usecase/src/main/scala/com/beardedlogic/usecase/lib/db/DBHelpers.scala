@@ -2,9 +2,9 @@ package com.beardedlogic.usecase
 package lib.db
 
 import scala.slick.jdbc.GetResult
-import lib.EnumValue
 import java.sql.Timestamp
 import org.joda.time.DateTime
+import com.beardedlogic.usecase.util.EnumValue
 
 object DBHelpers {
   import model._

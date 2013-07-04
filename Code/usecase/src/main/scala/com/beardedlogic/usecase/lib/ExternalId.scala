@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import net.liftweb.common.{Full, Empty, Box}
+import com.beardedlogic.usecase.util.BaseX
 
 object ExternalId {
 

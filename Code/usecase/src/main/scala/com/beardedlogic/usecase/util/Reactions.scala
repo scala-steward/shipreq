@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
 /**
  * Interface through which message handlers provide reactions to messages.

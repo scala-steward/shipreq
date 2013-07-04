@@ -6,6 +6,7 @@ import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import TypeTags._
 import model.{FieldKey, FieldKeyType}
 import CourseFields._
+import com.beardedlogic.usecase.util.{NoReactionOrNewMessages, TemplateCache}
 
 object NormalAndAlternateCourseFields extends FieldDef[CourseFieldState] {
   import TemplateCache._

@@ -11,7 +11,9 @@ import net.liftweb.util.Helpers._
 import lib._
 import field.Field
 import model.DAO
+import com.beardedlogic.usecase.util.{JsExt, Reactor, JavaScript}
 import JsExt.JqExpr
+import com.beardedlogic.usecase.util.{Reactor, JavaScript}
 
 object UCEditor {
   final val ParamId = "id"

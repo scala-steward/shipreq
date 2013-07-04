@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
 import net.liftweb.http.{InMemoryResponse, HeaderDefaults, LiftResponse}
 

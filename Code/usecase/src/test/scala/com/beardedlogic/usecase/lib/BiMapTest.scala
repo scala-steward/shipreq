@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
+import com.beardedlogic.usecase.util.BiMapBuilder
 
 class BiMapTest extends FunSuite with ShouldMatchers {
 

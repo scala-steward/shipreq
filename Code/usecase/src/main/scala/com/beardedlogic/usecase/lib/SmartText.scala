@@ -9,9 +9,11 @@ import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers.nextFuncName
 import net.liftweb.common.Logger
 
+import com.beardedlogic.usecase.util._
 import JsExt._
 import Messages._
 import TypeTags._
+
 
 // =====================================================================================================================
 

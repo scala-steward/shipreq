@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
 /**
  * Improvement over Scala's enums.

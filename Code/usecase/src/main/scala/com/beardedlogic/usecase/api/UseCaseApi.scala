@@ -5,8 +5,9 @@ import net.liftweb.common.Logger
 import net.liftweb.http._
 import net.liftweb.http.rest.RestHelper
 import net.liftweb.json._
-import com.beardedlogic.usecase.lib.{Locks, ExternalId}
-import lib.HttpResponses.PreconditionRequiredResponse
+
+import lib.{Locks, ExternalId}
+import util.HttpResponses.PreconditionRequiredResponse
 import model._
 import model.DbOpResult._
 import ApiHelpers._

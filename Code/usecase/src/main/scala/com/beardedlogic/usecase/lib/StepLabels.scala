@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib
 
 import scala.collection.mutable.{ Map => MutableMap }
 import TypeTags._
+import com.beardedlogic.usecase.util.RomanNumeral
 
 /**
  * @since 2/05/2013

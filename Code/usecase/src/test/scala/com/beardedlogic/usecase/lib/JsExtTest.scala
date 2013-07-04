@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
+import com.beardedlogic.usecase.util.JsExt
 import JsExt._
 
 class JsExtTest extends FunSuite with ShouldMatchers {

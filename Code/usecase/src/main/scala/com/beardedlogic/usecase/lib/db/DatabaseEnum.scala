@@ -3,6 +3,7 @@ package db
 
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
+import com.beardedlogic.usecase.util.{EnumValue, Enum}
 
 /**
  * Enum with a corresponding database table.

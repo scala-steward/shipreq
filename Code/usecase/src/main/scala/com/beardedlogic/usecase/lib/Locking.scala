@@ -6,6 +6,7 @@ import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 import java.util.concurrent.{TimeoutException, TimeUnit}
 import net.liftweb.common.Logger
 import Locks._
+import com.beardedlogic.usecase.util.{ResourceLeaseMonadL, ResourceLeaseMonadR, ResourceLeaseMonad1}
 
 object Locks {
   /** R/W locks keyed by use case data id. */

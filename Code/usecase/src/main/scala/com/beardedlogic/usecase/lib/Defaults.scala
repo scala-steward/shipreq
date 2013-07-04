@@ -4,6 +4,7 @@ package lib
 import field._
 import model._
 import net.liftweb.common.Logger
+import util.CachedFunction
 
 /**
  * Data IDs below 100 are reserved and can be safely allocated here.

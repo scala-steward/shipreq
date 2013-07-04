@@ -13,6 +13,7 @@ import org.scalatest.prop._
 import TypeTags._
 import Messages._
 import test.TestHelpers
+import util._
 
 object SmartTextTest extends MockitoSugar {
 

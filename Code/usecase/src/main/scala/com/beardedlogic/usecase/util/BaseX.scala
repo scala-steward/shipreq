@@ -1,7 +1,7 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
-import java.math.BigInteger
 import BaseX._
+import java.math.BigInteger
 
 object BaseX {
   /** Full range of signed long values + 1 */

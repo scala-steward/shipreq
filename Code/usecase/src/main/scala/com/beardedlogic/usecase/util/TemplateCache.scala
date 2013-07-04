@@ -1,9 +1,9 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
-import scala.xml.NodeSeq
 import net.liftweb.http.Templates
 import net.liftweb.util.ClearClearable
 import net.liftweb.util.Helpers._
+import scala.xml.NodeSeq
 
 /**
  * Loads and caches HTML templates.

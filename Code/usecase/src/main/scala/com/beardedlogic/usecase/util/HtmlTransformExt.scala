@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib
+package com.beardedlogic.usecase.util
 
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.strToCssBindPromoter

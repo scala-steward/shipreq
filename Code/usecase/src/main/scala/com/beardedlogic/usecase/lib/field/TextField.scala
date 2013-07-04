@@ -7,6 +7,7 @@ import model._
 import TextField._
 import TypeTags._
 import FieldValue.FieldValueData
+import com.beardedlogic.usecase.util.TemplateCache
 
 /**
  * Text field definition.
