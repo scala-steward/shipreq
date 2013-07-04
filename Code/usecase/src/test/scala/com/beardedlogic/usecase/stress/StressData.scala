@@ -3,6 +3,9 @@ package stress
 
 import org.scalacheck.Gen
 import scala.slick.jdbc.{StaticQuery => Q}
+
+import lib.Misc
+import lib.security.PasswordAndSalt
 import model.DataType
 import test.TestDatabaseSupport
 import StressTestHelpers._
@@ -11,7 +14,7 @@ object StressData {
   System.setProperty("run.mode", "test")
   TestDatabaseSupport.init()
 
-  def create(dataRows: Int) {
+  def populateValue(dataRows: Int = 50000) {
 
     val dataType = Gen.frequency(
       (1, DataType.FieldKey),
@@ -45,6 +48,37 @@ object StressData {
         for (rev <- 1 to revs) {
           threadLocalQ2.execute(nextId.get, dataId, rev)
         }
+      }
+    }
+
+    println("Done.")
+    threadLocalDb.closeAll
+  }
+
+  def populateUser(pendingRows: Int = 10000, confirmedRows: Int = 100000) {
+
+    val tokens = Stream.continually(Misc.randomConfirmationToken)
+
+    val threadLocalDb = new ThreadLocalDb
+    val Q1 = threadLocalDb.query {Q.update[(Long, String, String)]("INSERT INTO usr(id, email, confirmation_token, confirmation_sent_at) VALUES(?,?,?,NOW())")}
+    val Q2 = threadLocalDb.query {Q.update[(Long, String, String, String, String)]("INSERT INTO usr(id, username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,?,NOW(),NOW(),NOW())")}
+
+    // Create unconfirmed users
+    time(s"Created $pendingRows unconfirmed users") {
+      val nextId = new IdWithProgress("Created %d unconfirmed users...")
+      for (token <- tokens.take(pendingRows).par) {
+        val id = nextId.get
+        Q1.execute(id, s"u.$id@stress.com", token)
+      }
+    }
+
+    // Create unconfirmed users
+    time(s"Created $confirmedRows confirmed users") {
+      val nextId = new IdWithProgress("Created %d confirmed users...", 100000 + pendingRows)
+      for (p <- tokens.take(confirmedRows).par) {
+        val id = nextId.get
+        val ps = PasswordAndSalt.hashWithRandomSalt(p)
+        Q2.execute(id, s"u$id", s"u.$id@stress.com", ps.hashedPassword, ps.salt)
       }
     }
 

@@ -12,10 +12,10 @@ CREATE TABLE usr (
   ,password                   VARCHAR
   ,password_salt              VARCHAR
   ,password_changed_at        TIMESTAMPTZ
-  ,confirmation_token         VARCHAR
+  ,confirmation_token         VARCHAR     UNIQUE
   ,confirmation_sent_at       TIMESTAMPTZ
   ,confirmed_at               TIMESTAMPTZ
-  ,reset_password_token       VARCHAR
+  ,reset_password_token       VARCHAR     UNIQUE
   ,reset_password_sent_at     TIMESTAMPTZ
   ,reset_password_req_count   INT         NOT NULL DEFAULT(0)
   ,login_count                INT         NOT NULL DEFAULT(0)
