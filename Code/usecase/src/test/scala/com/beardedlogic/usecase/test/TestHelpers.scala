@@ -16,7 +16,6 @@ import lib.tree._
 import lib.field._
 import TreeOps._
 import lib.TypeTags._
-import lib.msg._
 import model._
 
 /**

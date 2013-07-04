@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib.msg
+package com.beardedlogic.usecase.lib
 
 import net.liftweb.http.js.{JsCmds, JsCmd}
 

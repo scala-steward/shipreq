@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.lib.msg
+package com.beardedlogic.usecase.lib
 
 /** Listens and reacts to messages. */
 trait MessageListener {

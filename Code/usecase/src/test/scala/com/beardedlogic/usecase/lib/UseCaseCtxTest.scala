@@ -11,7 +11,6 @@ import TestHelpers._
 import field._
 import TypeTags._
 import model._
-import msg.NoReaction
 
 class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 

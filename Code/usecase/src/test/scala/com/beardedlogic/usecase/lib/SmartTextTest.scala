@@ -11,7 +11,6 @@ import org.scalatest.prop.Tables.Table
 import org.scalatest.prop._
 
 import TypeTags._
-import msg._
 import Messages._
 import test.TestHelpers
 

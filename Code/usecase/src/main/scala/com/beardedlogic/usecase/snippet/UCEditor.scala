@@ -11,7 +11,6 @@ import net.liftweb.util.Helpers._
 import lib._
 import field.Field
 import model.DAO
-import msg.{JavaScript, Reactor}
 import JsExt.JqExpr
 
 object UCEditor {

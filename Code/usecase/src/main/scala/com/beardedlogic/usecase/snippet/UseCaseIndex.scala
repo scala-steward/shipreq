@@ -9,7 +9,6 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{CssSel, ClearClearable}
 
 import lib._
-import msg.{JavaScript, Reactor}
 import model.DAO
 import model.UseCaseSummary
 

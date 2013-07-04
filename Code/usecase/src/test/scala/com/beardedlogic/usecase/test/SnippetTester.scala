@@ -1,7 +1,7 @@
-package com.beardedlogic.usecase.test
+package com.beardedlogic.usecase
+package test
 
-import com.beardedlogic.usecase.lib.SnippetHelpers
-import com.beardedlogic.usecase.lib.msg.JavaScriptReaction
+import lib.{JavaScriptReaction, SnippetHelpers}
 
 class SnippetTester[S <: SnippetHelpers](val snippet: S) extends TestHelpers {
   val js = new JavaScriptReaction

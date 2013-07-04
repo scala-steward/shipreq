@@ -3,14 +3,13 @@ package com.beardedlogic.usecase.lib
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.util.parsing.combinator.RegexParsers
-import net.liftweb.http.js.{JsCmds, JsCmd}
+import net.liftweb.http.js.JsCmd
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers.nextFuncName
 import net.liftweb.common.Logger
 
 import JsExt._
-import msg._
 import Messages._
 import TypeTags._
 

@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package snippet
 
 import org.scalatest.FunSpec
-import lib.msg.NoReaction
+import lib.NoReaction
 import model.UseCaseSummary
 import test.TestDatabaseSupport
 

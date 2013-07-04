@@ -13,7 +13,6 @@ import JsExt._
 import tree.TreeOps._
 import TypeTags._
 import CourseFields._
-import msg._
 import Messages.StepChangeMsg
 import model._
 import FieldValue.FieldValueData

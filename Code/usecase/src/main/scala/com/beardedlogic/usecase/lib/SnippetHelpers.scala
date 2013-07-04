@@ -7,7 +7,6 @@ import net.liftweb.util.{CssSel, Mailer}
 import net.liftweb.util.Mailer.{MailTypes, From, Subject}
 import com.beardedlogic.usecase.lib.HttpResponses.ShouldNeverHappenResponse
 import com.beardedlogic.usecase.lib.security.Oshiro
-import com.beardedlogic.usecase.lib.msg.{JavaScript, JavaScriptReaction, Reactor}
 import com.beardedlogic.usecase.model.DAO
 import com.beardedlogic.usecase.lib.db.DaoProvider
 import com.beardedlogic.usecase.app.AppConfig

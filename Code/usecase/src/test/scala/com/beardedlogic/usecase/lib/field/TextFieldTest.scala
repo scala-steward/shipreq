@@ -5,7 +5,6 @@ package field
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
 import model._
-import msg._
 import TypeTags._
 import test.TestHelpers
 

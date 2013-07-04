@@ -6,7 +6,6 @@ import net.liftweb.http.js.{ JsCmd, JsCmds, JE }
 import TypeTags._
 import model.{FieldKey, FieldKeyType}
 import CourseFields._
-import msg.NoReactionOrNewMessages
 
 object NormalAndAlternateCourseFields extends FieldDef[CourseFieldState] {
   import TemplateCache._

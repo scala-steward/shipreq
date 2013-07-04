@@ -1,5 +1,4 @@
 package com.beardedlogic.usecase.lib
-package msg
 
 import TypeTags._
 

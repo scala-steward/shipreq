@@ -11,7 +11,6 @@ import TestHelpers._
 import TypeTags._
 import net.liftweb.http.CometActor
 import tree.TreeOps._
-import msg._
 import StepLabels._
 
 class CourseFieldsTest extends FunSpec with TestHelpers {
