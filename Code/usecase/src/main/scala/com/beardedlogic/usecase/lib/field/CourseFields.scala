@@ -9,6 +9,7 @@ import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.strToCssBindPromoter
 import scala.xml._
 
+import HtmlTransformExt._
 import JsExt._
 import tree.TreeOps._
 import TypeTags._
@@ -31,10 +32,6 @@ object CourseFields {
 
   def ExprForNodeAndChildren(n: StepNode) = n.map("#" + _.id).mkString(",")
   @inline def JqExprForNodeAndChildren(n: StepNode) = JqExpr(ExprForNodeAndChildren(n))
-
-  // TODO Move IfCssSel and PassThru elsewhere
-  val PassThru = "dpp_recommends_this_oh_well" #> ""
-  def IfCssSel(cond: => Boolean)(expr: => CssSel): CssSel = if (cond) expr else PassThru
 
   trait StartingLabelIndices {
     def startingLabelIndex(level: Int): Int
