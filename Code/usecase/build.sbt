@@ -2,11 +2,9 @@ organization := "com.beardedlogic"
 
 name := "usecase_editor"
 
-version := "0.0.1-SNAPSHOT"
+baseVersion := "0.2.0"
 
 scalaVersion := "2.10.2"
-
-seq(com.github.siasia.WebPlugin.webSettings :_*)
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions",
   "-language:higherKinds")
