@@ -30,4 +30,9 @@
       #footer-push
     #footer
       .container.text-right
-        %p.muted &copy; 2013 Bearded Logic
+        %p.muted
+          v<span data-lift="SystemInfo?name=build.version.base"></span>
+          built at <span data-lift="SystemInfo?name=build.time"></span>
+          | Scala v<span data-lift="SystemInfo?name=scala.version"></span>
+          | Java v<span data-lift="SystemInfo?name=java.version"></span>
+          | JVM v<span data-lift="SystemInfo?name=jvm.version"></span>
