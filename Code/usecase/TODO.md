@@ -19,6 +19,8 @@ FUNC TODO
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [S.0.5] [ACCT] Password reset (when not logged in).
+* [S.0.5] [UX  ] Style the login/register success boxes.
+* [S.0.5] [UX  ] Use bootstrap alert div instead of alert() for JS error (login/register).
 
 * [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
 * [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).
