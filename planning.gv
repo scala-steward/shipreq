@@ -18,7 +18,7 @@ digraph G {
 Promote
 HowMoney [label="How can I make money?"]
 Funding
-AccountPlan [label="Plan for accounts free/paid, public/private, etc"]
+AccountPlan [label="Plan for accounts free/paid,\npublic/private, etc"]
 GetUsers
 RelScope [label="Release & Scope plan"]
 Deploy
@@ -27,21 +27,20 @@ BusModel
 SalesPitch
 Domain
 TalkToC
-// MarketResearch
 
 {Domain; Deploy; SalesPitch; SalesArgs; Name} -> Promote
 {Hosting;Name} -> Domain
 {PlanUcF; TalkToC; MarketResearch} -> HowMoney
 {SalesArgs; PlanUcF} -> TalkToC
-{SalesPitch; PlanUcF; BusModel} -> Funding
-{BusModel; PlanUcF} -> RelScope
+{SalesPitch; BusModel} -> Funding
+{PlanUcF} -> RelScope
 {MarketResearch; SalesArgs; PlanUcF} -> SalesPitch
-{MarketResearch; PlanUcF; TalkToC} -> BusModel
+{MarketResearch; PlanUcF; TalkToC; RelScope} -> BusModel
 {Hosting} -> Deploy
-{Promote; AccountPlan} -> GetUsers
-{BusModel; RelScope} -> AccountPlan
+{Promote; Deploy; AccountPlan} -> GetUsers
+{BusModel} -> AccountPlan
 DeployLocally -> UsePrivately; UsePrivately -> PlanUcF
-{Legal; Deploy; AccountPlan; AcceptPayment; GetUsers} -> Profit
+{Legal; AccountPlan; AcceptPayment; GetUsers} -> Profit
 TalkToC -> MarketResearch
 
 }
