@@ -170,5 +170,5 @@ class LoginDSL(val s: SeleniumDriver) extends BaseDSL {
   def enterPassword(password: String) = {passwordElem.typeInto(password); this}
   def setRememberMe(on: Boolean) = {if (rememberMeElem.isSelected != on) rememberMeElem.click(); this}
 
-  def login() = s.findElement(By.cssSelector(".submit input")).click()
+  def login() = s.findElement(By.cssSelector("[type=submit]")).click()
 }
