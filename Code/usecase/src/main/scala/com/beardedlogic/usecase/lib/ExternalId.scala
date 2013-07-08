@@ -42,6 +42,8 @@ object ExternalId {
 
   def unapply(str: String): Option[Long] = toInternalOpt(str)
 
+  def unapply(str: Box[String]): Box[Long] = str.flatMap(toInternalBox)
+
   // -------------------------------------------------------------------------------------------------------------------
   // http://stackoverflow.com/questions/8554286/obfuscating-an-id
 

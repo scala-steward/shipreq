@@ -1,8 +1,9 @@
 package com.beardedlogic.usecase.lib
 
-import net.liftweb.common.Logger
+import net.liftweb.common.{Failure, Full, Box, Logger}
 import net.liftweb.http.js.{JsCmd, JsExp}
 import net.liftweb.http.{StatefulSnippet, ResponseShortcutException, LiftResponse}
+import net.liftweb.json.{NoTypeHints, Serialization}
 import net.liftweb.util.Mailer.{MailTypes, From, Subject}
 import net.liftweb.util.{CssSel, Mailer}
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
@@ -14,7 +15,7 @@ import com.beardedlogic.usecase.model.DAO
 import com.beardedlogic.usecase.snippet.Notices
 import com.beardedlogic.usecase.util.HttpResponses.ShouldNeverHappenResponse
 import com.beardedlogic.usecase.util.JsExt._
-import com.beardedlogic.usecase.util.{Reactor, JavaScriptReaction, JavaScript}
+import com.beardedlogic.usecase.util.{ErrorMessages, Reactor, JavaScriptReaction, JavaScript}
 import SnippetHelpers._
 
 object SnippetHelpers {
@@ -29,6 +30,19 @@ object SnippetHelpers {
 trait SnippetHelpers extends Misc with Logger {
 
   @inline implicit final def jsExpToJsCmd(in: JsExp) = in.cmd
+
+  @inline implicit def ConvertStringToNode(i: String) = Text(i)
+  @inline implicit def ConvertSeqStringToNodes(i: Seq[String]) = i.map(Text(_))
+  @inline implicit def OptionToBox[T](option: Option[T]): Box[T] = Box(option)
+
+//  implicit class BoxExt[T](val box: Box[T]) extends AnyVal {
+//    def ~~>(errMsg: String) = box ~> reactWithError(errMsg)
+//    def ~~>(errMsg: NodeSeq) = box ~> reactWithError(errMsg)
+//  }
+
+  protected implicit val jsonFormats = Serialization.formats(NoTypeHints)
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   type JsCallback = () => JsCmd
 
@@ -82,8 +96,13 @@ trait SnippetHelpers extends Misc with Logger {
     }
   }
 
-  implicit def ConvertStringToNode(i: String) = Text(i)
-  implicit def ConvertSeqStringToNodes(i: Seq[String]) = i.map(Text(_))
+  def reactToOptionalError(box: Box[_], id: String = DefaultAjaxErrorId)(implicit reactor: Reactor) {
+    box match {
+      case Full(_)            => removeError()
+      case Failure(err, _, _) => reactWithError(err, id)
+      case _                  => reactWithError(ErrorMessages.Generic, id)
+    }
+  }
 }
 
 /**

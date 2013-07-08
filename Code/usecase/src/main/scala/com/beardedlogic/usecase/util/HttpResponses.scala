@@ -24,16 +24,14 @@ object HttpResponses {
    * client GETs a resource's state, modifies it, and PUTs it back to the server, when meanwhile a third party has
    * modified the state on the server, leading to a conflict."
    */
-  case class PreconditionRequiredResponse(
-    msg: String = "That's already been updated. The data you're seeing is out-of-date. Reload and try again."
-    ) extends LiftResponse with HeaderDefaults {
+  case class PreconditionRequiredResponse(msg: String = ErrorMessages.StaleDataSubmitted) extends LiftResponse with HeaderDefaults {
     def toResponse = InMemoryResponse(msg.getBytes("UTF-8"), headers, cookies, 428)
   }
 
   /**
    * Analogous to IllegalStateException.
    */
-  case class ShouldNeverHappenResponse(msg: String = "Unexpected branch encountered.") extends LiftResponse with HeaderDefaults {
+  case class ShouldNeverHappenResponse(msg: String = ErrorMessages.ShouldNeverHappen) extends LiftResponse with HeaderDefaults {
     def toResponse = InMemoryResponse(msg.getBytes("UTF-8"), headers, cookies, 500)
   }
 

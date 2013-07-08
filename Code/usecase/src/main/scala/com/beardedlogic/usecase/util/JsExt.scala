@@ -1,8 +1,14 @@
 package com.beardedlogic.usecase.util
 
+import net.liftweb.common.Empty
 import net.liftweb.http.js._
+import net.liftweb.http.{JsContext, SHtml}
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
+import net.liftweb.json.Formats
+import net.liftweb.json.Serialization._
+import scala.Some
+import net.liftweb.json.Serialization.{write => jsonWrite}
 
 /**
  * Custom Javascript and JQuery extensions.
@@ -145,5 +151,36 @@ object JsExt {
   /** Causes matches elements to flash. */
   def JqHighlight(duration: JqDurationExpr = DefaultDuration) = new JsExp with JsMember {
     override val toJsCmd = "effect('highlight'" + duration.asOptionalLastArg + ")"
+  }
+
+  /** Selects the form containing `this`. */
+  object JqThisForm extends JsExp {override def toJsCmd = "$(this).parents('form')"}
+
+  object JqSerialiseThisForm extends JsExp {override def toJsCmd = JqThisForm.toJsCmd + ".serialize()"}
+
+  /** Submits this form via Lift (using Ajax). */
+  final val JqSubmitThisForm = SHtml.makeAjaxCall(JqSerialiseThisForm, new JsContext(Empty, Empty))
+
+  /**
+   * Meant to be used as an onClick attribute.
+   * Submits this form via Lift (using Ajax), then returns `false` to stop the form POSTing.
+   */
+  final val JqSubmitThisFormAndStop = JqSubmitThisForm.toJsCmd + "; return false"
+
+  /**
+   * Invokes a JavaScript trigger with JSON data.
+   *
+   * The JavaScript should define triggers as follows:
+   * {{{
+   * $(document).on('my-trigger-name', function(event, data) {
+   *   // Do something with data
+   * });
+   * }}}
+   */
+  def JsTriggerJson(triggerName: String, data: AnyRef)(implicit jsonFormats: Formats): JsCmd =
+    JsCmds.Run(s"$$(document).trigger('$triggerName',${jsonWrite(data)})")
+
+  abstract class JsonTrigger[T <: AnyRef](triggerName: String) {
+    def trigger(triggerData: T)(implicit jsonFormats: Formats) = JsTriggerJson(triggerName, triggerData)
   }
 }

@@ -20,6 +20,7 @@ function UseCaseSummary(uc) {
 function UCIViewModel(ucs) {
     this.useCases = ko.observableArray($.map(ucs,UseCaseSummary))
     this.populated = ko.computed(function(){ return this.useCases().length > 0 }, this);
+    this.findByDataEid = function(v) { return $.grep(VM.useCases(), function(n){ return n.dataEid() == v })[0] }
 }
 
 $(document).ready(function() {
@@ -31,4 +32,10 @@ $(document).on('new-uc', function(event, data) {
     m.editMode(true)
     VM.useCases.push(m)
     m.enterEditMode()
+});
+
+$(document).on('upd-uc', function(event, data) {
+    var n = UseCaseSummary(data)
+    var m = VM.findByDataEid(n.dataEid())
+    VM.useCases.replace(m,n)
 });
