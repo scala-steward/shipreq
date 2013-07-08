@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.util
 
-import net.liftweb.http.js.{ JsCmd, JsCmds, JsExp, JsMember }
+import net.liftweb.http.js._
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
 
@@ -14,6 +14,7 @@ object JsExt {
   trait JqDurationExpr {
     def toJsArg: Option[String]
     @inline final def asOnlyArg = toJsArg getOrElse ""
+    @inline final def asOptionalLastArg = toJsArg map ("," + _) getOrElse ""
     @inline final def asOptionalNonLastArg = toJsArg map (_ + ",") getOrElse ""
   }
   object DefaultDuration extends JqDurationExpr { override def toJsArg = None }
@@ -33,8 +34,12 @@ object JsExt {
   }
 
   /** A JQuery query for a given expression. ie. `$(expr)` */
-  case class JqExpr(expr: String) extends JsExp {
-	  override def toJsCmd = s"$$('${expr}')"
+  class JqExpr private(expr: String) extends JsExp {
+    override def toJsCmd = s"$$(${expr})"
+  }
+  object JqExpr extends HtmlFixer {
+    def apply(expr: String): JqExpr = new JqExpr(expr.encJs)
+    def apply(content: NodeSeq): JqExpr = new JqExpr(fixHtmlFunc("inline", content) { str => str })
   }
 
   /**
@@ -77,7 +82,25 @@ object JsExt {
       "prepend(" + fixHtmlFunc("inline", content) { str => str } + ")"
   }
 
-  object JqHide extends JsExp with JsMember { override val toJsCmd = "hide()" }
+  /**
+   * Insert every element in the set of matched elements to the end of the target.
+   *
+   * Example: `JqExpr(nodeSeq) ~> JqAppendTo("#notices")`
+   *
+   * @param expr The elements to receive the new content.
+   * @see http://api.jquery.com/appendTo/
+   */
+  def JqAppendTo(expr: String) = new JsExp with JsMember {override val toJsCmd = s"appendTo(${expr.encJs})"}
+
+  /**
+   * Insert every element in the set of matched elements to the end of the target.
+   *
+   * Example: `JqExpr(nodeSeq) ~> JqPrependTo("#notices")`
+   *
+   * @param expr The elements to receive the new content.
+   * @see http://api.jquery.com/prependTo/
+   */
+  def JqPrependTo(expr: String) = new JsExp with JsMember {override val toJsCmd = s"prependTo(${expr.encJs})"}
 
   def JqSlideDown(duration: JqDurationExpr = DefaultDuration) = new JsExp with JsMember {
     override val toJsCmd = "slideDown(" + duration.asOnlyArg + ")"
@@ -112,6 +135,15 @@ object JsExt {
   /** Display or hide the matched elements. */
   object JqToggle extends JsExp with JsMember {override val toJsCmd = "toggle()"}
 
+  object JqHide extends JsExp with JsMember { override val toJsCmd = "hide()" }
+
+  object JqRemove extends JsExp with JsMember {override val toJsCmd = "remove()"}
+
   /** Get the descendants of each element in the current set of matched elements, filtered by a selector. */
   def JqFind(selector: String) = new JsExp with JsMember {override val toJsCmd = s"find(${selector.encJs})"}
+
+  /** Causes matches elements to flash. */
+  def JqHighlight(duration: JqDurationExpr = DefaultDuration) = new JsExp with JsMember {
+    override val toJsCmd = "effect('highlight'" + duration.asOptionalLastArg + ")"
+  }
 }

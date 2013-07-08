@@ -1,17 +1,25 @@
 package com.beardedlogic.usecase.lib
 
 import net.liftweb.common.Logger
-import net.liftweb.http.js.{JsCmds, JsCmd, JsExp}
+import net.liftweb.http.js.{JsCmd, JsExp}
 import net.liftweb.http.{StatefulSnippet, ResponseShortcutException, LiftResponse}
 import net.liftweb.util.Mailer.{MailTypes, From, Subject}
 import net.liftweb.util.{CssSel, Mailer}
+import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
 import com.beardedlogic.usecase.app.AppConfig
 import com.beardedlogic.usecase.lib.db.DaoProvider
 import com.beardedlogic.usecase.lib.security.Oshiro
 import com.beardedlogic.usecase.model.DAO
+import com.beardedlogic.usecase.snippet.Notices
 import com.beardedlogic.usecase.util.HttpResponses.ShouldNeverHappenResponse
+import com.beardedlogic.usecase.util.JsExt._
 import com.beardedlogic.usecase.util.{Reactor, JavaScriptReaction, JavaScript}
+import SnippetHelpers._
+
+object SnippetHelpers {
+  final val DefaultAjaxErrorId = "ajaxErr"
+}
 
 /**
  * Helpers for snippets.
@@ -48,17 +56,34 @@ trait SnippetHelpers extends Misc with Logger {
   def sendMail(subject: Subject, rest: MailTypes*): Unit = mailer.sendMail(defaultMailFrom, subject, rest: _*)
   def sendMail(mail: Mail, additional: MailTypes*): Unit = sendMail(mail._1, (mail._2 ++ additional): _*)
 
-  def reactWithError(errMsg: String)(implicit reactor: Reactor) {
-    reactor(JavaScript)(JsCmds.Alert(errMsg))
+  // -------------------------------------------------------------------------------------------------------------------
+  // Error propagation
+
+  def removeError(id: String = DefaultAjaxErrorId)(implicit reactor: Reactor) {
+    reactor(JavaScript)(JqId(id) ~> JqRemove)
   }
 
-  def reactWithError(errMsg: Seq[String])(implicit reactor: Reactor) {
-    errMsg match {
-      case Nil                =>
-      case singleError :: Nil => reactWithError(singleError)
-      case _                  => reactWithError(errMsg.mkString("\n"))
+  def reactWithError(errMsg: NodeSeq, id: String = DefaultAjaxErrorId)(implicit reactor: Reactor) =
+    _reactWithError(id, Notices.renderSingle(Notices.ErrorClasses, errMsg))
+
+  def reactWithErrors(errMsgs: Seq[NodeSeq], id: String = DefaultAjaxErrorId)(implicit reactor: Reactor) {
+    errMsgs match {
+      case Nil                => removeError(id)
+      case singleError :: Nil => reactWithError(singleError, id)
+      case _                  => _reactWithError(id, Notices.renderMsgs(Notices.ErrorClasses, errMsgs).asInstanceOf[Elem])
     }
   }
+
+  private def _reactWithError(id: String, jsErrNode: => Elem)(implicit reactor: Reactor) {
+    removeError(id)
+    reactor(JavaScript) {
+      val errNode = jsErrNode % new UnprefixedAttribute("id", id, xml.Null)
+      JqExpr(errNode) ~> JqAppendTo("#notices") ~> JqHighlight()
+    }
+  }
+
+  implicit def ConvertStringToNode(i: String) = Text(i)
+  implicit def ConvertSeqStringToNodes(i: Seq[String]) = i.map(Text(_))
 }
 
 /**

@@ -46,6 +46,7 @@ class Register1 extends SingleOpStatefulSnippet {
             case Some(UserRegistrationInfo(id, _, _, _)) => onTokenExpired(id, dao)
           }
         )
+        removeError()
         reactor(JavaScript)(JqExpr("#emailSent,#register1Form") ~> JqToggle)
         sendMail(mail, To(email))
     }
@@ -123,7 +124,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       , Validate.password(password1)
       , Validate.password2(password1, password2)
     ).filter(_.isDefined).map(_.get)
-    if (failures.nonEmpty) reactWithError(failures) else {
+    if (failures.nonEmpty) reactWithErrors(failures) else {
 
       // Update user
       val ps = PasswordAndSalt.hashWithRandomSalt(password1)
@@ -139,6 +140,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
         case Success(_, _) =>
           info(s"Registered new user: $username")
           SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password1))
+          removeError()
           reactor(JavaScript)(JqExpr("#regComplete,#register2") ~> JqToggle)
 
         case r => warn("Unexpected result: " + r); shouldNeverHappen_!

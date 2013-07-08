@@ -2,8 +2,7 @@ package com.beardedlogic.usecase.snippet
 
 import net.liftweb.http.S
 import net.liftweb.util.Helpers._
-import scala.xml.NodeSeq
-import scala._
+import scala.xml._
 import net.liftweb.common.Box
 
 /**
@@ -11,33 +10,37 @@ import net.liftweb.common.Box
  */
 object Notices {
 
+  final val ErrorClasses = "alert alert-error"
+  final val WarningClasses = "alert"
+  final val SuccessClasses = "alert alert-success"
+
   def render =
-    "*" #> containContainers(
-      renderMsgs("notice_e", "alert alert-error", S.errors) ++
-      renderMsgs("notice_w", "alert", S.warnings) ++
-      renderMsgs("notice_n", "alert alert-success ", S.notices)
+    "* *" #> (
+      renderMsgsWithoutIds(ErrorClasses, S.errors) ++
+      renderMsgsWithoutIds(WarningClasses, S.warnings) ++
+      renderMsgsWithoutIds(SuccessClasses, S.notices)
     )
 
-  def renderMsgs(containerId: String, classes: String, msgs: List[(NodeSeq, Box[String])]): NodeSeq =
-    S.noIdMessages(msgs) match {
+  def renderMsgsWithoutIds(classes: String, msgs: List[(NodeSeq, Box[String])]) =
+    renderMsgs(classes, S.noIdMessages(msgs))
+
+  def renderMsgs(classes: String, msgs: Seq[NodeSeq]): NodeSeq =
+    msgs match {
       case Nil        => NodeSeq.Empty
-      case one :: Nil => toMsgContainer(containerId, classes, one)
-      case many       => toMsgContainer(containerId, classes + " alert-block", mergeMsgs(many))
+      case one :: Nil => toMsgContainer(classes, one)
+      case many       => toMsgContainer(classes + " alert-block", mergeMsgs(many))
     }
 
-  def mergeMsgs(msgs: List[NodeSeq]): NodeSeq = toList(msgs.map(toListItem).foldLeft(NodeSeq.Empty)(_ ++ _))
+  def renderSingle(classes: String, msg: NodeSeq): Elem = toMsgContainer(classes, msg)
 
-  def containContainers(containers: NodeSeq): NodeSeq =
-    if (containers == NodeSeq.Empty) NodeSeq.Empty
-    else toTopContainer(containers)
+  def mergeMsgs(msgs: Seq[NodeSeq]): Elem = toList(msgs.map(toListItem).foldLeft(NodeSeq.Empty)(_ ++ _))
 
   // -------------------------------------------------------------------------------------------------------------------
   // HTML generation
 
   final val closeAlertButton              = <button type="button" class="close" data-dismiss="alert">&times;</button>
-  def toTopContainer(containers: NodeSeq) = <div id="notices">{containers}</div>
-  def toMsgContainer(id: String,
-    classes: String, content: NodeSeq)    = <div id={id} class={classes}>{closeAlertButton}{content}</div>
-  def toList(msgs: NodeSeq)               = <ul>{msgs}</ul>
-  def toListItem(msg: NodeSeq)            = <li>{msg}</li>
+  private def toMsgContainer(
+    classes: String, content: NodeSeq)    = <div class={classes}>{closeAlertButton}{content}</div>
+  private def toList(msgs: NodeSeq)       = <ul>{msgs}</ul>
+  private def toListItem(msg: NodeSeq)    = <li>{msg}</li>
 }
