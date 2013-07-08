@@ -64,11 +64,9 @@ object UseCaseAccessor {
 
   private val fieldSelection = s"v.${ValueAccessor.*}, title, number, field_list_id"
 
-  val Select = Q.query[Long, UseCase]( s"""
-    SELECT $fieldSelection
-    FROM value v, usecase u
-    WHERE u.id=? AND v.id = u.id
-    """.sql)
+  private val selectSql = s"SELECT $fieldSelection FROM value v, usecase u WHERE u.id=? AND v.id = u.id"
+  val Select = Q.query[Long, UseCase](selectSql)
+  val Select2 = Q.query[(Long, Long), UseCase](s"$selectSql AND v.data_id=?")
 
   private def SelectLatestSql(dataIdSql: String) = s"""
     with history as (
@@ -134,6 +132,7 @@ trait UseCaseAccessor extends DatabaseAccessor {
   }
 
   def findUseCase(valueId: Long): Option[UseCase] = Select.firstOption(valueId)
+  def findUseCase(dataId: Long, valueId: Long): Option[UseCase] = Select2.firstOption(valueId, dataId)
 
   def findLatestUseCase(uc: UseCase): Option[UseCase] = findLatestUseCaseByDataId(uc.dataId)
   def findLatestUseCaseByDataId(dataId: Long): Option[UseCase] = SelectLatestByDataId.firstOption(dataId)

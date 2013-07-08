@@ -3,12 +3,10 @@ package com.beardedlogic.usecase.util
 import net.liftweb.common.Empty
 import net.liftweb.http.js._
 import net.liftweb.http.{JsContext, SHtml}
+import net.liftweb.json.Formats
+import net.liftweb.json.Serialization.{write => jsonWrite}
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import net.liftweb.json.Formats
-import net.liftweb.json.Serialization._
-import scala.Some
-import net.liftweb.json.Serialization.{write => jsonWrite}
 
 /**
  * Custom Javascript and JQuery extensions.
@@ -180,7 +178,7 @@ object JsExt {
   def JsTriggerJson(triggerName: String, data: AnyRef)(implicit jsonFormats: Formats): JsCmd =
     JsCmds.Run(s"$$(document).trigger('$triggerName',${jsonWrite(data)})")
 
-  abstract class JsonTrigger[T <: AnyRef](triggerName: String) {
+  abstract class JsonTrigger[T <: AnyRef](val triggerName: String) {
     def trigger(triggerData: T)(implicit jsonFormats: Formats) = JsTriggerJson(triggerName, triggerData)
   }
 }

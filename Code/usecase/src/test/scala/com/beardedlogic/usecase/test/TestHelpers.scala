@@ -8,7 +8,10 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import net.liftweb.common.Empty
 import net.liftweb.http.{S, LiftSession, LiftRules}
+import net.liftweb.mocks.MockHttpServletRequest
+import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
+import net.liftweb.util.Helpers._
 
 import lib._
 import NodeUtils._
@@ -17,7 +20,7 @@ import lib.field._
 import TreeOps._
 import lib.TypeTags._
 import model._
-import util.{NoReactionOrNewMessages, MessageCentre, CachedFunction, BiMap}
+import util._
 
 /**
  * @since 30/04/2013
@@ -99,8 +102,36 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     S.initIfUninitted(session) {block}
   }
 
-  def withSessionAttrs[U](attrs: (String, String)*)(block: => U): U = inMockSession {withSessionAttrs(Map(attrs: _*))(block)}
-  def withSessionAttrs[U](attrs: Map[String, String])(block: => U): U = S.withAttrs(S.mapToAttrs(attrs))(block)
+  def withSessionAttrs[U](attrs: (String, String)*)(block: => U): U = withSessionAttrs(Map(attrs: _*))(block)
+  def withSessionAttrs[U](attrs: Map[String, String])(block: => U): U = inMockSession{S.withAttrs(S.mapToAttrs(attrs))(block)}
+
+  def withSessionParams[U](params: Map[String, String])(block: => U): U = withSessionParams(params.toSeq: _*)(block)
+  def withSessionParams[U](params: (String, String)*)(block: => U): U = {
+    val req = new MockHttpServletRequest()
+    req.parameters = params.toList
+    MockWeb.testS(req)(block)
+  }
+
+  def assertJsAlert(js: JavaScriptReaction, errorMsg: Option[String]) { assertJsAlert(js.result.toJsCmd, errorMsg) }
+  def assertJsAlert(jsReaction: String, errorMsg: Option[String]) {
+    if (errorMsg.isDefined) {
+      jsReaction.toLowerCase should include ("alert")
+      jsReaction should include(errorMsg.get)
+    } else
+      jsReaction.toLowerCase should not include ("alert")
+  }
+
+  def assertJsErrorNotice(js: JavaScriptReaction, errorMsg: Option[String]) { assertJsErrorNotice(js.result.toJsCmd, errorMsg) }
+  def assertJsErrorNotice(jsReaction: String, errorMsg: Option[String]) {
+    if (errorMsg.isDefined) {
+      jsReaction.toLowerCase should (include ("#notices") and include("alert-error"))
+      jsReaction should include(errorMsg.get.encJs.replaceAll("^\"|\"$", ""))
+    } else {
+      jsReaction.toLowerCase should not include ("#notices")
+      jsReaction.toLowerCase should not include ("alert-error")
+    }
+  }
+
 }
 
 object TestHelpers extends TestHelpers {

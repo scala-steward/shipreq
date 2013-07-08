@@ -13,11 +13,12 @@ class SnippetTester[S <: SnippetHelpers](val snippet: S) extends TestHelpers {
   def jsReaction = js.result.toJsCmd
 
   def assertJsAlert(errorMsg: Option[String]) = {
-    if (errorMsg.isDefined) {
-      jsReaction.toLowerCase should include ("alert")
-      jsReaction should include(errorMsg.get)
-    } else
-      jsReaction.toLowerCase should not include ("alert")
+    TestHelpers.assertJsAlert(js, errorMsg)
+    this
+  }
+
+  def assertJsErrorNotice(errorMsg: Option[String]) = {
+    TestHelpers.assertJsErrorNotice(js, errorMsg)
     this
   }
 
