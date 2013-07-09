@@ -30,9 +30,10 @@
       #footer-push
     #footer
       .container.text-right
-        %p.muted
-          v<span data-lift="SystemInfo?name=build.version.base"></span>
-          built at <span data-lift="SystemInfo?name=build.time"></span>
-          | Scala v<span data-lift="SystemInfo?name=scala.version"></span>
-          | Java v<span data-lift="SystemInfo?name=java.version"></span>
-          | JVM v<span data-lift="SystemInfo?name=jvm.version"></span>
+        %p.muted(style="font-size:13px")
+          v<param data-lift="SystemInfo?name=build.version.full" >
+          @ <param data-lift="SystemInfo?name=build.time">
+          | <param data-lift="SystemInfo?name=run.mode.short">
+          | Scala v<param data-lift="SystemInfo?name=scala.version">
+          | Java v<param data-lift="SystemInfo?name=java.version">
+          | JVM v<param data-lift="SystemInfo?name=jvm.version">

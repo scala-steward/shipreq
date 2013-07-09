@@ -5,6 +5,8 @@ import net.liftweb.http.S
 import net.liftweb.util.Helpers.strToCssBindPromoter
 import org.joda.time.DateTime
 import scala.util.Properties
+import net.liftweb.util.Props
+import net.liftweb.util.Props.RunModes._
 
 object SystemInfo {
 
@@ -18,6 +20,15 @@ object SystemInfo {
     val Time        = new DateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(TimeStr))
   }
 
+  lazy val RunModeShort = Props.mode match {
+    case Development => "dev"
+    case Test => "test"
+    case Staging => "staging"
+    case Production => "prod"
+    case Pilot => "pilot"
+    case Profile => "profile"
+  }
+
   def render = "*" #> value(S.attr("name").openOrThrowException("Attribute 'name' required."))
 
   def value(name: String): String = name match {
@@ -28,6 +39,8 @@ object SystemInfo {
     case "java.version"       => Properties.javaVersion
     case "jvm.version"        => Properties.javaVmVersion
     case "scala.version"      => Properties.versionNumberString
+    case "run.mode.full"      => Props.mode.toString
+    case "run.mode.short"     => RunModeShort
   }
 
   // TODO uptime, memory/gc, load?, users online, row counts
