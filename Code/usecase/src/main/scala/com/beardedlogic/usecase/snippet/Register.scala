@@ -16,6 +16,7 @@ import model.DbOpResult.{NothingUpdated, ConstraintViolation, Success}
 import model.{DAO, UserRegistrationInfo}
 import security.PasswordAndSalt
 import util.{JsExt, Reactor, JavaScript}
+import util.HtmlTransformExt.ajaxSubmitOnClick
 import JsExt._
 
 /**
@@ -29,8 +30,7 @@ class Register1 extends SingleOpStatefulSnippet {
 
   def render = (
     "#email" #> SHtml.onSubmit(emailInput = _)
-      // & "form *+" #> SHtml.hidden(jsCallback(onSubmit(_)))
-      & ":submit" #> SHtml.ajaxSubmit("Register", jsCallback(onSubmit(_)))
+      & ":submit" #> ajaxSubmitOnClick(jsCallback(onSubmit(_)))
     )
 
   def onSubmit(implicit reactor: Reactor) {
@@ -102,7 +102,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       "#username" #> SHtml.ajaxText(usernameInput, onUsernameChange)
         & "#password1" #> SHtml.onSubmit(password1Input = _)
         & "#password2" #> SHtml.onSubmit(password2Input = _)
-        & ":submit" #> SHtml.ajaxSubmit("Create Account", jsCallback(onSubmit(_)))
+        & ":submit" #> ajaxSubmitOnClick(jsCallback(onSubmit(_)))
       )
   }
 
