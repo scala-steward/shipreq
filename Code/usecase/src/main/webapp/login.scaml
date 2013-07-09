@@ -1,16 +1,17 @@
 %div(data-lift="surround?with=default;at=content")
-  .centred_form(data-lift="Login?form=post")
+  .centred_form(data-lift="Login")
     %h2 Login
+    %form(data-lift="form.ajax")
 
-    .controls
-      %input#who.span4(type="text" placeholder="Username or Email")
+      .controls
+        %input#who.span4(type="text" placeholder="Username or Email")
 
-    .controls
-      %input#password.span4(type="password" placeholder="Password")
+      .controls
+        %input#password.span4(type="password" placeholder="Password")
 
-    .controls.controls-row
-      %label.checkbox.span3(style="margin-left:0")
-        %input#remember(type="checkbox")
-        Remember Me?
-      .span1(style="margin-left:0")
-        %button.btn.btn-primary(type="submit") Login
+      .controls.controls-row
+        %label.checkbox.span3(style="margin-left:0")
+          %input#remember(type="checkbox")
+          Remember Me?
+        .span1(style="margin-left:0")
+          %button.btn.btn-primary(type="submit") Login

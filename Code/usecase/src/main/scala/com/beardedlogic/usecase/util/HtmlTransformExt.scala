@@ -2,7 +2,7 @@ package com.beardedlogic.usecase.util
 
 import net.liftweb.http.S
 import net.liftweb.http.js.JsCmd
-import net.liftweb.util.CssSel
+import net.liftweb.util.{Helpers, CssSel}
 import net.liftweb.util.Helpers.strToCssBindPromoter
 import JsExt._
 
@@ -31,8 +31,20 @@ object HtmlTransformExt {
    *
    * @param onSubmitFn The function to call when the form is submitted.
    */
-  def reusableAjaxForm(onSubmitFn: () => JsCmd) = (
+  def reusableAjaxForm(onSubmitFn: () => JsCmd): CssSel = (
     "form *+" #> callOnSubmit(onSubmitFn) &
     "form :submit" #> ajaxSubmitThisFormOnClick
   )
+
+  /**
+   * Transforms a button so that it submits its parent form when clicked, and invokes the given function when the
+   * request hits the server.
+   *
+   * Copied from `SHtml.ajaxSubmit()` but modified so that it updates rather than replaces.
+   */
+  def ajaxSubmitOnClick(func: () => JsCmd): CssSel = {
+    val funcName = "z" + Helpers.nextFuncName
+    S.addFunctionMap(funcName, (func))
+    "* [onclick]" #> s"liftAjax.lift_uriSuffix='$funcName=_';return true"
+  }
 }

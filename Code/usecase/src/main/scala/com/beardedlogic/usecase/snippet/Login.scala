@@ -5,9 +5,11 @@ import net.liftweb.http.{S, StatefulSnippet, SHtml}
 import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc._
+
 import app.AppSiteMap
 import lib.SnippetHelpers
-import model.DAO
+import util.Reactor
+import util.HtmlTransformExt.ajaxSubmitOnClick
 
 class Login extends StatefulSnippet with SnippetHelpers {
   override def dispatch = { case _ => render }
@@ -22,13 +24,13 @@ class Login extends StatefulSnippet with SnippetHelpers {
       "#who [value]" #> usernameOrEmail &
       "#password" #> SHtml.onSubmit(password = _) &
       "#remember" #> SHtml.checkbox(rememberMe, rememberMe = _, "id" -> "remember") &
-      "type=submit" #> SHtml.onSubmitUnit(onLoginAttempt)
+      ":submit" #> ajaxSubmitOnClick(jsCallback(onLoginAttempt(_)))
     )
 
-  def onLoginAttempt() {
+  def onLoginAttempt(implicit reactor: Reactor) {
     // TODO Check password length when range constraints implemented
     if (usernameOrEmail.isEmpty || password.isEmpty)
-      S.error("Invalid login details.")
+      reactWithError("Invalid login details.")
     else {
       val subject = SecurityUtils.getSubject
       val loginToken = new UsernamePasswordToken(usernameOrEmail, password)
@@ -37,14 +39,13 @@ class Login extends StatefulSnippet with SnippetHelpers {
         subject.login(loginToken)
         onSuccessfulLogin()
       } catch {
-        // case _: LockedAccountException =>
-        // case _: ExcessiveAttemptsException =>
-        case _: AuthenticationException => S.error("Invalid login details.")
+        case _: AuthenticationException => reactWithError("Invalid login details.")
       }
     }
   }
 
   def onSuccessfulLogin() {
+    // TODO update login count async
     daoProvider.withSession(_.updateUserOnLogin(loggedInUser.get.id, clientIp_Or_?))
     S.redirectTo(AppSiteMap.HomeRelativeUrl)
   }
