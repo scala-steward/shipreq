@@ -12,14 +12,14 @@ import scala.xml._
 import util._
 import HtmlTransformExt._
 import JsExt._
-import tree.TreeOps._
+import tree._
+import TreeOps._
 import TypeTags._
 import CourseFields._
 import Messages.StepChangeMsg
 import model._
 import FieldValue.FieldValueData
 import StepLabels.{MaxStepsPerLevel, MaxStepDepth}
-
 
 object CourseFields {
   import TemplateCache._
@@ -32,7 +32,7 @@ object CourseFields {
   val AddTailStepTemplate = UseCaseEditorTemplate.extract("template-courses-addTailStep")
   val AddTailStepClass = "addTailStep"
 
-  def ExprForNodeAndChildren(n: StepNode) = n.map("#" + _.id).mkString(",")
+  def ExprForNodeAndChildren(n: StepNode) = n.mapRecursive("#" + _.id).mkString(",")
   @inline def JqExprForNodeAndChildren(n: StepNode) = JqExpr(ExprForNodeAndChildren(n))
 
   trait StartingLabelIndices {
@@ -60,7 +60,7 @@ object CourseFields {
   def compareAndSaveChanges(
     oldState: CourseFieldState,
     oldStepValues: Map[String @@ LocalId, PlainValue[DataType.Step]],
-    newState: List[StepState],
+    newState: StepStateTree,
     saveCtx: MutableFieldSaveCtx,
     dao: DAO
     ): Boolean = {
@@ -93,7 +93,7 @@ object CourseFields {
       case Nil => false
     }
 
-    var changedDetected = iter(newState)
+    val changedDetected = iter(newState.children)
     changedDetected || {
       // Top-level order could be different and no changes would otherwise be detected
       oldState.courses != newState
@@ -105,7 +105,7 @@ object CourseFields {
 
 abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers {
 
-  private[this] var _courses: List[StepNode] = Nil
+  private[this] var _courses = StepTree.empty
   private[this] var textFields: Map[String @@ LocalId, SmartStepText] = Map.empty
 
   def courses = _courses
@@ -124,7 +124,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   @inline def labelFor(node: StepNode) = labelPrefixForLevel(node.level).map(_ + node.label).getOrElse(node.label)
   def startingLabelIndices: StartingLabelIndices
 
-  def setCourses(newCourses: List[StepNode])(implicit reactor: Reactor) {
+  def setCourses(newCourses: StepTree)(implicit reactor: Reactor) {
     _courses = newCourses
     stepLabelMap.invalidate
     ucCtx.stepLabelMap.invalidate
@@ -140,7 +140,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   private[this] def syncTextFieldMap() {
     val oldTextFields = textFields
     textFields = Map.empty
-    courses.foreachNode{ n =>
+    courses.foreachRecursive{ n =>
       val id = n.id
       if (oldTextFields.contains(id)) {
         textFields += (id -> oldTextFields(id))
@@ -153,14 +153,14 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   /**
    * Renders a list of steps and their trees of children.
    */
-  protected def renderSteps(steps: List[StepNode]): CssSel =
-    ".step" #> steps.mapEachNode(renderSingleStep)
+  protected def renderSteps(steps: TreeLike[StepNode]): CssSel =
+    ".step" #> steps.mapRecursive(renderSingleStep)
 
   /**
    * Renders a list of steps and their trees of children.
    * Also renders an addTailStep button.
    */
-  protected def renderStepsWithAddTailStep(steps: List[StepNode]): NodeSeq => NodeSeq = {
+  protected def renderStepsWithAddTailStep(steps: TreeLike[StepNode]): NodeSeq => NodeSeq = {
     val t = "button" #> SHtml.ajaxButton("+", jsCallback(addTailStep(_)))
     val addTailStepTmpl = t(AddTailStepTemplate)
     renderSteps(steps) andThen ".steps *+" #> addTailStepTmpl // Append to .steps, after all the .step tags
@@ -201,7 +201,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     val newNode = buildNewTailStep()
     val newCourses = courses :+ newNode
     if (validateCourses(newCourses)) {
-      setCourses(newCourses)
+      setCourses(StepTree(newCourses))
       createAndRegisterTextField(newNode)
       reactor(JavaScript)(
         JqExpr(tailStepCss) ~> JqBefore(renderSingleStepXml(newNode))
@@ -215,7 +215,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   def addStep[R](preceedingNodeId: String @@ LocalId)(implicit reactor: Reactor): Option[StepNode] =
     stepInsert(preceedingNodeId, courses, StepNodeBuilder) match {
       case (newCourses, r@Some(newNode)) if (validateCourses(newCourses)) =>
-        setCourses(newCourses)
+        setCourses(StepTree(newCourses))
         createAndRegisterTextField(newNode)
         reactor(JavaScript)(
           JqId(preceedingNodeId) ~> JqAfter(renderSingleStepXml(newNode))
@@ -231,7 +231,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     if (!prohibitRemoval_?(id))
       stepRemove(id, courses) match {
         case (newCourses, r@Some(node)) =>
-          setCourses(newCourses)
+          setCourses(StepTree(newCourses))
           textFields -= id
           reactor(JavaScript)(
             FadeOutThen(JqExprForNodeAndChildren(node), 240.ms)(_ ~> JqJE.JqRemove() & UpdateLabels(courses))
@@ -245,7 +245,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   def decreaseIndent(nodeId: String @@ LocalId)(implicit reactor: Reactor): Boolean =
     indentDecrease(nodeId, courses) match {
       case (newCourses, Some(_)) if (validateCourses(newCourses)) =>
-        setCourses(newCourses)
+        setCourses(StepTree(newCourses))
         reactor(JavaScript)(
           customiseIndentDecreaseJs(nodeId, UpdateIndentation(courses) & UpdateLabels(courses))
         )
@@ -258,7 +258,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     indentIncrease(nodeId, courses) match {
       case (newCourses, Some(newNode)) if (validateCourses(newCourses)) =>
         val oldCourses = courses
-        setCourses(newCourses)
+        setCourses(StepTree(newCourses))
         reactor(JavaScript)(
           customiseIndentIncreaseJs(nodeId, newNode, oldCourses, UpdateIndentation(courses) & UpdateLabels(courses))
         )
@@ -294,14 +294,14 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   /** Allows customisation of the ajax response of a successful indent increase. */
   protected def customiseIndentIncreaseJs(nodeId: String @@ LocalId,
                                           newNode: StepNode,
-                                          oldCourses: List[StepNode],
+                                          oldCourses: StepTree,
                                           updateJs: JsCmd): JsCmd = updateJs
 
   /**
    * Creates Javascript to update the indentation levels of all given nodes.
    */
-  protected def UpdateIndentation(nodes: List[StepNode]): JsCmd = JsCmds.Run(
-    nodes.mapEachNode(n =>
+  protected def UpdateIndentation(nodes: StepTree): JsCmd = JsCmds.Run(
+    nodes.mapRecursive(n =>
       JqId(n.id) ~> JqJE.JqAttr(AttrLevel, n.level.toString) toJsCmd
     ) mkString ";\n"
   )
@@ -309,8 +309,8 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   /**
    * Creates Javascript to update the label text of all given nodes.
    */
-  protected def UpdateLabels(nodes: List[StepNode]): JsCmd = JsCmds.Run(
-    nodes.mapEachNode(n =>
+  protected def UpdateLabels(nodes: StepTree): JsCmd = JsCmds.Run(
+    nodes.mapRecursive(n =>
       JsCmds.SetHtml(n.labelId, Text(labelFor(n))).toJsCmd
     ) mkString "\n"
   )
@@ -318,10 +318,12 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
   override def setState(newState: CourseFieldState) = {
     rootLabelPrefix.refresh
 
-    val newCourses = convertNodeTree[StepState, StepNode](newState.courses, { case (node, level, index, children) =>
-      StepNode(node.id, level, index, children)
-    }, startingLabelIndices.startingLabelIndex _)
-    setCourses(newCourses)(NoReactionOrNewMessages)
+    val newCourses = convertNodeTree[StepState, StepNode](
+      newState.courses.children
+      ,{ case (node, level, index, children) =>StepNode(node.id, level, index, children)}
+      , startingLabelIndices.startingLabelIndex _
+    )
+    setCourses(StepTree(newCourses))(NoReactionOrNewMessages)
 
     syncTextFieldMap
 
@@ -349,7 +351,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
 
       // No previous save, add everything for first time
       case None =>
-        courses.foreachNode { n =>
+        courses.foreachRecursive { n =>
           val v = dao.createInitialValue(DataType.Step)
           saveCtx.stepValues += (n.id -> v)
         }
@@ -385,7 +387,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     // Link FV to top-level
     val fv = newSaveCtx.fieldValues(fieldKey)
     for {
-      (ss,i) <- state.get.courses.zipWithIndex
+      (ss,i) <- state.get.courses.children.zipWithIndex
       stepValue <- combinedSaveCtx.stepValues.get(ss.id)
     } dao.relate_stepParent_has_step(fv, i.toShort, stepValue)
 
@@ -394,10 +396,10 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
 
   val state = CachedFunction.eager0WithInitial({
     val stepStateList = convertNodeTree[StepNode, StepState](
-      courses, { (ss, level, index, children) =>
-          StepState(ss.id, textFields(ss.id).textWithNormalisedRefs(ucCtx), children)
-      }, startingLabelIndices.startingLabelIndex _
+      courses
+      , { (ss, level, index, children) => StepState(ss.id, textFields(ss.id).textWithNormalisedRefs(ucCtx), children) }
+      , startingLabelIndices.startingLabelIndex _
     )
-    CourseFieldState(stepStateList)
+    CourseFieldState(StepStateTree(stepStateList))
   })(null)
 }

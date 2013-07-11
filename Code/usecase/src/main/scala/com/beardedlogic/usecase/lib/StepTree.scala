@@ -5,19 +5,21 @@ import TypeTags._
 import tree._
 import StepLabels.LabelMakers
 
-object StepNodeBuilder extends TreeNodeBuilder[StepNode] {
-  def apply(
-    level: Int,
-    labelIndex: Int,
-    children: List[StepNode] = Nil
-    ) = StepNode(nextFuncName.asLocalId, level, labelIndex, children)
+/**
+ * A full tree of steps.
+ *
+ * @param children The top-level steps.
+ */
+case class StepTree(override val children: List[StepNode]) extends TreeRoot[StepNode]
+
+object StepTree {
+  final val empty = apply(Nil)
 }
 
-case class StepNode(id: String @@ LocalId,
-  level: Int,
-  labelIndex: Int,
-  children: List[StepNode] = Nil)
-  extends TreeNode[StepNode] {
+/**
+ * A step with a 0-n list of child steps.
+ */
+case class StepNode(id: String @@ LocalId, level: Int, labelIndex: Int, children: List[StepNode] = Nil) extends TreeNode[StepNode] {
 
   // TODO Remove tight label maker coupling from StepNode
   // TODO Disable in prod
@@ -39,4 +41,9 @@ case class StepNode(id: String @@ LocalId,
 
   @inline final def labelId = id + "-l"
   @inline final def stepTextId = id + "-t"
+}
+
+object StepNodeBuilder extends TreeNodeBuilder[StepNode] {
+  def apply(level: Int, labelIndex: Int, children: List[StepNode] = Nil) =
+    StepNode(nextFuncName.asLocalId, level, labelIndex, children)
 }

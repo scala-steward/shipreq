@@ -2,8 +2,7 @@ package com.beardedlogic.usecase
 package lib
 package field
 
-import tree.TreeNodeLike
-import tree.TreeOps._
+import tree._
 import model._
 import CourseFields._
 import TypeTags._
@@ -17,7 +16,7 @@ class CourseFieldStateLoader(val fieldKey: FieldKey, val li: StartingLabelIndice
                          has <- loadCtx.relations.get(RelationType.Has)
                        } yield unpackSteps(fv.valueId, 0, has, loadCtx.stepData, saveCtx)
                        ).getOrElse(List.empty[StepState])
-    CourseFieldState(stepStates)
+    CourseFieldState(StepStateTree(stepStates))
   }
 
   /**
@@ -47,8 +46,8 @@ class CourseFieldStateLoader(val fieldKey: FieldKey, val li: StartingLabelIndice
   }
 }
 
-case class CourseFieldState(courses: List[StepState]) {
-  val stepMap: Map[String @@ LocalId, StepState] = courses.mapEachNode(ss => (ss.id -> ss)).toMap
+case class CourseFieldState(courses: StepStateTree) {
+  val stepMap: Map[String @@ LocalId, StepState] = courses.mapRecursive(ss => (ss.id -> ss)).toMap
 }
 
 case class StepState(
@@ -60,3 +59,5 @@ case class StepState(
   // Manually specify else it will recurse forever because this is Traversable
   override def toString = s"StepState($id, '$text', $children)"
 }
+
+case class StepStateTree(override val children: List[StepState]) extends TreeRoot[StepState]

@@ -3,7 +3,6 @@ package lib
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
-import com.beardedlogic.usecase.test.TestHelpers
 import TypeTags._
 import tree._
 import TreeOps._
@@ -14,7 +13,10 @@ import StepLabels.LabelMakers
 
 class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
+  case class StepTreeWithText(override val children: List[StepNodeWithText]) extends TreeRoot[StepNodeWithText]
   implicit def autoTagLocalStepIds(s: String) = s.asLocalId
+  implicit def ListToStepTree(l: List[StepNode]) = StepTree(l)
+  implicit def ListToStepTreeWithText(l: List[StepNodeWithText]) = StepTreeWithText(l)
 
   /**
    * StepNode test data.
@@ -61,7 +63,7 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
   "mapIdsAndFullLabels()" should {
 
-    def oneLevel: List[StepNode] = StepNode("X1", 0, 0) :: StepNode("X2", 0, 1) :: Nil
+    def oneLevel: StepTree = StepNode("X1", 0, 0) :: StepNode("X2", 0, 1) :: Nil
 
     "map ids to labels" in {
       val map = mapIdsToFullLabels(oneLevel, "1.")
@@ -91,44 +93,51 @@ class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
   // -------------------------------------------------------------------------------------------------------------------
 
   "TreeNodeLike stuff" should {
-      val c1_0_2_x =
-        new StepNodeWithText("1.0.2.a", 2, 1, null) ::
-          new StepNodeWithText("1.0.2.b", 2, 2, null) ::
-          Nil
+    val c1_0_2_x =
+      new StepNodeWithText("1.0.2.a", 2, 1, null) ::
+        new StepNodeWithText("1.0.2.b", 2, 2, null) ::
+        Nil
 
-      val c1_0_x =
-        new StepNodeWithText("1.0.1", 1, 1, null) ::
-          new StepNodeWithText("1.0.2", 1, 2, null, c1_0_2_x) ::
-          new StepNodeWithText("1.0.3", 1, 3, null) ::
-          Nil
+    val c1_0_x =
+      new StepNodeWithText("1.0.1", 1, 1, null) ::
+        new StepNodeWithText("1.0.2", 1, 2, null, c1_0_2_x) ::
+        new StepNodeWithText("1.0.3", 1, 3, null) ::
+        Nil
 
-      val c1_2_x =
-        new StepNodeWithText("1.2.1", 1, 1, null) ::
-          Nil
+    val c1_2_x =
+      new StepNodeWithText("1.2.1", 1, 1, null) ::
+        Nil
 
-      val top =
-        new StepNodeWithText("1.0", 0, 0, null, c1_0_x) ::
-          new StepNodeWithText("1.1", 0, 1, null) ::
-          new StepNodeWithText("1.2", 0, 2, null, c1_2_x) ::
-          Nil
+    val top: TreeLike[StepNodeWithText] =
+      new StepNodeWithText("1.0", 0, 0, null, c1_0_x) ::
+        new StepNodeWithText("1.1", 0, 1, null) ::
+        new StepNodeWithText("1.2", 0, 2, null, c1_2_x) ::
+        Nil
 
-      val ids = List(
-        "1.0", "1.0.1", "1.0.2", "1.0.2.a", "1.0.2.b", "1.0.3",
-        "1.1",
-        "1.2", "1.2.1").sorted
+    val node10: TreeNodeLike[StepNodeWithText] = top(0)
 
-    "node.foreach()" in {
+    val ids = List(
+      "1.0", "1.0.1", "1.0.2", "1.0.2.a", "1.0.2.b", "1.0.3",
+      "1.1",
+      "1.2", "1.2.1").sorted
+
+    val idsFor10 = ids.filter(_.startsWith("1.0"))
+
+    "TreeLike.foreachRecursive" in {
       var list = List.empty[String]
-      top(0).foreach(list :+= _.id)
-      list.sorted should be(ids.filter(_.startsWith("1.0")))
-    }
-    "foreachNode()" in {
-      var list = List.empty[String]
-      top.foreachNode(list :+= _.id)
+      top.foreachRecursive(list :+= _.id)
       list.sorted should be(ids)
     }
-    "mapEachNode()" in {
-      top.mapEachNode(_.id.asInstanceOf[String]).sorted should be(ids)
+    "TreeLike.mapRecursive" in {
+      top.mapRecursive(_.id.asInstanceOf[String]).sorted should be(ids)
+    }
+    "TreeNodeLike.foreachRecursive" in {
+      var list = List.empty[String]
+      node10.foreachRecursive(list :+= _.id)
+      list.sorted should be(idsFor10)
+    }
+    "TreeNodeLike.mapRecursive" in {
+      node10.mapRecursive(_.id.asInstanceOf[String]).sorted should be(idsFor10)
     }
   }
 

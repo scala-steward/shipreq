@@ -75,7 +75,7 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     u
   }
 
-  def buildStateForTest(nodes: List[StepNodeWithText]): List[StepState] = {
+  def buildStateForTest(nodes: List[StepNodeWithText]): StepStateTree = {
     val cf = new NormalAndAlternateCourseFields(new UseCaseCtx(null), mock[FieldKey])
     cf.buildStateForTest(nodes)
   }
@@ -150,16 +150,19 @@ object TestHelpers extends TestHelpers {
     }, cf.startingLabelIndices.startingLabelIndex _)
 
     def setCoursesWithTextAndInit(nodes: List[StepNodeWithText]) {
-      cf.setCourses(nodes.map(_.toStepNode))(NoReactionOrNewMessages)
+      cf.setCourses(StepTree(nodes.map(_.toStepNode)))(NoReactionOrNewMessages)
       cf.init
       val savedSteps = BiMap.empty[Long_StepDataId, String @@ LocalId]
-      nodes.foreachNode(n => cf.test__textFields(n.id).setTextFromLoad(n.text.hasNormalisedRefs, savedSteps))
+      TreeLike(nodes).foreachRecursive(n => cf.test__textFields(n.id).setTextFromLoad(n.text.hasNormalisedRefs, savedSteps))
     }
 
-    def buildStateForTest(nodes: List[StepNodeWithText]): List[StepState] =
-      convertNodeTree[StepNodeWithText, StepState](nodes, {
-        case (n, level, index, children) => StepState(n.id, n.text.hasNormalisedRefs, children)
-      }, cf.startingLabelIndices.startingLabelIndex _)
+    def buildStateForTest(nodes: List[StepNodeWithText]) = StepStateTree(
+        convertNodeTree[StepNodeWithText, StepState](
+          nodes
+          , { case (n, level, index, children) => StepState(n.id, n.text.hasNormalisedRefs, children) }
+          , cf.startingLabelIndices.startingLabelIndex _
+        )
+      )
 
     def setCoursesWithText(nodes: List[StepNodeWithText]) {
       cf.setState(CourseFieldState(cf.buildStateForTest(nodes)))()

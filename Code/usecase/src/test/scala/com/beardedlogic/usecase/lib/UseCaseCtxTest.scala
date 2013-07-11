@@ -136,13 +136,13 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
     it("should save when empty") {
       val uc = new UseCaseCtx(null)
-      uc.courseFields.foreach(_ setCourses Nil)
+      uc.courseFields.foreach(_ setCourses StepTree.empty)
       assertTableDiffs('usecase -> 1, 'data -> 1, 'value -> 1) { uc.save(db) }
     }
 
     it("should save with 2 text fields") {
       val uc = sampleCtx
-      uc.courseFields.foreach(_ setCourses Nil)
+      uc.courseFields.foreach(_ setCourses StepTree.empty)
       assertTableDiffs('usecase -> 1, 'data -> 3, 'value -> 3, 'field_value -> 2, 'relation -> 2) { uc.save(db) }
     }
   }
@@ -236,7 +236,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
 
     // Reorder @ L1
     val ncac = uc.ncacField.get
-    ncac setCourses fixTopLevelIndices(ncac.courses.reverse)
+    ncac setCourses StepTree(fixTopLevelIndices(ncac.courses.children.reverse))
     testUpdate('usecase -> 1, 'field_value -> 1, 'value -> 2, 'relation -> FVsPlus(ncac.courses.size))
 
     // Step text change @ L2
@@ -259,7 +259,7 @@ class UseCaseCtxTest extends FunSpec with TestDatabaseSupport with TestHelpers {
     testUpdate('usecase -> 1, 'field_value -> 2, 'step -> 1, 'value -> 4, 'data -> 1, 'relation -> FVsPlus(3))
 
     // Reorder to step referred to by others
-    ncac setCourses fixTopLevelIndices(ncac.courses.reverse)
+    ncac setCourses StepTree(fixTopLevelIndices(ncac.courses.children.reverse))
     eventually(uc.textFields(0).value.text should be("New step is [1.0]"))
     testUpdate('usecase -> 1, 'field_value -> 1, 'value -> 2, 'relation -> FVsPlus(ncac.courses.size))
 

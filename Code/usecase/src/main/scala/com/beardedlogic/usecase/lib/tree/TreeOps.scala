@@ -9,10 +9,7 @@ import TypeTags._
  */
 object TreeOps {
 
-  implicit class TreeNodeLikeListExt[T <: TreeNodeLike[T]](val tree: List[T]) extends AnyVal {
-    def foreachNode[U](fn: T => U) { tree.foreach(_.foreach(fn)) }
-    def mapEachNode[R](fn: T => R): List[R] = tree.flatMap(_.map(fn))
-  }
+  implicit def TreeLikeToList[N <: TreeNode[N]](tree: TreeLike[N]): List[N] = tree.children
 
   /**
    * Generates a map of node IDs to labels.

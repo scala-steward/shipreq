@@ -32,8 +32,8 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
 
   val T1 = StepState("X2", "T1", List(StepState("X3", "T2", Nil), StepState("X4", "T3", Nil)))
   val T4 = StepState("X5", "T4", List(StepState("X6", "T5", Nil), StepState("X7", "T6", Nil)))
-  val Tree1 = StepState("X1", "Root", List(T1, T4)) :: StepState("X8", "Other", Nil) :: Nil
-  val Tree2 = StepState("X1", "Root [D.800]", List(T1, T4)) :: StepState("X8", "Other", Nil) :: Nil
+  val Tree1 = StepStateTree(StepState("X1", "Root", List(T1, T4)) :: StepState("X8", "Other", Nil) :: Nil)
+  val Tree2 = StepStateTree(StepState("X1", "Root [D.800]", List(T1, T4)) :: StepState("X8", "Other", Nil) :: Nil)
 
   val Tree1Text = """
         1.0. Root
@@ -89,7 +89,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     it("should remove step from courses") {
       val cf = new NormalAndAlternateCourseFields(mockUseCaseCtx, Key_NC)
       cf.removeStep(cf.courses(0)(0).id)
-      cf.courses should have size(1)
+      cf.courses.children should have size(1)
     }
     it("should remove step from text-field map") {
       val cf = new NormalAndAlternateCourseFields(mockUseCaseCtx, Key_NC)
@@ -219,7 +219,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     val mockStepValuesByNameB = Map.newBuilder[String @@ NormalisedRefs, PlainValue[DataType.Step]]
     var i = 0
     //val savedSteps = new BiMapBuilder[Long_StepDataId, String @@ LocalId]
-    state.courses.foreachNode { ss =>
+    state.courses.foreachRecursive { ss =>
       i += 1
       val dataId = (i * 1000).tag[StepDataId]
       val sv = PlainValue[DataType.Step](i, dataId, 1)
@@ -233,7 +233,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
   describe("Comparison") {
     it("do nothing with no changes") {
       val oldState = CourseFieldState(Tree1)
-      val oldStepValues = oldState.courses.mapEachNode { ss =>
+      val oldStepValues = oldState.courses.mapRecursive { ss =>
         val id = ss.id.replace("X", "").toLong
         (ss.id -> PlainValue[DataType.Step](id, id * 1000, 1))
       }.toMap
@@ -349,7 +349,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
       it("should not save when no courses") {
         val cf = new ExceptionCourseFields(mockUseCaseCtx, Key_EC)
         cf.save_? should be(false)
-        cf.setState(CourseFieldState(List.empty))()
+        cf.setState(CourseFieldState(StepStateTree(Nil)))()
         cf.save_? should be(false)
       }
       it("should save when has courses") {

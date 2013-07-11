@@ -35,7 +35,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
 
   // TODO This will do for now but if this is moved into init() it will cause problems with TextFields due to the stepRefMap
   setCourses(defaultState)(NoReactionOrNewMessages)
-  def defaultState = StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil
+  def defaultState = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
 
   override def recalcRootLabelPrefix = Some(s"${ucCtx.number}.")
   override def startingLabelIndices = NCAC_StartingLabelIndices
@@ -46,8 +46,8 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
   }
 
   override def render = (
-    renderSteps(courses.head :: Nil)(NormalCourseTemplate) ++
-    renderStepsWithAddTailStep(courses.tail)(AlternateCourseTemplate)
+    renderSteps(courses.head)(NormalCourseTemplate) ++
+    renderStepsWithAddTailStep(courses.tailAsTreeLike)(AlternateCourseTemplate)
   )
 
   override protected def buildNewTailStep() = StepNodeBuilder(0, courses.size)
@@ -60,7 +60,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
   override def prohibitRemoval_?(id: String @@ LocalId) = (id == courses.head.id)
 
   protected override def customiseIndentDecreaseJs(nodeId: String @@ LocalId, updateJs: JsCmd): JsCmd =
-    courses match {
+    courses.children match {
       // Move steps from NC to AC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
         JsCmds.Run(s"nc_to_ac('#uce','${nodeId}',${JE.AnonFunc(updateJs).toJsCmd})")
@@ -69,8 +69,8 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
       case _ => updateJs
     }
 
-  protected override def customiseIndentIncreaseJs(nodeId: String @@ LocalId, newNode: StepNode, oldCourses: List[StepNode], updateJs: JsCmd): JsCmd =
-    oldCourses match {
+  protected override def customiseIndentIncreaseJs(nodeId: String @@ LocalId, newNode: StepNode, oldCourses: StepTree, updateJs: JsCmd): JsCmd =
+    oldCourses.children match {
       // Move steps from AC to NC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
         JsCmds.Run(s"ac_to_nc('#uce','${ExprForNodeAndChildren(newNode)}',${JE.AnonFunc(updateJs).toJsCmd})")
