@@ -7,13 +7,13 @@ package com.beardedlogic.usecase.lib.tree
  */
 trait TreeLike[N <: TreeNodeLike[N]] {
 
-  val children: List[N]
+  protected def nodes: List[N]
 
-  def apply(childIndex: Int) = if (childIndex >= 0) children(childIndex) else children(children.size + childIndex)
+  def apply(childIndex: Int) = if (childIndex >= 0) nodes(childIndex) else nodes(nodes.size + childIndex)
 
-  def foreachRecursive(fn: N => Any): Unit = children.foreach(_.foreachRecursive(fn))
+  def foreachRecursive(fn: N => Any): Unit = nodes.foreach(_.foreachRecursive(fn))
 
-  def mapRecursive[R](fn: N => R): List[R] = children.flatMap(_.mapRecursive(fn))
+  def mapRecursive[R](fn: N => R): List[R] = nodes.flatMap(_.mapRecursive(fn))
 }
 
 object TreeLike {
@@ -21,7 +21,7 @@ object TreeLike {
 }
 
 /** A generic implementation for turning a List into a TreeLike. */
-case class GenTreeLike[N <: TreeNodeLike[N]](override val children: List[N]) extends TreeLike[N]
+case class GenTreeLike[N <: TreeNodeLike[N]](override val nodes: List[N]) extends TreeLike[N]
 
 /**
  * The root of a tree.
@@ -30,12 +30,13 @@ case class GenTreeLike[N <: TreeNodeLike[N]](override val children: List[N]) ext
  * @since 11/07/2013
  */
 trait TreeRoot[N <: TreeNodeLike[N]] extends TreeLike[N] {
-  final def size = children.size
-  final def isEmpty = children.isEmpty
-  final def nonEmpty = children.nonEmpty
-  final def head = children.head
-  final def headOption = children.headOption
-  final def tail = children.tail
+  override def nodes: List[N]
+  final def size = nodes.size
+  final def isEmpty = nodes.isEmpty
+  final def nonEmpty = nodes.nonEmpty
+  final def head = nodes.head
+  final def headOption = nodes.headOption
+  final def tail = nodes.tail
   final def tailAsTreeLike: TreeLike[N] = TreeLike(tail)
 }
 
@@ -46,6 +47,9 @@ trait TreeRoot[N <: TreeNodeLike[N]] extends TreeLike[N] {
  */
 trait TreeNodeLike[N <: TreeNodeLike[N]] extends TreeLike[N] {
   self: N =>
+
+  val children: List[N]
+  override final protected def nodes: List[N] = children
 
   override def foreachRecursive(fn: N => Any) {
     fn(this)

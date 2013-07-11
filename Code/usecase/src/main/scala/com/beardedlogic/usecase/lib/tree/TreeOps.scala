@@ -9,7 +9,8 @@ import TypeTags._
  */
 object TreeOps {
 
-  implicit def TreeLikeToList[N <: TreeNode[N]](tree: TreeLike[N]): List[N] = tree.children
+  implicit def TreeRootToList[N <: TreeNodeLike[N]](tree: TreeRoot[N]): List[N] = tree.nodes
+  implicit def TreeNodeToList[N <: TreeNodeLike[N]](tree: TreeNodeLike[N]): List[N] = tree.children
 
   /**
    * Generates a map of node IDs to labels.

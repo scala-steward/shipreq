@@ -93,7 +93,7 @@ object CourseFields {
       case Nil => false
     }
 
-    val changedDetected = iter(newState.children)
+    val changedDetected = iter(newState)
     changedDetected || {
       // Top-level order could be different and no changes would otherwise be detected
       oldState.courses != newState
@@ -319,7 +319,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     rootLabelPrefix.refresh
 
     val newCourses = convertNodeTree[StepState, StepNode](
-      newState.courses.children
+      newState.courses
       ,{ case (node, level, index, children) =>StepNode(node.id, level, index, children)}
       , startingLabelIndices.startingLabelIndex _
     )
@@ -387,7 +387,7 @@ abstract class CourseFields extends Field[CourseFieldState] with SnippetHelpers 
     // Link FV to top-level
     val fv = newSaveCtx.fieldValues(fieldKey)
     for {
-      (ss,i) <- state.get.courses.children.zipWithIndex
+      (ss,i) <- state.get.courses.zipWithIndex
       stepValue <- combinedSaveCtx.stepValues.get(ss.id)
     } dao.relate_stepParent_has_step(fv, i.toShort, stepValue)
 

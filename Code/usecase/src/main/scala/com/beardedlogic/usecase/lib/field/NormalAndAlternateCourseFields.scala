@@ -60,7 +60,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
   override def prohibitRemoval_?(id: String @@ LocalId) = (id == courses.head.id)
 
   protected override def customiseIndentDecreaseJs(nodeId: String @@ LocalId, updateJs: JsCmd): JsCmd =
-    courses.children match {
+    courses.nodes match {
       // Move steps from NC to AC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
         JsCmds.Run(s"nc_to_ac('#uce','${nodeId}',${JE.AnonFunc(updateJs).toJsCmd})")
@@ -70,7 +70,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
     }
 
   protected override def customiseIndentIncreaseJs(nodeId: String @@ LocalId, newNode: StepNode, oldCourses: StepTree, updateJs: JsCmd): JsCmd =
-    oldCourses.children match {
+    oldCourses.nodes match {
       // Move steps from AC to NC
       case nc :: ac1 :: acN if ac1.id == nodeId =>
         JsCmds.Run(s"ac_to_nc('#uce','${ExprForNodeAndChildren(newNode)}',${JE.AnonFunc(updateJs).toJsCmd})")

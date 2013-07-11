@@ -8,9 +8,9 @@ import StepLabels.LabelMakers
 /**
  * A full tree of steps.
  *
- * @param children The top-level steps.
+ * @param nodes The top-level steps.
  */
-case class StepTree(override val children: List[StepNode]) extends TreeRoot[StepNode]
+case class StepTree(override val nodes: List[StepNode]) extends TreeRoot[StepNode]
 
 object StepTree {
   final val empty = apply(Nil)

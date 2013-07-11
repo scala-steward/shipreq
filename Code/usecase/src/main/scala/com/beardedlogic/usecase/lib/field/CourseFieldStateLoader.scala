@@ -60,4 +60,4 @@ case class StepState(
   override def toString = s"StepState($id, '$text', $children)"
 }
 
-case class StepStateTree(override val children: List[StepState]) extends TreeRoot[StepState]
+case class StepStateTree(override val nodes: List[StepState]) extends TreeRoot[StepState]

@@ -89,7 +89,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
     it("should remove step from courses") {
       val cf = new NormalAndAlternateCourseFields(mockUseCaseCtx, Key_NC)
       cf.removeStep(cf.courses(0)(0).id)
-      cf.courses.children should have size(1)
+      cf.courses.nodes should have size(1)
     }
     it("should remove step from text-field map") {
       val cf = new NormalAndAlternateCourseFields(mockUseCaseCtx, Key_NC)

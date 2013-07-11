@@ -13,7 +13,7 @@ import StepLabels.LabelMakers
 
 class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {
 
-  case class StepTreeWithText(override val children: List[StepNodeWithText]) extends TreeRoot[StepNodeWithText]
+  case class StepTreeWithText(override val nodes: List[StepNodeWithText]) extends TreeRoot[StepNodeWithText]
   implicit def autoTagLocalStepIds(s: String) = s.asLocalId
   implicit def ListToStepTree(l: List[StepNode]) = StepTree(l)
   implicit def ListToStepTreeWithText(l: List[StepNodeWithText]) = StepTreeWithText(l)
