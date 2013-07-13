@@ -15,6 +15,7 @@ object ExceptionCourseFields extends FieldDef[CourseFieldState] {
   override def fieldKeyType = FieldKeyType.ExceptionCourses
   override def fieldKeyData = None
 
+  def EC_LabelPrefix(ucNum: Short) = s"$ucNum.E."
   def EC_StartingLabelIndices = StartingLabelIndicesAt1
   override def stateLoader(fieldKey: FieldKey) = new CourseFieldStateLoader(fieldKey, EC_StartingLabelIndices)
 
@@ -28,7 +29,7 @@ object ExceptionCourseFields extends FieldDef[CourseFieldState] {
 class ExceptionCourseFields(override val ucCtx: UseCaseCtx, override val fieldKey: FieldKey) extends CourseFields {
   import ExceptionCourseFields._
 
-  override def recalcRootLabelPrefix = Some(s"${ucCtx.number}.E.")
+  override def recalcRootLabelPrefix = Some(EC_LabelPrefix(ucCtx.number))
   override def startingLabelIndices = EC_StartingLabelIndices
 
   override def render = renderStepsWithAddTailStep(courses)(ExceptionTemplate)

@@ -61,11 +61,14 @@ object SmartTextTest extends MockitoSugar {
     }
   }
 
+  val FlowRightReplace = "(-+)>".r
+  val FlowLeftReplace = "<(-+)".r
+
   implicit class StringFlowExt(s: String) {
     def fixArrows(from: Boolean) = if (from)
-      s.replace("-->", "<--").replace("➡", "⬅").replace("->", "<-")
+      FlowRightReplace.replaceAllIn(s, "<" + _.group(1)).replace("➡", "⬅")
     else
-      s.replace("<--", "-->").replace("⬅", "➡").replace("<-", "->")
+      FlowLeftReplace.replaceAllIn(s, _.group(1) + ">").replace("⬅", "➡")
   }
 
   class ReactionCollector extends Reactor {
@@ -119,12 +122,6 @@ class SmartTextTest
       case m : MsgCollector => m.reactionCollector.reactions should have size(if (expected) 1 else 0)
       //case m : _ => verify(m, if (expected) times(1) else never).!(any[PushToClient])
     }
-  }
-
-  override def checkTextParsing(text: String, expected: String) = {
-    val actual = stepFieldWithText(text).text
-    actual should be(expected)
-    true
   }
 
   implicit def reactor = NoReaction
@@ -354,9 +351,11 @@ class SmartTextTest
 
     def textTransformation(from:Boolean) {
 
+      def testTextOneWay(a: String, b: String): Unit = stepFieldWithText(a).text should be(b)
+
       def testText(a: String, b: String) {
         stepFieldWithText(a.fixArrows(from)).text should be(b.fixArrows(from))
-        stepFieldWithText(a.replaceAll("-->", "➡").fixArrows(from)).text should be(b.fixArrows(from))
+        stepFieldWithText(a.replaceAll("-{2,}>", "➡").fixArrows(from)).text should be(b.fixArrows(from))
       }
 
       it("should allow links to self") {
@@ -368,6 +367,8 @@ class SmartTextTest
                               , ("--> blah", "-> blah")
                               , ("blarr --> blah", "blarr -> blah")
                               , ("blarr -->", "blarr ->")
+                              , ("zxc-->abc", "zxc->abc")
+                              , ("zxc----->abc", "zxc->abc")
                               , ("--> [S.0]", "-> [S.0?]")
                               , ("--> S.0", "-> S.0")
                               , ("--> S.1, S.0", "-> S.1, S.0")
@@ -375,7 +376,16 @@ class SmartTextTest
                               , ("--> S.1 bullshit", "-> S.1 bullshit")
                               , ("--> X1", "-> X1")
                             )
-        forAll(examples)(testText _)
+        val examples2 = Table(("Before", "After")
+          , ("zxc➡-abc", "zxc->-abc")
+          , ("zxc-➡abc", "zxc->abc")
+          , ("zxc-➡-abc", "zxc->-abc")
+          , ("zxc⬅-abc", "zxc<-abc")
+          , ("zxc-⬅abc", "zxc-<-abc")
+          , ("zxc-⬅-abc", "zxc-<-abc")
+        )
+        forAll(examples)(testText)
+        forAll(examples2)(testTextOneWay)
       }
 
       it("should parse a single valid ref") {
@@ -768,47 +778,30 @@ trait SmartTextChecks {
   import SmartTextTest._
   import org.scalacheck.Prop._
   import org.scalacheck.Gen
+  import test.DataGenerators._
+  import SmartText._
 
-  val text: Gen[String] = Gen.alphaStr suchThat (s => !s.contains("-->") && !s.contains("➡"))
-  val nothing: Gen[String] = ""
-  val whitespace: Gen[String] = Gen.listOf(Gen.oneOf(' ', '\t')).map(_.mkString)
-  val left: Gen[String] = text | nothing | whitespace
-
-  val optionalWhitespace: Gen[String] = nothing | whitespace
-
-  val arrow = for {
-    w1 <- optionalWhitespace
-    a <- Gen.oneOf("-->", "➡")
-    w2 <- optionalWhitespace
-  } yield w1 + a + w2
-
-  def optionalBraces(gen: Gen[String]): Gen[String] = for {
-    wrap <- Gen.oneOf(true, false)
-    label <- gen
-  } yield (if (wrap) s"[$label]" else label)
-
-  val validStep = optionalBraces(Gen.oneOf("S.1", "S.2", "S.3", "S.5"))
+  val validStep = withOptionalBraces(Gen.oneOf("S.1", "S.2", "S.3", "S.5"))
   val invalidStep = Gen.oneOf("S.0", ".1", "X1", "")
 
   val invalidStatement = for {
-    l <- left
-    a <- arrow
+    l <- optionalPlainText suchThat (!_.endsWith("-"))
+    a <- flowToArrow
     r <- Gen.listOf(invalidStep | nothing).map(_.mkString(","))
   } yield l + a + r
 
-  val validStatement = (for {
-    l <- left
-    a <- arrow
+  val validStatement = for {
+    l <- optionalPlainText suchThat (!_.endsWith("-"))
+    a <- flowToArrow
     r <- Gen.listOf1(validStep)
-  } yield (l, a, r))
+  } yield (l, a, r)
 
-  val invalidStatementProp = forAll(invalidStatement) { t =>
-    val exp = t.trim.replaceAll("-->|➡", "->")
+  val invalidStatementProp = forAllNoShrink(invalidStatement) { t =>
+    val exp = FlowToArrowRegex.replaceAllIn(t.trim, FlowToArrowBadReplacement)
     checkTextParsing(t, exp)
   }
 
-  val validStatementProp = forAll(validStatement) { x =>
-    val (l, a, steps) = x
+  val validStatementProp = forAllNoShrink(validStatement) { case (l, a, steps) if a.nonEmpty && steps.nonEmpty =>
     val t = l + a + steps.mkString(",")
     val end = if (steps.isEmpty) "" else "➡ " + TreeSet(steps: _*).map { _.replaceFirst("^\\[?", "[").replaceFirst("\\]?$", "]") }.mkString(" ")
     val exp = List(l.trim, end).filter(_.nonEmpty).mkString(" ")
@@ -817,6 +810,6 @@ trait SmartTextChecks {
 
   def checkTextParsing(text: String, expected: String) = {
     val actual = stepFieldWithText(text).text
-    (actual == expected) :| s"'$text' should parse into '$expected', not '$actual'"
+    (actual == expected) :|| s"Parsing failed.\nT: '$text'\nE: '$expected'\nA: '$actual'"
   }
 }

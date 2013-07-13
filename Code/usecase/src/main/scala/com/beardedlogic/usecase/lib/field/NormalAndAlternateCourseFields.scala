@@ -17,6 +17,7 @@ object NormalAndAlternateCourseFields extends FieldDef[CourseFieldState] {
   override def fieldKeyType = FieldKeyType.NormalAndAlternateCourses
   override def fieldKeyData = None
 
+  def NCAC_LabelPrefix(ucNum: Short) = s"$ucNum."
   def NCAC_StartingLabelIndices = StartingRootLabelIndexAt0
   override def stateLoader(fieldKey: FieldKey) = new CourseFieldStateLoader(fieldKey, NCAC_StartingLabelIndices)
 
@@ -37,7 +38,7 @@ class NormalAndAlternateCourseFields(override val ucCtx: UseCaseCtx, override va
   setCourses(defaultState)(NoReactionOrNewMessages)
   def defaultState = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
 
-  override def recalcRootLabelPrefix = Some(s"${ucCtx.number}.")
+  override def recalcRootLabelPrefix = Some(NCAC_LabelPrefix(ucCtx.number))
   override def startingLabelIndices = NCAC_StartingLabelIndices
 
   override def init() {

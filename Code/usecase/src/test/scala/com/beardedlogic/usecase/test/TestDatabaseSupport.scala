@@ -76,6 +76,12 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
   var dbVar: DAO = null
   def db = dbVar
 
+  def rollbackAfter[U](fn: => U): U = db.withTransaction {
+    val result = fn
+    db.rollback()
+    result
+  }
+
   def testDaoProvider = new TestDaoProvider(db)
 
   def randomId = -TestDatabaseSupport.Random.nextLong().abs

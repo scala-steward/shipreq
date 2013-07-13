@@ -14,6 +14,14 @@ trait TreeLike[N <: TreeNodeLike[N]] {
   def foreachRecursive(fn: N => Any): Unit = nodes.foreach(_.foreachRecursive(fn))
 
   def mapRecursive[R](fn: N => R): List[R] = nodes.flatMap(_.mapRecursive(fn))
+
+  def flattenRecursive: List[N] = mapRecursive(n => n)
+
+  def sizeRecursive: Int = {
+    var size = 0
+    foreachRecursive(_ => size += 1)
+    size
+  }
 }
 
 object TreeLike {

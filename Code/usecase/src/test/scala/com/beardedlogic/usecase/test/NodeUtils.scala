@@ -89,7 +89,7 @@ object NodeUtils {
   def inspectTree(tree: List[StepNodeWithText], indent: String = "", res: List[String] = Nil): List[String] = tree match {
     case Nil => res
     case h :: t =>
-      val s = s"${indent}${h.label}. ${h.text}"
+      val s = s"${indent}${h.label}. ${h.text.replace("\n","\\n")}"
       val ch = inspectTree(h.children, indent + "  ")
       inspectTree(t, indent, res ::: s :: ch)
   }

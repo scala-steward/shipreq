@@ -43,13 +43,18 @@ object SmartText {
 
   val DeletedRef = MakeRef("DELETED")
 
-  val FlowToArrowRegex = "-{2,}>|[→➡⇨⇒⇾]".r
-  val FlowToArrowBadReplacement = "->"
+  // TODO Merge flow arrow stuff
   val FlowToArrow = "➡"
+  val FlowToUnicodeArrows: List[Char] = (FlowToArrow + "→⇨⇒⇾").toList
+  val FlowToArrowRegex = s"-{2,}>|[${FlowToUnicodeArrows.mkString}]".r
+  val FlowToArrowBadRegex = s"-*(?:->|[${FlowToUnicodeArrows.mkString}])".r
+  val FlowToArrowBadReplacement = "->"
 
-  val FlowFromArrowRegex = "<-{2,}|[←⬅⇦⇐⇽]".r
-  val FlowFromArrowBadReplacement = "<-"
   val FlowFromArrow = "⬅"
+  val FlowFromUnicodeArrows: List[Char] = (FlowFromArrow + "←⇦⇐⇽").toList
+  val FlowFromArrowRegex = s"<-{2,}|[${FlowFromUnicodeArrows.mkString}]".r
+  val FlowFromArrowBadRegex = s"(?:<-|[${FlowFromUnicodeArrows.mkString}])-*".r
+  val FlowFromArrowBadReplacement = "<-"
 
   @inline def MakeFlowText(arrow: String, labels: TreeSet[String @@ Label]) =
     arrow + " " + labels.map(MakeRef(_)).mkString(" ")
@@ -383,7 +388,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     var refs = Map.empty[String @@ LocalId, String @@ Label]
     var text = ""
     def arrow : String
-    def arrowReplacement : String
+    // def arrowReplacement : String
     def get(pr : ParseResult[FlowParseResult]): Option[List[String]]
     def flowChangeMsg: Message
     final def broadcast(implicit reactor: Reactor) { msgCentre ! flowChangeMsg }
@@ -411,7 +416,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
   /** Indicates which steps flow into this step. */
   final class FlowFrom extends Flow {
     override def arrow = FlowFromArrow
-    override def arrowReplacement = FlowFromArrowBadReplacement
+    // override def arrowReplacement = FlowFromArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.from
     override def flowChangeMsg = FlowFromChangeMsg(refs.keySet, stepId)
   }
@@ -419,7 +424,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
   /** Indicates into which steps this step flows. */
   final class FlowTo extends Flow {
     override def arrow = FlowToArrow
-    override def arrowReplacement = FlowToArrowBadReplacement
+    // override def arrowReplacement = FlowToArrowBadReplacement
     override def get(pr : ParseResult[FlowParseResult]) = pr.get.to
     override def flowChangeMsg = FlowToChangeMsg(stepId, refs.keySet)
   }
@@ -470,8 +475,8 @@ class SmartStepText(override val msgCentre: MessageCentre,
       flowTo.clearAndBroadcast
     }
 
-    text = FlowFromArrowRegex.replaceAllIn(text, FlowFromArrowBadReplacement)
-    text = FlowToArrowRegex.replaceAllIn(text, FlowToArrowBadReplacement)
+    text = FlowFromArrowBadRegex.replaceAllIn(text, FlowFromArrowBadReplacement)
+    text = FlowToArrowBadRegex.replaceAllIn(text, FlowToArrowBadReplacement)
     text
   }
 

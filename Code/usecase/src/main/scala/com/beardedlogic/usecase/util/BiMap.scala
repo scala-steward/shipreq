@@ -16,7 +16,12 @@ object BiMap {
  *
  * @since 31/05/2013
  */
-case class BiMap[A, B](final val ab: Map[A, B], final val ba: Map[B, A])
+case class BiMap[A, B](final val ab: Map[A, B], final val ba: Map[B, A]) {
+  def as = ab.keySet
+  def bs = ba.keySet
+  def size = ab.size
+  assume(ab.size == ba.size, "A->B and B->A have differing sizes. There must be a non-unique element.")
+}
 
 /*{
   def apply(a:A): B = ab(a)
