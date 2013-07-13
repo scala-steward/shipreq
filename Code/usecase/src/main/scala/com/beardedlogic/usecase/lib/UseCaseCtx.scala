@@ -26,6 +26,7 @@ class UseCaseCtx(val cometActor: AnyRef = null) extends Logger {
   val fieldList = Defaults.FieldList
   val fields = fieldList.get.fieldKeys.map(k => k.fieldDef.newFieldInstance(this, k))
   @inline final def genericFields = fields.asInstanceOf[List[Field[Any]]]
+  def field(fk: FieldKey) = fields.collectFirst {case f if f.fieldKey == fk => f}
 
   val courseFields: List[CourseFields] = fields.collect { case f: CourseFields => f }
   def textFields = fields.collect { case f: TextField => f }
@@ -72,6 +73,13 @@ class UseCaseCtx(val cometActor: AnyRef = null) extends Logger {
     lastSave = Some(checkpoint)
   }
 
+  /**
+   * Saves the use case.
+   *
+   * Does nothing if there are differences between the current UC, and the last-saved revision.
+   *
+   * @return Whether or not the use case was saved.
+   */
   def save(dao: DAO): Boolean = {
     def actuallySave: Boolean = dao.withTransaction {
       var changesDetected = false

@@ -56,6 +56,8 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
       & "textarea" #> value.renderTextarea
     )
 
+  def state: String @@ NormalisedRefs = value.textWithNormalisedRefs(ucCtx)
+
   override def setState(newState: String @@ NormalisedRefs): () => Unit = {
     () => value.setTextFromLoad(newState, ucCtx.savedSteps.get)
   }
@@ -68,13 +70,13 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
     dao: DAO): Boolean = {
     lastSave match {
       case None                    => true
-      case Some((_, previousText)) => previousText != value.textWithNormalisedRefs(ucCtx)
+      case Some((_, previousText)) => previousText != state
     }
   }
 
   override def save(combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx, dao: DAO): (FieldValueData, String @@ NormalisedRefs) = {
     // Required again because normalised refs may be different after presave
-    val txt = value.textWithNormalisedRefs(ucCtx)
+    val txt = state
     (Some(txt), txt)
   }
 

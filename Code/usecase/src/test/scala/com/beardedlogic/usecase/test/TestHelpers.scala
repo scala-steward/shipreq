@@ -132,6 +132,14 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     }
   }
 
+  def time[U](logFn: Float => Any)(fn: => U): U = {
+    val start = System.currentTimeMillis
+    val result = fn
+    val end = System.currentTimeMillis
+    val time = (end - start).toFloat / 1000f
+    logFn(time)
+    result
+  }
 }
 
 object TestHelpers extends TestHelpers {

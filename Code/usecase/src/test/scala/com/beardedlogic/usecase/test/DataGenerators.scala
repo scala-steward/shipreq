@@ -250,4 +250,6 @@ object DataGenerators extends Logger {
       uc
     }
   }
+
+  implicit lazy val arbUseCase: Arbitrary[UseCaseCtx] = Arbitrary(useCase)
 }
