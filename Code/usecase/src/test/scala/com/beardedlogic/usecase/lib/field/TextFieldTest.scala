@@ -58,7 +58,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
       }
     }
 
-    def testPresave(tf: TextField, lastSave: Option[(FieldSaveCtx, String @@ NormalisedRefs)], expectChange: Boolean) {
+    def testPresave(tf: TextField, lastSave: Option[(FieldSaveCtx, TextWithNormalisedRefs)], expectChange: Boolean) {
       val saveCtx = mock[MutableFieldSaveCtx]
       val dao = mock[DAO]
       tf.save_? should be(true)

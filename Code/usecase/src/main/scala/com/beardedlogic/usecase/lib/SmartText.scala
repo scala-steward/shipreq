@@ -65,7 +65,7 @@ object SmartText {
   def normaliseRefs(
     text: String,
     savedSteps: Map[LocalIdStr, Long_StepDataId],
-    refs: Map[LocalIdStr, LabelStr]): String @@ NormalisedRefs = {
+    refs: Map[LocalIdStr, LabelStr]): TextWithNormalisedRefs = {
 
     var r = text
     for {
@@ -219,7 +219,7 @@ class SmartText(val msgCentre: MessageCentre,
    *                          human-readable labels.
    * @param savedSteps A map of step data-to-node ids.
    */
-  def setTextFromLoad(newValueWithNRefs: String @@ NormalisedRefs, savedSteps: BiMap[Long_StepDataId, LocalIdStr]) {
+  def setTextFromLoad(newValueWithNRefs: TextWithNormalisedRefs, savedSteps: BiMap[Long_StepDataId, LocalIdStr]) {
     refAndIdLookup.invalidate
 
     // Realise normalised refs
@@ -236,10 +236,10 @@ class SmartText(val msgCentre: MessageCentre,
     _text = parseText(newValue)(NoReactionOrNewMessages)
   }
 
-  @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): String @@ NormalisedRefs =
+  @inline final def textWithNormalisedRefs(ucCtx: UseCaseCtx): TextWithNormalisedRefs =
     textWithNormalisedRefs(ucCtx.savedSteps.get.ba)
 
-  def textWithNormalisedRefs(savedSteps: Map[LocalIdStr, Long_StepDataId]): String @@ NormalisedRefs =
+  def textWithNormalisedRefs(savedSteps: Map[LocalIdStr, Long_StepDataId]): TextWithNormalisedRefs =
     normaliseRefs(text, savedSteps, refsInText)
 
   /**
@@ -558,7 +558,7 @@ class SmartStepText(override val msgCentre: MessageCentre,
     f.refs -= id
   }
 
-  override def textWithNormalisedRefs(savedSteps: Map[LocalIdStr, Long_StepDataId]): String @@ NormalisedRefs = {
+  override def textWithNormalisedRefs(savedSteps: Map[LocalIdStr, Long_StepDataId]): TextWithNormalisedRefs = {
     var txt = super.textWithNormalisedRefs(savedSteps)
     txt = normaliseRefs(txt, savedSteps, flowFrom.refs)
     txt = normaliseRefs(txt, savedSteps, flowTo.refs)

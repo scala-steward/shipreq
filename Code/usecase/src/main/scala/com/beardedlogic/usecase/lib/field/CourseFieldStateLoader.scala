@@ -53,7 +53,7 @@ case class CourseFieldState(courses: StepStateTree) {
 
 case class StepState(
   id: LocalIdStr,
-  text: String @@ NormalisedRefs,
+  text: TextWithNormalisedRefs,
   children: List[StepState])
   extends TreeNodeLike[StepState] {
 

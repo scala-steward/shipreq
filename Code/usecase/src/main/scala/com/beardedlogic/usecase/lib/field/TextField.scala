@@ -14,7 +14,7 @@ import com.beardedlogic.usecase.util.TemplateCache
  *
  * @param title Name/title of the field. E.g. "Pre-Conditions"
  */
-case class TextFieldDef(title: String) extends FieldDef[String @@ NormalisedRefs] {
+case class TextFieldDef(title: String) extends FieldDef[TextWithNormalisedRefs] {
 
   override def newFieldInstance(ucCtx: UseCaseCtx, fieldKey: FieldKey) = new TextField(this, ucCtx, fieldKey)
 
@@ -29,7 +29,7 @@ object TextField {
 
   val TextTemplate = UseCaseEditorTemplate.extract("template-text")
 
-  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[String @@ NormalisedRefs] {
+  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[TextWithNormalisedRefs] {
     override def load(loadCtx: FieldLoadCtx, saveCtx: MutableFieldSaveCtx) =
       loadCtx.fieldValues.get(fieldKey).map(_.fieldData).flatten.getOrElse("").hasNormalisedRefs
   }
@@ -41,7 +41,7 @@ object TextField {
  * @param fd Identity of this text field.
  */
 class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override val fieldKey: FieldKey)
-  extends Field[String @@ NormalisedRefs] {
+  extends Field[TextWithNormalisedRefs] {
 
   val value = new SmartText(ucCtx.msgCentre, ucCtx.stepLabelMap)
 
@@ -56,16 +56,16 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
       & "textarea" #> value.renderTextarea
     )
 
-  def state: String @@ NormalisedRefs = value.textWithNormalisedRefs(ucCtx)
+  def state: TextWithNormalisedRefs = value.textWithNormalisedRefs(ucCtx)
 
-  override def setState(newState: String @@ NormalisedRefs): () => Unit = {
+  override def setState(newState: TextWithNormalisedRefs): () => Unit = {
     () => value.setTextFromLoad(newState, ucCtx.savedSteps.get)
   }
 
   override def save_? : Boolean = value.text.nonEmpty
 
   override def presave(
-    lastSave: Option[(FieldSaveCtx, String @@ NormalisedRefs)],
+    lastSave: Option[(FieldSaveCtx, TextWithNormalisedRefs)],
     saveCtx: MutableFieldSaveCtx,
     dao: DAO): Boolean = {
     lastSave match {
@@ -74,7 +74,7 @@ class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override v
     }
   }
 
-  override def save(combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx, dao: DAO): (FieldValueData, String @@ NormalisedRefs) = {
+  override def save(combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx, dao: DAO): (FieldValueData, TextWithNormalisedRefs) = {
     // Required again because normalised refs may be different after presave
     val txt = state
     (Some(txt), txt)

@@ -216,7 +216,7 @@ class CourseFieldsTest extends FunSpec with TestHelpers {
 
   def lastSave2For(state: CourseFieldState) = {
     val oldStepValuesB = Map.newBuilder[LocalIdStr, PlainValue[DataType.Step]]
-    val mockStepValuesByNameB = Map.newBuilder[String @@ NormalisedRefs, PlainValue[DataType.Step]]
+    val mockStepValuesByNameB = Map.newBuilder[TextWithNormalisedRefs, PlainValue[DataType.Step]]
     var i = 0
     //val savedSteps = new BiMapBuilder[Long_StepDataId, LocalIdStr]
     state.courses.foreachRecursive { ss =>

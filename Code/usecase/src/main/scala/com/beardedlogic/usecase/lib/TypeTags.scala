@@ -24,6 +24,7 @@ object TypeTags {
 
   /** Indicates that references to steps are in normalised form. Eg. [D.112] instead of [3.0.1] */
   trait NormalisedRefs extends TypeTag[String]
+  type TextWithNormalisedRefs = String @@ NormalisedRefs
 
   /** A transient ID used as glue between internal components and/or the client. */
   trait LocalId extends TypeTag[String]
@@ -34,7 +35,7 @@ object TypeTags {
   type LabelStr = String @@ Label
 
   implicit class StringTypeExt(val s: String) extends AnyVal {
-    def hasNormalisedRefs = s.asInstanceOf[String @@ NormalisedRefs]
+    def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
     def asLocalId = s.asInstanceOf[LocalIdStr]
     def asLabel = s.asInstanceOf[LabelStr]
   }
