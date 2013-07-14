@@ -1,0 +1,110 @@
+@startuml ucc-classes.png
+
+class UseCaseCtx {
+	msgCentre
+	-lastSave: Option[UseCaseSaveCheckpoint]
+	-number: Short
+	-title: String
+	fieldList
+	fields: List[Field[_]]
+	normalCourseTitleId
+	-stepLabelMap()
+	-savedSteps()
+}
+
+interface FieldDef {
+	Field newFieldInstance(ucCtx, fieldKey)
+	FieldKeyType fieldKeyType()
+	FieldKeyData fieldKeyData()
+	FieldStateLoader stateLoader(fieldKey)
+}
+
+interface Field {
+	ucCtx: UseCaseCtx
+	fieldKey: FieldKey
+	init()
+	render()
+	setState(newState)
+	Boolean save_?()
+	Boolean presave(lastSave, saveCtx, dao)
+	(FieldValueData, State) save(combinedSaveCtx, newSaveCtx, dao)
+}
+
+interface FieldStateLoader {
+	State load(loadCtx, saveCtx)
+}
+
+class TextFieldDef {
+	title: String
+}
+class TextField {
+	fd: TextFieldDef
+	value: SmartText
+	state()
+}
+TextField --|> Field
+TextFieldDef --|> FieldDef
+TextField o- TextFieldDef
+
+class SmartText {
+	msgCentre: MessageCentre
+	textareaId: String
+	#writeLock
+	-_text
+	-refsInText
+	-refAndIdLookup
+	' text()
+	' renderTextarea()
+	' setTextFromLoad(newValueWithNRefs, savedSteps)
+	' textWithNormalisedRefs(uc)
+	' JsCmd onTextChange(newValue)
+	' setTextFromUser(newValueRaw)
+	' messageHandler(reactor)
+}
+class SmartStepText {
+	stepId: String
+	-textWithoutFlow: String
+	flowFrom: Flow
+	flowTo: Flow
+	String buildFullText()
+}
+SmartStepText --|> SmartText
+
+abstract class CourseFields {
+	-_courses: StepTree
+	-textFields: Map[String, SmartStepText]
+	setCourses(StepTree)(Reactor)
+}
+CourseFields --|> Field
+
+UseCaseCtx o- Field
+FieldDef o- FieldStateLoader
+TextField *- SmartText
+FieldDef ..> Field
+
+' class SmartStepText {
+' stepId: String @@ LocalId
+' }
+
+' Data *- Value : has 1..n >
+' Value *- VersionAnn : has 0..1 >
+'
+' Value --> Relation : from n >
+' Value <-- Relation : to n <
+'
+' UseCase --|> Value
+' FieldKey --|> Value
+' FieldValue --|> Value
+' Text --|> Value
+' Step --|> Value
+' File --|> Value
+'
+' Data o- DataType
+' Relation o- DataRelationType
+' FieldKey o-- FieldKeyType
+'
+' UseCase o-- Value : has field list 1 >
+' FieldValue o-- FieldKey : has key 1 >
+' Step o-- Text : has text [0..1] >
+
+@enduml
