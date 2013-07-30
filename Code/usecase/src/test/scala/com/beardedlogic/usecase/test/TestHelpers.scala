@@ -14,6 +14,7 @@ import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
 import net.liftweb.util.Helpers.stringToSuper
 import scalaz.{NonEmptyList, Lens}
+import scala.annotation.tailrec
 
 import lib.change._
 import lib.tree._
@@ -171,6 +172,9 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     , f.sli.startingLabelIndex _
     )
   )
+
+  @tailrec final def deepestLast[N <: TreeNodeLike[N]](n: N): N =
+    if (n.children.isEmpty) n else deepestLast(n.children.last)
 
   def createTempDir(prefix: String, suffix: String = ""): File = {
     val tmpDir = File.createTempFile(prefix, suffix)

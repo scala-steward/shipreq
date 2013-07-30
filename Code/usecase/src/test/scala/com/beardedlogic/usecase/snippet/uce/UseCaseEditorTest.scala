@@ -5,7 +5,8 @@ import java.util.regex.Pattern
 import scala.util.matching.Regex
 import org.scalatest.FunSpec
 import lib.Types._
-import lib.UseCase
+import lib.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
+import lib.{StepNode, UseCase}
 import Renderer.TitleId
 import test.{LoadedTestData, TestHelpers, TestDatabaseSupport}
 
@@ -20,6 +21,7 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
 
   class UseCaseEditor2 extends UseCaseEditor {
     def setState2(newState: State) = { super.setState(newState); this }
+
     def update2(f: UseCase => UcUpdateResult): (UseCaseEditor2, String) =
       (this, inMockSession {unquoteJs(update(f).toJsCmd).trim})
   }
@@ -33,6 +35,73 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
   def UCE2a = new UseCaseEditor2().setState2(State2a)
   def UCE2b = new UseCaseEditor2().setState2(State2b)
   def UCE3 = new UseCaseEditor2().setState2(State3)
+
+  /**
+   * Creates UCE with UC with EC like:
+   *
+   * 1.E.99
+   * 1.E.99.99
+   * 1.E.99.99.cu
+   */
+  def uceWithThreeFullLevelsOfEC = {
+    val uce = new UseCaseEditor2()
+    def tree = ECF(uce.fieldValues).tree
+    def last = tree.nodes.last
+    MaxStepsPerLevel.times(uce.update2(ECF.addTailStep)) // Creates (1-99)
+    MaxStepsPerLevel.times(uce.update2(ECF.addStep(last.id))) // Creates (1-99)
+    uce.update2(ECF.increaseIndent(last(-1).id)) // Creates 99.98.a
+    uce.update2(ECF.addStep(last.id)) // Creates 99.99
+    MaxStepsPerLevel.times(uce.update2(ECF.addStep(last(-1)(-1).id))) // Creates 99.98.(a-xx)
+    tree.sizeRecursive should be(MaxStepsPerLevel * 3)
+    uce.uc.pp
+    uce
+  }
+
+  /**
+   * Creates UCE with UC with EC like:
+   *
+   * 1.E.1
+   * 1.E.1.1
+   * 1.E.1.1.a
+   * 1.E.1.1.a.i
+   * 1.E.1.1.a.i.1
+   * 1.E.1.1.a.i.2
+   */
+  def uceWithDeepestLevelEC = {
+    val uce = new UseCaseEditor2()
+    def tree = ECF(uce.fieldValues).tree
+    var last: StepNode = null
+    (MaxStepDepth + 1) times {
+      uce.update2(ECF.addTailStep)
+      last = tree.nodes.last
+      MaxStepDepth times { uce.update2(ECF.increaseIndent(last.id)) }
+    }
+    (uce,last)
+  }
+
+  def assertUpdateFails(uce: UseCaseEditor2, f: UseCase => UcUpdateResult): Unit = {
+    val oldUC = uce.uc
+    val (_,resp) = uce.update2(f)
+    assertFailResponse(resp)
+    uce.uc should be theSameInstanceAs(oldUC)
+  }
+
+  def assertIdAndAction(resp: String, id: LocalIdStr, actionStr: String): Unit =
+    assertIdAndActionR(resp, id, Pattern.quote(actionStr).r)
+
+  def assertIdAndActionR(resp: String, id: LocalIdStr, actionRegex: Regex): Unit =
+    resp should include regex(s"""$id[^;\n]+?$actionRegex""")
+
+  def assertIdRelabeled(resp: String, id: LocalIdStr, newLabel: String) {
+    assertIdAndActionR(resp, s"$id-l".asLocalId, s"""['"]$newLabel['"]""".r)
+  }
+
+  def assertNewStepFound(resp: String) {
+    resp should include("class=\"step\"")
+    resp should include("<textarea")
+  }
+
+  def assertFailResponse(resp: String): Unit = resp should include("alert(")
 
   describe("Full-page rendering") {
     lazy val xml = inMockSession(UCE1.dispatch("render")(Templates.EntirePage))
@@ -120,21 +189,6 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
       }
     }
 
-    def assertIdAndAction(resp: String, id: LocalIdStr, actionStr: String): Unit =
-      assertIdAndActionR(resp, id, Pattern.quote(actionStr).r)
-
-    def assertIdAndActionR(resp: String, id: LocalIdStr, actionRegex: Regex): Unit =
-      resp should include regex(s"""$id[^;\n]+?$actionRegex""")
-
-    def assertIdRelabeled(resp: String, id: LocalIdStr, newLabel: String) {
-      assertIdAndActionR(resp, s"$id-l".asLocalId, s"""['"]$newLabel['"]""".r)
-    }
-
-    def assertNewStepFound(resp: String) {
-      resp should include("class=\"step\"")
-      resp should include("<textarea")
-    }
-
     def itRespectsMaxSteps(name: String, uceFn: => () => UseCaseEditor2, addFn: => UseCase => UcUpdateResult, labelAtMax: String) = {
       it(s"should not exceed the max-steps limit ($name)") {
         val uce = uceFn()
@@ -148,7 +202,7 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
         }
         val oldUc = uce.uc
         val (n,resp) = uce.update2(addFn)
-        resp should include("alert(")
+        assertFailResponse(resp)
         uce.uc should be theSameInstanceAs(oldUc)
       }
     }
@@ -239,8 +293,27 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
         val (_,resp) = UCE1.update2(NCF.increaseIndent(NcSfv.tree(1).id))
         resp should include("ac_to_nc")
       }
-      // TODO it("should fail when indent exceeds max steps"){
-      // TODO it("should fail when indent exceeds max depth"){
+      it("should fail when it causes a breach of max steps per level") {
+        val uce = uceWithThreeFullLevelsOfEC
+        def tree = ECF(uce.fieldValues).tree
+        uce.update2(ECF.removeStep(tree(3).id))
+        uce.update2(ECF.addTailStep)
+        assertUpdateFails(uce, ECF.increaseIndent(tree.nodes.last.id)) // L0 --> L1
+      }
+      it("should fail when increasing the deepest level allowed") {
+        val (uce, last) = uceWithDeepestLevelEC
+        uce.update2(ECF.addStep(last.id))
+        val n = deepestLast(ECF(uce.uc.fieldValues).tree.nodes.last)
+        assertUpdateFails(uce, ECF.increaseIndent(n.id))
+      }
+      it("should fail when increasing a step which has children at the lowest level") {
+        val (uce, _) = uceWithDeepestLevelEC
+        def tree = ECF(uce.fieldValues).tree
+        uce.update2(ECF.addStep(tree(0).id)) // add 1.E.1.1
+        val n = tree(0)(0)
+        uce.update2(ECF.decreaseIndent(n.id)) // dec 1.E.1.1 into 1.E.2
+        assertUpdateFails(uce, ECF.increaseIndent(n.id)) // inc 1.E.2 with its new children
+      }
     }
 
     describe("decreasing a step indent") {
@@ -266,7 +339,12 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
         resp should not include("nc_to_ac")
         assertIdAndAction(resp, id, "attr")
       }
-      // TODO it("should fail when indent exceeds max steps"){
+      it("should fail when it causes a breach of max steps per level") {
+        val uce = uceWithThreeFullLevelsOfEC
+        def last = ECF(uce.fieldValues).tree.nodes.last
+        assertUpdateFails(uce, ECF.decreaseIndent(last(0).id)) // L0 <-- L1
+        assertUpdateFails(uce, ECF.decreaseIndent(last(-1)(0).id)) // L1 <-- L2
+      }
     }
   }
 }
