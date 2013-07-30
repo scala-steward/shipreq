@@ -1,9 +1,11 @@
 @startuml classes-top.png
 
 package lib {
-	interface MessageHandler {
-		+handleMessage(msg)(stepsAndLabels)
+	interface ChangeResponder {
+		+respondToChange(c)(stepsAndLabels)
 	}
+	interface UcChangeSource
+	UseCaseProper --|> UcChangeSource
 	class UseCaseHeader {
 		+title
 		+number
@@ -19,13 +21,13 @@ package lib {
 
 package model {
 	enum FieldKeyType {
-		+fieldDef(data: FieldKeyRecData)
+		+fieldDefn(data: FieldKeyRecData)
 	}
 	class FieldKeyRec {
 		+valueId
 		+fieldKeyType
 		+fieldKeyData: Option[String]
-		+fieldDef()
+		+fieldDefn()
 		+field()
 	}
 	FieldKeyRec o-- FieldKeyType
@@ -39,7 +41,7 @@ package model {
 		+fieldKeys
 		+dataId
 		+valueId
-		+fieldDefs()
+		+fieldDefns()
 		+fields()
 	}
 	FieldListRec o-- FieldKeyRec
@@ -74,7 +76,7 @@ package text {
 		-updateRefs(f, co)
 		-processFlowChangeMsg(f, co, updateFn, mayneIds, oneId)
 	}
-	ParsedText --|> MessageHandler
+	ParsedText --|> ChangeResponder
 	FreeText --|> ParsedText
 	StepText --|> ParsedText
 	Parser ..> ParsedText
@@ -107,11 +109,12 @@ package field {
 	Field o-- FieldKeyRec
 	Field o-- FieldDefinition
 	Field ..> FieldValueSaver
+	Field --|> UcChangeSource
 	FieldDefinition o-- FieldKeyType
 	FieldDefinition <-- FieldKeyType
 	' Field_Value ..o FieldValueSaver
 	Field_Value <.. Field
-	Field_Value --|> MessageHandler
+	Field_Value --|> ChangeResponder
 }
 
 UseCase o-- Field
@@ -158,6 +161,9 @@ package text {
 	class TextFieldValue << virtual >> {
 		+FreeText
 	}
+	class TextField {
+		+updateText(id, newText)(uc)
+	}
 	' TextFieldDefinition --|> FieldDefinition
 	' TextField --|> Field
 	TextField o-- TextFieldDefinition
@@ -172,21 +178,35 @@ package text {
 package step {
 	abstract class StepField {
 		+sli: startingLabelIndices
+		+preferTitleInRoot_?()
+		+prohibitRemoval_?(value, id)
 		+rootLabelPrefix(UseCaseHeader)
+		+updateText(id, newText)(uc)
+		+addTailStep(uc)
+		+addStep(precedingNodeId)(uc)
+		+removeStep(id)(uc)
+		+decreaseIndent(id)(uc)
+		+increaseIndent(id)(uc)
 	}
 	class StepFieldValueSaver {
 		+normalisedState(savedSteps)
 	}
 	class StepFieldValue {
+		+field
 		+tree
 		+textmap
+		+getNormalisedText(id, savedSteps)
+		+respondToChange(c)(stepsAndLabels)
+		+withNewStep(newTree, stepId)
+		+withNewTree(newTree)
 	}
 	' NormalisedStepTree
 	' NormalisedStep
 	' StepFieldValue o-- StepTree
 	' StepFieldValue o-- StepText
 	' StepField --|> Field
-	StepField *-- StepFieldValue
+	StepField o.. StepFieldValue
+	StepField --* StepFieldValue
 	StepField ..> StepFieldValueSaver
 	StepFieldValueSaver o-- StepFieldValue
 	' StepFieldValueSaver --|> FieldValueSaver

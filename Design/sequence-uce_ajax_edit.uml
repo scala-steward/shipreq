@@ -11,9 +11,10 @@ entity SFV
 entity "FreeText\nStepText" as StepText
 entity Change
 
-User -> Callback : Update step text (txt)
-Callback ->o UCE : Get UC => UC
-Callback -> UC : updateTextFieldText(field, txt)\nupdateStepFieldText(field, id, txt)
+User -> Callback : Update text
+Callback -> UCE : update(UseCase\n=> UcUpdateResult)
+
+UCE -> UC : updateTextFieldText(field, txt)\nupdateStepFieldText(field, id, txt)
   UC ->o Lens : get(UC, F) => FreeText\nget(UC, F, id) => StepText
   UC -> StepText : update(txt)
     StepText ->o Change : TextChanged\nStepTextChanged(id)\nFlow{From,To}Change
@@ -28,15 +29,20 @@ Callback -> UC : updateTextFieldText(field, txt)\nupdateStepFieldText(field, id,
 
   UC2 -> SFV : SFV.respondToChange(change)
   SFV -> StepText : respondToChange(change)
-  StepText ->o Change : create StepTextChanged(id)
+  StepText ->o Change : StepTextChanged(id)
   SFV <-- StepText : ChangeResult[StepText, Change]
   UC2 <-- SFV : ChangeResult[SFV, Change]
 
-  UC <-- UC2 : ChangeResult[UC, (Field,Change)]
+  UC <-- UC2 : UcUpdateResult
   UC -> UC : Merge ChangeResult + (Field,Change)
-Callback <-- UC : ChangeResult[UC, (Field,Change)]
-Callback ->o UCE : Set UC => Unit
-Callback ->o UCE : renderChanges(UC, List[(Field,Change)]) => JsCmd
+UCE <-- UC : UcUpdateResult
+
+UCE ->o UCE : SetState
+UCE -> Renderer : jsRespondToChanges(changes)
+Renderer -> Renderer : jsXxx
+UCE <-- Renderer : JsCmd
+
+Callback <-- UCE : JsCmd
 User <-- Callback : JsCmd
 
 @enduml
