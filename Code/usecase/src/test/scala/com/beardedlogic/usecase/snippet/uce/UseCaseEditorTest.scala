@@ -72,14 +72,6 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
       val uce = UCE1
       uce.state should be theSameInstanceAs (State1)
     }
-    // TODO rethink this. If state not in renderer, no need to recreate
-    //    it("should replace the renderer") {
-    //      val uce = new UseCaseEditor2()
-    //      val r1 = uce.renderer
-    //      uce.setState2(State1)
-    //      uce.renderer should not be theSameInstanceAs(r1)
-    //      uce.renderer.state should be(State1)
-    //    }
   }
 
   describe("AJAX callbacks") {
