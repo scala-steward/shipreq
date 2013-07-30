@@ -69,6 +69,8 @@ abstract class StepField extends Field with StepFieldValueLoader {
 
   override def valueSaver(v: StepFieldValue) = new StepFieldValueSaver(v, rec, sli)
 
+  override def toString = s"${getClass.getSimpleName}[#${rec.valueId}]"
+
   def updateText(id: LocalIdStr, newText: String)(uc: UseCase): UcUpdateResult = {
     implicit val lens = alens(FieldLenses.uc.stepText, (uc, this, id))
     uc.update(this, lens.get.update(newText)(uc.stepsAndLabels))
