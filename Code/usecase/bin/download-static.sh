@@ -1,6 +1,6 @@
 #!/bin/bash
 
-v=1.10.1
+v=1.10.2
 echo "Downloading v$v of jQuery -- http://jquery.com/download/"
 curl -s http://code.jquery.com/jquery-$v.min.js -o src/main/webapp/js/vendor/jquery.js
 echo $?
