@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import net.liftweb.util.Helpers.nextFuncName
-import TypeTags._
+import Types._
 import tree._
 import StepLabels.LabelMakers
 
@@ -38,9 +38,6 @@ case class StepNode(id: LocalIdStr, level: Int, labelIndex: Int, children: List[
     labelIndex: Int = this.labelIndex,
     children: List[StepNode] = this.children
     ) = StepNode(id, level, labelIndex, children)
-
-  @inline final def labelId = id + "-l"
-  @inline final def stepTextId = id + "-t"
 }
 
 object StepNodeBuilder extends TreeNodeBuilder[StepNode] {

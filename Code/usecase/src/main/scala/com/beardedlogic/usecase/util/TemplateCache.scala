@@ -31,5 +31,6 @@ object TemplateCache {
     r
   }
 
+  // TODO DELETE
   val UseCaseEditorTemplate = LoadTemplate(List("uce"))
 }

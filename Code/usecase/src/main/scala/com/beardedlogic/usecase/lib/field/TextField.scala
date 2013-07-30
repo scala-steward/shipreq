@@ -1,84 +1,59 @@
-package com.beardedlogic.usecase
-package lib
-package field
+package com.beardedlogic.usecase.lib.field
 
-import net.liftweb.util.Helpers._
-import model._
-import TextField._
-import TypeTags._
-import FieldValue.FieldValueData
-import com.beardedlogic.usecase.util.TemplateCache
+import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.lib.text.FreeText
+import com.beardedlogic.usecase.model._
+import com.beardedlogic.usecase.lib.UseCase
 
-/**
- * Text field definition.
- *
- * @param title Name/title of the field. E.g. "Pre-Conditions"
- */
-case class TextFieldDef(title: String) extends FieldDef[TextWithNormalisedRefs] {
+// =====================================================================================================================
 
-  override def newFieldInstance(ucCtx: UseCaseCtx, fieldKey: FieldKey) = new TextField(this, ucCtx, fieldKey)
-
-  override def fieldKeyType = FieldKeyType.Text
-  override def fieldKeyData = Some(title)
-
-  override def stateLoader(fieldKey: FieldKey) = new StateLoader(fieldKey)
+case class TextFieldDefinition(title: String) extends FieldDefinition {
+  override val fieldKeyType = FieldKeyType.Text
+  override val fieldKeyData = Some(title)
+  override def field(rec: FieldKeyRec) = TextField(this, rec)
 }
 
-object TextField {
-  import TemplateCache._
+// =====================================================================================================================
 
-  val TextTemplate = UseCaseEditorTemplate.extract("template-text")
+case class TextField(override val defn: TextFieldDefinition, override val rec: FieldKeyRec) extends Field {
+  override type Value = FreeText
+  override type State = TextWithNormalisedRefs
 
-  class StateLoader(val fieldKey: FieldKey) extends FieldStateLoader[TextWithNormalisedRefs] {
-    override def load(loadCtx: FieldLoadCtx, saveCtx: MutableFieldSaveCtx) =
-      loadCtx.fieldValues.get(fieldKey).map(_.fieldData).flatten.getOrElse("").hasNormalisedRefs
+  override def empty = FreeText.empty
+
+  override def load(loadCtx: FieldLoadCtx, mutableSaveCtx: MutableFieldSaveCtx) =
+    loadCtx.fieldValues.get(rec).flatMap(_.fieldData).getOrElse("").hasNormalisedRefs
+
+  override def denormalise(normalisedState: TextWithNormalisedRefs, savedSteps: SavedSteps) =
+    (None, (stepsAndLabels: StepAndLabelBiMap) => FreeText.load(normalisedState)(savedSteps, stepsAndLabels))
+
+  override def valueSaver(v: FreeText) = new TextFieldValueSaver(v)
+
+  def updateText(newText: String)(uc: UseCase): UcUpdateResult = {
+    implicit val lens = alens(FieldLenses.uc.textField, (uc, this))
+    uc.update(this, lens.get.update(newText)(uc.stepsAndLabels))
   }
 }
 
-/**
- * A single, stateful text field instance.
- *
- * @param fd Identity of this text field.
- */
-class TextField(val fd: TextFieldDef, override val ucCtx: UseCaseCtx, override val fieldKey: FieldKey)
-  extends Field[TextWithNormalisedRefs] {
+// =====================================================================================================================
 
-  val value = new SmartText(ucCtx.msgCentre, ucCtx.stepLabelMap)
+class TextFieldValueSaver(val v: FreeText) extends FieldValueSaver[TextWithNormalisedRefs] {
+  type S = TextWithNormalisedRefs
 
-  override def init() {
-    value.init()
-  }
+  def state(savedSteps: SavedSteps): S = v.textWithNormalisedRefs(savedSteps)
 
-  override def render = renderExpr(TextTemplate)
+  override def record_required_? = v.text.nonEmpty
 
-  def renderExpr = (
-    "th *" #> fd.title
-      & "textarea" #> value.renderTextarea
-    )
-
-  def state: TextWithNormalisedRefs = value.textWithNormalisedRefs(ucCtx)
-
-  override def setState(newState: TextWithNormalisedRefs): () => Unit = {
-    () => value.setTextFromLoad(newState, ucCtx.savedSteps.get)
-  }
-
-  override def save_? : Boolean = value.text.nonEmpty
-
-  override def presave(
-    lastSave: Option[(FieldSaveCtx, TextWithNormalisedRefs)],
-    saveCtx: MutableFieldSaveCtx,
-    dao: DAO): Boolean = {
-    lastSave match {
-      case None                    => true
-      case Some((_, previousText)) => previousText != state
+  override def presave(dao: DAO, prevSave: Option[(FieldSaveCtx, S)], savedSteps: SavedSteps)(saveCtx: MutableFieldSaveCtx) = {
+    prevSave match {
+      case None => true
+      case Some((_, previousText)) => previousText != state(savedSteps)
     }
   }
 
-  override def save(combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx, dao: DAO): (FieldValueData, TextWithNormalisedRefs) = {
+  override def save(dao: DAO, savedSteps: SavedSteps, combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx) = {
     // Required again because normalised refs may be different after presave
-    val txt = state
-    (Some(txt), txt)
+    val ntxt = state(savedSteps)
+    (Some(ntxt), ntxt)
   }
-
-  override def toString = s"TextField[${fd.title}]"
 }

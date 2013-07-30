@@ -8,19 +8,19 @@ import test.TestDatabaseSupport
 class FieldListTest extends FunSpec with TestDatabaseSupport {
 
   lazy val fl1 =
-    NormalAndAlternateCourseFields ::
-      TextFieldDef("Opeth") ::
-      TextFieldDef("Heritage") ::
-      TextFieldDef("Haxprocess") ::
-      ExceptionCourseFields ::
+    NormalCourseFieldDefinition ::
+      TextFieldDefinition("Opeth") ::
+      TextFieldDefinition("Heritage") ::
+      TextFieldDefinition("Haxprocess") ::
+      ExceptionCourseFieldDefinition ::
       Nil
 
   lazy val fl2 =
-      TextFieldDef("Opeth") ::
-      TextFieldDef("Heritage") ::
-      TextFieldDef("CHANGED") ::
-      NormalAndAlternateCourseFields ::
-      ExceptionCourseFields ::
+    TextFieldDefinition("Opeth") ::
+      TextFieldDefinition("Heritage") ::
+      TextFieldDefinition("CHANGED") ::
+      NormalCourseFieldDefinition ::
+      ExceptionCourseFieldDefinition ::
       Nil
 
 
@@ -37,7 +37,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
         db.createInitialFieldList(fieldList)
       }
       val loaded = db.findFieldList(saved.data, LatestRev)
-      loaded.get.fieldDefs should be(fieldList)
+      loaded.get.fieldDefns should be(fieldList)
     }
 
     describe("ensureSavedAndLatest") {
@@ -45,7 +45,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
         val id = randomId
         val r = db.syncFieldList(id, fl1)
         r.data should be(Data(id,DataType.FieldList))
-        r.fieldDefs should be(fl1)
+        r.fieldDefns should be(fl1)
       }
 
       it("should use existing when already saved") {
@@ -65,7 +65,7 @@ class FieldListTest extends FunSpec with TestDatabaseSupport {
           db.syncFieldList(save1.dataId, fl2)
         }
         save2.data should be(save1.data)
-        save2.fieldDefs should be(fl2)
+        save2.fieldDefns should be(fl2)
       }
     }
   }

@@ -6,7 +6,7 @@ import org.scalatest.matchers.ShouldMatchers
 
 class NodeUtilsTest extends WordSpec with ShouldMatchers with TestHelpers {
   import NodeUtils._
-  import TestHelpers.TreeDSL._
+  import TreeDSL._
 
   val BT_102 = $("a" ~> $("i", "ii", "iii"), "b", "c" ~> $("i", "ii"))
   val BT_103 = $("a" ~> $("i"), "b")

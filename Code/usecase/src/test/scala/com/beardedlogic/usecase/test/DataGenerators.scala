@@ -6,19 +6,17 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Prop, Arbitrary, Gen}
 import scala.util.matching.Regex
 
-import lib.Misc.{RNG, removeAllWhitespace}
+import lib.Misc.removeAllWhitespace
 import lib.field._
 import lib.tree._
-import lib.{TypeTags, UseCaseCtx}
+import lib.{Types}
 import util.NoReaction
 
 import lib.StepLabels._
-import lib.SmartText._
-import CourseFields._
-import ExceptionCourseFields._
-import NormalAndAlternateCourseFields._
+import lib.text.ParsingConfig._
 import TreeOps._
-import TypeTags._
+import Types._
+import com.beardedlogic.usecase.lib.field.StepField.StartingLabelIndices
 
 object DataGenerators extends Logger {
 
@@ -122,14 +120,12 @@ object DataGenerators extends Logger {
   case class StepPlaceholderTree(override val nodes: List[StepPlaceholderNode], sli: StartingLabelIndices) extends TreeRoot[StepPlaceholderNode] {
     lazy val labels = mapRecursive(_.label)
 
-    lazy val stepStateTree = StepStateTree(
-      convertNodeTree[StepPlaceholderNode, StepState](nodes
-      , {case (node, level, index, children) => StepState(node.label.replace('.', '_').asLocalId, "".hasNormalisedRefs, children)}
+    lazy val stepStateTree = NormalisedStepTree(
+      convertNodeTree[StepPlaceholderNode, NormalisedStep](nodes
+      , {case (node, level, index, children) => NormalisedStep(node.label.replace('.', '_').asLocalId, "".hasNormalisedRefs, children)}
       , sli.startingLabelIndex _
       )
     )
-
-    lazy val courseFieldState = CourseFieldState(stepStateTree)
   }
 
   private def numberOfSteps(startingIndex: Int): Gen[Int] = {
@@ -198,7 +194,8 @@ object DataGenerators extends Logger {
 
   val useCaseNumber = arbitrary[Short] suchThat (_ > 0)
 
-  val useCase: Gen[UseCaseCtx] = {
+  /*
+  val useCase: Gen[UseCase] = {
     implicit val reactor = NoReaction
     for {
       title <- useCaseTitle
@@ -224,7 +221,6 @@ object DataGenerators extends Logger {
       ecField.setState(ec.courseFieldState)
       uc.stepLabelMap.invalidate
       assume(uc.stepLabelMap.get.bs == steps.labels.toSet)
-      uc.msgCentre.enabled = true
 
       // Text fields
       uc.textFields.zip(textFields).foreach {
@@ -251,5 +247,6 @@ object DataGenerators extends Logger {
     }
   }
 
-  implicit lazy val arbUseCase: Arbitrary[UseCaseCtx] = Arbitrary(useCase)
+  implicit lazy val arbUseCase: Arbitrary[UseCase] = Arbitrary(useCase)
+  */
 }

@@ -9,7 +9,7 @@ import Misc._
  */
 object InputCorrection {
 
-  def correct(uc: UseCase) = uc.copy(title = useCaseTitle(uc.title))
+  def correct(uc: UseCaseHeader) = uc.copy(title = useCaseTitle(uc.title))
 
   def email(input: String) = removeAllWhitespace(input)
 

@@ -3,7 +3,7 @@ package model
 
 import lib.db.DatabaseEnum
 import lib.field._
-import FieldKey.FieldKeyData
+import lib.Types._
 
 /**
  * Represents types of fields that a use case (or something else) can have.
@@ -11,7 +11,7 @@ import FieldKey.FieldKeyData
  * @since 22/05/2013
  */
 sealed abstract class FieldKeyType(val ordinal: Short) extends FieldKeyType.Value {
-  def fieldDef(data: FieldKeyData): FieldDef[_]
+  def fieldDefn(data: FieldKeyRecData): FieldDefinition
 }
 
 object FieldKeyType extends DatabaseEnum[FieldKeyType] {
@@ -21,21 +21,21 @@ object FieldKeyType extends DatabaseEnum[FieldKeyType] {
    * A field with a name and a single text value.
    */
   case object Text extends FieldKeyType(300) {
-    override def fieldDef(data: FieldKeyData) = TextFieldDef(data.get)
+    override def fieldDefn(data: FieldKeyRecData) = TextFieldDefinition(data.get)
   }
 
   /**
    * A composite field of Normal Course, and Alternate Course use case step trees.
    */
   case object NormalAndAlternateCourses extends FieldKeyType(301) {
-    override def fieldDef(data: FieldKeyData) = NormalAndAlternateCourseFields
+    override def fieldDefn(data: FieldKeyRecData) = NormalCourseFieldDefinition
   }
 
   /**
    * A field of Exception Course use case step trees.
    */
   case object ExceptionCourses extends FieldKeyType(302) {
-    override def fieldDef(data: FieldKeyData) = ExceptionCourseFields
+    override def fieldDefn(data: FieldKeyRecData) = ExceptionCourseFieldDefinition
   }
 
   val Values = List(Text, NormalAndAlternateCourses, ExceptionCourses)

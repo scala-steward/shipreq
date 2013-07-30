@@ -37,11 +37,11 @@ order by data_id, data_type, rev;
 
 
 
---  val fieldValues: Map[FieldKey, FieldValue],
+--  val fieldValues: Map[FieldKeyRec, FieldValueRec],
 --  val stepData: Map[Long, String],
 --  val relations: Map[RelationType, Map[Long, List[Long]]]
 
---case class FieldValue(
+--case class FieldValueRec(
 --  valueId: Long,
 --  fieldKeyId: Long,
 --  fieldData: FieldValueData

@@ -3,12 +3,12 @@ package lib
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.ShouldMatchers
-import TypeTags._
+import Types._
 import tree._
 import TreeOps._
 import test._
 import NodeUtils._
-import TestHelpers.TreeDSL._
+import TreeDSL._
 import StepLabels.LabelMakers
 
 class StepTreeTest extends WordSpec with ShouldMatchers with TestHelpers {

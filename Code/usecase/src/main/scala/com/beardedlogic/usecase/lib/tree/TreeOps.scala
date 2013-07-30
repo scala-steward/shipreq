@@ -2,7 +2,7 @@ package com.beardedlogic.usecase.lib
 package tree
 
 import scala.annotation.tailrec
-import TypeTags._
+import Types._
 
 /**
  * @since 2/05/2013

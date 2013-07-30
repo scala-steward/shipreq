@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.lib
 package tree
 
-import TypeTags._
+import Types._
 
 /**
  * Builds on `TreeNodeLike` to add a node ID, and hierarchical position details.

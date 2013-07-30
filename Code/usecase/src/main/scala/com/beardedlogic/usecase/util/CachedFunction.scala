@@ -1,5 +1,17 @@
 package com.beardedlogic.usecase.util
 
+case class LazyVal[T](init: () => T) {
+  lazy val get: T = init()
+  def apply(): T = get
+}
+object LazyVal {
+  def <~[T](t: T) = apply(() => t)
+}
+
+// =====================================================================================================================
+
+// TODO Remove all CachedFunction stuff. Promotes very bad behaviour.
+
 object CachedFunction {
   def lazy0[R](fn: => R) = new LazyCachedFunction[R](fn)
   def eager0[R](fn: => R) = new EagerCachedFunction[R](fn, fn)
@@ -9,8 +21,6 @@ object CachedFunction {
   def eager1WithInitial[T, R](fn: T => R)(initial: R) = new CachedFunction1[T, R](initial, fn)
   def static1[T, R](staticValue: R) = new CachedFunction1[T, R](staticValue, (_: T) => staticValue)
 }
-
-// TODO Could squeeze much more reuse out of CachedFunction classes
 
 // =====================================================================================================================
 

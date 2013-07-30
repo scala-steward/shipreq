@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package test
 
 import lib._
-import TypeTags._
+import Types._
 import tree.TreeNode
 import StepLabels._
 

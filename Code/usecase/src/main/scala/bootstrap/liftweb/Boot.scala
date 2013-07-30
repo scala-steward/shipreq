@@ -10,7 +10,6 @@ import lib.{ExternalIdStr, Defaults}
 import lib.db.DB
 import lib.security.Oshiro
 import app.AppSiteMap
-import snippet.UCEditor
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -39,10 +38,10 @@ class Boot {
 
     // Routing
     // TODO should be done via sitemap
-    LiftRules.statelessRewrite.append {
-      case RewriteRequest(ParsePath("usecase" :: ExternalIdStr(id) :: Nil, "", true, false), GetRequest, _) =>
-        RewriteResponse("uce" :: Nil, Map(UCEditor.ParamId -> id))
-    }
+//    LiftRules.statelessRewrite.append {
+//      case RewriteRequest(ParsePath("usecase" :: ExternalIdStr(id) :: Nil, "", true, false), GetRequest, _) =>
+//        RewriteResponse("uce" :: Nil, Map(UCEditor.ParamId -> id))
+//    }
 
     // Use HTML5 for rendering
     LiftRules.htmlProperties.default.set((r: Req) => new Html5Properties(r.userAgent))

@@ -5,42 +5,140 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.scalatest.matchers.{ShouldMatchers, Matcher, MatchResult}
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
+import org.scalatest.prop.Tables.Table
 import net.liftweb.common.Empty
 import net.liftweb.http.{S, LiftSession, LiftRules}
 import net.liftweb.mocks.MockHttpServletRequest
 import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.stringToSuper
+import scalaz.Lens
 
-import lib._
-import NodeUtils._
+import lib.change._
 import lib.tree._
 import lib.field._
-import TreeOps._
-import lib.TypeTags._
+import lib.text._
+import lib._
 import model._
 import util._
+
+import Types._
+import NodeUtils._
+import TreeOps._
 
 /**
  * @since 30/04/2013
  */
 trait TestHelpers extends MockitoSugar with ShouldMatchers {
-  import TestHelpers._
 
   if (!LiftRules.doneBoot) (new bootstrap.liftweb.Boot).configureLift
-  if (Defaults.FieldList.get == null) Defaults.FieldList << mockFieldList(Defaults.FieldListDefs)
+  //if (Defaults.FieldList.get == null) Defaults.FieldList << mockFieldList(Defaults.FieldListDefns)
 
-  def mockFieldList(defs: List[FieldDef[_]]): FieldList = {
-    val pv = PlainValue[DataType.FieldList](-666, -1, 1)
-    var i = -999
-    val keys = defs.map {
-      case d: TextFieldDef                        => i -= 1; FieldKey(i, FieldKeyType.Text, Some(d.title))
-      case _: NormalAndAlternateCourseFields.type => FieldKey(-1100, FieldKeyType.NormalAndAlternateCourses, None)
-      case _: ExceptionCourseFields.type          => FieldKey(-1101, FieldKeyType.ExceptionCourses, None)
-    }
-    FieldList(pv, keys)
+  type Refs = Map[LocalIdStr, LabelStr]
+
+  def savedSteps(tuples: (Int, LocalIdStr)*): BiMap[Long_StepDataId, LocalIdStr] =
+    BiMap.apply(tuples.map(t => (t._1.toLong.tag[StepDataId], t._2)): _*)
+
+  def mapToLabels(i: Traversable[LocalIdStr], stepState: StepAndLabelBiMap = StepState1) = i.map(id => (id, stepState.get.ab(id))).toMap
+  def mapFromLabels(i: Traversable[LocalIdStr], stepState: StepAndLabelBiMap = StepState1) = i.map(id => (stepState.get.ab(id), id)).toMap
+
+  def mapToIds(i: Traversable[LabelStr], stepState: StepAndLabelBiMap = StepState1) = i.map(l => (l, stepState.get.ba(l))).toMap
+  def mapFromIds(i: Traversable[LabelStr], stepState: StepAndLabelBiMap = StepState1) = i.map(l => (stepState.get.ba(l), l)).toMap
+
+  def flowFromClause(refs: (LocalIdStr, LabelStr)*) = if (refs.isEmpty) None else Some(FlowFromClause(Map(refs: _*)))
+  def flowToClause(refs: (LocalIdStr, LabelStr)*) = if (refs.isEmpty) None else Some(FlowToClause(Map(refs: _*)))
+
+  val X0 = "X0".asLocalId
+  val X1 = "X1".asLocalId
+  val X2 = "X2".asLocalId
+  val X3 = "X3".asLocalId
+  val X4 = "X4".asLocalId
+  val X5 = "X5".asLocalId
+  val X6 = "X6".asLocalId
+  val X7 = "X7".asLocalId
+  val X8 = "X8".asLocalId
+  val X9 = "X9".asLocalId
+  val X3E1 = "X3E1".asLocalId
+  val X3E2 = "X3E2".asLocalId
+
+  val S0 = "S.0".asLabel
+  val S1 = "S.1".asLabel
+  val S2 = "S.2".asLabel
+  val S3 = "S.3".asLabel
+  val S4 = "S.4".asLabel
+  val S5 = "S.5".asLabel
+  val S6 = "S.6".asLabel
+  val SA = "S.A".asLabel
+  val SF = "S.F".asLabel
+
+  val SavedSteps1: SavedSteps = savedSteps(
+    140 -> X0,
+    141 -> X1,
+    142 -> X2,
+    143 -> X3,
+    144 -> X4,
+    145 -> X5,
+    146 -> X6
+  )
+
+  val StepState1: StepAndLabelBiMap = LazyVal <~ BiMap(X1 -> S1, X2 -> S2, X3 -> S3, X5 -> S5, X6 -> S6, X0 -> S0)
+  val StepState2: StepAndLabelBiMap = LazyVal <~ BiMap(X1 -> SA, X2 -> S2, X4 -> S4, X5 -> SF, X6 -> S6)
+
+  val TextWithFlowExamples = Table[String, String, List[String], List[String]](
+    ("EXAMPLE", "TEXT", "REFS-FROM", "REFS-TO")
+    , ("omg --> 1.0", "omg", Nil, List("1.0"))
+    , ("omg <-- 1.0", "omg", List("1.0"), Nil)
+    , ("omg --> 1.0 <-- 1.2", "omg", List("1.2"), List("1.0"))
+    , ("omg <-- 1.0 --> 1.2", "omg", List("1.0"), List("1.2"))
+    , ("hehe sweet! --> 1.3 [1.0]", "hehe sweet!", Nil, List("1.3", "1.0"))
+    , ("excellent yo --> 3.E.1,3.E.2", "excellent yo", Nil, List("3.E.1", "3.E.2"))
+    , ("excellent --> yo --> 1.0", "excellent --> yo", Nil, List("1.0"))
+  )
+
+  val StepStateB: StepAndLabelBiMap = LazyVal <~ BiMap(
+    X1 -> "1.0".asLabel,
+    X2 -> "1.2".asLabel,
+    X3 -> "1.3".asLabel,
+    X3E1 -> "3.E.1".asLabel,
+    X3E2 -> "3.E.2".asLabel)
+
+  implicit def FieldToFKRec(f: Field): FieldKeyRec = f.rec
+
+  lazy val TF1 = mockTextField("Stuff #1", 111)
+  lazy val TF2 = mockTextField("Stuff #2", 222)
+  lazy val TF3 = mockTextField("Stuff #3", 333)
+  lazy val TF4 = mockTextField("Stuff #4", 444)
+
+  lazy val NCF = NormalCourseField(FieldKeyRec(55, NormalCourseFieldDefinition.fieldKeyType, NormalCourseFieldDefinition.fieldKeyData))
+  lazy val ECF = ExceptionCourseField(FieldKeyRec(66, ExceptionCourseFieldDefinition.fieldKeyType, ExceptionCourseFieldDefinition.fieldKeyData))
+
+  val EmptyLoadCtx = new FieldLoadCtx(Map.empty, Map.empty, Map.empty)
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  val stepTreeLens = {
+    import LensFns._
+    FieldLenses.uc.stepField >@==> scalaz.Lens.lensg[StepFieldValue, StepTree](
+      sfv => t => sfv.withNewTree(t),
+      sfv => sfv.tree
+    )
   }
+
+  def mockTextField(title: String, id: Long) = {
+    val defn = TextFieldDefinition(title)
+    TextField(defn, FieldKeyRec(id, FieldKeyType.Text, defn.fieldKeyData))
+  }
+
+//  def mockFieldList(defs: List[FieldDefinition]): FieldListRec = {
+//    val pv = PlainValue[DataType.FieldList](-666, -1, 1)
+//    var i = -999
+//    val keys = defs.map {
+//      case d: TextFieldDef                        => i -= 1; FieldKeyRec(i, FieldKeyType.Text, Some(d.title))
+//      case _: NormalAndAlternateCourseFields.type => FieldKeyRec(-1100, FieldKeyType.NormalAndAlternateCourses, None)
+//      case _: ExceptionCourseFields.type          => FieldKeyRec(-1101, FieldKeyType.ExceptionCourses, None)
+//    }
+//    FieldListRec(pv, keys)
+//  }
 
   def eventually(cond: => Any) {
     val test = (sleep: Int) => try { cond; true } catch { case _: Throwable => Thread.sleep(sleep); false }
@@ -58,27 +156,13 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
 
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
 
-  def matchTree(expected: List[StepNodeWithText]) = TestHelpers.TreeMatcher(expected)
-
-  def mockUseCaseCtx: UseCaseCtx = {
-    val u = mock[UseCaseCtx]
-    when(u.savedSteps).thenReturn(CachedFunction.static1[FieldSaveCtx, BiMap[Long_StepDataId, LocalIdStr]](BiMap.empty))
-    when(u.stepLabelMap).thenReturn(CachedFunction.lazy0(BiMap.empty[LocalIdStr, LabelStr]))
-    when(u.msgCentre).thenReturn(mock[MessageCentre])
-    when(u.number).thenReturn(1: Short)
-    u
-  }
-
-  def mockUseCaseCtx(stepLabelMap: Map[LocalIdStr, LabelStr]): UseCaseCtx = {
-    val u = mockUseCaseCtx
-    when(u.stepLabelMap).thenReturn(CachedFunction.lazy0(BiMap(stepLabelMap)))
-    u
-  }
-
-  def buildStateForTest(nodes: List[StepNodeWithText]): StepStateTree = {
-    val cf = new NormalAndAlternateCourseFields(new UseCaseCtx(null), mock[FieldKey])
-    cf.buildStateForTest(nodes)
-  }
+  // TODO rename
+  def buildStateForTest(f: StepField, nodes: List[StepNodeWithText]) = NormalisedStepTree(
+    convertNodeTree[StepNodeWithText, NormalisedStep](nodes
+    , {(n, _, _, children) => NormalisedStep(n.id, n.text.hasNormalisedRefs, children)}
+    , f.sli.startingLabelIndex _
+    )
+  )
 
   def createTempDir(prefix: String, suffix: String = ""): File = {
     val tmpDir = File.createTempFile(prefix, suffix)
@@ -140,44 +224,74 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
     logFn(time)
     result
   }
-}
 
-object TestHelpers extends TestHelpers {
+  def fixTopLevelIndices(nodes: List[StepNode]): List[StepNode] =
+    for ((n, i) <- nodes.zipWithIndex) yield n.copy(labelIndex = i)
 
-  implicit class MyRichInt(val i: Int) extends AnyVal {
-    def times(block: => Any) { 1 to i foreach(_ => block) }
+  def assertStepsAndLabelsRegen(uc: UseCase) {
+    uc.stepsAndLabels.get should be(UseCaseFns.generateStepAndLabelBiMap(uc.fieldValues, uc.header).get)
   }
 
-  implicit class CourseFieldExt(val cf: CourseFields) extends AnyVal {
+  def assertUseCasesMatchIgnoringStepsAndLabels(actual: UseCase, expected: UseCase) {
+    actual.copy(stepsAndLabels = EmptyStepAndLabelBiMap) should be(expected.copy(stepsAndLabels = EmptyStepAndLabelBiMap))
+  }
 
-    def coursesWithText: List[StepNodeWithText] = convertNodeTree[StepNode, StepNodeWithText](cf.courses, {
-      case (n, lvl, lbl, children) =>
-        val savedSteps = try cf.ucCtx.savedSteps.get.ba catch {case _: Throwable => Map.empty[LocalIdStr, Long_StepDataId]}
-        val txt = cf.test__textFields.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
-        StepNodeWithText(n.id, lvl, lbl, txt, children)
-    }, cf.startingLabelIndices.startingLabelIndex _)
+  def assertUseCasesMatch(actual: UseCase, expected: UseCase) {
+    actual.header should be(expected.header)
+    actual.fields should be(expected.fields)
+    actual.fieldValues.norm should be(expected.fieldValues.norm)
+  }
 
-    def setCoursesWithTextAndInit(nodes: List[StepNodeWithText]) {
-      cf.setCourses(StepTree(nodes.map(_.toStepNode)))(NoReactionOrNewMessages)
-      cf.init
-      val savedSteps = BiMap.empty[Long_StepDataId, LocalIdStr]
-      TreeLike(nodes).foreachRecursive(n => cf.test__textFields(n.id).setTextFromLoad(n.text.hasNormalisedRefs, savedSteps))
-    }
+  def freeText(txt: String) = FreeText(txt, Map.empty)
 
-    def buildStateForTest(nodes: List[StepNodeWithText]) = StepStateTree(
-        convertNodeTree[StepNodeWithText, StepState](
-          nodes
-          , { case (n, level, index, children) => StepState(n.id, n.text.hasNormalisedRefs, children) }
-          , cf.startingLabelIndices.startingLabelIndex _
+  def normaliseFieldValues(fieldValues: FieldValues): FieldValues = fieldValues.mapValues{
+    case v: StepFieldValue => v.norm.asInstanceOf[Field#Value]
+    case v: FreeText => v.norm.asInstanceOf[Field#Value]
+    case v => v
+  }
+
+  def normaliseFreeText(s: FreeText): FreeText = s.copy(refs = s.refs.norm)
+  def normaliseStepText(s: StepText): StepText = s.copy(
+    mainClause = s.mainClause.norm,
+    flowFromClause = s.flowFromClause.map(normaliseFlowFromClause),
+    flowToClause = s.flowToClause.map(normaliseFlowToClause)
+  )
+  def normaliseFlowFromClause(c: FlowFromClause): FlowFromClause = c.copy(refs = c.refs.norm)
+  def normaliseFlowToClause(c: FlowToClause): FlowToClause = c.copy(refs = c.refs.norm)
+
+  def normaliseRefs(r: Refs): Refs = r.map {
+    case (id, ref) => (ref.asLocalId -> ref)
+  }
+
+  def normaliseStepFieldValue(s: StepFieldValue): StepFieldValue = {
+    var newTextmap = Map.empty[LocalIdStr, StepText]
+    // Add treeroot map
+    val newNodes = s.tree.nodes.map(n => n.deepCopy[StepNode] {
+      (stepNode, children) =>
+        val newId = s"id/${stepNode.level}.${stepNode.labelIndex}".asLocalId
+        s.textmap.get(stepNode.id).map(
+          txt => newTextmap += (newId -> txt.copy(stepId = newId).norm)
         )
-      )
-
-    def setCoursesWithText(nodes: List[StepNodeWithText]) {
-      cf.setState(CourseFieldState(cf.buildStateForTest(nodes)))()
-    }
+        stepNode.copy(id = newId, children = children)
+    })
+    s.copy(tree = StepTree(newNodes), textmap = newTextmap)
   }
 
-  case class TreeMatcher(expected: List[StepNodeWithText]) extends Matcher[List[StepNodeWithText]] {
+  def removeNcField(uc: UseCase): UseCase = {
+    val noNc: PartialFunction[Field, Boolean] = { case _:NormalCourseField => false; case _=>true}
+    val f = uc.fields.filter(noNc)
+    val fv = uc.fieldValues.filterKeys(noNc)
+    uc.copy(fields = f, fieldValues = fv).regenerateStepsAndLabels
+  }
+
+  def assertStepTree(uc: UseCase, f: StepField, expectedTreeText: String) {
+    f.getTextTree(uc) should matchTree(parseStepTree(expectedTreeText))
+  }
+
+  /**
+   * ScalaTest matcher for text trees.
+   */
+  case class TextTreeMatcher(expected: List[StepNodeWithText]) extends Matcher[List[StepNodeWithText]] {
     def apply(actual: List[StepNodeWithText]): MatchResult = {
       val result = removeIds(actual) == removeIds(expected)
       MatchResult(result,
@@ -185,42 +299,109 @@ object TestHelpers extends TestHelpers {
         "Trees matched but shouldn't have.\n" + inspectTree(actual))
     }
   }
+  def matchTree(expected: List[StepNodeWithText]) = TextTreeMatcher(expected)
 
   /**
-   * Old way of generating trees.
+   * Extensions for: Int
    */
-  object TreeDSL {
-    import lib.StepLabels.LabelMakers
+  implicit class MyRichInt(val i: Int) {
+    def times(block: => Any) { 1 to i foreach(_ => block) }
+  }
 
-    case class NC(val node: String, val children: List[NC])
-    def $(nodes: NC*) = nodes.toList
-    implicit def nodeWithoutChildren(n: String) = NC(n, Nil)
-    implicit class StringAsNode(val s: String) { def ~>(children: List[NC]) = NC(s, children) }
-    implicit class NCListExt(val ncs: List[NC]) {
-      val regex = """^(\S+?)/(\S+)$""".r
-      val labelSplit = """^(\S+\.)?([^\.]+)$""".r
-      def toStepNodes: List[StepNodeWithText] = toStepNodes(0, "", true)
-      def toStepNodesN: List[StepNodeWithText] = toStepNodes(0, "", false)
-      def toStepNodes(lvl: Int, idPrefix: String, genIds: Boolean): List[StepNodeWithText] = ncs.map { nc =>
-        val (lbl, txt) = if (regex.pattern.matcher(nc.node).matches) {
-          val regex(l, t) = nc.node; (l, t)
-        } else
-          (nc.node, "Step:" + nc.node)
-        val id = idPrefix + lbl
-        val ch = nc.children.toStepNodes(lvl + 1, id + ".", genIds)
-        val labelSplit(lblPrefix, lblSuffix) = lbl
-        val lblIndex = LabelMakers(lvl)(lblSuffix)
-        val id2 = if (genIds) id else null
-        StepNodeWithText(id2.asLocalId, lvl, lblIndex, txt, ch)
-      }
+  /**
+   * Extensions for: StepFieldValue
+   */
+  implicit class StepFieldValueExt(val v: StepFieldValue) {
+    def norm = normaliseStepFieldValue(v)
+
+    def toTextTree(field: StepField, savedSteps: SavedSteps = EmptySavedSteps): List[StepNodeWithText] =
+      convertNodeTree[StepNode, StepNodeWithText](v.tree, {
+        case (n, lvl, lbl, children) =>
+          val txt = v.textmap.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
+          StepNodeWithText(n.id, lvl, lbl, txt, children)
+      }, field.sli.startingLabelIndex _)
+  }
+
+  /**
+   * Extensions for: List[StepNodeWithText]
+   */
+  implicit class TextTreeExt(val x: List[StepNodeWithText]) {
+    def toStepTree = StepTree(x.map(_.toStepNode))
+
+    def toTextmap(savedSteps: SavedSteps = EmptySavedSteps, stepsAndLabels: StepAndLabelBiMap = EmptyStepAndLabelBiMap) =
+      TreeLike(x).mapRecursive[(LocalIdStr, StepText)](n => {
+        val t = StepText.load(n.id, n.text.hasNormalisedRefs)(savedSteps, stepsAndLabels)
+        (n.id, t)
+      }).toMap
+
+    def toStepFieldValue(f: StepField, savedSteps: SavedSteps = EmptySavedSteps, stepsAndLabels: StepAndLabelBiMap = EmptyStepAndLabelBiMap) =
+      StepFieldValue(f, toStepTree, toTextmap(savedSteps, stepsAndLabels))
+  }
+
+
+  /**
+   * Extensions for: TextField
+   */
+  implicit class TextFieldExt(val f: TextField) {
+    def lens = Lens.lensg[UseCase, FreeText](
+      u => v => FieldLenses.uc.textField.set((u, f), v),
+      u => FieldLenses.uc.textField.get(u, f))
+  }
+
+  /**
+   * Extensions for: StepField
+   */
+  implicit class StepFieldExt(val f: StepField) {
+    def lens = Lens.lensg[UseCase, StepFieldValue](
+      u => v => FieldLenses.uc.stepField.set((u, f), v),
+      u => FieldLenses.uc.stepField.get(u, f))
+    def getTextTree(uc: UseCase) = lens.get(uc).toTextTree(f)
+  }
+
+  /**
+   * Extensions for: FieldValues
+   */
+  implicit class FieldValuesExt(val x: FieldValues) {
+    def norm = normaliseFieldValues(x)
+  }
+
+  /**
+   * Extensions for: FreeText
+   */
+  implicit class FreeTextExt(val v: FreeText) {
+    def norm = normaliseFreeText(v)
+  }
+
+  /**
+   * Extensions for: StepText
+   */
+  implicit class StepTextExt(val v: StepText) {
+    def norm = normaliseStepText(v)
+  }
+
+  /**
+   * Extensions for: Refs
+   */
+  implicit class RefsExt(val v: Refs) {
+    def norm = normaliseRefs(v)
+  }
+
+  /**
+   * Extensions for: ChangeResultF
+   */
+  implicit class ChangeResultFExt[V, C](val r: ChangeResultF[V, C]) {
+    def gimme: V = openChange._1
+
+    def openChange: (V, List[C]) = r match {
+      case Changed(v, c) => (v, c.list)
+      case _ => fail(s"Change expected. Got: $r")
     }
 
-    type NodeChange = Tuple2[String, List[NC]]
-    def changeChildren(nodes: List[StepNodeWithText], changes: NodeChange*): List[StepNodeWithText] = nodes.map { n =>
-      val matches = for ((id, c) <- changes if id == n.id) yield c
-      val ch = if (matches.isEmpty) n.children else matches(0).toStepNodes
-      n.copy(children = changeChildren(ch, changes: _*))
+    def openFailure(r: ChangeResultF[_, _]): String = r match {
+      case ChangeFailure(err) => err
+      case _ => fail(s"ChangeFailure expected. Got: $r")
     }
-
   }
 }
+
+object TestHelpers extends TestHelpers

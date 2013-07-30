@@ -1,62 +1,74 @@
-package com.beardedlogic.usecase
-package lib
-package field
+package com.beardedlogic.usecase.lib.field
 
-import scala.xml.NodeSeq
-import model._
-import FieldKey.FieldKeyData
-import FieldValue.FieldValueData
+import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.model._
+import com.beardedlogic.usecase.lib.{StepTree, UcChangeSource}
+import com.beardedlogic.usecase.lib.change.ChangeResponder
 
-/**
- * @tparam S Field State type.
- */
-trait FieldDef[S] {
+trait FieldDefinition {
 
-  def newFieldInstance(ucCtx: UseCaseCtx, fieldKey: FieldKey): Field[S]
+  /** The type (enum) of this field. */
+  val fieldKeyType: FieldKeyType
 
-  def fieldKeyType: FieldKeyType
+  /** Arbitrary data (to store in the database) that comprises this field key's state. */
+  val fieldKeyData: FieldKeyRecData
 
-  /**
-   * The arbitrary data stored in the database that comprises this field key's state.
-   */
-  def fieldKeyData: FieldKeyData
-
-  def stateLoader(fieldKey: FieldKey): FieldStateLoader[S]
+  def field(rec: FieldKeyRec): Field
 }
 
 /**
- * Stateful instance of a Use Case Editor field (or fields).
+ * Represents a field that a use case can have. Eg. "Frequency of Use", "Exception Courses"
  *
- * @tparam S Field State type.
+ * This does not include the value of the field.
  */
-trait Field[S] {
+trait Field extends UcChangeSource {
 
-  val ucCtx: UseCaseCtx
+  /** The type of this field's values. */
+  type Value <: ChangeResponder[Value]
 
-  val fieldKey: FieldKey
+  /** The type of this field's normalised state. */
+  type State
 
-  @inline final def msgCentre = ucCtx.msgCentre
+  val defn: FieldDefinition
+
+  /** The DB record used to reference this field. */
+  val rec: FieldKeyRec
+
+  @inline final def castValue(v: Field#Value) = v.asInstanceOf[Value]
+
+  @inline final def castState(s: Field#State) = s.asInstanceOf[State]
+
+  @inline final def apply(fieldValues: FieldValues): Value = castValue(fieldValues(this))
+
+  @inline final def get(fieldValues: FieldValues): Option[Value] = fieldValues.get(this).asInstanceOf[Option[Value]]
+
+  @inline final def ~>(fieldValue: Value): (Field, Field#Value) = this -> fieldValue
+
+  @inline final def value(implicit fieldValues: FieldValues) = apply(fieldValues)
+
+  def empty: Value
 
   /**
-   * Called once after all fields have been created. Invocation is synchronous and must complete before the first
-   * render is performed.
-   */
-  def init(): Unit
-
-  def render(): NodeSeq
-
-  /**
-   * Restores internal state to a previous state. Usually called when loading from DB.
+   * Builds a field value state a previously saved state, as provided by the load context.
    *
-   * @return A function to be invoked after all fields have had their states similarly set.
+   * @param loadCtx A big blob of data for all fields, from which this field should find and use its own data.
+   * @param mutableSaveCtx After loading, a load ctx is transformed into a save ctx so that it can be used as a save
+   *                       checkpoint. Fields should update the saveCtx as required as they process the load ctx.
    */
-  def setState(newState: S): () => Unit
+  def load(loadCtx: FieldLoadCtx, mutableSaveCtx: MutableFieldSaveCtx): State
+
+  def denormalise(s: State, savedSteps: SavedSteps): (Option[StepTree], StepAndLabelBiMap => Value)
+
+  def valueSaver(v: Value): FieldValueSaver[State]
+}
+
+trait FieldValueSaver[S] {
 
   /**
    * Gives a field a chance to opt-out of storing a value in the database.
    * If a field is blank, then there's no point saving it.
    */
-  def save_? : Boolean
+  def record_required_? : Boolean
 
   /**
    * Saves `data` and `value` rows for any additional data required.
@@ -66,12 +78,7 @@ trait Field[S] {
    *
    * @return Whether the field's state has changed since the last save.
    */
-  def presave(
-    lastSave: Option[(FieldSaveCtx, S)],
-    saveCtx: MutableFieldSaveCtx,
-    dao: DAO
-  ): Boolean
-
+  def presave(dao: DAO, prevSave: Option[(FieldSaveCtx, S)], savedSteps: SavedSteps)(saveCtx: MutableFieldSaveCtx): Boolean
 
   /**
    * Continues saving state to database.
@@ -85,9 +92,5 @@ trait Field[S] {
    * @return A single, arbitrary data string that will be stored in `field_value.data`. The format and mechanism of this
    *         value can be decided by the field type.
    */
-  def save(
-    combinedSaveCtx: FieldSaveCtx,
-    newSaveCtx: FieldSaveCtx,
-    dao: DAO
-  ): (FieldValueData, S)
+  def save(dao: DAO, savedSteps: SavedSteps, combinedSaveCtx: FieldSaveCtx, newSaveCtx: FieldSaveCtx): (FieldValueRecData, S)
 }

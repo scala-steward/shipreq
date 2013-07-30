@@ -35,7 +35,7 @@ object UseCaseIndex extends SnippetHelpers {
 
   def createNewUseCase(reactor: Reactor, dao: DAO): UseCaseSummary = {
     val uc = dao.createInitialUseCase(Defaults.Title, Defaults.FieldList.get)
-    val ucs = UseCaseSummary(uc.dataId, uc.valueId, uc.number, uc.title, Misc.currentTimeAsIso8601Str)
+    val ucs = UseCaseSummary(uc.dataId, uc.valueId, uc.header.number, uc.header.title, Misc.currentTimeAsIso8601Str)
     reactor(JavaScript)(NewUseCase.trigger(ucs))
     ucs
   }
@@ -49,7 +49,7 @@ object UseCaseIndex extends SnippetHelpers {
       lock     <- Locks.UseCase.forWrite(dataId)
       dao      <- daoProvider.forTransaction
       uc       <- dao.findUseCase(dataId, valueId)        ?~ "Use case not found."
-      newUc     = uc.copy(title = newTitle)
+      newUc     = uc.withTitle(newTitle)
       savedUc  <- dao.updateUseCaseHeader(newUc) match {
                     case Success(_, r) => Full(r)
                     case StaleRevision => Failure(ErrorMessages.StaleDataSubmitted)

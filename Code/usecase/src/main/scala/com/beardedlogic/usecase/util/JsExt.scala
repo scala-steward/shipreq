@@ -47,6 +47,16 @@ object JsExt {
   }
 
   /**
+   * Set the HTML contents of each element in the set of matched elements.
+   *
+   * @see http://api.jquery.com/html/
+   */
+  case class JqHtml(content: NodeSeq) extends JsExp with JsMember {
+    override val toJsCmd =
+      "html(" + fixHtmlFunc("inline", content) { str => str } + ")"
+  }
+
+  /**
    * Insert content, specified by the parameter, after each element in the set of matched elements.
    *
    * @see http://api.jquery.com/after/

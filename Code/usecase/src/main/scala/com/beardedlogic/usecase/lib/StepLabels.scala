@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.lib
 
 import scala.collection.mutable.{ Map => MutableMap }
-import TypeTags._
+import Types._
 import com.beardedlogic.usecase.util.RomanNumeral
 
 /**

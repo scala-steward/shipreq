@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package snippet
 
 import com.beardedlogic.usecase.lib.{ExternalId, Defaults}
-import com.beardedlogic.usecase.model.{UseCase, UseCaseSummary}
+import com.beardedlogic.usecase.model.{UseCaseRec, UseCaseSummary}
 import com.beardedlogic.usecase.test.TestDatabaseSupport
 import com.beardedlogic.usecase.util.{ErrorMessages, JavaScriptReaction, NoReaction}
 import org.scalatest.FunSpec
@@ -59,19 +59,19 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     def testSuccess(newTitle: String, expectedTitleAfterSave: String): UseCaseSummary =
       testSuccess2(newUc, newTitle, expectedTitleAfterSave)
 
-    def testSuccess2(uc1: UseCase, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
+    def testSuccess2(uc1: UseCaseRec, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
       val (r, js) = test(params(uc1.dataId, uc1.valueId, newTitle))
       r should be('defined)
       val uc2 = r.openOrThrowException("required")
       assertJsErrorNotice(js, None)
       assertUpdateTriggered(js)
-      uc2.number should equal(uc1.number)
+      uc2.number should equal(uc1.header.number)
       uc2.title should equal(expectedTitleAfterSave)
       db.findAllUseCaseSummaries() should contain(uc2)
       uc2
     }
 
-    def testFailure(uc: UseCase, errorMsgFrag: String, params: Map[String, String]) {
+    def testFailure(uc: UseCaseRec, errorMsgFrag: String, params: Map[String, String]) {
       val (r, js) = assertTableDiffs()(test(params))
       r should be('empty)
       assertJsErrorNotice(js, Some(errorMsgFrag))
@@ -99,7 +99,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
       val uc2 = db.findUseCase(uc2s.valueId).get
-      assertTableDiffs(){ testSuccess2(uc2, uc2.title, uc2.title) }
+      assertTableDiffs(){ testSuccess2(uc2, uc2.header.title, uc2.header.title) }
       db.findAllUseCaseSummaries() should contain(uc2s)
     }
 
@@ -112,8 +112,8 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
 
     it("should reject updates when UC rev not latest") {
       val uc = newUc
-      val uc1 = db.updateUseCaseHeader(uc.copy(title="New Title!")).dataOpt.get // direct update (same valueId)
-      val uc2 = db.updateUseCaseHeader(uc1.copy(title="Newer title")).dataOpt.get // audited update
+      val uc1 = db.updateUseCaseHeader(uc.withTitle("New Title!")).dataOpt.get // direct update (same valueId)
+      val uc2 = db.updateUseCaseHeader(uc1.withTitle("Newer title")).dataOpt.get // audited update
       uc2.valueId should not be(uc.valueId)
       testFailure(uc2, ErrorMessages.StaleDataSubmitted, params(uc.dataId, uc.valueId, "zxcvz"))
     }

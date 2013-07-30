@@ -5,7 +5,7 @@ package com.beardedlogic.usecase.lib.tree
  *
  * @since 11/07/2013
  */
-trait TreeLike[N <: TreeNodeLike[N]] {
+trait TreeLike[+N <: TreeNodeLike[N]] {
 
   protected def nodes: List[N]
 
@@ -37,7 +37,7 @@ case class GenTreeLike[N <: TreeNodeLike[N]](override val nodes: List[N]) extend
  *
  * @since 11/07/2013
  */
-trait TreeRoot[N <: TreeNodeLike[N]] extends TreeLike[N] {
+trait TreeRoot[+N <: TreeNodeLike[N]] extends TreeLike[N] {
   override def nodes: List[N]
   final def size = nodes.size
   final def isEmpty = nodes.isEmpty
@@ -53,7 +53,7 @@ trait TreeRoot[N <: TreeNodeLike[N]] extends TreeLike[N] {
  *
  * @since 1/06/2013
  */
-trait TreeNodeLike[N <: TreeNodeLike[N]] extends TreeLike[N] {
+trait TreeNodeLike[+N <: TreeNodeLike[N]] extends TreeLike[N] {
   self: N =>
 
   val children: List[N]
@@ -66,10 +66,10 @@ trait TreeNodeLike[N <: TreeNodeLike[N]] extends TreeLike[N] {
 
   override def mapRecursive[R](fn: N => R): List[R] = fn(this) +: super.mapRecursive(fn)
 
-  def deepCopy(fn: (N, List[N]) => N): N = {
+  def deepCopy[R](fn: (N, List[R]) => R): R = {
     val copiedChildren = deepCopyChildren(fn)
     fn(this, copiedChildren)
   }
 
-  def deepCopyChildren(fn: (N, List[N]) => N): List[N] = children.map(_ deepCopy fn)
+  def deepCopyChildren[R](fn: (N, List[R]) => R): List[R] = children.map(_ deepCopy fn)
 }

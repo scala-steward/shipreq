@@ -23,6 +23,7 @@ case class BiMap[A, B](final val ab: Map[A, B], final val ba: Map[B, A]) {
   def bs = ba.keySet
   def size = ab.size
   assume(ab.size == ba.size, "A->B and B->A have differing sizes. There must be a non-unique element.")
+  override def toString = s"BiMap($ab)"
 }
 
 /*{
@@ -41,9 +42,9 @@ final class BiMapBuilder[A, B] {
   final val ab = Map.newBuilder[A, B]
   final val ba = Map.newBuilder[B, A]
 
-  @inline final def +=(ab: Tuple2[A, B]) {
+  @inline final def +=(ab: (A, B)) {
     this.ab += ab
-    ba += (ab._2 -> ab._1)
+    ba += ab.swap
   }
 
   @inline def update(a: A, b: B): Unit = this += (a -> b)

@@ -1,0 +1,42 @@
+@startuml
+autonumber
+
+actor User
+participant Callback
+control UCE
+entity UC
+participant UC2
+participant Lens
+entity SFV
+entity "FreeText\nStepText" as StepText
+entity Change
+
+User -> Callback : Update step text (txt)
+Callback ->o UCE : Get UC => UC
+Callback -> UC : updateTextFieldText(field, txt)\nupdateStepFieldText(field, id, txt)
+  UC ->o Lens : get(UC, F) => FreeText\nget(UC, F, id) => StepText
+  UC -> StepText : update(txt)
+    StepText ->o Change : TextChanged\nStepTextChanged(id)\nFlow{From,To}Change
+  UC <-- StepText : ChangeResult[FreeText/StepText, Change]
+  UC ->o Lens : set(UC, F, FreeText) => UC\nset(UC, F, id, StepText) => UC
+  UC -> UC : regenerateStepsAndLabels => UC
+  UC -> UC2 : respondToChanges(changes)
+
+  UC2 -> StepText : FreeText.respondToChange(change)
+  StepText ->o Change : TextChanged
+  UC2 <-- StepText : ChangeResult[FreeText, Change]
+
+  UC2 -> SFV : SFV.respondToChange(change)
+  SFV -> StepText : respondToChange(change)
+  StepText ->o Change : create StepTextChanged(id)
+  SFV <-- StepText : ChangeResult[StepText, Change]
+  UC2 <-- SFV : ChangeResult[SFV, Change]
+
+  UC <-- UC2 : ChangeResult[UC, (Field,Change)]
+  UC -> UC : Merge ChangeResult + (Field,Change)
+Callback <-- UC : ChangeResult[UC, (Field,Change)]
+Callback ->o UCE : Set UC => Unit
+Callback ->o UCE : renderChanges(UC, List[(Field,Change)]) => JsCmd
+User <-- Callback : JsCmd
+
+@enduml

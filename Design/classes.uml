@@ -1,0 +1,204 @@
+@startuml classes-top.png
+
+package lib {
+	interface MessageHandler {
+		+handleMessage(msg)(stepsAndLabels)
+	}
+	class UseCaseHeader {
+		+title
+		+number
+	}
+	class UseCase {
+		+header
+		+fields
+		+fieldValues
+		+stepsAndLabels
+	}
+	UseCase o-- UseCaseHeader
+}
+
+package model {
+	enum FieldKeyType {
+		+fieldDef(data: FieldKeyRecData)
+	}
+	class FieldKeyRec {
+		+valueId
+		+fieldKeyType
+		+fieldKeyData: Option[String]
+		+fieldDef()
+		+field()
+	}
+	FieldKeyRec o-- FieldKeyType
+	class FieldValueRec {
+		+valueId
+		+fieldKeyId
+		+fieldData: Option[String]
+	}
+	FieldValueRec o.. FieldKeyRec
+	class FieldListRec {
+		+fieldKeys
+		+dataId
+		+valueId
+		+fieldDefs()
+		+fields()
+	}
+	FieldListRec o-- FieldKeyRec
+}
+
+package text {
+	interface Parser {
+		+empty
+		+load(TextWithNormalisedRefs)(savedSteps, stepsAndLabels)
+		+parse(text)(stepsAndLabels)
+	}
+	interface ParsedText {
+		+text
+		+isEmpty()
+		+nonEmpty()
+		+hasRefs_?()
+		+textWithNormalisedRefs(savedSteps)
+		+update(input)(stepsAndLabels)
+		#correctInput(input)
+		#updateCorrected(newText)(stepsAndLabels)
+	}
+	class FreeText {
+		+updateRefs(stepsAndLabels)
+	}
+	class StepText {
+		+allRefs
+		-parseTextForFlow(input)
+		-transitionFlowClause(flow, oldClause, labelsFoundInNewFlow)
+		+withFlowFrom(from)
+		+withFlowTo(to)
+		+updateRefs(stepsAndLabels)
+		-updateRefs(f, co)
+		-processFlowChangeMsg(f, co, updateFn, mayneIds, oneId)
+	}
+	ParsedText --|> MessageHandler
+	FreeText --|> ParsedText
+	StepText --|> ParsedText
+	Parser ..> ParsedText
+	FreeText_ --|> Parser
+	FreeText_ ..> FreeText
+	StepTextFactory --|> Parser
+	StepTextFactory ..> StepText
+}
+
+package field {
+	interface FieldDefinition {
+		+fieldKeyType
+		+fieldKeyData
+		+field(FieldKeyRec)
+	}
+	interface Field {
+		+defn
+		+rec
+		+empty()
+		+load(loadCtx, mutableSaveCtx)
+		+denormalise(state, savedSteps)
+		+valueSaver(value)
+	}
+	interface FieldValueSaver {
+		+record_required_?()
+		+presave(dao, prevSave, savedSteps)(mutableSaveCtx)
+		+save(dao, savedSteps, combinedSaveCtx, newSaveCtx)
+	}
+	interface Field_Value
+	Field o-- FieldKeyRec
+	Field o-- FieldDefinition
+	Field ..> FieldValueSaver
+	FieldDefinition o-- FieldKeyType
+	FieldDefinition <-- FieldKeyType
+	' Field_Value ..o FieldValueSaver
+	Field_Value <.. Field
+	Field_Value --|> MessageHandler
+}
+
+UseCase o-- Field
+UseCase o-- Field_Value
+
+@enduml
+
+'=======================================================================================================================
+@startuml classes-fields.png
+
+package field {
+	interface FieldDefinition {
+		+fieldKeyType
+		+fieldKeyData
+		+field(FieldKeyRec)
+	}
+	interface Field {
+		+defn
+		+rec
+		+empty()
+		+load(loadCtx, mutableSaveCtx)
+		+denormalise(state, savedSteps)
+		+valueSaver(value)
+	}
+	interface FieldValueSaver {
+		+record_required_?()
+		+presave(dao, prevSave, savedSteps)(mutableSaveCtx)
+		+save(dao, savedSteps, combinedSaveCtx, newSaveCtx)
+	}
+	interface Field_Value
+	Field o-- FieldDefinition
+	Field ..> FieldValueSaver
+	' Field_Value ..o FieldValueSaver
+	Field_Value <.. Field
+}
+
+package text {
+	class TextFieldDefinition {
+		+title
+	}
+	class TextFieldValueSaver {
+		+state(savedSteps)
+	}
+	class TextFieldValue << virtual >> {
+		+FreeText
+	}
+	' TextFieldDefinition --|> FieldDefinition
+	' TextField --|> Field
+	TextField o-- TextFieldDefinition
+	TextField o.. TextFieldValue
+	' TextFieldValueSaver --|> FieldValueSaver
+	TextField ..> TextFieldValueSaver
+	' TextFieldValue .. FreeText
+	TextFieldValue --o TextFieldValueSaver
+	' Field_Value <|-- TextFieldValue
+}
+
+package step {
+	abstract class StepField {
+		+sli: startingLabelIndices
+		+rootLabelPrefix(UseCaseHeader)
+	}
+	class StepFieldValueSaver {
+		+normalisedState(savedSteps)
+	}
+	class StepFieldValue {
+		+tree
+		+textmap
+	}
+	' NormalisedStepTree
+	' NormalisedStep
+	' StepFieldValue o-- StepTree
+	' StepFieldValue o-- StepText
+	' StepField --|> Field
+	StepField *-- StepFieldValue
+	StepField ..> StepFieldValueSaver
+	StepFieldValueSaver o-- StepFieldValue
+	' StepFieldValueSaver --|> FieldValueSaver
+	' Field_Value <|-- StepFieldValue
+
+	' NormalCourseFieldDefinition --|> FieldDefinition
+	NormalCourseField --|> StepField
+	NormalCourseField o-- NormalCourseFieldDefinition
+
+	' ExceptionCourseFieldDefinition --|> FieldDefinition
+	ExceptionCourseField --|> StepField
+	ExceptionCourseField o-- ExceptionCourseFieldDefinition
+}
+
+@enduml

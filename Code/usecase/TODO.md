@@ -47,6 +47,5 @@ TECH TODO
 * [C.2.0] [PERF] DAO should cache certain actions and execute in bulk.
 * [C.1.1] [TEST] Remove UseCaseCtx.init().
 * [C.1.0] [RUSE] Improve reusability of CachedFunction classes (and switch tests back on).
-* [C.0.0] [ARCH] Title-to-NC sync should be done via msging.
 * [C.0.0] [FAIL] DatabaseEnumTest disabled due to DB deadlocks.
 

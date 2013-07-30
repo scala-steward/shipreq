@@ -5,7 +5,6 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import com.beardedlogic.usecase.lib.{ExternalId, Defaults}
 import com.beardedlogic.usecase.test.{TestDatabaseSupport, TestHelpers}
 import support.SeleniumTest
-import TestHelpers._
 
 class UseCaseIndexTest extends FunSuite with SeleniumTest with BeforeAndAfter with TestDatabaseSupport {
 

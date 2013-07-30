@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package model
 
 import scala.slick.jdbc.{StaticQuery => Q, GetResult}
-import lib.TypeTags._
+import lib.Types._
 import StepAccessor._
 
 object StepAccessor {

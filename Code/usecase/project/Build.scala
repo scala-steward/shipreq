@@ -9,6 +9,8 @@ object B extends Build {
 
   val BuildPropsFilename = "build.properties"
 
+  val clear = TaskKey[Unit]("clear", "Clears the screen.")
+
   lazy val root =
     Project("root", file("."))
     .configs(SeleniumTest)
@@ -16,6 +18,7 @@ object B extends Build {
     .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*) // Dependency graph
     .settings(inConfig(SeleniumTest)(Defaults.testSettings): _*)
     .settings(
+      clear := { println("\033[2J\033[;H") },
 
       version <<= (baseVersion, buildRev) {(ver,rev) => ver + "-SNAPSHOT-" + rev.substring(0, 8)},
 
