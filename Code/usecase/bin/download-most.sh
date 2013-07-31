@@ -34,6 +34,12 @@ echo "Downloading v$v of KO mapping -- https://github.com/SteveSanderson/knockou
 curl -s https://raw.github.com/SteveSanderson/knockout.mapping/$v/build/output/knockout.mapping-latest.js -o src/main/javascript/vendor/knockout-mapping.js
 echo $?
 
+echo "Downloading Mousetrap"
+curl -s https://raw.github.com/ccampbell/mousetrap/master/mousetrap.js -o src/main/javascript/vendor/mousetrap.js && \
+curl -s https://raw.github.com/ccampbell/mousetrap/master/plugins/global-bind/mousetrap-global-bind.js -o src/main/javascript/vendor/mousetrap-global-bind.js
+echo $?
+sed -i -e '/@url/d' src/main/javascript/vendor/mousetrap.js
+
 v=1.12.0
 echo "Downloading v$v of QUnit -- http://qunitjs.com/"
 curl -s http://code.jquery.com/qunit/qunit-$v.js -o vendor/qunit/qunit.js && \
