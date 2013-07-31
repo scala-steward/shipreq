@@ -1,3 +1,7 @@
+var liftAjax = {
+    lift_ajaxHandler: function(){return false}
+}
+
 var ids = {
     title: "uc-title"
     ,tf0: "F808585046428RZEI0V"
@@ -17,24 +21,6 @@ var ids = {
 
 function $id(id) {
     return $("#" + id)
-}
-
-/**
- *
- * @param elementId
- * @return HTMLTextAreaElement
- */
-function getElementAbove(elementId) { return getElementBeside(elementId, -1) }
-function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
-function getElementBeside(elementId, offset) {
-    var all = $('.uce textarea:visible')
-    for (var i = 0; i < all.length; i++) {
-        if (elementId == all[i].id) {
-            i += offset + all.length
-            i %= all.length
-            return all[i]
-        }
-    }
 }
 
 function testBelow(desc, from, to) {
@@ -64,9 +50,15 @@ testBelow("AC -> EC", ids.s_1_1, ids.s_1_e_1)
 testBelow("EC -> EC", ids.s_1_e_1, ids.s_1_e_2)
 testBelow("EC -> text", ids.s_1_e_2, ids.tf3)
 
-test("Focus testing", function(){
-    var x = $id(ids.s_1_1)
-    equal( x.is(':focus'), false )
-    x.focus()
-    equal( x.is(':focus'), true )
-})
+function testFocusChange(name, fn, from, to) {
+    test("Keyboard shortcut: " + name, function(){
+        var x = $id(from)
+        x.focus()
+        equal( x.is(':focus'), true, "Initial focus failed." )
+        fn()
+        equal( x.is(':focus'), false, "Focus didn't change." )
+        equal( $id(to).is(':focus'), true, "Target didn't get focus." )
+    })
+}
+testFocusChange("Alt + Down", onAltDown, ids.s_1_0, ids.s_1_0_1)
+testFocusChange("Alt + Up",   onAltUp,   ids.s_1_0, ids.tf2)

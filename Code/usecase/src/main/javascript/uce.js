@@ -41,3 +41,53 @@ function ac_to_nc(containerId, stepsJqExpr, rewriteFn) {
 			});
 	});
 }
+
+function getAllUceInputFields() { return $('.uce textarea:visible') }
+
+function getElementBeside(elementId, offset) {
+    var all = getAllUceInputFields()
+    for (var i = 0; i < all.length; i++) {
+        if (elementId == all[i].id) {
+            i += offset + all.length
+            i %= all.length
+            return all[i]
+        }
+    }
+}
+
+/**
+ * Locates the textarea above the one given. If the top is given, then the bottom is returned.
+ *
+ * @param elementId The current element.
+ * @return HTMLTextAreaElement
+ */
+function getElementAbove(elementId) { return getElementBeside(elementId, -1) }
+
+/**
+ * Locates the textarea below the one given. If the bottom is given, then the top is returned.
+ *
+ * @param elementId The current element.
+ * @return HTMLTextAreaElement
+ */
+function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
+
+/**
+ * Changes the keyboard focus to another.
+ *
+ * @param tgtFn Given the ID of the currently focused field, returns the target field to move to focus to.
+ *              (id: String) => (jQuery expression / HTMLTextAreaElement)
+ */
+function changeFocus(tgtFn) {
+    var allSelected = getAllUceInputFields().filter(':focus')
+    if (allSelected.length == 1) {
+        var tgt = tgtFn(allSelected[0].id)
+        $(tgt).focus()
+    }
+}
+
+$(document).ready(function() {
+    Mousetrap.bindGlobal('alt+down', onAltDown);
+    Mousetrap.bindGlobal('alt+up',   onAltUp);
+});
+function onAltDown() { return changeFocus(getElementBelow) }
+function onAltUp()   { return changeFocus(getElementAbove) }
