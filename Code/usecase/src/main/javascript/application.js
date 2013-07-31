@@ -8,14 +8,11 @@
 // require "vendor/jquery-serializeObject.js"
 // require "vendor/jquery-livequery.js"
 
-var apiUrls = new function() {
-    this.updateUseCaseHeader = function(id){ return {url: "/api/usecase/"+id, type: 'PUT' }}
-}
-
 var urls = new function() {
     this.viewUseCase = function(id){ return "/usecase/"+id }
 }
 
+/*
 function fullStop(sentence) {
     if (sentence.match('\\.$') == null) return sentence + ".";
     return sentence
@@ -47,7 +44,7 @@ function ajaxErrorHandler(xhr, textStatus, errorThrown) {
     alert(msg)
 }
 
-/** A map of pending AJAX requests. Used to prevent duplicate form submissions. */
+/** A map of pending AJAX requests. Used to prevent duplicate form submissions. *
 PendingAjax = {}
 
 function submitJsonForm(apiUrl, successCallback) {
@@ -79,6 +76,7 @@ function submitJsonForm(apiUrl, successCallback) {
         else console.debug("Ignoring repeated " + ajaxKey)
     }
 }
+*/
 
 // Add a global event handler to make Enter submit the current form, for any elements with class 'enterSubmitsForm'.
 $(document).keypress(function (e) {

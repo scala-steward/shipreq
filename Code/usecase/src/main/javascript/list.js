@@ -7,11 +7,6 @@ function UseCaseSummary(uc) {
 
     m.enterEditMode = function(){ m.editMode(true); $("."+m.cssClass+" textarea").select().focus() }
 
-    m.save = submitJsonForm(apiUrls.updateUseCaseHeader(uc.valueEid), function(result) {
-        var n = UseCaseSummary(result)
-        VM.useCases.replace(m,n)
-    })
-
     m.viewUrl = urls.viewUseCase(uc.dataEid)
 
     return m
