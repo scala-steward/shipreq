@@ -50,15 +50,23 @@ testBelow("AC -> EC", ids.s_1_1, ids.s_1_e_1)
 testBelow("EC -> EC", ids.s_1_e_1, ids.s_1_e_2)
 testBelow("EC -> text", ids.s_1_e_2, ids.tf3)
 
+function assertLosesFocus(elementId, fn) {
+    var e = $id(elementId)
+    e.focus()
+    equal( e.is(':focus'), true, "Initial focus failed." )
+    fn()
+    equal( e.is(':focus'), false, "Focus didn't change." )
+}
 function testFocusChange(name, fn, from, to) {
     test("Keyboard shortcut: " + name, function(){
-        var x = $id(from)
-        x.focus()
-        equal( x.is(':focus'), true, "Initial focus failed." )
-        fn()
-        equal( x.is(':focus'), false, "Focus didn't change." )
+        assertLosesFocus(from, fn)
         equal( $id(to).is(':focus'), true, "Target didn't get focus." )
     })
 }
 testFocusChange("Alt + Down", onAltDown, ids.s_1_0, ids.s_1_0_1)
 testFocusChange("Alt + Up",   onAltUp,   ids.s_1_0, ids.tf2)
+
+test("Keyboard shortcut: Esc", function(){
+    assertLosesFocus(ids.s_1_0, onEscape)
+    equal( $(':focus').length, 0, "Nothing should have focus." )
+})

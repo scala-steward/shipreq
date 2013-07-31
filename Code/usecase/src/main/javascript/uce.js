@@ -72,22 +72,33 @@ function getElementAbove(elementId) { return getElementBeside(elementId, -1) }
 function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
 
 /**
+ * If valid field has focus, then applies a fn to it.
+ */
+function withFocusedInputField(fn) {
+    var allSelected = getAllUceInputFields().filter(':focus')
+    if (allSelected.length > 0) fn(allSelected[0])
+}
+
+/**
  * Changes the keyboard focus to another.
  *
  * @param tgtFn Given the ID of the currently focused field, returns the target field to move to focus to.
  *              (id: String) => (jQuery expression / HTMLTextAreaElement)
  */
 function changeFocus(tgtFn) {
-    var allSelected = getAllUceInputFields().filter(':focus')
-    if (allSelected.length == 1) {
-        var tgt = tgtFn(allSelected[0].id)
+    withFocusedInputField(function (sel) {
+        var tgt = tgtFn(sel.id)
         $(tgt).focus()
-    }
+    })
 }
 
+function blurFn(sel) { return $(sel).blur() }
+
+function onAltDown() { return changeFocus(getElementBelow) }
+function onAltUp()   { return changeFocus(getElementAbove) }
+function onEscape()  { return withFocusedInputField(blurFn) }
 $(document).ready(function() {
     Mousetrap.bindGlobal('alt+down', onAltDown);
     Mousetrap.bindGlobal('alt+up',   onAltUp);
+    Mousetrap.bindGlobal('esc',      onEscape);
 });
-function onAltDown() { return changeFocus(getElementBelow) }
-function onAltUp()   { return changeFocus(getElementAbove) }
