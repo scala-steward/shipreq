@@ -37,6 +37,7 @@ TECH TODO
 * [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
 * [S.1.3] [PERF] Shiro caching.
+* [S.1.3] [PERF] Textareas' blur shouldn't send a request when input doesn't change.
 * [S.1.1] [DEMO] Show flow deletion in flow demo.
 * [S.1.1] [TEST] When SBT 0.13 comes out, shutdown Jetty et al in SBT hook.
 * [S.0.5] [BUG ] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
