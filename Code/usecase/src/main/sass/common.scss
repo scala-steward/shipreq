@@ -3,34 +3,37 @@
 // Taken from twitter.github.io/bootstrap/examples/sticky-footer.html
 
 $pageWidth: 780px;
-$footerHeight: 30px;
+$pageMarginHoriz: 30px;
+$footerHeight: 26px;
 
 html, body { height: 100% } // Cannot have any padding or margin here
-
-// The container for the main content and footer.
-.container {
-	width: auto;
-	max-width: $pageWidth;
-}
 
 // Wrapper for page content to push down footer
 #body {
 	min-height: 100%;
 	height: auto !important;
 	height: 100%;
-	margin: 0 auto $footerHeight*-1; // Negative indent footer by it's height
+	margin-top: 4px;
+	margin-bottom: $footerHeight*-1; // Negative indent footer by it's height
 }
 
+// Footer
 #footer-push, #footer { height: $footerHeight }
-#footer { background-color: #f5f5f5; }
-#footer .container p { margin: 5px 0 }
+
+// Container for the main content and footer content.
+.content {
+	//	Fixed width disabled ==> width: auto; max-width: $pageWidth; margin-left: auto; margin-right: auto;
+	width: auto;
+	margin-left: $pageMarginHoriz;
+	margin-right: $pageMarginHoriz;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Generic
 
 .alert {
 	margin: 20px auto 20px auto;
-	max-width: $pageWidth/1.61803398875
+	max-width: $pageWidth / 1.61803398875
 }
 .alert p:last-child { margin-bottom: 0 }
 
@@ -48,12 +51,26 @@ textarea {
 
 abbr.timeago[title] { border-bottom: none !important }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Specific
-
 .centred_form {
 	width: 300px;
 	margin: 1cm auto 1cm auto;
 	h2 { margin-bottom: 0.6em }
 	.controls { margin-top: 2px }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Specific
+
+.loginInfo { text-align: center }
+
+#footer {
+	background-color: #f5f5f5;
+	border-top: solid 1px #ececec;
+	.content {
+		margin-top: 3px;
+		font-size: 12px;
+		font-family: monospace;
+		color: #808080;
+		text-align: center
+	}
 }
