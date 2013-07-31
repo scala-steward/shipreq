@@ -119,7 +119,7 @@ class UseCaseEditorDSL(val s: SeleniumDriver, private val givenCourseRoot: Optio
   def stepCount = steps.size
   def stepText(row: Int) = stepTextElem(row).value
   def stepTextElem(row: Int) = steps(row).findElement(By.cssSelector("textarea"))
-  def stepLabel(row: Int) = steps(row).findElement(By.cssSelector(".label span")).getText
+  def stepLabel(row: Int) = steps(row).findElement(By.cssSelector(".lbl span")).getText
   def stepLevel(row: Int) = {
     val lvl = steps(row).getAttribute(StepLevelAttribute)
     lvl should fullyMatch regex ("^\\d+$")

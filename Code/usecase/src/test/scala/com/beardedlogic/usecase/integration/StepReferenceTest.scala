@@ -22,7 +22,7 @@ class StepReferenceTest  extends FunSpec with SeleniumTest with BeforeAndAfter {
     labelMap = null
   }
 
-  def referring = selenium.findElement(By.cssSelector(".ucdata textarea"))
+  def referring = selenium.findElement(By.cssSelector(".fieldFrame textarea"))
 
   def refText(stepLabel: String) = s"Look at [${stepLabel}]. Good."
 

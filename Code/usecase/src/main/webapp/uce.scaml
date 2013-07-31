@@ -1,6 +1,7 @@
 %div(data-lift="surround?with=default;at=content")
   %link(data-lift="head" href="/css/uce.css" rel="stylesheet" type="text/css")
   %script(data-lift="head" src="/js/uce.js" type="text/javascript")
+
   #legend
     %dl
       %dt
@@ -18,18 +19,25 @@
       %dt
         %code <-- [1.1] [1.2]
       %dd Indicates that other steps flow here.
+
   #uce.uce(data-lift="uce/UseCaseEditor")
+
     %div
       %div
         Revision:
         %span.rev 123
       %button.saveUseCase Save
+
     %table.title
       %tr
         %th
-          <span id="uc-id">UC-<span class="ucid">123</span></span>:
+          %span#uc-id<>
+            UC-
+            %span.ucid<> 123
+          \:
         %td
-          %input(name="title" value="Use Case Title")
+          %input(name="title")
+
     %table.fieldFrame
 
       %tr.fieldFrame#template-text
