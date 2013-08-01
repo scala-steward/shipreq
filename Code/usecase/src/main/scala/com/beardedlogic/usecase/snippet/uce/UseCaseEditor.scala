@@ -75,7 +75,7 @@ class UseCaseEditor extends StatefulSnippet with SnippetHelpers {
     }
 
   def onSave(dao: DAO): JsCmd = {
-    UseCaseFns.save(uc, state.prevSave, dao) match {
+    UseCasePersistence.save(uc, state.prevSave, dao) match {
       case thisSave@Some(cp) =>
         setState(State(cp.uc, thisSave))
         renderer.jsUpdateRevision

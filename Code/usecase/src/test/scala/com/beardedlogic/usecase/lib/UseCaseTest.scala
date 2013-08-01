@@ -13,6 +13,7 @@ import test.{LoadedTestData, TestDatabaseSupport, TestData, TestHelpers}
 import text.{FlowToClause, FlowFromClause, StepText, FreeText}
 import Types._
 import UseCaseFns._
+import UseCasePersistence._
 
 class UseCaseTest extends FunSpec with TestHelpers with TestData {
 
