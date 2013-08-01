@@ -42,6 +42,8 @@ function ac_to_nc(containerId, stepsJqExpr, rewriteFn) {
 	});
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 function getAllUceInputFields() { return $('.uce textarea:visible') }
 
 function getElementBeside(elementId, offset) {
@@ -79,6 +81,14 @@ function withFocusedInputField(fn) {
     if (allSelected.length > 0) fn(allSelected[0])
 }
 
+/** Locates the top-level container of an element in a step. */
+function getStepContainer(innerElement) {
+    return $(innerElement).parents().filter('.step')
+}
+
+/** Searches the given step-container's tree of elements for the add-step button. */
+function getAddStepButton(stepContainer) { return stepContainer.find('button.add:visible')[0] }
+
 /**
  * Changes the keyboard focus to another.
  *
@@ -94,11 +104,25 @@ function changeFocus(tgtFn) {
 
 function blurFn(sel) { return $(sel).blur() }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 function onAltDown() { return changeFocus(getElementBelow) }
 function onAltUp()   { return changeFocus(getElementAbove) }
 function onEscape()  { return withFocusedInputField(blurFn) }
+
+function onAltEnter() {
+    withFocusedInputField(function (textarea) {
+        var addButton = getAddStepButton(getStepContainer(textarea))
+        if (addButton) {
+            $(textarea).blur()
+            $(addButton).click()
+        }
+    })
+}
+
 $(document).ready(function() {
-    Mousetrap.bindGlobal('alt+down', onAltDown);
-    Mousetrap.bindGlobal('alt+up',   onAltUp);
-    Mousetrap.bindGlobal('esc',      onEscape);
+    Mousetrap.bindGlobal('alt+down',  onAltDown);
+    Mousetrap.bindGlobal('alt+up',    onAltUp);
+    Mousetrap.bindGlobal('alt+enter', onAltEnter);
+    Mousetrap.bindGlobal('esc',       onEscape);
 });
