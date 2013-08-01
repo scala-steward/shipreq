@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 import com.beardedlogic.usecase.lib.StepLabels.{MaxStepsPerLevel, MaxStepDepth}
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
+import com.beardedlogic.usecase.lib.UseCaseHeader
 import com.beardedlogic.usecase.lib.tree.TreeOps._
 import com.beardedlogic.usecase.lib.{UseCase, StepNodeBuilder, StepNode, StepTree}
 import com.beardedlogic.usecase.model._

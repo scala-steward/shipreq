@@ -12,7 +12,7 @@ import JsCmds.Noop
 
 import lib.change._
 import lib.field._
-import lib.UcChangeSource
+import lib.UcChangeDomain
 import util.JsExt._
 import Changes._
 import Renderer._
@@ -87,7 +87,7 @@ case class Renderer(uce: UseCaseEditor) extends RendererHelper {
   def jsRespondChangeFailure(errorMessage: String): JsCmd =
     JsCmds.Alert(errorMessage)
 
-  def jsRespondToChanges(changes: NonEmptyList[(UcChangeSource, Change)]): JsCmd = {
+  def jsRespondToChanges(changes: NonEmptyList[(UcChangeDomain, Change)]): JsCmd = {
     var js = Noop
     for (c <- changes.list) {
       c match {

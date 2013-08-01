@@ -5,7 +5,6 @@ import lib._
 import Types._
 import UseCaseFns._
 import field._
-import model.UseCaseHeader
 import test.NodeUtils._
 import text.{StepText, FreeText}
 

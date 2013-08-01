@@ -5,7 +5,7 @@ import scalaz.Lens.lensg
 import lib.Types._
 import lib.text.{StepText, FreeText}
 import lib.UseCase
-import model.UseCaseHeader
+import lib.UseCaseHeader
 import util.LensFns._
 
 object FieldLenses {

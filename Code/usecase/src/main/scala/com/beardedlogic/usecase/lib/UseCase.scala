@@ -15,7 +15,7 @@ import tree.TreeOps._
 
 object UseCaseFns {
 
-  def addChangesToResult(beforeTransform: UseCase, transformResult: UcUpdateResult, changes: NonEmptyList[(UcChangeSource, Change)]): UcUpdateResult =
+  def addChangesToResult(beforeTransform: UseCase, transformResult: UcUpdateResult, changes: NonEmptyList[(UcChangeDomain, Change)]): UcUpdateResult =
     transformResult match {
       case NoChange => Changed(beforeTransform, changes)
       case Changed(v,c) => Changed(v, c append changes)
@@ -309,7 +309,7 @@ case class UseCase(
   @inline final def update[V](f: Field, cr: ChangeResultF[V, Change])(implicit l: AppliedLens[UseCase, V]): UcUpdateResult =
     update(cr, keyByField(f) _)
 
-  def update[V](cr: ChangeResultF[V, Change], changeMapFn: Change => (UcChangeSource, Change))(implicit l: AppliedLens[UseCase, V]): UcUpdateResult =
+  def update[V](cr: ChangeResultF[V, Change], changeMapFn: Change => (UcChangeDomain, Change))(implicit l: AppliedLens[UseCase, V]): UcUpdateResult =
     cr.flatMapF((newValue, changes) => {
       val update1 = l.set(newValue).regenerateStepsAndLabels
       val update2 = update1.respondToChanges(changes)
@@ -321,15 +321,15 @@ case class UseCase(
     implicit val lens = alens(FieldLenses.uc.title, this)
     val newTitle = InputCorrection.useCaseTitle(input)
     if (lens.get == newTitle) NoChange
-    else update(newTitle @: TitleChanged(lens.get, newTitle), c => (UseCaseProper, c))
+    else update(newTitle @: TitleChanged(lens.get, newTitle), c => (UseCaseHeader, c))
   }
 }
 
-/** Marks a class as having the ability to provide changes to a Use Case. (eg. each field can contribute a change.) */
-trait UcChangeSource
+/** Narrows down the scope of a change. Paired with changes to indicate where (eg. which field) the change occurred. */
+trait UcChangeDomain
 
-/** Change source that indicates the change was instigated by the use case itself (as opposed to by its fields). */
-case object UseCaseProper extends UcChangeSource
+object UseCaseHeader extends UcChangeDomain
+case class UseCaseHeader(title: String, number: Short)
 
 case class UseCaseSaveCheckpoint(
   uc: UseCase,

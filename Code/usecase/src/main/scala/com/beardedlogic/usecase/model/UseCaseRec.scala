@@ -8,8 +8,6 @@ import db.DBHelpers._
 import DbOpResult._
 import ExternalId.{toExternal, toInternal}
 
-case class UseCaseHeader(title: String, number: Short)
-
 case class UseCaseRec(
   value: PlainValue[DataType.UseCase],
   header: UseCaseHeader,

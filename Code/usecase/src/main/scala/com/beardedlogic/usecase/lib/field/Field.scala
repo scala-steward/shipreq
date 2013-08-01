@@ -2,7 +2,7 @@ package com.beardedlogic.usecase.lib.field
 
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.model._
-import com.beardedlogic.usecase.lib.{StepTree, UcChangeSource}
+import com.beardedlogic.usecase.lib.{StepTree, UcChangeDomain}
 import com.beardedlogic.usecase.lib.change.ChangeResponder
 
 trait FieldDefinition {
@@ -21,7 +21,7 @@ trait FieldDefinition {
  *
  * This does not include the value of the field.
  */
-trait Field extends UcChangeSource {
+trait Field extends UcChangeDomain {
 
   /** The type of this field's values. */
   type Value <: ChangeResponder[Value]

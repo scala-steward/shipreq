@@ -28,7 +28,7 @@ object Types {
   type FieldStates = Map[Field, Field#State]
   type FieldValues = Map[Field, Field#Value]
 
-  type UcUpdateResult = ChangeResultF[UseCase, (UcChangeSource, Change)]
+  type UcUpdateResult = ChangeResultF[UseCase, (UcChangeDomain, Change)]
 
   // Due to http://youtrack.jetbrains.com/issue/SCL-5900
   @inline final def alens[A1, A2, B](l: LensFamily[A1, A2, B, B], key: A1) = AppliedLens(l, key)

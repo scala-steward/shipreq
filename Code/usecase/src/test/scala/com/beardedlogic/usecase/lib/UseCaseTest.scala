@@ -8,7 +8,7 @@ import Q.interpolation
 import change.Changes.StepTextChanged
 import change.{NoChange, Change}
 import field._
-import model.{UseCaseHeader, DataType}
+import model.DataType
 import test.{LoadedTestData, TestDatabaseSupport, TestData, TestHelpers}
 import text.{FlowToClause, FlowFromClause, StepText, FreeText}
 import Types._

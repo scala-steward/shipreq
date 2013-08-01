@@ -3,7 +3,7 @@ package model
 
 import org.scalatest.FunSpec
 import test.{TestHelpers, TestDatabaseSupport}
-import lib.Defaults
+import lib.{Defaults, UseCaseHeader}
 import scala.slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
 import DbOpResult._

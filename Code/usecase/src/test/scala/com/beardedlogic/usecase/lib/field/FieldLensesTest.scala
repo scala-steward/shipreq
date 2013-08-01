@@ -1,9 +1,8 @@
 package com.beardedlogic.usecase.lib.field
 
 import org.scalatest.FunSpec
-import com.beardedlogic.usecase.lib.UseCase
+import com.beardedlogic.usecase.lib.{UseCase, UseCaseHeader}
 import com.beardedlogic.usecase.lib.text.FreeText
-import com.beardedlogic.usecase.model.UseCaseHeader
 import com.beardedlogic.usecase.test.NodeUtils._
 import com.beardedlogic.usecase.test.{TestData, TestHelpers}
 

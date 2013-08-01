@@ -5,6 +5,7 @@ import org.scalatest.FunSpec
 import org.mockito.Mockito._
 import model._
 import lib.Types._
+import lib.UseCaseHeader
 import lib.UseCaseFns._
 import lib.text.StepText
 import test.NodeUtils._
