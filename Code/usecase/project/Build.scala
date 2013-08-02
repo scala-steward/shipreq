@@ -21,7 +21,7 @@ object B extends Build {
     .settings(
       clear := { println("\033[2J\033[;H") },
 
-      ideaExcludeFolders := List(".idea", ".idea_modules", ".sass-cache", ".settings", "WEB-INF", "src/main/webapp/WEB-INF/_scalate"),
+      ideaExcludeFolders := List(".idea", ".idea_modules", ".sass-cache", ".settings", "WEB-INF", "src/main/webapp/WEB-INF/_scalate", "src/main/webapp/css"),
 
       version <<= (baseVersion, buildRev) {(ver,rev) => ver + "-SNAPSHOT-" + rev.substring(0, 8)},
 

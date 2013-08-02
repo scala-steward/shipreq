@@ -60,6 +60,7 @@ table.step[data-lvl="0"] .label, table.step[data-lvl="0"] textarea { font-weight
 #legend dt { float: left; width: 170px; }
 #legend dd:not(:last-of-type) { padding-bottom: 0.8ex; }
 
+.debug .typing { border: solid 2px #d88; }
 .debug tr.fieldFrame > td { background: #eef; }
 .debug .step .lbl { background: #ffb; }
 .debug .step .txt { background: #bfb; }

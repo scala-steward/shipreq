@@ -94,17 +94,19 @@ DomEnhancements = [
     {css: "textarea",     apply: function(x){ x.autosize() }}
 ];
 
-// Apply DomEnhancements via LiveQuery
-for (var i = 0; i < DomEnhancements.length; i++) {
-    var e = DomEnhancements[i]
-    // console.debug("Registering LQ: "+ e.css)
-    $(e.css).livequery(function (ee) {
-        return function () {
-            // console.debug("LQ calling: "+ ee.css)
-            ee.apply($(this))
-        }
-    }(e))
+function registerDomEnhancementsWithLiveQuery() {
+    for (var i = 0; i < DomEnhancements.length; i++) {
+        var e = DomEnhancements[i]
+        // console.debug("Registering LQ: "+ e.css)
+        $(e.css).livequery(function (ee) {
+            return function () {
+                // console.debug("LQ calling: "+ ee.css)
+                ee.apply($(this))
+            }
+        }(e))
+    }
 }
+$(document).ready(registerDomEnhancementsWithLiveQuery)
 
 // Provide JQuery fns to apply DomEnhancements
 function enhanceDom() { $(document).enhanceDom() }

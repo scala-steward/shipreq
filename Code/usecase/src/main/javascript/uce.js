@@ -73,17 +73,17 @@ function getElementAbove(elementId) { return getElementBeside(elementId, -1) }
  */
 function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
 
-/**
- * If valid field has focus, then applies a fn to it.
- */
+function getFocusedInputField() { return getAllUceInputFields().filter(':focus')[0] }
+
+/** If an input field has focus, then applies a fn to it. */
 function withFocusedInputField(fn) {
-    var allSelected = getAllUceInputFields().filter(':focus')
-    if (allSelected.length > 0) fn(allSelected[0])
+    var s = getFocusedInputField()
+    if (s) fn(s)
 }
 
 /** Locates the top-level container of an element in a step. */
 function getStepContainer(innerElement) {
-    return $(innerElement).parents().filter('.step')
+    return $(innerElement).parents('.step')
 }
 
 /** Searches the given step-container's tree of elements for the add-step button. */
@@ -103,6 +103,41 @@ function changeFocus(tgtFn) {
 }
 
 function blurFn(sel) { return $(sel).blur() }
+
+/**
+ * Returns the full label (eg. "1.0.2.a") of a step.
+ *
+ * @param element Any element within a step.
+ * @returns A string.
+ */
+function getFullLabel(element) {
+    var curStep = getStepContainer(element)
+    var result = curStep.find('.lbl span').text()
+    var lvl = curStep.data('lvl')
+    if (lvl > 0) {
+        // Get all steps before current
+        var steps = curStep.parent('.steps').find('.step:not(#' + curStep.attr('id') + ' ~ *)')
+        while(lvl-- != 0) {
+            var lbl = steps.filter('[data-lvl='+lvl+']').last().find('.lbl span').text()
+            result = lbl + "." + result
+        }
+    }
+    return result
+}
+
+function makeRef(labelText) { return "[" + labelText + "]" }
+
+DomEnhancements.push({css: "#uce textarea", apply: configureUceTextarea})
+function configureUceTextarea(e) {
+    e.on('focus', autoSetTypingMode)
+    e.on('blur', autoSetTypingMode)
+}
+function setTypingMode(on) {
+    var e = $('#uce')
+    var c = 'typing'
+    if (on) e.addClass(c); else e.removeClass(c)
+}
+function autoSetTypingMode() { setTypingMode(getFocusedInputField()) }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -125,4 +160,10 @@ $(document).ready(function() {
     Mousetrap.bindGlobal('alt+up',    onAltUp);
     Mousetrap.bindGlobal('alt+enter', onAltEnter);
     Mousetrap.bindGlobal('esc',       onEscape);
+
+    $('.step .lbl, .step .lbl *').bind('mousedown',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+//        console.log( getFullLabel(e.toElement) )
+    })
 });
