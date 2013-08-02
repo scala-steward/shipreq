@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import org.sbtidea.SbtIdeaPlugin._
 
 object B extends Build {
 
@@ -19,6 +20,8 @@ object B extends Build {
     .settings(inConfig(SeleniumTest)(Defaults.testSettings): _*)
     .settings(
       clear := { println("\033[2J\033[;H") },
+
+      ideaExcludeFolders := List(".idea", ".idea_modules", ".sass-cache", ".settings", "WEB-INF", "src/main/webapp/WEB-INF/_scalate"),
 
       version <<= (baseVersion, buildRev) {(ver,rev) => ver + "-SNAPSHOT-" + rev.substring(0, 8)},
 
