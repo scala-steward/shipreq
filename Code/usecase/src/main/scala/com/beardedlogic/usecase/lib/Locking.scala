@@ -1,12 +1,13 @@
 package com.beardedlogic.usecase
 package lib
 
-import com.google.common.collect.MapMaker
+import com.google.common.cache.{CacheBuilder, CacheLoader}
 import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 import java.util.concurrent.{TimeoutException, TimeUnit}
+import java.lang.{Long => JLong}
 import net.liftweb.common.Logger
 import Locks._
-import com.beardedlogic.usecase.util.{ResourceLeaseMonadL, ResourceLeaseMonadR, ResourceLeaseMonad1}
+import util.{ResourceLeaseMonadL, ResourceLeaseMonadR, ResourceLeaseMonad1}
 
 object Locks {
   /** R/W locks keyed by use case data id. */
@@ -21,18 +22,17 @@ class LockManager extends Logger {
   private val ReadLockToken = new ReadLockToken{}
   private val WriteLockToken = new WriteLockToken{}
 
-  private class Fn extends com.google.common.base.Function[Long, ReentrantReadWriteLock] {
-    override def apply(key: Long) = new ReentrantReadWriteLock
-    override def equals(that: Any) = false
+  private class Fn extends CacheLoader[JLong, ReentrantReadWriteLock] {
+    override def load(key: JLong) = new ReentrantReadWriteLock
   }
 
-  private val lockMap = new MapMaker()
-                        .concurrencyLevel(32)
-                        .initialCapacity(0x1000)
-                        .weakValues()
-                        .makeComputingMap[Long, ReentrantReadWriteLock](new Fn)
+  private val lockCache = CacheBuilder.newBuilder()
+                          .concurrencyLevel(32)
+                          .initialCapacity(0x1000)
+                          .weakValues()
+                          .build(new Fn)
 
-  @inline final protected def getLock(id: Long): ReentrantReadWriteLock = lockMap.get(id)
+  @inline final protected def getLock(id: Long): ReentrantReadWriteLock = lockCache.get(id)
 
   @inline private def withLock[U](lock: Lock)(block: => U): U = {
     if (!lock.tryLock(30, TimeUnit.SECONDS)) throw new TimeoutException()
