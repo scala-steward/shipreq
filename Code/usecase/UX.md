@@ -4,7 +4,6 @@ USAGE NOTES
 * Sorting of refs should be "natural" (ie. 1.0 < 1.0.1 < 1.0.1.a)
 * Enter in step creates new line. I want a new step.
 * Text not corrected when post-correction matches prev value.
-* Need a way to click step to insert ref, rather than type.
 * Need a way to symlink steps (affecting flow). Eg "Copy 1.E.1.1"
 * Be nice to see/insert field templates/examples.
   Eg. 'Frequency Of Use' should have
