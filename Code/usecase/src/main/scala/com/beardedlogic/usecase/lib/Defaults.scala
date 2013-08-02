@@ -4,7 +4,7 @@ package lib
 import net.liftweb.common.Logger
 import field._
 import model._
-import util.CachedFunction
+import util.LazyVal
 
 /**
  * Data IDs below 100 are reserved and can be safely allocated here.
@@ -33,16 +33,16 @@ object Defaults extends Logger {
       TextFieldDefinition("Notes and Issues") ::
       Nil
 
-  val FieldList = CachedFunction.eager1WithInitial[DAO, FieldListRec](dao => {
+  val FieldList: LazyVal[FieldListRec] = LazyDbVal(dao => {
     val fl = dao.syncFieldList(ReservedIds.DefaultFieldList, FieldListDefns)
     debug(s"Default field list: ${fl.dataId}:${fl.valueId}")
     fl
-  })(null)
+  })
+
+  private def LazyDbVal[V](fn: DAO => V) = LazyVal <~ DI.DaoProvider.withTransaction(fn)
 
   def init() {
-    DI.DaoProvider.withTransaction { dao =>
-      FieldList.refresh(dao)
-    }
+    FieldList.get
     debug("Defaults initialised successfully.")
   }
 }
