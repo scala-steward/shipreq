@@ -29,8 +29,8 @@ var ids = {
 
 function testSetup() {
     liftAjax.clear()
-    enhanceDom()
-    uceSetup()
+//    enhanceDom()
+//    uceSetup()
 }
 
 function stdModule(name) {

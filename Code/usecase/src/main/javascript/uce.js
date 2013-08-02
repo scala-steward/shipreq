@@ -129,12 +129,6 @@ function getFullLabel(element) {
 
 function makeRef(labelText) { return "[" + labelText + "]" }
 
-DomEnhancements.push({css: "#uce textarea", apply: configureUceTextarea})
-function configureUceTextarea(e) {
-    e.on('focus', autoSetTypingMode)
-    e.on('blur', autoSetTypingMode)
-}
-
 function inTypingMode() { return $('#uce').hasClass('typing') }
 
 function setTypingMode(on) {
@@ -187,6 +181,9 @@ function uceSetup() {
     Mousetrap.bindGlobal('alt+up',    onAltUp);
     Mousetrap.bindGlobal('alt+enter', onAltEnter);
     Mousetrap.bindGlobal('esc',       onEscape);
-    $('.step .lbl, .step .lbl *').bindOnce('mousedown',onLabelClick)
 }
 $(document).ready(uceSetup)
+
+$(document).on('focus', "#uce textarea", autoSetTypingMode)
+$(document).on('blur',  "#uce textarea", autoSetTypingMode)
+$(document).on('mousedown', ".step .lbl, .step .lbl *", onLabelClick)

@@ -111,7 +111,6 @@ $(document).ready(registerDomEnhancementsWithLiveQuery)
 
 function enhanceDom() { $(document).enhanceDom() }
 (function ($) {
-
     // Provide JQuery fn to apply DomEnhancements
     $.fn.enhanceDom = function () {
         for (var i=0; i < DomEnhancements.length; i++) {
@@ -120,9 +119,4 @@ function enhanceDom() { $(document).enhanceDom() }
         }
         return this;
     };
-
-    $.fn.bindOnce = function (a,b) {
-        this.unbind(a,b)
-        this.bind(a,b)
-    }
 }(jQuery));
