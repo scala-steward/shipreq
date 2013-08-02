@@ -21,6 +21,10 @@ object Misc extends Misc {
     df.setTimeZone(tz)
     df
   }
+
+  implicit class AnyExt[V](val v: V) extends AnyVal {
+    def modIf[VV >: V](cond: Boolean)(mod: V => VV): VV = if (cond) mod(v) else v
+  }
 }
 
 trait Misc {
@@ -46,4 +50,6 @@ trait Misc {
   def randomString(length: Int): String = RNG.alphanumeric.take(length).mkString
 
   def removeAllWhitespace(input: String) = WhitespaceRegex.replaceAllIn(input, "")
+
+  //def modIf[V, VV >: V](v: V, cond: Boolean)(mod: V => VV): VV = if (cond) mod(v) else v
 }
