@@ -46,29 +46,35 @@ object FreeAndStepTextTests extends TestHelpers {
   }
 
   sealed trait FlowTester {
+    type Clause <: FlowClause
     def other: FlowTester
     def get(t: StepText): Option[FlowClause]
     def change(src: LocalIdStr, tgt: Set[LocalIdStr]): Change
     def forceArrows(str: String): String
     def style: FlowStyle
+    def obj: Flow[Clause]
   }
 
   object FlowFromTester extends FlowTester {
+    override type Clause = FlowFromClause
     val FlowRightReplace = "(-+)>".r
     override def other = FlowToTester
     override def get(t: StepText) = t.flowFromClause
     override def change(src: LocalIdStr, tgt: Set[LocalIdStr]) = FlowFromChange(tgt, src)
     override def forceArrows(s: String) = FlowRightReplace.replaceAllIn(s, "<" + _.group(1)).replace("➡", "⬅")
     override def style = FlowFromStyle
+    override def obj = FlowFrom
   }
 
   object FlowToTester extends FlowTester {
+    override type Clause = FlowToClause
     val FlowLeftReplace = "<(-+)".r
     override def other = FlowFromTester
     override def get(t: StepText) = t.flowToClause
     override def change(src: LocalIdStr, tgt: Set[LocalIdStr]) = FlowToChange(src, tgt)
     override def forceArrows(s: String) = FlowLeftReplace.replaceAllIn(s, _.group(1) + ">").replace("⬅", "➡")
     override def style = FlowToStyle
+    override def obj = FlowTo
   }
 
   val FlowTesters = List(FlowFromTester, FlowToTester)
@@ -257,6 +263,13 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
             }
           }
         }
+      }
+
+      it("should sort refs with parents preceding children") {
+        val orderedLabels = List("1.0", "1.0.1", "1.0.1.a", "1.0.1.a.2", "1.0.1.c", "1.0.2", "1.1", "1.E.1")
+        val refs: Refs = orderedLabels.map(x => (s"id/$x".asLocalId, x.asLabel)).toMap
+        val flow = F.obj.create(refs).get
+        F.obj.toText(flow).replaceAll("[^0-9a-zE\\. ]", "").trim should be(orderedLabels.mkString(" "))
       }
 
       it("should parse a single valid ref") {

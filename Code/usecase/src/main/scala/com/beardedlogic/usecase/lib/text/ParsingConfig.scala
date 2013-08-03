@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.lib.text
 
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable.SortedSet
 import scala.util.matching.Regex
 import com.beardedlogic.usecase.lib.Types._
 
@@ -20,8 +20,16 @@ object ParsingConfig {
     val arrowBadRegex: Regex
     val arrowBadReplacement: String
     final def replaceAllArrowsWithBad(input: String) = arrowBadRegex.replaceAllIn(input, arrowBadReplacement)
-    final def makeFlowText(labels: TreeSet[LabelStr]) = arrow + " " + labels.map(makeRef).mkString(" ")
-    final def makeFlowTextOrEmpty(labels: TreeSet[LabelStr]) = if (labels.isEmpty) "" else makeFlowText(labels)
+    final def makeFlowText(labels: SortedSet[LabelStr]) = {
+      val sb = new StringBuilder(labels.size * 14 + 2)
+      sb.append(arrow)
+      labels.foreach(l => {
+        sb.append(' ')
+        makeRef(sb, l)
+      })
+      sb.toString
+    }
+    final def makeFlowTextOrEmpty(labels: SortedSet[LabelStr]) = if (labels.isEmpty) "" else makeFlowText(labels)
   }
 
   object FlowFromStyle extends FlowStyle {

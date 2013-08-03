@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.lib.text
 
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable.{SortedSet, TreeSet}
 import com.beardedlogic.usecase.lib.change.Change
 import com.beardedlogic.usecase.lib.change.Changes.{FlowToChange, FlowFromChange}
 import com.beardedlogic.usecase.lib.Types._
@@ -29,7 +29,7 @@ sealed trait FlowClause {
   /** Returns a function that produces a Change to indicate that a flow clause has changed. */
   def flowChangeFn: LocalIdStr => Change
 
-  def sortedLabels: TreeSet[LabelStr] = {
+  def sortedLabels: SortedSet[LabelStr] = {
     var s = TreeSet.empty[LabelStr]
     for (lbl <- refs.values) s += lbl
     s
