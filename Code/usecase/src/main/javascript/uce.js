@@ -152,7 +152,7 @@ function onLabelClick(event) {
                 var after = fullText.substring(sel.end, fullText.length)
                 if (before.match(/\S$/)) ref = " " +ref
                 if (after.match(/^\S/)) ref += " "
-                focused.replaceSelectedText(ref)
+                focused.replaceSelectedText(ref).trigger('autosize.resize')
             })
         }
         event.preventDefault();
