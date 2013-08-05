@@ -25,11 +25,11 @@ FUNC TODO
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
 * [S.2.3] [UCE ] Stop invalidating both flow clauses when one's broken.
 * [S.2.1] [ACCT] Change username & password (when logged in).
-* [S.2.0] [UCE ] Change indent via Alt + Left/Right
 * [S.1.3] [UCE ] Text field values shouldn't lose audit trail when text is cleared.
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [S.0.5] [ACCT] Password reset (when not logged in).
+* [S.0.3] [UCE ] Field should be focused after indent via keyboard.
 * [S.0.2] [UCE ] Text not corrected when post-correction matches prev value.
 
 * [C.3.1] [UCE ] Search and replace.

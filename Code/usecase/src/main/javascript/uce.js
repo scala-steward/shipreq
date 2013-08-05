@@ -75,10 +75,13 @@ function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
 
 function getFocusedInputField() { return getAllUceInputFields().filter(':focus')[0] }
 
-/** If an input field has focus, then applies a fn to it. */
+/**
+ * If an input field has focus, then applies a fn to it.
+ * @return False if not field found, else the result of the fn.
+ */
 function withFocusedInputField(fn) {
     var s = getFocusedInputField()
-    if (s) fn(s)
+    return (s ? fn(s) : false)
 }
 
 /** Locates the top-level container of an element in a step. */
@@ -89,16 +92,24 @@ function getStepContainer(innerElement) {
 /** Searches the given step-container's tree of elements for the add-step button. */
 function getAddStepButton(stepContainer) { return stepContainer.find('button.add:visible')[0] }
 
+/** Searches the given step-container's tree of elements for the increment-indent button. */
+function getIncIndentButton(stepContainer) { return stepContainer.find('button.indentInc:visible')[0] }
+
+/** Searches the given step-container's tree of elements for the decrement-indent button. */
+function getDecIndentButton(stepContainer) { return stepContainer.find('button.indentDec:visible')[0] }
+
 /**
  * Changes the keyboard focus to another.
  *
  * @param tgtFn Given the ID of the currently focused field, returns the target field to move to focus to.
  *              (id: String) => (jQuery expression / HTMLTextAreaElement)
+ * @return Whether the focus was changed.
  */
 function changeFocus(tgtFn) {
     withFocusedInputField(function (sel) {
         var tgt = tgtFn(sel.id)
         $(tgt).focus()
+        return true;
     })
 }
 
@@ -160,27 +171,42 @@ function onLabelClick(event) {
     }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
-function onAltDown() { return changeFocus(getElementBelow) }
-function onAltUp()   { return changeFocus(getElementAbove) }
-function onEscape()  { return withFocusedInputField(blurFn) }
-
-function onAltEnter() {
+/**
+ * If a step is focused, clicks one of its buttons.
+ *
+ * @param containerToButtonFn A fn that takes a step container and returns a button to click.
+ * @return Whether a button was clicked.
+ */
+function clickFocusedStepsButton(containerToButtonFn) {
     withFocusedInputField(function (textarea) {
-        var addButton = getAddStepButton(getStepContainer(textarea))
-        if (addButton) {
+        var button = containerToButtonFn(getStepContainer(textarea))
+        if (button) {
             $(textarea).blur()
-            $(addButton).click()
-        }
+            $(button).click()
+            return true
+        } else
+            return false
     })
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
+function onEscape()   { withFocusedInputField(blurFn) }
+function onAltDown()  { changeFocus(getElementBelow) }
+function onAltUp()    { changeFocus(getElementAbove) }
+function onAltLeft()  { clickFocusedStepsButton(getDecIndentButton) }
+function onAltRight() { clickFocusedStepsButton(getIncIndentButton) }
+function onAltEnter() { clickFocusedStepsButton(getAddStepButton) }
+
+function bindKeys(keys, fn) { Mousetrap.bindGlobal(keys, function(){ fn(); return false }) }
+
 function uceSetup() {
-    Mousetrap.bindGlobal('alt+down',  onAltDown);
-    Mousetrap.bindGlobal('alt+up',    onAltUp);
-    Mousetrap.bindGlobal('alt+enter', onAltEnter);
-    Mousetrap.bindGlobal('esc',       onEscape);
+    bindKeys('alt+right', onAltRight);
+    bindKeys('alt+left',  onAltLeft);
+    bindKeys('alt+down',  onAltDown);
+    bindKeys('alt+up',    onAltUp);
+    bindKeys('alt+enter', onAltEnter);
+    bindKeys('esc',       onEscape);
 }
 $(document).ready(uceSetup)
 

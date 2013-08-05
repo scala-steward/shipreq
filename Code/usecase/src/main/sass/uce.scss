@@ -3,16 +3,18 @@ $maxStepDepth: 4;
 // =====================================================================================================================
 // Control rules
 
-/* Prevent deletion of normal course first step */
-.step.noDel .delete { visibility:hidden; }
+// Prevent deletion of normal course first step
+.step.noDel .delete ,
 
-/* Prevent indentDecrease for top-level */
-.step[data-lvl="0"] .indentDec { visibility:hidden; }
+// Prevent indentDecrease for top-level
+.step[data-lvl="0"] .indentDec ,
 
-/* Prevent indentIncrease for deepest children */
-[data-lvl="#{$maxStepDepth}"] .indentInc { visibility: hidden; }
+// Prevent indentIncrease for deepest children
+[data-lvl="#{$maxStepDepth}"] .indentInc {
+  visibility:hidden !important
+}
 
-/* Prevent indentIncrease for first children */
+// Prevent indentIncrease for first children
 .courses-n .step:first-child,
 .courses-e .step:first-child,
 .step[data-lvl="0"]+.step[data-lvl="1"],
@@ -21,12 +23,13 @@ $maxStepDepth: 4;
 .step[data-lvl="3"]+.step[data-lvl="4"],
 .step[data-lvl="4"]+.step[data-lvl="5"] {
 	.indentInc {
-		visibility:hidden;
+		visibility:hidden !important;
 	}
 }
 
 // =====================================================================================================================
-/* General styles */
+// General styles
+
 .uce {
 	margin: 1cm 1cm 0 1cm;
 
@@ -53,7 +56,8 @@ $maxStepDepth: 4;
 }
 
 // =====================================================================================================================
-/* UC Title (UC-123: Abc) */
+// UC Title (UC-123: Abc)
+
 .uce .title {
 	&, td, textarea {
 		width: 100%
@@ -69,7 +73,8 @@ $maxStepDepth: 4;
 }
 
 // =====================================================================================================================
-/* Fields and attributes */
+// Fields and attributes
+
 table.fieldFrame {
 	margin-top: 1cm;
 	width: 100%;
@@ -94,7 +99,7 @@ table.fieldFrame {
 }
 
 // =====================================================================================================================
-/* Steps */
+// Steps
 
 [data-lvl="0"] .lbl { padding-left:  0ex; width: 5ex } // 123.0
 [data-lvl="1"] .lbl { padding-left:  4ex; width: 3ex } // 99.
