@@ -7,34 +7,44 @@ FEATURE TODO
 * [M] Use Case CRUD interface.
 * [M] Usage limits per user (or team, etc).
 * [S] Subscriptions.
+* [S] Be nice to see/insert field templates/examples.
+  Eg. 'Frequency Of Use' should have
+    P(50%) = Not used.
+    P(90%) = 0 to 20 times per game.
+    P(99%) = 0 to 100 times per game.
+* [C] Nice to have BA in steps reference BA in actors. Change actors, steps change too.
 
 FUNC TODO
 =========
 
-* [M.1.5] [LEGL] Add terms of service.
+* [M.0.5] [LEGL] Add terms of service.
+* [M.0.5] [UCE ] Fix: Accidently hit back without saving, progress is lost.
 
-* [S.4.4] [UCE ] Keyboard shortcuts for step editing (ie. nav & indent)
+* [S.4.4] [UCE ] Symlink steps (and have flow targets point back). Eg "@sameas/@Copy [1.E.1.1]"
 * [S.3.2] [UCE ] New UCs should have the normal course head set to the UC title.
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
+* [S.2.3] [UCE ] Stop invalidating both flow clauses when one's broken.
 * [S.2.1] [ACCT] Change username & password (when logged in).
+* [S.2.0] [UCE ] Change indent via Alt + Left/Right
 * [S.1.3] [UCE ] Text field values shouldn't lose audit trail when text is cleared.
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [S.0.5] [ACCT] Password reset (when not logged in).
+* [S.0.2] [UCE ] Text not corrected when post-correction matches prev value.
 
+* [C.3.1] [UCE ] Search and replace.
 * [C.4.4] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
 * [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).
 * [C.3.3] [UCE ] Support in-place DB updating (ie. no history disabled)
 * [C.2.1] [ACCT] Add JS email corrector/validator like mailcheck.js.
+* [C.1.1] [UCE ] Alt+Shift+Enter to create next & indent.
 * [C.1.1] [UCE ] View step references. (Eg. Who has refs to 1.0.4?)
 * [C.1.0] [UCE ] While typing, click on step/label to insert a reference.
-
 
 TECH TODO
 =========
 
 * [S.3.5] [PERF] Add proper DB indexes.
-* [S.3.0] [PERF] Use pickling for JSON serialisation.
 * [S.2.4] [PERF] DB connection pooling.
 * [S.1.3] [PERF] Shiro caching.
 * [S.1.3] [PERF] Textareas' blur shouldn't send a request when input doesn't change.
