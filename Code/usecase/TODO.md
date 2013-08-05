@@ -29,7 +29,6 @@ FUNC TODO
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [S.0.5] [ACCT] Password reset (when not logged in).
-* [S.0.3] [UCE ] Field should be focused after indent via keyboard.
 * [S.0.2] [UCE ] Text not corrected when post-correction matches prev value.
 
 * [C.3.1] [UCE ] Search and replace.

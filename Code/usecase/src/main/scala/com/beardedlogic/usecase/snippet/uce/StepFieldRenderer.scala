@@ -2,13 +2,15 @@ package com.beardedlogic.usecase
 package snippet.uce
 
 import scala.xml.{Text, NodeSeq}
+import net.liftweb.common.Full
 import net.liftweb.http.js.JsExp.strToJsExp
 import net.liftweb.http.js.{JsExp, JE, JsCmd, JsCmds}
 import net.liftweb.http.js.jquery.JqJE
 import net.liftweb.http.js.jquery.JqJsCmds.jsExpToJsCmd
-import net.liftweb.http.SHtml
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
+import JsCmds.Noop
 
 import com.beardedlogic.usecase.lib.tree.TreeLike
 import com.beardedlogic.usecase.lib._
@@ -43,10 +45,10 @@ trait StepFieldRenderConfig {
   def render(r: StepFieldRenderer): NodeSeq
 
   /** Allows customisation of the ajax response of a successful indent decrease. */
-  def customiseDecIndentJs(node: StepNode, newTree: StepTree, js: JsCmd): JsCmd
+  def customiseDecIndentJs(node: StepNode, newTree: StepTree, updateJs: JsCmd, focusJs: JsCmd): JsCmd
 
   /** Allows customisation of the ajax response of a successful indent increase. */
-  def customiseIncIndentJs(oldTree: StepTree, node: StepNode, js: JsCmd): JsCmd
+  def customiseIncIndentJs(oldTree: StepTree, node: StepNode, updateJs: JsCmd, focusJs: JsCmd): JsCmd
 }
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -61,24 +63,24 @@ object NormalCourseFieldConfig extends StepFieldRenderConfig {
     r.renderSteps(r.tree.head)(Templates.NormalCourse) ++
       r.renderStepsWithAddTailStep(r.tree.tailAsTreeLike)(Templates.AlternateCourses)
 
-  override def customiseDecIndentJs(node: StepNode, newTree: StepTree, js: JsCmd) =
+  override def customiseDecIndentJs(node: StepNode, newTree: StepTree, updateJs: JsCmd, focusJs: JsCmd) =
     newTree.nodes match {
       // Move steps from NC to AC
       case nc :: ac1 :: acN if ac1.id == node.id =>
-        JsCmds.Run(s"nc_to_ac('#uce','${node.id}',${JE.AnonFunc(js).toJsCmd})")
+        JsCmds.Run(s"nc_to_ac('#uce','${node.id}',${JE.AnonFunc(updateJs).toJsCmd},${JE.AnonFunc(focusJs).toJsCmd})")
 
       // Apply indent decrease normally
-      case _ => js
+      case _ => updateJs & focusJs
     }
 
-  override def customiseIncIndentJs(oldTree: StepTree, node: StepNode, js: JsCmd) =
+  override def customiseIncIndentJs(oldTree: StepTree, node: StepNode, updateJs: JsCmd, focusJs: JsCmd) =
     oldTree.nodes match {
       // Move steps from AC to NC
       case nc :: ac1 :: acN if ac1.id == node.id =>
-        JsCmds.Run(s"ac_to_nc('#uce','${ExprForNodeAndChildren(node)}',${JE.AnonFunc(js).toJsCmd})")
+        JsCmds.Run(s"ac_to_nc('#uce','${ExprForNodeAndChildren(node)}',${JE.AnonFunc(updateJs).toJsCmd},${JE.AnonFunc(focusJs).toJsCmd})")
 
       // Apply indent normally
-      case _ => js
+      case _ => updateJs & focusJs
     }
 }
 
@@ -93,8 +95,8 @@ object ExceptionCourseFieldConfig extends StepFieldRenderConfig {
   override def render(r: StepFieldRenderer) =
     r.renderStepsWithAddTailStep(r.tree)(Templates.ExceptionCourses)
 
-  override def customiseDecIndentJs(node: StepNode, newTree: StepTree, js: JsCmd) = js
-  override def customiseIncIndentJs(oldTree: StepTree, node: StepNode, js: JsCmd) = js
+  override def customiseDecIndentJs(node: StepNode, newTree: StepTree, updateJs: JsCmd, focusJs: JsCmd) = updateJs & focusJs
+  override def customiseIncIndentJs(oldTree: StepTree, node: StepNode, updateJs: JsCmd, focusJs: JsCmd) = updateJs & focusJs
 }
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -207,13 +209,19 @@ case class StepFieldRenderer(
 
   def jsDecIndent(node: StepNode): JsCmd = {
     val newTree = f.value.tree
-    val js = jsUpdateIndentation(newTree) & jsUpdateLabels(newTree)
-    cfg.customiseDecIndentJs(node, newTree, js)
+    val updateJs = jsUpdateIndentation(newTree) & jsUpdateLabels(newTree)
+    cfg.customiseDecIndentJs(node, newTree, updateJs, jsFocusIfSpecified(node))
   }
 
   def jsIncIndent(node: StepNode, oldTree: StepTree): JsCmd = {
-    val js = jsUpdateIndentation(f.value.tree) & jsUpdateLabels(f.value.tree)
-    cfg.customiseIncIndentJs(oldTree, node, js)
+    val updateJs = jsUpdateIndentation(f.value.tree) & jsUpdateLabels(f.value.tree)
+    cfg.customiseIncIndentJs(oldTree, node, updateJs, jsFocusIfSpecified(node))
+  }
+
+  @inline private def jsFocusIfSpecified(node: StepNode): JsCmd =
+    S.param("focus") match {
+    case Full(_) => JqStepText(node) ~> JqFocus
+    case _ => Noop
   }
 
 }

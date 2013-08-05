@@ -4,18 +4,19 @@
  * @param stepId The ID of the step to move.
  * @param rewriteFn The function that updates steps' labels and indents.
  */
-function nc_to_ac(containerId, stepId, rewriteFn) {
+function nc_to_ac(containerId, stepId, rewriteFn, completionFn) {
 	var courses = containerId + ' .courses'
 	var t = $('<div class="stepTransport"></div>')
 				.uniqueId()
 				.appendTo(courses+'-n td.steps')
 				.append($('#' + stepId + ', #' + stepId + '~.step'))
 	t.hide("drop", {direction : "down"}, 250, function() {
-		rewriteFn();
+		rewriteFn()
 		t.prependTo($(courses+'-a td.steps'))
 			.show("drop", {direction : "up"}, 250, function() {
-				t.children().prependTo($(courses+'-a td.steps'));
-				t.remove();
+				t.children().prependTo($(courses+'-a td.steps'))
+				t.remove()
+				completionFn()
 			});
 	});
 }
@@ -26,18 +27,19 @@ function nc_to_ac(containerId, stepId, rewriteFn) {
  * @param stepsJqExpr A JQuery expression that selects all steps to move.
  * @param rewriteFn The function that updates steps' labels and indents.
  */
-function ac_to_nc(containerId, stepsJqExpr, rewriteFn) {
+function ac_to_nc(containerId, stepsJqExpr, rewriteFn, completionFn) {
 	var courses = containerId + ' .courses'
 	var t = $('<div class="stepTransport"></div>')
 				.uniqueId()
 				.prependTo(courses+'-a td.steps')
 				.append($(stepsJqExpr))
 	t.hide("drop", {direction : "up"}, 250, function() {
-		rewriteFn();
+		rewriteFn()
 		t.appendTo($(courses+'-n td.steps'))
 			.show("drop", {direction : "down"}, 250, function() {
-				t.children().appendTo($(courses+'-n td.steps'));
-				t.remove();
+				t.children().appendTo($(courses+'-n td.steps'))
+				t.remove()
+				completionFn()
 			});
 	});
 }
@@ -175,27 +177,43 @@ function onLabelClick(event) {
  * If a step is focused, clicks one of its buttons.
  *
  * @param containerToButtonFn A fn that takes a step container and returns a button to click.
+ * @param clickFn If provided, a function that takes a button and simulates clicking.
  * @return Whether a button was clicked.
  */
-function clickFocusedStepsButton(containerToButtonFn) {
+function clickFocusedStepsButton(containerToButtonFn, clickFn) {
     withFocusedInputField(function (textarea) {
         var button = containerToButtonFn(getStepContainer(textarea))
         if (button) {
             $(textarea).blur()
-            $(button).click()
+            if (clickFn)
+                clickFn(button)
+            else
+                $(button).click()
             return true
         } else
             return false
     })
 }
 
+/** Invokes the onClick JS code in a button's attribute and adds additional args to the request. */
+function clickLiftAjaxButtonWithExtraArgs(button, args) {
+    var js = $(button).attr('onclick').replace('lift_ajaxHandler("','lift_ajaxHandler("'+args+'&').replace('return ','')
+    eval(js)
+}
+
+/**
+ * Invokes the onClick JS code in a button's attribute, adding a 'focus' flag to the request.
+ * This flag directs the server function to focus a step as part of the response.
+ */
+ function clickWithFocusFlag(button){ clickLiftAjaxButtonWithExtraArgs(button, 'focus=true') }
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 function onEscape()   { withFocusedInputField(blurFn) }
 function onAltDown()  { changeFocus(getElementBelow) }
 function onAltUp()    { changeFocus(getElementAbove) }
-function onAltLeft()  { clickFocusedStepsButton(getDecIndentButton) }
-function onAltRight() { clickFocusedStepsButton(getIncIndentButton) }
+function onAltLeft()  { clickFocusedStepsButton(getDecIndentButton, clickWithFocusFlag) }
+function onAltRight() { clickFocusedStepsButton(getIncIndentButton, clickWithFocusFlag) }
 function onAltEnter() { clickFocusedStepsButton(getAddStepButton) }
 
 function bindKeys(keys, fn) { Mousetrap.bindGlobal(keys, function(){ fn(); return false }) }

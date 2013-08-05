@@ -148,7 +148,7 @@ test("[Alt + Enter] Does nothing when a text field is focused", function() {
 test("[Alt + Left] Decreases indent of selected step if allowed", function() {
     setFocus(ids.s_1_0_1.txt)
     onAltLeft()
-    equal( liftAjax.lastA(), "F80858504645200DF1L=true", "Dec-step RPC should be called." )
+    equal( liftAjax.lastA(), "focus=true&F80858504645200DF1L=true", "Dec-step RPC should be called." )
 })
 
 // TODO css visibility based JS tests disabled
@@ -166,7 +166,7 @@ test("[Alt + Left] Does nothing when non-step fields are selected", function() {
 test("[Alt + Right] Increases indent of selected step if allowed", function() {
     setFocus(ids.s_1_0_2.txt)
     onAltRight()
-    equal( liftAjax.lastA(), "F808585046459HVUE4T=true", "Inc-step RPC should be called." )
+    equal( liftAjax.lastA(), "focus=true&F808585046459HVUE4T=true", "Inc-step RPC should be called." )
 })
 
 //test("[Alt + Right] Does nothing when selected step's indent can't be decreased", function() {
