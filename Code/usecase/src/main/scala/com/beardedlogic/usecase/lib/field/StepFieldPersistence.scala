@@ -38,28 +38,35 @@ private[field] trait StepFieldValueLoader extends Field {
     NormalisedStepTree(normalisedSteps)
   }
 
-  override def denormalise(normalisedState: NormalisedStepTree, savedSteps: SavedSteps) = {
+  override def denormalise(normalisedState: NormalisedStepTree, savedSteps: SavedSteps) =
+    if (normalisedState.isEmpty) {
+      // Use field's default value
+      val sfv = defaultValue
+      (Some(sfv.tree), _ => sfv)
 
-    // Part 1: Turn normalisedStepTree into real StepTree
-    val stepTree = StepTree(convertNodeTree[NormalisedStep, StepNode](
-    normalisedState.nodes
-    , {(node, level, index, children) => StepNode(node.id, level, index, children)}
-    , sli.startingLabelIndex
-    ))
+    } else {
+      // Part 1: Turn normalisedStepTree into real StepTree
+      val stepTree = StepTree(convertNodeTree[NormalisedStep, StepNode](
+      normalisedState.nodes
+      , {(node, level, index, children) => StepNode(node.id, level, index, children)}
+      , sli.startingLabelIndex
+      ))
 
-    // Part 2: Later, create StepText for each node
-    val part2 = (stepsAndLabels: StepAndLabelBiMap) => {
-      val textmapBuilder = Map.newBuilder[LocalIdStr, StepText]
-      stepTree.foreachRecursive(n => {
-        val id = n.id
-        val ntxt = normalisedState.stepMap(id).text
-        textmapBuilder += (id -> StepText.load(id, ntxt)(savedSteps, stepsAndLabels))
-      })
-      StepFieldValue(this, stepTree, textmapBuilder.result)
+      // Part 2: Later, create StepText for each node
+      val part2 = (stepsAndLabels: StepAndLabelBiMap) => {
+        val textmapBuilder = Map.newBuilder[LocalIdStr, StepText]
+        stepTree.foreachRecursive(n => {
+          val id = n.id
+          val ntxt = normalisedState.stepMap(id).text
+          textmapBuilder += (id -> StepText.load(id, ntxt)(savedSteps, stepsAndLabels))
+        })
+        StepFieldValue(this, stepTree, textmapBuilder.result)
+      }
+
+      (Some(stepTree), part2)
     }
 
-    (Some(stepTree), part2)
-  }
+  def defaultValue: Value
 }
 
 object StepFieldValueSaver {

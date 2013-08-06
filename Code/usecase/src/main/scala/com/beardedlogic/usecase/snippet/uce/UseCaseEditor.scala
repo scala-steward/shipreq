@@ -30,8 +30,7 @@ object UseCaseEditor {
     val h = UseCaseHeader(Defaults.Title, 1)
     val fl = Defaults.FieldList.get.fields
     val ncf = UseCaseFns.filter[NormalCourseField](fl).head
-    val nct = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
-    val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> StepFieldValue.forTree(ncf, nct))
+    val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultValue)
     val sl = UseCaseFns.generateStepAndLabelBiMap(fv, h)
     val uc = UseCase(h, fl, fv, sl)
     State(uc, None)

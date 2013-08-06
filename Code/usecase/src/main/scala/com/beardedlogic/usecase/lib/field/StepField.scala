@@ -160,9 +160,16 @@ case object NormalCourseFieldDefinition extends FieldDefinition {
   override def field(rec: FieldKeyRec) = NormalCourseField(rec)
 }
 
+object NormalCourseField {
+  final val EmptyTree = StepTree(StepNodeBuilder(0, 0, Nil) :: Nil)
+  final val DefaultTree = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
+}
+
 case class NormalCourseField(override val rec: FieldKeyRec) extends StepField {
+  import NormalCourseField._
   override val defn = NormalCourseFieldDefinition
-  override val empty = StepFieldValue.forTree(this, StepTree(StepNodeBuilder(0, 0, Nil) :: Nil))
+  override val empty = StepFieldValue.forTree(this, EmptyTree)
+  override val defaultValue = StepFieldValue.forTree(this, DefaultTree)
   override def rootLabelPrefix(uch: UseCaseHeader) = s"${uch.number}."
   override val sli = StartingRootLabelIndexAt0
   override def prohibitRemoval_?(v: Value, id: LocalIdStr) = v.tree(0).id == id
@@ -180,6 +187,7 @@ case object ExceptionCourseFieldDefinition extends FieldDefinition {
 case class ExceptionCourseField(override val rec: FieldKeyRec) extends StepField {
   override val defn = ExceptionCourseFieldDefinition
   override val empty = StepFieldValue.empty(this)
+  override val defaultValue = empty
   override def rootLabelPrefix(uch: UseCaseHeader) = s"${uch.number}.E."
   override val sli = StartingLabelIndicesAt1
   override def prohibitRemoval_?(v: Value, id: LocalIdStr) = false

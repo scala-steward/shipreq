@@ -94,18 +94,19 @@ class StepFieldTest extends FunSpec with TestHelpers {
   }
 
   describe("Loading") {
-    describe("denormalise()") {
-      def denormalise(s: S, f: StepField, savedSteps: SavedSteps) = {
-        val (stepTreeOp, fn) = f.denormalise(s, savedSteps)
-        val stepLabelMap = stepTreeOp.map(generateStepAndLabelMap(f, _, UCH)).getOrElse(Map.empty)
-        val stepsAndLabels = generateStepAndLabelBiMap(Seq(stepLabelMap))
-        val tree = fn(stepsAndLabels)
-        val txtTree = tree.toTextTree(f, savedSteps)
-        (stepLabelMap, tree, txtTree)
-      }
+    def denormalise(f: StepField, s: S, savedSteps: SavedSteps) = {
+      val (stepTreeOp, fn) = f.denormalise(s, savedSteps)
+      val stepLabelMap = stepTreeOp.map(generateStepAndLabelMap(f, _, UCH)).getOrElse(Map.empty)
+      val stepsAndLabels = generateStepAndLabelBiMap(Seq(stepLabelMap))
+      val tree = fn(stepsAndLabels)
+      val txtTree = tree.toTextTree(f, savedSteps)
+      (stepLabelMap, tree, txtTree)
+    }
 
+
+    describe("denormalise()") {
       it("should build a matching tree (NC/AC)") {
-        val (stepLabelMap, _, txtTree) = denormalise(Tree1State, NCF, EmptySavedSteps)
+        val (stepLabelMap, _, txtTree) = denormalise(NCF, Tree1State, EmptySavedSteps)
         txtTree should matchTree(Tree1TextTree)
         stepLabelMap(X1) should be("9.0")
         stepLabelMap(X2) should be("9.0.1")
@@ -113,7 +114,7 @@ class StepFieldTest extends FunSpec with TestHelpers {
       }
 
       it("should build a matching tree (EC)") {
-        val (stepLabelMap, _, txtTree) = denormalise(Tree1State, ECF, EmptySavedSteps)
+        val (stepLabelMap, _, txtTree) = denormalise(ECF, Tree1State, EmptySavedSteps)
         txtTree should matchTree(parseStepTree( """
           9.E.1. Root
             1. T1
@@ -129,18 +130,18 @@ class StepFieldTest extends FunSpec with TestHelpers {
       }
 
       it("should create a StepText for each step") {
-        val (_, tree, _) = denormalise(Tree1State, NCF, EmptySavedSteps)
+        val (_, tree, _) = denormalise(NCF, Tree1State, EmptySavedSteps)
         tree.textmap.keySet should be(Set(X1, X2, X3, X4, X5, X6, X7, X8))
         tree.textmap(X2).text should be("T1")
       }
 
       it("should realise normalised refs") {
-        val (_, tree, _) = denormalise(Tree2State, NCF, SavedSteps1)
+        val (_, tree, _) = denormalise(NCF, Tree2State, SavedSteps1)
         tree.textmap(X1).text should be("Root [9.0.1.a]")
       }
 
       it("should create empty StepTexts for blank steps") {
-        val (_, tree, _) = denormalise(Tree1bState, NCF, EmptySavedSteps)
+        val (_, tree, _) = denormalise(NCF, Tree1bState, EmptySavedSteps)
         tree.textmap(X1) should be(StepText.empty(X1))
       }
     }
@@ -175,6 +176,22 @@ class StepFieldTest extends FunSpec with TestHelpers {
             :: NormalisedStep("s202", "EC 1E2", Nil)
             :: Nil
         ))
+      }
+    }
+
+    describe("Default values") {
+      def defaultSfvFor(f: StepField) = {
+        val normalisedStepTree = f.load(EmptyLoadCtx, new MutableFieldSaveCtx)
+        val (_,sfv,_) = denormalise(f, normalisedStepTree, EmptySavedSteps)
+        sfv
+      }
+      it("should be empty for NC") {
+        val sfv = defaultSfvFor(NCF)
+        sfv.tree.size should be(1)
+        sfv.tree.sizeRecursive should be(2)
+      }
+      it("should be empty for EC") {
+        defaultSfvFor(ECF).tree.size should be(0)
       }
     }
   }
