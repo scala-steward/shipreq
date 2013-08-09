@@ -41,7 +41,7 @@ object Defaults extends Logger {
 
   private def LazyDbVal[V](fn: DAO => V) = LazyVal <~ DI.DaoProvider.withTransaction(fn)
 
-  def init() {
+  def init(): Unit = {
     FieldList.get
     debug("Defaults initialised successfully.")
   }
