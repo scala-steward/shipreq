@@ -48,7 +48,7 @@ BEGIN
 
     update usecase
     set latest_rev_id = (
-        select case when latest_rev is null then null
+        select case when latest_rev is null then -1
                else (select id from usecase_rev where ident_id = OLD.ident_id and rev = latest_rev)
                end
     )

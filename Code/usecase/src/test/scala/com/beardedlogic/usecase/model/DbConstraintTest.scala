@@ -27,7 +27,7 @@ class DbConstraintTest extends FunSpec with TestDatabaseSupport {
     val txt2 = insertText(txtField2)
     val ncStep1, ncStep2, ncStep3, ncStep4 = insertText(ncId)
     val ecStep1 = insertText(ecId)
-    def latestRevId = sql"SELECT latest_rev_id FROM usecase WHERE id = $uc".as[Option[Long]].first
+    def latestRevId = sql"SELECT latest_rev_id FROM usecase WHERE id = $uc".as[Long].first
     def insertRev(rev: Int, number: Short, title: String): Long =
       sql"INSERT INTO usecase_rev(ident_id,rev,number,title) VALUES($uc,$rev,$number,$title) RETURNING id".as[Long].first
   }
@@ -50,46 +50,47 @@ class DbConstraintTest extends FunSpec with TestDatabaseSupport {
   }
 
   it("usecase.latest_rev_id") {
+    val TMP = -1
     val fk = new SampleFKs
     val smp = new SampleUC(fk)
     val smp2 = new SampleUC(fk)
 
     // INSERT
-    smp.latestRevId should be(None)
+    smp.latestRevId should be(TMP)
     val rev2 = smp.insertRev(2, 9, "ah")
-    smp.latestRevId should be(Some(rev2))
+    smp.latestRevId should be(rev2)
     val rev1 = smp.insertRev(1, 9, "ah")
-    smp.latestRevId should be(Some(rev2))
+    smp.latestRevId should be(rev2)
     val rev3 = smp.insertRev(3, 9, "ah")
-    smp.latestRevId should be(Some(rev3))
+    smp.latestRevId should be(rev3)
 
     // UC-SCOPE
-    smp2.latestRevId should be(None)
+    smp2.latestRevId should be(TMP)
     val revB1 = smp2.insertRev(2, 8, "qwe")
-    smp2.latestRevId should be(Some(revB1))
+    smp2.latestRevId should be(revB1)
 
     // UPDATE rev
     sqlu"UPDATE usecase_rev set rev=rev+5000 WHERE ident_id = ${smp.uc} AND id = $rev2".execute
-    smp.latestRevId should be(Some(rev2))
+    smp.latestRevId should be(rev2)
     sqlu"UPDATE usecase_rev set rev=rev-5000 WHERE ident_id = ${smp.uc} AND id = $rev2".execute
-    smp.latestRevId should be(Some(rev3))
+    smp.latestRevId should be(rev3)
 
     // UPDATE ident_id
     sqlu"UPDATE usecase_rev set ident_id = ${smp2.uc} WHERE ident_id = ${smp.uc} AND id = $rev3".execute
-    smp.latestRevId should be(Some(rev2))
-    smp2.latestRevId should be(Some(rev3))
+    smp.latestRevId should be(rev2)
+    smp2.latestRevId should be(rev3)
 
     // DELETE
     sqlu"DELETE FROM usecase_rev where id = $rev3".execute
-    smp2.latestRevId should be(Some(revB1))
+    smp2.latestRevId should be(revB1)
     sqlu"DELETE FROM usecase_rev where id = $revB1".execute
-    smp2.latestRevId should be(None)
+    smp2.latestRevId should be(TMP)
 
     // UPDATE ident_id of latest rev
     val revB2 = smp2.insertRev(8, 8, "qwe")
-    smp2.latestRevId should be(Some(revB2))
+    smp2.latestRevId should be(revB2)
     sqlu"UPDATE usecase_rev set ident_id = ${smp.uc} WHERE ident_id = ${smp2.uc} AND id = $revB2".execute
-    smp2.latestRevId should be(None)
+    smp2.latestRevId should be(TMP)
   }
 
   def linkText(ucRevId: Long, txtRevId: Long) =

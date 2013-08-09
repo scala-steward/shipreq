@@ -47,7 +47,8 @@ CREATE TABLE usecase_rev (
     ,UNIQUE(ident_id,rev)
 );
 
-ALTER TABLE usecase ADD COLUMN latest_rev_id  BIGINT NULL REFERENCES usecase_rev;
+-- Default latest_rev_id to -1. The usecase_rev insert trigger will update it before the txn ends.
+ALTER TABLE usecase ADD COLUMN latest_rev_id BIGINT NOT NULL DEFAULT(-1) REFERENCES usecase_rev INITIALLY DEFERRED;
 
 CREATE TABLE text (
     id              BIGINT      PRIMARY KEY DEFAULT NEXTVAL('text_seq')
