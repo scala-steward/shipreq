@@ -31,6 +31,7 @@ object TestDatabaseSupport {
   }
 
   val Random = new Random()
+
 }
 
 trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
@@ -40,21 +41,9 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
     TestDatabaseSupport.init()
     debug(s"DB Test start: ${test.name}")
     try {
-      val outcome = DB.withInstance(wrapTestsInTransaction) { s: Session =>
-        this.sessionVar = s
-        this.dbVar = new DAO(s)
-        s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
-        try {
-          DI.DaoProvider.doWith(testDaoProvider) {
-            beforeEachWithDao()
-            test()
-          }
-        }
-        finally {
-          if (wrapTestsInTransaction) s.rollback()
-          this.sessionVar = null
-          this.dbVar = null
-        }
+      val outcome = withTransactionInternal(wrapTestsInTransaction, wrapTestsInTransaction) {
+        beforeEachWithDao()
+        test()
       }
       outcome match {
         case Exceptional(e) => debug("Test failure.", e)
@@ -65,6 +54,25 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
     catch {case e: Throwable => error("Test error.", e); throw e }
     finally debug(s"DB Test end: ${test.name}")
   }
+
+  private def withTransactionInternal[U](transaction: Boolean, rollback: Boolean)(fn: => U): U =
+    DB.withInstance(transaction) { s: Session =>
+      val oldSessionVar = this.sessionVar
+      val oldDbVar = this.dbVar
+      try {
+        this.sessionVar = s
+        this.dbVar = new DAO(s)
+        s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
+        DI.DaoProvider.doWith(testDaoProvider) {
+          fn
+        }
+      }
+      finally {
+        if (rollback) s.rollback()
+        this.sessionVar = oldSessionVar
+        this.dbVar = oldDbVar
+      }
+    }
 
   def beforeEachWithDao() {}
 
@@ -79,6 +87,8 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
   var dbVar: DAO = null
   def db = dbVar
 
+  def withNewTransaction[U](fn: => U): U = withTransactionInternal(true, true)(fn)
+
   def rollbackAfter[U](fn: => U): U = db.withTransaction {
     val result = fn
     db.rollback()
@@ -89,36 +99,30 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
 
   def randomId = -TestDatabaseSupport.Random.nextLong().abs
 
-  def countRowsIn(table: Symbol) = Q.queryNA[Int](s"select count(*) from ${table.name}").first
+def countRowsIn(table: Symbol): Int = ???
+def assertTableDiffs[T](expectations: (Symbol, Int)*)(block: => T): T = ???
+def truncate(tables: Symbol*): Unit = ???
 
-  val Tables = List(
-    'data_type,
-    'relation_type,
-    'field_key_type,
-    'data,
-    'value,
-    'relation,
-    'field_key,
-    'field_value,
-    'usecase,
-    'step,
-    'usr
-  )
-  val ValueTables = List(
-    'value,
-    'field_key,
-    'field_value,
-    'usecase,
-    'step
-  )
+  def countRowsIn2(table: Table) = Q.queryNA[Int](s"select count(*) from ${table.name}").first
 
-  def assertTableDiffs[T](expectations: (Symbol, Int)*)(block: => T) = {
+  sealed trait Table {def name: String; override def toString = name}
+  object tFieldKeyType extends Table {def name = "field_key_type"}
+  object tFieldKey extends Table {def name = "field_key"}
+  object tUsecase extends Table {def name = "usecase"}
+  object tUsecaseRev extends Table {def name = "usecase_rev"}
+  object tText extends Table {def name = "text"}
+  object tTextRev extends Table {def name = "text_rev"}
+  object tUcField extends Table {def name = "uc_field"}
+  object tUsr extends Table {def name = "usr"}
+  val Tables = List(tFieldKeyType, tFieldKey, tUsecase, tUsecaseRev, tText, tTextRev, tUcField, tUsr)
+
+  def assertTableDiffs2[T](expectations: (Table, Int)*)(block: => T) = {
     val specTables = expectations.map(_._1)
     val unspecTables = Tables.filter(!specTables.contains(_)).map((_,0))
     val fullExp = expectations ++ unspecTables
     val fullExpMap = fullExp.toMap
 
-    def count = fullExp.map { case (t, _) => (t -> countRowsIn(t)) }.toMap
+    def count = fullExp.map { case (t, _) => (t -> countRowsIn2(t)) }.toMap
     val before = count
     val result = block
     val after = count.map { case (t, newCount) => (t, newCount - before(t)) }.toMap
@@ -133,25 +137,21 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
     result
   }
 
-  def truncateAll() = truncate(Tables: _*)
+  def truncateAll() = truncate2(Tables: _*)
 
-  def truncate(tables: Symbol*) {
+  def truncate2(tables: Table*) {
     tables.foreach { table =>
     // Dependents first
       table match {
-        case 'data_type      => truncate('data)
-        case 'data           => truncate('value)
-        case 'value          => truncate('relation, 'field_key, 'field_value, 'usecase)
-        case 'relation_type  => truncate('relation)
-        case 'field_key_type => truncate('field_key)
-        case _                =>
+        case tFieldKeyType => truncate2(tFieldKey)
+        case tFieldKey     => truncate2(tText)
+        case tUsecase      => truncate2(tUsecaseRev)
+        case tUsecaseRev   => Q.updateNA(s"update usecase set latest_rev_id = NULL").execute; truncate2(tUcField)
+        case tText         => truncate2(tTextRev)
+        case tTextRev      => truncate2(tUcField)
+        case _             =>
       }
       val tableName = table.name
-      if (ValueTables.contains(table)) {
-        Q.updateNA(s"delete from relation where from_id in (select id from $tableName) OR to_id in (select id from $tableName)").execute
-        if (table != "value")
-          Q.updateNA(s"delete from value where id in (select id from $tableName)").execute
-      }
       Q.updateNA(s"delete from $tableName").execute
     }
   }

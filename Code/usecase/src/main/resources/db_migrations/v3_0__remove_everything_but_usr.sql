@@ -1,0 +1,14 @@
+DROP VIEW     IF EXISTS v_data;
+DROP TABLE    IF EXISTS relation;
+DROP TABLE    IF EXISTS usecase;
+DROP TABLE    IF EXISTS step;
+DROP TABLE    IF EXISTS field_value;
+DROP TABLE    IF EXISTS field_key;
+DROP TABLE    IF EXISTS value;
+DROP TABLE    IF EXISTS data;
+DROP TABLE    IF EXISTS field_key_type;
+DROP TABLE    IF EXISTS relation_type;
+DROP TABLE    IF EXISTS data_type;
+DROP SEQUENCE IF EXISTS value_seq;
+DROP SEQUENCE IF EXISTS data_seq;
+
