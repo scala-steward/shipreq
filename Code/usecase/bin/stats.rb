@@ -27,6 +27,7 @@ def wcFilesByType(dir,pat) wcFiles("find #{dir} -name '#{pat}'") end
 puts "main.html  - #{searchMain(5){ wcFilesByType 'src/main', '*.html' }}"
 puts "main.scaml - #{searchMain(5){ wcFilesByType 'src/main', '*.scaml' }}"
 puts "main.sass  - #{searchMain(5){ wcFilesInDir 'src/main/sass' }}"
+puts "main.sql   - #{searchMain(5){ wcFilesInDir 'src/main/resources/db_migrations' }}"
 puts
 puts "Scala      - #{searchSrc(5){|dir| wcFilesInDir("#{dir}/scala") }}"
 puts "JavaScript - #{searchSrc(5){|dir| wcFiles "find #{dir}/javascript -name '*.js' | fgrep -v vendor" }}"
