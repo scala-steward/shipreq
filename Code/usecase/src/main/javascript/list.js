@@ -1,13 +1,13 @@
 function UseCaseSummary(uc) {
     var m = ko.mapping.fromJS(uc)
 
-    m.cssClass = "uc-"+uc.dataEid
+    m.cssClass = "uc-" + uc.eid
 
     m.editMode = ko.observable(false)
 
     m.enterEditMode = function(){ m.editMode(true); $("."+m.cssClass+" textarea").select().focus() }
 
-    m.viewUrl = urls.viewUseCase(uc.dataEid)
+    m.viewUrl = urls.viewUseCase(uc.eid)
 
     return m
 }
@@ -15,7 +15,7 @@ function UseCaseSummary(uc) {
 function UCIViewModel(ucs) {
     this.useCases = ko.observableArray($.map(ucs,UseCaseSummary))
     this.populated = ko.computed(function(){ return this.useCases().length > 0 }, this);
-    this.findByDataEid = function(v) { return $.grep(VM.useCases(), function(n){ return n.dataEid() == v })[0] }
+    this.findByDataEid = function(v) { return $.grep(VM.useCases(), function(n){ return n.eid() == v })[0] }
 }
 
 $(document).ready(function() {
@@ -31,6 +31,6 @@ $(document).on('new-uc', function(event, data) {
 
 $(document).on('upd-uc', function(event, data) {
     var n = UseCaseSummary(data)
-    var m = VM.findByDataEid(n.dataEid())
+    var m = VM.findByDataEid(n.eid())
     VM.useCases.replace(m,n)
 });

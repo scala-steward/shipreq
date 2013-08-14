@@ -8,7 +8,6 @@ import net.liftweb.util.Props
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import scala.slick.session.{Session, Database}
-import com.beardedlogic.usecase.model.{RelationType, FieldKeyType, DataType}
 
 /**
  * Database connectivity.
@@ -73,27 +72,22 @@ object DB extends Logger {
     flyway
   }
 
+  // TODO Consolidate DB access: Slick, DB, DAO, DI.DaoProvider
+
   val Slick = Database.forDataSource(DataSource)
 
   def withInstance[T](transaction: Boolean)(block: Session => T): T = {
     if (transaction) Slick.withTransaction(block) else Slick.withSession(block)
   }
 
-  def performPendingMigrations() = Flyway.migrate()
-
-  def syncEnums(implicit s: Session) = DatabaseEnum.init(DataType, FieldKeyType, RelationType)
+  private def performPendingMigrations() = Flyway.migrate()
 
   @volatile private var initCalled = false
-  def init() {
-    synchronized {
-      if (!initCalled) {
-        performPendingMigrations()
-        Slick.withTransaction { implicit s: Session =>
-          syncEnums
-        }
-        debug("Database initialised successfully.")
-        initCalled = true
-      }
+  def init(): Unit = synchronized {
+    if (!initCalled) {
+      performPendingMigrations()
+      debug("Database initialised successfully.")
+      initCalled = true
     }
   }
 

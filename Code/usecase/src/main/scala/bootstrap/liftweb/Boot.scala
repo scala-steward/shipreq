@@ -10,6 +10,8 @@ import lib.{ExternalIdStr, Defaults}
 import lib.db.DB
 import lib.security.Oshiro
 import app.AppSiteMap
+import scala.slick.session.Session
+import com.beardedlogic.usecase.model.FieldKeyType
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -54,7 +56,12 @@ class Boot {
   }
 
   def initDatabase() {
+    def initDbModels(): Unit = DB.Slick.withTransaction { implicit s: Session =>
+      FieldKeyType.init
+    }
+
     DB.init()
+    initDbModels()
     Defaults.init()
   }
 

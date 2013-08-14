@@ -1,16 +1,14 @@
 package com.beardedlogic.usecase.app
 
 import net.liftweb.common._
+import net.liftweb.http.{Templates, RedirectResponse, LiftResponse}
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
-import com.beardedlogic.usecase.model.{UseCaseSummary, UseCaseRec}
-import com.beardedlogic.usecase.lib.ExternalId
-import AppConfig.BaseUrl
-import net.liftweb.http.{Templates, RedirectResponse, LiftResponse}
 import org.apache.shiro.SecurityUtils
-import net.liftweb.sitemap.Loc.EarlyResponse
-import com.beardedlogic.usecase.model.UseCaseRec
-import net.liftweb.common.Full
+import com.beardedlogic.usecase.model.{UseCaseSummary, UseCaseRev}
+import com.beardedlogic.usecase.lib.ExternalId
+import com.beardedlogic.usecase.lib.Types._
+import AppConfig.BaseUrl
 
 object AppSiteMap {
 
@@ -46,9 +44,9 @@ object AppSiteMap {
 
   object Urls {
     // TODO viewUseCase() should be UseCaseEditor() and should use a Loc
-    def viewUseCase(uc: UseCaseRec): String = viewUseCase(ExternalId(uc.dataId))
-    def viewUseCase(ucs: UseCaseSummary): String = viewUseCase(ucs.dataEid)
-    def viewUseCase(dataEid: String): String = "/usecase/" + dataEid
+    def viewUseCase(uc: UseCaseRev): String = viewUseCase(uc.identId)
+    def viewUseCase(ucs: UseCaseSummary): String = viewUseCase(ucs.id)
+    def viewUseCase(id: UseCaseIdentId): String = "/usecase/" + ExternalId(id)
   }
 
   object Implicits {

@@ -1,22 +1,24 @@
 package com.beardedlogic.usecase
 package snippet
 
-import com.beardedlogic.usecase.lib.{ExternalId, Defaults}
-import com.beardedlogic.usecase.model.{UseCaseRec, UseCaseSummary}
-import com.beardedlogic.usecase.test.TestDatabaseSupport
-import com.beardedlogic.usecase.util.{ErrorMessages, JavaScriptReaction, NoReaction}
 import org.scalatest.FunSpec
 import org.scalatest.prop.PropertyChecks
+import lib.{ExternalId, Defaults}
+import lib.Types._
+import model.{UseCaseRev, UseCaseSummary}
+import test.TestDatabaseSupport
+import util.{ErrorMessages, JavaScriptReaction, NoReaction}
 
 class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with PropertyChecks {
+  import Tables._
 
   describe("#createNewUseCase") {
-    def createNewUseCase: UseCaseSummary = assertTableDiffs('data -> 1, 'value -> 1, 'usecase -> 1) {
+    def createNewUseCase: UseCaseSummary = assertTableDiffs(Usecase -> 1, UsecaseRev -> 1) {
       UseCaseIndex.createNewUseCase(NoReaction, db)
     }
 
     it("should create the first as \"1. Untitled\"") {
-      truncate('usecase)
+      truncate(Usecase)
       val uc = createNewUseCase
       uc.number should be(1)
       uc.title should be("Untitled")
@@ -25,7 +27,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     // TODO New-UC has GLOBAL scope.
 
     it("should create the second as \"2. Untitled\"") {
-      truncate('usecase)
+      truncate(Usecase)
       createNewUseCase
       val uc = createNewUseCase
       uc.number should be(2)
@@ -43,10 +45,15 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       js.result.toString should not include ("trigger")
     }
 
-    def newUc = db.createInitialUseCase(Defaults.Title, Defaults.FieldList.get)
+    def assertSummaryInAll(x: UseCaseSummary): Unit =
+      db.findAllUseCaseSummaries().map(ignoreTimestamp) should contain(ignoreTimestamp(x))
 
-    def params(dataId: Long, valueId: Long, newTitle: String) =
-      Map("dataEid" -> ExternalId(dataId), "valueEid" -> ExternalId(valueId), "title" -> newTitle)
+    def ignoreTimestamp(x: UseCaseSummary) = x.copy(updatedAt = "IGNORED")
+
+    def newUc = db.createInitialUseCase(Defaults.Title)
+
+    def params(id: UseCaseIdentId, newTitle: String) =
+      Map("eid" -> ExternalId(id), "title" -> newTitle)
 
     def test(params: Map[String, String]) = {
       val js = new JavaScriptReaction
@@ -59,24 +66,24 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     def testSuccess(newTitle: String, expectedTitleAfterSave: String): UseCaseSummary =
       testSuccess2(newUc, newTitle, expectedTitleAfterSave)
 
-    def testSuccess2(uc1: UseCaseRec, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
-      val (r, js) = test(params(uc1.dataId, uc1.valueId, newTitle))
+    def testSuccess2(uc1: UseCaseRev, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
+      val (r, js) = test(params(uc1, newTitle))
       r should be('defined)
       val uc2 = r.openOrThrowException("required")
       assertJsErrorNotice(js, None)
       assertUpdateTriggered(js)
       uc2.number should equal(uc1.header.number)
       uc2.title should equal(expectedTitleAfterSave)
-      db.findAllUseCaseSummaries() should contain(uc2)
+      assertSummaryInAll(uc2)
       uc2
     }
 
-    def testFailure(uc: UseCaseRec, errorMsgFrag: String, params: Map[String, String]) {
+    def testFailure(uc: UseCaseRev, errorMsgFrag: String, params: Map[String, String]) {
       val (r, js) = assertTableDiffs()(test(params))
       r should be('empty)
       assertJsErrorNotice(js, Some(errorMsgFrag))
       assertUpdateNotTriggered(js)
-      db.findUseCase(uc.valueId) should be(Some(uc))
+      db.findUseCase(uc.id) should be(Some(uc))
     }
 
     it("should update new new UC") {
@@ -98,24 +105,23 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     it("should appear to update when no change") {
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
-      val uc2 = db.findUseCase(uc2s.valueId).get
+      val uc2 = db.findLatestUseCase(uc2s.id).get
       assertTableDiffs(){ testSuccess2(uc2, uc2.header.title, uc2.header.title) }
-      db.findAllUseCaseSummaries() should contain(uc2s)
+      assertSummaryInAll(uc2s)
     }
 
     it("should reject invalid input data") {
       val uc = newUc
-      testFailure(uc, "not found", params(uc.dataId, 987654321, "hell0"))
-      testFailure(uc, "not found", params(98732156, uc.valueId, "hell0"))
-      testFailure(uc, ErrorMessages.BadRequest, params(uc.dataId, uc.valueId, "") - "title")
+      testFailure(uc, "not found", params(98732156.tag[UseCaseIdentId], "hell0"))
+      testFailure(uc, ErrorMessages.BadRequest, params(uc, "") - "title")
     }
 
-    it("should reject updates when UC rev not latest") {
-      val uc = newUc
-      val uc1 = db.updateUseCaseHeader(uc.withTitle("New Title!")).dataOpt.get // direct update (same valueId)
-      val uc2 = db.updateUseCaseHeader(uc1.withTitle("Newer title")).dataOpt.get // audited update
-      uc2.valueId should not be(uc.valueId)
-      testFailure(uc2, ErrorMessages.StaleDataSubmitted, params(uc.dataId, uc.valueId, "zxcvz"))
-    }
+    //it("should reject updates when UC rev not latest") {
+    //  val uc = newUc
+    //  val uc1 = db.updateUseCaseHeader(uc.identId, _.copy(title = "New Title!")).dataOpt.get // direct update (same valueId)
+    //  val uc2 = db.updateUseCaseHeader(uc1.identId, _.copy(title = "Newer title")).dataOpt.get // audited update
+    //  uc2.id should not be(uc.id)
+    //  testFailure(uc2, ErrorMessages.StaleDataSubmitted, params(uc.identId, uc.id, "zxcvz"))
+    //}
   }
 }

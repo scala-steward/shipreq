@@ -17,6 +17,7 @@ import tree.TreeOps._
 trait UcChangeDomain
 
 object UseCaseHeader extends UcChangeDomain
+// TODO Reverse params of UseCaseHeader
 case class UseCaseHeader(title: String, number: Short)
 
 // =====================================================================================================================
@@ -43,9 +44,6 @@ object UseCaseFns {
       case _ => Map.empty[LocalIdStr, LabelStr]
     }
 
-  def generateSavedSteps(saveCtx: FieldSaveCtx): SavedSteps =
-    BiMap(saveCtx.stepValues.map {case (localStepId, stepValue) => (stepValue.taggedDataId -> localStepId)})
-
   def mergeStepAndLabelMaps(maps: Iterable[Map[LocalIdStr, LabelStr]]): Map[LocalIdStr, LabelStr] =
     (Map.empty[LocalIdStr, LabelStr] /: maps)(_ ++ _)
 
@@ -60,7 +58,7 @@ object UseCaseFns {
   def generateStepAndLabelMap(field: Field, tree: StepTree, uch: UseCaseHeader): Map[LocalIdStr, LabelStr] =
     field match {
       case f: StepField => mapIdsToFullLabels(tree.nodes, f.rootLabelPrefix(uch))
-      case f => throw new IllegalStateException(s"Don't know how to mapIdsToFullLabels for field: $f")
+      case f => throw new IllegalStateException(s"Don't know how to generateStepAndLabelMap for field: $f")
     }
 
   /**
