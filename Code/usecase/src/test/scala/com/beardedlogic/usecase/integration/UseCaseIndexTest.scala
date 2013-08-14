@@ -5,6 +5,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import com.beardedlogic.usecase.lib.{ExternalId, Defaults}
 import com.beardedlogic.usecase.test.{TestDatabaseSupport, TestHelpers}
 import support.SeleniumTest
+import com.beardedlogic.usecase.app.AppSiteMap.Urls
 
 class UseCaseIndexTest extends FunSuite with SeleniumTest with BeforeAndAfter with TestDatabaseSupport {
 
@@ -17,9 +18,8 @@ class UseCaseIndexTest extends FunSuite with SeleniumTest with BeforeAndAfter wi
   }
 
   def assertLinkUrl() {
-    val valueId = db.findAllUseCaseSummaries.head.valueId
-    val dataId = db.findUseCase(valueId).get.identId
-    dsl.row(0).linkUrl should be(baseUrl + "/usecase/" + ExternalId(dataId))
+    val ucs = db.findAllUseCaseSummaries.head
+    dsl.row(0).linkUrl should be(baseUrl + Urls.viewUseCase(ucs))
   }
 
   test("empty initially") {

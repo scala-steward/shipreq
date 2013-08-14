@@ -4,6 +4,7 @@ package snippet
 import org.scalatest.FunSpec
 import org.scalatest.prop.PropertyChecks
 import lib.{ExternalId, Defaults}
+import lib.Types._
 import model.{UseCaseRev, UseCaseSummary}
 import test.TestDatabaseSupport
 import util.{ErrorMessages, JavaScriptReaction, NoReaction}
@@ -51,8 +52,8 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
 
     def newUc = db.createInitialUseCase(Defaults.Title)
 
-    def params(dataId: Long, valueId: Long, newTitle: String) =
-      Map("dataEid" -> ExternalId(dataId), "valueEid" -> ExternalId(valueId), "title" -> newTitle)
+    def params(id: UseCaseIdentId, newTitle: String) =
+      Map("eid" -> ExternalId(id), "title" -> newTitle)
 
     def test(params: Map[String, String]) = {
       val js = new JavaScriptReaction
@@ -66,7 +67,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       testSuccess2(newUc, newTitle, expectedTitleAfterSave)
 
     def testSuccess2(uc1: UseCaseRev, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
-      val (r, js) = test(params(uc1.identId, uc1.id, newTitle))
+      val (r, js) = test(params(uc1, newTitle))
       r should be('defined)
       val uc2 = r.openOrThrowException("required")
       assertJsErrorNotice(js, None)
@@ -104,15 +105,15 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     it("should appear to update when no change") {
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
-      val uc2 = db.findUseCase(uc2s.valueId).get
+      val uc2 = db.findLatestUseCase(uc2s.id).get
       assertTableDiffs(){ testSuccess2(uc2, uc2.header.title, uc2.header.title) }
       assertSummaryInAll(uc2s)
     }
 
     it("should reject invalid input data") {
       val uc = newUc
-      testFailure(uc, "not found", params(98732156, uc.id, "hell0"))
-      testFailure(uc, ErrorMessages.BadRequest, params(uc.identId, uc.id, "") - "title")
+      testFailure(uc, "not found", params(98732156.tag[UseCaseIdentId], "hell0"))
+      testFailure(uc, ErrorMessages.BadRequest, params(uc, "") - "title")
     }
 
     //it("should reject updates when UC rev not latest") {

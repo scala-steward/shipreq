@@ -42,11 +42,9 @@ object UseCaseIndex extends SnippetHelpers {
   }
 
   def updateUseCaseHeader(implicit reactor: Reactor): Box[UseCaseSummary] = {
-    // TODO use case index: stop sending valueId around
-
     val result: Box[UseCaseSummary] = for {
-      newTitle <- S.param("title")                                               ?~ ErrorMessages.BadRequest
-      ucId     <- tag[UseCaseIdentIdTag](ExternalId.unapply(S.param("dataEid"))) ?~ ErrorMessages.BadRequest
+      newTitle <- S.param("title")                                           ?~ ErrorMessages.BadRequest
+      ucId     <- tag[UseCaseIdentIdTag](ExternalId.unapply(S.param("eid"))) ?~ ErrorMessages.BadRequest
       lock     <- Locks.UseCase.forWrite(ucId)
       dao      <- daoProvider.forTransaction
       savedUc  <- dao.updateUseCaseHeader(ucId, _.copy(title= newTitle)) match {

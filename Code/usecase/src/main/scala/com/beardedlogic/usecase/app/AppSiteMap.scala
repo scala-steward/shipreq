@@ -7,6 +7,7 @@ import net.liftweb.sitemap.Loc._
 import org.apache.shiro.SecurityUtils
 import com.beardedlogic.usecase.model.{UseCaseSummary, UseCaseRev}
 import com.beardedlogic.usecase.lib.ExternalId
+import com.beardedlogic.usecase.lib.Types._
 import AppConfig.BaseUrl
 
 object AppSiteMap {
@@ -43,9 +44,9 @@ object AppSiteMap {
 
   object Urls {
     // TODO viewUseCase() should be UseCaseEditor() and should use a Loc
-    def viewUseCase(uc: UseCaseRev): String = viewUseCase(ExternalId(uc.identId))
-    def viewUseCase(ucs: UseCaseSummary): String = viewUseCase(ucs.dataEid)
-    def viewUseCase(dataEid: String): String = "/usecase/" + dataEid
+    def viewUseCase(uc: UseCaseRev): String = viewUseCase(uc.identId)
+    def viewUseCase(ucs: UseCaseSummary): String = viewUseCase(ucs.id)
+    def viewUseCase(id: UseCaseIdentId): String = "/usecase/" + ExternalId(id)
   }
 
   object Implicits {

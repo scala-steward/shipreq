@@ -11,23 +11,20 @@ import Types._
 
 case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
 
-// These fields names need to match the attributes in list.html
-// TODO Update UseCaseSummary field names & list.html
+// NOTE: These fields names need to match the attributes in list.html
 case class UseCaseSummary(
-  dataEid: String,
-  valueEid: String,
+  eid: String,
   number: Short,
   title: String,
   updatedAt: String) {
 
-  def this(dataId: Long, valueId: Long, number: Short, title: String, updatedAt: String) =
-    this(toExternal(dataId), toExternal(valueId), number, title, updatedAt)
+  def this(id: UseCaseIdentId, number: Short, title: String, updatedAt: String) =
+    this(toExternal(id), number, title, updatedAt)
 
   def this(uc: UseCaseRev, updatedAt: String) =
-    this(uc.identId, uc.id, uc.header.number, uc.header.title, updatedAt)
+    this(uc.identId, uc.header.number, uc.header.title, updatedAt)
 
-  def dataId: UseCaseIdentId = toInternal(dataEid).tag[UseCaseIdentIdTag]
-  def valueId: UseCaseRevId = toInternal(valueEid).tag[UseCaseRevIdTag]
+  def id: UseCaseIdentId = toInternal(eid).tag[UseCaseIdentIdTag]
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -37,7 +34,7 @@ object UseCaseAccessor {
   implicit val GRUseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<, r.<<)))
 
   implicit val GRUseCaseSummary = GetResult(r =>
-    new UseCaseSummary(r.nextLong, r.nextLong, r.nextShort, r.nextString, r.nextString))
+    new UseCaseSummary(r.nextId[UseCaseIdentId], r.nextShort, r.nextString, r.nextString))
 
   val InsertIdent = Q.queryNA[UseCaseIdentId]("INSERT INTO usecase DEFAULT VALUES RETURNING id")
 
@@ -60,7 +57,7 @@ object UseCaseAccessor {
     s"SELECT ${r_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
 
   val SelectSummaries = Q.queryNA[UseCaseSummary]( s"""
-    select ident_id, r.id, number, title, to_iso8601_str(created_at)
+    select ident_id, number, title, to_iso8601_str(created_at)
     from usecase u, usecase_rev r
     where r.id = latest_rev_id
     order by number """.sql)
