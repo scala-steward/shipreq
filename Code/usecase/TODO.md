@@ -27,6 +27,7 @@ FUNC TODO
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
 * [S.2.3] [UCE ] Stop invalidating both flow clauses when one's broken.
 * [S.2.1] [ACCT] Change username & password (when logged in).
+* [S.1.4] [UCE ] Select text when a field is focused via keyboard.
 * [S.1.2] [UCE ] Flow parsing fails both sides if either side has an error.
 * [S.1.2] [UCE ] Flow parsing does weird things when flow exists then an edit with bad flow clause(s) comes in.
 * [S.0.5] [ACCT] Password reset (when not logged in).
