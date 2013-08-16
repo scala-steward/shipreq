@@ -1,6 +1,6 @@
 db.appname=UseCaseEditor
-db.database=usecase
-db.username=usecase
+db.database=usecase_prod
+db.username=usecase_prod
 db.password=ucelocal
 
 mail.from=default@props.com
