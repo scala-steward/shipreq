@@ -19,6 +19,9 @@
 
 <h1>JS Graphviz Demo</h1>
 
+<button id="go2">Render UC-2</button>
+<button id="go5">Render UC-5</button>
+
 <h3>UC2 (content in JS)</h3>
 <div id="uc2">HERE</div>
 
@@ -71,13 +74,18 @@
 
 	var uc2Content = 'digraph G {;rankdir=LR;subgraph cluster_0 {;node [style=filled,color=lightblue];"2.1"->"2.1.1"->"2.1.2";}; subgraph cluster_1 {;node [style=filled,color=green];"2.0"->"2.0.1"->"2.0.2"->"2.0.3"->"2.0.4";}; subgraph cluster_2 {;node [style=filled,color=red];"2.E.1"->"2.E.1.1"->"2.E.1.2";"2.E.2"->"2.E.2.1";};"2.0.1"->"2.1";"2.0.1"->"2.E.2";"2.0.2"->"2.E.1";"2.1.2"->"2.0.2";"2.E.1.2"->"2.0.4";"2.E.2.1"->"2.E.1.1";START [shape=circle,style=filled,color=black,fontsize=1,height=.3];END [shape=doublecircle,style=filled,color=black,fontsize=1,height=.3];START->{ "2.0" };{ "2.0.4" }->END;graph [label="UC-2: Reference other UCs"];}'
 
-	$(document).ready(function () {
+	function go5() {
 		var uc5svg = Viz($('#uc5-content').html(), 'svg')
 		$('#uc5').html(uc5svg)
-
+	}
+	function go2() {
 		var uc2svg = Viz(uc2Content, 'svg')
 		$('#uc2').html(uc2svg)
-	});
+	}
+
+	$('#go2').click(go2);
+	$('#go5').click(go5);
+
 </script>
 </body>
 </html>
