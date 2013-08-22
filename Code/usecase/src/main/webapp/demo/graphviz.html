@@ -5,7 +5,6 @@
 	<script type="text/javascript" src="../js/vendor/jquery.js"></script>
 	<script type="text/javascript" src="../../javascript/vendor/jquery-ui.js"></script>
 	<script type="text/javascript" src="../../javascript/vendor/jquery-autosize.js"></script>
-	<script type="text/javascript" src="../js/vendor/viz.js"></script>
 
 	<!--<link media="screen" type="text/css" href="../css/vendor/bootstrap.css" rel="stylesheet"/>-->
 	<link media="screen" type="text/css" href="../css/uce.css" rel="stylesheet"/>
@@ -75,16 +74,25 @@
 	var uc2Content = 'digraph G {;rankdir=LR;subgraph cluster_0 {;node [style=filled,color=lightblue];"2.1"->"2.1.1"->"2.1.2";}; subgraph cluster_1 {;node [style=filled,color=green];"2.0"->"2.0.1"->"2.0.2"->"2.0.3"->"2.0.4";}; subgraph cluster_2 {;node [style=filled,color=red];"2.E.1"->"2.E.1.1"->"2.E.1.2";"2.E.2"->"2.E.2.1";};"2.0.1"->"2.1";"2.0.1"->"2.E.2";"2.0.2"->"2.E.1";"2.1.2"->"2.0.2";"2.E.1.2"->"2.0.4";"2.E.2.1"->"2.E.1.1";START [shape=circle,style=filled,color=black,fontsize=1,height=.3];END [shape=doublecircle,style=filled,color=black,fontsize=1,height=.3];START->{ "2.0" };{ "2.0.4" }->END;graph [label="UC-2: Reference other UCs"];}'
 
 	function go5() {
-		var uc5svg = Viz($('#uc5-content').html(), 'svg')
-		$('#uc5').html(uc5svg)
+		var c = $('#uc5-content').html()
+		// var uc5svg = Viz(c, 'svg')
+		// $('#uc5').html(uc5svg)
+		worker.postMessage({id:'#uc5', dot:c})
 	}
 	function go2() {
-		var uc2svg = Viz(uc2Content, 'svg')
-		$('#uc2').html(uc2svg)
+		// var uc2svg = Viz(uc2Content, 'svg')
+		// $('#uc2').html(uc2svg)
+		worker.postMessage({id:'#uc2', dot:uc2Content})
 	}
 
 	$('#go2').click(go2);
 	$('#go5').click(go5);
+
+	var worker = new Worker('../../javascript/viz-worker.js');
+	worker.onmessage = function(ev) {
+		var d = ev.data
+		$(d.id).html(d.svg)
+	};
 
 </script>
 </body>
