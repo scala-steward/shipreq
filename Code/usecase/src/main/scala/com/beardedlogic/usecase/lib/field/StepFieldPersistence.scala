@@ -40,7 +40,7 @@ private[field] trait StepFieldPersistenceMixin extends Field {
           // New node
           case h :: t if (h.fkId == rec.id && h.parentId == parentId) =>
             val children = parseRels(allRels, level + 1, Some(h.id))
-            val idStr = s"s${h.id}".asLocalStepId // TODO exposing DB ids
+            val idStr = ExternalId(h.id).asLocalStepId
             normTextMap += (idStr -> h.text)
             savedStepMap += (idStr -> h.textRev.identId)
             savedData += (h.textRev.identId -> h.rel)
