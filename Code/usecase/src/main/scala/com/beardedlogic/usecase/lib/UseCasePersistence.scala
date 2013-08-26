@@ -9,7 +9,7 @@ import UseCaseFns._
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-case class FieldLoadCtx(fieldData: List[UcFieldTextWithFK])
+case class FieldLoadCtx(header: UseCaseHeader, fieldData: List[UcFieldTextWithFK])
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ object UseCasePersistence {
 
     @inline def uch = ucRev.header
     val fieldList = Defaults.FieldList.get.fields // TODO hardcoded fieldlist
-    val loadCtx = FieldLoadCtx(dao.findAllUcFieldData(ucRev.id))
+    val loadCtx = FieldLoadCtx(uch, dao.findAllUcFieldData(ucRev.id))
 
     var loadResults = List.empty[(Field, FieldLoadResult[Field#Value, Field#SavedData])]
     var stepAndLabelMaps = List.empty[Map[LocalStepId, LabelStr]]

@@ -68,7 +68,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
     val F202 = UcFieldTextWithFK(ECF, UcFieldText(Some("x.E.2"), None, 1, TextRev(202, 1, 22, "EC 1E2")))
     val F211 = UcFieldTextWithFK(ECF, UcFieldText(Some("x.E.1.1"), Some(201), 0, TextRev(211, 1, 23, "EC 1E11")))
     val F_* = List(N70, N701, N702, N702a, N703, F201, F202, F211)
-    val LoadCtx = FieldLoadCtx(F_*)
+    val LoadCtx = FieldLoadCtx(UCH, F_*)
 
     def load(f: StepField, ctx: FieldLoadCtx, uch: UseCaseHeader = UCH) = {
       val r = f.load(ctx)
@@ -100,6 +100,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
       val (sfv, _) = load(NCF, EmptyLoadCtx)
       sfv.tree.sizeRecursive should be(2)
       sfv.tree.size should be(1)
+      sfv.textmap(sfv.tree.head.id).text ==== UCH.title
     }
 
     it("should allow a blank tree for EC") {

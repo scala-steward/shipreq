@@ -3,7 +3,7 @@ package lib.field
 
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
-import lib.FieldLoadCtx
+import com.beardedlogic.usecase.lib.{UseCaseHeader, FieldLoadCtx}
 import lib.Types._
 import lib.text.FreeText
 import model._
@@ -18,6 +18,8 @@ class TextFieldTest extends FunSpec with TestHelpers {
     v
   }
 
+  val UCH = UseCaseHeader(2, "AH")
+  val EmptyLoadCtx = FieldLoadCtx(UCH, List.empty)
   val TI1 = 201L.tag[TextIdentIdTag]
   val TR1 = 301L.tag[TextRevIdTag]
   val TR2 = 302L.tag[TextRevIdTag]
@@ -40,7 +42,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
   describe("Loading") {
     val V1 = ucFieldText(TF1.rec, TR1, "Jord")
     val V2 = ucFieldText(TF2.rec, TR2, "puls")
-    val LoadCtx = FieldLoadCtx(List(V1, V2))
+    val LoadCtx = FieldLoadCtx(UCH, List(V1, V2))
     def load(f: TextField, ctx: FieldLoadCtx) = f.load(ctx).phase2(EmptySavedSteps, EmptyStepAndLabelBiMap)
     def loadV(f: TextField, ctx: FieldLoadCtx): FreeText = load(f, ctx)._1
     def loadSD(f: TextField, ctx: FieldLoadCtx) = load(f, ctx)._2
@@ -65,7 +67,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
     it("should denormalise text with refs") {
       val V3 = ucFieldText(TF1.rec, TR1, "look at [D.143]")
-      val t = TF1.load(FieldLoadCtx(List(V3))).phase2(SavedSteps1, StepState1)._1
+      val t = TF1.load(FieldLoadCtx(UCH, List(V3))).phase2(SavedSteps1, StepState1)._1
       t should be(FreeText("look at [S.3]", Map(X3 -> S3)))
     }
   }

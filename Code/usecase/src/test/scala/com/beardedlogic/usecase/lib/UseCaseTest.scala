@@ -241,6 +241,13 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     db.createTextRev(db.createInitialText(ucIdentId, fkId), 1, text.hasNormalisedRefs)
 
   describe("Loading") {
+    it("should set NC.0 to the title for new UCs") {
+      val x = db.createInitialUseCase("Hello")
+      val y = loadRev(x)
+      val sfv = NCF.lens.get(y.uc)
+      sfv.textmap(sfv.tree.head.id).text ==== x.header.title
+    }
+
     it("should load a simple, manually-saved UC") {
       // Create UC
       val ucIdentId = db.createUseCaseIdent

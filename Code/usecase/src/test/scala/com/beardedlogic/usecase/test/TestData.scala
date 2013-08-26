@@ -18,6 +18,7 @@ trait TestData extends TestHelpers {
   lazy val FL: List[Field] = List(TF1, TF2, NCF, ECF, TF3)
   lazy val EmptyFieldValues: FieldValues = FL.map(f => (f ~> f.empty)).toMap
   lazy val UCH = UseCaseHeader(7, "YES!")
+  lazy val EmptyLoadCtx = FieldLoadCtx(UCH, List.empty)
   lazy val EmptyUC = UseCase(UCH, FL, EmptyFieldValues, EmptyStepAndLabelBiMap)
   lazy val EmptyUcWithoutNCF = removeNcField(EmptyUC)
 

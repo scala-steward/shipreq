@@ -125,8 +125,6 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
   lazy val NCF = NormalCourseField(FieldKeyRec(55.tag[FieldKeyIdTag], NormalCourseFieldDefinition.fieldKeyType, NormalCourseFieldDefinition.fieldKeyData))
   lazy val ECF = ExceptionCourseField(FieldKeyRec(66.tag[FieldKeyIdTag], ExceptionCourseFieldDefinition.fieldKeyType, ExceptionCourseFieldDefinition.fieldKeyData))
 
-  val EmptyLoadCtx = new FieldLoadCtx(List.empty)
-
   // -------------------------------------------------------------------------------------------------------------------
 
   def mockSavedStepsFor(tree: StepTree): SavedSteps = {

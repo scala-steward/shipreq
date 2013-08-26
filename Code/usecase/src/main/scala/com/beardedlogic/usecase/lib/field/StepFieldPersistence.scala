@@ -20,7 +20,7 @@ private[field] trait StepFieldPersistenceMixin extends Field {
   override def valueSaver(v: StepFieldValue, stepsAndLabels: StepAndLabelBiMap) =
     new StepFieldValueSaver(v, rec, sli, stepsAndLabels)
 
-  def defaultLoadValue: (Option[StepTree], () => StepFieldValue)
+  def defaultLoadValue(h: UseCaseHeader): (Option[StepTree], () => StepFieldValue)
 
   // =====================================================================================================================
 
@@ -58,7 +58,7 @@ private[field] trait StepFieldPersistenceMixin extends Field {
     if (stepNodes.isEmpty) {
 
       // Use default value
-      val (stepTree, fn) = defaultLoadValue
+      val (stepTree, fn) = defaultLoadValue(loadCtx.header)
       FieldLoadResult[Value, SavedData](Map.empty, stepTree, (savedSteps, stepsAndLabels) => (fn(), None))
 
     } else {

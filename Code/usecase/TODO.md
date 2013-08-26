@@ -23,7 +23,6 @@ FUNC TODO
 * [M.0.5] [UCE ] Fix: Accidently hit back without saving, progress is lost.
 
 * [S.4.4] [UCE ] Symlink steps (and have flow targets point back). Eg "@sameas/@Copy [1.E.1.1]"
-* [S.3.2] [UCE ] New UCs should have the normal course head set to the UC title.
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
 * [S.2.3] [UCE ] Stop invalidating both flow clauses when one's broken.
 * [S.2.1] [ACCT] Change username & password (when logged in).

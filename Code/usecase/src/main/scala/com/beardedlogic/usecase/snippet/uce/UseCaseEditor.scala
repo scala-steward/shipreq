@@ -27,7 +27,7 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
     val h = UseCaseHeader(1, Defaults.Title)
     val fl = Defaults.FieldList.get.fields
     val ncf = UseCaseFns.filter[NormalCourseField](fl).head
-    val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultLoadValue._2.apply)
+    val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultLoadValue(h)._2.apply)
     val sl = UseCaseFns.generateStepAndLabelBiMap(fv, h)
     val uc = UseCase(h, fl, fv, sl)
     State(uc, None)

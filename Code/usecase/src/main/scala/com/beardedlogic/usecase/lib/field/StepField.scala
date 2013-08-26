@@ -9,6 +9,7 @@ import Types._
 import change._
 import Changes._
 import StepField._
+import text.StepText
 
 object StepField {
   def MaxStepViolationMsg = Some(s"That would cause you to have ${MaxStepsPerLevel + 1} steps at the same level, which exceeds the maximum allowed.")
@@ -169,8 +170,11 @@ case class NormalCourseField(override val rec: FieldKeyRec) extends StepField {
   override val sli = StartingRootLabelIndexAt0
   override def prohibitRemoval_?(v: Value, id: LocalStepId) = v.tree(0).id == id
   override def preferTitleInRoot_?() = true
-  override val defaultLoadValue = {
-    val sfv = StepFieldValue.forTree(this, DefaultTree)
+  override def defaultLoadValue(h: UseCaseHeader) = {
+    val v1 = StepFieldValue.forTree(this, DefaultTree)
+    val id = v1.tree.head.id
+    val txt = StepText.parse(id, h.title)(EmptyStepAndLabelBiMap)
+    val sfv = FieldLenses.sfv.stepText.set((v1, id), txt)
     (Some(sfv.tree), () => sfv)
   }
 }
@@ -189,5 +193,6 @@ case class ExceptionCourseField(override val rec: FieldKeyRec) extends StepField
   override def rootLabelPrefix(uch: UseCaseHeader) = s"${uch.number}.E."
   override val sli = StartingLabelIndicesAt1
   override def prohibitRemoval_?(v: Value, id: LocalStepId) = false
-  override val defaultLoadValue = (None, empty _)
+  override def defaultLoadValue(h: UseCaseHeader) = defaultLoadValue_
+  private val defaultLoadValue_ = (None, empty _)
 }
