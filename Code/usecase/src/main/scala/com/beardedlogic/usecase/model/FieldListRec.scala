@@ -14,6 +14,10 @@ case class FieldListRec(fieldKeys: List[FieldKeyRec]) {
   lazy val textFields: List[TextField] = filterFields[TextField]
 }
 
+object FieldListRec {
+  def fromFields(fields: List[Field]) = apply(fields map (_.rec))
+}
+
 trait FieldListAccessor extends DatabaseAccessor {
   self: FieldKeyAccessor =>
 

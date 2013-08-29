@@ -34,7 +34,7 @@ import Changes.ExistingStepLabelsChanged
 /**
  * @since 30/04/2013
  */
-trait TestHelpers extends MockitoSugar with ShouldMatchers {
+trait TestHelpers extends MockitoSugar with ShouldMatchers with DebugImplicits {
 
   if (!LiftRules.doneBoot) (new bootstrap.liftweb.Boot).configureLift
   //if (Defaults.FieldList.get == null) Defaults.FieldList << mockFieldList(Defaults.FieldListDefns)
@@ -360,10 +360,6 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers {
   implicit class AnyExt[T](val v: T) {
     // Equality assertion with type equivalence ala Specs2
     def ====(that: T): Unit = v should be(that)
-
-    def pp(): T = {println(v); v}
-    def pp(name: String): T = {println(s"$name: $v"); v}
-    def pp(f: T => String): T = {println(f(v)); v}
   }
 
   /**
