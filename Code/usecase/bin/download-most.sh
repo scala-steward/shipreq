@@ -19,9 +19,8 @@ echo "Downloading v$v of jQuery.serializeObject -- http://plugins.jquery.com/ser
 curl -s https://raw.github.com/hongymagic/jQuery.serializeObject/$v/jquery.serializeObject.js -o src/main/javascript/vendor/jquery-serializeObject.js
 echo $?
 
-v=1.3.4
-echo "Downloading v$v of jQuery.liveQuery -- http://plugins.jquery.com/livequery/"
-curl -s https://raw.github.com/hazzik/livequery/$v/jquery.livequery.min.js -o src/main/javascript/vendor/jquery-livequery.js
+echo "Downloading jQuery.liveQuery"
+curl -s https://raw.github.com/hazzik/livequery/master/dist/jquery.livequery.min.js -o src/main/javascript/vendor/jquery-livequery.js
 echo $?
 
 v=2.2.1
