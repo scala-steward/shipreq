@@ -1,7 +1,17 @@
 package com.beardedlogic.usecase.lib.change
 
+import scalaz.NonEmptyList
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.{StepTree, StepNode}
+
+sealed trait Change {
+  val asOnlyChange = NonEmptyList(this)
+  def @:[V](newValue: V) = Changed(newValue, asOnlyChange)
+  def +(otherChange: Change): NonEmptyList[Change] = NonEmptyList(this, otherChange)
+  def +:(otherChange: Change): NonEmptyList[Change] = NonEmptyList(otherChange, this)
+  def ++(otherChanges: NonEmptyList[Change]): NonEmptyList[Change] = this <:: otherChanges
+  def ++(otherChanges: List[Change]): NonEmptyList[Change] = NonEmptyList.nel(this, otherChanges)
+}
 
 object Changes {
 
