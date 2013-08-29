@@ -17,6 +17,9 @@ import Types._
  */
 object FlowGraph {
 
+  /** Convenience method for `render . model` */
+  def render(uc: UseCase) = Renderer.render(Modeller.model(uc))
+
   // =====================================================================================================================
   // Data types
 
@@ -140,17 +143,17 @@ object FlowGraph {
     val GrpEnd = Cord("}")
 
     val StartSymbol = Cord("S")
-    val StartDecl = StartSymbol ++ Cord("[shape=circle style=filled color=black fontsize=1 height=.3]")
+    val StartDecl = Cord(StartSymbol + "[shape=circle style=filled color=black fontsize=1 height=.3]")
     val EndSymbol = Cord("E")
-    val EndDecl = EndSymbol ++ Cord("[shape=doublecircle style=filled color=black fontsize=1 height=.3]")
+    val EndDecl = Cord(EndSymbol + "[shape=doublecircle style=filled color=black fontsize=1 height=.3]")
 
-    val GraphGroup = group(Cord("digraph G{ranksep=0.28;")) _
-    //val NcGroup = group(Cord("subgraph clusterN{style=invis edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]")) _
-    val NcGroup = group(Cord("{edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]")) _
-    val AcGroup = anonGroup(Cord("""node[style="filled,rounded" fillcolor=skyblue shape=box]""")) _
-    val EcGroup = anonGroup(Cord("node[style=filled fillcolor=tomato shape=octagon]")) _
-    val NcHeadNodeGroup = anonGroup(Cord("node[shape=invhouse]")) _
-    val AcHeadNodeGroup = anonGroup(Cord("node[style=filled shape=invhouse]")) _
+    val GraphGroup = group("digraph G{ranksep=0.28;") _
+    //val NcGroup = group("subgraph clusterN{style=invis edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
+    val NcGroup = group("{edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
+    val AcGroup = anonGroup("""node[style="filled,rounded" fillcolor=skyblue shape=box]""") _
+    val EcGroup = anonGroup("node[style=filled fillcolor=tomato shape=octagon]") _
+    val NcHeadNodeGroup = anonGroup("node[shape=invhouse]") _
+    val AcHeadNodeGroup = anonGroup("node[style=filled shape=invhouse]") _
     val TerminalsGroup = anonGroup("edge[weight=9]") _
 
     case object NC extends Category {
