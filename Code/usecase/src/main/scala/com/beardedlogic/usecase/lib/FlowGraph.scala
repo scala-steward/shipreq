@@ -130,7 +130,13 @@ object FlowGraph {
       case AC | EC => dz.toList filter (_.flowFromClause.isEmpty)
     }
 
-    def endNodes(implicit tops: List[FlatZipper]): List[Node] = tops map (_.end.focus) filter (_.flowToClause.isEmpty)
+    def endNodes(implicit c: Category, tops: List[FlatZipper]): List[Node] = {
+      val ends = tops map (_.end.focus)
+      c match {
+        case NC => ends
+        case AC | EC => ends filter (_.flowToClause.isEmpty)
+      }
+    }
   }
 
   // ===================================================================================================================
