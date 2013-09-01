@@ -52,7 +52,7 @@ object Renderer {
 case class Renderer(
   state: UseCaseEditor.State,
   textFieldIds: Map[Field, LocalTextFieldId],
-  updateUC: (UseCase => UcUpdateResult) => JsCmd,
+  modifyUC: (UseCase => UcUpdateResult) => JsCmd,
   save: () => JsCmd
   ) extends RendererHelper {
 
@@ -85,8 +85,8 @@ case class Renderer(
     )
 
   val stepRenderers = Memo.immutableListMapMemo[StepField, StepFieldRenderer] {
-    case f: NormalCourseField => StepFieldRenderer(state, updateUC, f, NormalCourseFieldConfig)
-    case f: ExceptionCourseField => StepFieldRenderer(state, updateUC, f, ExceptionCourseFieldConfig)
+    case f: NormalCourseField => StepFieldRenderer(f, NormalCourseFieldConfig, state, modifyUC)
+    case f: ExceptionCourseField => StepFieldRenderer(f, ExceptionCourseFieldConfig, state, modifyUC)
   }
 
   def flowGraph = FlowGraph.render(uc)

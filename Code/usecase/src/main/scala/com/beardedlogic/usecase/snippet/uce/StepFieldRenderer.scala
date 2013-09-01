@@ -102,10 +102,10 @@ object ExceptionCourseFieldConfig extends StepFieldRenderConfig {
 // -------------------------------------------------------------------------------------------------------------------
 
 case class StepFieldRenderer(
-  state: UseCaseEditor.State,
-  updateUC: (UseCase => UcUpdateResult) => JsCmd,
   f: StepField,
-  cfg: StepFieldRenderConfig
+  cfg: StepFieldRenderConfig,
+  state: UseCaseEditor.State,
+  modifyUC: (UseCase => UcUpdateResult) => JsCmd
   ) extends RendererHelper {
 
   val rootLabelPrefix = f.rootLabelPrefix(uch)
@@ -132,7 +132,7 @@ case class StepFieldRenderer(
    * Also renders an addTailStep button.
    */
   def renderStepsWithAddTailStep(steps: TreeLike[StepNode]): NodeSeq => NodeSeq = {
-    val t = "button" #> SHtml.ajaxButton("+", =>%(f.addTailStep))
+    val t = "button" #> SHtml.ajaxButton("+", () => %(f.addTailStep))
     val addTailStepTmpl = t(Templates.AddTailStep)
     renderSteps(steps) andThen ".steps *+" #> addTailStepTmpl // Append to .steps, after all the .step tags
   }
@@ -142,7 +142,7 @@ case class StepFieldRenderer(
    */
   def renderSingleStep(n: StepNode) = {
     val id = n.id
-    @inline def =>%%(fn: LocalStepId => UseCase => UcUpdateResult) = =>%(fn(id))
+    @inline def %%(fn: LocalStepId => UseCase => UcUpdateResult) = () => %(fn(id))
     (
       ".step [id]" #> id
         & StepLevelAttributeCss #> n.level
@@ -150,10 +150,10 @@ case class StepFieldRenderer(
         & ".lbl span *" #> labelFor(n)
         & ".lbl span [id]" #> labelId(id)
         & "@text" #> SHtml.ajaxTextarea(text(id), i => %(f.updateText(id, i)), "id" -> textareaId(id))
-        & ".add" #> SHtml.ajaxButton("+", =>%%(f.addStep))
-        & ".delete" #> SHtml.ajaxButton("-", =>%%(f.removeStep))
-        & ".indentDec" #> SHtml.ajaxButton("«", =>%%(f.decreaseIndent))
-        & ".indentInc" #> SHtml.ajaxButton(<span>»</span>, =>%%(f.increaseIndent))
+        & ".add" #> SHtml.ajaxButton("+", %%(f.addStep))
+        & ".delete" #> SHtml.ajaxButton("-", %%(f.removeStep))
+        & ".indentDec" #> SHtml.ajaxButton("«", %%(f.decreaseIndent))
+        & ".indentInc" #> SHtml.ajaxButton(<span>»</span>, %%(f.increaseIndent))
       )
   }
 

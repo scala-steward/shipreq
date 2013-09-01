@@ -6,7 +6,7 @@ import com.beardedlogic.usecase.lib.UseCase
 
 private [uce] trait RendererHelper {
   def state: UseCaseEditor.State
-  def updateUC: (UseCase => UcUpdateResult) => JsCmd
+  def modifyUC: (UseCase => UcUpdateResult) => JsCmd
 
   @inline final def uc = state.uc
   @inline final def uch = uc.header
@@ -14,6 +14,5 @@ private [uce] trait RendererHelper {
   @inline final implicit def fieldValues = uc.fieldValues
 
   // % as in "mod(ify)"
-  @inline final def %(f: UseCase => UcUpdateResult): JsCmd = updateUC(f)
-  @inline final def =>%(f: UseCase => UcUpdateResult) = () => updateUC(f)
+  @inline final def %(f: UseCase => UcUpdateResult): JsCmd = modifyUC(f)
 }
