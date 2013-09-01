@@ -24,7 +24,9 @@ FUNC TODO
 * [M.0.5] [UCE ] Fix: Accidently hit back without saving, progress is lost.
 
 * [S.4.4] [UCE ] Symlink steps (and have flow targets point back). Eg "@sameas/@Copy [1.E.1.1]"
+* [S.3.2] [UCE ] BUG: Flow change not broadcast when valid flow invalidated.
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
+* [S.2.3] [UCE ] HTML title sync to UC title.
 * [S.2.3] [UCE ] Stop invalidating both flow clauses when one's broken.
 * [S.2.1] [ACCT] Change username & password (when logged in).
 * [S.1.4] [UCE ] Select text when a field is focused via keyboard.
