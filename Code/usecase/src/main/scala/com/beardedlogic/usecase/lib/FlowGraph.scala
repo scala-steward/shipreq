@@ -149,25 +149,23 @@ object FlowGraph {
 
     val GraphGroup = group("digraph G{ranksep=0.28;") _
     //val NcGroup = group("subgraph clusterN{style=invis edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
-    val NcGroup = group("{edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
+    val NcGroup = anonGroup("edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
+    val NcHeadNodeGroup = anonGroup("node[style=filled fillcolor=lawngreen shape=invhouse]") _
     val AcGroup = anonGroup("""node[style="filled,rounded" fillcolor=skyblue shape=box]""") _
+    val AcHeadNodeGroup = anonGroup("node[style=filled fillcolor=skyblue shape=invhouse]") _
     val EcGroup = anonGroup("node[style=filled fillcolor=tomato shape=octagon]") _
-    val NcHeadNodeGroup = anonGroup("node[shape=invhouse]") _
-    val AcHeadNodeGroup = anonGroup("node[style=filled shape=invhouse]") _
     val TerminalsGroup = anonGroup("edge[weight=9]") _
 
     case object NC extends Category {
       override def render(d: IntraCatData) =
-        NcGroup(
-          NcHeadNodeGroup(nodeDecls(d.headNodes)) ++
-          renderI(d.implicitFlows))
+        NcHeadNodeGroup(nodeDecls(d.headNodes)) ++
+        NcGroup(renderI(d.implicitFlows))
     }
 
     case object AC extends Category {
       override def render(d: IntraCatData) =
-        AcGroup(
-          AcHeadNodeGroup(nodeDecls(d.headNodes)) ++
-          renderI(d.implicitFlows))
+        AcHeadNodeGroup(nodeDecls(d.headNodes)) ++
+        AcGroup(renderI(d.implicitFlows))
     }
 
     case object EC extends Category {
