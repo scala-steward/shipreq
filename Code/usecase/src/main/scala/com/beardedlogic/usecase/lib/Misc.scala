@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import net.liftweb.http.S
 import org.joda.time.DateTime
 import scala.util.Random
+import scalaz.Cord
 import com.beardedlogic.usecase.app.AppConfig
 import AppConfig._
 import Misc._
@@ -12,6 +13,8 @@ import Misc._
 object Misc extends Misc {
 
   final val RNG = new Random()
+
+  final val SingleSpace = Cord(" ")
 
   final val WhitespaceRegex = "\\s+".r
 

@@ -4,12 +4,14 @@ package lib.text
 import org.scalatest.FunSpec
 import org.scalatest.prop._
 import scala.collection.immutable.TreeSet
+import scalaz.syntax.apply._
+import scalaz.std.list.listInstance
 import lib.change._
 import lib.Types._
 import util._
 import test.TestHelpers
 import Changes._
-import ParsingConfig.{FlowFromStyle, FlowStyle, FlowToStyle}
+import ParsingConfig._
 
 object FreeAndStepTextTests extends TestHelpers {
 
@@ -234,6 +236,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
     def aFlowClause(F: FlowTester) {
 
       def parsef(input: String) = parse(F.forceArrows(input))
@@ -309,15 +312,6 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         testFlowText("S.1 [S.1] S.2 [S.1]", "[S.1] [S.2]", Seq(S1, S2))
       }
 
-      it("should invalidate flow clause when valid & invalid refs found") {
-        val examples = Table(("BEFORE", "AFTER")
-          , ("--> [S.123], [S.1]", "-> [S.123?], [S.1]")
-          , ("➡ [S.123], [S.1]", "-> [S.123?], [S.1]")
-          , ("--> S.1, X1", "-> S.1, X1")
-        )
-        forAll(examples)(testTextToTextAndNoFlows(_, _))
-      }
-
       it("should handle invalid flow clauses") {
         val examples = Table(("BEFORE", "AFTER")
           , ("--> blah", "-> blah")
@@ -326,11 +320,9 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
           , ("zxc-->abc", "zxc->abc")
           , ("zxc----->abc", "zxc->abc")
           , ("--> [S.123]", "-> [S.123?]")
-          , ("--> S.123", "-> S.123")
-          , ("--> S.1, S.123", "-> S.1, S.123")
-          , ("--> [S.1], [S.123]", "-> [S.1], [S.123?]")
-          , ("--> S.1 bullshit", "-> S.1 bullshit")
-          , ("--> X1", "-> X1")
+          , ("--> S.123", "-> [S.123?]")
+          , ("--> S.456, S.123", "-> [S.456?] [S.123?]")
+          , ("--> [S.456], [S.123]", "-> [S.456?] [S.123?]")
         )
         forAll(examples)((before, after) => {
           testTextToTextf(before, after)
@@ -338,7 +330,74 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         })
       }
 
-      describe(s"Responding to a $MockExistingStepLabelsChanged") {
+      // Examples:
+      // ⬅[S.1] [E.901]               becomes <- [E.901?] ⬅ [S.1]
+      // ⬅[E.901] [S.1]⬅[S.2] [E.902] becomes <- [E.901?] <- [E.902?] ⬅ [S.1] [S.2]
+      it("should seperate good and bad refs in flow clauses") {
+        sealed trait Ref {
+          def t1: String
+          def t2: String
+          def good: Boolean
+          def bad = !good
+        }
+        case object GoodRef extends Ref {
+          override def t1 = "S.1"
+          override def t2 = "S.2"
+          override def good = true
+        }
+        case object BadRef extends Ref {
+          override def t1 = "E.901"
+          override def t2 = "E.902"
+          override def good = false
+        }
+        case class Example(input: String, output: String) {
+          def ioPair = (input, output)
+        }
+
+        def makeExample(a: List[Ref], b: List[Ref]): Example = {
+          def genInp(l: List[Ref], f: Ref => String) = l match {
+            case Nil => ""
+            case _ => "⬅" + l.map(r => makeRef(f(r))).mkString("")
+          }
+          val input = genInp(a, _.t1) + genInp(b, _.t2)
+
+          def expBad(l: List[Ref], f: Ref => String): Option[String] = l.filter(_.bad) match {
+            case Nil => None
+            case ll => Some("<- " + ll.map(r => makeInvalidRef(f(r))).mkString(" "))
+          }
+          def expGood1(l: List[Ref], f: Ref => String) = l.filter(_.good).map(r => makeRef(f(r)))
+          def expGood: Option[String] = (expGood1(a, _.t1) ::: expGood1(b, _.t2)) match {
+            case Nil => None
+            case l => Some("⬅ " + l.mkString(" "))
+          }
+          val exps = expBad(a, _.t1) :: expBad(b, _.t2) :: expGood :: Nil
+          val output = exps.filter(_.isDefined).map(_.get).mkString(" ")
+
+          Example(input, output)
+        }
+
+        // Build all combinations of good & bad refs
+        def examples = {
+          val l = List(GoodRef, BadRef)
+          val c = (1 to l.size).map(n => l.combinations(n).toList).flatten.map(_.permutations.toList).flatten.toList
+          ^(c, List(Nil) ::: c)(makeExample)
+        }
+        //examples foreach println
+
+        // Test
+        val table = Table(("IN","OUT"),examples.map(_.ioPair): _*)
+        forAll(table)(testTextToTextf(_,_))
+      }
+
+      it("should parse correct flow clauses left of erroneous flow clauses") {
+        val examples = Table(("BEFORE", "AFTER")
+          , ("--> S.1 --> [S.99?]", "-> [S.99?] ➡ [S.1]")
+          , ("bullshit --> bullshit --> S.1 --> [S.99?]", "bullshit -> bullshit -> [S.99?] ➡ [S.1]")
+        )
+        forAll(examples)(testTextToTextf(_,_))
+      }
+
+      describe("Responding to a MockExistingStepLabelsChanged") {
         def test(textBefore: String, textAfter: String, refsAfter: Set[LocalStepId]) {
           val x = parse(F.forceArrows(textBefore))
           val y = x.respondToChange(MockExistingStepLabelsChanged)(StepState2).getOrElse(x)
@@ -387,6 +446,12 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         it("should produce a flow-change when all steps removed") {
           test("--> S.1, S.1, S.2", Set(S1, S2))("blah", Some(Set()))
         }
+        it("should produce a flow-change when all steps invalidated") {
+          test("--> S.1, S.1, S.2", Set(S1, S2))("--> S.987 S.456", Some(Set()))
+        }
+        it("should produce a flow-change when some steps invalidated") {
+          test("--> S.1, S.1, S.2", Set(S1, S2))("--> S.1 S.456", Some(Set(X1)))
+        }
         it("should not produce a flow-change when no changes and has steps") {
           test("blah --> S.1", Set(S1))("blah and stuff --> S.1", None)
           test("blah --> S.1", Set(S1))("blah and stuff --> [S.1] [S.1]", None)
@@ -396,6 +461,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         }
       }
     } // end aFlowClause
+    // -----------------------------------------------------------------------------------------------------------------
 
     describe("Parsing flow-from clause") {
       it should behave like (aFlowClause(FlowFromTester))
@@ -437,12 +503,9 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       it("should parse random valid statements") {
         check(HalfAssedOldProperties.validStatementProp)
       }
-      it("should transform random invalid statements") {
-        check(HalfAssedOldProperties.invalidStatementProp)
-      }
     }
 
-    describe("Text") {
+    describe("text()") {
       it("should combine clauses") {
         implicit val ss = StepState1
         val X1_S1 = Some(Map(X1 -> S1))
@@ -474,7 +537,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       }
     }
 
-    describe(s"Responding to FlowChangeMsgs") {
+    describe("Responding to FlowChangeMsgs") {
       // In these examples, a flow-change created by X1(S1) is received by step X0.
       // ToMe means that X1 has been pointed at X0.
       // ToNone means that X1 does not point at X0.
@@ -548,13 +611,6 @@ object HalfAssedOldProperties {
   // TODO It would be nice to do write proper property-checks
 
   val validStep = withOptionalBraces(Gen.oneOf("S.1", "S.2", "S.3", "S.5"))
-  val invalidStep = Gen.oneOf("S.123", ".1", "X1", "")
-
-  val invalidStatement = for {
-    l <- optionalPlainText suchThat (!_.endsWith("-"))
-    a <- flowToArrow
-    r <- Gen.listOf(invalidStep | nothing).map(_.mkString(","))
-  } yield l + a + r
 
   val validStatement = for {
     l <- optionalPlainText suchThat (!_.endsWith("-"))
@@ -562,10 +618,6 @@ object HalfAssedOldProperties {
     r <- Gen.listOf1(validStep)
   } yield (l, a, r)
 
-  val invalidStatementProp = forAllNoShrink(invalidStatement) { t =>
-    val exp = FlowToStyle.replaceAllArrowsWithBad(t.trim)
-    checkTextParsing(t, exp)
-  }
 
   val validStatementProp = forAllNoShrink(validStatement) { case (l, a, steps) if a.nonEmpty && steps.nonEmpty =>
     val t = l + a + steps.mkString(",")

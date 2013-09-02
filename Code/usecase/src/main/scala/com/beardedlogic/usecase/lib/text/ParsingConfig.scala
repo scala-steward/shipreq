@@ -35,7 +35,7 @@ object ParsingConfig {
     final def makeFlowTextOrEmpty(labels: SortedSet[LabelStr]) = if (labels.isEmpty) "" else makeFlowText(labels)
   }
 
-  object FlowFromStyle extends FlowStyle {
+  case object FlowFromStyle extends FlowStyle {
     override val arrow = "⬅"
     override val unicodeArrows = (arrow + "←⇦⇐⇽").toList
     override val arrowRegex = s"<-{2,}|[${unicodeArrows.mkString}]".r
@@ -43,7 +43,7 @@ object ParsingConfig {
     override val arrowBadReplacement = "<-"
   }
 
-  object FlowToStyle extends FlowStyle {
+  case object FlowToStyle extends FlowStyle {
     override val arrow = "➡"
     override val unicodeArrows = (arrow + "→⇨⇒⇾").toList
     override val arrowRegex = s"-{2,}>|[${unicodeArrows.mkString}]".r

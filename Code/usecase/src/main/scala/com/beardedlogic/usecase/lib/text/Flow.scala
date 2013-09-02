@@ -6,28 +6,32 @@ import com.beardedlogic.usecase.lib.change.Changes.{FlowToChange, FlowFromChange
 import com.beardedlogic.usecase.lib.Types._
 import ParsingConfig.{FlowToStyle, FlowFromStyle, FlowStyle}
 
+object Flow {
+  type Refs = Map[LocalStepId, LabelStr]
+}
+import Flow.Refs
+
 sealed trait Flow[Clause <: FlowClause] {
 
   def style: FlowStyle
+  protected def justCreate(refs: Refs): Clause
+  protected def change(stepId: LocalStepId, refs: Refs): Change
 
-  def createPotentiallyEmpty(refs: Map[LocalStepId, LabelStr]): Clause
-
-  def create(refs: Map[LocalStepId, LabelStr]): Option[Clause] =
+  def create(refs: Refs): Option[Clause] =
     if (refs.isEmpty) None
-    else Some(createPotentiallyEmpty(refs))
+    else Some(justCreate(refs))
 
-  /** Returns a function that produces a Change to indicate that a flow clause was cleared. */
-  val flowClearedChangeFn = createPotentiallyEmpty(Map.empty).flowChangeFn
+  def changeFor(stepId: LocalStepId, clause: Option[Clause]): Change = clause match {
+    case None => change(stepId, Map.empty)
+    case Some(c) => change(stepId, c.refs)
+  }
 
   def toText(c: Clause) = style.makeFlowTextOrEmpty(c.sortedLabels)
 }
 
 sealed trait FlowClause {
 
-  val refs: Map[LocalStepId, LabelStr]
-
-  /** Returns a function that produces a Change to indicate that a flow clause has changed. */
-  def flowChangeFn: LocalStepId => Change
+  val refs: Refs
 
   def sortedLabels: SortedSet[LabelStr] = {
     var s = TreeSet.empty[LabelStr]
@@ -38,22 +42,20 @@ sealed trait FlowClause {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-object FlowFrom extends Flow[FlowFromClause] {
+case object FlowFrom extends Flow[FlowFromClause] {
   override def style = FlowFromStyle
-  override def createPotentiallyEmpty(refs: Map[LocalStepId, LabelStr]) = FlowFromClause(refs)
+  override protected def justCreate(refs: Refs) = FlowFromClause(refs)
+  override protected def change(stepId: LocalStepId, refs: Refs) = FlowFromChange(refs.keySet, stepId)
 }
 
-case class FlowFromClause(refs: Map[LocalStepId, LabelStr]) extends FlowClause {
-  override def flowChangeFn = stepId => FlowFromChange(refs.keySet, stepId)
-}
+case class FlowFromClause(refs: Refs) extends FlowClause
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-object FlowTo extends Flow[FlowToClause] {
+case object FlowTo extends Flow[FlowToClause] {
   override def style = FlowToStyle
-  override def createPotentiallyEmpty(refs: Map[LocalStepId, LabelStr]) = FlowToClause(refs)
+  override protected def justCreate(refs: Refs) = FlowToClause(refs)
+  override protected def change(stepId: LocalStepId, refs: Refs) = FlowToChange(stepId, refs.keySet)
 }
 
-case class FlowToClause(refs: Map[LocalStepId, LabelStr]) extends FlowClause {
-  override def flowChangeFn = stepId => FlowToChange(stepId, refs.keySet)
-}
+case class FlowToClause(refs: Refs) extends FlowClause

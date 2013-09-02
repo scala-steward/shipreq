@@ -4,6 +4,9 @@ package lib.text
 import org.scalatest.FunSpec
 import org.scalatest.prop.{TableFor2, PropertyChecks}
 import test.TestHelpers
+import lib.Types._
+import ParsingConfig.{FlowToStyle, FlowStyle, FlowFromStyle}
+import Grammar._
 
 class GrammarTest extends FunSpec with TestHelpers with PropertyChecks {
   val G = Grammar
@@ -36,7 +39,7 @@ class GrammarTest extends FunSpec with TestHelpers with PropertyChecks {
       test(G.StepLabel, examples)(_.replaceAll("\\s+", ""))
     }
 
-    it("should parse OptionallyBracedRef") {
+    it("should parse ValidRef") {
       val examples = Table(("EXAMPLE", "PASS")
         , ("1.0", true)
         , ("1.0.a.iii.1", true)
@@ -53,10 +56,10 @@ class GrammarTest extends FunSpec with TestHelpers with PropertyChecks {
         , ("[[1.0]]", false)
         , ("", false)
       )
-      test(G.OptionallyBracedRef, examples)(_.replaceAll("[\\s\\[\\]]+", ""))
+      test(G.ValidRef, examples)(i => validRef(i.replaceAll("[\\s\\[\\]]+", "")))
     }
 
-    it("should parse FlowToRefList") {
+    it("should parse FlowRefList") {
       val examples = Table(("EXAMPLE", "PASS")
         , ("1.0", true)
         , ("1.0, 1.2", true)
@@ -70,20 +73,31 @@ class GrammarTest extends FunSpec with TestHelpers with PropertyChecks {
 
       )
       test(G.FlowRefList, examples) {
-        _.replace("[", ",[").replace("]", "],").replaceAll("[\\s\\[\\]]+", "").split(",+").filter(_.nonEmpty).toList
+        _.replace("[", ",[").replace("]", "],").replaceAll("[\\s\\[\\]]+", "").split(",+").filter(_.nonEmpty).toList.map(validRef)
       }
     }
 
-    it("should parse TextAndFlow") {
+    it("should parse TextAndFlows with flow") {
       forAll(TextWithFlowExamples) {
         (input, expText, expRefsFrom, expRefsTo) =>
-          val r = G.parseAll(G.TextAndFlow, input)
-          r.successful should be(true)
-          r.get._1 should be(expText)
-          val flowResults = r.get._2
-          flowResults.from should be(if (expRefsFrom.isEmpty) None else Some(expRefsFrom))
-          flowResults.to should be(if (expRefsTo.isEmpty) None else Some(expRefsTo))
+          withClue(s"Input='$input'.") {
+            val r = G.parseAll(G.TextAndFlows, input)
+            withClue("Parse result should be successful.") {r.successful ==== true}
+            r.get._1 should be(expText)
+            val flowResults = r.get._2
+            def results(style: FlowStyle) = flowResults.filter(_.style == style).map(_.refs).flatten.map(validRefS)
+            results(FlowFromStyle) ==== expRefsFrom
+            results(FlowToStyle) ==== expRefsTo
+          }
       }
     }
   }
+
+  def validRefS(x: RefToken): String = validRef(x)
+  def validRef(x: RefToken): LabelStr = x match {
+    case PotentiallyValidRef(lbl) => lbl
+    case _ => fail("Expected result: " + x)
+  }
+
+  def validRef(x: String) = PotentiallyValidRef(x.asLabel)
 }

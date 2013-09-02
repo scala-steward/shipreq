@@ -1,8 +1,12 @@
 package com.beardedlogic.usecase.lib.text
 
 import scala.collection.immutable.TreeSet
+import scalaz.{NonEmptyList, Cord}
+import com.beardedlogic.usecase.lib.Misc.SingleSpace
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
+import com.beardedlogic.usecase.lib.text.Grammar.{InvalidRefToken, PotentiallyValidRef, ParsedFlowClause}
+import com.beardedlogic.usecase.lib.text.ParsingConfig.{FlowToStyle, FlowFromStyle, makeInvalidRef}
 import Changes._
 import ParsingUtils._
 
@@ -32,6 +36,9 @@ object StepText {
   }
 }
 
+/**
+ * Represents the value of a single step in a `StepField`.
+ */
 case class StepText(
   stepId: LocalStepId,
   mainClause: FreeText,
@@ -63,10 +70,13 @@ case class StepText(
   protected def textChanged = StepTextChanged(stepId)
 
   override protected[text] def updateCorrected(newText: String)(implicit stepsAndLabels: StepAndLabelBiMap) = {
-    val (text, from, to, msgs) = parseTextForFlow(newText)
-    val main = mainClause.update(invalidateFlowArrows(text)).getOrElse(mainClause)
+    val p = parseTextForFlow(newText)
+    val (from, c1) = updateFlowClause(FlowFrom, flowFromClause, p.from)
+    val (to, c2) = updateFlowClause(FlowTo, flowToClause, p.to)
+    val changes = NonEmptyList.apply[Change](textChanged, c1 ::: c2: _*)
+    val main = mainClause.update(invalidateFlowArrows(p.text)).getOrElse(mainClause)
     val newVal = copy(mainClause = main, flowFromClause = from, flowToClause = to)
-    Changed(newVal, textChanged ++ msgs)
+    Changed(newVal, changes)
   }
 
   def updateMainClause(newMainClauseText: String)(implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[StepText, Change] =
@@ -75,128 +85,82 @@ case class StepText(
     mapChanges(_.map(convertFreeTextChange)).
     map(m => copy(mainClause = m))
 
+  def updateFlowClause[C <: FlowClause, F <: Flow[C]](flow: F, oldClause: Option[C], newRefs: Flow.Refs): (Option[C], List[Change]) = {
+    val newClause = flow.create(newRefs)
+    def change = List(flow.changeFor(stepId, newClause))
+    val changes: List[Change] = (oldClause, newClause) match {
+      case (None, None) => Nil
+      case (None, Some(_)) => change
+      case (Some(old), _) => if (old.refs == newRefs) Nil else change
+    }
+    (newClause, changes)
+  }
+
+  private case class TextAndRefs(text: String, from: Flow.Refs, to: Flow.Refs)
+
   /**
    * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
    *
    * If found (and valid), they are extracted and normalised.
    */
-  private def parseTextForFlow(input: String)(implicit stepsAndLabels: StepAndLabelBiMap)
-  : (String, Option[FlowFromClause], Option[FlowToClause], List[Change]) = {
+  private def parseTextForFlow(input: String)(implicit stepsAndLabels: StepAndLabelBiMap): TextAndRefs = {
 
-    // Parse flow clauses
-    val pr = Grammar.parseAll(Grammar.TextAndFlow, input)
-    val (text, fromLabels: Option[List[LabelStr]], toLables: Option[List[LabelStr]]) =
-      if (pr.successful) {
-        // Clauses exist. Validate.
-        val (text, flowResult) = pr.get
-        (text, flowResult.from.asLabels, flowResult.to.asLabels)
-      } else
-      // Free text only
-        (input, None, None)
+    val labelLookup = stepsAndLabels.get.ba
 
-    // Transition to new clauses
-    val parsedTo = transitionFlowClause(FlowTo, flowToClause, toLables)
-    val parsedFrom = if (parsedTo.isEmpty) None else transitionFlowClause(FlowFrom, flowFromClause, fromLabels)
+    def parseFlowClause(acc: TextAndRefs, clause: ParsedFlowClause): TextAndRefs = {
 
-    if (parsedFrom.isDefined && parsedTo.isDefined) {
-      // No errors in From or To clauses
-      val (newFrom, msgsFrom) = parsedFrom.get
-      val (newTo, msgsTo) = parsedTo.get
-      (text, newFrom, newTo, msgsFrom ::: msgsTo)
-    } else
-    // One or both flow clauses are invalid
-    // TODO stop discarding a valid flow clause when the other is invalid
-    // TODO broken flow doesn't broadcast change
-      (input, None, None, List.empty)
-  }
+      def validateEachRef = {
+        var bad = List.empty[Cord]
+        var good: Flow.Refs = Map.empty
+        for (token <- clause.refs)
+          token match {
+            case PotentiallyValidRef(lbl) =>
+              labelLookup.get(lbl) match {
+                case Some(stepId) => good += (stepId -> lbl)
+                case None => bad ::= Cord(makeInvalidRef(lbl))
+              }
+            case InvalidRefToken(token) =>
+              bad ::= Cord(token)
+          }
+        (bad, good)
+      }
 
-  private def transitionFlowClause[C <: FlowClause, F <: Flow[C]](flow: F, oldClause: Option[C]
-    , labelsFoundInNewFlow: Option[List[LabelStr]])(implicit stepsAndLabels: StepAndLabelBiMap)
-  : Option[(Option[C], List[Change])] =
+      val (bad, good) = validateEachRef
 
-    labelsFoundInNewFlow match {
-      // No flow specified
-      case None =>
-        val changes = oldClause.map(_ => flow.flowClearedChangeFn(stepId)).toList
-        Some(None, changes)
-
-      // Flow specified and valid
-      case Some(labels) if areLabelsValid_?(labels) =>
-        val labelsToIds = stepsAndLabels.get.ba
-        val newRefs = labels.map(l => (labelsToIds(l), l)).toMap
-        oldClause.filter(_.refs == newRefs).map(clause =>
-        // No changes
-          Some(Some(clause), List.empty[Change])
-        ).getOrElse {
-          // Change detected
-          val clause = flow.create(newRefs).get
-          val changes = clause.flowChangeFn(stepId)
-          Some(Some(clause), List(changes))
+      // Add bad refs back into text
+      val newText: String =
+        if (bad.isEmpty) acc.text
+        else {
+          val badRefs = bad.foldRight(Cord.empty)((e, a) => a ++ SingleSpace ++ e)
+          val badClause: Cord = clause.style.arrowBadReplacement +: badRefs
+          val badClause2: Cord = if (acc.text.isEmpty) badClause else SingleSpace ++ badClause
+          (acc.text +: badClause2).toString
         }
 
-      // Flow specified and invalid
-      case _ => None
+      // Combine results
+      if (good.isEmpty)
+        acc.copy(text = newText)
+      else clause.style match {
+        case FlowFromStyle => acc.copy(text = newText, from = acc.from ++ good)
+        case FlowToStyle => acc.copy(text = newText, to = acc.to ++ good)
+      }
     }
 
+    // Parse flow clauses
+    val parseResult = Grammar.parseAll(Grammar.TextAndFlows, input)
+    if (parseResult.successful) {
 
-  //  /**
-//   * Scans input for optional flow clauses such as `"--> 1.0.2"`, `"<-- 1.4, 1.5"`.
-//   *
-//   * If found (and valid), they are extracted and normalised.
-//   */
-//  private def parseTextForFlow(input: String)(implicit stepsAndLabels: StepAndLabelBiMap)
-//  : (String, Option[FlowFromClause], Option[FlowToClause], Set[Change]) = {
-//
-//    // Parse flow clauses
-//    val pr = Grammar.parseAll(Grammar.TextAndFlow, input)
-//    val (text, fromLabels: Option[List[LabelStr]], toLables: Option[List[LabelStr]]) =
-//      if (pr.successful) {
-//        // Clauses exist. Validate.
-//        val (text, flowResult) = pr.get
-//        (text, flowResult.from.asLabels, flowResult.to.asLabels)
-//      } else
-//      // Free text only
-//        (input, None, None)
-//
-//    // Transition to new clauses
-//    val parsedTo = transitionFlowClause(FlowTo, flowToClause, toLables)
-//    val parsedFrom = transitionFlowClause(FlowFrom, flowFromClause, fromLabels)
-//
-//    (parsedFrom, parsedTo) match {
-//      case (NoChange,              NoChange)          => NoChange
-//      case (NoChange,              Changed(toV, toC)) => Changed((text, flowFromClause, toV), toC)
-//      case (Changed(fromV, fromC), NoChange)          => Changed((text, fromV, flowToClause), fromC)
-//      case (Changed(fromV, fromC), Changed(toV, toC)) => Changed((text, fromV, toV), fromC ++ toC)
-//      // TODO stop discarding a valid flow clause when the other is invalid
-//      // TODO broken flow doesn't broadcast change
-//      case (ChangeFailure(_), _) | (_, ChangeFailure(_)) => (input, None, None, Set.empty)
-//    }
-//  }
-//
-//  private def transitionFlowClause[C <: FlowClause, F <: Flow[C]](flow: F, oldClause: Option[C]
-//    , labelsFoundInNewFlow: Option[List[LabelStr]])(implicit stepsAndLabels: StepAndLabelBiMap)
-//  : ChangeResultF[Option[C], Change] =
-//
-//    labelsFoundInNewFlow match {
-//      // No flow specified
-//      case None =>
-//        val changes = oldClause.map(_ => flow.clearMsg(stepId)).toSet
-//        Changed(None, changes)
-//
-//      // Flow specified and valid
-//      case Some(labels) if areLabelsValid_?(labels) =>
-//        val labelsToIds = stepsAndLabels.get.ba
-//        val newRefs = labels.map(l => (labelsToIds(l), l)).toMap
-//        oldClause.filter(_.refs == newRefs).map(clause => NoChange).getOrElse {
-//          // Change detected
-//          val clause = flow.create(newRefs).get
-//          val msg = clause.flowChangeMsg(stepId)
-//          Changed(Some(clause), Set(msg))
-//        }
-//
-//      // Flow specified and invalid // TODO Shouldn't this be a change failure?
-//      case _ => ChangeFailure("Invalid flow.")
-//    }
+      // Flow clauses found
+      val (text, flowClauses) = parseResult.get
+      val z = TextAndRefs(text, Map.empty, Map.empty)
+      flowClauses.foldLeft(z)(parseFlowClause)
+
+    } else {
+
+      // No flow clauses detected
+      TextAndRefs(input.trim, Map.empty, Map.empty)
+    }
+  }
 
   override def respondToChange(c: Change)(implicit stepsAndLabels: StepAndLabelBiMap) = c match {
 

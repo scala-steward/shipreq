@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.lib.text
 
 import scala.annotation.tailrec
 import scala.util.parsing.combinator.RegexParsers
+import com.beardedlogic.usecase.lib.Types._
 import ParsingConfig._
 
 /**
@@ -78,24 +79,34 @@ object Grammar extends RegexParsers {
 
   val BracedRef: Parser[String] = "[" ~> StepLabel <~ "]"
 
-  val OptionallyBracedRef: Parser[String] = BracedRef | StepLabel
+  val ValidRef: Parser[PotentiallyValidRef] = (BracedRef | StepLabel) ^^ {
+    case r => PotentiallyValidRef(r.asLabel)
+  }
+  val InvalidRef: Parser[InvalidRefToken] = "\\[[A-Za-z0-9 .?]+\\]".r ^^ {
+    case token => InvalidRefToken(token)
+  }
+  val AnyRef: Parser[RefToken] = ValidRef | InvalidRef
+  val FlowRefList: Parser[List[RefToken]] = rep1sep(AnyRef, "," ?)
 
-  val FlowRefList: Parser[List[String]] = rep1sep(OptionallyBracedRef, "," ?)
+  def flowClause(style: FlowStyle): Parser[ParsedFlowClause] = style.arrowRegex ~> FlowRefList ^^ {
+    case refs => ParsedFlowClause(style, refs)
+  }
+  val FlowFromClause: Parser[ParsedFlowClause] = flowClause(FlowFromStyle)
+  val FlowToClause: Parser[ParsedFlowClause] = flowClause(FlowToStyle)
+  val FlowClause: Parser[ParsedFlowClause] = FlowFromClause | FlowToClause
 
-  val FlowFromClause: Parser[List[String]] = FlowFromStyle.arrowRegex ~> FlowRefList
+  val TextAndFlows: Parser[(String, List[ParsedFlowClause])] = AnyTextThen(false, rep1(FlowClause))
 
-  val FlowToClause: Parser[List[String]] = FlowToStyle.arrowRegex ~> FlowRefList
+  sealed trait RefToken
+  case class PotentiallyValidRef(label: LabelStr) extends RefToken
+  case class InvalidRefToken(token: String) extends RefToken
 
-  val TextAndFlow: Parser[(String, FlowParseResult)] =
-    AnyTextThen(false,
-      FlowFromClause ~ opt(FlowToClause) ^^ { case from ~ to => FlowParseResult(Some(from), to) } |
-        FlowToClause ~ opt(FlowFromClause) ^^ { case to ~ from => FlowParseResult(from, Some(to)) }
-    )
+  case class ParsedFlowClause(style: FlowStyle, refs: List[RefToken])
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   /**
    * Matches Text and the first step reference. If no refs, then matches the entire input as Text.
    */
   val TextAndPossibleRef: Parser[(String, Option[String])] = AnyTextThenOptional(true, BracedRef)
-
-  case class FlowParseResult(from: Option[List[String]], to: Option[List[String]])
 }
