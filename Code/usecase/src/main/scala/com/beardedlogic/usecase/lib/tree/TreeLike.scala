@@ -64,7 +64,7 @@ trait TreeNodeLike[+N <: TreeNodeLike[N]] extends TreeLike[N] {
     super.foreachRecursive(fn)
   }
 
-  override def mapRecursive[R](fn: N => R): List[R] = fn(this) +: super.mapRecursive(fn)
+  override def mapRecursive[R](fn: N => R): List[R] = fn(this) :: super.mapRecursive(fn)
 
   def deepCopy[R](fn: (N, List[R]) => R): R = {
     val copiedChildren = deepCopyChildren(fn)

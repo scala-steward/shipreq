@@ -41,9 +41,9 @@ case class StepText(
 
   override val text = {
     var t = List.empty[String]
-    if (mainClause.text.nonEmpty) t :+= mainClause.text
-    for (c <- flowFromClause) t :+= FlowFrom.toText(c)
-    for (c <- flowToClause) t :+= FlowTo.toText(c)
+    for (c <- flowToClause) t ::= FlowTo.toText(c)
+    for (c <- flowFromClause) t ::= FlowFrom.toText(c)
+    if (mainClause.text.nonEmpty) t ::= mainClause.text
     t.mkString(" ")
   }
 
