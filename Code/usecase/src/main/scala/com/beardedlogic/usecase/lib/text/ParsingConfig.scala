@@ -21,13 +21,16 @@ object ParsingConfig {
     val arrowBadReplacement: String
     final def replaceAllArrowsWithBad(input: String) = arrowBadRegex.replaceAllIn(input, arrowBadReplacement)
     final def makeFlowText(labels: SortedSet[LabelStr]) = {
-      val sb = new StringBuilder(labels.size * 14 + 2)
+      val expSize = labels.size * 20 + 2
+      val sb = new StringBuilder(expSize)
       sb.append(arrow)
       labels.foreach(l => {
         sb.append(' ')
         makeRef(sb, l)
       })
-      sb.toString
+      val r = sb.toString
+      assume(r.length <= expSize, s"Flow text string builder exceeded pre-alloc space. (Exp: $expSize. Got: ${r.length}.)")
+      r
     }
     final def makeFlowTextOrEmpty(labels: SortedSet[LabelStr]) = if (labels.isEmpty) "" else makeFlowText(labels)
   }
@@ -48,24 +51,16 @@ object ParsingConfig {
     override val arrowBadReplacement = "->"
   }
 
-  @inline def makeInvalidLabel(label: String) = label + "?"
-
-  @inline def makeInvalidRef(sb: StringBuilder, label: String) = {
-    sb += RefBraceL
-    sb ++= label
-    sb += '?'
-    sb += RefBraceR
-  }
-
-  @inline def makeInvalidNormalisedRef(textIdentId: String) = makeRef("D." + textIdentId)
-
-  @inline def makeNormalisedRef(textIdentId: TextIdentId) = makeRef("D." + textIdentId)
-
+  @inline private def makeRef_(sb: StringBuilder)(fn: => Any): Unit = { sb += RefBraceL; fn; sb += RefBraceR }
+  @inline def makeRef(sb: StringBuilder, label: String) = makeRef_(sb)(sb ++= label)
   @inline def makeRef(label: String) = RefBraceL + label + RefBraceR
 
-  @inline def makeRef(sb: StringBuilder, label: String) {
-    sb += RefBraceL
-    sb ++= label
-    sb += RefBraceR
-  }
+  val NormalisationPrefix = "D."
+  @inline def makeNormalisedRef(textIdentId: TextIdentId) = makeRef(NormalisationPrefix + textIdentId)
+
+  val InvalidRefSuffix = '?'
+  @inline def makeInvalidLabel(label: String) = label + InvalidRefSuffix
+  @inline def makeInvalidRef(label: String) = makeRef(makeInvalidLabel(label))
+  @inline def makeInvalidRef(sb: StringBuilder, label: String) = makeRef_(sb) {sb ++= label; sb += InvalidRefSuffix}
+  @inline def makeInvalidNormalisedRef(textIdentId: String) = makeInvalidRef(NormalisationPrefix + textIdentId)
 }
