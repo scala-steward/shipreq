@@ -142,7 +142,7 @@ function getDecIndentButton(stepContainer) { return findSingleVisibleChild(stepC
 function changeFocus(tgtFn) {
     withFocusedInputField(function (sel) {
         var tgt = tgtFn(sel.id)
-        $(tgt).focus()
+        $(tgt).focus().select()
         return true;
     })
 }

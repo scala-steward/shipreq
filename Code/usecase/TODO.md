@@ -27,7 +27,6 @@ FUNC TODO
 * [S.2.4] [UCE ] Allow step reordering, probably via drag-n-drop.
 * [S.2.3] [UCE ] HTML title sync to UC title.
 * [S.2.1] [ACCT] Change username & password (when logged in).
-* [S.1.4] [UCE ] Select text when a field is focused via keyboard.
 * [S.0.5] [ACCT] Password reset (when not logged in).
 * [S.0.2] [UCE ] Text not corrected when post-correction matches prev value.
 
