@@ -31,6 +31,7 @@ TECH TODO
 * [S.1.1] [TEST] When SBT 0.13 comes out, shutdown Jetty et al in SBT hook.
 * [S.0.5] [BUG ] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
 
+* [C.3.3] [CODE] Seal Field trait.
 * [C.2.0] [PERF] DAO should cache certain actions and execute in bulk.
 * [C.1.1] [DEMO] Show flow deletion in flow demo.
 
