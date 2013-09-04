@@ -1,13 +1,14 @@
 package com.beardedlogic.usecase
 package lib.field
 
-import scalaz.Lens.lensg
+import scalaz.Lens.{lensg, lensFamilyg}
 import lib.Types._
 import lib.text.{StepText, FreeText}
 import lib.UseCase
 import lib.UseCaseHeader
 import util.LensFns._
 
+// TODO move and rename "Field" lenses. Maybe UC lenses
 object FieldLenses {
 
   // Header lenses
@@ -23,6 +24,14 @@ object FieldLenses {
       sfv => id => sfv.textmap(id)
     )
   }
+
+  val freeText = lensFamilyg[FreeText, FreeText, String, (String, StepAndLabelBiMap)](
+    _ => input => FreeText.parse(input._1)(input._2),
+    _.text)
+
+  val stepText = lensFamilyg[StepText, StepText, String, (String, StepAndLabelBiMap)](
+    v => input => StepText.parse(v.stepId, input._1)(input._2),
+    _.text)
 
   // Use case lenses
   object uc {
