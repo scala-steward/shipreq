@@ -10,16 +10,15 @@ import JsCmds.Noop
 import lib._
 import change._
 import field._
-import model._
 import Types._
 
 object UseCaseEditor extends StaticSnippetHelpers with DI {
 
-  case class State(uc: UseCase, prevSave: Option[UseCaseSaveCheckpoint]) {
-    def currentRevision = prevSave.map(_.rec.rev.toString).getOrElse("0")
+  case class State(uc: UseCase, prevSave: Option[UseCaseSaveCheckpoint], saveEnabled: Boolean) {
+    def currentRevision: Short = prevSave.map(_.rec.rev).getOrElse(0: Short)
   }
   object State {
-    def apply(cp: UseCaseSaveCheckpoint): State = State(cp.uc, Some(cp))
+    def apply(cp: UseCaseSaveCheckpoint): State = State(cp.uc, Some(cp), false)
   }
 
   // TODO Delete UCE . initial state
@@ -30,7 +29,7 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
     val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultLoadValue(h)._2.apply)
     val sl = UseCaseFns.generateStepAndLabelBiMap(fv, h)
     val uc = UseCase(h, fl, fv, sl)
-    State(uc, None)
+    State(uc, None, false)
   }
 
   def loadLatest(ucId: UseCaseIdentId): State = {
@@ -66,7 +65,7 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
     .map(f => (f -> nextFuncName.tag[LocalTextFieldIdTag]))
     .toMap
 
-  private var renderer__ = Renderer(state, textFieldIds, update, save)
+  private var renderer__ = Renderer(state, textFieldIds, update, state.prevSave.map(_ => save _))
   @inline final def renderer = renderer__
 
   protected def setState(newState: State): Unit = {
@@ -79,7 +78,8 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
   def update(f: UseCase => UcUpdateResult): JsCmd =
     f(uc) match {
       case Changed(newUc, changes) =>
-        setState(State(newUc, state.prevSave))
+        val matchesLastSave = doesMatchLastSave(newUc)
+        setState(State(newUc, state.prevSave, !matchesLastSave))
         renderer.jsRespondToChanges(changes)
 
       case NoChange => Noop
@@ -90,10 +90,19 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
   def save(): JsCmd =
     daoProvider.withTransaction(dao => {
       UseCasePersistence.save(uc, state.prevSave, dao) match {
-        case thisSave@Some(cp) =>
-          setState(State(cp.uc, thisSave))
-          renderer.jsUpdateRevision
-        case None => Noop
+        case Some(cp) =>
+          setState(State(cp))
+          jsPostSave
+        case None =>
+          jsPostSaveNop
       }
     })
+
+  def jsPostSave: JsCmd = jsPostSaveNop & renderer.jsUpdateRevision
+  def jsPostSaveNop: JsCmd = renderer.jsEnableSaveButton(false)
+
+  def doesMatchLastSave(uc: UseCase): Boolean = state.prevSave match {
+    case None => false
+    case Some(cp) => UseCaseEquality.uc.equal(uc, cp.uc)
+  }
 }

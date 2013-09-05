@@ -6,32 +6,44 @@ import scala.util.matching.Regex
 import org.scalatest.FunSpec
 import lib.Types._
 import lib.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
-import lib.{StepNode, UseCase}
+import com.beardedlogic.usecase.lib.{UseCaseSaveCheckpoint, StepNode, UseCase}
 import Renderer.TitleId
-import test.{LoadedTestData, TestHelpers, TestDatabaseSupport}
+import test.{CssTestHelpers, TestData, LoadedTestData, TestHelpers, TestDatabaseSupport}
 import UseCaseEditor._
+import model.UseCaseRev
+import org.mockito.Mockito.when
+import xml.{Node, NodeSeq}
+import net.liftweb.http.js.JsCmd
 
-class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelpers with LoadedTestData {
-
-  implicit class StringExt(val x: String) {
-    def pp(): String = {println(x); x}
-  }
+class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssTestHelpers {
 
   def unquoteJs(in: String): String =
     "\\\\u([0-9a-f]{4})".r.replaceAllIn(in, m => Integer.parseInt(m.group(1), 16).toChar.toString).replace("\\\"","\"")
 
+  implicit def js2str(js: JsCmd): String = unquoteJs(js.toJsCmd).trim
+
   class UseCaseEditor2(state: State) extends UseCaseEditor(state) {
     def setState2(newState: State) = { super.setState(newState); this }
 
-    def update2(f: UseCase => UcUpdateResult): (UseCaseEditor2, String) =
-      (this, inMockSession {unquoteJs(update(f).toJsCmd).trim})
+    override def update(f: UseCase => UcUpdateResult): JsCmd = inMockSession {super.update(f)}
+
+    def update2(f: UseCase => UcUpdateResult): (UseCaseEditor2, String) = (this, update(f))
   }
 
-  lazy val State1 = State(MockUc1.sampleUC, None)
-  lazy val State2a = State(MockUc2a.UC, None)
-  lazy val State2b = State(MockUc2b.UC, None)
-  lazy val State3 = State(MockUc3.UC, None)
+  def mockRev = {
+    val m = mock[UseCaseRev]
+    when(m.rev).thenReturn(3: Short)
+    m
+  }
 
+  def loadedState(uc: UseCase) = State(uc, Some(UseCaseSaveCheckpoint(uc, mockRev, EmptySavedSteps, Map.empty)), false)
+
+  lazy val State1 = loadedState(MockUc1.sampleUC)
+  lazy val State2a = loadedState(MockUc2a.UC)
+  lazy val State2b = loadedState(MockUc2b.UC)
+  lazy val State3 = loadedState(MockUc3.UC)
+
+  def UceAnon = new UseCaseEditor2(DefaultInitialState)
   def UCE1 = new UseCaseEditor2(State1)
   def UCE2a = new UseCaseEditor2(State2a)
   def UCE2b = new UseCaseEditor2(State2b)
@@ -103,9 +115,14 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
 
   def assertFailResponse(resp: String): Unit = resp should include("alert(")
 
-  describe("Full-page rendering") {
-    lazy val xml = inMockSession(UCE1.dispatch("render")(Renderer.Templates.EntirePage))
+  def render(uce: UseCaseEditor) = {
+    lazy val xml = inMockSession(uce.dispatch("render")(Renderer.Templates.EntirePage))
     lazy val html = xml.toString
+    (xml, html)
+  }
+
+  describe("Full-page rendering") {
+    lazy val (_, html) = render(UCE1)
 
     it("should render the title") {
       html should include(MockUc1.sampleUC.header.title)
@@ -113,7 +130,7 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
 
     it("should render text fields") {
       html should include(TF1.defn.title)
-      html should include(TF4.defn.title)
+      html should include(TF2.defn.title)
       html should include(">blah<") // TF1
       html should include(">hehe<") // TF3
     }
@@ -345,6 +362,48 @@ class UseCaseEditorTest extends FunSpec with TestDatabaseSupport with TestHelper
         def last = ECF(uce.fieldValues).tree.nodes.last
         assertUpdateFails(uce, ECF.decreaseIndent(last(0).id)) // L0 <-- L1
         assertUpdateFails(uce, ECF.decreaseIndent(last(-1)(0).id)) // L1 <-- L2
+      }
+    }
+  }
+
+  describe("The Save button") {
+
+    describe("when page first rendered") {
+      def saveButtonO(xml: NodeSeq) = findCssO(xml, "#save")
+      def saveButton(xml: NodeSeq) = findCss(xml, "#save")
+
+      it("should be removed when UC is anonymous") {
+        lazy val (xml, html) = render(UceAnon)
+        html should not include("Revision")
+        saveButtonO(xml) ==== None
+      }
+
+      it("should be disabled when UC is loaded") {
+        lazy val (xml, html) = render(UCE2b)
+        html should include("Revision")
+        saveButton(xml).toString.toLowerCase should include ("disabled")
+      }
+    }
+
+    describe("after an AJAX event") {
+      def assertSaveButtonDisabled(js: String) = js should include ("attr('disabled")
+      def assertSaveButtonEnabled(js: String) = js should include ("removeAttr('disabled")
+
+      it("should be disabled after a save") {
+        assertSaveButtonDisabled(UCE2b.jsPostSave)
+        assertSaveButtonDisabled(UCE2b.jsPostSaveNop)
+      }
+
+      it("should be disabled only after changes which make it differ from last save") {
+        val uce = new UseCaseEditor2(State1)
+
+        val resp1 = uce.update(TF1.updateText("bananas"))
+        uce.state.saveEnabled ==== true
+        assertSaveButtonEnabled(resp1)
+
+        val resp2 = uce.update(TF1.updateText("blah"))
+        uce.state.saveEnabled ==== false
+        assertSaveButtonDisabled(resp2)
       }
     }
   }

@@ -9,6 +9,7 @@ import net.liftweb.http.js.{JsCmd, JsCmds}
 import net.liftweb.http.js.jquery.JqJE
 import net.liftweb.http.js.jquery.JqJsCmds.jsExpToJsCmd
 import net.liftweb.http.{S, SHtml}
+import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
 import lib.change._
@@ -46,6 +47,10 @@ object Renderer {
 
   final val TitleId = "uc-title"
 
+  final val SaveButtonId = "save"
+  final val SaveButtonEnableJs: JsCmd = JqId(SaveButtonId) ~> JqEnable
+  final val SaveButtonDisableJs: JsCmd = JqId(SaveButtonId) ~> JqDisable
+
   final val FlowGraphTrigger = JsTextTrigger("flowgraph-update")
 
   case object JsUpdatePageTitle extends JsCmd {
@@ -57,7 +62,7 @@ case class Renderer(
   state: UseCaseEditor.State,
   textFieldIds: Map[Field, LocalTextFieldId],
   modifyUC: (UseCase => UcUpdateResult) => JsCmd,
-  save: () => JsCmd
+  saveUC: Option[() => JsCmd]
   ) extends RendererHelper {
 
   // *************************************
@@ -68,10 +73,17 @@ case class Renderer(
     S.appendGlobalJs(JsSetGlobalVar("InitialFlowGraph", flowGraph))
     ".fieldFrame *" #> renderFields andThen (
       ".title .ucid *" #> uch.number.toString
-        & ".rev *" #> state.currentRevision
         & ".title @title" #> SHtml.ajaxTextarea(uch.title, i => %(_.updateTitle(i)), "id" -> TitleId, "rows" -> "1")
-        & ".saveUseCase" #> SHtml.ajaxButton("Save", save)
+        & renderSaveCont
       )
+  }
+
+  def renderSaveCont: CssSel = saveUC match {
+    case None =>
+      ".save" #> ""
+    case Some(saveFn) =>
+      ".save .rev *" #> state.currentRevision.toString &
+      ".save button" #> SHtml.ajaxButton("Save", saveFn, "id" -> SaveButtonId, "disabled" -> "disabled")
   }
 
   def renderFields: NodeSeq =
@@ -103,7 +115,9 @@ case class Renderer(
     JsCmds.Alert(errorMessage)
 
   def jsRespondToChanges(changes: NonEmptyList[(UcChangeDomain, Change)]): JsCmd =
-    changes.foldMap(jsRespondToChange) |+| jsRedrawFlowDiagram(changes)
+    changes.foldMap(jsRespondToChange)    |+|
+    jsRedrawFlowDiagram(changes)          |+|
+    jsEnableSaveButton(state.saveEnabled)
 
   def jsRespondToChange(change: (UcChangeDomain, Change)): JsCmd = change match {
     case (_,            TitleChanged(_, _))                 => jsUpdateTitle
@@ -134,7 +148,10 @@ case class Renderer(
   def jsDrawFlowDiagram: JsCmd = FlowGraphTrigger.trigger(flowGraph)
 
   def jsUpdateRevision: JsCmd =
-    JqExpr(".rev") ~> JqJE.JqHtml(Text(state.currentRevision))
+    JqExpr(".save .rev") ~> JqJE.JqHtml(Text(state.currentRevision.toString))
+
+  def jsEnableSaveButton(enable: Boolean): JsCmd =
+    if (enable) SaveButtonEnableJs else SaveButtonDisableJs
 
   def jsUpdateTitle: JsCmd =
     JqId(TitleId) ~> JqSetTextarea(uch.title) & JsUpdatePageTitle

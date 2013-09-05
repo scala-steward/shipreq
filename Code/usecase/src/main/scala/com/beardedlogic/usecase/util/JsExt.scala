@@ -233,4 +233,8 @@ object JsExt {
   def JsSetGlobalVar(varName: String, valueExpr: JsExp) = new JsCmd {
     override def toJsCmd = s"$varName=${valueExpr.toJsCmd}"
   }
+
+  object JqEnable extends JsMethod {override val toJsCmd = "removeAttr('disabled')"}
+
+  object JqDisable extends JsMethod {override val toJsCmd = "attr('disabled','disabled')"}
 }
