@@ -1,0 +1,95 @@
+digraph G {
+
+{
+  node [shape=box style=filled]
+  edge [color=black style=solid]
+  UseCase
+  usecase_rev
+  edge [fontsize=11 color=blue]
+  usecase_rev -> UseCase [label="F.Load"]
+  UseCase -> usecase_rev [label="F.Save"]
+}
+
+node [shape=none]
+edge [fontsize=9]
+
+subgraph clusterDB {
+
+  { node[fontcolor=gray]
+    // SavedStepsAndLabels [label="<SavedSteps,StepsAndLabels>"]
+  }
+
+  field_key_type
+  field_key
+  usecase
+  text
+  text_rev
+  uc_field
+
+  field_key -> field_key_type
+  text -> {usecase;field_key}
+  text_rev -> text
+  uc_field -> text_rev
+  uc_field -> text_rev
+
+  graph[label="uci ∘ uclatest = 1[usecase], uci :: retraction"]
+}
+uc_field -> usecase_rev
+usecase_rev -> usecase [label="uci"]
+usecase -> usecase_rev [label="uclatest"]
+
+subgraph clusterMem {
+
+  { node[fontcolor=gray]
+    SavedStepsAndLabels [label="<SavedSteps,StepsAndLabels>"]
+    TwnrSsSal [label="<TextWithNormalisedRefs,SavedSteps,StepsAndLabels>"]
+    InputTextStepsAndLabels [label="<InputText,StepsAndLabels>"]
+    UcNumberAndFVs [label="<UcNumber,FieldValueMap>"]
+    PTSS [label="<ParsedText,SavedSteps>"]
+    FFV [label="<Field,FieldValue>"]
+  }
+
+  ParsedText
+  InputText
+  TextWithNormalisedRefs
+  LabelStr
+  LocalStepId
+  Field
+  FieldList
+  UcTitle
+
+  SavedSteps -> {TextIdentId; LocalStepId} // n->1
+  StepsAndLabels -> {LocalStepId; LabelStr} // n->1
+
+  InputTextStepsAndLabels -> {StepsAndLabels; InputText}
+  InputTextStepsAndLabels -> ParsedText [label="parse"]
+
+  TwnrSsSal -> {TextWithNormalisedRefs,SavedStepsAndLabels}
+  TwnrSsSal -> ParsedText [label="load"]
+  SavedStepsAndLabels -> {StepsAndLabels; SavedSteps}
+
+  PTSS -> {ParsedText; SavedSteps; TextWithNormalisedRefs}
+
+  FieldList -> Field // n->1
+  FieldValueMap -> FFV // n->1
+
+  FFV -> {Field; FieldValue}
+
+  UcNumberAndFVs -> {UcNumber; FieldValueMap}
+  UcNumberAndFVs -> StepsAndLabels [label="generate"]
+
+  ParsedText -> InputTextStepsAndLabels [label=s]
+
+  graph[label="parse ∘ s = 1[ParsedText], s :: section of parse"]
+}
+UseCase -> {FieldList; UcTitle; UcNumberAndFVs}
+
+/*
+edge [color=red style=dashed]
+text_rev -> TextWithNormalisedRefs
+{text;text_rev} -> TextIdentId
+usecase_rev -> {UcTitle;UcNumber}
+field_key -> Field
+*/
+
+}

@@ -1,0 +1,94 @@
+digraph G {
+
+node [shape=none]
+edge [fontsize=9]
+
+subgraph clusterDB {
+
+  { node[fontcolor=gray]
+    // SavedStepsAndLabels [label="<SavedSteps,StepsAndLabels>"]
+  }
+
+  field_key_type
+  field_key
+  usecase
+  usecase_rev
+  text
+  text_rev
+  uc_field
+
+  field_key -> field_key_type
+  usecase_rev -> usecase [label="uci"]
+  text -> {usecase;field_key}
+  text_rev -> text
+  uc_field -> {usecase_rev;text_rev}
+  uc_field -> text_rev
+  usecase -> usecase_rev [label="uclatest"]
+
+  graph[label="uci ∘ uclatest = 1[usecase], uci :: retraction"]
+}
+
+subgraph clusterMem {
+
+  { node[fontcolor=gray]
+    SavedStepsAndLabels [label="<SavedSteps,StepsAndLabels>"]
+    TwnrSsSal [label="<TextWithNormalisedRefs,SavedSteps,StepsAndLabels>"]
+    InputTextStepsAndLabels [label="<InputText,StepsAndLabels>"]
+    UcNumberAndFVs [label="<UcNumber,FieldValueMap>"]
+    PTSS [label="<ParsedText,SavedSteps>"]
+    FFV [label="<Field,FieldValue>"]
+  }
+
+  ParsedText
+  InputText
+  TextWithNormalisedRefs
+
+  SavedSteps -> {TextIdentId; LocalStepId} // n->1
+  StepsAndLabels -> {LocalStepId; LabelStr} // n->1
+
+  LabelStr
+  LocalStepId
+
+  Field
+
+  InputTextStepsAndLabels -> {StepsAndLabels; InputText}
+  InputTextStepsAndLabels -> ParsedText [label="parse"]
+
+  TwnrSsSal -> {TextWithNormalisedRefs,SavedStepsAndLabels}
+  TwnrSsSal -> ParsedText [label="load"]
+  SavedStepsAndLabels -> {StepsAndLabels; SavedSteps}
+
+  PTSS -> {ParsedText; SavedSteps; TextWithNormalisedRefs}
+
+  UseCase -> {FieldList; UcTitle}
+
+  FieldList -> Field // n->1
+  FieldValueMap -> FFV // n->1
+
+  FFV -> {Field; FieldValue}
+
+  UseCase -> UcNumberAndFVs -> {UcNumber; FieldValueMap}
+  UcNumberAndFVs -> StepsAndLabels [label="generate"]
+
+  ParsedText -> InputTextStepsAndLabels [label=s]
+
+  graph[label="parse ∘ s = 1[ParsedText], s :: section of parse"]
+}
+
+edge [color=red style=dashed]
+text_rev -> TextWithNormalisedRefs
+{text;text_rev} -> TextIdentId
+usecase_rev -> {UcTitle;UcNumber}
+field_key -> Field
+
+/*
+node [shape=box style=filled]
+edge [color=black style=solid]
+MUC -> UseCase; UseCase -> MUC
+DBUC -> {usecase; usecase_rev}; usecase_rev -> DBUC
+edge [fontsize=11 color=blue]
+DBUC -> MUC [label="F.Load"]
+MUC -> DBUC [label="F.Save"]
+*/
+
+}

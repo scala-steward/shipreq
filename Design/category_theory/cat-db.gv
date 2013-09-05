@@ -1,0 +1,27 @@
+digraph G {
+
+  node [shape=none]
+  edge [fontsize=9]
+
+  { node[fontcolor=gray]
+    // SavedStepsAndLabels [label="<SavedSteps,StepsAndLabels>"]
+  }
+
+field_key_type
+field_key
+usecase
+usecase_rev
+text
+text_rev
+uc_field
+
+field_key -> field_key_type
+usecase_rev -> usecase [label="uci"]
+text -> {usecase;field_key}
+text_rev -> text
+uc_field -> {usecase_rev;text_rev}
+uc_field -> text_rev
+usecase -> usecase_rev [label="uclatest"]
+
+graph[label="uci ∘ uclatest = 1[usecase], uci :: retraction"]
+}
