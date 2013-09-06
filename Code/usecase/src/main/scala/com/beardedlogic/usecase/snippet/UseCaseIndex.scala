@@ -9,8 +9,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{CssSel, ClearClearable}
 
 import lib._
-import db.DbOpResult.{NothingUpdated, Success}
-import db.{DAO, UseCaseSummary}
+import db.{DAO, UseCaseSummary, UseCaseHeaderUpdateResult}
 import util.{ErrorMessages, Reactor, JavaScript}
 import util.HtmlTransformExt._
 import util.JsExt.JsJsonTrigger
@@ -42,15 +41,17 @@ object UseCaseIndex extends SnippetHelpers {
   }
 
   def updateUseCaseHeader(implicit reactor: Reactor): Box[UseCaseSummary] = {
+    import UseCaseHeaderUpdateResult._
     val result: Box[UseCaseSummary] = for {
       newTitle <- S.param("title")                                          ?~ ErrorMessages.BadRequest
       ucId     <- ExternalId.unapply(S.param("eid")).tag[UseCaseIdentIdTag] ?~ ErrorMessages.BadRequest
       lock     <- Locks.UseCase.forWrite(ucId)
       dao      <- daoProvider.forTransaction
       savedUc  <- dao.updateUseCaseHeader(ucId, _.copy(title= newTitle)) match {
-                    case Success(_, r)  => Full(r)
-                    case NothingUpdated => Failure("Use case not found.")
-                    case _              => Failure(ErrorMessages.Generic)
+                    case NewRevision(r)     => Full(r)
+                    case DirectUpdate(r)    => Full(r)
+                    case AlreadyUpToDate(r) => Full(r)
+                    case UseCaseNotFound    => Failure("Use case not found.")
                   }
     } yield {
       val ucs = new UseCaseSummary(savedUc, Misc.currentTimeAsIso8601Str)

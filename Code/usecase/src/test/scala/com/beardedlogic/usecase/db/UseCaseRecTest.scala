@@ -5,7 +5,7 @@ import org.scalatest.FunSpec
 import test.TestDatabaseSupport
 import lib.{Defaults, UseCaseHeader}
 import lib.Types._
-import DbOpResult._
+import UseCaseHeaderUpdateResult._
 
 class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
 
@@ -29,21 +29,24 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
       import Tables._
       assertTableDiffs(UsecaseRev -> 1, UcField -> relationRows) {
         val r = db.updateUseCaseHeader(src, _.copy(title = "omg"))
-        r.successCodeOpt ==== Some(NewRevision)
-        val newUc = r.dataOpt.get
-        assertUC(newUc, src.withTitle("omg"), 1)
-        newUc
+        r match {
+          case NewRevision(n) => assertUC(n, src.withTitle("omg"), 1); n
+          case _ => fail("Expected NewRevision. Got " + r)
+        }
       }
     }
 
     def assertNOP(uc: UseCaseRev, expected: UseCaseRev) {
       val r = assertTableDiffs() {db.updateUseCaseHeader(uc, h => h)}
-      r should be(Success(AlreadyUpToDate, expected))
+      r ==== AlreadyUpToDate(expected)
     }
 
     def createTwoRevs = {
       val rev1 = db.createInitialUseCase("Haha")
-      val rev2s = db.updateUseCaseHeader(rev1, _.copy(title = "wow")).dataOpt.get
+      val rev2s = db.updateUseCaseHeader(rev1, _.copy(title = "wow")) match {
+        case NewRevision(x) => x
+        case _ => fail("Expected NewRevision.")
+      }
       val rev2 = db.findUseCase(rev2s).get
       (rev1, rev2)
     }
@@ -52,8 +55,7 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
       val rev1 = db.createInitialUseCase(Defaults.Title)
       val tgt = rev1.withTitle("omg")
       val r = assertTableDiffs() {db.updateUseCaseHeader(rev1, _ => tgt.header)}
-      r ==== Success(DirectUpdate, tgt)
-      assertUC(r.dataOpt.get, tgt, 0)
+      r ==== DirectUpdate(tgt)
     }
 
     it("should do an audited update when rev #1 and non-default title changes") {

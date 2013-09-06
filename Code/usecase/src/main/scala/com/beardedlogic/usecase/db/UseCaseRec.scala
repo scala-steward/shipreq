@@ -5,7 +5,6 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import lib.{Defaults, InputCorrection, UseCaseHeader}
 import lib.ExternalId.{toExternal, toInternal}
 import DBHelpers._
-import DbOpResult._
 import lib.Types._
 
 case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
@@ -126,33 +125,41 @@ private[db] trait UseCaseAccessor extends DatabaseAccessor {
    * update, a new revision is created.
    *
    * @param ucId The `usecase` id to update. (Note: not the `usecase_rev` id.)
-   * @return A result indicator, and a resulting `UseCaseRev` if successful. Possible results are:
-   *         AlreadyUpToDate, DirectUpdate, NewRevision, NothingUpdated.
    */
-  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader): DbOpResult[UseCaseRev] = withTransaction {
+  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader): UseCaseHeaderUpdateResult = withTransaction {
     // TODO locking? race conditions here? ensure DB mutex
+    import UseCaseHeaderUpdateResult._
 
     findLatestUseCase(ucId) match {
-      case None => NothingUpdated
+      case None => UseCaseNotFound
+
       case Some(latest) =>
         val newHeader = InputCorrection.correct(modFn(latest.header))
 
         // NOP
         if (latest.header == newHeader)
-          Success(AlreadyUpToDate, latest)
+          AlreadyUpToDate(latest)
 
         // Rev #1 title update
         else if (latest.rev == 1 && latest.header == newHeader.copy(title = Defaults.Title)) {
           UpdateTitleDirectly.execute(newHeader.title, latest.id)
-          Success(DirectUpdate, latest.copy(header = newHeader))
+          DirectUpdate(latest.copy(header = newHeader))
         }
 
         // Audited update
         else {
           val newRev = createUseCaseRevWithoutCorrection(ucId, latest.rev + 1, newHeader)
           copyUcFieldsBetweenRevs(latest, newRev)
-          Success(NewRevision, newRev)
+          NewRevision(newRev)
         }
     }
   }
+}
+
+sealed trait UseCaseHeaderUpdateResult
+object UseCaseHeaderUpdateResult {
+  case class NewRevision(result: UseCaseRev) extends UseCaseHeaderUpdateResult
+  case class DirectUpdate(result: UseCaseRev) extends UseCaseHeaderUpdateResult
+  case class AlreadyUpToDate(result: UseCaseRev) extends UseCaseHeaderUpdateResult
+  case object UseCaseNotFound extends UseCaseHeaderUpdateResult
 }

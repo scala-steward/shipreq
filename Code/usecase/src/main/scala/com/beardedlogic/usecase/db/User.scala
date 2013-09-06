@@ -7,7 +7,6 @@ import scala.slick.jdbc.{StaticQuery => Q, SetParameter, GetResult}
 import scala.slick.session.PositionedParameters
 import lib.security.PasswordAndSalt
 import DBHelpers._
-import DbOpResult._
 import UserAccessor._
 
 case class UserDescriptor(
@@ -86,13 +85,22 @@ private[db] trait UserAccessor extends DatabaseAccessor {
 
   def updateUserConfirmationToken(id: Long, token: String): Unit = UpdateConfirmationToken.execute(token, id)
 
-  def registerUser(token: String)(username: String, ps: PasswordAndSalt, ipAddr: String): DbOpResult[Long] =
+  def registerUser(token: String)(username: String, ps: PasswordAndSalt, ipAddr: String): UserRegistrationResult = {
+    import UserRegistrationResult._
     try {
       Register.firstOption(username, ps, ipAddr, token) match {
-        case Some(id) => Success(DirectUpdate, id)
-        case _ => NothingUpdated
+        case Some(id) => Success(id)
+        case None => NoMatchingConfToken
       }
     } catch {
-      case e: PSQLException if e.getMessage.contains("usr_username_key") => ConstraintViolation
+      case e: PSQLException if e.getMessage.contains("usr_username_key") => UsernameTaken
     }
+  }
+}
+
+sealed trait UserRegistrationResult
+object UserRegistrationResult {
+  case class Success(userId: Long) extends UserRegistrationResult
+  case object NoMatchingConfToken extends UserRegistrationResult
+  case object UsernameTaken extends UserRegistrationResult
 }

@@ -12,8 +12,7 @@ import app.AppSiteMap
 import AppSiteMap.Implicits._
 import lib._
 import mail.RegistrationEmails
-import db.DbOpResult.{NothingUpdated, ConstraintViolation, Success}
-import db.{DAO, UserRegistrationInfo}
+import db.{DAO, UserRegistrationInfo, UserRegistrationResult}
 import security.PasswordAndSalt
 import util.{JsExt, Reactor, JavaScript}
 import util.HtmlTransformExt.ajaxSubmitOnClick
@@ -125,25 +124,24 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       , Validate.password2(password1, password2)
     ).filter(_.isDefined).map(_.get)
     if (failures.nonEmpty) reactWithErrors(failures) else {
+      import UserRegistrationResult._
 
       // Update user
       val ps = PasswordAndSalt.hashWithRandomSalt(password1)
       daoProvider.withSession(_.registerUser(token)(username, ps, clientIp_Or_?)) match {
 
-        case ConstraintViolation => reactWithError("Username is already taken.")
+        case UsernameTaken => reactWithError("Username is already taken.")
 
-        case NothingUpdated =>
+        case NoMatchingConfToken =>
           S.error("Your registration token disappeared.")
           S.redirectTo(AppSiteMap.Login.relativeUrl)
 
         // Registration complete
-        case Success(_, _) =>
+        case Success(_) =>
           info(s"Registered new user: $username")
           SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password1))
           removeError()
           reactor(JavaScript)(JqExpr("#regComplete,#register2") ~> JqToggle)
-
-        case r => warn("Unexpected result: " + r); shouldNeverHappen_!
       }
     }
   }
