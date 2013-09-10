@@ -20,7 +20,7 @@ class UseCaseIndexTest extends FunSuite with SeleniumTest with BeforeAndAfter wi
 
   def assertLinkUrl() {
     val ucs = db.findAllUseCaseSummaries.head
-    dsl.row(0).linkUrl should be(baseUrl + AppSiteMap.UseCaseEditor.relativeUrl(ucs.id))
+    dsl.row(0).linkUrl should be(baseUrl + AppSiteMap.UseCaseEditor.relativeUrl(ucs.parseId.get))
   }
 
   test("empty initially") {

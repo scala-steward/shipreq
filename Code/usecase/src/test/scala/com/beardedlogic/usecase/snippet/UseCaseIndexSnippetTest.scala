@@ -53,7 +53,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     def newUc = db.createInitialUseCase(Defaults.Title)
 
     def params(id: UseCaseIdentId, newTitle: String) =
-      Map("eid" -> ExternalId(id), "title" -> newTitle)
+      Map("eid" -> ExternalId.UseCase(id), "title" -> newTitle)
 
     def test(params: Map[String, String]) = {
       val js = new JavaScriptReaction
@@ -105,7 +105,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     it("should appear to update when no change") {
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
-      val uc2 = db.findLatestUseCase(uc2s.id).get
+      val uc2 = db.findLatestUseCase(uc2s.parseId.get).get
       assertTableDiffs(){ testSuccess2(uc2, uc2.header.title, uc2.header.title) }
       assertSummaryInAll(uc2s)
     }
