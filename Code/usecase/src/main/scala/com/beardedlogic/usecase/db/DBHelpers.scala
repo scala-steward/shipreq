@@ -43,6 +43,8 @@ private[db] object DBHelpers {
   implicit val SPTextRevIdOpt = SPTaggedLongOpt[TextRevId]
   implicit val GRTextIdentId = GRTaggedLong[TextIdentId]
   implicit val SPTextIdentId = SPTaggedLong[TextIdentId]
+  implicit val GRUserId = GRTaggedLong[UserId]
+  implicit val SPUserId = SPTaggedLong[UserId]
 
   implicit val GRTextWithNormalisedRefs = GetResult(_.nextString.hasNormalisedRefs)
 

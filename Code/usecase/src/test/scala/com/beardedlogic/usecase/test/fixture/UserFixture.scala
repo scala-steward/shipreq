@@ -11,6 +11,7 @@ import db.DB
 import lib.security.PasswordAndSalt
 import db.UserDescriptor
 import test.TestDatabaseSupport
+import lib.Types._
 
 trait UserFixture {
 
@@ -21,7 +22,7 @@ trait UserFixture {
     val pws = PasswordAndSalt.hashWithRandomSalt(password)
     def hashedPassword = pws.hashedPassword
     def salt = pws.salt
-    def toUserDescriptor = UserDescriptor(id, username, email)
+    def toUserDescriptor = UserDescriptor(id.tag[UserIdTag], username, email)
   }
 
   case class PendingTestUser(email: String, token: String, tokenCreatedAt: DateTime)

@@ -6,16 +6,17 @@ import org.postgresql.util.PSQLException
 import scala.slick.jdbc.{StaticQuery => Q, SetParameter, GetResult}
 import scala.slick.session.PositionedParameters
 import lib.security.PasswordAndSalt
+import lib.Types._
 import DBHelpers._
 import UserAccessor._
 
 case class UserDescriptor(
-  id: Long,
+  id: UserId,
   username: String,
   email: String)
 
 case class UserRegistrationInfo(
-  id: Long,
+  id: UserId,
   confirmationToken: Option[String],
   confirmationSentAt: Option[DateTime],
   confirmedAt: Option[DateTime]
@@ -47,13 +48,13 @@ private[db] object UserAccessor {
 
   val GetConfirmationTokenIssuedDate = Q.query[String, DateTime]("SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
-  val UpdateConfirmationToken = Q.update[(String, Long)]("UPDATE usr SET confirmation_token = ?, confirmation_sent_at = NOW() WHERE id=?")
+  val UpdateConfirmationToken = Q.update[(String, UserId)]("UPDATE usr SET confirmation_token = ?, confirmation_sent_at = NOW() WHERE id=?")
 
-  val UpdateOnLogin = Q.update[(String, Long)]("UPDATE usr SET login_count = login_count + 1, last_login_at = NOW(), last_login_ip = ? WHERE id=?")
+  val UpdateOnLogin = Q.update[(String, UserId)]("UPDATE usr SET login_count = login_count + 1, last_login_at = NOW(), last_login_ip = ? WHERE id=?")
 
   val InsertUnconfirmed = Q.update[(String, String)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")
 
-  val Register = Q.query[(String, PasswordAndSalt, String, String), Long]( """
+  val Register = Q.query[(String, PasswordAndSalt, String, String), UserId]( """
     UPDATE usr SET username = ?
       ,password = ?, password_salt = ?, password_changed_at = NOW()
       ,confirmation_token = NULL, confirmed_at = NOW()
@@ -81,9 +82,9 @@ private[db] trait UserAccessor extends DatabaseAccessor {
   /** Creates an unconfirmed user account. No username, no password until email confirmed. */
   def createUser(email: String, token: String): Unit = InsertUnconfirmed.execute(email, token)
 
-  def updateUserOnLogin(id: Long, ipAddr: String): Unit = UpdateOnLogin.execute(ipAddr, id)
+  def updateUserOnLogin(id: UserId, ipAddr: String): Unit = UpdateOnLogin.execute(ipAddr, id)
 
-  def updateUserConfirmationToken(id: Long, token: String): Unit = UpdateConfirmationToken.execute(token, id)
+  def updateUserConfirmationToken(id: UserId, token: String): Unit = UpdateConfirmationToken.execute(token, id)
 
   def registerUser(token: String)(username: String, ps: PasswordAndSalt, ipAddr: String): UserRegistrationResult = {
     import UserRegistrationResult._
@@ -100,7 +101,7 @@ private[db] trait UserAccessor extends DatabaseAccessor {
 
 sealed trait UserRegistrationResult
 object UserRegistrationResult {
-  case class Success(userId: Long) extends UserRegistrationResult
+  case class Success(userId: UserId) extends UserRegistrationResult
   case object NoMatchingConfToken extends UserRegistrationResult
   case object UsernameTaken extends UserRegistrationResult
 }
