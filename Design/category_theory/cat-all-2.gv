@@ -25,7 +25,10 @@ subgraph clusterDB {
   text
   text_rev
   uc_field
+  usr
+  project
 
+  usecase -> project -> usr
   field_key -> field_key_type
   text -> {usecase;field_key}
   text_rev -> text
