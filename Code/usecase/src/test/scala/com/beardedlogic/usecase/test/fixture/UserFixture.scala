@@ -10,10 +10,11 @@ import scala.slick.session.Session
 import db.DB
 import lib.security.PasswordAndSalt
 import db.UserDescriptor
-import test.TestDatabaseSupport
+import test.{TestHelpers, TestDatabaseSupport}
 import lib.Types._
 
 trait UserFixture {
+  this: TestHelpers =>
 
   implicit def timeSpanToTimestamp(t: DateTime): Timestamp = new Timestamp(t.getMillis)
 
@@ -64,4 +65,6 @@ trait UserFixture {
   def deleteUser(u: PendingTestUser)(implicit db: Session): Unit = deleteUserByEmail(u.email)
   def deleteUser(id: Long)(implicit db: Session): Unit = Q.update[Long]("DELETE FROM usr WHERE id = ?").execute(id)
   def deleteUserByEmail(email: String)(implicit db: Session): Unit = Q.update[String]("DELETE FROM usr WHERE email = ?").execute(email)
+
+  def login(user: TestUser): Unit = login(user.username, user.password)
 }

@@ -8,7 +8,7 @@ import field._
 import test.NodeUtils._
 import text.{FlowFrom, FlowTo, StepText, FreeText}
 
-trait TestData extends TestHelpers {
+trait TestData extends TestHelpers2 {
 
   // TODO Create TestData MockUc1
   // TODO Move TestData into TestHelpers?

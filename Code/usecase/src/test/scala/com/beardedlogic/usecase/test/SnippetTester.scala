@@ -3,7 +3,7 @@ package test
 
 import lib.{SnippetHelpers}
 
-class SnippetTester[S <: SnippetHelpers](val snippet: S) extends TestHelpers {
+class SnippetTester[S <: SnippetHelpers](val snippet: S) extends TestHelpers2 {
   val mailer = new TestMailer
 
   snippet.mailer = mailer
