@@ -19,11 +19,12 @@ trait UserFixture {
   implicit def timeSpanToTimestamp(t: DateTime): Timestamp = new Timestamp(t.getMillis)
 
   case class TestUser(username: String, email: String, password: String) {
-    var id = 0L
+    var _id: Option[UserId] = None
+    def id: UserId = _id.getOrElse(???)
     val pws = PasswordAndSalt.hashWithRandomSalt(password)
     def hashedPassword = pws.hashedPassword
     def salt = pws.salt
-    def toUserDescriptor = UserDescriptor(id.tag[UserIdTag], username, email)
+    def toUserDescriptor = UserDescriptor(id, username, email)
   }
 
   case class PendingTestUser(email: String, token: String, tokenCreatedAt: DateTime)
@@ -43,8 +44,8 @@ trait UserFixture {
 
   def initUserFixture(implicit db: Session): Unit = {
     // Insert mock users (registered)
-    val i1 = Q.query[(String, String, String, String), Int]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,NOW(),NOW(),NOW()) RETURNING id")
-    for (u <- users) u.id = i1.first(u.username, u.email, u.hashedPassword, u.salt)(db)
+    val i1 = Q.query[(String, String, String, String), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,NOW(),NOW(),NOW()) RETURNING id")
+    for (u <- users) u._id = Some(i1.first(u.username, u.email, u.hashedPassword, u.salt)(db).tag[UserIdTag])
 
     // Insert mock users (pending confirmation)
     pendingUsers.foreach(u => insert(u)(db))
@@ -61,7 +62,7 @@ trait UserFixture {
     Q.update[(String, String, Timestamp)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,?)").
     execute(user.email, user.token, user.tokenCreatedAt)
 
-  def deleteUser(u: TestUser)(implicit db: Session): Unit = { deleteUser(u.id); u.id = 0 }
+  def deleteUser(u: TestUser)(implicit db: Session): Unit = { deleteUser(u.id); u._id = None }
   def deleteUser(u: PendingTestUser)(implicit db: Session): Unit = deleteUserByEmail(u.email)
   def deleteUser(id: Long)(implicit db: Session): Unit = Q.update[Long]("DELETE FROM usr WHERE id = ?").execute(id)
   def deleteUserByEmail(email: String)(implicit db: Session): Unit = Q.update[String]("DELETE FROM usr WHERE email = ?").execute(email)

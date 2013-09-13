@@ -8,10 +8,11 @@ import org.apache.shiro.authc.UsernamePasswordToken
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.scalatest.{BeforeAndAfterEach, Suite, BeforeAndAfterAll}
 import org.scalatest.matchers.{ShouldMatchers, Matcher, MatchResult}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.Tables.Table
-import net.liftweb.common.Empty
+import net.liftweb.common.{Failure, Box, Empty}
 import net.liftweb.http.{S, LiftSession, LiftRules}
 import net.liftweb.http.js.JsCmd
 import net.liftweb.mocks.MockHttpServletRequest
@@ -35,7 +36,6 @@ import LensFns._
 import NodeUtils._
 import TreeOps._
 import Changes.ExistingStepLabelsChanged
-import org.scalatest.{BeforeAndAfterEach, Suite, BeforeAndAfterAll}
 
 /**
  * @since 30/04/2013
@@ -384,6 +384,17 @@ trait TestHelpers2 extends MockitoSugar with ShouldMatchers with DebugImplicits 
   implicit class MyRichJsCmd(val j: JsCmd) {
     def assertJsAlert(errorMsg: Option[String]) = TestHelpers2.this.assertJsAlert(j.toJsCmd, errorMsg)
     def assertJsErrorNotice(errorMsg: Option[String]) = TestHelpers2.this.assertJsErrorNotice(j.toJsCmd, errorMsg)
+  }
+
+  /**
+   * Extensions for: Box
+   */
+  implicit class MyRichBox[T](val b: Box[T]) {
+    def gimme: T = b.openOrThrowException(s"Box was expected to be Full, but was: $b")
+    def gimmeErr: String = b match {
+      case Failure(err,_,_) => err
+      case r => fail(s"Failure expected. Got: $r")
+    }
   }
 
   /**

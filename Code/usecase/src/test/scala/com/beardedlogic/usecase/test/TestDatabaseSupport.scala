@@ -5,6 +5,7 @@ import com.googlecode.flyway.core.dbsupport.{SqlScript, DbSupportFactory}
 import java.sql.Connection
 import net.liftweb.common.Logger
 import org.apache.commons.io.IOUtils
+import org.postgresql.util.PSQLException
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.{Exceptional, Outcome, Suite}
 import scala.slick.jdbc.{StaticQuery => Q}
@@ -118,7 +119,11 @@ trait TestDatabaseSupport extends TestHelpers with ShouldMatchers with Logger {
   def collectTableDiffs[T](fn: => T): (T, Map[Table, Int]) = {
     val before = countAllTableRows
     val result = fn
-    val after = countAllTableRows
+    val after = try {
+       countAllTableRows
+    } catch {
+      case e: PSQLException if e.getMessage.contains("current transaction is aborted") => before
+    }
     val diff = after.map {case (t, newCount) => (t, newCount - before(t))}.toMap
     (result, diff)
   }
