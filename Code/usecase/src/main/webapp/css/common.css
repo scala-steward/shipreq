@@ -12,7 +12,7 @@ html, body { height: 100%; }
 
 .alert p:last-child { margin-bottom: 0; }
 
-.hidden { display: none; }
+.hidden2 { display: none; }
 
 textarea { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-bottom: 0; resize: none; overflow: auto; outline: none; }
 
@@ -20,7 +20,6 @@ abbr.timeago[title] { border-bottom: none !important; }
 
 .centred_form { width: 300px; margin: 1cm auto 1cm auto; }
 .centred_form h2 { margin-bottom: 0.6em; }
-.centred_form .controls { margin-top: 2px; }
 
 .loginInfo { text-align: center; }
 

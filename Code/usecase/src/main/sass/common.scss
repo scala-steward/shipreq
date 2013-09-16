@@ -47,7 +47,8 @@ html, body { height: 100% } // Cannot have any padding or margin here
 }
 .alert p:last-child { margin-bottom: 0 }
 
-.hidden { display: none }
+// https://github.com/twbs/bootstrap/issues/9881
+.hidden2 { display: none }
 
 textarea {
 	@include box-sizing-border;
@@ -63,7 +64,6 @@ abbr.timeago[title] { border-bottom: none !important }
 	width: 300px;
 	margin: 1cm auto 1cm auto;
 	h2 { margin-bottom: 0.6em }
-	.controls { margin-top: 2px }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

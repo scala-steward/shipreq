@@ -8,8 +8,11 @@ rm -rf $tmp
 mkdir -p $tmp
 cd $tmp
 
-wget http://twitter.github.io/bootstrap/assets/bootstrap.zip
-unzip bootstrap \
-  && cp -pv bootstrap/js/bootstrap.min.js   "$rr"/src/main/webapp/js/vendor/bootstrap.js \
-  && cp -pv bootstrap/css/bootstrap.min.css "$rr"/src/main/webapp/css/vendor/bootstrap.css
+v=3.0.0
+
+wget https://github.com/twbs/bootstrap/releases/download/v$v/bootstrap-$v-dist.zip
+unzip bootstrap-$v-dist.zip \
+  && cp -pv dist/js/bootstrap.min.js         "$rr"/src/main/webapp/js/vendor/bootstrap.js \
+  && cp -pv dist/css/bootstrap.min.css       "$rr"/src/main/webapp/css/vendor/bootstrap.css \
+  && cp -pv dist/css/bootstrap-theme.min.css "$rr"/src/main/webapp/css/vendor/bootstrap-theme.css
 

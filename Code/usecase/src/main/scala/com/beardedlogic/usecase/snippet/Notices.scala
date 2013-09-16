@@ -10,9 +10,10 @@ import net.liftweb.common.Box
  */
 object Notices {
 
-  final val ErrorClasses = "alert alert-error"
-  final val WarningClasses = "alert"
-  final val SuccessClasses = "alert alert-success"
+  final val CommonClasses = "alert alert-dismissable"
+  final val ErrorClasses = CommonClasses + " alert-danger"
+  final val WarningClasses = CommonClasses + " alert-warning"
+  final val SuccessClasses = CommonClasses + " alert-success"
 
   def render =
     "* *" #> (
@@ -28,7 +29,7 @@ object Notices {
     msgs match {
       case Nil        => NodeSeq.Empty
       case one :: Nil => toMsgContainer(classes, one)
-      case many       => toMsgContainer(classes + " alert-block", mergeMsgs(many))
+      case many       => toMsgContainer(classes, mergeMsgs(many))
     }
 
   def renderSingle(classes: String, msg: NodeSeq): Elem = toMsgContainer(classes, msg)
