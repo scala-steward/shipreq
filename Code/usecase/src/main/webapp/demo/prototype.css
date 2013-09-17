@@ -1,5 +1,6 @@
 .page-new {margin-top:1000px}
 .hidden2 {display:none}
+.dropdown-menu a.delete {color:red}
 
 #projectL {margin:4ex 8ex 6ex 6ex}
 #projectL .project {margin-top:4ex}
@@ -11,9 +12,11 @@
 
 #ucl-p {margin-top:6ex}
 #ucl-p h3 {font-weight:bold}
-#ucl {margin: 5ex 4ex 0 4ex}
-#ucl .lctls {text-align:right}
-#ucl .lctls, #ucl .mid {margin-bottom:2ex}
+#ucl {margin-top: 4ex}
+#ucl table {width:100%}
+#ucl td.l {vertical-align:top; text-align:right; padding-right:1.6ex; width:14ex; _background:#eef}
+#ucl td.l .dropdown-menu * {text-align:left; padding-right:0}
+#ucl td.r {vertical-align:top; padding-bottom:2ex; _background:#fef}
 #ucl .view-mode .view a.title {font-size:120%; line-height:1em; color:#4183C4; font-weight:bold}
 #ucl .view-mode .view .detail {font-size:70%; color:#888}
 
@@ -22,7 +25,11 @@
 #shares h3 {font-weight:bold}
 #shares .name {_padding-top:1ex; _background:#fef}
 #shares .name a {font-size:140%; font-weight:bold; color:#4183C4}
-#shares .url {width:56ex; margin-top:1ex}
+#shares .url {width:56ex; margin-top:0.2ex}
 #shares .url .urltxt {font-family:monospace; background:white; cursor:text}
-#shares .views {_background:#eef; font-size:100%; color:#888; margin-top:1ex}
-#shares li {padding:2ex}
+#shares .views {_background:#eef; font-size:100%; color:#888; margin-top:0.5ex}
+#shares li {padding-top:3ex}
+#shares table {width:100%}
+#shares td.l {vertical-align:top; text-align:right; padding-right:1.6ex; width:14ex; _background:#eef; padding-top:0.6ex;}
+#shares td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
+#shares td.r {vertical-align:top; _background:#fef}

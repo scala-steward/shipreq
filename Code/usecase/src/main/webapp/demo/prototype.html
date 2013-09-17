@@ -15,6 +15,13 @@
 <!--------------------------------------------------------------------------------------------------------------------->
 <h1>Your Projects</h1>
 
+	<div id="projectC" class="input-group">
+		<span class="input-group-btn">
+			<button type="submit" class="btn btn-success">Create</button>
+		</span>
+		<input type="input" class="form-control" placeholder="Project Name">
+	</div>
+
 	<div id="projectL">
 		<div class="project">
 			<a class="title" href="#page-projectR">Card/Board</a>
@@ -27,13 +34,6 @@
 			<div class="details shares">3 shares with 2409 views. Last viewed <abbr class="timeago" title="2013/05/22 13:45">1 hour ago</abbr>.</div>
 		</div>
 	</div>
-
-	<form class="form-inline" id="projectC">
-		<div class="form-group col-xs-6">
-			<input type="input" class="form-control" placeholder="Project Name">
-		</div>
-		<button type="submit" class="btn btn-success">Create Project</button>
-	</form>
 
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
@@ -51,35 +51,61 @@
 		<div class="panel-body">
 
 			<!-- New Use Case -->
-			<form class="form-inline" id="usecaseC">
-				<div class="form-group col-xs-9">
-					<input type="input" class="form-control" placeholder="Use Case Title">
-				</div>
-				<button type="submit" class="btn btn-success">Create Use Case</button>
-			</form>
+			<div class="input-group" id="usecaseC">
+				<span class="input-group-btn">
+					<button type="submit" class="btn btn-success">Create</button>
+				</span>
+				<input type="input" class="form-control" placeholder="Use Case Title">
+			</div>
 
 			<!-- Use Case List -->
-			<div id="ucl">
-				<div class="uc">
-					<div class="row view-mode">
-						<div class="lctls col-md-1"><button class="btn btn-sm btn-default edit">Edit</button></div>
-						<div class="mid col-md-11 view">
-							<a class="title" href="page-uce">UC-1: Create Report for Month-End</a>
-							<p class="detail">Last updated <abbr class="timeago" title="2013/05/22 13:45">8 months ago</abbr>.</p>
-						</div>
-					</div>
-					<div class="row edit-mode hidden2">
-						<div class="lctls col-md-1"><button class="btn btn-sm btn-primary update">Update</button></div>
-						<div class="mid col-md-9">
-							<form>
-								<input class="form-control" type="text" value="UC-1: Create Report for Month-End">
-							</form>
-						</div>
-						<div class="col-md-1"><button class="btn btn-sm btn-danger delete">Delete</button></div>
-						<div class="col-md-1"><button class="btn btn-sm btn-default cancel">Cancel</button></div>
-					</div>
-				</div>
-			</div>
+			<ul id="ucl" class="list-unstyled">
+				<li class="uc">
+					<table>
+						<tr class="view-mode">
+							<td class="l">
+								<div class="btn-group">
+									<button class="edit btn btn-sm btn-default">Edit</button>
+									<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+									<ul class="dropdown-menu" role="menu">
+										<li><a href="#" class="delete" onclick="return false">Delete</a></li>
+									</ul>
+								</div>
+								<!--<button class="btn btn-sm btn-default edit">Edit</button>-->
+							</td>
+							<td class="r view">
+								<a class="title" href="page-uce">UC-1: Create Report for Month-End</a>
+								<p class="detail">Last updated <abbr class="timeago" title="2013/05/22 13:45">8 months ago</abbr>.</p>
+							</td>
+						</tr>
+						<tr class="edit-mode hidden2">
+							<td class="l">
+								<!--<div class="btn-group">-->
+									<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
+									<!--<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>-->
+									<!--<ul class="dropdown-menu" role="menu">-->
+										<!--<li><a href="#" class="danger">Delete</a></li>-->
+									<!--</ul>-->
+								<!--</div>-->
+								<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
+							</td>
+							<td class="r">
+								<div class="input-group">
+									<!--<span class="input-group-btn">-->
+										<!--<button class="btn tn-sm btn-default cancel">Cancel</button>-->
+										<!--<button class="btn tn-sm btn-primary update">Update</button>-->
+									<!--</span>-->
+									<input class="form-control" type="text" value="Create Report for Month-End">
+									<span class="input-group-btn">
+										<button class="btn tn-sm btn-default cancel">Cancel</button>
+										<button class="btn tn-sm btn-primary update">Update</button>
+									</span>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</li>
+			</ul>
 
 		</div>
 	</div>
@@ -101,28 +127,33 @@
 		</div>
 
 		<ul id="shareL" class="list-unstyled _list-group">
-			<li class="share list-unstyled _list-group-item">
-				<div class="name pull-left">
-					<a href="#shareUrl">Use Case Editor v1.0</a>
-				</div>
-				<div class="ctls btn-group pull-right">
-					<button class="btn btn-sm btn-default edit">Edit</button>
-					<button class="btn btn-sm btn-default chgpwd">Change Password</button>
-					<button class="btn btn-sm btn-danger delete">Delete</button>
-				</div>
-				<div class="clearfix"></div>
-				<!--<div class="desc">This is for milestones 1-4, email UCs have been removed and pushed to M5.</div>-->
-				<div class="url">
-					<div class="input-group">
-						<span class="input-group-addon">Copy</span>
-						<input type="text" class="form-control input-sm urltxt" value="http://www.reqrepo.com/share/n4m90N76h3hah" readonly onclick="$(this).select()">
-					</div>
-					<div class="hide input-group">
-						<span class="input-group-addon">Copy</span>
-						<p class="form-control input-sm urltxt">http://www.reqrepo.com/share/n4m90N76h3hah</p>
-					</div>
-				</div>
-				<div class="views">30 views. Last viewed 3 days ago.</div>
+			<li class="share _list-group-item">
+				<table>
+					<tr>
+						<td class="l">
+							<div class="btn-group">
+								<button class="edit btn btn-sm btn-default">Edit</button>
+								<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+								<ul class="dropdown-menu" role="menu">
+									<li><a href="#" onclick="return false">Change Password</a></li>
+									<li><a href="#" class="delete" onclick="return false">Delete</a></li>
+								</ul>
+							</div>
+						</td>
+						<td class="r">
+							<div class="name">
+								<a href="#shareUrl">Use Case Editor v1.0</a>
+							</div>
+							<div class="url">
+								<div class="input-group">
+									<input type="text" class="form-control input-sm urltxt" value="http://www.reqrepo.com/share/n4m90N76h3hah" readonly onclick="$(this).select()">
+									<span class="input-group-addon">Copy</span>
+								</div>
+							</div>
+							<div class="views">30 views. Last viewed <abbr class="timeago" title="2013/05/22 13:45">3 days ago</abbr>.</div>
+						</td>
+					</tr>
+				</table>
 			</li>
 		</ul>
 
