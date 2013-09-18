@@ -1,6 +1,7 @@
 .page-new {margin-top:1000px}
 .hidden2 {display:none}
 .dropdown-menu a.delete {color:red}
+.todo {color:red; background:#fee}
 
 #projectL {margin:4ex 8ex 6ex 6ex}
 #projectL .project {margin-top:4ex}
@@ -36,6 +37,7 @@
 
 #page-shareCU {margin-bottom:2.5ex}
 
+#page-presmode nav {margin-top:6ex}
 #page-presmode nav ol {margin-left:1ex}
 #page-presmode nav a {font-size:110%; line-height:1.6em}
 #page-presmode main {margin-top:4em}
@@ -48,7 +50,7 @@
 #page-presmode .fvs > tr > td {padding-top:0.3ex; padding-bottom:0.3ex}
 #page-presmode .fvs img {width:100%; max-width:100%}
 #page-presmode .fvs td > ul {padding-left:2ex}
-#page-presmode *:not(a) {color:black !important}
+#page-presmode *:not(a):not(button) {color:black !important}
 #page-presmode .steps th {white-space:nowrap}
 #page-presmode .steps td {width:100%}
 #page-presmode .steps * {line-height:1.168em}

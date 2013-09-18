@@ -37,11 +37,19 @@
 
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
-	<h1 id="page-projectR">
-		Shared Expenses
-		<button class="btn btn-default" style="margin-left:2em">Edit</button>
-		<button class="btn btn-danger">Delete</button>
-	</h1>
+	<h1 id="page-projectR">Shared Expenses</h1>
+
+	<div class="proj-ctls btn-group">
+		<button class="btn btn-default" onclick="return false">Read Use Cases</button>
+		<button class="btn btn-default" onclick="return false">Generate PDF</button>
+		<div class="btn-group">
+			<button class="edit btn btn-default">Rename</button>
+			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+			<ul class="dropdown-menu" role="menu">
+				<li><a href="#" class="delete" onclick="return false">Delete</a></li>
+			</ul>
+		</div>
+	</div>
 
 	<!-- Use Case Panel -->
 	<div class="panel panel-default" id="ucl-p">
@@ -221,8 +229,14 @@
 <hr class="page-new">
 <div id="page-presmode">
 
+	<header>
+		<button class="pull-right btn btn-default" onclick="alert('Download starts. Not customisable from here.'); return false">Download PDF</button>
+		<h1>Use Case Editor v1.0</h1>
+		<p class="clearfix">This covers everything for the first release. Auto-destruct and match-making services have been moved to v2.0 and have been removed from scope. Blah blah this is an example of a user-provided share description.</p>
+	</header>
+
 	<nav>
-		<h1>Table of Contents</h1>
+		<h3>Table of Contents</h3>
 		<ul class="toc _list-unstyled">
 			<li><a href="#pm-uc">UC-1: Delete a Use Case</a></li>
 			<li><a href="#pm-uc">UC-2: Reference an entire UC</a></li>
