@@ -3,14 +3,18 @@ package test
 
 import java.io.File
 import org.apache.commons.io.FileUtils
+import org.apache.shiro.SecurityUtils
+import org.apache.shiro.authc.UsernamePasswordToken
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.scalatest.{BeforeAndAfterEach, Suite, BeforeAndAfterAll}
 import org.scalatest.matchers.{ShouldMatchers, Matcher, MatchResult}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.Tables.Table
-import net.liftweb.common.Empty
+import net.liftweb.common.{Failure, Box, Empty}
 import net.liftweb.http.{S, LiftSession, LiftRules}
+import net.liftweb.http.js.JsCmd
 import net.liftweb.mocks.MockHttpServletRequest
 import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
@@ -32,17 +36,13 @@ import LensFns._
 import NodeUtils._
 import TreeOps._
 import Changes.ExistingStepLabelsChanged
-import net.liftweb.http.js.JsCmd
 
 /**
  * @since 30/04/2013
  */
-trait TestHelpers extends MockitoSugar with ShouldMatchers with DebugImplicits {
+trait TestHelpers2 extends MockitoSugar with ShouldMatchers with DebugImplicits {
 
   val Cores = Math.max(1, Runtime.getRuntime().availableProcessors - 1)
-
-  if (!LiftRules.doneBoot) (new bootstrap.liftweb.Boot).configureLift
-  //if (Defaults.FieldList.get == null) Defaults.FieldList << mockFieldList(Defaults.FieldListDefns)
 
   implicit def JsCmdToStr(js: JsCmd): String = js.toJsCmd
 
@@ -233,6 +233,11 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers with DebugImplicits {
     }
   }
 
+  def login(username: String, password: String): Unit =
+    SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password))
+
+  def logout(): Unit = SecurityUtils.getSubject.logout
+
   def inMockSession[U](block: => U): U = {
     val session: LiftSession = new LiftSession("", StringHelpers.randomString(20), Empty)
     S.initIfUninitted(session) {block}
@@ -377,8 +382,19 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers with DebugImplicits {
    * Extensions for: JsCmd
    */
   implicit class MyRichJsCmd(val j: JsCmd) {
-    def assertJsAlert(errorMsg: Option[String]) = TestHelpers.this.assertJsAlert(j.toJsCmd, errorMsg)
-    def assertJsErrorNotice(errorMsg: Option[String]) = TestHelpers.this.assertJsErrorNotice(j.toJsCmd, errorMsg)
+    def assertJsAlert(errorMsg: Option[String]) = TestHelpers2.this.assertJsAlert(j.toJsCmd, errorMsg)
+    def assertJsErrorNotice(errorMsg: Option[String]) = TestHelpers2.this.assertJsErrorNotice(j.toJsCmd, errorMsg)
+  }
+
+  /**
+   * Extensions for: Box
+   */
+  implicit class MyRichBox[T](val b: Box[T]) {
+    def gimme: T = b.openOrThrowException(s"Box was expected to be Full, but was: $b")
+    def gimmeErr: String = b match {
+      case Failure(err,_,_) => err
+      case r => fail(s"Failure expected. Got: $r")
+    }
   }
 
   /**
@@ -483,4 +499,23 @@ trait TestHelpers extends MockitoSugar with ShouldMatchers with DebugImplicits {
   }
 }
 
-object TestHelpers extends TestHelpers
+object TestHelpers extends TestHelpers2
+
+trait TestHelpers extends TestHelpers2 with BeforeAndAfterAll with BeforeAndAfterEach {
+  this: Suite =>
+
+  if (!LiftRules.doneBoot) (new bootstrap.liftweb.Boot).configureLift
+
+  override def beforeAll(): Unit = {
+    if (!logoutBeforeEach) logout()
+    super.beforeAll
+  }
+
+  override def beforeEach(): Unit = {
+    if (logoutBeforeEach) logout()
+    super.beforeEach
+  }
+
+  /** Logout performed before each test when true, and once before all tests when false. */
+  var logoutBeforeEach = true
+}

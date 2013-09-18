@@ -14,7 +14,10 @@ usecase_rev
 text
 text_rev
 uc_field
+usr
+project
 
+usecase -> project -> usr
 field_key -> field_key_type
 usecase_rev -> usecase [label="uci"]
 text -> {usecase;field_key}

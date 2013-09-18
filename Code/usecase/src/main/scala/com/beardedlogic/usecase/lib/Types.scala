@@ -7,7 +7,7 @@ import net.liftweb.http.js.{JsCmd, JsCmds}
 import scalaz.{Monoid, LensFamily}
 import change.{Change, ChangeResultF}
 import field.Field
-import db.{FieldKeyRec, TextRev, UseCaseRev}
+import db.{UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
 import util.{AppliedLens, LazyVal, BiMap}
 
 /**
@@ -82,27 +82,33 @@ object Types {
   /** Marks a Long value as corresponding to `field_key.id`. */
   trait FieldKeyIdTag extends TypeTag[Long]
   type FieldKeyId = JLong @@ FieldKeyIdTag
-  @inline final implicit def FieldKeyToId(r: FieldKeyRec) = r.id.tag[FieldKeyIdTag]
+  @inline final implicit def FieldKeyToId(r: FieldKeyRec): FieldKeyId = r.id
 
   /** Marks a Long value as corresponding to `usecase.id` and `usecase_rev.ident_id`. */
   trait UseCaseIdentIdTag extends TypeTag[Long]
   type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
-  @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev) = r.identId.tag[UseCaseIdentIdTag]
+  @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
 
   /** Marks a Long value as corresponding to `usecase_rev.id`. */
   trait UseCaseRevIdTag extends TypeTag[Long]
   type UseCaseRevId = JLong @@ UseCaseRevIdTag
-  @inline final implicit def UseCaseRevToId(r: UseCaseRev) = r.id.tag[UseCaseRevIdTag]
+  @inline final implicit def UseCaseRevToId(r: UseCaseRev): UseCaseRevId = r.id
 
   /** Marks a Long value as corresponding to `text.id` and `text_rev.ident_id`. */
   trait TextIdentIdTag extends TypeTag[Long]
   type TextIdentId = JLong @@ TextIdentIdTag
-  @inline final implicit def TextRevToIdentId(r: TextRev) = r.identId.tag[TextIdentIdTag]
+  @inline final implicit def TextRevToIdentId(r: TextRev): TextIdentId = r.identId
 
   /** Marks a Long value as corresponding to `text_rev.id`. */
   trait TextRevIdTag extends TypeTag[Long]
   type TextRevId = JLong @@ TextRevIdTag
-  @inline final implicit def TextRevToId(r: TextRev) = r.id.tag[TextRevIdTag]
+  @inline final implicit def TextRevToId(r: TextRev): TextRevId = r.id
+
+  /** Marks a Long value as corresponding to `usr.id`. */
+  trait UserIdTag extends TypeTag[Long]
+  type UserId = JLong @@ UserIdTag
+  @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
+  @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
 
   // -------------------------------------------------------------------------------------------------------------------
   // Typedefs

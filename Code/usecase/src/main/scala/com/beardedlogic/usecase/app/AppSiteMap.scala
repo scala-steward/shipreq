@@ -53,7 +53,7 @@ object AppSiteMap {
   }
 
   private def Menu_UcIdParam(name: String, linkText: Loc.LinkText[UseCaseIdentId]) =
-    Menu.param[UseCaseIdentId](name, linkText, ExternalId.parse(_).tag[UseCaseIdentIdTag], ExternalId.toExternal(_))
+    Menu.param[UseCaseIdentId](name, linkText, ExternalId.UseCase.parseB(_), ExternalId.UseCase.toExternal(_))
 
   private def UseTemplate(path: String) = TemplateBox(() => Templates(path.split("/").toList))
 

@@ -9,11 +9,11 @@ import scalaz.std.list.listInstance
 import lib.change._
 import lib.Types._
 import util._
-import test.TestHelpers
+import test.{TestHelpers2, TestHelpers}
 import Changes._
 import ParsingConfig._
 
-object FreeAndStepTextTests extends TestHelpers {
+object FreeAndStepTextTests extends TestHelpers2 {
 
   def assertFlowClause(c: Option[FlowClause], refs: Refs) {
     if (refs.isEmpty)

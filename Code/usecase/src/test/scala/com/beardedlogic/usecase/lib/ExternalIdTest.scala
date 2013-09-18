@@ -3,12 +3,15 @@ package com.beardedlogic.usecase.lib
 import org.scalacheck.Prop._
 import org.scalatest.FunSuite
 import org.scalatest.prop.Checkers
-import ExternalId._
 import org.scalatest.matchers.ShouldMatchers
+import ExternalId.UseCase._
+import Types._
 
 class ExternalIdTest extends FunSuite with Checkers with ShouldMatchers {
 
   implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = 10000)
+
+  implicit def autoTagLongs(x: Long) = x.tag[UseCaseIdentIdTag]
 
   // println((100 to 150).map(toExternal(_)).mkString("\n"))
   // println(toExternal(Long.MaxValue))
@@ -19,7 +22,7 @@ class ExternalIdTest extends FunSuite with Checkers with ShouldMatchers {
     check {
       id: Long =>
         val ext = toExternal(id)
-        val i2 = toInternal(ext)
+        val i2 = parseO(ext).get
         (i2 == id) :| s"$id --> $ext --> $i2"
     }
   }

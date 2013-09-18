@@ -3,7 +3,7 @@ package db
 
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import lib.{Defaults, InputCorrection, UseCaseHeader}
-import lib.ExternalId.{toExternal, toInternal}
+import lib.ExternalId
 import DBHelpers._
 import lib.Types._
 
@@ -17,12 +17,12 @@ case class UseCaseSummary(
   updatedAt: String) {
 
   def this(id: UseCaseIdentId, number: Short, title: String, updatedAt: String) =
-    this(toExternal(id), number, title, updatedAt)
+    this(ExternalId.UseCase(id), number, title, updatedAt)
 
   def this(uc: UseCaseRev, updatedAt: String) =
     this(uc.identId, uc.header.number, uc.header.title, updatedAt)
 
-  def id: UseCaseIdentId = toInternal(eid).tag[UseCaseIdentIdTag]
+  def parseId = ExternalId.UseCase.parseO(eid)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

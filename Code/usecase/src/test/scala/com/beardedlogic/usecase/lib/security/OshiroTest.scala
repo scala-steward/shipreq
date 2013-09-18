@@ -21,12 +21,6 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
     super.afterAll
   }
 
-  def subject = SecurityUtils.getSubject
-
-  def login(username: String, password: String) {
-    subject.login(new UsernamePasswordToken(username, password))
-  }
-
   describe("Authentication") {
     it("should allow users by username") {
       login(user1.username, user1.password)
@@ -51,7 +45,7 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
 
   describe("loggedInUser") {
     it("should return None when no user logged in") {
-      subject.logout
+      logout
       Oshiro.loggedInUser should be(None)
     }
 

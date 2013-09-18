@@ -17,7 +17,6 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
 
   override def beforeEachWithDao() {
     initUserFixture(session)
-    SecurityUtils.getSubject.logout() // TODO Should this not be elsewhere?
   }
 
   def assertSingleError(substring: String) {
