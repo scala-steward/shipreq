@@ -12,14 +12,14 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
   describe("findUseCase") {
     it("should load when found") {
       val uch = UseCaseHeader(17, "ah")
-      val saved = dao.createInitialUseCase(uch)
-      dao.findUseCase(saved).get ==== saved
+      val saved = dao.createUseCaseIdentAndRev1(uch)
+      dao.findUseCaseRev(saved).get ==== saved
     }
   }
 
   describe("updateUseCaseHeader") {
     def assertUC(revId: UseCaseRevId, expected: UseCaseRev, revOffset: Int) {
-      val uc = dao.findUseCase(revId).get
+      val uc = dao.findUseCaseRev(revId).get
       uc.identId ==== expected.identId
       uc.rev.toInt ==== expected.rev + revOffset
       uc.header ==== expected.header
@@ -42,24 +42,24 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
     }
 
     def createTwoRevs = {
-      val rev1 = dao.createInitialUseCase("Haha")
+      val rev1 = dao.createUseCaseIdentAndRev1("Haha")
       val rev2s = dao.updateUseCaseHeader(rev1, _.copy(title = "wow")) match {
         case NewRevision(x) => x
         case _ => fail("Expected NewRevision.")
       }
-      val rev2 = dao.findUseCase(rev2s).get
+      val rev2 = dao.findUseCaseRev(rev2s).get
       (rev1, rev2)
     }
 
     it("should do a direct update when rev #1 and title default") {
-      val rev1 = dao.createInitialUseCase(Defaults.Title)
+      val rev1 = dao.createUseCaseIdentAndRev1(Defaults.Title)
       val tgt = rev1.withTitle("omg")
       val r = assertTableDiffs() {dao.updateUseCaseHeader(rev1, _ => tgt.header)}
       r ==== DirectUpdate(tgt)
     }
 
     it("should do an audited update when rev #1 and non-default title changes") {
-      assertAuditedUpdate(dao.createInitialUseCase("Haha"))
+      assertAuditedUpdate(dao.createUseCaseIdentAndRev1("Haha"))
     }
 
     it("should do an audited update when rev #2+") {
@@ -70,9 +70,9 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
     it("should copy relationships when performing an audited update") {
       val fk1 = dao.createFieldKey(FieldKeyType.Text, Some("THE OCEAN"))
       val fk2 = dao.createFieldKey(FieldKeyType.Text, Some("PELAGIAL"))
-      val uc1 = dao.createInitialUseCase("Haha")
-      val txt1 = dao.createTextRev(dao.createInitialText(uc1, fk1), 1, "mesopelagic".hasNormalisedRefs)
-      val txt2 = dao.createTextRev(dao.createInitialText(uc1, fk2), 1, "bathyalpelagic".hasNormalisedRefs)
+      val uc1 = dao.createUseCaseIdentAndRev1("Haha")
+      val txt1 = dao.createTextRev(dao.createTextIdent(uc1, fk1), 1, "mesopelagic".hasNormalisedRefs)
+      val txt2 = dao.createTextRev(dao.createTextIdent(uc1, fk2), 1, "bathyalpelagic".hasNormalisedRefs)
       dao.linkUcToText(uc1, txt1)
       dao.linkUcToText(uc1, txt2)
 
@@ -81,7 +81,7 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
     }
 
     it("should do nothing when rev #1 and no change") {
-      val rev1 = dao.createInitialUseCase(Defaults.Title)
+      val rev1 = dao.createUseCaseIdentAndRev1(Defaults.Title)
       assertNOP(rev1, rev1)
       assertNOP(rev1.withTitle(""), rev1)
     }

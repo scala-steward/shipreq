@@ -108,7 +108,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
       def mockDao = {
         val dao = mock[Dao]
-        when(dao.createInitialText(any, any)).thenAnswer(mockCreateInitialTextAnswer(657))
+        when(dao.createTextIdent(any, any)).thenAnswer(mockCreateInitialTextAnswer(657))
         when(dao.createTextRev(any, any, any)).thenAnswer(mockCreateTextRevAnswer)
         dao
       }
@@ -121,7 +121,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
         tr.rev ==== 1
         tr.identId.toLong ==== 657
         tr.text.toString ==== "hello"
-        verify(dao, times(1)).createInitialText(any, any)
+        verify(dao, times(1)).createTextIdent(any, any)
         verify(dao, times(1)).createTextRev(any, any, any)
         verify(dao, times(1)).linkUcToText(any, any)
         verifyNoMoreInteractions(dao)

@@ -47,7 +47,7 @@ class Login extends SingleOpStatefulSnippet {
 
   def onSuccessfulLogin(): Nothing = {
     // TODO update login count async
-    daoProvider.withSession(_.updateUserOnLogin(loggedInUser.get.id, clientIp_Or_?))
+    daoProvider.withSession(_.logUserLogin(loggedInUser.get.id, clientIp_Or_?))
     S.redirectTo(AppSiteMap.HomeRelativeUrl)
   }
 }

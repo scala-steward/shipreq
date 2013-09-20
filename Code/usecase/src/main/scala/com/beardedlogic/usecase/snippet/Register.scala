@@ -52,7 +52,7 @@ class Register1 extends SingleOpStatefulSnippet {
 
   private def onNewUser(email: String, dao: Dao): Mail = {
     val token = randomConfirmationToken
-    dao.createUser(email, token)
+    dao.createUserPlaceholder(email, token)
     RegistrationEmails.LinkToCompleteRegistration(token)
   }
 
@@ -130,7 +130,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
 
       // Update user
       val ps = PasswordAndSalt.hashWithRandomSalt(password1)
-      daoProvider.withSession(_.registerUser(token)(username, ps, clientIp_Or_?)) match {
+      daoProvider.withSession(_.performUserRegistration(token)(username, ps, clientIp_Or_?)) match {
 
         case UsernameTaken => jsShowError("Username is already taken.")
 

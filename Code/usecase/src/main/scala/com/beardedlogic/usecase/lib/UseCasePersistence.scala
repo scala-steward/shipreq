@@ -106,7 +106,7 @@ object UseCasePersistence {
 
       prevSave match {
         case Some(cp) => isSaveRequired_?(cp)
-        case _ => true
+        case None     => true
       }
     }
 
@@ -114,8 +114,8 @@ object UseCasePersistence {
       savers.filter {case (f, s) => getPrevSaveDataFor(f).isDefined || s.record_required_?}
 
     def saveUcHeader(): UseCaseRev = prevSave match {
-      case Some(cp) => dao.createUseCase(cp.rec.identId, (cp.rec.rev + 1).toShort, uc.header)
-      case _ => dao.createInitialUseCase(uc.header)
+      case Some(cp) => dao.createUseCaseRev(cp.rec.identId, (cp.rec.rev + 1).toShort, uc.header)
+      case None     => dao.createUseCaseIdentAndRev1(uc.header)
     }
 
     def presave(ucId: UseCaseIdentId, savers: ValueSavers): SavedSteps = {

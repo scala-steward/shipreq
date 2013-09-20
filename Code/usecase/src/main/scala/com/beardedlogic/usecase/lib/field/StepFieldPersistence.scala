@@ -112,7 +112,7 @@ class StepFieldValueSaver(
     var stepIds = Map.empty[LocalStepId, TextIdentId]
 
     def newStep(localId: LocalStepId): Unit = {
-      val id = dao.createInitialText(ucId, fieldKeyRec)
+      val id = dao.createTextIdent(ucId, fieldKeyRec)
       stepIds += (localId -> id)
     }
 

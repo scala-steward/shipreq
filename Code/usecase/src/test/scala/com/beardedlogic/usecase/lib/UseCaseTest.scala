@@ -231,18 +231,18 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   val rels = 2 + 5 + 3 // 2 text fields + 5 NC steps + 3 EC steps
 
   def loadRev(revId: UseCaseRevId): UseCaseSaveCheckpoint = {
-    val rec = dao.findUseCase(revId).get
+    val rec = dao.findUseCaseRev(revId).get
     Locks.UseCase.withReadLockToken(rec.identId)(load(rec, dao, _))
   }
 
   def reload(cp: UseCaseSaveCheckpoint) = loadRev(cp.rec)
 
   def createInitialTextRev(ucIdentId: UseCaseIdentId, fkId: FieldKeyId, text: String) =
-    dao.createTextRev(dao.createInitialText(ucIdentId, fkId), 1, text.hasNormalisedRefs)
+    dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.hasNormalisedRefs)
 
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {
-      val x = dao.createInitialUseCase("Hello")
+      val x = dao.createUseCaseIdentAndRev1("Hello")
       val y = loadRev(x)
       val sfv = NCF.lens.get(y.uc)
       sfv.textmap(sfv.tree.head.id).text ==== x.header.title
@@ -251,7 +251,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     it("should load a simple, manually-saved UC") {
       // Create UC
       val ucIdentId = dao.createUseCaseIdent
-      val ucRevId = dao.createUseCase(ucIdentId, 1, UseCaseHeader(3, "ahh"))
+      val ucRevId = dao.createUseCaseRev(ucIdentId, 1, UseCaseHeader(3, "ahh"))
 
       // Create Text FV
       val txtRev = createInitialTextRev(ucIdentId, TF1, "Hehe")
@@ -275,7 +275,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     it("should load a manually-saved UC with refs") {
       // Create UC
       val ucIdentId = dao.createUseCaseIdent
-      val ucRevId = dao.createUseCase(ucIdentId, 1, UseCaseHeader(3, "ahh"))
+      val ucRevId = dao.createUseCaseRev(ucIdentId, 1, UseCaseHeader(3, "ahh"))
 
       // Create course FV
       val s1 = createInitialTextRev(ucIdentId, NCF, "Root")

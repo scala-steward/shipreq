@@ -123,7 +123,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
     describe("presave()") {
       def mockDao = {
         val dao = mock[Dao]
-        when(dao.createInitialText(any, any)).thenAnswer(mockCreateInitialTextAnswer(657))
+        when(dao.createTextIdent(any, any)).thenAnswer(mockCreateInitialTextAnswer(657))
         dao
       }
 
@@ -131,7 +131,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
         val dao = mockDao
         val s = valueSaver(NCF, NcSfv)
         val newlySavedSteps = s.presave(dao, ucId, None)
-        verify(dao, times(5)).createInitialText(ucId, NCF.rec.id)
+        verify(dao, times(5)).createTextIdent(ucId, NCF.rec.id)
         verifyNoMoreInteractions(dao)
         newlySavedSteps.keys ==== NcStepText.keys
       }
@@ -152,7 +152,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
         val s = valueSaver(ECF, parseStepTree(newTree).toStepFieldValue(ECF))
 
         val newlySavedSteps = s.presave(dao, ucId, Some(mockSavedStepsFor(prev)))
-        verify(dao, times(2)).createInitialText(ucId, ECF.rec.id)
+        verify(dao, times(2)).createTextIdent(ucId, ECF.rec.id)
         verifyNoMoreInteractions(dao)
         newlySavedSteps.keys ==== Set("1.0.2", "1.2")
       }

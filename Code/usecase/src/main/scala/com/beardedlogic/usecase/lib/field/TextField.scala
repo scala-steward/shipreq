@@ -65,7 +65,7 @@ class TextFieldValueSaver(val v: FreeText, val fkId: FieldKeyId, val stepsAndLab
       case Some(prev) => dao.createTextRev(prev.identId, (prev.rev + 1).toShort, curText)
       // New step
       case None =>
-        val textIdentId = dao.createInitialText(ucId, fkId)
+        val textIdentId = dao.createTextIdent(ucId, fkId)
         dao.createTextRev(textIdentId, 1: Short, curText)
     }
 
