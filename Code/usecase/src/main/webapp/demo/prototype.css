@@ -3,6 +3,9 @@
 .dropdown-menu a.delete {color:red}
 .todo {color:red; background:#fee}
 
+#page-projectR2 nav {margin-top:6ex}
+#projectR2-shares {padding-top:2ex}
+
 #projectL {margin:4ex 8ex 6ex 6ex}
 #projectL .project {margin-top:4ex}
 #projectL .project .title {font-size:250%}
@@ -23,17 +26,17 @@
 
 #usecaseC {margin-top:2ex}
 
-#shares h3 {font-weight:bold}
-#shares .name {_padding-top:1ex; _background:#fef}
-#shares .name a {font-size:140%; font-weight:bold; color:#4183C4}
-#shares .url {width:56ex; margin-top:0.2ex}
-#shares .url .urltxt {font-family:monospace; background:white; cursor:text}
-#shares .views {_background:#eef; font-size:100%; color:#888; margin-top:0.5ex}
-#shares li {padding-top:3ex}
-#shares table {width:100%}
-#shares td.l {vertical-align:top; text-align:right; padding-right:1.6ex; width:14ex; _background:#eef; padding-top:0.6ex;}
-#shares td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
-#shares td.r {vertical-align:top; _background:#fef}
+.shareL h3 {font-weight:bold}
+.shareL .name {_padding-top:1ex; _background:#fef}
+.shareL .name a {font-size:140%; font-weight:bold; color:#4183C4}
+.shareL .url {width:56ex; margin-top:0.2ex}
+.shareL .url .urltxt {font-family:monospace; background:white; cursor:text}
+.shareL .views {_background:#eef; font-size:100%; color:#888; margin-top:0.5ex}
+.shareL li {padding-top:3ex}
+.shareL table {width:100%}
+.shareL td.l {vertical-align:top; text-align:right; padding-right:1.6ex; width:14ex; _background:#eef; padding-top:0.6ex;}
+.shareL td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
+.shareL td.r {vertical-align:top; _background:#fef}
 
 #page-shareCU {margin-bottom:2.5ex}
 

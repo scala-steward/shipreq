@@ -37,16 +37,18 @@
 
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
-	<h1 id="page-projectR">Shared Expenses</h1>
+<div id="page-projectR">
+
+	<h1>Shared Expenses</h1>
 
 	<div class="proj-ctls btn-group">
 		<button class="btn btn-default" onclick="return false">Read Use Cases</button>
 		<button class="btn btn-default" onclick="return false">Generate PDF</button>
 		<div class="btn-group">
-			<button class="edit btn btn-default">Rename</button>
+			<button class="edit btn btn-default">Rename Project</button>
 			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
 			<ul class="dropdown-menu" role="menu">
-				<li><a href="#" class="delete" onclick="return false">Delete</a></li>
+				<li><a href="#" class="delete" onclick="return false">Delete Project</a></li>
 			</ul>
 		</div>
 	</div>
@@ -134,7 +136,7 @@
 			<button type="submit" class="btn btn-success ull-right">Share Use Cases</button>
 		</div>
 
-		<ul id="shareL" class="list-unstyled _list-group">
+		<ul id="shareL" class="list-unstyled _list-group shareL">
 			<li class="share _list-group-item">
 				<table>
 					<tr>
@@ -170,6 +172,36 @@
 		$('#shareL').append($('#shareL').html())
 	</script>
 
+</div>
+<!--------------------------------------------------------------------------------------------------------------------->
+<hr class="page-new">
+<div id="page-projectR2">
+
+	<h1>Shared Expenses</h1>
+
+	<nav>
+		<ul class="nav nav-tabs">
+			<li class="active"><a data-toggle="tab" href="#projectR2-ucs">Use Cases</a></li>
+			<li><a data-toggle="tab" href="#projectR2-shares">Shares</a></li>
+		</ul>
+	</nav>
+
+	<div class="tab-content">
+		<section id="projectR2-ucs" class="tab-pane fade in active"></section>
+		<section id="projectR2-shares" class="tab-pane fade"></section>
+	</div>
+
+	<script type="text/javascript">
+		$('#page-projectR2 nav').before($('#page-projectR .proj-ctls').clone())
+		$('#projectR2-ucs').append($('#ucl-p .panel-body').html())
+		$('#projectR2-shares').append($('#shares .panel-body').html())
+		$('#projectR2-shares').append($('#shareL').clone())
+		$('#page-projectR2 nav a').click(function (e) {
+			e.preventDefault()
+			$(this).tab('show')
+		})
+	</script>
+</div>
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
 <h1 id="page-shareCU">Share Use Cases</h1>
