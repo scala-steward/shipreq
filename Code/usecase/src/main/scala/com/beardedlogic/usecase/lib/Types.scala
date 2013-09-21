@@ -19,7 +19,7 @@ object Types {
   // Type tags
 
   sealed trait TypeTag[B]
-  type Tagged[T <: TypeTag[_]] = {type Tag = T}
+  // type Tagged[T <: TypeTag[_]] = {type Tag = T}
   type @@[O, T <: TypeTag[_]] = O with T
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -28,23 +28,23 @@ object Types {
   implicit def taggedStringOrdering[T <: TypeTag[String]] = implicitly[Ordering[String]].asInstanceOf[Ordering[String @@ T]]
 
   /** Indicates that references to steps are in normalised form. Eg. [D.112] instead of [3.0.1] */
-  trait NormalisedRefs extends TypeTag[String]
-  type TextWithNormalisedRefs = String @@ NormalisedRefs
+  sealed trait TextWithNormalisedRefsTag extends TypeTag[String]
+  type TextWithNormalisedRefs = String @@ TextWithNormalisedRefsTag
 
-  trait LocalIdTag extends TypeTag[String]
+  sealed trait LocalIdTag extends TypeTag[String]
   type AnyLocalId = String @@ LocalIdTag
 
   /** A transient ID used to identify a TextField's . */
-  trait LocalTextFieldIdTag extends LocalIdTag
+  sealed trait LocalTextFieldIdTag extends LocalIdTag
   type LocalTextFieldId = String @@ LocalTextFieldIdTag
 
   /** A transient ID used to identify a single step node in memory. */
-  trait LocalStepIdTag extends LocalIdTag
+  sealed trait LocalStepIdTag extends LocalIdTag
   type LocalStepId = String @@ LocalStepIdTag
 
   /** A textual label for a tree node. Eg. "1.0.2.a" */
-  trait Label extends TypeTag[String]
-  type LabelStr = String @@ Label
+  sealed trait LabelTag extends TypeTag[String]
+  type LabelStr = String @@ LabelTag
 
   implicit class StringTypeExt(val s: String) extends AnyVal {
     def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
@@ -80,32 +80,32 @@ object Types {
   }
 
   /** Marks a Long value as corresponding to `field_key.id`. */
-  trait FieldKeyIdTag extends TypeTag[Long]
+  sealed trait FieldKeyIdTag extends TypeTag[Long]
   type FieldKeyId = JLong @@ FieldKeyIdTag
   @inline final implicit def FieldKeyToId(r: FieldKeyRec): FieldKeyId = r.id
 
   /** Marks a Long value as corresponding to `usecase.id` and `usecase_rev.ident_id`. */
-  trait UseCaseIdentIdTag extends TypeTag[Long]
+  sealed trait UseCaseIdentIdTag extends TypeTag[Long]
   type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
   @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
 
   /** Marks a Long value as corresponding to `usecase_rev.id`. */
-  trait UseCaseRevIdTag extends TypeTag[Long]
+  sealed trait UseCaseRevIdTag extends TypeTag[Long]
   type UseCaseRevId = JLong @@ UseCaseRevIdTag
   @inline final implicit def UseCaseRevToId(r: UseCaseRev): UseCaseRevId = r.id
 
   /** Marks a Long value as corresponding to `text.id` and `text_rev.ident_id`. */
-  trait TextIdentIdTag extends TypeTag[Long]
+  sealed trait TextIdentIdTag extends TypeTag[Long]
   type TextIdentId = JLong @@ TextIdentIdTag
   @inline final implicit def TextRevToIdentId(r: TextRev): TextIdentId = r.identId
 
   /** Marks a Long value as corresponding to `text_rev.id`. */
-  trait TextRevIdTag extends TypeTag[Long]
+  sealed trait TextRevIdTag extends TypeTag[Long]
   type TextRevId = JLong @@ TextRevIdTag
   @inline final implicit def TextRevToId(r: TextRev): TextRevId = r.id
 
   /** Marks a Long value as corresponding to `usr.id`. */
-  trait UserIdTag extends TypeTag[Long]
+  sealed trait UserIdTag extends TypeTag[Long]
   type UserId = JLong @@ UserIdTag
   @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id

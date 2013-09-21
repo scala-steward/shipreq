@@ -28,23 +28,28 @@ libraryDependencies ++= {
     "com.google.code.findbugs"  % "jsr305"                 % "2.0.1", // required by Guava
     "org.fusesource.scalate"   %% "scalate-core"           % "1.6.1",
     "org.fusesource.scalamd"   %% "scalamd"                % "1.6", // markdown
+    "org.apache.commons"        % "commons-lang3"          % "3.1",
     // [test]
-    "org.scalatest"               %% "scalatest"              % "2.0.M8"              % "test",
-    "org.mockito"                 %  "mockito-core"           % "1.9.5"               % "test",
-    "org.scalacheck"              %% "scalacheck"             % "1.10.1"              % "test",
-    "net.liftweb"                 %% "lift-testkit"           % liftVersion           % "test",
-    "org.apache.directory.studio" % "org.apache.commons.io"   % "2.4"                 % "test",
-    "org.seleniumhq.selenium"     %  "selenium-java"          % "2.35.0"              % "test" excludeAll(
+    "org.scalatest"              %% "scalatest"              % "2.0.M8"              % "test",
+    "org.mockito"                 % "mockito-core"           % "1.9.5"               % "test",
+    "org.scalacheck"             %% "scalacheck"             % "1.10.1"              % "test",
+    "net.liftweb"                %% "lift-testkit"           % liftVersion           % "test",
+    "org.apache.directory.studio" % "org.apache.commons.io"  % "2.4"                 % "test",
+    "com.twitter"                %% "util-eval"              % "6.5.0"               % "test",
+    "org.seleniumhq.selenium"     % "selenium-java"          % "2.35.0"              % "test" excludeAll(
       ExclusionRule(name = "selenium-android-driver"),
       ExclusionRule(name = "selenium-htmlunit-driver"),
       ExclusionRule(name = "selenium-ie-driver"),
       ExclusionRule(name = "selenium-iphone-driver"),
-      ExclusionRule(name = "selenium-safari-driver")
-    ),
-    "org.eclipse.jetty"           %  "jetty-webapp"           % "8.1.12.v20130726"    % "container,test",
-    "org.eclipse.jetty.orbit"     %  "javax.servlet"          % "3.0.0.v201112011016" % "container,test,provided" artifacts Artifact("javax.servlet", "jar", "jar")
+      ExclusionRule(name = "selenium-safari-driver")),
+    "org.eclipse.jetty"           %  "jetty-webapp"          % "8.1.12.v20130726"    % "container,test",
+    "org.eclipse.jetty.orbit"     %  "javax.servlet"         % "3.0.0.v201112011016" % "container,test,provided" artifacts Artifact("javax.servlet", "jar", "jar")
   )
 }
+
+
+
+initialCommands += "import com.beardedlogic.usecase, usecase.db._, usecase.lib, lib._, field._, tree._, text._, usecase.util._, Types._"
 
 EclipseKeys.executionEnvironment := Some(EclipseExecutionEnvironment.JavaSE16)
 

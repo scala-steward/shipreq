@@ -98,6 +98,11 @@ object UseCaseFns {
   }
 }
 
+object UseCase {
+  def shortcut(header: UseCaseHeader, fieldValues: Seq[(Field, Field#Value)], stepsAndLabels: StepAndLabelBiMap): UseCase =
+    UseCase(header, fieldValues.map(_._1).toList, fieldValues.toMap, stepsAndLabels)
+}
+
 // =====================================================================================================================
 
 case class UseCase(
