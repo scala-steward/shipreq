@@ -46,6 +46,14 @@ object Types {
   sealed trait LabelTag extends TypeTag[String]
   type LabelStr = String @@ LabelTag
 
+  /** An ExternalID string for a UseCaseIdentId */
+  sealed trait UseCaseIdentEITag extends TypeTag[String]
+  type UseCaseIdentEI = String @@ UseCaseIdentEITag
+
+  /** An ExternalID string for a TextRevId */
+  sealed trait TextRevEITag extends TypeTag[String]
+  type TextRevEI = String @@ TextRevEITag
+
   implicit class StringTypeExt(val s: String) extends AnyVal {
     def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
     def asLocalStepId = s.asInstanceOf[LocalStepId]
@@ -79,13 +87,20 @@ object Types {
     def tag[T <: TypeTag[Long]] = x.map(_.tag[T])
   }
 
+  sealed trait ExteralisableIdTag extends TypeTag[Long] {
+    type EITag <: TypeTag[String]
+    type EI = String @@ EITag
+  }
+
   /** Marks a Long value as corresponding to `field_key.id`. */
   sealed trait FieldKeyIdTag extends TypeTag[Long]
   type FieldKeyId = JLong @@ FieldKeyIdTag
   @inline final implicit def FieldKeyToId(r: FieldKeyRec): FieldKeyId = r.id
 
   /** Marks a Long value as corresponding to `usecase.id` and `usecase_rev.ident_id`. */
-  sealed trait UseCaseIdentIdTag extends TypeTag[Long]
+  sealed trait UseCaseIdentIdTag extends ExteralisableIdTag {
+    override type EITag = UseCaseIdentEITag
+  }
   type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
   @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
 
@@ -100,7 +115,9 @@ object Types {
   @inline final implicit def TextRevToIdentId(r: TextRev): TextIdentId = r.identId
 
   /** Marks a Long value as corresponding to `text_rev.id`. */
-  sealed trait TextRevIdTag extends TypeTag[Long]
+  sealed trait TextRevIdTag extends ExteralisableIdTag {
+    override type EITag = TextRevEITag
+  }
   type TextRevId = JLong @@ TextRevIdTag
   @inline final implicit def TextRevToId(r: TextRev): TextRevId = r.id
 

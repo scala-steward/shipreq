@@ -2,9 +2,9 @@ package com.beardedlogic.usecase
 package db
 
 import org.joda.time.DateTime
-import lib.Types._
-import lib.{ExternalId, UseCaseHeader}
 import scala.reflect.ClassTag
+import lib.Types._
+import lib.UseCaseHeader
 import lib.field._
 
 // ===================================================================================================================
@@ -47,27 +47,10 @@ case class UcFieldText(label: Option[String], parentId: Option[TextRevId], index
 
 case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
 
-// NOTE: These fields names need to match the attributes in list.html
-case class UseCaseSummary(
-  eid: String,
-  number: Short,
-  title: String,
-  updatedAt: String) {
-
-  def this(id: UseCaseIdentId, number: Short, title: String, updatedAt: String) =
-    this(ExternalId.UseCase(id), number, title, updatedAt)
-
-  def this(uc: UseCaseRev, updatedAt: String) =
-    this(uc.identId, uc.header.number, uc.header.title, updatedAt)
-
-  def parseId = ExternalId.UseCase.parseO(eid)
-}
-
 case class UserDescriptor(id: UserId, username: String, email: String)
 
 case class UserRegistrationInfo(
   id: UserId,
   confirmationToken: Option[String],
   confirmationSentAt: Option[DateTime],
-  confirmedAt: Option[DateTime]
-  )
+  confirmedAt: Option[DateTime])
