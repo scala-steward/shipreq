@@ -46,6 +46,8 @@ function $id(id) {
     throw "ID string expected. Got: "+id
 }
 
+function fail(msg) {ok(false, msg)}
+
 //function assertConsumesEvent(fn){ equal(fn(), false, "Event handler should return false to consume event.") }
 
 function assertFocus(element, expected, msg) {
@@ -88,6 +90,18 @@ function focusActAssertNoAjaxCalls(id, actionFn) {
     assertNoAjaxCalls()
 }
 
+function equalElement(actual, expected) {
+    if (actual && actual.append)
+        fail("JQuery selector returned.")
+    else {
+        if (typeof(expected) === 'string')
+            expected = $id(expected)
+        if (expected.append) // JQuery selector
+            expected = expected[0]
+        equal(actual, expected)
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 stdModule("Inspection")
@@ -104,21 +118,40 @@ var elementsBelow = [
     [ids.s_1_e_2,   ids.tf3]
 ]
 
-test("getElementAbove", testEach(elementsBelow, function(e) {
+test("previousEditorTextInput", testEach(elementsBelow, function(e) {
     var from = e[1].txt
     var to = e[0].txt
-    equal(getElementAbove(from).id, to, to + " <-- " + from)
+    equal(previousEditorTextInput(from).id, to, to + " <-- " + from)
 }))
-test("getElementBelow", testEach(elementsBelow, function(e) {
+test("nextEditorTextInput", testEach(elementsBelow, function(e) {
     var from = e[0].txt
     var to = e[1].txt
-    equal(getElementBelow(from).id, to, from + " --> " + to)
+    equal(nextEditorTextInput(from).id, to, from + " --> " + to)
 }))
 
-test("getFullLabel", testEach(ids, function(e) {
+test("stepRootOfChildElement", testEach(ids, function(e) {
     if (e.flbl) {
-        equal(getFullLabel($id(e.lbl)), e.flbl)
-        equal(getFullLabel($id(e.lbl).parent()), e.flbl)
+        equalElement(stepRootOfChildElement($id(e.cont)), e.cont)
+        equalElement(stepRootOfChildElement($id(e.txt)), e.cont)
+        equalElement(stepRootOfChildElement($id(e.lbl)), e.cont)
+        equalElement(stepRootOfChildElement($id(e.cont)[0]), e.cont)
+        equalElement(stepRootOfChildElement($id(e.txt)[0]), e.cont)
+        equalElement(stepRootOfChildElement($id(e.lbl)[0]), e.cont)
+    }
+}))
+
+test("labelOfStepElement", testEach(ids, function(e) {
+    if (e.flbl) {
+        equal(labelOfStepElement($id(e.cont)), e.flbl)
+        equal(labelOfStepElement($id(e.lbl)), e.flbl)
+        equal(labelOfStepElement($id(e.txt)), e.flbl)
+        equal(labelOfStepElement($id(e.lbl).parent()), e.flbl)
+    }
+}))
+
+test("stepRootOfLabel", testEach(ids, function(e) {
+    if (e.flbl) {
+        equalElement(stepRootOfLabel(e.flbl), e.cont)
     }
 }))
 

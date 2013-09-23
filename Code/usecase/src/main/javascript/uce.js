@@ -1,4 +1,122 @@
 // ---------------------------------------------------------------------------------------------------------------------
+// Inspection
+
+/**
+ * Locates the root container of an element in a step.
+ *
+ * @param element Any element within a step.
+ * @returns An element.
+ */
+function stepRootOfChildElement(element) {
+    var stepCss = '.step'
+    var e = $(element)
+    return ((e.filter(stepCss).length != 0) ? e : (e.parents(stepCss)))[0]
+}
+
+/**
+ * Locates the root of a step with a given label.
+ *
+ * @param label The label of the step to find.
+ * @returns The step root element (if found).
+ */
+function stepRootOfLabel(label) {
+    return $('.step').filterE(stepHasLabel(label))[0]
+}
+
+/**
+ * Returns the full label (eg. "1.0.2.a") of a step.
+ *
+ * @param element Any element within a step.
+ * @returns A string.
+ */
+function labelOfStepElement(element) {
+    var step = $(stepRootOfChildElement(element))
+    if (step.length == 0) return undefined
+    var result = step.find('.lbl span').text()
+    var lvl = step.attr('data-lvl')
+    if (lvl > 0) {
+        // Get all steps before current
+        var steps = step.parent('.steps').find('.step:not(#' + step.attr('id') + ' ~ *)')
+        while(lvl-- != 0) {
+            var lbl = steps.filter('[data-lvl='+lvl+']').last().find('.lbl span').text()
+            result = lbl + "." + result
+        }
+    }
+    return result
+}
+
+/**
+ * Curried function that checks if a step's label matches input.
+ * input -> element -> boolean
+ */
+function stepHasLabel(label) {
+    return function(step) {
+        return label == labelOfStepElement(step)
+    }
+}
+
+/**
+ * Find the sole visible child matching a provided CSS selector.
+ *
+ * @returns An element or undefined.
+ */
+function soleVisibleChild(parent, childCss) {
+    return $(parent).find(childCss).filterE(isVisible)[0]
+}
+
+function addStepButtonOfStep(stepRoot) { return soleVisibleChild(stepRoot, 'button.add') }
+function incIndentButtonOfStep(stepRoot) { return soleVisibleChild(stepRoot, 'button.indentInc') }
+function decIndentButtonOfStep(stepRoot) { return soleVisibleChild(stepRoot, 'button.indentDec') }
+
+/**
+ * Finds all elements in the use case editor that accept text input.
+ *
+ * @returns jQuery expression.
+ */
+function allEditorTextInputsQ() { return $('.uce textarea:visible') }
+
+/**
+ * Returns the sibling text-input of a given text-input that is [offset] elements away.
+ *
+ * @param elementId The ID of a text-input.
+ * @param offset The number of elements to traverse. (Negative means backwards.)
+ * @returns HTMLTextAreaElement
+ */
+function editorTextInputSibling(elementId, offset) {
+    var all = allEditorTextInputsQ()
+    for (var i = 0; i < all.length; i++) {
+        if (elementId == all[i].id) {
+            i += offset + all.length
+            i %= all.length
+            return all[i]
+        }
+    }
+}
+
+/**
+ * Locates the textarea above the one given. If the top is given, then the bottom is returned.
+ *
+ * @param elementId The current element.
+ * @return HTMLTextAreaElement
+ */
+function previousEditorTextInput(elementId) { return editorTextInputSibling(elementId, -1) }
+
+/**
+ * Locates the textarea below the one given. If the bottom is given, then the top is returned.
+ *
+ * @param elementId The current element.
+ * @return HTMLTextAreaElement
+ */
+function nextEditorTextInput(elementId) { return editorTextInputSibling(elementId, 1) }
+
+/**
+ * Locates the editor text-input element that currently has focus.
+ *
+ * @return HTMLTextAreaElement
+ */
+function focusedEditorTextInput() { return allEditorTextInputsQ().filter(':focus')[0] }
+
+// ---------------------------------------------------------------------------------------------------------------------
 // FlowGraph rendering
 
 // Globals:
@@ -24,10 +142,6 @@ $(document).on('flowgraph-update', function(event, data) {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-
-function updatePageTitle() {
-    document.title = $('#uc-id').text() +": "+ $('#uc-title').val()
-}
 
 /**
  * Moves a step (and its future children) from Normal Course to Alternate Courses.
@@ -75,66 +189,18 @@ function ac_to_nc(containerId, stepsJqExpr, rewriteFn, completionFn) {
 	});
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
-function getAllUceInputFields() { return $('.uce textarea:visible') }
-
-function getElementBeside(elementId, offset) {
-    var all = getAllUceInputFields()
-    for (var i = 0; i < all.length; i++) {
-        if (elementId == all[i].id) {
-            i += offset + all.length
-            i %= all.length
-            return all[i]
-        }
-    }
+function updatePageTitle() {
+    document.title = $('#uc-id').text() +": "+ $('#uc-title').val()
 }
-
-/**
- * Locates the textarea above the one given. If the top is given, then the bottom is returned.
- *
- * @param elementId The current element.
- * @return HTMLTextAreaElement
- */
-function getElementAbove(elementId) { return getElementBeside(elementId, -1) }
-
-/**
- * Locates the textarea below the one given. If the bottom is given, then the top is returned.
- *
- * @param elementId The current element.
- * @return HTMLTextAreaElement
- */
-function getElementBelow(elementId) { return getElementBeside(elementId, 1) }
-
-function getFocusedInputField() { return getAllUceInputFields().filter(':focus')[0] }
 
 /**
  * If an input field has focus, then applies a fn to it.
  * @return False if not field found, else the result of the fn.
  */
 function withFocusedInputField(fn) {
-    var s = getFocusedInputField()
+    var s = focusedEditorTextInput()
     return (s ? fn(s) : false)
 }
-
-/** Locates the top-level container of an element in a step. */
-function getStepContainer(innerElement) {
-    return $(innerElement).parents('.step')
-}
-
-/** Filter predicate that returns true for visible elements. */
-function visible(i,e) {return $(e).filter(':visible').css('visibility') != 'hidden'}
-
-function findSingleVisibleChild(parent, childCss) { return parent.find(childCss).filter(visible)[0] }
-
-/** Searches the given step-container's tree of elements for the add-step button. */
-function getAddStepButton(stepContainer) { return findSingleVisibleChild(stepContainer, 'button.add') }
-
-/** Searches the given step-container's tree of elements for the increment-indent button. */
-function getIncIndentButton(stepContainer) { return findSingleVisibleChild(stepContainer, 'button.indentInc') }
-
-/** Searches the given step-container's tree of elements for the decrement-indent button. */
-function getDecIndentButton(stepContainer) { return findSingleVisibleChild(stepContainer, 'button.indentDec') }
 
 /**
  * Changes the keyboard focus to another.
@@ -156,27 +222,6 @@ function blurFn(sel) { return $(sel).blur() }
 // ---------------------------------------------------------------------------------------------------------------------
 // Feature: Click a step label while during textarea-input to insert a reference.
 
-/**
- * Returns the full label (eg. "1.0.2.a") of a step.
- *
- * @param element Any element within a step.
- * @returns A string.
- */
-function getFullLabel(element) {
-    var curStep = getStepContainer(element)
-    var result = curStep.find('.lbl span').text()
-    var lvl = curStep.attr('data-lvl')
-    if (lvl > 0) {
-        // Get all steps before current
-        var steps = curStep.parent('.steps').find('.step:not(#' + curStep.attr('id') + ' ~ *)')
-        while(lvl-- != 0) {
-            var lbl = steps.filter('[data-lvl='+lvl+']').last().find('.lbl span').text()
-            result = lbl + "." + result
-        }
-    }
-    return result
-}
-
 function makeRef(labelText) { return "[" + labelText + "]" }
 
 function inTypingMode() { return $('#uce').hasClass('typing') }
@@ -187,11 +232,11 @@ function setTypingMode(on) {
     if (on) e.addClass(c); else e.removeClass(c)
 }
 
-function autoSetTypingMode() { setTypingMode(getFocusedInputField()) }
+function autoSetTypingMode() { setTypingMode(focusedEditorTextInput()) }
 
 function onLabelClick(event) {
     if (inTypingMode()) {
-        var label = getFullLabel(event.toElement)
+        var label = labelOfStepElement(event.toElement)
         if (label && label.length > 0) {
             withFocusedInputField(function(focused){
                 focused = $(focused)
@@ -219,7 +264,7 @@ function onLabelClick(event) {
  */
 function clickFocusedStepsButton(containerToButtonFn, clickFn) {
     withFocusedInputField(function (textarea) {
-        var button = containerToButtonFn(getStepContainer(textarea))
+        var button = containerToButtonFn(stepRootOfChildElement(textarea))
         if (button) {
             $(textarea).blur()
             if (clickFn)
@@ -253,11 +298,11 @@ $(document).on('mousedown', ".step .lbl, .step .lbl *", onLabelClick)
 // Keyboard shortcuts
 
 function onEscape()   { withFocusedInputField(blurFn) }
-function onAltDown()  { changeFocus(getElementBelow) }
-function onAltUp()    { changeFocus(getElementAbove) }
-function onAltLeft()  { clickFocusedStepsButton(getDecIndentButton, clickWithFocusFlag) }
-function onAltRight() { clickFocusedStepsButton(getIncIndentButton, clickWithFocusFlag) }
-function onAltEnter() { clickFocusedStepsButton(getAddStepButton) }
+function onAltDown()  { changeFocus(nextEditorTextInput) }
+function onAltUp()    { changeFocus(previousEditorTextInput) }
+function onAltLeft()  { clickFocusedStepsButton(decIndentButtonOfStep, clickWithFocusFlag) }
+function onAltRight() { clickFocusedStepsButton(incIndentButtonOfStep, clickWithFocusFlag) }
+function onAltEnter() { clickFocusedStepsButton(addStepButtonOfStep, undefined) }
 
 function bindKeys(keys, fn) { Mousetrap.bindGlobal(keys, function(){ fn(); return false }) }
 
