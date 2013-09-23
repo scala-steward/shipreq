@@ -23,6 +23,8 @@
 #ucl td.r {vertical-align:top; padding-bottom:2ex; _background:#fef}
 #ucl .view-mode .view a.title {font-size:120%; line-height:1em; color:#4183C4; font-weight:bold}
 #ucl .view-mode .view .detail {font-size:70%; color:#888}
+#ucl .deleted .view a.title {color:#777}
+#ucl .deleted .view .detail {color:#aaa}
 
 #usecaseC {margin-top:2ex}
 

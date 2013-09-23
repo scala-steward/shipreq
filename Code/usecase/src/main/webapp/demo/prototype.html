@@ -95,7 +95,7 @@
 									<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
 									<!--<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>-->
 									<!--<ul class="dropdown-menu" role="menu">-->
-										<!--<li><a href="#" class="danger">Delete</a></li>-->
+									<!--<li><a href="#" class="danger">Delete</a></li>-->
 									<!--</ul>-->
 								</div>
 								<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
@@ -103,8 +103,8 @@
 							<td class="r">
 								<div class="input-group">
 									<!--<span class="input-group-btn">-->
-										<!--<button class="btn tn-sm btn-default cancel">Cancel</button>-->
-										<!--<button class="btn tn-sm btn-primary update">Update</button>-->
+									<!--<button class="btn tn-sm btn-default cancel">Cancel</button>-->
+									<!--<button class="btn tn-sm btn-primary update">Update</button>-->
 									<!--</span>-->
 									<input class="form-control" type="text" value="Create Report for Month-End">
 									<span class="input-group-btn">
@@ -112,6 +112,22 @@
 										<!--<button class="btn tn-sm btn-primary update">Update</button>-->
 									</span>
 								</div>
+							</td>
+						</tr>
+					</table>
+				</li>
+				<!-- Deleted UC -->
+				<li class="uc deleted" style="display:none">
+					<table>
+						<tr class="view-mode">
+							<td class="l">
+								<div class="btn-group">
+									<button class="btn btn-sm btn-default">Revive</button>
+								</div>
+							</td>
+							<td class="r view">
+								<a class="title" href="#">UC-2: Deliver Packages via Trained Seagull</a>
+								<p class="detail">Deleted <abbr class="timeago" title="2013/05/22 13:45">8 months ago</abbr>.</p>
 							</td>
 						</tr>
 					</table>
@@ -125,6 +141,8 @@
 		$('#ucl').append($('#ucl').html())
 		function ucModeToggle(el) {	$(el).parents('.uc').find('.view-mode,.edit-mode').toggle() }
 		$('#ucl').find('button.edit,button.cancel,button.update').click(function(){ ucModeToggle(this) })
+		$($('#ucl .uc.deleted')[1]).remove()
+		$($('#ucl .uc.deleted')[2]).remove()
 	</script>
 
 	<!-- Shares -->
@@ -188,13 +206,19 @@
 	</nav>
 
 	<div class="tab-content">
-		<section id="projectR2-ucs" class="tab-pane fade in active"></section>
+		<section id="projectR2-ucs" class="tab-pane fade in active">
+			<div class="checkbox show-deleted-ucs">
+				<label>
+					<input type="checkbox"> Show deleted
+				</label>
+			</div>
+		</section>
 		<section id="projectR2-shares" class="tab-pane fade"></section>
 	</div>
 
 	<script type="text/javascript">
 		$('#page-projectR2 nav').before($('#page-projectR .proj-ctls').clone())
-		$('#projectR2-ucs').append($('#ucl-p .panel-body').html())
+		$('#projectR2-ucs').before($('#ucl-p .panel-body').html())
 		$('#projectR2-shares').append($('#shares .panel-body').html())
 		$('#projectR2-shares').append($('#shareL').clone())
 		$('#page-projectR2 nav a').click(function (e) {
@@ -202,6 +226,7 @@
 			$(this).tab('show')
 		})
 		$('#projectR2-ucs').find('button.edit,button.cancel,button.update').click(function(){ ucModeToggle(this) })
+		$('.show-deleted-ucs input').click(function(e){ $('.uc.deleted').toggle() })
 	</script>
 </div>
 <!--------------------------------------------------------------------------------------------------------------------->
