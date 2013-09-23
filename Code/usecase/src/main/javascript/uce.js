@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Inspection
 
 /**
@@ -8,9 +8,7 @@
  * @returns An element.
  */
 function stepRootOfChildElement(element) {
-    var stepCss = '.step'
-    var e = $(element)
-    return ((e.filter(stepCss).length != 0) ? e : (e.parents(stepCss)))[0]
+    return $(element).selfOrParent('table.step')[0]
 }
 
 /**
@@ -20,7 +18,7 @@ function stepRootOfChildElement(element) {
  * @returns The step root element (if found).
  */
 function stepRootOfLabel(label) {
-    return $('.step').filterE(stepHasLabel(label))[0]
+    return $('table.step').filterE(stepHasLabel(label))[0]
 }
 
 /**
@@ -53,6 +51,14 @@ function stepHasLabel(label) {
     return function(step) {
         return label == labelOfStepElement(step)
     }
+}
+
+function textInputOfStep(element) {
+    return $(element).find('textarea')[0]
+}
+
+function isValidLabel(str) {
+    return str && str.indexOf && str.indexOf('.') >= 0
 }
 
 /**
@@ -116,7 +122,7 @@ function nextEditorTextInput(elementId) { return editorTextInputSibling(elementI
  */
 function focusedEditorTextInput() { return allEditorTextInputsQ().filter(':focus')[0] }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // FlowGraph rendering
 
 // Globals:
@@ -128,6 +134,20 @@ function setupViz() {
     VizWorker.onmessage = function(ev) {
         var d = ev.data
         $(d.id).html(d.svg)
+
+        // Find step nodes in flow graph
+        var stepNodes = $(d.id).find('g.node').filterE(isValidLabel.c(titleOfFlowgraphNode))
+        stepNodes.eachE(function(e){
+            e=$(e); e.attr("class",e.attr("class")+" step")
+        })
+
+        // Clicking a node selects the step text
+        stepNodes.click(function(ev){
+            var label = titleOfFlowgraphNode($(ev.target).selfOrParent('g.node'))
+            if (isValidLabel(label)) {
+                $(textInputOfStep(stepRootOfLabel(label))).focus().select()
+            }
+        })
     }
 
     if (typeof InitialFlowGraph === 'string')
@@ -137,11 +157,15 @@ function setupViz() {
     //$(document).trigger('flowgraph-update',x)
 }
 
+function titleOfFlowgraphNode(node) {
+    return $(node).find('title').text()
+}
+
 $(document).on('flowgraph-update', function(event, data) {
     VizWorker.postMessage({id:'#flowgraph', dot:data})
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 
 /**
  * Moves a step (and its future children) from Normal Course to Alternate Courses.
@@ -219,7 +243,7 @@ function changeFocus(tgtFn) {
 
 function blurFn(sel) { return $(sel).blur() }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Feature: Click a step label while during textarea-input to insert a reference.
 
 function makeRef(labelText) { return "[" + labelText + "]" }
@@ -236,7 +260,7 @@ function autoSetTypingMode() { setTypingMode(focusedEditorTextInput()) }
 
 function onLabelClick(event) {
     if (inTypingMode()) {
-        var label = labelOfStepElement(event.toElement)
+        var label = labelOfStepElement(event.target)
         if (label && label.length > 0) {
             withFocusedInputField(function(focused){
                 focused = $(focused)
@@ -294,7 +318,7 @@ $(document).on('focus', "#uce textarea", autoSetTypingMode)
 $(document).on('blur',  "#uce textarea", autoSetTypingMode)
 $(document).on('mousedown', ".step .lbl, .step .lbl *", onLabelClick)
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Keyboard shortcuts
 
 function onEscape()   { withFocusedInputField(blurFn) }
@@ -315,7 +339,7 @@ function setupKeyBindings() {
     bindKeys('esc',       onEscape);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Prevent losing unsaved changes
 
 function saveButton() { return $('#save') }
@@ -327,7 +351,7 @@ function promptWhenLeaving() {
 
 window.onbeforeunload = promptWhenLeaving
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 
 function uceSetup() {
     setupKeyBindings()

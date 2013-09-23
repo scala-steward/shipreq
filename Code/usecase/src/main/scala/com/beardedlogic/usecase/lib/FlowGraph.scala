@@ -168,7 +168,7 @@ object FlowGraph {
     val EndSymbol = Cord("E")
     val EndDecl = Cord(EndSymbol + "[shape=doublecircle style=filled color=black fontsize=1 height=.3]")
 
-    val GraphGroup = group("digraph G{ranksep=0.28;") _
+    val GraphGroup = group("digraph G{rankdir=LR;ranksep=0.28;") _
     //val NcGroup = group("subgraph clusterN{style=invis edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
     val NcGroup = anonGroup("edge[weight=9] node[style=filled fillcolor=lawngreen shape=ellipse]") _
     val NcHeadNodeGroup = anonGroup("node[style=filled fillcolor=lawngreen shape=invhouse]") _

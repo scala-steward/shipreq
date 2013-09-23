@@ -147,6 +147,12 @@ table.step {
 	&:after {content:"↑"} /* ↑↱ */
 }
 
+#flowgraph svg {
+  max-width:100%;
+  cursor:default;
+  g.step {cursor: pointer}
+}
+
 // =====================================================================================================================
 
 #legend {
