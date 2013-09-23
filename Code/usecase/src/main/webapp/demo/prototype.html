@@ -36,8 +36,8 @@
 	</div>
 
 <!--------------------------------------------------------------------------------------------------------------------->
+<div id="page-projectR" style="display:none">
 <hr class="page-new">
-<div id="page-projectR">
 
 	<h1>Shared Expenses</h1>
 
@@ -75,7 +75,7 @@
 						<tr class="view-mode">
 							<td class="l">
 								<div class="btn-group">
-									<button class="edit btn btn-sm btn-default">Edit</button>
+									<button class="edit btn btn-sm btn-default">Rename</button>
 									<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
 									<ul class="dropdown-menu" role="menu">
 										<li><a href="#" class="delete" onclick="return false">Delete</a></li>
@@ -90,13 +90,14 @@
 						</tr>
 						<tr class="edit-mode hidden2">
 							<td class="l">
-								<!--<div class="btn-group">-->
+								<div class="btn-group">
+									<button class="btn tn-sm btn-primary update">Update</button>
 									<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
 									<!--<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>-->
 									<!--<ul class="dropdown-menu" role="menu">-->
 										<!--<li><a href="#" class="danger">Delete</a></li>-->
 									<!--</ul>-->
-								<!--</div>-->
+								</div>
 								<!--<button class="btn btn-sm btn-default cancel">Cancel</button>-->
 							</td>
 							<td class="r">
@@ -108,7 +109,7 @@
 									<input class="form-control" type="text" value="Create Report for Month-End">
 									<span class="input-group-btn">
 										<button class="btn tn-sm btn-default cancel">Cancel</button>
-										<button class="btn tn-sm btn-primary update">Update</button>
+										<!--<button class="btn tn-sm btn-primary update">Update</button>-->
 									</span>
 								</div>
 							</td>
@@ -200,6 +201,7 @@
 			e.preventDefault()
 			$(this).tab('show')
 		})
+		$('#projectR2-ucs').find('button.edit,button.cancel,button.update').click(function(){ ucModeToggle(this) })
 	</script>
 </div>
 <!--------------------------------------------------------------------------------------------------------------------->
