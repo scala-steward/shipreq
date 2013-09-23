@@ -1,7 +1,9 @@
+.pgTitle {margin-bottom:2.5ex}
 .page-new {margin-top:1000px}
 .hidden2 {display:none}
 .dropdown-menu a.delete {color:red}
 .todo {color:red; background:#fee}
+[disabled] * {color:#aaa !important}
 
 #page-projectR2 nav {margin-top:6ex}
 #projectR2-shares {padding-top:2ex}
@@ -40,8 +42,6 @@
 .shareL td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
 .shareL td.r {vertical-align:top; _background:#fef}
 
-#page-shareCU {margin-bottom:2.5ex}
-
 #page-presmode nav {margin-top:6ex}
 #page-presmode nav ol {margin-left:1ex}
 #page-presmode nav a {font-size:110%; line-height:1.6em}
@@ -67,3 +67,31 @@
 #page-presmode .fvs a.step:not(:hover) ,
 #page-presmode .fvs a.uc:not(:hover) {_color:black; _text-decoration:underline; border-bottom:1px dotted}
 #page-presmode .steps .highlight {_font-weight:bold; background:#ffc}
+
+
+
+
+.spinner {
+    display: inline-block;
+    opacity: 0;
+    width: 0;
+    -webkit-transition: opacity 0.25s, width 0.25s;
+    -moz-transition: opacity 0.25s, width 0.25s;
+    -o-transition: opacity 0.25s, width 0.25s;
+    transition: opacity 0.25s, width 0.25s;
+}
+.has-spinner.active {    cursor:progress;}
+.has-spinner.active .spinner {
+    opacity: 1;
+    width: auto; /* This doesn't work, just fix for unknown width elements */
+}
+.has-spinner.btn-xs.active .spinner {   width: 10px;}
+.has-spinner.btn-sm.active .spinner {    width: 13px;}
+.has-spinner.btn.active .spinner {    width: 16px;}
+.has-spinner.btn-lg.active .spinner {    width: 19px;}
+
+button:not(.active) .when-not-active {display:none}
+button:not(.active) .when-active {display:inline}
+button.active {opacity:0.85}
+button.active .when-not-active {display:inline}
+button.active .when-active {display:none}

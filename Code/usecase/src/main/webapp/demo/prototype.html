@@ -8,6 +8,7 @@
 	<script type="text/javascript" src="../js/vendor/bootstrap.js"></script>
 	<link type="text/css" rel="stylesheet" href="prototype.css" />
 	<link type="text/css" rel="stylesheet" href="../css/vendor/bootstrap.css" />
+	<link type="text/css" rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css" />
 	<!--<style media="screen" type="text/css"></style>-->
 </head>
 <body><div class="container">
@@ -231,7 +232,7 @@
 </div>
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
-<h1 id="page-shareCU">Share Use Cases</h1>
+<h1 id="page-shareCU" class="pgTitle">Share Use Cases</h1>
 
 	<form class="form-horizontal" role="form">
 		<div class="form-group">
@@ -255,7 +256,7 @@
 				<textarea class="form-control" id="inputWelcome" rows="6" placeholder="Any additional text to display to viewers who access the share."></textarea>
 			</div>
 		</div>
-		<div class="form-group">
+		<div class="form-group" id="uc-selection">
 			<label class="col-sm-2 control-label">Content</label>
 			<div class="col-sm-10">
 				<div class="radio">
@@ -283,6 +284,43 @@
 			</div>
 		</div>
 	</form>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+<hr class="page-new">
+<h1 id="page-genPDF" class="pgTitle">Generate PDF</h1>
+
+	<form class="form-horizontal" role="form">
+		<fieldset id="pdf-form">
+			<div class="form-group">
+				<label for="inputName1" class="col-sm-2 control-label">PDF Title</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="inputPdfTitle" placeholder="PDF Title" required value="Use Case Editor v1.0">
+				</div>
+			</div>
+			<hr id="pdf-uc-selection">
+		</fieldset>
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<!--button type="button"
+						class="btn btn-success"
+						data-loading-text="Generating..."
+						onclick="$(this).button('loading'); $('#pdf-form').attr('disabled','disabled')"
+						>
+					Generate PDF
+				</button-->
+				<button type="button" class="btn btn-lg btn-success has-spinner" onclick="$(this).toggleClass('active'); return false">
+					<span class="spinner"><i class="icon-spin icon-refresh"></i></span>
+					<!--<span class="spinner"><i class="glyphicon glyphicon-spin glyphicon-refresh"></i></span>-->
+					<span class="when-active">Generate PDF</span>
+					<span class="when-not-active">Generating...</span>
+				</button>
+			</div>
+		</div>
+	</form>
+
+	<script>
+		$('#pdf-uc-selection').replaceWith($('#uc-selection'))
+	</script>
 
 <!--------------------------------------------------------------------------------------------------------------------->
 <hr class="page-new">
