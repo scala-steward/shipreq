@@ -107,8 +107,8 @@ class Dao(_session: Session) {
    * Creates a `usecase` and a rev-#1 `usecase_rev`. The UC number is determined automatically.
    */
   def createUseCaseIdentAndRev1(title: String): UseCaseRev = withTransaction {
-    val identId = createUseCaseIdent()
     val correctedTitle = InputCorrection.useCaseTitle(title)
+    val identId = createUseCaseIdent()
     val (id, number) = InsertUseCaseRev1WithAutoNumber.first(identId, correctedTitle)
     UseCaseRev(identId, 1, id, UseCaseHeader(number, correctedTitle))
   }
@@ -227,6 +227,9 @@ private[db] final object Sql {
     }
   }
 
+  private[this] case class Update() extends scala.annotation.StaticAnnotation
+  private[this] case class Insert() extends scala.annotation.StaticAnnotation
+
   // ###################################################################################################################
   // User
 
@@ -245,16 +248,16 @@ private[db] final object Sql {
   val GetConfirmationTokenIssuedDate = query[String, DateTime](
     "SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
-  val UpdateConfirmationToken = update[(String, UserId)](
+  @Update val UpdateConfirmationToken = update[(String, UserId)](
     "UPDATE usr SET confirmation_token = ?, confirmation_sent_at = NOW() WHERE id=?")
 
-  val LogUserLogin = update[(String, UserId)](
+  @Update val LogUserLogin = update[(String, UserId)](
     "UPDATE usr SET login_count = login_count + 1, last_login_at = NOW(), last_login_ip = ? WHERE id=?")
 
-  val InsertUserPlaceholder = update[(String, String)](
+  @Insert val InsertUserPlaceholder = update[(String, String)](
     "INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")
 
-  val RegisterUser = query[(String, PasswordAndSalt, String, String), UserId]( """
+  @Update val RegisterUser = query[(String, PasswordAndSalt, String, String), UserId]( """
     UPDATE usr SET username = ?
       ,password = ?, password_salt = ?, password_changed_at = NOW()
       ,confirmation_token = NULL, confirmed_at = NOW()
@@ -268,14 +271,14 @@ private[db] final object Sql {
   private val ucrev_* = s"r.ident_id, r.rev, r.id, r.number, r.title"
 
   private val NextUseCaseNumber =
-    "select coalesce(max(number),0)+1 from usecase_rev where id in (select latest_rev_id from usecase)"
+    "SELECT coalesce(max(number),0)+1 from usecase_rev where id in (select latest_rev_id from usecase)"
 
-  val InsertUseCaseIdent = queryNA[UseCaseIdentId]("INSERT INTO usecase DEFAULT VALUES RETURNING id")
+  @Insert val InsertUseCaseIdent = queryNA[UseCaseIdentId]("INSERT INTO usecase DEFAULT VALUES RETURNING id")
 
-  val InsertUseCaseRev = query[(UseCaseIdentId, Short, Short, String), UseCaseRevId](
+  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, Short, String), UseCaseRevId](
     "INSERT INTO usecase_rev(ident_id, rev, number, title) VALUES(?,?,?,?) RETURNING id")
 
-  val InsertUseCaseRev1WithAutoNumber = query[(UseCaseIdentId, String), (UseCaseRevId, Short)](
+  @Insert val InsertUseCaseRev1WithAutoNumber = query[(UseCaseIdentId, String), (UseCaseRevId, Short)](
     s"INSERT INTO usecase_rev(ident_id, rev, number, title) VALUES(?,1,($NextUseCaseNumber),?) RETURNING id, number")
 
   val SelectLatestUseCaseRevId = query[UseCaseIdentId, UseCaseRevId](s"SELECT latest_rev_id FROM usecase WHERE id=?")
@@ -291,32 +294,32 @@ private[db] final object Sql {
     WHERE r.id = latest_rev_id
     ORDER BY number """.sql)
 
-  val UpdateUseCaseTitleDirect = update[(String, UseCaseRevId)]("UPDATE usecase_rev SET title=? WHERE id=?")
+  @Update val UpdateUseCaseTitleDirect = update[(String, UseCaseRevId)]("UPDATE usecase_rev SET title=? WHERE id=?")
 
   // ###################################################################################################################
   // Text
 
   private val textrev_* = "tr.ident_id, tr.rev, tr.id, tr.text"
 
-  val InsertTextIdent = query[(UseCaseIdentId, FieldKeyId), TextIdentId](
+  @Insert val InsertTextIdent = query[(UseCaseIdentId, FieldKeyId), TextIdentId](
     "INSERT INTO text(uc_id, fk_id) VALUES(?,?) RETURNING id")
 
-  val InsertTextRev = query[(TextIdentId, Short, TextWithNormalisedRefs), TextRevId](
+  @Insert val InsertTextRev = query[(TextIdentId, Short, TextWithNormalisedRefs), TextRevId](
     "INSERT INTO text_rev(ident_id, rev, text) VALUES(?,?,?) RETURNING id")
 
   // ###################################################################################################################
   // uc_field
 
-  val LinkUcToText = update[(UseCaseRevId, TextRevId)]("INSERT INTO uc_field(uc_rev_id, text_rev_id) VALUES(?,?)")
+  @Insert val LinkUcToText = update[(UseCaseRevId, TextRevId)](
+    "INSERT INTO uc_field(uc_rev_id, text_rev_id) VALUES(?,?)")
 
-  val LinkUcToStep = update[(UseCaseRevId, LabelStr, Option[TextRevId], Short, TextRevId)](
+  @Insert val LinkUcToStep = update[(UseCaseRevId, LabelStr, Option[TextRevId], Short, TextRevId)](
     "INSERT INTO uc_field(uc_rev_id, label, parent_rev_id, index, text_rev_id) VALUES(?,?,?,?,?)")
 
-  val CopyUcFieldsBetweenRevs = update[(UseCaseRevId, UseCaseRevId)]("""
+  @Insert val CopyUcFieldsBetweenRevs = update[(UseCaseRevId, UseCaseRevId)]("""
     INSERT INTO uc_field
     SELECT ?, label, parent_rev_id, index, text_rev_id
-      FROM uc_field where uc_rev_id = ?
-    """.sql)
+      FROM uc_field where uc_rev_id = ? """.sql)
 
   // Step loading depends on ORDER BY index
   val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](s"""
@@ -332,7 +335,7 @@ private[db] final object Sql {
   val SelectReusableFieldKeyId = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
     "SELECT id FROM field_key WHERE type_id=? AND data IS NOT DISTINCT FROM ?")
 
-  val InsertFieldKey = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
+  @Insert val InsertFieldKey = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
     "INSERT INTO field_key(type_id, data) VALUES(?,?) RETURNING id")
 }
 
