@@ -3,20 +3,26 @@ package com.beardedlogic.usecase.lib
 import scalaz.syntax.monoid._
 import net.liftweb.common.{Failure, Full, Box, Logger, Empty}
 import net.liftweb.http.js.{JsCmd, JsExp}
-import net.liftweb.http.{StatefulSnippet, ResponseShortcutException, LiftResponse}
+import net.liftweb.http.js.JsCmds.Noop
+import net.liftweb.http.{RedirectResponse, StatefulSnippet, ResponseShortcutException, LiftResponse}
 import net.liftweb.json.{NoTypeHints, Serialization}
 import net.liftweb.util.Mailer.{MailTypes, From, Subject}
 import net.liftweb.util.{CssSel, Mailer}
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
 import com.beardedlogic.usecase.app.AppConfig
+import com.beardedlogic.usecase.app.AppSiteMap.Login
+import com.beardedlogic.usecase.app.AppSiteMap.Implicits._
 import com.beardedlogic.usecase.lib.security.Oshiro
+import com.beardedlogic.usecase.db.{UserDescriptor, DAO}
 import com.beardedlogic.usecase.snippet.Notices
 import com.beardedlogic.usecase.util.HttpResponses.ShouldNeverHappenResponse
 import com.beardedlogic.usecase.util.JsExt._
 import com.beardedlogic.usecase.util.ErrorMessages
 import Types.JsCmdMonoid
 import SnippetHelpers._
+
+// TODO Needs rework between static & stateful
 
 object SnippetHelpers extends StaticSnippetHelpers {
   final val DefaultAjaxErrorId = "ajaxErr"
@@ -29,8 +35,6 @@ trait StaticSnippetHelpers {
   def shouldNeverHappen_! = respondImmediately(ShouldNeverHappenResponse())
 
   def shouldNeverHappen_!(msg: String) = respondImmediately(ShouldNeverHappenResponse(msg))
-
-  def loggedInUser = Oshiro.loggedInUser
 }
 
 /**
@@ -47,6 +51,11 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
   @inline implicit def OptionToBox[T](option: Option[T]): Box[T] = Box(option)
 
   protected implicit lazy val jsonFormats = Serialization.formats(NoTypeHints)
+
+  def currentUser: UserDescriptor = Oshiro.loggedInUser match {
+    case Some(user) => user
+    case None => respondImmediately(RedirectResponse(Login.relativeUrl))
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -76,10 +85,10 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
       JqExpr(errNode) ~> JqAppendTo("#notices") ~> JqHighlight()
     }
 
-  def jsPossibleError[T](box: Box[T], id: String = DefaultAjaxErrorId)(successJs: T => JsCmd): JsCmd = box match {
+  def jsPossibleError[T](box: Box[T], id: String = DefaultAjaxErrorId)(successJs: T => JsCmd, failureJs: => JsCmd = Noop): JsCmd = box match {
     case Full(v)            => jsClearError() |+| successJs(v)
-    case Empty              => jsShowError(ErrorMessages.Generic, id)
-    case Failure(err, _, _) => jsShowError(err, id)
+    case Empty              => jsShowError(ErrorMessages.Generic, id) |+| failureJs
+    case Failure(err, _, _) => jsShowError(err, id) |+| failureJs
   }
 }
 
