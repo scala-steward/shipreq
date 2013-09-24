@@ -8,6 +8,17 @@ import lib.UseCaseHeader
 import lib.field._
 
 // ===================================================================================================================
+// User
+
+case class UserDescriptor(id: UserId, username: String, email: String)
+
+case class UserRegistrationInfo(
+  id: UserId,
+  confirmationToken: Option[String],
+  confirmationSentAt: Option[DateTime],
+  confirmedAt: Option[DateTime])
+
+// ===================================================================================================================
 // Fields
 
 case class FieldKeyRec(id: FieldKeyId, fkType: FieldKeyType, data: FieldKeyRecData) {
@@ -29,6 +40,11 @@ object FieldListRec {
   def fromFields(fields: List[Field]) = apply(fields map (_.rec))
 }
 
+// ===================================================================================================================
+// UC & Text
+
+case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
+
 case class TextRev(identId: TextIdentId, rev: Short, id: TextRevId, text: TextWithNormalisedRefs)
 
 case class UcFieldTextWithFK(fkId: FieldKeyId, rel: UcFieldText) {
@@ -44,13 +60,3 @@ case class UcFieldText(label: Option[String], parentId: Option[TextRevId], index
   @inline final def id = textRev.id
   @inline final def text = textRev.text
 }
-
-case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
-
-case class UserDescriptor(id: UserId, username: String, email: String)
-
-case class UserRegistrationInfo(
-  id: UserId,
-  confirmationToken: Option[String],
-  confirmationSentAt: Option[DateTime],
-  confirmedAt: Option[DateTime])
