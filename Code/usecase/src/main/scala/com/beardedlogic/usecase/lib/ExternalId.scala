@@ -7,6 +7,7 @@ import Types._
 
 object ExternalId {
   // util.Random.shuffle(x.toList).mkString
+  final val Project = new ExternalId[ProjectIdTag]("F4XBvt0i2cnHQ6dIaAomLjPE3MOrsbxReq1W9pgZyzNY7SkGf5UlwJCTKuVD8h")
   final val UseCase = new ExternalId[UseCaseIdentIdTag]("0atxlQwnj7y3zFZNVBqJ42AcriYEeMu8SdU91HgfTsb6GhmWkX5KopCIRLvOPD")
   final val TextRev = new ExternalId[TextRevIdTag]("eBM0xKQuO2Zy43AnWGPmkbXN9HprwV7ItSi1CdETv6D5UYRscjJzhFgoLflqa8")
 }

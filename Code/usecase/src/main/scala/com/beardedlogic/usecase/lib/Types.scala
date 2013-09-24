@@ -54,6 +54,10 @@ object Types {
   sealed trait TextRevEITag extends TypeTag[String]
   type TextRevEI = String @@ TextRevEITag
 
+  /** An ExternalID string for a ProjectId */
+  sealed trait ProjectEITag extends TypeTag[String]
+  type ProjectEI = String @@ ProjectEITag
+
   implicit class StringTypeExt(val s: String) extends AnyVal {
     def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
     def asLocalStepId = s.asInstanceOf[LocalStepId]
@@ -126,6 +130,12 @@ object Types {
   type UserId = JLong @@ UserIdTag
   @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
+
+  /** Marks a Long value as corresponding to `project.id`. */
+  trait ProjectIdTag extends ExteralisableIdTag {
+    override type EITag = ProjectEITag
+  }
+  type ProjectId = JLong @@ ProjectIdTag
 
   // -------------------------------------------------------------------------------------------------------------------
   // Typedefs

@@ -45,6 +45,8 @@ private[db] object DbHelpers {
   implicit val SP_TextIdentId = SP_TaggedLong[TextIdentId]
   implicit val GR_UserId = GR_TaggedLong[UserId]
   implicit val SP_UserId = SP_TaggedLong[UserId]
+  implicit val GR_ProjectId = GR_TaggedLong[ProjectId]
+  implicit val SP_ProjectId = SP_TaggedLong[ProjectId]
 
   implicit val GR_TextWithNormalisedRefs = GetResult(_.nextString.hasNormalisedRefs)
 

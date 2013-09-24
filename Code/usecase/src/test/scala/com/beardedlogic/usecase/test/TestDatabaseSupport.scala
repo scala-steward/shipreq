@@ -108,6 +108,7 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
   object Tables {
     object FieldKeyType extends Table {def name = "field_key_type"}
     object FieldKey extends Table {def name = "field_key"}
+    object Project extends Table {def name = "project"}
     object Usecase extends Table {def name = "usecase"}
     object UsecaseRev extends Table {def name = "usecase_rev"}
     object Text extends Table {def name = "text"}
