@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase
 package db
 
-import java.lang.{Long => JLong}
+import java.lang.{Long => JLong, Short => JShort}
 import java.sql.Timestamp
 import org.joda.time.DateTime
 import scala.Long
@@ -21,6 +21,8 @@ private[db] object DbHelpers {
   implicit class PositionedResultExt(val r: PositionedResult) extends AnyVal {
     def nextId[T <: JLong @@ TypeTag[Long]](): T = r.nextObject.asInstanceOf[T]
     def nextId_?[T <: JLong @@ TypeTag[Long]](): Option[T] = r.nextObjectOption.asInstanceOf[Option[T]]
+    def nextTShort[Tag <: TypeTag[Short]](): JShort @@ Tag = r.nextShort.tag[Tag]
+    def nextTShort_?[Tag <: TypeTag[Short]](): Option[JShort @@ Tag] = r.nextShortOption.map(_.tag[Tag])
   }
 
   private def GR_TaggedLong[T <: JLong @@ TypeTag[Long]]: GetResult[T] = GetResult(_.nextId[T])
@@ -31,6 +33,14 @@ private[db] object DbHelpers {
   private def SP_TaggedLongOpt[T <: JLong @@ TypeTag[Long]] = new SetParameter[Option[T]] {
     def apply(v: Option[T], pp: PositionedParameters): Unit = pp.setObjectOption(v, java.sql.Types.BIGINT)
   }
+
+  private def GR_TaggedShort[Tag <: TypeTag[Short]]: GetResult[JShort @@ Tag] = GetResult(_.nextTShort[Tag])
+  private def SP_TaggedShort[Tag <: TypeTag[Short]]: SetParameter[JShort @@ Tag] = new SetParameter[JShort @@ Tag] {
+    def apply(v: JShort @@ Tag, pp: PositionedParameters): Unit = pp.setShort(v)
+  }
+
+  implicit val GR_UseCaseNumber = GR_TaggedShort[UseCaseNumber]
+  implicit val SP_UseCaseNumber = SP_TaggedShort[UseCaseNumber]
   implicit val GR_FieldKeyId = GR_TaggedLong[FieldKeyId]
   implicit val SP_FieldKeyId = SP_TaggedLong[FieldKeyId]
   implicit val GR_UseCaseRevId = GR_TaggedLong[UseCaseRevId]

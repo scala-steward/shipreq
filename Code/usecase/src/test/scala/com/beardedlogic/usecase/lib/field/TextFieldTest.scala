@@ -3,7 +3,7 @@ package lib.field
 
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
-import com.beardedlogic.usecase.lib.{UseCaseHeader, FieldLoadCtx}
+import com.beardedlogic.usecase.lib.FieldLoadCtx
 import lib.Types._
 import lib.text.FreeText
 import db._
@@ -18,7 +18,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
     v
   }
 
-  val UCH = UseCaseHeader(2, "AH")
+  val UCH = UseCaseHeader("AH")
   val EmptyLoadCtx = FieldLoadCtx(UCH, List.empty)
   val TI1 = 201L.tag[TextIdentIdTag]
   val TR1 = 301L.tag[TextRevIdTag]

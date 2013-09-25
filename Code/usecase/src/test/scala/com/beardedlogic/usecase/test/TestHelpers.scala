@@ -296,7 +296,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits {
     for ((n, i) <- nodes.zipWithIndex) yield n.copy(labelIndex = i)
 
   def assertStepsAndLabelsRegen(uc: UseCase) {
-    uc.stepsAndLabels.value ==== UseCaseFns.generateStepAndLabelBiMap(uc.fieldValues, uc.header).value
+    uc.stepsAndLabels.value ==== UseCaseFns.generateStepAndLabelBiMap(uc).value
   }
 
   def assertUseCasesMatchIgnoringStepsAndLabels(actual: UseCase, expected: UseCase) {

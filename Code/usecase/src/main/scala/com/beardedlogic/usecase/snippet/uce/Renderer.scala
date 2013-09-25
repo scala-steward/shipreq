@@ -72,7 +72,7 @@ case class Renderer(
   def render = {
     S.appendGlobalJs(JsSetGlobalVar("InitialFlowGraph", flowGraph))
     ".fieldFrame *" #> renderFields andThen (
-      ".title .ucid *" #> uch.number.toString
+      ".title .ucid *" #> ucNumber.toString
         & ".title @title" #> SHtml.ajaxTextarea(uch.title, i => %(_.updateTitle(i)), "id" -> TitleId, "rows" -> "1")
         & renderSaveCont
       )

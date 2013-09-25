@@ -38,6 +38,7 @@ object UseCasePersistence {
   def load(ucRev: UseCaseRev, dao: Dao, lock: LockTokenR[UseCase]): UseCaseSaveCheckpoint = {
 
     @inline def uch = ucRev.header
+    @inline def ucn = ucRev.ident.number
     val fieldList = Defaults.FieldList.value.fields // TODO hardcoded fieldlist
     val loadCtx = FieldLoadCtx(uch, dao.findAllUcFieldData(ucRev.id))
 
@@ -48,7 +49,7 @@ object UseCasePersistence {
     for (f <- fieldList) {
       val r = f.load(loadCtx)
       loadResults +:= (f -> r)
-      for (tree <- r.stepTree) stepAndLabelMaps +:= generateStepAndLabelMap(f, tree, uch)
+      for (tree <- r.stepTree) stepAndLabelMaps +:= generateStepAndLabelMap(ucn, f, tree)
       if (r.savedSteps.nonEmpty) savedStepMap ++= r.savedSteps
     }
 
@@ -63,13 +64,15 @@ object UseCasePersistence {
       for (sd <- sdOpt) savedData += (f -> sd)
     }
 
-    val uc = UseCase(uch, fieldList, fieldValues.result, stepAndLabels)
+    val uc = UseCase(ucRev.ident, uch, fieldList, fieldValues.result, stepAndLabels)
     val cp = UseCaseSaveCheckpoint(uc, ucRev, savedSteps, savedData.result)
 
     cp
   }
 
   // ===================================================================================================================
+
+  // TODO UC now requires a UC ident, ergo prevSave can never be None
 
   /**
    * Saves the use case.
@@ -114,7 +117,7 @@ object UseCasePersistence {
       savers.filter {case (f, s) => getPrevSaveDataFor(f).isDefined || s.record_required_?}
 
     def saveUcHeader(): UseCaseRev = prevSave match {
-      case Some(cp) => dao.createUseCaseRev(cp.rec.identId, (cp.rec.rev + 1).toShort, uc.header)
+      case Some(cp) => dao.createUseCaseRev(cp.rec.ident, (cp.rec.rev + 1).toShort, uc.header)
       case None     => dao.createUseCaseIdentAndRev1(uc.header)
     }
 
@@ -144,7 +147,8 @@ object UseCasePersistence {
         val savers = selectFieldsRequiringSave(allSavers)
         implicit val newSavedSteps = presave(ucRev.identId, savers)
         val savedData = save(savers, ucRev.identId, ucRev.id)
-        UseCaseSaveCheckpoint(uc, ucRev, newSavedSteps, savedData)
+        val newUc = if (prevSave.isEmpty) uc.copy(number = ucRev.ident.number) else uc
+        UseCaseSaveCheckpoint(newUc, ucRev, newSavedSteps, savedData)
       }
 
     if (isSaveRequired_?(allSavers))

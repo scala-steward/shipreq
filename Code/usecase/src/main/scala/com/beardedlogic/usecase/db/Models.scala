@@ -4,7 +4,7 @@ package db
 import org.joda.time.DateTime
 import scala.reflect.ClassTag
 import lib.Types._
-import lib.UseCaseHeader
+import lib.UcChangeDomain
 import lib.field._
 
 // ===================================================================================================================
@@ -43,7 +43,14 @@ object FieldListRec {
 // ===================================================================================================================
 // UC & Text
 
-case class UseCaseRev(identId: UseCaseIdentId, rev: Short, id: UseCaseRevId, header: UseCaseHeader)
+case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber)
+
+case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader) {
+  @inline final def identId = ident.identId
+}
+
+case class UseCaseHeader(title: String)
+object UseCaseHeader extends UcChangeDomain
 
 case class TextRev(identId: TextIdentId, rev: Short, id: TextRevId, text: TextWithNormalisedRefs)
 

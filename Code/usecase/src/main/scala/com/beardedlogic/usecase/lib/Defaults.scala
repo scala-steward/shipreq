@@ -8,8 +8,12 @@ import db._
 
 object Defaults extends Logger {
 
+  // TODO Change defaults to lowercase
+
   /** Default title of new use cases. */
   val Title = "Untitled"
+
+  val useCaseHeader = UseCaseHeader(Title)
 
   val FieldListDefns: List[FieldDefinition] =
     TextFieldDefinition("Description") ::

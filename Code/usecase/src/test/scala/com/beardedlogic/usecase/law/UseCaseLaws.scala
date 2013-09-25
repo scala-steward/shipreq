@@ -89,8 +89,11 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   // Each check pass will run in its own transaction
   override val wrapTestsInTransaction = false
 
-  implicit lazy val arbUseCase: Arbitrary[UseCase] = Arbitrary(useCaseGen(Defaults.FieldList.value))
-  implicit lazy val arbUseCaseMutators: Arbitrary[List[UseCaseMutator]] = Arbitrary(Gen.listOfN(mutationsPerRun, useCaseMutator))
+  implicit lazy val arbUseCase: Arbitrary[UseCase] =
+    Arbitrary(useCaseGen(Defaults.FieldList.value, (1:Short).tag[UseCaseNumberTag]))
+
+  implicit lazy val arbUseCaseMutators: Arbitrary[List[UseCaseMutator]] =
+    Arbitrary(Gen.listOfN(mutationsPerRun, useCaseMutator))
 
   def all(ps: Seq[Prop]) = Prop.all(ps: _*)
 

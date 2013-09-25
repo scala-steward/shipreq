@@ -13,7 +13,8 @@ import scala.util.Random
 import Q.interpolation
 
 import db.{Dao, DaoProvider, DB}
-import lib.DI
+import lib.{DI, UseCaseSaveCheckpoint}
+import lib.Types._
 
 object TestDB {
 
@@ -180,6 +181,20 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
     val sqlFull = IOUtils.toString(getClass.getResource(filename.replaceFirst("^/?", "/")))
     val script = new SqlScript(sqlFull, dbSupport)
     script.execute(dbSupport.getJdbcTemplate)
+  }
+
+  /**
+   * When a new UC is saved it gets given the number available UC number. Use this to correct the UC number after the
+   * fact.
+   *
+   * @param n The new UC number.
+   */
+  def forceUcNumber(cp: UseCaseSaveCheckpoint, n: Int): UseCaseSaveCheckpoint = {
+    val ucn = n.toShort.tag[UseCaseNumberTag]
+    val uc_ = cp.uc.copy(number = ucn)
+    val rec_ = cp.rec.copy(ident = cp.rec.ident.copy(number = ucn))
+    sqlu"UPDATE usecase set number=${ucn.toShort} where id = ${rec_.ident.identId.toLong}".execute
+    cp.copy(uc = uc_, rec = rec_)
   }
 }
 

@@ -3,16 +3,17 @@ package db
 
 import org.scalatest.FunSpec
 import test.TestDatabaseSupport
-import lib.{Defaults, UseCaseHeader}
+import lib.Defaults
 import lib.Types._
 import UseCaseHeaderUpdateResult._
 
 class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
 
+  implicit def str2uch(title: String): UseCaseHeader = UseCaseHeader(title)
+
   describe("findUseCase") {
     it("should load when found") {
-      val uch = UseCaseHeader(17, "ah")
-      val saved = dao.createUseCaseIdentAndRev1(uch)
+      val saved = dao.createUseCaseIdentAndRev1("ah")
       dao.findUseCaseRev(saved).get ==== saved
     }
   }
@@ -52,7 +53,7 @@ class UseCaseRevTest extends FunSpec with TestDatabaseSupport {
     }
 
     it("should do a direct update when rev #1 and title default") {
-      val rev1 = dao.createUseCaseIdentAndRev1(Defaults.Title)
+      val rev1 = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
       val tgt = rev1.withTitle("omg")
       val r = assertTableDiffs() {dao.updateUseCaseHeader(rev1, _ => tgt.header)}
       r ==== DirectUpdate(tgt)

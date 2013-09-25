@@ -1,13 +1,13 @@
 package com.beardedlogic.usecase
 package lib
 
-import java.lang.{Long => JLong}
+import java.lang.{Long => JLong, Short => JShort}
 import net.liftweb.common.Box
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import scalaz.{LensFamily, Monoid, Name, Value}
 import change.{Change, ChangeResultF}
 import field.Field
-import db.{UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
+import db.{UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
 import util.{AppliedLens, BiMap}
 
 /**
@@ -76,6 +76,27 @@ object Types {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  // Short tags
+
+  implicit class JShortTypeExt(val x: JShort) extends AnyVal {
+    def tag[T <: TypeTag[Short]] = x.asInstanceOf[JShort @@ T]
+  }
+  implicit class ShortTypeExt(val x: scala.Short) extends AnyVal {
+    def tag[T <: TypeTag[Short]] = JShort.valueOf(x).tag[T]
+  }
+  implicit class ShortOptionExt(val x: Option[Short]) extends AnyVal {
+    def tag[T <: TypeTag[Short]] = x.map(_.tag[T])
+  }
+  implicit class ShortBoxExt(val x: Box[scala.Short]) extends AnyVal {
+    def tag[T <: TypeTag[Short]] = x.map(_.tag[T])
+  }
+
+  /** Marks a Short value as corresponding to `usecase.number`. */
+  sealed trait UseCaseNumberTag extends TypeTag[Short]
+  type UseCaseNumber = JShort @@ UseCaseNumberTag
+  @inline final implicit def UcIdentToUcN(u: UseCaseIdent): UseCaseNumber = u.number
+
+  // -------------------------------------------------------------------------------------------------------------------
   // Long tags
 
   implicit class JLongTypeExt(val x: JLong) extends AnyVal {
@@ -107,6 +128,7 @@ object Types {
   }
   type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
   @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
+  @inline final implicit def UseCaseIdentToIdentId(i: UseCaseIdent): UseCaseIdentId = i.identId
 
   /** Marks a Long value as corresponding to `usecase_rev.id`. */
   sealed trait UseCaseRevIdTag extends TypeTag[Long]

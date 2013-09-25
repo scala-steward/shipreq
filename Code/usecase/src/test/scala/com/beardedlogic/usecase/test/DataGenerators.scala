@@ -7,10 +7,10 @@ import org.scalacheck.{Prop, Arbitrary, Gen}
 import scala.util.matching.Regex
 
 import lib._
-import change.NoChange
 import field._
-import db.FieldListRec
 import tree._
+import change.NoChange
+import db.{UseCaseHeader, FieldListRec}
 import text.{StepText, FreeText}
 import Misc.removeAllWhitespace
 import StepField.StartingLabelIndices
@@ -218,15 +218,16 @@ object DataGenerators extends Logger {
   def genNcSfv(NCF: => NormalCourseField): Gen[NcSfv] = {
     val ncf = NCF
     for {
-      h <- arbitrary[UseCaseHeader]
-      nc <- stepPlaceholderTree(ncf.rootLabelPrefix(h), ncf.sli, 1)
+      uch <- arbitrary[UseCaseHeader]
+      ucn <- arbitrary[UseCaseNumber]
+      nc <- stepPlaceholderTree(ncf.rootLabelPrefix(ucn), ncf.sli, 1)
       steps = StepPlaceholderTree(nc.nodes, null)
       refdep = RefDependentGen(steps)
       stepTexts <- Gen.listOfN(steps.sizeRecursive, refdep.stepText)
     } yield {
-      implicit val stepsAndLabels = generateStepAndLabelBiMap(h, (ncf -> nc.stepTree))
+      implicit val stepsAndLabels = generateStepAndLabelBiMap(ucn, (ncf -> nc.stepTree))
       val sfv = stepFieldValue(stepTexts, ncf, nc.stepTree)
-      NcSfv(h, sfv, stepsAndLabels)
+      NcSfv(uch, sfv, stepsAndLabels)
     }
   }
 
@@ -235,23 +236,24 @@ object DataGenerators extends Logger {
 
   val useCaseTitle = arbitrary[String]
 
-  val useCaseNumber = Gen.posNum[Short]
+  val useCaseNumber = Gen.posNum[Short].map(_.tag[UseCaseNumberTag])
 
   val useCaseHeader = for {
-    number <- useCaseNumber
     title <- useCaseTitle
-  } yield UseCaseHeader(number, title)
+  } yield UseCaseHeader(title)
 
   implicit val arbUCH = Arbitrary(useCaseHeader)
+  implicit val arbUCN = Arbitrary(useCaseNumber)
 
-  def useCaseGen(fieldList: => FieldListRec): Gen[UseCase] = {
+  def useCaseGen(fieldList: => FieldListRec, ucnGen: Gen[UseCaseNumber] = useCaseNumber): Gen[UseCase] = {
     val NCF = fieldList.NCF
     val ECF = fieldList.ECF
 
     for {
       h <- arbitrary[UseCaseHeader]
-      nc <- stepPlaceholderTree(NCF.rootLabelPrefix(h),  NCF.sli, 1)
-      ec <- stepPlaceholderTree(ECF.rootLabelPrefix(h),  ECF.sli, 0)
+      ucn <- ucnGen
+      nc <- stepPlaceholderTree(NCF.rootLabelPrefix(ucn),  NCF.sli, 1)
+      ec <- stepPlaceholderTree(ECF.rootLabelPrefix(ucn),  ECF.sli, 0)
       steps = StepPlaceholderTree(nc.nodes ::: ec.nodes, null)
       refdep = RefDependentGen(steps)
       textFieldTexts <- Gen.listOfN(fieldList.textFields.size, refdep.textFieldText)
@@ -260,7 +262,7 @@ object DataGenerators extends Logger {
       trace(s"Creating UC with ${steps.sizeRecursive} steps.")
 
       // Steps and Labels
-      implicit val stepsAndLabels = generateStepAndLabelBiMap(h, (NCF -> nc.stepTree), (ECF -> ec.stepTree))
+      implicit val stepsAndLabels = generateStepAndLabelBiMap(ucn, (NCF -> nc.stepTree), (ECF -> ec.stepTree))
       assume(stepsAndLabels.value.bs == steps.labels.toSet)
 
       // Text fields
@@ -279,7 +281,7 @@ object DataGenerators extends Logger {
       )
 
       val fieldValues = stepFieldValues ++ textFieldValues
-      UseCase(h, fieldList.fields, fieldValues, stepsAndLabels)
+      UseCase(ucn, h, fieldList.fields, fieldValues, stepsAndLabels)
     }
   }
 

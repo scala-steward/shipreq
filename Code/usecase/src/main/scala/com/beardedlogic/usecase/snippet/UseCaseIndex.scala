@@ -37,8 +37,8 @@ object UseCaseIndex extends SnippetHelpers {
   def onNew(): JsCmd = TriggerAdd.trigger(create())
 
   def create(): UseCaseSummary = daoProvider.withTransaction { dao =>
-    val uc = dao.createUseCaseIdentAndRev1(Defaults.Title)
-    new UseCaseSummary(uc, Misc.currentTimeAsIso8601Str)
+    val ucr = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
+    new UseCaseSummary(ucr, Misc.currentTimeAsIso8601Str)
   }
 
   def onUpdate(): JsCmd = onUpdate(update)

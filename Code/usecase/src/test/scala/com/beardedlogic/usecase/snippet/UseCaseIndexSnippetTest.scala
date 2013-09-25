@@ -52,7 +52,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
 
     def ignoreTimestamp(x: UseCaseSummary) = x.copy(updatedAt = "IGNORED")
 
-    def newUc = dao.createUseCaseIdentAndRev1(Defaults.Title)
+    def newUc = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
 
     def params(id: UseCaseIdentId, newTitle: String) =
       Map("eid" -> ExternalId.UseCase(id), "title" -> newTitle)
@@ -74,7 +74,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       val uc2 = r.openOrThrowException("required")
       assertJsErrorNotice(js, None)
       assertUpdateTriggered(js)
-      uc2.number should equal(uc1.header.number)
+      uc2.number should equal(uc1.ident.number)
       uc2.title should equal(expectedTitleAfterSave)
       assertSummaryInAll(uc2)
       uc2

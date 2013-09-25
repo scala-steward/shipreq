@@ -7,6 +7,7 @@ import net.liftweb.http._
 import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
+import db.UseCaseIdent
 import lib._
 import change._
 import field._
@@ -23,12 +24,13 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
 
   // TODO Delete UCE . initial state
   val DefaultInitialState: State = {
-    val h = UseCaseHeader(1, Defaults.Title)
+    val ucn = (0:Short).tag[UseCaseNumberTag]
+    val h = Defaults.useCaseHeader
     val fl = Defaults.FieldList.value.fields
     val ncf = UseCaseFns.filter[NormalCourseField](fl).head
     val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultLoadValue(h)._2.apply)
-    val sl = UseCaseFns.generateStepAndLabelBiMap(fv, h)
-    val uc = UseCase(h, fl, fv, sl)
+    val sl = UseCaseFns.generateStepAndLabelBiMap(ucn, fv)
+    val uc = UseCase(ucn, h, fl, fv, sl)
     State(uc, None, false)
   }
 

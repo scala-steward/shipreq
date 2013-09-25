@@ -2,6 +2,7 @@ package com.beardedlogic.usecase
 package lib
 
 import Misc._
+import db.UseCaseHeader
 
 /**
  * Corrects undesirable user input.

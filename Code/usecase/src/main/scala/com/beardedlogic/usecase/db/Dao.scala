@@ -8,7 +8,7 @@ import scala.slick.jdbc.{StaticQuery, SetParameter, GetResult}
 import scala.slick.session.PositionedParameters
 import lib.field.FieldDefinition
 import lib.security.PasswordAndSalt
-import lib.{Defaults, InputCorrection, UseCaseHeader}
+import lib.{Defaults, InputCorrection}
 import lib.Types._
 
 /**
@@ -101,38 +101,36 @@ class Dao(_session: Session) {
    * Creates a new `usecase` row. If a `usecase_rev` row is not inserted before the end of the transaction, then the
    * transaction will fail because `usecase.latest_rev_id` will be `NULL`.
    */
-  def createUseCaseIdent(): UseCaseIdentId = InsertUseCaseIdent.first()
+  def createUseCaseIdent(): UseCaseIdent = InsertUseCaseIdent.first()
 
-  private def createUseCaseRevWithoutCorrection(ucId: UseCaseIdentId, rev: Short, h: UseCaseHeader): UseCaseRev = {
-    val id = InsertUseCaseRev.first(ucId, rev, h.number, h.title)
-    UseCaseRev(ucId, rev, id, h)
+  /**
+   * Same as `#createUseCaseIdent` except uses a manually-provided UC number.
+   * This should only be used in tests.
+   */
+  def createUseCaseIdentWithForcedNumber(ucn: UseCaseNumber): UseCaseIdent = {
+    val id = InsertUseCaseIdentForceNum.first(ucn)
+    UseCaseIdent(id, ucn)
   }
 
-  def createUseCaseRev(ucId: UseCaseIdentId, rev: Short, header: UseCaseHeader): UseCaseRev = {
+  private def createUseCaseRevWithoutCorrection(ident: UseCaseIdent, rev: Short, h: UseCaseHeader): UseCaseRev = {
+    val id = InsertUseCaseRev.first(ident, rev, h.title)
+    UseCaseRev(ident, rev, id, h)
+  }
+
+  def createUseCaseRev(ucIdent: UseCaseIdent, rev: Short, header: UseCaseHeader): UseCaseRev = {
     val uch = InputCorrection.correct(header)
-    createUseCaseRevWithoutCorrection(ucId, rev, uch)
-  }
-
-  // TODO Remove createUseCaseIdentAndRev1(header) after anonymous UC editing is removed
-  def createUseCaseIdentAndRev1(header: UseCaseHeader): UseCaseRev = withTransaction {
-    val identId = createUseCaseIdent()
-    val h = InputCorrection.correct(header)
-    val rev = 1: Short
-    createUseCaseRevWithoutCorrection(identId, rev, h)
+    createUseCaseRevWithoutCorrection(ucIdent, rev, uch)
   }
 
   // TODO New-UC has GLOBAL scope.
   // TODO New-UC: Use table locking for mutex?
   // TODO New-UC: Lacking appropriate number uniqueness constraint
   // TODO need a usecase state so we can call correct() instead of correctUseCaseTitle(). Would also make stateEquals() redundant
-  /**
-   * Creates a `usecase` and a rev-#1 `usecase_rev`. The UC number is determined automatically.
-   */
-  def createUseCaseIdentAndRev1(title: String): UseCaseRev = withTransaction {
-    val correctedTitle = InputCorrection.useCaseTitle(title)
-    val identId = createUseCaseIdent()
-    val (id, number) = InsertUseCaseRev1WithAutoNumber.first(identId, correctedTitle)
-    UseCaseRev(identId, 1, id, UseCaseHeader(number, correctedTitle))
+  def createUseCaseIdentAndRev1(header: UseCaseHeader): UseCaseRev = withTransaction {
+    val ident = createUseCaseIdent()
+    val h = InputCorrection.correct(header)
+    val rev = 1: Short
+    createUseCaseRevWithoutCorrection(ident, rev, h)
   }
 
   def findUseCaseRev(revId: UseCaseRevId): Option[UseCaseRev] = SelectUseCaseRev.firstOption(revId)
@@ -171,7 +169,7 @@ class Dao(_session: Session) {
 
         // Audited update
         else {
-          val newRev = createUseCaseRevWithoutCorrection(ucId, latest.rev + 1, newHeader)
+          val newRev = createUseCaseRevWithoutCorrection(latest.ident, latest.rev + 1, newHeader)
           linkUcToSameFieldsAsOtherUc(latest, newRev)
           NewRevision(newRev)
         }
@@ -237,8 +235,9 @@ private[db] final object Sql {
   implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldText= GetResult(r => UcFieldText(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
-  implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<, r.<<)))
-  implicit val GR_UseCaseSummary = GetResult(r => new UseCaseSummary(r.nextId[UseCaseIdentId], r.nextShort, r.nextString, r.nextString))
+  implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<)}
+  implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<)))
+  implicit val GR_UseCaseSummary = GetResult(r => new UseCaseSummary(r.nextId[UseCaseIdentId], r.nextTShort[UseCaseNumber], r.nextString, r.nextString))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
 
@@ -296,22 +295,22 @@ private[db] final object Sql {
   // ###################################################################################################################
   // Use Case
 
-  private val ucrev_* = s"r.ident_id, r.rev, r.id, r.number, r.title"
+  private val ucrev_* = s"r.ident_id, u.number, r.rev, r.id, r.title"
 
-  private val NextUseCaseNumber =
-    "SELECT coalesce(max(number),0)+1 from usecase_rev where id in (select latest_rev_id from usecase)"
+  private val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase)"
 
-  @Insert val InsertUseCaseIdent = queryNA[UseCaseIdentId]("INSERT INTO usecase DEFAULT VALUES RETURNING id")
+  @Insert val InsertUseCaseIdent = queryNA[UseCaseIdent](
+    s"INSERT INTO usecase(number) VALUES($NextUseCaseNumber) RETURNING id, number")
 
-  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, Short, String), UseCaseRevId](
-    "INSERT INTO usecase_rev(ident_id, rev, number, title) VALUES(?,?,?,?) RETURNING id")
+  @Insert val InsertUseCaseIdentForceNum = query[UseCaseNumber, UseCaseIdentId](
+    "INSERT INTO usecase(number) VALUES(?) RETURNING id")
 
-  @Insert val InsertUseCaseRev1WithAutoNumber = query[(UseCaseIdentId, String), (UseCaseRevId, Short)](
-    s"INSERT INTO usecase_rev(ident_id, rev, number, title) VALUES(?,1,($NextUseCaseNumber),?) RETURNING id, number")
+  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, String), UseCaseRevId](
+    "INSERT INTO usecase_rev(ident_id, rev, title) VALUES(?,?,?) RETURNING id")
 
   val SelectLatestUseCaseRevId = query[UseCaseIdentId, UseCaseRevId](s"SELECT latest_rev_id FROM usecase WHERE id=?")
 
-  val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](s"SELECT ${ucrev_*} FROM usecase_rev r WHERE r.id=?")
+  val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE u.id=r.ident_id AND r.id=?")
 
   val SelectLatestUseCaseRevByIdent = query[UseCaseIdentId, UseCaseRev](
     s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
