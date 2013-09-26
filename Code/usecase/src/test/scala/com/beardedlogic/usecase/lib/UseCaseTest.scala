@@ -5,16 +5,16 @@ import org.scalatest.FunSpec
 import scala.slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
 
+import Types._
 import change.Changes.{TextChanged, StepTextChanged}
-import change.{NoChange, Change}
+import change.NoChange
+import db.UseCaseHeader
 import field._
 import test.{LoadedTestData, TestDatabaseSupport, TestData, TestHelpers}
 import text.{FlowToClause, FlowFromClause, StepText, FreeText}
-import Types._
 import Lenses._
 import UseCaseFns._
 import UseCasePersistence._
-import db.UseCaseHeader
 
 class UseCaseTest extends FunSpec with TestHelpers with TestData {
 
@@ -239,7 +239,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {
-      val x = dao.createUseCaseIdentAndRev1(UseCaseHeader("Hello"))
+      val x = dao.createUseCaseIdentAndRev1(newProjectId(), UseCaseHeader("Hello"))
       val y = loadRev(x)
       val sfv = NCF.lens.get(y.uc)
       sfv.textmap(sfv.tree.head.id).text ==== x.header.title
@@ -247,7 +247,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     it("should load a simple, manually-saved UC") {
       // Create UC
-      val ucIdent = dao.createUseCaseIdentWithForcedNumber((3:Short).tag[UseCaseNumberTag])
+      val ucIdent = dao.createUseCaseIdentWithForcedNumber(newProjectId(), (3:Short).tag[UseCaseNumberTag])
       val ucRev = dao.createUseCaseRev(ucIdent, 1, UseCaseHeader("ahh"))
 
       // Create Text FV
@@ -271,7 +271,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     it("should load a manually-saved UC with refs") {
       // Create UC
-      val ucIdent = dao.createUseCaseIdentWithForcedNumber((3:Short).tag[UseCaseNumberTag])
+      val ucIdent = dao.createUseCaseIdentWithForcedNumber(newProjectId(), (3:Short).tag[UseCaseNumberTag])
       val ucRev = dao.createUseCaseRev(ucIdent, 1, UseCaseHeader("ahh"))
 
       // Create course FV
@@ -300,7 +300,10 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     describe("First-time save") {
 
       it("should save when empty") {
-        assertTableDiffs(Tables.Usecase -> 1, Tables.UsecaseRev -> 1) {saveUseCase(EmptyUcWithoutNCF, None)}
+        val projectId = newProjectId()
+        assertTableDiffs(Tables.Usecase -> 1, Tables.UsecaseRev -> 1) {
+          saveUseCase(EmptyUcWithoutNCF, None, projectId)
+        }
       }
 
       it("should return a valid ctx") {
@@ -312,8 +315,9 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
         // Two revs here:
         // 1) initial save via UseCaseL screen (header only)
         // 2) proper save from UCE (saves fields)
+        val projectId = newProjectId()
         assertTableDiffs(Usecase -> 1, UsecaseRev -> 2, Text -> 2, TextRev -> 2, UcField -> 2) {
-          saveUseCase(removeNcField(MockUc1.sampleTextOnlyUC), None)
+          saveUseCase(removeNcField(MockUc1.sampleTextOnlyUC), None, projectId)
         }
       }
     }

@@ -19,7 +19,8 @@ class DbTriggerTest extends FunSpec with TestDatabaseSupport {
 
   case class SampleUC(ucn: Short, fks: SampleFKs) {
     import fks._
-    val ucId: Long = sql"INSERT INTO usecase(number) VALUES($ucn) RETURNING id".as[Long].first
+    val projectId = newProjectId().longValue
+    val ucId: Long = sql"INSERT INTO usecase(project_id,number) VALUES($projectId,$ucn) RETURNING id".as[Long].first
     def insertText(fkId: Long) = SampleText(this, fkId)
     val txt1 = insertText(txtField1)
     val txt2 = insertText(txtField2)

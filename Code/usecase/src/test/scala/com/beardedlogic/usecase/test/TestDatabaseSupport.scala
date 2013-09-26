@@ -12,7 +12,7 @@ import slick.session.{Database, Session}
 import scala.util.Random
 import Q.interpolation
 
-import db.{UseCaseRev, Dao, DaoProvider, DB}
+import db.{CreateProjectResult, UseCaseRev, Dao, DaoProvider, DB}
 import com.beardedlogic.usecase.lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
@@ -102,6 +102,8 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
   def testDaoProvider = new TestDaoProvider(dao)
 
   def randomId = -TestDB.Random.nextLong().abs
+
+  def randomStr: String = TestDB.Random.nextString(32)
 
   def countRowsIn(table: Table) = Q.queryNA[Int](s"select count(*) from ${table.name}").first
 
@@ -197,12 +199,22 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
     cp.copy(uc = uc_, rec = rec_)
   }
 
-  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint]): Option[UseCaseSaveCheckpoint] = prev match {
+  def newProjectId(): ProjectId = dao.createProject(getOrCreateUserId, randomStr) match {
+    case CreateProjectResult.Success(r) => r
+    case x => fail("Failed to create random project id: " + x)
+  }
+
+  def getOrCreateUserId(): UserId =
+    sql"select id from usr where username is not null".as[Long].firstOption.getOrElse {
+      sql"INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES($randomStr,$randomStr,0,0,NOW(),NOW(),NOW()) RETURNING id".as[Long].first
+    }.tag[UserIdTag]
+
+  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, dao)
     case None =>
-      val ucr = dao.createUseCaseIdentAndRev1(uc.header)
+      val ucr = dao.createUseCaseIdentAndRev1(projectId, uc.header)
       val someCp = Some(loadUseCase(ucr))
-      saveUseCase(uc, someCp).orElse(someCp)
+      saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
 
   def loadUseCase(ucRev: UseCaseRev) =

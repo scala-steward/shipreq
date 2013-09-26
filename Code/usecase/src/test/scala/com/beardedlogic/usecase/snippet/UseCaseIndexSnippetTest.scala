@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase
 package snippet
 
+import scala.slick.jdbc.StaticQuery.interpolation
 import net.liftweb.http.js.JsCmd
 import org.scalatest.FunSpec
 import org.scalatest.prop.PropertyChecks
@@ -12,6 +13,14 @@ import util.ErrorMessages
 
 class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with PropertyChecks {
   import Tables._
+
+  override def beforeEachWithDao {
+    super.beforeEachWithDao
+
+    // HACK BECAUSE OF OTHER TEMP HACK WHERE PROJECT_ID = 1
+    dao.createProject(getOrCreateUserId(), "BLAH!")
+    sqlu"update project set id=1".execute
+  }
 
   describe("JSON generation") {
     it("should include tagged EIDs") {
@@ -44,8 +53,6 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
   }
 
-  // TODO Test ucCtx.save corrects UC titles too
-
   describe("#update") {
     def assertUpdateTriggered(js: JsCmd) {
       js.toJsCmd should (include(UseCaseIndex.TriggerUpdate.triggerName) and include("trigger"))
@@ -55,12 +62,12 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       js.toJsCmd should not include ("trigger")
     }
 
-    def assertSummaryInAll(x: UseCaseSummary): Unit =
-      dao.findAllUseCaseSummaries().map(ignoreTimestamp) should contain(ignoreTimestamp(x))
+    def assertSummaryInAll(x: UseCaseSummary)(implicit projectId: ProjectId): Unit =
+      dao.findAllUseCaseSummaries(projectId).map(ignoreTimestamp) should contain(ignoreTimestamp(x))
 
     def ignoreTimestamp(x: UseCaseSummary) = x.copy(updatedAt = "IGNORED")
 
-    def newUc = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
+    def newUc(implicit projectId: ProjectId) = dao.createUseCaseIdentAndRev1(projectId, Defaults.useCaseHeader)
 
     def params(id: UseCaseIdentId, newTitle: String) =
       Map("eid" -> ExternalId.UseCase(id), "title" -> newTitle)
@@ -73,10 +80,10 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
       }
     }
 
-    def testSuccess(newTitle: String, expectedTitleAfterSave: String): UseCaseSummary =
+    def testSuccess(newTitle: String, expectedTitleAfterSave: String)(implicit projectId: ProjectId): UseCaseSummary =
       testSuccess2(newUc, newTitle, expectedTitleAfterSave)
 
-    def testSuccess2(uc1: UseCaseRev, newTitle: String, expectedTitleAfterSave: String): UseCaseSummary = {
+    def testSuccess2(uc1: UseCaseRev, newTitle: String, expectedTitleAfterSave: String)(implicit projectId: ProjectId): UseCaseSummary = {
       val (r, js) = test(params(uc1, newTitle))
       r shouldBe defined
       val uc2 = r.openOrThrowException("required")
@@ -97,10 +104,12 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should update new new UC") {
+      implicit val project = newProjectId
       testSuccess("great", "great")
     }
 
     it("should correct invalid titles") {
+      implicit val project = newProjectId
       val examples = Table(("INPUT", "OUTPUT")
         , ("   omg   ", "omg")
         , ("what     about", "what about")
@@ -113,6 +122,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should appear to update when no change") {
+      implicit val project = newProjectId
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
       val uc2 = dao.findUseCaseLatestRev(uc2s.parseId.get).get
@@ -121,6 +131,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should reject invalid input data") {
+      implicit val project = newProjectId
       val uc = newUc
       testFailure(uc, "not found", params(98732156.tag[UseCaseIdentId], "hell0"))
       testFailure(uc, ErrorMessages.BadRequest, params(uc, "") - "title")

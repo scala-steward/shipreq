@@ -26,9 +26,11 @@ object UseCaseIndex extends SnippetHelpers {
     "#initVM" #> JsCmds.Script(js)
   }
 
+  def projectId: ProjectId = 1.tag[ProjectIdTag] // TODO PROJECT_ID_TEMP_HACK !!!!!!!!!!!!!!
+
   def render = daoProvider.withSession(dao =>
     ClearClearable
-      & InitKoViewModel("UCIViewModel", dao.findAllUseCaseSummaries)
+      & InitKoViewModel("UCIViewModel", dao.findAllUseCaseSummaries(projectId))
       & ".new_uc button" #> SHtml.ajaxButton("+ New UC", onNew _)
       & ".edit form" #> reusableAjaxForm(onUpdate)
   )
@@ -36,7 +38,7 @@ object UseCaseIndex extends SnippetHelpers {
   def onNew(): JsCmd = TriggerAdd.trigger(create())
 
   def create(): UseCaseSummary = daoProvider.withTransaction { dao =>
-    val ucr = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
+    val ucr = dao.createUseCaseIdentAndRev1(projectId, Defaults.useCaseHeader)
     UseCaseSummary.as(ucr, Misc.currentTimeAsIso8601Str)
   }
 

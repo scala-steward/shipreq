@@ -101,14 +101,14 @@ class Dao(_session: Session) {
    * Creates a new `usecase` row. If a `usecase_rev` row is not inserted before the end of the transaction, then the
    * transaction will fail because `usecase.latest_rev_id` will be `NULL`.
    */
-  def createUseCaseIdent(): UseCaseIdent = InsertUseCaseIdent.first()
+  def createUseCaseIdent(projectId: ProjectId): UseCaseIdent = InsertUseCaseIdent.first(projectId, projectId)
 
   /**
    * Same as `#createUseCaseIdent` except uses a manually-provided UC number.
    * This should only be used in tests.
    */
-  def createUseCaseIdentWithForcedNumber(ucn: UseCaseNumber): UseCaseIdent = {
-    val id = InsertUseCaseIdentForceNum.first(ucn)
+  def createUseCaseIdentWithForcedNumber(projectId: ProjectId, ucn: UseCaseNumber): UseCaseIdent = {
+    val id = InsertUseCaseIdentForceNum.first(projectId, ucn)
     UseCaseIdent(id, ucn)
   }
 
@@ -122,12 +122,9 @@ class Dao(_session: Session) {
     createUseCaseRevWithoutCorrection(ucIdent, rev, uch)
   }
 
-  // TODO New-UC has GLOBAL scope.
   // TODO New-UC: Use table locking for mutex?
-  // TODO New-UC: Lacking appropriate number uniqueness constraint
-  // TODO need a usecase state so we can call correct() instead of correctUseCaseTitle(). Would also make stateEquals() redundant
-  def createUseCaseIdentAndRev1(header: UseCaseHeader): UseCaseRev = withTransaction {
-    val ident = createUseCaseIdent()
+  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader): UseCaseRev = withTransaction {
+    val ident = createUseCaseIdent(projectId)
     val h = InputCorrection.correct(header)
     val rev = 1: Short
     createUseCaseRevWithoutCorrection(ident, rev, h)
@@ -137,9 +134,9 @@ class Dao(_session: Session) {
 
   def findUseCaseLatestRevId(ucId: UseCaseIdentId): Option[UseCaseRevId] = SelectLatestUseCaseRevId.firstOption(ucId)
 
-  def findUseCaseLatestRev(ucId: UseCaseIdentId): Option[UseCaseRev] = SelectLatestUseCaseRevByIdent.firstOption(ucId)
+  def findUseCaseLatestRev(ucId: UseCaseIdentId): Option[UseCaseRev] = SelectLatestUseCaseRev.firstOption(ucId)
 
-  def findAllUseCaseSummaries(): List[UseCaseSummary] = SelectUseCaseSummaries.list
+  def findAllUseCaseSummaries(projectId: ProjectId): List[UseCaseSummary] = SelectUseCaseSummaries.list(projectId)
 
   /**
    * Updates the header of an existing use case (ie. just the contents of the `usecase` table ignoring its relations).
@@ -297,28 +294,31 @@ private[db] final object Sql {
 
   private val ucrev_* = s"r.ident_id, u.number, r.rev, r.id, r.title"
 
-  private val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase)"
+  @Insert val InsertUseCaseIdent = {
+    val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase where project_id=?)"
+    query[(ProjectId, ProjectId), UseCaseIdent](
+      s"INSERT INTO usecase(project_id, number) VALUES(?, $NextUseCaseNumber) RETURNING id, number")
+  }
 
-  @Insert val InsertUseCaseIdent = queryNA[UseCaseIdent](
-    s"INSERT INTO usecase(number) VALUES($NextUseCaseNumber) RETURNING id, number")
-
-  @Insert val InsertUseCaseIdentForceNum = query[UseCaseNumber, UseCaseIdentId](
-    "INSERT INTO usecase(number) VALUES(?) RETURNING id")
+  @Insert val InsertUseCaseIdentForceNum = query[(ProjectId, UseCaseNumber), UseCaseIdentId](
+    "INSERT INTO usecase(project_id,number) VALUES(?,?) RETURNING id")
 
   @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, String), UseCaseRevId](
     "INSERT INTO usecase_rev(ident_id, rev, title) VALUES(?,?,?) RETURNING id")
 
-  val SelectLatestUseCaseRevId = query[UseCaseIdentId, UseCaseRevId](s"SELECT latest_rev_id FROM usecase WHERE id=?")
+  val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](
+    s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE u.id=r.ident_id AND r.id=?")
 
-  val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE u.id=r.ident_id AND r.id=?")
+  val SelectLatestUseCaseRevId = query[UseCaseIdentId, UseCaseRevId](
+    s"SELECT latest_rev_id FROM usecase WHERE id=?")
 
-  val SelectLatestUseCaseRevByIdent = query[UseCaseIdentId, UseCaseRev](
+  val SelectLatestUseCaseRev = query[UseCaseIdentId, UseCaseRev](
     s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
 
-  val SelectUseCaseSummaries = queryNA[UseCaseSummary]( s"""
+  val SelectUseCaseSummaries = query[ProjectId, UseCaseSummary]( s"""
     SELECT ident_id, number, title, to_iso8601_str(created_at)
     FROM usecase u, usecase_rev r
-    WHERE r.id = latest_rev_id
+    WHERE r.id = latest_rev_id and project_id = ?
     ORDER BY number """.sql)
 
   @Update val UpdateUseCaseTitleDirect = update[(String, UseCaseRevId)]("UPDATE usecase_rev SET title=? WHERE id=?")
