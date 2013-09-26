@@ -8,8 +8,8 @@ import net.liftweb.sitemap.Loc._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import org.apache.shiro.SecurityUtils
-import com.beardedlogic.usecase.lib.ExternalId
 import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.lib.{ExternalId, ExternalIdConverter}
 import AppConfig.BaseUrl
 import net.liftweb.sitemap.Loc.EarlyResponse
 import net.liftweb.common.Full
@@ -63,7 +63,7 @@ object AppSiteMap {
     Full(RedirectResponse(HomeRelativeUrl))
   }
 
-  private def MenuWithIdParam[Tag <: ExteralisableIdTag](eidGen: ExternalId[Tag])(name: String, linkText: Loc.LinkText[JLong @@ Tag]) =
+  private def MenuWithIdParam[Tag <: ExteralisableIdTag](eidGen: ExternalIdConverter[Tag])(name: String, linkText: Loc.LinkText[JLong @@ Tag]) =
     Menu.param[JLong @@ Tag](name, linkText, eidGen.parseB(_), eidGen.toExternal(_))
 
   private def UseTemplate(path: String) = TemplateBox(() => Templates(path.split("/").toList))

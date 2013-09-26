@@ -221,10 +221,15 @@ class Dao(_session: Session) {
   }
 }
 
+// ###################################################################################################################
+// ###################################################################################################################
+// ###################################################################################################################
+
 /**
  * SQL for all functions exposed in the DAO.
  */
 private[db] final object Sql {
+  import AutoExternaliseIds._
   import SqlHelpers._
   import StaticQuery.{query, queryNA, update, updateNA}
 
@@ -235,7 +240,7 @@ private[db] final object Sql {
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
   implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<)))
-  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary.as(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
 

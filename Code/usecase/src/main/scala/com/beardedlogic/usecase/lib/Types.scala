@@ -49,18 +49,6 @@ object Types {
   sealed trait LabelTag extends TypeTag[String]
   type LabelStr = String @@ LabelTag
 
-  /** An ExternalID string for a UseCaseIdentId */
-  sealed trait UseCaseIdentEITag extends TypeTag[String]
-  type UseCaseIdentEI = String @@ UseCaseIdentEITag
-
-  /** An ExternalID string for a TextRevId */
-  sealed trait TextRevEITag extends TypeTag[String]
-  type TextRevEI = String @@ TextRevEITag
-
-  /** An ExternalID string for a ProjectId */
-  sealed trait ProjectEITag extends TypeTag[String]
-  type ProjectEI = String @@ ProjectEITag
-
   implicit class StringTypeExt(val s: String) extends AnyVal {
     def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
     def asLocalStepId = s.asInstanceOf[LocalStepId]
@@ -115,23 +103,10 @@ object Types {
     def tag[T <: TypeTag[Long]] = x.map(_.tag[T])
   }
 
-  sealed trait ExteralisableIdTag extends TypeTag[Long] {
-    type EITag <: TypeTag[String]
-    type EI = String @@ EITag
-  }
-
   /** Marks a Long value as corresponding to `field_key.id`. */
   sealed trait FieldKeyIdTag extends TypeTag[Long]
   type FieldKeyId = JLong @@ FieldKeyIdTag
   @inline final implicit def FieldKeyToId(r: FieldKeyRec): FieldKeyId = r.id
-
-  /** Marks a Long value as corresponding to `usecase.id` and `usecase_rev.ident_id`. */
-  sealed trait UseCaseIdentIdTag extends ExteralisableIdTag {
-    override type EITag = UseCaseIdentEITag
-  }
-  type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
-  @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
-  @inline final implicit def UseCaseIdentToIdentId(i: UseCaseIdent): UseCaseIdentId = i.identId
 
   /** Marks a Long value as corresponding to `usecase_rev.id`. */
   sealed trait UseCaseRevIdTag extends TypeTag[Long]
@@ -143,24 +118,52 @@ object Types {
   type TextIdentId = JLong @@ TextIdentIdTag
   @inline final implicit def TextRevToIdentId(r: TextRev): TextIdentId = r.identId
 
-  /** Marks a Long value as corresponding to `text_rev.id`. */
-  sealed trait TextRevIdTag extends ExteralisableIdTag {
-    override type EITag = TextRevEITag
-  }
-  type TextRevId = JLong @@ TextRevIdTag
-  @inline final implicit def TextRevToId(r: TextRev): TextRevId = r.id
-
   /** Marks a Long value as corresponding to `usr.id`. */
   sealed trait UserIdTag extends TypeTag[Long]
   type UserId = JLong @@ UserIdTag
   @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Externalisable ID tags
+
+  sealed trait ExteralisableIdTag extends TypeTag[Long] {
+    type EITag <: TypeTag[String]
+    type EI = String @@ EITag
+  }
+
+  /** Marks a Long value as corresponding to `usecase.id` and `usecase_rev.ident_id`. */
+  sealed trait UseCaseIdentIdTag extends ExteralisableIdTag {
+    override type EITag = UseCaseIdentEITag
+  }
+  sealed trait UseCaseIdentEITag extends TypeTag[String]
+  type UseCaseIdentId = JLong @@ UseCaseIdentIdTag
+  type UseCaseIdentEI = String @@ UseCaseIdentEITag
+  @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
+  @inline final implicit def UseCaseIdentToIdentId(i: UseCaseIdent): UseCaseIdentId = i.identId
+
+  /** Marks a Long value as corresponding to `text_rev.id`. */
+  sealed trait TextRevIdTag extends ExteralisableIdTag {
+    override type EITag = TextRevEITag
+  }
+  sealed trait TextRevEITag extends TypeTag[String]
+  type TextRevId = JLong @@ TextRevIdTag
+  type TextRevEI = String @@ TextRevEITag
+  @inline final implicit def TextRevToId(r: TextRev): TextRevId = r.id
+
   /** Marks a Long value as corresponding to `project.id`. */
   trait ProjectIdTag extends ExteralisableIdTag {
     override type EITag = ProjectEITag
   }
+  sealed trait ProjectEITag extends TypeTag[String]
   type ProjectId = JLong @@ ProjectIdTag
+  type ProjectEI = String @@ ProjectEITag
+
+  object AutoExternaliseIds {
+    implicit def autoExternaliseId_P(id: ProjectId): ProjectEI = ExternalId.Project(id)
+    implicit def autoExternaliseId_UC(id: UseCaseIdentId): UseCaseIdentEI = ExternalId.UseCase(id)
+    implicit def autoExternaliseId_TR(id: TextRevId): TextRevEI = ExternalId.TextRev(id)
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Typedefs

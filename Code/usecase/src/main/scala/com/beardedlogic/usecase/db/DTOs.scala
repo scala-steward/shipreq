@@ -3,6 +3,7 @@ package db
 
 import lib.ExternalId
 import lib.Types._
+import AutoExternaliseIds._
 
 // NOTE: These fields names need to match the attributes in list.html
 case class UseCaseSummary(
@@ -11,12 +12,7 @@ case class UseCaseSummary(
   title: String,
   updatedAt: String) {
 
-  def parseId = ExternalId.UseCase.parseO(eid)
-}
-object UseCaseSummary {
-  def as(id: UseCaseIdentId, number: UseCaseNumber, title: String, updatedAt: String): UseCaseSummary =
-    apply(ExternalId.UseCase(id), number, title, updatedAt)
+  def this(ucr: UseCaseRev, updatedAt: String) = this(ucr.identId, ucr.ident.number, ucr.header.title, updatedAt)
 
-  def as(ucr: UseCaseRev, updatedAt: String): UseCaseSummary =
-    as(ucr.identId, ucr.ident.number, ucr.header.title, updatedAt)
+  def parseId = ExternalId.UseCase.parseO(eid)
 }

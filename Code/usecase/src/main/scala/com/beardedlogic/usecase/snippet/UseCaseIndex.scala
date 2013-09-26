@@ -39,7 +39,7 @@ object UseCaseIndex extends SnippetHelpers {
 
   def create(): UseCaseSummary = daoProvider.withTransaction { dao =>
     val ucr = dao.createUseCaseIdentAndRev1(projectId, Defaults.useCaseHeader)
-    UseCaseSummary.as(ucr, Misc.currentTimeAsIso8601Str)
+    new UseCaseSummary(ucr, Misc.currentTimeAsIso8601Str)
   }
 
   def onUpdate(): JsCmd = onUpdate(update)
@@ -57,5 +57,5 @@ object UseCaseIndex extends SnippetHelpers {
                     case AlreadyUpToDate(r) => Full(r)
                     case UseCaseNotFound    => Failure("Use case not found.")
                   }
-    } yield UseCaseSummary.as(savedUc, Misc.currentTimeAsIso8601Str)
+    } yield new UseCaseSummary(savedUc, Misc.currentTimeAsIso8601Str)
 }
