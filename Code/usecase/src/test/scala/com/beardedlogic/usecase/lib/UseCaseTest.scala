@@ -300,17 +300,20 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     describe("First-time save") {
 
       it("should save when empty") {
-        assertTableDiffs(Tables.Usecase -> 1, Tables.UsecaseRev -> 1) {save(EmptyUcWithoutNCF, None, dao)}
+        assertTableDiffs(Tables.Usecase -> 1, Tables.UsecaseRev -> 1) {saveUseCase(EmptyUcWithoutNCF, None)}
       }
 
       it("should return a valid ctx") {
-        val cp = save(EmptyUcWithoutNCF, None, dao)
+        val cp = saveUseCase(EmptyUcWithoutNCF, None)
         cp should not be ('empty)
       }
 
       it("should save with 2 text fields") {
-        assertTableDiffs(Usecase -> 1, UsecaseRev -> 1, Text -> 2, TextRev -> 2, UcField -> 2) {
-          save(removeNcField(MockUc1.sampleTextOnlyUC), None, dao)
+        // Two revs here:
+        // 1) initial save via UseCaseL screen (header only)
+        // 2) proper save from UCE (saves fields)
+        assertTableDiffs(Usecase -> 1, UsecaseRev -> 2, Text -> 2, TextRev -> 2, UcField -> 2) {
+          saveUseCase(removeNcField(MockUc1.sampleTextOnlyUC), None)
         }
       }
     }
@@ -318,18 +321,18 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     describe("Incremental updates") {
       def testUpdateSucceeds(mutate: UseCase => UseCase, expectedTableDiffs: (Table, Int)*) {
         val uc1 = sampleUC
-        val cp1 = save(uc1, None, dao)
+        val cp1 = saveUseCase(uc1, None)
         cp1 should not be (None)
         val uc2 = mutate(uc1)
-        val cp2 = assertTableDiffs(expectedTableDiffs: _*) {save(uc2, cp1, dao)}
+        val cp2 = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(uc2, cp1)}
         cp2 should not be (None)
       }
 
       it("should do nothing when no changes") {
         val uc1 = sampleUC
-        val cp1 = save(uc1, None, dao)
+        val cp1 = saveUseCase(uc1, None)
         cp1 should not be (None)
-        assertTableDiffs() {save(uc1, cp1, dao)} ==== None
+        assertTableDiffs() {saveUseCase(uc1, cp1)} ==== None
       }
 
       it("should save a title change") {
@@ -359,7 +362,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   describe("Saving then Loading") {
     it("should load in full after saving") {
       // Save first
-      val saved = save(sampleUC, None, dao).get
+      val saved = saveUseCase(sampleUC, None).get
 
       // Then load back (testing manually)
       val loaded = loadRev(saved.rec).uc
@@ -377,12 +380,12 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     }
 
     it("should load in full after multiple updates") {
-      var prevSave: UseCaseSaveCheckpoint = forceUcNumber(save(sampleUC, None, dao).get, 7)
+      var prevSave: UseCaseSaveCheckpoint = forceUcNumber(saveUseCase(sampleUC, None).get, 7)
       def uc = prevSave.uc
 
       def testUpdate(mutate: UseCase => UseCase, expectedTableDiffs: (Table, Int)*) = {
         val newUc = mutate(prevSave.uc)
-        val cpSaveOp = assertTableDiffs(expectedTableDiffs: _*) {save(newUc, Some(prevSave), dao)}
+        val cpSaveOp = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(newUc, Some(prevSave))}
         if (expectedTableDiffs.isEmpty) {
           cpSaveOp ==== None
         } else {
@@ -437,7 +440,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       // Save first
       val a = TF1.updateText("Text like [7.0]")(sampleUC).gimme
       val saved = NCF.updateText(NcSfv.tree(0).id, "Step like [7.0.1]")(a).gimme
-      val cp = forceUcNumber(save(saved, None, dao).get, 7)
+      val cp = forceUcNumber(saveUseCase(saved, None).get, 7)
 
       // Confirm stored normalised in DB
       sql"select text from text_rev where text like ${"Text like%"}".as[String].first should not be ("Text like [7.0]")
@@ -453,7 +456,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     it("should normalise and de-normalise refs in flow") {
       // Save first
       val saved = NCF.updateText(NcSfv.tree(1).id, "Flow like --> [7.0.1]")(sampleUC).gimme
-      val cp = forceUcNumber(save(saved, None, dao).get, 7)
+      val cp = forceUcNumber(saveUseCase(saved, None).get, 7)
 
       // Confirm stored normalised in DB
       sql"select text from text_rev where text like ${"%⬅%"}".as[String].first should not include ("[7.")

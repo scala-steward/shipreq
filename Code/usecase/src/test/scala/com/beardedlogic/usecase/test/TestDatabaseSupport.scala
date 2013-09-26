@@ -12,8 +12,8 @@ import slick.session.{Database, Session}
 import scala.util.Random
 import Q.interpolation
 
-import db.{Dao, DaoProvider, DB}
-import lib.{DI, UseCaseSaveCheckpoint}
+import db.{UseCaseRev, Dao, DaoProvider, DB}
+import com.beardedlogic.usecase.lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
 object TestDB {
@@ -196,6 +196,18 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
     sqlu"UPDATE usecase set number=${ucn.toShort} where id = ${rec_.ident.identId.toLong}".execute
     cp.copy(uc = uc_, rec = rec_)
   }
+
+  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint]): Option[UseCaseSaveCheckpoint] = prev match {
+    case Some(cp) => UseCasePersistence.save(uc, cp, dao)
+    case None =>
+      val ucr = dao.createUseCaseIdentAndRev1(uc.header)
+      val someCp = Some(loadUseCase(ucr))
+      saveUseCase(uc, someCp).orElse(someCp)
+  }
+
+  def loadUseCase(ucRev: UseCaseRev) =
+    Locks.useCase.read(ucRev)(UseCasePersistence.load(ucRev, dao, _))
+
 }
 
 class TestDaoProvider(dao: Dao) extends DaoProvider {

@@ -46,6 +46,11 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
       case _                                      => shouldNeverHappen_!
     }
   }
+
+  def allowSave(before: State, after: UseCase): Boolean = before.prevSave match {
+    case None => false
+    case Some(cp) => !UseCaseEquality.uc.equal(cp.uc, after)
+  }
 }
 
 import UseCaseEditor._
@@ -80,8 +85,7 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
   def update(f: UseCase => UcUpdateResult): JsCmd =
     f(uc) match {
       case Changed(newUc, changes) =>
-        val matchesLastSave = doesMatchLastSave(newUc)
-        setState(State(newUc, state.prevSave, !matchesLastSave))
+        setState(State(newUc, state.prevSave, allowSave(state, newUc)))
         renderer.jsRespondToChanges(changes)
 
       case NoChange => Noop
@@ -89,22 +93,21 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
       case ChangeFailure(err) => renderer.jsRespondChangeFailure(err)
     }
 
-  def save(): JsCmd =
-    daoProvider.withTransaction(dao => {
-      UseCasePersistence.save(uc, state.prevSave, dao) match {
-        case Some(cp) =>
-          setState(State(cp))
-          jsPostSave
-        case None =>
-          jsPostSaveNop
-      }
-    })
+  def save(): JsCmd = state.prevSave match {
+    case Some(cp) =>
+      daoProvider.withTransaction(dao => {
+        UseCasePersistence.save(uc, cp, dao) match {
+          case Some(cp) =>
+            setState(State(cp))
+            jsPostSave
+          case None =>
+            jsPostSaveNop
+        }
+      })
+    case None => shouldNeverHappen_!("Save failed. Ident missing.")
+  }
 
   def jsPostSave: JsCmd = jsPostSaveNop & renderer.jsUpdateRevision
   def jsPostSaveNop: JsCmd = renderer.jsEnableSaveButton(false)
 
-  def doesMatchLastSave(uc: UseCase): Boolean = state.prevSave match {
-    case None => false
-    case Some(cp) => UseCaseEquality.uc.equal(uc, cp.uc)
-  }
 }

@@ -288,29 +288,30 @@ object DataGenerators extends Logger {
   // -------------------------------------------------------------------------------------------------------------------
   // Use Case mutation
 
-  case class UseCaseMutator(fn: UseCase => UcUpdateResult) {
+  case class UseCaseMutator(name: String, fn: UseCase => UcUpdateResult) {
     def apply(uc: UseCase) = fn(uc)
+    override def toString = s"UseCaseMutator($name)"
   }
 
   object UseCaseMutators {
 
-    private def mutateField(fn: (UseCase, RefDependentGen) => Gen[UcUpdateResult]): Gen[UseCaseMutator] = Gen(prms =>
-      Some(UseCaseMutator(uc => {
+    private def mutateField(name: String, fn: (UseCase, RefDependentGen) => Gen[UcUpdateResult]): Gen[UseCaseMutator] = Gen(prms =>
+      Some(UseCaseMutator(name, uc => {
         val refdep = RefDependentGen(uc)
         val g = fn(uc, refdep)
         g.apply(prms).getOrElse(NoChange)
       })))
 
-    private def mutateStepNoText(fn: (StepField, LocalStepId) => UseCase => UcUpdateResult) =
-      mutateField((uc, refdep) =>
+    private def mutateStepNoText(name: String, fn: (StepField, LocalStepId) => UseCase => UcUpdateResult) =
+      mutateField(name, (uc, refdep) =>
         for {
           f <- Gen.oneOf(UseCaseFns.filter[StepField](uc.fields))
           id <- Gen.oneOf(f(uc.fieldValues).textmap.keys.toSeq)
         } yield fn(f, id)(uc)
       )
 
-    private def mutateStep(fn: (StepField, LocalStepId, String) => UseCase => UcUpdateResult) =
-      mutateField((uc, refdep) =>
+    private def mutateStep(name: String, fn: (StepField, LocalStepId, String) => UseCase => UcUpdateResult) =
+      mutateField(name, (uc, refdep) =>
         for {
           f <- Gen.oneOf(UseCaseFns.filter[StepField](uc.fields))
           id <- Gen.oneOf(f(uc.fieldValues).textmap.keys.toSeq)
@@ -318,20 +319,20 @@ object DataGenerators extends Logger {
         } yield fn(f, id, txt)(uc)
       )
 
-    val MutateTitle = for (title <- useCaseTitle) yield UseCaseMutator(_.updateTitle(title))
+    val MutateTitle = for (title <- useCaseTitle) yield UseCaseMutator("Title", _.updateTitle(title))
 
-    val MutateTextField = mutateField((uc, refdep) =>
+    val MutateTextField = mutateField("TextField", (uc, refdep) =>
       for {
         f <- Gen.oneOf(UseCaseFns.filter[TextField](uc.fields))
         txt <- refdep.textFieldText
       } yield f.updateText(txt)(uc)
     )
 
-    val MutateStepText = mutateStep((f, id, txt) => f.updateText(id, txt))
-    val AddStep = mutateStepNoText((f, id) => f.addStep(id))
-    val RemoveStep = mutateStepNoText((f, id) => f.removeStep(id))
-    val DecreaseIdent = mutateStepNoText((f, id) => f.decreaseIndent(id))
-    val IncreaseIdent = mutateStepNoText((f, id) => f.increaseIndent(id))
+    val MutateStepText = mutateStep("StepText", (f, id, txt) => f.updateText(id, txt))
+    val AddStep = mutateStepNoText("AddStep", (f, id) => f.addStep(id))
+    val RemoveStep = mutateStepNoText("RemoveStep", (f, id) => f.removeStep(id))
+    val DecreaseIdent = mutateStepNoText("DecreaseIdent", (f, id) => f.decreaseIndent(id))
+    val IncreaseIdent = mutateStepNoText("IncreaseIdent", (f, id) => f.increaseIndent(id))
   }
 
   val useCaseMutator: Gen[UseCaseMutator] = {
