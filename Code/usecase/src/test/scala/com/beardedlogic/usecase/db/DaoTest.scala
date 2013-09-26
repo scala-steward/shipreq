@@ -4,11 +4,13 @@ package db
 import org.scalatest.FunSpec
 import test.TestDatabaseSupport
 import slick.jdbc.StaticQuery.interpolation
+import lib.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
 import lib.Defaults
 import lib.Types._
-import lib.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
+import AutoExternaliseIds._
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
+  implicit def str2uch(title: String): UseCaseHeader = UseCaseHeader(title)
 
   describe("FieldList") {
     lazy val fl1 =
@@ -53,7 +55,6 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
   // ===================================================================================================================
 
   describe("UseCase") {
-    implicit def str2uch(title: String): UseCaseHeader = UseCaseHeader(title)
 
     describe("findUseCase") {
       it("should load when found") {
@@ -137,6 +138,35 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         val (_, rev2) = createTwoRevs()
         assertNOP(rev2, rev2)
         assertNOP(rev2.withTitle(rev2.header.title + "  "), rev2)
+      }
+    }
+  }
+
+  // ===================================================================================================================
+
+  describe("Project") {
+    describe("summariseProjects") {
+
+      def summariseWithNoise(userId: UserId) = {
+        newProjectId(newUserId) // Give some other user a project
+        dao.summariseProjects(userId)
+      }
+
+      it("should return [] when user has no projects") {
+        summariseWithNoise(newUserId) shouldBe empty
+      }
+
+      it("should return a summary for each project the user has") {
+        val u = newUserId
+        val p1 = dao.createProject(u, "Bereft").gimme
+        val s1 = ProjectSummary(p1, "Bereft", 0, None)
+        summariseWithNoise(u) ==== List(s1)
+        val p2 = dao.createProject(u, "Apple").gimme
+        dao.summariseProjects(u) ==== List(ProjectSummary(p2, "Apple", 0, None), s1)
+        dao.createUseCaseIdentAndRev1(p2, "yo")
+        val r = dao.summariseProjects(u)
+        r.map(_.copy(ucUpdatedAt = None)) ==== List(ProjectSummary(p2, "Apple", 1, None), s1)
+        r(0).ucUpdatedAt shouldBe defined
       }
     }
   }

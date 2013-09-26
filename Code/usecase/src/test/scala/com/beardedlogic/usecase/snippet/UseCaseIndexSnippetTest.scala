@@ -104,12 +104,12 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should update new new UC") {
-      implicit val project = newProjectId
+      implicit val project = newProjectId()
       testSuccess("great", "great")
     }
 
     it("should correct invalid titles") {
-      implicit val project = newProjectId
+      implicit val project = newProjectId()
       val examples = Table(("INPUT", "OUTPUT")
         , ("   omg   ", "omg")
         , ("what     about", "what about")
@@ -122,7 +122,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should appear to update when no change") {
-      implicit val project = newProjectId
+      implicit val project = newProjectId()
       val uc1 = newUc
       val uc2s = testSuccess2(uc1, "hello", "hello")
       val uc2 = dao.findUseCaseLatestRev(uc2s.parseId.get).get
@@ -131,7 +131,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     it("should reject invalid input data") {
-      implicit val project = newProjectId
+      implicit val project = newProjectId()
       val uc = newUc
       testFailure(uc, "not found", params(98732156.tag[UseCaseIdentId], "hell0"))
       testFailure(uc, ErrorMessages.BadRequest, params(uc, "") - "title")

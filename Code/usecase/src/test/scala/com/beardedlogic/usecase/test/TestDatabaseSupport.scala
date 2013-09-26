@@ -199,17 +199,17 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
     cp.copy(uc = uc_, rec = rec_)
   }
 
-  def newProjectId(): ProjectId = dao.createProject(getOrCreateUserId, randomStr) match {
-    case CreateProjectResult.Success(r) => r
-    case x => fail("Failed to create random project id: " + x)
-  }
+  def newProjectId(userId: UserId = getOrCreateUserId): ProjectId =
+    dao.createProject(userId, randomStr).gimme
 
   def getOrCreateUserId(): UserId =
-    sql"select id from usr where username is not null".as[Long].firstOption.getOrElse {
-      sql"INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES($randomStr,$randomStr,0,0,NOW(),NOW(),NOW()) RETURNING id".as[Long].first
-    }.tag[UserIdTag]
+    sql"select id from usr where username is not null".as[Long].firstOption.map(_.tag[UserIdTag]).getOrElse(newUserId)
 
-  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId): Option[UseCaseSaveCheckpoint] = prev match {
+  def newUserId(): UserId =
+    sql"INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES($randomStr,$randomStr,0,0,NOW(),NOW(),NOW()) RETURNING id".
+    as[Long].first.tag[UserIdTag]
+
+  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId()): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, dao)
     case None =>
       val ucr = dao.createUseCaseIdentAndRev1(projectId, uc.header)

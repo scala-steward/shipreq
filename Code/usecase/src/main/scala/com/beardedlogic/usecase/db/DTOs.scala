@@ -5,6 +5,16 @@ import lib.ExternalId
 import lib.Types._
 import AutoExternaliseIds._
 
+
+
+case class ProjectSummary(
+  eid: ProjectEI,
+  name: String,
+  ucCount: Int,
+  ucUpdatedAt: Option[String])
+
+
+
 // NOTE: These fields names need to match the attributes in list.html
 case class UseCaseSummary(
   eid: UseCaseIdentEI,

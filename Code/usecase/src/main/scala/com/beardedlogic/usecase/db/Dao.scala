@@ -95,6 +95,8 @@ class Dao(_session: Session) {
     })(InvalidName, NameAlreadyInUse)
   }
 
+  def summariseProjects(userId: UserId): List[ProjectSummary] = SummariseProjects.list(userId)
+
   // ===================================================================================================================
   // Use Case
 
@@ -235,6 +237,7 @@ private[db] final object Sql {
 
   implicit val GR_FieldKey = GetResult {r => FieldKeyRec(r.<<, r.<<, r.<<)}
   implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt(r.nextString, r.nextString))
+  implicit val GR_ProjectSummary = GetResult(r => ProjectSummary(r.nextId[ProjectId], r.<<, r.<<, r.<<))
   implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldText= GetResult(r => UcFieldText(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
@@ -294,6 +297,15 @@ private[db] final object Sql {
 
   @Insert val CreateProject = query[(UserId, String), ProjectId](
     "INSERT INTO project(usr_id, name) VALUES(?,?) RETURNING id")
+
+  val SummariseProjects = query[UserId, ProjectSummary]( s"""
+    SELECT p.id, p.name, count(r.created_at), max(r.created_at)
+    FROM project p
+    LEFT JOIN usecase u on p.id = u.project_id
+    LEFT JOIN usecase_rev r on r.id = u.latest_rev_id
+    WHERE p.usr_id = ?
+    GROUP BY p.id, p.name
+    ORDER BY p.name """.sql)
 
   // ###################################################################################################################
   // Use Case

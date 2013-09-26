@@ -76,7 +76,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   // -------------------------------------------------------------------------------------------------------------------
 
   val load = loadUseCase _
-  def save(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId) = saveUseCase(uc, prev, projectId)
+  def save(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId()) = saveUseCase(uc, prev, projectId)
 
   def saveAndLoad(uc: UseCase, prev: Option[UseCaseSaveCheckpoint] = None) =
     load(save(uc, prev).getOrElse(prev.get).rec)
