@@ -19,7 +19,7 @@ import com.beardedlogic.usecase.snippet.Notices
 import com.beardedlogic.usecase.util.HttpResponses.ShouldNeverHappenResponse
 import com.beardedlogic.usecase.util.JsExt._
 import com.beardedlogic.usecase.util.ErrorMessages
-import com.beardedlogic.usecase.lib.Types.{UserId, JsCmdMonoid}
+import Types._
 import SnippetHelpers._
 
 // TODO Needs rework between static & stateful
@@ -51,6 +51,8 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
   @inline implicit def OptionToBox[T](option: Option[T]): Box[T] = Box(option)
 
   protected implicit lazy val jsonFormats = Serialization.formats(NoTypeHints)
+
+  def toJson[T <: AnyRef](data: T): Json[T] = Serialization.write(data).tag[JsonTag[T]]
 
   def currentUser_!() : UserDescriptor = Oshiro.loggedInUser match {
     case Some(user) => user

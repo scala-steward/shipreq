@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase
 package snippet
 
+import net.liftweb.http.js.JsCmd
 import org.scalatest.FunSpec
 import org.scalatest.prop.PropertyChecks
 import lib.{ExternalId, Defaults}
@@ -8,10 +9,17 @@ import lib.Types._
 import db.{UseCaseRev, UseCaseSummary}
 import test.TestDatabaseSupport
 import util.ErrorMessages
-import net.liftweb.http.js.JsCmd
 
 class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with PropertyChecks {
   import Tables._
+
+  describe("JSON generation") {
+    it("should include tagged EIDs") {
+      val ucs = UseCaseSummary("secret".tag[UseCaseIdentEITag], (3:Short).tag[UseCaseNumberTag], "hello", "now")
+      val json = UseCaseIndex.toJson(ucs)
+      json should include("secret")
+    }
+  }
 
   describe("#createNewUseCase") {
     def createNewUseCase: UseCaseSummary = assertTableDiffs(Usecase -> 1, UsecaseRev -> 1) {

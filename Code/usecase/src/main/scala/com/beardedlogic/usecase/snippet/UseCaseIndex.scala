@@ -4,7 +4,6 @@ package snippet
 import net.liftweb.common.{Full, Failure, Box}
 import net.liftweb.http.{S, SHtml}
 import net.liftweb.http.js.{JsCmd, JsCmds}
-import net.liftweb.json.Serialization.{write => jsonWrite}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{CssSel, ClearClearable}
 
@@ -21,9 +20,9 @@ object UseCaseIndex extends SnippetHelpers {
   final val TriggerAdd = JsJsonTrigger[UseCaseSummary]("uc-add")
   final val TriggerUpdate = JsJsonTrigger[UseCaseSummary]("uc-upd")
 
-  def InitKoViewModel(vmClassName: String, model: AnyRef): CssSel = {
-    val json = jsonWrite(model)
-    val js = JsCmds.Run(s"var VM=new $vmClassName($json)")
+  def InitKoViewModel(vmClassName: String, model: List[UseCaseSummary]): CssSel = {
+    val json = toJson(model)
+    val js = JsCmds.Run(s"VM=new $vmClassName($json)")
     "#initVM" #> JsCmds.Script(js)
   }
 
@@ -38,7 +37,7 @@ object UseCaseIndex extends SnippetHelpers {
 
   def create(): UseCaseSummary = daoProvider.withTransaction { dao =>
     val ucr = dao.createUseCaseIdentAndRev1(Defaults.useCaseHeader)
-    new UseCaseSummary(ucr, Misc.currentTimeAsIso8601Str)
+    UseCaseSummary.as(ucr, Misc.currentTimeAsIso8601Str)
   }
 
   def onUpdate(): JsCmd = onUpdate(update)
@@ -56,5 +55,5 @@ object UseCaseIndex extends SnippetHelpers {
                     case AlreadyUpToDate(r) => Full(r)
                     case UseCaseNotFound    => Failure("Use case not found.")
                   }
-    } yield new UseCaseSummary(savedUc, Misc.currentTimeAsIso8601Str)
+    } yield UseCaseSummary.as(savedUc, Misc.currentTimeAsIso8601Str)
 }

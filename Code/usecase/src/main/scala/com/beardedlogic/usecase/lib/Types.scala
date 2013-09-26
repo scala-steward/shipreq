@@ -27,6 +27,9 @@ object Types {
 
   implicit def taggedStringOrdering[T <: TypeTag[String]] = implicitly[Ordering[String]].asInstanceOf[Ordering[String @@ T]]
 
+  sealed trait JsonTag[T] extends TypeTag[String]
+  type Json[T] = String @@ JsonTag[T]
+
   /** Indicates that references to steps are in normalised form. Eg. [D.112] instead of [3.0.1] */
   sealed trait TextWithNormalisedRefsTag extends TypeTag[String]
   type TextWithNormalisedRefs = String @@ TextWithNormalisedRefsTag

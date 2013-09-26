@@ -237,7 +237,7 @@ private[db] final object Sql {
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
   implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<)))
-  implicit val GR_UseCaseSummary = GetResult(r => new UseCaseSummary(r.nextId[UseCaseIdentId], r.nextTShort[UseCaseNumber], r.nextString, r.nextString))
+  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary.as(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
 
