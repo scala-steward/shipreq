@@ -19,6 +19,7 @@ import lib.Types._
  * - `find`: Searches for a single row. Returns Option[T].
  * - `findAll`: Searches for a multiple rows. Returns List[T], possibly empty.
  * - `findOrCreate`: Searches for an item and creates it if not found. Returns T.
+ * - `summarise`: Retrieves a list of objects that summarise one or more data. Returns List[T].
  *
  * - `create`: Creates a new row. Returns T.
  * - `link`: Creates a link/mapping between existing DB records. Returns unit.
@@ -136,7 +137,7 @@ class Dao(_session: Session) {
 
   def findUseCaseLatestRev(ucId: UseCaseIdentId): Option[UseCaseRev] = SelectLatestUseCaseRev.firstOption(ucId)
 
-  def findAllUseCaseSummaries(projectId: ProjectId): List[UseCaseSummary] = SelectUseCaseSummaries.list(projectId)
+  def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases.list(projectId)
 
   /**
    * Updates the header of an existing use case (ie. just the contents of the `usecase` table ignoring its relations).
@@ -315,7 +316,7 @@ private[db] final object Sql {
   val SelectLatestUseCaseRev = query[UseCaseIdentId, UseCaseRev](
     s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
 
-  val SelectUseCaseSummaries = query[ProjectId, UseCaseSummary]( s"""
+  val SummariseUseCases = query[ProjectId, UseCaseSummary]( s"""
     SELECT ident_id, number, title, to_iso8601_str(created_at)
     FROM usecase u, usecase_rev r
     WHERE r.id = latest_rev_id and project_id = ?

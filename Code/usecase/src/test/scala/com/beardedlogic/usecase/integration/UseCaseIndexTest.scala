@@ -16,11 +16,11 @@ class UseCaseIndexTest extends FunSuite with SeleniumTest with BeforeAndAfter wi
   lazy val dsl = goto.useCaseIndex
 
   def assertDatabase(expected: (Int, String)*)(implicit projectId: ProjectId) {
-    dao.findAllUseCaseSummaries(projectId).map(s => (s.number.toInt, s.title)).toList should be(expected.toList)
+    dao.summariseUseCases(projectId).map(s => (s.number.toInt, s.title)).toList should be(expected.toList)
   }
 
   def assertLinkUrl(implicit projectId: ProjectId) {
-    val ucs = dao.findAllUseCaseSummaries(projectId).head
+    val ucs = dao.summariseUseCases(projectId).head
     dsl.row(0).linkUrl should be(baseUrl + AppSiteMap.UseCaseEditor.relativeUrl(ucs.parseId.get))
   }
 

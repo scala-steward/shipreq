@@ -63,7 +63,7 @@ class UseCaseIndexSnippetTest extends FunSpec with TestDatabaseSupport with Prop
     }
 
     def assertSummaryInAll(x: UseCaseSummary)(implicit projectId: ProjectId): Unit =
-      dao.findAllUseCaseSummaries(projectId).map(ignoreTimestamp) should contain(ignoreTimestamp(x))
+      dao.summariseUseCases(projectId).map(ignoreTimestamp) should contain(ignoreTimestamp(x))
 
     def ignoreTimestamp(x: UseCaseSummary) = x.copy(updatedAt = "IGNORED")
 

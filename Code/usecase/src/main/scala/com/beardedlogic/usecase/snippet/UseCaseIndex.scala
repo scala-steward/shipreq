@@ -30,7 +30,7 @@ object UseCaseIndex extends SnippetHelpers {
 
   def render = daoProvider.withSession(dao =>
     ClearClearable
-      & InitKoViewModel("UCIViewModel", dao.findAllUseCaseSummaries(projectId))
+      & InitKoViewModel("UCIViewModel", dao.summariseUseCases(projectId))
       & ".new_uc button" #> SHtml.ajaxButton("+ New UC", onNew _)
       & ".edit form" #> reusableAjaxForm(onUpdate)
   )
