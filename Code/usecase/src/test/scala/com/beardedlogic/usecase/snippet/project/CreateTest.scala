@@ -1,8 +1,7 @@
-package com.beardedlogic.usecase.snippet
+package com.beardedlogic.usecase.snippet.project
 
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 import net.liftweb.http.js.JsCmd
-import net.liftweb.http.ResponseShortcutException
 import com.beardedlogic.usecase.test.TestDatabaseSupport
 import com.beardedlogic.usecase.test.fixture.UserFixture
 
@@ -15,7 +14,7 @@ class ProjectCreateTest extends FunSuite with TestDatabaseSupport with UserFixtu
   }
 
   def create(n: String): JsCmd = {
-    val s = new ProjectCreate
+    val s = new create
     s.projectName = n
     s.onSubmit
   }

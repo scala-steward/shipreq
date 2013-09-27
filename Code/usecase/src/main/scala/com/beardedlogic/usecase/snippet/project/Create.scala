@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.snippet
+package com.beardedlogic.usecase.snippet.project
 
 import net.liftweb.http.js.JsCmd
 import net.liftweb.http.{S, SHtml}
@@ -15,7 +15,7 @@ import AppSiteMap.Implicits._
  *
  * @since 24/09/2013
  */
-class ProjectCreate extends SingleOpStatefulSnippet {
+class create extends SingleOpStatefulSnippet {
 
   private[snippet] var projectName = ""
 
