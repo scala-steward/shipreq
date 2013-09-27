@@ -12,27 +12,28 @@
     %script(type="text/javascript" src="/js/application.js")
 
   %body
-    #body
-      .content
+    #ly-hdrbody
+      .ly-content
 
-        .loginInfo
-          %div(data-lift="Authenticated")
-            Logged in as <b>@<span data-lift="LoggedInUser.username"></span></b>.
-            %a(data-lift="Link.to?name=Logout")
+        %header
+          .loginInfo
+            %div(data-lift="Authenticated")
+              Logged in as <b>@<span data-lift="LoggedInUser.username"></span></b>.
+              %a(data-lift="Link.to?name=Logout")
 
-          %div(data-lift="Authenticated.not")
-            You're not logged in.
-            %a(data-lift="Link.to?name=Login")
-            or
-            %a(data-lift="Link.to?name=Register1")
+            %div(data-lift="Authenticated.not")
+              You're not logged in.
+              %a(data-lift="Link.to?name=Login")
+              or
+              %a(data-lift="Link.to?name=Register1")
 
-        #notices(data-lift="Notices")
+          %section#notices(data-lift="Notices")
 
         #content CONTENT GOES HERE
 
-      #footer-push
-    #footer
-      .content
+      #ly-footer-push
+    %footer#ly-footer
+      .ly-content
         v<param data-lift="SystemInfo?name=build.version.full" >
         @ <param data-lift="SystemInfo?name=build.time">
         | <param data-lift="SystemInfo?name=run.mode.short">
