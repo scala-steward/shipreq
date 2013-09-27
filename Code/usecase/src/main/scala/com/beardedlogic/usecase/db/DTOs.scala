@@ -8,7 +8,7 @@ import AutoExternaliseIds._
 
 
 case class ProjectSummary(
-  eid: ProjectEI,
+  id: ProjectId,
   name: String,
   ucCount: Int,
   ucUpdatedAt: Option[String])

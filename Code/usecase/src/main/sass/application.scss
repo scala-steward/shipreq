@@ -78,7 +78,20 @@ html, body { height: 100% } // Cannot have any padding or margin here
 	margin-right: $pageMarginHoriz;
 }
 
+#content {
+  margin-top: 2.3em;
+}
+
 // =====================================================================================================================
 // Specific
 
 .loginInfo { text-align: center }
+
+#project-list {
+  margin-top: 3em;
+  li {
+    margin-top: 1.8em;
+    .title {font-size: 250%}
+    .details {color: #444}
+  }
+}

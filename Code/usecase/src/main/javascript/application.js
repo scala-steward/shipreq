@@ -81,8 +81,9 @@ $(document).keypress(function (e) {
 })
 
 DomEnhancements = [
-    {css: "abbr.timeago", apply: function(x){ x.timeago() }},
-    {css: "textarea",     apply: function(x){ x.autosize() }}
+    {css: "abbr.timeago",  apply: function(x){ x.timeago() }},
+    {css: "abbr.timeago2", apply: function(x){ x.timeago2() }},
+    {css: "textarea",      apply: function(x){ x.autosize() }}
 ];
 
 function registerDomEnhancementsWithLiveQuery() {
@@ -100,7 +101,24 @@ function registerDomEnhancementsWithLiveQuery() {
 $(document).ready(registerDomEnhancementsWithLiveQuery)
 
 function enhanceDom() { $(document).enhanceDom() }
+
 (function ($) {
+
+    // Customised impl of timeago.
+    // Attr should have ISO8601 in the title and nothing in the text.
+    // After using this, a "3. days ago"-like expression will be visible with a locale-friendly string shown
+    // when hovered over.
+    $.fn.timeago2 = function () {
+        var e = $(this)
+        var isotime = e.attr('title')
+        if (typeof isotime === 'string') {
+            var d = new Date(isotime)
+            //var t = d.toLocaleString()
+            var t = d.toLocaleDateString() + ' @ ' + d.toLocaleTimeString()
+            e.html(t).timeago()
+        }
+    }
+
     // Provide JQuery fn to apply DomEnhancements
     $.fn.enhanceDom = function () {
         for (var i=0; i < DomEnhancements.length; i++) {
@@ -109,4 +127,5 @@ function enhanceDom() { $(document).enhanceDom() }
         }
         return this;
     };
+
 }(jQuery));

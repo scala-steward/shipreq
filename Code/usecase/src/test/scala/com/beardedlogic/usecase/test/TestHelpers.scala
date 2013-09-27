@@ -214,6 +214,14 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits {
 
   def any[T](implicit m: Manifest[T]) = org.mockito.Matchers.any(m.runtimeClass.asInstanceOf[Class[T]])
 
+  def countOccurrences(str1: String, str2: String): Int = {
+    @tailrec def count(pos: Int, c: Int): Int = {
+      val idx = str1 indexOf(str2, pos)
+      if (idx == -1) c else count(idx + str2.size, c + 1)
+    }
+    count(0, 0)
+  }
+
   @tailrec final def deepestLast[N <: TreeNodeLike[N]](n: N): N =
     if (n.children.isEmpty) n else deepestLast(n.children.last)
 
@@ -383,6 +391,13 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits {
    */
   implicit class MyRichInt(val i: Int) {
     def times(block: => Any) { 1 to i foreach(_ => block) }
+  }
+
+  /**
+   * Extensions for: String
+   */
+  implicit class MyRichString(val self: String) {
+    def occurrences(of: String) = countOccurrences(self, of)
   }
 
   /**

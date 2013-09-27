@@ -299,7 +299,7 @@ private[db] final object Sql {
     "INSERT INTO project(usr_id, name) VALUES(?,?) RETURNING id")
 
   val SummariseProjects = query[UserId, ProjectSummary]( s"""
-    SELECT p.id, p.name, count(r.created_at), max(r.created_at)
+    SELECT p.id, p.name, count(r.created_at), to_iso8601_str(max(r.created_at))
     FROM project p
     LEFT JOIN usecase u on p.id = u.project_id
     LEFT JOIN usecase_rev r on r.id = u.latest_rev_id
