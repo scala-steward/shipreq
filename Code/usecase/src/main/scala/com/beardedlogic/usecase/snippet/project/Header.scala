@@ -2,11 +2,11 @@ package com.beardedlogic.usecase
 package snippet.project
 
 import net.liftweb.http.js.JsCmd
-import net.liftweb.http.{SHtml, StatefulSnippet}
+import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers._
 
 import db.UpdateProjectResult
-import lib.SnippetHelpers
+import lib.SingleOpStatefulSnippet
 import lib.Types._
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
@@ -20,10 +20,8 @@ private[project] object HeaderConsts {
  *
  * @since 30/09/2013
  */
-class header(projectId: ProjectId) extends StatefulSnippet with SnippetHelpers {
+class Header(projectId: ProjectId) extends SingleOpStatefulSnippet {
   import HeaderConsts._
-
-  override def dispatch = { case _ => render }
 
   // TODO would this be better using Shiro's authorisation?
   val project = requireResult_!(for {

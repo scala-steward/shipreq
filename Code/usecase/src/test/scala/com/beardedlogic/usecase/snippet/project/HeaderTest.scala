@@ -15,7 +15,7 @@ class HeaderTest extends FunSuite with TestHelpers {
     loggedInUser: Option[UserDescriptor] = Some(UD1),
     project: Option[Project] = Some(Project("Grrr", UD1.id)),
     updateResult: UpdateProjectResult = Success("YAY")
-    )(fn: header => R = identity[header] _): R = {
+    )(fn: Header => R = identity[Header] _): R = {
 
     val pid = 123456.tag[ProjectIdTag]
     val uid: UserId = loggedInUser.map(_.id).getOrElse((-1).tag[UserIdTag])
@@ -25,7 +25,7 @@ class HeaderTest extends FunSuite with TestHelpers {
     }).install {
       withUserLoggedIn(loggedInUser) {
         inMockSession {
-          val h = new header(pid)
+          val h = new Header(pid)
           fn(h)
         }
       }

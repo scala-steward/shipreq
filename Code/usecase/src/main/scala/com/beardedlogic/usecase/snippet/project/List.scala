@@ -11,7 +11,7 @@ import AppSiteMap.Implicits._
  *
  * @since 27/09/2013
  */
-object list extends SnippetHelpers {
+object List extends SnippetHelpers {
 
   def render = {
     val userId = currentUserId_!

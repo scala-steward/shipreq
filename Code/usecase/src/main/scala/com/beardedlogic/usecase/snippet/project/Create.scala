@@ -15,7 +15,7 @@ import AppSiteMap.Implicits._
  *
  * @since 24/09/2013
  */
-class create extends SingleOpStatefulSnippet {
+class Create extends SingleOpStatefulSnippet {
 
   private[snippet] var projectName = ""
 

@@ -14,7 +14,7 @@ class ProjectCreateTest extends FunSuite with TestDatabaseSupport with UserFixtu
   }
 
   def create(n: String): JsCmd = {
-    val s = new create
+    val s = new Create
     s.projectName = n
     s.onSubmit
   }

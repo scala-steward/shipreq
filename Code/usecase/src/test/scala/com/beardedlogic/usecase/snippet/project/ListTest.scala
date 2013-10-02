@@ -8,7 +8,7 @@ import com.beardedlogic.usecase.lib.Types._
 class ListTest extends FunSuite with TestHelpers {
   lazy val html = loadTemplate("loggedin/index", "project-list")
 
-  import list.renderProjectList
+  import List.renderProjectList
 
   def includeNone = include("none")
   def includeProjects = include regex ("<ol[ >]")
