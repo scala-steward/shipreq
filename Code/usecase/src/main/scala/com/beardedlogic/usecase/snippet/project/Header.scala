@@ -10,6 +10,7 @@ import lib.SingleOpStatefulSnippet
 import lib.Types._
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
+import lib.security.PermissionCheck
 
 private[project] object HeaderConsts {
   final val TriggerProjectUpdated = JsTextTrigger("project-updated")
@@ -23,11 +24,8 @@ private[project] object HeaderConsts {
 class Header(projectId: ProjectId) extends SingleOpStatefulSnippet {
   import HeaderConsts._
 
-  // TODO would this be better using Shiro's authorisation?
-  val project = requireResult_!(for {
-    dao <- daoProvider.forSession
-    p   <- dao.findProject(projectId) if p.owner == currentUserId_!
-  } yield p)
+  val project = requireResultO_!(daoProvider.withSession(_.findProject(projectId)))
+  PermissionCheck.userCan readAndUpdate project andIfNotThen redirectHome
 
   private[snippet] var projectName = project.name
 

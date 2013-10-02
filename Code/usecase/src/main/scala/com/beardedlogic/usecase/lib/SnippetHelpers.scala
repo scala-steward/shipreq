@@ -40,6 +40,11 @@ trait StaticSnippetHelpers extends Logger {
 
   def shouldNeverHappen_!(msg: String) = respondImmediately(ShouldNeverHappenResponse(msg))
 
+  def requireResultO_![T](o: Option[T], fallbackErrorReaction: => Nothing = redirectHome): T = o match {
+    case Some(t) => t
+    case None    => fallbackErrorReaction
+  }
+
   def requireResult_![T](box: Box[T], fallbackErrorReaction: => Nothing = redirectHome): T = box match {
     case Full(t)                                 => t
     case Empty                                   => fallbackErrorReaction
