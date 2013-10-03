@@ -1,20 +1,21 @@
-package com.beardedlogic.usecase.snippet.project
+package com.beardedlogic.usecase
+package snippet
 
 import net.liftweb.http.js.JsCmd
 import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers._
 
-import com.beardedlogic.usecase.app.AppSiteMap
-import com.beardedlogic.usecase.db.CreateProjectResult
-import com.beardedlogic.usecase.lib.SingleOpStatefulSnippet
-import com.beardedlogic.usecase.util.HtmlTransformExt.ajaxSubmitOnClick
+import app.AppSiteMap
+import db.CreateProjectResult
+import lib.SingleOpStatefulSnippet
+import util.HtmlTransformExt.ajaxSubmitOnClick
 
 /**
  * Form to create a new project.
  *
  * @since 24/09/2013
  */
-class Create extends SingleOpStatefulSnippet {
+class ProjectCreate extends SingleOpStatefulSnippet {
 
   private[snippet] var projectName = ""
 

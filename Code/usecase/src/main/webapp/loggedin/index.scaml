@@ -12,12 +12,12 @@
 
       %section#project-new
         %form(data-lift="form.ajax")
-          .input-group(data-lift="project/create")
+          .input-group(data-lift="ProjectCreate")
             %span.input-group-btn
               %button(type="submit" class="btn btn-lg btn-success") Create
             %input(type="text" class="input-lg form-control enterSubmitsForm" placeholder="Project Name" required)
 
-      %section#project-list(data-lift="project/list")
+      %section#project-list(data-lift="ProjectList")
         %h3.none You don't have any projects. Create one above!
         %ol.list-unstyled
           %li

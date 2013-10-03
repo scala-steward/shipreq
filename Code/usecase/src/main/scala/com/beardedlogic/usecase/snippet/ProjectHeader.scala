@@ -1,5 +1,5 @@
 package com.beardedlogic.usecase
-package snippet.project
+package snippet
 
 import net.liftweb.http.js.JsCmd
 import net.liftweb.http.SHtml
@@ -8,11 +8,11 @@ import net.liftweb.util.Helpers._
 import db.UpdateProjectResult
 import lib.SingleOpStatefulSnippet
 import lib.Types._
+import lib.security.PermissionCheck
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
-import lib.security.PermissionCheck
 
-private[project] object HeaderConsts {
+private[snippet] object ProjectHeaderConsts {
   final val TriggerProjectUpdated = JsTextTrigger("project-updated")
 }
 
@@ -21,15 +21,14 @@ private[project] object HeaderConsts {
  *
  * @since 30/09/2013
  */
-class Header(projectId: ProjectId) extends SingleOpStatefulSnippet {
-  import HeaderConsts._
+class ProjectHeader(projectId: ProjectId) extends SingleOpStatefulSnippet {
+  import ProjectHeaderConsts._
+  implicit def alertId = "phdra".tag[AlertIdTag]
 
   val project = requireResultO_!(daoProvider.withSession(_.findProject(projectId)))
   PermissionCheck.userCan readAndUpdate project andIfNotThen redirectHome
 
-  private[snippet] var projectName = project.name
-
-  implicit def alertId = "phdra".tag[AlertIdTag]
+  var projectName = project.name
 
   def render = (
     "#project-title" #> (

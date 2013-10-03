@@ -1,14 +1,14 @@
-package com.beardedlogic.usecase.snippet.project
+package com.beardedlogic.usecase.snippet
 
 import org.scalatest.FunSuite
 import com.beardedlogic.usecase.test.TestHelpers
 import com.beardedlogic.usecase.db.ProjectSummary
 import com.beardedlogic.usecase.lib.Types._
 
-class ListTest extends FunSuite with TestHelpers {
+class ProjectListTest extends FunSuite with TestHelpers {
   lazy val html = loadTemplate("loggedin/index", "project-list")
 
-  import List.renderProjectList
+  import ProjectList.renderProjectList
 
   def includeNone = include("none")
   def includeProjects = include regex ("<ol[ >]")

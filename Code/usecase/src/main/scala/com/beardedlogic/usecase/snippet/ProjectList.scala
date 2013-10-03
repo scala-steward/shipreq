@@ -1,9 +1,10 @@
-package com.beardedlogic.usecase.snippet.project
+package com.beardedlogic.usecase
+package snippet
 
 import net.liftweb.util.Helpers._
-import com.beardedlogic.usecase.app.AppSiteMap
-import com.beardedlogic.usecase.db.ProjectSummary
-import com.beardedlogic.usecase.lib.SnippetHelpers
+import app.AppSiteMap
+import db.ProjectSummary
+import lib.SnippetHelpers
 import AppSiteMap.Implicits._
 
 /**
@@ -11,7 +12,7 @@ import AppSiteMap.Implicits._
  *
  * @since 27/09/2013
  */
-object List extends SnippetHelpers {
+object ProjectList extends SnippetHelpers {
 
   def render = {
     val userId = currentUserId_!
