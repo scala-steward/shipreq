@@ -51,7 +51,7 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
     "li [class+]" #> uc.eid &
     "a .title" #> (
       "* *" #> s"UC-${uc.number}: ${uc.title}" &
-      "* [href]" #> AppSiteMap.UseCaseEditor.relativeUrl(uc.parseId.get)
+      "* [href]" #> AppSiteMap.UseCaseEditor.relativeUrl(uc.id)
     ) &
     ".detail abbr [title]" #> uc.updatedAt &
     renderEditItem(uc)
@@ -68,12 +68,16 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
   )
 
   def onCreate(): JsCmd = {
-    val h = UseCaseHeader(createTitle)
-    // TODO createUseCaseIdentAndRev1 never returns an error
-    val ucRev = daoProvider.withTransaction(_.createUseCaseIdentAndRev1(projectId, h))
-    val ucs = new UseCaseSummary(ucRev, Misc.currentTimeAsIso8601Str)
+    val ucs = create(createTitle)
     val li = renderListItem(ucs)(ListItemTemplate)
     TriggerCreated.trigger(li)
+  }
+
+  def create(title: String): UseCaseSummary = {
+    val h = UseCaseHeader(title)
+    // TODO createUseCaseIdentAndRev1 never returns an error
+    val ucRev = daoProvider.withTransaction(_.createUseCaseIdentAndRev1(projectId, h))
+    new UseCaseSummary(ucRev, Misc.currentTimeAsIso8601Str)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -81,7 +85,7 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
   def renderEditItem(uc: UseCaseSummary) = {
     var title = ""
-    val updateFn = () => onUpdate(uc.parseId.get, title)
+    val updateFn = () => onUpdate(uc, title)
     ".edit-mode" #> (
       ":text [value]" #> uc.title &
       ":text" #> SHtml.onSubmit(title = _) &
@@ -89,15 +93,14 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
     )
   }
 
-  def onUpdate(id: UseCaseIdentId, newTitle: String): JsCmd = {
-    val eid = ExternalId.UseCase(id)
-    update(id, newTitle) match {
+  def onUpdate(uc: UseCaseSummary, newTitle: String): JsCmd = {
+    update(uc.id, newTitle) match {
       case None =>
-        TriggerUpdateNop.trigger(eid)
+        TriggerUpdateNop.trigger(uc.eid)
       case Some(ucRev) =>
         val ucs = new UseCaseSummary(ucRev, Misc.currentTimeAsIso8601Str)
         val li = renderListItem(ucs)(ListItemTemplate)
-        val dto = UpdateDTO(eid, JqExpr(li))
+        val dto = UpdateDTO(uc.eid, JqExpr(li))
         TriggerUpdated.trigger(dto)
     }
   }

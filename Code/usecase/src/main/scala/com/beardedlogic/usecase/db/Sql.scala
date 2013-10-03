@@ -11,7 +11,6 @@ import lib.Types._
  * SQL for all functions exposed in the DAO.
  */
 private[db] final object Sql {
-  import AutoExternaliseIds._
   import SqlHelpers._
   import StaticQuery.{query, queryNA, update, updateNA}
 
