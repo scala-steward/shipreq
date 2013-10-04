@@ -4,9 +4,9 @@ package db
 import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import lib.field.FieldDefinition
-import lib.security.PasswordAndSalt
 import lib.{Defaults, InputCorrection}
 import lib.Types._
+import security.PasswordAndSalt
 
 /**
  * Database interface.

@@ -1,5 +1,5 @@
 package com.beardedlogic.usecase
-package lib.security
+package security
 
 import db.Project
 

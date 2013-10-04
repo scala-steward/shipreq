@@ -8,10 +8,9 @@ import org.apache.shiro.authc.UsernamePasswordToken
 import org.postgresql.util.PSQLException
 import org.scalatest.FunSpec
 
-import lib.security.Oshiro
+import security.Oshiro
 import test.{SnippetTester, TestDatabaseSupport}
 import test.fixture.UserFixture
-import net.liftweb.http.js.JsCmd
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
 

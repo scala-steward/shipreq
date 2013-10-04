@@ -8,7 +8,7 @@ import net.liftweb.util.Helpers._
 import db.UpdateProjectResult
 import lib.SingleOpStatefulSnippet
 import lib.Types._
-import lib.security.PermissionCheck
+import security.PermissionCheck
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
 

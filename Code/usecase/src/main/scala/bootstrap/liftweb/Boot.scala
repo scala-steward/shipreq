@@ -9,7 +9,7 @@ import com.beardedlogic.usecase._
 import app.AppSiteMap
 import db.DB
 import lib.Defaults
-import lib.security.Oshiro
+import security.Oshiro
 
 /**
  * A class that's instantiated early and run.  It allows the application

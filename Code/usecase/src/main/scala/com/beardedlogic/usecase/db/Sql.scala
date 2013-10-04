@@ -4,8 +4,8 @@ package db
 import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery, SetParameter, GetResult}
 import scala.slick.session.PositionedParameters
-import lib.security.PasswordAndSalt
 import lib.Types._
+import security.PasswordAndSalt
 
 /**
  * SQL for all functions exposed in the DAO.

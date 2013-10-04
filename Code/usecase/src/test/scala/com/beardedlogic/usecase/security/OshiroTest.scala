@@ -1,7 +1,6 @@
 package com.beardedlogic.usecase
-package lib.security
+package security
 
-import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc._
 import org.scalatest.{BeforeAndAfterAll, FunSpec}
 import test.TestDatabaseSupport

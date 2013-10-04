@@ -1,6 +1,7 @@
-package com.beardedlogic.usecase.lib.security
+package com.beardedlogic.usecase
+package security
 
-import com.beardedlogic.usecase.db.UserDescriptor
+import db.UserDescriptor
 
 /**
  * Interface that provides the app with security features.

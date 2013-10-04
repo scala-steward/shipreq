@@ -1,4 +1,5 @@
-package com.beardedlogic.usecase.lib.security
+package com.beardedlogic.usecase
+package security
 
 import org.apache.shiro.util.ByteSource
 import org.apache.shiro.codec.Base64

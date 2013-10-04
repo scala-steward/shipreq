@@ -1,10 +1,11 @@
-package com.beardedlogic.usecase.lib.security
+package com.beardedlogic.usecase
+package security
 
 import net.liftweb.http.{LiftRules, DispatchSnippet}
 import org.apache.shiro.SecurityUtils.{getSubject => subject}
 import scala.xml.{Text, NodeSeq}
 import Oshiro.loggedInUser
-import com.beardedlogic.usecase.db.UserDescriptor
+import db.UserDescriptor
 
 object ShiroSnippets {
 
