@@ -28,9 +28,15 @@ object Oshiro extends SecurityProvider {
     ShiroSnippets.init()
   }
 
+  private def subject = SecurityUtils.getSubject
+
   override def loggedInUser: Option[UserDescriptor] = {
-    val x = SecurityUtils.getSubject.getPrincipal
+    val x = subject.getPrincipal
     if (x == null) None
     else x.asInstanceOf[Some[UserDescriptor]]
   }
+
+  def logout(): Unit = subject.logout()
+
+  def isAuthenticated: Boolean = subject.isAuthenticated
 }

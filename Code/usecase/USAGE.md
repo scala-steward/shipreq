@@ -65,5 +65,6 @@ Testing
 * Running Selenium tests
     sbt selenium:test
 
-* To generate test data
-    bin/dump_sql.sh usecase > src/test/resources/testdata-xx.sql
+* Running JS tests
+    Load `src/test/javascript/tests.html` in a browser.
+

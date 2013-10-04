@@ -8,6 +8,7 @@ FUNC TODO
 * [M.0.5] [LEGL] Check all licences and attribute as required.
 * [M.0.5] [LEGL] Add terms of service.
 
+* [S.-.-] [ACCT] Remove the remember-me functionality.
 * [S.2.5] [UCE ] Step is lost if accidentally deleted. No undo.
 * [S.2.1] [ACCT] Change username & password (when logged in).
 * [S.0.5] [ACCT] Password reset (when not logged in).

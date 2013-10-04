@@ -1,4 +1,5 @@
-package com.beardedlogic.usecase.app
+package com.beardedlogic.usecase
+package app
 
 import java.lang.{Long => JLong}
 import net.liftweb.common._
@@ -7,11 +8,11 @@ import net.liftweb.sitemap.Loc._
 import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
-import org.apache.shiro.SecurityUtils
 
 import AppConfig.BaseUrl
-import com.beardedlogic.usecase.lib.Types._
-import com.beardedlogic.usecase.lib.{ExternalId, ExternalIdConverter}
+import lib.Types._
+import lib.{ExternalId, ExternalIdConverter}
+import security.Oshiro
 
 object AppSiteMap {
 
@@ -33,10 +34,10 @@ object AppSiteMap {
     >> Hidden >> UseTemplate("register2"))
 
   val Project = (MenuWithIdParam(ExternalId.Project)("project", "Project") / "project" / *
-    >> Hidden >> UseTemplate("loggedin/project"))
+    >> AuthenticationRequired >> UseTemplate("loggedin/project"))
 
   val UseCaseEditor = (MenuWithIdParam(ExternalId.UseCase)("uce", "Use Case Editor") / "usecase" / *
-    >> Hidden >> UseTemplate("uce"))
+    >> AuthenticationRequired >> UseTemplate("uce"))
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -54,15 +55,7 @@ object AppSiteMap {
     SiteMap(pages: _*)
   }
 
-  def logout(): Box[LiftResponse] = {
-    SecurityUtils.getSubject.logout()
-    Full(RedirectResponse(HomeRelativeUrl))
-  }
-
-  private def MenuWithIdParam[Tag <: ExteralisableIdTag](eidGen: ExternalIdConverter[Tag])(name: String, linkText: Loc.LinkText[JLong @@ Tag]) =
-    Menu.param[JLong @@ Tag](name, linkText, eidGen.parseB(_), eidGen.toExternal(_))
-
-  private def UseTemplate(path: String) = TemplateBox(() => Templates(path.split("/").toList))
+  // -------------------------------------------------------------------------------------------------------------------
 
   object Implicits {
 
@@ -72,8 +65,7 @@ object AppSiteMap {
     }
 
     implicit class MenuableExt(val menu: Menu.Menuable) extends AnyVal {
-      // TODO Gross hack for Home -> / instead of /index
-      def relativeUrl: String = if (menu == Home) "/" else menu.loc.calcDefaultHref
+      def relativeUrl: String = if (menu eq Home) "/" else menu.loc.calcDefaultHref
       def absoluteUrl: String = BaseUrl + relativeUrl
     }
 
@@ -82,4 +74,20 @@ object AppSiteMap {
       def absoluteUrl(arg: T): String = BaseUrl + relativeUrl(arg)
     }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  import Implicits._
+
+  def logout(): Box[LiftResponse] = {
+    Oshiro.logout()
+    Full(RedirectResponse(HomeRelativeUrl))
+  }
+
+  private def MenuWithIdParam[Tag <: ExteralisableIdTag](eidGen: ExternalIdConverter[Tag])(name: String, linkText: Loc.LinkText[JLong @@ Tag]) =
+    Menu.param[JLong @@ Tag](name, linkText, eidGen.parseB(_), eidGen.toExternal(_))
+
+  private def UseTemplate(path: String) = TemplateBox(() => Templates(path.split("/").toList))
+
+  private def AuthenticationRequired =
+    If(() => Oshiro.isAuthenticated, () => RedirectResponse(Login.relativeUrl))
 }
