@@ -18,14 +18,12 @@ object Login {
 class Login extends SingleOpStatefulSnippet {
 
   private var usernameOrEmail, password = ""
-  private var rememberMe = true
 
   // TODO What about when user already logged in?
 
   def render = (
     "#who" #> SHtml.onSubmit(i => usernameOrEmail = InputCorrection.usernameOrEmail(i)) &
     "#password" #> SHtml.onSubmit(i => password = InputCorrection.password(i)) &
-    "#remember" #> SHtml.checkbox(rememberMe, rememberMe = _, "id" -> "remember") &
     ":submit" #> ajaxSubmitOnClick(onLoginAttempt)
     )
 
@@ -34,7 +32,7 @@ class Login extends SingleOpStatefulSnippet {
       jsShowError(InvalidLogin)
     else {
       val loginToken = new UsernamePasswordToken(usernameOrEmail, password)
-      loginToken.setRememberMe(rememberMe)
+      loginToken.setRememberMe(false)
       try {
         SecurityUtils.getSubject.login(loginToken)
         onSuccessfulLogin()
