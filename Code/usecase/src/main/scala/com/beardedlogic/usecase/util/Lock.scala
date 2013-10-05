@@ -21,11 +21,24 @@ import net.liftweb.common.Logger
  */
 trait LockToken
 
+// =====================================================================================================================
+
 sealed trait Lock[+R <: LockToken, +W <: LockToken]
 
 object Lock {
-  type Read[+R <: LockToken] = Lock[R, _]
-  type Write[+W <: LockToken] = Lock[_, W]
+  type Read[+R <: LockToken] = Lock[R, _ <: LockToken]
+  type Write[+W <: LockToken] = Lock[_ <: LockToken, W]
+}
+
+// =====================================================================================================================
+
+trait PreparedLock[+R <: LockToken, +W <: LockToken] {
+  def apply[T](block: Lock[R,W] => T): T
+}
+
+object PreparedLock {
+  type Read[+R <: LockToken] = PreparedLock[R, _ <: LockToken]
+  type Write[+W <: LockToken] = PreparedLock[_ <: LockToken, W]
 }
 
 // =====================================================================================================================
@@ -38,6 +51,8 @@ object LockProvider {
   private[this] val lockInstance_ = new Lock[Ø, Ø] {}
   @inline private[util] def lockInstance[R <: LockToken, W <: LockToken] = lockInstance_.asInstanceOf[Lock[R, W]]
 }
+
+// =====================================================================================================================
 
 import LockProvider._
 
@@ -57,7 +72,17 @@ trait LockProvider[LockKey <: AnyRef
 
   final def writeM[M[_]](id: LockKey): ResourceLeaseMonad1[WL, M] =
     new ResourceLeaseMonad1[WL, M] {protected override def exec[T](f: WL => T): T = write(id)(f(_))}
+
+  def readP(id: LockKey): PreparedLock[RLR, RLW] = new PreparedLock[RLR, RLW] {
+    override def apply[T](block: RL => T): T = read(id)(block)
+  }
+
+  def writeP(id: LockKey): PreparedLock[WLR, WLW] = new PreparedLock[WLR, WLW] {
+    override def apply[T](block: WL => T): T = write(id)(block)
+  }
 }
+
+// =====================================================================================================================
 
 object DefaultLockProvider {
   def simple[LockKey <: AnyRef, T <: LockToken] = new DefaultLockProvider[LockKey, T, Ø, Ø, T]

@@ -227,27 +227,29 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   import MockUc1._
   val rels = 2 + 5 + 3 // 2 text fields + 5 NC steps + 3 EC steps
 
-  def loadRev(revId: UseCaseRevId): UseCaseSaveCheckpoint = {
+  def loadRev(revId: UseCaseRevId, projectId: ProjectId): UseCaseSaveCheckpoint = {
     val rec = dao.findUseCaseRev(revId).get
-    Locks.useCase.read(rec.identId)(load(rec, dao, _))
+    Locks.SingleUseCase.read(rec.identId, projectId)(load(rec, dao, _))
   }
 
-  def reload(cp: UseCaseSaveCheckpoint) = loadRev(cp.rec)
+  def reload(cp: UseCaseSaveCheckpoint, projectId: ProjectId) = loadRev(cp.rec, projectId)
 
   def createInitialTextRev(ucIdentId: UseCaseIdentId, fkId: FieldKeyId, text: String) =
     dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.hasNormalisedRefs)
 
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {
-      val x = dao.createUseCaseIdentAndRev1(newProjectId(), UseCaseHeader("Hello"))
-      val y = loadRev(x)
+      val pid = newProjectId()
+      val x = dao.createUseCaseIdentAndRev1(pid, UseCaseHeader("Hello"))
+      val y = loadRev(x, pid)
       val sfv = NCF.lens.get(y.uc)
       sfv.textmap(sfv.tree.head.id).text ==== x.header.title
     }
 
     it("should load a simple, manually-saved UC") {
       // Create UC
-      val ucIdent = dao.createUseCaseIdentWithForcedNumber(newProjectId(), (3:Short).tag[UseCaseNumberTag])
+      val pid = newProjectId()
+      val ucIdent = dao.createUseCaseIdentWithForcedNumber(pid, (3:Short).tag[UseCaseNumberTag])
       val ucRev = dao.createUseCaseRev(ucIdent, 1, UseCaseHeader("ahh"))
 
       // Create Text FV
@@ -261,7 +263,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       dao.linkUcToStep(ucRev, "3.0.1".asLabel, 0, Some(s1.id), s2)
 
       // Load
-      val loaded = loadRev(ucRev).uc
+      val loaded = loadRev(ucRev, pid).uc
 
       // Verify
       loaded.header ==== UseCaseHeader("ahh")
@@ -271,7 +273,8 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     it("should load a manually-saved UC with refs") {
       // Create UC
-      val ucIdent = dao.createUseCaseIdentWithForcedNumber(newProjectId(), (3:Short).tag[UseCaseNumberTag])
+      val pid = newProjectId()
+      val ucIdent = dao.createUseCaseIdentWithForcedNumber(pid, (3:Short).tag[UseCaseNumberTag])
       val ucRev = dao.createUseCaseRev(ucIdent, 1, UseCaseHeader("ahh"))
 
       // Create course FV
@@ -287,7 +290,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       dao.linkUcToText(ucRev, txtRev)
 
       // Load
-      val loaded = loadRev(ucRev).uc
+      val loaded = loadRev(ucRev, pid).uc
 
       // Verify
       loaded.header ==== UseCaseHeader("ahh")
@@ -307,7 +310,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       }
 
       it("should return a valid ctx") {
-        val cp = saveUseCase(EmptyUcWithoutNCF, None)
+        val cp = saveUseCase(EmptyUcWithoutNCF, None, newProjectId())
         cp should not be ('empty)
       }
 
@@ -324,19 +327,21 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     describe("Incremental updates") {
       def testUpdateSucceeds(mutate: UseCase => UseCase, expectedTableDiffs: (Table, Int)*) {
+        val pid = newProjectId()
         val uc1 = sampleUC
-        val cp1 = saveUseCase(uc1, None)
+        val cp1 = saveUseCase(uc1, None, pid)
         cp1 should not be (None)
         val uc2 = mutate(uc1)
-        val cp2 = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(uc2, cp1)}
+        val cp2 = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(uc2, cp1, pid)}
         cp2 should not be (None)
       }
 
       it("should do nothing when no changes") {
+        val pid = newProjectId()
         val uc1 = sampleUC
-        val cp1 = saveUseCase(uc1, None)
+        val cp1 = saveUseCase(uc1, None, pid)
         cp1 should not be (None)
-        assertTableDiffs() {saveUseCase(uc1, cp1)} ==== None
+        assertTableDiffs() {saveUseCase(uc1, cp1, pid)} ==== None
       }
 
       it("should save a title change") {
@@ -366,10 +371,11 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   describe("Saving then Loading") {
     it("should load in full after saving") {
       // Save first
-      val saved = saveUseCase(sampleUC, None).get
+      val pid = newProjectId()
+      val saved = saveUseCase(sampleUC, None, pid).get
 
       // Then load back (testing manually)
-      val loaded = loadRev(saved.rec).uc
+      val loaded = loadRev(saved.rec, pid).uc
       TF1.lens.get(loaded).text ==== "blah"
       TF2.lens.get(loaded).text ==== ""
       TF3.lens.get(loaded).text ==== "hehe"
@@ -384,16 +390,17 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
     }
 
     it("should load in full after multiple updates") {
-      var prevSave: UseCaseSaveCheckpoint = forceUcNumber(saveUseCase(sampleUC, None).get, 7)
+      val pid = newProjectId()
+      var prevSave: UseCaseSaveCheckpoint = forceUcNumber(saveUseCase(sampleUC, None, pid).get, 7)
       def uc = prevSave.uc
 
       def testUpdate(mutate: UseCase => UseCase, expectedTableDiffs: (Table, Int)*) = {
         val newUc = mutate(prevSave.uc)
-        val cpSaveOp = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(newUc, Some(prevSave))}
+        val cpSaveOp = assertTableDiffs(expectedTableDiffs: _*) {saveUseCase(newUc, Some(prevSave), pid)}
         if (expectedTableDiffs.isEmpty) {
           cpSaveOp ==== None
         } else {
-          val cpLoad = reload(cpSaveOp.get)
+          val cpLoad = reload(cpSaveOp.get, pid)
           assertUseCasesMatch(cpLoad.uc, newUc)
           prevSave = cpSaveOp.get
         }
@@ -442,16 +449,17 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     it("should normalise and de-normalise refs in text") {
       // Save first
+      val pid = newProjectId()
       val a = TF1.updateText("Text like [7.0]")(sampleUC).gimme
       val saved = NCF.updateText(NcSfv.tree(0).id, "Step like [7.0.1]")(a).gimme
-      val cp = forceUcNumber(saveUseCase(saved, None).get, 7)
+      val cp = forceUcNumber(saveUseCase(saved, None, pid).get, 7)
 
       // Confirm stored normalised in DB
       sql"select text from text_rev where text like ${"Text like%"}".as[String].first should not be ("Text like [7.0]")
       sql"select text from text_rev where text like ${"Step like%"}".as[String].first should not be ("Step like [7.0.1]")
 
       // Then load back
-      val loaded = reload(cp).uc
+      val loaded = reload(cp, pid).uc
       val ltree = NCF.lens.get(loaded).tree
       TF1.lens.get(loaded).text ==== "Text like [7.0]"
       ucStepTextTextL.get(loaded, (NCF, ltree(0).id)) ==== "Step like [7.0.1]"
@@ -459,15 +467,16 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
     it("should normalise and de-normalise refs in flow") {
       // Save first
+      val pid = newProjectId()
       val saved = NCF.updateText(NcSfv.tree(1).id, "Flow like --> [7.0.1]")(sampleUC).gimme
-      val cp = forceUcNumber(saveUseCase(saved, None).get, 7)
+      val cp = forceUcNumber(saveUseCase(saved, None, pid).get, 7)
 
       // Confirm stored normalised in DB
       sql"select text from text_rev where text like ${"%⬅%"}".as[String].first should not include ("[7.")
       sql"select text from text_rev where text like ${"%➡%"}".as[String].first should not include ("[7.")
 
       // Then load back
-      val loaded = reload(cp).uc
+      val loaded = reload(cp, pid).uc
       val ltree = NCF.lens.get(loaded).tree
       ucStepTextTextL.get(loaded, (NCF, ltree(1).id)) ==== "Flow like ➡ [7.0.1]"
       ucStepTextTextL.get(loaded, (NCF, ltree(0)(0).id)) ==== "First ⬅ [7.1]"

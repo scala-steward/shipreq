@@ -8,7 +8,6 @@ import org.scalatest.prop._
 import lib._
 import change.Changed
 import field._
-import db._
 import test.TestDatabaseSupport
 import test.DataGenerators._
 import Types._
@@ -29,13 +28,14 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   lazy val MutateAndSaveP = forAll((uc0: UseCase, mutations: List[UseCaseMutator]) => dbProp {
     val timer = new Timer
     var uc = uc0
-    var prevSave = save(uc, None)
+    val pid = newProjectId()
+    var prevSave = save(uc, None, pid)
     var curRev: Int = prevSave.get.rec.rev
     var result: Prop = true
 
     def saveChangedUc(newUc: UseCase): Unit = {
       val newResult: Prop =
-        save(newUc, prevSave) match {
+        save(newUc, prevSave, pid) match {
           case Some(cp) => checkNewRev(newUc, cp)
           case None => checkNopSave(newUc)
         }
@@ -47,10 +47,10 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
       curRev += 1
       prevSave = Some(cp)
       val ucRev = cp.rec
-      equal("UC revision")(curRev, ucRev.rev) && load(ucRev).uc <==> newUc
+      equal("UC revision")(curRev, ucRev.rev) && load(ucRev, pid).uc <==> newUc
     }
 
-    def checkNopSave(newUc: UseCase): Prop = load(prevSave.get.rec).uc <==> newUc
+    def checkNopSave(newUc: UseCase): Prop = load(prevSave.get.rec, pid).uc <==> newUc
 
     // Perform mutations
     for (m <- mutations) m(uc) match {
@@ -63,12 +63,14 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   })
 
   lazy val SaveAndLoadP = forAll((uc: UseCase) => timedDbProp("SaveAndLoad", uc) {
-    uc <==> saveAndLoad(uc).uc
+    val pid = newProjectId()
+    uc <==> saveAndLoad(uc, pid).uc
   })
 
   lazy val SecondSaveIsNopP = forAll((uc: UseCase) => timedDbProp("SecondSaveIsNop", uc) {
-    val cp1 = saveAndLoad(uc)
-    val (save2, diffs) = collectTableDiffs {save(cp1.uc, Some(cp1))}
+    val pid = newProjectId()
+    val cp1 = saveAndLoad(uc, pid)
+    val (save2, diffs) = collectTableDiffs {save(cp1.uc, Some(cp1), pid)}
     val tableChanges = diffs.filterNot {case (_, diff) => diff == 0}
     (tableChanges.isEmpty && save2.isEmpty) :| s"Shouldn't save the second time. UC content =\n${uc.toPrettyString}"
   })
@@ -76,10 +78,10 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   // -------------------------------------------------------------------------------------------------------------------
 
   val load = loadUseCase _
-  def save(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId()) = saveUseCase(uc, prev, projectId)
+  def save = saveUseCase _
 
-  def saveAndLoad(uc: UseCase, prev: Option[UseCaseSaveCheckpoint] = None) =
-    load(save(uc, prev).getOrElse(prev.get).rec)
+  def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) =
+    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)
 
   // -------------------------------------------------------------------------------------------------------------------
 

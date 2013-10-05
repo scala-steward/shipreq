@@ -4,7 +4,8 @@ package lib
 import Types._
 import field._
 import db._
-import util.{BiMap, LockTokenR}
+import lib.Locks.SingleUseCase
+import util.{PreparedLock, BiMap, Lock}
 import UseCaseFns._
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ case class UseCaseSaveCheckpoint(
 
 object UseCasePersistence {
 
-  def load(ucRev: UseCaseRev, dao: DaoT, lock: LockTokenR[UseCase]): UseCaseSaveCheckpoint = {
+  def load(ucRev: UseCaseRev, dao: DaoT, lock: Lock.Read[SingleUseCase]): UseCaseSaveCheckpoint = {
 
     @inline def uch = ucRev.header
     @inline def ucn = ucRev.ident.number
@@ -79,7 +80,7 @@ object UseCasePersistence {
    *
    * @return A checkpoint is there was anything to save, else `None` if UC was already up-to-date.
    */
-  def save(uc: UseCase, prevSave: UseCaseSaveCheckpoint, dao: DaoT): Option[UseCaseSaveCheckpoint] = {
+  def save(uc: UseCase, prevSave: UseCaseSaveCheckpoint, preparedLock: PreparedLock.Write[SingleUseCase], dao: DaoT) : Option[UseCaseSaveCheckpoint] = {
     type ValueSavers = Map[Field, FieldValueSaver[_]]
 
     val allSavers: ValueSavers =
@@ -131,11 +132,7 @@ object UseCasePersistence {
       savedData
     }
 
-    // TODO UCP.save's lock acquisition should be externalised.
-    // Maybe required a (PotentialLock :: id -> concrete lock) where PotentialLock :: lock
-    def withLock[R](fn: => R): R = Locks.useCase.write(prevSave.rec)(_ => fn)
-
-    def performSave(): UseCaseSaveCheckpoint = {
+    def performSave(lock: Lock.Write[SingleUseCase]): UseCaseSaveCheckpoint = {
       val ucRev = saveUcHeader()
       val savers = selectFieldsRequiringSave(allSavers)
       implicit val newSavedSteps = presave(ucRev.identId, savers)
@@ -144,7 +141,7 @@ object UseCasePersistence {
     }
 
     if (isSaveRequired_?(allSavers))
-      Some(withLock(performSave))
+      Some(preparedLock(performSave))
     else
       None
   }

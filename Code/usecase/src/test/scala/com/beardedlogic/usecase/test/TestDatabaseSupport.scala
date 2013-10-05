@@ -13,7 +13,7 @@ import scala.util.Random
 import Q.interpolation
 
 import db.{DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import com.beardedlogic.usecase.lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
+import lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
 object TestDB {
@@ -211,16 +211,16 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
     sql"INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES($randomStr,$randomStr,0,0,NOW(),NOW(),NOW()) RETURNING id".
     as[Long].first.tag[UserIdTag]
 
-  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: => ProjectId = newProjectId()): Option[UseCaseSaveCheckpoint] = prev match {
-    case Some(cp) => UseCasePersistence.save(uc, cp, dao)
+  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
+    case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
     case None =>
       val ucr = dao.createUseCaseIdentAndRev1(projectId, uc.header)
-      val someCp = Some(loadUseCase(ucr))
+      val someCp = Some(loadUseCase(ucr, projectId))
       saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
 
-  def loadUseCase(ucRev: UseCaseRev) =
-    Locks.useCase.read(ucRev)(UseCasePersistence.load(ucRev, dao, _))
+  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId) =
+    Locks.SingleUseCase.readP(ucRev, projectId)(UseCasePersistence.load(ucRev, dao, _))
 
 }
 

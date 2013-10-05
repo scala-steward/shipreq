@@ -7,7 +7,7 @@ import net.liftweb.http._
 import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
-import db.UseCaseIdent
+import app.RequestVars.SoleProject
 import lib._
 import change._
 import field._
@@ -35,7 +35,7 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
   }
 
   def loadLatest(ucId: UseCaseIdentId): State = requireResult_!(for {
-      lock   <- Locks.useCase.readM(ucId)
+      lock   <- Locks.SingleUseCase.readM(ucId, SoleProject.is.id)
       dao    <- daoProvider.forTransaction
       ucRec  <- Box(dao.findUseCaseLatestRev(ucId)) ~> NotFoundResponse()
     } yield State(UseCasePersistence.load(ucRec, dao, lock)))
@@ -89,7 +89,8 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
   def save(): JsCmd = state.prevSave match {
     case Some(cp) =>
       daoProvider.withTransaction(dao => {
-        UseCasePersistence.save(uc, cp, dao) match {
+        val lock = Locks.SingleUseCase.writeP(cp.rec, SoleProject.is.id)
+        UseCasePersistence.save(uc, cp, lock, dao) match {
           case Some(cp) =>
             setState(State(cp))
             jsPostSave

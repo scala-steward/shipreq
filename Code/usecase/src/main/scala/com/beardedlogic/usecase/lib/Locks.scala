@@ -1,7 +1,6 @@
 package com.beardedlogic.usecase
 package lib
 
-import app.RequestVars.SoleProject
 import util.{DefaultLockProvider, LockToken, LockProvider}
 import LockProvider._
 import Types._
@@ -24,23 +23,21 @@ object Locks {
    *
    * Any access here blocks UseCaseNumbers write-access.
    */
-  val SingleUseCase: LockProvider[UseCaseIdentId, SingleUseCase, Ø, UseCaseNumbers, SingleUseCase] =
-    new DefaultLockProvider[UseCaseIdentId, SingleUseCase, Ø, UseCaseNumbers, SingleUseCase] {
+  val SingleUseCase =
+    new LockProvider[(UseCaseIdentId, ProjectId), SingleUseCase, Ø, UseCaseNumbers, SingleUseCase] {
 
       private val UCL = DefaultLockProvider.simple[UseCaseIdentId, SingleUseCase]
 
-      def pid: ProjectId = SoleProject.is.id
-
-      override def read[U](id: UseCaseIdentId)(block: RL => U): U =
-        UseCaseNumbers.shareAccess(pid)(l1 =>
-          UCL.read(id)(l2 => {
+      override def read[U](ids: (UseCaseIdentId, ProjectId))(block: RL => U): U =
+        UseCaseNumbers.shareAccess(ids._2)(l1 =>
+          UCL.read(ids._1)(l2 => {
             val l = merge(l1, l2)
             block(l)
           }))
 
-      override def write[U](id: UseCaseIdentId)(block: WL => U): U =
-        UseCaseNumbers.shareAccess(pid)(l1 =>
-          UCL.write(id)(l2 => {
+      override def write[U](ids: (UseCaseIdentId, ProjectId))(block: WL => U): U =
+        UseCaseNumbers.shareAccess(ids._2)(l1 =>
+          UCL.write(ids._1)(l2 => {
             val l = merge(l1, l2)
             block(l)
           }))
