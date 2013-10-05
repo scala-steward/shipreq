@@ -5,8 +5,10 @@ import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import lib.field.FieldDefinition
 import lib.{Defaults, InputCorrection}
+import lib.Locks.{UseCaseNumbers, SingleUseCase}
 import lib.Types._
 import security.PasswordAndSalt
+import util.Lock
 
 /**
  * Database interface.
@@ -140,8 +142,6 @@ sealed trait DaoS {
     createUseCaseRevWithoutCorrection(ucIdent, rev, uch)
   }
 
-  // TODO New-UC: Use table locking for mutex?
-
   def findUseCaseRev(revId: UseCaseRevId): Option[UseCaseRev] = SelectUseCaseRev.firstOption(revId)
 
   def findUseCaseLatestRevId(ucId: UseCaseIdentId): Option[UseCaseRevId] = SelectLatestUseCaseRevId.firstOption(ucId)
@@ -195,7 +195,7 @@ sealed trait DaoT extends DaoS {
   import lib.Misc.ShortExt
   import Sql._
 
-  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader): UseCaseRev = {
+  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader, lock: Lock.Write[UseCaseNumbers]): UseCaseRev = {
     val ident = createUseCaseIdent(projectId)
     val h = InputCorrection.correct(header)
     val rev = 1: Short
@@ -208,8 +208,7 @@ sealed trait DaoT extends DaoS {
    * When updating just the title of an Untitled rev #1 UC, the update is direct. In all other cases requiring an
    * update, a new revision is created.
    */
-  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader): UseCaseHeaderUpdateResult = {
-    // TODO locking? race conditions here? ensure DB mutex
+  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader, lock: Lock.Write[SingleUseCase]): UseCaseHeaderUpdateResult = {
     import UseCaseHeaderUpdateResult._
 
     findUseCaseLatestRev(ucId) match {

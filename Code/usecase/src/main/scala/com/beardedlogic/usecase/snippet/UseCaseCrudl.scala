@@ -7,7 +7,7 @@ import net.liftweb.util.Helpers._
 
 import app.AppSiteMap
 import db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
-import lib.{ExternalId, Misc, SingleOpStatefulSnippet}
+import lib.{Locks, ExternalId, Misc, SingleOpStatefulSnippet}
 import util.NonEmptyTemplate
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.{JsTextTrigger, JqExpr, JsJsonTrigger, JsHtmlTrigger}
@@ -76,7 +76,10 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
   def create(title: String): UseCaseSummary = {
     val h = UseCaseHeader(title)
     // TODO createUseCaseIdentAndRev1 never returns an error
-    val ucRev = daoProvider.withTransaction(_.createUseCaseIdentAndRev1(projectId, h))
+    val ucRev =
+      Locks.UseCaseNumbers.write(projectId)(lock =>
+        daoProvider.withTransaction(
+          _.createUseCaseIdentAndRev1(projectId, h, lock)))
     new UseCaseSummary(ucRev, Misc.currentTimeAsIso8601Str)
   }
 
@@ -107,11 +110,13 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
   def update(id: UseCaseIdentId, newTitle: String): Option[UseCaseRev] = {
     import UseCaseHeaderUpdateResult._
-    daoProvider.withTransaction(_.updateUseCaseHeader(id, _.copy(title = newTitle))) match {
-      case NewRevision(r)     => Some(r)
-      case DirectUpdate(r)    => Some(r)
-      case AlreadyUpToDate(r) => None
-      case UseCaseNotFound    => redirectTo(AppSiteMap.Project)(projectId)
-    }
+    Locks.SingleUseCase.write(id, projectId)(lock =>
+      daoProvider.withTransaction(
+        _.updateUseCaseHeader(id, _.copy(title = newTitle), lock) match {
+          case NewRevision(r)     => Some(r)
+          case DirectUpdate(r)    => Some(r)
+          case AlreadyUpToDate(r) => None
+          case UseCaseNotFound    => redirectTo(AppSiteMap.Project)(projectId)
+        }))
   }
 }

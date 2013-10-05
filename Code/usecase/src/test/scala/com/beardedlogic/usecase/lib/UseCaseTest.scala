@@ -240,7 +240,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {
       val pid = newProjectId()
-      val x = dao.createUseCaseIdentAndRev1(pid, UseCaseHeader("Hello"))
+      val x = createUseCaseIdentAndRev1(pid, UseCaseHeader("Hello"))
       val y = loadRev(x, pid)
       val sfv = NCF.lens.get(y.uc)
       sfv.textmap(sfv.tree.head.id).text ==== x.header.title

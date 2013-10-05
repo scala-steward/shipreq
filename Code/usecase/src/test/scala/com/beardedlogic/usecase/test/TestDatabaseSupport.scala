@@ -12,7 +12,7 @@ import slick.session.{Database, Session}
 import scala.util.Random
 import Q.interpolation
 
-import db.{DaoS, DaoT, DaoProvider, DB, UseCaseRev}
+import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
 import lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
@@ -214,7 +214,7 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
   def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
     case None =>
-      val ucr = dao.createUseCaseIdentAndRev1(projectId, uc.header)
+      val ucr = createUseCaseIdentAndRev1(projectId, uc.header)
       val someCp = Some(loadUseCase(ucr, projectId))
       saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
@@ -222,6 +222,11 @@ trait TestDatabaseSupport extends TestHelpers with Logger {
   def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId) =
     Locks.SingleUseCase.readP(ucRev, projectId)(UseCasePersistence.load(ucRev, dao, _))
 
+  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader) =
+    Locks.UseCaseNumbers.write(projectId)(dao.createUseCaseIdentAndRev1(projectId, header, _))
+
+  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader)(implicit projectId: ProjectId) =
+    Locks.SingleUseCase.write(ucId, projectId)(dao.updateUseCaseHeader(ucId, modFn, _))
 }
 
 class TestDaoProvider(dao: DaoT) extends DaoProvider {

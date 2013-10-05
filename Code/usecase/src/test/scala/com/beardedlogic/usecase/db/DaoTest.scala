@@ -58,7 +58,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
     describe("findUseCase") {
       it("should load when found") {
-        val saved = dao.createUseCaseIdentAndRev1(newProjectId(), "ah")
+        val saved = createUseCaseIdentAndRev1(newProjectId(), "ah")
         dao.findUseCaseRev(saved).get ==== saved
       }
     }
@@ -73,10 +73,10 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         uc.header ==== expected.header
       }
 
-      def assertAuditedUpdate(src: UseCaseRev, relationRows: Int = 0): UseCaseRev = {
+      def assertAuditedUpdate(src: UseCaseRev, relationRows: Int = 0)(implicit projectId: ProjectId): UseCaseRev = {
         import Tables._
         assertTableDiffs(UsecaseRev -> 1, UcField -> relationRows) {
-          val r = dao.updateUseCaseHeader(src, _.copy(title = "omg"))
+          val r = updateUseCaseHeader(src, _.copy(title = "omg"))
           r match {
             case NewRevision(n) => assertUC(n, src.withTitle("omg"), 1); n
             case _ => fail("Expected NewRevision. Got " + r)
@@ -84,14 +84,14 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         }
       }
 
-      def assertNOP(uc: UseCaseRev, expected: UseCaseRev) {
-        val r = assertTableDiffs() {dao.updateUseCaseHeader(uc, h => h)}
+      def assertNOP(uc: UseCaseRev, expected: UseCaseRev)(implicit projectId: ProjectId) {
+        val r = assertTableDiffs() {updateUseCaseHeader(uc, h => h)}
         r ==== AlreadyUpToDate(expected)
       }
 
-      def createTwoRevs(projectId: ProjectId = newProjectId()) = {
-        val rev1 = dao.createUseCaseIdentAndRev1(projectId, "Haha")
-        val rev2s = dao.updateUseCaseHeader(rev1, _.copy(title = "wow")) match {
+      def createTwoRevs(implicit projectId: ProjectId) = {
+        val rev1 = createUseCaseIdentAndRev1(projectId, "Haha")
+        val rev2s = updateUseCaseHeader(rev1, _.copy(title = "wow")) match {
           case NewRevision(x) => x
           case _ => fail("Expected NewRevision.")
         }
@@ -100,42 +100,48 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       }
 
       it("should do a direct update when rev #1 and title default") {
-        val rev1 = dao.createUseCaseIdentAndRev1(newProjectId(), Defaults.useCaseHeader)
+        implicit val pid = newProjectId()
+        val rev1 = createUseCaseIdentAndRev1(pid, Defaults.useCaseHeader)
         val tgt = rev1.withTitle("omg")
-        val r = assertTableDiffs() {dao.updateUseCaseHeader(rev1, _ => tgt.header)}
+        val r = assertTableDiffs() {updateUseCaseHeader(rev1, _ => tgt.header)}
         r ==== DirectUpdate(tgt)
       }
 
       it("should do an audited update when rev #1 and non-default title changes") {
-        assertAuditedUpdate(dao.createUseCaseIdentAndRev1(newProjectId(), "Haha"))
+        implicit val pid = newProjectId()
+        assertAuditedUpdate(createUseCaseIdentAndRev1(pid, "Haha"))
       }
 
       it("should do an audited update when rev #2+") {
-        val (_, rev2) = createTwoRevs()
+        implicit val pid = newProjectId()
+        val (_, rev2) = createTwoRevs
         assertAuditedUpdate(rev2)
       }
 
       it("should copy relationships when performing an audited update") {
         val fk1 = dao.createFieldKey(FieldKeyType.Text, Some("THE OCEAN"))
         val fk2 = dao.createFieldKey(FieldKeyType.Text, Some("PELAGIAL"))
-        val uc1 = dao.createUseCaseIdentAndRev1(newProjectId(), "Haha")
+        val uc1 = createUseCaseIdentAndRev1(newProjectId(), "Haha")
         val txt1 = dao.createTextRev(dao.createTextIdent(uc1, fk1), 1, "mesopelagic".hasNormalisedRefs)
         val txt2 = dao.createTextRev(dao.createTextIdent(uc1, fk2), 1, "bathyalpelagic".hasNormalisedRefs)
         dao.linkUcToText(uc1, txt1)
         dao.linkUcToText(uc1, txt2)
 
+        implicit val pid = newProjectId()
         val uc2 = assertAuditedUpdate(uc1, 2)
         dao.findAllUcFieldData(uc2).map(_.textRev).map(_.toString).sorted ==== List(txt1, txt2).map(_.toString).sorted
       }
 
       it("should do nothing when rev #1 and no change") {
-        val rev1 = dao.createUseCaseIdentAndRev1(newProjectId(), Defaults.useCaseHeader)
+        implicit val pid = newProjectId()
+        val rev1 = createUseCaseIdentAndRev1(pid, Defaults.useCaseHeader)
         assertNOP(rev1, rev1)
         assertNOP(rev1.withTitle(""), rev1)
       }
 
       it("should do nothing when rev #2 and no change") {
-        val (_, rev2) = createTwoRevs()
+        implicit val pid = newProjectId()
+        val (_, rev2) = createTwoRevs
         assertNOP(rev2, rev2)
         assertNOP(rev2.withTitle(rev2.header.title + "  "), rev2)
       }
@@ -232,7 +238,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         summariseWithNoise(u) ==== List(s1)
         val p2 = dao.createProject(u, "Apple").gimme
         dao.summariseProjects(u) ==== List(ProjectSummary(p2, "Apple", 0, None), s1)
-        dao.createUseCaseIdentAndRev1(p2, "yo")
+        createUseCaseIdentAndRev1(p2, "yo")
         val r = dao.summariseProjects(u)
         r.map(_.copy(ucUpdatedAt = None)) ==== List(ProjectSummary(p2, "Apple", 1, None), s1)
         r(0).ucUpdatedAt shouldBe defined
