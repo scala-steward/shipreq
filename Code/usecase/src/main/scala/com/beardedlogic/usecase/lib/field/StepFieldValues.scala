@@ -77,10 +77,4 @@ case class StepFieldValue(field: StepField, tree: StepTree, textmap: Map[LocalSt
 
   def textByLabels(implicit stepsAndLabels: StepAndLabelBiMap): Map[LabelStr, String] =
     for ((id,t) <- textmap) yield (stepsAndLabels.value.ab(id), t.text)
-
-  def toPrettyString: String = {
-    val lines = s"StepFieldValue: $field, ${textmap.size} steps." +:
-      textmap.map {case (id, t) => "    %-16s = %s".format(id, t.text)}.toList.sorted
-    lines.mkString("\n")
-  }
 }

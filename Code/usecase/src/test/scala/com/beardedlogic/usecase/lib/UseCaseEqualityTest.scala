@@ -10,10 +10,10 @@ import UseCaseEquality._
 class UseCaseEqualityTest extends FunSuite with TestData {
 
   def assertEqual(a: UseCase, b: UseCase): Unit = {
-    assert(a ≟ b, "UseCases should be equal.")
+    assert(a ≟ b, "UseCases should be equal.\nA:\n$a\nB:\n$b")
   }
   def assertNotEqual(a: UseCase, b: UseCase): Unit = {
-    assert(a ≠ b, s"UseCases should not be equal.\nA: ${a.toPrettyString}\nB: ${b.toPrettyString}")
+    assert(a ≠ b, s"UseCases should not be equal.\nA:\n$a\nB:\n$b")
   }
 
   def testStringChange(f: UseCase => (String => String) => UseCase): Unit = {

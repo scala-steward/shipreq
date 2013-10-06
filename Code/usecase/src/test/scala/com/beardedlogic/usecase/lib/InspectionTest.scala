@@ -18,7 +18,8 @@ class InspectionTest extends FunSuite with TestData {
       val code = uc.shows
       val parsedUc: UseCase = eval(code)
       assertUseCasesMatch(parsedUc, uc)
-      parsedUc.toPrettyString ==== uc.toPrettyString
+      parsedUc.devView ==== uc.devView
+      parsedUc.inspect ==== uc.inspect
     }
   }
 }

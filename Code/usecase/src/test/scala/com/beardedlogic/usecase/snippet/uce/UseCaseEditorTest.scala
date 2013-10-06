@@ -216,7 +216,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
           i+=1
           val oldUc = uce.uc
           val (_, resp) = uce.update2(addFn)
-          if (uce.uc eq oldUc) fail(s"AddFn didn't add. (attempt: $i)\nResponse: $resp\n${uce.uc.toPrettyString}")
+          if (uce.uc eq oldUc) fail(s"AddFn didn't add. (attempt: $i)\nResponse: $resp\n${uce.uc}")
         }
         val oldUc = uce.uc
         val (n,resp) = uce.update2(addFn)

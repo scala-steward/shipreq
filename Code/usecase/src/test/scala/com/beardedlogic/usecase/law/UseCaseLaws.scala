@@ -72,7 +72,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
     val cp1 = saveAndLoad(uc, pid)
     val (save2, diffs) = collectTableDiffs {save(cp1.uc, Some(cp1), pid)}
     val tableChanges = diffs.filterNot {case (_, diff) => diff == 0}
-    (tableChanges.isEmpty && save2.isEmpty) :| s"Shouldn't save the second time. UC content =\n${uc.toPrettyString}"
+    (tableChanges.isEmpty && save2.isEmpty) :| s"Shouldn't save the second time. UC content =\n${uc.inspect}"
   })
 
   // -------------------------------------------------------------------------------------------------------------------

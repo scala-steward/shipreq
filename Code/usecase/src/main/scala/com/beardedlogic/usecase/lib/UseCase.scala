@@ -3,6 +3,7 @@ package lib
 
 import scala.reflect.ClassTag
 import scalaz.{Need, NonEmptyList}
+import scalaz.syntax.show._
 import Types._
 import db.UseCaseHeader
 import change._
@@ -114,13 +115,28 @@ case class UseCase(
 
   implicit protected def stepsAndLabelsImplicit = stepsAndLabels
 
-  def toPrettyString: String = {
-    def printFieldValue(v: Field#Value): String = v match {
-      case sfv: StepFieldValue => sfv.toPrettyString
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** Returns Scala code that can be used to recreate this use case. */
+  def inspect = {
+    import Inspection._
+    this.shows
+  }
+
+  /** Returns a textual view of the entire use case that includes internal IDs. */
+  def devView: String = {
+    def ppFV(v: Field#Value): String = v match {
+      case sfv: StepFieldValue => ppSfv(sfv)
       case _ => v.toString
     }
+    def ppSfv(sfv: StepFieldValue): String = {
+      import sfv._
+      val lines = s"StepFieldValue: $field, ${textmap.size} steps." +:
+        textmap.map {case (id, t) => "    %-16s = %s".format(id, t.text)}.toList.sorted
+      lines.mkString("\n")
+    }
     val line = "-" * 98
-    val fieldsPP = fields.map(f => s"  F: $f\n  V: ${printFieldValue(fieldValues(f))}\n").mkString("\n")
+    val fieldsPP = fields.map(f => s"  F: $f\n  V: ${ppFV(fieldValues(f))}\n").mkString("\n")
     val snl = stepsAndLabels.value.ab.map {case (id, lbl) => "  %-16s <-- %s".format(lbl, id)}.toList.sorted.mkString("\n")
     (s">$line>\n"
       + s"Header: $header\n"
@@ -130,7 +146,25 @@ case class UseCase(
     .replace(FreeText.empty.toString, "FreeText.empty")
   }
 
-  def pp() = { println(toPrettyString); this }
+  /** Returns a textual view of the entire use case as the user would see it. */
+  def userView: String = {
+    def text(t: String) = "⟦" + t.replaceAll("\n","\n\t\t") + "⟧"
+    def printF(f: Field, v: Field#Value): String = f match {
+      case tf: TextField => "%-30s: %s".format(tf.defn.title, text(tf.castValue(v).text))
+      case sf: StepField => "%s\n%s".format(sf.getClass.getSimpleName, printSFV(sf.castValue(v)))
+    }
+    def printSFV(sfv: StepFieldValue): String =
+        sfv.textByLabels.map{case (l,t) => "  %-18s: %s".format(l, text(t))}.toList.sorted.mkString("\n")
+    val line = "-" * 98
+    val lineS = s">$line>"
+    val lineE = s"<$line<"
+    val fieldsStr = fields.map(f => printF(f, fieldValues(f))).mkString("\n")
+    s"\n$lineS\nUC-$number: ${header.title}\n$lineS\n$fieldsStr\n$lineE"
+  }
+
+  override def toString = inspect
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   def regenerateStepsAndLabels: UseCase =
     copy(stepsAndLabels = generateStepAndLabelBiMap(this))
