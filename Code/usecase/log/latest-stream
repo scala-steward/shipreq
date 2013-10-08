@@ -1,0 +1,4 @@
+#!/bin/bash
+
+f="$( "$(dirname "$0")"/latest-file )"
+exec tail -8000f "$f"

@@ -16,7 +16,6 @@
 target
 sloccount.sc
 tmp
-log
 
 .cache
 .scala_dependencies
