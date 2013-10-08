@@ -35,6 +35,25 @@ object DataGenerators extends Logger {
     def :||(err: => String): Prop = Prop(x) :| (if (x) "" else err)
   }
 
+  /**
+   * Same as `Gen.frequency` except if the selected generator cannot provide, it is removed from the freq map and we
+   * try again.
+   */
+  def frequencyTrialAndError[I, O](gs: (Int, Gen[I])*)(eval: I => O)(test: O => Boolean): Gen[(I, O)] = {
+    Gen(prms => {
+      @tailrec def go(remaining: List[(Int, Gen[I])]): Option[(I, O)] = remaining match {
+        case Nil => None
+        case _ =>
+          val gen = Gen.frequency(gs: _*)
+          gen(prms).map(i => (i, eval(i))) match {
+            case r@Some((i, o)) if test(o) => r
+            case _ => go(remaining.filterNot(_._2 eq gen))
+          }
+      }
+      go(gs.toList)
+    })
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // Low level
 
@@ -346,6 +365,11 @@ object DataGenerators extends Logger {
         Some(f.updateText(txt)(uc), s"[=] Change TextField [${f.defn.title}] to ${txt.shows}")
     )
 
+    val AddTailStep = fieldMutator((uc, refdep) =>
+      for (f <- Gen.oneOf(UseCaseFns.filter[StepField](uc.fields)))
+      yield Some(f.addTailStep(uc),s"[+] Add tail step to ${f.getClass.getSimpleName}")
+    )
+
     val MutateStepText = mutateStep(_.updateText(_, _), (uc, f, id, txt) => s"[=] Change step text ${id.withLabel(uc)} to ${txt.shows}")
     val AddStep = mutateStepNoText(_.addStep(_), (uc, _, id) => s"[+] Add step ${id.withLabel(uc)}")
     val RemoveStep = mutateStepNoText(_.removeStep(_), (uc, _, id) => s"[-] Remove step ${id.withLabel(uc)}")
@@ -353,35 +377,15 @@ object DataGenerators extends Logger {
     val IncreaseIdent = mutateStepNoText(_.increaseIndent(_), (uc, _, id) => s"[>] Inc step ${id.withLabel(uc)}")
   }
 
-  // TODO no add tail step
-
-  /**
-   * Same as `Gen.frequency` except if the selected generator cannot provide, it is removed from the freq map and we
-   * try again.
-   */
-  def frequencyTrialAndError[I, O](gs: (Int, Gen[I])*)(eval: I => O)(test: O => Boolean): Gen[(I, O)] = {
-    Gen(prms => {
-      @tailrec def go(remaining: List[(Int, Gen[I])]): Option[(I, O)] = remaining match {
-        case Nil => None
-        case _ =>
-          val gen = Gen.frequency(gs: _*)
-          gen(prms).map(i => (i, eval(i))) match {
-            case r@Some((i, o)) if test(o) => r
-            case _ => go(remaining.filterNot(_._2 eq gen))
-          }
-      }
-      go(gs.toList)
-    })
-  }
-
   val useCaseMutator: Gen[UseCaseMutator] = {
     import UseCaseMutators._
     Gen(prms => Some(UseCaseMutator(uc => {
       val x = frequencyTrialAndError(
         (1, MutateTitle)
-        , (20, MutateTextField)
-        , (50, MutateStepText)
-        , (18, AddStep)
+        , (30, MutateTextField)
+        , (60, MutateStepText)
+        , (14, AddStep)
+        , (16, AddTailStep)
         , (10, RemoveStep)
         , (10, DecreaseIdent)
         , (10, IncreaseIdent)

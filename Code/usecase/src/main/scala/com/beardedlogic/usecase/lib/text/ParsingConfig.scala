@@ -21,7 +21,7 @@ object ParsingConfig {
     val arrowBadReplacement: String
     final def replaceAllArrowsWithBad(input: String) = arrowBadRegex.replaceAllIn(input, arrowBadReplacement)
     final def makeFlowText(labels: SortedSet[LabelStr]) = {
-      val expSize = labels.size * 20 + 2
+      val expSize = labels.size * 24 + 2
       val sb = new StringBuilder(expSize)
       sb.append(arrow)
       labels.foreach(l => {
