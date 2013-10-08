@@ -3,17 +3,15 @@ package test
 
 import com.googlecode.flyway.core.dbsupport.{SqlScript, DbSupportFactory}
 import java.sql.Connection
-import net.liftweb.common.Logger
 import org.apache.commons.io.IOUtils
 import org.postgresql.util.PSQLException
 import org.scalatest.{Exceptional, Outcome, Suite}
 import scala.slick.jdbc.{StaticQuery => Q}
 import slick.session.{Database, Session}
-import scala.util.Random
 import Q.interpolation
 
 import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import lib.{Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
+import com.beardedlogic.usecase.lib.{Defaults, Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
 object TestDB {
@@ -24,6 +22,7 @@ object TestDB {
     if (!ready) {
       ready = true
       DB.wipe_!
+      Defaults.uninit()
       (new bootstrap.liftweb.Boot).initDatabase()
     }
   }

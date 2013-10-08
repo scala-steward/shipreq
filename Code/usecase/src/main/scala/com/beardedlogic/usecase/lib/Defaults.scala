@@ -28,9 +28,15 @@ object Defaults extends Logger {
       TextFieldDefinition("Notes and Issues") ::
       Nil
 
-  val fieldList: Name[FieldListRec] = dbVal(_.syncFieldList(fieldListDefns))
+  private var fieldList_ : Name[FieldListRec] = null
+  def fieldList = fieldList_
 
   private def dbVal[V](fn: DaoT => V): Name[V] = Need(DI.DaoProvider.withTransaction(fn))
+
+  def uninit(): Unit = {
+    fieldList_ = dbVal(_.syncFieldList(fieldListDefns))
+  }
+  uninit()
 
   def init(): Unit = {
     fieldList.value
