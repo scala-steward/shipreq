@@ -14,7 +14,7 @@ import change._
 import field._
 import Types._
 
-object UseCaseEditor extends StaticSnippetHelpers with DI {
+object UseCaseEditor {
 
   case class State(uc: UseCase, prevSave: Option[UseCaseSaveCheckpoint], saveEnabled: Boolean) {
     def currentRevision: Short = prevSave.map(_.rec.rev).getOrElse(0: Short)
@@ -22,6 +22,16 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
   object State {
     def apply(cp: UseCaseSaveCheckpoint): State = State(cp.uc, Some(cp), false)
   }
+
+  case class UcModifier(
+    updateFn: UseCase => UcUpdateResult,
+    nopFn: Option[Renderer => JsCmd],
+    errFn: Option[String => JsCmd])
+}
+
+import UseCaseEditor._
+
+object UseCaseEditorFns extends StaticSnippetHelpers with DI {
 
   // TODO Delete UCE . initial state
   val DefaultInitialState: State = {
@@ -47,7 +57,7 @@ object UseCaseEditor extends StaticSnippetHelpers with DI {
   }
 }
 
-import UseCaseEditor._
+import UseCaseEditorFns._
 
 class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet with SnippetHelpers {
 
@@ -76,15 +86,17 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
 
   override def dispatch = { case _ => renderer.render }
 
-  def update(f: UseCase => UcUpdateResult): JsCmd =
-    f(uc) match {
+  def update(m: UcModifier): JsCmd =
+    m.updateFn(uc) match {
       case Changed(newUc, changes) =>
         setState(State(newUc, state.prevSave, allowSave(state, newUc)))
         renderer.jsRespondToChanges(changes)
 
-      case NoChange => Noop
+      case NoChange =>
+        m.nopFn.map(_(renderer)) getOrElse Noop
 
-      case ChangeFailure(err) => renderer.jsRespondChangeFailure(err)
+      case ChangeFailure(err) =>
+        m.errFn.map(_(err)) getOrElse renderer.jsRespondChangeFailure(err)
     }
 
   def save(): JsCmd = state.prevSave match {

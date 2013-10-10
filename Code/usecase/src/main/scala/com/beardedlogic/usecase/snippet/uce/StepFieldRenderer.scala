@@ -19,6 +19,7 @@ import util.JsExt._
 import lib.field._
 import lib.Types._
 import Renderer._
+import UseCaseEditor._
 
 object StepFieldRenderer {
   @inline final def ExprForNodeAndChildren(n: StepNode) = n.mapRecursive("#" + _.id).mkString(",")
@@ -104,8 +105,8 @@ object ExceptionCourseFieldConfig extends StepFieldRenderConfig {
 case class StepFieldRenderer(
   f: StepField,
   cfg: StepFieldRenderConfig,
-  state: UseCaseEditor.State,
-  modifyUC: (UseCase => UcUpdateResult) => JsCmd
+  state: State,
+  modifyUC: UcModifier => JsCmd
   ) extends RendererHelper {
 
   val rootLabelPrefix = f.rootLabelPrefix(ucNumber)
@@ -132,7 +133,7 @@ case class StepFieldRenderer(
    * Also renders an addTailStep button.
    */
   def renderStepsWithAddTailStep(steps: TreeLike[StepNode]): NodeSeq => NodeSeq = {
-    val t = "button" #> SHtml.ajaxButton("+", () => %(f.addTailStep))
+    val t = "button" #> SHtml.ajaxButton("+", UcModifier(f.addTailStep, None, None))
     val addTailStepTmpl = t(Templates.AddTailStep)
     renderSteps(steps) andThen ".steps *+" #> addTailStepTmpl // Append to .steps, after all the .step tags
   }
@@ -142,14 +143,14 @@ case class StepFieldRenderer(
    */
   def renderSingleStep(n: StepNode) = {
     val id = n.id
-    @inline def %%(fn: LocalStepId => UseCase => UcUpdateResult) = () => %(fn(id))
+    @inline def %%(fn: LocalStepId => UseCase => UcUpdateResult) = UcModifier(fn(id), None, None)
     (
       ".step [id]" #> id
         & StepLevelAttributeCss #> n.level
         & IfCssSel(cfg.prohibitRemoval_?(id, tree)) {".step [class+]" #> "noDel"}
         & ".lbl span *" #> labelFor(n)
         & ".lbl span [id]" #> labelId(id)
-        & "@text" #> SHtml.ajaxTextarea(text(id), i => %(f.updateText(id, i)), "id" -> textareaId(id))
+        & "@text" #> SHtml.ajaxTextarea(text(id), modText(id)(_), "id" -> textareaId(id))
         & ".add" #> SHtml.ajaxButton("+", %%(f.addStep))
         & ".delete" #> SHtml.ajaxButton("-", %%(f.removeStep))
         & ".indentDec" #> SHtml.ajaxButton("«", %%(f.decreaseIndent))
@@ -164,6 +165,13 @@ case class StepFieldRenderer(
     val fn = ".step" #> renderSingleStep(n)
     fn(Templates.Step)
   }
+
+  // **************************************
+  // *             Modifiers              *
+  // **************************************
+
+  def modText(id: LocalStepId)(input: String) =
+    UcModifier(f.updateText(id, input), Some(_.stepRenderers(f).jsUpdateStepFieldText(id)), None)
 
   // **************************************
   // *             Javascript             *

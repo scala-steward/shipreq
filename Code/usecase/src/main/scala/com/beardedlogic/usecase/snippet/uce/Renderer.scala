@@ -15,10 +15,11 @@ import net.liftweb.util.Helpers._
 import lib.change._
 import lib.field._
 import lib.Types._
-import lib.{FlowGraph, UcChangeDomain, UseCase}
+import lib.{FlowGraph, UcChangeDomain}
 import util.JsExt._
 import Changes._
 import Renderer._
+import UseCaseEditor._
 
 object Renderer {
 
@@ -59,9 +60,9 @@ object Renderer {
 }
 
 case class Renderer(
-  state: UseCaseEditor.State,
+  state: State,
   textFieldIds: Map[Field, LocalTextFieldId],
-  modifyUC: (UseCase => UcUpdateResult) => JsCmd,
+  modifyUC: UcModifier => JsCmd,
   saveUC: Option[() => JsCmd]
   ) extends RendererHelper {
 
@@ -72,10 +73,10 @@ case class Renderer(
   def render = {
     S.appendGlobalJs(JsSetGlobalVar("InitialFlowGraph", flowGraph))
     ".fieldFrame *" #> renderFields andThen (
-      ".title .ucid *" #> ucNumber.toString
-        & ".title @title" #> SHtml.ajaxTextarea(uch.title, i => %(_.updateTitle(i)), "id" -> TitleId, "rows" -> "1")
-        & renderSaveCont
-      )
+      ".title .ucid *" #> ucNumber.toString &
+      ".title @title" #> SHtml.ajaxTextarea(uch.title, modTitle(_), "id" -> TitleId, "rows" -> "1") &
+      renderSaveCont
+    )
   }
 
   def renderSaveCont: CssSel = saveUC match {
@@ -97,7 +98,7 @@ case class Renderer(
 
   def renderTextField(f: TextField) = (
     "th *" #> f.defn.title
-      & "textarea" #> SHtml.ajaxTextarea(f.value.text, i => %(f.updateText(i)), "id" -> textFieldIds(f))
+      & "textarea" #> SHtml.ajaxTextarea(f.value.text, modTextField(f)(_), "id" -> textFieldIds(f))
     )
 
   val stepRenderers = Memo.immutableListMapMemo[StepField, StepFieldRenderer] {
@@ -106,6 +107,18 @@ case class Renderer(
   }
 
   def flowGraph = FlowGraph.render(uc)
+
+  // **************************************
+  // *             Modifiers              *
+  // **************************************
+
+  def modTitle(input: String) =
+    UcModifier(_.updateTitle(input),
+      Some(_.jsUpdateTitle),
+      Some(err => jsRespondChangeFailure(err) & JqId(TitleId) ~> JqFocus ~> JqSelect))
+
+  def modTextField(f: TextField)(input: String) =
+    UcModifier(f.updateText(input), Some(_.jsUpdateTextField(f)), None)
 
   // **************************************
   // *             Javascript             *

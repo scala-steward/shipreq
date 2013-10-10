@@ -3,7 +3,6 @@ Legend: [M/S/C] [Benefit 0-none,5-max] [Penalty 0-none,5-severe]
 FUNC TODO
 =========
 
-* [M.4.4] [UCE ] Invalid UC title handled miserably in UCE.
 * [M.3.3] [PROJ] Delete use cases.
 * [M.2.2] [PROJ] Delete projects.
 * [M.0.5] [LEGL] Check all licences and attribute as required.
@@ -12,7 +11,6 @@ FUNC TODO
 * [S.2.5] [UCE ] Step is lost if accidentally deleted. No undo.
 * [S.2.1] [ACCT] Change username & password (when logged in).
 * [S.0.5] [ACCT] Password reset (when not logged in).
-* [S.0.2] [UCE ] Text not corrected when post-correction matches prev value. (Title, text, step)
 
 * [C.4.4] [UCE ] Symlink steps (and have flow targets point back). Eg "@sameas/@Copy [1.E.1.1]" What about children steps?
 * [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).

@@ -1,12 +1,11 @@
 package com.beardedlogic.usecase.snippet.uce
 
 import net.liftweb.http.js.JsCmd
-import com.beardedlogic.usecase.lib.Types._
-import com.beardedlogic.usecase.lib.UseCase
+import UseCaseEditor._
 
 private [uce] trait RendererHelper {
-  def state: UseCaseEditor.State
-  def modifyUC: (UseCase => UcUpdateResult) => JsCmd
+  def state: State
+  def modifyUC: UcModifier => JsCmd
 
   @inline final def uc = state.uc
   @inline final def ucNumber = uc.number
@@ -14,6 +13,6 @@ private [uce] trait RendererHelper {
   @inline final def fields = uc.fields
   @inline final implicit def fieldValues = uc.fieldValues
 
-  // % as in "mod(ify)"
-  @inline final def %(f: UseCase => UcUpdateResult): JsCmd = modifyUC(f)
+  implicit def autoApplyModifier(m: UcModifier): JsCmd = modifyUC(m)
+  implicit def autoApplyModifierFn(m: UcModifier): () => JsCmd = () => modifyUC(m)
 }

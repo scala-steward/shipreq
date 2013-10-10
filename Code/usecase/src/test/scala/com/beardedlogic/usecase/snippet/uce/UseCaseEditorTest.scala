@@ -2,18 +2,20 @@ package com.beardedlogic.usecase
 package snippet.uce
 
 import java.util.regex.Pattern
-import scala.util.matching.Regex
+import net.liftweb.http.js.JsCmd
 import org.scalatest.FunSpec
+import org.mockito.Mockito.when
+import scala.util.matching.Regex
+import xml.NodeSeq
+
+import db.UseCaseRev
 import lib.Types._
 import lib.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
-import com.beardedlogic.usecase.lib.{UseCaseSaveCheckpoint, StepNode, UseCase}
+import lib.{UseCaseSaveCheckpoint, StepNode, UseCase}
 import Renderer.TitleId
-import test.{CssTestHelpers, TestData, LoadedTestData, TestHelpers, TestDatabaseSupport}
+import test.{CssTestHelpers, TestData, TestHelpers}
 import UseCaseEditor._
-import db.UseCaseRev
-import org.mockito.Mockito.when
-import xml.{Node, NodeSeq}
-import net.liftweb.http.js.JsCmd
+import UseCaseEditorFns._
 
 class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssTestHelpers {
 
@@ -25,9 +27,9 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
   class UseCaseEditor2(state: State) extends UseCaseEditor(state) {
     def setState2(newState: State) = { super.setState(newState); this }
 
-    override def update(f: UseCase => UcUpdateResult): JsCmd = inMockSession {super.update(f)}
+    override def update(m: UcModifier): JsCmd = inMockSession {super.update(m)}
 
-    def update2(f: UseCase => UcUpdateResult): (UseCaseEditor2, String) = (this, update(f))
+    def update2(f: UseCase => UcUpdateResult): (UseCaseEditor2, String) = (this, update(UcModifier(f, None, None)))
   }
 
   def mockRev = {
@@ -170,6 +172,13 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
       it("should set the title via ajax") {
         assertIdAndActionR(resp, TitleId.tag[IsLocalId], """['"]bananas['"]""".r)
       }
+
+      it("should restore the original value after receiving an inconsequential change") {
+        val uce = new UseCaseEditor2(State1)
+        val resp: String = uce.update(uce.renderer.modTitle(" YES!"))
+        resp should (include("\"YES") and (not(include(" YES"))))
+        uce.state should be theSameInstanceAs (State1)
+      }
     }
 
     describe("text field change") {
@@ -180,6 +189,13 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
       it("should set the field value via ajax") {
         resp should include("bananas")
         resp should include(uce.textFieldIds(TF1))
+      }
+
+      it("should restore the original value after receiving an inconsequential change") {
+        val uce = new UseCaseEditor2(State1)
+        val resp: String = uce.update(uce.renderer.modTextField(TF1)(" blah"))
+        resp should (include("\"blah") and (not(include(" blah"))))
+        uce.state should be theSameInstanceAs (State1)
       }
     }
 
@@ -204,6 +220,13 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
         val (uce,resp) = UCE1.update2(NCF.updateText(NcSfv.tree(0).id, "bananas --> 7.0.2"))
         resp should include("⬅ [7.0]")
         resp should include(NcSfv.tree(0)(1).id)
+      }
+
+      it("should restore the original value after receiving an inconsequential change") {
+        val uce = new UseCaseEditor2(State2a)
+        val resp: String = uce.update(uce.renderer.stepRenderers(NCF).modText(X2)(" blar"))
+        resp should (include("\"blar") and (not(include(" blar"))))
+        uce.state should be theSameInstanceAs (State2a)
       }
     }
 
@@ -397,11 +420,11 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
       it("should be disabled only after changes which make it differ from last save") {
         val uce = new UseCaseEditor2(State1)
 
-        val resp1 = uce.update(TF1.updateText("bananas"))
+        val resp1 = uce.update(UcModifier(TF1.updateText("bananas"), None, None))
         uce.state.saveEnabled ==== true
         assertSaveButtonEnabled(resp1)
 
-        val resp2 = uce.update(TF1.updateText("blah"))
+        val resp2 = uce.update(UcModifier(TF1.updateText("blah"), None, None))
         uce.state.saveEnabled ==== false
         assertSaveButtonDisabled(resp2)
       }
