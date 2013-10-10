@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>UseCase Editor Prototype</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script type="text/javascript" src="../js/vendor/jquery.js"></script>
+	<script type="text/javascript" src="../js/vendor/bootstrap.js"></script>
+	<link type="text/css" rel="stylesheet" href="prototype-uce.css" />
+	<link type="text/css" rel="stylesheet" href="prototype.css" />
+	<link type="text/css" rel="stylesheet" href="../css/vendor/bootstrap.css" />
+	<!--<style media="screen" type="text/css"></style>-->
+</head>
+<body>
+
+<header>
+	<nav>
+	<ol class="breadcrumb">
+		<li><a href="#">Home</a></li>
+		<li><a href="#">Use Case Editor</a></li>
+		<li class="dropdown">
+			<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+				UC-3: Eat Food <b class="caret"></b>
+			</a>
+			<ul class="dropdown-menu">
+				<li><a href="#">UC-1: Drink Water</a></li>
+				<li><a href="#">UC-2: Buy Food</a></li>
+				<li><a href="#">UC-3: Eat Food</a></li>
+				<li><a href="#">UC-4: Drink Beer</a></li>
+				<li><a href="#">UC-5: Smile-Burp</a></li>
+			</ul>
+		</li>
+	</ol>
+	</nav>
+</header>
+
+<!-- Button trigger modal -->
+<a data-toggle="modal" href="#myModal" class="btn btn-primary btn-lg">Cool Editor Features</a>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<!--
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title">Feature Cheatsheet</h4>
+			</div>
+            -->
+			<div class="modal-body">
+
+				<h4>References</h4>
+				<ul>
+					<li>
+						<b>Reference a Step.</b>
+						<p>
+							In order to refer to a step, type the step number with square brackets around it into your text.
+							<div class="code"><code>Example: This is a reference to [1.0.1].</code></div>
+						</p>
+						<p>
+							If the step number later changes, the reference will be updated automatically.
+						</p>
+					</li>
+					<li>
+						<b>Step Flow.</b>
+						<p>
+							You can indicate execution paths by typing an arrow proceded by one or more steps, at the end of a step's text.
+							<div class="code"><code>--&gt;</code> indicates that the current step flows to other steps.</div>
+							<div class="code"><code>&lt;--</code> indicates that other steps flow to the current one.</div>
+						</p>
+						<p class="gap">
+							Example, you type:
+							<div class="code"><code>This jumps forward to another step. --&gt; 1.4</code></div>
+							The system will validate and replace it with:
+							<div class="code"><code>This jumps forward to another step. ➡ [1.4]</code></div>
+						</p>
+						<p class="gap">
+							As with normal step references, if the step numbers change your flow will be updated automatically.
+						</p>
+					</li>
+					<li>
+						<b>Invalid References.</b>
+						<p>
+							If you accidentally enter a reference for a step that doesn't exist, a question mark will be added to it.
+						</p>
+						<div class="code"><code>Example: The reference [1.8?] is invalid.</code></div>
+						<p>
+							If the referenced step is deleted, then references to it will be updated to indicated that it no longer exists.
+						</p>
+						<div class="code"><code>Example: This is a reference to [DELETED].</code></div>
+					</li>
+				</ul>
+
+				<hr>
+
+				<h4>Movement</h4>
+				When typing, you can press the following key combinations to get things done faster.
+				<table class="mvmt">
+					<tr><th>Alt + Enter</th><td>Create next step.</td></tr>
+					<tr><th>Alt + Up/Down</th><td>Move cursor to previous/next field.</td></tr>
+					<tr><th>Alt + Left/Right</th><td>Increase/decrease step indent.</td></tr>
+				</table>
+
+
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<script>
+	$('#myModal').modal('show')
+</script>
+
+<button type="submit" class="btn btn-lg btn-success">Save</button>
+
+
+		<div id="uce" class="uce">
+
+			<table class="title">
+				<tbody><tr>
+					<th><span id="uc-id">UC-<span class="ucid">3</span></span>:
+					</th>
+					<td>
+						<textarea name="title" id="uc-title" rows="1">Eat Food</textarea>
+					</td>
+				</tr>
+				</tbody></table>
+			<table class="fieldFrame"><tr class="fieldFrame">
+				<th>Description</th>
+				<td>
+					<textarea rows="1" id="F567466526842URCQJZ"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Actors</th>
+				<td>
+					<textarea rows="1" id="F567466526843F10CR4"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Pre-Conditions</th>
+				<td>
+					<textarea rows="1" id="F567466526844XWO1PZ"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Post-Conditions</th>
+				<td>
+					<textarea rows="1" id="F56746652684525N1GI"></textarea>
+				</td>
+			</tr><tr class="fieldFrame courses-n">
+				<th>
+					Normal<br>Course
+				</th>
+				<td class="steps"><table data-lvl="0" id="F567466526786TXULSQ" class="step noDel">
+					<tbody><tr>
+						<td class="lbl">
+							<span id="F567466526786TXULSQ-l">3.0</span>.
+						</td>
+						<td class="txt">
+							<form id="F567466526890LUA3GR" action="javascript://">
+								<textarea name="text" rows="1" id="F567466526786TXULSQ-t">Eat Food</textarea>
+							</form>
+						</td>
+						<td class="ctl">
+							<button class="delete">-</button>
+							<button class="indentDec">«</button>
+							<button class="indentInc"><span>»</span></button>
+							<button class="add">+</button>
+						</td>
+					</tr>
+					</tbody></table><table class="step" id="F567466526785EJE5OH" data-lvl="1">
+					<tbody><tr>
+						<td class="lbl">
+							<span id="F567466526785EJE5OH-l">1</span>.
+						</td>
+						<td class="txt">
+							<form id="F5674665268913BXZFV" action="javascript://">
+								<textarea name="text" rows="1" id="F567466526785EJE5OH-t"></textarea>
+							</form>
+						</td>
+						<td class="ctl">
+							<button class="delete">-</button>
+							<button class="indentDec">«</button>
+							<button class="indentInc"><span>»</span></button>
+							<button class="add">+</button>
+						</td>
+					</tr>
+					</tbody></table></td>
+			</tr><tr class="fieldFrame courses-a">
+				<th>
+					Alternative<br>Courses
+				</th>
+				<td class="steps"><div class="addTailStep">
+					<button>+</button>
+				</div></td>
+			</tr><tr class="fieldFrame courses-e">
+				<th>Exceptions</th>
+				<td class="steps"><div class="addTailStep">
+					<button>+</button>
+				</div></td>
+			</tr><tr class="fieldFrame">
+				<th>Use Case Relationships</th>
+				<td>
+					<textarea rows="1" id="F567466526846X5MKUM"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Constraints and Business Rules</th>
+				<td>
+					<textarea rows="1" id="F5674665268472YA1SO"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Frequency of Use</th>
+				<td>
+					<textarea rows="1" id="F5674665268484NAYTK"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Special Requirements</th>
+				<td>
+					<textarea rows="1" id="F5674665268491V43UO"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Assumptions</th>
+				<td>
+					<textarea rows="1" id="F567466526850IBAP2V"></textarea>
+				</td>
+			</tr><tr class="fieldFrame">
+				<th>Notes and Issues</th>
+				<td>
+					<textarea rows="1" id="F567466526851JGAYWD"></textarea>
+				</td>
+			</tr></table>
+			<div id="flowgraph"></div>
+		</div>
+
+
+</body>
+</html>

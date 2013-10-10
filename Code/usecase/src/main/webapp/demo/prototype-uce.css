@@ -1,0 +1,24 @@
+#myModal h4 {color:#f08; ont-weight:bold}
+#myModal .modal-dialog {
+    width:85%;
+	max-width: 90ex;
+}
+#myModal ul {
+  padding-left:16px;
+}
+#myModal li+li {margin-top:2ex}
+#myModal li p {
+  margin-bottom:0
+}
+#myModal li p.gap {
+  margin-top:2ex
+}
+#myModal li div.code {
+  margin-left:3ex;
+}
+#myModal li code {
+  color:#00c;
+  background:#ddd
+}
+#myModal .mvmt {margin-left: 4ex; margin-top:1ex}
+#myModal .mvmt td {padding-left: 4ex}
