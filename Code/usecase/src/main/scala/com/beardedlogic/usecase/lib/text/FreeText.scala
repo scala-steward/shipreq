@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.lib.text
 
+import scala.annotation.tailrec
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
 import Changes._
@@ -25,30 +26,38 @@ object FreeText extends Parser[FreeText] {
    * 3) Appends a ? to invalid references.
    */
   def parseCorrected(text: String)(implicit stepsAndLabels: StepAndLabelBiMap) = {
+    import Grammar.{parse => parseG, _}
     lazy val labelsToIds = stepsAndLabels.value.ba
 
     val newText = new StringBuilder
     var refs = Map.empty[LocalStepId, StepLabel]
 
-    // Parse input
-    var r = Grammar.parse(Grammar.TextAndPossibleRef, text)
-    while (r.get._2.isDefined) {
-      newText ++= r.get._1
-
-      // Check label validity
-      val label = r.get._2.get.asLabel
-      val id = labelsToIds.get(label)
-      if (id.isDefined) {
-        if (!refs.contains(id.get)) refs += (id.get -> label)
-        makeRef(newText, label)
-      } else
-        makeInvalidRef(newText, label)
-
-      // Continue parsing
-      r = Grammar.parse(Grammar.TextAndPossibleRef, r.next)
+    @tailrec
+    def go(pr: ParseResult[(String, Option[FreeTextRefToken])]): Unit = {
+      pr match {
+        case Success((txt, None), _) =>
+          newText ++= txt
+        case Success((txt, Some(ref)), next) =>
+          newText ++= txt
+          parseRef(ref)
+          go(parseG(TextAndPossibleRef, next))
+        //TODO case Error(_, _) =>
+        //TODO case Failure(_, _) =>
+      }
     }
-    newText ++= r.get._1
 
+    def parseRef(ref: FreeTextRefToken): Unit = ref match {
+      case StepLabelRefToken(label) =>
+        // Check label validity
+        val id = labelsToIds.get(label)
+        if (id.isDefined) {
+          if (!refs.contains(id.get)) refs += (id.get -> label)
+          makeRef(newText, label)
+        } else
+          makeInvalidRef(newText, label)
+    }
+
+    go(parseG(TextAndPossibleRef, text))
     FreeText(newText.toString, refs)
   }
 }

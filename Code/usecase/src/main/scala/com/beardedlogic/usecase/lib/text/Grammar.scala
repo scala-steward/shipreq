@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.lib.text
 
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.util.parsing.combinator.RegexParsers
 import com.beardedlogic.usecase.lib.Types._
@@ -76,18 +77,38 @@ object Grammar extends RegexParsers {
   private def optionallyBraced[T](inner: Parser[T]): Parser[T] = (braced(inner) | inner)
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Free Text
+  // Step label (Eg. "1.2", "3.E.2.a")
 
-  // Denotes the label of a step. Eg. "1.2", "3.E.2.a"
+  case class StepLabelRefToken(label: StepLabel) extends FreeTextRefToken
+
   val StepLabel: Parser[String] = {
     val level: Parser[String] = "[A-Za-z]+|\\d+".r
     level ~ rep1("." ~> level) ^^ {case h ~ t => (h :: t).mkString(".")}
   }
 
+  val StepLabelRef: Parser[StepLabelRefToken] = braced(StepLabel) ^^ (s => StepLabelRefToken(s.asLabel))
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Use Case ref. (Eg. "UC-3", "UC 8", "UC-123: Do Stuff")
+
+  case class UseCaseRefToken(number: UseCaseNumber, title: Option[String]) extends FreeTextRefToken
+
+  val UseCaseRef: Parser[UseCaseRefToken] = braced(
+    "UC" ~> opt("-") ~> "\\d+".r ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
+      case num ~ title => UseCaseRefToken(num.toShort.tag[IsUseCaseNumber], title)
+    })
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Free Text
+
+  sealed trait FreeTextRefToken
+
+  val FreeTextRef: Parser[FreeTextRefToken] = StepLabelRef | UseCaseRef
+
   /**
    * Matches Text and the first step reference. If no refs, then matches the entire input as Text.
    */
-  val TextAndPossibleRef: Parser[(String, Option[String])] = anyTextThenOptional(true, braced(StepLabel))
+  val TextAndPossibleRef: Parser[(String, Option[FreeTextRefToken])] = anyTextThenOptional(true, FreeTextRef)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Step Text
