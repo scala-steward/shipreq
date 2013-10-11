@@ -12,6 +12,7 @@ FUNC TODO
 * [S.2.1] [ACCT] Change username & password (when logged in).
 * [S.0.5] [ACCT] Password reset (when not logged in).
 
+* [C.2.4] [UCE ] Make step labels fade into links when clickable, else users wont know to click.
 * [C.4.4] [UCE ] Symlink steps (and have flow targets point back). Eg "@sameas/@Copy [1.E.1.1]" What about children steps?
 * [C.3.4] [ACCT] Add JS validation to register2 (ie. account creation).
 * [C.3.3] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
