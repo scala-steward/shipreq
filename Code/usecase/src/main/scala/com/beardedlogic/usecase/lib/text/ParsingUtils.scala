@@ -37,12 +37,12 @@ object ParsingUtils extends Logger {
       idsToLabels.get(id) match {
         case Some(newLabel) =>
           if (oldLabel != newLabel) {
-            newText = newText.replace(makeRef(oldLabel), makeRef(newLabel))
+            newText = newText.replace(makeStepRef(oldLabel), makeStepRef(newLabel))
             changed = true
           }
           newRefs += (id -> newLabel)
         case _ =>
-          newText = newText.replace(makeRef(oldLabel), DeletedRef)
+          newText = newText.replace(makeStepRef(oldLabel), DeletedRef)
           changed = true
       }
     }
@@ -62,7 +62,7 @@ object ParsingUtils extends Logger {
     for {
       (localId, label) <- refs
       dataId <- localToDb.get(localId)
-    } r = r.replace(makeRef(label), makeNormalisedRef(dataId))
+    } r = r.replace(makeStepRef(label), makeNormalisedStepRef(dataId))
     r.hasNormalisedRefs
   }
 
@@ -83,9 +83,9 @@ object ParsingUtils extends Logger {
     NormalisedRefRegex.replaceAllIn(text, m => {
       val idText = m.group(1)
       val textIdentId = idText.toLong.tag[IsTextIdentId]
-      dbIdsToLocalIds.get(textIdentId).flatMap(nodeId => localIdsToLabels.get(nodeId)).map(makeRef(_)).getOrElse {
+      dbIdsToLocalIds.get(textIdentId).flatMap(nodeId => localIdsToLabels.get(nodeId)).map(makeStepRef).getOrElse {
         warn(s"Unable to realise normalised step reference. ❚ Text: $text ❚ TextIdentId: $textIdentId ❚ DbIdsToLocalIds: $dbIdsToLocalIds ❚ LocalIdsToLabels: $localIdsToLabels")
-        makeInvalidNormalisedRef(idText)
+        makeInvalidStepRef(idText)
       }
     }).tag[InputCorrected]
   }

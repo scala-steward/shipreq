@@ -3,40 +3,40 @@ package com.beardedlogic.usecase.lib.text
 import scala.collection.immutable.SortedSet
 import scala.util.matching.Regex
 import com.beardedlogic.usecase.lib.Types._
-import com.beardedlogic.usecase.lib.Misc
 
-object ParsingConfig {
+final object ParsingConfig {
 
   val RefBraceL = '['
   val RefBraceR = ']'
+  val InvalidRefSuffix = '?'
 
   val RefBraceLs = RefBraceL.toString
   val RefBraceRs = RefBraceR.toString
 
-  val DeletedRef = makeRef("DELETED")
-
-  val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
-
-  @inline def makeRef(label: String) = RefBraceL + label + RefBraceR
+  val DeletedRef = RefBraceL + "DELETED" + RefBraceR
 
   val NormalisationPrefix = "D."
-  @inline def makeNormalisedRef(textIdentId: TextIdentId) = makeRef(NormalisationPrefix + textIdentId)
+  val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
 
-  val InvalidRefSuffix = '?'
-  @inline def makeInvalidLabel(label: String) = label + InvalidRefSuffix
-  @inline def makeInvalidRef(label: String) = makeRef(makeInvalidLabel(label))
-  @inline def makeInvalidNormalisedRef(textIdentId: String) = makeInvalidRef(NormalisationPrefix + textIdentId)
+  @inline def makeStepRef(label: StepLabel) = RefBraceL + label + RefBraceR
+  @inline def makeInvalidStepRef(label: String) = RefBraceL + label + InvalidRefSuffix + RefBraceR
+  @inline def makeNormalisedStepRef(textIdentId: TextIdentId) = RefBraceL + NormalisationPrefix + textIdentId + RefBraceR
 
-  type SBEffect = StringBuilder => Unit
   implicit class StringBuilderPCExt(val sb: StringBuilder) extends AnyVal {
-    def braced(fn: SBEffect): StringBuilder = {sb += RefBraceL; fn(sb); sb += RefBraceR; sb}
+    def braced(fn: => Unit): StringBuilder = {sb += RefBraceL; fn; sb += RefBraceR; sb}
 
-    def appendRef(refInner: String) = braced(_ append refInner)
-    def appendRef2(refInner: SBEffect) = braced(refInner)
+    def appendStepRef(valid: Boolean, label: StepLabel) = braced {
+      sb.append(label)
+      if (!valid) sb.append(InvalidRefSuffix)
+    }
 
-    def appendInvalidRef(refInner: String) = braced(_ append refInner append InvalidRefSuffix)
-    def appendInvalidRef2(refInner: SBEffect, suffix: SBEffect = Misc.NoEffect1) =
-      braced(sb => {refInner(sb); sb += InvalidRefSuffix; suffix(sb)})
+    def appendUseCaseRef(num: UseCaseNumber, title: String) = braced {
+      sb.append("UC-").append(num.toInt).append(": ").append(title)
+    }
+    def appendInvalidUseCaseRef(num: UseCaseNumber, title: Option[String]) = braced {
+      sb.append("UC-").append(num.toInt).append(InvalidRefSuffix)
+      if (title.isDefined) sb.append(": ").append(title.get)
+    }
   }
 
   sealed trait FlowStyle {
@@ -50,7 +50,7 @@ object ParsingConfig {
       val expSize = labels.size * 20 + 2
       val sb = new StringBuilder(expSize)
       sb.append(arrow)
-      labels.foreach(l => sb.append(' ').appendRef(l))
+      labels.foreach(l => sb.append(' ').appendStepRef(true, l))
       val r = sb.toString
       //assume(r.length <= expSize, s"Flow text string builder exceeded pre-alloc space. (Exp: $expSize. Got: ${r.length}.)")
       r

@@ -6,7 +6,7 @@ import com.beardedlogic.usecase.lib.Misc.SingleSpace
 import com.beardedlogic.usecase.lib.UcParsingCtx
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
-import com.beardedlogic.usecase.lib.text.ParsingConfig.{FlowToStyle, FlowFromStyle, makeInvalidRef}
+import com.beardedlogic.usecase.lib.text.ParsingConfig.{FlowToStyle, FlowFromStyle, makeInvalidStepRef}
 import Changes._
 import ParsingUtils._
 
@@ -120,7 +120,7 @@ case class StepText(
             case PotentiallyValidRef(lbl) =>
               labelsToIds.get(lbl) match {
                 case Some(stepId) => good += (stepId -> lbl)
-                case None => bad ::= Cord(makeInvalidRef(lbl))
+                case None => bad ::= Cord(makeInvalidStepRef(lbl))
               }
             case InvalidRefToken(token) =>
               bad ::= Cord(token)

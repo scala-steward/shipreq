@@ -395,15 +395,15 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         def makeExample(a: List[Ref], b: List[Ref]): Example = {
           def genInp(l: List[Ref], f: Ref => String) = l match {
             case Nil => ""
-            case _ => "⬅" + l.map(r => makeRef(f(r))).mkString("")
+            case _ => "⬅" + l.map(r => makeStepRef(f(r).tag[IsStepLabel])).mkString("")
           }
           val input = genInp(a, _.t1) + genInp(b, _.t2)
 
           def expBad(l: List[Ref], f: Ref => String): Option[String] = l.filter(_.bad) match {
             case Nil => None
-            case ll => Some("<- " + ll.map(r => makeInvalidRef(f(r))).mkString(" "))
+            case ll => Some("<- " + ll.map(r => makeInvalidStepRef(f(r))).mkString(" "))
           }
-          def expGood1(l: List[Ref], f: Ref => String) = l.filter(_.good).map(r => makeRef(f(r)))
+          def expGood1(l: List[Ref], f: Ref => String) = l.filter(_.good).map(r => makeStepRef(f(r).tag[IsStepLabel]))
           def expGood: Option[String] = (expGood1(a, _.t1) ::: expGood1(b, _.t2)) match {
             case Nil => None
             case l => Some("⬅ " + l.mkString(" "))

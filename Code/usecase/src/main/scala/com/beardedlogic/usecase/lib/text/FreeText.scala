@@ -55,23 +55,21 @@ object FreeText extends Parser[FreeText] {
       labelsToIds.get(label) match {
         case Some(id) =>
           refs += (id -> label)
-          newText.appendRef(label)
+          newText.appendStepRef(true, label)
         case None =>
-          newText.appendInvalidRef(label)
+          newText.appendStepRef(false, label)
       }
 
     @inline
     def appendUseCaseRef(num: UseCaseNumber, ot: Option[String]): Unit = {
-      @inline def appendValidRef(title: String) =
-        newText.appendRef2(_.append("UC-").append(num.toInt).append(": ").append(title))
       if (num == ctx.ucn) {
         refsOwnUc = true
-        appendValidRef(ctx.title)
-      } else ctx.rels.findUcTitle(num) match {
-        case Some(title) => appendValidRef(title)
-        case None =>
-          newText.appendInvalidRef2(_.append("UC-").append(num.toInt), sb => ot.foreach(title => sb append ": " append title))
-      }
+        newText.appendUseCaseRef(num, ctx.title)
+      } else
+        ctx.rels.findUcTitle(num) match {
+          case Some(t) => newText.appendUseCaseRef(num, t)
+          case None    => newText.appendInvalidUseCaseRef(num, ot)
+        }
     }
 
     go(parseG(TextAndPossibleRef, text))
