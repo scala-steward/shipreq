@@ -38,7 +38,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
 
     def testSave(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) = {
       val cpO = save(uc, prev, projectId)
-      val l = load(cpO.getOrElse(prev.get).rec, projectId)
+      val l = load(cpO.getOrElse(prev.get).rec, projectId)._1
       assertUseCasesLookSameToUser(l.uc, uc)
       cpO
     }
@@ -93,7 +93,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
       val pid = newProjectId()
       val ui = dao.createUseCaseIdentWithForcedNumber(pid, uc1.number)
       val r1 = dao.createUseCaseRev(ui, 1:Short, uc1.header)
-      val cp1 = Some(load(r1, pid))
+      val cp1 = Some(load(r1, pid)._1)
 
       val cp2 = testSave(uc2, pid, cp1)
       val cp3 = testSave(uc3, pid, cp2)
@@ -128,8 +128,8 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   val load = loadUseCase _
   def save = saveUseCase _
 
-  def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) =
-    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)
+  def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None): UseCaseSaveCheckpoint =
+    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)._1
 
   // -------------------------------------------------------------------------------------------------------------------
 

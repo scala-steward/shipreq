@@ -181,7 +181,7 @@ sealed trait DaoT extends DaoS {
    */
   def createUseCaseIdentWithForcedNumber(projectId: ProjectId, ucn: UseCaseNumber): UseCaseIdent = {
     val id = InsertUseCaseIdentForceNum.first(projectId, ucn)
-    UseCaseIdent(id, ucn)
+    UseCaseIdent(id, ucn, projectId)
   }
 
   def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader, lock: Lock.Write[UseCaseNumbers]): UseCaseRev = {

@@ -22,7 +22,7 @@ private[db] final object Sql {
   implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldText= GetResult(r => UcFieldText(r.nextStringOption.asLabelC, r.<<, r.<<, r.<<))
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
-  implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<)}
+  implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.nextString)))
   implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
@@ -101,12 +101,12 @@ private[db] final object Sql {
   // ###################################################################################################################
   // Use Case
 
-  private val ucrev_* = s"r.ident_id, u.number, r.rev, r.id, r.title"
+  private val ucrev_* = s"r.ident_id, u.number, u.project_id, r.rev, r.id, r.title"
 
   @Insert val InsertUseCaseIdent = {
     val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase where project_id=?)"
     query[(ProjectId, ProjectId), UseCaseIdent](
-      s"INSERT INTO usecase(project_id, number) VALUES(?, $NextUseCaseNumber) RETURNING id, number")
+      s"INSERT INTO usecase(project_id, number) VALUES(?, $NextUseCaseNumber) RETURNING id, number, project_id")
   }
 
   @Insert val InsertUseCaseIdentForceNum = query[(ProjectId, UseCaseNumber), UseCaseIdentId](

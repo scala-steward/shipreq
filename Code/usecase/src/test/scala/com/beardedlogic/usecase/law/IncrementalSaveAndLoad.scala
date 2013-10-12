@@ -44,11 +44,11 @@ object IncrementalSaveAndLoad extends Commands {
         SystemInvariants(pid, db)
       }
       val rev1 = db.createUseCaseIdentAndRev1(pid, UseCaseHeader("Do Stuff".tag[Validated]))
-      cp = db.loadUseCase(rev1, pid)
+      cp = db.loadUseCase(rev1, pid)._1
       history = (cp.uc, "Starting point.") :: Nil
     }
 
-    def reload: UseCaseSaveCheckpoint = db.loadUseCase(cp.rec, pid)
+    def reload: UseCaseSaveCheckpoint = db.loadUseCase(cp.rec, pid)._1
 
     def save(uc: UseCase, mutationDesc: String): Option[UseCaseSaveCheckpoint] = {
       history = (uc, mutationDesc) :: history

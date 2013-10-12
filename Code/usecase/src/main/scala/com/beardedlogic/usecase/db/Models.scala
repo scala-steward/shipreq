@@ -43,7 +43,7 @@ object FieldListRec {
 // ===================================================================================================================
 // UC & Text
 
-case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber)
+case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
 
 case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader) {
   @inline final def identId = ident.identId

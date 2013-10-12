@@ -11,7 +11,7 @@ import slick.session.{Database, Session}
 import Q.interpolation
 
 import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import com.beardedlogic.usecase.lib.{InputValidator, Defaults, Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
+import com.beardedlogic.usecase.lib.{UseCaseRelations, InputValidator, Defaults, Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
 import lib.Types._
 
 object TestDB {
@@ -91,7 +91,6 @@ trait TestDatabaseSupport extends TestHelpers with TestDatabaseHelpers {
   def dao = daoVar
 
   def withNewTransaction[U](fn: => U, commit: Boolean = true): U = withTransactionInternal(true, !commit)(fn)
-
 }
 
 trait TestDatabaseHelpers extends TestHelpers2 {
@@ -223,12 +222,12 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
     case None =>
       val ucr = createUseCaseIdentAndRev1(projectId, uc.header)
-      val someCp = Some(loadUseCase(ucr, projectId))
+      val someCp = Some(loadUseCase(ucr, projectId)._1)
       saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
 
   def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId) =
-    Locks.SingleUseCase.readP(ucRev, projectId)(UseCasePersistence.load(ucRev, dao, _))
+    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev, dao, _))
 
   def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader) =
     Locks.UseCaseNumbers.write(projectId)(dao.createUseCaseIdentAndRev1(projectId, header, _))

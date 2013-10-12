@@ -235,7 +235,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
 
   def loadRev(revId: UseCaseRevId, projectId: ProjectId): UseCaseSaveCheckpoint = {
     val rec = dao.findUseCaseRev(revId).get
-    Locks.SingleUseCase.read(rec.identId, projectId)(load(rec, dao, _))
+    Locks.UseCaseNumbers.read(projectId)(load(rec, dao, _))._1
   }
 
   def reload(cp: UseCaseSaveCheckpoint, projectId: ProjectId) = loadRev(cp.rec, projectId)
@@ -302,6 +302,18 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       loaded.header ==== UseCaseHeader("ahh".validated)
       TF3(loaded.fieldValues).text ==== "look at [3.0.1] and [3.1]!"
       assertStepTree(loaded, NCF, "3.0. Root\n  1. Child [3.0]\n3.1. Other [3.0.1]")
+    }
+
+    it("should realise UC refs") {
+      // Create UCs
+      val pid = newProjectId()
+      createUseCaseIdentAndRev1(pid, UseCaseHeader("First!".validated))
+      val r = createUseCaseIdentAndRev1(pid, UseCaseHeader("SECOND".validated))
+      dao.linkUcToText(r, createInitialTextRev(r, TF1, "I LIKE [UC-1] AND [UC-2]"))
+
+      // Load and verify
+      val loaded = loadRev(r, pid).uc
+      TF1(loaded.fieldValues).text ==== "I LIKE [UC-1: First!] AND [UC-2: SECOND]"
     }
   }
 
