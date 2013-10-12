@@ -26,7 +26,7 @@ private[field] trait StepFieldPersistenceMixin extends Field {
 
   override def load(loadCtx: FieldLoadCtx) = {
 
-    val normTextMap = Map.newBuilder[LocalStepId, TextWithNormalisedRefs]
+    val normTextMap = Map.newBuilder[LocalStepId, NormalisedText]
     val savedStepMap = Map.newBuilder[LocalStepId, TextIdentId]
     val savedData = Map.newBuilder[TextIdentId, UcFieldText]
 
@@ -96,7 +96,7 @@ class StepFieldValueSaver(
 
     @inline def different_?(cur: StepNode, prev: UcFieldText) =
       labelsByLocalId(cur.id) != prev.label.get ||
-      v.textmap(cur.id).textWithNormalisedRefs(savedSteps) != prev.text
+      v.textmap(cur.id).normalisedText(savedSteps) != prev.text
 
     def anyNewOrModified = v.tree.iteratorRecursive.exists(n =>
       savedSteps.ba.get(n.id)

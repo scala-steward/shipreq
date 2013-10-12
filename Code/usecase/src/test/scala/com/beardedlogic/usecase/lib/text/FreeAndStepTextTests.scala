@@ -178,22 +178,22 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
     describe("Loading text") {
       it("should load simple text") {
-        val x = T.parser.load("Hehe".hasNormalisedRefs)(BiMap.empty, StepState1)
+        val x = T.parser.load("Hehe".tag[IsNormalised])(BiMap.empty, StepState1)
         T.assert(x, "Hehe", Map.empty, false)
       }
 
       it("should denormalise step refs") {
-        val x = T.parser.load("Hehe [D.100]".hasNormalisedRefs)(savedSteps(100 -> X2), StepState1)
+        val x = T.parser.load("Hehe [D.100]".tag[IsNormalised])(savedSteps(100 -> X2), StepState1)
         T.assert(x, "Hehe [S.2]", Map(X2 -> S2), false)
       }
 
       it("should denormalise UC refs") {
-        val x = T.parser.load("Hehe [UC-2] and [UC-1]!".hasNormalisedRefs)(BiMap.empty, StepState1)
+        val x = T.parser.load("Hehe [UC-2] and [UC-1]!".tag[IsNormalised])(BiMap.empty, StepState1)
         T.assert(x, "Hehe [UC-2: Second] and [UC-1: First]!", Map.empty, false)
       }
 
       it("should denormalise UC self-refs") {
-        val x = T.parser.load("Hehe [UC-3]!".hasNormalisedRefs)(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
+        val x = T.parser.load("Hehe [UC-3]!".tag[IsNormalised])(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
         T.assert(x, "Hehe [UC-3: Old Third]!", Map.empty, true)
       }
     }
@@ -201,7 +201,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     describe("Normalising text") {
       it("should normalise UC refs to [UC-n]") {
         val txt = "Hehe [UC-2: Second] and [UC-1: First]!"
-        val nt = T.parse(txt).textWithNormalisedRefs(BiMap.empty)
+        val nt = T.parse(txt).normalisedText(BiMap.empty)
         nt shouldBe "Hehe [UC-2] and [UC-1]!"
       }
     }
@@ -596,7 +596,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     describe("Loading text with flow") {
       it("should normalise refs in all clauses") {
         val save = savedSteps(100 -> X2, 104 -> X1, 108 -> X3)
-        val x = new StepTextFactory(X0).load("He [D.108] he ⬅ [D.100] ➡ [D.104]".hasNormalisedRefs)(save, StepState1)
+        val x = new StepTextFactory(X0).load("He [D.108] he ⬅ [D.100] ➡ [D.104]".tag[IsNormalised])(save, StepState1)
         x.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
         x.mainClause.refs should be(Map("X3" -> "S.3"))
         x.flowFromClause should be(Some(FlowFromClause(Map(X2 -> S2))))

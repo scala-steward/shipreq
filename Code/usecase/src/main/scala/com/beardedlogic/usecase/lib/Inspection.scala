@@ -99,10 +99,10 @@ object Inspection {
 
   implicit def validatedType[T <: AnyRef](implicit t: Show[T]): Show[T @@ Validated] = taggedAnyRef[T, Validated]
 
-  implicit val textWithNRefs   : Show[TextWithNormalisedRefs] = taggedStr[HasNormalisedRefs]
-  implicit val localTextFieldId: Show[LocalTextFieldId]       = taggedStr[IsLocalTextFieldId]
-  implicit val localStepId     : Show[LocalStepId]            = taggedStr[IsLocalStepId]
-  implicit val labelStr        : Show[StepLabel]              = taggedStr[IsStepLabel]
+  implicit val textWithNRefs   : Show[NormalisedText]   = taggedStr[IsNormalised]
+  implicit val localTextFieldId: Show[LocalTextFieldId] = taggedStr[IsLocalTextFieldId]
+  implicit val localStepId     : Show[LocalStepId]      = taggedStr[IsLocalStepId]
+  implicit val labelStr        : Show[StepLabel]        = taggedStr[IsStepLabel]
 
   implicit val useCaseNumber: Show[UseCaseNumber] = taggedShort[IsUseCaseNumber]
 

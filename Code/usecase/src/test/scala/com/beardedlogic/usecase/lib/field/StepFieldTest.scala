@@ -17,7 +17,7 @@ class StepFieldTest extends FunSpec with TestHelpers with TestData {
   type V = StepFieldValue
 
   implicit def autoTagLocalStepIds(s: String) = s.asLocalStepId
-  implicit def autoTagNormalisedRefs(s: String) = s.hasNormalisedRefs
+  implicit def autoTagNormalisedRefs(s: String) = s.tag[IsNormalised]
 
   val ucId = 123L.tag[IsUseCaseIdentId]
 

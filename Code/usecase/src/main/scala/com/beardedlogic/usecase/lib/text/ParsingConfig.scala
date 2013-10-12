@@ -26,6 +26,7 @@ final object ParsingConfig {
     new StringBuilder(title.length + 10).appendUseCaseRef(num, title).toString
 
   val ValidUseCaseRefRegex = "\\[UC-(\\d+?): (.+?)\\]".r
+  def makeNormalisedUseCaseRef(m: Regex.Match): String = RefBraceLs + "UC-" + m.group(1) + RefBraceRs
 
   implicit class StringBuilderPCExt(val sb: StringBuilder) extends AnyVal {
     def braced(fn: => Unit): StringBuilder = {sb += RefBraceL; fn; sb += RefBraceR; sb}

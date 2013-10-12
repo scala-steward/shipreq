@@ -13,7 +13,7 @@ import ParsingUtils._
 case class StepTextFactory(stepId: LocalStepId) extends Parser[StepText] {
   override def empty = StepText.empty(stepId)
 
-  override def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) =
+  override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) =
     StepText.load(stepId, text)
 
   override def parse(text: String)(implicit ctx: UcParsingCtx) =
@@ -25,10 +25,10 @@ object StepText {
 
   def empty(stepId: LocalStepId) = StepText(stepId, FreeText.empty, None, None)
 
-  def load(stepId: LocalStepId, text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
+  def load(stepId: LocalStepId, text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
     implicit val stepsAndLabels = ctx.stepsAndLabels
     val e = empty(stepId)
-    e.updateCorrected(realiseNormalisedRefs(text)).getOrElse(e)
+    e.updateCorrected(realiseNormalisedStepRefs(text)).getOrElse(e)
   }
 
   def parse(stepId: LocalStepId, text: String)(implicit ctx: UcParsingCtx) = {
@@ -62,7 +62,7 @@ case class StepText(
     m
   }
 
-  override def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = normaliseRefs(text, allRefs, savedSteps)
+  override def normalisedText(implicit savedSteps: SavedSteps) = normalise(text, allRefs, savedSteps)
 
   override val hasRefs_? = mainClause.hasRefs_? || flowHasRefs_?(flowFromClause) || flowHasRefs_?(flowToClause)
 

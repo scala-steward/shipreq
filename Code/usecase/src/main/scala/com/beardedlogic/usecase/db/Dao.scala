@@ -146,7 +146,7 @@ sealed trait DaoS {
   def createTextIdent(ucId: UseCaseIdentId, fkId: FieldKeyId): TextIdentId =
     InsertTextIdent.first(ucId, fkId)
 
-  def createTextRev(identId: TextIdentId, rev: Short, text: TextWithNormalisedRefs): TextRev = {
+  def createTextRev(identId: TextIdentId, rev: Short, text: NormalisedText): TextRev = {
     val id = InsertTextRev.first(identId, rev, text)
     TextRev(identId, rev, id, text)
   }

@@ -56,7 +56,7 @@ private[db] object SqlHelpers {
   implicit val GR_ProjectId = GR_TaggedLong[ProjectId]
   implicit val SP_ProjectId = SP_TaggedLong[ProjectId]
 
-  implicit val GR_TextWithNormalisedRefs = GetResult(_.nextString.hasNormalisedRefs)
+  implicit val GR_NormalisedText = GetResult(_.nextString.tag[IsNormalised])
 
   implicit val GR_FieldKeyType = GetResult(r => FieldKeyType(r.nextShort))
   implicit object SetParameterFieldKeyType extends SetParameter[FieldKeyType] {

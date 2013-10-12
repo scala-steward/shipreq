@@ -138,7 +138,7 @@ private[db] final object Sql {
   @Insert val InsertTextIdent = query[(UseCaseIdentId, FieldKeyId), TextIdentId](
     "INSERT INTO text(uc_id, fk_id) VALUES(?,?) RETURNING id")
 
-  @Insert val InsertTextRev = query[(TextIdentId, Short, TextWithNormalisedRefs), TextRevId](
+  @Insert val InsertTextRev = query[(TextIdentId, Short, NormalisedText), TextRevId](
     "INSERT INTO text_rev(ident_id, rev, text) VALUES(?,?,?) RETURNING id")
 
   // ###################################################################################################################

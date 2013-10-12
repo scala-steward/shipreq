@@ -241,7 +241,7 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   def reload(cp: UseCaseSaveCheckpoint, projectId: ProjectId) = loadRev(cp.rec, projectId)
 
   def createInitialTextRev(ucIdentId: UseCaseIdentId, fkId: FieldKeyId, text: String) =
-    dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.hasNormalisedRefs)
+    dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.tag[IsNormalised])
 
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {

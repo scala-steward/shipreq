@@ -14,9 +14,9 @@ object FreeText extends Parser[FreeText] {
 
   def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
-  override def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
+  override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
     implicit val stepsAndLabels = ctx.stepsAndLabels
-    parseCorrected(realiseNormalisedRefs(text))
+    parseCorrected(realiseNormalisedStepRefs(text))
   }
 
   override def parse(text: String)(implicit ctx: UcParsingCtx) =
@@ -92,7 +92,7 @@ object FreeText extends Parser[FreeText] {
  */
 case class FreeText(text: String, refs: Map[LocalStepId, StepLabel], refsOwnUc: Boolean) extends ParsedText[FreeText] {
 
-  override def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = normaliseRefs(text, refs, savedSteps)
+  override def normalisedText(implicit savedSteps: SavedSteps) = normalise(text, refs, savedSteps)
 
   override def hasRefs_? = refs.nonEmpty
 

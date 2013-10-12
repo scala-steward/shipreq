@@ -52,24 +52,26 @@ object ParsingUtils extends Logger {
   }
 
   /**
-   * Normalises references in text so that they can be saved to the DB.
-   *
-   * Example: converts [4.0.1.b] to [D.1045].
+   * Normalises text before saving to the database.
    */
-  def normaliseRefs(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): TextWithNormalisedRefs = {
+  def normalise(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): NormalisedText = {
 
-    // Normalise step refs
-    val localToDb = savedSteps.ba
-    var r = text
-    for {
-      (localId, label) <- refs
-      dataId <- localToDb.get(localId)
-    } r = r.replace(makeStepRef(label), makeNormalisedStepRef(dataId))
+    /** Example: converts [4.0.1.b] to [D.1045]. */
+    @inline def normaliseStepRefs(text: String) = {
+      val localToDb = savedSteps.ba
+      var r = text
+      for {
+        (localId, label) <- refs
+        dataId <- localToDb.get(localId)
+      } r = r.replace(makeStepRef(label), makeNormalisedStepRef(dataId))
+      r
+    }
 
-    // Normalise UC refs
-    r = ValidUseCaseRefRegex.replaceAllIn(r, m => RefBraceLs + "UC-" + m.group(1) + RefBraceRs)
+    /** Example: converts [UC-3: Do stuff] to [UC-3] */
+    @inline def normaliseUcRefs(text: String) =
+      ValidUseCaseRefRegex.replaceAllIn(text, makeNormalisedUseCaseRef _)
 
-    r.hasNormalisedRefs
+    normaliseStepRefs(normaliseUcRefs(text)).tag[IsNormalised]
   }
 
   /**
@@ -80,7 +82,7 @@ object ParsingUtils extends Logger {
    * @param text Text with all step references normalised with DB data IDs instead of human-readable labels.
    * @return Text with all step references
    */
-  def realiseNormalisedRefs(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps,
+  def realiseNormalisedStepRefs(text: NormalisedText)(implicit savedSteps: SavedSteps,
     stepsAndLabels: StepAndLabelBiMap): String @@ InputCorrected = {
 
     val dbIdsToLocalIds = savedSteps.ab

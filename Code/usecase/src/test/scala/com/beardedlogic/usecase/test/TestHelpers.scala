@@ -177,7 +177,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     override def answer(i: InvocationOnMock) = {
       val identId = i.getArguments()(0).asInstanceOf[TextIdentId]
       val rev = i.getArguments()(1).asInstanceOf[Short]
-      val text = i.getArguments()(2).asInstanceOf[TextWithNormalisedRefs]
+      val text = i.getArguments()(2).asInstanceOf[NormalisedText]
       val id = (identId*10).tag[IsTextRevId]
       TextRev(identId, rev, id, text)
     }
@@ -487,7 +487,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     def toTextTree(field: StepField, savedSteps: SavedSteps = EmptySavedSteps): List[StepNodeWithText] =
       convertNodeTree[StepNode, StepNodeWithText](v.tree, {
         case (n, lvl, lbl, children) =>
-          val txt = v.textmap.get(n.id).map(_.textWithNormalisedRefs(savedSteps)).getOrElse("".hasNormalisedRefs)
+          val txt = v.textmap.get(n.id).map(_.normalisedText(savedSteps)).getOrElse("".tag[IsNormalised])
           StepNodeWithText(n.id, lvl, lbl, txt, children)
       }, field.sli.startingLabelIndex _)
   }
@@ -500,7 +500,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
 
     def toTextmap(savedSteps: SavedSteps = EmptySavedSteps, sl: StepAndLabelBiMap = EmptyStepAndLabelBiMap) =
       TreeLike(x).mapRecursive[(LocalStepId, StepText)](n => {
-        val t = StepText.load(n.id, n.text.hasNormalisedRefs)(savedSteps, UcParsingCtx.Empty.copy(stepsAndLabels = sl))
+        val t = StepText.load(n.id, n.text.tag[IsNormalised])(savedSteps, UcParsingCtx.Empty.copy(stepsAndLabels = sl))
         (n.id, t)
       }).toMap
 

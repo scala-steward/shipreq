@@ -8,7 +8,7 @@ trait Parser[T <: ParsedText[T]] {
 
   def empty: T
 
-  def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): T
+  def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): T
 
   def parse(text: String)(implicit ctx: UcParsingCtx): T
 }
@@ -21,9 +21,7 @@ trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
   @inline final def isEmpty = text.isEmpty
   @inline final def nonEmpty = text.nonEmpty
 
-  def textWithNormalisedRefs(implicit savedSteps: SavedSteps): TextWithNormalisedRefs
-
-  //  def refs: Refs
+  def normalisedText(implicit savedSteps: SavedSteps): NormalisedText
 
   /** Does this text contain any step references? */
   def hasRefs_? : Boolean

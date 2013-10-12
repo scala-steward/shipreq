@@ -60,8 +60,8 @@ case class StepFieldValue(field: StepField, tree: StepTree, textmap: Map[LocalSt
     }
   }
 
-  def getNormalisedText(id: LocalStepId)(implicit savedSteps: SavedSteps): TextWithNormalisedRefs =
-    textmap.get(id).map(_.textWithNormalisedRefs).getOrElse("".hasNormalisedRefs)
+  def getNormalisedText(id: LocalStepId)(implicit savedSteps: SavedSteps): NormalisedText =
+    textmap.get(id).map(_.normalisedText).getOrElse("".tag[IsNormalised])
 
   def withNewStep(newTree: StepTree, stepId: LocalStepId) =
     copy(tree = newTree, textmap = textmap + (stepId -> StepText.empty(stepId)))

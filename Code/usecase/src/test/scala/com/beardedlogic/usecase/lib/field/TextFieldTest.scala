@@ -38,7 +38,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
   }
 
   def ucFieldText(fkId: FieldKeyId, id: TextRevId, text: String) =
-    UcFieldTextWithFK(fkId, UcFieldText(None, None, -1, TextRev((id * 10000).tag[IsTextIdentId], 1, id, text.hasNormalisedRefs)))
+    UcFieldTextWithFK(fkId, UcFieldText(None, None, -1, TextRev((id * 10000).tag[IsTextIdentId], 1, id, text.tag[IsNormalised])))
 
   describe("Loading") {
     val V1 = ucFieldText(TF1.rec, TR1, "Jord")
@@ -94,12 +94,12 @@ class TextFieldTest extends FunSpec with TestHelpers {
       implicit val ctx = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
 
       it("should compare simple text") {
-        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "ah".hasNormalisedRefs)) ==== false
-        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "30".hasNormalisedRefs)) ==== true
+        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "ah".tag[IsNormalised])) ==== false
+        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "30".tag[IsNormalised])) ==== true
       }
 
       it("should normalise refs before comparison") {
-        val tr = TextRev(TI1, 1, TR1, "look at [D.141]".hasNormalisedRefs)
+        val tr = TextRev(TI1, 1, TR1, "look at [D.141]".tag[IsNormalised])
         saver(FreeText.parse("look at [S.1]")).differsFromPrevSave_?(tr) ==== false
         saver(FreeText.parse("look at [S.2]")).differsFromPrevSave_?(tr) ==== true
       }
@@ -131,7 +131,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
       it("should update changed text") {
         val dao = mockDao
-        val prev = TextRev(TI1, 2, TR1, "OLD".hasNormalisedRefs)
+        val prev = TextRev(TI1, 2, TR1, "OLD".tag[IsNormalised])
         val tr = saver(parseExact("hello")).save(dao, ucId, ucRevId, Some(prev))
         tr.rev ==== 3
         tr.identId ==== TI1
@@ -143,7 +143,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
       it("should reuse unchanged text") {
         val dao = mockDao
-        val prev = TextRev(TI1, 2, TR1, "hello".hasNormalisedRefs)
+        val prev = TextRev(TI1, 2, TR1, "hello".tag[IsNormalised])
         val tr = saver(parseExact("hello")).save(dao, ucId, ucRevId, Some(prev))
         tr ==== prev
         verify(dao, times(1)).linkUcToText(any, any)
