@@ -175,14 +175,15 @@ case class StepText(
     case FlowFromChange(fromIds, id) => processFlowChange(FlowTo, flowToClause, withFlowTo, fromIds, id)
     case FlowToChange(id, toIds) => processFlowChange(FlowFrom, flowFromClause, withFlowFrom, toIds, id)
 
-    case _ => NoChange
+    // Delegate to the main clause
+    case _ => mainClause.respondToChange(c).map(ft => copy(mainClause = ft))
   }
 
   private def withFlowFrom(from: Option[FlowFromClause]) = copy(flowFromClause = from)
   private def withFlowTo(to: Option[FlowToClause]) = copy(flowToClause = to)
 
   def updateRefs(implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] = {
-    val main = mainClause.updateRefs.mapChanges(_.map(convertFreeTextChange))
+    val main = mainClause.updateStepRefs.mapChanges(_.map(convertFreeTextChange))
     val from = updateRefs(FlowFrom, flowFromClause)
     val to = updateRefs(FlowTo, flowToClause)
 

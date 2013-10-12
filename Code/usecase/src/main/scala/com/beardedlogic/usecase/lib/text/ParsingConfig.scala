@@ -22,6 +22,9 @@ final object ParsingConfig {
   @inline def makeInvalidStepRef(label: String) = RefBraceL + label + InvalidRefSuffix + RefBraceR
   @inline def makeNormalisedStepRef(textIdentId: TextIdentId) = RefBraceL + NormalisationPrefix + textIdentId + RefBraceR
 
+  @inline def makeUseCaseRef(num: UseCaseNumber, title: String): String =
+    new StringBuilder(title.length + 10).appendUseCaseRef(num, title).toString
+
   implicit class StringBuilderPCExt(val sb: StringBuilder) extends AnyVal {
     def braced(fn: => Unit): StringBuilder = {sb += RefBraceL; fn; sb += RefBraceR; sb}
 

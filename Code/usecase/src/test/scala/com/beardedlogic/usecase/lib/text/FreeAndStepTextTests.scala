@@ -229,6 +229,16 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         })
       }
     }
+
+    describe("Responding to a TitleChanged") {
+      it("should change UC refs to self") {
+        val x = T.parse("Look [UC-3].")
+        T.assert(x, "Look [UC-3: New Third].", Map.empty, true)
+        val (y, changes) = x.respondToChange(TitleChanged("New Third", "GREAT"))(autoCtx(StepState1).copy(title = "GREAT")).openChange
+        y.text ==== "Look [UC-3: GREAT]."
+        changes shouldBe List(TextChanged)
+      }
+    }
   } // end aTextWithRefs
 
   describe("FreeText") {

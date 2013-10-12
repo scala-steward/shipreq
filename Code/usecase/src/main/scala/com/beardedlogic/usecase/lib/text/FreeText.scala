@@ -105,16 +105,24 @@ case class FreeText(text: String, refs: Map[LocalStepId, StepLabel], refsOwnUc: 
   }
 
   override def respondToChange(c: Change)(implicit ctx: UcParsingCtx) = c match {
-    case _: ExistingStepLabelsChanged => updateRefs // Update step references when they change
-    case _ => NoChange
+    case _: ExistingStepLabelsChanged             => updateStepRefs
+    case TitleChanged(before, after) if refsOwnUc => updateUcRefs(before, after)
+    case _                                        => NoChange
   }
 
   /** Updates `refs` and creates a copy of `text` in which all references are up-to-date. */
-  def updateRefs(implicit ctx: UcParsingCtx): ChangeResult[FreeText, Change] = {
+  def updateStepRefs(implicit ctx: UcParsingCtx): ChangeResult[FreeText, Change] = {
     if (!hasRefs_?) NoChange
     else migrateRefsToNewStepTree(this)(ctx.stepsAndLabels) match {
       case Some(updated) => updated @: textChanged
       case _ => NoChange
     }
+  }
+
+  def updateUcRefs(before: String, after: String)(implicit ctx: UcParsingCtx): ChangeResult[FreeText, Change] = {
+    val oldRef = makeUseCaseRef(ctx.ucn, before)
+    val newRef = makeUseCaseRef(ctx.ucn, after)
+    val r = copy(text.replace(oldRef, newRef))
+    r @: textChanged
   }
 }
