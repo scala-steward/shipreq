@@ -38,3 +38,14 @@ Available snippets:
 
 Shiro is integrated via `src/main/resources/shiro.ini` and `src/main/webapp/web.xml`.
 
+
+Use Case Textual Features
+=========================
+* What is parsable is defined in `Grammar` with help from `ParsingConfig`.
+* Parsing and translation happens in
+    * `FreeText.parseCorrected()`
+    * `StepText.updateCorrected()`
+    * `FreeText.parseTextForFlow()`
+* Data available to parse-result translation is provided via `UcParsingCtx`.
+* To change text in reaction to other changes, add a case to `respondToChange()` in `FreeText`/`StepText`.
+
