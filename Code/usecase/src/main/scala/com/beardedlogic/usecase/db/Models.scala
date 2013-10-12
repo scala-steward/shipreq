@@ -43,7 +43,7 @@ object FieldListRec {
 // ===================================================================================================================
 // UC & Text
 
-case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber)
+case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
 
 case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader) {
   @inline final def identId = ident.identId
@@ -52,7 +52,7 @@ case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header:
 case class UseCaseHeader(title: String @@ Validated)
 object UseCaseHeader extends UcChangeDomain
 
-case class TextRev(identId: TextIdentId, rev: Short, id: TextRevId, text: TextWithNormalisedRefs)
+case class TextRev(identId: TextIdentId, rev: Short, id: TextRevId, text: NormalisedText)
 
 case class UcFieldTextWithFK(fkId: FieldKeyId, rel: UcFieldText) {
   @inline final def label = rel.label

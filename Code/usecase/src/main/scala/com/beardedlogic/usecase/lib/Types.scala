@@ -33,10 +33,10 @@ object Types {
     def tag[T <: TypeTag[A]] = a.asInstanceOf[A @@ T]
   }
 
-  implicit class StringTypeTagExt(val s: String) extends AnyVal {
-    def hasNormalisedRefs = s.asInstanceOf[TextWithNormalisedRefs]
+  implicit class StringGeneralExt(val s: String) extends AnyVal {
     def asLocalStepId = s.asInstanceOf[LocalStepId]
     def asLabel = s.asInstanceOf[StepLabel]
+    def inspect = Inspection.str.shows(s)
   }
 
   implicit class StringTypeTagExt2[F[_]](val s: F[String]) extends AnyVal {
@@ -86,9 +86,8 @@ object Types {
   sealed trait IsJsonFor[T] extends TypeTag[String]
   type Json[T] = String @@ IsJsonFor[T]
 
-  /** Indicates that references to steps are in normalised form. Eg. [D.112] instead of [3.0.1] */
-  sealed trait HasNormalisedRefs extends TypeTag[String]
-  type TextWithNormalisedRefs = String @@ HasNormalisedRefs
+  sealed trait IsNormalised extends TypeTag[String]
+  type NormalisedText = String @@ IsNormalised
 
   sealed trait IsLocalId extends TypeTag[String]
   type AnyLocalId = String @@ IsLocalId

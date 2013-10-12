@@ -4,14 +4,46 @@ import scala.collection.immutable.SortedSet
 import scala.util.matching.Regex
 import com.beardedlogic.usecase.lib.Types._
 
-object ParsingConfig {
+final object ParsingConfig {
 
   val RefBraceL = '['
   val RefBraceR = ']'
+  val InvalidRefSuffix = '?'
 
-  val DeletedRef = makeRef("DELETED")
+  val RefBraceLs = RefBraceL.toString
+  val RefBraceRs = RefBraceR.toString
 
+  val DeletedRef = RefBraceL + "DELETED" + RefBraceR
+
+  val NormalisationPrefix = "D."
   val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
+
+  @inline def makeStepRef(label: StepLabel) = RefBraceL + label + RefBraceR
+  @inline def makeInvalidStepRef(label: String) = RefBraceL + label + InvalidRefSuffix + RefBraceR
+  @inline def makeNormalisedStepRef(textIdentId: TextIdentId) = RefBraceL + NormalisationPrefix + textIdentId + RefBraceR
+
+  @inline def makeUseCaseRef(num: UseCaseNumber, title: String): String =
+    new StringBuilder(title.length + 10).appendUseCaseRef(num, title).toString
+
+  val ValidUseCaseRefRegex = "\\[UC-(\\d+?): (.+?)\\]".r
+  def makeNormalisedUseCaseRef(m: Regex.Match): String = RefBraceLs + "UC-" + m.group(1) + RefBraceRs
+
+  implicit class StringBuilderPCExt(val sb: StringBuilder) extends AnyVal {
+    def braced(fn: => Unit): StringBuilder = {sb += RefBraceL; fn; sb += RefBraceR; sb}
+
+    def appendStepRef(valid: Boolean, label: StepLabel) = braced {
+      sb.append(label)
+      if (!valid) sb.append(InvalidRefSuffix)
+    }
+
+    def appendUseCaseRef(num: UseCaseNumber, title: String) = braced {
+      sb.append("UC-").append(num.toInt).append(": ").append(title)
+    }
+    def appendInvalidUseCaseRef(num: UseCaseNumber, title: Option[String]) = braced {
+      sb.append("UC-").append(num.toInt).append(InvalidRefSuffix)
+      if (title.isDefined) sb.append(": ").append(title.get)
+    }
+  }
 
   sealed trait FlowStyle {
     val arrow: String
@@ -21,15 +53,12 @@ object ParsingConfig {
     val arrowBadReplacement: String
     final def replaceAllArrowsWithBad(input: String) = arrowBadRegex.replaceAllIn(input, arrowBadReplacement)
     final def makeFlowText(labels: SortedSet[StepLabel]) = {
-      val expSize = labels.size * 24 + 2
+      val expSize = labels.size * 20 + 2
       val sb = new StringBuilder(expSize)
       sb.append(arrow)
-      labels.foreach(l => {
-        sb.append(' ')
-        makeRef(sb, l)
-      })
+      labels.foreach(l => sb.append(' ').appendStepRef(true, l))
       val r = sb.toString
-      assume(r.length <= expSize, s"Flow text string builder exceeded pre-alloc space. (Exp: $expSize. Got: ${r.length}.)")
+      //assume(r.length <= expSize, s"Flow text string builder exceeded pre-alloc space. (Exp: $expSize. Got: ${r.length}.)")
       r
     }
     final def makeFlowTextOrEmpty(labels: SortedSet[StepLabel]) = if (labels.isEmpty) "" else makeFlowText(labels)
@@ -53,17 +82,4 @@ object ParsingConfig {
 
   val AnyValidArrowRegex =
     "(?:" + List(FlowFromStyle.arrowRegex, FlowToStyle.arrowRegex).map(_.pattern.pattern).mkString("|") + ")"
-
-  @inline private def makeRef_(sb: StringBuilder)(fn: => Any): Unit = { sb += RefBraceL; fn; sb += RefBraceR }
-  @inline def makeRef(sb: StringBuilder, label: String) = makeRef_(sb)(sb ++= label)
-  @inline def makeRef(label: String) = RefBraceL + label + RefBraceR
-
-  val NormalisationPrefix = "D."
-  @inline def makeNormalisedRef(textIdentId: TextIdentId) = makeRef(NormalisationPrefix + textIdentId)
-
-  val InvalidRefSuffix = '?'
-  @inline def makeInvalidLabel(label: String) = label + InvalidRefSuffix
-  @inline def makeInvalidRef(label: String) = makeRef(makeInvalidLabel(label))
-  @inline def makeInvalidRef(sb: StringBuilder, label: String) = makeRef_(sb) {sb ++= label; sb += InvalidRefSuffix}
-  @inline def makeInvalidNormalisedRef(textIdentId: String) = makeInvalidRef(NormalisationPrefix + textIdentId)
 }

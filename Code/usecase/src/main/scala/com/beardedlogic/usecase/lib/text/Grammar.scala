@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase.lib.text
 
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.util.parsing.combinator.RegexParsers
 import com.beardedlogic.usecase.lib.Types._
@@ -32,7 +33,7 @@ object Grammar extends RegexParsers {
    * @tparam T The type of the next parser.
    * @return A tuple of the characters collected here (can be an empty string), and the result of nextParser.
    */
-  def AnyTextThen[T](keepText: Boolean, nextParser: Parser[T]) = Parser[(String, T)] { in =>
+  private def anyTextThen[T](keepText: Boolean, nextParser: Parser[T]) = Parser[(String, T)] { in =>
     val sb = new StringBuilder
     @tailrec def parse(_in: Input): ParseResult[(String, T)] = {
       val in = if (keepText) gobbleWhitespace(sb, _in) else _in
@@ -57,7 +58,7 @@ object Grammar extends RegexParsers {
    * @tparam T The type of the next parser.
    * @return A tuple of the characters collected here (can be an empty string), and the result of nextParser.
    */
-  def AnyTextThenOptional[T](keepText: Boolean, nextParser: Parser[T]) = Parser[(String, Option[T])] { in =>
+  private def anyTextThenOptional[T](keepText: Boolean, nextParser: Parser[T]) = Parser[(String, Option[T])] { in =>
     val sb = new StringBuilder
     @tailrec def parse(_in: Input): ParseResult[(String, Option[T])] = {
       val in = if (keepText) gobbleWhitespace(sb, _in) else _in
@@ -71,42 +72,74 @@ object Grammar extends RegexParsers {
     parse(in)
   }
 
-  val StepLabelComponent: Parser[String] = "[A-Za-z]+|\\d+".r
+  private def braced[T](inner: Parser[T]): Parser[T] = RefBraceLs ~> inner <~ RefBraceRs
 
-  val StepLabel: Parser[String] = StepLabelComponent ~ rep1("." ~> StepLabelComponent) ^^ {
-    case h ~ t => (h :: t).mkString(".")
-  }
-
-  val BracedRef: Parser[String] = "[" ~> StepLabel <~ "]"
-
-  val ValidRef: Parser[PotentiallyValidRef] = (BracedRef | StepLabel) ^^ {
-    case r => PotentiallyValidRef(r.asLabel)
-  }
-  val InvalidRef: Parser[InvalidRefToken] = "\\[[A-Za-z0-9 .?]+\\]".r ^^ {
-    case token => InvalidRefToken(token)
-  }
-  val AnyRef: Parser[RefToken] = ValidRef | InvalidRef
-  val FlowRefList: Parser[List[RefToken]] = rep1sep(AnyRef, "," ?)
-
-  def flowClause(style: FlowStyle): Parser[ParsedFlowClause] = style.arrowRegex ~> FlowRefList ^^ {
-    case refs => ParsedFlowClause(style, refs)
-  }
-  val FlowFromClause: Parser[ParsedFlowClause] = flowClause(FlowFromStyle)
-  val FlowToClause: Parser[ParsedFlowClause] = flowClause(FlowToStyle)
-  val FlowClause: Parser[ParsedFlowClause] = FlowFromClause | FlowToClause
-
-  val TextAndFlows: Parser[(String, List[ParsedFlowClause])] = AnyTextThen(false, rep1(FlowClause))
-
-  sealed trait RefToken
-  case class PotentiallyValidRef(label: StepLabel) extends RefToken
-  case class InvalidRefToken(token: String) extends RefToken
-
-  case class ParsedFlowClause(style: FlowStyle, refs: List[RefToken])
+  private def optionallyBraced[T](inner: Parser[T]): Parser[T] = (braced(inner) | inner)
 
   // -------------------------------------------------------------------------------------------------------------------
+  // Step label (Eg. "1.2", "3.E.2.a")
+
+  case class StepLabelRefToken(label: StepLabel) extends FreeTextRefToken
+
+  val StepLabel: Parser[String] = {
+    val level: Parser[String] = "[A-Za-z]+|\\d+".r
+    level ~ rep1("." ~> level) ^^ {case h ~ t => (h :: t).mkString(".")}
+  }
+
+  val StepLabelRef: Parser[StepLabelRefToken] = braced(StepLabel) ^^ (s => StepLabelRefToken(s.asLabel))
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Use Case ref. (Eg. "UC-3", "UC 8", "UC-123: Do Stuff")
+
+  case class UseCaseRefToken(number: UseCaseNumber, title: Option[String]) extends FreeTextRefToken
+
+  val UseCaseRef: Parser[UseCaseRefToken] = braced(
+    "UC" ~> opt("-") ~> "\\d+".r ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
+      case num ~ title => UseCaseRefToken(num.toShort.tag[IsUseCaseNumber], title)
+    })
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Free Text
+
+  sealed trait FreeTextRefToken
+
+  val FreeTextRef: Parser[FreeTextRefToken] = StepLabelRef | UseCaseRef
 
   /**
    * Matches Text and the first step reference. If no refs, then matches the entire input as Text.
    */
-  val TextAndPossibleRef: Parser[(String, Option[String])] = AnyTextThenOptional(true, BracedRef)
+  val TextAndPossibleRef: Parser[(String, Option[FreeTextRefToken])] = anyTextThenOptional(true, FreeTextRef)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Step Text
+
+  object FlowParsers {
+    val ValidRef: Parser[PotentiallyValidRef] = optionallyBraced(StepLabel) ^^ {
+      case r => PotentiallyValidRef(r.asLabel)
+    }
+    val InvalidRef: Parser[InvalidRefToken] = "\\[[A-Za-z0-9 .?]+\\]".r ^^ {
+      case token => InvalidRefToken(token)
+    }
+    val AnyRef: Parser[RefToken] = ValidRef | InvalidRef
+    val FlowRefList: Parser[List[RefToken]] = rep1sep(AnyRef, "," ?)
+
+    def flowClause(style: FlowStyle): Parser[ParsedFlowClause] = style.arrowRegex ~> FlowRefList ^^ {
+      case refs => ParsedFlowClause(style, refs)
+    }
+    val FlowFromClause: Parser[ParsedFlowClause] = flowClause(FlowFromStyle)
+    val FlowToClause: Parser[ParsedFlowClause] = flowClause(FlowToStyle)
+    val FlowClause: Parser[ParsedFlowClause] = FlowFromClause | FlowToClause
+
+    sealed trait RefToken
+    case class PotentiallyValidRef(label: StepLabel) extends RefToken
+    case class InvalidRefToken(token: String) extends RefToken
+
+    case class ParsedFlowClause(style: FlowStyle, refs: List[RefToken])
+
+    /**
+     * Parsers flow clauses from text. Anything left of the flow clauses is considered free-text and not parsed by this
+     * parser.
+     */
+    val TextAndFlowClauses: Parser[(String, List[ParsedFlowClause])] = anyTextThen(false, rep1(FlowClause))
+  }
 }

@@ -24,7 +24,7 @@ object UseCaseEditor {
   }
 
   case class UcModifier(
-    updateFn: UseCase => UcUpdateResult,
+    updateFn: UseCaseUpdater => UcUpdateResult,
     nopFn: Option[Renderer => JsCmd],
     errFn: Option[String => JsCmd])
 }
@@ -45,11 +45,14 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
     State(uc, None, false)
   }
 
-  def loadLatest(ucId: UseCaseIdentId): State = requireResult_!(for {
-      lock   <- Locks.SingleUseCase.readM(ucId, SoleProject.is.id)
+  def loadLatest(ucId: UseCaseIdentId): (State, UseCaseRelations) = requireResult_!(for {
+      lock   <- Locks.UseCaseNumbers.readM(SoleProject.is.id)
       dao    <- daoProvider.forTransaction
       ucRec  <- Box(dao.findUseCaseLatestRev(ucId)) ~> NotFoundResponse()
-    } yield State(UseCasePersistence.load(ucRec, dao, lock)))
+    } yield {
+      val (cp,rels) = UseCasePersistence.load(ucRec, dao, lock)
+      (State(cp), rels)
+    })
 
   def allowSave(before: State, after: UseCase): Boolean = before.prevSave match {
     case None => false
@@ -59,9 +62,13 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
 
 import UseCaseEditorFns._
 
-class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet with SnippetHelpers {
+class UseCaseEditor(initialState: UseCaseEditor.State, val rels: UseCaseRelations) extends StatefulSnippet with SnippetHelpers {
 
-  def this() = this(DefaultInitialState)
+  // Constructor for demo page
+  def this() = this(DefaultInitialState, UseCaseRelations.Empty) // TODO What is the meaning of this constructor?
+
+  // Constructor for real page
+  def this(p: (State, UseCaseRelations)) = this(p._1, p._2)
   def this(ucId: UseCaseIdentId) = this(loadLatest(ucId))
 
   private var state__ = initialState
@@ -77,17 +84,20 @@ class UseCaseEditor(initialState: UseCaseEditor.State) extends StatefulSnippet w
     .toMap
 
   private var renderer__ = Renderer(state, textFieldIds, update, state.prevSave.map(_ => save _))
+  private var ucUpdater__ = UseCaseUpdater(uc, rels)
   @inline final def renderer = renderer__
+  @inline final def ucUpdater = ucUpdater__
 
   protected def setState(newState: State): Unit = {
     state__ = newState
     renderer__ = renderer__.copy(state = newState)
+    ucUpdater__ = UseCaseUpdater(uc, rels)
   }
 
   override def dispatch = { case _ => renderer.render }
 
   def update(m: UcModifier): JsCmd =
-    m.updateFn(uc) match {
+    m.updateFn(ucUpdater) match {
       case Changed(newUc, changes) =>
         setState(State(newUc, state.prevSave, allowSave(state, newUc)))
         renderer.jsRespondToChanges(changes)

@@ -37,33 +37,41 @@ object ParsingUtils extends Logger {
       idsToLabels.get(id) match {
         case Some(newLabel) =>
           if (oldLabel != newLabel) {
-            newText = newText.replace(makeRef(oldLabel), makeRef(newLabel))
+            newText = newText.replace(makeStepRef(oldLabel), makeStepRef(newLabel))
             changed = true
           }
           newRefs += (id -> newLabel)
         case _ =>
-          newText = newText.replace(makeRef(oldLabel), DeletedRef)
+          newText = newText.replace(makeStepRef(oldLabel), DeletedRef)
           changed = true
       }
     }
 
-    if (changed) Some(FreeText(newText, newRefs))
+    if (changed) Some(FreeText(newText, newRefs, ft.refsOwnUc))
     else None
   }
 
   /**
-   * Normalises references in text so that they can be saved to the DB.
-   *
-   * Example: converts [4.0.1.b] to [D.1045].
+   * Normalises text before saving to the database.
    */
-  def normaliseRefs(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): TextWithNormalisedRefs = {
-    val localToDb = savedSteps.ba
-    var r = text
-    for {
-      (localId, label) <- refs
-      dataId <- localToDb.get(localId)
-    } r = r.replace(makeRef(label), makeNormalisedRef(dataId))
-    r.hasNormalisedRefs
+  def normalise(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): NormalisedText = {
+
+    /** Example: converts [4.0.1.b] to [D.1045]. */
+    @inline def normaliseStepRefs(text: String) = {
+      val localToDb = savedSteps.ba
+      var r = text
+      for {
+        (localId, label) <- refs
+        dataId <- localToDb.get(localId)
+      } r = r.replace(makeStepRef(label), makeNormalisedStepRef(dataId))
+      r
+    }
+
+    /** Example: converts [UC-3: Do stuff] to [UC-3] */
+    @inline def normaliseUcRefs(text: String) =
+      ValidUseCaseRefRegex.replaceAllIn(text, makeNormalisedUseCaseRef _)
+
+    normaliseStepRefs(normaliseUcRefs(text)).tag[IsNormalised]
   }
 
   /**
@@ -74,8 +82,8 @@ object ParsingUtils extends Logger {
    * @param text Text with all step references normalised with DB data IDs instead of human-readable labels.
    * @return Text with all step references
    */
-  def realiseNormalisedRefs(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps,
-    stepsAndLabels: StepAndLabelBiMap): String = {
+  def realiseNormalisedStepRefs(text: NormalisedText)(implicit savedSteps: SavedSteps,
+    stepsAndLabels: StepAndLabelBiMap): String @@ InputCorrected = {
 
     val dbIdsToLocalIds = savedSteps.ab
     lazy val localIdsToLabels = stepsAndLabels.value.ab
@@ -83,10 +91,10 @@ object ParsingUtils extends Logger {
     NormalisedRefRegex.replaceAllIn(text, m => {
       val idText = m.group(1)
       val textIdentId = idText.toLong.tag[IsTextIdentId]
-      dbIdsToLocalIds.get(textIdentId).flatMap(nodeId => localIdsToLabels.get(nodeId)).map(makeRef(_)).getOrElse {
+      dbIdsToLocalIds.get(textIdentId).flatMap(nodeId => localIdsToLabels.get(nodeId)).map(makeStepRef).getOrElse {
         warn(s"Unable to realise normalised step reference. ❚ Text: $text ❚ TextIdentId: $textIdentId ❚ DbIdsToLocalIds: $dbIdsToLocalIds ❚ LocalIdsToLabels: $localIdsToLabels")
-        makeInvalidNormalisedRef(idText)
+        makeInvalidStepRef(idText)
       }
-    })
+    }).tag[InputCorrected]
   }
 }

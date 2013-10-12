@@ -18,6 +18,9 @@ import UseCasePersistence._
 
 class UseCaseTest extends FunSpec with TestHelpers with TestData {
 
+  implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
+  implicit def ucTu(uc: UseCase) = UseCaseUpdater(uc, UseCaseRelations.Empty)
+
   describe("filter()") {
     it("should filter a field list by TextField") {
       val x = filter[TextField](FL)
@@ -81,7 +84,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
     describe("Responding to changes") {
       describe("A title change") {
 
-        implicit def stepsAndLabels = EmptyStepAndLabelBiMap
+        implicit def ctx = UcParsingCtx.Empty
 
         def sfvWithText(f: StepField, stepText: StepText) =
           StepFieldValue(f, StepTree(StepNode(X1, 0, 0, Nil) :: Nil), Map(X1 -> stepText))
@@ -142,7 +145,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
   describe("updateTextFieldText()") {
     def test(f: TextField) {
       val uc = f.updateText("The Refusal, Karnivool [7.0]")(MockUc2b.UC).gimme
-      f.lens.get(uc) ==== FreeText("The Refusal, Karnivool [7.0]", Map(X1 -> "7.0".asLabel))
+      f.lens.get(uc) ==== FreeText("The Refusal, Karnivool [7.0]", Map(X1 -> "7.0".asLabel), false)
     }
     it("should update existing text") {
       test(TF1)
@@ -191,7 +194,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
       assertStepsAndLabelsRegen(uc)
     }
     it("should update refs in text") {
-      TF1.lens.get(uc) ==== FreeText("Linking to [7.0.3]", Map(X2 -> "7.0.3".asLabel))
+      TF1.lens.get(uc) ==== FreeText("Linking to [7.0.3]", Map(X2 -> "7.0.3".asLabel), false)
     }
   }
 
@@ -208,7 +211,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
       uc.stepsAndLabels.value.ab ==== Map(X1 -> "7.0".asLabel, X3 -> "7.0.1".asLabel)
     }
     it("should update refs to the step") {
-      TF1.lens.get(uc) ==== FreeText("Linking to [DELETED]",Map.empty)
+      TF1.lens.get(uc) ==== freeText("Linking to [DELETED]")
     }
     it("should not allow removal of the root NC node") {
       NCF.removeStep(X1)(MockUc2a.UC) ==== NoChange
@@ -227,15 +230,18 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
   import MockUc1._
   val rels = 2 + 5 + 3 // 2 text fields + 5 NC steps + 3 EC steps
 
+  implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
+  implicit def ucTu(uc: UseCase) = UseCaseUpdater(uc, UseCaseRelations.Empty)
+
   def loadRev(revId: UseCaseRevId, projectId: ProjectId): UseCaseSaveCheckpoint = {
     val rec = dao.findUseCaseRev(revId).get
-    Locks.SingleUseCase.read(rec.identId, projectId)(load(rec, dao, _))
+    Locks.UseCaseNumbers.read(projectId)(load(rec, dao, _))._1
   }
 
   def reload(cp: UseCaseSaveCheckpoint, projectId: ProjectId) = loadRev(cp.rec, projectId)
 
   def createInitialTextRev(ucIdentId: UseCaseIdentId, fkId: FieldKeyId, text: String) =
-    dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.hasNormalisedRefs)
+    dao.createTextRev(dao.createTextIdent(ucIdentId, fkId), 1, text.tag[IsNormalised])
 
   describe("Loading") {
     it("should set NC.0 to the title for new UCs") {
@@ -296,6 +302,18 @@ class UseCaseTest2 extends FunSpec with TestDatabaseSupport with TestHelpers wit
       loaded.header ==== UseCaseHeader("ahh".validated)
       TF3(loaded.fieldValues).text ==== "look at [3.0.1] and [3.1]!"
       assertStepTree(loaded, NCF, "3.0. Root\n  1. Child [3.0]\n3.1. Other [3.0.1]")
+    }
+
+    it("should realise UC refs") {
+      // Create UCs
+      val pid = newProjectId()
+      createUseCaseIdentAndRev1(pid, UseCaseHeader("First!".validated))
+      val r = createUseCaseIdentAndRev1(pid, UseCaseHeader("SECOND".validated))
+      dao.linkUcToText(r, createInitialTextRev(r, TF1, "I LIKE [UC-1] AND [UC-2]"))
+
+      // Load and verify
+      val loaded = loadRev(r, pid).uc
+      TF1(loaded.fieldValues).text ==== "I LIKE [UC-1: First!] AND [UC-2: SECOND]"
     }
   }
 

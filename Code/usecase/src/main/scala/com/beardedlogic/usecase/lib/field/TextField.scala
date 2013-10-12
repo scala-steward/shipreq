@@ -27,7 +27,7 @@ case class TextField(override val defn: TextFieldDefinition, override val rec: F
 
   override def load(loadCtx: FieldLoadCtx) = {
     val sd = loadCtx.fieldData.find(_.fkId == rec.id).map(_.textRev)
-    val text = sd.map(_.text).getOrElse("".hasNormalisedRefs)
+    val text = sd.map(_.text).getOrElse("".tag[IsNormalised])
     FieldLoadResult.noSteps[Value, SavedData]((savedSteps, stepsAndLabels) => {
       val fv = FreeText.load(text)(savedSteps, stepsAndLabels)
       (fv,sd)
@@ -36,9 +36,9 @@ case class TextField(override val defn: TextFieldDefinition, override val rec: F
 
   override def toString = s"${getClass.getSimpleName}[#${rec.id}:${defn.title}]"
 
-  def updateText(newText: String)(uc: UseCase): UcUpdateResult = {
-    implicit val lens = alens(Lenses.ucTextFieldL, (uc, this))
-    uc.update(this, lens.get.update(newText)(uc.stepsAndLabels))
+  def updateText(newText: String)(u: UseCaseUpdater): UcUpdateResult = {
+    implicit val lens = alens(Lenses.ucTextFieldL, (u.uc, this))
+    u.update(this, lens.get.update(newText)(u.ctx))
   }
 }
 
@@ -47,7 +47,7 @@ case class TextField(override val defn: TextFieldDefinition, override val rec: F
 class TextFieldValueSaver(val v: FreeText, val fkId: FieldKeyId, val stepsAndLabels: StepAndLabelBiMap) extends FieldValueSaver[TextRev] {
   type SavedData = TextRev
 
-  def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = v.textWithNormalisedRefs(savedSteps)
+  def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = v.normalisedText(savedSteps)
 
   override def record_required_? = v.text.nonEmpty
 

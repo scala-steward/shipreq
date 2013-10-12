@@ -116,8 +116,8 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         val fk1 = dao.createFieldKey(FieldKeyType.Text, Some("THE OCEAN"))
         val fk2 = dao.createFieldKey(FieldKeyType.Text, Some("PELAGIAL"))
         val uc1 = createUseCaseIdentAndRev1(newProjectId(), "Haha".validated)
-        val txt1 = dao.createTextRev(dao.createTextIdent(uc1, fk1), 1, "mesopelagic".hasNormalisedRefs)
-        val txt2 = dao.createTextRev(dao.createTextIdent(uc1, fk2), 1, "bathyalpelagic".hasNormalisedRefs)
+        val txt1 = dao.createTextRev(dao.createTextIdent(uc1, fk1), 1, "mesopelagic".tag[IsNormalised])
+        val txt2 = dao.createTextRev(dao.createTextIdent(uc1, fk2), 1, "bathyalpelagic".tag[IsNormalised])
         dao.linkUcToText(uc1, txt1)
         dao.linkUcToText(uc1, txt2)
 

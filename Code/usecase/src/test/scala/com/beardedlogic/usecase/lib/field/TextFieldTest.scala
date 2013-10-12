@@ -3,7 +3,7 @@ package lib.field
 
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
-import com.beardedlogic.usecase.lib.FieldLoadCtx
+import com.beardedlogic.usecase.lib.{UseCaseRelations, UcParsingCtx, FieldLoadCtx}
 import lib.Types._
 import lib.text.FreeText
 import db._
@@ -12,7 +12,8 @@ import test.TestHelpers
 class TextFieldTest extends FunSpec with TestHelpers {
   type V = FreeText
 
-  def parseExact(txt: String)(implicit stepsAndLabels: StepAndLabelBiMap) = {
+  def parseExact(txt: String)(implicit sl: StepAndLabelBiMap) = {
+    implicit val ctx = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
     val v = FreeText.parse(txt)
     v.text should be(txt)
     v
@@ -37,13 +38,13 @@ class TextFieldTest extends FunSpec with TestHelpers {
   }
 
   def ucFieldText(fkId: FieldKeyId, id: TextRevId, text: String) =
-    UcFieldTextWithFK(fkId, UcFieldText(None, None, -1, TextRev((id * 10000).tag[IsTextIdentId], 1, id, text.hasNormalisedRefs)))
+    UcFieldTextWithFK(fkId, UcFieldText(None, None, -1, TextRev((id * 10000).tag[IsTextIdentId], 1, id, text.tag[IsNormalised])))
 
   describe("Loading") {
     val V1 = ucFieldText(TF1.rec, TR1, "Jord")
     val V2 = ucFieldText(TF2.rec, TR2, "puls")
     val LoadCtx = FieldLoadCtx(UCH, List(V1, V2))
-    def load(f: TextField, ctx: FieldLoadCtx) = f.load(ctx).phase2(EmptySavedSteps, EmptyStepAndLabelBiMap)
+    def load(f: TextField, ctx: FieldLoadCtx) = f.load(ctx).phase2(EmptySavedSteps, UcParsingCtx.Empty)
     def loadV(f: TextField, ctx: FieldLoadCtx): FreeText = load(f, ctx)._1
     def loadSD(f: TextField, ctx: FieldLoadCtx) = load(f, ctx)._2
 
@@ -67,8 +68,8 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
     it("should denormalise text with refs") {
       val V3 = ucFieldText(TF1.rec, TR1, "look at [D.143]")
-      val t = TF1.load(FieldLoadCtx(UCH, List(V3))).phase2(SavedSteps1, StepState1)._1
-      t should be(FreeText("look at [S.3]", Map(X3 -> S3)))
+      val t = TF1.load(FieldLoadCtx(UCH, List(V3))).phase2(SavedSteps1, UcParsingCtx.Empty.copy(stepsAndLabels = StepState1))._1
+      t should be(FreeText("look at [S.3]", Map(X3 -> S3), false))
     }
   }
 
@@ -90,14 +91,15 @@ class TextFieldTest extends FunSpec with TestHelpers {
     describe("differsFromPrevSave_?") {
       implicit def ss = SavedSteps1
       implicit def sl = StepState1
+      implicit val ctx = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
 
       it("should compare simple text") {
-        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "ah".hasNormalisedRefs)) ==== false
-        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "30".hasNormalisedRefs)) ==== true
+        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "ah".tag[IsNormalised])) ==== false
+        saver(parseExact("ah")).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "30".tag[IsNormalised])) ==== true
       }
 
       it("should normalise refs before comparison") {
-        val tr = TextRev(TI1, 1, TR1, "look at [D.141]".hasNormalisedRefs)
+        val tr = TextRev(TI1, 1, TR1, "look at [D.141]".tag[IsNormalised])
         saver(FreeText.parse("look at [S.1]")).differsFromPrevSave_?(tr) ==== false
         saver(FreeText.parse("look at [S.2]")).differsFromPrevSave_?(tr) ==== true
       }
@@ -129,7 +131,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
       it("should update changed text") {
         val dao = mockDao
-        val prev = TextRev(TI1, 2, TR1, "OLD".hasNormalisedRefs)
+        val prev = TextRev(TI1, 2, TR1, "OLD".tag[IsNormalised])
         val tr = saver(parseExact("hello")).save(dao, ucId, ucRevId, Some(prev))
         tr.rev ==== 3
         tr.identId ==== TI1
@@ -141,7 +143,7 @@ class TextFieldTest extends FunSpec with TestHelpers {
 
       it("should reuse unchanged text") {
         val dao = mockDao
-        val prev = TextRev(TI1, 2, TR1, "hello".hasNormalisedRefs)
+        val prev = TextRev(TI1, 2, TR1, "hello".tag[IsNormalised])
         val tr = saver(parseExact("hello")).save(dao, ucId, ucRevId, Some(prev))
         tr ==== prev
         verify(dao, times(1)).linkUcToText(any, any)

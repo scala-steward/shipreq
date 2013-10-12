@@ -38,7 +38,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
 
     def testSave(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) = {
       val cpO = save(uc, prev, projectId)
-      val l = load(cpO.getOrElse(prev.get).rec, projectId)
+      val l = load(cpO.getOrElse(prev.get).rec, projectId)._1
       assertUseCasesLookSameToUser(l.uc, uc)
       cpO
     }
@@ -49,7 +49,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(11.tag[IsFieldKeyId],FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(12.tag[IsFieldKeyId],FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Post-Conditions"),FieldKeyRec(13.tag[IsFieldKeyId],FieldKeyType.Text,Some("Post-Conditions")))~>FreeText.empty
-        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,List(StepNode("F1197205450688HDKO1W".tag[IsLocalStepId],1,1,Nil))))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map()),None,None),"F1197205450688HDKO1W".tag[IsLocalStepId]->StepText.empty("F1197205450688HDKO1W".tag[IsLocalStepId])))
+        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,List(StepNode("F1197205450688HDKO1W".tag[IsLocalStepId],1,1,Nil))))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map(),false),None,None),"F1197205450688HDKO1W".tag[IsLocalStepId]->StepText.empty("F1197205450688HDKO1W".tag[IsLocalStepId])))
         ,ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None))~>StepFieldValue(ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None)),StepTree(Nil),Map())
         ,TextField(TextFieldDefinition("Use Case Relationships"),FieldKeyRec(16.tag[IsFieldKeyId],FieldKeyType.Text,Some("Use Case Relationships")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Constraints and Business Rules"),FieldKeyRec(17.tag[IsFieldKeyId],FieldKeyType.Text,Some("Constraints and Business Rules")))~>FreeText.empty
@@ -64,7 +64,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(11.tag[IsFieldKeyId],FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(12.tag[IsFieldKeyId],FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Post-Conditions"),FieldKeyRec(13.tag[IsFieldKeyId],FieldKeyType.Text,Some("Post-Conditions")))~>FreeText.empty
-        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,List(StepNode("F1197205450688HDKO1W".tag[IsLocalStepId],1,1,Nil))))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map()),None,None),"F1197205450688HDKO1W".tag[IsLocalStepId]->StepText.empty("F1197205450688HDKO1W".tag[IsLocalStepId])))
+        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,List(StepNode("F1197205450688HDKO1W".tag[IsLocalStepId],1,1,Nil))))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map(),false),None,None),"F1197205450688HDKO1W".tag[IsLocalStepId]->StepText.empty("F1197205450688HDKO1W".tag[IsLocalStepId])))
         ,ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None))~>StepFieldValue(ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None)),StepTree(Nil),Map())
         ,TextField(TextFieldDefinition("Use Case Relationships"),FieldKeyRec(16.tag[IsFieldKeyId],FieldKeyType.Text,Some("Use Case Relationships")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Constraints and Business Rules"),FieldKeyRec(17.tag[IsFieldKeyId],FieldKeyType.Text,Some("Constraints and Business Rules")))~>FreeText.empty
@@ -79,7 +79,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(11.tag[IsFieldKeyId],FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(12.tag[IsFieldKeyId],FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Post-Conditions"),FieldKeyRec(13.tag[IsFieldKeyId],FieldKeyType.Text,Some("Post-Conditions")))~>FreeText.empty
-        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,Nil))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map()),None,None)))
+        ,NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None))~>StepFieldValue(NormalCourseField(FieldKeyRec(14.tag[IsFieldKeyId],FieldKeyType.NormalAndAlternateCourses,None)),StepTree(List(StepNode("F1197205450689KYVCAS".tag[IsLocalStepId],0,0,Nil))),Map("F1197205450689KYVCAS".tag[IsLocalStepId]->StepText("F1197205450689KYVCAS".tag[IsLocalStepId],FreeText("Do Stuff",Map(),false),None,None)))
         ,ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None))~>StepFieldValue(ExceptionCourseField(FieldKeyRec(15.tag[IsFieldKeyId],FieldKeyType.ExceptionCourses,None)),StepTree(Nil),Map())
         ,TextField(TextFieldDefinition("Use Case Relationships"),FieldKeyRec(16.tag[IsFieldKeyId],FieldKeyType.Text,Some("Use Case Relationships")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Constraints and Business Rules"),FieldKeyRec(17.tag[IsFieldKeyId],FieldKeyType.Text,Some("Constraints and Business Rules")))~>FreeText.empty
@@ -93,7 +93,7 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
       val pid = newProjectId()
       val ui = dao.createUseCaseIdentWithForcedNumber(pid, uc1.number)
       val r1 = dao.createUseCaseRev(ui, 1:Short, uc1.header)
-      val cp1 = Some(load(r1, pid))
+      val cp1 = Some(load(r1, pid)._1)
 
       val cp2 = testSave(uc2, pid, cp1)
       val cp3 = testSave(uc3, pid, cp2)
@@ -128,8 +128,8 @@ class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
   val load = loadUseCase _
   def save = saveUseCase _
 
-  def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) =
-    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)
+  def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None): UseCaseSaveCheckpoint =
+    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)._1
 
   // -------------------------------------------------------------------------------------------------------------------
 

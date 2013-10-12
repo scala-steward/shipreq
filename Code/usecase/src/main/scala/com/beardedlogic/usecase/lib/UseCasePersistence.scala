@@ -4,7 +4,7 @@ package lib
 import Types._
 import field._
 import db._
-import lib.Locks.SingleUseCase
+import lib.Locks.{SingleUseCase, UseCaseNumbers}
 import util.{PreparedLock, BiMap, Lock}
 import UseCaseFns._
 
@@ -17,10 +17,10 @@ case class FieldLoadCtx(header: UseCaseHeader, fieldData: List[UcFieldTextWithFK
 case class FieldLoadResult[+V <: Field#Value, +SD <: Field#SavedData](
   savedSteps: Map[LocalStepId, TextIdentId],
   stepTree: Option[StepTree],
-  phase2: (SavedSteps, StepAndLabelBiMap) => (V, Option[SD]))
+  phase2: (SavedSteps, UcParsingCtx) => (V, Option[SD]))
 
 object FieldLoadResult {
-  def noSteps[V <: Field#Value, SD <: Field#SavedData](phase2: (SavedSteps, StepAndLabelBiMap) => (V, Option[SD])) =
+  def noSteps[V <: Field#Value, SD <: Field#SavedData](phase2: (SavedSteps, UcParsingCtx) => (V, Option[SD])) =
     FieldLoadResult(Map.empty, None, phase2)
 }
 
@@ -36,10 +36,11 @@ case class UseCaseSaveCheckpoint(
 
 object UseCasePersistence {
 
-  def load(ucRev: UseCaseRev, dao: DaoT, lock: Lock.Read[SingleUseCase]): UseCaseSaveCheckpoint = {
+  def load(ucRev: UseCaseRev, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): (UseCaseSaveCheckpoint, UseCaseRelations) = {
 
     @inline def uch = ucRev.header
     @inline def ucn = ucRev.ident.number
+    @inline def projectId = ucRev.ident.projectId
     val fieldList = Defaults.fieldList.value.fields // TODO hardcoded fieldlist
     val loadCtx = FieldLoadCtx(uch, dao.findAllUcFieldData(ucRev.id))
 
@@ -58,17 +59,19 @@ object UseCasePersistence {
     val stepAndLabels = generateStepAndLabelBiMap(stepAndLabelMaps)
     val fieldValues = Map.newBuilder[Field, Field#Value]
     val savedData = Map.newBuilder[Field, Field#SavedData]
+    val rels = CachedUseCaseRelations(dao.summariseUseCases(projectId))
+    val ctx = UcParsingCtx(ucn, uch.title, stepAndLabels, rels)
 
     for ((f, r) <- loadResults) {
-      val (fv, sdOpt) = r.phase2(savedSteps, stepAndLabels)
+      val (fv, sdOpt) = r.phase2(savedSteps, ctx)
       fieldValues += (f -> fv)
       for (sd <- sdOpt) savedData += (f -> sd)
     }
 
-    val uc = UseCase(ucRev.ident, uch, fieldList, fieldValues.result, stepAndLabels)
+    val uc = UseCase(ucn, uch, fieldList, fieldValues.result, stepAndLabels)
     val cp = UseCaseSaveCheckpoint(uc, ucRev, savedSteps, savedData.result)
 
-    cp
+    (cp, rels)
   }
 
   // ===================================================================================================================

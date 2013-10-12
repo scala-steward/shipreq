@@ -3,34 +3,35 @@ package com.beardedlogic.usecase.lib.text
 import scala.collection.immutable.TreeSet
 import scalaz.{NonEmptyList, Cord}
 import com.beardedlogic.usecase.lib.Misc.SingleSpace
+import com.beardedlogic.usecase.lib.UcParsingCtx
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
-import com.beardedlogic.usecase.lib.text.Grammar.{InvalidRefToken, PotentiallyValidRef, ParsedFlowClause}
-import com.beardedlogic.usecase.lib.text.ParsingConfig.{FlowToStyle, FlowFromStyle, makeInvalidRef}
+import com.beardedlogic.usecase.lib.text.ParsingConfig.{FlowToStyle, FlowFromStyle, makeInvalidStepRef}
 import Changes._
 import ParsingUtils._
 
 case class StepTextFactory(stepId: LocalStepId) extends Parser[StepText] {
   override def empty = StepText.empty(stepId)
 
-  override def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, stepsAndLabels: StepAndLabelBiMap) =
+  override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) =
     StepText.load(stepId, text)
 
-  override def parse(text: String)(implicit stepsAndLabels: StepAndLabelBiMap) =
+  override def parse(text: String)(implicit ctx: UcParsingCtx) =
     StepText.parse(stepId, text)
 }
 
 object StepText {
-  def correctInput(input: String): String = input.trim
+  def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
   def empty(stepId: LocalStepId) = StepText(stepId, FreeText.empty, None, None)
 
-  def load(stepId: LocalStepId, text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, stepsAndLabels: StepAndLabelBiMap) = {
+  def load(stepId: LocalStepId, text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
+    implicit val stepsAndLabels = ctx.stepsAndLabels
     val e = empty(stepId)
-    e.updateCorrected(realiseNormalisedRefs(text)).getOrElse(e)
+    e.updateCorrected(realiseNormalisedStepRefs(text)).getOrElse(e)
   }
 
-  def parse(stepId: LocalStepId, text: String)(implicit stepsAndLabels: StepAndLabelBiMap) = {
+  def parse(stepId: LocalStepId, text: String)(implicit ctx: UcParsingCtx) = {
     val e = empty(stepId)
     e.update(text).getOrElse(e)
   }
@@ -61,7 +62,7 @@ case class StepText(
     m
   }
 
-  override def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = normaliseRefs(text, allRefs, savedSteps)
+  override def normalisedText(implicit savedSteps: SavedSteps) = normalise(text, allRefs, savedSteps)
 
   override val hasRefs_? = mainClause.hasRefs_? || flowHasRefs_?(flowFromClause) || flowHasRefs_?(flowToClause)
 
@@ -69,7 +70,7 @@ case class StepText(
 
   protected def textChanged = StepTextChanged(stepId)
 
-  override protected[text] def updateCorrected(newText: String)(implicit stepsAndLabels: StepAndLabelBiMap) = {
+  override protected[text] def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx) = {
     val p = parseTextForFlow(newText)
     val (from, c1) = updateFlowClause(FlowFrom, flowFromClause, p.from)
     val (to, c2) = updateFlowClause(FlowTo, flowToClause, p.to)
@@ -79,7 +80,7 @@ case class StepText(
     Changed(newVal, changes)
   }
 
-  def updateMainClause(newMainClauseText: String)(implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[StepText, Change] =
+  def updateMainClause(newMainClauseText: String)(implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] =
     mainClause.
     update(newMainClauseText).
     mapChanges(_.map(convertFreeTextChange)).
@@ -104,9 +105,10 @@ case class StepText(
    *
    * If found (and valid), they are extracted and normalised.
    */
-  private def parseTextForFlow(input: String)(implicit stepsAndLabels: StepAndLabelBiMap): TextAndRefsS = {
+  private def parseTextForFlow(input: String)(implicit ctx: UcParsingCtx): TextAndRefsS = {
+    import Grammar.FlowParsers._
 
-    val labelLookup = stepsAndLabels.value.ba
+    val labelsToIds = ctx.getLabelsToIds
 
     def parseFlowClause(acc: TextAndRefsC, clause: ParsedFlowClause): TextAndRefsC = {
 
@@ -116,9 +118,9 @@ case class StepText(
         for (token <- clause.refs)
           token match {
             case PotentiallyValidRef(lbl) =>
-              labelLookup.get(lbl) match {
+              labelsToIds.get(lbl) match {
                 case Some(stepId) => good += (stepId -> lbl)
-                case None => bad ::= Cord(makeInvalidRef(lbl))
+                case None => bad ::= Cord(makeInvalidStepRef(lbl))
               }
             case InvalidRefToken(token) =>
               bad ::= Cord(token)
@@ -148,7 +150,7 @@ case class StepText(
     }
 
     // Parse flow clauses
-    val parseResult = Grammar.parseAll(Grammar.TextAndFlows, input)
+    val parseResult = Grammar.parseAll(TextAndFlowClauses, input)
     if (parseResult.successful) {
 
       // Flow clauses found
@@ -164,7 +166,7 @@ case class StepText(
     }
   }
 
-  override def respondToChange(c: Change)(implicit stepsAndLabels: StepAndLabelBiMap) = c match {
+  override def respondToChange(c: Change)(implicit ctx: UcParsingCtx) = c match {
 
     // Update step references when they change
     case _: ExistingStepLabelsChanged => updateRefs
@@ -173,14 +175,15 @@ case class StepText(
     case FlowFromChange(fromIds, id) => processFlowChange(FlowTo, flowToClause, withFlowTo, fromIds, id)
     case FlowToChange(id, toIds) => processFlowChange(FlowFrom, flowFromClause, withFlowFrom, toIds, id)
 
-    case _ => NoChange
+    // Delegate to the main clause
+    case _ => mainClause.respondToChange(c).map(ft => copy(mainClause = ft))
   }
 
   private def withFlowFrom(from: Option[FlowFromClause]) = copy(flowFromClause = from)
   private def withFlowTo(to: Option[FlowToClause]) = copy(flowToClause = to)
 
-  def updateRefs(implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[StepText, Change] = {
-    val main = mainClause.updateRefs.mapChanges(_.map(convertFreeTextChange))
+  def updateRefs(implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] = {
+    val main = mainClause.updateStepRefs.mapChanges(_.map(convertFreeTextChange))
     val from = updateRefs(FlowFrom, flowFromClause)
     val to = updateRefs(FlowTo, flowToClause)
 
@@ -198,10 +201,10 @@ case class StepText(
    *
    * @return A new (different) flow clause. If no change is required, then `None` is returned.
    */
-  private def updateRefs[C <: FlowClause, F <: Flow[C]](f: F, co: Option[C])(implicit stepsAndLabels: StepAndLabelBiMap)
+  private def updateRefs[C <: FlowClause, F <: Flow[C]](f: F, co: Option[C])(implicit ctx: UcParsingCtx)
   : ChangeResult[Option[C], Change] = co match {
     case Some(c) =>
-      lazy val localIdsToLabels = stepsAndLabels.value.ab
+      val localIdsToLabels = ctx.getIdsToLabels
       val changeFound = c.refs.exists {case (localId, label) => localIdsToLabels.get(localId).map(_ != label).getOrElse(true)}
       if (!changeFound) NoChange
       else {
@@ -219,7 +222,7 @@ case class StepText(
 
   private def processFlowChange[C <: FlowClause, F <: Flow[C]](
     f: F, co: Option[C], updateFn: Option[C] => StepText, manyIds: Set[LocalStepId], oneId: LocalStepId)
-    (implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[StepText, Change] =
+    (implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] =
 
     if (oneId == stepId) NoChange
     else {
@@ -230,7 +233,7 @@ case class StepText(
       else {
         // Update required
         val newRefs = if (a)
-          clauseRefs + (oneId -> stepsAndLabels.value.ab(oneId))
+          clauseRefs + (oneId -> ctx.getIdsToLabels(oneId))
         else
           clauseRefs - oneId
         updateFn(f.create(newRefs)) @: textChanged

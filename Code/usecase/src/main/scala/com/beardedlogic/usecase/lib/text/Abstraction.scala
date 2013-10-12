@@ -2,14 +2,15 @@ package com.beardedlogic.usecase.lib.text
 
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.change._
+import com.beardedlogic.usecase.lib.UcParsingCtx
 
 trait Parser[T <: ParsedText[T]] {
 
   def empty: T
 
-  def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, stepsAndLabels: StepAndLabelBiMap): T
+  def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): T
 
-  def parse(text: String)(implicit stepsAndLabels: StepAndLabelBiMap): T
+  def parse(text: String)(implicit ctx: UcParsingCtx): T
 }
 
 trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
@@ -20,20 +21,18 @@ trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
   @inline final def isEmpty = text.isEmpty
   @inline final def nonEmpty = text.nonEmpty
 
-  def textWithNormalisedRefs(implicit savedSteps: SavedSteps): TextWithNormalisedRefs
-
-  //  def refs: Refs
+  def normalisedText(implicit savedSteps: SavedSteps): NormalisedText
 
   /** Does this text contain any step references? */
   def hasRefs_? : Boolean
 
-  def update(input: String)(implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[Self, Change] = {
+  def update(input: String)(implicit ctx: UcParsingCtx): ChangeResult[Self, Change] = {
     val newText = correctInput(input)
     if (text == newText) NoChange
     else updateCorrected(newText)
   }
 
-  protected def correctInput(input: String): String
+  protected def correctInput(input: String): String @@ InputCorrected
 
-  protected def updateCorrected(newText: String)(implicit stepsAndLabels: StepAndLabelBiMap): ChangeResult[Self, Change]
+  protected def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx): ChangeResult[Self, Change]
 }
