@@ -34,7 +34,7 @@ trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
     else updateCorrected(newText)
   }
 
-  protected def correctInput(input: String): String
+  protected def correctInput(input: String): String @@ InputCorrected
 
-  protected def updateCorrected(newText: String)(implicit ctx: UcParsingCtx): ChangeResult[Self, Change]
+  protected def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx): ChangeResult[Self, Change]
 }

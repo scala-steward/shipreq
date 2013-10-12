@@ -10,9 +10,9 @@ import ParsingUtils._
 
 object FreeText extends Parser[FreeText] {
 
-  override val empty: FreeText = parseCorrected("")(UcParsingCtx.Empty)
+  override val empty: FreeText = parseCorrected("".tag[InputCorrected])(UcParsingCtx.Empty)
 
-  def correctInput(input: String) = input.trim
+  def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
   override def load(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
     implicit val stepsAndLabels = ctx.stepsAndLabels
@@ -22,7 +22,7 @@ object FreeText extends Parser[FreeText] {
   override def parse(text: String)(implicit ctx: UcParsingCtx) =
     parseCorrected(correctInput(text))
 
-  def parseCorrected(text: String)(implicit ctx: UcParsingCtx) = {
+  def parseCorrected(text: String @@ InputCorrected)(implicit ctx: UcParsingCtx) = {
     import Grammar.{parse => parseG, _}
     lazy val labelsToIds = ctx.getLabelsToIds
 
@@ -102,7 +102,7 @@ case class FreeText(text: String, refs: Map[LocalStepId, StepLabel], refsOwnUc: 
 
   protected def textChanged = TextChanged
 
-  override protected def updateCorrected(newText: String)(implicit ctx: UcParsingCtx) = {
+  override protected def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx) = {
     FreeText.parseCorrected(newText) @: textChanged
   }
 

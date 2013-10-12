@@ -21,7 +21,7 @@ case class StepTextFactory(stepId: LocalStepId) extends Parser[StepText] {
 }
 
 object StepText {
-  def correctInput(input: String): String = input.trim
+  def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
   def empty(stepId: LocalStepId) = StepText(stepId, FreeText.empty, None, None)
 
@@ -70,7 +70,7 @@ case class StepText(
 
   protected def textChanged = StepTextChanged(stepId)
 
-  override protected[text] def updateCorrected(newText: String)(implicit ctx: UcParsingCtx) = {
+  override protected[text] def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx) = {
     val p = parseTextForFlow(newText)
     val (from, c1) = updateFlowClause(FlowFrom, flowFromClause, p.from)
     val (to, c2) = updateFlowClause(FlowTo, flowToClause, p.to)

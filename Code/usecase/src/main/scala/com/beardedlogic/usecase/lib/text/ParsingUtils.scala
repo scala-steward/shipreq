@@ -75,7 +75,7 @@ object ParsingUtils extends Logger {
    * @return Text with all step references
    */
   def realiseNormalisedRefs(text: TextWithNormalisedRefs)(implicit savedSteps: SavedSteps,
-    stepsAndLabels: StepAndLabelBiMap): String = {
+    stepsAndLabels: StepAndLabelBiMap): String @@ InputCorrected = {
 
     val dbIdsToLocalIds = savedSteps.ab
     lazy val localIdsToLabels = stepsAndLabels.value.ab
@@ -87,6 +87,6 @@ object ParsingUtils extends Logger {
         warn(s"Unable to realise normalised step reference. ❚ Text: $text ❚ TextIdentId: $textIdentId ❚ DbIdsToLocalIds: $dbIdsToLocalIds ❚ LocalIdsToLabels: $localIdsToLabels")
         makeInvalidNormalisedRef(idText)
       }
-    })
+    }).tag[InputCorrected]
   }
 }
