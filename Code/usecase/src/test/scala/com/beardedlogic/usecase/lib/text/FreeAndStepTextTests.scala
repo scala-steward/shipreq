@@ -17,7 +17,8 @@ import ParsingConfig._
 
 object FreeAndStepTextTests extends TestHelpers2 {
 
-  implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx((3:Short).tag[IsUseCaseNumber], "New Third", sl, Rels)
+  val UCN = (3:Short).tag[IsUseCaseNumber]
+  implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx(UCN, "New Third", sl, Rels)
   implicit def autoNum(i: Int) = i.toShort.tag[IsUseCaseNumber]
   implicit def autoUCId(i: Int) = i.toLong.tag[IsUseCaseIdentId]
 
@@ -175,15 +176,33 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       }
     } // end parsing
 
-    describe("Loading free text") {
+    describe("Loading text") {
       it("should load simple text") {
         val x = T.parser.load("Hehe".hasNormalisedRefs)(BiMap.empty, StepState1)
         T.assert(x, "Hehe", Map.empty, false)
       }
 
-      it("should set text with normalised refs") {
+      it("should denormalise step refs") {
         val x = T.parser.load("Hehe [D.100]".hasNormalisedRefs)(savedSteps(100 -> X2), StepState1)
         T.assert(x, "Hehe [S.2]", Map(X2 -> S2), false)
+      }
+
+      it("should denormalise UC refs") {
+        val x = T.parser.load("Hehe [UC-2] and [UC-1]!".hasNormalisedRefs)(BiMap.empty, StepState1)
+        T.assert(x, "Hehe [UC-2: Second] and [UC-1: First]!", Map.empty, false)
+      }
+
+      it("should denormalise UC self-refs") {
+        val x = T.parser.load("Hehe [UC-3]!".hasNormalisedRefs)(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
+        T.assert(x, "Hehe [UC-3: Old Third]!", Map.empty, true)
+      }
+    }
+
+    describe("Normalising text") {
+      it("should normalise UC refs to [UC-n]") {
+        val txt = "Hehe [UC-2: Second] and [UC-1: First]!"
+        val nt = T.parse(txt).textWithNormalisedRefs(BiMap.empty)
+        nt shouldBe "Hehe [UC-2] and [UC-1]!"
       }
     }
 

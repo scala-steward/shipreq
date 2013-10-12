@@ -57,12 +57,18 @@ object ParsingUtils extends Logger {
    * Example: converts [4.0.1.b] to [D.1045].
    */
   def normaliseRefs(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): TextWithNormalisedRefs = {
+
+    // Normalise step refs
     val localToDb = savedSteps.ba
     var r = text
     for {
       (localId, label) <- refs
       dataId <- localToDb.get(localId)
     } r = r.replace(makeStepRef(label), makeNormalisedStepRef(dataId))
+
+    // Normalise UC refs
+    r = ValidUseCaseRefRegex.replaceAllIn(r, m => RefBraceLs + "UC-" + m.group(1) + RefBraceRs)
+
     r.hasNormalisedRefs
   }
 
