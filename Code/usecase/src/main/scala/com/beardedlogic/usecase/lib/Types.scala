@@ -1,15 +1,16 @@
-package com.beardedlogic.usecase
-package lib
+package com.beardedlogic.usecase.lib
 
+import com.beardedlogic.usecase.db.{UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
+import com.beardedlogic.usecase.feature.uc.change.{Change, ChangeResultF}
+import com.beardedlogic.usecase.feature.uc.field.Field
+import com.beardedlogic.usecase.feature.uc.UseCase
+import com.beardedlogic.usecase.feature.uc.change.UcChangeDomain
+import com.beardedlogic.usecase.feature.{ExternalId, Inspection}
+import com.beardedlogic.usecase.util.{AppliedLens, BiMap}
 import java.lang.{Long => JJLong, Short => JJShort}
 import net.liftweb.common.Box
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import scalaz.{LensFamily, Monoid, Name, Value}
-
-import change.{Change, ChangeResultF}
-import field.Field
-import db.{UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
-import util.{AppliedLens, BiMap}
 
 /**
  * @since 30/05/2013
@@ -200,7 +201,9 @@ object Types {
   // Type class instances
 
   implicit object JsCmdMonoid extends Monoid[JsCmd] {
+
     import JsCmds.{_Noop => Noop}
+
     override def zero = Noop
     override def append(a: JsCmd, b: => JsCmd) =
       if (a eq Noop) b

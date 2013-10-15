@@ -8,7 +8,8 @@ import scalaz.{-\/,\/-}
 
 import app.AppSiteMap
 import db.CreateProjectResult
-import com.beardedlogic.usecase.lib.{InputValidator, SingleOpStatefulSnippet}
+import feature.InputValidator
+import lib.SingleOpStatefulSnippet
 import util.HtmlTransformExt.ajaxSubmitOnClick
 
 /**

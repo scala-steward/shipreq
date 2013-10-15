@@ -8,7 +8,8 @@ import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc._
 import scala.xml.Text
 import scalaz.{-\/,\/-}
-import lib.{InputValidator, SingleOpStatefulSnippet}
+import lib.SingleOpStatefulSnippet
+import feature.InputValidator
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import Login._
 

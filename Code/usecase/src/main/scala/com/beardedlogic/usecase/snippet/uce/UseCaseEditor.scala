@@ -7,13 +7,14 @@ import net.liftweb.http._
 import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
+import app.{Defaults, DI}
 import app.RequestVars.SoleProject
 import db.UseCaseHeader
-import lib._
-import change._
-import field._
-import Types._
-import app.{Defaults, DI}
+import lib.{SnippetHelpers, Locks, StaticSnippetHelpers}
+import lib.Types._
+import feature.uc._
+import feature.uc.change._
+import feature.uc.field._
 
 object UseCaseEditor {
 

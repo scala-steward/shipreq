@@ -24,22 +24,23 @@ import scalaz.{Lens, NonEmptyList, Value}
 import scala.annotation.tailrec
 import scala.util.Random
 
-import lib.change._
-import lib.tree._
-import lib.field._
-import lib.text._
-import lib._
 import db._
+import feature.uc._
+import feature.uc.change._
+import feature.uc.field._
+import feature.uc.step._
+import feature.uc.text._
+import lib.DebugImplicits
 import security.SecurityProvider
 import util._
 
-import Types._
+import app.DI
+import lib.Types._
 import Lenses._
 import LensFns._
 import NodeUtils._
 import TreeOps._
 import Changes.ExistingStepLabelsChanged
-import app.DI
 
 case class FixedUser(ud: Option[UserDescriptor]) extends SecurityProvider {
   override def loggedInUser = ud

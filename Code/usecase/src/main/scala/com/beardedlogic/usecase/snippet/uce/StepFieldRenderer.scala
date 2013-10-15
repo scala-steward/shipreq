@@ -13,13 +13,13 @@ import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
-import com.beardedlogic.usecase.lib.tree.TreeLike
-import com.beardedlogic.usecase.lib._
+import feature.uc.change.UseCaseUpdater
+import feature.uc.field._
+import feature.uc.step.{StepTree, StepNode, TreeLike}
+import lib.Types._
 import util.HtmlTransformExt._
 import util.HtmlTransformExt.ajaxOnClick
 import util.JsExt._
-import lib.field._
-import lib.Types._
 import Renderer._
 import UseCaseEditor._
 

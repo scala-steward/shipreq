@@ -10,8 +10,10 @@ import xml.NodeSeq
 
 import db.UseCaseRev
 import lib.Types._
-import lib.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
-import lib.{UseCaseRelations, UseCaseUpdater, UseCaseSaveCheckpoint, StepNode, UseCase}
+import feature.uc._
+import change.UseCaseUpdater
+import step.StepNode
+import step.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
 import Renderer.TitleId
 import test.{CssTestHelpers, TestData, TestHelpers}
 import UseCaseEditor._

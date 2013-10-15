@@ -5,8 +5,8 @@ import org.scalacheck._
 import test.DataGenerators._
 import test.{TestDatabaseHelpers, TestDB}
 import db.UseCaseHeader
-import lib.{UseCase, UseCaseSaveCheckpoint}
-import lib.change.{Changed, ChangeFailure, NoChange}
+import feature.uc.{UseCase, UseCaseSaveCheckpoint}
+import feature.uc.change.{Changed, ChangeFailure, NoChange}
 import lib.Types._
 
 /**

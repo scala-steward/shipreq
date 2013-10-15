@@ -49,7 +49,7 @@ libraryDependencies ++= {
 
 
 
-initialCommands += "import scalaz.{Name,Need,Value}, com.beardedlogic.usecase, usecase.db._, usecase.lib, lib._, field._, tree._, text._, usecase.util._, Types._"
+initialCommands += "import scalaz.{Name,Need,Value}, com.beardedlogic.usecase, usecase.db._, usecase.lib.Types._, usecase.feature.uc, uc._, uc.field._, uc.step._, uc.text._, usecase.util._"
 
 EclipseKeys.executionEnvironment := Some(EclipseExecutionEnvironment.JavaSE17)
 

@@ -4,8 +4,7 @@ package db
 import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import scalaz.{-\/,\/-}
-import lib.field.FieldDefinition
-import lib.InputValidator
+import feature.uc.field.FieldDefinition
 import lib.Locks.{UseCaseNumbers, SingleUseCase}
 import lib.Types._
 import security.PasswordAndSalt

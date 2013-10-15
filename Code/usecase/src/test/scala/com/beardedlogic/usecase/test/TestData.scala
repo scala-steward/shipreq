@@ -1,14 +1,15 @@
 package com.beardedlogic.usecase
 package test
 
-import lib._
-import Types._
-import UseCaseFns._
+import lib.Types._
 import db.UseCaseHeader
-import field._
+import feature.uc._
+import feature.uc.field._
+import feature.uc.text.{FlowFrom, FlowTo, StepText, FreeText}
+import feature.uc.step.{StepNode, StepTree}
 import test.NodeUtils._
-import text.{FlowFrom, FlowTo, StepText, FreeText}
 import app.Defaults
+import UseCaseFns._
 
 trait TestData extends TestHelpers2 {
 

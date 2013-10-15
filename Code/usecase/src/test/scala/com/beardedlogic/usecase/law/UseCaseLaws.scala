@@ -7,11 +7,12 @@ import org.scalatest.FunSuite
 import org.scalatest.prop._
 import Prop._
 
-import lib._
-import field._
+import lib.Types._
+import feature.uc._
+import feature.uc.field._
+import feature.uc.step._
 import test.TestDatabaseSupport
 import test.DataGenerators._
-import Types._
 import UseCaseFns._
 import app.Defaults
 

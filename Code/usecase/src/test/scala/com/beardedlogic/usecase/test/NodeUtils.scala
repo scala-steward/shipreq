@@ -3,8 +3,8 @@ package test
 
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.{ Map => MutableMap }
-import lib._
-import Types._
+import lib.Types._
+import feature.uc.step._
 import StepLabels.LabelMakers
 
 /**

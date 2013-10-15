@@ -10,8 +10,9 @@ import org.apache.shiro.authc.UsernamePasswordToken
 import scalaz.{\/, -\/, \/-}
 
 import app.AppSiteMap
-import lib._
-import Types._
+import feature.InputValidator
+import lib.SingleOpStatefulSnippet
+import lib.Types._
 import mail.RegistrationEmails
 import db.{DaoT, UserRegistrationInfo, UserRegistrationResult}
 import security.PasswordAndSalt

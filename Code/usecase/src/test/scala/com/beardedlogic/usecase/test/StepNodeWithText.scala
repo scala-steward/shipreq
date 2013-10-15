@@ -1,10 +1,9 @@
 package com.beardedlogic.usecase
 package test
 
-import lib._
-import Types._
-import tree.TreeNode
-import StepLabels._
+import lib.Types.LocalStepId
+import feature.uc.step.{StepNode, TreeNode}
+import feature.uc.step.StepLabels._
 
 case class StepNodeWithText(
   id: LocalStepId,

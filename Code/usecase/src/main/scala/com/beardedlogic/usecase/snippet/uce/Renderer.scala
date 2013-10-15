@@ -12,10 +12,10 @@ import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
-import lib.change._
-import lib.field._
+import feature.uc.change._
+import feature.uc.field._
+import feature.FlowGraph
 import lib.Types._
-import lib.{FlowGraph, UcChangeDomain}
 import util.JsExt._
 import Changes._
 import Renderer._

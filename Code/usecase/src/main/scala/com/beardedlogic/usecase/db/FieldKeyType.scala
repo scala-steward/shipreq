@@ -3,7 +3,7 @@ package db
 
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
-import lib.field._
+import feature.uc.field._
 import lib.Types._
 
 /**

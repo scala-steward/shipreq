@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase.test
 
 import com.beardedlogic.usecase.lib.Types._
-import com.beardedlogic.usecase.lib.StepLabels._
+import com.beardedlogic.usecase.feature.uc.step.StepLabels._
 
 /**
  * Very old way of generating trees.

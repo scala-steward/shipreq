@@ -1,7 +1,7 @@
 package com.beardedlogic.usecase
 package db
 
-import lib.ExternalId
+import feature.ExternalId
 import lib.Types._
 
 

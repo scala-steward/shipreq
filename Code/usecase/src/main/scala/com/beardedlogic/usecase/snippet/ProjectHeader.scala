@@ -7,7 +7,8 @@ import net.liftweb.util.Helpers._
 import scalaz.{\/-, -\/}
 
 import db.UpdateProjectResult
-import lib.{InputValidator, SingleOpStatefulSnippet}
+import feature.InputValidator
+import lib.SingleOpStatefulSnippet
 import lib.Types._
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger

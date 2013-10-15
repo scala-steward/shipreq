@@ -10,10 +10,12 @@ import scala.slick.jdbc.{StaticQuery => Q}
 import slick.session.{Database, Session}
 import Q.interpolation
 
-import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import com.beardedlogic.usecase.lib.{UseCaseRelations, InputValidator, Locks, UseCasePersistence, UseCase, UseCaseSaveCheckpoint}
-import lib.Types._
 import app.{Defaults, DI}
+import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
+import lib.Types._
+import lib.Locks
+import feature.uc.{UseCase, UseCaseSaveCheckpoint, UseCasePersistence}
+import feature.InputValidator
 
 object TestDB {
 

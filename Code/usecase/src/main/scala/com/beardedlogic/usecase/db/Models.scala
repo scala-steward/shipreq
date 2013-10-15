@@ -4,8 +4,8 @@ package db
 import org.joda.time.DateTime
 import scala.reflect.ClassTag
 import lib.Types._
-import lib.UcChangeDomain
-import lib.field._
+import feature.uc.change.UcChangeDomain
+import feature.uc.field._
 
 // ===================================================================================================================
 // User

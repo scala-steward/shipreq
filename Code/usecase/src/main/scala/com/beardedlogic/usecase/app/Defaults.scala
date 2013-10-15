@@ -4,7 +4,7 @@ package app
 import net.liftweb.common.Logger
 import scalaz.{Name, Need}
 import db.{DaoT, FieldListRec}
-import lib.field.{ExceptionCourseFieldDefinition, NormalCourseFieldDefinition, TextFieldDefinition, FieldDefinition}
+import feature.uc.field.{ExceptionCourseFieldDefinition, NormalCourseFieldDefinition, TextFieldDefinition, FieldDefinition}
 
 object Defaults extends Logger {
 

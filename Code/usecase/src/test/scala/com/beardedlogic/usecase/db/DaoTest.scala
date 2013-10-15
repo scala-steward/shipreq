@@ -4,10 +4,8 @@ package db
 import org.scalatest.FunSpec
 import test.TestDatabaseSupport
 import slick.jdbc.StaticQuery.interpolation
-import lib.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
 import lib.Types._
-import AutoExternaliseIds._
-import app.Defaults
+import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
   implicit def str2uch(title: String @@ Validated): UseCaseHeader = UseCaseHeader(title)

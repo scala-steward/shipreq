@@ -8,18 +8,19 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scalaz.Memo
 
-import lib._
-import field._
-import tree._
-import change.NoChange
 import db.{UseCaseHeader, FieldListRec}
+import lib.Misc.removeAllWhitespace
+import lib.Types._
+import feature.InputValidator
+import feature.uc._
+import feature.uc.change.{UseCaseUpdater, NoChange}
+import feature.uc.field._
+import feature.uc.step._
 import text.{StepText, FreeText}
-import Misc.removeAllWhitespace
 import StepField.StartingLabelIndices
 import StepLabels._
 import text.ParsingConfig._
 import TreeOps._
-import Types._
 import UseCaseFns.generateStepAndLabelBiMap
 
 object DataGenerators extends Logger {

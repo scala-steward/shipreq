@@ -2,13 +2,14 @@ package com.beardedlogic.usecase
 package snippet
 
 import net.liftweb.http.SHtml
-import net.liftweb.http.js.{JsCmds, JsCmd}
+import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import scalaz.{\/, -\/, \/-}
 
 import app.AppSiteMap
 import db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary2}
-import lib.{InputValidator, Locks, ExternalId, Misc, SingleOpStatefulSnippet}
+import feature.InputValidator
+import lib.{Locks, Misc, SingleOpStatefulSnippet}
 import util.NonEmptyTemplate
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.{JsTextTrigger, JqExpr, JsJsonTrigger, JsHtmlTrigger}

@@ -10,7 +10,7 @@ import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 
 import AppConfig.BaseUrl
 import lib.Types._
-import lib.{ExternalId, ExternalIdConverter}
+import feature.{ExternalId, ExternalIdConverter}
 import security.{PermissionCheck, Oshiro}
 
 object AppSiteMap {
