@@ -1,24 +1,82 @@
-#myModal h4 {color:#f08; ont-weight:bold}
-#myModal .modal-dialog {
+#help-refs .modal-body h4 {color:#d07; ont-weight:bold; margin:0 0 0.3ex 0}
+#help-refs .modal-body h4:not(:first-child) {margin-top:3ex}
+#help-refs .modal-dialog {
     width:85%;
-	max-width: 90ex;
+	max-width: 96ex;
 }
-#myModal ul {
+#help-refs ul {
   padding-left:16px;
 }
-#myModal li+li {margin-top:2ex}
-#myModal li p {
-  margin-bottom:0
+#help-refs li+li {margin-top:2.5ex}
+#help-refs .modal-body  p {
+  margin-bottom:0;
 }
-#myModal li p.gap {
-  margin-top:2ex
+#help-refs .modal-body  p.gap {
+  margin-top:1ex
 }
-#myModal li div.code {
+#help-refs div.code {
   margin-left:3ex;
 }
-#myModal li code {
+#help-refs code {
   color:#00c;
   background:#ddd
 }
-#myModal .mvmt {margin-left: 4ex; margin-top:1ex}
-#myModal .mvmt td {padding-left: 4ex}
+#help-kb .mvmt {margin-left: 4ex; margin-top:2em}
+#help-kb .mvmt td {padding-left: 4ex; line-height:2em}
+
+.navbar .breadcrumb {margin-top:7px; margin-bottom:0; background:inherit}
+.breadcrumb .dropdown-toggle {color:#444; text-decoration:none }
+.breadcrumb .dropdown-menu :not(.current) {color:rgb(42, 100, 150)}
+.breadcrumb .dropdown-menu .current {color:#999}
+
+.save-row {text-align:right; padding-top:8px}
+
+table.fieldFrame { margin-top: 22px; width: 100%; }
+textarea {
+    overflow:hidden !important;
+    resize:none;
+}
+table.step .ctl { text-align: right; width: 116px; }
+.addTailStep button, table.step .ctl button {font-size:16px; line-height:16px; padding:4px; width:26px}
+.title th, .title td {vertical-align:middle}
+.title th {white-space:nowrap;}
+.title th h2 {margin:0; padding-right:1ex}
+table.fieldFrame tr.fieldFrame > th {padding-right:1ex}
+.uce { margin: 1.4em 0.9cm 0 0.9cm; }
+table.step .lbl { padding-right:0.8ex; }
+
+/**********************************************************************************************************************/
+
+.step.noDel .delete, .step[data-lvl="0"] .indentDec, [data-lvl="4"] .indentInc { visibility: hidden !important; }
+.courses-n .step:first-child .indentInc, .courses-e .step:first-child .indentInc, .step[data-lvl="0"] + .step[data-lvl="1"] .indentInc, .step[data-lvl="1"] + .step[data-lvl="2"] .indentInc, .step[data-lvl="2"] + .step[data-lvl="3"] .indentInc, .step[data-lvl="3"] + .step[data-lvl="4"] .indentInc, .step[data-lvl="4"] + .step[data-lvl="5"] .indentInc { visibility: hidden !important; }
+.uce form { display: inline; }
+.uce textarea, .uce input[type="text"] { color: #2d2d2d; }
+.uce textarea { width: 100%; }
+.uce textarea:hover { border: solid 1px #ccc; background: #eee; }
+.uce textarea:focus { border: solid 1px #373; background: #f8fff8; color: #000; }
+
+_uce .title, .uce .title td, .uce .title textarea { width: 100%; }
+_uce .title th, .uce .title textarea { font-size: 150%; font-weight: bold; vertical-align: middle; }
+_uce .title th { padding-right: 0.6em; }
+
+table.fieldFrame tr.fieldFrame > th { color: #555; font-weight: normal; width: 20ex; text-align: left; line-height: 125%; padding-right:1ex}
+table.fieldFrame tr.fieldFrame > th, table.fieldFrame tr.fieldFrame > td { padding-bottom: 1.5em; }
+table.fieldFrame th, table.fieldFrame td { vertical-align: top; }
+table.fieldFrame textarea { border: dashed 1px #ccc; }
+[data-lvl="0"] .lbl { padding-left: 0ex; width: 5ex; }
+[data-lvl="1"] .lbl { padding-left: 4ex; width: 3ex; }
+[data-lvl="2"] .lbl { padding-left: 7ex; width: 3ex; }
+[data-lvl="3"] .lbl { padding-left: 10ex; width: 4ex; }
+[data-lvl="4"] .lbl { padding-left: 14ex; width: 3ex; }
+table.step { width: 100%; }
+table.step .lbl { padding-top: 4px; color: #444; }
+table.step .txt { overflow: hidden; }
+table.step + .step, table.step + .stepTransport, .stepTransport + table.step { margin-top: 1ex; }
+table.step[data-lvl="0"] .label, table.step[data-lvl="0"] textarea { font-weight: bold; }
+.typing .step .lbl:hover, .typing .step .lbl *:hover { cursor: pointer; }
+.addTailStep { text-align: right; }
+.courses-a .step:first-child .indentInc { /* ↑↱ */ }
+.courses-a .step:first-child .indentInc span { display: none; }
+.courses-a .step:first-child .indentInc:after { content: "↑"; }
+#flowgraph svg { max-width: 100%; cursor: default; }
+#flowgraph svg g.step { cursor: pointer; }
