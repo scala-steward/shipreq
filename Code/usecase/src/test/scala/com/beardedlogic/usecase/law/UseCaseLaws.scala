@@ -13,6 +13,7 @@ import test.TestDatabaseSupport
 import test.DataGenerators._
 import Types._
 import UseCaseFns._
+import app.Defaults
 
 class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
 

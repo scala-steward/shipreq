@@ -3,7 +3,7 @@ package security
 
 import org.apache.shiro.realm.AuthenticatingRealm
 import org.apache.shiro.authc._
-import lib.DI.DaoProvider
+import app.DI.DaoProvider
 
 /**
  * Bridge between Shiro and this app. Performs authentication checks.

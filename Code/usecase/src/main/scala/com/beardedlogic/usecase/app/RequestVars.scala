@@ -4,7 +4,7 @@ package app
 import net.liftweb.common.{Box, Full}
 import net.liftweb.http.RequestVar
 import db.{UseCaseSummary, Project}
-import lib.DI.DaoProvider
+import DI.DaoProvider
 import lib.Types._
 import lib.SnippetHelpers._
 

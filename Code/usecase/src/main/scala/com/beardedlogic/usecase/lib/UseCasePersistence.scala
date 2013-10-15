@@ -7,6 +7,7 @@ import db._
 import lib.Locks.{SingleUseCase, UseCaseNumbers}
 import util.{PreparedLock, BiMap, Lock}
 import UseCaseFns._
+import app.Defaults
 
 // ---------------------------------------------------------------------------------------------------------------------
 

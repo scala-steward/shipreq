@@ -11,8 +11,9 @@ import slick.session.{Database, Session}
 import Q.interpolation
 
 import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import com.beardedlogic.usecase.lib.{UseCaseRelations, InputValidator, Defaults, Locks, UseCasePersistence, UseCase, DI, UseCaseSaveCheckpoint}
+import com.beardedlogic.usecase.lib.{UseCaseRelations, InputValidator, Locks, UseCasePersistence, UseCase, UseCaseSaveCheckpoint}
 import lib.Types._
+import app.{Defaults, DI}
 
 object TestDB {
 

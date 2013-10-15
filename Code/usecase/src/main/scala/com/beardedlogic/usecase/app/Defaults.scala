@@ -1,10 +1,10 @@
 package com.beardedlogic.usecase
-package lib
+package app
 
 import net.liftweb.common.Logger
 import scalaz.{Name, Need}
-import db._
-import field._
+import db.{DaoT, FieldListRec}
+import lib.field.{ExceptionCourseFieldDefinition, NormalCourseFieldDefinition, TextFieldDefinition, FieldDefinition}
 
 object Defaults extends Logger {
 

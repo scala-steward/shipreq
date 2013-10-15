@@ -39,6 +39,7 @@ import LensFns._
 import NodeUtils._
 import TreeOps._
 import Changes.ExistingStepLabelsChanged
+import app.DI
 
 case class FixedUser(ud: Option[UserDescriptor]) extends SecurityProvider {
   override def loggedInUser = ud

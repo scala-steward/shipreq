@@ -11,7 +11,7 @@ import net.liftweb.util.Mailer.{MailTypes, From, Subject}
 import net.liftweb.util.{CssSel, Mailer}
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
-import com.beardedlogic.usecase.app.{AppConfig, AppSiteMap}
+import com.beardedlogic.usecase.app.{DI, AppConfig, AppSiteMap}
 import com.beardedlogic.usecase.db.UserDescriptor
 import com.beardedlogic.usecase.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
 import com.beardedlogic.usecase.util.HttpResponses.ShouldNeverHappenResponse

@@ -8,6 +8,7 @@ import db.UseCaseHeader
 import field._
 import test.NodeUtils._
 import text.{FlowFrom, FlowTo, StepText, FreeText}
+import app.Defaults
 
 trait TestData extends TestHelpers2 {
 

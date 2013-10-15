@@ -6,9 +6,8 @@ import net.liftmodules.scamljade.ScamlJade
 import net.liftweb.util.{Props, Mailer}
 
 import com.beardedlogic.usecase._
-import app.AppSiteMap
+import app.{Defaults, AppSiteMap}
 import db.DB
-import lib.Defaults
 import security.Oshiro
 
 /**

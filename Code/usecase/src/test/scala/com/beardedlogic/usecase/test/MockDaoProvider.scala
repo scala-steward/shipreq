@@ -3,7 +3,7 @@ package test
 
 import org.scalatest.mock.MockitoSugar
 import com.beardedlogic.usecase.db.{DaoS, DaoT, DaoProvider}
-import com.beardedlogic.usecase.lib.DI
+import app.DI
 
 /**
  * [[com.beardedlogic.usecase.db.DaoProvider]] that creates and uses a mock DAO.

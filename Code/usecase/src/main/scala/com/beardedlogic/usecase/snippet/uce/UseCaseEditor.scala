@@ -13,6 +13,7 @@ import lib._
 import change._
 import field._
 import Types._
+import app.{Defaults, DI}
 
 object UseCaseEditor {
 

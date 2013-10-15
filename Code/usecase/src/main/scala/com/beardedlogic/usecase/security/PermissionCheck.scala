@@ -4,8 +4,8 @@ package security
 import scalaz.{\/, -\/, \/-}
 import net.liftweb.common.Logger
 import db.UserDescriptor
-import lib.DI
 import lib.Types.UserId
+import app.DI
 
 object PermissionCheck {
 

@@ -5,7 +5,7 @@ import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import scalaz.{-\/,\/-}
 import lib.field.FieldDefinition
-import lib.{InputValidator, Defaults}
+import lib.InputValidator
 import lib.Locks.{UseCaseNumbers, SingleUseCase}
 import lib.Types._
 import security.PasswordAndSalt
