@@ -1,5 +1,5 @@
 package com.beardedlogic.usecase
-package law
+package feature.uc
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Gen, Arbitrary, Prop}
@@ -8,15 +8,14 @@ import org.scalatest.prop._
 import Prop._
 
 import lib.Types._
-import feature.uc._
-import feature.uc.field._
-import feature.uc.step._
+import field._
+import step._
 import test.TestDatabaseSupport
 import test.DataGenerators._
 import UseCaseFns._
 import app.Defaults
 
-class UseCaseLaws extends FunSuite with TestDatabaseSupport with Checkers {
+class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Checkers {
 
   // Each check pass will run in its own transaction
   override val wrapTestsInTransaction = false

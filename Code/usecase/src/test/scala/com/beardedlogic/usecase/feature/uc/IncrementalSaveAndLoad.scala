@@ -1,13 +1,12 @@
 package com.beardedlogic.usecase
-package law
+package feature.uc
 
 import org.scalacheck._
 import test.DataGenerators._
 import test.{TestDatabaseHelpers, TestDB}
 import db.UseCaseHeader
-import feature.uc.{UseCase, UseCaseSaveCheckpoint}
-import feature.uc.change.{Changed, ChangeFailure, NoChange}
 import lib.Types._
+import change.{Changed, ChangeFailure, NoChange}
 
 /**
  * Mutate UC, save, load and compare, repeat.
