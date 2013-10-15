@@ -3,7 +3,6 @@
 
 .courses-n .step:first-child .indentInc, .courses-e .step:first-child .indentInc, .step[data-lvl="0"] + .step[data-lvl="1"] .indentInc, .step[data-lvl="1"] + .step[data-lvl="2"] .indentInc, .step[data-lvl="2"] + .step[data-lvl="3"] .indentInc, .step[data-lvl="3"] + .step[data-lvl="4"] .indentInc, .step[data-lvl="4"] + .step[data-lvl="5"] .indentInc { visibility: hidden !important; }
 
-.uce { margin: 1.4em 0.6cm 0 0.6cm; }
 .uce form { display: inline; }
 .uce textarea, .uce input[type="text"] { color: #2d2d2d; }
 .uce textarea { width: 100%; }

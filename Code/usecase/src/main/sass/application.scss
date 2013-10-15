@@ -85,6 +85,10 @@ html, body { height: 100% } // Cannot have any padding or margin here
   }
 }
 
+.ly-blank-body {
+  margin: 1.4em 0.6cm 0 0.6cm;
+}
+
 // =====================================================================================================================
 // Specific
 
@@ -105,7 +109,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
   input.title {font-weight:bold}
 }
 
-#project-main {
+#project-body {
   margin-top: 6ex;
   .tab-pane {margin-top:3ex}
 }

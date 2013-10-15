@@ -17,8 +17,6 @@
             %li
               %a(href="#") UC-<span class="num">123</span>: <span class="title">BLAH</span>
       %ul.nav.navbar-nav.navbar-right
-        %li
-          %a(data-lift="Link.to?name=Logout")
         %li.dropdown
           %a.dropdown-toggle(data-toggle="dropdown" href="#")
             Cool Features
@@ -28,6 +26,8 @@
               %a(data-toggle="modal" href="#help-refs") Links & References
             %li
               %a(data-toggle="modal" href="#help-kb") Keyboard Shortcuts
+        %li
+          %a(data-lift="Link.to?name=Logout")
 
   #help-refs.modal.fade.help-modal(aria-hidden="true" role="dialog" tabindex="-1")
     .modal-dialog
@@ -112,7 +112,7 @@
         .modal-footer
           %button.btn.btn-default(data-dismiss="modal" type="button") Close
 
-  %main#uce.uce(data-lift="uce/UseCaseEditor")
+  %main#uce.uce.ly-blank-body(data-lift="uce/UseCaseEditor")
 
     %table.title
       %tr

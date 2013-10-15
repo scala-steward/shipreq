@@ -19,6 +19,8 @@ html, body { height: 100%; }
 #ly-default .ly-content { width: auto; margin-left: 30px; margin-right: 30px; }
 #ly-default #content { margin-top: 2.3em; }
 
+.ly-blank-body { margin: 1.4em 0.6cm 0 0.6cm; }
+
 .loginInfo { text-align: center; }
 
 #project-list { margin-top: 3em; }
@@ -30,8 +32,8 @@ html, body { height: 100%; }
 #project-title h1 { margin-bottom: 0; }
 #project-title input.title { font-weight: bold; }
 
-#project-main { margin-top: 6ex; }
-#project-main .tab-pane { margin-top: 3ex; }
+#project-body { margin-top: 6ex; }
+#project-body .tab-pane { margin-top: 3ex; }
 
 #usecase-list { margin-top: 4ex; }
 #usecase-list table { width: 100%; }

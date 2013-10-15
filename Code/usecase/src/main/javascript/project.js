@@ -1,6 +1,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // Project Title
 
+function navbarProjectLinkSel() { return $('.navbar a.project') }
+function navbarProjectLinkSet(value) { navbarProjectLinkSel().html(value) }
+
 function titleSel() { return $('#project-title h1') }
 function titleGet() { return titleSel().html() }
 function titleSet(value) { titleSel().html(value) }
@@ -66,6 +69,7 @@ function ucliPrepare(scope) {
 
 $(document).on('project-updated', function(event, data) {
     titleSet(data)
+    navbarProjectLinkSet(data)
     renameCancel()
 });
 
