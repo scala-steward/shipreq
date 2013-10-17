@@ -36,6 +36,7 @@ import util._
 
 import app.DI
 import lib.Types._
+import FreeTextTerms._
 import Lenses._
 import LensFns._
 import NodeUtils._
@@ -60,6 +61,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
 
   implicit def JsCmdToStr(js: JsCmd): String = js.toJsCmd
 
+  // TODO delete refs?
   type Refs = Map[LocalStepId, StepLabel]
 
   def savedSteps(tuples: (Int, LocalStepId)*): BiMap[TextIdentId, LocalStepId] =
@@ -363,7 +365,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   def assertUseCasesLookSameToUser(actual: UseCase, expected: UseCase): Unit =
     actual.userView ==== expected.userView
 
-  def freeText(txt: String) = FreeText(txt, Map.empty, false)
+  def freeText(txt: String) = FreeText.parse(txt)(UcParsingCtx.Empty)
 
   def normaliseFieldValues(fieldValues: FieldValues): FieldValues = fieldValues.mapValues{
     case v: StepFieldValue => v.norm.asInstanceOf[Field#Value]
@@ -371,7 +373,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     case v => v
   }
 
-  def normaliseFreeText(s: FreeText): FreeText = s.copy(refs = s.refs.norm)
+  def normaliseFreeText(t: FreeText): FreeText = FreeText(normaliseFreeTextTerms(t.terms))
   def normaliseStepText(s: StepText): StepText = s.copy(
     mainClause = s.mainClause.norm,
     flowFromClause = s.flowFromClause.map(normaliseFlowFromClause),
@@ -379,6 +381,12 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   )
   def normaliseFlowFromClause(c: FlowFromClause): FlowFromClause = c.copy(refs = c.refs.norm)
   def normaliseFlowToClause(c: FlowToClause): FlowToClause = c.copy(refs = c.refs.norm)
+
+  def normaliseFreeTextTerms(ts: List[FreeTextTerm]): List[FreeTextTerm] = ts map normaliseFreeTextTerm
+  def normaliseFreeTextTerm(t: FreeTextTerm): FreeTextTerm = t match {
+    case StepRef(_, lbl) => StepRef(lbl.asLocalStepId, lbl)
+    case _ => t
+  }
 
   def normaliseRefs(r: Refs): Refs = r.map {
     case (id, lbl) => (lbl.asLocalStepId -> lbl)

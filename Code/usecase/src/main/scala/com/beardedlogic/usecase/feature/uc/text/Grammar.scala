@@ -85,6 +85,7 @@ object Grammar extends RegexParsers {
     case class PlainTextToken(text: String) extends FreeTextToken
     case class StepLabelRefToken(label: StepLabel) extends FreeTextToken
     case class UseCaseRefToken(number: UseCaseNumber, title: Option[String]) extends FreeTextToken
+    case object DeletedRefToken extends FreeTextToken
   }
 
   object FreeTextParsers {
@@ -95,6 +96,8 @@ object Grammar extends RegexParsers {
       level ~ rep1("." ~> level) ^^ {case h ~ t => (h :: t).mkString(".")}
     }
 
+    val DeletedRef: Parser[DeletedRefToken.type] = DeletedRefStr ^^^ DeletedRefToken
+
     val StepLabelRef: Parser[StepLabelRefToken] = braced(StepLabel) ^^ (s => StepLabelRefToken(s.asLabel))
 
     val UseCaseRef: Parser[UseCaseRefToken] = braced(
@@ -102,7 +105,7 @@ object Grammar extends RegexParsers {
         case num ~ title => UseCaseRefToken(num.toShort.tag[IsUseCaseNumber], title)
       })
 
-    val Ref: Parser[FreeTextToken] = StepLabelRef | UseCaseRef
+    val Ref: Parser[FreeTextToken] = StepLabelRef | UseCaseRef | DeletedRef
 
     val TextAndRefs: Parser[List[FreeTextToken]] =
       rep(anyTextThenOptional(true, Ref)) ^^ (

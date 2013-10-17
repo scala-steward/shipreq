@@ -55,16 +55,16 @@ case class StepText(
     t.mkString(" ")
   }
 
-  lazy val allRefs = {
-    var m = mainClause.refs
+  lazy val allStepRefs = {
+    var m = mainClause.stepRefs
     for (c <- flowFromClause) m ++= c.refs
     for (c <- flowToClause) m ++= c.refs
     m
   }
 
-  override def normalisedText(implicit savedSteps: SavedSteps) = normalise(text, allRefs, savedSteps)
+  override def normalisedText(implicit savedSteps: SavedSteps) = normalise(text, allStepRefs, savedSteps)
 
-  override val hasRefs_? = mainClause.hasRefs_? || flowHasRefs_?(flowFromClause) || flowHasRefs_?(flowToClause)
+  val hasStepRefs_? = mainClause.hasStepRefs_? || flowHasRefs_?(flowFromClause) || flowHasRefs_?(flowToClause)
 
   override protected def correctInput(input: String) = StepText.correctInput(input)
 
@@ -169,7 +169,7 @@ case class StepText(
   override def respondToChange(c: Change)(implicit ctx: UcParsingCtx) = c match {
 
     // Update step references when they change
-    case _: ExistingStepLabelsChanged => updateRefs
+    case _: ExistingStepLabelsChanged => updateAfterStepTreeChange
 
     // Add or Remove flow references
     case FlowFromChange(fromIds, id) => processFlowChange(FlowTo, flowToClause, withFlowTo, fromIds, id)
@@ -182,10 +182,10 @@ case class StepText(
   private def withFlowFrom(from: Option[FlowFromClause]) = copy(flowFromClause = from)
   private def withFlowTo(to: Option[FlowToClause]) = copy(flowToClause = to)
 
-  def updateRefs(implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] = {
-    val main = mainClause.updateStepRefs.mapChanges(_.map(convertFreeTextChange))
-    val from = updateRefs(FlowFrom, flowFromClause)
-    val to = updateRefs(FlowTo, flowToClause)
+  def updateAfterStepTreeChange(implicit ctx: UcParsingCtx): ChangeResult[StepText, Change] = {
+    val main = mainClause.updateAfterStepTreeChange.mapChanges(_.map(convertFreeTextChange))
+    val from = updateAfterStepTreeChange(FlowFrom, flowFromClause)
+    val to = updateAfterStepTreeChange(FlowTo, flowToClause)
 
     ChangeResult.map3(main, from, to)(mainClause, flowFromClause, flowToClause)(
       (m, f, t) => copy(mainClause = m, flowFromClause = f, flowToClause = t))
@@ -201,7 +201,7 @@ case class StepText(
    *
    * @return A new (different) flow clause. If no change is required, then `None` is returned.
    */
-  private def updateRefs[C <: FlowClause, F <: Flow[C]](f: F, co: Option[C])(implicit ctx: UcParsingCtx)
+  private def updateAfterStepTreeChange[C <: FlowClause, F <: Flow[C]](f: F, co: Option[C])(implicit ctx: UcParsingCtx)
   : ChangeResult[Option[C], Change] = co match {
     case Some(c) =>
       val localIdsToLabels = ctx.getIdsToLabels

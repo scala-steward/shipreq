@@ -13,7 +13,7 @@ final object ParsingConfig {
   val RefBraceLs = RefBraceL.toString
   val RefBraceRs = RefBraceR.toString
 
-  val DeletedRef = RefBraceL + "DELETED" + RefBraceR
+  val DeletedRefStr = RefBraceL + "DELETED" + RefBraceR
 
   val NormalisationPrefix = "D."
   val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r

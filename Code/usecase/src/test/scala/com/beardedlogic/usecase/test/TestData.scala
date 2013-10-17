@@ -6,6 +6,7 @@ import db.UseCaseHeader
 import feature.uc._
 import feature.uc.field._
 import feature.uc.text.{FlowFrom, FlowTo, StepText, FreeText}
+import feature.uc.text.FreeTextTerms._
 import feature.uc.step.{StepNode, StepTree}
 import test.NodeUtils._
 import app.Defaults
@@ -63,7 +64,7 @@ trait TestData extends TestHelpers2 {
       X4 -> StepText(X4, freeText("deeper"), None, None) // 7.0.1.a
     )
     lazy val NcSfv = StepFieldValue(NCF, NcStepTree, NcStepText)
-    lazy val TFV1 = FreeText("Linking to [7.0.1]", Map(X2 -> "7.0.1".asLabel), false)
+    lazy val TFV1 = FreeText(PlainText("Linking to ") :: StepRef(X2, "7.0.1".asLabel) :: Nil)
     lazy val UC = ucWithValues(TF1 -> TFV1, NCF -> NcSfv)
   }
 
@@ -77,7 +78,7 @@ trait TestData extends TestHelpers2 {
       X4 -> StepText(X4, freeText("deeper"), None, None) // 7.0.2.a
     )
     lazy val NcSfv = StepFieldValue(NCF, NcStepTree, NcStepText)
-    lazy val TFV1 = FreeText("Linking to [7.0.2]", Map(X2 -> "7.0.2".asLabel), false)
+    lazy val TFV1 = FreeText(PlainText("Linking to ") :: StepRef(X2, "7.0.2".asLabel) :: Nil)
     lazy val UC = ucWithValues(TF1 -> TFV1, NCF -> NcSfv)
   }
 
@@ -88,14 +89,14 @@ trait TestData extends TestHelpers2 {
         StepNode(X5, 1, 3, Nil) :: Nil
     lazy val NcStepTree = StepTree(StepNode(X1, 0, 0, X1sChildren) :: Nil)
     lazy val NcStepText = Map(
-      X1 -> StepText(X1, FreeText("I'm the root [7.0.3]", Map(X5 -> "7.0.3".asLabel), false), None, None), // 7.0
+      X1 -> StepText(X1, FreeText(PlainText("I'm the root ") :: StepRef(X5, "7.0.3".asLabel) :: Nil), None, None), // 7.0
       X3 -> StepText(X3, freeText("I was inserted"), None, None), // 7.0.1
       X2 -> StepText(X2, freeText("blar"), None, None), // 7.0.2
       X4 -> StepText(X4, freeText("deeper"), None, None), // 7.0.2.a
       X5 -> StepText(X5, freeText("last"), None, None) // 7.0.3
     )
     lazy val NcSfv = StepFieldValue(NCF, NcStepTree, NcStepText)
-    lazy val TFV1 = FreeText("Linking to [7.0.2]", Map(X2 -> "7.0.2".asLabel), false)
+    lazy val TFV1 = FreeText(PlainText("Linking to ") :: StepRef(X2, "7.0.2".asLabel) :: Nil)
     lazy val UC = ucWithValues(TF1 -> TFV1, NCF -> NcSfv)
   }
 
@@ -112,7 +113,7 @@ trait TestData extends TestHelpers2 {
       StepNode(X7, 0, 2, StepNode(X8, 1, 1, Nil) :: Nil) ::
       Nil)
     lazy val NcStepText = Map(
-      X1 -> StepText(X1, FreeText("I'm the root [7.0.3]", Map(X5 -> "7.0.3"), false), None, None), // 7.0
+      X1 -> StepText(X1, FreeText(PlainText("I'm the root ") :: StepRef(X5, "7.0.3"):: Nil), None, None), // 7.0
       X3 -> StepText(X3, freeText("I was inserted"), FlowFrom.create(Map(X4 -> "7.0.2.a")), None), // 7.0.1 <- 2a
       X2 -> StepText(X2, freeText("blar"), None, None), // 7.0.2
       X4 -> StepText(X4, freeText("deeper"), None, FlowTo.create(Map(X3 -> "7.0.1", X6 -> "7.1"))), // 7.0.2.a
@@ -123,7 +124,7 @@ trait TestData extends TestHelpers2 {
     )
     lazy val NcSfv = StepFieldValue(NCF, NcStepTree, NcStepText)
 
-    lazy val TFV1 = FreeText("Linking to [7.0.2]", Map(X2 -> "7.0.2".asLabel), false)
+    lazy val TFV1 = FreeText(PlainText("Linking to ") :: StepRef(X2, "7.0.2") :: Nil)
     lazy val UC = ucWithValues(TF1 -> TFV1, NCF -> NcSfv)
   }
 }

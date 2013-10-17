@@ -6,6 +6,10 @@ baseVersion := "0.2.0"
 
 scalaVersion := "2.10.3"
 
+initialize ~= { _ =>
+  sys.props("scalac.patmat.analysisBudget") = "off"
+}
+
 scalacOptions ++= Seq("-Xcheckinit", "-unchecked", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions",
   "-language:higherKinds", "-language:existentials")
 
@@ -49,7 +53,7 @@ libraryDependencies ++= {
 
 
 
-initialCommands += "import scalaz.{Name,Need,Value}, com.beardedlogic.usecase, usecase.db._, usecase.lib.Types._, usecase.feature.uc, uc._, uc.field._, uc.step._, uc.text._, usecase.util._"
+initialCommands += "import scalaz.{Name,Need,Value}, com.beardedlogic.usecase, usecase.db._, usecase.lib.Types._, usecase.feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, usecase.util._"
 
 EclipseKeys.executionEnvironment := Some(EclipseExecutionEnvironment.JavaSE17)
 

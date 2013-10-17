@@ -9,6 +9,7 @@ import field._
 import step.{StepTree, StepNode}
 import test.{TestData, TestHelpers}
 import text.{FlowToClause, FlowFromClause, StepText, FreeText}
+import text.FreeTextTerms._
 import Lenses._
 import UseCaseFns._
 
@@ -141,7 +142,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
   describe("updateTextFieldText()") {
     def test(f: TextField) {
       val uc = f.updateText("The Refusal, Karnivool [7.0]")(MockUc2b.UC).gimme
-      f.lens.get(uc) ==== FreeText("The Refusal, Karnivool [7.0]", Map(X1 -> "7.0".asLabel), false)
+      f.lens.get(uc) ==== FreeText(PlainText("The Refusal, Karnivool ") :: StepRef(X1, "7.0".asLabel) :: Nil)
     }
     it("should update existing text") {
       test(TF1)
@@ -190,7 +191,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
       assertStepsAndLabelsRegen(uc)
     }
     it("should update refs in text") {
-      TF1.lens.get(uc) ==== FreeText("Linking to [7.0.3]", Map(X2 -> "7.0.3".asLabel), false)
+      TF1.lens.get(uc) ==== FreeText(PlainText("Linking to ") :: StepRef(X2, "7.0.3".asLabel) :: Nil)
     }
   }
 
@@ -207,7 +208,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
       uc.stepsAndLabels.value.ab ==== Map(X1 -> "7.0".asLabel, X3 -> "7.0.1".asLabel)
     }
     it("should update refs to the step") {
-      TF1.lens.get(uc) ==== freeText("Linking to [DELETED]")
+      TF1.lens.get(uc) ==== FreeText(PlainText("Linking to ") :: DeletedRef :: Nil)
     }
     it("should not allow removal of the root NC node") {
       NCF.removeStep(X1)(MockUc2a.UC) ==== NoChange

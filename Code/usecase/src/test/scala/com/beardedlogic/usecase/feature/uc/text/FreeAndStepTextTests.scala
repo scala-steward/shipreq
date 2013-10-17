@@ -14,6 +14,8 @@ import util._
 import test.{TestHelpers2, TestHelpers}
 import Changes._
 import ParsingConfig._
+import FreeTextTerms._
+import reflect.ClassTag
 
 object FreeAndStepTextTests extends TestHelpers2 {
 
@@ -21,6 +23,7 @@ object FreeAndStepTextTests extends TestHelpers2 {
   implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx(UCN, "New Third", sl, Rels)
   implicit def autoNum(i: Int) = i.toShort.tag[IsUseCaseNumber]
   implicit def autoUCId(i: Int) = i.toLong.tag[IsUseCaseIdentId]
+  implicit def exTerms(t: FreeText) = t.terms
 
   val UCS = List(
     new UseCaseSummary2(100, 1, "First", "X"),
@@ -28,6 +31,11 @@ object FreeAndStepTextTests extends TestHelpers2 {
     new UseCaseSummary2(300, 3, "Old Third", "X")
   )
   val Rels = CachedUseCaseRelations(UCS)
+
+  def filterTerms[A <: FreeTextTerm](ts: List[FreeTextTerm])(implicit m: ClassTag[A]): List[A] =
+    ts.filter(a => m.runtimeClass.isAssignableFrom(a.getClass)).map(_.asInstanceOf[A])
+
+  def oldStyleRefs(ts: List[FreeTextTerm]): Refs = filterTerms[StepRef](ts).map(t => t.id -> t.label).toMap
 
   def assertFlowClause(c: Option[FlowClause], refs: Refs) {
     if (refs.isEmpty)
@@ -38,27 +46,28 @@ object FreeAndStepTextTests extends TestHelpers2 {
 
   abstract class Tester[T <: ParsedText[T]](val parser: Parser[T]) {
     def parse(text: String) = parser.parse(text)(StepState1)
-    def refs(t: T): Refs
-    def assert(subject: T, text: String, refs: Refs, refsOwnUc: Boolean): Unit
-  }
-
-  object FreeTextTester extends Tester[FreeText](FreeText) {
-    override def refs(t: FreeText) = t.refs
-    override def assert(subject: FreeText, text: String, refs: Refs, refsOwnUc: Boolean) {
-      subject.text ==== text
-      subject.refs ==== refs
-      subject.refsOwnUc ==== refsOwnUc
+    def terms(t: T): List[FreeTextTerm]
+    def assertTerms(t: T, expectedTerms: FreeTextTerm*): Unit = terms(t) shouldBe expectedTerms.toList
+    def assertText(t: T, expectedText: String): Unit = t.text shouldBe expectedText
+    def oldAssert(t: T, text: String, refs: Refs, refsOwnUc: Boolean): Unit = {
+      assertText(t, text)
+      oldStyleRefs(terms(t)) ==== refs
+      filterTerms[UseCaseSelfRef](terms(t)).nonEmpty ==== refsOwnUc
     }
   }
 
+  object FreeTextTester extends Tester[FreeText](FreeText) {
+    override def terms(t: FreeText) = t.terms
+  }
+
   object StepTextTester extends Tester[StepText](new StepTextFactory(X0)) {
-    override def refs(t: StepText) = t.allRefs
-    override def assert(subject: StepText, text: String, refs: Refs, refsOwnUc: Boolean) {
+    override def terms(t: StepText) = t.mainClause.terms
+    override def oldAssert(subject: StepText, text: String, refs: Refs, refsOwnUc: Boolean): Unit = {
       subject.text ==== text
-      subject.allRefs ==== refs
+      oldStyleRefs(terms(subject)) ==== refs
       subject.flowFromClause shouldBe None
       subject.flowToClause shouldBe None
-      FreeTextTester.assert(subject.mainClause, text, refs, refsOwnUc)
+      FreeTextTester.oldAssert(subject.mainClause, text, refs, refsOwnUc)
     }
   }
 
@@ -108,70 +117,85 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
   def aTextWithRefs[T <: ParsedText[T]](T: Tester[T]) {
     implicit def StrToSomeStr(s: String) = Some(s)
 
-    def test(input: String, output: Option[String], refs: Refs = Map.empty, refsOwnUc: Boolean = false) {
+    def testText(input: String, output: Option[String]): Unit = {
       val x = T.parse(input)
-      T.assert(x, output.getOrElse(input), refs, refsOwnUc)
+      x.text ==== output.getOrElse(input)
+    }
+    def testBoth(input: String, output: Option[String], terms: FreeTextTerm*): Unit = {
+      val x = T.parse(input)
+      x.text ==== output.getOrElse(input)
+      T.assertTerms(x, terms: _*)
+    }
+    def oldTest(input: String, output: Option[String], stepRefs: Refs = Map.empty, hasUcSelfRef: Boolean = false): Unit = {
+      val x = T.parse(input)
+      T.oldAssert(x, output.getOrElse(input), stepRefs, hasUcSelfRef)
     }
 
     describe("Parsing free text") {
       it("should parse plain text") {
-        test("", None)
-        test("nothing", None)
+        testBoth("", None)
+        testBoth("nothing", None, PlainText("nothing"))
       }
 
       it("should trim whitespace") {
-        test("  should  trim  whitespace  ", "should  trim  whitespace", Map.empty)
+        testText("  should  trim  whitespace  ", "should  trim  whitespace")
       }
 
       describe("Step refs") {
         it("should detect valid step refs") {
-          test("Umm [S.1] only", None, Map(X1 -> S1))
-          test("Umm [S.1] & [S.3] ah and [S.1]!", None, Map(X1 -> S1, X3 -> S3))
+          testBoth("Umm [S.1] only", None, PlainText("Umm "), StepRef(X1, S1), PlainText(" only"))
+          testBoth("Umm [S.1] & [S.3] ah and [S.1]!", None, PlainText("Umm "), StepRef(X1, S1), PlainText(" & "), StepRef(X3, S3), PlainText(" ah and "), StepRef(X1, S1), PlainText("!"))
         }
 
         it("should remove whitespace from step refs") {
-          test("[ S.1]", "[S.1]", Map(X1 -> S1))
-          test("[S.1 ]", "[S.1]", Map(X1 -> S1))
-          test("[ S.1 ]", "[S.1]", Map(X1 -> S1))
-          test("[S .1]", "[S.1]", Map(X1 -> S1))
-          test("[S. 1]", "[S.1]", Map(X1 -> S1))
-          test("[S . 1]", "[S.1]", Map(X1 -> S1))
-          test("This is [S . 1] and [ S.1 ] together!", "This is [S.1] and [S.1] together!", Map(X1 -> S1))
+          oldTest("[ S.1]", "[S.1]", Map(X1 -> S1))
+          oldTest("[S.1 ]", "[S.1]", Map(X1 -> S1))
+          oldTest("[ S.1 ]", "[S.1]", Map(X1 -> S1))
+          oldTest("[S .1]", "[S.1]", Map(X1 -> S1))
+          oldTest("[S. 1]", "[S.1]", Map(X1 -> S1))
+          oldTest("[S . 1]", "[S.1]", Map(X1 -> S1))
+          oldTest("This is [S . 1] and [ S.1 ] together!", "This is [S.1] and [S.1] together!", Map(X1 -> S1))
         }
 
         it("should add ? to invalid step refs") {
-          test("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist.")
+          oldTest("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist.")
         }
 
         it("should ignore existing invalid step refs") {
-          test("[1.0.9?] doesn't exist.", None)
+          oldTest("[1.0.9?] doesn't exist.", None)
         }
 
         it("should ignore invalid refs without dots") {
-          test("[DELETED]", None)
-          test("[123]", None)
+          oldTest("[123]", None)
+        }
+
+        it("should reparsed deleted refs as deleted refs") {
+          testBoth(DeletedRefStr, None, DeletedRef)
+          testBoth(s"Hehe $DeletedRefStr", None, PlainText("Hehe "), DeletedRef)
+          testBoth(s"$DeletedRefStr no", None, DeletedRef, PlainText(" no"))
+          testBoth(s"blah${DeletedRefStr}no", None, PlainText("blah"), DeletedRef, PlainText("no"))
         }
       }
 
       describe("Use Case refs") {
         it("should parse valid UC refs (numbers only)") {
-          test("[UC 1]", "[UC-1: First]")
-          test("[UC - 1]", "[UC-1: First]")
-          test("[UC- 1]", "[UC-1: First]")
-          test("[UC -1]", "[UC-1: First]")
-          test("[UC-1]", "[UC-1: First]")
-          test("[ UC-1 ]", "[UC-1: First]")
-          test("[ UC  1 ]", "[UC-1: First]")
-          test("[UC2]", "[UC-2: Second]")
+          oldTest("[UC 1]", "[UC-1: First]")
+          oldTest("[UC - 1]", "[UC-1: First]")
+          oldTest("[UC- 1]", "[UC-1: First]")
+          oldTest("[UC -1]", "[UC-1: First]")
+          oldTest("[UC-1]", "[UC-1: First]")
+          oldTest("[ UC-1 ]", "[UC-1: First]")
+          oldTest("[ UC  1 ]", "[UC-1: First]")
+          oldTest("[UC2]", "[UC-2: Second]")
         }
         it("should parse valid UC refs (with title)") {
-          test("[UC-1: Bullshit]", "[UC-1: First]")
-          test("[UC-1 : Bullshit ]", "[UC-1: First]")
-          test("[ UC 2: Blah blah blah] and [UC-1:FFS]", "[UC-2: Second] and [UC-1: First]")
+          oldTest("[UC-1: Bullshit]", "[UC-1: First]")
+          oldTest("[UC-1 : Bullshit ]", "[UC-1: First]")
+          oldTest("[ UC 2: Blah blah blah] and [UC-1:FFS]", "[UC-2: Second] and [UC-1: First]")
         }
         it("should use the current title when referencing current use case") {
-          test("[UC-3]", "[UC-3: New Third]", Map.empty, true)
-          test("[UC-1][UC-3]", "[UC-1: First][UC-3: New Third]", Map.empty, true)
+          oldTest("[UC-3]", "[UC-3: New Third]", Map.empty, true)
+          oldTest("[UC-1][UC-3]", "[UC-1: First][UC-3: New Third]", Map.empty, true)
         }
       }
     } // end parsing
@@ -179,22 +203,22 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     describe("Loading text") {
       it("should load simple text") {
         val x = T.parser.load("Hehe".tag[IsNormalised])(BiMap.empty, StepState1)
-        T.assert(x, "Hehe", Map.empty, false)
+        T.oldAssert(x, "Hehe", Map.empty, false)
       }
 
       it("should denormalise step refs") {
         val x = T.parser.load("Hehe [D.100]".tag[IsNormalised])(savedSteps(100 -> X2), StepState1)
-        T.assert(x, "Hehe [S.2]", Map(X2 -> S2), false)
+        T.oldAssert(x, "Hehe [S.2]", Map(X2 -> S2), false)
       }
 
       it("should denormalise UC refs") {
         val x = T.parser.load("Hehe [UC-2] and [UC-1]!".tag[IsNormalised])(BiMap.empty, StepState1)
-        T.assert(x, "Hehe [UC-2: Second] and [UC-1: First]!", Map.empty, false)
+        T.oldAssert(x, "Hehe [UC-2: Second] and [UC-1: First]!", Map.empty, false)
       }
 
       it("should denormalise UC self-refs") {
         val x = T.parser.load("Hehe [UC-3]!".tag[IsNormalised])(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
-        T.assert(x, "Hehe [UC-3: Old Third]!", Map.empty, true)
+        T.oldAssert(x, "Hehe [UC-3: Old Third]!", Map.empty, true)
       }
     }
 
@@ -215,7 +239,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       def test(before: String)(textAfter: String, refsAfter: Refs) {
         val x = T.parse(before)
         val y = x.respondToChange(MockExistingStepLabelsChanged)(StepState2)
-        T.assert(y.getOrElse(x), textAfter, refsAfter, false)
+        T.oldAssert(y.getOrElse(x), textAfter, refsAfter, false)
       }
 
       it("should update refs") {
@@ -252,7 +276,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     describe("Responding to a TitleChanged") {
       it("should change UC refs to self") {
         val x = T.parse("Look [UC-3].")
-        T.assert(x, "Look [UC-3: New Third].", Map.empty, true)
+        T.oldAssert(x, "Look [UC-3: New Third].", Map.empty, true)
         val (y, changes) = x.respondToChange(TitleChanged("New Third", "GREAT"))(autoCtx(StepState1).copy(title = "GREAT")).openChange
         y.text ==== "Look [UC-3: GREAT]."
         changes shouldBe List(TextChanged)
@@ -281,7 +305,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         val a = parse("Look at [S.1]")
         a.respondToChange(MockExistingStepLabelsChanged)(StepState2) match {
           case Changed(b, changes) =>
-            b should be(StepText(X0, FreeText("Look at [S.A]", Map(X1 -> SA), false), None, None))
+            b should be(StepText(X0, FreeText(PlainText("Look at ") :: StepRef(X1, SA) :: Nil), None, None))
             changes.list should contain(StepTextChanged(X0))
           case x => fail(s"Change expected, got: $x")
         }
@@ -541,7 +565,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       it("should parse both flows") {
         val x = new StepTextFactory(X0).parse("He [S.3] he ⬅ [S.2] ➡ [S.1]")(StepState1)
         x.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
-        x.mainClause.refs should be(Map("X3" -> "S.3"))
+        oldStyleRefs(x.mainClause) shouldBe Map("X3" -> "S.3")
         assertFlowClause(x.flowFromClause, Map(X2 -> S2))
         assertFlowClause(x.flowToClause, Map(X1 -> S1))
       }
@@ -598,7 +622,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         val save = savedSteps(100 -> X2, 104 -> X1, 108 -> X3)
         val x = new StepTextFactory(X0).load("He [D.108] he ⬅ [D.100] ➡ [D.104]".tag[IsNormalised])(save, StepState1)
         x.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
-        x.mainClause.refs should be(Map("X3" -> "S.3"))
+        oldStyleRefs(x.mainClause) shouldBe Map("X3" -> "S.3")
         x.flowFromClause should be(Some(FlowFromClause(Map(X2 -> S2))))
         x.flowToClause should be(Some(FlowToClause(Map(X1 -> S1))))
       }

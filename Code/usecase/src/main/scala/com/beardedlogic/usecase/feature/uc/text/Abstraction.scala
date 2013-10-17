@@ -23,9 +23,6 @@ trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
 
   def normalisedText(implicit savedSteps: SavedSteps): NormalisedText
 
-  /** Does this text contain any step references? */
-  def hasRefs_? : Boolean
-
   def update(input: String)(implicit ctx: UcParsingCtx): ChangeResult[Self, Change] = {
     val newText = correctInput(input)
     if (text == newText) NoChange

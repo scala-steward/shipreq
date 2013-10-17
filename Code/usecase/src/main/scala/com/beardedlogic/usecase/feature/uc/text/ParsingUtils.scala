@@ -24,34 +24,6 @@ object ParsingUtils extends Logger {
   }
 
   /**
-   * Keeps a map of step references (ie. step-id to label) up-to-date when the step tree structure changes.
-   */
-  def migrateRefsToNewStepTree(ft: FreeText)(implicit stepsAndLabels: StepAndLabelBiMap): Option[FreeText] = {
-    lazy val idsToLabels = stepsAndLabels.value.ab
-    var newRefs = Map.empty[LocalStepId, StepLabel]
-    var newText = ft.text
-    var changed = false
-
-    // Check each references we know our text has
-    for ((id, oldLabel) <- ft.refs) {
-      idsToLabels.get(id) match {
-        case Some(newLabel) =>
-          if (oldLabel != newLabel) {
-            newText = newText.replace(makeStepRef(oldLabel), makeStepRef(newLabel))
-            changed = true
-          }
-          newRefs += (id -> newLabel)
-        case _ =>
-          newText = newText.replace(makeStepRef(oldLabel), DeletedRef)
-          changed = true
-      }
-    }
-
-    if (changed) Some(FreeText(newText, newRefs, ft.refsOwnUc))
-    else None
-  }
-
-  /**
    * Normalises text before saving to the database.
    */
   def normalise(text: String, refs: Map[LocalStepId, StepLabel], savedSteps: SavedSteps): NormalisedText = {

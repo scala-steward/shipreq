@@ -13,6 +13,7 @@ import uc.field._
 import uc.step._
 import uc.text._
 import util.BiMap
+import FreeTextTerms._
 
 /**
  * Typeclasses of `scalaz.Show` that returns code that can be pasted back into Scala.
@@ -41,6 +42,7 @@ object Inspection {
       val c: Cord = s
       Show.show(t => c <> f(t))
     }
+    @inline def const[T]: Show[T] = Show.show(_ => Cord(s))
   }
 
   private implicit class CordExt(val c: Cord) extends AnyVal {
@@ -134,9 +136,26 @@ object Inspection {
   implicit val field: Show[Field] = Show.show(fieldM)
   implicit val stepField: Show[StepField] = Show.show(fieldM)
 
+  implicit val fttPlainText        : Show[PlainText]         = "PlainText" <*> (_.text.show)
+  implicit val fttStepRef          : Show[StepRef]           = "StepRef" <*> (x => x.id.show ++> x.label.show)
+  implicit val fttInvalidStepRef   : Show[InvalidStepRef]    = "InvalidStepRef" <*> (_.label.show)
+  implicit val fttDeletedStepRef   : Show[DeletedRef.type]   = "DeletedRef".const
+  implicit val fttUseCaseRef       : Show[UseCaseRef]        = "UseCaseRef" <*> (x => x.num.show ++> x.title.show)
+  implicit val fttUseCaseSelfRef   : Show[UseCaseSelfRef]    = "UseCaseSelfRef" <*> (x => x.num.show ++> x.title.show)
+  implicit val fttInvalidUseCaseRef: Show[InvalidUseCaseRef] = "InvalidUseCaseRef" <*> (x => x.num.show ++> x.title.show)
+  implicit val freeTextTerm: Show[FreeTextTerm] = Show.show(_ match {
+    case t@PlainText(_)            => t.show
+    case t@StepRef(_, _)           => t.show
+    case t@InvalidStepRef(_)       => t.show
+    case t@DeletedRef              => t.show
+    case t@UseCaseRef(_, _   )     => t.show
+    case t@UseCaseSelfRef(_, _)    => t.show
+    case t@InvalidUseCaseRef(_, _) => t.show
+  })
+
   implicit val freeText: Show[FreeText] = {
     val empty: Cord = "FreeText.empty"
-    Show.show(x => if (x.isEmpty) empty else "FreeText" <> x.text.show ++> x.refs.show ++> x.refsOwnUc.show)
+    Show.show(x => if (x.isEmpty) empty else "FreeText" <> x.terms.show)
   }
 
   implicit val flowFromClause: Show[FlowFromClause] = "FlowFromClause" <*> (_.refs.show)
