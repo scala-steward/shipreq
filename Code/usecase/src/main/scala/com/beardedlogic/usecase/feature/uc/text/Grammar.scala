@@ -83,8 +83,8 @@ object Grammar extends RegexParsers {
   sealed trait FreeTextToken
   object FreeTextToken {
     case class PlainTextToken(text: String) extends FreeTextToken
-    case class StepLabelRefToken(label: StepLabel) extends FreeTextToken
-    case class UseCaseRefToken(number: UseCaseNumber, title: Option[String]) extends FreeTextToken
+    case class StepRefToken(seemsValid: Boolean, label: StepLabel) extends FreeTextToken
+    case class UseCaseRefToken(seemsValid: Boolean, number: UseCaseNumber, title: Option[String]) extends FreeTextToken
     case object DeletedRefToken extends FreeTextToken
   }
 
@@ -96,16 +96,21 @@ object Grammar extends RegexParsers {
       level ~ rep1("." ~> level) ^^ {case h ~ t => (h :: t).mkString(".")}
     }
 
-    val DeletedRef: Parser[DeletedRefToken.type] = DeletedRefStr ^^^ DeletedRefToken
+    val RefInner_Deleted: Parser[DeletedRefToken.type] =
+      DeletedRefInner ^^^ DeletedRefToken
 
-    val StepLabelRef: Parser[StepLabelRefToken] = braced(StepLabel) ^^ (s => StepLabelRefToken(s.asLabel))
+    val RefInner_Step: Parser[StepRefToken] =
+      (StepLabel ~ opt(InvalidRefSuffix)) ^^ {
+        case s ~ invalid => StepRefToken(invalid.isEmpty, s.asLabel)
+      }
 
-    val UseCaseRef: Parser[UseCaseRefToken] = braced(
-      "UC" ~> opt("-") ~> "\\d+".r ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
-        case num ~ title => UseCaseRefToken(num.toShort.tag[IsUseCaseNumber], title)
-      })
+    val RefInner_UseCase: Parser[UseCaseRefToken] =
+      "UC" ~> opt("-") ~> "\\d+".r ~ opt(InvalidRefSuffix) ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
+        case num ~ invalid ~ title => UseCaseRefToken(invalid.isEmpty, num.toShort.tag[IsUseCaseNumber], title)
+      }
 
-    val Ref: Parser[FreeTextToken] = StepLabelRef | UseCaseRef | DeletedRef
+    val Ref: Parser[FreeTextToken] =
+      braced(RefInner_Step | RefInner_UseCase | RefInner_Deleted)
 
     val TextAndRefs: Parser[List[FreeTextToken]] =
       rep(anyTextThenOptional(true, Ref)) ^^ (

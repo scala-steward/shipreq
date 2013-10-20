@@ -48,10 +48,12 @@ object FreeText extends Parser[FreeText] {
       tokens map parseToken
 
     def parseToken(token: FreeTextToken): FreeTextTerm = token match {
-      case PlainTextToken(txt)      => PlainText(txt)
-      case StepLabelRefToken(label) => parseStepRef(label)
-      case UseCaseRefToken(num, ot) => parseUseCaseRef(num, ot)
-      case DeletedRefToken          => DeletedRef
+      case PlainTextToken(txt)             => PlainText(txt)
+      case StepRefToken(true, label)       => parseStepRef(label)
+      case StepRefToken(false, label)      => InvalidStepRef(label)
+      case UseCaseRefToken(true, num, ot)  => parseUseCaseRef(num, ot)
+      case UseCaseRefToken(false, num, ot) => InvalidUseCaseRef(num, ot)
+      case DeletedRefToken                 => DeletedRef
     }
 
     @inline

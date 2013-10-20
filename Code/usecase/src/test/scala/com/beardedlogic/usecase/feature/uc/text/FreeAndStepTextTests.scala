@@ -162,11 +162,12 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         }
 
         it("should add ? to invalid step refs") {
-          oldTest("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist.")
+          testBoth("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist."
+            , InvalidStepRef("1.0.9".asLabel), PlainText(" doesn't exist."))
         }
 
-        it("should ignore existing invalid step refs") {
-          oldTest("[1.0.9?] doesn't exist.", None)
+        it("should parse invalid step refs as is") {
+          testBoth("[1.0.9?] doesn't exist.", None, InvalidStepRef("1.0.9".asLabel), PlainText(" doesn't exist."))
         }
 
         it("should ignore invalid refs without dots") {
@@ -200,6 +201,14 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         it("should use the current title when referencing current use case") {
           oldTest("[UC-3]", "[UC-3: New Third]", Map.empty, true)
           oldTest("[UC-1][UC-3]", "[UC-1: First][UC-3: New Third]", Map.empty, true)
+        }
+        it("should invalidate bad refs") {
+          testBoth("[UC-123] doesn't exist.", "[UC-123?] doesn't exist.", InvalidUseCaseRef(123, None), PlainText(" doesn't exist."))
+          testBoth("[UC-123: Haha] doesn't exist.", "[UC-123?: Haha] doesn't exist.", InvalidUseCaseRef(123, "Haha"), PlainText(" doesn't exist."))
+        }
+        it("should parse already-invalid refs") {
+          testBoth("[UC-123?] doesn't exist.", None, InvalidUseCaseRef(123, None), PlainText(" doesn't exist."))
+          testBoth("[UC-123?: Haha] doesn't exist.", None, InvalidUseCaseRef(123, "Haha"), PlainText(" doesn't exist."))
         }
       }
     } // end parsing
