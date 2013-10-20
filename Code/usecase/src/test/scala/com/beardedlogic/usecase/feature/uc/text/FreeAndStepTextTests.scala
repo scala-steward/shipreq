@@ -56,11 +56,13 @@ object FreeAndStepTextTests extends TestHelpers2 {
       filterTerms[UseCaseSelfRef](terms(t)).nonEmpty ==== refsOwnUc
     }
     def textChanged: Change
+    def mapTerms(t: T, f: FreeTextTerm => FreeTextTerm): T
   }
 
   object FreeTextTester extends Tester[FreeText](FreeText) {
     override def terms(t: FreeText) = t.terms
     override def textChanged = TextChanged
+    override def mapTerms(t: FreeText, f: FreeTextTerm => FreeTextTerm) = FreeText(t.terms map f)
   }
 
   object StepTextTester extends Tester[StepText](new StepTextFactory(X0)) {
@@ -73,6 +75,8 @@ object FreeAndStepTextTests extends TestHelpers2 {
       subject.flowToClause shouldBe None
       FreeTextTester.oldAssert(subject.mainClause, text, refs, refsOwnUc)
     }
+    override def mapTerms(t: StepText, f: FreeTextTerm => FreeTextTerm) =
+      t.copy(mainClause = FreeText(t.mainClause.terms map f))
   }
 
   sealed trait FlowTester {
@@ -729,14 +733,24 @@ abstract class TextProps[T <: ParsedText[T]](T: Tester[T]) {
     arbitrary[String].flatMap(input =>
       State(parse(input)(Ctx1), Ctx1, SavedSteps1))
 
-  lazy val textAfterStepsRemoved: Gen[State] =
+  lazy val textAfterRefsInvalidated: Gen[State] =
     freshlyEnteredText.flatMap(s => {
       implicit val ss = EmptySavedSteps
       implicit val ctx = s.ctx.copy(stepsAndLabels = EmptyStepAndLabelBiMap)
-      State(s.t.respondToChange(StepRemoved(StepNode(X1,0,0))).getValueOrElse(s.t), ctx, ss)
+      State(T.mapTerms(s.t, invalidateTerm), ctx, ss)
     })
 
-  implicit def arbState: Arbitrary[State] = Arbitrary(freshlyEnteredText | textAfterStepsRemoved)
+  def invalidateTerm(t: FreeTextTerm): FreeTextTerm = t match {
+    case StepRef(_, label)          => DeletedRef
+    case UseCaseRef(num, title)     => InvalidUseCaseRef(num, Some(title))
+    case PlainText(_)
+       | InvalidStepRef(_)
+       | DeletedRef
+       | UseCaseSelfRef(_, _)
+       | InvalidUseCaseRef(_, _) => t
+  }
+
+  implicit def arbState: Arbitrary[State] = Arbitrary(freshlyEnteredText | textAfterRefsInvalidated)
 
   def equal(a: T, b: T): Prop
 
