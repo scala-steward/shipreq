@@ -13,7 +13,8 @@ final object ParsingConfig {
   val RefBraceLs = RefBraceL.toString
   val RefBraceRs = RefBraceR.toString
 
-  val DeletedRefStr = RefBraceL + "DELETED" + RefBraceR
+  val DeletedRefInner = "DELETED"
+  val DeletedRefStr = RefBraceL + DeletedRefInner + RefBraceR
 
   val NormalisationPrefix = "D."
   val NormalisedRefRegex = "\\[D\\.(\\d+?)\\]".r
@@ -80,6 +81,7 @@ final object ParsingConfig {
     override val arrowBadReplacement = "->"
   }
 
-  val AnyValidArrowRegex =
+  val AnyValidArrowRegexStr =
     "(?:" + List(FlowFromStyle.arrowRegex, FlowToStyle.arrowRegex).map(_.pattern.pattern).mkString("|") + ")"
+  val AnyValidArrowRegex = AnyValidArrowRegexStr.r
 }

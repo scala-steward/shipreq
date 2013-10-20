@@ -10,6 +10,7 @@ trait UseCaseRelations {
 object UseCaseRelations {
   val Empty: UseCaseRelations = new UseCaseRelations {
     override def findUcTitle(num: UseCaseNumber) = None
+    override def toString = "UseCaseRelations.Empty"
   }
 }
 

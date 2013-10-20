@@ -5,7 +5,7 @@ import scalaz.\/
 import app.AppConfig._
 import lib.Misc._
 import lib.Types._
-import feature.uc.text.ParsingConfig.AnyValidArrowRegex
+import feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
 import util.Constraints._
 import util.Validator
 
@@ -72,8 +72,8 @@ final object InputValidator {
     override def correct(input: String) = normaliseWhitespaceInSingleLineString(input)
     override protected val validator = Validator[String]("Use case title",
       NonEmpty,
-      CharBlacklist("[]⦋⦌［］",               "cannot include square brackets."),
-      Not(Contain.regex(AnyValidArrowRegex, "cannot include arrows."))
+      CharBlacklist("[]⦋⦌［］", "cannot include square brackets."),
+      Not(Contain.regex(AnyValidArrowRegexStr, "cannot include arrows."))
     )
   }
 }

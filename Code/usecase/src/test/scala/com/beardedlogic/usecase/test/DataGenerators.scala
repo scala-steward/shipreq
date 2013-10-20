@@ -85,7 +85,7 @@ object DataGenerators extends Logger {
 
   def containsAlphaNum(str: String): Boolean = str.exists(Character.isLetterOrDigit)
 
-  def withBraces(str: Gen[String]) = str.map(x => s"[$x]")
+  def withBraces(str: Gen[String]) = withOptionalSurroundingWhitespace(str).map(s => s"[$s]")
 
   def withOptionalBraces(str: Gen[String]) = Gen.oneOf(str, withBraces(str))
 
@@ -94,6 +94,17 @@ object DataGenerators extends Logger {
     mid <- gen
     w2 <- optionalWhitespace
   } yield w1 + mid + w2
+
+  def mkStringWithGen(gxs: Gen[List[String]], sep: Gen[String]): Gen[String] =
+    gxs.flatMap(xs =>
+      xs.foldRight(Gen.value("")) {
+        case (a, g) =>
+          for {b <- g; s <- sep} yield a + s + b
+      })
+
+  def mkStringWithWhitespace(gxs: Gen[List[String]]): Gen[String] = mkStringWithGen(gxs, whitespace)
+
+  def maybe[T](g: Gen[T]): Gen[Option[T]] = g.map(Some(_)) | None
 
   // -------------------------------------------------------------------------------------------------------------------
   // Smart Text
@@ -122,24 +133,36 @@ object DataGenerators extends Logger {
 
   def flowAndRefs(arrow: Gen[String], refs: Gen[String]) = for {a <- arrow; r <- refs} yield a + r
 
-  //  val refNum = Gen.chooseNum(0, MaxStepsPerLevel).map(_.toString)
-  //  val refLetter = for {
-  //    strlen <- Gen.frequency((5, 1), (2, 1), (1, 3))
-  //    chars <- Gen.pick(strlen, 'a' to 'z')
-  //  } yield chars.mkString
-  //  val romanNumeralChars = Gen.frequency((50, 'i'), (20, 'v'), (10, 'x'), (1, 'c'), (1, 'l'))
-  //  val refRoman = for {
-  //    strlen <- Gen.oneOf((1 to 9).toList ::: (1 to 4).toList)
-  //    chars <- Gen.listOfN(strlen, romanNumeralChars)
-  //  } yield chars.mkString
-  //  val refSep = withOptionalSurroundingWhitespace(".")
-  //  val refInner = Gen.someOf(refNum, refLetter, refRoman).flatMap(components => components.mkString())
+  val randomStepLabelWithoutPrefix = {
+    val refNum = Gen.chooseNum(0, MaxStepsPerLevel).map(_.toString)
+    val refLetter = for {
+      strlen <- Gen.frequency((85, 1), (12, 2), (3, 3))
+      chars <- Gen.pick(strlen, 'a' to 'z')
+    } yield chars.mkString
+    val romanNumeralChar = Gen.frequency((50, 'i'), (20, 'v'), (10, 'x'), (1, 'c'), (1, 'l'))
+    val refRoman = for {
+      strlen <- Gen.oneOf((1 to 9).toList ::: (1 to 4).toList)
+      chars <- Gen.listOfN(strlen, romanNumeralChar)
+    } yield chars.mkString
+    val sep = withOptionalSurroundingWhitespace(".")
+    val levels = List(refNum, refLetter, refRoman, refNum)
+    val stepComponents: Gen[List[String]] = Gen.choose(1, levels.size).flatMap(sz => Gen.sequence[List, String](levels.take(sz)))
+
+    mkStringWithGen(stepComponents, sep)
+  }
+
+  def randomStepLabelForUc(n: UseCaseNumber) = for {
+    prefix <- Gen.value(s"$n.") | s"$n.E."
+    suffix <- randomStepLabelWithoutPrefix
+  } yield prefix + suffix
+
+  def randomStepLabel = Gen.chooseNum(1,100).flatMap(n => randomStepLabelForUc(n.toShort.tag[IsUseCaseNumber]))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Step tree
 
   /** A node in a label-only tree structure. (Eg. "2.0.4.b.iv") */
-  case class StepPlaceholderNode(label: String, children: List[StepPlaceholderNode]) extends TreeNodeLike[StepPlaceholderNode]
+  case class StepPlaceholderNode(label: StepLabel, children: List[StepPlaceholderNode]) extends TreeNodeLike[StepPlaceholderNode]
 
   /** A tree structure of labels without any contents. */
   case class StepPlaceholderTree(override val nodes: List[StepPlaceholderNode], sli: StartingLabelIndices) extends TreeRoot[StepPlaceholderNode] {
@@ -170,7 +193,7 @@ object DataGenerators extends Logger {
           numberOfSteps(minSteps, sli.startingLabelIndex(level)).flatMap(size => {
             val listOfGens = (0 to (size - 1)).toList.map(i => {
               val ind = i + sli.startingLabelIndex(level)
-              val lbl = prefix + labelMaker(ind)
+              val lbl = (prefix + labelMaker(ind)).asLabel
               go(lbl + ".", level + 1, nextLabels, 0).map(StepPlaceholderNode(lbl, _))
             })
             Gen.sequence[List, StepPlaceholderNode](listOfGens)
@@ -182,38 +205,51 @@ object DataGenerators extends Logger {
   // -------------------------------------------------------------------------------------------------------------------
   // Data that depends on valid step refs
 
-  object RefDependentGen {
-    def apply(tree: StepPlaceholderTree) = new RefDependentGen(tree.labels)
-    def apply(uc: UseCase) = new RefDependentGen(uc.stepsAndLabels.value.ba.keys.toSeq)
+  object UcDataGenCtx {
+    def apply(tree: StepPlaceholderTree, selfUcNum: UseCaseNumber, ucsInProject: Seq[UseCaseNumber]) =
+      new UcDataGenCtx(tree.labels, selfUcNum, ucsInProject)
+
+    def apply(uc: UseCase, ucsInProject: Seq[UseCaseNumber]) =
+      new UcDataGenCtx(uc.stepsAndLabels.value.bs.toSeq, uc.number, ucsInProject)
+
+    def apply(c: UcParsingCtx, ucsInProject: Seq[UseCaseNumber]) =
+      new UcDataGenCtx(c.stepsAndLabels.value.bs.toSeq, c.ucn, ucsInProject)
   }
 
-  class RefDependentGen(labels: Seq[String]) {
+  class UcDataGenCtx(validSteps: Seq[StepLabel], selfUcNum: UseCaseNumber, existingUcs: Seq[UseCaseNumber]) {
+    val ucsInProject = (selfUcNum :: existingUcs.toList).distinct
+    val maxUcn = ucsInProject.map(_.toInt).max
 
-    val validRef = Gen.oneOf(labels)
+    val validStep = Gen.oneOf(validSteps)
+    val invalidStep = randomStepLabel suchThat (x => !validSteps.contains(removeAllWhitespace(x)))
+    val validStepRef = withBraces(validStep)
 
-    val validRefWithBraces = withBraces(validRef)
+    val possibleUcRefTitleSuffix = (nothing | useCaseTitle.map(":" + _))
+    val validUcRefInner = for {
+      n <- Gen.oneOf(ucsInProject)
+      title <- possibleUcRefTitleSuffix
+    } yield s"UC-$n$title"
 
-    val validRefElem = withOptionalSurroundingWhitespace(validRef | validRefWithBraces)
+    val invalidUcRefInner = possibleUcRefTitleSuffix.map(s"UC-${maxUcn + 1}?" + _)
 
-    val validRefList: Gen[String] = for {
-      lead <- optionalWhitespace
-      ref <- validRefElem
-      more <- Gen.listOf(validRefElem | whitespace)
-    } yield lead + (ref +: more).mkString(" ")
+    val textRef = withBraces(validStep | invalidStep | validUcRefInner | invalidUcRefInner | DeletedRefInner)
 
-    val flowToRefClause = flowAndRefs(flowToArrow, validRefList)
-    val flowFromRefClause = flowAndRefs(flowFromArrow, validRefList)
+    val textFieldText = Gen.listOf(nothing | plainText | textRef).map(_.mkString)
 
-    val textFieldText = Gen.listOf(nothing | plainText | validRefWithBraces).map(_.mkString)
+    val validFlowRef = validStep | validStepRef
+    val validFlowRefs = mkStringWithWhitespace(Gen.listOf(validFlowRef))
+    val flowToRefClause = flowAndRefs(flowToArrow, validFlowRefs)
+    val flowFromRefClause = flowAndRefs(flowFromArrow, validFlowRefs)
 
+    // TODO StepText now supports arbitrary flow clause count
     val stepText = for {
       desc <- textFieldText
+      clauseSep <- optionalWhitespace
       flowFrom <- (flowFromRefClause | nothing)
       flowTo <- (flowToRefClause | nothing)
       flowClauseOrder <- arbitrary[Boolean]
       flowClauseSep <- optionalWhitespace
       flow = if (flowClauseOrder) flowFrom + flowClauseSep + flowTo else flowTo + flowClauseSep + flowFrom
-      clauseSep <- optionalWhitespace
     } yield desc + clauseSep + flow
   }
 
@@ -243,7 +279,7 @@ object DataGenerators extends Logger {
       ucn <- arbitrary[UseCaseNumber]
       nc <- stepPlaceholderTree(ncf.rootLabelPrefix(ucn), ncf.sli, 1)
       steps = StepPlaceholderTree(nc.nodes, null)
-      refdep = RefDependentGen(steps)
+      refdep = UcDataGenCtx(steps, ucn, List.empty)
       stepTexts <- Gen.listOfN(steps.sizeRecursive, refdep.stepText)
     } yield {
       val stepsAndLabels = generateStepAndLabelBiMap(ucn, (ncf -> nc.stepTree))
@@ -256,7 +292,12 @@ object DataGenerators extends Logger {
   // -------------------------------------------------------------------------------------------------------------------
   // Use Case
 
-  val useCaseTitle = arbitrary[String]
+  private val usecasetitleRemoval = "[\\[\\]⦋⦌［］]+".r
+
+  lazy val useCaseTitle = arbitrary[String]
+                     .map(usecasetitleRemoval.replaceAllIn(_, ""))
+                     .map(AnyValidArrowRegex.replaceAllIn(_, ""))
+                     .map(s => if (s.isEmpty) "X" else s)
                      .map(InputValidator.useCaseTitle.correctAndValidate(_).toOption)
                      .suchThat(_.isDefined)
                      .map(_.get)
@@ -270,7 +311,7 @@ object DataGenerators extends Logger {
   implicit val arbUCH = Arbitrary(useCaseHeader)
   implicit val arbUCN = Arbitrary(useCaseNumber)
 
-  def useCaseGen(fieldList: => FieldListRec, ucnGen: Gen[UseCaseNumber] = useCaseNumber): Gen[UseCase] = {
+  def useCaseGen(fieldList: => FieldListRec, ucnGen: Gen[UseCaseNumber] = useCaseNumber, existingUcs: Seq[UseCaseNumber] = List.empty): Gen[UseCase] = {
     val NCF = fieldList.NCF
     val ECF = fieldList.ECF
 
@@ -280,7 +321,7 @@ object DataGenerators extends Logger {
       nc <- stepPlaceholderTree(NCF.rootLabelPrefix(ucn),  NCF.sli, 1)
       ec <- stepPlaceholderTree(ECF.rootLabelPrefix(ucn),  ECF.sli, 0)
       steps = StepPlaceholderTree(nc.nodes ::: ec.nodes, null)
-      refdep = RefDependentGen(steps)
+      refdep = UcDataGenCtx(steps, ucn, existingUcs)
       textFieldTexts <- Gen.listOfN(fieldList.textFields.size, refdep.textFieldText)
       stepTexts <- Gen.listOfN(steps.sizeRecursive, refdep.stepText)
     } yield {
@@ -331,10 +372,10 @@ object DataGenerators extends Logger {
     private def findChangableStep(sfv: StepFieldValue, eval: LocalStepId => UcUpdateResult): Option[(LocalStepId, UcUpdateResult)] =
       findTransformable(sfv.textmap.keys.toIndexedSeq, eval)(_.getChanges.nonEmpty)
 
-    private def fieldMutator(fn: (UseCaseUpdater, RefDependentGen) => Gen[Option[UcMutationResult]]): Gen[UseCaseMutator] =
+    private def fieldMutator(fn: (UseCaseUpdater, UcDataGenCtx) => Gen[Option[UcMutationResult]]): Gen[UseCaseMutator] =
       Gen(prms => Some(
         UseCaseMutator(uc => {
-          val refdep = RefDependentGen(uc)
+          val refdep = UcDataGenCtx(uc, List.empty) // TODO Field mutators aren't aware of other UCs
           val g = fn(uc, refdep)
           g.apply(prms).flatten.getOrElse(EmptyUcMutationResult)
         })))

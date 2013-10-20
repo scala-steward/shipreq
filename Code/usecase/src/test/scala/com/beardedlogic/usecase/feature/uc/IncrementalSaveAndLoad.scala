@@ -42,7 +42,7 @@ object IncrementalSaveAndLoad extends Commands {
         val pid = db.newProjectId()
         SystemInvariants(pid, db)
       }
-      val rev1 = db.createUseCaseIdentAndRev1(pid, UseCaseHeader("Do Stuff".tag[Validated]))
+      val rev1 = db.createUseCaseIdentAndRev1(pid, UseCaseHeader("IncrementalSaveAndLoad rev 1".tag[Validated]))
       cp = db.loadUseCase(rev1, pid)._1
       history = (cp.uc, "Starting point.") :: Nil
     }
@@ -65,7 +65,7 @@ object IncrementalSaveAndLoad extends Commands {
       (system.history :\ "")((he: HistoryEntry, a: String) => {
         val (uc, mutationDesc) = he
         c += 1
-        a + s"// ###### UC $c/$t: $mutationDesc\nval uc$c = ${uc.inspect}\n"
+        a + s"// ###### UC $c/$t: $mutationDesc\nval uc$c = ${uc.inspect}\n\n"
       })
     }
   }
@@ -123,10 +123,11 @@ object IncrementalSaveAndLoad extends Commands {
     }
 
     postConditions += {
-      case (_, _, err: Option[_]) => err match {
-        case None => true
-        case Some(msg) => Prop(false) :| msg.toString
-      }
+      case (_, _, err: Option[_]) =>
+        err match {
+          case None      => true
+          case Some(msg) => Prop(false) :| msg.toString
+        }
     }
   }
 

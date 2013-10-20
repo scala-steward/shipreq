@@ -3,7 +3,6 @@ package feature.uc.text
 
 import org.scalatest.FunSpec
 import org.scalatest.prop._
-import scala.collection.immutable.TreeSet
 import scalaz.syntax.apply._
 import scalaz.std.list.listInstance
 import db.UseCaseSummary2
@@ -16,6 +15,7 @@ import Changes._
 import ParsingConfig._
 import FreeTextTerms._
 import reflect.ClassTag
+import feature.uc.step.StepNode
 
 object FreeAndStepTextTests extends TestHelpers2 {
 
@@ -31,6 +31,7 @@ object FreeAndStepTextTests extends TestHelpers2 {
     new UseCaseSummary2(300, 3, "Old Third", "X")
   )
   val Rels = CachedUseCaseRelations(UCS)
+  val Ctx1: UcParsingCtx = autoCtx(StepState1)
 
   def filterTerms[A <: FreeTextTerm](ts: List[FreeTextTerm])(implicit m: ClassTag[A]): List[A] =
     ts.filter(a => m.runtimeClass.isAssignableFrom(a.getClass)).map(_.asInstanceOf[A])
@@ -45,7 +46,7 @@ object FreeAndStepTextTests extends TestHelpers2 {
   }
 
   abstract class Tester[T <: ParsedText[T]](val parser: Parser[T]) {
-    def parse(text: String) = parser.parse(text)(StepState1)
+    def parse(text: String) = parser.parse(text)(Ctx1)
     def terms(t: T): List[FreeTextTerm]
     def assertTerms(t: T, expectedTerms: FreeTextTerm*): Unit = terms(t) shouldBe expectedTerms.toList
     def assertText(t: T, expectedText: String): Unit = t.text shouldBe expectedText
@@ -109,13 +110,13 @@ object FreeAndStepTextTests extends TestHelpers2 {
   val FlowTesters = List(FlowFromTester, FlowToTester)
 }
 
+import FreeAndStepTextTests._
+
 // =====================================================================================================================
 
 class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks with Checkers {
 
-  implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = Cores * 40, workers = Cores)
-
-  import FreeAndStepTextTests._
+  implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = Cores * 50, workers = Cores)
 
   def aTextWithRefs[T <: ParsedText[T]](T: Tester[T]) {
     implicit def StrToSomeStr(s: String) = Some(s)
@@ -280,19 +281,28 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       it("should change UC refs to self") {
         val x = T.parse("Look [UC-3].")
         T.oldAssert(x, "Look [UC-3: New Third].", Map.empty, true)
-        val (y, changes) = x.respondToChange(TitleChanged("New Third", "GREAT"))(autoCtx(StepState1).copy(title = "GREAT")).openChange
+        val (y, changes) = x.respondToChange(TitleChanged("New Third", "GREAT"))(Ctx1.copy(title = "GREAT")).openChange
         y.text ==== "Look [UC-3: GREAT]."
         changes shouldBe List(T.textChanged)
       }
     }
   } // end aTextWithRefs
 
+  def obeysLaws[T <: ParsedText[T]](P: TextProps[T]) {
+    describe("Laws") {
+      it("t = parse t.text") {check(P.reparse)}
+      it("t = load t.normalisedText") {check(P.reload)}
+    }
+  }
+
   describe("FreeText") {
     it should behave like aTextWithRefs(FreeTextTester)
+    it should behave like obeysLaws(FreeTextProps)
   }
 
   describe("StepText") {
     it should behave like aTextWithRefs(StepTextTester)
+    it should behave like obeysLaws(StepTextProps)
 
     def parse(input: String, stepState: StepAndLabelBiMap = StepState1) = new StepTextFactory(X0).parse(input)(stepState)
 
@@ -593,10 +603,6 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         )
         forAll(examples)(testTextToText(_, _))
       }
-
-      it("should parse random valid statements") {
-        check(HalfAssedOldProperties.validStatementProp)
-      }
     }
 
     describe("text()") {
@@ -691,37 +697,56 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
 // =====================================================================================================================
 
-/**
- * ScalaCheck generators and checks for SmartText.
- *
- * @since 15/05/2013
- */
-object HalfAssedOldProperties {
+import org.scalacheck.{Arbitrary, Gen, Prop, Commands}
+import Arbitrary.arbitrary
+import Prop._
+import test.DataGenerators.UcDataGenCtx
 
-  import org.scalacheck.Gen
-  import org.scalacheck.Prop._
-  import test.DataGenerators._
+abstract class TextProps[T <: ParsedText[T]](T: Tester[T]) {
+  import T.parser.{load, parse}
 
-  // TODO It would be nice to do write proper property-checks
+//  implicit val Ctx = Ctx1
+//  implicit val SavedSteps = SavedSteps1
+  val ctxGen = UcDataGenCtx(Ctx1, UCS.map(_.number))
 
-  val validStep = withOptionalBraces(Gen.oneOf("S.1", "S.2", "S.3", "S.5"))
+  case class State(t: T, ctx: UcParsingCtx, ss: SavedSteps)
+  implicit def s2ss(s: State) = s.ss
+  implicit def s2ctx(s: State) = s.ctx
 
-  val validStatement = for {
-    l <- optionalPlainText suchThat (!_.endsWith("-"))
-    a <- flowToArrow
-    r <- Gen.listOf1(validStep)
-  } yield (l, a, r)
+  implicit def arbInput: Arbitrary[String]
+  //implicit def arbParsedText: Arbitrary[T] = Arbitrary(arbitrary[String].map(parse))
 
+  lazy val freshlyEnteredText: Gen[State] =
+    arbitrary[String].flatMap(input =>
+      State(parse(input)(Ctx1), Ctx1, SavedSteps1))
 
-  val validStatementProp = forAllNoShrink(validStatement) { case (l, a, steps) if a.nonEmpty && steps.nonEmpty =>
-    val t = l + a + steps.mkString(",")
-    val end = if (steps.isEmpty) "" else "➡ " + TreeSet(steps: _*).map { _.replaceFirst("^\\[?", "[").replaceFirst("\\]?$", "]") }.mkString(" ")
-    val exp = List(l.trim, end).filter(_.nonEmpty).mkString(" ")
-    checkTextParsing(t, exp)
-  }
+  lazy val textAfterStepsRemoved: Gen[State] =
+    freshlyEnteredText.flatMap(s => {
+      implicit val ss = EmptySavedSteps
+      implicit val ctx = s.ctx.copy(stepsAndLabels = EmptyStepAndLabelBiMap)
+      State(s.t.respondToChange(StepRemoved(StepNode(X1,0,0))).getValueOrElse(s.t), ctx, ss)
+    })
 
-  def checkTextParsing(text: String, expected: String) = {
-    val actual = FreeAndStepTextTests.StepTextTester.parse(text).text
-    (actual == expected) :|| s"Parsing failed.\nT: '$text'\nE: '$expected'\nA: '$actual'"
-  }
+  implicit def arbState: Arbitrary[State] = Arbitrary(freshlyEnteredText | textAfterStepsRemoved)
+
+  def equal(a: T, b: T): Prop
+
+  lazy val reparse = forAll((s: State) => equal(s.t, parse(s.t.text)(s)))
+  lazy val reload = forAll((s: State) => equal(s.t, load(s.t.normalisedText(s))(s, s)))
+}
+
+object FreeTextProps extends TextProps(FreeTextTester) {
+  override implicit val arbInput: Arbitrary[String] = Arbitrary(ctxGen.textFieldText)
+  override def equal(a: FreeText, b: FreeText) =
+    (a.text  == b.text ) :| "Text differs" &&
+    (a.terms == b.terms) :| "Terms differ."
+}
+
+object StepTextProps extends TextProps(StepTextTester) {
+  override implicit val arbInput: Arbitrary[String] = Arbitrary(ctxGen.textFieldText)
+  override def equal(a: StepText, b: StepText) =
+    (a.text             == b.text            ) :| "Text differs" &&
+    (a.mainClause.terms == b.mainClause.terms) :| "Main clause terms differ." &&
+    (a.flowFromClause   == b.flowFromClause  ) :| "Flow-from clauses differ." &&
+    (a.flowToClause     == b.flowToClause    ) :| "Flow-to clauses differ."
 }
