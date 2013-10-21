@@ -175,7 +175,10 @@ html, body { height: 100% } // Cannot have any padding or margin here
       td > ul {padding-left:2ex}
       //img {width:100%; max-width:100%}
       a.step:not(:hover), a.uc:not(:hover) {border-bottom:1px dotted}
-      .bad {color:#c00}
+      .bad.ref {
+        color:#c00;
+        cursor:no-drop;
+      }
       .steps {
         th {white-space:nowrap}
         td {width:100%}

@@ -57,7 +57,7 @@ html, body { height: 100%; }
 .ucs-published main .fvs > tr > th, .ucs-published main .fvs > tr > td { padding-top: 0.3ex; padding-bottom: 0.3ex; }
 .ucs-published main .fvs td > ul { padding-left: 2ex; }
 .ucs-published main .fvs a.step:not(:hover), .ucs-published main .fvs a.uc:not(:hover) { border-bottom: 1px dotted; }
-.ucs-published main .fvs .bad { color: #c00; }
+.ucs-published main .fvs .bad.ref { color: #c00; cursor: no-drop; }
 .ucs-published main .fvs .steps th { white-space: nowrap; }
 .ucs-published main .fvs .steps td { width: 100%; }
 .ucs-published main .fvs .steps * { line-height: 1.168em; }

@@ -66,9 +66,9 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   override def fttPlainText(t: PlainText)                 = plainText(t.text)
   override def fttStepRef(t: StepRef)                     = stepRef(t.label)
   override def fttAnyUseCaseRef(t: AnyUseCaseRef)         = <a class="uc" title={fullName(t.num, t.title)} href={ucHref(t.num)}>{reqId(t.num)}</a>
-  override def fttDeletedRef                              = <span class="bad">{DeletedRefStr}</span>
-  override def fttInvalidStepRef(t: InvalidStepRef)       = <span class="bad">{makeInvalidStepRef(t.label)}</span>
-  override def fttInvalidUseCaseRef(t: InvalidUseCaseRef) = <span class="bad">{makeInvalidUseCaseRef(t.num, t.title)}</span>
+  override def fttDeletedRef                              = <span class="bad ref">{DeletedRefStr}</span>
+  override def fttInvalidStepRef(t: InvalidStepRef)       = <span class="bad ref">{makeInvalidStepRef(t.label)}</span>
+  override def fttInvalidUseCaseRef(t: InvalidUseCaseRef) = <span class="bad ref">{makeInvalidUseCaseRef(t.num, t.title)}</span>
 
   def stepRef(l: StepLabel): X = <a class="step" href={stepHref(l)}>{l}</a>
 
