@@ -6,13 +6,14 @@ import net.liftweb.http.SHtml
 import net.liftweb.util.Helpers._
 import scalaz.{\/-, -\/}
 
+import app.{AppSiteMap, RequestVars}
 import db.UpdateProjectResult
 import feature.InputValidator
 import lib.SingleOpStatefulSnippet
 import lib.Types._
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
-import app.RequestVars
+import AppSiteMap.Implicits._
 
 private[snippet] object ProjectHeaderConsts {
   final val TriggerProjectUpdated = JsTextTrigger("project-updated")
@@ -36,7 +37,8 @@ class ProjectHeader extends SingleOpStatefulSnippet {
       "input .title [value]" #> project.name &
       "input .title" #> SHtml.onSubmit(projectNameInput = _) &
       "button .update" #> ajaxSubmitOnClick(onRename)
-    )
+    ) &
+    "a .readucs [href]" #> AppSiteMap.ReadOwnUcs.relativeUrl(project)
   )
 
   def onRename(): JsCmd = {

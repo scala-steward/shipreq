@@ -16,8 +16,12 @@ object RequestVars {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  private def urlProvidedProjectId: Box[ProjectId] = AppSiteMap.Project.currentValue
-  private def urlProvidedUseCaseId: Box[UseCaseIdentId] = AppSiteMap.UseCaseEditor.currentValue
+  private def urlProvidedProjectId: Box[ProjectId] =
+    AppSiteMap.Project.currentValue or
+    AppSiteMap.ReadOwnUcs.currentValue
+
+  private def urlProvidedUseCaseId: Box[UseCaseIdentId] =
+    AppSiteMap.UseCaseEditor.currentValue
 
   private def discoverProject: Box[Project] = {
     def discoverProjectByProjectId: Box[Project] = for {

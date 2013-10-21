@@ -40,11 +40,15 @@ object AppSiteMap {
     >> AuthenticationRequired >> ProjectPermissionRequired
     >> UseTemplate("loggedin/uceditor"))
 
+  val ReadOwnUcs = (MenuWithIdParam(ExternalId.Project)("readOwnUcs", "Read Use Cases") / "project" / * / "read"
+    >> AuthenticationRequired >> ProjectPermissionRequired
+    >> UseTemplate("loggedin/read_own_ucs"))
+
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages = List[ConvertableToMenu](
     Home, Login, Logout, Register1, Register2,
-    Project, UseCaseEditor
+    Project, UseCaseEditor, ReadOwnUcs
   )
 
   val sitemap = {
