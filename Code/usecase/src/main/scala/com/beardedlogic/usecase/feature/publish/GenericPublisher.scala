@@ -6,6 +6,7 @@ import com.beardedlogic.usecase.feature.uc.step.{StepNode, StepTreeZipper}
 import com.beardedlogic.usecase.feature.uc.text.FreeTextTerms._
 import com.beardedlogic.usecase.feature.uc.text.{FlowClause, FreeTextTerm, StepText, FreeText}
 import com.beardedlogic.usecase.lib.Types._
+import net.liftweb.util.TimeHelpers.logTime
 import scalaz.{Traverse, Monoid}
 import scalaz.syntax.foldable._
 import scalaz.syntax.monoid._
@@ -30,7 +31,9 @@ abstract class GenericPublisher(input: Input) {
   // -------------------------------------------------------------------------------------------------------------------
   // High-level
 
-  def doc: X = doc(toc, articles)
+  def doc: X = logTime(s"${getClass.getSimpleName}.doc(${useCases.size} UCs)")(
+    doc(toc, articles)
+  )
   def doc(toc: X, articles: X): X = toc |+| articles
 
   def toc: X = tocSurround(useCases foldMap tocEntry)

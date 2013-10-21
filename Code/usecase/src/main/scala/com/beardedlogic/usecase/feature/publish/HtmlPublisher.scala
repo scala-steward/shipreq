@@ -11,10 +11,10 @@ import scalaz.syntax.foldable._
 import ParsingConfig._
 
 object HtmlPublisher extends Publisher[NodeSeq] {
-  override def publish(input: Input) = new HtmlPublisherImpl(input).doc
+  override def publish(input: Input) = new HtmlPublisher(input).doc
 }
 
-class HtmlPublisherImpl(input: Input) extends GenericPublisher(input) {
+class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   type X = NodeSeq
   implicit val xMonoid = scalaz.std.nodeseq.nodeSeqInstance
 

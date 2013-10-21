@@ -1,14 +1,15 @@
 package com.beardedlogic.usecase
 package feature.uc
 
-import lib.Types._
-import field._
+import net.liftweb.util.TimeHelpers.logTime
+import app.Defaults
 import db._
+import field._
 import lib.Locks.{SingleUseCase, UseCaseNumbers}
+import lib.Types._
 import step.StepTree
 import util.{PreparedLock, BiMap, Lock}
 import UseCaseFns._
-import app.Defaults
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -79,9 +80,10 @@ object UseCasePersistence {
   def loadAll(projectId: ProjectId, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[UseCase] =
     loadAll(dao.findAllLatestUseCaseRevsByProject(projectId), dao, lock)
 
-  // TODO loadAll rubbish performance
   def loadAll(ucRevs: List[UseCaseRev], dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[UseCase] =
-    ucRevs.map(load(_, dao, lock)._1.uc)
+    logTime(s"UseCasePersistence.loadAll(${ucRevs.size} UCs)")(
+      ucRevs.map(load(_, dao, lock)._1.uc)
+    )
 
   // ===================================================================================================================
 
