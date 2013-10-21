@@ -76,6 +76,13 @@ object UseCasePersistence {
     (cp, rels)
   }
 
+  def loadAll(projectId: ProjectId, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[UseCase] =
+    loadAll(dao.findAllLatestUseCaseRevsByProject(projectId), dao, lock)
+
+  // TODO loadAll rubbish performance
+  def loadAll(ucRevs: List[UseCaseRev], dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[UseCase] =
+    ucRevs.map(load(_, dao, lock)._1.uc)
+
   // ===================================================================================================================
 
   /**

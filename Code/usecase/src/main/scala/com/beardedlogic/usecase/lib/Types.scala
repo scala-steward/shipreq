@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.lib
 
-import com.beardedlogic.usecase.db.{UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
+import com.beardedlogic.usecase.db.{Project, UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
 import com.beardedlogic.usecase.feature.uc.change.{Change, ChangeResultF}
 import com.beardedlogic.usecase.feature.uc.field.Field
 import com.beardedlogic.usecase.feature.uc.UseCase
@@ -172,6 +172,7 @@ object Types {
   sealed trait IsProjectEI extends TypeTag[String]
   type ProjectId = JLong @@ IsProjectId
   type ProjectEI = String @@ IsProjectEI
+  @inline final implicit def p2pid(p: Project): ProjectId = p.id
 
   object AutoExternaliseIds {
     implicit def aei_P (id: ProjectId)     : ProjectEI      = ExternalId.Project(id)
