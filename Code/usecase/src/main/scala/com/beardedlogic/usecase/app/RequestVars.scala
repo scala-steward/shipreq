@@ -19,9 +19,9 @@ object RequestVars extends Logger {
 
   object ProjectId extends RequestVar[Name[ProjectId]](fail("ProjectId"))
 
-  object SoleProject extends RequestVar[Name[Project]](fail("SoleProject"))
+  object Project extends RequestVar[Name[Project]](fail("SoleProject"))
 
-  object SoleUseCaseId extends RequestVar[Name[UseCaseIdentId]](fail("SoleUseCaseId"))
+  object UseCaseId extends RequestVar[Name[UseCaseIdentId]](fail("SoleUseCaseId"))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Derived
@@ -30,17 +30,17 @@ object RequestVars extends Logger {
     DaoProvider.withSession(_.summariseUseCases(ProjectId.get.value))
   )
 
-  def DeriveSoleProjectFromProjectId(): Unit =
-    SoleProject.set(Need(
+  def DeriveProjectFromProjectId(): Unit =
+    Project.set(Need(
       requireDbData("Project")(_.findProject(ProjectId.get.value))
     ))
 
   def DeriveProjectIdFromProject(): Unit =
-    ProjectId.set(Need(SoleProject.get.value.id))
+    ProjectId.set(Need(Project.get.value.id))
 
-  def DeriveSoleProjectFromUseCaseId(): Unit =
-    SoleProject.set(Need(
-      requireDbData("Project")(_.findProjectByUc(SoleUseCaseId.get.value))
+  def DeriveProjectFromUseCaseId(): Unit =
+    Project.set(Need(
+      requireDbData("Project")(_.findProjectByUc(UseCaseId.get.value))
     ))
 
   // -------------------------------------------------------------------------------------------------------------------

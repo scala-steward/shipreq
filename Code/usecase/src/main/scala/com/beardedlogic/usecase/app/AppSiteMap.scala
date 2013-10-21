@@ -10,7 +10,7 @@ import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scalaz.{Name, Need, NonEmptyList}
 
 import AppConfig.BaseUrl
-import RequestVars.{DeriveProjectIdFromProject, DeriveSoleProjectFromProjectId, DeriveSoleProjectFromUseCaseId}
+import RequestVars.{DeriveProjectIdFromProject, DeriveProjectFromProjectId, DeriveProjectFromUseCaseId}
 import lib.Types._
 import feature.{ExternalId, ExternalIdConverter, Navbar, NavbarElem}
 import security.{PermissionCheck, Oshiro}
@@ -42,7 +42,7 @@ object AppSiteMap {
     >> UsesNavbar(Navbar.Home, Navbar.CurrentProject)
     >> PerformEffects {
         setReqVar(RequestVars.ProjectId, Project, "Project --> ProjectId")
-        DeriveSoleProjectFromProjectId()
+        DeriveProjectFromProjectId()
       }
   )
 
@@ -52,8 +52,8 @@ object AppSiteMap {
     >> UseTemplate("loggedin/uceditor")
     >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown)
     >> PerformEffects {
-        setReqVar(RequestVars.SoleUseCaseId, UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
-        DeriveSoleProjectFromUseCaseId()
+        setReqVar(RequestVars.UseCaseId, UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
+        DeriveProjectFromUseCaseId()
         DeriveProjectIdFromProject()
       }
   )
@@ -65,7 +65,7 @@ object AppSiteMap {
     >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Use Cases"))
     >> PerformEffects {
         setReqVar(RequestVars.ProjectId, ReadOwnUcs, "ReadOwnUcs --> ProjectId")
-        DeriveSoleProjectFromProjectId()
+        DeriveProjectFromProjectId()
       }
   )
 
@@ -149,7 +149,7 @@ object AppSiteMap {
     If(() => check(PermissionCheck.userCan).expect, () => failResp)
 
   private def ProjectPermissionRequired =
-    PermissionRequired(_.readAndUpdate(RequestVars.SoleProject.get.value))
+    PermissionRequired(_.readAndUpdate(RequestVars.Project.get.value))
 
   private def UsesNavbar(h: NavbarElem, t: NavbarElem*) = {
     val elems = NonEmptyList(h, t: _*)

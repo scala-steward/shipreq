@@ -28,7 +28,7 @@ class ProjectHeader extends SingleOpStatefulSnippet {
   import ProjectHeaderConsts._
   implicit def alertId = "phdra".tag[AlertIdTag]
 
-  val project = RequestVars.SoleProject.get.value
+  val project = RequestVars.Project.get.value
   var projectNameInput = project.name
 
   def render = (

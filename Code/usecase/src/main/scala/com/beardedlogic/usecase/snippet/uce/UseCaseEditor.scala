@@ -8,7 +8,7 @@ import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
 import app.{Defaults, DI}
-import app.RequestVars.SoleProject
+import app.RequestVars.Project
 import db.UseCaseHeader
 import lib.{SnippetHelpers, Locks, StaticSnippetHelpers}
 import lib.Types._
@@ -48,7 +48,7 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
   }
 
   def loadLatest(ucId: UseCaseIdentId): (State, UseCaseRelations) = requireResult_!(for {
-      lock   <- Locks.UseCaseNumbers.readM(SoleProject.get.value.id)
+      lock   <- Locks.UseCaseNumbers.readM(Project.get.value.id)
       dao    <- daoProvider.forTransaction
       ucRec  <- Box(dao.findUseCaseLatestRev(ucId)) ~> NotFoundResponse()
     } yield {
@@ -114,7 +114,7 @@ class UseCaseEditor(initialState: UseCaseEditor.State, val rels: UseCaseRelation
   def save(): JsCmd = state.prevSave match {
     case Some(cp) =>
       daoProvider.withTransaction(dao => {
-        val lock = Locks.SingleUseCase.writeP(cp.rec, SoleProject.get.value.id)
+        val lock = Locks.SingleUseCase.writeP(cp.rec, Project.get.value.id)
         UseCasePersistence.save(uc, cp, lock, dao) match {
           case Some(cp) =>
             setState(State(cp))

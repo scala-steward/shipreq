@@ -10,7 +10,7 @@ import xml.NodeSeq
 object ReadOwnUcs {
 
   def render = {
-    val project = RequestVars.SoleProject.get.value
+    val project = RequestVars.Project.get.value
 
     val ucs: List[UseCase] =
       DI.DaoProvider.withTransaction(dao =>

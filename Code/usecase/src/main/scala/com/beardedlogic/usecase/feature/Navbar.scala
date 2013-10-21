@@ -46,7 +46,7 @@ object Navbar {
   case object Home extends StaticLinkElem(<a href={AppSiteMap.HomeRelativeUrl}>Home</a>)
 
   case object CurrentProject extends NavbarElem {
-    def project               = RequestVars.SoleProject.get.value
+    def project               = RequestVars.Project.get.value
     def link: Elem            = <a class="project">{project.name}</a>
     override def render       = link % Attribute("href", Text(AppSiteMap.Project.relativeUrl(project)), Null)
     override def renderActive = link % DudLinkAttr
@@ -58,7 +58,7 @@ object Navbar {
 
     override def render = {
       val ucs = RequestVars.UseCases.get
-      val ucId = RequestVars.SoleUseCaseId.get.value
+      val ucId = RequestVars.UseCaseId.get.value
       val isActive: (UseCaseSummary => Boolean) = (_.id == ucId)
       val currentUc = ucs.find(isActive) getOrElse shouldNeverHappen_!("SoleUseCaseId not found in UseCases")
       renderCurrent(currentUc) ++ dropdown(ucs filterNot isActive)

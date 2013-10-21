@@ -27,7 +27,7 @@ class ProjectHeaderTest extends FunSuite with TestHelpers {
     }).install {
       withUserLoggedIn(loggedInUser) {
         inMockSession {
-          RequestVars.SoleProject.set(Value(project))
+          RequestVars.Project.set(Value(project))
           val h = new ProjectHeader
           fn(h)
         }
