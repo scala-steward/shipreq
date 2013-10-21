@@ -1,9 +1,10 @@
 package com.beardedlogic.usecase
 package app
 
-import net.liftweb.common.{Logger, Box}
+import scalaz.{Name, Need}
+import net.liftweb.common.Logger
 import net.liftweb.http.RequestVar
-import db.{UseCaseSummary, Project}
+import db.{DaoS, UseCaseSummary, Project}
 import DI.DaoProvider
 import lib.Types._
 import lib.SnippetHelpers._
@@ -11,45 +12,51 @@ import feature.Navbar
 
 object RequestVars extends Logger {
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Manually set
+
   object Navbar extends RequestVar[Navbar](fail("Navbar"))
 
-  object SoleProject extends RequestVar[Project](discoverProject openOr fail("SoleProject"))
+  object ProjectId extends RequestVar[Name[ProjectId]](fail("ProjectId"))
 
-  object UseCases extends RequestVar[List[UseCaseSummary]](loadUseCases)
+  object SoleProject extends RequestVar[Name[Project]](fail("SoleProject"))
 
-  object SoleUseCaseId extends RequestVar[UseCaseIdentId](urlProvidedUseCaseId openOr fail("SoleUseCaseId"))
+  object SoleUseCaseId extends RequestVar[Name[UseCaseIdentId]](fail("SoleUseCaseId"))
 
   // -------------------------------------------------------------------------------------------------------------------
+  // Derived
+
+  object UseCases extends RequestVar[List[UseCaseSummary]](
+    DaoProvider.withSession(_.summariseUseCases(ProjectId.get.value))
+  )
+
+  def DeriveSoleProjectFromProjectId(): Unit =
+    SoleProject.set(Need(
+      requireDbData("Project")(_.findProject(ProjectId.get.value))
+    ))
+
+  def DeriveProjectIdFromProject(): Unit =
+    ProjectId.set(Need(SoleProject.get.value.id))
+
+  def DeriveSoleProjectFromUseCaseId(): Unit =
+    SoleProject.set(Need(
+      requireDbData("Project")(_.findProjectByUc(SoleUseCaseId.get.value))
+    ))
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Helpers
 
   private def fail(name: String): Nothing = {
     warn("No value available to RequestVar: " + name)
     redirectHome
   }
 
-  private def urlProvidedProjectId: Box[ProjectId] =
-    AppSiteMap.Project.currentValue or
-    AppSiteMap.ReadOwnUcs.currentValue
-
-  private def urlProvidedUseCaseId: Box[UseCaseIdentId] =
-    AppSiteMap.UseCaseEditor.currentValue
-
-  private def discoverProject: Box[Project] = {
-    def discoverProjectByProjectId: Box[Project] = for {
-      id <- urlProvidedProjectId
-      p <- DaoProvider.withSession(_.findProject(id))
-    } yield p
-
-    def discoverProjectByUseCaseId: Box[Project] = for {
-      id <- urlProvidedUseCaseId
-      p <- DaoProvider.withSession(_.findProjectByUc(id))
-    } yield p
-
-    discoverProjectByProjectId.or(discoverProjectByUseCaseId)
+  private def notFound(name: String): Nothing = {
+    warn(s"$name not found.")
+    redirectHome
   }
 
-  def getProjectId: ProjectId =
-    urlProvidedProjectId getOrElse SoleProject.get.id
+  private def requireDbData[T](name: String)(f: DaoS => Option[T]): T =
+    DaoProvider.withSession(f) getOrElse notFound(name)
 
-  private def loadUseCases: List[UseCaseSummary] =
-    DaoProvider.withSession(_.summariseUseCases(getProjectId))
 }

@@ -48,7 +48,7 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
   }
 
   def loadLatest(ucId: UseCaseIdentId): (State, UseCaseRelations) = requireResult_!(for {
-      lock   <- Locks.UseCaseNumbers.readM(SoleProject.is.id)
+      lock   <- Locks.UseCaseNumbers.readM(SoleProject.get.value.id)
       dao    <- daoProvider.forTransaction
       ucRec  <- Box(dao.findUseCaseLatestRev(ucId)) ~> NotFoundResponse()
     } yield {
@@ -114,7 +114,7 @@ class UseCaseEditor(initialState: UseCaseEditor.State, val rels: UseCaseRelation
   def save(): JsCmd = state.prevSave match {
     case Some(cp) =>
       daoProvider.withTransaction(dao => {
-        val lock = Locks.SingleUseCase.writeP(cp.rec, SoleProject.is.id)
+        val lock = Locks.SingleUseCase.writeP(cp.rec, SoleProject.get.value.id)
         UseCasePersistence.save(uc, cp, lock, dao) match {
           case Some(cp) =>
             setState(State(cp))
