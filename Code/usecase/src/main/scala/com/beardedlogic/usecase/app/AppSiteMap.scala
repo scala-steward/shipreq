@@ -61,7 +61,10 @@ object AppSiteMap {
   val sitemap = {
     import org.apache.shiro.authc.UsernamePasswordToken, org.apache.shiro.SecurityUtils.getSubject
 
-    def anonUce = Menu.i("Use Case Editor (demo)") / "uce" >> UseTemplate("loggedin/uceditor")
+    def anonUce = (Menu.i("Use Case Editor Demo") / "uce"
+      >> UseTemplate("loggedin/uceditor")
+      >> UsesNavbar(Navbar.Home, Navbar.StaticText("Use Case Editor Demo"))
+    )
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
