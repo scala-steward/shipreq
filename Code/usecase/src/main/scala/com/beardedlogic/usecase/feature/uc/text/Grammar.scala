@@ -105,7 +105,7 @@ object Grammar extends RegexParsers {
       }
 
     val RefInner_UseCase: Parser[UseCaseRefToken] =
-      "UC" ~> opt("-") ~> "\\d+".r ~ opt(InvalidRefSuffix) ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
+      "[Uu][Cc]".r ~> opt("-") ~> "\\d+".r ~ opt(InvalidRefSuffix) ~ opt(":" ~> s"[^${Pattern quote RefBraceRs}]+".r) ^^ {
         case num ~ invalid ~ title => UseCaseRefToken(invalid.isEmpty, num.toShort.tag[IsUseCaseNumber], title)
       }
 

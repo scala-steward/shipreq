@@ -187,7 +187,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       }
 
       describe("Use Case refs") {
-        it("should parse valid UC refs (numbers only)") {
+        it("should parse valid UC refs (without title)") {
           oldTest("[UC 1]", "[UC-1: First]")
           oldTest("[UC - 1]", "[UC-1: First]")
           oldTest("[UC- 1]", "[UC-1: First]")
@@ -196,11 +196,16 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
           oldTest("[ UC-1 ]", "[UC-1: First]")
           oldTest("[ UC  1 ]", "[UC-1: First]")
           oldTest("[UC2]", "[UC-2: Second]")
+          oldTest("[uc2]", "[UC-2: Second]")
+          oldTest("[Uc2]", "[UC-2: Second]")
+          oldTest("[uc-2]", "[UC-2: Second]")
+          oldTest("[uc 2]", "[UC-2: Second]")
         }
         it("should parse valid UC refs (with title)") {
           oldTest("[UC-1: Bullshit]", "[UC-1: First]")
           oldTest("[UC-1 : Bullshit ]", "[UC-1: First]")
           oldTest("[ UC 2: Blah blah blah] and [UC-1:FFS]", "[UC-2: Second] and [UC-1: First]")
+          oldTest("[ uc2 : Blah blah blah] and [ Uc-1:FFS]", "[UC-2: Second] and [UC-1: First]")
         }
         it("should use the current title when referencing current use case") {
           oldTest("[UC-3]", "[UC-3: New Third]", Map.empty, true)

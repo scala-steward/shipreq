@@ -226,9 +226,10 @@ object DataGenerators extends Logger {
 
     val possibleUcRefTitleSuffix = (nothing | useCaseTitle.map(":" + _))
     val validUcRefInner = for {
-      n <- Gen.oneOf(ucsInProject)
-      title <- possibleUcRefTitleSuffix
-    } yield s"UC-$n$title"
+      prefix <- Gen.oneOf("uc","UC","uc-","UC-")
+      n      <- Gen.oneOf(ucsInProject)
+      title  <- possibleUcRefTitleSuffix
+    } yield prefix + n + title
 
     val invalidUcRefInner = possibleUcRefTitleSuffix.map(s"UC-${maxUcn + 1}?" + _)
 
