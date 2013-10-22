@@ -45,8 +45,9 @@ object FreeAndStepTextTests extends TestHelpers2 {
       c.get.refs should be(refs)
   }
 
-  abstract class Tester[T <: ParsedText[T]](val parser: Parser[T]) {
-    def parse(text: String) = parser.parse(text)(Ctx1)
+  abstract class Tester[T <: ParsedText[T]] {
+    def parse(text: String)(implicit ctx: UcParsingCtx): T
+    def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): T
     def terms(t: T): List[FreeTextTerm]
     def assertTerms(t: T, expectedTerms: FreeTextTerm*): Unit = terms(t) shouldBe expectedTerms.toList
     def assertText(t: T, expectedText: String): Unit = t.text shouldBe expectedText
@@ -59,15 +60,20 @@ object FreeAndStepTextTests extends TestHelpers2 {
     def mapTerms(t: T, f: FreeTextTerm => FreeTextTerm): T
   }
 
-  object FreeTextTester extends Tester[FreeText](FreeText) {
+  object FreeTextTester extends Tester[FreeText] {
+    override def parse(text: String)(implicit ctx: UcParsingCtx) = FreeText.parse(text)
+    override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = FreeText.load(text)
     override def terms(t: FreeText) = t.terms
     override def textChanged = TextChanged
     override def mapTerms(t: FreeText, f: FreeTextTerm => FreeTextTerm) = FreeText(t.terms map f)
   }
 
-  object StepTextTester extends Tester[StepText](new StepTextFactory(X0)) {
+  object StepTextTester extends Tester[StepText] {
+    val id = X0
+    override def parse(text: String)(implicit ctx: UcParsingCtx) = StepText.parse(id, text)
+    override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = StepText.load(id, text)
     override def terms(t: StepText) = t.mainClause.terms
-    override def textChanged = StepTextChanged(X0)
+    override def textChanged = StepTextChanged(id)
     override def oldAssert(subject: StepText, text: String, refs: Refs, refsOwnUc: Boolean): Unit = {
       subject.text ==== text
       oldStyleRefs(terms(subject)) ==== refs
@@ -121,6 +127,7 @@ import FreeAndStepTextTests._
 class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks with Checkers {
 
   implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = Cores * 50, workers = Cores)
+  implicit val Ctx = Ctx1
 
   def aTextWithRefs[T <: ParsedText[T]](T: Tester[T]) {
     implicit def StrToSomeStr(s: String) = Some(s)
@@ -224,22 +231,22 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
     describe("Loading text") {
       it("should load simple text") {
-        val x = T.parser.load("Hehe".tag[IsNormalised])(BiMap.empty, StepState1)
+        val x = T.load("Hehe".tag[IsNormalised])(BiMap.empty, StepState1)
         T.oldAssert(x, "Hehe", Map.empty, false)
       }
 
       it("should denormalise step refs") {
-        val x = T.parser.load("Hehe [D.100]".tag[IsNormalised])(savedSteps(100 -> X2), StepState1)
+        val x = T.load("Hehe [D.100]".tag[IsNormalised])(savedSteps(100 -> X2), StepState1)
         T.oldAssert(x, "Hehe [S.2]", Map(X2 -> S2), false)
       }
 
       it("should denormalise UC refs") {
-        val x = T.parser.load("Hehe [UC-2] and [UC-1]!".tag[IsNormalised])(BiMap.empty, StepState1)
+        val x = T.load("Hehe [UC-2] and [UC-1]!".tag[IsNormalised])(BiMap.empty, StepState1)
         T.oldAssert(x, "Hehe [UC-2: Second] and [UC-1: First]!", Map.empty, false)
       }
 
       it("should denormalise UC self-refs") {
-        val x = T.parser.load("Hehe [UC-3]!".tag[IsNormalised])(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
+        val x = T.load("Hehe [UC-3]!".tag[IsNormalised])(BiMap.empty, UcParsingCtx(UCN, "Old Third", StepState1, Rels))
         T.oldAssert(x, "Hehe [UC-3: Old Third]!", Map.empty, true)
       }
     }
@@ -322,7 +329,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     it should behave like aTextWithRefs(StepTextTester)
     it should behave like obeysLaws(StepTextProps)
 
-    def parse(input: String, stepState: StepAndLabelBiMap = StepState1) = new StepTextFactory(X0).parse(input)(stepState)
+    def parse(input: String, stepState: StepAndLabelBiMap = StepState1) = StepText.parse(X0, input)(stepState)
 
     def testTextToText(input: String, output: String, stepState: StepAndLabelBiMap = StepState1) = {
       val x = parse(input, stepState)
@@ -594,7 +601,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
     describe("Parsing text with flow") {
       it("should parse both flows") {
-        val x = new StepTextFactory(X0).parse("He [S.3] he ⬅ [S.2] ➡ [S.1]")(StepState1)
+        val x = StepText.parse(X0, "He [S.3] he ⬅ [S.2] ➡ [S.1]")(StepState1)
         x.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
         oldStyleRefs(x.mainClause) shouldBe Map("X3" -> "S.3")
         assertFlowClause(x.flowFromClause, Map(X2 -> S2))
@@ -603,7 +610,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
       it("should parse TextWithFlowExamples") {
         forAll(TextWithFlowExamples)((input, expText, expRefsFrom, expRefsTo) => {
-          val x = new StepTextFactory(X0).parse(input)(StepStateB)
+          val x = StepText.parse(X0, input)(StepStateB)
           x.mainClause.text should be(expText.replaceAll("-->", FlowToStyle.arrowBadReplacement))
           assertFlowClause(x.flowFromClause, mapFromIds(expRefsFrom.asLabelC, StepStateB))
           assertFlowClause(x.flowToClause, mapFromIds(expRefsTo.asLabelC, StepStateB))
@@ -638,7 +645,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
           , ("", X1_S1, X1_S1, "⬅ [S.1] ➡ [S.1]")
         )
         forAll(examples)((main: String, from: Option[Refs], to: Option[Refs], expected: String) => {
-          val x = StepText(X0, FreeText.parse(main), from.map(FlowFromClause), to.map(FlowToClause))
+          val x = StepText(X0, FreeText.parse(main)(ctx), from.map(FlowFromClause), to.map(FlowToClause))
           x.text should be(expected)
         })
       }
@@ -647,7 +654,7 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
     describe("Loading text with flow") {
       it("should normalise refs in all clauses") {
         val save = savedSteps(100 -> X2, 104 -> X1, 108 -> X3)
-        val x = new StepTextFactory(X0).load("He [D.108] he ⬅ [D.100] ➡ [D.104]".tag[IsNormalised])(save, StepState1)
+        val x = StepText.load(X0, "He [D.108] he ⬅ [D.100] ➡ [D.104]".tag[IsNormalised])(save, StepState1)
         x.text should be("He [S.3] he ⬅ [S.2] ➡ [S.1]")
         oldStyleRefs(x.mainClause) shouldBe Map("X3" -> "S.3")
         x.flowFromClause should be(Some(FlowFromClause(Map(X2 -> S2))))
@@ -721,7 +728,7 @@ import Prop._
 import test.DataGenerators.UcDataGenCtx
 
 abstract class TextProps[T <: ParsedText[T]](T: Tester[T]) {
-  import T.parser.{load, parse}
+  import T.{load, parse}
 
 //  implicit val Ctx = Ctx1
 //  implicit val SavedSteps = SavedSteps1

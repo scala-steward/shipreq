@@ -32,21 +32,21 @@ import FreeTextTerms._
 
 // =====================================================================================================================
 
-object FreeText extends Parser[FreeText] {
+object FreeText {
 
-  override val empty: FreeText = parseCorrected("".tag[InputCorrected])(UcParsingCtx.Empty)
+  val empty: FreeText = parseCorrected("".tag[InputCorrected])(UcParsingCtx.Empty)
 
   def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
-  override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
+  def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): FreeText = {
     implicit val stepsAndLabels = ctx.stepsAndLabels
     parseCorrected(realiseNormalisedStepRefs(text))
   }
 
-  override def parse(text: String)(implicit ctx: UcParsingCtx) =
+  def parse(text: String)(implicit ctx: UcParsingCtx): FreeText =
     parseCorrected(correctInput(text))
 
-  def parseCorrected(text: String @@ InputCorrected)(implicit ctx: UcParsingCtx) = {
+  def parseCorrected(text: String @@ InputCorrected)(implicit ctx: UcParsingCtx): FreeText = {
     import Grammar.{parse => parseG, _}
     import FreeTextToken._
 

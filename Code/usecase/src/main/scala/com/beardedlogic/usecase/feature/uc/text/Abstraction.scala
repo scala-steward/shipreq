@@ -4,15 +4,6 @@ import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.feature.uc.change._
 import com.beardedlogic.usecase.feature.uc.UcParsingCtx
 
-trait Parser[T <: ParsedText[T]] {
-
-  def empty: T
-
-  def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): T
-
-  def parse(text: String)(implicit ctx: UcParsingCtx): T
-}
-
 trait ParsedText[Self <: ParsedText[Self]] extends ChangeResponder[Self] {
   this: Self =>
 

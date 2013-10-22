@@ -10,28 +10,18 @@ import com.beardedlogic.usecase.feature.uc.text.ParsingConfig.{FlowToStyle, Flow
 import Changes._
 import ParsingUtils._
 
-case class StepTextFactory(stepId: LocalStepId) extends Parser[StepText] {
-  override def empty = StepText.empty(stepId)
-
-  override def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) =
-    StepText.load(stepId, text)
-
-  override def parse(text: String)(implicit ctx: UcParsingCtx) =
-    StepText.parse(stepId, text)
-}
-
 object StepText {
   def correctInput(input: String): String @@ InputCorrected = input.trim.tag[InputCorrected]
 
-  def empty(stepId: LocalStepId) = StepText(stepId, FreeText.empty, None, None)
+  def empty(stepId: LocalStepId): StepText = StepText(stepId, FreeText.empty, None, None)
 
-  def load(stepId: LocalStepId, text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx) = {
+  def load(stepId: LocalStepId, text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): StepText = {
     implicit val stepsAndLabels = ctx.stepsAndLabels
     val e = empty(stepId)
     e.updateCorrected(realiseNormalisedStepRefs(text)).getValueOrElse(e)
   }
 
-  def parse(stepId: LocalStepId, text: String)(implicit ctx: UcParsingCtx) = {
+  def parse(stepId: LocalStepId, text: String)(implicit ctx: UcParsingCtx): StepText = {
     val e = empty(stepId)
     e.update(text).getValueOrElse(e)
   }
