@@ -14,6 +14,7 @@ import lib.Types._
 import feature.uc._
 import feature.uc.change._
 import feature.uc.field._
+import feature.uc.persist.{UseCasePersistence, UseCaseSaveCheckpoint}
 
 object UseCaseEditor {
 

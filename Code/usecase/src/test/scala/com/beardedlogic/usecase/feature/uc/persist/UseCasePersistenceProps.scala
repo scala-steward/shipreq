@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase
 package feature.uc
+package persist
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Gen, Arbitrary, Prop}

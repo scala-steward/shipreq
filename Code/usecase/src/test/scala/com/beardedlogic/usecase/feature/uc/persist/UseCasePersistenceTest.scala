@@ -1,5 +1,6 @@
 package com.beardedlogic.usecase
 package feature.uc
+package persist
 
 import org.scalatest.FunSpec
 import scala.slick.jdbc.{StaticQuery => Q}

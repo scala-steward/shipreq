@@ -57,8 +57,10 @@ object StepFieldConsts {
 /**
  * Abstract field that consists of a tree of structured StepTexts.
  */
-trait StepFieldLike extends StepFieldPersistenceMixin { this: Field with StepField =>
+trait StepFieldLike { this: Field with StepField =>
   override type Value = StepFieldValue
+
+  def defaultLoadValue(h: UseCaseHeader): (Option[StepTree], () => StepFieldValue)
 
   def rootLabelPrefix(ucn: UseCaseNumber): String
 

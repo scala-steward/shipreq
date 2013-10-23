@@ -8,6 +8,7 @@ import feature.uc.field._
 import feature.uc.text.{FlowFrom, FlowTo, StepText, FreeText}
 import feature.uc.text.FreeTextTerms._
 import feature.uc.step.{StepNode, StepTree}
+import persist.FieldLoadCtx
 import test.NodeUtils._
 import app.Defaults
 import UseCaseFns._

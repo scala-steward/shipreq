@@ -3,7 +3,8 @@ package com.beardedlogic.usecase.snippet
 import net.liftweb.util.Helpers._
 import net.liftweb.util.CssSel
 import com.beardedlogic.usecase.app.{AppSiteMap, RequestVars, DI}
-import com.beardedlogic.usecase.feature.uc.{UseCase, UseCasePersistence}
+import com.beardedlogic.usecase.feature.uc.UseCase
+import com.beardedlogic.usecase.feature.uc.persist.UseCasePersistence
 import com.beardedlogic.usecase.lib.Locks
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.feature.publish.{Input, HtmlPublisher}

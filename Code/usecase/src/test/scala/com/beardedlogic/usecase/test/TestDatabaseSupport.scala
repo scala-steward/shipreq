@@ -14,7 +14,8 @@ import app.{Defaults, DI}
 import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
 import lib.Types._
 import lib.Locks
-import feature.uc.{UseCase, UseCaseSaveCheckpoint, UseCasePersistence}
+import feature.uc.UseCase
+import feature.uc.persist.{UseCaseSaveCheckpoint, UseCasePersistence}
 import feature.InputValidator
 
 object TestDB {

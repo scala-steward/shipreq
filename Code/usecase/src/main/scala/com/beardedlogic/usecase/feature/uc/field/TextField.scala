@@ -2,7 +2,7 @@ package com.beardedlogic.usecase
 package feature.uc
 package field
 
-import db.{DaoT, FieldKeyType, FieldKeyRec, TextRev}
+import db.{FieldKeyType, FieldKeyRec}
 import lib.Types._
 import change.UseCaseUpdater
 import change.Changes.TextChanged
@@ -20,21 +20,8 @@ case class TextFieldDefinition(title: String) extends FieldDefinition {
 
 trait TextFieldLike { this: Field with TextField =>
   override type Value = FreeText
-  override type SavedData = TextRev
 
   override def empty = FreeText.empty
-
-  override def saver(v: FreeText, stepsAndLabels: StepAndLabelBiMap) =
-    new TextFieldValueSaver(v, rec, stepsAndLabels)
-
-  override def load(loadCtx: FieldLoadCtx) = {
-    val sd = loadCtx.fieldData.find(_.fkId == rec.id).map(_.textRev)
-    val text = sd.map(_.text).getOrElse("".tag[IsNormalised])
-    FieldLoadResult.noSteps[Value, SavedData]((savedSteps, stepsAndLabels) => {
-      val fv = FreeText.load(text)(savedSteps, stepsAndLabels)
-      (fv,sd)
-    })
-  }
 
   override def toString = s"${getClass.getSimpleName}[#${rec.id}:${defn.title}]"
 
@@ -48,38 +35,4 @@ trait TextFieldLike { this: Field with TextField =>
   }
 
   private val textChanged = TextChanged(this)
-}
-
-// =====================================================================================================================
-
-class TextFieldValueSaver(val v: FreeText, val fkId: FieldKeyId, val stepsAndLabels: StepAndLabelBiMap) extends FieldValueSaver[TextRev] {
-  type SavedData = TextRev
-
-  def textWithNormalisedRefs(implicit savedSteps: SavedSteps) = v.normalisedText(savedSteps)
-
-  override def record_required_? = v.text.nonEmpty
-
-  override def differsFromPrevSave_?(prev: SavedData)(implicit savedSteps: SavedSteps): Boolean =
-    textWithNormalisedRefs != prev.text
-
-  override def presave(dao: DaoT, ucId: UseCaseIdentId, prevSavedSteps: Option[SavedSteps]) = Map.empty
-
-  override def save(dao: DaoT, ucId: UseCaseIdentId, ucRevId: UseCaseRevId, prevSave: Option[SavedData])(implicit savedSteps: SavedSteps): SavedData = {
-    val curText = textWithNormalisedRefs
-
-    val textRev = prevSave match {
-      // Reuse
-      case Some(prev) if prev.text == curText => prev
-      // Update step
-      case Some(prev) => dao.createTextRev(prev.identId, (prev.rev + 1).toShort, curText)
-      // New step
-      case None =>
-        val textIdentId = dao.createTextIdent(ucId, fkId)
-        dao.createTextRev(textIdentId, 1: Short, curText)
-    }
-
-    dao.linkUcToText(ucRevId, textRev)
-
-    textRev
-  }
 }

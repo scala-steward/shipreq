@@ -16,21 +16,19 @@ sealed trait Field {
   /** The type of this field's values. */
   type Value
 
-  /** The type of data that encapsulates all records saved by this field. */
-  type SavedData
-
   val defn: FieldDefinition
 
   /** The DB record used to reference this field. */
   val rec: FieldKeyRec
 
-  @inline final def castV(v: Field#Value) = v.asInstanceOf[Value]
-  @inline final def castS(s: Field#SavedData) = s.asInstanceOf[SavedData]
-  @inline final def castS2[M[_]](saver: M[Field#SavedData]): M[SavedData] = saver.asInstanceOf[M[SavedData]]
+  final override def hashCode = rec.id.toInt
+  final override def equals(o: Any) = o match {
+    case f: Field => rec.id == f.rec.id
+    case _        => false
+  }
 
+  @inline final def castV(v: Field#Value) = v.asInstanceOf[Value]
   @inline final def ~>(v: Value): (Field, Field#Value) = this -> v
-  @inline final def pairS(sd: SavedData): (Field, Field#SavedData) = this -> sd
-  @inline final def pairS2[M[_]](sd: M[SavedData]): (Field, M[Field#SavedData]) = this -> sd.asInstanceOf[M[Field#SavedData]]
 
   @inline final def apply(fieldValues: FieldValues): Value = castV(fieldValues(this))
   @inline final def get(fieldValues: FieldValues): Option[Value] = fieldValues.get(this).asInstanceOf[Option[Value]]
@@ -39,15 +37,6 @@ sealed trait Field {
   def empty: Value
 
   def changeResponder(v: Value): ChangeResponder[Value]
-
-  /**
-   * Loads a field value from the database.
-   *
-   * @param loadCtx A big blob of data for all fields, from which this field should find and use its own data.
-   */
-  def load(loadCtx: FieldLoadCtx): FieldLoadResult[Value, SavedData]
-
-  def saver(v: Value, stepsAndLabels: StepAndLabelBiMap): FieldValueSaver[SavedData]
 }
 
 // =====================================================================================================================

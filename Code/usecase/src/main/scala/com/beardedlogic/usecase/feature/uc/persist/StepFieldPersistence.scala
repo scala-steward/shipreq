@@ -1,28 +1,26 @@
 package com.beardedlogic.usecase.feature.uc
-package field
+package persist
 
 import scala.annotation.tailrec
 import com.beardedlogic.usecase.db._
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.feature.ExternalId
+import field._
 import step.{StepNode, StepTree}
 import text.StepText
 import StepFieldConsts.StartingLabelIndices
-import StepFieldPersistence._
 
 object StepFieldPersistence {
   type SavedData = Map[TextIdentId, UcFieldText]
 }
 
-private[field] trait StepFieldPersistenceMixin {
-  this: Field with StepField with StepFieldLike =>
-
+case class StepFieldPersistence(f: StepField) extends FieldPersistence[StepField] {
   override type SavedData = StepFieldPersistence.SavedData
 
-  override def saver(v: StepFieldValue, stepsAndLabels: StepAndLabelBiMap) =
-    new StepFieldValueSaver(v, rec, sli, stepsAndLabels)
+  import f.{rec, sli, defaultLoadValue}
 
-  def defaultLoadValue(h: UseCaseHeader): (Option[StepTree], () => StepFieldValue)
+  override def saver(v: StepFieldValue, stepsAndLabels: StepAndLabelBiMap) =
+    new StepFieldSaver(v, rec, sli, stepsAndLabels)
 
   // ===================================================================================================================
 
@@ -69,7 +67,7 @@ private[field] trait StepFieldPersistenceMixin {
       val stepTree = StepTree(stepNodes)
       FieldLoadResult[Value, SavedData](savedStepMap.result, Some(stepTree), (savedSteps, stepsAndLabels) => {
         val textmap = for ((id, txt) <- normTextMap.result) yield (id -> StepText.load(txt)(savedSteps, stepsAndLabels))
-        val sfv = StepFieldValue(this, stepTree, textmap)
+        val sfv = StepFieldValue(f, stepTree, textmap)
         (sfv, Some(savedData.result))
       })
     }
@@ -77,18 +75,19 @@ private[field] trait StepFieldPersistenceMixin {
 }
 
 // =====================================================================================================================
+import StepFieldPersistence.SavedData
 
 /**
  * Saves a StepField to the database.
  *
  * @param v The field value to save.
  */
-class StepFieldValueSaver(
+class StepFieldSaver(
   val v: StepFieldValue,
   val fieldKeyRec: FieldKeyRec,
   val sli: StartingLabelIndices,
   val stepsAndLabels: StepAndLabelBiMap
-  ) extends FieldValueSaver[SavedData] {
+  ) extends FieldSaver[SavedData] {
 
   override def record_required_? = v.tree.nonEmpty
 

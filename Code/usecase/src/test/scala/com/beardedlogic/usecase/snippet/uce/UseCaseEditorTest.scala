@@ -12,6 +12,7 @@ import db.UseCaseRev
 import lib.Types._
 import feature.uc._
 import change.UseCaseUpdater
+import persist.UseCaseSaveCheckpoint
 import step.StepNode
 import step.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
 import Renderer.TitleId
@@ -40,7 +41,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
     m
   }
 
-  def loadedState(uc: UseCase) = State(uc, Some(UseCaseSaveCheckpoint(uc, mockRev, EmptySavedSteps, Map.empty)), false)
+  def loadedState(uc: UseCase) = State(uc, Some(UseCaseSaveCheckpoint(uc, mockRev, EmptySavedSteps, List.empty)), false)
 
   lazy val State1 = loadedState(MockUc1.sampleUC)
   lazy val State2a = loadedState(MockUc2a.UC)
