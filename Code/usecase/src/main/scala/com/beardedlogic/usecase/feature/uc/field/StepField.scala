@@ -32,7 +32,7 @@ object StepFieldConsts {
   @inline final def resultIfTreeIsValid(steps: List[StepNode], validResult: => UcUpdateResult): UcUpdateResult =
     validateTree(steps) match {
       case Some(error) => ChangeFailure(error)
-      case _ => validResult
+      case None        => validResult
     }
 
   def validateTree(steps: List[StepNode]): Option[String] = {
@@ -117,7 +117,7 @@ trait StepFieldLike { this: Field with StepField =>
           val newSfv = sfv.copy(tree = StepTree(newNodes), textmap = newTextmap)
           val cr = newSfv @: StepRemoved(this, removedNode)
           u.update(this, cr)
-        case _ => NoChange
+        case (_, None) => NoChange
       }
   }
 
@@ -152,7 +152,7 @@ trait StepFieldLike { this: Field with StepField =>
           val cr = newFn(sfv, newNodes, tgtNode)
           u.update(this, cr)
         })
-      case _ => NoChange
+      case (_, None) => NoChange
     }
   }
 }
@@ -172,7 +172,7 @@ object NormalCourseFieldConsts {
 
 trait NormalCourseFieldLike extends StepFieldLike { this: Field with StepField =>
   import NormalCourseFieldConsts._
-  override val defn = NormalCourseFieldDefinition
+  override def defn = NormalCourseFieldDefinition
   override val empty = StepFieldValue.forTree(this, EmptyTree)
   override def rootLabelPrefix(ucn: UseCaseNumber) = s"${ucn}."
   override val sli = StartingRootLabelIndexAt0
@@ -195,7 +195,7 @@ case object ExceptionCourseFieldDefinition extends FieldDefinition {
 }
 
 trait ExceptionCourseFieldLike extends StepFieldLike { this: Field with StepField =>
-  override val defn = ExceptionCourseFieldDefinition
+  override def defn = ExceptionCourseFieldDefinition
   override val empty = StepFieldValue.empty(this)
   override def rootLabelPrefix(ucn: UseCaseNumber) = s"${ucn}.E."
   override val sli = StartingLabelIndicesAt1

@@ -91,7 +91,6 @@ case class Renderer(
   def renderField(f: Field): NodeSeq = f match {
     case tf: TextField => renderTextField(tf)(Templates.TextField)
     case sf: StepField => stepRenderers(sf).render
-    case _ => NodeSeq.Empty
   }
 
   def renderTextField(f: TextField) = (

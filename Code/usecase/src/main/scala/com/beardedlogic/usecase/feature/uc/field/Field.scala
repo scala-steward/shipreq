@@ -16,7 +16,7 @@ sealed trait Field {
   /** The type of this field's values. */
   type Value
 
-  val defn: FieldDefinition
+  def defn: FieldDefinition
 
   /** The DB record used to reference this field. */
   val rec: FieldKeyRec

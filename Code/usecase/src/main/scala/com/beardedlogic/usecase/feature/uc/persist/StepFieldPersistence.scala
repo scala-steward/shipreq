@@ -107,7 +107,7 @@ class StepFieldSaver(
     )
 
     def anyRemoved = prev.exists(_._2.label match {
-      case None => false
+      case None      => false
       case Some(lbl) => labelsToLocalId.get(lbl).map(!v.textmap.contains(_)).getOrElse(true)
     })
 
@@ -128,8 +128,8 @@ class StepFieldSaver(
     def presaveNew(savedSteps: Map[LocalStepId, TextIdentId]): Unit = {
       v.tree.foreachRecursive(n =>
         savedSteps.get(n.id) match {
-          case None => newStep(n.id)
-          case _ =>
+          case None    => newStep(n.id)
+          case Some(_) =>
         }
       )
     }

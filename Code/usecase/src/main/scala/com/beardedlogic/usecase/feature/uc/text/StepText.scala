@@ -211,7 +211,7 @@ case class StepTextUpdater(field: StepField, stepId: LocalStepId, t: StepText) e
           }) // orElse: step deleted, just omit
         f.create(newRefs) @: textChanged
       }
-    case _ => NoChange
+    case None => NoChange
   }
 
   private def processFlowChange[C <: FlowClause, F <: Flow[C]](
