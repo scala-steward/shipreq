@@ -11,16 +11,18 @@ trait ParsedText {
   def normalisedText(implicit savedSteps: SavedSteps): NormalisedText
 }
 
-trait ParsedTextUpdater[T <: ParsedText] extends ChangeResponder[T] {
-  def t: T
+trait ParsedTextUpdater[T <: ParsedText] {
   def correctInput(input: String): String @@ InputCorrected
-  def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx): ChangeResult[T, Change]
+  def updateCorrected(t: T, newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx): ChangeResult[T, Change]
 
-  final def update(input: String)(implicit ctx: UcParsingCtx): ChangeResult[T, Change] = {
+  final def update(t: T, input: String)(implicit ctx: UcParsingCtx): ChangeResult[T, Change] = {
     val newText = correctInput(input)
     if (t.text == newText)
       NoChange
     else
-      updateCorrected(newText)
+      updateCorrected(t, newText)
   }
+
+  final def updateAndGet(t: T, input: String)(implicit ctx: UcParsingCtx): T = update(t, input).getValueOrElse(t)
+  final def updateCorrectedAndGet(t: T, input: String @@ InputCorrected)(implicit ctx: UcParsingCtx): T = updateCorrected(t, input).getValueOrElse(t)
 }

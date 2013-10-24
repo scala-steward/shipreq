@@ -25,14 +25,11 @@ trait TextFieldLike { this: Field with TextField =>
 
   override def toString = s"${getClass.getSimpleName}[#${rec.id}:${defn.title}]"
 
-  override def changeResponder(v: FreeText) = FreeTextUpdater(v, textChanged)
+  override val changeResponder = new FreeTextUpdater(TextChanged(this))
 
   def updateText(newText: String)(u: UseCaseUpdater): UcUpdateResult = {
     implicit val lens = alens(Lenses.ucTextFieldL, (u.uc, this))
-    val updater = FreeTextUpdater(lens.get, textChanged)
-    val cr = updater.update(newText)(u.ctx)
+    val cr = changeResponder.update(lens.get, newText)(u.ctx)
     u.update(this, cr)
   }
-
-  private val textChanged = TextChanged(this)
 }

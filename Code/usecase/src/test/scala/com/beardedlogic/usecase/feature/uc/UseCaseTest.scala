@@ -10,7 +10,7 @@ import db.{FieldKeyRec, FieldKeyType, UseCaseHeader}
 import field._
 import step.{StepTree, StepNode}
 import test.{TestData, TestHelpers}
-import text.{FlowToClause, FlowFromClause, StepText, FreeText}
+import text.{StepTextUpdater, FlowToClause, FlowFromClause, StepText, FreeText}
 import text.FreeTextTerms._
 import util.BiMap
 import Lenses._
@@ -48,22 +48,23 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
 
     it("should not recalc when only a step text changes") {
       val id = NcSfv.textmap.keySet.head
-      assertDoesntRecalc(uc => ucStepTextInstL.mod(
-        _.updater(NCF, id).update("okyjidf")(uc.stepsAndLabels).gimme, (uc, (NCF, id))
+      assertDoesntRecalc(uc =>
+        ucStepTextInstL.mod(t =>
+          new StepTextUpdater(NCF, id).updateAndGet(t, "okyjidf")(uc.stepsAndLabels), (uc, (NCF, id))
       ))
     }
 
     it("should not recalc when only a text field changes") {
-      assertDoesntRecalc(uc => TF1.lens.mod(_.updater(TF1).update("okyjidf")(uc.stepsAndLabels).gimme, uc))
+      assertDoesntRecalc(uc => TF1.lens.mod(t => TF1.changeResponder.update(t, "okyjidf")(uc.stepsAndLabels).gimme, uc))
     }
 
-    def assertRecalc(mod: UseCase => UseCase) {
-      val uc1 = mod(sampleUC)
-      val uc2 = correctStepsAndLabelsAfterUpdate(sampleUC, uc1)
-      uc2 should not be theSameInstanceAs(uc1)
-      uc2.stepsAndLabels.value should not be (uc1.stepsAndLabels.value)
-      uc2.copy(stepsAndLabels = uc1.stepsAndLabels) ==== uc1
-    }
+//    def assertRecalc(mod: UseCase => UseCase) {
+//      val uc1 = mod(sampleUC)
+//      val uc2 = correctStepsAndLabelsAfterUpdate(sampleUC, uc1)
+//      uc2 should not be theSameInstanceAs(uc1)
+//      uc2.stepsAndLabels.value should not be (uc1.stepsAndLabels.value)
+//      uc2.copy(stepsAndLabels = uc1.stepsAndLabels) ==== uc1
+//    }
   }
 
   describe("respondToChanges()") {

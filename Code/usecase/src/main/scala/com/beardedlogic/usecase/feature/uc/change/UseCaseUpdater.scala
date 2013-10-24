@@ -25,18 +25,8 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
   def respondToChanges(changes: NonEmptyList[Change]): UcUpdateResult = {
 
     def changeField(f: Field, fieldValue: Field#Value): ChangeResult[Field#Value, Change] = {
-      val changesOccurred = new ListBuffer[Change]
-      var fv = f castV fieldValue
-      var changeResponder = f.changeResponder(fv)
-      for (c <- changes.list)
-        changeResponder.respondToChange(c) match {
-          case Changed(newFv, newChanges) =>
-            fv = newFv
-            changesOccurred ++= newChanges.list
-            changeResponder = f.changeResponder(fv)
-          case NoChange =>
-        }
-      ChangeResult(fv, changesOccurred.result)
+      val fv = f castV fieldValue
+      f.changeResponder.respondToChanges(fv, changes)
     }
 
     val changeAllFields = {

@@ -118,23 +118,24 @@ case class FreeText(terms: List[FreeTextTerm]) extends ParsedText {
 
 // =====================================================================================================================
 
-case class FreeTextUpdater(t: FreeText, textChanged: Change) extends ParsedTextUpdater[FreeText] {
+class FreeTextUpdater(textChanged: Change) extends ParsedTextUpdater[FreeText] with SeqChangeResponder[FreeText] {
 
   override def correctInput(input: String) = FreeText.correctInput(input)
 
-  override def updateCorrected(newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx) =
+  override def updateCorrected(t: FreeText, newText: String @@ InputCorrected)(implicit ctx: UcParsingCtx) =
     FreeText.parseCorrected(newText) @: textChanged
 
-  override def respondToChange(c: Change)(implicit ctx: UcParsingCtx) = c match {
-    case _: ExistingStepLabelsChanged                  => updateAfterStepTreeChange
-    case TitleChanged(_, newTitle) if t.hasUcSelfRef_? => updateUcSelfRefs(newTitle)
-    case _                                             => NoChange
-  }
+  override def respondToChange(t: FreeText, c: Change)(implicit  ctx: UcParsingCtx) =
+    c match {
+      case _: ExistingStepLabelsChanged                  => updateAfterStepTreeChange(t)
+      case TitleChanged(_, newTitle) if t.hasUcSelfRef_? => updateUcSelfRefs(t, newTitle)
+      case _                                             => NoChange
+    }
 
   /**
    * Updates references when the step tree structure changes.
    */
-  def updateAfterStepTreeChange(implicit ctx: UcParsingCtx): ChangeResult[FreeText, Change] =
+  def updateAfterStepTreeChange(t: FreeText)(implicit ctx: UcParsingCtx): ChangeResult[FreeText, Change] =
     if (!t.hasStepRefs_?)
       NoChange
     else {
@@ -165,10 +166,10 @@ case class FreeTextUpdater(t: FreeText, textChanged: Change) extends ParsedTextU
         NoChange
     }
 
-  def updateUcSelfRefs(newTitle: String): ChangeResult[FreeText, Change] = {
-    val newTerms = t.terms.map(t => t match {
+  def updateUcSelfRefs(t: FreeText, newTitle: String): ChangeResult[FreeText, Change] = {
+    val newTerms = t.terms.map(_ match {
       case UseCaseSelfRef(num, _) => UseCaseSelfRef(num, newTitle)
-      case _ => t
+      case term                   => term
     })
     t.copy(terms = newTerms) @: textChanged
   }

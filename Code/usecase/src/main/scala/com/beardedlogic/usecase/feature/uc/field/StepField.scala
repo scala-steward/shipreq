@@ -73,12 +73,12 @@ trait StepFieldLike { this: Field with StepField =>
 
   override def toString = s"${getClass.getSimpleName}[#${rec.id}]"
 
-  override def changeResponder(sfv: StepFieldValue) = sfv
+  override val changeResponder = new StepFieldValueChangeResponder(this)
 
   def updateText(id: LocalStepId, newText: String)(u: UseCaseUpdater): UcUpdateResult = {
     implicit val lens = alens(ucStepTextInstL, (u.uc, (this, id)))
-    val updater = StepTextUpdater(this, id, lens.get)
-    val cr = updater.update(newText)(u.ctx)
+    val updater = new StepTextUpdater(this, id)
+    val cr = updater.update(lens.get, newText)(u.ctx)
     u.update(this, cr)
   }
 

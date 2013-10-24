@@ -549,7 +549,6 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
    */
   implicit class FreeTextExt(val v: FreeText) {
     def norm = normaliseFreeText(v)
-    def updater(f: TextField) = FreeTextUpdater(v, TextChanged(f))
   }
 
   /**
@@ -557,7 +556,6 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
    */
   implicit class StepTextExt(val v: StepText) {
     def norm = normaliseStepText(v)
-    def updater(f: StepField, id: LocalStepId) = StepTextUpdater(f, id, v)
   }
 
   /**

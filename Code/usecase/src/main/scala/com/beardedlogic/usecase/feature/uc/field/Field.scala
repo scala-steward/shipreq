@@ -36,7 +36,7 @@ sealed trait Field {
 
   def empty: Value
 
-  def changeResponder(v: Value): ChangeResponder[Value]
+  def changeResponder: ChangeResponder[Value]
 }
 
 // =====================================================================================================================

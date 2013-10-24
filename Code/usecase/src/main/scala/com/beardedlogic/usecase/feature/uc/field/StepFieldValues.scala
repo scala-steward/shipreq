@@ -22,47 +22,9 @@ object StepFieldValue {
  * @param textmap Optional text values for nodes (ie. steps). If an entry doesn't exist for a node then that step is
  *                considered to have no text.
  */
-case class StepFieldValue(field: StepField, tree: StepTree, textmap: Map[LocalStepId, StepText]) extends ChangeResponder[StepFieldValue] {
+case class StepFieldValue(field: StepField, tree: StepTree, textmap: Map[LocalStepId, StepText]) {
 
   assume(textmap.keySet == tree.mapRecursive(_.id).toSet, "There must be a StepText for all steps.")
-
-  override def respondToChange(c: Change)(implicit ctx: UcParsingCtx): ChangeResult[StepFieldValue, Change] =
-    respondToChangeByDelegation(c)
-    .andThen(this, _.respondToChangeInternally(c))
-
-  private def respondToChangeInternally(c: Change)(implicit ctx: UcParsingCtx): ChangeResult[StepFieldValue, Change] = {
-    def allowTitleChange_? = field.preferTitleInRoot_? && tree.nonEmpty
-    def changeRootToTitle(before: String, after: String) = {
-      val id = tree(0).id
-      val lens = alens(Lenses.sfvStepTextInstL, (this, id))
-      val t = lens.get
-      val curText = t.mainClause.text
-      if (curText.isEmpty || curText == before)
-        StepTextUpdater(field, id, t).updateMainClause(after).mapValue(lens.set)
-      else
-        NoChange
-    }
-    c match {
-      case TitleChanged(before, after) if allowTitleChange_? => changeRootToTitle(before, after)
-      case _ => NoChange
-    }
-  }
-
-  private def respondToChangeByDelegation(c: Change)(implicit ctx: UcParsingCtx): ChangeResult[StepFieldValue, Change] = {
-    // Delegate msg to all StepText instances
-    var newTextmap = textmap
-    var changes = List.empty[Change]
-    for ((id, curVal) <- textmap)
-      StepTextUpdater(field, id, curVal).respondToChange(c) match {
-        case Changed(newVal, h) =>
-          newTextmap += (id -> newVal)
-          changes ++= h.list
-        case NoChange =>
-      }
-
-    // Copy if changed
-    ChangeResult(copy(textmap = newTextmap), changes)
-  }
 
   def getNormalisedText(id: LocalStepId)(implicit savedSteps: SavedSteps): NormalisedText =
     textmap.get(id).map(_.normalisedText).getOrElse("".tag[IsNormalised])
@@ -81,4 +43,47 @@ case class StepFieldValue(field: StepField, tree: StepTree, textmap: Map[LocalSt
 
   def textByLabels(implicit stepsAndLabels: StepAndLabelBiMap): Map[StepLabel, String] =
     for ((id,t) <- textmap) yield (stepsAndLabels.value.ab(id), t.text)
+}
+
+// =====================================================================================================================
+
+class StepFieldValueChangeResponder(field: StepField) extends SeqChangeResponder[StepFieldValue] {
+
+  override def respondToChange(sfv: StepFieldValue, c: Change)(implicit ctx: UcParsingCtx) =
+    respondToChangeByDelegation(sfv, c)
+    .andThen(sfv, respondToChangeInternally(_, c))
+
+  private def respondToChangeInternally(sfv: StepFieldValue, c: Change)(implicit ctx: UcParsingCtx): R = {
+    def allowTitleChange_? = field.preferTitleInRoot_? && sfv.tree.nonEmpty
+    def changeRootToTitle(before: String, after: String) = {
+      val id = sfv.tree(0).id
+      val lens = alens(Lenses.sfvStepTextInstL, (sfv, id))
+      val t = lens.get
+      val curText = t.mainClause.text
+      if (curText.isEmpty || curText == before)
+        new StepTextUpdater(field, id).updateMainClause(t, after).mapValue(lens.set)
+      else
+        NoChange
+    }
+    c match {
+      case TitleChanged(before, after) if allowTitleChange_? => changeRootToTitle(before, after)
+      case _ => NoChange
+    }
+  }
+
+  private def respondToChangeByDelegation(sfv: StepFieldValue, c: Change)(implicit ctx: UcParsingCtx): R = {
+    // Delegate msg to all StepText instances
+    var newTextmap = sfv.textmap
+    var changes = List.empty[Change]
+    for ((id, curVal) <- sfv.textmap)
+      new StepTextUpdater(field, id).respondToChange(curVal, c) match {
+        case Changed(newVal, h) =>
+          newTextmap += (id -> newVal)
+          changes ++= h.list
+        case NoChange =>
+      }
+
+    // Copy if changed
+    ChangeResult(sfv.copy(textmap = newTextmap), changes)
+  }
 }
