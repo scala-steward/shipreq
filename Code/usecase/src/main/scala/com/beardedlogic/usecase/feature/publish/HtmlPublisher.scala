@@ -9,6 +9,7 @@ import com.beardedlogic.usecase.lib.Types._
 import scala.xml.{NodeSeq, Text}
 import scalaz.syntax.foldable._
 import ParsingConfig._
+import MarkupTokens._
 
 object HtmlPublisher extends Publisher[NodeSeq] {
   override def publish(input: Input) = new HtmlPublisher(input).doc
@@ -60,10 +61,24 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   override def textFieldTitleSurround(title: X)      = <th>{title}</th>
   override def textFieldValueSurround(value: X)      = <td>{value}</td>
 
-  def plainText(value: String): X =
-    value.split('\n').toList.map(t => Text(t): NodeSeq).intercalate(<br/>) // TODO guard against \r?
+  override def markupToken(t: MarkupToken) = t match {
+    case BlankLine           => <br/>
+    case NonBlankLine(terms) => terms foldMap term
+    case UL(lis)             => <ul>{lis foldMap li}</ul>
+  }
 
-  override def fttPlainText(t: PlainText)                 = plainText(t.text)
+  def li(li: LI): X = <li>{li.content foldMap markupToken}</li>
+
+  override def betweenMarkupTokens(a: MarkupToken, b: MarkupToken): X =
+    a match {
+      case BlankLine | UL(_) => zero
+      case NonBlankLine(_)   => b match {
+        case BlankLine | NonBlankLine(_) => <br/>
+        case UL(_)                       => zero
+      }
+    }
+
+  override def fttPlainText(t: PlainText)                 = Text(t.text)
   override def fttStepRef(t: StepRef)                     = stepRef(t.label)
   override def fttAnyUseCaseRef(t: AnyUseCaseRef)         = <a class="uc" title={fullName(t.num, t.title)} href={ucHref(t.num)}>{reqId(t.num)}</a>
   override def fttDeletedRef                              = <span class="bad ref">{DeletedRefStr}</span>

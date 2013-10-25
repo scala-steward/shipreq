@@ -107,7 +107,28 @@ abstract class GenericPublisher(input: Input) {
   def textFieldValueSurround(value: X): X
   def textFieldValueInner(value: FreeText): X = text(value)
 
-  final def text(value: FreeText): X = value.terms foldMap term
+  final def text(value: FreeText): X =
+    markupTokens(
+      TextMarkup.markup(
+        TextMarkup.introduce(
+          value.terms)))
+
+  final def markupTokens(tokens: List[MarkupToken]): X = {
+    var prev: MarkupToken = null
+    tokens.foldLeft(zero)((acc, mt) => {
+      val x = markupToken(mt)
+      val r =
+        if (prev eq null)
+          x
+        else
+          acc |+| betweenMarkupTokens(prev, mt) |+| x
+      prev = mt
+      r
+    })
+  }
+
+  def markupToken(t: MarkupToken): X
+  def betweenMarkupTokens(a: MarkupToken, b: MarkupToken): X
 
   final def term(term: FreeTextTerm): X = term match {
     case t@PlainText(_)            => fttPlainText(t)
