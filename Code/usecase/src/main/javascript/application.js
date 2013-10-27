@@ -5,7 +5,6 @@
 // require "vendor/jquery-ui.js"
 // require "vendor/jquery-autosize.js"
 // require "vendor/jquery-timeago.js"
-// require "vendor/jquery-serializeObject.js"
 // require "vendor/jquery-livequery.js"
 // require "vendor/jquery-rangyinputs.js"
 // require "vendor/mousetrap.js"

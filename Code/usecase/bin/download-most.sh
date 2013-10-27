@@ -14,11 +14,6 @@ echo "Downloading jQuery.timeago"
 curl -s http://timeago.yarp.com/jquery.timeago.js -o src/main/javascript/vendor/jquery-timeago.js
 echo $?
 
-v=2.0.2
-echo "Downloading v$v of jQuery.serializeObject -- http://plugins.jquery.com/serializeObject/"
-curl -s https://raw.github.com/hongymagic/jQuery.serializeObject/$v/jquery.serializeObject.js -o src/main/javascript/vendor/jquery-serializeObject.js
-echo $?
-
 echo "Downloading jQuery.liveQuery"
 curl -s https://raw.github.com/hazzik/livequery/master/dist/jquery.livequery.min.js -o src/main/javascript/vendor/jquery-livequery.js
 echo $?
