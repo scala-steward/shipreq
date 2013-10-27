@@ -6,7 +6,9 @@ import net.liftweb.http.S
 import org.joda.time.DateTime
 import scala.util.Random
 import scalaz.Cord
+
 import com.beardedlogic.usecase.app.AppConfig
+import Types._
 import AppConfig._
 import Misc._
 
@@ -48,7 +50,7 @@ trait Misc {
 
   def clientIp_Or_? = clientIp.getOrElse("?")
 
-  def currentTimeAsIso8601Str: String = ISO8601Format.synchronized(ISO8601Format.format(new Date))
+  def currentTimeAsIso8601Str: String @@ ISO8601 = ISO8601Format.synchronized(ISO8601Format.format(new Date)).tag[ISO8601]
 
   def isConfirmationTokenExpired_?(dateIssued: DateTime): Boolean = TokenLifespan.ago.isAfter(dateIssued)
 

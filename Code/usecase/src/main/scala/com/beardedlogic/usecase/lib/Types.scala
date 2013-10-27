@@ -50,11 +50,13 @@ object Types {
   }
 
   implicit class StringTypeTagExt2[F[_]](val s: F[String]) extends AnyVal {
+    def tagInner[T <: TypeTag[String]] = s.asInstanceOf[F[String @@ T]]
     def asLocalStepIdC = s.asInstanceOf[F[LocalStepId]]
     def asLabelC = s.asInstanceOf[F[StepLabel]]
   }
 
   implicit class StringTypeTagExt3[G[_], F[G]](val s: F[G[String]]) extends AnyVal {
+    def tagInner[T <: TypeTag[String]] = s.asInstanceOf[F[G[String @@ T]]]
     def asLocalStepIdC = s.asInstanceOf[F[G[LocalStepId]]]
     def asLabelC = s.asInstanceOf[F[G[StepLabel]]]
   }
@@ -113,6 +115,9 @@ object Types {
   /** A textual label for a tree node. Eg. "1.0.2.a" */
   sealed trait IsStepLabel extends TypeTag[String]
   type StepLabel = String @@ IsStepLabel
+
+  /** Marks a string as being an ISO-8601 representation of a datetime. */
+  sealed trait ISO8601 extends TypeTag[String]
 
   // -------------------------------------------------------------------------------------------------------------------
   // Short tags

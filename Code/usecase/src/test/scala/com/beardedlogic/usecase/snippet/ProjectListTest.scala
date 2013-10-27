@@ -5,6 +5,7 @@ import com.beardedlogic.usecase.test.TestHelpers
 import com.beardedlogic.usecase.db.ProjectSummary
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.util.NonEmptyTemplate
+import com.beardedlogic.usecase.lib.Misc
 
 class ProjectListTest extends FunSuite with TestHelpers {
   lazy val html = NonEmptyTemplate.load("loggedin/index").extract("#project-list").get
@@ -20,7 +21,7 @@ class ProjectListTest extends FunSuite with TestHelpers {
 
   test("Projects") {
     val p1 = ProjectSummary(1.tag[IsProjectId], "Empty", 0, None)
-    val p2 = ProjectSummary(2.tag[IsProjectId], "Hello", 2, Some("2013-05-20T15:57:35.773674+10:00"))
+    val p2 = ProjectSummary(2.tag[IsProjectId], "Hello", 2, Some(Misc.currentTimeAsIso8601Str))
     val r = renderProjectList(p1 :: p2 :: Nil)(html).toString
     r should (includeProjects and (not(includeNone))
       and include("Empty") and include("0 Use Cases")

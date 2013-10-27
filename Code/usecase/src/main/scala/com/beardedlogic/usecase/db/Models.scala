@@ -50,9 +50,9 @@ class UseCaseSummary(val id: UseCaseIdentId, val number: UseCaseNumber, val titl
   final def fullName = UseCaseFns.fullName(number, title)
 }
 
-class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, val updatedAt: String)
+class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, val updatedAt: String @@ ISO8601)
   extends UseCaseSummary(id, number, title) {
-  def this(ucr: UseCaseRev, updatedAt: String) = this(ucr.identId, ucr.ident.number, ucr.title, updatedAt)
+  def this(ucr: UseCaseRev, updatedAt: String @@ ISO8601) = this(ucr.identId, ucr.ident.number, ucr.title, updatedAt)
 }
 
 case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
@@ -89,4 +89,4 @@ case class ProjectSummary(
   id: ProjectId,
   name: String,
   ucCount: Int,
-  ucUpdatedAt: Option[String])
+  ucUpdatedAt: Option[String @@ ISO8601])

@@ -3,7 +3,6 @@ package db
 
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import scala.Long
 import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
 import lib.Types._
@@ -22,6 +21,9 @@ private[db] object SqlHelpers {
     def nextTShort[Tag <: TypeTag[JShort]](): JShort @@ Tag = r.nextShort.tag[Tag]
     def nextTShort_?[Tag <: TypeTag[JShort]](): Option[JShort @@ Tag] = r.nextShortOption.map(_.tag[Tag])
   }
+
+  private def GR_TaggedString[T <: TypeTag[String]]: GetResult[String @@ T] = GetResult(_.nextString.tag[T])
+  private def GR_TaggedStringOpt[T <: TypeTag[String]]: GetResult[Option[String @@ T]] = GetResult(_.nextStringOption.tagInner[T])
 
   private def GR_TaggedLong[T <: JLong @@ TypeTag[JLong]]: GetResult[T] = GetResult(_.nextId[T])
   private def SP_TaggedLong[T <: JLong @@ TypeTag[JLong]]: SetParameter[T] = new SetParameter[T] {
@@ -56,7 +58,9 @@ private[db] object SqlHelpers {
   implicit val GR_ProjectId = GR_TaggedLong[ProjectId]
   implicit val SP_ProjectId = SP_TaggedLong[ProjectId]
 
-  implicit val GR_NormalisedText = GetResult(_.nextString.tag[IsNormalised])
+  implicit val GR_NormalisedText = GR_TaggedString[IsNormalised]
+  implicit val GR_ISO8601 = GR_TaggedString[ISO8601]
+  implicit val GR_ISO8601Opt = GR_TaggedStringOpt[ISO8601]
 
   implicit val GR_FieldKeyType = GetResult(r => FieldKeyType(r.nextShort))
   implicit object SetParameterFieldKeyType extends SetParameter[FieldKeyType] {
