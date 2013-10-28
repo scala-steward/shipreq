@@ -36,8 +36,9 @@
 .shareL .name a {font-size:140%; font-weight:bold; color:#4183C4}
 .shareL .url {width:56ex; margin-top:0.2ex}
 .shareL .url .urltxt {font-family:monospace; background:white; cursor:text}
-.shareL .views {_background:#eef; font-size:100%; color:#888; margin-top:0.5ex}
-.shareL li {padding-top:3ex}
+.shareL .url + .under {margin-top:0.5ex}
+.shareL .under {font-size:100%; color:#888; }
+.shareL li {padding-top:4.4ex}
 .shareL table {width:100%}
 .shareL td.l {vertical-align:top; text-align:right; padding-right:1.6ex; width:14ex; _background:#eef; padding-top:0.6ex;}
 .shareL td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
