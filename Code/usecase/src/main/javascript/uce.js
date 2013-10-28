@@ -132,6 +132,13 @@ function focusedEditorTextInput() { return allEditorTextInputsQ().filter(':focus
 function setupVizForUce() {
     setupViz(function(d){
 
+        // Find step nodes in flow graph
+        d.stepNodes = $(d.tgt).find('g.node').filterE(isValidLabel.c(titleOfFlowgraphNode))
+        d.stepNodes.eachE(function(e){
+            // $(e).addClass("step") // Doesn't work for svg children
+            $(e).attrAdd("class", "step")
+        })
+
         // Clicking a node selects the step text
         d.stepNodes.click(function(ev){
             var label = titleOfFlowgraphNode($(ev.target).selfOrParent('g.node'))

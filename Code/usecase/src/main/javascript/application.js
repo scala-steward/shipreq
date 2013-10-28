@@ -138,13 +138,6 @@ function setupViz(callback) {
         var d = ev.data
         $(d.tgt).html(d.svg)
 
-        // Find step nodes in flow graph
-        d.stepNodes = $(d.tgt).find('g.node').filterE(isValidLabel.c(titleOfFlowgraphNode))
-        d.stepNodes.eachE(function(e){
-            // $(e).addClass("step") // Doesn't work for svg children
-            $(e).attrAdd("class", "step")
-        })
-
         if (callback !== undefined)
             callback(d)
     }
