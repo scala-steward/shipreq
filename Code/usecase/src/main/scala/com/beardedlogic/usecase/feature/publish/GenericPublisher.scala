@@ -12,6 +12,7 @@ import com.beardedlogic.usecase.feature.uc.text.FreeTextTerms._
 import com.beardedlogic.usecase.feature.uc.text.{FlowClause, FreeTextTerm, StepText, FreeText}
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.feature.FlowGraph
+import com.beardedlogic.usecase.db.UseCaseRev
 
 abstract class GenericPublisher(input: Input) {
 
@@ -45,10 +46,11 @@ abstract class GenericPublisher(input: Input) {
   // Fields
 
   def fields(uc: UseCase): X =
-    getLogicalFields(uc) foldMap field
+    getLogicalFields(uc, input.revMap(uc)) foldMap field
 
-  def getLogicalFields(uc: UseCase): List[OutputField] =
-    OF_LastUpdated(input.revMap(uc).createdAt) ::
+  def getLogicalFields(uc: UseCase, rev: UseCaseRev): List[OutputField] =
+    OF_Revision(rev.rev) ::
+    OF_LastUpdated(rev.createdAt) ::
     uc.fields.foldMap(extractLogicalFields(uc))
 
   def extractLogicalFields(uc: UseCase)(ff: Field): List[OutputField] =
@@ -86,6 +88,7 @@ abstract class GenericPublisher(input: Input) {
     case f: OF_Step        => stepField(f)
     case f: OF_FlowGraph   => flowGraphField(f)
     case f: OF_LastUpdated => lastUpdatedField(f)
+    case f: OF_Revision    => revisionField(f)
   }
 
   def fieldTitle(title: String): X
@@ -188,6 +191,7 @@ abstract class GenericPublisher(input: Input) {
   // -------------------------------------------------------------------------------------------------------------------
   // Other fields
 
+  def revisionField(f: OF_Revision): X
   def lastUpdatedField(f: OF_LastUpdated): X
   def flowGraphField(f: OF_FlowGraph): X
 }

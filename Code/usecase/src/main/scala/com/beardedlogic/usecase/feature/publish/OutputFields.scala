@@ -7,6 +7,8 @@ import com.beardedlogic.usecase.lib.Types._
 
 sealed trait OutputField
 
+case class OF_Revision(rev: Short) extends OutputField
+
 case class OF_LastUpdated(when: String @@ ISO8601) extends OutputField
 
 case class OF_Text(title: String, value: FreeText) extends OutputField
