@@ -3,7 +3,8 @@ package db
 
 import org.scalatest.FunSpec
 import test.TestDatabaseSupport
-import slick.jdbc.StaticQuery.interpolation
+import slick.jdbc.{StaticQuery => Q}
+import Q.interpolation
 import lib.Types._
 import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
 
@@ -47,6 +48,34 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         val save2 = assertTableDiffs(Tables.FieldKey -> 1) {dao.syncFieldList(fl2)}
         save2.fieldDefns ==== fl2
       }
+    }
+  }
+
+  // ===================================================================================================================
+
+  describe("to_iso8601_str") {
+
+    def test(in: String, out: String): Unit = {
+      val q = Q.queryNA[String](s"select to_iso8601_str(timestamptz '$in')")
+      val r: String = q.first
+      r shouldBe out
+    }
+
+    it("should work with typical precision") {
+      test("2013-08-16 09:32:48.002474+10", "2013-08-15T23:32:48Z")
+    }
+
+    it("should work with more precision") {
+      test("2010-10-20 20:32:48.00247489+10", "2010-10-20T10:32:48Z")
+    }
+
+    it("should work with lesser precision") {
+      test("2012-09-10 09:56:23.2157+11", "2012-09-09T22:56:23Z")
+    }
+
+    it("should work with NULLs") {
+      val q = Q.queryNA[String](s"select to_iso8601_str(NULL)")
+      q.first shouldBe null
     }
   }
 
