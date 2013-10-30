@@ -8,7 +8,7 @@ import Q.interpolation
 import lib.Types._
 import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
 import security.PasswordAndSalt
-import feature.{UcFilter, All}
+import feature.{UcFilter, UcFilters}
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
   implicit def str2uch(title: String @@ Validated): UseCaseHeader = UseCaseHeader(title)
@@ -276,7 +276,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
   // ===================================================================================================================
 
   describe("Share") {
-    val FilterAllJson = UcFilter.toJson(All: UcFilter)
+    val FilterAllJson = UcFilters.All.json
 
     it("create.load = id") {
       val pid = newProjectId()

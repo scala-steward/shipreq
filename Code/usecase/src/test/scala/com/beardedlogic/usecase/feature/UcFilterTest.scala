@@ -3,12 +3,9 @@ package com.beardedlogic.usecase.feature
 import org.scalatest.{Matchers, FunSpec}
 import com.beardedlogic.usecase.lib.Types._
 import UcFilter._
-
-import com.beardedlogic.usecase.lib.Debug._
+import UcFilters._
 
 class UcFilterTest extends FunSpec with Matchers {
-
-//  class UcFilterTester(f: UcFilter) {  }
 
   implicit def autoId(i: Long): UseCaseIdentId = i.toLong.tag[IsUseCaseIdentId]
 

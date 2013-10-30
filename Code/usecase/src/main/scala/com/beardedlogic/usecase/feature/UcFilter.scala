@@ -11,20 +11,26 @@ import com.beardedlogic.usecase.db.{DaoS, UseCaseRev}
  */
 sealed trait UcFilter
 
-/**
- * No filter. All use cases remain in scope.
- */
-case object All extends UcFilter
+object UcFilters {
 
-/**
- * Only specified use cases are allowed.
- * To all other use cases: "Sorry mate, not with those shoes. It's not your night."
- */
-case class Whitelist(ids: List[UseCaseIdentId]) extends UcFilter
+  /**
+   * No filter. All use cases remain in scope.
+   */
+  case object All extends UcFilter {
+    val json: Json[UcFilter] = UcFilter.toJson(this)
+  }
+
+  /**
+   * Only specified use cases are allowed.
+   * To all other use cases: "Sorry mate, not with those shoes. It's not your night."
+   */
+  case class Whitelist(ids: List[UseCaseIdentId]) extends UcFilter
+}
 
 // =====================================================================================================================
 
 object UcFilter {
+  import UcFilters._
 
   type UseCases = List[UseCaseRev]
 
