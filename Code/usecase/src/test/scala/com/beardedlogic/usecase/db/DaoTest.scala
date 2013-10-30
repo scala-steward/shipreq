@@ -278,21 +278,24 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
   describe("Share") {
     val FilterAllJson = UcFilters.All.json
 
-    it("create.load = id") {
-      val pid = newProjectId()
-      val s = dao.createShare(pid, PasswordAndSalt.hashWithRandomSalt("volition"), "NAME", Some("pref"), FilterAllJson)
+    def createShare(pid: ProjectId = newProjectId()): Share = {
+      val s = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("volition"), "NAME", Some("pref"), FilterAllJson)
       s.name shouldBe "NAME"
       s.preface shouldBe Some("pref")
       s.ucFilterJson shouldBe FilterAllJson
       s.projectId shouldBe pid
+      s
+    }
 
+    it("find . create = id") {
+      val n, s, m = createShare()
       dao.findShare(s.id) shouldBe Some(s)
     }
 
     it("create should retry when token taken") {
       val firstToken: ShareUrlToken = "abcdefgh".tag
       val pid = newProjectId()
-      val a = dao.createShare(pid, PasswordAndSalt.hashWithRandomSalt("v"), "n", None, FilterAllJson, () => firstToken)
+      val a = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("v"), "n", None, FilterAllJson, () => firstToken)
       a.urlToken shouldBe firstToken
 
       var nextToken = firstToken
@@ -302,7 +305,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         nextToken = secondToken
         use
       }
-      val b = dao.createShare(pid, PasswordAndSalt.hashWithRandomSalt("v"), "n", None, FilterAllJson, fn)
+      val b = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("v"), "n", None, FilterAllJson, fn)
       b.urlToken shouldBe secondToken
     }
   }

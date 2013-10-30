@@ -231,7 +231,7 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     as[Long].first.tag[IsUserId]
 
   def newShare(projectId: ProjectId = newProjectId()): ShareId =
-    dao.createShare(projectId, PasswordAndSalt.hashWithRandomSalt(randomStr), randomStr, None, UcFilters.All.json).id
+    dao.createShare(projectId, PasswordAndSalt.createWithRandomSalt(randomStr), randomStr, None, UcFilters.All.json).id
 
   def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)

@@ -21,7 +21,7 @@ private[db] final object Sql {
   implicit def autotag[T <: AnyRef](t: T): T @@ Validated = t.tag[Validated]
 
   implicit val GR_FieldKey = GetResult {r => FieldKeyRec(r.<<, r.<<, r.<<)}
-  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt(r.nextString, r.nextString))
+  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt.restore(r.nextString.tag, r.<<))
   implicit val GR_Project = GetResult(r => Project(r.<<, r.<<, r.<<))
   implicit val GR_ProjectSummary = GetResult(r => ProjectSummary(r.nextId[ProjectId], r.<<, r.<<, r.<<))
   implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))

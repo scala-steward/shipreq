@@ -119,6 +119,9 @@ object Types {
   /** Marks a string as being an ISO-8601 representation of a datetime. */
   sealed trait ISO8601 extends TypeTag[String]
 
+  /** Marks a password as being hashed. */
+  sealed trait Hashed extends TypeTag[String]
+
   sealed trait IsShareUrlToken extends TypeTag[String]
   type ShareUrlToken = String @@ IsShareUrlToken
 
