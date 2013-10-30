@@ -206,11 +206,13 @@ sealed trait DaoS {
       }
     }
 
-  def logShareView(shareId: ShareId, ip: Option[String]): Unit = LogShareView.execute(shareId, ip)
+  def findShare(id: ShareId): Option[Share] = SelectShare.firstOption(id)
+
+  def findShareAndPassword(url: ShareUrlToken): Option[(Share, PasswordAndSalt)] = SelectShareByUrl.firstOption(url)
 
   def summariseShares(projectId: ProjectId): List[ShareSummary] = SummariseShares.list(projectId)
 
-  def findShare(id: ShareId): Option[Share] = SelectShare.firstOption(id)
+  def logShareView(shareId: ShareId, ip: Option[String]): Unit = LogShareView.execute(shareId, ip)
 }
 
 // #####################################################################################################################

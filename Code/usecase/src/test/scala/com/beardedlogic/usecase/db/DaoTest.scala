@@ -308,5 +308,12 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       val b = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("v"), "n", None, FilterAllJson, fn)
       b.urlToken shouldBe secondToken
     }
+
+    it("findShareAndPassword") {
+      val n, s, m = createShare()
+      val r = dao.findShareAndPassword(s.urlToken)
+      r.map(_._1) shouldBe Some(s)
+      r.get._2.matches("volition") shouldBe true
+    }
   }
 }

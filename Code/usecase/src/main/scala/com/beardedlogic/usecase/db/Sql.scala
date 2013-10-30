@@ -210,8 +210,13 @@ private[db] final object Sql {
 
   @Insert val LogShareView = update[(ShareId, Option[String])]("INSERT INTO share_view_log(share_id,ip) VALUES(?,?)")
 
+  val share_* = "id, project_id, url_token, name, preface, uc_filter"
+
   val SelectShare = query[ShareId, Share](
-    "SELECT id, project_id, url_token, name, preface, uc_filter FROM share WHERE id=?")
+    s"SELECT ${share_*} FROM share WHERE id=?")
+
+  val SelectShareByUrl = query[ShareUrlToken, (Share, PasswordAndSalt)](
+    s"SELECT ${share_*}, password, password_salt FROM share WHERE url_token=?")
 
   val SummariseShares = query[ProjectId, ShareSummary](
     "SELECT id, url_token, name, uc_filter, view_count, to_iso8601_str(last_viewed_at) FROM share WHERE project_id=?")
