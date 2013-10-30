@@ -17,7 +17,8 @@ import lib.Types._
 import lib.Locks
 import feature.uc.UseCase
 import feature.uc.persist.{UseCaseSaveCheckpoint, UseCasePersistence}
-import feature.InputValidator
+import feature.{UcFilters, InputValidator}
+import security.PasswordAndSalt
 
 object TestDB {
 
@@ -230,8 +231,7 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     as[Long].first.tag[IsUserId]
 
   def newShare(projectId: ProjectId = newProjectId()): ShareId =
-    sql"INSERT INTO share(project_id, url_token, name, password, password_salt, uc_filter) VALUES($projectId, $randomStr, $randomStr, $randomStr, $randomStr, '{}') RETURNING id".
-    as[Long].first.tag[IsShareId]
+    dao.createShare(projectId, PasswordAndSalt.hashWithRandomSalt(randomStr), randomStr, None, UcFilters.All.json).id
 
   def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
