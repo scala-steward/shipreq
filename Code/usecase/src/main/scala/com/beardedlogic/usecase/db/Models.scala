@@ -44,10 +44,17 @@ object FieldListRec {
 // ===================================================================================================================
 // UC & Text
 
-class UseCaseSummary(val id: UseCaseIdentId, val number: UseCaseNumber, val title: String) {
-  def this(ucr: UseCaseRev) = this(ucr.identId, ucr.ident.number, ucr.title)
-  final def eid = ExternalId.UseCase.toExternal(id)
+sealed trait BasicUseCaseInfo {
+  def identId: UseCaseIdentId
+  def number: UseCaseNumber
+  def title: String
+  final def eid = ExternalId.UseCase.toExternal(identId)
   final def fullName = UseCaseFns.fullName(number, title)
+}
+
+class UseCaseSummary(val id: UseCaseIdentId, val number: UseCaseNumber, val title: String) extends BasicUseCaseInfo {
+  @inline final def identId = id
+  def this(ucr: UseCaseRev) = this(ucr.identId, ucr.ident.number, ucr.title)
 }
 
 class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, val updatedAt: String @@ ISO8601)
@@ -57,8 +64,10 @@ class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, 
 
 case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
 
-case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601) {
+case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601)
+  extends BasicUseCaseInfo {
   @inline final def identId = ident.identId
+  @inline final def number = ident.number
   @inline final def title = header.title
 }
 

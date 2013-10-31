@@ -21,7 +21,7 @@ html, body { height: 100%; }
 #ly-default .ly-content { width: auto; margin-left: 30px; margin-right: 30px; }
 #ly-default #content { margin-top: 2.3em; }
 
-.ly-blank-body { margin: 1.4em 0.6cm 0 0.6cm; }
+.ly-blank-body { margin: 1.4em 0.6cm 0 0.6cm; padding-bottom: 0.6cm; }
 
 .loginInfo { text-align: center; }
 
@@ -44,6 +44,9 @@ html, body { height: 100%; }
 #usecase-list td.r { vertical-align: top; padding-bottom: 2ex; }
 #usecase-list .view-mode .view a.title { font-size: 120%; line-height: 1em; color: #4183C4; font-weight: bold; }
 #usecase-list .view-mode .view .detail { font-size: 70%; color: #888888; }
+
+#share-create h1 { margin-bottom: 1em; }
+#share-create .form-group.submit { text-align: right; }
 
 .ucs-published { color: #222; margin: 0 auto 0 auto; padding: 2ex 6ex 6ex 6ex; max-width: 144ex; }
 .ucs-published h2, .ucs-published h3 { color: #000; }

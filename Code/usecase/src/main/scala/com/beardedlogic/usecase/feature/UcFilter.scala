@@ -1,10 +1,17 @@
 package com.beardedlogic.usecase.feature
 
-import scala.xml.NodeSeq
-import scalaz.NonEmptyList
+import net.liftweb.common.Full
+import net.liftweb.http.S
 import net.liftweb.json._
+import scala.xml.{Text, NodeSeq}
+import scalaz.NonEmptyList
+import scalaz.syntax.foldable._
+import scalaz.std.list.listInstance
+import scalaz.std.nodeseq.nodeSeqInstance
+
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.db.{DaoS, UseCaseRev}
+import com.beardedlogic.usecase.lib.SnippetHelpers.shouldNeverHappen_swallowInProd
 
 /**
  * The filtering of a project's use cases.
@@ -34,10 +41,11 @@ object UcFilter {
 
   type UseCases = List[UseCaseRev]
 
-  def init(ucs: UseCases): NonEmptyList[UcFilter] = NonEmptyList(
-    All,
-    Whitelist(ucs.map(_.identId))
-  )
+  def init(ucs: UseCases, selected: UcFilter): NonEmptyList[UcFilter] =
+    selected match {
+      case All          => NonEmptyList(All, Whitelist(ucs.map(_.identId)))
+      case s: Whitelist => NonEmptyList(All, s)
+    }
 
   // -------------------------------------------------------------------------------------------------------------------
   // JSON
@@ -104,5 +112,92 @@ object UcFilter {
   // -------------------------------------------------------------------------------------------------------------------
   // Rendering
 
-  def render[F <: UcFilter](f: F, selected: Boolean, ucs: UseCases): Option[(NodeSeq, () => F)] = ???
+  private[this] object Rendering {
+    val optionParamName = "ucfilter"
+    val idAll = "a"
+    val idWhitelist = "w"
+
+    def Z = NodeSeq.Empty
+    val someChecked = Some(Text("checked"))
+    val preRenderedAllSel = renderFieldAll(true)
+    val preRenderedAllNotSel = renderFieldAll(false)
+
+    def renderAllOptions(fs: NonEmptyList[UcFilter], selected: UcFilter, ucs: UseCases): NodeSeq =
+      <div class="ucfilter-group">
+        {fs.foldMap(f => ucFilterOption(f, f eq selected, ucs))}
+      </div>
+
+    def renderFieldAll(selected: Boolean) = wrap("all", selected)(radio(All, selected, "All use cases"))
+
+    def ucFilterOption(f: UcFilter, selected: Boolean, ucs: UseCases): NodeSeq = f match {
+      case All =>
+        if (selected) preRenderedAllSel else preRenderedAllNotSel
+
+      case Whitelist(ids) =>
+        wrap("wl", selected)(radio(f, selected, "Only selected use cases"), ucCheckboxes(ucs, ids))
+    }
+
+    def checkedAttr(enabled: Boolean): Option[Text] =
+      if (enabled) someChecked else None
+
+    def idstr(f: UcFilter): String = f match {
+      case All          => idAll
+      case Whitelist(_) => idWhitelist
+    }
+
+    def wrap(className: String, selected: Boolean)(content: NodeSeq, subContent: NodeSeq = Z): NodeSeq = {
+      val wrappedSubContent = (
+        if (subContent.isEmpty)
+          Z
+        else if (selected)
+          <div class="sub">{subContent}</div>
+        else
+          <div class="sub" style="display:none">{subContent}</div>
+      )
+      val className2 = "ucfilter " + className
+      <div class={className2}>{content}{wrappedSubContent}</div>
+    }
+
+    def radio(f: UcFilter, selected: Boolean, desc: String): NodeSeq =
+      <div class="radio"><label>
+        <input type="radio" name={optionParamName} class="ucfilter" value={idstr(f)} checked={checkedAttr(selected)} /> {desc}
+      </label></div>
+
+    def ucCheckboxes(ucs: UseCases, selectedIds: List[UseCaseIdentId]): NodeSeq =
+      if (ucs.isEmpty)
+        Z
+      else
+        <ol class="ucs">{ucs foldMap ucCheckbox(selectedIds, idWhitelist)}</ol>
+
+    def ucCheckbox(selectedIds: List[UseCaseIdentId], namePrefix: String)(uc: UseCaseRev): NodeSeq = {
+      val selected = selectedIds.contains(uc.identId)
+      val name = ucParamName(namePrefix, uc)
+      <li class="checkbox"><label><input type="checkbox" name={name} value="1" checked={checkedAttr(selected)}/> {uc.fullName}</label></li>
+    }
+
+    def ucParamName(prefix: String, id: UseCaseIdentId) = s"$prefix-$id"
+
+    def parseRequest(ucs: UseCases): UcFilter = {
+      S.param(optionParamName) match {
+        case Full(`idAll`) =>
+          All
+
+        case Full(`idWhitelist`) =>
+          val ids = ucs.map(_.identId).filter(id => S.param(ucParamName(idWhitelist, id)).isDefined)
+          Whitelist(ids)
+
+        case p =>
+          shouldNeverHappen_swallowInProd(All)(s"Invalid UC-filter param: $p")
+      }
+    }
+  }
+
+  def render(selected: UcFilter, ucs: UseCases): (NodeSeq, () => UcFilter) =
+    render(init(ucs, selected), selected, ucs)
+
+  def render(fs: NonEmptyList[UcFilter], selected: UcFilter, ucs: UseCases): (NodeSeq, () => UcFilter) = {
+    val r = Rendering.renderAllOptions(fs, selected, ucs)
+    val f = () => Rendering.parseRequest(ucs)
+    (r, f)
+  }
 }

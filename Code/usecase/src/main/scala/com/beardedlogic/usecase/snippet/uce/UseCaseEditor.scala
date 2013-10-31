@@ -9,7 +9,7 @@ import JsCmds.Noop
 
 import app.{Defaults, DI, RequestVars}
 import db.UseCaseHeader
-import lib.{SnippetHelpers, Locks, StaticSnippetHelpers}
+import lib.{Misc, SnippetHelpers, Locks, StaticSnippetHelpers}
 import lib.Types._
 import feature.uc._
 import feature.uc.change._
@@ -40,7 +40,7 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
     val ucn = (0:Short).tag[IsUseCaseNumber]
     val h = UseCaseHeader("DEMO".tag[Validated])
     val fl = Defaults.fieldList.value.fields
-    val ncf = UseCaseFns.filter[NormalCourseField](fl).head
+    val ncf = Misc.filterCovar[NormalCourseField](fl).head
     val fv = fl.map(f => (f ~> f.empty)).toMap + (ncf ~> ncf.defaultLoadValue(h)._2.apply)
     val sl = UseCaseFns.generateStepAndLabelBiMap(ucn, fv)
     val uc = UseCase(ucn, h, fl, fv, sl)
@@ -81,7 +81,7 @@ class UseCaseEditor(initialState: UseCaseEditor.State, val rels: UseCaseRelation
   @inline final def fieldValues = uc.fieldValues
 
   val textFieldIds: Map[Field, LocalTextFieldId] =
-    UseCaseFns.filter[TextField](fields)
+    Misc.filterCovar[TextField](fields)
     .map(f => (f -> nextFuncName.tag[IsLocalTextFieldId]))
     .toMap
 

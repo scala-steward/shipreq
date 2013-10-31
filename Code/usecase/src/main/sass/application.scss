@@ -100,6 +100,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
 
 .ly-blank-body {
   margin: 1.4em 0.6cm 0 0.6cm;
+  padding-bottom: 0.6cm;
 }
 
 // =====================================================================================================================
@@ -158,6 +159,11 @@ html, body { height: 100% } // Cannot have any padding or margin here
       color: #888
     }
   }
+}
+
+#share-create {
+  h1 { margin-bottom: 1em }
+  .form-group.submit { text-align: right }
 }
 
 .ucs-published {

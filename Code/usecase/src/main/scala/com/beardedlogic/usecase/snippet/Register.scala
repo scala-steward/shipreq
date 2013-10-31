@@ -110,27 +110,15 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
     JqId("username") ~> JqSetValue(usernameInput)
   }
 
-  // TODO MOVE
-  def collectErrors(es: Seq[String \/ Any]): List[String] =
-    es.foldRight(List.empty[String])((e: String \/ Any, r: List[String]) => e match {
-      case -\/(err) => err :: r
-      case \/-(_) => r
-    })
-
   def onSubmit(): JsCmd = try {
     import UserRegistrationResult._
 
-    val usernameE = InputValidator.username.correctAndValidate(usernameInput)
-    val password1C = InputValidator.password.correct(password1Input)
-    val password1E = InputValidator.password.validate(password1C)
-    val password2E =
-      if (password1C == InputValidator.password.correct(password2Input)) password1E
-      else -\/("Passwords don't match.")
+    val usernameV = InputValidator.username.correctAndValidate(usernameInput)
+    val passwordsV = InputValidator.passwords.correctAndValidate(password1Input, password2Input)
 
     val possibleJs = for {
-      username <- usernameE
-      password <- password1E
-      _        <- password2E
+      username <- usernameV
+      password <- passwordsV
     } yield {
       // Update user
       val ps = PasswordAndSalt.createWithRandomSalt(password)
@@ -149,7 +137,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       }
     }
 
-    possibleJs | jsShowErrors(collectErrors(List(usernameE, password1E, password2E)))
+    possibleJs | jsShowErrors(collectErrors(List(usernameV, passwordsV)))
   } finally {
     password1Input = "" // Let's not keep the plaintext passwords around
     password2Input = ""

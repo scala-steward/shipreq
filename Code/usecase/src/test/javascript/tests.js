@@ -29,6 +29,7 @@ var ids = {
     ,s_1_e_2: {txt: "s1044-t", lbl: "s1044-l", cont: "s1044", flbl: "1.E.2"}
     ,tf3: {txt: "F8085850464312XOWYC"}
     ,tf8: {txt: "F8085850464365THSLV"}
+    ,ucFilter: {all: "ucfilter-all-rad", whitelist: "ucfilter-wl-rad"}
 }
 
 function testSetup() {
@@ -319,4 +320,46 @@ test("Prompts before leaving page when unsaved changes", function() {
     // Save button doesn't exist
     saveButton().remove()
     equal('undefined', typeof promptWhenLeaving())
+})
+
+// =====================================================================================================================
+
+stdModule('UC Filter form')
+
+function testUcFilterForm(allSelected) {
+    equal(allSelected, $id(ids.ucFilter.all).is(':checked'), "UC Filter option: All")
+    equal(!allSelected, $id(ids.ucFilter.whitelist).is(':checked'), "UC Filter option: Whitelist")
+    equal(!allSelected, $('.ucfilter.wl .sub').is(':visible'), "Whitelist's subcontent")
+}
+
+function enterStateUcFilterWhitelist() {
+    clickUcFilter(ids.ucFilter.whitelist)
+}
+
+function clickUcFilter(id) {
+    ucFilterForm.setup()
+    $id(id).prop('checked', true)
+    $id(id).change()
+}
+
+test("All -> All", function() {
+    clickUcFilter(ids.ucFilter.all)
+    testUcFilterForm(true)
+})
+
+test("All -> Whitelist", function() {
+    clickUcFilter(ids.ucFilter.whitelist)
+    testUcFilterForm(false)
+})
+
+test("Whitelist -> Whitelist", function() {
+    enterStateUcFilterWhitelist()
+    clickUcFilter(ids.ucFilter.whitelist)
+    testUcFilterForm(false)
+})
+
+test("Whitelist -> All", function() {
+    enterStateUcFilterWhitelist()
+    clickUcFilter(ids.ucFilter.all)
+    testUcFilterForm(true)
 })

@@ -15,7 +15,7 @@ class ValidateTest extends FunSuite with Matchers with PropertyChecks {
     IV.username.correctAndValidate("").swap.toOption.get should (startWith("Username can only") or startWith("Username must"))
   }
 
-  def testV(iv: InputValidator[String], examples: TableFor2[Option[String], String]) {
+  def testV(iv: InputValidator[String, String], examples: TableFor2[Option[String], String]) {
     forAll(examples) {
       (failureFrag, input) =>
         iv.validate(input.tag[InputCorrected]) match {

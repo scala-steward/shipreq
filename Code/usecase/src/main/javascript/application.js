@@ -223,8 +223,34 @@ function enhanceDom() { $(document).enhanceDom() }
 
 }(jQuery));
 
+// =====================================================================================================================
+// TODO Clean this shit file up!
+
+var ucFilterForm = {
+    setup: function() {
+        // UC Filter form: Only show sub-content for selected option.
+        $('.ucfilter-group input.ucfilter').change(ucFilterForm.updateAll)
+    },
+    updateAll: function() {
+        $('.ucfilter-group div.ucfilter').eachE(ucFilterForm.update)
+    },
+    update: function(e) {
+        var sub = $(e).find('.sub')
+        if (sub) {
+            var open = sub.is(':visible')
+            var selected = $(e).find('input.ucfilter').is(':checked')
+            if (open != selected) {
+                sub.toggle("slide",{direction:'up'}, 200)
+            }
+        }
+    }
+}
+
+// =====================================================================================================================
 
 $(document).ready(function(){
+
+    ucFilterForm.setup()
 
     // When refs are hovered over, highlight the reference step.
     $('.ucs-published .steps tr')

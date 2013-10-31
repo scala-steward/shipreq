@@ -30,7 +30,6 @@
             %li
               %a.delete(href="#") Delete Project
 
-
     %section#project-body
       %nav
         %ul.nav.nav-tabs
@@ -38,8 +37,9 @@
             %a(data-toggle="tab" href="#tab-ucs") Use Cases
           %li
             %a(data-toggle="tab" href="#tab-shares") Shares
-
       .tab-content
+
+        /---------------------------------------------------------------------------------------------------------------
         %section#tab-ucs.tab-pane.fade.in.active(data-lift="UseCaseCrudl")
 
           / Use Case: New
@@ -87,5 +87,9 @@
                 %input(type="checkbox")/
                 Show deleted
 
-        %section#tab-shares.tab-pane.fade
+        /---------------------------------------------------------------------------------------------------------------
+        %section#tab-shares.tab-pane.fade(data-lift="ShareList")
+
+          %a.btn.btn-success.create Share Use Cases
+
           %pre PENDING

@@ -9,7 +9,7 @@ import scala.util.matching.Regex
 import scalaz.Memo
 
 import db.{UseCaseHeader, FieldListRec}
-import lib.Misc.removeAllWhitespace
+import lib.Misc._
 import lib.Types._
 import feature.InputValidator
 import feature.uc._
@@ -401,7 +401,7 @@ object DataGenerators extends Logger {
     private def mutateStepNoText(fn: (StepField, LocalStepId) => UseCaseUpdater => UcUpdateResult, desc: (UseCase, StepField, LocalStepId) => String): Gen[UseCaseMutator] =
       fieldMutator((u, refdep) => {
         val uc = u.uc
-        val perField = UseCaseFns.filter[StepField](uc.fields).toStream.map(f =>
+        val perField = filterCovar[StepField](uc.fields).toStream.map(f =>
           for ((id, r) <- findChangableStep(f(uc.fieldValues), fn(f, _)(u))) yield (r, desc(uc, f, id))
         )
         val result = perField.filter(_.isDefined).headOption.flatten
@@ -412,7 +412,7 @@ object DataGenerators extends Logger {
       fieldMutator((u, refdep) => {
         val uc = u.uc
         refdep.stepText.flatMap(txt => {
-          val perField = UseCaseFns.filter[StepField](uc.fields).toStream.map(f =>
+          val perField = filterCovar[StepField](uc.fields).toStream.map(f =>
             for ((id, r) <- findChangableStep(f(uc.fieldValues), fn(f, _, txt)(u))) yield (r, desc(uc, f, id, txt))
           )
           val result = perField.filter(_.isDefined).headOption.flatten
@@ -428,14 +428,14 @@ object DataGenerators extends Logger {
 
     val MutateTextField = fieldMutator((u, refdep) =>
       for {
-        f <- Gen.oneOf(UseCaseFns.filter[TextField](u.uc.fields))
+        f <- Gen.oneOf(filterCovar[TextField](u.uc.fields))
         txt <- refdep.textFieldText
       } yield
         Some(f.updateText(txt)(u), s"[=] Change TextField [${f.defn.title}] to ${txt.inspect}")
     )
 
     val AddTailStep = fieldMutator((u, refdep) =>
-      for (f <- Gen.oneOf(UseCaseFns.filter[StepField](u.uc.fields)))
+      for (f <- Gen.oneOf(filterCovar[StepField](u.uc.fields)))
       yield Some(f.addTailStep(u),s"[+] Add tail step to ${f.getClass.getSimpleName}")
     )
 

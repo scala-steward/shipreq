@@ -8,12 +8,12 @@ import org.scalatest.FunSuite
 import org.scalatest.prop._
 import Prop._
 
+import lib.Misc._
 import lib.Types._
 import field._
 import step._
 import test.TestDatabaseSupport
 import test.DataGenerators._
-import UseCaseFns._
 import app.Defaults
 
 class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Checkers {
@@ -160,8 +160,8 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
   implicit class UseCaseExt(val x: UseCase) {
     def <==>(y: UseCase): Prop = useCasesEqual(x, y)
     def =/=(y: UseCase): Prop = useCasesDiffer(x, y)
-    def textFields: List[TextField] = filter[TextField](x.fields)
-    def stepFields: List[StepField] = filter[StepField](x.fields)
+    def textFields: List[TextField] = filterCovar[TextField](x.fields)
+    def stepFields: List[StepField] = filterCovar[StepField](x.fields)
   }
 
   def useCasesEqual(a: UseCase, b: UseCase): Prop = {

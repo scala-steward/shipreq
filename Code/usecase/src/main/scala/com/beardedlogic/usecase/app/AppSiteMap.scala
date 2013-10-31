@@ -50,15 +50,14 @@ object AppSiteMap {
       }
   )
 
-  val UseCaseEditor: PM[UseCaseIdentId] = (
-    MenuWithIdParam(ExternalId.UseCase)("uce", "Use Case Editor") / "usecase" / *
+  val ShareCreate: PM[ProjectId] = (
+    MenuWithIdParam(ExternalId.Project)("shareCreate", "Share Use Cases") / "project" / * / "share"
     >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("loggedin/uceditor")
-    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown)
+    >> UseTemplate("loggedin/share-create")
+    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Share Use Cases"))
     >> PerformEffects {
-        RequestVars.UseCaseId.setByParam(UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
-        RequestVars.Project.deriveFromUseCaseId()
-        RequestVars.ProjectId.deriveFromProject()
+        RequestVars.ProjectId.setByParam(ShareCreate, "ShareCreate --> ProjectId")
+        RequestVars.Project.deriveFromProjectId()
       }
   )
 
@@ -73,11 +72,23 @@ object AppSiteMap {
       }
   )
 
+  val UseCaseEditor: PM[UseCaseIdentId] = (
+    MenuWithIdParam(ExternalId.UseCase)("uce", "Use Case Editor") / "usecase" / *
+    >> AuthenticationRequired >> ProjectPermissionRequired
+    >> UseTemplate("loggedin/uceditor")
+    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown)
+    >> PerformEffects {
+        RequestVars.UseCaseId.setByParam(UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
+        RequestVars.Project.deriveFromUseCaseId()
+        RequestVars.ProjectId.deriveFromProject()
+      }
+  )
+
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages = List[ConvertableToMenu](
     Home, Login, Logout, Register1, Register2,
-    Project, UseCaseEditor, ReadOwnUcs
+    Project, UseCaseEditor, ReadOwnUcs, ShareCreate
   )
 
   val sitemap = {
@@ -90,6 +101,7 @@ object AppSiteMap {
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
+      // Full(RedirectResponse("/project/cUZ0/share"))
       Full(redirectHomeResp)
     })
 
