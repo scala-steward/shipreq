@@ -4,7 +4,7 @@ package snippet
 import net.liftweb.util.Helpers._
 import scalaz.NonEmptyList.nel
 
-import app.AppSiteMap
+import app.{RequestVars, AppSiteMap}
 import AppSiteMap.Implicits._
 import lib.Types._
 import lib.SingleOpStatefulSnippet
@@ -20,8 +20,7 @@ import net.liftweb.util.CssSel
  */
 class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
-  // TODO share
-  val ucs = daoProvider.withSession(_.summariseUseCases2(projectId))
+  val ucs = RequestVars.UseCases.get
 
   def render = {
     val shares = daoProvider.withSession(_.summariseShares(projectId))

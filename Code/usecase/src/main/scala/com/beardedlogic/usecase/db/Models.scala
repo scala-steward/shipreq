@@ -52,13 +52,12 @@ sealed trait BasicUseCaseInfo {
   final def fullName = UseCaseFns.fullName(number, title)
 }
 
-class UseCaseSummary(val id: UseCaseIdentId, val number: UseCaseNumber, val title: String) extends BasicUseCaseInfo {
+case class UseCaseSummary(
+  id: UseCaseIdentId,
+  number: UseCaseNumber,
+  title: String,
+  updatedAt: String @@ ISO8601) extends BasicUseCaseInfo {
   @inline final def identId = id
-  def this(ucr: UseCaseRev) = this(ucr.identId, ucr.ident.number, ucr.title)
-}
-
-class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, val updatedAt: String @@ ISO8601)
-  extends UseCaseSummary(id, number, title) {
   def this(ucr: UseCaseRev, updatedAt: String @@ ISO8601) = this(ucr.identId, ucr.ident.number, ucr.title, updatedAt)
 }
 

@@ -68,11 +68,16 @@ final object UseCasePersistence {
 
   // ===================================================================================================================
 
+  // TODO Remove UCP.load() that loads rels, make loadAll bulkable
   def load(ucRev: UseCaseRev, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): (UseCaseSaveCheckpoint, UseCaseRelations) = {
+    val rels = CachedUseCaseRelations(dao.summariseUseCases(ucRev.ident.projectId))
+    val cp = load(ucRev, rels, dao, lock)
+    (cp, rels)
+  }
 
+  def load(ucRev: UseCaseRev, rels: UseCaseRelations, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): UseCaseSaveCheckpoint = {
     @inline def uch = ucRev.header
     @inline def ucn = ucRev.ident.number
-    @inline def projectId = ucRev.ident.projectId
     val fieldList = Defaults.fieldList.value.fields // TODO hardcoded fieldlist
     val loadCtx = FieldLoadCtx(uch, dao.findAllUcFieldData(ucRev.id))
 
@@ -96,7 +101,6 @@ final object UseCasePersistence {
 
     val savedSteps: SavedSteps = BiMap.swapped(savedStepMap)
     val stepAndLabels = generateStepAndLabelBiMap(stepAndLabelMaps)
-    val rels = CachedUseCaseRelations(dao.summariseUseCases(projectId))
     val ctx = UcParsingCtx(ucn, uch.title, stepAndLabels, rels)
 
     var savedData = List.empty[FieldAndSavedData]
@@ -112,16 +116,17 @@ final object UseCasePersistence {
 
     val uc = UseCase(ucn, uch, fieldList, fieldValues, stepAndLabels)
     val cp = UseCaseSaveCheckpoint(uc, ucRev, savedSteps, savedData)
-    (cp, rels)
+    cp
   }
 
   def loadAll(projectId: ProjectId, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[(UseCaseRev, UseCase)] =
-    loadAll(dao.findAllLatestUseCaseRevsByProject(projectId), dao, lock)
-
-  def loadAll(ucRevs: List[UseCaseRev], dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[(UseCaseRev, UseCase)] =
-    logTime(s"UseCasePersistence.loadAll(${ucRevs.size} UCs)")(
-      ucRevs.map(r => (r, load(r, dao, lock)._1.uc))
-    )
+    logTime {
+      val ucRevs = dao.findAllLatestUseCaseRevsByProject(projectId)
+      val rels = CachedUseCaseRelations(dao.summariseUseCases(projectId))
+      val ucs = ucRevs.map(r => (r, load(r, rels, dao, lock).uc))
+      val logMsg = s"UseCasePersistence.loadAll(${ucRevs.size} UCs)"
+      (logMsg, ucs)
+    }
 
   // ===================================================================================================================
 

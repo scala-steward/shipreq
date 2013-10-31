@@ -52,7 +52,8 @@ object UseCaseEditorFns extends StaticSnippetHelpers with DI {
       dao    <- daoProvider.forTransaction
       ucRec  <- Box(dao.findUseCaseLatestRev(ucId)) ~> NotFoundResponse()
     } yield {
-      val (cp,rels) = UseCasePersistence.load(ucRec, dao, lock)
+      val rels = CachedUseCaseRelations(RequestVars.UseCases.get)
+      val cp = UseCasePersistence.load(ucRec, rels , dao, lock)
       (State(cp), rels)
     })
 

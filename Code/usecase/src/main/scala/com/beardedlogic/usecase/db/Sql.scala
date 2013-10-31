@@ -29,8 +29,7 @@ private[db] final object Sql {
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
   implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.nextString), r.<<))
-  val GR_UseCaseSummary2 = GetResult(r => new UseCaseSummary2(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
-  val GR_UseCaseSummary = GetResult(r => new UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<))
+  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
 
@@ -148,16 +147,10 @@ private[db] final object Sql {
     s"SELECT $select FROM usecase u, usecase_rev r WHERE r.id = latest_rev_id and project_id = ?$w ORDER BY number"
   }
 
-  def UseCaseIdentIdIn(ids: NonEmptyList[UseCaseIdentId]) = s"ident_id in (${idsToSql(ids)})"
+  val SummariseUseCases = query[ProjectId, UseCaseSummary](
+    summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
 
-  val SummariseUseCases = {
-    implicit val v = GR_UseCaseSummary
-    query[ProjectId, UseCaseSummary](summariseUseCaseSql("ident_id, number, title"))
-  }
-  val SummariseUseCases2 = {
-    implicit val v = GR_UseCaseSummary2
-    query[ProjectId, UseCaseSummary2](summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
-  }
+  def UseCaseIdentIdIn(ids: NonEmptyList[UseCaseIdentId]) = s"ident_id in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Text

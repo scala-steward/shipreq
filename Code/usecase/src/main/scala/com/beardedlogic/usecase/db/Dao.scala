@@ -153,7 +153,6 @@ sealed trait DaoS {
   }
 
   def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases.list(projectId)
-  def summariseUseCases2(projectId: ProjectId): List[UseCaseSummary2] = SummariseUseCases2.list(projectId)
 
   // ===================================================================================================================
   // uc_field
