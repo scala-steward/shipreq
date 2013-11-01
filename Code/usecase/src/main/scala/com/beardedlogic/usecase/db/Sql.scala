@@ -136,7 +136,10 @@ private[db] final object Sql {
 
   val SelectLatestUseCaseRevsByProject = query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*))
 
-  def SelectLatestUseCaseRevsArb(where: String) =
+  def SelectLatestUseCaseRevsByIds(ids: NonEmptyList[UseCaseIdentId]) =
+    SelectLatestUseCaseRevsArb(UseCaseIdentIdIn("ident_id", ids))
+
+  private def SelectLatestUseCaseRevsArb(where: String) =
     query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*, Some(where)))
 
   private def summariseUseCaseSql(select: String, where: Option[String] = None) = {
@@ -150,7 +153,7 @@ private[db] final object Sql {
   val SummariseUseCases = query[ProjectId, UseCaseSummary](
     summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
 
-  def UseCaseIdentIdIn(ids: NonEmptyList[UseCaseIdentId]) = s"ident_id in (${idsToSql(ids)})"
+  private def UseCaseIdentIdIn(col: String, ids: NonEmptyList[UseCaseIdentId]) = s"$col in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Text
@@ -177,13 +180,20 @@ private[db] final object Sql {
     SELECT ?, label, parent_rev_id, index, text_rev_id
       FROM uc_field where uc_rev_id = ? """.sql)
 
-  // Step loading depends on ORDER BY index
-  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](s"""
-    SELECT fk_id, label, parent_rev_id, index, ${textrev_*}
+  private def selectUcFieldSql(selectPrefix: String, cond: String) = s"""
+    SELECT ${selectPrefix}fk_id, label, parent_rev_id, index, ${textrev_*}
       FROM uc_field f, text_rev tr, text t
      WHERE text_rev_id = tr.id and tr.ident_id = t.id
-       AND uc_rev_id = ?
-     ORDER BY index """.sql)
+       AND $cond
+     ORDER BY index """.sql
+  // ORDER BY: Step loading RELIES on ORDER BY index
+
+  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](selectUcFieldSql("","uc_rev_id = ?"))
+
+  def SelectUcFieldsInBulk(ids: NonEmptyList[UseCaseRevId]) = queryNA[(UseCaseRevId, UcFieldTextWithFK)](
+    selectUcFieldSql("uc_rev_id,", UseCaseRevIdIn("uc_rev_id", ids)))
+
+  private def UseCaseRevIdIn(col: String, ids: NonEmptyList[UseCaseRevId]) = s"$col in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Fields

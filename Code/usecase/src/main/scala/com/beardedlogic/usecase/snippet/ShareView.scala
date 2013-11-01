@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.snippet
 
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
+import scalaz.std.list.listInstance
 import com.beardedlogic.usecase.app.DI
 import com.beardedlogic.usecase.db.{Share, Project}
 import com.beardedlogic.usecase.feature.UcFilter
@@ -37,11 +38,11 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
   }
 
   def postAuthPage(s: Share, p: Project): PostAuthPage = {
-    val filter = UcFilter.fromJson(s.ucFilterJson)
+    val f = UcFilter.fromJson(s.ucFilterJson)
     val ucs =
       DI.DaoProvider.withTransaction(dao =>
         Locks.UseCaseNumbers.read(p)(lock =>
-          UseCasePersistence.loadAll(p, UcFilter(filter, _), dao, lock)))
+          UseCasePersistence.loadAll(p).filter(UcFilter(f)).run(dao, lock)))
 
     if (ucs.isEmpty)
       ZeroUcs

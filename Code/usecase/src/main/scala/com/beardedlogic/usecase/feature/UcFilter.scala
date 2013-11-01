@@ -4,7 +4,8 @@ import net.liftweb.common.Full
 import net.liftweb.http.S
 import net.liftweb.json._
 import scala.xml.{Text, NodeSeq}
-import scalaz.NonEmptyList
+import scalaz.{MonadPlus, NonEmptyList}
+import scalaz.syntax.monadPlus._
 import scalaz.syntax.foldable._
 import scalaz.std.list.listInstance
 import scalaz.std.nodeseq.nodeSeqInstance
@@ -99,14 +100,9 @@ object UcFilter {
   // -------------------------------------------------------------------------------------------------------------------
   // Application
 
-  def apply[U <: BasicUseCaseInfo](f: UcFilter, ucs: List[U]): List[U] = f match {
+  def apply[C[_] : MonadPlus, U <: BasicUseCaseInfo](f: UcFilter)(ucs: C[U]): C[U] = f match {
     case All            => ucs
     case Whitelist(ids) => ucs.filter(uc => ids.contains(uc.identId))
-  }
-
-  def loadApply(f: UcFilter, dao: DaoS, projectId: ProjectId): UseCases = f match {
-    case All            => dao.findAllLatestUseCaseRevsByProject(projectId)
-    case Whitelist(ids) => dao.findAllLatestUseCaseRevs(projectId, ids)
   }
 
   // -------------------------------------------------------------------------------------------------------------------

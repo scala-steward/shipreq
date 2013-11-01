@@ -237,12 +237,12 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
     case None =>
       val ucr = createUseCaseIdentAndRev1(projectId, uc.header)
-      val someCp = Some(loadUseCase(ucr, projectId)._1)
+      val someCp = Some(loadUseCase(ucr, projectId))
       saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
 
-  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId) =
-    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev, dao, _))
+  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId): UseCaseSaveCheckpoint =
+    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev).run(dao, _))
 
   def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader): UseCaseRev =
     Locks.UseCaseNumbers.write(projectId)(dao.createUseCaseIdentAndRev1(projectId, header, _))

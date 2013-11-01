@@ -15,6 +15,7 @@ import step._
 import test.TestDatabaseSupport
 import test.DataGenerators._
 import app.Defaults
+import com.beardedlogic.usecase.lib.Locks
 
 class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Checkers {
 
@@ -29,6 +30,8 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
 
   test("save (save uc) = NOP") {check(SecondSaveIsNopP)}
 
+  test("ids <$> load = load ids") {check(BulkLoadP)}
+
   test("(mutate a = mutate a) && (mutate b = mutate b)") {check(ConsistentMutationPerUseCaseInstance)}
 
   test("m x ⇒ load (save (m x)) = m x") {
@@ -40,7 +43,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
 
     def testSave(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) = {
       val cpO = save(uc, prev, projectId)
-      val l = load(cpO.getOrElse(prev.get).rec, projectId)._1
+      val l = load(cpO.getOrElse(prev.get).rec, projectId)
       assertUseCasesLookSameToUser(l.uc, uc)
       cpO
     }
@@ -98,7 +101,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
       val pid = newProjectId()
       val ui = dao.createUseCaseIdentWithForcedNumber(pid, uc1.number)
       val r1 = dao.createUseCaseRev(ui, 1:Short, uc1.header)
-      val cp1 = Some(load(r1, pid)._1)
+      val cp1 = Some(load(r1, pid))
 
       val cp2 = testSave(uc2, pid, cp1)
       val cp3 = testSave(uc3, pid, cp2)
@@ -118,6 +121,18 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
     uc <==> saveAndLoad(uc, pid).uc
   })
 
+  lazy val BulkLoadP = forAll((a: UseCase, b: UseCase) => dbProp {
+    val pid = newProjectId()
+    val x = save(a, None, pid).get
+    val y = save(b, None, pid).get
+    val both = List(x, y)
+    val individually = both.map(cp => load(cp.rec, pid).uc).sorted
+    val bulk = Locks.UseCaseNumbers.readP(pid)(UseCasePersistence.loadAll(pid).run(dao, _).map(_.uc)).sorted
+    bulk.size == 2 &&
+    bulk(0) <==> individually(0) &&
+    bulk(1) <==> individually(1)
+  })
+
   lazy val SecondSaveIsNopP = forAll((uc: UseCase) => timedDbProp("SecondSaveIsNop", uc) {
     val pid = newProjectId()
     val cp1 = saveAndLoad(uc, pid)
@@ -134,7 +149,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
   def save = saveUseCase _
 
   def saveAndLoad(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None): UseCaseSaveCheckpoint =
-    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)._1
+    load(save(uc, prev, projectId).getOrElse(prev.get).rec, projectId)
 
   // -------------------------------------------------------------------------------------------------------------------
 

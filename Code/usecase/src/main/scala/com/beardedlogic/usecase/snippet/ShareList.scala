@@ -1,8 +1,10 @@
 package com.beardedlogic.usecase
 package snippet
 
+import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import scalaz.NonEmptyList.nel
+import scalaz.std.list.listInstance
 
 import app.{RequestVars, AppSiteMap}
 import AppSiteMap.Implicits._
@@ -11,7 +13,6 @@ import lib.SingleOpStatefulSnippet
 import db.ShareSummary
 import feature.UcFilter
 import util.ConciseIntListDesc
-import net.liftweb.util.CssSel
 
 /**
  * Displays a list of a user's shares.
@@ -49,7 +50,7 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
   )}
 
   def descMatchingUcs(f: UcFilter): String = {
-    val m = UcFilter.apply(f, ucs)
+    val m = UcFilter.apply(f)(ucs)
     val msize = m.size
     msize match {
       case 0 => "0 use cases."

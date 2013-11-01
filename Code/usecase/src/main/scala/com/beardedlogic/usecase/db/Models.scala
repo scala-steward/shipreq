@@ -65,6 +65,7 @@ case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectI
 
 case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601)
   extends BasicUseCaseInfo {
+  @inline final def projectId = ident.projectId
   @inline final def identId = ident.identId
   @inline final def number = ident.number
   @inline final def title = header.title

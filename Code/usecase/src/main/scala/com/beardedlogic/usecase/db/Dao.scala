@@ -4,6 +4,8 @@ package db
 import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import scalaz.NonEmptyList.nel
+import scalaz.std.list.listInstance
+import scalaz.syntax.functor._
 import feature.uc.field.FieldDefinition
 import feature.UcFilter
 import lib.Locks.{UseCaseNumbers, SingleUseCase}
@@ -149,7 +151,7 @@ sealed trait DaoS {
   def findAllLatestUseCaseRevs(pid: ProjectId, ids: List[UseCaseIdentId]): List[UseCaseRev] = ids match {
     case Nil       => List.empty
     case id :: Nil => findUseCaseLatestRev(id).toList
-    case h :: t    => SelectLatestUseCaseRevsArb(UseCaseIdentIdIn(nel(h, t))).list(pid)
+    case h :: t    => SelectLatestUseCaseRevsByIds(nel(h, t)).list(pid)
   }
 
   def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases.list(projectId)
@@ -159,6 +161,13 @@ sealed trait DaoS {
 
   def findAllUcFieldData(ucRevId: UseCaseRevId): List[UcFieldTextWithFK] =
     SelectUcFields.list(ucRevId)
+
+  // TODO findAllUcFieldData & findAllLatestUseCaseRevs should run in ID batches. What's postgres's limit on INs?
+  def findAllUcFieldData(ids: List[UseCaseRevId]): List[(UseCaseRevId, UcFieldTextWithFK)] = ids match {
+    case Nil       => List.empty
+    case id :: Nil => findAllUcFieldData(id).strengthL(id)
+    case h :: t    => SelectUcFieldsInBulk(nel(h, t)).list()
+  }
 
   def linkUcToText(uc: UseCaseRevId, txt: TextRevId): Unit =
     LinkUcToText.execute(uc, txt)
