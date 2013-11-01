@@ -64,7 +64,7 @@ object AppSiteMap {
 
   val ShareView: PM[ShareUrlToken] = (
     Menu.param[ShareUrlToken]("share-view", "_", i => Full(i.tag), o => o) / "share" / *
-    >> UseTemplate("share-list")
+    >> UseTemplate("share-view")
   )
 
   val ReadOwnUcs: PM[ProjectId] = (
