@@ -40,7 +40,10 @@ abstract class GenericPublisher(input: Input) {
   // High-level
 
   def doc: X = logTime(s"${getClass.getSimpleName}.doc(${useCases.size} UCs)")(
-    doc(optionalDocHeader, toc, articles)
+    if (useCases.isEmpty)
+      optionalDocHeader
+    else
+      doc(optionalDocHeader, toc, articles)
   )
   def doc(header: X, toc: X, articles: X): X = header |+| toc |+| articles
 

@@ -18,7 +18,7 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
   sealed trait PostAuthPage extends Page
 
   case object PasswordRequired extends Page
-  case object ZeroUcs extends PostAuthPage
+  case class ZeroUcs(header: NodeSeq) extends PostAuthPage
   case class ShowUcs(content: NodeSeq) extends PostAuthPage
 
   type OSP = Option[(Share, Project)]
@@ -43,15 +43,14 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
       DI.DaoProvider.withTransaction(dao =>
         Locks.UseCaseNumbers.read(p)(lock =>
           UseCasePersistence.loadAll(p).filter(UcFilter(f)).run(dao, lock)))
+    val h = DocHeader(s.name, s.preface)
+    val i = new Input(Some(h), ucs)
+    val q = new HtmlPublisher(i)
 
     if (ucs.isEmpty)
-      ZeroUcs
-    else {
-      val h = DocHeader(s.name, s.preface)
-      val i = new Input(Some(h), ucs)
-      val o = HtmlPublisher.publish(i)
-      ShowUcs(o)
-    }
+      ZeroUcs(q.optionalDocHeader)
+    else
+      ShowUcs(q.doc)
   }
 
   def render =
@@ -59,8 +58,8 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
       case PasswordRequired =>
         "#passwordRequired ^^" #> ""
 
-      case ZeroUcs =>
-        "#share-view-none ^^" #> ""
+      case ZeroUcs(h) =>
+        "#share-view-none ^^" #> "" andThen ".header" #> h
 
       case ShowUcs(o) =>
         "#share-view ^^" #> "" andThen ".ucs-published *" #> o

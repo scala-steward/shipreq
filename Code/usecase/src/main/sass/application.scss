@@ -218,6 +218,12 @@ html, body { height: 100% } // Cannot have any padding or margin here
     a {font-size:110%; line-height:1.6em}
   }
 
+  & > .none {
+    text-align: center;
+    margin-top: 10em;
+    font-style: italic;
+  }
+
   main {
     margin-top:5em;
     article + article {margin-top:8em}

@@ -68,6 +68,7 @@ html, body { height: 100%; }
 .ucs-published > header h1 { font-weight: bold; }
 .ucs-published nav ol { margin-left: 1ex; }
 .ucs-published nav a { font-size: 110%; line-height: 1.6em; }
+.ucs-published > .none { text-align: center; margin-top: 10em; font-style: italic; }
 .ucs-published main { margin-top: 5em; }
 .ucs-published main article + article { margin-top: 8em; }
 .ucs-published main .fvs { width: 100%; }
