@@ -4,6 +4,7 @@ import net.liftweb.common.Box
 import net.liftweb.http.S
 import net.liftweb.util.Helpers._
 import scala.xml._
+import com.beardedlogic.usecase.lib.NoticeFlash
 
 object AlertType {
   private[snippet] final val CommonClasses = "alert alert-dismissable"
@@ -12,21 +13,25 @@ object AlertType {
 sealed trait AlertType {
   def classes: String
   def sessionMsgs: List[(NodeSeq, Box[String])]
+  def flashMsgs: NoticeFlash.NoticeFlashVar
 }
 
 case object AlertTypeError extends AlertType {
   override val classes = AlertType.CommonClasses + " alert-danger"
   override def sessionMsgs = S.errors
+  override def flashMsgs = NoticeFlash.errors
 }
 
 case object AlertTypeSuccess extends AlertType {
   override val classes = AlertType.CommonClasses + " alert-success"
   override def sessionMsgs = S.notices
+  override def flashMsgs = NoticeFlash.notices
 }
 
 case object AlertTypeWarning extends AlertType {
   override val classes = AlertType.CommonClasses + " alert-warning"
   override def sessionMsgs = S.warnings
+  override def flashMsgs = NoticeFlash.warnings
 }
 
 /**
@@ -36,13 +41,19 @@ object Notices {
 
   def render =
     "* *" #> (
-      renderMsgsWithoutIds(AlertTypeError) ++
-      renderMsgsWithoutIds(AlertTypeWarning) ++
-      renderMsgsWithoutIds(AlertTypeSuccess)
+      renderAllOfType(AlertTypeError) ++
+      renderAllOfType(AlertTypeWarning) ++
+      renderAllOfType(AlertTypeSuccess)
     )
 
-  def renderMsgsWithoutIds(alertType: AlertType) =
-    renderMsgs(alertType, S.noIdMessages(alertType.sessionMsgs))
+  def renderAllOfType(alertType: AlertType) = {
+    val s = S.noIdMessages(alertType.sessionMsgs)
+    val all = alertType.flashMsgs.get match {
+      case None    => s
+      case Some(f) => f.list ++ s
+    }
+    renderMsgs(alertType, all)
+  }
 
   /** @return Either an empty NodeSeq or an Elem */
   def renderMsgs(alertType: AlertType, msgs: Seq[NodeSeq]): NodeSeq =

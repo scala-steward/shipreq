@@ -39,15 +39,10 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
 
   def initialPage = pageFor(loadIfAlreadyAuth or loadIfCurrentUserIsOwner)
 
-  def expired(authTime: DateTime): Boolean = {
-    val expiry = authTime.plus(AppConfig.ShareViewAuthPeriod)
-    expiry.isBeforeNow
-  }
-
   def loadIfAlreadyAuth: LoadResult =
     for {
       (authTime, authPass) <- AuthMapVar.get.get(token)
-                              if !expired(authTime)
+                              if authTime <= AppConfig.ShareViewAuthPeriod
       (s, ps)              <- daoProvider.withSession(_ findShareAndPassword token)
                               if ps.hashedPassword == authPass
     } yield s

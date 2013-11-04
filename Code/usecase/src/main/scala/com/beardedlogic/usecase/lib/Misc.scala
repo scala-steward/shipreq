@@ -4,7 +4,7 @@ import java.util.{Date, TimeZone}
 import java.text.SimpleDateFormat
 import net.liftweb.common.Logger
 import net.liftweb.http.S
-import org.joda.time.DateTime
+import org.joda.time.{DateTimeUtils, Period, DateTime}
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -36,13 +36,22 @@ object Misc extends Misc with Logger {
     def modIf[VV >: V](cond: Boolean)(mod: V => VV): VV = if (cond) mod(v) else v
   }
 
-  implicit class ShortExt[V](val a: Short) extends AnyVal {
+  implicit class ShortExt(val a: Short) extends AnyVal {
     def +!(b: Int = 1): Short = (a + b).toShort
+  }
+
+  implicit class DateTimeExt(val t: DateTime) extends AnyVal {
+    def >(timeToLive: Period) = isExpired_?(t, timeToLive)
+    def <=(timeToLive: Period) = ! >(timeToLive)
   }
 }
 
 trait Misc {
   import Misc._
+
+  implicit def impAnyExt[V](v: V) = AnyExt(v)
+  implicit def impShortExt(v: Short) = ShortExt(v)
+  implicit def impDateTimeExt(v: DateTime) = DateTimeExt(v)
 
   def clientIp: Option[String] = (
     S.originalRequest.filter(_.request ne null).map(_.remoteAddr)
@@ -57,6 +66,9 @@ trait Misc {
   def currentTimeAsIso8601Str: String @@ ISO8601 = ISO8601Format.synchronized(ISO8601Format.format(new Date)).tag[ISO8601]
 
   def isConfirmationTokenExpired_?(dateIssued: DateTime): Boolean = TokenLifespan.ago.isAfter(dateIssued)
+
+  def isExpired_?(startTime: DateTime, timeToLive: Period, now: Long = DateTimeUtils.currentTimeMillis): Boolean =
+    startTime plus timeToLive isBefore now
 
   def normaliseCRLFs(str: String) = Misc.NormaliseCRLFs.replaceAllIn(str, "\n")
 

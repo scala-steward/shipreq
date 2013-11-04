@@ -27,4 +27,7 @@ object AppConfig {
 
   /** The amount of time that a user is allowed to view a share after authenticating, without re-authenticating. */
   final val ShareViewAuthPeriod = Period.minutes(30)
+
+  /** Maximum time a flash variable will be retained. (default) */
+  final val FlashVarTTL = Period.seconds(12)
 }
