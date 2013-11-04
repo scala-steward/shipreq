@@ -4,11 +4,22 @@ import net.liftweb.http.{SHtml, S}
 import net.liftweb.http.js.{JE, JsCmd}
 import net.liftweb.util.{Helpers, CssSel}
 import net.liftweb.util.Helpers.strToCssBindPromoter
+import scala.xml.NodeSeq
 import JsExt._
 
 object HtmlTransformExt {
 
   final val PassThru = "dpp_recommends_this_oh_well" #> ""
+
+  final def NoneS: Option[String] = None
+
+  def removeClasses(cssSel: String)(x: String, xs: String*) =
+    multiTransform(s"$cssSel [class!]" #> _)(x, xs: _*)
+
+  def multiTransform(f: String => CssSel)(x: String, xs: String*) = {
+    val fst: NodeSeq => NodeSeq = f(x)
+    (fst /: xs.map(f))((a,b) => a andThen b)
+  }
 
   def IfCssSel(cond: => Boolean)(expr: => CssSel): CssSel = if (cond) expr else PassThru
 

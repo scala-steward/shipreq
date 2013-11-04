@@ -5,10 +5,11 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import com.beardedlogic.usecase.app.AppSiteMap
 import com.beardedlogic.usecase.feature.{InputValidator, UcFilters, UcFilter}
-import com.beardedlogic.usecase.lib.SingleOpStatefulSnippet
+import com.beardedlogic.usecase.lib.{NoticeFlash, SingleOpStatefulSnippet}
 import com.beardedlogic.usecase.lib.Types.ProjectId
 import com.beardedlogic.usecase.security.PasswordAndSalt
 import com.beardedlogic.usecase.util.HtmlTransformExt.ajaxSubmitOnClick
+import project.ActivateTab
 
 /**
  * Allows a user to create a new share.
@@ -50,15 +51,19 @@ class ShareCreate(projectId: ProjectId) extends SingleOpStatefulSnippet {
       val ps = PasswordAndSalt.createWithRandomSalt(password)
       val preface = nonEmptyString(prefaceT)
       val ucFilterJson = UcFilter.toJson(ucFilter)
-
-      // TODO notice and/or make it show shares tab
       daoProvider.withSession(_.createShare(projectId, ps, name, preface, ucFilterJson))
-      redirectTo(AppSiteMap.Project)(projectId)
+      postCreation()
     }
 
     possibleJs | jsShowErrors(collectErrors(List(nameV, passwordsV, prefaceV)))
   } finally {
     password1Input = "" // Let's not keep the plaintext passwords around
     password2Input = ""
+  }
+
+  def postCreation(): Nothing = {
+    NoticeFlash.notices.addS("Share created successfully.")
+    ActivateTab.SharesTab.setInFlash()
+    redirectTo(AppSiteMap.Project)(projectId)
   }
 }
