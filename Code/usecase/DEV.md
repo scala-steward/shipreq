@@ -57,3 +57,17 @@ Use Case Textual Features
     * Add a case to `respondToChange()` in `FreeText`/`StepText`.
     * Perform the reaction in `TextProps.arbState` in `FreeAndStepTextTests.scala`.
 
+Snippet Testing
+===============
+* TestHelpers
+  * inMockSession(...)
+  * withSessionAttrs    - S.attr
+  * withSessionParams   - S.param
+  * withUserLoggedIn    - Data: UD1, UD2
+  * assertJsAlert
+  * assertJsErrorNotice
+  * assertRedirect      - Catches redirect-exception
+* MockDaoProvider{cfg}.install{test}
+* CssTestHelpers
+  * findCss
+* unquoteJs/js2str in UseCaseEditorTest

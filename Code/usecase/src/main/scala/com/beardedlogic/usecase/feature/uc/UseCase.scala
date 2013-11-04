@@ -5,6 +5,7 @@ import scala.reflect.ClassTag
 import scalaz.Need
 import db.UseCaseHeader
 import lib.Types._
+import lib.Misc.isCovar
 import feature.Inspection
 import util.BiMap
 import field._
@@ -34,14 +35,8 @@ object UseCaseFns {
   def reqId(n: UseCaseNumber) = s"UC-$n"
   def fullName(n: UseCaseNumber, title: String) = s"UC-$n: $title"
 
-  def isF[F <: Field](a: Field)(implicit m: ClassTag[F]): Boolean =
-    m.runtimeClass.isAssignableFrom(a.getClass)
-
-  def filter[F <: Field](fields: List[Field])(implicit m: ClassTag[F]): List[F] =
-    fields.filter(isF[F]).asInstanceOf[List[F]]
-
-  def filter[F <: Field](fieldValues: FieldValues)(implicit m: ClassTag[F]): Map[F, F#Value] =
-    fieldValues.filterKeys(isF[F]).asInstanceOf[Map[F, F#Value]]
+  def filterKeys[F <: Field](fieldValues: FieldValues)(implicit m: ClassTag[F]): Map[F, F#Value] =
+    fieldValues.filterKeys(isCovar[F]).asInstanceOf[Map[F, F#Value]]
 
   // TODO Minimise computation with savedSteps + StepAndLabelBiMap
 

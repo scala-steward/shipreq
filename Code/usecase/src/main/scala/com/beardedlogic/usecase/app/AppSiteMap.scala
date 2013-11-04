@@ -36,11 +36,12 @@ object AppSiteMap {
 
   val Register1 = Menu(Loc("Register1", List("register"), "Register"))
 
-  val Register2 = (Menu.param[String]("Register2", "Register", token => Full(token), t => t) / "register" / *
+  val Register2 = (
+    Menu.param[String]("Register2", "_", i => Full(i), o => o) / "register" / *
     >> Hidden >> UseTemplate("register2"))
 
   val Project: PM[ProjectId] = (
-    MenuWithIdParam(ExternalId.Project)("project", "Project") / "project" / *
+    MenuWithIdParam(ExternalId.Project)("project") / "project" / *
     >> AuthenticationRequired >> ProjectPermissionRequired
     >> UseTemplate("loggedin/project")
     >> UsesNavbar(Navbar.Home, Navbar.CurrentProject)
@@ -50,8 +51,35 @@ object AppSiteMap {
       }
   )
 
+  val ShareCreate: PM[ProjectId] = (
+    MenuWithIdParam(ExternalId.Project)("share-create") / "project" / * / "share"
+    >> AuthenticationRequired >> ProjectPermissionRequired
+    >> UseTemplate("loggedin/share-create")
+    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Share Use Cases"))
+    >> PerformEffects {
+        RequestVars.ProjectId.setByParam(ShareCreate, "ShareCreate --> ProjectId")
+        RequestVars.Project.deriveFromProjectId()
+      }
+  )
+
+  val ShareView: PM[ShareUrlToken] = (
+    Menu.param[ShareUrlToken]("share-view", "_", i => Full(i.tag), o => o) / "share" / *
+    >> UseTemplate("share-view")
+  )
+
+  val ReadOwnUcs: PM[ProjectId] = (
+    MenuWithIdParam(ExternalId.Project)("readOwnUcs") / "project" / * / "read"
+    >> AuthenticationRequired >> ProjectPermissionRequired
+    >> UseTemplate("loggedin/read_own_ucs")
+    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Use Cases"))
+    >> PerformEffects {
+        RequestVars.ProjectId.setByParam(ReadOwnUcs, "ReadOwnUcs --> ProjectId")
+        RequestVars.Project.deriveFromProjectId()
+      }
+  )
+
   val UseCaseEditor: PM[UseCaseIdentId] = (
-    MenuWithIdParam(ExternalId.UseCase)("uce", "Use Case Editor") / "usecase" / *
+    MenuWithIdParam(ExternalId.UseCase)("uce") / "usecase" / *
     >> AuthenticationRequired >> ProjectPermissionRequired
     >> UseTemplate("loggedin/uceditor")
     >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown)
@@ -62,22 +90,11 @@ object AppSiteMap {
       }
   )
 
-  val ReadOwnUcs: PM[ProjectId] = (
-    MenuWithIdParam(ExternalId.Project)("readOwnUcs", "Read Use Cases") / "project" / * / "read"
-    >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("loggedin/read_own_ucs")
-    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Use Cases"))
-    >> PerformEffects {
-        RequestVars.ProjectId.setByParam(ReadOwnUcs, "ReadOwnUcs --> ProjectId")
-        RequestVars.Project.deriveFromProjectId()
-      }
-  )
-
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages = List[ConvertableToMenu](
     Home, Login, Logout, Register1, Register2,
-    Project, UseCaseEditor, ReadOwnUcs
+    Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareView
   )
 
   val sitemap = {
@@ -91,6 +108,7 @@ object AppSiteMap {
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
       Full(redirectHomeResp)
+      // Full(RedirectResponse("/project/cUZ0/share"))
     })
 
     def apiLogin = Menu.i("login.api") / "login.api" >> EarlyResponse(() => for {
@@ -141,8 +159,8 @@ object AppSiteMap {
     Full(redirectHomeResp)
   }
 
-  private def MenuWithIdParam[Tag <: IsExteralisableId](eidGen: ExternalIdConverter[Tag])(name: String, linkText: Loc.LinkText[JLong @@ Tag]) =
-    Menu.param[JLong @@ Tag](name, linkText, eidGen.parseB(_), eidGen.toExternal(_))
+  private def MenuWithIdParam[Tag <: IsExteralisableId](eidGen: ExternalIdConverter[Tag])(name: String) =
+    Menu.param[JLong @@ Tag](name, "_", eidGen.parseB(_), eidGen.toExternal(_))
 
   private def UseTemplate(path: String) = TemplateBox(() => Templates(path.split("/").toList))
 

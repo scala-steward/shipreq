@@ -1,0 +1,46 @@
+digraph G {
+
+{ node[style=filled fillcolor=yellow]
+UseCaseRev
+UseCaseRelations
+UcFilter
+ProjectId
+UseCaseSaveCheckpoint
+UseCase
+FieldLoadCtx
+}
+
+// Dao
+ProjectId -> UseCaseRelations [color=red] // summariseUseCases
+UseCaseRev -> FieldLoadCtx [color=red] // findAllUcFieldData
+ProjectId -> UseCaseRev [color=red] // findAllLatestUseCaseRevsByProject
+
+// Load 1
+//UseCaseRev -> UseCaseSaveCheckpoint_UseCaseRelations
+UseCaseRev -> UseCaseRev_UseCaseRelations [color=brown]
+// UseCaseRev_UseCaseRelations -> UseCaseSaveCheckpoint_UseCaseRelations [color=brown]
+
+// Load 2
+// UseCaseRev_UseCaseRelations -> UseCaseSaveCheckpoint [color=red]
+UseCaseRev_UseCaseRelations -> UseCaseRev_Rels_FieldLoadCtx [color=brown]
+UseCaseRev_Rels_FieldLoadCtx -> UseCaseSaveCheckpoint [color=blue]
+
+// LoadAll 1
+//ProjectId -> List_UseCaseRev_UseCase
+ProjectId -> ProjectId_UcFilter //List_UseCaseRev_UseCase
+
+// LoadAll 2
+// ProjectId_UcFilter -> List_UseCaseRev_UseCase
+ProjectId_UcFilter -> UseCaseRev
+// ProjectId_UcFilter -> UseCaseRelations
+
+UseCaseRev -> ProjectId
+UseCaseSaveCheckpoint -> UseCase
+
+edge[color=grey arrowhead=none style=dashed]
+// List_UseCaseRev_UseCase -> {UseCase;UseCaseRev}
+ProjectId_UcFilter -> {ProjectId;UcFilter}
+UseCaseRev_UseCaseRelations -> {UseCaseRev;UseCaseRelations}
+// UseCaseSaveCheckpoint_UseCaseRelations -> {UseCaseSaveCheckpoint;UseCaseRelations}
+UseCaseRev_Rels_FieldLoadCtx -> {UseCaseRev_UseCaseRelations;FieldLoadCtx}
+}

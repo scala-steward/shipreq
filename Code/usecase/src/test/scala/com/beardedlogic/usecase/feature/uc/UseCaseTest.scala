@@ -21,13 +21,6 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
   implicit def autoCtx(sl: StepAndLabelBiMap) = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
   implicit def ucTu(uc: UseCase) = UseCaseUpdater(uc, UseCaseRelations.Empty)
 
-  describe("filter()") {
-    it("should filter a field list by TextField") {
-      val x = filter[TextField](FL)
-      x ==== List(TF1, TF2, TF3)
-    }
-  }
-
   describe("correctStepsAndLabelsAfterUpdate()") {
     import MockUc1._
 

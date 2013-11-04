@@ -1,6 +1,6 @@
 package com.beardedlogic.usecase.lib
 
-import com.beardedlogic.usecase.db.{Project, UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
+import com.beardedlogic.usecase.db.{Share, BasicUseCaseInfo, Project, UseCaseIdent, UserRegistrationInfo, UserDescriptor, FieldKeyRec, TextRev, UseCaseRev}
 import com.beardedlogic.usecase.feature.uc.change.{Change, ChangeResultF}
 import com.beardedlogic.usecase.feature.uc.field.Field
 import com.beardedlogic.usecase.feature.uc.UseCase
@@ -119,6 +119,12 @@ object Types {
   /** Marks a string as being an ISO-8601 representation of a datetime. */
   sealed trait ISO8601 extends TypeTag[String]
 
+  /** Marks a password as being hashed. */
+  sealed trait Hashed extends TypeTag[String]
+
+  sealed trait IsShareUrlToken extends TypeTag[String]
+  type ShareUrlToken = String @@ IsShareUrlToken
+
   // -------------------------------------------------------------------------------------------------------------------
   // Short tags
 
@@ -152,6 +158,10 @@ object Types {
   @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
 
+  sealed trait IsShareId extends TypeTag[JLong]
+  type ShareId = JLong @@ IsShareId
+  @inline final implicit def ShareToId(s: Share): ShareId = s.id
+
   // -------------------------------------------------------------------------------------------------------------------
   // Externalisable ID tags
 
@@ -167,7 +177,7 @@ object Types {
   sealed trait IsUseCaseIdentEI extends TypeTag[String]
   type UseCaseIdentId = JLong @@ IsUseCaseIdentId
   type UseCaseIdentEI = String @@ IsUseCaseIdentEI
-  @inline final implicit def UseCaseRevToIdentId(r: UseCaseRev): UseCaseIdentId = r.identId
+  @inline final implicit def BasicUseCaseInfoToIdentId(r: BasicUseCaseInfo): UseCaseIdentId = r.identId
   @inline final implicit def UseCaseIdentToIdentId(i: UseCaseIdent): UseCaseIdentId = i.identId
   @inline final implicit def cp2uid(u: UseCaseSaveCheckpoint): UseCaseIdentId = u.rec
 

@@ -25,6 +25,57 @@
   <div id="qunit"></div>
   <div id="qunit-fixture">
 
+  <!-- ============================================================================================================= -->
+
+  <main class="ly-blank-body" id="share-create">
+	  <h1>Share Use Cases</h1>
+	  <form class="form-horizontal" role="form">
+		  <div class="form-group">
+			  <label for="inputName" class="col-sm-2 control-label">Name</label>
+			  <div class="col-sm-10">
+				  <input required="required" placeholder="Document Title" type="text" class="form-control" id="inputName">
+			  </div>
+		  </div>
+		  <div class="form-group">
+			  <label for="inputPassword1" class="col-sm-2 control-label">Password</label>
+			  <div class="col-sm-5">
+				  <input required="required" placeholder="Password" type="password" class="form-control" id="inputPassword1">
+			  </div>
+			  <div class="col-sm-5">
+				  <input required="required" placeholder="Confirm Password" type="password" class="form-control" id="inputPassword2">
+			  </div>
+		  </div>
+		  <div class="form-group">
+			  <label for="inputPreface" class="col-sm-2 control-label">Preface</label>
+			  <div class="col-sm-10">
+				  <textarea rows="7" placeholder="Optional, introductory text to present before the Table of Contents." class="form-control" id="inputPreface"></textarea>
+			  </div>
+		  </div>
+		  <div class="form-group">
+			  <label class="col-sm-2 control-label">Use Case Selection</label>
+			  <div class="col-sm-10">
+				  <div id="uc-filters" class="ucfilter-group">
+					  <div class="ucfilter all"><div class="radio"><label>
+						  <input id="ucfilter-all-rad" type="radio" name="ucfilter" class="ucfilter" value="a" checked="checked"> All use cases
+					  </label></div></div>
+					  <div class="ucfilter wl"><div class="radio"><label>
+					  	    <input id="ucfilter-wl-rad" type="radio" name="ucfilter" class="ucfilter" value="wl"> Only selected use cases
+				  		  </label></div>
+						  <div class="sub" style="display:none"><ol class="ucs"><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-1: Delete a Use Case</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-2: Reference an entire UC</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-3: Reference a step in another UC</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-4: View UCs in Presentation Mode</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-5: Allow Friends to read UCs</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-6: Download a PDF of UCs</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-7: Create a Project</label></li><li class="checkbox"><label><input type="checkbox" checked="checked"> UC-8: Change a Share</label></li></ol></div>
+					  </div>
+				  </div>
+			  </div>
+		  </div>
+		  <div class="form-group submit">
+			  <div class="col-sm-offset-2 col-sm-10">
+				  <button type="submit" class="btn btn-success">Create Share</button>
+			  </div>
+		  </div>
+	  </form>
+  </main>
+
+  <!-- ============================================================================================================= -->
+
   <main id="uce" class="uce">
 
   <table class="title">

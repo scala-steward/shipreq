@@ -8,7 +8,7 @@ import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet,
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Mailer.{MailTypes, From, Subject}
-import net.liftweb.util.{CssSel, Mailer}
+import net.liftweb.util.{Props, CssSel, Mailer}
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
 import com.beardedlogic.usecase.app.{DI, AppConfig, AppSiteMap}
@@ -49,6 +49,17 @@ trait StaticSnippetHelpers extends Logger {
 
   def shouldNeverHappen_!(msg: String) = respondImmediately(ShouldNeverHappenResponse(msg))
 
+  def shouldNeverHappen_swallowInProd[T](fallback: T)(msg: String): T = {
+    import Props.RunModes._
+    Props.mode match {
+      case Production | Pilot | Staging =>
+        error(msg)
+        fallback
+      case Test | Development | Profile =>
+        shouldNeverHappen_!(msg)
+    }
+  }
+
   def requireResultO_![T](o: Option[T], fallbackErrorReaction: => Nothing = redirectHome): T = o match {
     case Some(t) => t
     case None    => fallbackErrorReaction
@@ -84,7 +95,9 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
 
   def toJson[T <: AnyRef](data: T): Json[T] = Serialization.write(data).tag[IsJsonFor[T]]
 
-  final def currentUser_!(): UserDescriptor = securityProvider.loggedInUser match {
+  @inline final def currentUser: Option[UserDescriptor] = securityProvider.loggedInUser
+
+  final def currentUser_!(): UserDescriptor = currentUser match {
     case Some(user) => user
     case None => respondImmediately(RedirectResponse(AppSiteMap.Login.relativeUrl))
   }
@@ -149,5 +162,5 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
  */
 abstract class SingleOpStatefulSnippet extends StatefulSnippet with SnippetHelpers {
   override def dispatch = { case _ => render }
-  def render: CssSel
+  def render: NodeSeq => NodeSeq
 }

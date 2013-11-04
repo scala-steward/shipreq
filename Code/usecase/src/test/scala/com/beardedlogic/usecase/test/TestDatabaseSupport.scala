@@ -12,11 +12,13 @@ import Q.interpolation
 
 import app.{Defaults, DI}
 import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
+import db.SqlHelpers.SP_ProjectId
 import lib.Types._
 import lib.Locks
 import feature.uc.UseCase
 import feature.uc.persist.{UseCaseSaveCheckpoint, UseCasePersistence}
-import feature.InputValidator
+import feature.{UcFilters, InputValidator}
+import security.PasswordAndSalt
 
 object TestDB {
 
@@ -128,7 +130,9 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     object TextRev extends Table {def name = "text_rev"}
     object UcField extends Table {def name = "uc_field"}
     object Usr extends Table {def name = "usr"}
-    val All = List(FieldKeyType, FieldKey, Usecase, UsecaseRev, Text, TextRev, UcField, Usr)
+    object Share extends Table {def name = "share"}
+    object ShareViewLog extends Table {def name = "share_view_log"}
+    val All = List(FieldKeyType, FieldKey, Usecase, UsecaseRev, Text, TextRev, UcField, Usr, Share, ShareViewLog)
   }
 
   def countAllTableRows = Tables.All.map(t => (t -> countRowsIn(t))).toMap
@@ -176,7 +180,11 @@ trait TestDatabaseHelpers extends TestHelpers2 {
         case UsecaseRev   => Q.updateNA(s"update usecase set latest_rev_id = NULL").execute; truncate(UcField)
         case Text         => truncate(TextRev)
         case TextRev      => truncate(UcField)
-        case _             =>
+        case Project      => truncate(Share, Usecase)
+        case Usr          => truncate(Project)
+        case UcField
+          | Share
+          | ShareViewLog  => // No one keys to these tables
       }
       val tableName = table.name
       Q.updateNA(s"delete from $tableName").execute
@@ -222,16 +230,19 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     sql"INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES($randomStr,$randomStr,0,0,NOW(),NOW(),NOW()) RETURNING id".
     as[Long].first.tag[IsUserId]
 
+  def newShare(projectId: ProjectId = newProjectId()): ShareId =
+    dao.createShare(projectId, PasswordAndSalt.createWithRandomSalt(randomStr), randomStr, None, UcFilters.All.json).id
+
   def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
     case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
     case None =>
       val ucr = createUseCaseIdentAndRev1(projectId, uc.header)
-      val someCp = Some(loadUseCase(ucr, projectId)._1)
+      val someCp = Some(loadUseCase(ucr, projectId))
       saveUseCase(uc, someCp, projectId).orElse(someCp)
   }
 
-  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId) =
-    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev, dao, _))
+  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId): UseCaseSaveCheckpoint =
+    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev).run(dao, _))
 
   def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader): UseCaseRev =
     Locks.UseCaseNumbers.write(projectId)(dao.createUseCaseIdentAndRev1(projectId, header, _))

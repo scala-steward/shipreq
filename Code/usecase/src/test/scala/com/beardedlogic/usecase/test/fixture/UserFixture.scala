@@ -20,7 +20,7 @@ trait UserFixture {
   case class TestUser(username: String, email: String, password: String) {
     var _id: Option[UserId] = None
     def id: UserId = _id.getOrElse(???)
-    val pws = PasswordAndSalt.hashWithRandomSalt(password)
+    val pws = PasswordAndSalt.createWithRandomSalt(password)
     def hashedPassword = pws.hashedPassword
     def salt = pws.salt
     def toUserDescriptor = UserDescriptor(id, username, email)

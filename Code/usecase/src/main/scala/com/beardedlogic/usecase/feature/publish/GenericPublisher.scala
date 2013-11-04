@@ -25,13 +25,35 @@ abstract class GenericPublisher(input: Input) {
 
   @inline final def useCases = input.sortedUseCases
 
+  @inline final def inScope(num: UseCaseNumber) = useCases.exists(_.number == num)
+
+  final def plainText(value: String): X =
+    plainText(List(PlainText(value)))
+
+  final def plainText(terms: List[FreeTextTerm]): X =
+    markupTokens(
+      TextMarkup.markup(
+        TextMarkup.introduce(
+          terms)))
+
   // -------------------------------------------------------------------------------------------------------------------
   // High-level
 
   def doc: X = logTime(s"${getClass.getSimpleName}.doc(${useCases.size} UCs)")(
-    doc(toc, articles)
+    if (useCases.isEmpty)
+      optionalDocHeader
+    else
+      doc(optionalDocHeader, toc, articles)
   )
-  def doc(toc: X, articles: X): X = toc |+| articles
+  def doc(header: X, toc: X, articles: X): X = header |+| toc |+| articles
+
+  def optionalDocHeader: X = input.header map docHeader getOrElse docHeaderSubst
+  def docHeaderSubst: X = zero
+  def docHeader(h: DocHeader): X = docHeader(docHeaderTitle(h.title), h.preface.map(docHeaderPreface).getOrElse(zero))
+  def docHeader(title: X, preface: X): X
+  def docHeaderTitle(t: String): X
+  final def docHeaderPreface(p: String) = plainText(p)
+  def docHeaderPreface(p: X): X
 
   def toc: X = tocSurround(useCases foldMap tocEntry)
   def tocSurround(entries: X): X
@@ -107,11 +129,7 @@ abstract class GenericPublisher(input: Input) {
   def textFieldValueSurround(value: X): X
   def textFieldValueInner(value: FreeText): X = text(value)
 
-  final def text(value: FreeText): X =
-    markupTokens(
-      TextMarkup.markup(
-        TextMarkup.introduce(
-          value.terms)))
+  final def text(value: FreeText): X = plainText(value.terms)
 
   final def markupTokens(tokens: List[MarkupToken]): X = {
     var prev: MarkupToken = null
@@ -145,11 +163,15 @@ abstract class GenericPublisher(input: Input) {
   def fttDeletedRef                                 : X
   def fttStepRef(value: StepRef)                    : X
   def fttInvalidStepRef(value: InvalidStepRef)      : X
-  def fttAnyUseCaseRef(value: AnyUseCaseRef)        : X
-  def fttUseCaseRef(value: UseCaseRef)              : X = fttAnyUseCaseRef(value)
-  def fttUseCaseSelfRef(value: UseCaseSelfRef)      : X = fttAnyUseCaseRef(value)
+  def fttUseCaseRefOutOfScope(value: UseCaseRef)    : X
+  def fttUseCaseRefInScope(value: AnyUseCaseRef)    : X
+  def fttUseCaseSelfRef(value: UseCaseSelfRef)      : X = fttUseCaseRefInScope(value)
   def fttInvalidUseCaseRef(value: InvalidUseCaseRef): X
   def fttMathTex(value: MathTexTerm)                : X
+
+  final def fttUseCaseRef(r: UseCaseRef) =
+    if (inScope(r.num)) fttUseCaseRefInScope(r)
+    else                fttUseCaseRefOutOfScope(r)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Step fields

@@ -19,7 +19,6 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   type X = NodeSeq
   implicit val xMonoid = scalaz.std.nodeseq.nodeSeqInstance
 
-  // TODO UCs wont always be in scope
   @inline private def ucId(n: UseCaseNumber) = reqId(n)
   @inline private def ucHref(n: UseCaseNumber) = "#" + ucId(n)
 
@@ -28,6 +27,10 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
 
   // -------------------------------------------------------------------------------------------------------------------
   // High-level
+
+  override def docHeader(title: X, preface: X): X = <header>{title}{preface}</header>
+  override def docHeaderTitle(t: String) = <h1>{t}</h1>
+  override def docHeaderPreface(p: X) = <p>{p}</p>
 
   override def tocSurround(entries: X) =
     <nav>
@@ -80,7 +83,8 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
 
   override def fttPlainText(t: PlainText)                 = Text(t.text)
   override def fttStepRef(t: StepRef)                     = stepRef(t.label)
-  override def fttAnyUseCaseRef(t: AnyUseCaseRef)         = <a class="uc" title={fullName(t.num, t.title)} href={ucHref(t.num)}>{reqId(t.num)}</a>
+  override def fttUseCaseRefInScope(t: AnyUseCaseRef)     = <a class="uc" title={fullName(t.num, t.title)} href={ucHref(t.num)}>{reqId(t.num)}</a>
+  override def fttUseCaseRefOutOfScope(t: UseCaseRef)     = <span class="uc outofscope">{reqId(t.num)} <sup>({t.title})</sup></span>
   override def fttDeletedRef                              = <span class="bad ref">{DeletedRefStr}</span>
   override def fttInvalidStepRef(t: InvalidStepRef)       = <span class="bad ref">{makeInvalidStepRef(t.label)}</span>
   override def fttInvalidUseCaseRef(t: InvalidUseCaseRef) = <span class="bad ref">{makeInvalidUseCaseRef(t.num, t.title)}</span>

@@ -6,7 +6,7 @@ import org.scalatest.prop._
 import scala.reflect.ClassTag
 import scalaz.syntax.apply._
 import scalaz.std.list.listInstance
-import db.UseCaseSummary2
+import db.UseCaseSummary
 import feature.uc.change._
 import lib.Misc
 import lib.Types._
@@ -26,9 +26,9 @@ object FreeAndStepTextTests extends TestHelpers2 {
   implicit def exTerms(t: FreeText) = t.terms
 
   val UCS = List(
-    new UseCaseSummary2(100, 1, "First", Misc.currentTimeAsIso8601Str),
-    new UseCaseSummary2(200, 2, "Second", Misc.currentTimeAsIso8601Str),
-    new UseCaseSummary2(300, 3, "Old Third", Misc.currentTimeAsIso8601Str)
+    new UseCaseSummary(100, 1, "First", Misc.currentTimeAsIso8601Str),
+    new UseCaseSummary(200, 2, "Second", Misc.currentTimeAsIso8601Str),
+    new UseCaseSummary(300, 3, "Old Third", Misc.currentTimeAsIso8601Str)
   )
   val Rels = CachedUseCaseRelations(UCS)
   val Ctx1: UcParsingCtx = autoCtx(StepState1)

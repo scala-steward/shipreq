@@ -3,6 +3,12 @@ package feature.uc
 package persist
 
 import net.liftweb.util.TimeHelpers.logTime
+import scalaz.{Functor, Foldable}
+import scalaz.std.list.listInstance
+import scalaz.syntax.foldable._
+import scalaz.syntax.functor._
+import scalaz.Scalaz.Id
+
 import app.Defaults
 import db._
 import field._
@@ -68,13 +74,54 @@ final object UseCasePersistence {
 
   // ===================================================================================================================
 
-  def load(ucRev: UseCaseRev, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): (UseCaseSaveCheckpoint, UseCaseRelations) = {
+  case class Loader[C[_] : Foldable : Functor](
+    projectId: ProjectId,
+     ucRevsFn: DaoT => ProjectId => C[UseCaseRev],
+      loadCtx: DaoT => C[UseCaseRev] => UseCaseRev => FieldLoadCtx,
+       relsFn: DaoT => ProjectId => UseCaseRelations = loadRels
+    ) {
 
+    def filter(f: C[UseCaseRev] => C[UseCaseRev]): Loader[C] =
+      copy(ucRevsFn = {d => (f compose ucRevsFn(d))})
+
+    def useRels(r: UseCaseRelations): Loader[C] =
+      copy(relsFn = {_ => _ => r})
+
+    def run(dao: DaoT, lock: Lock.Read[UseCaseNumbers]): C[UseCaseSaveCheckpoint] = logTime {
+      val ucRevs   = ucRevsFn(dao)(projectId)
+      val rels     = relsFn(dao)(projectId)
+      val loadCtxs = loadCtx(dao)(ucRevs)
+      val loadFn   = loadPure(rels) _
+      val cps      = ucRevs.map(u => loadFn(u, loadCtxs(u)))
+      (s"UseCasePersistence.load(${ucRevs.count} UCs)" ,cps)
+    }
+  }
+
+  def load(ucRev: UseCaseRev) =
+    Loader[Id](ucRev.projectId
+      , _ => _ => ucRev
+      , d => _ => u => FieldLoadCtx(u.header, d findAllUcFieldData u))
+
+  def loadAll(projectId: ProjectId) =
+    Loader[List](projectId
+      , _.findAllLatestUseCaseRevsByProject
+      , d => ucs => serveBulkLoadCtxs(d findAllUcFieldData ucs.map(_.id)))
+
+  private val loadRels: DaoT => ProjectId => UseCaseRelations =
+    d => p => CachedUseCaseRelations(d.summariseUseCases(p))
+
+  private def serveBulkLoadCtxs(bulk: List[(UseCaseRevId, UcFieldTextWithFK)]): UseCaseRev => FieldLoadCtx =
+    u => {
+      val fieldData = bulk.foldRight(List.empty[UcFieldTextWithFK]) {
+        case ((id, row), r) => if (id == u.id) row :: r else r
+      }
+      FieldLoadCtx(u.header, fieldData)
+    }
+
+  private def loadPure(rels: UseCaseRelations)(ucRev: UseCaseRev, loadCtx: FieldLoadCtx): UseCaseSaveCheckpoint = {
     @inline def uch = ucRev.header
     @inline def ucn = ucRev.ident.number
-    @inline def projectId = ucRev.ident.projectId
     val fieldList = Defaults.fieldList.value.fields // TODO hardcoded fieldlist
-    val loadCtx = FieldLoadCtx(uch, dao.findAllUcFieldData(ucRev.id))
 
     var transientFields = List.empty[Field]
     var loadResults = List.empty[FieldAndLoadResult]
@@ -96,7 +143,6 @@ final object UseCasePersistence {
 
     val savedSteps: SavedSteps = BiMap.swapped(savedStepMap)
     val stepAndLabels = generateStepAndLabelBiMap(stepAndLabelMaps)
-    val rels = CachedUseCaseRelations(dao.summariseUseCases(projectId))
     val ctx = UcParsingCtx(ucn, uch.title, stepAndLabels, rels)
 
     var savedData = List.empty[FieldAndSavedData]
@@ -112,16 +158,8 @@ final object UseCasePersistence {
 
     val uc = UseCase(ucn, uch, fieldList, fieldValues, stepAndLabels)
     val cp = UseCaseSaveCheckpoint(uc, ucRev, savedSteps, savedData)
-    (cp, rels)
+    cp
   }
-
-  def loadAll(projectId: ProjectId, dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[(UseCaseRev, UseCase)] =
-    loadAll(dao.findAllLatestUseCaseRevsByProject(projectId), dao, lock)
-
-  def loadAll(ucRevs: List[UseCaseRev], dao: DaoT, lock: Lock.Read[UseCaseNumbers]): List[(UseCaseRev, UseCase)] =
-    logTime(s"UseCasePersistence.loadAll(${ucRevs.size} UCs)")(
-      ucRevs.map(r => (r, load(r, dao, lock)._1.uc))
-    )
 
   // ===================================================================================================================
 

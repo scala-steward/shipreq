@@ -4,7 +4,12 @@ package db
 import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery, SetParameter, GetResult}
 import scala.slick.session.PositionedParameters
+import scalaz.std.string.stringInstance
+import scalaz.syntax.foldable._
+import scalaz.NonEmptyList
+import scalaz.NonEmptyList.nonEmptyList
 import lib.Types._
+import feature.UcFilter
 import security.PasswordAndSalt
 
 /**
@@ -16,7 +21,7 @@ private[db] final object Sql {
   implicit def autotag[T <: AnyRef](t: T): T @@ Validated = t.tag[Validated]
 
   implicit val GR_FieldKey = GetResult {r => FieldKeyRec(r.<<, r.<<, r.<<)}
-  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt(r.nextString, r.nextString))
+  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt.restore(r.nextString.tag, r.<<))
   implicit val GR_Project = GetResult(r => Project(r.<<, r.<<, r.<<))
   implicit val GR_ProjectSummary = GetResult(r => ProjectSummary(r.nextId[ProjectId], r.<<, r.<<, r.<<))
   implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
@@ -24,10 +29,12 @@ private[db] final object Sql {
   implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
   implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.nextString), r.<<))
-  val GR_UseCaseSummary2 = GetResult(r => new UseCaseSummary2(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
-  val GR_UseCaseSummary = GetResult(r => new UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<))
+  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
+
+  implicit val GR_Share = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ShareSummary = GetResult(r => ShareSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
 
   implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
     def apply(v: PasswordAndSalt, pp: PositionedParameters) {
@@ -38,6 +45,8 @@ private[db] final object Sql {
 
   private[this] case class Update() extends scala.annotation.StaticAnnotation
   private[this] case class Insert() extends scala.annotation.StaticAnnotation
+
+  private def idsToSql(ids: NonEmptyList[JLong]): String = ids.map(_.toString).intercalate(",")
 
   // ###################################################################################################################
   // User
@@ -127,17 +136,24 @@ private[db] final object Sql {
 
   val SelectLatestUseCaseRevsByProject = query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*))
 
-  private def summariseUseCaseSql(select: String) =
-    s"SELECT $select FROM usecase u, usecase_rev r WHERE r.id = latest_rev_id and project_id = ? ORDER BY number"
+  def SelectLatestUseCaseRevsByIds(ids: NonEmptyList[UseCaseIdentId]) =
+    SelectLatestUseCaseRevsArb(UseCaseIdentIdIn("ident_id", ids))
 
-  val SummariseUseCases = {
-    implicit val v = GR_UseCaseSummary
-    query[ProjectId, UseCaseSummary](summariseUseCaseSql("ident_id, number, title"))
+  private def SelectLatestUseCaseRevsArb(where: String) =
+    query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*, Some(where)))
+
+  private def summariseUseCaseSql(select: String, where: Option[String] = None) = {
+    val w = where match {
+      case None       => ""
+      case Some(cond) => s" and ($cond)"
+    }
+    s"SELECT $select FROM usecase u, usecase_rev r WHERE r.id = latest_rev_id and project_id = ?$w ORDER BY number"
   }
-  val SummariseUseCases2 = {
-    implicit val v = GR_UseCaseSummary2
-    query[ProjectId, UseCaseSummary2](summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
-  }
+
+  val SummariseUseCases = query[ProjectId, UseCaseSummary](
+    summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
+
+  private def UseCaseIdentIdIn(col: String, ids: NonEmptyList[UseCaseIdentId]) = s"$col in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Text
@@ -164,13 +180,20 @@ private[db] final object Sql {
     SELECT ?, label, parent_rev_id, index, text_rev_id
       FROM uc_field where uc_rev_id = ? """.sql)
 
-  // Step loading depends on ORDER BY index
-  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](s"""
-    SELECT fk_id, label, parent_rev_id, index, ${textrev_*}
+  private def selectUcFieldSql(selectPrefix: String, cond: String) = s"""
+    SELECT ${selectPrefix}fk_id, label, parent_rev_id, index, ${textrev_*}
       FROM uc_field f, text_rev tr, text t
      WHERE text_rev_id = tr.id and tr.ident_id = t.id
-       AND uc_rev_id = ?
-     ORDER BY index """.sql)
+       AND $cond
+     ORDER BY index """.sql
+  // ORDER BY: Step loading RELIES on ORDER BY index
+
+  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](selectUcFieldSql("","uc_rev_id = ?"))
+
+  def SelectUcFieldsInBulk(ids: NonEmptyList[UseCaseRevId]) = queryNA[(UseCaseRevId, UcFieldTextWithFK)](
+    selectUcFieldSql("uc_rev_id,", UseCaseRevIdIn("uc_rev_id", ids)))
+
+  private def UseCaseRevIdIn(col: String, ids: NonEmptyList[UseCaseRevId]) = s"$col in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Fields
@@ -180,4 +203,31 @@ private[db] final object Sql {
 
   @Insert val InsertFieldKey = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
     "INSERT INTO field_key(type_id, data) VALUES(?,?) RETURNING id")
+
+  // ###################################################################################################################
+  // Shares
+
+  @Insert val InsertShare = query[(ProjectId, ShareUrlToken, PasswordAndSalt, String, Option[String], Json[UcFilter]), ShareId](
+    "INSERT INTO share(project_id, url_token, password, password_salt, name, preface, uc_filter)"
+      + " VALUES(?,?,?,?,?,?,?) RETURNING id")
+
+  @Insert val LogShareView = update[(ShareId, Option[String])]("INSERT INTO share_view_log(share_id,ip) VALUES(?,?)")
+
+  val share_* = "id, project_id, url_token, name, preface, uc_filter"
+
+  val SelectShare = query[ShareId, Share](
+    s"SELECT ${share_*} FROM share WHERE id=?")
+
+  val SelectShareAndPasswordByUrl = query[ShareUrlToken, (Share, PasswordAndSalt)](
+    s"SELECT ${share_*}, password, password_salt FROM share WHERE url_token=?")
+
+  val SelectShareAndProjectByUrl = query[ShareUrlToken, (Share, Project)](s"""
+    SELECT ${share_* inTable "s"}, ${project_* inTable "p"}
+    FROM share s, project p
+    WHERE url_token=? AND s.project_id = p.id
+    """.sql)
+
+  val SummariseShares = query[ProjectId, ShareSummary](
+    "SELECT id, url_token, name, uc_filter, view_count, to_iso8601_str(last_viewed_at)" +
+      " FROM share WHERE project_id=? ORDER by name")
 }

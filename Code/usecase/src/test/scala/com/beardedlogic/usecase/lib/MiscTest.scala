@@ -3,10 +3,18 @@ package com.beardedlogic.usecase.lib
 import org.scalatest.FunSpec
 import org.scalatest.Matchers
 import net.liftweb.util.Helpers._
-import Misc._
 import scalaz.Cord
+import com.beardedlogic.usecase.feature.uc.field.{StepField, TextField}
+import com.beardedlogic.usecase.test.TestData
 
-class MiscTest extends FunSpec with Matchers with Misc {
+class MiscTest extends FunSpec with Matchers with Misc with TestData {
+
+  describe("filterCovar()") {
+    it("should filter with covariance") {
+      filterCovar[StepField](FL) shouldBe List(NCF, ECF)
+      filterCovar[TextField](FL) shouldBe List(TF1, TF2, TF3)
+    }
+  }
 
   describe("#randomConfirmationToken") {
     it("should return different values each time") {

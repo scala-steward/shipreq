@@ -26,8 +26,8 @@ class UseCasePersistenceTest extends FunSpec with TestDatabaseSupport with TestH
   implicit def ucTu(uc: UseCase) = UseCaseUpdater(uc, UseCaseRelations.Empty)
 
   def loadRev(revId: UseCaseRevId, projectId: ProjectId): UseCaseSaveCheckpoint = {
-    val rec = dao.findUseCaseRev(revId).get
-    Locks.UseCaseNumbers.read(projectId)(load(rec, dao, _))._1
+    val rev = dao.findUseCaseRev(revId).get
+    Locks.UseCaseNumbers.read(projectId)(load(rev).run(dao, _))
   }
 
   def reload(cp: UseCaseSaveCheckpoint, projectId: ProjectId) = loadRev(cp.rec, projectId)

@@ -4,7 +4,7 @@ package db
 import org.joda.time.DateTime
 import scala.reflect.ClassTag
 import lib.Types._
-import feature.ExternalId
+import feature.{UcFilter, ExternalId}
 import feature.uc.field._
 import feature.uc.UseCaseFns
 
@@ -44,21 +44,30 @@ object FieldListRec {
 // ===================================================================================================================
 // UC & Text
 
-class UseCaseSummary(val id: UseCaseIdentId, val number: UseCaseNumber, val title: String) {
-  def this(ucr: UseCaseRev) = this(ucr.identId, ucr.ident.number, ucr.title)
-  final def eid = ExternalId.UseCase.toExternal(id)
+sealed trait BasicUseCaseInfo {
+  def identId: UseCaseIdentId
+  def number: UseCaseNumber
+  def title: String
+  final def eid = ExternalId.UseCase.toExternal(identId)
   final def fullName = UseCaseFns.fullName(number, title)
 }
 
-class UseCaseSummary2(id: UseCaseIdentId, number: UseCaseNumber, title: String, val updatedAt: String @@ ISO8601)
-  extends UseCaseSummary(id, number, title) {
+case class UseCaseSummary(
+  id: UseCaseIdentId,
+  number: UseCaseNumber,
+  title: String,
+  updatedAt: String @@ ISO8601) extends BasicUseCaseInfo {
+  @inline final def identId = id
   def this(ucr: UseCaseRev, updatedAt: String @@ ISO8601) = this(ucr.identId, ucr.ident.number, ucr.title, updatedAt)
 }
 
 case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
 
-case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601) {
+case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601)
+  extends BasicUseCaseInfo {
+  @inline final def projectId = ident.projectId
   @inline final def identId = ident.identId
+  @inline final def number = ident.number
   @inline final def title = header.title
 }
 
@@ -90,3 +99,22 @@ case class ProjectSummary(
   name: String,
   ucCount: Int,
   ucUpdatedAt: Option[String @@ ISO8601])
+
+// ===================================================================================================================
+// Shares
+
+case class Share(
+  id: ShareId,
+  projectId: ProjectId,
+  urlToken: ShareUrlToken,
+  name: String,
+  preface: Option[String],
+  ucFilterJson: Json[UcFilter])
+
+case class ShareSummary(
+  id: ShareId,
+  urlToken: ShareUrlToken,
+  name: String,
+  ucFilterJson: Json[UcFilter],
+  viewCount: Long,
+  lastViewedAt: Option[String @@ ISO8601])

@@ -30,7 +30,6 @@
             %li
               %a.delete(href="#") Delete Project
 
-
     %section#project-body
       %nav
         %ul.nav.nav-tabs
@@ -38,8 +37,9 @@
             %a(data-toggle="tab" href="#tab-ucs") Use Cases
           %li
             %a(data-toggle="tab" href="#tab-shares") Shares
-
       .tab-content
+
+        /---------------------------------------------------------------------------------------------------------------
         %section#tab-ucs.tab-pane.fade.in.active(data-lift="UseCaseCrudl")
 
           / Use Case: New
@@ -87,5 +87,34 @@
                 %input(type="checkbox")/
                 Show deleted
 
-        %section#tab-shares.tab-pane.fade
-          %pre PENDING
+        /---------------------------------------------------------------------------------------------------------------
+        %section#tab-shares.tab-pane.fade(data-lift="ShareList")
+          %script(type="text/javascript" src="/js/zeroclipboard.js" data-lift="tail")
+
+          %a.btn.btn-success.create Share Use Cases
+
+          %ul#share-list.list-unstyled
+            %li.share
+              %table
+                %tr
+                  %td.l
+                    .btn-group
+                      %button.edit.btn.btn-sm.btn-default Edit
+                      %button.btn.btn-sm.btn-default.dropdown-toggle(data-toggle="dropdown" type="button")
+                        %span.caret
+                      %ul.dropdown-menu(role="menu")
+                        %li
+                          %a(href="#" onclick="return false") Change Password
+                        %li
+                          %a.delete(href="#" onclick="return false") Delete
+                  %td.r
+                    .name
+                      %a(href="#shareUrl") Use Case Editor v1.0
+                    .url
+                      .input-group
+                        %input.form-control.input-sm.urltxt(type="text" value="http://www.reqrepo.com/share/xxxxxxxxxxxxx" readonly)
+                        %span.input-group-addon.copy(title="Copy URL to clipboard") Copy
+                    .under.ucdesc 8 use cases: 1-4, 6, 7.
+                    .under.views
+                      %span.v 1000000 views!
+                      %span.r Last viewed <abbr class="timeago2" title="2013-09-02T15:57:35.773674+10:00"></abbr>.

@@ -46,6 +46,8 @@ abbr.timeago[title] { border-bottom: none !important }
   cursor:default;
 }
 
+[data-clipboard-text], [data-clipboard-target] {cursor:pointer}
+
 // =====================================================================================================================
 // Layout
 // Taken from twitter.github.io/bootstrap/examples/sticky-footer.html
@@ -100,6 +102,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
 
 .ly-blank-body {
   margin: 1.4em 0.6cm 0 0.6cm;
+  padding-bottom: 0.6cm;
 }
 
 // =====================================================================================================================
@@ -160,6 +163,44 @@ html, body { height: 100% } // Cannot have any padding or margin here
   }
 }
 
+#share-create {
+  h1 { margin-bottom: 1em }
+  .form-group.submit { text-align: right }
+}
+
+#share-list{
+  h3 {font-weight:bold}
+  .name a {font-size:140%; font-weight:bold; color:#4183C4}
+  .url {
+    width: 56ex;
+    margin-top: 0.2ex;
+    .urltxt {
+      font-family: monospace;
+      background: white;
+      cursor: text
+    }
+  }
+  .url + .under {margin-top:0.5ex}
+  .under {font-size:100%; color:#888; }
+  li {padding-top:4.4ex}
+  table {width:100%}
+  td.l {
+    vertical-align: top;
+    text-align: right;
+    padding-top: 0.6ex;
+    padding-right: 2.4ex;
+    width: 15ex;
+    .dropdown-menu * {
+      text-align: left;
+      padding-right: 0;
+      padding-top: 0.6ex
+    }
+  }
+  td.r {
+    vertical-align: top;
+  }
+}
+
 .ucs-published {
   color:#222;
   margin: 0 auto 0 auto;
@@ -167,9 +208,20 @@ html, body { height: 100% } // Cannot have any padding or margin here
   max-width: 144ex;
   h2,h3 {color:#000}
 
+  & > header {
+    margin-bottom:3em;
+    h1 { font-weight: bold; }
+  }
+
   nav {
     ol {margin-left:1ex}
     a {font-size:110%; line-height:1.6em}
+  }
+
+  & > .none {
+    text-align: center;
+    margin-top: 10em;
+    font-style: italic;
   }
 
   main {
@@ -201,6 +253,10 @@ html, body { height: 100% } // Cannot have any padding or margin here
         &,* {
           line-height: 1.1em !important;
         }
+      }
+
+      .uc.outofscope {
+        &,* {color:#c00 !important}
       }
 
       a.step:not(:hover), a.uc:not(:hover) {border-bottom:1px dotted}

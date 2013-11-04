@@ -12,6 +12,8 @@ abbr.timeago[title] { border-bottom: none !important; }
 
 .flowgraph svg { max-width: 100% !important; /* Set a maximum relative to the parent */ width: auto\9 !important; /* IE7-8 need help adjusting responsive images */ border: 0; -ms-interpolation-mode: bicubic; cursor: default; }
 
+[data-clipboard-text], [data-clipboard-target] { cursor: pointer; }
+
 html, body { height: 100%; }
 
 #ly-default #ly-hdrbody { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; min-height: 100%; height: auto !important; height: 100%; padding-top: 4px; margin-bottom: -26px; }
@@ -21,7 +23,7 @@ html, body { height: 100%; }
 #ly-default .ly-content { width: auto; margin-left: 30px; margin-right: 30px; }
 #ly-default #content { margin-top: 2.3em; }
 
-.ly-blank-body { margin: 1.4em 0.6cm 0 0.6cm; }
+.ly-blank-body { margin: 1.4em 0.6cm 0 0.6cm; padding-bottom: 0.6cm; }
 
 .loginInfo { text-align: center; }
 
@@ -45,10 +47,28 @@ html, body { height: 100%; }
 #usecase-list .view-mode .view a.title { font-size: 120%; line-height: 1em; color: #4183C4; font-weight: bold; }
 #usecase-list .view-mode .view .detail { font-size: 70%; color: #888888; }
 
+#share-create h1 { margin-bottom: 1em; }
+#share-create .form-group.submit { text-align: right; }
+
+#share-list h3 { font-weight: bold; }
+#share-list .name a { font-size: 140%; font-weight: bold; color: #4183C4; }
+#share-list .url { width: 56ex; margin-top: 0.2ex; }
+#share-list .url .urltxt { font-family: monospace; background: white; cursor: text; }
+#share-list .url + .under { margin-top: 0.5ex; }
+#share-list .under { font-size: 100%; color: #888; }
+#share-list li { padding-top: 4.4ex; }
+#share-list table { width: 100%; }
+#share-list td.l { vertical-align: top; text-align: right; padding-top: 0.6ex; padding-right: 2.4ex; width: 15ex; }
+#share-list td.l .dropdown-menu * { text-align: left; padding-right: 0; padding-top: 0.6ex; }
+#share-list td.r { vertical-align: top; }
+
 .ucs-published { color: #222; margin: 0 auto 0 auto; padding: 2ex 6ex 6ex 6ex; max-width: 144ex; }
 .ucs-published h2, .ucs-published h3 { color: #000; }
+.ucs-published > header { margin-bottom: 3em; }
+.ucs-published > header h1 { font-weight: bold; }
 .ucs-published nav ol { margin-left: 1ex; }
 .ucs-published nav a { font-size: 110%; line-height: 1.6em; }
+.ucs-published > .none { text-align: center; margin-top: 10em; font-style: italic; }
 .ucs-published main { margin-top: 5em; }
 .ucs-published main article + article { margin-top: 8em; }
 .ucs-published main .fvs { width: 100%; }
@@ -63,6 +83,7 @@ html, body { height: 100%; }
 .ucs-published main .fvs tr.lastupdated { margin-top: 0 !important; border-top: none !important; }
 .ucs-published main .fvs tr.lastupdated * { padding-bottom: 0.3em !important; }
 .ucs-published main .fvs tr.rev, .ucs-published main .fvs tr.rev *, .ucs-published main .fvs tr.lastupdated, .ucs-published main .fvs tr.lastupdated * { line-height: 1.1em !important; }
+.ucs-published main .fvs .uc.outofscope, .ucs-published main .fvs .uc.outofscope * { color: #c00 !important; }
 .ucs-published main .fvs a.step:not(:hover), .ucs-published main .fvs a.uc:not(:hover) { border-bottom: 1px dotted; }
 .ucs-published main .fvs .bad.ref { color: #c00; cursor: no-drop; }
 .ucs-published main .fvs .steps th { white-space: nowrap; }

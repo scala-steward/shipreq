@@ -7,6 +7,8 @@ import slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
 import lib.Types._
 import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
+import security.PasswordAndSalt
+import feature.{UcFilter, UcFilters}
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
   implicit def str2uch(title: String @@ Validated): UseCaseHeader = UseCaseHeader(title)
@@ -256,6 +258,70 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       dao.findAllLatestUseCaseRevsByProject(p).map(_.title) shouldBe List("YAY")
       createUseCaseIdentAndRev1(p, "yo".validated)
       dao.findAllLatestUseCaseRevsByProject(p).map(_.title) shouldBe List("YAY", "yo")
+    }
+
+    it("findAllLatestUseCaseRevs(pid,ids)") {
+      newUserProjectAndUseCase("IGNORED".validated, "IGNORED".validated)
+      val (_,p,u1) = newUserProjectAndUseCase("P1".validated, "U1".validated)
+      val u2 = createUseCaseIdentAndRev1(p, "U2".validated)
+      val u3 = createUseCaseIdentAndRev1(p, "U3".validated)
+      val u4 = createUseCaseIdentAndRev1(p, "U4".validated)
+
+      dao.findAllLatestUseCaseRevs(p, Nil) shouldBe Nil
+      dao.findAllLatestUseCaseRevs(p, List(u2)) shouldBe List(u2)
+      dao.findAllLatestUseCaseRevs(p, List(u1, u3, u4)) shouldBe List(u1, u3, u4)
+    }
+  }
+
+  // ===================================================================================================================
+
+  describe("Share") {
+    val FilterAllJson = UcFilters.All.json
+
+    def createShare(pid: ProjectId = newProjectId()): Share = {
+      val s = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("volition"), "NAME", Some("pref"), FilterAllJson)
+      s.name shouldBe "NAME"
+      s.preface shouldBe Some("pref")
+      s.ucFilterJson shouldBe FilterAllJson
+      s.projectId shouldBe pid
+      s
+    }
+
+    it("find . create = id") {
+      val n, s, m = createShare()
+      dao.findShare(s.id) shouldBe Some(s)
+    }
+
+    it("create should retry when token taken") {
+      val firstToken: ShareUrlToken = "abcdefgh".tag
+      val pid = newProjectId()
+      val a = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("v"), "n", None, FilterAllJson, () => firstToken)
+      a.urlToken shouldBe firstToken
+
+      var nextToken = firstToken
+      val secondToken: ShareUrlToken = "987654321".tag
+      val fn = () => {
+        val use = nextToken
+        nextToken = secondToken
+        use
+      }
+      val b = dao.createShare(pid, PasswordAndSalt.createWithRandomSalt("v"), "n", None, FilterAllJson, fn)
+      b.urlToken shouldBe secondToken
+    }
+
+    it("findShareAndPassword") {
+      val n, s, m = createShare()
+      val r = dao.findShareAndPassword(s.urlToken)
+      r.map(_._1) shouldBe Some(s)
+      r.get._2.matches("volition") shouldBe true
+    }
+
+    it("findShareAndProject") {
+      val pid = newProjectId()
+      val s = createShare(pid)
+      val r = dao.findShareAndProject(s.urlToken)
+      r.map(_._1) shouldBe Some(s)
+      r.get._2 shouldBe dao.findProject(pid).get
     }
   }
 }

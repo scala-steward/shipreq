@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase
 package test
 
+import lib.Misc._
 import lib.Types._
 import db.UseCaseHeader
 import feature.uc._
@@ -136,9 +137,9 @@ trait TestData extends TestHelpers2 {
 trait LoadedTestData extends TestData {
   lazy val FLRec = Defaults.fieldList.value
   override lazy val FL = FLRec.fields
-  lazy val TxtFields = filter[TextField](FL)
-  lazy override val NCF = filter[NormalCourseField](FL).head
-  lazy override val ECF = filter[ExceptionCourseField](FL).head
+  lazy val TxtFields = filterCovar[TextField](FL)
+  lazy override val NCF = filterCovar[NormalCourseField](FL).head
+  lazy override val ECF = filterCovar[ExceptionCourseField](FL).head
   lazy override val TF1 = TxtFields(0)
   lazy override val TF2 = TxtFields(1)
   lazy override val TF3 = TxtFields(2)

@@ -3,8 +3,14 @@ package db
 
 import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
+import scalaz.NonEmptyList.nel
+import scalaz.std.list.listInstance
+import scalaz.syntax.functor._
 import feature.uc.field.FieldDefinition
+import feature.UcFilter
 import lib.Locks.{UseCaseNumbers, SingleUseCase}
+import lib.Misc.retry
+import lib.ShareUrlTokenGen
 import lib.Types._
 import security.PasswordAndSalt
 import util.Lock
@@ -38,6 +44,26 @@ sealed trait DaoS {
   import Sql._
 
   implicit val session: Session
+
+  /** "Safe" in the sense that an error rolls back the inner transaction without aborting the outer one. */
+  private[this] def inSafeTransaction[T](f: => T): T = {
+    val conn = session.conn
+    val oldAutoCommit = conn.getAutoCommit
+    conn.setAutoCommit(false)
+    val sp = conn.setSavepoint()
+
+    try {
+      val result = f
+      conn.commit
+      result
+    } catch {
+      case e: Throwable =>
+        conn.rollback(sp)
+        throw e
+    } finally {
+      conn.setAutoCommit(oldAutoCommit)
+    }
+  }
 
   // ===================================================================================================================
   // User
@@ -122,14 +148,26 @@ sealed trait DaoS {
 
   def findAllLatestUseCaseRevsByProject(pid: ProjectId): List[UseCaseRev] = SelectLatestUseCaseRevsByProject.list(pid)
 
+  def findAllLatestUseCaseRevs(pid: ProjectId, ids: List[UseCaseIdentId]): List[UseCaseRev] = ids match {
+    case Nil       => List.empty
+    case id :: Nil => findUseCaseLatestRev(id).toList
+    case h :: t    => SelectLatestUseCaseRevsByIds(nel(h, t)).list(pid)
+  }
+
   def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases.list(projectId)
-  def summariseUseCases2(projectId: ProjectId): List[UseCaseSummary2] = SummariseUseCases2.list(projectId)
 
   // ===================================================================================================================
   // uc_field
 
   def findAllUcFieldData(ucRevId: UseCaseRevId): List[UcFieldTextWithFK] =
     SelectUcFields.list(ucRevId)
+
+  // TODO findAllUcFieldData & findAllLatestUseCaseRevs should run in ID batches. What's postgres's limit on INs?
+  def findAllUcFieldData(ids: List[UseCaseRevId]): List[(UseCaseRevId, UcFieldTextWithFK)] = ids match {
+    case Nil       => List.empty
+    case id :: Nil => findAllUcFieldData(id).strengthL(id)
+    case h :: t    => SelectUcFieldsInBulk(nel(h, t)).list()
+  }
 
   def linkUcToText(uc: UseCaseRevId, txt: TextRevId): Unit =
     LinkUcToText.execute(uc, txt)
@@ -159,6 +197,37 @@ sealed trait DaoS {
     val id = InsertFieldKey.first(fkType, data)
     FieldKeyRec(id, fkType, data)
   }
+
+  // ===================================================================================================================
+  // Shares
+
+  def createShare(
+    projectId: ProjectId, ps: PasswordAndSalt,
+    name: String, preface: Option[String], ucFilterJson: Json[UcFilter],
+    urlTokenFn: () => ShareUrlToken = ShareUrlTokenGen.fn)
+  : Share =
+    retry(12) { // Chance of error when 200,000 tokens in use = 0.0000002% ^ 12 (6E-105%)
+      inSafeTransaction {
+        val urlToken = urlTokenFn()
+        val id = InsertShare.first(projectId, urlToken, ps, name, preface, ucFilterJson)
+        Share(id, projectId, urlToken, name, preface, ucFilterJson)
+      }
+    }
+
+  def findShare(id: ShareId): Option[Share] =
+    SelectShare.firstOption(id)
+
+  def findShareAndPassword(url: ShareUrlToken): Option[(Share, PasswordAndSalt)] =
+    SelectShareAndPasswordByUrl.firstOption(url)
+
+  def findShareAndProject(url: ShareUrlToken): Option[(Share, Project)] =
+    SelectShareAndProjectByUrl.firstOption(url)
+
+  def summariseShares(projectId: ProjectId): List[ShareSummary] =
+    SummariseShares.list(projectId)
+
+  def logShareView(shareId: ShareId, ip: Option[String]): Unit =
+    LogShareView.execute(shareId, ip)
 }
 
 // #####################################################################################################################
