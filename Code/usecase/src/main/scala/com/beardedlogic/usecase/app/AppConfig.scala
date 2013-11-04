@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.app
 
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
+import org.joda.time.Period
 
 object AppConfig {
 
@@ -23,4 +24,7 @@ object AppConfig {
 
   /** Usernames' min & max lengths. */
   final val UsernameLength = 3 to 32
+
+  /** The amount of time that a user is allowed to view a share after authenticating, without re-authenticating. */
+  final val ShareViewAuthPeriod = Period.minutes(30)
 }

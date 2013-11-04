@@ -1,46 +1,73 @@
 package com.beardedlogic.usecase.snippet
 
+import net.liftweb.http.js.{JsCmds, JsCmd}
+import net.liftweb.http.{SessionVar, SHtml}
 import net.liftweb.util.Helpers._
-import scala.xml.NodeSeq
+import org.joda.time.DateTime
+import scala.xml.{Text, NodeSeq}
 import scalaz.std.list.listInstance
-import com.beardedlogic.usecase.app.DI
-import com.beardedlogic.usecase.db.{Share, Project}
+
+import com.beardedlogic.usecase.app.{AppConfig, DI}
+import com.beardedlogic.usecase.db.Share
 import com.beardedlogic.usecase.feature.UcFilter
 import com.beardedlogic.usecase.feature.publish.{DocHeader, HtmlPublisher, Input}
 import com.beardedlogic.usecase.feature.uc.persist.UseCasePersistence
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.{Locks, SingleOpStatefulSnippet}
 import com.beardedlogic.usecase.security.PermissionCheck
+import com.beardedlogic.usecase.util.HtmlTransformExt.ajaxSubmitOnClick
+import ShareView._
 
-class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
+object ShareView {
+  type AuthMap = Map[ShareUrlToken, (DateTime, String @@ Hashed)]
+  object AuthMapVar extends SessionVar[AuthMap](Map.empty)
 
   sealed trait Page
   sealed trait PostAuthPage extends Page
-
   case object PasswordRequired extends Page
   case class ZeroUcs(header: NodeSeq) extends PostAuthPage
   case class ShowUcs(content: NodeSeq) extends PostAuthPage
 
-  type OSP = Option[(Share, Project)]
+  type LoadResult = Option[Share]
+}
 
-  // TODO opens 2 DB connections
+class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
 
-  def loadIfCurrentUserIsOwner: OSP =
+  // TODO opens too many separate DB connections
+
+  def render = renderPage(initialPage)
+
+  def initialPage = pageFor(loadIfAlreadyAuth or loadIfCurrentUserIsOwner)
+
+  def expired(authTime: DateTime): Boolean = {
+    val expiry = authTime.plus(AppConfig.ShareViewAuthPeriod)
+    expiry.isBeforeNow
+  }
+
+  def loadIfAlreadyAuth: LoadResult =
     for {
-      _      <- currentUser
-      (s, p) <- daoProvider.withSession(_.findShareAndProject(token))
-      _      <- PermissionCheck.userCan.readAndUpdate(p).toOption
-    } yield (s, p)
+      (authTime, authPass) <- AuthMapVar.get.get(token)
+                              if !expired(authTime)
+      (s, ps)              <- daoProvider.withSession(_ findShareAndPassword token)
+                              if ps.hashedPassword == authPass
+    } yield s
 
-  def pageFor(osp: OSP): Page =
-    osp match {
-      case None         => PasswordRequired
-      case Some((s, p)) => postAuthPage(s, p)
+  def loadIfCurrentUserIsOwner: LoadResult =
+    for {
+      _       <- currentUser
+      (s, pr) <- daoProvider.withSession(_ findShareAndProject token)
+      _       <- PermissionCheck.userCan.readAndUpdate(pr).toOption
+    } yield s
+
+  def pageFor(o: LoadResult): Page =
+    o match {
+      case None    => PasswordRequired
+      case Some(s) => postAuthPage(s)
     }
 
-  def postAuthPage(s: Share, p: Project): PostAuthPage = {
+  def postAuthPage(s: Share): PostAuthPage = {
     val f = UcFilter.fromJson(s.ucFilterJson)
-    val ucs = loadUcs(p, f)
+    val ucs = loadUcs(s.projectId, f)
     val h = DocHeader(s.name, s.preface)
     val i = new Input(Some(h), ucs)
     val q = new HtmlPublisher(i)
@@ -56,14 +83,10 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
       Locks.UseCaseNumbers.read(p)(lock =>
         UseCasePersistence.loadAll(p).filter(UcFilter(f)).run(dao, lock)))
 
-  def initialPage = pageFor(loadIfCurrentUserIsOwner)
-
-  def render = renderPage(initialPage)
-
   def renderPage(page: Page) =
     page match {
       case PasswordRequired =>
-        "#passwordRequired ^^" #> ""
+        "#passwordRequired ^^" #> "" andThen renderPasswordForm
 
       case ZeroUcs(h) =>
         "#share-view-none ^^" #> "" andThen ".header" #> h
@@ -72,4 +95,26 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
         "#share-view ^^" #> "" andThen ".ucs-published *" #> o
     }
 
+  def renderPasswordForm = {
+    var passwordInput = ""
+    "#password" #> SHtml.onSubmit(passwordInput = _) &
+      ":submit" #> ajaxSubmitOnClick(() => onSubmitPassword(passwordInput))
+  }
+
+  def onSubmitPassword(password: String): JsCmd = {
+    val possibleJs = for {
+      (s, p) <- daoProvider.withSession(_ findShareAndPassword token)
+      if p matches password
+    } yield {
+      onAuth(p.hashedPassword)
+      JsCmds.Reload
+    }
+    possibleJs getOrElse jsShowError(Text("Access denied. Please verify the URL and password."))
+  }
+
+  def onAuth(hashedPassword: String @@ Hashed): Unit = {
+    val newAuthEntry = (token, (DateTime.now, hashedPassword))
+    AuthMapVar.atomicUpdate(_ + newAuthEntry)
+    // Log view
+  }
 }

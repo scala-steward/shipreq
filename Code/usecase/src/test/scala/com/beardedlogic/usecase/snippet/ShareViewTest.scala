@@ -1,14 +1,17 @@
 package com.beardedlogic.usecase.snippet
 
+import org.joda.time.DateTime
 import org.mockito.Mockito.when
 import org.scalatest.FunSpec
-import com.beardedlogic.usecase.db.{UseCaseIdent, UseCaseRev, Project, Share}
+import com.beardedlogic.usecase.db.{UserDescriptor, UseCaseIdent, UseCaseRev, Project, Share}
 import com.beardedlogic.usecase.feature.uc.persist.UseCaseSaveCheckpoint
 import com.beardedlogic.usecase.feature.{UcFilters, UcFilter}
 import com.beardedlogic.usecase.lib.Misc
 import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.security.PasswordAndSalt
 import com.beardedlogic.usecase.test.{TestData, TestHelpers, MockDaoProvider}
 import com.beardedlogic.usecase.util.NonEmptyTemplate
+import ShareView._
 
 class ShareViewTest extends FunSpec with TestHelpers with TestData {
   lazy val template = NonEmptyTemplate.load("share-view").get
@@ -18,11 +21,50 @@ class ShareViewTest extends FunSpec with TestHelpers with TestData {
   val projectId = 123.tag[IsProjectId]
   val share = Share(1.tag, projectId, URL, "z", None, UcFilter.toJson(UcFilters.All))
   val project = Project(projectId, "z", userId)
+  val PS = PasswordAndSalt.createWithRandomSalt("correct")
   val cp = {
     val uc = MockUc4.UC
     val ucr = UseCaseRev(UseCaseIdent(8.tag, (2: Short).tag, projectId), 3, 9.tag, uc.header, Misc.currentTimeAsIso8601Str)
     UseCaseSaveCheckpoint(uc, ucr, null, null)
   }
+
+  def subject = {
+    val s = new ShareView(URL)
+    s.loadUcs = (p: ProjectId, f: UcFilter) => List(cp)
+    s
+  }
+
+  def setupValidShare[U](f: => U): U =
+    inMockSession {
+      MockDaoProvider(dao => {
+        when(dao.findShareAndPassword(URL)).thenReturn(Some(share, PS))
+        when(dao.findShareAndProject(URL)).thenReturn(Some(share, project))
+      }).install {
+        f
+      }
+    }
+
+  def setupInvalidShare[U](f: => U): U =
+    inMockSession {
+      MockDaoProvider(dao => {
+        when(dao.findShareAndPassword(URL)).thenReturn(None)
+        when(dao.findShareAndProject(URL)).thenReturn(None)
+      }).install {
+        f
+      }
+    }
+
+  def setupValidShareAndUser(u: UserDescriptor = UD1)(f: ShareView => Unit): Unit =
+    setupValidShare {
+      withUserLoggedIn(Some(u)) {
+        f(subject)
+      }
+    }
+
+  def authGuest(token: ShareUrlToken = URL
+    , when: DateTime = DateTime.now.minusSeconds(30)
+    , password: String @@ Hashed = PS.hashedPassword): Unit =
+    AuthMapVar.atomicUpdate(_ + (token -> (when, password)))
 
   describe("Rendering") {
     def assertFrag(html: String, pass: Boolean, ucs: Boolean, zeroUcs: Boolean = false): Unit = {
@@ -33,21 +75,21 @@ class ShareViewTest extends FunSpec with TestHelpers with TestData {
     }
 
     it("should render the PasswordRequired page") {
-      val s = new ShareView(URL)
-      val html = s.renderPage(s.PasswordRequired)(template).toString
-      assertFrag(html, true, false)
+      inMockSession {
+        val html = subject.renderPage(PasswordRequired)(template).toString
+        assertFrag(html, true, false)
+        html should include ("type=\"password\"")
+      }
     }
 
     it("should render the ZeroUcs page") {
-      val s = new ShareView(URL)
-      val html = s.renderPage(s.ZeroUcs(<xxx/>))(template).toString
+      val html = subject.renderPage(ZeroUcs(<xxx/>))(template).toString
       assertFrag(html, false, true, true)
       html should include("xxx")
     }
 
     it("should render the ShowUcs page") {
-      val s = new ShareView(URL)
-      val html = s.renderPage(s.ShowUcs(<xxx/>))(template).toString
+      val html = subject.renderPage(ShowUcs(<xxx/>))(template).toString
       assertFrag(html, false, true)
       html should include("xxx")
     }
@@ -56,62 +98,107 @@ class ShareViewTest extends FunSpec with TestHelpers with TestData {
   describe("GET valid url") {
 
     describe("User is a guest") {
-      it("should ask for password when user is a guest") {
-        val s = new ShareView(URL)
-        s.initialPage shouldBe s.PasswordRequired
+      it("should deny access and ask for password the first time") {
+        subject.initialPage shouldBe PasswordRequired
+      }
+
+      it("should allow access when already authorised") {
+        setupValidShare {
+          authGuest()
+          subject.initialPage shouldBe a[ShowUcs]
+        }
+      }
+
+      it("should deny access when already authorised but expired") {
+        setupValidShare {
+          authGuest(when = DateTime.now minusWeeks 2)
+          subject.initialPage shouldBe PasswordRequired
+        }
+      }
+
+      it("should deny access when already authorised but password has changed") {
+        setupValidShare {
+          authGuest(password = "changed".tag)
+          subject.initialPage shouldBe PasswordRequired
+        }
+      }
+
+      it("should deny access when other page is authorised") {
+        setupValidShare {
+          authGuest(token = "different".tag)
+          subject.initialPage shouldBe PasswordRequired
+        }
       }
     }
 
     describe("User is the project owner") {
 
-      def test(f: ShareView => Unit): Unit =
-        MockDaoProvider(dao => {
-          when(dao.findShareAndProject(URL)).thenReturn(Some(share, project))
-        }).install {
-          withUserLoggedIn(Some(UD1)) {
-            val s = new ShareView(URL)
-            f(s)
-          }
-        }
-
       it("should display the UCs (when there are none)") {
-        test(s => {
+        setupValidShareAndUser()(s => {
           s.loadUcs = (p: ProjectId, f: UcFilter) => List.empty
-          s.initialPage shouldBe a[s.ZeroUcs]
+          s.initialPage shouldBe a[ZeroUcs]
         })
       }
 
       it("should display the UCs (when there are some)") {
-        test(s => {
-          s.loadUcs = (p: ProjectId, f: UcFilter) => List(cp)
-          s.initialPage shouldBe a[s.ShowUcs]
-        })
+        setupValidShareAndUser()(_.initialPage shouldBe a[ShowUcs])
       }
     }
 
     describe("User is logged-in and unrelated") {
       it("should ask for password when user is a guest") {
-        MockDaoProvider(dao => {
-          when(dao.findShareAndProject(URL)).thenReturn(Some(share, project))
-        }).install {
-          withUserLoggedIn(Some(UD2)) {
-            val s = new ShareView(URL)
-            s.initialPage shouldBe s.PasswordRequired
-          }
-        }
+        setupValidShareAndUser(UD2)(_.initialPage shouldBe PasswordRequired)
       }
     }
   }
 
   describe("GET invalid url") {
-    it("should act as if valid") {
-      MockDaoProvider(dao => {
-        when(dao.findShareAndProject(URL)).thenReturn(None)
-      }).install {
+    it("should act as if valid (when user is guest)") {
+      setupInvalidShare {
+        subject.initialPage shouldBe PasswordRequired
+      }
+    }
+
+    it("should act as if valid (when user logged in)") {
+      setupInvalidShare {
         withUserLoggedIn(Some(UD1)) {
-          val s = new ShareView(URL)
-          s.initialPage shouldBe s.PasswordRequired
+          subject.initialPage shouldBe PasswordRequired
         }
+      }
+    }
+  }
+
+  describe("Credential submission") {
+    lazy val jsForIncorrectPasswordValidShare =
+      setupValidShare {subject.onSubmitPassword("wrong").toJsCmd}
+
+    it("should reject when password incorrect") {
+      assertJsErrorNotice(jsForIncorrectPasswordValidShare, Some("denied"))
+    }
+
+    it("should act as if password incorrect when share doesnt exist") {
+      setupInvalidShare {
+        subject.onSubmitPassword("whatever").toJsCmd shouldBe jsForIncorrectPasswordValidShare
+      }
+    }
+
+    it("should grant access when password correct") {
+      val oldAuthMap: AuthMap = Map("qwe".tag -> (DateTime.now minusHours 4, "roar".tag))
+      val o = oldAuthMap.head
+      setupValidShare {
+        AuthMapVar.set(oldAuthMap)
+
+        val js = subject.onSubmitPassword("correct").toJsCmd
+
+        assertJsErrorNotice(js, None)
+
+        val a = AuthMapVar.get
+        a should have size 2
+        a.get(o._1) shouldBe Some(o._2)
+        a.get(URL) shouldBe defined
+        a(URL)._1.isAfterNow shouldBe false
+        a(URL)._1.isAfter(DateTime.now minusSeconds 1) shouldBe true
+        a(URL)._2 shouldBe PS.hashedPassword
       }
     }
   }

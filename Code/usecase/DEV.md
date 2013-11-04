@@ -61,9 +61,12 @@ Snippet Testing
 ===============
 * TestHelpers
   * inMockSession(...)
-  * withSessionAttrs  - S.attr
-  * withSessionParams - S.param
-  * withUserLoggedIn  - Data: UD1, UD2
+  * withSessionAttrs    - S.attr
+  * withSessionParams   - S.param
+  * withUserLoggedIn    - Data: UD1, UD2
+  * assertJsAlert
+  * assertJsErrorNotice
+  * assertRedirect      - Catches redirect-exception
 * MockDaoProvider{cfg}.install{test}
 * CssTestHelpers
   * findCss

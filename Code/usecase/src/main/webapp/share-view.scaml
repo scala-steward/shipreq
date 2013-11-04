@@ -4,7 +4,15 @@
   %div(data-lift="ShareView")
 
     #passwordRequired
-      %h1 Password Required!
+      %section#notices(data-lift="Notices")
+      .centred_form
+        %h2 Password Required
+        %br
+        %form(data-lift="form.ajax")
+          .form-group
+            %input#password.form-control(type="password" placeholder="Password" required autofocus)
+          .form-group
+            %button.btn.btn-primary.pull-right(type="submit") Enter
 
     #share-view-none.ucs-published
       .header
