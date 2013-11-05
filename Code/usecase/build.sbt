@@ -24,7 +24,7 @@ libraryDependencies ++= {
     "ch.qos.logback"            % "logback-classic"        % "1.0.13",
     "com.typesafe.slick"       %% "slick"                  % "1.0.1",
     "org.postgresql"            % "postgresql"             % "9.3-1100-jdbc41",
-    "com.googlecode.flyway"     % "flyway-core"            % "2.1.1",
+    "com.googlecode.flyway"     % "flyway-core"            % "2.2.1",
     "org.apache.shiro"          % "shiro-core"             % shiroVersion,
     "org.apache.shiro"          % "shiro-web"              % shiroVersion,
     "org.slf4j"                 % "jcl-over-slf4j"         % "1.7.5", // required by Shiro (in place of commons-logging)
