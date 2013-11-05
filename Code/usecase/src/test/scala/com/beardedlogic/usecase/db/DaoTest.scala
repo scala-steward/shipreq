@@ -107,7 +107,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
         assertTableDiffs(UsecaseRev -> 1, UcField -> relationRows) {
           val r = updateUseCaseHeader(src, _.copy(title = "omg".validated))
           r match {
-            case Success(n) => assertUC(n, src.withTitle("omg".validated), 1); n
+            case DbSuccess(n) => assertUC(n, src.withTitle("omg".validated), 1); n
             case _ => fail("Expected Success. Got " + r)
           }
         }
@@ -123,7 +123,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       def createTwoRevs(implicit projectId: ProjectId) = {
         val rev1 = createUseCaseIdentAndRev1(projectId, "Haha".validated)
         val rev2s = updateUseCaseHeader(rev1, _.copy(title = "wow".validated)) match {
-          case Success(x) => x
+          case DbSuccess(x) => x
           case _ => fail("Expected Success.")
         }
         val rev2 = dao.findUseCaseRev(rev2s).get
@@ -207,7 +207,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
       it("should update the project name") {
         val (u, p) = newUserAndProject("A".validated)
-        assertTableDiffs()(dao.updateProject(p, u, "B".validated)) ==== Success
+        assertTableDiffs()(dao.updateProject(p, u, "B".validated)) ==== DbSuccess
         dao.findProject(p).get.name ==== "B"
       }
 

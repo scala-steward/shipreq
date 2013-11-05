@@ -32,7 +32,7 @@ class ProjectCreate extends SingleOpStatefulSnippet {
       case -\/(err) => jsShowError(err)
       case \/-(name) =>
         daoProvider.withSession(_.createProject(currentUserId_!, name)) match {
-          case Success(id)      => redirectTo(AppSiteMap.Project)(id)
+          case DbSuccess(id)      => redirectTo(AppSiteMap.Project)(id)
           case NameAlreadyInUse => jsShowError("You already have a project with that name.")
         }
     }

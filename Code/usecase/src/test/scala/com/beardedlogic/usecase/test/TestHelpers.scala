@@ -593,7 +593,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
 
   implicit class CreateProjectResultExt(r: CreateProjectResult) {
     def gimme: ProjectId = r match {
-      case CreateProjectResult.Success(x) => x
+      case CreateProjectResult.DbSuccess(x) => x
       case x => fail("Failed to create random project id: " + x)
     }
   }

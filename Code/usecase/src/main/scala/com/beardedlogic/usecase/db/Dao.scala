@@ -75,7 +75,7 @@ sealed trait DaoS {
     import UserRegistrationResult._
     try {
       RegisterUser.firstOption(username, ps, ipAddr, token) match {
-        case Some(id) => Success(id)
+        case Some(id) => DbSuccess(id)
         case None => NoMatchingConfToken
       }
     } catch {
@@ -114,7 +114,7 @@ sealed trait DaoS {
     import CreateProjectResult._
     saveProject[CreateProjectResult](name, name => {
       val id = CreateProject.first(usrId, name)
-      Success(id)
+      DbSuccess(id)
     })(NameAlreadyInUse)
   }
 
@@ -122,7 +122,7 @@ sealed trait DaoS {
     import UpdateProjectResult._
     saveProject[UpdateProjectResult](name, name => {
       if (RenameProject.first(name, id, usrId) == 0) ProjectNotFound
-      else Success
+      else DbSuccess
     })(NameAlreadyInUse)
   }
 
@@ -278,7 +278,7 @@ sealed trait DaoT extends DaoS {
         else {
           val newRev = createUseCaseRev(latest.ident, latest.rev +! 1, h)
           linkUcToSameFieldsAsOtherUc(latest, newRev)
-          Success(newRev)
+          DbSuccess(newRev)
         }
     }
   }
@@ -299,27 +299,27 @@ sealed trait DaoT extends DaoS {
 
 sealed trait UserRegistrationResult
 object UserRegistrationResult {
-  case class Success(userId: UserId) extends UserRegistrationResult
+  case class DbSuccess(userId: UserId) extends UserRegistrationResult
   case object NoMatchingConfToken extends UserRegistrationResult
   case object UsernameTaken extends UserRegistrationResult
 }
 
 sealed trait UseCaseHeaderUpdateResult
 object UseCaseHeaderUpdateResult {
-  case class Success(result: UseCaseRev) extends UseCaseHeaderUpdateResult
+  case class DbSuccess(result: UseCaseRev) extends UseCaseHeaderUpdateResult
   case class AlreadyUpToDate(result: UseCaseRev) extends UseCaseHeaderUpdateResult
   case object UseCaseNotFound extends UseCaseHeaderUpdateResult
 }
 
 sealed trait CreateProjectResult
 object CreateProjectResult {
-  case class Success(id: ProjectId) extends CreateProjectResult
+  case class DbSuccess(id: ProjectId) extends CreateProjectResult
   case object NameAlreadyInUse extends CreateProjectResult
 }
 
 sealed trait UpdateProjectResult
 object UpdateProjectResult {
-  case object Success extends UpdateProjectResult
+  case object DbSuccess extends UpdateProjectResult
   case object NameAlreadyInUse extends UpdateProjectResult
   case object ProjectNotFound extends UpdateProjectResult
 }

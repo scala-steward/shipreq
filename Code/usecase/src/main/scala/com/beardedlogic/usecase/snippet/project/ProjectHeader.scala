@@ -47,7 +47,7 @@ class ProjectHeader extends SingleOpStatefulSnippet {
       case -\/(err) => jsShowError(err)
       case \/-(name) =>
         daoProvider.withSession(_.updateProject(project.id, currentUserId_!, name)) match {
-          case Success          => jsRenamed(name)
+          case DbSuccess        => jsRenamed(name)
           case NameAlreadyInUse => jsShowError("You already have a project with that name.")
           case ProjectNotFound  => redirectHome
         }

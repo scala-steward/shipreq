@@ -114,7 +114,7 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
       Locks.SingleUseCase.write(id, projectId)(lock =>
         daoProvider.withTransaction(_.updateUseCaseHeader(id, _.copy(title = newTitle), lock))
       ) match {
-        case Success(r)         => Some(r)
+        case DbSuccess(r)       => Some(r)
         case AlreadyUpToDate(r) => None
         case UseCaseNotFound    => redirectTo(AppSiteMap.Project)(projectId)
       })
