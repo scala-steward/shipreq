@@ -14,6 +14,7 @@ import net.liftweb.util.Helpers._
 import feature.uc.change._
 import feature.uc.field._
 import feature.FlowGraph
+import feature.validation.VFailure
 import lib.ScalazSubset._
 import lib.Types._
 import util.JsExt._
@@ -126,8 +127,8 @@ case class Renderer(
   // *             Javascript             *
   // **************************************
 
-  def jsRespondChangeFailure(errorMessage: String): JsCmd =
-    JsCmds.Alert(errorMessage) // TODO can do better than this
+  def jsRespondChangeFailure(f: VFailure): JsCmd =
+    JsCmds.Alert(f.toText) // TODO can do better than this
 
   def jsRespondToChanges(changes: NonEmptyList[Change]): JsCmd =
     changes.foldMap(jsRespondToChange)    |+|

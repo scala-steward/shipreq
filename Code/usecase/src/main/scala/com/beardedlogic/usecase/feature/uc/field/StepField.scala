@@ -4,6 +4,7 @@ package field
 import scala.annotation.tailrec
 import com.beardedlogic.usecase.db._
 import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.feature.validation.VFailure
 import change._
 import step.StepLabels.{MaxStepsPerLevel, MaxStepDepth}
 import step.{StepTree, StepNodeBuilder, StepNode}
@@ -15,6 +16,7 @@ import StepFieldConsts._
 
 object StepFieldConsts {
   def MaxStepViolationMsg = Some(s"That would cause you to have ${MaxStepsPerLevel + 1} steps at the same level, which exceeds the maximum allowed.")
+  def MaxStepViolationChangeFailure = ChangeFailure(VFailure.looseMsg(MaxStepViolationMsg.get))
   def MaxLevelViolationMsg = Some(s"That would cause your steps to be ${MaxStepDepth + 1} levels deep, which exceeds the maximum allowed.")
 
   trait StartingLabelIndices {
@@ -31,7 +33,7 @@ object StepFieldConsts {
 
   @inline final def resultIfTreeIsValid(steps: List[StepNode], validResult: => UcUpdateResult): UcUpdateResult =
     validateTree(steps) match {
-      case Some(error) => ChangeFailure(error)
+      case Some(error) => ChangeFailure(VFailure.looseMsg(error))
       case None        => validResult
     }
 
@@ -87,7 +89,7 @@ trait StepFieldLike { this: Field with StepField =>
     val curNodes = lens.get.tree.nodes
     val labelIndex = sli.startingLabelIndex(0) + curNodes.size
     if (labelIndex > MaxStepsPerLevel)
-      ChangeFailure(MaxStepViolationMsg.get)
+      MaxStepViolationChangeFailure
     else {
       val tailStep = StepNodeBuilder(0, labelIndex)
       val newSfv = lens.get.withNewStep(StepTree(curNodes :+ tailStep), tailStep.id)

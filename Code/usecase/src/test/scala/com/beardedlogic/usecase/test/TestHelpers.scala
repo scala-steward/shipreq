@@ -586,7 +586,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     }
 
     def openFailure(r: ChangeResultF[_, _]): String = r match {
-      case ChangeFailure(err) => err
+      case ChangeFailure(f) => f.toText
       case _ => fail(s"ChangeFailure expected. Got: $r")
     }
   }

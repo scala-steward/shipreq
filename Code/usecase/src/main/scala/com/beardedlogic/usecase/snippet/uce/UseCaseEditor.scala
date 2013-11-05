@@ -15,6 +15,7 @@ import feature.uc._
 import feature.uc.change._
 import feature.uc.field._
 import feature.uc.persist.{UseCasePersistence, UseCaseSaveCheckpoint}
+import feature.validation.VFailure
 
 object UseCaseEditor {
 
@@ -28,7 +29,7 @@ object UseCaseEditor {
   case class UcModifier(
     updateFn: UseCaseUpdater => UcUpdateResult,
     nopFn: Option[Renderer => JsCmd],
-    errFn: Option[String => JsCmd])
+    errFn: Option[VFailure => JsCmd])
 }
 
 import UseCaseEditor._
@@ -108,8 +109,8 @@ class UseCaseEditor(initialState: UseCaseEditor.State, val rels: UseCaseRelation
       case NoChange =>
         m.nopFn.map(_(renderer)) getOrElse Noop
 
-      case ChangeFailure(err) =>
-        m.errFn.map(_(err)) getOrElse renderer.jsRespondChangeFailure(err)
+      case ChangeFailure(vf) =>
+        m.errFn.map(_(vf)) getOrElse renderer.jsRespondChangeFailure(vf)
     }
 
   def save(): JsCmd = state.prevSave match {

@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase.feature.uc.change
 
 import scalaz.NonEmptyList
+import com.beardedlogic.usecase.feature.validation.VFailure
 
 object ChangeResult {
 
@@ -119,7 +120,7 @@ trait NoChangeOrFailure {
 /**
  * Indicates an error occurred attempting to perform a change.
  */
-final case class ChangeFailure(errorMessage: String) extends ChangeResultF[Nothing, Nothing] with NoChangeOrFailure {
+final case class ChangeFailure(failure: VFailure) extends ChangeResultF[Nothing, Nothing] with NoChangeOrFailure {
   override def isFailure = true
 }
 

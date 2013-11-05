@@ -2,9 +2,9 @@ package com.beardedlogic.usecase.feature.uc
 package change
 
 import scala.collection.mutable.ListBuffer
-import scalaz.{NonEmptyList, -\/, \/-, Failure, Success}
+import scalaz.{NonEmptyList, Failure, Success}
 import com.beardedlogic.usecase.lib.Types._
-import com.beardedlogic.usecase.feature.validation.{VFailureTextRenderer, Validator}
+import com.beardedlogic.usecase.feature.validation.Validator
 import com.beardedlogic.usecase.util.AppliedLens
 import field._
 import Changes._
@@ -63,7 +63,7 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
   def updateTitle(input: String): UcUpdateResult = {
     implicit val lens = alens(Lenses.ucTitleL, uc)
     Validator.useCaseTitle.correctAndValidate(input) match {
-      case Failure(f)        => ChangeFailure(f.toText)
+      case Failure(f)        => ChangeFailure(f)
       case Success(newTitle) =>
         if (newTitle == lens.get)
           NoChange
