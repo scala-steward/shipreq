@@ -4,26 +4,7 @@
 
   %section#notices(data-lift="Notices")
 
-  %main#share-create.ly-blank-body(data-lift="ShareEdit")
+  %main#share-create.ly-blank-body
     %h1 Edit Share
 
-    %form(data-lift="form.ajax?class=form-horizontal")
-
-      .form-group
-        %label.col-sm-2.control-label(for="shareName") Name
-        .col-sm-10
-          %input#shareName.form-control(type="text" placeholder="Document Title" required)
-
-      .form-group
-        %label.col-sm-2.control-label(for="preface") Preface
-        .col-sm-10
-          %textarea#preface.form-control(placeholder="Optional, introductory text to present before the Table of Contents." rows="7")
-
-      .form-group
-        %label.col-sm-2.control-label Use Case Selection
-        .col-sm-10
-          #uc-filters
-
-      .form-group.submit
-        .col-sm-offset-2.col-sm-10
-          %button.btn.btn-success(type="submit") Update Share
+    #edit-form(data-lift="ShareEdit")

@@ -3,7 +3,7 @@ package com.beardedlogic.usecase.util
 import net.liftweb.http.Templates
 import net.liftweb.util.{ClearClearable, CssSel}
 import net.liftweb.util.Helpers._
-import xml.NodeSeq
+import xml.{Node, NodeSeq}
 
 case class NonEmptyTemplate(content: NodeSeq) {
 
@@ -13,8 +13,8 @@ case class NonEmptyTemplate(content: NodeSeq) {
 
   def extract(css: String): NonEmptyTemplate = {
     val extractor = s"$css ^^" #> ""
-    val extract = extractor(content)
-    NonEmptyTemplate(extract)
+    val extracted = extractor(content)
+    NonEmptyTemplate(extracted)
   }
 
   def clearClearable = transform(ClearClearable)
@@ -25,12 +25,26 @@ case class NonEmptyTemplate(content: NodeSeq) {
 
   def get = content
 
-  def quickExtract(id: String) = extract("#"+id).removeId.get
+  def quickExtractById(id: String) = extract("#"+id).removeId.get
+
+  def assert(f: NodeSeq => Boolean) =
+    if (f(content)) this else
+      throw new IllegalStateException(s"Template assertion failed.\n\n$content")
+
+  def assertHead(f: Node => Boolean) = assert(c => f(c.head))
+
+  /**
+   * Checked the XML element type of the head node.
+   * @param expected Eg. "form", "div".
+   */
+  def assertHeadType(expected: String) = assertHead(_.label == expected)
+
+  def assertSingleHead() = assert(_.size == 1)
 }
 
 object NonEmptyTemplate {
 
- def load(path: List[String]): NonEmptyTemplate = NonEmptyTemplate(Templates(path).openOr(NodeSeq.Empty)).clearClearable
+  def load(path: List[String]): NonEmptyTemplate = NonEmptyTemplate(Templates(path).openOr(NodeSeq.Empty)).clearClearable
 
   def load(path: String): NonEmptyTemplate = load(path.split('/').toList)
 

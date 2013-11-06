@@ -16,7 +16,7 @@ import util.JsExt.{JsTextTrigger, JqExpr, JsJsonTrigger, JsHtmlTrigger}
 import AppSiteMap.Implicits._
 
 object UseCaseCrudlConsts {
-  val ListItemTemplate = NonEmptyTemplate.load("loggedin/project").quickExtract("template-li")
+  val ListItemTemplate = NonEmptyTemplate.load("loggedin/project").quickExtractById("template-li")
 
   final val TriggerCreated = JsHtmlTrigger("usecase-created")
 

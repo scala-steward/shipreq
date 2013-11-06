@@ -29,12 +29,12 @@ object Renderer {
 
     final val EntirePage = NonEmptyTemplate.load("loggedin/uceditor")
 
-    final val TextField = EntirePage.quickExtract("template-text")
-    final val Step = EntirePage.quickExtract("template-step")
-    final val AddTailStep = EntirePage.quickExtract("template-courses-addTailStep")
+    final val TextField = EntirePage.quickExtractById("template-text")
+    final val Step = EntirePage.quickExtractById("template-step")
+    final val AddTailStep = EntirePage.quickExtractById("template-courses-addTailStep")
 
     private def addStepTemplate = ".steps * " #> Templates.Step
-    private def extractStepTemplate(name: String) = addStepTemplate(EntirePage.quickExtract(name))
+    private def extractStepTemplate(name: String) = addStepTemplate(EntirePage.quickExtractById(name))
     final val NormalCourse = extractStepTemplate("template-courses-n")
     final val AlternateCourses = extractStepTemplate("template-courses-a")
     final val ExceptionCourses = extractStepTemplate("template-courses-e")
