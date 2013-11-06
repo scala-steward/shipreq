@@ -61,8 +61,7 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
     }
 
   def postAuthPage(s: Share): PostAuthPage = {
-    val f = UcFilter.fromJson(s.ucFilterJson)
-    val ucs = loadUcs(s.projectId, f)
+    val ucs = loadUcs(s.projectId, s.ucFilter)
     val h = DocHeader(s.name, s.preface)
     val i = new Input(Some(h), ucs)
     val q = new HtmlPublisher(i)

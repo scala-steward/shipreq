@@ -18,6 +18,8 @@ import Permission.RequestVarPermExt
 object AppSiteMap {
   type PM[T] = Menu.ParamMenuable[T]
 
+  // TODO SiteMap effects have a requested order. Right now they're unenforced.
+
   private implicit class RequestVarNExt[T](val rv: RequestVar[Name[T]]) extends AnyVal {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
@@ -63,6 +65,18 @@ object AppSiteMap {
       }
   )
 
+  val ShareEdit: PM[ShareUrlToken] = (
+    Menu.param[ShareUrlToken]("share-edit", "_", i => Full(i.tag), o => o) / "share" / * / "edit"
+    >> AuthenticationRequired
+    >> PermissionRequired(Permissions.editShare.using(project = RequestVars.Project.some, share = RequestVars.Share.some))
+    >> UseTemplate("loggedin/share-edit")
+    >> UsesNavbar(Navbar.Home, Navbar.CurrentProject, Navbar.StaticText("Edit Share"))
+    >> PerformEffects {
+        val token = Need(ShareEdit.currentValue.get)
+        RequestVars.deriveShareAndProjectFromShareUrlToken(token)
+      }
+  )
+
   val ShareView: PM[ShareUrlToken] = (
     Menu.param[ShareUrlToken]("share-view", "_", i => Full(i.tag), o => o) / "share" / *
     >> UseTemplate("share-view")
@@ -95,7 +109,7 @@ object AppSiteMap {
 
   val AllProdPages = List[ConvertableToMenu](
     Home, Login, Logout, Register1, Register2,
-    Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareView
+    Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
   )
 
   val sitemap = {

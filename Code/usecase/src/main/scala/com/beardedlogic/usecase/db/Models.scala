@@ -109,7 +109,9 @@ case class Share(
   urlToken: ShareUrlToken,
   name: String,
   preface: Option[String],
-  ucFilterJson: Json[UcFilter])
+  ucFilterJson: Json[UcFilter]) {
+  def ucFilter = UcFilter.fromJson(ucFilterJson)
+}
 
 case class ShareSummary(
   id: ShareId,
@@ -117,4 +119,6 @@ case class ShareSummary(
   name: String,
   ucFilterJson: Json[UcFilter],
   viewCount: Long,
-  lastViewedAt: Option[String @@ ISO8601])
+  lastViewedAt: Option[String @@ ISO8601]) {
+  def ucFilter = UcFilter.fromJson(ucFilterJson)
+}

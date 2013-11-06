@@ -4,7 +4,7 @@ package app
 import scalaz.{Name, Need}
 import net.liftweb.common.Logger
 import net.liftweb.http.RequestVar
-import db.{DaoS, UseCaseSummary, Project}
+import db.{Share, DaoS, UseCaseSummary, Project}
 import DI.DaoProvider
 import lib.Types._
 import lib.SnippetHelpers._
@@ -24,6 +24,14 @@ object RequestVars extends Logger {
   object Project extends RequestVar[Name[Project]](fail("SoleProject")) {
     def deriveFromProjectId(): Unit = Project.set(requireDbData("Project")(_.findProject(ProjectId.get.value)))
     def deriveFromUseCaseId(): Unit = Project.set(requireDbData("Project")(_.findProjectByUc(UseCaseId.get.value)))
+  }
+
+  object ShareId extends RequestVar[Name[ShareId]](fail("ShareId")) {
+    def deriveFromShare(): Unit = ShareId.set(Need(Share.get.value.id))
+  }
+
+  object Share extends RequestVar[Name[Share]](fail("SoleShare")) {
+    def deriveFromShareId(): Unit = Share.set(requireDbData("Share")(_.findShare(ShareId.get.value)))
   }
 
   object UseCaseId extends RequestVar[Name[UseCaseIdentId]](fail("SoleUseCaseId"))
@@ -48,6 +56,14 @@ object RequestVars extends Logger {
     redirectHome
   }
 
-  private def requireDbData[T](name: String)(f: DaoS => Option[T]): Need[T] =
+  private def requireDbData[T](name: String)(f: => DaoS => Option[T]): Need[T] =
     Need(DaoProvider.withSession(f) getOrElse notFound(name))
+
+  def deriveShareAndProjectFromShareUrlToken(token: Name[ShareUrlToken]): Unit = {
+    val both = requireDbData("Share & Project")(_ findShareAndProject token.value)
+    Share set Need(both.value._1)
+    Project set Need(both.value._2)
+    ProjectId.deriveFromProject()
+    ShareId.deriveFromShare()
+  }
 }
