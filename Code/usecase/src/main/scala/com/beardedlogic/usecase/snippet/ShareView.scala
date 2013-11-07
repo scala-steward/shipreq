@@ -86,7 +86,7 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
         "#share-view-none ^^" #> "" andThen ".header" #> h
 
       case ShowUcs(o) =>
-        "#share-view ^^" #> "" andThen ".ucs-published *" #> o
+        "#share-view ^^" #> "" andThen "#X" #> o
     }
 
   def renderPasswordForm = {
