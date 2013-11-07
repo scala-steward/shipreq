@@ -53,4 +53,5 @@ UNTESTED
 * [U] ShareCreate
 * [U] ShareEdit
 * [U] Password changing: ShareList, DynModal
+* [U] Share deletion (inc DynModal)
 * [U] project/ActivateTab

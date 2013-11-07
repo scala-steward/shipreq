@@ -13,9 +13,15 @@ import lib.SingleOpStatefulSnippet
 import lib.Types._
 import security.PasswordAndSalt
 import snippet.DynModal
-import util.ConciseIntListDesc
+import util.{NonEmptyTemplate, ConciseIntListDesc}
 import util.HtmlTransformExt.ajaxOnClick
+import util.JsExt._
 import AppSiteMap.Implicits._
+import ShareListConsts._
+
+object ShareListConsts {
+  val DeleteModalBody = NonEmptyTemplate.load("templates-hidden/modal_body-delete_share").get
+}
 
 /**
  * Displays a list of a user's shares.
@@ -43,20 +49,26 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
   def renderShare(s: ShareSummary) = {
     val absUrl = AppSiteMap.ShareView.absoluteUrl(s.urlToken)
     val relUrl = AppSiteMap.ShareView.relativeUrl(s.urlToken)
-    ".l" #> (
-      ".edit [href]" #> AppSiteMap.ShareEdit.relativeUrl(s.urlToken)
-      & ".chgpwd" #> ajaxOnClick(() => DynModal.passwordChanger("Change Share Password", onPasswordChange(s)))
-    ) &
-    ".r" #> (
-      ".name a *" #> s.name
-      & ".name a [href]" #> relUrl
-      & ".url :text [value]" #> absUrl
-      & ".url .copy [data-clipboard-text]" #> absUrl
-      & ".ucdesc *" #> descMatchingUcs(s.ucFilter)
-      & ".views .v" #> descViewCount(s.viewCount)
-      & ".views .r" #> renderViewRecency(s.lastViewedAt)
+    (
+      "li [id+]" #> shareLiId(s)
+      & ".l" #> (
+        ".edit [href]" #> AppSiteMap.ShareEdit.relativeUrl(s.urlToken)
+        & ".chgpwd" #> ajaxOnClick(() => DynModal.passwordChanger("Change Share Password")(onPasswordChange(s)))
+        & ".delete" #> ajaxOnClick(() => DynModal.confirmDanger(DeleteModalBody, "Delete Share")(onDelete(s)))
+      )
+      & ".r" #> (
+        ".name a *" #> s.name
+        & ".name a [href]" #> relUrl
+        & ".url :text [value]" #> absUrl
+        & ".url .copy [data-clipboard-text]" #> absUrl
+        & ".ucdesc *" #> descMatchingUcs(s.ucFilter)
+        & ".views .v" #> descViewCount(s.viewCount)
+        & ".views .r" #> renderViewRecency(s.lastViewedAt)
+      )
     )
   }
+
+  def shareLiId(s: ShareSummary): String = "s-" + s.urlToken
 
   def descMatchingUcs(f: UcFilter): String = {
     val m = UcFilter.apply(f)(ucs)
@@ -86,5 +98,10 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
     val ps = PasswordAndSalt.createWithRandomSalt(newPassword)
     daoProvider.withSession(_.updateSharePassword(s, ps))
     jsShowNotice("Password updated successfully.")
+  }
+
+  def onDelete(s: ShareSummary): JsCmd = {
+    daoProvider.withSession(_ deleteShare s)
+    FadeOutThen(JqId(shareLiId(s)), Slow)(_ ~> JqRemove & jsShowNotice("Share deleted successfully."))
   }
 }

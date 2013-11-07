@@ -218,6 +218,9 @@ sealed trait DaoS {
   def updateSharePassword(id: ShareId, ps: PasswordAndSalt): Unit =
     UpdateSharePassword.execute(ps, id)
 
+  def deleteShare(id: ShareId): Unit =
+    DeleteShare.execute(id)
+
   def findShare(id: ShareId): Option[Share] =
     SelectShare.firstOption(id)
 

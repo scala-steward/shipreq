@@ -29,6 +29,7 @@ html, body { height: 100%; }
 
 #dynmodal.password-change .modal-dialog { width: 410px; }
 #dynmodal.password-change .modal-dialog .submit { text-align: right; }
+#dynmodal.confirm-danger .modal-footer { text-align: right; }
 
 #project-list { margin-top: 3em; }
 #project-list li { margin-top: 1.8em; }

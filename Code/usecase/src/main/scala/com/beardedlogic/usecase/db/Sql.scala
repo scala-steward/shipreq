@@ -41,8 +41,9 @@ private[db] final object Sql {
     }
   }
 
-  private[this] case class Update() extends scala.annotation.StaticAnnotation
   private[this] case class Insert() extends scala.annotation.StaticAnnotation
+  private[this] case class Update() extends scala.annotation.StaticAnnotation
+  private[this] case class Delete() extends scala.annotation.StaticAnnotation
 
   private def idsToSql(ids: NonEmptyList[JLong]): String = ids.map(_.toString).intercalate(",")
 
@@ -214,6 +215,8 @@ private[db] final object Sql {
 
   @Update val UpdateSharePassword = update[(PasswordAndSalt, ShareId)](
     "UPDATE share SET password=?, password_salt=?, password_changed_at=NOW() WHERE id=?")
+
+  @Delete val DeleteShare = update[ShareId]("DELETE FROM share WHERE id=?")
 
   @Insert val LogShareView = update[(ShareId, Option[String])]("INSERT INTO share_view_log(share_id,ip) VALUES(?,?)")
 
