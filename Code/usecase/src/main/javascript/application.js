@@ -152,7 +152,7 @@ $(document).on('dynmodal', function (event, data) {
             $(this).remove();
         })
         .on('shown.bs.modal', function () {
-            $('#dynmodal-password1').focus();
+            $(this).find('.focus').focus();
         })
         .modal('show');
 });

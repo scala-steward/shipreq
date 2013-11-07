@@ -15,7 +15,7 @@ import com.beardedlogic.usecase.util.NonEmptyTemplate
  */
 object DynModal extends StaticSnippetHelpers {
 
-  val DialogTemplate = NonEmptyTemplate.load("templates-hidden/change_password_dialog").get
+  val ChangePasswordTemplate = NonEmptyTemplate.load("templates-hidden/dynmodal-change_password").get
 
   implicit val innerNoticesCont: NoticeContainerExp = "#dynmodal-notices".tag
   implicit val innerErrorAlertId: ErrorAlertId = "d--e".tag
@@ -47,9 +47,9 @@ object DynModal extends StaticSnippetHelpers {
       ".modal-title *" #> title
       & "#dynmodal-password1" #> SHtml.onSubmit(password1Input = _)
       & "#dynmodal-password2" #> SHtml.onSubmit(password2Input = _)
-      & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
+      & ":submit" #> ajaxSubmitOnClick(onSubmit)
     )
-    val html = transform(DialogTemplate)
+    val html = transform(ChangePasswordTemplate)
 
     Trigger.trigger(html)
   }
