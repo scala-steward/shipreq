@@ -10,7 +10,7 @@ import lib.Types._
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   def V = Validator
 
-  def testV(v: Validator[String, String], examples: TableFor2[Option[String], String]) {
+  def testV(v: Validator[String, String, String], examples: TableFor2[Option[String], String]) {
     forAll(examples) {
       (failureFrag, input) =>
         v.validate(input.tag[InputCorrected]) match {
