@@ -22,9 +22,11 @@ import ScalazSubset._
 import Types._
 
 object SnippetHelpers extends StaticSnippetHelpers {
+  sealed trait NoticeContainerExpTag extends TypeTag[String]
   sealed trait ErrorAlertIdTag extends TypeTag[String]
 
-  final val DefaultAjaxErrorId: ErrorAlertId = "x--e".tag
+  final val DefaultNoticesContainerExp = "#notices".tag[NoticeContainerExpTag]
+  final val DefaultAjaxErrorId = "x--e".tag[ErrorAlertIdTag]
 
   final val JqExprJsonSerializer: Serializer[JqExpr] = new Serializer[JqExpr] {
     import net.liftweb.json._
@@ -37,7 +39,7 @@ object SnippetHelpers extends StaticSnippetHelpers {
   final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer
 }
 
-import SnippetHelpers.{ErrorAlertIdTag, DefaultAjaxErrorId, DefaultJsonFormat}
+import SnippetHelpers.{ErrorAlertIdTag, NoticeContainerExpTag}
 
 // =====================================================================================================================
 
@@ -45,6 +47,7 @@ import SnippetHelpers.{ErrorAlertIdTag, DefaultAjaxErrorId, DefaultJsonFormat}
  * Snippet helpers without Misc, DI and implicit vals/defs.
  */
 trait StaticSnippetHelpers extends Logger {
+  final type NoticeContainerExp = String @@ NoticeContainerExpTag
   final type ErrorAlertId = String @@ ErrorAlertIdTag
 
   @inline implicit final def jsExpToJsCmd(in: JsExp): JsCmd = in.cmd
@@ -90,8 +93,8 @@ trait StaticSnippetHelpers extends Logger {
   // -------------------------------------------------------------------------------------------------------------------
   // Error propagation and Alerts
 
-  @inline private def appendAlert(alert: NodeSeq): JsCmd =
-    JqExpr(alert) ~> JqAppendTo("#notices") ~> JqHighlight()
+  @inline private def appendAlert(alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
+    JqExpr(alert) ~> JqAppendTo(nc) ~> JqHighlight()
 
   private def applyIdToAlert(id: String, alert: NodeSeq): NodeSeq =
     if (id eq null) alert
@@ -101,37 +104,37 @@ trait StaticSnippetHelpers extends Logger {
       case _ => warn("Don't know how to add id to: " + alert.getClass); alert
     }
 
-  @inline private def jsClearAndShowError(alert: => NodeSeq)(implicit id: ErrorAlertId): JsCmd =
+  @inline private def jsClearAndShowError(alert: => NodeSeq)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     jsClearError |+| appendAlert(applyIdToAlert(id, alert))
 
   def jsClearError(implicit id: ErrorAlertId): JsCmd =
     JqId(id) ~> JqRemove
 
-  def jsShowError(errMsg: NodeSeq)(implicit id: ErrorAlertId): JsCmd =
+  def jsShowError(errMsg: NodeSeq)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     jsClearAndShowError(Notices.renderSingle(AlertTypeError, errMsg))
 
-  def jsShowFailure(vf: VFailure)(implicit id: ErrorAlertId): JsCmd =
+  def jsShowFailure(vf: VFailure)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     jsShowError(vf.toHtml)
 
-  def jsShowErrors(errMsgs: Seq[NodeSeq])(implicit id: ErrorAlertId): JsCmd = errMsgs match {
+  def jsShowErrors(errMsgs: Seq[NodeSeq])(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd = errMsgs match {
     case Nil                => jsClearError
     case singleError :: Nil => jsShowError(singleError)
     case _                  => jsClearAndShowError(Notices.renderMsgs(AlertTypeError, errMsgs))
   }
 
-  def jsPossibleError[T](box: Box[T])(successJs: T => JsCmd, failureJs: => JsCmd = Noop)(implicit id: ErrorAlertId): JsCmd =
+  def jsPossibleError[T](box: Box[T])(successJs: T => JsCmd, failureJs: => JsCmd = Noop)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     box match {
       case Full(v)            => jsClearError                       |+| successJs(v)
       case Empty              => jsShowError(ErrorMessages.Generic) |+| failureJs
       case FailBox(err, _, _) => jsShowError(err)                   |+| failureJs
     }
 
-  def jsShowNotice(content: NodeSeq, alertId: String = null): JsCmd =
+  def jsShowNotice(content: NodeSeq, alertId: String = null)(implicit nc: NoticeContainerExp): JsCmd =
     appendAlert(
       applyIdToAlert(alertId,
         Notices.renderSingle(AlertTypeSuccess, content)))
 
-  def ifValid[T](v: ValidationResultU[T])(f: T => JsCmd)(implicit id: ErrorAlertId): JsCmd =
+  def ifValid[T](v: ValidationResultU[T])(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     v match {
       case scalaz.Failure(f) => jsShowFailure(f)
       case scalaz.Success(s) => f(s)
@@ -146,9 +149,11 @@ trait StaticSnippetHelpers extends Logger {
  * @since 11/06/2013
  */
 trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger {
+  import SnippetHelpers.{DefaultNoticesContainerExp, DefaultAjaxErrorId, DefaultJsonFormat}
 
-  protected implicit lazy val jsonFormats = DefaultJsonFormat
+  protected implicit def noticesContainerExp = DefaultNoticesContainerExp
   protected implicit def errorAlertId = DefaultAjaxErrorId
+  protected implicit lazy val jsonFormats = DefaultJsonFormat
 
   def toJson[T <: AnyRef](data: T): Json[T] = Serialization.write(data).tag[IsJsonFor[T]]
 
