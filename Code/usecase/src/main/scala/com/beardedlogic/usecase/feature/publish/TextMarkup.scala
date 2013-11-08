@@ -40,6 +40,7 @@ object TextMarkup {
 
   val ParseLines = "(?s)^(.*)\n([^\n]*)$".r
   val ParseListItem = "^\\* +(.*)$".r
+  val ParseListItemCont = "^ {2,}(.*)$".r
   val TwoBlankLines = BlankLine :: BlankLine :: Nil
 
   /**
@@ -102,17 +103,52 @@ object TextMarkup {
         // Check if start of new LI
         toLI(line) match {
           case newLi @ \/-(_) => acc :+ newLi
+          case nonLi @ -\/(_) =>
 
-          // Check if plain-text immediately follows an LI
-          case nonLi@ -\/(_) =>
+            // Check if prev is LI
             acc.lastOption match {
-              case Some(\/-(prevLi))   => acc.init :+ \/-(LI(prevLi.content :+ line)) // Note: Using list append
               case Some(-\/(_)) | None => acc :+ nonLi
+              case Some(\/-(prevLi)) =>
+
+                // Check if line starts with indent
+                toLIcont(line) match {
+                  case Some(liCont) =>
+                    acc.init :+ \/-(LI(liCont :: prevLi.content))
+                  case None =>
+                    acc :+ nonLi
+                }
             }
+
         }
 
-      case BlankLine | UL(_) => acc :+ -\/(t)
+      case BlankLine =>
+        // Check if prev is LI
+        acc.lastOption match {
+          case Some(-\/(_)) | None => acc :+ -\/(BlankLine)
+          case Some(\/-(prevLi))   => acc.init :+ \/-(LI(BlankLine :: prevLi.content))
+        }
+
+      case UL(_) => acc :+ -\/(t)
     }
+
+  def toLIcont(line: NonBlankLine): Option[MarkupToken] = {
+    line.content.head match {
+      case PlainText(lineStartText) =>
+        lineStartText match {
+          case ParseListItemCont(txt) =>
+
+            // Matched
+            val newLine = if (txt.isEmpty)
+              Line(line.content.tail)
+            else
+              NonBlankLine(nel(PlainText(txt), line.content.tail))
+            Some(newLine)
+
+          case _ => None // doesn't match regex
+        }
+      case _ => None // Not a PlainText
+    }
+  }
 
   def toLI(line: NonBlankLine): MarkupToken \/ LI = {
     line.content.head match {
@@ -150,12 +186,13 @@ object TextMarkup {
         xs(i) match {
           case -\/(BlankLine) => go(i, acc, blanks + 1)
           case -\/(t)         => go(i, t :: addBlanks(acc, blanks), 0)
-          case \/-(li) =>
+          case \/-(liR) =>
+            val li = LI(liR.content.dropWhile(_ == BlankLine).reverse)
             acc match {
               case UL(lis) :: t => go(i, UL(li <:: lis) :: t, 0)
               case _ =>
-                val b = if (blanks == 0) 0 else blanks - 1
-                go(i, UL(NEL(li)) :: addBlanks(acc, b), 0)
+                val droppedBlanks = (liR.content.length - li.content.length)
+                go(i, UL(NEL(li)) :: addBlanks(acc, blanks + droppedBlanks), 0)
             }
         }
     }

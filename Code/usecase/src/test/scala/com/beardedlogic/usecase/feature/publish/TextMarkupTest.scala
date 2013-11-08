@@ -118,24 +118,38 @@ class TextMarkupTest extends FunSpec with Matchers with PropertyChecks {
         ,("* Hehe\n\n\n* middle\n\n\n* Great", ul(li("Hehe"), li("middle"), li("Great"))))
     }
 
-    it("should allow CRs within LIs") {
-      testAll(("* Hehe\nCont", ul(li("Hehe", "Cont")))
-        ,("* Hehe\nCont\n* Great", ul(li("Hehe", "Cont"), li("Great")))
-        ,("* Hehe\nCont\nMore\n* Great\nYeah", ul(li("Hehe", "Cont", "More"), li("Great", "Yeah")))
+    it("should allow indented LI continuations") {
+      testAll(("* Hehe\n  Cont", ul(li("Hehe", "Cont")))
+        ,("* Hehe\n  Cont\n* Great", ul(li("Hehe", "Cont"), li("Great")))
+        ,("* Hehe\n  Cont\n  More\n* Great\n  Yeah", ul(li("Hehe", "Cont", "More"), li("Great", "Yeah")))
       )
     }
 
-    it("should consider blank lines the end of LIs") {
-      testAll(("* Hehe\n\nTEXT", ul(li("Hehe")) :: Line("TEXT"))
-        ,("* Hehe\n\nTEXT\n* Great", ul(li("Hehe")) :: Line("TEXT") :: ul(li("Great")))
-        ,("* Hehe\n\nTEXT\n\nMore\n\n* Great\nYeaH", ul(li("Hehe")) :: Line("TEXT") :: BlankLine :: Line("More") :: BlankLine :: ul(li("Great", "YeaH")))
+    it("should trim indent from LI continuations") {
+      test1("* Hehe\n        Cont", ul(li("Hehe", "Cont")))
+    }
+
+    it("should allow blank lines in LIs") {
+      testAll(("* Hehe\n\n  Cont", ul(li("Hehe", BlankLine, "Cont")))
+        ,("* Hehe\n  \n  Cont", ul(li("Hehe", BlankLine, "Cont")))
+        ,("* Hehe\n  \n\n  Cont", ul(li("Hehe", BlankLine, BlankLine, "Cont")))
+        ,("* Hehe\n  \n\n  Cont\n* cool", ul(li("Hehe", BlankLine, BlankLine, "Cont"), li("cool")))
       )
     }
 
-    it("should preserve blanks line between LIs and normal text") {
+    it("should consider end a UL when a non-LI is encountered") {
+      testAll(("* Hehe\nTEXT", ul(li("Hehe")) :: Line("TEXT"))
+        ,("* Hehe\nTEXT\n* Great", ul(li("Hehe")) :: Line("TEXT") :: ul(li("Great")))
+        ,("* Hehe\n\nTEXT", ul(li("Hehe")) :: BlankLine :: Line("TEXT"))
+        ,("* Hehe\n\nTEXT\n* Great", ul(li("Hehe")) ::BlankLine ::  Line("TEXT") :: ul(li("Great")))
+        ,("* Hehe\n\nTEXT\n\nMore\n\n* Great\n  YeaH", ul(li("Hehe")) :: BlankLine :: Line("TEXT") :: BlankLine :: Line("More") :: BlankLine :: ul(li("Great", "YeaH")))
+      )
+    }
+
+    it("should preserve blank line around ULs") {
       testAll(
-        ("* Hehe\n\n\nTEXT", ul(li("Hehe")) :: BlankLine :: Line("TEXT"))
-        ,("* Hehe\n\n\n\nTEXT", ul(li("Hehe")) :: BlankLine :: BlankLine :: Line("TEXT"))
+        ("* Hehe\n\nTEXT", ul(li("Hehe")) :: BlankLine :: Line("TEXT"))
+        ,("* Hehe\n\n\nTEXT", ul(li("Hehe")) :: BlankLine :: BlankLine :: Line("TEXT"))
         ,("TEXT\n\n* Hehe", Line("TEXT") :: BlankLine :: ul(li("Hehe")))
         ,("TEXT\n\n\n* Hehe", Line("TEXT") :: BlankLine :: BlankLine :: ul(li("Hehe")))
       )
