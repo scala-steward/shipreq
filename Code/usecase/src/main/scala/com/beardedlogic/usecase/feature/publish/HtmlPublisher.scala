@@ -70,7 +70,7 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
     case UL(lis)             => <ul>{lis foldMap li}</ul>
   }
 
-  def li(li: LI): X = <li>{li.content foldMap markupToken}</li>
+  def li(li: LI): X = <li>{markupTokens(li.content)}</li>
 
   override def betweenMarkupTokens(a: MarkupToken, b: MarkupToken): X =
     a match {

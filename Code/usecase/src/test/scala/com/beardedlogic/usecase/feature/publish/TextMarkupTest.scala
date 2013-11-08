@@ -109,9 +109,35 @@ class TextMarkupTest extends FunSpec with Matchers with PropertyChecks {
       testAll(
         ("* Hehe\n* Great", ul(li("Hehe"), li("Great")))
         , ("* Hehe\n* middle\n* Great", ul(li("Hehe"), li("middle"), li("Great")))
-        , ("* Hehe\nTEXT\n* Great", ul(li("Hehe")) :: Line("TEXT") :: ul(li("Great")))
-        , ("* Hehe\n\n* Great", ul(li("Hehe")) :: BlankLine :: ul(li("Great")))
-        , ("* Hehe\n* good\nTEXT\n\n* Great", ul(li("Hehe"), li("good")) :: Line("TEXT") :: BlankLine :: ul(li("Great")))
+      )
+    }
+
+    it("should gobble blank lines between adjacent LIs") {
+      testAll(
+        ("* Hehe\n\n* Great", ul(li("Hehe"), li("Great")))
+        ,("* Hehe\n\n\n* middle\n\n\n* Great", ul(li("Hehe"), li("middle"), li("Great"))))
+    }
+
+    it("should allow CRs within LIs") {
+      testAll(("* Hehe\nCont", ul(li("Hehe", "Cont")))
+        ,("* Hehe\nCont\n* Great", ul(li("Hehe", "Cont"), li("Great")))
+        ,("* Hehe\nCont\nMore\n* Great\nYeah", ul(li("Hehe", "Cont", "More"), li("Great", "Yeah")))
+      )
+    }
+
+    it("should consider blank lines the end of LIs") {
+      testAll(("* Hehe\n\nTEXT", ul(li("Hehe")) :: Line("TEXT"))
+        ,("* Hehe\n\nTEXT\n* Great", ul(li("Hehe")) :: Line("TEXT") :: ul(li("Great")))
+        ,("* Hehe\n\nTEXT\n\nMore\n\n* Great\nYeaH", ul(li("Hehe")) :: Line("TEXT") :: BlankLine :: Line("More") :: BlankLine :: ul(li("Great", "YeaH")))
+      )
+    }
+
+    it("should preserve blanks line between LIs and normal text") {
+      testAll(
+        ("* Hehe\n\n\nTEXT", ul(li("Hehe")) :: BlankLine :: Line("TEXT"))
+        ,("* Hehe\n\n\n\nTEXT", ul(li("Hehe")) :: BlankLine :: BlankLine :: Line("TEXT"))
+        ,("TEXT\n\n* Hehe", Line("TEXT") :: BlankLine :: ul(li("Hehe")))
+        ,("TEXT\n\n\n* Hehe", Line("TEXT") :: BlankLine :: BlankLine :: ul(li("Hehe")))
       )
     }
   }

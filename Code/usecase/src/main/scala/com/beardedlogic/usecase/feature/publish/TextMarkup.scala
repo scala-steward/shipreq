@@ -92,31 +92,74 @@ object TextMarkup {
    * Extracts ULs from text lines.
    */
   def markupUL(t: List[MarkupToken]): List[MarkupToken] =
-    t.map(toLi).foldRight(List.empty[MarkupToken])(foldLis)
+    foldLIsIntoULs(
+      t.foldLeft(Vector.empty[MarkupToken \/ LI])(foldIntoLIs))
 
-  private val toLi: MarkupToken => MarkupToken \/ LI = {
-    case l@NonBlankLine(lineContent) =>
-      lineContent.head match {
-        case PlainText(lineStartText) =>
-          lineStartText match {
-            case ParseListItem(liStartText) =>
-              val newLine =
-                if (liStartText.isEmpty) Line(lineContent.tail)
-                else NonBlankLine(nel(PlainText(liStartText), lineContent.tail))
-              \/-(LI(newLine :: Nil))
-            case _ => -\/(l)
-          }
-        case _ => -\/(l)
-      }
-    case t@_ => -\/(t)
+  private def foldIntoLIs(acc: Vector[MarkupToken \/ LI], t: MarkupToken): Vector[MarkupToken \/ LI] =
+    t match {
+      case line@ NonBlankLine(_) =>
+
+        // Check if start of new LI
+        toLI(line) match {
+          case newLi @ \/-(_) => acc :+ newLi
+
+          // Check if plain-text immediately follows an LI
+          case nonLi@ -\/(_) =>
+            acc.lastOption match {
+              case Some(\/-(prevLi))   => acc.init :+ \/-(LI(prevLi.content :+ line)) // Note: Using list append
+              case Some(-\/(_)) | None => acc :+ nonLi
+            }
+        }
+
+      case BlankLine | UL(_) => acc :+ -\/(t)
+    }
+
+  def toLI(line: NonBlankLine): MarkupToken \/ LI = {
+    line.content.head match {
+      case PlainText(lineStartText) =>
+        lineStartText match {
+          case ParseListItem(liStartText) =>
+
+            // Matched
+            val newLine = if (liStartText.isEmpty)
+                Line(line.content.tail)
+              else
+                NonBlankLine(nel(PlainText(liStartText), line.content.tail))
+            \/-(LI(newLine :: Nil))
+
+          case _ => -\/(line) // doesn't match regex
+        }
+      case _ => -\/(line) // Not a PlainText
+    }
   }
 
-  private val foldLis: (MarkupToken \/ LI, List[MarkupToken]) => List[MarkupToken] =
-    (e, acc) => e match {
-      case -\/(mt) => mt :: acc
-      case \/-(li) => acc match {
-        case UL(lis) :: t => UL(li <:: lis) :: t
-        case _            => UL(NEL(li)) :: acc
-      }
+  private def foldLIsIntoULs(xs: Vector[MarkupToken \/ LI]): List[MarkupToken] = {
+    def addBlanks(acc: List[MarkupToken], blanks: Int): List[MarkupToken] = {
+      var a = acc
+      var b = blanks
+      while (b != 0) {a = BlankLine :: a; b -= 1}
+      a
     }
+
+    @tailrec
+    def go(ii: Int, acc: List[MarkupToken], blanks: Int): List[MarkupToken] = {
+      val i = ii - 1
+      if (i == -1)
+        acc
+      else
+        xs(i) match {
+          case -\/(BlankLine) => go(i, acc, blanks + 1)
+          case -\/(t)         => go(i, t :: addBlanks(acc, blanks), 0)
+          case \/-(li) =>
+            acc match {
+              case UL(lis) :: t => go(i, UL(li <:: lis) :: t, 0)
+              case _ =>
+                val b = if (blanks == 0) 0 else blanks - 1
+                go(i, UL(NEL(li)) :: addBlanks(acc, b), 0)
+            }
+        }
+    }
+
+    go(xs.length, List.empty, 0)
+  }
 }
