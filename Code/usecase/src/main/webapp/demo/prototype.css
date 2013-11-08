@@ -44,7 +44,9 @@
 .shareL td.l .dropdown-menu * {text-align:left; padding-right:0; padding-top:0.6ex}
 .shareL td.r {vertical-align:top; _background:#fef}
 
-#page-presmode nav {margin-top:6ex}
+#page-presmode .docwide-last-updated { text-align: right; margin-top:2.2em; font-size:80%; }
+#page-presmode .docwide-last-updated, #page-presmode .docwide-last-updated * { color:#777 !important; _font-style: italic; }
+#page-presmode nav {margin-top:4ex}
 #page-presmode nav ol {margin-left:1ex}
 #page-presmode nav a {font-size:110%; line-height:1.6em}
 #page-presmode main {margin-top:4em}
@@ -104,3 +106,5 @@ button.active .when-active {display:none}
 #dynamic-modal .submit {
     text-align: right;
 }
+
+

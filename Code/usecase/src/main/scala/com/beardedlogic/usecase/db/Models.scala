@@ -63,7 +63,7 @@ case class UseCaseSummary(
 
 case class UseCaseIdent(identId: UseCaseIdentId, number: UseCaseNumber, projectId: ProjectId)
 
-case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: String @@ ISO8601)
+case class UseCaseRev(ident: UseCaseIdent, rev: Short, id: UseCaseRevId, header: UseCaseHeader, createdAt: DateTime)
   extends BasicUseCaseInfo {
   @inline final def projectId = ident.projectId
   @inline final def identId = ident.identId

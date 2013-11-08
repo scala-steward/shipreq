@@ -32,6 +32,9 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   override def docHeaderTitle(t: String) = <h1>{t}</h1>
   override def docHeaderPreface(p: X) = <p>{p}</p>
 
+  override def docLastUpdated(t: String @@ ISO8601) =
+    <p class="last-updated">Last updated: <time class="showdatetime" datetime={t}></time></p>
+
   override def tocSurround(entries: X) =
     <nav>
       <h2>Table of Contents</h2>

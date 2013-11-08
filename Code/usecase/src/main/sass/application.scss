@@ -48,6 +48,12 @@ abbr.timeago[title] { border-bottom: none !important }
 
 [data-clipboard-text], [data-clipboard-target] {cursor:pointer}
 
+time.showdate, time.showdatetime {
+  border-bottom: dotted #aaa 1px;
+  //box-sizing: border-box;
+  cursor: help;
+}
+
 // =====================================================================================================================
 // Layout
 // Taken from twitter.github.io/bootstrap/examples/sticky-footer.html
@@ -218,14 +224,27 @@ html, body { height: 100% } // Cannot have any padding or margin here
 
 .ucs-published {
   color:#222;
-  margin: 0 auto 0 auto;
+  margin: 0.8em auto 0 auto;
   padding: 2ex 6ex 6ex 6ex;
   max-width: 144ex;
   h2,h3 {color:#000}
 
   & > header {
-    margin-bottom:3em;
-    h1 { font-weight: bold; }
+    //margin-bottom:3em;
+    h1 { margin-top:0; font-weight: bold; }
+  }
+
+  & > .last-updated {
+    margin-top: 1.7em;
+    padding-bottom: 0.8em;
+    text-align: right;
+    font-size: 80%;
+    &, * { color:#666 !important; }
+
+    &:first-child {
+      // When there is no header above it, ie. on the read-own-ucs page, but not the share-view page
+      float:right;
+    }
   }
 
   nav {
@@ -240,6 +259,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
   }
 
   main {
+    clear: both;
     margin-top:5em;
     article + article {margin-top:8em}
 
@@ -263,7 +283,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
       tr.lastupdated {
         margin-top:0 !important;
         border-top:none !important;
-        * { padding-bottom:0.3em !important;}
+        th { padding-bottom:0.3em !important;}
       }
       tr.rev, tr.lastupdated {
         &,* {

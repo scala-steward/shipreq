@@ -7,7 +7,7 @@ import com.beardedlogic.usecase.app.DI
 import com.beardedlogic.usecase.db.{UserDescriptor, UseCaseIdent, UseCaseRev, Project, Share}
 import com.beardedlogic.usecase.feature.uc.persist.UseCaseSaveCheckpoint
 import com.beardedlogic.usecase.feature.{UcFilters, UcFilter}
-import com.beardedlogic.usecase.lib.{LogShareView, StatLogger, Misc}
+import com.beardedlogic.usecase.lib.{LogShareView, StatLogger}
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.security.PasswordAndSalt
 import com.beardedlogic.usecase.test.{TestData, TestHelpers, MockDaoProvider}
@@ -25,7 +25,7 @@ class ShareViewTest extends FunSpec with TestHelpers with TestData {
   val PS = PasswordAndSalt.createWithRandomSalt("correct")
   val cp = {
     val uc = MockUc4.UC
-    val ucr = UseCaseRev(UseCaseIdent(8.tag, (2: Short).tag, projectId), 3, 9.tag, uc.header, Misc.currentTimeAsIso8601Str)
+    val ucr = UseCaseRev(UseCaseIdent(8.tag, (2: Short).tag, projectId), 3, 9.tag, uc.header, DateTime.now)
     UseCaseSaveCheckpoint(uc, ucr, null, null)
   }
 

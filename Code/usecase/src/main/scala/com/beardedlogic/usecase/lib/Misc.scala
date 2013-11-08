@@ -1,36 +1,30 @@
 package com.beardedlogic.usecase.lib
 
-import java.util.{Date, TimeZone}
-import java.text.SimpleDateFormat
 import net.liftweb.common.Logger
 import net.liftweb.http.S
 import org.joda.time.{DateTimeUtils, Period, DateTime}
+import org.joda.time.format.ISODateTimeFormat
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.Random
-import scalaz.{\/-, -\/, \/, Cord}
+import scalaz.Cord
 
 import com.beardedlogic.usecase.app.AppConfig
 import Types._
 import AppConfig._
 
-object Misc extends Misc with Logger {
+final object Misc extends Misc with Logger {
 
-  final val RNG = new Random()
+  val RNG = new Random()
 
-  final val SingleSpace = Cord(" ")
+  val SingleSpace = Cord(" ")
 
-  final val WhitespaceRegex = "\\s+".r
-  final val NormaliseCRLFs = "\r\n?".r
+  val WhitespaceRegex = "\\s+".r
+  val NormaliseCRLFs = "\r\n?".r
 
-  final val NoEffect1: (Any => Unit) = _ => ()
+  val NoEffect1: (Any => Unit) = _ => ()
 
-  private final val ISO8601Format = {
-    val tz = TimeZone.getTimeZone("UTC")
-    val df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    df.setTimeZone(tz)
-    df
-  }
+  val Iso8601Format = ISODateTimeFormat.dateTime.withZoneUTC
 
   implicit class AnyExt[V](val v: V) extends AnyVal {
     def modIf[VV >: V](cond: Boolean)(mod: V => VV): VV = if (cond) mod(v) else v
@@ -43,6 +37,7 @@ object Misc extends Misc with Logger {
   implicit class DateTimeExt(val t: DateTime) extends AnyVal {
     def >(timeToLive: Period) = isExpired_?(t, timeToLive)
     def <=(timeToLive: Period) = ! >(timeToLive)
+    def toIso8601Str: String @@ ISO8601 = Misc.toIso8601Str(t)
   }
 }
 
@@ -61,7 +56,11 @@ trait Misc {
     // println("X-Forwarded-For: " + req.header("X-Forwarded-For"))
     )
 
-  def currentTimeAsIso8601Str: String @@ ISO8601 = ISO8601Format.synchronized(ISO8601Format.format(new Date)).tag[ISO8601]
+  final def currentTimeAsIso8601Str: String @@ ISO8601 =
+    Iso8601Format.print(DateTimeUtils.currentTimeMillis).tag
+
+  final def toIso8601Str(d: DateTime): String @@ ISO8601 =
+    Iso8601Format.print(d).tag
 
   def isConfirmationTokenExpired_?(dateIssued: DateTime): Boolean = TokenLifespan.ago.isAfter(dateIssued)
 

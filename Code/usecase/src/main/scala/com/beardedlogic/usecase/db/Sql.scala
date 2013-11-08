@@ -135,7 +135,8 @@ private[db] final object Sql {
   // ###################################################################################################################
   // Use Case
 
-  private val ucrev_* = s"r.ident_id, u.number, u.project_id, r.rev, r.id, r.title, to_iso8601_str(r.created_at)"
+  private val ucrev_* = s"r.ident_id, u.number, u.project_id, r.rev, r.id, r.title, r.created_at"
+  //private val ucrevS_* = ucrev_*.replaceAll("((?:[a-z]+\\.)created_at)", "to_iso8601_str($1)")
 
   @Insert val InsertUseCaseIdent = {
     val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase where project_id=?)"
@@ -146,8 +147,8 @@ private[db] final object Sql {
   @Insert val InsertUseCaseIdentForceNum = query[(ProjectId, UseCaseNumber), UseCaseIdentId](
     "INSERT INTO usecase(project_id,number) VALUES(?,?) RETURNING id")
 
-  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, String), (UseCaseRevId, String @@ ISO8601)](
-    "INSERT INTO usecase_rev(ident_id, rev, title) VALUES(?,?,?) RETURNING id, to_iso8601_str(created_at)")
+  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, String), (UseCaseRevId, DateTime)](
+    "INSERT INTO usecase_rev(ident_id, rev, title) VALUES(?,?,?) RETURNING id, created_at")
 
   val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](
     s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE u.id=r.ident_id AND r.id=?")

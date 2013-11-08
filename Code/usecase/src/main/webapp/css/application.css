@@ -14,6 +14,8 @@ abbr.timeago[title] { border-bottom: none !important; }
 
 [data-clipboard-text], [data-clipboard-target] { cursor: pointer; }
 
+time.showdate, time.showdatetime { border-bottom: dotted #aaa 1px; cursor: help; }
+
 html, body { height: 100%; }
 
 #ly-default #ly-hdrbody { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; min-height: 100%; height: auto !important; height: 100%; padding-top: 4px; margin-bottom: -26px; }
@@ -67,14 +69,16 @@ html, body { height: 100%; }
 #share-list td.l .dropdown-menu * { text-align: left; padding-right: 0; padding-top: 0.6ex; }
 #share-list td.r { vertical-align: top; }
 
-.ucs-published { color: #222; margin: 0 auto 0 auto; padding: 2ex 6ex 6ex 6ex; max-width: 144ex; }
+.ucs-published { color: #222; margin: 0.8em auto 0 auto; padding: 2ex 6ex 6ex 6ex; max-width: 144ex; }
 .ucs-published h2, .ucs-published h3 { color: #000; }
-.ucs-published > header { margin-bottom: 3em; }
-.ucs-published > header h1 { font-weight: bold; }
+.ucs-published > header h1 { margin-top: 0; font-weight: bold; }
+.ucs-published > .last-updated { margin-top: 1.7em; padding-bottom: 0.8em; text-align: right; font-size: 80%; }
+.ucs-published > .last-updated, .ucs-published > .last-updated * { color: #666 !important; }
+.ucs-published > .last-updated:first-child { float: right; }
 .ucs-published nav ol { margin-left: 1ex; }
 .ucs-published nav a { font-size: 110%; line-height: 1.6em; }
 .ucs-published > .none { text-align: center; margin-top: 10em; font-style: italic; }
-.ucs-published main { margin-top: 5em; }
+.ucs-published main { clear: both; margin-top: 5em; }
 .ucs-published main article + article { margin-top: 8em; }
 .ucs-published main .fvs { width: 100%; table-layout: fixed; }
 .ucs-published main .fvs th, .ucs-published main .fvs td { vertical-align: top; }
@@ -86,7 +90,7 @@ html, body { height: 100%; }
 .ucs-published main .fvs tr.rev { margin-bottom: 0 !important; border-bottom: none !important; }
 .ucs-published main .fvs tr.rev * { padding-top: 0.3em !important; }
 .ucs-published main .fvs tr.lastupdated { margin-top: 0 !important; border-top: none !important; }
-.ucs-published main .fvs tr.lastupdated * { padding-bottom: 0.3em !important; }
+.ucs-published main .fvs tr.lastupdated th { padding-bottom: 0.3em !important; }
 .ucs-published main .fvs tr.rev, .ucs-published main .fvs tr.rev *, .ucs-published main .fvs tr.lastupdated, .ucs-published main .fvs tr.lastupdated * { line-height: 1.1em !important; }
 .ucs-published main .fvs .uc.outofscope, .ucs-published main .fvs .uc.outofscope * { color: #c00 !important; }
 .ucs-published main .fvs a.step:not(:hover), .ucs-published main .fvs a.uc:not(:hover) { border-bottom: 1px dotted; }

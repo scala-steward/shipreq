@@ -9,6 +9,7 @@ import com.beardedlogic.usecase.feature.uc.step.{StepNode, StepTreeZipper}
 import com.beardedlogic.usecase.feature.uc.text.FreeTextTerms._
 import com.beardedlogic.usecase.feature.uc.text.{FlowClause, FreeTextTerm, StepText, FreeText}
 import com.beardedlogic.usecase.lib.ScalazSubset._
+import com.beardedlogic.usecase.lib.Misc.DateTimeExt
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.feature.FlowGraph
 import com.beardedlogic.usecase.db.UseCaseRev
@@ -42,9 +43,10 @@ abstract class GenericPublisher(input: Input) {
     if (useCases.isEmpty)
       optionalDocHeader
     else
-      doc(optionalDocHeader, toc, articles)
+      doc(optionalDocHeader, optionalDocLastUpdated, toc, articles)
   )
-  def doc(header: X, toc: X, articles: X): X = header |+| toc |+| articles
+  def doc(header: X, lastUpdated: X, toc: X, articles: X): X =
+          header |+| lastUpdated |+| toc |+| articles
 
   def optionalDocHeader: X = input.header map docHeader getOrElse docHeaderSubst
   def docHeaderSubst: X = zero
@@ -53,6 +55,9 @@ abstract class GenericPublisher(input: Input) {
   def docHeaderTitle(t: String): X
   final def docHeaderPreface(p: String) = plainText(p)
   def docHeaderPreface(p: X): X
+
+  def optionalDocLastUpdated: X = input.lastUpdated.map(t => docLastUpdated(t.toIso8601Str)) getOrElse zero
+  def docLastUpdated(t: String @@ ISO8601): X
 
   def toc: X = tocSurround(useCases foldMap tocEntry)
   def tocSurround(entries: X): X
@@ -71,7 +76,7 @@ abstract class GenericPublisher(input: Input) {
 
   def getLogicalFields(uc: UseCase, rev: UseCaseRev): List[OutputField] =
     OF_Revision(rev.rev) ::
-    OF_LastUpdated(rev.createdAt) ::
+    OF_LastUpdated(rev.createdAt.toIso8601Str) ::
     uc.fields.foldMap(extractLogicalFields(uc))
 
   def extractLogicalFields(uc: UseCase)(ff: Field): List[OutputField] =

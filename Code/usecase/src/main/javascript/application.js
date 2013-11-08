@@ -173,10 +173,11 @@ $(document).keypress(function (e) {
 })
 
 DomEnhancements = [
-    {css: "abbr.timeago",  apply: function(x){ x.timeago() }},
-    {css: "abbr.timeago2", apply: function(x){ x.timeago2() }},
-    {css: "time.showdate", apply: function(x){ x.showdate() }},
-    {css: "textarea",      apply: function(x){ x.autosize() }}
+    {css: "abbr.timeago",      apply: function(x){ x.timeago() }},
+    {css: "abbr.timeago2",     apply: function(x){ x.timeago2() }},
+    {css: "time.showdate",     apply: function(x){ x.showdate() }},
+    {css: "time.showdatetime", apply: function(x){ x.showdatetime() }},
+    {css: "textarea",          apply: function(x){ x.autosize() }}
 ];
 
 function registerDomEnhancementsWithLiveQuery() {
@@ -214,16 +215,13 @@ function enhanceDom() { $(document).enhanceDom() }
     }
 
     $.fn.showdate = function () {
-        var e = $(this)
-        var isotime = e.attr('datetime')
-        if (typeof isotime === 'string') {
-            var d = new Date(isotime)
-            var show = d.toLocaleDateString()
-            var ago = $.timeago(d)
-            e.attr('title', ago)
-            e.html(show)
-        }
-        else console.warn("showdate failed on ", e)
+        return applyShowDateGen("showdate", $(this), function(d){
+            return d.toLocaleDateString()})
+    }
+
+    $.fn.showdatetime = function () {
+        return applyShowDateGen("showdatetime", $(this), function(d){
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString()})
     }
 
     // Provide JQuery fn to apply DomEnhancements
@@ -239,6 +237,18 @@ function enhanceDom() { $(document).enhanceDom() }
 
 // =====================================================================================================================
 // TODO Clean this shit file up!
+
+function applyShowDateGen(name, e, showFn) {
+    var isotime = e.attr('datetime')
+    if (typeof isotime === 'string') {
+        var d = new Date(isotime)
+        var show = showFn(d)
+        var ago = $.timeago(d)
+        e.attr('title', ago)
+        e.html(show)
+    }
+    else console.warn(name + " failed on ", e)
+}
 
 var ucFilterForm = {
     setup: function() {
