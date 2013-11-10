@@ -1,11 +1,12 @@
 package com.beardedlogic.usecase.feature.validation
 
+import scalaz.{Validation, Success, Failure}
 import com.beardedlogic.usecase.app.AppConfig._
 import com.beardedlogic.usecase.lib.ScalazSubset._
 import com.beardedlogic.usecase.lib.Types._
 import com.beardedlogic.usecase.lib.Misc._
 import com.beardedlogic.usecase.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
-import scalaz.{Validation, Success, Failure}
+import com.beardedlogic.usecase.security.PasswordAndSalt
 import Constraints._
 
 sealed trait Validator[I <: AnyRef, C <: AnyRef, V <: AnyRef] {
@@ -93,6 +94,15 @@ final object Validator {
             s
       }
     }
+  }
+
+  def currentPassword(ps: PasswordAndSalt): Validator[String, String, Unit2] = new Validator[String, String, Unit2] {
+    override def correct(input: String) = password.correct(input)
+    override def validate(input: String @@ InputCorrected) =
+      if (ps.matches(input))
+        Success(Unit2.tag)
+      else
+        Failure(VFailure.looseMsg("Current password is incorrect."))
   }
 
   object projectName

@@ -14,7 +14,6 @@ import lib.Types._
 import security.PasswordAndSalt
 import snippet.DynModal
 import util.{NonEmptyTemplate, ConciseIntListDesc}
-import util.HtmlTransformExt.ajaxOnClick
 import util.JsExt._
 import AppSiteMap.Implicits._
 import ShareListConsts._
@@ -53,8 +52,8 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
       "li [id+]" #> shareLiId(s)
       & ".l" #> (
         ".edit [href]" #> AppSiteMap.ShareEdit.relativeUrl(s.urlToken)
-        & ".chgpwd" #> ajaxOnClick(() => DynModal.passwordChanger(s.name)(onPasswordChange(s)))
-        & ".delete" #> ajaxOnClick(() => DynModal.confirmDanger(Some(s.name), DeleteModalBody, "Delete Share")(onDelete(s)))
+        & ".chgpwd" #> DynModal.passwordChangerT(s.name, None)(onPasswordChange(s))
+        & ".delete" #> DynModal.confirmDangerT(Some(s.name), DeleteModalBody, "Delete Share")(onDelete(s))
       )
       & ".r" #> (
         ".name a *" #> s.name

@@ -37,29 +37,43 @@ object DynModal extends StaticSnippetHelpers {
    * Opens a modal dialog that prompts the user to enter a new password.
    *
    * @param title The dialog title.
+   * @param current If provided, the user must enter a "Current Password" which must unlock this argument in order for
+   *                a password change to be permitted.
    * @param successFn Callback that reacts to a successful password submission.
    */
-  def passwordChangerRaw(title: String)(successFn: String @@ Validated => JsCmd): JsCmd = {
+  def passwordChanger(title: String, current: Option[PasswordAndSalt])(successFn: String @@ Validated => JsCmd): JsCmd = {
+    var passwordCInput = ""
     var password1Input = ""
     var password2Input = ""
 
     def onSubmit(): JsCmd = {
-      val v = Validator.passwords.correctAndValidate(password1Input, password2Input)
+      val vn = Validator.passwords.correctAndValidate(password1Input, password2Input)
+      val v: ValidationResult[String] = current match {
+        case None     => vn
+        case Some(ps) => Validator.Ap.apply2(Validator.currentPassword(ps).correctAndValidate(passwordCInput), vn)((_,n) => n)
+      }
       ifValid(v)(newPassword =>
         JsModalHide & successFn(newPassword))
     }
 
+    val currentPasswordTransform = current match {
+      case None    => ".curpw" #> ""
+      case Some(_) => "#dynmodal-passwordC" #> SHtml.onSubmit(passwordCInput = _)
+    }
     run(ChangePasswordTemplate)(
       ".modal-title *" #> title
+      & currentPasswordTransform
       & "#dynmodal-password1" #> SHtml.onSubmit(password1Input = _)
       & "#dynmodal-password2" #> SHtml.onSubmit(password2Input = _)
       & ":submit" #> ajaxSubmitOnClick(onSubmit)
     )
   }
 
-  def passwordChanger(title: String)(successFn: PasswordAndSalt => JsCmd): JsCmd =
-    passwordChangerRaw(title)(newPassword =>
-      successFn(PasswordAndSalt.createWithRandomSalt(newPassword)))
+  /** Typical use: invoked via onclick event + ajax, process a PasswordAndSalt on success. */
+  def passwordChangerT(title: String, current: Option[PasswordAndSalt])(successFn: PasswordAndSalt => JsCmd) =
+    ajaxOnClick(() =>
+      passwordChanger(title, current)(newPassword =>
+        successFn(PasswordAndSalt.createWithRandomSalt(newPassword))))
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -86,4 +100,9 @@ object DynModal extends StaticSnippetHelpers {
       & ".btn-danger" #> ("* *" #> buttonLabel & ajaxOnClick(onSubmit))
     )
   }
+
+  /** Typical use: invoked via onclick event + ajax. */
+  def confirmDangerT(title: Option[String], body: NodeSeq, buttonLabel: String)(successFn: => JsCmd) =
+    ajaxOnClick(() =>
+      confirmDanger(title, body, buttonLabel)(successFn))
 }

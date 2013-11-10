@@ -7,13 +7,14 @@ import lib.Types._
 import feature.{UcFilter, ExternalId}
 import feature.uc.field._
 import feature.uc.UseCaseFns
+import security.PasswordAndSalt
 
 // ===================================================================================================================
 // User
 
 case class UserDescriptor(id: UserId, username: String, email: String)
 
-case class UserSupplementalInfo(registeredAt: String @@ ISO8601)
+case class UserSupplementalInfo(ps: PasswordAndSalt, registeredAt: String @@ ISO8601)
 
 case class UserRegistrationInfo(
   id: UserId,

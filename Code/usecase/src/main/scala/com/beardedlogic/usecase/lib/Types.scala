@@ -35,6 +35,12 @@ object Types {
   trait TypeTag[-O <: AnyRef]
   type @@[+O <: AnyRef, T <: TypeTag[O]] = O with T
 
+  // Taggable version of Unit
+  sealed trait Unit2 extends AnyRef
+  final object Unit2 extends Unit2 {
+    override def toString = "()"
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // Implicits
 

@@ -152,7 +152,7 @@ $(document).on('dynmodal', function (event, data) {
             $(this).remove();
         })
         .on('shown.bs.modal', function () {
-            $(this).find('.focus').focus();
+            $(this).find('.focus:first').focus();
         })
         .modal('show');
 });

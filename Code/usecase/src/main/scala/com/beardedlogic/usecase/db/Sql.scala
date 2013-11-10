@@ -30,7 +30,7 @@ private[db] final object Sql {
   implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<))
+  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
   implicit val GR_Share = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
   implicit val GR_ShareSummary = GetResult(r => ShareSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
@@ -84,7 +84,7 @@ private[db] final object Sql {
     RETURNING id""".sql)
 
   val GetUserSupplementalInfo = query[UserId, UserSupplementalInfo](
-    "SELECT confirmed_at FROM usr WHERE id=?")
+    "SELECT password, password_salt, confirmed_at FROM usr WHERE id=?")
 
   val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
     "UPDATE usr SET password = ?, password_salt = ?, password_changed_at = NOW() WHERE id=?")

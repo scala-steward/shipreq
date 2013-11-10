@@ -7,7 +7,6 @@ FUNC TODO
 * [M.2.2] [PROJ] Delete projects.
 * [M.0.5] [LEGL] Check all licences and attribute as required.
 * [M.0.5] [LEGL] Add terms of service.
-* [M.0.5] [SEC ] Require current user account password when changing.
 
 * [S.4.1] [PUBL] Show aggregated last-update-date.
 * [S.3.4] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.

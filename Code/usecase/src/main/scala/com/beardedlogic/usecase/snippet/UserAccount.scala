@@ -6,7 +6,6 @@ import com.beardedlogic.usecase.app.AppSiteMap
 import com.beardedlogic.usecase.lib.SnippetHelpers
 import com.beardedlogic.usecase.lib.Types.UserId
 import com.beardedlogic.usecase.security.PasswordAndSalt
-import com.beardedlogic.usecase.util.HtmlTransformExt.ajaxOnClick
 
 /**
  * Allows user to view and modify their account details.
@@ -20,7 +19,7 @@ object UserAccount extends SnippetHelpers {
       ".username .form-control-static *" #> u.username
       & ".email .form-control-static *" #> u.email
       & ".registeredAt time [datetime]" #> uu.registeredAt
-      & ".password .edit" #> ajaxOnClick(() => DynModal.passwordChanger("Account Password")(onPasswordChange(u)))
+      & ".password .edit" #> DynModal.passwordChangerT("Account Password", Some(uu.ps))(onPasswordChange(u))
     )
   }
 
