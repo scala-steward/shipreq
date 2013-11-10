@@ -7,6 +7,7 @@ import scala.xml.NodeSeq
 import com.beardedlogic.usecase.feature.validation.Validator
 import com.beardedlogic.usecase.lib.StaticSnippetHelpers
 import com.beardedlogic.usecase.lib.Types._
+import com.beardedlogic.usecase.security.PasswordAndSalt
 import com.beardedlogic.usecase.util.HtmlTransformExt._
 import com.beardedlogic.usecase.util.JsExt._
 import com.beardedlogic.usecase.util.NonEmptyTemplate
@@ -38,7 +39,7 @@ object DynModal extends StaticSnippetHelpers {
    * @param title The dialog title.
    * @param successFn Callback that reacts to a successful password submission.
    */
-  def passwordChanger(title: String)(successFn: String @@ Validated => JsCmd): JsCmd = {
+  def passwordChangerRaw(title: String)(successFn: String @@ Validated => JsCmd): JsCmd = {
     var password1Input = ""
     var password2Input = ""
 
@@ -55,6 +56,10 @@ object DynModal extends StaticSnippetHelpers {
       & ":submit" #> ajaxSubmitOnClick(onSubmit)
     )
   }
+
+  def passwordChanger(title: String)(successFn: PasswordAndSalt => JsCmd): JsCmd =
+    passwordChangerRaw(title)(newPassword =>
+      successFn(PasswordAndSalt.createWithRandomSalt(newPassword)))
 
   // -------------------------------------------------------------------------------------------------------------------
 

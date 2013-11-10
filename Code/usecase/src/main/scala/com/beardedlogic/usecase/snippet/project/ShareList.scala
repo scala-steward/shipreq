@@ -94,9 +94,8 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
     case Some(at) => "abbr [title]" #> at
   }
 
-  def onPasswordChange(s: ShareSummary)(newPassword: String @@ Validated): JsCmd = {
-    val ps = PasswordAndSalt.createWithRandomSalt(newPassword)
-    daoProvider.withSession(_.updateSharePassword(s, ps))
+  def onPasswordChange(s: ShareSummary)(newPassword: PasswordAndSalt): JsCmd = {
+    daoProvider.withSession(_.updateSharePassword(s, newPassword))
     jsShowNotice(s"Updated Share Password: ${s.name}")
   }
 

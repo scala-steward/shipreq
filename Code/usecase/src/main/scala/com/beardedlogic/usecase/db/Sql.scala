@@ -86,6 +86,9 @@ private[db] final object Sql {
   val GetUserSupplementalInfo = query[UserId, UserSupplementalInfo](
     "SELECT confirmed_at FROM usr WHERE id=?")
 
+  val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
+    "UPDATE usr SET password = ?, password_salt = ?, password_changed_at = NOW() WHERE id=?")
+
   // ###################################################################################################################
   // Project
 

@@ -38,29 +38,29 @@
         .panel-body
           %form.form-horizontal
 
-            .form-group
+            .form-group.username
               %label.col-xs-4.control-label Username
               .col-xs-7
-                %p.form-control-static.username xxx
+                %p.form-control-static xxx
 
-            .form-group
+            .form-group.email
               %label.col-xs-4.control-label Email
               .col-xs-7
-                %p.form-control-static.email xxx
-              .col-xs-1
+                %p.form-control-static xxx
+              .col-xs-1.rctl
                 /%button.btn.btn-default Edit
 
-            .form-group
+            .form-group.password
               %label.col-xs-4.control-label Password
-              .col-xs-7
+              .col-xs-5
                 %p.form-control-static ************
-              .col-xs-1
-                /%button.btn.btn-default Edit
+              .col-xs-3.rctl
+                %button.btn.btn-default.edit Change Password
 
-            .form-group
+            .form-group.registeredAt
               %label.col-xs-4.control-label Account Created
               .col-xs-8
-                %p.form-control-static.registeredAt
+                %p.form-control-static
                   %time.showdate
 
       %section#useracct-ctls

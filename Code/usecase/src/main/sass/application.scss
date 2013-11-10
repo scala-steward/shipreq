@@ -150,8 +150,9 @@ html, body { height: 100% } // Cannot have any padding or margin here
   .tab-pane {margin-top:3ex}
 }
 
-#useracct-ctls {
-  text-align:right;
+#useracct-hub {
+  .rctl { text-align: right; }
+  #useracct-ctls { text-align: right; }
 }
 
 #usecase-list {

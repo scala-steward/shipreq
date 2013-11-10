@@ -101,6 +101,8 @@ sealed trait DaoS {
 
   def logUserLogin(id: UserId, ip: Option[String]): Unit = LogUserLogin.execute(id, ip)
 
+  def updateUserPassword(id: UserId, ps: PasswordAndSalt): Unit = UpdateUserPassword.execute(ps, id)
+
   // ===================================================================================================================
   // Project
 
