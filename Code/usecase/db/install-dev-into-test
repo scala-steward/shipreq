@@ -1,0 +1,6 @@
+#!/bin/bash
+
+dbdir="$(dirname "$0")"
+
+sudo -u postgres pg_dump --encoding=UTF-8 --blobs --clean --create usecase_dev \
+  | "$dbdir"/sql-trns-dbname test | sudo -u postgres psql
