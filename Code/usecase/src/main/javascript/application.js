@@ -146,15 +146,31 @@ function setupViz(callback) {
 // =====================================================================================================================
 
 $(document).on('dynmodal', function (event, data) {
-    $(data)
+    var d = $(data)
         .appendTo("body")
         .on('hidden.bs.modal', function () {
             $(this).remove();
         })
         .on('shown.bs.modal', function () {
             $(this).find('.focus:first').focus();
-        })
-        .modal('show');
+        });
+
+    // Disable button(s) until user types in confirmation text
+    d.find('.type-to-confirm').eachE(function (r){
+        r = $(r)
+        var inp = r.find('[data-confirmation]')
+        if (inp.length == 1) {
+            var btn = r.find('.confirmed')
+            var norm = function (s) { return $.trim(s).replace(/\s+/g, " ")  }
+            var exp = norm(inp.data('confirmation'))
+            var f = function () { btn.prop('disabled', norm(inp.val()) != exp) }
+            f();
+            inp.on('input propertychange change', f)
+        } else
+            console.warn("Length != 1: ",inp)
+    });
+
+    d.modal('show');
 });
 
 // =====================================================================================================================

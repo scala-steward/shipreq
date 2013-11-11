@@ -8,14 +8,22 @@ import net.liftweb.util.Helpers._
 import app.{AppSiteMap, RequestVars}
 import db.UpdateProjectResult._
 import feature.validation.Validator
-import lib.SingleOpStatefulSnippet
+import lib.{NoticeFlash, SingleOpStatefulSnippet}
 import lib.Types._
+import snippet.DynModal
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
+import util.NonEmptyTemplate
 import AppSiteMap.Implicits._
 
-private[snippet] object ProjectHeaderConsts {
-  final val TriggerProjectUpdated = JsTextTrigger("project-updated")
+object ProjectHeaderConsts {
+  val TriggerProjectUpdated = JsTextTrigger("project-updated")
+
+  private val deleteModalBodyTemplate = NonEmptyTemplate.load("templates-hidden/modal_body-delete_project").get
+  def DeleteModalBody(projectName: String) = {
+    val t = ":text [data-confirmation]" #> projectName
+    t(deleteModalBodyTemplate)
+  }
 }
 
 /**
@@ -28,22 +36,24 @@ class ProjectHeader extends SingleOpStatefulSnippet {
   override implicit def errorAlertId = "phdra".tag
 
   val project = RequestVars.Project.get.value
-  var projectNameInput = project.name
+  @inline final def name = project.name
+  var projectNameInput = name
 
   def render = (
     "#project-title" #> (
-      "h1 *" #> project.name &
-      "input .title [value]" #> project.name &
-      "input .title" #> SHtml.onSubmit(projectNameInput = _) &
-      "button .update" #> ajaxSubmitOnClick(onRename)
-    ) &
-    "a .readucs [href]" #> AppSiteMap.ReadOwnUcs.relativeUrl(project)
+      "h1 *" #> name
+      & "input .title [value]" #> name
+      & "input .title" #> SHtml.onSubmit(projectNameInput = _)
+      & "button .update" #> ajaxSubmitOnClick(onRename)
+    )
+    & ".readucs a [href]" #> AppSiteMap.ReadOwnUcs.relativeUrl(project)
+    & ".delete" #> DynModal.confirmDangerT("project-del", Some(name), DeleteModalBody(name), None)(onDelete)
   )
 
   def onRename(): JsCmd =
-    ifValid(Validator.projectName.correctAndValidate(projectNameInput))(name =>
-      daoProvider.withSession(_.updateProject(project.id, currentUserId_!, name)) match {
-        case DbSuccess        => jsRenamed(name)
+    ifValid(Validator.projectName.correctAndValidate(projectNameInput))(newName =>
+      daoProvider.withSession(_.updateProject(project.id, currentUserId_!, newName)) match {
+        case DbSuccess        => jsRenamed(newName)
         case NameAlreadyInUse => jsShowError("You already have a project with that name.")
         case ProjectNotFound  => redirectHome
       }
@@ -54,4 +64,10 @@ class ProjectHeader extends SingleOpStatefulSnippet {
     & jsShowNotice("Project renamed successfully.")
     & TriggerProjectUpdated.trigger(newName)
   )
+
+  def onDelete(): Nothing = {
+    daoProvider.withSession(_ deleteProject project)
+    NoticeFlash.notices.addS(s"Deleted Project: $name")
+    redirectHome
+  }
 }

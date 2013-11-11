@@ -88,3 +88,6 @@ insert into value values(2,55,(select ))
 insert into value(data_id,rev)
 select 66,coalesce(max(rev)+1,1) from value where data_id=66
 returning id, rev
+
+-- Row counts on all tables
+SELECT relname, n_tup_ins - n_tup_del as rowcount FROM pg_stat_all_tables where relname not like 'pg%' and relname not like 'sql%' order by 1;

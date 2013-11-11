@@ -96,7 +96,6 @@ $(document).ready(function() {
     $('#project-title button.cancel').click(renameCancel)
     $('nav .update').click(renameStart)
     $('nav .genpdf').click(PENDING)
-    $('nav .delete').click(PENDING)
     ucliPrepare(ucListSel())
     ucListSectionRefreshMode()
 })

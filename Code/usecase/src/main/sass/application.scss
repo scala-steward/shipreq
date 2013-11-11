@@ -123,7 +123,14 @@ html, body { height: 100% } // Cannot have any padding or margin here
   }
 
   &.confirm-danger {
+    .type-to-confirm .ctls { text-align: center; }
     .modal-footer { text-align: right; }
+  }
+
+  &.project-del {
+    .modal-dialog { width: 500px; }
+    .a {color:#d80000}
+    .b {margin-top:2em}
   }
 }
 

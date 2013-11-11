@@ -139,6 +139,8 @@ private[db] final object Sql {
     order by p.name
     """.sql)
 
+  @Delete val DeleteProject = update[ProjectId]("DELETE FROM project where id=?")
+
   // ###################################################################################################################
   // Use Case
 

@@ -101,7 +101,7 @@ button.active .when-not-active {display:inline}
 button.active .when-active {display:none}
 
 #dynamic-modal .modal-dialog {
-    width: 400px;
+    width: 500px;
 }
 #dynamic-modal .submit {
     text-align: right;

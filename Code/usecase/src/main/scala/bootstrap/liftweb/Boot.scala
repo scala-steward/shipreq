@@ -63,6 +63,7 @@ class Boot {
   def preloadTemplates(): Unit = {
     snippet.DynModal
     snippet.ShareEditConsts
+    snippet.project.ProjectHeaderConsts
     snippet.project.ShareListConsts
     snippet.project.UseCaseCrudlConsts
     snippet.uce.Renderer.Templates

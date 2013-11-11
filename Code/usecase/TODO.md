@@ -54,6 +54,7 @@ UNTESTED
 * [U] Share deletion (inc DynModal)
 * [U] project/ActivateTab
 * [U] UserAccount: View, pw change
+* [U] Project deletion
 
 MORE
 ====

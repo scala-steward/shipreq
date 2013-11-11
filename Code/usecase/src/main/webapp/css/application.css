@@ -31,7 +31,11 @@ html, body { height: 100%; }
 
 #dynmodal.password-change .modal-dialog { width: 410px; }
 #dynmodal.password-change .modal-dialog .submit { text-align: right; }
+#dynmodal.confirm-danger .type-to-confirm .ctls { text-align: center; }
 #dynmodal.confirm-danger .modal-footer { text-align: right; }
+#dynmodal.project-del .modal-dialog { width: 500px; }
+#dynmodal.project-del .a { color: #d80000; }
+#dynmodal.project-del .b { margin-top: 2em; }
 
 #project-list { margin-top: 3em; }
 #project-list li { margin-top: 1.8em; }

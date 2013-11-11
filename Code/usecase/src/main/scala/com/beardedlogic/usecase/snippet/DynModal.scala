@@ -83,10 +83,11 @@ object DynModal extends StaticSnippetHelpers {
    * Opens a modal dialog that prompts the user to confirm a dangerous operation.
    *
    * @param body The modal body.
-   * @param buttonLabel The label that appears on the button to proceed with the dangerous operation.
+   * @param footerButtonLabel If provided, the label that appears on the button in the footer that triggers the
+   *                          dangerous operation. If None, then the entire footer will be omitted.
    * @param successFn Callback that reacts to successful confirmation.
    */
-  def confirmDanger(title: Option[String], body: NodeSeq, buttonLabel: String)(successFn: => JsCmd): JsCmd = {
+  def confirmDanger(dlgClass: String, title: Option[String], body: NodeSeq, footerButtonLabel: Option[String])(successFn: => JsCmd): JsCmd = {
 
     def onSubmit(): JsCmd = JsModalHide & successFn
 
@@ -94,15 +95,21 @@ object DynModal extends StaticSnippetHelpers {
       case None    => ".modal-header" #> ""
       case Some(t) => ".modal-title *" #> t
     }
+    val footerTransform = footerButtonLabel match {
+      case None    => ".modal-footer" #> ""
+      case Some(l) => ".modal-footer .btn-danger *" #> l
+    }
+
     run(ConfirmDangerTemplate)(
-      titleTransform
-      & ".modal-body *" #> body
-      & ".btn-danger" #> ("* *" #> buttonLabel & ajaxOnClick(onSubmit))
+      ( "#dynmodal [class+]" #> dlgClass
+        & titleTransform
+        & ".modal-body *" #> body
+        & footerTransform
+      ) andThen ".btn-danger" #> ajaxOnClick(onSubmit)
     )
   }
 
   /** Typical use: invoked via onclick event + ajax. */
-  def confirmDangerT(title: Option[String], body: NodeSeq, buttonLabel: String)(successFn: => JsCmd) =
-    ajaxOnClick(() =>
-      confirmDanger(title, body, buttonLabel)(successFn))
+  def confirmDangerT(dlgClass: String, title: Option[String], body: NodeSeq, footerButtonLabel: Option[String])(successFn: => JsCmd) =
+    ajaxOnClick(() => confirmDanger(dlgClass, title, body, footerButtonLabel)(successFn))
 }

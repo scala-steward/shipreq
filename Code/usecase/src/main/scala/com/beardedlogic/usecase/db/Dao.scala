@@ -28,6 +28,7 @@ import util.Lock
  * - `log`: Records a loggable event. Returns unit.
  * - `sync`: Ensures the DB state of a record matches a provided model, changing the DB if necessary.
  * - `update`: Modifies an existing DB record. Return specialised result.
+ * - `delete`: Delete data and usually its dependents. Returns unit.
  *
  * - `perform`: Perform specialised business-logic (as opposed to CRUD-like operations).
  */
@@ -133,6 +134,9 @@ sealed trait DaoS {
   def findProjectByUc(ucId: UseCaseIdentId): Option[Project] = FindProjectByUc.firstOption(ucId)
 
   def summariseProjects(userId: UserId): List[ProjectSummary] = SummariseProjects.list(userId)
+
+  // Deletion automatically cascades to shares and use cases. See FKs in child tables.
+  def deleteProject(id: ProjectId): Unit = DeleteProject.execute(id)
 
   // ===================================================================================================================
   // Use Case
