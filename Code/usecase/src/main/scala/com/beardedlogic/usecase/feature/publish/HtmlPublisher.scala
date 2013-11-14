@@ -1,13 +1,14 @@
 package com.beardedlogic.usecase.feature.publish
 
+import scala.xml.{NodeSeq, Text}
 import com.beardedlogic.usecase.feature.uc.UseCase
 import com.beardedlogic.usecase.feature.uc.UseCaseFns.{fullName, reqId}
-import com.beardedlogic.usecase.feature.uc.step.{StepNode, StepTreeZipper}
+import com.beardedlogic.usecase.feature.uc.step.StepTreeZipper
 import com.beardedlogic.usecase.feature.uc.text.FreeTextTerms._
-import com.beardedlogic.usecase.feature.uc.text.{FlowClause, ParsingConfig, StepText}
+import com.beardedlogic.usecase.feature.uc.text.ParsingConfig
+import com.beardedlogic.usecase.lib.Misc.DateTimeExt
 import com.beardedlogic.usecase.lib.ScalazSubset._
 import com.beardedlogic.usecase.lib.Types._
-import scala.xml.{NodeSeq, Text}
 import ParsingConfig._
 import MarkupTokens._
 
@@ -103,27 +104,24 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
   override def stepFieldValueEmpty                   = <td></td>
   override def stepFieldValueSurround(value: X)      = <td class="steps">{value}</td>
 
-  override def stepFieldValueGenerationSurround(level: Int, generation: X) = {
+  override def stepTreeGenSurround(level: Int, gen: X) = {
     val c = "lvl-" + level
-    val x = <table class={c}>{generation}</table>
+    val x = <table class={c}>{gen}</table>
     if (level == 0)
       x
     else
       <tr class="ind"><td colspan="2">{x}</td></tr>
   }
 
-  override def stepFieldValueStep(value: StepTreeZipper.AnyFocus) = {
-    val n: StepNode = value.node
-    val v: StepText = value.value
-    val l = if (value.level == 0) value.label else n.label
-    <tr id={stepId(value.label)}><th>{l}.</th><td>{stepText(v)}</td></tr>
-  }
+  override def stepTreeNoChildren(step: StepTreeZipper.AnyFocus, stepLeader: String, text: X) =
+    <tr id={stepId(step.label)}><th>{stepLeader}</th><td>{text}</td></tr>
 
-  override def flowClause(c: FlowClause) =
-    <span class="flow"> {c.flowObj.style.arrow} {c.sortedLabels.toList map flowRef intercalate flowRefSep}</span>
+  override def stepTreeWithChildren(step: StepTreeZipper.AnyFocus, stepLeader: String, text: X, children: X) =
+    stepTreeNoChildren(step, stepLeader, text) ++ children
 
-  def flowRef(l: StepLabel): X = stepRef(l)
-  def flowRefSep: X = Text(", ")
+  override def flowClause(arrow: String, refs: X) = <span class="flow"> {arrow} {refs}</span>
+  override def flowRef(l: StepLabel)              = stepRef(l)
+  override val flowRefSep                         = Text(", ")
 
   // -------------------------------------------------------------------------------------------------------------------
   // Other fields
@@ -132,7 +130,7 @@ class HtmlPublisher(input: Input) extends GenericPublisher(input) {
     <tr class="rev"><th>Revision</th><td>{f.rev}</td></tr>
 
   override def lastUpdatedField(f: OF_LastUpdated) =
-    <tr class="lastupdated"><th>Last Updated</th><td><time class="showdate" datetime={f.when}></time></td></tr>
+    <tr class="lastupdated"><th>Last Updated</th><td><time class="showdate" datetime={f.when.toIso8601Str}></time></td></tr>
 
   override def flowGraphField(f: OF_FlowGraph) =
     <tr class="flowgraph"><th>Flow Graph</th><td data-dot={f.dot.value}></td></tr>

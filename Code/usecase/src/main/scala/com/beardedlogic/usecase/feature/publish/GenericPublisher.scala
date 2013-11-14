@@ -76,7 +76,7 @@ abstract class GenericPublisher(input: Input) {
 
   def getLogicalFields(uc: UseCase, rev: UseCaseRev): List[OutputField] =
     OF_Revision(rev.rev) ::
-    OF_LastUpdated(rev.createdAt.toIso8601Str) ::
+    OF_LastUpdated(rev.createdAt) ::
     uc.fields.foldMap(extractLogicalFields(uc))
 
   def extractLogicalFields(uc: UseCase)(ff: Field): List[OutputField] =
@@ -189,22 +189,33 @@ abstract class GenericPublisher(input: Input) {
 
   final def stepFieldValue(f: OF_Step): X = f.value match {
     case None    => stepFieldValueEmpty
-    case Some(v) => stepFieldValueSurround(stepFieldValueGeneration(v))
+    case Some(v) => stepFieldValueSurround(stepTree(v))
   }
   def stepFieldValueEmpty: X
   def stepFieldValueSurround(value: X): X
-  final def stepFieldValueGeneration(zipper: StepTreeZipper.DeepZipper): X =
-    stepFieldValueGenerationSurround(zipper.focus.level, stepFieldValueGenerationInner(zipper))
-  def stepFieldValueGenerationSurround(level: Int, generation: X): X
-  def stepFieldValueGenerationInner(zipper: StepTreeZipper.DeepZipper): X =
-    zipper.foldMap(n => {
-      val x = stepFieldValueStep(n)
-      n.down match {
-        case None          => x
-        case Some(nextGen) => x |+| stepFieldValueGeneration(nextGen)
-      }
-    })
-  def stepFieldValueStep(value: StepTreeZipper.AnyFocus): X
+
+  final def stepTree(zipper: StepTreeZipper.DeepZipper): X =
+    stepTreeGenSurround(zipper.focus.level,
+      zipper.foldMap(step => {
+        step.down match {
+          case None           => stepTreeNoChildren(step)
+          case Some(children) => stepTreeWithChildren(step, children)
+        }
+      })
+    )
+
+  def stepTreeGenSurround(level: Int, gen: X): X
+
+  final def stepLeader(step: StepTreeZipper.AnyFocus): String =
+    (if (step.level == 0) step.label else step.node.label) + "."
+
+  final def stepTreeNoChildren(step: StepTreeZipper.AnyFocus): X =
+    stepTreeNoChildren(step, stepLeader(step), stepText(step.value))
+  def stepTreeNoChildren(step: StepTreeZipper.AnyFocus, stepLeader: String, text: X): X
+
+  final def stepTreeWithChildren(step: StepTreeZipper.AnyFocus, children: StepTreeZipper.DeepZipper): X =
+    stepTreeWithChildren(step, stepLeader(step), stepText(step.value), stepTree(children))
+  def stepTreeWithChildren(step: StepTreeZipper.AnyFocus, stepLeader: String, text: X, children: X): X
 
   def stepText(value: StepText): X =
     text(value.mainClause) |+| flowClause(value.flowFromClause) |+| flowClause(value.flowToClause)
@@ -214,7 +225,12 @@ abstract class GenericPublisher(input: Input) {
       case None => zero
       case Some(c) => flowClause(c)
     }
-  def flowClause(c: FlowClause): X
+  def flowClause(c: FlowClause): X =
+    flowClause(c.flowObj.style.arrow, c.sortedLabels.toList map flowRef intercalate flowRefSep)
+
+  def flowClause(arrow: String, refs: X): X
+  def flowRef(l: StepLabel): X
+  def flowRefSep: X
 
   // -------------------------------------------------------------------------------------------------------------------
   // Other fields

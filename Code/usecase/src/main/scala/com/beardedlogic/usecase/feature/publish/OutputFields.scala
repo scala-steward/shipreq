@@ -1,15 +1,15 @@
 package com.beardedlogic.usecase.feature.publish
 
+import org.joda.time.DateTime
 import scalaz.Name
 import com.beardedlogic.usecase.feature.uc.step.StepTreeZipper
 import com.beardedlogic.usecase.feature.uc.text.FreeText
-import com.beardedlogic.usecase.lib.Types._
 
 sealed trait OutputField
 
 case class OF_Revision(rev: Short) extends OutputField
 
-case class OF_LastUpdated(when: String @@ ISO8601) extends OutputField
+case class OF_LastUpdated(when: DateTime) extends OutputField
 
 case class OF_Text(title: String, value: FreeText) extends OutputField
 
