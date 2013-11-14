@@ -72,6 +72,9 @@ object Inspection {
       if (l.isEmpty) nil
       else "List" <> Cord.mkCord(`,`, l.map(Show[A].show): _*))
 
+  def listWithCR[A: Show]: Show[List[A]] = Show.show(l => l.map(_.show ++ eol).show)
+  def showListWithCR[A: Show](list: List[A]) = listWithCR[A].show(list)
+
   implicit def mapShow[K, V](implicit K: Show[K], V: Show[V]): Show[Map[K, V]] =
     "Map" <*> (m =>
       Cord.mkCord(`,`, m.toSeq.view.map {
