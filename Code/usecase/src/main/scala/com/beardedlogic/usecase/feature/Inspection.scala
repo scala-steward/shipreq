@@ -2,11 +2,12 @@ package com.beardedlogic.usecase
 package feature
 
 import org.apache.commons.lang3.StringEscapeUtils.escapeJava
+import org.joda.time.DateTime
 import scala.reflect.runtime.universe.{TypeTag => ReflectTypeTag}
 import scalaz.{Cord, Show, Name, Need, Value}
 import scalaz.syntax.show._
 
-import db.{UseCaseIdent, UseCaseHeader, FieldKeyType, FieldKeyRec}
+import db.{UseCaseRev, UseCaseIdent, UseCaseHeader, FieldKeyType, FieldKeyRec}
 import lib.Types._
 import uc.UseCase
 import uc.field._
@@ -56,14 +57,14 @@ object Inspection {
 
   implicit def unitInstance    = scalaz.std.anyVal.unitInstance
   implicit def intInstance     = scalaz.std.anyVal.intInstance
-  implicit def longInstance    = scalaz.std.anyVal.longInstance
   implicit def shortInstance   = scalaz.std.anyVal.shortInstance
   implicit def booleanInstance = scalaz.std.anyVal.booleanInstance
   implicit def optionInstance[A: Show]: Show[Option[A]] = scalaz.std.option.optionShow
 
   implicit val unit: Show[Unit] = Show.show(_ => `()`)
   implicit val str: Show[String] = Show.show(`"` ++ escapeJava(_) ++ `"`)
-  implicit val jlong: Show[JLong] = Show.show(_.toString)
+  implicit val long: Show[Long] = Show.show(_.toString + "L")
+  implicit val jlong: Show[JLong] = Show.show(_.toString + "L")
   implicit val jshort: Show[JShort] = Show.show(`(` ++ _.toString ++ `:Short)`)
 
   implicit def listShow[A: Show]: Show[List[A]] =
@@ -82,6 +83,8 @@ object Inspection {
   implicit def nameShow[A: Show]: Show[Name[A]] = "Name" <*> (_.value.show)
   implicit def needShow[A: Show]: Show[Need[A]] = "Need" <*> (_.value.show)
   implicit def valueShow[A: Show]: Show[Value[A]] = "Value" <*> (_.value.show)
+
+  implicit val datetimeShow: Show[DateTime] = "new DateTime" <*> (_.getMillis.show)
 
   // ===================================================================================================================
   // Type tags
@@ -117,6 +120,7 @@ object Inspection {
   implicit val textIdentId: Show[TextIdentId]    = taggedLong[IsTextIdentId]
   implicit val textRevId  : Show[TextRevId]      = taggedLong[IsTextRevId]
   implicit val userId     : Show[UserId]         = taggedLong[IsUserId]
+  implicit val projectId  : Show[ProjectId]      = taggedLong[IsProjectId]
 
   // ===================================================================================================================
   // Fields and values
@@ -192,7 +196,7 @@ object Inspection {
   // ===================================================================================================================
   // Use Case
 
-  implicit val uciShow: Show[UseCaseIdent] = "UseCaseIdent" <*> (x => x.identId.show ++> x.number.show)
+  implicit val uciShow: Show[UseCaseIdent] = "UseCaseIdent" <*> (x => x.identId.show ++> x.number.show ++> x.projectId.show)
 
   implicit val uchShow: Show[UseCaseHeader] = "UseCaseHeader" <*> (_.title.show)
 
@@ -200,4 +204,7 @@ object Inspection {
     val fvTuples = x.fields.map(f => f.show ++ `~>` ++ showFieldValue(f, x.fieldValues(f)) ++ eol)
     x.number.show ++> x.header.show ++ eol ++> fvTuples.show ++> x.stepsAndLabels.show
   })
+
+  implicit val ucrShow: Show[UseCaseRev] = "UseCaseRev" <*> (x =>
+    x.ident.show ++> x.rev.show ++> x.id.show ++> x.header.show ++> x.createdAt.show)
 }
