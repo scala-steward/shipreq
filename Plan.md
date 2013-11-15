@@ -1,18 +1,9 @@
 1.0 Dev
-=============
-
-* UC-5: Allow Friends to read UCs
-
-* Allow CRs in UL markup
-* Decide on step symlinks and implement
+=======
 
 * UC-1: Delete a Use Case
-* UC-8: Modify a Share
-* Delete project
 
-* User management: display
 * User management: mod email
-* User management: mod password
 * User management: delete
 
 * Usage Limits.
