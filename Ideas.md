@@ -1,6 +1,6 @@
 Top-Level Features
 ==================
-* Persist
+* Store
 * Share
 * History/Compare
 * Link (UC-to-UC)
@@ -8,8 +8,10 @@ Top-Level Features
 * Customise Fields
 * Tags (TODOs/TBDs)
 * Version/Group/Organise
-* Collaborate
 * Undo & Auto-Save
+* Collaborate
+  * Composition
+  * Change Management
 
 Other Features
 ==============
@@ -25,7 +27,7 @@ Ideas
 * First-class Actors.
   (completion, auto-rename like step refs, UC diagram, enhanced flow graph)
 
-* Sharable / AOP-style pre- & post-conditions.
+* Shared / AOP-style pre- & post-conditions.
   (Instead of writing the same conditions in all UCs, define them one and select UCs they apply to.)
 
 * Publish Feature.
