@@ -2,6 +2,7 @@ package com.beardedlogic.usecase.feature.uc.change
 
 import scalaz.NonEmptyList
 import com.beardedlogic.usecase.feature.validation.VFailure
+import com.beardedlogic.usecase.lib.Types.ValidationResultU
 
 object ChangeResult {
 
@@ -38,6 +39,12 @@ object ChangeResult {
     changes match {
       case Nil    => NoChange
       case h :: t => Changed(newValue, NonEmptyList.nel(h, t))
+    }
+
+  def fromValidation[VV, V, C](r: ValidationResultU[VV])(onSuccess: VV => ChangeResultF[V, C]): ChangeResultF[V, C] =
+    r match {
+      case scalaz.Failure(f) => ChangeFailure(f)
+      case scalaz.Success(v) => onSuccess(v)
     }
 }
 
