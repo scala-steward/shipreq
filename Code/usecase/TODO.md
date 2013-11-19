@@ -6,19 +6,6 @@ FUNC TODO
 * [M.3.3] [PROJ] Delete use cases.
 * [M.0.5] [LEGL] Check all licences and attribute as required.
 * [M.0.5] [LEGL] Add terms of service.
-* [M.0.5] [SEC ] Add/verify length constraints to
-                  field_key.data
-                  field_key_type.name
-                  project.name
-                  share.name
-                  share.password
-                  share.preface
-                  text_rev.text
-                  uc_field.label
-                  usecase_rev.title
-                  usr.username
-                  usr.email
-                  usr.password
 
 * [S.3.4] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.2.5] [UCE ] Step is lost if accidentally deleted. No undo.
