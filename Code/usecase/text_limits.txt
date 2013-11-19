@@ -1,0 +1,14 @@
+Accurate as of schema 5.2
+
+field_key.data       TEXT     N/A: No user control (yet).
+field_key_type.name  VARCHAR  N/A: No user control.
+project.name         VARCHAR  MandatoryShortText
+share.name           VARCHAR  MandatoryShortText
+share.password       VARCHAR  HasLengthInRange(PasswordLength)
+share.preface        TEXT     LargeTextO
+text_rev.text        TEXT     LargeText
+uc_field.label       VARCHAR  N/A: No user control.
+usecase_rev.title    VARCHAR  HasShortTextLimit
+usr.email            VARCHAR  HasMaximumLength(EmailMaxLength)
+usr.password         VARCHAR  HasLengthInRange(PasswordLength)
+usr.username         VARCHAR  HasLengthInRange(UsernameLength)

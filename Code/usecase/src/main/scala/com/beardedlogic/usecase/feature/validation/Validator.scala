@@ -33,16 +33,34 @@ final object Validator {
     final override def validate(input: O @@ InputCorrected) = Success(input.tag)
   }
 
-  sealed trait UnrestrictedMultiLineString extends InputCorrectionOnly[String, String] {
-    override def correct(input: String) = correctMultiLineString(input)
-  }
-  private def correctMultiLineString(input: String) = normaliseCRLFs(input).trim.tag[InputCorrected]
-
-  sealed trait OptionalMultiLineString extends InputCorrectionOnly[String, Option[String]] {
-    override def correct(input: String) = nonEmptyString(correctMultiLineString(input)).tag
-  }
-
   val Ap = Validation.ValidationApplicative[VFailure](VFailure.semigroup)
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** Empty string not allowed. Carriage returns removed. */
+  sealed abstract class MandatoryShortText(name: String) extends InputValidatorV[String] {
+    override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
+    override protected val validator = ConstraintValidator[String](name, NonEmpty, HasShortTextLimit)
+  }
+
+  private def correctLargeText(input: String) = normaliseCRLFs(input).trim
+  private def largeTextValidator(name: String) = ConstraintValidator[String](name, HasLargeTextLimit)
+
+  /** Empty string is represented as `""`. */
+  sealed abstract class LargeText(name: String) extends InputValidatorV[String] {
+    override def correct(input: String) = correctLargeText(input).tag
+    override val validator = largeTextValidator(name)
+  }
+
+  /** Empty string is represented as `None`. */
+  sealed abstract class LargeTextO(name: String) extends Validator[String, Option[String], Option[String]] {
+    override def correct(input: String) = nonEmptyString(correctLargeText(input)).tag
+    val validator = largeTextValidator(name)
+    override def validate(input: Option[String] @@ InputCorrected) = (input: Option[String]) match {
+      case None    => Success(input.tag)
+      case Some(i) => validator.validate(i.tag).map(s => Some(s).tag)
+    }
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -61,6 +79,7 @@ final object Validator {
     extends InputValidatorV[String] {
     override def correct(input: String) = removeAllWhitespace(input).tag
     override protected val validator = ConstraintValidator[String]("Email address",
+      HasMaximumLength(EmailMaxLength),
       MatchesRegex("^_+@_+?\\._+$".replace("_", "[^&<>]").r, "is invalid.") // loose validation
     )
   }
@@ -105,31 +124,24 @@ final object Validator {
         Failure(VFailure.looseMsg("Current password is incorrect."))
   }
 
-  object projectName
-    extends InputValidatorV[String] {
-    override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
-    override protected val validator = ConstraintValidator[String]("Project name", NonEmpty)
-  }
+  object projectName extends MandatoryShortText("Project name")
 
   object useCaseTitle
     extends InputValidatorV[String] {
     override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
     override protected val validator = ConstraintValidator[String]("Use case title",
       NonEmpty,
+      HasShortTextLimit,
       Blacklist.chars("[]⦋⦌［］", "cannot include square brackets."),
       Not(Contain.regex(AnyValidArrowRegexStr, ""), "cannot include arrows.")
     )
   }
 
-  object shareName
-    extends InputValidatorV[String] {
-    override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
-    override protected val validator = ConstraintValidator[String]("Share name", NonEmpty)
-  }
+  object shareName extends MandatoryShortText("Share name")
 
-  object sharePreface extends OptionalMultiLineString
+  object sharePreface extends LargeTextO("Preface")
 
-  object textFieldText extends UnrestrictedMultiLineString
+  object textFieldText extends LargeText("Text")
 
-  object stepFieldText extends UnrestrictedMultiLineString
+  object stepFieldText extends LargeText("Text")
 }

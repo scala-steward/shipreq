@@ -5,20 +5,27 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import org.scalatest.prop._
 import scalaz.{Failure, Success}
+import app.AppConfig._
 import lib.Types._
 
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   def V = Validator
 
-  def testV(v: Validator[String, String, String], examples: TableFor2[Option[String], String]) {
-    forAll(examples) {
-      (failureFrag, input) =>
-        v.validate(input.tag[InputCorrected]) match {
-          case Failure(f) => f.toText should include(failureFrag.getOrElse("Validation failed but was expected to pass."))
-          case Success(_) => failureFrag shouldBe None
-        }
+  def testV(v: Validator[String, String, String], examples: TableFor2[Option[String], String]): Unit =
+    forAll(examples) ((expectedFailure, input) => testV(v, input, expectedFailure))
+
+  def testV(v: Validator[String, String, String], input: String, expectedFailure: Option[String]): Unit =
+    v.validate(input.tag) match {
+      case Failure(f) => f.toText should include(expectedFailure.getOrElse("Validation failed but was expected to pass."))
+      case Success(_) => expectedFailure shouldBe None
     }
-  }
+
+  def testCV(v: Validator[String, String, String], examples: TableFor3[String, Option[String], Option[String]]): Unit =
+    forAll(examples)((i, cc, expectedFailure) => {
+      val c = cc.getOrElse(i)
+      v.correct(i) shouldBe c
+      testV(v, c, expectedFailure)
+    })
 
   test("Email correction") {
     V.email.correct("hehe") shouldBe "hehe"
@@ -104,5 +111,40 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
       , (Some("arrow"), "hehe ⬅")
       , (Some("arrow"), "hehe ➡")
     ))
+  }
+
+  test("MandatoryShortText") {
+    testCV(V.projectName, Table(("IN", "CORRECTED", "FAILURE")
+      , ("", None, Some("blank"))
+      , ("  ", Some(""), Some("blank"))
+      , ("hello", None, None)
+      , (" hello ", Some("hello"), None)
+      , ("\n\nhello\n\n", Some("hello"), None)
+      , ("\n\nhello\n\nhello\n\n", Some("hello hello"), None)
+      , ("hello\n\rgreat", Some("hello great"), None)
+      , ("x" * ShortTextMaxLength, None, None)
+      , ("x" * (ShortTextMaxLength + 1), None, Some("too large"))
+    ))
+  }
+
+  test("LargeText") {
+    testCV(V.textFieldText, Table(("IN", "CORRECTED", "FAILURE")
+      , ("", None, None)
+      , ("  ", Some(""), None)
+      , ("hello", None, None)
+      , (" hello ", Some("hello"), None)
+      , ("\n\nhello\n\n", Some("hello"), None)
+      , ("\n\nhello\n\nhello\n\n", Some("hello\n\nhello"), None)
+      , ("x" * LargeTextMaxLength, None, None)
+      , ("x" * (LargeTextMaxLength + 1), None, Some("too large"))
+    ))
+  }
+
+  test("LargeTextO") {
+    V.sharePreface.correct("\n\n  ") shouldBe None
+    V.sharePreface.correctAndValidate("") shouldBe Success(None)
+    V.sharePreface.correctAndValidate("\n\nyo\n\nhehe\n\n") shouldBe Success(Some("yo\n\nhehe".tag))
+    V.sharePreface.correctAndValidate("x" * LargeTextMaxLength).isSuccess shouldBe true
+    V.sharePreface.correctAndValidate("x" * (LargeTextMaxLength + 1)).isSuccess shouldBe false
   }
 }

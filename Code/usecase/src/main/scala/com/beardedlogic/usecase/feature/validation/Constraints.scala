@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase.feature.validation
 
 import java.util.regex.Pattern
+import com.beardedlogic.usecase.app.AppConfig._
 
 trait Constraint[T <: AnyRef] extends (T => Option[String]) {
   def isValid(t: T): Boolean
@@ -86,4 +87,19 @@ final object Constraints {
     override def isValid(input: String) = input.nonEmpty
     override val failureResult = Some("cannot be blank.")
   }
+
+  case class HasMaximumLength(maxLength: Int) extends Constraint[String] {
+    override def apply(input: String) = {
+      val excess = input.length - maxLength
+      if (excess > 0)
+        Some(s"is too large by $excess characters.")
+      else
+        None
+    }
+    override def isValid(input: String) = input.length <= maxLength
+  }
+
+  object HasShortTextLimit extends HasMaximumLength(ShortTextMaxLength)
+
+  object HasLargeTextLimit extends HasMaximumLength(LargeTextMaxLength)
 }

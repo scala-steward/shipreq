@@ -1,6 +1,7 @@
 package com.beardedlogic.usecase.feature.validation
 
 import org.scalatest.{Matchers, FunSuite}
+import com.beardedlogic.usecase.app.AppConfig._
 import Constraints._
 
 class ConstraintTest extends FunSuite with Matchers {
@@ -68,6 +69,16 @@ class ConstraintTest extends FunSuite with Matchers {
     fail("")
     pass("1")
     pass("12345")
+  }
+
+  test("HasLargeTextLimit") {
+    implicit val c = HasLargeTextLimit
+    pass("")
+    pass("." * (LargeTextMaxLength / 2))
+    pass("." * LargeTextMaxLength)
+    fail("." * (LargeTextMaxLength + 1))
+    fail("." * (LargeTextMaxLength * 2))
+    c("." * (LargeTextMaxLength + 666)).get should include(" 666 ")
   }
 
 }
