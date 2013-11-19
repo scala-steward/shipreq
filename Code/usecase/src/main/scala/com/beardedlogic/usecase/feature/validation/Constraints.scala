@@ -3,9 +3,13 @@ package com.beardedlogic.usecase.feature.validation
 import java.util.regex.Pattern
 
 trait Constraint[T <: AnyRef] extends (T => Option[String]) {
+  def isValid(t: T): Boolean
+}
+
+trait ConstraintWithStaticFailureResult[T <: AnyRef] extends Constraint[T] {
   final def apply(t: T): Option[String] = if (isValid(t)) None else failureResult
   def isValid(t: T): Boolean
-  def failureResult: Some[String]
+  val failureResult: Some[String]
 }
 
 final object Constraints {
@@ -15,15 +19,12 @@ final object Constraints {
   // -------------------------------------------------------------------------------------------------------------------
   // Combinators
 
-  case class Not[T <: AnyRef](v: Constraint[T], errMsg: Option[String] = None) extends Constraint[T] {
+  case class Not[T <: AnyRef](v: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
     override def isValid(t: T) = !v.isValid(t)
-    override val failureResult = errMsg match {
-      case x@Some(_) => x
-      case None      => v.failureResult
-    }
+    override val failureResult = Some(errMsg)
   }
 
-  case class And[T <: AnyRef](a: Constraint[T], b: Constraint[T], errMsg: String) extends Constraint[T] {
+  case class And[T <: AnyRef](a: Constraint[T], b: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
     override def isValid(t: T) = a.isValid(t) && b.isValid(t)
     override val failureResult = Some(errMsg)
   }
@@ -31,7 +32,7 @@ final object Constraints {
   // -------------------------------------------------------------------------------------------------------------------
   // Instances
 
-  case class MatchesRegex(regex: Pattern, errMsg: String) extends Constraint[String] {
+  case class MatchesRegex(regex: Pattern, errMsg: String) extends ConstraintWithStaticFailureResult[String] {
     override def isValid(input: String) = regex.matcher(input).matches
     override val failureResult = Some(errMsg)
   }
@@ -44,16 +45,20 @@ final object Constraints {
     def regex(regex: String, errMsg: String) = MatchesRegex(s".*(?:$regex)$$".r.pattern, errMsg)
   }
 
-  /** Validates that a string consists only of certain chars. */
-  object CharWhitelist {
-    def apply(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
+  object Whitelist {
+    /** Validates that a string consists only of certain chars. */
+    def chars(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
+
+    /** Validates that a string consists only of certain chars. */
     def charRegex(charRegex: String, errMsg: String) = MatchesRegex(s"^[$charRegex]*$$".r.pattern, errMsg)
   }
 
-  /** Validates that a string doesn't contain any prohibited chars. */
-  object CharBlacklist {
-    def apply(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
-    def charRegex(charRegex: String, errMsg: String) = Not(Contain.regex(s"[$charRegex]", errMsg))
+  object Blacklist {
+    /** Validates that a string doesn't contain any prohibited chars. */
+    def chars(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
+
+    /** Validates that a string doesn't contain any prohibited chars. */
+    def charRegex(charRegex: String, errMsg: String) = Not(Contain.regex(s"[$charRegex]", ""), errMsg)
   }
 
   /** Validates that a string contains a certain pattern or substring. */
@@ -72,12 +77,12 @@ final object Constraints {
    *
    * @param range inclusive
    */
-  case class HasLengthInRange(range: Range) extends Constraint[String] {
+  case class HasLengthInRange(range: Range) extends ConstraintWithStaticFailureResult[String] {
     override def isValid(input: String) = range.contains(input.length)
     override val failureResult = Some(s"must be between ${range.min} and ${range.max} characters long.")
   }
 
-  object NonEmpty extends Constraint[String] {
+  object NonEmpty extends ConstraintWithStaticFailureResult[String] {
     override def isValid(input: String) = input.nonEmpty
     override val failureResult = Some("cannot be blank.")
   }

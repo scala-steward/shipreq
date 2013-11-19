@@ -51,9 +51,9 @@ final object Validator {
     override def correct(input: String) = input.trim.toLowerCase.tag
     override protected val validator = ConstraintValidator[String]("Username",
       HasLengthInRange(UsernameLength),
-      CharWhitelist.charRegex("a-z0-9_", "can only contain letters, numbers and underscores."),
-      StartsWith.regex("[a-z]",          "must start with a letter."),
-      EndsWith.regex("[a-z0-9]",         "must end with a letter or a number.")
+      Whitelist.charRegex("a-z0-9_", "can only contain letters, numbers and underscores."),
+      StartsWith.regex("[a-z]",      "must start with a letter."),
+      EndsWith.regex("[a-z0-9]",     "must end with a letter or a number.")
     )
   }
 
@@ -116,8 +116,8 @@ final object Validator {
     override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
     override protected val validator = ConstraintValidator[String]("Use case title",
       NonEmpty,
-      CharBlacklist("[]⦋⦌［］", "cannot include square brackets."),
-      Not(Contain.regex(AnyValidArrowRegexStr, "cannot include arrows."))
+      Blacklist.chars("[]⦋⦌［］", "cannot include square brackets."),
+      Not(Contain.regex(AnyValidArrowRegexStr, ""), "cannot include arrows.")
     )
   }
 
