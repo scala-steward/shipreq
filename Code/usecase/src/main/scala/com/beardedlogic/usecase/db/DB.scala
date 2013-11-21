@@ -63,7 +63,7 @@ object DB extends Logger {
         pool.setJdbcUrl(ds.getUrl)
         pool.setUsername(username)
         pool.setPassword(password)
-        pool.setDefaultTransactionIsolation("SERIALIZABLE")
+        pool.setDefaultTransactionIsolation("READ_COMMITTED") // Shouldn't be doing repeated-reads anyway
         pool.setDefaultAutoCommit(true)
         pool.setLogStatementsEnabled(false)
 

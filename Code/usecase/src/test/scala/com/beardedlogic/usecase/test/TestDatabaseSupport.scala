@@ -76,7 +76,7 @@ trait TestDatabaseSupport extends TestHelpers with TestDatabaseHelpers {
       try {
         this.sessionVar = s
         this.daoVar = db.Shim.newDaoT(s)
-        s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
+        // s.conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
         DI.DaoProvider.doWith(testDaoProvider) {
           fn
         }
