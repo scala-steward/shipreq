@@ -9,7 +9,7 @@ import com.beardedlogic.usecase.stress.GenerateUCs
 import com.beardedlogic.usecase.test.{TestHelpers, TestDB}
 import TestDB.withDbHelpers
 
-class ParSave extends FunSuite with TestHelpers with DI {
+class ParSaveTest extends FunSuite with TestHelpers with DI {
 
   // Number of UC revisions to save
   val count = 8
@@ -82,7 +82,7 @@ class ParSave extends FunSuite with TestHelpers with DI {
         debug(s"$prefix Pass #${i + 1}")
         //debug(s"$prefix Pass #${i + 1}\n" + uc.devView)
         cp = save(uc, cp)
-        debug(cp.savedSteps)
+        //debug(cp.savedSteps)
         assertUseCasesLookSameToUser(loadLatest(rev1).uc, uc)
       }
 
