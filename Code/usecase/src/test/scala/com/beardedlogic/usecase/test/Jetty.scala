@@ -2,10 +2,8 @@ package com.beardedlogic.usecase.test
 
 import net.liftweb.common.Logger
 import net.liftweb.util.TimeHelpers._
-import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.server.nio.SelectChannelConnector
+import org.eclipse.jetty.server._
 import org.eclipse.jetty.webapp.WebAppContext
-import com.beardedlogic.usecase.lib.Misc
 import java.io.File
 import org.apache.commons.io.FileUtils
 
@@ -28,20 +26,19 @@ class Jetty(val port: Int) extends Logger {
   def release() = instance.release()
 
   private def newServer: Server = {
+    info("Starting Jetty")
+
     // Manually create an exploded WAR
     // Could use sbt or a real WAR but then we can't easily/quickly run single tests from IDE
     val tmpWarDir = TestHelpers.createTempDir("usecase-test-war")
     FileUtils.copyDirectory(new File("src/main/webapp"), tmpWarDir)
     FileUtils.copyDirectory(new File("target/scala-2.10/resource_managed/main"), tmpWarDir)
 
-    info("Starting Jetty")
     val svr = new Server
-
-    val connector = new SelectChannelConnector
-    connector.setPort(port)
-    connector.setMaxIdleTime(maxIdle.millis.toInt)
-    connector.setServer(svr)
-    svr.setConnectors(Array(connector))
+    val http = new ServerConnector(svr, new HttpConnectionFactory(new HttpConfiguration))
+    http.setPort(port)
+    http.setIdleTimeout(maxIdle.millis)
+    svr.setConnectors(Array(http))
 
     val context = new WebAppContext
     context.setContextPath("/")
