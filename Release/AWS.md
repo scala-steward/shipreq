@@ -35,3 +35,5 @@ Instance Setup
   ./init-packages
   ./init-instance_store
   ./init-user
+* user/deploy $ec
+* ssh `cat username`@$ec
