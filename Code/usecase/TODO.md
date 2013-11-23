@@ -30,7 +30,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [M.0.5] [SEC ] Rate-limit login (and anything else vulnerable to automated attack).
 * [S.3.5] [PERF] Add proper DB indexes.
 * [S.1.3] [PERF] Shiro caching.
 * [S.1.3] [PERF] Textareas' blur shouldn't send a request when input doesn't change.

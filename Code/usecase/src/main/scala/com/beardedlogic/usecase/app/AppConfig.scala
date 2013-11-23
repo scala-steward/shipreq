@@ -11,6 +11,9 @@ final object AppConfig {
   // TODO BaseUrl hardcoded to localhost
   val BaseUrl = "http://localhost:8080"
 
+  /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
+  val AttackFrustrationDelayMs: Long = 120
+
   /** Number of characters in tokens used for email & reset-password verification. */
   val ConfirmationTokenLength = 49
 

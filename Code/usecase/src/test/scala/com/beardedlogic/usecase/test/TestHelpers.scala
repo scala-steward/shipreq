@@ -45,6 +45,7 @@ import change.Changes.{TextChanged, ExistingStepLabelsChanged}
 
 case class FixedUser(ud: Option[UserDescriptor]) extends SecurityProvider {
   override def loggedInUser = ud
+  override def enforceHumanSpeed() = ()
   def install[R](fn: => R): R = DI.SecurityProvider.doWith(this)(fn)
 }
 
@@ -605,6 +606,13 @@ object TestHelpers extends TestHelpers2 {
       val b = new bootstrap.liftweb.Boot
       b.configureLift
       b.preloadTemplates
+
+      // Disable SecurityProvider.enforceHumanSpeed()
+      val defaultSecProv = DI.SecurityProvider.default.get.vend
+      DI.SecurityProvider.default.set(new SecurityProvider {
+        def loggedInUser: Option[UserDescriptor] = defaultSecProv.loggedInUser
+        override def enforceHumanSpeed() = ()
+      })
     }
 }
 

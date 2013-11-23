@@ -5,6 +5,7 @@ import org.apache.shiro.SecurityUtils
 import org.apache.shiro.config.IniSecurityManagerFactory
 import org.apache.shiro.crypto.SecureRandomNumberGenerator
 import db.UserDescriptor
+import app.AppConfig
 
 /**
  * Apache城との橋になる「お城」。
@@ -39,4 +40,6 @@ object Oshiro extends SecurityProvider {
   def logout(): Unit = subject.logout()
 
   def isAuthenticated: Boolean = subject.isAuthenticated
+
+  override def enforceHumanSpeed() = Thread.sleep(AppConfig.AttackFrustrationDelayMs)
 }

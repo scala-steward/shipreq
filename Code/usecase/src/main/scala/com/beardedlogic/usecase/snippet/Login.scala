@@ -30,6 +30,8 @@ class Login extends SingleOpStatefulSnippet {
   )
 
   def onLoginAttempt(): JsCmd = {
+    securityProvider.enforceHumanSpeed()
+
     val v = Validator.Ap.apply2(
       Validator.usernameOrEmail.correctAndValidate(usernameOrEmailInput),
       Validator.password.correctAndValidate(passwordInput)

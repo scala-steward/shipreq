@@ -33,6 +33,8 @@ class Register1 extends SingleOpStatefulSnippet {
     )
 
   def onSubmit(): JsCmd = {
+    securityProvider.enforceHumanSpeed()
+
     ifValid(Validator.email.correctAndValidate(emailInput))(email => {
       val mail: Mail = daoProvider.withTransaction(dao =>
         dao.findUserRegistrationInfo(email) match {
@@ -92,7 +94,8 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
     }
 
   def render = {
-    validateToken_!
+    securityProvider.enforceHumanSpeed()
+    validateToken_!()
     (
       "#username" #> SHtml.ajaxText(usernameInput, onUsernameChange)
         & "#password1" #> SHtml.onSubmit(password1Input = _)

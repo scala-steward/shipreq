@@ -96,6 +96,8 @@ class ShareView(token: ShareUrlToken) extends SingleOpStatefulSnippet {
   }
 
   def onSubmitPassword(password: String): JsCmd = {
+    securityProvider.enforceHumanSpeed()
+
     val possibleJs = for {
       (s, p) <- daoProvider.withSession(_ findShareAndPassword token)
       if p matches password
