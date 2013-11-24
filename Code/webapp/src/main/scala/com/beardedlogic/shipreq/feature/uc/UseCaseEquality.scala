@@ -1,8 +1,8 @@
 package com.beardedlogic.shipreq
 package feature.uc
 
-import scalaz.Equal
-import scalaz.std.map._
+import scalaz.{Order, Equal}
+import scalaz.std.map.mapEqual
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
 import field._
@@ -33,6 +33,10 @@ object UseCaseEquality {
     case f: StepField      => sfvTextOnly.equal(f.castV(a), f.castV(b))
     case f: FlowGraphField => true
   }
+
+  def stringTagOrder[S <: String @@ TypeTag[String]]: Order[S] = stringInstance.asInstanceOf[Order[S]]
+  implicit def localStepIdOrder: Order[LocalStepId] = stringTagOrder
+  implicit def stepLabelOrder: Order[StepLabel] = stringTagOrder
 
   implicit val stepAndLabels: Equal[StepAndLabelBiMap] = Equal.equalBy(_.value.ab)
 

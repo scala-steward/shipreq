@@ -18,7 +18,7 @@ libraryDependencies ++= {
   val shiroVersion = "1.2.2"
   Seq(
     "net.liftweb"              %% "lift-webkit"            % liftVersion,
-    "org.scalaz"               %% "scalaz-core"            % "7.1.0-M3",
+    "org.scalaz"               %% "scalaz-core"            % "7.1.0-M4",
     "ch.qos.logback"            % "logback-classic"        % "1.0.13",
     "com.typesafe.slick"       %% "slick"                  % "1.0.1",
     "org.postgresql"            % "postgresql"             % "9.3-1100-jdbc41",
