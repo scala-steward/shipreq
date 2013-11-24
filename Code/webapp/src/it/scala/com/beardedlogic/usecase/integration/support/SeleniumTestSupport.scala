@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase
+package com.beardedlogic.shipreq
 package integration.support
 
 import org.openqa.selenium.firefox.FirefoxDriver

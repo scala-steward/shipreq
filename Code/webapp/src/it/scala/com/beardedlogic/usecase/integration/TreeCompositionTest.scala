@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.integration
+package com.beardedlogic.shipreq.integration
 
 import org.scalatest.FreeSpec
 import support.SeleniumTest

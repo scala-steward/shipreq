@@ -1,4 +1,4 @@
-package com.beardedlogic.usecase.integration
+package com.beardedlogic.shipreq.integration
 
 import org.openqa.selenium.By
 import org.openqa.selenium.WebElement

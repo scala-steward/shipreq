@@ -5,7 +5,7 @@ import net.liftweb.http._
 import net.liftmodules.scamljade.ScamlJade
 import net.liftweb.util.{Props, Mailer}
 
-import com.beardedlogic.usecase._
+import com.beardedlogic.shipreq._
 import app.{Defaults, AppSiteMap}
 import db.DB
 import security.Oshiro
@@ -31,7 +31,7 @@ class Boot {
     initMailer()
 
     // App package path
-    LiftRules.addToPackages("com.beardedlogic.usecase")
+    LiftRules.addToPackages("com.beardedlogic.shipreq")
 
     // Register route whitelist
     LiftRules.setSiteMap(AppSiteMap.sitemap)

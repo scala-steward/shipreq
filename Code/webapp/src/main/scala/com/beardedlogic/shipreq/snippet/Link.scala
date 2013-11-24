@@ -1,0 +1,27 @@
+package com.beardedlogic.shipreq.snippet
+
+import net.liftweb.http.{S, DispatchSnippet}
+import net.liftweb.sitemap.SiteMap
+import scala.xml.{Group, NodeSeq}
+import com.beardedlogic.shipreq.lib.SnippetHelpers
+
+/**
+ * Creates a link to a page. Throws an error is the page is not found.
+ */
+object Link extends DispatchSnippet with SnippetHelpers {
+  override def dispatch = {
+    case "home" => home
+    case "to" => to
+  }
+
+  def home(input: NodeSeq): NodeSeq = <a href="/">Home</a>
+
+  def to(text: NodeSeq): NodeSeq =
+    for {
+      name <- S.attr("name").toList
+      loc <- SiteMap.findLoc(name) ~> cantGenerateLink_!(name)
+    } yield
+      Group(SiteMap.buildLink(name))
+
+  private def cantGenerateLink_!(name: String): Nothing = shouldNeverHappen_!(s"Unable to generate link to $name")
+}
