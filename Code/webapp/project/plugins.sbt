@@ -1,5 +1,5 @@
 // Web app support plugin for XSbt using Jetty Web Server
-addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "0.4.2")
+addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "0.5.0")
 
 // SBT Eclipse
  addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.3.0")
