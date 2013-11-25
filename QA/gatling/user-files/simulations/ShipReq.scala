@@ -1,0 +1,146 @@
+import io.gatling.core.Predef._
+import io.gatling.core.session.Expression
+import io.gatling.http.Predef._
+import io.gatling.jdbc.Predef._
+import io.gatling.http.Headers.Names._
+import io.gatling.http.Headers.Values._
+import scala.concurrent.duration._
+import bootstrap._
+import assertions._
+
+object ShipReq {
+
+  case class TestUser(username: String, password: String)
+
+  val testUser1 = TestUser("test__xabcdefghijklmnopx__1000", """71^[:q-.At*'.^7Vh>(^rEQ>yxOJ(WK/p/Zo.H+KA(4PT07Kp.`FYEG^4YDO)rQl=N<g@WDNpPGeOr<Px26F6@GDA:wG3pwy50CRJk""")
+
+  val httpProtocol = http
+    .baseURL(System.getProperty("baseurl"))
+    .acceptHeader("*/*")
+    .acceptEncodingHeader("gzip, deflate")
+    .acceptLanguageHeader("en-US,en;q=0.5")
+    .connection("keep-alive")
+    .userAgentHeader("Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0")
+    .disableFollowRedirect
+
+  val userClicked = Map("""Accept""" -> """text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8""")
+
+  val loginPostHeaders = Map(
+    """Accept""" -> """text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01""",
+    """Cache-Control""" -> """no-cache""",
+    """Content-Type""" -> """application/x-www-form-urlencoded; charset=UTF-8""",
+    """Pragma""" -> """no-cache""",
+    """X-Requested-With""" -> """XMLHttpRequest""")
+
+  val jsHeaders = Map("""If-Modified-Since""" -> """Mon, 18 Nov 2000 21:22:03 GMT""")
+
+  //val commonJs = List("vendor/jquery","vendor/bootstrap", "application").map(j => s"/js/$j.js")
+
+  def getJsOnce(name: String) = {
+    val key = s"js_loaded_$name"
+    doIf(s => !s.contains(key))(
+      exec(getJs(s"/js/$name.js")))
+      .exec(_.set(key, true))
+  }
+
+  def getJs(url: String) =
+    exec(http("JS: " + url.replace("/js/", "").replaceFirst("\\?.*$", "")).get(url).headers(jsHeaders).check(status is 200))
+
+  //  def getCss(url: String) =
+  //    exec(http("CSS: " + url.replace("/css/", "").replaceFirst("\\?.*$", "")).get(url).headers(jsHeaders).check(status is 200))
+
+  val commonJs =
+    exec(getJsOnce("vendor/jquery"))
+      .exec(getJsOnce("vendor/bootstrap"))
+      .exec(getJsOnce("application"))
+
+  def home(loggedIn: Boolean) = {
+    val r = regex("Test Project")
+    val (name, respTest) = if (loggedIn)
+      ("Home (logged in)", r.exists)
+    else
+      ("Home (anon)", r.notExists)
+    exec(http("Home").get("/").headers(userClicked).check(status is 200, respTest))
+      .exec(getLiftAjax)
+      .exec(commonJs)
+  }
+
+  val getLiftAjax = exec(pause(30 millis).exec(http("JS: liftAjax").get("/ajax_request/liftAjax.js")))
+
+  val getLogin =
+    exec(http("Login GET").get("/login").headers(userClicked)
+      .check(
+        regex("""lift_page = "([A-Za-z0-9]+)"""").saveAs("login_post_url") //
+        , regex("""hidden" name="([A-Za-z0-9]+)"""").saveAs("login_post_hidden") //
+        , regex("""who"[^>]+?name="([A-Za-z0-9]+)"""").saveAs("login_post_username") //
+        , regex("""password"[^>]+?name="([A-Za-z0-9]+)"""").saveAs("login_post_password") //
+        , regex("""liftAjax.lift_uriSuffix='([A-Za-z0-9]+?)=_';return true""").saveAs("login_post_submit") //
+        ))
+      .exec(getLiftAjax)
+      .exec(commonJs)
+
+  def postLogin(user: TestUser) =
+    exec(http("Login POST").post("/ajax_request/${login_post_url}-00/").headers(loginPostHeaders)
+      .param("${login_post_hidden}", "true") //
+      .param("${login_post_username}", user.username) //
+      .param("${login_post_password}", user.password) //
+      .param("${login_post_submit}", "_") //
+      .check(status is 200, regex("window.location").exists))
+
+  def loginAs(user: TestUser) =
+    group("Login")(
+      getLogin
+        .pause(120 millis).exec(postLogin(user))
+        .pause(70 millis).exec(home(true)))
+
+  def project(id: String) =
+    group("Project Overview")(
+      exec(http(s"Project: $id").get(s"/project/$id").headers(userClicked).check(status is 200))
+        .exec(getLiftAjax)
+        .exec(commonJs)
+        .exec(getJsOnce("zeroclipboard"))
+        .exec(getJsOnce("project")))
+
+  def usecaseEditor(id: String) =
+    group("UseCase Editor")(
+      exec(http(s"UCE: $id").get(s"/usecase/$id").headers(userClicked).check(status is 200))
+        .exec(getLiftAjax)
+        .exec(commonJs)
+        .exec(getJsOnce("uce")))
+
+  def readUsecases(project: String) =
+    group("Read UCs")(
+      exec(http(s"Read UCs: $project").get(s"/project/$project/read").headers(userClicked).check(status is 200))
+        .pause(20 millis)
+        .exec(getLiftAjax)
+        .exec(commonJs)
+        .exec(getJsOnce("publish"))
+        .exec(getJs("/js/vendor/mathjax/MathJax.js?config=default"))
+        .pause(40 millis)
+        .exec(getJs("/js/vendor/mathjax/config/default.js")))
+
+  val logout =
+    exec(http("Logout").get("/logout").check(status is 302))
+
+  val smokeTest = scenario("Smoke Test")
+    .group("Home (anon)")(exec(home(false)))
+    .exec(loginAs(testUser1))
+    .pause(100 millis).exec(project("j8NA940XXv9"))
+    .pause(200 millis).exec(usecaseEditor("2PbB1awttl1"))
+    .pause(200 millis).exec(usecaseEditor("2PbB10XLd8j"))
+    .pause(200 millis).exec(project("j8NA940XXv9"))
+    .pause(200 millis).exec(readUsecases("j8NA940XXv9"))
+    .pause(200 millis).exec(logout)
+}
+
+import ShipReq._
+
+class SmokeTest extends Simulation {
+  setUp(smokeTest.inject(atOnce(1 users))).protocols(httpProtocol)
+}
+
+class StressTest extends Simulation {
+  val users = 200
+  val newUsersPerSec = 10
+  setUp(smokeTest.inject(ramp(users users).over((users / newUsersPerSec) seconds))).protocols(httpProtocol)
+}

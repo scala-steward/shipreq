@@ -1,0 +1,3 @@
+#!/bin/bash
+
+JAVA_OPTS='-Dbaseurl=http://localhost:8080' bin/gatling.sh -s SmokeTest -nr -rf /tmp
