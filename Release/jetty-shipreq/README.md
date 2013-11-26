@@ -1,38 +1,39 @@
+Getting Started
+===============
+* Decrypt the SSL passwords.
+    cd start.d && ./decrypt
+
+
 Usage
 =====
 
-### Start
-* bin/jetty.sh start
-* java -jar start.jar
+* Run
+    ./jetty
 
-### Stop
-* bin/jetty.sh stop
+* Start daemon
+    ./jettyd start
 
+* Stop daemon
+    ./jettyd stop
 
 
 Config
 ======
 
-* Type `java -jar start.jar --list-config` and it will list at the bottom, all the enabled args.
+* Inspection
+    ./jetty --list-config
+    ./jetty --list-modules
+    ./jettyd check
 
-* Config comes from:
+* Jetty config:
     * start.ini
-    * etc/jetty.conf (only applied when launched via bin/jetty.sh)
+    * start.d/*.ini
+    * etc/jetty.conf [daemon-mode only]
+    * XMLs displayed in `./jetty --list-config`
 
-* As is indicated by above, config is also loaded from:
-  * etc/jetty.xml
-  * etc/jetty-http.xml
-  * etc/jetty-deploy.xml
-  * start.d/*.ini
-
-* Additional properties files are also added to the classpath by dropping them in resources/
-  This is where Prod properties, DB connection and logging config will be found.
-
-
-Requirements
-============
-* log/
-* work/
+* App config:
+    * resources/*
+    * start.d/shipreq.ini
 
 
 Keystore & SSL
