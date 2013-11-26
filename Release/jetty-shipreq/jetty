@@ -1,10 +1,4 @@
 #!/bin/bash
 
 cd "$(dirname "$0")"
-JETTY_HOME="$(dirname "$(readlink start.jar)")"
-JETTY_BASE="$(pwd)"
-
-JETTY_HOME="$JETTY_HOME" \
-JETTY_BASE="$JETTY_BASE" \
-JETTY_LOGS="$JETTY_BASE/log" \
-"$JETTY_HOME/bin/jetty.sh" "$@"
+java -jar jetty-inst/start.jar "$@"

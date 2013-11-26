@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+JETTY_HOME="$(readlink jetty-inst)"
+JETTY_BASE="$(pwd)"
+
+JETTY_HOME="$JETTY_HOME" \
+JETTY_BASE="$JETTY_BASE" \
+JETTY_LOGS="$JETTY_BASE/log" \
+"$JETTY_HOME/bin/jetty.sh" "$@"
