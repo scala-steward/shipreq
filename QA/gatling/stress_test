@@ -1,3 +1,10 @@
 #!/bin/bash
 
-JAVA_OPTS='-Dbaseurl=http://localhost:8080' bin/gatling.sh -s StressTest
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <url>"
+  exit 1
+fi
+
+url="$1"
+
+JAVA_OPTS="-Dbaseurl=$url" bin/gatling.sh -s StressTest
