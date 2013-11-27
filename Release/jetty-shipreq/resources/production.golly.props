@@ -1,3 +1,5 @@
+server.url = https://localhost:443
+
 db.appname  = WEBAPP_PILOT
 db.database = usecase_dev
 db.username = usecase_dev

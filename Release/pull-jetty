@@ -1,0 +1,9 @@
+#!/bin/bash
+
+[ -z "$1" ] && echo "Usage: $0 <public DNS>" && exit 1
+
+cd "$(dirname "$0")"
+shift
+
+rsync "$@" -vzrRlptSihOJ --skip-compress={jar,war} --exclude={log,work,'*'.war} `cat username`@"$ec":jetty-shipreq .
+

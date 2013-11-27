@@ -4,5 +4,5 @@
 
 cd "$(dirname "$0")"
 
-rsync -vzrRlptSihOJ --skip-compress=jar --exclude={demo-base,log,work,'*'.war,pilot.'*'} jetty-9.1.0 jetty-shipreq `cat username`@"$1":
+rsync -vzrRlptSihOJ --skip-compress=jar --exclude={demo-base,log,work,'*.war'} jetty-9.1.0 jetty-shipreq `cat username`@"$1":
 
