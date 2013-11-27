@@ -4,6 +4,7 @@ u=ec2-rr
 h=/home/$u
 
 groupadd app
+chmod 644 /etc/resolv.conf
 
 useradd -m -g app -s /bin/bash $u \
   && mkdir -m 700 $h/.ssh \
