@@ -39,4 +39,6 @@ Instance Setup
   ./init-user
   reboot
 * user/deploy $ec
+* deploy-jetty $ec
+* deploy-war $ec
 * ssh `cat username`@$ec

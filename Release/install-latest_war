@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+
+d=../Code/webapp/target/scala-2.10/
+s="$(ls -1rt $d | fgrep .war | tail -1)"
+[ -z "$s" ] && echo "No WARs found in $d" && exit 1
+echo "Found: $s"
+
+echo "Installing..."
+cp -p $d/$s jetty-shipreq/webapps/shipreq.war \
+  && echo && jetty-shipreq/inspect-war
