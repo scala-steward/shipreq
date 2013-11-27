@@ -1,6 +1,6 @@
 #!/bin/bash
 
-u=ec2-rr
+u=shipreq
 h=/home/$u
 
 groupadd app
