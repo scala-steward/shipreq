@@ -4,5 +4,10 @@
 
 cd "$(dirname "$0")"
 
-rsync -vcRptih jetty-shipreq/webapps/shipreq.war `cat username`@"$1":
+war=jetty-shipreq/webapps/shipreq.war
 
+rsync -vcRptih $war $(<username)@"$1":
+
+echo
+sha1sum $war | sed 's/$/ (local)/'
+ssh $(<username)@"$1" "sha1sum $war" | sed 's/$/ (remote)/'
