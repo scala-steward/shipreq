@@ -165,7 +165,6 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
   }
 
   type Mail = (Subject, List[MailTypes])
-  var mailer: Mailer = Mailer
   def defaultMailFrom = From(AppConfig.MailFromAddress)
   def sendMail(subject: Subject, rest: MailTypes*): Unit = mailer.sendMail(defaultMailFrom, subject, rest: _*)
   def sendMail(mail: Mail, additional: MailTypes*): Unit = sendMail(mail._1, (mail._2 ++ additional): _*)

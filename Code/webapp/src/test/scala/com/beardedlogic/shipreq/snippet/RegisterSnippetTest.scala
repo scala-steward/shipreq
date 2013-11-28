@@ -9,7 +9,7 @@ import org.postgresql.util.PSQLException
 import org.scalatest.FunSpec
 
 import security.Oshiro
-import test.{SnippetTester, TestDatabaseSupport}
+import test.{TestMailer, TestDatabaseSupport}
 import test.fixture.UserFixture
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
@@ -23,32 +23,31 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     S.errors(0)._1.toString.toLowerCase should include(substring.toLowerCase)
   }
 
-  class Reg1Tester extends SnippetTester(new Register1) {
-    def submit(email: String, usrTableDiff: Int) = {
+  class Reg1Tester(val snippet: Register1 = new Register1()) {
+    def submit(email: String, usrTableDiff: Int) = TestMailer.install {
       snippet.emailInput = email
-      val js = assertTableDiffs(Tables.Usr -> usrTableDiff) {snippet.onSubmit()}
-      (js, this)
+      assertTableDiffs(Tables.Usr -> usrTableDiff) {snippet.onSubmit()}
     }
   }
 
   def testSuccess(email: String, usrTableDiff: Int, tokenChange: Boolean) {
     val tokenBefore = lookupConfirmationToken(email)
-    val tester = new Reg1Tester()
-    tester.submit(email, usrTableDiff)._1.assertJsAlert(None)
+    val r = new Reg1Tester().submit(email, usrTableDiff)
+    r.result.assertJsAlert(None)
     val token = lookupConfirmationToken(email)
     token should not be ('empty)
     if (tokenChange)
       token should not be (tokenBefore)
     else
       token should be(tokenBefore)
-    tester.assertEmail(Some(List(token.get)))
+    r.assertEmail(Some(List(token.get)))
   }
 
   describe("Register1.onSubmit") {
     it("when email is invalid -- should reject request") {
-      val (js,t) = new Reg1Tester().submit("not_an_email", 0)
-      js.assertJsAlert(Some("Email"))
-      t.assertEmail(None)
+      val r = new Reg1Tester().submit("not_an_email", 0)
+      r.result.assertJsAlert(Some("Email"))
+      r.assertEmail(None)
     }
 
     it("when a pending, valid token exists -- should resend email") {
@@ -64,14 +63,17 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     }
 
     it("when a email belongs to registered account -- should email with link to reset password") {
-      val (js,t) = new Reg1Tester().submit(user1.email, 0)
-      js.assertJsAlert(None)
-      t.assertEmail(Some(List("/login")))
+      val r = new Reg1Tester().submit(user1.email, 0)
+      r.result.assertJsAlert(None)
+      r.assertEmail(Some(List("/login")))
     }
   }
 
-  class Reg2Tester(token: String) extends SnippetTester(new Register2(token)) {
-    def onSubmit_() = snippet.onSubmit()
+  // ===================================================================================================================
+
+  class Reg2Tester(token: String) {
+    val snippet = new Register2(token)
+    def onSubmit_() = TestMailer.install(snippet.onSubmit()).result
   }
 
   describe("Register2.validateToken") {
