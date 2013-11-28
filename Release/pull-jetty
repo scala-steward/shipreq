@@ -5,5 +5,5 @@
 cd "$(dirname "$0")"
 shift
 
-rsync "$@" -vzrRlptSihOJ --skip-compress={jar,war} --exclude={log,work,'*'.war} `cat username`@"$ec":jetty-shipreq .
+rsync "$@" -vzrRlptSihOJ --skip-compress={jar,war} --exclude={log,work,'*'.war} `cat username`@"$ec":webapp .
 

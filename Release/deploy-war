@@ -4,7 +4,7 @@
 
 cd "$(dirname "$0")"
 
-war=jetty-shipreq/webapps/shipreq.war
+war=webapp/webapps/shipreq.war
 
 rsync -vcRptih $war $(<username)@"$1":
 

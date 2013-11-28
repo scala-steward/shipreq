@@ -8,5 +8,5 @@ s="$(ls -1rt $d | fgrep .war | tail -1)"
 echo "Found: $s"
 
 echo "Installing..."
-cp -p $d/$s jetty-shipreq/webapps/shipreq.war \
-  && echo && jetty-shipreq/inspect-war
+cp -p $d/$s webapp/webapps/shipreq.war \
+  && echo && webapp/inspect-war
