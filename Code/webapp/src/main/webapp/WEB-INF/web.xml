@@ -5,7 +5,25 @@
 	version="2.5"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
-	<listener>
+    <servlet>
+        <description>Serves static content using pre-gzipped resources when available.</description>
+        <servlet-name>static</servlet-name>
+        <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+        <init-param><param-name>gzip</param-name><param-value>true</param-value></init-param>
+        <init-param><param-name>dirAllowed</param-name><param-value>false</param-value></init-param>
+        <init-param><param-name>etags</param-name><param-value>true</param-value></init-param>
+        <init-param><param-name>maxCacheSize</param-name><param-value>16777216</param-value></init-param>
+        <load-on-startup>0</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>static</servlet-name>
+        <url-pattern>/css/*</url-pattern>
+        <url-pattern>/js/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- =========================================================================================================== -->
+
+    <listener>
 		<listener-class>org.apache.shiro.web.env.EnvironmentLoaderListener</listener-class>
 	</listener>
 
@@ -19,15 +37,18 @@
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 
-	<filter>
+    <!-- =========================================================================================================== -->
+
+    <filter>
+        <description>The Filter that intercepts lift calls</description>
+        <display-name>Lift Filter</display-name>
 		<filter-name>LiftFilter</filter-name>
-		<display-name>Lift Filter</display-name>
-		<description>The Filter that intercepts lift calls</description>
-		<filter-class>net.liftweb.http.LiftFilter</filter-class>
+        <filter-class>net.liftweb.http.LiftFilter</filter-class>
 	</filter>
 
 	<filter-mapping>
 		<filter-name>LiftFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+
 </web-app>
