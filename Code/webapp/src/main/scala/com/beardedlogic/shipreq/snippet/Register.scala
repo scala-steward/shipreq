@@ -4,11 +4,11 @@ package snippet
 import net.liftweb.http.js.JsCmd
 import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Mailer._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
 
 import app.AppSiteMap
+import lib.MailHelpers.MailContent
 import lib.SingleOpStatefulSnippet
 import lib.Types._
 import mail.RegistrationEmails
@@ -35,31 +35,31 @@ class Register1 extends SingleOpStatefulSnippet {
   def onSubmit(): JsCmd = {
     securityProvider.enforceHumanSpeed()
 
-    ifValid(Validator.email.correctAndValidate(emailInput))(email => {
-      val mail: Mail = daoProvider.withTransaction(dao =>
-        dao.findUserRegistrationInfo(email) match {
-          case None => onNewUser(email, dao)
+    ifValid(Validator.email.correctAndValidate(emailInput))(emailAddr => {
+      val mail: MailContent = daoProvider.withTransaction(dao =>
+        dao.findUserRegistrationInfo(emailAddr) match {
+          case None => onNewUser(emailAddr, dao)
           case Some(UserRegistrationInfo(_, _, _, Some(_))) => onAlreadyRegistered()
           case Some(UserRegistrationInfo(_, Some(token), Some(issued), _)) if !isConfirmationTokenExpired_?(issued) => onTokenReusable(token)
           case Some(UserRegistrationInfo(id, _, _, _)) => onTokenExpired(id, dao)
         }
       )
-      sendMail(mail, To(email))
+      sendMail(mail addressedTo emailAddr)
       jsClearError & JqExpr("#emailSent,#register1Form") ~> JqToggle
     })
   }
 
-  private def onNewUser(email: String @@ Validated, dao: DaoT): Mail = {
+  private def onNewUser(email: String @@ Validated, dao: DaoT): MailContent = {
     val token = randomConfirmationToken
     dao.createUserPlaceholder(email, token)
     RegistrationEmails.LinkToCompleteRegistration(token)
   }
 
-  private def onTokenReusable(token: String): Mail = {
+  private def onTokenReusable(token: String): MailContent = {
     RegistrationEmails.LinkToCompleteRegistration(token)
   }
 
-  private def onTokenExpired(id: UserId, dao: DaoT): Mail = {
+  private def onTokenExpired(id: UserId, dao: DaoT): MailContent = {
     val token = randomConfirmationToken
     dao.updateUserConfirmationToken(id, token)
     RegistrationEmails.LinkToCompleteRegistration(token)

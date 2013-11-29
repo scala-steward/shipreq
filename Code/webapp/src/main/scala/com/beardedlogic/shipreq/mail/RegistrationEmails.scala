@@ -1,20 +1,17 @@
 package com.beardedlogic.shipreq
 package mail
 
-import net.liftweb.util.Mailer.{MailTypes, PlainMailBodyType, Subject}
 import app.AppConfig._
-import app.AppSiteMap._
 import app.AppSiteMap.Implicits._
+import app.AppSiteMap._
+import lib.MailCompositionHelpers
 
-object RegistrationEmails {
-  type Mail = (Subject, List[MailTypes])
-
-  private def simple(subj: String, body: String): Mail = (Subject(subj), List(PlainMailBodyType(body.trim)))
+object RegistrationEmails extends MailCompositionHelpers {
 
   val subject = s"Registration at $AppName"
 
-  def LinkToCompleteRegistration(token: String): Mail =
-    simple(subject, s"""
+  def LinkToCompleteRegistration(token: String) =
+    plainTextMail(subject, s"""
 
 Your email address has been used to register a $AppName account.
 
@@ -23,10 +20,10 @@ ${Register2.absoluteUrl(token)}
 
 If you were not expecting this message, please ignore and delete it.
 
-""")
+""".trim)
 
-  val AlreadyRegistered: Mail =
-    simple(subject, s"""
+  val AlreadyRegistered =
+    plainTextMail(subject, s"""
 
 Somebody, probably you, has tried to re-register your email address.
 As you already have a registered account, no action has been taken.
@@ -36,5 +33,5 @@ ${Login.absoluteUrl}
 
 If you were not expecting this message, please ignore and delete it.
 
-""")
+""".trim)
 }

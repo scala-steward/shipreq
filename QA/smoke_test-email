@@ -1,0 +1,32 @@
+#!/bin/bash
+
+addr='japgolly@gmail.com'
+if [ $# -lt 1 -o $# -gt 2 ]; then
+  echo "Usage: $0 <url or url file> [<email address>]"
+  echo "Default email address: $addr"
+  exit 1
+fi
+
+tmp=/tmp/$(date +%Y%m%d-%H%M%S)
+tmp1=$tmp-1
+tmp2=$tmp-2
+
+source "$(dirname "$0")/lib.sh" || exit 1
+eval_url "$1"
+[ -n "$2" ] && addr="$2"
+u="$url/diag/mail?to=$addr"
+
+echo "URL: $u"
+curl -D $tmp2 "$u" >$tmp1 2>/dev/null
+
+if [ -n "$(fgrep '200 OK' $tmp2)" ]; then
+  cat $tmp1
+  r=0
+else
+  echo
+  cat $tmp2
+  cat $tmp1
+  r=1
+fi
+rm -f $tmp1 $tmp2
+exit $r

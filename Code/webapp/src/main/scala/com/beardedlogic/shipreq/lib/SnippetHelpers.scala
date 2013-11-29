@@ -6,11 +6,10 @@ import net.liftweb.http.js.JsCmds.Noop
 import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet, ResponseShortcutException, LiftResponse}
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
-import net.liftweb.util.Mailer.{MailTypes, From, Subject}
-import net.liftweb.util.{Props, Mailer}
+import net.liftweb.util.Props
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
-import com.beardedlogic.shipreq.app.{DI, AppConfig, AppSiteMap}
+import com.beardedlogic.shipreq.app.{DI, AppSiteMap}
 import com.beardedlogic.shipreq.db.UserDescriptor
 import com.beardedlogic.shipreq.feature.validation.VFailure
 import com.beardedlogic.shipreq.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
@@ -148,7 +147,7 @@ trait StaticSnippetHelpers extends Logger {
  *
  * @since 11/06/2013
  */
-trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger {
+trait SnippetHelpers extends StaticSnippetHelpers with Misc with MailHelpers with DI with Logger {
   import SnippetHelpers.{DefaultNoticesContainerExp, DefaultAjaxErrorId, DefaultJsonFormat}
 
   protected implicit def noticesContainerExp = DefaultNoticesContainerExp
@@ -163,11 +162,6 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
     case Some(user) => user
     case None => respondImmediately(RedirectResponse(AppSiteMap.Login.relativeUrl))
   }
-
-  type Mail = (Subject, List[MailTypes])
-  def defaultMailFrom = From(AppConfig.MailFromAddress)
-  def sendMail(subject: Subject, rest: MailTypes*): Unit = mailer.sendMail(defaultMailFrom, subject, rest: _*)
-  def sendMail(mail: Mail, additional: MailTypes*): Unit = sendMail(mail._1, (mail._2 ++ additional): _*)
 }
 
 /**
