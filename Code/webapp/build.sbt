@@ -16,7 +16,14 @@ scalacOptions ++= Seq("-Xcheckinit", "-unchecked", "-deprecation", "-Yno-generic
 libraryDependencies ++= {
   val liftVersion = "2.6-M2-golly-1"
   val shiroVersion = "1.2.2"
+  val scalaDepsVersion = "2.10.3"
   Seq(
+    // Force expected version of Scala (transitive versions used otherwise)
+    "org.scala-lang"            % "scala-compiler"         % scalaDepsVersion,
+    "org.scala-lang"            % "scala-library"          % scalaDepsVersion,
+    "org.scala-lang"            % "scala-reflect"          % scalaDepsVersion,
+    "org.scala-lang"            % "scalap"                 % scalaDepsVersion,
+    // [main]
     "net.liftweb"              %% "lift-webkit"            % liftVersion,
     "org.scalaz"               %% "scalaz-core"            % "7.1.0-M4",
     "ch.qos.logback"            % "logback-classic"        % "1.0.13",
