@@ -254,7 +254,7 @@ function applyShowDateGen(name, e, showFn) {
     else console.warn(name + " failed on ", e)
 }
 
-var ucFilterForm = {
+/** @const */ var ucFilterForm = {
     setup: function() {
         // UC Filter form: Only show sub-content for selected option.
         $('.ucfilter-group input.ucfilter').change(ucFilterForm.updateAll)
@@ -275,10 +275,33 @@ var ucFilterForm = {
 }
 
 // =====================================================================================================================
+// Published UCs (share-view & read-own-ucs)
+
+/** @const */ var publishedUcs = {
+    renderAll: function() {
+        var data_dot_attr = 'dot'
+        $('tr.flowgraph').each(function(i,p){
+            var id = "fg-"+i
+            $(p).attrAdd('id', id)
+            var dot = $(p).find('[data-'+data_dot_attr+']').data(data_dot_attr)
+            var tgtSel = '#'+id+' td'
+            VizWorker.postMessage({tgt:tgtSel, dot:dot})
+        })
+    },
+    setup: function() {
+        if ($('.ucs-published').length != 0) {
+            setupViz()
+            publishedUcs.renderAll()
+        }
+    }
+}
+
+// =====================================================================================================================
 
 $(document).ready(function(){
 
-    ucFilterForm.setup()
+    ucFilterForm.setup();
+    publishedUcs.setup();
 
     $('#share-list .urltxt').click(function(){ $(this).select() });
 
