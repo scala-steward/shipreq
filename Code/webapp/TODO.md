@@ -7,6 +7,7 @@ FUNC TODO
 * [M.0.5] [LEGL] Check all licences and attribute as required.
 * [M.0.5] [LEGL] Add terms of service.
 
+* [S.4.1] [UA  ] Integrate feedback.js.
 * [S.3.4] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.2.5] [UCE ] Step is lost if accidentally deleted. No undo.
 * [S.2.1] [ACCT] Change username.
@@ -33,12 +34,12 @@ TECH TODO
 * [S.3.5] [PERF] Add proper DB indexes.
 * [S.1.3] [PERF] Shiro caching.
 * [S.1.3] [PERF] Textareas' blur shouldn't send a request when input doesn't change.
-* [S.1.1] [TEST] When SBT 0.13 comes out, shutdown Jetty et al in SBT hook.
 * [S.0.5] [BUG ] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
 
 * [C.2.2] [    ] robots.txt
 * [C.2.0] [PERF] DAO should cache certain actions and execute in bulk.
 * [C.1.1] [DEMO] Show flow deletion in flow demo.
+* [C.0.0] [TEST] Shutdown Jetty et al in SBT hook.
 
 UNTESTED
 ========
