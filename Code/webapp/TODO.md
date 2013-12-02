@@ -7,6 +7,7 @@ FUNC TODO
 * [M.0.5] [LEGL] Check all licences and attribute as required.
 * [M.0.5] [LEGL] Add terms of service.
 
+* [S.0.5] [PERF] Cascaded deletion VERY slow with non-trivial amount of data.
 * [S.4.1] [UA  ] Integrate feedback.js.
 * [S.3.4] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.2.5] [UCE ] Step is lost if accidentally deleted. No undo.
