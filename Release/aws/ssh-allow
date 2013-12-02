@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+  echo "Usage: $0 <group name> (<ip> | myip)"
+  exit 1
+fi
+
+name="$1"
+ip="$2"
+[ "$ip" == myip ] && ip="$(curl -s http://ifconfig.me)"
+
+echo "=== Adding"
+ec2-authorize "$name" -P tcp -p 22 --cidr "$ip"/32
+echo
+
+echo "=== Confirmation"
+ec2-describe-group "$1"
+
+

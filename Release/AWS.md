@@ -8,6 +8,11 @@ Local Machine Setup
     export AWS_ACCESS_KEY=
     export AWS_SECRET_KEY=
 
+* To set the default region, get the URL for it:
+    ec2-describe-regions
+* localrc
+    export EC2_URL=https://<service_endpoint>
+
 
 Create a New Instance
 =====================
