@@ -116,6 +116,16 @@ html, body { height: 100% } // Cannot have any padding or margin here
 
 .loginInfo { text-align: center }
 
+#register2 {
+  width: 560px;
+  margin: 1cm auto 1cm auto;
+  h1 {margin-bottom:1em}
+  .alert {
+    h3 {margin-top: 0.3em}
+    a {text-decoration: underline}
+  }
+}
+
 #dynmodal {
   &.password-change .modal-dialog {
     width: 410px;

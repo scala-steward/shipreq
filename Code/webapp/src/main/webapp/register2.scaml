@@ -1,28 +1,29 @@
 %div(data-lift="surround?with=default;at=content")
-  %h1 Sign up 2/2
-
   #register2(data-lift="Register2")
+    %h1 New User Registration
     %form(data-lift="form.ajax?class=form-horizontal")
 
       .form-group.username
         %label.control-label.col-md-2(for="username") Username:
-        .col-md-3
+        .col-md-6
           %input.form-control#username(type="text")
 
       .form-group.password1
         %label.control-label.col-md-2(for="password1") Password:
-        .col-md-3
+        .col-md-6
           %input.form-control#password1(type="password")
 
       .form-group.password2
         %label.control-label.col-md-2(for="password2") Confirm Password:
-        .col-md-3
+        .col-md-6
           %input.form-control#password2(type="password")
 
       .form-group.submit
-        .col-md-offset-2.col-md-3
+        .col-md-offset-2.col-md-6
           %button.btn.btn-primary(type="submit") Create Account
 
   #regComplete.hidden2.alert.alert-success
-    %p You have successfully created an account.
-    %p You are now logged in.
+    %h3 Welcome to <x data-lift="Prop.appName"></x>!
+    %p Your account has been created successfully.
+    %p
+      %a(href="/") Click here to proceed.

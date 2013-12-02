@@ -29,6 +29,11 @@ html, body { height: 100%; }
 
 .loginInfo { text-align: center; }
 
+#register2 { width: 560px; margin: 1cm auto 1cm auto; }
+#register2 h1 { margin-bottom: 1em; }
+#register2 .alert h3 { margin-top: 0.3em; }
+#register2 .alert a { text-decoration: underline; }
+
 #dynmodal.password-change .modal-dialog { width: 410px; }
 #dynmodal.password-change .modal-dialog .submit { text-align: right; }
 #dynmodal.confirm-danger .type-to-confirm .ctls { text-align: center; }
