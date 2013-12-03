@@ -83,8 +83,8 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     m
   }
 
-  val UD1 = UserDescriptor(5001.tag[UserId], "U1", "U1@TEST")
-  val UD2 = UserDescriptor(5002.tag[UserId], "U2", "U2@TEST")
+  val UD1 = UserDescriptor(5001.tag[UserId], "U1", "U1@TEST", Set.empty)
+  val UD2 = UserDescriptor(5002.tag[UserId], "U2", "U2@TEST", Set.empty)
 
   val X0 = "X0".asLocalStepId
   val X1 = "X1".asLocalStepId

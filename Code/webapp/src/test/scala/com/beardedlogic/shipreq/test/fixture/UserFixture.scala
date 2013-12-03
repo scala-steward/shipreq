@@ -8,7 +8,7 @@ import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
 
 import db.UserDescriptor
-import security.PasswordAndSalt
+import security.{Roles, PasswordAndSalt}
 import test.{TestDB, TestHelpers}
 import lib.Types._
 
@@ -17,19 +17,19 @@ trait UserFixture {
 
   implicit def timeSpanToTimestamp(t: DateTime): Timestamp = new Timestamp(t.getMillis)
 
-  case class TestUser(username: String, email: String, password: String) {
+  case class TestUser(username: String, email: String, password: String, roles: Set[String]) {
     var _id: Option[UserId] = None
     def id: UserId = _id.getOrElse(???)
     val pws = PasswordAndSalt.createWithRandomSalt(password)
     def hashedPassword = pws.hashedPassword
     def salt = pws.salt
-    def toUserDescriptor = UserDescriptor(id, username, email)
+    def toUserDescriptor = UserDescriptor(id, username, email, roles)
   }
 
   case class PendingTestUser(email: String, token: String, tokenCreatedAt: DateTime)
 
-  val user1 = TestUser("golly", "g@g.com", "hello1234")
-  val user2 = TestUser("deepti", "d@d.com", "harvest321")
+  val user1 = TestUser("golly", "g@g.com", "hello1234", Set(Roles.Admin.name))
+  val user2 = TestUser("deepti", "d@d.com", "harvest321", Set.empty)
   val users = List(user1, user2)
 
   val userWithCurrentToken = PendingTestUser("a@p.com", "abc123abc123", 5.minutes.ago)
@@ -42,8 +42,8 @@ trait UserFixture {
 
   def initUserFixture(implicit db: Session): Unit = {
     // Insert mock users (registered)
-    val i1 = Q.query[(String, String, String, String), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at) VALUES(?,?,?,?,NOW(),NOW(),NOW()) RETURNING id")
-    for (u <- users) u._id = Some(i1.first(u.username, u.email, u.hashedPassword, u.salt)(db).tag[IsUserId])
+    val i1 = Q.query[(String, String, String, String, Option[String]), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at, roles) VALUES(?,?,?,?,NOW(),NOW(),NOW(),?) RETURNING id")
+    for (u <- users) u._id = Some(i1.first(u.username, u.email, u.hashedPassword, u.salt, UserDescriptor.roleStr(u.roles))(db).tag[IsUserId])
 
     // Insert mock users (pending confirmation)
     pendingUsers.foreach(u => insert(u)(db))

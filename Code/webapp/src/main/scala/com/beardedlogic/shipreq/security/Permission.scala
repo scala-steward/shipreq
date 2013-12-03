@@ -10,6 +10,9 @@ import Permission._
 
 final object Permission {
 
+  val SomeTrue = Some(true)
+  val SomeFalse = Some(false)
+
   implicit val permissionSemigroup: Semigroup[Permission] = new Semigroup[Permission] {
     override def append(a: Permission, b: => Permission) = a & b
   }
@@ -29,7 +32,7 @@ final object Permission {
         case None =>
           true
         case Some(failure) =>
-          warn(s"Permission denied: [$failure] $ctx")
+          if (permission.warnOnFailure) warn(s"Permission denied: [$failure] $ctx")
           false
       }
 
@@ -55,10 +58,15 @@ trait Permission {
     share: Option[Share] = None
     ) =
     new Checker(Ctx(user, project, share), this)
+
+  def warnOnFailure: Boolean
 }
 
 trait TypicalPermission extends Permission {
   protected val logger = Logger.apply(Permissions.getClass.getCanonicalName.replace("$", "") + "." + name)
+
+  @inline final def True = Permission.SomeTrue
+  @inline final def False = Permission.SomeFalse
 
   def check(ctx: Ctx): Option[Boolean]
 
@@ -83,4 +91,5 @@ trait TypicalPermission extends Permission {
 
 final class AndPermission(a: Permission, b: Permission) extends Permission {
   override def failure(ctx: Permission.Ctx) = a.failure(ctx) orElse b.failure(ctx)
+  override def warnOnFailure = a.warnOnFailure || b.warnOnFailure
 }

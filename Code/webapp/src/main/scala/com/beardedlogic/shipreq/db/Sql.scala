@@ -3,7 +3,7 @@ package db
 
 import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery, SetParameter, GetResult}
-import scala.slick.session.PositionedParameters
+import slick.session.{PositionedResult, PositionedParameters}
 import scalaz.NonEmptyList
 import lib.ScalazSubset._
 import lib.Types._
@@ -18,6 +18,12 @@ private[db] final object Sql {
   import StaticQuery.{query, queryNA, update, updateNA}
   implicit def autotag[T <: AnyRef](t: T): T @@ Validated = t.tag[Validated]
 
+  def userRoles(r: PositionedResult): Set[String] =
+    r.nextStringOption match {
+      case None        => Set.empty
+      case Some(roles) => roles.split(',').toSet
+    }
+
   implicit val GR_FieldKey = GetResult {r => FieldKeyRec(r.<<, r.<<, r.<<)}
   implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt.restore(r.nextString.tag, r.<<))
   implicit val GR_Project = GetResult(r => Project(r.<<, r.<<, r.<<))
@@ -28,7 +34,7 @@ private[db] final object Sql {
   implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<, r.<<)}
   implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.nextString), r.<<))
   implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
-  implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<))
+  implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
@@ -56,7 +62,7 @@ private[db] final object Sql {
   // ###################################################################################################################
   // User
 
-  private val UserDescCols = "id,username,email"
+  private val UserDescCols = "id,username,email,roles"
   private val PwdAndSaltCols = "password, password_salt"
 
   val GetUserDescCredByUsername = query[String, (UserDescriptor, PasswordAndSalt)](

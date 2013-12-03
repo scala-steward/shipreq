@@ -11,12 +11,16 @@ import org.scalatest.FunSpec
 import security.Oshiro
 import test.{TestMailer, TestDatabaseSupport}
 import test.fixture.UserFixture
+import util.NonEmptyTemplate
+import app.AppConfig
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
 
   override def beforeEachWithDao() {
     initUserFixture(session)
   }
+
+  lazy val reg1html = NonEmptyTemplate.load("register").get
 
   def assertSingleError(substring: String) {
     S.errors.size should be(1)
@@ -30,20 +34,52 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     }
   }
 
-  def testSuccess(email: String, usrTableDiff: Int, tokenChange: Boolean) {
-    val tokenBefore = lookupConfirmationToken(email)
-    val r = new Reg1Tester().submit(email, usrTableDiff)
-    r.result.assertJsAlert(None)
-    val token = lookupConfirmationToken(email)
-    token should not be ('empty)
-    if (tokenChange)
-      token should not be (tokenBefore)
-    else
-      token should be(tokenBefore)
-    r.assertEmail(Some(List(token.get)))
+  describe("Register1.render") {
+    def test(config: Boolean, allowed: Boolean): Unit = inMockSession {
+      val orig = AppConfig.AllowRegister
+      try {
+        AppConfig.AllowRegister = () => config
+        val t = new Register1().render
+        val x = t(reg1html)
+        val h = x.toString
+        h.contains("register1Form") shouldBe allowed
+        h.contains("registrationDisabled") shouldBe (!allowed)
+      } finally {
+        AppConfig.AllowRegister = orig
+      }
+    }
+
+    it("should allow registration to anonymous user when config on") {
+      test(true, true)
+    }
+    it("should deny registration to anonymous user when config off") {
+      test(false, false)
+    }
+    it("should deny registration to non-admin user when config off") {
+      login(user2)
+      test(false, false)
+    }
+    it("should allow registration to admin even when config off") {
+      login(user1)
+      test(false, true)
+    }
   }
 
   describe("Register1.onSubmit") {
+
+    def testSuccess(email: String, usrTableDiff: Int, tokenChange: Boolean) {
+      val tokenBefore = lookupConfirmationToken(email)
+      val r = new Reg1Tester().submit(email, usrTableDiff)
+      r.result.assertJsAlert(None)
+      val token = lookupConfirmationToken(email)
+      token should not be ('empty)
+      if (tokenChange)
+        token should not be (tokenBefore)
+      else
+        token should be(tokenBefore)
+      r.assertEmail(Some(List(token.get)))
+    }
+
     it("when email is invalid -- should reject request") {
       val r = new Reg1Tester().submit("not_an_email", 0)
       r.result.assertJsAlert(Some("Email"))

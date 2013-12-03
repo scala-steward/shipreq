@@ -12,7 +12,17 @@ import security.PasswordAndSalt
 // ===================================================================================================================
 // User
 
-case class UserDescriptor(id: UserId, username: String, email: String)
+case class UserDescriptor(id: UserId, username: String, email: String, roles: Set[String]) {
+  final def hasRole(role: String): Boolean = roles.contains(role)
+}
+
+object UserDescriptor {
+  def roleStr(roles: Set[String]): Option[String] =
+    if (roles.isEmpty)
+      None
+    else
+      Some(roles.mkString(","))
+}
 
 case class UserSupplementalInfo(ps: PasswordAndSalt, registeredAt: String @@ ISO8601)
 

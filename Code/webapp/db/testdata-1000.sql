@@ -12,6 +12,7 @@ BEGIN TRANSACTION;
 
 --ALTER TABLE usr DISABLE TRIGGER ALL;
 INSERT INTO usr (id, username, email, password, password_salt, password_changed_at, confirmation_token, confirmation_sent_at, confirmed_at, reset_password_token, reset_password_sent_at, reset_password_req_count, login_count, last_login_at, last_login_ip) VALUES (-1000, 'test__xabcdefghijklmnopx__1000', 'japgolly+test__xabcdefghijklmnopx__1000@gmail.com', 'eyLhzz11LT2Z5eK648KTk1ar45U94t5u5wQp1ho7YiH5TDM8EkHshQL5ytw30mgnawe9HS1ZH3wJNVw/sOPdFg==', 'Fq4FQFLdd2LYfunPAGwLpQ==', '2013-11-25 10:49:19.043876+11', NULL, '2013-11-25 10:48:41.980779+11', '2013-11-25 10:49:19.043876+11', NULL, NULL, 0, 2, '2013-11-25 10:58:45.902061+11', '0:0:0:0:0:0:0:1');
+UPDATE usr SET roles = 'test' WHERE id = -1000;
 --ALTER TABLE usr ENABLE TRIGGER ALL;
 
 --ALTER TABLE usr_login_log DISABLE TRIGGER ALL;
