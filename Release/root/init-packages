@@ -1,4 +1,4 @@
 #!/bin/bash
 
 pacman -Syu
-pacman -S --needed yaourt git colordiff wget bash-completion traceroute zip unzip rsync htop
+pacman -S --needed yaourt git colordiff wget bash-completion traceroute zip unzip rsync htop postgresql
