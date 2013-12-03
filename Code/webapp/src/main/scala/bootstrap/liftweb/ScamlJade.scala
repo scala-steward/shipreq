@@ -20,6 +20,7 @@ import org.fusesource.scalate.layout.DefaultLayoutStrategy
 import org.fusesource.scalate.util.{ResourceNotFoundException, FileResourceLoader, ClassPathBuilder}
 import org.fusesource.scalate.{DefaultRenderContext, Binding, TemplateEngine}
 import scala.tools.nsc.Global
+import net.liftweb.util.Props
 
 /**
  * ScamlJade template support.
@@ -28,10 +29,13 @@ import scala.tools.nsc.Global
  *
  * **IMPORTANT**: In development mode, the scaml/jade will be run every time;
  * however, in production mode it will only every be processed once, so it must
- * be side-effect free or it
- * will not behave as expected.
+ * be side-effect free or it will not behave as expected.
  */
 object ScamlJade extends Loggable {
+
+  if (Props.productionMode)
+    System.setProperty("scalate.allowReload", "false")
+
   private val renderer = new ScamlJadeRenderer
 
   /**
@@ -75,27 +79,26 @@ object ScamlJade extends Loggable {
       }
     }
 
-  def preprocess(name: String): Box[URL] = {
-    var fos: FileOutputStream = null
-    try {
-      if (renderer.canLoad(name)) {
-        val rawTemplate = renderer.layout(name)
-        val file: File = newTempFile()
-        fos = new FileOutputStream(file)
+  def preprocess(name: String): Box[URL] =
+    tryLoad(name).map(rawTemplate => {
+      val file = newTempFile()
+      val fos = new FileOutputStream(file)
+      try {
         val writer = new PrintWriter(new OutputStreamWriter(fos))
         writer.print(rawTemplate)
         writer.close()
-        Full(file.toURI.toURL)
-      } else {
+        file.toURI.toURL
+      } finally
+        fos.close
+    })
+
+  def tryLoad(name: String): Box[String] =
+    try {
+      if (renderer.canLoad(name))
+        Full(renderer.layout(name))
+      else
         Empty
-      }
-    } catch {
-      case e: Throwable =>
-        throw scala.xml.dtd.ValidationException(e.getMessage)
-    } finally {
-      if (fos != null) fos.close
-    }
-  }
+    } catch {case e: Throwable => throw scala.xml.dtd.ValidationException(e.getMessage)}
 }
 
 /**
@@ -106,7 +109,7 @@ class ScamlJadeRenderer extends TemplateEngine with Loggable {
 
   if (useWebInfWorkingDirectory) {
     val path = realPath("WEB-INF")
-    if (path != null) {
+    if (path ne null) {
       workingDirectory = new File(path, "_scalate")
       workingDirectory.mkdirs
     }
@@ -151,7 +154,7 @@ class ScamlJadeRenderer extends TemplateEngine with Loggable {
 
     protected def toFileOrFail(uri: String): File = {
       val file = realFile(uri)
-      if (file == null) {
+      if (file eq null) {
         throw new ResourceNotFoundException(resource = uri, root = context.realPath("/"))
       }
       file
@@ -162,7 +165,7 @@ class ScamlJadeRenderer extends TemplateEngine with Loggable {
      */
     def realPath(uri: String): String = {
       val file = realFile(uri)
-      if (file != null) file.getPath else null
+      if (file ne null) file.getPath else null
     }
 
     /**
@@ -174,7 +177,7 @@ class ScamlJadeRenderer extends TemplateEngine with Loggable {
         //logger.debug("realPath for: " + uri + " is: " + path)
 
         var answer: File = null
-        if (path != null) {
+        if (path ne null) {
           val file = new File(path)
           if (file.canRead) { answer = file }
         }
