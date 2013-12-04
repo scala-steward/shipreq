@@ -5,10 +5,10 @@
     %form(data-lift="form.ajax")
 
       .form-group
-        %input#who.form-control(type="text" placeholder="Username or Email")
+        %input#who.form-control(type="text" placeholder="Username or Email" required autofocus)
 
       .form-group
-        %input#password.form-control(type="password" placeholder="Password")
+        %input#password.form-control(type="password" placeholder="Password" required)
 
       .form-group
         %button.btn.btn-primary(type="submit") Login
