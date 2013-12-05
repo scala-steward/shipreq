@@ -2,7 +2,7 @@ package com.beardedlogic.shipreq
 package test
 
 import org.scalatest.mock.MockitoSugar
-import com.beardedlogic.shipreq.db.{DaoS, DaoT, DaoProvider}
+import db.{AdminDao, DaoS, DaoT, DaoProvider}
 import app.DI
 
 /**
@@ -18,8 +18,10 @@ import app.DI
  */
 class MockDaoProvider extends DaoProvider with MockitoSugar {
   val dao = mock[DaoT]
+  val adminDao = mock[AdminDao]
   override def withSession[T](block: DaoS => T): T = block(dao)
   override def withTransaction[T](block: DaoT => T): T = block(dao)
+  override def withAdminDao[T](block: AdminDao => T): T = block(adminDao)
 
   def install[R](fn: => R): R = DI.DaoProvider.doWith(this)(fn)
 }

@@ -12,7 +12,7 @@ import scalaz.{Name, Need, NonEmptyList}
 
 import AppConfig.BaseUrl
 import lib.Types._
-import feature.{DiagnosticEndpoints, ExternalId, ExternalIdConverter, Navbar, NavbarElem}
+import feature.{SessionStats, DiagnosticEndpoints, ExternalId, ExternalIdConverter, Navbar, NavbarElem}
 import security.{Permissions, Permission, Oshiro}
 import Permission.RequestVarPermExt
 
@@ -107,11 +107,14 @@ object AppSiteMap {
       }
   )
 
+  val Admin = pageWithStaticUrl("admin", mkTitle("Admin"), "")(_ / "sir" / "stats" >> AdminOnly >> Hidden)
+
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, Login, Logout, Register1, Register2,
-    Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
+    Home, Login, Logout, Register1, Register2
+    , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
+    , Admin
   ) ++ DiagnosticEndpoints.Endpoints
 
   val sitemap = {
@@ -124,6 +127,7 @@ object AppSiteMap {
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
+      SessionStats.onLogin(S.session, Oshiro.loggedInUser.get)
       Full(redirectHomeResp)
       // Full(RedirectResponse("/project/cUZ0/share"))
     })
@@ -174,6 +178,7 @@ object AppSiteMap {
 
   def logout(): Box[LiftResponse] = {
     Oshiro.logout()
+    SessionStats.onLogout(S.session)
     Full(redirectHomeResp)
   }
 
@@ -214,6 +219,9 @@ object AppSiteMap {
 
   private def ProjectPermissionRequired =
     PermissionRequired(Permissions.accessProject.using(project = RequestVars.Project.some))
+
+  private def AdminOnly =
+    Test(_ => Permissions.admin.using().isPass)
 
   private def buildNavbar(h: NavbarElem, t: NavbarElem*) = {
     val elems = NonEmptyList(h, t: _*)

@@ -1,9 +1,12 @@
 package com.beardedlogic.shipreq.lib
 
-import com.beardedlogic.shipreq.lib.Types._
 import net.liftweb.actor.SpecializedLiftActor
-import com.beardedlogic.shipreq.db.DaoS
+import net.liftweb.common.Box
+import net.liftweb.http.LiftSession
 import com.beardedlogic.shipreq.app.DI
+import com.beardedlogic.shipreq.db.{UserDescriptor, DaoS}
+import com.beardedlogic.shipreq.feature.SessionStats
+import com.beardedlogic.shipreq.lib.Types._
 
 sealed trait StatLoggerCmd
 case class LogShareView(id: ShareId, ip: Option[String] = Misc.clientIp) extends StatLoggerCmd
@@ -11,9 +14,10 @@ case class LogUserLogin(id: UserId, ip: Option[String] = Misc.clientIp) extends 
 
 trait StatLogger {
   def !(msg: StatLoggerCmd): Unit
+  def updateSessionStatsOnLogin(bs: Box[LiftSession], user: UserDescriptor): Unit
 }
 
-object StatLoggerActor extends StatLogger with SpecializedLiftActor[StatLoggerCmd] {
+object StatLoggerImpl extends StatLogger with SpecializedLiftActor[StatLoggerCmd] {
 
   protected def dao(f: DaoS => Unit): Unit =
     DI.DaoProvider.withSession(f)
@@ -22,4 +26,7 @@ object StatLoggerActor extends StatLogger with SpecializedLiftActor[StatLoggerCm
     case LogShareView(id, ip) => dao(_.logShareView(id, ip))
     case LogUserLogin(id, ip) => dao(_.logUserLogin(id, ip))
   }
+
+  override def updateSessionStatsOnLogin(bs: Box[LiftSession], user: UserDescriptor) =
+    SessionStats.onLogin(bs, user)
 }

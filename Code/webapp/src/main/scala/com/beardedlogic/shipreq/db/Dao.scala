@@ -66,11 +66,6 @@ sealed trait DaoS {
   }
 
   // ===================================================================================================================
-  // Diagnostics
-
-  def diagSelectNow() = DiagSelectNow.first
-
-  // ===================================================================================================================
   // User
 
   /** Creates an unconfirmed user account. No username, no password until email confirmed. */
@@ -314,6 +309,28 @@ sealed trait DaoT extends DaoS {
     val fkRecs = fields.map(f => findOrCreateFieldKey(f.fieldKeyType, f.fieldKeyData))
     FieldListRec(fkRecs)
   }
+}
+
+
+// #####################################################################################################################
+
+/**
+ * DAO for administrative and diagnostic purposes.
+ */
+sealed class AdminDao(_session: Session) extends DaoS {
+  import AdminSql._
+  implicit final val session = _session
+
+  def diagSelectNow() = DiagSelectNow.first
+
+  def statsCountUsers: UsrCount = {
+    val (a, b) = StatsCountUsers.first()
+    UsrCount(a, b)
+  }
+
+  def statsTableSizes: List[(String, Long)] = StatsSizesByTypes.list("r")
+  def statsIndexSizes: List[(String, Long)] = StatsSizesByTypes.list("i")
+  def statsDatabaseSize: Long = StatsDatabaseSize.first(DB.DatabaseName.replaceFirst("^.*/", ""))
 }
 
 // #####################################################################################################################

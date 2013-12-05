@@ -61,6 +61,7 @@ UNTESTED
 * [U] Project deletion
 * [U] Runtime props
 * [U] DiagnosticEndpoints
+* [U] AdminSnippet
 
 MORE
 ====

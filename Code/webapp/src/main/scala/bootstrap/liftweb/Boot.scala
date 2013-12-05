@@ -8,6 +8,7 @@ import net.liftweb.util.{Props, Mailer}
 import com.beardedlogic.shipreq._
 import app.{Defaults, AppSiteMap}
 import db.DB
+import feature.SessionStats
 import security.Oshiro
 
 /**
@@ -33,6 +34,10 @@ class Boot {
     Oshiro.init()
 
     initMailer()
+
+    // Collect session stats
+    LiftSession.afterSessionCreate ::= SessionStats.onSessionCreation _
+    LiftSession.onShutdownSession ::= SessionStats.onSessionExpiration _
 
     // App package path
     LiftRules.addToPackages(packageRoot)

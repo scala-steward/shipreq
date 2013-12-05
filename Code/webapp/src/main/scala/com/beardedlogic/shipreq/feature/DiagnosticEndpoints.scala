@@ -63,7 +63,7 @@ object DiagnosticEndpoints extends DI {
   def dbTest(): DbTestResult = {
     val (ab, (b, dbClock)) =
       calcTime {
-        daoProvider.withSession(dao =>
+        daoProvider.withAdminDao(dao =>
           calcTime {
             dao.diagSelectNow()
           }

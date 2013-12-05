@@ -1,7 +1,7 @@
 package com.beardedlogic.shipreq
 package snippet
 
-import net.liftweb.http.SHtml
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
@@ -52,6 +52,7 @@ class Login extends SingleOpStatefulSnippet {
   }
 
   def onSuccessfulLogin(): Nothing = {
+    statLogger.updateSessionStatsOnLogin(S.session, currentUser_!)
     statLogger ! LogUserLogin(currentUserId_!)
     redirectHome
   }

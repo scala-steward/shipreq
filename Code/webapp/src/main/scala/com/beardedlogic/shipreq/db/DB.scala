@@ -145,6 +145,8 @@ object DB extends Logger {
     @inline private def initConnAndExec[T](s: Session, block: Dao => T): T = {
       block(new Dao(s))
     }
+    override def withAdminDao[T](block: AdminDao => T): T =
+      Slick.withSession(s => block(new AdminDao(s)))
   }
 
   @volatile private var initPending = true

@@ -3,9 +3,9 @@ package app
 
 import net.liftweb.util.SimpleInjector
 import net.liftweb.util.{Mailer => LiftMailer}
-import db.{DB, DaoProvider, DaoS, DaoT}
+import db.{AdminDao, DB, DaoProvider, DaoS, DaoT}
 import security.{SecurityProvider, Oshiro}
-import lib.{StatLoggerActor, StatLogger}
+import lib.{StatLoggerImpl, StatLogger}
 
 /**
  * Houses and provides access to global resources. Not exactly "dependency injection" but serves a similar enough
@@ -16,13 +16,14 @@ import lib.{StatLoggerActor, StatLogger}
 object DI extends SimpleInjector {
 
   final val DaoProvider = new Inject[DaoProvider](DB.DaoProvider) with DaoProvider {
+    override def withAdminDao[T](block: AdminDao => T): T = vend.withAdminDao(block)
     override def withSession[T](block: DaoS => T): T = vend.withSession(block)
     override def withTransaction[T](block: DaoT => T): T = vend.withTransaction(block)
   }
 
   final val SecurityProvider = new Inject[SecurityProvider](Oshiro) {}
 
-  final val StatLogger = new Inject[StatLogger](StatLoggerActor) {}
+  final val StatLogger = new Inject[StatLogger](StatLoggerImpl) {}
 
   final val Mailer = new Inject[LiftMailer](LiftMailer) {}
 }

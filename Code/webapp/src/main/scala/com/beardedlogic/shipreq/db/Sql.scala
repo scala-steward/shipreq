@@ -9,13 +9,13 @@ import lib.ScalazSubset._
 import lib.Types._
 import feature.UcFilter
 import security.PasswordAndSalt
+import SqlHelpers._
+import StaticQuery.{query, queryNA, update, updateNA}
 
 /**
  * SQL for all functions exposed in the DAO.
  */
 private[db] final object Sql {
-  import SqlHelpers._
-  import StaticQuery.{query, queryNA, update, updateNA}
   implicit def autotag[T <: AnyRef](t: T): T @@ Validated = t.tag[Validated]
 
   def userRoles(r: PositionedResult): Set[String] =
@@ -53,11 +53,6 @@ private[db] final object Sql {
   private[this] case class Delete() extends scala.annotation.StaticAnnotation
 
   private def idsToSql(ids: NonEmptyList[JLong]): String = ids.map(_.toString).intercalate(",")
-
-  // ###################################################################################################################
-  // Diagnostics
-
-  val DiagSelectNow = queryNA[DateTime]("select now()")
 
   // ###################################################################################################################
   // User
@@ -283,4 +278,34 @@ private[db] final object Sql {
   val SummariseShares = query[ProjectId, ShareSummary](
     "SELECT id, url_token, name, uc_filter, view_count, to_iso8601_str(last_viewed_at)" +
       " FROM share WHERE project_id=? ORDER by name")
+}
+
+
+// #####################################################################################################################
+// Diagnostics & Stats
+private[db] final object AdminSql {
+
+  val DiagSelectNow = queryNA[DateTime]("select now()")
+
+  val StatsCountUsers = queryNA[(Long, Long)]("select count(username), count(1) from usr")
+
+  val StatsDatabaseSize = query[String, Long]("SELECT pg_database_size(?)")
+
+  val StatsSizesByTypes = query[String, (String, Long)]("""
+    WITH a as (
+        SELECT
+          relname "name"
+          ,pg_total_relation_size(C.oid) "size"
+        FROM pg_class C
+        LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace)
+        WHERE nspname NOT IN ('pg_catalog', 'information_schema')
+         AND nspname !~ '^pg_toast'
+         AND C.relkind = ?
+      ), b AS (
+        SELECT * FROM a WHERE size != 0
+        UNION SELECT '*', sum(size) FROM a
+      )
+      SELECT * FROM b WHERE size != 0 ORDER BY 1;
+    """.sql)
+
 }

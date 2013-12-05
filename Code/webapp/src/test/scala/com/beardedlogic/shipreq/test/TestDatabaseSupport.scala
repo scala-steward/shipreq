@@ -11,7 +11,7 @@ import slick.session.{Database, Session}
 import Q.interpolation
 
 import app.{Defaults, DI}
-import db.{UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
+import db.{AdminDao, UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
 import db.SqlHelpers.SP_ProjectId
 import lib.Types._
 import lib.Locks
@@ -269,6 +269,7 @@ object TestDatabaseHelpers {
 }
 
 class TestDaoProvider(dao: DaoT) extends DaoProvider {
+  override def withAdminDao[T](block: AdminDao => T): T = ???
   override def withSession[T](block: DaoS => T): T = block(dao)
   override def withTransaction[T](block: DaoT => T): T = block(dao)
 }

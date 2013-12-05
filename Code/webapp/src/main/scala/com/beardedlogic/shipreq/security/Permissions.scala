@@ -41,4 +41,11 @@ final object Permissions {
       else
         False
   }
+
+  val admin = new TypicalPermission {
+    def warnOnFailure: Boolean = true
+    def name: String = "admin"
+    def check(ctx: Ctx): Option[Boolean] =
+      ctx.user.map(_ hasRole Roles.Admin.name)
+  }
 }
