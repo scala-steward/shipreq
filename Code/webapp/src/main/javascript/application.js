@@ -121,13 +121,15 @@ function isVisible(e) {
 // =====================================================================================================================
 
 function setupViz(callback) {
-    VizWorker = new Worker('/js/viz-worker.js')
-    VizWorker.onmessage = function(ev) {
-        var d = ev.data
-        $(d.tgt).html(d.svg)
+    if (typeof(VizWorker) == 'undefined') {
+        VizWorker = new Worker('/js/viz-worker.js')
+        VizWorker.onmessage = function(ev) {
+            var d = ev.data
+            $(d.tgt).html(d.svg)
 
-        if (callback !== undefined)
-            callback(d)
+            if (callback !== undefined)
+                callback(d)
+        }
     }
 }
 
@@ -300,7 +302,8 @@ function applyShowDateGen(name, e, showFn) {
         if ($('.ucs-published').length != 0) {
             setupViz()
             publishedUcs.renderAll()
-        }
+        } else if ($('.preloadviz').length != 0)
+            setupViz();
     }
 }
 
