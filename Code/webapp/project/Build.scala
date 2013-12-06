@@ -1,7 +1,7 @@
 import sbt._
 import Keys._
 import org.sbtidea.SbtIdeaPlugin._
-import com.earldouglas.xsbtwebplugin.PluginKeys.webappResources
+import com.earldouglas.xsbtwebplugin.PluginKeys.{packageWar, webappResources}
 import com.earldouglas.xsbtwebplugin.WebPlugin.webSettings
 
 object B extends Build {
@@ -64,6 +64,13 @@ object B extends Build {
     )
   }
 
+  def warSettings = (p: Project) => p.settings(
+    // Don't allow WEB-INF/_scalate into the WAR
+    excludeFilter in packageWar ~= { _ ||
+        new FileFilter { def accept(f: File) = f.getPath.containsSlice("/_scalate/") }
+    }
+  )
+
   def testSettings = (p: Project) => p.settings(
     // Put webapp on test classpath so templates load
     unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" },
@@ -90,6 +97,7 @@ object B extends Build {
       eclipseSettings,
       intellijSettings,
       javascriptSettings,
+      warSettings,
       testSettings,
       integrationTestSettings
     )
