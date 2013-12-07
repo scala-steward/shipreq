@@ -10,10 +10,10 @@ trait ResourceLeaseMonad1[Resource, M[_]] extends ResourceLeaseFunctor[Resource]
   def flatMap[T](f: Resource => M[T]): M[T] = exec(f(_))
 }
 
-trait ResourceLeaseMonadR[Resource, L, M[L, _]] extends ResourceLeaseFunctor[Resource] {
-  def flatMap[T](f: Resource => M[L, T]): M[L, T] = exec(f(_))
-}
+//trait ResourceLeaseMonadR[Resource, L, M[L, _]] extends ResourceLeaseFunctor[Resource] {
+//  def flatMap[T](f: Resource => M[L, T]): M[L, T] = exec(f(_))
+//}
 
-trait ResourceLeaseMonadL[Resource, R, M[_, R]] extends ResourceLeaseFunctor[Resource] {
-  def flatMap[T](f: Resource => M[T, R]): M[T, R] = exec(f(_))
-}
+//trait ResourceLeaseMonadL[Resource, R, M[_, R]] extends ResourceLeaseFunctor[Resource] {
+//  def flatMap[T](f: Resource => M[T, R]): M[T, R] = exec(f(_))
+//}
