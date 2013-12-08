@@ -82,6 +82,14 @@ object ShipReq {
       .exec(getCommonDeps)
   }
 
+  val about =
+    exec(http("About").get("/about").headers(userClicked).check(status is 200))
+      .exec(getCommonDeps)
+
+  val register =
+    exec(http("Register").get("/register").headers(userClicked).check(status is 200))
+      .exec(getCommonDeps)
+
   val getLogin =
     exec(http("Login GET").get("/login").headers(userClicked)
       .check(
@@ -134,7 +142,9 @@ object ShipReq {
 
   val smokeTest = scenario("Smoke Test")
     .group("Home (anon)")(exec(home(false)))
-    .exec(loginAs(testUser1))
+                      .exec(about)
+                      .exec(register)
+    .pause( 50 millis).exec(loginAs(testUser1))
     .pause(100 millis).exec(project("j8NA940XXv9"))
     .pause(200 millis).exec(usecaseEditor("2PbB1awttl1"))
     .pause(200 millis).exec(usecaseEditor("2PbB10XLd8j"))

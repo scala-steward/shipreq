@@ -10,4 +10,4 @@ eval_url "$1"
 cd_gatling
 echo "URL: $url"
 
-JAVA_OPTS="-Dbaseurl=$url" bin/gatling.sh -s SmokeTest -nr -rf /tmp
+time JAVA_OPTS="-Dbaseurl=$url" bin/gatling.sh -s SmokeTest -nr -rf /tmp
