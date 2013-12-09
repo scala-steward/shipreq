@@ -4,7 +4,6 @@ FUNC TODO
 =========
 
 * [M.2.5=7] [LEGL] Add terms of service.
-* [M.0.5=5] [BUG ] Stale assets served after update.
 * [M.3.2=5] [PROJ] Delete use cases.
 
 * [S.3.4=7] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.

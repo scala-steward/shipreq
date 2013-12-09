@@ -12,6 +12,7 @@
         <init-param><param-name>gzip</param-name><param-value>true</param-value></init-param>
         <init-param><param-name>dirAllowed</param-name><param-value>false</param-value></init-param>
         <init-param><param-name>etags</param-name><param-value>true</param-value></init-param>
+        <init-param><param-name>cacheControl</param-name><param-value>must-revalidate</param-value></init-param>
         <init-param><param-name>maxCacheSize</param-name><param-value>16777216</param-value></init-param>
         <load-on-startup>0</load-on-startup>
     </servlet>
