@@ -1,3 +1,4 @@
+@charset "UTF-8";
 .alert { margin: 20px auto 20px auto; max-width: 480px; }
 .alert p:last-child { margin-bottom: 0; }
 
@@ -116,3 +117,15 @@ html, body { height: 100%; }
 .ucs-published main .fvs .steps .ind th { font-weight: normal; }
 .ucs-published main .fvs .steps .ind td { padding-left: 1.2ex; }
 .ucs-published main .fvs .steps .highlight { _font-weight: bold; background: #ffc; }
+
+blockquote.rndquote { max-width: 84ex; margin-left: auto; margin-right: auto; }
+blockquote.rndquote * { color: #363636; }
+blockquote.rndquote footer { text-align: right; font-size: 85%; }
+blockquote.rndquote footer:before { content: "— "; }
+blockquote.rndquote footer cite + cite:before { content: ", "; }
+blockquote.rndquote footer cite.title { font-style: italic; }
+blockquote.rndquote .errcost { margin-top: -0.5em; }
+blockquote.rndquote .errcost tr > *:first-child { padding-right: 2em; }
+blockquote.rndquote .errcost tr:nth-child(2) td { padding-top: 0.3em; }
+blockquote.rndquote .errcost th { border-bottom: solid 1px #222; font-size: 1.3em; font-weight: normal; padding-bottom: 0.3em; padding-top: 0; }
+blockquote.rndquote .errcost th + th, blockquote.rndquote .errcost td + td { text-align: center; }
