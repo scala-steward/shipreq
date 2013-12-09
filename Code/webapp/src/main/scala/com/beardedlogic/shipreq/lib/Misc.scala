@@ -106,4 +106,18 @@ trait Misc {
       s"1 $singular"
     else
       s"$c $plural"
+
+  /**
+   * Fast impl that checks if a string contains any alphabetic characters.
+   */
+  final def containsAlpha(s: String): Boolean = {
+    var i = s.length - 1
+    while (i >= 0) {
+      val ch = s(i)
+      if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
+        return true
+      i -= 1
+    }
+    false
+  }
 }

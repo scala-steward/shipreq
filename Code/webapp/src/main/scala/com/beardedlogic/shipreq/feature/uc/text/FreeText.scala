@@ -1,5 +1,6 @@
 package com.beardedlogic.shipreq.feature.uc.text
 
+import com.beardedlogic.shipreq.lib.Misc.containsAlpha
 import com.beardedlogic.shipreq.lib.Types._
 import com.beardedlogic.shipreq.feature.validation.Validator
 import com.beardedlogic.shipreq.feature.uc.UcParsingCtx
@@ -72,9 +73,9 @@ object FreeText {
 
     @inline
     def parseStepRef(label: StepLabel): FreeTextTerm =
-      labelsToIds.get(label) match {
-        case Some(id) => StepRef(id, label)
-        case None     => InvalidStepRef(label)
+      lookupLabel(label, labelsToIds) match {
+        case Some((exactLabel, id)) => StepRef(id, exactLabel)
+        case None                   => InvalidStepRef(label)
       }
 
     @inline
@@ -93,6 +94,16 @@ object FreeText {
       case e@Error(_, _)      => throw new RuntimeException(s"FreeText parsing error occurred: $e. Text: ${text.inspect}")
     }
   }
+
+  def lookupLabel(label: StepLabel, available: Map[StepLabel, LocalStepId]): Option[(StepLabel, LocalStepId)] =
+    available.get(label) match {
+      case Some(id) =>
+        Some((label, id))
+      case None if containsAlpha(label) =>
+        available.find {case (l, _) => l.equalsIgnoreCase(label)}
+      case None =>
+        None
+    }
 }
 
 // =====================================================================================================================

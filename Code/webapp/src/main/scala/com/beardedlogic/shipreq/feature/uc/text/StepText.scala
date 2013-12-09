@@ -104,10 +104,10 @@ class StepTextUpdater(field: StepField, stepId: LocalStepId) extends ParsedTextU
         var good: Flow.Refs = Map.empty
         for (token <- clause.refs)
           token match {
-            case PotentiallyValidRef(lbl) =>
-              labelsToIds.get(lbl) match {
-                case Some(stepId) => good += (stepId -> lbl)
-                case None => bad ::= Cord(makeInvalidStepRef(lbl))
+            case PotentiallyValidRef(label) =>
+              FreeText.lookupLabel(label, labelsToIds) match {
+                case Some((exactLabel, stepId)) => good += (stepId -> exactLabel)
+                case None                       => bad ::= Cord(makeInvalidStepRef(label))
               }
             case InvalidRefToken(token) =>
               bad ::= Cord(token)

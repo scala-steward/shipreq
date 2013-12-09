@@ -11,7 +11,6 @@ FUNC TODO
 * [S.4.1=5] [UA  ] Integrate feedback.js.
 * [S.0.5=5] [PERF] Cascaded deletion VERY slow with non-trivial amount of data.
 * [S.0.5=5] [ACCT] Password reset (when not logged in).
-* [S.0.5=5] [UCE ] Step refs are case-sensitive. [5.e.1] should work in place of [5.E.1].
 * [S.0.5=5] [FAIL] Robustness: Handle DB going down.
 * [S.2.1=3] [ACCT] Change username.
 * [S.1.1=2] [READ] Markup for http links.

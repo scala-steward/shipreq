@@ -184,6 +184,10 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
           oldTest("This is [S . 1] and [ S.1 ] together!", "This is [S.1] and [S.1] together!", Map(X1 -> S1))
         }
 
+        it("should resolve step refs without case sensitivity") {
+          testBoth("[s.1]", Some("[S.1]"), StepRef(X1, S1))
+        }
+
         it("should add ? to invalid step refs") {
           testBoth("[1.0.9] doesn't exist.", "[1.0.9?] doesn't exist."
             , InvalidStepRef("1.0.9".asLabel), PlainText(" doesn't exist."))
@@ -453,6 +457,10 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
 
       it("should allow links to self") {
         testFlowText("S.0", "[S.0]", Seq(S0))
+      }
+
+      it("should resolve refs without case sensitivity") {
+        testFlowText("s.1", "[S.1]", Seq(S1))
       }
 
       it("should resolve duplicate refs") {
