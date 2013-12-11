@@ -243,6 +243,15 @@ html, body { height: 100% } // Cannot have any padding or margin here
   }
 }
 
+.hasPublishedFVs .fvpub {
+  .bad.ref {
+    color:#c00;
+    cursor:no-drop;
+  }
+  ul {padding-left:2ex}
+  .wouldbelink {color: #428bca}
+}
+
 .ucs-published {
   color:#222;
   margin: 0.8em auto 0 auto;
@@ -294,8 +303,6 @@ html, body { height: 100% } // Cannot have any padding or margin here
       & > tr > td {padding-left:2ex}
       & > tr > th , & > tr > td {padding-top:0.3ex; padding-bottom:0.3ex}
 
-      td > ul {padding-left:2ex}
-
       tr.rev {
         margin-bottom:0 !important;
         border-bottom:none !important;
@@ -317,10 +324,6 @@ html, body { height: 100% } // Cannot have any padding or margin here
       }
 
       a.step:not(:hover), a.uc:not(:hover) {border-bottom:1px dotted}
-      .bad.ref {
-        color:#c00;
-        cursor:no-drop;
-      }
       .steps {
         th {white-space:nowrap}
         td {width:100%}

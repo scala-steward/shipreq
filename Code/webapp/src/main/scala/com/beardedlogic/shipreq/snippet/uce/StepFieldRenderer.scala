@@ -22,6 +22,8 @@ import util.HtmlTransformExt.ajaxOnClick
 import util.JsExt._
 import Renderer._
 import UseCaseEditor._
+import feature.publish.HtmlFieldValuePublishers
+import feature.uc.text.StepText
 
 object StepFieldRenderer {
   @inline final def ExprForNodeAndChildren(n: StepNode) = n.mapRecursive("#" + _.id).mkString(",")
@@ -32,6 +34,13 @@ object StepFieldRenderer {
 
   /** ID of the textarea that contains a step's text. */
   @inline final def textareaId(id: LocalStepId): String = (id: String) + "-t"
+
+  @inline final def stepPubId(id: LocalStepId): String = (id: String) + "-p"
+
+  @inline final def renderStepPub(value: StepText) = HtmlFieldValuePublishers.stepField(value)
+
+  case class StepUpdateMsg(taid: String, tav: String, pid: String, pv: NodeSeq)
+  final val StepUpdateTrigger = JsJsonTrigger[StepUpdateMsg]("step-upd")
 }
 
 import StepFieldRenderer._
@@ -117,8 +126,10 @@ case class StepFieldRenderer(
   @inline final def labelPrefixForLevel(level: Int) = if (level == 0) rootLabelPrefix else ""
   @inline final def labelFor(node: StepNode) = labelPrefixForLevel(node.level) + node.label
 
+  @inline final def step(id: LocalStepId): StepText = f.value.textmap.get(id).getOrElse(StepText.empty)
+
   /** The text value of a step. */
-  @inline final def text(id: LocalStepId): String = f.value.textmap.get(id).map(_.text).getOrElse("")
+  @inline final def text(id: LocalStepId): String = step(id).text
 
   // *************************************
   // *             Rendering             *
@@ -152,6 +163,8 @@ case class StepFieldRenderer(
         & IfCssSel(cfg.prohibitRemoval_?(id, tree)) {".step [class+]" #> "noDel"}
         & ".lbl span *" #> labelFor(n)
         & ".lbl span [id]" #> labelId(id)
+        & ".fvpub [id]" #> stepPubId(id)
+        & ".fvpub *" #> renderStepPub(step(id))
         & "@text" #> ajaxTextarea(text(id), modText(id)(_), "id" -> textareaId(id))
         & ".add" #> ajaxOnClick(%%(f.addStep))
         & ".delete" #> ajaxOnClick(%%(f.removeStep))
@@ -202,10 +215,13 @@ case class StepFieldRenderer(
   )
 
   def jsUpdateStepFieldText(id: LocalStepId): JsCmd =
-    JqStepText(id) ~> JqSetTextarea(text(id))
+    StepUpdateTrigger.trigger(
+      StepUpdateMsg(
+        textareaId(id), text(id),
+        stepPubId(id), renderStepPub(step(id))))
 
   @inline private def jsShowNewStep(node: StepNode) =
-    JqId(node.id) ~> JqHide ~> JqSlideDown(Fast).andThen(JqStepText(node) ~> JqFocus)
+    JqId(node.id) ~> JqHide ~> JqSlideDown(Fast).andThen(jsFocus(node))
 
   def jsAddTailStep(node: StepNode): JsCmd = (
     JqExpr(cfg.tailStepCss) ~> JqBefore(renderSingleStepXml(node))
@@ -234,8 +250,10 @@ case class StepFieldRenderer(
 
   @inline private def jsFocusIfSpecified(node: StepNode): JsCmd =
     S.param("focus") match {
-    case Full(_) => JqStepText(node) ~> JqFocus
-    case _ => Noop
+    case Full(_) => jsFocus(node)
+    case _       => Noop
   }
 
+  @inline private def jsFocus(node: StepNode): JsCmd =
+    JsCmds.Run(s"focusUCEInput(${JqStepText(node).toJsCmd})")
 }

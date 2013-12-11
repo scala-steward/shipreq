@@ -7,7 +7,7 @@ import com.beardedlogic.shipreq.feature.uc.UseCase
 import com.beardedlogic.shipreq.feature.uc.field._
 import com.beardedlogic.shipreq.feature.uc.step.{StepNode, StepTreeZipper}
 import com.beardedlogic.shipreq.feature.uc.text.FreeTextTerms._
-import com.beardedlogic.shipreq.feature.uc.text.{FlowClause, FreeTextTerm, StepText, FreeText}
+import com.beardedlogic.shipreq.feature.uc.text.{FreeTextTerm, StepText, FreeText}
 import com.beardedlogic.shipreq.lib.ScalazSubset._
 import com.beardedlogic.shipreq.lib.Misc.DateTimeExt
 import com.beardedlogic.shipreq.lib.Types._
@@ -20,6 +20,9 @@ abstract class GenericPublisher(input: Input) {
   implicit def xMonoid: Monoid[X]
   implicit def listMonoid[A]: Monoid[List[A]] = scalaz.std.list.listMonoid
   implicit def listInstance: Traverse[List] = scalaz.std.list.listInstance
+  implicit def markupTokenRenderer: MarkupTokenRenderer[X]
+  implicit def fttRenderer: FTTRenderer[X]
+  implicit def stepRenderer: StepRenderer[X]
 
   @inline final def zero = xMonoid.zero
 
@@ -27,14 +30,8 @@ abstract class GenericPublisher(input: Input) {
 
   @inline final def inScope(num: UseCaseNumber) = useCases.exists(_.number == num)
 
-  final def plainText(value: String): X =
-    plainText(List(PlainText(value)))
-
-  final def plainText(terms: List[FreeTextTerm]): X =
-    markupTokens(
-      TextMarkup.markup(
-        TextMarkup.introduce(
-          terms)))
+  final def markedUpText(value: String)            : X = markedUpText(List(PlainText(value)))
+  final def markedUpText(terms: List[FreeTextTerm]): X = Helpers.markupAndRenderFTTs(terms)
 
   // -------------------------------------------------------------------------------------------------------------------
   // High-level
@@ -53,7 +50,7 @@ abstract class GenericPublisher(input: Input) {
   def docHeader(h: DocHeader): X = docHeader(docHeaderTitle(h.title), h.preface.map(docHeaderPreface).getOrElse(zero))
   def docHeader(title: X, preface: X): X
   def docHeaderTitle(t: String): X
-  final def docHeaderPreface(p: String) = plainText(p)
+  final def docHeaderPreface(p: String) = markedUpText(p)
   def docHeaderPreface(p: X): X
 
   def optionalDocLastUpdated: X = input.lastUpdated.map(t => docLastUpdated(t.toIso8601Str)) getOrElse zero
@@ -133,49 +130,7 @@ abstract class GenericPublisher(input: Input) {
   def textFieldValueSurround(value: X): X
   def textFieldValueInner(value: FreeText): X = text(value)
 
-  final def text(value: FreeText): X = plainText(value.terms)
-
-  final def markupTokens(tokens: List[MarkupToken]): X = {
-    var prev: MarkupToken = null
-    tokens.foldLeft(zero)((acc, mt) => {
-      val x = markupToken(mt)
-      val r =
-        if (prev eq null)
-          x
-        else
-          acc |+| betweenMarkupTokens(prev, mt) |+| x
-      prev = mt
-      r
-    })
-  }
-
-  def markupToken(t: MarkupToken): X
-  def betweenMarkupTokens(a: MarkupToken, b: MarkupToken): X
-
-  final def term(term: FreeTextTerm): X = term match {
-    case t: PlainText         => fttPlainText(t)
-    case t: StepRef           => fttStepRef(t)
-    case t: InvalidStepRef    => fttInvalidStepRef(t)
-    case t@ DeletedRef        => fttDeletedRef
-    case t: UseCaseRef        => fttUseCaseRef(t)
-    case t: UseCaseSelfRef    => fttUseCaseSelfRef(t)
-    case t: InvalidUseCaseRef => fttInvalidUseCaseRef(t)
-    case t: MathTexTerm       => fttMathTex(t)
-  }
-
-  def fttPlainText(value: PlainText)                : X
-  def fttDeletedRef                                 : X
-  def fttStepRef(value: StepRef)                    : X
-  def fttInvalidStepRef(value: InvalidStepRef)      : X
-  def fttUseCaseRefOutOfScope(value: UseCaseRef)    : X
-  def fttUseCaseRefInScope(value: AnyUseCaseRef)    : X
-  def fttUseCaseSelfRef(value: UseCaseSelfRef)      : X = fttUseCaseRefInScope(value)
-  def fttInvalidUseCaseRef(value: InvalidUseCaseRef): X
-  def fttMathTex(value: MathTexTerm)                : X
-
-  final def fttUseCaseRef(r: UseCaseRef) =
-    if (inScope(r.num)) fttUseCaseRefInScope(r)
-    else                fttUseCaseRefOutOfScope(r)
+  final def text(value: FreeText): X = markedUpText(value.terms)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Step fields
@@ -217,20 +172,7 @@ abstract class GenericPublisher(input: Input) {
     stepTreeWithChildren(step, stepLeader(step), stepText(step.value), stepTree(children))
   def stepTreeWithChildren(step: StepTreeZipper.AnyFocus, stepLeader: String, text: X, children: X): X
 
-  def stepText(value: StepText): X =
-    text(value.mainClause) |+| flowClause(value.flowFromClause) |+| flowClause(value.flowToClause)
-
-  def flowClause(oc: Option[FlowClause]): X =
-    oc match {
-      case None => zero
-      case Some(c) => flowClause(c)
-    }
-  def flowClause(c: FlowClause): X =
-    flowClause(c.flowObj.style.arrow, c.sortedLabels.toList map flowRef intercalate flowRefSep)
-
-  def flowClause(arrow: String, refs: X): X
-  def flowRef(l: StepLabel): X
-  def flowRefSep: X
+  final def stepText(value: StepText): X = stepRenderer.step(value)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Other fields

@@ -1,6 +1,7 @@
 %div(data-lift="surround?with=blank;at=content")
   %link(data-lift="head" href="/css/uce.css" rel="stylesheet" type="text/css")
   %script(data-lift="head" src="/js/uce.js" type="text/javascript")
+  %div(data-lift="embed?what=publish-includes")
 
   %header
     %nav.navbar.navbar-default(role="navigation")
@@ -152,12 +153,13 @@
     .save-row
       %button.btn.btn-lg.btn-success Save
 
-    %table.fieldFrame
+    %table.fieldFrame.hasPublishedFVs
 
-      %tr.fieldFrame#template-text
+      %tr.fieldFrame.textfield#template-text
         %th Actors
-        %td
-          %textarea(rows=1) Scorer
+        %td.txtAndPub
+          %div.fvpub xxx
+          %textarea(rows=1) xxx
 
       %tr.fieldFrame#template-courses-n.courses-n
         %th
@@ -167,9 +169,9 @@
             %tr
               %td.lbl
                 <span>1.0</span>.
-              %td.txt
-                %form(data-lift="form.ajax" style="display: inline")
-                  %textarea(name="text" rows=1) Score a new game of Scrabble.
+              %td.txt.txtAndPub
+                %div.fvpub xxx
+                %textarea(name="text" rows=1) xxx
               %td.ctl
                 .btn-group
                   %button.btn.btn-default.btn-sm.delete ‐

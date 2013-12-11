@@ -58,7 +58,7 @@ function assertFocus(element, expected, msg) {
 
 function setFocus(elementId) {
     var e = $id(elementId)
-    e.focus()
+    focusUCEInput(e)
     assertFocus(e, true, "Element should get focus." )
     return e
 }

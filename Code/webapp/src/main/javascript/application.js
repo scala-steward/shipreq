@@ -206,7 +206,6 @@ function registerDomEnhancementsWithLiveQuery() {
         }(e))
     }
 }
-$(document).ready(registerDomEnhancementsWithLiveQuery)
 
 function enhanceDom() { $(document).enhanceDom() }
 
@@ -310,6 +309,8 @@ function applyShowDateGen(name, e, showFn) {
 // =====================================================================================================================
 
 $(document).ready(function(){
+
+    registerDomEnhancementsWithLiveQuery();
 
     ucFilterForm.setup();
     publishedUcs.setup();

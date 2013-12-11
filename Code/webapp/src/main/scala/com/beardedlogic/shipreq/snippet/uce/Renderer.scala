@@ -11,9 +11,10 @@ import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
+import feature.FlowGraph
 import feature.uc.change._
 import feature.uc.field._
-import feature.FlowGraph
+import feature.publish.HtmlFieldValuePublishers
 import feature.validation.VFailure
 import lib.ScalazSubset._
 import lib.Types._
@@ -54,8 +55,12 @@ object Renderer {
   final val SaveButtonEnableJs: JsCmd = JqId(SaveButtonId) ~> JqEnable
   final val SaveButtonDisableJs: JsCmd = JqId(SaveButtonId) ~> JqDisable
 
-  final val FlowGraphTrigger = JsTextTrigger("flowgraph-update")
+  final val FlowGraphTrigger = JsTextTrigger("flowgraph-upd")
 
+  case class TextFieldUpdateMsg(taid: String, tav: String, pid: String, pv: NodeSeq)
+  final val TextFieldUpdateTrigger = JsJsonTrigger[TextFieldUpdateMsg]("textfield-upd")
+
+  // TODO use trigger for title update
   case object JsUpdatePageTitle extends JsCmd {
     override def toJsCmd = "updatePageTitle()"
   }
@@ -67,6 +72,9 @@ case class Renderer(
   modifyUC: UcModifier => JsCmd,
   saveUC: Option[() => JsCmd]
   ) extends RendererHelper with Logger {
+
+  @inline final def textFieldPubId(f: TextField) = textFieldIds(f) + "-p"
+  @inline final def renderTextFieldPub(f: TextField) = HtmlFieldValuePublishers.textField(f.value)
 
   // *************************************
   // *             Rendering             *
@@ -96,6 +104,8 @@ case class Renderer(
 
   def renderTextField(f: TextField) = (
     "th *" #> f.defn.title &
+    ".fvpub [id]" #> textFieldPubId(f) &
+    ".fvpub *" #> renderTextFieldPub(f) &
     "textarea" #> SHtml.ajaxTextarea(f.value.text, modTextField(f)(_), "id" -> textFieldIds(f))
   )
 
@@ -167,5 +177,9 @@ case class Renderer(
     JsUpdatePageTitle
 
   def jsUpdateTextField(f: TextField): JsCmd =
-    JqId(textFieldIds(f)) ~> JqSetTextarea(f.value.text)
+    TextFieldUpdateTrigger.trigger(
+      TextFieldUpdateMsg(
+        textFieldIds(f), f.value.text,
+        textFieldPubId(f), renderTextFieldPub(f)))
+
 }

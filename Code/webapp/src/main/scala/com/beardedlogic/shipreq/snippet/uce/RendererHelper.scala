@@ -1,6 +1,7 @@
 package com.beardedlogic.shipreq.snippet.uce
 
 import net.liftweb.http.js.JsCmd
+import com.beardedlogic.shipreq.lib.SnippetHelpers
 import UseCaseEditor._
 
 private [uce] trait RendererHelper {
@@ -15,4 +16,6 @@ private [uce] trait RendererHelper {
 
   implicit def autoApplyModifier(m: UcModifier): JsCmd = modifyUC(m)
   implicit def autoApplyModifierFn(m: UcModifier): () => JsCmd = () => modifyUC(m)
+
+  implicit def jsonFormats = SnippetHelpers.DefaultJsonFormat
 }

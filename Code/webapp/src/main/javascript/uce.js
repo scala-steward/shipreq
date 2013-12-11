@@ -1,6 +1,24 @@
 // =====================================================================================================================
 // Inspection
 
+function getPubView(ta, logError) {
+    var p = $(ta).parent('td').find('.fvpub')
+    if (p.length != 1) {
+        if (logError)
+            console.error("Didn't find fvpub.", this, p)
+    } else
+        return p
+}
+
+function getInputForPub(p, logError) {
+    var i = $(p).parent('td').find('textarea')
+    if (i.length != 1) {
+        if (logError)
+            console.error("Didn't find input.", this, i)
+    } else
+        return i
+}
+
 /**
  * Locates the root container of an element in a step.
  *
@@ -79,7 +97,7 @@ function decIndentButtonOfStep(stepRoot) { return soleVisibleChild(stepRoot, 'bu
  *
  * @returns jQuery expression.
  */
-function allEditorTextInputsQ() { return $('.uce textarea:visible') }
+function allEditorTextInputsQ() { return $('.uce textarea') }
 
 /**
  * Returns the sibling text-input of a given text-input that is [offset] elements away.
@@ -160,10 +178,6 @@ function titleOfFlowgraphNode(node) {
     return $(node).find('title').text()
 }
 
-$(document).on('flowgraph-update', function(event, data) {
-    VizWorker.postMessage({tgt:'.flowgraph td', dot:data})
-});
-
 // =====================================================================================================================
 
 /**
@@ -234,13 +248,32 @@ function withFocusedInputField(fn) {
  */
 function changeFocus(tgtFn) {
     withFocusedInputField(function (sel) {
-        var tgt = tgtFn(sel.id)
-        $(tgt).focus().select()
+        var tgtInputElem = $(tgtFn(sel.id))
+        focusUCEInput(tgtInputElem)
         return true;
     })
 }
 
+/**
+ * Gives focus to an input element in the UCE.
+ * Some input elements are hidden behind a publish-style view; this caters for those scenarios.
+ */
+function focusUCEInput(inputElem) {
+    var p = getPubView(inputElem)
+    if (p)
+        p.click()
+    else
+        $(inputElem).focus().select();
+}
+
 function blurFn(sel) { return $(sel).blur() }
+
+function updateTxtAndPub(taid, tav, pid, pv) {
+    $('#' + taid).val(tav).trigger('autosize.resize')
+    var p = $('#' + pid)
+    p.html(pv)
+    if (p.find('script').length > 0) MathJax.Hub.Queue(["Typeset", MathJax.Hub, p[0]]);
+}
 
 // =====================================================================================================================
 // Feature: Click a step label while during textarea-input to insert a reference.
@@ -312,11 +345,6 @@ function clickLiftAjaxButtonWithExtraArgs(button, args) {
  */
  function clickWithFocusFlag(button){ clickLiftAjaxButtonWithExtraArgs(button, 'focus=true') }
 
-// Install event handlers so that users can click-to-insert step labels while typing
-$(document).on('focus', "#uce textarea", autoSetTypingMode)
-$(document).on('blur',  "#uce textarea", autoSetTypingMode)
-$(document).on('mousedown', ".step .lbl, .step .lbl *", onLabelClick)
-
 // =====================================================================================================================
 // Keyboard shortcuts
 
@@ -351,10 +379,48 @@ function promptWhenLeaving() {
 window.onbeforeunload = promptWhenLeaving
 
 // =====================================================================================================================
+// Triggers
+
+$(document).on('flowgraph-upd', function(event, data) {
+    VizWorker.postMessage({tgt:'.flowgraph td', dot:data})
+});
+
+$(document).on('textfield-upd', function(event, data) {
+    updateTxtAndPub(data.taid, data.tav, data.pid, data.pv)
+});
+
+$(document).on('step-upd', function(event, data) {
+    updateTxtAndPub(data.taid, data.tav, data.pid, data.pv)
+});
+
+// =====================================================================================================================
 
 function uceSetup() {
     setupKeyBindings()
     setupVizForUce()
     updatePageTitle()
+
+    // Install event handlers so that users can click-to-insert step labels while typing
+    $(document).on('focus', "#uce textarea", autoSetTypingMode)
+    $(document).on('blur',  "#uce textarea", autoSetTypingMode)
+    $(document).on('mousedown', ".step .lbl, .step .lbl *", onLabelClick)
+
+    // Click a published-FV swaps it into an input field so the user can type
+    $(document).on('click', '.txtAndPub .fvpub', function(){
+        var p = $(this)
+        var ta = getInputForPub(p, true)
+        if (ta) {
+            p.hide();
+            ta.show().focus().select();
+        }
+    })
+    $(document).on('blur', '.txtAndPub textarea', function(){
+        var ta = $(this)
+        var p = getPubView(ta, true)
+        if (p) {
+            ta.hide();
+            p.show();
+        }
+    })
 }
 $(document).ready(uceSetup)

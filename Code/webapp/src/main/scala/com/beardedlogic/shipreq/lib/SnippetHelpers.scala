@@ -35,7 +35,15 @@ object SnippetHelpers extends StaticSnippetHelpers {
     }
   }
 
-  final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer
+  final val NodeSeqJsonSerializer: Serializer[NodeSeq] = new Serializer[NodeSeq] {
+    import net.liftweb.json._
+    def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), NodeSeq] = ???
+    def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
+      case expr: NodeSeq => JString(expr.toString)
+    }
+  }
+
+  final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer + NodeSeqJsonSerializer
 }
 
 import SnippetHelpers.{ErrorAlertIdTag, NoticeContainerExpTag}

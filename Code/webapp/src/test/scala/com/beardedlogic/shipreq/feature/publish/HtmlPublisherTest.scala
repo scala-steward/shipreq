@@ -2,11 +2,11 @@ package com.beardedlogic.shipreq.feature.publish
 
 import scalaz._, com.beardedlogic.shipreq._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
 import org.joda.time.DateTime
-import org.scalatest.{Matchers, FunSuite}
+import org.scalatest.{Matchers, FunSpec}
 import net.liftweb.common.Logger
 import scala.xml._
 
-class HtmlPublisherTest extends FunSuite with Matchers {
+class HtmlPublisherTest extends FunSpec with Matchers {
 
   val ucs =
     List((UseCase.as((1:Short).tag[IsUseCaseNumber],UseCaseHeader("Delete a Use Case".tag[Validated])
@@ -76,7 +76,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Description</th>
-          <td>
+          <td class="fvpub">
             This is a link to
             <span class="bad ref">[DELETED]</span>
             .
@@ -84,7 +84,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Actors</th>
-          <td>
+          <td class="fvpub">
             This is an invalid link to
             <span class="bad ref">[1.9.9?]</span>
             .
@@ -92,7 +92,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Pre-Conditions</th>
-          <td>
+          <td class="fvpub">
             BA is signed in and has at least one use case.
             <br/>
             <br/>
@@ -123,7 +123,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Post-Conditions</th>
-          <td>
+          <td class="fvpub">
             <ul>
               <li>UC no longer accessable.</li>
               <li>Remaining UCs have no links to the deleted UC.</li>
@@ -141,7 +141,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Normal Course</th>
-          <td class="steps">
+          <td class="steps fvpub">
             <table class="lvl-0">
               <tr id="step-1_0">
                 <th>1.0.</th>
@@ -200,23 +200,23 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Use Case Relationships</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Constraints and Business Rules</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Frequency of Use</th>
-          <td>Occasional.</td>
+          <td class="fvpub">Occasional.</td>
         </tr>
         <tr>
           <th>Special Requirements</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Assumptions</th>
-          <td>
+          <td class="fvpub">
             Refs to deleted UC will be unnormalised to
             <span class="bad ref">[DELETED]</span>
             on load.
@@ -224,7 +224,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Notes and Issues</th>
-          <td>The deleted UC's number will not be reclaimed.</td>
+          <td class="fvpub">The deleted UC's number will not be reclaimed.</td>
         </tr>
       </tbody>
     </table>
@@ -247,7 +247,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Description</th>
-          <td>
+          <td class="fvpub">
             UCs often refer to other UCs.
             <br/>
             <br/>
@@ -261,19 +261,19 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Actors</th>
-          <td>BA</td>
+          <td class="fvpub">BA</td>
         </tr>
         <tr>
           <th>Pre-Conditions</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Post-Conditions</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Normal Course</th>
-          <td class="steps">
+          <td class="steps fvpub">
             <table class="lvl-0">
               <tr id="step-2_0">
                 <th>2.0.</th>
@@ -345,7 +345,7 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Exceptions</th>
-          <td class="steps">
+          <td class="steps fvpub">
             <table class="lvl-0">
               <tr id="step-2_E_1">
                 <th>2.E.1.</th>
@@ -429,15 +429,15 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Use Case Relationships</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Constraints and Business Rules</th>
-          <td>References are only allowed between data in the same project.</td>
+          <td class="fvpub">References are only allowed between data in the same project.</td>
         </tr>
         <tr>
           <th>Frequency of Use</th>
-          <td>
+          <td class="fvpub">
             P(80%): ≥ 1 time per 10 UCs.
             <br/>
             P(50%): ≥ 3 times per 10 UCs.
@@ -445,17 +445,17 @@ class HtmlPublisherTest extends FunSuite with Matchers {
         </tr>
         <tr>
           <th>Special Requirements</th>
-          <td>
+          <td class="fvpub">
             MAYBE: If the referenced UC doesn't already, it should get a line like &quot;Referenced in [UC-X: Xxxx]&quot; appended to its &quot;Use Case Relationships&quot; field.
           </td>
         </tr>
         <tr>
           <th>Assumptions</th>
-          <td></td>
+          <td class="fvpub"></td>
         </tr>
         <tr>
           <th>Notes and Issues</th>
-          <td>
+          <td class="fvpub">
             UC refs in flow-clauses are prohibited but UC step refs are not. (See
             <span class="uc outofscope">
               UC-3
@@ -474,14 +474,14 @@ class HtmlPublisherTest extends FunSuite with Matchers {
 
   val logger = Logger.apply("BLAH!")
 
-  test("Sample Published HTML should not change") {
-    val html = HtmlPublisher.publish(input)
-
-    //import scalaz._, Scalaz._
-    //logger.debug("\n\n\n" + html.shows + "\n\n")
-
-    //norm(html) shouldBe norm(expectedHtml)
-    compareLists(norm(html), norm(expectedHtml))
+  describe("HTML Publisher") {
+    it("should render sample data as expected") {
+      val html = HtmlPublisher.publish(input)
+      //import scalaz._, Scalaz._
+      //logger.debug("\n\n\n" + html.shows + "\n\n")
+      //norm(html) shouldBe norm(expectedHtml)
+      compareLists(norm(html), norm(expectedHtml))
+    }
   }
 
   val pretty = new PrettyPrinter(160,2)
@@ -496,5 +496,77 @@ class HtmlPublisherTest extends FunSuite with Matchers {
     for ((a,e) <- as zip es)
       a shouldBe e
     as.size shouldBe es.size
+  }
+
+  // ===================================================================================================================
+
+  trait ValuePublisherTester {
+    def testN(terms: FreeTextTerm*)(exp: NodeSeq): Unit = test(terms: _*)(exp.toString)
+    def test(terms: FreeTextTerm*)(exp: String): Unit
+  }
+
+  def textFieldLike(t: ValuePublisherTester) = {
+    import t._
+
+    it("should render markup tokens") {
+      test(PlainText("Blah\n\nHehe\n* LI 1\n* LI 2"))("""Blah<br/><br/>Hehe<ul><li>LI 1</li><li>LI 2</li></ul>""")
+    }
+    it("should render FTT: step refs") {
+      testN(StepRef("ID12".tag, "1.2".tag))(<span class="wouldbelink step">[1.2]</span>)
+      testN(InvalidStepRef("1.9.9".tag))   (<span class="bad ref">[1.9.9?]</span>)
+      testN(DeletedRef)                    (<span class="bad ref">[DELETED]</span>)
+    }
+    it("should render FTT: UC refs") {
+      val num = 3.toShort.tag[IsUseCaseNumber]
+      testN(UseCaseRef(num, "Do Stuff"))             (<span class="wouldbelink uc">[UC-3: Do Stuff]</span>)
+      testN(UseCaseSelfRef(num, "Do Stuff"))         (<span class="wouldbelink uc">[UC-3: Do Stuff]</span>)
+      testN(InvalidUseCaseRef(num, Some("Do Stuff")))(<span class="bad ref">[UC-3?: Do Stuff]</span>)
+      testN(InvalidUseCaseRef(num, None))            (<span class="bad ref">[UC-3?]</span>)
+    }
+    it("should render FTT: math") {
+      testN(MathTexTerm("xxx"))(<script type="math/tex">xxx</script>)
+    }
+  }
+
+  describe("Value Publisher: TextField") {
+    val tester = new ValuePublisherTester {
+      override def test(terms: FreeTextTerm*)(exp: String): Unit = {
+        val t = FreeText(terms.toList)
+        val o = HtmlFieldValuePublishers.textField(t)
+        o.toString shouldBe exp
+      }
+    }
+    it should behave like textFieldLike(tester)
+  }
+
+  describe("Value Publisher: StepField") {
+    def testST(t: StepText)(exp: String): Unit = {
+      val o = HtmlFieldValuePublishers.stepField(t)
+      o.toString shouldBe exp
+    }
+    val tester = new ValuePublisherTester {
+      override def test(terms: FreeTextTerm*)(exp: String): Unit = {
+        testST(StepText(FreeText(terms.toList), None, None))(exp)
+      }
+    }
+    it should behave like textFieldLike(tester)
+
+    val mc = FreeText(PlainText("Cool") :: Nil)
+    it ("should render flow refs (1 per flow)") {
+      val ff = FlowFromClause(Map("qwe".tag -> "1.0.8".tag))
+      val ft = FlowToClause(Map("0DG8G".tag -> "2.E.2".tag))
+      val ef = <span class="flow"> ⬅ <span class="wouldbelink step">[1.0.8]</span></span>
+      val et = <span class="flow"> ➡ <span class="wouldbelink step">[2.E.2]</span></span>
+      testST(StepText(mc, Some(ff), Some(ft)))(s"Cool${ef}${et}")
+      testST(StepText(mc, Some(ff), None))(s"Cool${ef}")
+      testST(StepText(mc, None, Some(ft)))(s"Cool${et}")
+    }
+    it ("should render flow refs (2 per flow)") {
+      val ff = FlowFromClause(Map("qwe".tag -> "1.0.8".tag, "asd".tag -> "1.0.1".tag))
+      val ft = FlowToClause(Map("0DG8G".tag -> "2.E.2".tag, "0DG81".tag -> "2.E.3".tag))
+      testST(StepText(mc, Some(ff), Some(ft)))(
+        <xml:group>Cool<span class="flow"> ⬅ <span class="wouldbelink step">[1.0.1]</span> <span class="wouldbelink step">[1.0.8]</span></span><span class="flow"> ➡ <span class="wouldbelink step">[2.E.2]</span> <span class="wouldbelink step">[2.E.3]</span></span></xml:group>
+        .toString)
+    }
   }
 }

@@ -20,6 +20,10 @@ table.fieldFrame tr.fieldFrame > th { color: #555; font-weight: normal; width: 2
 table.fieldFrame tr.fieldFrame > th, table.fieldFrame tr.fieldFrame > td { padding-bottom: 1.5em; }
 table.fieldFrame th, table.fieldFrame td { vertical-align: top; }
 table.fieldFrame textarea { border: dashed 1px #ccc; }
+table.fieldFrame .txtAndPub .fvpub { border: dashed 1px #ccc; padding: 2px; min-height: 26px; }
+table.fieldFrame .txtAndPub .fvpub, table.fieldFrame .txtAndPub .fvpub * { cursor: pointer !important; }
+table.fieldFrame .txtAndPub .fvpub > ul { margin-left: 1ex; margin-bottom: 0; }
+table.fieldFrame .txtAndPub textarea { display: none; }
 
 [data-lvl="0"] .lbl { padding-left: 0ex; width: 5ex; }
 
@@ -30,6 +34,8 @@ table.fieldFrame textarea { border: dashed 1px #ccc; }
 [data-lvl="3"] .lbl { padding-left: 10ex; width: 4ex; }
 
 [data-lvl="4"] .lbl { padding-left: 14ex; width: 3ex; }
+
+[data-lvl="0"] .lbl, [data-lvl="0"] .fvpub { font-weight: bold; }
 
 table.step { width: 100%; }
 table.step .lbl { padding-top: 4px; padding-right: 0.8ex; color: #444; }

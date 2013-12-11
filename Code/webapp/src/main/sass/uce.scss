@@ -92,6 +92,22 @@ table.fieldFrame {
 	textarea {
 		border: dashed 1px #ccc;
 	}
+
+  .txtAndPub {
+    .fvpub {
+      border: dashed 1px #ccc;
+      padding: 2px;
+      min-height: 26px;
+      &, * {
+        cursor: pointer !important;
+      }
+      & > ul {
+        margin-left: 1ex;
+        margin-bottom: 0;
+      }
+    }
+    textarea {display: none}
+  }
 }
 
 // =====================================================================================================================
@@ -103,6 +119,12 @@ table.fieldFrame {
 [data-lvl="3"] .lbl { padding-left: 10ex; width: 4ex } // xviii.
 [data-lvl="4"] .lbl { padding-left: 14ex; width: 3ex } // 99.
 
+[data-lvl="0"] {
+  .lbl, .fvpub {
+    font-weight: bold;
+  }
+}
+
 table.step {
 	width: 100%;
 	.lbl {
@@ -110,6 +132,7 @@ table.step {
 		padding-right:0.8ex;
 		color: #444;
 	}
+
 	.txt {
 		overflow: hidden;
 	}
