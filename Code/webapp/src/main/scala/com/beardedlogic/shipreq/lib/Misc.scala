@@ -10,6 +10,7 @@ import scala.util.Random
 import scalaz.Cord
 
 import com.beardedlogic.shipreq.app.AppConfig
+import com.beardedlogic.shipreq.feature.uc.field.{TextFieldDefinition, TextField, Field}
 import Types._
 import AppConfig._
 
@@ -97,6 +98,9 @@ trait Misc {
 
   def filterCovar[T](list: List[_])(implicit m: ClassTag[T]): List[T] =
     list.filter(isCovar[T]).asInstanceOf[List[T]]
+
+  def findTextField(defn: TextFieldDefinition, fields: List[Field]): Option[TextField] =
+    fields.collectFirst {case t: TextField if t.defn == defn => t}
 
   def nonEmptyString(s: String): Option[String] =
     if (s.isEmpty) None else Some(s)

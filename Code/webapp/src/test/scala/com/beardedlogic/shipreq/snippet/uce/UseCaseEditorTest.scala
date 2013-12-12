@@ -27,7 +27,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
 
   implicit def js2str(js: JsCmd): String = unquoteJs(js.toJsCmd).trim
 
-  class UseCaseEditor2(state: State) extends UseCaseEditor(state, UseCaseRelations.Empty) {
+  class UseCaseEditor2(state: State, rels: UseCaseRelations = UseCaseRelations.Empty) extends UseCaseEditor(state, rels) {
     def setState2(newState: State) = { super.setState(newState); this }
 
     override def update(m: UcModifier): JsCmd = inMockSession {super.update(m)}
@@ -48,7 +48,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
   lazy val State2b = loadedState(MockUc2b.UC)
   lazy val State3 = loadedState(MockUc3.UC)
 
-  def UceAnon = new UseCaseEditor2(DefaultInitialState)
+  def UceDemo = new UseCaseEditor2(UseCaseEditorDemo.state, UseCaseEditorDemo.relations)
   def UCE1 = new UseCaseEditor2(State1)
   def UCE2a = new UseCaseEditor2(State2a)
   def UCE2b = new UseCaseEditor2(State2b)
@@ -155,6 +155,12 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
       html should include("EC-1E1-1")
       html should include("EC-1E2")
       html should include("7.E.1")
+    }
+
+    it("should render the demo page") {
+      val (_, html) = render(UceDemo)
+      html should include("[UC-2: Request Refund]")
+      html should include("data-lvl=\"2\"")
     }
   }
 
@@ -399,7 +405,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
       def saveButton(xml: NodeSeq) = findCss(xml, "#save")
 
       it("should be removed when UC is anonymous") {
-        lazy val (xml, html) = render(UceAnon)
+        lazy val (xml, html) = render(UceDemo)
         saveButtonO(xml) ==== None
       }
 

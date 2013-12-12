@@ -101,12 +101,17 @@ object AppSiteMap {
   val UseCaseEditor: PM[UseCaseIdentId] = (
     MenuWithIdParam(ExternalId.UseCase)("uce") / "usecase" / *
     >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("loggedin/uceditor")
+    >> UseTemplate("uceditor")
     >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown) {
         RequestVars.UseCaseId.setByParam(UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
         RequestVars.Project.deriveFromUseCaseId()
         RequestVars.ProjectId.deriveFromProject()
       }
+  )
+
+  val DemoUseCaseEditor = pageWithStaticUrl("demo-uce", mkTitle("Demo"), "")(_ / "demo" / "editor"
+    >> UseTemplate("uceditor")
+    >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.StaticText("Use Case Editor Demo")){}
   )
 
   val AdminStats = pageWithStaticUrl("admin.stats", mkTitle("Stats"), "")(_ / "sir" / "stats" >> AdminOnly >> Hidden)
@@ -116,16 +121,12 @@ object AppSiteMap {
   val AllProdPages: List[ConvertableToMenu] = List(
     Home, About, Login, Logout, Register1, Register2
     , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
+    , DemoUseCaseEditor
     , AdminStats
   ) ++ DiagnosticEndpoints.Endpoints
 
   val sitemap = {
     import org.apache.shiro.authc.UsernamePasswordToken, org.apache.shiro.SecurityUtils.getSubject
-
-    def anonUce = (Menu.i("Use Case Editor Demo") / "uce"
-      >> UseTemplate("loggedin/uceditor")
-      >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.StaticText("Use Case Editor Demo")){}
-    )
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
@@ -143,8 +144,8 @@ object AppSiteMap {
     })
 
     val additionalPages: List[ConvertableToMenu] = Props.mode match {
-      case Development => List(anonUce, autoLogin)
-      case TestMode    => List(anonUce, apiLogin)
+      case Development => List(autoLogin)
+      case TestMode    => List(apiLogin)
       case _           => List.empty
     }
 

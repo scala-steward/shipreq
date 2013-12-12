@@ -8,21 +8,32 @@ import feature.uc.field._
 
 object Defaults extends Logger {
 
+  val tfDescription     = TextFieldDefinition("Description")
+  val tfActors          = TextFieldDefinition("Actors")
+  val tfPreConditions   = TextFieldDefinition("Pre-Conditions")
+  val tfPostConditions  = TextFieldDefinition("Post-Conditions")
+  val tfUCRelationships = TextFieldDefinition("Use Case Relationships")
+  val tfConstraints     = TextFieldDefinition("Constraints and Business Rules")
+  val tfFreqOfUse       = TextFieldDefinition("Frequency of Use")
+  val tfSpecialReqs     = TextFieldDefinition("Special Requirements")
+  val tfAssumptions     = TextFieldDefinition("Assumptions")
+  val tfNotesAndIssues  = TextFieldDefinition("Notes and Issues")
+
   val fieldListDefns: List[FieldDefinition] =
-    TextFieldDefinition("Description") ::
-      TextFieldDefinition("Actors") ::
-      TextFieldDefinition("Pre-Conditions") ::
-      TextFieldDefinition("Post-Conditions") ::
-      NormalCourseFieldDefinition ::
-      ExceptionCourseFieldDefinition ::
-      FlowGraphFieldDefinition ::
-      TextFieldDefinition("Use Case Relationships") ::
-      TextFieldDefinition("Constraints and Business Rules") ::
-      TextFieldDefinition("Frequency of Use") ::
-      TextFieldDefinition("Special Requirements") ::
-      TextFieldDefinition("Assumptions") ::
-      TextFieldDefinition("Notes and Issues") ::
-      Nil
+    tfDescription ::
+    tfActors ::
+    tfPreConditions ::
+    tfPostConditions ::
+    NormalCourseFieldDefinition ::
+    ExceptionCourseFieldDefinition ::
+    FlowGraphFieldDefinition ::
+    tfUCRelationships ::
+    tfConstraints ::
+    tfFreqOfUse ::
+    tfSpecialReqs ::
+    tfAssumptions ::
+    tfNotesAndIssues ::
+    Nil
 
   private var fieldList_ : Name[FieldListRec] = null
   def fieldList = fieldList_

@@ -28,7 +28,7 @@ object Renderer {
   object Templates {
     import util.NonEmptyTemplate
 
-    final val EntirePage = NonEmptyTemplate.load("loggedin/uceditor")
+    final val EntirePage = NonEmptyTemplate.load("uceditor")
 
     final val TextField = EntirePage.quickExtractById("template-text")
     final val Step = EntirePage.quickExtractById("template-step")
