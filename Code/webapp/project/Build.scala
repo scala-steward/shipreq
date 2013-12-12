@@ -104,6 +104,8 @@ object B extends Build {
     .settings(
       startYear := Some(2013),
       clear := { println("\033[2J\033[;H") },
+      // Ensure templates can be loaded from the console
+      fullClasspath in console in Compile += file("src/main/webapp"),
       // Prevent src/main/java appearing in .classpath
       unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
     )
