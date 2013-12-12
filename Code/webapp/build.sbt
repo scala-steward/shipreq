@@ -10,7 +10,7 @@ initialize ~= { _ =>
   sys.props("scalac.patmat.analysisBudget") = "off"
 }
 
-scalacOptions ++= Seq("-Xcheckinit", "-unchecked", "-deprecation", "-Yno-generic-signatures",
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-Yno-generic-signatures",
   "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
 
 libraryDependencies ++= {

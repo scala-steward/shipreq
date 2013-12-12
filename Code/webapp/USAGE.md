@@ -68,3 +68,13 @@ Testing
 * Running JS tests
     Load `src/test/javascript/tests.html` in a browser.
 
+
+Making a Release
+================
+
+1. ./release
+2. cd ../../Release
+3. ./install-latest_war
+4. [OPTIONAL] cd webapp && ./jetty and test locally.
+5. ./deploy-war <ip>
+

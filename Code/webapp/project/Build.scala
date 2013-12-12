@@ -64,6 +64,25 @@ object B extends Build {
     )
   }
 
+  lazy val releaseMode: Boolean = {
+    val mode = System.getProperty("MODE", "").trim
+    val r = mode.compareToIgnoreCase("release") == 0
+    if (r) println("Release Mode.")
+    r
+  }
+
+  def debugSettings = (p: Project) => p.settings(
+    scalacOptions ++= Seq("-Xcheckinit")
+  )
+
+  def releaseSettings = {
+    val compilerSettings = Seq("-optimise", /*"-Yinline-warnings",*/ "-Xelide-below", "OFF")
+    (p: Project) => p.settings(
+      scalacOptions in Compile ++= compilerSettings,
+      scalacOptions in Test ~= (_ filterNot (compilerSettings contains _))
+    )
+  }
+
   def warSettings = (p: Project) => p.settings(
     // Don't allow WEB-INF/_scalate into the WAR
     excludeFilter in packageWar ~= { _ ||
@@ -97,6 +116,7 @@ object B extends Build {
       eclipseSettings,
       intellijSettings,
       javascriptSettings,
+      if (releaseMode) releaseSettings else debugSettings,
       warSettings,
       testSettings,
       integrationTestSettings

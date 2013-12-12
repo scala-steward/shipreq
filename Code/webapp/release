@@ -1,0 +1,5 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+bin/generate-css.sh
+echo
+sbt -DMODE=release clean package test
