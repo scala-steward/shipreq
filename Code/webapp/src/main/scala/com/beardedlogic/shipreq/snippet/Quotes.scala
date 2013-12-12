@@ -1,11 +1,11 @@
 package com.beardedlogic.shipreq.snippet
 
-import com.beardedlogic.shipreq.util.{DisableCache, NeverExpire, ExpireAfter, CacheFn, NonEmptyTemplate}
-import net.liftweb.util.Helpers._
-import xml.{NodeSeq, Elem, Node}
-import scala.util.Random
-import org.joda.time.Period
+import com.beardedlogic.shipreq.app.AppConfig
+import com.beardedlogic.shipreq.util.{CacheFn, NonEmptyTemplate}
 import net.liftweb.common.Logger
+import net.liftweb.util.Helpers._
+import scala.util.Random
+import scala.xml.{NodeSeq, Elem, Node}
 
 object Quotes extends Logger {
 
@@ -35,7 +35,7 @@ object Quotes extends Logger {
     "*" #> q
   }
 
-  val rcache = CacheFn(renderFn)(ExpireAfter(Period minutes 30))
+  val rcache = CacheFn(renderFn)(AppConfig.QuoteCachePolicy)
 
   def render = rcache.value
 }

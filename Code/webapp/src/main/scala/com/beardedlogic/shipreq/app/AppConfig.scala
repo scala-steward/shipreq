@@ -4,6 +4,7 @@ import net.liftweb.util.Helpers._
 import org.joda.time.Period
 import com.beardedlogic.shipreq.util.ExternalValueReader._
 import com.beardedlogic.shipreq.util.RuntimePropReaders._
+import com.beardedlogic.shipreq.util.ExpireAfter
 
 final object AppConfig {
   implicit def PropScope = GlobalScope
@@ -40,10 +41,12 @@ final object AppConfig {
   val LargeTextMaxLength = 20000
 
   /** The amount of time that a user is allowed to view a share after authenticating, without re-authenticating. */
-  val ShareViewAuthPeriod = Period.minutes(30)
+  val ShareViewAuthPeriod = Period minutes 30
 
   /** Maximum time a flash variable will be retained. (default) */
-  val FlashVarTTL = Period.seconds(12)
+  val FlashVarTTL = Period seconds 12
+
+  val QuoteCachePolicy = ExpireAfter(Period minutes 30)
 
   /**
    * Whether or not new registrations are allowed.
