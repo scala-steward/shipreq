@@ -15,6 +15,7 @@ import util.HtmlTransformExt.ajaxSubmitOnClick
 import util.JsExt.JsTextTrigger
 import util.NonEmptyTemplate
 import AppSiteMap.Implicits._
+import db.AsyncDb
 
 object ProjectHeaderConsts {
   val TriggerProjectUpdated = JsTextTrigger("project-updated")
@@ -36,6 +37,7 @@ class ProjectHeader extends SingleOpStatefulSnippet {
   override implicit def errorAlertId = "phdra".tag
 
   val project = RequestVars.Project.get.value
+  @inline final def pid = project.id
   @inline final def name = project.name
   var projectNameInput = name
 
@@ -66,7 +68,8 @@ class ProjectHeader extends SingleOpStatefulSnippet {
   )
 
   def onDelete(): Nothing = {
-    daoProvider.withSession(_ deleteProject project)
+    daoProvider.withSession(_ deleteProjectSoft pid)
+    asyncDb ! AsyncDb.DeleteProject(pid)
     NoticeFlash.notices.addS(s"Deleted Project: $name")
     redirectHome
   }

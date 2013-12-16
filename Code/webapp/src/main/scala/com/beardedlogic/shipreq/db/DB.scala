@@ -140,14 +140,11 @@ object DB extends Logger {
   private val Slick = Database.forDataSource(DataSource)
 
   object DaoProvider extends DaoProvider {
-    override def withSession[T](block: DaoS => T): T = Slick.withSession(initConnAndExec(_, block))
-    override def withTransaction[T](block: DaoT => T): T = Slick.withTransaction(initConnAndExec(_, block))
-    @inline private def initConnAndExec[T](s: Session, block: Dao => T): T = {
-      block(new Dao(s))
-    }
-    override protected def createSession(): DaoS = new Dao(Slick.createSession())
-    override def withAdminDao[T](block: AdminDao => T): T =
-      Slick.withSession(s => block(new AdminDao(s)))
+    override def withRawSession [T](block: Session  => T): T = Slick.withSession(s => block(s))
+    override def withSession    [T](block: DaoS     => T): T = Slick.withSession(s => block(new Dao(s)))
+    override def withAdminDao   [T](block: AdminDao => T): T = Slick.withSession(s => block(new AdminDao(s)))
+    override def withTransaction[T](block: DaoT     => T): T = Slick.withTransaction(s => block(new Dao(s)))
+    override protected def createSession(): DaoS             = new Dao(Slick.createSession())
   }
 
   @volatile private var initPending = true

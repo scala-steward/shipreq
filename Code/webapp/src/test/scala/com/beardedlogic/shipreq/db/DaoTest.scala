@@ -275,6 +275,27 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       dao.findAllLatestUseCaseRevs(p, List(u2)) shouldBe List(u2)
       dao.findAllLatestUseCaseRevs(p, List(u1, u3, u4)) shouldBe List(u1, u3, u4)
     }
+
+    def afterDeletion: (UserId, ProjectId, ProjectId) = {
+      val (uid, p1) = newUserAndProject("wow".tag)
+      assertTableDiffs()(dao deleteProjectSoft p1)
+      val p2 = dao.createProject(uid, "wow".tag).gimme
+      assertTableDiffs()(dao deleteProjectSoft p2)
+      (uid, p1, p2)
+    }
+
+    it("deletion should be soft and hard") {
+      val (_, p1, p2) = afterDeletion
+      val a = new AsyncDao
+      assertTableDiffs(Tables.Project -> -1)(a deleteProject p1)
+      assertTableDiffs(Tables.Project -> -1)(a deleteProject p2)
+    }
+
+    it("soft deletion should hide the project from view") {
+      val (u, p, _) = afterDeletion
+      dao.findProject(p) shouldBe None
+      dao.summariseProjects(u).map(_.id) should not contain(p)
+    }
   }
 
   // ===================================================================================================================

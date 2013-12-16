@@ -1,11 +1,11 @@
 package com.beardedlogic.shipreq
 package app
 
+import db.{AsyncDbImpl, AsyncDb, DB, DaoProvider}
+import lib.{StatLoggerImpl, StatLogger}
 import net.liftweb.util.SimpleInjector
 import net.liftweb.util.{Mailer => LiftMailer}
-import db.{AdminDao, DB, DaoProvider, DaoS, DaoT}
 import security.{SecurityProvider, Oshiro}
-import lib.{StatLoggerImpl, StatLogger}
 
 /**
  * Houses and provides access to global resources. Not exactly "dependency injection" but serves a similar enough
@@ -22,6 +22,8 @@ object DI extends SimpleInjector {
   final val StatLogger = new Inject[StatLogger](StatLoggerImpl) {}
 
   final val Mailer = new Inject[LiftMailer](LiftMailer) {}
+
+  final val AsyncDb = new Inject[AsyncDb](AsyncDbImpl) {}
 }
 
 /**
@@ -32,4 +34,5 @@ trait DI {
   def securityProvider = DI.SecurityProvider.vend
   def statLogger = DI.StatLogger.vend
   def mailer = DI.Mailer.vend
+  def asyncDb = DI.AsyncDb.vend
 }

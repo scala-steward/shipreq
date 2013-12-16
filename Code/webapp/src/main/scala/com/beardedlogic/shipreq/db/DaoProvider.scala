@@ -1,10 +1,13 @@
 package com.beardedlogic.shipreq
 package db
 
-import util.ResourceLeaseMonad1
 import scalaz.Need
+import slick.session.Session
+import util.ResourceLeaseMonad1
 
 trait DaoProvider {
+
+  def withRawSession[T](block: Session => T): T
 
   def withSession[T](block: DaoS => T): T
   def forSession[M[_]] = new ResourceLeaseMonad1[DaoS, M] {protected override def exec[T](f: DaoS => T): T = withSession(f(_))}

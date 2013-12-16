@@ -9,7 +9,6 @@ FUNC TODO
 
 * [S.3.4=7] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.2.5=7] [UCE ] Step is lost if accidentally deleted. No undo.
-* [S.0.5=5] [PERF] Cascaded deletion VERY slow with non-trivial amount of data.
 * [S.0.5=5] [ACCT] Password reset (when not logged in).
 * [S.0.5=5] [FAIL] Robustness: Handle DB going down.
 * [S.2.1=3] [ACCT] Change username.

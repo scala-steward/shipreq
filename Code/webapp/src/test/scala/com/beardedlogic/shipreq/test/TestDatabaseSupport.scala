@@ -144,7 +144,7 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     object Share extends Table {def name = "share"}
     object ShareViewLog extends Table {def name = "share_view_log"}
     object UsrLoginLog extends Table {def name = "usr_login_log"}
-    val All = List(FieldKeyType, FieldKey, Usecase, UsecaseRev, Text, TextRev, UcField, Usr, Share, ShareViewLog, UsrLoginLog)
+    val All = List(FieldKeyType, FieldKey, Project, Usecase, UsecaseRev, Text, TextRev, UcField, Usr, Share, ShareViewLog, UsrLoginLog)
   }
 
   def countAllTableRows = Tables.All.map(t => (t -> countRowsIn(t))).toMap
@@ -277,8 +277,9 @@ object TestDatabaseHelpers {
 
 class TestDaoProvider(dao: DaoT, adminDao: AdminDao) extends DaoProvider {
   override protected def createSession(): DaoS = ???
+  override def withRawSession [T](block: Session    => T): T = block(dao.session)
   override def withLazySession[T](block: Need[DaoS] => T): T = block(Need(dao))
-  override def withAdminDao[T](block: AdminDao => T): T = block(adminDao)
-  override def withSession[T](block: DaoS => T): T = block(dao)
-  override def withTransaction[T](block: DaoT => T): T = block(dao)
+  override def withAdminDao   [T](block: AdminDao   => T): T = block(adminDao)
+  override def withSession    [T](block: DaoS       => T): T = block(dao)
+  override def withTransaction[T](block: DaoT       => T): T = block(dao)
 }

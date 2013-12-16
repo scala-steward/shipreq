@@ -25,9 +25,10 @@ class MockDaoProvider extends DaoProvider with MockitoSugar {
   for (d <- List(dao, adminDao)) when(d.session).thenReturn(session)
 
   override protected def createSession(): DaoS = dao
-  override def withSession[T](block: DaoS => T): T = block(dao)
-  override def withTransaction[T](block: DaoT => T): T = block(dao)
-  override def withAdminDao[T](block: AdminDao => T): T = block(adminDao)
+  override def withRawSession [T](block: Session  => T): T = block(session)
+  override def withSession    [T](block: DaoS     => T): T = block(dao)
+  override def withTransaction[T](block: DaoT     => T): T = block(dao)
+  override def withAdminDao   [T](block: AdminDao => T): T = block(adminDao)
 
   def install[R](fn: => R): R = DI.DaoProvider.doWith(this)(fn)
 }

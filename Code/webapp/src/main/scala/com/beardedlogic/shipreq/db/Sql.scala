@@ -102,18 +102,20 @@ private[db] final object Sql {
     "INSERT INTO project(usr_id, name) VALUES(?,?) RETURNING id")
 
   private val project_* = s"id,name,usr_id"
+  private val projectIsDead = "deleted_at IS NOT NULL"
+  private val projectIsLive = "deleted_at IS NULL"
 
-  val FindProject = query[ProjectId, Project](s"SELECT ${project_*} FROM project WHERE id=?")
+  val FindProject = query[ProjectId, Project](s"SELECT ${project_*} FROM project WHERE id=? AND $projectIsLive")
 
   val FindProjectByUc = query[UseCaseIdentId, Project](
-    s"SELECT ${project_*} FROM project WHERE id = (SELECT project_id FROM usecase u WHERE u.id=?)")
+    s"SELECT ${project_*} FROM project WHERE id = (SELECT project_id FROM usecase u WHERE u.id=?) AND $projectIsLive")
 
   @Update val RenameProject = update[(String, ProjectId, UserId)](
     "UPDATE project SET name=? WHERE id=? AND usr_id=?")
 
   val SummariseProjects = query[UserId, ProjectSummary]( s"""
     with projects as (
-      select id, name from project where usr_id = ?
+      select id, name from project where usr_id = ? and $projectIsLive
     ), ucs as (
       select p.id
         ,count(1) uc_count
@@ -145,7 +147,8 @@ private[db] final object Sql {
     order by p.name
     """.sql)
 
-  @Delete val DeleteProject = update[ProjectId]("DELETE FROM project where id=?")
+  @Update val DeleteProjectSoft = update[(String, ProjectId)]("UPDATE project SET name=?, deleted_at=NOW() where id=?")
+  @Delete val DeleteProjectHard = update[ProjectId](s"DELETE FROM project where id=? and $projectIsDead")
 
   // ###################################################################################################################
   // Use Case
@@ -272,7 +275,7 @@ private[db] final object Sql {
   val SelectShareAndProjectByUrl = query[ShareUrlToken, (Share, Project)](s"""
     SELECT ${share_* inTable "s"}, ${project_* inTable "p"}
     FROM share s, project p
-    WHERE url_token=? AND s.project_id = p.id
+    WHERE url_token=? AND s.project_id = p.id AND $projectIsLive
     """.sql)
 
   val SummariseShares = query[ProjectId, ShareSummary](

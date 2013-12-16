@@ -1,6 +1,7 @@
 package com.beardedlogic.shipreq
 package db
 
+import net.liftweb.util.Helpers.nextFuncName
 import org.postgresql.util.PSQLException
 import scala.slick.driver.PostgresDriver.simple._
 import feature.uc.field.FieldDefinition
@@ -136,8 +137,7 @@ sealed trait DaoS {
 
   def summariseProjects(userId: UserId): List[ProjectSummary] = SummariseProjects.list(userId)
 
-  // Deletion automatically cascades to shares and use cases. See FKs in child tables.
-  def deleteProject(id: ProjectId): Unit = DeleteProject.execute(id)
+  def deleteProjectSoft(id: ProjectId): Unit = DeleteProjectSoft.execute(nextFuncName, id)
 
   // ===================================================================================================================
   // Use Case
