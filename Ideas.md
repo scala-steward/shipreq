@@ -52,3 +52,5 @@ Ideas
     * Analysis: Boolean logic - (checkbox)
     * Implemented
     * Unit/Integration Tested
+
+* Overview of empty fields, TBDs, TODOs, and errors ([DELETED], [1.2?] etc).

@@ -5,6 +5,7 @@ FUNC TODO
 
 * [M.2.5=7] [LEGL] Add terms of service.
 * [M.3.2=5] [PROJ] Delete use cases.
+* [M.0.5=5] [UCE ] Unicode flow arrows didn't work on Dad's computer.
 
 * [S.3.4=7] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.2.5=7] [UCE ] Step is lost if accidentally deleted. No undo.
