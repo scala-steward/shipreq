@@ -169,8 +169,11 @@ case object NormalCourseFieldDefinition extends FieldDefinition {
 }
 
 object NormalCourseFieldConsts {
-  final val EmptyTree = StepTree(StepNodeBuilder(0, 0, Nil) :: Nil)
-  final val DefaultTree = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
+  val EmptyTree = StepTree(StepNodeBuilder(0, 0, Nil) :: Nil)
+  val DefaultTree = StepTree(StepNodeBuilder(0, 0, List(StepNodeBuilder(1, 1))) :: Nil)
+
+  private val addFullStop = "(?<=[a-zA-Z0-9])$".r.pattern
+  def titleToMainClause(t: String) = addFullStop.matcher(t).replaceFirst(".")
 }
 
 trait NormalCourseFieldLike extends StepFieldLike { this: Field with StepField =>
@@ -184,7 +187,8 @@ trait NormalCourseFieldLike extends StepFieldLike { this: Field with StepField =
   override def defaultLoadValue(h: UseCaseHeader) = {
     val sfv1 = StepFieldValue.forTree(this, DefaultTree)
     val id = sfv1.tree.head.id
-    val sfv = sfvStepTextTextL.set((sfv1, id), (h.title, UcParsingCtx.Empty))
+    val ncText = titleToMainClause(h.title)
+    val sfv = sfvStepTextTextL.set((sfv1, id), (ncText, UcParsingCtx.Empty))
     (Some(sfv.tree), () => sfv)
   }
 }

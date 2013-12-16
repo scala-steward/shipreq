@@ -13,8 +13,6 @@ object StepFieldValue {
 
   def forTree(field: StepField, tree: StepTree) =
     apply(field, tree, tree.mapRecursive(n => (n.id -> StepText.empty)).toMap)
-
-  val addFullStop = "(?<=[a-zA-Z0-9])$".r.pattern
 }
 
 /**
@@ -60,10 +58,8 @@ class StepFieldValueChangeResponder(field: StepField) extends SeqChangeResponder
     def allowTitleChange_? =
       field.preferTitleInRoot_? && sfv.tree.nonEmpty
 
-    def titleToMainClause(t: String) =
-      StepFieldValue.addFullStop.matcher(t).replaceFirst(".")
-
     def changeRootToTitle(oldTitle: String, newTitle: String) = {
+      import NormalCourseFieldConsts.titleToMainClause
       val id = sfv.tree(0).id
       val lens = alens(Lenses.sfvStepTextInstL, (sfv, id))
       val step = lens.get

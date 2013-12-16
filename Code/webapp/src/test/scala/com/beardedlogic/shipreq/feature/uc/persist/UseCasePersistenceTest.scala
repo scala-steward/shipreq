@@ -41,7 +41,7 @@ class UseCasePersistenceTest extends FunSpec with TestDatabaseSupport with TestH
       val x = createUseCaseIdentAndRev1(pid, UseCaseHeader("Hello".validated))
       val y = loadRev(x, pid)
       val sfv = NCF.lens.get(y.uc)
-      sfv.textmap(sfv.tree.head.id).text ==== x.title
+      sfv.textmap(sfv.tree.head.id).text ==== "Hello."
     }
 
     it("should load a simple, manually-saved UC") {
