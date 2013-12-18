@@ -5,6 +5,7 @@ import scalaz.Need
 import slick.session.Session
 import util.ResourceLeaseMonad1
 
+// TODO DaoProvider has become retarded. FIX IT!
 trait DaoProvider {
 
   def withRawSession[T](block: Session => T): T

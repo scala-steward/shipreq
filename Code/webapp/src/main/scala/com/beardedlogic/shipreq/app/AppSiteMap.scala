@@ -48,6 +48,15 @@ object AppSiteMap {
     >> Hidden >> UseTemplate("register2")
   )
 
+  private def ResetPasswordTitle = mkTitle("Password Reset")
+  val ResetPassword1 = pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw")
+
+  val ResetPassword2 = (
+    Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
+      >> StaticTitle(ResetPasswordTitle)
+      >> Hidden >> UseTemplate("resetpw2")
+    )
+
   val Project: PM[ProjectId] = (
     MenuWithIdParam(ExternalId.Project)("project") / "project" / *
     >> TitleFromProjectName
@@ -119,7 +128,7 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, About, Login, Logout, Register1, Register2
+    Home, About, Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
     , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
     , DemoUseCaseEditor
     , AdminStats

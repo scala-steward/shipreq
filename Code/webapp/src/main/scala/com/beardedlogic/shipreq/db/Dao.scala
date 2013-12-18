@@ -38,6 +38,20 @@ private[db] class Dao(_session: Session) extends DaoT {
   implicit final val session = _session
 }
 
+object Dao {
+  // Not making this part of DaoT because it just makes testing with mocks a pain the fucking arse.
+  def withTransactionLevel[R](dao: DaoT, level: Int)(f: => R): R = {
+    val conn = dao.session.conn
+//    val orig = conn.getTransactionIsolation
+    try {
+//      conn setTransactionIsolation level
+      f
+    } finally ()
+//      conn setTransactionIsolation orig
+  }
+
+}
+
 /**
  * Database interfacing methods that do not require a transaction.
  */
@@ -98,6 +112,8 @@ sealed trait DaoS {
 
   def findUserRegistrationInfo(email: String) = GetUserRegInfo.firstOption(email)
 
+  def findUserRegAndResetPwInfo(email: String) = GetUserRegAndResetPwInfo.firstOption(email)
+
   def findUserConfirmationTokenIssuedDate(token: String) = GetConfirmationTokenIssuedDate.firstOption(token)
 
   def findUserSupplementalInfo(id: UserId) = GetUserSupplementalInfo.firstOption(id)
@@ -105,6 +121,17 @@ sealed trait DaoS {
   def logUserLogin(id: UserId, ip: Option[String]): Unit = LogUserLogin.execute(id, ip)
 
   def updateUserPassword(id: UserId, ps: PasswordAndSalt): Unit = UpdateUserPassword.execute(ps, id)
+
+  def performInstallNewResetPasswordToken(u: UserId, tokenFn: () => String): String =
+    retry(10) {
+      inSafeTransaction {
+        val token = tokenFn()
+        InstallNewResetPasswordToken.execute(token, u)
+        token
+      }
+    }
+
+  def performReuseResetPasswordToken(u: UserId): Unit = ReuseResetPasswordToken.execute(u)
 
   // ===================================================================================================================
   // Project

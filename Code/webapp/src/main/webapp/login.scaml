@@ -1,7 +1,7 @@
 %div(data-lift="surround?with=default;at=content")
   %div(data-lift="Quotes")
 
-  .centred_form(data-lift="Login")
+  .centred_form.login(data-lift="Login")
     %h2 Login
 
     %form(data-lift="form.ajax")
@@ -14,3 +14,6 @@
 
       .form-group
         %button.btn.btn-primary(type="submit") Login
+
+    .text-right
+      %a(data-lift="Link.to?name=resetpw1")

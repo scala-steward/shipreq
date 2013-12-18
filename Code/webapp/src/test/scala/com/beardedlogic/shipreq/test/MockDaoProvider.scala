@@ -6,6 +6,7 @@ import org.scalatest.mock.MockitoSugar
 import slick.session.Session
 import app.DI
 import db.{AdminDao, DaoS, DaoT, DaoProvider}
+import java.sql.Connection
 
 /**
  * [[com.beardedlogic.shipreq.db.DaoProvider]] that creates and uses a mock DAO.
@@ -19,9 +20,12 @@ import db.{AdminDao, DaoS, DaoT, DaoProvider}
  * }}}
  */
 class MockDaoProvider extends DaoProvider with MockitoSugar {
+  val conn = mock[Connection]
   val session = mock[Session]
   val dao = mock[DaoT]
   val adminDao = mock[AdminDao]
+
+  when(session.conn).thenReturn(conn)
   for (d <- List(dao, adminDao)) when(d.session).thenReturn(session)
 
   override protected def createSession(): DaoS = dao

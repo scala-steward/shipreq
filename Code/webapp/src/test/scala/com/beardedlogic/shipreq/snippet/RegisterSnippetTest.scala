@@ -13,6 +13,7 @@ import test.{TestMailer, TestDatabaseSupport}
 import test.fixture.UserFixture
 import util.NonEmptyTemplate
 import app.AppConfig
+import Register._
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
 
@@ -31,6 +32,15 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     def submit(email: String, usrTableDiff: Int) = TestMailer.install {
       snippet.emailInput = email
       assertTableDiffs(Tables.Usr -> usrTableDiff) {snippet.onSubmit()}
+    }
+  }
+
+  describe("isTokenExpired") {
+    it("should consider 1-day-old valid") {
+      isTokenExpired(1.day.ago) should be(false)
+    }
+    it("should consider 1-week-old expired") {
+      isTokenExpired(1.week.ago) should be(true)
     }
   }
 

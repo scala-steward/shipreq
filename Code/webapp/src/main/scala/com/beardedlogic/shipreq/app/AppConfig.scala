@@ -28,6 +28,9 @@ final object AppConfig {
   /** How long confirmation tokens are valid for after issuing. */
   val TokenLifespan = 3 days
 
+  /** How long password-reset tokens are valid for after issuing. */
+  val PasswordResetTokenLifespan = 24 hours
+
   /** Usernames' min & max lengths. */
   val UsernameLength = 3 to 32
 

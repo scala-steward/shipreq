@@ -64,8 +64,6 @@ trait Misc {
   final def toIso8601Str(d: DateTime): String @@ ISO8601 =
     Iso8601Format.print(d).tag
 
-  def isConfirmationTokenExpired_?(dateIssued: DateTime): Boolean = TokenLifespan.ago.isAfter(dateIssued)
-
   def isExpired_?(startTime: DateTime, timeToLive: Period, now: Long = DateTimeUtils.currentTimeMillis): Boolean =
     startTime plus timeToLive isBefore now
 

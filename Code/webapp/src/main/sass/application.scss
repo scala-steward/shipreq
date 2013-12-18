@@ -28,9 +28,12 @@ textarea {
 abbr.timeago[title] { border-bottom: none !important }
 
 .centred_form {
-  width: 300px;
   margin: 1cm auto 1cm auto;
   h2 { margin-bottom: 0.6em }
+  p { margin-bottom: 1.6em }
+  &.login,
+  &#register1Form { width: 44ex }
+  &#resetpw1Form  { width: 54ex }
 }
 
 .flowgraph svg {
@@ -341,11 +344,11 @@ html, body { height: 100% } // Cannot have any padding or margin here
 }
 
 blockquote.rndquote {
-  max-width: 84ex;
+  max-width: 94ex;
   margin-left: auto;
   margin-right: auto;
   * {
-    color: #363636;
+    color: #555;
   }
   footer {
     text-align: right;

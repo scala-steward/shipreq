@@ -8,8 +8,11 @@ textarea { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizi
 
 abbr.timeago[title] { border-bottom: none !important; }
 
-.centred_form { width: 300px; margin: 1cm auto 1cm auto; }
+.centred_form { margin: 1cm auto 1cm auto; }
 .centred_form h2 { margin-bottom: 0.6em; }
+.centred_form p { margin-bottom: 1.6em; }
+.centred_form.login, .centred_form#register1Form { width: 44ex; }
+.centred_form#resetpw1Form { width: 54ex; }
 
 .flowgraph svg { max-width: 100% !important; /* Set a maximum relative to the parent */ width: auto\9 !important; /* IE7-8 need help adjusting responsive images */ border: 0; -ms-interpolation-mode: bicubic; cursor: default; }
 
@@ -120,8 +123,8 @@ html, body { height: 100%; }
 .ucs-published main .fvs .steps .ind td { padding-left: 1.2ex; }
 .ucs-published main .fvs .steps .highlight { _font-weight: bold; background: #ffc; }
 
-blockquote.rndquote { max-width: 84ex; margin-left: auto; margin-right: auto; }
-blockquote.rndquote * { color: #363636; }
+blockquote.rndquote { max-width: 94ex; margin-left: auto; margin-right: auto; }
+blockquote.rndquote * { color: #555; }
 blockquote.rndquote footer { text-align: right; font-size: 85%; }
 blockquote.rndquote footer:before { content: "— "; }
 blockquote.rndquote footer cite + cite:before { content: ", "; }

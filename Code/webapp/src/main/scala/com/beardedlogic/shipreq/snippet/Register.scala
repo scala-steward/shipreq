@@ -6,8 +6,9 @@ import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
+import org.joda.time.DateTime
 
-import app.AppSiteMap
+import app.{AppConfig, AppSiteMap}
 import lib.MailHelpers.MailContent
 import lib.SingleOpStatefulSnippet
 import lib.Types._
@@ -17,6 +18,11 @@ import feature.validation.Validator
 import security.{Permissions, PasswordAndSalt}
 import util.JsExt._
 import util.HtmlTransformExt.ajaxSubmitOnClick
+import Register._
+
+object Register {
+  def isTokenExpired(dateIssued: DateTime): Boolean = AppConfig.TokenLifespan.ago.isAfter(dateIssued)
+}
 
 /**
  * Takes an email address, validates it, creates a new user, sends an email with a verification-token in it.
@@ -41,16 +47,26 @@ class Register1 extends SingleOpStatefulSnippet {
     ifValid(Validator.email.correctAndValidate(emailInput))(emailAddr => {
       val mail: MailContent = daoProvider.withTransaction(dao =>
         dao.findUserRegistrationInfo(emailAddr) match {
-          case None => onNewUser(emailAddr, dao)
-          case Some(UserRegistrationInfo(_, _, _, Some(_))) => onAlreadyRegistered()
-          case Some(UserRegistrationInfo(_, Some(token), Some(issued), _)) if !isConfirmationTokenExpired_?(issued) => onTokenReusable(token)
-          case Some(UserRegistrationInfo(id, _, _, _)) => onTokenExpired(id, dao)
+          case None    => onNewUser(emailAddr, dao)
+          case Some(u) => performPreRegistation(u, dao)
         }
       )
       sendMail(mail addressedTo emailAddr)
       jsClearError & JqExpr("#emailSent,#register1Form") ~> JqToggle
     })
   }
+
+  def performPreRegistation(u: UserRegistrationInfo, dao: DaoT): MailContent =
+    u match {
+      case UserRegistrationInfo(_, _, _, Some(_)) =>
+        onAlreadyRegistered()
+      case UserRegistrationInfo(_, Some(token), Some(issued), None) if !isTokenExpired(issued) =>
+        onTokenReusable(token)
+      case UserRegistrationInfo(id, _, _, None) =>
+        onTokenExpired(id, dao)
+    }
+
+  // TODO add retries incase token in use
 
   private def onNewUser(email: String @@ Validated, dao: DaoT): MailContent = {
     val token = randomConfirmationToken
@@ -89,7 +105,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
         S.error("Invalid registration token. Please re-register your email address.")
         redirectTo(AppSiteMap.Register1)
 
-      case Some(issued) if isConfirmationTokenExpired_?(issued) =>
+      case Some(issued) if isTokenExpired(issued) =>
         S.error("Your registration token has expired. Please re-register your email address to get a new token.")
         redirectTo(AppSiteMap.Register1)
 

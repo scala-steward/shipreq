@@ -36,6 +36,7 @@ private[db] final object Sql {
   implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
   implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ResetPasswordInfo = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
   implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
   implicit val GR_Share = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
@@ -58,7 +59,8 @@ private[db] final object Sql {
   // User
 
   private val UserDescCols = "id,username,email,roles"
-  private val PwdAndSaltCols = "password, password_salt"
+  private val PwdAndSaltCols = "password,password_salt"
+  private val UserRegistrationInfoCols = "id,confirmation_token,confirmation_sent_at,confirmed_at"
 
   val GetUserDescCredByUsername = query[String, (UserDescriptor, PasswordAndSalt)](
     s"SELECT $UserDescCols,$PwdAndSaltCols FROM usr WHERE username=?")
@@ -67,7 +69,10 @@ private[db] final object Sql {
     s"SELECT $UserDescCols,$PwdAndSaltCols FROM usr WHERE email=? AND password IS NOT NULL")
 
   val GetUserRegInfo = query[String, UserRegistrationInfo](
-    "SELECT id, confirmation_token, confirmation_sent_at, confirmed_at FROM usr WHERE email=?")
+    s"SELECT $UserRegistrationInfoCols FROM usr WHERE email=?")
+
+  val GetUserRegAndResetPwInfo = query[String, (UserRegistrationInfo, ResetPasswordInfo)](
+    s"SELECT $UserRegistrationInfoCols, reset_password_token, reset_password_sent_at FROM usr WHERE email=?")
 
   val GetConfirmationTokenIssuedDate = query[String, DateTime](
     "SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
@@ -92,8 +97,14 @@ private[db] final object Sql {
   val GetUserSupplementalInfo = query[UserId, UserSupplementalInfo](
     "SELECT password, password_salt, confirmed_at FROM usr WHERE id=?")
 
-  val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
+  @Update val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
     "UPDATE usr SET password = ?, password_salt = ?, password_changed_at = NOW() WHERE id=?")
+
+  @Update val InstallNewResetPasswordToken = update[(String, UserId)](
+    "UPDATE usr SET reset_password_token = ?, reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
+
+  @Update val ReuseResetPasswordToken = update[UserId](
+    "UPDATE usr SET reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
   // ###################################################################################################################
   // Project

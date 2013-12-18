@@ -35,10 +35,18 @@ class TestMailer extends Mailer {
  * functionality.
  */
 case class MailTestResult[R](mailer: TestMailer, result: R) extends Matchers {
+
+  def sent = mailer.sent
+
   def assertEmail(emailFrags: Option[List[String]]) = {
-    TestHelpers.testListOfZeroOrOne(emailFrags, mailer.sent)(mail =>
+    TestHelpers.testListOfZeroOrOne(emailFrags, sent)(mail =>
       for (f <- emailFrags.get) mail.getContent.toString should include(f)
     )
     this
   }
+
+  def assertSent(emailFrags: String*) = assertEmail(Some(List(emailFrags: _*)))
+
+  def assertNothingSent() = assertEmail(None)
+
 }
