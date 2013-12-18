@@ -276,10 +276,10 @@ object TestDatabaseHelpers {
 }
 
 class TestDaoProvider(dao: DaoT, adminDao: AdminDao) extends DaoProvider {
-  override protected def createSession(): DaoS = ???
-  override def withRawSession [T](block: Session    => T): T = block(dao.session)
-  override def withLazySession[T](block: Need[DaoS] => T): T = block(Need(dao))
-  override def withAdminDao   [T](block: AdminDao   => T): T = block(adminDao)
-  override def withSession    [T](block: DaoS       => T): T = block(dao)
-  override def withTransaction[T](block: DaoT       => T): T = block(dao)
+  override def withRawSession[T](f: Session => T): T       = f(dao.session)
+  override protected def rawSession(): Session             = dao.session
+  override protected def newDaoS    (s: Session): DaoS     = dao
+  override protected def newDaoT    (s: Session): DaoT     = dao
+  override protected def newAdminDao(s: Session): AdminDao = adminDao
+  override def withLazySession[T](f: Need[DaoS] => T): T   = f(Need(dao))
 }

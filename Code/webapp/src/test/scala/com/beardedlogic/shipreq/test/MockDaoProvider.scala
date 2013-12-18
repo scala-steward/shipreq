@@ -7,6 +7,7 @@ import slick.session.Session
 import app.DI
 import db.{AdminDao, DaoS, DaoT, DaoProvider}
 import java.sql.Connection
+import scalaz.Need
 
 /**
  * [[com.beardedlogic.shipreq.db.DaoProvider]] that creates and uses a mock DAO.
@@ -20,19 +21,23 @@ import java.sql.Connection
  * }}}
  */
 class MockDaoProvider extends DaoProvider with MockitoSugar {
-  val conn = mock[Connection]
-  val session = mock[Session]
-  val dao = mock[DaoT]
+  val conn     = mock[Connection]
+  val session  = mock[Session]
+  val dao      = mock[DaoT]
   val adminDao = mock[AdminDao]
 
   when(session.conn).thenReturn(conn)
   for (d <- List(dao, adminDao)) when(d.session).thenReturn(session)
 
-  override protected def createSession(): DaoS = dao
-  override def withRawSession [T](block: Session  => T): T = block(session)
-  override def withSession    [T](block: DaoS     => T): T = block(dao)
-  override def withTransaction[T](block: DaoT     => T): T = block(dao)
-  override def withAdminDao   [T](block: AdminDao => T): T = block(adminDao)
+  override protected def rawSession(): Session                            = session
+  override def withRawSession [T](f: Session  => T): T                    = f(session)
+  override protected def inTransaction[T](s: Session)(f: Session => T): T = f(s)
+
+  override protected def newDaoS    (s: Session): DaoS     = dao
+  override protected def newDaoT    (s: Session): DaoT     = dao
+  override protected def newAdminDao(s: Session): AdminDao = adminDao
+
+  override def withLazySession[T](f: Need[DaoS] => T): T = f(Need(dao))
 
   def install[R](fn: => R): R = DI.DaoProvider.doWith(this)(fn)
 }
