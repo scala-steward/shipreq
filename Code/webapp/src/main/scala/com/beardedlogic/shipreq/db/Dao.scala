@@ -64,27 +64,40 @@ sealed trait DaoS {
   private[this] def inSafeTransaction[T](f: => T): T = {
     val conn = session.conn
     val oldAutoCommit = conn.getAutoCommit
-    conn.setAutoCommit(false)
+    if (oldAutoCommit)
+      conn.setAutoCommit(false)
     val sp = conn.setSavepoint()
 
     try {
       val result = f
-      conn.commit
+      if (oldAutoCommit)
+        conn.commit
       result
     } catch {
       case e: Throwable =>
         conn.rollback(sp)
         throw e
     } finally {
-      conn.setAutoCommit(oldAutoCommit)
+      if (oldAutoCommit)
+        conn.setAutoCommit(true)
     }
   }
 
   // ===================================================================================================================
   // User
 
+  private def tokenAttempt(tokenFn: () => String)(f: String => Unit): String =
+    retry(10) {
+      inSafeTransaction {
+        val token = tokenFn()
+        f(token)
+        token
+      }
+    }
+
   /** Creates an unconfirmed user account. No username, no password until email confirmed. */
-  def createUserPlaceholder(email: String @@ Validated, token: String): Unit = InsertUserPlaceholder.execute(email, token)
+  def createUserPlaceholder(email: String @@ Validated, tokenFn: () => String): String =
+    tokenAttempt(tokenFn)(token => InsertUserPlaceholder.execute(email, token))
 
   def performUserRegistration(token: String)(username: String @@ Validated, ps: PasswordAndSalt, ipAddr: String): UserRegistrationResult = {
     import UserRegistrationResult._
@@ -98,7 +111,8 @@ sealed trait DaoS {
     }
   }
 
-  def updateUserConfirmationToken(id: UserId, token: String): Unit = UpdateConfirmationToken.execute(token, id)
+  def updateUserConfirmationToken(id: UserId, tokenFn: () => String): String =
+    tokenAttempt(tokenFn)(token => UpdateConfirmationToken.execute(token, id))
 
   def findUserDescAndCredentials(usernameOrEmail: String): Option[(UserDescriptor, PasswordAndSalt)] =
     if (usernameOrEmail.indexOf('@') == -1)
@@ -123,13 +137,7 @@ sealed trait DaoS {
   def updateUserPassword(id: UserId, ps: PasswordAndSalt): Unit = UpdateUserPassword.execute(ps, id)
 
   def performInstallNewResetPasswordToken(u: UserId, tokenFn: () => String): String =
-    retry(10) {
-      inSafeTransaction {
-        val token = tokenFn()
-        InstallNewResetPasswordToken.execute(token, u)
-        token
-      }
-    }
+    tokenAttempt(tokenFn)(token => InstallNewResetPasswordToken.execute(token, u))
 
   def performReuseResetPasswordToken(u: UserId): Unit = ReuseResetPasswordToken.execute(u)
 

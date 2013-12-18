@@ -69,11 +69,8 @@ object Register1 extends SnippetHelpers {
         onTokenExpired(id, dao)
     }
 
-  // TODO add retries incase token in use
-
   private def onNewUser(email: String @@ Validated, dao: DaoT): MailContent = {
-    val token = randomConfirmationToken
-    dao.createUserPlaceholder(email, token)
+    val token = dao.createUserPlaceholder(email, () => randomConfirmationToken)
     RegistrationEmails.LinkToCompleteRegistration(token)
   }
 
@@ -82,8 +79,7 @@ object Register1 extends SnippetHelpers {
   }
 
   private def onTokenExpired(id: UserId, dao: DaoT): MailContent = {
-    val token = randomConfirmationToken
-    dao.updateUserConfirmationToken(id, token)
+    val token = dao.updateUserConfirmationToken(id, () => randomConfirmationToken)
     RegistrationEmails.LinkToCompleteRegistration(token)
   }
 
