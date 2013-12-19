@@ -2,17 +2,23 @@ package com.beardedlogic.shipreq.snippet
 
 import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{when, verify}
 import org.scalatest.FunSpec
 
 import com.beardedlogic.shipreq.db.{ResetPasswordInfo, UserRegistrationInfo, DaoT}
 import com.beardedlogic.shipreq.lib.Types._
 import com.beardedlogic.shipreq.test.T2._
 import com.beardedlogic.shipreq.test.{MockDaoProvider, TestHelpers}
+import com.beardedlogic.shipreq.util.NonEmptyTemplate
 
 class ResetPasswordTest extends FunSpec with TestHelpers {
 
-  describe("Request submission") {
+  val validEmail = "hehe@yay.com"
+
+  val expiredTime = 2 days
+  val nonExpiredTime = 1 hour
+
+  describe("ResetPassword1.perform") {
 
     def findUserReturns(r: Option[(UserRegistrationInfo, ResetPasswordInfo)]): DbSetup = new DbSetup {
       override def setup(d: DaoT) = when(d.findUserRegAndResetPwInfo(any)) thenReturn r
@@ -24,8 +30,8 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
     val UserNotFound             = findUserReturns(None)
     val UnactivatedUser          = findUserReturns(Some(UserRegistrationInfo(5.tag, Some("X"), Some((1 minute).ago), None), noResetPwToken))
     val UserWithoutExistingToken = findUserReturns(Some(registeredUser, noResetPwToken))
-    val UserWithExpiredToken     = findUserReturns(Some(registeredUser, existingToken("EXPIRED", 1 month)))
-    val UserWithValidToken       = findUserReturns(Some(registeredUser, existingToken("VALID", 1 minute)))
+    val UserWithExpiredToken     = findUserReturns(Some(registeredUser, existingToken("EXPIRED", expiredTime)))
+    val UserWithValidToken       = findUserReturns(Some(registeredUser, existingToken("VALID", nonExpiredTime)))
 
     val JsEmailSent     = NoErrorNotice & JsContains("resetpwTokenSent")
     val JsEmailRejected = HasErrorNotice("mail address") & JsDoesntContain("resetpwTokenSent")
@@ -61,32 +67,87 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
 
     // matches user: N, valid email: Y - pretend sent
     it("should do nothing and pretend email sent when no user found and email is valid") {
-      test("hehe@yay.com", UserNotFound)(NoDbChange, NoEmailSent, JsEmailSent)
+      test(validEmail, UserNotFound)(NoDbChange, NoEmailSent, JsEmailSent)
     }
 
     // matches user: N, valid email: N - error
     it("should reject email address when no user found and email is invalid") {
-      test("what", UserNotFound)(NoDbChange, NoEmailSent, JsEmailRejected)
+      test("invalidEmail", UserNotFound)(NoDbChange, NoEmailSent, JsEmailRejected)
     }
 
     // matches user: Y, registered: N - send reg token
     it("should send registration email when user found and account not activated") {
-      test("hehe@yay.com", UnactivatedUser)(NoDbChange, ConfirmRegistrationEmailSent, JsEmailSent)
+      test(validEmail, UnactivatedUser)(NoDbChange, ConfirmRegistrationEmailSent, JsEmailSent)
     }
 
     // matches user: Y, registered: Y, has recent reset pw token: Y - reuse token, send email, inc req count
     it("should send email with current token when user found and valid reset-pw token exists") {
-      test("hehe@yay.com", UserWithValidToken)(ReusesToken, ChangeReqEmailSent, JsEmailSent)
+      test(validEmail, UserWithValidToken)(ReusesToken, ChangeReqEmailSent, JsEmailSent)
     }
 
     // matches user: Y, registered: Y, has recent reset pw token: N - new token, send email, inc req count
     it("should send email with new token when user found and reset-pw token has expired") {
-      test("hehe@yay.com", UserWithExpiredToken)(IssuesNewToken, ChangeReqEmailSent, JsEmailSent)
+      test(validEmail, UserWithExpiredToken)(IssuesNewToken, ChangeReqEmailSent, JsEmailSent)
     }
 
     // matches user: Y, registered: Y, has recent reset pw token: N - new token, send email, inc req count
     it("should send email with new token when user found and doesnt have a reset-pw token yet") {
-      test("hehe@yay.com", UserWithoutExistingToken)(IssuesNewToken, ChangeReqEmailSent, JsEmailSent)
+      test(validEmail, UserWithoutExistingToken)(IssuesNewToken, ChangeReqEmailSent, JsEmailSent)
+    }
+  }
+
+  describe("ResetPassword2.render") {
+    lazy val template = NonEmptyTemplate.load("resetpw2").get
+
+    def findToken(r: Option[DateTime]): DbSetup =
+      new DbSetup {override def setup(d: DaoT) = when(d.findResetPasswordTokenIssuedDate(any)) thenReturn r}
+
+    val TokenNotFound = findToken(None)
+    val TokenExpired = findToken(Some(expiredTime.ago))
+    val TokenValid = findToken(Some(nonExpiredTime.ago))
+
+    def test(dbSetup: DbSetup)(ne: SNoticeExp, re: RenderExp): Unit =
+      inMockSession {
+        MockDaoProvider(dbSetup setup _).install {
+          val s = new ResetPassword2("ah")
+          val r = tryRender(s.render(template))
+          ne.test()
+          re.test(r)
+        }
+      }
+
+    it("should redirect when token expired") {
+      test(TokenExpired)(HasErrorNoticeContaining("expired"), Redirects)
+    }
+    it("should redirect when token not found") {
+      test(TokenNotFound)(HasErrorNoticeContaining("invalid"), Redirects)
+    }
+    it("should provide form when token valid") {
+      test(TokenValid)(NoNotices, HtmlContains("<form "))
+    }
+  }
+
+  describe("ResetPassword2.onSubmit") {
+
+    val UpdatesPassword = new DbExp {override def test(d: DaoT) = verify(d).performPasswordReset(any, any)}
+
+    def test(p: String)(dbExp: DbExp, jsExp: JsExp): Unit =
+      inMockSession {
+        MockDaoProvider().install {
+          val s = new ResetPassword2("ah")
+          s.password1Input = p
+          s.password2Input = p
+          val js = s.onSubmit()
+          dbExp.test()
+          jsExp test js
+        }
+      }
+
+    it("should reject invalid passwords") {
+      test("x")(NoDbInteraction, HasErrorNotice("assword"))
+    }
+    it("should update the password when valid") {
+      test("asdjhf2314sdfajk")(UpdatesPassword, JsContains("toggle"))
     }
   }
 }

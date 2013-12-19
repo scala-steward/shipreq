@@ -141,6 +141,10 @@ sealed trait DaoS {
 
   def performReuseResetPasswordToken(u: UserId): Unit = ReuseResetPasswordToken.execute(u)
 
+  def findResetPasswordTokenIssuedDate(token: String) = GetResetPasswordTokenIssuedDate.firstOption(token)
+
+  def performPasswordReset(ps: PasswordAndSalt, token: String) = ResetPassword.execute(ps, token)
+
   // ===================================================================================================================
   // Project
 

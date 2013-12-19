@@ -29,11 +29,12 @@ abbr.timeago[title] { border-bottom: none !important }
 
 .centred_form {
   margin: 1cm auto 1cm auto;
-  h2 { margin-bottom: 0.6em }
+  h2 { margin-bottom: 0.8em }
   p { margin-bottom: 1.6em }
   &.login,
   &#register1Form { width: 44ex }
   &#resetpw1Form  { width: 54ex }
+  &#resetpw2Form  { width: 90ex }
 }
 
 .flowgraph svg {

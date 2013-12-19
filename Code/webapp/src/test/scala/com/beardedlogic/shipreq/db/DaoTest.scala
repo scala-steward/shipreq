@@ -7,8 +7,9 @@ import slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
 import lib.Types._
 import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
-import security.PasswordAndSalt
 import feature.UcFilters
+import security.PasswordAndSalt
+import snippet.ResetPassword
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
   implicit def str2uch(title: String @@ Validated): UseCaseHeader = UseCaseHeader(title)
@@ -295,6 +296,32 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       val (u, p, _) = afterDeletion
       dao.findProject(p) shouldBe None
       dao.summariseProjects(u).map(_.id) should not contain(p)
+    }
+  }
+
+  // ===================================================================================================================
+
+  describe("User") {
+
+    it("reset password fns") {
+      val u = newUserId
+      val username = sql"select username from usr where id=${u: Long}".as[String].first()
+      val token = dao.performInstallNewResetPasswordToken(u, () => s"token.$u")
+
+      val date = dao.findResetPasswordTokenIssuedDate(token).get
+      ResetPassword.isTokenExpired(date) shouldBe false
+
+      dao.performReuseResetPasswordToken(u)
+      val date2 = dao.findResetPasswordTokenIssuedDate(token).get
+      ResetPassword.isTokenExpired(date2) shouldBe false
+
+      val p = "hehegreat100"
+      val ps = PasswordAndSalt.createWithRandomSalt(p)
+      dao.performPasswordReset(ps, token)
+
+      dao.findResetPasswordTokenIssuedDate(token) shouldBe None
+      val ps2 = dao.findUserDescAndCredentials(username).get._2
+      ps2.matches(p) shouldBe true
     }
   }
 

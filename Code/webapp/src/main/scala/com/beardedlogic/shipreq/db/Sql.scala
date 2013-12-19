@@ -106,6 +106,15 @@ private[db] final object Sql {
   @Update val ReuseResetPasswordToken = update[UserId](
     "UPDATE usr SET reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
+  val GetResetPasswordTokenIssuedDate = query[String, DateTime](
+    "SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
+
+  @Update val ResetPassword = update[(PasswordAndSalt, String)]("""
+    UPDATE usr SET
+      password = ?, password_salt = ?, password_changed_at = NOW(),
+      reset_password_token = NULL
+    WHERE reset_password_token = ? """.sql)
+
   // ###################################################################################################################
   // Project
 

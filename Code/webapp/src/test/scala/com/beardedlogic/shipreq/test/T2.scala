@@ -5,6 +5,9 @@ import com.beardedlogic.shipreq.db.DaoT
 import net.liftweb.http.js.JsCmd
 import org.mockito.Mockito.{verify, times, never, verifyNoMoreInteractions}
 import org.scalatest.Matchers
+import xml.NodeSeq
+import scalaz.{\/-, -\/, \/}
+import net.liftweb.http.{S, RedirectResponse, ResponseShortcutException}
 
 /**
  * Can't think of what else to call this. It's like Testing 2.0.
@@ -80,5 +83,73 @@ object T2 {
 
   object NoDbInteraction extends DbExp {
     override def test(d: DaoT) = verifyNoMoreInteractions(d)
+  }
+
+  // ===================================================================================================================
+  // Expectations: HTML
+
+  trait HtmlExp {
+    a =>
+    def test(h: NodeSeq): Unit = test(h.toString)
+    def test(h: String): Unit
+    def &(b: HtmlExp): HtmlExp = new HtmlExp {override def test(html: String) = { a.test(html); b.test(html) }}
+  }
+
+  case class HtmlContains(frag: String, frags: String*) extends HtmlExp with Matchers {
+    override def test(html: String) = {
+      for (f <- (frag +: frags)) html should include(f)
+    }
+  }
+
+  case class HtmlDoesntContain(frag: String, frags: String*) extends HtmlExp with Matchers {
+    override def test(html: String) = {
+      for (f <- (frag +: frags)) html should not include(f)
+    }
+  }
+
+  // ===================================================================================================================
+  // Expectations: Render
+
+  def tryRender(f: => NodeSeq): Throwable \/ NodeSeq =
+    try \/-(f) catch {case t: Throwable => -\/(t)}
+
+  trait RenderExp {
+    type R = Throwable \/ NodeSeq
+    def test(r: R): Unit
+  }
+
+  trait ResponseShortcutExp extends RenderExp with Matchers {
+    override def test(r: R): Unit = r match {
+      case -\/(e: ResponseShortcutException) => test(e)
+      case _ => fail(s"ResponseShortcutException expected. Got: $r")
+    }
+    def test(r: ResponseShortcutException): Unit
+  }
+
+  object Redirects extends ResponseShortcutExp {
+    def test(r: ResponseShortcutException): Unit = r.response shouldBe a [RedirectResponse]
+  }
+
+  case class RendersHtmlLike(he: HtmlExp) extends RenderExp with Matchers {
+    override def test(r: R): Unit = r match {
+      case \/-(n) => he.test(n)
+      case _ => fail(s"HTML expected. Got: $r")
+    }
+  }
+  implicit def HtmlExpToRenderExp(he: HtmlExp): RenderExp = RendersHtmlLike(he)
+
+  // ===================================================================================================================
+  // Expectations: S.notices
+
+  trait SNoticeExp {
+    def test(): Unit
+  }
+  object NoNotices extends SNoticeExp with Matchers {
+    override def test() = S.getAllNotices shouldBe List.empty
+  }
+  case class HasErrorNoticeContaining(frag: String, frags: String*) extends SNoticeExp with Matchers {
+    val allFrags = frag :: frags.toList
+    override def test() = S.errors.exists(e => check(e._1.toString)) shouldBe true
+    def check(i: String): Boolean = !allFrags.exists(f => !i.contains(f))
   }
 }
