@@ -8,7 +8,7 @@ import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 
 import app.AppConfig.PasswordResetTokenLifespan
-import db.{Dao, DaoT, UserRegistrationInfo, ResetPasswordInfo}
+import db.{DaoT, UserRegistrationInfo, ResetPasswordInfo}
 import feature.validation.Validator
 import lib.MailHelpers.MailContent
 import lib.{SingleOpStatefulSnippet, SnippetHelpers}
@@ -44,22 +44,21 @@ object ResetPassword1 extends SnippetHelpers {
 
   def perform(emailInput: String): JsCmd = {
     val email = Validator.email.correct(emailInput)
-    daoProvider.withTransaction(dao =>
-      Dao.withTransactionLevel(dao, Connection.TRANSACTION_SERIALIZABLE) {
-        dao.findUserRegAndResetPwInfo(email) match {
+    daoProvider.withTransactionLevel(Connection.TRANSACTION_SERIALIZABLE)(dao =>
+      dao.findUserRegAndResetPwInfo(email) match {
 
-          case None =>
-            ifValid(Validator.email.validate(email))(_ => jsEmailSent)
+        case None =>
+          ifValid(Validator.email.validate(email))(_ => jsEmailSent)
 
-          case Some((u@UserRegistrationInfo(_, _, _, None), _)) =>
-            send(email, Register1.performPreRegistation(u, dao))
+        case Some((u@UserRegistrationInfo(_, _, _, None), _)) =>
+          send(email, Register1.performPreRegistation(u, dao))
 
-          case Some((UserRegistrationInfo(id, _, _, Some(_)), ResetPasswordInfo(Some(token), Some(issued)))) if !isTokenExpired(issued) =>
-            send(email, reuseToken(id, token, dao))
+        case Some((UserRegistrationInfo(id, _, _, Some(_)), ResetPasswordInfo(Some(token), Some(issued)))) if !isTokenExpired(issued) =>
+          send(email, reuseToken(id, token, dao))
 
-          case Some((UserRegistrationInfo(id, _, _, Some(_)), _)) =>
-            send(email, issueNewToken(id, dao))
-  }})}
+        case Some((UserRegistrationInfo(id, _, _, Some(_)), _)) =>
+          send(email, issueNewToken(id, dao))
+  })}
 
   def send(emailAddr: String, mail: MailContent): JsCmd = {
     sendMail(mail addressedTo emailAddr)

@@ -7,7 +7,6 @@ import scala.slick.driver.PostgresDriver.simple._
 import feature.uc.field.FieldDefinition
 import feature.UcFilter
 import lib.Locks.{UseCaseNumbers, SingleUseCase}
-import lib.ScalazSubset._
 import lib.Misc.retry
 import lib.ShareUrlTokenGen
 import lib.Types._
@@ -36,20 +35,6 @@ import util.Lock
  */
 private[db] class Dao(_session: Session) extends DaoT {
   implicit final val session = _session
-}
-
-object Dao {
-  // Not making this part of DaoT because it just makes testing with mocks a pain the fucking arse.
-  def withTransactionLevel[R](dao: DaoT, level: Int)(f: => R): R = {
-    val conn = dao.session.conn
-//    val orig = conn.getTransactionIsolation
-    try {
-//      conn setTransactionIsolation level
-      f
-    } finally ()
-//      conn setTransactionIsolation orig
-  }
-
 }
 
 /**

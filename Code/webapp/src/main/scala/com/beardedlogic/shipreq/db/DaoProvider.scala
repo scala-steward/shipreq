@@ -33,4 +33,18 @@ abstract class DaoProvider {
       if (used) n.value.session.close()
   }
 
+  /**
+   * Starts a transaction with a specified transaction isolation level.
+   * @param level See java.sql.Connection
+   */
+  def withTransactionLevel[R](level: Int)(f: DaoT => R): R =
+    withRawSession(s => {
+      val conn = s.conn
+      val orig = conn.getTransactionIsolation
+      try {
+        conn setTransactionIsolation level
+        inTransaction(s)(ss => f(newDaoT(ss)))
+      } finally
+        conn setTransactionIsolation orig
+    })
 }
