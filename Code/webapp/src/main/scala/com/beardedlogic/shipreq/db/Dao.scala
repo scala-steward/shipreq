@@ -194,11 +194,11 @@ sealed trait DaoS {
 
   def findAllLatestUseCaseRevsByProject(pid: ProjectId): List[UseCaseRev] = SelectLatestUseCaseRevsByProject.list(pid)
 
-  def findAllLatestUseCaseRevs(pid: ProjectId, ids: List[UseCaseIdentId]): List[UseCaseRev] = ids match {
-    case Nil       => List.empty
-    case id :: Nil => findUseCaseLatestRev(id).toList
-    case h :: t    => SelectLatestUseCaseRevsByIds(nel(h, t)).list(pid)
-  }
+  def findAllLatestUseCaseRevs(pid: ProjectId, ids: List[UseCaseIdentId]): List[UseCaseRev] =
+    if (ids.isEmpty)
+      List.empty
+    else
+      SelectLatestUseCaseRevsByIds.list(pid, ids)
 
   def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases.list(projectId)
 
@@ -208,12 +208,11 @@ sealed trait DaoS {
   def findAllUcFieldData(ucRevId: UseCaseRevId): List[UcFieldTextWithFK] =
     SelectUcFields.list(ucRevId)
 
-  // TODO findAllUcFieldData & findAllLatestUseCaseRevs should run in ID batches. What's postgres's limit on INs?
-  def findAllUcFieldData(ids: List[UseCaseRevId]): List[(UseCaseRevId, UcFieldTextWithFK)] = ids match {
-    case Nil       => List.empty
-    case id :: Nil => findAllUcFieldData(id).strengthL(id)
-    case h :: t    => SelectUcFieldsInBulk(nel(h, t)).list()
-  }
+  def findAllUcFieldData(ids: List[UseCaseRevId]): List[(UseCaseRevId, UcFieldTextWithFK)] =
+    if (ids.isEmpty)
+      List.empty
+    else
+      SelectUcFieldsInBulk.list(ids)
 
   def linkUcToText(uc: UseCaseRevId, txt: TextRevId): Unit =
     LinkUcToText.execute(uc, txt)

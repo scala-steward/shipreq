@@ -3,6 +3,8 @@ package db
 
 import java.sql.Timestamp
 import org.joda.time.DateTime
+import org.postgresql.core.Oid
+import org.postgresql.jdbc4.Jdbc4Array
 import org.postgresql.util.PGobject
 import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
@@ -38,6 +40,32 @@ object SqlHelpers {
   private def SP_TaggedLongOpt[T <: JLong @@ TypeTag[JLong]] = new SetParameter[Option[T]] {
     def apply(v: Option[T], pp: PositionedParameters): Unit = pp.setObjectOption(v, java.sql.Types.BIGINT)
   }
+  private def SP_TaggedLongArray[T <: JLong @@ TypeTag[JLong]]: SetParameter[List[T]] = new SetParameter[List[T]] {
+    def apply(v: List[T], pp: PositionedParameters): Unit = {
+      /*
+      val a = new Array[Long](v.size)
+      var i = v.size - 1
+      while (i >= 0) {
+        a(i) = v(i).longValue
+        i -= 1
+      }
+      */
+      val sb = new StringBuilder
+      sb append '{'
+      if (v.nonEmpty) {
+        sb append v.head.longValue
+        v.tail.foreach(t => {
+          sb append ','
+          sb append t.longValue
+        })
+      }
+      sb append '}'
+      val c1 = pp.ps.getConnection.asInstanceOf[com.jolbox.bonecp.ConnectionHandle]
+      val c2 = c1.getInternalConnection.asInstanceOf[org.postgresql.core.BaseConnection]
+      val a = new Jdbc4Array(c2, Oid.INT8_ARRAY, sb.toString)
+      pp.setObject(a, java.sql.Types.ARRAY)
+    }
+  }
 
   private def GR_TaggedShort[Tag <: TypeTag[JShort]]: GetResult[JShort @@ Tag] = GetResult(_.nextTShort[Tag])
   private def SP_TaggedShort[Tag <: TypeTag[JShort]]: SetParameter[JShort @@ Tag] = new SetParameter[JShort @@ Tag] {
@@ -61,8 +89,10 @@ object SqlHelpers {
   implicit val SP_FieldKeyId = SP_TaggedLong[FieldKeyId]
   implicit val GR_UseCaseRevId = GR_TaggedLong[UseCaseRevId]
   implicit val SP_UseCaseRevId = SP_TaggedLong[UseCaseRevId]
+  implicit val SP_UseCaseRevIdA = SP_TaggedLongArray[UseCaseRevId]
   implicit val GR_UseCaseIdentId = GR_TaggedLong[UseCaseIdentId]
   implicit val SP_UseCaseIdentId = SP_TaggedLong[UseCaseIdentId]
+  implicit val SP_UseCaseIdentIdA = SP_TaggedLongArray[UseCaseIdentId]
   implicit val GR_TextRevId = GR_TaggedLong[TextRevId]
   implicit val SP_TextRevId = SP_TaggedLong[TextRevId]
   implicit val GR_TextRevIdOpt = GR_TaggedLongOpt[TextRevId]

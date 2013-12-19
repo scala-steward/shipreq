@@ -197,13 +197,11 @@ private[db] final object Sql {
   val SelectLatestUseCaseRev = query[UseCaseIdentId, UseCaseRev](
     s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
 
-  val SelectLatestUseCaseRevsByProject = query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*))
+  val SelectLatestUseCaseRevsByProject =
+    query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*))
 
-  def SelectLatestUseCaseRevsByIds(ids: NonEmptyList[UseCaseIdentId]) =
-    SelectLatestUseCaseRevsArb(UseCaseIdentIdIn("ident_id", ids))
-
-  private def SelectLatestUseCaseRevsArb(where: String) =
-    query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*, Some(where)))
+  val SelectLatestUseCaseRevsByIds =
+    query[(ProjectId, List[UseCaseIdentId]), UseCaseRev](summariseUseCaseSql(ucrev_*, Some("ident_id = ANY(?)")))
 
   private def summariseUseCaseSql(select: String, where: Option[String] = None) = {
     val w = where match {
@@ -215,8 +213,6 @@ private[db] final object Sql {
 
   val SummariseUseCases = query[ProjectId, UseCaseSummary](
     summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
-
-  private def UseCaseIdentIdIn(col: String, ids: NonEmptyList[UseCaseIdentId]) = s"$col in (${idsToSql(ids)})"
 
   // ###################################################################################################################
   // Text
@@ -251,12 +247,11 @@ private[db] final object Sql {
      ORDER BY index """.sql
   // ORDER BY: Step loading RELIES on ORDER BY index
 
-  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](selectUcFieldSql("","uc_rev_id = ?"))
+  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](
+    selectUcFieldSql("","uc_rev_id = ?"))
 
-  def SelectUcFieldsInBulk(ids: NonEmptyList[UseCaseRevId]) = queryNA[(UseCaseRevId, UcFieldTextWithFK)](
-    selectUcFieldSql("uc_rev_id,", UseCaseRevIdIn("uc_rev_id", ids)))
-
-  private def UseCaseRevIdIn(col: String, ids: NonEmptyList[UseCaseRevId]) = s"$col in (${idsToSql(ids)})"
+  val SelectUcFieldsInBulk = query[List[UseCaseRevId], (UseCaseRevId, UcFieldTextWithFK)](
+    selectUcFieldSql("uc_rev_id,", "uc_rev_id = ANY(?)"))
 
   // ###################################################################################################################
   // Fields
