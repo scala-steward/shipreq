@@ -46,10 +46,10 @@ object ShipReq {
 
   val jsHeaders = Map("Accept" -> "*/*")
 
-  val getJsOnce = getOnce("js", n => getJs(s"/js/$n.js")) _
+  val getJsOnce = getOnce("js", n => getJs(s"/assets/$n.js")) _
 
   def getJs(url: String) =
-    exec(http("JS: " + url.replace("/js/", "").replaceFirst("\\?.*$", "")).get(url).headers(jsHeaders).check(status is 200))
+    exec(http("JS: " + url.replace("/assets/", "").replaceFirst("\\?.*$", "")).get(url).headers(jsHeaders).check(status is 200))
   
   val getLiftAjax = exec(http("JS: liftAjax").get("/ajax_request/liftAjax.js").headers(jsHeaders).check(status is 200))
 
@@ -59,17 +59,17 @@ object ShipReq {
 
   val cssHeaders = Map("Accept" -> "text/css,*/*;q=0.1")
 
-  val getCssOnce = getOnce("css", n => getCss(s"/css/$n.css")) _
+  val getCssOnce = getOnce("css", n => getCss(s"/assets/$n.css")) _
 
   def getCss(url: String) =
-    exec(http("CSS: " + url.replace("/css/", "").replaceFirst("\\?.*$", "")).get(url).headers(cssHeaders).check(status is 200))
+    exec(http("CSS: " + url.replace("/assets/", "").replaceFirst("\\?.*$", "")).get(url).headers(cssHeaders).check(status is 200))
 
   // -------------------------------------------------------------------------------------------------------------------
 
   val getCommonDeps =
       exec(pause(30 millis))
-      .exec(getCssOnce("application"))
-      .exec(getJsOnce("all"))
+      .exec(getCssOnce("app"))
+      .exec(getJsOnce("app"))
       .exec(getLiftAjax)
 
   def home(loggedIn: Boolean) = {
@@ -133,9 +133,9 @@ object ShipReq {
       exec(http(s"Read UCs: $project").get(s"/project/$project/read").headers(userClicked).check(status is 200))
         .pause(20 millis)
         .exec(getCommonDeps)
-        .exec(getJs("/js/vendor/mathjax/MathJax.js?config=default"))
+        .exec(getJs("/assets/vendor/mathjax/MathJax.js?config=default"))
         .pause(40 millis)
-        .exec(getJs("/js/vendor/mathjax/config/default.js")))
+        .exec(getJs("/assets/vendor/mathjax/config/default.js")))
 
   val logout =
     exec(http("Logout").get("/logout").check(status is 302))
