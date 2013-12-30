@@ -1,16 +1,1 @@
-/*
- *  /MathJax/extensions/TeX/enclose.js
- *  
- *  Copyright (c) 2009-2013 The MathJax Consortium
- *
- *  Part of the MathJax library.
- *  See http://www.mathjax.org for details.
- * 
- *  Licensed under the Apache License, Version 2.0;
- *  you may not use this file except in compliance with the License.
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- */
-
-MathJax.Extension["TeX/enclose"]={version:"2.2",ALLOWED:{arrow:1,color:1,mathcolor:1,background:1,mathbackground:1,padding:1,thickness:1}};MathJax.Hub.Register.StartupHook("TeX Jax Ready",function(){var c=MathJax.InputJax.TeX,a=MathJax.ElementJax.mml,b=MathJax.Extension["TeX/enclose"].ALLOWED;c.Definitions.Add({macros:{enclose:"Enclose"}},null,true);c.Parse.Augment({Enclose:function(g){var k=this.GetArgument(g),e=this.GetBrackets(g),j=this.ParseArg(g);var l={notation:k.replace(/,/g," ")};if(e){e=e.replace(/ /g,"").split(/,/);for(var h=0,d=e.length;h<d;h++){var f=e[h].split(/[:=]/);if(b[f[0]]){f[1]=f[1].replace(/^"(.*)"$/,"$1");if(f[1]==="true"){f[1]=true}if(f[1]==="false"){f[1]=false}l[f[0]]=f[1]}}}this.Push(a.menclose(j).With(l))}});MathJax.Hub.Startup.signal.Post("TeX enclose Ready")});MathJax.Ajax.loadComplete("[MathJax]/extensions/TeX/enclose.js");
-
+MathJax.Extension["TeX/enclose"]={version:"2.2",ALLOWED:{arrow:1,color:1,mathcolor:1,background:1,mathbackground:1,padding:1,thickness:1}},MathJax.Hub.Register.StartupHook("TeX Jax Ready",function(){var a=MathJax.InputJax.TeX,b=MathJax.ElementJax.mml,c=MathJax.Extension["TeX/enclose"].ALLOWED;a.Definitions.Add({macros:{enclose:"Enclose"}},null,!0),a.Parse.Augment({Enclose:function(a){var d=this.GetArgument(a),e=this.GetBrackets(a),f=this.ParseArg(a),g={notation:d.replace(/,/g," ")};if(e){e=e.replace(/ /g,"").split(/,/);for(var h=0,i=e.length;i>h;h++){var j=e[h].split(/[:=]/);c[j[0]]&&(j[1]=j[1].replace(/^"(.*)"$/,"$1"),"true"===j[1]&&(j[1]=!0),"false"===j[1]&&(j[1]=!1),g[j[0]]=j[1])}}this.Push(b.menclose(f).With(g))}}),MathJax.Hub.Startup.signal.Post("TeX enclose Ready")}),MathJax.Ajax.loadComplete("[MathJax]/extensions/TeX/enclose.js");

@@ -30,6 +30,10 @@ module.exports = function(grunt) {
         out: 'src/main/webapp/assets',
         tmp: 'target/js',
       },
+      mathjax: {
+        src: 'vendor/MathJax-2.2',
+        out: 'src/main/webapp/assets/vendor/mathjax',
+      },
     },
 
     // *****************************************************************************************************************
@@ -40,7 +44,7 @@ module.exports = function(grunt) {
       tmp: ['<%= cfg.js.tmp %>', '<%= cfg.css.tmp %>'],
 
       // Delete MathJax copy
-      mathjax: ['src/main/webapp/assets/vendor/mathjax'],
+      mathjax: ['<%= cfg.mathjax.out %>'],
 
       // Delete previously-generated CSS
       css: {
@@ -74,7 +78,7 @@ module.exports = function(grunt) {
       mathjax: {
         files: [{
           expand: true,
-          cwd: 'vendor/MathJax-2.2',
+          cwd: '<%= cfg.mathjax.src %>',
           src: [
             'extensions/**/*',
             'fonts/HTML-CSS/**/*', '!fonts/HTML-CSS/TeX/png/**/*', '!fonts/HTML-CSS/TeX/svg/**/*',
@@ -85,7 +89,7 @@ module.exports = function(grunt) {
             'localization/en/**/*',
             'MathJax.js',
           ],
-          dest: 'src/main/webapp/assets/vendor/mathjax',
+          dest: '<%= cfg.mathjax.out %>',
         }]
       },
     },
@@ -144,13 +148,23 @@ module.exports = function(grunt) {
       },
 
       // Shrink JS files
-      all: {
+      own: {
         files: [{
           expand: true,
           cwd : '<%= cfg.js.tmp %>',
           dest: '<%= cfg.js.out %>',
           src: '**/*.js',
           ext: '.js',
+        }]
+      },
+
+      // Shrink MathJax JS
+      mathjax: {
+        files: [{
+          expand: true,
+          cwd : '<%= cfg.mathjax.out %>',
+          dest: '<%= cfg.mathjax.out %>',
+          src: '**/*.js',
         }]
       },
     },
@@ -242,10 +256,11 @@ module.exports = function(grunt) {
   // Task definitions
 
   grunt.registerTask('vendor' , ['copy:vendor'  ,'less:bootstrap'                        ]);
-  grunt.registerTask('mathjax', ['clean:mathjax','copy:mathjax'                          ]);
-  grunt.registerTask('js'     , ['clean:js'     ,'concat:js'   ,'uglify'                 ]);
+  grunt.registerTask('mathjax', ['clean:mathjax','copy:mathjax','uglify:mathjax'         ]);
+  grunt.registerTask('js'     , ['clean:js'     ,'concat:js'   ,'uglify:own'             ]);
   grunt.registerTask('css'    , ['clean:css'    ,'sass'        ,'concat:app_css','cssmin']);
   grunt.registerTask('default', ['clean:tmp'    ,'vendor'      ,'js'            ,'css'   ]);
+  grunt.registerTask('all'    , ['mathjax'      ,'default'                               ]);
 };
 
 // vim:sw=2 ts=2 et:
