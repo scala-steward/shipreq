@@ -11,6 +11,7 @@
     "zeroclipboard": "*",
     "jquery.livequery": "*",
     "mousetrap": "*",
-    "jquery.ui": "~1.10"
+    "jquery.ui": "~1.10",
+    "qunit": "*"
   }
 }
