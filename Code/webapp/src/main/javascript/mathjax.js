@@ -211,8 +211,7 @@ MathJax.Hub.Config({
   //  jax that prevents it from operating properly).
   //
   errorSettings: {
-    message: ["[Math Processing Error]"], // HTML snippet structure for message to use
-    messageId: "MathProcessingError",     // ID of snippet for localization
+    message: ["[",["MathProcessingError","Math Processing Error"],"]"],
     style: {color: "#CC0000", "font-style":"italic"}  // style for message
   },
 
@@ -363,13 +362,15 @@ MathJax.Hub.Config({
     //  use of the STIX fonts, or set it to an empty list, [], if
     //  you want to force MathJax to use web-based or image fonts.
     //
-    availableFonts: ["STIX","TeX"],
+    // availableFonts: ["STIX","TeX"],
+    // availableFonts: ["Asana-Math","Gyre-Pagella","Gyre-Termes","Latin-Modern","Neo-Euler","STIX-Web","TeX"],
+    availableFonts: ["Latin-Modern"],
 
     //
     //  This is the preferred font to use when more than one of those
     //  listed above is available.
     //
-    preferredFont: "TeX",
+    preferredFont: "Latin-Modern",
 
     //
     //  This is the web-based font to use when none of the fonts listed
@@ -380,7 +381,7 @@ MathJax.Hub.Config({
     //
     //  if you want to prevent the use of web-based fonts.
     //
-    webFont: "TeX",
+    webFont: "Latin-Modern",
 
     //
     //  This is the font to use for image fallback mode (when none of the
@@ -521,6 +522,10 @@ MathJax.Hub.Config({
     //
     minScaleAdjust: 50,
 
+    //  This option indicates whether MathJax should try to correct the
+    //  x-height of equations to match the size of the surrounding text.
+    matchFontHeight: true,
+
     //
     //  This allows you to define or modify the styles used to display
     //  various math elements created by MathJax.
@@ -614,6 +619,10 @@ MathJax.Hub.Config({
     EqnChunkFactor: 1.5,
     EqnChunkDelay: 100,
 
+    //  This option indicates whether MathJax should try to correct the
+    //  x-height of equations to match the size of the surrounding text.
+    matchFontHeight: true,
+
     //
     //  These settings control automatic line breaking.  It is off by
     //  default, so only explicit line breaks are performed (via
@@ -704,6 +713,20 @@ MathJax.Hub.Config({
     showFontMenu: false,
     showContext:  false,
     showDiscoverable: false,
+
+    //
+    // These are the settings for the Annotation menu. If the <math> root has
+    // a <semantics> child that contains one of the following annotation
+    // formats, the source will be available via the "Show Math As" menu.
+    // Each format has a list of possible encodings.
+    //
+    semanticsAnnotations: {
+      "TeX": ["TeX", "LaTeX", "application/x-tex"],
+      "StarMath": ["StarMath 5.0"],
+      "Maple": ["Maple"],
+      "ContentMathML": ["MathML-Content", "application/mathml-content+xml"],
+      "OpenMath": ["OpenMath"]
+    },
 
     //
     //  These are the settings for the Show Source window.  The initial

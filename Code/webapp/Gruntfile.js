@@ -81,13 +81,20 @@ module.exports = function(grunt) {
           cwd: '<%= cfg.mathjax.src %>',
           src: [
             'extensions/**/*',
-            'fonts/HTML-CSS/**/*', '!fonts/HTML-CSS/TeX/png/**/*', '!fonts/HTML-CSS/TeX/svg/**/*',
+            'fonts/HTML-CSS/**/*',
             'images/**/*',
             'jax/element/**/*',
             'jax/input/TeX/**/*',
             'jax/output/HTML-CSS/**/*',
             'localization/en/**/*',
             'MathJax.js',
+            // Remove all fonts except Latin-Modern
+            '!fonts/HTML-CSS/Asana-*/**/*', '!jax/output/HTML-CSS/fonts/Asana-*/**/*',
+            '!fonts/HTML-CSS/Gyre-*/**/*',  '!jax/output/HTML-CSS/fonts/Gyre-*/**/*',
+            '!fonts/HTML-CSS/Neo-*/**/*',   '!jax/output/HTML-CSS/fonts/Neo-*/**/*',
+            '!fonts/HTML-CSS/STIX-*/**/*',  '!jax/output/HTML-CSS/fonts/STIX-*/**/*',
+            '!fonts/HTML-CSS/TeX/**/*',     '!jax/output/HTML-CSS/fonts/TeX/**/*',
+            // '!fonts/HTML-CSS/TeX/png/**/*', '!fonts/HTML-CSS/TeX/svg/**/*',
           ],
           dest: '<%= cfg.mathjax.out %>',
         }]
