@@ -22,7 +22,7 @@ module.exports = function(grunt) {
         src: 'src/main/styles',
         out: 'src/main/webapp/assets',
         tmp: 'target/css',
-        bootstrap_cust: 'vendor/boostrap.css',
+        bootstrap_cust: '<%= cfg.vendor.cust %>/boostrap.css',
         app_only: '<%= cfg.css.tmp %>/app-only.css',
       },
       js: {
@@ -30,18 +30,29 @@ module.exports = function(grunt) {
         out: 'src/main/webapp/assets',
         tmp: 'target/js',
       },
+      vendor: {
+        cust: 'vendor',
+        out: 'src/main/webapp/assets/vendor',
+      },
       mathjax: {
         src: '.bower/MathJax',
-        out: 'src/main/webapp/assets/vendor/mathjax',
+        out: '<%= cfg.vendor.out %>/mathjax',
       },
     },
 
     // *****************************************************************************************************************
-    // TODO should be able to delete ALL vendor stuff
     clean: {
 
       // Delete temp dirs
       tmp: ['<%= cfg.js.tmp %>', '<%= cfg.css.tmp %>'],
+
+      // Delete vendor assets
+      vendor: {
+        expand: true,
+        cwd: '<%= cfg.vendor.out %>',
+        src: ['**/*', '!mathjax/**/*'],
+        filter: 'isFile',
+      },
 
       // Delete MathJax copy
       mathjax: ['<%= cfg.mathjax.out %>'],
@@ -69,8 +80,9 @@ module.exports = function(grunt) {
       // Copies required 3rd-party files
       vendor: {
         files: [
-          {src:'.bower/jquery/jquery.min.js', dest:'<%= cfg.js.out %>/vendor/jquery.js', nonull:true},
-          {src:'.bower/zeroclipboard/ZeroClipboard.swf', dest:'src/main/webapp/assets/vendor/ZeroClipboard.swf', nonull:true},
+          {src:'.bower/jquery/jquery.min.js',            dest:'<%= cfg.vendor.out %>/jquery.js',         nonull:true},
+          {src:'.bower/zeroclipboard/ZeroClipboard.swf', dest:'<%= cfg.vendor.out %>/ZeroClipboard.swf', nonull:true},
+          {src:'<%= cfg.vendor.cust %>/viz.js',          dest:'<%= cfg.vendor.out %>/viz.js',            nonull:true},
         ]
       },
 
@@ -183,9 +195,7 @@ module.exports = function(grunt) {
       bootstrap: {
         options: {
           paths: '.bower/bootstrap/less',
-          // compress: true,
           cleancss: true,
-          // optimization: 2,
           // strictMath: true, // Pending 3.1.0
         },
         src: ['<%= cfg.css.src %>/bootstrap.less'],
@@ -271,7 +281,7 @@ module.exports = function(grunt) {
   // *******************************************************************************************************************
   // Task definitions
 
-  grunt.registerTask('vendor' , ['copy:vendor'  ,'less:bootstrap'                        ]);
+  grunt.registerTask('vendor' , ['clean:vendor' ,'copy:vendor' ,'less:bootstrap'         ]);
   grunt.registerTask('mathjax', ['clean:mathjax','copy:mathjax','uglify:mathjax'         ]);
   grunt.registerTask('js'     , ['clean:js'     ,'concat:js'   ,'uglify:own'             ]);
   grunt.registerTask('css'    , ['clean:css'    ,'sass'        ,'concat:app_css','cssmin']);
