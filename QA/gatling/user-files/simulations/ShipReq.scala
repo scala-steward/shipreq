@@ -133,9 +133,9 @@ object ShipReq {
       exec(http(s"Read UCs: $project").get(s"/project/$project/read").headers(userClicked).check(status is 200))
         .pause(20 millis)
         .exec(getCommonDeps)
-        .exec(getJs("/assets/vendor/mathjax/MathJax.js?config=default"))
+        .exec(getJs("/assets/vendor/mathjax/MathJax.js?config=/assets/mathjax"))
         .pause(40 millis)
-        .exec(getJs("/assets/vendor/mathjax/config/default.js")))
+        .exec(getJs("/assets/mathjax.js")))
 
   val logout =
     exec(http("Logout").get("/logout").check(status is 302))
