@@ -32,7 +32,6 @@ FUNC TODO
 TECH TODO
 =========
 
-* [S.4.5=9] [    ] Google Analytics
 * [S.3.5=8] [PERF] Add proper DB indexes.
 * [S.0.5=5] [BUG ] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
 * [S.1.3=4] [PERF] Textareas' blur shouldn't send a request when input doesn't change.

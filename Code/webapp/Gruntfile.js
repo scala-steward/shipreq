@@ -121,6 +121,7 @@ module.exports = function(grunt) {
         files: [
             jsConcatTask('app', [
               // jquery is loaded via CDN, else it would be here too. TODO Change?
+              '<%= cfg.js.src %>/google-analytics.js',
               '.bower/bootstrap/js/alert.js',
               '.bower/bootstrap/js/dropdown.js',
               '.bower/bootstrap/js/modal.js',
@@ -146,7 +147,7 @@ module.exports = function(grunt) {
             expand: true,
             cwd : '<%= cfg.js.src %>',
             dest: '<%= cfg.js.tmp %>',
-            src: ['**/*.js', '!app.js', '!zeroclipboard.js'],
+            src: ['**/*.js', '!app.js', '!google-analytics.js', '!zeroclipboard.js'],
           },
         ]
       },
