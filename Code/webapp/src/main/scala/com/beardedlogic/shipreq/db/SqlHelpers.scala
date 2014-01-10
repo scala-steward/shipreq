@@ -3,8 +3,6 @@ package db
 
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import org.postgresql.core.Oid
-import org.postgresql.jdbc4.Jdbc4Array
 import org.postgresql.util.PGobject
 import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
@@ -18,6 +16,13 @@ object SqlHelpers {
   implicit def TimestampToDateTime(t: Timestamp): DateTime = new DateTime(t)
   implicit val GR_DateTime = GetResult(r => TimestampToDateTime(r.nextTimestamp))
   implicit val GR_DateTimeOption = GetResult(r => r.nextTimestampOption.map(TimestampToDateTime))
+
+  @inline private def pgObject(typ: String, value: String): PGobject = {
+    val o = new PGobject()
+    o.setType(typ)
+    o.setValue(value)
+    o
+  }
 
   implicit class PositionedResultExt(val r: PositionedResult) extends AnyVal {
     def nextId[T <: JLong @@ TypeTag[JLong]](): T = r.nextObject.asInstanceOf[T]
@@ -42,14 +47,6 @@ object SqlHelpers {
   }
   private def SP_TaggedLongArray[T <: JLong @@ TypeTag[JLong]]: SetParameter[List[T]] = new SetParameter[List[T]] {
     def apply(v: List[T], pp: PositionedParameters): Unit = {
-      /*
-      val a = new Array[Long](v.size)
-      var i = v.size - 1
-      while (i >= 0) {
-        a(i) = v(i).longValue
-        i -= 1
-      }
-      */
       val sb = new StringBuilder
       sb append '{'
       if (v.nonEmpty) {
@@ -60,10 +57,9 @@ object SqlHelpers {
         })
       }
       sb append '}'
-      val c1 = pp.ps.getConnection.asInstanceOf[com.jolbox.bonecp.ConnectionHandle]
-      val c2 = c1.getInternalConnection.asInstanceOf[org.postgresql.core.BaseConnection]
-      val a = new Jdbc4Array(c2, Oid.INT8_ARRAY, sb.toString)
-      pp.setObject(a, java.sql.Types.ARRAY)
+
+      val o = pgObject("_int8", sb.toString)
+      pp.setObject(o, java.sql.Types.OTHER)
     }
   }
 
@@ -75,9 +71,7 @@ object SqlHelpers {
   private def GR_Json[T]: GetResult[Json[T]] = GetResult(_.nextString.tag[IsJsonFor[T]])
   private def SP_Json[T]: SetParameter[Json[T]] = new SetParameter[Json[T]] {
     def apply(v: Json[T], pp: PositionedParameters): Unit = {
-      val jo = new PGobject()
-      jo.setType("json")
-      jo.setValue(v)
+      val jo = pgObject("json", v)
       pp.setObject(jo, java.sql.Types.OTHER)
     }
   }
