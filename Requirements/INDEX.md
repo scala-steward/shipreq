@@ -1,6 +1,3 @@
-`study-software_requirements_2ed.md`
-  * Summary of entire requirements process described in Software Requirements (2nd Edition).
-
 Phase #1: Project Start
 =======================
 
