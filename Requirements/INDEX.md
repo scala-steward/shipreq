@@ -27,15 +27,18 @@ Phase #1: Project Start
 Phase #2: Post UCE 1.0
 ======================
 
-`feature-organisation.ods`
-  * Supplimental analysis of the organisation feature. Contains:
-    * Analysis of envisioned org-units and attributes.
-    * Analysis of org-units relationships.
-
 `major_features.ods`
   * List of major features envisioned.
   * Version and analysis/impl status for each feature.
   * Analysis of feature intersection.
+
+`ideas.md`
+  * Quick-and-easy dumping ground for project ideas. Predates `major_features.ods` which is a subset.
+
+`feature-organisation.ods`
+  * Supplimental analysis of the organisation feature. Contains:
+    * Analysis of envisioned org-units and attributes.
+    * Analysis of org-units relationships.
 
 `interviews.ods`
   * Summary of contents of `interview-nnn` files.
