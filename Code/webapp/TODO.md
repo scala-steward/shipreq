@@ -3,8 +3,6 @@ Legend: [M/S/C] [Benefit 0-none,5-max] [Penalty 0-none,5-severe]
 FUNC TODO
 =========
 
-* [M.2.5=7] [LEGL] Add terms of service.
-
 * [S.5.4=9] [UA  ] Allow users to provide feedback.
 * [S.2.5=7] [UCE ] Step is lost if accidentally deleted. No undo.
 * [S.2.4=6] [UX  ] Mark or remove buttons/links to unimplemented functionality.

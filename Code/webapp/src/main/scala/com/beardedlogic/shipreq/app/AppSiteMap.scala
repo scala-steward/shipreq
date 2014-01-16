@@ -34,7 +34,7 @@ object AppSiteMap {
   val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index")
 
   val About = pageWithStaticUrl("about", "About")(_ / "about")
-  val TermsOfService = pageWithStaticUrl("terms", "Terms Of Service")(_ / "terms")
+  val TermsOfService = pageWithStaticUrl("terms", mkTitle("Terms of Service"), "Terms")(_ / "terms")
   val PrivacyPolicy = pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy")
 
   val Login = pageWithStaticUrl("login", "Login")(_ / "login")

@@ -6,7 +6,7 @@ import com.beardedlogic.shipreq.app.AppSiteMap.Implicits._
 import com.beardedlogic.shipreq.lib.{Misc, SnippetHelpers}
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.sitemap.{Loc, SiteMap}
-import scala.xml.{NodeSeq, Text}
+import scala.xml.{Elem, NodeSeq, Text}
 
 /**
  * Creates a link to a page. Throws an error is the page is not found.
@@ -34,6 +34,9 @@ object Link extends DispatchSnippet with SnippetHelpers {
   def generateLink(loc: Loc[_]): NodeSeq => NodeSeq = {
       val linkText = loc.linkText openOr Text(loc.name)
       val link = <a href={loc.relativeUrl}>{linkText}</a>
-      _ => link
+      n => n match {
+        case <a>{customTitle}</a> => <a href={loc.relativeUrl}>{customTitle}</a>
+        case _                    => link
+      }
     }
 }

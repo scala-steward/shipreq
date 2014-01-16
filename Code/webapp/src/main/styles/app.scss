@@ -414,6 +414,7 @@ blockquote.rndquote {
   section {
     margin-top: 2em;
     .h {
+      color: #111;
       font-weight: bold;
     }
     li {
@@ -422,8 +423,11 @@ blockquote.rndquote {
   }
   footer {
     margin-top: 2em;
-    time {
-      text-decoration: underline;
+    .lastupdated {
+      color: #444;
+      time {
+        text-decoration: underline;
+      }
     }
     .generatedby {
       margin-top: 1ex;
