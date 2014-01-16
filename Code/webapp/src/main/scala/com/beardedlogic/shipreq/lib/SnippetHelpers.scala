@@ -60,7 +60,7 @@ trait StaticSnippetHelpers extends Logger {
   @inline implicit final def jsExpToJsCmd(in: JsExp): JsCmd = in.cmd
   @inline implicit final def str2txt(s: String): NodeSeq = Text(s)
 
-  def redirectHome                                      : Nothing = S.redirectTo(AppSiteMap.HomeRelativeUrl)
+  def redirectHome                                      : Nothing = S.redirectTo(AppSiteMap.Home.relativeUrl)
   def redirectTo(page: Menu)                            : Nothing = S.redirectTo(page.relativeUrl)
   def redirectTo(page: Menu.Menuable)                   : Nothing = S.redirectTo(page.relativeUrl)
   def redirectTo[T](page: Menu.ParamMenuable[T])(arg: T): Nothing = S.redirectTo(page.relativeUrl(arg))

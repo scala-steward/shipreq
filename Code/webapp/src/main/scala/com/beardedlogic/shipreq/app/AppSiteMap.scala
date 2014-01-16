@@ -27,8 +27,6 @@ object AppSiteMap {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
-  val HomeRelativeUrl = "/"
-
   // -------------------------------------------------------------------------------------------------------------------
   // Menu.i(NAME_AND_TITLE) / PATH_FOR_URL_AND_TEMPLATE
   // Menu(Loc(NAME, PATH_FOR_URL_AND_TEMPLATE, TITLE))
@@ -213,7 +211,7 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
   import Implicits._
 
-  def redirectHomeResp = RedirectResponse(HomeRelativeUrl)
+  def redirectHomeResp = RedirectResponse(Home.relativeUrl)
 
   def logout(): Box[LiftResponse] = {
     Oshiro.logout()

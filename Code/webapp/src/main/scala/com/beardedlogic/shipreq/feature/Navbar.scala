@@ -41,7 +41,7 @@ object Navbar {
     override val renderActive = link % DudLinkAttr
   }
 
-  case object Home extends StaticLinkElem(<a href={AppSiteMap.HomeRelativeUrl}>Home</a>)
+  case object Home extends StaticLinkElem(<a href={AppSiteMap.Home.relativeUrl}>Home</a>)
 
   case object CurrentProject extends NavbarElem {
     def project               = RequestVars.Project.get.value
