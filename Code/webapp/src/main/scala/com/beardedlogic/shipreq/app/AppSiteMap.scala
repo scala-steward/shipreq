@@ -7,8 +7,10 @@ import net.liftweb.sitemap.Loc._
 import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
+import scala.collection.concurrent.TrieMap
+import scala.util.hashing.Hashing
 import scala.xml.{Text, NodeSeq}
-import scalaz.{Name, Need, NonEmptyList}
+import scalaz.{Memo, Name, Need, NonEmptyList}
 
 import AppConfig.BaseUrl
 import lib.Types._
@@ -166,15 +168,40 @@ object AppSiteMap {
 
   object Implicits {
 
+    private def newUrlMemo: Memo[Loc[_], String] =
+      Memo.mutableMapMemo(new TrieMap[Loc[_], String](Hashing.default, Equiv.reference))
+
+    private val relUrlMemo = newUrlMemo(loc => {
+      val s = loc.calcDefaultHref
+      if (s.endsWith("/index"))
+        if (s.length == 6)
+          "/"
+        else
+          s.substring(0, s.length - 6)
+      else
+        s
+    })
+
+    private val absUrlMemo = newUrlMemo(loc => {
+      loc.relativeUrl match {
+        case "/" => BaseUrl
+        case s   => BaseUrl + s
+      }
+    })
+
+    implicit class LocExt(val loc: Loc[_]) extends AnyVal {
+      def relativeUrl: String = relUrlMemo(loc)
+      def absoluteUrl: String = absUrlMemo(loc)
+    }
+
     implicit class MenuExt(val menu: Menu) extends AnyVal {
-      def relativeUrl: String = menu.loc.calcDefaultHref
-      def absoluteUrl: String = BaseUrl + relativeUrl
+      def relativeUrl: String = menu.loc.relativeUrl
+      def absoluteUrl: String = menu.loc.absoluteUrl
     }
 
     implicit class MenuableExt(val menu: Menu.Menuable) extends AnyVal {
-
-      def relativeUrl: String = if (menu eq Home) "/" else menu.loc.calcDefaultHref
-      def absoluteUrl: String = BaseUrl + relativeUrl
+      def relativeUrl: String = menu.loc.relativeUrl
+      def absoluteUrl: String = menu.loc.absoluteUrl
     }
 
     implicit class ParamMenuableExt[T](val menu: Menu.ParamMenuable[T]) extends AnyVal {
