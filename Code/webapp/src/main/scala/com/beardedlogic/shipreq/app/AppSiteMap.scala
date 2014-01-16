@@ -7,12 +7,11 @@ import net.liftweb.sitemap.Loc._
 import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
-import scala.collection.concurrent.TrieMap
-import scala.util.hashing.Hashing
 import scala.xml.{Text, NodeSeq}
 import scalaz.{Memo, Name, Need, NonEmptyList}
 
 import AppConfig.BaseUrl
+import lib.Misc
 import lib.Types._
 import feature.{SessionStats, DiagnosticEndpoints, ExternalId, ExternalIdConverter, Navbar, NavbarElem}
 import security.{Permissions, Permission, Oshiro}
@@ -34,14 +33,14 @@ object AppSiteMap {
 
   val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index")
 
-  val About = pageWithStaticUrl("about", mkTitle("About"), "About")(_ / "about")
+  val About = pageWithStaticUrl("about", "About")(_ / "about")
+  val TermsOfService = pageWithStaticUrl("terms", "Terms Of Service")(_ / "terms")
+  val PrivacyPolicy = pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy")
 
-  val Login = pageWithStaticUrl("login", mkTitle("Login"), "Login")(_ / "login")
-
+  val Login = pageWithStaticUrl("login", "Login")(_ / "login")
   val Logout = pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(logout))
 
   val Register1 = pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register")
-
   val Register2 = (
     Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
     >> StaticTitle(mkTitle("Register"))
@@ -50,7 +49,6 @@ object AppSiteMap {
 
   private def ResetPasswordTitle = mkTitle("Password Reset")
   val ResetPassword1 = pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw")
-
   val ResetPassword2 = (
     Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
       >> StaticTitle(ResetPasswordTitle)
@@ -128,7 +126,8 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, About, Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
+    Home, About, TermsOfService, PrivacyPolicy
+    , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
     , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
     , DemoUseCaseEditor
     , AdminStats
@@ -166,8 +165,7 @@ object AppSiteMap {
 
   object Implicits {
 
-    private def newUrlMemo: Memo[Loc[_], String] =
-      Memo.mutableMapMemo(new TrieMap[Loc[_], String](Hashing.default, Equiv.reference))
+    private def newUrlMemo: Memo[Loc[_], String] = Misc.newMemo(Equiv.reference)
 
     private val relUrlMemo = newUrlMemo(loc => {
       val s = loc.calcDefaultHref
@@ -230,6 +228,9 @@ object AppSiteMap {
 
   private def DynamicTitle[T](title: => String) =
     Title[T](_ => Text(title))
+
+  private def pageWithStaticUrl(name: String, linkAndTitle: String)(f: Menu.PreMenu => Menu.Menuable): Menu.Menuable =
+    pageWithStaticUrl(name, mkTitle(linkAndTitle), linkAndTitle)(f)
 
   private def pageWithStaticUrl(name: String, title: String, linkText: String)(f: Menu.PreMenu => Menu.Menuable): Menu.Menuable =
     f(Menu(name, linkText)) >> StaticTitle(title)

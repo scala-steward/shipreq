@@ -409,3 +409,26 @@ blockquote.rndquote {
   margin: 1ex;
   border: solid 1px #cdcd75;
 }
+
+.legaldoc {
+  section {
+    margin-top: 2em;
+    .h {
+      font-weight: bold;
+    }
+    li {
+      margin-bottom: 0.4em;
+    }
+  }
+  footer {
+    margin-top: 2em;
+    time {
+      text-decoration: underline;
+    }
+    .generatedby {
+      margin-top: 1ex;
+      font-size: 10px;
+      color: #bbb;
+    }
+  }
+}

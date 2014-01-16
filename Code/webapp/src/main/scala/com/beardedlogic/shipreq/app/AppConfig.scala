@@ -12,6 +12,8 @@ final object AppConfig {
   // Make sure this is in sync with application.js
   val AppName = "ShipReq"
 
+  val SupportEmailAddress = "bearded.logic@gmail.com"
+
   val BaseUrl = need[String]("server.url")
 
   /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
