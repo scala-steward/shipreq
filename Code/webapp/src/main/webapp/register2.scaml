@@ -20,6 +20,12 @@
         .col-md-6
           %input.form-control#password2(type="password" required)
 
+      .form-group.tos
+        .col-md-2
+        %label.col-md-6
+          %input#tos(type="checkbox")
+          I agree to the <a data-lift="Link.terms">terms of service</a>.
+
       .form-group.submit
         .col-md-offset-2.col-md-6
           %button.btn.btn-primary(type="submit") Create Account

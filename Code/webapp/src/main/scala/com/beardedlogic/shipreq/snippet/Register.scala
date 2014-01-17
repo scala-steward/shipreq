@@ -97,6 +97,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
   var usernameInput = ""
   var password1Input = ""
   var password2Input = ""
+  var tos = false
 
   def validateToken_!(): Unit =
     daoProvider.withSession(_.findUserConfirmationTokenIssuedDate(token)) match {
@@ -118,6 +119,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       "#username" #> SHtml.ajaxText(usernameInput, onUsernameChange)
         & "#password1" #> SHtml.onSubmit(password1Input = _)
         & "#password2" #> SHtml.onSubmit(password2Input = _)
+        & "#tos" #> SHtml.onSubmitBoolean(tos = _)
         & ":submit" #> ajaxSubmitOnClick(onSubmit)
       )
   }
@@ -131,13 +133,14 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
   def onSubmit(): JsCmd = try {
     import UserRegistrationResult._
 
-    val v = Validator.Ap.apply2(
+    val v = Validator.Ap.apply3(
       Validator.username.correctAndValidate(usernameInput),
-      Validator.passwords.correctAndValidate(password1Input, password2Input)
-    )(Tuple2.apply)
+      Validator.passwords.correctAndValidate(password1Input, password2Input),
+      Validator.tosAgreement.correctAndValidate(tos)
+    )(Tuple3.apply)
 
     ifValid(v)(r => {
-      val (username, password) = r
+      val (username, password, _) = r
       val ps = PasswordAndSalt.createWithRandomSalt(password)
       daoProvider.withSession(_.performUserRegistration(token)(username, ps, clientIp.getOrElse("?"))) match {
 

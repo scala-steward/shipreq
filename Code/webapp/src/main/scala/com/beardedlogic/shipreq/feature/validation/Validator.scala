@@ -1,5 +1,6 @@
 package com.beardedlogic.shipreq.feature.validation
 
+import java.lang.{Boolean => JBool}
 import scalaz.{Validation, Success, Failure}
 import com.beardedlogic.shipreq.app.AppConfig._
 import com.beardedlogic.shipreq.lib.ScalazSubset._
@@ -31,6 +32,10 @@ final object Validator {
 
   sealed trait InputCorrectionOnly[I <: AnyRef, O <: AnyRef] extends Validator[I, O, O] {
     final override def validate(input: O @@ InputCorrected) = Success(input.tag)
+  }
+
+  sealed trait ValidationOnly[T <: AnyRef] extends Validator[T, T, T] {
+    final override def correct(input: T): T @@ InputCorrected = input.tag
   }
 
   val Ap = Validation.ValidationApplicative[VFailure](VFailure.semigroup)
@@ -122,6 +127,14 @@ final object Validator {
         Success(Unit2.tag)
       else
         Failure(VFailure.looseMsg("Current password is incorrect."))
+  }
+
+  object tosAgreement extends ValidationOnly[JBool] {
+    override def validate(b: JBool @@ InputCorrected) =
+      if (b.booleanValue)
+        Success(b.tag)
+      else
+        Failure(VFailure.looseMsg("You must agree to the terms of service."))
   }
 
   object projectName extends MandatoryShortText("Project name")
