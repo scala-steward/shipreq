@@ -3,17 +3,17 @@ Legend: [M/S/C] [Benefit 0-none,5-max] [Penalty 0-none,5-severe]
 FUNC TODO
 =========
 
-* [M.2.5=7] [LEGL] Add terms of service.
-* [M.2.4=6] [UX  ] Mark or remove buttons/links to unimplemented functionality.
-* [M.3.2=5] [PROJ] Delete use cases.
-* [M.0.5=5] [UCE ] Unicode flow arrows didn't work on Dad's computer.
-
-* [S.3.4=7] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
+* [S.5.4=9] [UA  ] Allow users to provide feedback.
 * [S.2.5=7] [UCE ] Step is lost if accidentally deleted. No undo.
+* [S.2.4=6] [UX  ] Mark or remove buttons/links to unimplemented functionality.
+* [S.3.2=5] [PROJ] Delete use cases.
+* [S.2.3=5] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
 * [S.0.5=5] [FAIL] Robustness: Handle DB going down.
-* [S.2.1=3] [ACCT] Change username.
+* [S.0.3=3] [ACCT] Change email.
+* [S.0.2=2] [ACCT] Delete account.
+* [S.0.2=2] [UX  ] Page for 404 errors.
+* [S.0.2=2] [UX  ] Page for 5xx errors.
 
-* [C.5.2=7] [UA  ] Integrate feedback.js.
 * [C.3.4=7] [ACCT] Add JS validation to register2 (ie. account creation).
 * [C.2.4=6] [UCE ] Make step labels fade into links when clickable, else users wont know to click.
 * [C.3.3=6] [UCI ] Reorder UCs. Might be superceded by better UC org func such as grouping.
@@ -24,10 +24,12 @@ FUNC TODO
 * [C.2.1=3] [UCE ] Delete step via KB shortcut.
 * [C.2.1=3] [ACCT] Add JS email corrector/validator like mailcheck.js.
 * [C.2.1=3] [UCE ] Search and replace.
+* [C.2.1=3] [READ] Markup for ordered lists. (eg "#. abc")
 * [C.2.0=2] [UX  ] When a user account is created, a default project called "Untitled Project" should be created.
 * [C.1.1=2] [UCE ] Alt+Shift+Enter to create next & indent.
 * [C.1.1=2] [UCE ] View step references. (Eg. Who has refs to 1.0.4?)
 * [C.1.1=2] [READ] Markup for mailto links.
+* [C.0.2=2] [ACCT] Change username.
 * [C.0.1=1] [UX  ] System shouldn't provide a means to read UCs when no UCs exist.
 
 TECH TODO

@@ -133,6 +133,7 @@ html, body { height: 100% } // Cannot have any padding or margin here
     h3 {margin-top: 0.3em}
     a {text-decoration: underline}
   }
+  .tos label {font-weight: normal}
 }
 
 #dynmodal {
@@ -344,6 +345,14 @@ html, body { height: 100% } // Cannot have any padding or margin here
         .ind th {font-weight:normal}
         .ind td {padding-left:1.2ex}
         .highlight {_font-weight:bold; background:#ffc}
+        .flow {
+          font-family: _dejavu;
+          * {
+            // Refs needn't use DejaVu
+            // This should use the same value as in bootstrap-vars.less
+            font-family: Arimo, Arial, 'Arial Unicode MS', 'Helvetica Neue', Helvetica, sans-serif;
+          }
+        }
       }
     }
   }
@@ -384,6 +393,47 @@ blockquote.rndquote {
     }
     th+th, td+td {
       text-align: center;
+    }
+  }
+}
+
+.browser-warning {
+  .t {
+    padding: 4px;
+    width: 100%;
+    background: #ff9;
+    font-size: 1.25em;
+  }
+  a {
+    color: #d00;
+  }
+  margin: 1ex;
+  border: solid 1px #cdcd75;
+}
+
+.legaldoc {
+  section {
+    margin-top: 2em;
+    .h {
+      color: #111;
+      font-weight: bold;
+    }
+    li {
+      margin-bottom: 0.4em;
+    }
+  }
+  footer {
+    margin-top: 2em;
+    .lastupdated {
+      color: #444;
+      time {
+        text-decoration: underline;
+      }
+    }
+    .generatedby {
+      margin-top: 1ex;
+      font-size: 10px;
+      color: #bbb;
     }
   }
 }

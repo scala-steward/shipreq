@@ -5,18 +5,15 @@ import org.scalatest.FunSpec
 
 class LinkSnippetTest extends FunSpec with TestHelpers {
 
-  describe("#to") {
+  it("should render a link to the named page") {
+    Link.linkTo("register1")(<div></div>).toString ==== """<a href="/register">Register</a>"""
+  }
 
-    it("should render a link to the named page") {
-      withSessionAttrs("name" -> "register1") {
-        Link.to(<div></div>).toString ==== """<a href="/register">Register</a>"""
-      }
-    }
+  it("should preserve custom titles") {
+    Link.linkTo("login")(<a data-lift="asdf">YAY!</a>).toString ==== """<a href="/login">YAY!</a>"""
+  }
 
-    it("should throw an exception if page not found") {
-      withSessionAttrs("name" -> "xcbv") {
-        intercept[Exception](Link.to(<div></div>))
-      }
-    }
+  it("should throw an exception if page not found") {
+    intercept[Exception](Link.linkTo("xcbv"))
   }
 }

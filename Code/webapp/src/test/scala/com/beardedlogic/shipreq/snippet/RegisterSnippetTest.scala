@@ -149,6 +149,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
       t.snippet.usernameInput = "crazy50"
       t.snippet.password1Input = "abcd5678"
       t.snippet.password2Input = t.snippet.password1Input
+      t.snippet.tos = true
       t
     }
 
@@ -185,6 +186,10 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
       t.onSubmit_
       try {assertUnconfirmed()}
       catch {case e: PSQLException if e.getMessage.contains("transaction is aborted") =>}
+    }
+
+    it("should reject without ToS agreement") {
+      testFailure(_.tos = false)
     }
 
     describe("when form details valid") {

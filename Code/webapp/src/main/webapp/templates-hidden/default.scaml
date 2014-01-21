@@ -18,14 +18,14 @@
           .loginInfo
             %div(data-lift="Authenticated")
               Logged in as <b>@<span data-lift="LoggedInUser.username"></span></b>.
-              %a(data-lift="Link.to?name=logout")
+              %a(data-lift="Link.logout")
 
             %div(data-lift="Authenticated.not")
-              %a(data-lift="Link.to?name=home")
+              %a(data-lift="Link.home")
               |
-              %a(data-lift="Link.to?name=login")
+              %a(data-lift="Link.login")
               |
-              %a(data-lift="Link.to?name=register1")
+              %a(data-lift="Link.register1")
 
           %section#notices(data-lift="Notices")
 
@@ -34,5 +34,7 @@
       #ly-footer-push
     %footer#ly-footer
       .ly-content
-        &copy; 2013 Bearded Logic
-        | <a data-lift="Link.to?name=about"></a>
+        &copy; 2013-2014 Bearded Logic
+        | <a data-lift="Link.about"></a>
+        | <a data-lift="Link.terms"></a>
+        | <a data-lift="Link.privacy"></a>

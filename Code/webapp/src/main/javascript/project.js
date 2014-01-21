@@ -61,7 +61,7 @@ function ucLiModeEdit(el) {
 function ucliPrepare(scope) {
     scope.find('.view-mode button.update').click(ucLiModeEdit.withThis())
     scope.find('.edit-mode button.cancel').click(ucLiModeView.withThis())
-    scope.find('a.delete').click(PENDING)
+    //scope.find('a.delete').click(PENDING)
 }
 
 // =====================================================================================================================
@@ -95,7 +95,7 @@ $(document).on('usecase-update-nop', function(event, data) {
 $(document).ready(function() {
     $('#project-title button.cancel').click(renameCancel)
     $('nav .update').click(renameStart)
-    $('nav .genpdf').click(PENDING)
+    //$('nav .genpdf').click(PENDING)
     ucliPrepare(ucListSel())
     ucListSectionRefreshMode()
 })

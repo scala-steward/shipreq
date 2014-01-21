@@ -5,9 +5,11 @@ import net.liftweb.http.S
 import org.joda.time.{DateTimeUtils, Period, DateTime}
 import org.joda.time.format.DateTimeFormat
 import scala.annotation.tailrec
+import scala.collection.concurrent.TrieMap
 import scala.reflect.ClassTag
+import scala.util.hashing.Hashing
 import scala.util.Random
-import scalaz.Cord
+import scalaz.{Memo, Cord}
 
 import com.beardedlogic.shipreq.app.AppConfig
 import com.beardedlogic.shipreq.feature.uc.field.{TextFieldDefinition, TextField, Field}
@@ -122,4 +124,7 @@ trait Misc {
     }
     false
   }
+
+  def newMemo[K, V](eqFn: Equiv[K] = Equiv.universal[K], hashFn: Hashing[K] = Hashing.default[K]): Memo[K, V] =
+    Memo.mutableMapMemo(new TrieMap[K, V](hashFn, eqFn))
 }

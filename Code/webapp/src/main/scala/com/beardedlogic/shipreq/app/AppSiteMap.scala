@@ -8,9 +8,10 @@ import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{Text, NodeSeq}
-import scalaz.{Name, Need, NonEmptyList}
+import scalaz.{Memo, Name, Need, NonEmptyList}
 
 import AppConfig.BaseUrl
+import lib.Misc
 import lib.Types._
 import feature.{SessionStats, DiagnosticEndpoints, ExternalId, ExternalIdConverter, Navbar, NavbarElem}
 import security.{Permissions, Permission, Oshiro}
@@ -25,8 +26,6 @@ object AppSiteMap {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
-  val HomeRelativeUrl = "/"
-
   // -------------------------------------------------------------------------------------------------------------------
   // Menu.i(NAME_AND_TITLE) / PATH_FOR_URL_AND_TEMPLATE
   // Menu(Loc(NAME, PATH_FOR_URL_AND_TEMPLATE, TITLE))
@@ -34,14 +33,14 @@ object AppSiteMap {
 
   val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index")
 
-  val About = pageWithStaticUrl("about", mkTitle("About"), "About")(_ / "about")
+  val About = pageWithStaticUrl("about", "About")(_ / "about")
+  val TermsOfService = pageWithStaticUrl("terms", mkTitle("Terms of Service"), "Terms")(_ / "terms")
+  val PrivacyPolicy = pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy")
 
-  val Login = pageWithStaticUrl("login", mkTitle("Login"), "Login")(_ / "login")
-
+  val Login = pageWithStaticUrl("login", "Login")(_ / "login")
   val Logout = pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(logout))
 
   val Register1 = pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register")
-
   val Register2 = (
     Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
     >> StaticTitle(mkTitle("Register"))
@@ -50,7 +49,6 @@ object AppSiteMap {
 
   private def ResetPasswordTitle = mkTitle("Password Reset")
   val ResetPassword1 = pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw")
-
   val ResetPassword2 = (
     Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
       >> StaticTitle(ResetPasswordTitle)
@@ -128,7 +126,8 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, About, Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
+    Home, About, TermsOfService, PrivacyPolicy
+    , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
     , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
     , DemoUseCaseEditor
     , AdminStats
@@ -166,15 +165,39 @@ object AppSiteMap {
 
   object Implicits {
 
+    private def newUrlMemo: Memo[Loc[_], String] = Misc.newMemo(Equiv.reference)
+
+    private val relUrlMemo = newUrlMemo(loc => {
+      val s = loc.calcDefaultHref
+      if (s.endsWith("/index"))
+        if (s.length == 6)
+          "/"
+        else
+          s.substring(0, s.length - 6)
+      else
+        s
+    })
+
+    private val absUrlMemo = newUrlMemo(loc => {
+      loc.relativeUrl match {
+        case "/" => BaseUrl
+        case s   => BaseUrl + s
+      }
+    })
+
+    implicit class LocExt(val loc: Loc[_]) extends AnyVal {
+      def relativeUrl: String = relUrlMemo(loc)
+      def absoluteUrl: String = absUrlMemo(loc)
+    }
+
     implicit class MenuExt(val menu: Menu) extends AnyVal {
-      def relativeUrl: String = menu.loc.calcDefaultHref
-      def absoluteUrl: String = BaseUrl + relativeUrl
+      def relativeUrl: String = menu.loc.relativeUrl
+      def absoluteUrl: String = menu.loc.absoluteUrl
     }
 
     implicit class MenuableExt(val menu: Menu.Menuable) extends AnyVal {
-
-      def relativeUrl: String = if (menu eq Home) "/" else menu.loc.calcDefaultHref
-      def absoluteUrl: String = BaseUrl + relativeUrl
+      def relativeUrl: String = menu.loc.relativeUrl
+      def absoluteUrl: String = menu.loc.absoluteUrl
     }
 
     implicit class ParamMenuableExt[T](val menu: Menu.ParamMenuable[T]) extends AnyVal {
@@ -186,7 +209,7 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
   import Implicits._
 
-  def redirectHomeResp = RedirectResponse(HomeRelativeUrl)
+  def redirectHomeResp = RedirectResponse(Home.relativeUrl)
 
   def logout(): Box[LiftResponse] = {
     Oshiro.logout()
@@ -205,6 +228,9 @@ object AppSiteMap {
 
   private def DynamicTitle[T](title: => String) =
     Title[T](_ => Text(title))
+
+  private def pageWithStaticUrl(name: String, linkAndTitle: String)(f: Menu.PreMenu => Menu.Menuable): Menu.Menuable =
+    pageWithStaticUrl(name, mkTitle(linkAndTitle), linkAndTitle)(f)
 
   private def pageWithStaticUrl(name: String, title: String, linkText: String)(f: Menu.PreMenu => Menu.Menuable): Menu.Menuable =
     f(Menu(name, linkText)) >> StaticTitle(title)

@@ -12,7 +12,7 @@ cd $tmp || exit 1
 
 echo "Extracting..."
 unzip -q "$war" 'assets/*'
-find -name '*.gz' -exec rm {} +
+find \( -name '*.gz' -o -name '*.woff' \) -exec rm {} +
 
 echo "Compressing..."
 find -type f -exec gzip -9 {} +

@@ -174,8 +174,6 @@ $(document).on('dynmodal', function (event, data) {
 
 // =====================================================================================================================
 
-function PENDING() { alert('PENDING'); return false }
-
 // Make sure this is in sync with AppConfig.scala
 AppConfig = {
     AppName: "ShipReq"
@@ -330,4 +328,15 @@ $(document).ready(function(){
     $('.ucs-published .steps tr')
         .filter(function(i,e){return e.id.substr(0,4)=="step"})
         .each(function(i,e){ $('.ucs-published a.step[href=#'+e.id+']').addClassOnHover('#'+e.id,'highlight') })
+    ;
+
+    $('.unimplemented').click(function(){
+        alert("Sorry. This action isn't available yet.\n\nIt will be enabled in a future update of this site.");
+    });
+
+    // Add a warning about untested browsers
+    if (!navigator.userAgent.match(/Chrome|Firefox/i))
+        $('body').prepend(
+            '<div class="browser-warning"><div class="t"><strong>WARNING:</strong> This site has so far only been tested on <a href="//www.google.com/chrome">Chrome</a> and <a href="//www.mozilla.org/en-US/firefox">Firefox</a>. Your browser may not display this site properly.</div></div>'
+        );
 })
