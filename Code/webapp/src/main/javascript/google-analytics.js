@@ -14,11 +14,11 @@ function urlPathForGA(url) {
 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-var GA = (function(ga){
+var GA = (function(){
 
     var sendEvent = function(category, action, label, value) {
         // var s = '|'; console.log("GA EVENT:", category, s, action, s, label, s, value);
-        ga('send', 'event', category, action, label);
+        ga('send', 'event', category, action, label, value);
     };
 
     var actionFn = function(category, action) {
@@ -70,8 +70,19 @@ var GA = (function(ga){
     var click = 'click';
     return {
         actions: actions,
-        setup: function() {
 
+        init: function() {
+            // https://developers.google.com/analytics/devguides/collection/analyticsjs/
+            var hostname = 'shipreq.com';
+            if (window.location.hostname === hostname) {
+                ga('create', 'UA-47038103-1', hostname);
+            } else {
+                ga('create', 'UA-47038103-2', {'cookieDomain': 'none'});
+            }
+            ga('set', 'page', urlPathForGA());
+        },
+
+        setupEventStats: function() {
             // URL: /
             $('#useracct-ctls button.delete').on(click, actions.NYI.delUser());
 
@@ -106,10 +117,9 @@ var GA = (function(ga){
             }
         }
     }
-}(ga));
+}());
 
-ga('create', 'UA-47038103-1', 'shipreq.com');
-ga('set', 'page', urlPathForGA());
+GA.init();
 ga('send', 'pageview');
 
 
