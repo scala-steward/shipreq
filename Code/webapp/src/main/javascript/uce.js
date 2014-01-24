@@ -159,10 +159,9 @@ function setupVizForUce() {
 
         // Clicking a node selects the step text
         d.stepNodes.click(function(ev){
-            var label = titleOfFlowgraphNode($(ev.target).selfOrParent('g.node'))
-            if (isValidLabel(label)) {
-                $(textInputOfStep(stepRootOfLabel(label))).focus().select()
-            }
+            var label = titleOfFlowgraphNode($(ev.target).selfOrParent('g.node'));
+            if (isValidLabel(label))
+                focusUCEInput($(textInputOfStep(stepRootOfLabel(label))));
         })
 
     })
