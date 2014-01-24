@@ -385,15 +385,14 @@ test("Whitelist -> All", function() {
 stdModule('Misc')
 
 test("URL sanitisation for Google Analytics", function() {
-    equal('/', urlPathForGA('https://shipreq.com'));
-    equal('/', urlPathForGA('https://shipreq.com/'));
-    equal('/login', urlPathForGA('https://shipreq.com/login'));
-    equal('/register/___', urlPathForGA('https://shipreq.com/register/bacdefasdklj349o875dkjfsunYUGygASDF'));
-    equal('/resetpw/___', urlPathForGA('https://shipreq.com/resetpw/bacdefasdklj349o875dkjfsunYUGygASDF'));
-    equal('/project/___', urlPathForGA('https://shipreq.com/project/cUz0'));
-    equal('/project/___/read', urlPathForGA('https://shipreq.com/project/cUz0/read'));
-    equal('/usecase/___', urlPathForGA('https://shipreq.com/usecase/cUz0'));
-    equal('/share/___', urlPathForGA('https://shipreq.com/share/cUz0'));
-    equal('/share/___/edit', urlPathForGA('https://shipreq.com/share/cUz0/edit'));
+    equal('/', GA.path('/'));
+    equal('/login', GA.path('/login'));
+    equal('/register/___', GA.path('/register/bacdefasdklj349o875dkjfsunYUGygASDF'));
+    equal('/resetpw/___', GA.path('/resetpw/bacdefasdklj349o875dkjfsunYUGygASDF'));
+    equal('/project/___', GA.path('/project/cUz0'));
+    equal('/project/___/read', GA.path('/project/cUz0/read'));
+    equal('/usecase/___', GA.path('/usecase/cUz0'));
+    equal('/share/___', GA.path('/share/cUz0'));
+    equal('/share/___/edit', GA.path('/share/cUz0/edit'));
 })
 
