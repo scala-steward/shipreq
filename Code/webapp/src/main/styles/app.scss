@@ -58,7 +58,7 @@ abbr.timeago[title] { border-bottom: none !important }
 [data-clipboard-text], [data-clipboard-target] {cursor:pointer}
 
 time.showdate, time.showdatetime {
-  border-bottom: dotted #aaa 1px;
+  border-bottom: 1px dotted #aaa;
   //box-sizing: border-box;
   cursor: help;
 }
