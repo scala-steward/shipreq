@@ -216,7 +216,7 @@ module.exports = function(grunt) {
           expand: true,
           cwd : '<%= cfg.css.src %>',
           dest: '<%= cfg.css.out %>',
-          src: ['**/*.less', '!app.less', '!bootstrap*'],
+          src: ['**/*.less', '!app.*', '!bootstrap*', '!webfonts.*'],
           ext: '.css',
         }]
       },
