@@ -7,6 +7,7 @@
     "grunt-contrib-concat": "*",
     "grunt-contrib-copy": "*",
     "grunt-contrib-cssmin": "*",
+    "grunt-contrib-csslint": "*",
     "grunt-contrib-jshint": "*",
     "grunt-contrib-less": "*",
     "grunt-contrib-qunit": "*",

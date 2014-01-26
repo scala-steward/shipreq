@@ -44,7 +44,8 @@ module.exports = function(grunt) {
     clean: {
 
       // Delete temp dirs
-      tmp: ['<%= cfg.js.tmp %>', '<%= cfg.css.tmp %>'],
+      css_tmp: ['<%= cfg.css.tmp %>'],
+      js_tmp: ['<%= cfg.js.tmp %>'],
 
       // Delete vendor assets
       vendor: {
@@ -156,7 +157,7 @@ module.exports = function(grunt) {
       app_css: {
         nonull: true,
         src: [ '<%= cfg.css.bootstrap_cust %>', '<%= cfg.css.app_only %>'],
-        dest: '<%= cfg.css.out %>/app.css',
+        dest: '<%= cfg.css.tmp %>/app.css',
       },
     },
 
@@ -215,7 +216,7 @@ module.exports = function(grunt) {
         files: [{
           expand: true,
           cwd : '<%= cfg.css.src %>',
-          dest: '<%= cfg.css.out %>',
+          dest: '<%= cfg.css.tmp %>',
           src: ['**/*.less', '!app.*', '!bootstrap*', '!webfonts.*'],
           ext: '.css',
         }]
@@ -236,11 +237,28 @@ module.exports = function(grunt) {
       all: {
         files: [{
           expand: true,
-          cwd : '<%= cfg.css.out %>',
+          cwd : '<%= cfg.css.tmp %>',
           dest: '<%= cfg.css.out %>',
-          src: ['**/*.css'],
+          src: ['**/*.css', '!app-only*'],
           ext: '.css',
         }]
+      },
+    },
+
+    // *****************************************************************************************************************
+    csslint: {
+      options: {
+        ids: false,                      // disagree
+        'unique-headings': false,        // disagree
+        'qualified-headings': false,     // disagree
+        'overqualified-elements': false, // disagree
+        important: false,                // using sparingly
+        'box-model': false,              // I'm aware
+        'adjoining-classes': false,      // Fuck IE 6/7
+        'box-sizing': false,             // Fuck IE 6/7
+      },
+      all: {
+        src: ['<%= cfg.css.tmp %>/**/*.css', '!**/app.css'],
       },
     },
 
@@ -249,12 +267,8 @@ module.exports = function(grunt) {
       options: {
         spawn: false,
       },
-      bootstrap_less: {
-        files: ['<%= cfg.css.src %>/bootstrap.less'],
-        tasks: ['less:bootstrap','css'],
-      },
       css: {
-        files: ['<%= cfg.css.src %>/**/*.s?ss'],
+        files: ['<%= cfg.css.src %>/**/*.less'],
         tasks: ['css'],
       },
       js: {
@@ -277,14 +291,14 @@ module.exports = function(grunt) {
   // *******************************************************************************************************************
   // Task definitions
 
-  grunt.registerTask('vendor' , ['clean:vendor' ,'copy:vendor' ,'less:bootstrap'                          ]);
-  grunt.registerTask('mathjax', ['clean:mathjax','copy:mathjax','uglify:mathjax'                          ]);
-  grunt.registerTask('js'     , ['clean:js'     ,'concat:js'   ,'uglify:own'                              ]);
-  grunt.registerTask('css'    , ['clean:css'    ,'less:app'    ,'less:other'    ,'concat:app_css','cssmin']);
-  grunt.registerTask('test'   , ['qunit'                                                                  ]);
-
-  grunt.registerTask('default', ['clean:tmp','vendor','js','css','test']);
-  grunt.registerTask('all'    , ['mathjax','default']);
+  grunt.registerTask('vendor'  , ['clean:vendor', 'copy:vendor', 'less:bootstrap']);
+  grunt.registerTask('mathjax' , ['clean:mathjax', 'copy:mathjax', 'uglify:mathjax']);
+  grunt.registerTask('js'      , ['clean:js_tmp', 'clean:js', 'concat:js', 'uglify:own']);
+  grunt.registerTask('css'     , ['clean:css_tmp', 'clean:css', 'less:app', 'less:other', 'concat:app_css', 'cssmin']);
+  grunt.registerTask('test'    , ['qunit']);
+  grunt.registerTask('default' , ['vendor', 'js', 'css', 'test']);
+  grunt.registerTask('all'     , ['mathjax', 'default']);
+  grunt.registerTask('lint-css', ['css', 'csslint']);
 };
 
 // vim:sw=2 ts=2 et:
