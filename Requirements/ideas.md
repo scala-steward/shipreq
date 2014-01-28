@@ -29,3 +29,9 @@ Smaller features should be in `Code/webapp/TODO.md`.
     * Implemented
     * Unit/Integration Tested
 
+* Scan requirements for vague/ambiguous words.
+
+* Allow stakeholders to vote to determine req/feature priority.
+
+* Link change requests to affected requirements.
+
