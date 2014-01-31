@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "bootstrap": "~3.0",
-    "jquery": ">=1.10 <2.0",
+    "jquery": "*",
     "jquery-autosize": "*",
     "jquery-timeago": "*",
     "jquery-rangyinputs": "https://github.com/timdown/rangyinputs.git",
