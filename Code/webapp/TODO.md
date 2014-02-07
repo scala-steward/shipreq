@@ -10,6 +10,7 @@ FUNC TODO
 * [S.3.3=6] [UCE ] Speed up JS animation. I felt a little annoyed waiting after delete-step.
 * [S.3.2=5] [PROJ] Delete use cases.
 * [S.2.3=5] [UCE ] Save button doesn't from disabled to enabled when text changes, only after blur. Confusing for user.
+* [S.2.2=4] [UCE ] Either replace consecutive whitespace or maintain it when rendering to HTML.
 * [S.0.3=3] [ACCT] Change email.
 * [S.0.3=3] [UCE ] Replace tabs with spaces.
 * [S.0.2=2] [ACCT] Delete account.
