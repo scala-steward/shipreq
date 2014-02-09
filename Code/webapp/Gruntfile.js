@@ -32,7 +32,7 @@ module.exports = function(grunt) {
         src: 'src/main/styles',
         out: 'src/main/webapp/assets',
         tmp: 'target/css',
-        bootstrap_cust: '<%= cfg.vendor.cust %>/boostrap.css',
+        bootstrap_cust: '<%= cfg.vendor.cust %>/bootstrap.css',
         app_only: '<%= cfg.css.tmp %>/app-only.css',
       },
       js: {
