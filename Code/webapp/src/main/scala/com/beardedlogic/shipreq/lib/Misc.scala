@@ -23,7 +23,6 @@ final object Misc extends Misc with Logger {
   val SingleSpace = Cord(" ")
 
   val WhitespaceRegex = "\\s+".r
-  val NormaliseCRLFs = "\r\n?".r
 
   val NoEffect1: (Any => Unit) = _ => ()
 
@@ -68,8 +67,6 @@ trait Misc {
 
   def isExpired_?(startTime: DateTime, timeToLive: Period, now: Long = DateTimeUtils.currentTimeMillis): Boolean =
     startTime plus timeToLive isBefore now
-
-  def normaliseCRLFs(str: String) = Misc.NormaliseCRLFs.replaceAllIn(str, "\n")
 
   def normaliseWhitespaceInSingleLineString(str: String) = Misc.WhitespaceRegex.replaceAllIn(str, " ").trim
 

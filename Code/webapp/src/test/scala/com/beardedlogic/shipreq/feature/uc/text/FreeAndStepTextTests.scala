@@ -185,6 +185,10 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       it("should replace <= with ≤") { testSymbolReplacement("<=","≤") }
       it("should replace >= with ≥") { testSymbolReplacement(">=","≥") }
 
+      it("should replace tabs with spaces") {
+        testText("\thehe\tWhat?\t", "hehe What?")
+      }
+
       describe("Step refs") {
         it("should detect valid step refs") {
           testBoth("Umm [S.1] only", None, PlainText("Umm "), StepRef(X1, S1), PlainText(" only"))

@@ -7,8 +7,16 @@ trait TextReplacement {
   def apply(in: String): String
 }
 
-case class StaticRegexReplacement(regex: Regex, replacement: String) extends TextReplacement {
-  override def apply(in: String): String = regex.replaceAllIn(in, replacement)
+case class RegexReplacement(regex: Regex, replacement: String) extends TextReplacement {
+  override def apply(in: String) = regex.replaceAllIn(in, replacement)
+}
+
+case class CharReplacement(from: Char, replacement: Char) extends TextReplacement {
+  override def apply(in: String) = in.replace(from, replacement)
+}
+
+object Trim extends TextReplacement {
+  override def apply(in: String) = in.trim
 }
 
 object TextReplacements {
@@ -16,14 +24,22 @@ object TextReplacements {
   private [this] val PunctuationOrSymbol = """[\p{S}\p{P}]"""
   private def symbolReplacement(from: String, to: String): TextReplacement = {
     val f = Pattern.quote(from)
-    StaticRegexReplacement(s"(?<!$PunctuationOrSymbol)$f(?!$PunctuationOrSymbol)".r, to)
+    RegexReplacement(s"(?<!$PunctuationOrSymbol)$f(?!$PunctuationOrSymbol)".r, to)
   }
 
-  val GeneralReplacements: List[TextReplacement] = List(
+  @inline final def perform(replacements: List[TextReplacement])(z: String): String =
+    (z /: replacements)((t, r) => r(t))
+
+  val General: List[TextReplacement] = List(
     symbolReplacement("<=", "≤"),
     symbolReplacement(">=", "≥")
   )
 
-  @inline final def performGeneral(z: String): String =
-    (z /: GeneralReplacements)((t, r) => r(t))
+  val Whitespace: List[TextReplacement] = List(
+    RegexReplacement("\r\n?".r, "\n"),
+    CharReplacement('\t', ' '),
+    Trim
+  )
+
+  val GeneralWithWhitespace = General ++ Whitespace
 }

@@ -49,7 +49,7 @@ final object Validator {
   }
 
   private def correctLargeText(input: String) =
-    TextReplacements.performGeneral(normaliseCRLFs(input).trim)
+    TextReplacements.perform(TextReplacements.GeneralWithWhitespace)(input)
 
   private def largeTextValidator(name: String) =
     ConstraintValidator[String](name, HasLargeTextLimit)
@@ -74,7 +74,7 @@ final object Validator {
 
   object username
     extends InputValidatorV[String] {
-    override def correct(input: String) = input.trim.toLowerCase.tag
+    override def correct(input: String) = removeAllWhitespace(input).toLowerCase.tag
     override protected val validator = ConstraintValidator[String]("Username",
       HasLengthInRange(UsernameLength),
       Whitelist.charRegex("a-z0-9_", "can only contain letters, numbers and underscores."),
@@ -145,7 +145,7 @@ final object Validator {
   object useCaseTitle
     extends InputValidatorV[String] {
     override def correct(input: String) =
-      TextReplacements.performGeneral(normaliseWhitespaceInSingleLineString(input)).tag
+      TextReplacements.perform(TextReplacements.General)(normaliseWhitespaceInSingleLineString(input)).tag
     override protected val validator = ConstraintValidator[String]("Use case title",
       NonEmpty,
       HasShortTextLimit,
