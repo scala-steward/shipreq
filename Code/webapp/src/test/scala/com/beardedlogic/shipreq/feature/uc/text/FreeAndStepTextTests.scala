@@ -171,10 +171,9 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
       def testSymbolReplacement(from: String, to: String): Unit = {
         // test next to legal chars
         val arounds = List("hehe", "123", " nice ", " 4 ", "X", "\n")
-        val combos = arounds.flatMap(a => List(a+from, from+a, a+from+a))
+        val combos = arounds.flatMap(a => List(a+from, from+a, a+from+a, a+from+a+from+a))
         for (a <- combos :+ from)
-          T.updater.update(T.parse(""), a).gimme.text shouldBe a.replace(from, to).trim
-//          testText(a, a.replace(from, to).trim)
+          testText(a, a.replace(from, to).trim)
 
         // test next to symbols
         val symbols = "!<=>".toCharArray.toList.map(_.toString)

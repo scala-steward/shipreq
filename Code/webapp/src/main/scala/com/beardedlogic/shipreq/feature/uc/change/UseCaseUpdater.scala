@@ -64,7 +64,7 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
   def updateTitle(input: String): UcUpdateResult = {
     implicit val lens = alens(Lenses.ucTitleL, uc)
     def validator = Validator.useCaseTitle
-    val c = ParsedTextUpdater.performReplacementsOnUpdate(validator.correct(input))
+    val c = validator.correct(input)
 
     if (c.isEmpty)
       // If the user clears the title field, restore the title back to its value before they cleared it

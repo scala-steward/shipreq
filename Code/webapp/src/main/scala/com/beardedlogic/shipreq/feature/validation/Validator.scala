@@ -48,8 +48,11 @@ final object Validator {
     override protected val validator = ConstraintValidator[String](name, NonEmpty, HasShortTextLimit)
   }
 
-  private def correctLargeText(input: String) = normaliseCRLFs(input).trim
-  private def largeTextValidator(name: String) = ConstraintValidator[String](name, HasLargeTextLimit)
+  private def correctLargeText(input: String) =
+    TextReplacements.performGeneral(normaliseCRLFs(input).trim)
+
+  private def largeTextValidator(name: String) =
+    ConstraintValidator[String](name, HasLargeTextLimit)
 
   /** Empty string is represented as `""`. */
   sealed abstract class LargeText(name: String) extends InputValidatorV[String] {
@@ -141,7 +144,8 @@ final object Validator {
 
   object useCaseTitle
     extends InputValidatorV[String] {
-    override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
+    override def correct(input: String) =
+      TextReplacements.performGeneral(normaliseWhitespaceInSingleLineString(input)).tag
     override protected val validator = ConstraintValidator[String]("Use case title",
       NonEmpty,
       HasShortTextLimit,
