@@ -7,6 +7,7 @@ import com.beardedlogic.shipreq.lib.Types._
 import com.beardedlogic.shipreq.feature.validation.Validator
 import com.beardedlogic.shipreq.util.AppliedLens
 import field._
+import text.ParsedTextUpdater
 import Changes._
 import UseCaseFns._
 
@@ -63,7 +64,7 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
   def updateTitle(input: String): UcUpdateResult = {
     implicit val lens = alens(Lenses.ucTitleL, uc)
     def validator = Validator.useCaseTitle
-    val c = validator.correct(input)
+    val c = ParsedTextUpdater.performReplacementsOnUpdate(validator.correct(input))
 
     if (c.isEmpty)
       // If the user clears the title field, restore the title back to its value before they cleared it

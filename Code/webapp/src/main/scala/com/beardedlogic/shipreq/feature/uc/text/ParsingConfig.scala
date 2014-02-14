@@ -1,5 +1,6 @@
 package com.beardedlogic.shipreq.feature.uc.text
 
+import java.util.regex.Pattern
 import scala.collection.immutable.SortedSet
 import scala.util.matching.Regex
 import com.beardedlogic.shipreq.lib.Types._
@@ -88,4 +89,18 @@ final object ParsingConfig {
   val AnyValidArrowRegexStr =
     "(?:" + List(FlowFromStyle.arrowRegex, FlowToStyle.arrowRegex).map(_.pattern.pattern).mkString("|") + ")"
   val AnyValidArrowRegex = AnyValidArrowRegexStr.r
+
+
+  private [this] val PunctuationOrSymbol = """[\p{S}\p{P}]"""
+  private def symbolReplacement(from: String, to: String): TextReplacement = {
+    val f = Pattern.quote(from)
+    StaticRegexReplacement(s"(?<!$PunctuationOrSymbol)$f(?!$PunctuationOrSymbol)".r, to)
+  }
+
+  /** Replacements made to free/step text after enter by user, before parsing. */
+  val PreprocessReplacements: List[TextReplacement] = List(
+    symbolReplacement("<=", "≤"),
+    symbolReplacement(">=", "≥")
+  )
+
 }

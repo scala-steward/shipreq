@@ -3,7 +3,6 @@ Legend: [M/S/C] [Benefit 0-none,5-max] [Penalty 0-none,5-severe]
 FUNC TODO
 =========
 
-* [S.5.4=9] [UCE ] Replace <= and >= with ≤ and ≥.
 * [S.5.4=9] [UCE ] Tab/shift-tab should move between input fields just like alt+up/down.
 * [S.5.4=9] [UA  ] Allow users to provide feedback.
 * [S.2.5=7] [UCE ] Step is lost if accidentally deleted. No undo.
