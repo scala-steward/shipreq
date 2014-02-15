@@ -1,15 +1,22 @@
 digraph G {
 // rankdir=LR;
 
-Interest [label="I'm only interested\nin a particular subset\nof reqs right now"]
-Overwhelming [label="Overwhelming to view\nall UCs as flat list."]
-EstSize [label="User needs to estimate the\nsize/scope of a grouping."]
+{ // TOP-LEVEL
+rank=same;
+node [fontcolor="#880000"]
+  Interest [label="I'm only interested\nin a particular subset\nof reqs right now"]
+  Overwhelming [label="Overwhelming to view\nall reqs as flat list."]
+  RWM [label="Groupings can convey\nreal-world properties and\ncapture real requirements"]
+}
+
+EstSize [label="Need to estimate the\nsize/scope of a grouping."]
 Fickle [label="Some groupings are\nfickle and change often."]
-RWM [label="Groupings can convey\nreal-world properties and\ncapture real requirements"]
 Planning [label="Groupings are often\nused for planning"]
 Balance [label="Want to make certain\ngrouping buckets contain\nsimilar number of reqs"]
 ForgotApply [label="Want to know if I've\nforgotten to apply a\ngrouping to any reqs."]
-SeeProb [label="Discover a problem"]
+SeeProb [label="Discover an\napplication problem"]
+OverUnderUsed [label="Groups are less\neffective if\nthey contain too\nmany/little reqs."]
+InadeqCfg [label="Decide grouping\ncfg is inadequate"]
 
 { // FUNCTIONALITY [R]
 node [style=filled,fillcolor="#ddeeff"]
@@ -29,6 +36,7 @@ node [style=filled,fillcolor="#bbbbff"]
   Store [label="Need to record groupings"]
   BulkApply [label="Want to assign groupings to\nmultiple UCs simultaneously"]
   Apply [label="Apply groupings\nwhilst editing req"]
+  Cfg [label="Configure\nGroupings"]
 }
 
 { // QUESTIONABLE
@@ -51,6 +59,8 @@ Fickle -> Overview
 BulkApply -> Overview
 EstSize -> Overview
 {SeeMissing; Overview} -> SeeProb -> BulkApply
-Store -> Apply
+Store -> {Apply; Cfg}
+Cfg -> OverUnderUsed -> EstSize
+Overview -> InadeqCfg -> Cfg
 
 }
