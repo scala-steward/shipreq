@@ -1,0 +1,56 @@
+digraph G {
+// rankdir=LR;
+
+Interest [label="I'm only interested\nin a particular subset\nof reqs right now"]
+Overwhelming [label="Overwhelming to view\nall UCs as flat list."]
+EstSize [label="User needs to estimate the\nsize/scope of a grouping."]
+Fickle [label="Some groupings are\nfickle and change often."]
+RWM [label="Groupings can convey\nreal-world properties and\ncapture real requirements"]
+Planning [label="Groupings are often\nused for planning"]
+Balance [label="Want to make certain\ngrouping buckets contain\nsimilar number of reqs"]
+ForgotApply [label="Want to know if I've\nforgotten to apply a\ngrouping to any reqs."]
+SeeProb [label="Discover a problem"]
+
+{ // FUNCTIONALITY [R]
+node [style=filled,fillcolor="#ddeeff"]
+  BooleanFilterOps [label="When searching/filtering\nby groupings, users\nsometimes need to specify\n{NOT,AND,OR}"]
+  Filter [label="Filter by groupings."]
+  FilterS [label="UC selection in Shares\nshould be filterable\nby groupings."]
+  FilterR [label="Filter by groupings\nwhen reading/printing/\nreviewing UCs."]
+  FilterUCL [label="Filter UC List\nby groupings"]
+{rank=same;
+  Overview [label="Need a summary to\nunderstand how groupings\nare distributed across\nall requirements."]
+  SeeMissing [label="Count/see UCs that\ndon't have any grouping\nof the given tree\n(eg. UCs without a priority.)"]
+}
+}
+
+{ // FUNCTIONALITY [W]
+node [style=filled,fillcolor="#bbbbff"]
+  Store [label="Need to record groupings"]
+  BulkApply [label="Want to assign groupings to\nmultiple UCs simultaneously"]
+  Apply [label="Apply groupings\nwhilst editing req"]
+}
+
+{ // QUESTIONABLE
+node [style=filled,fillcolor="#ffcccc"]
+  // Browse [label="View and navigate\ntop-level Groupings as\n1st-class citizens"]
+}
+
+RWM -> Interest [constraint=false]
+{Interest; Overwhelming} -> {Store; Filter}
+Filter -> {FilterS; FilterR; FilterUCL} -> BooleanFilterOps
+// EstSize -> Browse
+Fickle -> BulkApply
+RWM -> {Store; Fickle}
+RWM -> Planning -> Fickle
+{Balance; Planning} -> EstSize
+Overview -> SeeMissing
+Planning -> Balance
+Fickle -> Overview
+{Store; Fickle} -> ForgotApply -> SeeMissing
+BulkApply -> Overview
+EstSize -> Overview
+{SeeMissing; Overview} -> SeeProb -> BulkApply
+Store -> Apply
+
+}
