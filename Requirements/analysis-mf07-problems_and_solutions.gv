@@ -17,6 +17,7 @@ ForgotApply [label="Want to know if I've\nforgotten to apply a\ngrouping to any 
 SeeProb [label="Discover an\napplication problem"]
 OverUnderUsed [label="Groups are less\neffective if\nthey contain too\nmany/little reqs."]
 InadeqCfg [label="Decide grouping\ncfg is inadequate"]
+CfgThenApply [label="After creating a\nnew grouping, the\nnext step is\noften to apply it"]
 
 { // FUNCTIONALITY [R]
 node [style=filled,fillcolor="#ddeeff"]
@@ -27,7 +28,7 @@ node [style=filled,fillcolor="#ddeeff"]
   FilterUCL [label="Filter UC List\nby groupings"]
 {rank=same;
   Overview [label="Need a summary to\nunderstand how groupings\nare distributed across\nall requirements."]
-  SeeMissing [label="Count/see UCs that\ndon't have any grouping\nof the given tree\n(eg. UCs without a priority.)"]
+  SeeMissing [label="Count/see reqs\nmissing appl of\ncertain grouping tree\n(eg. missing priority)"]
 }
 }
 
@@ -62,5 +63,7 @@ EstSize -> Overview
 Store -> {Apply; Cfg}
 Cfg -> OverUnderUsed -> EstSize
 Overview -> InadeqCfg -> Cfg
+BulkApply -> InadeqCfg [constraint=false]
+Cfg -> CfgThenApply -> BulkApply
 
 }

@@ -1,0 +1,30 @@
+digraph G {
+
+{ // FUNCTIONALITY [R]
+node [style=filled,fillcolor="#ddeeff"]
+{rank=same;
+  Overview [label="Need a summary to\nunderstand how groupings\nare distributed across\nall requirements."]
+  SeeMissing [label="Count/see UCs that\ndon't have any grouping\nof the given tree\n(eg. UCs without a priority.)"]
+}
+}
+
+{ // FUNCTIONALITY [W]
+node [style=filled,fillcolor="#bbbbff"]
+  BulkApply [label="Want to assign groupings to\nmultiple UCs simultaneously"]
+  Cfg [label="Configure\nGroupings"]
+}
+
+// START [shape=circle,style=filled,color=black,fontsize=1,height=.3]
+// START -> Overview
+// START -> Cfg
+// START -> BulkApply
+
+Overview -> SeeMissing [dir=back,arrowtail=dot]
+Overview -> BulkApply [label="Alloc problem"]
+Overview -> Cfg [label="Cfg problem"]
+BulkApply -> Cfg [label="Cfg problem"]
+BulkApply -> Overview [label="Continue review"]
+Cfg -> BulkApply [label="Apply new G"]
+Cfg -> Overview [label="Decide cfg change\nbased on usage"]
+
+}
