@@ -1,6 +1,6 @@
 digraph G {
 
-{ edge[dir=both,color=grey]
+{ edge[dir=both,color="#cccccc"]
   rank=same;
   HomeA -> {About; ToS; Privacy; Login; Register}
   About -> {ToS; Privacy; Login; Register}
@@ -12,10 +12,10 @@ digraph G {
 
 ShareView1
 Login -> ResetPW
-ResetPW -> {HomeA; About; ToS; Privacy; Login; Register} [color=grey]
+ResetPW -> {HomeA; About; ToS; Privacy; Login; Register} [color="#cccccc"]
 // Register2 -> {HomeA; About; ToS; Privacy; Login; Register} [color=grey]
 
-node [style=filled,color=green]
+node [style=filled,color="#44ff44"]
 HomeL [label="HomeL (projects)"]
 Login -> HomeL
 // Register2 -> HomeL
