@@ -42,3 +42,7 @@ User Classes
 * Startups
 * Small Business
 * Large Business
+
+Pricing of other apps
+=====================
+Gemnasium: $15/month for 10 private repos, $25/m for 20, $50/m for 50
