@@ -33,3 +33,12 @@ Affects DB size & traffic.
 (TODO: every unbound DB field should have an in-app (trigger?) restriction)
 (TODO: all bound var-length DB fields should also have a restriction lest the user lose data on save)
 
+User Classes
+============
+
+* Lone Dev
+* Lone BA
+* Lone entrepenuer
+* Startups
+* Small Business
+* Large Business
