@@ -1,30 +1,27 @@
 digraph G {
   START [shape=circle,style=filled,color=black,fontsize=1,height=.3];
+
   lp [label="Landing Page"];
-  lp_mob [label="Prototype mobile version"];
-  lp_impl [label="Implement"];
   buscards [label="Business cards"];
-  mark [label="Find a marketer"];
-  // mark_online [label="Seek marketer online"];
-  askcont [label="Ask contacts"];
-  netev [label="Ask at networking event"];
   getusers [label="Get Users"];
   busplan [label="Business Plan"];
-  busplan_online [label="Research busplans online"];
-  sbc [label="SBC workshop"];
-  qusers [label="Question users"];
-  NEIS;
-  eoi [label="Expressions of Interest"];
+  selina [label="Talk to Selina"]
+  free_bmentor [label="Free Business Consultation"]
 
-  lp_mob -> lp_impl -> lp;
-  {askcont; netev} -> mark;
-  {lp; mark} -> getusers -> qusers;
-  {sbc; busplan_online; askcont; netev; qusers} -> busplan;
-  {busplan; Centrelink; eoi} -> NEIS;
-  getusers -> eoi;
-  logo -> {buscards; lp_impl}
-  {buscards; lp} -> netev;
+  logo -> buscards [constraint=false]
+  logo -> lp
+  lp -> buscards
 
-  START -> {Centrelink; logo; askcont; lp_mob; sbc; busplan_online} [color=red];
+  busplan -> free_bmentor
+
+  nhill_plan
+  pricing
+  pricing -> nhill_plan [constraint=false,dir=both]
+
+  requirements
+
+  {selina; free_bmentor; lp} -> getusers
+
+  START -> {logo; busplan; selina; requirements; pricing; nhill_plan} [color=red];
 
 }
