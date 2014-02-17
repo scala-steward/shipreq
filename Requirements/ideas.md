@@ -35,3 +35,12 @@ Smaller features should be in `Code/webapp/TODO.md`.
 
 * Link change requests to affected requirements.
 
+
+Generic TODOs: Plain text.
+TODOs due to MF intersection problems.
+where/how to store intersection problems?
+
+user stories, how to cater for them? Will likely share most of UC functionality.
+
+References to external stuff. Eg: declare once a URL for Policies 2013, then use it everywhere.
+
