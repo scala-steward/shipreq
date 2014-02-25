@@ -65,4 +65,11 @@ final object AppConfig {
   }
 
   val jQueryVersion = "2.1.0"
+
+  object LandingPage {
+    /** Where peoples' expressions-of-interest are sent for me to read. */
+    val sendTo = SupportEmailAddress
+    /** The subject used when peoples' expressions-of-interest are sent for me to read. */
+    val subject = "Expression of Interest"
+  }
 }

@@ -147,4 +147,16 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
     V.sharePreface.correctAndValidate("x" * LargeTextMaxLength).isSuccess shouldBe true
     V.sharePreface.correctAndValidate("x" * (LargeTextMaxLength + 1)).isSuccess shouldBe false
   }
+
+  test("Landing page name") {
+    testCV(V.landingPageName, Table(("IN", "CORRECTED", "FAILURE")
+      , (" ", Some(""), Some("blank"))
+      , ("Blah", None, Some("surname"))
+      , ("Blah Yay5", None, Some("numbers"))
+      , ("Blah Yay", None, None)
+      , ("Blah Yay Go", None, None)
+      , ("Blah Yay-Go", None, None)
+      , ("Blah   Yay", Some("Blah Yay"), None)
+    ))
+  }
 }

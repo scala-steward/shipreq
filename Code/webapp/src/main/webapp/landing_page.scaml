@@ -1,0 +1,33 @@
+%div(data-lift="surround?with=blank;at=content")
+  %main#lp
+
+    %a.btn.btn-success#login(data-lift="Link.login") Login »
+
+    %img#logo(src="/assets/shipreq.png" alt="ShipReq")
+    #logo-sub Better <strong>requirements</strong> ship better products.
+
+    %table#mid
+      %tr
+        %td#midleft
+
+          %p#p1
+            <x data-lift="Prop.appName"></x> is a modern, online tool
+            <br>for requirements development and management,
+            <br>currently in private beta phase.
+
+          %p#p2
+            Would you like to know more, or participate in the beta?
+            %br
+            Get in touch!
+            %span.arrow-r
+
+        %td#form(data-lift="LandingPage.form")
+          %form(role="form" data-lift="form.ajax")
+            .form-group
+              %input.form-control.n(placeholder="Your name" autofocus required)
+            .form-group
+              %input.form-control.e(type="email" placeholder="Your email address" required)
+            .form-group
+              %textarea.form-control.m(placeholder="What would you like to say?" rows="11")
+            .form-group.submit
+              %button.btn.btn-primary(type="submit") Express Interest

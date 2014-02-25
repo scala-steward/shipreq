@@ -217,11 +217,13 @@ module.exports = function(grunt) {
 
     // *****************************************************************************************************************
     less: {
+        options: {
+          paths: '.bower/bootstrap/less',
+        },
 
       // Build custom bootstrap.css
       bootstrap: {
         options: {
-          paths: '.bower/bootstrap/less',
           cleancss: true,
           // strictMath: true, // Pending 3.1.0
         },

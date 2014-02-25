@@ -26,12 +26,18 @@ object AppSiteMap {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
+  private val landingPageTemplate = "landing_page"
+
   // -------------------------------------------------------------------------------------------------------------------
   // Menu.i(NAME_AND_TITLE) / PATH_FOR_URL_AND_TEMPLATE
   // Menu(Loc(NAME, PATH_FOR_URL_AND_TEMPLATE, TITLE))
   // Menu.param[PARAM_TYPE(S)](NAME, TITLE, URL_TO_PARAM, PARAM_TO_URL) / PATH_FOR_URL_AND_TEMPLATE
 
-  val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index")
+  val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
+    >> UseEitherTemplate(Oshiro.isAuthenticated, "loggedin/index")(landingPageTemplate)
+  )
+
+  val Land_BusinessCard = pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
 
   val About = pageWithStaticUrl("about", "About")(_ / "about")
   val TermsOfService = pageWithStaticUrl("terms", mkTitle("Terms of Service"), "Terms")(_ / "terms")
@@ -126,7 +132,7 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, About, TermsOfService, PrivacyPolicy
+    Home, About, TermsOfService, PrivacyPolicy, Land_BusinessCard
     , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
     , Project, UseCaseEditor, ReadOwnUcs, ShareCreate, ShareEdit, ShareView
     , DemoUseCaseEditor
@@ -219,7 +225,10 @@ object AppSiteMap {
 
   @inline final def defaultTitle = AppConfig.AppName
 
-  @inline final def mkTitle(title: String): String = s"$title | ${AppConfig.AppName}"
+  @inline final def mkTitle(title: String): String = title match {
+    case "" => defaultTitle
+    case _  => s"$title | ${AppConfig.AppName}"
+  }
 
   private def StaticTitle[T](title: String) = {
     val titleXml: NodeSeq = Text(title)
@@ -244,9 +253,19 @@ object AppSiteMap {
   private def MenuWithIdParam[Tag <: IsExteralisableId](eidGen: ExternalIdConverter[Tag])(name: String) =
     Menu.param[JLong @@ Tag](name, "", eidGen.parseB(_), eidGen.toExternal(_))
 
+  private def splitPath(path: String): List[String] =
+    path.split("/").toList
+
   private def UseTemplate(path: String) = {
-    val t = path.split("/").toList
+    val t = splitPath(path)
+    // TODO is Templates reusable here?
     TemplateBox(() => Templates(t))
+  }
+
+  private def UseEitherTemplate(condB: => Boolean, pathB: String)(pathA: String) = {
+    val a = splitPath(pathA)
+    val b = splitPath(pathB)
+    TemplateBox(() => Templates(if (condB) b else a))
   }
 
   private def AuthenticationRequired =

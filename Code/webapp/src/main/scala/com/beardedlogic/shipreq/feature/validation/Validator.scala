@@ -161,4 +161,16 @@ final object Validator {
   object textFieldText extends LargeText("Text")
 
   object stepFieldText extends LargeText("Text")
+
+  object landingPageName extends InputValidatorV[String] {
+    override def correct(input: String) = normaliseWhitespaceInSingleLineString(input).tag
+    override protected val validator = ConstraintValidator[String]("Your name",
+      NonEmpty,
+      IsNotAFirstNameOnly,
+      HasShortTextLimit,
+      Not(Contain.regex("[0-9]", ""), "has numbers in it? I don't believe you.")
+    )
+  }
+  def landingPageEmail = email
+  object landingPageMsg extends LargeTextO("Your message")
 }
