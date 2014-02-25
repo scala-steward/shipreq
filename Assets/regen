@@ -1,0 +1,9 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+[ -e *.png ] && rm *.png
+convert -density 66 logo.svg -alpha off logo-66.png
+
+identify *.png
+parallel pngout ::: *.png
+identify *.png
