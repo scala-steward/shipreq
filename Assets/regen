@@ -1,10 +1,37 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 
-[ -e *.png ] && rm *.png
+rm *.png *.ico 2>/dev/null
 
-n=logo-title; convert -density 90 $n.svg -alpha off $n-90.png
+echo "Converting..."
 
-identify *.png
+lt=logo-title
+convert -density 90 $lt.svg -alpha off $lt-1024.png
+
+lo=logo-only
+convert -background transparent $lo.svg $lo-300-a.png
+convert -background white $lo.svg -alpha off $lo-300-o.png
+
+convert -background transparent $lo.svg -alpha background \
+  \( -clone 0 -resize 16x16 \) \
+  \( -clone 0 -resize 32x32 \) \
+  \( -clone 0 -resize 48x48 \) \
+  \( -clone 0 -resize 64x64 \) \
+  -delete 0 favicon-a.ico
+convert -background white $lo.svg \
+  \( -clone 0 -resize 12x12 -bordercolor white -border 1 -bordercolor '#565656' -border 1 \) \
+  \( -clone 0 -resize 28x28 -bordercolor white -border 1 -bordercolor '#565656' -border 1 \) \
+  \( -clone 0 -resize 44x44 -bordercolor white -border 1 -bordercolor '#565656' -border 1 \) \
+  \( -clone 0 -resize 60x60 -bordercolor white -border 1 -bordercolor '#565656' -border 1 \) \
+  -delete 0 favicon-b.ico
+
+echo "Compressing PNGs..."
 parallel pngout ::: *.png
-identify *.png
+
+echo
+identify *.png *.ico
+echo
+
+webapp=../Code/webapp/src/main/webapp
+cp -v favicon-a.ico $webapp/assets/favicon.ico
+cp -v $lt-1024.png $webapp/assets/shipreq.png
