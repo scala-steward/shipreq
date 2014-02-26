@@ -2,7 +2,8 @@
 cd "$(dirname "$0")"
 
 [ -e *.png ] && rm *.png
-convert -density 66 logo.svg -alpha off logo-66.png
+
+n=logo-title; convert -density 90 $n.svg -alpha off $n-90.png
 
 identify *.png
 parallel pngout ::: *.png
