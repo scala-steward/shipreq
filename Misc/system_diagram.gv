@@ -1,0 +1,46 @@
+digraph G {
+  compound=true
+  labelloc=t
+  label="ShipReq System Diagram"
+
+  eaddr_blogic [label="bearded.logic\n@gmail.com" shape=folder style=filled fillcolor="#aabbff"]
+
+  subgraph cluster_usr {
+    style=filled
+    fillcolor="#eeeeaa"
+    node [style=filled fillcolor="#ccaa66"]
+
+    label="Userland"
+    usr_web [label="User's\nweb browser" shape=tab]
+    usr_email [label="User's\nemail" shape=folder]
+  }
+
+  subgraph cluster_net {
+    style=filled
+    fillcolor="#e2e2e2"
+    node [style=filled fillcolor="#55cc55"]
+    label=""
+
+    gandi [label="gandi.net"]
+
+    subgraph cluster_aws {
+      fillcolor="#cccccc"
+      // node[shape=rect]
+      label="Amazon Web Services"
+      aws_r53 [label="Route 53"]
+      aws_ec2 [label="EC2"]
+      aws_rds [label="RDS"]
+      aws_ses [label="SES"]
+    }
+  }
+
+  usr_web -> gandi [color="#996644"]
+  gandi -> aws_r53 [label="DNS:*"]
+  aws_r53 -> aws_r53 [label="DNS:www" dir=back]
+  aws_r53 -> aws_ec2 [label="DNS:APEX"]
+  aws_ec2 -> aws_rds [label="Database\n(postgresql)"]
+  aws_ec2 -> aws_ses [label="Outgoing email\n(SMTP)"]
+  aws_ses -> usr_email
+  aws_ses -> eaddr_blogic [label="Expressions\nof Interest"]
+  eaddr_blogic -> usr_email [label="Manual comms"]
+}
