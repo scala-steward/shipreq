@@ -9,13 +9,6 @@ digraph G {
 
   { node[shape=folder style=filled]
     eaddr_blogic [label="bearded.logic\n@gmail.com" fillcolor="#aabbff"]
-    eaddr_webapp [label="no-reply\n@shipreq.com" fillcolor="#dddddd"]
-  }
-
-  { node[shape=signature]
-    email_eoi [label=" E.o.Interest"]
-    email_sys [label=" System email"]
-    email_man [label=" Manual comms"]
   }
 
   subgraph cluster_usr {
@@ -55,14 +48,7 @@ digraph G {
   aws_r53 -> aws_ec2 [label="DNS:APEX"]
   aws_ec2 -> aws_rds [label="Database\n(postgresql)"]
   aws_ec2 -> aws_ses [label="Outgoing email\n(SMTP)"]
-
-  aws_ses -> email_eoi -> eaddr_blogic
-  email_eoi -> eaddr_webapp [dir=back arrowtail=dot style=dotted]
-
-  aws_ses -> email_sys -> usr_email
-  email_sys -> eaddr_webapp [dir=back arrowtail=dot style=dotted]
-
-  eaddr_blogic -> email_man -> usr_email
-
+  aws_ses -> {eaddr_blogic; usr_email}
+  eaddr_blogic -> usr_email [label="One-on-one\nconversation"]
   me -> eaddr_blogic
 }
