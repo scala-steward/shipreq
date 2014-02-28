@@ -11,6 +11,13 @@ convert -density 90 $lt.svg -alpha off $lt-1024.png
 lo=logo-only
 convert -background transparent $lo.svg $lo-300-a.png
 convert -background white $lo.svg -alpha off $lo-300-o.png
+convert -density 120 -background transparent $lo.svg $lo-400-a.png
+convert -density 120 -background white $lo.svg -alpha off $lo-400-o.png
+convert -density 15 -background white $lo.svg -alpha off $lo-50-o.png
+convert -density 24 -background white $lo.svg -alpha off -gravity Center -extent 100x80 linkedin-product.png
+
+lw=logo-wide
+convert -density 30 -background white $lw.svg -alpha off -gravity Center -extent 100x60 linkedin-company.png
 
 convert -background transparent $lo.svg -alpha background \
   \( -clone 0 -resize 16x16 \) \
