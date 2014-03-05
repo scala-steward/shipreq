@@ -14,15 +14,15 @@ digraph G {
     style=filled
     fillcolor="#eeeeaa"
     node [style=filled fillcolor="#ccaa66"]
-
     label="Userland"
     usr_web [label="User's\nweb browser" shape=tab]
     usr_mail [label="User's\nemail" shape=folder fillcolor="#ccaaaa"]
+    usr [shape=proteinstab style=filled label="\nUser"]
   }
+
   subgraph cluster_gandi {
     fillcolor="#e8e8e8"
     label="gandi.net"
-    // gandi_dns [label="DNS"]
     gandi_mx [label="Mail fwd"]
     ea_contact [label="contact@\nshipreq.com" shape=folder style=filled fillcolor="#aabbff"]
     ea_news [label="news@\nshipreq.com" shape=folder style=filled fillcolor="#aabbff"]
@@ -32,7 +32,6 @@ digraph G {
   subgraph cluster_aws {
     fillcolor="#e8e8e8"
     label="Amazon Web Services"
-    // aws_r53 [label="Route 53"]
     aws_rds [label="RDS"]
     {node[fillcolor=pink]
       wb  [label="webapp"]
@@ -45,6 +44,7 @@ digraph G {
     label="MailChimp"
     mc_api [label="API"]
     mc_web [label="Web interface" shape=tab]
+    mc_staff [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
   }
 
   subgraph cluster_fd {
@@ -52,6 +52,7 @@ digraph G {
     label="Freshdesk"
     fd_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
     fd_web [label="Web interface" shape=tab]
+    fd_staff [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
   }
 
   subgraph cluster_crm {
@@ -60,6 +61,7 @@ digraph G {
     crm_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
     crm_web [label="Web interface" shape=tab]
     crm_api [label="API"]
+    crm_staff [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -83,6 +85,9 @@ digraph G {
     crm_mail -> crm_web
     usr_mail -> usr_web [dir=back]
     usr_web -> wb -> aws_rds -> worker
+    fd_web -> fd_staff
+    crm_web -> crm_staff
+    usr_web -> usr [dir=back]
   }
 
   // Email flows (outgoing)
@@ -96,6 +101,10 @@ digraph G {
     crm_mail -> crm_web
     // mc_web -> mc_api -> worker
     worker -> mc_api -> mc_web [dir=back]
+    fd_web -> fd_staff [dir=back]
+    mc_web -> mc_staff [dir=back]
+    usr_web -> usr
+    crm_web -> crm_staff
   }
 
 }
