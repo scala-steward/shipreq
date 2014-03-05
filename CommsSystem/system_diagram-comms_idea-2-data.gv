@@ -4,7 +4,7 @@ digraph G {
   label="ShipReq System Diagram\n(arrows denote flow of data from one component to another)\n(ignores which component instigates the data transfer)\n(red = email from user, blue = email to user)\n"
   style=filled fillcolor="#e2ffe2"
   node [style=filled fillcolor="#55cc55"]
-  // edge [minlen=2]
+  edge [arrowhead=vee arrowtail=vee]
 
   // -----------------------------------------------------------------------------------------------
 
@@ -105,6 +105,7 @@ digraph G {
     mc_web -> mc_staff [dir=back]
     usr_web -> usr
     crm_web -> crm_staff
+    wb -> aws_rds -> worker
   }
 
 }

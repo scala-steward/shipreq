@@ -4,7 +4,7 @@ digraph G {
   label="ShipReq System Diagram\n(arrows denote a component's knowledge of another)"
   style=filled fillcolor="#e2ffe2"
   node [style=filled fillcolor="#55cc55"]
-  // edge [minlen=2]
+  edge [arrowhead=vee arrowtail=vee]
 
   // -----------------------------------------------------------------------------------------------
 

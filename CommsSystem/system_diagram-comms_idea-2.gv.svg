@@ -45,7 +45,7 @@
 <!-- gmail&#45;&gt;gandi_mx -->
 <g id="edge18" class="edge"><title>gmail&#45;&gt;gandi_mx</title>
 <path fill="none" stroke="black" d="M357.39,-342.41C357.39,-322.669 357.39,-297.059 357.39,-280.337"/>
-<polygon fill="black" stroke="black" points="353.89,-342.679 357.39,-352.679 360.89,-342.679 353.89,-342.679"/>
+<polygon fill="black" stroke="black" points="357.39,-352.679 352.89,-342.679 357.39,-347.679 357.39,-342.679 357.39,-342.679 357.39,-342.679 357.39,-347.679 361.89,-342.679 357.39,-352.679 357.39,-352.679"/>
 <text text-anchor="middle" x="369.89" y="-323.3" font-family="Times,serif" font-size="14.00">Fwd</text>
 </g>
 <!-- gandi_dns -->
@@ -61,7 +61,7 @@
 <!-- gandi_dns&#45;&gt;aws_r53 -->
 <g id="edge1" class="edge"><title>gandi_dns&#45;&gt;aws_r53</title>
 <path fill="none" stroke="black" d="M522.284,-279.138C529.604,-289.74 540.512,-303.069 553.39,-311 613.165,-347.816 694.153,-362.051 746.344,-367.549"/>
-<polygon fill="black" stroke="black" points="746.089,-371.041 756.384,-368.537 746.774,-364.075 746.089,-371.041"/>
+<polygon fill="black" stroke="black" points="756.384,-368.537 745.991,-372.036 751.408,-368.047 746.432,-367.558 746.432,-367.558 746.432,-367.558 751.408,-368.047 746.872,-363.079 756.384,-368.537 756.384,-368.537"/>
 <text text-anchor="middle" x="638.89" y="-323.3" font-family="Times,serif" font-size="14.00">Delegates DNS</text>
 </g>
 <!-- ea_contact -->
@@ -73,7 +73,7 @@
 <!-- gandi_mx&#45;&gt;ea_contact -->
 <g id="edge13" class="edge"><title>gandi_mx&#45;&gt;ea_contact</title>
 <path fill="none" stroke="black" d="M378.574,-245.902C397.104,-232.484 424.55,-212.09 447.39,-193 455.873,-185.909 464.819,-177.871 472.853,-170.428"/>
-<polygon fill="black" stroke="black" points="475.623,-172.63 480.533,-163.241 470.84,-167.519 475.623,-172.63"/>
+<polygon fill="black" stroke="black" points="480.533,-163.241 476.306,-173.36 476.882,-166.658 473.231,-170.074 473.231,-170.074 473.231,-170.074 476.882,-166.658 470.156,-166.789 480.533,-163.241 480.533,-163.241"/>
 <text text-anchor="middle" x="452.39" y="-205.3" font-family="Times,serif" font-size="14.00">Catch</text>
 </g>
 <!-- ea_news -->
@@ -85,7 +85,7 @@
 <!-- gandi_mx&#45;&gt;ea_news -->
 <g id="edge14" class="edge"><title>gandi_mx&#45;&gt;ea_news</title>
 <path fill="none" stroke="black" d="M348.241,-243.884C338.161,-225.024 321.81,-194.431 309.961,-172.263"/>
-<polygon fill="black" stroke="black" points="312.991,-170.506 305.19,-163.337 306.817,-173.806 312.991,-170.506"/>
+<polygon fill="black" stroke="black" points="305.19,-163.337 313.873,-170.035 307.547,-167.746 309.904,-172.156 309.904,-172.156 309.904,-172.156 307.547,-167.746 305.935,-174.277 305.19,-163.337 305.19,-163.337"/>
 <text text-anchor="middle" x="350.39" y="-205.3" font-family="Times,serif" font-size="14.00">Catch</text>
 </g>
 <!-- ea_notice -->
@@ -97,7 +97,7 @@
 <!-- gandi_mx&#45;&gt;ea_notice -->
 <g id="edge15" class="edge"><title>gandi_mx&#45;&gt;ea_notice</title>
 <path fill="none" stroke="black" d="M363.292,-243.884C369.737,-225.193 380.156,-194.976 387.783,-172.858"/>
-<polygon fill="black" stroke="black" points="391.115,-173.931 391.067,-163.337 384.498,-171.649 391.115,-173.931"/>
+<polygon fill="black" stroke="black" points="391.067,-163.337 392.061,-174.257 389.437,-168.063 387.807,-172.79 387.807,-172.79 387.807,-172.79 389.437,-168.063 383.552,-171.323 391.067,-163.337 391.067,-163.337"/>
 <text text-anchor="middle" x="393.39" y="-205.3" font-family="Times,serif" font-size="14.00">Catch</text>
 </g>
 <!-- fd_mail -->
@@ -108,7 +108,7 @@
 <!-- gandi_mx&#45;&gt;fd_mail -->
 <g id="edge16" class="edge"><title>gandi_mx&#45;&gt;fd_mail</title>
 <path fill="none" stroke="black" d="M329.658,-247.735C305.18,-235.351 269.172,-215.445 241.39,-193 232.948,-186.18 224.65,-177.725 217.575,-169.82"/>
-<polygon fill="black" stroke="black" points="220.144,-167.441 210.948,-162.18 214.856,-172.027 220.144,-167.441"/>
+<polygon fill="black" stroke="black" points="210.948,-162.18 220.9,-166.785 214.224,-165.957 217.5,-169.734 217.5,-169.734 217.5,-169.734 214.224,-165.957 214.101,-172.683 210.948,-162.18 210.948,-162.18"/>
 <text text-anchor="middle" x="287.89" y="-205.3" font-family="Times,serif" font-size="14.00">Fwd</text>
 </g>
 <!-- crm_mail -->
@@ -119,19 +119,19 @@
 <!-- gandi_mx&#45;&gt;crm_mail -->
 <g id="edge17" class="edge"><title>gandi_mx&#45;&gt;crm_mail</title>
 <path fill="none" stroke="black" d="M313.609,-258.933C230.207,-253.98 53.5261,-238.273 16.3895,-193 -5.0326,-166.884 -5.77072,-142.492 16.3895,-117 63.9591,-62.2775 583.586,-41.2603 735.754,-36.2529"/>
-<polygon fill="black" stroke="black" points="736.182,-39.741 746.064,-35.9198 735.956,-32.7447 736.182,-39.741"/>
+<polygon fill="black" stroke="black" points="746.064,-35.9198 736.214,-40.7405 741.066,-36.0814 736.069,-36.2429 736.069,-36.2429 736.069,-36.2429 741.066,-36.0814 735.923,-31.7452 746.064,-35.9198 746.064,-35.9198"/>
 <text text-anchor="middle" x="28.8895" y="-140.3" font-family="Times,serif" font-size="14.00">Fwd</text>
 </g>
 <!-- aws_r53&#45;&gt;gandi_mx -->
 <g id="edge12" class="edge"><title>aws_r53&#45;&gt;gandi_mx</title>
 <path fill="none" stroke="black" d="M756.047,-369.688C699.664,-367.034 597.291,-359.038 513.39,-335 469.212,-322.343 421.708,-298.844 390.882,-282.136"/>
-<polygon fill="black" stroke="black" points="392.323,-278.934 381.873,-277.189 388.953,-285.07 392.323,-278.934"/>
+<polygon fill="black" stroke="black" points="381.873,-277.189 392.804,-278.058 386.255,-279.595 390.638,-282.002 390.638,-282.002 390.638,-282.002 386.255,-279.595 388.472,-285.947 381.873,-277.189 381.873,-277.189"/>
 <text text-anchor="middle" x="540.39" y="-323.3" font-family="Times,serif" font-size="14.00">DNS:MX</text>
 </g>
 <!-- aws_r53&#45;&gt;aws_r53 -->
 <g id="edge2" class="edge"><title>aws_r53:w&#45;&gt;aws_r53:w</title>
 <path fill="none" stroke="black" d="M748.253,-379.275C742.91,-381.816 737.493,-379.391 737.493,-372 737.493,-361 749.493,-361 755.39,-372"/>
-<polygon fill="black" stroke="black" points="750.886,-381.59 755.39,-372 745.888,-376.688 750.886,-381.59"/>
+<polygon fill="black" stroke="black" points="755.39,-372 751.6,-382.29 751.888,-375.57 748.387,-379.139 748.387,-379.139 748.387,-379.139 751.888,-375.57 745.174,-375.988 755.39,-372 755.39,-372"/>
 <text text-anchor="middle" x="705.493" y="-368.3" font-family="Times,serif" font-size="14.00">DNS:www </text>
 </g>
 <!-- wb -->
@@ -142,7 +142,7 @@
 <!-- aws_r53&#45;&gt;wb -->
 <g id="edge3" class="edge"><title>aws_r53&#45;&gt;wb</title>
 <path fill="none" stroke="black" d="M797.586,-353.648C796.795,-336.564 795.575,-310.215 794.654,-290.319"/>
-<polygon fill="black" stroke="black" points="798.15,-290.136 794.191,-280.309 791.157,-290.46 798.15,-290.136"/>
+<polygon fill="black" stroke="black" points="794.191,-280.309 799.149,-290.09 794.422,-285.304 794.653,-290.298 794.653,-290.298 794.653,-290.298 794.422,-285.304 790.158,-290.506 794.191,-280.309 794.191,-280.309"/>
 <text text-anchor="middle" x="830.89" y="-323.3" font-family="Times,serif" font-size="14.00">DNS:APEX</text>
 </g>
 <!-- aws_rds -->
@@ -158,12 +158,12 @@
 <!-- wb&#45;&gt;ea_contact -->
 <g id="edge5" class="edge"><title>wb&#45;&gt;ea_contact</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M769.529,-247.812C761.349,-243.502 752.069,-238.839 743.39,-235 678.161,-206.148 600.525,-178.634 550.631,-161.793"/>
-<polygon fill="black" stroke="black" points="551.628,-158.435 541.034,-158.569 549.4,-165.071 551.628,-158.435"/>
+<polygon fill="black" stroke="black" points="541.034,-158.569 551.947,-157.487 545.774,-160.161 550.514,-161.753 550.514,-161.753 550.514,-161.753 545.774,-160.161 549.081,-166.019 541.034,-158.569 541.034,-158.569"/>
 </g>
 <!-- wb&#45;&gt;aws_rds -->
 <g id="edge4" class="edge"><title>wb&#45;&gt;aws_rds</title>
 <path fill="none" stroke="black" d="M791.914,-243.884C790.289,-225.036 787.654,-194.469 785.743,-172.304"/>
-<polygon fill="black" stroke="black" points="789.217,-171.849 784.871,-162.186 782.243,-172.45 789.217,-171.849"/>
+<polygon fill="black" stroke="black" points="784.871,-162.186 790.213,-171.763 785.301,-167.168 785.73,-172.149 785.73,-172.149 785.73,-172.149 785.301,-167.168 781.247,-172.536 784.871,-162.186 784.871,-162.186"/>
 </g>
 <!-- worker -->
 <g id="node11" class="node"><title>worker</title>
@@ -174,17 +174,17 @@
 <!-- worker&#45;&gt;ea_contact -->
 <g id="edge19" class="edge"><title>worker&#45;&gt;ea_contact</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M866.503,-243.745C857.873,-240.695 848.89,-237.651 840.39,-235 738.784,-203.314 617.941,-173.163 550.831,-157.072"/>
-<polygon fill="black" stroke="black" points="551.47,-153.626 540.931,-154.707 549.844,-160.435 551.47,-153.626"/>
+<polygon fill="black" stroke="black" points="540.931,-154.707 551.703,-152.654 545.794,-155.869 550.657,-157.03 550.657,-157.03 550.657,-157.03 545.794,-155.869 549.611,-161.407 540.931,-154.707 540.931,-154.707"/>
 </g>
 <!-- worker&#45;&gt;aws_rds -->
 <g id="edge7" class="edge"><title>worker&#45;&gt;aws_rds</title>
 <path fill="none" stroke="black" d="M878.264,-239.156C860.114,-226.731 837.979,-210.238 820.39,-193 813.105,-185.861 806.032,-177.246 800.055,-169.297"/>
-<polygon fill="black" stroke="black" points="802.755,-167.059 794.041,-161.033 797.095,-171.178 802.755,-167.059"/>
+<polygon fill="black" stroke="black" points="794.041,-161.033 803.564,-166.471 796.983,-165.076 799.925,-169.119 799.925,-169.119 799.925,-169.119 796.983,-165.076 796.287,-171.767 794.041,-161.033 794.041,-161.033"/>
 </g>
 <!-- worker&#45;&gt;aws_ses -->
 <g id="edge6" class="edge"><title>worker&#45;&gt;aws_ses</title>
 <path fill="none" stroke="black" d="M900.1,-235.543C890.791,-216.259 878.055,-189.879 868.733,-170.568"/>
-<polygon fill="black" stroke="black" points="871.832,-168.937 864.333,-161.454 865.528,-171.981 871.832,-168.937"/>
+<polygon fill="black" stroke="black" points="864.333,-161.454 872.733,-168.503 866.506,-165.956 868.68,-170.459 868.68,-170.459 868.68,-170.459 866.506,-165.956 864.628,-172.415 864.333,-161.454 864.333,-161.454"/>
 </g>
 <!-- mc_api -->
 <g id="node12" class="node"><title>mc_api</title>
@@ -194,14 +194,14 @@
 <!-- worker&#45;&gt;mc_api -->
 <g id="edge8" class="edge"><title>worker&#45;&gt;mc_api</title>
 <path fill="none" stroke="black" d="M891.623,-287.557C876.773,-303.694 855.253,-323.117 831.39,-332 798.484,-344.248 783.454,-348.365 752.39,-332 735.115,-322.9 722.864,-304.468 715.064,-288.801"/>
-<polygon fill="black" stroke="black" points="718.145,-287.126 710.777,-279.513 711.789,-290.059 718.145,-287.126"/>
+<polygon fill="black" stroke="black" points="710.777,-279.513 719.053,-286.707 712.872,-284.052 714.967,-288.592 714.967,-288.592 714.967,-288.592 712.872,-284.052 710.881,-290.478 710.777,-279.513 710.777,-279.513"/>
 <text text-anchor="middle" x="843.623" y="-306.357" font-family="Times,serif" font-size="14.00">Push contact data</text>
 <text text-anchor="middle" x="843.623" y="-291.357" font-family="Times,serif" font-size="14.00">Query</text>
 </g>
 <!-- worker&#45;&gt;crm_mail -->
 <g id="edge20" class="edge"><title>worker&#45;&gt;crm_mail</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M915.776,-235.101C918.406,-203.948 918.057,-151.542 892.39,-117 870.802,-87.9483 847.262,-104.826 818.39,-83 809.954,-76.6235 802.053,-68.2352 795.482,-60.2573"/>
-<polygon fill="black" stroke="black" points="798.078,-57.8963 789.149,-52.1937 792.573,-62.22 798.078,-57.8963"/>
+<polygon fill="black" stroke="black" points="789.149,-52.1937 798.865,-57.2787 792.238,-56.1259 795.326,-60.0582 795.326,-60.0582 795.326,-60.0582 792.238,-56.1259 791.787,-62.8376 789.149,-52.1937 789.149,-52.1937"/>
 <text text-anchor="middle" x="929.39" y="-140.3" font-family="Times,serif" font-size="14.00">BCC</text>
 </g>
 <!-- crm_api -->
@@ -212,7 +212,7 @@
 <!-- worker&#45;&gt;crm_api -->
 <g id="edge9" class="edge"><title>worker&#45;&gt;crm_api</title>
 <path fill="none" stroke="black" d="M930.132,-236.05C938.006,-223.683 946.567,-208.175 951.39,-193 965.423,-148.838 967.492,-94.5139 967.26,-62.4368"/>
-<polygon fill="black" stroke="black" points="970.754,-62.0156 967.097,-52.0717 963.755,-62.1253 970.754,-62.0156"/>
+<polygon fill="black" stroke="black" points="967.097,-52.0717 971.754,-62 967.176,-57.0711 967.254,-62.0704 967.254,-62.0704 967.254,-62.0704 967.176,-57.0711 962.755,-62.1409 967.097,-52.0717 967.097,-52.0717"/>
 <text text-anchor="middle" x="1039.89" y="-147.8" font-family="Times,serif" font-size="14.00">Push contact data</text>
 <text text-anchor="middle" x="1039.89" y="-132.8" font-family="Times,serif" font-size="14.00">Log MailChimp broadcasts</text>
 </g>
@@ -225,12 +225,12 @@
 <!-- mc_web&#45;&gt;ea_news -->
 <g id="edge10" class="edge"><title>mc_web&#45;&gt;ea_news</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M574.03,-243.979C567.166,-240.966 560.073,-237.875 553.39,-235 517.524,-219.572 510.401,-209.917 472.39,-201 445.075,-194.593 372.129,-204.164 346.39,-193 335.001,-188.06 324.585,-179.426 316.177,-170.83"/>
-<polygon fill="black" stroke="black" points="318.674,-168.375 309.331,-163.38 313.52,-173.112 318.674,-168.375"/>
+<polygon fill="black" stroke="black" points="309.331,-163.38 319.41,-167.699 312.714,-167.062 316.097,-170.744 316.097,-170.744 316.097,-170.744 312.714,-167.062 312.783,-173.788 309.331,-163.38 309.331,-163.38"/>
 </g>
 <!-- mc_web&#45;&gt;ea_notice -->
 <g id="edge11" class="edge"><title>mc_web&#45;&gt;ea_notice</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M605.984,-243.769C599.736,-229.629 588.761,-210.452 572.39,-201 548.476,-187.193 473.716,-204.001 448.39,-193 437.004,-188.055 426.588,-179.419 418.179,-170.824"/>
-<polygon fill="black" stroke="black" points="420.677,-168.369 411.333,-163.375 415.523,-173.106 420.677,-168.369"/>
+<polygon fill="black" stroke="black" points="411.333,-163.375 421.413,-167.692 414.716,-167.056 418.1,-170.738 418.1,-170.738 418.1,-170.738 414.716,-167.056 414.787,-173.783 411.333,-163.375 411.333,-163.375"/>
 </g>
 <!-- fd_web -->
 <g id="node15" class="node"><title>fd_web</title>
@@ -241,7 +241,7 @@
 <!-- fd_web&#45;&gt;crm_mail -->
 <g id="edge21" class="edge"><title>fd_web&#45;&gt;crm_mail</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M132.911,-125.888C140.454,-122.49 148.567,-119.275 156.39,-117 368.435,-55.3411 634.814,-39.9061 735.912,-36.1592"/>
-<polygon fill="black" stroke="black" points="736.144,-39.6533 746.014,-35.8038 735.897,-32.6577 736.144,-39.6533"/>
+<polygon fill="black" stroke="black" points="746.014,-35.8038 736.179,-40.6527 741.017,-35.9797 736.02,-36.1555 736.02,-36.1555 736.02,-36.1555 741.017,-35.9797 735.862,-31.6583 746.014,-35.8038 746.014,-35.8038"/>
 <text text-anchor="middle" x="285.89" y="-95.3" font-family="Times,serif" font-size="14.00">Auto&#45;BCC</text>
 </g>
 <!-- crm_web -->
