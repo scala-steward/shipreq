@@ -36,24 +36,27 @@ object DataGenerators extends Logger {
     def :||(err: => String): Prop = Prop(x) :| (if (x) "" else err)
   }
 
+//  def gen[T](f: Gen.Parameters => R[T]): Gen[T] = new Gen[T] {
+//    def doApply(p: Gen.Parameters) = f(p)
+//  }
+
   /**
    * Same as `Gen.frequency` except if the selected generator cannot provide, it is removed from the freq map and we
    * try again.
    */
-  def frequencyTrialAndError[I, O](gs: (Int, Gen[I])*)(eval: I => O)(test: O => Boolean): Gen[(I, O)] = {
-    Gen(prms => {
-      @tailrec def go(remaining: List[(Int, Gen[I])]): Option[(I, O)] = remaining match {
-        case Nil => None
+  def frequencyTrialAndError[I, O](gs: (Int, Gen[I])*)(eval: I => O)(test: O => Boolean): Gen[(I, O)] =
+    Gen.parameterized[(I, O)](prms => {
+      @tailrec def go(remaining: List[(Int, Gen[I])]): Gen[(I, O)] = remaining match {
+        case Nil => Gen.fail
         case _ =>
           val gen = Gen.frequency(gs: _*)
-          gen(prms).map(i => (i, eval(i))) match {
-            case r@Some((i, o)) if test(o) => r
+          gen.apply(prms).map(i => (i, eval(i))) match {
+            case Some(r@(i, o)) if test(o) => Gen.const(r)
             case _ => go(remaining.filterNot(_._2 eq gen))
           }
       }
       go(gs.toList)
     })
-  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Low level
@@ -81,7 +84,7 @@ object DataGenerators extends Logger {
 
   val whitespace: Gen[String] = " " //Gen.choose(1, 4).flatMap(n => Gen.listOfN(n, whitespaceChar)).map(_.mkString)
 
-  val optionalWhitespace: Gen[String] = nothing | whitespace
+  val optionalWhitespace: Gen[String] = Gen.oneOf(nothing, whitespace)
 
   def containsAlphaNum(str: String): Boolean = str.exists(Character.isLetterOrDigit)
 
@@ -97,14 +100,12 @@ object DataGenerators extends Logger {
 
   def mkStringWithGen(gxs: Gen[List[String]], sep: Gen[String]): Gen[String] =
     gxs.flatMap(xs =>
-      xs.foldRight(Gen.value("")) {
+      xs.foldRight(Gen.const("")) {
         case (a, g) =>
           for {b <- g; s <- sep} yield a + s + b
       })
 
   def mkStringWithWhitespace(gxs: Gen[List[String]]): Gen[String] = mkStringWithGen(gxs, whitespace)
-
-  def maybe[T](g: Gen[T]): Gen[Option[T]] = g.map(Some(_)) | None
 
   // -------------------------------------------------------------------------------------------------------------------
   // Smart Text
@@ -118,7 +119,7 @@ object DataGenerators extends Logger {
 
   val plainText = arbitrary[String] suchThat doesntContainSpecial
 
-  val optionalPlainText = nothing | plainText
+  val optionalPlainText = Gen.oneOf(nothing, plainText)
 
   val arrowStem = Gen.choose(2, 10).map("-" * _)
 
@@ -152,7 +153,7 @@ object DataGenerators extends Logger {
   }
 
   def randomStepLabelForUc(n: UseCaseNumber) = for {
-    prefix <- Gen.value(s"$n.") | s"$n.E."
+    prefix <- Gen.oneOf(Gen.const(s"$n."), s"$n.E.")
     suffix <- randomStepLabelWithoutPrefix
   } yield prefix + suffix
 
@@ -224,7 +225,7 @@ object DataGenerators extends Logger {
     val invalidStep = randomStepLabel suchThat (x => !validSteps.contains(removeAllWhitespace(x)))
     val validStepRef = withBraces(validStep)
 
-    val possibleUcRefTitleSuffix = (nothing | useCaseTitle.map(":" + _))
+    val possibleUcRefTitleSuffix = Gen.oneOf(nothing, useCaseTitle.map(":" + _))
     val validUcRefInner = for {
       prefix <- Gen.oneOf("uc","UC","uc-","UC-")
       n      <- Gen.oneOf(ucsInProject)
@@ -239,18 +240,18 @@ object DataGenerators extends Logger {
       .map("{|" :: "math" :: ":" :: _ :: "|}" :: Nil)
     )
 
-    val textToken = (
+    val textToken = Gen.oneOf(
       mathTex
-        | withBraces(validStep)
-        | withBraces(invalidStep)
-        | withBraces(validUcRefInner)
-        | withBraces(invalidUcRefInner)
-        | withBraces(DeletedRefInner)
+        , withBraces(validStep)
+        , withBraces(invalidStep)
+        , withBraces(validUcRefInner)
+        , withBraces(invalidUcRefInner)
+        , withBraces(DeletedRefInner)
       )
 
-    val textFieldText = Gen.listOf(nothing | plainText | textToken).map(_.mkString)
+    val textFieldText = Gen.listOf(Gen.oneOf(nothing, plainText, textToken)).map(_.mkString)
 
-    val validFlowRef = validStep | validStepRef
+    val validFlowRef = Gen.oneOf(validStep, validStepRef)
     val validFlowRefs = mkStringWithWhitespace(Gen.listOf(validFlowRef))
     val flowToRefClause = flowAndRefs(flowToArrow, validFlowRefs)
     val flowFromRefClause = flowAndRefs(flowFromArrow, validFlowRefs)
@@ -259,8 +260,8 @@ object DataGenerators extends Logger {
     val stepText = for {
       desc <- textFieldText
       clauseSep <- optionalWhitespace
-      flowFrom <- (flowFromRefClause | nothing)
-      flowTo <- (flowToRefClause | nothing)
+      flowFrom <- Gen.oneOf(flowFromRefClause, nothing)
+      flowTo <- Gen.oneOf(flowToRefClause, nothing)
       flowClauseOrder <- arbitrary[Boolean]
       flowClauseSep <- optionalWhitespace
       flow = if (flowClauseOrder) flowFrom + flowClauseSep + flowTo else flowTo + flowClauseSep + flowFrom
@@ -391,7 +392,7 @@ object DataGenerators extends Logger {
       findTransformable(sfv.textmap.keys.toIndexedSeq, eval)(_.getChanges.nonEmpty)
 
     private def fieldMutator(fn: (UseCaseUpdater, UcDataGenCtx) => Gen[Option[UcMutationResult]]): Gen[UseCaseMutator] =
-      Gen(prms => Some(
+      Gen.parameterized(prms => Gen.const(
         UseCaseMutator(uc => {
           val refdep = UcDataGenCtx(uc, List.empty) // TODO Field mutators aren't aware of other UCs
           val g = fn(uc, refdep)
@@ -448,7 +449,7 @@ object DataGenerators extends Logger {
 
   val useCaseMutator: Gen[UseCaseMutator] = {
     import UseCaseMutators._
-    Gen(prms => Some(UseCaseMutator(uc => {
+    Gen.parameterized(prms => Gen.const(UseCaseMutator(uc => {
       val x = frequencyTrialAndError(
         (1, MutateTitle)
         , (30, MutateTextField)

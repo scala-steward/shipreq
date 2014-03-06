@@ -22,19 +22,19 @@ object GenerateUCs /*extends App */{
   }
 
   def generate(count: Int, ucn: UseCaseNumber): ParSeq[UseCase] = {
-    val prms = Gen.Params()
+    val prms = Gen.Parameters.default
     val gen = useCaseGen(fieldList, ucn)
     (1 to count).toList.par.map(_ => nextUseCase(gen, prms))
   }
 
   def generate(count: Int, ucn: UseCaseNumber, seed: Long): List[UseCase] = {
-    val prms = Gen.Params(rng = new java.util.Random(seed))
+    val prms = new Gen.Parameters.Default{ override val rng = new scala.util.Random(seed) }
     val gen = useCaseGen(fieldList, ucn)
     (1 to count).toList.map(_ => nextUseCase(gen, prms))
   }
 
   @tailrec
-  def nextUseCase(gen: Gen[UseCase], prms: Gen.Params, tries: Int = 20): UseCase =
+  def nextUseCase(gen: Gen[UseCase], prms: Gen.Parameters, tries: Int = 20): UseCase =
     gen(prms) match {
       case Some(uc)           => uc
       case None if tries == 0 => throw new RuntimeException("Failed to generate UC.")

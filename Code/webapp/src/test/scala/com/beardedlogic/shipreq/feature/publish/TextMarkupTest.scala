@@ -15,9 +15,9 @@ class TextMarkupTest extends FunSpec with Matchers with PropertyChecks {
 
     val lowAsciiChar: Gen[Char] = Gen.oneOf((33 to 126).map(_.toChar))
     val specialChar: Gen[Char] = Gen.oneOf('\n', '*', ' ')
-    val anyChar: Gen[Char] = lowAsciiChar | specialChar
+    val anyChar: Gen[Char] = Gen.oneOf(lowAsciiChar, specialChar)
     val string: Gen[String] = for (cs <- Gen.listOf(anyChar)) yield cs.mkString
-    val nonEmptyString: Gen[String] = for (cs <- Gen.listOf1(anyChar)) yield cs.mkString
+    val nonEmptyString: Gen[String] = for (cs <- Gen.nonEmptyListOf(anyChar)) yield cs.mkString
 
     val plainText: Gen[PlainText] = nonEmptyString.map(PlainText)
 

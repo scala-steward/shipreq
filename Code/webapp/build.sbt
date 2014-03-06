@@ -27,9 +27,9 @@ libraryDependencies ++= {
     "org.fusesource.scalamd"   %% "scalamd"                % "1.6", // markdown
     "org.apache.commons"        % "commons-lang3"          % "3.1",
     // [test]
-    "org.scalatest"              %% "scalatest"              % "2.0"                 % "test",
+    "org.scalatest"              %% "scalatest"              % "2.1.0"               % "test",
     "org.mockito"                 % "mockito-core"           % "1.9.5"               % "test",
-    "org.scalacheck"             %% "scalacheck"             % "1.10.1"              % "test",
+    "org.scalacheck"             %% "scalacheck"             % "1.11.3"              % "test",
     "net.liftweb"                %% "lift-testkit"           % liftVersion           % "test",
     "org.apache.directory.studio" % "org.apache.commons.io"  % "2.4"                 % "test",
     "com.twitter"                %% "util-eval"              % "6.5.0"               % "test",

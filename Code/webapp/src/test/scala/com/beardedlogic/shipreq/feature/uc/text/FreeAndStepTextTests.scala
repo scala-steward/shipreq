@@ -810,7 +810,7 @@ abstract class TextProps[T <: ParsedText](T: Tester[T]) {
        | InvalidUseCaseRef(_, _) => t
   }
 
-  implicit def arbState: Arbitrary[State] = Arbitrary(freshlyEnteredText | textAfterRefsInvalidated)
+  implicit def arbState: Arbitrary[State] = Arbitrary(Gen.oneOf(freshlyEnteredText, textAfterRefsInvalidated))
 
   def equal(a: T, b: T): Prop
 
