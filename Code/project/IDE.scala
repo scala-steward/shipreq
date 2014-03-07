@@ -31,12 +31,7 @@ object IdeSettings {
   */
 
   def apply(module: Module): Project => Project = module match {
-    case Root =>
-      _.configure(intellijSettings)
-    case Webapp =>
-      // _.settings(ideaExcludeFolders := excludes.webapp)
-      identity
+    case Root => _.configure(intellijSettings)
+    case _    => identity
   }
-
-  // def apply(module: Module): Project => Project = identity
 }

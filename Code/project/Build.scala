@@ -9,13 +9,14 @@ object ShipReq extends Build {
   // Declare modules
   lazy val root = Root.project
   lazy val webapp = Webapp.project
+  lazy val backendJobs = BackendJobs.project
 
   // ===================================================================================================================
   object Root extends Module {
 
     def project = Project("root", file("."))
       .configure(Common.settings, IdeSettings(Root))
-      .aggregate(webapp)
+      .aggregate(webapp, backendJobs)
   }
 
   // ===================================================================================================================
@@ -73,4 +74,16 @@ object ShipReq extends Build {
         unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
       )
     }
+
+  // ===================================================================================================================
+  object BackendJobs extends Module {
+
+    val dir = "backjob"
+
+    def project = Project(dir, file(dir))
+      .configure(
+        Common.settings,
+        IdeSettings(BackendJobs)
+      )
+  }
 }

@@ -1,0 +1,10 @@
+name := "backend_jobs"
+
+libraryDependencies ++= {
+  val akkaVersion = "2.3.0"
+  Seq(
+    "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+//    "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
+    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test"
+  )
+}
