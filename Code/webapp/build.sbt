@@ -13,16 +13,12 @@ libraryDependencies ++= {
     // [main]
     "net.liftweb"              %% "lift-webkit"            % liftVersion,
     "org.scalaz"               %% "scalaz-core"            % "7.1.0-M5",
-    "ch.qos.logback"            % "logback-classic"        % "1.0.13",
-    "com.typesafe.slick"       %% "slick"                  % "1.0.1",
-    "org.postgresql"            % "postgresql"             % "9.3-1101-jdbc41",
     "com.googlecode.flyway"     % "flyway-core"            % "2.2.1",
     "org.apache.shiro"          % "shiro-core"             % shiroVersion,
     "org.apache.shiro"          % "shiro-web"              % shiroVersion,
     "org.slf4j"                 % "jcl-over-slf4j"         % "1.7.5", // required by Shiro (in place of commons-logging)
-    "com.jolbox"                % "bonecp"                 % "0.8.0.RELEASE",
-    "com.google.guava"          % "guava"                  % "15.0",
-    "com.google.code.findbugs"  % "jsr305"                 % "2.0.2", // required by Guava
+//    "com.google.guava"          % "guava"                  % "15.0", // pulled in by common/BoneCP
+//    "com.google.code.findbugs"  % "jsr305"                 % "2.0.2", // required by Guava
     "org.fusesource.scalate"   %% "scalate-core"           % "1.6.1",
     "org.fusesource.scalamd"   %% "scalamd"                % "1.6", // markdown
     "org.apache.commons"        % "commons-lang3"          % "3.1",

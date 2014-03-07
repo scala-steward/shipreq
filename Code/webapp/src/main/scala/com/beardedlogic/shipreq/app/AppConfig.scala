@@ -3,7 +3,7 @@ package com.beardedlogic.shipreq.app
 import net.liftweb.util.Helpers._
 import org.joda.time.Period
 import com.beardedlogic.shipreq.util.ExternalValueReader._
-import com.beardedlogic.shipreq.util.RuntimePropReaders._
+import com.beardedlogic.shipreq.util.PropsRetrievers._
 import com.beardedlogic.shipreq.util.ExpireAfter
 
 final object AppConfig {
@@ -60,7 +60,7 @@ final object AppConfig {
    * (Registration tokens already issued will still be accepted.)
    */
   var AllowRegister: () => Boolean = { // non-volatile var allowed because modification will only occur in test-mode.
-    val v = get[Boolean]("app.allow.register") openOr true
+    val v = tryNeed("app.allow.register", true)
     () => v
   }
 

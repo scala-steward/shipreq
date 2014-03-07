@@ -10,6 +10,7 @@ import lib.Types._
 import feature.UcFilter
 import security.PasswordAndSalt
 import SqlHelpers._
+import SqlHelpers2._
 import StaticQuery.{query, queryNA, update, updateNA}
 
 /**

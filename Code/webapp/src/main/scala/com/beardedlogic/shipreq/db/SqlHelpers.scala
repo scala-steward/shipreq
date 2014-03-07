@@ -3,26 +3,19 @@ package db
 
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import org.postgresql.util.PGobject
 import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
 import lib.Types._
 import feature.UcFilter
+import SqlHelpers._
 
-object SqlHelpers {
+object SqlHelpers2 {
 
   @inline implicit def shortToFieldKeyType(ordinal: Short): FieldKeyType = FieldKeyType(ordinal)
 
   implicit def TimestampToDateTime(t: Timestamp): DateTime = new DateTime(t)
   implicit val GR_DateTime = GetResult(r => TimestampToDateTime(r.nextTimestamp))
   implicit val GR_DateTimeOption = GetResult(r => r.nextTimestampOption.map(TimestampToDateTime))
-
-  @inline private def pgObject(typ: String, value: String): PGobject = {
-    val o = new PGobject()
-    o.setType(typ)
-    o.setValue(value)
-    o
-  }
 
   implicit class PositionedResultExt(val r: PositionedResult) extends AnyVal {
     def nextId[T <: JLong @@ TypeTag[JLong]](): T = r.nextObject.asInstanceOf[T]
@@ -112,15 +105,5 @@ object SqlHelpers {
   implicit val GR_FieldKeyType = GetResult(r => FieldKeyType(r.nextShort))
   implicit val SP_FieldKeyType: SetParameter[FieldKeyType] = new SetParameter[FieldKeyType] {
     def apply(v: FieldKeyType, pp: PositionedParameters): Unit = pp.setShort(v.id)
-  }
-
-  private[this] val LeadingWhitespace = """[\r\n]+\s*""".r
-
-  implicit class SqlStringExt(val s: String) extends AnyVal {
-    def sql = LeadingWhitespace.replaceAllIn(s, " ").trim
-    def inTable(table: String) = {
-      val p = table + "."
-      """(^|,)\s*""".r.replaceAllIn(s, _.group(0)+p)
-    }
   }
 }
