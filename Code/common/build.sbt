@@ -1,7 +1,5 @@
 name := "common"
 
-version := "1.0.0-SNAPSHOT"
-
 libraryDependencies ++= {
   Seq(
     "org.postgresql"            % "postgresql"             % "9.3-1101-jdbc41",

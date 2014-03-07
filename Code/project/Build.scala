@@ -1,7 +1,6 @@
 import sbt._
 import Keys._
 import Common.Functions._
-import Common.Values._
 
 object ShipReq extends Build {
 
@@ -39,10 +38,6 @@ object ShipReq extends Build {
 
     val dir = "webapp"
 
-    def compilerFlags = debugOrRelease(
-      _.settings(scalacOptions ++= Seq("-Xcheckinit")),
-      nonTestCompilerFlags("-optimise", /*"-Yinline-warnings",*/ "-Xelide-below", "OFF"))
-
     def warSettings = (p: Project) => p.settings(
       // Don't allow WEB-INF/_scalate into the WAR
       excludeFilter in packageWar ~= { _ ||
@@ -53,9 +48,6 @@ object ShipReq extends Build {
     def testSettings = (p: Project) => p.settings(
       // Put webapp on test classpath so templates load
       unmanagedResourceDirectories in Test <+= baseDirectory { _ / "src/main/webapp" },
-      // Prevent src/test/java appearing in .classpath
-      unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_)),
-      scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
       parallelExecution in Test := false
     )
 
@@ -72,19 +64,14 @@ object ShipReq extends Build {
         Common.settings,
         ideSettings,
         Common.generateBuildPropFile(),
-        compilerFlags,
         warSettings,
         testSettings,
         integrationTestSettings
       )
       .settings(webSettings: _*)
       .settings(
-        version := s"${fmtTimeNow("yyyyMMdd")}-${gitRevisionShort}${snapshotSuffix}",
-        isSnapshot := snapshotSuffix.nonEmpty,
         // Ensure templates can be loaded from the console
-        fullClasspath in console in Compile += file("src/main/webapp"),
-        // Prevent src/main/java appearing in .classpath
-        unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
+        fullClasspath in console in Compile += file("src/main/webapp")
       )
       .dependsOn(common)
     }
@@ -97,5 +84,8 @@ object ShipReq extends Build {
     def project = Project(dir, file(dir))
       .configure(Common.settings, ideSettings)
       .dependsOn(common)
+      .settings(
+        scalacOptions in Compile ~= removeValues("-optimise") // see Akka docs
+      )
   }
 }

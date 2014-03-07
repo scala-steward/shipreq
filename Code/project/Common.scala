@@ -28,12 +28,26 @@ object Common {
     "-Yno-generic-signatures",
     "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
 
+  def testCompilerFlags = Seq("-language:reflectiveCalls")
+
+  def debugAndReleaseCompilerFlags = debugOrRelease(
+    _.settings(scalacOptions ++= Seq("-Xcheckinit")),
+    nonTestCompilerFlags("-optimise", /*"-Yinline-warnings",*/ "-Xelide-below", "OFF"))
+
   lazy val settings = (p: Project) => p
     .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*) // Dependency graph
     .settings(
       clearScreenTask := { println("\033[2J\033[;H") },
-      scalacOptions ++= compilerFlags
+      version := s"${fmtTimeNow("yyyyMMdd")}-${gitRevisionShort}${snapshotSuffix}",
+      isSnapshot := snapshotSuffix.nonEmpty,
+      scalacOptions ++= compilerFlags,
+      scalacOptions in Test ++= testCompilerFlags,
+      // Prevent src/main/java appearing in .classpath
+      unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
+      // Prevent src/test/java appearing in .classpath
+      unmanagedSourceDirectories in Test <<= (scalaSource in Test)(Seq(_))
     )
+    .configure(debugAndReleaseCompilerFlags)
 
   // ===================================================================================================================
   object Values {
@@ -41,7 +55,7 @@ object Common {
     lazy val releaseMode: Boolean = {
       val mode = System.getProperty("MODE", "").trim
       val r = mode.compareToIgnoreCase("release") == 0
-      if (r) println("Release Mode.")
+      if (r) println("[mode] \033[1;31mRelease Mode.\033[0m")
       r
     }
 
@@ -65,7 +79,9 @@ object Common {
     def nonTestCompilerFlags(flags: String*): Project => Project =
       _.settings(
         scalacOptions in Compile ++= flags,
-        scalacOptions in Test ~= (_ filterNot (flags contains _))
+        scalacOptions in Test ~= removeValues(flags: _*)
       )
+
+    def removeValues[T](values: T*): Seq[T] => Seq[T] = (_ filterNot (values contains _))
   }
 }
