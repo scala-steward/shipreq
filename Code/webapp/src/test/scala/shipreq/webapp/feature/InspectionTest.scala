@@ -10,7 +10,7 @@ import uc.text.FreeTextTerms.MathTexTerm
 
 class InspectionTest extends FunSuite with TestData {
 
-  val imports = "import scalaz.{Name,Need,Value}, shipreq.webapp, shipreq.db._, shipreq.lib.Types._, shipreq.feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, shipreq.util._;"
+  val imports = "import scalaz.{Name,Need,Value}, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._;"
 
   def eval[T](code: String): T = new Eval(None).apply(imports + code)
 
