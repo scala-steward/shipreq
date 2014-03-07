@@ -1,5 +1,7 @@
 name := "backend_jobs"
 
+version := "1.0.0-SNAPSHOT"
+
 libraryDependencies ++= {
   val akkaVersion = "2.3.0"
   Seq(

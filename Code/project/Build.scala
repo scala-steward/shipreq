@@ -4,19 +4,32 @@ import Common.Functions._
 import Common.Values._
 
 object ShipReq extends Build {
-  sealed trait Module
 
   // Declare modules
   lazy val root = Root.project
+  lazy val common = CommonModule.project
   lazy val webapp = Webapp.project
   lazy val backendJobs = BackendJobs.project
+
+  sealed trait Module {
+    def ideSettings = IdeSettings(this)
+  }
 
   // ===================================================================================================================
   object Root extends Module {
 
     def project = Project("root", file("."))
-      .configure(Common.settings, IdeSettings(Root))
-      .aggregate(webapp, backendJobs)
+      .configure(Common.settings, ideSettings)
+      .aggregate(common, webapp, backendJobs)
+  }
+
+  // ===================================================================================================================
+  object CommonModule extends Module {
+
+    val dir = "common"
+
+    def project = Project(dir, file(dir))
+      .configure(Common.settings, ideSettings)
   }
 
   // ===================================================================================================================
@@ -57,7 +70,7 @@ object ShipReq extends Build {
     def project = Project("webapp", file(dir))
       .configure(
         Common.settings,
-        IdeSettings(Webapp),
+        ideSettings,
         Common.generateBuildPropFile(),
         compilerFlags,
         warSettings,
@@ -73,6 +86,7 @@ object ShipReq extends Build {
         // Prevent src/main/java appearing in .classpath
         unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
       )
+      .dependsOn(common)
     }
 
   // ===================================================================================================================
@@ -81,9 +95,7 @@ object ShipReq extends Build {
     val dir = "backjob"
 
     def project = Project(dir, file(dir))
-      .configure(
-        Common.settings,
-        IdeSettings(BackendJobs)
-      )
+      .configure(Common.settings, ideSettings)
+      .dependsOn(common)
   }
 }
