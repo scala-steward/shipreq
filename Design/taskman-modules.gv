@@ -1,0 +1,63 @@
+digraph G {
+compound=true
+labelloc=t
+node[style=filled]
+edge[color="#222222"]
+label="Taskman dist gets everything visible."
+
+subgraph cluster_abs {
+  label="Abstraction & logic. 100% pure FP." style=filled fillcolor="#eeeeee" fontcolor="#007000" node[fillcolor="#bbffbb"]
+  dbv [label="ShipReq\ndata interface"]
+  smtp [label="SMTP\ninterface"]
+  mc [label="MailChimp\ninterface"]
+  crm [label="Insightly\ninterface"]
+  actors
+  bl [label="Business logic"]
+  tl [label="Taskman logic"]
+}
+
+subgraph cluster_real {
+  label="Real implementations. Wiring." style=filled fillcolor="#eeeeee" fontcolor=red node[fillcolor="#ffbbbb"]
+  _dbv [label="ShipReq\nViews"]
+  _smtp [label="SMTP"]
+  _mc [label="MailChimp\nAPI"]
+  _crm [label="Insightly\nAPI"]
+  akka
+}
+
+subgraph cluster_public {
+  label="Webapp gets this." style=filled fillcolor="#cccccc"
+
+  subgraph cluster_api {
+    label="API" style=filled fillcolor="#eeeeee" fontcolor="#000080" node[fillcolor="#bbbbff"]
+    bla [label="Business logic API\n(event/job defns)"]
+    tla [label="Taskman\nsubmission API"]
+    ser [label="Serialisation" fillcolor="#bbffbb"]
+    workq [label="Work Queue\ninterface" fillcolor="#bbffbb"]
+  }
+
+  subgraph cluster_realp {
+    label="Real implementations for API" style=filled fillcolor="#eeeeee" fontcolor=red node[fillcolor="#ffbbbb"]
+    _workq [label="Work Queue\nDB objects"]
+    json4s
+  }
+}
+
+
+dbv -> _dbv
+workq -> _workq
+smtp -> _smtp
+mc -> _mc
+crm -> _crm
+ser -> json4s
+actors -> akka
+
+tl -> actors
+tl -> workq,ser
+bl -> dbv,smtp,mc,crm,actors
+bl -> tl [constraint=false]
+
+bla -> bl
+tla -> ser,workq
+
+}
