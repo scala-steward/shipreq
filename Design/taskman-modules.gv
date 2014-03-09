@@ -3,7 +3,7 @@ compound=true
 labelloc=t
 node[style=filled]
 edge[color="#222222"]
-label="Taskman dist gets everything visible."
+label="Taskman dist gets everything visible.\n(A→B means B knows about A)"
 
 subgraph cluster_abs {
   label="Abstraction & logic. 100% pure FP." style=filled fillcolor="#eeeeee" fontcolor="#007000" node[fillcolor="#bbffbb"]
@@ -13,7 +13,7 @@ subgraph cluster_abs {
   crm [label="Insightly\ninterface"]
   actors
   bl [label="Business logic"]
-  tl [label="Taskman logic"]
+  tl [label="Taskman\nprocessing logic"]
 }
 
 subgraph cluster_real {
@@ -32,6 +32,7 @@ subgraph cluster_public {
     label="API" style=filled fillcolor="#eeeeee" fontcolor="#000080" node[fillcolor="#bbbbff"]
     bla [label="Business logic API\n(event/job defns)"]
     tla [label="Taskman\nsubmission API"]
+    tsl [label="Taskman\nsubmission logic" fillcolor="#bbffbb"]
     ser [label="Serialisation" fillcolor="#bbffbb"]
     workq [label="Work Queue\ninterface" fillcolor="#bbffbb"]
   }
@@ -52,12 +53,15 @@ crm -> _crm
 ser -> json4s
 actors -> akka
 
-tl -> actors
-tl -> workq,ser
-bl -> dbv,smtp,mc,crm,actors
-bl -> tl [constraint=false]
+tl -> actors [dir=back]
+tl -> workq,ser [dir=back]
+bl -> dbv,smtp,mc,crm,actors [dir=back]
+tl -> bl [constraint=false]
 
-bla -> bl
-tla -> ser,workq
+tla -> bla [constraint=false]
+tla,bla -> bl
+tla -> tsl
+tsl -> ser,workq [dir=back]
+// tsl -> tl [dir=back] // weird bug, draws twice if not backwards
 
 }
