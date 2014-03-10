@@ -7,7 +7,7 @@ import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
 import lib.Types._
 import feature.UcFilter
-import SqlHelpers._
+import shipreq.webapp.db.SqlHelpers._
 
 object SqlHelpers2 {
 

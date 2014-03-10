@@ -1,4 +1,4 @@
-package com.beardedlogic.shipreq.util
+package shipreq.webapp.util
 
 /**
  * Reads values from some kind of external source.

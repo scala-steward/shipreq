@@ -1,4 +1,4 @@
-package com.beardedlogic.shipreq.db
+package shipreq.webapp.db
 
 import org.postgresql.util.PGobject
 

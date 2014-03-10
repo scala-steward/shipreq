@@ -3,7 +3,7 @@ package shipreq.webapp.app
 import net.liftweb.util.Helpers._
 import org.joda.time.Period
 import shipreq.webapp.util.ExternalValueReader._
-import shipreq.webapp.util.RuntimePropReaders._
+import shipreq.webapp.util.PropsRetrievers._
 import shipreq.webapp.util.ExpireAfter
 
 final object AppConfig {
