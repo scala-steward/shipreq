@@ -12,7 +12,7 @@ import field.{StepFieldValue, StepField}
 import text.StepText
 import test.NodeUtils._
 import test.{TestData, TestHelpers}
-import util.{BiMap, BiMapBuilder}
+import shipreq.base.util.{BiMap, BiMapBuilder}
 import step.{StepNode, StepTree}
 
 class StepFieldPersistenceTest extends FunSpec with TestHelpers with TestData {

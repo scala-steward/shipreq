@@ -1,8 +1,9 @@
-package shipreq.webapp.util
+package shipreq.base.util
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
+// TODO move this into base
 class BiMapTest extends FunSuite with Matchers {
 
   test("Adding & retrieving") {

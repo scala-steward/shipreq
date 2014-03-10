@@ -1,4 +1,4 @@
-package shipreq.webapp.util
+package shipreq.base.util
 
 /**
  * Reads values from some kind of external source.

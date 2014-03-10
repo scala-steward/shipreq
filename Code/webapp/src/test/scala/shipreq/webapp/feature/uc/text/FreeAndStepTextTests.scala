@@ -11,7 +11,7 @@ import feature.uc.change._
 import lib.Misc
 import lib.Types._
 import feature.uc.{CachedUseCaseRelations, UcParsingCtx}
-import util._
+import shipreq.base.util.BiMap
 import test.{TestHelpers2, TestHelpers}
 import Changes._
 import ParsingConfig._

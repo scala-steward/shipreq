@@ -1,5 +1,6 @@
 package shipreq.webapp.lib
 
+import shipreq.base.util.BiMap
 import shipreq.webapp.db._
 import shipreq.webapp.feature.uc.change.{Change, ChangeResultF}
 import shipreq.webapp.feature.uc.field.Field
@@ -7,7 +8,7 @@ import shipreq.webapp.feature.uc.UseCase
 import shipreq.webapp.feature.uc.persist.UseCaseSaveCheckpoint
 import shipreq.webapp.feature.validation.VFailure
 import shipreq.webapp.feature.{ExternalId, Inspection}
-import shipreq.webapp.util.{AppliedLens, BiMap}
+import shipreq.webapp.util.AppliedLens
 import java.lang.{Long => JJLong, Short => JJShort}
 import net.liftweb.common.Box
 import net.liftweb.http.js.{JsCmd, JsCmds}

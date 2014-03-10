@@ -12,7 +12,7 @@ import Q.interpolation
 
 import app.{Defaults, DI}
 import db.{AdminDao, UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
-import db.SqlHelpers2.SP_ProjectId
+import db.SqlHelpers.SP_ProjectId
 import lib.Types._
 import lib.Locks
 import feature.UcFilters

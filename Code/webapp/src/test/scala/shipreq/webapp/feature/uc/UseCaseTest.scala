@@ -12,7 +12,7 @@ import step.{StepTree, StepNode}
 import test.{TestData, TestHelpers}
 import text.{StepTextUpdater, FlowToClause, FlowFromClause, StepText, FreeText}
 import text.FreeTextTerms._
-import util.BiMap
+import shipreq.base.util.BiMap
 import Lenses._
 import UseCaseFns._
 

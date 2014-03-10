@@ -1,4 +1,4 @@
-package shipreq.webapp.db
+package shipreq.base.db
 
 import org.postgresql.util.PGobject
 

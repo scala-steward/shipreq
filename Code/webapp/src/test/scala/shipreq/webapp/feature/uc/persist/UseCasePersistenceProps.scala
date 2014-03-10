@@ -39,7 +39,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
   }
 
   test("Caught Failure #1") {
-    import scalaz.Name, db._, field._, text._, util._, FreeTextTerms._
+    import scalaz.Name, shipreq.base.util.BiMap, db._, field._, text._, FreeTextTerms._
 
     def testSave(uc: UseCase, projectId: ProjectId, prev: Option[UseCaseSaveCheckpoint] = None) = {
       val cpO = save(uc, prev, projectId)

@@ -41,6 +41,6 @@ libraryDependencies ++= {
 }
 
 initialCommands += """
-  import scalaz._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
+  import scalaz._, shipreq.base.util._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
   def initlift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}
 """

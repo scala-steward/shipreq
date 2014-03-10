@@ -13,8 +13,8 @@ import uc.UseCase
 import uc.field._
 import uc.step._
 import uc.text._
-import util.BiMap
 import FreeTextTerms._
+import shipreq.base.util.BiMap
 
 /**
  * Typeclasses of `scalaz.Show` that returns code that can be pasted back into Scala.

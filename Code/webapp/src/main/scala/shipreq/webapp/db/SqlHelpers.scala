@@ -7,9 +7,9 @@ import scala.slick.jdbc.{SetParameter, GetResult}
 import scala.slick.session.{PositionedParameters, PositionedResult}
 import lib.Types._
 import feature.UcFilter
-import shipreq.webapp.db.SqlHelpers._
+import shipreq.base.db.SqlHelpers._
 
-object SqlHelpers2 {
+object SqlHelpers {
 
   @inline implicit def shortToFieldKeyType(ordinal: Short): FieldKeyType = FieldKeyType(ordinal)
 

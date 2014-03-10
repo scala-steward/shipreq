@@ -5,13 +5,14 @@ package persist
 import net.liftweb.util.TimeHelpers.logTime
 import scalaz.{Functor, Foldable}
 
+import shipreq.base.util.BiMap
 import app.Defaults
 import db._
 import field._
 import lib.Locks.{SingleUseCase, UseCaseNumbers}
 import lib.ScalazSubset._
 import lib.Types._
-import util.{PreparedLock, BiMap, Lock}
+import util.{PreparedLock, Lock}
 import UseCaseFns._
 
 case class UseCaseSaveCheckpoint(

@@ -24,6 +24,7 @@ import scalaz.{Lens, NonEmptyList, Value}
 import scala.annotation.tailrec
 import scala.util.Random
 
+import shipreq.base.util._
 import db._
 import feature.uc._
 import feature.uc.change._

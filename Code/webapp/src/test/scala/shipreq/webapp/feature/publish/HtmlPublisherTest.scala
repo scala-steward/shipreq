@@ -1,6 +1,7 @@
 package shipreq.webapp.feature.publish
 
-import scalaz._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
+import shipreq.base.util.BiMap
+import scalaz._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, FunSpec}
 import net.liftweb.common.Logger

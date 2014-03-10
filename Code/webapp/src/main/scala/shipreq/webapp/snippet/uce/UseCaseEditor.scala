@@ -46,7 +46,8 @@ object UseCaseEditorDemo {
   @inline private def ucs3 = new UseCaseSummary((-3).tag, (3:Short).tag, "Update Profile", Misc.currentTimeAsIso8601Str)
 
   def useCase = {
-    import feature.uc.step._, feature.uc.text._, FreeTextTerms._, util.BiMap, scalaz.Name
+    import shipreq.base.util.BiMap
+    import feature.uc.step._, feature.uc.text._, FreeTextTerms._, scalaz.Name
     import Defaults._
 
     val h = UseCaseHeader("Purchase Things".tag)

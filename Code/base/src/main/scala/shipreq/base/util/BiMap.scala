@@ -1,4 +1,4 @@
-package shipreq.webapp.util
+package shipreq.base.util
 
 object BiMap {
 

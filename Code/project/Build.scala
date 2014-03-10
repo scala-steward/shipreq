@@ -6,7 +6,7 @@ object ShipReq extends Build {
 
   // Declare modules
   lazy val root = Root.project
-  lazy val common = CommonModule.project
+  lazy val base = Base.project
   lazy val webapp = Webapp.project
   lazy val taskman = Taskman.project
 
@@ -19,13 +19,13 @@ object ShipReq extends Build {
 
     def project = Project("root", file("."))
       .configure(Common.settings, ideSettings)
-      .aggregate(common, webapp, taskman)
+      .aggregate(webapp, taskman)
   }
 
   // ===================================================================================================================
-  object CommonModule extends Module {
+  object Base extends Module {
 
-    val dir = "common"
+    val dir = "base"
 
     def project = Project(dir, file(dir))
       .configure(Common.settings, ideSettings)
@@ -73,7 +73,7 @@ object ShipReq extends Build {
         // Ensure templates can be loaded from the console
         fullClasspath in console in Compile += file("src/main/webapp")
       )
-      .dependsOn(common)
+      .dependsOn(base)
     }
 
   // ===================================================================================================================
@@ -83,7 +83,7 @@ object ShipReq extends Build {
 
     def project = Project(dir, file(dir))
       .configure(Common.settings, ideSettings)
-      .dependsOn(common)
+      .dependsOn(base)
       .settings(
         scalacOptions in Compile ~= removeValues("-optimise") // see Akka docs
       )

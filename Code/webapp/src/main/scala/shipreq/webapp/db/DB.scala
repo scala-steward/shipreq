@@ -5,6 +5,7 @@ import com.googlecode.flyway.core.util.logging.{Log, LogCreator, LogFactory}
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
 import scala.slick.session.Session
+import shipreq.base.db.BaseDbConnection
 
 /**
  * Database connectivity.

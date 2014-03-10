@@ -5,12 +5,13 @@ import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery, SetParameter, GetResult}
 import slick.session.{PositionedResult, PositionedParameters}
 import scalaz.NonEmptyList
+
+import shipreq.base.db.SqlHelpers._
+import shipreq.webapp.db.SqlHelpers._
 import lib.ScalazSubset._
 import lib.Types._
 import feature.UcFilter
 import security.PasswordAndSalt
-import SqlHelpers._
-import SqlHelpers2._
 import StaticQuery.{query, queryNA, update, updateNA}
 
 /**

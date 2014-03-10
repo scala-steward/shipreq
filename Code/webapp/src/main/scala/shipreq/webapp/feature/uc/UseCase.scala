@@ -3,11 +3,12 @@ package feature.uc
 
 import scala.reflect.ClassTag
 import scalaz.Need
+
+import shipreq.base.util.BiMap
 import db.UseCaseHeader
 import lib.Types._
 import lib.Misc.isCovar
 import feature.Inspection
-import util.BiMap
 import field._
 import text.FreeText
 import step.StepTree

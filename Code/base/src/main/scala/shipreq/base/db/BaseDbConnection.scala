@@ -1,4 +1,4 @@
-package shipreq.webapp
+package shipreq.base
 package db
 
 import ch.qos.logback.classic.Level

@@ -4,7 +4,7 @@ import org.scalatest.FunSpec
 import scala.slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
 import org.postgresql.util.PSQLException
-import shipreq.webapp.db.SqlHelpers2.SP_ShareId
+import shipreq.webapp.db.SqlHelpers.SP_ShareId
 import shipreq.webapp.test.TestDatabaseSupport
 
 class DbTriggerTest extends FunSpec with TestDatabaseSupport {

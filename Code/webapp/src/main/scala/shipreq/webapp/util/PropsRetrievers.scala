@@ -2,7 +2,7 @@ package shipreq.webapp.util
 
 import net.liftweb.util.Props
 import net.liftweb.common.{Empty, Box, Full, Failure}
-import ExternalValueReader._
+import shipreq.base.util.ExternalValueReader.Retriever
 
 object PropsRetrievers {
   private implicit def unbox[T](b: Box[T]): Either[Option[String], T] = b match {
