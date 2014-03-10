@@ -19,6 +19,7 @@ object ShipReq extends Build {
 
     def project = Project("root", file("."))
       .configure(Common.settings, ideSettings)
+      .settings(target <<= baseDirectory(_ / ".target"))
       .aggregate(base, webapp, taskman)
   }
 
