@@ -106,7 +106,7 @@ object ShipReq extends Build {
         "org.scala-lang"            % "scala-reflect"          % ScalaVersion,
         "org.scala-lang"            % "scalap"                 % ScalaVersion,
         "net.liftweb"              %% "lift-webkit"            % liftVersion,
-        Common.Deps.Scalaz,
+        Common.Deps.ScalazCore,
         "org.apache.shiro"          % "shiro-core"             % shiroVersion,
         "org.apache.shiro"          % "shiro-web"              % shiroVersion,
         "org.slf4j"                 % "jcl-over-slf4j"         % "1.7.5", // required by Shiro (in place of commons-logging)
@@ -162,6 +162,12 @@ object ShipReq extends Build {
     // ----------------------------------------------------
     object Logic extends Module {
       val dir = "taskman-api-logic"
+
+      override def deps = Seq(
+        Common.Deps.ScalazCore,
+        Common.Deps.ScalazEffect
+      )
+
       override def project = typicalProject
         .dependsOn(base)
     }
