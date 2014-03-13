@@ -34,13 +34,11 @@ subgraph cluster_public {
     bla [label="Business logic API\n(event/job defns)"]
     tla [label="Taskman\nsubmission API"]
     tsl [label="Taskman\nsubmission logic" fillcolor="#bbffbb"]
-    ser [label="Serialisation" fillcolor="#bbffbb"]
-    workq [label="Work Queue\ninterface" fillcolor="#bbffbb"]
   }
 
   subgraph cluster_realp {
     label="Real implementations for API" style=filled fillcolor="#eeeeee" fontcolor=red node[fillcolor="#ffbbbb"]
-    _workq [label="Work Queue\nDB objects"]
+    _tsl [label="Taskman\nsubmission impl"]
     json4s
     postgres [label="Slick\nBoneCP\nPostgreSQL"]
   }
@@ -48,25 +46,24 @@ subgraph cluster_public {
 
 
 dbv -> _dbv
-workq -> _workq
 smtp -> _smtp
 mc -> _mc
 crm -> _crm
-ser -> json4s
 actors -> akka
 
 tl -> actors [dir=back]
-tl -> workq,ser [dir=back]
 bl -> dbv,smtp,mc,crm,actors [dir=back]
-tl -> bl [constraint=false]
+tl -> bl [minlen=2 constraint=false]
 
-tla -> bla [constraint=false]
+tsl -> _tsl
+// bla -> _tsl
+tla -> bla [minlen=2 constraint=false]
 tla,bla -> bl
 tla -> tsl
-tsl -> ser,workq [dir=back]
-// tsl -> tl [dir=back] // weird bug, draws twice if not backwards
+tsl -> tl
 
 _mc,_crm -> http
-_workq,_dbv -> postgres
+_tsl,_dbv -> postgres [dir=back]
+_tsl -> json4s [dir=back]
 
 }
