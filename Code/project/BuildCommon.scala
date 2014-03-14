@@ -47,7 +47,8 @@ object Common {
       javacOptions ++= javacFlags,
       scalaVersion := Deps.Scala.version,
       scalacOptions ++= scalacFlags,
-      scalacOptions in Test ++= scalacTestFlags
+      scalacOptions in Test ++= scalacTestFlags,
+      cleanKeepFiles ++= Seq("resolution-cache", "streams").map(target.value / _) // stop those constant dep updates
     )
     .configure(debugAndReleaseCompilerFlags)
 
