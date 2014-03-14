@@ -11,10 +11,14 @@ object ShipReq extends Build {
   lazy val base            = Base.project
   lazy val baseDb          = Base.Db.project
   lazy val webapp          = Webapp.project
-  lazy val taskmanApiLogic = TaskmanApi.Logic.project
-  lazy val taskmanApi      = TaskmanApi.project
-  lazy val taskmanLogic    = Taskman.Logic.project
-  lazy val taskman         = Taskman.project
+
+  lazy val taskmanApiLogic    = Taskman.Api.Logic.project
+  lazy val taskmanApiImpl     = Taskman.Api.Impl.project
+  lazy val taskmanServerLogic = Taskman.Server.Logic.project
+  lazy val taskmanServerImpl  = Taskman.Server.Impl.project
+  lazy val taskmanApi         = Taskman.Api.project
+  lazy val taskmanServer      = Taskman.Server.project
+  lazy val taskman            = Taskman.project
 
   sealed trait Module {
     def project: Project
@@ -33,6 +37,9 @@ object ShipReq extends Build {
 
     protected def typicalProject: Project =
       Project(dir, file(dir)).configure(commonSettings).settings(name := dir)
+
+    protected def umbrellaOf(ps: ProjectReference*): Project =
+      typicalProject.aggregate(ps: _*).dependsOn(ps.map{p => p: ClasspathDep[ProjectReference]}: _*)
   }
 
   // ===================================================================================================================
@@ -40,7 +47,7 @@ object ShipReq extends Build {
     def dir = "."
     override def project = Project("root", file(dir))
       .configure(commonSettings, Common.useHiddenTargetDir)
-      .aggregate(base, baseDb, webapp, taskman, taskmanLogic, taskmanApi, taskmanApiLogic)
+      .aggregate(base, baseDb, webapp, taskman)
   }
 
   // ===================================================================================================================
@@ -120,46 +127,64 @@ object ShipReq extends Build {
     }
 
   // ===================================================================================================================
-  object TaskmanApi extends Module {
-    val dir = "taskman-api"
-    override def project = typicalProject
-      .dependsOn(taskmanApiLogic % "compile->compile;test->test-lib")
-
-    override def deps =
-      Json4s.jackson ++ testScope(specs2)
-
-    // ----------------------------------------------------
-    object Logic extends Module with ExportsTestLib {
-      val dir = "taskman-api-logic"
-
-      override def deps =
-        Scalaz.core ++ Scalaz.effect ++
-        depScope(TestLib)(scalaCheck ++ Scala.reflect) ++ testScope(specs2)
-
-      override def project = typicalProject
-        .dependsOn(base)
-        .configure(testLibSettings)
-    }
-  }
-
-  // ===================================================================================================================
   object Taskman extends Module {
     val dir = "taskman"
+    override def project = umbrellaOf(taskmanApi, taskmanServer)
 
-    override def deps =
-      Akka.actor ++ testScope(Akka.testkit)
+    // API --------------------------------------------------
+    object Api extends Module {
+      val dir = "taskman-api"
+      override def project = umbrellaOf(taskmanApiLogic, taskmanApiImpl)
 
-    override def project = typicalProject
-      .dependsOn(taskmanLogic, taskmanApi, baseDb)
-      .settings(
-        scalacOptions in Compile ~= removeValues("-optimise") // see Akka docs
-      )
+      // API: Logic -----------------------------------------
+      object Logic extends Module with ExportsTestLib {
+        val dir = "taskman-api-logic"
 
-    // ----------------------------------------------------
-    object Logic extends Module {
-      val dir = "taskman-logic"
-      override def project = typicalProject
-        .dependsOn(taskmanApiLogic)
+        override def deps =
+          Scalaz.core ++ Scalaz.effect ++
+          depScope(TestLib)(scalaCheck ++ Scala.reflect) ++ testScope(specs2)
+
+        override def project = typicalProject
+          .dependsOn(base)
+          .configure(testLibSettings)
+      }
+
+      // API: Impl ------------------------------------------
+      object Impl extends Module {
+        val dir = "taskman-api-impl"
+        override def project = typicalProject
+          .dependsOn(taskmanApiLogic % "compile->compile;test->test-lib")
+
+        override def deps =
+          Json4s.jackson ++ testScope(specs2)
+      }
+    }
+
+    // Server -----------------------------------------------
+    object Server extends Module {
+      val dir = "taskman-server"
+      override def project = umbrellaOf(taskmanServerLogic, taskmanServerImpl)
+
+      // Server: Logic --------------------------------------
+      object Logic extends Module {
+        val dir = "taskman-server-logic"
+        override def project = typicalProject.dependsOn(taskmanApiLogic)
+      }
+
+      // Server: Impl ---------------------------------------
+      object Impl extends Module {
+        val dir = "taskman-server-impl"
+
+        override def deps =
+          Akka.actor ++ testScope(Akka.testkit)
+
+        override def project = typicalProject
+          .dependsOn(taskmanServerLogic, taskmanApi, baseDb)
+          .settings(
+            scalacOptions in Compile ~= removeValues("-optimise") // see Akka docs
+          )
+      }
+
     }
   }
 }
