@@ -6,21 +6,32 @@ rankdir=BT edge[dir=back] node[style=filled]
   baseDb [label="base-db"]
 }
 {node[fillcolor="#aaaaff"]
-  taskman
-  taskmanLogic [label="taskman-logic"]
+  taskmanServerImpl [label="taskman-server-impl"]
+  taskmanServerLogic [label="taskman-server-logic"]
+  taskmanServer [label="taskman-server"]
 }
 {node[fillcolor="#ddf8ff"]
-  taskmanApi [label="taskman-api"]
+  taskmanApiImpl [label="taskman-api-impl"]
   taskmanApiLogic [label="taskman-api-logic"]
+  taskmanApi [label="taskman-api"]
 }
+  taskman [fillcolor="#ffbbbb"]
   webapp [fillcolor="#ffbbbb"]
 
+// Deps
 base
 baseDb -> base
-webapp -> baseDb,taskmanApi
-taskmanApi -> taskmanApiLogic
 taskmanApiLogic -> base
-taskman -> taskmanLogic,taskmanApi,baseDb
-taskmanLogic -> taskmanApiLogic
+taskmanApiImpl -> taskmanApiLogic,baseDb
+taskmanApi -> taskmanApiImpl
+taskmanServerLogic -> taskmanApiLogic
+taskmanServerImpl -> taskmanServerLogic,taskmanApi,baseDb
+taskmanServer -> taskmanServerImpl
+webapp -> baseDb,taskmanApi
 
+// Aggregation
+edge[dir=forward style=dashed arrowhead=vee color="#999999"]
+taskmanApi -> taskmanApiLogic,taskmanApiImpl
+taskmanServer -> taskmanServerLogic,taskmanServerImpl
+taskman -> taskmanApi,taskmanServer
 }
