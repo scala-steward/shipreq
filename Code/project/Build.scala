@@ -11,6 +11,7 @@ object ShipReq extends Build {
 
   lazy val base     = Base.project
   lazy val baseDb   = Base.Db.project
+  lazy val baseTest = Base.Test.project
   lazy val baseUtil = Base.Util.project
 
   lazy val webapp = Webapp.project
@@ -58,7 +59,7 @@ object ShipReq extends Build {
   object Base extends Module {
     val dir = "base"
     override def project = typicalProject
-      .aggregate(baseUtil, baseDb) // not umbrella cos it shouldn't dependOn
+      .aggregate(baseUtil, baseDb, baseTest) // not umbrella cos it shouldn't dependOn
 
     // ----------------------------------------------------
     object Util extends Module {
@@ -79,6 +80,18 @@ object ShipReq extends Build {
 
       override def project = typicalProject
         .dependsOn(baseUtil)
+    }
+
+    // ----------------------------------------------------
+    object Test extends Module {
+      val dir = "base-test"
+
+      override def deps =
+        depScope("provided")(scalaTest ++ specs2)
+
+      override def project = typicalProject
+        .dependsOn(baseUtil)
+        .dependsOn(baseDb % "provided")
     }
   }
 
@@ -166,6 +179,7 @@ object ShipReq extends Build {
         override def project = typicalProject
           .dependsOn(taskmanApiLogic % "compile->compile;test->test-lib")
           .dependsOn(taskmanServerSchema % "test")
+          .dependsOn(baseTest % "test")
 
         override def deps =
           Json4s.jackson ++ testScope(specs2)

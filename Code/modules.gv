@@ -1,12 +1,14 @@
 digraph G {
-compound=true
 rankdir=BT edge[dir=back] node[style=filled]
+
+edge[color="#cc0000"]
 
 subgraph cluster_base {
   style=filled fillcolor="#f4fff4" node[fillcolor="#bbffbb"]
   base [label="[aggregate]\nbase" fillcolor="#cccccc"]
   baseUtil [label="base-util"]
   baseDb [label="base-db"]
+  baseTest [label="base-test"]
 }
 
 subgraph cluster_t {
@@ -27,7 +29,7 @@ subgraph cluster_t {
     taskmanApiLogic [label="taskman-api-logic"]
   }
 
-  taskman [label="[aggregate]\ntaskman" fillcolor="#cccccc"]
+  taskman [label="[aggregate]\ntaskman" fillcolor="#ffff80"]
 }
 
 root [label="[aggregate]\nroot" fillcolor="#cccccc"]
@@ -36,11 +38,14 @@ webapp [fillcolor="#ffff80"]
 // Deps
 baseUtil
 baseDb -> baseUtil
+baseTest -> baseUtil
+baseTest -> baseDb [style=dashed label="provided"]
 taskmanDb -> baseDb
 taskmanApiLogic -> baseUtil
-taskmanApiImpl -> taskmanApiLogic,baseDb
-taskmanApiImpl -> taskmanApiLogic [label="test-lib" style=dashed]
-taskmanApiImpl -> taskmanDb [label="test" style=dashed]
+taskmanApiImpl -> taskmanApiLogic,baseDb [minlen=2]
+taskmanApiImpl -> taskmanApiLogic [color="#111111" style=dashed label="test-lib"]
+taskmanApiImpl -> taskmanDb       [color="#111111" style=dashed label="test"]
+taskmanApiImpl -> baseTest        [color="#111111" style=dashed label="test"]
 taskmanApi -> taskmanApiImpl
 taskmanServerLogic -> taskmanApiLogic
 taskmanServerImpl -> taskmanServerLogic,taskmanApi,taskmanDb
@@ -52,6 +57,6 @@ edge[dir=forward style=dashed arrowhead=vee color="#aaaaaa"]
 taskmanApi -> taskmanApiLogic,taskmanApiImpl
 taskmanServer -> taskmanServerLogic,taskmanServerImpl,taskmanDb
 taskman -> taskmanApi,taskmanServer
-base -> baseUtil,baseDb
+base -> baseUtil,baseDb,baseTest
 root -> base,webapp,taskman
 }
