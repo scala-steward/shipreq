@@ -1,7 +1,7 @@
 package shipreq.webapp.db
 
 import scala.slick.session.Session
-import shipreq.base.db.{DbTemplate, BaseDbConnection}
+import shipreq.base.db.{DatabaseConnection, DbTemplate}
 
 /**
  * Database connectivity.
@@ -10,20 +10,19 @@ import shipreq.base.db.{DbTemplate, BaseDbConnection}
  */
 object DB extends DbTemplate {
 
-  override protected def establishConnection() = {
+  override protected lazy val connection = {
     import shipreq.webapp.util.PropsRetrievers._
-    new BaseDbConnection()
+    DatabaseConnection.establish_!()
   }
+
+  @inline def DataSource = connection.ds
 
   override protected def onInit(implicit s: Session) = {
     FieldKeyType.init
   }
 
-  @inline def DataSource = baseConn.DataSource
-  import baseConn.Slick
-
   object DaoProvider extends DaoProvider {
-    override def withRawSession[T](f: Session => T): T = Slick.withSession(f)
-    override protected def rawSession(): Session       = Slick.createSession()
+    override def withRawSession[T](f: Session => T): T = slick.withSession(f)
+    override protected def rawSession(): Session       = slick.createSession()
   }
 }

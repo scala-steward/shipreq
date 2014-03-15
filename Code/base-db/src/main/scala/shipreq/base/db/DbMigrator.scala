@@ -5,7 +5,7 @@ import com.googlecode.flyway.core.util.logging.{Log, LogCreator, LogFactory}
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
 
-class DbMigrator(ds: DataSource, cfg: Flyway => Flyway = identity) {
+class DbMigrator(c: DatabaseConnection, cfg: Flyway => Flyway = identity) {
 
   final class FlyWayLogger(clazz: Class[_]) extends Log {
     private[this] val log = LoggerFactory.getLogger(clazz)
@@ -24,9 +24,10 @@ class DbMigrator(ds: DataSource, cfg: Flyway => Flyway = identity) {
       val flyway = new Flyway
       flyway.setLocations("db_migrations")
       flyway.setSqlMigrationPrefix("v")
+      c.schema.foreach(flyway.setSchemas(_))
       cfg(flyway)
     }
-    flyway.setDataSource(ds)
+    flyway.setDataSource(c.ds)
     flyway
   }
 

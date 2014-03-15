@@ -1,14 +1,16 @@
 package shipreq.webapp.util
 
 import net.liftweb.util.Props
-import net.liftweb.common.{Empty, Box, Full, Failure}
+import net.liftweb.common.{Empty, Box, Failure, Full}
+import scalaz.\/-
+import shipreq.base.util.{Error, ErrorOr}
 import shipreq.base.util.ExternalValueReader.Retriever
 
 object PropsRetrievers {
-  private implicit def unbox[T](b: Box[T]): Either[Option[String], T] = b match {
-    case Full(v)          => Right(v)
-    case Empty            => Left(None)
-    case Failure(e, _, _) => Left(Some(e))
+  private implicit def unbox[T](b: Box[T]): Option[ErrorOr[T]] = b match {
+    case Full(v)          => Some(\/-(v))
+    case Empty            => None
+    case Failure(e, _, _) => Some(Error(e))
   }
   implicit val retrieverS = Retriever[String] (Props.get    (_))
   implicit val retrieverI = Retriever[Int]    (Props.getInt (_))

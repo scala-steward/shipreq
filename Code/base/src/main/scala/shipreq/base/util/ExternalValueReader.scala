@@ -1,5 +1,7 @@
 package shipreq.base.util
 
+import scalaz.{\/-, -\/}
+
 /**
  * Reads values from some kind of external source.
  *
@@ -9,7 +11,7 @@ package shipreq.base.util
  */
 object ExternalValueReader {
 
-  case class Retriever[T](run: String => Either[Option[String], T])
+  case class Retriever[T](run: String => Option[ErrorOr[T]])
 
   case class PropScope(run: String => String)
 
@@ -18,37 +20,40 @@ object ExternalValueReader {
   def scopeByPrefix(prefix: String) =
     PropScope(prefix + _)
 
-  def scopeByNS(ns: String) =
-    if (ns.isEmpty) GlobalScope else scopeByPrefix(s"$ns.")
+  def scopeByNS(ns1: String, ns: String*) =
+    scopeByPrefix((ns1 +: ns).map(_.replaceFirst("\\.+$", "")).filter(_.nonEmpty).mkString("", ".", "."))
 
-  def getEO[T](name: String)(implicit s: PropScope, r: Retriever[T]): Either[Option[String], T] =
+  def getOE[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[ErrorOr[T]] =
     r.run(s.run(name))
 
-  def get[T](name: String)(implicit s: PropScope, r: Retriever[T]): Either[String, T] =
-    getEO(name).left.map(_ getOrElse defaultErrorMsg(name))
+  def get[T](name: String)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] =
+    getOE(name) getOrElse defaultError(name)
 
   def getO[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[T] =
-    get(name).right.toOption
+    getOE(name).flatMap(_.toOption)
 
-  def tryGet[T](name: String, moreNames: String*)(implicit s: PropScope, r: Retriever[T]): Either[String, T] = {
+  def tryGet[T](name: String, moreNames: String*)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] = {
     val es = (name #:: moreNames.toStream).map(get(_))
     es.filter(_.isRight).headOption.getOrElse(es.head)
   }
 
   def need[T](name: String)(implicit s: PropScope, r: Retriever[T]): T =
     get(name) match {
-      case Right(t)  => t
-      case Left(msg) => throw new RuntimeException(msg)
+      case \/-(t) => t
+      case -\/(e) => throw Error.throwable(e)
     }
 
   def tryNeed[T](name: String, default: T)(implicit s: PropScope, r: Retriever[T]): T =
     getO(name) getOrElse default
 
   def tryUse[T](name: String)(f: T => Unit)(implicit s: PropScope, r: Retriever[T]): Unit =
-    get(name).right foreach f
+    get(name) foreach f
 
   def defaultErrorMsg(name: String)(implicit s: PropScope): String =
     s"Unable to retrieve external value: ${s.run(name)}"
+
+  def defaultError(name: String)(implicit s: PropScope): ErrorOr[Nothing] =
+    Error(defaultErrorMsg(name))
 }
 
 // =====================================================================================================================
@@ -75,17 +80,20 @@ class StringBasedValueReader(_retrieverS: Retriever[String]) {
   implicit final def retrieverS = _retrieverS
 
   protected def tryParse[T](f: String => T): Retriever[T] =
-    tryParseF(v => Right(f(v)))
+    tryParseE(s => \/-(f(s)))
 
-  protected def tryParseF[T](f: String => Either[Option[String], T]): Retriever[T] =
+  protected def tryParseE[T](f: String => ErrorOr[T]): Retriever[T] =
+    tryParseOE(s => Some(f(s)))
+
+  protected def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
     Retriever(k =>
-      try retrieverS.run(k) match {
-        case Right(v)      => f(v)
-        case Left(None)    => Left(None)
-        case Left(Some(e)) => Left(Some(s"Error parsing $k: $e"))
-      }
-      catch { case e: Throwable => Left(Some(s"Error parsing $k: ${e.getMessage}")) }
-    )
+        ErrorOr.annotateO(s"Error parsing $k")(
+          ErrorOr.catchExceptionO(
+            retrieverS.run(k) match {
+              case Some(\/-(s)) => f(s)
+              case Some(-\/(e)) => Some(-\/(e))
+              case None         => None
+            })))
 
   implicit val retrieverI: Retriever[Int] =
     tryParse(Integer.parseInt)
@@ -93,13 +101,13 @@ class StringBasedValueReader(_retrieverS: Retriever[String]) {
   implicit val retrieverL: Retriever[Long] =
     tryParse(java.lang.Long.parseLong)
 
-  implicit val retrieverB: Retriever[Boolean] = tryParseF(s =>
+  implicit val retrieverB: Retriever[Boolean] = tryParseE(s =>
     if (RegexT.matcher(s).matches)
-      Right(true)
+      \/-(true)
     else if (RegexF.matcher(s).matches)
-      Right(false)
+      \/-(false)
     else
-      Left(Some(s"Unable to parse '$s'"))
+      Error(s"Unable to parse '$s'")
   )
 }
 
@@ -115,10 +123,9 @@ object JPropertiesValueReader {
   def apply(p: Properties) = new StringBasedValueReader(
     Retriever[String](k =>
       Option(p.getProperty(k)) match {
-        case None =>
-          Left(None)
+        case None     => None
         case Some(vv) =>
           val v = removeComment(vv).trim
-          if (v.isEmpty) Left(None) else Right(v)
+          if (v.isEmpty) None else Some(\/-(v))
       }))
 }

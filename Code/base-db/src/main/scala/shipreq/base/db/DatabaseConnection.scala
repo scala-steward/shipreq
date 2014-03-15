@@ -1,33 +1,49 @@
-package shipreq.base
-package db
+package shipreq.base.db
 
 import ch.qos.logback.classic.Level
-import com.jolbox.bonecp.BoneCPDataSource
+import com.jolbox.bonecp.{ConnectionHandle, BoneCPDataSource}
+import com.jolbox.bonecp.hooks.{AbstractConnectionHook, ConnectionHook}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
-import scala.slick.session.Database
+import shipreq.base.util.ErrorOr
+import shipreq.base.util.ExternalValueReader.{get => getEV, Retriever => R, _}
 
-import util.ExternalValueReader._
+case class DatabaseConnection(schema: Option[String], name: String, ds: BoneCPDataSource)
 
-class BaseDbConnection(setDsDefaults: BoneCPDataSource => BoneCPDataSource = identity)(
-  implicit _s: Retriever[String], _i: Retriever[Int], _l: Retriever[Long], _b: Retriever[Boolean]) {
+object DatabaseConnection {
+  private[this] val log = LoggerFactory.getLogger(getClass)
 
-  protected val log = LoggerFactory.getLogger(getClass)
+  type C = BoneCPDataSource => BoneCPDataSource
 
-  // ===================================================================================================================
-  // Connection
+  def PropertyScope = "db"
 
-  protected def loadDataSource(): Either[String, BoneCPDataSource] = {
-    implicit val scope = scopeByNS("db")
+  def establish_!(defaults: C = identity)(implicit _s: R[String], _i: R[Int], _l: R[Long], _b: R[Boolean]): DatabaseConnection = {
+    val c = ErrorOr.require_!(get(defaults))
+    verify_!(c)
+    c
+  }
+
+  def get(defaults: C = identity)(implicit _s: R[String], _i: R[Int], _l: R[Long], _b: R[Boolean]): ErrorOr[DatabaseConnection] =
+    ErrorOr.catchException {
+      dataSource(defaults).map {
+        case (schema, ds) =>
+          DatabaseConnection(schema, getDatabaseName(ds), ds)
+    }
+  }
+
+  protected def dataSource(defaults: C = identity)(implicit _s: R[String], _i: R[Int], _l: R[Long], _b: R[Boolean])
+  : ErrorOr[(Option[String], BoneCPDataSource)] = {
+
+    implicit val scope = scopeByNS(PropertyScope)
     for {
-      database <- get[String]("database").right
-      username <- get[String]("username").right
-      password <- get[String]("password").right
+      database <- getEV[String]("database")
+      username <- getEV[String]("username")
+      password <- getEV[String]("password")
     } yield {
       val ds = new PGSimpleDataSource
       ds.setDatabaseName(database)
       ds.setUser(username)
-//      ds.setPassword(password)
+      // ds.setPassword(password)
       ds.setDisableColumnSanitiser(true)
       tryUse("appname"                )(ds.setApplicationName)
       tryUse("binary_transfer"        )(ds.setBinaryTransfer)
@@ -47,20 +63,29 @@ class BaseDbConnection(setDsDefaults: BoneCPDataSource => BoneCPDataSource = ide
       tryUse("ssl_factory"            )(ds.setSslfactory)
       tryUse("tcp_keep_alive"         )(ds.setTcpKeepAlive)
       tryUse("unknown_length"         )(ds.setUnknownLength)
-      tryGet[String]("log_level", "loglevel").right.foreach(l => ds.setLogLevel(Level.valueOf(l.toUpperCase).toInt))
+      tryGet[String]("log_level", "loglevel").foreach(l => ds.setLogLevel(Level.valueOf(l.toUpperCase).toInt))
+
+      val schema = getO[String]("schema")
+      val searchPath= getO[String]("search_path")
 
       {
-        implicit val scope = scopeByNS("db.pool")
+        implicit val scope = scopeByNS(PropertyScope, "pool")
         val pool = {
           val pool = new BoneCPDataSource()
           pool.setDefaultTransactionIsolation("READ_COMMITTED") // Shouldn't be doing repeated-reads anyway
           pool.setDefaultAutoCommit(true)
           pool.setLogStatementsEnabled(false)
-          setDsDefaults(pool)
+          defaults(pool)
         }
         pool.setJdbcUrl(ds.getUrl)
         pool.setUsername(username)
         pool.setPassword(password)
+
+        (schema, searchPath) match {
+          case (_,          Some(path)) => setSearchPath(path)(pool)
+          case (Some(path), None)       => setSearchPath(path)(pool)
+          case (None      , None)       =>
+        }
 
         tryUse("acquireIncrement"                 )(pool.setAcquireIncrement)
         tryUse("acquireRetryAttempts"             )(pool.setAcquireRetryAttempts)
@@ -93,7 +118,7 @@ class BaseDbConnection(setDsDefaults: BoneCPDataSource => BoneCPDataSource = ide
         tryUse("statisticsEnabled"                )(pool.setStatisticsEnabled)
         tryUse("transactionRecoveryEnabled"       )(pool.setTransactionRecoveryEnabled)
 
-        pool
+        (schema, pool)
       }
     }
   }
@@ -101,22 +126,25 @@ class BaseDbConnection(setDsDefaults: BoneCPDataSource => BoneCPDataSource = ide
   private def getDatabaseName(ds: BoneCPDataSource): String =
     ds.getJdbcUrl.replaceFirst("\\?.*", "").replaceFirst("^.+//", "")
 
-  val DataSource = {
-    val ds = loadDataSource() match {
-      case Right(v) => v
-      case Left(e)  => throw new RuntimeException(e)
-    }
-    log.info("Connecting to database: " + getDatabaseName(ds))
-    log.debug("Database pool config: " + ds.getConfig)
-    ds.getConfig
-    ds.getConnection().close() // test the data source validity
-    ds
+  def verify_!(c: DatabaseConnection): Unit = {
+    log.info("Connecting to database: " + c.name)
+    log.debug("Database pool config: " + c.ds.getConfig)
+    c.ds.getConnection().close() // test the data source validity
   }
 
-  val DatabaseName = getDatabaseName(DataSource)
+  def setSearchPath(path: String) =
+    runOnConnectionAcquire(s"SET search_path TO $path")
 
-  // ===================================================================================================================
-  // Access
-
-  val Slick = Database.forDataSource(DataSource)
+  def runOnConnectionAcquire(sql: String): C =
+    ds => {
+      val hook: ConnectionHook = new AbstractConnectionHook {
+        override def onAcquire(conn: ConnectionHandle): Unit = {
+          val s = conn.createStatement()
+          try s.execute(sql)
+          finally s.close()
+        }
+      }
+      ds.setConnectionHook(hook)
+      ds
+    }
 }
