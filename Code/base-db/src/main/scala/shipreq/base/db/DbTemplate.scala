@@ -3,13 +3,14 @@ package shipreq.base.db
 import com.googlecode.flyway.core.Flyway
 import org.slf4j.LoggerFactory
 import scala.slick.session.{Database, Session}
+import shipreq.base.util.Logger
 
 /**
  * Template/mixin for database singletons.
  */
 trait DbTemplate {
 
-  protected val log = LoggerFactory.getLogger(getClass.getCanonicalName.replaceFirst("\\$$", ""))
+  protected val log = Logger.forClass(getClass)
 
   protected /* lazy */ val connection: DatabaseConnection
 

@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.ExternalValueReader.{get => getEV, Retriever => R, _}
 
-case class DatabaseConnection(schema: Option[String], name: String, ds: BoneCPDataSource)
+case class DatabaseConnection(host: String, name: String, schema: Option[String], ds: BoneCPDataSource) {
+  def desc = s"$host/$name" + schema.map(":" + _).getOrElse("")
+}
 
 object DatabaseConnection {
   private[this] val log = LoggerFactory.getLogger(getClass)
@@ -26,13 +28,13 @@ object DatabaseConnection {
   def get(defaults: C = identity)(implicit _s: R[String], _i: R[Int], _l: R[Long], _b: R[Boolean]): ErrorOr[DatabaseConnection] =
     ErrorOr.catchException {
       dataSource(defaults).map {
-        case (schema, ds) =>
-          DatabaseConnection(schema, getDatabaseName(ds), ds)
+        case (schema, pg, ds) =>
+          DatabaseConnection(pg.getServerName, pg.getDatabaseName, schema, ds)
     }
   }
 
   protected def dataSource(defaults: C = identity)(implicit _s: R[String], _i: R[Int], _l: R[Long], _b: R[Boolean])
-  : ErrorOr[(Option[String], BoneCPDataSource)] = {
+  : ErrorOr[(Option[String], PGSimpleDataSource, BoneCPDataSource)] = {
 
     implicit val scope = scopeByNS(PropertyScope)
     for {
@@ -118,22 +120,21 @@ object DatabaseConnection {
         tryUse("statisticsEnabled"                )(pool.setStatisticsEnabled)
         tryUse("transactionRecoveryEnabled"       )(pool.setTransactionRecoveryEnabled)
 
-        (schema, pool)
+        (schema, ds, pool)
       }
     }
   }
 
-  private def getDatabaseName(ds: BoneCPDataSource): String =
-    ds.getJdbcUrl.replaceFirst("\\?.*", "").replaceFirst("^.+//", "")
-
   def verify_!(c: DatabaseConnection): Unit = {
-    log.info("Connecting to database: " + c.name)
-    log.debug("Database pool config: " + c.ds.getConfig)
+    log.info("Connecting to database: {}", c.desc)
+    log.debug("Database pool config: {}", c.ds.getConfig)
     c.ds.getConnection().close() // test the data source validity
   }
 
-  def setSearchPath(path: String) =
+  def setSearchPath(path: String) = {
+    if (path.contains("-")) throw new IllegalArgumentException("PostgreSQL doesn't allow dashes in schema names.")
     runOnConnectionAcquire(s"SET search_path TO $path")
+  }
 
   def runOnConnectionAcquire(sql: String): C =
     ds => {
