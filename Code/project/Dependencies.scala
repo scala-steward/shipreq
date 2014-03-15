@@ -41,13 +41,18 @@ object Deps {
     val jackson = dd("json4s-jackson") ++ Scala.all
   }
 
+  object SLF4J extends Group("1.7.6", "org.slf4j") {
+    val api = d("slf4j-api")
+    val jcl = d("jcl-over-slf4j")
+  }
+
   object Lift extends Group("2.6-M2-golly-1", "net.liftweb") {
     val webkit  = dd("lift-webkit") ++ Scala.all // because it contains lift-json
     val testkit = dd("lift-testkit")
   }
 
   object Shiro extends Group("1.2.2", "org.apache.shiro") {
-    val core = d("shiro-core") ++ slf4j // slf4j required in place of commons-logging
+    val core = d("shiro-core") ++ SLF4J.jcl // slf4j required in place of commons-logging
     val web  = d("shiro-web")
     val all  = core ++ web
   }
@@ -63,7 +68,6 @@ object Deps {
                         "com.google.code.findbugs"    % "jsr305"                % "2.0.2" // required by Guava (which is required by BoneCP)
   val flyway      :MS = "com.googlecode.flyway"       % "flyway-core"           % "2.3.1"
   val logback     :MS = "ch.qos.logback"              % "logback-classic"       % "1.1.1"
-  val slf4j       :MS = "org.slf4j"                   % "jcl-over-slf4j"        % "1.7.5"
   val scalate     :MS = "org.fusesource.scalate"     %% "scalate-core"          % "1.6.1" ++
                         "org.fusesource.scalamd"     %% "scalamd"               % "1.6" // why again?
   val commonsLang :MS = "org.apache.commons"          % "commons-lang3"         % "3.1"

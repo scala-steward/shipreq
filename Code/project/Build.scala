@@ -65,7 +65,7 @@ object ShipReq extends Build {
       val dir = "base-util"
 
       override def deps =
-        Scalaz.core ++ scalaTest % "test"
+        SLF4J.api ++ Scalaz.core ++ scalaTest % "test"
 
       override def project = typicalProject
     }
