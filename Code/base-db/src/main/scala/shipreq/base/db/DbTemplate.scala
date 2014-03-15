@@ -16,7 +16,7 @@ trait DbTemplate {
 
   @inline final def DatabaseName = connection.name
 
-  protected val slick = Database.forDataSource(connection.ds)
+  protected val _slick = Database.forDataSource(connection.ds)
 
   protected def flywayCfg: Flyway => Flyway = identity
 
@@ -31,7 +31,7 @@ trait DbTemplate {
   def init(): Unit = initLock.synchronized {
     if (initPending) {
       migrator.performPendingMigrations()
-      slick.withTransaction((s: Session) => onInit(s))
+      _slick.withTransaction((s: Session) => onInit(s))
       initPending = false
       log.debug("Database initialised successfully.")
     }

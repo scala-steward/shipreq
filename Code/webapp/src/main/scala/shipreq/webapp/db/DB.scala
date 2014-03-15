@@ -22,7 +22,7 @@ object DB extends DbTemplate {
   }
 
   object DaoProvider extends DaoProvider {
-    override def withRawSession[T](f: Session => T): T = slick.withSession(f)
-    override protected def rawSession(): Session       = slick.createSession()
+    override def withRawSession[T](f: Session => T): T = _slick.withSession(f)
+    override protected def rawSession(): Session       = _slick.createSession()
   }
 }

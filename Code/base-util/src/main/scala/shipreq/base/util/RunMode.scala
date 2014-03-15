@@ -1,4 +1,4 @@
-package shipreq.taskman
+package shipreq.base.util
 
 object RunMode extends Enumeration {
 

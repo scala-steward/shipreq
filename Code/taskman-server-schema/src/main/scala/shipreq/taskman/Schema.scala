@@ -1,8 +1,8 @@
 package shipreq.taskman
 
 import java.util.Properties
+import shipreq.base.util._
 import shipreq.base.db._
-import shipreq.base.util.JPropertiesValueReader
 
 
 object ExampleUsage {

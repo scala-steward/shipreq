@@ -1,11 +1,10 @@
-package shipreq.taskman
+package shipreq.base.util
 
 import java.io.InputStream
 import java.util.Properties
 import scalaz.Endo
 import scalaz.std.list.listInstance
 import scalaz.syntax.applicative._
-import shipreq.base.util.Logger
 
 object Props {
 
