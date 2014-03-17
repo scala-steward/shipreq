@@ -1,15 +1,15 @@
 package shipreq.webapp.test
 
-import shipreq.webapp.app.DI
-import shipreq.webapp.db.DaoT
-import net.liftweb.http.js.JsCmd
 import org.mockito.Mockito.{verify, times, never, verifyNoMoreInteractions}
 import org.scalatest.Matchers
-import xml.NodeSeq
-import scalaz.{\/-, -\/, \/}
+import net.liftweb.http.js.JsCmd
 import net.liftweb.http.{S, RedirectResponse, ResponseShortcutException}
-import shipreq.taskman.api.TaskDef
-import shipreq.taskman.api.TaskDef.{RegistrationRequested, PasswordResetRequested, ReRegistrationAttempted}
+import scala.xml.NodeSeq
+import scalaz.{\/-, -\/, \/}
+import shipreq.webapp.app.DI
+import shipreq.webapp.db.DaoT
+import shipreq.taskman.api.Msg
+import Msg.{RegistrationRequested, PasswordResetRequested, ReRegistrationAttempted}
 
 /**
  * Can't think of what else to call this. It's like Testing 2.0.
@@ -69,7 +69,7 @@ object T2 {
     override def test = _.tasksSubmitted shouldBe empty
   }
 
-  type TaskTestPF = PartialFunction[TaskDef, Function0[Unit]]
+  type TaskTestPF = PartialFunction[Msg, Function0[Unit]]
 
   case class SubmittedOneTask(m: TaskTestPF) extends TestTaskmanExp with Matchers {
     override def test = tt => tt.tasksSubmitted match {

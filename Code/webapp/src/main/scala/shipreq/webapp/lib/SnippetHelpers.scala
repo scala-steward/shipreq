@@ -9,7 +9,7 @@ import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 
-import shipreq.taskman.api.TaskDef
+import shipreq.taskman.api.Msg
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
 import shipreq.webapp.feature.validation.VFailure
@@ -172,8 +172,8 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
     case None => respondImmediately(RedirectResponse(AppSiteMap.Login.relativeUrl))
   }
 
-  def submitTask(task: TaskDef, dao: DaoS): Unit =
-    taskman.submitTask(task, dao.session)
+  def submitTask(msg: Msg, dao: DaoS): Unit =
+    taskman.submitTask(msg, dao.session)
 }
 
 /**

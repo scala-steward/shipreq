@@ -15,7 +15,7 @@ import util.NonEmptyTemplate
 import app.AppConfig
 import Register._
 import shipreq.webapp.test.T2.{NoTasksSubmitted, SubmittedOneTask}
-import shipreq.taskman.api.TaskDef.{ReRegistrationAttempted, RegistrationRequested}
+import shipreq.taskman.api.Msg.{ReRegistrationAttempted, RegistrationRequested}
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
 

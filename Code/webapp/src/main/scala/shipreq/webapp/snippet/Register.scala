@@ -7,7 +7,7 @@ import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
 import org.joda.time.DateTime
 
-import shipreq.taskman.api.TaskDef
+import shipreq.taskman.api.Msg
 import shipreq.webapp.app.{AppConfig, AppSiteMap}
 import shipreq.webapp.lib.{SnippetHelpers, SingleOpStatefulSnippet}
 import shipreq.webapp.lib.Types._
@@ -17,7 +17,7 @@ import shipreq.webapp.security.{Permissions, PasswordAndSalt}
 import shipreq.webapp.util.JsExt._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
 import AppSiteMap.Implicits._
-import TaskDef.{ReRegistrationAttempted, RegistrationRequested}
+import Msg.{ReRegistrationAttempted, RegistrationRequested}
 import Register._
 
 object Register {
@@ -52,14 +52,14 @@ object Register1 extends SnippetHelpers {
       daoProvider.withTransaction(dao => {
         val task = dao.findUserRegistrationInfo(emailAddr) match {
           case None    => onNewUser(emailAddr, dao)
-          case Some(u) => preRegistrationTask(emailAddr, u, dao)
+          case Some(u) => preRegistrationMsg(emailAddr, u, dao)
         }
         submitTask(task, dao)
       })
       jsClearError & JqExpr("#emailSent,#register1Form") ~> JqToggle
     })
 
-  def preRegistrationTask(email: String @@ Validated, u: UserRegistrationInfo, dao: DaoT): TaskDef =
+  def preRegistrationMsg(email: String @@ Validated, u: UserRegistrationInfo, dao: DaoT): Msg =
     u match {
       case UserRegistrationInfo(_, _, _, Some(_)) =>
         onAlreadyRegistered(email)
@@ -69,23 +69,23 @@ object Register1 extends SnippetHelpers {
         onTokenExpired(email, id, dao)
     }
 
-  private def onNewUser(email: String @@ Validated, dao: DaoT): TaskDef = {
+  private def onNewUser(email: String @@ Validated, dao: DaoT): Msg = {
     val token = dao.createUserPlaceholder(email, () => randomConfirmationToken)
     registrationRequestedTask(email, token)
   }
 
-  private def onTokenReusable(email: String @@ Validated, token: String): TaskDef =
+  private def onTokenReusable(email: String @@ Validated, token: String): Msg =
     registrationRequestedTask(email, token)
 
-  private def onTokenExpired(email: String @@ Validated, id: UserId, dao: DaoT): TaskDef = {
+  private def onTokenExpired(email: String @@ Validated, id: UserId, dao: DaoT): Msg = {
     val token = dao.updateUserConfirmationToken(id, () => randomConfirmationToken)
     registrationRequestedTask(email, token)
   }
 
-  private def onAlreadyRegistered(email: String @@ Validated): TaskDef =
+  private def onAlreadyRegistered(email: String @@ Validated): Msg =
     ReRegistrationAttempted(email.tag, AppSiteMap.Login.absoluteUrl)
 
-  private def registrationRequestedTask(email: String @@ Validated, token: String): TaskDef =
+  private def registrationRequestedTask(email: String @@ Validated, token: String): Msg =
     RegistrationRequested(email.tag, AppSiteMap.Register2.absoluteUrl(token))
 }
 

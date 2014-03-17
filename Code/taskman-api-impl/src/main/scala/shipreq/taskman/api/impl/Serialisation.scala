@@ -6,13 +6,13 @@ import org.json4s.jackson.Serialization.{read, write}
 import scalaz.{\/-, \/, -\/}
 import shipreq.base.util.{BiMap, Error, ErrorOr}
 import shipreq.taskman.api.Types._
-import shipreq.taskman.api.{TaskDef, TaskTypes}
-import TaskDef._
+import shipreq.taskman.api.{Msg, MsgType}
+import Msg._
 
 private[api] object Serialisation {
 
-  type Ser = Json[TaskDef]
-  type DeSer = ErrorOr[TaskDef]
+  type Ser = Json[Msg]
+  type DeSer = ErrorOr[Msg]
 
   private def fieldRenamer[A: Manifest](m: BiMap[String, String]): FieldSerializer[A] =
     FieldSerializer({
@@ -32,20 +32,19 @@ private[api] object Serialisation {
       + fieldRenamer[LandingPageHit]         (BiMap("email"->"e", "name"->"n", "msg"->"m", "newsletter"->"w"))
     )
 
-  def serialise(t: TaskDef): Ser = write(t).tag
+  def serialise(m: Msg): Ser = write(m).tag
 
-  def deserialise(taskTypeId: Int, s: Ser): DeSer = {
-    TaskTypes.lookupType(taskTypeId) match {
-      case Some(tt) =>
-        val defClass = TaskTypes.lookupTaskDef(tt)
+  def deserialise(msgTypeId: Short, s: Ser): DeSer = {
+    MsgType.lookup(msgTypeId) match {
+      case Some(t) =>
         ErrorOr.annotate(s"Failed to parse JSON: $s") {
           ErrorOr.catchException {
-            val t: TaskDef = read(s)(implicitly[Formats], Manifest.classType(defClass))
-            \/-(t)
+            val m: Msg = read(s)(implicitly[Formats], Manifest.classType(t.msgClass))
+            \/-(m)
           }
         }
       case None =>
-        Error(s"Unknown task type: $taskTypeId")
+        Error(s"Unknown message type: $msgTypeId")
     }
   }
 }

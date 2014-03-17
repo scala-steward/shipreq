@@ -3,8 +3,8 @@ package shipreq.taskman.api
 import scala.reflect.runtime.{universe => ru}
 import org.scalacheck.{Gen, Arbitrary}
 import shipreq.taskman.api.Types._
-import shipreq.taskman.api.{TaskType => T}
-import shipreq.taskman.api.{TaskDef => D}
+import shipreq.taskman.api.{MsgType => T}
+import shipreq.taskman.api.{Msg => M}
 
 object TestHelpers {
 
@@ -17,14 +17,29 @@ object TestHelpers {
     else None
   }
 
-  lazy val taskDefClassShortNames: List[String] =
-    TestHelpers.sealedDescendants[TaskDef].get.toList.map(_.name.toString)
+  class SealedDescendants[Root : ru.TypeTag] {
 
-  lazy val taskDefClassFullNames: Set[String] =
-    taskDefClassShortNames.map(TaskDef.getClass.getCanonicalName + _).toSet
+    val classes_ : Set[Class[_]] = {
+      val m = ru.runtimeMirror(getClass.getClassLoader)
+      sealedDescendants[Root].get.toList.map(s => m.runtimeClass(s.asClass)).toSet
+    }
 
-  lazy val taskDefClasses: Set[Class[_ <: TaskDef]] =
-    taskDefClassFullNames.map(n => Class.forName(n).asSubclass(classOf[TaskDef]))
+    val classes: Set[Class[_ <: Root]] =
+      classes_.asInstanceOf[Set[Class[_ <: Root]]]
+
+    val shortNames: List[String] =
+      classes_.toList.map(_.getSimpleName)
+
+    val fullNames: Set[String] =
+      classes_.map(_.getCanonicalName)
+
+    def size = fullNames.size
+  }
+
+  val allMsgs     = new SealedDescendants[Msg]
+  val allMsgTypes = new SealedDescendants[MsgType]
+
+  // ===================================================================================================================
 
   import Arbitrary._
 
@@ -35,28 +50,28 @@ object TestHelpers {
   def genEmail: Gen[EmailAddr] = arbitrary[String].map(_.tag)
   def genUserId: Gen[UserId] = arbitrary[Long].map(_.tag)
 
-  implicit def arbTaskDef: Arbitrary[TaskDef] =
-    Arbitrary { Gen.oneOf(taskDefClasses.toSeq) flatMap genTaskDef }
+  implicit def arbMsg: Arbitrary[Msg] =
+    Arbitrary { Gen.oneOf(allMsgs.classes.toSeq) flatMap genMsg }
 
-  def genTaskDef(c: Class[_ <: TaskDef]): Gen[TaskDef] = genTaskDef(TaskTypes.lookupType(c))
+  def genMsg(c: Class[_ <: Msg]): Gen[Msg] = genMsg(MsgType.lookup(c))
 
-  def genTaskDef(t: TaskType): Gen[TaskDef] = t match {
+  def genMsg(t: MsgType): Gen[Msg] = t match {
 
     case T.RegistrationRequested =>
       for(email <- genEmail; url <- arbitrary[String])
-      yield D.RegistrationRequested(email, url)
+      yield M.RegistrationRequested(email, url)
 
     case T.ReRegistrationAttempted =>
       for(email <- genEmail; url <- arbitrary[String])
-      yield D.ReRegistrationAttempted(email, url)
+      yield M.ReRegistrationAttempted(email, url)
 
     case T.RegistrationCompleted =>
       for (userId <- genUserId) yield
-        D.RegistrationCompleted(userId)
+        M.RegistrationCompleted(userId)
 
     case T.PasswordResetRequested =>
       for(email <- genEmail; url <- arbitrary[String])
-      yield D.PasswordResetRequested(email, url)
+      yield M.PasswordResetRequested(email, url)
 
     case T.LandingPageHit =>
       for {
@@ -65,9 +80,9 @@ object TestHelpers {
         msg <- arbitrary[Option[String]]
         newsletter <- arbitrary[Boolean]
       } yield
-        D.LandingPageHit(email, name, msg, newsletter)
+        M.LandingPageHit(email, name, msg, newsletter)
   }
 
-//  def genTaskDefOfEachType: Gen[List[TaskDef]] =
-//    Gen.sequence[List, TaskDef](taskDefClasses.toList map genTaskDef)
+//  def genMsgOfEachType: Gen[List[Msg]] =
+//    Gen.sequence[List, Msg](taskDefClasses.toList map genMsg)
 }

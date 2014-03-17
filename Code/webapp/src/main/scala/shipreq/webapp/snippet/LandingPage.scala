@@ -9,7 +9,7 @@ import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
 import shipreq.webapp.feature.validation.Validator
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.lib.SnippetHelpers
-import shipreq.taskman.api.TaskDef.LandingPageHit
+import shipreq.taskman.api.Msg.LandingPageHit
 
 object LandingPage extends SnippetHelpers {
 

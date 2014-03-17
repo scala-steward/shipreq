@@ -30,7 +30,7 @@ import Types._
 
 //object Main{
 //  def main(a: Array[String]) {
-//    println(TaskTypes.ById(102))
+//    println(MsgType.ById(102))
 //  }
 //}
 
@@ -41,8 +41,8 @@ object TaskmanApi {
   type CmdF[A] = FreeC[Cmd, A]
   implicit def cmdLiftF[A](c: Cmd[A]): CmdF[A] = liftFC(c)
 
-  case class SubmitTask(t: TaskDef) extends Cmd[Unit]
-  case class SubmitTasks(ts: Seq[TaskDef]) extends Cmd[Unit]
+  case class SubmitTask(t: Msg) extends Cmd[Unit]
+  case class SubmitTasks(ts: Seq[Msg]) extends Cmd[Unit]
 }
 
 object Effect {

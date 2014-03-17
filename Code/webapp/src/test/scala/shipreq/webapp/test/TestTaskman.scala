@@ -28,9 +28,9 @@ class TestTaskman extends TaskmanInterface {
       }
     }
 
-  override def submitTask(task: TaskDef, s: Session) = run(SubmitTask(task))
-  override def submitTasks(tasks: Seq[TaskDef], s: Session) = run(SubmitTasks(tasks))
+  override def submitTask(msg: Msg, s: Session) = run(SubmitTask(msg))
+  override def submitTasks(msgs: Seq[Msg], s: Session) = run(SubmitTasks(msgs))
 
   @volatile var ran: List[Cmd[_]] = List.empty
-  @volatile var tasksSubmitted: List[TaskDef] = List.empty
+  @volatile var tasksSubmitted: List[Msg] = List.empty
 }

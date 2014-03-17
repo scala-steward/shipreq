@@ -1,7 +1,7 @@
 package shipreq.taskman.api.impl
 
-import shipreq.taskman.api.TaskDef
-import TaskDef._
+import shipreq.taskman.api.Msg
+import Msg._
 
 private[api] case class Priority(value: Short)
 
@@ -12,7 +12,7 @@ private[api] object Priority {
   val Low    = Priority(20)
   @inline def UserWaiting = High
 
-  def forTask(t: TaskDef): Priority = t match {
+  def of(t: Msg): Priority = t match {
     case _: RegistrationRequested
        | _: ReRegistrationAttempted
        | _: PasswordResetRequested

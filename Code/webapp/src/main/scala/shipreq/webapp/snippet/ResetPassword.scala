@@ -6,7 +6,7 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 
-import shipreq.taskman.api.TaskDef
+import shipreq.taskman.api.Msg
 import shipreq.webapp.app.AppConfig.PasswordResetTokenLifespan
 import shipreq.webapp.db.{DaoT, UserRegistrationInfo, ResetPasswordInfo}
 import shipreq.webapp.feature.validation.Validator
@@ -51,17 +51,17 @@ object ResetPassword1 extends SnippetHelpers {
 
           // Account not activated yet
           case Some((u@UserRegistrationInfo(_, _, _, None), _)) =>
-            submitTask(Register1.preRegistrationTask(email.tag, u, dao), dao)
+            submitTask(Register1.preRegistrationMsg(email.tag, u, dao), dao)
 
           // Valid token available
           case Some((UserRegistrationInfo(id, _, _, Some(_)), ResetPasswordInfo(Some(token), Some(issued)))) if !isTokenExpired(issued) =>
             reuseToken(id, token, dao)
-            submitTask(passwordResetTask(email, token), dao)
+            submitTask(passwordResetMsg(email, token), dao)
 
           // No token or token expired
           case Some((UserRegistrationInfo(id, _, _, Some(_)), _)) =>
             val token = issueNewToken(id, dao)
-            submitTask(passwordResetTask(email, token), dao)
+            submitTask(passwordResetMsg(email, token), dao)
         }
 
       // Respond the same in all cases (for security purposes)
@@ -69,8 +69,8 @@ object ResetPassword1 extends SnippetHelpers {
     })
   )
 
-  def passwordResetTask(email: String @@ InputCorrected, token: String): TaskDef =
-    TaskDef.PasswordResetRequested(email.tag, AppSiteMap.ResetPassword2.absoluteUrl(token))
+  def passwordResetMsg(email: String @@ InputCorrected, token: String): Msg =
+    Msg.PasswordResetRequested(email.tag, AppSiteMap.ResetPassword2.absoluteUrl(token))
 
   val jsEmailSent: JsCmd =
     jsClearError & JqExpr("#resetpw1Form,#resetpwTokenSent") ~> JqToggle
