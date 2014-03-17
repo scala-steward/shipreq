@@ -1,18 +1,17 @@
 package shipreq.webapp.lib
 
-import shipreq.webapp.app.AppConfig
 import scala.slick.session.Session
-import shipreq.taskman.api._
-import shipreq.taskman.api.impl._
-import TaskmanApiImpl._
-import TaskmanApi._
+import shipreq.webapp.app.AppConfig
+import shipreq.taskman.api.impl.TaskmanApiImpl._
+import shipreq.taskman.api.{Msg, ApiOp}
+import ApiOp._
 import Effect._
 
 object TaskmanImpl extends TaskmanInterface {
 
   val ctx = new GlobalContext(Some(AppConfig.TaskmanSchema))
 
-  @inline private def run[A](msg: Cmd[A], s: Session): A =
+  @inline private def run[A](msg: ApiOp[A], s: Session): A =
     compile(msg, reify(ctx, s)).unsafePerformIO()
 
   override def submitMsg(m: Msg, s: Session) = run(SubmitMsg(m), s)

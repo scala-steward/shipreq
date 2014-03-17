@@ -3,9 +3,9 @@ package shipreq.taskman.api.impl
 import org.specs2.mutable.Specification
 import shipreq.base.test.db.specs2.DatabaseTest
 import shipreq.taskman.api.Types._
-import shipreq.taskman.api._
-import TaskmanApi._
-import Effect._
+import shipreq.taskman.api.{Msg, ApiOp}
+import ApiOp.SubmitMsg
+import ApiOp.Effect._
 import TaskmanApiImpl._
 
 class TaskSubmissionTest extends Specification with DatabaseTest {
