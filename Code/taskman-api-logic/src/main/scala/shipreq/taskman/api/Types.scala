@@ -3,6 +3,7 @@ package shipreq.taskman.api
 import shipreq.base.util.TypeTags
 
 // TODO Merge with webapp's types
+// TODO use value classes
 
 trait Types extends TypeTags {
   import Types._
