@@ -1,4 +1,4 @@
-package shpireq.taskman.server
+package shipreq.taskman.server
 
 import org.specs2.mutable._
 import org.joda.time.{Period, DateTime}

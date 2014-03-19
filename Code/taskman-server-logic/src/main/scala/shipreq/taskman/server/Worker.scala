@@ -1,4 +1,4 @@
-package shpireq.taskman.server
+package shipreq.taskman.server
 
 import scalaz.{-\/, \/-, ~>}
 import scalaz.effect.IO

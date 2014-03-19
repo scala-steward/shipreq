@@ -1,4 +1,4 @@
-package shpireq.taskman.server
+package shipreq.taskman.server
 
 import org.joda.time.Period
 import scala.collection.immutable.TreeSet

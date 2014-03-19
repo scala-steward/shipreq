@@ -1,4 +1,4 @@
-package shpireq.taskman.server.business
+package shipreq.taskman.server.business
 
 import scalaz._
 import scalaz.effect.{MonadIO, IO}

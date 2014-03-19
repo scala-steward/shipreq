@@ -1,4 +1,4 @@
-package shpireq.taskman
+package shipreq.taskman
 
 import org.joda.time.DateTime
 import scalaz.{\/-, ~>}

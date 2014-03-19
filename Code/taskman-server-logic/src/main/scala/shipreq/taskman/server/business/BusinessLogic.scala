@@ -1,10 +1,10 @@
-package shpireq.taskman.server.business
+package shipreq.taskman.server.business
 
 import scalaz.{~>, \/-, NonEmptyList}
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 import shipreq.base.util.ErrorOr
-import shpireq.taskman.server._
+import shipreq.taskman.server._
 import shipreq.taskman.api.{Types, Msg}
 import Types._
 import BusinessLogic._
