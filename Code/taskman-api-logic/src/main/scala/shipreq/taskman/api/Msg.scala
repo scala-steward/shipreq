@@ -16,7 +16,7 @@ object Msg {
 
   case class RegistrationCompleted(userId: UserId) extends Msg
 
-  case class ReRegistrationAttempted(email: EmailAddr, loginUrl: String) extends Msg
+  case class ReRegistrationAttempted(email: EmailAddr) extends Msg
 
   case class PasswordResetRequested(email: EmailAddr, resetPasswordUrl: String) extends Msg
 

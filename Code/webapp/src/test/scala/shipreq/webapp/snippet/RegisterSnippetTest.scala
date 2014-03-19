@@ -14,8 +14,8 @@ import test.fixture.UserFixture
 import util.NonEmptyTemplate
 import app.AppConfig
 import Register._
-import shipreq.webapp.test.T2.{NoTasksSubmitted, SubmittedOneTask}
-import shipreq.taskman.api.Msg.{ReRegistrationAttempted, RegistrationRequested}
+import shipreq.webapp.test.T2.{NoTasksSubmitted, SubmittedOneTask, ReRegistrationAttemptedT}
+import shipreq.taskman.api.Msg.RegistrationRequested
 
 class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixture {
 
@@ -111,7 +111,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     it("when a email belongs to registered account -- should email with link to reset password") {
       val (r, tt) = test(user1.email, 0)
       r.assertJsAlert(None)
-      SubmittedOneTask{ case ReRegistrationAttempted(_,url) => () => url should include("login") } test tt
+      SubmittedOneTask(ReRegistrationAttemptedT) test tt
     }
   }
 

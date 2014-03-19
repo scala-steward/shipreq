@@ -62,8 +62,8 @@ object TestHelpers {
       yield M.RegistrationRequested(email, url)
 
     case T.ReRegistrationAttempted =>
-      for(email <- genEmail; url <- arbitrary[String])
-      yield M.ReRegistrationAttempted(email, url)
+      for(email <- genEmail)
+      yield M.ReRegistrationAttempted(email)
 
     case T.RegistrationCompleted =>
       for (userId <- genUserId) yield

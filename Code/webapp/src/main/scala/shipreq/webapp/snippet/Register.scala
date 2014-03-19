@@ -83,7 +83,7 @@ object Register1 extends SnippetHelpers {
   }
 
   private def onAlreadyRegistered(email: String @@ Validated): Msg =
-    ReRegistrationAttempted(email.tag, AppSiteMap.Login.absoluteUrl)
+    ReRegistrationAttempted(email.tag)
 
   private def registrationRequestedTask(email: String @@ Validated, token: String): Msg =
     RegistrationRequested(email.tag, AppSiteMap.Register2.absoluteUrl(token))

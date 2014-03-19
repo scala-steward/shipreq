@@ -85,7 +85,7 @@ object T2 {
     { case RegistrationRequested(_, url) => absUrl(token)(url) }
 
   val ReRegistrationAttemptedT: TaskTestPF =
-    { case ReRegistrationAttempted(_, url) => absUrl("login")(url) }
+    { case ReRegistrationAttempted(_) => () => () }
 
   val PasswordResetRequestedT: TaskTestPF =
     { case PasswordResetRequested(_, url) => absUrl("/resetpw/")(url) }
