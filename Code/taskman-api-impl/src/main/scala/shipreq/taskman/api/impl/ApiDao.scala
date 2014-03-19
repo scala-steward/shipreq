@@ -13,6 +13,9 @@ private[api] class ApiSql(prefix: String) {
 
   val CreateMsg = update[(Short, Option[Ser], Short)](
     s"select ${prefix}create_msg_v01(?::int2, ?::json, ?::int2)")
+
+  val CfgPut = update[(String, String)](
+    s"select ${prefix}cfg_update(?::VARCHAR, ?::TEXT)")
 }
 
 private[api] class ApiDao(ctx: TaskmanApiImpl.GlobalContext, session: Session) {
@@ -25,4 +28,7 @@ private[api] class ApiDao(ctx: TaskmanApiImpl.GlobalContext, session: Session) {
 
   def createMsg(m: MsgType, taskData: Ser, p: Priority): Unit =
     CreateMsg.execute(m.id.toShort, Some(taskData), p.value)
+
+  def cfgPut(k: String, v: String): Unit =
+    CfgPut.execute(k, v)
 }

@@ -5,9 +5,10 @@ import net.liftweb.http._
 import provider.HTTPParam
 
 import shipreq.webapp._
-import app.{Defaults, AppSiteMap}
+import shipreq.webapp.app.{DI, Defaults, AppSiteMap}
 import db.DB
 import feature.SessionStats
+import lib.Taskman
 import security.Oshiro
 
 /**
@@ -25,6 +26,7 @@ class Boot {
     configureLift()
     preloadTemplates()
     initDatabase()
+    initTaskman()
     logImportantSettings()
   }
 
@@ -57,6 +59,11 @@ class Boot {
     DB.init()
     Defaults.init()
   }
+
+  def initTaskman(): Unit =
+    DI.DaoProvider.vend.withSession(s =>
+      DI.Taskman.vend.run(
+        Taskman.updateCfg, s.session))
 
   def preloadTemplates(): Unit = {
     snippet.DynModal

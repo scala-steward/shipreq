@@ -1,9 +1,13 @@
 package shipreq.webapp.test
 
-import shipreq.webapp.lib.{TaskmanImpl, TaskmanInterface}
 import scala.slick.session.Session
+import scalaz.~>
+import scalaz.Free.FreeC
 import shipreq.webapp.app.DI
-import shipreq.taskman.api.{ApiOp, Msg}
+import shipreq.webapp.lib.{TaskmanImpl, TaskmanInterface}
+import shipreq.taskman.FreeEffect._
+import shipreq.taskman.api.Msg
+import shipreq.taskman.api.ApiOp
 import ApiOp._
 
 object TestTaskman {
@@ -18,17 +22,16 @@ class TestTaskman extends TaskmanInterface {
 
   def ctx = TaskmanImpl.ctx
 
-  @inline private def run[A](cmd: ApiOp[A]): Unit =
-    synchronized {
-      ran ::= cmd
-      cmd match {
-        case SubmitMsg(t) => tasksSubmitted ::= t
-        case SubmitMsgs(ts) => tasksSubmitted :::= ts.toList
-      }
+  val trans: (ApiOp ~> IOM) = new (ApiOp ~> IOM) {
+    def apply[A](c: ApiOp[A]): IOM[A] = c match {
+      case SubmitMsg(t)   => iom{ tasksSubmitted ::= t }
+      case SubmitMsgs(ts) => iom{ tasksSubmitted :::= ts.toList }
+      case CfgPut(k, v)   => iom{}
     }
+  }
 
-  override def submitMsg(m: Msg, s: Session) = run(SubmitMsg(m))
-  override def submitMsgs(ms: Seq[Msg], s: Session) = run(SubmitMsgs(ms))
+  override def run[A](ops: FreeC[ApiOp, A], s: Session): A =
+    synchronized(compile(ops, trans).unsafePerformIO())
 
   @volatile var ran: List[ApiOp[_]] = List.empty
   @volatile var tasksSubmitted: List[Msg] = List.empty
