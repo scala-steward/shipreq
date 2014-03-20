@@ -4,7 +4,6 @@ import org.specs2.mutable._
 import org.joda.time.{Period, DateTime}
 import scalaz.{Endo, ~>}
 import scalaz.effect.IO
-import shipreq.base.util.ErrorOr
 import shipreq.base.test.MockOpTransformer
 import shipreq.taskman.api.Msg.ReRegistrationAttempted
 import shipreq.taskman.api.Types._
@@ -41,20 +40,22 @@ class WorkerTest extends Specification {
   val allowAssignWorker = endoMod[MockSops](_.assignWorkerR << Some(md))
   val msgCompleteCrash = endoMod[MockSops](_.msgCompleteR << ???)
 
+  val clock = IO(DateTime.now)
+
   val fpAbort: FailurePolicy =
-    msg => err => FailurePolicyR(MsgFailedAbort(msg), Nil)
+    f => FailureResponse(MsgFailedAbort(f.m), Nil)
 
   val fpAbortSupport: FailurePolicy =
-    msg => err => FailurePolicyR(MsgFailedAbort(msg), NotifySupportWorkerFailed(msg, err) :: Nil)
+    f => FailureResponse(MsgFailedAbort(f.m), NotifySupportWorkerFailed(f.m, f.err) :: Nil)
 
   val fpRetry: FailurePolicy =
-    msg => err => FailurePolicyR(MsgFailedRetry(msg, Period days 1), Nil)
+    f => FailureResponse(MsgFailedRetry(f.m, Period days 1), Nil)
 
-  val mpNop: MsgProcessor = msg => IO(ErrorOr(()))
+  val mpNop: MsgProcessor = msg => nopTask
   val mpCrash: MsgProcessor = msg => ???
 
   def test(opToIo: Sop ~> IO, fp: FailurePolicy, mp: MsgProcessor): WorkResult =
-    Worker.Reified(WorkerId(7))(NodeId(4), opToIo, fp, mp).process(mh).unsafePerformIO()
+    Worker.Reified(WorkerId(7))(NodeId(4), opToIo, clock, fp, mp).process(mh).unsafePerformIO()
 
   "Worker.Reified" >> {
 

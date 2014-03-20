@@ -3,7 +3,7 @@ package shipreq.taskman
 import org.joda.time.DateTime
 import scalaz.{\/-, ~>}
 import scalaz.effect.{MonadIO, IO}
-import shipreq.base.util.ErrorOr
+import shipreq.base.util.{ErrorTag, ErrorOr}
 import shipreq.taskman.api.{Msg, Priority}
 
 package object server {
@@ -27,10 +27,16 @@ package object server {
     assert(failureCount >= 0, s"Failure count = $failureCount")
   }
 
+  /**
+   * Indication that an error is deterministic and will always occur.
+   * In other words, there is no point in retrying because whatever caused this error the first time is guaranteed to
+   * occur next time.
+   */
+  case object Deterministic extends ErrorTag
+
   implicit class OpExt[F[_], A](val op: F[A]) extends AnyVal {
     def toIO(implicit opToIo: F ~> IO): IO[A] = opToIo(op)
     def toIOM[M[_]](implicit opToIo: F ~> IO, m: MonadIO[M]): M[A] = toIO.liftIO[M]
     def toIOE(implicit opToIo: F ~> IO): IO[ErrorOr[A]] = toIO.map(\/-(_))
   }
-
 }
