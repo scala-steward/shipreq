@@ -215,7 +215,7 @@ object ShipReq extends Build {
         val dir = "taskman-server-impl"
 
         override def deps =
-          Akka.actor ++ testScope(Akka.testkit)
+          Akka.actor ++ javaMail ++ testScope(Akka.testkit)
 
         override def project = typicalProject
           .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
