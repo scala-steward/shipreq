@@ -59,7 +59,7 @@ class ManagerTest extends Specification with ScalaCheck {
       (for (a <- popJob; b <- popJob) yield (a,b)).run(q) match {
         case (r, (None, None))       => r == q && q.isEmpty
         case (r, (Some(j), None))    => r == q - j
-        case (r, (Some(j), Some(k))) => r == q - j - k && j.p.value >= k.p.value
+        case (r, (Some(j), Some(k))) => r == q - j - k && j.priority.value >= k.priority.value
       }
     }
   }

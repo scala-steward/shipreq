@@ -14,7 +14,7 @@ package object server {
 
   case class MsgId(value: Long) extends AnyVal
 
-  case class MsgHeader(id: MsgId, p: Priority, created: DateTime) {
+  case class MsgHeader(id: MsgId, priority: Priority, created: DateTime) {
     // override def toString = s"MsgHeader($id,$p,new DateTime(${created.getMillis}))\n"
     override def equals(other: Any): Boolean = other match {
       case MsgHeader(id2, _, _) if id.value == id2.value => true
@@ -23,7 +23,7 @@ package object server {
     override def hashCode: Int = (id.value ^ (id.value >>> 32)).toInt
   }
 
-  case class MsgDetail(h: MsgHeader, m: Msg, failureCount: Short) {
+  case class MsgDetail(hdr: MsgHeader, msg: Msg, failureCount: Short) {
     assert(failureCount >= 0, s"Failure count = $failureCount")
   }
 

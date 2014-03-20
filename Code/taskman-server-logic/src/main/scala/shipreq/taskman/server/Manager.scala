@@ -15,7 +15,7 @@ object Manager {
 
   object PrioritisationOrder extends Ordering[MsgHeader] {
     override def compare(x: MsgHeader, y: MsgHeader): Int = {
-      val a = y.p.value - x.p.value
+      val a = y.priority.value - x.priority.value
       if (a != 0) a else {
         val b = x.created.compareTo(y.created)
         if (b != 0) b else
@@ -30,7 +30,7 @@ object Manager {
     State.modify(_ ++ ms)
 
   val getHighestPriority: JobQueueS[Option[Priority]] =
-    State.gets(_.headOption.map(_.p))
+    State.gets(_.headOption.map(_.priority))
 
   val popJob: JobQueueS[Option[MsgHeader]] =
     State(q =>

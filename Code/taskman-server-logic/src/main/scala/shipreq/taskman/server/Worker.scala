@@ -70,7 +70,7 @@ object Worker {
     private[this] val catchTaskmanErrorsN = catchTaskmanErrors(None)
 
     private[this] def performWork(m: MsgDetail): IO[WorkResult] =
-      ErrorOr.catchExceptionM(msgProcessor(m.m)) >>= {
+      ErrorOr.catchExceptionM(msgProcessor(m.msg)) >>= {
         case \/-(_) =>
           MarkMsgComplete(m).toIO >> Completed.toIO
         case -\/(err) =>
