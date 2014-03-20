@@ -1,5 +1,9 @@
 package shipreq.base.util
 
+import java.util.{Properties, Locale}
+import scalaz.\/-
+import shipreq.base.util.ExternalValueReader.Retriever
+
 object RunMode extends Enumeration {
 
   val Development = Value(1, "Development")
@@ -9,7 +13,7 @@ object RunMode extends Enumeration {
   val Pilot       = Value(5, "Pilot")
   val Profile     = Value(6, "Profile")
 
-  def names(m: Value): List[String] = m match {
+  def namesFor(m: Value): List[String] = m match {
     case Development => List("dev", "development")
     case Test        => List("test")
     case Staging     => List("staging")
@@ -18,7 +22,29 @@ object RunMode extends Enumeration {
     case Profile     => List("profile")
   }
 
-  def detect(st: Array[StackTraceElement] = Thread.currentThread.getStackTrace): Value =
+  private[this] val normaliseName: String => String = _ toLowerCase Locale.ENGLISH
+
+  private[this] val nameToMode: Map[String, Value] =
+      values.toList.flatMap(m =>
+        (m.toString :: namesFor(m))
+          .map(n => (normaliseName(n) -> m))
+      ).toMap
+
+  def forName(n: String): Option[Value] =
+    nameToMode.get(normaliseName(n))
+
+  def retriever(implicit r: Retriever[String]): Retriever[Value] =
+    new StringBasedValueReader(r).tryParseE[Value](s =>
+      forName(s) match {
+        case Some(m) => \/-(m)
+        case None    => Error(s"Unable to parse run mode: $s")
+      }
+    )
+
+  val retrieverFromSysProps: Retriever[Value] =
+    retriever(JPropertiesValueReader(Props.systemProps(new Properties)).retrieverS)
+
+  def detectFromStackTrace(st: Array[StackTraceElement] = Thread.currentThread.getStackTrace): Value =
     if (doesStackTraceContainKnownTestRunner(st))
       Test
     else

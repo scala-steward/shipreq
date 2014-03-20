@@ -4,8 +4,7 @@ import ch.qos.logback.classic.Level
 import com.jolbox.bonecp.{ConnectionHandle, BoneCPDataSource}
 import com.jolbox.bonecp.hooks.{AbstractConnectionHook, ConnectionHook}
 import org.postgresql.ds.PGSimpleDataSource
-import org.slf4j.LoggerFactory
-import shipreq.base.util.ErrorOr
+import shipreq.base.util.{ErrorOr, Logger}
 import shipreq.base.util.ExternalValueReader.{get => getEV, Retriever => R, _}
 
 case class DatabaseConnection(host: String, name: String, schema: Option[String], ds: BoneCPDataSource) {
@@ -13,7 +12,7 @@ case class DatabaseConnection(host: String, name: String, schema: Option[String]
 }
 
 object DatabaseConnection {
-  private[this] val log = LoggerFactory.getLogger(getClass)
+  private[this] val log = Logger.forClass(getClass)
 
   type C = BoneCPDataSource => BoneCPDataSource
 

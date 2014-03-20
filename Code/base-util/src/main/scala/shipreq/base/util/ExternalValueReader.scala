@@ -31,7 +31,11 @@ object ExternalValueReader {
     getOE(name) getOrElse defaultError(name)
 
   def getO[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[T] =
-    getOE(name).flatMap(_.toOption)
+    getOE(name) match {
+      case None         => None
+      case Some(\/-(v)) => Some(v)
+      case Some(-\/(e)) => throw Error.throwable(e)
+    }
 
   def tryGet[T](name: String, moreNames: String*)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] = {
     val es = (name #:: moreNames.toStream).map(get(_))
@@ -44,7 +48,7 @@ object ExternalValueReader {
       case -\/(e) => throw Error.throwable(e)
     }
 
-  def tryNeed[T](name: String, default: T)(implicit s: PropScope, r: Retriever[T]): T =
+  def tryNeed[T](name: String, default: => T)(implicit s: PropScope, r: Retriever[T]): T =
     getO(name) getOrElse default
 
   def tryUse[T](name: String)(f: T => Unit)(implicit s: PropScope, r: Retriever[T]): Unit =
@@ -80,13 +84,13 @@ class StringBasedValueReader(_retrieverS: Retriever[String]) {
 
   implicit final def retrieverS = _retrieverS
 
-  protected def tryParse[T](f: String => T): Retriever[T] =
+  def tryParse[T](f: String => T): Retriever[T] =
     tryParseE(s => \/-(f(s)))
 
-  protected def tryParseE[T](f: String => ErrorOr[T]): Retriever[T] =
+  def tryParseE[T](f: String => ErrorOr[T]): Retriever[T] =
     tryParseOE(s => Some(f(s)))
 
-  protected def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
+  def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
     Retriever(k =>
         ErrorOr.annotateO(s"Error parsing $k")(
           ErrorOr.catchExceptionM(

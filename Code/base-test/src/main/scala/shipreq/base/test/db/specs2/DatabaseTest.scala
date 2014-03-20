@@ -11,7 +11,7 @@ import shipreq.base.db.{DatabaseConnection, DbTemplate}
 
 object TestDB {
   val runMode = RunMode.Test
-  val props = JPropertiesValueReader(Props.standard(runMode)(new Properties))
+  val props = JPropertiesValueReader(Props.loadUsingStandardStrategy(runMode)(new Properties))
   import props._
   private object db extends DbTemplate {
     override protected lazy val connection = DatabaseConnection.establish_!()
