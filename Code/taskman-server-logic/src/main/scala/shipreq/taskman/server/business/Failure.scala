@@ -5,18 +5,9 @@ import shipreq.taskman.api.Priority
 import shipreq.taskman.server.{Sop, Deterministic}
 import shipreq.taskman.server.Sop._
 import shipreq.taskman.server.Worker.{FailurePolicy, FailureResponse, FailureCtx}
+import shipreq.base.util.jodatime.JodaTimeHelpers._
 
 object Failure {
-  implicit class TimeHelpers(val n: Int) extends AnyVal {
-    def second  = Period seconds n
-    def seconds = Period seconds n
-    def minute  = Period minutes n
-    def minutes = Period minutes n
-    def hour    = Period hours n
-    def hours   = Period hours n
-    def day     = Period days n
-    def days    = Period days n
-  }
 
   def composeF[R,A,B,C](h: B => A => C, g: R => B): R => A => C =
     r => h(g(r))
