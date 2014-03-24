@@ -4,12 +4,17 @@ package db
 import java.sql.Timestamp
 import org.joda.time.DateTime
 import scala.slick.jdbc.{SetParameter, GetResult}
-import scala.slick.session.PositionedParameters
+import scala.slick.session.{PositionedResult, PositionedParameters}
+import scalaz.NonEmptyList
+import shipreq.base.db.SqlHelpers._
+import lib.ScalazSubset._
 import lib.Types._
 import feature.UcFilter
-import shipreq.base.db.SqlHelpers._
+import security.PasswordAndSalt
 
 object SqlHelpers {
+
+  implicit def autotag[T <: AnyRef](t: T): T @@ Validated = t.tag[Validated]
 
   @inline implicit def shortToFieldKeyType(ordinal: Short): FieldKeyType = FieldKeyType(ordinal)
 
@@ -54,4 +59,38 @@ object SqlHelpers {
   implicit val SP_FieldKeyType: SetParameter[FieldKeyType] = new SetParameter[FieldKeyType] {
     def apply(v: FieldKeyType, pp: PositionedParameters): Unit = pp.setShort(v.id)
   }
+
+  implicit val GR_FieldKey = GetResult {r => FieldKeyRec(r.<<, r.<<, r.<<)}
+  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt.restore(r.nextString.tag, r.<<))
+  implicit val GR_Project = GetResult(r => Project(r.<<, r.<<, r.<<))
+  implicit val GR_ProjectSummary = GetResult(r => ProjectSummary(r.nextId[ProjectId], r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_UcFieldText= GetResult(r => UcFieldText(r.nextStringOption.asLabelC, r.<<, r.<<, r.<<))
+  implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
+  implicit val GR_UseCaseIdent = GetResult {r => UseCaseIdent(r.<<, r.<<, r.<<)}
+  implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.nextString), r.<<))
+  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.nextId[UseCaseIdentId], r.<<, r.<<, r.<<))
+  implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
+  implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ResetPasswordInfo = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
+  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
+
+  implicit val GR_Share = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ShareSummary = GetResult(r => ShareSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+
+  implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
+    def apply(v: PasswordAndSalt, pp: PositionedParameters) {
+      pp.setString(v.hashedPassword)
+      pp.setString(v.salt)
+    }
+  }
+
+  def userRoles(r: PositionedResult): Set[String] =
+    r.nextStringOption match {
+      case None        => Set.empty
+      case Some(roles) => roles.split(',').toSet
+    }
+
+  private def idsToSql(ids: NonEmptyList[JLong]): String = ids.map(_.toString).intercalate(",")
+
 }
