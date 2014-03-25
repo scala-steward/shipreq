@@ -42,4 +42,8 @@ package object server {
     def liftIOM[M[_]](implicit opToIo: F ~> IO, m: MonadIO[M]): M[A] = toIO.liftIO[M]
     def liftIOE(implicit opToIo: F ~> IO): IOE[A] = toIO.map(\/-(_))
   }
+
+  implicit def MsgDetailToHdr(m: MsgDetail): MsgHeader = m.hdr
+  implicit def MsgDetailToId(m: MsgDetail): MsgId = m.hdr.id
+  implicit def MsgHeaderToId(m: MsgHeader): MsgId = m.id
 }

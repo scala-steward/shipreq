@@ -13,10 +13,27 @@ import Sop._
 
 object SopImpl {
 
+  sealed trait ArchiveIntent {
+    def resultFlag: Char
+    val resultFlagS = resultFlag.toString
+    def incFailureCount_? : Boolean
+    def failureCountInc = if (incFailureCount_?) 1 else 0
+  }
+
+  case object Succeeded extends ArchiveIntent {
+    override def resultFlag = 's'
+    override def incFailureCount_? = false
+  }
+
+  case object FailAndAbort extends ArchiveIntent {
+    override def resultFlag = 'f'
+    override def incFailureCount_? = true
+  }
+
   object Sql {
     import java.sql.Timestamp
     import scala.slick.jdbc.{GetResult, SetParameter}
-    import scala.slick.jdbc.StaticQuery.{query, queryNA, update, updateNA}
+    import scala.slick.jdbc.StaticQuery.{query, update}
     import scala.slick.session.PositionedParameters
     import shipreq.base.db.SqlHelpers._
 
@@ -26,6 +43,13 @@ object SopImpl {
     // TODO joda time + slick should be shared in base-db
     implicit def TimestampToDateTime(t: Timestamp): DateTime = new DateTime(t)
     implicit val GR_DateTime = GetResult(r => TimestampToDateTime(r.nextTimestamp))
+
+    implicit object SP_ArchiveIntent extends SetParameter[ArchiveIntent] {
+      def apply(v: ArchiveIntent, pp: PositionedParameters): Unit = {
+        pp setString v.resultFlagS
+        pp setInt v.failureCountInc
+      }
+    }
 
     implicit val GR_MsgId = GetResult(r => MsgId(r.<<))
     implicit object SP_MsgId extends SetParameter[MsgId] {
@@ -106,6 +130,27 @@ object SopImpl {
         where id = ? and node = ? and worker is null
         returning type, data, failure_count
       """.sql)
+
+    // TODO Doesn't confirm worker. and node = ? and worker = ?  , NodeId, WorkerId
+    val failAndRetryQ = update[(Period, MsgId)]("""
+        update msgq
+        set
+          node = null,
+          worker = null,
+          failure_count = failure_count + 1,
+          updated_at = now(),
+          effective_from = now() + ?
+        where id = ?
+      """.sql)
+
+    // TODO Doesn't confirm worker. and node = ? and worker = ?  , NodeId, WorkerId
+    val archiveMsgQ = update[(MsgId, ArchiveIntent)]("""
+        with tmp as (
+          delete from msgq where id=?
+          returning id, type, data, ?, failure_count+?, created_at, now()
+        )
+        insert into msg_history select * from tmp
+      """.sql)
   }
 
   // ===================================================================================================================
@@ -137,13 +182,19 @@ object SopImpl {
               MsgDetail(hdr, msg, failureCount)))
       }
 
+    def failAndRetry(msg: MsgId, delay: Period): Unit =
+      failAndRetryQ.execute(delay, msg)
+    
+    def archiveMsg(msg: MsgId, status: ArchiveIntent): Unit =
+      archiveMsgQ.execute(msg, status)
+
   }
 }
 
 // =====================================================================================================================
 
 class SopImpl(db: Database) extends (Sop ~> IO) {
-  import SopImpl.Dao
+  import SopImpl._
 
   private[this] def io[A](f: Dao => A): IO[A] =
     IO(db.withSession(implicit s => f(new Dao())))
@@ -156,10 +207,16 @@ class SopImpl(db: Database) extends (Sop ~> IO) {
     case GetMsgAssignWorker(node, worker, hdr) =>
       io(_.getMsgAssignWorker(node, worker, hdr))
 
+    case MsgFailedRetry(m, delay) =>
+      io(_.failAndRetry(m, delay))
+
+    case MarkMsgComplete(m) =>
+      io(_.archiveMsg(m, Succeeded))
+
+    case MsgFailedAbort(m) =>
+      io(_.archiveMsg(m, FailAndAbort))
+
     /*
-    case class MarkMsgComplete(m: MsgDetail) extends Sop[Unit]
-    case class MsgFailedAbort(m: MsgDetail) extends FailedJobReaction
-    case class MsgFailedRetry(m: MsgDetail, p: Period) extends FailedJobReaction
     case class NotifySupportWorkerFailed(m: MsgDetail, e: Error) extends Sop[Unit]
     case class NotifySupportTaskmanError(e: Error, m: Option[MsgDetail]) extends Sop[Unit]
      */

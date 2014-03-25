@@ -49,7 +49,7 @@ object Failure {
   def retryEveryUntil(every: Period, cutoff: Period): RetryRule = {
     val everyS = Some(every)
     ctx => {
-      val retryExpiry = ctx.m.hdr.created plus cutoff
+      val retryExpiry = ctx.m.created plus cutoff
       if (ctx.now.isAfter(retryExpiry)) None else everyS
     }
   }
@@ -107,7 +107,7 @@ object Failure {
 
   val priorityBasedRetryRule: RetryRule =
     ctx => {
-      val p = ctx.m.hdr.priority.value
+      val p = ctx.m.priority.value
       val r: RetryRule =
         if (p >= Priority.High.value) impatientRetries
         else patientRetries
