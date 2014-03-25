@@ -215,10 +215,12 @@ object ShipReq extends Build {
         val dir = "taskman-server-impl"
 
         override def deps =
-          Akka.actor ++ javaMail ++ testScope(Akka.testkit)
+          Akka.actor ++ javaMail ++
+          testScope(Akka.testkit ++ specs2)
 
         override def project = typicalProject
           .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
+          .dependsOn(baseTest % "test")
           .settings(
             scalacOptions in Compile ~= removeValues("-optimise") // because Akka docs
           )

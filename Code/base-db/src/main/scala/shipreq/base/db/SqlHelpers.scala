@@ -67,10 +67,17 @@ object SqlHelpers {
     def apply(v: JShort @@ Tag, pp: PositionedParameters): Unit = pp.setShort(v)
   }
 
+  private[this] val SqlComments = """\s+--[^\r\n]*""".r
   private[this] val LeadingWhitespace = """[\r\n]+\s*""".r
 
   implicit class SqlStringExt(val s: String) extends AnyVal {
-    def sql = LeadingWhitespace.replaceAllIn(s, " ").trim
+    def sql = {
+      var t = s
+      t = SqlComments.replaceAllIn(t, "")
+      t = LeadingWhitespace.replaceAllIn(t, " ")
+      t.trim
+    }
+
     def inTable(table: String) = {
       val p = table + "."
       """(^|,)\s*""".r.replaceAllIn(s, _.group(0)+p)

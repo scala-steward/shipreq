@@ -19,10 +19,10 @@ object Sop {
    * Assigns msgs to the given node id, and retrieves them.
    *
    * @param limit The maximum number of msgs to assign and return.
-   * @param minPriority All msgs will be at least this priority or higher.
    * @param assignmentTrustPeriod Period of time for which another node's assignment is respected.
+   * @param queued The highest priority msg in, and size of the in-memory queue.
    */
-  case class GetMsgsAssignNode(n: NodeId, limit: Int, minPriority: Option[Priority], assignmentTrustPeriod: Period)
+  case class GetMsgsAssignNode(n: NodeId, limit: Int, assignmentTrustPeriod: Period, queued: Option[(Priority, Int)])
     extends Sop[Seq[MsgHeader]]
 
   case class GetMsgAssignWorker(n: NodeId, w: WorkerId, m: MsgHeader) extends Sop[Option[MsgDetail]]

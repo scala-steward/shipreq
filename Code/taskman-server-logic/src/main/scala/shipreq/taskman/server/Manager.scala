@@ -29,8 +29,13 @@ object Manager {
   def addToQueue(ms: Seq[MsgHeader]): JobQueueS[Unit] =
     State.modify(_ ++ ms)
 
-  val getHighestPriority: JobQueueS[Option[Priority]] =
-    State.gets(_.headOption.map(_.priority))
+  val getQueueStatus: JobQueueS[Option[(Priority, Int)]] = // TODO cache?
+    State.gets(q =>
+      if (q.isEmpty)
+        None
+      else
+        Some((q.head.priority, q.size))
+    )
 
   val popJob: JobQueueS[Option[MsgHeader]] =
     State(q =>
@@ -44,10 +49,9 @@ object Manager {
 
     val pollTask: JobQueueSIO[Int] =
       for {
-        curHighPri <- getHighestPriority.lift[IO]
-        minPri     =  curHighPri.map(_.inc)
-        jobs       <- GetMsgsAssignNode(node, limit, minPri, assignmentTrustPeriod).liftIOM[JobQueueSIO]
-        _          <- addToQueue(jobs).lift[IO]
+        queueStatus <- getQueueStatus.lift[IO]
+        jobs        <- GetMsgsAssignNode(node, limit, assignmentTrustPeriod, queueStatus).liftIOM[JobQueueSIO]
+        _           <- addToQueue(jobs).lift[IO]
       } yield jobs.length
   }
 }

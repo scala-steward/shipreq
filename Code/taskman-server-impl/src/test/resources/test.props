@@ -1,0 +1,6 @@
+db.appname  = TASKMAN_TEST
+db.schema   = taskman_server_impl
+db.database = usecase_test
+db.username = usecase_test
+db.password = ucet
+

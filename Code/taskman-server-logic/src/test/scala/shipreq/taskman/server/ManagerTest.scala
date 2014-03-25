@@ -28,8 +28,8 @@ class ManagerTest extends Specification with ScalaCheck {
       addToQueue(ms).run(q)._1 must containAllOf(q.toSeq) and containAllOf(ms.distinct)
     }
 
-    "getHighestPriority" in {
-      getHighestPriority.run(eg4) ==== (eg4, Some(Priority(6)))
+    "getQueueStatus" in {
+      getQueueStatus.run(eg4) ==== (eg4, Some((Priority(6), 4)))
     }
 
     "popJob" ! prop { (q: JobQueue) =>
@@ -52,8 +52,8 @@ class ManagerTest extends Specification with ScalaCheck {
         q ==== emptyQueue + d
       }
 
-      "Min priority be unspecified" in {
-        mockSop.soleOp.minPriority ==== None
+      "Queue status be unspecified" in {
+        mockSop.soleOp.queued ==== None
       }
     }
 
@@ -65,8 +65,8 @@ class ManagerTest extends Specification with ScalaCheck {
         q ==== emptyQueue + a + c + d
       }
 
-      "Min priority in query should be 7" in {
-        mockSop.soleOp.minPriority ==== Some(Priority(7))
+      "Queue status should be provided" in {
+        mockSop.soleOp.queued ==== Some((Priority(6), 1))
       }
     }
   }

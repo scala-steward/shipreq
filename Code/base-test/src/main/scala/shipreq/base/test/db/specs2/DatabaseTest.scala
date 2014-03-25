@@ -43,7 +43,7 @@ trait DatabaseTest extends AroundExample {
   implicit def session: Session = _session.getOrElse(throw new RuntimeException("No session available."))
 
   override def around[T: AsResult](t: => T): Result = {
-    TestDB.init()
+    TestDB.init() // TODO needs some kind of shutdown hook, keeps crashing from SBT with ~test
     TestDB.slick.withTransaction(s => {
       _session = Some(s)
       try AsResult(t)
