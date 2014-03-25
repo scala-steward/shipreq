@@ -31,11 +31,7 @@ object ExternalValueReader {
     getOE(name) getOrElse defaultError(name)
 
   def getO[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[T] =
-    getOE(name) match {
-      case None         => None
-      case Some(\/-(v)) => Some(v)
-      case Some(-\/(e)) => throw Error.throwable(e)
-    }
+    getOE(name) map ErrorOr.require_!
 
   def tryGet[T](name: String, moreNames: String*)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] = {
     val es = (name #:: moreNames.toStream).map(get(_))
@@ -43,10 +39,7 @@ object ExternalValueReader {
   }
 
   def need[T](name: String)(implicit s: PropScope, r: Retriever[T]): T =
-    get(name) match {
-      case \/-(t) => t
-      case -\/(e) => throw Error.throwable(e)
-    }
+    ErrorOr require_! get(name)
 
   def tryNeed[T](name: String, default: => T)(implicit s: PropScope, r: Retriever[T]): T =
     getO(name) getOrElse default

@@ -20,7 +20,7 @@ final class BopImpl(emailer: EmailImpl) extends (Bop ~> IOE) with Logger {
           log.info("{} completed in {}ms.", op.getClass.getSimpleName, time)
         case -\/(e) =>
           log.error("{} failed after {}ms with [{}]. Op: {}",
-            op.getClass.getSimpleName, java.lang.Long.valueOf(time), Error msg e, op)
+            op.getClass.getSimpleName, java.lang.Long.valueOf(time), e.msg, op)
       }
     )
 

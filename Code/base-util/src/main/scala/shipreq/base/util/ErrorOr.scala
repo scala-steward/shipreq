@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import scalaz.Scalaz.Id
 import scalaz.{Applicative, -\/, \/-, \&/, Lens}
 import scalaz.\&/.{Both, That, This}
 
@@ -7,13 +8,16 @@ object ErrorOr {
   def apply[A](a: A): ErrorOr[A] = \/-(a)
 
   def catchException[A](a: => ErrorOr[A]): ErrorOr[A] =
-    try a catch { case e: Throwable => Error(e) }
+    catchExceptionM[Id, A](a)
 
   def catchExceptionM[M[_], A](a: => M[ErrorOr[A]])(implicit M: Applicative[M]): M[ErrorOr[A]] =
-    try a catch { case e: Throwable => M.point(Error(e)) }
+    try a catch {
+      case ErrorAsThrowable(e) => M.point(e.toErrorOr)
+      case e: Throwable        => M.point(Error(e))
+    }
 
   def annotate[A](ann: => String)(eoa: ErrorOr[A]): ErrorOr[A] =
-    eoa.leftMap(Error.annotate(ann, _))
+    eoa.leftMap(_ annotate ann)
 
   def annotateO[A](ann: => String)(o: Option[ErrorOr[A]]): Option[ErrorOr[A]] =
     o.map(annotate(ann))
@@ -39,15 +43,48 @@ object ErrorOr {
   def require_![A](eoa: ErrorOr[A]): A =
     eoa match {
       case \/-(v) => v
-      case -\/(e) => throw Error.throwable(e)
+      case -\/(e) => e.throw_!()
     }
 }
 
 trait ErrorTag
 
 final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.empty) {
-  def tag(t: ErrorTag) = Error(reason, tags + t)
-  def is(t: ErrorTag): Boolean = tags contains t
+  import Error._
+
+  def annotate(a: String): Error =
+    reasonLens.mod({
+      case This(m)    => This(merge(a, m))
+      case That(e)    => Both(a, e)
+      case Both(m, e) => Both(merge(a, m), e)
+    }, this)
+
+  def tag(t: ErrorTag) =
+    Error(reason, tags + t)
+
+  def is(t: ErrorTag): Boolean =
+    tags contains t
+
+  def throw_!(): Nothing =
+    throw throwable
+
+  def toErrorOr[A]: ErrorOr[A] =
+    -\/(this)
+
+  def msg: String = reason match {
+    case This(m)    => m
+    case That(e)    => e.getMessage
+    case Both(m, e) => merge(m, e.getMessage)
+  }
+
+  def cause: Option[Throwable] = reason match {
+    case This(_)    => None
+    case That(e)    => Some(e)
+    case Both(_, e) => Some(e)
+  }
+
+  def throwable: Throwable =
+    ErrorAsThrowable(this)
 }
 
 object Error {
@@ -62,7 +99,7 @@ object Error {
   @inline final def error[A](e: Throwable)           : Error = Error(That(e))
   @inline final def error[A](m: String, e: Throwable): Error = Error(Both(m, e))
 
-  private[this] def merge(a: String, b: String): String =
+  private def merge(a: String, b: String): String =
     if (a.isEmpty) b
     else if (b.isEmpty) a
     else {
@@ -72,23 +109,6 @@ object Error {
          else " "
       a + p + b
     }
-
-  def msg(error: Error): String = error.reason match {
-    case This(m)    => m
-    case That(e)    => e.getMessage
-    case Both(m, e) => merge(m, e.getMessage)
-  }
-
-  def annotate(a: String, error: Error): Error =
-    reasonLens.mod({
-      case This(m)    => This(merge(a, m))
-      case That(e)    => Both(a, e)
-      case Both(m, e) => Both(merge(a, m), e)
-    }, error)
-
-  def throwable(error: Error): Throwable = error.reason match {
-    case This(m)    => new RuntimeException(m)
-    case That(e)    => e
-    case Both(m, e) => new RuntimeException(m, e)
-  }
 }
+
+final case class ErrorAsThrowable(e: Error) extends RuntimeException(e.msg, e.cause getOrElse null)
