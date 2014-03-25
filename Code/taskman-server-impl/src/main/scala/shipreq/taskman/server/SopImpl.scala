@@ -5,7 +5,10 @@ import org.postgresql.util.PGInterval
 import scala.slick.session.{Database, Session}
 import scalaz.~>
 import scalaz.effect.IO
+import shipreq.base.util.ErrorOr
 import shipreq.taskman.api.{Priority, Msg}
+import shipreq.taskman.api.Types._
+import shipreq.taskman.api.impl.Serialisation
 import Sop._
 
 object SopImpl {
@@ -25,9 +28,22 @@ object SopImpl {
     implicit val GR_DateTime = GetResult(r => TimestampToDateTime(r.nextTimestamp))
 
     implicit val GR_MsgId = GetResult(r => MsgId(r.<<))
+    implicit object SP_MsgId extends SetParameter[MsgId] {
+      def apply(v: MsgId, pp: PositionedParameters): Unit = pp setLong v.value
+    }
 
     implicit object SP_NodeId extends SetParameter[NodeId] {
       def apply(v: NodeId, pp: PositionedParameters): Unit = pp setInt v.value
+    }
+    implicit object SP_NodeIdO extends SetParameter[Option[NodeId]] {
+      def apply(v: Option[NodeId], pp: PositionedParameters): Unit = pp setIntOption v.map(_.value)
+    }
+
+    implicit object SP_WorkerId extends SetParameter[WorkerId] {
+      def apply(v: WorkerId, pp: PositionedParameters): Unit = pp setShort v.value
+    }
+    implicit object SP_WorkerIdO extends SetParameter[Option[WorkerId]] {
+      def apply(v: Option[WorkerId], pp: PositionedParameters): Unit = pp setShortOption v.map(_.value)
     }
 
     implicit val GR_Priority = GetResult(r => Priority(r.<<))
@@ -47,8 +63,7 @@ object SopImpl {
 
     implicit val GR_MsgHeader = GetResult(r => MsgHeader(r.<<, r.<<, r.<<))
 
-    private[this] def getMsgsAssignNode_q(extraSel: Option[String], extraCond: Option[String]) =
-      s"""
+    private[this] def getMsgsAssignNode_q(extraSel: Option[String], extraCond: Option[String]) = s"""
            select ctid ${extraSel.map(s => s",$s") getOrElse ""}
            from msgq
            where
@@ -62,8 +77,7 @@ object SopImpl {
            limit ? -- for update
       """.sql
 
-    private[this] def getMsgsAssignNode_upd(ctids: String) =
-      s"""
+    private[this] def getMsgsAssignNode_upd(ctids: String) = s"""
          update msgq
          set node = ?, worker = NULL, updated_at = now()
          where ctid in ($ctids)
@@ -76,8 +90,7 @@ object SopImpl {
     val getMsgsAssignNodeF = query[(NodeId, Period, Priority, Int), MsgHeader](
       getMsgsAssignNode_upd(getMsgsAssignNode_q(None, Some("priority > ?"))))
 
-    val getMsgsAssignNodeP = query[(Period, Int, Int, Priority, NodeId), MsgHeader](
-      s"""
+    val getMsgsAssignNodeP = query[(Period, Int, Int, Priority, NodeId), MsgHeader](s"""
         with a as (${getMsgsAssignNode_q(Some("priority p"), None)})
         , b as (
             select ctid from a
@@ -85,6 +98,13 @@ object SopImpl {
             limit greatest(?,(select count(1) from a where p>?))
         )
         ${getMsgsAssignNode_upd("select ctid from b")}
+      """.sql)
+
+    val getMsgAssignWorkerQ = query[(WorkerId, MsgId, NodeId), (Short, Json[Msg], Short)]("""
+        update msgq
+        set worker = ?, updated_at = now()
+        where id = ? and node = ? and worker is null
+        returning type, data, failure_count
       """.sql)
   }
 
@@ -108,23 +128,35 @@ object SopImpl {
             // Full mem-queue
             getMsgsAssignNodeF.list(node, assignmentTrustPeriod, memPri, limit)
       }
+
+    def getMsgAssignWorker(node: NodeId, worker: WorkerId, hdr: MsgHeader): Option[MsgDetail] =
+      getMsgAssignWorkerQ.firstOption(worker, hdr.id, node) map {
+        case (msgType, msgData, failureCount) =>
+          ErrorOr.require_!(
+            Serialisation.deserialise(msgType, msgData).map(msg =>
+              MsgDetail(hdr, msg, failureCount)))
+      }
+
   }
 }
 
 // =====================================================================================================================
 
 class SopImpl(db: Database) extends (Sop ~> IO) {
+  import SopImpl.Dao
+
+  private[this] def io[A](f: Dao => A): IO[A] =
+    IO(db.withSession(implicit s => f(new Dao())))
+
   override def apply[A](op: Sop[A]): IO[A] = op match {
 
     case GetMsgsAssignNode(node, limit, trustPeriod, queued) =>
-      IO{
-        db.withSession(implicit s =>
-          new SopImpl.Dao().getMsgsAssignNode(node, limit, trustPeriod, queued)
-        )
-      }
+      io(_.getMsgsAssignNode(node, limit, trustPeriod, queued))
+
+    case GetMsgAssignWorker(node, worker, hdr) =>
+      io(_.getMsgAssignWorker(node, worker, hdr))
 
     /*
-    case class GetMsgAssignWorker(n: NodeId, w: WorkerId, m: MsgHeader) extends Sop[Option[MsgDetail]]
     case class MarkMsgComplete(m: MsgDetail) extends Sop[Unit]
     case class MsgFailedAbort(m: MsgDetail) extends FailedJobReaction
     case class MsgFailedRetry(m: MsgDetail, p: Period) extends FailedJobReaction

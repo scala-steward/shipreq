@@ -8,7 +8,7 @@ import shipreq.taskman.api.Types._
 import shipreq.taskman.api.{Msg, MsgType}
 import Msg._
 
-private[api] object Serialisation {
+private[taskman] object Serialisation {
 
   type Ser = Json[Msg]
   type DeSer = ErrorOr[Msg]
