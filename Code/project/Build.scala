@@ -96,62 +96,6 @@ object ShipReq extends Build {
   }
 
   // ===================================================================================================================
-  object Webapp extends Module {
-    import com.earldouglas.xsbtwebplugin.PluginKeys.packageWar
-    import com.earldouglas.xsbtwebplugin.WebPlugin.webSettings
-
-    val dir = "webapp"
-
-    def warSettings = (p: Project) => p.settings(
-      // Don't allow WEB-INF/_scalate into the WAR
-      excludeFilter in packageWar ~= { _ ||
-        new FileFilter { def accept(f: File) = f.getPath.containsSlice("/_scalate/") }
-      }
-    )
-
-    def testSettings = (p: Project) => p.settings(
-      // Put webapp on test classpath so templates load
-      unmanagedResourceDirectories in Test <+= baseDirectory { _ / "src/main/webapp" },
-      parallelExecution in Test := false
-    )
-
-    lazy val IntegrationTest = config("it") extend Test
-    def integrationTestSettings = (p: Project) =>
-      p.configs(IntegrationTest)
-        .settings(inConfig(IntegrationTest)(Defaults.testSettings): _*)
-        .settings(
-        parallelExecution in IntegrationTest := false
-      )
-
-    override def deps =
-      Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
-      testScope(scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
-      depScope("it")(selenium) ++
-      (jetty % "container,test") ++ (servlet % "container,test,provided")
-
-    def consoleCmds = """
-      import scalaz._, shipreq.base.util._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
-      def initlift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}
-    """
-
-    override def project = typicalProject
-      .configure(
-        Common.generateBuildPropFile(),
-        warSettings,
-        testSettings,
-        integrationTestSettings
-      )
-      .settings(webSettings: _*)
-      .settings(
-        initialCommands += consoleCmds,
-        // Ensure templates can be loaded from the console
-        fullClasspath in console in Compile += file("src/main/webapp")
-      )
-      .dependsOn(baseDb, taskmanApi)
-      .dependsOn(baseUtil, taskmanApiLogic, taskmanApiImpl) // Stupid IDEA auto-import needs this
-    }
-
-  // ===================================================================================================================
   object Taskman extends Module {
     val dir = "taskman"
     override def project = umbrellaOf(taskmanApi, taskmanServer)
@@ -225,7 +169,62 @@ object ShipReq extends Build {
             scalacOptions in Compile ~= removeValues("-optimise") // because Akka docs
           )
       }
-
     }
   }
+
+  // ===================================================================================================================
+  object Webapp extends Module {
+    import com.earldouglas.xsbtwebplugin.PluginKeys.packageWar
+    import com.earldouglas.xsbtwebplugin.WebPlugin.webSettings
+
+    val dir = "webapp"
+
+    def warSettings = (p: Project) => p.settings(
+      // Don't allow WEB-INF/_scalate into the WAR
+      excludeFilter in packageWar ~= { _ ||
+        new FileFilter { def accept(f: File) = f.getPath.containsSlice("/_scalate/") }
+      }
+    )
+
+    def testSettings = (p: Project) => p.settings(
+      // Put webapp on test classpath so templates load
+      unmanagedResourceDirectories in Test <+= baseDirectory { _ / "src/main/webapp" },
+      parallelExecution in Test := false
+    )
+
+    lazy val IntegrationTest = config("it") extend Test
+    def integrationTestSettings = (p: Project) =>
+      p.configs(IntegrationTest)
+        .settings(inConfig(IntegrationTest)(Defaults.testSettings): _*)
+        .settings(
+        parallelExecution in IntegrationTest := false
+      )
+
+    override def deps =
+      Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
+      testScope(scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
+      depScope("it")(selenium) ++
+      (jetty % "container,test") ++ (servlet % "container,test,provided")
+
+    def consoleCmds = """
+      import scalaz._, shipreq.base.util._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
+      def initlift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}
+    """
+
+    override def project = typicalProject
+      .configure(
+        Common.generateBuildPropFile(),
+        warSettings,
+        testSettings,
+        integrationTestSettings
+      )
+      .settings(webSettings: _*)
+      .settings(
+        initialCommands += consoleCmds,
+        // Ensure templates can be loaded from the console
+        fullClasspath in console in Compile += file("src/main/webapp")
+      )
+      .dependsOn(baseDb, taskmanApi)
+      .dependsOn(baseUtil, taskmanApiLogic, taskmanApiImpl) // Stupid IDEA auto-import needs this
+    }
 }
