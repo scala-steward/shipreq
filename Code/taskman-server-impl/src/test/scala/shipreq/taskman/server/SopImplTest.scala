@@ -13,7 +13,7 @@ import shipreq.taskman.api.impl.Serialisation
 import shipreq.taskman.api.Types._
 import shipreq.taskman.api.{MsgType, Msg, Priority}
 import Msg.ReRegistrationAttempted
-import SopImpl.Sql._
+import Sql._
 
 class SopImplTest extends Specification with DatabaseTest with NoTimeConversions {
 
@@ -175,7 +175,7 @@ class SopImplTest extends Specification with DatabaseTest with NoTimeConversions
     }
 
     "deserialise the msg" in {
-      test(insertAssignedToOwnNode)().pp must beLike{ case Some(MsgDetail(_, msg, _)) if msg == defaultMsg => ok }
+      test(insertAssignedToOwnNode)() must beLike{ case Some(MsgDetail(_, msg, _)) if msg == defaultMsg => ok }
     }
 
     "assign when unassigned" in {
