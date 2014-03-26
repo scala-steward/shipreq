@@ -1,12 +1,12 @@
 package shipreq.taskman.server
 
-import scalaz.{~>, -\/, \/-}
+import scalaz.{-\/, \/-}
 import scalaz.effect.IO
-import shipreq.base.util.{Error, ErrorOr, Logger}
-import shipreq.taskman.server.business.Bop
+import shipreq.base.util.{ErrorOr, Logger}
+import shipreq.taskman.server.business.{BopReifier, Bop}
 import Bop._
 
-final class BopImpl(emailer: EmailImpl) extends (Bop ~> IOE) with Logger {
+final class BopImpl(emailer: EmailImpl) extends BopReifier with Logger {
 
   override def apply[A](op: Bop[A]): IOE[A] =
     IoUtils.timeU(

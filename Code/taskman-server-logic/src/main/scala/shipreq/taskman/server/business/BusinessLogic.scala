@@ -1,17 +1,15 @@
 package shipreq.taskman.server.business
 
-import scalaz.~>
 import shipreq.taskman.api.Msg
-import shipreq.taskman.server._
 import shipreq.taskman.server.Worker.MsgProcessor
 import BusinessLogic._
 
 object BusinessLogic {
 
-  implicit def autoReifyBop(bop: Bop[Unit])(implicit reifier: Bop ~> IOE): IOE[Unit] = reifier(bop)
+  implicit def autoReifyBop(bop: Bop[Unit])(implicit reifier: BopReifier) = reifier(bop)
 }
 
-class BusinessLogic(implicit ctx: Email.Ctx, reifier: Bop ~> IOE) {
+class BusinessLogic(implicit ctx: Email.Ctx, reifier: BopReifier) {
 
   val email = new Emails(ctx)
 
