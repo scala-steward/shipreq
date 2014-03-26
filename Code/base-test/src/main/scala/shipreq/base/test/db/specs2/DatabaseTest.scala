@@ -9,28 +9,17 @@ import scala.slick.jdbc.SQLInterpolation
 import shipreq.base.util._
 import shipreq.base.db.{DatabaseConnection, DbTemplate}
 
-object TestDB {
+object TestDb extends DbTemplate {
   val runMode = RunMode.Test
   val props = JPropertiesValueReader(Props.loadUsingStandardStrategy(runMode)(new Properties))
   import props._
-  private object db extends DbTemplate {
-    override protected lazy val connection = DatabaseConnection.establish_!()
-    def slick = _slick
-  }
+  override protected def newConnection = DatabaseConnection.establish_!()
 
-  def slick = db.slick
+  def slick = _slick
 
-  @volatile private var ready = false
-
-  def init(): Unit = synchronized {
-    if (!ready) {
-      ready = true
-      db.wipe_!()
-      db.init()
-    }
-  }
-
+  override protected def preInit() = wipe_!()
 }
+
 
 trait DatabaseTest extends AroundExample {
   this: Specification =>
@@ -43,8 +32,8 @@ trait DatabaseTest extends AroundExample {
   implicit def session: Session = _session.getOrElse(throw new RuntimeException("No session available."))
 
   override def around[T: AsResult](t: => T): Result = {
-    TestDB.init() // TODO needs some kind of shutdown hook, keeps crashing from SBT with ~test
-    TestDB.slick.withTransaction(s => {
+    TestDb.init()
+    TestDb.slick.withTransaction(s => {
       _session = Some(s)
       try AsResult(t)
       finally {

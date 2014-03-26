@@ -38,6 +38,17 @@ object Common {
 
   def javacFlags = Seq("-target", targetJdk, "-source", targetJdk)
 
+  def getMethod(loader: ClassLoader, className: String, methodName: String): Option[java.lang.reflect.Method] =
+    try {
+      Option(loader.loadClass(className).getMethod(methodName))
+    } catch {
+      case  _: Throwable => None
+    }
+
+  def shutdownTestDb(loader: ClassLoader): Unit = {
+    getMethod(loader, "shipreq.base.test.db.specs2.TestDb", "shutdown").foreach(_ invoke null)
+  }
+
   lazy val settings = (p: Project) => p
     .settings((
         net.virtualvoid.sbt.graph.Plugin.graphSettings ++ // Dependency graph
@@ -56,6 +67,7 @@ object Common {
       scalaVersion := Deps.Scala.version,
       scalacOptions ++= scalacFlags,
       scalacOptions in Test ++= scalacTestFlags,
+      testOptions in Test += Tests.Cleanup(shutdownTestDb(_)),
       cleanKeepFiles ++= Seq("resolution-cache", "streams").map(target.value / _) // stop those constant dep updates
     )
     .configure(debugAndReleaseCompilerFlags)

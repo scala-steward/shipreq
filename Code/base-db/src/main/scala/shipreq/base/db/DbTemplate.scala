@@ -1,35 +1,37 @@
 package shipreq.base.db
 
 import com.googlecode.flyway.core.Flyway
-import org.slf4j.LoggerFactory
 import scala.slick.session.{Database, Session}
 import shipreq.base.util.Logger
 
 /**
  * Template/mixin for database singletons.
  */
-trait DbTemplate {
+trait DbTemplate extends Logger {
 
-  protected val log = Logger.forClass(getClass)
-
-  protected /* lazy */ val connection: DatabaseConnection
-
-  @inline final def DatabaseName = connection.name
-
-  protected val _slick = Database.forDataSource(connection.ds)
+  protected def newConnection: DatabaseConnection
+  protected final lazy val connection = newConnection
 
   protected def flywayCfg: Flyway => Flyway = identity
 
-  private[this] val migrator = new DbMigrator(connection, flywayCfg)
+  protected def preInit(): Unit = ()
+
+  protected def onInit(implicit s: Session): Unit = ()
 
   // ===================================================================================================================
-  // Initialisation
 
-  private[this] def initLock: AnyRef = migrator
+  final def DatabaseName = connection.name
+
+  protected lazy val _slick = Database.forDataSource(connection.ds)
+
+  private[this] lazy val migrator = new DbMigrator(connection, flywayCfg)
+
+  private[this] val initLock = new Object
   @volatile private[this] var initPending = true
 
   def init(): Unit = initLock.synchronized {
     if (initPending) {
+      preInit()
       migrator.performPendingMigrations()
       _slick.withTransaction((s: Session) => onInit(s))
       initPending = false
@@ -37,15 +39,20 @@ trait DbTemplate {
     }
   }
 
-  protected def onInit(implicit s: Session): Unit = ()
-
   /**
    * Drops all objects (tables, views, procedures, triggers, ...) in the configured schemas.
    */
-  def wipe_!() = initLock.synchronized {
+  protected def wipe_!(): Unit = initLock.synchronized {
     log.warn("Wiping database: " + DatabaseName)
     migrator.wipe_!()
     initPending = true
-    this
+  }
+
+  def shutdown(): Unit = initLock.synchronized {
+    if (!initPending) {
+      log.debug("Database shutting down...")
+      initPending = true
+      connection.ds.close()
+    }
   }
 }

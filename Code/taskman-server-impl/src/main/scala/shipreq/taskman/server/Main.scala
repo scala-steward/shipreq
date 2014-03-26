@@ -16,7 +16,7 @@ import javax.mail.internet._
 class Db(props: StringBasedValueReader) extends DbTemplate {
   import props._
 
-  override protected lazy val connection = DatabaseConnection.establish_!()
+  override protected def newConnection = DatabaseConnection.establish_!()
 
   def slick = _slick
 }
@@ -86,9 +86,12 @@ object Main {
     FailurePolicy
     MsgProcessor
 
-  BusinessLogic
-    Email.Ctx
-    Bop ~> IOE
+  Msg test.
+    new ->
+      cant(assign worker) -> assign node -> cant(assign node) -> assign worker -> cant(assign node, assign worker) ->
+      fail:retry ->
+      cant(assign worker) -> assign node -> cant(assign node) -> assign worker -> cant(assign node, assign worker) ->
+      pass|fail -> cant(assign node, assign worker)
 
    */
 }

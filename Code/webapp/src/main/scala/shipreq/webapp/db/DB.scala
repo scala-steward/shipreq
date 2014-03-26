@@ -10,19 +10,24 @@ import shipreq.base.db.{DatabaseConnection, DbTemplate}
  */
 object DB extends DbTemplate {
 
-  override protected lazy val connection = {
+  override protected def newConnection = {
     import shipreq.webapp.util.PropsRetrievers._
     DatabaseConnection.establish_!()
   }
 
   @inline def DataSource = connection.ds
 
+  private[this] val slick = _slick
+
+  // Making public for tests
+  override def wipe_!(): Unit = super.wipe_!()
+
   override protected def onInit(implicit s: Session) = {
     FieldKeyType.init
   }
 
   object DaoProvider extends DaoProvider {
-    override def withRawSession[T](f: Session => T): T = _slick.withSession(f)
-    override protected def rawSession(): Session       = _slick.createSession()
+    override def withRawSession[T](f: Session => T): T = slick.withSession(f)
+    override protected def rawSession(): Session       = slick.createSession()
   }
 }
