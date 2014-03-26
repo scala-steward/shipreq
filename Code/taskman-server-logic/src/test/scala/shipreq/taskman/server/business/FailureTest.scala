@@ -3,6 +3,7 @@ package shipreq.taskman.server.business
 import org.joda.time.Period
 import org.specs2.matcher.Matcher
 import org.specs2.mutable._
+import org.specs2.time.NoTimeConversions
 import shipreq.base.util.Error
 import shipreq.base.util.jodatime.JodaTimeHelpers._
 import shipreq.taskman.server._
@@ -11,14 +12,12 @@ import Sop._
 import Failure._
 import Worker._
 
-class FailureTest extends Specification {
+class FailureTest extends Specification with NoTimeConversions {
 
   val genericError = Error.error("NO!")
   val deterministicError = Error.error("ALWAYS NO!").tag(Deterministic)
   val ctx_det = FailureCtx(md_1, deterministicError, timeNow)
   val ctx_nd = FailureCtx(md_1, genericError, timeNow)
-
-  override implicit def intToRichLong(v: Int): Nothing = ??? //new longAsTime(v.toLong) // fuck off specs2
 
   def reactWith(f: FailedJobReaction) =
     be_==(Some(f)) ^^ {(_:Option[FailureResponse]).map(_.reaction)}
