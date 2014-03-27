@@ -7,6 +7,12 @@ import scalaz.\&/.{Both, That, This}
 object ErrorOr {
   def apply[A](a: A): ErrorOr[A] = \/-(a)
 
+  def fromOption[A](o: Option[A], errMsg: => String): ErrorOr[A] =
+    o match {
+      case Some(a) => apply(a)
+      case None => Error(errMsg)
+    }
+
   def catchException[A](a: => ErrorOr[A]): ErrorOr[A] =
     catchExceptionM[Id, A](a)
 

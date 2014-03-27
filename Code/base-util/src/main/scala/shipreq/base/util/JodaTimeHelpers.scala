@@ -1,6 +1,9 @@
 package shipreq.base.util.jodatime
 
+import java.util.regex.Pattern
 import org.joda.time.Period
+import shipreq.base.util.ExternalValueReader.Retriever
+import shipreq.base.util.{ErrorOr, Error, StringParsingBase}
 
 object JodaTimeHelpers {
 
@@ -35,5 +38,70 @@ object JodaTimeHelpers {
     def year         = Period years n
     def years        = Period years n
   }
+}
 
+object JodaTimeValueRetrievers {
+  val periodRegex = """^(\d+)\s*([a-zA-Z]+)$""".r.pattern
+
+  sealed abstract class TimeUnit(readRegexS: String) {
+    def period(q: Int): Period
+    val readRegex = Pattern.compile("^(?:" + readRegexS + ")$", Pattern.CASE_INSENSITIVE)
+  }
+  object TimeUnit {
+    case object Ms extends TimeUnit("ms|millis(?:econds?)?") {
+      override def period(n: Int) = Period millis n
+    }
+    case object Sec extends TimeUnit("s|sec(?:onds?)?") {
+      override def period(n: Int) = Period seconds n
+    }
+    case object Min extends TimeUnit("min(?:utes?)?") {
+      override def period(n: Int) = Period minutes n
+    }
+    case object Hour extends TimeUnit("hr|hours?") {
+      override def period(n: Int) = Period hours n
+    }
+    case object Day extends TimeUnit("d|days?") {
+      override def period(n: Int) = Period days n
+    }
+    case object Week extends TimeUnit("w|weeks?") {
+      override def period(n: Int) = Period weeks n
+    }
+    case object Month extends TimeUnit("months?") {
+      override def period(n: Int) = Period months n
+    }
+    case object Year extends TimeUnit("yr|years?") {
+      override def period(n: Int) = Period years n
+    }
+    val values: List[TimeUnit] = List(Ms, Sec, Min, Hour, Day, Week, Month, Year)
+  }
+}
+
+case class JodaTimeValueRetrievers(rs: Retriever[String]) extends StringParsingBase(rs) {
+  import shipreq.base.util.ExternalValueReader._
+  import JodaTimeValueRetrievers._
+
+  def parseTimeUnit(s: String) =
+    ErrorOr.fromOption(
+      TimeUnit.values.find(_.readRegex.matcher(s).matches),
+      s"Unable to parse time unit: '$s'"
+    )
+
+  private[this] implicit val retrieverTU: Retriever[TimeUnit] =
+    tryParseE(parseTimeUnit)
+
+  implicit val retrieverPeriod: Retriever[Period] =
+    tryParseE(s =>
+      if (s == "0")
+        ErrorOr(Period.ZERO)
+      else {
+        val m = periodRegex.matcher(s)
+        if (!m.matches)
+          Error(s"Unable to parse into quantity and unit: '$s'")
+        else
+          for {
+            n <- ErrorOr.safe(java.lang.Integer.parseInt(m group 1))
+            u <- parseTimeUnit(m group 2)
+          } yield u.period(n)
+      }
+    )
 }

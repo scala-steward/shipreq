@@ -9,6 +9,8 @@ import shipreq.taskman.api.Types._
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.server.business.{BusinessLogic, Failure, Email}
 import scala.slick.session.Database
+import shipreq.base.util.jodatime.JodaTimeValueRetrievers
+import org.joda.time.Period
 
 //==========================================================================================
 
@@ -30,7 +32,9 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
   protected def fromDb = CfgValueReader(sopReifier)
   protected implicit def scope: PropScope = scopeByNS("taskman")
   protected implicit def _retrieverS = evr.retrieverS
+  val jtr = JodaTimeValueRetrievers(_retrieverS)
   import evr.retrieverI
+  import jtr.retrieverPeriod
 
   override def mailSession = EmailImpl.loadSession(mailProps)
   override val defaultFromAddress = need[String]("mail.from").tag
@@ -40,8 +44,14 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
 
   object manager {
     implicit def scope: PropScope = scopeByNS("taskman.manager")
+    def minimumTrustPeriodSec = 10
+    def minimumTrustPeriod = Period.seconds(minimumTrustPeriodSec).toStandardDuration
+
     val queueSize = validate("queueSize", need[Int])(valTest(_ >= 1, "Must be at least 1."))
-    val assignmentTrustPeriod = 5 minutes
+
+    val trustPeriod = validate("trustPeriod", need[Period])(valTest(
+      _.toStandardDuration isLongerThan minimumTrustPeriod,
+      s"Must be at least $minimumTrustPeriodSec seconds."))
   }
 
   def loggable = Map[String, Any](
@@ -49,14 +59,19 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
     , "shipreq" -> shipreq
     , "loginUrl" -> loginUrl
     , "manager.queueSize" -> manager.queueSize
+    , "manager.trustPeriod" -> manager.trustPeriod
   )
-  log.info("Config: {}", loggable.toList.map{case (k,v) => s"$k=$v"}.sorted.mkString(", "))
+  log.info("Config: {}", loggable.toList
+    .sortBy(kv => (kv._1.count(_ == '.'), kv._1))
+    .map{case (k,v) => "\n  %-20s = %s".format(k,v) }
+    .mkString
+  )
 
   val bopReifier = new BopImpl(this)
   val failurePolicy = Failure.failurePolicy
   val msgProcessor = BusinessLogic(this, bopReifier)
   val nodeId = sopReifier.getNextNodeId.unsafePerformIO()
-  log.debug("Node ID is {}.", nodeId.value)
+  log.info("Node ID is {}.", nodeId.value)
 }
 
 //==========================================================================================

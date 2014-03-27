@@ -99,6 +99,24 @@ object ExternalValueReader {
 }
 
 // =====================================================================================================================
+import ExternalValueReader.Retriever
+
+abstract class StringParsingBase(_retrieverS: Retriever[String]) {
+
+  final def tryParse[T](f: String => T): Retriever[T] =
+    tryParseE(k => ErrorOr(f(k)))
+
+  final def tryParseE[T](f: String => ErrorOr[T]): Retriever[T] =
+    tryParseOE(k => Some(f(k)))
+
+  final def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
+    Retriever(k =>
+      _retrieverS.run(k) match {
+        case Some(\/-(s)) => f(s)
+        case Some(-\/(e)) => Some(-\/(e))
+        case None         => None
+      })
+}
 
 object StringBasedValueReader {
   import java.util.regex.Pattern
@@ -111,29 +129,13 @@ object StringBasedValueReader {
     RemoveComments.matcher(s).replaceFirst("")
 }
 
-import ExternalValueReader.Retriever
-
 /**
  * Reads a bunch of differently-typed values by parsing strings.
  */
-class StringBasedValueReader(_retrieverS: Retriever[String]) {
+class StringBasedValueReader(_retrieverS: Retriever[String]) extends StringParsingBase(_retrieverS) {
   import StringBasedValueReader._
 
   implicit final def retrieverS = _retrieverS
-
-  def tryParse[T](f: String => T): Retriever[T] =
-    tryParseE(s => ErrorOr(f(s)))
-
-  def tryParseE[T](f: String => ErrorOr[T]): Retriever[T] =
-    tryParseOE(s => Some(f(s)))
-
-  def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
-    Retriever(k =>
-      retrieverS.run(k) match {
-        case Some(\/-(s)) => f(s)
-        case Some(-\/(e)) => Some(-\/(e))
-        case None         => None
-      })
 
   implicit val retrieverI: Retriever[Int] =
     tryParse(Integer.parseInt)
