@@ -43,9 +43,9 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
   override val emailer  = new EmailImpl(this)
 
   object manager {
-    implicit def scope: PropScope = scopeByNS("taskman.manager")
-    def minimumTrustPeriodSec = 10
-    def minimumTrustPeriod = Period.seconds(minimumTrustPeriodSec).toStandardDuration
+    private implicit def scope: PropScope = scopeByNS("taskman.manager")
+    private def minimumTrustPeriodSec = 10
+    private def minimumTrustPeriod = Period.seconds(minimumTrustPeriodSec).toStandardDuration
 
     val queueSize = validate("queueSize", need[Int])(valTest(_ >= 1, "Must be at least 1."))
 

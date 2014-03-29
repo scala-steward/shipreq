@@ -45,6 +45,7 @@ package object server {
     def liftIOE(implicit opToIo: F ~> IO): IOE[A] = toIO.map(\/-(_))
   }
 
+  implicit def MsgDetailToMsg(m: MsgDetail): Msg = m.msg
   implicit def MsgDetailToHdr(m: MsgDetail): MsgHeader = m.hdr
   implicit def MsgDetailToId(m: MsgDetail): MsgId = m.hdr.id
   implicit def MsgHeaderToId(m: MsgHeader): MsgId = m.id
