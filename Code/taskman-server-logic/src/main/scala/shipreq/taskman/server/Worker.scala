@@ -6,10 +6,10 @@ import scalaz.effect.IO
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
 import scalaz.std.list.listInstance
-import shipreq.base.util.{ErrorOr, Error}
+import shipreq.base.util.{Logger, ErrorOr, Error}
 import Sop._
 
-object Worker {
+object Worker extends Logger {
 
   type FailurePolicy = FailureCtx => FailureResponse
 
@@ -91,5 +91,27 @@ object Worker {
     def process(m: MsgHeader): IO[WorkResult] =
       catchTaskmanErrorsN(
         GetMsgAssignWorker(node, worker, m).toIO >>= processAssignment)
+
+    def logWorkResult(r: WorkResult): IO[WorkResult] = IO{
+      r match {
+        case CouldntAssign =>
+        case Completed(m) =>
+          log.info("Work completed: {}", m)
+        case WorkerFailed(_, e, f) =>
+          // f contains m so no need to print separately
+          if (e is Deliberate)
+            log.debug("Worker deliberately failed: {} // {}", e.msg, f, null)
+          else
+            log.warn(s"Worker failed: $f", e.throwable)
+        case TaskmanFailed(e, Some(m)) =>
+          log.error(s"Taskman error occurred processing $m", e.throwable)
+        case TaskmanFailed(e, None) =>
+          log.error(s"Taskman error occurred! (no msg)", e.throwable)
+      }
+      r
+    }
+
+    def processL(m: MsgHeader): IO[WorkResult] =
+      process(m) >>= logWorkResult
   }
 }
