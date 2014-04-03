@@ -1,13 +1,12 @@
 package shipreq.taskman.server
 
 import org.joda.time.DateTime
-import scalaz.{-\/, \/-, ~>}
+import scalaz.{-\/, \/-}
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
 import scalaz.std.list.listInstance
 import shipreq.base.util.{ErrorOr, Error}
-import shipreq.taskman.api.Msg
 import Sop._
 
 object Worker {
@@ -42,43 +41,46 @@ object Worker {
     case object CouldntAssign extends WorkResult
 
     /** Work completed successfully. */
-    case object Completed extends WorkResult
+    case class Completed(m: MsgDetail) extends WorkResult
 
     /** The worker business logic failed. */
-    case object WorkerFailed extends WorkResult
+    case class WorkerFailed(m: MsgDetail, e: Error, f: FailedJobReaction) extends WorkResult
 
     /** An error occurred in Taskman's generic work management. */
-    case object TaskmanFailed extends WorkResult
+    case class TaskmanFailed(e: Error, m: Option[MsgDetail]) extends WorkResult
   }
 
   import WorkResult._
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  case class Reified(worker: WorkerId)(
+  case class Reified(
     implicit node: NodeId,
+             worker: WorkerId,
              sopToIo: SopReifier,
              clock: IO[DateTime],
              failurePolicy: FailurePolicy,
              msgProcessor: MsgProcessor) {
 
     private[this] def catchTaskmanErrors(m: => Option[MsgDetail]): IO[WorkResult] => IO[WorkResult] =
-      _.except(t =>
-        sopToIo(NotifySupportTaskmanError(Error.error(t), m)) >> TaskmanFailed.toIO)
+      _.except(t => {
+        val e = Error.error(t)
+        sopToIo(NotifySupportTaskmanError(e, m)) >> TaskmanFailed(e, m).toIO
+      })
 
     private[this] val catchTaskmanErrorsN = catchTaskmanErrors(None)
 
     private[this] def performWork(m: MsgDetail): IO[WorkResult] =
       ErrorOr.catchExceptionM(msgProcessor(m)) >>= {
-        case \/-(_) =>
-          MarkMsgComplete(m).toIO >> Completed.toIO
-        case -\/(err) =>
-          clock >>= handleTaskFailure(m, err)
+        case \/-(_) => MarkMsgComplete(m).toIO >> Completed(m).toIO
+        case -\/(e) => clock >>= handleTaskFailure(m, e)
       }
 
     private[this] def handleTaskFailure(m: MsgDetail, err: Error)(now: DateTime): IO[WorkResult] = {
       val f = failurePolicy(FailureCtx(m, err, now))
-      f.reaction.toIO >> f.additionalOps.traverse_(sopToIo) >> WorkerFailed.toIO
+      f.reaction.toIO >>
+        f.additionalOps.traverse_(sopToIo) >>
+          WorkerFailed(m, err, f.reaction).toIO
     }
 
     private[this] val processAssignment: Option[MsgDetail] => IO[WorkResult] = {
