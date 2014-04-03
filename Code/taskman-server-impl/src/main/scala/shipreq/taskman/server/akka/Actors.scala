@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.joda.time.DateTime
 import scala.concurrent.duration._
 import scalaz.Heap
-import shipreq.taskman.api.Priority
-import shipreq.taskman.server.{WorkerId, MsgId, MsgHeader}
+import shipreq.taskman.api.{MsgId, Priority}
+import shipreq.taskman.server.{WorkerId, MsgHeader}
 
 object SourceActor {
   def props = Props[SourceActor]
