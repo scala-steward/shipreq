@@ -4,3 +4,5 @@ db.database = usecase_test
 db.username = usecase_test
 db.password = ucet
 
+shipreq.webapp.appName   = TestShipReq
+shipreq.webapp.url.login = http://test.shipreq.com/login
