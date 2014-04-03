@@ -24,9 +24,10 @@ object Worker {
    */
   case class FailureResponse(reaction: FailedJobReaction, additionalOps: List[Sop[Unit]])
 
-  type MsgProcessor = Msg => IOE[Unit]
+  type MsgProcessor = MsgDetail => IOE[Unit]
 
-  val nopTask: IOE[Unit] = IO(ErrorOr(()))
+  val nopResult = ErrorOr(())
+  val nopTask: IOE[Unit] = IO(nopResult)
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -68,7 +69,7 @@ object Worker {
     private[this] val catchTaskmanErrorsN = catchTaskmanErrors(None)
 
     private[this] def performWork(m: MsgDetail): IO[WorkResult] =
-      ErrorOr.catchExceptionM(msgProcessor(m.msg)) >>= {
+      ErrorOr.catchExceptionM(msgProcessor(m)) >>= {
         case \/-(_) =>
           MarkMsgComplete(m).toIO >> Completed.toIO
         case -\/(err) =>
