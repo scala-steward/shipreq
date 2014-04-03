@@ -1,12 +1,12 @@
 package shipreq.taskman.server.business
 
 import scalaz.effect.IO
-import shipreq.base.util.{ErrorOr, Error, Logger}
+import shipreq.base.util.{ErrorOr, Error}
 import shipreq.taskman.api.Msg
-import shipreq.taskman.server.Worker
+import shipreq.taskman.server.{Deliberate, Worker}
 import shipreq.taskman.server.Worker.MsgProcessor
 
-object BusinessLogic extends Logger {
+object BusinessLogic {
 
   def apply(ctx: Email.Ctx, reifier: BopReifier): MsgProcessor = {
 
@@ -26,22 +26,19 @@ object BusinessLogic extends Logger {
         case Msg.PasswordResetRequested(addr, url) =>
           email.sendToUser(addr, email.passwordChangeRequest(url))
 
-        case Msg.DummyMsg(desc, processingTimeMs, retryCount, failureMsg) =>
-          IO {
-            log.info("Received dummy: {}", desc)
-            if (processingTimeMs > 0) Thread sleep processingTimeMs
-            val r: ErrorOr[Unit] =
-              (md.failureCount < retryCount, failureMsg) match {
-                case (true, _)        => Error(s"Retrying: Failure count (${md.failureCount}) < desired ($retryCount).")
-                case (false, Some(e)) => Error(e)
-                case (false, None)    => Worker.nopResult
-              }
-            log.info("Fate of dummy: {} => {}", desc, r, null)
-            r
-          }
+        case Msg.DummyMsg(desc, processingTimeMs, retryCount, failureMsg) => IO {
+          if (processingTimeMs > 0)
+            Thread sleep processingTimeMs
+          ErrorOr.tag[Unit](Deliberate)(
+            (md.failureCount < retryCount, failureMsg) match {
+              case (true, _)        => Error(s"Retrying: Failure count (${md.failureCount}) < desired ($retryCount).")
+              case (false, Some(e)) => Error(e)
+              case (false, None)    => Worker.nopResult
+            }
+          )
+        }
 
       }
-
     msgProcessor
   }
 }
