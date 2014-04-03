@@ -1,9 +1,10 @@
 package shipreq.base.test.db.specs2
 
+import java.util.concurrent.locks.Lock
+import java.util.Properties
 import org.specs2.mutable.Specification
 import org.specs2.execute.{Result, AsResult}
 import org.specs2.specification.AroundExample
-import java.util.Properties
 import scala.slick.session.{Database, Session}
 import scala.slick.jdbc.SQLInterpolation
 import shipreq.base.util._
@@ -32,12 +33,21 @@ trait DatabaseTest extends AroundExample {
 
   def db: Database = new SingleConnDatabase(session)
 
+  def mutex: Option[Lock] = None
+
   def wrapTestsInTransaction = true
 
   override def around[T: AsResult](t: => T): Result = {
+    def inMutex[A](f: => A): A = mutex match {
+      case None => f
+      case Some(lock) =>
+        lock.lockInterruptibly()
+        try f finally lock.unlock()
+    }
+
     def go(s: Session)(rollback: => Unit): Result = {
       _session = Some(s)
-      try AsResult(t)
+      try inMutex(AsResult(t))
       finally {
         rollback
         _session = None

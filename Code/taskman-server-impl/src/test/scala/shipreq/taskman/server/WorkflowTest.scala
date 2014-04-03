@@ -5,6 +5,7 @@ import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import shipreq.base.test.db.specs2.DatabaseTest
 import shipreq.base.util.jodatime.JodaTimeHelpers._
+import shipreq.taskman.api.MsgId
 import shipreq.taskman.api.Types._
 import shipreq.taskman.api.Msg.ReRegistrationAttempted
 import shipreq.taskman.api.ApiOp.SubmitMsg
@@ -13,6 +14,8 @@ import Sql._
 
 class WorkflowTest extends Specification with DatabaseTest with NoTimeConversions with ThrownExpectations
     with ServerImplTestHelpers {
+
+  override def mutex = dbMutexR
 
   val n = NodeId(123)
   val w = WorkerId(666)
@@ -37,12 +40,12 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
     (m, assignWorker)
   }
 
-  def queryHistory =
-    sql"select result,failure_count from msg_history".as[(String,Int)].list
+  def queryHistory(id: MsgId) =
+    sql"select result,failure_count from msg_history where id=${id.value}".as[(String,Int)].firstOption
 
   "Workflow: fail then pass" in {
     // new
-    run(SubmitMsg(defaultMsg))
+    val id = run(SubmitMsg(defaultMsg))
 
     // assign node -> assign worker
     val (m1, assignWorker1) = findAndStartWork
@@ -61,12 +64,12 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
     run(find) must beEmpty
     run(assignWorker2) must beNone
 
-    queryHistory must_== ("s", 1) :: Nil
+    queryHistory(id) must_== Some(("s", 1))
   }
 
   "Workflow: fail+delay then abort" in {
     // new
-    run(SubmitMsg(defaultMsg))
+    val id = run(SubmitMsg(defaultMsg))
 
     // assign node -> assign worker
     val (m1, assignWorker1) = findAndStartWork
@@ -87,6 +90,6 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
     run(find) must beEmpty
     run(assignWorker2) must beNone
 
-    queryHistory must_== ("f", 2) :: Nil
+    queryHistory(id) must_== Some(("f", 2))
   }
 }

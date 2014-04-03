@@ -1,12 +1,16 @@
 package shipreq.taskman.server
 
-import shipreq.taskman.api.impl.TaskmanApi
-import shipreq.taskman.api.ApiOp
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import scalaz.effect.IO
 import scala.slick.session.Database
+import shipreq.taskman.api.impl.TaskmanApi
+import shipreq.taskman.api.ApiOp
 
 trait ServerImplTestHelpers {
   def db: Database
+
+  final def dbMutexR = ServerImplTestHelpers.dbMutexR
+  final def dbMutexW = ServerImplTestHelpers.dbMutexW
 
   def apiOpReifier = new TaskmanApi(TaskmanApi.Context(None), db)
   def sopReifier = new SopImpl(db)
@@ -19,6 +23,11 @@ trait ServerImplTestHelpers {
 }
 
 object ServerImplTestHelpers {
+
+  val dbLockRW = new ReentrantReadWriteLock
+  val dbMutexR = Some(dbLockRW.readLock)
+  val dbMutexW = Some(dbLockRW.writeLock)
+
   def apply(_db: Database): ServerImplTestHelpers =
     new ServerImplTestHelpers {
       override def db = _db
