@@ -98,5 +98,6 @@ class MockSops extends MockOpTransformer[Sop, IO] {
     case _: MsgFailedRetry            => msgFailedRetryR.pop()
     case _: NotifySupportWorkerFailed =>
     case _: NotifySupportTaskmanError =>
+    case    Nop                       =>
   }
 }
