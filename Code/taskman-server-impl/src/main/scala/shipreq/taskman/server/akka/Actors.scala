@@ -2,12 +2,10 @@ package shipreq.taskman.server.akka
 
 import akka.actor.{Props, ActorLogging, Actor, ActorRef}
 import java.util.concurrent.atomic.AtomicInteger
-import org.joda.time.DateTime
+import org.joda.time.Period
 import scala.concurrent.duration._
-import scalaz.Heap
-import shipreq.taskman.api.{MsgId, Priority}
+import shipreq.taskman.api.Priority
 import shipreq.taskman.server.{Worker, TaskmanCtx, WorkerId, MsgHeader}
-import shipreq.taskman.server.Sop._
 
 object SourceActor {
   def props(ctx: TaskmanCtx) = Props(classOf[SourceActor], ctx)
@@ -18,27 +16,19 @@ object SourceActor {
 
 class SourceActor(ctx: TaskmanCtx) extends Actor with ActorLogging {
   import SourceActor._
+  import shipreq.taskman.server.{Source => S}
   import ctx._
 
-  // TODO this logic should be in server-logic
-
-  val minPollGapMs = 1000
-  var lastPolled: DateTime = DateTime.now()
-
-  def poll(queued: Option[(Priority, Int)]): Seq[MsgHeader] = {
-    if (DateTime.now().isAfter(lastPolled plusMillis minPollGapMs)) {
-      val r = sopReifier(GetMsgsAssignNode(nodeId, manager.queueSize, manager.trustPeriod, queued)).unsafePerformIO()
-      lastPolled = DateTime.now()
-      r
-    } else
-      Seq.empty
-  }
+  // TODO HARDCODED values
+  val source = S.Reified(Period seconds 1, manager.queueSize, manager.trustPeriod)
+  var state: S.S = source.empty.unsafePerformIO()
 
   override def receive = {
-    case RequestForWork(queued) =>
-      val work = poll(queued)
-      if (work.nonEmpty)
-        sender() ! IncomingWork(work)
+    case RequestForWork(qs) =>
+      val (s2, ms) = source.poll(qs).run(state).unsafePerformIO()
+      state = s2
+      if (ms.nonEmpty)
+        sender() ! IncomingWork(ms)
   }
 }
 
@@ -56,18 +46,13 @@ object ManagerActor {
 
 class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with ActorLogging {
   import ManagerActor._
+  import shipreq.taskman.server.{Manager => M}
   import context.dispatcher
 
-  // TODO Manager logic doesn't make things better here. Recreate it in reverse.
-  //import shipreq.taskman.server.{Manager => M}
-  //  val manager = M.Reified(ctx.manager.queueSize, ctx.manager.trustPeriod)
-  //  var jobQueue: M.JobQueue = M.emptyQueue
-
-  implicit def priOrder = scalaz.Order.fromScalaOrdering(shipreq.taskman.server.Manager.PrioritisationOrder)
-
   var workers: Set[ActorRef] = Set.empty
-  var workQueue: Heap[MsgHeader] = Heap.Empty[MsgHeader]
+  var queue = M.emptyQueue
 
+  // TODO HARDCODED values
   val poller = context.system.scheduler.schedule(500 millis, 2000 millis, self, PollSource)
 
   override def postStop() = poller.cancel()
@@ -75,31 +60,21 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with ActorLo
   override def receive = {
 
     case PollSource =>
-      val qs = {
-        val s = workQueue.size
-        if (s == 0) None else Some((workQueue.minimum.priority, s))
-      }
-      // log.debug("Asking source for work: {}", qs)
-      source ! SourceActor.RequestForWork(qs) // TODO cache
+      val qs = M.getQueueStatus.eval(queue)
+      source ! SourceActor.RequestForWork(qs)
 
     case RegisterWorker =>
       workers += sender()
       log.debug("{} registered workers.", workers.size)
 
     case SourceActor.IncomingWork(work) =>
-      //log.debug("{} msg(s) received. New queue size is {}.", work.size, workQueue.size + work.size)
-      workQueue = (workQueue /: work)((q,w) => q insert w)
-      workers.foreach(_ ! WorkAvailable)
+      queue = M.addToQueue(work).exec(queue)
+      workers foreach (_ ! WorkAvailable)
 
     case RequestForWork =>
-      workQueue.uncons match {
-        case Some((w,q)) =>
-          //log.debug("Sending work {} to worker, queue size is now {}.", w, q.size)
-          sender() ! w
-          workQueue = q
-        case None =>
-        //log.debug("Work request ignored.")
-      }
+      val (q2, wo) = M.popJob.run(queue)
+      wo foreach (sender() ! _)
+      queue = q2
   }
 }
 
