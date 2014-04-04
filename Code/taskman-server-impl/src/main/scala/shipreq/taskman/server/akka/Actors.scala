@@ -2,8 +2,8 @@ package shipreq.taskman.server.akka
 
 import akka.actor.{Props, ActorLogging, Actor, ActorRef}
 import java.util.concurrent.atomic.AtomicInteger
-import org.joda.time.Period
 import scala.concurrent.duration._
+import shipreq.base.util.jodatime.JodaTimeHelpers.PeriodConv
 import shipreq.taskman.api.Priority
 import shipreq.taskman.server.{Worker, TaskmanCtx, WorkerId, MsgHeader}
 
@@ -18,9 +18,9 @@ class SourceActor(ctx: TaskmanCtx) extends Actor with ActorLogging {
   import SourceActor._
   import shipreq.taskman.server.{Source => S}
   import ctx._
+  import ctx.server._
 
-  // TODO HARDCODED values
-  val source = S.Reified(Period seconds 1, manager.queueSize, manager.trustPeriod)
+  val source = S.Reified(pollGap, queueSize, trustPeriod)
   var state: S.S = source.empty.unsafePerformIO()
 
   override def receive = {
@@ -34,7 +34,6 @@ class SourceActor(ctx: TaskmanCtx) extends Actor with ActorLogging {
 
 // =====================================================================================================================
 
-// TODO TaskmanCtx unneeded
 object ManagerActor {
   def props(ctx: TaskmanCtx, source: ActorRef) = Props(classOf[ManagerActor], ctx, source)
 
@@ -52,8 +51,7 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with ActorLo
   var workers: Set[ActorRef] = Set.empty
   var queue = M.emptyQueue
 
-  // TODO HARDCODED values
-  val poller = context.system.scheduler.schedule(500 millis, 2000 millis, self, PollSource)
+  val poller = context.system.scheduler.schedule(0 millis, ctx.server.pollEvery.toScala, self, PollSource)
 
   override def postStop() = poller.cancel()
 
