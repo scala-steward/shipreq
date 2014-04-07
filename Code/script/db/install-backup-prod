@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source $(dirname "$0")/lib.sh
-backup="$dbdir"/backup-prod.sql
+backup="$sqldir"/backup-prod.sql
 
 [ ! -r "$backup" ] && echo "File not found or readable: $backup" && exit 1
 
@@ -10,10 +10,10 @@ echo "About to wipe $db"
 
 sudo -k
 cat "$backup" | "$dbdir"/sql-trns-dbname "$1" | $sudo_psql
-#cat "$dbdir"/backup-prod.sql | "$dbdir"/sql-trns-dbname "$1" | sudo -u postgres -k pg_restore -d $db --clean --create
+#cat "$sqldir"/backup-prod.sql | "$dbdir"/sql-trns-dbname "$1" | sudo -u postgres -k pg_restore -d $db --clean --create
 #cat <&0
 
 #[ -z "$1" ] && echo "USAGE: $(basename "$0") [dev|test|prod]" && exit 1
 #conn="$dbdir/connect"
 #[ ! -x "$conn" ] && echo "File not found: $conn" && exit 2
-#cat "$dbdir"/backup-prod.sql | "$dbdir"/sql-trns-dbname "$1" | "$conn" "$1"
+#cat "$sqldir"/backup-prod.sql | "$dbdir"/sql-trns-dbname "$1" | "$conn" "$1"

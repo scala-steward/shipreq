@@ -37,8 +37,8 @@ First, be in webapp/
     sudo systemctl restart postgresql
 
 * Create local DBs
-    db/create dev
-    db/create test
+    script/db/create dev
+    script/db/create test
 
 * Initialise
   [TODO](improve this)

@@ -5,8 +5,6 @@
 #tmp=/tmp/$(date +%Y%m%d-%H%M%S)-$$
 #xxx="$(cd "$(dirname "$0")/xxx" && pwd)"
 
-dbdir="$(dirname "$0")"
-
 function die {
   echo -e "$*" >&2
   exit 1
@@ -46,6 +44,8 @@ function lookup1 {
   lookup "$1"
 }
 
+dbdir=$(dirname "$0")
+sqldir="$(dirname "$0")/../../sql"; [ -e "$sqldir" ] || die "SQL dir not found: $sqldir"
 sudo_psql='sudo -u postgres psql'
 sudo_pg_dump='sudo -u postgres pg_dump --encoding=UTF-8'
 
