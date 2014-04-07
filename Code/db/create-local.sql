@@ -1,4 +1,4 @@
-CREATE USER usecase_prod PASSWORD 'ucelocal';
-ALTER USER usecase_prod CREATEDB;
-CREATE DATABASE usecase_prod OWNER usecase_prod ENCODING 'utf8';
+CREATE USER shipreq_prod PASSWORD 'ucelocal';
+ALTER USER shipreq_prod CREATEDB;
+CREATE DATABASE shipreq_prod OWNER usecase_prod ENCODING 'utf8';
 

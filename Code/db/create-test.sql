@@ -1,4 +1,4 @@
-CREATE USER usecase_test PASSWORD 'ucet';
-ALTER USER usecase_test CREATEDB;
-CREATE DATABASE usecase_test OWNER usecase_test ENCODING 'utf8';
+CREATE USER shipreq_test PASSWORD 'sqt';
+ALTER USER shipreq_test CREATEDB;
+CREATE DATABASE shipreq_test OWNER usecase_test ENCODING 'utf8';
 

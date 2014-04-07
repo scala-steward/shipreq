@@ -1,8 +1,8 @@
 db.appname  = TASKMAN
 db.schema   = taskman
-db.database = usecase_dev
-db.username = usecase_dev
-db.password = uced
+db.database = shipreq_dev
+db.username = shipreq_dev
+db.password = sqd
 
 mail.smtp.host                = smtp.gmail.com
 mail.smtp.socketFactory.port  = 465

@@ -1,9 +1,9 @@
 server.url = http://localhost:8080
 
 db.appname  = WEBAPP
-db.database = usecase_dev
-db.username = usecase_dev
-db.password = uced
+db.database = shipreq_dev
+db.username = shipreq_dev
+db.password = sqd
 
 db.pool.partitionCount             = 4
 db.pool.minConnectionsPerPartition = 0

@@ -6,9 +6,9 @@ backup="$dbdir"/backup-prod.sql
 [ ! -r "$backup" ] && echo "File not found or readable: $backup" && exit 1
 
 case "$1" in
-  dev)  db=usecase_dev ;;
-  test) db=usecase_test ;;
-  prod) db=usecase_prod ; echo "WARNING: About to wipe PROD" ;;
+  dev)  db=shipreq_dev ;;
+  test) db=shipreq_test ;;
+  prod) db=shipreq_prod ; echo "WARNING: About to wipe PROD" ;;
   *) echo -e "Unknown db: '$1'.\nExpected [dev|test|prod]." >&2; exit 1
 esac
 

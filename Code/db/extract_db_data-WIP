@@ -6,7 +6,7 @@
 
 tmp=/tmp/hehe
 dump=$tmp/dump.sql
-# pg_dump --encoding=UTF-8 --data-only --no-owner --no-privileges --no-tablespaces usecase_prod > $dump
+# pg_dump --encoding=UTF-8 --data-only --no-owner --no-privileges --no-tablespaces shipreq_prod > $dump
 dump=/tmp/dumped
 
 tables=(

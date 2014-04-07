@@ -3,9 +3,9 @@
 dbdir="$(dirname "$0")"
 
 case "$1" in
-  dev)  db=usecase_dev ;;
-  test) db=usecase_test ;;
-  prod) db=usecase_prod ;;
+  dev)  db=shipreq_dev ;;
+  test) db=shipreq_test ;;
+  prod) db=shipreq_prod ;;
   *) echo -e "Unknown db: '$1'.\nExpected [dev|test|prod]." >&2; exit 1
 esac
 
