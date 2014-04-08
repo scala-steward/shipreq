@@ -26,6 +26,9 @@ object BusinessLogic {
         case Msg.PasswordResetRequested(addr, url) =>
           email.sendToUser(addr, email.passwordChangeRequest(url))
 
+        case Msg.SendDiagEmail(addr, subject, body) =>
+          email.sendToUser(addr, email.diagnosticEmail(subject, body, md))
+
         case Msg.DummyMsg(desc, processingTimeMs, retryCount, _, failureMsg) => IO {
           if (processingTimeMs > 0)
             Thread sleep processingTimeMs

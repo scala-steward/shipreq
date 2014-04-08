@@ -28,6 +28,8 @@ object Msg {
                       retryDelaySec: Int = 0,
                       failureMsg: Option[String] = None) extends Msg
 
+  case class SendDiagEmail(email: EmailAddr, subject: String, body: String) extends Msg
+
   // UserChangedPrefs
   // MailChimpBroadcast
 }
@@ -37,7 +39,9 @@ object Msg {
 sealed abstract class MsgType(val id: Short, val msgClass: Class[_ <: Msg])
 
 object MsgType {
+  // TODO Fuck this. Switch over to Simon's enum macro
   case object DummyMsg                extends MsgType(  1, classOf[Msg.DummyMsg])
+  case object SendDiagEmail           extends MsgType(  2, classOf[Msg.SendDiagEmail])
   case object RegistrationRequested   extends MsgType(100, classOf[Msg.RegistrationRequested])
   case object RegistrationCompleted   extends MsgType(101, classOf[Msg.RegistrationCompleted])
   case object ReRegistrationAttempted extends MsgType(102, classOf[Msg.ReRegistrationAttempted])
@@ -51,6 +55,7 @@ object MsgType {
     , PasswordResetRequested
     , LandingPageHit
     , DummyMsg
+    , SendDiagEmail
   )
 
   private[this] val byId: Map[Short, MsgType] = {

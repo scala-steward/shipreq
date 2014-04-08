@@ -91,6 +91,14 @@ object TestHelpers {
         failureMsg       <- arbitrary[Option[String]]
       } yield
         M.DummyMsg(desc, processingTimeMs, retryCount, retryDelaySec, failureMsg)
+
+    case T.SendDiagEmail =>
+      for {
+        email   <- genEmail
+        subject <- arbitrary[String]
+        body    <- arbitrary[String]
+      } yield
+        M.SendDiagEmail(email, subject, body)
   }
 
 //  def genMsgOfEachType: Gen[List[Msg]] =

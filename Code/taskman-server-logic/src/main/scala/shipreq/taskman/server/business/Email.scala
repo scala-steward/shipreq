@@ -2,6 +2,7 @@ package shipreq.taskman.server.business
 
 import scalaz.NonEmptyList
 import shipreq.taskman.api.Types._
+import shipreq.taskman.server.MsgDetail
 
 object Email {
 
@@ -27,6 +28,9 @@ class Emails(ctx: Email.Ctx) {
     val e = Email.Envelope(ctx.defaultFromAddress, NonEmptyList(addr))
     Bop.SendEmail(e, c)
   }
+
+  def diagnosticEmail(subject: String, body: String, msg: MsgDetail) =
+    Content(s"[DIAG] $subject", s"$body\n\n${"=" * 40}\nMsg header: ${msg.hdr}\nFailure count: ${msg.failureCount}")
 
   // ===================================================================================================================
 
