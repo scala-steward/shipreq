@@ -21,10 +21,14 @@ class TestTaskman extends TaskmanInterface {
   def ctx = TaskmanImpl.ctx
 
   val reify: (ApiOp ~> IO) = new (ApiOp ~> IO) {
-    def apply[A](c: ApiOp[A]): IO[A] = c match {
-      case SubmitMsg(t)   => IO{ tasksSubmitted ::= t; null.asInstanceOf[MsgId] }
-      case SubmitMsgs(ts) => IO{ tasksSubmitted :::= ts.toList }
-      case CfgPut(k, v)   => IO()
+    def apply[A](c: ApiOp[A]): IO[A] = synchronized {
+      ran ::= c
+      c match {
+        case SubmitMsg(t)       => IO{ msgsSubmitted ::= t; null.asInstanceOf[MsgId] }
+        case SubmitMsgs(ts)     => IO{ msgsSubmitted :::= ts.toList }
+        case CfgPut(k, v)       => IO()
+        case QueryMsgStatus(id) => IO(None)
+      }
     }
   }
 
@@ -32,5 +36,5 @@ class TestTaskman extends TaskmanInterface {
     synchronized(reify(op).unsafePerformIO())
 
   @volatile var ran: List[ApiOp[_]] = List.empty
-  @volatile var tasksSubmitted: List[Msg] = List.empty
+  @volatile var msgsSubmitted: List[Msg] = List.empty
 }

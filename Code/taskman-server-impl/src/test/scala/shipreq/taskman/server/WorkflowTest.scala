@@ -5,10 +5,10 @@ import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import shipreq.base.test.db.specs2.DatabaseTest
 import shipreq.base.util.jodatime.JodaTimeHelpers._
-import shipreq.taskman.api.MsgId
+import shipreq.taskman.api.{MsgStatus, MsgId}
 import shipreq.taskman.api.Types._
 import shipreq.taskman.api.Msg.ReRegistrationAttempted
-import shipreq.taskman.api.ApiOp.SubmitMsg
+import shipreq.taskman.api.ApiOp.{QueryMsgStatus, SubmitMsg}
 import shipreq.taskman.server.Sop._
 import Sql._
 
@@ -21,21 +21,23 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
   val w = WorkerId(666)
   val defaultMsg = ReRegistrationAttempted("haha cool".tag)
 
-  val find = GetMsgsAssignNode(n, 10, 1 minutes, None)
+  val assignNode = GetMsgsAssignNode(n, 10, 1 minutes, None)
 
   def findAndStartWork = {
     // assign node -> cant(assign node)
-    val q = run(find)
+    val q = run(assignNode)
     q must have size 1
-    run(find) must beEmpty
+    run(QueryMsgStatus(q.head.id)) must beSome(MsgStatus.NodeAssigned)
+    run(assignNode) must beEmpty
 
     // assign worker -> cant(assign node, assign worker)
     val assignWorker = GetMsgAssignWorker(n, w, q.head)
     val mo = run(assignWorker)
     mo must beSome
     val m = mo.get
-    run(find) must beEmpty
+    run(assignNode) must beEmpty
     run(assignWorker) must beNone
+    run(QueryMsgStatus(m.hdr.id)) must beSome(MsgStatus.Working)
 
     (m, assignWorker)
   }
@@ -46,6 +48,7 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
   "Workflow: fail then pass" in {
     // new
     val id = run(SubmitMsg(defaultMsg))
+    run(QueryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
 
     // assign node -> assign worker
     val (m1, assignWorker1) = findAndStartWork
@@ -54,6 +57,7 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
     // fail:retry -> cant(assign worker)
     run(UpdateMsgAbort(m1, 0 sec))
     run(assignWorker1) must beNone
+    run(QueryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
 
     // assign node -> assign worker
     val (m2, assignWorker2) = findAndStartWork
@@ -61,8 +65,9 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
 
     // pass -> cant(assign node, assign worker)
     run(UpdateMsgSuccess(m2))
-    run(find) must beEmpty
+    run(assignNode) must beEmpty
     run(assignWorker2) must beNone
+    run(QueryMsgStatus(id)) must beSome(MsgStatus.Complete)
 
     queryHistory(id) must_== Some(("s", 1))
   }
@@ -70,6 +75,7 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
   "Workflow: fail+delay then abort" in {
     // new
     val id = run(SubmitMsg(defaultMsg))
+    run(QueryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
 
     // assign node -> assign worker
     val (m1, assignWorker1) = findAndStartWork
@@ -78,7 +84,7 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
     // fail:retry -> cant(assign worker) while delay
     run(UpdateMsgAbort(m1, 1 sec))
     run(assignWorker1) must beNone
-    run(find) must beEmpty
+    run(assignNode) must beEmpty
     Thread.sleep(1050)
 
     // assign node -> assign worker
@@ -87,8 +93,9 @@ class WorkflowTest extends Specification with DatabaseTest with NoTimeConversion
 
     // pass -> cant(assign node, assign worker)
     run(UpdateMsgRetry(m2))
-    run(find) must beEmpty
+    run(assignNode) must beEmpty
     run(assignWorker2) must beNone
+    run(QueryMsgStatus(id)) must beSome(MsgStatus.Aborted)
 
     queryHistory(id) must_== Some(("f", 2))
   }

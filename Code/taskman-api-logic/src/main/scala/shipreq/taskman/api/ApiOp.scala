@@ -26,4 +26,9 @@ object ApiOp {
    * @param v The config value.
    */
   case class CfgPut(k: String, v: String) extends ApiOp[Unit]
+
+  /**
+   * Inspects the status of a msg.
+   */
+  case class QueryMsgStatus(id: MsgId) extends ApiOp[Option[MsgStatus]]
 }

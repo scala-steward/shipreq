@@ -66,13 +66,13 @@ object T2 {
   }
 
   object NoTasksSubmitted extends TestTaskmanExp with Matchers {
-    override def test = _.tasksSubmitted shouldBe empty
+    override def test = _.msgsSubmitted shouldBe empty
   }
 
   type TaskTestPF = PartialFunction[Msg, Function0[Unit]]
 
   case class SubmittedOneTask(m: TaskTestPF) extends TestTaskmanExp with Matchers {
-    override def test = tt => tt.tasksSubmitted match {
+    override def test = tt => tt.msgsSubmitted match {
       case t :: Nil => if (m isDefinedAt t) m(t)() else fail(s"Task didn't meet criteria: $t")
       case other    => other should have size(1)
     }

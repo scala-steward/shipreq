@@ -17,8 +17,9 @@ class TaskmanApi(ctx: TaskmanApi.Context, db: Database) extends ApiOpReifier {
     IO(db.withSession(s => f(new ApiDao(ctx, s))))
   
   override def apply[A](op: ApiOp[A]): IO[A] = op match {
-    case SubmitMsg(t)   => io(_ createMsg t)
-    case SubmitMsgs(ts) => io(dao => ts.foreach(t => dao createMsg t))
-    case CfgPut(k, v)   => io(_.cfgPut(k, v))
+    case SubmitMsg(t)       => io(_ createMsg t)
+    case SubmitMsgs(ts)     => io(dao => ts.foreach(t => dao createMsg t))
+    case CfgPut(k, v)       => io(_.cfgPut(k, v))
+    case QueryMsgStatus(id) => io(_ queryMsgStatus id)
   }
 }

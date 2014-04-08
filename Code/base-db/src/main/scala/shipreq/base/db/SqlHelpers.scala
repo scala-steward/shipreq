@@ -14,6 +14,17 @@ object SqlHelpers {
     o
   }
 
+  @inline def ISP[T](implicit e: SetParameter[T]) = e
+  @inline def IGR[T](implicit e: GetResult[T]) = e
+
+  final case class ContramapSP[Z, A](f: Z => A, sp: SetParameter[A]) extends SetParameter[Z] {
+    def apply(v: Z, pp: PositionedParameters): Unit = sp(f(v), pp)
+  }
+
+  implicit class SetParameterExt[A](val sp: SetParameter[A]) extends AnyVal {
+    def contramap[Z](f: Z => A): SetParameter[Z] = ContramapSP(f, sp)
+  }
+
   implicit class PositionedResultExt(val r: PositionedResult) extends AnyVal {
     def nextId[T <: JLong @@ TypeTag[JLong]](): T = r.nextObject.asInstanceOf[T]
     def nextId_?[T <: JLong @@ TypeTag[JLong]](): Option[T] = r.nextObjectOption.asInstanceOf[Option[T]]
