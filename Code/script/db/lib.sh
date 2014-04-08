@@ -31,11 +31,13 @@ function lookup {
       die "Unknown db: '$1'.\nExpected [dev|test|prod]."
   esac
 
+  user=$db
+
   connect="psql -d $db"
   if [ -z "$use_sudo" ]; then
-    cmd="$cmd -U $db"
+    connect="$connect -U $user"
   else
-    cmd="sudo -u postgres $sudo_opt $cmd"
+    connect="sudo -u postgres $sudo_opt $connect"
   fi
 }
 
