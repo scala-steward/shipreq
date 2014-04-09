@@ -17,7 +17,7 @@ import shipreq.webapp.lib.{Misc, SnippetHelpers}
 import shipreq.taskman.api.ApiOp.{QueryMsgStatus, SubmitMsg}
 import shipreq.taskman.api.Msg.SendDiagEmail
 import shipreq.taskman.api.Types._
-import shipreq.taskman.api.{ApiOp, MsgId}
+import shipreq.taskman.api.{Msg, ApiOp, MsgId}
 
 /**
  * Expose URLs for diagnostic functions and purposes.
@@ -53,9 +53,6 @@ object DiagnosticEndpoints extends DI {
       EarlyResponse(() => S.request.filter(_.request.scheme != "https").map(_ => MethodNotAllowedResponse()))
     else
       Test(_ => true)
-
-  def run[A](op: ApiOp[A]): A =
-    daoProvider.withSession(dao => taskman.run(dao.session, op))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Ping
@@ -101,7 +98,7 @@ object DiagnosticEndpoints extends DI {
       case Full(emailAddress) => {
         val token = nextFuncName
         val msg = SendDiagEmail(emailAddress.tag, token, s"Token: $token\nIssued: ${Misc.currentTimeAsIso8601Str}")
-        val (time, msgId) = calcTime(run(SubmitMsg(msg)))
+        val (time, msgId) = calcTime(taskman1(_ submitMsg msg))
         Full(jsonResponse(EmailSendResult(msgId, time, token)))
       }
       case _ => Full(BadResponse())
@@ -118,7 +115,7 @@ object DiagnosticEndpoints extends DI {
         MsgStatus.currentValue match {
           case Full(l) =>
             val id = MsgId(l)
-            run(QueryMsgStatus(id)) match {
+            taskman1(_ run QueryMsgStatus(id)) match {
               case Some(status) => Full(jsonResponse(MsgStatusResult(id, status.toString, status.isArchived)))
               case None         => Full(NotFoundResponse("Msg not found."))
             }

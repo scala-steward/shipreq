@@ -54,7 +54,7 @@ object Register1 extends SnippetHelpers {
           case None    => onNewUser(emailAddr, dao)
           case Some(u) => preRegistrationMsg(emailAddr, u, dao)
         }
-        submitMsg(msg, dao)
+        taskmanD(dao, _ submitMsg msg)
       })
       jsClearError & JqExpr("#emailSent,#register1Form") ~> JqToggle
     })

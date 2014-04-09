@@ -2,6 +2,7 @@ package shipreq.webapp
 package app
 
 import net.liftweb.util.SimpleInjector
+import scala.slick.session.Session
 import security.{SecurityProvider, Oshiro}
 import db.{AsyncDbImpl, AsyncDb, DB, DaoProvider}
 import lib.{TaskmanImpl, TaskmanInterface, StatLoggerImpl, StatLogger}
@@ -29,9 +30,13 @@ object DI extends SimpleInjector {
  * Mixes in accessors to DI resources.
  */
 trait DI {
-  def daoProvider = DI.DaoProvider.vend
-  def securityProvider = DI.SecurityProvider.vend
-  def statLogger = DI.StatLogger.vend
-  def taskman = DI.Taskman.vend
-  def asyncDb = DI.AsyncDb.vend
+  final def daoProvider = DI.DaoProvider.vend
+  final def securityProvider = DI.SecurityProvider.vend
+  final def statLogger = DI.StatLogger.vend
+  final def taskman = DI.Taskman.vend
+  final def asyncDb = DI.AsyncDb.vend
+
+  /** One-shot taskman job. Uses a new DB connection. */
+  final def taskman1[A](f: TaskmanInterface => Session => A): A =
+    daoProvider.withRawSession(f(taskman))
 }

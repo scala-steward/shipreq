@@ -17,7 +17,7 @@ import security.Oshiro
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
  */
-class Boot {
+class Boot extends DI {
 
   LiftRules.configureLogging()
 
@@ -65,9 +65,7 @@ class Boot {
   def initTaskman(): Unit =
     Props.mode match {
       case Test =>
-      case _ =>
-        DI.DaoProvider.vend.withSession(s =>
-          DI.Taskman.vend.runAll(s.session, Taskman.updateCfg: _*))
+      case _    => taskman1(_ runS Taskman.updateCfg)
     }
 
   def preloadTemplates(): Unit = {

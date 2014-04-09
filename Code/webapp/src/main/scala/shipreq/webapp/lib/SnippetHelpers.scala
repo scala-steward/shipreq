@@ -7,9 +7,8 @@ import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet,
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
+import scala.slick.session.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
-
-import shipreq.taskman.api.Msg
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
 import shipreq.webapp.feature.validation.VFailure
@@ -172,8 +171,8 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger 
     case None => respondImmediately(RedirectResponse(AppSiteMap.Login.relativeUrl))
   }
 
-  def submitMsg(m: Msg, dao: DaoS) =
-    taskman.submitMsg(m, dao.session)
+  def taskmanD[A](dao: DaoS, f: TaskmanInterface => Session => A): A =
+    f(taskman)(dao.session)
 }
 
 /**

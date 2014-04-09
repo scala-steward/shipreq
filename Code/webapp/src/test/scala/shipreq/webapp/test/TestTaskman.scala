@@ -32,7 +32,7 @@ class TestTaskman extends TaskmanInterface {
     }
   }
 
-  override def run[A](s: Session, op: ApiOp[A]): A =
+  override def run[A](op: ApiOp[A])(s: Session): A =
     synchronized(reify(op).unsafePerformIO())
 
   @volatile var ran: List[ApiOp[_]] = List.empty

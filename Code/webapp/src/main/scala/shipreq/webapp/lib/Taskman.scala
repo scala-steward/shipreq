@@ -22,10 +22,10 @@ object Taskman {
 object TaskmanImpl extends TaskmanInterface {
   val ctx = TaskmanApi.Context(Some(AppConfig.TaskmanSchema))
 
-  override def run[A](s: Session, op: ApiOp[A]): A =
+  override def run[A](op: ApiOp[A])(s: Session): A =
     new TaskmanApi(ctx, SingleConnDatabase(s)).apply(op).unsafePerformIO()
 
-  override def runAll(s: Session, ops: ApiOp[_]*): Unit = {
+  override def runS(ops: Seq[ApiOp[_]])(s: Session): Unit = {
     val reify = new TaskmanApi(ctx, SingleConnDatabase(s))
     for (op <- ops)
       reify(op).unsafePerformIO()
@@ -33,9 +33,10 @@ object TaskmanImpl extends TaskmanInterface {
 }
 
 trait TaskmanInterface {
-  def run[A](s: Session, op: ApiOp[A]): A
-  def runAll(s: Session, ops: ApiOp[_]*): Unit = ops.foreach(op => run(s, op))
+  def run[A](op: ApiOp[A])(s: Session): A
+  final def runN(ops: ApiOp[_]*)(s: Session): Unit = runS(ops)(s)
+  def runS(ops: Seq[ApiOp[_]])(s: Session): Unit = ops.foreach(op => run(op)(s))
 
-  def submitMsg(m: Msg, s: Session): MsgId       = run(s, SubmitMsg(m))
-  def submitMsgs(ms: Seq[Msg], s: Session): Unit = run(s, SubmitMsgs(ms))
+  def submitMsg(m: Msg)(s: Session): MsgId       = run(SubmitMsg(m))(s)
+  def submitMsgs(ms: Seq[Msg])(s: Session): Unit = run(SubmitMsgs(ms))(s)
 }
