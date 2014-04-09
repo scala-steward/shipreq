@@ -26,23 +26,27 @@ class Db(props: StringBasedValueReader) extends DbTemplate {
 //==========================================================================================
 
 class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReader)
-  extends Email.Ctx with EmailImpl.Ctx with BopImpl.Ctx with Logger {
+  extends Email.Ctx[EmailImpl.EA] with EmailImpl.Ctx with BopImpl.Ctx with Logger {
+  import EmailImpl.EA
 
   implicit val sopReifier = new SopImpl(db)
 
   protected def fromDb = CfgValueReader(sopReifier)
   protected implicit def scope: PropScope = scopeByNS("taskman")
-  protected implicit def _retrieverS = evr.retrieverS
-  val jtr = JodaTimeValueRetrievers(_retrieverS)
+  protected implicit def retrieverS = evr.retrieverS
+  val jtr = JodaTimeValueRetrievers(retrieverS)
 
   import evr.retrieverI
   import jtr.retrieverPeriod
 
   override val mailSession = EmailImpl.loadSession(mailProps)
-  override val defaultFromAddress = need[String]("mail.from").tag
+  override val addrParser  = EmailImpl.AddressParser
+  override val emailer     = new EmailImpl(this)
+  private[this] implicit def rEA = retrieverS.map(s => addrParser(s.tag[IsEmailAddr]))
+
+  override val defaultFromAddress = validate("mail.from", need[EA])(valTestNotError)
   override val shipreq  = need(CfgKeys.Webapp.appName )(GlobalScope, fromDb.retrieverS)
   override val loginUrl = need(CfgKeys.Webapp.loginUrl)(GlobalScope, fromDb.retrieverS)
-  override val emailer  = new EmailImpl(this)
 
   object server {
     private implicit def scope: PropScope = scopeByNS("taskman.server")

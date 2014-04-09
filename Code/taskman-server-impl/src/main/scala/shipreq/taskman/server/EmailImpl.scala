@@ -9,11 +9,13 @@ import scalaz.syntax.bind._
 import scalaz.syntax.traverse._
 import shipreq.base.util.{JPropertiesValueReader, Error, ErrorOr, Logger}
 import shipreq.base.util.ExternalValueReader._
-import shipreq.taskman.api.Types._
+import shipreq.taskman.api.Types
 import shipreq.taskman.server.business.Email
 import shipreq.taskman.server.business.Bop.SendEmail
 
 object EmailImpl extends Logger {
+
+  type EA = ErrorOr[Address]
 
   trait Ctx {
     def mailSession: Session
@@ -36,27 +38,30 @@ object EmailImpl extends Logger {
     }
     Session.getInstance(props, mailAuth getOrElse null)
   }
+
+  // TODO memo with LRU cache ?
+  case object AddressParser extends Email.AddrParser[EA] {
+    override def apply(ea: Types.EmailAddr): EA =
+      ErrorOr.catchAndTag(Deterministic) {
+        val as = InternetAddress.parse(ea)
+        if (as.size == 1)
+          ErrorOr(as.head)
+        else
+          Error(s"Email address '$ea' is expected to parse into a single address, but parsed into ${as.toList}")
+      }
+  }
 }
 
 final class EmailImpl(ctx: EmailImpl.Ctx) extends Logger {
+  import EmailImpl.EA
   import ctx._
 
-  // TODO memo with LRU cache
-  def parseEmailAddress(ea: EmailAddr): ErrorOr[Address] =
-    ErrorOr.catchAndTag(Deterministic){
-      val as = InternetAddress.parse(ea)
-      if (as.size == 1)
-        ErrorOr(as.head)
-      else
-        Error(s"Email address '$ea' is expected to parse into a single address, but parsed into ${as.toList}")
-    }
-
-  def buildEmail(e: Email.Envelope, c: Email.Content): ErrorOr[MimeMessage] = {
+  def buildEmail(e: Email.Envelope[EA], c: Email.Content): ErrorOr[MimeMessage] = {
     val r = for {
-      from <- parseEmailAddress(e.from)
-      to   <- e.to.traverse[ErrorOr, Address](parseEmailAddress)
-      cc   <- e.cc.traverse[ErrorOr, Address](parseEmailAddress)
-      bcc  <- e.bcc.traverse[ErrorOr, Address](parseEmailAddress)
+      from <- e.from
+      to   <- e.to.sequence[ErrorOr, Address]
+      cc   <- e.cc.sequence[ErrorOr, Address]
+      bcc  <- e.bcc.sequence[ErrorOr, Address]
     } yield {
       val m = new MimeMessage(mailSession)
       m.setSentDate(new java.util.Date)
@@ -73,7 +78,7 @@ final class EmailImpl(ctx: EmailImpl.Ctx) extends Logger {
     r.join
   }
 
-  def send(op: SendEmail): IOE[Unit] = IO(
+  def send(op: SendEmail[EA]): IOE[Unit] = IO(
     buildEmail(op.e, op.c).map(m => {
       Transport.send(m)
       log.info("Email sent: {} [{}]", op.e.to.head, op.c.subject, null)

@@ -3,16 +3,18 @@ package shipreq.taskman.server.business
 import scalaz.effect.IO
 import shipreq.base.util.{ErrorOr, Error}
 import shipreq.taskman.api.Msg
+import shipreq.taskman.api.Types.EmailAddr
 import shipreq.taskman.server.{Deliberate, Deterministic, Worker}
 import shipreq.taskman.server.Worker.MsgProcessor
 
 object BusinessLogic {
 
-  def apply(ctx: Email.Ctx, reifier: BopReifier): MsgProcessor = {
+  def apply[EA](ctx: Email.Ctx[EA], reifier: BopReifier): MsgProcessor = {
 
-    val email = new Emails(ctx)
+    val email = new Emails[EA](ctx)
 
     implicit def autoReifyBop(bop: Bop[Unit]) = reifier(bop)
+    implicit def autoParseEa(ea: EmailAddr): EA = ctx.addrParser(ea)
 
     val msgProcessor: MsgProcessor =
       md => md.msg match {

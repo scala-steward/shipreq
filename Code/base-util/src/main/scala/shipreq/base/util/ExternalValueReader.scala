@@ -65,6 +65,9 @@ object ExternalValueReader {
   def valTest[T](f: T => Boolean, errMsg: String): ValTest[T] =
     t => if (f(t)) None else Some(Error error errMsg)
 
+  def valTestNotError[T]: ValTest[ErrorOr[T]] =
+    _.swap.toOption
+
   def validate[T](name: String, f: String => T)(test: ValTest[T])(implicit s: PropScope): T =
     _test[T, T](name, f, test)(Some(_), _.throw_!())
 

@@ -8,5 +8,5 @@ sealed trait Bop[A]
 
 object Bop {
 
-  case class SendEmail(e: Email.Envelope, c: Email.Content) extends Bop[Unit]
+  case class SendEmail[EA](e: Email.Envelope[EA], c: Email.Content) extends Bop[Unit]
 }

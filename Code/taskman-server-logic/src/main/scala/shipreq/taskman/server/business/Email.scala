@@ -1,31 +1,34 @@
 package shipreq.taskman.server.business
 
 import scalaz.NonEmptyList
-import shipreq.taskman.api.Types._
+import shipreq.taskman.api.Types
 import shipreq.taskman.server.MsgDetail
 
 object Email {
 
-  trait Ctx {
+  trait Ctx[EA] {
     val shipreq: String
     val loginUrl: String
-    val defaultFromAddress: EmailAddr
+    val defaultFromAddress: EA
+    def addrParser: AddrParser[EA]
   }
 
-  case class Envelope(from: EmailAddr
-                      , to: NonEmptyList[EmailAddr]
-                      , cc: List[EmailAddr] = Nil
-                      , bcc: List[EmailAddr] = Nil)
+  type AddrParser[EA] = Types.EmailAddr => EA
+
+  case class Envelope[EA](from: EA
+                      , to: NonEmptyList[EA]
+                      , cc: List[EA] = Nil
+                      , bcc: List[EA] = Nil)
 
   case class Content(subject: String, body: String)
 }
 
-class Emails(ctx: Email.Ctx) {
+class Emails[EA](ctx: Email.Ctx[EA]) {
   import Email.Content
   import ctx._
 
-  def sendToUser(addr: EmailAddr, c: Content): Bop[Unit] = {
-    val e = Email.Envelope(ctx.defaultFromAddress, NonEmptyList(addr))
+  def sendToUser(addr: EA, c: Content): Bop[Unit] = {
+    val e = Email.Envelope[EA](ctx.defaultFromAddress, NonEmptyList(addr))
     Bop.SendEmail(e, c)
   }
 

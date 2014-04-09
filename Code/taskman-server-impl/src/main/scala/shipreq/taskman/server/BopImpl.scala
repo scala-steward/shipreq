@@ -34,7 +34,7 @@ final class BopImpl(ctx: Ctx) extends BopReifier with Logger {
 
   def applyOnly[A](op: Bop[A]): IOE[A] =
     op match {
-      case s: SendEmail => emailer.send(s)
+      case s: SendEmail[EmailImpl.EA] => emailer send s
     }
 }
 
