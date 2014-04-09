@@ -2,6 +2,8 @@ package bootstrap.liftweb
 
 import net.liftweb.common.Logger
 import net.liftweb.http._
+import net.liftweb.util.Props
+import net.liftweb.util.Props.RunModes._
 import provider.HTTPParam
 
 import shipreq.webapp._
@@ -61,8 +63,12 @@ class Boot {
   }
 
   def initTaskman(): Unit =
-    DI.DaoProvider.vend.withSession(s =>
-      DI.Taskman.vend.runAll(s.session, Taskman.updateCfg: _*))
+    Props.mode match {
+      case Test =>
+      case _ =>
+        DI.DaoProvider.vend.withSession(s =>
+          DI.Taskman.vend.runAll(s.session, Taskman.updateCfg: _*))
+    }
 
   def preloadTemplates(): Unit = {
     snippet.DynModal
