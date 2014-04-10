@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import org.joda.time.Period
+import org.joda.time.{DateTime, Period}
 import shipreq.base.util.Error
 import shipreq.taskman.api.Priority
 
@@ -38,8 +38,8 @@ object Sop {
   case class UpdateMsgRetry(m: MsgDetail) extends FailedJobReaction
   case class UpdateMsgAbort(m: MsgDetail, delay: Period) extends FailedJobReaction
 
-  case class NotifySupportWorkerFailed(m: MsgDetail, e: Error) extends Sop[Unit]
-  case class NotifySupportTaskmanError(e: Error, m: Option[MsgDetail]) extends Sop[Unit]
+  case class NotifySupportWorkerFailed(t: DateTime, m: MsgDetail, e: Error) extends Sop[Unit]
+  case class NotifySupportTaskmanError(t: DateTime, e: Error, m: Option[MsgDetail]) extends Sop[Unit]
 
   case object Nop extends Sop[Unit]
 }

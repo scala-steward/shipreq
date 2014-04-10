@@ -103,6 +103,8 @@ final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.e
     case That(e)    => e
     case Both(_, e) => ErrorAsThrowable(this)
   }
+
+  def stackTraceStr: String = Error stackTraceStr throwable
 }
 
 object Error {
@@ -127,6 +129,13 @@ object Error {
          else " "
       a + p + b
     }
+
+  def stackTraceStr(t: Throwable): String = {
+    val sw = new java.io.StringWriter
+    val pw = new java.io.PrintWriter(sw)
+    t.printStackTrace(pw)
+    sw.toString
+  }
 }
 
 final case class ErrorAsThrowable(e: Error) extends RuntimeException(e.msg, e.cause getOrElse null)

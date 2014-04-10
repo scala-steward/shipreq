@@ -1,39 +1,77 @@
 package shipreq.taskman.server.business
 
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import scalaz.NonEmptyList
 import shipreq.taskman.api.Types
 import shipreq.taskman.server.MsgDetail
+import shipreq.base.util.Error
 
 object Email {
 
   trait Ctx[EA] {
+    def addrParser: AddrParser[EA]
+
+    // Email addresses
+    val publicFrom: EA
+    val supportEnv: Envelope[EA]
+
+    // Email content tokens
     val shipreq: String
     val loginUrl: String
-    val defaultFromAddress: EA
-    def addrParser: AddrParser[EA]
   }
 
   type AddrParser[EA] = Types.EmailAddr => EA
 
-  case class Envelope[EA](from: EA
-                      , to: NonEmptyList[EA]
-                      , cc: List[EA] = Nil
-                      , bcc: List[EA] = Nil)
+  final case class Envelope[EA](from: EA, to: NonEmptyList[EA], cc: List[EA] = Nil, bcc: List[EA] = Nil) {
+    override def toString = {
+      val sb = new StringBuilder(getClass.getSimpleName)
+      def kv(k: String, v: Any, p: String = ", "): Unit = {
+        sb append p
+        sb append k
+        sb append " = "
+        sb append v
+      }
+      def kvo(k: String, v: List[EA]): Unit = if (v.nonEmpty) kv(k, v)
+      kv("from", from, "(")
+      kv("to", to)
+      kvo("cc", cc)
+      kvo("bcc", bcc)
+      sb append ')'
+      sb.toString
+    }
+  }
 
-  case class Content(subject: String, body: String)
+  final case class Content(subject: String, body: String)
+
+  val timeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 }
 
 class Emails[EA](ctx: Email.Ctx[EA]) {
-  import Email.Content
+  import Email._
   import ctx._
 
-  def sendToUser(addr: EA, c: Content): Bop[Unit] = {
-    val e = Email.Envelope[EA](ctx.defaultFromAddress, NonEmptyList(addr))
+  type SendOp = Bop[Unit]
+
+  def sendToUser(addr: EA, c: Content): SendOp = {
+    val e = Email.Envelope(ctx.publicFrom, NonEmptyList(addr))
     Bop.SendEmail(e, c)
   }
 
   def diagnosticEmail(subject: String, body: String, msg: MsgDetail) =
     Content(s"[DIAG] $subject", s"$body\n\n${"=" * 40}\nMsg header: ${msg.hdr}\nFailure count: ${msg.failureCount}")
+
+  // ===================================================================================================================
+
+  def notifySupportOfWorkerFailure(t: DateTime, m: MsgDetail, e: Error): SendOp =
+    Bop.SendEmail(supportEnv, Content(
+      s"[TASKMAN] Worker failed on #${m.hdr.id.value}",
+      s"TIME: ${t toString timeFormat}\n\nMSG: $m\n\nERROR: ${e.stackTraceStr}"))
+
+  def notifySupportOfTaskmanError(t: DateTime, e: Error, m: Option[MsgDetail]): SendOp =
+    Bop.SendEmail(supportEnv, Content(
+      s"[TASKMAN] Taskman infrastructure itself failed",
+      s"TIME: ${t toString timeFormat}\n\nERROR: ${e.stackTraceStr}\n\nMSG: $m"))
 
   // ===================================================================================================================
 

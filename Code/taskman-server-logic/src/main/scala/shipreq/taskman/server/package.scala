@@ -1,9 +1,9 @@
 package shipreq.taskman
 
 import org.joda.time.DateTime
-import scalaz.{\/-, ~>}
+import scalaz.{-\/, \/-, ~>}
 import scalaz.effect.{MonadIO, IO}
-import shipreq.base.util.{ErrorTag, ErrorOr}
+import shipreq.base.util.{ErrorTag, ErrorOr, Error}
 import shipreq.taskman.api.{MsgId, Msg, Priority}
 
 package object server {
@@ -42,6 +42,14 @@ package object server {
   type IOE[A] = IO[ErrorOr[A]]
 
   type SopReifier = Sop ~> IO
+
+  val nopIo = IO(())
+
+  def execIOE(ioe: IOE[_], f: Error => IO[Unit]): IO[Unit] =
+    ioe.flatMap {
+      case \/-(_) => nopIo
+      case -\/(e) => f(e)
+    }
 
   implicit class OpExt[F[_], A](val op: F[A]) extends AnyVal {
     def toIO(implicit opToIo: F ~> IO): IO[A] = opToIo(op)

@@ -2,7 +2,7 @@ package shipreq.base.test
 
 import scalaz.{Applicative, ~>, Name}
 
-abstract class MockOpTransformer[Op[_], I[_]: Applicative] extends (Op ~> I) {
+abstract class MockOpTransformer[Op[_], I[_]] extends (Op ~> I) {
 
   var allOps = List.empty[Op[_]]
 
@@ -19,12 +19,10 @@ abstract class MockOpTransformer[Op[_], I[_]: Applicative] extends (Op ~> I) {
 
   final override def apply[A](o: Op[A]): I[A] = {
     allOps = allOps :+ o
-    io(call(o))
+    trans(o)
   }
 
-  def io[A](a: => A): I[A] = implicitly[Applicative[I]].point(a)
-
-  def call[A]: Op[A] => A
+  def trans[A]: Op[A] => I[A]
 
   case class MockResponse[A](default: A) {
     private var rs = List.empty[Name[A]]
@@ -41,14 +39,23 @@ abstract class MockOpTransformer[Op[_], I[_]: Applicative] extends (Op ~> I) {
   }
 }
 
-case class MockOpTransformer1[Op[_], I[_]: Applicative, S <: Op[A]: Manifest, A](default: A) extends MockOpTransformer[Op, I] {
+abstract class MockOpTransformerA[Op[_], I[_]: Applicative] extends MockOpTransformer[Op, I] {
+
+  def io[A](a: => A): I[A] = implicitly[Applicative[I]].point(a)
+
+  final override def trans[A] = a => io(cotrans(a))
+
+  def cotrans[A]: Op[A] => A
+}
+
+case class MockOpTransformer1[Op[_], I[_]: Applicative, S <: Op[A]: Manifest, A](default: A) extends MockOpTransformerA[Op, I] {
   final def SM = implicitly[Manifest[S]]
 
-  val responses = MockResponse(default)
+  val responses = MockResponse[A](default)
 
-  override def call[A] = op =>
+  override def cotrans[X] = op =>
     if (op.getClass.isAssignableFrom(SM.runtimeClass))
-      responses.pop().asInstanceOf[A]
+      responses.pop().asInstanceOf[X]
     else
       throw new AssertionError(s"Unexpected operation: $op")
 

@@ -1,15 +1,20 @@
 package shipreq.taskman.server
 
+import org.joda.time.{Period, DateTime}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary._
-import org.joda.time.{Period, DateTime}
+import org.specs2.matcher.Matcher
+import org.specs2.matcher.AnyMatchers._
 import scalaz.Lens.lensg
-import scalaz.{Heap, Order, Endo}
+import scalaz.{NonEmptyList, Heap, Order, Endo}
 import scalaz.effect.IO
-import shipreq.base.test.MockOpTransformer
+import shipreq.base.util.Error
+import shipreq.base.test.{MockOpTransformerA, MockOpTransformer}
 import shipreq.taskman.api.{MsgId, Priority}
 import shipreq.taskman.api.Types._
 import shipreq.taskman.api.Msg.ReRegistrationAttempted
+import shipreq.taskman.server.business.{Emails, Bop, Email}
+import Bop._
 import Sop._
 import Manager._
 import Worker._
@@ -31,6 +36,9 @@ object TestHelpers {
   val mh_1 = MsgHeader(MsgId(1), Priority(6), timeNow)
   val md_1 = MsgDetail(mh_1, msg_rereg, 0)
   val mh_2 = MsgHeader(MsgId(2), Priority(5), timePast)
+
+  val sampleNotifySupportWorkerFailed = NotifySupportWorkerFailed(timeNow, md_1, Error error "WORKED FAILED")
+  val sampleNotifySupportTaskmanError = NotifySupportTaskmanError(timeNow, Error error "WORKED FAILED", Some(md_1))
 
   object lenses {
     object msgDetail {
@@ -54,7 +62,11 @@ object TestHelpers {
   def assignWorkerTo(md: MsgDetail) = endoMod[MockSops](_.assignWorkerR << Some(md))
   val assignWorkerAllow = assignWorkerTo(md_1)
   val assignWorkerCrash = endoMod[MockSops](_.assignWorkerR << ???)
-  val msgCompleteCrash = endoMod[MockSops](_.msgCompleteR << ???)
+  val crashOnUpdateMsgSuccess = endoMod[MockSops](_.updateMsgSuccessR << ???)
+  val crashOnNotifySupportWorkerFailed = endoMod[MockSops](_.notifySupportWorkerFailedR << ???)
+  val crashOnNotifySupportTaskmanError = endoMod[MockSops](_.notifySupportTaskmanErrorR << ???)
+
+  val crashOnSendEmail = endoMod[MockBops](_.sendEmailR << Error("CRASH!"))
 
   val clockReal = IO(DateTime.now)
 
@@ -62,7 +74,7 @@ object TestHelpers {
     f => FailureResponse(UpdateMsgRetry(f.m), Nil)
 
   val fpAbortSupport: FailurePolicy =
-    f => FailureResponse(UpdateMsgRetry(f.m), NotifySupportWorkerFailed(f.m, f.err) :: Nil)
+    f => FailureResponse(UpdateMsgRetry(f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
 
   val fpRetry: FailurePolicy =
     f => FailureResponse(UpdateMsgAbort(f.m, Period days 1), Nil)
@@ -87,24 +99,49 @@ object TestHelpers {
 
   implicit def arbitraryJobQueue = arbMap[JobQueue, List[MsgHeader]](emptyQueue ++ _)
 
+  object MockEmailCtx extends Email.Ctx[String] {
+    override def addrParser = identity
+    override val publicFrom = "publicFrom"
+    override val supportEnv = Email.Envelope("Support.From", NonEmptyList("Support.To"))
+    override val shipreq = "shipreq"
+    override val loginUrl = "loginUrl"
+  }
+  val MockEmails = new Emails(MockEmailCtx)
+
+  def haveRunBops(expBops: Class[_ <: Bop[_]]*): Matcher[MockBops] =
+    beEqualTo(expBops.toList) ^^ {(b: MockBops) => b.allOpClasses}
+
+  def haveRunOps(expSops: Class[_ <: Sop[_]]*)(expBops: Class[_ <: Bop[_]]*): Matcher[(MockSops, MockBops)] =
+    beEqualTo((expSops.toList, expBops.toList)) ^^ {(t: (MockSops, MockBops)) => (t._1.allOpClasses, t._2.allOpClasses)}
 }
 
-class MockSops extends MockOpTransformer[Sop, IO] {
+class MockSops extends MockOpTransformerA[Sop, IO] {
   val cfgGetR = MockResponse(Option[String](null))
   val assignNodeR = MockResponse(Seq.empty[MsgHeader])
   val assignWorkerR = MockResponse(Option[MsgDetail](null))
-  val msgCompleteR = MockResponse(())
-  val msgFailedRetryR = MockResponse(())
+  val updateMsgSuccessR = MockResponse(())
+  val updateMsgRetryR = MockResponse(())
+  val updateMsgAbortR = MockResponse(())
+  val notifySupportWorkerFailedR = MockResponse(())
+  val notifySupportTaskmanErrorR = MockResponse(())
 
-  override def call[A] = {
+  override def cotrans[A] = {
     case _: CfgGet                    => cfgGetR.pop()
     case _: GetMsgsAssignNode         => assignNodeR.pop()
     case _: GetMsgAssignWorker        => assignWorkerR.pop()
-    case _: UpdateMsgSuccess           => msgCompleteR.pop()
-    case _: UpdateMsgRetry            =>
-    case _: UpdateMsgAbort            => msgFailedRetryR.pop()
-    case _: NotifySupportWorkerFailed =>
-    case _: NotifySupportTaskmanError =>
+    case _: UpdateMsgSuccess          => updateMsgSuccessR.pop()
+    case _: UpdateMsgRetry            => updateMsgRetryR.pop()
+    case _: UpdateMsgAbort            => updateMsgAbortR.pop()
+    case _: NotifySupportWorkerFailed => notifySupportWorkerFailedR.pop()
+    case _: NotifySupportTaskmanError => notifySupportTaskmanErrorR.pop()
     case    Nop                       =>
+  }
+}
+
+class MockBops extends MockOpTransformer[Bop, IOE] {
+  val sendEmailR = MockResponse(nopResult)
+
+  override def trans[A] = {
+    case _: SendEmail[_] => IO(sendEmailR.pop())
   }
 }

@@ -16,6 +16,6 @@ object Logger {
 
 trait Logger {
 
-  final val log = Logger.forClass(getClass)
+  final protected val log = Logger.forClass(getClass)
 
 }

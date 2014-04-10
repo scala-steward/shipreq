@@ -16,6 +16,7 @@ object Server extends MainTemplate {
       run(ctx)(_.system.awaitTermination()))
 
   def run(ctx: TaskmanCtx)(f: System => Unit): Unit = {
+    ctx.logContent()
     val s = new System(ctx)
     s.manager.tell(ManagerActor.RegisterWorker, s.workers)
     log.info("Taskman started.")

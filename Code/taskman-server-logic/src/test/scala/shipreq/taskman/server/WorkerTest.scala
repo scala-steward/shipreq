@@ -68,7 +68,7 @@ class WorkerTest extends Specification {
     }
 
     "Taskman crashes post-work" >> {
-      val mockSop = (msgCompleteCrash compose assignWorkerAllow)(new MockSops)
+      val mockSop = (crashOnUpdateMsgSuccess compose assignWorkerAllow)(new MockSops)
       val r = test(mockSop, fpRetry, mpNop)
       "Result" in {
         r must beLike{ case _: WorkResult.TaskmanFailed => ok }

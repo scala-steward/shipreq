@@ -17,7 +17,7 @@ import Sql._
 
 class SopImplTest extends Specification with DatabaseTest with NoTimeConversions {
 
-  def dao = new SopImpl.Dao()
+  def dao = new SopImpl.Dao(session)
   val n = NodeId(123)
   val w = WorkerId(666)
   val rng = new Random()

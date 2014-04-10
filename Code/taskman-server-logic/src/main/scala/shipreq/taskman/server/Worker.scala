@@ -65,7 +65,8 @@ object Worker extends Logger {
     private[this] def catchTaskmanErrors(m: => Option[MsgDetail]): IO[WorkResult] => IO[WorkResult] =
       _.except(t => {
         val e = Error.error(t)
-        sopToIo(NotifySupportTaskmanError(e, m)) >> TaskmanFailed(e, m).toIO
+        val notifySupport = clock >>= (t => sopToIo(NotifySupportTaskmanError(t, e, m)))
+        notifySupport >> TaskmanFailed(e, m).toIO
       })
 
     private[this] val catchTaskmanErrorsN = catchTaskmanErrors(None)
@@ -78,9 +79,8 @@ object Worker extends Logger {
 
     private[this] def handleTaskFailure(m: MsgDetail, err: Error)(now: DateTime): IO[WorkResult] = {
       val f = failurePolicy(FailureCtx(m, err, now))
-      f.reaction.toIO >>
-        f.additionalOps.traverse_(sopToIo) >>
-          WorkerFailed(m, err, f.reaction).toIO
+      val addOps: IO[Unit] = f.additionalOps.traverse_(sopToIo)
+      f.reaction.toIO >> addOps >> WorkerFailed(m, err, f.reaction).toIO
     }
 
     private[this] val processAssignment: Option[MsgDetail] => IO[WorkResult] = {

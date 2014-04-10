@@ -3,6 +3,7 @@ package shipreq.taskman.server
 import java.util.Properties
 import javax.mail._
 import javax.mail.internet.{MimeMessage, InternetAddress}
+import scalaz.NonEmptyList
 import scalaz.effect.IO
 import scalaz.std.list._
 import scalaz.syntax.bind._
@@ -10,8 +11,8 @@ import scalaz.syntax.traverse._
 import shipreq.base.util.{JPropertiesValueReader, Error, ErrorOr, Logger}
 import shipreq.base.util.ExternalValueReader._
 import shipreq.taskman.api.Types
-import shipreq.taskman.server.business.Email
 import shipreq.taskman.server.business.Bop.SendEmail
+import shipreq.taskman.server.business.Email._
 
 object EmailImpl extends Logger {
 
@@ -39,8 +40,17 @@ object EmailImpl extends Logger {
     Session.getInstance(props, mailAuth getOrElse null)
   }
 
+  def envelopeLoader(implicit rea: Retriever[EA]): Retriever[Envelope[EA]] =
+    Retriever[Envelope[EA]](k => {
+      implicit val s = PropScope(n => s"$k.$n")
+      def get(n: String) = validate(n, need[EA])(valTestNotError)
+      val from = get("from")
+      val to   = get("to")
+      Some(ErrorOr(Envelope(from, NonEmptyList(to))))
+    })
+
   // TODO memo with LRU cache ?
-  case object AddressParser extends Email.AddrParser[EA] {
+  case object AddressParser extends AddrParser[EA] {
     override def apply(ea: Types.EmailAddr): EA =
       ErrorOr.catchAndTag(Deterministic) {
         val as = InternetAddress.parse(ea)
@@ -56,7 +66,7 @@ final class EmailImpl(ctx: EmailImpl.Ctx) extends Logger {
   import EmailImpl.EA
   import ctx._
 
-  def buildEmail(e: Email.Envelope[EA], c: Email.Content): ErrorOr[MimeMessage] = {
+  def buildEmail(e: Envelope[EA], c: Content): ErrorOr[MimeMessage] = {
     val r = for {
       from <- e.from
       to   <- e.to.sequence[ErrorOr, Address]

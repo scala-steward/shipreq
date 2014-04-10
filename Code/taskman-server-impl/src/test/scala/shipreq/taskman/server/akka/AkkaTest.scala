@@ -1,20 +1,19 @@
 package shipreq.taskman.server.akka
 
-import java.util.Properties
 import java.util.concurrent.{TimeUnit, CountDownLatch, Executors}
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.slick.jdbc.GetResult
-import shipreq.base.test.db.specs2.{DatabaseTest, TestDb}
-import shipreq.base.util.{JPropertiesValueReader, Props, Logger, RunMode}
+import shipreq.base.test.db.specs2.DatabaseTest
+import shipreq.base.util.Logger
 import shipreq.taskman.api.ApiOp.SubmitMsg
 import shipreq.taskman.api.Msg.DummyMsg
 import shipreq.taskman.api.MsgId
+import shipreq.taskman.server.ServerImplTestHelpers
 import shipreq.taskman.server.Sql.{Succeeded, FailAndAbort, ArchiveIntent}
 import shipreq.taskman.server.app.Server
-import shipreq.taskman.server.{ServerImplTestHelpers, TaskmanCtx}
 
 class AkkaTest extends Specification with DatabaseTest with NoTimeConversions with Logger with ServerImplTestHelpers {
 
@@ -34,11 +33,6 @@ class AkkaTest extends Specification with DatabaseTest with NoTimeConversions wi
     val es = Executors.newCachedThreadPool()
     implicit val ec = ExecutionContext.fromExecutorService(es)
     val shutdownLatch = new CountDownLatch(1)
-    val props = Props.loadUsingStandardStrategy(RunMode.Test)(new Properties)
-    val propsR = JPropertiesValueReader(props)
-    val ctx: TaskmanCtx = new TaskmanCtx(TestDb.slick, props, propsR) {
-      override def fromDb = propsR
-    }
     val startTime = System.currentTimeMillis()
 
     try {

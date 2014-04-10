@@ -1,14 +1,43 @@
 package shipreq.taskman.server.business
 
 import org.joda.time.Period
+import scalaz.effect.IO
+import scalaz.syntax.bind._
 import shipreq.base.util.jodatime.JodaTimeHelpers._
+import shipreq.base.util.Logger
 import shipreq.taskman.api.Msg.DummyMsg
 import shipreq.taskman.api.Priority
-import shipreq.taskman.server.{Deliberate, Deterministic, Sop}
 import shipreq.taskman.server.Sop._
-import shipreq.taskman.server.Worker.{FailurePolicy, FailureResponse, FailureCtx}
+import shipreq.taskman.server.Worker.{FailureResponse, FailurePolicy, FailureCtx}
+import shipreq.taskman.server._
 
-object Failure {
+object Failure extends Logger {
+
+  // TODO This should be elsewhere and/or this class needs renaming
+
+  def handleFailedWorker(emails: Emails[_], bopReifier: BopReifier, sopReifier: SopReifier): NotifySupportWorkerFailed => IO[Unit] =
+    op => execIOE(
+      bopReifier(emails.notifySupportOfWorkerFailure(op.t, op.m, op.e)),
+      e2 => IO(
+          log error s"""FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
+            Notification error: ${e2.stackTraceStr}
+            Worker error: ${op.e.stackTraceStr}
+            Msg: ${op.m}"""
+        ) >> sopReifier(NotifySupportTaskmanError(op.t, e2, Some(op.m)))
+    )
+
+  def handleFailedTaskman(emails: Emails[_], bopReifier: BopReifier): NotifySupportTaskmanError => IO[Unit] =
+    op => execIOE(
+      bopReifier(emails.notifySupportOfTaskmanError(op.t, op.e, op.m)),
+      e2 => IO(
+          log error s"""FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
+            Notification error: ${e2.stackTraceStr}
+            Original error: ${op.e.stackTraceStr}
+            Msg: ${op.m}"""
+        )
+    )
+
+  // ===================================================================================================================
 
   def composeF[R,A,B,C](h: B => A => C, g: R => B): R => A => C =
     r => h(g(r))
@@ -68,7 +97,7 @@ object Failure {
     if (ctx.err is Deliberate)
       Nop
     else
-      NotifySupportWorkerFailed(ctx.m, ctx.err)
+      NotifySupportWorkerFailed(ctx.now, ctx.m, ctx.err)
 
   val abortAndDontNotify: FailurePolicy =
     ctx => FailureResponse(UpdateMsgRetry(ctx.m), Nil)

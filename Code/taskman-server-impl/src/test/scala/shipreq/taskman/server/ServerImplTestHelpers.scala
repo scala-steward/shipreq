@@ -1,10 +1,13 @@
 package shipreq.taskman.server
 
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import scalaz.effect.IO
 import scala.slick.session.Database
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.ApiOp
+import shipreq.base.util.{JPropertiesValueReader, RunMode, Props}
+import ServerImplTestHelpers._
 
 trait ServerImplTestHelpers {
   def db: Database
@@ -12,8 +15,12 @@ trait ServerImplTestHelpers {
   final def dbMutexR = ServerImplTestHelpers.dbMutexR
   final def dbMutexW = ServerImplTestHelpers.dbMutexW
 
-  def apiOpReifier = new TaskmanApi(TaskmanApi.Context(None), db)
-  def sopReifier = new SopImpl(db)
+  lazy val ctx: TaskmanCtx = new TaskmanCtx(db, props, propsR) {
+    override def fromDb = propsR
+  }
+  lazy val apiOpReifier = new TaskmanApi(TaskmanApi.Context(None), db)
+  lazy val bopReifier = new BopImpl(ctx)
+  lazy val sopReifier = new SopImpl(db, ctx, bopReifier)
 
   def reify[A](op: ApiOp[A]): IO[A] = apiOpReifier(op)
   def reify[A](op: Sop[A]): IO[A] = sopReifier(op)
@@ -23,6 +30,9 @@ trait ServerImplTestHelpers {
 }
 
 object ServerImplTestHelpers {
+
+  def props = Props.loadUsingStandardStrategy(RunMode.Test)(new Properties)
+  val propsR = JPropertiesValueReader(props)
 
   val dbLockRW = new ReentrantReadWriteLock
   val dbMutexR = Some(dbLockRW.readLock)

@@ -3,6 +3,7 @@ package shipreq.taskman.server
 import java.util.Properties
 import org.joda.time.{DateTime, Period}
 import scala.slick.session.Database
+import scalaz.effect.IO
 import shipreq.base.db.{DatabaseConnection, DbTemplate}
 import shipreq.base.util.ExternalValueReader._
 import shipreq.base.util._
@@ -11,7 +12,6 @@ import shipreq.base.util.jodatime.JodaTimeValueRetrievers
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.api.Types._
 import shipreq.taskman.server.business.{BusinessLogic, Failure, Email}
-import scalaz.effect.IO
 
 //==========================================================================================
 
@@ -29,9 +29,7 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
   extends Email.Ctx[EmailImpl.EA] with EmailImpl.Ctx with BopImpl.Ctx with Logger {
   import EmailImpl.EA
 
-  implicit val sopReifier = new SopImpl(db)
-
-  protected def fromDb = CfgValueReader(sopReifier)
+  protected def fromDb = SopImpl.cfgValueReader(db)
   protected implicit def scope: PropScope = scopeByNS("taskman")
   protected implicit def retrieverS = evr.retrieverS
   val jtr = JodaTimeValueRetrievers(retrieverS)
@@ -43,8 +41,10 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
   override val addrParser  = EmailImpl.AddressParser
   override val emailer     = new EmailImpl(this)
   private[this] implicit def rEA = retrieverS.map(s => addrParser(s.tag[IsEmailAddr]))
+  private[this] implicit def rEE = EmailImpl.envelopeLoader
 
-  override val defaultFromAddress = validate("mail.from", need[EA])(valTestNotError)
+  override val publicFrom = validate("mail.public.from", need[EA])(valTestNotError)
+  override val supportEnv = need[Email.Envelope[EA]]("mail.support")
   override val shipreq  = need(CfgKeys.Webapp.appName )(GlobalScope, fromDb.retrieverS)
   override val loginUrl = need(CfgKeys.Webapp.loginUrl)(GlobalScope, fromDb.retrieverS)
 
@@ -63,25 +63,25 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
       log.warn(s"The minimum poll gap ($pollGap) is larger than the poll time ($pollEvery). Wasteful.")
   }
 
-  def loggable = Map[String, Any](
-    "defaultFromAddress" -> defaultFromAddress
-    , "shipreq" -> shipreq
-    , "loginUrl" -> loginUrl
-    , "server.queueSize" -> server.queueSize
+  def propmap = List[(String, Any)](
+      "shipreq"            -> shipreq
+    , "loginUrl"           -> loginUrl
+    , "mail.public.from"   -> publicFrom
+    , "mail.support"       -> supportEnv
+    , "server.queueSize"   -> server.queueSize
     , "server.trustPeriod" -> server.trustPeriod
-    , "server.poll.every" -> server.pollEvery
-    , "server.poll.gap" -> server.pollGap
+    , "server.poll.every"  -> server.pollEvery
+    , "server.poll.gap"    -> server.pollGap
   )
-  loggable.toList
-    .sortBy(kv => (kv._1.count(_ == '.'), kv._1))
-    .map{case (k,v) => "Config: %-20s = %s".format(k,v) }
-    .foreach(log.info)
+  def logContent(): Unit = {
+    propmap.map{ case (k,v) => "Config: %-20s = %s".format(k,v) } foreach log.info
+    log.info("Node ID is {}.", nodeId.value)
+  }
 
   implicit val bopReifier = new BopImpl(this)
+  implicit val sopReifier = new SopImpl(db, this, bopReifier)
   implicit val failurePolicy = Failure.failurePolicy
   implicit val msgProcessor = BusinessLogic(this, bopReifier)
   implicit val clock = IO(new DateTime)
-
   implicit val nodeId = sopReifier.getNextNodeId.unsafePerformIO()
-  log.info("Node ID is {}.", nodeId.value)
 }

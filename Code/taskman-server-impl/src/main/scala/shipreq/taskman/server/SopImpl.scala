@@ -3,15 +3,20 @@ package shipreq.taskman.server
 import org.joda.time.Period
 import scala.slick.session.{Database, Session}
 import scalaz.effect.IO
-import shipreq.base.util.ErrorOr
+import scalaz.std.option._
+import scalaz.syntax.traverse._
+import shipreq.base.util.{Logger, StringBasedValueReader, ErrorOr}
+import shipreq.base.util.ExternalValueReader.Retriever
 import shipreq.taskman.api.{MsgId, Priority}
 import shipreq.taskman.api.impl.Serialisation
+import shipreq.taskman.server.business.{Failure, BopReifier, Emails, Email}
 import Sql.{FailAndAbort, Succeeded}
 
 object SopImpl {
 
-  class Dao(implicit session: Session) {
+  class Dao(session: Session) {
     import Sql._
+    private[this] implicit def _s = session
 
     def getMsgsAssignNode(node: NodeId, limit: Int, assignmentTrustPeriod: Period, queued: Option[(Priority, Int)]): List[MsgHeader] =
       queued match {
@@ -49,18 +54,24 @@ object SopImpl {
     def cfgGet(k: String): Option[String] =
       cfgGetQ.firstOption(k)
   }
+
+  def cfgValueReader(db: Database) =
+    new StringBasedValueReader(
+      new Retriever[String](k =>
+        ErrorOr.safe(db.withSession((s: Session) => new Dao(s).cfgGet(k)))
+          .sequence))
 }
 
 // =====================================================================================================================
 
-class SopImpl(db: Database) extends SopReifier {
+class SopImpl[EA](db: Database, emailCtx: Email.Ctx[EA], bopReifier: BopReifier) extends SopReifier with Logger {
   import Sop._
   import SopImpl._
 
-  val nop = IO(())
-
-  private[this] def ioD[A](f: Dao => A): IO[A] =
-    IO(db.withSession(implicit s => f(new Dao())))
+  private[this] val emails = new Emails(emailCtx)
+  private[this] val failedWorkerHandler = Failure.handleFailedWorker(emails, bopReifier, this)
+  private[this] val failedTaskmanHandler = Failure.handleFailedTaskman(emails, bopReifier)
+  private[this] def ioD[A](f: Dao => A): IO[A] = IO(db.withSession(s => f(new Dao(s))))
 
   def getNextNodeId = ioD(_.getNextNodeId)
 
@@ -84,12 +95,13 @@ class SopImpl(db: Database) extends SopReifier {
     case CfgGet(k) =>
       ioD(_ cfgGet k)
 
-    case Nop =>
-      nop
+    case op: NotifySupportWorkerFailed =>
+      failedWorkerHandler(op)
 
-    /*
-    case class NotifySupportWorkerFailed(m: MsgDetail, e: Error) extends Sop[Unit]
-    case class NotifySupportTaskmanError(e: Error, m: Option[MsgDetail]) extends Sop[Unit]
-     */
+    case op: NotifySupportTaskmanError =>
+      failedTaskmanHandler(op)
+
+    case Nop =>
+      nopIo
   }
 }
