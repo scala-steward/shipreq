@@ -1,46 +1,60 @@
-Getting Started
-===============
+First-Time Procedure
+====================
 
-* Decrypt passwords and sensitive settings.
-    ./secrets-decrypt
-
-* Install webapps/shipreq.war
-    ../install-latest_war
+###  Local setup
 
 * Install required packages:
-    sudo pacman -Syu parallel pigz
+    sudo pacman -Syu --needed parallel pigz authbind
+
+* Decrypt passwords and sensitive settings.
+    webapp/secrets-decrypt
+
+* Install ShipReq WAR.
+    Build locally first.
+    ./install-war
+
+* Determine IP for commands below
+    export ip=$(../util/ip-shipreq)
+
+### Deployment
+
+    ./deploy-jetty $ip
+    ./deploy-webapp $ip
+    ./deploy-war $ip
+    ssh $(<deployment-user)@$ip webapp/restart
 
 
-Usage
-=====
+Upgrade Procedure
+=================
 
-* Run
-    ./jetty
+### Upgrading ShipReq
 
-* Start daemon
-    ./jettyd start
-
-* Stop daemon
-    ./jettyd stop
+    ./install-war
+    ./deploy-webapp $ip   # If needed
+    ./deploy-war $ip
+    ssh $(<deployment-user)@$ip webapp/restart
 
 
-Config
-======
+### Upgrading Jetty
 
-* Inspection
-    ./jetty --list-config
-    ./jetty --list-modules
-    ./jettyd check
+1. Install
+    ./install-jetty <jetty.tar.gz>
+    git commit as directed
 
-* Jetty config:
-    * start.ini
-    * start.d/*.ini
-    * etc/jetty.conf [daemon-mode only]
-    * XMLs displayed in `./jetty --list-config`
+2. Customisation
+    ./jetty-post_install
+    git add -A .
 
-* App config:
-    * resources/*
-    * start.d/shipreq.ini
+3. Test Locally
+    webapp/start
+    ../../../QA/smoke_test-frontend local-https
+
+4. Commit
+
+5. Deploy
+    ./deploy-jetty $ip
+    ./deploy-webapp $ip   # If needed
+    ssh $(<deployment-user)@$ip webapp/restart
 
 
 Keystore & SSL
@@ -75,11 +89,25 @@ Keystore & SSL
 ### Jetty Integration
 
 * Obfuscate passwords.
-    java -cp jetty-inst/lib/jetty-util-9.1.0.v20131115.jar org.eclipse.jetty.util.security.Password PASS1
-    java -cp jetty-inst/lib/jetty-util-9.1.0.v20131115.jar org.eclipse.jetty.util.security.Password PASS2
+    ./jetty-password_hash PASS1
+    ./jetty-password_hash PASS2
 
 * Give Jetty the passwords.
-    KeyStorePassword   - Keystore password.
-    TrustStorePassword - Keystore password.
-    KeyManagerPassword - PKCS12 password.
+
+  Jetty needs:
+      KeyStorePassword   - Keystore password.
+      TrustStorePassword - Keystore password.
+      KeyManagerPassword - PKCS12 password.
+
+  These are already configured to be provided via properties.
+  The properties are in `start.d/ssl-passwords.ini` and look like this:
+      jetty.keystore.password=OBF:blah1
+      jetty.truststore.password=OBF:blah1
+      jetty.keymanager.password=OBF:blah2
+
+
+Running, Usage, etc.
+====================
+
+See [webapp/README.md](webapp/README.md) for instructions.
 

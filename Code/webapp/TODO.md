@@ -43,6 +43,7 @@ TECH TODO
 * [S.0.2=2] [PERF] Serve robots.txt via HTTP.
 * [S.0.2=2] [UX  ] Page for 404 errors.
 * [S.0.2=2] [UX  ] Page for 5xx errors.
+* [S.2.0=2] [PERF] Investigate different parsing engine: parboiled-scala or gll-combinators.
 
 * [C.2.0=2] [PERF] DAO should cache certain actions and execute in bulk.
 * [C.1.1=2] [DEMO] Show flow deletion in flow demo.
