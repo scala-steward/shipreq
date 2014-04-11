@@ -1,6 +1,6 @@
 #!/bin/bash
 
-f=$(dirname $(readlink -e "$0"))/package/lib/taskman.jar
+f=$(dirname $(readlink -e "$0"))/taskman/lib/taskman.jar
 [ ! -e "$f" ] && echo "File not found: $f" && exit 1
 
 stat -L -c 'Size: %s bytes.' "$f"

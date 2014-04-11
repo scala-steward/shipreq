@@ -8,7 +8,7 @@ s=$(ls -1rt $d | grep 'assembly.*\.jar' | tail -1)
 echo "Found: $s"
 
 echo "Installing..."
-lib=package/lib
+lib=taskman/lib
 [ ! -e $lib ] && mkdir $lib
 cp -p $d/$s $lib/taskman.jar \
   && echo && echo "--------------------------------------------------------------------------------" \
