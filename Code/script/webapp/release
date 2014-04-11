@@ -1,7 +1,2 @@
 #!/bin/bash
-cd $(dirname "$0")/../../webapp || exit 1
-grunt
-echo '--------------------------------------------------------------------------------'
-git st .
-echo '--------------------------------------------------------------------------------'
-cd .. && sbt -DMODE=release clean 'project webapp' package test
+exec $(dirname $(readlink -e "$0"))/../release webapp "$@"
