@@ -1,10 +1,11 @@
 package shipreq.base.util.log
 
+import org.slf4j.{LoggerFactory, Logger => slf4jLogger}
 import shipreq.base.util.Error
 
 object Logger {
   def forClass(c: Class[_]): Logger =
-    new Logger(org.slf4j.LoggerFactory.getLogger(loggingName(c)))
+    new Logger(LoggerFactory.getLogger(loggingName(c)))
 
   def loggingName(c: Class[_]): String =
     if (c.getCanonicalName ne null)
@@ -27,7 +28,7 @@ object LogLevel {
   val values = List(Trace, Debug, Info, Warn, Error)
 }
 
-final class Logger(log: org.slf4j.Logger) {
+final class Logger(log: slf4jLogger) {
 
   sealed abstract class AtLevel {
     def ? : Boolean
@@ -110,4 +111,6 @@ final class Logger(log: org.slf4j.Logger) {
     case LogLevel.Trace => trace
     case LogLevel.Error => error
   }
+
+  @inline def mdc = MDC
 }

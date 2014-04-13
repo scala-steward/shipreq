@@ -4,7 +4,7 @@
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
-			<pattern>%-5level [%-34logger{34}] %msg%n</pattern>
+			<pattern>%-5level [%-40logger{40}] {%-40thread:%-9X{actor}} %msg%n</pattern>
 		</encoder>
 		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
 			<level>INFO</level>
@@ -14,7 +14,7 @@
 	<appender name="FILE.LOG" class="ch.qos.logback.core.FileAppender">
 		<file>log/taskman-server-impl-test-${bySecond}.log</file>
 		<encoder>
-			<pattern>%d{HH:mm:ss.SSS} %-5level [%-50logger{50}] {%thread} %msg%n</pattern>
+			<pattern>%d{HH:mm:ss.SSS} %-5level [%-50logger{50}] {%-40thread:%-9X{actor}} %msg%n</pattern>
 		</encoder>
 	</appender>
 

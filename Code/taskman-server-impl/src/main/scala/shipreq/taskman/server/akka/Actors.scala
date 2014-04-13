@@ -1,11 +1,19 @@
 package shipreq.taskman.server.akka
 
-import akka.actor.{Props, ActorLogging, Actor, ActorRef}
+import akka.actor.{Props, Actor, ActorRef}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import shipreq.base.util.jodatime.JodaTimeHelpers.PeriodConv
+import shipreq.base.util.log.{MDC, HasLogger}
 import shipreq.taskman.api.Priority
 import shipreq.taskman.server.{Worker, TaskmanCtx, WorkerId, MsgHeader}
+import ActorHelpers._
+
+private[akka] object ActorHelpers {
+  def mdcCtx(actor: String) = MDC("actor" -> actor)
+}
+
+// =====================================================================================================================
 
 object SourceActor {
   def props(ctx: TaskmanCtx) = Props(classOf[SourceActor], ctx)
@@ -14,16 +22,17 @@ object SourceActor {
   case class IncomingWork(work: Seq[MsgHeader])
 }
 
-class SourceActor(ctx: TaskmanCtx) extends Actor with ActorLogging {
+class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
   import SourceActor._
   import shipreq.taskman.server.{Source => S}
   import ctx._
   import ctx.server._
 
+  val mdc = mdcCtx("source")
   val source = S.Reified(pollGap, queueSize, trustPeriod)
   var state: S.S = source.empty.unsafePerformIO()
 
-  override def receive = {
+  override def receive = mdc.pf {
     case RequestForWork(qs) =>
       val (s2, ms) = source.poll(qs).run(state).unsafePerformIO()
       state = s2
@@ -43,19 +52,20 @@ object ManagerActor {
   case object RequestForWork
 }
 
-class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with ActorLogging {
+class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with HasLogger {
   import ManagerActor._
   import shipreq.taskman.server.{Manager => M}
   import context.dispatcher
 
+  val mdc = mdcCtx("manager")
+  val poller = context.system.scheduler.schedule(0 millis, ctx.server.pollEvery.toScala, self, PollSource)
+
   var workers: Set[ActorRef] = Set.empty
   var queue = M.emptyQueue
 
-  val poller = context.system.scheduler.schedule(0 millis, ctx.server.pollEvery.toScala, self, PollSource)
-
   override def postStop() = poller.cancel()
 
-  override def receive = {
+  override def receive = mdc.pf {
 
     case PollSource =>
       val qs = M.getQueueStatus.eval(queue)
@@ -63,7 +73,6 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with ActorLo
 
     case RegisterWorker =>
       workers += sender()
-      log.debug("{} registered workers.", workers.size)
 
     case SourceActor.IncomingWork(work) =>
       queue = M.addToQueue(work).exec(queue)
@@ -85,22 +94,24 @@ object WorkerActor {
   def nextId(): WorkerId = WorkerId(idCounter.incrementAndGet().toShort)
 }
 
-class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with ActorLogging {
+class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with HasLogger {
   import ctx._
   import ManagerActor.{RequestForWork, WorkAvailable}
 
   implicit val id: WorkerId = WorkerActor.nextId
+  val mdc = mdcCtx(s"worker-${id.value}")
   val worker = Worker.Reified()
 
   private def requestWork(): Unit =
     manager ! RequestForWork
 
-  override def receive = {
+  override def receive = mdc.pf {
 
     case WorkAvailable =>
       requestWork()
 
     case m: MsgHeader =>
+      log.debug.z(s"Starting work: $m")
       worker.processL(m).unsafePerformIO()
       requestWork()
   }
