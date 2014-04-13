@@ -8,13 +8,14 @@ import scalaz.effect.IO
 import scalaz.std.list._
 import scalaz.syntax.bind._
 import scalaz.syntax.traverse._
-import shipreq.base.util.{JPropertiesValueReader, Error, ErrorOr, Logger}
+import shipreq.base.util.{JPropertiesValueReader, Error, ErrorOr}
+import shipreq.base.util.log.HasLogger
 import shipreq.base.util.ExternalValueReader._
 import shipreq.taskman.api.Types
 import shipreq.taskman.server.business.Bop.SendEmail
 import shipreq.taskman.server.business.Email._
 
-object EmailImpl extends Logger {
+object EmailImpl extends HasLogger {
 
   type EA = ErrorOr[Address]
 
@@ -30,7 +31,7 @@ object EmailImpl extends Logger {
     val mailAuth: Option[Authenticator] = {
       implicit def scope = scopeByNS("mail")
       getO[String]("user").map(user => {
-        log.info("SMTP account: {}", user)
+        log.info.z(s"SMTP account: $user")
         new Authenticator {
           override def getPasswordAuthentication =
             new PasswordAuthentication(user, need[String]("password"))
@@ -62,7 +63,7 @@ object EmailImpl extends Logger {
   }
 }
 
-final class EmailImpl(ctx: EmailImpl.Ctx) extends Logger {
+final class EmailImpl(ctx: EmailImpl.Ctx) extends HasLogger {
   import EmailImpl.EA
   import ctx._
 
@@ -91,7 +92,7 @@ final class EmailImpl(ctx: EmailImpl.Ctx) extends Logger {
   def send(op: SendEmail[EA]): IOE[Unit] = IO(
     buildEmail(op.e, op.c).map(m => {
       Transport.send(m)
-      log.info("Email sent: {} [{}]", op.e.to.head, op.c.subject, null)
+      log.info.z(s"Email sent: ${op.e.to.head} [${op.c.subject}]")
     })
   )
 }

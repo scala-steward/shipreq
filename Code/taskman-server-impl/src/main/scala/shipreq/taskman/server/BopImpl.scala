@@ -1,8 +1,9 @@
 package shipreq.taskman.server
 
-import scalaz.{-\/, \/-}
 import scalaz.effect.IO
-import shipreq.base.util.{ErrorOr, Logger}
+import scalaz.{-\/, \/-}
+import shipreq.base.util.ErrorOr
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.business.{BopReifier, Bop}
 import Bop._
 import BopImpl._
@@ -13,7 +14,8 @@ object BopImpl {
   }
 }
 
-final class BopImpl(ctx: Ctx) extends BopReifier with Logger {
+final class BopImpl(ctx: Ctx) extends BopReifier with HasLogger {
+
   import ctx._
 
   override def apply[A](op: Bop[A]): IOE[A] =
@@ -25,10 +27,9 @@ final class BopImpl(ctx: Ctx) extends BopReifier with Logger {
     res => time => IO(
       res match {
         case \/-(_) =>
-          log.info("{} completed in {}ms.", op.getClass.getSimpleName, time)
+          log.info.z(s"${op.getClass.getSimpleName} completed in ${time}ms.")
         case -\/(e) =>
-          log.error("{} failed after {}ms with [{}]. Op: {}",
-            op.getClass.getSimpleName, java.lang.Long.valueOf(time), e.msg, op)
+          log.error.z(s"${op.getClass.getSimpleName} failed after ${time}ms with [${e.msg}]. Op: $op")
       }
     )
 

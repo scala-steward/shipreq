@@ -2,17 +2,18 @@ package shipreq.taskman.server.app
 
 import java.util.Properties
 import shipreq.base.util.ExternalValueReader._
-import shipreq.base.util.{ErrorOr, JPropertiesValueReader, Props, RunMode, Logger}
+import shipreq.base.util.{ErrorOr, JPropertiesValueReader, Props, RunMode}
 import shipreq.taskman.server.{TaskmanCtx, Db}
+import shipreq.base.util.log.HasLogger
 
-private[app] trait MainTemplate extends Logger {
+private[app] trait MainTemplate extends HasLogger {
 
   implicit def scope = GlobalScope
 
   lazy val runMode: RunMode = {
     implicit val rmr: Retriever[RunMode] = RunMode.retrieverFromSysProps
     val runMode: RunMode = tryNeed("run.mode", RunMode.detectFromStackTrace())
-    log.info("Run mode: {}", runMode)
+    log.info.z(s"Run mode: $runMode")
     runMode
   }
 
@@ -25,7 +26,7 @@ private[app] trait MainTemplate extends Logger {
     try {
       f(db)
     } finally {
-      ErrorOr.safe(db.shutdown()).leftMap(e => log.error("Error closing database connections.", e.throwable))
+      ErrorOr.safe(db.shutdown()).leftMap(e => log.error(e, "Error closing database connections."))
     }
   }
 

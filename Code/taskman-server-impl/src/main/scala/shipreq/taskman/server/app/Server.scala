@@ -2,7 +2,7 @@ package shipreq.taskman.server.app
 
 import akka.actor.ActorSystem
 import akka.routing.FromConfig
-import shipreq.base.util.Logger
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.akka._
 import shipreq.taskman.server.TaskmanCtx
 /**
@@ -23,7 +23,7 @@ object Server extends MainTemplate {
     f(s)
   }
 
-  class System(ctx: TaskmanCtx) extends Logger {
+  class System(ctx: TaskmanCtx) extends HasLogger {
     val system = ActorSystem("Taskman")
     val source = system.actorOf(SourceActor.props(ctx), "source")
     val manager = system.actorOf(ManagerActor.props(ctx, source), "manager")

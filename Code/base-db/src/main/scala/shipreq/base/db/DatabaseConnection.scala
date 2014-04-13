@@ -1,18 +1,18 @@
 package shipreq.base.db
 
 import ch.qos.logback.classic.Level
-import com.jolbox.bonecp.{ConnectionHandle, BoneCPDataSource}
 import com.jolbox.bonecp.hooks.{AbstractConnectionHook, ConnectionHook}
+import com.jolbox.bonecp.{ConnectionHandle, BoneCPDataSource}
 import org.postgresql.ds.PGSimpleDataSource
-import shipreq.base.util.{ErrorOr, Logger}
+import shipreq.base.util.ErrorOr
 import shipreq.base.util.ExternalValueReader.{get => getEV, Retriever => R, _}
+import shipreq.base.util.log.HasLogger
 
 case class DatabaseConnection(host: String, name: String, schema: Option[String], ds: BoneCPDataSource) {
   def desc = s"$host/$name" + schema.map(":" + _).getOrElse("")
 }
 
-object DatabaseConnection {
-  private[this] val log = Logger.forClass(getClass)
+object DatabaseConnection extends HasLogger {
 
   type C = BoneCPDataSource => BoneCPDataSource
 
@@ -125,8 +125,8 @@ object DatabaseConnection {
   }
 
   def verify_!(c: DatabaseConnection): Unit = {
-    log.info("Connecting to database: {}", c.desc)
-    log.debug("Database pool config: {}", c.ds.getConfig)
+    log.info.z(s"Connecting to database: ${c.desc}")
+    log.debug.z(s"Database pool config: ${c.ds.getConfig}")
     c.ds.getConnection().close() // test the data source validity
   }
 

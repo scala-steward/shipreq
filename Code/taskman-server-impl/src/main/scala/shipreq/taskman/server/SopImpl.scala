@@ -5,7 +5,7 @@ import scala.slick.session.{Database, Session}
 import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.syntax.traverse._
-import shipreq.base.util.{Logger, StringBasedValueReader, ErrorOr}
+import shipreq.base.util.{ErrorOr, StringBasedValueReader}
 import shipreq.base.util.ExternalValueReader.Retriever
 import shipreq.taskman.api.{MsgId, Priority}
 import shipreq.taskman.api.impl.Serialisation
@@ -64,7 +64,7 @@ object SopImpl {
 
 // =====================================================================================================================
 
-class SopImpl[EA](db: Database, emailCtx: Email.Ctx[EA], bopReifier: BopReifier) extends SopReifier with Logger {
+class SopImpl[EA](db: Database, emailCtx: Email.Ctx[EA], bopReifier: BopReifier) extends SopReifier {
   import Sop._
   import SopImpl._
 

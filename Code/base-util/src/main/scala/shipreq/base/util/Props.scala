@@ -5,18 +5,17 @@ import java.util.{Locale, Properties}
 import scalaz.Endo
 import scalaz.std.list.listInstance
 import scalaz.syntax.applicative._
+import shipreq.base.util.log.HasLogger
 
-object Props {
-
-  protected val log = Logger.forClass(getClass)
+object Props extends HasLogger {
 
   def loadFromClasspath(filename: String) = Endo[Properties](p => {
     val f = filename.replaceFirst("^/*", "/")
     val i = getClass.getResourceAsStream(f)
     if (i eq null)
-      log.debug("Properties not found: {}", f)
+      log.debug.z(s"Properties not found: $f")
     else {
-      log.info("Loading properties: {}", f)
+      log.info.z(s"Loading properties: $f")
       p.load(i)
     }
     p

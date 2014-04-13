@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.slick.jdbc.GetResult
 import shipreq.base.test.specs2.db.DatabaseTest
-import shipreq.base.util.Logger
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.ApiOp.SubmitMsg
 import shipreq.taskman.api.Msg.DummyMsg
 import shipreq.taskman.api.MsgId
@@ -15,7 +15,7 @@ import shipreq.taskman.server.ServerImplTestHelpers
 import shipreq.taskman.server.Sql.{Succeeded, FailAndAbort, ArchiveIntent}
 import shipreq.taskman.server.app.Server
 
-class AkkaTest extends Specification with DatabaseTest with NoTimeConversions with Logger with ServerImplTestHelpers {
+class AkkaTest extends Specification with DatabaseTest with NoTimeConversions with HasLogger with ServerImplTestHelpers {
 
   override def mutex = dbMutexW
   override def wrapTestsInTransaction = false
@@ -44,20 +44,20 @@ class AkkaTest extends Specification with DatabaseTest with NoTimeConversions wi
           s.system.awaitTermination(10.seconds)
         })
       catch {
-        case e: Throwable => log.error("Akka crashed", e)
+        case e: Throwable => log.error(e, "Akka crashed")
       })
 
       // submit jobs
       val dummy1 = run(SubmitMsg(DummyMsg("#1: Pass immediately")))
       val dummy2 = run(SubmitMsg(DummyMsg("#2: Fail immediately", retryCount = 1, failureMsg = Some("Deliberate fail."))))
-      log.debug("Dummy job ids: {}, {}", dummy1.value, dummy2.value)
+      log.debug.z(s"Dummy job ids: ${dummy1.value}, ${dummy2.value}")
 
       // wait for results
       val expect = List(Succeeded, FailAndAbort).map(Some(_))
       List(dummy1, dummy2).map(lookupHistory) must be_==(expect).eventually(20, 1.second)
 
     } finally {
-      log.info("Finished in %.3fs".format((System.currentTimeMillis() - startTime) / 1000.0))
+      log.info.fmt("Finished in %.3fs", (System.currentTimeMillis() - startTime) / 1000.0)
       shutdownLatch.countDown()
       es.shutdown()
       es.awaitTermination(10, TimeUnit.SECONDS)

@@ -9,6 +9,7 @@ import scala.slick.session.{Database, Session}
 import scala.slick.jdbc.SQLInterpolation
 import shipreq.base.util._
 import shipreq.base.db.{SingleConnDatabase, DatabaseConnection, DbTemplate}
+import shipreq.base.util.log.Logger
 
 object TestDb extends DbTemplate {
   val runMode = RunMode.Test
@@ -57,7 +58,7 @@ trait DatabaseTest extends AroundExample {
     wrapTestsInTransaction match {
       case true =>
         TestDb.slick.withTransaction(s =>
-          go(s)(try s.rollback() catch { case e: Throwable => dbLog.warn("Rollback failed.", e) })
+          go(s)(try s.rollback() catch { case e: Throwable => dbLog.warn(e, "Rollback failed.") })
         )
       case false =>
         TestDb.slick.withSession(s => go(s)())

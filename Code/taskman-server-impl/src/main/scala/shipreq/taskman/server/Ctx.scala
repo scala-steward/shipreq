@@ -9,6 +9,7 @@ import shipreq.base.util.ExternalValueReader._
 import shipreq.base.util._
 import shipreq.base.util.jodatime.JodaTimeHelpers._
 import shipreq.base.util.jodatime.JodaTimeValueRetrievers
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.api.Types._
 import shipreq.taskman.server.business.{BusinessLogic, Failure, Email}
@@ -26,7 +27,7 @@ class Db(props: StringBasedValueReader) extends DbTemplate {
 //==========================================================================================
 
 class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReader)
-  extends Email.Ctx[EmailImpl.EA] with EmailImpl.Ctx with BopImpl.Ctx with Logger {
+  extends Email.Ctx[EmailImpl.EA] with EmailImpl.Ctx with BopImpl.Ctx with HasLogger {
   import EmailImpl.EA
 
   protected def fromDb = SopImpl.cfgValueReader(db)
@@ -60,7 +61,7 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
     val pollEvery = validate("poll.every", need[Period])(atLeast(50 ms))
     val pollGap = validate("poll.min", n => getO[Period](n) getOrElse pollEvery)(atLeast(50 ms))
     if (pollGap.toStandardDuration isLongerThan pollEvery.toStandardDuration)
-      log.warn(s"The minimum poll gap ($pollGap) is larger than the poll time ($pollEvery). Wasteful.")
+      log.warn.z(s"The minimum poll gap ($pollGap) is larger than the poll time ($pollEvery). Wasteful.")
   }
 
   def propmap = List[(String, Any)](
@@ -74,8 +75,9 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
     , "server.poll.gap"    -> server.pollGap
   )
   def logContent(): Unit = {
-    propmap.map{ case (k,v) => "Config: %-20s = %s".format(k,v) } foreach log.info
-    log.info("Node ID is {}.", nodeId.value)
+    for ((k,v) <- propmap)
+      log.info.fmt("Config: %-20s = %s", k, v)
+    log.info.z(s"Node ID is ${nodeId.value}.")
   }
 
   implicit val bopReifier = new BopImpl(this)

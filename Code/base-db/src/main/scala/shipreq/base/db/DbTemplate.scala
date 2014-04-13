@@ -2,12 +2,12 @@ package shipreq.base.db
 
 import com.googlecode.flyway.core.Flyway
 import scala.slick.session.{Database, Session}
-import shipreq.base.util.Logger
+import shipreq.base.util.log.HasLogger
 
 /**
  * Template/mixin for database singletons.
  */
-trait DbTemplate extends Logger {
+trait DbTemplate extends HasLogger {
 
   protected def newConnection: DatabaseConnection
   protected final lazy val connection = newConnection
@@ -43,7 +43,7 @@ trait DbTemplate extends Logger {
    * Drops all objects (tables, views, procedures, triggers, ...) in the configured schemas.
    */
   protected def wipe_!(): Unit = initLock.synchronized {
-    log.warn("Wiping database: " + DatabaseName)
+    log.warn.z(s"Wiping database: $DatabaseName")
     migrator.wipe_!()
     initPending = true
   }

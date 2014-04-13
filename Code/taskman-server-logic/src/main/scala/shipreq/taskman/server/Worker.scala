@@ -1,15 +1,16 @@
 package shipreq.taskman.server
 
 import org.joda.time.DateTime
-import scalaz.{-\/, \/-}
 import scalaz.effect.IO
+import scalaz.std.list.listInstance
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
-import scalaz.std.list.listInstance
-import shipreq.base.util.{Logger, ErrorOr, Error}
+import scalaz.{-\/, \/-}
+import shipreq.base.util.{ErrorOr, Error}
+import shipreq.base.util.log.HasLogger
 import Sop._
 
-object Worker extends Logger {
+object Worker extends HasLogger {
 
   type FailurePolicy = FailureCtx => FailureResponse
 
@@ -96,17 +97,17 @@ object Worker extends Logger {
       r match {
         case CouldntAssign =>
         case Completed(m) =>
-          log.info("Successfully completed: {}", m)
+          log.info.z(s"Successfully completed: $m")
         case WorkerFailed(_, e, f) =>
           // f contains m so no need to print separately
           if (e is Deliberate)
-            log.info("Worker deliberately failed: {} // {}", e.msg, f, null)
+            log.info.z(s"Worker deliberately failed: ${e.msg} // $f")
           else
-            log.warn(s"Worker failed: $f", e.throwable)
+            log.warn(e, s"Worker failed: $f")
         case TaskmanFailed(e, Some(m)) =>
-          log.error(s"Taskman error occurred processing $m", e.throwable)
+          log.error(e, s"Taskman error occurred processing $m")
         case TaskmanFailed(e, None) =>
-          log.error(s"Taskman error occurred! (no msg)", e.throwable)
+          log.error(e, s"Taskman error occurred! (no msg)")
       }
       r
     }
