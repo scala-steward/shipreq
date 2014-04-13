@@ -50,7 +50,7 @@ object Common {
     }
 
   def shutdownTestDb(loader: ClassLoader): Unit = {
-    getMethod(loader, "shipreq.base.test.db.specs2.TestDb", "shutdown").foreach(_ invoke null)
+    getMethod(loader, "shipreq.base.test.specs2.db.TestDb", "shutdown").foreach(_ invoke null)
   }
 
   lazy val settings = (p: Project) => p
