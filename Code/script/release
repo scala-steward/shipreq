@@ -4,7 +4,7 @@ cd $(dirname $(readlink -e "$0"))/.. || exit 1
 avail_mods="taskman webapp"
 [ $# -eq 0 ] && defargs="$avail_mods"
 
-sbt=(sbt -DMODE=release clean)
+sbt=(sbt -DMODE=release)
 taskman=0
 webapp=0
 pre_release=()
@@ -24,9 +24,8 @@ for m in $defargs "$@"; do
       sbt_test+=(webapp/test)
       sbt_pkg+=(webapp/package)
       ;;
-    notest)
-      notest=1
-      ;;
+    notest) notest=1 ;;
+    noclean) noclean=1 ;;
     *)
       echo "Unknown module: $m"
       exit 1
@@ -39,6 +38,7 @@ case "$((taskman + webapp))" in
   *) sbt_test=(base/test ${sbt_test[@]}) ;;
 esac
 [ -n "$notest" ] && sbt_test=()
+[ -z "$noclean" ] && sbt+=(clean)
 
 function sep() { echo -e '____________________________________________________________________________________________________\n'; }
 
