@@ -2,7 +2,7 @@
 
 cd $(dirname $(readlink -e "$0"))/.. || exit 1
 
-[ $# -ne 1 ] && echo "Usage: $0 <main-class>" && exit 1
+[ $# -lt 1 ] && echo "Usage: $0 <main-class>" && exit 1
 
 main="$1"; shift
 conf=conf

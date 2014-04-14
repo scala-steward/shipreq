@@ -12,6 +12,7 @@ import shipreq.base.util.jodatime.JodaTimeValueRetrievers
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.api.Types._
+import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.server.business.{BusinessLogic, Failure, Email}
 
 //==========================================================================================
@@ -26,7 +27,7 @@ class Db(props: StringBasedValueReader) extends DbTemplate {
 
 //==========================================================================================
 
-class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReader)
+class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueReader)
   extends Email.Ctx[EmailImpl.EA] with EmailImpl.Ctx with BopImpl.Ctx with HasLogger {
   import EmailImpl.EA
 
@@ -84,6 +85,7 @@ class TaskmanCtx(db: Database, mailProps: Properties, evr: StringBasedValueReade
   implicit val sopReifier = new SopImpl(db, this, bopReifier)
   implicit val failurePolicy = Failure.failurePolicy
   implicit val msgProcessor = BusinessLogic(this, bopReifier)
+  implicit val aopReifier = new TaskmanApi(TaskmanApi.Context(None), db)
   implicit val clock = IO(new DateTime)
   implicit val nodeId = sopReifier.getNextNodeId.unsafePerformIO()
 }

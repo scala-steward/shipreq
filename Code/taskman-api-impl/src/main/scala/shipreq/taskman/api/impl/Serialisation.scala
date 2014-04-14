@@ -33,17 +33,17 @@ private[taskman] object Serialisation {
 
   def serialise(m: Msg): Ser = write(m).tag
 
-  def deserialise(msgTypeId: Short, s: Ser): DeSer = {
+  def deserialise(msgTypeId: Short, s: Ser): DeSer =
     MsgType.lookup(msgTypeId) match {
-      case Some(t) =>
-        ErrorOr.annotate(s"Failed to parse JSON: $s") {
-          ErrorOr.catchException {
-            val m: Msg = read(s)(implicitly[Formats], Manifest.classType(t.msgClass))
-            ErrorOr(m)
-          }
-        }
-      case None =>
-        Error(s"Unknown message type: $msgTypeId")
+      case Some(t) => deserialise(t, s)
+      case None    => Error(s"Unknown message type: $msgTypeId")
     }
-  }
+
+  def deserialise(t: MsgType, s: Ser): DeSer =
+    ErrorOr.annotate(s"Failed to parse JSON: $s") {
+      ErrorOr.catchException {
+        val m: Msg = read(s)(implicitly[Formats], Manifest.classType(t.msgClass))
+        ErrorOr(m)
+      }
+    }
 }

@@ -16,7 +16,7 @@ class SerialisationTest extends Specification with ScalaCheck {
     }
 
     "return an error for unknown task types" in {
-      deserialise(-500, "".tag) must beLike{ case -\/(e) if e.toString contains "-500" => ok }
+      deserialise(-500.toShort, "".tag) must beLike{ case -\/(e) if e.toString contains "-500" => ok }
     }
 
     "return an error if data fails parsing" in {

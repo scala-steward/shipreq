@@ -1,5 +1,7 @@
 package shipreq.taskman.api
 
+import shipreq.base.util.ScalaExt.Tuple2Ext
+
 /**
  * A datum that can be sent to the Taskman server and meaningfully processed.
  */
@@ -74,10 +76,17 @@ object MsgType {
     groups.mapValues(_.head).toMap
   }
 
-  assert(byId.size == byMsgClass.size)
+  private[this] val byMsgClassName: Map[String, MsgType] =
+    byMsgClass.toList.map(_.map1(_.getSimpleName)).toMap
 
-  @inline def lookup(id: Short): Option[MsgType] = byId.get(id)
-  @inline def lookup_!(id: Short): MsgType = byId(id)
+  assert(byId.size == byMsgClass.size)
+  assert(byId.size == byMsgClassName.size)
+
+  @inline def lookup(id: Short)   : Option[MsgType] = byId get id
+  @inline def lookup(name: String): Option[MsgType] = byMsgClassName get name
+
+  @inline def lookup_!(id: Short)       : MsgType = byId(id)
+  @inline def lookup_!(name: String)    : MsgType = byMsgClassName(name)
   @inline def lookup(c: Class[_ <: Msg]): MsgType = byMsgClass(c)
-  @inline def lookup(d: Msg): MsgType = byMsgClass(d.getClass)
+  @inline def lookup(d: Msg)            : MsgType = byMsgClass(d.getClass)
 }

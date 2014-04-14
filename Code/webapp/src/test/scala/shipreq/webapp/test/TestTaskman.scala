@@ -24,8 +24,8 @@ class TestTaskman extends TaskmanInterface {
     def apply[A](c: ApiOp[A]): IO[A] = synchronized {
       ran ::= c
       c match {
-        case SubmitMsg(t)       => IO{ msgsSubmitted ::= t; null.asInstanceOf[MsgId] }
-        case SubmitMsgs(ts)     => IO{ msgsSubmitted :::= ts.toList }
+        case SubmitMsg(m)       => IO{ msgsSubmitted ::= m; null.asInstanceOf[MsgId] }
+        case SubmitMsgs(ms)     => IO{ msgsSubmitted :::= ms.toList; null.asInstanceOf[List[(Msg, MsgId)]] }
         case CfgPut(k, v)       => IO()
         case QueryMsgStatus(id) => IO(None)
       }
