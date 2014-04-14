@@ -50,15 +50,15 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   override val shipreq  = need(CfgKeys.Webapp.appName )(GlobalScope, fromDb.retrieverS)
   override val loginUrl = need(CfgKeys.Webapp.loginUrl)(GlobalScope, fromDb.retrieverS)
 
-  object server {
-    private implicit def scope: PropScope = scopeByNS("taskman.server")
+  object work {
+    private implicit def scope: PropScope = scopeByNS("taskman.work")
     def atLeast(min: Period) =
       valTest[Period](_.toStandardDuration isLongerThan min.toStandardDuration, s"Must be at least $min.")
     def atLeast(min: Int) =
       valTest[Int](_ >= min, s"Must be at least $min.")
 
     val queueSize = validate("queueSize", need[Int])(atLeast(1))
-    val trustPeriod = validate("trustPeriod", need[Period])(atLeast(10 seconds))
+    implicit val trustPeriod = AssignmentTrustPeriod(validate("trustPeriod", need[Period])(atLeast(10 seconds)))
     val pollEvery = validate("poll.every", need[Period])(atLeast(50 ms))
     val pollGap = validate("poll.min", n => getO[Period](n) getOrElse pollEvery)(atLeast(50 ms))
     if (pollGap.toStandardDuration isLongerThan pollEvery.toStandardDuration)
@@ -70,10 +70,10 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
     , "loginUrl"           -> loginUrl
     , "mail.public.from"   -> publicFrom
     , "mail.support"       -> supportEnv
-    , "server.queueSize"   -> server.queueSize
-    , "server.trustPeriod" -> server.trustPeriod
-    , "server.poll.every"  -> server.pollEvery
-    , "server.poll.gap"    -> server.pollGap
+    , "work.queueSize"     -> work.queueSize
+    , "work.trustPeriod"   -> work.trustPeriod
+    , "work.poll.every"    -> work.pollEvery
+    , "work.poll.gap"      -> work.pollGap
   )
   def logContent(): Unit = {
     for ((k,v) <- propmap)
@@ -81,11 +81,12 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
     log.info.z(s"Node ID is ${nodeId.value}.")
   }
 
-  implicit val bopReifier = new BopImpl(this)
-  implicit val sopReifier = new SopImpl(db, this, bopReifier)
+  import work._
+  implicit val aopReifier    = new TaskmanApi(TaskmanApi.Context(None), db)
+  implicit val bopReifier    = new BopImpl(this)
+  implicit val sopReifier    = new SopImpl(db, this, bopReifier)
   implicit val failurePolicy = Failure.failurePolicy
-  implicit val msgProcessor = BusinessLogic(this, bopReifier)
-  implicit val aopReifier = new TaskmanApi(TaskmanApi.Context(None), db)
-  implicit val clock = IO(new DateTime)
-  implicit val nodeId = sopReifier.getNextNodeId.unsafePerformIO()
+  implicit val msgProcessor  = BusinessLogic(this, bopReifier)
+  implicit val clock         = IO(new DateTime)
+  implicit val nodeId        = sopReifier.getNextNodeId.unsafePerformIO()
 }

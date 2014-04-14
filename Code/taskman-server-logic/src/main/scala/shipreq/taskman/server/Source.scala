@@ -13,9 +13,10 @@ object Source {
   type STIO[A] = StateT[IO, S, A]
   type QueueStatus = Option[(Priority, Int)]
 
-  case class Reified(pollGap: Period, batchSize: Int, assignmentTrustPeriod: Period)(
+  case class Reified(pollGap: Period, batchSize: Int)(
     implicit node: NodeId,
              clock: IO[DateTime],
+             trustPeriod: AssignmentTrustPeriod,
              sopReifier: SopReifier) {
 
     def empty: IO[S] = clock.map(_ minus pollGap)
@@ -33,7 +34,7 @@ object Source {
       outsidePollGap flatMap (ok =>
         if (ok)
           for {
-            ms <- GetMsgsAssignNode(node, batchSize, assignmentTrustPeriod, qs).liftIOM[STIO]
+            ms <- GetMsgsAssignNode(node, batchSize, trustPeriod.value, qs).liftIOM[STIO]
             _  <- updateTime
           } yield ms
         else

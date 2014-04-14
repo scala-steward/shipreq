@@ -14,7 +14,8 @@ class SourceTest extends Specification with ScalaCheck {
   val mockMsgs = Seq(mh_1, mh_2)
   implicit val mockSop = MockOpTransformer1[Sop, IO, GetMsgsAssignNode, Seq[MsgHeader]](mockMsgs)
   implicit val clock = IO(timeNow)
-  val source = Reified(Period seconds 1, 20, Period days 3)
+  implicit val tp = AssignmentTrustPeriod(Period days 3)
+  val source = Reified(Period seconds 1, 20)
 
   "poll when allowed" >> {
     val (s, ms) = source.poll(None).run(timeNow minusDays 1).unsafePerformIO()

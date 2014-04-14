@@ -1,6 +1,6 @@
 package shipreq.taskman
 
-import org.joda.time.DateTime
+import org.joda.time.{Period, DateTime}
 import scalaz.{-\/, \/-, ~>}
 import scalaz.effect.{MonadIO, IO}
 import shipreq.base.util.{ErrorTag, ErrorOr, Error}
@@ -27,6 +27,8 @@ package object server {
     override lazy val toString =
       s"MsgDetail($hdr, ${msg.toString.replace("\n", "\\n")}, $failureCount)"
   }
+
+  final case class AssignmentTrustPeriod(value: Period) extends AnyVal
 
   /**
    * Indication that an error is deterministic and will always occur.
