@@ -8,7 +8,7 @@ import org.specs2.matcher.AnyMatchers._
 import scalaz.Lens.lensg
 import scalaz.{NonEmptyList, Heap, Order, Endo}
 import scalaz.effect.IO
-import shipreq.base.util.Error
+import shipreq.base.util.{ErrorOr, Error}
 import shipreq.base.test.{MockOpTransformerA, MockOpTransformer}
 import shipreq.taskman.api.{MsgId, Priority}
 import shipreq.taskman.api.Types._
@@ -59,28 +59,30 @@ object TestHelpers {
     }
   }
 
-  def assignWorkerTo(md: MsgDetail) = endoMod[MockSops](_.assignWorkerR << Some(md))
-  val assignWorkerAllow = assignWorkerTo(md_1)
-  val assignWorkerCrash = endoMod[MockSops](_.assignWorkerR << ???)
-  val crashOnUpdateMsgSuccess = endoMod[MockSops](_.updateMsgSuccessR << ???)
+  def assignWorkerTo(md: MsgDetail)    = endoMod[MockSops](_.assignWorkerR << Some(md))
+  val assignWorkerAllow                = assignWorkerTo(md_1)
+  val assignWorkerCrash                = endoMod[MockSops](_.assignWorkerR << ???)
+  val crashOnUpdateMsgSuccess          = endoMod[MockSops](_.updateMsgSuccessR << ???)
   val crashOnNotifySupportWorkerFailed = endoMod[MockSops](_.notifySupportWorkerFailedR << ???)
   val crashOnNotifySupportTaskmanError = endoMod[MockSops](_.notifySupportTaskmanErrorR << ???)
+  val reassignWorkerDeny               = endoMod[MockSops](_.reassignWorkerR << false)
+  val reassignWorkerCrash              = endoMod[MockSops](_.reassignWorkerR << ???)
 
   val crashOnSendEmail = endoMod[MockBops](_.sendEmailR << Error("CRASH!"))
 
   val clockReal = IO(DateTime.now)
 
-  val fpAbort: FailurePolicy =
+  val fpRetry: FailurePolicy =
     f => FailureResponse(UpdateMsgRetry(f.m), Nil)
 
-  val fpAbortSupport: FailurePolicy =
+  val fpRetrySupport: FailurePolicy =
     f => FailureResponse(UpdateMsgRetry(f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
 
-  val fpRetry: FailurePolicy =
+  val fpAbort: FailurePolicy =
     f => FailureResponse(UpdateMsgAbort(f.m, Period days 1), Nil)
 
-  val mpNop: MsgProcessor = msg => nopTask
-  val mpCrash: MsgProcessor = msg => ???
+  def mpNop[F[_]]: MsgProcessor[F] = _ sync IOE.nop
+  def mpCrash[F[_]]: MsgProcessor[F] = _ => ???
 
   def arbMap[B, A](f: A => B)(implicit a: Arbitrary[A]): Arbitrary[B] =
     Arbitrary { a.arbitrary.map(f) }
@@ -124,6 +126,7 @@ class MockSops extends MockOpTransformerA[Sop, IO] {
   val updateMsgAbortR = MockResponse(())
   val notifySupportWorkerFailedR = MockResponse(())
   val notifySupportTaskmanErrorR = MockResponse(())
+  val reassignWorkerR = MockResponse(true)
 
   override def cotrans[A] = {
     case _: CfgGet                    => cfgGetR.pop()
@@ -134,12 +137,13 @@ class MockSops extends MockOpTransformerA[Sop, IO] {
     case _: UpdateMsgAbort            => updateMsgAbortR.pop()
     case _: NotifySupportWorkerFailed => notifySupportWorkerFailedR.pop()
     case _: NotifySupportTaskmanError => notifySupportTaskmanErrorR.pop()
+    case _: ReAssignWorker            => reassignWorkerR.pop()
     case    Nop                       =>
   }
 }
 
 class MockBops extends MockOpTransformer[Bop, IOE] {
-  val sendEmailR = MockResponse(nopResult)
+  val sendEmailR = MockResponse(ErrorOr.unit)
 
   override def trans[A] = {
     case _: SendEmail[_] => IO(sendEmailR.pop())

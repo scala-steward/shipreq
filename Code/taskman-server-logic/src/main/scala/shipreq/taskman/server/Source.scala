@@ -5,6 +5,7 @@ import shipreq.taskman.api.Priority
 import shipreq.taskman.server.Sop.GetMsgsAssignNode
 import scalaz.{StateT, State}
 import scalaz.effect.IO
+import Source._
 
 object Source {
 
@@ -13,32 +14,33 @@ object Source {
   type STIO[A] = StateT[IO, S, A]
   type QueueStatus = Option[(Priority, Int)]
 
-  case class Reified(pollGap: Period, batchSize: Int)(
-    implicit node: NodeId,
-             clock: IO[DateTime],
-             trustPeriod: AssignmentTrustPeriod,
-             sopReifier: SopReifier) {
+}
 
-    def empty: IO[S] = clock.map(_ minus pollGap)
+final class Source(pollGap: Period, batchSize: Int)(
+  implicit node: NodeId,
+           clock: IO[DateTime],
+           trustPeriod: AssignmentTrustPeriod,
+           sopReifier: SopReifier) {
 
-    val outsidePollGap: STIO[Boolean] =
-      StateT(s => clock.map(now => (s, now.isAfter(s plus pollGap))))
+  def empty: IO[S] = clock.map(_ minus pollGap)
 
-    val updateTime: STIO[Unit] =
-      StateT(_ => clock.map(n => (n, ())))
+  val outsidePollGap: STIO[Boolean] =
+    StateT(s => clock.map(now => (s, now.isAfter(s plus pollGap))))
 
-    val noResults: STIO[Seq[MsgHeader]] =
-      StateT.stateT(Seq.empty)
+  val updateTime: STIO[Unit] =
+    StateT(_ => clock.map(n => (n, ())))
 
-    def poll(qs: QueueStatus): STIO[Seq[MsgHeader]] =
-      outsidePollGap flatMap (ok =>
-        if (ok)
-          for {
-            ms <- GetMsgsAssignNode(node, batchSize, trustPeriod.value, qs).liftIOM[STIO]
-            _  <- updateTime
-          } yield ms
-        else
-          noResults
-      )
-  }
+  val noResults: STIO[Seq[MsgHeader]] =
+    StateT.stateT(Seq.empty)
+
+  def poll(qs: QueueStatus): STIO[Seq[MsgHeader]] =
+    outsidePollGap flatMap (ok =>
+      if (ok)
+        for {
+          ms <- GetMsgsAssignNode(node, batchSize, trustPeriod.value, qs).liftIOM[STIO]
+          _  <- updateTime
+        } yield ms
+      else
+        noResults
+    )
 }

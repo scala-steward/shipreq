@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import shipreq.base.util.jodatime.JodaTimeHelpers.PeriodConv
 import shipreq.base.util.log.{MDC, HasLogger}
 import shipreq.taskman.api.Priority
-import shipreq.taskman.server.{Worker, TaskmanCtx, WorkerId, MsgHeader}
+import shipreq.taskman.server.{TaskmanCtx, MsgHeader}
 import ActorHelpers._
 
 private[akka] object ActorHelpers {
@@ -24,13 +24,13 @@ object SourceActor {
 
 class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
   import SourceActor._
-  import shipreq.taskman.server.{Source => S}
+  import shipreq.taskman.server.Source
   import ctx._
   import ctx.work._
 
   val mdc = mdcCtx("source")
-  val source = S.Reified(pollGap, queueSize)
-  var state: S.S = source.empty.unsafePerformIO()
+  val source = new Source(pollGap, queueSize)
+  var state = source.empty.unsafePerformIO()
 
   override def receive = mdc.pf {
     case RequestForWork(qs) =>
@@ -88,19 +88,23 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with HasLogg
 // =====================================================================================================================
 
 object WorkerActor {
+  import shipreq.taskman.server.WorkerId
+
   def props(ctx: TaskmanCtx, manager: ActorRef) = Props(classOf[WorkerActor], ctx, manager)
 
   private[this] val idCounter = new AtomicInteger
-  def nextId(): WorkerId = WorkerId(idCounter.incrementAndGet().toShort)
+  def nextId() = WorkerId(idCounter.incrementAndGet().toShort)
 }
 
 class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with HasLogger {
-  import ctx._
+  import shipreq.taskman.server.Worker
   import ManagerActor.{RequestForWork, WorkAvailable}
+  import ctx.{shipreq => _, _} // TODO rename ctx.shipreq
+  import ctx.work.trustPeriod
 
-  implicit val id: WorkerId = WorkerActor.nextId
+  implicit val id = WorkerActor.nextId
   val mdc = mdcCtx(s"worker-${id.value}")
-  val worker = Worker.Reified()
+  val worker = new Worker[shipreq.taskman.server.business.BusinessLogic.NoAsync]
 
   private def requestWork(): Unit =
     manager ! RequestForWork

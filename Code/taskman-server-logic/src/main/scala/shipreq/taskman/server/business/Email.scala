@@ -47,11 +47,11 @@ object Email {
   val timeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 }
 
-class Emails[EA](ctx: Email.Ctx[EA]) {
+final class Emails[EA](ctx: Email.Ctx[EA]) {
   import Email._
   import ctx._
 
-  type SendOp = Bop[Unit]
+  type SendOp = Bop.SendEmail[EA]
 
   def sendToUser(addr: EA, c: Content): SendOp = {
     val e = Email.Envelope(ctx.publicFrom, NonEmptyList(addr))

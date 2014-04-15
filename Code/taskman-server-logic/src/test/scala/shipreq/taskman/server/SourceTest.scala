@@ -6,7 +6,6 @@ import org.specs2.mutable._
 import scalaz.effect.IO
 import shipreq.base.test.MockOpTransformer1
 import TestHelpers._
-import Source._
 import Sop._
 
 class SourceTest extends Specification with ScalaCheck {
@@ -15,7 +14,7 @@ class SourceTest extends Specification with ScalaCheck {
   implicit val mockSop = MockOpTransformer1[Sop, IO, GetMsgsAssignNode, Seq[MsgHeader]](mockMsgs)
   implicit val clock = IO(timeNow)
   implicit val tp = AssignmentTrustPeriod(Period days 3)
-  val source = Reified(Period seconds 1, 20)
+  val source = new Source(Period seconds 1, 20)
 
   "poll when allowed" >> {
     val (s, ms) = source.poll(None).run(timeNow minusDays 1).unsafePerformIO()

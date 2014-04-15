@@ -1,50 +1,61 @@
 package shipreq.taskman.server.business
 
+import scalaz.~>
 import scalaz.effect.IO
 import shipreq.base.util.{ErrorOr, Error}
-import shipreq.taskman.api.Msg
+import shipreq.taskman.api.Msg._
 import shipreq.taskman.api.Types.EmailAddr
-import shipreq.taskman.server.{Deliberate, Deterministic, Worker}
-import shipreq.taskman.server.Worker.MsgProcessor
+import shipreq.taskman.server.{Deliberate, Deterministic}
+import shipreq.taskman.server.Worker.{MsgProcessor, MsgProcessorIn, MsgProcessorOut}
 
 object BusinessLogic {
+  type NoAsync[A] = Nothing
+}
+import BusinessLogic._
 
-  def apply[EA](ctx: Email.Ctx[EA], reifier: BopReifier): MsgProcessor = {
+final class BusinessLogic[EA](ctx: Email.Ctx[EA], bopReifier: BopReifier) extends MsgProcessor[NoAsync] {
+  type F[A] = NoAsync[A]
+  type MI = MsgProcessorIn[F]
+  type MO = MsgProcessorOut[F]
+  def emailScheduler: IO ~> F = ??? // TODO
 
-    val email = new Emails[EA](ctx)
+  private[this] val emails = new Emails[EA](ctx)
+  private[this] implicit def autoParseEa(ea: EmailAddr): EA = ctx.addrParser(ea)
+  @inline private[this] def emailUser(to: EA, c: Email.Content)(implicit i: MI): MO = send(emails.sendToUser(to, c))
+  @inline private[this] def send(e: Bop.SendEmail[EA])(implicit i: MI): MO = i.syncU(bopReifier(e))
 
-    implicit def autoReifyBop(bop: Bop[Unit]) = reifier(bop)
-    implicit def autoParseEa(ea: EmailAddr): EA = ctx.addrParser(ea)
+  override def apply(i: MI): MO = {
+    @inline def md = i.m
+    @inline implicit def _i = i
 
-    val msgProcessor: MsgProcessor =
-      md => md.msg match {
+    md.msg match {
 
-        case Msg.RegistrationRequested(addr, url) =>
-          email.sendToUser(addr, email.linkToCompleteRegistration(url))
+      case RegistrationRequested(addr, url) =>
+        emailUser(addr, emails.linkToCompleteRegistration(url))
 
-        case Msg.ReRegistrationAttempted(addr) =>
-          email.sendToUser(addr, email.reRegistrationAttempted)
+      case ReRegistrationAttempted(addr) =>
+        emailUser(addr, emails.reRegistrationAttempted)
 
-        case Msg.PasswordResetRequested(addr, url) =>
-          email.sendToUser(addr, email.passwordChangeRequest(url))
+      case PasswordResetRequested(addr, url) =>
+        emailUser(addr, emails.passwordChangeRequest(url))
 
-        case Msg.SendDiagEmail(addr, subject, body) =>
-          email.sendToUser(addr, email.diagnosticEmail(subject, body, md))
+      case SendDiagEmail(addr, subject, body) =>
+        emailUser(addr, emails.diagnosticEmail(subject, body, md))
 
-        case Msg.DummyMsg(desc, processingTimeMs, retryCount, _, failureMsg) => IO {
+      case DummyMsg(desc, processingTimeMs, retryCount, _, failureMsg) =>
+        i.sync {
           if (processingTimeMs > 0)
-            Thread sleep processingTimeMs
+            Thread.sleep(processingTimeMs)
           ErrorOr.tag[Unit](Deliberate)(
             if (md.failureCount < retryCount)
               Error(s"Failure count (${md.failureCount}) < desired ($retryCount).")
             else failureMsg match {
               case Some(e) => ErrorOr.tag(Deterministic)(Error(e))
-              case None    => Worker.nopResult
+              case None    => ErrorOr.unit
             }
           )
-        }
-
       }
-    msgProcessor
+
+    }
   }
 }

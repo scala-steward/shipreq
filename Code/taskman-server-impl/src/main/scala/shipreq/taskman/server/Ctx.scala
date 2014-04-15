@@ -85,8 +85,8 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   implicit val aopReifier    = new TaskmanApi(TaskmanApi.Context(None), db)
   implicit val bopReifier    = new BopImpl(this)
   implicit val sopReifier    = new SopImpl(db, this, bopReifier)
+  implicit val msgProcessor  = new BusinessLogic(this, bopReifier)
   implicit val failurePolicy = Failure.failurePolicy
-  implicit val msgProcessor  = BusinessLogic(this, bopReifier)
   implicit val clock         = IO(new DateTime)
   implicit val nodeId        = sopReifier.getNextNodeId.unsafePerformIO()
 }

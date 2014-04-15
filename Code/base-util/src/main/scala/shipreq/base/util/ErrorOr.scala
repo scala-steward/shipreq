@@ -7,6 +7,12 @@ import scalaz.\&/.{Both, That, This}
 object ErrorOr {
   def apply[A](a: A): ErrorOr[A] = \/-(a)
 
+  val unit = apply(())
+
+  @inline final def error[A](m: String)              : ErrorOr[A] = -\/(Error error m)
+  @inline final def error[A](e: Throwable)           : ErrorOr[A] = -\/(Error error e)
+  @inline final def error[A](m: String, e: Throwable): ErrorOr[A] = -\/(Error.error(m,e))
+
   def fromOption[A](o: Option[A], errMsg: => String): ErrorOr[A] =
     o match {
       case Some(a) => apply(a)
