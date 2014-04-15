@@ -70,6 +70,7 @@ object Common {
       version := s"${fmtTimeNow("yyyyMMdd")}-${gitRevisionShort}${snapshotSuffix}",
       isSnapshot := snapshotSuffix.nonEmpty,
       shellPrompt in ThisBuild := { (s: State) => Project.extract(s).currentRef.project + "> " },
+      incOptions := incOptions.value.withNameHashing(true),
       javacOptions ++= javacFlags,
       scalaVersion := Deps.Scala.version,
       scalacOptions ++= scalacFlags,
