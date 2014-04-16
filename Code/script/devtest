@@ -1,0 +1,19 @@
+#!/bin/bash
+cd $(dirname "$0")/..
+
+S=shipreq
+
+tmux -2 new-session -d -s $S \
+  && tmux rename-window ctl \
+  && tmux split-window -h \
+  && tmux select-pane -t 0 \
+  && tmux split-window -v \
+  && tmux select-pane -t 0 \
+  && tmux send-keys "clear; script/webapp/run" C-m \
+  && tmux select-pane -t 1 \
+  && tmux send-keys "clear; sleep 5; script/taskman/run" C-m \
+  && tmux select-pane -t 2 \
+  && tmux send-keys "cd ../QA && clear && ls -l" C-m
+
+tmux -2 attach-session -t $S
+
