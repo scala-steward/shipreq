@@ -19,8 +19,12 @@ final class BusinessLogic[EA, F[_]](
 
   private[this] val emails = new Emails[EA](ctx)
   private[this] implicit def autoParseEa(ea: EmailAddr): EA = ctx.addrParser(ea)
-  @inline private[this] def emailUser(to: EA, c: Email.Content)(implicit i: MI): MO = send(emails.sendToUser(to, c))
-  @inline private[this] def send(e: Bop.SendEmail[EA])(implicit i: MI): MO = i.syncU(bopReifier(e))
+
+  @inline private[this] def emailUser(to: EA, c: Email.Content)(implicit i: MI): MO =
+    send(emails.sendToUser(to, c))
+
+  @inline private[this] def send(e: Bop.SendEmail[EA])(implicit i: MI): MO =
+    i.asyncT(emailScheduler)(bopReifier(e))
 
   override def apply(i: MI): MO = {
     @inline def md = i.m
