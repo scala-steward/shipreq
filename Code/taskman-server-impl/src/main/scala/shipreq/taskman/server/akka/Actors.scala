@@ -75,6 +75,7 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with HasLogg
       workers += sender()
 
     case SourceActor.IncomingWork(work) =>
+      log.debug z s"Received ${work.size} new msg(s)"
       queue = M.addToQueue(work).exec(queue)
       workers foreach (_ ! WorkAvailable)
 
