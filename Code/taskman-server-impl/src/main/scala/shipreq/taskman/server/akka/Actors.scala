@@ -4,14 +4,9 @@ import akka.actor.{Props, Actor, ActorRef}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import shipreq.base.util.jodatime.JodaTimeHelpers.PeriodConv
-import shipreq.base.util.log.{MDC, HasLogger}
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.Priority
-import shipreq.taskman.server.{TaskmanCtx, MsgHeader}
-import ActorHelpers._
-
-private[akka] object ActorHelpers {
-  def mdcCtx(actor: String) = MDC("actor" -> actor)
-}
+import shipreq.taskman.server.{TaskmanLogging, TaskmanCtx, MsgHeader}
 
 // =====================================================================================================================
 
@@ -28,7 +23,7 @@ class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
   import ctx._
   import ctx.props.work.{trustPeriod => _, _}
 
-  val mdc = mdcCtx("source")
+  val mdc = TaskmanLogging.mdc("source")
   val source = new Source(pollGap, queueSize)
   var state = source.empty.unsafePerformIO()
 
@@ -57,7 +52,7 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with HasLogg
   import shipreq.taskman.server.{Manager => M}
   import context.dispatcher
 
-  val mdc = mdcCtx("manager")
+  val mdc = TaskmanLogging.mdc("manager")
   val poller = context.system.scheduler.schedule(0 millis, ctx.props.work.pollEvery.toScala, self, PollSource)
 
   var workers: Set[ActorRef] = Set.empty
@@ -103,7 +98,7 @@ class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with HasLogg
   import ctx.{shipreq => _, _} // TODO rename ctx.shipreq
 
   implicit val id = WorkerActor.nextId
-  val mdc = mdcCtx(s"worker-${id.value}")
+  val mdc = TaskmanLogging.mdc(s"worker-${id.value}")
   val worker = new Worker(ctx.msgProcessor)
 
   private def requestWork(): Unit =

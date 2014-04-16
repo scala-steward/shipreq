@@ -1,17 +1,16 @@
 package shipreq.taskman.server.business
 
-import scalaz.~>
 import scalaz.effect.IO
 import shipreq.base.util.{ErrorOr, Error}
 import shipreq.taskman.api.Msg._
 import shipreq.taskman.api.Types.EmailAddr
 import shipreq.taskman.server.{MsgDetail, IOE, Deliberate, Deterministic}
-import shipreq.taskman.server.Worker.{MsgProcessor, MsgProcessorIn, MsgProcessorOut}
+import shipreq.taskman.server.Worker.{AsyncScheduler, MsgProcessor, MsgProcessorIn, MsgProcessorOut}
 
 final class BusinessLogic[EA, F[_]](
       ctx: Email.Ctx[EA],
       bopReifier: BopReifier,
-      emailScheduler: IO ~> F
+      emailScheduler: AsyncScheduler[F]
     ) extends MsgProcessor[F] {
 
   type MI = MsgProcessorIn[F]
@@ -24,7 +23,7 @@ final class BusinessLogic[EA, F[_]](
     send(emails.sendToUser(to, c))
 
   @inline private[this] def send(e: Bop.SendEmail[EA])(implicit i: MI): MO =
-    i.asyncT(emailScheduler)(bopReifier(e))
+    i.async(emailScheduler)(bopReifier(e))
 
   override def apply(i: MI): MO = {
     @inline def md = i.m
@@ -65,7 +64,7 @@ final class BusinessLogic[EA, F[_]](
     }
 
     async match {
-      case true  => i.asyncT(emailScheduler)(io)
+      case true  => i.async(emailScheduler)(io)
       case false => i.sync(io)
     }
   }

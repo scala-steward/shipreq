@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.Properties
 import org.joda.time.{DateTime, Period}
 import scala.slick.session.Database
-import scalaz.~>
+import scalaz.syntax.bind._
 import scalaz.effect.IO
 import shipreq.base.db.{DatabaseConnection, DbTemplate}
 import shipreq.base.util.ExternalValueReader._
@@ -27,6 +27,21 @@ class Db(props: StringBasedValueReader) extends DbTemplate {
   override protected def newConnection = DatabaseConnection.establish_!()
 
   def slick = _slick
+}
+
+//==========================================================================================
+
+object TaskmanLogging {
+  import shipreq.base.util.log.MDC
+  import org.slf4j.{MDC => SMDC}
+
+  val whoKey = "who"
+
+  def mdc(who: String) = MDC(whoKey -> who)
+
+  type MdcValues = String
+  val readMdc: IO[MdcValues] = IO(SMDC get whoKey)
+  def writeMdc(who: MdcValues): IO[Unit] = IO(SMDC.put(whoKey, who))
 }
 
 //==========================================================================================
@@ -82,7 +97,9 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
 //==========================================================================================
 
 object TaskmanAsync {
-  type Future[A] = java.util.concurrent.Future[A]
+  import org.slf4j.{MDC => SMDC}
+
+  type Scheduler = Worker.AsyncScheduler[java.util.concurrent.Future]
 
   class CustomThreadFactory(name: String) extends ThreadFactory {
     val count = new AtomicInteger(0)
@@ -90,7 +107,7 @@ object TaskmanAsync {
     override def newThread(r: Runnable): Thread = {
       val r2 = new Runnable {
         override def run(): Unit = {
-          org.slf4j.MDC.clear()
+          SMDC.clear()
           r.run()
         }
       }
@@ -101,15 +118,16 @@ object TaskmanAsync {
   }
 
   final case class CallableIO[A](io: IO[A]) extends Callable[A] {
-    def call() = {
-//      org.slf4j.MDC.clear()
-      io.unsafePerformIO()
-    }
+    def call() = io.unsafePerformIO()
   }
 
-  def ioSubmitter(es: ExecutorService): (IO ~> Future) =
-    new (IO ~> Future) {
-      def apply[A](io: IO[A]): Future[A] = es submit CallableIO(io)
+  def scheduler(es: ExecutorService): Scheduler =
+    new Scheduler {
+      def apply[A](io: IO[A]) =
+        TaskmanLogging.readMdc >>= { who =>
+          val fio = TaskmanLogging.writeMdc(s"$who*") >> io
+          IO(es submit CallableIO(fio))
+        }
     }
 }
 
@@ -136,7 +154,7 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
     import TaskmanAsync._
 
     val emailThreadPool = Executors.newFixedThreadPool(props.mail.concurrencyMax, new CustomThreadFactory("email"))
-    val email = ioSubmitter(emailThreadPool)
+    val email = scheduler(emailThreadPool)
 
     def each(f: ExecutorService => Unit): Unit =
       f(emailThreadPool)

@@ -16,6 +16,8 @@ object Worker {
 
   type MsgProcessor[F[_]] = MsgProcessorIn[F] => MsgProcessorOut[F]
 
+  type AsyncScheduler[F[_]] = IO ~> ({type λ[α] = IO[F[α]]})#λ
+
   final class MsgProcessorIn[F[_]](val m: MsgDetail, _wrapAsync: => (IOE[Unit] => IO[WorkResult])) {
     private[this] lazy val wrapAsync = _wrapAsync
 
@@ -23,10 +25,9 @@ object Worker {
     @inline def sync(r: => ErrorOr[Unit]): MsgProcessorOut[F] = sync(IO(r))
     @inline def syncU(r: => Unit)        : MsgProcessorOut[F] = sync(ErrorOr(r))
 
-    @inline def async(f: IO[WorkResult] => IO[F[WorkResult]]): IOE[Unit] => MsgProcessorOut[F] =
+    @inline def async(f: AsyncScheduler[F]) = asyncF(f(_))
+    @inline def asyncF(f: IO[WorkResult] => IO[F[WorkResult]]): IOE[Unit] => MsgProcessorOut[F] =
       io => -\/(f(wrapAsync(io)))
-    @inline def asyncF(f: IO[WorkResult] => F[WorkResult]) = async(io => IO(f(io)))
-    @inline def asyncT(f: IO ~> F) = asyncF(f(_))
   }
 
   final case class AsyncResult[F[_]](f: F[WorkResult], m: MsgDetail)

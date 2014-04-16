@@ -112,8 +112,8 @@ class WorkerTest extends Specification {
              , sopEndo: Endo[MockSops] = assignWorkerAllow
               ) = {
       def run = {
-        val need = new (IO ~> Need) { def apply[A](io: IO[A]) = Need(io.unsafePerformIO()) }
-        val mp: MsgProcessor[Need] = i => i.asyncT(need)(io)
+        val need = new AsyncScheduler[Need] { def apply[A](io: IO[A]) = IO(Need(io.unsafePerformIO())) }
+        val mp: MsgProcessor[Need] = _.async(need)(io)
         val mockSop = sopEndo(new MockSops)
         val w = new Worker(mp)(nid, wid, mockSop, tp, clock, fpRetry)
         val r: R = w.process(mh_1).unsafePerformIO()
