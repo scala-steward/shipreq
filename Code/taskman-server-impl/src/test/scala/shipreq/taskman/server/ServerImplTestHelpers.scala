@@ -4,9 +4,10 @@ import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import scalaz.effect.IO
 import scala.slick.session.Database
+import shipreq.base.util.{JPropertiesValueReader, RunMode, Props}
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.ApiOp
-import shipreq.base.util.{JPropertiesValueReader, RunMode, Props}
+import shipreq.taskman.server.business.BopImpl
 import ServerImplTestHelpers._
 
 trait ServerImplTestHelpers {

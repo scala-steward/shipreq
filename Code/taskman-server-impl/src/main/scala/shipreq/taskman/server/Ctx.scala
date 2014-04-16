@@ -17,7 +17,7 @@ import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.api.Types._
 import shipreq.taskman.api.impl.TaskmanApi
-import shipreq.taskman.server.business.{BusinessLogic, Failure, Email}
+import shipreq.taskman.server.business.{BopImpl, EmailImpl, BusinessLogic, Failure, Email}
 
 //==========================================================================================
 

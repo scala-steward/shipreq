@@ -1,4 +1,4 @@
-package shipreq.taskman.server
+package shipreq.taskman.server.business
 
 import java.util.Properties
 import javax.mail._
@@ -8,12 +8,13 @@ import scalaz.effect.IO
 import scalaz.std.list._
 import scalaz.syntax.bind._
 import scalaz.syntax.traverse._
-import shipreq.base.util.{JPropertiesValueReader, Error, ErrorOr}
+import shipreq.base.util.{JPropertiesValueReader, ErrorOr}
 import shipreq.base.util.log.HasLogger
 import shipreq.base.util.ExternalValueReader._
 import shipreq.taskman.api.Types
-import shipreq.taskman.server.business.Bop.SendEmail
-import shipreq.taskman.server.business.Email._
+import shipreq.taskman.server.{Deterministic, IOE}
+import Bop.SendEmail
+import Email._
 
 object EmailImpl extends HasLogger {
 
