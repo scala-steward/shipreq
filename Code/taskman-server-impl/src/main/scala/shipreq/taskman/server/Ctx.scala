@@ -1,7 +1,7 @@
 package shipreq.taskman.server
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.{TimeUnit, Callable, ExecutorService, Executors}
+import java.util.concurrent.{Callable, Executors, ExecutorService, ThreadFactory, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.Properties
 import org.joda.time.{DateTime, Period}
 import scala.slick.session.Database
@@ -84,8 +84,27 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
 object TaskmanAsync {
   type Future[A] = java.util.concurrent.Future[A]
 
+  class CustomThreadFactory(name: String) extends ThreadFactory {
+    val count = new AtomicInteger(0)
+    val back = Executors.defaultThreadFactory
+    override def newThread(r: Runnable): Thread = {
+      val r2 = new Runnable {
+        override def run(): Unit = {
+          org.slf4j.MDC.clear()
+          r.run()
+        }
+      }
+      val t = back.newThread(r2)
+      t setName s"async-$name-${count.incrementAndGet}"
+      t
+    }
+  }
+
   final case class CallableIO[A](io: IO[A]) extends Callable[A] {
-    def call() = io.unsafePerformIO()
+    def call() = {
+//      org.slf4j.MDC.clear()
+      io.unsafePerformIO()
+    }
   }
 
   def ioSubmitter(es: ExecutorService): (IO ~> Future) =
@@ -114,12 +133,13 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   override val supportEnv = props.mail.supportEnv
 
   private[TaskmanCtx] object async {
-    val emailThreadPool = Executors.newFixedThreadPool(props.mail.concurrencyMax,
-      new ThreadFactoryBuilder().setNameFormat("async-email-%d").build)
-    // TODO each worker should wrap async task with own mdc
-    val email = TaskmanAsync.ioSubmitter(emailThreadPool)
+    import TaskmanAsync._
 
-    def each(f: ExecutorService => Unit): Unit = f(emailThreadPool)
+    val emailThreadPool = Executors.newFixedThreadPool(props.mail.concurrencyMax, new CustomThreadFactory("email"))
+    val email = ioSubmitter(emailThreadPool)
+
+    def each(f: ExecutorService => Unit): Unit =
+      f(emailThreadPool)
   }
 
   def logContent(): Unit = {
