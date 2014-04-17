@@ -3,8 +3,9 @@ package shipreq.taskman.server
 import org.joda.time.{DateTime, Period}
 import org.specs2.mutable.Specification
 import scala.reflect.ClassTag
-import scalaz.{\/-, \/, -\/, ~>, Need, Endo}
+import scalaz.{\/-, \/, -\/, Need, Endo}
 import scalaz.effect.IO
+import shipreq.base.util.effect.IOE
 import shipreq.base.util.ScalaExt.Tuple2Ext
 import TestHelpers._
 import Sop._

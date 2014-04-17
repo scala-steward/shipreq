@@ -3,8 +3,9 @@ package shipreq.taskman.server.business
 import scalaz.effect.IO
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorOr
+import shipreq.base.util.effect.IOE
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.server.{IOE, IoUtils}
+import shipreq.taskman.server.IoUtils
 import Bop._
 import BopImpl._
 

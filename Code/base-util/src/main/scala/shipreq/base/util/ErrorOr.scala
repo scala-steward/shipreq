@@ -1,7 +1,7 @@
 package shipreq.base.util
 
 import scalaz.Scalaz.Id
-import scalaz.{Applicative, -\/, \/-, \&/, Lens}
+import scalaz.{Applicative, -\/, \/-, \&/, Lens, Monad}
 import scalaz.\&/.{Both, That, This}
 
 object ErrorOr {
@@ -66,6 +66,33 @@ object ErrorOr {
       case \/-(v) => v
       case -\/(e) => e.throw_!()
     }
+
+  object Implicits {
+    implicit class MonadExt[M[_], A](val mea: M[ErrorOr[A]]) extends AnyVal {
+
+      @inline def mapE[B](f: => A => B)(implicit M: Monad[M]): M[ErrorOr[B]] =
+        fmapE(a => M point ErrorOr(f(a)))
+
+      @inline def emapE[B](f: => A => ErrorOr[B])(implicit M: Monad[M]): M[ErrorOr[B]] =
+        fmapE(a => M point f(a))
+
+      @inline def fmapE[B](f: => A => M[ErrorOr[B]])(implicit M: Monad[M]): M[ErrorOr[B]] =
+        M.bind(mea) {
+          case    \/-(a) => f(a)
+          case e@ -\/(_) => M.point(e)
+        }
+
+      @inline def >-> [B](f: => A => B)            (implicit M: Monad[M]): M[ErrorOr[B]] = mapE(f)
+      @inline def >=> [B](f: => A => ErrorOr[B])   (implicit M: Monad[M]): M[ErrorOr[B]] = emapE(f)
+      @inline def >==>[B](f: => A => M[ErrorOr[B]])(implicit M: Monad[M]): M[ErrorOr[B]] = fmapE(f)
+
+      @inline def execE(f: Error => M[Unit])(implicit M: Monad[M]): M[Unit] =
+        M.bind(mea){
+          case \/-(_) => M.point(())
+          case -\/(e) => f(e)
+        }
+    }
+  }
 }
 
 trait ErrorTag

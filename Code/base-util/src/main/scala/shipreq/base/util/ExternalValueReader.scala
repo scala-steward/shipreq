@@ -2,6 +2,7 @@ package shipreq.base.util
 
 import scalaz.{\/-, -\/}
 import scalaz.std.option.optionInstance
+import ErrorOr.Implicits.MonadExt
 
 /**
  * Reads values from some kind of external source.
@@ -142,11 +143,7 @@ abstract class StringParsingBase(_retrieverS: Retriever[String]) {
   final def tryParseOE[T](f: String => Option[ErrorOr[T]]): Retriever[T] =
     Retriever(k =>
       ErrorOr.catchExceptionM(
-        normalisedRS.run(k) match {
-          case Some(\/-(s)) => f(s)
-          case Some(-\/(e)) => Some(-\/(e))
-          case None         => None
-        }))
+        normalisedRS.run(k) fmapE f))
 }
 
 /**

@@ -9,10 +9,11 @@ import scalaz.std.list._
 import scalaz.syntax.bind._
 import scalaz.syntax.traverse._
 import shipreq.base.util.{JPropertiesValueReader, ErrorOr}
+import shipreq.base.util.effect.IOE
 import shipreq.base.util.log.HasLogger
 import shipreq.base.util.ExternalValueReader._
 import shipreq.taskman.api.Types
-import shipreq.taskman.server.{Deterministic, IOE}
+import shipreq.taskman.server.Deterministic
 import Bop.SendEmail
 import Email._
 

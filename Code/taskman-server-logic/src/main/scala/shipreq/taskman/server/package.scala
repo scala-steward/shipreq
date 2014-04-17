@@ -1,10 +1,10 @@
 package shipreq.taskman
 
 import org.joda.time.{Period, DateTime}
-import scalaz.{-\/, \/-, ~>}
-import scalaz.syntax.bind._
+import scalaz.{\/-, ~>}
 import scalaz.effect.{MonadIO, IO}
-import shipreq.base.util.{ErrorTag, ErrorOr, Error}
+import shipreq.base.util.ErrorTag
+import shipreq.base.util.effect.IOE
 import shipreq.taskman.api.{MsgId, Msg, Priority}
 
 package object server {
@@ -45,29 +45,9 @@ package object server {
    */
   case object Deliberate extends ErrorTag
 
-  type IOE[A] = IO[ErrorOr[A]]
-  object IOE {
-    def apply[A](f: => A): IOE[A] = IO(ErrorOr safe f)
-    val nop = apply(())
-  }
-
   type SopReifier = Sop ~> IO
 
-  val nopIo = IO(())
-
-  def tapIO[A](io: IO[A], f: A => IO[_]): IO[A] =
-    io.flatMap(a => f(a) >> IO(a))
-
-  def execIOE(ioe: IOE[_], f: Error => IO[Unit]): IO[Unit] =
-    ioe.flatMap {
-      case \/-(_) => nopIo
-      case -\/(e) => f(e)
-    }
-
-  implicit class IOExt[A](val io: IO[A]) extends AnyVal {
-    def tap(f: A => IO[_]): IO[A] = tapIO(io, f)
-    def <| (f: A => IO[_]): IO[A] = tapIO(io, f)
-  }
+  @inline def nopIo = shipreq.base.util.effect.nopIo
 
   implicit class OpExt[F[_], A](val op: F[A]) extends AnyVal {
     def toIO(implicit opToIo: F ~> IO): IO[A] = opToIo(op)

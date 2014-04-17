@@ -7,6 +7,7 @@ import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
 import scalaz.{-\/, \/, \/-, ~>}
 import shipreq.base.util.{ErrorOr, Error}
+import shipreq.base.util.effect.{IOE, IOExt}
 import shipreq.base.util.log.HasLogger
 import Sop._
 import Worker._

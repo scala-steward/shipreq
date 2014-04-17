@@ -9,6 +9,7 @@ import scalaz.Lens.lensg
 import scalaz.{NonEmptyList, Heap, Order, Endo}
 import scalaz.effect.IO
 import shipreq.base.util.{ErrorOr, Error}
+import shipreq.base.util.effect.IOE
 import shipreq.base.test.{MockOpTransformerA, MockOpTransformer}
 import shipreq.taskman.api.{MsgId, Priority}
 import shipreq.taskman.api.Types._

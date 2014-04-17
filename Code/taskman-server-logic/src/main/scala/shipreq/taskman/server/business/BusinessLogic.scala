@@ -2,9 +2,10 @@ package shipreq.taskman.server.business
 
 import scalaz.effect.IO
 import shipreq.base.util.{ErrorOr, Error}
+import shipreq.base.util.effect.IOE
 import shipreq.taskman.api.Msg._
 import shipreq.taskman.api.Types.EmailAddr
-import shipreq.taskman.server.{MsgDetail, IOE, Deliberate, Deterministic}
+import shipreq.taskman.server.{MsgDetail, Deliberate, Deterministic}
 import shipreq.taskman.server.Worker.{AsyncScheduler, MsgProcessor, MsgProcessorIn, MsgProcessorOut}
 
 final class BusinessLogic[EA, F[_]](
