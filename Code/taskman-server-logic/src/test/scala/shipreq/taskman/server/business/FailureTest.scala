@@ -17,14 +17,14 @@ class FailureTest extends Specification with NoTimeConversions {
 
   val genericError = Error("NO!")
   val deterministicError = Error("ALWAYS NO!").tag(Deterministic)
-  val ctx_det = FailureCtx(md_1, deterministicError, timeNow)
-  val ctx_nd = FailureCtx(md_1, genericError, timeNow)
+  val ctx_det = FailureCtx(node1, worker2, md_1, deterministicError, timeNow)
+  val ctx_nd = FailureCtx(node1, worker2, md_1, genericError, timeNow)
 
   def reactWith(f: FailedJobReaction) =
     be_==(Some(f)) ^^ {(_:Option[FailureResponse]).map(_.reaction)}
 
   def retryIn(p: Period)(implicit c: FailureCtx) =
-    reactWith(UpdateMsgAbort(c.m, p))
+    reactWith(UpdateMsgAbort(c.n, c.w, c.m, p))
 
   def notifySupport(implicit c: FailureCtx): Matcher[Option[FailureResponse]] =
     beSome(contain(beAnInstanceOf[NotifySupportWorkerFailed]).exactly(1)) ^^ {(_:Option[FailureResponse]).map(_.additionalOps)}
@@ -33,7 +33,7 @@ class FailureTest extends Specification with NoTimeConversions {
     implicit val c = ctx_det
 
     "abort when error is deterministic" in {
-      abortDeterministicErrors(c) must reactWith(UpdateMsgRetry(c.m))
+      abortDeterministicErrors(c) must reactWith(UpdateMsgRetry(c.n, c.w, c.m))
     }
 
     "notify support when error is deterministic" in {

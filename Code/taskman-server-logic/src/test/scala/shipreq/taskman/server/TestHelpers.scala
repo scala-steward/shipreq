@@ -35,6 +35,8 @@ object TestHelpers {
   val timePast = timeNow minusMinutes 10
 
   val msg_rereg = ReRegistrationAttempted("@".tag)
+  val node1 = NodeId(1)
+  val worker2 = WorkerId(2)
   val mh_1 = MsgHeader(MsgId(1), Priority(6), timeNow)
   val md_1 = MsgDetail(mh_1, msg_rereg, 0)
   val mh_2 = MsgHeader(MsgId(2), Priority(5), timePast)
@@ -75,13 +77,13 @@ object TestHelpers {
   val clockReal = IO(DateTime.now)
 
   val fpRetry: FailurePolicy =
-    f => FailureResponse(UpdateMsgRetry(f.m), Nil)
+    f => FailureResponse(UpdateMsgRetry(f.n, f.w, f.m), Nil)
 
   val fpRetrySupport: FailurePolicy =
-    f => FailureResponse(UpdateMsgRetry(f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
+    f => FailureResponse(UpdateMsgRetry(f.n, f.w, f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
 
   val fpAbort: FailurePolicy =
-    f => FailureResponse(UpdateMsgAbort(f.m, Period days 1), Nil)
+    f => FailureResponse(UpdateMsgAbort(f.n, f.w, f.m, Period days 1), Nil)
 
   def mpNop[F[_]]: MsgProcessor[F] = _ sync IOE.nop
   def mpCrash[F[_]]: MsgProcessor[F] = _ => ???

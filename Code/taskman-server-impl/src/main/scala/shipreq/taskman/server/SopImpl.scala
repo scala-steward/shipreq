@@ -45,11 +45,11 @@ object SopImpl {
     def reassignWorker(n: NodeId, w: WorkerId, m: MsgId): Boolean =
       reassignWorkerQ.firstOption(n, w, m) getOrElse false
 
-    def failAndRetry(msg: MsgId, delay: Period): Unit =
-      failAndRetryQ.execute(delay, msg)
+    def failAndRetry(n: NodeId, w: WorkerId, m: MsgId, delay: Period): Unit =
+      failAndRetryQ.first(delay, n, w, m)
     
-    def archiveMsg(msg: MsgId, status: ArchiveIntent): Unit =
-      archiveMsgQ.execute(msg, status)
+    def archiveMsg(n: NodeId, w: WorkerId, m: MsgId, status: ArchiveIntent): Unit =
+      archiveMsgQ.first(n, w, m, status)
 
     def getNextNodeId: NodeId =
       getNextNodeIdQ.first()
@@ -88,14 +88,14 @@ class SopImpl[EA](db: Database, emails: Emails, bopReifier: BopReifier) extends 
     case ReAssignWorker(n, w, m) =>
       ioD(_.reassignWorker(n, w, m))
 
-    case UpdateMsgAbort(m, delay) =>
-      ioD(_.failAndRetry(m, delay))
+    case UpdateMsgAbort(n, w, m, delay) =>
+      ioD(_.failAndRetry(n, w, m, delay))
 
-    case UpdateMsgSuccess(m) =>
-      ioD(_.archiveMsg(m, Succeeded))
+    case UpdateMsgSuccess(n, w, m) =>
+      ioD(_.archiveMsg(n, w, m, Succeeded))
 
-    case UpdateMsgRetry(m) =>
-      ioD(_.archiveMsg(m, FailAndAbort))
+    case UpdateMsgRetry(n, w, m) =>
+      ioD(_.archiveMsg(n, w, m, FailAndAbort))
 
     case CfgGet(k) =>
       ioD(_ cfgGet k)

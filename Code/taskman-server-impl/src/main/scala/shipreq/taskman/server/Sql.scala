@@ -102,6 +102,8 @@ object Sql {
          limit ? -- for update
     """.sql
 
+  private[this] def nwi = "(node = ? and worker = ? and id = ?)"
+
   private[this] def getMsgsAssignNode_upd(ctids: String) = s"""
        update msgq
        set node = ?, worker = NULL, updated_at = clock_timestamp()
@@ -132,15 +134,14 @@ object Sql {
       returning type, data, failure_count
     """.sql)
 
-  val reassignWorkerQ = query[(NodeId, WorkerId, MsgId), Boolean]("""
+  val reassignWorkerQ = query[(NodeId, WorkerId, MsgId), Boolean](s"""
       update msgq
       set updated_at = clock_timestamp()
-      where node = ? and worker = ? and id = ?
+      where $nwi
       returning true
     """.sql)
 
-  // TODO Doesn't confirm worker. and node = ? and worker = ?  , NodeId, WorkerId
-  val failAndRetryQ = update[(Period, MsgId)]("""
+  val failAndRetryQ = query[(Period, NodeId, WorkerId, MsgId), Boolean](s"""
       update msgq
       set
         node = null,
@@ -148,15 +149,16 @@ object Sql {
         failure_count = failure_count + 1,
         updated_at = clock_timestamp(),
         effective_from = clock_timestamp() + ?
-      where id = ?
+      where $nwi
+      returning true
     """.sql)
 
-  // TODO Doesn't confirm worker. and node = ? and worker = ?  , NodeId, WorkerId
-  val archiveMsgQ = update[(MsgId, ArchiveIntent)]("""
+  val archiveMsgQ = query[(NodeId, WorkerId, MsgId, ArchiveIntent), Boolean](s"""
       with tmp as (
-        delete from msgq where id=?
+        delete from msgq where $nwi
         returning id, type, data, ?, failure_count+?, created_at, clock_timestamp()
       )
       insert into msg_history select * from tmp
+      returning true
     """.sql)
 }

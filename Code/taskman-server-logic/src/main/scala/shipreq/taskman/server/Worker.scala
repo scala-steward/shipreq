@@ -39,7 +39,7 @@ object Worker {
 
   type FailurePolicy = FailureCtx => FailureResponse
 
-  case class FailureCtx(m: MsgDetail, err: Error, now: DateTime)
+  case class FailureCtx(n: NodeId, w: WorkerId, m: MsgDetail, err: Error, now: DateTime)
 
   /**
    * What to do when a job fails.
@@ -133,7 +133,7 @@ final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
   }
 
   private[this] def taskEnd(m: MsgDetail): ErrorOr[Unit] => IO[WorkResult] = {
-    case \/-(_) => UpdateMsgSuccess(m).toIO >> Completed(m).toIO
+    case \/-(_) => UpdateMsgSuccess(node, worker, m).toIO >> Completed(m).toIO
     case -\/(e) => handleTaskFailure(m, e)
   }
 
@@ -141,7 +141,7 @@ final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
     clock >>= handleTaskFailure2(m, e)
 
   private[this] def handleTaskFailure2(m: MsgDetail, e: Error)(now: DateTime): IO[WorkResult] = {
-    val f = failurePolicy(FailureCtx(m, e, now))
+    val f = failurePolicy(FailureCtx(node, worker, m, e, now))
     val addOps: IO[Unit] = f.additionalOps.traverse_(sopToIo)
     f.reaction.toIO >> addOps >> WorkerFailed(m, e, f.reaction).toIO
   }
