@@ -1,12 +1,10 @@
 package shipreq.taskman.server
 
 import com.squareup.okhttp.OkHttpClient
-import java.util.concurrent.{Callable, Executors, ExecutorService, ThreadFactory, TimeUnit}
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ExecutorService, TimeUnit}
 import java.util.Properties
 import org.joda.time.{DateTime, Period}
 import scala.slick.session.Database
-import scalaz.syntax.bind._
 import scalaz.effect.IO
 import shipreq.base.db.{DatabaseConnection, DbTemplate}
 import shipreq.base.util.ExternalValueReader._
@@ -24,25 +22,8 @@ import shipreq.taskman.server.business._
 
 class Db(props: StringBasedValueReader) extends DbTemplate {
   import props._
-
   override protected def newConnection = DatabaseConnection.establish_!()
-
   def slick = _slick
-}
-
-//==========================================================================================
-
-object TaskmanLogging {
-  import shipreq.base.util.log.MDC
-  import org.slf4j.{MDC => SMDC}
-
-  val whoKey = "who"
-
-  def mdc(who: String) = MDC(whoKey -> who)
-
-  type MdcValues = String
-  val readMdc: IO[MdcValues] = IO(SMDC get whoKey)
-  def writeMdc(who: MdcValues): IO[Unit] = IO(SMDC.put(whoKey, who))
 }
 
 //==========================================================================================
@@ -64,6 +45,17 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
   private def mkPropMap(kvs: (String, Any)*)(implicit s: PropScope): List[(String, Any)] =
     kvs.toList.map(_.map1(s.run))
 
+  def logContent(): Unit = {
+    log info "Properties:"
+    val ps = propmap.sortBy(_._1)
+    val maxKeyLen = ps.map(_._1.length).max
+    for ((k,v) <- ps)
+      log.info.fmt(s"    %-${maxKeyLen}s = %s", k, v)
+  }
+
+  def propmap = mail.propmap ++ mailchimp.propmap ++ work.propmap
+
+  // --------------------------------------------------------------------------
   object mail extends Email.EnvelopeProps[EA] {
     private implicit def scope: PropScope = scopeByNS("taskman.mail")
     private[this] implicit def rEA = retrieverS.map(s => addrParser(s.tag[IsEmailAddr]))
@@ -77,6 +69,7 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
       "public.from" -> publicFrom, "support" -> supportEnv, "concurrency.max" -> concurrencyMax)
   }
 
+  // --------------------------------------------------------------------------
   object mailchimp extends MailChimpImpl.Props {
     private implicit def scope: PropScope = scopeByNS("mailchimp")
     private[this] implicit def rEA = retrieverS.map(s => addrParser(s.tag[IsEmailAddr]))
@@ -89,6 +82,7 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
     private[TaskmanProps] def propmap = mkPropMap("dc" -> dc, "key" -> key, "masterList" -> masterList)
   }
 
+  // --------------------------------------------------------------------------
   object work {
     private implicit def scope: PropScope = scopeByNS("taskman.work")
 
@@ -103,60 +97,11 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
     private[TaskmanProps] def propmap = mkPropMap(
       "queueSize" -> queueSize, "trustPeriod" -> trustPeriod, "poll.every" -> pollEvery, "poll.min" -> pollGap)
   }
-
-  def propmap = mail.propmap ++ mailchimp.propmap ++ work.propmap
-
-  def logContent(): Unit = {
-    log info "Properties:"
-    val ps = propmap.sortBy(_._1)
-    val maxKeyLen = ps.map(_._1.length).max
-    for ((k,v) <- ps)
-      log.info.fmt(s"    %-${maxKeyLen}s = %s", k, v)
-  }
-
-}
-
-//==========================================================================================
-
-object TaskmanAsync {
-  import org.slf4j.{MDC => SMDC}
-
-  type Scheduler = Worker.AsyncScheduler[java.util.concurrent.Future]
-
-  class CustomThreadFactory(name: String) extends ThreadFactory {
-    val count = new AtomicInteger(0)
-    val back = Executors.defaultThreadFactory
-    override def newThread(r: Runnable): Thread = {
-      val r2 = new Runnable {
-        override def run(): Unit = {
-          SMDC.clear()
-          r.run()
-        }
-      }
-      val t = back.newThread(r2)
-      t setName s"async-$name-${count.incrementAndGet}"
-      t
-    }
-  }
-
-  final case class CallableIO[A](io: IO[A]) extends Callable[A] {
-    def call() = io.unsafePerformIO()
-  }
-
-  def scheduler(es: ExecutorService): Scheduler =
-    new Scheduler {
-      def apply[A](io: IO[A]) =
-        TaskmanLogging.readMdc >>= { who =>
-          val fio = TaskmanLogging.writeMdc(s"$who*") >> io
-          IO(es submit CallableIO(fio))
-        }
-    }
 }
 
 //==========================================================================================
 
 object TaskmanCtx {
-
   class EmailTokenValues(evr: StringBasedValueReader) extends Email.TokenValues {
     private implicit def scope = GlobalScope
     import evr._
@@ -169,18 +114,12 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   import TaskmanCtx._
 
   val props = new TaskmanProps(evr)
-
-  private[TaskmanCtx] object async {
-    import TaskmanAsync._
-
-    val emailThreadPool = Executors.newFixedThreadPool(props.mail.concurrencyMax, new CustomThreadFactory("email"))
-    val email = scheduler(emailThreadPool)
-
-    def each(f: ExecutorService => Unit): Unit =
-      f(emailThreadPool)
-  }
-
   def cfgFromApiReader = SopImpl.cfgValueReader(db)
+
+  private object async {
+    def each(f: ExecutorService => Unit): Unit = f(emailS)
+    val (emailS, email) = Async.newPool("email", props.mail.concurrencyMax)
+  }
 
   val email     = new EmailImpl(EmailImpl.loadSession(mailProps))
   val emails    = new Emails(EmailImpl.AddressParser, props.mail, new EmailTokenValues(cfgFromApiReader))
