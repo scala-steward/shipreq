@@ -33,6 +33,7 @@ object ShipReq extends Build {
     protected def depScope(s: String)(ms: MS): MS = ms % s
     protected def depScope(c: Configuration)(ms: MS): MS = depScope(c.name)(ms)
     protected def testScope = depScope("test") _
+    protected def providedScope = depScope("provided") _
 
     def ideSettings = IdeSettings(this)
 
@@ -67,9 +68,8 @@ object ShipReq extends Build {
 
       override def deps =
         SLF4J.api ++ Scalaz.core ++
-        Scalaz.effect % "provided" ++
-        jodaTime % "provided" ++
-        specs2 % "test"
+        providedScope(Scalaz.effect ++ jodaTime) ++
+        testScope(specs2 ++ Scalaz.scalacheck)
 
       override def project = typicalProject
     }
@@ -90,7 +90,7 @@ object ShipReq extends Build {
       val dir = "base-test"
 
       override def deps =
-        depScope("provided")(scalaTest ++ specs2)
+        providedScope(scalaTest ++ specs2)
 
       override def project = typicalProject
         .dependsOn(baseUtil)

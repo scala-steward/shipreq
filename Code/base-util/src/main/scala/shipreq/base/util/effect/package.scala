@@ -1,7 +1,9 @@
 package shipreq.base.util
 
+import scalaz.{\/, Catchable, Monad}
 import scalaz.syntax.bind._
 import scalaz.effect.IO
+import ErrorOr.Implicits._
 
 package object effect {
 
@@ -31,6 +33,14 @@ package object effect {
     @inline def error[A](m: String, e: Throwable): IOE[A] = error(Error(m, e))
 
     val nop = apply(())
+    
+    implicit val ioeInstance: Monad[IOE] = ErrorOr.Scalaz.monadInstance[IO]
+
+    implicit val ioeCatchable: Catchable[IOE] =
+      new Catchable[IOE] {
+        override def attempt[A](f: IOE[A]): IOE[Throwable \/ A] = f.except(IOE error _) >-> \/.right
+        override def fail[A](e: Throwable): IOE[A]              = IOE error e
+      }
   }
 
 }

@@ -1,21 +1,33 @@
 package shipreq.base.util
 
+import java.util.concurrent.atomic.AtomicBoolean
 import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
 import org.scalacheck.{Gen, Arbitrary}
-import scalaz.std.function.function0Instance
+import scalaz.Equal
+import scalaz.effect.IO
+import scalaz.scalacheck.ScalazProperties
+import scalaz.std.list._
 import ErrorOr.Implicits._
 import Arbitrary._
-import scalaz.effect.IO
-import java.util.concurrent.atomic.AtomicBoolean
 
 class ErrorOrTest extends Specification with ScalaCheck {
 
   val e = Error apply "!"
   val eo = ErrorOr error "!"
 
+  type LE[A] = List[ErrorOr[A]]
+  implicit def EQ[T] = Equal.equalA[ErrorOr[T]]
+  implicit val LEM = ErrorOr.Scalaz.monadInstance[List]
+
   implicit def arbErrorOr[T](implicit t: Arbitrary[T]) = Arbitrary[ErrorOr[T]] {
     Gen.oneOf(t.arbitrary map ErrorOr.apply, Gen.const(eo))
+  }
+  implicit def ALE[T](implicit t: Arbitrary[ErrorOr[T]]): Arbitrary[LE[T]] = Arbitrary(Gen.listOf(t.arbitrary))
+  implicit def AII: Arbitrary[Int => Int] = Arbitrary(Gen.oneOf((_: Int) + 100, (_: Int) << 1))
+
+  "Scalaz typeclasses" >> {
+    "Monad laws" ! check(ScalazProperties.monad.laws[LE])
   }
 
   "MonadExt" >> {
@@ -67,5 +79,4 @@ class ErrorOrTest extends Specification with ScalaCheck {
       Error.choose(a, e).swap.toOption == Some(a.swap.toOption getOrElse e)
     }
   }
-
 }

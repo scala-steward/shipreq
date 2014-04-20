@@ -1,7 +1,7 @@
 package shipreq.base.util
 
 import scalaz.Scalaz.Id
-import scalaz.{Applicative, -\/, \/-, \&/, Lens, Monad}
+import scalaz.{-\/, \/, \/-, \&/, Applicative, Catchable, Monad, Lens}
 import scalaz.\&/.{Both, That, This}
 
 object ErrorOr {
@@ -100,10 +100,12 @@ object ErrorOr {
     implicit class MonadExt[M[_], A](val mea: M[ErrorOr[A]]) extends AnyVal {
 
       @inline def mapE[B](f: => A => B)(implicit M: Monad[M]): M[ErrorOr[B]] =
-        fmapE(a => M point ErrorOr(f(a)))
+        // fmapE(a => M point ErrorOr(f(a)))
+        M.map(mea)(_ map f)
 
       @inline def emapE[B](f: => A => ErrorOr[B])(implicit M: Monad[M]): M[ErrorOr[B]] =
-        fmapE(a => M point f(a))
+        // fmapE(a => M point f(a))
+        M.map(mea)(_ flatMap f)
 
       @inline def fmapE[B](f: => A => M[ErrorOr[B]])(implicit M: Monad[M]): M[ErrorOr[B]] =
         M.bind(mea) {
@@ -137,6 +139,41 @@ object ErrorOr {
           case \/-(_) => M.point(())
           case -\/(e) => f(e)
         }
+
+      @inline def joinE[B](implicit M: Monad[M], ev: A =:= ErrorOr[B]): M[ErrorOr[B]] =
+        mea emapE ev
+
+      @inline def joinT[B](implicit M: Monad[M], ev: A =:= \/[Throwable, B]): M[ErrorOr[B]] =
+        mea.emapE(ev(_) match {
+          case    -\/(t) => error(t)
+          case r@ \/-(_) => r
+        })
+    }
+  }
+
+  object Scalaz {
+    import Implicits._
+
+    def monadInstance[M[_]](implicit M: Monad[M]): Monad[({type λ[α] = M[ErrorOr[α]]})#λ] = {
+      type ME[a] = M[ErrorOr[a]]
+      new Monad[ME] {
+        override def point[A](a: => A): ME[A] = M.point(ErrorOr(a))
+        override def bind[A, B](m: ME[A])(f: A => ME[B]): ME[B] = m >==> f
+        override def map[A, B](m: ME[A])(f: A => B): ME[B] = m >-> f
+      }
+    }
+
+    def catchableInstance[F[_]](implicit F: Applicative[F]): Catchable[({type λ[α] = F[ErrorOr[α]]})#λ] = {
+      type FE[a] = F[ErrorOr[a]]
+      new Catchable[FE] {
+        def fail[A](e: Throwable): FE[A] = F.point(ErrorOr error e)
+        def attempt[A](f: FE[A]): FE[Throwable \/ A] =
+          try F.map(f) {
+                case    -\/(e) => ErrorOr(-\/(e.throwable))
+                case r@ \/-(_) => ErrorOr(r)
+              }
+          catch { case t: Throwable => F.point(ErrorOr(-\/(t))) }
+      }
     }
   }
 }

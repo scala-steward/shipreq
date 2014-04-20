@@ -35,6 +35,7 @@ object Deps {
     val core       = dd("scalaz-core")
     val concurrent = dd("scalaz-concurrent")
     val effect     = dd("scalaz-effect")
+    val scalacheck = dd("scalaz-scalacheck-binding")
   }
 
   object Json4s extends Group("3.2.8", "org.json4s") {
