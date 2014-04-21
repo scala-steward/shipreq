@@ -93,6 +93,14 @@ object ErrorOr {
       case t: Throwable => Error.choose(tried, Error(t))
     }
 
+  def toError[A](ea: ErrorOr[A])(f: => A => Error): Error =
+    ea match {
+      case -\/(e) => e
+      case \/-(a) => f(a)
+    }
+
+  def toErrorN[A](ea: ErrorOr[A])(f: => A => Error): ErrorOr[Nothing] = toError(ea)(f).toErrorOr[Nothing]
+
   object Implicits {
 
     implicit def ErrorOrAsIdMonad[A](ea: ErrorOr[A]) = new MonadExt[Id, A](ea)
@@ -111,6 +119,12 @@ object ErrorOr {
         M.bind(mea) {
           case    \/-(a) => f(a)
           case e@ -\/(_) => M.point(e)
+        }
+
+      @inline def cmapE[B](f: => A => M[B], e: => Error => M[B])(implicit M: Monad[M]): M[B] =
+        M.bind(mea) {
+          case \/-(a) => f(a)
+          case -\/(r) => e(r)
         }
 
       @inline def >-> [B](f: => A => B)            (implicit M: Monad[M]): M[ErrorOr[B]] = mapE(f)
@@ -133,6 +147,18 @@ object ErrorOr {
 
       @inline def tapE(f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = fmapE(a => M.map(f(a))(_ => ErrorOr(a)))
       @inline def <<| (f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(f)
+
+      @inline def toErrorM(f: => A => Error)(implicit M: Monad[M]): M[Error] =
+        M.map(mea)(ea => toError(ea)(f))
+
+      @inline def toErrorNM(f: => A => Error)(implicit M: Monad[M]): M[ErrorOr[Nothing]] =
+        M.map(mea)(ea => toErrorN(ea)(f))
+
+      @inline def ftoErrorM(f: => A => M[Error])(implicit M: Monad[M]): M[Error] =
+        mea.cmapE(f, M.point(_))
+
+      @inline def ftoErrorNM(f: => A => M[Error])(implicit M: Monad[M]): M[ErrorOr[Nothing]] =
+        M.map(mea.ftoErrorM(f))(_.toErrorOr[Nothing])
 
       @inline def execE(f: Error => M[Unit])(implicit M: Monad[M]): M[Unit] =
         M.bind(mea){
