@@ -37,5 +37,6 @@ object Quotes extends Logger {
 
   val rcache = CacheFn(renderFn)(AppConfig.QuoteCachePolicy)
 
-  def render = rcache.value
+  // def render = rcache.value
+  val render = "*" #> "" // Quotes disabled
 }
