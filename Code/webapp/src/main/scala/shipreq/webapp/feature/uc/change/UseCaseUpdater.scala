@@ -3,11 +3,9 @@ package change
 
 import scala.collection.mutable.ListBuffer
 import scalaz.NonEmptyList
-import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.validation.Validator
 import shipreq.webapp.util.AppliedLens
 import field._
-import text.ParsedTextUpdater
 import Changes._
 import UseCaseFns._
 
@@ -62,7 +60,7 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
     })
 
   def updateTitle(input: String): UcUpdateResult = {
-    implicit val lens = alens(Lenses.ucTitleL, uc)
+    implicit val lens = AppliedLens(Lenses.ucTitleL, uc)
     def validator = Validator.useCaseTitle
     val c = validator.correct(input)
 

@@ -2,7 +2,7 @@ package shipreq.webapp.feature.uc.text
 
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.uc.change._
-import shipreq.webapp.feature.uc.UcParsingCtx
+import shipreq.webapp.feature.uc.{SavedSteps, UcParsingCtx}
 
 trait ParsedText {
   val text: String

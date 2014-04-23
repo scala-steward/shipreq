@@ -11,7 +11,7 @@ import xml.NodeSeq
 import db.UseCaseRev
 import lib.Types._
 import feature.uc._
-import change.{ChangeConstraint, UseCaseUpdater}
+import change.{UcUpdateResult, ChangeConstraint, UseCaseUpdater}
 import field.{StepField, ExceptionCourseField, NormalCourseField}
 import persist.UseCaseSaveCheckpoint
 import step.StepNode
@@ -19,7 +19,6 @@ import step.StepLabels.{MaxStepDepth, MaxStepsPerLevel}
 import Renderer.TitleId
 import test.{CssTestHelpers, TestData, TestHelpers}
 import UseCaseEditor._
-import UseCaseEditorFns._
 import shipreq.webapp.lib.Misc
 import app.AppConfig
 
@@ -47,7 +46,7 @@ class UseCaseEditorTest extends FunSpec with TestHelpers with TestData with CssT
     m
   }
 
-  def loadedState(uc: UseCase) = State(uc, Some(UseCaseSaveCheckpoint(uc, mockRev, EmptySavedSteps, List.empty)), false)
+  def loadedState(uc: UseCase) = State(uc, Some(UseCaseSaveCheckpoint(uc, mockRev, SavedSteps.empty, List.empty)), false)
 
   lazy val State1 = loadedState(MockUc1.sampleUC)
   lazy val State2a = loadedState(MockUc2a.UC)

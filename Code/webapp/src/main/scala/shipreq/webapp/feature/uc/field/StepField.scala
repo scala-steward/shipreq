@@ -5,6 +5,7 @@ import scala.annotation.tailrec
 import shipreq.webapp.db._
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.validation.{Validator, VFailure}
+import shipreq.webapp.util.AppliedLens
 import change._
 import step.StepLabels.{MaxStepsPerLevel, MaxStepDepth}
 import step.{StepTree, StepNodeBuilder, StepNode}
@@ -79,14 +80,14 @@ trait StepFieldLike { this: Field with StepField =>
 
   def updateText(id: LocalStepId, newText: String)(u: UseCaseUpdater): UcUpdateResult =
     ChangeResult.fromValidation(Validator.stepFieldText.correctAndValidate(newText))(t => {
-      implicit val lens = alens(ucStepTextInstL, (u.uc, (this, id)))
+      implicit val lens = AppliedLens(ucStepTextInstL, (u.uc, (this, id)))
       val updater = new StepTextUpdater(this, id)
       val cr = updater.updateCorrected(lens.get, t)(u.ctx)
       u.update(cr)
     })
 
   def addTailStep(u: UseCaseUpdater): UcUpdateResult = {
-    implicit val lens = alens(ucStepFieldL, (u.uc, this))
+    implicit val lens = AppliedLens(ucStepFieldL, (u.uc, this))
     val curNodes = lens.get.tree.nodes
     val labelIndex = sli.startingLabelIndex(0) + curNodes.size
     if (labelIndex > MaxStepsPerLevel)
@@ -109,7 +110,7 @@ trait StepFieldLike { this: Field with StepField =>
     )
 
   def removeStep(id: LocalStepId)(u: UseCaseUpdater): UcUpdateResult = {
-    implicit val lens = alens(ucStepFieldL, (u.uc, this))
+    implicit val lens = AppliedLens(ucStepFieldL, (u.uc, this))
     val sfv = lens.get
     if (prohibitRemoval_?(sfv, id)) NoChange
     else
@@ -147,7 +148,7 @@ trait StepFieldLike { this: Field with StepField =>
     newFn: (StepFieldValue, List[StepNode], StepNode) => Changed[StepFieldValue, Change]
     ): UcUpdateResult = {
 
-    implicit val lens = alens(ucStepFieldL, (u.uc, this))
+    implicit val lens = AppliedLens(ucStepFieldL, (u.uc, this))
     val sfv = lens.get
     updateFn(sfv) match {
       case (newNodes, Some(tgtNode: StepNode)) =>

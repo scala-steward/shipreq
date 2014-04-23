@@ -2,7 +2,7 @@ package shipreq.webapp.feature.uc
 
 import org.scalatest.FunSuite
 import scalaz.syntax.equal._
-import shipreq.webapp.lib.Types.{@@, Validated, StepAndLabelBiMap}
+import shipreq.webapp.lib.Types.{@@, Validated}
 import shipreq.webapp.test.TestData
 import change.UseCaseUpdater
 import change.Changes.StepAdded

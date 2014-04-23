@@ -4,7 +4,7 @@ package feature.uc.persist
 import org.scalatest.FunSpec
 import org.mockito.Mockito._
 import lib.Types._
-import feature.uc.UcParsingCtx
+import shipreq.webapp.feature.uc.{SavedSteps, StepAndLabelBiMap, UcParsingCtx}
 import feature.uc.field.TextField
 import feature.uc.text.FreeText
 import feature.uc.text.FreeTextTerms._
@@ -36,7 +36,7 @@ class TextFieldPersistenceTest extends FunSpec with TestHelpers {
     val V1 = ucFieldText(TF1.rec, TR1, "Jord")
     val V2 = ucFieldText(TF2.rec, TR2, "puls")
     val LoadCtx = FieldLoadCtx(UCH, List(V1, V2))
-    def load(f: TextField, ctx: FieldLoadCtx) = f.load(ctx).phase2(EmptySavedSteps, UcParsingCtx.Empty)
+    def load(f: TextField, ctx: FieldLoadCtx) = f.load(ctx).phase2(SavedSteps.empty, UcParsingCtx.Empty)
     def loadV(f: TextField, ctx: FieldLoadCtx): FreeText = load(f, ctx)._1
     def loadSD(f: TextField, ctx: FieldLoadCtx) = load(f, ctx)._2
 
@@ -69,7 +69,7 @@ class TextFieldPersistenceTest extends FunSpec with TestHelpers {
     implicit def ss = StepState1
     val ucId = 123L.tag[IsUseCaseIdentId]
 
-    def saver(v: V) = TF1.saver(v, EmptyStepAndLabelBiMap)
+    def saver(v: V) = TF1.saver(v, StepAndLabelBiMap.empty)
 
     describe("record_required_?") {
       it("should not require a record when no text") {
@@ -107,7 +107,7 @@ class TextFieldPersistenceTest extends FunSpec with TestHelpers {
         dao
       }
 
-      implicit val iss = EmptySavedSteps
+      implicit val iss = SavedSteps.empty
 
       it("should create a text + text_rev row for first time") {
         val dao = mockDao

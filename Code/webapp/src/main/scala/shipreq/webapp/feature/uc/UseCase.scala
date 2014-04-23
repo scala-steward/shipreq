@@ -21,7 +21,7 @@ case class UcParsingCtx(ucn: UseCaseNumber, title: String, stepsAndLabels: StepA
   def update(uc: UseCase): UcParsingCtx = UcParsingCtx(uc, rels)
 }
 object UcParsingCtx {
-  val Empty: UcParsingCtx = new UcParsingCtx((0:Short).tag[IsUseCaseNumber], "", EmptyStepAndLabelBiMap, UseCaseRelations.Empty) {
+  val Empty: UcParsingCtx = new UcParsingCtx((0:Short).tag[IsUseCaseNumber], "", StepAndLabelBiMap.empty, UseCaseRelations.Empty) {
     override def toString = "UcParsingCtx.Empty"
   }
 

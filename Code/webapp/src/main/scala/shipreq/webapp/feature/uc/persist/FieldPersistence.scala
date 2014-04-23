@@ -1,7 +1,7 @@
 package shipreq.webapp.feature.uc.persist
 
 import shipreq.webapp.db.{UcFieldTextWithFK, UseCaseHeader, DaoT}
-import shipreq.webapp.feature.uc.UcParsingCtx
+import shipreq.webapp.feature.uc.{SavedSteps, StepAndLabelBiMap, UcParsingCtx}
 import shipreq.webapp.feature.uc.field.Field
 import shipreq.webapp.feature.uc.step.StepTree
 import shipreq.webapp.lib.Types._

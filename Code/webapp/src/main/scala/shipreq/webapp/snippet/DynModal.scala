@@ -4,7 +4,7 @@ import net.liftweb.http.SHtml
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.{ValidationResult, Validator}
 import shipreq.webapp.lib.StaticSnippetHelpers
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt

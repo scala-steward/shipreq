@@ -10,7 +10,7 @@ import db.UseCaseSummary
 import feature.uc.change._
 import lib.Misc
 import lib.Types._
-import feature.uc.{CachedUseCaseRelations, UcParsingCtx}
+import shipreq.webapp.feature.uc.{SavedSteps, StepAndLabelBiMap, CachedUseCaseRelations, UcParsingCtx}
 import shipreq.base.util.BiMap
 import test.{TestHelpers2, TestHelpers}
 import Changes._
@@ -794,8 +794,8 @@ abstract class TextProps[T <: ParsedText](T: Tester[T]) {
 
   lazy val textAfterRefsInvalidated: Gen[State] =
     freshlyEnteredText.flatMap(s => {
-      implicit val ss = EmptySavedSteps
-      implicit val ctx = s.ctx.copy(stepsAndLabels = EmptyStepAndLabelBiMap)
+      implicit val ss = SavedSteps.empty
+      implicit val ctx = s.ctx.copy(stepsAndLabels = StepAndLabelBiMap.empty)
       State(T.mapTerms(s.t, invalidateTerm), ctx, ss)
     })
 

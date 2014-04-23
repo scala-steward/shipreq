@@ -11,8 +11,9 @@ import scalaz.Memo
 import db.{UseCaseHeader, FieldListRec}
 import lib.Misc._
 import lib.Types._
+import feature.validation.Validator
 import feature.uc._
-import feature.uc.change.{UseCaseUpdater, NoChange}
+import feature.uc.change.{UcUpdateResult, UseCaseUpdater, NoChange}
 import feature.uc.field._
 import feature.uc.step._
 import text.{StepText, FreeText}
@@ -21,7 +22,6 @@ import StepLabels._
 import text.ParsingConfig._
 import TreeOps._
 import UseCaseFns.generateStepAndLabelBiMap
-import feature.validation.Validator
 
 object DataGenerators extends Logger {
   import TestHelpers._

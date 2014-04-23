@@ -2,6 +2,7 @@ package shipreq.webapp.feature.uc.text
 
 import net.liftweb.common.Logger
 import shipreq.webapp.lib.Types._
+import shipreq.webapp.feature.uc.{StepAndLabelBiMap, SavedSteps}
 import ParsingConfig._
 
 object ParsingUtils extends Logger {

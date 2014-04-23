@@ -13,7 +13,7 @@ import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import JsCmds.Noop
 
-import feature.uc.change.UseCaseUpdater
+import shipreq.webapp.feature.uc.change.{UcUpdateResult, UseCaseUpdater}
 import feature.uc.field._
 import feature.uc.step.{StepTree, StepNode, TreeLike}
 import lib.Types._

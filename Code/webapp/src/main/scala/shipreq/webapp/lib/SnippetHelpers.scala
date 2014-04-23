@@ -11,7 +11,7 @@ import scala.slick.session.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
-import shipreq.webapp.feature.validation.VFailure
+import shipreq.webapp.feature.validation.{ValidationResultU, VFailure}
 import shipreq.webapp.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
 import shipreq.webapp.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.util.JsExt._

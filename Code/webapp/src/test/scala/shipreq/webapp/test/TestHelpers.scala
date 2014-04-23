@@ -42,7 +42,7 @@ import Lenses._
 import LensFns._
 import NodeUtils._
 import TreeOps._
-import change.Changes.{TextChanged, ExistingStepLabelsChanged}
+import change.Changes.ExistingStepLabelsChanged
 
 case class FixedUser(ud: Option[UserDescriptor]) extends SecurityProvider {
   override def loggedInUser = ud
@@ -359,7 +359,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   }
 
   def assertUseCasesMatchIgnoringStepsAndLabels(actual: UseCase, expected: UseCase) {
-    actual.copy(stepsAndLabels = EmptyStepAndLabelBiMap) should be(expected.copy(stepsAndLabels = EmptyStepAndLabelBiMap))
+    actual.copy(stepsAndLabels = StepAndLabelBiMap.empty) should be(expected.copy(stepsAndLabels = StepAndLabelBiMap.empty))
   }
 
   // TODO deprecate assertUseCasesMatch and rely on userView?
@@ -501,7 +501,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   implicit class StepFieldValueExt(val v: StepFieldValue) {
     def norm = normaliseStepFieldValue(v)
 
-    def toTextTree(field: StepField, savedSteps: SavedSteps = EmptySavedSteps): List[StepNodeWithText] =
+    def toTextTree(field: StepField, savedSteps: SavedSteps = SavedSteps.empty): List[StepNodeWithText] =
       convertNodeTree[StepNode, StepNodeWithText](v.tree, {
         case (n, lvl, lbl, children) =>
           val txt = v.textmap.get(n.id).map(_.normalisedText(savedSteps)).getOrElse("".tag[IsNormalised])
@@ -515,13 +515,13 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   implicit class TextTreeExt(val x: List[StepNodeWithText]) {
     def toStepTree = StepTree(x.map(_.toStepNode))
 
-    def toTextmap(savedSteps: SavedSteps = EmptySavedSteps, sl: StepAndLabelBiMap = EmptyStepAndLabelBiMap) =
+    def toTextmap(savedSteps: SavedSteps = SavedSteps.empty, sl: StepAndLabelBiMap = StepAndLabelBiMap.empty) =
       TreeLike(x).mapRecursive[(LocalStepId, StepText)](n => {
         val t = StepText.load(n.text.tag[IsNormalised])(savedSteps, UcParsingCtx.Empty.copy(stepsAndLabels = sl))
         (n.id, t)
       }).toMap
 
-    def toStepFieldValue(f: StepField, savedSteps: SavedSteps = EmptySavedSteps, stepsAndLabels: StepAndLabelBiMap = EmptyStepAndLabelBiMap) =
+    def toStepFieldValue(f: StepField, savedSteps: SavedSteps = SavedSteps.empty, stepsAndLabels: StepAndLabelBiMap = StepAndLabelBiMap.empty) =
       StepFieldValue(f, toStepTree, toTextmap(savedSteps, stepsAndLabels))
   }
 

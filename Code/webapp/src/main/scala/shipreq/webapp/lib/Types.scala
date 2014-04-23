@@ -1,18 +1,14 @@
 package shipreq.webapp.lib
 
-import shipreq.base.util.{BiMap, TypeTags}
-import shipreq.webapp.db._
-import shipreq.webapp.feature.uc.change.{Change, ChangeResultF}
-import shipreq.webapp.feature.uc.field.Field
-import shipreq.webapp.feature.uc.UseCase
-import shipreq.webapp.feature.uc.persist.UseCaseSaveCheckpoint
-import shipreq.webapp.feature.validation.VFailure
-import shipreq.webapp.feature.{ExternalId, Inspection}
-import shipreq.webapp.util.AppliedLens
-import java.lang.{Long => JJLong, Short => JJShort}
 import net.liftweb.common.Box
 import net.liftweb.http.js.{JsCmd, JsCmds}
-import scalaz.{Validation, LensFamily, Monoid, Name, Value}
+import scalaz.Monoid
+import shipreq.base.util.TypeTags
+import shipreq.webapp.db._
+import shipreq.webapp.feature.uc.UseCase
+import shipreq.webapp.feature.uc.field.FieldValues
+import shipreq.webapp.feature.uc.persist.UseCaseSaveCheckpoint
+import shipreq.webapp.feature.{ExternalId, Inspection}
 
 /**
  * @since 30/05/2013
@@ -175,28 +171,6 @@ object Types extends TypeTags {
     implicit def aei_UC(id: UseCaseIdentId): UseCaseIdentEI = ExternalId.UseCase(id)
     implicit def aei_TR(id: TextRevId)     : TextRevEI      = ExternalId.TextRev(id)
   }
-
-  // ===================================================================================================================
-  // Typedefs
-
-  type FieldKeyRecData = Option[String]
-  type FieldValueRecData = Option[String]
-
-  type ValidationResultU[+R]          = Validation[VFailure, R]
-  type ValidationResult[+R <: AnyRef] = Validation[VFailure, R @@ Validated]
-
-  type SavedSteps = BiMap[TextIdentId, LocalStepId]
-  def EmptySavedSteps: SavedSteps = BiMap.empty
-
-  type StepAndLabelBiMap = Name[BiMap[LocalStepId, StepLabel]]
-  final val EmptyStepAndLabelBiMap: StepAndLabelBiMap = Value(BiMap.empty)
-
-  type FieldValues = Map[Field, Field#Value]
-
-  type UcUpdateResult = ChangeResultF[UseCase, Change]
-
-  // Due to http://youtrack.jetbrains.com/issue/SCL-5900
-  @inline final def alens[A1, A2, B](l: LensFamily[A1, A2, B, B], key: A1) = AppliedLens(l, key)
 
   // ===================================================================================================================
   // Type class instances

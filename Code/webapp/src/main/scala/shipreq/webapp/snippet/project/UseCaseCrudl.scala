@@ -7,7 +7,7 @@ import net.liftweb.util.Helpers._
 
 import app.{RequestVars, AppSiteMap}
 import db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
-import feature.validation.Validator
+import shipreq.webapp.feature.validation.{ValidationResultU, Validator}
 import lib.{Locks, Misc, SingleOpStatefulSnippet}
 import lib.Types._
 import util.NonEmptyTemplate

@@ -1,8 +1,7 @@
 package shipreq.webapp.feature.uc.change
 
 import scalaz.NonEmptyList
-import shipreq.webapp.feature.validation.VFailure
-import shipreq.webapp.lib.Types.ValidationResultU
+import shipreq.webapp.feature.validation.{ValidationResultU, VFailure}
 
 object ChangeResult {
 

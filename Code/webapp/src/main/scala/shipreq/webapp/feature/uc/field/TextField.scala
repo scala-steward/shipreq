@@ -1,13 +1,12 @@
-package shipreq.webapp
-package feature.uc
-package field
+package shipreq.webapp.feature.uc.field
 
-import db.{FieldKeyType, FieldKeyRec}
-import lib.Types._
-import change.{ChangeResult, UseCaseUpdater}
-import change.Changes.TextChanged
-import feature.validation.Validator
-import text.{FreeTextUpdater, FreeText}
+import shipreq.webapp.db.{FieldKeyType, FieldKeyRec}
+import shipreq.webapp.feature.uc.Lenses
+import shipreq.webapp.feature.uc.change.Changes.TextChanged
+import shipreq.webapp.feature.uc.change.{UcUpdateResult, ChangeResult, UseCaseUpdater}
+import shipreq.webapp.feature.uc.text.{FreeTextUpdater, FreeText}
+import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.util.AppliedLens
 
 // =====================================================================================================================
 
@@ -30,7 +29,7 @@ trait TextFieldLike { this: Field with TextField =>
 
   def updateText(newText: String)(u: UseCaseUpdater): UcUpdateResult =
     ChangeResult.fromValidation(Validator.textFieldText.correctAndValidate(newText))(t => {
-      implicit val lens = alens(Lenses.ucTextFieldL, (u.uc, this))
+      implicit val lens = AppliedLens(Lenses.ucTextFieldL, (u.uc, this))
       val cr = changeResponder.updateCorrected(lens.get, t)(u.ctx)
       u.update(cr)
     })

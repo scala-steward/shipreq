@@ -69,7 +69,7 @@ class StepFieldPersistenceTest extends FunSpec with TestHelpers with TestData {
       val savedSteps: SavedSteps = BiMap.swapped(r.savedSteps)
       val stepAndLabels = r.stepTree
                           .map(t => generateStepAndLabelBiMap(generateStepAndLabelMap(ucn, f, t) :: Nil))
-                          .getOrElse(EmptyStepAndLabelBiMap)
+                          .getOrElse(StepAndLabelBiMap.empty)
       r.phase2(savedSteps, UcParsingCtx(ucn, uch.title, stepAndLabels, UseCaseRelations.Empty))
     }
 

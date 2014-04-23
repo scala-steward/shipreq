@@ -1,11 +1,12 @@
 package shipreq.webapp.feature.uc.field
 
 import shipreq.webapp.lib.Types._
-import shipreq.webapp.feature.uc.{UcParsingCtx, Lenses}
+import shipreq.webapp.feature.uc.{SavedSteps, StepAndLabelBiMap, UcParsingCtx, Lenses}
 import shipreq.webapp.feature.uc.change._
 import shipreq.webapp.feature.uc.step.StepTree
 import shipreq.webapp.feature.uc.step.TreeOps._
 import shipreq.webapp.feature.uc.text.{StepTextUpdater, StepText}
+import shipreq.webapp.util.AppliedLens
 import Changes._
 
 object StepFieldValue {
@@ -61,7 +62,7 @@ class StepFieldValueChangeResponder(field: StepField) extends SeqChangeResponder
     def changeRootToTitle(oldTitle: String, newTitle: String) = {
       import NormalCourseFieldConsts.titleToMainClause
       val id = sfv.tree(0).id
-      val lens = alens(Lenses.sfvStepTextInstL, (sfv, id))
+      val lens = AppliedLens(Lenses.sfvStepTextInstL, (sfv, id))
       val step = lens.get
       val curMainClause = step.mainClause.text
       if (curMainClause.isEmpty || curMainClause == titleToMainClause(oldTitle))

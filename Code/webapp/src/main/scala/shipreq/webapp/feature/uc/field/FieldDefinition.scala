@@ -1,8 +1,7 @@
 package shipreq.webapp
 package feature.uc.field
 
-import db.{FieldKeyType, FieldKeyRec}
-import lib.Types.FieldKeyRecData
+import shipreq.webapp.db.{FieldKeyRecData, FieldKeyType, FieldKeyRec}
 
 trait FieldDefinition {
 
