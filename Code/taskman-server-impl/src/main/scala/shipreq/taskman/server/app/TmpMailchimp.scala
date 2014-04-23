@@ -1,6 +1,12 @@
 package shipreq.taskman.server.app
 
-import shipreq.taskman.server.business.MailChimp
+import shipreq.taskman.server.business.MailChimp._
+import shipreq.taskman.server.business.MailChimp.API._
+import shipreq.taskman.api.Types._
+import scalaz.NonEmptyList
+import shipreq.base.util.effect.IOE
+import scalaz.effect.IO
+import shipreq.base.util.ErrorOr.Implicits._
 
 object TmpMailchimp extends MainTemplate {
 
@@ -8,34 +14,16 @@ object TmpMailchimp extends MainTemplate {
     withTaskmanCtx { ctx =>
       ctx.logContent()
       val mi = ctx.mailchimp
-      val io1 = mi.run(MailChimp.API.GetListId(ctx.props.mailchimp.masterList))
-      val io2 = mi.run(MailChimp.API.GetListId("xx"))
-
       log info "Ready...."
-      log info s"1) ${io1.unsafePerformIO()}"
-      log info s"2) ${io2.unsafePerformIO()}"
+
+      val io1 = mi.run(GetListId(ctx.props.mailchimp.masterList))
+      val io2 = (o: Option[ListId]) => IOE(o.get)
+      val io3 = (id: ListId) => IO(log info s"ID: $id")
+      val io4 = (id: ListId) => {
+          val s = Subscription("tmp-mailchimp-app@shipreq.com".tag, "Tmp MailChimp App", true, AccountStatus.Never)
+          mi.run(BatchSubscribe(id, NonEmptyList(s)))
+        }
+      val io = io1 >==> io2 <<| io3 >==> io4
+      io.unsafePerformIO()
     }
-
-  object MailChimpTmp {
-    object MasterList {
-
-      sealed abstract class Field[V](val tag: String)
-      // object EmailAddress extends Field[String]("")
-      object Name extends Field[String]("NAME")
-      object Newsletter extends Field[BoolAsNum]("NEWSLETTER")
-      object AccountStatus extends Field[AccountStatusValue]("ACCT")
-
-      sealed trait BoolAsNum
-      object BoolAsNum {
-        case object Yes extends BoolAsNum
-        case object No extends BoolAsNum
-      }
-
-      sealed trait AccountStatusValue
-      object AccountStatusValue {
-        case object Never extends AccountStatusValue
-        case object Active extends AccountStatusValue
-      }
-    }
-  }
 }

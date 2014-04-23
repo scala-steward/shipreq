@@ -103,7 +103,7 @@ object ErrorOr {
 
   object Implicits {
 
-    implicit def ErrorOrAsIdMonad[A](ea: ErrorOr[A]) = new MonadExt[Id, A](ea)
+    implicit def ErrorOrAsIdMonad[A](ea: Id[ErrorOr[A]]) = new MonadExt[Id, A](ea)
 
     implicit class MonadExt[M[_], A](val mea: M[ErrorOr[A]]) extends AnyVal {
 
@@ -147,6 +147,9 @@ object ErrorOr {
 
       @inline def tapE(f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = fmapE(a => M.map(f(a))(_ => ErrorOr(a)))
       @inline def <<| (f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(f)
+
+      @inline def _tapE(f: M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(_ => f)
+      @inline def |<<| (f: M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = _tapE(f)
 
       @inline def toErrorM(f: => A => Error)(implicit M: Monad[M]): M[Error] =
         M.map(mea)(ea => toError(ea)(f))
@@ -206,7 +209,7 @@ object ErrorOr {
 
 trait ErrorTag
 
-final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.empty) {
+final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.empty, supp: Option[Any] = None) {
   import Error._
 
   def annotate(a: String): Error =
@@ -217,10 +220,19 @@ final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.e
     }, this)
 
   def tag(t: ErrorTag) =
-    Error(reason, tags + t)
+    tagsLens.mod(_ + t, this)
 
   def is(t: ErrorTag): Boolean =
     tags contains t
+
+  def withSupp(s: Any): Error =
+    copy(supp = Some(s))
+
+  def withoutSupp: Error =
+    copy(supp = None)
+
+  def trySupp[A](f: PartialFunction[Any, A]): Option[A] =
+    supp.filter(f.isDefinedAt).map(f.apply)
 
   def throw_!(): Nothing =
     throw throwable
@@ -240,18 +252,18 @@ final case class Error(reason: String \&/ Throwable, tags: Set[ErrorTag] = Set.e
     case Both(_, e) => Some(e)
   }
 
-  def throwable: Throwable = reason match {
-    case This(_)    => ErrorAsThrowable(this)
-    case That(e)    => e
-    case Both(_, e) => ErrorAsThrowable(this)
+  def throwable: Throwable = this match {
+    case Error(That(e), _, None) if tags.isEmpty => e
+    case _                                       => ErrorAsThrowable(this)
   }
 
   def stackTraceStr: String = Error stackTraceStr throwable
 }
 
 object Error {
-  val reasonLens = Lens.lensg[Error, String \&/ Throwable](e => r => Error(r, e.tags)  , _.reason)
-  val tagsLens   = Lens.lensg[Error, Set[ErrorTag]       ](e => t => Error(e.reason, t), _.tags)
+  val reasonLens = Lens.lensg[Error, String \&/ Throwable](e => r => e.copy(reason = r), _.reason)
+  val tagsLens   = Lens.lensg[Error, Set[ErrorTag]       ](e => t => e.copy(tags = t)  , _.tags)
+  val suppLens   = Lens.lensg[Error, Option[Any]         ](e => s => e.copy(supp = s)  , _.supp)
 
   @inline final def apply[A](m: String)              : Error = Error(This(m))
   @inline final def apply[A](e: Throwable)           : Error = Error(That(e))
