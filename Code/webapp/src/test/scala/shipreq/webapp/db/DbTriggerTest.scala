@@ -174,4 +174,31 @@ class DbTriggerTest extends FunSpec with TestDatabaseSupport {
       dao.logUserLogin(b, None); viewCounts shouldBe (2,1)
     }
   }
+
+  describe(Tables.Usrd.name) {
+    def nameHistory(userId: Long) =
+      sql"select name from usrh_name where usr_id=$userId order by updated_at".as[String].list()
+    def insert(userId: Long, name: String, newsletter: Boolean) =
+      sqlu"insert into usrd values($userId,$name,$newsletter)".execute()
+    def update(userId: Long, name: String, newsletter: Boolean) =
+      sqlu"update usrd set name=$name, newsletter=$newsletter where usr_id=$userId".execute()
+    def read(userId: Long) =
+      sql"select name, newsletter from usrd where usr_id=$userId".as[(String,Boolean)].first()
+
+    it("should record name changes") {
+      val u = newUserId()
+      val (a,b,c) = ("Alice","Bob","Yay")
+      insert(u, a, true)
+      nameHistory(u) shouldBe Nil
+      List(b,b,b,c).foreach(update(u, _, true))
+      nameHistory(u) shouldBe List(a, b)
+    }
+
+    it("should updates without altercation by triggers") {
+      val u = newUserId()
+      insert(u, "A", true)
+      update(u, "B", false)
+      read(u) shouldBe ("B", false)
+    }
+  }
 }
