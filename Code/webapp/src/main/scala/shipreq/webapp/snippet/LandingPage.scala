@@ -6,45 +6,40 @@ import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
-import shipreq.webapp.feature.validation.Validator
-import shipreq.webapp.lib.Types._
+import shipreq.webapp.feature.validation.{ValidationResultU, Validator}
 import shipreq.webapp.lib.SnippetHelpers
 import shipreq.taskman.api.Msg.LandingPageHit
 
 object LandingPage extends SnippetHelpers {
 
-  case class Interest(name: String, email: String, msg: Option[String])
-
   private val firstNameExtractor = "\\s.+$".r
   private val jsDisableForm = JsCmds.Run("$('#form').find('input,textarea,button').prop('disabled',true)")
 
   def form: CssSel = {
-    var nameInput: String = ""
-    var emailInput: String = ""
-    var msgInput: String = ""
+    var nameI      : String  = ""
+    var emailI     : String  = ""
+    var msgI       : String  = ""
+    var newsletterI: Boolean = true
 
-    def nameV = Validator.landingPageName.correctAndValidate(nameInput)
-    def emailV = Validator.landingPageEmail.correctAndValidate(emailInput)
-    def msgV = Validator.landingPageMsg.correctAndValidate(msgInput)
+    def nameV       = Validator.landingPage.name.correctAndValidate(nameI)
+    def emailV      = Validator.landingPage.email.correctAndValidateEA(emailI)
+    def msgV        = Validator.landingPage.msg.correctAndValidate(msgI)
+    def newsletterV = ValidationResultU(newsletterI)
 
     def onSubmit: JsCmd =
-      Validator.Ap.apply3(nameV, emailV, msgV)(Interest) match {
+      Validator.Ap.apply4(emailV, nameV, msgV, newsletterV)(LandingPageHit) match {
         case Failure(f) =>
           JsCmds.Alert(f.toText)
-        case Success(i) =>
-          processInterest(i)
-          val firstName = firstNameExtractor.replaceFirstIn(i.name, "")
+        case Success(msg) =>
+          taskman1(_ submitMsg msg)
+          val firstName = firstNameExtractor.replaceFirstIn(msg.name, "")
           jsDisableForm & JsCmds.Alert(s"Thank you, $firstName.\n\nWe'll be in touch!")
       }
 
-    ".n" #> SHtml.onSubmit(nameInput = _) &
-    ".e" #> SHtml.onSubmit(emailInput = _) &
-    ".m" #> SHtml.onSubmit(msgInput = _) &
+    ".n" #> SHtml.onSubmit(nameI = _) &
+    ".e" #> SHtml.onSubmit(emailI = _) &
+    ".m" #> SHtml.onSubmit(msgI = _) &
+    ".newsletter input" #> SHtml.onSubmitBoolean(newsletterI = _) &
     ":submit" #> ajaxSubmitOnClick(onSubmit _)
-  }
-
-  def processInterest(i: Interest): Unit = {
-    val msg = LandingPageHit(i.email.tag, i.name, i.msg, false) // TODO newsletter hardcoded
-    taskman1(_ submitMsg msg)
   }
 }

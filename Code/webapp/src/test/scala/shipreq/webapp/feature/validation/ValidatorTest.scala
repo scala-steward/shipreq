@@ -149,7 +149,7 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("Landing page name") {
-    testCV(V.landingPageName, Table(("IN", "CORRECTED", "FAILURE")
+    testCV(V.landingPage.name, Table(("IN", "CORRECTED", "FAILURE")
       , (" ", Some(""), Some("blank"))
       , ("Blah", None, Some("surname"))
       , ("Blah Yay5", None, Some("numbers"))

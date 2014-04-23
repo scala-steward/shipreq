@@ -92,6 +92,9 @@ final object Validator {
       HasMaximumLength(EmailMaxLength),
       MatchesRegex("^_+@_+?\\._+$".replace("_", "[^&<>]").r, "is invalid.") // loose validation
     )
+
+    def correctAndValidateEA(i: String): ValidationResultU[EmailAddr] =
+      correctAndValidate(i).map((s: String) => s.tag)
   }
 
   object usernameOrEmail
@@ -164,15 +167,21 @@ final object Validator {
 
   object stepFieldText extends LargeText("Text")
 
-  object landingPageName extends InputValidatorV[String] {
-    override def correct(input: String): CI = normaliseWhitespaceInSingleLineString(input).tag
-    override protected val validator = ConstraintValidator[String]("Your name",
-      NonEmpty,
-      IsNotAFirstNameOnly,
-      HasShortTextLimit,
-      Not(Contain.regex("[0-9]", ""), "has numbers in it? I don't believe you.")
-    )
+  object landingPage {
+
+    object name extends InputValidatorV[String] {
+      override def correct(input: String): CI = normaliseWhitespaceInSingleLineString(input).tag
+      override protected val validator = ConstraintValidator[String]("Your name",
+        NonEmpty,
+        IsNotAFirstNameOnly,
+        HasShortTextLimit,
+        Not(Contain.regex("[0-9]", ""), "has numbers in it? I don't believe you.")
+      )
+    }
+
+    def email = Validator.email
+
+    object msg extends LargeTextO("Your message")
+
   }
-  def landingPageEmail = email
-  object landingPageMsg extends LargeTextO("Your message")
 }

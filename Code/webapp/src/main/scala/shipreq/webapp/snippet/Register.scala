@@ -48,7 +48,7 @@ object Register1 extends SnippetHelpers {
   }
 
   def perform(emailInput: String): JsCmd =
-    ifValid(Validator.email.correctAndValidate(emailInput))(emailAddr => {
+    ifValid(Validator.email.correctAndValidateEA(emailInput))(emailAddr => {
       daoProvider.withTransaction(dao => {
         val msg = dao.findUserRegistrationInfo(emailAddr) match {
           case None    => onNewUser(emailAddr, dao)
@@ -59,7 +59,7 @@ object Register1 extends SnippetHelpers {
       jsClearError & JqExpr("#emailSent,#register1Form") ~> JqToggle
     })
 
-  def preRegistrationMsg(email: String @@ Validated, u: UserRegistrationInfo, dao: DaoT): Msg =
+  def preRegistrationMsg(email: EmailAddr, u: UserRegistrationInfo, dao: DaoT): Msg =
     u match {
       case UserRegistrationInfo(_, _, _, Some(_)) =>
         onAlreadyRegistered(email)
@@ -69,24 +69,24 @@ object Register1 extends SnippetHelpers {
         onTokenExpired(email, id, dao)
     }
 
-  private def onNewUser(email: String @@ Validated, dao: DaoT): Msg = {
+  private def onNewUser(email: EmailAddr, dao: DaoT): Msg = {
     val token = dao.createUserPlaceholder(email, () => randomConfirmationToken)
     registrationRequestedTask(email, token)
   }
 
-  private def onTokenReusable(email: String @@ Validated, token: String): Msg =
+  private def onTokenReusable(email: EmailAddr, token: String): Msg =
     registrationRequestedTask(email, token)
 
-  private def onTokenExpired(email: String @@ Validated, id: UserId, dao: DaoT): Msg = {
+  private def onTokenExpired(email: EmailAddr, id: UserId, dao: DaoT): Msg = {
     val token = dao.updateUserConfirmationToken(id, () => randomConfirmationToken)
     registrationRequestedTask(email, token)
   }
 
-  private def onAlreadyRegistered(email: String @@ Validated): Msg =
-    ReRegistrationAttempted(email.tag)
+  private def onAlreadyRegistered(email: EmailAddr): Msg =
+    ReRegistrationAttempted(email)
 
-  private def registrationRequestedTask(email: String @@ Validated, token: String): Msg =
-    RegistrationRequested(email.tag, AppSiteMap.Register2.absoluteUrl(token))
+  private def registrationRequestedTask(email: EmailAddr, token: String): Msg =
+    RegistrationRequested(email, AppSiteMap.Register2.absoluteUrl(token))
 }
 
 /**
