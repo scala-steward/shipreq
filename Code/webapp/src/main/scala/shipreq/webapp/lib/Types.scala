@@ -3,7 +3,6 @@ package shipreq.webapp.lib
 import net.liftweb.common.Box
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import scalaz.Monoid
-import shipreq.base.util.TypeTags
 import shipreq.webapp.db._
 import shipreq.webapp.feature.uc.UseCase
 import shipreq.webapp.feature.uc.field.FieldValues
@@ -13,7 +12,7 @@ import shipreq.webapp.feature.{ExternalId, Inspection}
 /**
  * @since 30/05/2013
  */
-object Types extends TypeTags {
+object Types extends shipreq.taskman.api.Types {
 
   // ===================================================================================================================
   // Handy Conversions
@@ -116,8 +115,6 @@ object Types extends TypeTags {
   @inline final implicit def TextRevToIdentId(r: TextRev): TextIdentId = r.identId
 
   /** Marks a Long value as corresponding to `usr.id`. */
-  sealed trait IsUserId extends TypeTag[JLong]
-  type UserId = JLong @@ IsUserId
   @inline final implicit def UserToId1(a: UserDescriptor): UserId = a.id
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
 

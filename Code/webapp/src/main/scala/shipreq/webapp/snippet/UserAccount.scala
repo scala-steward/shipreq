@@ -4,7 +4,7 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import shipreq.webapp.app.AppSiteMap
 import shipreq.webapp.lib.SnippetHelpers
-import shipreq.webapp.lib.Types.UserId
+import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt
 
 /**

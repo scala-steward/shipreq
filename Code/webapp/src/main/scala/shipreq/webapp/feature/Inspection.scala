@@ -15,6 +15,7 @@ import uc.step._
 import uc.text._
 import FreeTextTerms._
 import shipreq.base.util.BiMap
+import shipreq.taskman.api.Types.IsUserId
 
 /**
  * Typeclasses of `scalaz.Show` that returns code that can be pasted back into Scala.

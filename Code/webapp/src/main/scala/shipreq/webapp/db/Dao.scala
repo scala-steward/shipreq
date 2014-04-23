@@ -68,6 +68,8 @@ sealed trait DaoS {
     }
   }
 
+  // TODO: Use EmailAddr instead of String
+
   // ===================================================================================================================
   // User
 
@@ -81,7 +83,7 @@ sealed trait DaoS {
     }
 
   /** Creates an unconfirmed user account. No username, no password until email confirmed. */
-  def createUserPlaceholder(email: String @@ Validated, tokenFn: () => String): String =
+  def createUserPlaceholder(email: EmailAddr, tokenFn: () => String): String =
     tokenAttempt(tokenFn)(token => InsertUserPlaceholder.execute(email, token))
 
   def performUserRegistration(token: String)(username: String @@ Validated, ps: PasswordAndSalt, ipAddr: String): UserRegistrationResult = {

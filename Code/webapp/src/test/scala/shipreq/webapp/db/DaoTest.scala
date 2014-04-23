@@ -1,15 +1,16 @@
-package shipreq.webapp
-package db
+package shipreq.webapp.db
 
 import org.scalatest.FunSpec
-import test.TestDatabaseSupport
 import slick.jdbc.{StaticQuery => Q}
 import Q.interpolation
-import lib.Types._
-import feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
-import feature.UcFilters
-import security.PasswordAndSalt
-import snippet.ResetPassword
+
+import shipreq.taskman.api.Types.IsUserId
+import shipreq.webapp.feature.UcFilters
+import shipreq.webapp.feature.uc.field.{TextFieldDefinition, NormalCourseFieldDefinition, ExceptionCourseFieldDefinition}
+import shipreq.webapp.lib.Types._
+import shipreq.webapp.security.PasswordAndSalt
+import shipreq.webapp.snippet.ResetPassword
+import shipreq.webapp.test.TestDatabaseSupport
 
 class DaoTest extends FunSpec with TestDatabaseSupport {
   implicit def str2uch(title: String @@ Validated): UseCaseHeader = UseCaseHeader(title)

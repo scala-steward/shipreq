@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.session.Session
 
+import shipreq.taskman.api.Types.IsUserId
 import db.UserDescriptor
 import security.{Roles, PasswordAndSalt}
 import test.{TestDB, TestHelpers}

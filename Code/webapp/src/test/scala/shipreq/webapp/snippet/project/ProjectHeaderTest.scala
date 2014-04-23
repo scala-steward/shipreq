@@ -3,6 +3,7 @@ package shipreq.webapp.snippet.project
 import org.mockito.Mockito.when
 import org.scalatest.FunSuite
 import scalaz.Value
+import shipreq.taskman.api.Types.IsUserId
 import shipreq.webapp.app.RequestVars
 import shipreq.webapp.db.{Project, UserDescriptor, UpdateProjectResult}
 import shipreq.webapp.test.{MockDaoProvider, TestHelpers}

@@ -10,6 +10,7 @@ import scalaz.Need
 import slick.session.{Database, Session}
 import Q.interpolation
 
+import shipreq.taskman.api.Types.IsUserId
 import app.{Defaults, DI}
 import db.{AdminDao, UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
 import db.SqlHelpers.SP_ProjectId
