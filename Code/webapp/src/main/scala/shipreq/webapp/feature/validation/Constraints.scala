@@ -3,11 +3,11 @@ package shipreq.webapp.feature.validation
 import java.util.regex.Pattern
 import shipreq.webapp.app.AppConfig._
 
-trait Constraint[T <: AnyRef] extends (T => Option[String]) {
+trait Constraint[-T <: AnyRef] extends (T => Option[String]) {
   def isValid(t: T): Boolean
 }
 
-trait ConstraintWithStaticFailureResult[T <: AnyRef] extends Constraint[T] {
+trait ConstraintWithStaticFailureResult[-T <: AnyRef] extends Constraint[T] {
   final def apply(t: T): Option[String] = if (isValid(t)) None else failureResult
   def isValid(t: T): Boolean
   val failureResult: Some[String]
@@ -20,12 +20,12 @@ final object Constraints {
   // -------------------------------------------------------------------------------------------------------------------
   // Combinators
 
-  case class Not[T <: AnyRef](v: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
+  case class Not[-T <: AnyRef](v: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
     override def isValid(t: T) = !v.isValid(t)
     override val failureResult = Some(errMsg)
   }
 
-  case class And[T <: AnyRef](a: Constraint[T], b: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
+  case class And[-T <: AnyRef](a: Constraint[T], b: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
     override def isValid(t: T) = a.isValid(t) && b.isValid(t)
     override val failureResult = Some(errMsg)
   }

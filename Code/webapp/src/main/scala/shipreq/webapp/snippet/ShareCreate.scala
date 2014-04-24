@@ -5,7 +5,7 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import shipreq.webapp.app.AppSiteMap
 import shipreq.webapp.feature.{UcFilters, UcFilter}
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.lib.{NoticeFlash, SingleOpStatefulSnippet}
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt
@@ -37,8 +37,8 @@ private[snippet] abstract class ShareCreateBase extends SingleOpStatefulSnippet 
 
   def onSubmit(ucFilterJson: () => Json[UcFilter]): JsCmd
 
-  def nameV = Validator.share.name.correctAndValidate(nameInput)
-  def prefaceV = Validator.share.preface.correctAndValidate(prefaceInput)
+  def nameV = Validators.share.name.correctAndValidate(nameInput)
+  def prefaceV = Validators.share.preface.correctAndValidate(prefaceInput)
 
   def goBackToShareList(): Nothing = {
     ActivateTab.SharesTab.setInFlash()
@@ -64,7 +64,7 @@ class ShareCreate(val projectId: ProjectId) extends ShareCreateBase {
 
   def onSubmit(ucFilterJson: () => Json[UcFilter]): JsCmd = {
     val v = try
-      Validator.Ap.apply3(nameV, Validator.passwords.correctAndValidate(password1Input, password2Input), prefaceV)(Tuple3.apply)
+      Validators.Ap.apply3(nameV, Validators.passwords.correctAndValidate(password1Input, password2Input), prefaceV)(Tuple3.apply)
     finally {
       password1Input = "" // Let's not keep the plaintext passwords around
       password2Input = ""

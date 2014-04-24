@@ -9,18 +9,20 @@ import app.AppConfig._
 import lib.Types._
 
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
-  def V = Validator
+  def V = Validators
 
-  def testV(v: Validator[String, String, String], examples: TableFor2[Option[String], String]): Unit =
+  type VT3 = Validator[String, String, String]
+
+  def testV(v: VT3, examples: TableFor2[Option[String], String]): Unit =
     forAll(examples) ((expectedFailure, input) => testV(v, input, expectedFailure))
 
-  def testV(v: Validator[String, String, String], input: String, expectedFailure: Option[String]): Unit =
+  def testV(v: VT3, input: String, expectedFailure: Option[String]): Unit =
     v.validate(input.tag) match {
       case Failure(f) => f.toText should include(expectedFailure.getOrElse("Validation failed but was expected to pass."))
       case Success(_) => expectedFailure shouldBe None
     }
 
-  def testCV(v: Validator[String, String, String], examples: TableFor3[String, Option[String], Option[String]]): Unit =
+  def testCV(v: VT3, examples: TableFor3[String, Option[String], Option[String]]): Unit =
     forAll(examples)((i, cc, expectedFailure) => {
       val c = cc.getOrElse(i)
       v.correct(i) shouldBe c
@@ -76,8 +78,8 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("Password pair validation") {
-    Validator.passwords.correctAndValidate("qweqwe123", "qweqwe123h").isFailure shouldBe true
-    Validator.passwords.correctAndValidate("qweqwe123", "qweqwe123").isFailure shouldBe false
+    Validators.passwords.correctAndValidate("qweqwe123", "qweqwe123h").isFailure shouldBe true
+    Validators.passwords.correctAndValidate("qweqwe123", "qweqwe123").isFailure shouldBe false
   }
 
   test("Username correction") {

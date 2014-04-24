@@ -11,7 +11,7 @@ import scala.slick.session.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
-import shipreq.webapp.feature.validation.{ValidationResultU, VFailure}
+import shipreq.webapp.feature.validation.{ValidationResult, VFailure}
 import shipreq.webapp.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
 import shipreq.webapp.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.util.JsExt._
@@ -141,7 +141,7 @@ trait StaticSnippetHelpers extends Logger {
       applyIdToAlert(alertId,
         Notices.renderSingle(AlertTypeSuccess, content)))
 
-  def ifValid[T](v: ValidationResultU[T])(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
+  def ifValid[T](v: ValidationResult[T])(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     v match {
       case scalaz.Failure(f) => jsShowFailure(f)
       case scalaz.Success(s) => f(s)

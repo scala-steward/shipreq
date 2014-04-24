@@ -9,7 +9,7 @@ import org.apache.shiro.authc._
 import scala.xml.Text
 import scalaz.{Failure, Success}
 import lib.{LogUserLogin, SingleOpStatefulSnippet}
-import feature.validation.Validator
+import feature.validation.Validators
 import util.HtmlTransformExt.ajaxSubmitOnClick
 import Login._
 
@@ -32,9 +32,9 @@ class Login extends SingleOpStatefulSnippet {
   def onLoginAttempt(): JsCmd = {
     securityProvider.enforceHumanSpeed()
 
-    val v = Validator.Ap.apply2(
-      Validator.user.usernameOrEmail.correctAndValidate(usernameOrEmailInput),
-      Validator.password.correctAndValidate(passwordInput)
+    val v = Validators.Ap.apply2(
+      Validators.user.usernameOrEmail.correctAndValidate(usernameOrEmailInput),
+      Validators.password.correctAndValidate(passwordInput)
     )(new UsernamePasswordToken(_, _))
 
     v match {

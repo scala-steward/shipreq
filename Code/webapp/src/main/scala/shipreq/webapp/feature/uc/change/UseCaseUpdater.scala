@@ -3,7 +3,7 @@ package change
 
 import scala.collection.mutable.ListBuffer
 import scalaz.NonEmptyList
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.util.AppliedLens
 import field._
 import Changes._
@@ -61,7 +61,7 @@ case class UseCaseUpdater(uc: UseCase, rels: UseCaseRelations) {
 
   def updateTitle(input: String): UcUpdateResult = {
     implicit val lens = AppliedLens(Lenses.ucTitleL, uc)
-    def validator = Validator.usecase.title
+    def validator = Validators.usecase.title
     val c = validator.correct(input)
 
     if (c.isEmpty)

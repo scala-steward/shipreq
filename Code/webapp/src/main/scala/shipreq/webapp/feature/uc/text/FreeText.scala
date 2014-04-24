@@ -2,7 +2,7 @@ package shipreq.webapp.feature.uc.text
 
 import shipreq.webapp.lib.Misc.containsAlpha
 import shipreq.webapp.lib.Types._
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.feature.uc.{SavedSteps, UcParsingCtx}
 import shipreq.webapp.feature.uc.change._
 import Changes._
@@ -41,7 +41,7 @@ object FreeText {
   val empty: FreeText = parseCorrected("".tag[InputCorrected])(UcParsingCtx.Empty)
 
   def correctInput(input: String): String @@ InputCorrected =
-    Validator.usecase.textFieldText.correct(input)
+    Validators.usecase.textFieldText.correct(input)
 
   def load(text: NormalisedText)(implicit savedSteps: SavedSteps, ctx: UcParsingCtx): FreeText = {
     implicit val stepsAndLabels = ctx.stepsAndLabels

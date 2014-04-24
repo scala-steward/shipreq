@@ -7,7 +7,7 @@ import net.liftweb.util.Helpers._
 
 import app.{RequestVars, AppSiteMap}
 import db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
-import shipreq.webapp.feature.validation.{ValidationResultU, Validator}
+import shipreq.webapp.feature.validation.{ValidationResult, Validators}
 import lib.{Locks, Misc, SingleOpStatefulSnippet}
 import lib.Types._
 import util.NonEmptyTemplate
@@ -72,8 +72,8 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
     ifValid(create(createTitle))(ucs =>
       jsClearError & TriggerCreated.trigger(renderListItem(ucs)(ListItemTemplate)))
 
-  def create(titleInput: String): ValidationResultU[UseCaseSummary] =
-    Validator.usecase.title.correctAndValidate(titleInput).map(newTitle => {
+  def create(titleInput: String): ValidationResult[UseCaseSummary] =
+    Validators.usecase.title.correctAndValidate(titleInput).map(newTitle => {
       val h = UseCaseHeader(newTitle)
       val ucRev = Locks.UseCaseNumbers.write(projectId)(lock =>
         daoProvider.withTransaction(_.createUseCaseIdentAndRev1(projectId, h, lock)))
@@ -104,9 +104,9 @@ class UseCaseCrudl(projectId: ProjectId) extends SingleOpStatefulSnippet {
         jsClearError & TriggerUpdated.trigger(dto)
     }
 
-  def update(id: UseCaseIdentId, titleInput: String): ValidationResultU[Option[UseCaseRev]] = {
+  def update(id: UseCaseIdentId, titleInput: String): ValidationResult[Option[UseCaseRev]] = {
     import UseCaseHeaderUpdateResult._
-    Validator.usecase.title.correctAndValidate(titleInput).map(newTitle =>
+    Validators.usecase.title.correctAndValidate(titleInput).map(newTitle =>
       Locks.SingleUseCase.write(id, projectId)(lock =>
         daoProvider.withTransaction(_.updateUseCaseHeader(id, _.copy(title = newTitle), lock))
       ) match {

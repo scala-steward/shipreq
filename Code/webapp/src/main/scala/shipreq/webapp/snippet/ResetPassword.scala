@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import shipreq.taskman.api.Msg
 import shipreq.webapp.app.AppConfig.PasswordResetTokenLifespan
 import shipreq.webapp.db.{DaoT, UserRegistrationInfo, ResetPasswordInfo}
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.lib.{SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
@@ -42,7 +42,7 @@ object ResetPassword1 extends SnippetHelpers {
   }
 
   def perform(emailInput: String): JsCmd =
-    ifValid(Validator.email.correctAndValidate(emailInput))(email =>
+    ifValid(Validators.email.correctAndValidate(emailInput))(email =>
       daoProvider.withTransactionLevel(Connection.TRANSACTION_SERIALIZABLE)(dao => {
         dao.findUserRegAndResetPwInfo(email) match {
 
@@ -114,7 +114,7 @@ class ResetPassword2(token: String) extends SingleOpStatefulSnippet {
 
   def onSubmit(): JsCmd =
     try {
-      ifValid(Validator.passwords.correctAndValidate(password1Input, password2Input))(resetPassword)
+      ifValid(Validators.passwords.correctAndValidate(password1Input, password2Input))(resetPassword)
     } finally {
       password1Input = "" // Let's not keep the plaintext passwords around
       password2Input = ""

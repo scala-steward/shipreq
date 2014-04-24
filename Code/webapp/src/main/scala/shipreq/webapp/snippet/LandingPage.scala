@@ -6,7 +6,7 @@ import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
-import shipreq.webapp.feature.validation.{ValidationResultU, Validator}
+import shipreq.webapp.feature.validation.{ValidationResult, Validators}
 import shipreq.webapp.lib.SnippetHelpers
 import shipreq.taskman.api.Msg.LandingPageHit
 
@@ -21,13 +21,13 @@ object LandingPage extends SnippetHelpers {
     var msgI       : String  = ""
     var newsletterI: Boolean = true
 
-    def nameV       = Validator.landingPage.name.correctAndValidate(nameI)
-    def emailV      = Validator.landingPage.email.correctAndValidateEA(emailI)
-    def msgV        = Validator.landingPage.msg.correctAndValidate(msgI)
-    def newsletterV = ValidationResultU(newsletterI)
+    def nameV       = Validators.landingPage.name.correctAndValidate(nameI)
+    def emailV      = Validators.landingPage.email.correctAndValidateEA(emailI)
+    def msgV        = Validators.landingPage.msg.correctAndValidate(msgI)
+    def newsletterV = ValidationResult(newsletterI)
 
     def onSubmit: JsCmd =
-      Validator.Ap.apply4(emailV, nameV, msgV, newsletterV)(LandingPageHit) match {
+      Validators.Ap.apply4(emailV, nameV, msgV, newsletterV)(LandingPageHit) match {
         case Failure(f) =>
           JsCmds.Alert(f.toText)
         case Success(msg) =>

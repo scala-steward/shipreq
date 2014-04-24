@@ -11,7 +11,7 @@ import scalaz.Memo
 import db.{UseCaseHeader, FieldListRec}
 import lib.Misc._
 import lib.Types._
-import feature.validation.Validator
+import feature.validation.Validators
 import feature.uc._
 import feature.uc.change.{UcUpdateResult, UseCaseUpdater, NoChange}
 import feature.uc.field._
@@ -313,7 +313,7 @@ object DataGenerators extends Logger {
                      .map(usecasetitleRemoval.replaceAllIn(_, ""))
                      .map(AnyValidArrowRegex.replaceAllIn(_, ""))
                      .map(s => if (s.isEmpty) "X" else s)
-                     .map(Validator.usecase.title.correctAndValidate(_).toOption)
+                     .map(Validators.usecase.title.correctAndValidate(_).toOption)
                      .suchThat(_.isDefined)
                      .map(_.get)
 

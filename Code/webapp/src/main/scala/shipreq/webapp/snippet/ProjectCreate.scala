@@ -9,7 +9,7 @@ import scalaz.{Failure, Success}
 import app.AppSiteMap
 import db.CreateProjectResult
 import lib.SingleOpStatefulSnippet
-import feature.validation.Validator
+import feature.validation.Validators
 import util.HtmlTransformExt.ajaxSubmitOnClick
 
 /**
@@ -28,7 +28,7 @@ class ProjectCreate extends SingleOpStatefulSnippet {
 
   def onSubmit(): JsCmd = {
     import CreateProjectResult._
-    Validator.project.name.correctAndValidate(projectNameInput) match {
+    Validators.project.name.correctAndValidate(projectNameInput) match {
       case Failure(f)    => jsShowFailure(f)
       case Success(name) =>
         daoProvider.withSession(_.createProject(currentUserId_!, name)) match {

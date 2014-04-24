@@ -4,7 +4,7 @@ import net.liftweb.http.SHtml
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import shipreq.webapp.feature.validation.{ValidationResult, Validator}
+import shipreq.webapp.feature.validation.{ValidationResultT, Validators}
 import shipreq.webapp.lib.StaticSnippetHelpers
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt
@@ -47,10 +47,10 @@ object DynModal extends StaticSnippetHelpers {
     var password2Input = ""
 
     def onSubmit(): JsCmd = {
-      val vn = Validator.passwords.correctAndValidate(password1Input, password2Input)
-      val v: ValidationResult[String] = current match {
+      val vn = Validators.passwords.correctAndValidate(password1Input, password2Input)
+      val v: ValidationResultT[String] = current match {
         case None     => vn
-        case Some(ps) => Validator.Ap.apply2(Validator.currentPassword(ps).correctAndValidate(passwordCInput), vn)((_,n) => n)
+        case Some(ps) => Validators.Ap.apply2(Validators.currentPassword(ps).correctAndValidate(passwordCInput), vn)((_,n) => n)
       }
       ifValid(v)(newPassword =>
         JsModalHide & successFn(newPassword))

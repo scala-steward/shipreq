@@ -13,7 +13,7 @@ object ConstraintValidator {
  * @param fieldName The field name. Prepend to validation failure messages.
  */
 class ConstraintValidator[T <: AnyRef](fieldName: String, constraints: List[Constraint[T]]) {
-  def validate(input: T @@ InputCorrected): ValidationResult[T] = {
+  def validate(input: T @@ InputCorrected): ValidationResultT[T] = {
     val in: T = input
 
     (List.empty[String] /: constraints)((acc, c) => c(in) match {

@@ -1,7 +1,7 @@
 package shipreq.webapp.feature.uc.change
 
 import scalaz.NonEmptyList
-import shipreq.webapp.feature.validation.{ValidationResultU, VFailure}
+import shipreq.webapp.feature.validation.{ValidationResult, VFailure}
 
 object ChangeResult {
 
@@ -40,7 +40,7 @@ object ChangeResult {
       case h :: t => Changed(newValue, NonEmptyList.nel(h, t))
     }
 
-  def fromValidation[VV, V, C](r: ValidationResultU[VV])(onSuccess: VV => ChangeResultF[V, C]): ChangeResultF[V, C] =
+  def fromValidation[VV, V, C](r: ValidationResult[VV])(onSuccess: VV => ChangeResultF[V, C]): ChangeResultF[V, C] =
     r match {
       case scalaz.Failure(f) => ChangeFailure(f)
       case scalaz.Success(v) => onSuccess(v)

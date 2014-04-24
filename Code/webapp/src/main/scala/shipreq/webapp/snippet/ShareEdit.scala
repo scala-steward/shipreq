@@ -5,7 +5,7 @@ import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
 import shipreq.webapp.app.RequestVars
 import shipreq.webapp.feature.UcFilter
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.lib.NoticeFlash
 import shipreq.webapp.lib.Types.Json
 import shipreq.webapp.util.HtmlTransformExt.IfCssSel
@@ -42,7 +42,7 @@ class ShareEdit extends ShareCreateBase {
       )
 
   def onSubmit(ucFilterJson: () => Json[UcFilter]): JsCmd = {
-    val v = Validator.Ap.apply2(nameV, prefaceV)(Tuple2.apply)
+    val v = Validators.Ap.apply2(nameV, prefaceV)(Tuple2.apply)
     ifValid(v)(r => {
       val (name, preface) = r
       daoProvider.withSession(_.updateShare(share, name, preface, ucFilterJson()))

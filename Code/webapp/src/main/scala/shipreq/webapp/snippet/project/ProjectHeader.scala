@@ -7,7 +7,7 @@ import net.liftweb.util.Helpers._
 
 import app.{AppSiteMap, RequestVars}
 import db.UpdateProjectResult._
-import feature.validation.Validator
+import feature.validation.Validators
 import lib.{NoticeFlash, SingleOpStatefulSnippet}
 import lib.Types._
 import snippet.DynModal
@@ -53,7 +53,7 @@ class ProjectHeader extends SingleOpStatefulSnippet {
   )
 
   def onRename(): JsCmd =
-    ifValid(Validator.project.name.correctAndValidate(projectNameInput))(newName =>
+    ifValid(Validators.project.name.correctAndValidate(projectNameInput))(newName =>
       daoProvider.withSession(_.updateProject(project.id, currentUserId_!, newName)) match {
         case DbSuccess        => jsRenamed(newName)
         case NameAlreadyInUse => jsShowError("You already have a project with that name.")

@@ -12,7 +12,7 @@ import shipreq.webapp.app.{AppConfig, AppSiteMap}
 import shipreq.webapp.lib.{SnippetHelpers, SingleOpStatefulSnippet}
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.db.{DaoT, UserRegistrationInfo, UserRegistrationResult}
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.security.{Permissions, PasswordAndSalt}
 import shipreq.webapp.util.JsExt._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
@@ -48,7 +48,7 @@ object Register1 extends SnippetHelpers {
   }
 
   def perform(emailInput: String): JsCmd =
-    ifValid(Validator.email.correctAndValidateEA(emailInput))(emailAddr => {
+    ifValid(Validators.email.correctAndValidateEA(emailInput))(emailAddr => {
       daoProvider.withTransaction(dao => {
         val msg = dao.findUserRegistrationInfo(emailAddr) match {
           case None    => onNewUser(emailAddr, dao)
@@ -129,17 +129,17 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
 
   // TODO onUsernameChange(): This should be pure JS
   def onUsernameChange(input: String): JsCmd = {
-    usernameInput = Validator.user.username.correct(input)
+    usernameInput = Validators.user.username.correct(input)
     JqId("username") ~> JqSetValue(usernameInput)
   }
 
   def onSubmit(): JsCmd = try {
     import UserRegistrationResult._
 
-    val v = Validator.Ap.apply3(
-      Validator.user.username.correctAndValidate(usernameInput),
-      Validator.passwords.correctAndValidate(password1Input, password2Input),
-      Validator.tosAgreement.correctAndValidate(tos)
+    val v = Validators.Ap.apply3(
+      Validators.user.username.correctAndValidate(usernameInput),
+      Validators.passwords.correctAndValidate(password1Input, password2Input),
+      Validators.tosAgreement.correctAndValidate(tos)
     )(Tuple3.apply)
 
     ifValid(v)(r => {

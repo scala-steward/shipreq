@@ -3,7 +3,7 @@ package shipreq.webapp.feature.uc.text
 import scala.collection.immutable.TreeSet
 import scalaz.{NonEmptyList, Cord}
 import shipreq.webapp.db.{FieldKeyType, FieldKeyRec}
-import shipreq.webapp.feature.validation.Validator
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.feature.uc.{SavedSteps, UcParsingCtx}
 import shipreq.webapp.feature.uc.change._
 import shipreq.webapp.feature.uc.field.{NormalCourseField, StepField}
@@ -15,7 +15,7 @@ import ParsingUtils._
 
 object StepText {
   def correctInput(input: String): String @@ InputCorrected =
-    Validator.usecase.stepFieldText.correct(input)
+    Validators.usecase.stepFieldText.correct(input)
 
   val empty = StepText(FreeText.empty, None, None)
 
