@@ -58,6 +58,9 @@ private[db] final object Sql {
     WHERE confirmation_token = ?
     RETURNING id""".sql)
 
+  @Insert val InsertUsrd = update[(UserId, String, Boolean)](
+    "INSERT INTO usrd VALUES(?,?,?)")
+
   val GetUserSupplementalInfo = query[UserId, UserSupplementalInfo](
     "SELECT password, password_salt, confirmed_at FROM usr WHERE id=?")
 

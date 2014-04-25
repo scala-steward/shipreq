@@ -104,6 +104,16 @@ final object Validators {
         Failure(VFailure.looseMsg("You must agree to the terms of service."))
   }
 
+  object humanFullName extends Typical[String](
+    normaliseWhitespaceInSingleLineString(_).tag,
+    ConstraintValidator("Your name",
+      NonEmpty,
+      IsNotAFirstNameOnly,
+      HasShortTextLimit,
+      Not(Contain.regex("[0-9]", ""), "shouldn't contain numbers.")
+    )
+  )
+
   // -------------------------------------------------------------------------------------------------------------------
 
   object user {
@@ -125,6 +135,7 @@ final object Validators {
       override def validate(input: CI) = underlying(input).validate(input)
     }
 
+    def name = humanFullName
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -161,19 +172,8 @@ final object Validators {
   // -------------------------------------------------------------------------------------------------------------------
 
   object landingPage {
-
-    object name extends Typical[String](
-      normaliseWhitespaceInSingleLineString(_).tag,
-      ConstraintValidator("Your name",
-        NonEmpty,
-        IsNotAFirstNameOnly,
-        HasShortTextLimit,
-        Not(Contain.regex("[0-9]", ""), "shouldn't contain numbers.")
-      )
-    )
-
+    def name = humanFullName
     def email = Validators.emailEA
-
     object msg extends LargeTextO("Your message")
   }
   

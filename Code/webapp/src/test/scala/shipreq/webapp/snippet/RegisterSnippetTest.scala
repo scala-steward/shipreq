@@ -149,6 +149,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
   describe("Register2 POST") {
     def tester = {
       val t = new Reg2Tester(userWithCurrentToken.token)
+      t.snippet.nameV        set  "John Stuff"
       t.snippet.usernameV    set  "crazy50"
       t.snippet.passwordV.fv set2 "abcd5678"
       t.snippet.tosV         set  true
@@ -168,6 +169,10 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
       val js = t.onSubmit_
       assertUnconfirmed()
       js.assertJsAlert(Some(""))
+    }
+
+    it("should reject an invalid name") {
+      testFailure(_.nameV set "9000")
     }
 
     it("should reject an invalid username") {

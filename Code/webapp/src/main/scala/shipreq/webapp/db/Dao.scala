@@ -86,18 +86,6 @@ sealed trait DaoS {
   def createUserPlaceholder(email: EmailAddr, tokenFn: () => String): String =
     tokenAttempt(tokenFn)(token => InsertUserPlaceholder.execute(email, token))
 
-  def performUserRegistration(token: String)(username: String @@ Validated, ps: PasswordAndSalt, ipAddr: String): UserRegistrationResult = {
-    import UserRegistrationResult._
-    try {
-      RegisterUser.firstOption(username, ps, ipAddr, token) match {
-        case Some(id) => DbSuccess(id)
-        case None => NoMatchingConfToken
-      }
-    } catch {
-      case e: PSQLException if e.getMessage.contains("usr_username_key") => UsernameTaken
-    }
-  }
-
   def updateUserConfirmationToken(id: UserId, tokenFn: () => String): String =
     tokenAttempt(tokenFn)(token => UpdateConfirmationToken.execute(token, id))
 
@@ -279,6 +267,24 @@ sealed trait DaoS {
 sealed trait DaoT extends DaoS {
   import lib.Misc.ShortExt
   import Sql._
+
+  def performUserRegistration(token: String)(
+    username: String @@ Validated, ps: PasswordAndSalt, ipAddr: String)(
+    name: String @@ Validated, newsletter: Boolean): UserRegistrationResult = {
+
+    import UserRegistrationResult._
+    try {
+      RegisterUser.firstOption(username, ps, ipAddr, token) match {
+        case Some(id) =>
+          InsertUsrd.execute(id, name, newsletter)
+          DbSuccess(id)
+        case None =>
+          NoMatchingConfToken
+      }
+    } catch {
+      case e: PSQLException if e.getMessage.contains("usr_username_key") => UsernameTaken
+    }
+  }
 
   /**
    * Creates a new `usecase` row. If a `usecase_rev` row is not inserted before the end of the transaction, then the

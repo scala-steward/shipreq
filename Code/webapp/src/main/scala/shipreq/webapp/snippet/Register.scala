@@ -97,10 +97,12 @@ object Register1 extends SnippetHelpers {
  */
 class Register2(token: String) extends SingleOpStatefulSnippet {
 
-  val usernameV = FormVar.ajaxStr(Validators.user.username, JqId("username"))("")
-  val passwordV = FormVar.passwordPair("#password1", "#password2")
-  val tosV      = FormVar.boolOnSubmit(Validators.tosAgreement, "#tos")(false)
-  val vars = FormVar.AP3(usernameV, passwordV, tosV)
+  val nameV       = FormVar.strOnSubmit(Validators.landingPage.name, "#name")("")
+  val usernameV   = FormVar.ajaxStr(Validators.user.username, JqId("username"))("")
+  val passwordV   = FormVar.passwordPair("#password1", "#password2")
+  val newsletterV = FormVar.boolOnSubmit("#newsletter")(true)
+  val tosV        = FormVar.boolOnSubmit(Validators.tosAgreement, "#tos")(false)
+  val vars = FormVar.AP5(nameV, usernameV, passwordV, newsletterV, tosV)
 
   def render = {
     securityProvider.enforceHumanSpeed()
@@ -124,10 +126,13 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
   def onSubmit(): JsCmd = try {
     import UserRegistrationResult._
 
-    ifValid(vars.validate(Tuple3.apply))(r => {
-      val (username, password, _) = r
+    ifValid(vars.validate(Tuple5.apply))(r => {
+      val (name, username, password, newsletter, _) = r
       val ps = PasswordAndSalt.createWithRandomSalt(password)
-      daoProvider.withSession(_.performUserRegistration(token)(username, ps, clientIp.getOrElse("?"))) match {
+
+      daoProvider.withTransaction(
+        _.performUserRegistration(token)(username, ps, clientIp.getOrElse("?"))(name, newsletter)
+      ) match {
 
         case UsernameTaken => jsShowError("Username is already taken.")
 
