@@ -73,21 +73,21 @@ statForModule dirs m = cloc $ map (joinDirs m) dirs
 statsForModule :: Module -> IO Stats
 statsForModule m = do a <- statForModule mainPaths m
                       b <- statForModule testPaths m
-                      if isSuffixOf "-test" m
-                        then return (emptyStat, mappend a b)
-                        else return (a,b)
+                      return $ if isSuffixOf "-test" m
+                        then (emptyStat, mappend a b)
+                        else (a,b)
 
 groupD :: [FilePath] -> Group -> IO GroupD
 groupD dirs g = let
   a = modulesFor g dirs
-  b = sequence $ map statsForModule a -- IO [Stats]
-  c = zip a <$> b                     -- IO [(Module, Stats)]
+  b = mapM statsForModule a -- IO [Stats]
+  c = zip a <$> b           -- IO [(Module, Stats)]
   d = filter (not . areEmpty . snd) <$> c
   in GroupD g <$> d
 
 gatherAllStats :: IO [GroupD]
 gatherAllStats = do dirs <- dirsIn "."
-                    sequence $ map (groupD dirs) groups
+                    mapM (groupD dirs) groups
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Printing stats
@@ -97,13 +97,13 @@ header = "                         |       Files     |            LoC\n"
 
 float i = fromIntegral i :: Float
 
-testRatio (Stat _ m, Stat _ t) = (float t) / (float m)
+testRatio (Stat _ m, Stat _ t) = float t / float m
 
 testRatioS (Stat _ 0, _) = " - "
 testRatioS s = printf "%.1f" $ testRatio s
 
 fmtG :: GroupD -> [String] -- row per module
-fmtG (GroupD g ms) = flip map ms $ fmtG'
+fmtG (GroupD _ ms) = map fmtG' ms
 fmtG' (m,s) = printf "%-24s | %s  | %s  (%s)" m (fmtPF s) (fmtPL s) (testRatioS s)
 
 fmtP :: String -> (Stat -> Int) -> Stats -> String
@@ -122,7 +122,7 @@ groupStats (GroupD _ ms) = mconcat $ map snd ms
 
 singleModuleGroup name stats = GroupD name [(name,stats)]
 
-consolidateGroup gd @ (GroupD g ms) = singleModuleGroup g $ groupStats gd
+consolidateGroup gd @ (GroupD g _) = singleModuleGroup g $ groupStats gd
 
 projectTotalStats gs = mconcat (map groupStats gs)
 projectTotal = singleModuleGroup "∑" . projectTotalStats
