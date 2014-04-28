@@ -8,7 +8,7 @@ import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.IoUtils
 import Bop._
 
-final class BopImpl(emailer: EmailImpl, mailchimp: MailChimpImpl) extends BopReifier with HasLogger {
+final class BopImpl(emailer: EmailImpl, mailchimp: MailChimp) extends BopReifier with HasLogger {
 
   override def apply[A](op: Bop[A]): IOE[A] =
     IoUtils.timeU(
@@ -30,7 +30,7 @@ final class BopImpl(emailer: EmailImpl, mailchimp: MailChimpImpl) extends BopRei
     case s: SendEmail =>
       emailer send s
 
-    case MailChimpOp(op) =>
+    case MailingListOp(op) =>
       mailchimp run op
   }
 }

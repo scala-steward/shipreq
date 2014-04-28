@@ -11,6 +11,6 @@ object Bop {
   /** Send an email. */
   case class SendEmail(e: Email.Envelope, c: Email.Content) extends Bop[Unit]
 
-  /** Interact with MailChimp through its API. */
-  case class MailChimpOp[A](op: MailChimp.API[A]) extends Bop[A]
+  /** Manage the mailing list. */
+  case class MailingListOp[A](op: MailingList.API[A]) extends Bop[A]
 }

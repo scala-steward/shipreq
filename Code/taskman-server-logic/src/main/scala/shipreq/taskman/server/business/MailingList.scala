@@ -3,7 +3,7 @@ package shipreq.taskman.server.business
 import shipreq.taskman.api.Types._
 import scalaz.NonEmptyList
 
-object MailChimp {
+object MailingList {
 
   // ===================================================================================================================
   // Data

@@ -67,7 +67,7 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
   }
 
   // --------------------------------------------------------------------------
-  object mailchimp extends MailChimpImpl.Props {
+  object mailchimp extends MailChimp.Props {
     private implicit def scope: PropScope = scopeByNS("mailchimp")
 
     val dc         = need[String]("dc")
@@ -119,7 +119,7 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   val email     = new EmailImpl(EmailImpl.loadSession(mailProps))
   val emails    = new Emails(props.mail, new EmailTokenValues(cfgFromApiReader))
   val http      = new OkHttpClient()
-  val mailchimp = new MailChimpImpl(http, props.mailchimp)
+  val mailchimp = new MailChimp(http, props.mailchimp)
 
   implicit def trustPeriod   = props.taskman.trustPeriod
   implicit val aopReifier    = new TaskmanApi(TaskmanApi.Context(None), db)

@@ -18,10 +18,10 @@ import shipreq.base.util.ScalaExt.AnyExt
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.Types._
 import ErrorOr.Implicits._
-import MailChimp._
-import MailChimp.API._
+import MailingList._
+import MailingList.API._
 
-object MailChimpImpl extends HasLogger {
+object MailChimp extends HasLogger {
 
   trait Props {
     val dc: String
@@ -199,9 +199,9 @@ object MailChimpImpl extends HasLogger {
     })
 }
 
-import MailChimpImpl._
+import MailChimp._
 
-final class MailChimpImpl(httpClient: OkHttpClient, props: Props) extends HasLogger {
+final class MailChimp(httpClient: OkHttpClient, props: Props) extends HasLogger {
 
   private val urlPrefix = s"https://${props.dc}.api.mailchimp.com/2.0"
   private val apikeyJson = render("apikey" -> props.key)

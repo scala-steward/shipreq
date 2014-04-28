@@ -3,13 +3,13 @@ package shipreq.taskman.server.business
 import org.json4s.JsonAST.JValue
 import org.specs2.mutable.Specification
 import scalaz.NonEmptyList
-import MailChimpImpl._
-import MailChimp.API._
-import MailChimp._
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.ErrorOr.Implicits._
 import shipreq.base.test.specs2.BaseMatchers._
 import shipreq.taskman.api.Types._
+import MailingList._
+import MailingList.API._
+import MailChimp._
 
 class MailChimpTest extends Specification {
 

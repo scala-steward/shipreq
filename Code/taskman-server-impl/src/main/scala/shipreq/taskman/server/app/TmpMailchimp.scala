@@ -1,7 +1,7 @@
 package shipreq.taskman.server.app
 
-import shipreq.taskman.server.business.MailChimp._
-import shipreq.taskman.server.business.MailChimp.API._
+import shipreq.taskman.server.business.MailingList._
+import shipreq.taskman.server.business.MailingList.API._
 import shipreq.taskman.api.Types._
 import scalaz.NonEmptyList
 import shipreq.base.util.effect.IOE
