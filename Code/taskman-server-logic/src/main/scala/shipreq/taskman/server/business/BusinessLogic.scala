@@ -81,10 +81,13 @@ final class BusinessLogic[F[_]](
       import MailingList._
       val s = Subscription(addr, name, newsletter, AccountStatus.Never)
       run(API.Subscribe(mailingListId, s, newsletter)) >==> {
-        case None =>
+        case Ok =>
           IOE.nop
-        case Some(AlreadySubscribed) =>
-          run(API.UpdateMember(mailingListId, s)).maybeFail(_.map(f => Error(s"Failed to update mailing list: $f")))
+        case AlreadySubscribed =>
+          run(API.UpdateMember(mailingListId, s)) >=> {
+            case Ok => ErrorOr.unit
+            case f  => ErrorOr error s"Failed to update mailing list: $f"
+          }
       }
     }
   }

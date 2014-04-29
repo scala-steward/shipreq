@@ -190,8 +190,8 @@ class MockBops extends MockOpTransformer[Bop, IOE] {
   val sendEmailR         = MockResponse(ErrorOr.unit)
   val lookupShipReqUserR = MockResponse[Option[ShipReqUser]](None)
   val mlGetListId        = MockResponse[Option[ListId]](None)
-  val mlSubscribe        = MockResponse[Option[SubscribeFail]](None)
-  val mlUpdateMember     = MockResponse[Option[UpdateMemberFail]](None)
+  val mlSubscribe        = MockResponse[SubscribeResult](Ok)
+  val mlUpdateMember     = MockResponse[UpdateMemberResult](Ok)
   val mlBatchSubscribe   = MockResponse(ErrorOr.unit)
 
   override def trans[A] = {

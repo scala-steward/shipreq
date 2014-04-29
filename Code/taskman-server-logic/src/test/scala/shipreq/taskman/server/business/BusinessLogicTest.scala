@@ -25,7 +25,7 @@ class BusinessLogicTest extends Specification {
 
     "Update ML & email support" in {
       val bop = new MockBops
-      bop.mlSubscribe << Some(MailingList.AlreadySubscribed)
+      bop.mlSubscribe << MailingList.AlreadySubscribed
       test(bop)._1 must haveRun[Bop].ops4[LookupShipReqUser, MailingListOp[Subscribe], MailingListOp[UpdateMember], SendEmail]
     }
 
