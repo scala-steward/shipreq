@@ -7,7 +7,7 @@ import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet,
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}

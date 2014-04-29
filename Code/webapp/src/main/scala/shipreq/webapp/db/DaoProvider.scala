@@ -2,7 +2,7 @@ package shipreq.webapp
 package db
 
 import scalaz.Need
-import slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import util.ResourceLeaseMonad1
 
 // Trait would be nice but https://issues.scala-lang.org/browse/SI-4767

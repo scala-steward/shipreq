@@ -1,6 +1,6 @@
 package shipreq.taskman.api.impl
 
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.taskman.api._
 import Serialisation.Ser
 

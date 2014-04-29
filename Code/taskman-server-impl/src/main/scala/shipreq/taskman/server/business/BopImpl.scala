@@ -2,7 +2,7 @@ package shipreq.taskman.server.business
 
 import scalaz.effect.IO
 import scalaz.{-\/, \/-}
-import scala.slick.session.Database
+import scala.slick.jdbc.JdbcBackend.Database
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.effect.{IoUtils, IOE}
 import shipreq.base.util.log.HasLogger

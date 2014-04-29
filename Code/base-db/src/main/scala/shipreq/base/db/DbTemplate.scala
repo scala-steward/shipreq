@@ -1,7 +1,7 @@
 package shipreq.base.db
 
 import com.googlecode.flyway.core.Flyway
-import scala.slick.session.{Database, Session}
+import scala.slick.jdbc.JdbcBackend.{Database, Session}
 import shipreq.base.util.log.HasLogger
 
 /**

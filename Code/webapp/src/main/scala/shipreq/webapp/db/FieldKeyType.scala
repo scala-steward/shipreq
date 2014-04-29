@@ -2,7 +2,7 @@ package shipreq.webapp
 package db
 
 import scala.slick.jdbc.{StaticQuery => Q}
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import feature.uc.field._
 import lib.Types._
 

@@ -1,6 +1,6 @@
 package shipreq.webapp.test
 
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import scalaz.~>
 import shipreq.webapp.app.DI
 import shipreq.webapp.lib.{TaskmanImpl, TaskmanInterface}

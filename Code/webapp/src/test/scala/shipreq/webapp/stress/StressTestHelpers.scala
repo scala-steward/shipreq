@@ -2,7 +2,7 @@ package shipreq.webapp.stress
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.slick.jdbc.StaticQuery
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.webapp.test.TestDB
 
 object StressTestHelpers {

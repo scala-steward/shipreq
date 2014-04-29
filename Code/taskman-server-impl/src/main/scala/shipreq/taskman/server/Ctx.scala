@@ -4,7 +4,7 @@ import com.squareup.okhttp.OkHttpClient
 import java.util.concurrent.{ExecutorService, TimeUnit}
 import java.util.Properties
 import org.joda.time.{DateTime, Period}
-import scala.slick.session.Database
+import scala.slick.jdbc.JdbcBackend.Database
 import scalaz.-\/
 import scalaz.effect.IO
 import shipreq.base.db.{DatabaseConnection, DbTemplate}

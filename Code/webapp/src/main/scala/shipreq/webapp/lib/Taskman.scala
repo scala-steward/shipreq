@@ -1,6 +1,6 @@
 package shipreq.webapp.lib
 
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.base.db.SingleConnDatabase
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.{MsgId, Msg, ApiOp}

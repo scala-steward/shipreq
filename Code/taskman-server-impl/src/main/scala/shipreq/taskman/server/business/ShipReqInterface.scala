@@ -1,6 +1,6 @@
 package shipreq.taskman.server.business
 
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.taskman.api.Types._
 
 object ShipReqInterface {

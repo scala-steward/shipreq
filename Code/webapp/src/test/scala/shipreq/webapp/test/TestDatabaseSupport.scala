@@ -7,7 +7,7 @@ import org.postgresql.util.PSQLException
 import org.scalatest.{Exceptional, Outcome, Suite}
 import scala.slick.jdbc.{StaticQuery => Q}
 import scalaz.Need
-import slick.session.{Database, Session}
+import scala.slick.jdbc.JdbcBackend.{Database, Session}
 import Q.interpolation
 
 import shipreq.taskman.api.Types.IsUserId

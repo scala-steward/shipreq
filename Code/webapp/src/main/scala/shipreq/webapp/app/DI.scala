@@ -2,7 +2,7 @@ package shipreq.webapp
 package app
 
 import net.liftweb.util.SimpleInjector
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import security.{SecurityProvider, Oshiro}
 import db.{AsyncDbImpl, AsyncDb, DB, DaoProvider}
 import lib.{TaskmanImpl, TaskmanInterface, StatLoggerImpl, StatLogger}

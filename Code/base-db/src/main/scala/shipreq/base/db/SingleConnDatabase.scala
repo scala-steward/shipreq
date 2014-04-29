@@ -1,6 +1,6 @@
 package shipreq.base.db
 
-import scala.slick.session.{Database, Session}
+import scala.slick.jdbc.JdbcBackend.{Database, Session}
 
 case class SingleConnDatabase(s: Session) extends Database {
   override def createConnection() = s.conn

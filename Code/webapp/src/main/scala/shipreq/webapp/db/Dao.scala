@@ -1,17 +1,16 @@
-package shipreq.webapp
-package db
+package shipreq.webapp.db
 
 import net.liftweb.util.Helpers.nextFuncName
 import org.postgresql.util.PSQLException
-import scala.slick.driver.PostgresDriver.simple._
-import feature.uc.field.FieldDefinition
-import feature.UcFilter
-import lib.Locks.{UseCaseNumbers, SingleUseCase}
-import lib.Misc.retry
-import lib.ShareUrlTokenGen
-import lib.Types._
-import security.PasswordAndSalt
-import util.Lock
+import scala.slick.jdbc.JdbcBackend.Session
+import shipreq.webapp.feature.uc.field.FieldDefinition
+import shipreq.webapp.feature.UcFilter
+import shipreq.webapp.lib.Locks.{UseCaseNumbers, SingleUseCase}
+import shipreq.webapp.lib.Misc.retry
+import shipreq.webapp.lib.ShareUrlTokenGen
+import shipreq.webapp.lib.Types._
+import shipreq.webapp.security.PasswordAndSalt
+import shipreq.webapp.util.Lock
 
 /**
  * Database interface.
@@ -265,7 +264,7 @@ sealed trait DaoS {
  * All database interfacing methods, including those that require a transaction.
  */
 sealed trait DaoT extends DaoS {
-  import lib.Misc.ShortExt
+  import shipreq.webapp.lib.Misc.ShortExt
   import Sql._
 
   def performUserRegistration(token: String)(

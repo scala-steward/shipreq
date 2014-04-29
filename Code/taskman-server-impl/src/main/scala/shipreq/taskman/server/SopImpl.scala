@@ -1,7 +1,7 @@
 package shipreq.taskman.server
 
 import org.joda.time.{Period, DateTime}
-import scala.slick.session.{Database, Session}
+import scala.slick.jdbc.JdbcBackend.{Database, Session}
 import scalaz.effect.IO
 import scalaz.std.option.optionInstance
 import scalaz.syntax.traverse._
@@ -37,9 +37,8 @@ object SopImpl {
   object Sql {
     import java.sql.Timestamp
     import org.postgresql.util.PGInterval
-    import scala.slick.jdbc.{GetResult, SetParameter}
+    import scala.slick.jdbc.{GetResult, SetParameter, PositionedParameters}
     import scala.slick.jdbc.StaticQuery.{query, queryNA}
-    import scala.slick.session.PositionedParameters
     import shipreq.base.db.SqlHelpers._
 
     implicit val GR_JsonMsg = GR_Json[Msg]

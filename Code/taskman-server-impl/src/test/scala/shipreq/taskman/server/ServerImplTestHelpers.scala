@@ -3,7 +3,7 @@ package shipreq.taskman.server
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import scalaz.effect.IO
-import scala.slick.session.Database
+import scala.slick.jdbc.JdbcBackend.Database
 import shipreq.base.util.{JPropertiesValueReader, RunMode, Props}
 import shipreq.taskman.api.ApiOp
 import ServerImplTestHelpers._

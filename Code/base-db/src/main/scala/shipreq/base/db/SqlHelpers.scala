@@ -1,8 +1,7 @@
 package shipreq.base.db
 
 import org.postgresql.util.PGobject
-import scala.slick.jdbc.{SetParameter, GetResult}
-import scala.slick.session.{PositionedResult, PositionedParameters}
+import scala.slick.jdbc.{GetResult, SetParameter, PositionedResult, PositionedParameters}
 import shipreq.base.util.TypeTags._
 
 object SqlHelpers {

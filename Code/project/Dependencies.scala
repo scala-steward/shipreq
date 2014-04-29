@@ -69,7 +69,7 @@ object Deps {
   val jodaTime    :MS = "joda-time"                   % "joda-time"             % "2.3" ++
                         "org.joda"                    % "joda-convert"          % "1.2"
   val postgresql  :MS = "org.postgresql"              % "postgresql"            % "9.3-1101-jdbc41"
-  val slick       :MS = "com.typesafe.slick"         %% "slick"                 % "1.0.1"
+  val slick       :MS = "com.typesafe.slick"         %% "slick"                 % "2.0.1"
   val bonecp      :MS = "com.jolbox"                  % "bonecp"                % "0.8.0.RELEASE" ++
                         "com.google.code.findbugs"    % "jsr305"                % "2.0.2" // required by Guava (which is required by BoneCP)
   val flyway      :MS = "com.googlecode.flyway"       % "flyway-core"           % "2.3.1"

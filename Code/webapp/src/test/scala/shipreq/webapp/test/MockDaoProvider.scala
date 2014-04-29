@@ -1,13 +1,13 @@
 package shipreq.webapp
 package test
 
+import java.sql.Connection
 import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
-import slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
+import scalaz.Need
 import app.DI
 import db.{AdminDao, DaoS, DaoT, DaoProvider}
-import java.sql.Connection
-import scalaz.Need
 
 /**
  * [[shipreq.webapp.db.DaoProvider]] that creates and uses a mock DAO.

@@ -3,7 +3,7 @@ package shipreq.webapp.db
 import net.liftweb.actor.SpecializedLiftActor
 import shipreq.webapp.app.DI
 import shipreq.webapp.lib.Types._
-import slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 import AsyncDb._
 
 object AsyncDb {

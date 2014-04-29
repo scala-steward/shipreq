@@ -5,7 +5,7 @@ import java.util.Properties
 import org.specs2.mutable.Specification
 import org.specs2.execute.{Result, AsResult}
 import org.specs2.specification.AroundExample
-import scala.slick.session.{Database, Session}
+import scala.slick.jdbc.JdbcBackend.{Database, Session}
 import scala.slick.jdbc.SQLInterpolation
 import shipreq.base.util._
 import shipreq.base.db.{SingleConnDatabase, DatabaseConnection, DbTemplate}

@@ -1,6 +1,6 @@
 package shipreq.taskman.api.impl
 
-import scala.slick.session.Database
+import scala.slick.jdbc.JdbcBackend.Database
 import shipreq.taskman.api.{Msg, MsgId, ApiOpReifier, ApiOp}
 import scalaz.effect.IO
 

@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery => Q}
-import scala.slick.session.Session
+import scala.slick.jdbc.JdbcBackend.Session
 
 import shipreq.taskman.api.Types.IsUserId
 import shipreq.webapp.db.{Shim, UserDescriptor}

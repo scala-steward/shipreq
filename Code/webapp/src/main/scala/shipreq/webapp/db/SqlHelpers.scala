@@ -3,8 +3,7 @@ package db
 
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import scala.slick.jdbc.{SetParameter, GetResult}
-import scala.slick.session.{PositionedResult, PositionedParameters}
+import scala.slick.jdbc.{GetResult, SetParameter, PositionedResult, PositionedParameters}
 import scalaz.NonEmptyList
 import shipreq.base.db.SqlHelpers._
 import lib.ScalazSubset._
