@@ -95,6 +95,9 @@ object ShipReq extends Build {
       override def project = typicalProject
         .dependsOn(baseUtil)
         .dependsOn(baseDb % "provided")
+        // Delete after upgrade to 2.11 and switch from Manifest to TypeTag
+        .settings(scalacOptions in Compile ~= removeValues("-deprecation"))
+        .settings(scalacOptions in Compile += "-nowarn")
     }
   }
 
