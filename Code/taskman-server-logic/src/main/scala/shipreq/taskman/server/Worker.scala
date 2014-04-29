@@ -7,7 +7,7 @@ import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
 import scalaz.{-\/, \/, \/-, ~>}
 import shipreq.base.util.{ErrorOr, Error}
-import shipreq.base.util.effect.IOE
+import shipreq.base.util.effect.{IoUtils, IOE}
 import shipreq.base.util.effect.IoUtils.IoExt
 import shipreq.base.util.log.HasLogger
 import Sop._
@@ -90,7 +90,7 @@ final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
   private type R = AsyncResult[F] \/ WorkResult
 
   def process(m: MsgHeader): IO[AsyncResult[F] \/ WorkResult] =
-    catchTaskmanErrorsN(assign(m)) <| logWorkResult
+    IoUtils.time_(catchTaskmanErrorsN(assign(m)))(logWorkResult)
 
   private[this] def catchExecErrors[A]: IO[A] => IO[ErrorOr[A]] =
     io => catchExecErrorsIOE(io map ErrorOr.apply)
@@ -147,27 +147,27 @@ final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
     f.reaction.toIO >> addOps >> WorkerFailed(m, e, f.reaction).toIO
   }
 
-  private[this] def logWorkResult(r: R): IO[Unit] = r match {
+  private[this] def logWorkResult(r: R)(time: Long): IO[Unit] = r match {
     case \/-(wr) =>
-      logWorkResult(wr)
+      logWorkResult(wr)(time)
     case -\/(AsyncResult(_, m)) =>
       IO(log.debug.z(s"Scheduled to run asynchronously: $m"))
   }
 
-  private[this] def logWorkResult(r: WorkResult): IO[Unit] =
+  private[this] def logWorkResult(r: WorkResult)(time: Long): IO[Unit] =
     IO(r match {
       case CouldntAssign(m) =>
         log.debug.z(s"Couldn't assign: $m")
       case CouldntReAssign(m) =>
         log.warn.z(s"Couldn't reassign: $m")
       case Completed(m) =>
-        log.info.z(s"Successfully completed: $m")
+        log.info.z(s"Successfully completed in ${time}ms: $m")
       case WorkerFailed(_, e, f) =>
         // f contains m so no need to print separately
         if (e is Deliberate)
           log.info.z(s"Worker deliberately failed: ${e.msg} // $f")
         else
-          log.error(e, s"Worker failed: $f")
+          log.error(e, s"Worker failed after ${time}ms: $f")
       case TaskmanFailed(e, Some(m)) =>
         log.error(e, s"Taskman error occurred processing $m")
       case TaskmanFailed(e, None) =>
@@ -176,12 +176,14 @@ final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
 
   private[this] def wrapAsync(m: MsgDetail, assignedSince: DateTime): IOE[Unit] => IO[WorkResult] =
     work =>
-      catchTaskmanErrorsWR(Some(m))(
-        reassignIfNeeded(m, assignedSince) >>= {
-          case Some(r) => IO(r)
-          case None    => performWorkF(m)(work)
-        }
-      ) <| logWorkResult
+      IoUtils.time_(
+        catchTaskmanErrorsWR(Some(m))(
+          reassignIfNeeded(m, assignedSince) >>= {
+            case Some(r) => IO(r)
+            case None    => performWorkF(m)(work)
+          }
+        )
+      )(logWorkResult)
 
   private[this] val reassignmentOk: IO[Option[WorkResult]] = IO(None)
   private[this] def reassignIfNeeded(m: MsgDetail, assignedSince: DateTime): IO[Option[WorkResult]] =

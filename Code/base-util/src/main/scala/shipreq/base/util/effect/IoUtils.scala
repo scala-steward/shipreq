@@ -24,7 +24,7 @@ object IoUtils {
       end   <- clockMs
     } yield (end - start, a)
 
-  def time_[A](log: A => Long => IO[Unit])(io: IO[A]): IO[A] =
+  def time_[A](io: IO[A])(log: A => Long => IO[Unit]): IO[A] =
     for {
       start <- clockMs
       a     <- io

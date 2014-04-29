@@ -18,9 +18,9 @@ final class BopImpl(db: Database, emailer: EmailImpl, mailchimp: MailChimp, ship
   override def apply[A](op: Bop[A]): IOE[A] = applyUntimed(op)
 
   def applyTimed[A](op: Bop[A]): IOE[A] =
-    IoUtils.time_(logAfterWork(op))(applyUntimed(op))
+    IoUtils.time_(applyUntimed(op))(logCompletion(op))
 
-  def logAfterWork[A](op: Bop[A]): ErrorOr[A] => Long => IO[Unit] =
+  def logCompletion[A](op: Bop[A]): ErrorOr[A] => Long => IO[Unit] =
     res => time => IO(
       res match {
         case \/-(_) =>
