@@ -82,7 +82,7 @@ object EmailImpl extends HasLogger {
   }
 }
 
-final class EmailImpl(mailSession: Session) extends HasLogger {
+final class EmailImpl(val mailSession: Session) extends HasLogger {
   import EmailImpl._
 
   val charset = "UTF-8"
