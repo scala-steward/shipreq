@@ -4,9 +4,8 @@ import scalaz.effect.IO
 import scalaz.{-\/, \/-}
 import scala.slick.session.Database
 import shipreq.base.util.ErrorOr
-import shipreq.base.util.effect.IOE
+import shipreq.base.util.effect.{IoUtils, IOE}
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.server.IoUtils
 import Bop._
 
 final class BopImpl(db: Database, emailer: EmailImpl, mailchimp: MailChimp, shipreqSchema: Option[String]) extends BopReifier with HasLogger {
@@ -16,10 +15,10 @@ final class BopImpl(db: Database, emailer: EmailImpl, mailchimp: MailChimp, ship
   private[this] def shipreqDao[A](f: ShipReqInterface.Dao => A): IOE[A] =
     IOE(db.withSession(s => f(new ShipReqInterface.Dao(shipreqSql)(s))))
 
-  override def apply[A](op: Bop[A]): IOE[A] =
-    IoUtils.timeU(
-      ErrorOr.catchExceptionM(applyOnly(op))
-    )(logAfterWork(op))
+  override def apply[A](op: Bop[A]): IOE[A] = applyUntimed(op)
+
+  def applyTimed[A](op: Bop[A]): IOE[A] =
+    IoUtils.time_(logAfterWork(op))(applyUntimed(op))
 
   def logAfterWork[A](op: Bop[A]): ErrorOr[A] => Long => IO[Unit] =
     res => time => IO(
@@ -31,11 +30,12 @@ final class BopImpl(db: Database, emailer: EmailImpl, mailchimp: MailChimp, ship
       }
     )
 
-  def applyOnly[A]: Bop[A] => IOE[A] = {
-    case s: SendEmail               => emailer send s
-    case MailingListOp(op)          => mailchimp run op
-    case LookupShipReqUser(-\/(id)) => shipreqDao(_ userQueryById id)
-    case LookupShipReqUser(\/-(ea)) => shipreqDao(_ userQueryByEmail ea)
-  }
+  def applyUntimed[A](op: Bop[A]): IOE[A] =
+    ErrorOr.catchExceptionM(op match {
+      case s: SendEmail               => emailer send s
+      case MailingListOp(op)          => mailchimp run op
+      case LookupShipReqUser(-\/(id)) => shipreqDao(_ userQueryById id)
+      case LookupShipReqUser(\/-(ea)) => shipreqDao(_ userQueryByEmail ea)
+    })
 }
 

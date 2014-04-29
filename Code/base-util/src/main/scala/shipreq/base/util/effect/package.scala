@@ -1,26 +1,10 @@
 package shipreq.base.util
 
 import scalaz.{\/, Catchable, Monad}
-import scalaz.syntax.bind._
 import scalaz.effect.IO
 import ErrorOr.Implicits._
 
 package object effect {
-
-  // ===================================================================================================================
-  // IO
-
-  val nopIo: IO[Unit] = IO(())
-
-  implicit class IOExt[A](val io: IO[A]) extends AnyVal {
-    @inline def tap(f: A => IO[_]): IO[A] = io.flatMap(a => f(a) >> IO(a))
-    @inline def <| (f: A => IO[_]): IO[A] = io tap f
-
-    @inline def castError[B](implicit ev: A =:= ErrorOr[Nothing]): IO[ErrorOr[B]] = io.asInstanceOf[IO[ErrorOr[B]]]
-  }
-
-  // ===================================================================================================================
-  // IOE
 
   type IOE[A] = IO[ErrorOr[A]]
 
@@ -42,5 +26,4 @@ package object effect {
         override def fail[A](e: Throwable): IOE[A]              = IOE error e
       }
   }
-
 }

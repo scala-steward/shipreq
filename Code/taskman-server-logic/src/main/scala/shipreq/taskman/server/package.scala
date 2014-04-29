@@ -47,8 +47,6 @@ package object server {
 
   type SopReifier = Sop ~> IO
 
-  @inline def nopIo = shipreq.base.util.effect.nopIo
-
   implicit class OpExt[F[_], A](val op: F[A]) extends AnyVal {
     def toIO(implicit opToIo: F ~> IO): IO[A] = opToIo(op)
     def toIOE(implicit opToIo: F ~> IOE): IOE[A] = opToIo(op)

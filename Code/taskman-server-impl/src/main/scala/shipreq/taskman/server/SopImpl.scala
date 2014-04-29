@@ -7,6 +7,7 @@ import scalaz.std.option.optionInstance
 import scalaz.syntax.traverse._
 import shipreq.base.util.{ErrorOr, StringBasedValueReader}
 import shipreq.base.util.ExternalValueReader.Retriever
+import shipreq.base.util.effect.IoUtils
 import shipreq.taskman.api.{MsgId, Msg, Priority}
 import shipreq.taskman.api.impl.Serialisation
 import shipreq.taskman.api.Types._
@@ -268,6 +269,6 @@ class SopImpl[EA](db: Database, emails: Emails, bopReifier: BopReifier) extends 
       failedTaskmanHandler(op)
 
     case Nop =>
-      nopIo
+      IoUtils.nop
   }
 }

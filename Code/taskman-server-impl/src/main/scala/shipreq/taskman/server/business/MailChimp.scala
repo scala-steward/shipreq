@@ -12,7 +12,8 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import scalaz.{NonEmptyList, -\/, \/-}
 import scalaz.effect.IO
-import shipreq.base.util.effect.{IOE, IOExt}
+import shipreq.base.util.effect.IOE
+import shipreq.base.util.effect.IoUtils.IoExt
 import shipreq.base.util.{Error, ErrorOr}
 import shipreq.base.util.ScalaExt.AnyExt
 import shipreq.base.util.log.HasLogger
