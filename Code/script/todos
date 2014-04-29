@@ -1,0 +1,8 @@
+#!/bin/bash
+cd $(dirname $(readlink -e "$0"))/.. || exit 1
+
+clear
+find */src -type f | egrep -v '/_scalate/|vendor|src/it/' | sort \
+  | xargs fgrep --color=always -n TODO \
+  | awk '{match($1,/([a-z_-]+)\/src/,a); if (NR > 1 && a[1] != p[1]) print ""; print} {match($1,/([a-z_-]+)\/src/,p)}'
+
