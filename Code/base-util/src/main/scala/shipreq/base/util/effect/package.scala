@@ -11,6 +11,8 @@ package object effect {
   object IOE {
     @inline def apply[A](f: => A): IOE[A] = IO(ErrorOr safe f)
 
+    @inline def pure[A](a: A): IOE[A] = IO(ErrorOr(a))
+
     @inline def error[A](e: Error)               : IOE[A] = IO(e.toErrorOr)
     @inline def error[A](m: String)              : IOE[A] = error(Error(m))
     @inline def error[A](e: Throwable)           : IOE[A] = error(Error(e))

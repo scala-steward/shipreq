@@ -150,10 +150,10 @@ final object ErrorOr {
       @inline def >==>^(f: A => M[ErrorOr[Unit]])(implicit M: Monad[M]): M[ErrorOr[A]] = ftapE(f)
 
       @inline def tapE(f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = fmapE(a => M.map(f(a))(_ => ErrorOr(a)))
-      @inline def <<| (f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(f)
+      @inline def <-<^(f: A => M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(f)
 
       @inline def _tapE(f: M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = tapE(_ => f)
-      @inline def |<<| (f: M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = _tapE(f)
+      @inline def <<^  (f: M[Unit])(implicit M: Monad[M]): M[ErrorOr[A]] = _tapE(f)
 
       @inline def toErrorM(f: => A => Error)(implicit M: Monad[M]): M[Error] =
         M.map(mea)(ea => toError(ea)(f))

@@ -13,6 +13,7 @@ object Tmp extends MainTemplate {
       ctx.logContent()
       //ctx.testConnections()
 
+      /*
       import javax.mail._
       import javax.mail.internet._
 
@@ -27,8 +28,8 @@ object Tmp extends MainTemplate {
       msg.setReplyTo(Array(new InternetAddress("ex-2@blah.com")))
       msg.setHeader("On-Behalf-Of", "ex-3@blah.com")
       Transport.send(msg)
+      */
 
-/*
       val mi = ctx.mailchimp
       val id = ctx.mailingListId
       log info "Ready...."
@@ -41,6 +42,5 @@ object Tmp extends MainTemplate {
 
       val io = batch |>==> sub |>==> upd
       io.unsafePerformIO()
-      */
     }
 }
