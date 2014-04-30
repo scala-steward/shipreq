@@ -58,6 +58,14 @@ object Common {
   lazy val settings = (p: Project) => p
     .settings((
         net.virtualvoid.sbt.graph.Plugin.graphSettings ++ // Dependency graph
+        addCommandAlias("/",    "project root") ++
+        addCommandAlias("B",   "project base") ++
+        addCommandAlias("T",   "project taskman") ++
+        addCommandAlias("W",   "project webapp") ++
+        addCommandAlias("TAI", "project taskman-api-impl") ++
+        addCommandAlias("TAL", "project taskman-api-logic") ++
+        addCommandAlias("TSI", "project taskman-server-impl") ++
+        addCommandAlias("TSL", "project taskman-server-logic") ++
         addCommandAlias("cc",   ";clear;compile") ++
         addCommandAlias("ctc",  ";clear;test:compile") ++
         addCommandAlias("ct",   ";clear;test") ++
