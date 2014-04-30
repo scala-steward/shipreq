@@ -40,7 +40,7 @@ object LogLevel {
     }
 
   def evr(implicit rs: Retriever[String]): Retriever[LogLevel] =
-    rs.emap(s => ErrorOr.fromOption(LogLevel.read(s), s"Invalid log level: $s"))
+    rs.emap(s => ErrorOr.fromOptionS(LogLevel.read(s), s"Invalid log level: $s"))
 }
 
 final class Logger(log: slf4jLogger) {

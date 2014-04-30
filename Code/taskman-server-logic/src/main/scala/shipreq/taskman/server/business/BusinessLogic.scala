@@ -67,7 +67,7 @@ final class BusinessLogic[F[_]](
     import MailingList._
 
     def get(id: UserId): IOE[ShipReqUser] =
-      run(LookupShipReqUser(-\/(id))) >=> (ErrorOr.fromOption(_, s"User not found: $id"))
+      run(LookupShipReqUser(-\/(id))) >=> (ErrorOr.fromOptionS(_, s"User not found: $id"))
 
     def subscription(u: ShipReqUser) =
       Subscription(u.email, u.name, u.newsletter, AccountStatus.Active)

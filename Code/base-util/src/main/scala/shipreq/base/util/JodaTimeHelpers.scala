@@ -87,7 +87,7 @@ case class JodaTimeValueRetrievers(rs: Retriever[String]) extends StringParsingB
   import JodaTimeValueRetrievers._
 
   def parseTimeUnit(s: String) =
-    ErrorOr.fromOption(
+    ErrorOr.fromOptionS(
       TimeUnit.values.find(_.readRegex.matcher(s).matches),
       s"Unable to parse time unit: '$s'"
     )

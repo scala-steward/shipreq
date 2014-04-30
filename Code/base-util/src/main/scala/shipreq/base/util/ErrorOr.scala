@@ -14,11 +14,14 @@ final object ErrorOr {
   def error[A](e: Throwable)           : ErrorOr[A] = -\/(Error(e))
   def error[A](m: String, e: Throwable): ErrorOr[A] = -\/(Error(m,e))
 
-  def fromOption[A](o: Option[A], errMsg: => String): ErrorOr[A] =
+  def fromOption[A](o: Option[A], e: => Error): ErrorOr[A] =
     o match {
       case Some(a) => apply(a)
-      case None    => error(errMsg)
+      case None    => e.toErrorOr
     }
+
+  @inline def fromOptionS[A](o: Option[A], errMsg: => String): ErrorOr[A] =
+    fromOption(o, Error(errMsg))
 
   def catchException[A](a: => ErrorOr[A]): ErrorOr[A] =
     catchExceptionM[Id, A](a)
