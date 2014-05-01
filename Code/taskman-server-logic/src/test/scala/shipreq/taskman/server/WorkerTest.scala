@@ -8,6 +8,9 @@ import scalaz.effect.IO
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.ScalaExt.Tuple2Ext
 import shipreq.base.test.specs2.BaseMatchers._
+import shipreq.taskman.server.business.Bop
+import shipreq.taskman.server.business.Bop.SupportOp
+import shipreq.taskman.server.business.Support.API.ReportFailure
 import TestHelpers._
 import Sop._
 import Worker._
@@ -150,5 +153,43 @@ class WorkerTest extends Specification {
     "Future notifies support"   in (s2 must haveRun[Sop].ops3[GetMsgAssignWorker, ReAssignWorker, NotifySupportTaskmanError])
     }
 
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  "Worker.FailureHandler" >> {
+    "handleFailedWorker" should {
+      def test(bop: MockBops) = {
+        new FailureHandler(MockEmails, bop).handleFailedWorker(sampleNotifySupportWorkerFailed).unsafePerformIO()
+        bop
+      }
+
+      "notify support" in {
+        val bop = new MockBops
+        test(bop) must haveRun[Bop].op[SupportOp[ReportFailure]]
+      }
+
+      "raise a taskman error if fails to notify support" in {
+        val bop = crashOnReportFailure(new MockBops)
+        test(bop) must haveRun[Bop].ops2[SupportOp[ReportFailure], SupportOp[ReportFailure]]
+      }
+    }
+
+    "handleFailedTaskman" should {
+      def test(bop: MockBops) = {
+        new FailureHandler(MockEmails, bop).handleFailedTaskman(sampleNotifySupportTaskmanError).unsafePerformIO()
+        bop
+      }
+
+      "notify support" in {
+        val bop = new MockBops
+        test(bop) must haveRun[Bop].op[SupportOp[ReportFailure]]
+      }
+
+      "recover if unable to notify support" in {
+        val bop = crashOnReportFailure(new MockBops)
+        test(bop) must haveRun[Bop].op[SupportOp[ReportFailure]]
+      }
+    }
   }
 }

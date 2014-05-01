@@ -66,10 +66,9 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
     private[this] implicit def rEE = EmailImpl.envelopeLoader
     private[this] implicit def rEF = EmailImpl.envelopeFrontLoader
     private[TaskmanProps] def propmap = mkPropMap(
-      "public.from" -> publicFrom, "support" -> supportEnv, "concurrency.max" -> concurrencyMax)
+      "public.from" -> publicFrom, "concurrency.max" -> concurrencyMax)
 
     override val publicFrom = need[Addr]("public.from")
-    override val supportEnv = need[Envelope]("support")
     val concurrencyMax = validate("concurrency.max", need[Int])(atLeast(1))
   }
 
@@ -81,20 +80,23 @@ final class TaskmanProps(evr: StringBasedValueReader) extends HasLogger {
     override val dc         = need[String]("dc")
     override val key        = need[String]("key")
     override val masterList = need[String]("masterList")
-    override val logLevel   = tryNeed[LogLevel]("logLevel", LogLevel.Debug)
+    override val logLevel   = need[LogLevel]("logLevel")
   }
 
   object freshdesk extends FreshDesk.Props {
+    import FreshDesk._
     private implicit def scope: PropScope = scopeByNS("freshdesk")
+    private implicit def rTO = ticketOrgRetriever
     private[TaskmanProps] def propmap = mkPropMap(
-      "domain" -> domain, "key" -> key, "landingPage.group" -> landingPageGroup,
-      "landingPage.ticketType" -> landingPageTicketType, "logLevel" -> logLevel)
+      "domain" -> domain, "key" -> key, "logLevel" -> logLevel, "taskmanEmail" -> taskmanEmail,
+      "org.landingPage" -> landingPage, "org.failure" -> failure)
 
-    override val domain                = need[String]("domain")
-    override val key                   = need[String]("key")
-    override val landingPageGroup      = need[String]("landingPage.group")
-    override val landingPageTicketType = need[String]("landingPage.ticketType")
-    override val logLevel              = tryNeed[LogLevel]("logLevel", LogLevel.Debug)
+    override val domain       = need[String]("domain")
+    override val key          = need[String]("key")
+    override val taskmanEmail = need[String]("taskmanEmail")
+    override val landingPage  = need[TicketOrg]("org.landingPage")
+    override val failure      = need[TicketOrg]("org.failure")
+    override val logLevel     = need[LogLevel]("logLevel")
   }
 
   object shipreq {
@@ -159,7 +161,7 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   implicit def trustPeriod   = props.taskman.trustPeriod
   implicit val aopReifier    = new TaskmanApi(TaskmanApi.Context(None), db)
   implicit val bopReifier    = new BopImpl(db, email, mailchimp, freshdesk, props.shipreq.schema)
-  implicit val sopReifier    = new SopImpl(db, emails, bopReifier)
+  implicit val sopReifier    = new SopImpl(db, new Worker.FailureHandler(emails, bopReifier))
   implicit val msgProcessor  = new BusinessLogic(bopReifier, emails, async.email, mailingListId)
   implicit val failurePolicy = Failure.failurePolicy
   implicit val clock         = IO(new DateTime)
@@ -169,9 +171,10 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
     props.logContent()
     val p = "    "
     log info "Settings"
-    log.info z s"${p}FreshDesk LP group ID = ${freshdesk.landingPageGroupId.value}"
-    log.info z s"${p}Mailing list ID       = ${mailingListId.value}"
-    log.info z s"${p}Node ID               = ${nodeId.value}"
+    log.info z s"${p}FreshDesk failure group = ${freshdesk.propsI.failure.group}"
+    log.info z s"${p}FreshDesk LP group      = ${freshdesk.propsI.landingPage.group}"
+    log.info z s"${p}Mailing list ID         = ${mailingListId.value}"
+    log.info z s"${p}Node ID                 = ${nodeId.value}"
   }
 
   def testConnections(): Unit = {

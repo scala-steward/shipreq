@@ -4,16 +4,13 @@ import org.joda.time.Period
 import org.specs2.matcher.Matcher
 import org.specs2.mutable._
 import org.specs2.time.NoTimeConversions
-import shipreq.base.test.specs2.BaseMatchers._
 import shipreq.base.util.Error
 import shipreq.base.util.jodatime.JodaTimeHelpers._
 import shipreq.taskman.server._
 import TestHelpers._
-import Bop.SendEmail
 import Sop._
 import Failure._
 import Worker._
-
 
 class FailureTest extends Specification with NoTimeConversions {
 
@@ -67,36 +64,6 @@ class FailureTest extends Specification with NoTimeConversions {
     "on 20th failure after cutoff, pass through" in {
       implicit val c = lenses.failureCtx.failureCountL.set(ctx_nd, 19).copy(now = timeNow plus 2.days)
       retryAndNotify(c) ==== None
-    }
-  }
-
-  "handleFailedWorker" should {
-    "notify support" in {
-      val bop = new MockBops
-      val sop = new MockSops
-      handleFailedWorker(MockEmails, bop, sop)(sampleNotifySupportWorkerFailed).unsafePerformIO()
-      (sop, bop) must haveRun2[Sop, Bop](_.none, _.op[SendEmail])
-    }
-
-    "raise a taskman error if fails to notify support" in {
-      val bop = crashOnSendEmail(new MockBops)
-      val sop = new MockSops
-      handleFailedWorker(MockEmails, bop, sop)(sampleNotifySupportWorkerFailed).unsafePerformIO()
-      (sop, bop) must haveRun2[Sop, Bop](_.op[NotifySupportTaskmanError], _.op[SendEmail])
-    }
-  }
-
-  "handleFailedTaskman" should {
-    "notify support" in {
-      val bop = new MockBops
-      handleFailedTaskman(MockEmails, bop)(sampleNotifySupportTaskmanError).unsafePerformIO()
-      bop must haveRun[Bop].op[SendEmail]
-    }
-
-    "recover if unable to notify support" in {
-      val bop = crashOnSendEmail(new MockBops)
-      handleFailedTaskman(MockEmails, bop)(sampleNotifySupportTaskmanError).unsafePerformIO()
-      bop must haveRun[Bop].op[SendEmail]
     }
   }
 }

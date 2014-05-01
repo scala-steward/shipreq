@@ -1,20 +1,21 @@
 package shipreq.taskman.server
 
 import org.joda.time.DateTime
+import scalaz.{-\/, \/, \/-, ~>}
 import scalaz.effect.IO
 import scalaz.std.list.listInstance
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
-import scalaz.{-\/, \/, \/-, ~>}
 import shipreq.base.util.{ErrorOr, Error}
 import shipreq.base.util.effect.{IoUtils, IOE}
-import shipreq.base.util.effect.IoUtils.IoExt
 import shipreq.base.util.log.HasLogger
+import shipreq.taskman.api.{Priority => MsgPriority}
+import shipreq.taskman.server.business.{Support, BopReifier, Emails}
+import shipreq.taskman.server.business.Bop.SupportOp
+import ErrorOr.Implicits.MonadExt
 import Sop._
-import Worker._
-import WorkResult._
 
-object Worker {
+object Worker extends HasLogger {
 
   type MsgProcessor[F[_]] = MsgProcessorIn[F] => MsgProcessorOut[F]
 
@@ -50,6 +51,44 @@ object Worker {
    */
   case class FailureResponse(reaction: FailedJobReaction, additionalOps: List[Sop[Unit]])
 
+  def priorityForWorkerFailure(mp: MsgPriority): Support.Priority =
+    mp.value match {
+      case p if p >= MsgPriority.High.value   => Support.Priority.Urgent
+      case p if p >= MsgPriority.Medium.value => Support.Priority.High
+      case _                                  => Support.Priority.Medium
+    }
+
+  final class FailureHandler(emails: Emails, bopReifier: BopReifier) {
+
+    def handleFailedWorker(f: NotifySupportWorkerFailed): IO[Unit] = {
+      val c = emails.workerFailureEmail(f.t, f.m, f.e)
+      val a = Support.API.ReportFailure(c.subject, c.body, priorityForWorkerFailure(f.m.priority))
+      val io = bopReifier(SupportOp(a))
+      val catchIo: Error => IO[Unit] =
+        e2 => IO(
+          log.error(s"""FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
+                Notification error: ${e2.stackTraceStr}
+                Worker error: ${f.e.stackTraceStr}
+                Msg: ${f.m}""")
+        ) >> handleFailedTaskman(NotifySupportTaskmanError(f.t, e2, Some(f.m)))
+      io.execE(catchIo)
+    }
+
+    def handleFailedTaskman(f: NotifySupportTaskmanError): IO[Unit] = {
+      val c = emails.taskmanErrorEmail(f.t, f.e, f.m)
+      val a = Support.API.ReportFailure(c.subject, c.body, Support.Priority.Urgent)
+      val io = bopReifier(SupportOp(a))
+      val catchIo: Error => IO[Unit] =
+        e2 => IO(
+          log.error(s"""FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
+              Notification error: ${e2.stackTraceStr}
+              Original error: ${f.e.stackTraceStr}
+              Msg: ${f.m}""")
+        )
+      io.execE(catchIo)
+    }
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   /** Represents the final outcome of attempting to perform a job. */
@@ -76,6 +115,8 @@ object Worker {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+import Worker._
+import WorkResult._
 
 final class Worker[F[_]](msgProcessor: MsgProcessor[F])(
     implicit node: NodeId,

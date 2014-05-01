@@ -4,13 +4,11 @@ db.database = shipreq_test
 db.username = shipreq_test
 db.password = sqt
 
-shipreq.webapp.appName   = TestShipReq
-shipreq.webapp.url.login = http://test.shipreq.com/login
-
-freshdesk.domain                 = yoarmum
-freshdesk.key                    = 6nOvQN6fH4XKlVCbXHD9
-freshdesk.landingPage.group      = Sales
-freshdesk.landingPage.ticketType = Lead
+freshdesk.domain          = yoarmum
+freshdesk.key             = 6nOvQN6fH4XKlVCbXHD9
+freshdesk.taskmanEmail    = Taskman <taskman@shipreq.com>
+freshdesk.org.landingPage = Sales / Lead
+freshdesk.org.failure     = QA / Incident
 
 mail.concurrency.max = 1
 
@@ -20,3 +18,7 @@ mailchimp.masterList = Master
 
 taskman.poll.every   = 200 ms
 taskman.poll.min     = #
+
+shipreq.webapp.appName   = TestShipReq
+shipreq.webapp.url.login = http://test.shipreq.com/login
+

@@ -25,7 +25,6 @@ object Email {
 
   trait EnvelopeProps {
     val publicFrom: Addr
-    val supportEnv: Envelope
   }
 
   trait TokenValues {
@@ -75,15 +74,15 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
 
   // ===================================================================================================================
 
-  def notifySupportOfWorkerFailure(t: DateTime, m: MsgDetail, e: Error): SendOp =
-    Bop.SendEmail(supportEnv, Content(
-      s"[TASKMAN] Worker failed on #${m.hdr.id.value}",
-      s"TIME: ${t toString timeFormat}\n\nMSG: $m\n\nERROR: ${e.stackTraceStr}"))
+  def workerFailureEmail(t: DateTime, m: MsgDetail, e: Error) = Content(
+    s"Taskman worker failed on msg (${m.id.value}) ${m.msg.msgTypeStr}",
+    s"TIME: ${t toString timeFormat}\n\nMSG: $m\n\nERROR: ${e.stackTraceStr}"
+  )
 
-  def notifySupportOfTaskmanError(t: DateTime, e: Error, m: Option[MsgDetail]): SendOp =
-    Bop.SendEmail(supportEnv, Content(
-      s"[TASKMAN] Taskman infrastructure itself failed",
-      s"TIME: ${t toString timeFormat}\n\nERROR: ${e.stackTraceStr}\n\nMSG: $m"))
+  def taskmanErrorEmail(t: DateTime, e: Error, m: Option[MsgDetail]) = Content(
+    "Taskman infrastructure failed",
+    s"TIME: ${t toString timeFormat}\n\nERROR: ${e.stackTraceStr}\n\nMSG: $m"
+  )
 
   // ===================================================================================================================
 

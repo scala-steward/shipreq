@@ -1,10 +1,14 @@
 package shipreq.taskman.server.app
 
-import shipreq.taskman.server.business.MailingList._
-import shipreq.taskman.server.business.MailingList.API._
+import org.joda.time.DateTime
+import shipreq.taskman.api._
 import shipreq.taskman.api.Types._
-import scalaz.NonEmptyList
+import shipreq.taskman.server._
+import shipreq.taskman.server.business._
+import shipreq.base.util.Error
 import shipreq.base.util.ErrorOr.Implicits._
+import MailingList.API._
+import Support.API._
 
 object Tmp extends MainTemplate {
 
@@ -44,5 +48,12 @@ object Tmp extends MainTemplate {
       val io = batch |>==> sub |>==> upd
       io.unsafePerformIO()
       */
+
+      // val e = Sop.NotifySupportTaskmanError(DateTime.now, Error("Test from Tmp", new RuntimeException), None)
+      // ctx.sopReifier(e).unsafePerformIO()
+
+      val m = MsgDetail(MsgHeader(MsgId(0), Priority.Medium, DateTime.now), Msg.RegistrationCompleted(0.tag), 0)
+      val f = Sop.NotifySupportWorkerFailed(DateTime.now, m ,Error("Test from Tmp", new RuntimeException))
+      ctx.sopReifier(f).unsafePerformIO()
     }
 }

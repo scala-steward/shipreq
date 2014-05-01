@@ -80,7 +80,8 @@ object TestHelpers {
   val reassignWorkerDeny               = endoMod[MockSops](_.reassignWorkerR << false)
   val reassignWorkerCrash              = endoMod[MockSops](_.reassignWorkerR << ???)
 
-  val crashOnSendEmail = endoMod[MockBops](_.sendEmailR << ErrorOr.error("CRASH!"))
+  val crashOnSendEmail     = endoMod[MockBops](_.sendEmailR << ErrorOr.error("CRASH!"))
+  val crashOnReportFailure = endoMod[MockBops](_.supReportFailure << ErrorOr.error("CRASH!"))
 
   val clockReal = IO(DateTime.now)
 
@@ -116,7 +117,6 @@ object TestHelpers {
   object MockEmailEnvelopeProps extends Email.EnvelopeProps {
     private[this] implicit def autoParseEa(ea: String): Addr = Addr(ea.tag)
     override val publicFrom: Addr = "publicFrom"
-    override val supportEnv = Email.Envelope("Support.From", NonEmptyList("Support.To"))
   }
 
   object MockEmailTokenValues extends Email.TokenValues {
@@ -186,6 +186,7 @@ object BopTypeTags extends OpTypeProvider[Bop] {
     case MailingListOp(_: UpdateMember)   => manifest[MailingListOp[UpdateMember]]
     case MailingListOp(_: BatchSubscribe) => manifest[MailingListOp[BatchSubscribe]]
     case SupportOp(_: NotifyLandingPage)  => manifest[SupportOp[NotifyLandingPage]]
+    case SupportOp(_: ReportFailure)      => manifest[SupportOp[ReportFailure]]
   }
 }
 
@@ -199,6 +200,7 @@ class MockBops extends MockOpTransformer[Bop, IOE] {
   val mlUpdateMember       = MockResponse[UpdateMemberResult](Ok)
   val mlBatchSubscribe     = MockResponse(ErrorOr.unit)
   val supNotifyLandingPage = MockResponse[TicketId](TicketId(666))
+  val supReportFailure     = MockResponse(ErrorOr(TicketId(200)))
 
   override def trans[A] = {
     case _: SendEmail                     => IO(sendEmailR.pop())
@@ -208,5 +210,6 @@ class MockBops extends MockOpTransformer[Bop, IOE] {
     case MailingListOp(_: UpdateMember)   => IOE(mlUpdateMember.pop())
     case MailingListOp(_: BatchSubscribe) => IO(mlBatchSubscribe.pop())
     case SupportOp(_: NotifyLandingPage)  => IOE(supNotifyLandingPage.pop())
+    case SupportOp(_: ReportFailure)      => IO(supReportFailure.pop())
   }
 }

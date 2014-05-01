@@ -228,12 +228,10 @@ object SopImpl {
 
 // =====================================================================================================================
 
-class SopImpl[EA](db: Database, emails: Emails, bopReifier: BopReifier) extends SopReifier {
+class SopImpl[EA](db: Database, fh: Worker.FailureHandler) extends SopReifier {
   import Sop._
   import SopImpl._
 
-  private[this] val failedWorkerHandler = Failure.handleFailedWorker(emails, bopReifier, this)
-  private[this] val failedTaskmanHandler = Failure.handleFailedTaskman(emails, bopReifier)
   private[this] def ioD[A](f: Dao => A): IO[A] = IO(db.withSession(s => f(new Dao(s))))
 
   def getNextNodeId = ioD(_.getNextNodeId)
@@ -262,10 +260,10 @@ class SopImpl[EA](db: Database, emails: Emails, bopReifier: BopReifier) extends 
       ioD(_ cfgGet k)
 
     case op: NotifySupportWorkerFailed =>
-      failedWorkerHandler(op)
+      fh handleFailedWorker op
 
     case op: NotifySupportTaskmanError =>
-      failedTaskmanHandler(op)
+      fh handleFailedTaskman op
 
     case Nop =>
       IoUtils.nop

@@ -23,5 +23,7 @@ object Support {
 
     /** Notify support of a landing page hit. */
     case class NotifyLandingPage(email: String, subject: String, desc: String, priority: Priority) extends API[TicketId]
+
+    case class ReportFailure(subject: String, desc: String, priority: Priority) extends API[TicketId]
   }
 }

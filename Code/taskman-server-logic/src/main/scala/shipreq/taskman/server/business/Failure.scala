@@ -1,9 +1,6 @@
 package shipreq.taskman.server.business
 
 import org.joda.time.Period
-import scalaz.effect.IO
-import scalaz.syntax.bind._
-import shipreq.base.util.ErrorOr.Implicits.MonadExt
 import shipreq.base.util.jodatime.JodaTimeHelpers._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.Msg.DummyMsg
@@ -13,31 +10,6 @@ import shipreq.taskman.server.Worker.{FailureResponse, FailurePolicy, FailureCtx
 import shipreq.taskman.server._
 
 object Failure extends HasLogger {
-
-  // TODO This should be elsewhere and/or this class needs renaming
-
-  def handleFailedWorker(emails: Emails, bopReifier: BopReifier, sopReifier: SopReifier): NotifySupportWorkerFailed => IO[Unit] =
-    op =>
-      bopReifier(emails.notifySupportOfWorkerFailure(op.t, op.m, op.e))
-        .execE(e2 => IO(
-            log.error(s"""FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
-              Notification error: ${e2.stackTraceStr}
-              Worker error: ${op.e.stackTraceStr}
-              Msg: ${op.m}""")
-          ) >> sopReifier(NotifySupportTaskmanError(op.t, e2, Some(op.m)))
-        )
-
-  def handleFailedTaskman(emails: Emails, bopReifier: BopReifier): NotifySupportTaskmanError => IO[Unit] =
-    op =>
-      bopReifier(emails.notifySupportOfTaskmanError(op.t, op.e, op.m))
-        .execE(e2 => IO(
-          log.error(s"""FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
-            Notification error: ${e2.stackTraceStr}
-            Original error: ${op.e.stackTraceStr}
-            Msg: ${op.m}""")
-        ))
-
-  // ===================================================================================================================
 
   def composeF[R,A,B,C](h: B => A => C, g: R => B): R => A => C =
     r => h(g(r))

@@ -5,7 +5,9 @@ import shipreq.base.util.ScalaExt.Tuple2Ext
 /**
  * A datum that can be sent to the Taskman server and meaningfully processed.
  */
-sealed trait Msg
+sealed trait Msg {
+  final def msgTypeStr = getClass.getSimpleName
+}
 
 object Msg {
   import Types._

@@ -36,7 +36,7 @@ object Http {
   def httpLoggers(log: Logger#AtLevel) = {
     val p = log.printer[IO]
     def s(prefix: String, str: String) = if (str.isEmpty) "" else prefix + str
-    val logRequest  = (r: Req)    => p(s"HTTP request: ${r.e.method} ${r.e.url}${s(" ~ ", r.bodyS)}")
+    val logRequest  = (r: Req)    => p(s"HTTP request: ${r.e.method.value} ${r.e.url}${s(" ~ ", r.bodyS)}")
     val logResponse = (r: String) => p(s"HTTP response: $r")
     val logResult   = (r: Any)    => p(s"Op result: $r")
     (logRequest, logResponse, logResult)

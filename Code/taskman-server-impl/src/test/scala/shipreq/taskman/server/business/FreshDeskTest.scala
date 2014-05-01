@@ -2,11 +2,9 @@ package shipreq.taskman.server.business
 
 import org.json4s.JsonAST.JValue
 import org.specs2.mutable.Specification
-import scalaz.NonEmptyList
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.ErrorOr.Implicits._
 import shipreq.base.test.specs2.BaseMatchers._
-import shipreq.taskman.api.Types._
 import Support._
 import Support.API._
 import FreshDesk._
@@ -21,11 +19,11 @@ class FreshDeskTest extends Specification {
     val respOk = parseIntoJson("""[{"group":{"assign_time":null,"business_calendar_id":null,"created_at":"2014-04-30T08:05:51+09:00","description":"Product Management group","escalate_to":null,"id":1000123401,"name":"Product Management","ticket_assign_type":0,"updated_at":"2014-04-30T08:05:51+09:00","agents":[]}},{"group":{"assign_time":null,"business_calendar_id":null,"created_at":"2014-04-30T08:05:51+09:00","description":"Members of the QA team belong to this group","escalate_to":null,"id":1000123402,"name":"QA","ticket_assign_type":0,"updated_at":"2014-04-30T08:05:51+09:00","agents":[]}},{"group":{"assign_time":null,"business_calendar_id":null,"created_at":"2014-04-30T08:05:51+09:00","description":"People in the Sales team are members of this group","escalate_to":null,"id":1000123403,"name":"Sales","ticket_assign_type":0,"updated_at":"2014-04-30T08:05:51+09:00","agents":[]}}]""")
 
     "find the id of a group by name" in {
-      respOk >=> parseGetGroupIdResponse("QA") must beNonErrorOf(GroupId(1000123402))
+      respOk >=> parseRespGetGroup("QA") must beNonErrorOf(Group(1000123402, "QA"))
     }
 
     "fail if no group returned with given name" in {
-      respOk >=> parseGetGroupIdResponse("WHAT") must beAnError
+      respOk >=> parseRespGetGroup("WHAT") must beAnError
     }
   }
 
