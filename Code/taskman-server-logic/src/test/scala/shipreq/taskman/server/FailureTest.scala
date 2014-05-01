@@ -1,4 +1,4 @@
-package shipreq.taskman.server.business
+package shipreq.taskman.server
 
 import org.joda.time.Period
 import org.specs2.matcher.Matcher
@@ -6,7 +6,6 @@ import org.specs2.mutable._
 import org.specs2.time.NoTimeConversions
 import shipreq.base.util.Error
 import shipreq.base.util.jodatime.JodaTimeHelpers._
-import shipreq.taskman.server._
 import TestHelpers._
 import Sop._
 import Failure._

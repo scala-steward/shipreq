@@ -1,13 +1,12 @@
-package shipreq.taskman.server.business
+package shipreq.taskman.server
 
 import org.joda.time.Period
 import shipreq.base.util.jodatime.JodaTimeHelpers._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.Msg.DummyMsg
 import shipreq.taskman.api.Priority
-import shipreq.taskman.server.Sop._
-import shipreq.taskman.server.Worker.{FailureResponse, FailurePolicy, FailureCtx}
-import shipreq.taskman.server._
+import Sop._
+import Worker.{FailureResponse, FailurePolicy, FailureCtx}
 
 object Failure extends HasLogger {
 

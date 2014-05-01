@@ -11,7 +11,6 @@ import shipreq.base.util.effect.IoUtils
 import shipreq.taskman.api.{MsgId, Msg, Priority}
 import shipreq.taskman.api.impl.Serialisation
 import shipreq.taskman.api.Types._
-import shipreq.taskman.server.business.{Failure, BopReifier, Emails}
 
 object SopImpl {
 
