@@ -66,6 +66,9 @@ private[db] final object Sql {
   val GetUserSuppAndDetail = query[UserId, (UserSupplementalInfo, UserDetail)](
     s"SELECT $usrSuppColumns, $usrdColumns FROM usr, usrd WHERE id=? and id=usr_id")
 
+  @Update val UpdateUserDetails = update[(String, Boolean, UserId)](
+    "update usrd set name=?, newsletter=? where usr_id=?")
+
   @Update val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
     "UPDATE usr SET password = ?, password_salt = ?, password_changed_at = NOW() WHERE id=?")
 

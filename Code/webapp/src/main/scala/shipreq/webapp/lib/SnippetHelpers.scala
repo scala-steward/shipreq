@@ -9,6 +9,7 @@ import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
 import scala.slick.jdbc.JdbcBackend.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
+import scalaz.Monoid
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
 import shipreq.webapp.feature.validation.{ValidationResult, VFailure}
@@ -103,6 +104,16 @@ trait StaticSnippetHelpers extends Logger {
   @inline private def appendAlert(alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
     JqExpr(alert) ~> JqAppendTo(nc) ~> JqHighlight()
 
+  @inline private def removeAlert(id: String): JsCmd = {
+    if (id eq null)
+      implicitly[Monoid[JsCmd]].zero
+    else
+      JqId(id) ~> JqRemove
+  }
+
+  @inline private def showAlert(id: String, alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
+    removeAlert(id) |+| appendAlert(applyIdToAlert(id, alert))
+
   private def applyIdToAlert(id: String, alert: NodeSeq): NodeSeq =
     if (id eq null) alert
     else alert match {
@@ -111,22 +122,16 @@ trait StaticSnippetHelpers extends Logger {
       case _ => warn("Don't know how to add id to: " + alert.getClass); alert
     }
 
-  @inline private def jsClearAndShowError(alert: => NodeSeq)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    jsClearError |+| appendAlert(applyIdToAlert(id, alert))
-
   def jsClearError(implicit id: ErrorAlertId): JsCmd =
-    JqId(id) ~> JqRemove
+    removeAlert(id)
 
   def jsShowError(errMsg: NodeSeq)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    jsClearAndShowError(Notices.renderSingle(AlertTypeError, errMsg))
-
-  def jsShowFailure(vf: VFailure)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    jsShowError(vf.toHtml)
+    showAlert(id, Notices.renderSingle(AlertTypeError, errMsg))
 
   def jsShowErrors(errMsgs: Seq[NodeSeq])(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd = errMsgs match {
     case Nil                => jsClearError
     case singleError :: Nil => jsShowError(singleError)
-    case _                  => jsClearAndShowError(Notices.renderMsgs(AlertTypeError, errMsgs))
+    case _                  => showAlert(id, Notices.renderMsgs(AlertTypeError, errMsgs))
   }
 
   def jsPossibleError[T](box: Box[T])(successJs: T => JsCmd, failureJs: => JsCmd = Noop)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
@@ -136,16 +141,17 @@ trait StaticSnippetHelpers extends Logger {
       case FailBox(err, _, _) => jsShowError(err)                   |+| failureJs
     }
 
-  def jsShowNotice(content: NodeSeq, alertId: String = null)(implicit nc: NoticeContainerExp): JsCmd =
-    appendAlert(
-      applyIdToAlert(alertId,
-        Notices.renderSingle(AlertTypeSuccess, content)))
+  def jsShowFailure(vf: VFailure)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
+    jsShowError(vf.toHtml)
 
   def ifValid[T](v: ValidationResult[T])(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     v match {
       case scalaz.Failure(f) => jsShowFailure(f)
-      case scalaz.Success(s) => f(s)
+      case scalaz.Success(s) => jsClearError & f(s)
     }
+
+  def jsShowNotice(content: NodeSeq, id: String = null)(implicit nc: NoticeContainerExp): JsCmd =
+    showAlert(id, Notices.renderSingle(AlertTypeSuccess, content))
 }
 
 // =====================================================================================================================

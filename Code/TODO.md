@@ -37,7 +37,6 @@ Comms System
 ============
 
 * [M.?.?=?] [   ] @shipreq email should be routed to FreshDesk.
-* [M.?.?=?] [ W+] Allow user to change prefs.
 * [M.?.?=?] [TW ] Change all bearded.logic@gmail.com links to contact@shipreq.com.
 * [M.?.?=?] [T  ] Setup MailChimp prod & doc process.
 * [M.?.?=?] [T  ] Setup FreshDesk prod & doc process.
@@ -74,6 +73,7 @@ Functional
 
 * [C.3.4=7] [ WX] Add JS validation to register2 (ie. account creation).
 * [C.3.3=6] [ W+] Reorder UCs. Might be superceded by better UC org func such as grouping.
+* [C.3.2=5] [ WX] FormVars should disable submit when no change to form data.
 * [C.2.1=3] [ WX] Add JS email corrector/validator like mailcheck.js.
 * [C.2.0=2] [ WX] When a user account is created, a default project called "Untitled Project" should be created.
 * [C.0.2=2] [ W+] Allow change username.

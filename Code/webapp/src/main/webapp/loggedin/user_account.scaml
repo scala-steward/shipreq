@@ -30,21 +30,24 @@
             %p.form-control-static
               %time.showdate
 
-  .panel.panel-default
+  .panel.panel-default#useracct-prefs
     .panel-heading
       %h3.panel-title User Details and Preferences
     .panel-body
-      %form.form-horizontal
+      %form(data-lift="form.ajax?class=form-horizontal")
 
         .form-group.name
-          %label.col-xs-4.control-label Name
-          .col-xs-7
-            %p.form-control-static xxx
+          %label.control-label.col-md-4(for="name") Full Name:
+          .col-md-5
+            %input.form-control#usrname(type="text" required)
 
         .form-group.newsletter
-          %label.col-xs-4.control-label Newsletter
-          .col-xs-7
-            %p.form-control-static xxx
+          .col-md-4
+          %label.col-md-5
+            %input#newsletter(type="checkbox" checked)
+            Subscribe to newsletter.
+          .col-xs-3.rctl
+            %button.btn.btn-default.edit#usrd-submit Update
 
   %section#useracct-ctls
     .btn-group
