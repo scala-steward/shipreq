@@ -36,12 +36,10 @@ Use Case Editor & Reader
 Comms System
 ============
 
-* [M.?.?=?] [   ] @shipreq email should be routed to FreshDesk.
 * [M.?.?=?] [TW ] Change all bearded.logic@gmail.com links to contact@shipreq.com.
 * [M.?.?=?] [T  ] Setup MailChimp prod & doc process.
-* [M.?.?=?] [T  ] Setup FreshDesk prod & doc process.
 
-* [S.?.?=?] [   ] @shipreq email should be routed to Gmail for redundancy.
+* [S.?.?=?] [   ] Add users' details to FreskDesk contacts.
 * [S.?.?=?] [T  ] Certain emails sent from Taskman should BCC Gmail for redundancy.
 * [S.?.?=?] [T P] Add indexes to Taskman tables.
 * [S.?.?=?] [T !] Async workers should reassign themselves if time remaining under threshold.
@@ -83,6 +81,7 @@ Functional
 Technical
 =========
 
+* [S.4.5=9] [TW!] Errors in webapp should be sent to support.
 * [S.3.5=8] [ WP] Add proper webapp DB indexes.
 * [S.0.5=5] [TW ] Monitoring. (nagios, riemann.io)
 * [S.0.5=5] [ W!] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
