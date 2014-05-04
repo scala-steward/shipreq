@@ -17,6 +17,7 @@ import net.liftweb.common.Loggable
 import net.liftweb.http.LiftRules
 import net.liftweb.http.provider.servlet.HTTPServletContext
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
+import org.fusesource.scalate.scaml.ScamlOptions
 import org.fusesource.scalate.util.{ResourceNotFoundException, FileResourceLoader, ClassPathBuilder}
 import org.fusesource.scalate.{DefaultRenderContext, Binding, TemplateEngine}
 import scala.tools.nsc.Global
@@ -33,8 +34,11 @@ import net.liftweb.util.Props
  */
 object ScamlJade extends Loggable {
 
-  if (Props.productionMode)
+  if (!Props.devMode) {
     System.setProperty("scalate.allowReload", "false")
+    ScamlOptions.indent = ""
+    ScamlOptions.nl = " "
+  }
 
   private val renderer = new ScamlJadeRenderer
 

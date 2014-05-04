@@ -74,8 +74,8 @@ object Deps {
                         "com.google.code.findbugs"    % "jsr305"                % "2.0.2" // required by Guava (which is required by BoneCP)
   val flyway      :MS = "com.googlecode.flyway"       % "flyway-core"           % "2.3.1"
   val logback     :MS = "ch.qos.logback"              % "logback-classic"       % "1.1.2"
-  val scalate     :MS = "org.fusesource.scalate"     %% "scalate-core"          % "1.6.1" ++
-                        "org.fusesource.scalamd"     %% "scalamd"               % "1.6" // why again?
+  val scalate     :MS = "org.scalatra.scalate"       %% "scalate-core"          % "1.7.0" ++
+                        "org.scalatra.scalate"       %% "scalamd"               % "1.6.1" // why again?
   val commonsLang :MS = "org.apache.commons"          % "commons-lang3"         % "3.3.2"
   val commonsIo   :MS = "org.apache.directory.studio" % "org.apache.commons.io" % "2.4"
   val twitterEval :MS = "com.twitter"                %% "util-eval"             % "6.14.0"
