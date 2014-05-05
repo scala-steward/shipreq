@@ -1,10 +1,8 @@
 package shipreq.base.util
 
 import java.io.InputStream
-import java.util.{Locale, Properties}
+import java.util.Properties
 import scalaz.Endo
-import scalaz.std.list.listInstance
-import scalaz.syntax.applicative._
 import shipreq.base.util.log.HasLogger
 
 object Props extends HasLogger {
@@ -38,17 +36,9 @@ object Props extends HasLogger {
    * default.props
    * System props
    */
-  def loadUsingStandardStrategy(m: RunMode): Endo[Properties] = {
-    def mkFilename(components: String*): Option[String] = {
-      val cs = components.filter(c => (c ne null) && c.nonEmpty)
-      if (cs.isEmpty) None else Some(cs.mkString("", ".", ".props"))
-    }
-
-    val runModeNames = m.names.map(_.toLowerCase(Locale.ENGLISH))
-    val userNames = List(System.getProperty("user.name"), "")
-    val filenames = (runModeNames |@| userNames)((a,b) => mkFilename(a,b)).filter(_.nonEmpty).map(_.get)
-
+  def loadUsingStandardStrategy(rm: RunMode): Endo[Properties] = {
     val s = systemProps andThen loadFromClasspath("default.props")
-    (s /: filenames.distinct.map(loadFromClasspath))(_ andThen _)
+    val f = RunMode.filenames(rm)(_.mkString("", ".", ".props"))
+    (s /: f.map(loadFromClasspath))(_ andThen _)
   }
 }

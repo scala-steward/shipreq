@@ -2,6 +2,8 @@ package shipreq.base.util
 
 import java.util.{Properties, Locale}
 import scalaz.\/-
+import scalaz.std.list.listInstance
+import scalaz.syntax.applicative._
 import shipreq.base.util.ExternalValueReader.Retriever
 
 sealed abstract class RunMode(val id: Int, val name: String, _altNames: String*) {
@@ -57,5 +59,15 @@ object RunMode {
       "org.specs2."
     )
     st.exists(e => names.exists(e.getClassName.startsWith))
+  }
+
+  def filenames(rm: RunMode)(combineComponents: Seq[String] => String): List[String] = {
+    def mkFilename(components: String*): List[String] = {
+      val cs = components.filter(c => (c ne null) && c.nonEmpty)
+      if (cs.isEmpty) Nil else combineComponents(cs) :: Nil
+    }
+    val runModeNames = rm.names.map(_.toLowerCase(Locale.ENGLISH))
+    val userNames = List(System.getProperty("user.name"), "")
+    (runModeNames |@| userNames)((a,b) => mkFilename(a,b)).flatten.distinct
   }
 }

@@ -4,7 +4,7 @@ import java.util.Properties
 import shipreq.base.util.ExternalValueReader._
 import shipreq.base.util.{ErrorOr, JPropertiesValueReader, Props, RunMode}
 import shipreq.taskman.server.{TaskmanCtx, Db}
-import shipreq.base.util.log.HasLogger
+import shipreq.base.util.log.{LogCfg, HasLogger}
 
 private[app] trait MainTemplate extends HasLogger {
 
@@ -13,6 +13,7 @@ private[app] trait MainTemplate extends HasLogger {
   lazy val runMode: RunMode = {
     implicit val rmr: Retriever[RunMode] = RunMode.retrieverFromSysProps
     val runMode: RunMode = tryNeed("run.mode", RunMode.detectFromStackTrace())
+    LogCfg.Logback.init(runMode)
     log.info.z(s"Run mode: $runMode")
     runMode
   }

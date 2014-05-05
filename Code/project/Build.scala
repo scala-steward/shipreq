@@ -68,7 +68,7 @@ object ShipReq extends Build {
 
       override def deps =
         SLF4J.api ++ Scalaz.core ++
-        providedScope(Scalaz.effect ++ jodaTime) ++
+        providedScope(Scalaz.effect ++ logback ++ jodaTime) ++
         testScope(specs2 ++ Scalaz.scalacheck)
 
       override def project = typicalProject

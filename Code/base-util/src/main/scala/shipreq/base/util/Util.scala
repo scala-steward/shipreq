@@ -1,5 +1,7 @@
 package shipreq.base.util
 
+import java.net.URL
+import scala.util.Try
 import scalaz.Memo
 import ScalaExt.StringBuilderExt
 
@@ -29,5 +31,8 @@ final object Util {
 
   val simpleNameMemo =
     Memo.immutableHashMapMemo[Class[_], String](simpleName _)
+
+  def existentLocalResources(paths: List[String]): Stream[URL] =
+    paths.toStream.map(f => Try(getClass.getResource(f)).getOrElse(null)).filter(_ ne null)
 
 }
