@@ -18,13 +18,16 @@ package object effect {
     @inline def error[A](e: Throwable)           : IOE[A] = error(Error(e))
     @inline def error[A](m: String, e: Throwable): IOE[A] = error(Error(m, e))
 
+    @inline def safeExec[A](catchIo: Error => IO[Unit])(io: IOE[A]): IO[Unit] =
+      io.except(error(_)).execE(catchIo)
+
     val nop = apply(())
     
     implicit val ioeInstance: Monad[IOE] = ErrorOr.Scalaz.monadInstance[IO]
 
     implicit val ioeCatchable: Catchable[IOE] =
       new Catchable[IOE] {
-        override def attempt[A](f: IOE[A]): IOE[Throwable \/ A] = f.except(IOE error _) >-> \/.right
+        override def attempt[A](f: IOE[A]): IOE[Throwable \/ A] = f.except(error(_)) >-> \/.right
         override def fail[A](e: Throwable): IOE[A]              = IOE error e
       }
   }

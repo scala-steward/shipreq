@@ -36,9 +36,9 @@ Use Case Editor & Reader
 Comms System
 ============
 
-* [M.?.?=?] [T  ] Handle actor failures. A crash in BopImpl.apply fucks everything up.
 * [M.?.?=?] [T  ] Setup MailChimp prod & doc process.
 
+* [S.0.5=5] [T !] Handle actor failures. Currently an escaped exception causes global shutdown (which fails).
 * [S.1.2=3] [   ] Update comms system & system arch doco.
 * [S.0.3=3] [T P] Add indexes to Taskman tables.
 * [S.0.3=3] [T !] Async workers should reassign themselves if time remaining under threshold.

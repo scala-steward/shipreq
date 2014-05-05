@@ -64,9 +64,14 @@ object Worker extends HasLogger {
       io1 execMap io2
     }
 
+    def run(catchIo: Error => IO[Unit])(f: => IOE[Unit]): IO[Unit] =
+      try
+        IOE.safeExec(catchIo)(f)
+      catch {
+        case t: Throwable => catchIo(Error(t))
+      }
+
     def handleFailedWorker(f: NotifySupportWorkerFailed): IO[Unit] = {
-      val c = emails.workerFailureEmail(f.t, f.m, f.e)
-      val io = raise(c, priorityForWorkerFailure(f.m.priority))
       val catchIo: Error => IO[Unit] =
         e2 => IO(
           log.error(s"""FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
@@ -74,12 +79,12 @@ object Worker extends HasLogger {
                 Worker error: ${f.e.stackTraceStr}
                 Msg: ${f.m}""")
         ) >> handleFailedTaskman(NotifySupportTaskmanError(f.t, e2, Some(f.m)))
-      io.execE(catchIo)
+      run(catchIo)(
+        raise(emails.workerFailureEmail(f.t, f.m, f.e), priorityForWorkerFailure(f.m.priority))
+      )
     }
 
     def handleFailedTaskman(f: NotifySupportTaskmanError): IO[Unit] = {
-      val c = emails.taskmanErrorEmail(f.t, f.e, f.m)
-      val io = raise(c, Support.Priority.Urgent)
       val catchIo: Error => IO[Unit] =
         e2 => IO(
           log.error(s"""FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
@@ -87,7 +92,9 @@ object Worker extends HasLogger {
               Original error: ${f.e.stackTraceStr}
               Msg: ${f.m}""")
         )
-      io.execE(catchIo)
+      run(catchIo)(
+        raise(emails.taskmanErrorEmail(f.t, f.e, f.m), Support.Priority.Urgent)
+      )
     }
   }
 
