@@ -6,6 +6,6 @@ cd $(dirname "$0") || exit 1
 src=taskman
 
 rsync -vzrRlptSihOJ --no-implied-dirs --skip-compress=jar \
-  --exclude={log,taskman.jar,'.*.sw?','production*.props','*localhost*'} \
+  --exclude={log,taskman.jar,'.*.sw?','production.golly.props','*localhost*'} \
   "$src" $(<deployment-user)@"$1":
 

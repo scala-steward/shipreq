@@ -1,5 +1,14 @@
 <configuration>
 
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%-5level [%-32logger{32}] {%-10X{who}} %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
     <appender name="FILE.LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>log/taskman.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -19,6 +28,9 @@
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %-5level [%-44logger{44}] {%-15thread:%-10X{who}} %msg%n</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
     </appender>
 
     <logger name="com.googlecode.flyway" level="INFO" />
@@ -35,5 +47,6 @@
     <root>
         <appender-ref ref="FILE.LOG" />
         <appender-ref ref="FILE.ERR" />
+        <appender-ref ref="STDOUT" />
 	</root>
 </configuration>

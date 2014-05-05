@@ -19,7 +19,7 @@ First-Time Procedure
 ### Deployment
 
     ./deploy-jetty $ip
-    ./deploy-webapp $ip
+    ./deploy-package $ip
     ./deploy-war $ip
     ssh $(<deployment-user)@$ip webapp/bin/restart
 
@@ -30,7 +30,7 @@ Upgrade Procedure
 ### Upgrading ShipReq
 
     ./install-war
-    ./deploy-webapp $ip   # If needed
+    ./deploy-package $ip   # If needed
     ./deploy-war $ip
     ssh $(<deployment-user)@$ip webapp/bin/restart
 
@@ -53,7 +53,7 @@ Upgrade Procedure
 
 5. Deploy
     ./deploy-jetty $ip
-    ./deploy-webapp $ip   # If needed
+    ./deploy-package $ip   # If needed
     ssh $(<deployment-user)@$ip webapp/bin/restart
 
 

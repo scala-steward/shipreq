@@ -12,7 +12,7 @@ First-Time Procedure
 
 ### Deployment
 
-    ./deploy-taskman $ip
+    ./deploy-package $ip
     ./deploy-jar $ip
 
 
@@ -20,7 +20,7 @@ Upgrade Procedure
 =================
 
     ./install-war
-    ./deploy-taskman $ip   # If needed
+    ./deploy-package $ip   # If needed
     ./deploy-jar $ip
     # TODO: ssh $(<deployment-user)@$ip taskman/bin/restart
 
