@@ -86,13 +86,13 @@ object TestHelpers {
   val clockReal = IO(DateTime.now)
 
   val fpRetry: FailurePolicy =
-    f => FailureResponse(UpdateMsgRetry(f.n, f.w, f.m), Nil)
+    f => FailureResponse(UpdateMsgAbort(f.n, f.w, f.m), Nil)
 
   val fpRetrySupport: FailurePolicy =
-    f => FailureResponse(UpdateMsgRetry(f.n, f.w, f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
+    f => FailureResponse(UpdateMsgAbort(f.n, f.w, f.m), NotifySupportWorkerFailed(timeNow, f.m, f.err) :: Nil)
 
   val fpAbort: FailurePolicy =
-    f => FailureResponse(UpdateMsgAbort(f.n, f.w, f.m, Period days 1), Nil)
+    f => FailureResponse(UpdateMsgRetry(f.n, f.w, f.m, Period days 1), Nil)
 
   def mpNop[F[_]]: MsgProcessor[F] = _ => IOE(ProcessorResult.Complete)
   def mpCrash[F[_]]: MsgProcessor[F] = _ => ???
@@ -139,8 +139,8 @@ object SopTypeTags extends OpTypeProvider[Sop] {
     case _: GetMsgsAssignNode         => manifest[GetMsgsAssignNode]
     case _: GetMsgAssignWorker        => manifest[GetMsgAssignWorker]
     case _: UpdateMsgSuccess          => manifest[UpdateMsgSuccess]
-    case _: UpdateMsgRetry            => manifest[UpdateMsgRetry]
     case _: UpdateMsgAbort            => manifest[UpdateMsgAbort]
+    case _: UpdateMsgRetry            => manifest[UpdateMsgRetry]
     case _: NotifySupportWorkerFailed => manifest[NotifySupportWorkerFailed]
     case _: NotifySupportTaskmanError => manifest[NotifySupportTaskmanError]
     case _: ReAssignWorker            => manifest[ReAssignWorker]
@@ -155,8 +155,8 @@ class MockSops extends MockOpTransformerA[Sop, IO] {
   val assignNodeR                = MockResponse(Seq.empty[MsgHeader])
   val assignWorkerR              = MockResponse(Option[MsgDetail](null))
   val updateMsgSuccessR          = MockResponse(())
-  val updateMsgRetryR            = MockResponse(())
   val updateMsgAbortR            = MockResponse(())
+  val updateMsgRetryR            = MockResponse(())
   val notifySupportWorkerFailedR = MockResponse(())
   val notifySupportTaskmanErrorR = MockResponse(())
   val reassignWorkerR            = MockResponse(true)
@@ -166,8 +166,8 @@ class MockSops extends MockOpTransformerA[Sop, IO] {
     case _: GetMsgsAssignNode         => assignNodeR.pop()
     case _: GetMsgAssignWorker        => assignWorkerR.pop()
     case _: UpdateMsgSuccess          => updateMsgSuccessR.pop()
-    case _: UpdateMsgRetry            => updateMsgRetryR.pop()
     case _: UpdateMsgAbort            => updateMsgAbortR.pop()
+    case _: UpdateMsgRetry            => updateMsgRetryR.pop()
     case _: NotifySupportWorkerFailed => notifySupportWorkerFailedR.pop()
     case _: NotifySupportTaskmanError => notifySupportTaskmanErrorR.pop()
     case _: ReAssignWorker            => reassignWorkerR.pop()

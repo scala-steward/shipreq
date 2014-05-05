@@ -22,7 +22,7 @@ class FailureTest extends Specification with NoTimeConversions {
     be_==(Some(f)) ^^ {(_:Option[FailureResponse]).map(_.reaction)}
 
   def retryIn(p: Period)(implicit c: FailureCtx) =
-    reactWith(UpdateMsgAbort(c.n, c.w, c.m, p))
+    reactWith(UpdateMsgRetry(c.n, c.w, c.m, p))
 
   def notifySupport(implicit c: FailureCtx): Matcher[Option[FailureResponse]] =
     beSome(contain(beAnInstanceOf[NotifySupportWorkerFailed]).exactly(1)) ^^ {(_:Option[FailureResponse]).map(_.additionalOps)}
@@ -31,7 +31,7 @@ class FailureTest extends Specification with NoTimeConversions {
     implicit val c = ctx_det
 
     "abort when error is deterministic" in {
-      abortDeterministicErrors(c) must reactWith(UpdateMsgRetry(c.n, c.w, c.m))
+      abortDeterministicErrors(c) must reactWith(UpdateMsgAbort(c.n, c.w, c.m))
     }
 
     "notify support when error is deterministic" in {

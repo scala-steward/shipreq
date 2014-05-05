@@ -246,13 +246,13 @@ class SopImpl[EA](db: Database, fh: Worker.FailureHandler) extends SopReifier {
     case ReAssignWorker(n, w, m) =>
       ioD(_.reassignWorker(n, w, m))
 
-    case UpdateMsgAbort(n, w, m, delay) =>
-      ioD(_.failAndRetry(n, w, m, delay))
-
     case UpdateMsgSuccess(n, w, m) =>
       ioD(_.archiveMsg(n, w, m, Succeeded))
 
-    case UpdateMsgRetry(n, w, m) =>
+    case UpdateMsgRetry(n, w, m, delay) =>
+      ioD(_.failAndRetry(n, w, m, delay))
+
+    case UpdateMsgAbort(n, w, m) =>
       ioD(_.archiveMsg(n, w, m, FailAndAbort))
 
     case CfgGet(k) =>

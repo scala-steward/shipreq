@@ -37,8 +37,8 @@ object Sop {
   case class ReAssignWorker(n: NodeId, w: WorkerId, m: MsgDetail) extends Sop[Boolean]
 
   case class UpdateMsgSuccess(n: NodeId, w: WorkerId, m: MsgDetail) extends Sop[Unit]
-  case class UpdateMsgRetry(n: NodeId, w: WorkerId, m: MsgDetail) extends FailedJobReaction
-  case class UpdateMsgAbort(n: NodeId, w: WorkerId, m: MsgDetail, delay: Period) extends FailedJobReaction
+  case class UpdateMsgRetry(n: NodeId, w: WorkerId, m: MsgDetail, delay: Period) extends FailedJobReaction
+  case class UpdateMsgAbort(n: NodeId, w: WorkerId, m: MsgDetail) extends FailedJobReaction
 
   case class NotifySupportWorkerFailed(t: DateTime, m: MsgDetail, e: Error) extends Sop[Unit]
   case class NotifySupportTaskmanError(t: DateTime, e: Error, m: Option[MsgDetail]) extends Sop[Unit]

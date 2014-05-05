@@ -64,19 +64,19 @@ class WorkerTest extends Specification {
     "Worker crashes (retry)" >> {
       val (r, s) = test(assignWorkerAllow, fpRetry, mpCrash)
       "Result"          in (r must haveResultS[WorkerFailed])
-      "Schedules retry" in (s must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgRetry])
+      "Schedules retry" in (s must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgAbort])
     }
 
     "Worker crashes (abort)" >> {
       val (r, s) = test(assignWorkerAllow, fpAbort, mpCrash)
       "Result"     in (r must haveResultS[WorkerFailed])
-      "Aborts job" in (s must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgAbort])
+      "Aborts job" in (s must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgRetry])
     }
 
     "Worker crashes (retry and notify support)" >> {
       val (r, s) = test(assignWorkerAllow, fpRetrySupport, mpCrash)
       "Result"                       in (r must haveResultS[WorkerFailed])
-      "Fails job & notifies support" in (s must haveRun[Sop].ops3[GetMsgAssignWorker, UpdateMsgRetry, NotifySupportWorkerFailed])
+      "Fails job & notifies support" in (s must haveRun[Sop].ops3[GetMsgAssignWorker, UpdateMsgAbort, NotifySupportWorkerFailed])
     }
 
     "Taskman crashes pre-work" >> {
@@ -129,7 +129,7 @@ class WorkerTest extends Specification {
       "Immediate result"           in (r1 must haveResultA)
       "Assigns msg before future"  in (s1 must haveRun[Sop].op[GetMsgAssignWorker])
       "Future result"              in (r2 must haveResultS[WorkerFailed])
-      "Future marks msg as failed" in (s2 must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgRetry])
+      "Future marks msg as failed" in (s2 must haveRun[Sop].ops2[GetMsgAssignWorker, UpdateMsgAbort])
     }
 
     "Reassigns and completes" >> {

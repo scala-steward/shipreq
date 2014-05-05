@@ -62,7 +62,7 @@ object Failure extends HasLogger {
     composeF(addOp, op)
 
   def retryResponse(ctx: FailureCtx)(delay: Period): FailureResponse =
-    FailureResponse(UpdateMsgAbort(ctx.n, ctx.w, ctx.m, delay), Nil)
+    FailureResponse(UpdateMsgRetry(ctx.n, ctx.w, ctx.m, delay), Nil)
 
   def notifySupport(ctx: FailureCtx): Sop[Unit] =
     if (ctx.err is Deliberate)
@@ -71,10 +71,10 @@ object Failure extends HasLogger {
       NotifySupportWorkerFailed(ctx.now, ctx.m, ctx.err)
 
   val abortAndDontNotify: FailurePolicy =
-    ctx => FailureResponse(UpdateMsgRetry(ctx.n, ctx.w, ctx.m), Nil)
+    ctx => FailureResponse(UpdateMsgAbort(ctx.n, ctx.w, ctx.m), Nil)
 
   val abortAndNotify: FailurePolicy =
-    ctx => FailureResponse(UpdateMsgRetry(ctx.n, ctx.w, ctx.m), notifySupport(ctx) :: Nil)
+    ctx => FailureResponse(UpdateMsgAbort(ctx.n, ctx.w, ctx.m), notifySupport(ctx) :: Nil)
 
   def abortDeterministicErrors: Rule =
     ifO(_.err is Deterministic, abortAndNotify)
