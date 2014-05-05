@@ -21,7 +21,7 @@ First-Time Procedure
     ./deploy-jetty $ip
     ./deploy-webapp $ip
     ./deploy-war $ip
-    ssh $(<deployment-user)@$ip webapp/restart
+    ssh $(<deployment-user)@$ip webapp/bin/restart
 
 
 Upgrade Procedure
@@ -32,7 +32,7 @@ Upgrade Procedure
     ./install-war
     ./deploy-webapp $ip   # If needed
     ./deploy-war $ip
-    ssh $(<deployment-user)@$ip webapp/restart
+    ssh $(<deployment-user)@$ip webapp/bin/restart
 
 
 ### Upgrading Jetty
@@ -54,7 +54,7 @@ Upgrade Procedure
 5. Deploy
     ./deploy-jetty $ip
     ./deploy-webapp $ip   # If needed
-    ssh $(<deployment-user)@$ip webapp/restart
+    ssh $(<deployment-user)@$ip webapp/bin/restart
 
 
 Keystore & SSL

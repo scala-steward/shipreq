@@ -1,6 +1,6 @@
 #!/bin/bash
 
-props="$(dirname "$0")/resources/production.shipreq.props"
+props="$(dirname "$0")/../resources/production.shipreq.props"
 [ ! -e "$props" ] && echo "File not found: $props" && exit 1
 
 propcontent="$(<$props)"

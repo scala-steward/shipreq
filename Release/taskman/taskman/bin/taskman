@@ -1,10 +1,11 @@
 #!/bin/bash
-cd $(dirname $(readlink -e "$0")) || exit 1
+cd $(dirname $(readlink -e "$0"))/.. || exit 1
 #tmp=/tmp/$(date +%Y%m%d-%H%M%S)-$$
 
 usage="Usage: $0 [start|status|stop|restart]"
 [ $# -ne 1 ] && echo "$usage" && exit 1
 
+bin=bin
 pidF=taskman.pid
 
 function is_alive {
@@ -26,7 +27,7 @@ case "$1" in
       echo "Already running on: $(<$pidF)"
     else
       echo "Starting..."
-      exec ./start >/dev/null &
+      exec "$bin"/start >/dev/null &
       p=$!
       sleep 2
       disown $p \
