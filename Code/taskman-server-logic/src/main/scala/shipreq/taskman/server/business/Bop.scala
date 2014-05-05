@@ -1,6 +1,7 @@
 package shipreq.taskman.server.business
 
 import scalaz.\/
+import shipreq.base.util.Util.simpleNameMemo
 import shipreq.taskman.api.Types._
 
 /**
@@ -10,6 +11,12 @@ import shipreq.taskman.api.Types._
 sealed trait Bop[A]
 
 object Bop {
+
+  def simpleName: Bop[_] => String = {
+    case MailingListOp(i) => s"MailingListOp(${simpleNameMemo(i.getClass)})"
+    case SupportOp(i)     => s"SupportOp(${simpleNameMemo(i.getClass)})"
+    case op               => simpleNameMemo(op.getClass)
+  }
 
   /** Send an email. */
   case class SendEmail(e: Email.Envelope, c: Email.Content) extends Bop[Unit]

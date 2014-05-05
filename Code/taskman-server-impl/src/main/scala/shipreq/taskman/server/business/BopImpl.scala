@@ -2,7 +2,6 @@ package shipreq.taskman.server.business
 
 import scalaz.{-\/, \/-}
 import scalaz.effect.IO
-import scalaz.syntax.bind._
 import scala.slick.jdbc.JdbcBackend.Database
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.effect.{IoUtils, IOE}
@@ -25,25 +24,15 @@ final class BopImpl(db: Database,
   def applyTimed[A](op: Bop[A]): IOE[A] =
     IoUtils.time_(applyUntimed(op))(logCompletion(op))
 
-  val className = scalaz.Memo.immutableHashMapMemo[Class[_], String] {
-    val regex = "^.+[\\.\\$]".r
-    c => regex.replaceFirstIn(c.getTypeName, "")
-  }
-
   def logCompletion[A](op: Bop[A]): ErrorOr[A] => Long => IO[Unit] =
-    res => time => {
-      val opName = op match {
-        case MailingListOp(i) => s"MailingListOp(${className(i.getClass)})"
-        case SupportOp(i)     => s"SupportOp(${className(i.getClass)})"
-        case _                => className(op.getClass)
-      }
-      IO(res match {
+    res => time => IO(
+      res match {
           case \/-(_) =>
-            log.info.z(s"$opName completed in ${time}ms.")
+            log.info.z(s"${simpleName(op)} completed in ${time}ms.")
           case -\/(e) =>
-            log.error.z(s"$opName failed after ${time}ms with [${e.msg}]. Op: $op")
-        })
-    }
+            log.error.z(s"${simpleName(op)} failed after ${time}ms with [${e.msg}]. Op: $op")
+        }
+      )
 
   def applyUntimed[A](op: Bop[A]): IOE[A] =
     ErrorOr.catchExceptionM(op match {

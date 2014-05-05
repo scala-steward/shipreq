@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import scalaz.Memo
 import ScalaExt.StringBuilderExt
 
 final object Util {
@@ -18,5 +19,15 @@ final object Util {
 
   @inline def quickToString(clz: Class[_])(fs: (StringBuilder => Any)*): String =
     quickSB(clz.getSimpleName, _.mkStringF("(", ", ", ")")(fs: _*))
+
+
+  private[this] val simpleClassNameRegex = "^.+[\\.\\$]".r
+
+  // https://issues.scala-lang.org/browse/SI-2034
+  def simpleName(c: Class[_]): String =
+    simpleClassNameRegex.replaceFirstIn(c.getTypeName, "")
+
+  val simpleNameMemo =
+    Memo.immutableHashMapMemo[Class[_], String](simpleName _)
 
 }
