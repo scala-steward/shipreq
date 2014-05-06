@@ -39,3 +39,7 @@ alias ql='pacman -Ql'
 alias syua='yaourt -Syua'
 alias y='yaourt -S --needed'
 alias yy='yaourt -S --needed --noconfirm'
+
+export JAVA_HOME=/opt/java7
+export PATH="$JAVA_HOME/bin:$PATH"
+
