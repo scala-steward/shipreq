@@ -7,7 +7,7 @@ First-Time Procedure
     sudo pacman -Syu --needed parallel pigz authbind
 
 * Decrypt passwords and sensitive settings.
-    webapp/secrets-decrypt
+    ./secrets-decrypt
 
 * Install ShipReq WAR.
     Build locally first.

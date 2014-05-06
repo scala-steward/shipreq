@@ -7,6 +7,9 @@ First-Time Procedure
     Build locally first.
     ./install-jar
 
+* Decrypt passwords and sensitive settings.
+    ./secrets-decrypt
+
 * Determine IP for commands below
     export ip=$(../util/ip-shipreq)
 
