@@ -46,12 +46,18 @@ Upgrade Procedure
     git add -A .
 
 3. Test Locally
-    webapp/start
+    webapp/bin/start
     ../../../QA/smoke_test-frontend local-https
 
-4. Commit
+4. Update Code
+    pushd ../../Code
+    vim project/Dependencies.scala
+    sbt clean test
+    popd
 
-5. Deploy
+5. Commit
+
+6. Deploy
     ./deploy-jetty $ip
     ./deploy-package $ip   # If needed
     ssh $(<deployment-user)@$ip webapp/bin/restart

@@ -79,7 +79,7 @@ object Deps {
   val commonsLang :MS = "org.apache.commons"          % "commons-lang3"         % "3.3.2"
   val commonsIo   :MS = "org.apache.directory.studio" % "org.apache.commons.io" % "2.4"
   val twitterEval :MS = "com.twitter"                %% "util-eval"             % "6.14.0"
-  val jetty       :MS = "org.eclipse.jetty"           % "jetty-webapp"          % "9.1.4.v20140401"
+  val jetty       :MS = "org.eclipse.jetty"           % "jetty-webapp"          % "9.1.5.v20140505"
   val servlet     :MS = "org.eclipse.jetty.orbit"     % "javax.servlet"         % "3.0.0.v201112011016" artifacts Artifact("javax.servlet", "jar", "jar")
   val mockito     :MS = "org.mockito"                 % "mockito-core"          % "1.9.5"
   val scalaTest   :MS = "org.scalatest"              %% "scalatest"             % "2.1.3"
