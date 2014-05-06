@@ -10,6 +10,11 @@ uber=lib/taskman.jar
 [ ! -e "$uber" ] && echo "Taskman JAR not found: $(pwd)/$uber" && exit 1
 cp="$resources/.:$uber"
 
-java_opt=(-server -cp "$cp" -Xss2m -Xmx512m -Drun.mode=production)
+java_opt=(-cp "$cp" -Xmx28m -Drun.mode=production)
+if [ -z "$client" ]; then
+  java_opt+=(-server -Xms20m)
+else
+  java_opt+=(-client)
+fi
 
 exec java $JAVA_OPTS "${java_opt[@]}" $main "$@"
