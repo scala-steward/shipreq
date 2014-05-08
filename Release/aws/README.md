@@ -29,10 +29,15 @@ Remote Service Setup
   * AWS console > EC2
   * Launch Instance
     * Community AMIs
-    * Go to https://www.uplinklabs.net/projects/arch-linux-on-ec2/
-    * Select S3 paravirtual, copy ami-12345678
-    * Back in Community AMIs, paste ami-12345678, press enter.
-    * Choose instance type.
+    * Do one of the following:
+      1. Type in: `x86_64 s3 arch-linux-pv-2014.05`
+      2. Type in: `x86_64 s3 arch-linux-lts-pv-2014.05`
+      3. Lookup manually:
+        * Go to https://www.uplinklabs.net/projects/arch-linux-on-ec2/
+        * Select S3 paravirtual, copy ami-12345678
+        * Back in Community AMIs, paste ami-12345678, press enter.
+    * Choose instance type. > Next
+    * Choose subnet to match DB's availability zone if DB already exists. > Next.
     * Keep hitting Next until get to `Configure Security Group`.
     * Select existing security group: webapp
     * Launch.

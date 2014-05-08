@@ -18,5 +18,8 @@ OS & Environment Setup
     ./instance_store-swap <size>
 
     reboot
-    ./instance_store-reinit
 
+* ssh root@$ip
+
+    hostname shipreq-app
+    ./instance_store-reinit
