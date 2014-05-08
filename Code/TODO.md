@@ -37,7 +37,6 @@ Comms System
 ============
 
 * [S.0.5=5] [T !] Handle actor failures. Currently an escaped exception causes global shutdown (which fails).
-* [S.1.2=3] [   ] Update comms system & system arch doco.
 * [S.0.3=3] [T P] Add indexes to Taskman tables.
 * [S.0.3=3] [T !] Async workers should reassign themselves if time remaining under threshold.
 
@@ -45,14 +44,6 @@ Comms System
 * [C.0.2=2] [T  ] Taskman msg consolidation to avoid redundant work. Eg n instances of SyncToMailingList(None).
 * [C.0.2=2] [T  ] Taskman msg batching. Eg every hour process all the UserUpdated(n) msgs in bulk.
 * [C.1.0=1] [T  ] Taskman msg aging.
-
-### Insightly
-* [?.?.?=?] [T  ] Should contact syncs to ML also happen to Insightly?
-* [?.?.?=?] [T  ] All emails sent from FreshDesk should BCC Insightly.
-* [?.?.?=?] [   ] @shipreq email should be routed to Insightly.
-* [?.?.?=?] [T  ] All emails sent from Taskman should BCC Insightly.
-* [?.?.?=?] [T  ] User pref change should update Insightly?
-* [?.?.?=?] [T  ] Setup Insightly prod & doc process.
 
 
 Functional
@@ -78,6 +69,7 @@ Technical
 =========
 
 * [S.3.5=8] [ WP] Add proper webapp DB indexes.
+* [S.0.5=5] [T !] taskman/bin/submit seems to overwrite log when running at same time.
 * [S.0.5=5] [TW ] Monitoring. (nagios, riemann.io)
 * [S.0.5=5] [ W!] When fields are loaded but no FV exists, fields should be cleared. (Will affect in-place loading.)
 * [S.1.3=4] [ WP] Textareas' blur shouldn't send a request when input doesn't change.

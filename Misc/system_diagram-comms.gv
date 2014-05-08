@@ -1,0 +1,108 @@
+digraph G {
+  compound=true
+  labelloc=t
+  label="ShipReq System Diagram: Emails & Comms\n(arrows denote flow of data from one component to another)\n(ignores which component instigates the data transfer)\n(red = comm from user, blue = comm to user)\n"
+  style=filled fillcolor="#e2ffe2"
+  node [style=filled fillcolor="#55cc55"]
+  edge [arrowhead=vee arrowtail=vee minlen=2]
+
+  // -----------------------------------------------------------------------------------------------
+
+  mail_archive [label="Archive.\nshipreq@gmail.com" shape=folder style=filled fillcolor="#aabbff"]
+
+  subgraph cluster_staff {
+    style=filled
+    fillcolor="#e6ffe6"
+    node [style=filled fillcolor="#ccaa66"]
+    label="Staff"
+    staff [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
+    staff_mail   [label="Staff's\npersonal email" shape=folder style=filled fillcolor="#aabbff"]
+  }
+
+  subgraph cluster_usr {
+    style=filled
+    fillcolor="#eeeeaa"
+    node [style=filled fillcolor="#ccaa66"]
+    label="Userland"
+    usr_web [label="User's\nweb browser" shape=tab]
+    usr_mail [label="User's\nemail" shape=folder fillcolor="#aabbff"]
+    usr [shape=proteinstab style=filled label="\nUser"]
+  }
+
+  subgraph cluster_gandi {
+    fillcolor="#ebebeb"
+    label="gandi.net"
+    node[shape=folder style=filled fillcolor="#c0c8e0"]
+    ea_contact [label="contact@\nshipreq.com"]
+    ea_news    [label="news@\nshipreq.com"]
+    ea_notice  [label="notice@\nshipreq.com"]
+    ea_support [label="support@\nshipreq.com"]
+    ea_noreply [label="no-reply@\nshipreq.com"]
+  }
+
+  subgraph cluster_aws {
+    fillcolor="#ebebeb"
+    label="Amazon Web Services"
+    aws_rds [label="RDS"]
+    {node[fillcolor=pink]
+      wb  [label="webapp"]
+      taskman [label="taskman"]
+    }
+  }
+
+  subgraph cluster_mc {
+    fillcolor="#ebebeb"
+    label="MailChimp"
+    mc_api [label="API"]
+    mc_web [label="Web interface" shape=tab]
+  }
+
+  subgraph cluster_fd {
+    fillcolor="#ebebeb"
+    label="Freshdesk"
+    fd_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
+    fd_web [label="Web interface" shape=tab]
+    fd_api [label="API"]
+  }
+
+  // -----------------------------------------------------------------------------------------------
+
+  fd_api -> fd_web
+  mc_api -> mc_web
+  taskman -> aws_rds [dir=both]
+  taskman -> mc_api
+  wb -> aws_rds [dir=both]
+  wb -> usr_web [dir=both]
+
+  // Email flows (incoming)
+  {edge[color=red]
+    ea_contact -> fd_mail
+    mail_archive -> ea_contact [dir=back]
+    ea_noreply,ea_news,ea_notice,ea_support -> ea_contact
+    fd_mail -> fd_web
+    fd_web -> staff
+    fd_web -> staff_mail -> staff
+    taskman -> fd_api
+    mail_archive -> taskman [dir=back]
+    usr_mail -> ea_contact
+    usr_mail -> usr_web [dir=back]
+    usr_web -> usr [dir=back]
+    usr_web -> wb -> aws_rds -> taskman
+  }
+
+  // Email flows (outgoing)
+  {edge[color="#000099"]
+    fd_web -> staff [dir=back]
+    fd_web -> usr_mail
+    mail_archive -> fd_web [dir=back]
+    mc_web -> staff [dir=back]
+    mc_web -> usr_mail
+    taskman -> mc_api -> mc_web [dir=back]
+    taskman:e -> usr_mail:n
+    mail_archive -> taskman [dir=back]
+    usr_mail -> usr_web
+    usr_web -> usr
+    wb -> aws_rds -> taskman
+  }
+
+}

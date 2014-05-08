@@ -1,54 +1,83 @@
 digraph G {
   compound=true
   labelloc=t
-  label="ShipReq System Diagram"
+  label="ShipReq System Diagram\n(arrows denote a component's knowledge of another)"
+  style=filled fillcolor="#e2ffe2"
+  node [style=filled fillcolor="#55cc55"]
+  edge [arrowhead=vee arrowtail=vee]
 
   // -----------------------------------------------------------------------------------------------
 
-  me [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
+  mail_archive [label="Archive.\nshipreq@gmail.com" shape=folder style=filled fillcolor="#aabbff"]
+  staff_mail   [label="Staff's\npersonal email" shape=folder style=filled fillcolor="#aabbff"]
 
-  { node[shape=folder style=filled]
-    eaddr_blogic [label="bearded.logic\n@gmail.com" fillcolor="#aabbff"]
-  }
-
-  subgraph cluster_usr {
-    style=filled
-    fillcolor="#eeeeaa"
-    node [style=filled fillcolor="#ccaa66"]
-
-    label="Userland"
-    usr_web [label="User's\nweb browser" shape=tab]
-    usr_email [label="User's\nemail" shape=folder]
-  }
-
-  subgraph cluster_net {
-    style=filled
-    fillcolor="#e2ffe2"
-    node [style=filled fillcolor="#55cc55"]
-    label=""
-
-    gandi [label="gandi.net"]
-
-    subgraph cluster_aws {
-      fillcolor="#ccddcc"
-      // node[shape=rect]
-      label="Amazon Web Services"
-      aws_r53 [label="Route 53"]
-      aws_ec2 [label="EC2"]
-      aws_rds [label="RDS"]
-      aws_ses [label="SES"]
+  subgraph cluster_gandi {
+    fillcolor="#ccddcc"
+    label="gandi.net"
+    gandi_dns [label="DNS"]
+    gandi_mx [label="Mail fwd"]
+    {node[shape=folder style=filled fillcolor="#c0c8e0"]
+      ea_contact [label="contact@\nshipreq.com"]
+      ea_news    [label="news@\nshipreq.com"]
+      ea_notice  [label="notice@\nshipreq.com"]
+      ea_support [label="support@\nshipreq.com"]
+      ea_noreply [label="no-reply@\nshipreq.com"]
     }
   }
 
+  subgraph cluster_aws {
+    fillcolor="#ccddcc"
+    label="Amazon Web Services"
+    aws_r53 [label="Route 53"]
+    aws_rds [label="RDS"]
+    aws_ses [label="SES"]
+    {node[fillcolor=pink]
+      webapp  [label="webapp"]
+      taskman [label="taskman"]
+    }
+  }
+
+  subgraph cluster_mc {
+    fillcolor="#ccddcc"
+    label="MailChimp"
+    mc_api [label="API"]
+    mc_web [label="Web interface" shape=tab]
+  }
+
+  subgraph cluster_fd {
+    fillcolor="#ccddcc"
+    label="Freshdesk"
+    fd_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
+    fd_web [label="Web interface" shape=tab]
+    fd_api [label="API"]
+  }
+
   // -----------------------------------------------------------------------------------------------
 
-  usr_web -> gandi [color="#996644"]
-  gandi -> aws_r53 [label="DNS:*"]
-  aws_r53 -> aws_r53 [label="DNS:www" dir=back]
-  aws_r53 -> aws_ec2 [label="DNS:APEX"]
-  aws_ec2 -> aws_rds [label="Database\n(postgresql)"]
-  aws_ec2 -> aws_ses [label="Outgoing email\n(SMTP)"]
-  aws_ses -> {eaddr_blogic; usr_email}
-  eaddr_blogic -> usr_email [label="One-on-one\nconversation"]
-  me -> eaddr_blogic
+  // DNS
+  gandi_dns    -> aws_r53   [label="Delegates DNS"]
+  aws_r53:w    -> aws_r53:w [label="DNS:www " dir=back]
+  aws_r53      -> webapp    [label="DNS:APEX"]
+
+  // Email forwarding
+  aws_r53      -> gandi_mx [label="DNS:MX"]
+  gandi_mx     -> ea_support,ea_noreply,ea_contact,ea_news,ea_notice [label="Catch"]
+  gandi_mx     -> fd_mail [label="Fwd"]
+  mail_archive -> gandi_mx [label="Fwd" dir=back]
+
+  webapp       -> aws_rds
+  webapp       -> ea_contact [style=dashed]
+
+  taskman      -> aws_ses
+  taskman      -> aws_rds
+  taskman      -> mc_api
+  taskman      -> fd_api
+  taskman      -> ea_noreply [style=dashed]
+  mail_archive -> taskman [dir=back]
+
+  mc_web       -> ea_news,ea_notice [style=dashed]
+
+  fd_web       -> staff_mail
+  mail_archive -> fd_web [label="Fwd" dir=back]
+
 }
