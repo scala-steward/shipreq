@@ -53,6 +53,7 @@ Functional
 * [S.3.4=7] [ W+] Allow delete use cases.
 * [S.0.4=4] [ W!] Bug: Ajax form, hit submit, Chrome rejects due to required fields, fix fields, blur on ajax text will then errornously submits form.
 * [S.0.3=3] [TW+] Allow change email.
+* [S.1.1=2] [ W!] Allow single digits in UC ids.
 * [S.0.2=2] [TW+] Allow delete account.
 * [S.0.2=2] [ WX] Page for 404 errors.
 
