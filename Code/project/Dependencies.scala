@@ -31,7 +31,7 @@ object Deps {
     val all      = compiler ++ library ++ reflect ++ p
   }
 
-  object Scalaz extends Group("7.1.0-M6", "org.scalaz") {
+  object Scalaz extends Group("7.1.0-M7", "org.scalaz") {
     val core       = dd("scalaz-core")
     val concurrent = dd("scalaz-concurrent")
     val effect     = dd("scalaz-effect")

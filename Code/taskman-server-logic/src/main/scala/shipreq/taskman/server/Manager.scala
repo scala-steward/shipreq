@@ -25,22 +25,17 @@ object Manager {
   def emptyQueue: JobQueue = Heap.Empty[MsgHeader]
 
   def addToQueue(ms: Seq[MsgHeader]): JobQueueS[Unit] =
-    State.modify(s =>
-      (s /: ms)((q, m) => q insert m))
+    State.modify(_ insertAll ms)
 
   val getQueueStatus: JobQueueS[Source.QueueStatus] = // TODO cache?
     State.gets(q =>
-      if (q.isEmpty)
-        None
-      else
-        Some((q.minimum.priority, q.size))
-    )
+      q.minimumO.map(m => (m.priority, q.size)))
 
   val popJob: JobQueueS[Option[MsgHeader]] =
     State(q =>
-      if (q.isEmpty)
-        (q, None)
-      else
-        (q.deleteMin, Some(q.minimum))
+      q.minimumO match {
+        case None      => (q, None)
+        case m@Some(_) => (q.deleteMin, m)
+      }
     )
 }
