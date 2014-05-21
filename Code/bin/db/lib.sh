@@ -46,7 +46,7 @@ function lookup1 {
   lookup "$1"
 }
 
-dbdir=$(dirname "$0")
+dbdir="$(dirname "$0")"
 sqldir="$(dirname "$0")/../../sql"; [ -e "$sqldir" ] || die "SQL dir not found: $sqldir"
 sudo_psql='sudo -u postgres psql'
 sudo_pg_dump='sudo -u postgres pg_dump --encoding=UTF-8'

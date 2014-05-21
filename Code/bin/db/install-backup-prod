@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $(dirname "$0")/lib.sh
+source "$(dirname "$0")"/lib.sh
 backup="$sqldir"/backup-prod.sql
 
 [ ! -r "$backup" ] && echo "File not found or readable: $backup" && exit 1

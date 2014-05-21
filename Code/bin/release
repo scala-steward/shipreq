@@ -1,5 +1,5 @@
 #!/bin/bash
-cd $(dirname $(readlink -e "$0"))/.. || exit 1
+cd "$(dirname "$(readlink -e "$0")")"/.. || exit 1
 
 avail_mods="taskman webapp"
 [ $# -eq 0 ] && defargs="$avail_mods"
@@ -33,9 +33,9 @@ for m in $defargs "$@"; do
 done
 
 case "$((taskman + webapp))" in
-  0) exec script/"$0" $avail_mods "$@" ;;
+  0) exec bin/"$0" $avail_mods "$@" ;;
   2) sbt_test=(test) ;;
-  *) sbt_test=(base/test ${sbt_test[@]}) ;;
+  *) sbt_test=(base/test "${sbt_test[@]}") ;;
 esac
 [ -n "$notest" ] && sbt_test=()
 [ -z "$noclean" ] && sbt+=(clean)
@@ -65,5 +65,5 @@ echo
 
 echo "> ${sbt[@]} ${sbt_test[@]} ${sbt_pkg[@]}"
 echo
-time ${sbt[@]} ${sbt_test[@]} ${sbt_pkg[@]}
+time "${sbt[@]}" "${sbt_test[@]}" "${sbt_pkg[@]}"
 

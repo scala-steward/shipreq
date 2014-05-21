@@ -4,7 +4,7 @@ usage="Usage: $0 [start|status|stop|restart]"
 [ $# -ne 1 ] && echo "$usage" && exit 1
 
 self=bin/taskman
-cd $(dirname $(readlink -e "$0"))/.. || exit 1
+cd "$(dirname "$(readlink -e "$0")")"/.. || exit 1
 [ ! -x "$self" ] && echo "Failed to determine self: $self" && exit 2
 
 bin=bin

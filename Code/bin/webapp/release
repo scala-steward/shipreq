@@ -1,2 +1,2 @@
 #!/bin/bash
-exec $(dirname $(readlink -e "$0"))/../release webapp "$@"
+exec "$(dirname "$(readlink -e "$0")")"/../release webapp "$@"

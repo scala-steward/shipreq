@@ -1,2 +1,2 @@
 #!/bin/bash
-exec $(dirname $(readlink -e "$0"))/../release taskman "$@"
+exec "$(dirname "$(readlink -e "$0")")"/../release taskman "$@"

@@ -1,2 +1,2 @@
 #!/bin/bash
-exec $(dirname $(readlink -e "$0"))/runc shipreq.taskman.server.app.ManualSubmit "$@"
+exec "$(dirname "$(readlink -e "$0")")"/runc shipreq.taskman.server.app.ManualSubmit "$@"
