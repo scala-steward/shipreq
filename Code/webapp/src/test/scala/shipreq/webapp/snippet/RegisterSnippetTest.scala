@@ -8,6 +8,7 @@ import org.apache.shiro.authc.UsernamePasswordToken
 import org.postgresql.util.PSQLException
 import org.scalatest.FunSpec
 
+import shipreq.base.util.ScalaExt._
 import security.Oshiro
 import test.TestDatabaseSupport
 import test.fixture.UserFixture
@@ -121,6 +122,12 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
   class Reg2Tester(token: String) {
     val snippet = new Register2(token)
 
+    def name_=     (v: String) : Unit = snippet.vars = snippet.vars put1 v
+    def username_= (v: String) : Unit = snippet.vars = snippet.vars put2 v
+    def password1_=(v: String) : Unit = snippet.vars = snippet.vars map3 (_ put1 v)
+    def password2_=(v: String) : Unit = snippet.vars = snippet.vars map3 (_ put2 v)
+    def tos_=      (v: Boolean): Unit = snippet.vars = snippet.vars put5 v
+
     def onSubmit() = withTestTaskman(snippet.onSubmit())
 
     def onSubmitF() = {
@@ -156,10 +163,11 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
   describe("Register2 POST") {
     def tester = {
       val t = new Reg2Tester(userWithCurrentToken.token)
-      t.snippet.nameV        set  "John Stuff"
-      t.snippet.usernameV    set  "crazy50"
-      t.snippet.passwordV.fv set2 "abcd5678"
-      t.snippet.tosV         set  true
+      t name_=      "John Stuff"
+      t username_=  "crazy50"
+      t password1_= "abcd5678"
+      t password2_= "abcd5678"
+      t tos_=       true
       t
     }
 
@@ -170,40 +178,40 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
       reg.confirmationToken should be(Some(userWithCurrentToken.token))
     }
 
-    def testFailure(mutate: Register2 => Any) {
+    def testFailure(mutate: Reg2Tester => Any) {
       val t = tester
-      mutate(t.snippet)
+      mutate(t)
       val js = t.onSubmitF
       assertUnconfirmed()
       js.assertJsAlert(Some(""))
     }
 
     it("should reject an invalid name") {
-      testFailure(_.nameV set "9000")
+      testFailure(_ name_= "9000")
     }
 
     it("should reject an invalid username") {
-      testFailure(_.usernameV set "9000")
+      testFailure(_ username_= "9000")
     }
 
     it("should reject an invalid password") {
-      testFailure(_.passwordV.fv set2 "abcd")
+      testFailure(_ password2_= "abcd")
     }
 
     it("should reject when passwords dont match") {
-      testFailure(_.passwordV.fv.a set "987654321zcbsdfg")
+      testFailure(_ password1_= "987654321zcbsdfg")
     }
 
     it("should reject a taken username") {
       val t = tester
-      t.snippet.usernameV set user2.username
+      t username_= user2.username
       t.onSubmitF
       try {assertUnconfirmed()}
       catch {case e: PSQLException if e.getMessage.contains("transaction is aborted") =>}
     }
 
     it("should reject without ToS agreement") {
-      testFailure(_.tosV set false)
+      testFailure(_ tos_= false)
     }
 
     describe("when form details valid") {

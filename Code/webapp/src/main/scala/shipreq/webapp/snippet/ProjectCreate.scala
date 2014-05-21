@@ -13,15 +13,18 @@ import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
  *
  * @since 24/09/2013
  */
-class ProjectCreate extends SingleOpStatefulSnippet {
+object ProjectCreate extends SingleOpStatefulSnippet {
 
-  private[snippet] val nameV = FormVar.strOnSubmit(Validators.project.name, ":text")("")
+  val form = FormVar.strOnSubmit(Validators.project.name, ":text")
 
-  def render =
-    nameV.csssel & ":submit" #> ajaxSubmitOnClick(onSubmit)
+  def render = {
+    var vars: form.Var = ""
+    form.csssel(vars, vars = _) &
+      ":submit" #> ajaxSubmitOnClick(() => onSubmit(vars))
+  }
 
-  def onSubmit(): JsCmd =
-    ifValid(nameV.validate)(name =>
+  def onSubmit(vars: form.Var): JsCmd =
+    ifValid(form validate vars)(name =>
       daoProvider.withSession(_.createProject(currentUserId_!, name)) match {
         case DbSuccess(id)    => redirectTo(AppSiteMap.Project)(id)
         case NameAlreadyInUse => jsShowError("You already have a project with that name.")

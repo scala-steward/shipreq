@@ -13,11 +13,7 @@ class ProjectCreateTest extends FunSuite with TestDatabaseSupport with UserFixtu
     login(user1)
   }
 
-  def create(n: String): JsCmd = {
-    val s = new ProjectCreate
-    s.nameV set n
-    s.onSubmit
-  }
+  def create(n: String): JsCmd = ProjectCreate.onSubmit(n)
 
   def testSuccess(): Unit =
     assertRedirect(

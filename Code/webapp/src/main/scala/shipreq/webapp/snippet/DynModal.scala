@@ -32,6 +32,8 @@ object DynModal extends StaticSnippetHelpers {
 
   val ChangePasswordTemplate = NonEmptyTemplate.load("templates-hidden/dynmodal-change_password").get
 
+  val ChangePasswordPairFV = FormVar.passwordPair("#dynmodal-password1", "#dynmodal-password2")
+
   /**
    * Opens a modal dialog that prompts the user to enter a new password.
    *
@@ -42,25 +44,17 @@ object DynModal extends StaticSnippetHelpers {
    */
   def passwordChanger(title: String, current: Option[PasswordAndSalt])(successFn: String @@ Validated => JsCmd): JsCmd = {
 
-    val curPasswordV = current.map(ps => FormVar.strOnSubmit(Validators.currentPassword(ps), "#dynmodal-passwordC")(""))
-    val passwordV = FormVar.passwordPair("#dynmodal-password1", "#dynmodal-password2")
+    val form = FormVar.passwordChange(current, "#dynmodal-passwordC", ".curpw" #> "", ChangePasswordPairFV)
 
-    def onSubmit(): JsCmd = {
-      val vn = passwordV.validate
-      val v: ValidationResultT[String] = curPasswordV match {
-        case None     => vn
-        case Some(fv) => Validators.Ap.apply2(fv.validate, vn)((_,n) => n)
-      }
-      ifValid(v)(newPassword =>
+    var vars: form.Var = FormVar.emptyPasswordChange
+
+    def onSubmit(): JsCmd =
+      ifValid(form validate vars)(newPassword =>
         JsModalHide & successFn(newPassword))
-    }
-
-    val currentPasswordTransform = curPasswordV.fold(".curpw" #> "")(_.csssel)
 
     run(ChangePasswordTemplate)(
       ".modal-title *" #> title
-      & currentPasswordTransform
-      & passwordV.csssel
+      & form.csssel(vars, vars = _)
       & ":submit" #> ajaxSubmitOnClick(onSubmit)
     )
   }

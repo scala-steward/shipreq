@@ -8,18 +8,22 @@ import shipreq.webapp.feature.UcFilter
 import shipreq.webapp.lib.{FormVar, NoticeFlash}
 import shipreq.webapp.lib.Types.Json
 import shipreq.webapp.util.NonEmptyTemplate
+import ShareCreateBase._
+import ShareEditConsts._
 
 object ShareEditConsts {
 
-  val EditForm: NodeSeq = {
+  val editFormXml: NodeSeq = {
     val createForm = NonEmptyTemplate.load("loggedin/share-create").extract("form")
-                     .assertHeadType("form").assertSingleHead.get
+                     .assertHeadType("form").assertSingleHead().get
     val transform = (
       ".password .form-group" #> "" &
       ":submit *" #> "Update Share"
     )
     transform(createForm)
   }
+
+  val editForm = FormVar.merge(nameFV, prefaceFV)(Tuple2.apply)
 }
 
 /**
@@ -31,16 +35,14 @@ class ShareEdit extends ShareCreateBase {
 
   val share = RequestVars.Share.value
   def projectId = share.projectId
+  var vars: editForm.Var = (share.name, share.preface.getOrElse(""))
 
-  def render = {
-    nameV set share.name
-    prefaceV set share.preface.getOrElse("")
-    "#edit-form" #> ShareEditConsts.EditForm andThen render2(share.ucFilter)
-  }
+  def render =
+    "#edit-form" #> editFormXml andThen (editForm.csssel(vars, vars = _) & render2(share.ucFilter))
 
   def onSubmit(ucFilterJson: () => Json[UcFilter]): JsCmd =
-    ifValid(FormVar.AP2(nameV, prefaceV).validate(Tuple2.apply))(r => {
-      val (name, preface) = r
+    ifValid(editForm validate vars)(t => {
+      val (name, preface) = t
       daoProvider.withSession(_.updateShare(share, name, preface, ucFilterJson()))
       NoticeFlash.notices.addS("Share updated successfully.")
       goBackToShareList()

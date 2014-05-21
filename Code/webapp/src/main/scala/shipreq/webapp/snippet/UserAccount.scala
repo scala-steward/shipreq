@@ -11,24 +11,30 @@ import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt
 import shipreq.webapp.util.HtmlTransformExt._
 
+object UserAccount {
+  val form = FormVar.merge(
+    FormVar.strOnSubmit(Validators.landingPage.name, "#usrname"),
+    FormVar.boolOnSubmit("#newsletter")
+  )(UserDetail)
+}
+
 /**
  * Allows user to view and modify their account details.
  */
 class UserAccount extends SnippetHelpers {
+  import UserAccount.form
 
   val usr = currentUser_!
   val (supp, usrd) = daoProvider.withSession(_ findUserSuppAndDetail usr) getOrElse redirectTo(AppSiteMap.Logout)
-
-  val nameV       = FormVar.strOnSubmit(Validators.landingPage.name, "#usrname")(usrd.name)
-  val newsletterV = FormVar.boolOnSubmit("#newsletter")(usrd.newsletter)
-  val vars = FormVar.AP2(nameV, newsletterV)
+  var vars: form.Var = (usrd.name, usrd.newsletter)
 
   def render = (
     ".username .form-control-static *" #> usr.username
     & ".email .form-control-static *" #> usr.email
     & ".registeredAt time [datetime]" #> supp.registeredAt
     & ".password .edit" #> DynModal.passwordChangerT("Account Password", Some(supp.ps))(onPasswordChange)
-    & vars.csssel & "#usrd-submit" #> ajaxSubmitOnClick(onUserPrefUpdate)
+    & form.csssel(vars, vars = _)
+    & "#usrd-submit" #> ajaxSubmitOnClick(onUserPrefUpdate)
   )
 
   def onPasswordChange(newPassword: PasswordAndSalt): JsCmd = {
@@ -37,7 +43,7 @@ class UserAccount extends SnippetHelpers {
   }
 
   def onUserPrefUpdate(): JsCmd =
-    ifValid(vars.validate(UserDetail))(d => {
+    ifValid(form.validate(vars))(d => {
       daoProvider.withTransaction(dao => {
         dao.updateUserDetails(usr, d)
         taskmanD(dao, _ submitMsg UserUpdated(usr))

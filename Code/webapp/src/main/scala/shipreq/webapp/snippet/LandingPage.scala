@@ -14,16 +14,18 @@ object LandingPage extends SnippetHelpers {
   private val firstNameExtractor = "\\s.+$".r
   private val jsDisableForm = JsCmds.Run("$('#form').find('input,textarea,button').prop('disabled',true)")
 
+  private val formDef = FormVar.merge(
+    FormVar.strOnSubmit(Validators.landingPage.email, ".e"),
+    FormVar.strOnSubmit(Validators.landingPage.name, ".n"),
+    FormVar.strOnSubmit(Validators.landingPage.msg, ".m"),
+    FormVar.boolOnSubmit(".newsletter input")
+  )(LandingPageHit)
+
   def form: CssSel = {
-    val vars = FormVar.AP4(
-      FormVar.strOnSubmit(Validators.landingPage.email, ".e")(""),
-      FormVar.strOnSubmit(Validators.landingPage.name, ".n")(""),
-      FormVar.strOnSubmit(Validators.landingPage.msg, ".m")(""),
-      FormVar.boolOnSubmit(".newsletter input")(true)
-    )
+    var vars: formDef.Var = ("", "", "", true)
 
     def onSubmit: JsCmd =
-      vars.validate(LandingPageHit) match {
+      formDef.validate(vars) match {
         case Failure(f) =>
           JsCmds.Alert(f.toText)
         case Success(msg) =>
@@ -32,6 +34,6 @@ object LandingPage extends SnippetHelpers {
           jsDisableForm & JsCmds.Alert(s"Thank you, $firstName.\n\nWe'll be in touch!")
       }
 
-    vars.csssel & ":submit" #> ajaxSubmitOnClick(onSubmit _)
+    formDef.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit _)
   }
 }

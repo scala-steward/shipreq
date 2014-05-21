@@ -4,7 +4,7 @@ import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 import org.mockito.Mockito.{when, verify}
 import org.scalatest.FunSpec
-
+import shipreq.base.util.ScalaExt._
 import shipreq.webapp.db.{ResetPasswordInfo, UserRegistrationInfo, DaoT}
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.test.T2._
@@ -136,7 +136,7 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
       inMockSession {
         MockDaoProvider().install {
           val s = new ResetPassword2("ah")
-          s.passwordV.fv set2 p
+          s.vars = (p, p)
           val js = s.onSubmit()
           dbExp.test()
           jsExp test js

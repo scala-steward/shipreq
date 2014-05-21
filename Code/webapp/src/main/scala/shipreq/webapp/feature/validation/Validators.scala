@@ -95,6 +95,24 @@ final object Validators {
           Failure(VFailure.looseMsg("Current password is incorrect."))
     }
 
+  type PasswordChangeIn = (String, (String, String))
+  def passwordChange(ps: PasswordAndSalt): ValidatorT[PasswordChangeIn, PasswordChangeIn, String] = {
+    val cur = currentPassword(ps)
+    new ValidatorT[PasswordChangeIn, PasswordChangeIn, String] {
+      override def correct(i: PasswordChangeIn): CI =
+        (cur correct i._1, passwords correct i._2).tag
+      override def validate(i: CI) =
+        Validators.Ap.apply2(cur validate i._1.tag, passwords validate i._2.tag)((_,n) => n)
+    }
+  }
+
+  /** `passwords` in the shape of `passwordChange`. i.e. change password without checking current. */
+  object passwordSet
+    extends ValidatorT[PasswordChangeIn, PasswordChangeIn, String] {
+      override def correct(i: PasswordChangeIn): CI = (i._1, passwords correct i._2).tag
+      override def validate(i: CI) = passwords validate i._2.tag
+    }
+
   object tosAgreement extends ValidatorT[Boolean, JBool, JBool] {
     override def correct(i: Boolean): CI = JBool.valueOf(i).tag
     override def validate(b: CI) =

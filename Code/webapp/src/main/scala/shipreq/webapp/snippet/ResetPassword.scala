@@ -27,15 +27,17 @@ object ResetPassword {
 
 object ResetPassword1 extends SnippetHelpers {
 
+  val form = FormVar.strOnSubmit(Validators.email, "#email")
+
   def render = {
-    val emailV = FormVar.strOnSubmit(Validators.email, "#email")("")
+    var vars: form.Var = ""
 
     def onSubmit(): JsCmd = {
       securityProvider.enforceHumanSpeed()
-      perform(emailV.validate)
+      perform(form validate vars)
     }
 
-    emailV.csssel & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
   }
 
   def perform(v: ValidationResultT[String]): JsCmd =
@@ -81,9 +83,14 @@ object ResetPassword1 extends SnippetHelpers {
 
 // =====================================================================================================================
 
-class ResetPassword2(token: String) extends SingleOpStatefulSnippet {
+object ResetPassword2 {
+  val form = FormVar.passwordPair("#password1", "#password2")
+}
 
-  val passwordV = FormVar.passwordPair("#password1", "#password2")
+class ResetPassword2(token: String) extends SingleOpStatefulSnippet {
+  import ResetPassword2._
+
+  var vars: form.Var = FormVar.emptyPasswordPair
 
   def validateToken_!(): Unit =
     daoProvider.withSession(_ findResetPasswordTokenIssuedDate token) match {
@@ -100,14 +107,14 @@ class ResetPassword2(token: String) extends SingleOpStatefulSnippet {
 
   def render = {
     validateToken_!()
-    passwordV.csssel & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
   }
 
   def onSubmit(): JsCmd =
     try
-      ifValid(passwordV.validate)(resetPassword)
+      ifValid(form validate vars)(resetPassword)
     finally
-      passwordV.fv.set2("") // Let's not keep the plaintext passwords around
+      vars = FormVar.emptyPasswordPair // Let's not keep the plaintext passwords around
 
   def resetPassword(password: String): JsCmd = {
     val ps = PasswordAndSalt.createWithRandomSalt(password)

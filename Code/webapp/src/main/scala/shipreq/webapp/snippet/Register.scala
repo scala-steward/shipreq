@@ -6,7 +6,7 @@ import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
 import org.joda.time.DateTime
-
+import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.Msg
 import shipreq.webapp.app.{AppConfig, AppSiteMap}
 import shipreq.webapp.lib.{FormVar, SnippetHelpers, SingleOpStatefulSnippet}
@@ -24,6 +24,8 @@ object Register {
   def isTokenExpired(dateIssued: DateTime): Boolean = AppConfig.TokenLifespan.ago.isAfter(dateIssued)
 }
 
+// =====================================================================================================================
+
 /**
  * Takes an email address, validates it, creates a new user, sends an email with a verification-token in it.
  *
@@ -31,17 +33,19 @@ object Register {
  */
 object Register1 extends SnippetHelpers {
 
+  val form = FormVar.strOnSubmit(Validators.emailEA, "#email")
+
   def render = {
-    val emailV = FormVar.strOnSubmit(Validators.emailEA, "#email")("")
+    var vars: form.Var = ""
 
     def onSubmit(): JsCmd = {
       securityProvider.enforceHumanSpeed()
-      perform(emailV.validate)
+      perform(form validate vars)
     }
 
     if (Permissions.userRegistration.using().isPass)
       ( "#registrationDisabled" #> ""
-      & emailV.csssel
+      & form.csssel(vars, vars = _)
       & ":submit" #> ajaxSubmitOnClick(onSubmit))
     else
       "#register1Form" #> ""
@@ -89,6 +93,18 @@ object Register1 extends SnippetHelpers {
     RegistrationRequested(email, AppSiteMap.Register2.absoluteUrl(token))
 }
 
+// =====================================================================================================================
+
+object Register2 {
+  val form = FormVar.merge(
+    FormVar.strOnSubmit(Validators.landingPage.name, "#name"),
+    FormVar.ajaxStr(Validators.user.username, JqId("username")),
+    FormVar.passwordPair("#password1", "#password2"),
+    FormVar.boolOnSubmit("#newsletter"),
+    FormVar.boolOnSubmit(Validators.tosAgreement, "#tos")
+  )(Tuple5.apply)
+}
+
 /**
  * Validates a token from email (part of the URL) and presents the user with a username/password form. Upon form
  * submission the user account is activated.
@@ -96,18 +112,14 @@ object Register1 extends SnippetHelpers {
  * @since 1/07/2013
  */
 class Register2(token: String) extends SingleOpStatefulSnippet {
+  import Register2._
 
-  val nameV       = FormVar.strOnSubmit(Validators.landingPage.name, "#name")("")
-  val usernameV   = FormVar.ajaxStr(Validators.user.username, JqId("username"))("")
-  val passwordV   = FormVar.passwordPair("#password1", "#password2")
-  val newsletterV = FormVar.boolOnSubmit("#newsletter")(true)
-  val tosV        = FormVar.boolOnSubmit(Validators.tosAgreement, "#tos")(false)
-  val vars = FormVar.AP5(nameV, usernameV, passwordV, newsletterV, tosV)
+  var vars: form.Var = ("", "", FormVar.emptyPasswordPair, true, false)
 
   def render = {
     securityProvider.enforceHumanSpeed()
     validateToken_!()
-    vars.csssel & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
   }
 
   def validateToken_!(): Unit =
@@ -126,7 +138,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
   def onSubmit(): JsCmd = try {
     import UserRegistrationResult._
 
-    ifValid(vars.validate(Tuple5.apply))(r => {
+    ifValid(form validate vars)(r => {
       val (name, username, password, newsletter, _) = r
       val ps = PasswordAndSalt.createWithRandomSalt(password)
 
@@ -149,5 +161,5 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
       }
     })
   } finally
-    passwordV.fv.set2("") // Let's not keep the plaintext passwords around
+    vars = vars put3 FormVar.emptyPasswordPair // Let's not keep the plaintext passwords around
 }

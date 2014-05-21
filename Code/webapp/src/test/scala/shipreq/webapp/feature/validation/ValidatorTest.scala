@@ -7,6 +7,7 @@ import org.scalatest.prop._
 import scalaz.{Failure, Success}
 import app.AppConfig._
 import lib.Types._
+import security.PasswordAndSalt
 
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   def V = Validators
@@ -80,6 +81,22 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   test("Password pair validation") {
     Validators.passwords.correctAndValidate("qweqwe123", "qweqwe123h").isFailure shouldBe true
     Validators.passwords.correctAndValidate("qweqwe123", "qweqwe123").isFailure shouldBe false
+  }
+
+  test("Password change") {
+    val ps = PasswordAndSalt.createWithRandomSalt("blahblah8")
+    val v = Validators.passwordChange(ps)
+    v.correctAndValidate("blahblah", ("qweqwe123", "qweqwe123")).isFailure shouldBe true
+    v.correctAndValidate("blahblah8", ("qweqwe12", "qweqwe123")).isFailure shouldBe true
+    v.correctAndValidate("blahblah8", ("qweqwe123", "")).isFailure shouldBe true
+    v.correctAndValidate("blahblah8", ("qweqwe123", "qweqwe123")) shouldBe Success("qweqwe123")
+  }
+
+  test("Password set") {
+    val v = Validators.passwordSet
+    v.correctAndValidate("", ("qweqwe12", "qweqwe123")).isFailure shouldBe true
+    v.correctAndValidate("", ("qweqwe123", "")).isFailure shouldBe true
+    v.correctAndValidate("", ("qweqwe123", "qweqwe123")) shouldBe Success("qweqwe123")
   }
 
   test("Username correction") {
