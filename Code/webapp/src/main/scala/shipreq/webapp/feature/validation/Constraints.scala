@@ -1,111 +1,61 @@
 package shipreq.webapp.feature.validation
 
 import java.util.regex.Pattern
+import java.util.regex.Pattern.quote
+import scala.util.matching.Regex
 import shipreq.webapp.app.AppConfig._
+import Constraint._
 
-trait Constraint[-T <: AnyRef] extends (T => Option[String]) {
-  def isValid(t: T): Boolean
-}
+object Constraints {
+  implicit def regexToPattern(regex: Regex): Pattern = regex.pattern
 
-trait ConstraintWithStaticFailureResult[-T <: AnyRef] extends Constraint[T] {
-  final def apply(t: T): Option[String] = if (isValid(t)) None else failureResult
-  def isValid(t: T): Boolean
-  val failureResult: Some[String]
-}
+  val nonEmpty = predicate[String](_.nonEmpty)("cannot be blank.")
 
-final object Constraints {
-  implicit def RegexToPattern(regex: scala.util.matching.Regex): Pattern = regex.pattern
-  private def CharStrToCharRegex(s: String): String = s.toCharArray.map(c=>Pattern.quote(c.toString)).mkString
+  def matchesR(regex: Pattern) = predicate[String](regex.matcher(_).matches)
 
-  // -------------------------------------------------------------------------------------------------------------------
-  // Combinators
+  def startsWithR(regex: String) = matchesR(s"^(?:$regex).*".r)
 
-  case class Not[-T <: AnyRef](v: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
-    override def isValid(t: T) = !v.isValid(t)
-    override val failureResult = Some(errMsg)
-  }
+  def endsWithR(regex: String) = matchesR(s".*(?:$regex)$$".r)
 
-  case class And[-T <: AnyRef](a: Constraint[T], b: Constraint[T], errMsg: String) extends ConstraintWithStaticFailureResult[T] {
-    override def isValid(t: T) = a.isValid(t) && b.isValid(t)
-    override val failureResult = Some(errMsg)
-  }
+  def startsWithS(prefix: String) = predicate[String](_ startsWith prefix)(s"must start with '$prefix'.")
 
-  // -------------------------------------------------------------------------------------------------------------------
-  // Instances
+  def endsWithS(suffix: String) = predicate[String](_ endsWith suffix)(s"must end with '$suffix'.")
 
-  case class MatchesRegex(regex: Pattern, errMsg: String) extends ConstraintWithStaticFailureResult[String] {
-    override def isValid(input: String) = regex.matcher(input).matches
-    override val failureResult = Some(errMsg)
-  }
+  def whitelistCharsR(charRegex: String) = matchesR(s"^[$charRegex]*$$".r)
 
-  object StartsWith {
-    def regex(regex: String, errMsg: String) = MatchesRegex(s"^(?:$regex).*".r.pattern, errMsg)
-  }
+  def whitelistCharsS(charList: String) = whitelistCharsR(quote(charList))
 
-  object EndsWith {
-    def regex(regex: String, errMsg: String) = MatchesRegex(s".*(?:$regex)$$".r.pattern, errMsg)
-  }
+  def blacklistCharsR(charRegex: String) = matchesR(s"^[^$charRegex]*$$".r)
 
-  object Whitelist {
-    /** Validates that a string consists only of certain chars. */
-    def chars(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
+  def blacklistCharsS(charList: String) = blacklistCharsR(quote(charList))
 
-    /** Validates that a string consists only of certain chars. */
-    def charRegex(charRegex: String, errMsg: String) = MatchesRegex(s"^[$charRegex]*$$".r.pattern, errMsg)
-  }
-
-  object Blacklist {
-    /** Validates that a string doesn't contain any prohibited chars. */
-    def chars(chars: String, errMsg: String) = charRegex(CharStrToCharRegex(chars), errMsg)
-
-    /** Validates that a string doesn't contain any prohibited chars. */
-    def charRegex(charRegex: String, errMsg: String) = Not(Contain.regex(s"[$charRegex]", ""), errMsg)
-  }
-
-  /** Validates that a string contains a certain pattern or substring. */
-  object Contains {
-    def regex(regex: String, errMsg: String) = MatchesRegex(s".*$regex.*".r.pattern, errMsg)
-  }
-  def Contain = Contains
+  def containsR(regex: String) = matchesR(s".*$regex.*".r)
 
   /** Validates that a string contains at least one letter, and at least one number. */
-  object ContainsAlphaAndNumber extends MatchesRegex(
-    ".*?[A-Za-z].*?[0-9].*|.*?[0-9].*?[A-Za-z].*".r.pattern,
+  val containsAlphaAndNumber = matchesR(
+    ".*?[A-Za-z].*?[0-9].*|.*?[0-9].*?[A-Za-z].*".r)(
     "must contain at least one letter, and at least one number.")
 
   /**
    * Validates that the length of a string is within min & max bounds.
-   *
    * @param range inclusive
    */
-  case class HasLengthInRange(range: Range) extends ConstraintWithStaticFailureResult[String] {
-    override def isValid(input: String) = range.contains(input.length)
-    override val failureResult = Some(s"must be between ${range.min} and ${range.max} characters long.")
-  }
+  def lengthInRange(range: Range) =
+    predicate[String](range contains _.length)(s"must be between ${range.min} and ${range.max} characters long.")
 
-  object NonEmpty extends ConstraintWithStaticFailureResult[String] {
-    override def isValid(input: String) = input.nonEmpty
-    override val failureResult = Some("cannot be blank.")
-  }
-
-  case class HasMaximumLength(maxLength: Int) extends Constraint[String] {
-    override def apply(input: String) = {
-      val excess = input.length - maxLength
+  def maximumLength(max: Int) = Constraint.perf[String](
+    _.length <= max // avoid creating errMsg if unneeded
+    , s => {
+      val excess = s.length - max
       if (excess > 0)
-        Some(s"is too large by $excess characters.")
+        s"is too large by $excess characters." :: Nil
       else
-        None
-    }
-    override def isValid(input: String) = input.length <= maxLength
-  }
+        Nil
+    })
 
-  object HasShortTextLimit extends HasMaximumLength(ShortTextMaxLength)
+  val shortTextLimit = maximumLength(ShortTextMaxLength)
 
-  object HasLargeTextLimit extends HasMaximumLength(LargeTextMaxLength)
+  val largeTextLimit = maximumLength(LargeTextMaxLength)
 
-  object IsNotAFirstNameOnly extends ConstraintWithStaticFailureResult[String] {
-    private val regex = "^\\s*\\S+\\s*$".r.pattern
-    override def isValid(input: String) = !regex.matcher(input).matches
-    override val failureResult = Some("should include a surname, please.")
-  }
+  val containsSurname = nonEmpty --> matchesR("""^\s*?\S+?\s+?\S.*""".r)("should include a surname, please.")
 }

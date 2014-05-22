@@ -1,6 +1,6 @@
 package shipreq.webapp.feature.validation
 
-import scalaz.{Validation, Success}
+import scalaz.{NonEmptyList, Failure, Validation, Success}
 import shipreq.webapp.lib.Types._
 
 trait CorrectionPart[-I, +C <: AnyRef] {
@@ -23,7 +23,25 @@ trait Validator[-I, C <: AnyRef, +V] extends CorrectionPart[I, C] with Validatio
     new Validator.Mapped(this, f)
 }
 
+/**
+ * Collection of constraints that apply to a subject.
+ *
+ * @param fieldName The field name. Prepend to validation failure messages.
+ */
+final case class ConstraintValidator[I <: AnyRef](fieldName: String, c: Constraint[I]) {
+  def validate(input: I @@ InputCorrected): ValidationResultT[I] = {
+    val i: I = input
+    c.invalidate(i) match {
+      case Nil    => Success(i.tag)
+      case h :: t => Failure(VFailure.forField(fieldName, NonEmptyList.nel(h, t)))
+    }
+  }
+}
+
+
 object Validator {
+
+  // TODO clean up this WTF business
 
   val Ap = Validation.ValidationApplicative[VFailure](VFailure.semigroup)
 
@@ -55,6 +73,5 @@ object Validator {
   trait ValidatorT[I, C <: AnyRef, V <: AnyRef] extends Validator[I, C, V @@ Validated]
 
   trait ValidatorT3[T <: AnyRef] extends ValidatorT[T, T, T]
-
 }
 

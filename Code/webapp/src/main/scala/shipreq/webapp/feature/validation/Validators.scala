@@ -8,16 +8,17 @@ import shipreq.webapp.lib.Types._
 import shipreq.webapp.lib.Misc._
 import shipreq.webapp.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
 import shipreq.webapp.security.PasswordAndSalt
+import Constraint.not
 import Constraints._
 import Validator._
 
-final object Validators {
+object Validators {
 
   def Ap = Validator.Ap
 
   /** Empty string not allowed. Carriage returns removed. */
   abstract class MandatoryShortText(name: String)
-    extends UseConstraintValidator(ConstraintValidator[String](name, NonEmpty, HasShortTextLimit)) {
+    extends UseConstraintValidator(ConstraintValidator[String](name, nonEmpty & shortTextLimit)) {
     override def correct(input: String): CI = normaliseWhitespaceInSingleLineString(input).tag
   }
 
@@ -25,7 +26,7 @@ final object Validators {
     TextReplacements.perform(TextReplacements.GeneralWithWhitespace)(input)
 
   private def largeTextValidator(name: String) =
-    ConstraintValidator[String](name, HasLargeTextLimit)
+    ConstraintValidator[String](name, largeTextLimit)
 
   /** Empty string is represented as `""`. */
   abstract class LargeText(name: String)
@@ -54,8 +55,8 @@ final object Validators {
     extends Typical[String](
       removeAllWhitespace(_).tag,
       ConstraintValidator("Email address",
-        HasMaximumLength(EmailMaxLength),
-        MatchesRegex("^_+@_+?\\._+$".replace("_", "[^&<>]").r, "is invalid.") // loose validation
+        maximumLength(EmailMaxLength)
+          & matchesR("^_+@_+?\\._+$".replace("_", "[^&<>]").r)("is invalid.") // loose validation
       )
     )
 
@@ -64,9 +65,8 @@ final object Validators {
   object password
     extends UseConstraintValidator[String](
       ConstraintValidator("Password",
-        HasLengthInRange(PasswordLength),
-        ContainsAlphaAndNumber
-      )
+        lengthInRange(PasswordLength)
+          & containsAlphaAndNumber)
     ) with NoInputCorrection[String]
 
   object passwords
@@ -125,11 +125,10 @@ final object Validators {
   object humanFullName extends Typical[String](
     normaliseWhitespaceInSingleLineString(_).tag,
     ConstraintValidator("Your name",
-      NonEmpty,
-      IsNotAFirstNameOnly,
-      HasShortTextLimit,
-      Blacklist.chars("<>\"[]{}%$@!;:|?*+_", "shouldn't contain symbols."),
-      Not(Contain.regex("[0-9]", ""), "shouldn't contain numbers.")
+      containsSurname
+        & shortTextLimit
+        & blacklistCharsS("<>\"[]{}%$@!;:|?*+_")("mustn't contain symbols.")
+        & blacklistCharsR("0-9")("mustn't contain numbers.")
     )
   )
 
@@ -140,10 +139,10 @@ final object Validators {
     object username extends Typical[String](
       removeAllWhitespace(_).toLowerCase.tag,
       ConstraintValidator("Username",
-        HasLengthInRange(UsernameLength),
-        Whitelist.charRegex("a-z0-9_", "can only contain letters, numbers and underscores."),
-        StartsWith.regex("[a-z]",      "must start with a letter."),
-        EndsWith.regex("[a-z0-9]",     "must end with a letter or a number.")
+        lengthInRange(UsernameLength)
+          & whitelistCharsR("a-z0-9_")("can only contain letters, numbers and underscores.")
+          & startsWithR("[a-z]")("must start with a letter.")
+          & endsWithR("[a-z0-9]")("must end with a letter or a number.")
       )
     )
 
@@ -170,10 +169,10 @@ final object Validators {
     object title extends Typical[String](
       i => TextReplacements.perform(TextReplacements.General)(normaliseWhitespaceInSingleLineString(i)).tag,
       ConstraintValidator("Use case title",
-        NonEmpty,
-        HasShortTextLimit,
-        Blacklist.chars("[]⦋⦌［］", "cannot include square brackets."),
-        Not(Contain.regex(AnyValidArrowRegexStr, ""), "cannot include arrows.")
+        nonEmpty
+          & shortTextLimit
+          & blacklistCharsS("[]⦋⦌［］")("cannot include square brackets.")
+          & not(containsR(AnyValidArrowRegexStr))("cannot include arrows.")
       )
     )
 
