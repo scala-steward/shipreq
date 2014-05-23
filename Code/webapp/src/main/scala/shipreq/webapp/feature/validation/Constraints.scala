@@ -4,15 +4,14 @@ import java.util.regex.Pattern
 import java.util.regex.Pattern.quote
 import scala.util.matching.Regex
 import shipreq.webapp.app.AppConfig._
-import shipreq.webapp.util.JsGen
 import Constraint._
 
 object Constraints {
   implicit def regexToPattern(regex: Regex): Pattern = regex.pattern
 
-  val nonEmpty = predicate[String](_.nonEmpty, "!!_")("cannot be blank.")
+  val nonEmpty = predicate[String](_.nonEmpty)("cannot be blank.")
 
-  def matchesR(regex: Pattern) = predicate[String](regex.matcher(_).matches, s"${JsGen translateRegex regex}.test(_)")
+  def matchesR(regex: Pattern) = predicate[String](regex.matcher(_).matches)
 
   def startsWithR(regex: String) = matchesR(s"^(?:$regex).*".r)
 
@@ -38,7 +37,7 @@ object Constraints {
    * @param range inclusive
    */
   def lengthInRange(range: Range) =
-    predicate[String](range contains _.length, s"(_.length>=${range.min} && _.length<=${range.max})")(
+    predicate[String](range contains _.length)(
       s"must be between ${range.min} and ${range.max} characters long.")
 
   def maximumLength(max: Int) = Constraint.perf[String](
@@ -49,7 +48,7 @@ object Constraints {
         s"is too large by $excess characters." :: Nil
       else
         Nil
-    }, s"_.length<=$max")
+    })
 
   val shortTextLimit = maximumLength(ShortTextMaxLength)
 
