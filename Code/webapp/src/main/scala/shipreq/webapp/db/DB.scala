@@ -17,8 +17,6 @@ object DB extends DbTemplate {
 
   @inline def DataSource = connection.ds
 
-  private[this] val slick = _slick
-
   // Making public for tests
   override def wipe_!(): Unit = super.wipe_!()
 
@@ -27,6 +25,7 @@ object DB extends DbTemplate {
   }
 
   object DaoProvider extends DaoProvider {
+    private[this] val slick = _slick // avoid lazy val overhead
     override def withRawSession[T](f: Session => T): T = slick.withSession(f)
     override protected def rawSession(): Session       = slick.createSession()
   }
