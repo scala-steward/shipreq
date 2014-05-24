@@ -5,8 +5,8 @@ import scalaz.{Success, Failure}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.app.AppConfig._
 import shipreq.webapp.lib.ScalazSubset._
+import shipreq.webapp.lib.TextMod._
 import shipreq.webapp.lib.Types._
-import shipreq.webapp.lib.Misc._
 import shipreq.webapp.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
 import shipreq.webapp.security.PasswordAndSalt
 import Constraint.not
@@ -16,28 +16,25 @@ object Validators {
 
   /** Empty string not allowed. Carriage returns removed. */
   private def mandatoryShortText(name: String) = Validator(
-    CorrectionPart.lift(normaliseWhitespaceInSingleLineString),
+    CorrectionPart.endo(singleLineWhitespace),
     ValidationPart.forConstraint(name, nonEmpty + shortTextLimit))
 
-  private def correctLargeText(input: String): String =
-    TextReplacements.perform(TextReplacements.GeneralWithWhitespace)(input)
-
-  private def largeTextValidator(name: String) =
-    ValidationPart.forConstraint(name, largeTextLimit)
+  private val largeTextCP = CorrectionPart.endo(multiLineWhitespace andThen niceSymbols)
+  private def largeTextValidator(name: String) = ValidationPart.forConstraint(name, largeTextLimit)
 
   /** Empty string is represented as `""`. */
   private def largeText(name: String) =
-    Validator(CorrectionPart.lift(correctLargeText), largeTextValidator(name))
+    Validator(largeTextCP, largeTextValidator(name))
 
   /** Empty string is represented as `None`. */
   private def optionalLargeText(name: String) = Validator(
-    CorrectionPart[String, Option[String]](i => nonEmptyString(correctLargeText(i)).tag),
+    largeTextCP.map[Option[String]](nonBlank(_).tag),
     ValidationPart.liftO[String, String](largeTextValidator(name).validate))
 
   // ===================================================================================================================
 
   val email = Validator(
-    CorrectionPart.lift(removeAllWhitespace),
+    CorrectionPart.endo(noWhitespace),
     ValidationPart.forConstraint("Email address",
       maximumLength(EmailMaxLength)
         + matchesR("^_+@_+?\\._+$".replace("_", "[^&<>]").r)("is invalid.") // loose validation
@@ -85,7 +82,7 @@ object Validators {
     ValidationPart.test[JBool](_.booleanValue, VFailure.looseMsg("You must agree to the terms of service.")))
 
   val humanFullName = Validator(
-    CorrectionPart.lift(normaliseWhitespaceInSingleLineString),
+    CorrectionPart.endo(singleLineWhitespace),
     ValidationPart.forConstraint("Your name",
       containsSurname
         + shortTextLimit
@@ -98,7 +95,7 @@ object Validators {
   object user {
 
     val username = Validator(
-      CorrectionPart.lift[String](removeAllWhitespace(_).toLowerCase),
+      CorrectionPart.endo(noWhitespace andThen lowerCase),
       ValidationPart.forConstraint("Username",
         lengthInRange(UsernameLength)
           + whitelistCharsR("a-z0-9_")("can only contain letters, numbers and underscores.")
@@ -122,8 +119,7 @@ object Validators {
   object usecase {
 
     val title = Validator(
-      CorrectionPart.lift[String](i =>
-        TextReplacements.perform(TextReplacements.General)(normaliseWhitespaceInSingleLineString(i))),
+      CorrectionPart.endo(singleLineWhitespace andThen niceSymbols),
       ValidationPart.forConstraint("Use case title",
         nonEmpty
           + shortTextLimit

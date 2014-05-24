@@ -1,20 +1,25 @@
 package shipreq.webapp.feature.validation
 
-import scalaz.{NonEmptyList, Failure, Validation, Success}
+import scalaz.{Endo, NonEmptyList, Failure, Validation, Success}
 import shipreq.webapp.lib.Types._
 
 final case class CorrectionPart[-I, +C <: AnyRef](correct: I => C @@ InputCorrected) {
-  def contramap[I2](f: I2 => I) = CorrectionPart[I2, C](correct compose f)
+  def contramap[I0](f: I0 => I) = CorrectionPart[I0, C](correct compose f)
+  def map[C2 <: AnyRef](f: C => C2 @@ InputCorrected) = CorrectionPart[I, C2](f compose correct)
 }
 
 object CorrectionPart {
   def lift[A <: AnyRef](f: A => A) = CorrectionPart[A, A](f(_).tag[InputCorrected])
+  def endo[A <: AnyRef](f: Endo[A]) = lift(f.run)
   def nop[A <: AnyRef] = lift[A](identity)
 }
 
 // =====================================================================================================================
 
 final class ValidationPart[-C <: AnyRef, +V](val validate: C @@ InputCorrected => ValidationResult[V]) {
+  def contramap[C0 <: AnyRef](f: C0 @@ InputCorrected => C @@ InputCorrected) =
+    ValidationPart.untyped[C0, V](validate compose f)
+
   def map[V2](f: V => V2) = ValidationPart.untyped[C, V2](validate(_) map f)
 }
 

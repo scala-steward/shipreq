@@ -9,7 +9,8 @@ import scala.util.matching.Regex
 import scalaz.Memo
 
 import db.{UseCaseHeader, FieldListRec}
-import lib.Misc._
+import lib.Misc.filterCovar
+import lib.TextMod
 import lib.Types._
 import feature.validation.Validators
 import feature.uc._
@@ -111,7 +112,7 @@ object DataGenerators extends Logger {
   // Smart Text
 
   def containsSpecial(s: String): Boolean = {
-    lazy val s2 = removeAllWhitespace(s)
+    lazy val s2 = TextMod.noWhitespace(s)
     FlowToStyle.arrowRegex.matches(s) || FlowFromStyle.arrowRegex.matches(s) || NormalisedRefRegex.matches(s2)
   }
 
@@ -222,7 +223,7 @@ object DataGenerators extends Logger {
     val maxUcn = ucsInProject.map(_.toInt).max
 
     val validStep = Gen.oneOf(validSteps)
-    val invalidStep = randomStepLabel suchThat (x => !validSteps.contains(removeAllWhitespace(x)))
+    val invalidStep = randomStepLabel suchThat (x => !validSteps.contains(TextMod.noWhitespace(x)))
     val validStepRef = withBraces(validStep)
 
     val possibleUcRefTitleSuffix = Gen.oneOf(nothing, useCaseTitle.map(":" + _))

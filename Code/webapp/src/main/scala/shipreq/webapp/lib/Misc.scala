@@ -16,13 +16,11 @@ import shipreq.webapp.feature.uc.field.{TextFieldDefinition, TextField, Field}
 import Types._
 import AppConfig._
 
-final object Misc extends Misc with Logger {
+object Misc extends Misc with Logger {
 
   val RNG = new Random()
 
   val SingleSpace = Cord(" ")
-
-  val WhitespaceRegex = "\\s+".r
 
   val NoEffect1: (Any => Unit) = _ => ()
 
@@ -68,13 +66,9 @@ trait Misc {
   def isExpired_?(startTime: DateTime, timeToLive: Period, now: Long = DateTimeUtils.currentTimeMillis): Boolean =
     startTime plus timeToLive isBefore now
 
-  def normaliseWhitespaceInSingleLineString(str: String) = Misc.WhitespaceRegex.replaceAllIn(str, " ").trim
-
   def randomConfirmationToken = randomString(ConfirmationTokenLength)
 
   def randomString(length: Int): String = RNG.alphanumeric.take(length).mkString
-
-  def removeAllWhitespace(input: String) = WhitespaceRegex.replaceAllIn(input, "")
 
   //def modIf[V, VV >: V](v: V, cond: Boolean)(mod: V => VV): VV = if (cond) mod(v) else v
 
@@ -98,9 +92,6 @@ trait Misc {
 
   def findTextField(defn: TextFieldDefinition, fields: List[Field]): Option[TextField] =
     fields.collectFirst {case t: TextField if t.defn == defn => t}
-
-  def nonEmptyString(s: String): Option[String] =
-    if (s.isEmpty) None else Some(s)
 
   def pluralise(singular: String, plural: String)(c: Long): String =
     if (c == 1)
