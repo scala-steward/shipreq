@@ -34,7 +34,9 @@ import net.liftweb.util.Props
  */
 object ScamlJade extends Loggable {
 
-  if (!Props.devMode) {
+  if (Props.devMode) {
+    System.setProperty("scalate.allowReload", "true")
+  } else {
     System.setProperty("scalate.allowReload", "false")
     ScamlOptions.indent = ""
     ScamlOptions.nl = " "
