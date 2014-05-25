@@ -97,8 +97,8 @@ object Register1 extends SnippetHelpers {
 
 object Register2 {
   val form = FormVar.merge(
-    FormVar.strOnSubmit(Validators.landingPage.name, "#name"),
-    FormVar.ajaxStr(Validators.user.username, JqId("username")),
+    FormVar.strOnSubmit (Validators.user.name, "#name"),
+    FormVar.ajaxStr     (Validators.user.username, JqId("username")),
     FormVar.passwordPair("#password1", "#password2"),
     FormVar.boolOnSubmit("#newsletter"),
     FormVar.boolOnSubmit(Validators.tosAgreement, "#tos")
