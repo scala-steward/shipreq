@@ -56,6 +56,10 @@ Phase #2: Post UCE 1.0
 `reqs.ods`
   * Requirements list.
 
+`system-wide.ods`
+  * For various attributes/behaviours, shows all instances and applications throughout the system.
+    This view helps avoid conflicts and inconsistencies.
+
 `UX-mf*.uml`
   * A sketch of the UX when the user performs a function pertaining to the Major Feature indicated in the filename.
     A state diagram is used and should be interpreted a little differently:
