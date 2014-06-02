@@ -5,7 +5,11 @@
 2. Work out intersections between MFs below & future MFs.
    Determine if any other MFs should be analysed immediately.
 
-3. Design & mock up UI for all of above.
+3. Create a deferred.{ods,md} or a Deferred tab in reqs.ods.
+   Scour analysis docs, req.ods, etc. to collect them all.
+   Prioritise.
+
+4. Design & mock up UI for all of above.
      * MF-05: Field Customisation
      * MF-06: Incompletions
      * MF-07: Organisation
