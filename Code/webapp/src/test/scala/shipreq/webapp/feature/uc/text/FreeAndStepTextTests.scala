@@ -659,8 +659,8 @@ class FreeAndStepTextTests extends FunSpec with TestHelpers with PropertyChecks 
         forAll(TextWithFlowExamples)((input, expText, expRefsFrom, expRefsTo) => {
           val x = StepText.parse(input)(StepStateB)
           x.mainClause.text should be(expText.replaceAll("-->", FlowToStyle.arrowBadReplacement))
-          assertFlowClause(x.flowFromClause, mapFromIds(expRefsFrom.map(StepLabel), StepStateB))
-          assertFlowClause(x.flowToClause, mapFromIds(expRefsTo.map(StepLabel), StepStateB))
+          assertFlowClause(x.flowFromClause, mapFromIds(expRefsFrom.map(StepLabel.apply), StepStateB))
+          assertFlowClause(x.flowToClause, mapFromIds(expRefsTo.map(StepLabel.apply), StepStateB))
         })
       }
 

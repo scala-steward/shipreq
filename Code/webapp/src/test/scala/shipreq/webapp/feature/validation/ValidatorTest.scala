@@ -36,7 +36,7 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("Email validation") {
-    testV(V.email, Table(("Failure Frag", "Input")
+    testV(V.email_, Table(("Failure Frag", "Input")
       , (None, "hehe@asd.com")
       , (None, "ffs+yay@gmail.com")
       , (Some("invalid"), "heheasd.com")
@@ -106,7 +106,7 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("Username validation") {
-    testV(V.user.username, Table(("Failure Frag", "Input")
+    testV(V.user.username_, Table(("Failure Frag", "Input")
       , (None, "abc")
       , (None, "a" * 32)
       , (Some("can only contain"), "@#$%::P1_")

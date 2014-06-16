@@ -49,7 +49,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
     }
 
     // ###### UC 1/3 ######
-    val uc1 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff".validated)
+    val uc1 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff")
       ,List(TextField(TextFieldDefinition("Description"),FieldKeyRec(FieldKeyId(10),FieldKeyType.Text,Some("Description")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(FieldKeyId(11),FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(FieldKeyId(12),FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty
@@ -65,7 +65,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
         ,TextField(TextFieldDefinition("Notes and Issues"),FieldKeyRec(FieldKeyId(21),FieldKeyType.Text,Some("Notes and Issues")))~>FreeText.empty
       ),Name(BiMap(LocalStepId("F1197205450688HDKO1W")->StepLabel("1.0.1"),LocalStepId("F1197205450689KYVCAS")->StepLabel("1.0"))))
     // ###### UC 2/3 ######
-    val uc2 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff".validated)
+    val uc2 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff")
       ,List(TextField(TextFieldDefinition("Description"),FieldKeyRec(FieldKeyId(10),FieldKeyType.Text,Some("Description")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(FieldKeyId(11),FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(FieldKeyId(12),FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty
@@ -81,7 +81,7 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
         ,TextField(TextFieldDefinition("Notes and Issues"),FieldKeyRec(FieldKeyId(21),FieldKeyType.Text,Some("Notes and Issues")))~>FreeText.empty
       ),Name(BiMap(LocalStepId("F1197205450688HDKO1W")->StepLabel("1.0.1"),LocalStepId("F1197205450689KYVCAS")->StepLabel("1.0"))))
     // ###### UC 3/3 ######
-    val uc3 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff".validated)
+    val uc3 = UseCase.as(UseCaseNumber(1),UseCaseHeader("Do Stuff")
       ,List(TextField(TextFieldDefinition("Description"),FieldKeyRec(FieldKeyId(10),FieldKeyType.Text,Some("Description")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Actors"),FieldKeyRec(FieldKeyId(11),FieldKeyType.Text,Some("Actors")))~>FreeText.empty
         ,TextField(TextFieldDefinition("Pre-Conditions"),FieldKeyRec(FieldKeyId(12),FieldKeyType.Text,Some("Pre-Conditions")))~>FreeText.empty

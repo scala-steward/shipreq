@@ -26,7 +26,7 @@ object ResetPassword {
 
 object ResetPassword1 extends SnippetHelpers {
 
-  val form = FormVar.strOnSubmit(Validators.emailEA, "#email")
+  val form = FormVar.strOnSubmit(Validators.email, "#email")
 
   def render = {
     var vars: form.Var = ""

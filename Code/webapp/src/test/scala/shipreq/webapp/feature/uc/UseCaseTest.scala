@@ -36,7 +36,7 @@ class UseCaseTest extends FunSpec with TestHelpers with TestData {
     }
 
     it("should not recalc when only the title has changed") {
-      assertDoesntRecalc(ucTitleL.set(_, "asdfklghj".validated))
+      assertDoesntRecalc(ucTitleL.set(_, "asdfklghj"))
     }
 
     it("should not recalc when only a step text changes") {

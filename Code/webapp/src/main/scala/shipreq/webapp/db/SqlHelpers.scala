@@ -4,7 +4,7 @@ package db
 import scala.slick.jdbc.{GetResult, SetParameter, PositionedResult, PositionedParameters}
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.db.JodaTimeSqlHelpers._
-import shipreq.taskman.api.UserId
+import shipreq.taskman.api.{EmailAddr, UserId}
 import lib.Types._
 import feature.UcFilter
 import security.PasswordAndSalt
@@ -13,6 +13,7 @@ object SqlHelpers {
 
   @inline implicit def shortToFieldKeyType(ordinal: Short): FieldKeyType = FieldKeyType(ordinal)
 
+  implicit val (ea1, ea2, ea3, ea4) = sqlAccessors[EmailAddr]
   implicit val (fk1, fk2, fk3, fk4) = sqlAccessors[FieldKeyId]
   implicit val (hs1, hs2, hs3, hs4) = sqlAccessors[HashedStr]
   implicit val (i81, i82, i83, i84) = sqlAccessors[ISO8601]
@@ -27,6 +28,7 @@ object SqlHelpers {
   implicit val (uc1, uc2, uc3, uc4) = sqlAccessors[UseCaseIdentId]
   implicit val (un1, un2, un3, un4) = sqlAccessors[UseCaseNumber]
   implicit val (ur1, ur2, ur3, ur4) = sqlAccessors[UseCaseRevId]
+  implicit val (um1, um2, um3, um4) = sqlAccessors[Username]
   implicit val (uf1, uf2, uf3, uf4) = sqlAccessorsJson[UcFilter]
   implicit val ucl = SP_TaggedLongL[UseCaseIdentId]
   implicit val url = SP_TaggedLongL[UseCaseRevId]

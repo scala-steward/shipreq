@@ -6,7 +6,9 @@ import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.jdbc.JdbcBackend.Session
-import shipreq.taskman.api.UserId
+import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.db.SqlHelpers._
+import shipreq.webapp.lib.Types.Username
 import shipreq.webapp.db.{Shim, UserDescriptor}
 import security.{Roles, PasswordAndSalt}
 import test.{TestDB, TestHelpers}
@@ -15,8 +17,10 @@ trait UserFixture {
   this: TestHelpers =>
 
   implicit def timeSpanToTimestamp(t: DateTime): Timestamp = new Timestamp(t.getMillis)
+  implicit def autoUsername(a: String) = Username(a)
+  implicit def autoEmailAddr(a: String) = EmailAddr(a)
 
-  case class TestUser(username: String, email: String, password: String, roles: Set[String], name: String, newsletter: Boolean) {
+  case class TestUser(username: Username, email: EmailAddr, password: String, roles: Set[String], name: String, newsletter: Boolean) {
     var _id: Option[UserId] = None
     def id: UserId = _id.getOrElse(???)
     val pws = PasswordAndSalt.createWithRandomSalt(password)
@@ -25,7 +29,7 @@ trait UserFixture {
     def toUserDescriptor = UserDescriptor(id, username, email, roles)
   }
 
-  case class PendingTestUser(email: String, token: String, tokenCreatedAt: DateTime)
+  case class PendingTestUser(email: EmailAddr, token: String, tokenCreatedAt: DateTime)
 
   val user1 = TestUser("golly", "g@g.com", "hello1234", Set(Roles.Admin.name), "User One", true)
   val user2 = TestUser("deepti", "d@d.com", "harvest321", Set.empty, "User Two", false)

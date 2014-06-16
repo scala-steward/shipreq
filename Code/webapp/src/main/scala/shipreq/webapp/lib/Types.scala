@@ -40,9 +40,6 @@ object Types {
   }
   implicit def InputCorrectedCtor[R] = TaggedTypeCtor[InputCorrected[R]](InputCorrected[R])
 
-  final case class Validated[A](value: A) extends TaggedType { type U = A }
-  implicit def ValidatedCtor[R] = TaggedTypeCtor[Validated[R]](Validated[R])
-
   // -------------------------------------------------------------------------------------------------------------------
   // String tags
 
@@ -74,6 +71,9 @@ object Types {
 
   final case class ShareUrlToken(value: String) extends TaggedString
   implicit object ShareUrlToken extends TaggedTypeCtor[ShareUrlToken]
+
+  final case class Username(value: String) extends TaggedString
+  implicit object Username extends TaggedTypeCtor[Username]
 
   // -------------------------------------------------------------------------------------------------------------------
   // Short tags

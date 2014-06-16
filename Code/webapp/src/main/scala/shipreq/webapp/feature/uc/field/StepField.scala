@@ -79,7 +79,7 @@ trait StepFieldLike { this: Field with StepField =>
   override val changeResponder = new StepFieldValueChangeResponder(this)
 
   def updateText(id: LocalStepId, newText: String)(u: UseCaseUpdater): UcUpdateResult =
-    ChangeResult.fromValidation(Validators.usecase.stepFieldText.correctAndValidate(newText))(t => {
+    ChangeResult.fromValidationIC(Validators.usecase.stepFieldText correctAndValidate newText)(t => {
       implicit val lens = AppliedLens(ucStepTextInstL, (u.uc, (this, id)))
       val updater = new StepTextUpdater(this, id)
       val cr = updater.updateCorrected(lens.get, t)(u.ctx)

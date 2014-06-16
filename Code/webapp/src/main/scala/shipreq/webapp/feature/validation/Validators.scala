@@ -33,14 +33,14 @@ object Validators {
 
   // ===================================================================================================================
 
-  val email = Validator(
+  val email_ = Validator(
     CorrectionPart.endo(noWhitespace),
     ValidationPart.forConstraint("Email address",
       maximumLength(EmailMaxLength)
         + matchesR("^_+@_+?\\._+$".replace("_", "[^&<>]").r)("is invalid.") // loose validation
     ))
 
-  val emailEA = email.map(EmailAddr.apply)
+  val email = email_ map EmailAddr.apply
 
   val password = Validator(
     CorrectionPart.nop[String],
@@ -94,7 +94,7 @@ object Validators {
 
   object user {
 
-    val username = Validator(
+    val username_ = Validator(
       CorrectionPart.endo(noWhitespace andThen lowerCase),
       ValidationPart.forConstraint("Username",
         lengthInRange(UsernameLength)
@@ -103,7 +103,9 @@ object Validators {
           + endsWithR("[a-z0-9]")("must end with a letter or a number.")
       ))
 
-    val usernameOrEmail = Validator.choose((i: String) => if (i.indexOf('@') == -1) username else email)
+    val username = username_ map Username.apply
+
+    val usernameOrEmail = Validator.choose((i: String) => if (i.indexOf('@') == -1) username_ else email_)
 
     def name = humanFullName
   }
@@ -142,7 +144,7 @@ object Validators {
 
   object landingPage {
     def name = humanFullName
-    def email = Validators.emailEA
+    def email = Validators.email
     val msg = optionalLargeText("Your message")
   }
 

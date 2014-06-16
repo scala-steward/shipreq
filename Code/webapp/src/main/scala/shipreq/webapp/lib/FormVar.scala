@@ -6,7 +6,7 @@ import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.feature.validation.{Validators, ValidationResult, Validator, CorrectionPart}
-import shipreq.webapp.lib.Types.{Validated, InputCorrected}
+import shipreq.webapp.lib.Types.InputCorrected
 import shipreq.webapp.security.PasswordAndSalt
 import shipreq.webapp.util.JsExt.{JqSetValue, JqId}
 import shipreq.webapp.util.HtmlTransformExt

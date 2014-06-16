@@ -20,7 +20,7 @@ import net.liftweb.mocks.MockHttpServletRequest
 import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
 import net.liftweb.util.Helpers.stringToSuper
-import shipreq.taskman.api.UserId
+import shipreq.taskman.api.{EmailAddr, UserId}
 import scalaz.{Lens, NonEmptyList, Value}
 import scala.annotation.tailrec
 import scala.util.Random
@@ -85,8 +85,8 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
     m
   }
 
-  val UD1 = UserDescriptor(UserId(5001), "U1", "U1@TEST", Set.empty)
-  val UD2 = UserDescriptor(UserId(5002), "U2", "U2@TEST", Set.empty)
+  val UD1 = UserDescriptor(UserId(5001), Username("U1"), EmailAddr("U1@TEST"), Set.empty)
+  val UD2 = UserDescriptor(UserId(5002), Username("U2"), EmailAddr("U2@TEST"), Set.empty)
 
   val X0 = LocalStepId("X0")
   val X1 = LocalStepId("X1")
@@ -449,13 +449,6 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
   }
 
   /**
-   * Extensions for: AnyRef
-   */
-  implicit class AnyRefExt2[T <: AnyRef](val v: T) {
-    def validated = Validated(v)
-  }
-
-  /**
    * Extensions for: Int
    */
   implicit class MyRichInt(val i: Int) {
@@ -577,7 +570,7 @@ trait TestHelpers2 extends MockitoSugar with Matchers with DebugImplicits with L
    * Extensions for: UseCaseRev
    */
   implicit class UseCaseRevExt(val v: UseCaseRev) {
-    def withTitle(t: Validated[String]) = v.copy(header = v.header.copy(title = t))
+    def withTitle(t: String) = v.copy(header = v.header.copy(title = t))
   }
 
   /**

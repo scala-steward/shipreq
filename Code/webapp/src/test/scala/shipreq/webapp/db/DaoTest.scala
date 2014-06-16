@@ -107,9 +107,9 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       def assertAuditedUpdate(src: UseCaseRev, relationRows: Int = 0)(implicit projectId: ProjectId): UseCaseRev = {
         import Tables._
         assertTableDiffs(UsecaseRev -> 1, UcField -> relationRows) {
-          val r = updateUseCaseHeader(src, _.copy(title = "omg".validated))
+          val r = updateUseCaseHeader(src, _.copy(title = "omg"))
           r match {
-            case DbSuccess(n) => assertUC(n, src.withTitle("omg".validated), 1); n
+            case DbSuccess(n) => assertUC(n, src.withTitle("omg"), 1); n
             case _ => fail("Expected Success. Got " + r)
           }
         }
@@ -124,7 +124,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
       def createTwoRevs(implicit projectId: ProjectId) = {
         val rev1 = createUseCaseIdentAndRev1(projectId, "Haha")
-        val rev2s = updateUseCaseHeader(rev1, _.copy(title = "wow".validated)) match {
+        val rev2s = updateUseCaseHeader(rev1, _.copy(title = "wow")) match {
           case DbSuccess(x) => x
           case _ => fail("Expected Success.")
         }
@@ -176,15 +176,15 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
   describe("Project") {
     import Tables.{Project => TProject}
 
-    def newUserAndProject(projectName: Validated[String]) = {
+    def newUserAndProject(projectName: String) = {
       val u = newUserId
       val p = dao.createProject(u, projectName).gimme
       (u, p)
     }
 
-    def newUserProjectAndUseCase(projectName: Validated[String], ucName: Validated[String]) = {
+    def newUserProjectAndUseCase(projectName: String, ucName: String) = {
       val (u, p) = newUserAndProject(projectName)
-      val uc = createUseCaseIdentAndRev1(p, ucName.value)
+      val uc = createUseCaseIdentAndRev1(p, ucName)
       (u, p, uc)
     }
 
@@ -193,11 +193,11 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
       it("should create a new project") {
         val u = newUserId
-        assertTableDiffs(TProject -> 1) {dao.createProject(u, "Blah".validated)}
+        assertTableDiffs(TProject -> 1) {dao.createProject(u, "Blah")}
       }
 
       it("should reject duplicate project names") {
-        val t = "Yay".validated
+        val t = "Yay"
         val (u, _) = newUserAndProject(t)
         val (_, _) = newUserAndProject(t)
         dao.createProject(u, t) ==== NameAlreadyInUse
@@ -208,24 +208,24 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       import UpdateProjectResult._
 
       it("should update the project name") {
-        val (u, p) = newUserAndProject("A".validated)
-        assertTableDiffs()(dao.updateProject(p, u, "B".validated)) ==== DbSuccess
+        val (u, p) = newUserAndProject("A")
+        assertTableDiffs()(dao.updateProject(p, u, "B")) ==== DbSuccess
         dao.findProject(p).get.name ==== "B"
       }
 
       it("should reject duplicate names") {
-        val (u, p1) = newUserAndProject("A".validated)
-        val p2 = dao.createProject(u, "B".validated).gimme
-        dao.updateProject(p2, u, "A".validated) ==== NameAlreadyInUse
+        val (u, p1) = newUserAndProject("A")
+        val p2 = dao.createProject(u, "B").gimme
+        dao.updateProject(p2, u, "A") ==== NameAlreadyInUse
       }
 
       it("should fail when project not found") {
-        dao.updateProject(ProjectId(0), UserId(0), "A".validated) ==== ProjectNotFound
+        dao.updateProject(ProjectId(0), UserId(0), "A") ==== ProjectNotFound
       }
 
       it("should fail when project doesnt belong to user") {
-        val (u, p) = newUserAndProject("A".validated)
-        dao.updateProject(p, newUserId, "B".validated) ==== ProjectNotFound
+        val (u, p) = newUserAndProject("A")
+        dao.updateProject(p, newUserId, "B") ==== ProjectNotFound
       }
     }
 
@@ -242,10 +242,10 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
       it("should return a summary for each project the user has") {
         val u = newUserId
-        val p1 = dao.createProject(u, "Bereft".validated).gimme
+        val p1 = dao.createProject(u, "Bereft").gimme
         val s1 = ProjectSummary(p1, "Bereft", 0, None, 0, 0, None)
         summariseWithNoise(u) ==== List(s1)
-        val p2 = dao.createProject(u, "Apple".validated).gimme
+        val p2 = dao.createProject(u, "Apple").gimme
         dao.summariseProjects(u) ==== List(ProjectSummary(p2, "Apple", 0, None, 0, 0, None), s1)
 
         // + use case
@@ -259,16 +259,16 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
     }
 
     it("findAllLatestUseCaseRevsByProject") {
-      newUserProjectAndUseCase("IGNORED".validated, "IGNORED".validated)
-      val (_,p,_) = newUserProjectAndUseCase("P1".validated, "YAY".validated)
+      newUserProjectAndUseCase("IGNORED", "IGNORED")
+      val (_,p,_) = newUserProjectAndUseCase("P1", "YAY")
       dao.findAllLatestUseCaseRevsByProject(p).map(_.title) shouldBe List("YAY")
       createUseCaseIdentAndRev1(p, "yo")
       dao.findAllLatestUseCaseRevsByProject(p).map(_.title) shouldBe List("YAY", "yo")
     }
 
     it("findAllLatestUseCaseRevs(pid,ids)") {
-      newUserProjectAndUseCase("IGNORED".validated, "IGNORED".validated)
-      val (_,p,u1) = newUserProjectAndUseCase("P1".validated, "U1".validated)
+      newUserProjectAndUseCase("IGNORED", "IGNORED")
+      val (_,p,u1) = newUserProjectAndUseCase("P1", "U1")
       val u2 = createUseCaseIdentAndRev1(p, "U2")
       val u3 = createUseCaseIdentAndRev1(p, "U3")
       val u4 = createUseCaseIdentAndRev1(p, "U4")
@@ -279,9 +279,9 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
     }
 
     def afterDeletion: (UserId, ProjectId, ProjectId) = {
-      val (uid, p1) = newUserAndProject("wow".validated)
+      val (uid, p1) = newUserAndProject("wow")
       assertTableDiffs()(dao deleteProjectSoft p1)
-      val p2 = dao.createProject(uid, "wow".validated).gimme
+      val p2 = dao.createProject(uid, "wow").gimme
       assertTableDiffs()(dao deleteProjectSoft p2)
       (uid, p1, p2)
     }

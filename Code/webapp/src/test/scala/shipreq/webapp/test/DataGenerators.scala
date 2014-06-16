@@ -272,6 +272,9 @@ object DataGenerators extends Logger {
   // -------------------------------------------------------------------------------------------------------------------
   // Step Field Values
 
+  val useCaseNumber = Gen.posNum[Short].map(UseCaseNumber.apply)
+  implicit val arbUCN = Arbitrary(useCaseNumber)
+
   case class NcSfv(h: UseCaseHeader, sfv: StepFieldValue, stepsAndLabels: StepAndLabelBiMap)
 
   def stepFieldValue(stepTexts: List[String], f: StepField, tree: StepTree)(implicit ctx: UcParsingCtx): StepFieldValue = {
@@ -318,14 +321,11 @@ object DataGenerators extends Logger {
                      .suchThat(_.isDefined)
                      .map(_.get)
 
-  val useCaseNumber = Gen.posNum[Short].map(UseCaseNumber)
-
   val useCaseHeader = for {
     title <- useCaseTitle
   } yield UseCaseHeader(title)
 
   implicit val arbUCH = Arbitrary(useCaseHeader)
-  implicit val arbUCN = Arbitrary(useCaseNumber)
 
   def useCaseGen(fieldList_ : => FieldListRec, ucnGen: Gen[UseCaseNumber] = useCaseNumber, existingUcs: Seq[UseCaseNumber] = List.empty): Gen[UseCase] = {
     val fieldList = fieldList_

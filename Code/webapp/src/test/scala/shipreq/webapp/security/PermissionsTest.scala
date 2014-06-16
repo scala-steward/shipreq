@@ -1,10 +1,13 @@
 package shipreq.webapp.security
 
 import org.scalatest.{Matchers, FunSpec}
-import shipreq.taskman.api.UserId
+import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.db.UserDescriptor
+import shipreq.webapp.lib.Types.Username
 
 class PermissionsTest extends FunSpec with Matchers {
+  implicit def autoUsername(a: String) = Username(a)
+  implicit def autoEmailAddr(a: String) = EmailAddr(a)
 
   val admin = UserDescriptor(UserId(1), "ad", "ad@ad.com", Set(Roles.Admin.name))
   val joe = UserDescriptor(UserId(2), "joe", "joe@ad.com", Set.empty)

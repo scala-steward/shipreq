@@ -51,7 +51,7 @@ class StepFieldPersistenceTest extends FunSpec with TestHelpers with TestData {
     implicit def int_to_textrevid(id: Int): TextRevId = TextRevId(id)
     implicit def int_to_textident(id: Int): TextIdentId = TextIdentId(id)
     implicit def autoLabel(x: String) = StepLabel(x)
-    implicit def autoLabelO(x: Option[String]): Option[StepLabel] = x map StepLabel
+    implicit def autoLabelO(x: Option[String]): Option[StepLabel] = x map StepLabel.apply
     implicit def parent(rel: UcFieldTextWithFK): Option[TextRevId] = Some(rel.id)
     val N70 = UcFieldTextWithFK(NCF, UcFieldText(Some("x.0"), None, 0, TextRev(10, 1, 100, "I'm the root [D.703]")))
     val N701 = UcFieldTextWithFK(NCF, UcFieldText(Some("x.0.1"), N70, 0, TextRev(11, 1, 101, "I was inserted")))

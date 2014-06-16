@@ -56,7 +56,7 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
             when(dao.performInstallNewResetPasswordToken(any, any)) thenReturn "TOKEN"
             dbSetup setup dao
           }).install {
-            val r = ResetPassword1.perform(Validators.emailEA.correctAndValidate(emailInput))
+            val r = ResetPassword1.perform(Validators.email.correctAndValidate(emailInput))
             dbExp.test()
             r
           }

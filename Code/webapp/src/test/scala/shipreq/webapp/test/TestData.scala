@@ -22,7 +22,7 @@ trait TestData extends TestHelpers2 {
   lazy val FL: List[Field] = List(TF1, TF2, NCF, ECF, TF3, FGF)
   lazy val EmptyFieldValues: FieldValues = FL.map(f => (f ~> f.empty)).toMap
   lazy val UCN = UseCaseNumber(7)
-  lazy val UCH = UseCaseHeader("YES!".validated)
+  lazy val UCH = UseCaseHeader("YES!")
   lazy val EmptyLoadCtx = FieldLoadCtx(UCH, List.empty)
   lazy val EmptyUC = UseCase(UCN, UCH, FL, EmptyFieldValues, StepAndLabelBiMap.empty)
   lazy val EmptyUcWithoutNCF = removeNcField(EmptyUC)

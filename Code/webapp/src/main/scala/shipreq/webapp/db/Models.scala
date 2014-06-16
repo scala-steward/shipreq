@@ -4,7 +4,7 @@ package db
 import org.joda.time.DateTime
 import shipreq.base.util.TaggedTypes.JsonStr
 import scala.reflect.ClassTag
-import shipreq.taskman.api.UserId
+import shipreq.taskman.api.{EmailAddr, UserId}
 import lib.Types._
 import feature.{UcFilter, ExternalId}
 import feature.uc.field._
@@ -14,7 +14,7 @@ import security.PasswordAndSalt
 // ===================================================================================================================
 // User
 
-case class UserDescriptor(id: UserId, username: String, email: String, roles: Set[String]) {
+case class UserDescriptor(id: UserId, username: Username, email: EmailAddr, roles: Set[String]) {
   final def hasRole(role: String): Boolean = roles.contains(role)
 }
 

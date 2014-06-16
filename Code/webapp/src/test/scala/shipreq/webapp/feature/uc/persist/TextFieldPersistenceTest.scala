@@ -21,7 +21,7 @@ class TextFieldPersistenceTest extends FunSpec with TestHelpers {
     v
   }
 
-  val UCH = UseCaseHeader("AH".validated)
+  val UCH = UseCaseHeader("AH")
   val EmptyLoadCtx = FieldLoadCtx(UCH, List.empty)
   val TI1 = TextIdentId(201)
   val TR1 = TextRevId(301)
@@ -86,8 +86,8 @@ class TextFieldPersistenceTest extends FunSpec with TestHelpers {
       implicit val ctx = UcParsingCtx.Empty.copy(stepsAndLabels = sl)
 
       it("should compare simple text") {
-        saver(parseExact(NormalisedText("ah"))).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "ah")) ==== false
-        saver(parseExact(NormalisedText("ah"))).differsFromPrevSave_?(TextRev(TI1, 1, TR1, "30")) ==== true
+        saver(parseExact(NormalisedText("ah"))).differsFromPrevSave_?(TextRev(TI1, 1, TR1, NormalisedText("ah"))) ==== false
+        saver(parseExact(NormalisedText("ah"))).differsFromPrevSave_?(TextRev(TI1, 1, TR1, NormalisedText("30"))) ==== true
       }
 
       it("should normalise refs before comparison") {

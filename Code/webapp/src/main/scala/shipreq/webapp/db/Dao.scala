@@ -92,17 +92,17 @@ sealed trait DaoS {
 
   def findUserDescAndCredentials(usernameOrEmail: String): Option[(UserDescriptor, PasswordAndSalt)] =
     if (usernameOrEmail.indexOf('@') == -1)
-      findUserDescAndCredentialsByUsername(usernameOrEmail)
+      findUserDescAndCredentials(Username(usernameOrEmail))
     else
-      findUserDescAndCredentialsByEmail(usernameOrEmail)
+      findUserDescAndCredentials(EmailAddr(usernameOrEmail))
 
-  def findUserDescAndCredentialsByUsername(username: String) = GetUserDescCredByUsername.firstOption(username)
+  def findUserDescAndCredentials(username: Username) = GetUserDescCredByUsername.firstOption(username)
 
-  def findUserDescAndCredentialsByEmail(email: String) = GetUserDescCredByEmail.firstOption(email)
+  def findUserDescAndCredentials(email: EmailAddr) = GetUserDescCredByEmail.firstOption(email)
 
-  def findUserRegistrationInfo(email: String) = GetUserRegInfo.firstOption(email)
+  def findUserRegistrationInfo(email: EmailAddr) = GetUserRegInfo.firstOption(email)
 
-  def findUserRegAndResetPwInfo(email: String) = GetUserRegAndResetPwInfo.firstOption(email)
+  def findUserRegAndResetPwInfo(email: EmailAddr) = GetUserRegAndResetPwInfo.firstOption(email)
 
   def findUserConfirmationTokenIssuedDate(token: String) = GetConfirmationTokenIssuedDate.firstOption(token)
 
@@ -127,13 +127,13 @@ sealed trait DaoS {
   // ===================================================================================================================
   // Project
 
-  private[this] def saveProject[R](name: Validated[String], saveFn: String => R)(nameAlreadyInUse: R): R =
+  private[this] def saveProject[R](name: String, saveFn: String => R)(nameAlreadyInUse: R): R =
     try saveFn(name)
     catch {
       case e: PSQLException if e.getMessage.contains("_usr_id_name_") => nameAlreadyInUse
     }
 
-  def createProject(usrId: UserId, name: Validated[String]): CreateProjectResult = {
+  def createProject(usrId: UserId, name: String): CreateProjectResult = {
     import CreateProjectResult._
     saveProject[CreateProjectResult](name, name => {
       val id = CreateProject.first(usrId, name)
@@ -141,7 +141,7 @@ sealed trait DaoS {
     })(NameAlreadyInUse)
   }
 
-  def updateProject(id: ProjectId, usrId: UserId, name: Validated[String]): UpdateProjectResult = {
+  def updateProject(id: ProjectId, usrId: UserId, name: String): UpdateProjectResult = {
     import UpdateProjectResult._
     saveProject[UpdateProjectResult](name, name => {
       if (RenameProject.first(name, id, usrId) == 0) ProjectNotFound
@@ -273,8 +273,8 @@ sealed trait DaoT extends DaoS {
   import Sql._
 
   def performUserRegistration(token: String)(
-    username: Validated[String], ps: PasswordAndSalt, ipAddr: String)(
-    name: Validated[String], newsletter: Boolean): UserRegistrationResult = {
+    username: Username, ps: PasswordAndSalt, ipAddr: String)(
+    name: String, newsletter: Boolean): UserRegistrationResult = {
 
     import UserRegistrationResult._
     try {
