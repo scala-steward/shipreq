@@ -1,13 +1,10 @@
 package shipreq.base.util
 
-import scala.runtime.AbstractFunction1
-
 object TaggedTypes {
 
   trait TaggedType { // extends PreventToString
     /** The Underlying value type. */
     type U
-
     def value: U
   }
 
@@ -24,7 +21,7 @@ object TaggedTypes {
   }
 
   /** Typeclass for tagging types. */
-  trait TaggedTypeCtor[T <: TaggedType] extends AbstractFunction1[T#U, T] {
+  trait TaggedTypeCtor[T <: TaggedType] { // Don't add AbstractFunction1[T#U, T] as it causes autoboxing
     def apply(u: T#U): T
   }
   object TaggedTypeCtor {

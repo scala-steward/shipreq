@@ -40,7 +40,7 @@ object Validators {
         + matchesR("^_+@_+?\\._+$".replace("_", "[^&<>]").r)("is invalid.") // loose validation
     ))
 
-  val emailEA = email.map(EmailAddr)
+  val emailEA = email.map(EmailAddr.apply)
 
   val password = Validator(
     CorrectionPart.nop[String],
@@ -49,7 +49,7 @@ object Validators {
   val passwords = Validator(
     CorrectionPart.liftE[(String, String)](_ umap password.correctU),
     ValidationPart[(String, String), String](input =>
-      password.validate(input.value._1) match {
+      password.validate(input.map(_._1)) match {
         case f@ Failure(_) => f
         case s@ Success(_) =>
           if (input.value._1 != input.value._2)
@@ -75,7 +75,7 @@ object Validators {
   /** `passwords` in the shape of `passwordChange`. i.e. change password without checking current. */
   val passwordSet = Validator(
     CorrectionPart.liftE[PasswordChange](_.map2(passwords.correctU)),
-    ValidationPart[PasswordChange, String](passwords validate _.value._2))
+    ValidationPart[PasswordChange, String](passwords validate _.map(_._2)))
 
   val tosAgreement = Validator(
     CorrectionPart.nop[Boolean],

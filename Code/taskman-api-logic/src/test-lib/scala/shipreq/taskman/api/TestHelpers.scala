@@ -55,8 +55,8 @@ object TestHelpers {
 //  implicit def arbEmail: Arbitrary[EmailAddr] = arbTagged[String, EmailAddr]
 //  def genEmail: Gen[EmailAddr] = arbEmail.arbitrary
 
-  def genEmail: Gen[EmailAddr] = arbitrary[String].map(EmailAddr)
-  def genUserId: Gen[UserId] = arbitrary[Long].map(UserId)
+  def genEmail: Gen[EmailAddr] = arbitrary[String].map(EmailAddr.apply)
+  def genUserId: Gen[UserId] = arbitrary[Long].map(UserId.apply)
   def genUserIdO: Gen[Option[UserId]] = Gen.option(genUserId)
 
   implicit def arbMsg: Arbitrary[Msg] =

@@ -54,7 +54,7 @@ object SqlHelpers {
       TC(S.next(r))
 
     def nextTaggedO[T <: TaggedType](implicit S: SqlForType[T#U], TC: TaggedTypeCtor[T]): Option[T] =
-      S.nextO(r).map(TC)
+      S.nextO(r).map(TC.apply)
   }
 
   def GR_Tagged[T <: TaggedType](implicit S: SqlForType[T#U], TC: TaggedTypeCtor[T]): GetResult[T] =

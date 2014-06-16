@@ -34,7 +34,10 @@ object Types {
   // -------------------------------------------------------------------------------------------------------------------
   // General tags
 
-  final case class InputCorrected[A](value: A) extends TaggedType { type U = A }
+  final case class InputCorrected[A](value: A) extends TaggedType {
+    type U = A
+    def map[B](f: A => B) = InputCorrected[B](f(value))
+  }
   implicit def InputCorrectedCtor[R] = TaggedTypeCtor[InputCorrected[R]](InputCorrected[R])
 
   final case class Validated[A](value: A) extends TaggedType { type U = A }
