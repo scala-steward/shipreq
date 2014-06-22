@@ -1,7 +1,10 @@
-1. Work out intersections between MFs below & future MFs.
-   Determine if any other MFs should be analysed immediately.
+1. Analyse due to phase-2 DB risk:
+    * MF-11: Collaboration: change mgnt & approval
+    * MF-08: History/Audit
+    * MF-17: Undo & Auto-save
+    * MF-04: Templates
 
-2. Design & mock up UI for:
+1. Plan UI for:
      * MF-01: Use Case Editor
      * MF-05: Field Customisation
      * MF-06: Incompletions
@@ -10,4 +13,13 @@
      * MF-13: Requirement Relationships
      * MF-22: High-level Requirements (MF, BO, SC, etc.)
 
-3. ¿Split subsequent requirements with coding?
+2. Analyse due to phase-2 req intersection risk:
+    * MF-09: Collaboration: authoring
+    * MF-10: Collaboration: stakeholders
+    * MF-20: Generic artifact storage (DOC, PDF, PNG, XLS)
+    * MF-14: Text-generated Diagrams
+
+3. Mock up UI.
+
+4. ¿Split subsequent requirements with coding?
+
