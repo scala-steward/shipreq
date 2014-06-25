@@ -1,10 +1,17 @@
+1. Need to work out saving strategy immediately.
+   Related:
+    * MF-08: History/Audit
+    * MF-09: Collaboration: authoring
+    * MF-10: Collaboration: stakeholders
+    * MF-17: Undo & Auto-save
+
 1. Analyse due to phase-2 DB risk:
     * MF-11: Collaboration: change mgnt & approval
     * MF-08: History/Audit
     * MF-17: Undo & Auto-save
     * MF-04: Templates
 
-1. Plan UI for:
+2. Plan UI for:
      * MF-01: Use Case Editor
      * MF-05: Field Customisation
      * MF-06: Incompletions
@@ -13,13 +20,13 @@
      * MF-13: Requirement Relationships
      * MF-22: High-level Requirements (MF, BO, SC, etc.)
 
-2. Analyse due to phase-2 req intersection risk:
+3. Mock up UI.
+
+4. Analyse due to phase-2 req intersection risk:
     * MF-09: Collaboration: authoring
     * MF-10: Collaboration: stakeholders
     * MF-20: Generic artifact storage (DOC, PDF, PNG, XLS)
     * MF-14: Text-generated Diagrams
-
-3. Mock up UI.
 
 4. ¿Split subsequent requirements with coding?
 
