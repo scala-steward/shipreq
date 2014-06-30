@@ -17,7 +17,7 @@ Done: 5,6,7,12,13
 
 # Incompletions
   * Total number.
-  * Filter by grouping, incmp type, req type, implying reqs
+  * Filter.
   * ∀req. req id, title, incmp count
   * ∀incmp. req id, name, field name, incmp supp info, incmp context
 
@@ -48,14 +48,14 @@ Done: 5,6,7,12,13
     * Restore
 
 # Groupings (top-level)
-  * Filter by grouping, incmp type, req type, implying reqs
+  * Filter.
   * Top-level Groupings
   * Allocation graphs
     * Segments = children of subject grouping
     * Detail of children: name, application count, %.
   * Change scope to: child grouping
 # Implication sources (top-level)
-  * Filter by grouping, incmp type, req type, implying reqs
+  * Filter.
   * Req types that don't require implication (eg. MF)
   * Implication graphs
     * Segments = active requirements of req type
@@ -63,7 +63,7 @@ Done: 5,6,7,12,13
   * Change scope to: req type
 
 ## Groupings (specific)
-  * Filter by grouping, incmp type, req type, implying reqs
+  * Filter.
   * Allocation graph
     * Segments = children of subject grouping
     * Detail of children: name, application count, %.
@@ -78,7 +78,7 @@ Done: 5,6,7,12,13
   * Delete subject or child grouping
   * Restore child grouping
 ## Implication sources (specific req type)
-  * Filter by grouping, incmp type, req type, implying reqs
+  * Filter.
   * Implication graph
     * Segments = reqs of subject req type
     * Detail of children: id, name, implication count, %.
@@ -117,11 +117,13 @@ Done: 5,6,7,12,13
     * Change common sem-ID prefix
   * Edit
     * View/Edit text tokens
+    * Implications.
+    * Groupings.
   * Delete
     * Usage summary (number(s) or table) of incoming references
     * Usage detail: Show each incoming references
     * List of implied reqs to also delete.
-  * Filter by grouping, req type, implying reqs, text
+  * Filter.
   * Sort criteria: view, edit, reset
 
 # Text Tokens
@@ -132,6 +134,13 @@ Done: 5,6,7,12,13
     * Usage summary (number(s) or table)
     * Usage detail: Show each req field using it
 
+================================================================================
+Common
 
-TODO: No incmp type filter for reqs?
-TODO: Text filter only for reqs?
+# Filter
+  * Filter by grouping
+  * Filter by incmp type
+  * Filter by req type
+  * Filter by implying reqs
+  * Filter by text
+
