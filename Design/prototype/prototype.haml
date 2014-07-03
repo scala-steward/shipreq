@@ -7,13 +7,24 @@
       th,td {border: solid 1px #000; padding: 1px 4px}
       .notes {color:#338; margin-top: 2em; margin-left: -3em; font-style:italic}
       .notes ol, .notes ul {margin-top:0.2em}
-      section.screen {border-top: solid 1px black; margin-top: 3em; padding-top: 0.7em; padding-left: 4em}
+      section.screen {border-top: solid 1px black; margin-top: 12em; padding-top: 0.7em; padding-left: 4em}
       section.screen > a h1 {margin-top: 0; margin-left: -2.6em}
       span.incmp {color:#c00}
       span.incmp-dull {color:#777}
+      .fixpre pre {margin-top:0; margin-bottom:0}
 
   %body
     %h1 SHIPREQ PHASE-2 PROTOTYPE
+
+    %ol
+      %li
+        %a(href="#fields") Fields
+      %li
+        %a(href="#incmp") Incompletions
+      %li
+        %a(href="#incmp-cfg") Incompletions (cfg)
+      %li
+        %a(href="#grouping-cfg") Groupings (cfg)
 
     -#==============================================================================================
     %section.screen
@@ -116,7 +127,7 @@
           %td UC-3
           %td Eat Food.
 
-      %h4 Incmp View
+      %h4 Incmp View (#1: the everything view)
       %table
         %tr
           %th ID
@@ -143,11 +154,91 @@
           %td
           %td
 
+      %h4 Incmp View (#2: collapsable)
+      %h5 &gt; Blank Fields (1)
+      %table
+        %tr
+          %th ID
+          %th Location
+        %tr
+          %td UC-3
+          %td 3.0.4.a
+      %h5 &gt; TODO (2)
+      %table
+        %tr
+          %th ID
+          %th Location
+          %th Supp Info
+          %th Context
+        %tr
+          %td FR-49
+          %td Body
+          %td
+          %td …the number of UCs and the number of incompletions <span class="incmp">#TBD</span> in each <span class="incmp-dull">#TODO</span>.
+        %tr
+          %td FR-49
+          %td Body
+          %td confirm
+          %td …of UCs and the number of incompletions <span class="incmp-dull">#TBD</span> in each <span class="incmp">#TODO</span>.
+
       .notes Notes.
         %ol
           %li Probably no need for req + incmp views to be visible simultaneously.  Maybe show one and allow to flip between both. Would save cog + DB load.
           %li Are requirements missing? From here we'd want to view (sub)req for more info and/or edit to resolve.
           %li Fark, how the hell is delayed-async-auto-save going to work if we can edit fields directly here? Similarly, undo.
+          %li Incmp view should probably be in collapsable sections.
+
+
+    -#==============================================================================================
+    %section.screen
+      %a#incmp-cfg
+        %h1 Incompletions (cfg)
+
+      %h3 User-Defined Incompletion Types
+      %button Create
+      %table
+        %tr
+          %th Name &amp; RefKey
+          %th Desc
+          %th Σ
+          %th Ctrls
+        %tr
+          %td TODO
+          %td Something that needs to be done.
+          %td
+            %a(href="#") 26
+          %td
+            %button Edit
+            %button Delete
+        %tr
+          %td
+            %input(value="TBD")
+          %td
+            %textarea
+              Pending discussion with a client.
+          %td
+            %a(href="#") 4
+          %td
+            %button Delete
+
+      %h3 Req-Types requiring implication
+      %div
+        %input(type="checkbox")
+        CO: Constraints
+      %div
+        %input(type="checkbox" checked="checked")
+        FR: Functional Requirements
+      %div
+        %input(type="checkbox")
+        MF: Major Features
+      %div
+        %input(type="checkbox" checked="checked")
+        QR: Quality Requirements
+
+      .notes Notes.
+        %ol
+          %li Maybe a good strategy on config pages would be having an edit button which then turns
+              static text into editable fields (which are autosaved).
 
 
     -#==============================================================================================
@@ -157,56 +248,75 @@
 
       %table
         %tr
-          %td
-            %pre
-              Priority
-               ├── High Priority
-               ├── Medium Priority
-               └── Low Priority
-              Blah
-              └── fay
-                  ├── evnznhce
-                  ├── webhket
-                  │   ├── daf7_arser
-                  │   ├── hyi_paser
-                  │   │   ├── jnshkn
-                  │   │   └── strm_reader
-                  │   └── hbi_parser
-                  └── ebsokt
+          %td.fixpre
+            %button Create
+            %pre Priority
+            %pre  ├── High Priority
+            %pre  ├── Medium Priority
+            %pre  └── Low Priority
+            %pre Blah
+            %pre └── fay
+            %pre     ├── evnznhce
+            %pre     ├── webhket
+            %pre     │   ├── daf7_arser
+            %pre     │   ├── hyi_paser
+            %pre     │   │   ├── jnshkn
+            %pre     │   │   └── strm_reader
+            %pre     │   └── hbi_parser
+            %pre     └── ebsokt
             %h3 Deleted Groupings / Bin
             TODO
           %td
-            %button Create
-            %div(style="margin-top:1em")
-              %h3 Editor
-              %table
-                %tr
-                  %th Name
-                  %td
-                    %input(value="High Priority")
-                  %th RefKey
-                  %td
-                    %input(value="pri=high")
-                  %th Type
-                  %td Applicable
-                  %th Enum
-                  %td
-                    %input(type="checkbox")
+            %h3 Editor
+            %table
+              %tr
+                %th Name
+                %td
+                  %input(value="High Priority")
+              %tr
+                %th Description
+                %td
+                  %textarea
+              %tr
+                %th RefKey
+                %td
+                  %input(value="pri=high")
+              %tr
+                %th Type
+                %td Applicable
+              %tr
+                %th Enum
+                %td
+                  %input(type="checkbox")
+            %div
               %h3 Parents
-                %div
-                  %input
-                  %button Add
-                %ol
-                  %li
-                    Priority
-                    %button Remove
+              %ol
+                %li
+                  Priority
+                  %button Remove
+              %div
+                %input
+                %button Add Parent
+            %div
               %h3 Children
-              %h3 Usage
-              %div Σ applications
-              %div View applications button or something
-              %button Delete
+              %ol
+                %li
+                  Priority
+                  %button Remove
+              %div
+                %input
+                %button Add Child
+            %h3 Usage
+            %div Σ applications
+            %div View applications button or something
+            %button Delete
+            %br
+            %br
+            %button Create Child
 
       .notes Notes.
         %ol
           %li Items can be dragged to reorder, or dragged from/to bin.
           %li If items can be dragged in/out of bin, is there any reason keeping the delete/restore buttons?
+          %li Drag left-side tree to reorder.
+          %li Drag from left-side into editor's parent/child sections.
