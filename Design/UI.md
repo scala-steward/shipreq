@@ -9,16 +9,6 @@
 # Add loose incompletion
   * Specify: type & text.
 
-## Groupings (specific)
-  * ∀ s : bar graph segment. list of reqs in s
-    * Select/deselect req
-    * Apply subject or child grouping to selected reqs.
-    * Remove subject or child grouping from selected reqs.
-    * Replace subject or child grouping in selected reqs, with 1 or more groupings of any kind.
-  * Add child grouping
-  * Edit subject or child grouping
-  * Delete subject or child grouping
-  * Restore child grouping
 ## Implication sources (specific req type)
   * ∀ s : bar graph segment. list of reqs implied by s
     * Select/deselect req

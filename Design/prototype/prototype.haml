@@ -396,14 +396,84 @@
       %div [Filter here]
 
       %h2 Priority
+        %button Add Child
+        %button Edit
+        %button Delete
       %div [Σ ALLOCATION GRAPH]
 
-      %p
-        %div Unapplied
-      %p
-        %a(href="#") Low Priority
+      %div
+        %input(type="checkbox")
+        0 selected.
+        %em\ (←Total selection)
+      %div
+        %button Apply ?⁺
+        %button Remove {g|g∈Priority}
+        %button Replace {g|g∈Priority} with ?⁺
+      %div
+        ?⁺
+        %input(placeholder="Grouping(s) to add")
+      -#%div
+        -#?⁻
+        -#%input(value="Priority")
 
-      %h3 Cfg
+      %p
+        %h4 Unapplied
+        %div
+          %button Apply ?⁺
+          -#%button Remove (doesn't make sense here)
+          -#%button Replace (doesn't make sense here)
+        %table
+          %tr
+            %th
+              %input(type="checkbox")
+            %th ID
+            %th Sem-ID
+            %th ? ⇒
+            %th Desc
+            %th ⇒ ?
+            %th Priority
+          %tr
+            %td
+              %input(type="checkbox")
+            %td FR-48
+            %td incmp.tag.ap
+            %td UC-4
+            %td BA shall be able to specify incompletion tags in reqs.
+            %td FR-264
+            %td
+
+      %p
+        %h4
+          %a(href="#") Low Priority
+          (← click rescopes)
+          %button Edit
+          %button Delete
+        /%div
+          %button Apply ?⁺
+          %button Remove LowPri/?⁻
+          %button Replace LowPri/?⁻ with ?⁺
+        %div
+          %button Remove LowPri
+          %button Replace LowPri with ?⁺
+        %table
+          %tr
+            %th
+              %input(type="checkbox")
+            %th ID
+            %th Sem-ID
+            %th ? ⇒
+            %th Desc
+            %th ⇒ ?
+            %th Priority
+          %tr
+            %td
+              %input(type="checkbox")
+            %td FR-50
+            %td incmp.tag.ap
+            %td MF-5
+            %td BA shall be able to specify incompletion tags in reqs.
+            %td
+            %td Low Priority
 
       .notes Notes.
         %table
@@ -420,7 +490,11 @@
             %td name, application count, %
             %td id, name, implication count, %
         %ol
-          %li xxx
+          %li The goals are to browse, understand, edit distribution.
+          %li Collapse/Expand for segment sections (h4's).
+          %li Cannot reorder or restore groupings. Instead provide link ↔ proper cfg?
+          %li Maybe the [Apply ?⁺] buttons can always be enabled and if you click without a ?⁺ specified, it just focusses the ?⁺ input.
+              Actually, in that case, the button labels should change as the ?⁺ input changes, so [Apply Low Priority] buttons.
 
     -#==============================================================================================
     %section.screen
