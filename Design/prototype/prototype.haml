@@ -13,6 +13,7 @@
       span.incmp {color:#c00}
       span.incmp-dull {color:#777}
       .fixpre pre {margin-top:0; margin-bottom:0}
+      .na, .na * {color:#777 !important; text-decoration:line-through !important}
 
   %body
     %h1 SHIPREQ PHASE-2 PROTOTYPE
@@ -365,7 +366,7 @@
       .notes Notes.
         %table
           %tr
-            %th Attr
+            %th
             %th Groupings
             %th Implications
           %tr
@@ -475,10 +476,100 @@
             %td
             %td Low Priority
 
+      -#--------------------------------------------------------------------------------------------
+
+      %div(style="padding-top:1.6em")
+      %a#impl-browse2
+        %h1 Implication Browser (lvl 2 only)
+
+      %button Back to Top-Level
+      %button.na Back to Parent grouping (when lvl is 3+)
+
+      %div [Filter here]
+
+      %h2 MF: Major Features
+        %button Add MF
+        %button Edit
+        %button Delete
+      %div [Σ ALLOCATION GRAPH]
+
+      %div
+        %input(type="checkbox")
+        0 selected.
+        %em\ (←Total selection)
+      %div
+        %button Apply ?⁺
+        %button Remove all direct MF implications
+        %button Replace all direct MF implications with ?⁺
+      %div
+        ?⁺
+        %input(placeholder="Grouping(s) to add")
+      -#%div
+        -#?⁻
+        -#%input(value="Priority")
+
+      %p
+        %h4 Not implied by an MF
+        %div
+          %button Apply ?⁺
+          -#%button Remove (doesn't make sense here)
+          -#%button Replace (doesn't make sense here)
+        %table
+          %tr
+            %th
+              %input(type="checkbox")
+            %th ID
+            %th Sem-ID
+            %th ? ⇒
+            %th Desc
+            %th ⇒ ?
+            %th Priority
+          %tr
+            %td
+              %input(type="checkbox")
+            %td FR-48
+            %td incmp.tag.ap
+            %td UC-4
+            %td BA shall be able to specify incompletion tags in reqs.
+            %td FR-264
+            %td
+
+      %p
+        %h4
+          MF-1: Import The Things With The Stuff
+          %button Edit
+          %button Delete
+        /%div
+          %button Apply ?⁺
+          %button Remove LowPri/?⁻
+          %button Replace LowPri/?⁻ with ?⁺
+        %div
+          %button Remove MF-1
+          %button Replace MF-1 with ?⁺
+        %table
+          %tr
+            %th
+              %input(type="checkbox")
+            %th ID
+            %th Sem-ID
+            %th ? ⇒
+            %th Desc
+            %th ⇒ ?
+            %th Priority
+          %tr
+            %td
+              %input(type="checkbox")
+            %td FR-50
+            %td incmp.tag.ap
+            %td MF-5
+            %td BA shall be able to specify incompletion tags in reqs.
+            %td
+            %td Low Priority
+
       .notes Notes.
         %table
           %tr
-            %th Attr
+            %th
             %th Groupings
             %th Implications
           %tr
@@ -495,6 +586,10 @@
           %li Cannot reorder or restore groupings. Instead provide link ↔ proper cfg?
           %li Maybe the [Apply ?⁺] buttons can always be enabled and if you click without a ?⁺ specified, it just focusses the ?⁺ input.
               Actually, in that case, the button labels should change as the ?⁺ input changes, so [Apply Low Priority] buttons.
+          %li Maybe a button to toggle read/edit mode. If browsing, all of those buttons are unnecessary clutter.
+          %li Needs undo/redo.
+          %li Implication transitivity becomes a problem. When browsing, I want to see. What happens when a user tries to remove/replace an implication and reqs are still transitively implied and remain the segment. Is that good (correct) or confusing? Should there just be a button to hide transitively implied reqs?
+
 
     -#==============================================================================================
     %section.screen

@@ -9,18 +9,8 @@
 # Add loose incompletion
   * Specify: type & text.
 
-## Implication sources (specific req type)
-  * ∀ s : bar graph segment. list of reqs implied by s
-    * Select/deselect req
-    * Apply implication from a req of subject req type, to selected reqs.
-    * Remove implication from a req of subject req type, from selected reqs.
-    * Replace implication from a req of subject req type, in selected reqs, with 1 or more others.
-  * Add req of subject req type
-  * Edit subject req type
-  * Delete subject req type
-
 # Requirement Types
-  * Props: implication required, mnemonic, name
+  * Props: implication required, mnemonic, name (singular & collective)
   * Create
   * List
   * Edit
