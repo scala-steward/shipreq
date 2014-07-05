@@ -44,6 +44,8 @@
         %a(href="#grouping-browse") Grouping Browser
       %li
         %a(href="#llreqs") Common Req View &amp; Editor
+      %li
+        %a(href="#filters") Filters
 
     -#==============================================================================================
     %section.screen
@@ -738,3 +740,69 @@
           %li Maybe move the focus around the expanded/detailed view as well?
           %li UC &amp; SHR are special cases. Determine their req views too.
 
+
+    -#==============================================================================================
+    %section.screen
+      %a#filters
+        %h1 Filters
+
+      %table.left-th
+        %tr
+          %th Req-Type
+          %td
+            <input type="checkbox"/> BR
+            <input type="checkbox"/> CO
+            <input type="checkbox"/> MF
+            <input type="checkbox"/> FR
+          %td BR,CO, etc. Would require not overlap between req-type mnemonic and mini-lang.
+        %tr
+          %th Groupings
+          %td
+            %input(style="width:50ex" value="#v1.0 and not(#pri=med or #pri=low)")
+          %td As is.
+        %tr
+          %th Implied By
+          %td
+            %input(style="width:50ex" value="MF-4 and not(MF-7 or MF-12) and MF-{7,9,120-140}")
+          %td As is.
+        %tr
+          %th Incompletion Type
+          %td
+            %div \<input type="checkbox"/> Is incomplete
+            %div \<input type="checkbox"/> Is not incomplete
+            %hr
+            %div \<input type="checkbox"/> TODO
+            %div \<input type="checkbox"/> TBD
+            %div \<input type="checkbox"/> Blank field
+            %div \<input type="checkbox"/> Project config issue
+          %td The user-defined ones are easy. The others are hard...
+        %tr
+          %th Text
+          %td
+            %input(style="width:50ex" value="req-type")
+            %div \<input type="checkbox"/> Case-Sensitive
+            %div Search Type:
+              %div(style="padding-left:2ex")
+                %div \<input type="radio" value="txtsearch" checked="checked"/> Simple
+                %div \<input type="radio" value="txtsearch"/> Advanced
+                  %em \ (requires search terms be quoted; understands AND,OR,NOT,parens)
+                %div \<input type="radio" value="txtsearch"/> Regex
+          %td how to represent the options?
+
+      %h3 Idea #2: Single text field
+      %div
+        %textarea(rows=3 cols=100)
+          {BR,CO} and #pri=high and implied by MF-{7,12} and #TODO and contains "req-type"
+        %textarea(rows=3 cols=100)
+          {BR,CO} #pri=high (implied by MF-7) (#TODO or (contains "req-type"))
+
+      .notes Notes.
+        %ol
+          %li Problem: filter needs MF-4 but I can't remember which MF "Auto-save" is. I'd want something like a little modal dlg or auto-complete thing to popup so I can select the right MF.
+          %li Grouping filter also needs help.
+          %li How to combine filter criteria? AND everything? Loss of flexibility.
+          %li Maybe the single textarea can be an advanced option. Seeing as its advanced just make fns for everything. eg. CONTAINS("req-type",false), /qwe/i
+          %li When not editing the filter, it should take up as little space as possible. Therefore a single text representation + an edit button would probably be best.
+          %li Goal: have a lang which can represent *any* criteria imaginable, have a simple frontend.
+              The lang doesn't have to be simple cos it would be interal-only and/or advanced-users-only.
+          %li This will also search as the Search infrastructure, not just filters.

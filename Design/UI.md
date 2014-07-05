@@ -39,14 +39,3 @@
   * Delete
     * Usage summary (number(s) or table)
     * Usage detail: Show each req field using it
-
-================================================================================
-Common
-
-# Filter
-  * Filter by grouping
-  * Filter by incmp type
-  * Filter by req type
-  * Filter by implying reqs
-  * Filter by text
-
