@@ -6,11 +6,17 @@
       <script type="text/javascript" src="target/scala-2.11/scala-js-experiment-jsdeps.js"></script>
       <script type="text/javascript" src="target/scala-2.11/scala-js-experiment-fastopt.js"></script>
       <script type="text/javascript" src="/workbench.js"></script>
+      <style>
+          table {border-collapse:collapse}
+          .excellike td, .excellike th {border: solid 1px #333}
+          .excellike .focus {border: solid 2px #800}
+      </style>
   </head>
   <body>
 
-    [<span id="target">in here</span>]
-    [<span id="target2">in here</span>]
+    <div id="target1">target1</div>
+    <hr>
+    <div id="target2">target2</div>
 
     <script type="text/javascript">
       golly.Golly().main()
