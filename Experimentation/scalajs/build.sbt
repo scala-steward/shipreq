@@ -1,3 +1,5 @@
+import ScalaJSKeys._
+
 scalaJSSettings
 
 name := "Scala.js experiment"
@@ -10,14 +12,16 @@ scalacOptions ++= Seq( "-deprecation", "-unchecked", "-language:_" )
 
 resolvers += bintray.Opts.resolver.repo("japgolly", "forks")
 
-libraryDependencies += "japgolly.scalaz" %%% "scalaz-core" % "7.1.0-RC1"
+resolvers += bintray.Opts.resolver.repo("japgolly", "scala")
 
-libraryDependencies += "org.scala-lang.modules.scalajs" %%% "scalajs-dom" % "0.6"
+libraryDependencies ++= Seq(
+  "japgolly.scalajs.react" %%% "scalajs-react" % "0.1.0"
+  ,"japgolly.scalaz" %%% "scalaz-core" % "7.1.0-RC1"
+)
 
-libraryDependencies += "com.scalatags" %%% "scalatags" % "0.3.5"
+jsDependencies += "org.webjars" % "react" % "0.10.0" / "react-with-addons.min.js"
 
-// Loads DOM into Rhino which enables sbt run
-ScalaJSKeys.requiresDOM := true
+skip in packageJSDependencies := false
 
 //==============================================================================
 
@@ -25,5 +29,5 @@ workbenchSettings
 
 bootSnippet := "golly.Golly().main();"
 
-refreshBrowsers <<= refreshBrowsers.triggeredBy(ScalaJSKeys.fastOptJS in Compile)
+refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile)
 
