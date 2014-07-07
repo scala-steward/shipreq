@@ -25,6 +25,7 @@
       .l2 {padding-left:8ex}
       .del, .del * {opacity:0.5; _color:#666 !important; text-decoration:line-through !important}
 
+      .no-border td, .no-border th {border:none}
       .req-detail .x {border:none; vertical-align:top}
       .req-detail .tt {background:#ddd; text-align:center}
       .causality td {border:none; vertical-align:middle}
@@ -52,7 +53,7 @@
       %li
         %a(href="#delete") Deleting Reqs
       %li
-        %a(href="#restore") Restoring Reqs
+        %a(href="#sort") Sort &amp; Columns
 
 
     -#==============================================================================================
@@ -744,10 +745,10 @@
         %ol
           %li Create buttons needs next action.
           %li Hover over MF-12 etc (like in template.?⇒) should display the req text. Click should change focus or maybe even bring up modal?
-          %li I'm not convinced that columns based on sort is a good idea. Will have to create a number of sort+column scenarios and test bouncing around between them.
           %li Needs undo/redo
           %li Maybe move the focus around the expanded/detailed view as well?
           %li UC &amp; SHR are special cases. Determine their req views too.
+          %li Custom fields have their own groupings &amp; implications. How to handle that?
 
 
     -#==============================================================================================
@@ -877,3 +878,70 @@
           %li As reqs are (de)selected, the reqs that they imply (dis)appear.
           %li In approach #2, in the right-most column refs selected for deletion get strike-through too.
           %li For restoration instead of deletion, the ⇐ column simply becomes ⇒.
+
+
+    -#==============================================================================================
+    %section.screen
+      %a#sort
+        %h1 Sort &amp; Columns
+
+      %h3 Sorting
+      %table.no-border
+        %tr
+          %td
+            %select(size=8)
+              %option Req-Type
+              %option Groupings
+              %option ? ⇒
+              %option Desc
+              %option ⇒ ?
+              %option Custom Field α (exclude UC-only fields)
+              %option Revision
+              %option Referenced By
+          %td
+            %div %button ⇒
+            %div %button ⇐
+          %td
+            %select(size=8)
+              %option Δ ID
+              %option Δ Sem-ID
+              %option ∇ Last Updated
+          %td
+            %div %button ⇑
+            %div %button ↑
+            %div %button Δ∇
+            %div %button ↓
+            %div %button ⇓
+
+      %h3 Columns
+      %table.no-border
+        %tr
+          %td
+            %select(size=8)
+              %option Req-Type
+              %option Groupings
+              %option Custom Field α (exclude UC-only fields)
+              %option Last Updated
+              %option Revision
+              %option Referenced By
+          %td
+            %div %button ⇒
+            %div %button ⇐
+          %td
+            %select(size=8)
+              %option ID
+              %option Sem-ID
+              %option ? ⇒
+              %option Desc
+              %option ⇒ ?
+          %td
+            %div %button ⇑
+            %div %button ↑
+            %div %button ↓
+            %div %button ⇓
+
+      .notes Notes.
+        %ol
+          %li Custom fields have their own groupings &amp; implications. How to handle that?
+          %li This works but makes for annoying UX.
+          %li Would columns based on sort be a good idea? Will have to create a number of common sort+column scenarios and test bouncing around between them.

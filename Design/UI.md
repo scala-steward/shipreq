@@ -19,9 +19,6 @@
   * Bin
     * Restore
 
-# Req List
-  * Sort criteria: view, edit, reset
-
 DEFERRING
 =========
 
