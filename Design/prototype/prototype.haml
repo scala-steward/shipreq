@@ -46,6 +46,9 @@
         %a(href="#llreqs") Common Req View &amp; Editor
       %li
         %a(href="#filters") Filters
+      %li
+        %a(href="#restore") Restoring Reqs
+
 
     -#==============================================================================================
     %section.screen
@@ -806,3 +809,66 @@
           %li Goal: have a lang which can represent *any* criteria imaginable, have a simple frontend.
               The lang doesn't have to be simple cos it would be interal-only and/or advanced-users-only.
           %li This will also search as the Search infrastructure, not just filters.
+
+
+    -#==============================================================================================
+    %section.screen
+      %a#restore
+        %h1 Restoring Reqs
+
+      %h3 Restoring UC-4: Do stuff.
+
+      %h4 Directly Implied
+      %table
+        %tr
+          %th
+            %input(type="checkbox" checked="checked")
+          %th Type
+          %th ID
+          %th Sem-ID
+          %th ? ⇒
+          %th Desc
+          %th ⇒ ?
+          %th Priority
+        %tr
+          %td
+            %input(type="checkbox" checked="checked")
+          %td FR
+          %td FR-48
+          %td incmp.tag.ap
+          %td UC-4
+          %td BA shall be able to specify incompletion tags in reqs.
+          %td FR-264
+          %td
+
+      %h4 Transitively Implied
+      %table
+        %tr
+          %th
+            %input(type="checkbox" checked="checked")
+          %th Type
+          %th ID
+          %th Sem-ID
+          %th ? ⇒
+          %th Desc
+          %th ⇒ ?
+          %th Priority
+        %tr
+          %td
+            %input(type="checkbox" checked="checked")
+          %td FR
+          %td FR-281
+          %td incmp.tag.join
+          %td FR-48
+          %td BA shall be able to do the stuff to the things.
+          %td
+          %td Low Priority
+
+      %button(style="margin-top:2em") Restore 3 Reqs
+      %button Cancel
+
+      .notes Notes.
+        %ol
+          %li As reqs are (de)selected, their direct &amp; transitively implied reqs (dis)appear from the transitive view.
+          %li Rather than two hardcoded sections, nesting or something would probably be clearer.
+              The req(s) originally asked to delete would be the root(s), each level of transitivity becomes a level of nesting.

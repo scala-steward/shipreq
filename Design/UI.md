@@ -22,8 +22,6 @@
 # Req List
   * Selected reqs
     * Create child
-    * Restore deleted
-      * List of implied reqs to also restore.
   * Edit
     * View/Edit text tokens
   * Delete
