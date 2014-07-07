@@ -10,14 +10,7 @@
   * Specify: type & text.
 
 # Requirement Types
-  * Props: implication required, mnemonic, name (singular & collective)
   * Create
-  * List
-  * Edit
-  * Delete
-    * Usage summary (number(s) or table)
-  * Bin
-    * Restore
 
 DEFERRING
 =========

@@ -39,6 +39,8 @@
       %li
         %a(href="#fields") Fields
       %li
+        %a(href="#reqtypes") Requirement Types
+      %li
         %a(href="#incmp") Incompletions
       %li
         %a(href="#incmp-cfg") Incompletions (cfg)
@@ -96,6 +98,17 @@
             %button Edit
             %button Delete
             [Drag]
+        %tr
+          %td TEST
+          %td \.test
+          %td Text
+          %td ☑
+          %td All.
+          %td 0
+          %td
+            %button Edit
+            %button Delete Forever
+            [Drag]
 
       %h4 Deleted Fields
       %table
@@ -131,6 +144,56 @@
             %ul
               %li we need an undo button, and maybe visible attr should be directly editable.
               %li maybe visible attr should be directly editable.
+
+
+    -#==============================================================================================
+    %section.screen
+      %a#reqtypes
+        %h1 Requirement Types
+
+      %h4 Active Fields
+      %button Create
+      %table
+        %tr
+          %th Mnemonic
+          %th Name
+          %th Implication Required
+          %th Requirements
+          %th Ctrls
+        %tr
+          %td BR
+          %td Business Requirement
+          %td ☐
+          %td 0
+          %td
+            %button Edit
+            %button Delete Forever
+        %tr
+          %td MF 
+            .del F
+          %td Major Feature
+          %td ☐
+          %td
+            %a(href="#") 27
+          %td
+            %button Edit
+            %button Delete
+        %tr
+          %td FR
+          %td Functional Requirement
+          %td ☑
+          %td
+            %a(href="#") 348
+          %td
+            %button Edit
+            %button Delete
+
+      %h4 Deleted Fields
+      [Blah blah blah]
+
+      .notes Notes.
+        %ol
+          %li This should work the same way the <a href="#fields">Fields</a> screen works.
 
 
     -#==============================================================================================
