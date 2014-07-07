@@ -20,11 +20,14 @@
     * Restore
 
 # Req List
-  * Selected reqs
-    * Create child
+  * Sort criteria: view, edit, reset
+
+DEFERRING
+=========
+
+# Req List
   * Edit
     * View/Edit text tokens
-  * Sort criteria: view, edit, reset
 
 # Text Tokens
   * Create
