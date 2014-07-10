@@ -10,13 +10,11 @@ scalaVersion := "2.11.1"
 
 scalacOptions ++= Seq( "-deprecation", "-unchecked", "-language:_" )
 
-resolvers += bintray.Opts.resolver.repo("japgolly", "forks")
-
 resolvers += bintray.Opts.resolver.repo("japgolly", "scala")
 
 libraryDependencies ++= Seq(
   "japgolly.scalajs.react" %%% "scalajs-react" % "0.1.0"
-  ,"japgolly.scalaz" %%% "scalaz-core" % "7.1.0-RC1"
+  ,"com.github.japgolly.fork.scalaz" %%% "scalaz-core" % "7.1.0-RC1"
 )
 
 jsDependencies += "org.webjars" % "react" % "0.10.0" / "react-with-addons.min.js"
