@@ -1,33 +1,19 @@
-Requirements
-============
-
-* Create reqs for text parsing and thus refkey rules such as fmt, uniqueness, case-sensitivity.
-* MF column. When sorted should show dups for each MF, just like how sem IDs work.
-
 Prototype / UI
 ==============
 
 ## High Freq UIs
 
-* Finish filter prototype.
-* Ask for sort/col design/UX help on reddit.
 * Mistake/accident prevention/recovery strategy.
   * Affects: Cfg.Fields, Cfg.ReqTypes, Incmp, Cfg.Incmp, GBrowser, LLReqs.
   * window top-right undo/redo, lock/unlock, partial undo? (ie. simply undo strategy that can fail on conflict)
   * First, catalog all change types.
 * Fucking subreqs, work out implications.
-* Prototype UC, SHR, subreqs on Incmp, GBrowser.
+* Prototype {UC, SHR, subreqs} on {Incmp, GroupingBrowser}.
 
 ## Med Freq UIs
 
-* Catalogue incompletion types and prototype each.
-  Think about how to quickly resolve from Incompletions page.
-* Does incompletion view really have enough info/functionality?
-  Confirm goals of page and re-read the reqs, maybe analysis doc too.
 * Mock up allocation graphs.
 * Grouping browser: revise reqs and analysis docs. Ensure it is sufficient for goals.
-* Create a doc with UIs and goals, ensure they stay true to their purpose.
-  Also clarify what they are *not* to prevent bloat and cross-UI duplication.
 * The implication browser differs from the grouping one in that it considers
   implication transitivity in its content, but not its editing.
   i.e. remove all from MF-1 implied can still leave some transitively implied reqs remaining.
@@ -46,3 +32,9 @@ Implementation / Other
 * Work out proper names for internal glossary (groupings, incmp, implication)
 * Idea: a project-wide long representing revision would be AWESOME.
   Eg. client's cache is at 15348, DB is at 16001, send changes. Could also use associativity and commutativity of (+) to compartmentalise and use revs for each data component (eg. grouping cfg rev, reqs rev) as long as all revs are monotonic.
+
+
+UX Notes
+========
+* Context over consistency
+* ≤ 5 columns in a table

@@ -11,7 +11,7 @@
       .notes ol, .notes ul {margin-top:0.2em}
       section.screen {border-top: solid 1px black; margin-top: 8em; padding-top: 0.7em; padding-left: 4em}
       section.screen > a h1 {margin-top: 0; margin-left: -2.6em}
-      span.incmp {color:#c00}
+      textarea.incmp, span.incmp {color:#c00}
       span.incmp-dull {color:#777}
       .empty {background:#c66}
       .fixpre pre {margin-top:0; margin-bottom:0}
@@ -24,6 +24,7 @@
       .l1 {padding-left:4ex}
       .l2 {padding-left:8ex}
       .del, .del * {opacity:0.5; _color:#666 !important; text-decoration:line-through !important}
+      .off, .off *:not(select) {color:#5a5a5a}
 
       .no-border td, .no-border th {border:none}
       .req-detail .x {border:none; vertical-align:top}
@@ -203,12 +204,22 @@
       %div [Filters here]
       %div Σ 29
 
-      %h3 Req View
+      %div
+        %button Field Cfg
+        %button Grouping Cfg
+        %button Req-Type Cfg
+        %em \ ← secondary goal
+
+      %h3 Distribution View
       %table
         %tr
           %th Σ
           %th ID
           %th ReqText
+        %tr
+          %td 1
+          %td Project Config
+          %td
         %tr
           %td 2
           %td FR-49
@@ -221,6 +232,10 @@
           %td 8
           %td UC-3
           %td Eat Food.
+        %tr
+          %td 2
+          %td Loose
+          %td
 
       %h3 Incmp View
       %h5 &gt; Blank Fields (1)
@@ -228,9 +243,11 @@
         %tr
           %th ID
           %th Location
+          %th Content
         %tr
           %td UC-3
           %td 3.0.4.a
+          %td %textarea
       %h5 &gt; TODO (2)
       %table
         %tr
@@ -248,11 +265,17 @@
           %td Body
           %td confirm
           %td …of UCs and the number of incompletions <span class="incmp-dull">#TBD</span> in each <span class="incmp">#TODO</span>.
+      %h5 &gt; Loose (1)
+      %table
+        %tr
+          %td %textarea.incmp(rows=3 cols=80) Still need to analyse all the things with the stuff and write down the words.
+          %td %button Resolve
 
       .notes Notes.
         %ol
-          %li Don't show req &amp; incmp views simultaneously. Show one and allow flip between both.
+          %li Distribution &amp; incmp views not simultaneously. Have a button or tab to flip between both.
           %li Incmp view sections will be collapsable.
+          %li Details about what to show for each incompletion type in <code>system-wide.ods:Incompletions</code>.
 
 
     -#==============================================================================================
@@ -817,30 +840,22 @@
             <input type="checkbox"/> CO
             <input type="checkbox"/> MF
             <input type="checkbox"/> FR
+            <input type="checkbox" checked/> All
         %tr
           %th Groupings
           %td
-            %input(style="width:50ex" value="#v1.0 and not(#pri=med or #pri=low)")
+            %input(style="width:50ex" value="#v1.0 #pri=med")
+            <input type="radio" checked/> Match any | <input type="radio"/> Match all
         %tr
           %th Implied By
           %td
             %input(style="width:50ex" value="MF-4 MF-12")
-            AND or OR?
-        %tr
-          %th Incompletion Type
-          %td
-            %div \<input type="checkbox"/> Is incomplete
-            %div \<input type="checkbox"/> Is not incomplete
-            %hr
-            %div \<input type="checkbox"/> TODO
-            %div \<input type="checkbox"/> TBD
-            %div \<input type="checkbox"/> Blank field
-            %div \<input type="checkbox"/> Project config issue
+            <input type="radio"/> Match any | <input type="radio" checked/> Match all
         %tr
           %th Text
           %td
             %input(style="width:50ex" value="req-type")
-            %div \<input type="checkbox"/> Case-Sensitive
+            \ <input type="checkbox"/> Case-Sensitive
 
       %h3 UI #2: Advanced filter
       %div
@@ -856,6 +871,7 @@
               %li A language to represent *any* criteria imaginable. Goal: expressivity.
               %li A simple UI for 80% of users to easily &amp; quickly accomplish 80%+ of typical filters. Goal: simplicity.
           %li When not editing the filter, it should take up as little space as possible. Therefore a single text representation + an edit button would probably be best.
+          %li Incompletion filtering would be nice in the underlying expression syntax. Should not be part of the simple UI; there is a whole incompletions UI for that.
 
 
     -#==============================================================================================
@@ -924,63 +940,68 @@
       %a#sort
         %h1 Sort &amp; Columns
 
-      %h3 Sorting
-      %table.no-border
+      %table
+        %tr
+          %th Columns
+          %th Sorting
         %tr
           %td
-            %select(size=8)
-              %option Req-Type
-              %option Groupings
-              %option ? ⇒
-              %option Desc
-              %option ⇒ ?
-              %option Custom Field α (exclude UC-only fields)
-              %option Revision
-              %option Referenced By
+            %ol
+              %li \<input type="checkbox" checked/> Column E [drag]
+              %li \<input type="checkbox" checked/> Column F [drag]
+              %li \<input type="checkbox" checked/> Column A [drag]
+              %li \<input type="checkbox" checked/> Column B [drag]
+              %li \<input type="checkbox" checked/> Column G [drag]
+              %li.off \<input type="checkbox"/> Column C [drag]
+              %li.off \<input type="checkbox"/> Column D [drag]
           %td
-            %div %button ⇒
-            %div %button ⇐
-          %td
-            %select(size=8)
-              %option Δ ID
-              %option Δ Sem-ID
-              %option ∇ Last Updated
-          %td
-            %div %button ⇑
-            %div %button ↑
-            %div %button Δ∇
-            %div %button ↓
-            %div %button ⇓
-
-      %h3 Columns
-      %table.no-border
-        %tr
-          %td
-            %select(size=8)
-              %option Req-Type
-              %option Groupings
-              %option Custom Field α (exclude UC-only fields)
-              %option Last Updated
-              %option Revision
-              %option Referenced By
-          %td
-            %div %button ⇒
-            %div %button ⇐
-          %td
-            %select(size=8)
-              %option ID
-              %option Sem-ID
-              %option ? ⇒
-              %option Desc
-              %option ⇒ ?
-          %td
-            %div %button ⇑
-            %div %button ↑
-            %div %button ↓
-            %div %button ⇓
+            %ol
+              %li
+                %select
+                  %option Not used
+                  %option(selected="selected") Δ Ascending
+                  %option ∇ Descending
+                \ Column A [drag]
+              %li
+                %select
+                  %option Not used
+                  %option(selected="selected") Δ Ascending
+                  %option ∇ Descending
+                \ Column C [drag]
+              %li
+                %select
+                  %option Not used
+                  %option Δ Ascending
+                  %option(selected="selected") ∇ Descending
+                \ Column E [drag]
+              %li
+                %select
+                  %option Not used
+                  %option(selected="selected") Δ Ascending
+                  %option ∇ Descending
+                \ Column G [drag]
+              %li.off
+                %select
+                  %option Not used
+                  %option Δ Ascending
+                  %option ∇ Descending
+                \ Column B [drag]
+              %li.off
+                %select
+                  %option Not used
+                  %option Δ Ascending
+                  %option ∇ Descending
+                \ Column D [drag]
+              %li.off
+                %select
+                  %option Not used
+                  %option Δ Ascending
+                  %option ∇ Descending
+                \ Column F [drag]
 
       .notes Notes.
         %ol
+          %li Columns not being used are sorted alphabetically.
+          %li Dragging something off, up into where things are on, also turns it on.
+          %li Dragging something on, down into where things are off, turns it off.
           %li Custom fields have their own groupings &amp; implications. How to handle that?
-          %li This works but makes for annoying UX.
-          %li Would columns based on sort be a good idea? Will have to create a number of common sort+column scenarios and test bouncing around between them.
