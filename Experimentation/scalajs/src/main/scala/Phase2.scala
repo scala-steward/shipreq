@@ -7,7 +7,6 @@ import japgolly.scalajs.react._
 import vdom.ReactVDom._
 import all._
 
-import scalatags.generic.AttrValue
 import scalaz.{-\/, \/-, \/, State, StateT, Scalaz}
 import Scalaz.Id
 import scalaz.syntax.bind._
@@ -15,10 +14,8 @@ import scalaz.syntax.bind._
 //import golly.ScalazReact._
 import monocle._
 import monocle.syntax._
-import monocle.function.Index._
 import monocle.function.Field1._
 import monocle.function.Field2._
-import monocle.function.HeadOption.{headOption, optionHeadOption} // to use headOption
 
 object Xxx {
   type SSetter[S, A] = Setter[S, S, _, A]
@@ -37,18 +34,6 @@ object Xxx {
     @inline def runStateF[V](f: V => StateT[Id, S, _])                    = (v: V) => u.runState(f(v))
     @inline def runStateF[V](f: V => StateT[Id, S, _], callback: => Unit) = (v: V) => u.runState(f(v), callback)
   }
-
-  val nonEmptyStringIso = Iso((_: Option[String]) getOrElse "", (s: String) => {
-    val j = s.trim
-    if (j.isEmpty) None else Some(j)
-  })
-
-//    def nonEmptyStringLens[A](l: SimpleLens[A, Option[String]]): SimpleLens[A, String] =
-//      l |-> nonEmptyStringIso
-//    l.xmapB(_ getOrElse "")((i: String) => {
-//      val j = i.trim
-//      if (j.isEmpty) None else Some(j)
-//    })
 
   def textChangeRecv(f: String => Unit): SyntheticEvent[dom.HTMLInputElement] => Unit = e => f(e.target.value)
   def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
@@ -69,7 +54,6 @@ object Xxx {
     final def modifyF(f: A => B) = (from: S) => o.modify(from, f)
   }
 
-  
   class StateHelper[S] {
     @inline final def apply[A](f: S => (S, A))        = State.apply(f)
     @inline final def constantState[A](a: A, s: => S) = State.constantState(a, s)
@@ -114,6 +98,82 @@ object Phase2 extends js.JSApp {
     def c2i: C => I
   }
 
+  trait Editor[D, V] {
+    def apply(data: D
+              , error: Option[ErrorMsg]
+              , onChange: D => Unit
+              , onCancel: (() => Unit) => Unit
+              , onEditEnd: => Unit
+              //, validator: Validator[D, _] // or just
+               ): V
+  }
+
+  // TODO create event handling monad?
+
+  // TODO This should validate the entire row and correct its input. (optionally)
+  class FormAttrShit[S, I, C, O](
+                                  v: Validator[I, C, O]
+                                  , pL: Lens[S, S, C, O]
+                                  , eL: SimpleLens[S, I]
+                                  ) {
+
+    private val SM = new StateHelper[S]
+
+    def getSaved = SM.gets(v.c2i compose pL.get)
+
+    def change(i: I) = SM.modify(eL.setF(i))
+
+    def cancelChange = getSaved >>= change
+
+    def editEnd =
+      SM.modify(s => {
+        val c = v.correct(eL.get(s))
+        val mod1 = eL.setF(v.c2i(c))
+        val mod2 = v.validate(c) match {
+          case -\/(_) => identity[S]_
+          case \/-(o) => pL.setF(o)
+        }
+        (mod1 compose mod2)(s)
+      })
+
+    def render[V](editor: Editor[I, V], T: ComponentScope_SS[S]): V = {
+      val S = T.state
+      val i = eL.get(S)
+      val e = v.correctAndValidate(i).swap.toOption
+      editor(i, e, T runStateF change, T runStateC cancelChange, T runState editEnd)
+    }
+  }
+
+  case class SpecSplice[P, V, I, C, O](pL: Lens[P, P, C, O], v: Validator[I, C, O], editor: Editor[I, V]) {
+    def initial: P => I = v.c2i compose pL.get
+  }
+
+  case class Spec2[P, V, I1, C1, O1, P2, I2, C2, O2](s1: SpecSplice[P,V,I1,C1,O1], s2: SpecSplice[P,V,I2,C2,O2]) {
+    type E = (I1,I2)
+    def initial(p: P): E = (s1 initial p, s2 initial p)
+
+    def shit[S](sp: SimpleLens[S, P], se: SimpleLens[S, E]) =
+      (
+        new FormAttrShit[S, I1, C1, O1](s1.v, sp |-> s1.pL, se |-> _1[E, I1]),
+        new FormAttrShit[S, I2, C2, O2](s2.v, sp |-> s2.pL, se |-> _2[E, I2])
+        )
+
+    type VV = (V, V)
+
+    def render[S](x: SimpleLens[S, (P, E)])(T: ComponentScope_SS[S]): VV =
+      render(x |-> _1, x |-> _2)(T)
+
+    def render[S](sp: SimpleLens[S, P], se: SimpleLens[S, E])(T: ComponentScope_SS[S]): VV = {
+      val s = shit(sp, se)
+      (
+        s._1.render(s1.editor, T)
+        ,s._2.render(s2.editor, T)
+        )
+    }
+  }
+
+  // ===================================================================================================================
+
   object KeyValidator extends Validator[String, String, String] {
     override def correct = _.trim.toUpperCase()
     override def validate = {
@@ -133,19 +193,7 @@ object Phase2 extends js.JSApp {
     override def validate = \/-(_)
   }
 
-  trait Editor[D, V] {
-    def apply(data: D
-              , error: Option[ErrorMsg]
-              , onChange: D => Unit
-              , onCancel: (() => Unit) => Unit
-              , onEditEnd: => Unit
-              //, validator: Validator[D, _] // or just
-               ): V
-  }
-
-  // TODO create event handling monad?
-
-  object TextInputEditor extends Editor[String, ReactVDom.Modifier] {
+  class TextEditor(node: ReactVDom.Tag) extends Editor[String, ReactVDom.Modifier] {
     override def apply(data: String
                        , error: Option[ErrorMsg]
                        , onChange: String => Unit
@@ -162,7 +210,7 @@ object Phase2 extends js.JSApp {
         }
 
       div(
-        input(
+        node(
           value := data
           , error.isDefined && (cls := "error")
           , onchange ==> textChangeRecv(onChange)
@@ -173,6 +221,9 @@ object Phase2 extends js.JSApp {
       )
     }
   }
+
+  val TextInputEditor = new TextEditor(input)
+  val TextareaEditor = new TextEditor(textarea)
 
   // ===================================================================================================================
   // StateMonad
@@ -185,84 +236,13 @@ object Phase2 extends js.JSApp {
     val keyL = SimpleLens2[UserDefIssueType](_.key)((a, b) => a.copy(key = b))
     val descL = SimpleLens2[UserDefIssueType](_.desc)((a, b) => a.copy(desc = b))
 
-//    val keyS = SpecSplice(keyL, KeyValidator, TextInputEditor)
-//    val descS = SpecSplice(descL, DescValidator, TextInputEditor)
-//    val SPEC = Spec2(keyS, descS)
-
     val SPEC = Spec2(
       SpecSplice(keyL, KeyValidator, TextInputEditor)
-      , SpecSplice(descL, DescValidator, TextInputEditor)
+      , SpecSplice(descL, DescValidator, TextareaEditor)
     )
 
     type IssueTypeTableS = Map[UserDefIssueTypeId, (UserDefIssueType, SPEC.E)]
-    def _ind(id: UserDefIssueTypeId) = SimpleLens2[IssueTypeTableS](_(id))((a,b) => a + (id -> b))
-    def saveL(id: UserDefIssueTypeId) = _ind(id) composeLens _1
-    def editL(id: UserDefIssueTypeId) = _ind(id) composeLens _2
-
-    // TODO This should validate the entire row and correct its input. (optionally)
-    class FormAttrShit[S, I, C, O](
-          v: Validator[I, C, O]
-        , pL: Lens[S, S, C, O]
-        , eL: SimpleLens[S, I]
-        ) {
-
-      private val SM = new StateHelper[S]
-
-      def getSaved = SM.gets(v.c2i compose pL.get)
-
-      def change(i: I) = SM.modify(eL.setF(i))
-
-      def cancelChange = getSaved >>= change
-
-      def editEnd =
-        SM.modify(s => {
-          val c = v.correct(eL.get(s))
-          val mod1 = eL.setF(v.c2i(c))
-          val mod2 = v.validate(c) match {
-              case -\/(_) => identity[S]_
-              case \/-(o) => pL.setF(o)
-            }
-          (mod1 compose mod2)(s)
-        })
-
-      def render[V](editor: Editor[I, V], T: ComponentScope_SS[S]): V = {
-        val S = T.state
-        val i = eL.get(S)
-        val e = v.correctAndValidate(i).swap.toOption
-        editor(i, e, T runStateF change, T runStateC cancelChange, T runState editEnd)
-      }
-    }
-
-    // ============================================================================================================
-
-    // P -> [Cₙ -> Iₙ]
-    // ↑ ↑ ↑
-    // Cₙ -> Iₙ
-    // P -> Cₙ
-
-//    case class SpecSplice[P, C, I](pL: Getter[P, C], c2i: C => I) {
-    case class SpecSplice[P, V, I, C, O](pL: Lens[P, P, C, O], v: Validator[I, C, O], editor: Editor[I, V]) {
-      def initial: P => I = v.c2i compose pL.get
-  }
-    
-    case class Spec2[P, V, I1, C1, O1, P2, I2, C2, O2](s1: SpecSplice[P,V,I1,C1,O1], s2: SpecSplice[P,V,I2,C2,O2]) {
-      type E = (I1,I2)
-      def initial(p: P): E = (s1 initial p, s2 initial p)
-
-      def shit[S](sp: SimpleLens[S, P], se: SimpleLens[S, E]) =
-        (
-          new FormAttrShit[S, I1, C1, O1](s1.v, sp |-> s1.pL, se |-> _1[E, I1]),
-          new FormAttrShit[S, I2, C2, O2](s2.v, sp |-> s2.pL, se |-> _2[E, I2])
-          )
-
-      def render[S](sp: SimpleLens[S, P], se: SimpleLens[S, E])(T: ComponentScope_SS[S]) = {
-        val s = shit(sp, se)
-        (
-          s._1.render(s1.editor, T)
-          ,s._2.render(s2.editor, T)
-          )
-      }
-    }
+    def rowL(id: UserDefIssueTypeId) = SimpleLens2[IssueTypeTableS](_(id))((a,b) => a + (id -> b))
 
     val IssueTypeTable = ReactComponentB[List[UserDefIssueType]]("IssueTypeTable")
       .getInitialState[IssueTypeTableS](_.map(x => x.id -> (x, SPEC.initial(x))).toMap)
@@ -270,14 +250,9 @@ object Phase2 extends js.JSApp {
         val S = T.state
         console.log(s"State = $S")
 
-        type Row = (Modifier, Modifier, Modifier)
         def row(s: UserDefIssueType) = {
-
-          // order dependent, splice.get(spec) should return each
-          val (key, desc) = SPEC.render(saveL(s.id), editL(s.id))(T)
-
+          val (key, desc) = SPEC.render(rowL(s.id))(T)
           val ctrls = raw(s"${s.key} | ${s.desc}")
-
           tr(keyAttr := s.id)(td(key), td(desc), td(ctrls))
         }
 
@@ -287,6 +262,4 @@ object Phase2 extends js.JSApp {
         ))
       }).create
     }
-
-
 }
