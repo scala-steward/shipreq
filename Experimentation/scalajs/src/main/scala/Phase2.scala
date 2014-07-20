@@ -22,6 +22,17 @@ import monocle.function.Field2._
 object Xxx {
   type SSetter[S, A] = Setter[S, S, _, A]
 
+  implicit def autoLiftStateIntoIO[S, A](s: StateT[Id, S, A]): StateT[IO, S, A] = s.lift[IO]
+
+  implicit final class ReactAttrExt22(val a: Attr) extends AnyVal {
+    @inline def ~~>(thunk: IO[Unit]) =
+      a --> thunk.unsafePerformIO()
+
+    @inline def ~~>[E <: dom.Node](eventHandler: SyntheticEvent[E] => IO[Unit]) =
+      a.==>[E, Unit](eventHandler(_).unsafePerformIO())
+  }
+
+
   implicit final class ComponentScope_SS_Ext3[S](val u: ComponentScope_SS[S]) extends AnyVal {
 
 //    @inline def setStateL [V](l: Setter[S, S, _, V])(v: V)                    = u.modState((s: S) => l.set(s, v))
@@ -33,15 +44,20 @@ object Xxx {
     @inline def runState(m: StateT[Id, S, _])                    = u.modState(m(_)._1)
     @inline def runState(m: StateT[Id, S, _], callback: => Unit) = u.modState(m(_)._1, callback)
     @inline def runStateC(m: StateT[Id, S, _])(callback: () => Unit) = runState(m, callback())
-    @inline def runStateF[V](f: V => StateT[Id, S, _])                    = (v: V) => u.runState(f(v))
-    @inline def runStateF[V](f: V => StateT[Id, S, _], callback: => Unit) = (v: V) => u.runState(f(v), callback)
 
-    @inline def runStateIO(m: StateT[IO, S, _]) = u.modState(s => m.run(s).unsafePerformIO()._1)
+    @inline def runStateIO(m: StateT[IO, S, Unit]): IO[Unit] =
+      IO(u.modState(s => m.run(s).unsafePerformIO()._1))
+    @inline def runStateIO(m: StateT[IO, S, Unit], callback: IO[Unit]): IO[Unit] =
+      IO(u.modState(s => m.run(s).unsafePerformIO()._1, callback.unsafePerformIO()))
+    @inline def runStateIOC(m: StateT[IO, S, Unit]): IO[Unit] => IO[Unit] =
+      c => runStateIO(m, c)
   }
 
   def textChangeRecv(f: String => Unit): SyntheticEvent[dom.HTMLInputElement] => Unit = e => f(e.target.value)
   def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
     textChangeRecv(t setStateL l)
+  def textChangeRecvIO(f: String => IO[Unit]): SyntheticEvent[dom.HTMLInputElement] => IO[Unit] =
+    e => f(e.target.value)
 
   def SimpleLens2[T] = new {
     def apply[A](f: T => A) = new {
@@ -105,11 +121,10 @@ object Phase2 extends js.JSApp {
   trait Editor[D, V] {
     def apply(data: D
               , error: Option[ErrorMsg]
-              , onChange: D => Unit
-              , onCancel: (() => Unit) => Unit
-              , onEditEnd: => Unit
-              //, validator: Validator[D, _] // or just
-               ): V
+              , onChange: D => IO[Unit]
+              , onCancel: IO[Unit] => IO[Unit]
+              , onEditEnd: IO[Unit]
+              ): V
   }
 
   // TODO create event handling monad?
@@ -146,7 +161,7 @@ object Phase2 extends js.JSApp {
     def render[V](editor: Editor[I, V], T: ComponentScope_SS[S]): V = {
       val i = eL get T.state
       val e = v.correctAndValidate(i).swap.toOption
-      editor(i, e, T runStateF change, T runStateC cancelChange, T runStateIO editEnd)
+      editor(i, e, i => T runStateIO change(i), T runStateIOC cancelChange, T runStateIO editEnd)
     }
   }
 
@@ -237,26 +252,26 @@ object Phase2 extends js.JSApp {
   class TextEditor(node: ReactVDom.Tag) extends Editor[String, ReactVDom.Modifier] {
     override def apply(data: String
                        , error: Option[ErrorMsg]
-                       , onChange: String => Unit
-                       , onCancel: (() => Unit) => Unit
-                       , onEditEnd: => Unit
+                       , onChange: String => IO[Unit]
+                       , onCancel: IO[Unit] => IO[Unit]
+                       , onEditEnd: IO[Unit]
                         ) = {
 
-      val cancelOnEscape: SyntheticEvent[dom.HTMLInputElement] => Unit =
+      val cancelOnEscape: SyntheticEvent[dom.HTMLInputElement] => IO[Unit] =
         e => if (e.keyboardEvent.keyCode == KeyCode.escape) {
           e.preventDefault()
           e.stopPropagation()
           val t = e.target
-          onCancel(() => t.blur())
-        }
+          onCancel(IO(t.blur()))
+        } else IO(())
 
       div(
         node(
           value := data
           , error.isDefined && (cls := "error")
-          , onchange ==> textChangeRecv(onChange)
-          , onblur --> onEditEnd
-          , onkeydown ==> cancelOnEscape
+          , onchange  ~~> textChangeRecvIO(onChange)
+          , onblur    ~~> onEditEnd
+          , onkeydown ~~> cancelOnEscape
         )
         , error.fold(Nop)(e => div(cls := "errorMsg")(e))
       )
