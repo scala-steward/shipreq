@@ -30,7 +30,7 @@ object Phase2 extends js.JSApp {
     val SPEC = Spec2(
       SpecSplice(keyL.get _, KeyValidator, TextInputEditor)
       , SpecSplice(descL.get _, DescValidator, TextareaEditor)
-      , UserDefIssueType.apply, fakeSave
+        ,(UserDefIssueType.apply _).tupled, fakeSave
     )
 
     def fakeSave(p: Option[UserDefIssueType], g: UserDefIssueType) = IO {
