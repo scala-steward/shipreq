@@ -10,9 +10,10 @@ import all._
 import ScalazReact._
 
 import scalaz.effect.IO
-import scalaz.{-\/, \/-, \/, State, StateT, Scalaz}
-import Scalaz.Id
+import scalaz.Scalaz.Id
+import scalaz.{Foldable, Bind, \/, \/-, -\/}
 import scalaz.syntax.bind._
+import scalaz.syntax.foldable._
 
 //import golly.ScalazReact._
 import monocle._
@@ -45,6 +46,15 @@ import Lib._
  *
  */
 object FormStuff {
+  private def getOrElseAP[M[_]: Foldable, A](m: M[A], a: => A): A =
+    m.foldr(a)(aa => _ => aa)
+
+  private def getOrElseAP[M[_]: Foldable, A, B](m: M[A], b: => B, f: A => B): B =
+    m.foldr(b)(a => _ => f(a))
+
+  private def foldableToOption[M[_]: Foldable, A](m: M[A]): Option[A] =
+    getOrElseAP[M, A, Option[A]](m, None, Some(_))
+
 
   type ErrorMsg = String
 
@@ -66,32 +76,38 @@ object FormStuff {
 
   // TODO create event handling monad?
 
-  class FormAttrShit[S, I, C, O](
+  class FormAttrShit[S, I, C, O, M[_] : Bind : Foldable](
                                   v: Validator[I, C, O]
-                                  , s2c: S => C
-                                  , siL: SimpleLens[S, I]
+                                  , s2oc: S => Option[C]
+                                  , getI: S => M[I]
+                                  , putI: (S,I) => M[S]
                                   , trySave: S => IO[S]
                                   ) {
 
-    private val SM = new StateHelper[S]
+    private def modI(s: S, f: I => I) = getI(s).flatMap(i => putI(s, f(i)))
 
-    def getSaved = SM.gets(v.c2i compose s2c)
+    private def change(i: I) = (s: S) => getOrElseAP(putI(s,i), s)
 
-    def change(i: I) = SM.modify(siL.setF(i))
+    private def cancelChange(T: ComponentScope_SS[S])(c: IO[Unit]): IO[Unit] =
+      T.stateIO.flatMap(s =>
+        s2oc(s).map(v.c2i) match {
+          case None => IO(())
+          case Some(i) => T.modStateIO(change(i), c)
+        }
+      )
 
-    def cancelChange = getSaved >>= change
-
-    def editEnd =
-      StateT[IO, S, Unit](s => {
-        val s2 = siL.modify(s, v.c2i compose v.correct)
-        trySave(s2).map((_,()))
+    private def editEnd(T: ComponentScope_SS[S]): IO[Unit] =
+      T.stateIO.flatMap(s => {
+        // optimisation: compare I & I here, don't try to save if equal
+        val m = modI(s, v.c2i compose v.correct).map(trySave(_) >>= T.setStateIO)
+        getOrElseAP(m, IO(()))
       })
 
-    def render[V](editor: Editor[I, V], T: ComponentScope_SS[S]): V = {
-      val i = siL get T.state
-      val e = v.correctAndValidate(i).swap.toOption
-      editor(i, e, i => T runStateIO change(i), T runStateIOC cancelChange, T runStateIO editEnd)
-    }
+    def render[V](editor: Editor[I, V], T: ComponentScope_SS[S]): M[V] =
+      getI(T.state).map(i => {
+          val e = v.correctAndValidate(i).swap.toOption
+          editor(i, e, i => T modStateIO change(i), cancelChange(T), editEnd(T))
+      })
   }
 
   // ===================================================================================================================
@@ -105,9 +121,25 @@ object FormStuff {
 
   case class SpecSpliceE[P, V, I, C, O](s: SpecSplice[P, I, C, O], editor: Editor[I, V])
 
-  case class Spec2[G, P, V, I1, C1, O1, I2, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]
+  /**
+   * @tparam G "Good", meaning entire row has passed validation, row ready to be saved.
+   * @tparam P "Persisted", the last saved copy of the row.
+   * @tparam Px "Persisted" with extra info
+   * @tparam V "View", the type of the DOM representation.
+   *
+   * Input
+   * - field specs (validation, editor, P → Cₙ)
+   * - build: Oₙ               → G
+   * - save:  Option[P, Px], G → IO[P]
+   *
+   * Output
+   * - initial: P                          → E
+   * - render:  S ↔ P, S ↔ E, Component[S] → Vₙ
+   */
+  case class Spec2[G, P, Px, V, I1, C1, O1, I2, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]
                                                     , oo2g: ((O1, O2)) => G
-                                                    , g2p: (Option[P], G) => IO[P]
+                                                    , saveIO: (Option[Px], G) => IO[Px]
+                                                    , needSave: (Px, G) => Boolean
                                                      ) {
     type E = (I1,I2)
     type OO = (O1, O2)
@@ -120,32 +152,55 @@ object FormStuff {
       o2 <- s2.s.savable(e._2)
     } yield (o1,o2)
 
-    def shit[S](sp: S => P, spp: (S, OO) => IO[S], se: SimpleLens[S, E]) = {
+    def shit[S, M[_] : Bind : Foldable](
+                                     s2op: S => Option[P],
+                                     spp: (S, OO) => IO[S],
+                                     getE: S => M[E],
+                                     putE: (S,E) => M[S]) = {
       val sf: S => IO[S] = s =>
-        savable(se get s).fold(IO(s))(oo => spp(s, oo))
+        foldableToOption(getE(s)).flatMap(savable).fold(IO(s))(oo => spp(s, oo))
+      def i1L = _1[E, I1]
+      def i2L = _2[E, I2]
+      def getI[I](l: SimpleLens[E, I]) = (s: S) => getE(s).map(l.get)
+      def putI[I](l: SimpleLens[E, I]) = (s: S, i:I) => getE(s).flatMap(e => putE(s, l.set(e, i)))
       (
-        new FormAttrShit[S, I1, C1, O1](s1.s.v, s1.s.p2c compose sp, se |-> _1[E, I1], sf),
-        new FormAttrShit[S, I2, C2, O2](s2.s.v, s2.s.p2c compose sp, se |-> _2[E, I2], sf)
+      new FormAttrShit[S, I1, C1, O1, M](s1.s.v, s2op.andThen(_ map s1.s.p2c), getI(i1L), putI(i1L), sf),
+      new FormAttrShit[S, I2, C2, O2, M](s2.s.v, s2op.andThen(_ map s2.s.p2c), getI(i2L), putI(i2L), sf)
       )
     }
 
-    def render[S](x: SimpleLens[S, (P, E)])(T: ComponentScope_SS[S]): VV = {
-      val sp = x composeLens _1
-      val se = x |-> _2
+    def render[S](
+                    getE: S => E,
+                    putE: (S, E) => S,
+                    getPx: S => Option[Px],
+                    storePx: (S, Option[Px], Px) => S,
+                    s2op: S => Option[P]
+                    )(T: ComponentScope_SS[S]): VV = renderM[S, Id](getE, putE, getPx, storePx, s2op)(T)
+
+    def renderM[S, M[_] : Bind : Foldable](
+                   getE: S => M[E],
+                   putE: (S,E) => M[S],
+                   getPx: S => Option[Px],
+                   storePx: (S, Option[Px], Px) => S,
+                   s2op: S => Option[P]
+                   )(T: ComponentScope_SS[S]): M[VV] = {
+
 
       def spp(s: S, oo: OO): IO[S] = {
         val g = oo2g(oo)
-        val op = sp.getOption(s)
-        val iop = g2p(op, g)
-        iop.map(p => sp.set(s, p))
+        val prevSave = getPx(s)
+        if (prevSave.fold(true)(needSave(_,g))) {
+          val iop = saveIO(prevSave, g)
+          iop.map(storePx(s, prevSave, _))
+        } else IO(s)
       }
 
       //    def render[S](sp: Lens[S, S, P, OO], se: SimpleLens[S, E])(T: ComponentScope_SS[S]): VV = {
-      val s = shit(sp.get _, spp , se)
-      (
-        s._1.render(s1.editor, T)
-        ,s._2.render(s2.editor, T)
-        )
+      val s = shit(s2op, spp, getE, putE)
+      for {
+        v1 <- s._1.render(s1.editor, T)
+        v2 <- s._2.render(s2.editor, T)
+      } yield (v1,v2)
     }
   }
 
@@ -202,5 +257,4 @@ object FormStuff {
 
   val TextInputEditor = new TextEditor(input)
   val TextareaEditor = new TextEditor(textarea)
-
 }
