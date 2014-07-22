@@ -64,11 +64,12 @@ object Phase2 extends js.JSApp {
     val unsavedL = SimpleLens2[FormState](_.unsaved)((a,b) => a.copy(unsaved = b))
 
     def mkPE(p: P) = (p, SPEC initial p)
-    def storePx(s: S, prev: Option[Px], px: Px): S = {
-      var f = savedL.modifyF(_ + (px._1 -> mkPE(px._2)))
-      if (prev.isEmpty) f = f compose unsavedL.setF(None)
-      f(s)
-    }
+
+    def storeInsert(px: Px): S => S =
+      storeUpdate(px) compose unsavedL.setF(None)
+
+    def storeUpdate(px: Px): S => S =
+      savedL.modifyF(_ + (px._1 -> mkPE(px._2)))
 
     def rowL(id: UserDefIssueTypeId) = savedL composeLens SimpleLens2[SaveMap](_(id))((a,b) => a + (id -> b))
 
@@ -77,7 +78,12 @@ object Phase2 extends js.JSApp {
       def setE(s:S, e:E): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(e)))
       //            unsavedL.get(s).map(_ => unsavedL.modify(s, _.map(_ => e)))
       val se = WierdLens[Option, S, S, E](unsavedL.get, setE)
-      val saverr = SavingThingy[S, G, Option[Px], Px]((a,b) => true, fakeSave, _=>None, storePx)
+
+      val saverr = SavingThingy[S, G, Unit, Unit, Px](
+        _ => (),
+        (_,g) => Some(()),
+        (_,g) => fakeSave(None,g),
+        storeInsert)
       SPEC.renderM(se, saverr.save, s2op) _
     }
 
@@ -91,8 +97,11 @@ object Phase2 extends js.JSApp {
           val l: SimpleLens[S, (P, E)] = rowL(id)
           val sp: SimpleLens[S, P] = l |-> _1
           val se: SimpleLens[S, E] = l |-> _2
-          val getPx: S => Option[Px] = s => Some(id, sp get s)
-          val saverr = SavingThingy[S, G, Option[Px], Px]((a,b) => a.fold(true)(_._2 != b), fakeSave, getPx, storePx)
+          val saverr = SavingThingy[S, G, Px, Px, Px](
+            s => (id, sp get s),
+            (px,g) => if (px._2 == g) None else Some(px),
+            (px,g) => fakeSave(Some(px), g),
+            storeUpdate)
 
           val (key, desc) = SPEC.render(se, saverr.save, sp.getOption)(T)
           val ctrls = raw(s"${s.key} | ${s.desc}")

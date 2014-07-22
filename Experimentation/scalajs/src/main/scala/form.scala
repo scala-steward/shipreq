@@ -133,16 +133,18 @@ object FormStuff {
 
   case class SpecSpliceE[P, V, I, C, O](s: SpecSplice[P, I, C, O], editor: Editor[I, V])
 
-  case class SavingThingy[S, G, L, Px](needSave: (L, G) => Boolean,
-                                    saveIO: (L, G) => IO[Px],
-                                    getLast: S => L,
-                                    storeSaved: (S, L, Px) => S) {
+  case class SavingThingy[S, G, L, L2, Px](getLast: S => L,
+                                           needSave: (L, G) => Option[L2],
+                                           saveIO: (L2, G) => IO[Px],
+                                           storeSaved: Px => S => S) {
     def save(s: S, g: G): IO[S] = {
       val last = getLast(s)
-      if (needSave(last, g))
-        saveIO(last, g).map(storeSaved(s, last, _))
-      else
-        IO(s)
+      needSave(last, g) match {
+        case Some(l2) =>
+          saveIO(l2, g).map(storeSaved(_)(s))
+        case None =>
+          IO(s)
+      }
     }
   }
 
