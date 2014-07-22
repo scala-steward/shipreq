@@ -74,12 +74,13 @@ object Phase2 extends js.JSApp {
         val s2op: S => Option[P] = _ => None
         def setE(s: S, e: E): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(e)))
         val se = WierdLens[Option, S, S, E](unsavedL.get, setE)
-        val saverr = SavingThingy[S, G, Unit, Unit, Px](
-          _ => (),
-          (_, g) => Some(()),
-          (_, g) => fakeSave(None, g),
-          storeInsert)
-        SPEC.renderM(se, saverr.save, s2op) _
+//        val saverr = SavingThingy[S, G, Unit, Unit, Px](
+//          _ => (),
+//          (_, g) => Some(()),
+//          (_, g) => fakeSave(None, g),
+//          storeInsert)
+        val saveIO: (S, G) => IO[S] = (s,g) => fakeSave(None, g).map(storeInsert(_)(s))
+        SPEC.renderM(se, saveIO, s2op) _
       }
     }
 
@@ -96,7 +97,7 @@ object Phase2 extends js.JSApp {
           (px,g) => if (px._2 == g) None else Some(px),
           (px,g) => fakeSave(Some(px), g),
           storeUpdate)
-        SPEC.render(se, saverr.save, sp.getOption) _
+        SPEC.render(se, saverr.save, sp.get) _
       }
     }
 

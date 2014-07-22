@@ -26,11 +26,11 @@ import Lib._
 /**
  * Done
  * ~~~~
- * [2] escape to cancel change
+ * [5] create new
+ * [5] saves only when entire row is valid
  * [4] validation as you type
  * [4] input correction (valid or not)
- * [5] saves only when entire row is valid
- * [5] create new
+ * [2] escape to cancel change
  *
  * TODO
  * ~~~~
@@ -64,11 +64,11 @@ object FormStuff {
   private def getOrElseAP[M[_]: Foldable, A](m: M[A], a: => A): A =
     m.foldr(a)(aa => _ => aa)
 
-  private def getOrElseAP[M[_]: Foldable, A, B](m: M[A], b: => B, f: A => B): B =
+  private def foldMapAP[M[_]: Foldable, A, B](m: M[A], b: => B)(f: A => B): B =
     m.foldr(b)(a => _ => f(a))
 
   private def foldableToOption[M[_]: Foldable, A](m: M[A]): Option[A] =
-    getOrElseAP[M, A, Option[A]](m, None, Some(_))
+    foldMapAP(m, None: Option[A])(Some.apply)
 
 
   type ErrorMsg = String
@@ -93,20 +93,16 @@ object FormStuff {
 
   class FormAttrShit[S, I, C, O, M[_] : Bind : Foldable](
                                   v: Validator[I, C, O]
-                                  , s2oc: S => Option[C]
+                                  , s2mc: S => M[C]
                                   , iL: WierdLens[M, S, S, I]
                                   , trySave: S => IO[S]
                                   ) {
 
     private def change(i: I) = (s: S) => getOrElseAP(iL.set(s,i), s)
 
-    private def cancelChange(T: ComponentScope_SS[S])(c: IO[Unit]): IO[Unit] =
+    private def cancelChange(T: ComponentScope_SS[S])(callback: IO[Unit]): IO[Unit] =
       T.stateIO.flatMap(s =>
-        s2oc(s).map(v.c2i) match {
-          case None => IO(())
-          case Some(i) => T.modStateIO(change(i), c)
-        }
-      )
+        foldMapAP(s2mc(s), IO(()))(c => T.modStateIO(change(v c2i c), callback)))
 
     private def editEnd(T: ComponentScope_SS[S]): IO[Unit] =
       T.stateIO.flatMap(s => {
@@ -152,30 +148,30 @@ object FormStuff {
       o2 <- s2.s.savable(e._2)
     } yield (o1,o2)
 
-    def fieldRenderers[S, M[_] : Bind : Foldable](s2op: S => Option[P],
+    def fieldRenderers[S, M[_] : Bind : Foldable](s2mp: S => M[P],
                                                   spp: (S, OO) => IO[S],
                                                   eL: WierdLens[M, S, S, E]) = {
       val sf: S => IO[S] = s =>
         foldableToOption(eL.get(s)).flatMap(savable).fold(IO(s))(oo => spp(s, oo))
       (
-        new FormAttrShit[S, I1, C1, O1, M](s1.s.v, s2op.andThen(_ map s1.s.p2c), eL map _1[E, I1], sf),
-        new FormAttrShit[S, I2, C2, O2, M](s2.s.v, s2op.andThen(_ map s2.s.p2c), eL map _2[E, I2], sf)
+        new FormAttrShit[S, I1, C1, O1, M](s1.s.v, s2mp.andThen(_ map s1.s.p2c), eL map _1[E, I1], sf),
+        new FormAttrShit[S, I2, C2, O2, M](s2.s.v, s2mp.andThen(_ map s2.s.p2c), eL map _2[E, I2], sf)
         )
     }
 
     def render[S](eL: SimpleLens[S, E],
                   saveG: (S, G) => IO[S],
-                  s2op: S => Option[P]
-                   )(T: ComponentScope_SS[S]): VV = renderM[S, Id](WierdLens from eL, saveG, s2op)(T)
+                  s2mp: S => P
+                   )(T: ComponentScope_SS[S]): VV = renderM[S, Id](WierdLens from eL, saveG, s2mp)(T)
 
     def renderM[S, M[_] : Bind : Foldable](eL: WierdLens[M, S, S, E],
                                            saveG: (S, G) => IO[S],
-                                           s2op: S => Option[P]
+                                           s2mp: S => M[P]
                                             )(T: ComponentScope_SS[S]): M[VV] = {
 
       def spp(s: S, oo: OO): IO[S] = saveG(s, oo2g(oo))
 
-      val s = fieldRenderers(s2op, spp, eL)
+      val s = fieldRenderers(s2mp, spp, eL)
       for {
         v1 <- s._1.render(s1.editor, T)
         v2 <- s._2.render(s2.editor, T)
