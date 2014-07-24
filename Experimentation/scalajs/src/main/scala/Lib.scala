@@ -13,18 +13,18 @@ object Lib {
 
     //    @inline def setStateL [V](l: Setter[S, S, _, V])(v: V)                    = u.modState((s: S) => l.set(s, v))
     //    @inline def setStateLC[V](l: Setter[S, S, _, V])(v: V)(callback: => Unit) = u.modState((s: S) => l.set(s, v), callback)
-    @inline def setStateL[V](l: Setter[S, S, _, V])(v: V)                    = u.modState(l.set(_, v))
-    @inline def setStateL[V](l: Setter[S, S, _, V], callback: => Unit)(v: V) = u.modState(l.set(_, v), callback)
+//    @inline def setStateL[V](l: Setter[S, S, _, V])(v: V)                    = u.modState(l.set(_, v))
+//    @inline def setStateL[V](l: Setter[S, S, _, V], callback: () => Unit)(v: V) = u.modState(l.set(_, v), callback)
 
     // Using StateT[Id] instead of State so that Intellij doesn't paint the entire screen red
-    @inline def runState(m: StateT[Id, S, _])                    = u.modState(m(_)._1)
-    @inline def runState(m: StateT[Id, S, _], callback: => Unit) = u.modState(m(_)._1, callback)
-    @inline def runStateC(m: StateT[Id, S, _])(callback: () => Unit) = runState(m, callback())
+//    @inline def runState(m: StateT[Id, S, _])                    = u.modState(m(_)._1)
+//    @inline def runState(m: StateT[Id, S, _], callback: () => Unit) = u.modState(m(_)._1, callback)
+//    @inline def runStateC(m: StateT[Id, S, _])(callback: () => Unit) = runState(m, callback())
   }
 
   def textChangeRecv(f: String => Unit): InputEvent => Unit = e => f(e.target.value)
-  def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
-    textChangeRecv(t setStateL l)
+//  def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
+//    textChangeRecv(t setStateL l)
   def textChangeRecvIO(f: String => IO[Unit]): InputEvent => IO[Unit] =
     e => f(e.target.value)
 
