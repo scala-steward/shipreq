@@ -40,31 +40,18 @@ object Phase2 extends js.JSApp {
   object IssueConfig {
 
     type CustomIssueTypeId = Long
-    type S = FormState
-    type E = SPEC.E
-    type P = CustomIssueType
-    type G = CustomIssueType
-    type Px = (CustomIssueTypeId, P)
-    type Unsaved = Option[E]
-    type SaveMap = Map[CustomIssueTypeId, (P, E)]
-
     case class CustomIssueType(key: String, desc: Option[String])
-    val keyL = SimpleLens2[CustomIssueType](_.key)((a, b) => a.copy(key = b))
-    val descL = SimpleLens2[CustomIssueType](_.desc)((a, b) => a.copy(desc = b))
 
-    val SPEC = Spec2(
-      SpecSplice(keyL.get _, KeyValidator).edit(TextInputEditor),
-      SpecSplice(descL.get _, DescValidator).edit(TextareaEditor),
-      (CustomIssueType.apply _).tupled)
+    type P = CustomIssueType
+    val PreSpec = SpecBuilder[P](
+                    SpecAttr[P](_.key)(KeyValidator)(TextInputEditor),
+                    SpecAttr[P](_.desc)(DescValidator)(TextareaEditor)
+                  ).buildO(CustomIssueType.apply)
+                  .rowId[CustomIssueTypeId]
+    val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
+                 .saveFn(fakeSave)
 
-    case class FormState(saved: SaveMap, unsaved: Unsaved)
-    val savedL = SimpleLens2[FormState](_.saved)((a,b) => a.copy(saved = b))
-    val unsavedL = SimpleLens2[FormState](_.unsaved)((a,b) => a.copy(unsaved = b))
-
-    def mkPE(p: P) = (p, SPEC initial p)
-
-    def storeUpdate(px: Px): S => S =
-      savedL.modifyF(_ + (px._1 -> mkPE(px._2)))
+    type Px = (CustomIssueTypeId, P)
 
     def fakeSave(p: Option[Px], g: CustomIssueType) = IO[Px] {
       console.log(s"SAVING $p ⇒ $g")
@@ -72,96 +59,44 @@ object Phase2 extends js.JSApp {
       (newId, g)
     }
 
-    type RowId = Option[CustomIssueTypeId]
-    val SPECX = Spec2X(SPEC, Some(keyUniqueness), None)
-    def keyUniqueness = uniqueness[S, RowId, (CustomIssueTypeId, (P, E)), String](
-      (s,w) => s.saved.toStream.filterNot(a => w.fold(false)(_ == a._1)),
-      (a,i) => i == a._2._1.key
-    )
+    def fakeDelete(id: CustomIssueTypeId) = IO {
+      console.log(s"DELETING $id")
+    }
 
-    // ...............................................................................................................
     object NewRow {
-      private def empty: SPEC.E = ("","")
-
-      def createS = State.modify[FormState](unsavedL.modifyF(_ orElse Some(empty)))
-
-      private def storeInsert(px: Px): S => S =
-        storeUpdate(px) compose unsavedL.setF(None)
-
-      private val renderAttr = {
-        val s2op: S => Option[P] = _ => None
-        def setE(s: S, e: E): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(e)))
-        val se = WierdLens[Option, S, S, E](unsavedL.get, setE)
-        val saveIO: (S, G) => IO[S] = (s,g) => fakeSave(None, g).map(storeInsert(_)(s))
-        SPECX.forRow(None).renderM(se, s2op)(saveIO)
-      }
-
-      private val delS = State.modify[S](_.copy(unsaved = None))
-
-      private def renderRow(T: ComponentScope_SS[S], vv: SPEC.VV) = {
+      val create = Spec.createUnsaved(("",""))
+      val row = Spec.unsavedRow((T, vv) => {
         val (key, desc) = vv
-        val delButton = button(onclick ~~> T.runStateIO(NewRow.delS))("Cancel")
+        val delButton = button(onclick ~~> T.modStateIO(Spec.removeUnsaved))("Cancel")
         tr(keyAttr := "new")(td(key), td(desc), td(delButton))
-      }
-
-      val row = new FullRow[Option, S, SPEC.VV, Tag, Unit](
-          _ => renderAttr, (T,_,vv) => renderRow(T, vv))
+      })
     }
 
-    // ...............................................................................................................
     object SavedRow {
-      private def rowL(id: CustomIssueTypeId) = savedL composeLens SimpleLens2[SaveMap](_(id))((a,b) => a + (id -> b))
-
-      private def renderAttr(id: CustomIssueTypeId) = {
-        val l: SimpleLens[S, (P, E)] = rowL(id)
-        val sp: SimpleLens[S, P] = l |-> _1
-        val se: SimpleLens[S, E] = l |-> _2
-        val saverr = SavingThingy[S, G, Px, Px, Px](
-          s => (id, sp get s),
-          (px,g) => if (px._2 == g) None else Some(px),
-          (px,g) => fakeSave(Some(px), g),
-          storeUpdate)
-        SPECX.forRow(Some(id)).render(se, sp.get)(saverr.save)
-      }
-
-      private def fakeDelete(id: CustomIssueTypeId) = IO {
-        console.log(s"DELETING $id")
-      }
-
-      private def delS(id: CustomIssueTypeId) =
-        runStoreU(fakeDelete(id), (s:S) => s.copy(saved = s.saved - id))
-
-      private def renderRow(T: ComponentScope_SS[S], id: CustomIssueTypeId, vv: SPEC.VV) = {
+      private val delete = Spec.deleteSavedFn(fakeDelete)
+      val row = Spec.savedRow((T, id, vv) => {
         val (key, desc) = vv
-        val delButton = button(onclick ~~> T.runStateIO(SavedRow delS id))("Delete")
-        //val ctrls = raw(s"${s.key} | ${s.desc}")
+        val delButton = button(onclick ~~> T.runStateIO(delete(id)))("Delete")
         tr(keyAttr := id)(td(key), td(desc), td(delButton))
-      }
-
-      val row = new FullRow[Id, S, SPEC.VV, Tag, CustomIssueTypeId](
-        renderAttr, renderRow)
+      })
     }
 
-    // ...............................................................................................................
     val IssueTypeTable = ReactComponentB[List[(CustomIssueTypeId, CustomIssueType)]]("IssueTypeTable")
-      .getInitialState(p => FormState(p.map(x => x._1 -> mkPE(x._2)).toMap, None))
+      .getInitialState(p => Spec.initialState(p))
       .render(T => {
         val S = T.state
         //console.log(s"State = $S")
 
-        def newRow = NewRow.row.render(T)(())
-        def row = SavedRow.row.render(T)
-
-        val rows = S.saved.toList.sortBy(_._2._1.key)
+        val newRow = NewRow.row.render(T)(())
+        val savedRows = Spec.renderSaved(T, SavedRow.row)(_.sortBy(_._2._1.key))
 
         // TODO handle empty table
         div(
-          button(onclick ~~> T.runStateIO(NewRow.createS))("Create"),
-          table(tbody(
-            tr(th("Name"), th("Description"), th("Ctrls"))
-            , newRow
-            , rows.map(x => row(x._1)).toJsArray
-          ))
+          button(onclick ~~> T.runStateIO(NewRow.create))("Create"),
+          table(
+            thead(tr(th("Name"), th("Description"), th("Ctrls"))),
+            tbody(newRow, savedRows)
+          )
         )
       }).create
     }
@@ -202,10 +137,67 @@ console.log(s"State = ${T.state}")
 
   // ===================================================================================================================
 
-  object ReqTypes {
-
-    type CustomReqTypeId = Int
-    case class CustomReqType(mnemonic: String, name: String, oldMnemonics: Set[String], implicationReq: Boolean)
-
-  }
+//  object ReqTypes {
+//
+//    type CustomReqTypeId = Int
+//
+//    case class CustomReqType(
+//        id: CustomReqTypeId,
+//        mnemonic: String,
+//        name: String,
+//        oldMnemonics: Set[String],
+//        implicationReq: Boolean,
+//        alive: Boolean)
+//
+//    /*
+//    type G = (String, Boolean)
+//    type E = SpecA.E
+//    type Unsaved = Option[E]
+//    type SaveMap = Map[CustomReqTypeId, (P, E)]
+//    type S = FormState
+//    //    case class CustomReqType
+//
+//    val SpecA = Spec2[G, P, Modifier,  String,String,String, Boolean,Boolean,Boolean](
+//      SpecSplice[P,String,String,String](_.mnemonic, MnemonicValidator).edit(TextInputEditor),
+//      SpecSplice[P,Boolean,Boolean,Boolean](_.implicationReq, NopValidator).edit(CheckboxEditor),
+//      x => x // (CustomIssueType.apply _).tupled)
+//    )
+//
+//    case class FormState(saved: SaveMap, unsaved: Unsaved)
+//    val savedL = SimpleLens2[FormState](_.saved)((a,b) => a.copy(saved = b))
+//    val unsavedL = SimpleLens2[FormState](_.unsaved)((a,b) => a.copy(unsaved = b))
+//
+//    type RowId = Option[CustomReqTypeId]
+//    def keyUniqueness = uniqueness[S, RowId, (CustomReqTypeId, (P, E)), String](
+//      (s,w) => s.saved.toStream.filterNot(a => w.fold(false)(_ == a._1)),
+//      (a,i) => i == a._2._1.mnemonic
+//    )
+//
+//    val SpecB = Spec2X(SpecA, Some(keyUniqueness), None)
+//    */
+//
+//    type P = CustomReqType
+//    val b1 = SpecBuilder[P](
+//      SpecAttr[P](_.mnemonic)(MnemonicValidator)(TextInputEditor),
+//      SpecAttr[P](_.implicationReq)(NopValidator)(CheckboxEditor)
+//    )
+//    val b2 = b1.rowId[CustomReqTypeId]
+//    b2.uniquenessCheck(_.mnemonic)
+//
+//    val ReqTypeTableComp = ReactComponentB[List[CustomReqType]]("ReqTypeTable")
+//      .stateless
+//      .render(T => {
+//
+//        //SpecB.forRow().render()
+//
+//        table(
+//          thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
+//          tbody(
+//
+//          )
+//        )
+//
+//      }).create
+//
+//  }
 }

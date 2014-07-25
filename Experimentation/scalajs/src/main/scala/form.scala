@@ -13,6 +13,7 @@ import ScalazReact._
 import scalaz.effect.IO
 import scalaz.Scalaz.Id
 import scalaz.{Foldable, Bind, \/, \/-, -\/, StateT}
+import scalaz.std.option._
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
 
@@ -256,6 +257,129 @@ object FormStuff {
   }
 
   // ===================================================================================================================
+  // easier spec building
+  
+  def SpecAttr[P] = new {
+    def apply[C](p2c: P => C) = new {
+      def apply[I, O](v: Validator[I, C, O])(e: Editor[I, ReactVDom.Modifier]) =
+        SpecSplice(p2c, v).edit(e)
+    }
+  }
+
+  def SpecBuilder[P] = new {
+    def apply[V, I1, C1, O1, I2, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]) =
+      new SpecBuilder2[P, (O1,O2), V, I1, C1, O1, I2, C2, O2](s1, s2, oo=>oo)
+  }
+
+  class SpecBuilder2[P, O, V, I1, C1, O1, I2, C2, O2](
+      s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2], buildO: ((O1,O2)) => O) {
+
+    type I = (I1,I2)
+
+    def mapO[OO](f: O => OO) = new SpecBuilder2(s1,s2, f compose buildO)
+    def buildO[OO](f: (O1,O2) => OO) = new SpecBuilder2(s1,s2, f.tupled)
+    
+    def rowId[W] = new B2[W]
+
+    class B2[DataId] {
+      type RowId = Option[DataId]
+      private type Unsaved = Option[I]
+      private type Saved = Map[DataId, (P, I)]
+      type S = (Saved, Unsaved)
+      private val savedL = _1[S, Saved]
+      private val unsavedL = _2[S, Unsaved]
+      private def savedIL(id: DataId) = savedL composeLens SimpleLens2[Saved](_(id))((a,b) => a + (id -> b))
+      type Px = (DataId, P)
+
+      def uniquenessCheck[A](f: P => A) = uniqueness[S, RowId, (DataId, (P, I)), A](
+        (s,ow) => savedL.get(s).toStream.filterNot(wpi => ow.fold(false)(_ == wpi._1)),
+        (wpi,a) => a == f(wpi._2._1)
+      )
+
+      def ctxAwareValidators(cv1: Option[CtxValidation[S, RowId, O1]], cv2: Option[CtxValidation[S, RowId, O2]]) = new {
+        def saveFn(f: (Option[Px], O) => IO[Px]) =
+          new B3(Spec2X(Spec2(s1, s2, buildO), cv1, cv2), f)
+      }
+
+
+      class B3(val spec: Spec2X[S, RowId, O, P, V, I1, C1, O1, I2, C2, O2]
+                  ,saveIO: (Option[Px], O) => IO[Px]
+                  ) {
+        type I = SpecBuilder2.this.I
+//        type O = this.O
+        type S = B2.this.S
+        type VV = spec.VV
+
+        private def mkPI(p: P) = (p, spec.spec initial p)
+
+        def initialState(xs: Seq[(DataId, P)]): S =
+          (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
+
+        private def renderAttrForUnsaved(saveIO: (S, O) => IO[S]) = {
+          val s2op: S => Option[P] = _ => None
+          def setI(s: S, i: I): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(i)))
+          val se = WierdLens[Option, S, S, I](unsavedL.get, setI)
+          spec.forRow(None).renderM(se, s2op)(saveIO)
+        }
+
+        def createUnsaved(empty: I) = scalaz.State.modify[S](unsavedL.modifyF(_ orElse Some(empty)))
+
+        val removeUnsaved = unsavedL setF None
+//        val cancelUnsaved = scalaz.State.modify[S](unsavedL setF None)
+
+        def insertUnsaved(px: Px)          : S => S = insertUnsaved(px._1, px._2)
+        def insertUnsaved(id: DataId, p: P): S => S = updateSaved(id, p) compose removeUnsaved
+
+        private val _renderAttrUnsaved =
+          renderAttrForUnsaved((s,g) => saveIO(None, g).map(insertUnsaved(_)(s)))
+
+        def unsavedRow[V2](renderRow: (ComponentScope_SS[S], VV) => V2) =
+          _unsavedRow(_renderAttrUnsaved, renderRow)
+
+        private def _unsavedRow[V2](renderAttr: ComponentScope_SS[S] => Option[VV], renderRow: (ComponentScope_SS[S], VV) => V2) =
+          new FullRow[Option, S, VV, V2, Unit](_ => renderAttr(_), (T,_,vv) => renderRow(T, vv))
+
+        private def renderAttrForSaved(id: DataId, saveIO: (Option[Px], O) => IO[Px]) = {
+          val l: SimpleLens[S, (P, I)] = savedIL(id)
+          val sp: SimpleLens[S, P] = l |-> _1
+          val si: SimpleLens[S, I] = l |-> _2
+
+          val save = saveHelper[S, O, Px, Px, Px](
+            s => (id, sp get s),
+            (px,g) => if (px._2 == g) None else Some(px),
+            (px,g) => saveIO(Some(px), g),
+            (s,px) => updateSaved(px)(s))
+
+          spec.forRow(Some(id)).render(si, sp.get)(save)
+        }
+
+        def removeSaved(id: DataId) = savedL.modifyF(m => m - id)
+
+        def deleteSavedFn(f: DataId => IO[Unit]) = (id: DataId) =>
+          runStoreU(f(id), removeSaved(id))
+
+
+        def updateSaved(px: Px)          : S => S = updateSaved(px._1, px._2)
+        def updateSaved(id: DataId, p: P): S => S = savedL.modifyF(_ + (id -> mkPI(p)))
+
+        def savedRow[V2](renderRow: (ComponentScope_SS[S], DataId, VV) => V2) =
+          _savedRow(renderAttrForSaved(_, saveIO), renderRow)
+
+        private def _savedRow[V2](renderAttr: DataId => ComponentScope_SS[S] => VV, renderRow: (ComponentScope_SS[S], DataId, VV) => V2) =
+            new FullRow[Id, S, VV, V2, DataId](renderAttr, renderRow)
+
+        type SavedL = List[(DataId, (P,I))]
+        def renderSaved(T: ComponentScope_SS[S], r: FullRow[Id, S, VV, Tag, DataId])(f: SavedL => SavedL) = {
+          val rr = r.render(T)
+          f(savedL.get(T.state).toList).map(x => rr(x._1)).toJsArray
+        }
+      }
+    }
+  }
+  
+
+
+  // ===================================================================================================================
   // rows
 
   class FullRow[M[_] : Bind, S, VV, V, RowId](renderAttr: RowId => ComponentScope_SS[S] => M[VV],
@@ -269,18 +393,17 @@ object FormStuff {
   // ===================================================================================================================
   // util
 
-  case class SavingThingy[S, G, L, L2, Px](getLast: S => L,
-                                           needSave: (L, G) => Option[L2],
-                                           saveIO: (L2, G) => IO[Px],
-                                           storeSaved: Px => S => S) {
-    def save(s: S, g: G): IO[S] = {
+  def saveHelper[S, G, L, L2, Px](getLast: S => L,
+                                  needSave: (L, G) => Option[L2],
+                                  saveIO: (L2, G) => IO[Px],
+                                  storeSaved: (S, Px) => S): (S, G) => IO[S] =
+    (s,g) => {
       val last = getLast(s)
       needSave(last, g) match {
-        case Some(l2) => saveIO(l2, g).map(storeSaved(_)(s))
+        case Some(l2) => saveIO(l2, g).map(storeSaved(s, _))
         case None     => IO(s)
       }
     }
-  }
 
   def deleteS[S, P, R](getP: S => P, save: P => IO[R], store: (S, P, R) => S) =
     StateT[IO, S, Unit](s => {
@@ -304,6 +427,22 @@ object FormStuff {
       case s if !s.matches("^[A-Z]+$") => -\/("One word, A-Z only.")
       case s => \/-(s)
     }
+    override def c2i = identity
+  }
+
+  object MnemonicValidator extends Validator[String, String, String] {
+    override def correct = _.trim.toUpperCase()
+    override def validate = {
+      case "" => -\/("It's blank!")
+      case s if !s.matches("^[A-Z]{1,6}$") => -\/("A-Z only, 1-6 letters.")
+      case s => \/-(s)
+    }
+    override def c2i = identity
+  }
+
+  def NopValidator[I] : Validator[I,I,I] = new Validator[I,I,I] {
+    override def correct = identity
+    override def validate = \/-.apply
     override def c2i = identity
   }
 
@@ -351,6 +490,32 @@ object FormStuff {
       )
     }
   }
+
+  object CheckboxEditor extends Editor[Boolean, ReactVDom.Modifier] {
+    override def apply(data: Boolean
+                       , error: Option[ErrorMsg]
+                       , onChange: Boolean => IO[Unit]
+                       , onCancel: IO[Unit] => IO[Unit]
+                       , onEditEnd: IO[Unit]
+                        ) = {
+      val ch: InputEvent => IO[Unit] = e => {
+        val v = !e.target.value.isEmpty
+        onChange(v) >> onEditEnd
+      }
+
+      div(
+        input(
+          value := 1
+          , `type` := "checkbox"
+          , onchange ~~> ch
+          , data && (checked := "checked")
+          , error.isDefined && (cls := "error")
+        )
+        , error.fold(Nop)(e => div(cls := "errorMsg")(e))
+      )
+    }
+  }
+
 
   val TextInputEditor = new TextEditor(input)
   val TextareaEditor = new TextEditor(textarea)
