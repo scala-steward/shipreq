@@ -19,12 +19,25 @@ import Lib._
 
 object Phase2 extends js.JSApp {
   override def main(): Unit = {
-    import Phase2.IssueConfig._
 
-    IssueTypeTable(List(
-      1L -> CustomIssueType("TODO", None)
-      ,2L -> CustomIssueType("TBD", Some("To Be Decided."))
-    )) render dom.document.getElementById("target")
+    {
+      import Phase2.IssueConfig._
+      IssueTypeTable(List(
+        1L -> CustomIssueType("TODO", None)
+        , 2L -> CustomIssueType("TBD", Some("To Be Decided."))
+      )) render dom.document.getElementById("target")
+    }
+
+    {
+      import Phase2.ReqTypes._
+      ReqTypeTableComp(List(
+        CustomReqType(1, "CO", "Constraint", Set.empty, false, true)
+        , CustomReqType(2, "MF", "Major Feature", Set.empty, false, true)
+        , CustomReqType(3, "FR", "Functional Requirement", Set.empty, false, true)
+        , CustomReqType(4, "BR", "Business Rule", Set.empty, false, true)
+        , CustomReqType(5, "DD", "Data Definition", Set("DA","DDF"), false, true)
+      )) render dom.document.getElementById("target2")
+    }
 
     DragAndDrop.Component(List(
       DragAndDrop.Item(10, "Ten")
@@ -32,7 +45,7 @@ object Phase2 extends js.JSApp {
       ,DragAndDrop.Item(30, "Firty")
       ,DragAndDrop.Item(40, "Thorty")
       ,DragAndDrop.Item(50, "Fipty")
-    )) render dom.document.getElementById("target2")
+    )) render dom.document.getElementById("target3")
   }
 
   // ===================================================================================================================
@@ -43,6 +56,7 @@ object Phase2 extends js.JSApp {
     case class CustomIssueType(key: String, desc: Option[String])
 
     type P = CustomIssueType
+    type Px = (CustomIssueTypeId, P)
     val PreSpec = SpecBuilder[P](
                     SpecAttr[P](_.key)(KeyValidator)(TextInputEditor),
                     SpecAttr[P](_.desc)(DescValidator)(TextareaEditor)
@@ -50,8 +64,6 @@ object Phase2 extends js.JSApp {
                   .rowId[CustomIssueTypeId]
     val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
                  .saveFn(fakeSave)
-
-    type Px = (CustomIssueTypeId, P)
 
     def fakeSave(p: Option[Px], g: CustomIssueType) = IO[Px] {
       console.log(s"SAVING $p ⇒ $g")
@@ -110,19 +122,21 @@ object Phase2 extends js.JSApp {
     val RowComp = DND.Child.dndItemComponent[Item](
       (i, hnd) => hnd :: raw(s"${i.id} | ${i.name}") :: Nil)
 
-    case class ParentState(items: List[Item], dnd: DND.Parent.PState[Item])
+    case class ParentState(items: List[Item], dnd: DND.Parent.PState[Item], i: Int)
 
     def itemCmp(a: Item, b: Item) = a.id==b.id
 
     val Component = ReactComponentB[List[Item]]("DragAndDrop")
-      .getInitialState(p => ParentState(p, DND.Parent.initialState))
+      .getInitialState(p => ParentState(p, DND.Parent.initialState, 0))
       .render(T => {
-console.log(s"State = ${T.state}")
+console.log(s"DND.State = ${T.state}")
         val itemsState = T.focusState(_.items)((a, b) => a.copy(items = b))
         val dndState = T.focusState(_.dnd)((a, b) => a.copy(dnd = b))
 
         def move(from: Item, to: Item) =
-          itemsState.modStateIO(DND.move(from, to, itemCmp))
+          IO{ console.log(s"...Before = ${T.state}") } >>
+          itemsState.modStateIO(DND.move(from, to, itemCmp)) >>
+          IO{ console.log(s"....After = ${T.state}") }
 
         def renderItem(i: Item) =
           li(key := i.id)(RowComp((i, DND.Parent.cProps(dndState, i, itemCmp, move ))))
@@ -137,67 +151,82 @@ console.log(s"State = ${T.state}")
 
   // ===================================================================================================================
 
-//  object ReqTypes {
-//
-//    type CustomReqTypeId = Int
-//
-//    case class CustomReqType(
-//        id: CustomReqTypeId,
-//        mnemonic: String,
-//        name: String,
-//        oldMnemonics: Set[String],
-//        implicationReq: Boolean,
-//        alive: Boolean)
-//
-//    /*
-//    type G = (String, Boolean)
-//    type E = SpecA.E
-//    type Unsaved = Option[E]
-//    type SaveMap = Map[CustomReqTypeId, (P, E)]
-//    type S = FormState
-//    //    case class CustomReqType
-//
-//    val SpecA = Spec2[G, P, Modifier,  String,String,String, Boolean,Boolean,Boolean](
-//      SpecSplice[P,String,String,String](_.mnemonic, MnemonicValidator).edit(TextInputEditor),
-//      SpecSplice[P,Boolean,Boolean,Boolean](_.implicationReq, NopValidator).edit(CheckboxEditor),
-//      x => x // (CustomIssueType.apply _).tupled)
-//    )
-//
-//    case class FormState(saved: SaveMap, unsaved: Unsaved)
-//    val savedL = SimpleLens2[FormState](_.saved)((a,b) => a.copy(saved = b))
-//    val unsavedL = SimpleLens2[FormState](_.unsaved)((a,b) => a.copy(unsaved = b))
-//
-//    type RowId = Option[CustomReqTypeId]
-//    def keyUniqueness = uniqueness[S, RowId, (CustomReqTypeId, (P, E)), String](
-//      (s,w) => s.saved.toStream.filterNot(a => w.fold(false)(_ == a._1)),
-//      (a,i) => i == a._2._1.mnemonic
-//    )
-//
-//    val SpecB = Spec2X(SpecA, Some(keyUniqueness), None)
-//    */
-//
-//    type P = CustomReqType
-//    val b1 = SpecBuilder[P](
-//      SpecAttr[P](_.mnemonic)(MnemonicValidator)(TextInputEditor),
-//      SpecAttr[P](_.implicationReq)(NopValidator)(CheckboxEditor)
-//    )
-//    val b2 = b1.rowId[CustomReqTypeId]
-//    b2.uniquenessCheck(_.mnemonic)
-//
-//    val ReqTypeTableComp = ReactComponentB[List[CustomReqType]]("ReqTypeTable")
-//      .stateless
-//      .render(T => {
-//
-//        //SpecB.forRow().render()
-//
-//        table(
-//          thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
-//          tbody(
-//
-//          )
-//        )
-//
-//      }).create
-//
-//  }
+  object ReqTypes {
+
+    type CustomReqTypeId = Int
+
+    case class CustomReqType(
+        id: CustomReqTypeId,
+        mnemonic: String,
+        name: String,
+        oldMnemonics: Set[String],
+        implicationReq: Boolean,
+        alive: Boolean)
+
+    // TODO T.state is consistent, doesn't show next iteration's state
+    // TODO prevent old mnemonic reuse
+    // TODO blacklist certain chars (ie. deny I change)
+    // TODO transform certain chars (ie. preprocess I)
+    // TODO Add an uneditable UC type in there
+
+    type P = CustomReqType
+    val PreSpec = SpecBuilder[P](
+        SpecAttr[P](_.mnemonic)(MnemonicValidator)(TextInputEditor),
+        SpecAttr[P](_.implicationReq)(NopValidator)(CheckboxEditor)
+      ).rowId[CustomReqTypeId]
+    val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.mnemonic)), None)
+      .saveFn(fakeSave)
+    type Px = PreSpec.Px
+
+    def fakeSave(op: Option[Px], g: (String, Boolean)) = IO[Px] {
+      val r = op match {
+        case None => CustomReqType(666, g._1, "No mame yet", Set.empty, g._2, true)
+        case Some((_, p)) => p.copy(mnemonic = g._1, implicationReq = g._2)
+      }
+      console.log(s"SAVING $op =[$g]=> $r")
+      (r.id, r)
+    }
+
+    def fakeDelete(id: CustomReqTypeId) = IO {
+      console.log(s"DELETING $id")
+    }
+
+    private val Create = Spec.createUnsaved(("",false))
+
+    private val NewRow = {
+      Spec.unsavedRow((T, vv) => {
+        val (mnemonic, impReq) = vv
+        val delButton = button(onclick ~~> T.modStateIO(Spec.removeUnsaved))("Cancel")
+        tr(keyAttr := "new")(td(mnemonic), td(impReq), td(delButton))
+      })
+    }
+
+    private val SavedRow = {
+      val delete = Spec.deleteSavedFn(fakeDelete)
+      Spec.savedRow((T, id, p, vv) => {
+        val (mnemonic, impReq) = vv
+        val delButton = button(onclick ~~> T.runStateIO(delete(id)))("Delete")
+        tr(keyAttr := id)(td(mnemonic), td(p.name), td(impReq), td(delButton))
+      })
+    }
+
+    val ReqTypeTableComp = ReactComponentB[List[CustomReqType]]("ReqTypeTable")
+      .getInitialState(p => Spec.initialState(p, _.id))
+      .render(T => {
+
+        val newRow = NewRow.render(T)(())
+        val savedRows = Spec.renderSaved(T, SavedRow)(_.sortBy(_._2._1.mnemonic))
+
+        div(
+          button(onclick ~~> T.runStateIO(Create))("Create"),
+          table(
+            thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
+            tbody(
+              newRow, savedRows
+            )
+          )
+        )
+
+      }).create
+  }
 }

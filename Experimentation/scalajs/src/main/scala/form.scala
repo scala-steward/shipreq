@@ -315,6 +315,9 @@ object FormStuff {
         def initialState(xs: Seq[(DataId, P)]): S =
           (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
 
+        def initialState(xs: Seq[P], id: P => DataId): S =
+          initialState(xs.map(x => id(x) -> x))
+
         private def renderAttrForUnsaved(saveIO: (S, O) => IO[S]) = {
           val s2op: S => Option[P] = _ => None
           def setI(s: S, i: I): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(i)))
@@ -361,6 +364,9 @@ object FormStuff {
 
         def updateSaved(px: Px)          : S => S = updateSaved(px._1, px._2)
         def updateSaved(id: DataId, p: P): S => S = savedL.modifyF(_ + (id -> mkPI(p)))
+
+        def savedRow[V2](renderRow: (ComponentScope_SS[S], DataId, P, VV) => V2) =
+          _savedRow(renderAttrForSaved(_, saveIO), (t,i,v) => renderRow(t,i,savedIL(i).get(t.state)._1,v))
 
         def savedRow[V2](renderRow: (ComponentScope_SS[S], DataId, VV) => V2) =
           _savedRow(renderAttrForSaved(_, saveIO), renderRow)
@@ -499,14 +505,14 @@ object FormStuff {
                        , onEditEnd: IO[Unit]
                         ) = {
       val ch: InputEvent => IO[Unit] = e => {
-        val v = !e.target.value.isEmpty
+        val v = e.target.checked
         onChange(v) >> onEditEnd
       }
 
       div(
         input(
-          value := 1
-          , `type` := "checkbox"
+          `type` := "checkbox"
+          //, value := 1
           , onchange ~~> ch
           , data && (checked := "checked")
           , error.isDefined && (cls := "error")
