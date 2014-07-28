@@ -1,3 +1,4 @@
+package utily
 
 import japgolly.scalajs.react.vdom.{ReactOutput, ReactVDom, VDomBuilder, ReactFragT}
 import org.scalajs.dom

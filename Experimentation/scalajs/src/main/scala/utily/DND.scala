@@ -1,3 +1,5 @@
+package utily
+
 import org.scalajs.dom
 import org.scalajs.dom.console
 import scala.scalajs.js

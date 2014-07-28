@@ -1,19 +1,21 @@
+package utily
+
+import scalaz.StateT
 import scalaz.Scalaz.Id
-import scalaz.{State, StateT}
 import scalaz.effect.IO
 import monocle._
 import japgolly.scalajs.react._
 
 object Lib {
-  type SSetter[S, A] = Setter[S, S, _, A]
+//  type SSetter[S, A] = Setter[S, S, _, A]
 
   implicit def autoLiftStateIntoIO[S, A](s: StateT[Id, S, A]): StateT[IO, S, A] = s.lift[IO]
+
 //  implicit class StateExt[S, A](val u: StateT[Id, S, A]) extends AnyVal {
 //    def liftIO = autoLiftStateIntoIO(u)
 //  }
 
-  implicit final class ComponentScope_SS_Ext3[S](val u: ComponentScope_SS[S]) extends AnyVal {
-
+//  implicit final class ComponentScope_SS_Ext3[S](val u: ComponentScope_SS[S]) extends AnyVal {
     //    @inline def setStateL [V](l: Setter[S, S, _, V])(v: V)                    = u.modState((s: S) => l.set(s, v))
     //    @inline def setStateLC[V](l: Setter[S, S, _, V])(v: V)(callback: => Unit) = u.modState((s: S) => l.set(s, v), callback)
 //    @inline def setStateL[V](l: Setter[S, S, _, V])(v: V)                    = u.modState(l.set(_, v))
@@ -23,7 +25,7 @@ object Lib {
 //    @inline def runState(m: StateT[Id, S, _])                    = u.modState(m(_)._1)
 //    @inline def runState(m: StateT[Id, S, _], callback: () => Unit) = u.modState(m(_)._1, callback)
 //    @inline def runStateC(m: StateT[Id, S, _])(callback: () => Unit) = runState(m, callback())
-  }
+//  }
 
   def textChangeRecv(f: String => Unit): InputEvent => Unit = e => f(e.target.value)
 //  def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
@@ -48,16 +50,4 @@ object Lib {
     final def setF(newValue: B) = (from: S) => o.set(from, newValue)
     final def modifyF(f: A => B) = (from: S) => o.modify(from, f)
   }
-
-  class StateHelper[S] {
-    @inline final def apply[A](f: S => (S, A))        = State.apply(f)
-    @inline final def constantState[A](a: A, s: => S) = State.constantState(a, s)
-    @inline final def state[A](a: A)                  = State.state(a)
-    @inline final def init                            = State.init[S]
-    @inline final def get                             = State.get[S]
-    @inline final def gets[A](f: S => A)              = State.gets(f)
-    @inline final def put(s: S)                       = State.put(s)
-    @inline final def modify(f: S => S)               = State.modify(f)
-  }
-
 }

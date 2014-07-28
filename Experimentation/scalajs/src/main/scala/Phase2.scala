@@ -1,15 +1,13 @@
 import org.scalajs.dom
 import org.scalajs.dom.console
 import scala.scalajs.js
-import scalaz.{State, StateT, Scalaz, Bind}
 import scalaz.syntax.bind._
-import Scalaz.Id
 import scalaz.effect.IO
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
-import FormStuff._
+import utily.FormStuff._
 
 object Phase2 extends js.JSApp {
   override def main(): Unit = {
@@ -32,14 +30,6 @@ object Phase2 extends js.JSApp {
         , CustomReqType(5, "DD", "Data Definition", Set("DA","DDF"), false, true)
       )) render dom.document.getElementById("target2")
     }
-
-    DragAndDrop.Component(List(
-      DragAndDrop.Item(10, "Ten")
-      ,DragAndDrop.Item(20, "Two Zero")
-      ,DragAndDrop.Item(30, "Firty")
-      ,DragAndDrop.Item(40, "Thorty")
-      ,DragAndDrop.Item(50, "Fipty")
-    )) render dom.document.getElementById("target3")
   }
 
   // ===================================================================================================================
@@ -106,42 +96,6 @@ object Phase2 extends js.JSApp {
         )
       }).create
     }
-
-  // ===================================================================================================================
-
-  object DragAndDrop {
-
-    case class Item(id: Int, name: String)
-
-    val RowComp = DND.Child.dndItemComponent[Item](
-      (i, hnd) => hnd :: raw(s"${i.id} | ${i.name}") :: Nil)
-
-    case class ParentState(items: List[Item], dnd: DND.Parent.PState[Item], i: Int)
-
-    def itemCmp(a: Item, b: Item) = a.id==b.id
-
-    val Component = ReactComponentB[List[Item]]("DragAndDrop")
-      .getInitialState(p => ParentState(p, DND.Parent.initialState, 0))
-      .render(T => {
-console.log(s"DND.State = ${T.state}")
-        val itemsState = T.focusState(_.items)((a, b) => a.copy(items = b))
-        val dndState = T.focusState(_.dnd)((a, b) => a.copy(dnd = b))
-
-        def move(from: Item, to: Item) =
-          IO{ console.log(s"...Before = ${T.state}") } >>
-          IO{ itemsState.modState(DND.move(from, to, itemCmp)) } >>
-          IO{ console.log(s"....After = ${T.state}") }
-
-        def renderItem(i: Item) =
-          li(key := i.id)(RowComp((i, DND.Parent.cProps(dndState, i, itemCmp, move ))))
-
-        div(
-          h1("Drag and Drop"),
-          ol(T.state.items.map(renderItem).toJsArray)
-
-        )
-      }).create
-  }
 
   // ===================================================================================================================
 
