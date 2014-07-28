@@ -6,7 +6,7 @@ name := "Scala.js experiment"
 
 // scalaVersion := "2.10.4"
 
-scalaVersion := "2.11.1"
+scalaVersion := "2.11.2"
 
 scalacOptions ++= Seq( "-deprecation", "-unchecked", "-language:_" )
 
@@ -17,7 +17,7 @@ libraryDependencies ++= Seq(
   ,"com.github.japgolly.fork.scalaz" %%% "scalaz-effect" % "7.0.6"
 )
 
-jsDependencies += "org.webjars" % "react" % "0.11.0" / "react-with-addons.js"
+jsDependencies += "org.webjars" % "react" % "0.11.1" / "react-with-addons.js"
 
 skip in packageJSDependencies := false
 

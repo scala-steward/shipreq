@@ -1,13 +1,8 @@
-import monocle._
-import monocle.syntax._
-import monocle.function.Field1._
-import monocle.function.Field2._
 import org.scalajs.dom
 import org.scalajs.dom.console
 import scala.scalajs.js
 import scalaz.{State, StateT, Scalaz, Bind}
 import scalaz.syntax.bind._
-import scalaz.std.option.optionInstance
 import Scalaz.Id
 import scalaz.effect.IO
 import japgolly.scalajs.react._
@@ -15,7 +10,6 @@ import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
 import FormStuff._
-import Lib._
 
 object Phase2 extends js.JSApp {
   override def main(): Unit = {
@@ -163,8 +157,7 @@ console.log(s"DND.State = ${T.state}")
         implicationReq: Boolean,
         alive: Boolean)
 
-    // TODO T.state is consistent, doesn't show next iteration's state
-    // TODO prevent old mnemonic reuse
+    // TODO prevent reuse over old mnemonics & UC
     // TODO Add an uneditable UC type in there
 
     type P = CustomReqType
@@ -191,11 +184,14 @@ console.log(s"DND.State = ${T.state}")
 
     private val Create = Spec.createUnsaved(("",false))
 
+    private def row(mnemonic: Modifier, name: Modifier, impReq: Modifier, delButton: Modifier) =
+      Seq(td(mnemonic), td(name), td(impReq), td(delButton))
+
     private val NewRow = {
       Spec.unsavedRow((T, vv) => {
         val (mnemonic, impReq) = vv
         val delButton = button(onclick ~~> T.runState(Spec.removeUnsavedS))("Cancel")
-        tr(keyAttr := "new")(td(mnemonic), td(impReq), td(delButton))
+        tr(keyAttr := "new")(row(mnemonic, "NO NAME!", impReq, delButton))
       })
     }
 
@@ -204,7 +200,7 @@ console.log(s"DND.State = ${T.state}")
       Spec.savedRow((T, id, p, vv) => {
         val (mnemonic, impReq) = vv
         val delButton = button(onclick ~~> T.runState(delete(id)))("Delete")
-        tr(keyAttr := id)(td(mnemonic), td(p.name), td(impReq), td(delButton))
+        tr(keyAttr := id)(row(mnemonic, p.name, impReq, delButton))
       })
     }
 
