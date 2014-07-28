@@ -301,6 +301,7 @@ object FormStuff {
       private val unsavedL = _2[S, Unsaved]
       private def savedIL(id: DataId) = savedL composeLens SimpleLens2[Saved](_(id))((a,b) => a + (id -> b))
       type Px = (DataId, P)
+      type OO = O
 
       def uniquenessCheck[A](f: P => A) = uniqueness[S, RowId, (DataId, (P, I)), A](
         (s,ow) => savedL.get(s).toStream.filterNot(wpi => ow.fold(false)(_ == wpi._1)),
@@ -317,7 +318,6 @@ object FormStuff {
                   ,saveIO: (Option[Px], O) => IO[Px]
                   ) {
         type I = SpecBuilder2.this.I
-//        type O = this.O
         type S = B2.this.S
         type VV = spec.VV
 
@@ -386,11 +386,14 @@ object FormStuff {
         private def _savedRow[V2](renderAttr: DataId => ComponentScope_SS[S] => VV, renderRow: (ComponentScope_SS[S], DataId, VV) => V2) =
             new FullRow[Id, S, VV, V2, DataId](renderAttr, renderRow)
 
-        type SavedL = List[(DataId, (P,I))]
-        def renderSaved(T: ComponentScope_SS[S], r: FullRow[Id, S, VV, Tag, DataId])(f: SavedL => SavedL) = {
+        type SavedPs = Stream[(DataId, P)]
+        def renderSaved(T: ComponentScope_SS[S], r: FullRow[Id, S, VV, Tag, DataId])(f: SavedPs => SavedPs) = {
           val rr = r.render(T)
-          f(savedL.get(T.state).toList).map(x => rr(x._1)).toJsArray
+          f(getSaved(T)).map(x => rr(x._1)).toJsArray
         }
+
+        def getSaved(T: ComponentScope_SS[S]): SavedPs =
+          savedL.get(T.state).toStream.map(x => x._1 -> x._2._1)
       }
     }
   }

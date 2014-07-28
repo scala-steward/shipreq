@@ -8,6 +8,8 @@ import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
 import utily.FormStuff._
+import domainy.Data._
+import domainy.FakeDao
 
 object Phase2 extends js.JSApp {
   override def main(): Unit = {
@@ -15,19 +17,19 @@ object Phase2 extends js.JSApp {
     {
       import Phase2.IssueConfig._
       IssueTypeTable(List(
-        1L -> CustomIssueType("TODO", None)
-        , 2L -> CustomIssueType("TBD", Some("To Be Decided."))
+        CustomIssueType(CustomIssueTypeId(1), "TODO", None),
+        CustomIssueType(CustomIssueTypeId(2), "TBD", Some("To Be Decided."))
       )) render dom.document.getElementById("target")
     }
 
     {
       import Phase2.ReqTypes._
       ReqTypeTableComp(List(
-        CustomReqType(1, "CO", "Constraint", Set.empty, false, true)
-        , CustomReqType(2, "MF", "Major Feature", Set.empty, false, true)
-        , CustomReqType(3, "FR", "Functional Requirement", Set.empty, false, true)
-        , CustomReqType(4, "BR", "Business Rule", Set.empty, false, true)
-        , CustomReqType(5, "DD", "Data Definition", Set("DA","DDF"), false, true)
+        CustomReqType(CustomReqTypeId(1), "CO", Set.empty, "Constraint", false, true),
+        CustomReqType(CustomReqTypeId(2), "MF", Set.empty, "Major Feature", false, true),
+        CustomReqType(CustomReqTypeId(3), "FR", Set.empty, "Functional Requirement", false, true),
+        CustomReqType(CustomReqTypeId(4), "BR", Set.empty, "Business Rule", false, true),
+        CustomReqType(CustomReqTypeId(5), "DD", Set("DA","DDF"), "Data Definition", false, true)
       )) render dom.document.getElementById("target2")
     }
   }
@@ -36,28 +38,25 @@ object Phase2 extends js.JSApp {
 
   object IssueConfig {
 
-    type CustomIssueTypeId = Long
-    case class CustomIssueType(key: String, desc: Option[String])
-
     type P = CustomIssueType
-    type Px = (CustomIssueTypeId, P)
     val PreSpec = SpecBuilder[P](
                     SpecAttr[P](_.key)(KeyValidator)(TextInputEditor),
                     SpecAttr[P](_.desc)(DescValidator)(TextareaEditor)
-                  ).buildO(CustomIssueType.apply)
+                  ).mapO(CustomIssueTypeV.fromTuple)
                   .rowId[CustomIssueTypeId]
     val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
                  .saveFn(fakeSave)
+    type Px = PreSpec.Px
 
-    def fakeSave(p: Option[Px], g: CustomIssueType) = IO[Px] {
-      console.log(s"SAVING $p ⇒ $g")
-      val newId = p.fold[CustomIssueTypeId](666L)(_._1)
-      (newId, g)
+    def fakeSave(prev: Option[Px], newValues: CustomIssueTypeV) = IO[Px] {
+      val n = prev match {
+        case None         => FakeDao.customIssueType.create(newValues)
+        case Some((id,_)) => FakeDao.customIssueType.update(newValues withId id)
+      }
+      (n.id, n)
     }
 
-    def fakeDelete(id: CustomIssueTypeId) = IO {
-      console.log(s"DELETING $id")
-    }
+    def fakeDelete(id: CustomIssueTypeId) = IO { FakeDao.customIssueType.deleteHard(id) }
 
     object NewRow {
       val create = Spec.createUnsaved(("",""))
@@ -73,18 +72,18 @@ object Phase2 extends js.JSApp {
       val row = Spec.savedRow((T, id, vv) => {
         val (key, desc) = vv
         val delButton = button(onclick ~~> T.runState(delete(id)))("Delete")
-        tr(keyAttr := id)(td(key), td(desc), td(delButton))
+        tr(keyAttr := id.value)(td(key), td(desc), td(delButton))
       })
     }
 
-    val IssueTypeTable = ReactComponentB[List[(CustomIssueTypeId, CustomIssueType)]]("IssueTypeTable")
-      .getInitialState(p => Spec.initialState(p))
+    val IssueTypeTable = ReactComponentB[List[CustomIssueType]]("IssueTypeTable")
+      .getInitialState(p => Spec.initialState(p, _.id))
       .render(T => {
         val S = T.state
         //console.log(s"State = $S")
 
         val newRow = NewRow.row.render(T)(())
-        val savedRows = Spec.renderSaved(T, SavedRow.row)(_.sortBy(_._2._1.key))
+        val savedRows = Spec.renderSaved(T, SavedRow.row)(_.sortBy(_._2.key))
 
         // TODO handle empty table
         div(
@@ -101,34 +100,24 @@ object Phase2 extends js.JSApp {
 
   object ReqTypes {
 
-    type CustomReqTypeId = Int
-
-    case class CustomReqType(
-        id: CustomReqTypeId,
-        mnemonic: String,
-        name: String,
-        oldMnemonics: Set[String],
-        implicationReq: Boolean,
-        alive: Boolean)
-
     // TODO prevent reuse over old mnemonics & UC
     // TODO Add an uneditable UC type in there
 
     type P = CustomReqType
     val PreSpec = SpecBuilder[P](
         SpecAttr[P](_.mnemonic)(MnemonicValidator)(TextInputEditor),
-        SpecAttr[P](_.implicationReq)(NopValidator)(CheckboxEditor)
-      ).rowId[CustomReqTypeId]
+        SpecAttr[P](_.implicationRequired)(NopValidator)(CheckboxEditor)
+      ).mapO(CustomReqTypeNV.fromTuple)
+      .rowId[CustomReqTypeId]
     val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.mnemonic)), None)
       .saveFn(fakeSave)
     type Px = PreSpec.Px
 
-    def fakeSave(op: Option[Px], g: (String, Boolean)) = IO[Px] {
+    def fakeSave(op: Option[Px], g: CustomReqTypeNV) = IO[Px] {
       val r = op match {
-        case None => CustomReqType(666, g._1, "No mame yet", Set.empty, g._2, true)
-        case Some((_, p)) => p.copy(mnemonic = g._1, implicationReq = g._2)
+        case None          => FakeDao.customReqType.create(g)
+        case Some((id, p)) => FakeDao.customReqType.update(id, g)
       }
-      console.log(s"SAVING $op =[$g]=> $r")
       (r.id, r)
     }
 
@@ -140,6 +129,10 @@ object Phase2 extends js.JSApp {
 
     private def row(mnemonic: Modifier, name: Modifier, impReq: Modifier, delButton: Modifier) =
       Seq(td(mnemonic), td(name), td(impReq), td(delButton))
+
+    private val UC: ReqTypeMnemonic = "UC"
+    private val ucRow =
+      tr(key := UC, row(raw(UC), raw("Use Case"), input(`type`:="checkbox", checked := "checked", disabled := "disabled"), Nop))
 
     private val NewRow = {
       Spec.unsavedRow((T, vv) => {
@@ -154,7 +147,7 @@ object Phase2 extends js.JSApp {
       Spec.savedRow((T, id, p, vv) => {
         val (mnemonic, impReq) = vv
         val delButton = button(onclick ~~> T.runState(delete(id)))("Delete")
-        tr(keyAttr := id)(row(mnemonic, p.name, impReq, delButton))
+        tr(keyAttr := id.value)(row(mnemonic, p.name, impReq, delButton))
       })
     }
 
@@ -163,7 +156,11 @@ object Phase2 extends js.JSApp {
       .render(T => {
 
         val newRow = NewRow.render(T)(())
-        val savedRows = Spec.renderSaved(T, SavedRow)(_.sortBy(_._2._1.mnemonic))
+        val savedRows = { //Spec.renderSaved(T, SavedRow)(_.sortBy(_._2._1.mnemonic))
+          val rr = SavedRow.render(T)
+          val rows = (UC -> ucRow) #:: Spec.getSaved(T).map(x => (x._2.mnemonic, rr(x._1)))
+          rows.sortBy(_._1).map(_._2).toJsArray
+        }
 
         div(
           button(onclick ~~> T.runState(Create))("Create"),
