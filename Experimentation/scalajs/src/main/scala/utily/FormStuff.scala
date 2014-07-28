@@ -27,10 +27,6 @@ import monocle.function.Field2._
 import Lib._
 import EditorStuff._
 
-// TODO validation: check uniqueness (local)
-// TODO compose a row (Spec2) with ctrls (deletion)
-// TODO compose homogeneous rows (Spec2's) to create a table
-// TODO compose hetrogeneous (unsaved + saved) rows (Spec2's) to create a table
 // TODO add drag/drop ordering to table
 // TODO state date structure help
 
@@ -41,18 +37,21 @@ import EditorStuff._
  * [5] saves only when entire row is valid
  * [4] validation as you type
  * [4] input correction (valid or not)
+ * [3] field validity depending on other fields (in same row)
+ * [3] field validity depending on other rows
  * [2] escape to cancel change
+ *
+ * Done in Isolation
+ * ~~~~~~~~~~~~~~~~~
+ * [5.5] drag to reorder
+ * [5.3] delete
+ * [5.2] show/hide deleted
  *
  * TODO
  * ~~~~
  * [ priority . effort ]
  *       handle name swap (should save both, not just one)
- * [5.5] drag to reorder
- * [5.3] delete
- * [5.2] show/hide deleted
  * [3.5] different view when field not in edit (sometimes the edit view is too noisy)
- * [3.5] field validity depending on other fields (in same row)
- * [3.5] field validity depending on other rows
  * [2.3] visual indication of save-in-progress & save-complete
  * [2.2] server-side only errors / errors on save
  * [1.3] validators with composite types (like new & change password)

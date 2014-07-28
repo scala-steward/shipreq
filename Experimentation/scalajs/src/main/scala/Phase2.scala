@@ -105,8 +105,7 @@ object Phase2 extends js.JSApp {
 
   object ReqTypes {
 
-    // TODO prevent reuse over old mnemonics & UC
-    // TODO Add an uneditable UC type in there
+    // TODO render old mnemonics
 
     type P = CustomReqType
     val PreSpec = SpecBuilder[P](
@@ -115,7 +114,6 @@ object Phase2 extends js.JSApp {
       ).mapO(CustomReqTypeNV.fromTuple)
       .rowId[CustomReqTypeId]
 
-    //def uniqueness[S, W, A, I](extract: (S,W) => Stream[A], cmp: (A, I) => Boolean, errorMsg: ErrorMsg = "Already in use. Duplicate.") =
     // TODO UC hardcoding here
     val mnemonicUniqueness = uniqueness[PreSpec.S, PreSpec.RowId, ReqTypeMnemonic, String](
       (s,ow) => UC #:: s._1.toStream.filterNot(x => ow.fold(false)(_ == x._1)).flatMap{x=>
@@ -171,6 +169,18 @@ object Phase2 extends js.JSApp {
       })
     }
 
+    def deletedRow(T: ComponentStateFocus[PreSpec.S], p: P) =
+      tr(cls := "del", key := p.id.value, row(
+        raw(p.mnemonic),
+        raw(p.name),
+        checkbox(p.implicationRequired)(disabled := "disabled"),
+        button(onclick ~~> T.runState(restoreS(p.id)))("Restore")))
+
+    val restoreS = Spec.modAndSaveS(px => IO {
+      FakeDao.customReqType.restore(px._1)
+      softDeleteL.set(px, true)
+    })
+
     case class ReqTypeTableProps(items: List[CustomReqType], showDeleted: Boolean)
 
     val ReqTypeTableComp = ReactComponentB[ReqTypeTableProps]("ReqTypeTable")
@@ -178,33 +188,25 @@ object Phase2 extends js.JSApp {
       .render(T => {
 
         val newRow = NewRow.render(T)(())
-        val savedRows = {
+
+        type RS = Stream[(ReqTypeMnemonic, Tag)]
+        def savedRows: RS = {
           val rr = SavedRow.render(T)
           // TODO UC hardcoding here
-          val rows = (UC -> ucRow) #:: Spec.getSaved(T).filter(_._2.alive).map(x => (x._2.mnemonic, rr(x._1)))
-          rows.sortBy(_._1).map(_._2).toJsArray
+          (UC -> ucRow) #:: Spec.getSaved(T).filter(_._2.alive).map(x => (x._2.mnemonic, rr(x._1)))
         }
-        def deletedRows: Modifier = {
-          val restoreS = Spec.modAndSaveS(px => IO {
-            FakeDao.customReqType.restore(px._1)
-            softDeleteL.set(px, true)
-          })
-          def r(p: P) =
-            tr(cls := "del", key := p.id.value, row(
-              raw(p.mnemonic),
-              raw(p.name),
-              checkbox(p.implicationRequired)(disabled := "disabled"),
-              button(onclick ~~> T.runState(restoreS(p.id)))("Restore")))
-          Spec.getSaved(T).map(_._2).filterNot(_.alive).sortBy(_.mnemonic).map(r).toJsArray
-        }
+        def deletedRows: RS =
+          if (T.props.showDeleted)
+            Spec.getSaved(T).map(_._2).filterNot(_.alive).map(p => (p.mnemonic, deletedRow(T, p)))
+          else Stream.empty
+
+        val savedAndDeleted = (savedRows #::: deletedRows).sortBy(_._1).map(_._2).toJsArray
 
         div(
           button(onclick ~~> T.runState(Create))("Create"),
           table(
             thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
-            tbody(
-              newRow, savedRows, T.props.showDeleted && deletedRows
-            )
+            tbody(newRow, savedAndDeleted)
           )
         )
 
