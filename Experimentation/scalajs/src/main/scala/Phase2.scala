@@ -7,7 +7,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
+import utily.EditorStuff._
 import utily.FormStuff._
+import utily.SpecN._
 import domainy.Data._
 import domainy.FakeDao
 
