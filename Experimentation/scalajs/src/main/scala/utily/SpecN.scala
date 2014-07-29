@@ -2,7 +2,7 @@ package utily
 
 import japgolly.scalajs.react._
 import scalaz.effect.IO
-import scalaz.{Foldable, Bind}
+import scalaz.{Foldable, Bind, Equal}
 import scalaz.syntax.bind._
 import monocle.function.Field1._
 import monocle.function.Field2._
@@ -20,7 +20,7 @@ object SpecN {
    * @tparam P "Persisted", the last saved copy of the row.
    * @tparam V "View", the type of the DOM representation.
    */
-  case class Spec2[G, P, V, I1, C1, O1, I2, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]
+  case class Spec2[G, P, V, I1:Equal, C1, O1, I2:Equal, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]
                                                     , oo2g: ((O1, O2)) => G
                                                      ) {
     type E = (I1,I2)
@@ -36,7 +36,7 @@ object SpecN {
   /**
    * Field attributes + TABLE ROW-ID + [ROW-ID & STATE AWARE VALIDATORS]
    */
-  case class Spec2X[S, W, G, P, V, I1, C1, O1, I2, C2, O2](
+  case class Spec2X[S, W, G, P, V, I1:Equal, C1, O1, I2:Equal, C2, O2](
       spec: Spec2[G, P, V, I1, C1, O1, I2, C2, O2],
       ctxV1: Option[CtxValidation[S, W, O1]],
       ctxV2: Option[CtxValidation[S, W, O2]]
@@ -84,7 +84,7 @@ object SpecN {
     }
   }
 
-  class SpecBuilder2[P, O, V, I1, C1, O1, I2, C2, O2](
+  class SpecBuilder2[P, O, V, I1:Equal, C1, O1, I2:Equal, C2, O2](
       s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2],
       buildO: ((O1,O2)) => O) {
 
@@ -134,7 +134,7 @@ object SpecN {
    * @tparam P "Persisted", the last saved copy of the row.
    * @tparam V "View", the type of the DOM representation.
    */
-  case class Spec3[G, P, V, I1, C1, O1, I2, C2, O2, I3, C3, O3]
+  case class Spec3[G, P, V, I1:Equal, C1, O1, I2:Equal, C2, O2, I3:Equal, C3, O3]
   (s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2], s3: SpecSpliceE[P,V,I3,C3,O3]
                                                     , oo2g: ((O1, O2, O3)) => G
                                                      ) {
@@ -151,7 +151,7 @@ object SpecN {
   /**
    * Field attributes + TABLE ROW-ID + [ROW-ID & STATE AWARE VALIDATORS]
    */
-  case class Spec3X[S, W, G, P, V, I1, C1, O1, I2, C2, O2, I3, C3, O3](
+  case class Spec3X[S, W, G, P, V, I1:Equal, C1, O1, I2:Equal, C2, O2, I3:Equal, C3, O3](
                                                             spec: Spec3[G, P, V, I1, C1, O1, I2, C2, O2, I3, C3, O3],
                                                             ctxV1: Option[CtxValidation[S, W, O1]],
                                                             ctxV2: Option[CtxValidation[S, W, O2]],
@@ -204,7 +204,7 @@ object SpecN {
     }
   }
 
-  class SpecBuilder3[P, O, V, I1, C1, O1, I2, C2, O2, I3, C3, O3](
+  class SpecBuilder3[P, O, V, I1:Equal, C1, O1, I2:Equal, C2, O2, I3:Equal, C3, O3](
                                                        s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2],s3: SpecSpliceE[P,V,I3,C3,O3],
                                                        buildO: ((O1,O2,O3)) => O) {
 
@@ -247,9 +247,9 @@ object SpecN {
   // ===================================================================================================================
 
   def SpecBuilder[P] = new {
-    def apply[V, I1, C1, O1, I2, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]) =
+    def apply[V, I1:Equal, C1, O1, I2:Equal, C2, O2](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2]) =
       new SpecBuilder2[P, (O1,O2), V, I1, C1, O1, I2, C2, O2](s1, s2, oo=>oo)
-    def apply[V, I1, C1, O1, I2, C2, O2, I3, C3, O3](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2], s3: SpecSpliceE[P,V,I3,C3,O3]) =
+    def apply[V, I1:Equal, C1, O1, I2:Equal, C2, O2, I3:Equal, C3, O3](s1: SpecSpliceE[P,V,I1,C1,O1], s2: SpecSpliceE[P,V,I2,C2,O2], s3: SpecSpliceE[P,V,I3,C3,O3]) =
       new SpecBuilder3[P, (O1,O2,O3), V, I1, C1, O1, I2, C2, O2, I3, C3, O3](s1, s2, s3, oo=>oo)
   }
 

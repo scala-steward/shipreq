@@ -1,10 +1,11 @@
 package utily
 
+import org.scalajs.dom.console
 import org.scalajs.dom.extensions.KeyCode
 import scala.runtime.AbstractFunction3
 import scalaz.effect.IO
 import scalaz.Scalaz.Id
-import scalaz.{Foldable, Bind, \/, \/-, -\/}
+import scalaz.{Foldable, Bind, \/, \/-, -\/, Equal}
 import scalaz.std.option._
 import scalaz.syntax.bind._
 import scalaz.syntax.foldable._
@@ -18,7 +19,7 @@ import ScalazReact._
 
 object EditorStuff {
 
-  class FormAttrShit[S, I, C, O, M[_] : Bind : Foldable](
+  class FormAttrShit[S, I : Equal, C, O, M[_] : Bind : Foldable](
       vs: S => Validator[I, C, O] // Conflation. S not required for i↔c
       , s2mc: S => M[C]
       , iL: WierdLens[M, S, S, I]
@@ -38,14 +39,23 @@ object EditorStuff {
         resolvem(s2mc(s))(c => change(vs(s) c2i c) addCallback callback)
       )
 
-    private def editEnd =
-      ReactS.getT[IO, S].flatMap(s => {
-        val v = vs(s)
-        // optimisation: compare I & I here, don't try to save if equal
-        // correctness, don't try to save if invalid
-        val ms = iL.mod(s, v.c2i compose v.correct)
-        resolvemio(ms)(s => ReactS.modT(trySave))
+    private def correctInput =
+      ReactS[S, Option[C]](s1 => {
+        val v = vs(s1)
+        val r = for {
+          i1 <- iL.getO(s1)
+          c = v.correct(i1)
+          i2 = v.c2i(c)
+          s2 <- iL.setO(s1, i2) if !implicitly[Equal[I]].equal(i1, i2)
+        } yield (s2, Some(c))
+        r.getOrElse((s1, None))
       })
+
+    private def editEnd =
+      correctInput.liftIO.flatMap {
+        case Some(_) => ReactS.modT(trySave)
+        case None    => ReactS.retT[IO, S, Unit](())
+      }
 
     def render[V](editor: Editor[I, V], T: ComponentStateFocus[S]): M[V] = {
       val s = T.state
@@ -62,7 +72,10 @@ object EditorStuff {
   def foldMapAP[M[_]: Foldable, A, B](m: M[A], b: => B)(f: A => B): B =
     m.foldr(b)(a => _ => f(a))
 
-  case class WierdLens[M[_]: Bind, S, T, A](get: S => M[A], set: (S, A) => M[T]) {
+  def foldableToOption[M[_]: Foldable, A](m: M[A]): Option[A] =
+    foldMapAP(m, None: Option[A])(Some.apply)
+
+  case class WierdLens[M[_]: Bind : Foldable, S, T, A](get: S => M[A], set: (S, A) => M[T]) {
     def mod(s: S, f: A => A): M[T] = get(s).flatMap(a => set(s, f(a)))
     def map[B](l: SimpleLens[A, B]) = WierdLens[M, S, T, B](
       s => get(s).map(l.get),
@@ -70,6 +83,9 @@ object EditorStuff {
 
     def dimap[F, G](f: F => S, g: T=> G) =
       WierdLens[M, F, G, A](get compose f, (b, a) => implicitly[Bind[M]].map(set(f(b), a))(g))
+
+    def getO: S => Option[A] = s => foldableToOption(get(s))
+    def setO: (S,A) => Option[T] = (s,a) => foldableToOption(set(s,a))
   }
 
   object WierdLens {

@@ -2,7 +2,10 @@ import org.scalajs.dom
 import org.scalajs.dom.console
 import scala.scalajs.js
 import scalaz.syntax.bind._
+import scalaz.Equal
 import scalaz.effect.IO
+import scalaz.std.string.stringInstance
+import scalaz.std.anyVal.booleanInstance
 import monocle.function.Field2._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._

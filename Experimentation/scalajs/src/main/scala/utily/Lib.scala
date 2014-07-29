@@ -13,9 +13,9 @@ object Lib {
 
   implicit def autoLiftStateIntoIO[S, A](s: StateT[Id, S, A]): StateT[IO, S, A] = s.lift[IO]
 
-//  implicit class StateExt[S, A](val u: StateT[Id, S, A]) extends AnyVal {
-//    def liftIO = autoLiftStateIntoIO(u)
-//  }
+  implicit class StateExt[S, A](val u: StateT[Id, S, A]) extends AnyVal {
+    def liftIO = autoLiftStateIntoIO(u)
+  }
 
 //  implicit final class ComponentScope_SS_Ext3[S](val u: ComponentScope_SS[S]) extends AnyVal {
     //    @inline def setStateL [V](l: Setter[S, S, _, V])(v: V)                    = u.modState((s: S) => l.set(s, v))

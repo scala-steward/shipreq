@@ -29,6 +29,7 @@ import EditorStuff._
 
 // TODO add drag/drop ordering to table
 // TODO state date structure help
+// TODO avoid NOP saves
 
 /**
  * Done
@@ -58,9 +59,6 @@ import EditorStuff._
  *
  */
 object FormStuff {
-
-  def foldableToOption[M[_]: Foldable, A](m: M[A]): Option[A] =
-    foldMapAP(m, None: Option[A])(Some.apply)
 
   trait Renderable[S, G, P, E, V, VV] {
     final def render(eL: SimpleLens[S, E], s2mp: S => P) = renderM[Id](WierdLens from eL, s2mp) _
