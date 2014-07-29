@@ -110,6 +110,7 @@ object Phase2 extends js.JSApp {
     type P = CustomReqType
     val PreSpec = SpecBuilder[P](
         SpecAttr[P](_.mnemonic)(MnemonicValidator)(TextInputEditor),
+        SpecAttr[P](_.name)(ReqNameValidator)(TextInputEditor),
         SpecAttr[P](_.implicationRequired)(NopValidator)(CheckboxEditor)
       ).mapO(CustomReqTypeNV.fromTuple)
       .rowId[CustomReqTypeId]
@@ -124,7 +125,7 @@ object Phase2 extends js.JSApp {
       "Mnemonic has already been used."
     )
 
-    val Spec = PreSpec.ctxAwareValidators(Some(mnemonicUniqueness), None)
+    val Spec = PreSpec.ctxAwareValidators(Some(mnemonicUniqueness), Some(PreSpec.uniquenessCheck(_.name)), None)
       .saveFn(fakeSave)
     type Px = PreSpec.Px
 
@@ -144,7 +145,7 @@ object Phase2 extends js.JSApp {
       (r.id, r)
     }
 
-    private val Create = Spec.createUnsaved(("",false))
+    private val Create = Spec.createUnsaved(("","",false))
 
     private def row(mnemonic: Modifier, name: Modifier, impReq: Modifier, delButton: Modifier) =
       Seq(td(mnemonic), td(name), td(impReq), td(delButton))
@@ -155,15 +156,15 @@ object Phase2 extends js.JSApp {
 
     private val NewRow =
       Spec.unsavedRow((T, vv) => {
-        val (mnemonic, impReq) = vv
+        val (mnemonic, name, impReq) = vv
         val delButton = button(onclick ~~> T.runState(Spec.removeUnsavedS))("Cancel")
-        tr(keyAttr := "new")(row(mnemonic, "NO NAME!", impReq, delButton))
+        tr(keyAttr := "new")(row(mnemonic, name, impReq, delButton))
       })
 
     private val SavedRow =
       Spec.savedRow((T, id, p, vv) => {
-        val (mnemonic, impReq) = vv
-        tr(keyAttr := id.value)(row(mnemonic, p.name, impReq, Deletion.buttons(T, id, HardDelete, SoftDelete)))
+        val (mnemonic, name, impReq) = vv
+        tr(keyAttr := id.value)(row(mnemonic, name, impReq, Deletion.buttons(T, id, HardDelete, SoftDelete)))
       })
 
     def deletedRow(T: ComponentStateFocus[PreSpec.S], p: P) =

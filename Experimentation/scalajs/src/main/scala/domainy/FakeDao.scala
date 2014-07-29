@@ -34,7 +34,7 @@ object FakeDao {
       CustomReqType(CustomReqTypeId(fakeId), nv.mnemonic, Set.empty, "NAME TODO", nv.implicationRequired, true).fakeCreate
 
     def update(id: CustomReqTypeId, v: CustomReqTypeNV) =
-      CustomReqType(id, v.mnemonic, Set.empty, "NAME TODO", v.implicationRequired, true).fakeUpdate
+      CustomReqType(id, v.mnemonic, Set.empty, v.name, v.implicationRequired, true).fakeUpdate
 
     def deleteHard(id: CustomReqTypeId) = id.fakeDeleteHard
     def deleteSoft(id: CustomReqTypeId) = id.fakeDeleteSoft

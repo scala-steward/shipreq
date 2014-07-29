@@ -115,6 +115,20 @@ object FormStuff {
       }
   }
 */
+  /**
+   * Single field attribute: types & validation logic.
+   */
+  case class SpecSplice[P, I, C, O](p2c: P => C, v: Validator[I, C, O]) {
+    def initial: P => I = v.c2i compose p2c
+    //    def savable(i: I) = v.correctAndValidate(i).toOption
+    def edit[V](e: Editor[I, V]) = SpecSpliceE(this, e)
+  }
+
+  /**
+   * Single field attribute: +renderToView.
+   */
+  case class SpecSpliceE[P, V, I, C, O](s: SpecSplice[P, I, C, O], editor: Editor[I, V])
+
 
   def SpecAttr[P] = new {
     import SpecN._

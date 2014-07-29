@@ -131,6 +131,16 @@ object EditorStuff {
     override def c2i = identity
   }
 
+  object ReqNameValidator extends Validator[String, String, String] {
+    override def liveCorrect = identity
+    override def correct = _.trim
+    override def validate = {
+      case "" => -\/("It's blank!")
+      case s => \/-(s)
+    }
+    override def c2i = identity
+  }
+
   def NopValidator[I] : Validator[I,I,I] = new Validator[I,I,I] {
     override def liveCorrect = identity
     override def correct = identity

@@ -40,7 +40,7 @@ object Data {
   }
   */
 
-  final case class CustomReqTypeNV(mnemonic: ReqTypeMnemonic, implicationRequired: Boolean)
+  final case class CustomReqTypeNV(mnemonic: ReqTypeMnemonic, name: String, implicationRequired: Boolean)
   object CustomReqTypeNV { val fromTuple = (apply _).tupled}
   final case class CustomReqType(id: CustomReqTypeId,
                                  mnemonic: ReqTypeMnemonic,
