@@ -1,5 +1,8 @@
 package utily
 
+import org.scalajs.dom
+import org.scalajs.dom.HTMLInputElement
+
 import scalaz.StateT
 import scalaz.Scalaz.Id
 import scalaz.effect.IO
@@ -29,12 +32,13 @@ object Lib {
 //    @inline def runStateC(m: StateT[Id, S, _])(callback: () => Unit) = runState(m, callback())
 //  }
 
+  type InputEvent = SyntheticEvent[HTMLInputElement]
+
   def textChangeRecv(f: String => Unit): InputEvent => Unit = e => f(e.target.value)
 //  def textChangeRecvL[State](t: ComponentScope_SS[State], l: Setter[State, State, _, String]) =
 //    textChangeRecv(t setStateL l)
 
-  def textChangeRecvIO(f: String => IO[Unit]): InputEvent => IO[Unit] =
-    e => f(e.target.value)
+  def textChangeRecvIO(f: String => IO[Unit]): InputEvent => IO[Unit] = e => f(e.target.value)
 
   def textChangeRecvX[R](f: String => R): InputEvent => R = e => f(e.target.value)
 

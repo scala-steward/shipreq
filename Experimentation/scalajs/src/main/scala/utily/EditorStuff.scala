@@ -1,6 +1,6 @@
 package utily
 
-import org.scalajs.dom.console
+import org.scalajs.dom.{HTMLInputElement, console}
 import org.scalajs.dom.extensions.KeyCode
 import scala.runtime.AbstractFunction3
 import scalaz.effect.IO
@@ -204,13 +204,14 @@ object EditorStuff {
                           , T: ComponentStateFocus[S]
                            ) = {
 
-      val cancelOnEscape: InputEvent => ReactST[IO, S, Unit] =
-        e => e.keyboardEvent
-          .filter(_.keyCode == KeyCode.escape)
-          .fold(ReactS.retT[IO,S,Unit](()))(_ => {
-          val t = e.target
-          ReactS.retM[IO, S, Unit](e.preventDefaultIO >> e.stopPropagationIO) >> onCancel(IO(t.blur()))
-        })
+      val cancelOnEscape: ReactKeyboardEventH => ReactST[IO, S, Unit] =
+        e => e.key match {
+          case "Escape" => // TODO use KeyValue
+            val t = e.target
+            ReactS.retM[IO, S, Unit](e.preventDefaultIO >> e.stopPropagationIO) >> onCancel(IO(t.blur()))
+          case _ =>
+            ReactS.retT[IO,S,Unit](())
+        }
 
       div(
         node(

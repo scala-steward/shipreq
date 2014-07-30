@@ -71,27 +71,27 @@ object DND {
 
     def initialState: CState = false
 
-    def dragStart[A](a: A, p: CProps[A]): SyntheticEvent[dom.Node] => StateIO[Unit] =
+    def dragStart[A](a: A, p: CProps[A]): SyntheticDragEvent[dom.Node] => StateIO[Unit] =
       e => StateT(_ => p.onDragStart(a) >> IO {
         //console.log(s"dragStart: $p")
-        e.dragEvent.get.dataTransfer.setData("text", "managed")
+        e.dataTransfer.setData("text", "managed")
         (true, ())
       })
 
     def dragEnd[A](p: CProps[A]): StateIO[Unit] =
       StateT(_ => p.onDragEnd >> IO(false, ()))
 
-    def dragOver[A](a: A, p: CProps[A], s: => CState): SyntheticEvent[dom.Node] => IO[Unit] =
+    def dragOver[A](a: A, p: CProps[A], s: => CState): SyntheticDragEvent[dom.Node] => IO[Unit] =
       e => IO {
         //console.log(s"dragOver: dragging = $s / dragover = ${p.dragover}")
         if (!s) {
           e.preventDefault()
-          e.dragEvent.get.dataTransfer.asInstanceOf[js.Dynamic].updateDynamic("dropEffect")("move")
+          e.dataTransfer.asInstanceOf[js.Dynamic].updateDynamic("dropEffect")("move")
           p.onDragOver(a).unsafePerformIO()
         }
       }
 
-    def drop[A](p: CProps[A]): SyntheticEvent[dom.Node] => IO[Unit] =
+    def drop[A](p: CProps[A]): SyntheticDragEvent[dom.Node] => IO[Unit] =
       _.preventDefaultIO >> p.onMove
 
     def renderDragHandle[S, A](p: CProps[A], a: A, T: ComponentStateFocus[CState]) =
