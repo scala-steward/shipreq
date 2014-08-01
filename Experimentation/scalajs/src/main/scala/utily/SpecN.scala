@@ -102,25 +102,16 @@ object SpecN {
       private type Unsaved = Option[I]
       private type Saved = Map[DataId, (P, I)]
       type S = (Saved, Unsaved)
-      private val savedL = _1[S, Saved]
-      private val unsavedL = _2[S, Unsaved]
-      type Px = (DataId, P)
-      type OO = O
+      private def savedL = _1[S, Saved]
 
       def uniquenessCheck[A](f: P => A) = uniqueness[S, RowId, (DataId, (P, I)), A](
         (s,ow) => savedL.get(s).toStream.filterNot(wpi => ow.fold(false)(_ == wpi._1)),
         (wpi,a) => a == f(wpi._2._1)
       )
 
-      def ctxAwareValidators(cv1: Option[CtxValidation[S, RowId, O1]], cv2: Option[CtxValidation[S, RowId, O2]]) = new {
-        def saveFn(saveIO: (Option[Px], O) => IO[Px]) = {
-          val spec = Spec2X(Spec2(s1, s2, buildO), cv1, cv2)
-          val renderable: Option[DataId] => Renderable[S,O,P,I,V,VV] = spec.forRow
-          val PtoI: P => I = spec.spec.initial
-          def mkPI(p: P): (P,I) = (p, PtoI(p))
-          val initialState: Seq[(DataId, P)] => S = xs => (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
-          new TableSpec(renderable, savedL, unsavedL, PtoI, initialState, saveIO)
-        }
+      def ctxAwareValidators(cv1: Option[CtxValidation[S, RowId, O1]], cv2: Option[CtxValidation[S, RowId, O2]]) = {
+        val spec = Spec2X(Spec2(s1, s2, buildO), cv1, cv2)
+        new TableSpecB[DataId, O, P, I, V, VV](spec.spec.initial).renderFn(spec.forRow)
       }
     }
   }
@@ -222,25 +213,16 @@ object SpecN {
       private type Unsaved = Option[I]
       private type Saved = Map[DataId, (P, I)]
       type S = (Saved, Unsaved)
-      private val savedL = _1[S, Saved]
-      private val unsavedL = _2[S, Unsaved]
-      type Px = (DataId, P)
-      type OO = O
+      private def savedL = _1[S, Saved]
 
       def uniquenessCheck[A](f: P => A) = uniqueness[S, RowId, (DataId, (P, I)), A](
         (s,ow) => savedL.get(s).toStream.filterNot(wpi => ow.fold(false)(_ == wpi._1)),
         (wpi,a) => a == f(wpi._2._1)
       )
 
-      def ctxAwareValidators(cv1: Option[CtxValidation[S, RowId, O1]], cv2: Option[CtxValidation[S, RowId, O2]], cv3: Option[CtxValidation[S, RowId, O3]]) = new {
-        def saveFn(saveIO: (Option[Px], O) => IO[Px]) = {
-          val spec = Spec3X(Spec3(s1, s2, s3, buildO), cv1, cv2, cv3)
-          val renderable: Option[DataId] => Renderable[S,O,P,I,V,VV] = spec.forRow
-          val PtoI: P => I = spec.spec.initial
-          def mkPI(p: P): (P,I) = (p, PtoI(p))
-          val initialState: Seq[(DataId, P)] => S = xs => (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
-          new TableSpec(renderable, savedL, unsavedL, PtoI, initialState, saveIO)
-        }
+      def ctxAwareValidators(cv1: Option[CtxValidation[S, RowId, O1]], cv2: Option[CtxValidation[S, RowId, O2]], cv3: Option[CtxValidation[S, RowId, O3]]) = {
+        val spec = Spec3X(Spec3(s1, s2, s3, buildO), cv1, cv2, cv3)
+        new TableSpecB[DataId, O, P, I, V, VV](spec.spec.initial).renderFn(spec.forRow)
       }
     }
   }

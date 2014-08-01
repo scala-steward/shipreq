@@ -127,6 +127,25 @@ object FormStuff {
    */
   case class SpecSpliceE[P, V, I, C, O](s: SpecSplice[P, I, C, O], editor: Editor[I, V])
 
+  class TableSpecB[DataId, O, P, I, V, VV](PtoI: P => I) {
+    private type Unsaved = Option[I]
+    private type Saved = Map[DataId, (P, I)]
+    private type S = (Saved, Unsaved)
+    private def savedL = _1[S, Saved]
+    private def unsavedL = _2[S, Unsaved]
+
+    def renderFn(renderable: Option[DataId] => Renderable[S, O, P, I, V, VV]) = new {
+
+      def saveFn2(saveIO: (Option[P], O) => IO[P], id: P => DataId) =
+        saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
+
+      def saveFn(saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) = {
+        def mkPI(p: P): (P, I) = (p, PtoI(p))
+        val initialState: Seq[(DataId, P)] => S = xs => (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
+        new TableSpec(renderable, savedL, unsavedL, PtoI, initialState, saveIO)
+      }
+    }
+  }
 
   def SpecAttr[P] = new {
     import SpecN._

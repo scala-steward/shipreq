@@ -53,19 +53,17 @@ object Phase2 extends js.JSApp {
                   ).mapO(CustomIssueTypeV.fromTuple)
                   .rowId[CustomIssueTypeId]
     val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
-                 .saveFn(fakeSave)
-    type Px = PreSpec.Px
+                 .saveFn2(fakeSave, _.id)
 
-    def fakeSave(prev: Option[Px], newValues: CustomIssueTypeV) = IO[Px] {
-      val n = prev match {
+    def fakeSave(prev: Option[P], newValues: CustomIssueTypeV) = IO[P] {
+      prev match {
         case None =>
           FakeDao.customIssueType.create(newValues)
-        case Some((_,old)) if old.value == newValues =>
+        case Some(old) if old.value == newValues =>
           old
-        case Some((id,_)) =>
-          FakeDao.customIssueType.update(newValues withId id)
+        case Some(p) =>
+          FakeDao.customIssueType.update(newValues withId p.id)
       }
-      (n.id, n)
     }
 
     def fakeDelete(id: CustomIssueTypeId) = IO { FakeDao.customIssueType.deleteHard(id) }
@@ -133,8 +131,7 @@ object Phase2 extends js.JSApp {
     )
 
     val Spec = PreSpec.ctxAwareValidators(Some(mnemonicUniqueness), Some(PreSpec.uniquenessCheck(_.name)), None)
-      .saveFn(fakeSave)
-    type Px = PreSpec.Px
+      .saveFn2(fakeSave, _.id)
 
     val Deletion = new DeletionThingy(Spec)(
       SimpleLens2[P](_.alive)((a,b) => a.copy(alive = b)),
@@ -144,16 +141,15 @@ object Phase2 extends js.JSApp {
         case Restore    => FakeDao.customReqType.restore(id)
       }))
 
-    def fakeSave(op: Option[Px], newValues: CustomReqTypeNV) = IO[Px] {
-      val r = op match {
+    def fakeSave(op: Option[P], newValues: CustomReqTypeNV) = IO[P] {
+      op match {
         case None =>
           FakeDao.customReqType.create(newValues)
-        case Some((_,old)) if old.value == newValues =>
+        case Some(old) if old.value == newValues =>
           old
-        case Some((id, _)) =>
-          FakeDao.customReqType.update(id, newValues)
+        case Some(p) =>
+          FakeDao.customReqType.update(p.id, newValues)
       }
-      (r.id, r)
     }
 
     private val Create = Spec.createUnsaved(("","",false))
