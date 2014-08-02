@@ -7,6 +7,7 @@
       body {padding-bottom:12em}
       table {border-collapse: collapse}
       th,td {border: solid 1px #000; padding: 1px 4px}
+      .todo {color:#d00}
       .notes {color:#338; margin-top: 2em; margin-left: -3em; font-style:italic}
       .notes ol, .notes ul {margin-top:0.2em}
       section.screen {border-top: solid 1px black; margin-top: 8em; padding-top: 0.7em; padding-left: 4em}
@@ -54,11 +55,11 @@
     %h3 Low Frequency
     %ol
       %li
-        %a(href="#fields") Cfg: Fields
+        %a.todo(href="#fields") Cfg: Fields
       %li
         %a(href="#reqtypes") Cfg: Requirement Types
       %li
-        %a(href="#grouping-cfg") Cfg: Groupings
+        %a.todo(href="#grouping-cfg") Cfg: Groupings
       %li
         %a(href="#incmp-cfg") Cfg: Incompletions
       %li
@@ -673,10 +674,12 @@
     -#==============================================================================================
     %section.screen
       %a#fields
-        %h1 Cfg: Fields
+        %h1.todo Cfg: Fields
 
-      %h4 Active Fields
       %button Create
+      %div
+        %input(type="checkbox")
+        Show deleted fields
       %table
         %tr
           %th Name
@@ -695,7 +698,6 @@
           %td
             %a(href="#") 27
           %td
-            %button Edit
             %button Delete
             [Drag]
         %tr
@@ -707,7 +709,6 @@
           %td
             %a(href="#") 432
           %td
-            %button Edit
             %button Delete
             [Drag]
         %tr
@@ -718,31 +719,16 @@
           %td All.
           %td 0
           %td
-            %button Edit
             %button Delete Forever
             [Drag]
 
-      %h4 Deleted Fields
-      %table
-        %tr
-          %th Name
-          %th RefKey
-          %th Field Type
-          %th Mandatory
-          %th Req Types
-          %th Usage
-          %th Ctrls
-        %tr
-          %td Description
-          %td \.desc
-          %td Text
-          %td ☐
-          %td Only: MF, UC.
-          %td
-            %a(href="#") 27
-          %td
-            %button Restore
-            [Drag]
+      %h3 Fields types todo
+        %ul
+          %li Text
+          %li Grouping
+          %li Implication
+          %li UC: Courses
+          %li UC: Flowgraph
 
       .notes Notes.
         %ol
@@ -756,8 +742,10 @@
       %a#reqtypes
         %h1 Cfg: Requirement Types
 
-      %h4 Active Fields
       %button Create
+      %div
+        %input(type="checkbox")
+        Show deleted reqs
       %table
         %tr
           %th Mnemonic
@@ -766,45 +754,39 @@
           %th Requirements
           %th Ctrls
         %tr
-          %td BR
-          %td Business Requirement
-          %td ☐
+          %td %input(type="text" value="BR")
+          %td %input(type="text" value="Business Requirement")
+          %td %input(type="checkbox")
           %td 0
           %td
-            %button Edit
             %button Delete Forever
         %tr
-          %td MF 
+          %td
+            %input(type="text" value="MF")
             .del F
-          %td Major Feature
-          %td ☐
+          %td %input(type="text" value="Major Feature")
+          %td %input(type="checkbox")
           %td
             %a(href="#") 27
           %td
-            %button Edit
             %button Delete
         %tr
-          %td FR
-          %td Functional Requirement
-          %td ☑
+          %td %input(type="text" value="FR")
+          %td %input(type="text" value="Functional Requirement")
+          %td %input(type="checkbox" checked="checked")
           %td
             %a(href="#") 348
           %td
-            %button Edit
             %button Delete
 
-      %h4 Deleted Fields
-      [Blah blah blah]
-
-      .notes Notes.
+      /.notes Notes.
         %ol
-          %li This should work the same way the <a href="#fields">Fields</a> screen works.
 
 
     -#==============================================================================================
     %section.screen
       %a#grouping-cfg
-        %h1 Cfg: Groupings
+        %h1.todo Cfg: Groupings
 
       %table
         %tr
@@ -888,6 +870,9 @@
 
       %h3 User-Defined Incompletion Types
       %button Create
+      %div
+        %input(type="checkbox")
+        Show deleted reqs
       %table
         %tr
           %th Name &amp; RefKey
@@ -900,8 +885,7 @@
           %td
             %a(href="#") 26
           %td
-            %button Edit
-            %button Delete Forever
+            %button Delete
         %tr
           %td
             %input(value="TBD")
@@ -909,23 +893,45 @@
             %textarea
               Pending discussion with a client.
           %td
-            %a(href="#") 4
+            %a(href="#") 0
           %td
             %button Delete Forever
 
-      %h3 Req-Types requiring implication
-      %div
-        %input(type="checkbox")
-        CO: Constraints
-      %div
-        %input(type="checkbox" checked="checked")
-        FR: Functional Requirements
-      %div
-        %input(type="checkbox")
-        MF: Major Features
-      %div
-        %input(type="checkbox" checked="checked")
-        QR: Quality Requirements
+      %h3 Other Causes of Incompletion
+      %table
+        %tr
+          %th Req-Types requiring implication
+          %th Mandatory Fields
+        %tr
+          %td
+            %div
+              %input(type="checkbox")
+              CO: Constraints
+            %div
+              %input(type="checkbox" checked="checked")
+              FR: Functional Requirements
+            %div
+              %input(type="checkbox")
+              MF: Major Features
+            %div
+              %input(type="checkbox" checked="checked")
+              QR: Quality Requirements
+          %td
+            %div
+              %input(type="checkbox")
+              Description
+            %div
+              %input(type="checkbox" checked="checked")
+              Priority
+            %div
+              %input(type="checkbox")
+              MF
+            %div
+              %input(type="checkbox" checked="checked")
+              Business Rules and Constraints
+            %div
+              %input(type="checkbox" checked="checked")
+              Notes and Issues
 
       /.notes Notes.
         %ol
