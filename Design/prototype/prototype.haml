@@ -21,7 +21,8 @@
       .subscreen {padding-top:1.6em}
       th.l {text-align:left}
       .shrna {text-align:center; color:#888}
-      .focuscell {border: solid 2px #008}
+      .focusrow, .focuscell {border: solid 2px #008}
+      .focusrow td {background: #f4f4ff}
       .left-th th {text-align:left}
       .l1 {padding-left:4ex}
       .l2 {padding-left:8ex}
@@ -36,6 +37,10 @@
       .causality td.b {font-weight:bold}
 
       .field-reqtypes label {margin-right: 1.2ex}
+
+      .cfggrp .l2 .n {padding-left: 4ex}
+      .cfggrp .e {text-align:center}
+      .usage {text-align:right}
 
   %body
     %h1 SHIPREQ PHASE-2 PROTOTYPE
@@ -61,7 +66,7 @@
       %li
         %a(href="#reqtypes") Cfg: Requirement Types
       %li
-        %a.todo(href="#grouping-cfg") Cfg: Groupings
+        %a(href="#grouping-cfg") Cfg: Groupings
       %li
         %a(href="#incmp-cfg") Cfg: Incompletions
       %li
@@ -821,26 +826,21 @@
           %td %input(type="text" value="Business Requirement")
           %td %input(type="checkbox")
           %td 0
-          %td
-            %button Delete Forever
+          %td %button Delete Forever
         %tr
           %td
             %input(type="text" value="MF")
             .del F
           %td %input(type="text" value="Major Feature")
           %td %input(type="checkbox")
-          %td
-            %a(href="#") 27
-          %td
-            %button Delete
+          %td %a(href="#") 27
+          %td %button Delete
         %tr
           %td %input(type="text" value="FR")
           %td %input(type="text" value="Functional Requirement")
           %td %input(type="checkbox" checked="checked")
-          %td
-            %a(href="#") 348
-          %td
-            %button Delete
+          %td %a(href="#") 348
+          %td %button Delete
 
       /.notes Notes.
         %ol
@@ -849,81 +849,112 @@
     -#==============================================================================================
     %section.screen
       %a#grouping-cfg
-        %h1.todo Cfg: Groupings
+        %h1 Cfg: Groupings
 
+      %button Create
+      %div
+        %input(type="checkbox")
+        Show deleted groupings
+
+      %table.cfggrp
+        %tr
+          %th
+          %th Name
+          %th Key
+          %th Enum
+          %th Usage
+          %th Ctrls
+        %tr.l1
+          %td
+          %td.n %input(type="text" value="Priority")
+          %td.k \-
+          %td.e %input(type="checkbox" checked=1)
+          %td.usage %a(href="#") 165
+          %td %button Delete
+        %tr.l2.focusrow
+          %td ☰
+          %td.n %input(type="text" value="High Priority")
+          %td.k %input(type="text" value="pri=high")
+          %td.e \-
+          %td.usage %a(href="#") 80
+          %td %button Delete
+        %tr.l2
+          %td ☰
+          %td.n %input(type="text" value="Medium Priority")
+          %td.k %input(type="text" value="pri=med")
+          %td.e \-
+          %td.usage %a(href="#") 21
+          %td %button Delete
+        %tr.l2
+          %td ☰
+          %td.n %input(type="text" value="Low Priority")
+          %td.k %input(type="text" value="pri=low")
+          %td.e \-
+          %td.usage %a(href="#") 64
+          %td %button Delete
+        %tr.l1
+          %td
+          %td.n %input(type="text" value="Status")
+          %td.k \-
+          %td.e %input(type="checkbox")
+          %td.usage 0
+          %td %button Delete Forever
+        %tr.l2
+          %td ☰
+          %td.n %input(type="text" value="WIP")
+          %td.k %input(type="text" value="WIP")
+          %td.e \-
+          %td.usage 0
+          %td %button Delete Forever
+
+      %h3 Detail Editor
+      %table
+        -# %tr
+          -# %th Name
+          -# %td %input(value="High Priority")
+        %tr
+          %th Description
+          %td %textarea
+        -# %tr
+          -# %th RefKey
+          -# %td %input(value="pri=high")
+        -# %tr
+          -# %th Type
+          -# %td Applicable
+        -# %tr
+          -# %th Enum
+          -# %td %input(type="checkbox" disabled=1)
       %table
         %tr
-          %td.fixpre
-            %button Create
-            %pre Priority
-            %pre  ├── High Priority
-            %pre  ├── Medium Priority
-            %pre  └── Low Priority
-            %pre Blah
-            %pre └── fay
-            %pre     ├── evnznhce
-            %pre     ├── webhket
-            %pre     │   ├── daf7_arser
-            %pre     │   ├── hyi_paser
-            %pre     │   │   ├── jnshkn
-            %pre     │   │   └── strm_reader
-            %pre     │   └── hbi_parser
-            %pre     └── ebsokt
-            %h3 Deleted Groupings / Bin
-            TODO
+          %th Parents
+          %th Children
+        %tr
           %td
-            %h3 Editor
-            %table
-              %tr
-                %th Name
-                %td
-                  %input(value="High Priority")
-              %tr
-                %th Description
-                %td
-                  %textarea
-              %tr
-                %th RefKey
-                %td
-                  %input(value="pri=high")
-              %tr
-                %th Type
-                %td Applicable
-              %tr
-                %th Enum
-                %td
-                  %input(type="checkbox")
+            %ol
+              %li
+                Priority
+                %button Remove
             %div
-              %h3 Parents
-              %ol
-                %li
-                  Priority
-                  %button Remove
-              %div
-                %input
-                %button Add Parent
+              %select %option Status&nbsp;&nbsp;&nbsp;
+              %button Add Parent
+          %td
+            %ol
+              %li
+                ☰ High Priority
+                %button Remove
+              %li
+                ☰ Medium Priority
+                %button Remove
+              %li
+                ☰ Low Priority
+                %button Remove
             %div
-              %h3 Children
-              %ol
-                %li
-                  Priority
-                  %button Remove
-              %div
-                %input
-                %button Add Child
-            %h3 Usage
-            %div Σ applications
-            %div View applications button or something
-            %button Delete
-            %br
-            %br
-            %button Create Child
+              %select %option Status&nbsp;&nbsp;&nbsp;
+              %button Add Child
 
       .notes Notes.
         %ol
-          %li Drag left-side tree to reorder.
-          %li Drag from left-side into editor's parent/child sections.
-          %li Reorder children via right-side children view.
+          %li Can drag from above into detail-editor's parent/child sections.
 
 
     -#==============================================================================================
