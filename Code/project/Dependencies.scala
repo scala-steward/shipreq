@@ -58,7 +58,7 @@ object Deps {
     val all  = core ++ web
   }
 
-  object Akka extends Group("2.3.2", "com.typesafe.akka") { // 2.3.4 breaks taskman ???
+  object Akka extends Group("2.3.4", "com.typesafe.akka") {
     val actor   = dd("akka-actor") ++ dd("akka-slf4j")
     val testkit = dd("akka-testkit")
   }

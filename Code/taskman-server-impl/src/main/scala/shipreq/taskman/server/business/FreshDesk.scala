@@ -101,12 +101,12 @@ object FreshDesk {
     names.traverse[ErrorOr, Group](parseRespGetGroup(_)(j))
 
   def parseRespGetGroup(name: String)(j: JValue): ErrorOr[Group] = {
-    val gs: List[Group] = for {
-      JArray(gs) <- j \\ "group"
-      g          <- gs
-      JString(n) <- g \ "name" if n == name
-      JInt(id)   <- g \ "id"
-    } yield Group(id.toLong, n)
+    val gs = (j \\ "group").children.toStream
+      .map(jj => (jj \ "name", jj \ "id"))
+      .map {
+        case (JString(`name`), JInt(id)) => Some(Group(id.toLong, name))
+        case _ => None
+      }.filter(_.isDefined).map(_.get)
     ErrorOr.fromOptionS(gs.headOption, s"FreshDesk group not found: $name")
   }
 
