@@ -32,13 +32,13 @@
 </g>
 <!-- baseUtil -->
 <g id="node3" class="node"><title>baseUtil</title>
-<ellipse fill="#bbffbb" stroke="black" cx="96" cy="-666" rx="40.8928" ry="18"/>
-<text text-anchor="middle" x="96" y="-662.3" font-family="Times,serif" font-size="14.00">base&#45;util</text>
+<ellipse fill="#bbffbb" stroke="black" cx="79" cy="-666" rx="40.8928" ry="18"/>
+<text text-anchor="middle" x="79" y="-662.3" font-family="Times,serif" font-size="14.00">base&#45;util</text>
 </g>
 <!-- base&#45;&gt;baseUtil -->
 <g id="edge33" class="edge"><title>base&#45;&gt;baseUtil</title>
-<path fill="none" stroke="#aaaaaa" stroke-dasharray="5,2" d="M57.2801,-426.4C52.9768,-432.486 48.8808,-439.219 46,-446 15.7615,-517.176 16.0548,-548.7 46,-620 50.036,-629.61 57.3351,-637.989 65.1315,-644.827"/>
-<polygon fill="#aaaaaa" stroke="#aaaaaa" points="72.9912,-651.14 62.3767,-648.386 69.0929,-648.009 65.1947,-644.877 65.1947,-644.877 65.1947,-644.877 69.0929,-648.009 68.0127,-641.369 72.9912,-651.14 72.9912,-651.14"/>
+<path fill="none" stroke="#aaaaaa" stroke-dasharray="5,2" d="M57.2801,-426.4C52.9768,-432.486 48.8808,-439.219 46,-446 40,-460.123 41.3384,-464.714 40,-480 34.5659,-542.063 28.1965,-560.605 47,-620 49.3075,-627.289 53.2828,-634.403 57.6629,-640.745"/>
+<polygon fill="#aaaaaa" stroke="#aaaaaa" points="63.768,-648.857 54.1592,-643.573 60.7614,-644.862 57.7548,-640.867 57.7548,-640.867 57.7548,-640.867 60.7614,-644.862 61.3504,-638.161 63.768,-648.857 63.768,-648.857"/>
 </g>
 <!-- baseDb -->
 <g id="node4" class="node"><title>baseDb</title>
@@ -62,23 +62,23 @@
 </g>
 <!-- baseRaw -->
 <g id="node2" class="node"><title>baseRaw</title>
-<ellipse fill="#bbffbb" stroke="black" cx="96" cy="-749" rx="43.6818" ry="26.7407"/>
-<text text-anchor="middle" x="96" y="-752.8" font-family="Times,serif" font-size="14.00">base&#45;sjs</text>
-<text text-anchor="middle" x="96" y="-737.8" font-family="Times,serif" font-size="14.00">(S+SJS)</text>
+<ellipse fill="#bbffbb" stroke="black" cx="79" cy="-749" rx="60.623" ry="26.7407"/>
+<text text-anchor="middle" x="79" y="-752.8" font-family="Times,serif" font-size="14.00">base&#45;util&#45;sjs</text>
+<text text-anchor="middle" x="79" y="-737.8" font-family="Times,serif" font-size="14.00">(Scala &amp; JS)</text>
 </g>
 <!-- baseUtil&#45;&gt;baseRaw -->
 <g id="edge1" class="edge"><title>baseUtil&#45;&gt;baseRaw</title>
-<path fill="none" stroke="#cc0000" d="M96,-694.415C96,-703.3 96,-713.126 96,-721.911"/>
-<polygon fill="#cc0000" stroke="#cc0000" points="99.5001,-694.178 96,-684.178 92.5001,-694.178 99.5001,-694.178"/>
+<path fill="none" stroke="#cc0000" d="M79,-694.415C79,-703.3 79,-713.126 79,-721.911"/>
+<polygon fill="#cc0000" stroke="#cc0000" points="82.5001,-694.178 79,-684.178 75.5001,-694.178 82.5001,-694.178"/>
 </g>
 <!-- baseDb&#45;&gt;baseUtil -->
 <g id="edge2" class="edge"><title>baseDb&#45;&gt;baseUtil</title>
-<path fill="none" stroke="#cc0000" d="M99.2395,-614.464C98.5232,-625.638 97.7179,-638.201 97.0894,-648.006"/>
-<polygon fill="#cc0000" stroke="#cc0000" points="102.743,-614.514 99.8903,-604.311 95.7577,-614.066 102.743,-614.514"/>
+<path fill="none" stroke="#cc0000" d="M93.4379,-613.811C90.2297,-625.185 86.5878,-638.098 83.7644,-648.108"/>
+<polygon fill="#cc0000" stroke="#cc0000" points="96.8802,-614.499 96.2263,-603.925 90.1431,-612.599 96.8802,-614.499"/>
 </g>
 <!-- baseTest&#45;&gt;baseUtil -->
 <g id="edge3" class="edge"><title>baseTest&#45;&gt;baseUtil</title>
-<path fill="none" stroke="#cc0000" d="M72.9231,-521.772C69.5976,-525.613 66.4855,-529.743 64,-534 56.0579,-547.602 56.2451,-552.41 54,-568 50.7058,-590.875 45.525,-598.499 54,-620 58.6242,-631.732 67.9089,-642.209 76.5753,-650.096"/>
+<path fill="none" stroke="#cc0000" d="M72.9231,-521.772C69.5976,-525.613 66.4855,-529.743 64,-534 56.0579,-547.602 56.2451,-552.41 54,-568 50.7058,-590.875 48.2028,-597.628 54,-620 56.6005,-630.036 61.9774,-640.216 67.0806,-648.349"/>
 <polygon fill="#cc0000" stroke="#cc0000" points="75.6084,-524.026 79.9165,-514.347 70.5126,-519.227 75.6084,-524.026"/>
 </g>
 <!-- baseTest&#45;&gt;baseDb -->
@@ -214,8 +214,8 @@
 </g>
 <!-- taskmanApiLogic&#45;&gt;baseUtil -->
 <g id="edge6" class="edge"><title>taskmanApiLogic&#45;&gt;baseUtil</title>
-<path fill="none" stroke="#cc0000" d="M230.197,-606.194C196.956,-620.761 152.264,-640.345 123.788,-652.823"/>
-<polygon fill="#cc0000" stroke="#cc0000" points="231.925,-609.259 239.68,-602.039 229.116,-602.847 231.925,-609.259"/>
+<path fill="none" stroke="#cc0000" d="M227.74,-605.504C190.678,-620.329 139.816,-640.674 108.202,-653.319"/>
+<polygon fill="#cc0000" stroke="#cc0000" points="229.337,-608.635 237.322,-601.671 226.737,-602.136 229.337,-608.635"/>
 </g>
 <!-- webapp -->
 <g id="node13" class="node"><title>webapp</title>
@@ -237,7 +237,7 @@
 <g id="node15" class="node"><title>webappFront</title>
 <ellipse fill="#99ccee" stroke="black" cx="838" cy="-309" rx="62.8651" ry="26.7407"/>
 <text text-anchor="middle" x="838" y="-312.8" font-family="Times,serif" font-size="14.00">webapp&#45;front</text>
-<text text-anchor="middle" x="838" y="-297.8" font-family="Times,serif" font-size="14.00">(SJS)</text>
+<text text-anchor="middle" x="838" y="-297.8" font-family="Times,serif" font-size="14.00">(JS)</text>
 </g>
 <!-- webapp&#45;&gt;webappFront -->
 <g id="edge31" class="edge"><title>webapp&#45;&gt;webappFront</title>
@@ -263,7 +263,7 @@
 <g id="node16" class="node"><title>webappShared</title>
 <ellipse fill="#99ccee" stroke="black" cx="852" cy="-401" rx="69.0935" ry="26.7407"/>
 <text text-anchor="middle" x="852" y="-404.8" font-family="Times,serif" font-size="14.00">webapp&#45;shared</text>
-<text text-anchor="middle" x="852" y="-389.8" font-family="Times,serif" font-size="14.00">(S+SJS)</text>
+<text text-anchor="middle" x="852" y="-389.8" font-family="Times,serif" font-size="14.00">(Scala &amp; JS)</text>
 </g>
 <!-- webappBack&#45;&gt;webappShared -->
 <g id="edge21" class="edge"><title>webappBack&#45;&gt;webappShared</title>
@@ -277,7 +277,7 @@
 </g>
 <!-- webappShared&#45;&gt;baseRaw -->
 <g id="edge23" class="edge"><title>webappShared&#45;&gt;baseRaw</title>
-<path fill="none" stroke="#cc0000" d="M890.687,-432.241C907.748,-449.133 924,-471.83 924,-497 924,-497 924,-497 924,-667 924,-746.575 310.415,-749.172 139.641,-748.354"/>
+<path fill="none" stroke="#cc0000" d="M890.687,-432.241C907.748,-449.133 924,-471.83 924,-497 924,-497 924,-497 924,-667 924,-745.891 332.831,-749.477 139.431,-748.54"/>
 <polygon fill="#cc0000" stroke="#cc0000" points="893.055,-429.663 883.371,-425.367 888.262,-434.765 893.055,-429.663"/>
 </g>
 <!-- taskman -->

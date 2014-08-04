@@ -9,10 +9,11 @@ object ShipReq extends Build {
   // Declare modules
   lazy val root = Root.project
 
-  lazy val base     = Base.project
-  lazy val baseDb   = Base.Db.project
-  lazy val baseTest = Base.Test.project
-  lazy val baseUtil = Base.Util.project
+  lazy val base        = Base.project
+  lazy val baseDb      = Base.Db.project
+  lazy val baseTest    = Base.Test.project
+  lazy val baseUtil    = Base.Util.project
+  lazy val baseUtilSjs = Base.UtilSjs.project
 
   lazy val webapp = Webapp.project
 
@@ -63,6 +64,17 @@ object ShipReq extends Build {
       .aggregate(baseUtil, baseDb, baseTest) // not umbrella cos it shouldn't dependOn
 
     // ----------------------------------------------------
+    object UtilSjs extends Module {
+      val dir = "base-util-sjs"
+
+      override def deps =
+        providedScope(SJS.scalazEffect)
+
+      override def project = typicalProject
+        .configure(Common.jsSettings)
+    }
+
+    // ----------------------------------------------------
     object Util extends Module {
       val dir = "base-util"
 
@@ -72,6 +84,7 @@ object ShipReq extends Build {
         testScope(specs2 ++ Scalaz.scalacheck)
 
       override def project = typicalProject
+        .dependsOn(baseUtilSjs)
     }
 
     // ----------------------------------------------------

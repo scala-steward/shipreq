@@ -1,6 +1,7 @@
 import sbt._
 import sbt.impl.GroupID
 import scala.languageFeature._
+import scala.scalajs.sbtplugin.ScalaJSPlugin._
 
 object Deps {
 
@@ -16,12 +17,24 @@ object Deps {
   private implicit def seqToMS(ms: Seq[ModuleID]) = MS(ms)
 
 
-  abstract class Group(final val version: String, final val groupId: GroupID) {
-    protected implicit def d(a: String): MS = groupId % a % version
-    protected implicit def dd(a: String): MS = groupId %% a % version
+  abstract class Group(final val version: String, final val groupId: String) {
+    protected implicit def d(a: String): MS = (groupId: GroupID) % a % version
+    protected implicit def dd(a: String): MS = (groupId: GroupID) %% a % version
+    protected implicit def js(a: String): MS = groupId %%% a % version
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+
+  object SJS {
+    val scalazCore   :MS = "com.github.japgolly.fork.scalaz"  %%% "scalaz-core"   % Scalaz.version
+    val scalazEffect :MS = "com.github.japgolly.fork.scalaz"  %%% "scalaz-effect" % Scalaz.version
+    val monocle      :MS = "com.github.japgolly.fork.monocle" %%% "monocle-core"  % "0.5.0"
+    object React extends Group("0.4.0", "com.github.japgolly.scalajs-react") {
+      val core   = js("core")
+      val test   = js("test")
+      val scalaz = js("ext-scalaz71")
+    }
+  }
 
   object Scala extends Group("2.10.4", "org.scala-lang") {
     val compiler = d("scala-compiler")

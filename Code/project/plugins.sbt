@@ -1,3 +1,6 @@
+// JavaScript generation and interop
+addSbtPlugin("org.scala-lang.modules.scalajs" % "scalajs-sbt-plugin" % "0.5.3")
+
 // Web app support plugin for XSbt using Jetty Web Server
 addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "0.5.0")
 
@@ -12,4 +15,3 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
 
 // Builds Taskman dist
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
-

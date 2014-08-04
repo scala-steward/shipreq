@@ -6,7 +6,7 @@ edge[color="#cc0000"]
 subgraph cluster_base {
   style=filled fillcolor="#f4fff4" node[fillcolor="#bbffbb"]
   base [label="[aggregate]\nbase" fillcolor="#cccccc"]
-  baseRaw [label="base-sjs\n(S+SJS)"]
+  baseRaw [label="base-util-sjs\n(Scala & JS)"]
   baseUtil [label="base-util"]
   baseDb [label="base-db"]
   baseTest [label="base-test"]
@@ -34,8 +34,8 @@ subgraph cluster_t {
     fillcolor=white node[fillcolor="#99ccee"]
     webapp [label="[aggregate]\nwebapp" fillcolor="#ffff80"]
     webappBack [label="webapp-back"]
-    webappFront [label="webapp-front\n(SJS)"]
-    webappShared [label="webapp-shared\n(S+SJS)"]
+    webappFront [label="webapp-front\n(JS)"]
+    webappShared [label="webapp-shared\n(Scala & JS)"]
   }
 
   taskman [label="[aggregate]\ntaskman" fillcolor="#ffff80"]
