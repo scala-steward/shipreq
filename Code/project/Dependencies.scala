@@ -31,14 +31,14 @@ object Deps {
     val all      = compiler ++ library ++ reflect ++ p
   }
 
-  object Scalaz extends Group("7.1.0-M7", "org.scalaz") {
+  object Scalaz extends Group("7.1.0", "org.scalaz") {
     val core       = dd("scalaz-core")
     val concurrent = dd("scalaz-concurrent")
     val effect     = dd("scalaz-effect")
     val scalacheck = dd("scalaz-scalacheck-binding")
   }
 
-  object Json4s extends Group("3.2.9", "org.json4s") {
+  object Json4s extends Group("3.2.10", "org.json4s") {
     val jackson = dd("json4s-jackson") ++ Scala.all
   }
 
@@ -47,7 +47,7 @@ object Deps {
     val jcl = d("jcl-over-slf4j")
   }
 
-  object Lift extends Group("2.6-M3", "net.liftweb") {
+  object Lift extends Group("2.6-RC1", "net.liftweb") {
     val webkit  = dd("lift-webkit") ++ Scala.all // because it contains lift-json
     val testkit = dd("lift-testkit")
   }
@@ -58,17 +58,17 @@ object Deps {
     val all  = core ++ web
   }
 
-  object Akka extends Group("2.3.2", "com.typesafe.akka") {
+  object Akka extends Group("2.3.2", "com.typesafe.akka") { // 2.3.4 breaks taskman ???
     val actor   = dd("akka-actor") ++ dd("akka-slf4j")
     val testkit = dd("akka-testkit")
   }
 
   val okHttp      :MS = "com.squareup.okhttp"         % "okhttp"                % "1.5.4"
   val httpCore    :MS = "org.apache.httpcomponents"   % "httpcore"              % "4.3.2"
-  val javaMail    :MS = "com.sun.mail"                % "javax.mail"            % "1.5.1"
+  val javaMail    :MS = "com.sun.mail"                % "javax.mail"            % "1.5.2"
   val jodaTime    :MS = "joda-time"                   % "joda-time"             % "2.3" ++
                         "org.joda"                    % "joda-convert"          % "1.2"
-  val postgresql  :MS = "org.postgresql"              % "postgresql"            % "9.3-1101-jdbc41"
+  val postgresql  :MS = "org.postgresql"              % "postgresql"            % "9.3-1102-jdbc41"
   val slick       :MS = "com.typesafe.slick"         %% "slick"                 % "2.0.1"
   val bonecp      :MS = "com.jolbox"                  % "bonecp"                % "0.8.0.RELEASE" ++
                         "com.google.code.findbugs"    % "jsr305"                % "2.0.2" // required by Guava (which is required by BoneCP)
@@ -84,7 +84,7 @@ object Deps {
   val mockito     :MS = "org.mockito"                 % "mockito-core"          % "1.9.5"
   val scalaTest   :MS = "org.scalatest"              %% "scalatest"             % "2.1.3"
   val scalaCheck  :MS = "org.scalacheck"             %% "scalacheck"            % "1.11.3"
-  val specs2      :MS = "org.specs2"                 %% "specs2"                % "2.3.11-scalaz-7.1.0-M6"
+  val specs2      :MS = "org.specs2"                 %% "specs2"                % "2.4"
   val selenium    :MS = "org.seleniumhq.selenium"     % "selenium-java"         % "2.35.0" excludeAll(
     ExclusionRule(name = "selenium-android-driver"),
     ExclusionRule(name = "selenium-htmlunit-driver"),
