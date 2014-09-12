@@ -71,7 +71,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        providedScope(SJS.scalazEffect)
+        providedScope(ScalaJS.Scalaz.effect)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJS)
@@ -219,7 +219,7 @@ object ShipReq extends Build {
       val dir = "webapp-shared"
 
 //      override def deps =
-//        providedScope(SJS.scalazEffect)
+//        providedScope(ScalaJS.Scalaz.effect)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJS)
@@ -233,8 +233,8 @@ object ShipReq extends Build {
       val dir = "webapp-client"
 
       override def deps =
-        SJS.scalazEffect ++ SJS.React.core ++ SJS.monocle ++
-        testScope(SJS.React.test)
+        ScalaJS.Scalaz.effect ++ ScalaJS.React.core ++ ScalaJS.monocle ++
+        testScope(ScalaJS.React.test)
 
       override def project = typicalProject
         .settings(scalaJSSettings: _*)

@@ -16,24 +16,28 @@ object Deps {
   private implicit def singleToMS(m: ModuleID) = MS(Seq(m))
   private implicit def seqToMS(ms: Seq[ModuleID]) = MS(ms)
 
+  private def jsA(a: String) = a + "_sjs0.5"
+  private def jsGA(g: String, a: String) = g %% jsA(a)
 
   abstract class Group(final val version: String, final val groupId: String) {
     protected implicit def d(a: String): MS = (groupId: GroupID) % a % version
     protected implicit def dd(a: String): MS = (groupId: GroupID) %% a % version
-    protected implicit def js(a: String): MS = groupId %%% a % version
+    protected implicit def js(a: String) = dd(jsA(a))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  object SJS {
-    val scalazCore   :MS = "com.github.japgolly.fork.scalaz"  %%% "scalaz-core"   % Scalaz.version
-    val scalazEffect :MS = "com.github.japgolly.fork.scalaz"  %%% "scalaz-effect" % Scalaz.version
-    val monocle      :MS = "com.github.japgolly.fork.monocle" %%% "monocle-core"  % "0.5.0"
+  object ScalaJS {
     object React extends Group("0.4.0", "com.github.japgolly.scalajs-react") {
       val core   = js("core")
       val test   = js("test")
       val scalaz = js("ext-scalaz71")
     }
+    object Scalaz extends Group(Deps.Scalaz.version + "-2", "com.github.japgolly.fork.scalaz") {
+      val core   = js("scalaz-core")
+      val effect = js("scalaz-effect")
+    }
+    val monocle :MS = jsGA("com.github.japgolly.fork.monocle", "monocle-core") % "0.5.1"
   }
 
   object Scala extends Group("2.11.2", "org.scala-lang") {
