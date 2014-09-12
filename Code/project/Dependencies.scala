@@ -99,9 +99,9 @@ object Deps {
   val jetty       :MS = "org.eclipse.jetty"           % "jetty-webapp"          % "9.1.5.v20140505"
   val servlet     :MS = "org.eclipse.jetty.orbit"     % "javax.servlet"         % "3.0.0.v201112011016" artifacts Artifact("javax.servlet", "jar", "jar")
   val mockito     :MS = "org.mockito"                 % "mockito-core"          % "1.9.5"
-  val scalaTest   :MS = "org.scalatest"              %% "scalatest"             % "2.1.3"
+  val scalaTest   :MS = "org.scalatest"              %% "scalatest"             % "2.2.1"
   val scalaCheck  :MS = "org.scalacheck"             %% "scalacheck"            % "1.11.3"
-  val specs2      :MS = "org.specs2"                 %% "specs2"                % "2.4"
+  val specs2      :MS = "org.specs2"                 %% "specs2"                % "2.4.2"
   val selenium    :MS = "org.seleniumhq.selenium"     % "selenium-java"         % "2.35.0" excludeAll(
     ExclusionRule(name = "selenium-android-driver"),
     ExclusionRule(name = "selenium-htmlunit-driver"),
