@@ -1,0 +1,31 @@
+digraph G {
+// compound=true
+labelloc=t
+label="A→B = B depends on A\n\n"
+
+// Config
+{
+  node [style=filled fillcolor="#ccccff"]
+  ReqTypes
+  UserDefIncompletionTypes
+  Groupings
+  Groupings,ReqTypes -> Fields
+}
+
+// Content
+subgraph cluster_reqs {
+  style=filled fillcolor="#ffeeee" label=""
+  node [style=filled fillcolor="#ffaaaa"]
+  UseCase,GenericReq,SHR
+}
+{
+  node [style=filled fillcolor="#ffffcc"]
+  LooseIncompletion
+}
+
+UserDefIncompletionTypes           -> LooseIncompletion
+Groupings,UserDefIncompletionTypes -> UseCase,GenericReq,SHR
+Fields                             -> UseCase,GenericReq
+ReqTypes                           -> GenericReq
+
+}
