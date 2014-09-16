@@ -1,6 +1,8 @@
 #!/bin/bash
 
-props="$(dirname "$0")/../resources/production.shipreq.props"
+propdir="$(dirname "$0")/../resources"
+props="$propdir/production.$(whoami).props"
+[ ! -e "$props" ] && props="$propdir/production.shipreq.props"
 [ ! -e "$props" ] && echo "File not found: $props" && exit 1
 
 propcontent="$(<$props)"
@@ -8,7 +10,9 @@ function prop {
   echo "$propcontent" | egrep '^ *'"$1"' *=' | perl -pe 's/^.+?=\s*//'
 }
 
+echo "Connecting to $(prop db.host)/$(prop db.database) as $(prop db.username)"
 echo "PASSWORD: $(prop db.password)"
+echo
 psql \
   -h "$(prop db.host)" \
   -d "$(prop db.database)" \
