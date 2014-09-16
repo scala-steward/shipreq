@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import java.nio.file.{Files, Path}
 import scala.scalajs.sbtplugin.ScalaJSPlugin._
 
 object Common {
@@ -160,5 +161,23 @@ object Common {
 
     def dontInline: Project => Project =
       _.settings(scalacOptions in Compile ~= removeValues("-optimise", "-Yinline"))
+
+    def ln_s(src: File, tgt: File, log: Logger): Unit = ln_s(src.toPath, tgt.toPath, log)
+    def ln_s(src: Path, tgt: Path, log: Logger): Unit = {
+      if (Files.isSymbolicLink(tgt) && Files.readSymbolicLink(tgt).equals(src))
+        log.debug(s"Symlink up-to-date: $tgt")
+      else {
+        log.info(s"Creating symlink $tgt -> $src")
+        Files.deleteIfExists(tgt)
+        Files.createSymbolicLink(tgt, src)
+      }
+    }
+
+    def ln(src: File, tgt: File, log: Logger): Unit = ln(src.toPath, tgt.toPath, log)
+    def ln(src: Path, tgt: Path, log: Logger): Unit = {
+      log.info(s"Creating hard link $tgt -> $src")
+      Files.deleteIfExists(tgt)
+      Files.createLink(tgt, src)
+    }
   }
 }

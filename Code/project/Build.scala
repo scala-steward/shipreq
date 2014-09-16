@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import Common.ExportsTestLib
 import Common.Functions._
+import Common.Values.releaseMode
 import Deps._
 
 object ShipReq extends Build {
@@ -248,6 +249,34 @@ object ShipReq extends Build {
 
       val dir = "webapp-server"
 
+      val linkClientJs = taskKey[Unit]("Creates symlinks to webapp client resources.")
+      val clientJsLinks = settingKey[ClientJsLinks]("Map of symlinks between client and server.")
+
+      class ClientJsLinks(sRoot: File, tRoot: File) {
+        private val s = sRoot / "scala-2.11"
+        private val t = tRoot / "src/main/webapp/assets"
+        private def sPrefix = "webapp-client-"
+        private def tName = "blah.js"
+        private val devMap = Map(
+          s / s"${sPrefix}fastopt.js"     -> t / tName,
+          s / s"${sPrefix}fastopt.js.map" -> t / s"$tName.map")
+        private val releaseMap =
+          Map(s / s"${sPrefix}opt.js" -> t / tName)
+        def links =
+          if (releaseMode) releaseMap else devMap
+        def cleanable =
+          (devMap.values ++ releaseMap.values).map(_.asFile).toSet[File]
+      }
+
+      def clientJsSettings = (_: Project).settings(
+        clientJsLinks := new ClientJsLinks((target in webappClient).value, baseDirectory.value),
+        cleanFiles ++= clientJsLinks.value.cleanable.toSeq,
+        linkClientJs := {
+          val log = streams.value.log
+          for ((s, t) <- clientJsLinks.value.links)
+            ln(s, t, log)
+        })
+
       def warSettings = (p: Project) => p.settings(
         // Don't allow WEB-INF/_scalate into the WAR
         excludeFilter in packageWar ~= { _ ||
@@ -283,12 +312,14 @@ object ShipReq extends Build {
       override def project = typicalProject
         .configure(
           Common.generateBuildPropFile(),
+          clientJsSettings,
           warSettings,
           testSettings,
           integrationTestSettings
         )
         .settings(webSettings: _*)
         .settings(addCommandAlias("up", ";container:stop ;clear ;container:start"): _*)
+        .settings(addCommandAlias("d", "container:stop"): _*)
         .settings(
           initialCommands += consoleCmds,
           // Ensure templates can be loaded from the console
