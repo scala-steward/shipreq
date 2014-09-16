@@ -39,7 +39,7 @@ object Common {
     nonTestCompilerFlags(/* TODO "-optimise",*/ /*"-Yinline-warnings",*/ "-Xelide-below", "OFF")
   )
 
-  def targetJdk = "1.7"
+  def targetJdk = "1.8"
 
   def javacFlags = Seq("-target", targetJdk, "-source", targetJdk)
 
