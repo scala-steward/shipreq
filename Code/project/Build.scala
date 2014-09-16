@@ -244,8 +244,8 @@ object ShipReq extends Build {
 
     // ----------------------------------------------------
     object Server extends Module {
-      import com.earldouglas.xsbtwebplugin.PluginKeys.packageWar
-      import com.earldouglas.xsbtwebplugin.WebPlugin.webSettings
+      import com.earldouglas.xsbtwebplugin.PluginKeys.{packageWar, start}
+      import com.earldouglas.xsbtwebplugin.WebPlugin.{container, webSettings}
 
       val dir = "webapp-server"
 
@@ -268,10 +268,20 @@ object ShipReq extends Build {
           (devMap.values ++ releaseMap.values).map(_.asFile).toSet[File]
       }
 
+      lazy val jsBuildTask = {
+        import scala.scalajs.sbtplugin.ScalaJSPlugin.ScalaJSKeys._
+        val task = if (releaseMode) fullOptJS else fastOptJS
+        task in Compile in webappClient
+      }
+
       def clientJsSettings = (_: Project).settings(
         clientJsLinks := new ClientJsLinks((target in webappClient).value, baseDirectory.value),
         cleanFiles ++= clientJsLinks.value.cleanable.toSeq,
+        { val k = Keys.`package` in Compile;        k <<= k.dependsOn(linkClientJs) },
+        { val k = start in container.Configuration; k <<= k.dependsOn(linkClientJs) },
+        { val k = test in Test;                     k <<= k.dependsOn(linkClientJs) },
         linkClientJs := {
+          jsBuildTask.value // Ensure client JS is built
           val log = streams.value.log
           for ((s, t) <- clientJsLinks.value.links)
             ln(s, t, log)
@@ -306,6 +316,7 @@ object ShipReq extends Build {
       """
 
       override def project = typicalProject
+        .settings(webSettings: _*)
         .configure(
           Common.generateBuildPropFile(),
           clientJsSettings,
@@ -315,7 +326,6 @@ object ShipReq extends Build {
           addCommandAliases(
             "up" -> ";container:stop ;clear ;container:start",
             "d" -> "container:stop"))
-        .settings(webSettings: _*)
         .settings(
           initialCommands += consoleCmds,
           // Ensure templates can be loaded from the console
