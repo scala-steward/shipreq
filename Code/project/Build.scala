@@ -88,6 +88,7 @@ object ShipReq extends Build {
 
       override def project = typicalProject
         .dependsOn(baseUtilSjs)
+        .configure(dontInline) // crashes scalac 2.11.2
     }
 
     // ----------------------------------------------------
@@ -112,7 +113,7 @@ object ShipReq extends Build {
       override def project = typicalProject
         .dependsOn(baseUtil)
         .dependsOn(baseDb % "provided")
-        // Delete after upgrade to 2.11 and switch from Manifest to TypeTag
+        // TODO Delete after upgrade to 2.11 and switch from Manifest to TypeTag
         .settings(scalacOptions in Compile ~= removeValues("-deprecation"))
         .settings(scalacOptions in Compile += "-nowarn")
     }
@@ -166,7 +167,7 @@ object ShipReq extends Build {
         override def project = typicalProject.dependsOn(taskmanApiLogic)
           .dependsOn(baseTest % "test")
           .dependsOn(baseUtil) // Stupid IDEA auto-import needs this
-          .settings(scalacOptions in Compile ~= removeValues("-optimise")) // try again with 2.11
+          .configure(dontInline) // crashes scalac 2.11.2
 
         override def deps =
           jodaTime ++ logback ++ testScope(specs2)
@@ -201,9 +202,8 @@ object ShipReq extends Build {
           .settings(assemblySettings: _*)
           .settings(
             initialCommands += consoleCmds,
-            test in assembly := {}, // Disable tests during assembly
-            scalacOptions in Compile ~= removeValues("-optimise") // because Akka docs
-        )
+            test in assembly := {}) // Disable tests during assembly
+          .configure(dontInline) // because Akka docs + crashes scalac 2.11.2
       }
     }
   }

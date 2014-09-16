@@ -26,6 +26,7 @@ object Common {
   def scalacFlags = Seq(
     "-unchecked",
     "-deprecation",
+    // "-Xstrict-inference", // Don't infer known-unsound types
     // "-Yno-generic-signatures", // Stuffs up json4s
     "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
 
@@ -36,7 +37,16 @@ object Common {
       scalacOptions ++= Seq("-Xcheckinit"),
       cleanKeepFiles ++= Seq("resolution-cache", "streams").map(target.value / _) // stop those constant dep updates
     ),
-    nonTestCompilerFlags(/* TODO "-optimise",*/ /*"-Yinline-warnings",*/ "-Xelide-below", "OFF")
+    nonTestCompilerFlags(
+      // "-optimise",
+      "-Ybackend:GenBCode",
+      "-Yclosure-elim",
+      "-Yconst-opt",
+      "-Ydead-code",
+      "-Yinline",
+      "-Yinline-handlers",
+      // "-Yinline-warnings",
+      "-Xelide-below", "OFF")
   )
 
   def targetJdk = "1.8"
@@ -147,5 +157,8 @@ object Common {
       )
 
     def removeValues[T](values: T*): Seq[T] => Seq[T] = (_ filterNot (values contains _))
+
+    def dontInline: Project => Project =
+      _.settings(scalacOptions in Compile ~= removeValues("-optimise", "-Yinline"))
   }
 }
