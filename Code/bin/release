@@ -56,10 +56,10 @@ done
 git st .
 sep
 
-[ -e /opt/java7 ] && {
-  JAVA_HOME=/opt/java7
-  PATH="$JAVA_HOME/bin:$PATH"
-}
+#[ -e /opt/java7 ] && {
+#  JAVA_HOME=/opt/java7
+#  PATH="$JAVA_HOME/bin:$PATH"
+#}
 java -version
 echo
 

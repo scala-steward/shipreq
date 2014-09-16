@@ -69,6 +69,10 @@ First, be in webapp-server/
   3. Edit Gruntfile.js
   4. grunt
 
+### Jetty
+
+Follow instructions in `../Release/webapp/README.md`.
+
 
 Development
 ===========

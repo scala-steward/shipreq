@@ -36,7 +36,7 @@ object Common {
       scalacOptions ++= Seq("-Xcheckinit"),
       cleanKeepFiles ++= Seq("resolution-cache", "streams").map(target.value / _) // stop those constant dep updates
     ),
-    nonTestCompilerFlags("-optimise", /*"-Yinline-warnings",*/ "-Xelide-below", "OFF")
+    nonTestCompilerFlags(/* TODO "-optimise",*/ /*"-Yinline-warnings",*/ "-Xelide-below", "OFF")
   )
 
   def targetJdk = "1.7"

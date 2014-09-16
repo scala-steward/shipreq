@@ -37,6 +37,8 @@ Upgrade Procedure
 
 ### Upgrading Jetty
 
+[Download](http://download.eclipse.org/jetty/stable-9/dist/)
+
 1. Install
     ./install-jetty <jetty.tar.gz>
     git commit as directed
@@ -52,7 +54,7 @@ Upgrade Procedure
 4. Update Code
     pushd ../../Code
     vim project/Dependencies.scala
-    sbt clean test
+    sbt 'project webapp-server' clean test
     popd
 
 5. Commit

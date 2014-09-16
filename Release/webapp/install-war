@@ -2,7 +2,7 @@
 
 cd "$(dirname "$0")"
 
-d=../../Code/webapp/target/scala-2.10/
+d=../../Code/webapp-server/target/scala-2.11/
 s="$(ls -1rt $d | fgrep .war | tail -1)"
 [ -z "$s" ] && echo "No WARs found in $d" && exit 1
 echo "Found: $s"
