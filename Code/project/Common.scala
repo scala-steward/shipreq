@@ -110,7 +110,8 @@ object Common {
     _.settings(target <<= baseDirectory(_ / ".target"))
 
   def scalaAndScalaJsShared: Project => Project =
-    identity
+    _.settings(scalaJSSettings: _*)
+    //.settings(libraryDependencies ~= (_.filterNot(_.name == "scalajs-library")))
 
   trait ExportsTestLib {
     lazy val TestLib = config("test-lib") extend Compile describedAs "Reusable test helpers"
