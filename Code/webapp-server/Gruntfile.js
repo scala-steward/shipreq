@@ -28,21 +28,23 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 
     cfg: {
+      assets: 'src/main/webapp/assets',
+      assets_dev: '<%= cfg.assets %>/dev',
       css: {
         src: 'src/main/styles',
-        out: 'src/main/webapp/assets',
+        out: '<%= cfg.assets %>',
         tmp: 'target/css',
         bootstrap_cust: '<%= cfg.vendor.cust %>/bootstrap.css',
         app_only: '<%= cfg.css.tmp %>/app-only.css',
       },
       js: {
         src: 'src/main/javascript',
-        out: 'src/main/webapp/assets',
+        out: '<%= cfg.assets %>',
         tmp: 'target/js',
       },
       vendor: {
         cust: 'vendor',
-        out: 'src/main/webapp/assets/vendor',
+        out: '<%= cfg.assets %>/vendor',
       },
       mathjax: {
         src: '.bower/MathJax',
@@ -56,6 +58,14 @@ module.exports = function(grunt) {
       // Delete temp dirs
       css_tmp: ['<%= cfg.css.tmp %>'],
       js_tmp: ['<%= cfg.js.tmp %>'],
+
+      // Delete dev assets
+      dev: {
+        expand: true,
+        cwd: '<%= cfg.assets_dev %>',
+        src: ['**/*', '!webapp-client*'],
+        filter: 'isFile',
+      },
 
       // Delete vendor assets
       vendor: {
@@ -72,7 +82,7 @@ module.exports = function(grunt) {
       css: {
         expand: true,
         cwd: '<%= cfg.css.out %>',
-        src: ['**/*.css', '!vendor/**/*'],
+        src: ['**/*.css', '!dev/**/*', '!vendor/**/*'],
         filter: 'isFile',
       },
 
@@ -80,7 +90,7 @@ module.exports = function(grunt) {
       js: {
         expand: true,
         cwd: '<%= cfg.js.out %>',
-        src: ['**/*.js', '!vendor/**/*'],
+        src: ['**/*.js', '!dev/**/*', '!vendor/**/*'],
         filter: 'isFile',
       },
     },
@@ -92,7 +102,10 @@ module.exports = function(grunt) {
       vendor: {
         files: [
           {src:'.bower/jquery/dist/jquery.min.js',       dest:'<%= cfg.vendor.out %>/jquery.js',         nonull:true},
+          {src:'.bower/jquery/dist/jquery.min.js',       dest:'<%= cfg.assets_dev %>/jquery.js',         nonull:true},
+          {src:'.bower/jquery/dist/jquery.min.map',      dest:'<%= cfg.assets_dev %>/jquery.min.map',    nonull:true},
           {src:'.bower/react/react.min.js',              dest:'<%= cfg.vendor.out %>/react.js',          nonull:true},
+          {src:'.bower/react/react.js',                  dest:'<%= cfg.assets_dev %>/react.js',          nonull:true},
           {src:'.bower/zeroclipboard/ZeroClipboard.swf', dest:'<%= cfg.vendor.out %>/ZeroClipboard.swf', nonull:true},
           {src:'<%= cfg.vendor.cust %>/viz.js',          dest:'<%= cfg.vendor.out %>/viz.js',            nonull:true},
         ]
@@ -315,7 +328,7 @@ module.exports = function(grunt) {
   // *******************************************************************************************************************
   // Task definitions
 
-  grunt.registerTask('vendor'  , ['clean:vendor', 'copy:vendor', 'less:bootstrap', 'replace:jquery']);
+  grunt.registerTask('vendor'  , ['clean:dev', 'clean:vendor', 'copy:vendor', 'less:bootstrap', 'replace:jquery']);
   grunt.registerTask('mathjax' , ['clean:mathjax', 'copy:mathjax', 'uglify:mathjax']);
   grunt.registerTask('js'      , ['clean:js_tmp', 'clean:js', 'concat:js', 'uglify:own']);
   grunt.registerTask('css'     , ['clean:css_tmp', 'clean:css', 'less:app', 'less:other', 'concat:app_css', 'cssmin']); // copy:debug_css

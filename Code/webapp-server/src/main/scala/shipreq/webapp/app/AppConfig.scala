@@ -70,4 +70,10 @@ final object AppConfig {
   }
 
   val jQueryVersion = "2.1.1"
+
+  /** URL prefix for dev & test only assets */
+  val devAssetPath = "/assets/dev"
+
+  /** URL prefix for vendor assets */
+  val vendorAssetPath = "/assets/vendor"
 }

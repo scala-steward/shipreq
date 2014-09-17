@@ -18,9 +18,10 @@ object Link extends DispatchSnippet with SnippetHelpers {
   private type R = NodeSeq => NodeSeq
 
   override def dispatch = {
-    case "App"    => appLink
-    case "jquery" => jqueryLink
-    case name     => ToPage(name)
+    case "App"      => appLink
+    case "jquery"   => jqueryLink
+    case "clientJs" => clientJs
+    case name       => ToPage(name)
   }
 
   private def static(link: NodeSeq): R = _ => link
@@ -30,15 +31,30 @@ object Link extends DispatchSnippet with SnippetHelpers {
 
   val jqueryLink = {
     val jqueryUrl = Props.mode match {
-      case Development | Test => "/assets/vendor/jquery.js"
+      case Development | Test => s"${AppConfig.devAssetPath}/jquery.js"
       case _                  => s"//ajax.googleapis.com/ajax/libs/jquery/${AppConfig.jQueryVersion}/jquery.min.js"
     }
-    static(<script src={jqueryUrl} type="text/javascript"></script>)
+    static(<script type="text/javascript" src={jqueryUrl}></script>)
+  }
+
+  val clientJs = {
+    val reactUrl = Props.mode match {
+      case Development | Test => s"${AppConfig.devAssetPath}/react.js"
+      case _                  => s"${AppConfig.vendorAssetPath}/react.js"
+    }
+    val clientJsUrl = Props.mode match {
+      case Development | Test => s"${AppConfig.devAssetPath}/webapp-client-fastopt.js"
+      case _                  => "/assets/C.js"
+    }
+    static(
+      <script type="text/javascript" src={reactUrl}></script>
+      <script type="text/javascript" src={clientJsUrl}></script>
+    )
   }
 
   object ToPage {
     def apply(name: String): R = {
-      val loc = SiteMap.findLoc(name) openOrThrowException s"Unable to generate link to $name"
+      val loc = SiteMap.findLoc(name) openOrThrowException s"No page found in sitemap called '$name'"
       pageLinkMemo(loc)
     }
 

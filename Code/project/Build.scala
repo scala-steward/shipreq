@@ -256,14 +256,14 @@ object ShipReq extends Build {
         private val s = sRoot / "scala-2.11"
         private val t = tRoot / "src/main/webapp/assets"
         private def sPrefix = Webapp.Client.dir + "-"
-        private def tName = "blah.js"
         private val devMap = {
-          val j = s"${sPrefix}fastopt.js"
-          val m = j + ".map"
-          Map(s/j -> t/tName, s/m -> t/m)
+          val o = t/"dev"
+          val js = s"${sPrefix}fastopt.js"
+          val map = js + ".map"
+          Map(s/js -> o/js, s/map -> o/map)
         }
         private val releaseMap =
-          Map(s/s"${sPrefix}opt.js" -> t/tName)
+          Map(s/s"${sPrefix}opt.js" -> t/"C.js")
         def links =
           if (releaseMode) releaseMap else devMap
         def cleanable =
@@ -290,9 +290,12 @@ object ShipReq extends Build {
         })
 
       def warSettings = (_: Project).settings(
-        // Don't allow WEB-INF/_scalate into the WAR
-        excludeFilter in packageWar ~= { _ ||
-          new FileFilter { def accept(f: File) = f.getPath.containsSlice("/_scalate/") }
+        // Remove certain files from the WAR
+        excludeFilter in packageWar ~= { (a: FileFilter) =>
+          var b = a || new FileFilter { def accept(f: File) = f.getPath.containsSlice("/_scalate/") }
+          if (releaseMode)
+            b = b || new FileFilter { def accept(f: File) = f.getPath.containsSlice("/dev/") }
+          b
         })
 
       def testSettings = (_: Project).settings(
