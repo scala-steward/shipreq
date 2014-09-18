@@ -1,6 +1,6 @@
 package hahaa
 
-import shipreq.webapp.shared.Interface
+import shipreq.webapp.shared.{ExampleData, Interface}
 
 import scala.scalajs.js
 import org.scalajs.dom.{document, window, Node, console, alert}
@@ -29,39 +29,39 @@ object ReactExamples extends js.JSApp {
     read[Interface.Page.WIP](a)
   }
 
-    @JSExport
-  def wire(a: String, b: String) = Interface.Page.WIP(
-    Interface.Wired(a, Interface.Defn.Square),
-    Interface.Wired(b, Interface.Defn.Half))
-
   @JSExport
   def invokeSquare(p: Interface.Page.WIP, n: js.Number): Unit =
     invokeCallback(p.square)(n.toInt, s => alert(s"RESPONSE: [$s]"))
 
-//  @js.annotation.JSExport
-//  def invokeSquare(fn: String, n: js.Number): Unit = {
-//    val XXX = CallbackFnNamesForPageX(RemoteCallback(fn, CallbackDefs.Square), null)
-//    invokeCallback(XXX.square)(n.toInt, s => alert(s"$n² = $s"))
-//  }
+  @JSExport
+  def invokeGrrr(p: Interface.Page.WIP, n: js.Number): Unit =
+    invokeCallback(p.grrr)(ExampleData(n.toInt), s => alert(s.yar))
 
-//  @js.annotation.JSExport
-//  def invokeHalf(fn: String, n: js.Number): Unit = {
-//    val XXX = CallbackFnNamesForPageX(null, RemoteCallback(fn, CallbackDefs.Half))
-//    invokeCallback(XXX.half)(n.toInt, s => alert(s"$n/2 = $s"))
-//  }
+  def invokeCallback[D <: Interface.Defn](r: Interface.Wired[D])(i: r.d.I, cb: r.d.O => Unit)(implicit I: upickle.Writer[r.d.I], O: upickle.Reader[r.d.O]): Unit = {
+    // TODO test all failure scenarios imaginable
+    val ii = js.encodeURIComponent(upickle write i)
+    val s: js.Any => Unit = o => {
+      console.log("invokeCallback result", o)
 
-  def invokeCallback[D <: Interface.Defn](r: Interface.Wired[D])(i: r.d.I, cb: r.d.O => Unit): Unit = {
-    val ii = js.encodeURIComponent(r.d serialise i)
-    val s: js.Any => Unit = o => cb(o.asInstanceOf[r.d.O]) // TODO
+      import upickle.Js
+      def walk(value: Any): Js.Value = value match{
+        case s: js.String => Js.Str(s)
+        case n: js.Number => Js.Num(n)
+        case true => Js.True
+        case false => Js.False
+        case null => Js.Null
+        case s: js.Array[_] => Js.Arr(s.map(walk(_: Any)):_*)
+        case s: js.Object => Js.Obj(s.asInstanceOf[js.Dictionary[_]].mapValues(walk).toSeq:_*)
+      }
+
+      val oo = upickle.readJs[r.d.O](walk(o))
+      cb(oo)
+//      cb(o.asInstanceOf[r.d.O])
+      // TODO
+    }
     // needs failure
     LiftAjax.lift_ajaxHandler(s"${r.n}=$ii", s, null, "json")
   }
-//  def invokeCallback[C <: Interface.Defn[I, O], I, O](r: Interface.Wired[C, I, O])(i: I, cb: O => Unit): Unit = {
-//    val ii = js.encodeURIComponent(r.d serialise i)
-//    val s: js.Any => Unit = o => cb(o.asInstanceOf[O]) // TODO
-//    // needs failure
-//    LiftAjax.lift_ajaxHandler(s"${r.n}=$ii", s, null, "json")
-//  }
 
   // ===================================================================================================================
 
