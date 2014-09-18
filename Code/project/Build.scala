@@ -230,6 +230,8 @@ object ShipReq extends Build {
     // ----------------------------------------------------
     object Client extends Module {
       import scala.scalajs.sbtplugin.ScalaJSPlugin._
+      import scala.scalajs.sbtplugin.InliningMode
+      import ScalaJSKeys._
 
       val dir = "webapp-client"
 
@@ -240,6 +242,10 @@ object ShipReq extends Build {
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
         .dependsOn(webappShared)
+        .settings(
+          emitSourceMaps in fullOptJS := false,
+          checkScalaJSIR in fullOptJS := true,
+          inliningMode in fullOptJS := InliningMode.Batch)
     }
 
     // ----------------------------------------------------
