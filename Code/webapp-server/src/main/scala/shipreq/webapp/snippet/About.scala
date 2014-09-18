@@ -64,6 +64,11 @@ class About {
         Some(Text("Copyright (c) 2013, Li Haoyi")),
         Set(MIT))
       ,
+      Attribution("μPickle",
+        "https://github.com/lihaoyi/upickle",
+        Some(Text("Copyright (c) 2013, Li Haoyi (haoyi.sg at gmail.com)")),
+        Set(MIT))
+      ,
       Attribution("jQuery",
         "http://jquery.com/",
         Some(Text("Copyright 2013 jQuery Foundation and other contributors.")),

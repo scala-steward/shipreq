@@ -24,6 +24,12 @@ object ReactExamples extends js.JSApp {
   }
 
   @JSExport
+  def wired(a: String) = {
+    import upickle._
+    read[Interface.Page.WIP](a)
+  }
+
+    @JSExport
   def wire(a: String, b: String) = Interface.Page.WIP(
     Interface.Wired(a, Interface.Defn.Square),
     Interface.Wired(b, Interface.Defn.Half))
@@ -44,12 +50,18 @@ object ReactExamples extends js.JSApp {
 //    invokeCallback(XXX.half)(n.toInt, s => alert(s"$n/2 = $s"))
 //  }
 
-  def invokeCallback[C <: Interface.Defn[I, O], I, O](r: Interface.Wired[C, I, O])(i: I, cb: O => Unit): Unit = {
-    val ii = js.encodeURIComponent(r.c serialise i)
-    val s: js.Any => Unit = o => cb(o.asInstanceOf[O]) // TODO
+  def invokeCallback[D <: Interface.Defn](r: Interface.Wired[D])(i: r.d.I, cb: r.d.O => Unit): Unit = {
+    val ii = js.encodeURIComponent(r.d serialise i)
+    val s: js.Any => Unit = o => cb(o.asInstanceOf[r.d.O]) // TODO
     // needs failure
-    LiftAjax.lift_ajaxHandler(s"${r.fn}=$ii", s, null, "json")
+    LiftAjax.lift_ajaxHandler(s"${r.n}=$ii", s, null, "json")
   }
+//  def invokeCallback[C <: Interface.Defn[I, O], I, O](r: Interface.Wired[C, I, O])(i: I, cb: O => Unit): Unit = {
+//    val ii = js.encodeURIComponent(r.d serialise i)
+//    val s: js.Any => Unit = o => cb(o.asInstanceOf[O]) // TODO
+//    // needs failure
+//    LiftAjax.lift_ajaxHandler(s"${r.n}=$ii", s, null, "json")
+//  }
 
   // ===================================================================================================================
 

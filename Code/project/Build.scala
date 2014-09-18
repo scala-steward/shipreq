@@ -236,7 +236,7 @@ object ShipReq extends Build {
       val dir = "webapp-client"
 
       override def deps =
-        ScalaJS.Scalaz.effect ++ ScalaJS.React.core ++ ScalaJS.monocle ++
+        ScalaJS.Scalaz.effect ++ ScalaJS.React.core ++ ScalaJS.monocle ++ ScalaJS.upickle ++
         testScope(ScalaJS.React.test)
 
       override def project = typicalProject
@@ -316,7 +316,7 @@ object ShipReq extends Build {
         .settings(parallelExecution in IntegrationTest := false)
 
       override def deps =
-        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
+        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++ upickle ++
         testScope(scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo /*++ twitterEval*/) ++
         depScope("it")(selenium) ++
         (jetty % "container,test") ++ (servlet % "container,test,provided")

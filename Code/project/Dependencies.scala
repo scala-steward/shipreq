@@ -38,6 +38,7 @@ object Deps {
       val effect = js("scalaz-effect")
     }
     val monocle :MS = jsGA("com.github.japgolly.fork.monocle", "monocle-core") % "0.5.1"
+    val upickle :MS = jsGA("com.lihaoyi", "upickle") % upickleVersion
   }
 
   object Scala extends Group("2.11.2", "org.scala-lang") {
@@ -80,6 +81,9 @@ object Deps {
     val testkit = dd("akka-testkit")
   }
 
+  def upickleVersion = "0.2.4"
+
+  val upickle     :MS = "com.lihaoyi"                %% "upickle"               % upickleVersion
   val okHttp      :MS = "com.squareup.okhttp"         % "okhttp"                % "1.5.4"
   val httpCore    :MS = "org.apache.httpcomponents"   % "httpcore"              % "4.3.2"
   val javaMail    :MS = "com.sun.mail"                % "javax.mail"            % "1.5.2"
