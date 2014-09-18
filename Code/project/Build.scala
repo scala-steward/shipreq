@@ -72,7 +72,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        providedScope(ScalaJS.Scalaz.effect)
+        providedScope(Scalaz.effect)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
@@ -219,9 +219,6 @@ object ShipReq extends Build {
     object Shared extends Module {
       val dir = "webapp-shared"
 
-//      override def deps =
-//        providedScope(ScalaJS.Scalaz.effect)
-
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
         .dependsOn(baseUtilSjs)
@@ -241,10 +238,14 @@ object ShipReq extends Build {
 
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
-        .dependsOn(webappShared)
         .settings(
+          // Recompile shared source rather than depending directly
+          // https://github.com/scala-js/scala-js/issues/1067
+          unmanagedSourceDirectories in Compile ++= Seq(
+            (scalaSource in Compile in baseUtilSjs).value,
+            (scalaSource in Compile in webappShared).value),
           emitSourceMaps in fullOptJS := false,
-          checkScalaJSIR in fullOptJS := true,
+          //checkScalaJSIR in fullOptJS := true, https://github.com/lihaoyi/upickle/issues/27
           inliningMode in fullOptJS := InliningMode.Batch)
     }
 
