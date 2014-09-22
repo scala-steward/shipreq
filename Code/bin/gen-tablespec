@@ -87,9 +87,9 @@ $rn
       }
   }
 
-  final class $SB[P, O, V, $IeCO]($spec, buildO: ($OO) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new $SB($ss, f compose buildO)
-    def buildO[OO](f: $OO ⇒ OO) = new $SB($ss, f$tupled)
+  final class $SB[P, G, V, $IeCO]($spec, buildG: ($OO) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new $SB($ss, f compose buildG)
+    def buildG[GG](f: $OO ⇒ GG) = new $SB($ss, f$tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -98,7 +98,7 @@ $rn
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators($cvs) =
-        TableSpecB default $RS(${mc(i => s"s$i toW cv$i")},buildO)
+        TableSpecB default $RS(${mc(i => s"s$i toW cv$i")},buildG)
     }
   }""")
 }

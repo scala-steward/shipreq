@@ -14,7 +14,7 @@ import japgolly.scalajs.react.ScalazReact._
 import utily.EditorStuff._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui.Util._
-import shipreq.webapp.client.ui.{table => _, _}
+import shipreq.webapp.client.ui.Validator
 import shipreq.webapp.client.ui.Editors._
 import shipreq.webapp.client.ui.table._
 
@@ -55,7 +55,7 @@ object Phase2 extends js.JSApp {
     val PreSpec = TableSpecBuilder[P](
                     FieldSpec[P](_.key)(KeyValidator)(TextInputEditor),
                     FieldSpec[P](_.desc)(DescValidator)(TextareaEditor)
-                  ).mapO(CustomIssueTypeV.fromTuple)
+                  ).mapG(CustomIssueTypeV.fromTuple)
                   .rowId[CustomIssueTypeId]
     val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
                  .saveFn2(fakeSave, _.id)
@@ -122,7 +122,7 @@ object Phase2 extends js.JSApp {
         FieldSpec[P](_.mnemonic           )(MnemonicValidator)(TextInputEditor),
         FieldSpec[P](_.name               )(ReqNameValidator )(TextInputEditor),
         FieldSpec[P](_.implicationRequired)(Validator.nop    )(CheckboxEditor)
-      ).mapO(CustomReqTypeNV.fromTuple)
+      ).mapG(CustomReqTypeNV.fromTuple)
       .rowId[CustomReqTypeId]
 
     // TODO UC hardcoding here

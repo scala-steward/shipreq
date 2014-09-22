@@ -16,24 +16,24 @@ import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.syntax.bind._
 
-trait RowRenderer[S, G, P, E, V] {
-  final def render(eL: SimpleLens[S, E], s2mp: S => P) = renderM[Id](WeirdLens from eL, s2mp) _
+trait RowRenderer[S, G, P, I, V] {
+  final def render(eL: SimpleLens[S, I], s2mp: S => P) = renderM[Id](WeirdLens from eL, s2mp) _
 
-  def renderM[M[_] : Bind : Optional2](eL: WeirdLens[M, S, S, E], s2mp: S => M[P])(saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[V]
+  def renderM[M[_] : Bind : Optional2](eL: WeirdLens[M, S, S, I], s2mp: S => M[P])(saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[V]
 }
 
 // =====================================================================================================================
 
-class TableSpecB[S, DataId, O, P, I, V](val PtoI: P => I,
-                                        val renderable: Option[DataId] => RowRenderer[S, O, P, I, V],
+class TableSpecB[S, DataId, G, P, I, V](val PtoI: P => I,
+                                        val renderable: Option[DataId] => RowRenderer[S, G, P, I, V],
                                         val savedUnsaved: SavedUnsavedL[S, DataId, P, I],
                                         val initialState: Seq[(DataId, P)] => S) {
 
-  def saveFn2(saveIO: (Option[P], O) => IO[P], id: P => DataId) =
+  def saveFn2(saveIO: (Option[P], G) => IO[P], id: P => DataId) =
     saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
 
-  def saveFn(saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) =
-    new TableSpec[S, DataId, O, P, I, V](this, saveIO)
+  def saveFn(saveIO: (Option[(DataId, P)], G) => IO[(DataId, P)]) =
+    new TableSpec[S, DataId, G, P, I, V](this, saveIO)
 }
 
 object TableSpecB {
@@ -73,8 +73,8 @@ object TableSpec {
 
 import TableSpec._
 
-class TableSpec[S, DataId, O, P, I, V](tsb: TableSpecB[S, DataId, O, P, I, V],
-                                        saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) {
+class TableSpec[S, DataId, G, P, I, V](tsb: TableSpecB[S, DataId, G, P, I, V],
+                                        saveIO: (Option[(DataId, P)], G) => IO[(DataId, P)]) {
 
   import tsb.{PtoI, renderable, initialState => _initialState}
   import tsb.savedUnsaved.{savedL, unsavedL}
@@ -94,7 +94,7 @@ class TableSpec[S, DataId, O, P, I, V](tsb: TableSpecB[S, DataId, O, P, I, V],
   // ----------------------------------------------------------------------
   // Unsaved
 
-  private def renderAttrForUnsaved(saveIO: (S, O) => IO[S]) = {
+  private def renderAttrForUnsaved(saveIO: (S, G) => IO[S]) = {
     val s2op: S => Option[P] = _ => None
     def setI(s: S, i: I): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(i)))
     val se = WeirdLens[Option, S, S, I](unsavedL.get, setI)
@@ -128,7 +128,7 @@ class TableSpec[S, DataId, O, P, I, V](tsb: TableSpecB[S, DataId, O, P, I, V],
   private def rowPx(id: DataId): S => Px = s => (id, rowP(id)(s))
 
   private def saveRowFn(id: DataId) =
-    saveHelper[S, O, Px, Px, Px](
+    saveHelper[S, G, Px, Px, Px](
       s => (id, rowP(id)(s)),
       (px,g) => if (px._2 == g) None else Some(px),
       (px,g) => saveIO(Some(px), g),

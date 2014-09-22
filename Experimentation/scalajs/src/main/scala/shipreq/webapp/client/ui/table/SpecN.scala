@@ -33,9 +33,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider1[P, O, V, I1: Equal,C1,O1](s1: FieldSpec[P,V,I1,C1,O1], buildO: (O1) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider1(s1, f compose buildO)
-    def buildO[OO](f: O1 ⇒ OO) = new TableSpecBuider1(s1, f)
+  final class TableSpecBuider1[P, G, V, I1: Equal,C1,O1](s1: FieldSpec[P,V,I1,C1,O1], buildG: (O1) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider1(s1, f compose buildG)
+    def buildG[GG](f: O1 ⇒ GG) = new TableSpecBuider1(s1, f)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -44,7 +44,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]]) =
-        TableSpecB default RowSpec1(s1 toW cv1,buildO)
+        TableSpecB default RowSpec1(s1 toW cv1,buildG)
     }
   }
 
@@ -75,9 +75,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider2[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2], buildO: ((O1,O2)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider2(s1,s2, f compose buildO)
-    def buildO[OO](f: (O1,O2) ⇒ OO) = new TableSpecBuider2(s1,s2, f.tupled)
+  final class TableSpecBuider2[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2], buildG: ((O1,O2)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider2(s1,s2, f compose buildG)
+    def buildG[GG](f: (O1,O2) ⇒ GG) = new TableSpecBuider2(s1,s2, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -86,7 +86,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]]) =
-        TableSpecB default RowSpec2(s1 toW cv1,s2 toW cv2,buildO)
+        TableSpecB default RowSpec2(s1 toW cv1,s2 toW cv2,buildG)
     }
   }
 
@@ -121,9 +121,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider3[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3], buildO: ((O1,O2,O3)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider3(s1,s2,s3, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3) ⇒ OO) = new TableSpecBuider3(s1,s2,s3, f.tupled)
+  final class TableSpecBuider3[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3], buildG: ((O1,O2,O3)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider3(s1,s2,s3, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3) ⇒ GG) = new TableSpecBuider3(s1,s2,s3, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -132,7 +132,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]]) =
-        TableSpecB default RowSpec3(s1 toW cv1,s2 toW cv2,s3 toW cv3,buildO)
+        TableSpecB default RowSpec3(s1 toW cv1,s2 toW cv2,s3 toW cv3,buildG)
     }
   }
 
@@ -171,9 +171,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider4[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4], buildO: ((O1,O2,O3,O4)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider4(s1,s2,s3,s4, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4) ⇒ OO) = new TableSpecBuider4(s1,s2,s3,s4, f.tupled)
+  final class TableSpecBuider4[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4], buildG: ((O1,O2,O3,O4)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider4(s1,s2,s3,s4, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4) ⇒ GG) = new TableSpecBuider4(s1,s2,s3,s4, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -182,7 +182,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]]) =
-        TableSpecB default RowSpec4(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,buildO)
+        TableSpecB default RowSpec4(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,buildG)
     }
   }
 
@@ -225,9 +225,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider5[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5], buildO: ((O1,O2,O3,O4,O5)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider5(s1,s2,s3,s4,s5, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4,O5) ⇒ OO) = new TableSpecBuider5(s1,s2,s3,s4,s5, f.tupled)
+  final class TableSpecBuider5[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5], buildG: ((O1,O2,O3,O4,O5)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider5(s1,s2,s3,s4,s5, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4,O5) ⇒ GG) = new TableSpecBuider5(s1,s2,s3,s4,s5, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -236,7 +236,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]],cv5: Option[ValidateFnW[S,RowId,O5]]) =
-        TableSpecB default RowSpec5(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,buildO)
+        TableSpecB default RowSpec5(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,buildG)
     }
   }
 
@@ -283,9 +283,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider6[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6], buildO: ((O1,O2,O3,O4,O5,O6)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider6(s1,s2,s3,s4,s5,s6, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4,O5,O6) ⇒ OO) = new TableSpecBuider6(s1,s2,s3,s4,s5,s6, f.tupled)
+  final class TableSpecBuider6[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6], buildG: ((O1,O2,O3,O4,O5,O6)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider6(s1,s2,s3,s4,s5,s6, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4,O5,O6) ⇒ GG) = new TableSpecBuider6(s1,s2,s3,s4,s5,s6, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -294,7 +294,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]],cv5: Option[ValidateFnW[S,RowId,O5]],cv6: Option[ValidateFnW[S,RowId,O6]]) =
-        TableSpecB default RowSpec6(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,buildO)
+        TableSpecB default RowSpec6(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,buildG)
     }
   }
 
@@ -345,9 +345,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider7[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7], buildO: ((O1,O2,O3,O4,O5,O6,O7)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider7(s1,s2,s3,s4,s5,s6,s7, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4,O5,O6,O7) ⇒ OO) = new TableSpecBuider7(s1,s2,s3,s4,s5,s6,s7, f.tupled)
+  final class TableSpecBuider7[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7], buildG: ((O1,O2,O3,O4,O5,O6,O7)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider7(s1,s2,s3,s4,s5,s6,s7, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4,O5,O6,O7) ⇒ GG) = new TableSpecBuider7(s1,s2,s3,s4,s5,s6,s7, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -356,7 +356,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]],cv5: Option[ValidateFnW[S,RowId,O5]],cv6: Option[ValidateFnW[S,RowId,O6]],cv7: Option[ValidateFnW[S,RowId,O7]]) =
-        TableSpecB default RowSpec7(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,buildO)
+        TableSpecB default RowSpec7(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,buildG)
     }
   }
 
@@ -411,9 +411,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider8[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8], buildO: ((O1,O2,O3,O4,O5,O6,O7,O8)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider8(s1,s2,s3,s4,s5,s6,s7,s8, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4,O5,O6,O7,O8) ⇒ OO) = new TableSpecBuider8(s1,s2,s3,s4,s5,s6,s7,s8, f.tupled)
+  final class TableSpecBuider8[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8], buildG: ((O1,O2,O3,O4,O5,O6,O7,O8)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider8(s1,s2,s3,s4,s5,s6,s7,s8, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4,O5,O6,O7,O8) ⇒ GG) = new TableSpecBuider8(s1,s2,s3,s4,s5,s6,s7,s8, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -422,7 +422,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]],cv5: Option[ValidateFnW[S,RowId,O5]],cv6: Option[ValidateFnW[S,RowId,O6]],cv7: Option[ValidateFnW[S,RowId,O7]],cv8: Option[ValidateFnW[S,RowId,O8]]) =
-        TableSpecB default RowSpec8(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,s8 toW cv8,buildO)
+        TableSpecB default RowSpec8(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,s8 toW cv8,buildG)
     }
   }
 
@@ -481,9 +481,9 @@ object SpecN {
       }
   }
 
-  final class TableSpecBuider9[P, O, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8,I9: Equal,C9,O9](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8],s9: FieldSpec[P,V,I9,C9,O9], buildO: ((O1,O2,O3,O4,O5,O6,O7,O8,O9)) ⇒ O) {
-    def mapO[OO](f: O ⇒ OO) = new TableSpecBuider9(s1,s2,s3,s4,s5,s6,s7,s8,s9, f compose buildO)
-    def buildO[OO](f: (O1,O2,O3,O4,O5,O6,O7,O8,O9) ⇒ OO) = new TableSpecBuider9(s1,s2,s3,s4,s5,s6,s7,s8,s9, f.tupled)
+  final class TableSpecBuider9[P, G, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8,I9: Equal,C9,O9](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8],s9: FieldSpec[P,V,I9,C9,O9], buildG: ((O1,O2,O3,O4,O5,O6,O7,O8,O9)) ⇒ G) {
+    def mapG[GG](f: G ⇒ GG) = new TableSpecBuider9(s1,s2,s3,s4,s5,s6,s7,s8,s9, f compose buildG)
+    def buildG[GG](f: (O1,O2,O3,O4,O5,O6,O7,O8,O9) ⇒ GG) = new TableSpecBuider9(s1,s2,s3,s4,s5,s6,s7,s8,s9, f.tupled)
     def rowId[W] = new B2[W]
     final class B2[DataId] {
       type RowId = Option[DataId]
@@ -492,7 +492,7 @@ object SpecN {
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
       def ctxAwareValidators(cv1: Option[ValidateFnW[S,RowId,O1]],cv2: Option[ValidateFnW[S,RowId,O2]],cv3: Option[ValidateFnW[S,RowId,O3]],cv4: Option[ValidateFnW[S,RowId,O4]],cv5: Option[ValidateFnW[S,RowId,O5]],cv6: Option[ValidateFnW[S,RowId,O6]],cv7: Option[ValidateFnW[S,RowId,O7]],cv8: Option[ValidateFnW[S,RowId,O8]],cv9: Option[ValidateFnW[S,RowId,O9]]) =
-        TableSpecB default RowSpec9(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,s8 toW cv8,s9 toW cv9,buildO)
+        TableSpecB default RowSpec9(s1 toW cv1,s2 toW cv2,s3 toW cv3,s4 toW cv4,s5 toW cv5,s6 toW cv6,s7 toW cv7,s8 toW cv8,s9 toW cv9,buildG)
     }
   }
 }
