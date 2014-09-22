@@ -5,7 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
-import utily.DND
+import shipreq.webapp.client.ui.DND
 
 object ReactExamples {
 
@@ -28,8 +28,8 @@ object ReactExamples {
 
       def move(from: Item, to: Item) =
         IO{ console.log(s"...Before = ${T.state}") } >>
-          IO{ itemsState.modState(DND.move(from, to)) } >>
-          IO{ console.log(s"....After = ${T.state}") }
+        IO{ itemsState.modState(DND.move(from, to)) } >>
+        IO{ console.log(s"....After = ${T.state}") }
 
       def renderItem(i: Item) =
         li(key := i.id)(RowComp((i, DND.Parent.cProps(dndState, i, move ))))
@@ -37,7 +37,6 @@ object ReactExamples {
       div(
         h1("Drag and Drop"),
         ol(T.state.items.map(renderItem).toJsArray)
-
       )
     }).create
 

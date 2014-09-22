@@ -1,4 +1,4 @@
-package utily
+package shipreq.webapp.client.ui
 
 import org.scalajs.dom
 import org.scalajs.dom.console

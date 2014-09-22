@@ -12,7 +12,6 @@ import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
 import japgolly.scalajs.react.ScalazReact._
 import utily.EditorStuff._
-import utily.FormStuff._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui.Util._
 import shipreq.webapp.client.ui.{table => _, _}
@@ -139,7 +138,7 @@ object Phase2 extends js.JSApp {
     val Spec = PreSpec.ctxAwareValidators(Some(mnemonicUniqueness), Some(PreSpec.uniquenessCheck(_.name)), None)
       .saveFn2(fakeSave, _.id)
 
-    val Deletion = new DeletionThingy(Spec)(
+    val Deletion = new DeletionManager(Spec)(
       SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
       id => a => IO(a match {
         case HardDelete => FakeDao.customReqType.deleteHard(id)
