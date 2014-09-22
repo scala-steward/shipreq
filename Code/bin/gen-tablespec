@@ -52,10 +52,10 @@ for (a <- (1 to 9)) {
   def tupled = if (a==1) "" else ".tupled"
 
   def in = mt(i ⇒ s"s$i initial p")
-  def vn = mn(i ⇒ s"      val v$i = s$i.vw.fold[S ⇒ Validator[${ICOn(i)}]](_⇒ s$i.v)(c ⇒ Validator.forRow(s$i.v,c,w))")
+  def vn = mn(i ⇒ s"      val v$i = s$i.vr.fold[S ⇒ Validator[${ICOn(i)}]](_⇒ s$i.v)(c ⇒ Validator.forRow(s$i.v,c,w))")
   def sn = mn(i ⇒ s"        o$i ← v$i(s).correctAndValidate(e${ta(i)}).toOption")
   def en = mb(i ⇒ s"        new SmartEditor[S,${ICOn(i)},M](v$i, s2mp.andThen(_ map s$i.p2c), iL${iLmap(i)}, sf)").replaceFirst("^ +","")
-  def rn = mn(i ⇒ s"            v$i ← s${ta(i)}.render(s$i.editor, T)")
+  def rn = mn(i ⇒ s"            v$i ← s${ta(i)}.render(s$i.e, T)")
 
   def RS = s"RowSpec$a"
   def SB = s"TableSpecBuider$a"
@@ -97,7 +97,7 @@ $rn
       def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, $II)), A](
         (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
         (wpi, a) ⇒ a == f(wpi._2._1))
-      def ctxAwareValidators($cvs) =
+      def tableConstraints($cvs) =
         TableSpecB default $RS(${mc(i => s"s$i toR cv$i")},buildU)
     }
   }""")

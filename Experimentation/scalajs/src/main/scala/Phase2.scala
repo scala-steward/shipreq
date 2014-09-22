@@ -57,7 +57,7 @@ object Phase2 extends js.JSApp {
                     FieldSpec[P](_.desc)(DescValidator)(TextareaEditor)
                   ).mapU(CustomIssueTypeV.fromTuple)
                   .dataId[CustomIssueTypeId]
-    val Spec = PreSpec.ctxAwareValidators(Some(PreSpec.uniquenessCheck(_.key)), None)
+    val Spec = PreSpec.tableConstraints(Some(PreSpec.uniquenessCheck(_.key)), None)
                  .saveFn2(fakeSave, _.id)
 
     def fakeSave(prev: Option[P], newValues: CustomIssueTypeV) = IO[P] {
@@ -135,7 +135,7 @@ object Phase2 extends js.JSApp {
       "Mnemonic has already been used."
     )
 
-    val Spec = PreSpec.ctxAwareValidators(Some(mnemonicUniqueness), Some(PreSpec.uniquenessCheck(_.name)), None)
+    val Spec = PreSpec.tableConstraints(Some(mnemonicUniqueness), Some(PreSpec.uniquenessCheck(_.name)), None)
       .saveFn2(fakeSave, _.id)
 
     val Deletion = new DeletionManager(Spec)(

@@ -17,17 +17,17 @@ import scalaz.std.option._
 import scalaz.syntax.bind._
 
 trait RowRenderer[S, U, P, II, VV] {
-  final def render(eL: SimpleLens[S, II], s2mp: S => P) = renderM[Id](WeirdLens from eL, s2mp) _
+  final def render(iL: SimpleLens[S, II], s2p: S => P) = renderM[Id](WeirdLens from iL, s2p) _
 
-  def renderM[M[_] : Bind : Optional2](eL: WeirdLens[M, S, S, II], s2mp: S => M[P])(save: (S, U) => IO[S]): ComponentStateFocus[S] => M[VV]
+  def renderM[M[_] : Bind : Optional2](iL: WeirdLens[M, S, S, II], s2mp: S => M[P])(save: (S, U) => IO[S]): ComponentStateFocus[S] => M[VV]
 }
 
 // =====================================================================================================================
 
-class TableSpecB[S, D, G, P, II, VV](val PtoI: P => II,
-                                     val renderable: Option[D] => RowRenderer[S, G, P, II, VV],
-                                     val savedUnsaved: SavedUnsavedL[S, D, P, II],
-                                     val initialState: Seq[(D, P)] => S) {
+final class TableSpecB[S, D, G, P, II, VV](val PtoI: P => II,
+                                           val renderable: Option[D] => RowRenderer[S, G, P, II, VV],
+                                           val savedUnsaved: SavedUnsavedL[S, D, P, II],
+                                           val initialState: Seq[(D, P)] => S) {
 
   def saveFn2(saveIO: (Option[P], G) => IO[P], id: P => D) =
     saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
@@ -40,9 +40,9 @@ object TableSpecB {
 
   def default[D, G, P, II, VV](spec: RowSpec[SavedAndUnsaved[D, P, II], Option[D], G, P, II, VV]) = {
     val init = spec.initial _
-    val initialState: Seq[(D, P)] => spec.SS =
+    val initialState: Seq[(D, P)] => spec.S =
       xs => (xs.map(x => x._1 ->(x._2, init(x._2))).toMap, None)
-    new TableSpecB[spec.SS, D, G, P, II, VV](init, spec.forRow, SavedUnsavedL.default, initialState)
+    new TableSpecB[spec.S, D, G, P, II, VV](init, spec.forRow, SavedUnsavedL.default, initialState)
   }
 }
 
@@ -73,10 +73,10 @@ object TableSpec {
 
 import TableSpec._
 
-class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
-                                    saveIO: (Option[(D, P)], U) => IO[(D, P)]) {
+final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
+                                          saveIO: (Option[(D, P)], U) => IO[(D, P)]) {
 
-  import tsb.{PtoI, renderable, initialState => _initialState}
+  import tsb.{PtoI, renderable}
   import tsb.savedUnsaved.{savedL, unsavedL}
 
   @inline final private def ST = ReactS.Fix[S]
@@ -85,9 +85,9 @@ class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
 
   def mkPI(p: P): (P,II) = (p, PtoI(p))
 
-  def initialState(xs: Seq[P], id: P => D): S = _initialState(xs.map(x => id(x) -> x))
-  def initialState(d: Map[D, P]): S = _initialState(d.toSeq)
-  def initialState(d: Seq[(D, P)]): S = _initialState(d)
+  def initialState(d: Seq[P], id: P => D): S = tsb.initialState(d.map(x => id(x) -> x))
+  def initialState(d: Map[D, P])         : S = tsb.initialState(d.toSeq)
+  def initialState(d: Seq[(D, P)])       : S = tsb.initialState(d)
 
   // ----------------------------------------------------------------------
   // Unsaved
