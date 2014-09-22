@@ -1,0 +1,31 @@
+digraph D {
+
+SpecAttr -> SpecBuilder [label="O⁺ = (Oⁿ)⁻"]
+SpecBuilder -> SpecBuilder_B2
+SpecBuilder_B2 -> AttrSpecW [label="S⁺ = SavedAndUnsaved[DataId⁻, P⁻, Iₙ⁻]\nW⁺ = Option[DataId⁻]"]
+AttrSpecW -> Spec [constraint=false]
+SpecBuilder_B2 -> Spec [label="G⁺ = O⁻"]
+SpecBuilder_B2 -> TableSpecB [label="I⁺ = (Iⁿ)⁻\nV⁺ = (Vⁿ)⁻"]
+TableSpecB -> TableSpec [label=" S⁺ = SavedAndUnsaved[DataId⁻, P⁻, I⁻]"]
+//    [DataId, O, P, I, V]
+// [S, DataId, O, P, I, V]
+Spec -> Renderable [label="E⁺ = (Iⁿ)⁻\nV⁺ = (Vⁿ)⁻"]
+Renderable -> TableSpecB [label="S⁻ = SavedAndUnsaved[DataId⁺, P⁺, I⁺]\nO⁺ = G⁻\nI⁺ = E⁻"]
+
+Spec [label="Spec\n[S,W,G,P,V,Iₙ,Cₙ,Oₙ]"]
+SpecAttr [label="SpecAttr/AttrSpec\n[P,V,I,C,O]"]
+AttrSpecW [label="AttrSpecW\n[S,W,P,V,I,C,O]"]
+SpecBuilder [label="SpecBuilder\n[P,O,V,Iₙ,Cₙ,Oₙ]"]
+SpecBuilder_B2 [label="SpecBuilder.B2\n[P,O,V,Iₙ,Cₙ,Oₙ]\n[DataId]"]
+TableSpecB [label="TableSpecB\n[DataId,O,P,I,V]"]
+TableSpec [label="TableSpec\n[S,DataId,O,P,I,V]"]
+Renderable [label="Renderable\n[S,G,P,E,V]"]
+
+edge [color=red fontcolor="#550000"]
+User [fontcolor=red]
+User -> SpecAttr [label="1. Create"]
+User -> SpecBuilder [label="2. Create\n3. Specify DataId type"]
+User -> SpecBuilder_B2 [label="4. ctxAwareValidators"]
+User -> TableSpecB [label="5. saveFn"]
+
+}

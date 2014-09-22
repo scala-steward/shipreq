@@ -1,42 +1,26 @@
 package utily
 
-import japgolly.scalajs.react.vdom.{ReactOutput, ReactVDom, VDomBuilder, ReactFragT}
-import org.scalajs.dom
-import org.scalajs.dom.extensions.KeyCode
-import scala.runtime.{AbstractFunction3, AbstractFunction2}
-import scala.scalajs.js
-
 import japgolly.scalajs.react._
-import vdom.ReactVDom._
-import all._
+import japgolly.scalajs.react.vdom.ReactVDom._
+import japgolly.scalajs.react.vdom.ReactVDom.all._
 import ScalazReact._
+import utily.SpecN.SpecGeneric
 
 import scalaz.effect.IO
 import scalaz.Scalaz.Id
-import scalaz.{Foldable, Bind, \/, \/-, -\/, StateT}
+import scalaz.Bind
 import scalaz.std.option._
 import scalaz.syntax.bind._
-import scalaz.syntax.foldable._
 
-//import golly.ScalazReact._
 import monocle._
-//import Monocle._
 import monocle.syntax._
 import monocle.function.Field1.first
 import monocle.function.Field2.second
-import monocle.function.Field3.third
 import monocle.std.tuple2._
-import monocle.std.tuple3._
 
 import shipreq.webapp.client.ui._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui.Util._
-import shipreq.webapp.client.ui.{ErrorMsg, InputEvent, Editor}
-import EditorStuff._
-
-// TODO add drag/drop ordering to table
-// TODO state date structure help
-// TODO avoid NOP saves
 
 /**
  * Done
@@ -57,69 +41,24 @@ import EditorStuff._
  *
  * TODO
  * ~~~~
- * [ priority . effort ]
- *       handle name swap (should save both, not just one)
+ * [PRIORITY.EFFORT]
+ * [3.?] handle name swap (should save both, not just one)
  * [3.5] different view when field not in edit (sometimes the edit view is too noisy)
  * [2.3] visual indication of save-in-progress & save-complete
  * [2.2] server-side only errors / errors on save
  * [1.3] validators with composite types (like new & change password)
- *
+ * [?.?] avoid NOP saves
+ * [?.?] state date structure help
+ * [?.?] add drag/drop ordering to table
  */
 object FormStuff {
 
-  trait Renderable[S, G, P, E, V, VV] {
+  trait Renderable[S, G, P, E, V] {
     final def render(eL: SimpleLens[S, E], s2mp: S => P) = renderM[Id](WeirdLens from eL, s2mp) _
 
-    def renderM[M[_] : Bind : Optional2]
-    (eL: WeirdLens[M, S, S, E], s2mp: S => M[P])
-    (saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[VV]
-
-    //    def contra[T](l: SimpleLens[T, S]) = new ContraRenderable[T, S, G, P, E, V, VV](this, l)
+    def renderM[M[_] : Bind : Optional2](eL: WeirdLens[M, S, S, E], s2mp: S => M[P])(saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[V]
   }
 
-  /*
-  class ContraRenderable[T, S, G, P, E, V, VV](
-      to: Renderable[S, G, P, E, V, VV]
-  , l: SimpleLens[T, S]
-      ) extends Renderable[T, G, P, E, V, VV] {
-
-    override def renderM[M[_] : Bind : Foldable]
-      (eL: WeirdLens[M, T, T, E], s2mp: T => M[P])
-      (saveG: (T, G) => IO[T]): ComponentStateFocus[T] => M[VV] =
-      T => {
-        //def dimap[F, G](f: F => S, g: T => G) =
-
-
-        use T.state everywhere will wipe out any changes to T not in S
-
-        val S: ComponentStateFocus[S] = T.focusState[S](l.get _)(l.set _)
-
-        val t_me = eL.get
-        val t_e_mt = eL.set
-        val t_s = l.get _
-        val t_s_t = l.set _
-
-        // get
-        val s_me: S => M[E] = s => {
-          val t: T = t_s_t(T.state, s)
-          t_me(t)
-        }
-
-        // set
-        val s_e_ms: (S,E) => M[S] = (s,e) => {
-          val t: T = t_s_t(T.state, s)
-          val mt = t_e_mt(t, e)
-          implicitly[Bind[M]].map(mt)(t_s)
-        }
-
-        val XeL: WeirdLens[M, S, S, E] = WeirdLens[M, S, S, E](s_me, s_e_ms)
-        val Xs2mp: S => M[P] = s => s2mp(t_s_t(T.state, s))
-        val XsaveG: (S, G) => IO[S] = (s,g) => saveG(t_s_t(T.state, s), g).map(t_s)
-        val x = to.renderM[M](XeL, Xs2mp)(XsaveG)
-        x(S)
-      }
-  }
-*/
   /**
    * Single field attribute: types & validation logic.
    * Single field attribute: +renderToView.
@@ -133,44 +72,78 @@ object FormStuff {
   class AttrSpecW[S, W, P, V, I, C, O](s: AttrSpec[P, V, I, C, O], val vw: Option[ValidateFnW[S, W, O]])
       extends AttrSpec(s.p2c, s.v, s.editor)
 
-  class TableSpecB[DataId, O, P, I, V, VV](PtoI: P => I) {
-    private type Unsaved = Option[I]
-    private type Saved = Map[DataId, (P, I)]
-    private type S = (Saved, Unsaved)
-    private def savedL = first[S, Saved]
-    private def unsavedL = second[S, Unsaved]
 
-    def renderFn(renderable: Option[DataId] => Renderable[S, O, P, I, V, VV]) = new {
 
-      def saveFn2(saveIO: (Option[P], O) => IO[P], id: P => DataId) =
-        saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
+  class TableSpecB[DataId, O, P, I, V](PtoI: P => I, renderable: Option[DataId] => Renderable[SavedAndUnsaved[DataId, P, I], O, P, I, V]) {
 
-      def saveFn(saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) = {
-        def mkPI(p: P): (P, I) = (p, PtoI(p))
-        val initialState: Seq[(DataId, P)] => S = xs => (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
-        new TableSpec(renderable, savedL, unsavedL, PtoI, initialState, saveIO)
-      }
+    def saveFn2(saveIO: (Option[P], O) => IO[P], id: P => DataId) =
+      saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
+
+    def saveFn(saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) = {
+      def mkPI(p: P): (P, I) = (p, PtoI(p))
+      val initialState: Seq[(DataId, P)] => SavedAndUnsaved[DataId, P, I] =
+        xs => (xs.map(x => x._1 -> mkPI(x._2)).toMap, None)
+      new TableSpec[SavedAndUnsaved[DataId, P, I], DataId, O, P, I, V](PtoI, renderable, simpleSavedUnsavedL[DataId, P, I], initialState, saveIO)
     }
   }
 
+
+  type Saved[DataId, P, I] = Map[DataId, (P, I)]
+  type Unsaved[I] = Option[I]
+  type SavedAndUnsaved[DataId, P, I] = (Saved[DataId, P, I], Unsaved[I])
+
+//  type SavedAndUnsavedStor[DataId, P, I] =
+//    final type Saved = Map[DataId, (P, I)]
+//    final type Unsaved = Option[I]
+//    def savedL: SimpleLens[S, Saved]
+//    def unsavedL: SimpleLens[S, Unsaved]
+//  }
+
+//  trait SomeTypes[DataId, P, I] {
+//    final type Saved = Map[DataId, (P, I)]
+//    final type Unsaved = Option[I]
+//    final type S = (Saved, Unsaved)
+//    protected final def savedL = first[S, Saved]
+//    protected final def unsavedL = second[S, Unsaved]
+//  }
+
+  def simpleSavedUnsavedL[DataId, P, I] =
+    SavedUnsavedL[SavedAndUnsaved[DataId, P, I], DataId, P, I](first, second)
+
+  case class SavedUnsavedL[S, DataId, P, I](
+    savedL: SimpleLens[S, Saved[DataId, P, I]],
+    unsavedL: SimpleLens[S, Unsaved[I]])
+
+//  trait SavedAndUnsavedStore[S, DataId, P, I] {
+//    final type Saved = Map[DataId, (P, I)]
+//    final type Unsaved = Option[I]
+//    def savedL: SimpleLens[S, Saved]
+//    def unsavedL: SimpleLens[S, Unsaved]
+//  }
+
+//  def xxxSomeTypes[DataId, P, I]
+//  trait SavedAndUnsavedStoreTuple2[DataId, P, I] extends SavedAndUnsavedStore2[S, DataId, P, I]{
+//    final type Saved = Map[DataId, (P, I)]
+//    final type Unsaved = Option[I]
+//    def savedL: SimpleLens[S, Saved]
+//    def unsavedL: SimpleLens[S, Unsaved]
+//  }
+
   def SpecAttr[P] = new {
     def apply[C](p2c: P => C) = new {
-      def apply[I, O](v: Validator[I, C, O])(e: Editor[I, ReactVDom.Modifier]) =
+      def apply[I, O](v: Validator[I, C, O])(e: Editor[I, Modifier]) =
         new AttrSpec(p2c, v, e)
     }
   }
 
-  class TableSpec[S, DataId, O, P, V, I, VV](
-                                       renderable: Option[DataId] => Renderable[S,O,P,I,V,VV],
-                                       savedL: SimpleLens[S, Map[DataId, (P, I)]],
-                                       unsavedL: SimpleLens[S, Option[I]],
-                                       PtoI: P => I,
-                                       _initialState: Seq[(DataId, P)] => S,
-                                       saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]
-                                       ) {
+  class TableSpec[S, DataId, O, P, I, V](
+      PtoI: P => I,
+      renderable: Option[DataId] => Renderable[S,O,P,I,V],
+      savedUnsaved: SavedUnsavedL[S, DataId, P, I],
+      _initialState: Seq[(DataId, P)] => S,
+      saveIO: (Option[(DataId, P)], O) => IO[(DataId, P)]) {
 
-//    def contramap[T](l: SimpleLens[T, S], i: S => T) = new TableSpec[T, DataId, O, P, V, I, VV](
-//      d => renderable(d).contra(l), l |-> savedL, l |-> unsavedL, PtoI, i compose initialState, saveIO)
+    import savedUnsaved.{savedL, unsavedL}
 
     @inline final private def ST = ReactS.Fix[S]
 
@@ -206,11 +179,11 @@ object FormStuff {
     private val _renderAttrUnsaved =
       renderAttrForUnsaved((s,g) => saveIO(None, g).map(insertUnsaved(_)(s)))
 
-    def unsavedRow[V2](renderRow: (ComponentStateFocus[S], VV) => V2) =
+    def unsavedRow[V2](renderRow: (ComponentStateFocus[S], V) => V2) =
       _unsavedRow(_renderAttrUnsaved, renderRow)
 
-    private def _unsavedRow[V2](renderAttr: ComponentStateFocus[S] => Option[VV], renderRow: (ComponentStateFocus[S], VV) => V2) =
-      new FullRow[Option, S, VV, V2, Unit](_ => renderAttr(_), (T,_,vv) => renderRow(T, vv))
+    private def _unsavedRow[V2](renderAttr: ComponentStateFocus[S] => Option[V], renderRow: (ComponentStateFocus[S], V) => V2) =
+      new FullRow[Option, S, V, V2, Unit](_ => renderAttr(_), (T,_,vv) => renderRow(T, vv))
 
     // ----------------------------------------------------------------------
     // Saved
@@ -256,17 +229,17 @@ object FormStuff {
 
     def updateSavedS(px: Px) = ST.mod(updateSaved(px))
 
-    def savedRow[V2](renderRow: (ComponentStateFocus[S], DataId, P, VV) => V2) =
+    def savedRow[V2](renderRow: (ComponentStateFocus[S], DataId, P, V) => V2) =
       _savedRow(renderAttrForSaved, (t,i,v) => renderRow(t,i,rowL(i).get(t.state)._1,v))
 
-    def savedRow[V2](renderRow: (ComponentStateFocus[S], DataId, VV) => V2) =
+    def savedRow[V2](renderRow: (ComponentStateFocus[S], DataId, V) => V2) =
       _savedRow(renderAttrForSaved, renderRow)
 
-    private def _savedRow[V2](renderAttr: DataId => ComponentStateFocus[S] => VV, renderRow: (ComponentStateFocus[S], DataId, VV) => V2) =
-      new FullRow[Id, S, VV, V2, DataId](renderAttr, renderRow)
+    private def _savedRow[V2](renderAttr: DataId => ComponentStateFocus[S] => V, renderRow: (ComponentStateFocus[S], DataId, V) => V2) =
+      new FullRow[Id, S, V, V2, DataId](renderAttr, renderRow)
 
     type SavedPs = Stream[(DataId, P)]
-    def renderSaved(T: ComponentStateFocus[S], r: FullRow[Id, S, VV, Tag, DataId])(f: SavedPs => SavedPs) = {
+    def renderSaved(T: ComponentStateFocus[S], r: FullRow[Id, S, V, Tag, DataId])(f: SavedPs => SavedPs) = {
       val rr = r.render(T)
       f(getSaved(T)).map(x => rr(x._1)).toJsArray
     }
@@ -278,11 +251,12 @@ object FormStuff {
   // ===================================================================================================================
   // rows
 
-  class FullRow[M[_] : Bind, S, VV, V, RowId](renderAttr: RowId => ComponentStateFocus[S] => M[VV],
-                                          renderRow: (ComponentStateFocus[S], RowId, VV) => V
-                                           ) {
-    def render(T: ComponentStateFocus[S]): RowId => M[V] =
-      id => renderAttr(id)(T).map(vv => renderRow(T, id, vv))
+  class FullRow[M[_] : Bind, S, V1, V2, RowId](
+      renderAttr: RowId => ComponentStateFocus[S] => M[V1],
+      renderRow: (ComponentStateFocus[S], RowId, V1) => V2) {
+
+    def render(T: ComponentStateFocus[S]): RowId => M[V2] =
+      id => renderAttr(id)(T).map(v1 => renderRow(T, id, v1))
   }
 
   // ===================================================================================================================
@@ -312,7 +286,7 @@ object FormStuff {
   case object Restore extends DeletionAction
 
   class DeletionThingy[S, P, DataId](
-                                      spec: TableSpec[S, DataId, _, P, _, _, _])(
+                                      spec: TableSpec[S, DataId, _, P, _, _])(
                                       l: SimpleLens[P, Boolean],
                                       saveIO: DataId => DeletionAction => IO[Unit]
                                ) {

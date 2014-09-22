@@ -18,6 +18,13 @@ import shipreq.webapp.client.ui.Util._
 // TODO use TupleExt.mapn
 object SpecN {
 
+  trait SpecGeneric[S, W, G, P, I, V] {
+    final type II = I
+    final type VV = V
+    def initial(p: P): II
+    def forRow(w: W): Renderable[S, G, P, II, VV]
+  }
+
   /**
    * This is actually just field attribute composition.
    * Single row/record.
@@ -30,13 +37,11 @@ object SpecN {
    */
   case class Spec2[S, W, G, P, V, I1:Equal, C1, O1, I2:Equal, C2, O2](
         s1: AttrSpecW[S,W,P,V,I1,C1,O1], s2: AttrSpecW[S,W,P,V,I2,C2,O2],
-        oo2g: ((O1, O2)) => G) {
+        oo2g: ((O1, O2)) => G) extends SpecGeneric[S, W, G, P, (I1, I2), (V, V)] {
 
-    type II = (I1, I2)
     type OO = (O1, O2)
-    type VV = (V, V)
 
-    def initial(p: P): II = (s1 initial p, s2 initial p)
+    override def initial(p: P): II = (s1 initial p, s2 initial p)
 
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S => M[P],
                                                        w: W,
@@ -63,7 +68,7 @@ object SpecN {
       )
     }
 
-    def forRow(w: W): Renderable[S, G, P, II, V, VV] = new Renderable[S, G, P, II, V, VV] {
+    override def forRow(w: W): Renderable[S, G, P, II, VV] = new Renderable[S, G, P, II, VV] {
       override def renderM[M[_] : Bind : Optional2]
       (eL: WeirdLens[M, S, S, II], s2mp: S => M[P])
       (saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[VV] = T => {
@@ -102,7 +107,7 @@ object SpecN {
 
       def ctxAwareValidators(cv1: Option[ValidateFnW[S, RowId, O1]], cv2: Option[ValidateFnW[S, RowId, O2]]) = {
         val spec = Spec2(s1.toW(cv1), s2.toW(cv2), buildO)
-        new TableSpecB[DataId, O, P, I, V, VV](spec.initial).renderFn(spec.forRow)
+        new TableSpecB[DataId, O, P, I, VV](spec.initial, spec.forRow)
       }
     }
   }
@@ -157,7 +162,7 @@ object SpecN {
         )
     }
 
-    def forRow(w: W): Renderable[S, G, P, II, V, VV] = new Renderable[S, G, P, II, V, VV] {
+    def forRow(w: W): Renderable[S, G, P, II, VV] = new Renderable[S, G, P, II, VV] {
       override def renderM[M[_] : Bind : Optional2]
       (eL: WeirdLens[M, S, S, II], s2mp: S => M[P])
       (saveG: (S, G) => IO[S]): ComponentStateFocus[S] => M[VV] = T => {
@@ -197,7 +202,7 @@ object SpecN {
 
       def ctxAwareValidators(cv1: Option[ValidateFnW[S, RowId, O1]], cv2: Option[ValidateFnW[S, RowId, O2]], cv3: Option[ValidateFnW[S, RowId, O3]]) = {
         val spec = Spec3(s1.toW(cv1), s2.toW(cv2), s3.toW(cv3), buildO)
-        new TableSpecB[DataId, O, P, I, V, VV](spec.initial).renderFn(spec.forRow)
+        new TableSpecB[DataId, O, P, I, VV](spec.initial, spec.forRow)
       }
     }
   }
