@@ -4,6 +4,7 @@ import monocle._
 import monocle.function.Field1.first
 import monocle.function.Field2.second
 import monocle.std.tuple2._
+import monocle.syntax._
 
 /**
  * Types
@@ -56,11 +57,23 @@ package object table {
 
   def getSaved[D, P, II]: SavedAndUnsaved[D, P, II] => Saved[D, P, II] = _._1
 
-  case class SavedUnsavedL[S, D, P, II](savedL: SimpleLens[S, Saved[D, P, II]],
-                                        unsavedL: SimpleLens[S, Unsaved[II]])
+  class SavedUnsavedL[S, D, P, II](val savedL: SimpleLens[S, Saved[D, P, II]],
+                                   val unsavedL: SimpleLens[S, Unsaved[II]]) {
+    def rowL(id: D) =
+      savedL composeLens SimpleLens[Saved[D, P, II]](_(id))((a, b) => a + (id -> b))
+
+    def rowIL(id: D) =
+      rowL(id) |-> second
+
+    def rowP(id: D): S => P =
+      savedL.get(_)(id)._1
+
+    def rowDP(id: D): S => (D, P) =
+      s => (id, rowP(id)(s))
+  }
 
   object SavedUnsavedL {
     def default[D, P, II] =
-      SavedUnsavedL[SavedAndUnsaved[D, P, II], D, P, II](first, second)
+      new SavedUnsavedL[SavedAndUnsaved[D, P, II], D, P, II](first, second)
   }
 }

@@ -4,12 +4,8 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import monocle._
-import monocle.function.Field2.second
-import monocle.std.tuple2._
-import monocle.syntax._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui._
-
 import scalaz.Bind
 import scalaz.Scalaz.Id
 import scalaz.effect.IO
@@ -24,8 +20,8 @@ trait RowRenderer[S, U, P, II, VV] {
 
 // =====================================================================================================================
 
-final class TableSpecB[S, D, G, P, II, VV](val PtoI: P => II,
-                                           val renderable: Option[D] => RowRenderer[S, G, P, II, VV],
+final class TableSpecB[S, D, G, P, II, VV](val p2ii: P => II,
+                                           val rowRenderer: Option[D] => RowRenderer[S, G, P, II, VV],
                                            val savedUnsaved: SavedUnsavedL[S, D, P, II],
                                            val initialState: Seq[(D, P)] => S) {
 
@@ -48,42 +44,19 @@ object TableSpecB {
 
 // =====================================================================================================================
 
-object TableSpec {
-
-  class FullRow[M[_] : Bind, S, V1, V2, R](renderAttr: R => ComponentStateFocus[S] => M[V1],
-                                           renderRow: (ComponentStateFocus[S], R, V1) => V2) {
-    def render(T: ComponentStateFocus[S]): R => M[V2] =
-      id => renderAttr(id)(T).map(v1 => renderRow(T, id, v1))
-  }
-
-  def saveHelper[S, G, L, L2, DP](getLast: S => L,
-                                  needSave: (L, G) => Option[L2],
-                                  saveIO: (L2, G) => IO[DP],
-                                  storeSaved: (S, DP) => S): (S, G) => IO[S] =
-    (s,g) => {
-      val last = getLast(s)
-      needSave(last, g) match {
-        case Some(l2) => saveIO(l2, g).map(storeSaved(s, _))
-        case None     => IO(s)
-      }
-    }
-}
-
-// =====================================================================================================================
-
 import TableSpec._
 
 final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
                                           saveIO: (Option[(D, P)], U) => IO[(D, P)]) {
 
-  import tsb.{PtoI, renderable}
-  import tsb.savedUnsaved.{savedL, unsavedL}
+  import tsb.{p2ii, rowRenderer}
+  import tsb.savedUnsaved._
 
   @inline final private def ST = ReactS.Fix[S]
 
-  type DP = (D, P)
+  final type DP = (D, P)
 
-  def mkPI(p: P): (P,II) = (p, PtoI(p))
+  def mkPI(p: P): (P,II) = (p, p2ii(p))
 
   def initialState(d: Seq[P], id: P => D): S = tsb.initialState(d.map(x => id(x) -> x))
   def initialState(d: Map[D, P])         : S = tsb.initialState(d.toSeq)
@@ -96,7 +69,7 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
     val s2op: S => Option[P] = _ => None
     def setI(s: S, i: II): Option[S] = unsavedL.get(s).map(_ => unsavedL.set(s, Some(i)))
     val se = WeirdLens[Option, S, S, II](unsavedL.get, setI)
-    renderable(None).renderM(se, s2op)(saveIO)
+    rowRenderer(None).renderM(se, s2op)(saveIO)
   }
 
   def createUnsaved(empty: II) = ReactS.mod(unsavedL.modifyF(_ orElse Some(empty)))
@@ -120,12 +93,6 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
   // ----------------------------------------------------------------------
   // Saved
 
-  // TODO this should be provided & elsewhere
-  private def rowL(id: D) = savedL composeLens SimpleLens[Saved[D, P, II]](_(id))((a,b) => a + (id -> b))
-  private def rowIL(id: D) = rowL(id) |-> second
-  private def rowP(id: D): S => P = savedL.get(_)(id)._1
-  private def rowDP(id: D): S => DP = s => (id, rowP(id)(s))
-
   private def saveRowFn(id: D) =
     saveHelper[S, U, DP, DP, DP](
       s => (id, rowP(id)(s)),
@@ -134,7 +101,7 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
       (s,px) => updateSaved(px)(s))
 
   private def renderAttrForSaved(id: D) =
-    renderable(Some(id)).render(rowIL(id), rowP(id))(saveRowFn(id))
+    rowRenderer(Some(id)).render(rowIL(id), rowP(id))(saveRowFn(id))
 
   def removeSaved(id: D) = savedL.modifyF(m => m - id)
   def removeSavedS(id: D) = ReactS.mod(removeSaved(id))
@@ -142,7 +109,7 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
   def deleteSavedS(f: D => IO[Unit]): D => ReactST[IO, S, Unit] =
     id => ReactS.retM(f(id)) >> removeSavedS(id)
 
-  def cancelChangesS(id: D) = ST.mod(s => rowIL(id).set(s, PtoI(rowP(id)(s))))
+  def cancelChangesS(id: D) = ST.mod(s => rowIL(id).set(s, p2ii(rowP(id)(s))))
 
   def modAndSaveS(modAndSaveIO: DP => IO[DP]): D => ReactST[IO, S, Unit] = id => {
     val modsaveS: ReactST[IO, S, DP] = ST.gets(rowDP(id)).lift[IO].flatMap(px1 => ST.retM(modAndSaveIO(px1)))
@@ -179,4 +146,27 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
 
   def getSaved(T: ComponentStateFocus[S]): SavedPs =
     savedL.get(T.state).toStream.map(x => x._1 -> x._2._1)
+}
+
+// =====================================================================================================================
+
+object TableSpec {
+
+  class FullRow[M[_] : Bind, S, V1, V2, R](renderAttr: R => ComponentStateFocus[S] => M[V1],
+                                           renderRow: (ComponentStateFocus[S], R, V1) => V2) {
+    def render(T: ComponentStateFocus[S]): R => M[V2] =
+      id => renderAttr(id)(T).map(v1 => renderRow(T, id, v1))
+  }
+
+  def saveHelper[S, G, L, L2, DP](getLast: S => L,
+                                  needSave: (L, G) => Option[L2],
+                                  saveIO: (L2, G) => IO[DP],
+                                  storeSaved: (S, DP) => S): (S, G) => IO[S] =
+    (s,g) => {
+      val last = getLast(s)
+      needSave(last, g) match {
+        case Some(l2) => saveIO(l2, g).map(storeSaved(s, _))
+        case None     => IO(s)
+      }
+    }
 }
