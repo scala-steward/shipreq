@@ -23,7 +23,7 @@ edge [color=red fontcolor="#550000"]
 Client [fontcolor=red]
 Client -> FieldSpec [label="1. Create"]
 Client -> TableSpecBuilder [label="2. Create\n3. dataId"]
-Client -> TableSpecBuilder_B2 [label="4. validators"]
+Client -> TableSpecBuilder_B2 [label="4. tableConstraints"]
 Client -> TableSpecB [label="5. saveFn"]
 TableSpecBuilder -> TableSpecBuilder [label=" U⁺ = arb"]
 

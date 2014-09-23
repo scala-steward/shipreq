@@ -33,7 +33,7 @@ object Deps {
       val test   = js("test")
       val scalaz = js("ext-scalaz71")
     }
-    object Scalaz extends Group(Deps.Scalaz.version + "-2", "com.github.japgolly.fork.scalaz") {
+    object Scalaz extends Group(Deps.Scalaz.version + "-3", "com.github.japgolly.fork.scalaz") {
       val core   = js("scalaz-core")
       val effect = js("scalaz-effect")
     }
