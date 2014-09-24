@@ -1,4 +1,4 @@
-package shipreq.webapp.feature.validation
+package shipreq.webapp.shared.validation
 
 trait Constraint[-A] {
 

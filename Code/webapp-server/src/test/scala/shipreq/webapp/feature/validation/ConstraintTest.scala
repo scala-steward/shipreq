@@ -1,9 +1,12 @@
 package shipreq.webapp.feature.validation
 
 import org.scalatest.{Matchers, FunSuite}
-import shipreq.webapp.app.AppConfig._
+import shipreq.webapp.shared.AppConsts._
+import shipreq.webapp.shared.validation._
 import Constraint.{not => NOT}
 import Constraints._
+
+// TODO move into webapp-shared
 
 class ConstraintTest extends FunSuite with Matchers {
 
@@ -77,11 +80,11 @@ class ConstraintTest extends FunSuite with Matchers {
   test("largeTextLimit") {
     implicit val c = largeTextLimit
     valid("")
-    valid("." * (LargeTextMaxLength / 2))
-    valid("." * LargeTextMaxLength)
-    invalid("." * (LargeTextMaxLength + 1))
-    invalid("." * (LargeTextMaxLength * 2))
-    c.invalidate("." * (LargeTextMaxLength + 666)).head should include(" 666 ")
+    valid("." * (largeTextMaxLength / 2))
+    valid("." * largeTextMaxLength)
+    invalid("." * (largeTextMaxLength + 1))
+    invalid("." * (largeTextMaxLength * 2))
+    c.invalidate("." * (largeTextMaxLength + 666)).head should include(" 666 ")
   }
 
   test("containsSurname") {

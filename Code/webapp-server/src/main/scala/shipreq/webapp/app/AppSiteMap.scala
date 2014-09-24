@@ -10,6 +10,7 @@ import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{Text, NodeSeq}
 import scalaz.{Memo, Name, Need, NonEmptyList}
 
+import shipreq.webapp.shared.AppConsts
 import AppConfig.BaseUrl
 import lib.Misc
 import lib.Types._
@@ -226,11 +227,11 @@ WIP,
     Full(redirectHomeResp)
   }
 
-  @inline final def defaultTitle = AppConfig.AppName
+  @inline final def defaultTitle = AppConsts.appName
 
   @inline final def mkTitle(title: String): String = title match {
     case "" => defaultTitle
-    case _  => s"$title | ${AppConfig.AppName}"
+    case _  => s"$title | ${AppConsts.appName}"
   }
 
   private def StaticTitle[T](title: String) = {

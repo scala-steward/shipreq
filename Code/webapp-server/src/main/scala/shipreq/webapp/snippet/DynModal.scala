@@ -3,10 +3,8 @@ package shipreq.webapp.snippet
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import shipreq.webapp.feature.validation.{ValidationResult, Validators}
 import shipreq.webapp.lib.{FormVar, StaticSnippetHelpers}
 import shipreq.webapp.lib.SnippetHelpers.{ErrorAlertId, NoticeContainerExp}
-import shipreq.webapp.lib.Types._
 import shipreq.webapp.security.PasswordAndSalt
 import shipreq.webapp.util.HtmlTransformExt._
 import shipreq.webapp.util.JsExt._

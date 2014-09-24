@@ -7,6 +7,7 @@ import net.liftweb.http.js.{JsExp, JsCmd, JsCmds}
 import net.liftweb.util.Helpers.nextFuncName
 import JsCmds.Noop
 
+import shipreq.webapp.shared.validation.VFailure
 import app.{AppConfig, Defaults, DI, RequestVars}
 import db.{UseCaseSummary, UseCaseHeader}
 import lib.{Misc, SnippetHelpers, Locks, StaticSnippetHelpers}
@@ -16,7 +17,6 @@ import feature.uc._
 import feature.uc.change._
 import feature.uc.field._
 import feature.uc.persist.{UseCasePersistence, UseCaseSaveCheckpoint}
-import feature.validation.VFailure
 import util.JsExt.JqFocus
 
 object UseCaseEditor {

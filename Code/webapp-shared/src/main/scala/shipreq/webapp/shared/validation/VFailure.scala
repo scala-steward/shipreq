@@ -1,8 +1,7 @@
-package shipreq.webapp.feature.validation
+package shipreq.webapp.shared.validation
 
-import scala.xml.NodeSeq
 import scalaz.{Monoid, Semigroup, NonEmptyList}
-import shipreq.webapp.lib.ScalazSubset._
+import scalaz.std.map.mapMonoid
 import VFailure._
 
 object VFailure {
@@ -21,7 +20,7 @@ object VFailure {
     override def append(a: F, bb: => F): F = {
       val b = bb
       val l = b.looseMsgs ::: a.looseMsgs
-      val f = b.fieldFailures |+| a.fieldFailures
+      val f = b.fieldFailures ++ a.fieldFailures
       new VFailure(l, f)
     }
   }
@@ -39,7 +38,6 @@ class VFailure private(
   ) {
 
   def toText: String = VFailureTextRenderer render this
-  def toHtml: NodeSeq = VFailureHtmlRenderer render this
 
   override def toString = toText
 

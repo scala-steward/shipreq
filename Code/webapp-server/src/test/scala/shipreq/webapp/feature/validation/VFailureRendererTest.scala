@@ -4,7 +4,10 @@ import org.scalatest.{Matchers, FunSpec}
 import scala.xml.Text
 import scalaz.NonEmptyList
 import scalaz.syntax.semigroup._
+import shipreq.webapp.shared.validation._
 import VFailure.semigroup
+
+// TODO move into webapp-shared
 
 class VFailureRendererTest extends FunSpec with Matchers {
 
@@ -17,22 +20,22 @@ class VFailureRendererTest extends FunSpec with Matchers {
 
   describe("Rendering to html") {
     it("Single field error") {
-      singleField.toHtml shouldBe Text("Car is too big.")
+      VFailureHtmlRenderer render singleField shouldBe Text("Car is too big.")
     }
     it("Multiple field errors") {
-      multiField.toHtml shouldBe Text("Car") ++ <ul><li>is too fast.</li><li>is too big.</li></ul>
+      VFailureHtmlRenderer render multiField shouldBe Text("Car") ++ <ul><li>is too fast.</li><li>is too big.</li></ul>
     }
     it("Single loose error") {
-      singleLoose.toHtml shouldBe Text("It's Tuesday.")
+      VFailureHtmlRenderer render singleLoose shouldBe Text("It's Tuesday.")
     }
     it("Multiple loose error") {
-      multiLoose.toHtml shouldBe <ul><li>It's too hot.</li><li>It's Tuesday.</li></ul>
+      VFailureHtmlRenderer render multiLoose shouldBe <ul><li>It's too hot.</li><li>It's Tuesday.</li></ul>
     }
     it("Different error types 1") {
-      multiTypes.toHtml shouldBe <ul><li>It's Tuesday.</li><li>Car is too big.</li></ul>
+      VFailureHtmlRenderer render multiTypes shouldBe <ul><li>It's Tuesday.</li><li>Car is too big.</li></ul>
     }
     it("Different error types 2") {
-      multiTypes4.toHtml shouldBe <ul><li>It's too hot.</li><li>It's Tuesday.</li><li>Car<ul><li>is too fast.</li><li>is too big.</li></ul></li></ul>
+      VFailureHtmlRenderer render multiTypes4 shouldBe <ul><li>It's too hot.</li><li>It's Tuesday.</li><li>Car<ul><li>is too fast.</li><li>is too big.</li></ul></li></ul>
     }
   }
 

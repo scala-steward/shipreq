@@ -8,6 +8,7 @@ import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.{MsgId, Msg, ApiOp}
 import shipreq.taskman.api.Msg.WebappErrorOccurred
+import shipreq.webapp.shared.AppConsts
 import shipreq.webapp.app.{DI, AppConfig}
 import shipreq.webapp.security.Oshiro
 import ApiOp._
@@ -18,7 +19,7 @@ object Taskman {
   import SM.Implicits._
 
   def updateCfg: List[ApiOp[Unit]] = List(
-    CfgPut(K.appName,  AppConfig.AppName),
+    CfgPut(K.appName,  AppConsts.appName),
     CfgPut(K.homeUrl,  SM.Home.absoluteUrl),
     CfgPut(K.loginUrl, SM.Login.absoluteUrl)
   )

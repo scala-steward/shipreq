@@ -7,14 +7,11 @@ import shipreq.base.util.jodatime.JodaTimeValueRetrievers
 import shipreq.webapp.util.PropsRetrievers._
 import shipreq.webapp.util.ExpireAfter
 
-final object AppConfig {
+object AppConfig {
   implicit def PropScope = scopeByNS("shipreq")
   private val jtr = JodaTimeValueRetrievers(retrieverS)
   import jtr.retrieverPeriod
   private implicit def rts: Retriever[TimeSpan] = jtr.retrieverPeriod.map(p => p)
-
-  // Make sure this is in sync with application.js
-  val AppName = "ShipReq"
 
   val SupportEmailAddress = need[String]("support.email")
 
@@ -29,26 +26,11 @@ final object AppConfig {
   /** The DB schema in which the Taskman interfaces reside. */
   val TaskmanSchema = need[String]("taskman.schema")
 
-  /** Passwords' min & max lengths. */
-  val PasswordLength = 8 to 128
-
   /** How long confirmation tokens are valid for after issuing. */
   val TokenLifespan = need[TimeSpan]("token.lifespan.email_conf")
 
   /** How long password-reset tokens are valid for after issuing. */
   val PasswordResetTokenLifespan = need[TimeSpan]("token.lifespan.resetpw")
-
-  /** Usernames' min & max lengths. */
-  val UsernameLength = 3 to 32
-
-  /** Email address max length. */
-  val EmailMaxLength = 120
-
-  /** Limit for generic VARCHAR columns. */
-  val ShortTextMaxLength = 255
-
-  /** Limit the length of seemingly-unbound inputs. Prevents a malicious user creating 1GB rows. */
-  val LargeTextMaxLength = 20000
 
   /** The amount of time that a user is allowed to view a share after authenticating, without re-authenticating. */
   val ShareViewAuthPeriod = need[Period]("share.auth_period")

@@ -14,7 +14,8 @@ import shipreq.base.util.TaggedTypes.{JsonStr, TaggedString}
 import shipreq.taskman.api.UserId
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
-import shipreq.webapp.feature.validation.{ValidationResult, VFailure}
+import shipreq.webapp.feature.validation.VFailureHtmlRenderer
+import shipreq.webapp.shared.validation.{ValidationResult, VFailure}
 import shipreq.webapp.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
 import shipreq.webapp.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.util.JsExt._
@@ -143,7 +144,7 @@ trait StaticSnippetHelpers extends Logger {
     }
 
   def jsShowFailure(vf: VFailure)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    jsShowError(vf.toHtml)
+    jsShowError(VFailureHtmlRenderer render vf)
 
   def ifValid[T](v: ValidationResult[T])(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     v match {

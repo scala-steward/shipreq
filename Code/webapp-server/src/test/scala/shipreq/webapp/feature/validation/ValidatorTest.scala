@@ -1,13 +1,12 @@
-package shipreq.webapp
-package feature.validation
+package shipreq.webapp.feature.validation
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import org.scalatest.prop._
 import scalaz.{Failure, Success}
-import app.AppConfig._
-import lib.Types._
-import security.PasswordAndSalt
+import shipreq.webapp.shared.AppConsts._
+import shipreq.webapp.shared.validation._
+import shipreq.webapp.security.PasswordAndSalt
 
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   def V = Validators
@@ -141,8 +140,8 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
       , ("\n\nhello\n\n", Some("hello"), None)
       , ("\n\nhello\n\nhello\n\n", Some("hello hello"), None)
       , ("hello\n\rgreat", Some("hello great"), None)
-      , ("x" * ShortTextMaxLength, None, None)
-      , ("x" * (ShortTextMaxLength + 1), None, Some("too large"))
+      , ("x" * shortTextMaxLength, None, None)
+      , ("x" * (shortTextMaxLength + 1), None, Some("too large"))
     ))
   }
 
@@ -154,8 +153,8 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
       , (" hello ", Some("hello"), None)
       , ("\n\nhello\n\n", Some("hello"), None)
       , ("\n\nhello\n\nhello\n\n", Some("hello\n\nhello"), None)
-      , ("x" * LargeTextMaxLength, None, None)
-      , ("x" * (LargeTextMaxLength + 1), None, Some("too large"))
+      , ("x" * largeTextMaxLength, None, None)
+      , ("x" * (largeTextMaxLength + 1), None, Some("too large"))
     ))
   }
 
@@ -163,8 +162,8 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
     V.share.preface.correct("\n\n  ").value shouldBe None
     V.share.preface.correctAndValidate("") shouldBe Success(None)
     V.share.preface.correctAndValidate("\n\nyo\n\nhehe\n\n") shouldBe Success(Some("yo\n\nhehe"))
-    V.share.preface.correctAndValidate("x" * LargeTextMaxLength).isSuccess shouldBe true
-    V.share.preface.correctAndValidate("x" * (LargeTextMaxLength + 1)).isSuccess shouldBe false
+    V.share.preface.correctAndValidate("x" * largeTextMaxLength).isSuccess shouldBe true
+    V.share.preface.correctAndValidate("x" * (largeTextMaxLength + 1)).isSuccess shouldBe false
   }
 
   test("Landing page name") {

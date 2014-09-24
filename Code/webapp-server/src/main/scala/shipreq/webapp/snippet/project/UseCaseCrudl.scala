@@ -1,18 +1,18 @@
-package shipreq.webapp
-package snippet.project
+package shipreq.webapp.snippet.project
 
 import net.liftweb.http.SHtml
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 
-import app.{RequestVars, AppSiteMap}
-import db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
-import shipreq.webapp.feature.validation.{ValidationResult, Validators}
-import lib.{Locks, Misc, SingleOpStatefulSnippet}
-import lib.Types._
-import util.NonEmptyTemplate
-import util.HtmlTransformExt.ajaxSubmitOnClick
-import util.JsExt.{JsTextTrigger, JqExpr, JsJsonTrigger, JsHtmlTrigger}
+import shipreq.webapp.shared.validation.ValidationResult
+import shipreq.webapp.app.{RequestVars, AppSiteMap}
+import shipreq.webapp.db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
+import shipreq.webapp.feature.validation.Validators
+import shipreq.webapp.lib.{Locks, Misc, SingleOpStatefulSnippet}
+import shipreq.webapp.lib.Types._
+import shipreq.webapp.util.NonEmptyTemplate
+import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
+import shipreq.webapp.util.JsExt.{JsTextTrigger, JqExpr, JsJsonTrigger, JsHtmlTrigger}
 import AppSiteMap.Implicits._
 
 object UseCaseCrudlConsts {

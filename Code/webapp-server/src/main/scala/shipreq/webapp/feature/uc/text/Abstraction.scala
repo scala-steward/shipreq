@@ -1,5 +1,6 @@
 package shipreq.webapp.feature.uc.text
 
+import shipreq.webapp.shared.validation.InputCorrected
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.uc.change._
 import shipreq.webapp.feature.uc.{SavedSteps, UcParsingCtx}

@@ -1,7 +1,6 @@
-package shipreq.webapp.feature.validation
+package shipreq.webapp.shared.validation
 
 import scalaz.{Endo, NonEmptyList, Failure, Validation, Success}
-import shipreq.webapp.lib.Types._
 
 final case class CorrectionPart[-I, C](correct: I => InputCorrected[C]) {
   def contramap[I0](f: I0 => I) = CorrectionPart[I0, C](correct compose f)

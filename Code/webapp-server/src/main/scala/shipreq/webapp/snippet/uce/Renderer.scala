@@ -11,11 +11,11 @@ import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
+import shipreq.webapp.shared.validation.VFailure
 import feature.FlowGraph
 import feature.uc.change._
 import feature.uc.field._
 import feature.publish.HtmlFieldValuePublishers
-import feature.validation.VFailure
 import lib.ScalazSubset._
 import lib.Types._
 import util.JsExt._

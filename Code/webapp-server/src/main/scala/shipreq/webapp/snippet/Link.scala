@@ -4,6 +4,7 @@ import shipreq.webapp.app.AppConfig
 import shipreq.webapp.app.AppSiteMap
 import shipreq.webapp.app.AppSiteMap.Implicits._
 import shipreq.webapp.lib.{Misc, SnippetHelpers}
+import shipreq.webapp.shared.AppConsts
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.sitemap.{Loc, SiteMap}
 import net.liftweb.util.Props
@@ -27,7 +28,7 @@ object Link extends DispatchSnippet with SnippetHelpers {
   private def static(link: NodeSeq): R = _ => link
 
   val appLink =
-    static(<a href={AppSiteMap.Home.absoluteUrl}>{AppConfig.AppName}</a>)
+    static(<a href={AppSiteMap.Home.absoluteUrl}>{AppConsts.appName}</a>)
 
   val jqueryLink = {
     val jqueryUrl = Props.mode match {

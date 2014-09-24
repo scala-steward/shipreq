@@ -1,9 +1,9 @@
-package shipreq.webapp.feature.validation
+package shipreq.webapp.shared.validation
 
 import java.util.regex.Pattern
 import java.util.regex.Pattern.quote
 import scala.util.matching.Regex
-import shipreq.webapp.app.AppConfig._
+import shipreq.webapp.shared.AppConsts
 import Constraint._
 
 object Constraints {
@@ -50,9 +50,9 @@ object Constraints {
         Nil
     })
 
-  val shortTextLimit = maximumLength(ShortTextMaxLength)
+  val shortTextLimit = maximumLength(AppConsts.shortTextMaxLength)
 
-  val largeTextLimit = maximumLength(LargeTextMaxLength)
+  val largeTextLimit = maximumLength(AppConsts.largeTextMaxLength)
 
   val containsSurname = nonEmpty && matchesR("""^\s*?\S+?\s+?\S.*""".r)("should include a surname, please.")
 }

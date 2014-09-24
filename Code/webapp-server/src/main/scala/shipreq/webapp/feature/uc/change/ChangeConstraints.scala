@@ -1,7 +1,7 @@
 package shipreq.webapp.feature.uc.change
 
 import shipreq.webapp.feature.uc.UseCase
-import shipreq.webapp.feature.validation.VFailure
+import shipreq.webapp.shared.validation.VFailure
 
 /**
  * A filter on use case changes just before they are applied.

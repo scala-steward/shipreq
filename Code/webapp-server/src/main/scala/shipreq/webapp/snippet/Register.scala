@@ -8,10 +8,11 @@ import org.apache.shiro.authc.UsernamePasswordToken
 import org.joda.time.DateTime
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.{UserId, EmailAddr, Msg}
+import shipreq.webapp.shared.validation.ValidationResult
 import shipreq.webapp.app.{AppConfig, AppSiteMap}
 import shipreq.webapp.lib.{FormVar, SnippetHelpers, SingleOpStatefulSnippet}
 import shipreq.webapp.db.{DaoT, UserRegistrationInfo, UserRegistrationResult}
-import shipreq.webapp.feature.validation.{ValidationResult, Validators}
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.security.{Permissions, PasswordAndSalt}
 import shipreq.webapp.util.JsExt._
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick

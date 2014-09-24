@@ -5,8 +5,8 @@ import net.liftweb.http.js.{JsExp, JsCmd, JsCmds}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.feature.validation.{Validators, ValidationResult, Validator, CorrectionPart}
-import shipreq.webapp.lib.Types.InputCorrected
+import shipreq.webapp.shared.validation.{ValidationResult, Validator, CorrectionPart, InputCorrected}
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.security.PasswordAndSalt
 import shipreq.webapp.util.JsExt.{JqSetValue, JqId}
 import shipreq.webapp.util.HtmlTransformExt

@@ -7,10 +7,11 @@ import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 
 import shipreq.taskman.api.{UserId, EmailAddr, Msg}
+import shipreq.webapp.shared.validation.ValidationResult
 import shipreq.webapp.app.AppConfig.PasswordResetTokenLifespan
 import shipreq.webapp.db.{DaoT, UserRegistrationInfo, ResetPasswordInfo}
-import shipreq.webapp.feature.validation.{ValidationResult, Validators}
 import shipreq.webapp.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
+import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.util.HtmlTransformExt.ajaxSubmitOnClick
 import shipreq.webapp.util.JsExt._
 import shipreq.webapp.app.AppSiteMap
