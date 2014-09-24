@@ -1,4 +1,4 @@
-package shipreq.webapp.lib
+package shipreq.webapp.shared
 
 import java.util.regex.Pattern
 import scala.util.matching.Regex
@@ -11,6 +11,7 @@ object TextMod {
 
   def regex(regex: Regex, repl: String) = Endo[String](regex.replaceAllIn(_, repl))
 
+  // TODO /[\p{S}\p{P}]/ isn't going to work in JS land
   private[this] val punctuationOrSymbol = """[\p{S}\p{P}]"""
   def symbol(from: String, to: String) =
     regex(s"(?<!$punctuationOrSymbol)${Pattern quote from}(?!$punctuationOrSymbol)".r, to)

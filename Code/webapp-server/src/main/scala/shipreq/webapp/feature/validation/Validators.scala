@@ -4,35 +4,17 @@ import scalaz.{Success, Failure}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
 import shipreq.webapp.shared.AppConsts
+import shipreq.webapp.shared.TextMod._
 import shipreq.webapp.shared.validation._
 import shipreq.webapp.lib.ScalazSubset._
-import shipreq.webapp.lib.TextMod._
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
 import shipreq.webapp.security.PasswordAndSalt
 import Constraint.not
 import Constraints._
+import GenericValidators._
 
 object Validators {
-
-  /** Empty string not allowed. Carriage returns removed. */
-  private def mandatoryShortText(name: String) = Validator(
-    CorrectionPart.endo(singleLineWhitespace),
-    ValidationPart.forConstraint(name, nonEmpty + shortTextLimit))
-
-  private val largeTextCP = CorrectionPart.endo(multiLineWhitespace andThen niceSymbols)
-  private def largeTextValidator(name: String) = ValidationPart.forConstraint(name, largeTextLimit)
-
-  /** Empty string is represented as `""`. */
-  private def largeText(name: String) =
-    Validator(largeTextCP, largeTextValidator(name))
-
-  /** Empty string is represented as `None`. */
-  private def optionalLargeText(name: String) = Validator(
-    largeTextCP.mapQ[Option[String]](nonBlank),
-    ValidationPart.liftO[String, String](largeTextValidator(name).validate))
-
-  // ===================================================================================================================
 
   val email_ = Validator(
     CorrectionPart.endo(noWhitespace),

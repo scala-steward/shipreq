@@ -8,9 +8,9 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scalaz.Memo
 
+import shipreq.webapp.shared.TextMod
 import db.{UseCaseHeader, FieldListRec}
 import lib.Misc.filterCovar
-import lib.TextMod
 import lib.Types._
 import feature.validation.Validators
 import feature.uc._
