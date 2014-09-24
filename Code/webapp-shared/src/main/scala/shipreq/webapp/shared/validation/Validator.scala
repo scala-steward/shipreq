@@ -1,18 +1,37 @@
 package shipreq.webapp.shared.validation
 
 import scalaz.{Endo, NonEmptyList, Failure, Validation, Success}
+import scalaz.Isomorphism.<=>
 
-final case class CorrectionPart[-I, C](correct: I => InputCorrected[C]) {
-  def contramap[I0](f: I0 => I) = CorrectionPart[I0, C](correct compose f)
-  def map[C2](f: C => InputCorrected[C2]) = CorrectionPart[I, C2](i => f(correct(i).value))
-  def mapQ[C2](f: C => C2) = CorrectionPart[I, C2](i => InputCorrected(f(correct(i).value)))
+final case class CorrectionPart[I, C](correct: I => InputCorrected[C], ci: C => I) {
+  def contramap[A](iso: A <=> I): CorrectionPart[A, C] =
+    contramap(iso.to)(iso.from)
+
+  def contramap[A](f: A => I)(g: I => A): CorrectionPart[A, C] =
+    CorrectionPart(correct compose f, g compose ci)
+
+  def map[D](iso: C <=> D): CorrectionPart[I, D] =
+    map(iso.to)(iso.from)
+
+  def map[D](f: C => D)(g: D => C): CorrectionPart[I, D] =
+    CorrectionPart(i => InputCorrected(f(correct(i).value)), ci compose g)
 }
 
 object CorrectionPart {
-  def lift[I, C](f: I => C) = CorrectionPart[I, C](i => InputCorrected(f(i)))
-  def liftE[A](f: A => A) = lift(f)
-  def endo[A](f: Endo[A]) = lift(f.run)
-  def nop[A] = liftE[A](identity)
+  def lift[I, C](iso: I <=> C): CorrectionPart[I, C] =
+    lift(iso.to)(iso.from)
+
+  def lift[I, C](f: I => C)(ci: C => I): CorrectionPart[I, C] =
+    CorrectionPart(i => InputCorrected(f(i)), ci)
+
+  def liftE[A](f: A => A) =
+    lift(f)(identity)
+
+  def endo[A](f: Endo[A]) =
+    lift(f.run)(identity)
+
+  def nop[A] =
+    liftE[A](identity)
 }
 
 // =====================================================================================================================
@@ -54,7 +73,8 @@ object ValidationPart {
 
 // =====================================================================================================================
 
-case class Validator[-I, C, +V](cp: CorrectionPart[I, C], vp: ValidationPart[C, V]) {
+case class Validator[I, C, +V](cp: CorrectionPart[I, C], vp: ValidationPart[C, V]) {
+  @inline final def ci = cp.ci
   @inline final def correct = cp.correct
   @inline final def correctU = correct andThen (_.value)
   @inline final def validate = vp.validate
@@ -70,7 +90,9 @@ case class Validator[-I, C, +V](cp: CorrectionPart[I, C], vp: ValidationPart[C, 
 
   def ***[I2, C2, V2](b: Validator[I2, C2, V2]): Validator[(I, I2), (C, C2), (V, V2)] =
     Validator(
-      CorrectionPart[(I, I2), (C, C2)](i => InputCorrected(this correct i._1 value, b correct i._2 value)),
+      CorrectionPart[(I, I2), (C, C2)](
+        i => InputCorrected(this correct i._1 value, b correct i._2 value),
+        c => (this ci c._1, b ci c._2)),
       ValidationPart[(C, C2), (V, V2)](i =>
         Validator.Ap.apply2(this validate InputCorrected(i.value._1), b validate InputCorrected(i.value._2))((x, y) => (x, y)))
     )
@@ -82,7 +104,7 @@ object Validator {
 
   def choose[I <: C, C, V](f: C => Validator[I, C, V]): Validator[I, C, V] =
     new Validator[I, C, V](
-      CorrectionPart[I, C](i => f(i).correct(i)),
+      CorrectionPart[I, C](i => f(i).correct(i), c => f(c).ci(c)),
       ValidationPart[C, V](c => f(c.value).validate(c))) {
       override def correctAndValidate(i: I): ValidationResult[V] = f(i).correctAndValidate(i)
     }

@@ -3,6 +3,7 @@ package shipreq.webapp.shared
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 import scalaz.Endo
+import scalaz.Isomorphism.<=>
 
 object TextMod {
 
@@ -39,6 +40,9 @@ object TextMod {
   val noWhitespace =
     regex(whitespaceRegex, "")
 
-  val nonBlank: String => Option[String] =
-    s => if (s.isEmpty) None else Some(s)
+  object nonBlank extends (String <=> Option[String]) {
+    override def to = s => if (s.isEmpty) None else Some(s)
+    override def from = _ getOrElse ""
+  }
+
 }

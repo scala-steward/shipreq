@@ -11,7 +11,7 @@ package object validation {
   }
 
   final case class InputCorrected[A](value: A) extends TaggedType {
-    type U = A
+    override type U = A
     def map[B](f: A => B) = InputCorrected[B](f(value))
   }
   implicit def InputCorrectedCtor[R] = TaggedTypeCtor[InputCorrected[R]](InputCorrected[R])
