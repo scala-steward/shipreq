@@ -1,20 +1,12 @@
 package hahaa
 
+import shipreq.webapp.client.lib.{Patches, LiftAjax}
 import shipreq.webapp.shared.{ExampleData, Interface}
 
 import scala.scalajs.js
 import org.scalajs.dom.{document, window, Node, console, alert}
 
 import scala.scalajs.js.annotation.{JSExport, JSName}
-
-@JSName("liftAjax")
-object LiftAjax extends js.Object {
-
-  def lift_ajaxHandler(input: String,
-                       success: js.Function1[js.Any, Unit] = null,
-                       failure: js.Function0[Unit] = null,
-                       respType: String = null): Boolean = ???
-}
 
 object ReactExamples extends js.JSApp {
 
@@ -42,19 +34,7 @@ object ReactExamples extends js.JSApp {
     val ii = js.encodeURIComponent(upickle write i)
     val s: js.Any => Unit = o => {
       console.log("invokeCallback result", o)
-
-      import upickle.Js
-      def walk(value: Any): Js.Value = value match{
-        case s: js.String => Js.Str(s)
-        case n: js.Number => Js.Num(n)
-        case true => Js.True
-        case false => Js.False
-        case null => Js.Null
-        case s: js.Array[_] => Js.Arr(s.map(walk(_: Any)):_*)
-        case s: js.Object => Js.Obj(s.asInstanceOf[js.Dictionary[_]].mapValues(walk).toSeq:_*)
-      }
-
-      val oo = upickle.readJs[r.d.O](walk(o))
+      val oo = upickle.readJs[r.d.O](Patches readJs o)
       cb(oo)
 //      cb(o.asInstanceOf[r.d.O])
       // TODO
