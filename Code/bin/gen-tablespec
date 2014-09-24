@@ -45,14 +45,14 @@ for (a <- (1 to 9)) {
   def VV    = mt(_ ⇒ "V")
   def vs    = mt(i ⇒ s"v$i")
   def ss    = mc(i ⇒ s"s$i")
-  def cvs   = mc(i ⇒ s"cv$i: Option[ValidateFnR[S,R,O$i]]")
+  def cvs   = mc(i ⇒ s"cv$i: Option[ValidateR[S,R,O$i]]")
 
   def ta(i: Int) = if (a==1) "" else s"._$i" //tuple access
   def iLmap(i: Int) = if (a==1) "" else s".mapF(_${ta(i)})((a,b) ⇒ a put$i b)"
   def tupled = if (a==1) "" else ".tupled"
 
   def in = mt(i ⇒ s"s$i initial p")
-  def vn = mn(i ⇒ s"      val v$i = s$i.vr.fold[S ⇒ Validator[${ICOn(i)}]](_⇒ s$i.v)(c ⇒ Validator.forRow(s$i.v,c,w))")
+  def vn = mn(i ⇒ s"      val v$i = s$i.vr.fold[S ⇒ ValidatorPlus[${ICOn(i)}]](_⇒ s$i.v)(s$i.v stateful _(w))")
   def sn = mn(i ⇒ s"        o$i ← v$i(s).correctAndValidate(e${ta(i)}).toOption")
   def en = mb(i ⇒ s"        new SmartEditor[S,${ICOn(i)},M](v$i, s2mp.andThen(_ map s$i.p2c), iL${iLmap(i)}, sf)").replaceFirst("^ +","")
   def rn = mn(i ⇒ s"            v$i ← s${ta(i)}.render(s$i.e, T)")
@@ -94,9 +94,8 @@ $rn
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, $II]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, $II)), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,$II,A](f)
       def tableConstraints($cvs) =
         TableSpecB default $RS(${mc(i => s"s$i toR cv$i")},buildU)
     }

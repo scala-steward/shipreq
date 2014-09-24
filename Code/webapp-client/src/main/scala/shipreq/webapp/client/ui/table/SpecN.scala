@@ -13,7 +13,7 @@ object SpecN {
   final case class RowSpec1[S, R, U, P, V, I1: Equal,C1,O1](s1: FieldSpecR[S,R,P,V,I1,C1,O1], buildU: (O1) ⇒ U) extends RowSpec[S, R, U, P, I1, V] {
     override def initial(p: P): I1 = s1 initial p
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,I1]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
       def savable(s: S, e: I1): Option[O1] = for {
         o1 ← v1(s).correctAndValidate(e).toOption
       } yield o1
@@ -40,10 +40,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, I1]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, I1)), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,I1,A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]]) =
         TableSpecB default RowSpec1(s1 toR cv1,buildU)
     }
   }
@@ -51,8 +50,8 @@ object SpecN {
   final case class RowSpec2[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2], buildU: ((O1,O2)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2), (V,V)] {
     override def initial(p: P): (I1,I2) = (s1 initial p,s2 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
       def savable(s: S, e: (I1,I2)): Option[(O1,O2)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -82,10 +81,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]]) =
         TableSpecB default RowSpec2(s1 toR cv1,s2 toR cv2,buildU)
     }
   }
@@ -93,9 +91,9 @@ object SpecN {
   final case class RowSpec3[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3], buildU: ((O1,O2,O3)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3), (V,V,V)] {
     override def initial(p: P): (I1,I2,I3) = (s1 initial p,s2 initial p,s3 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3)): Option[(O1,O2,O3)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -128,10 +126,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]]) =
         TableSpecB default RowSpec3(s1 toR cv1,s2 toR cv2,s3 toR cv3,buildU)
     }
   }
@@ -139,10 +136,10 @@ object SpecN {
   final case class RowSpec4[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4], buildU: ((O1,O2,O3,O4)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4), (V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4)): Option[(O1,O2,O3,O4)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -178,10 +175,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]]) =
         TableSpecB default RowSpec4(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,buildU)
     }
   }
@@ -189,11 +185,11 @@ object SpecN {
   final case class RowSpec5[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4],s5: FieldSpecR[S,R,P,V,I5,C5,O5], buildU: ((O1,O2,O3,O4,O5)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4,I5), (V,V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4,I5) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p,s5 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4,I5)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
-      val v5 = s5.vr.fold[S ⇒ Validator[I5,C5,O5]](_⇒ s5.v)(c ⇒ Validator.forRow(s5.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
+      val v5 = s5.vr.fold[S ⇒ ValidatorPlus[I5,C5,O5]](_⇒ s5.v)(s5.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4,I5)): Option[(O1,O2,O3,O4,O5)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -232,10 +228,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4,I5))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]],cv5: Option[ValidateFnR[S,R,O5]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]],cv5: Option[ValidateR[S,R,O5]]) =
         TableSpecB default RowSpec5(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,s5 toR cv5,buildU)
     }
   }
@@ -243,12 +238,12 @@ object SpecN {
   final case class RowSpec6[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4],s5: FieldSpecR[S,R,P,V,I5,C5,O5],s6: FieldSpecR[S,R,P,V,I6,C6,O6], buildU: ((O1,O2,O3,O4,O5,O6)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4,I5,I6), (V,V,V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4,I5,I6) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p,s5 initial p,s6 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4,I5,I6)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
-      val v5 = s5.vr.fold[S ⇒ Validator[I5,C5,O5]](_⇒ s5.v)(c ⇒ Validator.forRow(s5.v,c,w))
-      val v6 = s6.vr.fold[S ⇒ Validator[I6,C6,O6]](_⇒ s6.v)(c ⇒ Validator.forRow(s6.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
+      val v5 = s5.vr.fold[S ⇒ ValidatorPlus[I5,C5,O5]](_⇒ s5.v)(s5.v stateful _(w))
+      val v6 = s6.vr.fold[S ⇒ ValidatorPlus[I6,C6,O6]](_⇒ s6.v)(s6.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4,I5,I6)): Option[(O1,O2,O3,O4,O5,O6)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -290,10 +285,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4,I5,I6))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]],cv5: Option[ValidateFnR[S,R,O5]],cv6: Option[ValidateFnR[S,R,O6]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]],cv5: Option[ValidateR[S,R,O5]],cv6: Option[ValidateR[S,R,O6]]) =
         TableSpecB default RowSpec6(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,s5 toR cv5,s6 toR cv6,buildU)
     }
   }
@@ -301,13 +295,13 @@ object SpecN {
   final case class RowSpec7[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4],s5: FieldSpecR[S,R,P,V,I5,C5,O5],s6: FieldSpecR[S,R,P,V,I6,C6,O6],s7: FieldSpecR[S,R,P,V,I7,C7,O7], buildU: ((O1,O2,O3,O4,O5,O6,O7)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4,I5,I6,I7), (V,V,V,V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4,I5,I6,I7) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p,s5 initial p,s6 initial p,s7 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4,I5,I6,I7)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
-      val v5 = s5.vr.fold[S ⇒ Validator[I5,C5,O5]](_⇒ s5.v)(c ⇒ Validator.forRow(s5.v,c,w))
-      val v6 = s6.vr.fold[S ⇒ Validator[I6,C6,O6]](_⇒ s6.v)(c ⇒ Validator.forRow(s6.v,c,w))
-      val v7 = s7.vr.fold[S ⇒ Validator[I7,C7,O7]](_⇒ s7.v)(c ⇒ Validator.forRow(s7.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
+      val v5 = s5.vr.fold[S ⇒ ValidatorPlus[I5,C5,O5]](_⇒ s5.v)(s5.v stateful _(w))
+      val v6 = s6.vr.fold[S ⇒ ValidatorPlus[I6,C6,O6]](_⇒ s6.v)(s6.v stateful _(w))
+      val v7 = s7.vr.fold[S ⇒ ValidatorPlus[I7,C7,O7]](_⇒ s7.v)(s7.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4,I5,I6,I7)): Option[(O1,O2,O3,O4,O5,O6,O7)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -352,10 +346,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4,I5,I6,I7))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]],cv5: Option[ValidateFnR[S,R,O5]],cv6: Option[ValidateFnR[S,R,O6]],cv7: Option[ValidateFnR[S,R,O7]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]],cv5: Option[ValidateR[S,R,O5]],cv6: Option[ValidateR[S,R,O6]],cv7: Option[ValidateR[S,R,O7]]) =
         TableSpecB default RowSpec7(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,s5 toR cv5,s6 toR cv6,s7 toR cv7,buildU)
     }
   }
@@ -363,14 +356,14 @@ object SpecN {
   final case class RowSpec8[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4],s5: FieldSpecR[S,R,P,V,I5,C5,O5],s6: FieldSpecR[S,R,P,V,I6,C6,O6],s7: FieldSpecR[S,R,P,V,I7,C7,O7],s8: FieldSpecR[S,R,P,V,I8,C8,O8], buildU: ((O1,O2,O3,O4,O5,O6,O7,O8)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4,I5,I6,I7,I8), (V,V,V,V,V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4,I5,I6,I7,I8) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p,s5 initial p,s6 initial p,s7 initial p,s8 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4,I5,I6,I7,I8)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
-      val v5 = s5.vr.fold[S ⇒ Validator[I5,C5,O5]](_⇒ s5.v)(c ⇒ Validator.forRow(s5.v,c,w))
-      val v6 = s6.vr.fold[S ⇒ Validator[I6,C6,O6]](_⇒ s6.v)(c ⇒ Validator.forRow(s6.v,c,w))
-      val v7 = s7.vr.fold[S ⇒ Validator[I7,C7,O7]](_⇒ s7.v)(c ⇒ Validator.forRow(s7.v,c,w))
-      val v8 = s8.vr.fold[S ⇒ Validator[I8,C8,O8]](_⇒ s8.v)(c ⇒ Validator.forRow(s8.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
+      val v5 = s5.vr.fold[S ⇒ ValidatorPlus[I5,C5,O5]](_⇒ s5.v)(s5.v stateful _(w))
+      val v6 = s6.vr.fold[S ⇒ ValidatorPlus[I6,C6,O6]](_⇒ s6.v)(s6.v stateful _(w))
+      val v7 = s7.vr.fold[S ⇒ ValidatorPlus[I7,C7,O7]](_⇒ s7.v)(s7.v stateful _(w))
+      val v8 = s8.vr.fold[S ⇒ ValidatorPlus[I8,C8,O8]](_⇒ s8.v)(s8.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4,I5,I6,I7,I8)): Option[(O1,O2,O3,O4,O5,O6,O7,O8)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -418,10 +411,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4,I5,I6,I7,I8))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]],cv5: Option[ValidateFnR[S,R,O5]],cv6: Option[ValidateFnR[S,R,O6]],cv7: Option[ValidateFnR[S,R,O7]],cv8: Option[ValidateFnR[S,R,O8]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7,I8),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]],cv5: Option[ValidateR[S,R,O5]],cv6: Option[ValidateR[S,R,O6]],cv7: Option[ValidateR[S,R,O7]],cv8: Option[ValidateR[S,R,O8]]) =
         TableSpecB default RowSpec8(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,s5 toR cv5,s6 toR cv6,s7 toR cv7,s8 toR cv8,buildU)
     }
   }
@@ -429,15 +421,15 @@ object SpecN {
   final case class RowSpec9[S, R, U, P, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8,I9: Equal,C9,O9](s1: FieldSpecR[S,R,P,V,I1,C1,O1],s2: FieldSpecR[S,R,P,V,I2,C2,O2],s3: FieldSpecR[S,R,P,V,I3,C3,O3],s4: FieldSpecR[S,R,P,V,I4,C4,O4],s5: FieldSpecR[S,R,P,V,I5,C5,O5],s6: FieldSpecR[S,R,P,V,I6,C6,O6],s7: FieldSpecR[S,R,P,V,I7,C7,O7],s8: FieldSpecR[S,R,P,V,I8,C8,O8],s9: FieldSpecR[S,R,P,V,I9,C9,O9], buildU: ((O1,O2,O3,O4,O5,O6,O7,O8,O9)) ⇒ U) extends RowSpec[S, R, U, P, (I1,I2,I3,I4,I5,I6,I7,I8,I9), (V,V,V,V,V,V,V,V,V)] {
     override def initial(p: P): (I1,I2,I3,I4,I5,I6,I7,I8,I9) = (s1 initial p,s2 initial p,s3 initial p,s4 initial p,s5 initial p,s6 initial p,s7 initial p,s8 initial p,s9 initial p)
     private def fieldRenderers[M[_] : Bind : Optional2](s2mp: S ⇒ M[P], w: R, save: (S, U) ⇒ IO[S], iL: WeirdLens[M,S,S,(I1,I2,I3,I4,I5,I6,I7,I8,I9)]) = {
-      val v1 = s1.vr.fold[S ⇒ Validator[I1,C1,O1]](_⇒ s1.v)(c ⇒ Validator.forRow(s1.v,c,w))
-      val v2 = s2.vr.fold[S ⇒ Validator[I2,C2,O2]](_⇒ s2.v)(c ⇒ Validator.forRow(s2.v,c,w))
-      val v3 = s3.vr.fold[S ⇒ Validator[I3,C3,O3]](_⇒ s3.v)(c ⇒ Validator.forRow(s3.v,c,w))
-      val v4 = s4.vr.fold[S ⇒ Validator[I4,C4,O4]](_⇒ s4.v)(c ⇒ Validator.forRow(s4.v,c,w))
-      val v5 = s5.vr.fold[S ⇒ Validator[I5,C5,O5]](_⇒ s5.v)(c ⇒ Validator.forRow(s5.v,c,w))
-      val v6 = s6.vr.fold[S ⇒ Validator[I6,C6,O6]](_⇒ s6.v)(c ⇒ Validator.forRow(s6.v,c,w))
-      val v7 = s7.vr.fold[S ⇒ Validator[I7,C7,O7]](_⇒ s7.v)(c ⇒ Validator.forRow(s7.v,c,w))
-      val v8 = s8.vr.fold[S ⇒ Validator[I8,C8,O8]](_⇒ s8.v)(c ⇒ Validator.forRow(s8.v,c,w))
-      val v9 = s9.vr.fold[S ⇒ Validator[I9,C9,O9]](_⇒ s9.v)(c ⇒ Validator.forRow(s9.v,c,w))
+      val v1 = s1.vr.fold[S ⇒ ValidatorPlus[I1,C1,O1]](_⇒ s1.v)(s1.v stateful _(w))
+      val v2 = s2.vr.fold[S ⇒ ValidatorPlus[I2,C2,O2]](_⇒ s2.v)(s2.v stateful _(w))
+      val v3 = s3.vr.fold[S ⇒ ValidatorPlus[I3,C3,O3]](_⇒ s3.v)(s3.v stateful _(w))
+      val v4 = s4.vr.fold[S ⇒ ValidatorPlus[I4,C4,O4]](_⇒ s4.v)(s4.v stateful _(w))
+      val v5 = s5.vr.fold[S ⇒ ValidatorPlus[I5,C5,O5]](_⇒ s5.v)(s5.v stateful _(w))
+      val v6 = s6.vr.fold[S ⇒ ValidatorPlus[I6,C6,O6]](_⇒ s6.v)(s6.v stateful _(w))
+      val v7 = s7.vr.fold[S ⇒ ValidatorPlus[I7,C7,O7]](_⇒ s7.v)(s7.v stateful _(w))
+      val v8 = s8.vr.fold[S ⇒ ValidatorPlus[I8,C8,O8]](_⇒ s8.v)(s8.v stateful _(w))
+      val v9 = s9.vr.fold[S ⇒ ValidatorPlus[I9,C9,O9]](_⇒ s9.v)(s9.v stateful _(w))
       def savable(s: S, e: (I1,I2,I3,I4,I5,I6,I7,I8,I9)): Option[(O1,O2,O3,O4,O5,O6,O7,O8,O9)] = for {
         o1 ← v1(s).correctAndValidate(e._1).toOption
         o2 ← v2(s).correctAndValidate(e._2).toOption
@@ -488,10 +480,9 @@ object SpecN {
     final class B2[D] {
       type R = Option[D]
       type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8,I9)]
-      def uniquenessCheck[A](f: P ⇒ A) = Validator.uniqueness[S, R, (D, (P, (I1,I2,I3,I4,I5,I6,I7,I8,I9))), A](
-        (s, ow) ⇒ getSaved(s).toStream.filterNot(wpi ⇒ ow.fold(false)(_ == wpi._1)),
-        (wpi, a) ⇒ a == f(wpi._2._1))
-      def tableConstraints(cv1: Option[ValidateFnR[S,R,O1]],cv2: Option[ValidateFnR[S,R,O2]],cv3: Option[ValidateFnR[S,R,O3]],cv4: Option[ValidateFnR[S,R,O4]],cv5: Option[ValidateFnR[S,R,O5]],cv6: Option[ValidateFnR[S,R,O6]],cv7: Option[ValidateFnR[S,R,O7]],cv8: Option[ValidateFnR[S,R,O8]],cv9: Option[ValidateFnR[S,R,O9]]) =
+      def uniquenessCheck[A: Equal](f: P ⇒ A) =
+        TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7,I8,I9),A](f)
+      def tableConstraints(cv1: Option[ValidateR[S,R,O1]],cv2: Option[ValidateR[S,R,O2]],cv3: Option[ValidateR[S,R,O3]],cv4: Option[ValidateR[S,R,O4]],cv5: Option[ValidateR[S,R,O5]],cv6: Option[ValidateR[S,R,O6]],cv7: Option[ValidateR[S,R,O7]],cv8: Option[ValidateR[S,R,O8]],cv9: Option[ValidateR[S,R,O9]]) =
         TableSpecB default RowSpec9(s1 toR cv1,s2 toR cv2,s3 toR cv3,s4 toR cv4,s5 toR cv5,s6 toR cv6,s7 toR cv7,s8 toR cv8,s9 toR cv9,buildU)
     }
   }

@@ -69,12 +69,18 @@ object ValidationPart {
       case h :: t => Failure(VFailure.forField(fieldName, NonEmptyList.nel(h, t)))
     }
   })
+
+  def nop[A] =
+    ValidationPart[A, A](c => Success(c.value))
 }
 
 // =====================================================================================================================
 
+// TODO Determine Validator properties/laws
+
 class Validator[I, C, +V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C, V]) {
-  @inline final def ci = cp.ci
+  @inline final def ci(c: C): I = cp.ci(c)
+  @inline final def ci(c: InputCorrected[C]): I = cp.ci(c.value)
   @inline final def correct = cp.correct
   @inline final def correctU = correct andThen (_.value)
   @inline final def validate = vp.validate
@@ -103,6 +109,9 @@ object Validator {
 
   def apply[I, C, V](cp: CorrectionPart[I, C], vp: ValidationPart[C, V]): Validator[I, C, V] =
     new Validator(cp, vp)
+
+  def nop[A] =
+    apply[A, A, A](CorrectionPart.nop, ValidationPart.nop)
 
   def choose[I <: C, C, V](f: C => Validator[I, C, V]): Validator[I, C, V] =
     new Validator[I, C, V](

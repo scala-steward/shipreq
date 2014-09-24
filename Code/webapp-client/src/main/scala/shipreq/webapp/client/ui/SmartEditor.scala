@@ -8,7 +8,7 @@ import japgolly.scalajs.react.ScalazReact._
 import shipreq.webapp.client.ui.Implicits._
 
 class SmartEditor[S, I: Equal, C, O, M[_] : Bind : Optional2](
-    vs: S => Validator[I, C, O], // Conflation. S not required for i↔c
+    vs: S => ValidatorPlus[I, C, O],
     s2mc: S => M[C],
     iL: WeirdLens[M, S, S, I],
     trySave: S => IO[S]) {
@@ -20,7 +20,7 @@ class SmartEditor[S, I: Equal, C, O, M[_] : Bind : Optional2](
   // TODO does flatMap lose previous callbacks? And should it?
   private def cancelChange(callback: IO[Unit]) =
     ReactS.get[S].flatMap(s => // TODO get.flatMap seems needlessly inefficient
-      s2mc(s).mapReactS(c => change(vs(s) c2i c) addCallback callback))
+      s2mc(s).mapReactS(c => change(vs(s) ci c) addCallback callback))
 
   private def correctInput =
     ReactS.mod[S](s1 => {
@@ -28,7 +28,7 @@ class SmartEditor[S, I: Equal, C, O, M[_] : Bind : Optional2](
       val r = for {
         i1 <- iL.getO(s1)
         c = v.correct(i1)
-        i2 = v.c2i(c)
+        i2 = v.ci(c)
         s2 <- iL.setO(s1, i2) if !implicitly[Equal[I]].equal(i1, i2)
       } yield s2
       r getOrElse s1
@@ -40,7 +40,7 @@ class SmartEditor[S, I: Equal, C, O, M[_] : Bind : Optional2](
   def render[V](editor: Editor[I, V], T: ComponentStateFocus[S]): M[V] = {
     val s = T.state
     iL.get(s).map(i => {
-      val e = vs(s).correctAndValidate(i).swap.toOption
+      val e = vs(s).correctAndValidate(i).swap.toOption.map(_.toText)
       editor.render(i, e, change, cancelChange, editEnd, T)
     })
   }

@@ -1,5 +1,6 @@
 package shipreq.webapp.client
 
+/*
 import shipreq.webapp.client.ui.Validator
 import shipreq.webapp.shared.data._
 import shipreq.webapp.client.ui.table._
@@ -36,3 +37,4 @@ object CfgReqType {
 //            FieldSpec[P](_.mnemonic)
 //  )
 }
+*/

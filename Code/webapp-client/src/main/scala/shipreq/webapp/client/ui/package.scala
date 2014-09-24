@@ -1,16 +1,16 @@
 package shipreq.webapp.client
 
-import org.scalajs.dom.HTMLInputElement
 import japgolly.scalajs.react._
+import org.scalajs.dom.HTMLInputElement
+import shipreq.webapp.shared.validation.VFailure
 
 package object ui {
 
+  // TODO delete
   type ErrorMsg = String
 
   type InputEvent = SyntheticEvent[HTMLInputElement]
 
-  type ValidatorR[S, R, I, C, O] = (S, R) => Validator[I, C, O]
-
-  type ValidateFnR[S, R, O] = (S, R, O) => Option[ErrorMsg]
-
+  type ValidateR[S, R, O] = R => ValidateS[S, O]
+  type ValidateS[S, O] = (S, O) => Option[VFailure]
 }
