@@ -1,5 +1,9 @@
 package shipreq.base.util
 
+import scalaz.Equal
+import scalaz.std.string.stringInstance
+import scalaz.std.anyVal.{shortInstance, longInstance}
+
 object TaggedTypes {
 
   trait TaggedType { // extends PreventToString
@@ -36,6 +40,19 @@ object TaggedTypes {
     final type U = Short
     final def toInt = value.toInt
   }
+
+  final class TaggedTypeScalaz[T <: TaggedType {type U = A}, A](implicit E: Equal[A]) extends Equal[T] {
+    override def equal(a1: T, a2: T) = E.equal(a1.value, a2.value)
+    override def equalIsNatural = E.equalIsNatural
+    def subst[F <: TaggedType {type U = A}] = this.asInstanceOf[TaggedTypeScalaz[F, A]]
+  }
+  private val _taggedStringInstance = new TaggedTypeScalaz[TaggedString, String]
+  private val _taggedLongInstance   = new TaggedTypeScalaz[TaggedLong, Long]
+  private val _taggedShortInstance  = new TaggedTypeScalaz[TaggedShort, Short]
+
+  implicit def taggedStringInstance[T <: TaggedType {type U = String}] = _taggedStringInstance.subst[T]
+  implicit def taggedLongInstance  [T <: TaggedType {type U = Long}]   = _taggedLongInstance.subst[T]
+  implicit def taggedShortInstance [T <: TaggedType {type U = Short}]  = _taggedShortInstance.subst[T]
 
 //  implicit def autoUnboxTaggedTypes[T <: TaggedType](t: T): T#U = t.value
 //  implicit def autoUnboxTaggedLong[T <: TaggedType](t: T)(implicit ev: T#U =:= Long): Long = ev(t.value)
