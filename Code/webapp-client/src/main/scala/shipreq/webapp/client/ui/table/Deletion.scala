@@ -8,6 +8,7 @@ import scalaz.effect.IO
 import monocle._
 import monocle.function.Field2.second
 import monocle.std.tuple2._
+import shipreq.webapp.shared.data.{Dead, Alive}
 
 sealed trait DeletionAction
 case object HardDelete extends DeletionAction
@@ -15,16 +16,16 @@ case object SoftDelete extends DeletionAction
 case object Restore extends DeletionAction
 
 class DeletionManager[S, P, D](spec: TableSpec[S, D, _, P, _, _])(
-  aliveL: SimpleLens[P, Boolean],
+  aliveL: SimpleLens[P, Alive],
   saveIO: D => DeletionAction => IO[Unit]) {
 
   private type DP = (D, P)
   private val aliveL2 = second[DP, P] composeLens aliveL
 
-  private def modAliveS(ls: DeletionAction, alive: Boolean) =
+  private def modAliveS(ls: DeletionAction, alive: Alive) =
     spec.modAndSaveS(px => saveIO(px._1)(ls).map(_ => aliveL2.set(px, alive)))
-  private val restoreS    = modAliveS(Restore, true)
-  private val softDeleteS = modAliveS(SoftDelete, false)
+  private val restoreS    = modAliveS(Restore, Alive)
+  private val softDeleteS = modAliveS(SoftDelete, Dead)
   private val hardDeleteS = spec.deleteSavedS(id => saveIO(id)(HardDelete))
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction) =
@@ -37,9 +38,11 @@ class DeletionManager[S, P, D](spec: TableSpec[S, D, _, P, _, _])(
   def buttons(T: ComponentStateFocus[S], id: D, as: DeletionAction*) =
     as.map(button(T, id, _))
 
-  def getSaved(T: ComponentStateFocus[S], alive: Boolean): Stream[(D, P)] =
+  // TODO rename getSaved, here & in spec
+  // TODO provide separate filter
+  def getSaved(T: ComponentStateFocus[S], alive: Alive): Stream[(D, P)] =
     spec.getSaved(T).filter(px => aliveL.get(px._2) == alive)
 
-  def getSavedP(T: ComponentStateFocus[S], alive: Boolean): Stream[P] =
+  def getSavedP(T: ComponentStateFocus[S], alive: Alive): Stream[P] =
     getSaved(T, alive).map(_._2)
 }

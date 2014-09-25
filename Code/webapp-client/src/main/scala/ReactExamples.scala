@@ -66,14 +66,20 @@ object ReactExamples extends js.JSApp {
     import shipreq.webapp.client.CfgReqType._
     import CustReqType.Id
     implicit def autoMnemonic(s: String) = ReqType.Mnemonic(s)
-    ReqTypeTableCompOuter(ReqTypeTableProps(List(
+
+    val list = List(
       CustReqType(Id(1), "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
       CustReqType(Id(2), "MF", Set.empty, "Major Feature", ImplicationNotRequired, Alive),
       CustReqType(Id(3), "FR", Set.empty, "Functional Requirement", ImplicationNotRequired, Alive),
       CustReqType(Id(4), "BR", Set.empty, "Business Rule", ImplicationNotRequired, Alive),
       CustReqType(Id(5), "DD", Set("DA", "DDF"), "Data Definition", ImplicationNotRequired, Dead),
       CustReqType(Id(6), "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead)
-    ), false)) render mountNode
+    )
+
+    val proj = ProjectReqTypes(list.map(i => i.id -> i).toMap)
+
+//    ReqTypeTableCompOuter(ReqTypeTableProps(list, false)) render mountNode
+    ReqTypeTableCompOuter(ReqTypeTableProps(proj, false)) render mountNode
   }
 
   def example2(mountNode: Node) = {

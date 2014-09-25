@@ -1,5 +1,6 @@
 package shipreq.webapp.shared.data
 
+/*
 final case class Project(customReqTypes: Map[CustReqType.Id, CustReqType]) {
 
   lazy val allReqTypes: List[ReqType] =
@@ -14,3 +15,4 @@ final case class Project(customReqTypes: Map[CustReqType.Id, CustReqType]) {
   lazy val allMnemonics: Set[ReqType.Mnemonic] =
     allReqTypes.foldLeft(allActiveMnemonics)((a, r) => a ++ r.oldMnemonics)
 }
+*/

@@ -30,7 +30,6 @@ object ReqType {
   }
 
   val static: List[Static] = List(UseCase)
-  @inline final def staticG: List[ReqType] = static
 }
 
 // constraints:

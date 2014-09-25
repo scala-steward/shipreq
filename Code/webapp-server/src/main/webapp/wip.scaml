@@ -1,5 +1,12 @@
 %div(data-lift="surround?with=default;at=content")
   %script(data-lift="Link.clientJs")
+  :css
+    table {border-collapse:collapse}
+    td, th {border: solid 1px #333}
+    .error {border-color: red}
+    .errorMsg {color: red}
+    tr.del *:not(button) {color:#999; text-decoration: line-through;}
+    tr input, tr textarea {background:#ffffd4}
 
   %h1 WIP: Testing page
 
