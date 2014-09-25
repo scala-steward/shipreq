@@ -3,6 +3,7 @@
 import Control.Applicative
 import Control.Monad
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import System.Directory
@@ -93,6 +94,50 @@ gatherAllStats = do dirs <- dirsIn "."
                     mapM (groupD dirs) groups
 
 ------------------------------------------------------------------------------------------------------------------------
+-- Top-level module stats
+
+deps = M.fromList [
+         ("webapp-server",         ["webapp-shared", "base-db", "taskman-api"]) ,
+         ("webapp-client",         ["webapp-shared", "base-util-sjs"]) ,
+         ("webapp-shared",         ["base-util-sjs"]) ,
+         ("taskman",               ["taskman-api", "taskman-server"]) ,
+         ("taskman-api",           ["taskman-api-impl", "taskman-api-logic"]) ,
+         ("taskman-api-impl",      ["taskman-api-logic"]) ,
+         ("taskman-api-logic",     ["base-util"]) ,
+         ("taskman-server",        ["taskman-server-logic", "taskman-server-schema", "taskman-server-impl"]) ,
+         ("taskman-server-impl",   ["taskman-server-logic", "taskman-server-schema", "taskman-api"]) ,
+         ("taskman-server-schema", ["base-db"]) ,
+         ("taskman-server-logic",  ["taskman-api-logic"]) ,
+         ("base-db",               ["base-util"]) ,
+         ("base-util",             ["base-util-sjs"]) ]
+
+topLevelModules = ["taskman", "webapp-client", "webapp-server"]
+
+tdeps :: String -> [String]
+tdeps d = sort $ tdeps' [] [d]
+
+tdeps' :: [String] -> [String] -> [String]
+tdeps' done [] = done
+tdeps' done (q:qs) = let
+    (d',q') = tdeps'' done q
+  in tdeps' d' (nub $ q' ++ qs)
+
+tdeps'' :: [String] -> String -> ([String],[String])
+tdeps'' done dep = let
+    t     = M.findWithDefault [] dep deps
+    done' = done ++ [dep]
+    new   = filter (flip notElem done') t
+  in (done', new)
+
+extractModuleStats :: [GroupD] -> String -> Stats
+extractModuleStats gs name = mconcat $ map snd $ filter ((name ==) . fst) $ concatMap modstats gs
+
+extractModuleStatsT :: [GroupD] -> String -> Stats
+extractModuleStatsT gs name = mconcat $ map (extractModuleStats gs) $ tdeps name
+
+topLevelModuleStats gs = map (ap (,) (fst . extractModuleStatsT gs)) topLevelModules
+
+------------------------------------------------------------------------------------------------------------------------
 -- Printing stats
 
 header = "                      |       Files     |            LoC\n"
@@ -151,9 +196,15 @@ logicAndImpl gs = let l = modulesWithSuffix' "-logic" gs
 
 logicAndImplWithTotal gs = a ++ [consolidateGroups a] where a = logicAndImpl gs
 
+topLevelModuleStatReportS = "--------------------------------\n"
+topLevelModuleStatReportH = "Module            Files      LoC\n"++topLevelModuleStatReportS
+fmtTopLevelModuleStat (m,s) = printf "%-16s  %5d  %7d\n" m (files s) (loc s)
+topLevelModuleStatReport gs =
+  topLevelModuleStatReportH ++ (concatMap fmtTopLevelModuleStat $ topLevelModuleStats gs) ++ topLevelModuleStatReportS
+
 ------------------------------------------------------------------------------------------------------------------------
 
-sampleData = [GroupD "base" [("base-db",(Stat {files = 5, loc = 287},Stat {files = 0, loc = 0})),("base-test",(Stat {files = 0, loc = 0},Stat {files = 3, loc = 115})),("base-util",(Stat {files = 12, loc = 769},Stat {files = 3, loc = 244}))],GroupD "taskman" [("taskman-api-impl",(Stat {files = 3, loc = 103},Stat {files = 4, loc = 72})),("taskman-api-logic",(Stat {files = 7, loc = 136},Stat {files = 2, loc = 95})),("taskman-server-impl",(Stat {files = 15, loc = 959},Stat {files = 5, loc = 408})),("taskman-server-logic",(Stat {files = 11, loc = 587},Stat {files = 5, loc = 413}))],GroupD "webapp" [("webapp",(Stat {files = 133, loc = 8388},Stat {files = 70, loc = 8239}))]]
+sampleData = [GroupD {gname = "base", modstats = [("base-db",(Stat {files = 6, loc = 330},Stat {files = 0, loc = 0})),("base-test",(Stat {files = 0, loc = 0},Stat {files = 3, loc = 167})),("base-util",(Stat {files = 9, loc = 529},Stat {files = 3, loc = 244})),("base-util-sjs",(Stat {files = 6, loc = 470},Stat {files = 0, loc = 0}))]},GroupD {gname = "taskman", modstats = [("taskman-api-impl",(Stat {files = 3, loc = 102},Stat {files = 4, loc = 75})),("taskman-api-logic",(Stat {files = 6, loc = 148},Stat {files = 2, loc = 109})),("taskman-server-impl",(Stat {files = 16, loc = 1144},Stat {files = 6, loc = 443})),("taskman-server-logic",(Stat {files = 13, loc = 816},Stat {files = 6, loc = 517}))]},GroupD {gname = "webapp", modstats = [("webapp-client",(Stat {files = 18, loc = 1059},Stat {files = 1, loc = 10})),("webapp-server",(Stat {files = 130, loc = 8252},Stat {files = 70, loc = 8267})),("webapp-shared",(Stat {files = 16, loc = 439},Stat {files = 0, loc = 0}))]}]
 
 main :: IO ()
 main = do putStrLn "Analysing..."
@@ -172,4 +223,6 @@ main = do putStrLn "Analysing..."
             ,fmtGroups $ logicAndImpl gs
             ,fmtGroups [consolidateGroups $ logicAndImpl gs]
             ]
+          putStrLn "\n"
+          putStrLn $ topLevelModuleStatReport gs
 
