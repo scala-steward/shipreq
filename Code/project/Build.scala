@@ -220,6 +220,8 @@ object ShipReq extends Build {
     object Shared extends Module {
       val dir = "webapp-shared"
 
+      override def deps = upickle
+
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
         .dependsOn(baseUtilSjs)
@@ -320,7 +322,7 @@ object ShipReq extends Build {
         .settings(parallelExecution in IntegrationTest := false)
 
       override def deps =
-        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++ upickle ++
+        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
         testScope(scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo /*++ twitterEval*/) ++
         depScope("it")(selenium) ++
         (jetty % "container,test") ++ (servlet % "container,test,provided")

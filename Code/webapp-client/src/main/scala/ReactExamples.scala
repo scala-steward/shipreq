@@ -1,11 +1,11 @@
 package hahaa
 
-import shipreq.webapp.client.lib.{Patches, LiftAjax}
-import shipreq.webapp.shared.{ExampleData, Interface}
+import shipreq.webapp.client.lib.{InterfaceClient, Patches, LiftAjax}
+import shipreq.webapp.shared.rpc._
+import InterfaceClient._
 
 import scala.scalajs.js
 import org.scalajs.dom.{document, window, Node, console, alert}
-
 import scala.scalajs.js.annotation.{JSExport, JSName}
 
 object ReactExamples extends js.JSApp {
@@ -17,32 +17,17 @@ object ReactExamples extends js.JSApp {
   }
 
   @JSExport
-  def wired(a: String) = {
-    import upickle._
-    read[Interface.Page.WIP](a)
-  }
+  def wired(a: js.Any) = readCluster[Interfaces.WIP](a)
 
   @JSExport
-  def invokeSquare(p: Interface.Page.WIP, n: js.Number): Unit =
+  def invokeSquare(p: Interfaces.WIP, n: js.Number): Unit =
     invokeCallback(p.square)(n.toInt, s => alert(s"RESPONSE: [$s]"))
 
   @JSExport
-  def invokeGrrr(p: Interface.Page.WIP, n: js.Number): Unit =
+  def invokeGrrr(p: Interfaces.WIP, n: js.Number): Unit =
     invokeCallback(p.grrr)(ExampleData(n.toInt), s => alert(s.yar))
 
-  def invokeCallback[D <: Interface.Defn](r: Interface.Wired[D])(i: r.d.I, cb: r.d.O => Unit)(implicit I: upickle.Writer[r.d.I], O: upickle.Reader[r.d.O]): Unit = {
-    // TODO test all failure scenarios imaginable
-    val ii = js.encodeURIComponent(upickle write i)
-    val s: js.Any => Unit = o => {
-      console.log("invokeCallback result", o)
-      val oo = upickle.readJs[r.d.O](Patches readJs o)
-      cb(oo)
-//      cb(o.asInstanceOf[r.d.O])
-      // TODO
-    }
-    // needs failure
-    LiftAjax.lift_ajaxHandler(s"${r.n}=$ii", s, null, "json")
-  }
+
 
   // ===================================================================================================================
 
