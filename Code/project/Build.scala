@@ -72,7 +72,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        providedScope(Scalaz.effect)
+        Scalaz.core
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
@@ -240,6 +240,7 @@ object ShipReq extends Build {
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
         .settings(utest.jsrunner.Plugin.utestJsSettings: _*)
+        .configure(dontInline) // crashes scalac 2.11.2
         .settings(
           // Recompile shared source rather than depending directly
           // https://github.com/scala-js/scala-js/issues/1067

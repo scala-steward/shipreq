@@ -1,6 +1,6 @@
 package shipreq.webapp.snippet
 
-import shipreq.webapp.app.AppConfig
+import shipreq.webapp.app.AppConfig._
 import shipreq.webapp.app.AppSiteMap
 import shipreq.webapp.app.AppSiteMap.Implicits._
 import shipreq.webapp.lib.{Misc, SnippetHelpers}
@@ -30,27 +30,28 @@ object Link extends DispatchSnippet with SnippetHelpers {
   val appLink =
     static(<a href={AppSiteMap.Home.absoluteUrl}>{AppConsts.appName}</a>)
 
+  private def sbtInReleaseMode =
+    sys.props get "MODE" exists (_ == "release")
+
+  private def useDevResources = (Props.mode, sbtInReleaseMode) match {
+    case (Development, false) | (Test, false) => true
+    case _ => false
+  }
+
   val jqueryLink = {
     val jqueryUrl = Props.mode match {
-      case Development | Test => s"${AppConfig.devAssetPath}/jquery.js"
-      case _                  => s"//ajax.googleapis.com/ajax/libs/jquery/${AppConfig.jQueryVersion}/jquery.min.js"
+      case Development | Test => s"$devAssetPath/jquery.js"
+      case _                  => s"//ajax.googleapis.com/ajax/libs/jquery/$jQueryVersion/jquery.min.js"
     }
     static(<script type="text/javascript" src={jqueryUrl}></script>)
   }
 
   val clientJs = {
-    val reactUrl = Props.mode match {
-      case Development | Test => s"${AppConfig.devAssetPath}/react.js"
-      case _                  => s"${AppConfig.vendorAssetPath}/react.js"
-    }
-    val clientJsUrl = Props.mode match {
-      case Development | Test => s"${AppConfig.devAssetPath}/webapp-client-fastopt.js"
-      case _                  => "/assets/C.js"
-    }
+    val reactUrl = if (useDevResources) s"$devAssetPath/react.js" else s"$vendorAssetPath/react.js"
+    val clientJsUrl = if (useDevResources) s"$devAssetPath/webapp-client-fastopt.js" else "/assets/C.js"
     static(
       <script type="text/javascript" src={reactUrl}></script>
-      <script type="text/javascript" src={clientJsUrl}></script>
-    )
+      <script type="text/javascript" src={clientJsUrl}></script>)
   }
 
   object ToPage {
