@@ -1,10 +1,9 @@
 package shipreq.webapp.shared.data
 
-/*
 final case class Project(customReqTypes: Map[CustReqType.Id, CustReqType]) {
 
   lazy val allReqTypes: List[ReqType] =
-    customReqTypes.values.foldLeft(ReqType.static)((a, b) => b :: a)
+    customReqTypes.values.foldLeft(ReqType.static: List[ReqType])((a, b) => b :: a)
 
   // constraints:
   // - Σ oldMnemonics + Σ mnemonic contains no dups
@@ -15,4 +14,3 @@ final case class Project(customReqTypes: Map[CustReqType.Id, CustReqType]) {
   lazy val allMnemonics: Set[ReqType.Mnemonic] =
     allReqTypes.foldLeft(allActiveMnemonics)((a, r) => a ++ r.oldMnemonics)
 }
-*/

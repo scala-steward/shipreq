@@ -1,12 +1,12 @@
 package shipreq.webapp.client
 
-import monocle.{Iso, SimpleLens}
+import monocle.SimpleLens
 import org.scalajs.dom.console
-import shipreq.base.util.TaggedTypes.taggedStringInstance
-
 import scalaz.effect.IO
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
+import japgolly.scalajs.react.ReactComponentB
+import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.shared.data._
 import shipreq.webapp.client.ui.table._
 import shipreq.webapp.client.ui.{Editors => E, Util}
@@ -18,11 +18,18 @@ object CfgReqType {
   type P = CustReqType
   type D = CustReqType.Id
 
-  val prespec = TableSpecBuilder[P](
+  private val prespec = TableSpecBuilder[P](
     FieldSpec[P](_.mnemonic.value)(V.mnemonic)(E.TextInputEditor),
     FieldSpec[P](_.name)(V.name)(E.TextInputEditor),
     FieldSpec[P].noValidation(_.imp, ImplicationRequired)(E.CheckboxEditor))
     .dataId[D]
+
+  private val spec = prespec
+    .tableConstraints(
+      Some(mnemonicUniqueness),
+      Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
+      None)
+    .saveFn2(fakeSave, _.id)
 
   private def mnemonicUniqueness =
     TableConstraint.uniquenessE[prespec.S, prespec.R, Mnemonic](
@@ -35,15 +42,19 @@ object CfgReqType {
         (static #::: custom).flatMap(p => p.mnemonic #:: p.oldMnemonics.toStream)
       }).fieldName("Mnemonic")
 
-  val spec = prespec
-    .tableConstraints(
-      Some(mnemonicUniqueness),
-      Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
-      None)
-    .saveFn2(fakeSave, _.id)
+  case class Props(customReqTypes: Map[CustReqType.Id, CustReqType], showDeleted: Boolean)
 
-  // AJAX is async
-  def fakeSave(op: Option[P], newValues: prespec.U) = IO[P] {
+  val Component = ReactComponentB[Props]("CfgReqTypes")
+    .getInitialState(p => p.showDeleted)
+    .render(Render.renderOuter _)
+    .create
+
+  private val InnerComponent = ReactComponentB[Props]("CfgReqTypesⁱ")
+    .getInitialState(p => spec.initialState(p.customReqTypes))
+    .render(Render.renderInner _)
+    .create
+
+  private def fakeSave(op: Option[P], newValues: prespec.U) = IO[P] {
     val (a,b,c) = newValues
     op match {
       case None =>
@@ -57,7 +68,7 @@ object CfgReqType {
     }
   }
 
-  val deletion = new DeletionManager(spec)(
+  private val deletion = new DeletionManager(spec)(
     SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
     id => a => IO(a match {
 //      case HardDelete => FakeDao.customReqType.deleteHard(id)
@@ -66,106 +77,74 @@ object CfgReqType {
       case x => console.log(s"FAKE DELETE: $x on $id")
     }))
 
-  object Action {
-    val newRow =
-      spec.createUnsaved(("","",false))
-  }
+  private val newRowS = spec.createUnsaved(("","",false))
 
-  // ------------------
+  private object Render {
+    import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
+    import Util.checkbox
 
-  type Props = ReqTypeTableProps
+    def renderOuter(S: ComponentScopeU[Props, Boolean, Unit]): VDom = {
+      val s = S.state
+      div(
+        label(
+          checkbox(s)(onchange --> S.modState(b => !b)),
+          raw(if (s) "Showing deleted" else "Not showing deleted")),
+        InnerComponent(S.props.copy(showDeleted = s)))
+    }
 
-  case class ReqTypeTableProps(qqq: ProjectReqTypes, showDeleted: Boolean)
+    type ScopeI = ComponentScopeU[Props, prespec.S, Unit]
+    type FocusI = ComponentStateFocus[prespec.S]
+    type RowStream = Stream[(Mnemonic, Tag)]
 
-  import japgolly.scalajs.react.ReactComponentB
-
-  val ReqTypeTableComp = ReactComponentB[ReqTypeTableProps]("CfgReqTypesⁱ")
-    .getInitialState(p => spec.initialState(p.qqq.customReqTypes))
-    .render(Render.renderInner _)
-    .create
-
-  val ReqTypeTableCompOuter = ReactComponentB[ReqTypeTableProps]("CfgReqTypes")
-    .getInitialState(p => p.showDeleted)
-    .render(Render.renderOuter _)
-    .create
-
-  // ------------------
-
-  object Render {
-    import japgolly.scalajs.react._
-    import japgolly.scalajs.react.vdom.ReactVDom._
-    import japgolly.scalajs.react.vdom.ReactVDom.all._
-    import japgolly.scalajs.react.ScalazReact._
+    def renderInner(S: ScopeI): VDom = {
+      val newRow = Render.newRow.render(S)(())
+      val nonNewRows = (staticRows #::: savedRows(S) #::: deletedRows(S)).sortBy(_._1.value).map(_._2).toJsArray
+      div(
+        button(onclick ~~> S.runState(newRowS), "New"),
+        table(
+          thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
+          tbody(newRow, nonNewRows)))
+    }
 
     private def row(mnemonic: Modifier, name: Modifier, impReq: Modifier, delButton: Modifier) =
       Seq(td(mnemonic), td(name), td(impReq), td(delButton))
 
     val newRow =
-      spec.unsavedRow((T, vv) => {
+      spec.unsavedRow((F, vv) => {
         val (mnemonic, name, impReq) = vv
-        val delButton = button(onclick ~~> T.runState(spec.removeUnsavedS))("Cancel")
+        val delButton = button(onclick ~~> F.runState(spec.removeUnsavedS))("Cancel")
         tr(keyAttr := "new", row(mnemonic, name, impReq, delButton))
       })
 
-    val savedRow =
-      spec.savedRow((T, id, p, vv) => {
-        val (mnemonic, name, impReq) = vv
-        tr(keyAttr := id.value, row(mnemonic, name, impReq, deletion.buttons(T, id, HardDelete, SoftDelete)))
-      })
-
-    def deletedRow(T: ComponentStateFocus[prespec.S], p: P) =
-      tr(cls := "del", key := p.id.value, row(
-        raw(p.mnemonic),
-        raw(p.name),
-        Util.checkbox(ImplicationRequired from p.imp)(disabled := true),
-        deletion.button(T, p.id, Restore)))
-
-    def staticRow(r: ReqType.Static) =
-      tr(key := r.mnemonic.value, row(
-        raw(r.mnemonic),
-        raw(r.name),
-        Util.checkbox(ImplicationRequired from r.imp)(disabled := true),
-        Nop))
-
-    def renderInner(T: ComponentScopeU[Props, prespec.S, Unit]): VDom = {
-      val newRow = Render.newRow.render(T)(())
-
-      type RS = Stream[(Mnemonic, Tag)]
-
-      def savedRows: RS = {
-        val rr = Render.savedRow.render(T)
-        deletion.getSavedP(T, Alive).map(p => p.mnemonic ->  rr(p.id))
-      }
-
-      def deletedRows: RS =
-        if (T.props.showDeleted)
-          deletion.getSavedP(T, Dead).map(p => p.mnemonic -> Render.deletedRow(T, p))
-        else
-          Stream.empty
-
-      def staticRows: RS = // TODO make val and list
-        ReqType.static.toStream.map(r => r.mnemonic -> staticRow(r))
-
-      val nonNewRows = (staticRows #::: savedRows #::: deletedRows).sortBy(_._1.value).map(_._2).toJsArray
-
-      div(
-        button(onclick ~~> T.runState(Action.newRow))("New"),
-        table(
-          thead(tr(th("Mnemonic"), th("Name"), th("Implication Required"), th("Ctrls"))),
-          tbody(newRow, nonNewRows)
-        )
-      )
+    def savedRows(S: ScopeI): RowStream = {
+      val rr = savedRow.render(S)
+      deletion.getSavedP(S, Alive).map(p => p.mnemonic -> rr(p.id))
     }
 
-    def renderOuter(t: ComponentScopeU[Props, Boolean, Unit]): VDom = {
-      val s = t.state
-      div(
-        label(
-          Util.checkbox(s)(onchange --> t.modState(b => !b)), // TODO --> instead of ~~>
-          raw(if (s) "Showing deleted" else "Not showing deleted")
-        ),
-        ReqTypeTableComp(t.props.copy(showDeleted = s))
-      )
+    val savedRow =
+      spec.savedRow((F, id, p, vv) => {
+        val (mnemonic, name, impReq) = vv
+        tr(keyAttr := id.value, row(mnemonic, name, impReq, deletion.buttons(F, id, HardDelete, SoftDelete)))
+      })
+
+    def deletedRows(S: ScopeI): RowStream =
+      if (S.props.showDeleted)
+        deletion.getSavedP(S, Dead).map(p => p.mnemonic -> deletedRow(S, p))
+      else
+        Stream.empty
+
+    def deletedRow(F: FocusI, p: P) = {
+      val imp = checkbox(ImplicationRequired from p.imp)(disabled := true)
+      val del = deletion.button(F, p.id, Restore)
+      tr(cls := "del", key := p.id.value, row(raw(p.mnemonic), raw(p.name), imp, del))
+    }
+
+    val staticRows: RowStream =
+      ReqType.static.map(r => r.mnemonic -> staticRow(r)).toStream
+
+    def staticRow(r: ReqType.Static) = {
+      val imp = checkbox(ImplicationRequired from r.imp)(disabled := true)
+      tr(key := r.mnemonic.value, row(raw(r.mnemonic), raw(r.name), imp, Nop))
     }
   }
 }

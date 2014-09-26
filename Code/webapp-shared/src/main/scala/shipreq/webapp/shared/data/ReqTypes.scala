@@ -44,19 +44,3 @@ final case class CustReqType(id: CustReqType.Id,
 object CustReqType {
   final case class Id(value: Long) extends TaggedLong
 }
-
-// TODO ProjectReqTypes copied from Project
-final case class ProjectReqTypes(customReqTypes: Map[CustReqType.Id, CustReqType]) {
-
-  lazy val allReqTypes: List[ReqType] =
-    customReqTypes.values.foldLeft(ReqType.static ::: List.empty[ReqType])((a, b) => b :: a)
-
-  // constraints:
-  // - Σ oldMnemonics + Σ mnemonic contains no dups
-
-  lazy val allActiveMnemonics: Set[ReqType.Mnemonic] =
-    allReqTypes.foldLeft(Set.empty[ReqType.Mnemonic])((a, r) => a + r.mnemonic)
-
-  lazy val allMnemonics: Set[ReqType.Mnemonic] =
-    allReqTypes.foldLeft(allActiveMnemonics)((a, r) => a ++ r.oldMnemonics)
-}

@@ -76,10 +76,9 @@ object ReactExamples extends js.JSApp {
       CustReqType(Id(6), "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead)
     )
 
-    val proj = ProjectReqTypes(list.map(i => i.id -> i).toMap)
+    val map = list.map(i => i.id -> i).toMap
 
-//    ReqTypeTableCompOuter(ReqTypeTableProps(list, false)) render mountNode
-    ReqTypeTableCompOuter(ReqTypeTableProps(proj, false)) render mountNode
+    Component(Props(map, false)) render mountNode
   }
 
   def example2(mountNode: Node) = {
