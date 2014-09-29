@@ -25,6 +25,11 @@ object Deps {
     protected implicit def js(a: String) = dd(jsA(a))
   }
 
+  case class JvmAndJs(groupId: String, name: String, version: String) {
+    final val jvm: MS = (groupId: GroupID) %% name % version
+    final val js: MS = jsGA(groupId, name) % version
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   object ScalaJS {
@@ -38,8 +43,6 @@ object Deps {
       val effect = js("scalaz-effect")
     }
     val monocle :MS = jsGA("com.github.japgolly.fork.monocle", "monocle-core") % "0.5.1"
-    val upickle :MS = jsGA("com.lihaoyi", "upickle") % upickleVersion
-    val utest   :MS = jsGA("com.lihaoyi", "utest") % "0.2.3"
   }
 
   object Scala extends Group("2.11.2", "org.scala-lang") {
@@ -82,9 +85,9 @@ object Deps {
     val testkit = dd("akka-testkit")
   }
 
-  def upickleVersion = "0.2.5"
+  val μPickle = JvmAndJs("com.lihaoyi", "upickle", "0.2.5")
+  val μTest   = JvmAndJs("com.lihaoyi", "utest",   "0.2.3")
 
-  val upickle     :MS = "com.lihaoyi"                %% "upickle"               % upickleVersion
   val okHttp      :MS = "com.squareup.okhttp"         % "okhttp"                % "1.5.4"
   val httpCore    :MS = "org.apache.httpcomponents"   % "httpcore"              % "4.3.2"
   val javaMail    :MS = "com.sun.mail"                % "javax.mail"            % "1.5.2"

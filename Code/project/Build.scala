@@ -72,7 +72,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        Scalaz.core
+        Scalaz.core ++ testScope(μTest.jvm)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
@@ -220,7 +220,8 @@ object ShipReq extends Build {
     object Shared extends Module {
       val dir = "webapp-shared"
 
-      override def deps = upickle
+      override def deps =
+        μPickle.jvm ++ testScope(μTest.jvm)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
@@ -231,27 +232,43 @@ object ShipReq extends Build {
     object Client extends Module {
       import scala.scalajs.sbtplugin.ScalaJSPlugin._
       import scala.scalajs.sbtplugin.InliningMode
+      import scala.scalajs.sbtplugin.env.phantomjs.PhantomJSEnv
+      import utest.jsrunner.Plugin.utestJsSettings
       import ScalaJSKeys._
 
       val dir = "webapp-client"
 
       override def deps =
-        ScalaJS.Scalaz.effect ++ ScalaJS.React.scalaz ++ ScalaJS.monocle ++ ScalaJS.upickle ++
-        testScope(ScalaJS.React.test ++ ScalaJS.utest)
+        ScalaJS.Scalaz.effect ++ ScalaJS.React.scalaz ++ ScalaJS.monocle ++ μPickle.js ++
+        testScope(ScalaJS.React.test ++ μTest.js)
+
+      def testSettings = (_: Project)
+        .settings(utestJsSettings: _*)
+        .settings(
+          jsDependencies += "org.webjars" % "react" % "0.11.1" % "test" / "react-with-addons.js" commonJSName "React",
+          requiresDOM := true,
+          jsEnv in Test := new PhantomJSEnv)
+
+      def prodJsSettings = (_: Project).settings(
+        emitSourceMaps in fullOptJS := false,
+        // checkScalaJSIR in fullOptJS := true, https://github.com/lihaoyi/upickle/issues/27
+        inliningMode in fullOptJS := InliningMode.Batch)
+
+      // Recompile shared source rather than depending directly
+      // https://github.com/scala-js/scala-js/issues/1067
+      def jsStyleDependsOn(ps: Project*) = (_: Project)
+        .settings(ps.flatMap(p => Seq(
+          unmanagedSourceDirectories in Compile += (scalaSource in Compile in p).value,
+          unmanagedSourceDirectories in Test    += (scalaSource in Test    in p).value
+        )): _*)
 
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
-        .settings(utest.jsrunner.Plugin.utestJsSettings: _*)
-        .configure(dontInline) // crashes scalac 2.11.2
-        .settings(
-          // Recompile shared source rather than depending directly
-          // https://github.com/scala-js/scala-js/issues/1067
-          unmanagedSourceDirectories in Compile ++= Seq(
-            (scalaSource in Compile in baseUtilSjs).value,
-            (scalaSource in Compile in webappShared).value),
-          emitSourceMaps in fullOptJS := false,
-          //checkScalaJSIR in fullOptJS := true, https://github.com/lihaoyi/upickle/issues/27
-          inliningMode in fullOptJS := InliningMode.Batch)
+        .configure(
+          jsStyleDependsOn(baseUtilSjs, webappShared),
+          testSettings,
+          dontInline, // crashes scalac 2.11.2
+          prodJsSettings)
     }
 
     // ----------------------------------------------------

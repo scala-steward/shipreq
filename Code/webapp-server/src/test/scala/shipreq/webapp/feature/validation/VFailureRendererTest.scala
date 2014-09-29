@@ -7,8 +7,6 @@ import scalaz.syntax.semigroup._
 import shipreq.webapp.shared.validation._
 import VFailure.semigroup
 
-// TODO move into webapp-shared
-
 class VFailureRendererTest extends FunSpec with Matchers {
 
   val singleField = VFailure.forField("Car", NonEmptyList("is too big."))
@@ -39,24 +37,4 @@ class VFailureRendererTest extends FunSpec with Matchers {
     }
   }
 
-  describe("Rendering to text") {
-    it("Single field error") {
-      singleField.toText shouldBe "Car is too big."
-    }
-    it("Multiple field errors") {
-      multiField.toText shouldBe "Car\n  - is too fast.\n  - is too big."
-    }
-    it("Single loose error") {
-      singleLoose.toText shouldBe "It's Tuesday."
-    }
-    it("Multiple loose error") {
-      multiLoose.toText shouldBe "It's too hot.\n\nIt's Tuesday."
-    }
-    it("Different error types 1") {
-      multiTypes.toText shouldBe "It's Tuesday.\n\nCar is too big."
-    }
-    it("Different error types 2") {
-      multiTypes4.toText shouldBe "It's too hot.\n\nIt's Tuesday.\n\nCar\n  - is too fast.\n  - is too big."
-    }
-  }
 }
