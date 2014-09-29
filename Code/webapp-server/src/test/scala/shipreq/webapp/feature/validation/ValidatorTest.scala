@@ -8,6 +8,8 @@ import shipreq.webapp.shared.AppConsts._
 import shipreq.webapp.shared.validation._
 import shipreq.webapp.security.PasswordAndSalt
 
+// TODO Move ValidatorTest into webapp-shared
+
 class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   def V = Validators
 
