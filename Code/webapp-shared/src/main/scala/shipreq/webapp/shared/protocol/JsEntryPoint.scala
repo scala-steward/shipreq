@@ -1,9 +1,14 @@
 package shipreq.webapp.shared.protocol
 
+import upickle.{Reader, Writer}
+
 /**
  * Describes a function exposed in client JS, that the server can invoke.
  */
-final class JsEntryPoint[I,O] private[JsEntryPoint] (val name: String)
+final class JsEntryPoint[I,O] private[JsEntryPoint] (val name: String)(implicit RI: Reader[I], WI: Writer[I]) {
+  implicit def ri = RI
+  implicit def wi = WI
+}
 
 /**
  * The contents of this object allow client and server to be in sync wrt exported JS names and parameter types.

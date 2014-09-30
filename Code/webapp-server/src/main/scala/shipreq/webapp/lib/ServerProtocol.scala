@@ -16,7 +16,8 @@ object ServerProtocol {
       case e: Throwable => -\/(e)
     }
 
-  def routine[D <: Routine.Desc](d: D)(f: d.I => d.O)(implicit I: Reader[d.I], O: Writer[d.O]) = {
+  def routine[D <: Routine.Desc](d: D)(f: d.I => d.O) = {
+    import d.{ri, wo}
     val proc = S.SFuncHolder(req =>
       parseJson[d.I](req) match {
         case \/-(i) => RawJsonResponse(write[d.O](f(i)))
@@ -26,13 +27,14 @@ object ServerProtocol {
     Routine.Remote[D](fnName, d)
   }
 
-  def invokeClientJs[I: Writer, O](f: JsEntryPoint[I, O])(i: I): String = {
-    def runOnWindowLoad(f: StringBuilder => Unit): StringBuilder => Unit = sb => {
+  def invokeClientJs[I, O](ep: JsEntryPoint[I, O])(i: I): String = {
+    @inline def runOnWindowLoad(f: StringBuilder => Unit): StringBuilder => Unit = sb => {
       sb append "window.onload = function(){"
       f(sb)
       sb append "};"
     }
-    def callClient[I: Writer](n: String, i: I): StringBuilder => Unit = sb => {
+    import ep.wi
+    @inline def callClient(n: String, i: I): StringBuilder => Unit = sb => {
       sb append JsEntryPoint.client
       sb append "()."
       sb append n
@@ -40,9 +42,9 @@ object ServerProtocol {
       sb append write(i)
       sb append ')'
     }
-    quickSB(runOnWindowLoad(callClient(f.name, i)))
+    quickSB(runOnWindowLoad(callClient(ep.name, i)))
   }
 
-  def invokeClientHtml[I: Writer, O](f: JsEntryPoint[I, O])(i: I) =
+  def invokeClientHtml[I, O](f: JsEntryPoint[I, O])(i: I) =
     <script type="text/javascript">{invokeClientJs(f)(i)}</script>
 }

@@ -26,8 +26,8 @@ object ClientProtocol {
   def readCluster[G <: Routine.Group : Reader](a: js.Any) = // TODO rename
     parseJsObject[G](a)
 
-  def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, callback: r.d.O => Unit)
-                             (implicit I: Writer[r.d.I], O: Reader[r.d.O]): Unit = {
+  def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, callback: r.d.O => Unit): Unit = {
+    import r.d.{wi, ro}
     val i = js.encodeURIComponent(write(input))
     val success = jsonEffect[r.d.O](callback)
     // TODO failure
