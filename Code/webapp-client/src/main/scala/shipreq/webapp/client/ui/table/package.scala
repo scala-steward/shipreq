@@ -51,6 +51,7 @@ import monocle.syntax._
  */
 package object table {
 
+  // TODO why is P in the saved map? It should come from props (?)
   type Saved[D, P, II] = Map[D, (P, II)]
   type Unsaved[II] = Option[II]
   type SavedAndUnsaved[D, P, II] = (Saved[D, P, II], Unsaved[II])
