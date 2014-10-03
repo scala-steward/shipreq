@@ -7,6 +7,7 @@ import scalaz.effect.IO
 import scalaz.syntax.equal._
 import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
 import shipreq.webapp.shared.data.{Dead, Alive}
+import shipreq.webapp.client.protocol.FailureIO
 
 sealed abstract class DeletionAction(val btnLabel: String)
 case object HardDelete extends DeletionAction("Delete Forever")
@@ -57,16 +58,18 @@ final class SyncDeletion[S, P, D](spec: TableSpec.SyncSave[S, D, _, P, _, _])(
 
 final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _, _])(
     aliveL: SimpleLens[P, Alive],
-    delIO: (X, D, DeletionAction) => IO[Unit])
+    delIO: (X, D, DeletionAction, FailureIO) => IO[Unit])
     extends Deletion(spec, aliveL) {
 
-  def actionS(d: D, a: DeletionAction)(implicit x: X) =
-    ReactS.modT[IO, S](s =>
-      delIO(x, d, a)
-        .map(_ => spec.setStatusToEffectInProgress(Some(d))(s)))
+  def actionS(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) = {
+    val r = Some(id)
+    val f = spec.failureIO(T, r)
+    val j = delIO(x, id, a, f)
+    ReactS.modT[IO, S](s => j.map(_ => spec.setStatusToEffectInProgress(r)(s)))
+  }
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) =
-    all.button(onclick ~~> T.runState(actionS(id, a)), a.btnLabel)
+    all.button(onclick ~~> T.runState(actionS(T, id, a)), a.btnLabel)
 
   def buttons(T: ComponentStateFocus[S], id: D, as: DeletionAction*)(implicit x: X) =
     as.map(button(T, id, _))

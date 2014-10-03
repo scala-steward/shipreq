@@ -16,9 +16,9 @@ object ClientProtocol {
       case e: Throwable => -\/(e)
     }
 
-  def jsonEffect[T: Reader](f: T => Any): js.Any => Unit =
+  def jsonEffect[T: Reader](f: T => IO[Unit]): js.Any => Unit =
     a => parseJsObject[T](a) match {
-      case \/-(b) => f(b); ()
+      case \/-(b) => f(b).unsafePerformIO()
       case -\/(e) => handleJsonParsingError(e)
     }
 
@@ -27,11 +27,12 @@ object ClientProtocol {
   def readCluster[G <: Routine.Group : Reader](a: js.Any) = // TODO rename
     parseJsObject[G](a)
 
-  def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, callback: r.d.O => Unit): IO[Unit] = {
+  def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, success: r.d.O => IO[Unit], f: FailureIO): IO[Unit] = {
     import r.d.{wi, ro}
     val i = js.encodeURIComponent(write(input))
-    val success = jsonEffect[r.d.O](callback)
-    // TODO failure
-    IO(LiftAjax.lift_ajaxHandler(s"${r.n}=$i", success, null, "json"))
+    val q = s"${r.n}=$i"
+    val s = jsonEffect[r.d.O](success)
+    val ff = () => f.io.unsafePerformIO() // TODO log unless release mode
+    IO(LiftAjax.lift_ajaxHandler(q, s, ff, "json"))
   }
 }

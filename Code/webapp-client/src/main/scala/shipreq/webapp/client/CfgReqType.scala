@@ -11,7 +11,7 @@ import japgolly.scalajs.react.ReactComponentB
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.shared.data._
 import shipreq.webapp.shared.protocol.Routines
-import shipreq.webapp.client.protocol.ClientProtocol
+import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
 import shipreq.webapp.client.ui.table._
 import shipreq.webapp.client.ui.{Editors => E, Util}
 import Validators.{reqType => V}
@@ -62,12 +62,12 @@ object CfgReqType {
     .render(Render.renderInner _)
     .create
 
-  private def saveIO(x: X, op: Option[P], u: prespec.U): IO[Unit] =
+  private def saveIO(x: X, op: Option[P], u: prespec.U, f: FailureIO): IO[Unit] =
     op match {
       case None =>
-        ClientProtocol.call(x.create)(u, o => console.log(s"Ajax Result = $o"))
+        ClientProtocol.call(x.create)(u, o => IO(console.log(s"Ajax Result = $o")), f)
       case Some(p) =>
-        ClientProtocol.call(x.update)((p.id, u), o => console.log(s"Ajax Result = $o"))
+        ClientProtocol.call(x.update)((p.id, u), o => IO(console.log(s"Ajax Result = $o")), f)
     }
 
   private val deletion =
@@ -75,11 +75,12 @@ object CfgReqType {
       SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
       deleteIO)
 
-  private def deleteIO(x: X, id: D, a: DeletionAction): IO[Unit] =
+  private def deleteIO(x: X, id: D, a: DeletionAction, f: FailureIO): IO[Unit] =
+    // TODO Merge these callbacks
     a match {
-      case HardDelete => ClientProtocol.call(x.hardDelete)(id, o => console.log(s"Ajax Result = $o"))
-      case SoftDelete => ClientProtocol.call(x.softDelete)(id, o => console.log(s"Ajax Result = $o"))
-      case Restore    => ClientProtocol.call(x.restore)(id, o => console.log(s"Ajax Result = $o"))
+      case HardDelete => ClientProtocol.call(x.hardDelete)(id, o => IO(console.log(s"Ajax Result = $o")), f)
+      case SoftDelete => ClientProtocol.call(x.softDelete)(id, o => IO(console.log(s"Ajax Result = $o")), f)
+      case Restore    => ClientProtocol.call(x.restore   )(id, o => IO(console.log(s"Ajax Result = $o")), f)
     }
 
   private val newRowS = spec.createUnsaved(("","",false))

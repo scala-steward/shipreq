@@ -6,10 +6,11 @@ import shipreq.webapp.client.protocol.ClientProtocol
 import scala.scalajs.js
 import org.scalajs.dom.{document, window, Node, console, alert}
 import scala.scalajs.js.annotation.{JSExport, JSName}
+import scalaz.effect.IO
 
 object ReactExamples {
 
-  def main(routines: Routines.ForCfgReqType): Unit = {
+  def main(routines: Routines.ForCfgReqType) = IO[Unit] {
     example1(document getElementById "eg1")
     //    example2(document getElementById "eg2")
     cfgReqTypesTest(routines, document getElementById "eg2")
