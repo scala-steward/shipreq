@@ -35,11 +35,18 @@ final class TableSpecB[S, D, U, P, II, VV](val p2ii: P => II,
     saveNotNeededWhenE(ev compose p2ii)
 
   class B2(saveNotNeeded: (U, P) => Boolean) {
-    def saveFn2(saveIO: (Option[P], U) => IO[P], id: P => D) =
-      saveFn((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
 
-    def saveFn(saveIO: (Option[(D, P)], U) => IO[(D, P)]) =
-      new TableSpec[S, D, U, P, II, VV](TableSpecB.this, saveIO, saveNotNeeded)
+    def syncSave(saveIO: (Option[(D, P)], U) => IO[(D, P)]) =
+      new TableSpec.SyncSave(TableSpecB.this, saveNotNeeded, saveIO)
+
+    def syncSaveP(id: P => D, saveIO: (Option[P], U) => IO[P]) =
+      syncSave((opx, o) => saveIO(opx.map(_._2), o).map(p => (id(p), p)))
+
+    def asyncSave[X](saveIO: (X, Option[(D, P)], U) => IO[Unit]) =
+      new TableSpec.AsyncSave(TableSpecB.this, saveNotNeeded, saveIO)
+
+    def asyncSaveP[X](id: P => D, saveIO: (X, Option[P], U) => IO[Unit]) =
+      asyncSave[X]((x, opx, o) => saveIO(x, opx.map(_._2), o))
   }
 }
 
@@ -57,10 +64,7 @@ object TableSpecB {
 
 import TableSpec._
 
-final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
-                                          saveIO: (Option[(D, P)], U) => IO[(D, P)],
-                                          saveNotNeeded: (U, P) => Boolean) {
-
+abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV], saveNotNeeded: (U, P) => Boolean) {
   import tsb.{p2ii, rowRenderer}
   import tsb.savedUnsaved._
 
@@ -93,11 +97,10 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
   def insertUnsaved(px: DP)          : S => S = insertUnsaved(px._1, px._2)
   def insertUnsaved(id: D, p: P): S => S = updateSaved(id, p) compose removeUnsaved
 
-  private val _renderAttrUnsaved =
-    renderAttrForUnsaved((s,g) => saveIO(None, g).map(insertUnsaved(_)(s)))
+  protected def createIO: X => (S, U) => IO[S]
 
-  def unsavedRow[V2](renderRow: (ComponentStateFocus[S], VV) => V2) =
-    _unsavedRow(_renderAttrUnsaved, renderRow)
+  def unsavedRow[V2](renderRow: (ComponentStateFocus[S], VV) => V2)(implicit x: X) =
+    _unsavedRow(renderAttrForUnsaved(createIO(x)), renderRow)
 
   private def _unsavedRow[V2](renderAttr: ComponentStateFocus[S] => Option[VV], renderRow: (ComponentStateFocus[S], VV) => V2) =
     new FullRow[Option, S, VV, V2, Unit](_ => renderAttr(_), (T,_,vv) => renderRow(T, vv))
@@ -105,15 +108,16 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
   // ----------------------------------------------------------------------
   // Saved
 
-  private def saveRowFn(id: D) =
-    saveHelper[S, U, DP, DP, DP](
+  protected def updateIO(id: D)(implicit x: X) =
+    updateIfNeeded[S, U, DP, DP](
       s => (id, rowP(id)(s)),
-      (dp,u) => if (saveNotNeeded(u, dp._2)) None else Some(dp),
-      (dp,u) => saveIO(Some(dp), u),
-      (s,dp) => updateSaved(dp)(s))
+      (dp, u) => if (saveNotNeeded(u, dp._2)) None else Some(dp)
+    )(updateIO2(x))
 
-  private def renderAttrForSaved(id: D) =
-    rowRenderer(Some(id)).render(rowIL(id), rowP(id))(saveRowFn(id))
+  protected def updateIO2: X => (S, DP, U) => IO[S]
+
+  private def renderAttrForSaved(id: D)(implicit x: X) =
+    rowRenderer(Some(id)).render(rowIL(id), rowP(id))(updateIO(id))
 
   def removeSaved(id: D) = savedL.modifyF(m => m - id)
   def removeSavedS(id: D) = ReactS.mod(removeSaved(id))
@@ -141,10 +145,10 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
 
   def updateSavedS(px: DP) = ST.mod(updateSaved(px))
 
-  def savedRow[V2](renderRow: (ComponentStateFocus[S], D, P, VV) => V2) =
+  def savedRow[V2](renderRow: (ComponentStateFocus[S], D, P, VV) => V2)(implicit x: X) =
     _savedRow(renderAttrForSaved, (t,i,v) => renderRow(t,i,rowL(i).get(t.state)._1,v))
 
-  def savedRow[V2](renderRow: (ComponentStateFocus[S], D, VV) => V2) =
+  def savedRow[V2](renderRow: (ComponentStateFocus[S], D, VV) => V2)(implicit x: X) =
     _savedRow(renderAttrForSaved, renderRow)
 
   private def _savedRow[V2](renderAttr: D => ComponentStateFocus[S] => VV, renderRow: (ComponentStateFocus[S], D, VV) => V2) =
@@ -164,20 +168,57 @@ final class TableSpec[S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, VV],
 
 object TableSpec {
 
+  implicit object NoX
+
+  // TODO pass in overrides as fns instead of using inheritence?
+  final class SyncSave[S, D, U, P, II, VV](
+      tsb:           TableSpecB[S, D, U, P, II, VV],
+      saveNotNeeded: (U, P) => Boolean,
+      saveIO:        (Option[(D, P)], U) => IO[(D, P)])
+      extends TableSpec[NoX.type, S, D, U, P, II, VV](tsb, saveNotNeeded) {
+
+    override protected def createIO = _ => (s, u) =>
+      saveIO(None, u)
+        .map(insertUnsaved(_)(s))
+
+    override protected def updateIO2 = _ => (s, dp, u) =>
+      saveIO(Some(dp), u)
+        .map(updateSaved(_)(s))
+  }
+
+  // =====================================================================================================================
+
+  final class AsyncSave[X, S, D, U, P, II, VV](
+      tsb:           TableSpecB[S, D, U, P, II, VV],
+      saveNotNeeded: (U, P) => Boolean,
+      saveIO:        (X, Option[(D, P)], U) => IO[Unit])
+      extends TableSpec[X, S, D, U, P, II, VV](tsb, saveNotNeeded) {
+
+    override protected def createIO = x => (s, u) =>
+      saveIO(x, None, u)
+        .map(_ => setStatusToEffectInProgress(None)(s))
+
+    override protected def updateIO2 = x => (s, dp, u) =>
+      saveIO(x, Some(dp), u)
+        .map(_ => setStatusToEffectInProgress(Some(dp._1))(s))
+
+    def setStatusToEffectInProgress(row: Option[D]): S => S = identity // TODO
+  }
+
+  // =====================================================================================================================
+
+  final private[table]
   class FullRow[M[_] : Bind, S, V1, V2, R](renderAttr: R => ComponentStateFocus[S] => M[V1],
                                            renderRow: (ComponentStateFocus[S], R, V1) => V2) {
     def render(T: ComponentStateFocus[S]): R => M[V2] =
       id => renderAttr(id)(T).map(v1 => renderRow(T, id, v1))
   }
 
-  def saveHelper[S, G, L, L2, DP](getLast: S => L,
-                                  needSave: (L, G) => Option[L2],
-                                  saveIO: (L2, G) => IO[DP],
-                                  storeSaved: (S, DP) => S): (S, G) => IO[S] =
-    (s,g) => {
-      val last = getLast(s)
-      needSave(last, g) match {
-        case Some(l2) => saveIO(l2, g).map(storeSaved(s, _))
+  @inline final private[table]
+  def updateIfNeeded[S, U, L, L2](getLast: S => L, needSave: (L, U) => Option[L2])(f: (S, L2, U) => IO[S]): (S, U) => IO[S] =
+    (s,u) => {
+      needSave(getLast(s), u) match {
+        case Some(l2) => f(s, l2, u)
         case None     => IO(s)
       }
     }

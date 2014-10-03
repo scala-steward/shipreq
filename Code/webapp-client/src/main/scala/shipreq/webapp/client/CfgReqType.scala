@@ -21,6 +21,7 @@ object CfgReqType {
 
   type P = CustReqType
   type D = CustReqType.Id
+  type X = Int
 
   private val prespec = TableSpecBuilder[P](
     FieldSpec[P](_.mnemonic.value)(V.mnemonic)(E.TextInputEditor),
@@ -34,7 +35,8 @@ object CfgReqType {
       Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
       None)
     .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
-    .saveFn2(fakeSave, _.id)
+    .asyncSaveP(_.id, fakeSave2)
+  //.syncSaveP(_.id, fakeSave)
 
   private def mnemonicUniqueness =
     TableConstraint.uniquenessE[prespec.S, prespec.R, Mnemonic](
@@ -75,6 +77,9 @@ object CfgReqType {
     }
   }
 
+  private def fakeSave2(x: X, op: Option[P], newValues: prespec.U) =
+    IO(println(s"x = $x"))
+
   private val deletion = new DeletionManager(spec)(
     SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
     id => a => IO(a match {
@@ -104,6 +109,7 @@ object CfgReqType {
     type RowStream = Stream[(Mnemonic, Tag)]
 
     def renderInner(S: ScopeI): VDom = {
+      implicit val x: X = 666
       val newRow = Render.newRow.render(S)(())
       val nonNewRows = (staticRows #::: savedRows(S) #::: deletedRows(S)).sortBy(_._1.value).map(_._2).toJsArray
       div(
@@ -116,19 +122,19 @@ object CfgReqType {
     private def row(mnemonic: Modifier, name: Modifier, impReq: Modifier, delButton: Modifier) =
       Seq(td(mnemonic), td(name), td(impReq), td(delButton))
 
-    val newRow =
+    def newRow(implicit x: X) =
       spec.unsavedRow((F, vv) => {
         val (mnemonic, name, impReq) = vv
         val delButton = button(onclick ~~> F.runState(spec.removeUnsavedS))("Cancel")
         tr(keyAttr := "new", row(mnemonic, name, impReq, delButton))
       })
 
-    def savedRows(S: ScopeI): RowStream = {
+    def savedRows(S: ScopeI)(implicit x: X): RowStream = {
       val rr = savedRow.render(S)
       deletion.getSavedP(S, Alive).map(p => p.mnemonic -> rr(p.id))
     }
 
-    val savedRow =
+    def savedRow(implicit x: X) =
       spec.savedRow((F, id, p, vv) => {
         val (mnemonic, name, impReq) = vv
         tr(keyAttr := id.value, row(mnemonic, name, impReq, deletion.buttons(F, id, HardDelete, SoftDelete)))

@@ -16,7 +16,7 @@ case object HardDelete extends DeletionAction
 case object SoftDelete extends DeletionAction
 case object Restore extends DeletionAction
 
-class DeletionManager[S, P, D](spec: TableSpec[S, D, _, P, _, _])(
+class DeletionManager[S, P, D](spec: TableSpec[_, S, D, _, P, _, _])(
   aliveL: SimpleLens[P, Alive],
   saveIO: D => DeletionAction => IO[Unit]) {
 
