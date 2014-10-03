@@ -70,14 +70,17 @@ object CfgReqType {
         ClientProtocol.call(x.update)((p.id, u), o => console.log(s"Ajax Result = $o"))
     }
 
-  private val deletion = new DeletionManager(spec)(
-    SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
-    id => a => IO(a match {
-//      case HardDelete => FakeDao.customReqType.deleteHard(id)
-//      case SoftDelete => FakeDao.customReqType.deleteSoft(id)
-//      case Restore    => FakeDao.customReqType.restore(id)
-      case x => console.log(s"FAKE DELETE: $x on $id")
-    }))
+  private val deletion =
+    new AsyncDeletion(spec)(
+      SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
+      deleteIO)
+
+  private def deleteIO(x: X, id: D, a: DeletionAction): IO[Unit] =
+    a match {
+      case HardDelete => ClientProtocol.call(x.hardDelete)(id, o => console.log(s"Ajax Result = $o"))
+      case SoftDelete => ClientProtocol.call(x.softDelete)(id, o => console.log(s"Ajax Result = $o"))
+      case Restore    => ClientProtocol.call(x.restore)(id, o => console.log(s"Ajax Result = $o"))
+    }
 
   private val newRowS = spec.createUnsaved(("","",false))
 
@@ -130,13 +133,13 @@ object CfgReqType {
         tr(keyAttr := id.value, row(mnemonic, name, impReq, deletion.buttons(F, id, HardDelete, SoftDelete)))
       })
 
-    def deletedRows(S: ScopeI): RowStream =
+    def deletedRows(S: ScopeI)(implicit x: X): RowStream =
       if (S.props.showDeleted)
         deletion.getSavedP(S, Dead).map(p => p.mnemonic -> deletedRow(S, p))
       else
         Stream.empty
 
-    def deletedRow(F: FocusI, p: P) = {
+    def deletedRow(F: FocusI, p: P)(implicit x: X) = {
       val imp = checkbox(ImplicationRequired from p.imp)(disabled := true)
       val del = deletion.button(F, p.id, Restore)
       tr(cls := "del", key := p.id.value, row(raw(p.mnemonic), raw(p.name), imp, del))

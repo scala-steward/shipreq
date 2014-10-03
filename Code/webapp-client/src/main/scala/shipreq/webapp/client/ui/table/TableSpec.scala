@@ -127,7 +127,7 @@ abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, 
 
   def cancelChangesS(id: D) = ST.mod(s => rowIL(id).set(s, p2ii(rowP(id)(s))))
 
-  def modAndSaveS(modAndSaveIO: DP => IO[DP]): D => ReactST[IO, S, Unit] = id => {
+  def updateSavedSIO(modAndSaveIO: DP => IO[DP]): D => ReactST[IO, S, Unit] = id => {
     val modsaveS: ReactST[IO, S, DP] = ST.gets(rowDP(id)).lift[IO].flatMap(px1 => ST.retM(modAndSaveIO(px1)))
     //        .map(px2 => updateSaved(px2)(s1))
     //      ST.gets(rowPx(id)).flatMap()
