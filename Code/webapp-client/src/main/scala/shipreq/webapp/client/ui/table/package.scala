@@ -1,11 +1,5 @@
 package shipreq.webapp.client.ui
 
-import monocle._
-import monocle.function.Field1.first
-import monocle.function.Field2.second
-import monocle.std.tuple2._
-import monocle.syntax._
-
 /**
  * Types
  * ~~~~~
@@ -37,7 +31,7 @@ import monocle.syntax._
  * [5.3] delete
  * [5.2] show/hide deleted
  *
- * TODO
+ * TODO Additional TableSpec features ↙
  * ~~~~
  * [PRIORITY.EFFORT]
  * [3.?] handle name swap (should save both, not just one)
@@ -51,39 +45,9 @@ import monocle.syntax._
  */
 package object table {
 
-  // TODO rename this shit too
-
   // TODO why is P in the saved map? It should come from props (?)
 
-  final case class SavedRow[P, II](status: RowStatus, p: P, ii: II)
-
-  type Saved[D, P, II] = Map[D, SavedRow[P, II]]
-  type Unsaved[II] = Option[(RowStatus, II)]
-  type SavedAndUnsaved[D, P, II] = (Saved[D, P, II], Unsaved[II])
-
-  def getSaved[D, P, II]: SavedAndUnsaved[D, P, II] => Saved[D, P, II] = _._1
-
-  class SavedUnsavedL[S, D, P, II](val savedL: SimpleLens[S, Saved[D, P, II]],
-                                   val unsavedL: SimpleLens[S, Unsaved[II]]) {
-
-    def rowL(id: D) =
-      savedL composeLens SimpleLens[Saved[D, P, II]](_(id))((a, b) => a + (id -> b))
-
-    def rowStatus(id: D): SimpleLens[S, RowStatus] =
-      rowL(id) |-> SimpleLens[SavedRow[P, II]](_.status)((a, b) => a.copy(status = b))
-
-    def rowIL(id: D): SimpleLens[S, II] =
-      rowL(id) |-> SimpleLens[SavedRow[P, II]](_.ii)((a, b) => a.copy(ii = b))
-
-    def rowP(id: D): S => P =
-      savedL.get(_)(id).p
-
-    def rowDP(id: D): S => (D, P) =
-      s => (id, rowP(id)(s))
-  }
-
-  object SavedUnsavedL {
-    def default[D, P, II] =
-      new SavedUnsavedL[SavedAndUnsaved[D, P, II], D, P, II](first, second)
-  }
+  type Saved[D, P, II]        = Map[D, SavedRow[P, II]]
+  type Unsaved[II]            = Option[UnsavedRow[II]]
+  type SavedUnsaved[D, P, II] = (Saved[D, P, II], Unsaved[II])
 }

@@ -8,6 +8,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui._
 import shipreq.webapp.shared.validation.{ValidatePlusR, ValidatorPlus}
+import TableSpec.RowRenderer
 
 object SpecN {
 
@@ -43,7 +44,7 @@ object SpecN {
   final class TablePreSpec1[P, D, U1, V, I1: Equal,C1,O1](s1: FieldSpec[P,V,I1,C1,O1], buildU: (O1) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, I1]
+    type S = SavedUnsaved[D, P, I1]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,I1,A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]]) =
@@ -86,7 +87,7 @@ object SpecN {
   final class TablePreSpec2[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2], buildU: ((O1,O2)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2)]
+    type S = SavedUnsaved[D, P, (I1,I2)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]]) =
@@ -133,7 +134,7 @@ object SpecN {
   final class TablePreSpec3[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3], buildU: ((O1,O2,O3)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]]) =
@@ -184,7 +185,7 @@ object SpecN {
   final class TablePreSpec4[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4], buildU: ((O1,O2,O3,O4)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]]) =
@@ -239,7 +240,7 @@ object SpecN {
   final class TablePreSpec5[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5], buildU: ((O1,O2,O3,O4,O5)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4,I5)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]],cv5: Option[ValidatePlusR[S,R,O5]]) =
@@ -298,7 +299,7 @@ object SpecN {
   final class TablePreSpec6[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6], buildU: ((O1,O2,O3,O4,O5,O6)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4,I5,I6)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]],cv5: Option[ValidatePlusR[S,R,O5]],cv6: Option[ValidatePlusR[S,R,O6]]) =
@@ -361,7 +362,7 @@ object SpecN {
   final class TablePreSpec7[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7], buildU: ((O1,O2,O3,O4,O5,O6,O7)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]],cv5: Option[ValidatePlusR[S,R,O5]],cv6: Option[ValidatePlusR[S,R,O6]],cv7: Option[ValidatePlusR[S,R,O7]]) =
@@ -428,7 +429,7 @@ object SpecN {
   final class TablePreSpec8[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8], buildU: ((O1,O2,O3,O4,O5,O6,O7,O8)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7,I8),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]],cv5: Option[ValidatePlusR[S,R,O5]],cv6: Option[ValidatePlusR[S,R,O6]],cv7: Option[ValidatePlusR[S,R,O7]],cv8: Option[ValidatePlusR[S,R,O8]]) =
@@ -499,7 +500,7 @@ object SpecN {
   final class TablePreSpec9[P, D, U1, V, I1: Equal,C1,O1,I2: Equal,C2,O2,I3: Equal,C3,O3,I4: Equal,C4,O4,I5: Equal,C5,O5,I6: Equal,C6,O6,I7: Equal,C7,O7,I8: Equal,C8,O8,I9: Equal,C9,O9](s1: FieldSpec[P,V,I1,C1,O1],s2: FieldSpec[P,V,I2,C2,O2],s3: FieldSpec[P,V,I3,C3,O3],s4: FieldSpec[P,V,I4,C4,O4],s5: FieldSpec[P,V,I5,C5,O5],s6: FieldSpec[P,V,I6,C6,O6],s7: FieldSpec[P,V,I7,C7,O7],s8: FieldSpec[P,V,I8,C8,O8],s9: FieldSpec[P,V,I9,C9,O9], buildU: ((O1,O2,O3,O4,O5,O6,O7,O8,O9)) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8,I9)]
+    type S = SavedUnsaved[D, P, (I1,I2,I3,I4,I5,I6,I7,I8,I9)]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,(I1,I2,I3,I4,I5,I6,I7,I8,I9),A](f)
     def tableConstraints(cv1: Option[ValidatePlusR[S,R,O1]],cv2: Option[ValidatePlusR[S,R,O2]],cv3: Option[ValidatePlusR[S,R,O3]],cv4: Option[ValidatePlusR[S,R,O4]],cv5: Option[ValidatePlusR[S,R,O5]],cv6: Option[ValidatePlusR[S,R,O6]],cv7: Option[ValidatePlusR[S,R,O7]],cv8: Option[ValidatePlusR[S,R,O8]],cv9: Option[ValidatePlusR[S,R,O9]]) =

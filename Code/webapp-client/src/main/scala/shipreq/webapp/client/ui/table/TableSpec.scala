@@ -4,40 +4,19 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import monocle._
-import shipreq.base.util.ScalaExt._
-import shipreq.webapp.client.protocol.FailureIO
-import shipreq.webapp.client.ui.Implicits._
-import shipreq.webapp.client.ui._
 import scalaz.{Equal, Bind}
 import scalaz.Scalaz.Id
 import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.syntax.bind._
 
-// TODO clean this shit file up, esp renaming stuff
-
-trait RowRenderer[S, U, P, II, VV] {
-  final def render(iL: SimpleLens[S, II], s2p: S => P) = renderM[Id](WeirdLens from iL, s2p) _
-
-  // TODO save here should include ComponentStateFocus[S]. Save those λs in renderAttrForUnsaved etc
-  def renderM[M[_] : Bind : Optional2](iL: WeirdLens[M, S, S, II], s2mp: S => M[P])(save: (S, U) => IO[S]): ComponentStateFocus[S] => M[VV]
-}
-
-sealed trait RowStatus
-object RowStatus {
-
-  /** Row is in sync with the known (local) world. An edit may or may not be in progress. */
-  case object Sync extends RowStatus
-
-  /** Row is locked pending an external response to change. (Ajax in progress) */
-  case object Locked extends RowStatus
-
-  /** Failed to coordination Local change with external agent. (Ajax failure) */
-  case object Failed extends RowStatus
-}
+import shipreq.webapp.client.protocol.FailureIO
+import shipreq.webapp.client.ui.Implicits._
+import shipreq.webapp.client.ui._
 import RowStatus.Sync
+import TableSpec.RowRenderer
 
-// =====================================================================================================================
+// TODO clean this shit file up, esp renaming stuff
 
 final class TableSpecB[S, D, U, P, II, VV](val p2ii: P => II,
                                            val rowRenderer: Option[D] => RowRenderer[S, U, P, II, VV],
@@ -74,7 +53,7 @@ final class TableSpecB[S, D, U, P, II, VV](val p2ii: P => II,
 
 object TableSpecB {
 
-  def default[D, G, P, II, VV](spec: RowSpec[SavedAndUnsaved[D, P, II], Option[D], G, P, II, VV]) = {
+  def default[D, G, P, II, VV](spec: RowSpec[SavedUnsaved[D, P, II], Option[D], G, P, II, VV]) = {
     val init = spec.initial _
     val initialState: Seq[(D, P)] => spec.S =
       xs => (xs.map{ case (d,p) => d -> SavedRow(Sync, p, init(p)) }.toMap, None)
@@ -105,9 +84,10 @@ abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, 
 
   private def renderAttrForUnsaved(saveIO: ComponentStateFocus[S] => (S, U) => IO[S]) = {
     val s2op: S => Option[P] = _ => None
-    val getI: S => Option[II] = unsavedL.get(_).map(_._2)
+    val getI: S => Option[II] = unsavedL.get(_).map(_.ii)
     // TODO if I=I will that clear the RowStatus?
-    val setI: (S, II) => Option[S] = (s,i) => unsavedL.get(s).map(_ => unsavedL.set(s, Some((Sync, i))))
+    val setI: (S, II) => Option[S] =
+      (s,i) => unsavedL.get(s).map(_ => unsavedL.set(s, Some(UnsavedRow(Sync, i))))
     val se = WeirdLens[Option, S, S, II](getI, setI)
     (T: ComponentStateFocus[S]) => {
       val r = rowRenderer(None).renderM(se, s2op)(saveIO(T))
@@ -115,7 +95,8 @@ abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, P, II, 
     }
   }
 
-  def createUnsaved(empty: II) = ReactS.mod(unsavedL.modifyF(_ orElse Some((Sync, empty))))
+  def createUnsaved(empty: II) =
+    ReactS.mod(unsavedL.modifyF(_ orElse Some(UnsavedRow(Sync, empty))))
 
   val removeUnsaved = unsavedL setF None
   val removeUnsavedS = ReactS.mod(removeUnsaved)
@@ -201,7 +182,6 @@ object TableSpec {
 
   implicit object NoX
 
-  // TODO pass in overrides as fns instead of using inheritence?
   final class SyncSave[S, D, U, P, II, VV](
       tsb:           TableSpecB[S, D, U, P, II, VV],
       saveNotNeeded: (U, P) => Boolean,
@@ -238,7 +218,7 @@ object TableSpec {
     }
 
     private def setStatus(status: RowStatus): Option[D] => S => S = {
-      case None => unsavedL.modifyF(_.map(_.put1(status)))
+      case None    => unsavedStatusL.setF(status)
       case Some(d) => rowStatus(d).setF(status)
     }
 
@@ -252,6 +232,13 @@ object TableSpec {
   }
 
   // =====================================================================================================================
+
+  private[table] trait RowRenderer[S, U, P, II, VV] {
+    final def render(iL: SimpleLens[S, II], s2p: S => P) = renderM[Id](WeirdLens from iL, s2p) _
+
+    // TODO save here should include ComponentStateFocus[S]. Save those λs in renderAttrForUnsaved etc
+    def renderM[M[_] : Bind : Optional2](iL: WeirdLens[M, S, S, II], s2mp: S => M[P])(save: (S, U) => IO[S]): ComponentStateFocus[S] => M[VV]
+  }
 
   final private[table]
   class FullRow[M[_] : Bind, S, V1, V2, R](renderAttr: R => ComponentStateFocus[S] => M[V1],

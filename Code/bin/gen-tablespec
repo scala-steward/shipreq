@@ -17,6 +17,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui._
 import shipreq.webapp.shared.validation.{ValidatePlusR, ValidatorPlus}
+import TableSpec.RowRenderer
 
 object SpecN {""")
 
@@ -98,7 +99,7 @@ $rn
   final class $PS[P, D, U1, V, $IeCO]($spec, buildU: ($OO) ⇒ U1) {
     type U = U1
     type R = Option[D]
-    type S = SavedAndUnsaved[D, P, $II]
+    type S = SavedUnsaved[D, P, $II]
     def uniquenessCheck[A: Equal](f: P ⇒ A) =
       TableConstraint.uniquenessT[D,P,$II,A](f)
     def tableConstraints($cvs) =
