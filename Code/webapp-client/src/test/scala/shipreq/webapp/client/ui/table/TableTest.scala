@@ -55,7 +55,7 @@ object TableTest extends TestSuite {
             val (name, desc) = vv
             div(keyAttr := d, ref := refs(d), name, desc)
           })
-          val savedRows = spec.renderSaved(T, savedRow)(_.sortBy(_._2.name))
+          val savedRows = spec.savedRows(T, savedRow)(_.sortBy(_._3.name))
           div(savedRows)
         }).create
 

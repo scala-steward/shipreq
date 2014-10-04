@@ -35,18 +35,18 @@ final class SyncDeletion[S, P, D](spec: TableSpec.SyncSave[S, D, _, P, _, _])(
     extends Deletion(spec, aliveL) {
 
   private val aliveL2 = second[DP, P] composeLens aliveL
-  private val restoreS    = modAliveS(Restore, Alive)
-  private val softDeleteS = modAliveS(SoftDelete, Dead)
-  private val hardDeleteS = spec.deleteSavedS(id => delIO(id, HardDelete))
-  @inline private def modAliveS(a: DeletionAction, alive: Alive) =
-    spec.updateSavedSIO(dp => delIO(dp._1, a).map(_ => aliveL2.set(dp, alive)))
+  private val restoreIO_    = modAliveIO_(Restore, Alive)
+  private val softDeleteIO_ = modAliveIO_(SoftDelete, Dead)
+  private val hardDeleteIO_ = spec.savedDeleteIO_(id => delIO(id, HardDelete))
+  @inline private def modAliveIO_(a: DeletionAction, alive: Alive) =
+    spec.updateSavedIO_(dp => delIO(dp._1, a).map(_ => aliveL2.set(dp, alive)))
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction) = {
     val b = all.button(a.btnLabel)
     a match {
-      case HardDelete => b(onclick ~~> T.runState(hardDeleteS(id)))
-      case SoftDelete => b(onclick ~~> T.runState(softDeleteS(id)))
-      case Restore    => b(onclick ~~> T.runState(restoreS(id)))
+      case HardDelete => b(onclick ~~> T.runState(hardDeleteIO_(id)))
+      case SoftDelete => b(onclick ~~> T.runState(softDeleteIO_(id)))
+      case Restore    => b(onclick ~~> T.runState(restoreIO_(id)))
     }
   }
 
@@ -61,7 +61,7 @@ final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _
     delIO: (X, D, DeletionAction, FailureIO) => IO[Unit])
     extends Deletion(spec, aliveL) {
 
-  def actionS(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) = {
+  def actionIO(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) = {
     val r = Some(id)
     val f = spec.failureIO(T, r)
     val j = delIO(x, id, a, f)
@@ -69,7 +69,7 @@ final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _
   }
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) =
-    all.button(onclick ~~> T.runState(actionS(T, id, a)), a.btnLabel)
+    all.button(onclick ~~> T.runState(actionIO(T, id, a)), a.btnLabel)
 
   def buttons(T: ComponentStateFocus[S], id: D, as: DeletionAction*)(implicit x: X) =
     as.map(button(T, id, _))

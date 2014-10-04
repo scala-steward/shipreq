@@ -83,7 +83,7 @@ object CfgReqType {
       case Restore    => ClientProtocol.call(x.restore   )(id, o => IO(console.log(s"Ajax Result = $o")), f)
     }
 
-  private val newRowS = spec.createUnsaved(("","",false))
+  private val newRowS = spec.unsavedInitS(("","",false))
 
   private object Render {
     import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
@@ -119,7 +119,7 @@ object CfgReqType {
     def newRow(implicit x: X) =
       spec.unsavedRow((F, vv) => {
         val (mnemonic, name, impReq) = vv
-        val delButton = button(onclick ~~> F.runState(spec.removeUnsavedS))("Cancel")
+        val delButton = button(onclick ~~> F.runState(spec.unsavedRemoveS))("Cancel")
         tr(keyAttr := "new", row(mnemonic, name, impReq, delButton))
       })
 
