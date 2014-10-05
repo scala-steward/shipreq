@@ -55,12 +55,12 @@ object CfgReqType {
   val Component = ReactComponentB[Props]("CfgReqTypes")
     .getInitialState(p => p.showDeleted)
     .render(Render.renderOuter _)
-    .create
+    .build
 
   private val InnerComponent = ReactComponentB[Props]("CfgReqTypesⁱ")
     .getInitialState(p => spec.initialState(p.startingPoint))
     .render(Render.renderInner _)
-    .create
+    .build
 
   private def saveIO(x: X, op: Option[P], u: prespec.U, f: FailureIO): IO[Unit] =
     op match {

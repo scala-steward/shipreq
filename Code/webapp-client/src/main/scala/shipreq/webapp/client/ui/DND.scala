@@ -122,6 +122,6 @@ object DND {
       DND.Child.renderRow(p, i, T)(
         r(i, DND.Child.renderDragHandle(p, i, T))
       )
-    }).create
+    }).build
   }
 }

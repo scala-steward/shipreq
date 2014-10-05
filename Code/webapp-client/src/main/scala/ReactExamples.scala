@@ -26,7 +26,7 @@ object ReactExamples {
 
     val HelloMessage = ReactComponentB[String]("HelloMessage")
       .render(name => div("Hello ", name))
-      .create
+      .build
 
     React.renderComponent(HelloMessage("John"), mountNode)
   }
@@ -70,7 +70,7 @@ object ReactExamples {
       .componentDidMount(scope =>
       scope.backend.interval = window.setInterval(scope.backend.tick(scope), 1000))
       .componentWillUnmount(_.backend.interval foreach window.clearInterval)
-      .createU
+      .buildU
 
     React.renderComponent(Timer(), mountNode)
   }
