@@ -35,7 +35,7 @@ subgraph cluster_t {
     webapp [label="[aggregate]\nwebapp" fillcolor="#ffff80"]
     webappBack [label="webapp-server"]
     webappFront [label="webapp-client\n(JS)"]
-    webappShared [label="webapp-shared\n(Scala & JS)"]
+    webappShared [label="webapp-base\n(Scala & JS)"]
   }
 
   taskman [label="[aggregate]\ntaskman" fillcolor="#ffff80"]

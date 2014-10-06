@@ -17,8 +17,8 @@ object ShipReq extends Build {
   lazy val baseUtilSjs = Base.UtilSjs.project
 
   lazy val webapp       = Webapp.project
+  lazy val webappBase   = Webapp.Base.project
   lazy val webappClient = Webapp.Client.project
-  lazy val webappShared = Webapp.Shared.project
   lazy val webappServer = Webapp.Server.project
 
   lazy val taskman             = Taskman.project
@@ -214,11 +214,11 @@ object ShipReq extends Build {
   object Webapp extends Module {
     val dir = "webapp"
     override def project = typicalProject
-      .aggregate(webappClient, webappShared, webappServer) // not umbrella cos it shouldn't dependOn
+      .aggregate(webappClient, webappBase, webappServer) // not umbrella cos it shouldn't dependOn
 
     // ----------------------------------------------------
-    object Shared extends Module {
-      val dir = "webapp-shared"
+    object Base extends Module {
+      val dir = "webapp-base"
 
       override def deps =
         μPickle.jvm ++ testScope(μTest.jvm)
@@ -265,7 +265,7 @@ object ShipReq extends Build {
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
         .configure(
-          jsStyleDependsOn(baseUtilSjs, webappShared),
+          jsStyleDependsOn(baseUtilSjs, webappBase),
           testSettings,
           dontInline, // crashes scalac 2.11.2
           prodJsSettings)
@@ -364,7 +364,7 @@ object ShipReq extends Build {
           initialCommands += consoleCmds,
           // Ensure templates can be loaded from the console
           fullClasspath in console in Compile += file("src/main/webapp"))
-        .dependsOn(baseDb, taskmanApi, webappShared)
+        .dependsOn(baseDb, taskmanApi, webappBase)
         .dependsOn(baseUtil, taskmanApiLogic, taskmanApiImpl) // Stupid IDEA auto-import needs this
       }
   }
