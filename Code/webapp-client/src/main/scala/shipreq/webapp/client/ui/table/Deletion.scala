@@ -7,16 +7,18 @@ import scalaz.effect.IO
 import scalaz.syntax.equal._
 import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
 import shipreq.webapp.shared.data.{Dead, Alive}
+import shipreq.webapp.shared.protocol.DeletionAction, DeletionAction._
 import shipreq.webapp.client.protocol.FailureIO
-
-sealed abstract class DeletionAction(val btnLabel: String)
-case object HardDelete extends DeletionAction("Delete Forever")
-case object SoftDelete extends DeletionAction("Delete")
-case object Restore    extends DeletionAction("Restore")
 
 abstract class Deletion[S, P, D](spec: TableSpec[_, S, D, _, P, _, _], aliveL: SimpleLens[P, Alive]) {
 
   final protected type DP = (D, P)
+
+  final protected def btnLabel(d: DeletionAction): String = d match {
+    case Restore => "Restore"
+    case SoftDel => "Delete"
+    case HardDel => "Delete Forever"
+  }
 
   // TODO rename getSaved, here & in spec
   // TODO provide separate filter
@@ -35,18 +37,18 @@ final class SyncDeletion[S, P, D](spec: TableSpec.SyncSave[S, D, _, P, _, _])(
     extends Deletion(spec, aliveL) {
 
   private val aliveL2 = second[DP, P] composeLens aliveL
-  private val restoreIO_    = modAliveIO_(Restore, Alive)
-  private val softDeleteIO_ = modAliveIO_(SoftDelete, Dead)
-  private val hardDeleteIO_ = spec.savedDeleteIO_(id => delIO(id, HardDelete))
+  private val restoreIO_ = modAliveIO_(Restore, Alive)
+  private val softDelIO_ = modAliveIO_(SoftDel, Dead)
+  private val hardDelIO_ = spec.savedDeleteIO_(id => delIO(id, HardDel))
   @inline private def modAliveIO_(a: DeletionAction, alive: Alive) =
     spec.updateSavedIO_(dp => delIO(dp._1, a).map(_ => aliveL2.set(dp, alive)))
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction) = {
-    val b = all.button(a.btnLabel)
+    val b = all.button(btnLabel(a))
     a match {
-      case HardDelete => b(onclick ~~> T.runState(hardDeleteIO_(id)))
-      case SoftDelete => b(onclick ~~> T.runState(softDeleteIO_(id)))
-      case Restore    => b(onclick ~~> T.runState(restoreIO_(id)))
+      case HardDel => b(onclick ~~> T.runState(hardDelIO_(id)))
+      case SoftDel => b(onclick ~~> T.runState(softDelIO_(id)))
+      case Restore => b(onclick ~~> T.runState(restoreIO_(id)))
     }
   }
 
@@ -69,7 +71,7 @@ final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _
   }
 
   def button(T: ComponentStateFocus[S], id: D, a: DeletionAction)(implicit x: X) =
-    all.button(onclick ~~> T.runState(actionIO(T, id, a)), a.btnLabel)
+    all.button(onclick ~~> T.runState(actionIO(T, id, a)), btnLabel(a))
 
   def buttons(T: ComponentStateFocus[S], id: D, as: DeletionAction*)(implicit x: X) =
     as.map(button(T, id, _))

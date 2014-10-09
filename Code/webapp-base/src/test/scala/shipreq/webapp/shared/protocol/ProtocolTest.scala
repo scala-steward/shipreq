@@ -5,6 +5,7 @@ import utest._
 import upickle._
 import shipreq.webapp.shared.data._
 import Routine.Remote, Routines._
+import DeletionAction._
 
 object ProtocolTest extends TestSuite {
 
@@ -42,32 +43,30 @@ object ProtocolTest extends TestSuite {
 
   object TestData {
     // TODO this is bullshit, need properties :(
+    // TODO or at least use applicative and give each field multiple values
     object customReqType {
-      def id = CustomReqType.Id(5)
+      def id = CustomReqType.Id(123654)
       def mn = ReqType.Mnemonic("BR")
       def mn2 = ReqType.Mnemonic("X")
       def mn3 = ReqType.Mnemonic("Y")
       val s = "hehe"
       def c1 = CustomReqType(id, mn, Set(mn2, mn3), s, ImplicationRequired, Dead)
+      def nv = (mn, s, ImplicationRequired)
     }
   }
 
   override def tests = TestSuite {
 
     'Routines {
-
       'CustomReqTypeOps {
         import TestData.customReqType._
-        'Create {
-          val kit = kitR(Routines.CustomReqTypeOps.Create)
-          'i - kit.testI( (mn,s,ImplicationRequired) )
-          'o - kit.testO(None, Some(c1))
-        }
-        'Update {
-          val kit = kitR(Routines.CustomReqTypeOps.Update)
-          'i - kit.testI( (id,(mn,s,ImplicationRequired)) )
-          'o - kit.testO(None, Some(c1))
-        }
+        val C = Routines.CustomReqTypeCrud
+        val kit = kitR(C)
+        'create  - kit.testI( C.create(nv) )
+        'update  - kit.testI( C.update(id, nv) )
+        'softDel - kit.testI( C.delete(id, SoftDel) )
+        'hardDel - kit.testI( C.delete(id, HardDel) )
+        'restore - kit.testI( C.delete(id, Restore) )
       }
     }
 
@@ -75,14 +74,7 @@ object ProtocolTest extends TestSuite {
       import JsEntryPoint._
 
       'reactExamples {
-        import CustomReqTypeOps._
-        kitEP(reactExamples).testI(ForCfgReqType(
-          Remote("x", Create),
-          Remote("e", Update),
-          Remote("f", SoftDelete),
-          Remote("h", HardDelete),
-          Remote("o", Restore)
-        ))
+        kitEP(reactExamples).testI(ForCfgReqType(Remote("x", Routines.CustomReqTypeCrud)))
       }
     }
 
@@ -98,7 +90,7 @@ object ProtocolTest extends TestSuite {
 
       def test2(dg: RemoteDeltaG) = {
         val d = List(dg)
-        kitR(Routines.CustomReqTypeOps.SoftDelete).testO(d)
+        kitR(Routines.CustomReqTypeCrud).testO(d)
       }
       def test[P <: Partition](p: P) = test2(test1(p))
 

@@ -5,6 +5,7 @@ import shipreq.webapp.client.delta._
 import shipreq.webapp.shared.data.Project
 import shipreq.webapp.shared.data.delta.{Rev, RemoteDelta}
 import japgolly.scalajs.react.experiment.Broadcaster
+import scalaz.effect.IO
 
 final class ClientData(initial: Project) extends Broadcaster[LocalDelta] {
 
@@ -12,15 +13,13 @@ final class ClientData(initial: Project) extends Broadcaster[LocalDelta] {
 
   @inline def project = p
 
-  def update(d: RemoteDelta): Unit = {
+  def update(d: RemoteDelta): IO[Unit] =
     RemoteDelta(p, d) match {
       case Applied(p2, d2) =>
-        p = p2
-        broadcast(d2)
+        IO{ p = p2; broadcast(d2) }
       case CouldntApply =>
-        dom.console.error(s"Update failed.\n\nΠ: $p\n\nΔ: $d") // TODO fix or at least remove in prod
+        IO{ dom.console.error(s"Update failed.\n\nΠ: $p\n\nΔ: $d") } // TODO fix or at least remove in prod
     }
-  }
 }
 
 object ClientData {

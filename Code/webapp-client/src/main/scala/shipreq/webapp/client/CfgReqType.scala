@@ -13,13 +13,15 @@ import japgolly.scalajs.react.ScalazReact._
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.shared.data._
 import shipreq.webapp.shared.data.delta.Partition
-import shipreq.webapp.shared.protocol.Routines
+import shipreq.webapp.shared.protocol.{DeletionAction, Routines}
 import shipreq.webapp.client.delta.LocalDelta
 import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
 import shipreq.webapp.client.ui.table._
 import shipreq.webapp.client.ui.{Editors => E, Util}
 import Validators.{reqType => V}
 import ReqType.Mnemonic
+import DeletionAction._
+import Routines.CustomReqTypeCrud
 
 object CfgReqType {
 
@@ -75,26 +77,25 @@ object CfgReqType {
     .configure(Listenable.installS(_.x._2, recvExtUpdate))
     .build
 
+  private def crudIO(x: X, f: FailureIO, a: CustomReqTypeCrud.Action): IO[Unit] =
+    ClientProtocol.call(x._1.crud)(a,
+      o => IO { console.log(s"Ajax Result = $o") } // TODO remove in prod
+             .flatMap(_ => x._2.update(o)),
+      f)
+
   private def saveIO(x: X, op: Option[P], u: prespec.U, f: FailureIO): IO[Unit] =
-    op match {
-      case None =>
-        ClientProtocol.call(x._1.create)(u, o => IO(console.log(s"Ajax Result = $o")), f)
-      case Some(p) =>
-        ClientProtocol.call(x._1.update)((p.id, u), o => IO(console.log(s"Ajax Result = $o")), f)
-    }
+    crudIO(x, f, op match {
+      case None    => CustomReqTypeCrud.create(u)
+      case Some(p) => CustomReqTypeCrud.update(p.id, u)
+    })
 
   private val deletion =
     new AsyncDeletion(spec)(
-      SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)),
+      SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)), // TODO async doesnt need lens, it only needs getter
       deleteIO)
 
   private def deleteIO(x: X, id: D, a: DeletionAction, f: FailureIO): IO[Unit] =
-    // TODO Merge these callbacks
-    a match {
-      case HardDelete => ClientProtocol.call(x._1.hardDelete)(id, o => IO(console.log(s"Ajax Result = $o")), f)
-      case SoftDelete => ClientProtocol.call(x._1.softDelete)(id, o => IO{console.log(s"Ajax Result = $o"); x._2.update(o) }, f)
-      case Restore    => ClientProtocol.call(x._1.restore   )(id, o => IO(console.log(s"Ajax Result = $o")), f)
-    }
+    crudIO(x, f, CustomReqTypeCrud.delete(id, a))
 
   private val newRowS = spec.unsavedInitS(("","",false))
 
@@ -144,7 +145,7 @@ object CfgReqType {
     def savedRows(S: ScopeI)(implicit x: X): RowStream = {
       val rr = spec.savedRowP((F, id, rs, p, vv) => {
         val (mnemonic, name, impReq) = vv
-        def c = deletion.buttons(F, id, HardDelete, SoftDelete)
+        def c = deletion.buttons(F, id, HardDel, SoftDel)
         row("live", mnemonic, name, impReq, rs, c)(keyAttr := id.value)
       })(x)(S)
       deletion.getSavedP(S, Alive).map(p => p.mnemonic -> rr(p.id))

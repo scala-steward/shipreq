@@ -6,32 +6,49 @@ import shipreq.webapp.shared.data.delta.RemoteDelta
 import Codec._, DataCodecs._, DeltaCodecs._
 import Routine._
 
-sealed abstract class GenericCrud[T: Reader : Writer, I: Reader : Writer, V: Reader : Writer] {
-  final type R = Option[T]
-  final type Id = I
-  final type Values = V
-
-  case object Create extends DescT[V, R]
-  case object Update extends DescT[(I, V), R]
-  case object SoftDelete extends DescT[I, RemoteDelta]
-  case object HardDelete extends DescT[I, R]
-  case object Restore extends DescT[I, R]
-
-  implicit def rr1 = remoteRoutine(Create)
-  implicit def rr2 = remoteRoutine(Update)
-  implicit def rr3 = remoteRoutine(SoftDelete)
-  implicit def rr4 = remoteRoutine(HardDelete)
-  implicit def rr5 = remoteRoutine(Restore)
+trait Crudable {
+  type Id
+  type V
 }
+
+trait CrudableAux[_I, _V] extends Crudable {
+  override final type Id = _I
+  override final type V = _V
+}
+
+abstract class CrudableCompanion[C <: Crudable](implicit RI: Reader[C#Id], WI: Writer[C#Id], RV: Reader[C#V], WV: Writer[C#V])
+    extends DescT[CrudAction[C], RemoteDelta] {
+
+  implicit def rwd = remoteRoutine(this)
+
+  final type Action = CrudAction[C]
+  @inline final def create(v: C#V)                      = CrudAction.Create[C](v)
+  @inline final def update(id: C#Id, v: C#V)            = CrudAction.Update[C](id, v)
+  @inline final def delete(id: C#Id, a: DeletionAction) = CrudAction.Delete[C](id, a)
+}
+
+sealed trait CrudAction[C <: Crudable]
+object CrudAction {
+  case class Create[C <: Crudable](newValues: C#V) extends CrudAction[C]
+  case class Update[C <: Crudable](id: C#Id, newValues: C#V) extends CrudAction[C]
+  case class Delete[C <: Crudable](id: C#Id, action: DeletionAction) extends CrudAction[C]
+}
+
+sealed abstract class DeletionAction
+object DeletionAction {
+  case object HardDel extends DeletionAction
+  case object SoftDel extends DeletionAction
+  case object Restore extends DeletionAction
+  def values = Seq(HardDel, SoftDel, Restore)
+}
+
+//======================================================================================================================
 
 object Routines {
 
-  object CustomReqTypeOps extends GenericCrud[CustomReqType, CustomReqType.Id, (ReqType.Mnemonic, String, ImplicationRequired)]
+  sealed trait CustomReqTypeCrud extends CrudableAux[CustomReqType.Id, (ReqType.Mnemonic, String, ImplicationRequired)]
+  object CustomReqTypeCrud extends CrudableCompanion[CustomReqTypeCrud]
 
-  case class ForCfgReqType(create: CustomReqTypeOps.Create.Remote,
-                           update: CustomReqTypeOps.Update.Remote,
-                           softDelete: CustomReqTypeOps.SoftDelete.Remote,
-                           hardDelete: CustomReqTypeOps.HardDelete.Remote,
-                           restore: CustomReqTypeOps.Restore.Remote)
+  case class ForCfgReqType(crud: CustomReqTypeCrud.Remote)
     extends Group
 }

@@ -3,47 +3,38 @@ package shipreq.webapp.snippet
 import net.liftweb.util.Helpers._
 import shipreq.webapp.shared.protocol._
 import shipreq.webapp.lib.ServerProtocol
-
 import shipreq.webapp.shared.data._
 import shipreq.webapp.shared.data.delta._
+import DeletionAction._
 
 class WIP {
 
   var rev = 99
 
-  val create = ServerProtocol.routine(Routines.CustomReqTypeOps.Create)(vs => {
-    val (mnemonic, name, impReq) = vs
-    println(s"TODO: create $vs")
-    None
-  })
+  val crud = ServerProtocol.routine(Routines.CustomReqTypeCrud)({
+    case CrudAction.Create(v)    =>
+      println(s"TODO: create $v"); Nil
 
-  val update = ServerProtocol.routine(Routines.CustomReqTypeOps.Update)(vs => {
-    val (id, (mnemonic, name, impReq)) = vs
-    println(s"TODO: update $vs")
-    None
-  })
+    case CrudAction.Update(id, v) =>
+      println(s"TODO: update $id $v"); Nil
 
-  val softDelete = ServerProtocol.routine(Routines.CustomReqTypeOps.SoftDelete)(id => {
-    println(s"TODO: softDelete $id")
-    rev += 1
-    Thread.sleep(1500)
-    val dg = RemoteDeltaG(Partition.CustomReqTypes, Rev(0), Rev(rev))(id :: Nil, Nil)
-    val d: RemoteDelta = dg :: Nil
-    d
-  })
+    case CrudAction.Delete(id, HardDel) =>
+      println(s"TODO: Hard delete $id"); Nil
+      rev += 1
+      Thread.sleep(1500)
+      val dg = RemoteDeltaG(Partition.CustomReqTypes, Rev(0), Rev(rev))(id :: Nil, Nil)
+      val d: RemoteDelta = dg :: Nil
+      d
 
-  val hardDelete = ServerProtocol.routine(Routines.CustomReqTypeOps.HardDelete)(id => {
-    println(s"TODO: hardDelete $id")
-    None
-  })
+    case CrudAction.Delete(id, SoftDel) =>
+      println(s"TODO: Soft delete $id"); Nil
 
-  val restore = ServerProtocol.routine(Routines.CustomReqTypeOps.Restore)(id => {
-    println(s"TODO: restore $id")
-    None
+    case CrudAction.Delete(id, Restore) =>
+      println(s"TODO: Restore $id"); Nil
   })
 
   def render = {
-    val pg = Routines.ForCfgReqType(create, update, softDelete, hardDelete, restore)
+    val pg = Routines.ForCfgReqType(crud)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }

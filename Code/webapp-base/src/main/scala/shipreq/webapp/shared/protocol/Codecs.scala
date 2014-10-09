@@ -17,6 +17,9 @@ private[protocol] object Codec {
     ReadWriter[T](i => Js.Str(i.value), { case Js.Str(i) => C(i)})
 
   def tagL[T <: TaggedLong](C: Long => T) =
+//    import java.lang.{Long => L}
+//    import java.lang.Character.{MAX_RADIX => R} // TODO patch scala.js
+//    ReadWriter[T](i => Js.Str(L.toString(i, R)), { case Js.Str(i) => C(L.parseLong(i, R)) })
     ReadWriter[T](i => Js.Str(i.value.toString), { case Js.Str(i) => C(i.toLong)})
 
   def boolCase[T](iso: Boolean <=> T) = {
@@ -35,6 +38,9 @@ private[protocol] object Codec {
       case Js.Str(k) if table.ba.contains(k) => table.ba(k)
     })
   }
+
+  def caseclass1[A, Z](y: A => Z, u: Z => Option[A])(implicit RA: Reader[A], WA: Writer[A]) =
+    ReadWriter[Z](z => WA write u(z).get, RA.read andThen y)
 
   def caseclass2[A: Reader : Writer, B: Reader : Writer, Z]
   (y: (A, B) => Z, u: Z => Option[(A, B)]): ReadWriter[Z] = {
@@ -74,6 +80,20 @@ private[protocol] object Codec {
   def remoteRoutine[R <: Routine.Desc](d: R) = ReadWriter[d.Remote](
     r => Js.Str(r.n),
     {case Js.Str(n) => Routine.Remote(n, d) })
+
+  implicit def deletionAction = enum[DeletionAction](DeletionAction.values: _*)
+
+  implicit def crudable[C <: Crudable](implicit WI: Writer[C#Id], RI: Reader[C#Id], WV: Writer[C#V], RV: Reader[C#V]): ReadWriter[CrudAction[C]] =
+    ReadWriter[CrudAction[C]]({
+      case CrudAction.Create(v)    => Js.Arr(WV write v)
+      case CrudAction.Update(i, v) => Js.Arr(WI write i, WV write v)
+      case CrudAction.Delete(i, a) => Js.Arr(WI write i, deletionAction write a, Js.Arr())
+    }, {
+      case Js.Arr(v)       => CrudAction.Create(RV read v)
+      case Js.Arr(i, v)    => CrudAction.Update(RI read i, RV read v)
+      case Js.Arr(i, a, _) => CrudAction.Delete(RI read i, deletionAction read a)
+    })
+
 }
 
 import Codec._
@@ -95,9 +115,15 @@ object DataCodecs {
 
 // =====================================================================================================================
 object RoutineGroupCodecs {
+  import Routines._
 
-  implicit def routinesForCfgReqType = caseclass5(Routines.ForCfgReqType.apply, Routines.ForCfgReqType.unapply)
 
+//  implicit def customReqTypeCrud = crudable[CustomReqTypeCrud]
+
+//  val x = implicitly[Reader[CustomReqTypeCrud.Desc.Remote]]
+  implicit def routinesForCfgReqType = caseclass1(ForCfgReqType.apply, ForCfgReqType.unapply)
+//  implicit def routinesForCfgReqTypeR: Reader[ForCfgReqType.type] = implicitly
+//  implicit def routinesForCfgReqTypeW: Writer[ForCfgReqType.type] = implicitly
 }
 
 // =====================================================================================================================
