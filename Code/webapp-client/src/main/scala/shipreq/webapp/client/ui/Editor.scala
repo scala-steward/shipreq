@@ -72,7 +72,7 @@ object Editors {
     }
 
     override def renderRO[S](data: String, T: ComponentStateFocus[S]) =
-      div(node(value := data)) // readonly := true
+      div(node(value := data, readonly := true))
   }
 
   object CheckboxEditor extends Editor[Boolean, Modifier] {
@@ -94,7 +94,7 @@ object Editors {
     }
 
     override def renderRO[S](data: Boolean, T: ComponentStateFocus[S]) =
-      div(checkbox(data)(disabled := true)) // readonly still allows change
+      div(checkbox(data)(readonly := true))
   }
 
   val TextInputEditor = new TextEditor(input)

@@ -8,5 +8,5 @@ object Util {
     e => f(e.target.value)
 
   def checkbox(check: Boolean) =
-    input(`type` := "checkbox", check && (checked := true))
+    input(`type` := "checkbox", checked := check)
 }
