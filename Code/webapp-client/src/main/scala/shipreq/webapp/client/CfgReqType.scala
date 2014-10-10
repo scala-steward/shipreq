@@ -1,7 +1,6 @@
 package shipreq.webapp.client
 
 import monocle.SimpleLens
-import org.scalajs.dom.console
 import scalaz.effect.IO
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
@@ -78,10 +77,7 @@ object CfgReqType {
     .build
 
   private def crudIO(x: X, f: FailureIO, a: CustomReqTypeCrud.Action): IO[Unit] =
-    ClientProtocol.call(x._1.crud)(a,
-      o => IO { console.log(s"Ajax Result = $o") } // TODO remove in prod
-             .flatMap(_ => x._2.update(o)),
-      f)
+    ClientProtocol.call(x._1.crud)(a, x._2.update, f)
 
   private def saveIO(x: X, op: Option[P], u: prespec.U, f: FailureIO): IO[Unit] =
     crudIO(x, f, op match {

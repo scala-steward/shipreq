@@ -18,7 +18,7 @@ final class ClientData(initial: Project) extends Broadcaster[LocalDelta] {
       case Applied(p2, d2) =>
         IO{ p = p2; broadcast(d2) }
       case CouldntApply =>
-        IO{ dom.console.error(s"Update failed.\n\nΠ: $p\n\nΔ: $d") } // TODO fix or at least remove in prod
+        Console.errorIO(s"Update failed.\n\nΠ: $p\n\nΔ: $d")
     }
 }
 

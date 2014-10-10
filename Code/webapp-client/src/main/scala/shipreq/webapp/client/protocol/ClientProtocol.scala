@@ -1,11 +1,11 @@
 package shipreq.webapp.client.protocol
 
-import org.scalajs.dom.console
 import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.{-\/, \/-, \/}
 import upickle._
 import shipreq.webapp.shared.protocol.Routine
+import shipreq.webapp.client.Console
 
 object ClientProtocol {
 
@@ -19,10 +19,11 @@ object ClientProtocol {
   def jsonEffect[T: Reader](f: T => IO[Unit]): js.Any => Unit =
     a => parseJsObject[T](a) match {
       case \/-(b) => f(b).unsafePerformIO()
-      case -\/(e) => handleJsonParsingError(e)
+      case -\/(e) => handleJsonParsingError(a, e)
     }
 
-  private def handleJsonParsingError(e: Throwable): Unit = () // TODO log unless release mode
+  private def handleJsonParsingError(a: js.Any, e: Throwable): Unit =
+    Console.error(s"Parsing failure: $e\nJS: ", a)
 
   def readCluster[G <: Routine.Group : Reader](a: js.Any) = // TODO rename
     parseJsObject[G](a)
@@ -32,7 +33,10 @@ object ClientProtocol {
     val i = js.encodeURIComponent(write(input))
     val q = s"${r.n}=$i"
     val s = jsonEffect[r.d.O](success)
-    val ff = () => f.io.unsafePerformIO() // TODO log unless release mode
+    val ff = () => {
+      Console.error(s"AJAX failure on ${r.n} ⇐ $input")
+      f.io.unsafePerformIO()
+    }
     IO(LiftAjax.lift_ajaxHandler(q, s, ff, "json"))
   }
 }
