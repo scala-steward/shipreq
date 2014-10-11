@@ -69,7 +69,7 @@ final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _
   private def actionIO(T: CSF, id: D, a: DeletionAction)(implicit x: X): ReactST[IO, S, Unit] = {
     lazy val del: ReactST[IO, S, Unit] = {
       val row = Some(id)
-      val f = spec.failureIO(T, row, Value(del))
+      val f = spec.failureIO(T, row, Need(del))
       val io = delIO(x, id, a, f)
       ReactS.retM(io) >> spec.lockRowS(row).liftIO
     }
