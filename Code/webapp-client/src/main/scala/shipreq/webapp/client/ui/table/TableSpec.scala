@@ -71,12 +71,19 @@ sealed abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, 
   final type DP = (D, P)
   final type CSF = ComponentStateFocus[S]
 
+  protected def createIO: (X, CSF, Retry[S], U) => ReactST[IO, S, Unit]
+
+  protected def updateIO: (X, CSF, Retry[S], DP, U) => ReactST[IO, S, Unit]
+
   @inline private final def initSavedRow(p: P): SavedRow[P, II] =
     SavedRow(Sync, p, p2ii(p))
 
   def initialState(d: Seq[P], id: P => D): S = tsb.initialState(d.map(x => id(x) -> x))
   def initialState(d: Map[D, P])         : S = tsb.initialState(d.toSeq)
   def initialState(d: Seq[(D, P)])       : S = tsb.initialState(d)
+
+  def unsavedInitS(empty: II) =
+    ReactS.mod(unsavedL.modifyF(_ orElse Some(UnsavedRow(Sync, empty))))
 
   private def inputGateway[M[_]: Bind : Optional2, T](getT: S => M[T], trs: T => RowStatus, ti: T => II,
                                                       setI: (S, II) => M[S]): InputGatewayE[M, S, II] = {
@@ -94,13 +101,17 @@ sealed abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, 
     case RowStatus.Locked                     => EditMode.ReadOnly
   }
 
-  protected def createIO: (X, CSF, Retry[S], U) => ReactST[IO, S, Unit]
+  private val unsavedS2OP: S => Option[P] = _ => None
 
   private val unsavedIG = inputGateway[Option, UnsavedRow[II]](
     unsavedLO.getOption, _.status, _.ii,
     (s, i) => unsavedL.get(s).map(_ => unsavedL.set(s, Some(UnsavedRow(Sync, i)))))
 
-  private val unsavedS2OP: S => Option[P] = _ => None
+  private def savedIG(id: D): InputGatewayE[Id, S, II] = {
+    val rL = rowL(id)
+    val iL = rL composeLens savedIL
+    inputGateway[Id, SavedRow[P, II]](rL.get, _.status, _.ii, iL.set)
+  }
 
   private def unsavedRenderAttr(x: X) = {
     val mr2 = multiFieldRenderer(None).prepare(unsavedIG)
@@ -113,36 +124,6 @@ sealed abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, 
         v <- r(T)
       } yield (rs, v)
     }
-  }
-
-  def unsavedInitS(empty: II) =
-    ReactS.mod(unsavedL.modifyF(_ orElse Some(UnsavedRow(Sync, empty))))
-
-  val unsavedRemoveF =
-    unsavedL setF None
-
-  val unsavedRemoveS =
-    ReactS.mod(unsavedRemoveF)
-
-  def unsavedToSavedF(dp: DP): S => S =
-    unsavedToSavedF(dp._1, dp._2)
-
-  def unsavedToSavedF(id: D, p: P): S => S =
-    savedSetF(id, p) compose unsavedRemoveF
-
-  def unsavedRow[V2](renderRow: (CSF, RowStatus, VV) => V2)(implicit x: X) = {
-    val rr = rowRenderer[Option, S, VV, V2, Unit](
-      _ => unsavedRenderAttr(x)(_),
-      (T, _, r, v) => renderRow(T, r, v))
-    (T: CSF) => rr(T)(())
-  }
-
-  protected def updateIO: (X, CSF, Retry[S], DP, U) => ReactST[IO, S, Unit]
-
-  private def savedIG(id: D): InputGatewayE[Id, S, II] = {
-    val rL = rowL(id)
-    val iL = rL composeLens savedIL
-    inputGateway[Id, SavedRow[P, II]](rL.get, _.status, _.ii, iL.set)
   }
 
   private def savedRenderAttr(x: X)(id: D) = {
@@ -164,22 +145,36 @@ sealed abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, 
     }
   }
 
+  def unsavedRow[V2](renderRow: (CSF, RowStatus, VV) => V2)(implicit x: X) = {
+    val rr = rowRenderer[Option, S, VV, V2, Unit](
+      _ => unsavedRenderAttr(x)(_),
+      (T, _, r, v) => renderRow(T, r, v))
+    (T: CSF) => rr(T)(())
+  }
+
+  def savedRowP[V2](renderRow: (CSF, D, RowStatus, P, VV) => V2)(implicit x: X) =
+    savedRow((t, d, r, v) => renderRow(t, d, r, rowP(d)(t.state), v))
+
+  def savedRow[V2](renderRow: (CSF, D, RowStatus, VV) => V2)(implicit x: X) =
+    rowRenderer[Id, S, VV, V2, D](savedRenderAttr(x), renderRow)
+
+  val unsavedRemoveF =
+    unsavedL setF None
+
+  val unsavedRemoveS =
+    ReactS.mod(unsavedRemoveF)
+
   def savedRemoveF(id: D) =
     savedL.modifyF(m => m - id)
 
   def savedRemoveS(id: D) =
     ReactS.mod(savedRemoveF(id))
 
-  def savedDeleteIO_(f: D => IO[Unit]): D => ReactST[IO, S, Unit] =
-    id => ReactS.retM(f(id)) >> savedRemoveS(id)
+  def unsavedToSavedF(dp: DP): S => S =
+    unsavedToSavedF(dp._1, dp._2)
 
-  def savedRevertS(id: D) =
-    ST.mod(s => rowIL(id).set(s, p2ii(rowP(id)(s))))
-
-  def updateSavedIO_(saveIO: DP => IO[DP]): D => ReactST[IO, S, Unit] = id =>
-    ST.gets(rowDP(id)).liftIO
-      .flatMap(px1 => ST.retM(saveIO(px1)))
-      .flatMap(savedSetS)
+  def unsavedToSavedF(id: D, p: P): S => S =
+    savedSetF(id, p) compose unsavedRemoveF
 
   def savedSetF(dp: DP): S => S =
     savedSetF(dp._1, dp._2)
@@ -190,11 +185,16 @@ sealed abstract class TableSpec[X, S, D, U, P, II, VV](tsb: TableSpecB[S, D, U, 
   def savedSetS(dp: DP) =
     ST.mod(savedSetF(dp))
 
-  def savedRowP[V2](renderRow: (CSF, D, RowStatus, P, VV) => V2)(implicit x: X) =
-    savedRow((t, d, r, v) => renderRow(t, d, r, rowP(d)(t.state), v))
+  def savedRevertS(id: D) =
+    ST.mod(s => rowIL(id).set(s, p2ii(rowP(id)(s))))
 
-  def savedRow[V2](renderRow: (CSF, D, RowStatus, VV) => V2)(implicit x: X) =
-    rowRenderer[Id, S, VV, V2, D](savedRenderAttr(x), renderRow)
+  def savedDeleteIO_(f: D => IO[Unit]): D => ReactST[IO, S, Unit] =
+    id => ReactS.retM(f(id)) >> savedRemoveS(id)
+
+  def updateSavedIO_(saveIO: DP => IO[DP]): D => ReactST[IO, S, Unit] = id =>
+    ST.gets(rowDP(id)).liftIO
+      .flatMap(px1 => ST.retM(saveIO(px1)))
+      .flatMap(savedSetS)
 
   final type SavedPs = Stream[(RowStatus, D, P)]
 
