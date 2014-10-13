@@ -78,33 +78,38 @@ object TableTest extends TestSuite {
 
       val initialState = c.state
 
-      def assertRowStatuses = assertRowValues(spec)((r, p) => r)(c)
+      val (sync,locked,failed) = ("sync","locked","failed")
+      def assertRowStatuses = assertRowValues(spec)((r, p) => r match {
+        case RowStatus.Sync      => sync
+        case RowStatus.Locked    => locked
+        case RowStatus.Failed(_) => failed
+      })(c)
 
       def setup(): Unit = {
         c setState initialState
         t.fs = Nil
         Simulation.focusChangeBlur("blar2") run i2
-        assertRowStatuses(2 -> RowStatus.Locked, 3 -> RowStatus.Sync)
+        assertRowStatuses(2 -> locked, 3 -> sync)
         Simulation.focusChangeBlur("blar3") run i3
-        assertRowStatuses(2 -> RowStatus.Locked, 3 -> RowStatus.Locked)
+        assertRowStatuses(2 -> locked, 3 -> locked)
       }
 
       'inOrder {
         setup()
         val List(f3, f2) = t.fs
         f2.io.unsafePerformIO()
-        assertRowStatuses(2 -> RowStatus.Failed, 3 -> RowStatus.Locked)
+        assertRowStatuses(2 -> failed, 3 -> locked)
         f3.io.unsafePerformIO()
-        assertRowStatuses(2 -> RowStatus.Failed, 3 -> RowStatus.Failed)
+        assertRowStatuses(2 -> failed, 3 -> failed)
       }
 
       'outOfOrder{
         setup()
         val List(f3, f2) = t.fs
         f3.io.unsafePerformIO()
-        assertRowStatuses(2 -> RowStatus.Locked, 3 -> RowStatus.Failed)
+        assertRowStatuses(2 -> locked, 3 -> failed)
         f2.io.unsafePerformIO()
-        assertRowStatuses(2 -> RowStatus.Failed, 3 -> RowStatus.Failed)
+        assertRowStatuses(2 -> failed, 3 -> failed)
       }
 
     }
