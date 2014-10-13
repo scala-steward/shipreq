@@ -6,7 +6,12 @@ import utest._
 
 object TestUtil {
 
-  implicit val propSettings = Settings(sampleSize = SampleSize(1000), debug = false)
+  val js = try { java.awt.Color.BLACK == null } catch { case _: Throwable => true }
+
+  implicit val propSettings = (
+    if (js) Settings(sampleSize = SampleSize(4))
+    else    Settings(sampleSize = SampleSize(100))
+    ).copy(debug = false)
 
   def assertProp[A](p: Prop[A], g: Gen[A])(implicit S: Settings): Unit = {
     val r = PTest(p, g)(S)
