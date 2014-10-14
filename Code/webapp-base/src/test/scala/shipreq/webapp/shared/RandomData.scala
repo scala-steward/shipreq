@@ -46,7 +46,10 @@ object RandomData {
         r2  <- rev
         ids <- customReqTypeId.list
         cs  <- customReqType.list
-      } yield RemoteDeltaG(Partition.CustomReqTypes, r1, r2)(ids, cs)
+      } yield if (r1.value <= r2.value)
+        RemoteDeltaG(Partition.CustomReqTypes, r1, r2)(ids, cs)
+      else
+        RemoteDeltaG(Partition.CustomReqTypes, r2, r1)(ids, cs)
   }
 
   object remoteDelta {

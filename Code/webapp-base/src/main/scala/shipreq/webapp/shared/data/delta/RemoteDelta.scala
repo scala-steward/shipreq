@@ -1,5 +1,7 @@
 package shipreq.webapp.shared.data.delta
 
+import shipreq.base.prop._
+
 final case class RemoteDeltaP[P <: Partition] private[delta](
     del: List[P#Id],
     upd: List[P#Instance]) {
@@ -15,6 +17,10 @@ final case class RemoteDeltaP[P <: Partition] private[delta](
 object RemoteDeltaG {
   def apply[P <: Partition](p: P, from: Rev, to: Rev)(del: List[P#Id], upd: List[P#Instance]) =
     new RemoteDeltaG(p, from, to, RemoteDeltaP(del, upd))
+
+  lazy val prop =
+    Prop[RemoteDeltaG]("from ≥ 0", _.from.value >= 0) &
+    Prop[RemoteDeltaG]("from ≤ to", r => r.from.value <= r.to.value)
 }
 
 final class RemoteDeltaG private(
@@ -22,6 +28,8 @@ final class RemoteDeltaG private(
     val from: Rev,
     val to: Rev,
     delta: RemoteDeltaP[_]) {
+
+  this assertSatisfies RemoteDeltaG.prop
 
   override def hashCode = p.hashCode + delta.hashCode + from.hashCode + to.hashCode
   override def equals(o: Any): Boolean = o match {

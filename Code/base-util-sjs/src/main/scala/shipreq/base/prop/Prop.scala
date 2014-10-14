@@ -1,6 +1,6 @@
 package shipreq.base.prop
 
-import scala.annotation.tailrec
+import scala.annotation.{elidable, tailrec}
 import scalaz.NonEmptyList
 import shipreq.base.util.Util
 
@@ -27,6 +27,19 @@ sealed abstract class Prop[A] {
 
   final def falsify(x: Ctx[A]) = falsifyE(x, true)
   final def falsify1(a: A) = falsify(Ctx single a)
+
+  @elidable(elidable.ASSERTION)
+  final def assert1(a: A): Unit =
+    falsify1(a).foreach(f => {
+      val err = s"Property [$toString] failed\nwith [$a]" +
+        s"\n\nRoot cause(s): ${f.rootCauses.list.mkString(", ")}" +
+        s"\nFailure tree:\n${f.tree("  ")}"
+      val sep = "=" * 120
+      System.err.println(sep)
+      System.err.println(err)
+      System.err.println(sep)
+      throw new java.lang.AssertionError(err)
+    })
 
   def falsifyE: (Ctx[A], Boolean) => Option[Falsification[A]]
 
@@ -133,16 +146,18 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
     loop(this, Nil)
   }
 
-  def tree: String = Util.quickSB(treeSB)
-  def treeSB(sb: StringBuilder): Unit = {
+  def tree(indent: String = ""): String = Util.quickSB(treeSB(_, indent))
+  def treeSB(sb: StringBuilder, indent: String = ""): Unit = {
     val pm = "│  "
     val pl = "   "
     val cm = "├─ "
     val cl = "└─ "
+    var first = true
     def loop(parentLvlLast: Vector[Boolean], fs: List[Falsification[A]], root: Boolean): Unit = fs match {
       case Nil =>
       case h :: t =>
-        sb append '\n'
+        if (first) first = false else sb append '\n'
+        sb append indent
         for (b <- parentLvlLast) sb.append(if (b) pl else pm)
         val last = t.isEmpty
         if (!root) sb.append(if (last) cl else cm)
