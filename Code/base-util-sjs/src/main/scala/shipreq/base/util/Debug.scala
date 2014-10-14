@@ -1,4 +1,4 @@
-package shipreq.webapp.lib
+package shipreq.base.util
 
 /**
  * Methods to help with debugging.

@@ -32,7 +32,6 @@ import feature.uc.change._
 import feature.uc.field._
 import feature.uc.step._
 import feature.uc.text._
-import lib.DebugImplicits
 import security.SecurityProvider
 import util._
 
