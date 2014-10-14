@@ -1,7 +1,8 @@
 package shipreq.base.prop
 
 import scala.annotation.{elidable, tailrec}
-import scalaz.NonEmptyList
+import scalaz.{Foldable, NonEmptyList}
+import scalaz.syntax.foldable._
 import shipreq.base.util.Util
 
 sealed abstract class Prop[A] {
@@ -12,6 +13,11 @@ sealed abstract class Prop[A] {
   def <==         (a: Prop[A]): Prop[A] = Reduction(this, a)
   def <==>        (q: Prop[A]): Prop[A] = Biconditional(this, q)
   def contramap[Z](f: Z => A) : Prop[Z] = Contramap(this, f)
+
+  @inline final def subst[B <: A]: Prop[B] = contramap(a => a: B)
+
+  @inline final def contramapF[Z, F[_]: Foldable](f: Z => F[A]): Prop[Z] =
+    ContramapF(this, f)
 
   @inline final def ∨      (q: Prop[A]) = this | q
   @inline final def ∧      (q: Prop[A]) = this & q
@@ -68,6 +74,15 @@ final case class Contramap[A, B](p: Prop[B], f: A => B) extends Prop[A] {
   override def contramap[Z](g: Z => A): Prop[Z] = Contramap(p, f compose g)
   override def test(x: Ctx[A]) = p.test(x map f)
   override def falsifyE = (x,e) => p.falsifyE(x map f, e).map(_ contramap f)
+  override def toString = p.toString
+}
+
+final case class ContramapF[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B]) extends Prop[A] {
+  override def test(x: Ctx[A]) = {
+    val y = x map f
+    y.a.any(b => p test Ctx(b, y.run, y.settings)) // TODO Ctx shouldn't be parameterised
+  }
+  override def falsifyE = falsifyN // TODO wimping out
   override def toString = p.toString
 }
 
