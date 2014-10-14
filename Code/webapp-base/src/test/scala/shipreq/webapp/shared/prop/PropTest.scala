@@ -23,10 +23,10 @@ object PropTest extends TestSuite {
         val expect = e map s
         assert(actual == expect)
       }
-      def testRootCauses[A](p: Prop[A], a: A, e: List[Prop[A]]): Unit = {
+      def testRootCauses[A](p: Prop[A], a: A, e: List[Prop[_]]): Unit = {
         val r = p.falsify1(a).toList.flatMap(_.rootCauses.list)
-        val actual = r.sortBy(_.toString)
-        val expect = e.sortBy(_.toString)
+        val actual = r.map(_.toString).sortBy(_.toString)
+        val expect = e.map(_.toString).sortBy(_.toString)
         assert(actual == expect)
       }
       'atom {
@@ -88,6 +88,15 @@ object PropTest extends TestSuite {
         val p = mod5 ∧ (even ==> (even ∧ odd)) ∧ (mod3 ∧ ~even)
         testRootCauses(p, 10, List(odd, mod3))
         testRootCauses(mod235c, 10, List(mod3))
+      }
+      'contramap {
+        val upper = Prop[String]("upper", s => s == s.toUpperCase)
+        case class Yay(s: String, i: Int)
+        val p = mod235c.contramap[Yay](_.i) ∧ upper.contramap[Yay](_.s)
+        testRootCauses(p, Yay("GOOD", 30), Nil)
+        testRootCauses(p, Yay("Bad", 30), List(upper))
+        testRootCauses(p, Yay("GOOD", 15), List(even))
+        testRootCauses(p, Yay("both", 4), List(mod3, mod5, upper))
       }
     }
   }

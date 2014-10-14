@@ -6,14 +6,14 @@ import scala.annotation.tailrec
 import scalaz.NonEmptyList
 
 sealed abstract class Prop[A] {
-  def unary_~ : Prop[A] = Negation(this)
-  def |   (q: Prop[A]) = Disjunction(NonEmptyList(q, this))
-  def &   (q: Prop[A]) = Conjunction(NonEmptyList(q, this))
-  def ==> (c: Prop[A]) = Implication(this, c)
-  def <== (a: Prop[A]) = Reduction(this, a)
-  def <==>(q: Prop[A]) = Biconditional(this, q)
+  def unary_~                 : Prop[A] = Negation(this)
+  def |           (q: Prop[A]): Prop[A] = Disjunction(NonEmptyList(q, this))
+  def &           (q: Prop[A]): Prop[A] = Conjunction(NonEmptyList(q, this))
+  def ==>         (c: Prop[A]): Prop[A] = Implication(this, c)
+  def <==         (a: Prop[A]): Prop[A] = Reduction(this, a)
+  def <==>        (q: Prop[A]): Prop[A] = Biconditional(this, q)
+  def contramap[Z](f: Z => A) : Prop[Z] = Contramap(this, f)
 
-  @inline final def unary_¬             = ~this
   @inline final def ∨      (q: Prop[A]) = this | q
   @inline final def ∧      (q: Prop[A]) = this & q
   @inline final def ⇐      (a: Prop[A]) = this <== a
@@ -29,7 +29,7 @@ sealed abstract class Prop[A] {
   final def falsify(x: Ctx[A]) = falsifyE(x, true)
   final def falsify1(a: A) = falsify(Ctx single a)
 
-  protected def falsifyE: (Ctx[A], Boolean) => Option[Falsification[A]]
+  def falsifyE: (Ctx[A], Boolean) => Option[Falsification[A]]
 
   @inline protected final def falsifyX(f: (Ctx[A], Boolean) => List[Falsification[A]]): (Ctx[A], Boolean) => Option[Falsification[A]] =
     (x,e) => if (test(x) == e) None else Some(Falsification(this, f(x,e)))
@@ -44,53 +44,65 @@ sealed abstract class Prop[A] {
     falsifyX((x, e2) => p.falsifyE(x, e == e2).toList)
 }
 
+
 final case class Atom[A](name: String, t: Ctx[A] => Boolean) extends Prop[A] {
   override def test(x: Ctx[A]) = t(x)
-  override protected def falsifyE = falsifyN
+  override def falsifyE = falsifyN
   override def toString = name
 }
 
+
+final case class Contramap[A, B](p: Prop[B], f: A => B) extends Prop[A] {
+  override def contramap[Z](g: Z => A): Prop[Z] = Contramap(p, f compose g)
+  override def test(x: Ctx[A]) = p.test(x map f)
+  override def falsifyE = (x,e) => p.falsifyE(x map f, e).map(_ contramap f)
+  override def toString = p.toString
+}
+
+
 final case class Negation[A](p: Prop[A]) extends Prop[A] {
   override def unary_~ = p
-
   override def test(x: Ctx[A]) = !p.test(x)
-  override protected def falsifyE = falsifyN //falsifyP(p, false)
+  override def falsifyE = falsifyN //falsifyP(p, false)
   override def toString = s"¬$p"
 }
 
+
 final case class Disjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def |(q: Prop[A]) = Disjunction(q <:: ps)
-
   override def test(x: Ctx[A]) = ps.stream.exists(_ test x)
-  override protected def falsifyE = falsifyB(ps)
+  override def falsifyE = falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∨ ")
 }
 
 final case class Conjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def &(q: Prop[A]) = Conjunction(q <:: ps)
-
   override def test(x: Ctx[A]) = ps.stream.forall(_ test x)
-  override protected def falsifyE = falsifyB(ps)
+  override def falsifyE = falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∧ ")
 }
 
+
 final case class Implication[A](a: Prop[A], c: Prop[A]) extends Prop[A] {
   override def test(x: Ctx[A]) = !a.test(x) || c.test(x)
-  override protected def falsifyE = falsifyP(c, true)
+  override def falsifyE = falsifyP(c, true)
   override def toString = s"$a ⇒ $c"
 }
 
+
 final case class Reduction[A](c: Prop[A], a: Prop[A]) extends Prop[A]  {
   override def test(x: Ctx[A]) = !a.test(x) || c.test(x)
-  override protected def falsifyE = falsifyP(c, true)
+  override def falsifyE = falsifyP(c, true)
   override def toString = s"$c ⇐ $a"
 }
 
+
 final case class Biconditional[A](p: Prop[A], q: Prop[A]) extends Prop[A]  {
   override def test(x: Ctx[A]) = p.test(x) == q.test(x)
-  override protected def falsifyE = falsifyN
+  override def falsifyE = falsifyN
   override def toString = s"$p ⇔ $q"
 }
+
 
 object Prop {
 
@@ -101,7 +113,10 @@ object Prop {
     new Atom[A](name, t)
 }
 
-case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
+final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
+
+  def contramap[Z](f: Z => A): Falsification[Z] =
+    Falsification(p contramap f, cause map (_ contramap f))
 
   def rootCauses: NonEmptyList[Prop[A]] = {
     @tailrec
@@ -121,5 +136,6 @@ case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
 
   def tree: String = Util.quickSB(treeSB)
   def treeSB(sb: StringBuilder): Unit = {
+    // TODO
   }
 }
