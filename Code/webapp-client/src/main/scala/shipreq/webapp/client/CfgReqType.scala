@@ -86,9 +86,7 @@ object CfgReqType {
     })
 
   private val deletion =
-    new AsyncDeletion(spec)(
-      SimpleLens[P](_.alive)((a,b) => a.copy(alive = b)), // TODO async doesnt need lens, it only needs getter
-      deleteIO)
+    new AsyncDeletion(spec)(_.alive, deleteIO)
 
   private def deleteIO(x: X, id: D, a: DeletionAction, f: FailureIO): IO[Unit] =
     crudIO(x, f, CustomReqTypeCrud.delete(id, a))

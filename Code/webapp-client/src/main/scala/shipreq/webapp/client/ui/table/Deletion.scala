@@ -12,7 +12,7 @@ import shipreq.webapp.shared.protocol.DeletionAction, DeletionAction._
 import shipreq.webapp.client.protocol.FailureIO
 import shipreq.webapp.client.ui.Implicits._
 
-abstract class Deletion[S, P, D](spec: TableSpec[_, S, D, _, P, _, _], aliveL: SimpleLens[P, Alive]) {
+abstract class Deletion[S, P, D](spec: TableSpec[_, S, D, _, P, _, _], aliveG: P => Alive) {
 
   final protected type DP = (D, P)
   final type CSF = ComponentStateFocus[S]
@@ -26,7 +26,7 @@ abstract class Deletion[S, P, D](spec: TableSpec[_, S, D, _, P, _, _], aliveL: S
   // TODO rename getSaved, here & in spec
   // TODO provide separate filter
   def getSaved(T: CSF, alive: Alive): Stream[(RowStatus, D, P)] =
-    spec.getSaved(T).filter(r => aliveL.get(r._3) ≟ alive)
+    spec.getSaved(T).filter(r => aliveG(r._3) ≟ alive)
 
   def getSavedP(T: CSF, alive: Alive): Stream[P] =
     getSaved(T, alive).map(_._3)
@@ -37,7 +37,7 @@ abstract class Deletion[S, P, D](spec: TableSpec[_, S, D, _, P, _, _], aliveL: S
 final class SyncDeletion[S, P, D](spec: TableSpec.SyncSave[S, D, _, P, _, _])(
     aliveL: SimpleLens[P, Alive],
     delIO: (D, DeletionAction) => IO[Unit])
-    extends Deletion(spec, aliveL) {
+    extends Deletion(spec, aliveL.get) {
 
   private val aliveL2 = second[DP, P] composeLens aliveL
   private val restoreIO_ = modAliveIO_(Restore, Alive)
@@ -62,9 +62,9 @@ final class SyncDeletion[S, P, D](spec: TableSpec.SyncSave[S, D, _, P, _, _])(
 // =====================================================================================================================
 
 final class AsyncDeletion[X, S, P, D](spec: TableSpec.AsyncSave[X, S, D, _, P, _, _])(
-    aliveL: SimpleLens[P, Alive],
+    aliveG: P => Alive,
     delIO: (X, D, DeletionAction, FailureIO) => IO[Unit])
-    extends Deletion(spec, aliveL) {
+    extends Deletion(spec, aliveG) {
 
   private def actionIO(T: CSF, id: D, a: DeletionAction)(implicit x: X): ReactST[IO, S, Unit] = {
     lazy val del: ReactST[IO, S, Unit] = {
