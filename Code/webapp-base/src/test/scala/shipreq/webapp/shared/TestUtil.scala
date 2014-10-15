@@ -8,11 +8,11 @@ import Console.{RED, BOLD, WHITE_B, RESET}
 
 object TestUtil {
 
-  val js = try { java.awt.Color.BLACK == null } catch { case _: Throwable => true }
+  val jvm = try { "!" matches """/[\p{S}\p{P}]/""" } catch { case _: Throwable => false }
 
   implicit val propSettings = (
-    if (js) Settings(sampleSize = SampleSize(4))
-    else    Settings(sampleSize = SampleSize(100))
+    if (jvm) Settings(sampleSize = SampleSize(100))
+    else     Settings(sampleSize = SampleSize(10))
     ).copy(debug = false, sizeDist = Seq(0.2 -> 0.2, 0.8 -> 0.8))
 
   def assertProp[A](p: Prop[A], g: Gen[A])(implicit S: Settings): Unit = {
