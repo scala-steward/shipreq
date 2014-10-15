@@ -201,17 +201,15 @@ object Gen {
 
 sealed trait Distinct[A] {
   def apply(r: RngGen[List[A]]): RngGen[List[A]]
-  def +(d: Distinct[A]): Distinct[A]
+  final def +(d: Distinct[A]): Distinct[A] = DistinctN(r => d(apply(r)))
 }
 
 final case class DistinctN[A](f: RngGen[List[A]] => RngGen[List[A]]) extends Distinct[A] {
   override def apply(r: RngGen[List[A]]) = f(r)
-  override def +(d: Distinct[A]): Distinct[A] = DistinctN(f compose d.apply)
 }
 
 final case class Distinct1[A, B](f: A => TraversableOnce[B], g: (A, Set[B]) => A, i: TraversableOnce[B]) extends Distinct[A] {
   override def apply(r: RngGen[List[A]]) = Gen.distinctF(r, f, g, i)
-  override def +(d: Distinct[A]): Distinct[A] = DistinctN(apply)
 
   def blacklist(j: TraversableOnce[B]) = copy[A, B](i = j)
 
