@@ -40,18 +40,18 @@ object PTest {
 //      case RunState(r, Satisfied) => RunState(r, Proved)
 //      case r => r
 //    }
-
   private def testN[A](p: Prop[A], data: EphemeralStream[A])(implicit S: Settings): RunState[A] = {
-    data.foldLeft(RunState[A](0, Satisfied))(rs => a => {
-      rs.result match {
-        case Satisfied =>
-          val r = RunState(rs.runs + 1, test1(p, a, Ctx(rs.runs, S)))
-          if (S.debug) debug1(a, r)
-          r
-        case Proved | Falsified(_) =>
-          rs
-      }
-    })
+    val it = EphemeralStream.toIterable(data).iterator
+    var rs = RunState[A](0, Satisfied)
+    while (rs.success && it.hasNext) {
+//      println(">>>>>>>>>>>>>>>>>>>>>")
+      val a = it.next()
+//      println("<<<<<<<<<<<<<<<<<<<<< "+a)
+//      println()
+      rs = RunState(rs.runs + 1, test1(p, a, Ctx(rs.runs, S)))
+      if (S.debug) debug1(a, rs)
+    }
+    rs
   }
 
   private def debug1[A](a: A, r: RunState[A])(implicit S: Settings): Unit = {

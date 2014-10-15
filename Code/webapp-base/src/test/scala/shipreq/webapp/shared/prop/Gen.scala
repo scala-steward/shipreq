@@ -1,7 +1,7 @@
 package shipreq.webapp.shared.prop
 
 import com.nicta.rng.{Rng, Size}
-import scalaz._
+import scalaz._, Leibniz.===
 import shipreq.base.prop._
 
 trait Gen[A] {
@@ -21,6 +21,12 @@ class RngGen[A](val f: GenSize => Rng[A]) extends Gen[A] {
 
   override def map[B](g: A => B): RngGen[B] = new RngGen[B](s => f(s) map g)
   override def subst[B >: A]    : RngGen[B] = map(a => a: B)
+
+  def withFilter(p: A => Boolean): RngGen[A] =
+    map(a => if (p(a)) a else
+      // This seems crazy to be but it's how scala.Future does it
+      throw new NoSuchElementException("RngGen.withFilter predicate is not satisfied"))
+
 
   def mapr[B](g: Rng[A] => Rng[B])    = new RngGen[B](g compose f)
   def flatMap[B](g: A => RngGen[B])   = new RngGen[B](s => f(s).flatMap(a => g(a).f(s)))
@@ -47,6 +53,78 @@ class RngGen[A](val f: GenSize => Rng[A]) extends Gen[A] {
   //  def \?/[X](x: Rng[X]): Rng[A \?/ X] =
   //  def +++[X](x: Rng[X]): Rng[A \/ X] =
   //  def eitherS[X](x: Rng[X]): Rng[Either[A, X]] =
+
+
+//  def distinctList[B](f: A => Set[B])(g: (A, Set[B]) => A, initB: Set[B] = Set.empty[B]) = list.distinct(f)(g, initB)
+//
+//  def distinct[B, C](f: B => Set[C])(g: (B, Set[C]) => B, initC: Set[C] = Set.empty[C])(implicit ev: A === List[B]): RngGen[List[B]] =
+//    Gen.distinctF(ev.subst(this), f, g, initC)
+
+//  def distinct[B](implicit ev: A === List[B]) = new X[B](ev subst this)
+
+//  def distinct[B](ds: Distinctness[B]*)(implicit ev: A === List[B]): RngGen[List[B]] =
+//    (ev.subst(this) /: ds)((q, d) => Gen.distinctF(q, d.f, d.g, d.i))
+
+  def distinct[B](d: Distinctness[B])(implicit ev: A === List[B]): RngGen[List[B]] = d(ev.subst(this))
+
+  //def distinctOn[B](f: Distinctness.B1[B] => Distinctness[B])(implicit ev: A === List[B])
+}
+
+/*
+final class X[A](rng: RngGen[List[A]]) {
+  def getSelf = get(a => a)
+  def get[B](f: A => B) = getN(a => Set(f(a)))
+  def getN[B](f: A => TraversableOnce[B]) = new X2(rng, f)
+}
+final class X2[A, B](rng: RngGen[List[A]], f: A => TraversableOnce[B], initB: TraversableOnce[B] = Set.empty) {
+  def blacklist(i: TraversableOnce[B]) = new X2(rng, f, i)
+  def set(g: (A, Set[B]) => A) = Gen.distinctF(rng, f, g, initB)
+}
+*/
+
+
+trait Distinctness[A] {
+  def apply(r: RngGen[List[A]]): RngGen[List[A]]
+  def +(d: Distinctness[A]): Distinctness[A]
+}
+case class DistinctnessN[A](f: RngGen[List[A]] => RngGen[List[A]]) extends Distinctness[A] {
+  override def apply(r: RngGen[List[A]]) = f(r)
+  override def +(d: Distinctness[A]): Distinctness[A] = DistinctnessN(f compose d.apply)
+}
+
+case class Distinctness1[A, B](f: A => TraversableOnce[B], g: (A, Set[B]) => A, i: TraversableOnce[B]) extends Distinctness[A] {
+  def blacklist(j: TraversableOnce[B]) = copy[A, B](i = j)
+
+  def contramap[Z](m: Z => A, n: (Z, A) => Z) =
+    Distinctness1[Z, B](f compose m, (z,bs) => n(z, g(m(z),bs)), i)
+
+  override def apply(r: RngGen[List[A]]) = Gen.distinctF(r, f, g, i)
+  override def +(d: Distinctness[A]): Distinctness[A] = DistinctnessN(apply)
+}
+
+//case class Distinctness[A, B](f: A => TraversableOnce[B], g: (A, Set[B]) => A, i: TraversableOnce[B]) {
+//  def blacklist(j: TraversableOnce[B]) = copy[A, B](i = j)
+//}
+object Distinctness {
+  def on[A] = new B1[A]
+  lazy val str  = on[String](identity).str ((_, b) => b)
+  lazy val int  = on[Int]   (identity).int ((_, b) => b)
+  lazy val long = on[Long]  (identity).long((_, b) => b)
+
+  final class B1[A] {
+    def apply[B](f: A => B)              = n[B](a => Set(f(a)))
+    def n[B](f: A => TraversableOnce[B]) = new B2[A, B](f)
+    def self = apply(identity)
+    //def selfInt(implicit ev: Int =:= A) = apply[A](identity).int((_, b) => ev(b))
+  }
+
+  final class B2[A, B](f: A => TraversableOnce[B]) {
+    def apply(g: (A, Set[B]) => A) = Distinctness1(f, g, Set.empty)
+
+    def str (g: (A, String) => A)(implicit ev: B === String) = apply((a, bs) => g(a, "\uffff" + (ev subst bs).max))
+    def int (g: (A, Int)    => A)(implicit ev: B === Int)    = apply((a, bs) => g(a, (ev subst bs).max + 1))
+    def long(g: (A, Long)   => A)(implicit ev: B === Long)   = apply((a, bs) => g(a, (ev subst bs).max + 1L))
+  }
 }
 
 class RngGenS[A](f: GenSize => Rng[A]) extends RngGen(f) {
@@ -63,6 +141,11 @@ class RngGenS[A](f: GenSize => Rng[A]) extends RngGen(f) {
 
 object Gen {
 
+  implicit object RngGenScalaz extends Monad[RngGen] {
+    def bind[A, B](a: RngGen[A])(f: A => RngGen[B]) = a flatMap f
+    def point[A](a: => A) = insert(a)
+  }
+  
   object Covariance {
     implicit def rnggenCovariance[A, B >: A](r: RngGen[A]) = r.subst[B]
   }
@@ -137,6 +220,8 @@ object Gen {
   def oneof[A]     (a: A, as: A*)          : RngGen[A]      = Rng.oneof(a, as: _*).gen
   def oneofV[A]    (x: OneAnd[Vector, A])  : RngGen[A]      = Rng.oneofV(x).gen
 
+  def sequence           [T[_], A](x: T[RngGen[A]])(implicit T: Traverse[T]): RngGen[T[A]] = T.sequence(x)
+
 //  def pair               [A, B](a: Gen[A], b: Gen[B]): Gen[(A, B)] = Rng.pair.gen
 //  def triple             [A, B, C](a: Gen[A], b: Gen[B], c: Gen[C]): Gen[(A, B, C)] = Rng.triple.gen
 //  def sequence           [T[_], A](x: T[Gen[A]])(implicit T: Traverse[T]): Gen[T[A]] = Rng.sequence.gen
@@ -154,4 +239,92 @@ object Gen {
 
   def oneofGC[A, B >: A](a: RngGen[A], as: RngGen[A]*): RngGen[B] =
     oneofG(a.subst[B], as.map(_.subst[B]): _*)
+
+//  def distinct[A, B](r: RngGen[List[A]], f: A => B, g: (A, Set[B]) => Option[RngGen[A]]): RngGen[List[A]] =
+//    r.flatMap(as => {
+//      var bs = Set.empty[B]
+//      var ok = List.empty[A]
+//      var ko = List.empty[A]
+//      as.foreach(a => {
+//        val b = f(a)
+//        if (bs contains b)
+//          ko = a :: ko
+//        else {
+//          bs += b
+//          ok = a :: ok
+//        }
+//      })
+//
+//      if (ko.isEmpty)
+//        r
+//      else
+//        ko.foldLeft(Gen.insert(ok, bs))(
+//          (q, a) => q.flatMap { case (as, bs) =>
+//            g(a, bs).fold(q)(
+//              r => r.map(a2 => (a2 :: as, bs + f(a2))))
+//          }
+//        ).map(_._1)
+//    })
+  //final class Tmp[A, B, C](val c: ((A, Set[B]) => Option[RngGen[A]]) => C) extends AnyVal {
+  //  def apply(g: (A, Set[B]) => Option[RngGen[A]]) = c(g)
+  //  def apply(g: (A, Set[B]) => A) = c((a, b) => Some(Gen insert g(a, b)))
+  //}
+
+  def distinctF[A, B](r: RngGen[List[A]], f: A => TraversableOnce[B], g: (A, Set[B]) => A, initB: TraversableOnce[B]): RngGen[List[A]] =
+    r.flatMap(distinct(_, f, g, initB))
+
+  def distinct[A, B](as: List[A], f: A => TraversableOnce[B], g: (A, Set[B]) => A, initB: TraversableOnce[B]): RngGen[List[A]] = {
+      var bs = initB.toSet
+      var ok = List.empty[A]
+      var ko = List.empty[A]
+      as.foreach(a => {
+        val bs2 = f(a).toSet
+        val dup = bs.exists(bs2.contains)
+        if (dup)
+          ko = a :: ko
+        else {
+          bs ++= bs2
+          ok = a :: ok
+        }
+      })
+
+    val asS = as
+//      */
+//      val asS = as
+//      val (ok, bs, ko) = {
+//        var bs = Set.empty[B]
+//        var ok = List.empty[A]
+//        var ko = List.empty[A]
+//        as.foreach(a => {
+//          val bs2 = f(a)
+//          val dup = bs.exists(bs2.contains)
+//          if (dup)
+//            ko = a :: ko
+//          else {
+//            bs ++= bs2
+//            ok = a :: ok
+//          }
+//        })
+//        (ok, bs, ko)
+//      }
+//
+//      println(s"$as --- ${(ok, bs, ko)}")
+
+      if (ko.isEmpty)
+        Gen.insert(as)
+      else
+        ko.foldLeft(Gen.insert(ok, bs))(
+          (q, a) => q.map { case (as, bs) =>
+            val a2 = g(a, bs)
+            val bs2 = f(a2).toSet
+//            println(s"---------------------------------- $asS\nOLD AS: $as\nA1: $a\nA2: $a2\nNEW AS: ${a2 :: as}\nOLD BS: $bs\nBS2: $bs2\nNEW BS: ${bs ++ bs2}\n")
+            if (bs.exists(bs2.contains)) {
+              println(s"-----------------------\nA1: $a\n\nA2: $a2\n\nBS1: $bs\n\nBS2: $bs2\n\nBS3: ${bs ++ bs2}\n")
+              throw new java.lang.AssertionError(s"Data still not distinct.")
+            }
+            (a2 :: as, bs ++ bs2)
+          }
+        ).map(_._1)
+    }
+
 }
