@@ -34,58 +34,52 @@ object TableTest extends TestSuite {
     var fs = List.empty[FailureIO]
   }
 
+  type X = Tester
+  def save(x: X, o: Option[(Int, Data)], u: Data, f: FailureIO) = IO[Unit] {
+    x.fs ::= f
+  }
+  val spec = prespec2.asyncSave(save)
+
+  val refs = Ref.param[Int, TopNode](_.toString)
+
+  val C = ReactComponentB[(X, Map[Int, Data])]("C")
+    .getInitialState(p => spec.initialState(p._2))
+    .render(T => {
+      implicit def x = T.props._1
+      val savedRow = spec.savedRow((_, d, _, vv) => {
+        val (name, desc) = vv
+        div(keyAttr := d, ref := refs(d), name, desc)
+      })
+      val savedRows = spec.savedRows(T, savedRow)(_.sortBy(_._3.name))
+      div(savedRows)
+    }).build
+
+  val data = Map(2 -> Data("ABC", None), 3 -> Data("DEF", Some("YAG")))
+  val t = new Tester
+  val c = ReactTestUtils renderIntoDocument C((t, data))
+  val ta = TableAssertions(spec, c)
+  import ta._
+
+  val List(i2, i3) = List(2, 3).map(i =>
+    ReactTestUtils.findRenderedDOMComponentWithTag(refs(i)(c).get, "input").domType[dom.HTMLInputElement])
+
+  val simChange = Simulation.focusChangeBlur("x")
+
   override def tests = TestSuite {
-
-    type X = Tester
-    def save(x: X, o: Option[(Int, Data)], u: Data, f: FailureIO) = IO[Unit] {
-      x.fs ::= f
-    }
-    val spec = prespec2.asyncSave(save)
-
-    val refs = Ref.param[Int, TopNode](_.toString)
-
-    val C = ReactComponentB[(X, Map[Int, Data])]("C")
-      .getInitialState(p => spec.initialState(p._2))
-      .render(T => {
-        implicit def x = T.props._1
-        val savedRow = spec.savedRow((_, d, _, vv) => {
-          val (name, desc) = vv
-          div(keyAttr := d, ref := refs(d), name, desc)
-        })
-        val savedRows = spec.savedRows(T, savedRow)(_.sortBy(_._3.name))
-        div(savedRows)
-      }).build
-
-    val data = Map(2 -> Data("ABC", None), 3 -> Data("DEF", Some("YAG")))
-    val t = new Tester
-    val c = ReactTestUtils renderIntoDocument C((t, data))
-    val ta = TableAssertions(spec, c)
-    import ta._
-
-    val List(i2, i3) = List(2, 3).map(i =>
-      ReactTestUtils.findRenderedDOMComponentWithTag(refs(i)(c).get, "input").domType[dom.HTMLInputElement])
-
+    ta.resetState()
+    t.fs = Nil
 
     'asyncSaveFailure {
-
-      val simChange = Simulation.focusChangeBlur("x")
-
-      def setup(): Unit = {
-        resetState()
-        t.fs = Nil
-        simChange run i2; assertRowStatuses(2 -> locked, 3 -> sync)
-        simChange run i3; assertRowStatuses(2 -> locked, 3 -> locked)
-      }
+      simChange run i2; assertRowStatuses(2 -> locked, 3 -> sync)
+      simChange run i3; assertRowStatuses(2 -> locked, 3 -> locked)
 
       'inOrder {
-        setup()
         val List(f3, f2) = t.fs
         f2.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> locked)
         f3.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> failed)
       }
 
       'outOfOrder{
-        setup()
         val List(f3, f2) = t.fs
         f3.io.unsafePerformIO(); assertRowStatuses(2 -> locked, 3 -> failed)
         f2.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> failed)
