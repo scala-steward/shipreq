@@ -4,7 +4,6 @@ package table
 import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom
-import scalajs.js
 import scalaz.effect.IO
 import scalaz.std.string.stringInstance
 import scalaz.Equal
@@ -16,8 +15,6 @@ import ValidatorPlus.Implicits._
 import TableTestUtils._
 
 object TableTest extends TestSuite {
-  implicit def autoUnboxRefsInTests[T <: TopNode](r: js.UndefOr[ReactComponentM_[T]]) = r.get
-  implicit def autoUnboxRefsInTestsC[T <: TopNode](r: js.UndefOr[ReactComponentM_[T]]): ComponentOrNode = r.get
 
   case class Data(name: String, desc: Option[String]) //, num: Int)
   implicit def DataEqual = Equal.equalA[Data]
