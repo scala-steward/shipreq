@@ -19,33 +19,31 @@ package shipreq.webapp.client.ui
  * ~~~~
  * [5] create new
  * [5] saves only when entire row is valid
+ * [5] delete
+ * [5] show/hide deleted
  * [4] validation as you type
  * [4] input correction (valid or not)
  * [3] field validity depending on other fields (in same row)
  * [3] field validity depending on other rows
  * [2] escape to cancel change
+ * [2] visual indication of save-in-progress & save-complete
+ * [1] avoid NOP saves
  *
  * Done in Isolation
  * ~~~~~~~~~~~~~~~~~
  * [5.5] drag to reorder
- * [5.3] delete
- * [5.2] show/hide deleted
  *
  * TODO Additional TableSpec features ↙
  * ~~~~
  * [PRIORITY.EFFORT]
- * [3.?] handle name swap (should save both, not just one)
+ * [5.?] add drag/drop ordering to table
  * [3.5] different view when field not in edit (sometimes the edit view is too noisy)
- * [2.3] visual indication of save-in-progress & save-complete
+ * [2.?] handle name swap (should save both, not just one)
  * [2.2] server-side only errors / errors on save
  * [1.3] validators with composite types (like new & change password)
- * [?.?] avoid NOP saves
  * [?.?] state date structure help
- * [?.?] add drag/drop ordering to table
  */
 package object table {
-
-  // TODO why is P in the saved map? It should come from props (?)
 
   type Saved[D, P, II]        = Map[D, SavedRow[P, II]]
   type Unsaved[II]            = Option[UnsavedRow[II]]
