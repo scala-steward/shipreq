@@ -253,7 +253,9 @@ object ShipReq extends Build {
       def testSettings = (_: Project)
         .settings(utestJsSettings: _*)
         .settings(
-          test in Test := (test in(Test, stage)).value,
+          test      in Test := (test      in(Test, stage)).value,
+          testOnly  in Test := (testOnly  in(Test, stage)).evaluated,
+          testQuick in Test := (testQuick in(Test, stage)).evaluated,
           jsDependencies += "org.webjars" % "react" % "0.11.1" % "test" / "react-with-addons.js" commonJSName "React",
           requiresDOM := true,
           jsEnv in Test := new PhantomJSEnv)
