@@ -11,6 +11,7 @@ import utest._
 import shipreq.webapp.shared.validation.{GenericValidators, ValidatorPlus}
 import shipreq.webapp.client.protocol.FailureIO
 import ValidatorPlus.Implicits._
+import TableTestUtils._
 
 object TableTest extends TestSuite {
 
@@ -33,85 +34,62 @@ object TableTest extends TestSuite {
     var fs = List.empty[FailureIO]
   }
 
-  def assertRowValues[D, P, A](spec: TableSpec[_, _, D, _, P, _, _])(f: (RowStatus, P) => A) =
-    (c: spec.CSF) => new {
-      def apply(m: (D, A)*): Unit = {
-        val actual = spec.getSaved(c).map { case (r, d, p) => d -> f(r, p)}.toMap
-        val expect = m.toMap
-        assert(actual == expect)
-      }
-    }
-
   override def tests = TestSuite {
+
+    type X = Tester
+    def save(x: X, o: Option[(Int, Data)], u: Data, f: FailureIO) = IO[Unit] {
+      x.fs ::= f
+    }
+    val spec = prespec2.asyncSave(save)
+
+    val refs = Ref.param[Int, TopNode](_.toString)
+
+    val C = ReactComponentB[(X, Map[Int, Data])]("C")
+      .getInitialState(p => spec.initialState(p._2))
+      .render(T => {
+        implicit def x = T.props._1
+        val savedRow = spec.savedRow((_, d, _, vv) => {
+          val (name, desc) = vv
+          div(keyAttr := d, ref := refs(d), name, desc)
+        })
+        val savedRows = spec.savedRows(T, savedRow)(_.sortBy(_._3.name))
+        div(savedRows)
+      }).build
+
+    val data = Map(2 -> Data("ABC", None), 3 -> Data("DEF", Some("YAG")))
+    val t = new Tester
+    val c = ReactTestUtils renderIntoDocument C((t, data))
+    val ta = TableAssertions(spec, c)
+    import ta._
+
+    val List(i2, i3) = List(2, 3).map(i =>
+      ReactTestUtils.findRenderedDOMComponentWithTag(refs(i)(c).get, "input").domType[dom.HTMLInputElement])
+
 
     'asyncSaveFailure {
 
-      type X = Tester
-      def save(x: X, o: Option[(Int, Data)], u: Data, f: FailureIO) = IO[Unit] {
-        x.fs ::= f
-      }
-      val spec = prespec2.asyncSave(save)
-
-      val refs = Ref.param[Int, TopNode](_.toString)
-
-      val C = ReactComponentB[(X, Map[Int, Data])]("C")
-        .getInitialState(p => spec.initialState(p._2))
-        .render(T => {
-          implicit def x = T.props._1
-          val savedRow = spec.savedRow((_, d, _, vv) => {
-            val (name, desc) = vv
-            div(keyAttr := d, ref := refs(d), name, desc)
-          })
-          val savedRows = spec.savedRows(T, savedRow)(_.sortBy(_._3.name))
-          div(savedRows)
-        }).build
-
-      val t = new Tester
-      val data = Map(2 -> Data("ABC", None), 3 -> Data("DEF", Some("YAG")))
-      val c = ReactTestUtils renderIntoDocument C((t, data))
-
-      val r2 = refs(2)(c).get
-      val i2 = ReactTestUtils.findRenderedDOMComponentWithTag(r2, "input").domType[dom.HTMLInputElement]
-
-      val r3 = refs(3)(c).get
-      val i3 = ReactTestUtils.findRenderedDOMComponentWithTag(r3, "input").domType[dom.HTMLInputElement]
-
-      val initialState = c.state
-
-      val (sync,locked,failed) = ("sync","locked","failed")
-      def assertRowStatuses = assertRowValues(spec)((r, p) => r match {
-        case RowStatus.Sync      => sync
-        case RowStatus.Locked    => locked
-        case RowStatus.Failed(_) => failed
-      })(c)
+      val simChange = Simulation.focusChangeBlur("x")
 
       def setup(): Unit = {
-        c setState initialState
+        resetState()
         t.fs = Nil
-        Simulation.focusChangeBlur("blar2") run i2
-        assertRowStatuses(2 -> locked, 3 -> sync)
-        Simulation.focusChangeBlur("blar3") run i3
-        assertRowStatuses(2 -> locked, 3 -> locked)
+        simChange run i2; assertRowStatuses(2 -> locked, 3 -> sync)
+        simChange run i3; assertRowStatuses(2 -> locked, 3 -> locked)
       }
 
       'inOrder {
         setup()
         val List(f3, f2) = t.fs
-        f2.io.unsafePerformIO()
-        assertRowStatuses(2 -> failed, 3 -> locked)
-        f3.io.unsafePerformIO()
-        assertRowStatuses(2 -> failed, 3 -> failed)
+        f2.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> locked)
+        f3.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> failed)
       }
 
       'outOfOrder{
         setup()
         val List(f3, f2) = t.fs
-        f3.io.unsafePerformIO()
-        assertRowStatuses(2 -> locked, 3 -> failed)
-        f2.io.unsafePerformIO()
-        assertRowStatuses(2 -> failed, 3 -> failed)
+        f3.io.unsafePerformIO(); assertRowStatuses(2 -> locked, 3 -> failed)
+        f2.io.unsafePerformIO(); assertRowStatuses(2 -> failed, 3 -> failed)
       }
-
     }
   }
 }
