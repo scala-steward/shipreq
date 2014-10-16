@@ -258,7 +258,7 @@ object ShipReq extends Build {
           testQuick in Test := (testQuick in(Test, stage)).evaluated,
           jsDependencies += "org.webjars" % "react" % "0.11.1" % "test" / "react-with-addons.js" commonJSName "React",
           requiresDOM := true,
-          jsEnv in Test := new PhantomJSEnv)
+          postLinkJSEnv in Test := new PhantomJSEnv)
 
       def prodJsSettings = (_: Project).settings(
         emitSourceMaps in fullOptJS := false,
