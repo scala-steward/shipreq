@@ -13,6 +13,20 @@ object DataProp {
   lazy val rev =
     Prop[Rev]("rev ≥ 0", _.value >= 0)
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Incompletions
+
+  object customIncmpTypes {
+
+    lazy val uniqueId =
+      Prop[CustomIncmpTypes]("each CustomIncmpType is unique", _.data.map(_.id).isUnique)
+
+    def all = uniqueId
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Requirement Types
+
   lazy val reqType =
     Prop[ReqType]("oldMnemonics doesn't contain current mnemonic", a => !a.oldMnemonics.contains(a.mnemonic))
 
@@ -31,12 +45,12 @@ object DataProp {
 
   object customReqTypes {
 
+    lazy val uniqueId =
+      Prop[CustomReqTypes]("each CustomReqTypeId is unique", _.data.map(_.id).isUnique)
+
     lazy val uniqueMnemonics =
       Prop[CustomReqTypes]("each mnemonic is unique",
         _.data.toList.flatMap(b => b.mnemonic :: b.oldMnemonics.toList).isUnique)
-
-    lazy val uniqueId =
-      Prop[CustomReqTypes]("each CustomReqTypeId is unique", _.data.map(_.id).isUnique)
 
     lazy val uniqueNames =
       Prop[CustomReqTypes]("each CustomReqType name is unique", _.data.map(_.name).isUnique)
@@ -48,6 +62,8 @@ object DataProp {
       uniqueMnemonics ∧ uniqueId ∧ uniqueNames ∧ rev.contramap(_.rev) ∧ each
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
   lazy val project =
+    customIncmpTypes.all.contramap[Project](_.customIncmpTypes) ∧
     customReqTypes.all.contramap[Project](_.customReqTypes)
 }

@@ -1,11 +1,12 @@
 package shipreq.webapp.shared.protocol
 
-import shipreq.base.util.BiMap
-
+import scalaz.NonEmptyList
 import scalaz.Isomorphism.<=>
 import upickle._
+import shipreq.base.util.BiMap
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.shared.data._
+import shipreq.webapp.shared.data.delta.Rev
 
 private[protocol] object Codec {
   //  private def tagS[T <: TaggedString](implicit C: TaggedTypeCtor[T]) =
@@ -32,8 +33,8 @@ private[protocol] object Codec {
   }
 
   // UNSAFE. Make sure tests using exhaustive pattern matching to cover this hierarchy
-  def enum[T](ts: T*) = {
-    val table = BiMap(ts.zipWithIndex.map(p => p._1 -> ('0' + p._2).toChar.toString).toMap)
+  def enum[T](ts: NonEmptyList[T]) = {
+    val table = BiMap(ts.list.zipWithIndex.map(p => p._1 -> ('0' + p._2).toChar.toString).toMap)
     ReadWriter[T](t => Js.Str(table.ab(t)), {
       case Js.Str(k) if table.ba.contains(k) => table.ba(k)
     })
@@ -81,7 +82,7 @@ private[protocol] object Codec {
     r => Js.Str(r.n),
     {case Js.Str(n) => Routine.Remote(n, d) })
 
-  implicit def deletionAction = enum[DeletionAction](DeletionAction.values: _*)
+  implicit def deletionAction = enum(DeletionAction.values)
 
   implicit def crudable[C <: Crudable](implicit WI: Writer[C#Id], RI: Reader[C#Id], WV: Writer[C#V], RV: Reader[C#V]): ReadWriter[CrudAction[C]] =
     ReadWriter[CrudAction[C]]({
@@ -95,28 +96,31 @@ private[protocol] object Codec {
     })
 
 }
-
 import Codec._
 
 // =====================================================================================================================
 object DataCodecs {
 
   implicit def alive = boolCase(Alive)
-
   implicit def impReq = boolCase(ImplicationRequired)
+  implicit def rev = tagL(Rev.apply)
+
+  implicit def refkey = tagS(RefKey.apply)
+  implicit def customIncmpTypeId = tagL(CustomIncmpType.Id.apply)
+  implicit def customIncmpType = caseclass4(CustomIncmpType.apply, CustomIncmpType.unapply)
+  implicit def customIncmpTypes = caseclass2(CustomIncmpTypes.apply, CustomIncmpTypes.unapply)
 
   implicit def reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
-
   implicit def customReqTypeId = tagL(CustomReqType.Id.apply)
-
   implicit def customReqType = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+  implicit def customReqTypes = caseclass2(CustomReqTypes.apply, CustomReqTypes.unapply)
 
+  implicit def project = caseclass2(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================
 object RoutineGroupCodecs {
   import Routines._
-
 
 //  implicit def customReqTypeCrud = crudable[CustomReqTypeCrud]
 
@@ -129,10 +133,9 @@ object RoutineGroupCodecs {
 // =====================================================================================================================
 object DeltaCodecs {
   import shipreq.webapp.shared.data.delta._
+  import DataCodecs.rev
 
-  implicit def rev = tagL(Rev.apply)
-
-  implicit def partitions = enum[Partition](Partition.CustomReqTypes)
+  implicit def partitions = enum(Partition.values)
 
   implicit def remoteDeltaGW = Writer[RemoteDeltaG](r => {
     import r.p.{wd, wp}

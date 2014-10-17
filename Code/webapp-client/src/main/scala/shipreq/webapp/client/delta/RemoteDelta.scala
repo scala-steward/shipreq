@@ -29,7 +29,8 @@ object RemoteDelta {
           }
 
         d.p match {
-          case t@ CustomReqTypes => x(t, CustomReqTypeFns)
+          case t@ CustomIncmpTypes => x(t, CustomIncmpTypeFns)
+          case t@ CustomReqTypes   => x(t, CustomReqTypeFns)
         }
       }
       
@@ -38,6 +39,27 @@ object RemoteDelta {
         case CouldntApply => CouldntApply
       }
     })
+}
+
+// TODO CustomIncmpTypeFns is just a search/replace different from CustomReqTypeFns
+object CustomIncmpTypeFns extends Fns[CustomIncmpTypes.type] {
+
+  override def rev(p: Project) =
+    p.customIncmpTypes.rev
+
+  override def update(p: Project, rev: Rev, ds: RemoteDeltaP[CustomIncmpTypes.type]) = {
+    var vs = p.customIncmpTypes.data.toStream
+
+    val dels = ds.del.toSet
+    if (dels.nonEmpty)
+      vs = vs.filterNot(p => dels contains p.id)
+
+    val upds = ds.upd.map(p => p.id -> p).toMap
+    if (upds.nonEmpty)
+      vs = vs.map(p => upds.getOrElse(p.id, p))
+
+    p.copy(customIncmpTypes = D.CustomIncmpTypes(rev, vs.toList))
+  }
 }
 
 object CustomReqTypeFns extends Fns[CustomReqTypes.type] {

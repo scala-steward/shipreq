@@ -1,5 +1,6 @@
 package shipreq.webapp.shared.protocol
 
+import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
 import shipreq.webapp.shared.data._
 import shipreq.webapp.shared.data.delta.RemoteDelta
@@ -39,7 +40,7 @@ object DeletionAction {
   case object HardDel extends DeletionAction
   case object SoftDel extends DeletionAction
   case object Restore extends DeletionAction
-  def values = Seq(HardDel, SoftDel, Restore)
+  def values = NonEmptyList[DeletionAction](HardDel, SoftDel, Restore)
 }
 
 //======================================================================================================================

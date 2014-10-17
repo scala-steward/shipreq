@@ -87,8 +87,15 @@ object ProtocolTest extends TestSuite {
 
     'Δ {
       val prop = kitR(Routines.CustomReqTypeCrud).propO
-      def test(p: Partition) = RandomData.remoteDelta forPart p mustSatisfy prop
-      'CustomReqTypes - test(Partition.CustomReqTypes)
+      def test(p: Partition) = RandomData.remoteDelta forPart confirmTest(p) mustSatisfy prop
+
+      // This just spits out a compiler warning to remind you to add a manual test here
+      def confirmTest(p: Partition) = p match {
+        case Partition.CustomIncmpTypes => p
+        case Partition.CustomReqTypes => p
+      }
+      'CustomIncmpTypes - test(Partition.CustomIncmpTypes)
+      'CustomReqTypes   - test(Partition.CustomReqTypes)
     }
   }
 }

@@ -8,6 +8,9 @@ import shipreq.base.util.Debug._
 
 object RandomData {
 
+  lazy val id =
+    Gen.positivelong
+
   lazy val rev =
     Gen.positivelong.map(delta.Rev)
 
@@ -17,17 +20,45 @@ object RandomData {
       r2 <- rev
     } yield if (r1.value <= r2.value) (r1, r2) else (r2, r1)
 
+  lazy val optionalLargeText =
+    Gen.string1.lim(AppConsts.largeTextMaxLength).option
+
   lazy val alive =
     Gen.oneof[Alive](Alive, Dead)
 
   lazy val implicationRequired =
     Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationNotRequired)
 
+  lazy val refKey =
+    for {
+      h <- Gen.alphanumeric
+      t <- Gen.charof("._=-", 'a' to 'z', 'A' to 'Z', '0' to '9').list.lim(AppConsts.refKeyLength.end)
+    } yield RefKey((h :: t).mkString)
+
+  lazy val customIncmpTypeId =
+    id map CustomIncmpType.Id
+  
+  lazy val customIncmpType =
+    for {
+      i <- customIncmpTypeId
+      k <- refKey
+      d <- optionalLargeText
+      a <- alive
+    } yield CustomIncmpType(i, k, d, a)
+  
+  lazy val customIncmpTypes = {
+    def distinctId = Distinct.on[CustomIncmpType](_.id.value).long((a, b) => a.copy(id = CustomIncmpType.Id(b)))
+    for {
+      r  <- rev
+      cs <- customIncmpType.list.distinct(distinctId)
+    } yield CustomIncmpTypes(r, cs)
+  }
+
   lazy val reqTypeMnemonic =
     Gen.uppers1.lim(6).map(cs => ReqType.Mnemonic(cs.list.mkString))
 
   lazy val customReqTypeId =
-    Gen.long.map(CustomReqType.Id)
+    id map CustomReqType.Id
 
   lazy val customReqTypeName =
     Gen.alphanumericstring1 // TODO reenable after Jawn bugfix Gen.string1
@@ -62,19 +93,32 @@ object RandomData {
   }
 
   lazy val project =
-    customReqTypes.map(Project)
+    for {
+      i <- customIncmpTypes
+      r <- customReqTypes
+    } yield Project(i, r)
 
   // -------------------------------------------------------------------------------------------------------------------
   object remoteDeltaG {
     def forPart: Partition => RngGen[RemoteDeltaG] = {
-      case p@ Partition.CustomReqTypes => customReqTypes
+      case Partition.CustomIncmpTypes => customIncmpTypesDG
+      case Partition.CustomReqTypes   => customReqTypesDG
     }
 
-    lazy val customReqTypes =
+    // TODO another copy/paste/search/replace
+    lazy val customIncmpTypesDG =
+      for {
+        (r1, r2) <- revPair
+        ids      <- customIncmpTypeId.list
+        cs       <- customIncmpType.list
+      } yield RemoteDeltaG(Partition.CustomIncmpTypes, r1, r2)(ids, cs)
+
+    lazy val customReqTypesDG =
       for {
         (r1, r2) <- revPair
         ids      <- customReqTypeId.list
         cs       <- customReqType.list
+      //} yield RemoteDeltaG(Partition.CustomReqTypes, r1, r2)(ids -- cs.map(_.id), cs) // TODO make set
       } yield RemoteDeltaG(Partition.CustomReqTypes, r1, r2)(ids, cs)
   }
 
@@ -87,10 +131,8 @@ object RandomData {
   object routines {
     import Routine._, Routines._
 
-    lazy val deletionAction = {
-      import DeletionAction._
-      Gen.oneof[DeletionAction](HardDel, SoftDel, Restore)
-    }
+    lazy val deletionAction =
+      Gen.oneofL(DeletionAction.values)
 
     lazy val remoteName =
       Gen.alphanumericstring1

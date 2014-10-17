@@ -1,13 +1,13 @@
 package shipreq.webapp.shared.data
 
 import shipreq.base.prop._
+import shipreq.webapp.shared.data.delta.Rev
 
-final case class CustomReqTypes(
-  rev: delta.Rev,
-  data: List[CustomReqType])
+final case class CustomReqTypes(rev: Rev, data: List[CustomReqType])
 
-final case class Project(customReqTypes: CustomReqTypes) {
-  def rev = customReqTypes.rev
+final case class CustomIncmpTypes(rev: Rev, data: List[CustomIncmpType])
 
+final case class Project(customIncmpTypes: CustomIncmpTypes, customReqTypes: CustomReqTypes) {
+  def rev = customIncmpTypes.rev + customReqTypes.rev
   this assertSatisfies DataProp.project
 }

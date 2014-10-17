@@ -1,5 +1,6 @@
 package shipreq.webapp.shared.data.delta
 
+import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.webapp.shared.data._
@@ -7,6 +8,7 @@ import shipreq.webapp.shared.protocol.DataCodecs._
 
 final case class Rev(value: Long) extends TaggedLong {
   @inline def succ = Rev(value + 1L)
+  @inline def +(r: Rev) = Rev(value + r.value)
 }
 
 sealed trait Partition {
@@ -54,7 +56,11 @@ case object Partition {
   }
 
   // ------------------------------------------------------------------------------------------------------------------
+  // Partition instances
 
-  case object CustomReqTypes extends Aux[CustomReqType, CustomReqType.Id]
+  val values = NonEmptyList[Partition](CustomIncmpTypes, CustomReqTypes)
+
+  case object CustomIncmpTypes extends Aux[CustomIncmpType, CustomIncmpType.Id]
+  case object CustomReqTypes   extends Aux[CustomReqType,   CustomReqType.Id]
 }
 

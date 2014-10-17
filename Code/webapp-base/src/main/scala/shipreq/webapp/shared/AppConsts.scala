@@ -13,6 +13,9 @@ object AppConsts {
   /** Requirement types' min & max lengths. */
   def reqTypeMnemonicLength = 1 to 6
 
+  /** `RefKey` min & max lengths. */
+  def refKeyLength = 1 to 20
+
   /** Email address max length. */
   def emailMaxLength = 120
 

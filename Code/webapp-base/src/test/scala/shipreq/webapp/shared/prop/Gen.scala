@@ -164,4 +164,9 @@ object Gen {
 
   def oneofGC[A, B >: A](a: RngGen[A], as: RngGen[A]*): RngGen[B] =
     oneofG(a.subst[B], as.map(_.subst[B]): _*)
+
+  def oneofUnsafe[A](s: Seq[A]) = oneof(s.head, s.tail: _*)
+
+  def charof(s: String, rs: scala.collection.immutable.NumericRange.Inclusive[Char]*) =
+    oneofUnsafe(rs.flatMap(_.toSeq) ++ s.toCharArray)
 }

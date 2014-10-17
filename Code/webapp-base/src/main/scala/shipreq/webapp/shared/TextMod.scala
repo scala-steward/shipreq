@@ -10,7 +10,7 @@ object TextMod {
   def literal(from: Char, to: Char) = Endo[String](_.replace(from, to))
   def literal(from: String, to: String) = Endo[String](_.replace(from, to))
 
-  def regex(regex: Regex, repl: String) = Endo[String](regex.replaceAllIn(_, repl))
+  def regexReplace(regex: Regex, repl: String) = Endo[String](regex.replaceAllIn(_, repl))
 
   private[this] val punctuationOrSymbol =
     // Originally /[\p{S}\p{P}]/
@@ -20,7 +20,7 @@ object TextMod {
 
   private[this] def symbol(from: String, to: String) =
     //regex(s"(?<!$punctuationOrSymbol)${Pattern quote from}(?!$punctuationOrSymbol)".r, to)
-    regex(s"(^|$notPunctuationOrSymbol)$from(?!$punctuationOrSymbol)".r, "$1" + to)
+    regexReplace(s"(^|$notPunctuationOrSymbol)$from(?!$punctuationOrSymbol)".r, "$1" + to)
 
   // ---------------------------------------------------------------------------
 
@@ -37,15 +37,15 @@ object TextMod {
   val whitespaceRegex = "\\s+".r
 
   val singleLineWhitespace =
-    regex(whitespaceRegex, " ") andThen trim
+    regexReplace(whitespaceRegex, " ") andThen trim
 
   val multiLineWhitespace =
-    regex("\r\n?".r, "\n") andThen
+    regexReplace("\r\n?".r, "\n") andThen
     literal('\t', ' ') andThen
     trim
 
   val noWhitespace =
-    regex(whitespaceRegex, "")
+    regexReplace(whitespaceRegex, "")
 
   def truncateToLength(range: Range.Inclusive): Endo[String] =
     truncateToLength(range.end)

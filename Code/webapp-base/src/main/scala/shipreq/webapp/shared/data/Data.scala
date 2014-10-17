@@ -10,3 +10,12 @@ case object Alive extends Alive with (Boolean <=> Alive) {
   override def to = b => if (b) Alive else Dead
 }
 case object Dead extends Alive
+
+
+sealed trait ImplicationRequired
+case object ImplicationRequired extends ImplicationRequired with (Boolean <=> ImplicationRequired) {
+  implicit val equal = Equal.equalA[ImplicationRequired]
+  override def from = _ == ImplicationRequired
+  override def to = b => if (b) ImplicationRequired else ImplicationNotRequired
+}
+case object ImplicationNotRequired extends ImplicationRequired

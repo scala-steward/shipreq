@@ -12,19 +12,21 @@ class WIP {
 
   def newProject = {
     import shipreq.webapp.shared.data._
-    import CustomReqType.Id
-    implicit def autoMnemonic(s: String) = ReqType.Mnemonic(s)
-    val list = List(
-      CustomReqType(Id(1), "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
-      CustomReqType(Id(2), "MF", Set.empty, "Major Feature", ImplicationNotRequired, Alive),
-      CustomReqType(Id(3), "FR", Set.empty, "Functional Requirement", ImplicationRequired, Alive),
-      CustomReqType(Id(4), "BR", Set.empty, "Business Rule", ImplicationNotRequired, Alive),
-      CustomReqType(Id(5), "DD", Set("DA", "DDF"), "Data Definition", ImplicationNotRequired, Dead),
-      CustomReqType(Id(6), "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead)
-    )
-    //val map = list.map(i => i.id -> i).toMap
-    val rev = Rev(100)
-    new Project(CustomReqTypes(rev, list))
+    import shipreq.webapp.shared.UnsafeTypes._
+
+    val customImplTypes = CustomIncmpTypes(10, List(
+      CustomIncmpType(1, "TODO", "Something you need To Do.", Alive),
+      CustomIncmpType(2, "TBD", "To Be Decided.", Alive)))
+
+    val customReqTypes = CustomReqTypes(20, List(
+        CustomReqType(1, "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
+        CustomReqType(2, "MF", Set.empty, "Major Feature", ImplicationNotRequired, Alive),
+        CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired, Alive),
+        CustomReqType(4, "BR", Set.empty, "Business Rule", ImplicationNotRequired, Alive),
+        CustomReqType(5, "DD", Set("DA", "DDF"), "Data Definition", ImplicationNotRequired, Dead),
+        CustomReqType(6, "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead)))
+
+    new Project(customImplTypes, customReqTypes)
   }
 
   var p = newProject
@@ -56,13 +58,14 @@ class WIP {
     mod(_.map(c => if (c.id == id) f(c) else c))
 
   def mod1(f: List[CustomReqType] => List[CustomReqType]): Option[Rev] = {
-    val a = p.customReqTypes.data
+    val c = p.customReqTypes
+    val a = c.data
     val b = f(a)
     if (a == b)
       None
     else {
-      val rev = p.customReqTypes.rev.succ
-      p = Project(CustomReqTypes(rev, b))
+      val rev = c.rev.succ
+      p = p.copy(customReqTypes = CustomReqTypes(rev, b))
       Some(rev)
     }
   }
