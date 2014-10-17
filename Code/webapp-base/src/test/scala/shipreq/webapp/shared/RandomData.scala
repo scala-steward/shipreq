@@ -12,7 +12,7 @@ object RandomData {
     Gen.positivelong
 
   lazy val rev =
-    Gen.positivelong.map(delta.Rev)
+    Gen.positivelong.map(Rev)
 
   lazy val revPair =
     for {

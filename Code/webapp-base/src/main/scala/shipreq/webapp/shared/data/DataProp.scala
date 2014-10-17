@@ -2,7 +2,6 @@ package shipreq.webapp.shared.data
 
 import scalaz.std.list._
 import shipreq.base.prop._
-import shipreq.webapp.shared.data.delta.Rev
 
 object DataProp {
 

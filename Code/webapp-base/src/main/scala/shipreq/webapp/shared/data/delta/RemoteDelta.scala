@@ -1,6 +1,7 @@
 package shipreq.webapp.shared.data.delta
 
 import shipreq.base.prop._
+import shipreq.webapp.shared.data.Rev
 
 final case class RemoteDeltaP[P <: Partition] private[delta](
     del: List[P#Id],

@@ -1,12 +1,11 @@
 package shipreq.webapp.client
 
-import org.scalajs.dom
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 import shipreq.webapp.client.delta._
 import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
 import shipreq.webapp.shared.data.Project
-import shipreq.webapp.shared.data.delta.{Rev, RemoteDelta}
+import shipreq.webapp.shared.data.delta.RemoteDelta
 import japgolly.scalajs.react.experiment.Broadcaster
 import shipreq.webapp.shared.protocol.Routines.ProjectInit
 

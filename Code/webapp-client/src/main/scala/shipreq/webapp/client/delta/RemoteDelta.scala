@@ -1,7 +1,8 @@
 package shipreq.webapp.client.delta
 
 import shipreq.webapp.shared.data.delta._
-import shipreq.webapp.shared.{data => D}, D.Project
+import shipreq.webapp.shared.{data => D}
+import D.{Project, Rev}
 import Partition._
 
 sealed trait ApplicationResult

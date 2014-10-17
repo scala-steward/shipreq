@@ -2,6 +2,14 @@ package shipreq.webapp.shared.data
 
 import scalaz.Equal
 import scalaz.Isomorphism.<=>
+import shipreq.base.util.TaggedTypes.TaggedLong
+
+
+final case class Rev(value: Long) extends TaggedLong {
+  @inline def succ      = Rev(value + 1L)
+  @inline def +(r: Rev) = Rev(value + r.value)
+}
+
 
 sealed trait Alive
 case object Alive extends Alive with (Boolean <=> Alive) {

@@ -1,7 +1,6 @@
 package shipreq.webapp.shared.data
 
 import shipreq.base.prop._
-import shipreq.webapp.shared.data.delta.Rev
 
 final case class CustomReqTypes(rev: Rev, data: List[CustomReqType])
 

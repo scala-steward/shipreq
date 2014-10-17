@@ -6,7 +6,6 @@ import upickle._
 import shipreq.base.util.BiMap
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.shared.data._
-import shipreq.webapp.shared.data.delta.Rev
 
 private[protocol] object Codec {
   //  private def tagS[T <: TaggedString](implicit C: TaggedTypeCtor[T]) =
