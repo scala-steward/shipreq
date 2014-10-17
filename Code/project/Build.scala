@@ -85,7 +85,7 @@ object ShipReq extends Build {
       override def deps =
         SLF4J.api ++ Scalaz.core ++
         providedScope(Scalaz.effect ++ logback ++ jodaTime) ++
-        testScope(specs2 ++ Scalaz.scalacheck)
+        testScope(Specs2.combo ++ Scalaz.scalacheck)
 
       override def project = typicalProject
         .dependsOn(baseUtilSjs)
@@ -109,7 +109,7 @@ object ShipReq extends Build {
       val dir = "base-test"
 
       override def deps =
-        providedScope(scalaTest ++ specs2)
+        providedScope(scalaTest ++ Specs2.combo)
 
       override def project = typicalProject
         .dependsOn(baseUtil)
@@ -136,7 +136,7 @@ object ShipReq extends Build {
 
         override def deps =
           Scalaz.core ++ Scalaz.effect ++
-          depScope(TestLib)(scalaCheck ++ Scala.reflect) ++ testScope(specs2)
+          depScope(TestLib)(scalaCheck ++ Scala.reflect) ++ testScope(Specs2.combo)
 
         override def project = typicalProject
           .dependsOn(baseUtil)
@@ -153,7 +153,7 @@ object ShipReq extends Build {
           .dependsOn(baseUtil, baseDb) // Stupid IDEA auto-import needs this
 
         override def deps =
-          Json4s.jackson ++ testScope(specs2)
+          Json4s.jackson ++ testScope(Specs2.combo)
       }
     }
 
@@ -172,7 +172,7 @@ object ShipReq extends Build {
           .configure(dontInline) // crashes scalac 2.11.2
 
         override def deps =
-          jodaTime ++ logback ++ testScope(specs2)
+          jodaTime ++ logback ++ testScope(Specs2.combo)
       }
 
       // Server: Schema -------------------------------------
@@ -187,7 +187,7 @@ object ShipReq extends Build {
 
         override def deps =
           Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
-          testScope(Akka.testkit ++ specs2)
+          testScope(Akka.testkit ++ Specs2.combo)
 
         def consoleCmds = """
           import org.json4s._

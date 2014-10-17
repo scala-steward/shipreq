@@ -88,6 +88,10 @@ object Deps {
     val testkit = dd("akka-testkit")
   }
 
+  object Specs2 extends Group("2.4.2", "org.specs2") {
+    val combo = dd("specs2-core") ++ dd("specs2-scalacheck")
+  }
+
   val μPickle = JvmAndJs("com.lihaoyi", "upickle", "0.2.5")
   val μTest   = JvmAndJs("com.lihaoyi", "utest",   "0.2.3")
 
@@ -114,7 +118,6 @@ object Deps {
   val mockito     :MS = "org.mockito"                 % "mockito-core"          % "1.9.5"
   val scalaTest   :MS = "org.scalatest"              %% "scalatest"             % "2.2.1"
   val scalaCheck  :MS = "org.scalacheck"             %% "scalacheck"            % "1.11.3"
-  val specs2      :MS = "org.specs2"                 %% "specs2"                % "2.4.2"
   val selenium    :MS = "org.seleniumhq.selenium"     % "selenium-java"         % "2.35.0" excludeAll(
     ExclusionRule(name = "selenium-android-driver"),
     ExclusionRule(name = "selenium-htmlunit-driver"),
