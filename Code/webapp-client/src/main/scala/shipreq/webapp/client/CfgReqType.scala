@@ -1,6 +1,5 @@
 package shipreq.webapp.client
 
-import monocle.SimpleLens
 import scalaz.effect.IO
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
@@ -35,14 +34,6 @@ object CfgReqType {
     FieldSpec[P].noValidation(_.imp, ImplicationRequired)(E.CheckboxEditor))
     .dataId[D]
 
-  private val spec = prespec
-    .tableConstraints(
-      Some(mnemonicUniqueness),
-      Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
-      None)
-    .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
-    .asyncSaveP(_.id, saveIO)
-
   private def mnemonicUniqueness =
     TableConstraint.uniquenessE[prespec.S, prespec.R, Mnemonic](
       (s, r) => {
@@ -54,16 +45,26 @@ object CfgReqType {
         (static #::: custom).flatMap(p => p.mnemonic #:: p.oldMnemonics.toStream)
       }).fieldName("Mnemonic")
 
+  private val spec = prespec
+    .tableConstraints(
+      Some(mnemonicUniqueness),
+      Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
+      None)
+    .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
+    .asyncSaveP(_.id, saveIO)
+
+  private val deletion =
+    new AsyncDeletion(spec)(_.alive, deleteIO)
+
+  private val newRowS =
+    spec.unsavedInitS(("","",false))
+
+  // ===================================================================================================================
+  // Component
+
   case class Props(x: Arb, showDeleted: Boolean)
 
-  final class MyBack extends OnUnmount
-
-  private def recvExtUpdate(d: LocalDelta) = ReactS.mod[prespec.S](s1 => {
-    val ds = LocalDelta.filter(Partition.CustomReqTypes, d)
-    val s2 = (s1 /: ds.del)((t,id) => spec.savedRemoveF(id)(t))
-    val s3 = (s2 /: ds.upd)((t,p) => spec.savedSetF(p.id, p)(t))
-    s3
-  })
+  private final class Backend extends OnUnmount
 
   val Component = ReactComponentB[Props]("CfgReqTypes")
     .getInitialState(p => p.showDeleted)
@@ -72,10 +73,20 @@ object CfgReqType {
 
   private val InnerComponent = ReactComponentB[Props]("CfgReqTypesⁱ")
     .getInitialState(p => spec.initialState(p.x._2.project.customReqTypes.data, _.id))
-    .backend(_ => new MyBack)
+    .backend(_ => new Backend)
     .render(Render.renderInner _)
     .configure(Listenable.installS(_.x._2, recvExtUpdate))
     .build
+
+  // ===================================================================================================================
+  // IO
+
+  private def recvExtUpdate(d: LocalDelta) = ReactS.mod[prespec.S](s1 => {
+    val ds = LocalDelta.filter(Partition.CustomReqTypes, d)
+    val s2 = (s1 /: ds.del)((t,id) => spec.savedRemoveF(id)(t))
+    val s3 = (s2 /: ds.upd)((t,p) => spec.savedSetF(p.id, p)(t))
+    s3
+  })
 
   private def crudIO(x: Arb, s: SuccessIO, f: FailureIO, a: CustomReqTypeCrud.Action): IO[Unit] =
     ClientProtocol.call(x._1)(a, x._2.update(_) >> s.io, f)
@@ -86,14 +97,10 @@ object CfgReqType {
       case Some(p) => CustomReqTypeCrud.update(p.id, u)
     })
 
-  private val deletion =
-    new AsyncDeletion(spec)(_.alive, deleteIO)
-
   private def deleteIO(x: Arb, id: D, a: DeletionAction, f: FailureIO): IO[Unit] =
     crudIO(x, SuccessIO.nop, f, CustomReqTypeCrud.delete(id, a))
 
-  private val newRowS = spec.unsavedInitS(("","",false))
-
+  // ===================================================================================================================
   private object Render {
     import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
     import Util.checkbox
@@ -107,8 +114,7 @@ object CfgReqType {
         InnerComponent(S.props.copy(showDeleted = s)))
     }
 
-    type ScopeI = ComponentScopeU[Props, prespec.S, MyBack]
-    type FocusI = ComponentStateFocus[prespec.S]
+    type ScopeI = ComponentScopeU[Props, prespec.S, Backend]
     type RowStream = Stream[(Mnemonic, Tag)]
 
     def renderInner(S: ScopeI): VDom = {
@@ -170,6 +176,5 @@ object CfgReqType {
       }
       ReqType.static.map(r => r.mnemonic -> rr(r)).toStream
     }
-
   }
 }
