@@ -3,7 +3,7 @@ cd "$(dirname "$(readlink -e "$0")")"/.. || exit 1
 
 [ -z "$colour" ] && colour=always
 
-find */src -type f | egrep -v '/_scalate/|vendor|src/it/|/assets/' | sort \
+find project */src -type f | egrep -v '/_scalate/|vendor|src/it/|/assets/' | sort \
   | xargs fgrep --color=$colour -n TODO \
   | awk '{match($1,/([a-z_-]+)\/src/,a); if (NR > 1 && a[1] != p[1]) print ""; print} {match($1,/([a-z_-]+)\/src/,p)}'
 
