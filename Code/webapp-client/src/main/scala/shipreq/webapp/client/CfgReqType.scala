@@ -1,32 +1,28 @@
 package shipreq.webapp.client
 
-import scalaz.effect.IO
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
-import scalaz.syntax.bind._
 import japgolly.scalajs.react.ReactComponentB
-import japgolly.scalajs.react.experiment.{Listenable, OnUnmount}
-import japgolly.scalajs.react.ScalazReact._
+import japgolly.scalajs.react.experiment.OnUnmount
 
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.{DeletionAction, Routines}
-import shipreq.webapp.client.delta.LocalDelta
-import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
+import shipreq.webapp.client.lib.TableIO
 import shipreq.webapp.client.util.ui.table._
 import shipreq.webapp.client.util.ui.{Editors => E, Util}
 import Validators.{reqType => V}
 import ReqType.Mnemonic
 import DeletionAction._
 import Routines.CustomReqTypeCrud
+import DataImplicits._
 
 object CfgReqType {
 
-  type P = CustomReqType
-  type D = CustomReqType.Id
-  type Arb = (CustomReqTypeCrud.Remote, ClientData)
+  val tableIO = new TableIO[CustomReqTypeAndId, CustomReqTypeCrud, CustomReqTypeCrud.type]
+  import tableIO.{P, D, Arb}
 
   private val prespec = TableSpecBuilder[P](
     FieldSpec[P](_.mnemonic.value)(V.mnemonic)(E.TextInputEditor),
@@ -51,10 +47,10 @@ object CfgReqType {
       Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
       None)
     .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
-    .asyncSaveP(_.id, saveIO)
+    .asyncSaveP(_.id, tableIO.saveIO)
 
   private val deletion =
-    new AsyncDeletion(spec)(_.alive, deleteIO)
+    new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
 
   private val newRowS =
     spec.unsavedInitS(("","",false))
@@ -75,30 +71,8 @@ object CfgReqType {
     .getInitialState(p => spec.initialState(p.x._2.project.customReqTypes.data, _.id))
     .backend(_ => new Backend)
     .render(Render.renderInner _)
-    .configure(Listenable.installS(_.x._2, recvExtUpdate))
+    .configure(tableIO.recvExtUpdates(spec, Partition.CustomReqTypes, _.x))
     .build
-
-  // ===================================================================================================================
-  // IO
-
-  private def recvExtUpdate(d: LocalDelta) = ReactS.mod[prespec.S](s1 => {
-    val ds = LocalDelta.filter(Partition.CustomReqTypes, d)
-    val s2 = (s1 /: ds.del)((t,id) => spec.savedRemoveF(id)(t))
-    val s3 = (s2 /: ds.upd)((t,p) => spec.savedSetF(p.id, p)(t))
-    s3
-  })
-
-  private def crudIO(x: Arb, s: SuccessIO, f: FailureIO, a: CustomReqTypeCrud.Action): IO[Unit] =
-    ClientProtocol.call(x._1)(a, x._2.update(_) >> s.io, f)
-
-  private def saveIO(x: Arb, op: Option[P], u: prespec.U, s: SuccessIO, f: FailureIO): IO[Unit] =
-    crudIO(x, s, f, op match {
-      case None    => CustomReqTypeCrud.create(u)
-      case Some(p) => CustomReqTypeCrud.update(p.id, u)
-    })
-
-  private def deleteIO(x: Arb, id: D, a: DeletionAction, f: FailureIO): IO[Unit] =
-    crudIO(x, SuccessIO.nop, f, CustomReqTypeCrud.delete(id, a))
 
   // ===================================================================================================================
   private object Render {
