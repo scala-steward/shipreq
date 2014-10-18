@@ -3,8 +3,8 @@ package shipreq.webapp.feature.validation
 import scala.xml.{NodeSeq, Text}
 import scalaz.NonEmptyList
 import shipreq.webapp.lib.ScalazSubset._
-import shipreq.webapp.shared.validation.GenericVFailureRenderer
-import shipreq.webapp.shared.validation.VFailure.ErrorMsg
+import shipreq.webapp.base.validation.GenericVFailureRenderer
+import shipreq.webapp.base.validation.VFailure.ErrorMsg
 
 object VFailureHtmlRenderer extends GenericVFailureRenderer {
   override type I = NodeSeq

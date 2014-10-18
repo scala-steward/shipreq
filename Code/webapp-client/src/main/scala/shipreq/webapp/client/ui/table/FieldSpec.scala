@@ -1,7 +1,7 @@
 package shipreq.webapp.client.ui.table
 
 import shipreq.webapp.client.ui._
-import shipreq.webapp.shared.validation.{ValidatePlusR, ValidatorPlus}
+import shipreq.webapp.base.validation.{ValidatePlusR, ValidatorPlus}
 import scalaz.Isomorphism.<=>
 
 class FieldSpec[P, V, I, C, O](val p2c: P => C, val v: ValidatorPlus[I, C, O], val e: Editor[I, V]) {

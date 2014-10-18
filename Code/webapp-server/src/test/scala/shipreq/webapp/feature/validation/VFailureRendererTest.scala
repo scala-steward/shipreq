@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, FunSpec}
 import scala.xml.Text
 import scalaz.NonEmptyList
 import scalaz.syntax.semigroup._
-import shipreq.webapp.shared.validation._
+import shipreq.webapp.base.validation._
 import VFailure.semigroup
 
 class VFailureRendererTest extends FunSpec with Matchers {

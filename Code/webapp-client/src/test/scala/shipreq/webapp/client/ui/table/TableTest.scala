@@ -9,7 +9,7 @@ import scalaz.std.string.stringInstance
 import scalaz.Equal
 import utest._
 import shipreq.base.util.Debug._
-import shipreq.webapp.shared.validation.{GenericValidators, ValidatorPlus}
+import shipreq.webapp.base.validation.{GenericValidators, ValidatorPlus}
 import shipreq.webapp.client.protocol.FailureIO
 import ValidatorPlus.Implicits._
 import TableTestUtils._

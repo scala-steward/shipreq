@@ -1,7 +1,7 @@
 package shipreq.webapp.client.ui.table
 
 import scalaz.{NonEmptyList, Equal}
-import shipreq.webapp.shared.validation.{ValidatePlusR, VFailure}
+import shipreq.webapp.base.validation.{ValidatePlusR, VFailure}
 import scalaz.syntax.equal._
 
 object TableConstraint {

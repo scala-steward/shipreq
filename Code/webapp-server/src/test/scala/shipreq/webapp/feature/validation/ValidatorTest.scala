@@ -4,8 +4,8 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import org.scalatest.prop._
 import scalaz.{Failure, Success}
-import shipreq.webapp.shared.AppConsts._
-import shipreq.webapp.shared.validation._
+import shipreq.webapp.base.AppConsts._
+import shipreq.webapp.base.validation._
 import shipreq.webapp.security.PasswordAndSalt
 
 // TODO Move ValidatorTest into webapp-shared

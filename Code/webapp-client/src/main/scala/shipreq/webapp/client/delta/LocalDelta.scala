@@ -1,7 +1,7 @@
 package shipreq.webapp.client.delta
 
 import scala.annotation.tailrec
-import shipreq.webapp.shared.data.delta.Partition
+import shipreq.webapp.base.data.delta.Partition
 
 case class LocalDeltaP[P <: Partition](del: List[P#Id],
                                        upd: List[P#Data]) {

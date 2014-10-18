@@ -15,7 +15,7 @@ import shipreq.taskman.api.UserId
 import shipreq.webapp.app.{DI, AppSiteMap}
 import shipreq.webapp.db.{DaoS, UserDescriptor}
 import shipreq.webapp.feature.validation.VFailureHtmlRenderer
-import shipreq.webapp.shared.validation.{ValidationResult, VFailure}
+import shipreq.webapp.base.validation.{ValidationResult, VFailure}
 import shipreq.webapp.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
 import shipreq.webapp.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.util.JsExt._

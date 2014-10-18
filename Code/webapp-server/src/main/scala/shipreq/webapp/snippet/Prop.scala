@@ -3,7 +3,7 @@ package shipreq.webapp.snippet
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import shipreq.webapp.shared.AppConsts
+import shipreq.webapp.base.AppConsts
 import shipreq.webapp.app.AppConfig
 import shipreq.webapp.lib.Misc
 

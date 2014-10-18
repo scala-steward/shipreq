@@ -2,7 +2,7 @@ package hahaa
 
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
-import shipreq.webapp.shared.protocol.Routines
+import shipreq.webapp.base.protocol.Routines
 
 import scala.scalajs.js
 import org.scalajs.dom.{document, window, Node, console, alert}

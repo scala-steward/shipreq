@@ -1,6 +1,6 @@
 package shipreq.webapp.feature.uc.text
 
-import shipreq.webapp.shared.validation.InputCorrected
+import shipreq.webapp.base.validation.InputCorrected
 import shipreq.webapp.lib.Misc.containsAlpha
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.validation.Validators

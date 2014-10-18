@@ -3,9 +3,9 @@ package shipreq.webapp.feature.validation
 import scalaz.{Success, Failure}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
-import shipreq.webapp.shared.AppConsts
-import shipreq.webapp.shared.TextMod._
-import shipreq.webapp.shared.validation._
+import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.TextMod._
+import shipreq.webapp.base.validation._
 import shipreq.webapp.lib.ScalazSubset._
 import shipreq.webapp.lib.Types._
 import shipreq.webapp.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr

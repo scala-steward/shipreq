@@ -7,8 +7,8 @@ import scalaz.{Need, Value}
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
-import shipreq.webapp.shared.data.{Dead, Alive}
-import shipreq.webapp.shared.protocol.DeletionAction, DeletionAction._
+import shipreq.webapp.base.data.{Dead, Alive}
+import shipreq.webapp.base.protocol.DeletionAction, DeletionAction._
 import shipreq.webapp.client.protocol.FailureIO
 import shipreq.webapp.client.ui.Implicits._
 

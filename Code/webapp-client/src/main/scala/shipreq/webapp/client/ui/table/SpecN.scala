@@ -8,7 +8,7 @@ import scalaz.syntax.bind._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.ui.Implicits._
 import shipreq.webapp.client.ui._
-import shipreq.webapp.shared.validation.{ValidatePlusR, ValidatorPlus}
+import shipreq.webapp.base.validation.{ValidatePlusR, ValidatorPlus}
 import TableSpec.{MultiFieldRenderer, MultiFieldRenderer2}
 
 object SpecN {

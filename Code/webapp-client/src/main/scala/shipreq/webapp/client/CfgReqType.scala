@@ -10,9 +10,9 @@ import japgolly.scalajs.react.experiment.{Listenable, OnUnmount}
 import japgolly.scalajs.react.ScalazReact._
 
 import shipreq.base.util.TaggedTypes.taggedStringInstance
-import shipreq.webapp.shared.data._
-import shipreq.webapp.shared.data.delta.Partition
-import shipreq.webapp.shared.protocol.{DeletionAction, Routines}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.delta.Partition
+import shipreq.webapp.base.protocol.{DeletionAction, Routines}
 import shipreq.webapp.client.delta.LocalDelta
 import shipreq.webapp.client.protocol.{FailureIO, ClientProtocol}
 import shipreq.webapp.client.ui.table._

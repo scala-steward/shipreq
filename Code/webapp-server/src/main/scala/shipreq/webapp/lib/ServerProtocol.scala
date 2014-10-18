@@ -5,7 +5,7 @@ import scalaz.{-\/, \/-, \/}
 import upickle._
 
 import shipreq.base.util.Util.quickSB
-import shipreq.webapp.shared.protocol.{JsEntryPoint, Routine}
+import shipreq.webapp.base.protocol.{JsEntryPoint, Routine}
 
 object ServerProtocol {
 

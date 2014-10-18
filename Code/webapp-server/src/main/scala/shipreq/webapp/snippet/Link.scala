@@ -4,7 +4,7 @@ import shipreq.webapp.app.AppConfig._
 import shipreq.webapp.app.AppSiteMap
 import shipreq.webapp.app.AppSiteMap.Implicits._
 import shipreq.webapp.lib.{Misc, SnippetHelpers}
-import shipreq.webapp.shared.AppConsts
+import shipreq.webapp.base.AppConsts
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.sitemap.{Loc, SiteMap}
 import net.liftweb.util.Props

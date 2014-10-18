@@ -3,7 +3,7 @@ package shipreq.webapp.client.protocol
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
 import scalaz.effect.IO
-import shipreq.webapp.shared.protocol.{JsEntryPoint => EP}
+import shipreq.webapp.base.protocol.{JsEntryPoint => EP}
 
 @JSExport(EP.client)
 object JsEntryPoints {

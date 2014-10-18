@@ -1,18 +1,18 @@
 package shipreq.webapp.snippet
 
 import net.liftweb.util.Helpers._
-import shipreq.webapp.shared.protocol._
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.lib.ServerProtocol
-import shipreq.webapp.shared.data._
-import shipreq.webapp.shared.data.delta._
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.delta._
 import DeletionAction._
 import shipreq.webapp.util.QuietException
 
 class WIP {
 
   def newProject = {
-    import shipreq.webapp.shared.data._
-    import shipreq.webapp.shared.UnsafeTypes._
+    import shipreq.webapp.base.data._
+    import shipreq.webapp.base.UnsafeTypes._
 
     val customImplTypes = DataSet[CustomIncmpTypeAndId](10, List(
       CustomIncmpType(1, "TODO", "Something you need To Do.", Alive),

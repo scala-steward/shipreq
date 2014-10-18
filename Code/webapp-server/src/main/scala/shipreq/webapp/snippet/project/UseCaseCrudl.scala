@@ -4,7 +4,7 @@ import net.liftweb.http.SHtml
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 
-import shipreq.webapp.shared.validation.ValidationResult
+import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.app.{RequestVars, AppSiteMap}
 import shipreq.webapp.db.{UseCaseRev, UseCaseHeaderUpdateResult, UseCaseHeader, UseCaseSummary}
 import shipreq.webapp.feature.validation.Validators

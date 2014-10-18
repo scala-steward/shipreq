@@ -11,7 +11,7 @@ import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
-import shipreq.webapp.shared.validation.VFailure
+import shipreq.webapp.base.validation.VFailure
 import feature.FlowGraph
 import feature.uc.change._
 import feature.uc.field._

@@ -10,7 +10,7 @@ import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{Text, NodeSeq}
 import scalaz.{Memo, Name, Need, NonEmptyList}
 
-import shipreq.webapp.shared.AppConsts
+import shipreq.webapp.base.AppConsts
 import AppConfig.BaseUrl
 import lib.Misc
 import lib.Types._

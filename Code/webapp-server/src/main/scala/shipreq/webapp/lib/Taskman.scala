@@ -8,7 +8,7 @@ import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.{MsgId, Msg, ApiOp}
 import shipreq.taskman.api.Msg.WebappErrorOccurred
-import shipreq.webapp.shared.AppConsts
+import shipreq.webapp.base.AppConsts
 import shipreq.webapp.app.{DI, AppConfig}
 import shipreq.webapp.security.Oshiro
 import ApiOp._

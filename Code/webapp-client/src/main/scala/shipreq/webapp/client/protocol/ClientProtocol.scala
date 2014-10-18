@@ -4,7 +4,7 @@ import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.{-\/, \/-, \/}
 import upickle._
-import shipreq.webapp.shared.protocol.Routine
+import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.client.Console
 
 object ClientProtocol {

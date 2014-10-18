@@ -1,8 +1,8 @@
 package shipreq.webapp.client.delta
 
-import shipreq.webapp.shared.data._
-import shipreq.webapp.shared.data.delta._
-import shipreq.webapp.shared.data.DataImplicits._
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.delta._
+import shipreq.webapp.base.data.DataImplicits._
 import Partition._
 
 sealed trait ApplicationResult

@@ -4,7 +4,7 @@ package field
 import scala.annotation.tailrec
 import shipreq.webapp.db._
 import shipreq.webapp.lib.Types._
-import shipreq.webapp.shared.validation.VFailure
+import shipreq.webapp.base.validation.VFailure
 import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.util.AppliedLens
 import change._

@@ -2,7 +2,7 @@ package shipreq.webapp.feature.uc.text
 
 import scala.collection.immutable.TreeSet
 import scalaz.{NonEmptyList, Cord}
-import shipreq.webapp.shared.validation.InputCorrected
+import shipreq.webapp.base.validation.InputCorrected
 import shipreq.webapp.db.{FieldKeyType, FieldKeyRec}
 import shipreq.webapp.feature.validation.Validators
 import shipreq.webapp.feature.uc.{SavedSteps, UcParsingCtx}

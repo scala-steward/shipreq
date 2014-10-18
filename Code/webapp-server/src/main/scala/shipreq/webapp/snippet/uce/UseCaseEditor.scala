@@ -7,7 +7,7 @@ import net.liftweb.http.js.{JsExp, JsCmd, JsCmds}
 import net.liftweb.util.Helpers.nextFuncName
 import JsCmds.Noop
 
-import shipreq.webapp.shared.validation.VFailure
+import shipreq.webapp.base.validation.VFailure
 import app.{AppConfig, Defaults, DI, RequestVars}
 import db.{UseCaseSummary, UseCaseHeader}
 import lib.{Misc, SnippetHelpers, Locks, StaticSnippetHelpers}
