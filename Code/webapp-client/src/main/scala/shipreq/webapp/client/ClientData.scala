@@ -8,6 +8,7 @@ import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.data.delta.RemoteDelta
 import japgolly.scalajs.react.experiment.Broadcaster
 import shipreq.webapp.base.protocol.Routines.ProjectInit
+import shipreq.webapp.client.util.Console
 
 final class ClientData(init: Project) extends Broadcaster[LocalDelta] {
 

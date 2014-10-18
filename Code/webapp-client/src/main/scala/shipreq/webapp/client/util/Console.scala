@@ -1,4 +1,4 @@
-package shipreq.webapp.client
+package shipreq.webapp.client.util
 
 import org.scalajs.dom.console
 import scala.annotation.elidable

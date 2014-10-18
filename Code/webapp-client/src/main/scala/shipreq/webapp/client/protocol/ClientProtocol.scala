@@ -5,7 +5,7 @@ import scalaz.effect.IO
 import scalaz.{-\/, \/-, \/}
 import upickle._
 import shipreq.webapp.base.protocol.Routine
-import shipreq.webapp.client.Console
+import shipreq.webapp.client.util.Console
 
 object ClientProtocol {
 
