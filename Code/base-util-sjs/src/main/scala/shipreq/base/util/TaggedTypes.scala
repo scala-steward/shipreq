@@ -42,9 +42,11 @@ object TaggedTypes {
     final def toInt = value.toInt
   }
 
-  final class TaggedTypeScalaz[T <: TaggedType {type U = A}, A](implicit E: Equal[A]) extends Equal[T] {
+  final class TaggedTypeScalaz[T <: TaggedType {type U = A}, A](implicit E: Equal[A], O: Ordering[A])
+      extends Equal[T] with Ordering[T] {
     override def equal(a1: T, a2: T) = E.equal(a1.value, a2.value)
     override def equalIsNatural = E.equalIsNatural
+    override def compare(x: T, y: T) = O.compare(x.value, y.value)
     def subst[F <: TaggedType {type U = A}] = this.asInstanceOf[TaggedTypeScalaz[F, A]]
   }
   private val _taggedStringInstance = new TaggedTypeScalaz[TaggedString, String]

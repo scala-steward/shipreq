@@ -34,6 +34,7 @@ object Validators {
   val refKey = {
     // DD-18: Hashtag-like refkeys (groupings, incmp) must match this format: /[A-Za-z0-9][A-Za-z0-9_-=.]*/
     // Must not contain: []{}<>
+    // TODO should uniqueness and matching be case-insensitive?
     val validChars = WhitelistCharsR("""A-Za-z0-9\._=\-""", "may only consist of letters, numbers, and these symbols: . _ = -")
     val validLength = LengthInRange(refKeyLength)
     ValidatorPlus(

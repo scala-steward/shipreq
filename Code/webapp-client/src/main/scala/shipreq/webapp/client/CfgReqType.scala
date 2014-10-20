@@ -6,6 +6,7 @@ import scalaz.std.tuple._
 import japgolly.scalajs.react.ReactComponentB
 import japgolly.scalajs.react.experiment.OnUnmount
 
+import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.Routines
@@ -50,9 +51,6 @@ object CfgReqType {
   private val deletion =
     new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
 
-  private val newRowS =
-    spec.unsavedInitS(("","",false))
-
   // ===================================================================================================================
   // Component
 
@@ -79,14 +77,13 @@ object CfgReqType {
 
     val cells = new CfgTableCells[P, spec.VV, (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
       override def mklist = {
-        case (mnemonic, oldMnemonics, name, impReq) => {
+        case (mnemonic, oldMnemonics, name, impReq) =>
           val mn: Modifier =
             if (oldMnemonics.isEmpty)
               mnemonic
             else
               Seq(mnemonic, div(cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
           List(mn, name, impReq)
-        }
       }
       override def newRow = {
         case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)

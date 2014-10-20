@@ -12,8 +12,6 @@ sealed trait ReqType {
 object ReqType {
   final case class Mnemonic(value: String) extends TaggedString
 
-  implicit val scalaOrdering = Ordering.by((_: ReqType.Mnemonic).value)
-
   sealed trait Static extends ReqType
 
   case object UseCase extends Static {

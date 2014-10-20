@@ -1,6 +1,5 @@
 package shipreq.webapp.base.data
 
-import scalaz.Equal
 import shipreq.base.util.TaggedTypes._
 
 /**
@@ -11,9 +10,6 @@ import shipreq.base.util.TaggedTypes._
  * #pri=high refers to a grouping.
  */
 final case class RefKey(value: String) extends TaggedString
-object RefKey {
-  implicit val equal = Equal.equalA[RefKey]
-}
 
 // =====================================================================================================================
 
