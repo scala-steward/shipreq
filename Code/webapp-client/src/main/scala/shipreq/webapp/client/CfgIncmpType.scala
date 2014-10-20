@@ -6,12 +6,12 @@ import scalaz.std.option._
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
 import japgolly.scalajs.react.ReactComponentB
-import japgolly.scalajs.react.experiment.OnUnmount
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.Routines
 import shipreq.webapp.client.lib.{CfgTableCells, CfgTable, TableIO}
+import shipreq.webapp.client.util.OnUnmountBackend
 import shipreq.webapp.client.util.ui.table._
 import shipreq.webapp.client.util.ui.{Editors => E, Util}
 import Validators.{customIncmpType => V}
@@ -35,15 +35,12 @@ object CfgIncmpType {
     .saveNotNeededWhenE(p => (p.key, p.desc))
     .asyncSaveP(_.id, tableIO.saveIO)
 
-  private val deletion =
-    new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
+  private val deletion = new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
 
   // ===================================================================================================================
   // Component
 
   case class Props(x: Arb, showDeleted: Boolean)
-
-  private final class Backend extends OnUnmount
 
   val Component = ReactComponentB[Props]("CfgIncmpTypes")
     .getInitialState(p => p.showDeleted)
@@ -52,7 +49,7 @@ object CfgIncmpType {
 
   private val InnerComponent = ReactComponentB[Props]("CfgIncmpTypesⁱ")
     .getInitialState(p => spec.initialState(p.x._2.project.customIncmpTypes.data, _.id))
-    .backend(_ => new Backend)
+    .backend(_ => new OnUnmountBackend)
     .render(Render.renderInner _)
     .configure(tableIO.recvExtUpdates(spec, Partition.CustomIncmpTypes, _.x))
     .build
@@ -80,7 +77,7 @@ object CfgIncmpType {
         InnerComponent(S.props.copy(showDeleted = s)))
     }
 
-    def renderInner(S: ComponentScopeU[Props, prespec.S, Backend]): VDom =
+    def renderInner(S: ComponentScopeU[Props, prespec.S, _]): VDom =
       tbl(S.props.showDeleted, S)(S.props.x)
         .tableness(List(FieldNames.refKey, FieldNames.desc), identity)
   }

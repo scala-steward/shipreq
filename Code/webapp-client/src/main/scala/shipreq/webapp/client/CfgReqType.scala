@@ -4,13 +4,13 @@ import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
 import japgolly.scalajs.react.ReactComponentB
-import japgolly.scalajs.react.experiment.OnUnmount
 
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.Routines
 import shipreq.webapp.client.lib.{CfgTableCells, CfgTable, TableIO}
+import shipreq.webapp.client.util.OnUnmountBackend
 import shipreq.webapp.client.util.ui.table._
 import shipreq.webapp.client.util.ui.{Editors => E, Util}
 import Validators.{reqType => V}
@@ -48,15 +48,12 @@ object CfgReqType {
     .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
     .asyncSaveP(_.id, tableIO.saveIO)
 
-  private val deletion =
-    new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
+  private val deletion = new AsyncDeletion(spec)(_.alive, tableIO.deleteIO)
 
   // ===================================================================================================================
   // Component
 
   case class Props(x: Arb, showDeleted: Boolean)
-
-  private final class Backend extends OnUnmount
 
   val Component = ReactComponentB[Props]("CfgReqTypes")
     .getInitialState(p => p.showDeleted)
@@ -65,7 +62,7 @@ object CfgReqType {
 
   private val InnerComponent = ReactComponentB[Props]("CfgReqTypesⁱ")
     .getInitialState(p => spec.initialState(p.x._2.project.customReqTypes.data, _.id))
-    .backend(_ => new Backend)
+    .backend(_ => new OnUnmountBackend)
     .render(Render.renderInner _)
     .configure(tableIO.recvExtUpdates(spec, Partition.CustomReqTypes, _.x))
     .build
@@ -97,7 +94,6 @@ object CfgReqType {
     }
 
     val tbl = CfgTable[CustomReqTypeAndId].b1(spec)(deletion, ("", "", false), _.mnemonic).b2(cells)
-    import tbl.RowStream
 
     def renderOuter(S: ComponentScopeU[Props, Boolean, Unit]): VDom = {
       val s = S.state
@@ -108,11 +104,11 @@ object CfgReqType {
         InnerComponent(S.props.copy(showDeleted = s)))
     }
 
-    def renderInner(S: ComponentScopeU[Props, prespec.S, Backend]): VDom =
+    def renderInner(S: ComponentScopeU[Props, prespec.S, _]): VDom =
       tbl(S.props.showDeleted, S)(S.props.x)
         .tableness(List("Mnemonic", "Name", "Implication Required"), staticRows #::: _)
 
-    val staticRows: RowStream = {
+    val staticRows: tbl.RowStream = {
       def rr(r: ReqType.Static) = {
         val imp = checkbox(ImplicationRequired from r.imp)(disabled := true)
         tbl.row("static", RowStatus.Sync, (raw(r.mnemonic), r.oldMnemonics, raw(r.name), imp), EmptyTag)(keyAttr := r.mnemonic.value)
