@@ -75,7 +75,7 @@ object TableTest extends TestSuite {
   val ta = TableAssertions(spec, c)
   import ta._
 
-  def nameRef(i: Int) = Sel("input").find(refs(i)(c)).domType[dom.HTMLInputElement]
+  def nameRef(i: Int) = Sel("input").findIn(refs(i)(c)).domType[dom.HTMLInputElement]
 
   val simChange = Simulation.focusChangeBlur("x")
 
@@ -102,7 +102,7 @@ object TableTest extends TestSuite {
     }
 
     'newItem {
-      Simulation.click run (Sel("button.new") find c)
+      Simulation.click run (Sel("button.new") findIn c)
       assertUnsavedRowStatus(Some(Sync))
       simChange run nameRef(-1)
       assertMatch(t.upds){case List((None, _))=>}
