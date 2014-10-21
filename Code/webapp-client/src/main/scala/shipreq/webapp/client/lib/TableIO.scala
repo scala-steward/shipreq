@@ -17,7 +17,14 @@ import DataImplicits._
 
 final case class TableIoArb[RD <: Desc](remote: Remote[RD], clientData: ClientData)
 
-final case class TableIoProps[RD <: Desc](x: TableIoArb[RD], showDeleted: Boolean)
+final class TableIoProps[RD <: Desc](val x: TableIoArb[RD], val showDeleted: Boolean)
+object TableIoProps {
+  @inline def apply[RD <: Desc](x: TableIoArb[RD], showDeleted: Boolean) =
+    new TableIoProps(x, showDeleted)
+
+  @inline def apply[RD <: Desc](remote: Remote[RD], clientData: ClientData, showDeleted: Boolean) =
+    new TableIoProps(TableIoArb(remote, clientData), showDeleted)
+}
 
 class RemoteDeltaListener[T <: DataAndId, RD <: DescT[_, RemoteDelta]](implicit I: IdAccessor[T]) {
   final type P = T#Data

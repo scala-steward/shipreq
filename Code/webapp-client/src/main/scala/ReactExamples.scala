@@ -3,19 +3,18 @@ package hahaa
 import org.scalajs.dom._
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.Routines
-import shipreq.webapp.client.lib.{TableIoProps, TableIoArb}
+import shipreq.webapp.client.lib._
 import shipreq.webapp.client.ui._
 
 object ReactExamples {
 
-  def main(routines: Routines.ForCfgReqType) = IO[Unit] {
+  def main(r: Routines.ForCfgReqType) = IO[Unit] {
     example1(document getElementById "eg1")
 
     import shipreq.webapp.client._
-    ClientData.init(routines.projectInit, clientData => IO {
-      CfgReqType.Component(TableIoProps(TableIoArb(routines.reqCrud, clientData), false)) render document.getElementById("eg2")
-      CfgIncmpType.Component(TableIoProps(TableIoArb(routines.incmpCrud, clientData), false)) render document.getElementById("eg3")
-      CfgReqType2.Component(TableIoArb(routines.reqImpReq, clientData)) render document.getElementById("eg4")
+    ClientData.init(r.projectInit, clientData => IO {
+      CfgReqTypes.comp(TableIoProps(r.reqCrud, clientData, false)) render document.getElementById("eg2")
+      CfgIncompletions.comp(CfgIncompletions.Props(r.incmpCrud, r.reqImpReq, clientData, false)) render document.getElementById("eg3")
     }).unsafePerformIO()
   }
 
