@@ -50,7 +50,6 @@ object Types {
   /** A textual label for a tree node. Eg. "1.0.2.a" */
   final case class StepLabel(value: String) extends TaggedString
   implicit object StepLabel extends TaggedTypeCtor[StepLabel]
-  implicit val StepLabelOrdering = implicitly[Ordering[String]].on[StepLabel](_.value)
 
   /** Marks a string as being an ISO-8601 representation of a datetime. */
   final case class ISO8601(value: String) extends TaggedString
