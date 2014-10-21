@@ -82,7 +82,7 @@ class WIP {
       })
 
     val imptoggle =
-      ServerProtocol.routine(Routines.CustomReqTypeImpUpd){
+      ServerProtocol.routine(Routines.CustomReqTypeImplicationMod){
         case (id, imp2) => upd(id, _.copy(imp = imp2))
       }
   }

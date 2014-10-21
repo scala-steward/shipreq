@@ -134,7 +134,7 @@ object RandomData {
         remote(ProjectInit),
         remote(CustomIncmpTypeCrud),
         remote(CustomReqTypeCrud),
-        remote(CustomReqTypeImpUpd))
+        remote(CustomReqTypeImplicationMod))
 
     class CrudActionGens[C <: Crudable] (idG: RngGen[C#Id], vG: RngGen[C#V]) {
       import Gen.Covariance._

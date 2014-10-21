@@ -13,8 +13,8 @@ object ReactExamples {
 
     import shipreq.webapp.client._
     ClientData.init(r.projectInit, clientData => IO {
-      CfgReqTypes.comp(TableIoProps(r.reqCrud, clientData, false)) render document.getElementById("eg2")
-      CfgIncompletions.comp(CfgIncompletions.Props(r.incmpCrud, r.reqImpReq, clientData, false)) render document.getElementById("eg3")
+      CfgReqTypes.comp(TableIoProps(r.reqTypeCrud, clientData, false)) render document.getElementById("eg2")
+      CfgIncompletions.comp(CfgIncompletions.Props(r.incmpCrud, r.reqTypeImpMod, clientData, false)) render document.getElementById("eg3")
     }).unsafePerformIO()
   }
 

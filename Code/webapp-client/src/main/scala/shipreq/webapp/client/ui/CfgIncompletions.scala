@@ -14,7 +14,7 @@ import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data.Validators.{customIncmpType => V}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
-import shipreq.webapp.base.protocol.Routines.{CustomIncmpTypeCrud, CustomReqTypeImpUpd}
+import shipreq.webapp.base.protocol.Routines.{CustomIncmpTypeCrud, CustomReqTypeImplicationMod}
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.protocol.{ClientProtocol, FailureIO}
@@ -25,7 +25,7 @@ import shipreq.webapp.client.util.ui.{Editors => E}
 object CfgIncompletions {
 
   case class Props(a: CustomIncmpTypeCrud.Remote,
-                   b: CustomReqTypeImpUpd.Remote,
+                   b: CustomReqTypeImplicationMod.Remote,
                    c: ClientData,
                    showDeleted: Boolean)
 
@@ -81,7 +81,7 @@ object CfgIncompletions {
 
   object OtherCauses {
 
-    val tableIO = new RemoteDeltaListener[CustomReqTypeAndId, CustomReqTypeImpUpd.type]
+    val tableIO = new RemoteDeltaListener[CustomReqTypeAndId, CustomReqTypeImplicationMod.type]
     import tableIO.{Arb, D, P}
 
     private val prespec = TableSpecBuilder[P](
