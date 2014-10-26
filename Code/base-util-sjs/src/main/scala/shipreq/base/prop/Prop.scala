@@ -42,9 +42,7 @@ sealed abstract class Prop[A] {
   @elidable(elidable.ASSERTION)
   final def assert1(a: A): Unit =
     falsify1(a).foreach(f => {
-      val err = s"Property [$toString] failed\nwith [$a]" +
-        s"\n\nRoot cause(s): ${f.rootCauses.list.mkString(", ")}" +
-        s"\nFailure tree:\n${f.treeI("  ")}"
+      val err = f.report
       val sep = "=" * 120
       System.err.println(sep)
       System.err.println(err)
@@ -55,7 +53,7 @@ sealed abstract class Prop[A] {
   def falsifyE: (A, Ctx, Boolean) => Option[Falsification[A]]
 
   @inline protected final def falsifyX(f: (A, Ctx, Boolean) => List[Falsification[A]]): (A, Ctx, Boolean) => Option[Falsification[A]] =
-    (a,x,e) => if (test(a,x) == e) None else Some(Falsification(this, f(a,x,e)))
+    (a,x,e) => if (test(a,x) == e) None else Some(Falsification(this, f(a,x,e), Set(a)))
 
   @inline protected final def falsifyN =
     falsifyX((a,x,e) => Nil)
@@ -78,7 +76,10 @@ final case class Atom[A](name: String, t: (A, Ctx) => Boolean) extends Prop[A] {
 final case class Contramap[A, B](p: Prop[B], f: A => B) extends Prop[A] {
   override def contramap[Z](g: Z => A): Prop[Z] = Contramap(p, f compose g)
   override def test(a: A, x: Ctx) = p.test(f(a), x)
-  override def falsifyE = (a,x,e) => p.falsifyE(f(a), x, e).map(_ map(_ contramap f))
+  override def falsifyE = (a,x,e) => {
+    val b = f(a)
+    p.falsifyE(b, x, e).map(_.map(_ contramap f).copy(inputs = Set(b)))
+  }
   override def toString = p.toString
 }
 
@@ -88,7 +89,22 @@ final case class Forall[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B], updName:
   override def falsifyE = (a, x, e) =>
     f(a).foldl(List.empty[Falsification[B]])(q => b => p.falsifyE(b, x, e).toList ::: q) match {
       case Nil => None
-      case fs@(_ :: _) => Some(Falsification(this, fs.distinct.map(_.map[A](Forall(_, f, false)))))
+      case fs@(_ :: _) =>
+        val causes = fs
+          .foldLeft(Map.empty[Prop[B], (List[Falsification[B]], Set[Any])])((q, i) => {
+            val (cs, is) = q.getOrElse(i.p, (List.empty[Falsification[B]], Set.empty[Any]))
+            q + (i.p ->(cs ++ i.cause, is ++ i.inputs))
+          })
+          .toList
+          .map { case (p, (cs, is)) =>
+            val causes2 = cs
+              .foldLeft(Map.empty[Prop[B], Set[Any]])((q, c) =>
+                q + (c.p -> (q.getOrElse(c.p, Set.empty[Any]) ++ c.inputs)))
+              .toList.map { case (p2, is2) => Falsification(p2, Nil, is2) }
+            val inputs2 = causes2.foldLeft(Set.empty[Any])(_ ++ _.inputs)
+            Falsification(p, causes2, inputs2).map[A](Forall(_, f, false))
+          }
+        Some(Falsification(this, causes, Set(a)))
     }
   override def toString = if (updName) s"∀{$p}" else p.toString
 }
@@ -141,7 +157,7 @@ final case class Reduction[A](c: Prop[A], a: Prop[A]) extends Prop[A]  {
 
 final case class Biconditional[A](p: Prop[A], q: Prop[A]) extends Prop[A]  {
   override def test(a: A, x: Ctx) = p.test(a, x) == q.test(a, x)
-  override def falsifyE = falsifyN
+  override def falsifyE = falsifyN // TODO different than disjunction, breakdown or not?
   override def toString = s"$p ⇔ $q"
 }
 
@@ -155,11 +171,12 @@ object Prop {
     new Atom[A](name, t)
 }
 
-final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
+final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inputs: Set[Any]) {
 
   def map[B](f: Prop[A] => Prop[B]): Falsification[B] =
-    Falsification(f(p), cause map (_ map f))
+    Falsification(f(p), cause map (_ map f), inputs)
 
+  // TODO rootCauses is redundant now or what?
   def rootCauses: NonEmptyList[Prop[A]] = {
     @tailrec
     def loop2(fs: List[Falsification[A]], cs: List[Prop[A]]): List[Prop[A]] =
@@ -170,21 +187,71 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
     @tailrec
     def loop(f: Falsification[A], cs: List[Prop[A]]): NonEmptyList[Prop[A]] =
       f match {
-        case Falsification(p, Nil) => NonEmptyList.nel(p, cs.filterNot(_ == p))
-        case Falsification(_, h :: t) => loop(h, loop2(t, cs))
+        case Falsification(p, Nil, _)    => NonEmptyList.nel(p, cs.filterNot(_ == p))
+        case Falsification(_, h :: t, _) => loop(h, loop2(t, cs))
       }
     loop(this, Nil)
   }
 
-  def tree = treeI("")
-  def treeI(indent: String): String = Util.quickSB(treeSB(_, indent))
-  def treeSB(sb: StringBuilder, indent: String = ""): Unit = {
+  def rootCausesAndInputs: Map[Prop[A], Set[Any]] = {
+    type R = Map[Prop[A], Set[Any]]
+    @inline def addR(r: R, p: Prop[A], i: Set[Any]): R =
+      r + (p -> (r.getOrElse(p, Set.empty[Any]) ++ i))
+    def loop(f: Falsification[A], r: R): R =
+      f match {
+        case Falsification(p, Nil, i)        => addR(r, p, i)
+        case Falsification(_, c@(_ :: _), _) => c.foldLeft(r)((q,c) => loop(c, q))
+      }
+    loop(this, Map.empty)
+  }
+
+  def failureTree = failureTreeI("")
+  def failureTreeI(indent: String): String = Util.quickSB(failureTreeSB(_, indent))
+  def failureTreeSB(sb: StringBuilder, indent: String = ""): Unit =
+    AsciiTree[Falsification[A]](sb, List(this), _.p.toString, _.cause, indent)
+
+  def rootCauseTree = rootCauseTreeI("")
+  def rootCauseTreeI(indent: String): String = Util.quickSB(rootCauseTreeSB(_, indent))
+  def rootCauseTreeSB(sb: StringBuilder, indent: String = ""): Unit = {
+    val m = rootCausesAndInputs
+    trait X
+    case class K(k: Prop[A]) extends X {
+      override val toString = k.toString
+    }
+    case class I(i: Any) extends X {
+      override val toString = i.toString
+    }
+    case object T extends X {
+      override def toString = s"${m.size} props, ${m.values.foldLeft(Set.empty[Any])(_ ++ _).size} inputs."
+    }
+    val keys = m.keys.toList.map(K).sortBy(_.toString)
+    AsciiTree[X](sb, List(T), _.toString, {
+      case T    => keys
+      case K(k) => m(k).map(I).toList.sortBy(_.toString)
+      case I(_) => Nil
+    }, indent)
+  }
+
+  def report = {
+    def is = inputs.toList.sortBy(_.toString) match {
+      case Nil        => "."
+      case h :: Nil   => s" on\ninput: $h"
+      case l@(_ :: _) => s" on\ninputs: ${l.mkString("\n        ")}"
+    }
+    s"Property [$p] failed$is" +
+      s"\n\nRoot causes:\n${rootCauseTreeI("  ")}" +
+      s"\n\nFailure tree:\n${failureTreeI("  ")}"
+  }
+}
+
+object AsciiTree {
+  def apply[N](sb: StringBuilder, root: List[N], show: N => String, leaves: N => List[N], indent: String = ""): Unit = {
     val pm = "│  "
     val pl = "   "
     val cm = "├─ "
     val cl = "└─ "
     var first = true
-    def loop(parentLvlLast: Vector[Boolean], fs: List[Falsification[A]], root: Boolean): Unit = fs match {
+    def loop(parentLvlLast: Vector[Boolean], fs: List[N], root: Boolean): Unit = fs match {
       case Nil =>
       case h :: t =>
         if (first) first = false else sb append '\n'
@@ -192,11 +259,11 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]]) {
         for (b <- parentLvlLast) sb.append(if (b) pl else pm)
         val last = t.isEmpty
         if (!root) sb.append(if (last) cl else cm)
-        sb append h.p.toString
+        sb append show(h)
         val nextLvl = if (root) Vector.empty[Boolean] else parentLvlLast :+ last
-        loop(nextLvl, h.cause, false)
+        loop(nextLvl, leaves(h), false)
         loop(parentLvlLast, t, root)
     }
-    loop(Vector.empty, List(this), true)
+    loop(Vector.empty, root, true)
   }
 }
