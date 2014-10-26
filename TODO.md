@@ -20,13 +20,6 @@ Implementation / Other
 * Idea: a project-wide long representing revision would be AWESOME.
   Eg. client's cache is at 15348, DB is at 16001, send changes. Could also use associativity and commutativity of (+) to compartmentalise and use revs for each data component (eg. grouping cfg rev, reqs rev) as long as all revs are monotonic.
 
-* Language:
-  Groupings     ⇒ Tags
-  Incompletions ⇒ Issues
-  Sem ID        ⇒ 
-  SMR           ⇒ 
-  Implication   ⇒ ¿ needs/causes/requires/implies/drives/encompasses ? 
-
 Decisions
 =========
 
