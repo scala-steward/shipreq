@@ -6,15 +6,11 @@ import DataImplicits._
 
 object DataProp {
 
-  private implicit class SeqExt[A](val s: Seq[A]) extends AnyVal {
-    @inline final def isUnique = s.distinct == s
-  }
-
   lazy val rev =
     Prop[Rev]("rev ≥ 0", _.value >= 0)
 
   private def dataSet[T <: DataAndId : IdAccessor] =
-    Prop[DataSet[T]]("each ID is unique", _.data.map(_.id).isUnique)
+    Prop.distinct("ID", (_: DataSet[T]).data.toStream.map(_.id.value))
 
   // -------------------------------------------------------------------------------------------------------------------
   // Incompletions
@@ -46,11 +42,10 @@ object DataProp {
     type DS = DataSet[CustomReqTypeAndId]
 
     lazy val uniqueMnemonics =
-      Prop[DS]("each mnemonic is unique",
-        _.data.toList.flatMap(b => b.mnemonic :: b.oldMnemonics.toList).isUnique)
+      Prop.distinct("mnemonic", (_: DS).data.toStream.flatMap(b => b.mnemonic #:: b.oldMnemonics.toStream).map(_.value))
 
     lazy val uniqueNames =
-      Prop[DS]("each CustomReqType name is unique", _.data.map(_.name).isUnique)
+      Prop.distinct("name", (_: DS).data.toStream.map(_.name))
 
     lazy val each =
       customReqType.all.forall[DS, List](_.data)

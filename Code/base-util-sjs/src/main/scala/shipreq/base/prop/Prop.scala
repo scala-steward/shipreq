@@ -50,10 +50,12 @@ sealed abstract class Prop[A] {
       throw new java.lang.AssertionError(err)
     })
 
+  protected[prop] def fmta: A => Any
+
   def falsifyE: (A, Ctx, Boolean) => Option[Falsification[A]]
 
   @inline protected final def falsifyX(f: (A, Ctx, Boolean) => List[Falsification[A]]): (A, Ctx, Boolean) => Option[Falsification[A]] =
-    (a,x,e) => if (test(a,x) == e) None else Some(Falsification(this, f(a,x,e), Set(a)))
+    (a,x,e) => if (test(a,x) == e) None else Some(Falsification(this, f(a,x,e), Set(fmta(a))))
 
   @inline protected final def falsifyN =
     falsifyX((a,x,e) => Nil)
@@ -66,7 +68,7 @@ sealed abstract class Prop[A] {
 }
 
 
-final case class Atom[A](name: String, t: (A, Ctx) => Boolean) extends Prop[A] {
+final case class Atom[A](name: String, t: (A, Ctx) => Boolean, fmta: A => Any) extends Prop[A] {
   override def test(a: A, x: Ctx) = t(a, x)
   override def falsifyE = falsifyN
   override def toString = name
@@ -76,11 +78,9 @@ final case class Atom[A](name: String, t: (A, Ctx) => Boolean) extends Prop[A] {
 final case class Contramap[A, B](p: Prop[B], f: A => B) extends Prop[A] {
   override def contramap[Z](g: Z => A): Prop[Z] = Contramap(p, f compose g)
   override def test(a: A, x: Ctx) = p.test(f(a), x)
-  override def falsifyE = (a,x,e) => {
-    val b = f(a)
-    p.falsifyE(b, x, e).map(_.map(_ contramap f).copy(inputs = Set(b)))
-  }
+  override def falsifyE = (a,x,e) => p.falsifyE(f(a), x, e).map(_.map(_ contramap f))
   override def toString = p.toString
+  override protected[prop] def fmta = p.fmta compose f
 }
 
 
@@ -107,6 +107,7 @@ final case class Forall[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B], updName:
         Some(Falsification(this, causes, Set(a)))
     }
   override def toString = if (updName) s"∀{$p}" else p.toString
+  override protected[prop] def fmta = identity
 }
 
 
@@ -115,6 +116,7 @@ final case class Rename[A](name: String, p: Prop[A]) extends Prop[A] {
   override def test(a: A, x: Ctx) = p.test(a, x)
   override def falsifyE = (a,b,c) => p.falsifyE(a,b,c).map(_.copy(this))
   override def toString = name
+  override protected[prop] def fmta = p.fmta
 }
 
 
@@ -123,6 +125,7 @@ final case class Negation[A](p: Prop[A]) extends Prop[A] {
   override def test(a: A, x: Ctx) = !p.test(a, x)
   override def falsifyE = falsifyN //falsifyP(p, false)
   override def toString = s"¬$p"
+  override protected[prop] def fmta = p.fmta
 }
 
 
@@ -131,6 +134,7 @@ final case class Disjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def test(a: A, x: Ctx) = ps.stream.exists(_.test(a, x))
   override def falsifyE = falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∨ ")
+  override protected[prop] def fmta = identity
 }
 
 final case class Conjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
@@ -138,6 +142,7 @@ final case class Conjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def test(a: A, x: Ctx) = ps.stream.forall(_.test(a, x))
   override def falsifyE = falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∧ ")
+  override protected[prop] def fmta = identity
 }
 
 
@@ -145,6 +150,7 @@ final case class Implication[A](a: Prop[A], c: Prop[A]) extends Prop[A] {
   override def test(i: A, x: Ctx) = !a.test(i, x) || c.test(i, x)
   override def falsifyE = falsifyP(c, true)
   override def toString = s"$a ⇒ $c"
+  override protected[prop] def fmta = identity
 }
 
 
@@ -152,6 +158,7 @@ final case class Reduction[A](c: Prop[A], a: Prop[A]) extends Prop[A]  {
   override def test(i: A, x: Ctx) = !a.test(i, x) || c.test(i, x)
   override def falsifyE = falsifyP(c, true)
   override def toString = s"$c ⇐ $a"
+  override protected[prop] def fmta = identity
 }
 
 
@@ -159,17 +166,44 @@ final case class Biconditional[A](p: Prop[A], q: Prop[A]) extends Prop[A]  {
   override def test(a: A, x: Ctx) = p.test(a, x) == q.test(a, x)
   override def falsifyE = falsifyN // TODO different than disjunction, breakdown or not?
   override def toString = s"$p ⇔ $q"
+  override protected[prop] def fmta = identity
 }
 
 
 object Prop {
 
   @inline final def apply[A](name: String, t: A => Boolean): Prop[A] =
-    withCtx(name, (a,_) => t(a))
+    atom2(name, t, identity)
 
-  @inline final def withCtx[A](name: String, t: (A, Ctx) => Boolean): Prop[A] =
-    new Atom[A](name, t)
+  @inline final def atom2[A](name: String, t: A => Boolean, fmta: A => Any): Prop[A] =
+    atom(name, (a,_) => t(a), fmta)
+
+  @inline final def atom[A](name: String, t: (A, Ctx) => Boolean, fmta: A => Any): Prop[A] =
+    new Atom[A](name, t, fmta)
+
+  def distinct[A, B](name: String, f: A => Stream[B]) =
+    distinct[B](name).contramap(f)
+
+  def distinct[A](name: String) =
+    atom2[Stream[A]](s"each $name is unique", as => {
+      var s = Set.empty[A]
+      !as.exists(a =>
+        s.contains(a) match {
+          case true  => true
+          case false => s += a; false
+        })
+    }, as => {
+      val dups =
+        (Map.empty[A, Int] /: as)((q, a) => q + (a -> (q.getOrElse(a, 0) + 1)))
+          .filter(_._2 > 1)
+          .toStream
+          .sortBy(_._1.toString)
+          .map { case (a, i) => s"$a -> $i"}
+          .mkString("Dups(", ", ", ")")
+      s"$as\n$dups"
+    })
 }
+
 
 final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inputs: Set[Any]) {
 
@@ -255,11 +289,13 @@ object AsciiTree {
       case Nil =>
       case h :: t =>
         if (first) first = false else sb append '\n'
+        var indentlen = sb.length
         sb append indent
         for (b <- parentLvlLast) sb.append(if (b) pl else pm)
         val last = t.isEmpty
         if (!root) sb.append(if (last) cl else cm)
-        sb append show(h)
+        indentlen = sb.length - indentlen
+        sb append show(h).replaceAll("\n(?=[^\n])", "\n" + (" " * indentlen))
         val nextLvl = if (root) Vector.empty[Boolean] else parentLvlLast :+ last
         loop(nextLvl, leaves(h), false)
         loop(parentLvlLast, t, root)
