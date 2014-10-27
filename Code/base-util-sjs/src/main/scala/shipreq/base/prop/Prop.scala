@@ -1,8 +1,12 @@
 package shipreq.base.prop
 
-import scala.annotation.{elidable, tailrec}
+import scala.annotation.elidable
 import scalaz.{Foldable, NonEmptyList}
+import scalaz.std.tuple.tuple2Monoid
+import scalaz.std.list.listMonoid
+import scalaz.std.set.setMonoid
 import scalaz.syntax.foldable._
+import shipreq.base.util.{Monoidmap, Multimap}
 
 object Prop {
 
@@ -184,19 +188,17 @@ final case class Forall[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B], updName:
       case Nil => None
       case fs@(_ :: _) =>
         val causes = fs
-          .foldLeft(Map.empty[Prop[B], (List[Falsification[B]], Set[Any])])((q, i) => {
-          val (cs, is) = q.getOrElse(i.p, (List.empty[Falsification[B]], Set.empty[Any]))
-          q + (i.p ->(cs ++ i.cause, is ++ i.inputs))
-        })
-          .toList
+          .foldLeft(Monoidmap.empty[Prop[B], (List[Falsification[B]], Set[Any])])(
+            (q, i) => q.add(i.p, (i.cause, i.inputs)))
+          .plainMap.toList
           .map { case (p, (cs, is)) =>
-          val causes2 = cs
-            .foldLeft(Map.empty[Prop[B], Set[Any]])((q, c) =>
-            q + (c.p -> (q.getOrElse(c.p, Set.empty[Any]) ++ c.inputs)))
-            .toList.map { case (p2, is2) => Falsification(p2, Nil, is2) }
-          val inputs2 = causes2.foldLeft(Set.empty[Any])(_ ++ _.inputs)
-          Falsification(p, causes2, inputs2).map[A](Forall(_, f, false))
-        }
+            val causes2 = cs
+              .foldLeft(Multimap.set[Prop[B], Any])((q, c) => q.addN(c.p, c.inputs))
+              .plainMap.toList
+              .map { case (p2, is2) => Falsification(p2, Nil, is2) }
+            val inputs2 = causes2.foldLeft(Set.empty[Any])(_ ++ _.inputs)
+            Falsification(p, causes2, inputs2).map[A](Forall(_, f, false))
+          }
         Some(Falsification(this, causes, Set(a)))
     }
   override def toString = if (updName) s"∀{$p}" else p.toString
