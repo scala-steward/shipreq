@@ -8,10 +8,10 @@ import Console.{RED, BOLD, WHITE_B, RESET}
 
 object TestUtil {
 
-  val jvm = try { "!" matches """/[\p{S}\p{P}]/""" } catch { case _: Throwable => false }
+  val jvm = try { "!" matches """\p{P}""" } catch { case _: Throwable => false }
 
   implicit val propSettings = (
-    if (jvm) Settings(sampleSize = SampleSize(100))
+    if (jvm) Settings(sampleSize = SampleSize(200))
     else     Settings(sampleSize = SampleSize(10))
     ).copy(debug = false, sizeDist = Seq(0.2 -> 0.2, 0.8 -> 0.8))
 
