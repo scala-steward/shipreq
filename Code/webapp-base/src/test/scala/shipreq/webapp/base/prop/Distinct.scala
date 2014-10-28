@@ -1,51 +1,105 @@
 package shipreq.webapp.base.prop
 
-import scalaz.Leibniz._
+import scalaz.{Foldable, State}
+import scalaz.syntax.foldable._
+import shipreq.base.util.Baggy, Baggy._
+import Distinct.Fixer
 
-sealed trait Distinct[A] {
-  def apply(r: RngGen[List[A]]): RngGen[List[A]]
-  final def +(d: Distinct[A]): Distinct[A] = DistinctN(r => d(apply(r)))
+case class Distinct[A, X, H[_] : Baggy, Y, Z, B](fixer: Fixer[X, H, Y, Z],
+                                                 t: A => (X => State[H[Y], Z]) => State[H[Y], B]) {
+
+  final type S[λ] = State[H[Y], λ]
+
+  def runs(a: A): S[B] =
+    t(a)(fixer.apply)
+
+  def run: A => B =
+    runs(_).eval(fixer.inith)
+
+  def addh(xs: X*) =
+    copy(fixer = this.fixer.addh(xs: _*))
+
+  @inline final def contramap[C](f: C => A, g: (C, B) => C) =
+    dimap(f, g)
+
+  def dimap[M, N](f: M => A, g: (M, B) => N) =
+    Distinct[M, X, H, Y, Z, N](fixer, m => x_sz => t(f(m))(x_sz).map(b => g(m, b)))
+
+  def dimaps[M, N](f: M => (A => S[B]) => S[N]) =
+    Distinct[M, X, H, Y, Z, N](fixer, m => x_sz => f(m)(a => t(a)(x_sz)))
+
+  def lift[F[_] : Foldable : Baggy]: Distinct[F[A], X, H, Y, Z, F[B]] =
+    dimaps[F[A], F[B]](fa => ab => State(h0 =>
+      fa.foldl((h0, implicitly[Baggy[F]].empty[B]))(q => a => {
+        val (h1, fb) = q
+        val (h2, b) = ab(a).run(h1)
+        (h2, fb + b)
+      })
+    ))
+
+  def compose[C](f: Distinct[C, X, H, Y, Z, A]) = f + this
+
+  def +[C](f: Distinct[B, X, H, Y, Z, C]) =
+    Distinct[A, X, H, Y, Z, C](fixer + f.fixer, a => _ => runs(a) flatMap f.runs)
+
+  // TODO doesn't allow (name + id).list[List]
 }
 
-final case class DistinctN[A](f: RngGen[List[A]] => RngGen[List[A]]) extends Distinct[A] {
-  override def apply(r: RngGen[List[A]]) = f(r)
-}
-
-final case class Distinct1[A, B](f: A => TraversableOnce[B], g: (A, Set[B]) => A, i: TraversableOnce[B]) extends Distinct[A] {
-  override def apply(r: RngGen[List[A]]) = Distinct.applyF(r, f, g, i)
-
-  def blacklist(j: TraversableOnce[B]) = copy[A, B](i = j)
-
-  def contramap[Z](m: Z => A, n: (Z, A) => Z) =
-    Distinct1[Z, B](f compose m, (z,bs) => n(z, g(m(z),bs)), i)
-}
+// =====================================================================================================================
 
 object Distinct {
-  def on[A] = new B1[A]
-  lazy val str  = on[String](identity).str ((_, b) => b)
-  lazy val int  = on[Int]   (identity).int ((_, b) => b)
-  lazy val long = on[Long]  (identity).long((_, b) => b)
 
-  final class B1[A] {
-    def apply[B](f: A => B)              = n[B](a => Set(f(a)))
-    def n[B](f: A => TraversableOnce[B]) = new B2[A, B](f)
-    def self = apply(identity)
+  case class Fixer[X, H[_] : Baggy, Y, Z](f: X => Y, g: Y => Z, fix: H[Y] => Y, inith: H[Y]) {
+    def apply(x: X): State[H[Y], Z] =
+      State[H[Y], Z](h => {
+        var y = f(x)
+        if (h contains y)
+          y = fix(h)
+        (h + y, g(y))
+      })
+
+    @inline final def xmap[A](b: Z => A)(a: A => X) =
+      dimap(a, b)
+
+    def dimap[A, B](a: A => X, b: Z => B) =
+      Fixer[A, H, Y, B](f compose a, b compose g, fix, inith)
+
+    def addh(xs: X*) =
+      copy[X, H, Y, Z](inith = xs.foldLeft(this.inith)(_ + f(_)))
+
+    def +(φ: Fixer[X, H, Y, Z]) =
+      copy[X, H, Y, Z](inith = this.inith ++ φ.inith)
+
+    def distinct =
+      Distinct[X, X, H, Y, Z, Z](this, x => f => f(x))
   }
 
-  final class B2[A, B](f: A => TraversableOnce[B]) {
-    def apply(g: (A, Set[B]) => A) = Distinct1(f, g, Set.empty)
-    def str (g: (A, String) => A)(implicit ev: B === String) = apply((a, bs) => g(a, distinctStr(ev subst bs)))
-    def int (g: (A, Int)    => A)(implicit ev: B === Int)    = apply((a, bs) => g(a, (ev subst bs).max + 1))
-    def long(g: (A, Long)   => A)(implicit ev: B === Long)   = apply((a, bs) => g(a, (ev subst bs).max + 1L))
+  object Fixer {
+    def lift[H[_], A](f: H[A] => A)(implicit H: Baggy[H]) =
+      Fixer[A, H, A, A](identity, identity, f, H.empty)
   }
 
-  def distinctStr(bs: Set[String]): String = {
-    val x = bs.max
+  // =====================================================================================================================
+
+  def fixInt(is: Set[Int]): Int = {
+    var i = is.max + 1
+    if (i == Int.MinValue) while (is contains i) i += 1
+    i
+  }
+
+  def fixLong(is: Set[Long]): Long = {
+    var i = is.max + 1L
+    if (i == Long.MinValue) while (is contains i) i += 1L
+    i
+  }
+
+  def fixStr(ss: Set[String]): String = {
+    val x = ss.max
     if (x.nonEmpty) {
       val c = x.head
       if (c < 0xffff) return (c + 1).toChar.toString
     }
-    val y = bs.min
+    val y = ss.min
     if (y.nonEmpty) {
       val c = y.head
       if (c > 32) return (c - 1).toChar.toString
@@ -53,36 +107,11 @@ object Distinct {
     "\uffff" + x
   }
 
-  def applyF[A, B](r: RngGen[List[A]], f: A => TraversableOnce[B], g: (A, Set[B]) => A, ib: TraversableOnce[B]): RngGen[List[A]] =
-    r.flatMap(apply(_, f, g, ib))
+  lazy val fstr  = Fixer lift fixStr
+  lazy val fint  = Fixer lift fixInt
+  lazy val flong = Fixer lift fixLong
 
-  def apply[A, B](as: List[A], f: A => TraversableOnce[B], g: (A, Set[B]) => A, ib: TraversableOnce[B]): RngGen[List[A]] = {
-    var bs = ib.toSet
-    var ok = List.empty[A]
-    var ko = List.empty[A]
-    as.foreach(a => {
-      val bs2 = f(a).toSet
-      val dup = bs.exists(bs2.contains)
-      if (dup)
-        ko = a :: ko
-      else {
-        bs ++= bs2
-        ok = a :: ok
-      }
-    })
-    if (ko.isEmpty)
-      Gen.insert(as)
-    else
-      ko.foldLeft(Gen.insert(ok, bs))(
-        (q, a) => q.map { case (as, bs) =>
-          val a2 = g(a, bs)
-          val bs2 = f(a2).toSet
-          if (bs.exists(bs2.contains)) {
-            println(s"${"-" * 100}\nA.old: $a\nA.new: $a2\nBs.A: $bs2\nBs.Old: $bs")
-            throw new java.lang.AssertionError(s"Data still not distinct.")
-          }
-          (a2 :: as, bs ++ bs2)
-        }
-      ).map(_._1)
-  }
+  lazy val str  = fstr.distinct
+  lazy val int  = fint.distinct
+  lazy val long = flong.distinct
 }

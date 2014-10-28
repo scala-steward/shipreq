@@ -1,7 +1,9 @@
 package shipreq.webapp.base
 
+import scalaz.std.list._
+import scalaz.std.set._
 import shipreq.webapp.base.prop.{Distinct, RngGen, Gen}
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.data._, ReqType.Mnemonic
 import shipreq.webapp.base.data.delta._
 import shipreq.webapp.base.protocol._
 import shipreq.base.util.Debug._
@@ -44,10 +46,10 @@ object RandomData {
     Gen.apply4(CustomIncmpType.apply)(customIncmpTypeId, refKey, optionalLargeText, alive)
 
   lazy val customIncmpTypes =
-    dataSet[CustomIncmpTypeAndId](customIncmpType)
+    dataSet[CustomIncmpTypeAndId](customIncmpType, identity)
 
   lazy val reqTypeMnemonic =
-    Gen.uppers1.lim(6).map(cs => ReqType.Mnemonic(cs.list.mkString))
+    Gen.uppers1.lim(6).map(cs => Mnemonic(cs.list.mkString))
 
   lazy val customReqTypeId =
     id map CustomReqType.Id
@@ -66,24 +68,26 @@ object RandomData {
     } yield CustomReqType(id, mn, om - mn, n, ir, a)
 
   lazy val customReqTypes = {
-    def distinctName = Distinct.on[CustomReqType](_.name).str((a, b) => a.copy(name = b))
-    def distinctMnemonics = Distinct.on[CustomReqType]
-      .n(c => c.oldMnemonics + c.mnemonic)(
-        (a, bs) => {
-          var c = a
-          c = a.copy(oldMnemonics = c.oldMnemonics -- bs)
-          if (c.oldMnemonics.contains(c.mnemonic) || bs.contains(c.mnemonic))
-            c = c.copy(mnemonic = ReqType.Mnemonic("\uffff" + bs.max.value))
-          c
-        })
-      .blacklist(ReqType.static.map(_.mnemonic).toSet)
-    dataSet[CustomReqTypeAndId](customReqType, Some(distinctName + distinctMnemonics))
+    // TODO ffs just use lenses
+    def dname = Distinct.str.contramap[CustomReqType](_.name, (a, b) => a.copy(name = b)).lift[List]
+    def dmnemonic = {
+      val distm = Distinct.fstr
+        .xmap(Mnemonic.apply)(_.value)
+        .addh(ReqType.static.map(_.mnemonic): _*)
+        .addh(ReqType.static.flatMap(_.oldMnemonics.toList): _*)
+        .distinct
+      val cur = distm.contramap[CustomReqType](_.mnemonic, (a, b) => a.copy(mnemonic = b))
+      val old = distm.lift[Set].contramap[CustomReqType](_.oldMnemonics, (a, b) => a.copy(oldMnemonics = b))
+      (cur + old).lift[List]
+    }
+    val d = dname.run compose dmnemonic.run
+    dataSet[CustomReqTypeAndId](customReqType, d)
   }
 
-  def dataSet[T <: DataAndId](r: RngGen[T#Data], dist: Option[Distinct[T#Data]] = None)(implicit i: IdAccessor[T]): RngGen[DataSet[T]] = {
-    def distId = Distinct.on[T#Data](_.id.value).long((a,b) => i.setId(a, i mkId b))
-    val dist2 = dist.fold(distId: Distinct[T#Data])(distId + _)
-    Gen.apply2(DataSet[T])(rev, r.list.distinct(dist2))
+  def dataSet[T <: DataAndId](r: RngGen[T#Data], mod: List[T#Data] => List[T#Data])(implicit i: IdAccessor[T]): RngGen[DataSet[T]] = {
+    def distId = Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[T#Data](i.id, i.setId).lift[List].run
+    val f = mod compose distId
+    Gen.apply2(DataSet[T])(rev, r.list.map(f))
   }
 
   lazy val project =

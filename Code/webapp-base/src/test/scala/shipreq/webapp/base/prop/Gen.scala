@@ -53,8 +53,6 @@ class RngGen[A](val f: GenSize => Rng[A]) extends Gen[A] {
   //  def \?/[X](x: Rng[X]): Rng[A \?/ X] =
   //  def +++[X](x: Rng[X]): Rng[A \/ X] =
   //  def eitherS[X](x: Rng[X]): Rng[Either[A, X]] =
-
-  def distinct[B](d: Distinct[B])(implicit ev: A === List[B]): RngGen[List[B]] = d(ev.subst(this))
 }
 
 class RngGenS[A](f: GenSize => Rng[A]) extends RngGen(f) {
