@@ -25,10 +25,10 @@ object Prop {
   def distinct[A](name: String) =
     atom2[Stream[A]](s"each $name is unique", as => {
       var s = Set.empty[A]
-      !as.exists(a =>
+      as.forall(a =>
         s.contains(a) match {
-          case true  => true
-          case false => s += a; false
+          case true  => false
+          case false => s += a; true
         })
     }, as => {
       val dups =
