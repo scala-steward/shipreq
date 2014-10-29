@@ -227,7 +227,6 @@ object ShipReq extends Build {
       override def project = typicalProject
         .configure(
           Common.scalaAndScalaJsShared,
-          useMacroParadiseJvm,
           addCommandAliases(
             "js" -> Client.jsCmd,
             "wd" -> ";up;~js"))

@@ -47,7 +47,7 @@ object Deps {
     }
     object Monocle extends Group(Deps.Monocle.version, "com.github.japgolly.fork.monocle") {
       val core   = js("monocle-core")
-      val macros = js("monocle-macro") ++ core ++ macroParadise
+      val macros = js("monocle-macro") ++ core
     }
   }
 
@@ -105,8 +105,9 @@ object Deps {
 
   val RNG = JvmAndJsFork("com.nicta", "com.github.japgolly.fork.nicta", "rng", "1.3.0")
 
-  val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
-  def useMacroParadiseJvm = (_: Project).settings(addCompilerPlugin(macroParadise))
+  // Was only needed trying to use Monocle's @Lenses. Monocle's Lenser works without this.
+  // val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  // def useMacroParadiseJvm = (_: Project).settings(addCompilerPlugin(macroParadise))
 
   val okHttp      :MS = "com.squareup.okhttp"         % "okhttp"                % "1.5.4"
   val httpCore    :MS = "org.apache.httpcomponents"   % "httpcore"              % "4.3.2"
