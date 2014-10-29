@@ -68,16 +68,11 @@ object RandomData {
     } yield CustomReqType(id, mn, om - mn, n, ir, a)
 
   lazy val customReqTypes = {
-    // TODO ffs just use lenses
-    def dname = Distinct.str.contramap[CustomReqType](_.name, (a, b) => a.copy(name = b))
+    def dname = Distinct.str.at(CustomReqTypeL.name)
     def dmnemonic = {
-      val distm = Distinct.fstr
-        .xmap(Mnemonic.apply)(_.value)
-        .addh(ReqType.static.map(_.mnemonic): _*)
-        .addh(ReqType.static.flatMap(_.oldMnemonics.toList): _*)
-        .distinct
-      val cur = distm.contramap[CustomReqType](_.mnemonic, (a, b) => a.copy(mnemonic = b))
-      val old = distm.lift[Set].contramap[CustomReqType](_.oldMnemonics, (a, b) => a.copy(oldMnemonics = b))
+      val distm = Distinct.fstr.xmap(Mnemonic.apply)(_.value).addhs(ReqType.staticMnemonics).distinct
+      val cur = distm.at(CustomReqTypeL.mnemonic)
+      val old = distm.lift[Set].at(CustomReqTypeL.oldMnemonics)
       cur + old
     }
     val d = (dname * dmnemonic).lift[List]

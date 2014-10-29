@@ -27,13 +27,10 @@ object DataProp {
 
   object customReqType {
 
-    private def mnemonicBlacklist  =
-      ReqType.static.map(_.mnemonic).toSet
-
     // starting to overlap with validation....
     lazy val mnemonicStatic =
       Prop[CustomReqType]("mnemonic doesn't overlap with static",
-        a => mnemonicBlacklist.intersect(a.oldMnemonics + a.mnemonic).isEmpty)
+        a => ReqType.staticMnemonics.intersect(a.oldMnemonics + a.mnemonic).isEmpty)
 
     lazy val all = mnemonicStatic ∧ reqType.subst
   }

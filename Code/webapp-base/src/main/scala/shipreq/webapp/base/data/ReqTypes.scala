@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data
 
+import monocle.Lenser
 import shipreq.base.util.TaggedTypes._
 
 sealed trait ReqType {
@@ -22,6 +23,9 @@ object ReqType {
   }
 
   val static: List[Static] = List(UseCase)
+
+  lazy val staticMnemonics =
+    (Set.empty[Mnemonic] /: static)((q, r) => q ++ r.oldMnemonics + r.mnemonic)
 }
 
 // =====================================================================================================================
@@ -45,4 +49,11 @@ object CustomReqType extends IdAccessor[CustomReqTypeAndId] {
   override def id(d: CustomReqType) = d.id
   override def mkId(l: Long) = Id(l)
   override def setId(a: CustomReqType, b: Id) = a.copy(id = b)
+}
+
+object CustomReqTypeL {
+  private[this] def l = Lenser[CustomReqType]
+  val name         = l(_.name)
+  val mnemonic     = l(_.mnemonic)
+  val oldMnemonics = l(_.oldMnemonics)
 }

@@ -6,8 +6,8 @@ import scala.scalajs.sbtplugin.ScalaJSPlugin._
 object Deps {
 
   case class MS private[Deps](ms: Seq[ModuleID]) {
-    def %(revision: String) = MS(ms.map(_ % revision))
-    def ++(that: MS) = MS(ms ++ that.ms)
+    def %(revision: String): MS = MS(ms.map(_ % revision))
+    def ++(that: MS): MS = MS(ms ++ that.ms)
   }
   object MS {
     val empty = MS(Seq.empty)
@@ -45,7 +45,10 @@ object Deps {
       val core   = js("scalaz-core")
       val effect = js("scalaz-effect")
     }
-    val monocle :MS = jsGA("com.github.japgolly.fork.monocle", "monocle-core") % "0.5.1"
+    object Monocle extends Group(Deps.Monocle.version, "com.github.japgolly.fork.monocle") {
+      val core   = js("monocle-core")
+      val macros = js("monocle-macro") ++ core ++ macroParadise
+    }
   }
 
   object Scala extends Group("2.11.2", "org.scala-lang") {
@@ -61,6 +64,11 @@ object Deps {
     val concurrent = dd("scalaz-concurrent")
     val effect     = dd("scalaz-effect")
     val scalacheck = dd("scalaz-scalacheck-binding")
+  }
+
+  object Monocle extends Group("0.5.1", "com.github.julien-truffaut") {
+    val core   = dd("monocle-core")
+    val macros = dd("monocle-macro") ++ core
   }
 
   object Json4s extends Group("3.2.10", "org.json4s") {
@@ -96,6 +104,9 @@ object Deps {
   val μTest   = JvmAndJs("com.lihaoyi", "utest",   "0.2.3")
 
   val RNG = JvmAndJsFork("com.nicta", "com.github.japgolly.fork.nicta", "rng", "1.3.0")
+
+  val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  def useMacroParadiseJvm = (_: Project).settings(addCompilerPlugin(macroParadise))
 
   val okHttp      :MS = "com.squareup.okhttp"         % "okhttp"                % "1.5.4"
   val httpCore    :MS = "org.apache.httpcomponents"   % "httpcore"              % "4.3.2"

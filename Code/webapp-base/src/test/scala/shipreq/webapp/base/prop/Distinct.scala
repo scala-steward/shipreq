@@ -1,5 +1,6 @@
 package shipreq.webapp.base.prop
 
+import monocle.Lens
 import scalaz.{NonEmptyList, Foldable, State}
 import scalaz.Leibniz.===
 import scalaz.syntax.foldable._
@@ -23,6 +24,9 @@ case class Distinct[A, X, H[_] : Baggy, Y, Z, B](
 
   def addh(xs: X*) =
     copy(fixer = this.fixer.addh(xs: _*))
+
+  @inline final def at[M, N](l: Lens[M, N, A, B]) =
+    dimap(l.get, l.set)
 
   @inline final def contramap[C](f: C => A, g: (C, B) => C) =
     dimap(f, g)
@@ -93,7 +97,10 @@ object Distinct {
     def dimap[A, B](a: A => X, b: Z => B) =
       Fixer[A, H, Y, B](f compose a, b compose g, fix, inith)
 
-    def addh(xs: X*) =
+    @inline final def addh(xs: X*) =
+      addhs(xs)
+
+    def addhs(xs: TraversableOnce[X]) =
       copy[X, H, Y, Z](inith = xs.foldLeft(this.inith)(_ + f(_)))
 
     def +(φ: Fixer[X, H, Y, Z]) =
