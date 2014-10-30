@@ -1,4 +1,4 @@
-package shipreq.base.util
+package shipreq.prop.util
 
 import scalaz.Monoid
 

@@ -1,4 +1,4 @@
-package shipreq.base.prop
+package shipreq.prop
 
 import scala.annotation.elidable
 import scalaz.{Foldable, NonEmptyList}
@@ -6,7 +6,7 @@ import scalaz.std.tuple.tuple2Monoid
 import scalaz.std.list.listMonoid
 import scalaz.std.set.setMonoid
 import scalaz.syntax.foldable._
-import shipreq.base.util.{Monoidmap, Multimap}
+import shipreq.prop.util.{Monoidmap, Multimap}
 
 object Prop {
 

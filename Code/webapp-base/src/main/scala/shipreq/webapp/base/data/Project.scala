@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import shipreq.base.prop._
+import shipreq.prop._
 
 trait DataSetAccessor[DI <: DataAndId] {
   def getRev(p: Project): Rev

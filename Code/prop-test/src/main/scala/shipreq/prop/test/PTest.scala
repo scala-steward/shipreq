@@ -1,7 +1,7 @@
-package shipreq.webapp.base.prop
+package shipreq.prop.test
 
 import scalaz.EphemeralStream
-import shipreq.base.prop._
+import shipreq.prop._
 
 sealed trait Result[+A] {
   def success: Boolean = this match {

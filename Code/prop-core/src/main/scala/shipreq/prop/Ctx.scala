@@ -1,4 +1,4 @@
-package shipreq.base.prop
+package shipreq.prop
 
 final case class GenSize(value: Int) {
   def map(f: Int => Int) = GenSize(f(value))

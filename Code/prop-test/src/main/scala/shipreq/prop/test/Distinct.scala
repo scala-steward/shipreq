@@ -1,11 +1,11 @@
-package shipreq.webapp.base.prop
+package shipreq.prop.test
 
 import monocle.Lens
 import scalaz.{NonEmptyList, Foldable, State}
 import scalaz.Leibniz.===
 import scalaz.std.stream._
 import scalaz.syntax.foldable._
-import shipreq.base.util.Baggy, Baggy._
+import Baggy._
 import Distinct.Fixer
 
 sealed trait DistinctFn[A, B] {

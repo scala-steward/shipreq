@@ -1,8 +1,6 @@
-package shipreq.base.util2
+package shipreq.prop.util
 
-import java.net.URL
 import scala.annotation.tailrec
-import scala.util.Try
 import scalaz.Memo
 
 object Util {

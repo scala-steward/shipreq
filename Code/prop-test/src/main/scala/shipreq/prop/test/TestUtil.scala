@@ -1,10 +1,9 @@
-package shipreq.webapp.base
+package shipreq.prop.test
 
-import shipreq.base.util2.Util
-import shipreq.base.prop._
-import shipreq.webapp.base.prop._
+import shipreq.prop.util.Util
+import shipreq.prop._
 import utest._
-import Console.{RED, BOLD, WHITE_B, RESET}
+import Console.{RED, WHITE_B, RESET}
 
 object TestUtil {
 

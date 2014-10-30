@@ -1,6 +1,6 @@
-package shipreq.base.util
+package shipreq.prop.util
 
-import shipreq.base.util.Multimap.Multiness
+import Multimap.Multiness
 
 class Multimap[K, L[_], V](val m: Map[K, L[V]], l: Multiness[L]) {
 

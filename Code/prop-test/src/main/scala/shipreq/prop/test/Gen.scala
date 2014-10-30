@@ -1,8 +1,8 @@
-package shipreq.webapp.base.prop
+package shipreq.prop.test
 
 import com.nicta.rng.{Rng, Size}
 import scalaz._, Leibniz.===
-import shipreq.base.prop._
+import shipreq.prop._
 
 trait Gen[A] {
   def gen2(gs: GenSize): Gen2[A]

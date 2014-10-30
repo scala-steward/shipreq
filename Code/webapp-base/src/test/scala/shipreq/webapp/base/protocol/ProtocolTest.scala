@@ -6,8 +6,8 @@ import upickle._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta._
 import shipreq.webapp.base.RandomData
-import shipreq.base.prop._
-import shipreq.webapp.base.TestUtil._
+import shipreq.prop._
+import shipreq.prop.test.TestUtil._
 
 object ProtocolTest extends TestSuite {
 

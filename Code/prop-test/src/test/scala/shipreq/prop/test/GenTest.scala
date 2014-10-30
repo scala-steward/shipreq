@@ -1,9 +1,9 @@
-package shipreq.webapp.base.prop
+package shipreq.prop.test
 
 import scalaz.std.list._
-import shipreq.webapp.base.TestUtil._
-import shipreq.base.prop._
 import utest._
+import shipreq.prop._
+import TestUtil._
 
 object GenTest extends TestSuite {
 

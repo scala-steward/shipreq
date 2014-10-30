@@ -2,7 +2,7 @@ package shipreq.webapp.base
 
 import scalaz.std.list._
 import scalaz.std.set._
-import shipreq.webapp.base.prop.{Distinct, RngGen, Gen}
+import shipreq.prop.test.{Distinct, RngGen, Gen}
 import shipreq.webapp.base.data._, ReqType.Mnemonic
 import shipreq.webapp.base.data.delta._
 import shipreq.webapp.base.protocol._

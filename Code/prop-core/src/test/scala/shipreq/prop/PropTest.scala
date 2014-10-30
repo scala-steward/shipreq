@@ -1,4 +1,4 @@
-package shipreq.base.prop
+package shipreq.prop
 
 import scalaz.std.list._
 import utest._

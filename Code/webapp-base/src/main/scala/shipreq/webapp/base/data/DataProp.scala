@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
 import scalaz.std.list._
-import shipreq.base.prop._
+import shipreq.prop._
 import DataImplicits._
 
 object DataProp {
