@@ -2,7 +2,7 @@ package shipreq.base.prop
 
 import scala.annotation.tailrec
 import scalaz.NonEmptyList
-import shipreq.base.util.Util
+import shipreq.base.util2.Util
 
 final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inputs: Set[Any]) {
 

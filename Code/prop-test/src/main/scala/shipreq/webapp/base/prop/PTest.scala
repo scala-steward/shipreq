@@ -29,7 +29,7 @@ object PTest {
         val s = S.sampleSize.map(v => (v * sr + 0.5).toInt max 1)
         val g = S.genSize.map(v => (v * gr + 0.5).toInt max 0)
         if (S.debug) println(s"Generating ${s.value} samples @ sz ${g.value}...")
-        gen.gen2(g).f(s).take(s)
+        gen.gen2(g).f(s).take(s.value)
       }
     testN(p, data)
   }

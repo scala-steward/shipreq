@@ -10,10 +10,13 @@ object ShipReq extends Build {
   // Declare modules
   lazy val root = Root.project
 
+  lazy val prop     = Prop.project
+  lazy val propCore = Prop.PropCore.project
+  lazy val propTest = Prop.PropTest.project
+
   lazy val base         = Base.project
   lazy val baseDb       = Base.Db.project
   lazy val baseTest     = Base.Test.project
-  lazy val basePropTest = Base.PropTest.project
   lazy val baseUtil     = Base.Util.project
   lazy val baseUtilSjs  = Base.UtilSjs.project
 
@@ -59,26 +62,44 @@ object ShipReq extends Build {
     def dir = "."
     override def project = Project("root", file(dir))
       .configure(commonSettings, Common.useHiddenTargetDir)
-      .aggregate(base, webapp, taskman)
+      .aggregate(base, webapp, taskman, prop)
   }
 
   // ===================================================================================================================
-  object Base extends Module {
-    val dir = "base"
+  object Prop extends Module {
+    val dir = "prop"
+
     override def project = typicalProject
-      .aggregate(baseUtilSjs, baseUtil, baseDb, baseTest, basePropTest) // not umbrella cos it shouldn't dependOn
+      .aggregate(propCore, propTest) // not umbrella cos it shouldn't dependOn
+
+    // ----------------------------------------------------
+    object PropCore extends Module {
+      val dir = "prop-core"
+
+      override def deps =
+        Scalaz.core ++ testScope(μTest.jvm)
+
+      override def project = typicalProject
+        .configure(Common.scalaAndScalaJsShared)
+    }
 
     // ----------------------------------------------------
     object PropTest extends Module {
-      val dir = "base-prop-test"
+      val dir = "prop-test"
 
       override def deps =
         Scalaz.core ++ Monocle.macros ++ RNG.jvm ++ μTest.jvm
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
-        .dependsOn(baseUtilSjs)
+        .dependsOn(propCore)
     }
+  }
+    // ===================================================================================================================
+  object Base extends Module {
+    val dir = "base"
+    override def project = typicalProject
+      .aggregate(baseUtilSjs, baseUtil, baseDb, baseTest) // not umbrella cos it shouldn't dependOn
 
     // ----------------------------------------------------
     object UtilSjs extends Module {
@@ -89,6 +110,7 @@ object ShipReq extends Build {
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
+        .dependsOn(propCore, propTest % "test")
     }
 
     // ----------------------------------------------------
@@ -243,7 +265,7 @@ object ShipReq extends Build {
           addCommandAliases(
             "js" -> Client.jsCmd,
             "wd" -> ";up;~js"))
-        .dependsOn(baseUtilSjs, basePropTest % "test")
+        .dependsOn(propCore, baseUtilSjs, propTest % "test")
     }
 
     // ----------------------------------------------------
@@ -292,8 +314,8 @@ object ShipReq extends Build {
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
         .configure(
-          jsStyleDependsOn(baseUtilSjs, webappBase),
-          jsStyleDependsOn1(basePropTest, Compile -> Test, Test -> Test),
+          jsStyleDependsOn(propCore, baseUtilSjs, webappBase),
+          jsStyleDependsOn1(propTest, Compile -> Test, Test -> Test),
           testSettings,
           dontInline, // crashes scalac 2.11.2
           prodJsSettings)
