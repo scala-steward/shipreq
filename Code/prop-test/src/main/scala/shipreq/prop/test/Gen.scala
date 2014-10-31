@@ -39,13 +39,16 @@ class RngGen[A](val f: GenSize => Rng[A]) extends Gen[A] {
   private def combrng[B, C](b: RngGen[B], c: (Rng[A], Rng[B]) => Rng[C]): RngGen[C] =
     new RngGen(s => c(f(s), b.f(s)))
 
-  def fill(n: Int)   : RngGen[List[A]]              = mapr(_ fill n)
-  def list           : RngGenS[List[A]]             = sizeOp(_.list)
-  def list1          : RngGenS[NonEmptyList[A]]     = sizeOp(_.list1)
-  def set            : RngGenS[Set[A]]              = sizeOp(_.list, (_: List[A]).toSet)
-  def vector         : RngGenS[Vector[A]]           = sizeOp(_.vector)
-  def stream[AA >: A]: RngGenS[EphemeralStream[AA]] = sizeOp(_.stream)
-  def option         : RngGen[Option[A]]            = mapr(_.option)
+  def fill(n: Int)   : RngGen[List[A]]             = mapr(_ fill n)
+  def list           : RngGenS[List[A]]            = sizeOp(_.list)
+  def list1          : RngGenS[NonEmptyList[A]]    = sizeOp(_.list1)
+  def set            : RngGenS[Set[A]]             = sizeOp(_.list, (_: List[A]).toSet)
+  def set1           : RngGenS[Set[A]]             = sizeOp(_.list1, (_: NonEmptyList[A]).list.toSet)
+  def vector         : RngGenS[Vector[A]]          = sizeOp(_.vector)
+  def vector1        : RngGenS[Vector[A]]          = sizeOp(_.vector).flatMap(s => map(s :+ _))
+  def stream         : RngGenS[EphemeralStream[A]] = sizeOp(_.stream)
+  def stream1        : RngGenS[EphemeralStream[A]] = sizeOp(_.stream).flatMap(s => map(_ ##:: s))
+  def option         : RngGen[Option[A]]           = mapr(_.option)
 
   def ***       [X](x: RngGen[X]): RngGen[(A, X)]       = combrng[X, (A, X)](x, _ *** _)
   def either    [X](x: RngGen[X]): RngGen[A \/ X]       = combrng[X, A \/ X](x, _ either _)
@@ -61,6 +64,12 @@ class RngGenS[A](f: GenSize => Rng[A]) extends RngGen(f) {
     val t = GenSize(size)
     new RngGenS[A](s => f(if (s.value > size) t else s))
   }
+
+  override def map[B](g: A => B)            : RngGenS[B] = new RngGenS(s => f(s) map g)
+  override def mapr[B](g: Rng[A] => Rng[B]) : RngGenS[B] = new RngGenS(g compose f)
+  override def flatMap[B](g: A => RngGen[B]): RngGenS[B] = new RngGenS(s => f(s).flatMap(a => g(a).f(s)))
+
+  def sup: RngGen[A] = this
 }
 
 object Gen {
