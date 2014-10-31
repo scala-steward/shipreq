@@ -2,9 +2,10 @@ package shipreq.base.util
 
 object ScalaExt {
 
-  implicit class AnyExt[A](val a: A) extends AnyVal {
+  implicit class BaseUtilExtAny[A](val a: A) extends AnyVal {
     @inline def |>[B](f: A => B): B = f(a)
     @inline def |&>[B](f: A => B): (A, B) = (a, f(a))
+    @inline def tmap2[B, C](b: A => B, c: A => C): (B, C) = (b(a), c(a))
   }
 
   implicit class StringBuilderExt(val sb: StringBuilder) extends AnyVal {
