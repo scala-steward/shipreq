@@ -11,6 +11,6 @@ object DefaultSettings {
   implicit val propSettings =
     Settings(
       executor   = ParallelExecutor(),
-      sampleSize = SampleSize(1000),
-      genSize    = GenSize(400))
+      sampleSize = SampleSize(100),
+      genSize    = GenSize(200))
 }
