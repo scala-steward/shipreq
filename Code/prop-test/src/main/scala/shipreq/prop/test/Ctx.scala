@@ -21,9 +21,6 @@ case class Settings(
 
 object Settings {
   val default = Settings()
-  object Default {
-    implicit def defaultSettings = Settings.default
-  }
 }
 
 case class Ctx(run: Int, settings: Settings)

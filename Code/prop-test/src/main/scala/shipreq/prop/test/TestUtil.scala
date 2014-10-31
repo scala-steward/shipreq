@@ -10,9 +10,9 @@ object TestUtil {
   val jvm = try { "!" matches """\p{P}""" } catch { case _: Throwable => false }
 
   implicit val propSettings = (
-    if (jvm) Settings(sampleSize = SampleSize(200), genSize = GenSize(300), executor = Executor.ParallelExecutor)
+    if (jvm) Settings(sampleSize = SampleSize(100), genSize = GenSize(200), executor = Executor.ParallelExecutor())
     else     Settings(sampleSize = SampleSize(10))
-    ).copy(debug = false, debugMaxLen = 200, sizeDist = Seq(0.2 -> 0.2, 0.8 -> 0.8))
+    ).copy(debug = true, debugMaxLen = 200, sizeDist = Seq(0.2 -> 0.2, 0.8 -> 0.8))
 
   def assertProp[A](p: Prop[A], g: Gen[A])(implicit S: Settings): Unit = {
     val r = PTest(p, g, S)
