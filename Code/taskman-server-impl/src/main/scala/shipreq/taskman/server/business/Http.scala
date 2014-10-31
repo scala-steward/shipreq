@@ -15,7 +15,7 @@ import scalaz.effect.IO
 import shipreq.base.util.{Error, ErrorOr}
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.log.Logger
-import shipreq.base.util.ScalaExt.AnyExt
+import shipreq.base.util.ScalaExt.BaseUtilExtAny
 import ErrorOr.Implicits._
 
 object Http {

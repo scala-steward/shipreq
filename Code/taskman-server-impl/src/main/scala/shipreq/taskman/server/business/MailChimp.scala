@@ -10,7 +10,7 @@ import scalaz.syntax.bind._
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.effect.IoUtils.IoExt
 import shipreq.base.util.{Error, ErrorOr}
-import shipreq.base.util.ScalaExt.AnyExt
+import shipreq.base.util.ScalaExt.BaseUtilExtAny
 import shipreq.base.util.log.{LogLevel, HasLogger}
 import shipreq.taskman.api.EmailAddr
 import ErrorOr.Implicits._

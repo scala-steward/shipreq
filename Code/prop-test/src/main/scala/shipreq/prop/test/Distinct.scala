@@ -23,19 +23,19 @@ case class Distinct[A, X, H[_] : Baggy, Y, Z, B](
   def run: A => B =
     runs(_).eval(fixer.inith)
 
-  def addh(xs: X*) =
+  def addh(xs: X*): Distinct[A, X, H, Y, Z, B] =
     copy(fixer = this.fixer.addh(xs: _*))
 
-  @inline final def at[M, N](l: Lens[M, N, A, B]) =
+  @inline final def at[M, N](l: Lens[M, N, A, B]): Distinct[M, X, H, Y, Z, N] =
     dimap(l.get, l.set)
 
-  @inline final def contramap[C](f: C => A, g: (C, B) => C) =
+  @inline final def contramap[C](f: C => A, g: (C, B) => C): Distinct[C, X, H, Y, Z, C] =
     dimap(f, g)
 
-  def dimap[M, N](f: M => A, g: (M, B) => N) =
+  def dimap[M, N](f: M => A, g: (M, B) => N): Distinct[M, X, H, Y, Z, N] =
     Distinct[M, X, H, Y, Z, N](fixer, m => x_sz => t(f(m))(x_sz).map(b => g(m, b)))
 
-  def dimaps[M, N](f: M => (A => S[B]) => S[N]) =
+  def dimaps[M, N](f: M => (A => S[B]) => S[N]): Distinct[M, X, H, Y, Z, N] =
     Distinct[M, X, H, Y, Z, N](fixer, m => x_sz => f(m)(a => t(a)(x_sz)))
 
   def lift[F[_] : Foldable : Baggy]: Distinct[F[A], X, H, Y, Z, F[B]] =
@@ -56,9 +56,10 @@ case class Distinct[A, X, H[_] : Baggy, Y, Z, B](
   def liftMapValues[K]: Distinct[Map[K, A], X, H, Y, Z, Map[K, B]] =
     liftR[K].lift[Stream].dimap[Map[K, A], Map[K, B]](_.toStream, (_, l) => l.toMap)
 
-  def compose[C](f: Distinct[C, X, H, Y, Z, A]) = f + this
+  def compose[M](f: Distinct[M, X, H, Y, Z, A]): Distinct[M, X, H, Y, Z, B] =
+    f + this
 
-  def +[C](f: Distinct[B, X, H, Y, Z, C]) =
+  def +[C](f: Distinct[B, X, H, Y, Z, C]): Distinct[A, X, H, Y, Z, C] =
     Distinct[A, X, H, Y, Z, C](fixer + f.fixer, a => _ => runs(a) flatMap f.runs)
 
   def *(f: DistinctFn[A, A])(implicit ev: B === A): DistinctEndo[A] =
@@ -101,27 +102,27 @@ object Distinct {
         (h + y, g(y))
       })
 
-    @inline final def xmap[A](b: Z => A)(a: A => X) =
+    @inline final def xmap[A](b: Z => A)(a: A => X): Fixer[A, H, Y, A] =
       dimap(a, b)
 
-    def dimap[A, B](a: A => X, b: Z => B) =
-      Fixer[A, H, Y, B](f compose a, b compose g, fix, inith)
+    def dimap[A, B](a: A => X, b: Z => B): Fixer[A, H, Y, B] =
+      Fixer(f compose a, b compose g, fix, inith)
 
-    @inline final def addh(xs: X*) =
+    @inline final def addh(xs: X*): Fixer[X, H, Y, Z] =
       addhs(xs)
 
-    def addhs(xs: TraversableOnce[X]) =
-      copy[X, H, Y, Z](inith = xs.foldLeft(this.inith)(_ + f(_)))
+    def addhs(xs: TraversableOnce[X]): Fixer[X, H, Y, Z] =
+      copy(inith = xs.foldLeft(this.inith)(_ + f(_)))
 
-    def +(φ: Fixer[X, H, Y, Z]) =
-      copy[X, H, Y, Z](inith = this.inith ++ φ.inith)
+    def +(φ: Fixer[X, H, Y, Z]): Fixer[X, H, Y, Z] =
+      copy(inith = this.inith ++ φ.inith)
 
-    def distinct =
-      Distinct[X, X, H, Y, Z, Z](this, x => f => f(x))
+    def distinct: Distinct[X, X, H, Y, Z, Z] =
+      Distinct(this, x => f => f(x))
   }
 
   object Fixer {
-    def lift[H[_], A](f: H[A] => A)(implicit H: Baggy[H]) =
+    def lift[H[_], A](f: H[A] => A)(implicit H: Baggy[H]): Fixer[A, H, A, A] =
       Fixer[A, H, A, A](identity, identity, f, H.empty)
   }
 
