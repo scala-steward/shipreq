@@ -36,11 +36,11 @@ object PropTest extends TestSuite {
   override def tests = TestSuite {
     'Falsy {
       def test[A](p: Prop[A], a: A, expect: Option[Falsy[A]]): Unit = {
-        val actual = p falsify1 a map toFalsy
+        val actual = p falsify a map toFalsy
         assert(actual == expect)
       }
       def testRootCauses[A](p: Prop[A], a: A, e: List[Prop[_]]): Unit = {
-        val r = p.falsify1(a).toList.flatMap(_.rootCauses.list)
+        val r = p.falsify(a).toList.flatMap(_.rootCauses.list)
         val actual = r.map(_.toString).sorted
         val expect = e.map(_.toString).sorted
         assert(actual == expect)
@@ -122,14 +122,14 @@ object PropTest extends TestSuite {
         testRootCauses(allEven, List(4,5,6,7), List(even))
       }
       'renamed {
-        val t = mod235c.rename("whateverness").falsify1(6).get.failureTree
+        val t = mod235c.rename("whateverness").falsify(6).get.failureTree
         assert(t == "whateverness\n└─ mod5")
       }
       'forall2 {
         val t = Prop[Int]("true", _ => true)
         val q = even ∧ mod5 ∧ t
         val p = q.forallF[List].asInstanceOf[Forall[List, List[Int], Int]]
-        val r = p.falsify1(List(1,2,3,4,5,6,7,8,9,10)).get
+        val r = p.falsify(List(1,2,3,4,5,6,7,8,9,10)).get
         val d = Falsification(mod5, Nil, Set(1,2,3,4,6,7,8,9))
         val e = Falsification(even, Nil, Set(1,3,5,7,9))
         val c = Falsification(q, List(d, e), Set(1,2,3,4,5,6,7,8,9))

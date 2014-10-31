@@ -1,4 +1,4 @@
-package shipreq.prop
+package shipreq.prop.test
 
 final case class GenSize(value: Int) {
   def map(f: Int => Int) = GenSize(f(value))
@@ -8,11 +8,12 @@ final case class SampleSize(value: Int)  {
 }
 
 case class Settings(
-  sizeDist: Seq[(Double, Double)] = Seq.empty,
-  sampleSize: SampleSize          = SampleSize(100),
-  genSize: GenSize                = GenSize(40),
-  debug: Boolean                  = false,
-  debugMaxLen: Int                = 960) {
+  sizeDist   : Seq[(Double, Double)] = Seq.empty,
+  sampleSize : SampleSize            = SampleSize(100),
+  genSize    : GenSize               = GenSize(40),
+  executor   : Executor              = Executor.SingleThreadedExecutor,
+  debug      : Boolean               = false,
+  debugMaxLen: Int                   = 960) {
 
   lazy val sampleSizeLen = sampleSize.value.toString.length
   lazy val sampleProgressFmt = s"[%${sampleSizeLen}d/${sampleSize.value}] "

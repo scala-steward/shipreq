@@ -7,6 +7,6 @@ package object prop {
   implicit class PropExtAny[A](val a: A) extends AnyVal {
 
     @elidable(elidable.ASSERTION)
-    def assertSatisfies(p: Prop[A]): Unit = p.assert1(a)
+    def assertSatisfies(p: Prop[A]): Unit = p.assert(a)
   }
 }

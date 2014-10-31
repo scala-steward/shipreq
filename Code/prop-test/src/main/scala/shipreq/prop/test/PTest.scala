@@ -17,11 +17,106 @@ case class  Falsified[+A](a: A)   extends Result[A]
 case class RunState[+A](runs: Int, result: Result[A])
 object RunState {
   implicit def RunStateToResult[A](r: RunState[A]): Result[A] = r.result
+
+  def empty[A] = RunState[A](0, Satisfied)
+}
+
+trait Executor {
+  def run[A](p: Prop[A], data: EphemeralStream[A], S: Settings): RunState[A]
+}
+
+object Executor {
+  import PTest._
+
+  object SingleThreadedExecutor extends Executor {
+    override def run[A](p: Prop[A], data: EphemeralStream[A], S: Settings): RunState[A] = {
+      val it = EphemeralStream.toIterable(data).iterator
+      var rs = RunState[A](0, Satisfied)
+      while (rs.success && it.hasNext) {
+        val a = it.next()
+        rs = RunState(rs.runs + 1, test1(p, a)) // TODO pass to executor? Ctx(rs.runs, S)
+        if (S.debug) debug1(a, rs, S)
+      }
+      rs
+    }
+  }
+
+  object ParallelExecutor extends Executor {
+    import java.util.concurrent._
+
+    override def run[A](p: Prop[A], datas: EphemeralStream[A], S: Settings): RunState[A] = {
+      println("executror...")
+
+      val workers = 6
+
+      val (next, fail) = {
+        val lock = new Object
+        @volatile var done = datas.isEmpty
+
+        val fail: () => Unit =
+          () => done = true
+
+        val next: () => Option[(Int, () => A)] = {
+          var nextData: () => EphemeralStream[A] = () => datas
+          var runcnt = 0
+          () => if (done) None else lock.synchronized {
+            val cur = nextData()
+            if (cur.isEmpty || done) {
+              done = true
+              None
+            } else {
+              runcnt += 1
+              nextData = cur.tail
+              Some((runcnt, cur.head))
+            }
+          }
+        }
+        (next, fail)
+      }
+
+      def task(worker: Int) = new Callable[RunState[A]] {
+        override def call(): RunState[A] = {
+          var rs = RunState[A](0, Satisfied)
+          var n = next()
+          while (n.isDefined) {
+            val (r, fa) = n.get
+            val a = fa()
+            rs = RunState(r, test1(p, a))
+            if (S.debug) debug1(a, rs, S)
+            if (!rs.success) fail()
+            n = next()
+          }
+          rs
+        }
+      }
+
+      println("workers...")
+      val es: ExecutorService = Executors.newFixedThreadPool(workers)
+      val fs = (1 to workers).toList.map(es submit task(_))
+      es.shutdown()
+      val rss = fs.map(_.get())
+      es.awaitTermination(1, TimeUnit.MINUTES)
+
+      println("done...")
+
+      def merge(a: RunState[A], b: RunState[A]): RunState[A] =
+        (a.success, b.success) match {
+          case (true, false)             => b
+          case (false, true)             => a
+          case (_, _) if a.runs < b.runs => a
+          case _                         => b
+        }
+
+      val rs = rss.foldLeft(RunState.empty[A])(merge)
+      rs
+    }
+  }
+
 }
 
 object PTest {
 
-  def apply[A](p: Prop[A], gen: Gen[A])(implicit S: Settings): RunState[A] = {
+  def apply[A](p: Prop[A], gen: Gen[A], S: Settings): RunState[A] = {
     if (S.debug) println(s"\n$p")
     val data =
       EphemeralStream((if (S.sizeDist.isEmpty) Seq((1D, 1D)) else S.sizeDist): _*)
@@ -31,7 +126,7 @@ object PTest {
         if (S.debug) println(s"Generating ${s.value} samples @ sz ${g.value}...")
         gen.gen2(g).f(s).take(s.value)
       }
-    testN(p, data)
+    S.executor.run(p, data, S)
   }
 
   // exhaustive
@@ -40,18 +135,19 @@ object PTest {
 //      case RunState(r, Satisfied) => RunState(r, Proved)
 //      case r => r
 //    }
-  private def testN[A](p: Prop[A], data: EphemeralStream[A])(implicit S: Settings): RunState[A] = {
-    val it = EphemeralStream.toIterable(data).iterator
-    var rs = RunState[A](0, Satisfied)
-    while (rs.success && it.hasNext) {
-      val a = it.next()
-      rs = RunState(rs.runs + 1, test1(p, a, Ctx(rs.runs, S)))
-      if (S.debug) debug1(a, rs)
-    }
-    rs
-  }
 
-  private def debug1[A](a: A, r: RunState[A])(implicit S: Settings): Unit = {
+//  private def testN[A](p: Prop[A], data: EphemeralStream[A])(implicit S: Settings): RunState[A] = {
+//    val it = EphemeralStream.toIterable(data).iterator
+//    var rs = RunState[A](0, Satisfied)
+//    while (rs.success && it.hasNext) {
+//      val a = it.next()
+//      rs = RunState(rs.runs + 1, test1(p, a)) // TODO pass to executor? Ctx(rs.runs, S)
+//      if (S.debug) debug1(a, rs)
+//    }
+//    rs
+//  }
+
+  def debug1[A](a: A, r: RunState[A], S: Settings): Unit = {
     def c(code: String, m: Any) = s"\033[${code}m$m\033[0m"
     var aa = a.toString
     val maxLen = if (r.success) S.debugMaxLen else aa.length
@@ -66,9 +162,9 @@ object PTest {
     if (al > 200) println()
   }
 
-  private def test1[A](p: Prop[A], a: A, x: Ctx): Result[A] =
+  def test1[A](p: Prop[A], a: A): Result[A] =
     try {
-      if (p.test(a, x)) Satisfied else Falsified(a)
+      if (p.test(a)) Satisfied else Falsified(a)
     } catch {
       case _: Throwable => Falsified(a)
     }

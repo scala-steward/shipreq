@@ -43,11 +43,11 @@ object ProtocolTest extends TestSuite {
       assert(b == a)
     }
 
-    def propA[A: Reader : Writer](lf: LogFmt, name: String) = Prop.atom[A](name, (a,x) => {
+    def propA[A: Reader : Writer](lf: LogFmt, name: String) = Prop.atom[A](name, a => {
       val j = write(a)
       val b = read[A](j)
-      if (!x.settings.debug && x.run == 0)
-        println(lf(a.toString, j))
+//      if (!x.settings.debug && x.run == 0)
+//        println(lf(a.toString, j))
       b == a
     }, identity)
 
