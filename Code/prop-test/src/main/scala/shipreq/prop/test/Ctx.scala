@@ -8,23 +8,13 @@ final case class SampleSize(value: Int)  {
 }
 
 case class Settings(
-  sizeDist   : Seq[(Double, Double)] = Seq.empty,
+  executor   : Executor              = SingleThreadedExecutor,
+  sizeDist   : Seq[(Double, Double)] = Seq(0.1 -> 0.1, 0.1 -> 0.2, 0.8 -> 0.8),
   sampleSize : SampleSize            = SampleSize(100),
   genSize    : GenSize               = GenSize(40),
-  executor   : Executor              = Executor.SingleThreadedExecutor,
   debug      : Boolean               = false,
-  debugMaxLen: Int                   = 960) {
+  debugMaxLen: Int                   = 200) {
 
   lazy val sampleSizeLen = sampleSize.value.toString.length
   lazy val sampleProgressFmt = s"[%${sampleSizeLen}d/${sampleSize.value}] "
-}
-
-object Settings {
-  val default = Settings()
-}
-
-case class Ctx(run: Int, settings: Settings)
-
-object Ctx {
-  def single(implicit S: Settings = Settings.default) = Ctx(0, S)
 }

@@ -93,6 +93,7 @@ object ShipReq extends Build {
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
         .dependsOn(propCore)
+        .settings(unmanagedSourceDirectories in Compile += baseDirectory.value / "src/main/scala-jvm")
     }
   }
     // ===================================================================================================================
@@ -303,21 +304,26 @@ object ShipReq extends Build {
       // Recompile shared source rather than depending directly
       // https://github.com/scala-js/scala-js/issues/1067
       def jsStyleDependsOn(deps: Project*) =
-        deps.foldLeft(identity[Project]_)(_ compose jsStyleDependsOn1(_, Compile -> Compile, Test -> Test))
+        deps.foldLeft(identity[Project]_)(_ compose jsStyleDependsOnS(_)(Compile -> Compile, Test -> Test))
 
-      def jsStyleDependsOn1(dep: Project, scopes: (Configuration, Configuration)*) = (_: Project)
-        .settings(scopes.map{ case (a, b) =>
-          unmanagedSourceDirectories in b += (scalaSource in a in dep).value
-        }: _*)
+      def jsStyleDependsOnS(deps: Project*)(scopes: (Configuration, Configuration)*) = (_: Project)
+        .settings((
+          for {
+            dep    <- deps
+            (a, b) <- scopes
+          } yield
+            unmanagedSourceDirectories in b += (scalaSource in a in dep).value
+          ): _*)
 
       override def project = typicalProject
         .settings(scalaJSSettings: _*)
         .configure(
           jsStyleDependsOn(propCore, baseUtilSjs, webappBase),
-          jsStyleDependsOn1(propTest, Compile -> Test, Test -> Test),
+          jsStyleDependsOnS(propTest)(Compile -> Test, Test -> Test),
           testSettings,
           dontInline, // crashes scalac 2.11.2
           prodJsSettings)
+        .settings(unmanagedSourceDirectories in Test += (baseDirectory in Compile in propTest).value / "src/main/scala-js")
     }
 
     // ----------------------------------------------------

@@ -47,7 +47,7 @@ parseCloc a = parse $ listToMaybe $ filter (isPrefixOf "Scala") $ lines a
 -- Stats gathering
 
 groups = ["prop", "base", "taskman", "webapp"]
-mainPaths = ["src/main/scala"]
+mainPaths = ["src/main/scala", "src/main/scala-jvm", "src/main/scala-js"]
 testPaths = ["src/test-lib/scala", "src/test/scala"]
 
 type Group = String
