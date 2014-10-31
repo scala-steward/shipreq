@@ -188,8 +188,8 @@ final case class Forall[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B], updName:
           .plainMap.toList
           .map { case (p, (cs, is)) =>
             val causes2 = cs
-              .foldLeft(Multimap.set[Prop[B], Any])((q, c) => q.addN(c.p, c.inputs))
-              .plainMap.toList
+              .foldLeft(Multimap.empty[Prop[B], Set, Any])((q, c) => q.addvs(c.p, c.inputs))
+              .m.toList
               .map { case (p2, is2) => Falsification(p2, Nil, is2) }
             val inputs2 = causes2.foldLeft(Set.empty[Any])(_ ++ _.inputs)
             Falsification(p, causes2, inputs2).map[A](Forall(_, f, false))
