@@ -28,26 +28,30 @@ final class Multimap[K, L[_], V](val m: Map[K, L[V]])(implicit L: MultiValues[L]
 
   @inline private[this] def copy(m: Map[K, L[V]]) = new Multimap[K, L, V](m)
 
-  @inline private[this] def modM(f: Map[K, L[V]] => Map[K, L[V]]) = copy(f(m))
+  def apply   (k: K): L[V]            = m getOrEmpty k
+  def mod     (k: K, f: L[V] => L[V]) = copy(m.mod(k, f))
+  def add     (k: K, v: V)            = mod(k, _ add1 v)
+  def addPair (kv: (K, V))            = copy(m add kv)
+  def addPairs(kvs: (K, V)*)          = copy(kvs.foldLeft(m)(_ add _))
+  def addvs   (k: K, vs: L[V])        = mod(k, _ addn vs)
+  def addks   (ks: L[K], v: V)        = copy(ks.foldl(m)(_.add(_, v)))
+  def del     (k: K, v: V)            = mod(k, _ del1 v)
+  def delk    (k: K)                  = copy(m - k)
+  def delv    (v: V)                  = copy(m.mapValues(_ del1 v))
+  def delks   (ks: L[K])              = copy(ks.foldl(m)(_ - _))
+  def delvs   (vs: L[V])              = copy(m.mapValues(_ deln vs))
+  def set     (k: K, vs: L[V])        = mod(k, _ => vs)
+  def reverse                         = Multimap.reverse(m)
 
-  def apply(k: K): L[V]            = m getOrEmpty k
-  def mod  (k: K, f: L[V] => L[V]) = copy(m.mod(k, f))
-  def add  (k: K, v: V)            = mod(k, _ add1 v)
-  def addvs(k: K, vs: L[V])        = mod(k, _ addn vs)
-  def addks(ks: L[K], v: V)        = copy(ks.foldl(m)(_.add(_, v)))
-  def del  (k: K, v: V)            = mod(k, _ del1 v)
-  def delk (k: K)                  = copy(m - k)
-  def delv (v: V)                  = copy(m.mapValues(_ del1 v))
-  def delks(ks: L[K])              = modM(m => ks.foldl(m)(_ - _))
-  def delvs(vs: L[V])              = copy(m.mapValues(_ deln vs))
-  def set  (k: K, vs: L[V])        = mod(k, _ => vs)
-  def reverse                      = Multimap.reverse(m)
+  @inline def delbi(a: K, b: V)(implicit e: K =:= V, f: V =:= K) =
+    copy(m.mod(a, _ del1 b).mod(b, _ del1 a))
 
   def streamKV: Stream[(K, V)] =
     m.toStream.flatMap(kv => kv._2.stream.map(v => (kv._1, v)))
 
   def keyCount   = m.size
   def valueCount = m.valuesIterator.foldLeft(0)(_ + _.count)
+  def sizeSummary = SizeSummary(m.valuesIterator.foldLeft(Vector.empty[Int])(_ :+ _.count))
 }
 
 object Multimap {
@@ -56,6 +60,7 @@ object Multimap {
   private[util] object Internal {
     implicit final class MultiMapExt[K, L[_], V](val m: Map[K, L[V]]) extends AnyVal {
       @inline def getOrEmpty(k: K)          (implicit L: MultiValues[L]): L[V]         = m.getOrElse(k, L.empty)
+      @inline def add(kv: (K, V))           (implicit L: MultiValues[L]): Map[K, L[V]] = mod(kv._1, _ add1 kv._2)
       @inline def add(k: K, v: V)           (implicit L: MultiValues[L]): Map[K, L[V]] = mod(k, _ add1 v)
       @inline def mod(k: K, f: L[V] => L[V])(implicit L: MultiValues[L]): Map[K, L[V]] = put(k, f(getOrEmpty(k)))
       @inline def put(k: K, v: L[V])        (implicit L: MultiValues[L]): Map[K, L[V]] =
@@ -73,6 +78,31 @@ object Multimap {
       def count                         (implicit L: MultiValues[L]) = foldl(0)((q, _) => q + 1)
       def isEmpty                       (implicit L: MultiValues[L]) = L.isEmpty(as)
     }
+  }
+
+  case class SizeSummary(vs: Vector[Int]) {
+    val keys = vs.size
+    val values = vs.sum
+    val vmin = if (vs.isEmpty) 0 else vs.min
+    val vmax = if (vs.isEmpty) 0 else vs.max
+    val avg = values.toDouble / keys.toDouble
+    val avgi = avg.toInt
+    val stddev = {
+      val s = (0.0 /: vs)((q,x) => q + Math.pow(x - avg, 2))
+      Math.sqrt(s / keys.toDouble)
+    }
+    override val toString =
+      if (vs.isEmpty)
+        "empty"
+      else {
+        def fmt(d: Double) = "%.03f" format d
+        def rng(z: Double) = {
+          val s = stddev * z
+          val List(a, b) = List(-s, s).map(x => (x + avg).toInt)
+          s"[$a…$b]"
+        }
+        s"$keys → Σ$values [$vmin … $avgi … $vmax] σ=${fmt(stddev)} 68%:${rng(1)} 95%:${rng(2)}"
+      }
   }
 
   def apply[K, L[_], V](m: Map[K, L[V]])(implicit L: MultiValues[L]) =
