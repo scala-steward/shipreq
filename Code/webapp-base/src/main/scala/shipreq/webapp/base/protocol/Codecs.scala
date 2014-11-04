@@ -58,40 +58,40 @@ private[protocol] object Codec {
     Js.Arr(ts.foldLeft(List.empty[Js.Value])((q,i) => W.write0(i) :: q): _*)
 
   def caseclass1[A, Z](y: A => Z, u: Z => Option[A])(implicit RA: Reader[A], WA: Writer[A]) =
-    ReadWriter[Z](z => WA write u(z).get, RA.read andThen y)
+    ReadWriter[Z](z => WA write0 u(z).get, RA.read0 andThen y)
 
   def caseclass2[A: Reader : Writer, B: Reader : Writer, Z]
   (y: (A, B) => Z, u: Z => Option[(A, B)]): ReadWriter[Z] = {
-    val r = Tuple2R[A, B].read
-    val w = Tuple2W[A, B].write
+    val r = Tuple2R[A, B].read0
+    val w = Tuple2W[A, B].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass3[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, Z]
   (y: (A, B, C) => Z, u: Z => Option[(A, B, C)]): ReadWriter[Z] = {
-    val r = Tuple3R[A, B, C].read
-    val w = Tuple3W[A, B, C].write
+    val r = Tuple3R[A, B, C].read0
+    val w = Tuple3W[A, B, C].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass4[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, Z]
   (y: (A, B, C, D) => Z, u: Z => Option[(A, B, C, D)]): ReadWriter[Z] = {
-    val r = Tuple4R[A, B, C, D].read
-    val w = Tuple4W[A, B, C, D].write
+    val r = Tuple4R[A, B, C, D].read0
+    val w = Tuple4W[A, B, C, D].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
   
   def caseclass5[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, Z]
   (y: (A, B, C, D, E) => Z, u: Z => Option[(A, B, C, D, E)]): ReadWriter[Z] = {
-    val r = Tuple5R[A, B, C, D, E].read
-    val w = Tuple5W[A, B, C, D, E].write
+    val r = Tuple5R[A, B, C, D, E].read0
+    val w = Tuple5W[A, B, C, D, E].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass6[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, F: Reader : Writer, Z]
   (y: (A, B, C, D, E, F) => Z, u: Z => Option[(A, B, C, D, E, F)]): ReadWriter[Z] = {
-    val r = Tuple6R[A, B, C, D, E, F].read
-    val w = Tuple6W[A, B, C, D, E, F].write
+    val r = Tuple6R[A, B, C, D, E, F].read0
+    val w = Tuple6W[A, B, C, D, E, F].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
@@ -104,13 +104,13 @@ private[protocol] object Codec {
 
   implicit def crudable[C <: Crudable](implicit WI: Writer[C#Id], RI: Reader[C#Id], WV: Writer[C#V], RV: Reader[C#V]): ReadWriter[CrudAction[C]] =
     ReadWriter[CrudAction[C]]({
-      case CrudAction.Create(v)    => Js.Arr(WV write v)
-      case CrudAction.Update(i, v) => Js.Arr(WI write i, WV write v)
-      case CrudAction.Delete(i, a) => Js.Arr(WI write i, deletionAction write a, Js.Arr())
+      case CrudAction.Create(v)    => Js.Arr(WV write0 v)
+      case CrudAction.Update(i, v) => Js.Arr(WI write0 i, WV write0 v)
+      case CrudAction.Delete(i, a) => Js.Arr(WI write0 i, deletionAction write0 a, Js.Arr())
     }, {
-      case Js.Arr(v)       => CrudAction.Create(RV read v)
-      case Js.Arr(i, v)    => CrudAction.Update(RI read i, RV read v)
-      case Js.Arr(i, a, _) => CrudAction.Delete(RI read i, deletionAction read a)
+      case Js.Arr(v)       => CrudAction.Create(RV read0 v)
+      case Js.Arr(i, v)    => CrudAction.Update(RI read0 i, RV read0 v)
+      case Js.Arr(i, a, _) => CrudAction.Delete(RI read0 i, deletionAction read0 a)
     })
 }
 import Codec._
