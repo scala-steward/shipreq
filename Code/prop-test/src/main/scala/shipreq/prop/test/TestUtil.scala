@@ -31,7 +31,7 @@ object TestUtil {
         throw new AssertionError(s"Failed: $p")
 
       case RunState(runs, Error(a, e)) =>
-        fail(a, v => s"\n${RED_B}Crashed $WHITE_B[$p]$RESET$RED after $runs runs with:$RESET\n$v\n", e.toString)
+        fail(a, v => s"\n${RED_B}Crashed $WHITE_B$RED[$p]$RESET$RED_B after $runs runs with:$RESET\n$v\n", e.toString)
         throw new AssertionError(s"Failed: $p", e)
     }
   }
