@@ -12,14 +12,14 @@ object TestUtil {
 
   def assertProp[A](p: Prop[A], g: Gen[A])(implicit S: Settings): Unit = {
 
-    def fail(a: A, header: String => String, footer: String): Unit = {
+    def fail(a: A, header: String => String, printFooter: => Unit): Unit = {
       if (!S.debug) {
         val v = a.toString
         val w = Util.escapeString(v)
         println(header(v))
         if (w != v) println(s"$w\n")
       }
-      println(footer)
+      printFooter
       println()
     }
 
@@ -27,11 +27,13 @@ object TestUtil {
       case RunState(_, Satisfied()) | RunState(_, Proved()) => ()
 
       case RunState(runs, Falsified(a, f)) =>
-        fail(a, v => s"\n${RED}Falsified $WHITE_B[$p]$RESET$RED after $runs runs with:$RESET\n$v\n", f.report)
+        fail(a, v => s"\n${RED}Falsified $WHITE_B[$p]$RESET$RED after $runs runs with:$RESET\n$v\n",
+          println(f.report))
         throw new AssertionError(s"Failed: $p")
 
       case RunState(runs, Error(a, e)) =>
-        fail(a, v => s"\n${RED_B}Crashed $WHITE_B$RED[$p]$RESET$RED_B after $runs runs with:$RESET\n$v\n", e.toString)
+        fail(a, v => s"\n${RED_B}Crashed $WHITE_B$RED[$p]$RESET$RED_B after $runs runs with:$RESET\n$v\n",
+          e.printStackTrace())
         throw new AssertionError(s"Failed: $p", e)
     }
   }
