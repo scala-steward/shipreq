@@ -22,6 +22,6 @@ object GenericValidators {
 
   /** Empty string is represented as `None`. */
   def optionalLargeText(name: String) = Validator(
-    largeTextCP.map(nonBlank),
+    largeTextCP.imap(nonBlank),
     ValidationPart.liftO[String, String](largeTextValidator(name).validate))
 }

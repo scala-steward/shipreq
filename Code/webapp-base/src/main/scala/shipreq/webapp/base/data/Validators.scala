@@ -23,12 +23,12 @@ object Validators {
         upperCase andThen validChars andThen validLength)
     }
 
-    val name = mandatoryShortText("Name").toPlus
+    val name = mandatoryShortText("Name").liftToPlus
   }
 
   object customIncmpType {
     def key = refKey
-    def desc = optionalLargeText(FieldNames.desc).toPlus
+    def desc = optionalLargeText(FieldNames.desc).liftToPlus
   }
 
   val refKey = {

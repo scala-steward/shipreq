@@ -1,24 +1,29 @@
 package shipreq.webapp.base.validation
 
-import scalaz.{Endo, NonEmptyList, Failure, Validation, Success}
+import scalaz._
 import scalaz.Isomorphism.<=>
+import scalaz.syntax.functor._
+import scalaz.syntax.traverse._
 
 final class CorrectionPart[I, C](val correct: I => InputCorrected[C], val ci: C => I) {
-  def contramap[A](iso: A <=> I): CorrectionPart[A, C] =
-    contramap(iso.to)(iso.from)
+  def contraimap[A](iso: A <=> I): CorrectionPart[A, C] =
+    contraxmap(iso.from)(iso.to)
 
-  def contramap[A](f: A => I)(g: I => A): CorrectionPart[A, C] =
+  def contraxmap[A](g: I => A)(f: A => I): CorrectionPart[A, C] =
     new CorrectionPart(correct compose f, g compose ci)
 
-  def map[D](iso: C <=> D): CorrectionPart[I, D] =
-    map(iso.to)(iso.from)
+  def imap[D](iso: C <=> D): CorrectionPart[I, D] =
+    xmap(iso.to)(iso.from)
 
-  def map[D](f: C => D)(g: D => C): CorrectionPart[I, D] =
+  def xmap[D](f: C => D)(g: D => C): CorrectionPart[I, D] =
     new CorrectionPart(i => InputCorrected(f(correct(i).value)), ci compose g)
+
+  def lift[M[_]](implicit M: Functor[M]): CorrectionPart[M[I], M[C]] =
+    new CorrectionPart(mi => InputCorrected(M.map(mi)(correct(_).value)), M.map(_)(ci))
 }
 
 object CorrectionPart {
-  def apply[I, C](f: I => C)(ci: C => I): CorrectionPart[I, C] =
+  @inline def apply[I, C](f: I => C)(ci: C => I): CorrectionPart[I, C] =
     new CorrectionPart(i => InputCorrected(f(i)), ci)
 
   def lift[I, C](iso: I <=> C): CorrectionPart[I, C] =
@@ -36,16 +41,24 @@ object CorrectionPart {
 
 // =====================================================================================================================
 
-final class ValidationPart[C, +V](val validate: InputCorrected[C] => ValidationResult[V]) {
-  def contramap[C0](f: InputCorrected[C0] => InputCorrected[C]) =
-    ValidationPart[C0, V](validate compose f)
+final class ValidationPart[C, V](val validate: InputCorrected[C] => ValidationResult[V]) {
 
-  def map[V2](f: V => V2) = ValidationPart[C, V2](validate(_) map f)
+  def contramapI[B](f: InputCorrected[B] => InputCorrected[C]) =
+    ValidationPart[B, V](validate compose f)
+
+  def contramap[B](f: B => C): ValidationPart[B, V] =
+    ValidationPart(ib => validate(InputCorrected(f(ib.value))))
+
+  def map[W](f: V => W): ValidationPart[C, W] =
+    ValidationPart(validate(_) map f)
+
+  def lift[M[_]](implicit M: Functor[M], T: Traverse[M]): ValidationPart[M[C], M[V]] =
+    ValidationPart(mic => M.map(mic.value)(c => validate(InputCorrected(c))).sequence[ValidationResult, V])
 }
 
 object ValidationPart {
 
-  def apply[C, V](f: InputCorrected[C] => ValidationResult[V]) =
+  @inline def apply[C, V](f: InputCorrected[C] => ValidationResult[V]) =
     new ValidationPart(f)
 
   def liftO[C, V](f: InputCorrected[C] => ValidationResult[V]) =
@@ -81,7 +94,7 @@ object ValidationPart {
 
 // TODO Determine Validator properties/laws
 
-class Validator[I, C, +V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C, V]) {
+class Validator[I, C, V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C, V]) {
   @inline final def ci(c: C): I = cp.ci(c)
   @inline final def ci(c: InputCorrected[C]): I = cp.ci(c.value)
   @inline final def correct = cp.correct
@@ -94,8 +107,17 @@ class Validator[I, C, +V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C
   def isValid(input: InputCorrected[C]): Boolean =
     validate(input).isSuccess
 
-  def map[V2](f: V => V2): Validator[I, C, V2] =
+  def contraimap[A](iso: A <=> I): Validator[A, C, V] =
+    Validator(cp contraimap iso, vp)
+
+  def contraxmap[A](g: I => A)(f: A => I): Validator[A, C, V] =
+    Validator(cp.contraxmap(g)(f), vp)
+
+  def map[W](f: V => W): Validator[I, C, W] =
     Validator(cp, vp map f)
+
+  def lift[M[_]](implicit M: Functor[M], T: Traverse[M]): Validator[M[I], M[C], M[V]] =
+    Validator(cp.lift[M], vp.lift[M])
 
   def ***[I2, C2, V2](b: Validator[I2, C2, V2]): Validator[(I, I2), (C, C2), (V, V2)] =
     Validator(
@@ -110,7 +132,7 @@ class Validator[I, C, +V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C
 object Validator {
   val Ap = Validation.ValidationApplicative[VFailure](VFailure.semigroup)
 
-  def apply[I, C, V](cp: CorrectionPart[I, C], vp: ValidationPart[C, V]): Validator[I, C, V] =
+  @inline def apply[I, C, V](cp: CorrectionPart[I, C], vp: ValidationPart[C, V]): Validator[I, C, V] =
     new Validator(cp, vp)
 
   def nop[A] =

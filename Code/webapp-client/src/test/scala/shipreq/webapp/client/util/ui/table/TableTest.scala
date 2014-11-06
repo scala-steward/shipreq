@@ -20,7 +20,7 @@ object TableTest extends TestSuite {
   implicit def DataEqual = Equal.equalA[Data]
 
   val nameV = ValidatorPlus.nop[String]
-  val descV = GenericValidators.optionalLargeText("desc").toPlus
+  val descV = GenericValidators.optionalLargeText("desc").liftToPlus
 
   val prespec = TableSpecBuilder[Data](
     FieldSpec[Data](_.name)(nameV)(Editors.TextInputEditor),
