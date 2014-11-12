@@ -11,6 +11,8 @@ import shipreq.prop.test.TestUtil._
 
 object ProtocolTest extends TestSuite {
 
+  implicit def equality[A] = scalaz.Equal.equalA[A]
+
   def kitR[R <: Routine.Desc](r: R) = {
     import r.{ri, wi, ro, wo}
     new KitIO[r.I, r.O]("Routines." + r.getClass.getSimpleName.replace("$",""))
@@ -43,13 +45,13 @@ object ProtocolTest extends TestSuite {
       assert(b == a)
     }
 
-    def propA[A: Reader : Writer](lf: LogFmt, name: String) = Prop.atom[A](name, a => {
+    def propA[A: Reader : Writer](lf: LogFmt, name: String) = Prop.equalSelf[A](name, a => {
       val j = write(a)
       val b = read[A](j)
 //      if (!x.settings.debug && x.run == 0)
 //        println(lf(a.toString, j))
-      b == a
-    }, identity)
+      b
+    })
 
     def propI = propA[I](logFmtI, s"$subject⁻: read(write(a)) = a")
     def propO = propA[O](logFmtO, s"$subject⁺: read(write(a)) = a")

@@ -4,10 +4,10 @@ import scala.annotation.tailrec
 import scalaz.NonEmptyList
 import shipreq.prop.util.Util
 
-final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inputs: Set[Any]) {
+final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], finfo: Set[FailureInfo]) {
 
   def map[B](f: Prop[A] => Prop[B]): Falsification[B] =
-    Falsification(f(p), cause map (_ map f), inputs)
+    Falsification(f(p), cause map (_ map f), finfo)
 
   // TODO rootCauses is redundant now or what?
   def rootCauses: NonEmptyList[Prop[A]] = {
@@ -26,10 +26,10 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inp
     loop(this, Nil)
   }
 
-  def rootCausesAndInputs: Map[Prop[A], Set[Any]] = {
-    type R = Map[Prop[A], Set[Any]]
-    @inline def addR(r: R, p: Prop[A], i: Set[Any]): R =
-      r + (p -> (r.getOrElse(p, Set.empty[Any]) ++ i))
+  def rootCausesAndInputs: Map[Prop[A], Set[FailureInfo]] = { // TODO look! a multimap
+    type R = Map[Prop[A], Set[FailureInfo]]
+    @inline def addR(r: R, p: Prop[A], i: Set[FailureInfo]): R =
+      r + (p -> (r.getOrElse(p, Set.empty[FailureInfo]) ++ i))
     def loop(f: Falsification[A], r: R): R =
       f match {
         case Falsification(p, Nil, i)        => addR(r, p, i)
@@ -51,11 +51,11 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inp
     case class K(k: Prop[A]) extends X {
       override val toString = k.toString
     }
-    case class I(i: Any) extends X {
-      override val toString = i.toString
+    case class I(i: FailureInfo) extends X {
+      override val toString = i.value.toString
     }
     case object T extends X {
-      override def toString = s"${m.size} props, ${m.values.foldLeft(Set.empty[Any])(_ ++ _).size} inputs."
+      override def toString = s"${m.size} props, ${m.values.foldLeft(Set.empty[FailureInfo])(_ ++ _).size} inputs."
     }
     val keys = m.keys.toList.map(K).sortBy(_.toString)
     Util.asciiTreeSB[X](sb, List(T), _.toString, {
@@ -70,7 +70,7 @@ final case class Falsification[A](p: Prop[A], cause: List[Falsification[A]], inp
     sb append "Property ["
     sb append p.toString
     sb append "] failed"
-    inputs.toList.sortBy(_.toString) match {
+    finfo.toStream.map(_.value).sorted.toList match {
       case Nil =>
         sb append '.'
       case h :: Nil =>

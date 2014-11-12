@@ -1,5 +1,6 @@
 package shipreq.prop
 
+import scalaz.Value
 import scalaz.std.list._
 import utest._
 
@@ -19,8 +20,10 @@ object PropTest extends TestSuite {
   }
   implicit def toFalsy[A](f: Falsification[A]): Falsy[A] = Falsy(f.p, f.cause map toFalsy)
 
+  implicit def toFInfo[A](a: A): FailureInfo = Value(a.toString)
+
   def norm[A](f: Falsification[A]): Falsification[A] =
-    Falsification(f.p, f.cause.sortBy(_.toString) map norm, f.inputs)
+    Falsification(f.p, f.cause.sortBy(_.toString) map norm, f.finfo.map(v => Value(v.value)))
 
   val even = Prop[Int]("even", _ % 2 == 0)
   val mod3 = Prop[Int]("mod3", _ % 3 == 0)

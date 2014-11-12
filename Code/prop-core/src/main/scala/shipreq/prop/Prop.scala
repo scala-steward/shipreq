@@ -1,43 +1,64 @@
 package shipreq.prop
 
 import scala.annotation.elidable
-import scalaz.{Foldable, NonEmptyList}
+import scalaz.{Foldable, NonEmptyList, Need, Equal}
 import scalaz.std.tuple.tuple2Monoid
 import scalaz.std.list.listMonoid
 import scalaz.std.set.setMonoid
+import scalaz.syntax.equal._
 import scalaz.syntax.foldable._
 import shipreq.prop.util.{Monoidmap, Multimap}
 
 object Prop {
 
-  @inline final def apply[A](name: String, t: A => Boolean): Prop[A] =
-    atom(name, t, identity)
+  def apply[A](name: String, t: A => Boolean): Prop[A] =
+    atom(name, a => if (t(a)) None else Some(fmta(a)))
 
-  @inline final def atom[A](name: String, t: A => Boolean, fmta: A => Any): Prop[A] =
-    new Atom[A](name, t, fmta)
+  def atom[A](name: String, t: A => Option[FailureInfo]): Prop[A] =
+    new Atom[A](name, t)
+
+  def equalSelf[A: Equal](name: String, f: A => A): Prop[A] =
+    equal[A, A](name, f, identity)
+
+  def equal[A, B: Equal](name: String, t: A => B, e: A => B): Prop[A] =
+    atom[A](name, a => {
+      val ba = t(a)
+      val be = e(a)
+      test(ba ≟ be, s"Actual: $ba\nExpect: $be")
+    })
 
   def distinct[A, B](name: String, f: A => Stream[B]) =
     distinct[B](name).contramap(f)
 
   def distinct[A](name: String) =
     atom[Stream[A]](s"each $name is unique", as => {
-      var s = Set.empty[A]
-      as.forall(a =>
-        s.contains(a) match {
-          case true  => false
-          case false => s += a; true
+      val dups = (Map.empty[A, Int] /: as)((q, a) => q + (a -> (q.getOrElse(a, 0) + 1))).filter(_._2 > 1)
+      if (dups.isEmpty)
+        None
+      else
+        Some(Need {
+          val d = dups.toStream
+            .sortBy(_._1.toString)
+            .map { case (a, i) => s"$a → $i"}
+            .mkString("{", ", ", "}")
+          s"Inputs: $as\nDups: $d"
         })
-    }, as => {
-      val dups =
-        (Map.empty[A, Int] /: as)((q, a) => q + (a -> (q.getOrElse(a, 0) + 1)))
-          .filter(_._2 > 1)
-          .toStream
-          .sortBy(_._1.toString)
-          .map { case (a, i) => s"$a -> $i"}
-          .mkString("Dups(", ", ", ")")
-      s"$as\n$dups"
     })
+
+  def test(b: Boolean, e: => String): Option[FailureInfo] =
+    if (b) None else Some(Need(e))
+
+  private[prop] def fmta(a: Any): FailureInfo =
+    Need(a.toString)
+
+  private[Prop] def failureExpected(a: Any): FailureInfo =
+    Need(s"Failure expected with input [$a]")
+
+  private[prop] def testB[A](a: A, test: Boolean): Option[FailureInfo] =
+    if (test) None else Some(fmta(a))
 }
+
+import Prop.{failureExpected, testB, fmta}
 
 
 sealed abstract class Prop[A] {
@@ -68,7 +89,11 @@ sealed abstract class Prop[A] {
   @inline final def implies             (c: Prop[A])   = this ==> c
   @inline final def ∀[Z, F[_]: Foldable](f: Z => F[A]) = forall(f)
 
-  def test(a: A): Boolean
+  def testE(a: A): Option[FailureInfo]
+  final def test(a: A): Boolean = testE(a).isEmpty
+
+  protected[prop] def wantFailure(a: A): Option[FailureInfo] =
+    if (test(a)) Some(failureExpected(a)) else None
 
   final def falsify(a: A) = falsifyE(a, true)
 
@@ -83,12 +108,15 @@ sealed abstract class Prop[A] {
       throw new java.lang.AssertionError(err)
     })
 
-  protected[prop] def fmta: A => Any
-
   def falsifyE: (A, Boolean) => Option[Falsification[A]]
 
   @inline protected final def falsifyX(f: (A, Boolean) => List[Falsification[A]]): (A, Boolean) => Option[Falsification[A]] =
-    (a,e) => if (test(a) == e) None else Some(Falsification(this, f(a,e), Set(fmta(a))))
+    (a,e) =>
+      testE(a) match {
+      case Some(i) if e  => Some(Falsification(this, f(a,e), Set(i)))
+      case None    if !e => Some(Falsification(this, f(a,e), Set(failureExpected(a))))
+      case _             => None
+    }
 
   @inline protected final def falsifyN =
     falsifyX((a,e) => Nil)
@@ -101,8 +129,8 @@ sealed abstract class Prop[A] {
 }
 
 
-final case class Atom[A](name: String, t: A => Boolean, fmta: A => Any) extends Prop[A] {
-  override def test(a: A) = t(a)
+final case class Atom[A](name: String, t: A => Option[FailureInfo]) extends Prop[A] {
+  override def testE(a: A) = t(a)
   override def falsifyE = falsifyN
   override def toString = name
 }
@@ -110,92 +138,83 @@ final case class Atom[A](name: String, t: A => Boolean, fmta: A => Any) extends 
 
 final case class Negation[A](p: Prop[A]) extends Prop[A] {
   override def unary_~ = p
-  override def test(a: A) = !p.test(a)
+  override def testE(a: A) = p.wantFailure(a)
   override def falsifyE = falsifyN //falsifyP(p, false)
   override def toString = s"¬$p"
-  override protected[prop] def fmta = p.fmta
 }
 
 
 final case class Disjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def |(q: Prop[A]) = Disjunction(q <:: ps)
-  override def test(a: A) = ps.stream.exists(_.test(a))
+  override def testE(a: A) = testB(a, ps.stream.exists(_.test(a)))
   override def falsifyE = falsifyN //falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∨ ")
-  override protected[prop] def fmta = identity
 }
 
 final case class Conjunction[A](ps: NonEmptyList[Prop[A]]) extends Prop[A] {
   override def &(q: Prop[A]) = Conjunction(q <:: ps)
-  override def test(a: A) = ps.stream.forall(_.test(a))
+  override def testE(a: A) = testB(a, ps.stream.forall(_.test(a)))
   override def falsifyE = falsifyB(ps)
   override def toString = ps.stream.map(_.toString).mkString(" ∧ ")
-  override protected[prop] def fmta = identity
 }
 
 
 final case class Implication[A](a: Prop[A], c: Prop[A]) extends Prop[A] {
-  override def test(i: A) = !a.test(i) || c.test(i)
+  override def testE(i: A) = testB(i, !a.test(i) || c.test(i))
   override def falsifyE = falsifyP(c, true)
   override def toString = s"$a ⇒ $c"
-  override protected[prop] def fmta = identity
 }
 
 
 final case class Reduction[A](c: Prop[A], a: Prop[A]) extends Prop[A]  {
-  override def test(i: A) = !a.test(i) || c.test(i)
+  override def testE(i: A) = testB(i, !a.test(i) || c.test(i))
   override def falsifyE = falsifyP(c, true)
   override def toString = s"$c ⇐ $a"
-  override protected[prop] def fmta = identity
 }
 
 
 final case class Biconditional[A](p: Prop[A], q: Prop[A]) extends Prop[A]  {
-  override def test(a: A) = p.test(a) == q.test(a)
+  override def testE(a: A) = testB(a, p.test(a) == q.test(a))
   override def falsifyE = falsifyN
   override def toString = s"$p ⇔ $q"
-  override protected[prop] def fmta = identity
 }
 
 
 final case class Rename[A](name: String, p: Prop[A]) extends Prop[A] {
   override def rename(n: String): Prop[A] = Rename(n, p)
-  override def test(a: A) = p.test(a)
+  override def testE(a: A) = p.testE(a)
   override def falsifyE = (a,e) => p.falsifyE(a,e).map(_.copy(this))
   override def toString = name
-  override protected[prop] def fmta = p.fmta
 }
 
 
 final case class Contramap[A, B](p: Prop[B], f: A => B) extends Prop[A] {
   override def contramap[Z](g: Z => A): Prop[Z] = Contramap(p, f compose g)
-  override def test(a: A) = p.test(f(a))
+  override def testE(a: A) = p.testE(f(a))
   override def falsifyE = (a,e) => p.falsifyE(f(a), e).map(_.map(_ contramap f))
   override def toString = p.toString
-  override protected[prop] def fmta = p.fmta compose f
 }
 
 
 final case class Forall[F[_]: Foldable, A, B](p: Prop[B], f: A => F[B], updName: Boolean) extends Prop[A] {
-  override def test(a: A) = f(a).∀(b => p.test(b))
+  override def testE(a: A) = testB(a, f(a).∀(b => p.test(b)))
   override def falsifyE = (a, e) =>
     f(a).foldl(List.empty[Falsification[B]])(q => b => p.falsifyE(b, e).toList ::: q) match {
       case Nil => None
       case fs@(_ :: _) =>
         val causes = fs
-          .foldLeft(Monoidmap.empty[Prop[B], (List[Falsification[B]], Set[Any])])(
-            (q, i) => q.add(i.p, (i.cause, i.inputs)))
+          .foldLeft(Monoidmap.empty[Prop[B], (List[Falsification[B]], Set[FailureInfo])])(
+            (q, i) => q.add(i.p, (i.cause, i.finfo)))
           .plainMap.toList
           .map { case (p, (cs, is)) =>
             val causes2 = cs
-              .foldLeft(Multimap.empty[Prop[B], Set, Any])((q, c) => q.addvs(c.p, c.inputs))
+              .foldLeft(Multimap.empty[Prop[B], Set, FailureInfo])((q, c) => q.addvs(c.p, c.finfo))
               .m.toList
               .map { case (p2, is2) => Falsification(p2, Nil, is2) }
-            val inputs2 = causes2.foldLeft(Set.empty[Any])(_ ++ _.inputs)
+            val inputs2 = causes2.foldLeft(Set.empty[FailureInfo])(_ ++ _.finfo)
             Falsification(p, causes2, inputs2).map[A](Forall(_, f, false))
           }
-        Some(Falsification(this, causes, Set(a)))
+        Some(Falsification(this, causes, Set(fmta(a))))
     }
   override def toString = if (updName) s"∀{$p}" else p.toString
-  override protected[prop] def fmta = identity
 }
