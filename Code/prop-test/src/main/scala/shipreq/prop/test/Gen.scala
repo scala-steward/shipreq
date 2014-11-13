@@ -36,18 +36,19 @@ class Gen[A](val f: GenSize => Rng[A]) {
   def set         : GenS[Set[A]]             = sizeOp(_.list, (_: List[A]).toSet)
   def set1        : GenS[Set[A]]             = sizeOp(_.list1, (_: NonEmptyList[A]).list.toSet)
   def vector      : GenS[Vector[A]]          = sizeOp(_.vector)
-  def vector1     : GenS[Vector[A]]          = sizeOp(_.vector).flatMap(s => map(s :+ _))
-  def stream      : GenS[EphemeralStream[A]] = sizeOp(_.stream)
-  def stream1     : GenS[EphemeralStream[A]] = sizeOp(_.stream).flatMap(s => map(_ ##:: s))
+  def vector1     : GenS[Vector[A]]          = vector.flatMap(s => this.map(s :+ _))
+  def estream     : GenS[EphemeralStream[A]] = sizeOp(_.stream)
+  def estream1    : GenS[EphemeralStream[A]] = estream.flatMap(s => this.map(_ ##:: s))
+  def stream      : GenS[Stream[A]]          = estream.map(_.toStream)
+  def stream1     : GenS[Stream[A]]          = stream.flatMap(s => this.map(_ #:: s))
   def option      : Gen[Option[A]]           = mapr(_.option)
 
   def ***       [X](x: Gen[X]): Gen[(A, X)]       = combrng[X, (A, X)](x, _ *** _)
-  def either    [X](x: Gen[X]): Gen[A \/ X]       = combrng[X, A \/ X](x, _ either _)
   def \/        [X](x: Gen[X]): Gen[A \/ X]       = combrng[X, A \/ X](x, _ \/ _)
   def +++       [X](x: Gen[X]): Gen[A \/ X]       = combrng[X, A \/ X](x, _ +++ _)
   def validation[X](x: Gen[X]): Gen[A \?/ X]      = combrng[X, A \?/ X](x, _ validation _)
   def \?/       [X](x: Gen[X]): Gen[A \?/ X]      = combrng[X, A \?/ X](x, _ \?/ _)
-  def eitherS   [X](x: Gen[X]): Gen[Either[A, X]] = combrng[X, Either[A, X]](x, _ eitherS _)
+  def either    [X](x: Gen[X]): Gen[Either[A, X]] = combrng[X, Either[A, X]](x, _ eitherS _)
 }
 
 class GenS[A](f: GenSize => Rng[A]) extends Gen(f) {
