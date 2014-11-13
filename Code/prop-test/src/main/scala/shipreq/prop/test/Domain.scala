@@ -1,7 +1,7 @@
 package shipreq.prop.test
 
 import scala.collection.immutable.NumericRange
-import scalaz.{\/-, -\/, \/}
+import scalaz.{Functor, \/-, -\/, \/}
 
 trait Domain[A] {
   val size: Int
@@ -30,6 +30,10 @@ trait Domain[A] {
 }
 
 object Domain {
+
+  implicit val domainInstance: Functor[Domain] = new Functor[Domain] {
+    override def map[A, B](fa: Domain[A])(f: A => B): Domain[B] = fa map f
+  }
 
   final class Mapped[A, B](u: Domain[A], f: A => B) extends Domain[B] {
     override val size = u.size
@@ -70,6 +74,6 @@ object Domain {
   val boolean: Domain[Boolean] =
     ofValues(true, false)
 
-  lazy val bytes: Domain[Byte] =
+  lazy val byte: Domain[Byte] =
     ofRange(Byte.MinValue to Byte.MaxValue).map(_.toByte)
 }
