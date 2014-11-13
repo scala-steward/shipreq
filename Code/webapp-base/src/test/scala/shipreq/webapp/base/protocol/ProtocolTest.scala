@@ -7,7 +7,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta._
 import shipreq.webapp.base.RandomData
 import shipreq.prop._
-import shipreq.prop.test.TestUtil._
+import shipreq.prop.test.PropTest._
 
 object ProtocolTest extends TestSuite {
 

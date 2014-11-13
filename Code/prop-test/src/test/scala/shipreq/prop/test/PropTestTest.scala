@@ -3,7 +3,7 @@ package shipreq.prop.test
 import scalaz.std.list._
 import utest._
 import shipreq.prop._
-import TestUtil._
+import PropTest._
 
 object PropTestTest extends TestSuite {
 

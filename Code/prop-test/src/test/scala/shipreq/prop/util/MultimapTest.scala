@@ -3,7 +3,7 @@ package shipreq.prop.util
 import utest._
 import shipreq.prop._
 import shipreq.prop.test._
-import shipreq.prop.test.TestUtil._
+import shipreq.prop.test.PropTest._
 import Multimap.Internal._
 
 object MultimapTest extends TestSuite {
