@@ -86,7 +86,7 @@ object Gen {
 
   def double         : Gen[Double]  = Rng.double.gen
   def float          : Gen[Float]   = Rng.float.gen
-  def long           : Gen[Long]    = Rng.long.gen
+  def long           : Gen[Long]    = rng_long.gen
   def int            : Gen[Int]     = Rng.int.gen
   def byte           : Gen[Byte]    = Rng.byte.gen
   def short          : Gen[Short]   = Rng.short.gen
@@ -171,6 +171,12 @@ object Gen {
 
   def frequencyL[A](l: NonEmptyList[(Int, Gen[A])]): Gen[A] =
     new Gen[A](s => Rng.frequencyL(l map freqRng[A](s)))
+
+  /** Nicta one uses +. | will be faster. */
+  private[this] def rng_long: Rng[Long] =
+    Rng.int.flatMap(a => Rng.int.map(b =>
+      (a.toLong << 32) | b.toLong
+    ))
 
   // -------------------------------------------------------------------------------------------------------------------
 
