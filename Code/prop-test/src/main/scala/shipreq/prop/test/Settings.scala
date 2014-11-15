@@ -10,13 +10,17 @@ final case class SampleSize(value: Int)  {
 }
 
 case class Settings(
-  executor   : Executor                      = SingleThreadedExecutor,
-  sizeDist   : Seq[(Int, Double \/ GenSize)] = Seq(1 → \/-(GenSize(4)), 1 → -\/(0.2), 8 → -\/(0.8)),
-  sampleSize : SampleSize                    = SampleSize(100),
-  genSize    : GenSize                       = GenSize(40),
-  debug      : Boolean                       = false,
-  debugMaxLen: Int                           = 200) {
+  executor   : Executor          = SingleThreadedExecutor,
+  sizeDist   : Settings.SizeDist = Seq(1 → \/-(GenSize(4)), 1 → -\/(0.2), 8 → -\/(0.8)),
+  sampleSize : SampleSize        = SampleSize(100),
+  genSize    : GenSize           = GenSize(40),
+  debug      : Boolean           = false,
+  debugMaxLen: Int               = 200) {
 
   lazy val sampleSizeLen = sampleSize.value.toString.length
   lazy val sampleProgressFmt = s"[%${sampleSizeLen}d/${sampleSize.value}] "
+}
+
+object Settings {
+  type SizeDist = Seq[(Int, Double \/ GenSize)]
 }

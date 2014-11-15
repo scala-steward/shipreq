@@ -1,7 +1,7 @@
 package shipreq.prop.test
 
 import com.nicta.rng.Rng
-import scalaz.{-\/, \/-, EphemeralStream}
+import scalaz.EphemeralStream
 import shipreq.prop._
 import Executor.Data
 
@@ -25,30 +25,34 @@ object RunState {
 
 object PTest {
 
+  private[this] def prepareData[A](gen: Gen[A], sizeDist: Settings.SizeDist, genSize: GenSize, debug: Boolean): Data[A] =
+    (sampleSize, debugPrefix) => {
+      val samples: (SampleSize, GenSize) => Rng[EphemeralStream[A]] = (s, g) => {
+        if (debug) println(s"${debugPrefix}Generating ${s.value} samples @ sz ${g.value}...")
+        gen.data(g, s).map(_ take s.value)
+      }
+      if (sizeDist.isEmpty)
+        samples(sampleSize, genSize).run
+      else {
+        var total = sizeDist.foldLeft(0)(_ + _._1)
+        var rem = sampleSize.value
+        val plan = sizeDist.map { case (si, gg) =>
+          val gs = gg.fold[GenSize](p => genSize.map(v => (v * p + 0.5).toInt max 0), identity)
+          val ss = SampleSize((si.toDouble / total * rem + 0.5).toInt)
+          total -= si
+          rem -= ss.value
+          (ss, gs)
+        }
+        plan.toStream
+          .map(samples.tupled)
+          .foldLeft(Rng insert EphemeralStream[A])((a, b) => b.flatMap(c => a.map(_ ++ c)))
+          .run
+      }
+    }
+
   def test[A](p: Prop[A], gen: Gen[A], S: Settings): RunState[A] = {
     if (S.debug) println(s"\n$p")
-    def samples(s: SampleSize, g: GenSize): Rng[EphemeralStream[A]] = {
-      if (S.debug) println(s"Generating ${s.value} samples @ sz ${g.value}...")
-      gen.data(g, s).map(_ take s.value)
-    }
-    def sampleSizePerc(s: SampleSize, p: Double): SampleSize =
-      s.map(v => (v * p + 0.5).toInt max 1)
-    def genSizePerc(s: GenSize, p: Double): GenSize =
-      s.map(v => (v * p + 0.5).toInt max 0)
-    val data: Data[A] = s =>
-      if (S.sizeDist.isEmpty)
-        samples(s, S.genSize).run
-      else {
-        val total = S.sizeDist.foldLeft(0)(_ + _._1).toDouble
-        def ssPerc(i: Int) = i.toDouble / total
-        S.sizeDist.toStream.map {
-          case (si, -\/(gp)) => samples(sampleSizePerc(s, ssPerc(si)), genSizePerc(S.genSize, gp))
-          case (si, \/-(gs)) => samples(sampleSizePerc(s, ssPerc(si)), gs)
-        }
-        .foldLeft(Rng insert EphemeralStream[A])((a, b) => b.flatMap(c => a.map(_ ++ c)))
-        .run
-      }
-    S.executor.run(p, data, S)
+    S.executor.run(p, prepareData(gen, S.sizeDist, S.genSize, S.debug), S)
   }
 
   private[test] def testN[A](p: Prop[A], data: EphemeralStream[A], runInc: () => Int, S: Settings): RunState[A] = {

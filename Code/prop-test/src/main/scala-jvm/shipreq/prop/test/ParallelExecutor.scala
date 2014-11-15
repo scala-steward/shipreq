@@ -22,6 +22,8 @@ object ParallelExecutor {
 
 case class ParallelExecutor(workers: Int = defaultThreadCount) extends Executor {
 
+  val debugPrefixes = (0 until workers).toVector.map(i => s"Worker #$i: ")
+
   override def run[A](p: Prop[A], g: Data[A], S: Settings): RunState[A] = {
     val sss = {
       var rem = S.sampleSize.value
@@ -36,9 +38,15 @@ case class ParallelExecutor(workers: Int = defaultThreadCount) extends Executor 
       v
     }
 
+    if (S.debug) {
+      val szs = sss.map(_.value)
+      println(s"Samples/Worker: ${szs.mkString("{", ",", "}")} = Σ${szs.sum}")
+    }
+
     val ai = new AtomicInteger(0)
     def task(worker: Int) = mkTask {
-      val data = g(sss(worker)).unsafePerformIO()
+      val dp = debugPrefixes(worker)
+      val data = g(sss(worker), dp).unsafePerformIO()
       testN(p, data, ai.incrementAndGet, S)
     }
     runAsync2(workers, task)
