@@ -2,9 +2,11 @@ package shipreq.webapp.client.util.ui.tablespec2
 
 import design._
 import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
-import shipreq.webapp.base.validation.ValidatorPlus
+import monocle.Lenser
+import shipreq.webapp.base.validation._
 import shipreq.webapp.client.util.ui.Util.textChangeRecv
-import scalaz._
+import scala.util.Try
+import scalaz.Bind
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 
@@ -37,7 +39,7 @@ object impls {
 //      }
 //    }
 
-  abstract class ECB2 {
+  abstract class ECB2[A] {
     type S
     type ST = ReactST[IO, S, Unit]
     val f: ComponentStateFocus[S]
@@ -59,20 +61,23 @@ object impls {
       }
     })
 
-  def renderWithError[A, B, C](editor: Editor[A, B, C, Modifier])(err: String): Editor[A, B, C, Modifier] =
+  val textInputEditor = textEditor2(input)
+  val textareaEditor = textEditor2(textarea)
+
+  def renderWithError[A, B, C[_]](editor: Editor[A, B, C, Modifier])(err: String): Editor[A, B, C, Modifier] =
     Editor(ei => div(editor render ei, div(cls := "errorMsg", err)))
 
-  def editorWithError[A, B, C](editor: Editor[A, B, C, Modifier]): EditorE[Option[String], A, B, C, Modifier] =
+  def editorWithError[A, B, C[_]](editor: Editor[A, B, C, Modifier]): EditorE[Option[String], A, B, C, Modifier] =
     _.fold(editor)(renderWithError(editor))
 
-  def editorV[E, A, B, C, V](f: A => E, e: EditorE[E, A, B, C, V]): Editor[A, B, C, V] =
+  def editorV[E, A, B, C[_], V](f: A => E, e: EditorE[E, A, B, C, V]): Editor[A, B, C, V] =
     Editor(i => e(f(i.data)) render i)
 
-  def validateAndDisplayError[A, B, C](f: A => Option[String], e: Editor[A, B, C, Modifier]): Editor[A, B, C, Modifier] =
+  def validateAndDisplayError[A, B, C[_]](f: A => Option[String], e: Editor[A, B, C, Modifier]): Editor[A, B, C, Modifier] =
     Editor(i => editorV(f, editorWithError(e)) render i)
 
   @deprecated("Need external validation (S⇒VP)", "")
-  def composeEditorValidator[I, C](v: ValidatorPlus[I, _, _], e: Editor[I, I, C, Modifier]): Editor[I, I, C, Modifier] = {
+  def composeEditorValidator[I, C[_]](v: ValidatorPlus[I, _, _], e: Editor[I, I, C, Modifier]): Editor[I, I, C, Modifier] = {
     type E = Editor[I, I, C, Modifier]
     val e1: E = e.mapOutput(v.liveCorrect)
     val e2: E = validateAndDisplayError(i => v.correctAndValidate(i).swap.toOption.map(_.toText), e1)
@@ -80,4 +85,37 @@ object impls {
   }
 
   // ===================================================================================================================
+  // example
+
+  case class Age(value: Int)
+  case class Person(name: String, age: Age)
+
+  val nameV: ValidatorPlus[String, String, String] = ???
+
+  val ageV =
+    ValidatorPlus[String, Option[Int], Age](
+      CorrectionPart[String, Option[Int]](s => Try(Option(s.toInt)).getOrElse(None))(_.fold("")(_.toString)),
+      ValidationPart[Option[Int], Age](???),
+      _.replaceAll("\\D", ""))
+
+  val nameE = textInputEditor
+  val ageE = textInputEditor
+
+//  val nameEE = composeEditorValidator(nameV, nameE)
+//  val ageEE = composeEditorValidator(ageV, ageE)
+
+  case class RowState(n: String, a: String)
+  private[this] def l = Lenser[RowState]
+  val rowState_n = l(_.n)
+  val rowState_a = l(_.a)
+
+  val dirty: ECB2[RowState] = new ECB2[RowState] {
+    type S = RowState
+    val f: ComponentStateFocus[S] = ???
+    val cb: ST = ReactS.getsT(s => IO(s))
+  }
+  implicit val dirtyBind: Bind[ECB2] = ???
+
+  val rowE: Editor[RowState, RowState, ECB2, (Modifier, Modifier)] =
+    editors2i(nameE, ageE, rowState_n, rowState_a, dirty)
 }

@@ -5,6 +5,7 @@ import japgolly.scalajs.react.ScalazReact.ReactST
 import shipreq.webapp.base.validation.ValidatorPlus
 import monocle._
 import scalaz.effect.IO
+import scalaz._, Scalaz._
 
 object design {
 
@@ -82,11 +83,15 @@ object design {
 
 */
 
-  case class EditorCallbacks[A, C](onChange: A => C,
-                                   onCancel: C,
-                                   onEditFinished: C) {
+  case class EditorCallbacks[A, C[_]](onChange: A => C[Unit],
+                                   onCancel: C[Unit],
+                                   onEditFinished: C[Unit]) {
+
     def contramap[X](f: X => A): EditorCallbacks[X, C] =
       copy[X, C](onChange = onChange compose f)
+
+    def contrafmap[X](f: X => C[A])(implicit F: Bind[C]): EditorCallbacks[X, C] =
+      copy[X, C](onChange = x => F.bind(f(x))(a => this.onChange(a)))
 
 //    def ***[B, D](f: EditorCallbacks[B, D]): EditorCallbacks[(A, B), (C, D)] =
 //      EditorCallbacks(
@@ -95,7 +100,7 @@ object design {
 //        (onEditFinished, f.onEditFinished))
   }
 
-  case class EditorInput[A, B, C](data: A,
+  case class EditorInput[A, B, C[_]](data: A,
                                   cssClass: String,
                                   editable: Option[EditorCallbacks[B, C]]) {
     def map[X](f: A => X): EditorInput[X, B, C] =
@@ -111,7 +116,7 @@ object design {
 //        editable.flatMap(a => f.editable.map(b => a *** b))) // No!
   }
 
-  case class Editor[A, B, C, V](render: EditorInput[A, B, C] => V) {
+  case class Editor[A, B, C[_], V](render: EditorInput[A, B, C] => V) {
     def contramap[X](f: X => A): Editor[X, B, C, V] =
       Editor(i => render(i map f))
 
@@ -127,32 +132,31 @@ object design {
 //      })
   }
 
-  type EditorE[E, A, B, C, V] = E => Editor[A, B, C, V]
+  type EditorE[E, A, B, C[_], V] = E => Editor[A, B, C, V]
 
   // external data (dirty and clean)
   // wire up editors - composition for EditorInput ?
   // correct, validate, save on edit finish
-
+/*
 
   def nopCB[S] = ReactS.retT[IO, S, Unit](())
 
   trait Row {
     type S // State|Store
-    type ST[A] = ReactST[IO, S, A]
-    type C = ST[Unit] // Callback
+    type C[A] = ReactST[IO, S, A]
     type Clean
     type Dirty
     type Validated
 
     def clean: Clean
-    def dirty: ST[Dirty] // Read all stores in row, to build X
+    def dirty: C[Dirty] // Read all stores in row, to build X
 
     def validate: Dirty => Option[Validated] // Verify X
 
     def saveRequired: (Clean, Validated) => Boolean // check store for last clean and abort if NOP
 
-    def save: Validated => C
-    def lock: C
+    def save: Validated => C[Unit]
+    def lock: C[Unit]
 
     def onChange: C =
       dirty.flatMap(d =>
@@ -198,25 +202,31 @@ object design {
       (v1, v2)
     }
   }
+*/
 
-  def editors2[A,B,C, A1,B1,V1, A2,B2,V2](e1: Editor[A1,B1,C,V1], e2: Editor[A2,B2,C,V2])
+  def editors2[A,B,C[_]: Bind, A1,B1,V1, A2,B2,V2](e1: Editor[A1,B1,C,V1], e2: Editor[A2,B2,C,V2],
 //                                     (f1: Lens[A, B, A1, B1], f2: Lens[A, B, A2, B2],
-                                     (a1: A => A1, a2: A => A2,
+                                     a1: A => A1, a2: A => A2,
                                       b1: (B, B1) => B, b2: (B, B2) => B,
-                                       dirty: B)
-  : Editor[A, B, C, (V1, V2)] = // TODO dirty can't happen. Should be at least S=>B
+                                       dirty: C[B])
+  : Editor[A, B, C, (V1, V2)] =
     Editor(i => {
-      def b1u: B1 => B = b1(dirty, _)
-      def b2u: B2 => B = b2(dirty, _)
-      val i1 = EditorInput[A1, B1, C](a1(i.data), i.cssClass, i.editable.map(_ contramap b1u))
-      val i2 = EditorInput[A2, B2, C](a2(i.data), i.cssClass, i.editable.map(_ contramap b2u))
+      def b1u: B1 => C[B] = i => dirty.map(b1(_, i))
+      def b2u: B2 => C[B] = i => dirty.map(b2(_, i))
+      val i1 = EditorInput[A1, B1, C](a1(i.data), i.cssClass, i.editable.map(_ contrafmap b1u))
+      val i2 = EditorInput[A2, B2, C](a2(i.data), i.cssClass, i.editable.map(_ contrafmap b2u))
       val v1 = e1.render(i1)
       val v2 = e2.render(i2)
       (v1, v2)
     })
 
+  def editors2i[I,C[_]: Bind, I1,V1, I2,V2](e1: Editor[I1,I1,C,V1], e2: Editor[I2,I2,C,V2],
+                                            f1: SimpleLens[I, I1], f2: SimpleLens[I, I2],
+                                            dirty: C[I]) : Editor[I, I, C, (V1, V2)] =
+    editors2(e1, e2, f1.get, f2.get, f1.set, f2.set, dirty)
+
+
   // turn multiple editors into row
   // row has differnt callbacks
-
 
 }
