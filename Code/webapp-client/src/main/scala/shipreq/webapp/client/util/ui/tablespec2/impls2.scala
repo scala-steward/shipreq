@@ -11,6 +11,7 @@ import scalajs.js.UndefOr
 import scala.util.Try
 import scalaz._, Scalaz._
 import scalaz.effect.IO
+import shipreq.base.util.ScalaExt._
 
 object impls2 {
 
@@ -37,6 +38,7 @@ object impls2 {
     def cb: ReactST[IO, S, A]
 
     final def run: IO[A] = f.runState(cb)
+    final def proc[R](g: (ComponentStateFocus[S], ReactST[IO, S, A]) => R): R = g(f, cb)
   }
   object ECB2 {
     def apply[_S](_f: => ComponentStateFocus[_S], _cb: => ReactST[IO, _S, Unit]): ECB2 =
@@ -44,6 +46,13 @@ object impls2 {
         override type S = _S
         override def f = _f
         override def cb = _cb
+      }
+
+    def nop[_S](_f: => ComponentStateFocus[_S]): ECB2 =
+      new ECB2 {
+        override type S = _S
+        override def f = _f
+        override def cb = ReactS.retM[IO, S, Unit](IO(()))
       }
   }
 
@@ -56,7 +65,7 @@ object impls2 {
         case Some(cb) =>
           base(
             onchange  ~~> textChangeRecv(cb.onChange(_).run),
-            onkeydown ~~> cb.onCancel.f._runState(cancelOnEscape(cb.onCancel.cb)),
+            onkeydown ~~> cb.onCancel.proc((f, cb) => f._runState(cancelOnEscape(cb))),
             onblur    ~~> cb.onEditFinished.run)
       }
     })
@@ -108,4 +117,142 @@ object impls2 {
 
   val e2 = nameE2 compose ageE2
 
+  object ManualExample1_split_editors {
+    object RowStatus
+    case class Props(ppl: Map[Long, Person])
+    case class RowState(i: (String,String), rowStatus: RowStatus.type)
+    type SavedState = Map[Long, RowState]
+    case class ZeState(saved: SavedState)
+
+    class TopBackend(c: BackendScope[Props, ZeState]) {
+
+      def tableProps = TableProps(rowpropsa(c.state.saved))
+
+      def update1(id: Long): String => ECB2 = ???
+      def update2(id: Long): String => ECB2 =
+        i => ECB2[ZeState](c, ReactS.modT[IO, ZeState](s => {
+          val nv = s.saved(id).i put2 i
+          ???
+        }))
+
+      def revert1(id: Long): ECB2 = ???
+      def revert2(id: Long): ECB2 =
+        ECB2[ZeState](c, ReactS.modT[IO, ZeState](s => {
+          val i = c.props.ppl(id).age.toString
+          val nv = s.saved(id).i put2 i
+          ???
+        }))
+
+      def rowpropsa(saved: SavedState): Vector[SavedRowProps] =
+        saved.foldLeft(Vector.empty[SavedRowProps])((q,a) => q :+ rowprops1(a._1, a._2))
+
+      def rowprops1(id: Long, s: RowState): SavedRowProps =
+        SavedRowProps(id,
+          EditorInput(s.i._1, "", Some(EditorCallbacks[String, ECB2](update1(id), revert1(id), ???))),
+          EditorInput(s.i._2, "", Some(EditorCallbacks[String, ECB2](update2(id), revert2(id), ???))))
+
+    }
+
+    val outmost = ReactComponentB[Props]("Outmost")
+      .getInitialState(p => ZeState(p.ppl.mapValues(v => RowState((v.name, v.age.toString), RowStatus))))
+      .backend(new TopBackend(_))
+      .render((p, s, b) =>
+        div(h1("Hi!"), tablec(b.tableProps))
+      )
+      .build
+
+    case class TableProps(saved: Vector[SavedRowProps])
+    val tablec = ReactComponentB[TableProps]("table")
+      .stateless
+      .render((p,_) =>
+        table(
+          thead("Name", "Age"),
+          tbody(p.saved.map(savedrow(_)).asJsArray))
+      )
+      .build
+
+    case class SavedRowProps(key: Long, nameEI: EditorInput[String, String, ECB2], ageEI: EditorInput[String, String, ECB2])
+    val savedrow = ReactComponentB[SavedRowProps]("savedrow")
+      .stateless
+      .render((p, _) => {
+        //val (n, a) = e2.render(???)
+        val n = nameE2 render p.nameEI
+        val a = ageE2 render p.ageEI
+        tr(key := p.key, n, a)
+      })
+      .build
+  }
+
+  // ******************************************************************
+  object ManualExample2_consolidated_editors {
+    object RowStatus
+    case class Props(ppl: Map[Long, Person])
+    case class RowState(i: (String,String), rowStatus: RowStatus.type)
+    type SavedState = Map[Long, RowState]
+    case class ZeState(saved: SavedState)
+
+    class TopBackend(c: BackendScope[Props, ZeState]) {
+
+      val nopEcb = ECB2.nop(c)
+
+      def tableProps = TableProps(rowpropsa(c.state.saved))
+
+      def update1(id: Long): String => ECB2 = ???
+      def update2(id: Long): String => ECB2 =
+        i => ECB2[ZeState](c, ReactS.modT[IO, ZeState](s => {
+          val nv = s.saved(id).i put2 i
+          ???
+        }))
+
+      def revert1(id: Long): ECB2 = ???
+      def revert2(id: Long): ECB2 =
+        ECB2[ZeState](c, ReactS.modT[IO, ZeState](s => {
+          val i = c.props.ppl(id).age.toString
+          val nv = s.saved(id).i put2 i
+          ???
+        }))
+
+      def rowpropsa(saved: SavedState): Vector[SavedRowProps] =
+        saved.foldLeft(Vector.empty[SavedRowProps])((q,a) => q :+ rowprops1(a._1, a._2))
+
+      def rowprops1(id: Long, s: RowState): SavedRowProps =
+        SavedRowProps(id, EditorInput(
+          s.i, "",
+          Some(EditorCallbacks[String \/ String, (ECB2, ECB2)](
+            {
+              case -\/(i) => (update1(id)(i), nopEcb)
+              case \/-(i) => (nopEcb, update2(id)(i))
+            },
+            (revert1(id), revert2(id)),
+            ???))))
+
+    }
+
+    val outmost = ReactComponentB[Props]("Outmost")
+      .getInitialState(p => ZeState(p.ppl.mapValues(v => RowState((v.name, v.age.toString), RowStatus))))
+      .backend(new TopBackend(_))
+      .render((p, s, b) =>
+      div(h1("Hi!"), tablec(b.tableProps))
+      )
+      .build
+
+    case class TableProps(saved: Vector[SavedRowProps])
+    val tablec = ReactComponentB[TableProps]("table")
+      .stateless
+      .render((p,_) =>
+      table(
+        thead("Name", "Age"),
+        tbody(p.saved.map(savedrow(_)).asJsArray))
+      )
+      .build
+
+    case class SavedRowProps(key: Long, ei: EditorInput[(String, String), String \/ String, (ECB2, ECB2)])
+    val savedrow = ReactComponentB[SavedRowProps]("savedrow")
+      .stateless
+      .render((p, _) => {
+        val (n, a) = e2.render(p.ei)
+        tr(key := p.key, n, a)
+      })
+      .build
+  }
 }
