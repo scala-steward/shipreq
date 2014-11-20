@@ -12,40 +12,16 @@ import shipreq.base.util.ScalaExt._
 
 object Neo {
 
-  // VP A B → (S → B → VR C) → (S → VP A C)
-  // ------   --------------   ++++++++++++
-  //           +   +      -     -      +i+i
-
-  class externalValidation[S, A, B, C](
-//    vp: ValidationPart[A, B],
-    f: (S, B) => ValidationResult[C]
-  ,w: Int => S
-  ,x: S => Int
-                                        ) {
-
-    def apply: S => ValidationPart[A, C] =
-      s => {
-      val x = f(s, ???)
-      ???
-    }
-
-    def maps[T](g: T => S, h: S => T) =
-      new externalValidation[T, A, B, C](
-        (t, b) => {
-          val s: S = g(t)
-          f(s, b)
-        }
-      ,i => h(w(i))
-      ,t => x(g(t))
-      )
-  }
-
   // Args
   // - for each arg, measure variance of each type
   // - variance will determine what is needed to shift type later (functor variance)
 
   // Functions
   // - in & out of each type determine subtype variance of class's type members
+
+  // Experiences
+  // - If a type τ doesn't have the desired functoral variance, split it into two types, accept fn τ₁→τ₂.
+  // - Going too abstract too soon means you could develop something nice/moral that can't do what you need it to.
 
   // ===================================================================================================================
 
