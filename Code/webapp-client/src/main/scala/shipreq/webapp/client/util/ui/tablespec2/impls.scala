@@ -108,20 +108,6 @@ object impls {
   val nameE2 = composeEditorValidator(nameV, nameE)
   val ageE2 = composeEditorValidator(ageV, ageE)
 
-  @inline final def modStateL[M[_], S, T, A](l: SimpleLens[T, S], r: ReactST[M, S, A])(implicit M: Functor[M]): ReactST[M, T, A] =
-    modState(l.get, l.set, r)
-
-  @inline final def modState[M[_], S, T, A](f: T => S, g: (T, S) => T, r: ReactST[M, S, A])(implicit M: Functor[M]): ReactST[M, T, A] =
-    StateT[M, StateAndCallbacks[T], A](tc => {
-      val sc = StateAndCallbacks(f(tc.s), tc.cb)
-      val x: M[(StateAndCallbacks[S], A)] = r(sc)
-      val y: M[(StateAndCallbacks[T], A)] = M.map(x){
-        case (z, a) => (StateAndCallbacks[T](g(tc.s, z.s), z.cb), a)
-      }
-      //      r. M.map(f(sc.s))(s2 => (sc withState s2,()) )
-      y
-    })
-
   type I = (String,String)
   type ICb[A] = RST[I, A]
 //  def icb_scb(l: SimpleLens[I, String]): ICb ~> StrCb = new (ICb ~> StrCb) {
