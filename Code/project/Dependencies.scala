@@ -36,7 +36,10 @@ object Deps {
   // -------------------------------------------------------------------------------------------------------------------
 
   object ScalaJS {
-    object React extends Group("0.5.1", "com.github.japgolly.scalajs-react") {
+    // Update webapp-server/bower.json too.
+    val reactJs = "org.webjars" % "react" % "0.12.0"
+
+    object React extends Group("0.6.0-SNAPSHOT", "com.github.japgolly.scalajs-react") {
       val core   = js("core")
       val test   = js("test")
       val scalaz = js("ext-scalaz71")
