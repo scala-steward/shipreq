@@ -70,12 +70,14 @@ object Neo {
   }
 
   case class Editor[-A, +B, +C, -D, +V](render: EditorInput[A, B, C, D] => V) {
+    // TODO need strength A
     def mapA[X](f: X => A): Editor[X, B, C, D, V] = Editor(i => render(i mapA f))
     def mapB[X](f: B => X): Editor[A, X, C, D, V] = Editor(i => render(i mapB f))
     def mapC[X](f: C => X): Editor[A, B, X, D, V] = Editor(i => render(i mapC f))
     def mapD[X](f: X => D): Editor[A, B, C, X, V] = Editor(i => render(i mapD f))
 
-//    def mapCB[X,Y,Z](f: EditorCallbacks[X,Y,Z] => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i mapCB f))
+    def mapCB[X,Y,Z](f: EditorCallbacks[X,Y,Z] => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i mapCB f))
+    //def modCB[BB >: B, CC >: C, DD <: D](f: EditorCallbacks[BB,CC,DD] => EditorCallbacks[BB,CC,DD]): Editor[A,BB,CC,DD,V] = Editor(i => render(i mapCB f))
     def modB_onChange      [X >: B](f: X => X): Editor[A, X, C, D, V] = Editor(i => render(i modB_onChange f))
     def modB_onEditFinished[X >: B](f: X => X): Editor[A, X, C, D, V] = Editor(i => render(i modB_onEditFinished f))
 
@@ -137,6 +139,8 @@ object Neo {
       })
   }
 
+  def modcallbacks[A,B,C,D,V,X,Y](e: Editor[A,B,C,D,V])(f: (A, EditorCallbacks[B,C,D]) => EditorCallbacks[B,C,D]): Editor[A,B,C,D,V] =
+    Editor(i => e.render(i.mapCB(f(i.data, _))))
 
 
   trait GenField[_R] {
@@ -387,48 +391,57 @@ object Neo {
     object ManualExample1_split_editors {
       object RowStatus
       case class Props(ppl: Map[Long, Person])
-      case class RowState(i: (String,String), rowStatus: RowStatus.type)
+      case class RowState(i: (String,String), rowStatus: RowStatus.type, p: Person)
       type SavedState = Map[Long, RowState]
       case class ZeState(saved: SavedState)
       val ZS = ReactS.FixT[IO, ZeState]
+
+//      def updatel(rowl: SimpleLens[ZeState, RowState], b: PersonFieldAndInput) =
+//        ZS.modS(rowl.modifyF(r => {
+//          val i1 = r.i
+//          val i2 = b.f.lens.set(i1, b.v)
+//          RowState(i2, RowStatus)
+//        }))
+      def updatex(id: Long, b: PersonFieldAndInput) =
+        ZS.modS{ s =>
+          val row = s.saved(id)
+          val i1 = row.i
+          val i2 = b.f.lens.set(i1, b.v)
+          s.copy(saved = s.saved + (id -> row.copy(i = i2)))
+        }
+      def revertx(id: Long, f: PersonField) =
+        ZS.modS{ s =>
+          val row = s.saved(id)
+          val p = row.p
+          val i1 = row.i
+          val i2 = f match {
+            case PersonFieldName => i1 put1 p.name
+            case PersonFieldAge  => i1 put2 p.age.toString
+          }
+          s.copy(saved = s.saved + (id -> row.copy(i = i2)))
+        }
+      /*
+      val nameE4a = nameE3.mapC(_.zoomU[ZeState])
+      val nameE4b = modcallbacks(nameE4a)(x => x.copy(onChange =
+        (str,c) => x.onChange(str,c >> updatex(id, b))
+      ))
+      */
+      type CompositeC2 = (PersonField, ReactST[IO, ZeState, Unit])
+      val mergedE2a = mergedE
+        .mapC(_ map2 (_.zoomU[ZeState]))
+        .mapA[(SWII, Long)](_._1)
+      val mergedE2b = modcallbacks(mergedE2a)((a, x) =>
+        x.copy(
+          onChange = (b, cc) => x.onChange(b, cc map2 (c => c >> updatex(a._2, b))),
+          onCancel = cc => x.onCancel(cc map2 (c => c >> revertx(a._2, cc._1)))
+        ))
 
       class TopBackend(c: BackendScope[Props, ZeState]) {
 
         def tableProps = TableProps(rowpropsa(c.state.saved))
 
-        def updaten(id: Long): (PersonFieldAndInput, CompositeC) => IO[Unit] =
-          (b, cc) => {
-            val (_,ru) = cc
-            c.runState(
-              ru.zoomU[ZeState] >>
-                ZS.modS{ s =>
-                  val i1 = s.saved(id).i
-                  val i2 = b.f.lens.set(i1, b.v)
-                  s.copy(saved = s.saved + (id -> RowState(i2, RowStatus)))
-                }
-            )
-          }
-
         // TODO HAD A THOUGHT! Instead of 3 callback fields we should have (CallbackType, B, C) => D
         // or (CallbackType[B], C) => D
-
-        // 90% the same as update
-        def revertn(id: Long): CompositeC => IO[Unit] =
-          cc => {
-            val (fc,ru) = cc
-            c.runState(
-              ru.zoomU[ZeState] >>
-                ZS.modS{ s =>
-                  val p = c.props.ppl(id)
-                  val i1 = s.saved(id).i
-                  val i2 = fc match {
-                    case PersonFieldName => i1 put1 p.name
-                    case PersonFieldAge  => i1 put2 p.age.toString
-                  }
-                  s.copy(saved = s.saved + (id -> RowState(i2, RowStatus)))
-                }
-            )
-          }
 
         def rowpropsa(saved: SavedState): Vector[SavedRowProps] = {
           val names = saved.mapValues(_.i._1)
@@ -437,18 +450,22 @@ object Neo {
 
         def rowprops1(names: Map[Long, String], id: Long, s: RowState): SavedRowProps = {
           val nameswi: NameSWI = ((names, id), s.i._1)
+          val swii: SWII = (nameswi, s.i._2)
+
+          val cbRealise: CompositeC2 => IO[Unit] = x => c.runState(x._2)
+          val cbRealise2: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
+
           SavedRowProps(id,
             EditorInput(
-              (nameswi, s.i._2),
+              (swii, id),
               "",
-              Some(EditorCallbacks[PersonFieldAndInput, CompositeC, IO[Unit]](
-                updaten(id), revertn(id), ???))))
-                //update1(id), revert1(id), ???))))
+              Some(EditorCallbacks[PersonFieldAndInput, CompositeC2, IO[Unit]](
+                cbRealise2, cbRealise, cbRealise2))))
         }
       }
 
       val outmost = ReactComponentB[Props]("Outmost")
-        .getInitialState(p => ZeState(p.ppl.mapValues(v => RowState((v.name, v.age.toString), RowStatus))))
+        .getInitialState(p => ZeState(p.ppl.mapValues(v => RowState((v.name, v.age.toString), RowStatus, v))))
         .backend(new TopBackend(_))
         .render((p, s, b) =>
         div(h1("Hi!"), tablec(b.tableProps))
@@ -465,17 +482,25 @@ object Neo {
         )
         .build
 
-      case class SavedRowProps(key: Long, ei: EditorInput[(NameSWI, String), PersonFieldAndInput, CompositeC, IO[Unit]])
+      case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long), PersonFieldAndInput, CompositeC2, IO[Unit]])
       val savedrow = ReactComponentB[SavedRowProps]("savedrow")
         .stateless
         .render((p, _) => {
-        val (n, a) = mergedE.render(p.ei)
+        val (n, a) = mergedE2b.render(p.ei)
 //        val n = nameE3 render p.nameEI
 //        val a = ageE2 render p.ageEI
         tr(key := p.key, n, a)
       })
-        .build
+      .build
     }
+
+
+    // TODO component is adding a callback action on its own which means the only way to add that, is in the component
+    val ageV2 = ageV.toValiS[NameSW]
+    //val personVF = (si: SWII) => Validator.Ap.apply2(nameV2 correctAndValidate si._1, ageV correctAndValidate si._2)((n,a))
+    val personV = nameV2 merge2 ageV2
+    def personVF(s: NameSW, i: (String,String)) = personV.correctAndValidate(s, i)
+    // mergedE ???
   }
   //  type S = Int
   //  type T = List[Int]

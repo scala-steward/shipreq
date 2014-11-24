@@ -53,6 +53,15 @@ final class ValiS[S, I, C, V](val cp: CPS[S, I, C], val vp: VPS[S, C, V]) {
   //def andThenV[A](that: VPS[S, V, A]): VPS[S, C, A] = composeV(that composeV this
   def addValidation[X](f: VPS[S, V, X]): ValiS[S, I, C, X] =
     new ValiS(cp, vp andThen f)
+
+  def merge2[I2,C2,V2](b: ValiS[S, I2,C2,V2]): ValiS[S, (I,I2), (C,C2) ,(V,V2)] =
+    new ValiS(
+      new CPS[S, (I,I2), (C,C2)](
+        (s,ii) => InputCorrected((correctU(s,ii._1), b.correctU(s,ii._2))),
+        c => (ci(c._1), b.ci(c._2))),
+      new VPS[S, (C,C2), (V,V2)](
+        (s,c) => Validator.Ap.tuple2(validate(s,c.map(_._1)), b.validate(s,c.map(_._2))))
+    )
 }
 
 object ValiS {

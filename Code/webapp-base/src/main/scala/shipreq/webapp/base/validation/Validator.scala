@@ -20,6 +20,11 @@ final class CorrectionPart[I, C](val correct: I => InputCorrected[C], val ci: C 
 
   def lift[M[_]](implicit M: Functor[M]): CorrectionPart[M[I], M[C]] =
     new CorrectionPart(mi => InputCorrected(M.map(mi)(correct(_).value)), M.map(_)(ci))
+
+  def ***[I2, C2](b: CorrectionPart[I2, C2]): CorrectionPart[(I, I2), (C, C2)] =
+      new CorrectionPart[(I, I2), (C, C2)](
+        i => InputCorrected(this correct i._1 value, b correct i._2 value),
+        c => (this ci c._1, b ci c._2))
 }
 
 object CorrectionPart {
@@ -54,6 +59,12 @@ final class ValidationPart[C, V](val validate: InputCorrected[C] => ValidationRe
 
   def lift[M[_]](implicit M: Traverse[M]): ValidationPart[M[C], M[V]] =
     ValidationPart(mic => M.map(mic.value)(c => validate(InputCorrected(c))).sequence[ValidationResult, V])
+
+  def ***[C2, V2](b: ValidationPart[C2, V2]): ValidationPart[(C, C2), (V, V2)] =
+      ValidationPart[(C, C2), (V, V2)](i => Validator.Ap.apply2(
+        this validate InputCorrected(i.value._1),
+        b validate InputCorrected(i.value._2))
+        ((x, y) => (x, y)))
 }
 
 object ValidationPart {
@@ -120,13 +131,7 @@ class Validator[I, C, V](val cp: CorrectionPart[I, C], val vp: ValidationPart[C,
     Validator(cp.lift[M], vp.lift[M])
 
   def ***[I2, C2, V2](b: Validator[I2, C2, V2]): Validator[(I, I2), (C, C2), (V, V2)] =
-    Validator(
-      new CorrectionPart[(I, I2), (C, C2)](
-        i => InputCorrected(this correct i._1 value, b correct i._2 value),
-        c => (this ci c._1, b ci c._2)),
-      ValidationPart[(C, C2), (V, V2)](i =>
-        Validator.Ap.apply2(this validate InputCorrected(i.value._1), b validate InputCorrected(i.value._2))((x, y) => (x, y)))
-    )
+    Validator(cp *** b.cp, vp *** b.vp)
 }
 
 object Validator {
