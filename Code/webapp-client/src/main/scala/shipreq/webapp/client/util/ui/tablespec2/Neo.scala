@@ -152,7 +152,7 @@ object Neo {
     e => e.key match {
       case "Escape" => // TODO use KeyValue
         val t = e.target
-        RU.callback(IO(t.blur()), e.preventDefaultIO >> e.stopPropagationIO)
+        RU.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO)(IO(t.blur()))
       case _ =>
         nopRU
     }
@@ -377,7 +377,7 @@ object Neo {
               (nameswi, s.i._2),
               "",
               Some(EditorCallbacks[String \/ String, RU, IO[Unit]](
-                updaten(id), revertn(id), ???))))
+                updaten(id), ????, ???))))
                 //update1(id), revert1(id), ???))))
         }
       }
