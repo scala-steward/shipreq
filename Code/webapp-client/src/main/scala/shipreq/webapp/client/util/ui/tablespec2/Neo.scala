@@ -11,6 +11,7 @@ import scalaz._, Scalaz._
 import shipreq.base.util.ScalaExt._
 import scala.language.reflectiveCalls
 
+
 object Neo {
   @deprecated("????", "")
   def ???? = scala.Predef.???
@@ -179,7 +180,7 @@ object Neo {
   implicit final class EditorExt[A,B,C,D,V](val e: Editor[A,B,C,D,V]) extends AnyVal {
     type Self = Editor[A, B, C, D, V]
 
-    def applyLiveCorrection(v: ValidatorPlus[B, _, _]): Self =
+    def applyLiveCorrection(v: Validator[B, _, _]): Self =
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
     def applyPostCorrection[T](v: CorrectionPart[B, T]): Self =
@@ -193,7 +194,7 @@ object Neo {
       validateAndDisplayError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText), e)
   }
 
-  def composeEditorValidator[I, C, D](v: ValidatorPlus[I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[I, I, C, D, Modifier] =
+  def composeEditorValidator[I, C, D](v: Validator[I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[I, I, C, D, Modifier] =
     e.applyInputValidation(v)
       .applyLiveCorrection(v)
       .applyPostCorrection(v.cp)
@@ -214,14 +215,15 @@ object Neo {
     case class Age(value: Int)
     case class Person(id: Long, name: String, age: Age)
 
-    val nameV: ValidatorPlus[String, String, String] = ???
+    val nameV: Validator[String, String, String] = ???
 
     val ageV =
-      ValidatorPlus[String, Option[Int], Age](
-        CorrectionPart[String, Option[Int]](s => Try(Option(s.toInt)).getOrElse(None))(_.fold("")(_.toString)),
-        ValidationPart[Option[Int], Age](???),
-        _.replaceAll("\\D", ""))
-
+      Validator(
+        CorrectionPart.apply3[String, Option[Int]](
+          _.replaceAll("\\D", ""),
+          s => Try(Option(s.toInt)).getOrElse(None),
+          _.fold("")(_.toString)),
+        ValidationPart[Option[Int], Age](???))
 
     // ValidationPlus isn't helpful. LiveCorrect used in isolation from Validator
     val nameV_1: Validator[String, String, String] = nameV

@@ -7,40 +7,52 @@ import scalaz.syntax.traverse._
 import scalaz.Validation.FlatMap._
 import shipreq.base.util.ScalaExt._
 
-final class CorrectionPartS[S, I, C](val correct: (S, I) => InputCorrected[C], val ci: C => I) {
+final class CorrectionPartS[S, I, C](val liveCorrect: I => I, val fullCorrect: (S, I) => InputCorrected[C], val ci: C => I) {
+
+  def addLiveCorrect(f: I => I): CorrectionPartS[S, I, C] =
+    new CorrectionPartS(f compose liveCorrect, fullCorrect, ci)
+
+  @inline def correct(s: S, i: I) = fullCorrect(s, liveCorrect(i))
   @inline def correct_(i: I)(implicit ev: Unit =:= S) = correct((), i)
 
   @inline def liftS[X](implicit ev: Unit =:= S): CorrectionPartS[X, I, C] =
     contramapS[X](_ => ())
 
   def contramapS[X](f: X => S): CorrectionPartS[X, I, C] =
-    new CorrectionPartS((t, i) => correct(f(t), i), ci)
+    new CorrectionPartS(liveCorrect, (t, i) => correct(f(t), i), ci)
 
   def xmapI[X](g: I => X)(f: X => I): CorrectionPartS[S, X, C] =
-    new CorrectionPartS((s, a) => correct(s, f(a)), g compose ci)
+    new CorrectionPartS(a => g(liveCorrect(f(a))), (s, a) => fullCorrect(s, f(a)), g compose ci)
 
   def xmapC[X](f: C => X)(g: X => C): CorrectionPartS[S, I, X] =
-    new CorrectionPartS((s, i) => correct(s, i) map f, ci compose g)
+    new CorrectionPartS(liveCorrect, (s, i) => fullCorrect(s, i) map f, ci compose g)
 
   def lift[M[_]](implicit M: Functor[M]): CorrectionPartS[S, M[I], M[C]] =
-    new CorrectionPartS((s, m) => InputCorrected(M.map(m)(correct(s, _).value)), M.map(_)(ci))
+    new CorrectionPartS(
+      M.map(_)(liveCorrect),
+      (s, m) => InputCorrected(M.map(m)(fullCorrect(s, _).value)),
+      M.map(_)(ci))
 
   def imapI[X](iso: X <=> I): CorrectionPartS[S, X, C] = xmapI(iso.from)(iso.to)
   def imapC[X](iso: C <=> X): CorrectionPartS[S, I, X] = xmapC(iso.to)(iso.from)
 
   def ***[I2, C2](b: CorrectionPartS[S, I2, C2]): CorrectionPartS[S, (I,I2), (C,C2)] =
       new CorrectionPartS[S, (I,I2), (C,C2)](
+        i => (this liveCorrect i._1, b liveCorrect i._2),
         (s,i) => InputCorrected(correct(s, i._1).value, b.correct(s, i._2).value),
         c => (this ci c._1, b ci c._2))
 }
 
 object CorrectionPart {
-  @inline def apply[I, C](f: I => C)(ci: C => I): CorrectionPart[I, C] =
-    new CorrectionPart((_, i) => InputCorrected(f(i)), ci)
+  @inline def apply[I, C](f: I => C, ci: C => I): CorrectionPart[I, C] =
+    apply3(identity, f, ci)
 
-  def lift [I, C](iso: I <=> C): CorrectionPart[I, C] = apply(iso.to)(iso.from)
-  def liftE[A]   (f: A => A)   : CorrectionPart[A, A] = apply(f)(identity)
-  def endo [A]   (f: Endo[A])  : CorrectionPart[A, A] = apply(f.run)(identity)
+  @inline def apply3[I, C](lc: I => I, f: I => C, ci: C => I): CorrectionPart[I, C] =
+    new CorrectionPart(lc, (_, i) => InputCorrected(f(i)), ci)
+
+  def lift [I, C](iso: I <=> C): CorrectionPart[I, C] = apply(iso.to, iso.from)
+  def liftE[A]   (f: A => A)   : CorrectionPart[A, A] = apply(f, identity)
+  def endo [A]   (f: Endo[A])  : CorrectionPart[A, A] = apply(f.run, identity)
   def nop  [A]                 : CorrectionPart[A, A] = liftE[A](identity)
 }
 
@@ -114,14 +126,14 @@ object ValidationPart {
 // TODO Determine Validator properties/laws
 
 class ValidatorS[S, I, C, V](val cp: CorrectionPartS[S, I, C], val vp: ValidationPartS[S, C, V]) {
-  @inline final def ci(c: C): I = cp.ci(c)
-  @inline final def correct = cp.correct
-  @inline final def correctU = correct andThenA (_.value)
-  @inline final def validate = vp.validate
-
-  def correctAndValidate(s: S, i: I)                : ValidationResult[V] = validate(s, correct(s, i))
-  def isValid           (s: S, i: I)                : Boolean             = correctAndValidate(s, i).isSuccess
-  def isValidC          (s: S, c: InputCorrected[C]): Boolean             = validate(s, c).isSuccess
+  @inline final def liveCorrect       (i: I)                      : I                   = cp.liveCorrect(i)
+  @inline final def ci                (c: C)                      : I                   = cp.ci(c)
+  @inline final def correct           (s: S, i: I)                : InputCorrected[C]   = cp.correct(s, i)
+  @inline final def correctU          (s: S, i: I)                : C                   = correct(s, i).value
+  @inline final def isValid           (s: S, i: I)                : Boolean             = correctAndValidate(s, i).isSuccess
+  @inline final def isValidC          (s: S, c: InputCorrected[C]): Boolean             = validate(s, c).isSuccess
+  @inline final def validate          (s: S, c: InputCorrected[C]): ValidationResult[V] = vp.validate(s, c)
+                def correctAndValidate(s: S, i: I)                : ValidationResult[V] = validate(s, correct(s, i))
 
   @inline final def correct_           (i: I)                (implicit ev: Unit =:= S) = correct           ((), i)
   @inline final def correctU_          (i: I)                (implicit ev: Unit =:= S) = correctU          ((), i)
@@ -129,19 +141,18 @@ class ValidatorS[S, I, C, V](val cp: CorrectionPartS[S, I, C], val vp: Validatio
   @inline final def correctAndValidate_(i: I)                (implicit ev: Unit =:= S) = correctAndValidate((), i)
   @inline final def isValid_           (i: I)                (implicit ev: Unit =:= S) = isValid           ((), i)
 
-  def contramapS[X]   (f: X => S)              : ValidatorS[X, I, C, V] = Validator(cp contramapS f, vp contramapS f)
-  def imapI     [X]   (iso: X <=> I)           : ValidatorS[S, X, C, V] = xmapI(iso.from)(iso.to)
-  def xmapI     [X]   (g: I => X)(f: X => I)   : ValidatorS[S, X, C, V] = Validator(cp.xmapI(g)(f), vp)
-  def xmapC     [X]   (g: C => X)(f: X => C)   : ValidatorS[S, I, X, V] = Validator(cp.xmapC(g)(f), vp contramap f)
-  def map       [X]   (f: V => X)              : ValidatorS[S, I, C, X] = Validator(cp, vp map f)
-  def liftS     [X]   (implicit ev: Unit =:= S): ValidatorS[X, I, C, V] = contramapS[X](_ => ())
-  def lift      [M[_]](implicit M: Traverse[M]): ValidatorS[S, M[I], M[C], M[V]] = Validator(cp.lift[M], vp.lift[M])
+  def contramapS    [X]   (f: X => S)                  : ValidatorS[X, I, C, V]          = Validator(cp contramapS f, vp contramapS f)
+  def imapI         [X]   (iso: X <=> I)               : ValidatorS[S, X, C, V]          = xmapI(iso.from)(iso.to)
+  def xmapI         [X]   (g: I => X)(f: X => I)       : ValidatorS[S, X, C, V]          = Validator(cp.xmapI(g)(f), vp)
+  def xmapC         [X]   (g: C => X)(f: X => C)       : ValidatorS[S, I, X, V]          = Validator(cp.xmapC(g)(f), vp contramap f)
+  def map           [X]   (f: V => X)                  : ValidatorS[S, I, C, X]          = Validator(cp, vp map f)
+  def liftS         [X]   (implicit ev: Unit =:= S)    : ValidatorS[X, I, C, V]          = contramapS[X](_ => ())
+  def lift          [M[_]](implicit M: Traverse[M])    : ValidatorS[S, M[I], M[C], M[V]] = Validator(cp.lift[M], vp.lift[M])
+  def addLiveCorrect      (f: I => I)                  : ValidatorS[S, I, C, V]          = Validator(cp addLiveCorrect f, vp)
+  def addValidation [X]   (f: ValidationPartS[S, V, X]): ValidatorS[S, I, C, X]          = Validator(cp, vp andThen f)
 
   def ***[I2, C2, V2](b: ValidatorS[S, I2, C2, V2]): ValidatorS[S, (I,I2), (C,C2), (V,V2)] =
     new ValidatorS(cp *** b.cp, vp *** b.vp)
-
-  def addValidation[X](f: ValidationPartS[S, V, X]): ValidatorS[S, I, C, X] =
-    new ValidatorS(cp, vp andThen f)
 }
 
 object Validator {
@@ -155,7 +166,7 @@ object Validator {
 
   def choose[S, I <: C, C, V](f: C => ValidatorS[S, I, C, V]): ValidatorS[S, I, C, V] =
     new ValidatorS[S, I, C, V](
-        new CorrectionPartS[S, I, C]((s, i) => f(i).correct(s, i), c => f(c).ci(c)),
+        new CorrectionPartS[S, I, C](identity, (s, i) => f(i).correct(s, i), c => f(c).ci(c)),
         new ValidationPartS[S, C, V]((s, c) => f(c.value).validate(s, c))) {
       override def correctAndValidate(s: S, i: I): ValidationResult[V] = f(i).correctAndValidate(s, i)
     }
