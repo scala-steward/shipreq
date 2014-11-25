@@ -420,6 +420,20 @@ object Neo {
           }
           s.copy(saved = s.saved + (id -> row.copy(i = i2)))
         }
+      def validaterow(ss: NameSW, id: Long, ok: ((String, Age)) => ReactST[IO, ZeState, Unit], ko: VFailure => ReactST[IO, ZeState, Unit]) =
+        ZS.liftR{ s =>
+          val i = s.saved(id).i
+          personVF(ss, i) match {
+            case scalaz.Success(v) => ok(v)
+            case scalaz.Failure(f) => ko(f)
+          }
+        }
+      def lockrow(id: Long) =
+        ZS.modS{ s =>
+          val row = s.saved(id)
+          val row2 = row.copy(rowStatus = RowStatus)
+          s.copy(saved = s.saved + (id -> row2))
+        }
       /*
       val nameE4a = nameE3.mapC(_.zoomU[ZeState])
       val nameE4b = modcallbacks(nameE4a)(x => x.copy(onChange =
@@ -430,11 +444,25 @@ object Neo {
       val mergedE2a = mergedE
         .mapC(_ map2 (_.zoomU[ZeState]))
         .mapA[(SWII, Long)](_._1)
-      val mergedE2b = modcallbacks(mergedE2a)((a, x) =>
+      val mergedE2 = modcallbacks(mergedE2a)((a, x) =>
         x.copy(
           onChange = (b, cc) => x.onChange(b, cc map2 (c => c >> updatex(a._2, b))),
           onCancel = cc => x.onCancel(cc map2 (c => c >> revertx(a._2, cc._1)))
         ))
+
+
+      val ageV2 = ageV.toValiS[NameSW]
+      //val personVF = (si: SWII) => Validator.Ap.apply2(nameV2 correctAndValidate si._1, ageV correctAndValidate si._2)((n,a))
+      val personV = nameV2 merge2 ageV2
+      def personVF(s: NameSW, i: (String,String)) = personV.correctAndValidate(s, i)
+      val mergedE3 = modcallbacks(mergedE2)((a, x) => {
+        val (((namesw, i1), i2), id) = a
+        x.copy(
+          onEditFinished = (b, cc) => x.onEditFinished(b, cc map2 (c =>
+            c >> validaterow(namesw, id, v => lockrow(id), _ => ZS.ret(()))
+          ))
+        )})
+
 
       class TopBackend(c: BackendScope[Props, ZeState]) {
 
@@ -486,21 +514,13 @@ object Neo {
       val savedrow = ReactComponentB[SavedRowProps]("savedrow")
         .stateless
         .render((p, _) => {
-        val (n, a) = mergedE2b.render(p.ei)
+        val (n, a) = mergedE2.render(p.ei)
 //        val n = nameE3 render p.nameEI
 //        val a = ageE2 render p.ageEI
         tr(key := p.key, n, a)
       })
       .build
     }
-
-
-    // TODO component is adding a callback action on its own which means the only way to add that, is in the component
-    val ageV2 = ageV.toValiS[NameSW]
-    //val personVF = (si: SWII) => Validator.Ap.apply2(nameV2 correctAndValidate si._1, ageV correctAndValidate si._2)((n,a))
-    val personV = nameV2 merge2 ageV2
-    def personVF(s: NameSW, i: (String,String)) = personV.correctAndValidate(s, i)
-    // mergedE ???
   }
   //  type S = Int
   //  type T = List[Int]
