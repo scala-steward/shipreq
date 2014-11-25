@@ -9,7 +9,6 @@ import scalaz.effect.IO
 import scalajs.js.undefined
 import scalaz._, Scalaz._
 import shipreq.base.util.ScalaExt._
-import ValiS._
 import scala.language.reflectiveCalls
 
 object Neo {
@@ -184,14 +183,14 @@ object Neo {
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
     def applyPostCorrection[T](v: CorrectionPart[B, T]): Self =
-      e.pmodB { case OnEditFinished(b) => v.ci(v.correct(b).value) }
+      e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
   }
 
   implicit final class EditorExtV[A,B,C,D](val e: Editor[A,B,C,D,Modifier]) extends AnyVal {
     type Self = Editor[A, B, C, D, Modifier]
 
     def applyInputValidation(v: Validator[A, _, _]): Self =
-      validateAndDisplayError(i => v.correctAndValidate(i).swap.toOption.map(_.toText), e)
+      validateAndDisplayError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText), e)
   }
 
   def composeEditorValidator[I, C, D](v: ValidatorPlus[I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[I, I, C, D, Modifier] =
@@ -202,7 +201,7 @@ object Neo {
   implicit final class EditorExtV2[A,B,C,D](val e: Editor[A,B,C,D,Modifier]) extends AnyVal {
     type Self = Editor[A, B, C, D, Modifier]
 
-    def applyInputValidation2[S](v: ValiS[S, A, _, _]): Editor[(S, A), B, C, D, Modifier] =
+    def applyInputValidation2[S](v: ValidatorS[S, A, _, _]): Editor[(S, A), B, C, D, Modifier] =
       validateAndDisplayError(sa => v.correctAndValidate(sa._1, sa._2).swap.toOption.map(_.toText), e.strengthL[S])
   }
 
@@ -244,13 +243,13 @@ object Neo {
       }
     def uniquenessFailure(fieldName: String): VFailure =
       VFailure.forField(fieldName, NonEmptyList("must be unique."))
-    def tovps[S,A](f: (S,InputCorrected[A]) => Option[VFailure]): VPS[S, A, A] =
-      new VPS((s,a) => f(s,a) match {
+    def tovps[S,A](f: (S,InputCorrected[A]) => Option[VFailure]): ValidationPartS[S, A, A] =
+      new ValidationPartS((s,a) => f(s,a) match {
         case None    => Success(a.value)
         case Some(r) => Failure(r)
       })
     val nameUniqueVPS = tovps[NameSW, String]((a,b) => nameUniqueness(a._1, a._2, b))
-    val nameV2 = nameV.toValiS[NameSW].addValidation(nameUniqueVPS)
+    val nameV2 = nameV.liftS[NameSW].addValidation(nameUniqueVPS)
     val nameE3 = nameE2.applyInputValidation2(nameV2)
 
     sealed trait PersonField extends GenField[(String, String)] {
@@ -322,8 +321,8 @@ object Neo {
           case OnCancel    => c map2 (_ >> revertx(a._2, c._1))
         }))
 
-      val ageV2 = ageV.toValiS[NameSW]
-      val personV = nameV2 merge2 ageV2
+      val ageV2 = ageV.liftS[NameSW]
+      val personV = nameV2 *** ageV2
       def personVF(s: NameSW, i: (String,String)) = personV.correctAndValidate(s, i)
       val mergedE3 = mergedE2.modCallbacksA(a => {
         val (((namesw, i1), i2), id) = a

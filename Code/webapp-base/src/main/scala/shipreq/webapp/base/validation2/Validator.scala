@@ -8,6 +8,11 @@ import scalaz.Validation.FlatMap._
 import shipreq.base.util.ScalaExt._
 
 final class CorrectionPartS[S, I, C](val correct: (S, I) => InputCorrected[C], val ci: C => I) {
+  @inline def correct_(i: I)(implicit ev: Unit =:= S) = correct((), i)
+
+  @inline def liftS[X](implicit ev: Unit =:= S): CorrectionPartS[X, I, C] =
+    contramapS[X](_ => ())
+
   def contramapS[X](f: X => S): CorrectionPartS[X, I, C] =
     new CorrectionPartS((t, i) => correct(f(t), i), ci)
 
@@ -42,6 +47,11 @@ object CorrectionPart {
 // =====================================================================================================================
 
 final class ValidationPartS[S, C, V](val validate: (S, InputCorrected[C]) => ValidationResult[V]) {
+  @inline def validate_(c: InputCorrected[C])(implicit ev: Unit =:= S) = validate((), c)
+
+  @inline def liftS[X](implicit ev: Unit =:= S): ValidationPartS[X, C, V] =
+    contramapS[X](_ => ())
+
   def contramapS[X](f: X => S): ValidationPartS[X, C, V] =
     new ValidationPartS((t, c) => validate(f(t), c))
 
@@ -109,18 +119,23 @@ class ValidatorS[S, I, C, V](val cp: CorrectionPartS[S, I, C], val vp: Validatio
   @inline final def correctU = correct andThenA (_.value)
   @inline final def validate = vp.validate
 
-  def correctAndValidate(s: S, i: I): ValidationResult[V] =
-    validate(s, correct(s, i))
+  def correctAndValidate(s: S, i: I)                : ValidationResult[V] = validate(s, correct(s, i))
+  def isValid           (s: S, i: I)                : Boolean             = correctAndValidate(s, i).isSuccess
+  def isValidC          (s: S, c: InputCorrected[C]): Boolean             = validate(s, c).isSuccess
 
-  def isValid (s: S, i: I)                : Boolean = correctAndValidate(s, i).isSuccess
-  def isValidC(s: S, c: InputCorrected[C]): Boolean = validate(s, c).isSuccess
+  @inline final def correct_           (i: I)                (implicit ev: Unit =:= S) = correct           ((), i)
+  @inline final def correctU_          (i: I)                (implicit ev: Unit =:= S) = correctU          ((), i)
+  @inline final def validate_          (c: InputCorrected[C])(implicit ev: Unit =:= S) = validate          ((), c)
+  @inline final def correctAndValidate_(i: I)                (implicit ev: Unit =:= S) = correctAndValidate((), i)
+  @inline final def isValid_           (i: I)                (implicit ev: Unit =:= S) = isValid           ((), i)
 
-  def contramapS[X](f: X => S)           : ValidatorS[X, I, C, V]          = Validator(cp contramapS f, vp contramapS f)
-  def imapI     [X](iso: X <=> I)        : ValidatorS[S, X, C, V]          = xmapI(iso.from)(iso.to)
-  def xmapI     [X](g: I => X)(f: X => I): ValidatorS[S, X, C, V]          = Validator(cp.xmapI(g)(f), vp)
-  def xmapC     [X](g: C => X)(f: X => C): ValidatorS[S, I, X, V]          = Validator(cp.xmapC(g)(f), vp contramap f)
-  def map       [X](f: V => X)           : ValidatorS[S, I, C, X]          = Validator(cp, vp map f)
-  def lift[M[_]](implicit M: Traverse[M]): ValidatorS[S, M[I], M[C], M[V]] = Validator(cp.lift[M], vp.lift[M])
+  def contramapS[X]   (f: X => S)              : ValidatorS[X, I, C, V] = Validator(cp contramapS f, vp contramapS f)
+  def imapI     [X]   (iso: X <=> I)           : ValidatorS[S, X, C, V] = xmapI(iso.from)(iso.to)
+  def xmapI     [X]   (g: I => X)(f: X => I)   : ValidatorS[S, X, C, V] = Validator(cp.xmapI(g)(f), vp)
+  def xmapC     [X]   (g: C => X)(f: X => C)   : ValidatorS[S, I, X, V] = Validator(cp.xmapC(g)(f), vp contramap f)
+  def map       [X]   (f: V => X)              : ValidatorS[S, I, C, X] = Validator(cp, vp map f)
+  def liftS     [X]   (implicit ev: Unit =:= S): ValidatorS[X, I, C, V] = contramapS[X](_ => ())
+  def lift      [M[_]](implicit M: Traverse[M]): ValidatorS[S, M[I], M[C], M[V]] = Validator(cp.lift[M], vp.lift[M])
 
   def ***[I2, C2, V2](b: ValidatorS[S, I2, C2, V2]): ValidatorS[S, (I,I2), (C,C2), (V,V2)] =
     new ValidatorS(cp *** b.cp, vp *** b.vp)
