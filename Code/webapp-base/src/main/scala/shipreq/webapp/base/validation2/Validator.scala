@@ -75,18 +75,18 @@ final class ValidationPartS[S, C, V](val validate: (S, InputCorrected[C]) => Val
     new ValidationPartS[S, (C,C2), (V,V2)]((s, i) => Validator.Ap.tuple2(
       this.validate(s, i.map(_._1)),
       that.validate(s, i.map(_._2))))
+
+  def liftO: ValidationPartS[S, Option[C], Option[V]] =
+    new ValidationPartS[S, Option[C], Option[V]]((s, ic) => ic.value match {
+      case None    => Success(None)
+      case Some(c) => validate(s, InputCorrected(c)).map(s => Some(s))
+    })
 }
 
 object ValidationPart {
 
   @inline def apply[C, V](f: InputCorrected[C] => ValidationResult[V]): ValidationPart[C, V] =
     new ValidationPart((_, c) => f(c))
-
-  def liftO[C, V](f: InputCorrected[C] => ValidationResult[V]): ValidationPart[Option[C], Option[V]] =
-    ValidationPart[Option[C], Option[V]](_.value match {
-      case None    => Success(None)
-      case Some(c) => f(InputCorrected(c)).map(s => Some(s))
-    })
 
   def test[A](test: InputCorrected[A] => Boolean, fail: VFailure): ValidationPart[A, A] = {
     val failure = Failure(fail)
