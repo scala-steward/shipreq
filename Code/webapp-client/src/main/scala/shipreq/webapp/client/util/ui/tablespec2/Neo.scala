@@ -2,7 +2,6 @@ package shipreq.webapp.client.util.ui.tablespec2
 
 import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
 import monocle._
-import shipreq.webapp.base.validation._
 import shipreq.webapp.base.validation2._
 import shipreq.webapp.client.util.ui.Util._
 import scala.util.Try

@@ -1,6 +1,5 @@
 package shipreq.webapp.base.validation2
 
-import shipreq.webapp.base.validation._
 import scalaz.{Validation => _, _}
 import scalaz.Isomorphism.<=>
 import scalaz.syntax.semigroup._
