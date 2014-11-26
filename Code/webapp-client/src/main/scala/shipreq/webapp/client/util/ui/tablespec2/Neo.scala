@@ -47,9 +47,9 @@ object Neo {
     def map  [X]    (f: D => X)                       = EditorCallbacks[I, C, X](t andThenA f)
     def dimap[X,Y,Z](f: X => I, g: Y => C, h: D => Z) = EditorCallbacks[X, Y, Z]((x,c) => h(t(x map f, g(c))))
 
-    def pmodI(f: PartialFunction[EditorCallback[I], I]): EditorCallbacks[I, C, D] =
+    def pmodI(f: C => PartialFunction[EditorCallback[I], I]): EditorCallbacks[I, C, D] =
       EditorCallbacks((i,c) => {
-        val j = f.andThen(i2 => i map (_ => i2)).applyOrElse(i, identity[EditorCallback[I]])
+        val j = f(c).andThen(i2 => i map (_ => i2)).applyOrElse(i, identity[EditorCallback[I]])
         t(j, c)
       })
 
@@ -83,8 +83,11 @@ object Neo {
     def mapC     [X](f: C => X): Editor[A,     B, X, D, V] = Editor(i => render(i cmapC f))
     def cmapD    [X](f: X => D): Editor[A,     B, C, X, V] = Editor(i => render(i mapD f))
 
-    def pmodB(f: PartialFunction[EditorCallback[B], B])     : Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodI f)
-    def pmodC(f: C => PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodC f)
+    def pmodBx(f: A => C => PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodI f(a))
+    def pmodCx(f: A => C => PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodC f(a))
+
+    def pmodB(f: PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodI (_ => f))
+    def pmodC(f: PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodC (_ => f))
 
     def cmapCallbacksA[X,Y,Z](f: A => EditorCallbacks[X,Y,Z] => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i.mapCallbacks(f(i.data))))
     def cmapCallbacks [X,Y,Z](f: EditorCallbacks[X,Y,Z]      => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i mapCallbacks f))
@@ -163,11 +166,14 @@ object Neo {
   implicit final class EditorExt[A,B,C,D,V](val e: Editor[A,B,C,D,V]) extends AnyVal {
     type Self = Editor[A, B, C, D, V]
 
-    def applyLiveCorrection(v: Validator[B, _, _]): Self =
+    def applyLiveCorrection(v: ValidatorS[_, B, _, _]): Self =
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
-    def applyPostCorrection[T](v: CorrectionPart[B, T]): Self =
+    def applyPostCorrection[U](v: CorrectionPart[B, U]): Self =
       e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
+
+    def applyPostCorrectionS[S, U](v: CorrectionPartS[S, B, U])(f: A => S): Self =
+      e.pmodBx(a => _ => { case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
   }
 
   implicit final class EditorExtV[A,B,C,D](val e: Editor[A,B,C,D,Modifier]) extends AnyVal {
@@ -175,19 +181,26 @@ object Neo {
 
     def applyInputValidation(v: Validator[A, _, _]): Self =
       validateAndDisplayError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText), e)
+
+    def applyInputValidationS[S, I](v: ValidatorS[S, I, _, _])(s: A => S, i: A => I): Self =
+      validateAndDisplayError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText), e)
+
+    def applyInputValidationSL[S, I](v: ValidatorS[S, A, _, _]) =
+      e.strengthL[S].applyInputValidationS(v)(_._1, _._2)
+
   }
 
+  @deprecated("no","")
   def composeEditorValidator[I, C, D](v: Validator[I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[I, I, C, D, Modifier] =
     e.applyInputValidation(v)
       .applyLiveCorrection(v)
       .applyPostCorrection(v.cp)
 
-  implicit final class EditorExtV2[A,B,C,D](val e: Editor[A,B,C,D,Modifier]) extends AnyVal {
-    type Self = Editor[A, B, C, D, Modifier]
-
-    def applyInputValidation2[S](v: ValidatorS[S, A, _, _]): Editor[(S, A), B, C, D, Modifier] =
-      validateAndDisplayError(sa => v.correctAndValidate(sa._1, sa._2).swap.toOption.map(_.toText), e.strengthL[S])
-  }
+  @deprecated("no","")
+  def composeEditorValidator2[S, I, C, D](v: ValidatorS[S, I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[(S, I), I, C, D, Modifier] =
+    e.applyInputValidationSL(v)
+      .applyLiveCorrection(v)
+      .applyPostCorrectionS(v.cp)(_._1)
 
   // --------------
   // Rows and state
@@ -297,10 +310,6 @@ object Neo {
           _.fold("")(_.toString)),
         ValidationPart[Option[Int], Age](???))
 
-    // ValidationPlus isn't helpful. LiveCorrect used in isolation from Validator
-    val nameV_1: Validator[String, String, String] = nameV
-    // TODO can't cmap Validator because I in invariant & needs xmap.
-
     val nameE = textInputEditor
     val ageE = textInputEditor
 
@@ -324,7 +333,7 @@ object Neo {
       })
     val nameUniqueVPS = tovps[NameSW, String]((a,b) => nameUniqueness(a._1, a._2, b))
     val nameV2 = nameV.liftS[NameSW].addValidation(nameUniqueVPS)
-    val nameE3 = nameE2.applyInputValidation2(nameV2)
+    val nameE3 = nameE2.applyInputValidationSL(nameV2)
 
     type CompositeC = (personFields.Field, RU)
 
