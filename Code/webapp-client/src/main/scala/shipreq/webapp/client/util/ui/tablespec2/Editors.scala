@@ -12,7 +12,9 @@ object Editors {
   val RU  = ReactS.FixT[IO, Unit]
   val nop = RU.ret(())
 
-  def textEditor(node: Tag): Editor[String, String, RU, IO[Unit], Modifier] =
+  type SimpleEditor[I] = Editor[I, I, RU, IO[Unit], Modifier]
+
+  def textEditor(node: Tag): SimpleEditor[String] =
     Editor(ei => {
       val base = node(cls := ei.cssClass, value := ei.data)
       ei.editable match {
@@ -20,9 +22,9 @@ object Editors {
           base(readonly := true)
         case Some(cb) =>
           base(
-            onchange  ~~> textChangeRecv(t => cb.t(OnChange(t), nop)),
-            onblur    ~~> textChangeRecv(t => cb.t(OnEditFinished(t), nop)),
-            onkeydown ~~> cancelOnEscape(cb.t(OnCancel, _)))
+            onchange  ~~> textChangeRecv(t => cb(OnChange(t), nop)),
+            onblur    ~~> textChangeRecv(t => cb(OnEditFinished(t), nop)),
+            onkeydown ~~> cancelOnEscape(cb(OnCancel, _)))
       }
     })
 
@@ -37,6 +39,21 @@ object Editors {
 
   val textInputEditor = textEditor(input)
   val textareaEditor  = textEditor(textarea)
+
+  val checkboxEditor: SimpleEditor[Boolean] =
+    Editor(ei => {
+      val base = checkbox(ei.data)(cls := ei.cssClass)
+      ei.editable match {
+        case None =>
+          base(readonly := true)
+        case Some(cb) =>
+          def handleChange: ReactEventI => IO[Unit] = e => {
+            val b = e.target.checked
+            cb(OnChange(b), nop) >> cb(OnEditFinished(b), nop)
+          }
+          base(onchange ~~> handleChange)
+      }
+    })
 
   def renderWithError[A, B, C, D](editor: Editor[A, B, C, D, Modifier])(err: String): Editor[A, B, C, D, Modifier] =
     Editor(ei => div(editor render ei, div(cls := "errorMsg", err)))

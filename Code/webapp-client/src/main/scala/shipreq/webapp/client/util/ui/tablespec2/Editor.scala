@@ -17,6 +17,8 @@ case object      OnCancel                    extends EditorCallback[Nothing]
 // =====================================================================================================================
 
 case class EditorCallbacks[I, C, D](t: (EditorCallback[I], C) => D) {
+  @inline final def apply(i: EditorCallback[I], c: C): D = t(i, c)
+
   def cmap [X,Y]  (f: X => I, g: Y => C)            = EditorCallbacks[X, Y, D]((x,c) => t(x map f, g(c)))
   def cmapC[X]    (f: X => C)                       = EditorCallbacks[I, X, D]((x,c) => t(x, f(c)))
   def map  [X]    (f: D => X)                       = EditorCallbacks[I, C, X](t andThenA f)
