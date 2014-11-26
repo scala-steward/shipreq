@@ -1,7 +1,8 @@
-package shipreq.webapp.client.util.ui.tablespec2
+            package shipreq.webapp.client.util.ui.tablespec2
 
 import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
 import monocle._
+import monocle.syntax._
 import shipreq.webapp.base.validation2._
 import shipreq.webapp.client.util.ui.Util._
 import scala.util.Try
@@ -206,6 +207,81 @@ object Neo {
       validateAndDisplayError(sa => v.correctAndValidate(sa._1, sa._2).swap.toOption.map(_.toText), e.strengthL[S])
   }
 
+  // --------------
+  // Rows and state
+  // --------------
+
+  sealed trait RowStatus
+  object RowStatus {
+
+    /** Row is in sync with the known (local) world. An edit may or may not be in progress. */
+    case object Sync extends RowStatus
+
+    /** Row is locked pending an external response to change. (Ajax in progress) */
+    case object Locked extends RowStatus
+
+    /** Failed to coordination Local change with external agent. (Ajax failure) */
+    case class Failed(retry: IO[Unit]) extends RowStatus
+  }
+
+  // final case class SavedRowDP[D, P](status: RowStatus, d: D, p: P)
+
+  object SavedRowStore {
+    final case class Row[P, I](status: RowStatus, p: P, i: I)
+    class RowL[P, I] {
+      private[this] def l = Lenser[Row[P, I]]
+      val status = l(_.status)
+      val p      = l(_.p)
+      val i      = l(_.i)
+    }
+
+    type SS[K, P, I] = Map[K, Row[P, I]]
+    def apply[K, P, I](pi: P => I): SavedRowStore[SS[K, P, I], K, P, I] =
+      new SavedRowStore(SimpleIso.dummy, new RowL, pi)
+  }
+  class SavedRowStore[S, K, P, I](_s: SimpleLens[S, SavedRowStore.SS[K,P,I]],
+                                     _savedRow: SavedRowStore.RowL[P, I],
+                                     pi: P => I) {
+    final type State = S
+    final type Row = SavedRowStore.Row[P, I]
+    final type SS = SavedRowStore.SS[K, P, I]
+    final type KP = (K, P)
+
+    def contramap[T](f: SimpleLens[T, S]): SavedRowStore[T, K, P, I] =
+      new SavedRowStore(f |-> _s, _savedRow, pi)
+    
+    @inline private def initRow(p: P): Row =
+      SavedRowStore.Row(RowStatus.Sync, p, pi(p))
+
+    private def __row  (k: K): SimpleLens[SS, Row]      = SimpleLens[SS](_ apply k)((m, p) => m + (k -> p))
+    private def _row   (k: K): SimpleLens[S, Row]       = _s |-> __row(k)
+    private def _status(k: K): SimpleLens[S, RowStatus] = _row(k) |-> _savedRow.status
+
+    def initStateM(s: Map[K, P])         : SS = s mapValues initRow
+    def initStateS(s: Seq[P], pk: P => K): SS = initStateM(s.foldLeft(Map.empty[K, P])((m, p) => m + p.mapStrengthL(pk)))
+    def initStateT(s: Seq[KP])           : SS = initStateM(s.toMap)
+
+    def remove   (k: K)              : S => S = _s.modifyF(_ - k)
+    def set      (k: K, p: P)        : S => S = _s.modifyF(_ + (k -> initRow(p)))
+    def setT     (kp: KP)            : S => S = set(kp._1, kp._2)
+    def setStatus(k: K, r: RowStatus): S => S = _status(k).setF(r)
+    
+    def getAll(s: S): Stream[(RowStatus, K, P)] =
+      _s.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
+
+//    private[this] implicit def autoLiftEndo(f: S => S): ReactS[S, Unit] = ReactS mod f
+//    def savedRemoveR(k: K): ReactS[S, Unit] = savedRemoveF(k)
+//    def savedSetR   (kp: KP)    : ReactS[S, Unit] = savedSetF(kp)
+
+    def updateIO(saveIO: KP => IO[KP]): K => ReactST[IO, S, Unit] =
+      k => ReactS.modT[IO, S](s =>
+        saveIO(k, _row(k).get(s).p)
+          .map(setT(_)(s)))
+
+    def deleteIO(delIO: K => IO[Unit]): K => ReactST[IO, S, Unit] =
+      k => ReactS.retM(delIO(k)) >> ReactS.mod(remove(k)).lift[IO] // TODO revisit after 0.6.0
+  }
+
   // ↑ Library ↑
   // ===================================================================================================================
   // ↓ Application ↓
@@ -275,11 +351,13 @@ object Neo {
       Editor.merge2(nameE3, ageE2).pairI[PersonField](PersonFieldName, PersonFieldAge)
 
     object ManualExample1_split_editors {
-      object RowStatus
+      //private[this] implicit def autoLiftEndo[S](f: S => S): ReactS[S, Unit] = ReactS mod f
+
       case class Props(ppl: Map[Long, Person])
-      case class RowState(i: (String,String), rowStatus: RowStatus.type, p: Person)
-      type SavedState = Map[Long, RowState]
-      case class ZeState(saved: SavedState)
+      
+      val savedStore = SavedRowStore[Long, Person, (String, String)](p => (p.name, p.age.toString))
+      case class ZeState(saved: savedStore.State)
+      val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
       val ZS = ReactS.FixT[IO, ZeState]
 
       def updatex(id: Long, b: PersonFieldAndInput) =
@@ -308,12 +386,10 @@ object Neo {
             case scalaz.Failure(f) => ko(f)
           }
         }
+
       def lockrow(id: Long) =
-        ZS.modS{ s =>
-          val row = s.saved(id)
-          val row2 = row.copy(rowStatus = RowStatus)
-          s.copy(saved = s.saved + (id -> row2))
-        }
+        ZS.modS(savedStoreZ.setStatus(id, RowStatus.Locked))
+
       type CompositeC2 = (PersonField, ReactST[IO, ZeState, Unit])
       val mergedE2 = mergedE
         .strengthR[Long]
@@ -335,17 +411,17 @@ object Neo {
 
       class TopBackend(c: BackendScope[Props, ZeState]) {
 
+        val cbRealise: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
+        val editable = Some(EditorCallbacks[PersonFieldAndInput, CompositeC2, IO[Unit]](cbRealise))
+
         def tableProps = TableProps(rowpropsa(c.state.saved))
 
-        def rowpropsa(saved: SavedState): Vector[SavedRowProps] = {
+        def rowpropsa(saved: savedStore.State): Vector[SavedRowProps] = {
           val names = saved.mapValues(_.i._1)
           saved.foldLeft(Vector.empty[SavedRowProps])((q, a) => q :+ rowprops1(names, a._1, a._2))
         }
 
-        val cbRealise: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
-        val editable = Some(EditorCallbacks[PersonFieldAndInput, CompositeC2, IO[Unit]](cbRealise))
-
-        def rowprops1(names: Map[Long, String], id: Long, s: RowState): SavedRowProps = {
+        def rowprops1(names: Map[Long, String], id: Long, s: savedStore.Row): SavedRowProps = {
           val nameswi: NameSWI = ((names, id), s.i._1)
           val swii: SWII = (nameswi, s.i._2)
           SavedRowProps(id, EditorInput((swii, id), "", editable))
@@ -353,7 +429,7 @@ object Neo {
       }
 
       val outmost = ReactComponentB[Props]("Outmost")
-        .getInitialState(p => ZeState(p.ppl.mapValues(v => RowState((v.name, v.age.toString), RowStatus, v))))
+        .getInitialState(p => ZeState(savedStore initStateM p.ppl))
         .backend(new TopBackend(_))
         .render((p, s, b) =>
         div(h1("Hi!"), tablec(b.tableProps))
