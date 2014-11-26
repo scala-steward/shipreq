@@ -69,11 +69,12 @@ class SavedRowStore[S, K, P, I](_s: SimpleLens[S, SavedRowStore.SS[K,P,I]],
   //    def savedRemoveR(k: K): ReactS[S, Unit] = savedRemoveF(k)
   //    def savedSetR   (kp: KP)    : ReactS[S, Unit] = savedSetF(kp)
 
-  def updateIO(saveIO: KP => IO[KP]): K => ReactST[IO, S, Unit] =
-    k => ReactS.modT[IO, S](s =>
-      saveIO(k, _row(k).get(s).p)
-        .map(setT(_)(s)))
-
-  def deleteIO(delIO: K => IO[Unit]): K => ReactST[IO, S, Unit] =
-    k => ReactS.retM(delIO(k)) >> ReactS.mod(remove(k)).lift[IO] // TODO revisit after 0.6.0
+  // these two below are synchronous
+//  def updateIO(saveIO: KP => IO[KP]): K => ReactST[IO, S, Unit] =
+//    k => ReactS.modT[IO, S](s =>
+//      saveIO(k, _row(k).get(s).p)
+//        .map(setT(_)(s)))
+//
+//  def deleteIO(delIO: K => IO[Unit]): K => ReactST[IO, S, Unit] =
+//    k => ReactS.retM(delIO(k)) >> ReactS.mod(remove(k)).lift[IO] // TODO revisit after 0.6.0
 }

@@ -59,9 +59,6 @@ object Neo {
     val nameV: Validator[String, String, String] = ???
     val ageV: Validator[String, Option[Int], Age] = ???
 
-    val nameE2 = composeEditorValidator(nameV, textInputEditor)
-    val ageE2 = composeEditorValidator(ageV, textInputEditor)
-
     // This is what uniqueness validation of name would probably look like ↙
     type NameSW = (Map[Long, String], Long)
     type NameSWI = (NameSW, String)
@@ -79,12 +76,15 @@ object Neo {
       })
     val nameUniqueVPS = tovps[NameSW, String]((a,b) => nameUniqueness(a._1, a._2, b))
     val nameV2 = nameV.liftS[NameSW].addValidation(nameUniqueVPS)
-    val nameE3 = nameE2.applyInputValidationSL(nameV2)
+    //val nameE3 = nameE2.applyInputValidationSL(nameV2)
+    val nameE3 = composeEditorValidatorS(nameV2, textInputEditor)
+
+    val ageE2 = composeEditorValidator(ageV, textInputEditor)
+
+    val mergedE = Editor.merge2(personFields, nameE3, ageE2).pairI
 
     type CompositeC = (personFields.Field, RU)
-
     type SWII = (NameSWI, String)
-    val mergedE = Editor.merge2(personFields, nameE3, ageE2).pairI
 
     object ManualExample1_split_editors {
 
