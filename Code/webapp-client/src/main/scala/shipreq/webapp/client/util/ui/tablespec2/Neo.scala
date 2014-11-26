@@ -256,6 +256,7 @@ object Neo {
     private def __row  (k: K): SimpleLens[SS, Row]      = SimpleLens[SS](_ apply k)((m, p) => m + (k -> p))
     private def _row   (k: K): SimpleLens[S, Row]       = _s |-> __row(k)
     private def _status(k: K): SimpleLens[S, RowStatus] = _row(k) |-> _savedRow.status
+    private def _i     (k: K): SimpleLens[S, I]         = _row(k) |-> _savedRow.i
 
     def initStateM(s: Map[K, P])         : SS = s mapValues initRow
     def initStateS(s: Seq[P], pk: P => K): SS = initStateM(s.foldLeft(Map.empty[K, P])((m, p) => m + p.mapStrengthL(pk)))
@@ -268,6 +269,9 @@ object Neo {
     
     def getAll(s: S): Stream[(RowStatus, K, P)] =
       _s.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
+
+    def setField[F <: GenField[I]](k: K, f: GenFieldValue[F]): S => S =
+      (_i(k) |-> f.f.lens).setF(f.v)
 
 //    private[this] implicit def autoLiftEndo(f: S => S): ReactS[S, Unit] = ReactS mod f
 //    def savedRemoveR(k: K): ReactS[S, Unit] = savedRemoveF(k)
@@ -361,12 +365,8 @@ object Neo {
       val ZS = ReactS.FixT[IO, ZeState]
 
       def updatex(id: Long, b: PersonFieldAndInput) =
-        ZS.modS{ s =>
-          val row = s.saved(id)
-          val i1 = row.i
-          val i2 = b.f.lens.set(i1, b.v)
-          s.copy(saved = s.saved + (id -> row.copy(i = i2)))
-        }
+        ZS.modS(savedStoreZ.setField(id, b))
+
       def revertx(id: Long, f: PersonField) =
         ZS.modS{ s =>
           val row = s.saved(id)
