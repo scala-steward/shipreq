@@ -220,6 +220,10 @@ object Neo {
     type SS[K, P, I] = Map[K, Row[P, I]]
     def apply[K, P, I](pi: P => I): SavedRowStore[SS[K, P, I], K, P, I] =
       new SavedRowStore(SimpleIso.dummy, new RowL, pi)
+
+    def of[P, I](f: FieldSet[P, I]) = new {
+      def keyedBy[K]: SavedRowStore[SS[K, P, I], K, P, I] = SavedRowStore(f.pi)
+    }
   }
   class SavedRowStore[S, K, P, I](_s: SimpleLens[S, SavedRowStore.SS[K,P,I]],
                                      _savedRow: SavedRowStore.RowL[P, I],
@@ -334,7 +338,7 @@ object Neo {
 
       case class Props(ppl: Map[Long, Person])
       
-      val savedStore = SavedRowStore[Long, Person, (String, String)](p => (p.name, p.age.toString))
+      val savedStore = SavedRowStore.of(personFields).keyedBy[Long]
       case class ZeState(saved: savedStore.State)
       val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
       val ZS = ReactS.FixT[IO, ZeState]
@@ -378,8 +382,10 @@ object Neo {
 
       class TopBackend(c: BackendScope[Props, ZeState]) {
 
-        val cbRealise: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
-        val editable = Some(EditorCallbacks[personFields.FieldValue, CompositeC2, IO[Unit]](cbRealise))
+        val editable = {
+          val cbRealise: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
+          Some(EditorCallbacks[personFields.FieldValue, CompositeC2, IO[Unit]](cbRealise))
+        }
 
         def tableProps = TableProps(rowpropsa(c.state.saved))
 
