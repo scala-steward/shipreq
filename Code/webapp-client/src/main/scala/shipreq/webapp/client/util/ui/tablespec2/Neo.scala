@@ -100,34 +100,16 @@ object Neo {
   }
 
   object Editor {
-    def merge2[C, D, A1, B1, V1, A2, B2, V2](e1: Editor[A1, B1, C, D, V1], e2: Editor[A2, B2, C, D, V2]) = new {
-      def pairI[F <: GenField[_]](f1: F, f2: F)(implicit w1: B1 =:= f1.V, w2: B2 =:= f2.V) =
-        apply[(A1, A2), F](_._1, _._2, f1, f2)
-      def apply[I, F <: GenField[_]](a1: I => A1, a2: I => A2, f1: F, f2: F)
-                                    (implicit w1: B1 =:= f1.V, w2: B2 =:= f2.V): Editor[I, GenFieldValue[F], (F, C), D, (V1, V2)] =
+    type F = FieldSet[_, _]
+    def merge2[C, D, A1, B1, V1, A2, B2, V2, FS <: FieldSet2[_, B1, B2]](fs: FS, e1: Editor[A1, B1, C, D, V1], e2: Editor[A2, B2, C, D, V2]) = new {
+      def pairI = apply[(A1, A2)](_._1, _._2)
+      def apply[I](a1: I => A1, a2: I => A2): Editor[I, fs.FieldValue, (fs.Field, C), D, (V1, V2)] =
         Editor(ei => {
-          val i1 = ei.mapABC[A1, B1, C](a1, GenFieldValue(f1)(_), (f1, _))
-          val i2 = ei.mapABC[A2, B2, C](a2, GenFieldValue(f2)(_), (f2, _))
+          val i1 = ei.mapABC[A1, B1, C](a1, fs.f1 * _, (fs.f1, _))
+          val i2 = ei.mapABC[A2, B2, C](a2, fs.f2 * _, (fs.f2, _))
           (e1 render i1, e2 render i2)
         })
     }
-  }
-
-  trait GenField[_R] { // TODO don't think this needs to be exposed like this
-    final type R = _R
-    type V
-    def lens: SimpleLens[R, V]
-  }
-  trait GenFieldValue[F <: GenField[_]] {
-    val f: F
-    val v: f.V
-  }
-  object GenFieldValue {
-    def apply[F <: GenField[_]](a: F)(b: a.V): GenFieldValue[F] =
-      new GenFieldValue[F] {
-        override final val f: a.type = a
-        override final val v = b
-      }
   }
 
   // ↑ Abstract ↑
@@ -270,8 +252,8 @@ object Neo {
     def getAll(s: S): Stream[(RowStatus, K, P)] =
       _s.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
 
-    def setField[F <: GenField[I]](k: K, f: GenFieldValue[F]): S => S =
-      (_i(k) |-> f.f.lens).setF(f.v)
+    def setField[X](k: K, fv: FieldSet[X, I]#FieldValue): S => S =
+      (_i(k) |-> fv.f.ilens).setF(fv.v)
 
 //    private[this] implicit def autoLiftEndo(f: S => S): ReactS[S, Unit] = ReactS mod f
 //    def savedRemoveR(k: K): ReactS[S, Unit] = savedRemoveF(k)
@@ -294,6 +276,12 @@ object Neo {
 
     case class Age(value: Int)
     case class Person(id: Long, name: String, age: Age)
+
+    // TODO later reduce this to a val, who needs named field access?
+    object PeronFields extends FieldSet2[Person, String, String](_.name, _.age.toString) {
+      @inline def name = f1
+      @inline def age = f2
+    }
 
     val nameV: Validator[String, String, String] = ???
 
@@ -334,28 +322,15 @@ object Neo {
     val nameV2 = nameV.liftS[NameSW].addValidation(nameUniqueVPS)
     val nameE3 = nameE2.applyInputValidation2(nameV2)
 
-    sealed trait PersonField extends GenField[(String, String)] {
-//      final def *(_v: V): GenFieldValue[PersonField] = GenFieldValue(this)(_v)
-    }
-    case object PersonFieldName extends PersonField {
-      override type V = String
-      override def lens: SimpleLens[R, V] = SimpleLens[R](_._1)(_ put1 _)
-    }
-    case object PersonFieldAge extends PersonField {
-      override type V = String
-      override def lens: SimpleLens[R, V] = SimpleLens[R](_._2)(_ put2 _)
-    }
-    type PersonFieldAndInput = GenFieldValue[PersonField]
-    type CompositeC = (PersonField, RU)
+    type CompositeC = (PeronFields.Field, RU)
 
     // 1: NameSWI, String, RU, IO[Unit], Modifier
     // 2: String,  String, RU, IO[Unit], Modifier
     type SWII = (NameSWI, String)
-    val mergedE: Editor[SWII, PersonFieldAndInput, CompositeC, IO[Unit], (Modifier, Modifier)] =
-      Editor.merge2(nameE3, ageE2).pairI[PersonField](PersonFieldName, PersonFieldAge)
+    val mergedE: Editor[SWII, PeronFields.FieldValue, CompositeC, IO[Unit], (Modifier, Modifier)] =
+      Editor.merge2(PeronFields, nameE3, ageE2).pairI
 
     object ManualExample1_split_editors {
-      //private[this] implicit def autoLiftEndo[S](f: S => S): ReactS[S, Unit] = ReactS mod f
 
       case class Props(ppl: Map[Long, Person])
       
@@ -364,18 +339,15 @@ object Neo {
       val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
       val ZS = ReactS.FixT[IO, ZeState]
 
-      def updatex(id: Long, b: PersonFieldAndInput) =
+      def updatex(id: Long, b: PeronFields.FieldValue) =
         ZS.modS(savedStoreZ.setField(id, b))
 
-      def revertx(id: Long, f: PersonField) =
+      def revertx(id: Long, f: PeronFields.Field) =
         ZS.modS{ s =>
           val row = s.saved(id)
           val p = row.p
           val i1 = row.i
-          val i2 = f match {
-            case PersonFieldName => i1 put1 p.name
-            case PersonFieldAge  => i1 put2 p.age.toString
-          }
+          val i2 = f.ilens.set(i1, f.pv(p))
           s.copy(saved = s.saved + (id -> row.copy(i = i2)))
         }
       def validaterow(ss: NameSW, id: Long, ok: ((String, Age)) => ReactST[IO, ZeState, Unit], ko: VFailure => ReactST[IO, ZeState, Unit]) =
@@ -390,7 +362,7 @@ object Neo {
       def lockrow(id: Long) =
         ZS.modS(savedStoreZ.setStatus(id, RowStatus.Locked))
 
-      type CompositeC2 = (PersonField, ReactST[IO, ZeState, Unit])
+      type CompositeC2 = (PeronFields.Field, ReactST[IO, ZeState, Unit])
       val mergedE2 = mergedE
         .strengthR[Long]
         .mapC(_ map2 (_.zoomU[ZeState]))
@@ -412,7 +384,7 @@ object Neo {
       class TopBackend(c: BackendScope[Props, ZeState]) {
 
         val cbRealise: (Any,CompositeC2) => IO[Unit] = (_,x) => c.runState(x._2)
-        val editable = Some(EditorCallbacks[PersonFieldAndInput, CompositeC2, IO[Unit]](cbRealise))
+        val editable = Some(EditorCallbacks[PeronFields.FieldValue, CompositeC2, IO[Unit]](cbRealise))
 
         def tableProps = TableProps(rowpropsa(c.state.saved))
 
@@ -446,7 +418,7 @@ object Neo {
         )
         .build
 
-      case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long), PersonFieldAndInput, CompositeC2, IO[Unit]])
+      case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long), PeronFields.FieldValue, CompositeC2, IO[Unit]])
       val savedrow = ReactComponentB[SavedRowProps]("savedrow")
         .stateless
         .render((p, _) => {
