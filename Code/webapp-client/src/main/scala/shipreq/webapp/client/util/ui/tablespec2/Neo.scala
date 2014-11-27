@@ -59,24 +59,10 @@ object Neo {
     val nameV: ValidatorU[String, String, String] = ???
     val ageV: ValidatorU[String, Option[Int], Age] = ???
 
-    // This is what uniqueness validation of name would probably look like ↙
-    type NameSW = (Map[Long, String], Long)
+    val nameUnique = Uniqueness.over[Person](_.id, _.name).forField("Name")
+    type NameSW = nameUnique.S
     type NameSWI = (NameSW, String)
-    def nameUniqueness(names: Map[Long, String], id: Long, name: String): Option[VFailure] =
-      (names - id).forall(_._2 != name) match {
-        case true  => None
-        case false => Some(uniquenessFailure("Name"))
-      }
-    def uniquenessFailure(fieldName: String): VFailure =
-      VFailure.forField(fieldName, NonEmptyList("must be unique."))
-    def tovps[S,A](f: (S,InputCorrected[A]) => Option[VFailure]): ValidationPart[S, A, A] =
-      new ValidationPart((s,a) => f(s,a) match {
-        case None    => Success(a.value)
-        case Some(r) => Failure(r)
-      })
-    val nameUniqueVPS = tovps[NameSW, String]((a,b) => nameUniqueness(a._1, a._2, b))
-    val nameV2 = nameV.liftS[NameSW].addValidation(nameUniqueVPS)
-    //val nameE3 = nameE2.applyInputValidationSL(nameV2)
+    val nameV2 = nameV.liftS[NameSW].addValidation(nameUnique.vp)
     val nameE3 = composeEditorValidator(nameV2, textInputEditor)
 
     val ageE2 = composeEditorValidatorU(ageV, textInputEditor)
@@ -135,12 +121,12 @@ object Neo {
         def tableProps = TableProps(rowpropsa(c.state.saved))
 
         def rowpropsa(saved: savedStore.State): Vector[SavedRowProps] = {
-          val names = saved.mapValues(_.i._1)
-          saved.foldLeft(Vector.empty[SavedRowProps])((q, a) => q :+ rowprops1(names, a._1, a._2))
+          val ppl = saved.values.toStream.map(_.p)
+          saved.foldLeft(Vector.empty[SavedRowProps])((q, a) => q :+ rowprops1(ppl, a._1, a._2))
         }
 
-        def rowprops1(names: Map[Long, String], id: Long, s: savedStore.Row): SavedRowProps = {
-          val nameswi: NameSWI = ((names, id), s.i._1)
+        def rowprops1(ppl: Stream[Person], id: Long, s: savedStore.Row): SavedRowProps = {
+          val nameswi: NameSWI = ((ppl, id), s.i._1)
           val swii: SWII = (nameswi, s.i._2)
           SavedRowProps(id, EditorInput((swii, id), "", editable))
         }

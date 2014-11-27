@@ -97,28 +97,35 @@ final class ValidationPart[S, C, V](val validate: (S, InputCorrected[C]) => Vali
 
 object ValidationPart {
 
-  @inline def apply[C, V](f: InputCorrected[C] => ValidationResult[V]): ValidationPartU[C, V] =
-    new ValidationPartU((_, c) => f(c))
+  @inline def apply[C, V](f: C => ValidationResult[V]): ValidationPartU[C, V] =
+    new ValidationPart((_, c) => f(c.value))
 
-  def test[A](test: InputCorrected[A] => Boolean, fail: VFailure): ValidationPartU[A, A] = {
+  @inline def apply[S, C, V](f: (S, C) => ValidationResult[V]): ValidationPart[S, C, V] =
+    new ValidationPart((s, c) => f(s, c.value))
+
+//  def testU[A](test: InputCorrected[A] => Boolean, fail: VFailure): ValidationPartU[A, A] = {
+//    val failure = Failure(fail)
+//    apply[A, A](a => if (test(a)) Success(a.value) else failure)
+//  }
+
+  def test[S, A](test: (S, A) => Boolean, fail: VFailure): ValidationPart[S, A, A] = {
     val failure = Failure(fail)
-    apply[A, A](a => if (test(a)) Success(a.value) else failure)
+    apply[S, A, A]((s, a) => if (test(s, a)) Success(a) else failure)
   }
 
   /**
    * @param fieldName The field name. Prepend to validation failure messages.
    */
   def forConstraint[A](fieldName: String, c: Constraint[A]): ValidationPartU[A, A] =
-    ValidationPart[A, A](input => {
-      val a = input.value
+    ValidationPart[A, A](a =>
       c.invalidate(a) match {
         case Nil    => Success(a)
         case h :: t => Failure(VFailure.forField(fieldName, NonEmptyList.nel(h, t)))
       }
-    })
+    )
 
-  def nop[A]              : ValidationPartU[A, A] = ValidationPart(c => Success(c.value))
-  def nop[C, V](f: C => V): ValidationPartU[C, V] = ValidationPart(c => Success(f(c.value)))
+  def nop[A]              : ValidationPartU[A, A] = ValidationPart(c => Success(c))
+  def nop[C, V](f: C => V): ValidationPartU[C, V] = ValidationPart(c => Success(f(c)))
 }
 
 // =====================================================================================================================
