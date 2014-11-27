@@ -3,11 +3,9 @@ package shipreq.webapp.client.util.ui.tablespec2
 import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.syntax._
-import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 
 object SavedRowStore {
-
   final case class Row[P, I](status: RowStatus, p: P, i: I)
 
   class RowL[P, I] {
@@ -31,9 +29,9 @@ class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
                                 rowL: SavedRowStore.RowL[P, I],
                                 pi: P => I) {
   final type State = S
-  final type Row = SavedRowStore.Row[P, I]
-  final type SS = SavedRowStore.SS[K, P, I]
-  final type KP = (K, P)
+  final type Row   = SavedRowStore.Row[P, I]
+  final type SS    = SavedRowStore.SS[K, P, I]
+  final type KP    = (K, P)
 
   def contramap[T](f: SimpleLens[T, S]): SavedRowStore[T, K, P, I] =
     new SavedRowStore(f |-> _ss, rowL, pi)

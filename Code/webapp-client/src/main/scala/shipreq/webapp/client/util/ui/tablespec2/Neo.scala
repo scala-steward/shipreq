@@ -52,7 +52,7 @@ object Neo {
     case class Age(value: Int)
     case class Person(id: Long, name: String, age: Age)
 
-    val personFields = FieldSet2[Person](_.name, _.age.toString)
+    val personFields = FieldSet2[Person](_.name, _.age.toString)(("", ""))
 
     val nameV: ValidatorU[String, String, String] = ???
     val ageV: ValidatorU[String, Option[Int], Age] = ???
