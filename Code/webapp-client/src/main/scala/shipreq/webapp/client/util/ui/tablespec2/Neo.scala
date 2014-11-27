@@ -65,90 +65,87 @@ object Neo {
 
     val ageE = composeEditorValidatorU(ageV, textInputEditor)
 
-    object ManualExample1_split_editors {
+    case class Props(ppl: Map[Long, Person])
 
-      case class Props(ppl: Map[Long, Person])
-      
-      val savedStore = SavedRowStore.of(personFields).keyedBy[Long]
-      case class ZeState(saved: savedStore.State)
-      val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
-      val ZS = ReactS.FixT[IO, ZeState]
+    val savedStore = SavedRowStore.of(personFields).keyedBy[Long]
+    case class ZeState(saved: savedStore.State)
+    val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
+    val ZS = ReactS.FixT[IO, ZeState]
 
-      type SWII = (NameSWI, String)
-      val personV = nameV2 *** ageV.liftS[NameSW]
-      def validaterow(ss: NameSW, id: Long, ok: ((String, Age)) => ReactST[IO, ZeState, Unit], ko: VFailure => ReactST[IO, ZeState, Unit]) =
-        ZS.liftR{ s =>
-          val i = s.saved(id).i
-          personV.correctAndValidate(ss, i) match {
-            case scalaz.Success(v) => ok(v)
-            case scalaz.Failure(f) => ko(f)
-          }
-        }
-
-      val personE = Editor.merge2(personFields, nameE, ageE).pairI
-        .strengthR[Long]
-        .mapC(_ map2 (_.zoomU[ZeState]))
-        .modCallbacksA(a => {
-          val (((namesw, _), _), id) = a
-          _.pmodC(c => {
-            case OnChange(b) => c map2 (_ >> updatex(a._2, b))
-            case OnCancel    => c map2 (_ >> revertx(a._2, c._1))
-            case OnEditFinished(b) => c map2 (_ >> validaterow(namesw, id, v => lockrow(id), _ => ZS.ret(())))
-          })
-        })
-      type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
-
-      def updatex(id: Long, b: personFields.FieldValue) = ZS.modS(savedStoreZ.setField(id, b))
-      def revertx(id: Long, f: personFields.Field)      = ZS.modS(savedStoreZ.revertField(id, f))
-      def lockrow(id: Long)                             = ZS.modS(savedStoreZ.setStatus(id, RowStatus.Locked))
-
-      class TopBackend(c: BackendScope[Props, ZeState]) {
-
-        val editable = {
-          val cbRealise: (Any,CompositeC) => IO[Unit] = (_,x) => c.runState(x._2)
-          Some(EditorCallbacks[personFields.FieldValue, CompositeC, IO[Unit]](cbRealise))
-        }
-
-        def tableProps = TableProps(rowpropsa(c.state.saved))
-
-        def rowpropsa(saved: savedStore.State): Vector[SavedRowProps] = {
-          val ppl = saved.values.toStream.map(_.p)
-          saved.foldLeft(Vector.empty[SavedRowProps])((q, a) => q :+ rowprops1(ppl, a._1, a._2))
-        }
-
-        def rowprops1(ppl: Stream[Person], id: Long, s: savedStore.Row): SavedRowProps = {
-          val nameswi: NameSWI = ((ppl, id), s.i._1)
-          val swii: SWII = (nameswi, s.i._2)
-          SavedRowProps(id, EditorInput((swii, id), "", editable))
+    type SWII = (NameSWI, String)
+    val personV = nameV2 *** ageV.liftS[NameSW]
+    def validaterow(ss: NameSW, id: Long, ok: ((String, Age)) => ReactST[IO, ZeState, Unit], ko: VFailure => ReactST[IO, ZeState, Unit]) =
+      ZS.liftR{ s =>
+        val i = s.saved(id).i
+        personV.correctAndValidate(ss, i) match {
+          case scalaz.Success(v) => ok(v)
+          case scalaz.Failure(f) => ko(f)
         }
       }
 
-      val outmost = ReactComponentB[Props]("Outmost")
-        .getInitialState(p => ZeState(savedStore initStateM p.ppl))
-        .backend(new TopBackend(_))
-        .render((p, s, b) =>
-        div(h1("Hi!"), tablec(b.tableProps))
-        )
-        .build
-
-      case class TableProps(saved: Vector[SavedRowProps])
-      val tablec = ReactComponentB[TableProps]("table")
-        .stateless
-        .render((p,_) =>
-        table(
-          thead("Name", "Age"),
-          tbody(p.saved.map(savedrow(_)).asJsArray))
-        )
-        .build
-
-      case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long), personFields.FieldValue, CompositeC, IO[Unit]])
-      val savedrow = ReactComponentB[SavedRowProps]("savedrow")
-        .stateless
-        .render((p, _) => {
-        val (n, a) = personE.render(p.ei)
-        tr(key := p.key, n, a)
+    val personE = Editor.merge2(personFields, nameE, ageE).pairI
+      .strengthR[Long]
+      .mapC(_ map2 (_.zoomU[ZeState]))
+      .modCallbacksA(a => {
+        val (((namesw, _), _), id) = a
+        _.pmodC(c => {
+          case OnChange(b) => c map2 (_ >> updatex(a._2, b))
+          case OnCancel    => c map2 (_ >> revertx(a._2, c._1))
+          case OnEditFinished(b) => c map2 (_ >> validaterow(namesw, id, v => lockrow(id), _ => ZS.ret(())))
+        })
       })
-      .build
+    type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
+
+    def updatex(id: Long, b: personFields.FieldValue) = ZS.modS(savedStoreZ.setField(id, b))
+    def revertx(id: Long, f: personFields.Field)      = ZS.modS(savedStoreZ.revertField(id, f))
+    def lockrow(id: Long)                             = ZS.modS(savedStoreZ.setStatus(id, RowStatus.Locked))
+
+    class TopBackend(c: BackendScope[Props, ZeState]) {
+
+      val editable = {
+        val cbRealise: (Any,CompositeC) => IO[Unit] = (_,x) => c.runState(x._2)
+        Some(EditorCallbacks[personFields.FieldValue, CompositeC, IO[Unit]](cbRealise))
+      }
+
+      def tableProps = TableProps(rowpropsa(c.state.saved))
+
+      def rowpropsa(saved: savedStore.State): Vector[SavedRowProps] = {
+        val ppl = saved.values.toStream.map(_.p)
+        saved.foldLeft(Vector.empty[SavedRowProps])((q, a) => q :+ rowprops1(ppl, a._1, a._2))
+      }
+
+      def rowprops1(ppl: Stream[Person], id: Long, s: savedStore.Row): SavedRowProps = {
+        val nameswi: NameSWI = ((ppl, id), s.i._1)
+        val swii: SWII = (nameswi, s.i._2)
+        SavedRowProps(id, EditorInput((swii, id), "", editable))
+      }
     }
+
+    val outmost = ReactComponentB[Props]("Outmost")
+      .getInitialState(p => ZeState(savedStore initStateM p.ppl))
+      .backend(new TopBackend(_))
+      .render((p, s, b) =>
+      div(h1("Hi!"), tablec(b.tableProps))
+      )
+      .build
+
+    case class TableProps(saved: Vector[SavedRowProps])
+    val tablec = ReactComponentB[TableProps]("table")
+      .stateless
+      .render((p,_) =>
+      table(
+        thead("Name", "Age"),
+        tbody(p.saved.map(savedrow(_)).asJsArray))
+      )
+      .build
+
+    case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long), personFields.FieldValue, CompositeC, IO[Unit]])
+    val savedrow = ReactComponentB[SavedRowProps]("savedrow")
+      .stateless
+      .render((p, _) => {
+      val (n, a) = personE.render(p.ei)
+      tr(key := p.key, n, a)
+    })
+    .build
   }
 }
