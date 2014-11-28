@@ -75,4 +75,33 @@ object NeoSaves {
       x.flatMap(_.fold(_ => abortSave, valid))
     })
   }
+
+  def validateAndCreateAsync[S, T, U, I](validator: Validator[T, I, _, U],
+                                         st: S => T,
+                                         si: S => I,
+                                         removeNew: ReactS[S, Unit],
+                                         asyncCreate: (U, SuccessIO, FailureIO) => IO[Unit],
+                                         realise: ReactST[IO, S, Unit] => IO[Unit],
+                                         setStatus: SetRowStatus[S])
+  : ReactST[IO, S, Unit] = {
+    type R = ReactST[IO, S, Unit]
+    val Fix = ReactS.FixT[IO, S] // TODO should add type X[A] = ReactST[M, S, A] to FixT
+    retryably[R](retry => {
+      def abortSave: R = setStatus(RowStatus.Sync).lift[IO] // TODO fuck it, add liftIO to ReactS
+      def valid(u: U): R = Fix.liftR { s =>
+        save(u) >> setStatus(RowStatus.Locked).lift[IO]
+      }
+      def save(u: U): R = {
+        val s = SuccessIO(realise(removeNew.lift[IO]))
+        val f: FailureIO = {
+          val retryIO  = realise(retry.value)
+          val failureS = setStatus(RowStatus.Failed(retryIO)).lift[IO]
+          FailureIO(realise(failureS))
+        }
+        Fix.retM(asyncCreate(u, s, f))
+      }
+      val x = Fix.gets(s => IO(validator.correctAndValidate(st(s), si(s))))
+      x.flatMap(_.fold(_ => abortSave, valid))
+    })
+  }
 }
