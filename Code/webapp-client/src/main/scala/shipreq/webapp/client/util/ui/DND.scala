@@ -50,10 +50,10 @@ object DND {
           case Some((_, Some(d))) => implicitly[Equal[A]].equal(a, d)
           case _ => false
         },
-        T _runStateF dragStart.liftR,
-        T _runStateF dragOver.liftR,
-        T runStateF dragLeave.liftR,
-        T runStateF dragEnd.liftR,
+        T _runStateF dragStart.liftS,
+        T _runStateF dragOver.liftS,
+        T runStateF dragLeave.liftS,
+        T runStateF dragEnd.liftS,
         T.state match {
           case Some((from, Some(to))) => move(from, to)
           case _ => IO(())
@@ -101,8 +101,8 @@ object DND {
       span(
         className    := "draghandle",
         draggable    := "true",
-        onDragStart ~~> T._runState(dragStart(a, p).liftR),
-        onDragEnd   ~~> T.runState(dragEnd(p).liftR),
+        onDragStart ~~> T._runState(dragStart(a, p).liftS),
+        onDragEnd   ~~> T.runState(dragEnd(p).liftS),
         // onMouseDown={typeof window.isIE9 != 'undefined' && this.handleIE9DragHack}
         "\u2630")
 
