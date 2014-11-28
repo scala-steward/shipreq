@@ -1,10 +1,9 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
-//import japgolly.scalajs.react._
-//import japgolly.scalajs.react.vdom.ReactVDom.all._
-//import japgolly.scalajs.react.vdom.ReactVDom.{Tag => _, _}
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.ReactVDom.{Tag => _, _}
+import japgolly.scalajs.react.ScalazReact._
 
-import japgolly.scalajs.react.ScalazReact.ReactS
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.taggedStringInstance
 import shipreq.webapp.base.UiText.FieldNames
@@ -17,7 +16,7 @@ import scalaz.effect.IO
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.Routines.CustomReqTypeCrud
-import shipreq.webapp.client.lib._
+//import shipreq.webapp.client.lib._
 //import shipreq.webapp.client.util.ui.Util.checkbox
 //import shipreq.webapp.client.util.ui.table._
 //import shipreq.webapp.client.util.ui.{Editors => E}
@@ -118,17 +117,6 @@ object CfgReqTypes222 {
   val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
   val impE      = Editors.checkboxEditor.imap(ImplicationRequired)
 
-//  private val prespec = TableSpecBuilder[P](
-//    FieldSpec[P](_.mnemonic.value)(V.mnemonic)(E.TextInputEditor),
-//    FieldSpec[P](_.name)(V.name)(E.TextInputEditor),
-//    FieldSpec[P].noValidation(_.imp, ImplicationRequired)(E.CheckboxEditor))
-//    .dataId[D]
-//
-//  private val spec = prespec
-//    .tableConstraints(
-//      Some(mnemonicUniqueness),
-//      Some(prespec.uniquenessCheck(_.name).fieldName("Name")),
-//      None)
 //    .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
 //    .asyncSaveP(tableIO.updateIO)
 //
@@ -140,8 +128,10 @@ object CfgReqTypes222 {
 //
 //  val comp = tableIO.outerComponent("Cfg: Requirement Types", compI)
 
+  import japgolly.scalajs.react.vdom.ReactVDom.all._
+  import shipreq.webapp.client.util.ui.Util.checkbox
 
-//  private def cells = new CfgTableCells[P, spec.VV, (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
+//  private def cells = new CfgTableCells[P, (Modifier,Modifier,Modifier), (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
 //    override def mklist = {
 //      case (mnemonic, oldMnemonics, name, impReq) =>
 //        val mn: Modifier =
@@ -160,7 +150,7 @@ object CfgReqTypes222 {
 //    override def deletedRow = p =>
 //      (raw(p.mnemonic), p.oldMnemonics, raw(p.name), checkbox(ImplicationRequired from p.imp)(disabled := true))
 //  }
-//
+
 //  private val tbl = CfgTable[CustomReqTypeAndId].b1(spec)(specC, specD, ("", "", false), _.mnemonic).b2(cells)
 //
 //  private def renderInner(S: ComponentScopeU[tableIO.Props, prespec.S, _]): ReactElement =
