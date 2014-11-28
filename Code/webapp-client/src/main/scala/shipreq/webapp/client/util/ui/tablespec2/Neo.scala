@@ -33,16 +33,6 @@ object Neo {
   // ===================================================================================================================
   // ↓ Library ↓
 
-  def composeEditorValidatorU[I, C, D](v: ValidatorU[I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[I, I, C, D, Modifier] =
-    e.applyInputValidation(v)
-      .applyLiveCorrection(v)
-      .applyPostCorrection(v.cp)
-
-  def composeEditorValidator[S, I, C, D](v: Validator[S, I, _, _], e: Editor[I, I, C, D, Modifier]): Editor[(S, I), I, C, D, Modifier] =
-    e.applyInputValidationSL(v)
-      .applyLiveCorrection(v)
-      .applyPostCorrectionS(v.cp)(_._1)
-
   // ↑ Library ↑
   // ===================================================================================================================
   // ↓ Application ↓
@@ -61,9 +51,9 @@ object Neo {
     type NameSW = nameUnique._S
     type NameSWI = (NameSW, String)
     val nameV2 = nameV.liftS[NameSW].addValidation(nameUnique)
-    val nameE = composeEditorValidator(nameV2, textInputEditor)
+    val nameE = textInputEditor.applyValidator(nameV2)
 
-    val ageE = composeEditorValidatorU(ageV, textInputEditor)
+    val ageE = textInputEditor.applyValidatorU(ageV)
 
     case class Props(ppl: Map[Long, Person])
 

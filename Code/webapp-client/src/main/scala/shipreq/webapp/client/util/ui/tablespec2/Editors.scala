@@ -63,16 +63,17 @@ object Editors {
   def resolveEditorWithError[E, A, B, C, D, V](f: A => E, e: E => Editor[A, B, C, D, V]): Editor[A, B, C, D, V] =
     Editor(i => e(f(i.data)) render i)
 
+  // TODO Move to implicits object, or add implicit defs to editor itself
   implicit final class EditorExt[A,B,C,D,V](val e: Editor[A,B,C,D,V]) extends AnyVal {
     type Self = Editor[A,B,C,D,V]
 
     def applyLiveCorrection(v: Validator[_, B, _, _]): Self =
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
-    def applyPostCorrection[U](v: CorrectionPartU[B, U]): Self =
+    def applyPostCorrectionU[U](v: CorrectionPartU[B, U]): Self =
       e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
 
-    def applyPostCorrectionS[S, U](v: CorrectionPart[S, B, U])(f: A => S): Self =
+    def applyPostCorrection[S, U](v: CorrectionPart[S, B, U])(f: A => S): Self =
       e.pmodBx(a => _ => { case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
   }
 
@@ -85,14 +86,26 @@ object Editors {
     def renderOptionalError(f: A => Option[String]): Self =
       Editor(i => resolveEditorWithError(f, fromOptionalError) render i)
 
-    def applyInputValidation(v: ValidatorU[A, _, _]): Self =
+    def applyInputValidationU(v: ValidatorU[A, _, _]): Self =
       renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))
 
-    def applyInputValidationS[S, I](v: Validator[S, I, _, _])(s: A => S, i: A => I): Self =
+    def applyInputValidation[S, I](v: Validator[S, I, _, _])(s: A => S, i: A => I): Self =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))
 
-    def applyInputValidationSL[S, I](v: Validator[S, A, _, _]) =
-      e.strengthL[S].applyInputValidationS(v)(_._1, _._2)
+    def applyInputValidationL[S, I](v: Validator[S, A, _, _]) =
+      e.strengthL[S].applyInputValidation(v)(_._1, _._2)
   }
 
+  implicit final class EditorExtII[I,C,D,V](val e: Editor[I,I,C,D,Modifier]) extends AnyVal {
+
+    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I, I, C, D, Modifier] =
+      e.applyInputValidationU(v)
+        .applyLiveCorrection(v)
+        .applyPostCorrectionU(v.cp)
+
+    def applyValidator[S](v: Validator[S, I, _, _]): Editor[(S, I), I, C, D, Modifier] =
+      e.applyInputValidationL(v)
+        .applyLiveCorrection(v)
+        .applyPostCorrection(v.cp)(_._1)
+  }
 }

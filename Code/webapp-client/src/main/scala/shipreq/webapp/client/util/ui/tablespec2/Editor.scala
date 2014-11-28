@@ -1,6 +1,8 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
 import scalaz.{\/, -\/, \/-}
+import scalaz.Isomorphism.<=>
+import scalaz.Leibniz.===
 import shipreq.base.util.ScalaExt._
 
 sealed abstract class EditorCallback[+I] {
@@ -57,18 +59,21 @@ case class EditorInput[A, B, C, D](data: A, cssClass: String,
 // =====================================================================================================================
 
 case class Editor[A, B, C, D, V](render: EditorInput[A, B, C, D] => V) {
-  def strengthL[X]           : Editor[(X,A), B, C, D, V] = cmapA(_._2)
-  def strengthR[X]           : Editor[(A,X), B, C, D, V] = cmapA(_._1)
-  def cmapA    [X](f: X => A): Editor[X,     B, C, D, V] = Editor(i => render(i mapA f))
-  def mapB     [X](f: B => X): Editor[A,     X, C, D, V] = Editor(i => render(i cmapB f))
-  def mapC     [X](f: C => X): Editor[A,     B, X, D, V] = Editor(i => render(i cmapC f))
-  def cmapD    [X](f: X => D): Editor[A,     B, C, X, V] = Editor(i => render(i mapD f))
+  def strengthL[X]                      : Editor[(X,A), B, C, D, V] = cmapA(_._2)
+  def strengthR[X]                      : Editor[(A,X), B, C, D, V] = cmapA(_._1)
+  def cmapA    [X]  (f: X ⇒ A)          : Editor[X,     B, C, D, V] = Editor(i ⇒ render(i mapA f))
+  def mapB     [X]  (f: B ⇒ X)          : Editor[A,     X, C, D, V] = Editor(i ⇒ render(i cmapB f))
+  def mapC     [X]  (f: C ⇒ X)          : Editor[A,     B, X, D, V] = Editor(i ⇒ render(i cmapC f))
+  def cmapD    [X]  (f: X ⇒ D)          : Editor[A,     B, C, X, V] = Editor(i ⇒ render(i mapD f))
+  def xmap     [X,Y](f: X ⇒ A, g: B ⇒ Y): Editor[X,     Y, C, D, V] = Editor(i ⇒ render(i.mapABC[A, B, C](f, g, identity)))
 
-  def pmodBx(f: A => C => PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodI f(a))
-  def pmodCx(f: A => C => PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodC f(a))
+  def imap[X](i: A <=> X)(implicit ev: A === B): Editor[X, X, C, D, V] =
+    xmap[X, X](i.from, ev.subst[({type λ[α] = α => X})#λ](i.to))
 
-  def pmodB(f: PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodI (_ => f))
-  def pmodC(f: PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodC (_ => f))
+  def pmodBx(f: A ⇒ C ⇒ PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodI f(a))
+  def pmodCx(f: A ⇒ C ⇒ PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacksA[B,C,D](a ⇒ _ pmodC f(a))
+  def pmodB (f:         PartialFunction[EditorCallback[B], B]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodI (_ => f))
+  def pmodC (f:         PartialFunction[EditorCallback[B], C]): Editor[A, B, C, D, V] = cmapCallbacks[B,C,D](_ pmodC (_ => f))
 
   def cmapCallbacksA[X,Y,Z](f: A => EditorCallbacks[X,Y,Z] => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i.mapCallbacks(f(i.data))))
   def cmapCallbacks [X,Y,Z](f: EditorCallbacks[X,Y,Z]      => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i mapCallbacks f))

@@ -19,10 +19,11 @@ object Uniqueness {
     new BF[S, V](ValidationPart.test(test, _))
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
-
+  /** Some(k₁) = Some(k₂), otherwise false */
   private def ignoreO[K: Equal]: Option[K] => Option[K] => Boolean =
     _.fold[Option[K] => Boolean](_ => false)(k => _.fold(false)(k ≟ _))
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   def againstSetByKeyO[S, K: Equal, V](key: S => Option[K],
                                        data: S => Stream[(Option[K], Set[V])]): BF[S, V] =
@@ -40,6 +41,9 @@ object Uniqueness {
   final class BE[E] {
     def apply[K: Equal, V: Equal](ek: E => K, ev: E => V): BF[(Stream[E], K), V] =
       main[(Stream[E], K), E, K, E, V](_._2, _._1, ek, identity, k => k ≟ _, v => v ≟ ev(_))
+
+    def applyO[K: Equal, V: Equal](ek: E => Option[K], ev: E => V): BF[(Stream[E], Option[K]), V] =
+      main[(Stream[E], Option[K]), E, Option[K], E, V](_._2, _._1, ek, identity, ignoreO[K], v => v ≟ ev(_))
   }
 
   // -------------------------------------------------------------------------------------------------------------------

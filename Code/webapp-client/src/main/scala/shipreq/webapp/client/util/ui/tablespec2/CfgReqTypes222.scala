@@ -3,9 +3,16 @@ package shipreq.webapp.client.util.ui.tablespec2
 //import japgolly.scalajs.react._
 //import japgolly.scalajs.react.vdom.ReactVDom.all._
 //import japgolly.scalajs.react.vdom.ReactVDom.{Tag => _, _}
+
+import japgolly.scalajs.react.ScalazReact.ReactS
+import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.taggedStringInstance
+import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data.ReqType.Mnemonic
+
+import scalaz.effect.IO
+
 //import shipreq.webapp.base.data.Validators.{reqType => V}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
@@ -29,18 +36,35 @@ object __Validators {
 
   object reqType {
 
-    val mnemonic = {
+    type S = (Stream[CustomReqType], Option[CustomReqType.Id])
+
+    val mnemonicU = {
       val validChars = WhitelistCharsR("A-Z", "may only consist of letters.")
       val validLength = LengthInRange(reqTypeMnemonicLength)
       Validator(
         CorrectionPart.endo(noWhitespace andThen upperCase)
           .addLiveCorrect(upperCase.run andThen validChars.live.run andThen validLength.live.run),
-        ValidationPart.forConstraint("Mnemonic", nonEmpty >> (validChars.constraint + validLength))
+        ValidationPart.forConstraint(FieldNames.mnemonic, nonEmpty >> (validChars.constraint + validLength))
           .map(ReqType.Mnemonic)
         )
     }
 
-    val name = mandatoryShortText("Name")
+    private def mnemonicUniqueness = {
+      val static = (none[CustomReqType.Id],  ReqType.staticMnemonics)
+      Uniqueness.againstSetByKeyO[S, CustomReqType.Id, Mnemonic](
+        sr => sr._2,
+        sr => static #:: sr._1.map(_.tmap2(_.id.some, _.allMnemonics))
+      ).fieldName(FieldNames.mnemonic)
+    }
+
+    val mnemonicS = mnemonicU.liftS[S].addValidation(mnemonicUniqueness)
+
+    val nameU = mandatoryShortText("Name")
+
+    private def nameUniqueness =
+      Uniqueness.entity[CustomReqType].applyO(_.id.some, _.name).fieldName("Name")
+
+    val nameS = nameU.liftS[S].addValidation(nameUniqueness)
   }
 
   object customIncmpType {
@@ -66,11 +90,33 @@ import __Validators.{reqType => V}
 
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.validation2._
+import scala.language.reflectiveCalls
+import Editors.{EditorExtII, EditorExtV, EditorExt}
+import monocle._
+import monocle.syntax._
 
 object CfgReqTypes222 {
 
   val tableIO = new TableIO[CustomReqTypeAndId, CustomReqTypeCrud, CustomReqTypeCrud.type]
-  import tableIO.P
+  import tableIO.{D, P}
+
+  val fields = FieldSet3[P](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationNotRequired))
+
+  val savedRowStore = SavedRowStore.of(fields).keyedBy[D]
+  val newRowStore   = NewRowStore.of(fields)
+  case class State(savedRows: savedRowStore.State, newRow: newRowStore.State)
+  object State {
+    private[this] def l = Lenser[State]
+    val _savedRows = l(_.savedRows)
+    val _newRow    = l(_.newRow)
+  }
+  type S = State
+  type RowId = Option[D]
+  val ST = ReactS.FixT[IO, S]
+
+  val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
+  val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
+  val impE      = Editors.checkboxEditor.imap(ImplicationRequired)
 
 //  private val prespec = TableSpecBuilder[P](
 //    FieldSpec[P](_.mnemonic.value)(V.mnemonic)(E.TextInputEditor),
@@ -94,12 +140,6 @@ object CfgReqTypes222 {
 //
 //  val comp = tableIO.outerComponent("Cfg: Requirement Types", compI)
 
-//  private def mnemonicUniqueness = {
-//    val static = (none[CustomReqType.Id],  ReqType.staticMnemonics)
-//    Uniqueness.againstSetByKeyO[(prespec.S, prespec.R), CustomReqType.Id, Mnemonic](
-//      sr => sr._2,
-//      sr => static #:: sr._1._1.toStream.map(_._2.p.tmap2(_.id.some, _.allMnemonics)))
-//  }
 
 //  private def cells = new CfgTableCells[P, spec.VV, (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
 //    override def mklist = {
