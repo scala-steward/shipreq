@@ -99,7 +99,7 @@ object Neo {
         ???, //      needSave: (U, P) => SaveNeed,
         ???, //      asyncSaveIO: (P, U, Any, Any) => IO[Unit],
         realise, //      realise: ReactST[IO, S, Unit] => IO[Unit],
-        savedStoreZ.setStatusS(id) //      setStatus: SetRowStatus[S]
+        v => savedStoreZ.setStatusS(id, v).liftIO //      setStatus: SetRowStatus[S]
       )
     }
 

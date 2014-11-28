@@ -54,7 +54,7 @@ class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
   def setT     (kp: KP)            : S => S = set(kp._1, kp._2)
   def setStatus(k: K, r: RowStatus): S => S = _status(k).setF(r)
 
-  def setStatusS(k: K): RowStatus => ReactS[S, Unit] = r => ReactS.mod(setStatus(k, r))
+  def setStatusS(k: K, r: RowStatus): ReactS[S, Unit] = ReactS.mod(setStatus(k, r))
 
   def getP(k: K): S => P = _p(k).get
   def getI(k: K): S => I = _i(k).get
