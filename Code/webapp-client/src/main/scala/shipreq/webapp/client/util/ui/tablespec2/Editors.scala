@@ -10,7 +10,7 @@ object Editors {
 
   type RU = ReactST[IO, Unit, Unit]
   val RU  = ReactS.FixT[IO, Unit]
-  val nop = RU.ret(())
+  val nop = RU.nop
 
   type SimpleEditor[I] = Editor[I, I, RU, IO[Unit], Modifier]
 
@@ -32,7 +32,7 @@ object Editors {
     e => f(e.key match {
       case "Escape" => // TODO use KeyValue
         val t = e.target
-        RU.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO)(IO(t.blur()))
+        RU.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
       case _ =>
         nop
     })

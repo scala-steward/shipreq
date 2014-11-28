@@ -51,28 +51,29 @@ object NeoSaves {
                                           realise: ReactST[IO, S, Unit] => IO[Unit],
                                           setStatus: SetRowStatus[S])
   : ReactST[IO, S, Unit] = {
-    type R = ReactST[IO, S, Unit]
-    val Fix = ReactS.FixT[IO, S] // TODO should add type X[A] = ReactST[M, S, A] to FixT
+    val Fix = ReactS.FixT[IO, S]
+    type R = Fix.T[Unit]
     retryably[R](retry => {
-      def abortSave: R = setStatus(RowStatus.Sync).lift[IO]
+      def abortSave: R = setStatus(RowStatus.Sync).liftIO
       def valid(u: U): R = Fix.liftR { s =>
         val p = sp(s)
         needSave(u, p) match {
           case SaveNotNeeded => abortSave
-          case SaveNeeded    => save(p, u) >> setStatus(RowStatus.Locked).lift[IO]
+          case SaveNeeded    => save(p, u) >> setStatus(RowStatus.Locked).liftIO
         }
       }
       def save(p: P, u: U): R = {
         val s: SuccessIO = SuccessIO.nop
         val f: FailureIO = {
           val retryIO  = realise(retry.value)
-          val failureS = setStatus(RowStatus.Failed(retryIO)).lift[IO]
+          val failureS = setStatus(RowStatus.Failed(retryIO)).liftIO
           FailureIO(realise(failureS))
         }
-        Fix.retM(asyncSaveIO(p, u, s, f))
+        Fix.ret(asyncSaveIO(p, u, s, f))
       }
-      val x = Fix.gets(s => IO(validator.correctAndValidate(st(s), si(s))))
-      x.flatMap(_.fold(_ => abortSave, valid))
+      Fix.liftR(s =>
+        validator.correctAndValidate(st(s), si(s))
+          .fold(_ => abortSave, valid))
     })
   }
 
@@ -84,24 +85,25 @@ object NeoSaves {
                                          realise: ReactST[IO, S, Unit] => IO[Unit],
                                          setStatus: SetRowStatus[S])
   : ReactST[IO, S, Unit] = {
-    type R = ReactST[IO, S, Unit]
-    val Fix = ReactS.FixT[IO, S] // TODO should add type X[A] = ReactST[M, S, A] to FixT
+    val Fix = ReactS.FixT[IO, S]
+    type R = Fix.T[Unit]
     retryably[R](retry => {
-      def abortSave: R = setStatus(RowStatus.Sync).lift[IO] // TODO fuck it, add liftIO to ReactS
+      def abortSave: R = setStatus(RowStatus.Sync).liftIO
       def valid(u: U): R = Fix.liftR { s =>
-        save(u) >> setStatus(RowStatus.Locked).lift[IO]
+        save(u) >> setStatus(RowStatus.Locked).liftIO
       }
       def save(u: U): R = {
-        val s = SuccessIO(realise(removeNew.lift[IO]))
+        val s = SuccessIO(realise(removeNew.liftIO))
         val f: FailureIO = {
           val retryIO  = realise(retry.value)
-          val failureS = setStatus(RowStatus.Failed(retryIO)).lift[IO]
+          val failureS = setStatus(RowStatus.Failed(retryIO)).liftIO
           FailureIO(realise(failureS))
         }
-        Fix.retM(asyncCreate(u, s, f))
+        Fix.ret(asyncCreate(u, s, f))
       }
-      val x = Fix.gets(s => IO(validator.correctAndValidate(st(s), si(s))))
-      x.flatMap(_.fold(_ => abortSave, valid))
+      Fix.liftR(s =>
+        validator.correctAndValidate(st(s), si(s))
+          .fold(_ => abortSave, valid))
     })
   }
 }

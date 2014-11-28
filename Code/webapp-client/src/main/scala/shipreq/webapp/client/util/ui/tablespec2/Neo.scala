@@ -72,8 +72,6 @@ object Neo {
     case class ZeState(saved: savedStore.State)
     val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
     val ZS = ReactS.FixT[IO, ZeState]
-    val nop = ZS.ret(()) // TODO add nop and & _nop to React
-    val _nop = (_: Any) => nop
 
     def nameSW(s: ZeState): NameSW = ????
 
@@ -94,8 +92,8 @@ object Neo {
 
     type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
 
-    def updateField(id: Long, b: personFields.FieldValue) = ZS.modS(savedStoreZ.setField(id, b))
-    def revertField(id: Long, f: personFields.Field)      = ZS.modS(savedStoreZ.revertField(id, f))
+    def updateField(id: Long, b: personFields.FieldValue) = ZS.modT(savedStoreZ.setField(id, b))
+    def revertField(id: Long, f: personFields.Field)      = ZS.modT(savedStoreZ.revertField(id, f))
 
     def validateAndSave(id: Long, realise: ReactST[IO, ZeState, Unit] => IO[Unit]) = {
       import NeoSaves._
@@ -153,7 +151,7 @@ object Neo {
       .render((p,_) =>
       table(
         thead("Name", "Age"),
-        tbody(p.saved.map(savedrow(_)).asJsArray))
+        tbody(p.saved.map(savedrow(_)).toReactNodeArray))
       )
       .build
 
