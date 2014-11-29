@@ -25,9 +25,8 @@ class Deletion[P](health: P => Alive) {
       case Dead  => false
     }
 
-  import japgolly.scalajs.react._, vdom.ReactVDom.{all => *, _}, implicits._, ScalazReact._
-  import vdom.ReactVDom.{all => <}
+  import japgolly.scalajs.react._, vdom.ReactVDom.implicits._, prefix_<*._, ScalazReact._
 
-  def button(a: DeletionAction, io: IO[Unit]) =
+  def button(a: DeletionAction, io: => IO[Unit]) =
     <.button(buttonLabel(a), *.onclick ~~> io)
 }

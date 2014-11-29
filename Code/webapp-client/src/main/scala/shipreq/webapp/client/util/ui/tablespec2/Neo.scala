@@ -1,6 +1,6 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
-import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
+import japgolly.scalajs.react._, vdom.ReactVDom.implicits._, prefix_<*._, ScalazReact._
 import monocle._
 import monocle.syntax._
 import shipreq.webapp.base.validation2._
@@ -131,7 +131,7 @@ object Neo {
       .getInitialState(p => ZeState(savedStore initStateM p.ppl))
       .backend(new TopBackend(_))
       .render((p, s, b) =>
-      div(h1("Hi!"), tablec(b.tableProps))
+        <.div(<.h1("Hi!"), tablec(b.tableProps))
       )
       .build
 
@@ -139,9 +139,9 @@ object Neo {
     val tablec = ReactComponentB[TableProps]("table")
       .stateless
       .render((p,_) =>
-      table(
-        thead("Name", "Age"),
-        tbody(p.saved.map(savedrow(_)).toReactNodeArray))
+        <.table(
+          <.thead("Name", "Age"),
+          <.tbody(p.saved.map(savedrow(_)).toReactNodeArray))
       )
       .build
 
@@ -149,8 +149,8 @@ object Neo {
     val savedrow = ReactComponentB[SavedRowProps]("savedrow")
       .stateless
       .render((p, _) => {
-      val (n, a) = personE.render(p.ei)
-      tr(key := p.key, n, a)
+        val (n, a) = personE.render(p.ei)
+        <.tr(*.key := p.key, n, a)
     })
     .build
   }
