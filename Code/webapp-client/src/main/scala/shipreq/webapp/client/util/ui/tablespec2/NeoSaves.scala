@@ -30,6 +30,20 @@ object NeoSaves {
     a
   }
 
+  def validateAndSaveAsync2[S, T, K, P, U, I](validator: Validator[T, I, _, U], store: SavedRowStore[S, K, P, I])(
+                                           st: S => T,
+                                           needSave: (U, P) => SaveNeed,
+                                           asyncSaveIO: (P, U, SuccessIO, FailureIO) => IO[Unit],
+                                           realise: ReactST[IO, S, Unit] => IO[Unit])
+  : K => ReactST[IO, S, Unit] =
+    k => validateAndSaveAsync(
+      validator, st,
+      store.getI(k),
+      store.getP(k),
+      needSave, asyncSaveIO, realise,
+      rs => store.setStatusS(k, rs).liftIO
+    )
+
   def validateAndSaveAsync[S, T, P, U, I](validator: Validator[T, I, _, U],
                                           st: S => T,
                                           si: S => I,

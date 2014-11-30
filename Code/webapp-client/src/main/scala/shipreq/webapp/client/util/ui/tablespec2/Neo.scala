@@ -58,9 +58,10 @@ object Neo {
     case class Props(ppl: Map[Long, Person])
 
     val savedStore = SavedRowStore.of(personFields).keyedBy[Long]
-    type Realiser = ReactST[IO, ZeState, Unit] => IO[Unit]
     case class ZeState(saved: savedStore.State)
     val savedStoreZ = savedStore.contramap(SimpleLens[ZeState](_.saved)((a,b) =>  a.copy(saved = b)))
+
+    type Realiser = ReactST[IO, ZeState, Unit] => IO[Unit]
     val ZS = ReactS.FixT[IO, ZeState]
 
     def nameSW(s: ZeState): NameSW = ????
@@ -68,9 +69,12 @@ object Neo {
     type SWII = (NameSWI, String)
     val personV = nameV2 *** ageV.liftS[NameSW]
 
-    val personE = Editor.merge2(personFields, nameE, ageE).pairI
+//    val tmp = Editor.merge2(personFields, nameE, ageE).tupleI(_.zoomU[ZeState])
+//      .cmapA[(SWII, Long, Realiser)](_._1)
+//    val xE2 = savedStoreZ.applyRowUpdateAndRevert(tmp)(_._2)
+
+    val personE = Editor.merge2(personFields, nameE, ageE).tupleI(_.zoomU[ZeState])
       .cmapA[(SWII, Long, Realiser)](_._1)
-      .mapC(_ map2 (_.zoomU[ZeState]))
       .modCallbacksA(a => {
         val (_, id, realiser) = a
         _.pmodC(c => {
@@ -80,12 +84,10 @@ object Neo {
         })
       })
 
-    type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
-
     def updateField(id: Long, b: personFields.FieldValue) = ZS.modT(savedStoreZ.setField(id, b))
     def revertField(id: Long, f: personFields.Field)      = ZS.modT(savedStoreZ.revertField(id, f))
 
-    def validateAndSave(id: Long, realise: ReactST[IO, ZeState, Unit] => IO[Unit]) = {
+    def validateAndSave(id: Long, realise: Realiser) = {
       import NeoSaves._
       type S = ZeState
       type I = personV._I
@@ -103,6 +105,7 @@ object Neo {
       )
     }
 
+    type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
 
     class TopBackend(c: BackendScope[Props, ZeState]) {
 

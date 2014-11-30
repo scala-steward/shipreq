@@ -79,6 +79,7 @@ case class Editor[A, B, C, D, V](render: EditorInput[A, B, C, D] => V) {
   def cmapCallbacks [X,Y,Z](f: EditorCallbacks[X,Y,Z]      => EditorCallbacks[B,C,D]): Editor[A,X,Y,Z,V] = Editor(i => render(i mapCallbacks f))
 
   @inline def modCallbacksA(f: A => EditorCallbacks[B, C, D] => EditorCallbacks[B, C, D]): Editor[A, B, C, D, V] = cmapCallbacksA(f)
+  @inline def modCallbacks(f: EditorCallbacks[B, C, D] => EditorCallbacks[B, C, D]): Editor[A, B, C, D, V] = cmapCallbacks(f)
 
   def compose[M, N, O>:C, P<:D, Q](t: Editor[M,N,O,P,Q]): Editor[(A,M), B\/N, O, P, (V,Q)] =
     Editor[(A,M), B\/N, O, P, (V,Q)](i => {
@@ -92,13 +93,33 @@ case class Editor[A, B, C, D, V](render: EditorInput[A, B, C, D] => V) {
 
 object Editor {
   type F = FieldSet[_, _]
-  def merge2[C, D, A1, B1, V1, A2, B2, V2, FS <: FieldSet2[_, B1, B2]](fs: FS, e1: Editor[A1, B1, C, D, V1], e2: Editor[A2, B2, C, D, V2]) = new {
-    def pairI = apply[(A1, A2)](_._1, _._2)
-    def apply[I](a1: I => A1, a2: I => A2): Editor[I, fs.FieldValue, (fs.Field, C), D, (V1, V2)] =
+  def merge2[C, D, A1, B1, V1, A2, B2, V2, FS <: FieldSet2[_, B1, B2]](fs: FS, e1: Editor[A1, B1, C, D, V1], e2: Editor[A2, B2, C, D, V2]) =
+  new {
+    def tupleI[C2](g: C => C2) = apply[(A1, A2), C2](_._1, _._2, g)
+    def apply[I, C2](a1: I => A1, a2: I => A2, g: C => C2): Editor[I, fs.FieldValue, (fs.Field, C2), D, (V1, V2)] =
       Editor(ei => {
-        val i1 = ei.mapABC[A1, B1, C](a1, fs.f1 * _, (fs.f1, _))
-        val i2 = ei.mapABC[A2, B2, C](a2, fs.f2 * _, (fs.f2, _))
+        val i1 = ei.mapABC[A1, B1, C](a1, fs.f1 * _, c => (fs.f1, g(c)))
+        val i2 = ei.mapABC[A2, B2, C](a2, fs.f2 * _, c => (fs.f2, g(c)))
         (e1 render i1, e2 render i2)
       })
   }
+
+  def merge3[C, D, A1, B1, V1, A2, B2, V2, A3, B3, V3, FS <: FieldSet3[_, B1, B2, B3]](fs: FS, e1: Editor[A1, B1, C, D, V1], e2: Editor[A2, B2, C, D, V2], e3: Editor[A3, B3, C, D, V3]) =
+    new {
+    def tupleI[C2](g: C => C2) = apply[(A1, A2, A3), C2](_._1, _._2, _._3, g)
+    def apply[I, C2](a1: I => A1, a2: I => A2, a3: I => A3, g: C => C2): Editor[I, fs.FieldValue, (fs.Field, C2), D, (V1, V2, V3)] =
+      Editor(ei => {
+        val i1 = ei.mapABC[A1, B1, C](a1, fs.f1 * _, c => (fs.f1, g(c)))
+        val i2 = ei.mapABC[A2, B2, C](a2, fs.f2 * _, c => (fs.f2, g(c)))
+        val i3 = ei.mapABC[A3, B3, C](a3, fs.f3 * _, c => (fs.f3, g(c)))
+        (e1 render i1, e2 render i2, e3 render i3)
+      })
+  }
+
+  def merge3S[S, C, D, A1, B1, V1, A2, B2, V2, A3, B3, V3, FS <: FieldSet3[_, B1, B2, B3]](fs: FS, e1: Editor[(S,A1), B1, C, D, V1], e2: Editor[(S,A2), B2, C, D, V2], e3: Editor[(S,A3), B3, C, D, V3]) =
+    new {
+      def tupleI[C2](g: C => C2) = apply[(A1, A2, A3), C2](_._1, _._2, _._3, g)
+      def apply[I, C2](a1: I => A1, a2: I => A2, a3: I => A3, g: C => C2): Editor[(S,I), fs.FieldValue, (fs.Field, C2), D, (V1, V2, V3)] =
+        merge3(fs,e1,e2,e3).apply[(S,I),C2](_ map2 a1, _ map2 a2, _ map2 a3, g)
+    }
 }

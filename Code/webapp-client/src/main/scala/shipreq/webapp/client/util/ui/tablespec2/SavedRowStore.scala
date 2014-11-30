@@ -3,6 +3,7 @@ package shipreq.webapp.client.util.ui.tablespec2
 import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.syntax._
+import scalaz.{Bind, Applicative}
 import shipreq.base.util.ScalaExt._
 
 object SavedRowStore {
@@ -83,4 +84,30 @@ class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
 //
 //  def deleteIO(delIO: K => IO[Unit]): K => ReactST[IO, S, Unit] =
 //    k => ReactS.retM(delIO(k)) >> ReactS.mod(remove(k)).lift[IO] // TODO revisit after 0.6.0
+
+  def applyRowUpdateAndRevert[M[_]: Bind: Applicative, A, D, V, F, FV]
+  (e: Editor[A, FV, (F, ReactST[M, S, Unit]), D, V])(k: A => K)(implicit wf: F <:< FieldSet[P, I]#Field, wv: FV <:< FieldSet[P, I]#FieldValue)
+    : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
+    e.modCallbacksA(a => {
+      val id = k(a)
+      _.pmodC(c => {
+        case OnChange(v) => c map2 (_ >> ReactS.modT(setField(id, v)))
+        case OnCancel    => c map2 (_ >> ReactS.modT(revertField(id, c._1)))
+      })
+    })
+
+  def applyRowUpdateAndRevertO[M[_]: Bind: Applicative, A, D, V, F, FV]
+  (e: Editor[A, FV, (F, ReactST[M, S, Unit]), D, V])(k: A => Option[K])(implicit wf: F <:< FieldSet[P, I]#Field, wv: FV <:< FieldSet[P, I]#FieldValue)
+    : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
+    e.modCallbacksA(a => {
+      k(a) match {
+        case None =>
+          identity
+        case Some(id) =>
+          _.pmodC(c => {
+            case OnChange(v) => c map2 (_ >> ReactS.modT(setField(id, v)))
+            case OnCancel    => c map2 (_ >> ReactS.modT(revertField(id, c._1)))
+          })
+      }
+    })
 }

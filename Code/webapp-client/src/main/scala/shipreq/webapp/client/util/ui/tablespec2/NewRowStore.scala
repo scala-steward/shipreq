@@ -1,8 +1,11 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
+import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.std.option.some
 import monocle.syntax._
+import scalaz.{Applicative, Bind}
+import shipreq.base.util.ScalaExt._
 
 object NewRowStore {
   final case class Row[I](status: RowStatus, i: I)
@@ -46,4 +49,14 @@ class NewRowStore[S, I](_ss: SimpleLens[S, NewRowStore.SS[I]], rowL: NewRowStore
 
   def setField[X](fv: FieldSet[X, I]#FieldValue): S => S =
     (_i composeOptional fv.f.ilens).setF(fv.v)
+
+
+  def applyRowUpdate[M[_]: Bind: Applicative, A, D, V, F, FV](e: Editor[A, FV, (F, ReactST[M, S, Unit]), D, V])
+                                                             (implicit wf: F <:< FieldSet[_, I]#Field, wv: FV <:< FieldSet[_, I]#FieldValue)
+  : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
+    e.modCallbacks {
+      _.pmodC(c => {
+        case OnChange(v) => c map2 (_ >> ReactS.modT(setField(v)))
+      })
+    }
 }

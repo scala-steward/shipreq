@@ -114,12 +114,17 @@ object CfgReqTypes222 {
   }
   type S = State
   val ST = ReactS.FixT[IO, S]
-
+  type ST = ReactST[IO, S, Unit]
   val savedRowStoreS = savedRowStore.contramap(State._savedRows)
+  val newRowStoreS   = newRowStore  .contramap(State._newRow)
 
   val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
   val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
-  val impE      = Editors.checkboxEditor.imap(ImplicationRequired)
+  val impE      = Editors.checkboxEditor.imap(ImplicationRequired).strengthL[V.S]
+
+  val rowE      = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI(_.zoomU[S])
+  val savedRowE = savedRowStoreS.applyRowUpdateAndRevertO(rowE)(_._1._2)
+  val newRowE   = newRowStoreS.applyRowUpdate(rowE)
 
   case class Props(remote: CustomReqTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean)
 
@@ -141,16 +146,16 @@ object CfgReqTypes222 {
 
     def render: ReactElement =
       <.div(
-        renderShowDeleted(c.state.showDeleted, toggleShowDeleted),
+        showDeletedElement(c.state.showDeleted, toggleShowDeleted),
         ???)
   }
 
   val xxxx = new RemoteDeltaListener2[CustomReqTypeAndId, CustomReqTypeCrud.type]
 
-  def renderShowDeleted(show: Boolean, toggle: => IO[Unit]): ReactElement =
+  def showDeletedElement(show: Boolean, toggle: => IO[Unit]): ReactElement =
       <.label(
         Util.checkbox(show)(*.onchange ~~> toggle),
-        if (show) "Showing deleted" else "Not showing deleted")
+        if (show) "Deleted items visible." else "Deleted items hidden.")
 
   val Top =
     ReactComponentB[Props]("top")
