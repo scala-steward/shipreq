@@ -143,7 +143,7 @@ object CfgReqTypes222 {
     val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
     val impE      = Editors.checkboxEditor.imap(ImplicationRequired).strengthL[V.S]
 
-    val rowE  = {
+    val rowE = {
       var e = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI.zoomU[S]
 
       e = Editors.applyRowUpdateAndRevert(e, savedRowStoreS, newRowStoreS)(_._1._2)
@@ -186,11 +186,6 @@ object CfgReqTypes222 {
       .build
 
 
-  //    .saveNotNeededWhenE(p => (p.mnemonic, p.name, p.imp))
-//    .asyncSaveP(tableIO.updateIO)
-//
-//  private val specC = TableSpecC(spec)(tableIO.createIO)
-//
 //  private val specD = TableSpecD(spec)(_.alive, tableIO.deleteIO)
 //
 //  private val compI = tableIO.innerComponent(spec, Partition.CustomReqTypes, renderInner)

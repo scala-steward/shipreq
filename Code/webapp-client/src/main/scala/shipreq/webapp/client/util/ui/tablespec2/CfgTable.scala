@@ -1,99 +1,112 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
-import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._, ScalazReact._
+import japgolly.scalajs.react._, vdom.ReactVDom._, prefix_<*._, implicits.{Tag => _, _}, ScalazReact._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.protocol.DeletionAction
 import shipreq.webapp.base.protocol.DeletionAction._
-import shipreq.webapp.client.lib.UiLib
-import shipreq.webapp.client.util.ui.Util
+//import shipreq.webapp.client.lib.UiLib
+//import shipreq.webapp.client.util.ui.Util
 import DataImplicits._
+import scalaz.effect.IO
 
-/*
-trait CfgTableCells[P, VV, Cells] {
-  def mklist: Cells => List[Modifier]
-  def newRow: VV => Cells
-  def savedRow: (VV, P) => Cells
-  def deletedRow: P => Cells
+trait CfgTableCells[P, A, B] {
+  def newRow    : A => B
+  def savedRow  : (A, P) => B
+  def deletedRow: P => B
+  def render    : B => List[ReactElement]
 }
 
-object CfgTable {
-  @inline final def apply[DI <: DataAndId : IdAccessor] = new CfgTable[DI]
-}
 
-final class CfgTable[DI <: DataAndId : IdAccessor] {
+final class CfgTable[DI <: DataAndId, S, I, V, V2, A, B, C, RowKey](savedStore: SavedRowStore[S, DI#Id, DI#Data, I],
+                                                                    newStore: NewRowStore[S, I],
+                                                                    editor: Editor[A, B, IO, S, C, IO[Unit], V],
+                                                                    rowkey: DI#Data => RowKey,
+                                                                    cellfmt: CfgTableCells[DI#Data, V, V2],
+                                                                    editorA: Option[DI#Id] => A,
+                                                                    del: Deletion[DI#Data, DI#Id],
+                                                                    showDeleted: S => Boolean,
+                                                                    c: ComponentStateFocus[S])
+                                                                   (implicit I: IdAccessor[DI], O: Ordering[RowKey]) {
+
   type P = DI#Data
-  type D = DI#Id
+  type K = DI#Id
+  type RowStream = Stream[(RowKey, ReactElement)]
 
-  // -------------------------------------------------------------------------------------------------------------------
-  @inline def b1[Arb, S, U, II, VV, RowKey: Ordering](specU: TableSpecU[Arb, S, D, U, P, II, VV])
-                                                     (specC: TableSpecC[Arb, S, D, U, P, II, VV],
-                                                      specD: TableSpecD[Arb, S, P, D],
-                                                      emptyII: II,
-                                                      rowkey: P => RowKey) =
-    new B1(specU, specC, specD, emptyII, rowkey)
+  private[this] val ST = ReactS.FixT[IO, S]
+  private[this] def run(s: ST.T[Unit]): IO[Unit] = c.runState(s)
+  private[this] implicit def endofToReactST(f: S => S) = ST modT f
 
-  final class B1[Arb, S, U, II, VV, RowKey: Ordering](specU: TableSpecU[Arb, S, D, U, P, II, VV], specC: TableSpecC[Arb, S, D, U, P, II, VV], specD: TableSpecD[Arb, S, P, D], emptyII: II, rowkey: P => RowKey) {
-
-    val newRowS =
-      specC.unsavedInitS(emptyII)
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @inline def b2[Cells](cells: CfgTableCells[P, VV, Cells]) = new B2(cells)
-
-    final class B2[Cells](cells: CfgTableCells[P, VV, Cells]) {
-      type RowStream = Stream[(RowKey, Tag)]
-
-      def row(classArg: String, rs: RowStatus, vv: Cells, ctrls: => Modifier): Tag = {
-        val cls2 = UiLib.rowStatusRowClass(rs)
-        val c = UiLib.rowStatusCtrls(rs, ctrls)
-        tr(cls := s"$classArg $cls2", cells.mklist(vv).map(td(_)), td(c))
-      }
-
-      // ---------------------------------------------------------------------------------------------------------------
-      @inline def apply(showDeleted: Boolean, S: ComponentStateFocus[S])(implicit x: Arb) =
-        new B3(showDeleted, S)
-
-      final class B3(showDeleted: Boolean, S: ComponentStateFocus[S])(implicit x: Arb) {
-
-        def newButton =
-          button(onclick ~~> S.runState(newRowS), disabled := specC.unsavedRowExists(S), "New")
-
-        def newRow =
-          specC.unsavedRow((F, rs, vv) => {
-            def c = button(onclick ~~> F.runState(specC.unsavedRemoveS), "Cancel")
-            row("new", rs, cells.newRow(vv), c)(keyAttr := "new")
-          })(x)(S)
-
-        private def savedRow =
-          specU.savedRowP((F, id, rs, p, vv) => {
-            def c = specD.buttons(F, id, HardDel, SoftDel)
-            row("live", rs, cells.savedRow(vv, p), c)(keyAttr := id.value)
-          })(x)(S)
-
-        def savedRows: RowStream =
-          specD.savedGetP(S, Alive).map(p => rowkey(p) -> savedRow(p.id))
-
-        private def deletedRow(rs: RowStatus, p: P) = {
-          def c = specD.button(S, p.id, Restore)
-          row("dead", rs, cells.deletedRow(p), c)(keyAttr := p.id.value)
-        }
-
-        def deletedRows: RowStream =
-          if (showDeleted)
-            specD.savedGet(S, Dead).map(r => rowkey(r.p) -> deletedRow(r.status, r.p))
-          else
-            Stream.empty
-
-        def nonNewRows(rows: RowStream => RowStream) =
-          rows(deletedRows #::: savedRows).sortBy(_._1).map(_._2).toJsArray
-
-        def tableness(headers: List[String], rows: RowStream => RowStream) =
-          div(
-            newButton,
-            table(
-              thead(tr(headers.map(th(_)), th("Ctrls"))),
-              tbody(newRow, nonNewRows(rows))))
-      }
+  private[this] val editable: RowStatus => Option[editor.Editable] = {
+    val canedit = editor.editable(c runState _.st)
+    rs => rs match {
+      case RowStatus.Sync | RowStatus.Failed(_) => canedit
+      case RowStatus.Locked                     => None
     }
   }
+
+  private[this] def renderRow(k: Option[K], rs: RowStatus): V =
+    editor render EditorI(editorA(k), "", editable(rs))
+
+  def newButton: ReactElement =
+    <.button(
+      *.onclick ~~> run(newStore.enableEdit),
+      *.disabled := newStore.editing(c.state),
+      "New")
+
+  def newCancelButton: ReactElement =
+    <.button(
+      *.onclick ~~> run(newStore.remove),
+      "Cancel")
+
+  def row(classArg: String, rs: RowStatus, cells: V2, ctrls: => Modifier): Tag = {
+    val cls2 = UiLib.rowStatusRowClass(rs)
+    val c = UiLib.rowStatusCtrls(rs, ctrls)
+    <.tr(
+      *.cls := s"$classArg $cls2",
+      cellfmt.render(cells).map(<.td(_)),
+      <.td(c))
+  }
+
+  def newRowO: Option[Modifier] =
+    newStore.get(c.state).map(r => {
+      val v = renderRow(None, r.status)
+      row("new", r.status, cellfmt.newRow(v), newCancelButton)(*.keyAttr := "new")
+    })
+
+  def newRow: Modifier = newRowO.getOrElse(EmptyTag)
+
+  def savedRows: RowStream = {
+    var rs = savedStore.rowStream(c.state)
+    if (showDeleted(c.state))
+      rs = rs.filter(r => del.filterAlive(r.p))
+    rs.map(r => {
+      val el = del.alive(r.p) match {
+        case Alive => liveSavedRow(r.status, r.p)
+        case Dead  => deadSavedRow(r.status, r.p)
+      }
+      (rowkey(r.p), el)
+    })
+  }
+
+  private def liveSavedRow(rs: RowStatus, p: P): ReactElement = {
+    def del1 = del.button(p.id, HardDel)
+    def del2 = del.button(p.id, SoftDel)
+    val v = renderRow(Some(p.id), rs)
+    row("live", rs, cellfmt.savedRow(v, p), Seq(del1, del2).toReactNodeArray)(*.keyAttr := p.id.value)
+  }
+
+  private def deadSavedRow(rs: RowStatus, p: P): ReactElement = {
+    def restore = del.button(p.id, Restore)
+    row("dead", rs, cellfmt.deletedRow(p), restore)(*.keyAttr := p.id.value)
+  }
+
+  def allSortableRows(static: RowStream) =
+    (static #::: savedRows).sortBy(_._1).map(_._2).toReactNodeArray
+
+  def table(headers: List[String], static: RowStream) =
+    <.div(
+      newButton,
+      <.table(
+        <.thead(<.tr(headers.map(<.th(_)), <.th("Ctrls"))), // TODO bad perf
+        <.tbody(newRow, allSortableRows(static))))
 }
-*/

@@ -42,11 +42,12 @@ class NewRowStore[S, I](_ss: SimpleLens[S, NewRowStore.SS[I]], rowL: NewRowStore
   private val _status: SimpleOptional[S, RowStatus] = _row composeOptional rowL.status
   private val _i     : SimpleOptional[S, I]         = _row composeOptional rowL.i
 
-  def getI                   : S => Option[I] = _i.getOption
-  def startEdit              : S => S         = s => if (editable(s)) s else _ss.set(s, Some(initRow))
-  def editable               : S => Boolean   = _ss.get(_).isDefined
-  def remove                 : S => S         = _ss.set(_, None)
-  def setStatus(r: RowStatus): S => S         = _status.setF(r)
+  def get                    : S => Option[Row] = _row.getOption
+  def getI                   : S => Option[I]   = _i.getOption
+  def enableEdit             : S => S           = s => if (editing(s)) s else _ss.set(s, Some(initRow))
+  def editing                : S => Boolean     = _ss.get(_).isDefined
+  def remove                 : S => S           = _ss.set(_, None)
+  def setStatus(r: RowStatus): S => S           = _status.setF(r)
 
   def setStatusST[M[_]: Applicative]: RowStatus => ReactST[M, S, Unit] = rs => ReactS.modT(setStatus(rs))
 

@@ -17,16 +17,16 @@ object Deletion {
 
 import Deletion._
 
-class Deletion[P](health: P => Alive) {
+class Deletion[P, K](val alive: P => Alive, delIO: (K, DeletionAction) => IO[Unit]) {
 
   val filterAlive: P => Boolean =
-    p => health(p) match {
+    p => alive(p) match {
       case Alive => true
       case Dead  => false
     }
 
   import japgolly.scalajs.react._, vdom.ReactVDom.implicits._, prefix_<*._, ScalazReact._
 
-  def button(a: DeletionAction, io: => IO[Unit]) =
-    <.button(buttonLabel(a), *.onclick ~~> io)
+  def button(k: K, a: DeletionAction) =
+    <.button(buttonLabel(a), *.onclick ~~> delIO(k, a))
 }

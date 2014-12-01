@@ -64,8 +64,10 @@ def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] = rs 
   def getAllP(s: S): Stream[P] =
     _ss.get(s).toStream.map(_._2.p)
 
-  def getAll(s: S): Stream[(RowStatus, K, P)] =
-    _ss.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
+  def rowStream(s: S): Stream[Row] = _ss.get(s).values.toStream
+
+//  def getAll(s: S): Stream[(RowStatus, K, P)] =
+//    _ss.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
 
   def setField[X](k: K, fv: FieldSet[X, I]#FieldValue): S => S =
     (_i(k) |-> fv.f.ilens).setF(fv.v)
