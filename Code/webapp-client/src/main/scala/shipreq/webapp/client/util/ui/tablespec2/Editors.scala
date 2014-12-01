@@ -10,11 +10,14 @@ import shipreq.webapp.client.util.ui.Util._
 
 object Editors {
 
-  type RU = ReactST[IO, Unit, Unit]
-  val RU  = ReactS.FixT[IO, Unit]
-  val nop = RU.nop
+  val ST  = ReactS.FixT[IO, Unit]
+  type ST = ST.T[Unit]
+  val nop = ST.nop
 
-  type SimpleEditor[I] = Editor[I, I, RU, IO[Unit], Modifier]
+  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], Modifier]
+
+  @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nop): CallbackH[I, IO, Unit, Unit] =
+    CallbackH(event, st, ())
 
   def textEditor(node: Tag): SimpleEditor[String] =
     Editor(ei => {
@@ -23,18 +26,19 @@ object Editors {
         case None =>
           base(readonly := true)
         case Some(cb) =>
+          @inline def cbh(event: CallbackEvent[String], st: ST = nop) = cb(callbackH(event, st))
           base(
-            onchange  ~~> textChangeRecv(t => cb(OnChange(t), nop)),
-            onblur    ~~> textChangeRecv(t => cb(OnEditFinished(t), nop)),
-            onkeydown ~~> cancelOnEscape(cb(OnCancel, _)))
+            onchange  ~~> textChangeRecv(i => cbh(OnChange(i))),
+            onblur    ~~> textChangeRecv(i => cbh(OnEditFinished(i))),
+            onkeydown ~~> cancelOnEscape(s => cbh(OnCancel, s)))
       }
     })
 
-  def cancelOnEscape[X](f: RU => X): ReactKeyboardEventH => X =
+  def cancelOnEscape[X](f: ST => X): ReactKeyboardEventH => X =
     e => f(e.key match {
       case "Escape" => // TODO use KeyValue
         val t = e.target
-        RU.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
+        ST.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
       case _ =>
         nop
     })
@@ -49,25 +53,26 @@ object Editors {
         case None =>
           base(readonly := true)
         case Some(cb) =>
+          @inline def cbh(event: CallbackEvent[Boolean], st: ST = nop) = cb(callbackH(event, st))
           def handleChange: ReactEventI => IO[Unit] = e => {
             val b = e.target.checked
-            cb(OnChange(b), nop) >> cb(OnEditFinished(b), nop)
+            cbh(OnChange(b)) >> cbh(OnEditFinished(b))
           }
           base(onchange ~~> handleChange)
       }
     })
 
-  def renderWithError[A, B, C, D](editor: Editor[A, B, C, D, Modifier])(err: String): Editor[A, B, C, D, Modifier] =
+  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,Modifier])(err: String): Editor[A,B,M,S,C,D,Modifier] =
     Editor(ei => div(editor render ei, div(cls := "errorMsg", err)))
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def resolveEditorWithError[E, A, B, C, D, V](f: A => E, e: E => Editor[A, B, C, D, V]): Editor[A, B, C, D, V] =
+  def resolveEditorWithError[E,A,B,M[_],S,C,D,V](f: A => E, e: E => Editor[A,B,M,S,C,D,V]): Editor[A,B,M,S,C,D,V] =
     Editor(i => e(f(i.data)) render i)
 
   // TODO Move to implicits object, or add implicit defs to editor itself
-  implicit final class EditorExt[A,B,C,D,V](val e: Editor[A,B,C,D,V]) extends AnyVal {
-    type Self = Editor[A,B,C,D,V]
+  implicit final class EditorExt[A,B,M[_],S,C,D,V](val e: Editor[A,B,M,S,C,D,V]) extends AnyVal {
+    type Self = Editor[A,B,M,S,C,D,V]
 
     def applyLiveCorrection(v: Validator[_, B, _, _]): Self =
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
@@ -75,12 +80,13 @@ object Editors {
     def applyPostCorrectionU[U](v: CorrectionPartU[B, U]): Self =
       e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
 
-    def applyPostCorrection[S, U](v: CorrectionPart[S, B, U])(f: A => S): Self =
-      e.pmodBx(a => _ => { case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
+    def applyPostCorrection[T, U](v: CorrectionPart[T, B, U])(f: A => T): Self =
+      e.modCallbacksA(a =>
+        _.pmodB{ case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
   }
 
-  implicit final class EditorExtV[A,B,C,D](val e: Editor[A,B,C,D,Modifier]) extends AnyVal {
-    type Self = Editor[A,B,C,D,Modifier]
+  implicit final class EditorExtV[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,Modifier]) extends AnyVal {
+    type Self = Editor[A,B,M,S,C,D,Modifier]
 
     def fromOptionalError: Option[String] => Self =
       _.fold(e)(renderWithError(e))
@@ -91,54 +97,52 @@ object Editors {
     def applyInputValidationU(v: ValidatorU[A, _, _]): Self =
       renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))
 
-    def applyInputValidation[S, I](v: Validator[S, I, _, _])(s: A => S, i: A => I): Self =
+    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Self =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))
 
-    def applyInputValidationL[S, I](v: Validator[S, A, _, _]) =
-      e.strengthL[S].applyInputValidation(v)(_._1, _._2)
+    def applyInputValidationL[T, I](v: Validator[T, A, _, _]) =
+      e.strengthL[T].applyInputValidation(v)(_._1, _._2)
   }
 
-  implicit final class EditorExtII[I,C,D,V](val e: Editor[I,I,C,D,Modifier]) extends AnyVal {
+  implicit final class EditorExtII[I,M[_],S,C,D](val e: Editor[I,I,M,S,C,D,Modifier]) extends AnyVal {
 
-    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I, I, C, D, Modifier] =
+    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I,I,M,S,C,D,Modifier] =
       e.applyInputValidationU(v)
         .applyLiveCorrection(v)
         .applyPostCorrectionU(v.cp)
 
-    def applyValidator[S](v: Validator[S, I, _, _]): Editor[(S, I), I, C, D, Modifier] =
+    def applyValidator[T](v: Validator[T, I, _, _]): Editor[(T, I), I, M, S, C, D, Modifier] =
       e.applyInputValidationL(v)
         .applyLiveCorrection(v)
         .applyPostCorrection(v.cp)(_._1)
   }
 
-  implicit final class EditorExtIII[M[_], S,A,B,C1,D,V](val e: Editor[A,B,(C1,ReactST[M, S, Unit]),D,V]) extends AnyVal {
-    type Self = Editor[A, B, (C1,ReactST[M, S, Unit]), D, V]
+  implicit final class EditorExtIII[A,B,M[_],S,C,D,V](val e: Editor[A,B,M,S,C,D,V]) extends AnyVal {
+    type Self = Editor[A,B,M,S,C,D,V]
     def applyOnEditFinished[K](f: K => ReactST[M, S, Unit])(g: A => K)(implicit M: Bind[M]): Self =
-      e.modCallbacksA(a =>
-        _.pmodC(c => {
-          case OnEditFinished(_) => c map2 (_ >> f(g(a)))
-        })
-      )
+      e.modCallbacksA(a => _.paddST {
+        case OnEditFinished(_) => f(g(a))
+      })
   }
 
-  def applyRowUpdateAndRevert[M[_] : Bind : Applicative, S, K, P, I, A, D, V, F, FV](
-      e         : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V],
-      savedStore: SavedRowStore[S,K,P,I],
-      newStore  : NewRowStore[S,I])
+  def applyRowUpdateAndRevert[A, FV, M[_] : Bind : Applicative, S, F, D, V, K, P, I](
+      e         : Editor[A, FV, M, S, F, D, V],
+      savedStore: SavedRowStore[S, K, P, I],
+      newStore  : NewRowStore[S, I])
       (k        : A => Option[K])
       (implicit wf: F <:< FieldSet[P, I]#Field, wv: FV <:< FieldSet[P, I]#FieldValue)
-      : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
+      : Editor[A, FV, M, S, F, D, V] =
     e.modCallbacksA(a =>
       k(a) match {
         case None =>
-          _.pmodC(c => {
-            case OnChange(v) => c map2 (_ >> newStore.setFieldST(v))
-          })
+          _.paddST {
+            case OnChange(v) => newStore.setFieldST(v)
+          }
         case Some(id) =>
-          _.pmodC(c => {
-            case OnChange(v) => c map2 (_ >> savedStore.setFieldST(id, v))
-            case OnCancel    => c map2 (_ >> savedStore.revertFieldST(id, c._1))
-          })
-      })
-
+          h => h.paddST {
+            case OnChange(v) => savedStore.setFieldST(id, v)
+            case OnCancel    => savedStore.revertFieldST(id, h.data)
+          }
+      }
+    )
 }

@@ -69,19 +69,16 @@ object Neo {
     type SWII = (NameSWI, String)
     val personV = nameV2 *** ageV.liftS[NameSW]
 
-//    val tmp = Editor.merge2(personFields, nameE, ageE).tupleI(_.zoomU[ZeState])
-//      .cmapA[(SWII, Long, Realiser)](_._1)
-//    val xE2 = savedStoreZ.applyRowUpdateAndRevert(tmp)(_._2)
-
-    val personE = Editor.merge2(personFields, nameE, ageE).tupleI(_.zoomU[ZeState])
+    val personE = Editor.merge2(personFields, nameE, ageE).tupleI
+      .zoomU[ZeState]
       .cmapA[(SWII, Long, Realiser)](_._1)
       .modCallbacksA(a => {
         val (_, id, realiser) = a
-        _.pmodC(c => {
-          case OnChange(b)       => c map2 (_ >> updateField(id, b))
-          case OnCancel          => c map2 (_ >> revertField(id, c._1))
-          case OnEditFinished(_) => c map2 (_ >> validateAndSave(id, realiser))
-        })
+        h => h.paddST {
+          case OnChange(b)       => updateField(id, b)
+          case OnCancel          => revertField(id, h.data)
+          case OnEditFinished(_) => validateAndSave(id, realiser)
+        }
       })
 
     def updateField(id: Long, b: personFields.FieldValue) = ZS.modT(savedStoreZ.setField(id, b))
@@ -104,16 +101,11 @@ object Neo {
         realise) //      realise: ReactST[IO, S, Unit] => IO[Unit],
     }
 
-    type CompositeC = (personFields.Field, ReactST[IO, ZeState, Unit])
-
     class TopBackend(c: BackendScope[Props, ZeState]) {
 
       val realiser: Realiser = c.runState(_)
 
-      val editable = {
-        val cbRealise: (Any,CompositeC) => IO[Unit] = (_,x) => c.runState(x._2)
-        Some(EditorCallbacks[personFields.FieldValue, CompositeC, IO[Unit]](cbRealise))
-      }
+      val editable = personE.editable(c runState _.st)
 
       def tableProps = TableProps(rowpropsa(c.state.saved))
 
@@ -125,7 +117,7 @@ object Neo {
       def rowprops1(ppl: Stream[Person], id: Long, s: savedStore.Row): SavedRowProps = {
         val nameswi: NameSWI = ((ppl, id), s.i._1)
         val swii: SWII = (nameswi, s.i._2)
-        SavedRowProps(id, EditorInput((swii, id, realiser), "", editable))
+        SavedRowProps(id, EditorI((swii, id, realiser), "", editable))
       }
     }
 
@@ -147,7 +139,7 @@ object Neo {
       )
       .build
 
-    case class SavedRowProps(key: Long, ei: EditorInput[(SWII, Long, Realiser), personFields.FieldValue, CompositeC, IO[Unit]])
+    case class SavedRowProps(key: Long, ei: personE.Input)
     val savedrow = ReactComponentB[SavedRowProps]("savedrow")
       .stateless
       .render((p, _) => {

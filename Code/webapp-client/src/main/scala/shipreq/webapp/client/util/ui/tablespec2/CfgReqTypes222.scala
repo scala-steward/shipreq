@@ -144,7 +144,7 @@ object CfgReqTypes222 {
     val impE      = Editors.checkboxEditor.imap(ImplicationRequired).strengthL[V.S]
 
     val rowE  = {
-      var e = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI(_.zoomU[S])
+      var e = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI.zoomU[S]
 
       e = Editors.applyRowUpdateAndRevert(e, savedRowStoreS, newRowStoreS)(_._1._2)
 
