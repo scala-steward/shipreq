@@ -173,15 +173,9 @@ object CfgReqTypes222 {
     def savedRowA(id: CustomReqType.Id): rowE.InputA =
       rowA(Some(id), savedRowStoreS.getI(id)(c.state))
 
-    def render: ReactElement =
-      <.div(
-        showDeletedElement(c.state.showDeleted, toggleShowDeleted),
-        ???)
-
     import shipreq.webapp.client.util.ui.Util.checkbox
 
-    private def cells = new CfgTableCells[CustomReqType, rowE.View] {
-      override type Norm = (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)
+    private def cells = new CfgTableCells[CustomReqType, rowE.View, (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
 
       override def newRow = {
         case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)
@@ -208,6 +202,22 @@ object CfgReqTypes222 {
     val del = NeoSaves.deleterAsync(savedRowStoreS)(_.alive, tableIO.deleteIO, c runState _)
 
     val tbl = CfgTable(rowE, savedRowStoreS, newRowStoreS).then(_.mnemonic, cells, newRowA, savedRowA, del, _.showDeleted, c)
+
+    private val staticRows: tbl.RowStream = {
+      def rr(r: ReqType.Static): ReactElement = {
+        val imp = checkbox(ImplicationRequired from r.imp)(*.disabled := true)
+        val norm: tbl.Norm = (r.mnemonic.value, r.oldMnemonics, r.name, imp)
+        tbl.row("static", RowStatus.Sync, norm, EmptyTag)(*.keyAttr := r.mnemonic.value)
+      }
+      ReqType.static.map(r => r.mnemonic -> rr(r)).toStream
+    }
+
+    def render: ReactElement =
+      <.div(
+        showDeletedElement(c.state.showDeleted, toggleShowDeleted),
+        tbl.table(
+          List("Mnemonic", "Name", "Implication Required"),
+          staticRows))
   }
   // ===================================================================================================================
 
@@ -226,20 +236,7 @@ object CfgReqTypes222 {
       .configure(xxxx.recvExtUpdates(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
       .build
 
-
 //  private val compI = tableIO.innerComponent(spec, Partition.CustomReqTypes, renderInner)
 //
 //  val comp = tableIO.outerComponent("Cfg: Requirement Types", compI)
-
-//  private def renderInner(S: ComponentScopeU[tableIO.Props, prespec.S, _]): ReactElement =
-//    tbl(S.props.showDeleted, S)(S.props.x)
-//      .tableness(List("Mnemonic", "Name", "Implication Required"), staticRows #::: _)
-//
-//  private val staticRows: tbl.RowStream = {
-//    def rr(r: ReqType.Static) = {
-//      val imp = checkbox(ImplicationRequired from r.imp)(disabled := true)
-//      tbl.row("static", RowStatus.Sync, (raw(r.mnemonic), r.oldMnemonics, raw(r.name), imp), EmptyTag)(keyAttr := r.mnemonic.value)
-//    }
-//    ReqType.static.map(r => r.mnemonic -> rr(r)).toStream
-//  }
 }
