@@ -19,10 +19,6 @@ import shipreq.base.util.GenTuple, GenTuple._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.protocol.Routines.CustomReqTypeCrud
-//import shipreq.webapp.client.lib._
-//import shipreq.webapp.client.util.ui.Util.checkbox
-//import shipreq.webapp.client.util.ui.table._
-//import shipreq.webapp.client.util.ui.{Editors => E}
 
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance
@@ -101,9 +97,6 @@ import monocle.syntax._
 
 object CfgReqTypes222 {
 
-//  val tableIO = new TableIO[CustomReqTypeAndId, CustomReqTypeCrud, CustomReqTypeCrud.type]
-//  import tableIO.{D, P}
-
   val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationNotRequired))
 
   val savedRowStore = SavedRowStore.of(fields).keyedBy[CustomReqType.Id]
@@ -132,7 +125,7 @@ object CfgReqTypes222 {
   // ===================================================================================================================
   class Backend(c: BackendScope[Props, State]) extends OnUnmount {
 
-    val tableIO = TableIO2(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
+    val tableIO = TableIO(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
 
     def stateForValidator(k: Option[CustomReqType.Id]): S => V.S =
       s => (savedRowStoreS.getAllP(s), k)
@@ -221,7 +214,7 @@ object CfgReqTypes222 {
   }
   // ===================================================================================================================
 
-  val xxxx = new RemoteDeltaListener2[CustomReqType, CustomReqType.Id, CustomReqTypeCrud.type]
+  def rdl = RemoteDeltaListener(CustomReqType, CustomReqTypeCrud)
 
   def showDeletedElement(show: Boolean, toggle: => IO[Unit]): ReactElement =
       <.label(
@@ -233,10 +226,6 @@ object CfgReqTypes222 {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(xxxx.recvExtUpdates(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
+      .configure(rdl.recvExtUpdates(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
       .build
-
-//  private val compI = tableIO.innerComponent(spec, Partition.CustomReqTypes, renderInner)
-//
-//  val comp = tableIO.outerComponent("Cfg: Requirement Types", compI)
 }

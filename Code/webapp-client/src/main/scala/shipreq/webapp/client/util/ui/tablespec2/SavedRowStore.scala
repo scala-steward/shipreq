@@ -3,7 +3,7 @@ package shipreq.webapp.client.util.ui.tablespec2
 import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.syntax._
-import scalaz.{Bind, Applicative}
+import scalaz.Applicative
 import shipreq.base.util.ScalaExt._
 
 object SavedRowStore {
@@ -26,13 +26,13 @@ object SavedRowStore {
   }
 }
 
-class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
+final class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
                                 rowL: SavedRowStore.RowL[P, I],
                                 pi: P => I) {
-  final type State = S
-  final type Row   = SavedRowStore.Row[P, I]
-  final type SS    = SavedRowStore.SS[K, P, I]
-  final type KP    = (K, P)
+  type State = S
+  type Row   = SavedRowStore.Row[P, I]
+  type SS    = SavedRowStore.SS[K, P, I]
+  type KP    = (K, P)
 
   def contramap[T](f: SimpleLens[T, S]): SavedRowStore[T, K, P, I] =
     new SavedRowStore(f |-> _ss, rowL, pi)
@@ -55,8 +55,7 @@ class SavedRowStore[S, K, P, I](_ss: SimpleLens[S, SavedRowStore.SS[K,P,I]],
   def setT     (kp: KP)            : S => S = set(kp._1, kp._2)
   def setStatus(k: K, r: RowStatus): S => S = _status(k).setF(r)
 
-//  def setStatusS(k: K, r: RowStatus): ReactS[S, Unit] = ReactS.mod(setStatus(k, r))
-def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] = rs => ReactS.modT(setStatus(k, rs))
+  def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] = rs => ReactS.modT(setStatus(k, rs))
 
   def getP(k: K): S => P = _p(k).get
   def getI(k: K): S => I = _i(k).get
@@ -66,9 +65,6 @@ def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] = rs 
 
   def rowStream(s: S): Stream[Row] = _ss.get(s).values.toStream
 
-//  def getAll(s: S): Stream[(RowStatus, K, P)] =
-//    _ss.get(s).toStream.map(x => (x._2.status, x._1, x._2.p))
-
   def setField[X](k: K, fv: FieldSet[X, I]#FieldValue): S => S =
     (_i(k) |-> fv.f.ilens).setF(fv.v)
 
@@ -77,43 +73,4 @@ def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] = rs 
 
   def setFieldST[M[_]: Applicative, X](k: K, fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] = ReactS modT setField(k, fv)
   def revertFieldST[M[_]: Applicative](k: K, f: FieldSet[P, I]#Field): ReactST[M, S, Unit] = ReactS modT revertField(k, f)
-
-  //    private[this] implicit def autoLiftEndo(f: S => S): ReactS[S, Unit] = ReactS mod f
-  //    def savedRemoveR(k: K): ReactS[S, Unit] = savedRemoveF(k)
-  //    def savedSetR   (kp: KP)    : ReactS[S, Unit] = savedSetF(kp)
-
-  // these two below are synchronous
-//  def updateIO(saveIO: KP => IO[KP]): K => ReactST[IO, S, Unit] =
-//    k => ReactS.modT[IO, S](s =>
-//      saveIO(k, _row(k).get(s).p)
-//        .map(setT(_)(s)))
-//
-//  def deleteIO(delIO: K => IO[Unit]): K => ReactST[IO, S, Unit] =
-//    k => ReactS.retM(delIO(k)) >> ReactS.mod(remove(k)).lift[IO] // TODO revisit after 0.6.0
-
-//  def applyRowUpdateAndRevert[M[_]: Bind: Applicative, A, D, V, F, FV]
-//  (e: Editor[A, FV, (F, ReactST[M, S, Unit]), D, V])(k: A => K)(implicit wf: F <:< FieldSet[P, I]#Field, wv: FV <:< FieldSet[P, I]#FieldValue)
-//    : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
-//    e.modCallbacksA(a => {
-//      val id = k(a)
-//      _.pmodC(c => {
-//        case OnChange(v) => c map2 (_ >> ReactS.modT(setField(id, v)))
-//        case OnCancel    => c map2 (_ >> ReactS.modT(revertField(id, c._1)))
-//      })
-//    })
-//
-//  def applyRowUpdateAndRevertO[M[_]: Bind: Applicative, A, D, V, F, FV]
-//  (e: Editor[A, FV, (F, ReactST[M, S, Unit]), D, V])(k: A => Option[K])(implicit wf: F <:< FieldSet[P, I]#Field, wv: FV <:< FieldSet[P, I]#FieldValue)
-//    : Editor[A, FV, (F, ReactST[M, S, Unit]), D, V] =
-//    e.modCallbacksA(a => {
-//      k(a) match {
-//        case None =>
-//          identity
-//        case Some(id) =>
-//          _.pmodC(c => {
-//            case OnChange(v) => c map2 (_ >> ReactS.modT(setField(id, v)))
-//            case OnCancel    => c map2 (_ >> ReactS.modT(revertField(id, c._1)))
-//          })
-//      }
-//    })
 }
