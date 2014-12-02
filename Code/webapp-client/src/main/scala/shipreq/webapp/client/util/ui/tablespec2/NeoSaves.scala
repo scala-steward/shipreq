@@ -2,6 +2,7 @@ package shipreq.webapp.client.util.ui.tablespec2
 
 import japgolly.scalajs.react.ScalazReact._
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.data.Alive
 import shipreq.webapp.base.protocol.DeletionAction
 import shipreq.webapp.base.validation2._
 import shipreq.webapp.client.protocol.FailureIO
@@ -119,6 +120,14 @@ object NeoSaves {
           .fold(_ => abortSave, valid)))
     })
   }
+
+  def deleterAsync[S, K, P](store: SavedRowStore[S, K, P, _])
+                           (alive: P => Alive,
+                            asyncDelete: (K, DeletionAction, SuccessIO, FailureIO) => IO[Unit],
+                            realise: ReactST[IO, S, Unit] => IO[Unit]) =
+    new Deletion[P, K](alive, (id, a) =>
+      realise(deleteAsync(id, a, asyncDelete, realise, store.setStatusST[IO](id))))
+
 
   def deleteAsync[S, D](id: D, da: DeletionAction,
                         asyncDelete: (D, DeletionAction, SuccessIO, FailureIO) => IO[Unit],

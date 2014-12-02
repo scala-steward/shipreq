@@ -10,24 +10,41 @@ import shipreq.webapp.base.protocol.DeletionAction._
 import DataImplicits._
 import scalaz.effect.IO
 
-trait CfgTableCells[P, A, B] {
-  def newRow    : A => B
-  def savedRow  : (A, P) => B
-  def deletedRow: P => B
-  def render    : B => List[ReactElement]
+trait CfgTableCells[P, A] {
+  type Norm
+  def newRow    : A => Norm
+  def savedRow  : (A, P) => Norm
+  def deletedRow: P => Norm
+  def render    : Norm => Seq[Modifier]
 }
 
+object CfgTable {
+  def apply[S, K <: TaggedLong, P, I, A, B, C, V](editor: Editor[A, B, IO, S, C, IO[Unit], V],
+                                                  savedStore: SavedRowStore[S, K, P, I],
+                                                  newStore: NewRowStore[S, I])(implicit I: DataIdAux[P, K]) = new {
+    def then[RowKey](rowkey: P => RowKey,
+                     cellfmt: CfgTableCells[P, V],
+                     newRowA: I => A,
+                     savedRowA: K => A,
+                     del: Deletion[P, K],
+                     showDeleted: S => Boolean,
+                     c: ComponentStateFocus[S])
+                    (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey] =
+      new CfgTable(editor, savedStore, newStore, rowkey, cellfmt, newRowA, savedRowA, del, showDeleted, c)
+  }
+}
 
-final class CfgTable[S, K <: TaggedLong, P, I, V, V2, A, B, C, RowKey](savedStore: SavedRowStore[S, K, P, I],
-                                                                       newStore: NewRowStore[S, I],
-                                                                       editor: Editor[A, B, IO, S, C, IO[Unit], V],
-                                                                       rowkey: P => RowKey,
-                                                                       cellfmt: CfgTableCells[P, V, V2],
-                                                                       editorA: Option[K] => A,
-                                                                       del: Deletion[P, K],
-                                                                       showDeleted: S => Boolean,
-                                                                       c: ComponentStateFocus[S])
-                                                                      (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
+final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey](editor: Editor[A, B, IO, S, C, IO[Unit], V],
+                                                                   savedStore: SavedRowStore[S, K, P, I],
+                                                                   newStore: NewRowStore[S, I],
+                                                                   rowkey: P => RowKey,
+                                                                   cellfmt: CfgTableCells[P, V],
+                                                                   newRowA: I => A,
+                                                                   savedRowA: K => A,
+                                                                   del: Deletion[P, K],
+                                                                   showDeleted: S => Boolean,
+                                                                   c: ComponentStateFocus[S])
+                                                                  (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
   type RowStream = Stream[(RowKey, ReactElement)]
 
   private[this] val ST = ReactS.FixT[IO, S]
@@ -42,8 +59,8 @@ final class CfgTable[S, K <: TaggedLong, P, I, V, V2, A, B, C, RowKey](savedStor
     }
   }
 
-  private[this] def renderRow(k: Option[K], rs: RowStatus): V =
-    editor render EditorI(editorA(k), "", editable(rs))
+  private[this] def renderRow(a: A, rs: RowStatus): V =
+    editor render EditorI(a, "", editable(rs))
 
   def newButton: ReactElement =
     <.button(
@@ -56,7 +73,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, V, V2, A, B, C, RowKey](savedStor
       *.onclick ~~> run(newStore.remove),
       "Cancel")
 
-  def row(classArg: String, rs: RowStatus, cells: V2, ctrls: => Modifier): Tag = {
+  def row(classArg: String, rs: RowStatus, cells: cellfmt.Norm, ctrls: => Modifier): Tag = {
     val cls2 = UiLib.rowStatusRowClass(rs)
     val c = UiLib.rowStatusCtrls(rs, ctrls)
     <.tr(
@@ -65,9 +82,9 @@ final class CfgTable[S, K <: TaggedLong, P, I, V, V2, A, B, C, RowKey](savedStor
       <.td(c))
   }
 
-  def newRowO: Option[Modifier] =
+  def newRowO: Option[Tag] =
     newStore.get(c.state).map(r => {
-      val v = renderRow(None, r.status)
+      val v = renderRow(newRowA(r.i), r.status)
       row("new", r.status, cellfmt.newRow(v), newCancelButton)(*.keyAttr := "new")
     })
 
@@ -89,7 +106,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, V, V2, A, B, C, RowKey](savedStor
   private def liveSavedRow(rs: RowStatus, p: P): ReactElement = {
     def del1 = del.button(p.id, HardDel)
     def del2 = del.button(p.id, SoftDel)
-    val v = renderRow(Some(p.id), rs)
+    val v = renderRow(savedRowA(p.id), rs)
     row("live", rs, cellfmt.savedRow(v, p), Seq(del1, del2).toReactNodeArray)(*.keyAttr := p.id.value)
   }
 

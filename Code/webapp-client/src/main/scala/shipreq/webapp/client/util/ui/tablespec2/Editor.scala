@@ -74,6 +74,8 @@ final case class EditorI[A, B, M[_], S, C, D](data: A, cssClass: String,
 
 final case class Editor[A, B, M[_], S, C, D, V](render: EditorI[A, B, M, S, C, D] => V) {
   type Input     = EditorI[A, B, M, S, C, D]
+  type InputA    = A
+  type View      = V
   type CBH       = CallbackH[B, M, S, C]
   type Editable = CBH => D
   def editable(f: CBH => D): Option[Editable] = Some(f)

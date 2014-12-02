@@ -1,6 +1,6 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
-import japgolly.scalajs.react._, vdom.ReactVDom.implicits._, prefix_<*._, ScalazReact._
+import japgolly.scalajs.react._, vdom.ReactVDom._, prefix_<*._, implicits.{Tag => _, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.{Listenable, OnUnmount}
 
 import shipreq.base.util.ScalaExt._
@@ -129,6 +129,7 @@ object CfgReqTypes222 {
       savedRowStore.initStateS(p.clientData.project.customReqTypes.data, _.id),
       p.showDeleted)
 
+  // ===================================================================================================================
   class Backend(c: BackendScope[Props, State]) extends OnUnmount {
 
     val tableIO = TableIO2(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
@@ -163,11 +164,52 @@ object CfgReqTypes222 {
       c runState st
     }
 
+    def rowA(k: Option[CustomReqType.Id], i: fields.I): rowE.InputA =
+      ((savedRowStoreS.getAllP(c.state), k), i)
+
+    def newRowA(i: fields.I): rowE.InputA =
+      rowA(None, i)
+
+    def savedRowA(id: CustomReqType.Id): rowE.InputA =
+      rowA(Some(id), savedRowStoreS.getI(id)(c.state))
+
     def render: ReactElement =
       <.div(
         showDeletedElement(c.state.showDeleted, toggleShowDeleted),
         ???)
+
+    import shipreq.webapp.client.util.ui.Util.checkbox
+
+    private def cells = new CfgTableCells[CustomReqType, rowE.View] {
+      override type Norm = (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)
+
+      override def newRow = {
+        case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)
+      }
+
+      override def savedRow = {
+        case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)
+      }
+
+      override def deletedRow = p =>
+        (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(ImplicationRequired from p.imp)(*.disabled := true))
+
+      override def render = {
+        case (mnemonic, oldMnemonics, name, impReq) =>
+          val mn: Modifier =
+            if (oldMnemonics.isEmpty)
+              mnemonic
+            else
+              Seq(mnemonic, <.div(*.cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
+          Seq(mn, name, impReq)
+      }
+    }
+
+    val del = NeoSaves.deleterAsync(savedRowStoreS)(_.alive, tableIO.deleteIO, c runState _)
+
+    val tbl = CfgTable(rowE, savedRowStoreS, newRowStoreS).then(_.mnemonic, cells, newRowA, savedRowA, del, _.showDeleted, c)
   }
+  // ===================================================================================================================
 
   val xxxx = new RemoteDeltaListener2[CustomReqType, CustomReqType.Id, CustomReqTypeCrud.type]
 
@@ -185,37 +227,10 @@ object CfgReqTypes222 {
       .build
 
 
-//  private val specD = TableSpecD(spec)(_.alive, tableIO.deleteIO)
-//
 //  private val compI = tableIO.innerComponent(spec, Partition.CustomReqTypes, renderInner)
 //
 //  val comp = tableIO.outerComponent("Cfg: Requirement Types", compI)
 
-  import japgolly.scalajs.react.vdom.ReactVDom.all._
-  import shipreq.webapp.client.util.ui.Util.checkbox
-
-//  private def cells = new CfgTableCells[P, (Modifier,Modifier,Modifier), (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
-//    override def mklist = {
-//      case (mnemonic, oldMnemonics, name, impReq) =>
-//        val mn: Modifier =
-//          if (oldMnemonics.isEmpty)
-//            mnemonic
-//          else
-//            Seq(mnemonic, div(cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
-//        List(mn, name, impReq)
-//    }
-//    override def newRow = {
-//      case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)
-//    }
-//    override def savedRow = {
-//      case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)
-//    }
-//    override def deletedRow = p =>
-//      (raw(p.mnemonic), p.oldMnemonics, raw(p.name), checkbox(ImplicationRequired from p.imp)(disabled := true))
-//  }
-
-//  private val tbl = CfgTable[CustomReqTypeAndId].b1(spec)(specC, specD, ("", "", false), _.mnemonic).b2(cells)
-//
 //  private def renderInner(S: ComponentScopeU[tableIO.Props, prespec.S, _]): ReactElement =
 //    tbl(S.props.showDeleted, S)(S.props.x)
 //      .tableness(List("Mnemonic", "Name", "Implication Required"), staticRows #::: _)
