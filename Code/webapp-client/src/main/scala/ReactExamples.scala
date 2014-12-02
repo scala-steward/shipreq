@@ -1,6 +1,7 @@
 package hahaa
 
 import org.scalajs.dom._
+import shipreq.webapp.client.util.ui.tablespec2.CfgReqTypes222
 import scala.scalajs.js
 //import scalaz._, Scalaz._
 import scalaz.\/
@@ -58,7 +59,8 @@ object ReactExamples {
         CfgIncompletions.comp(CfgIncompletions.Props(r.incmpCrud, r.reqTypeImpMod, clientData, false))
 
       def cfgReqTypesR: Renderer[ProjectPage] = _ =>
-        CfgReqTypes.comp(TableIoProps(r.reqTypeCrud, clientData, false))
+        //CfgReqTypes.comp(TableIoProps(r.reqTypeCrud, clientData, false))
+        CfgReqTypes222.Top(CfgReqTypes222.Props(r.reqTypeCrud, clientData, false))
 
       val c = Router.component(BaseUrl("/wip"), ProjectPage)
       c() render document.getElementById("eg2")
