@@ -7,8 +7,15 @@ import RowStatus._
 
 object TestUtil {
 
-  def fields2[A,B](empty: (A,B)) =
-    FieldSet2[(A,B)](_._1, _._2)(empty)
+  case class AB[A,B](a: A, b: B)
+
+  def genAB[A, B](ga: Gen[A], gb: Gen[B]): Gen[AB[A,B]] =
+    Gen.apply2(AB.apply[A, B])(ga, gb)
+
+  type TestFields2[A, B] = FieldSet2[AB[A, B], A, B]
+
+  def fields2[A,B](empty: (A,B)): TestFields2[A, B] =
+    FieldSet2[AB[A,B]](_.a, _.b)(empty)
 
   implicit val eqRowStatus = Equal.equalA[RowStatus]
 
