@@ -5,16 +5,24 @@ import scalaz.EphemeralStream
 import shipreq.prop._
 import Executor.Data
 
-sealed trait Result[A] {
-  def success: Boolean = this match {
+object Result {
+  def apply[A](a: A, e: Eval): Result[A] =
+    if (e.success)
+      Satisfied()
+    else
+      Falsified(a, e)
+}
+// TODO why not covariant?
+sealed abstract class Result[A] {
+  final def success: Boolean = this match {
     case Satisfied() | Proved()        => true
     case Falsified(_, _) | Error(_, _) => false
   }
 }
-final case class Satisfied[A]()                          extends Result[A]
-final case class Proved   [A]()                          extends Result[A]
-final case class Falsified[A](a: A, f: Falsification[A]) extends Result[A]
-final case class Error    [A](a: A, e: Throwable)        extends Result[A]
+final case class Satisfied[A]()                   extends Result[A]
+final case class Proved   [A]()                   extends Result[A]
+final case class Falsified[A](a: A, f: Eval)      extends Result[A]
+final case class Error    [A](a: A, e: Throwable) extends Result[A]
 
 case class RunState[A](runs: Int, result: Result[A])
 object RunState {
@@ -86,11 +94,10 @@ object PTest {
 
   private[test] def test1[A](p: Prop[A], a: A): Result[A] =
     try {
-      p.falsify(a).fold(Satisfied(): Result[A])(Falsified(a, _))
+      Result(a, p(a))
     } catch {
       case e: Throwable => Error(a, e)
     }
-
 
   def prove[A](p: Prop[A], d: Domain[A], S1: Settings): RunState[A] = {
     val S = S1.copy(sampleSize = SampleSize(d.size))
