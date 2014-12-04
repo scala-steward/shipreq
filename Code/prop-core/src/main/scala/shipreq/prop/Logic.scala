@@ -59,6 +59,7 @@ sealed abstract class Logic[P[_], A] {
   @inline final def or           (q: Logic[P, A]): Logic[P, A] = this | q
   @inline final def and          (q: Logic[P, A]): Logic[P, A] = this & q
   @inline final def implies      (c: Logic[P, A]): Logic[P, A] = this ==> c
+  @inline final def not                          : Logic[P, A] = ~this
   @inline final def subst[B <: A]                : Logic[P, B] = contramap(a => a: B)
 
   final def ifelse(ifPass: Logic[P, A], ifFail: Logic[P, A]): Logic[P, A] =
@@ -101,15 +102,17 @@ sealed abstract class Logic[P[_], A] {
   }
 
   final def unary_~ : Logic[P, A] = this match {
-    case Negation(l)        => l
-    case Named(n, l)        => Named(n, ~l)
-    case Mapped(m, l)       => Mapped(m, ~l)
-    case Disjunction(ls)    => Conjunction(ls.map(~_))
-    case Conjunction(ls)    => Disjunction(ls.map(~_))
+    case Negation(l)                   => l
+    case Named(n, l)                   => Named(n, ~l)
+    case Mapped(m, l)                  => Mapped(m, ~l)
+    case Disjunction(ls)               => Conjunction(ls.map(~_))
+    case Conjunction(ls)               => Disjunction(ls.map(~_))
+    case Biconditional(Negation(p), q) => p ⇔ q
+    case Biconditional(p, q)           => p ⇔ ~q
     case Atom(_)
       | Implication(_, _)
-      | Reduction(_, _)
-      | Biconditional(_, _) => Negation(this)
+      | Reduction(_, _)                => Negation(this)
+    //case Implication(a, c)           => a ∧ ~c
   }
 
   final def rename(n: String): Logic[P, A] = this match {
