@@ -3,6 +3,41 @@ package shipreq.prop
 import scalaz.{Equal, Contravariant}
 import shipreq.prop.util.Multimap
 import shipreq.prop.util.Util
+
+object Eval {
+  type Name = String
+  type Failures = Multimap[FailureReason, List, List[Eval]]
+  private[prop] val root = Multimap.empty[FailureReason, List, List[Eval]]
+
+  implicit val evalInstances: Contravariant[Eval_] =
+    new Contravariant[Eval_] {
+      override def contramap[A, B](r: Eval_[A])(f: B => A): Eval_[B] = r
+    }
+
+  private[prop] def success(name: Name, i: Input): Eval =
+    Eval(name, i, root)
+
+  private[prop] def rootFail(name: Name, i: Input, failure: FailureReason): Eval =
+    Eval(name, i, root.add(failure, Nil))
+
+  def run(l: Logic[Eval_, _]): Eval =
+    l.run(identity)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Logic
+
+  def atom(name: Name, a: Any, failure: FailureReasonO): EvalL =
+    Atom[Eval_, Nothing](Eval(name, Input(a), failure.fold(root)(root.add(_, Nil))))
+
+  def equal[A: Equal](name: String, a: Any, t: A, e: A): EvalL =
+    atom(name, a, Prop.testEq(t, e))
+
+  def equal[A](name: String, a: A) = new EqualB[A](name, a)
+  final class EqualB[A](name: String, a: A)  {
+    def apply[B: Equal](t: A => B, e: A => B): EvalL = equal(name, a, t(a), e(a))
+  }
+}
+
 import Eval.{Failures, Name}
 
 final case class Eval private[prop] (name: Name, input: Input, failures: Failures) {
@@ -14,8 +49,6 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
 
   lazy val reasonsAndCauses =
     failures.m.mapValues(_.flatten)
-//    failures.m.foldLeft(Multimap.empty[FailureReason, List, Eval])((q, kv) =>
-//      q.addvs(kv._1, kv._2.flatten)).m
 
   def rootCauses: Set[Name] =
     rootCausesAndInputs.keySet
@@ -79,39 +112,4 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
     }
     sb.toString()
   }
-}
-
-object Eval {
-  type Name = String
-  type Failures = Multimap[FailureReason, List, List[Eval]]
-  private[prop] val root = Multimap.empty[FailureReason, List, List[Eval]]
-
-  implicit val evalInstances: Contravariant[Eval_] =
-    new Contravariant[Eval_] {
-      override def contramap[A, B](r: Eval_[A])(f: B => A): Eval_[B] = r
-    }
-
-  private[prop] def success(name: Name, i: Input): Eval =
-    Eval(name, i, root)
-
-  private[prop] def rootFail(name: Name, i: Input, failure: FailureReason): Eval =
-    Eval(name, i, root.add(failure, Nil))
-
-  // -------------------------------------------------------------------------------------------------------------------
-  // Logic
-
-  def atom(name: Name, a: Any, failure: FailureReasonO): EvalL =
-    Atom[Eval_, Nothing](Eval(name, Input(a), failure.fold(root)(root.add(_, Nil))))
-
-  def run(l: Logic[Eval_, _]): Eval =
-    l.run(identity)
-
-  def equal[A: Equal](name: String, a: Any, t: A, e: A): EvalL =
-    atom(name, a, Prop.testEq(t, e))
-
-  def equal[A](name: String, a: A) = new EqualB[A](name, a)
-  final class EqualB[A](name: String, a: A)  {
-    def apply[B: Equal](t: A => B, e: A => B): EvalL = equal(name, a, t(a), e(a))
-  }
-
 }
