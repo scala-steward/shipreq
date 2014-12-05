@@ -26,26 +26,26 @@ object NewRowStoreTest extends TestSuite {
 
     def testNop(name: => String, t: S) = E.equal(name, t, s)
 
-    def empty =
-      ( E.test ("enableEdit → active", t.editing(t.enableEdit(s)))
-      ∧ testNop("remove = id",         t.remove(s))
-      ∧ testNop("setStatus = id",      t.setStatus(Sync)(s))
-      ∧ E.test ("get = None",          t.get(s).isEmpty)
-      ) rename "Empty"
+    def empty = "Empty" rename_: (
+      E.test ("enableEdit → active", t.editing(t.enableEdit(s))) ∧
+      testNop("remove = id",         t.remove(s))                ∧
+      testNop("setStatus = id",      t.setStatus(Sync)(s))       ∧
+      E.test ("get = None",          t.get(s).isEmpty)           )
 
-    def active =
-      ( E.test ("remove → empty",       !t.editing(t.remove(s)))
-      ∧ testNop("enableEdit = id",      t.enableEdit(s))
-      ∧ E.equal("get.set(v).set = v",   t.getI(setab2(setab(s))),                         (a2, b2).some)
-      ∧ E.equal("get.set(rs).set = rs", t.getStatus(t.setStatus(r2)(t.setStatus(r1)(s))), r2.some)
-      ) rename "Active"
+    def active = "Active" rename_: (
+      E.test ("remove → empty",       !t.editing(t.remove(s)))                                         ∧
+      testNop("enableEdit = id",      t.enableEdit(s))                                                 ∧
+      E.equal("get.set(v).set = v",   t.getI(setab2(setab(s))),                         (a2, b2).some) ∧
+      E.equal("get.set(rs).set = rs", t.getStatus(t.setStatus(r2)(t.setStatus(r1)(s))), r2.some)       )
 
-    def isActive = E.test("is active", t.editing(s))
+    def isActive =
+      E.test("is active", t.editing(s))
+
+    def common =
+      E.equal("get <=> getI", t.get(s).isEmpty, t.getI(s).isEmpty)
 
     def main =
-      ( E.equal("get <=> getI", t.get(s).isEmpty, t.getI(s).isEmpty)
-      ∧ isActive.ifelse(active, empty)
-      ) rename "NewStore"
+      (common ∧ isActive.ifelse(active, empty)) rename "NewStore"
   }
 
   // -------------------------------------------------------------------------------------------------------------------

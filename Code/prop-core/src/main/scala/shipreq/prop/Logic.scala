@@ -61,6 +61,7 @@ sealed abstract class Logic[P[_], A] {
   @inline final def implies      (c: Logic[P, A]): Logic[P, A] = this ==> c
   @inline final def not                          : Logic[P, A] = ~this
   @inline final def subst[B <: A]                : Logic[P, B] = contramap(a => a: B)
+  @inline final def rename_:(name: => String)    : Logic[P, A] = this rename name
 
   final def ifelse(ifPass: Logic[P, A], ifFail: Logic[P, A]): Logic[P, A] =
     (this ==> ifPass) ∧ (~this ==> ifFail)
