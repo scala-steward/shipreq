@@ -1,11 +1,10 @@
 package shipreq.prop
 
-import scalaz.{Equal, Contravariant}
+import scalaz.{Value, Need, Equal, Contravariant}
 import shipreq.prop.util.Multimap
 import shipreq.prop.util.Util
 
 object Eval {
-  type Name = String
   type Failures = Multimap[FailureReason, List, List[Eval]]
   private[prop] val root = Multimap.empty[FailureReason, List, List[Eval]]
 
@@ -26,19 +25,22 @@ object Eval {
   // -------------------------------------------------------------------------------------------------------------------
   // Logic
 
-  def atom(name: Name, a: Any, failure: FailureReasonO): EvalL =
-    Atom[Eval_, Nothing](Eval(name, Input(a), failure.fold(root)(root.add(_, Nil))))
+  def atom(name: => String, a: Any, failure: FailureReasonO): EvalL =
+    Atom[Eval_, Nothing](Eval(Need(name), Input(a), failure.fold(root)(root.add(_, Nil))))
 
-  def equal[A: Equal](name: String, a: Any, t: A, e: A): EvalL =
-    atom(name, a, Prop.testEq(t, e))
+  def test[A](name: => String, a: Any, t: Boolean): EvalL =
+    atom(name, a, Prop.reasonBool(t, a))
 
-  def equal[A](name: String, a: A) = new EqualB[A](name, a)
+  def equal[A: Equal](name: => String, a: Any, actual: A, expect: A): EvalL =
+    atom(name, a, Prop.reasonEq(actual, expect))
+
+  def equal[A](name: => String, a: A) = new EqualB[A](name, a)
   final class EqualB[A](name: String, a: A)  {
-    def apply[B: Equal](t: A => B, e: A => B): EvalL = equal(name, a, t(a), e(a))
+    def apply[B: Equal](actual: A => B, expect: A => B): EvalL = equal(name, a, actual(a), expect(a))
   }
 }
 
-import Eval.{Failures, Name}
+import Eval.Failures
 
 final case class Eval private[prop] (name: Name, input: Input, failures: Failures) {
   def rename(n: Name)        : Eval    = rename(_ => n)
@@ -54,23 +56,23 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
     rootCausesAndInputs.keySet
 
   def rootCausesAndInputs: Map[Name, Set[FailureReason]] = {
-    type R = Multimap[Name, Set, FailureReason]
+    type R = Multimap[String, Set, FailureReason]
     def loope(e: Eval, r: R): R =
       e.reasonsAndCauses.foldLeft(r)((q, kv) => loopk(e.name, kv._1, kv._2, q))
     def loopk(k: Name, f: FailureReason, vs: List[Eval], r: R): R =
       if (vs.isEmpty)
-        r.add(k, f)
+        r.add(k.value, f)
       else
         vs.foldLeft(r)((q, v) => loope(v, q))
-    loope(this, Multimap.empty).m
+    loope(this, Multimap.empty).m.toList.map(x => (Value(x._1), x._2)).toMap
   }
 
   def failureTree = failureTreeI("")
   def failureTreeI(indent: String): String = Util.quickSB(failureTreeSB(_, indent))
   def failureTreeSB(sb: StringBuilder, indent: String): Unit =
-    Util.asciiTreeSB[Eval](sb, List(this), _.name,
-      _.reasonsAndCauses.values.flatMap(_.toList).toList.map(v => (v.name, v)).toMap.toList.sortBy(_._1).map(_._2),
-      indent)
+    Util.asciiTreeSB[Eval](sb, List(this),
+      _.reasonsAndCauses.values.flatMap(_.toList).toList.map(v => (v.name.value, v)).toMap.toList.sortBy(_._1).map(_._2),
+      _.name.value, indent)
 
   def rootCauseTree = rootCauseTreeI("")
   def rootCauseTreeI(indent: String): String = Util.quickSB(rootCauseTreeSB(_, indent))
@@ -78,26 +80,26 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
     val m = rootCausesAndInputs
     trait X
     case class K(k: Name) extends X {
-      override val toString = k
+      override val toString = k.value
     }
     case class I(i: FailureReason) extends X {
-      override val toString = i
+      override val toString = (i: String)
     }
     case object T extends X {
       override def toString = s"${m.size} failed axioms, ${m.values.foldLeft(Set.empty[FailureReason])(_ ++ _).size} causes of failure."
     }
     val keys = m.keys.toList.map(K).sortBy(_.toString)
-    Util.asciiTreeSB[X](sb, List(T), _.toString, {
-      case T    => keys
-      case K(k) => m(k).map(I).toList.sortBy(_.toString)
-      case I(_) => Nil
-    }, indent)
+    Util.asciiTreeSB[X](sb, List(T), {
+        case T    => keys
+        case K(k) => m(k).map(I).toList.sortBy(_.toString)
+        case I(_) => Nil
+      }, _.toString, indent)
   }
 
   def report: String = {
     val sb = new StringBuilder
     sb append "Property ["
-    sb append name
+    sb append name.value
     sb append "] "
     if (success)
       sb append "passed."
