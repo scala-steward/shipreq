@@ -62,9 +62,7 @@ object SavedRowStoreTest extends TestSuite {
       TestInput(t, s, f, a1, b1, a2, b2, k1, k2, r1, r2)
     }
 
-  def p = Prop.eval[TestInput[FakeS, Long, Int, String]](_.eval)
-
   override def tests = TestSuite {
-    g mustSatisfy p
+    g mustSatisfyE (_.eval)
   }
 }

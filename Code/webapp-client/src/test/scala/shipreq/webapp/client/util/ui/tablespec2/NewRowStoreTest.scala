@@ -71,9 +71,7 @@ object NewRowStoreTest extends TestSuite {
       TestInput(t, s, f, a1, b1, a2, b2, r1, r2)
     }
 
-  def p = Prop.eval[TestInput[FakeS, Int, String]](_.main)
-
   override def tests = TestSuite {
-    g mustSatisfy p
+    g mustSatisfyE (_.main)
   }
 }
