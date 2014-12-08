@@ -108,6 +108,13 @@ object prefix_<* extends Xxxx {
   @inline final def svg_* = XxxxConst.AllSvgAttr
 }
 
+object prefix_<^ extends Xxxx {
+  @inline final def < = XxxxConst.AllHtmlTags
+  @inline final def ^ = XxxxConst.AllHtmlAttr
+  @inline final def *< = XxxxConst.AllSvgTags
+  @inline final def *^ = XxxxConst.AllSvgAttr
+}
+
 //object noprefix extends Xxxx with XxxxConst.AllHtmlTags with XxxxConst.AllHtmlAttr
 
 object scalatags_test {

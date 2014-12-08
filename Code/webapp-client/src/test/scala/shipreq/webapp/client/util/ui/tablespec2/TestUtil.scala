@@ -1,5 +1,7 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import monocle.Lenser
 import scalaz.Equal
 import scalaz.std.anyVal.longInstance
 import scalaz.effect.IO
@@ -8,6 +10,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.TextMod._
 import shipreq.webapp.base.validation2.Constraints._
 import shipreq.webapp.base.validation2._
+import Editors._
 import RowStatus._
 
 object TestUtil {
@@ -63,5 +66,53 @@ object TestUtil {
     val personV = usernameV ⊗ descV
 
     val fields = FieldSet2[Person](_.username.value, _.desc getOrElse "")(("", "TODO"))
+
+    val savedRowStore = SavedRowStore.of(fields).keyedBy[Long]
+    val newRowStore   = NewRowStore.of(fields)
+
+    val sampleData = List(
+      Person(7, Username("mike"), None),
+      Person(4, Username("bob"), Some("Hello")))
+
+    case class NewAndSavedRowState(newRow: newRowStore.State, savedRows: savedRowStore.State)
+    object NewAndSavedRowState {
+      private[this] def l = Lenser[NewAndSavedRowState]
+      val _newRow      = l(_.newRow)
+      val _savedRows   = l(_.savedRows)
+      val savedRowStoreS = savedRowStore.contramap(_savedRows)
+      val newRowStoreS   = newRowStore  .contramap(_newRow)
+
+      val initialState = NewAndSavedRowState(newRowStore.initState, savedRowStore.initStateS(sampleData, _.id))
+
+      class Backend(c: BackendScope[Unit, NewAndSavedRowState]) {
+        val e1 = Editor.merge2(fields,
+          textInputEditor.addCssClass("username"),
+          textareaEditor.addCssClass("desc"))
+          .tupleI.strengthR[Option[Long]].zoomU[NewAndSavedRowState]
+        val e = applyRowUpdateAndRevert(e1, savedRowStoreS, newRowStoreS)(_._2)
+
+        def renderRow(a: e.InputA) =
+          e.render(EditorI(a, "", e.editable(c runState _.st)))
+
+        def render: ReactElement = {
+          val newRow = newRowStoreS.getI(c.state).fold(EmptyTag)(i => {
+            val v = renderRow((i, None))
+            <.div(^.cls := "new", v._1, v._2)
+          })
+          val saved = savedRowStoreS.rowStream(c.state).map(row => {
+            val id = row.p.id
+            val v = renderRow((row.i, id.some))
+            <.div(^.key := id, ^.cls := s"id-$id", v._1, v._2)
+          })
+          <.section(newRow, saved.toReactNodeArray)
+        }
+      }
+
+      val Component = ReactComponentB[Unit]("NewAndSavedRowState")
+        .initialState(NewAndSavedRowState.initialState)
+        .backend(new Backend(_))
+        .render(_.backend.render)
+        .buildU
+    }
   }
 }

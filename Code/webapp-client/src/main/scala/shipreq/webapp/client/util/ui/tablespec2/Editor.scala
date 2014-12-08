@@ -44,6 +44,9 @@ final case class CallbackH[B, M[_], S, C](event: CallbackEvent[B], st: ReactST[M
 final case class EditorI[A, B, M[_], S, C, D](data: A, cssClass: String,
                                               editable: Option[CallbackH[B, M, S, C] => D]) {
 
+  def addCssClass(c: String): EditorI[A,B,M,S,C,D] =
+    copy(cssClass = if (cssClass.isEmpty) c else s"$cssClass $c")
+
   def mapAB[X,Y](f: A => X, g: Y => B): EditorI[X,Y,M,S,C,D] =
     copy(data = f(data), editable = cmapcbh(_ mapB g))
 
@@ -119,6 +122,9 @@ final case class Editor[A, B, M[_], S, C, D, V](render: EditorI[A, B, M, S, C, D
 //      val i2 = i.copy[M,N,O,P](data = i.data._2, editable = i.editable.map(_.dimap[N,O,P](\/-.apply, o⇒o, p⇒p)))
 //      (this render i1, t render i2)
 //    })
+
+  def addCssClass(c: String): Editor[A,B,M,S,C,D,V] =
+    Editor(i => render(i addCssClass c))
 }
 
 // =====================================================================================================================

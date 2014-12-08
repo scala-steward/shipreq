@@ -14,7 +14,7 @@ object Editors {
   type ST = ST.T[Unit]
   val nop = ST.nop
 
-  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], Modifier]
+  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], Tag]
 
   @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nop): CallbackH[I, IO, Unit, Unit] =
     CallbackH(event, st, ())
@@ -30,7 +30,7 @@ object Editors {
           base(
             onchange  ~~> textChangeRecv(i => cbh(OnChange(i))),
             onblur    ~~> textChangeRecv(i => cbh(OnEditFinished(i))),
-            onkeydown ~~> cancelOnEscape(s => cbh(OnCancel, s)))
+            onkeydown ~~> cancelOnEscape(s => cbh(OnCancel, s))) // esc doesn't trigger onkeypress
       }
     })
 
@@ -62,7 +62,7 @@ object Editors {
       }
     })
 
-  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,Modifier])(err: String): Editor[A,B,M,S,C,D,Modifier] =
+  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,Tag])(err: String): Editor[A,B,M,S,C,D,Tag] =
     Editor(ei => div(editor render ei, div(cls := "errorMsg", err)))
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -89,32 +89,32 @@ object Editors {
       })
   }
 
-  implicit final class EditorExtV[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,Modifier]) extends AnyVal {
+  implicit final class EditorExtV[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,Tag]) extends AnyVal {
 
-    def fromOptionalError: Option[String] => Editor[A,B,M,S,C,D,Modifier] =
+    def fromOptionalError: Option[String] => Editor[A,B,M,S,C,D,Tag] =
       _.fold(e)(renderWithError(e))
 
-    def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,Modifier] =
+    def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,Tag] =
       Editor(i => resolveEditorWithError(f, fromOptionalError) render i)
 
-    def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,Modifier] =
+    def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,Tag] =
       renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))
 
-    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,Modifier] =
+    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,Tag] =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))
 
     def applyInputValidationL[T, I](v: Validator[T, A, _, _]) =
       e.strengthL[T].applyInputValidation(v)(_._1, _._2)
   }
 
-  implicit final class EditorExtII[I,M[_],S,C,D](val e: Editor[I,I,M,S,C,D,Modifier]) extends AnyVal {
+  implicit final class EditorExtII[I,M[_],S,C,D](val e: Editor[I,I,M,S,C,D,Tag]) extends AnyVal {
 
-    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I,I,M,S,C,D,Modifier] =
+    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I,I,M,S,C,D,Tag] =
       e.applyInputValidationU(v)
         .applyLiveCorrection(v)
         .applyPostCorrectionU(v.cp)
 
-    def applyValidator[T](v: Validator[T, I, _, _]): Editor[(T, I), I, M, S, C, D, Modifier] =
+    def applyValidator[T](v: Validator[T, I, _, _]): Editor[(T, I), I, M, S, C, D, Tag] =
       e.applyInputValidationL(v)
         .applyLiveCorrection(v)
         .applyPostCorrection(v.cp)(_._1)
