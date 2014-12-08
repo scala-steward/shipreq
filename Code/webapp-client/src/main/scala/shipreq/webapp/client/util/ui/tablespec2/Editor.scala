@@ -107,6 +107,9 @@ final case class Editor[A, B, M[_], S, C, D, V](render: EditorI[A, B, M, S, C, D
   def paddST(pf: PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
     modCallbacks(_.paddST(pf))
 
+  def paddSTA(pf: A => PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
+    modCallbacksA(a => _.paddST(pf(a)))
+
   def zoomU[T](implicit M: Functor[M], ev: S === Unit): Editor[A,B,M,T,C,D,V] =
     mapCallbacks(_.mapST(_.zoomU[T]))
 

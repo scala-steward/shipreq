@@ -72,37 +72,35 @@ object Editors {
 
   // TODO Move to implicits object, or add implicit defs to editor itself
   implicit final class EditorExt[A,B,M[_],S,C,D,V](val e: Editor[A,B,M,S,C,D,V]) extends AnyVal {
-    type Self = Editor[A,B,M,S,C,D,V]
 
-    def applyLiveCorrection(v: Validator[_, B, _, _]): Self =
+    def applyLiveCorrection(v: Validator[_, B, _, _]): Editor[A,B,M,S,C,D,V] =
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
-    def applyPostCorrectionU[U](v: CorrectionPartU[B, U]): Self =
+    def applyPostCorrectionU[U](v: CorrectionPartU[B, U]): Editor[A,B,M,S,C,D,V] =
       e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
 
-    def applyPostCorrection[T, U](v: CorrectionPart[T, B, U])(f: A => T): Self =
+    def applyPostCorrection[T, U](v: CorrectionPart[T, B, U])(f: A => T): Editor[A,B,M,S,C,D,V] =
       e.modCallbacksA(a =>
         _.pmodB{ case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
 
-    def applyOnEditFinishedK[K](f: K => ReactST[M, S, Unit])(g: A => K)(implicit M: Bind[M]): Self =
-      e.modCallbacksA(a => _.paddST {
+    def applyOnEditFinishedK[K](f: K => ReactST[M, S, Unit])(g: A => K)(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
+      e.paddSTA(a => {
         case OnEditFinished(_) => f(g(a))
       })
   }
 
   implicit final class EditorExtV[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,Modifier]) extends AnyVal {
-    type Self = Editor[A,B,M,S,C,D,Modifier]
 
-    def fromOptionalError: Option[String] => Self =
+    def fromOptionalError: Option[String] => Editor[A,B,M,S,C,D,Modifier] =
       _.fold(e)(renderWithError(e))
 
-    def renderOptionalError(f: A => Option[String]): Self =
+    def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,Modifier] =
       Editor(i => resolveEditorWithError(f, fromOptionalError) render i)
 
-    def applyInputValidationU(v: ValidatorU[A, _, _]): Self =
+    def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,Modifier] =
       renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))
 
-    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Self =
+    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,Modifier] =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))
 
     def applyInputValidationL[T, I](v: Validator[T, A, _, _]) =

@@ -150,6 +150,7 @@ object CfgReqTypes222 {
         tableIO.updateIO,
         c runState _)
       e.applyOnEditFinishedK(savef)(_._1._2)
+      // e.paddSTA(a => { case OnEditFinished(_) => savef(a._1._2) })
     }
 
     val toggleShowDeleted: IO[Unit] = {
