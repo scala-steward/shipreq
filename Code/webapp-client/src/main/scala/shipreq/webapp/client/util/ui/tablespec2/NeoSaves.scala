@@ -163,4 +163,14 @@ object NeoSaves {
     val create = validateAndCreateAsync2(v, newStore)(createT, asyncCreate, realise)
     _.fold(create)(update)
   }
+
+  def typicalValidateAndSave[K, P, U, I](v: Validator[(Stream[P], Option[K]), I, _, U], sas: TypicalStoresAndState[P,I,K])(
+    needSave: (P, U) => SaveNeed,
+    tableIO: TableIO[P, _, U, _],
+    realise: sas.ST => IO[Unit]) : Option[K] => sas.ST =
+    validateAndSaveBoth(
+      v, sas.savedRowStoreS)(sas.newRowStoreS,
+      sas.validatorInput(None), k => sas.validatorInput(Some(k)), needSave,
+      tableIO.createIO, tableIO.updateIO, realise)
+
 }

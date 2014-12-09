@@ -118,30 +118,18 @@ object CfgReqTypes222 {
 
     val tableIO = TableIO(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
 
-    def stateForValidator(k: Option[CustomReqType.Id]): S => V.S =
-      s => (savedRowStoreS.getAllP(s), k)
-
-    val needSave = NeoSaves.SaveNeed.cmpToExtract((p: CustomReqType) => (p.mnemonic, p.name, p.imp))
-
-    val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
-    val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
-    val impE      = Editors.checkboxEditor.imap(ImplicationRequired).strengthL[V.S]
-
     val rowE = {
+      val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
+      val nameE     = Editors.textInputEditor.applyValidator(V.nameS)
+      val impE      = Editors.checkboxEditor.imap(ImplicationRequired).strengthL[V.S]
+
       var e = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI.zoomU[S]
 
       e = Editors.applyRowUpdateAndRevert(e, savedRowStoreS, newRowStoreS)(_._1._2)
 
-      val savef = NeoSaves.validateAndSaveBoth(V.all, savedRowStoreS)(
-        newRowStoreS,
-        stateForValidator(None),
-        k => stateForValidator(Some(k)),
-        needSave,
-        tableIO.createIO,
-        tableIO.updateIO,
-        c runState _)
+      val needSave = NeoSaves.SaveNeed.cmpToExtract((p: CustomReqType) => (p.mnemonic, p.name, p.imp))
+      val savef = NeoSaves.typicalValidateAndSave(V.all, storesAndState)(needSave, tableIO, c runState _)
       e.applyOnEditFinishedK(savef)(_._1._2)
-      // e.paddSTA(a => { case OnEditFinished(_) => savef(a._1._2) })
     }
 
     val toggleShowDeleted: IO[Unit] = {

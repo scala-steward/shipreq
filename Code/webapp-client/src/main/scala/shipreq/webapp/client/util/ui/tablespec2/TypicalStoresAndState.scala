@@ -3,7 +3,6 @@ package shipreq.webapp.client.util.ui.tablespec2
 import japgolly.scalajs.react.ScalazReact._
 import monocle.Lenser
 import scalaz.effect.IO
-import shipreq.webapp.base.data.CustomReqType
 
 object TypicalStoresAndState {
   def apply[P, I](fields: FieldSet[P, I]) = new B(fields)
@@ -14,7 +13,7 @@ object TypicalStoresAndState {
 
 class TypicalStoresAndState[P, I, K](fields: FieldSet[P, I]) {
 
-  val savedRowStore = SavedRowStore.of(fields).keyedBy[CustomReqType.Id]
+  val savedRowStore = SavedRowStore.of(fields).keyedBy[K]
   val newRowStore   = NewRowStore.of(fields)
 
   case class State(newRow: newRowStore.State, savedRows: savedRowStore.State, showDeleted: Boolean)
@@ -32,4 +31,10 @@ class TypicalStoresAndState[P, I, K](fields: FieldSet[P, I]) {
 
   val savedRowStoreS = savedRowStore.contramap(State._savedRows)
   val newRowStoreS   = newRowStore  .contramap(State._newRow)
+
+  /**
+   * Validators requiring external data (eg. for uniqueness checking) typically need input in this shape.
+   */
+  def validatorInput(k: Option[K]): S => (Stream[P], Option[K]) =
+    s => (savedRowStoreS.getAllP(s), k)
 }
