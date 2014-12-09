@@ -96,7 +96,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, N](editor: Ed
   def newRow: Modifier = newRowO.getOrElse(EmptyTag)
 
   def savedRows: RowStream = {
-    var rs = savedStore.rowStream(c.state)
+    var rs = savedStore.getAll(c.state)
     if (!showDeleted(c.state))
       rs = rs.filter(r => del.filterAlive(r.p))
     rs.map(r => {

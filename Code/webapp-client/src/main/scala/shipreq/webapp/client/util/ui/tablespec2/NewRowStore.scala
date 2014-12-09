@@ -9,7 +9,7 @@ import scalaz.Applicative
 object NewRowStore {
   final case class Row[I](status: RowStatus, i: I)
 
-  class RowL[I] {
+  final class RowL[I] {
     private[this] def l = Lenser[Row[I]]
     val status = l(_.status)
     val i      = l(_.i)
@@ -24,6 +24,10 @@ object NewRowStore {
     NewRowStore(f.emptyI)
 }
 
+/**
+ * @tparam S State.
+ * @tparam I Input. A subset of the subject datum's fields in a form that matches the editor state.
+ */
 final class NewRowStore[S, I](_ss: SimpleLens[S, NewRowStore.SS[I]], rowL: NewRowStore.RowL[I], emptyI: I) {
   type State = S
   type Row   = NewRowStore.Row[I]
@@ -49,10 +53,12 @@ final class NewRowStore[S, I](_ss: SimpleLens[S, NewRowStore.SS[I]], rowL: NewRo
   def remove                 : S => S                 = _ss.set(_, None)
   def setStatus(r: RowStatus): S => S                 = _status.setF(r)
 
-  def setStatusST[M[_]: Applicative]: RowStatus => ReactST[M, S, Unit] = rs => ReactS.modT(setStatus(rs))
+  def setStatusST[M[_]: Applicative]: RowStatus => ReactST[M, S, Unit] =
+    rs => ReactS.modT(setStatus(rs))
 
   def setField[X](fv: FieldSet[X, I]#FieldValue): S => S =
     (_i composeOptional fv.f.ilens).setF(fv.v)
 
-  def setFieldST[M[_]: Applicative, X](fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] = ReactS modT setField(fv)
+  def setFieldST[M[_]: Applicative, X](fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] =
+    ReactS modT setField(fv)
 }

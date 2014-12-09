@@ -107,6 +107,7 @@ object TestUtil {
 
     val sampleData = List(person4, person7)
 
+    // TODO Use TypicalStoresAndState
     case class NewAndSavedRowState(newRow: newRowStore.State, savedRows: savedRowStore.State)
     object NewAndSavedRowState {
       private[this] def l = Lenser[NewAndSavedRowState]
@@ -160,7 +161,7 @@ object TestUtil {
             val v = renderRow((i, None))
             <.div(^.cls := "new", v._1, v._2)
           })
-          val saved = savedRowStoreS.rowStream(c.state).map(row => {
+          val saved = savedRowStoreS.getAll(c.state).map(row => {
             val id = row.p.id
             val v = renderRow((row.i, id.some))
             <.div(^.key := id, ^.cls := s"id-$id", v._1, v._2)
