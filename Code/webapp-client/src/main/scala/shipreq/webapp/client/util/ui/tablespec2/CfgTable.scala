@@ -33,6 +33,9 @@ object CfgTable {
                     (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
       new CfgTable(editor, savedStore, newStore, rowkey, cellfmt, newRowA, savedRowA, del, showDeleted, c)
   }
+
+  def header(headers: List[String]): ReactElement =
+    <.thead(<.tr(headers.map(<.th(_)), <.th("Ctrls")))
 }
 
 final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, N](editor: Editor[A, B, IO, S, C, IO[Unit], V],
@@ -120,10 +123,10 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, N](editor: Ed
   def allSortableRows(static: RowStream) =
     (static #::: savedRows).sortBy(_._1).map(_._2).toReactNodeArray
 
-  def table(headers: List[String], static: RowStream) =
+  def table(header: ReactElement, static: RowStream) =
     <.div(
       newButton,
       <.table(
-        <.thead(<.tr(headers.map(<.th(_)), <.th("Ctrls"))), // TODO bad perf
+        header,
         <.tbody(newRow, allSortableRows(static))))
 }

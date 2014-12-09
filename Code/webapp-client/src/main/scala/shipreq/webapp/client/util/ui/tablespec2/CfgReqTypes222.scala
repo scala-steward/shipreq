@@ -95,24 +95,13 @@ import Editors.{EditorExtII, EditorExtV, EditorExt}
 import monocle._
 import monocle.syntax._
 
+
 object CfgReqTypes222 {
 
   val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationNotRequired))
 
-  val savedRowStore = SavedRowStore.of(fields).keyedBy[CustomReqType.Id]
-  val newRowStore   = NewRowStore.of(fields)
-  case class State(newRow: newRowStore.State, savedRows: savedRowStore.State, showDeleted: Boolean)
-  object State {
-    private[this] def l = Lenser[State]
-    val _newRow      = l(_.newRow)
-    val _savedRows   = l(_.savedRows)
-    val _showDeleted = l(_.showDeleted)
-  }
-  type S = State
-  val ST = ReactS.FixT[IO, S]
-  type ST = ReactST[IO, S, Unit]
-  val savedRowStoreS = savedRowStore.contramap(State._savedRows)
-  val newRowStoreS   = newRowStore  .contramap(State._newRow)
+  val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomReqType.Id]
+  import storesAndState._
 
   case class Props(remote: CustomReqTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean)
 
@@ -121,6 +110,8 @@ object CfgReqTypes222 {
       newRowStore.initState,
       savedRowStore.initStateS(p.clientData.project.customReqTypes.data, _.id),
       p.showDeleted)
+
+  val headerRow = CfgTable.header(List("Mnemonic", "Name", "Implication Required"))
 
   // ===================================================================================================================
   class Backend(c: BackendScope[Props, State]) extends OnUnmount {
@@ -209,9 +200,7 @@ object CfgReqTypes222 {
     def render: ReactElement =
       <.div(
         showDeletedElement(c.state.showDeleted, toggleShowDeleted),
-        tbl.table(
-          List("Mnemonic", "Name", "Implication Required"),
-          staticRows))
+        tbl.table(headerRow, staticRows))
   }
   // ===================================================================================================================
 
