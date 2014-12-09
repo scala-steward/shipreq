@@ -10,7 +10,7 @@ import scalaz.Equal
 import utest._
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.validation.{GenericValidators, ValidatorPlus}
-import shipreq.webapp.client.protocol.FailureIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import ValidatorPlus.Implicits._
 import TableTestUtils._
 

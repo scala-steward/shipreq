@@ -6,7 +6,7 @@ import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data.Alive
 import shipreq.webapp.base.protocol.DeletionAction, DeletionAction._
-import shipreq.webapp.client.protocol.FailureIO
+import shipreq.webapp.client.util.FailureIO
 import shipreq.webapp.client.util.ui.Implicits._
 import TableSpecD.DelIO
 

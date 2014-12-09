@@ -5,8 +5,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.Alive
 import shipreq.webapp.base.protocol.DeletionAction
 import shipreq.webapp.base.validation2._
-import shipreq.webapp.client.protocol.FailureIO
-import shipreq.webapp.client.util.ui.table.SuccessIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import scalaz.{Equal, Need, Name}
 import scalaz.effect.IO
 import scalaz.syntax.equal._

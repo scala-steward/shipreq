@@ -4,7 +4,7 @@ import japgolly.scalajs.react._, ScalazReact._
 import scalaz.{Equal, Bind, Name}
 import scalaz.effect.IO
 import scalaz.syntax.bind._
-import shipreq.webapp.client.protocol.FailureIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import shipreq.webapp.client.util.ui.Implicits._
 import shipreq.webapp.client.util.ui._
 import RowStatus.Sync
@@ -91,8 +91,3 @@ object TableSpec {
 }
 
 final case class SavedRowDP[D, P](status: RowStatus, d: D, p: P)
-
-final case class SuccessIO(io: IO[Unit]) // TODO Either move and use in ClientProtocol too, or rename
-object SuccessIO {
-  def nop = SuccessIO(IO(()))
-}

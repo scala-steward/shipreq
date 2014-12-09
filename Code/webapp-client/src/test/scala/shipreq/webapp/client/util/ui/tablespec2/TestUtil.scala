@@ -2,8 +2,7 @@ package shipreq.webapp.client.util.ui.tablespec2
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import monocle.Lenser
-import shipreq.webapp.client.protocol.FailureIO
-import shipreq.webapp.client.util.ui.table.SuccessIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import scalaz.Equal
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._

@@ -4,7 +4,7 @@ import japgolly.scalajs.react._, ScalazReact._
 import scalaz.Value
 import scalaz.effect.IO
 import scalaz.std.option._
-import shipreq.webapp.client.protocol.FailureIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import shipreq.webapp.client.util.ui.Implicits._
 import TableSpec._
 import TableSpecC.CreateIO

@@ -1,8 +1,7 @@
 package shipreq.webapp.client.util.ui.tablespec2
 
 import japgolly.scalajs.react.ScalazReact._
-import shipreq.webapp.client.protocol.FailureIO
-import shipreq.webapp.client.util.ui.table.SuccessIO
+import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import shipreq.base.util.ScalaExt._
 import TestUtil._
 import utest._
