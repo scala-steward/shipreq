@@ -146,7 +146,7 @@ object EditorTest extends TestSuite {
       val e = textInputEditor.applyInputValidationU(usernameVU)
       def test(i: String, expect: Option[String]): Unit = {
         val re: ReactElement = e.render(EditorI(i, "", None))
-        val tgt = ReactTestUtils.renderIntoDocument(re.asInstanceOf[ReactComponentU_]) // TODO fix react
+        val tgt = ReactTestUtils.renderIntoDocument(re)
         val actual = Sel(".errorMsg").findInO(tgt).map(_.getDOMNode().innerHTML)
         assertEq(actual, expect)
       }
