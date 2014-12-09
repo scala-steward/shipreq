@@ -27,8 +27,10 @@ object TestUtil {
 
   def assertEq[A: Equal](name: Option[String], actual: A, expect: A): Unit =
     if (actual ≠ expect) {
+      println()
       name.foreach(n => println(s">>>>>>> $n"))
       println(s"actual: [$actual]\nexpect: [$expect]")
+      println()
       assert(false)
     }
 

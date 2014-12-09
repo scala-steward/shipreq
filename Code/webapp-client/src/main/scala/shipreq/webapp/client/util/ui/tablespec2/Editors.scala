@@ -13,11 +13,11 @@ object Editors {
 
   val ST  = ReactS.FixT[IO, Unit]
   type ST = ST.T[Unit]
-  val nop = ST.nop
+  val nopST = ST.nop
 
   type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], Tag]
 
-  @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nop): CallbackH[I, IO, Unit, Unit] =
+  @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nopST): CallbackH[I, IO, Unit, Unit] =
     CallbackH(event, st, ())
 
   def textEditor(node: Tag): SimpleEditor[String] =
@@ -27,7 +27,7 @@ object Editors {
         case None =>
           base(readonly := true)
         case Some(cb) =>
-          @inline def cbh(event: CallbackEvent[String], st: ST = nop) = cb(callbackH(event, st))
+          @inline def cbh(event: CallbackEvent[String], st: ST = nopST) = cb(callbackH(event, st))
           base(
             onchange  ~~> textChangeRecv(i => cbh(OnChange(i))),
             onblur    ~~> textChangeRecv(i => cbh(OnEditFinished(i))),
@@ -35,14 +35,15 @@ object Editors {
       }
     })
 
-  def cancelOnEscape[X](f: ST => X): ReactKeyboardEventH => X =
-    e => f(e.key match {
+  def cancelOnEscape(f: ST => IO[Unit]): ReactKeyboardEventH => IO[Unit] =
+    e => e.key match {
       case "Escape" => // TODO use KeyValue
         val t = e.target
-        ST.callback[Unit](e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
+        val st = ST.callback(e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
+        f(st)
       case _ =>
-        nop
-    })
+        IO(())
+    }
 
   val textInputEditor = textEditor(input)
   val textareaEditor  = textEditor(textarea)
@@ -54,7 +55,7 @@ object Editors {
         case None =>
           base(readonly := true)
         case Some(cb) =>
-          @inline def cbh(event: CallbackEvent[Boolean], st: ST = nop) = cb(callbackH(event, st))
+          @inline def cbh(event: CallbackEvent[Boolean], st: ST = nopST) = cb(callbackH(event, st))
           def handleChange: ReactEventI => IO[Unit] = e => {
             val b = e.target.checked
             cbh(OnChange(b)) >> cbh(OnEditFinished(b))
@@ -63,13 +64,12 @@ object Editors {
       }
     })
 
-  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,Tag])(err: String): Editor[A,B,M,S,C,D,Tag] =
-    Editor(ei => div(editor render ei, div(cls := "errorMsg", err)))
+  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,Tag], err: Option[String]): Editor[A,B,M,S,C,D,Tag] =
+    Editor(ei => div(
+      editor render ei,
+      err.map(e => div(cls := "errorMsg", e))))
 
   // -------------------------------------------------------------------------------------------------------------------
-
-  def resolveEditorWithError[E,A,B,M[_],S,C,D,V](f: A => E, e: E => Editor[A,B,M,S,C,D,V]): Editor[A,B,M,S,C,D,V] =
-    Editor(i => e(f(i.data)) render i)
 
   // TODO Move to implicits object, or add implicit defs to editor itself
   implicit final class EditorExt[A,B,M[_],S,C,D,V](val e: Editor[A,B,M,S,C,D,V]) extends AnyVal {
@@ -92,11 +92,8 @@ object Editors {
 
   implicit final class EditorExtV[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,Tag]) extends AnyVal {
 
-    def fromOptionalError: Option[String] => Editor[A,B,M,S,C,D,Tag] =
-      _.fold(e)(renderWithError(e))
-
     def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,Tag] =
-      Editor(i => resolveEditorWithError(f, fromOptionalError) render i)
+      Editor(i => renderWithError(e, f(i.data)) render i)
 
     def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,Tag] =
       renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))

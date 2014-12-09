@@ -11,6 +11,7 @@ import utest._
 import shipreq.base.util.ScalaExt._
 import Editors._
 import TestUtil._, SampleData_Person._
+import NewAndSavedRowState._
 
 object EditorTest extends TestSuite {
 
@@ -64,7 +65,6 @@ object EditorTest extends TestSuite {
   }
 
   def testUpdateRevert[P,B,N<:TopNode](c: ReactComponentM[P, NewAndSavedRowState, B, N]): Unit = {
-    import NewAndSavedRowState._
 //    val c = ReactTestUtils.renderIntoDocument(Component(props))
 
     def test(tgtsel: Sel, revertable: Boolean, teste: String => Unit, testn: => Unit): Unit = {
@@ -155,10 +155,23 @@ object EditorTest extends TestSuite {
     }
 
     'applyRowUpdateAndRevert {
-      import NewAndSavedRowState._
-      val props = NewAndSavedRowState.Props(fieldValidation = false, updateRevert = true, saveIO = None)
+      val props = Props(fieldValidation = false, updateRevert = true, saveIO = None)
       val c = ReactTestUtils.renderIntoDocument(Component(props))
       testUpdateRevert(c)
+    }
+
+    'weirdKeyDownIssue {
+      val props = Props(fieldValidation = false, updateRevert = true, saveIO = None)
+      val c = ReactTestUtils.renderIntoDocument(Component(props))
+      val tgt = Sel(".id-7 .username").findIn(c).domType[HTMLInputElement].getDOMNode()
+      def test(prefix: String, expect: String): Unit = {
+        assertEq(s"$prefix.input", tgt.value, expect)
+        assertEq(s"$prefix.state", savedRowStoreS.getI(7)(c.state)._1, expect)
+      }
+      (Simulation.focus >> ChangeEventData("abc").simulation) run tgt
+      test("pre", "abc")
+      KeyboardEventData(key = "F1").simulationKeyDown run tgt
+      test("post", "abc")
     }
 
     'combos {
@@ -168,8 +181,7 @@ object EditorTest extends TestSuite {
       }
 
       'validationAndUpdateRevert {
-        import NewAndSavedRowState._
-        val props = NewAndSavedRowState.Props(fieldValidation = true, updateRevert = true, saveIO = None)
+        val props = Props(fieldValidation = true, updateRevert = true, saveIO = None)
         val c = ReactTestUtils.renderIntoDocument(Component(props))
         testUpdateRevert(c)
         val u4 = Sel(".id-4 .username").findIn(c).domType[HTMLInputElement].getDOMNode()
@@ -180,8 +192,6 @@ object EditorTest extends TestSuite {
       }
 
       'allWithAsyncCreateAndUpdate {
-        import NewAndSavedRowState._
-
         var saves = Vector.empty[SaveI]
         val s: SaveIO = i => IO(saves :+= i)
 
@@ -192,11 +202,11 @@ object EditorTest extends TestSuite {
           assertEq(saves(0).u, saves(1).u)
         }
 
-        val props = NewAndSavedRowState.Props(fieldValidation = true, updateRevert = true, saveIO = s.some)
+        val props = Props(fieldValidation = true, updateRevert = true, saveIO = s.some)
         val c = ReactTestUtils.renderIntoDocument(Component(props))
 
         'saved {
-          def tgt = Sel(".id-7 .username").findIn(c).domType[HTMLInputElement].getDOMNode()
+          val tgt = Sel(".id-7 .username").findIn(c).domType[HTMLInputElement].getDOMNode()
 
           def assertNoSave(): Unit = {
             assert(saves.isEmpty)
@@ -249,7 +259,7 @@ object EditorTest extends TestSuite {
 
         'new {
           c modState newRowStoreS.enableEdit
-          def tgt = Sel(".new .username").findIn(c).domType[HTMLInputElement].getDOMNode()
+          val tgt = Sel(".new .username").findIn(c).domType[HTMLInputElement].getDOMNode()
 
           def assertNoSave(): Unit = {
             assert(saves.isEmpty)
