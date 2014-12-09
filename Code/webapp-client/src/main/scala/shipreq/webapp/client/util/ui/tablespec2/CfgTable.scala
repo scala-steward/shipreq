@@ -108,7 +108,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, N](editor: Ed
     def del1 = del.button(p.id, HardDel)
     def del2 = del.button(p.id, SoftDel)
     val v = renderRow(savedRowA(p.id), rs)
-    row("live", rs, cellfmt.savedRow(v, p), Seq(del1, del2).toReactNodeArray)(*.keyAttr := p.id.value)
+    row("live", rs, cellfmt.savedRow(v, p), <.span(del1, del2))(*.keyAttr := p.id.value)
   }
 
   private def deadSavedRow(rs: RowStatus, p: P): ReactElement = {
