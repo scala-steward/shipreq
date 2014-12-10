@@ -1,5 +1,6 @@
 package shipreq.webapp.client.ui
 
+/*
 import japgolly.scalajs.react._, vdom.ReactVDom.{Tag => _, _}, all._
 import scalaz.effect.IO
 import scalaz.std.anyVal.booleanInstance
@@ -122,3 +123,4 @@ object CfgIncompletions {
     }
   }
 }
+*/

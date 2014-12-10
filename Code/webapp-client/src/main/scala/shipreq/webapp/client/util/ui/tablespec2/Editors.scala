@@ -5,7 +5,7 @@ import scalaz.{Applicative, Bind}
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.validation2._
+import shipreq.webapp.base.validation._
 import shipreq.webapp.client.util.ui.Util._
 import shipreq.base.util.Debug._
 
@@ -78,7 +78,7 @@ object Editors {
       e.pmodB { case OnChange(b) => v.liveCorrect(b) }
 
     def applyPostCorrectionU[U](v: CorrectionPartU[B, U]): Editor[A,B,M,S,C,D,V] =
-      e.pmodB { case OnEditFinished(b) => v.ci(v.correct_(b).value) }
+      e.pmodB { case OnEditFinished(b) => v.ci(v.correctU(b).value) }
 
     def applyPostCorrection[T, U](v: CorrectionPart[T, B, U])(f: A => T): Editor[A,B,M,S,C,D,V] =
       e.modCallbacksA(a =>
@@ -96,7 +96,7 @@ object Editors {
       Editor(i => renderWithError(e, f(i.data)) render i)
 
     def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,Tag] =
-      renderOptionalError(i => v.correctAndValidate_(i).swap.toOption.map(_.toText))
+      renderOptionalError(i => v.correctAndValidateU(i).swap.toOption.map(_.toText))
 
     def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,Tag] =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))

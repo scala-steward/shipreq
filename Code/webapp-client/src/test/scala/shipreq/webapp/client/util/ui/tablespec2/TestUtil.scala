@@ -10,8 +10,8 @@ import scalaz.effect.IO
 import shipreq.prop.test.Gen
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.TextMod._
-import shipreq.webapp.base.validation2.Constraints._
-import shipreq.webapp.base.validation2._
+import shipreq.webapp.base.validation.Constraints._
+import shipreq.webapp.base.validation._
 import Editors._
 import RowStatus._
 import shipreq.base.util.Debug._
@@ -75,10 +75,10 @@ object TestUtil {
     val usernameF = "Username"
 
     val usernameVU = Validator(
-      CorrectionPart
+      CorrectionPartU
         .endo(noWhitespace andThen lowerCase)
         .addLiveCorrect(_.toLowerCase),
-      ValidationPart.forConstraint(usernameF,
+      ValidationPartU.forConstraint(usernameF,
         lengthInRange(2 to 16)
           + whitelistCharsR("a-z0-9_")("can only contain letters, numbers and underscores.")
           + startsWithR("[a-z]")("must start with a letter.")

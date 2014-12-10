@@ -28,7 +28,7 @@ object __Validators {
   import shipreq.webapp.base.AppConsts._
   import shipreq.webapp.base.TextMod._
   import shipreq.webapp.base.UiText.FieldNames
-  import shipreq.webapp.base.validation2._
+  import shipreq.webapp.base.validation._
   import Constraints._
   import GenericValidators._
 
@@ -36,16 +36,7 @@ object __Validators {
 
     type S = (Stream[CustomReqType], Option[CustomReqType.Id])
 
-    val mnemonicU = {
-      val validChars = WhitelistCharsR("A-Z", "may only consist of letters.")
-      val validLength = LengthInRange(reqTypeMnemonicLength)
-      Validator(
-        CorrectionPart.endo(noWhitespace andThen upperCase)
-          .addLiveCorrect(upperCase.run andThen validChars.live.run andThen validLength.live.run),
-        ValidationPart.forConstraint(FieldNames.mnemonic, nonEmpty >> (validChars.constraint + validLength))
-          .map(ReqType.Mnemonic)
-        )
-    }
+    import Validators.reqType.{mnemonic => mnemonicU, name => nameU}
 
     private def mnemonicUniqueness = {
       val static = (none[CustomReqType.Id],  ReqType.staticMnemonics)
@@ -57,39 +48,18 @@ object __Validators {
 
     val mnemonicS = mnemonicU.liftS[S].addValidation(mnemonicUniqueness)
 
-    val nameU = mandatoryShortText("Name")
-
     private def nameUniqueness =
       Uniqueness.entity[CustomReqType].applyO(_.id.some, _.name).fieldName("Name")
 
     val nameS = nameU.liftS[S].addValidation(nameUniqueness)
 
-    val all = mnemonicS ⊗ nameS ⊗ Validator.nop[ImplicationRequired].liftS[S]
-  }
-
-  object customIncmpType {
-    def key = refKey
-    def desc = optionalLargeText(FieldNames.desc)
-  }
-
-  val refKey = {
-    // DD-18: Hashtag-like refkeys (groupings, incmp) must match this format: /[A-Za-z0-9][A-Za-z0-9_-=.]*/
-    // Must not contain: []{}<>
-    // TODO should uniqueness and matching be case-insensitive?
-    val validChars = WhitelistCharsR("""A-Za-z0-9\._=\-""", "may only consist of letters, numbers, and these symbols: . _ = -")
-    val validLength = LengthInRange(refKeyLength)
-    Validator(
-      CorrectionPart.endo(noWhitespace)
-        .addLiveCorrect(validChars.run andThen truncateToLength(refKeyLength).run),
-      ValidationPart.forConstraint(FieldNames.refKey, nonEmpty >> (startsWithAlphaNumeric + validChars + validLength))
-        .map(RefKey.apply)
-      )
+    val all = mnemonicS ⊗ nameS ⊗ ValidatorU.nop[ImplicationRequired].liftS[S]
   }
 }
 import __Validators.{reqType => V}
 
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.validation2._
+import shipreq.webapp.base.validation._
 import scala.language.reflectiveCalls
 import Editors.{EditorExtII, EditorExtV, EditorExt}
 import monocle._

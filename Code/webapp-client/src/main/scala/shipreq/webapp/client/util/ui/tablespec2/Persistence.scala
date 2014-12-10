@@ -3,7 +3,7 @@ package shipreq.webapp.client.util.ui.tablespec2
 import japgolly.scalajs.react.ScalazReact._
 import shipreq.webapp.base.data.Alive
 import shipreq.webapp.base.protocol.DeletionAction
-import shipreq.webapp.base.validation2._
+import shipreq.webapp.base.validation._
 import shipreq.webapp.client.util.{FailureIO, SuccessIO}
 import scalaz.{Need, Name}
 import scalaz.effect.IO

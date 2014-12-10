@@ -1,6 +1,9 @@
 package shipreq.webapp.client.util.ui
 package table
 
+/*
+// TODO Use or delete
+
 import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom
@@ -9,9 +12,8 @@ import scalaz.std.string.stringInstance
 import scalaz.Equal
 import utest._
 import shipreq.base.util.Debug._
-import shipreq.webapp.base.validation.{GenericValidators, ValidatorPlus}
+import shipreq.webapp.base.validation._
 import shipreq.webapp.client.util.{FailureIO, SuccessIO}
-import ValidatorPlus.Implicits._
 import TableTestUtils._
 
 object TableTest extends TestSuite {
@@ -116,3 +118,4 @@ object TableTest extends TestSuite {
     }
   }
 }
+*/

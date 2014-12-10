@@ -3,6 +3,8 @@ package shipreq.webapp.client.util.ui.table
 import japgolly.scalajs.react.ComponentStateFocus
 import utest._
 
+/*
+// TODO Use or delete
 object TableTestUtils {
 
   sealed trait RowStatusT
@@ -45,3 +47,4 @@ object TableTestUtils {
     }
   }
 }
+*/
