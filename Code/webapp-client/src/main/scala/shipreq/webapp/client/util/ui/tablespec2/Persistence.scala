@@ -136,12 +136,12 @@ object Persistence {
 
   def asyncSaveT[K, P, U, I](v: Validator[(Stream[P], Option[K]), I, _, U], sas: TypicalStoresAndState[P, I, K])
                             (needSave: (P, U) => SaveNeed,
-                             tableIO: TableIO[P, _, U, _],
+                             crudIO: CrudIO[P, _, U, _],
                              realise: sas.ST => IO[Unit]): Option[K] => sas.ST =
     asyncSaveS(
       v, sas.savedRowStoreS)(sas.newRowStoreS,
         sas.validatorInput(None), k => sas.validatorInput(Some(k)), needSave,
-        tableIO.createIO, tableIO.updateIO, realise)
+        crudIO.createIO, crudIO.updateIO, realise)
 
 
   // ===================================================================================================================
@@ -162,9 +162,9 @@ object Persistence {
 
 
   def asyncDeletionS[S, K, P](store: SavedRowStore[S, K, P, _])
-                            (alive: P => Alive,
-                             deleteIO: (K, DeletionAction) => (SuccessIO, FailureIO) => IO[Unit],
-                             realise: Realise[S]): Deletion[P, K] =
+                             (alive: P => Alive,
+                              deleteIO: (K, DeletionAction) => (SuccessIO, FailureIO) => IO[Unit],
+                              realise: Realise[S]): Deletion[P, K] =
     new Deletion[P, K](alive, (id, a) =>
       realise(asyncDelete(deleteIO(id, a), realise, store.setStatusST[IO](id))))
 }

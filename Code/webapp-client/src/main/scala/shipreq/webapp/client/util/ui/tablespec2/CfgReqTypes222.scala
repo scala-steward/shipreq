@@ -115,7 +115,7 @@ object CfgReqTypes222 {
       .render(_.backend.render)
       .configure(
         RemoteDeltaListener(CustomReqType, CustomReqTypeCrud)
-          .recvExtUpdates(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
+          .install(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
       .build
 
   private def initialState(p: Props): S =
@@ -126,9 +126,9 @@ object CfgReqTypes222 {
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
 
-    val tableIO = TableIO(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
+    val crudIO = CrudIO(CustomReqType, CustomReqTypeCrud)(c.props.remote, c.props.clientData)
 
-    val deletion = Persistence.asyncDeletionS(savedRowStoreS)(_.alive, tableIO._deleteIO, c runState _)
+    val deletion = Persistence.asyncDeletionS(savedRowStoreS)(_.alive, crudIO._deleteIO, c runState _)
 
     val rowE = {
       val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
@@ -140,7 +140,7 @@ object CfgReqTypes222 {
       e = Editors.applyRowUpdateAndRevert(e, savedRowStoreS, newRowStoreS)(_._1._2)
 
       val needSave = SaveNeed.cmpToExtract((p: CustomReqType) => (p.mnemonic, p.name, p.imp))
-      val savef = Persistence.asyncSaveT(V.all, storesAndState)(needSave, tableIO, c runState _)
+      val savef = Persistence.asyncSaveT(V.all, storesAndState)(needSave, crudIO, c runState _)
       e.applyOnEditFinishedK(savef)(_._1._2)
     }
 
