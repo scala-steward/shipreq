@@ -71,7 +71,7 @@ object ProtocolTest extends TestSuite {
       }
 
       // TODO copy/paste/search/replace again
-      'CustomIncmpTypeOps {
+      'CustomIncmpTypeCrud {
         val prop = kitR(Routines.CustomIncmpTypeCrud).propI
         import RandomData.routines.customIncmpTypeCrud._
         'create { create _mustSatisfy prop }
@@ -79,9 +79,17 @@ object ProtocolTest extends TestSuite {
         'delete { delete _mustSatisfy prop }
       }
 
-      'CustomReqTypeOps {
+      'CustomReqTypeCrud {
         val prop = kitR(Routines.CustomReqTypeCrud).propI
         import RandomData.routines.customReqTypeCrud._
+        'create { create _mustSatisfy prop }
+        'update { update _mustSatisfy prop }
+        'delete { delete _mustSatisfy prop }
+      }
+
+      'TagCrud {
+        val prop = kitR(Routines.TagCrud).propI
+        import RandomData.routines.tagCrud._
         'create { create _mustSatisfy prop }
         'update { update _mustSatisfy prop }
         'delete { delete _mustSatisfy prop }
@@ -100,10 +108,12 @@ object ProtocolTest extends TestSuite {
       // This just spits out a compiler warning to remind you to add a manual test here
       def confirmTest(p: Partition) = p match {
         case Partition.CustomIncmpTypes => p
-        case Partition.CustomReqTypes => p
+        case Partition.CustomReqTypes   => p
+        case Partition.Tags             => p
       }
       'CustomIncmpTypes - test(Partition.CustomIncmpTypes)
       'CustomReqTypes   - test(Partition.CustomReqTypes)
+      'Tags             - test(Partition.Tags)
     }
   }
 }

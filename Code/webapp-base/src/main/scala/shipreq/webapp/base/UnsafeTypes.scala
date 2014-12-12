@@ -13,6 +13,7 @@ object UnsafeTypes {
 
   implicit def autoCustomReqTypeId(i: Int) = CustomReqType.Id(i)
   implicit def autoCustomIncmpTypeId(i: Int) = CustomIncmpType.Id(i)
+  implicit def autoTagId(i: Int) = Tag.Id(i)
   implicit def autoRev(i: Int) = Rev(i)
 
   implicit def autoSome[A](a: A) = Some(a)

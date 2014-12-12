@@ -12,6 +12,21 @@ import GenericValidators._
 
 object Validators {
 
+  val genericName = mandatoryShortText("Name")
+
+  val genericDesc = optionalLargeText(FieldNames.desc)
+
+  // DD-18: Hashtag-like refkeys (groupings, incmp) must match this format: /[A-Za-z0-9][A-Za-z0-9_-=.]*/
+  // Must not contain: []{}<>
+  // TODO should refkey uniqueness and matching be case-insensitive? Probably.
+  val refKeyU =
+    Rules.whitelistCharsR( """A-Za-z0-9\._=\-""", "may only consist of letters, numbers, and these symbols: . _ = -")
+      .addRule(Rules.lengthInRange(refKeyLength))
+      .correct(noWhitespace.compose)
+      .constraint(c => nonEmpty >> (startsWithAlphaNumeric + c))
+      .forField(FieldNames.refKey)
+      .map(RefKey.apply)
+
   // ===================================================================================================================
   object reqType {
     type S = (Stream[CustomReqType], Option[CustomReqType.Id])
@@ -32,10 +47,9 @@ object Validators {
         sr => static #:: sr._1.map(_.tmap2(_.id.some, _.allMnemonics))
       ).fieldName(FieldNames.mnemonic)
     }
-
     val mnemonicS = mnemonicU.liftS[S].addValidation(mnemonicUniqueness)
 
-    def nameU = mandatoryShortText("Name")
+    def nameU = genericName
 
     private def nameUniqueness =
       Uniqueness.entity[CustomReqType].applyO(_.id.some, _.name).fieldName("Name")
@@ -56,7 +70,7 @@ object Validators {
 
     val keyS = keyU.liftS[S].addValidation(keyUniqueness)
 
-    def descU = optionalLargeText(FieldNames.desc)
+    def descU = genericDesc
 
     def descS = descU.liftS[S]
 
@@ -64,17 +78,12 @@ object Validators {
   }
 
   // ===================================================================================================================
-
-  // DD-18: Hashtag-like refkeys (groupings, incmp) must match this format: /[A-Za-z0-9][A-Za-z0-9_-=.]*/
-  // Must not contain: []{}<>
-  // TODO should uniqueness and matching be case-insensitive?
-  val refKeyU =
-    Rules.whitelistCharsR( """A-Za-z0-9\._=\-""", "may only consist of letters, numbers, and these symbols: . _ = -")
-      .addRule(Rules.lengthInRange(refKeyLength))
-      .correct(noWhitespace.compose)
-      .constraint(c => nonEmpty >> (startsWithAlphaNumeric + c))
-      .forField(FieldNames.refKey)
-      .map(RefKey.apply)
-
-
+  object tag {
+    def nameU = genericName
+    def keyU  = refKeyU
+    def descU = genericDesc
+    // name - unique
+    // refkey - unique
+    // no cycles
+  }
 }

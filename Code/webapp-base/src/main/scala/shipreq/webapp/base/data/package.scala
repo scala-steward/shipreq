@@ -7,6 +7,9 @@ package object data {
     def id(d: D): I
     def setId(d: D, id: I): D
     def mkId(l: Long): I // For testing
+
+    final def pairWithId(d: D): (I, D) = (id(d), d)
+    final def mapById(ds: Traversable[D]): Map[I, D] = (Map.empty[I, D] /: ds)(_ + pairWithId(_))
   }
 
   type DataIdAux[D, Id] = DataId[D] {type I = Id}
@@ -18,6 +21,8 @@ package object data {
   abstract class DataObjImplicits {
     @inline implicit final def tcCustomIncmpType = CustomIncmpType.IdAccess
     @inline implicit final def tcCustomReqType   = CustomReqType.IdAccess
+    @inline implicit final def tcTag             = Tag.IdAccess
+    @inline implicit final def tcTagPov          = TagProtocol.PovTag.IdAccess
   }
 
   object DataImplicits extends DataObjImplicits with Project.Implicits {

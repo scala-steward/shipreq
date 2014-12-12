@@ -1,5 +1,6 @@
 package shipreq.webapp.client.delta
 
+import shipreq.prop.util.BiMultimap
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta._
 import shipreq.webapp.base.data.DataImplicits._
@@ -32,9 +33,10 @@ object RemoteDelta {
         d.p match {
           case t@ CustomIncmpTypes => x(t, GenericPartitionFns(t))
           case t@ CustomReqTypes   => x(t, GenericPartitionFns(t))
+          case t@ Tags             => x(t, TagPartitionFns)
         }
       }
-      
+
       acc match {
         case a@ Applied(_, _) => y(a)
         case CouldntApply => CouldntApply
@@ -53,10 +55,9 @@ class GenericPartitionFns[P <: Partition {type Data = D}, D](q: P)(implicit da: 
   def rev(p: Project): Rev = da.getRev(p)
 
   def update(p: Project, rev: Rev, ds: RemoteDeltaP[P]): Project = {
-
     var vs = da.getData(p)
 
-    val dels = ds.del.toSet
+    val dels = ds.del
     if (dels.nonEmpty)
       vs = vs.filterNot(data => dels contains data.id)
 
@@ -65,5 +66,31 @@ class GenericPartitionFns[P <: Partition {type Data = D}, D](q: P)(implicit da: 
       vs = vs.map(p => upds.getOrElse(p.id, p))
 
     da.set(p, rev, vs)
+  }
+}
+
+object TagPartitionFns extends Fns[Tags.type] {
+  type T = Tags.type
+
+  def rev(p: Project): Rev =
+    p.tags.rev
+
+  def update(p: Project, rev: Rev, ds: RemoteDeltaP[T]): Project = {
+    val t = p.tags.data
+    var tags = t.tags
+    var pc = t.structure.ab
+
+    for (id <- ds.del) {
+      tags -= id
+      pc = pc delkv id
+    }
+
+    for (u <- ds.upd) {
+      val id = u.id
+      tags += id -> u.tag
+      pc = pc.setks(u.rels.parents, id).setvs(id, u.rels.children)
+    }
+
+    p.copy(tags = RevAnd(rev, TagTree(tags, BiMultimap(pc))))
   }
 }

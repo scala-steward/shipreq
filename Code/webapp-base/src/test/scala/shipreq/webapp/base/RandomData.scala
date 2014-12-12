@@ -1,7 +1,15 @@
 package shipreq.webapp.base
 
+import monocle.function.{first, second}
+import monocle.std.tuple2._
+import monocle.syntax.lens.toLensOps
+import shipreq.prop.CycleDetector
+import shipreq.prop.util.{BiMultimap, Multimap}
+import scala.annotation.tailrec
 import scalaz.std.list._
+import scalaz.std.option._
 import scalaz.std.set._
+import scalaz.std.stream._
 import shipreq.prop.test.{Distinct, Gen}
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.webapp.base.data._, ReqType.Mnemonic
@@ -98,14 +106,99 @@ object RandomData {
     Gen.apply2(DataSet[D])(rev, r.list.map(f))
   }
 
+  lazy val tagId =
+    id map Tag.Id
+
+  lazy val isEnumLike =
+    Gen.oneof[IsEnumLike](IsEnumLike, NotEnumLike)
+
+  def tagName =
+    shortText1
+
+  lazy val tagGroup =
+    Gen.apply5(TagGroup.apply)(tagId, tagName, optionalLargeText, isEnumLike, alive)
+
+  lazy val applicableTag =
+    Gen.apply5(ApplicableTag.apply)(tagId, tagName, optionalLargeText, refKey, alive)
+
+  lazy val tag =
+    Gen.oneofG[Tag](tagGroup.subst, applicableTag.subst)
+
+  /** RefKey uniqueness enforced in Project, not here */
+  lazy val tags: Gen[List[Tag]] = {
+    val di = distinctId[Tag, Tag.Id]
+    val dn = Distinct.str.at(Tag._name)
+    val d = (di * dn).lift[List]
+    tag.list map d.run
+  }
+
+  type TagMM = Multimap[Tag.Id, Set, Tag.Id]
+  val tagCycleDetector = CycleDetector.Directed.setmultimap[Tag.Id, Long](_.value)
+
+  @tailrec
+  def preventCycles(m: TagMM, i: Int = 0): TagMM =
+    tagCycleDetector.findCycle(m.m) match {
+      case None     =>
+        // println(s"No cycles after $i attemps @ size ${m.keyCount}→${m.valueCount}")
+        m
+      case Some((a, b)) =>
+//        println(s"Found cycle #$i [$a→$b] in ${m.m}")
+//        preventCycles(m.del(a, b).del(b, a), i + 1) // TODO better but slowwwwww
+        preventCycles(m.delk(b), i + 1)
+    }
+
+  def tagTreeStructure(tags: Set[Tag.Id]): Gen[TagTree.Structure] =
+    if (tags.isEmpty)
+      Gen.insert(BiMultimap(Multimap.empty[Tag.Id, Set, Tag.Id]))
+    else {
+      val tagsSeq = tags.toSeq
+      val idset = Gen.oneof(tagsSeq.head, tagsSeq.tail: _*).set
+      idset.map(_.toStream)
+        .flatMap(ks => Gen sequence ks.map(k => idset.map(v => (k, v - k)).sup))
+        .map(s => BiMultimap(preventCycles(Multimap(s.toMap))))
+    }
+
+  lazy val tagTree: Gen[TagTree] =
+    for {
+      l ← tags
+      m = Tag.IdAccess.mapById(l)
+      s ← tagTreeStructure(m.keySet)
+    } yield TagTree(m, s)
+
+  lazy val revAndTagTree: Gen[RevAnd[TagTree]] =
+    Gen.apply2(RevAnd.apply[TagTree])(rev, tagTree)
+
+  def setTagKey(tt: Tag, kk: Option[RefKey]): Tag = tt match {
+    case t: ApplicableTag => kk.fold(t)(k => t.copy(key = k))
+    case t: TagGroup      => t
+  }
+
+  def distinctRefkeys = {
+    type A = DataSet[CustomIncmpType]
+    type B = RevAnd[TagTree]
+    type T = (A, B)
+    val refkey = Distinct.fstr.xmap(RefKey.apply)(_.value).distinct
+    val incmp = refkey
+      .at(CustomIncmpType._key).lift[List]
+      .at(first[T, A] |-> DataSet._data[CustomIncmpType])
+    val tags = refkey
+      .lift[Option].contramap[Tag](_.keyO, setTagKey).liftMapValues[Tag.Id]
+      .at(second[T, B] |-> RevAnd._data[TagTree] |-> TagTree._tags)
+    incmp + tags
+  }
+
   lazy val project =
-    Gen.apply2(Project.apply)(customIncmpTypes, customReqTypes)
+    for {
+      (incmp, tags) <- Gen.tuple2(customIncmpTypes, revAndTagTree) map distinctRefkeys.run
+      reqtypes      <- customReqTypes
+    } yield Project(incmp, reqtypes, tags)
 
   // -------------------------------------------------------------------------------------------------------------------
   object remoteDeltaG {
     def forPart: Partition => Gen[RemoteDeltaG] = {
       case Partition.CustomIncmpTypes => customIncmpTypesDG
       case Partition.CustomReqTypes   => customReqTypesDG
+      case Partition.Tags             => tagsDG
     }
 
     def generic(p: Partition)(ir: Gen[p.Id], dr: Gen[p.Data]): Gen[RemoteDeltaG] = {
@@ -123,6 +216,15 @@ object RandomData {
 
     lazy val customReqTypesDG =
       generic(Partition.CustomReqTypes)(customReqTypeId, customReqType)
+
+    lazy val tagsDG =
+      generic(Partition.Tags)(tagId, povTag)
+
+    lazy val povTag =
+      for {
+        t      ← tag
+        (p, c) ← tagId.set.pair
+      } yield TagProtocol.PovTag(t, TagProtocol.PovRelations(p - t.id -- c, c - t.id -- p))
   }
 
   object remoteDelta {
@@ -144,11 +246,12 @@ object RandomData {
       remoteName.map(Remote(_, d))
 
     lazy val forCfgReqType =
-      Gen.apply4(ForCfgReqType)(
+      Gen.apply5(ForCfgReqType)(
         remote(ProjectInit),
         remote(CustomIncmpTypeCrud),
         remote(CustomReqTypeCrud),
-        remote(CustomReqTypeImplicationMod))
+        remote(CustomReqTypeImplicationMod),
+        remote(TagCrud))
 
     class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._
@@ -165,5 +268,16 @@ object RandomData {
     lazy val customReqTypeCrud = new CrudActionGens(CustomReqTypeCrud)(
       RandomData.customReqTypeId,
       Gen.tuple3(reqTypeMnemonic, customReqTypeName, implicationRequired))
+
+    lazy val tagValues =
+      remoteDeltaG.povTag.map(t => (valuesFromTag(t.tag), t.rels))
+
+    def valuesFromTag: Tag => TagProtocol.Values = {
+      case TagGroup(_, n, d, e, _)      => TagProtocol.TagGroupValues(n, d, e)
+      case ApplicableTag(_, n, d, k, _) => TagProtocol.ApplicableTagValues(n, d, k)
+    }
+
+    lazy val tagCrud =
+      new CrudActionGens(TagCrud)(RandomData.tagId, tagValues)
   }
 }

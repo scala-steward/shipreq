@@ -3,7 +3,8 @@ package shipreq.webapp.base.protocol
 import scalaz.NonEmptyList
 import scalaz.Isomorphism.<=>
 import upickle._
-import shipreq.base.util.BiMap
+import shipreq.prop.util._
+import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.data._
 import DataImplicits._
@@ -39,6 +40,9 @@ private[protocol] object Codec {
       case Js.Str(k) if table.ba.contains(k) => table.ba(k)
     })
   }
+
+  def xmap[A, B](f: A => B)(g: B => A)(implicit RB: Reader[B], WB: Writer[B]) =
+    ReadWriter[A](WB.write0 compose f, RB.read0 andThen g)
 
   implicit class ReaderExt[T](val r: Reader[T]) extends AnyVal {
     @inline def readSet[TT >: T](s: Seq[Js.Value]): Set[TT] =
@@ -95,17 +99,36 @@ private[protocol] object Codec {
     val w = Tuple6W[A, B, C, D, E, F].write0
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
+
+  def intkeyW[T](k: Int, t: T)(implicit T: Writer[T]) =
+    Js.Arr(Js.Num(k), T write0 t)
+
+  def readJ[T](v: Js.Value)(implicit T: Reader[T]) = T read0 v
+
+  /*
+  Something like this for ADTs maybe?
+  val vv = Vector[ReadWriter[_ <: Tag]](tagGroup, applicableTag)
+  def w: Tag => ReadWriter[_ <: Tag] = {
+    case t: TagGroup      => vv(0)
+    case t: ApplicableTag => vv(1)
+  }
+  implicit def tag2 = ReadWriter[Tag](
+  t => w(t).asInstanceOf[Writer[Tag]] write0 t, {
+    case Js.Arr(Js.Num(n), v) => vv(n.toInt) read0 v
+  })
+  */
 }
 import Codec._
 
 // =====================================================================================================================
 object DataCodecs {
 
+  implicit def rev = tagL(Rev.apply)
   implicit def alive = boolCase(Alive)
   implicit def impReq = boolCase(ImplicationRequired)
-  implicit def rev = tagL(Rev.apply)
-
+  implicit def isEnumLike = boolCase(IsEnumLike)
   implicit def refkey = tagS(RefKey.apply)
+
   implicit def customIncmpTypeId = tagL(CustomIncmpType.Id.apply)
   implicit def customIncmpType = caseclass4(CustomIncmpType.apply, CustomIncmpType.unapply)
 
@@ -116,7 +139,43 @@ object DataCodecs {
   implicit def dataset[D, I](implicit D: DataIdAux[D, I], WI: Writer[I], RI: Reader[I], WV: Writer[D], RV: Reader[D]) =
     caseclass2(DataSet.apply[D], DataSet.unapply[D])
 
-  implicit def project = caseclass2(Project.apply, Project.unapply)
+  implicit def tagId = tagL(Tag.Id.apply)
+  implicit def tagGroup = caseclass5(TagGroup.apply, TagGroup.unapply)
+  implicit def applicableTag = caseclass5(ApplicableTag.apply, ApplicableTag.unapply)
+  implicit def tag = ReadWriter[Tag]({
+    case t: TagGroup      => intkeyW(0, t)
+    case t: ApplicableTag => intkeyW(1, t)
+  }, {
+    case Js.Arr(Js.Num(n), v) => n.toInt match {
+      case 0 => readJ[TagGroup](v)
+      case 1 => readJ[ApplicableTag](v)
+    }
+  })
+  implicit def tagTree = xmap(
+    (t: TagTree) => (t.tags.values.toList, t.structure.ab.m)) {
+    case (vs, ab) =>
+      val t = Tag.IdAccess.mapById(vs)
+      val s = BiMultimap(Multimap(ab))
+      TagTree(t, s)
+  }
+  implicit def tagPovRelations = caseclass2(TagProtocol.PovRelations.apply, TagProtocol.PovRelations.unapply)
+  implicit def tagPov = caseclass2(TagProtocol.PovTag.apply, TagProtocol.PovTag.unapply)
+  implicit def tagGroupValues = caseclass3(TagProtocol.TagGroupValues.apply, TagProtocol.TagGroupValues.unapply)
+  implicit def applicableTagValues = caseclass3(TagProtocol.ApplicableTagValues.apply, TagProtocol.ApplicableTagValues.unapply)
+  implicit def tagValues = ReadWriter[TagProtocol.Values]({
+    case t: TagProtocol.TagGroupValues      => intkeyW(0, t)
+    case t: TagProtocol.ApplicableTagValues => intkeyW(1, t)
+  }, {
+    case Js.Arr(Js.Num(n), v) => n.toInt match {
+      case 0 => readJ[TagProtocol.TagGroupValues](v)
+      case 1 => readJ[TagProtocol.ApplicableTagValues](v)
+    }
+  })
+
+  implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
+    caseclass2(RevAnd.apply[T], RevAnd.unapply[T])
+
+  implicit def project = caseclass3(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================
@@ -144,7 +203,7 @@ object RoutineCodecs {
 object RoutineGroupCodecs {
   import Routines._
 
-  implicit def routinesForCfgReqType = caseclass4(ForCfgReqType.apply, ForCfgReqType.unapply)
+  implicit def routinesForCfgReqType = caseclass5(ForCfgReqType.apply, ForCfgReqType.unapply)
 }
 
 // =====================================================================================================================

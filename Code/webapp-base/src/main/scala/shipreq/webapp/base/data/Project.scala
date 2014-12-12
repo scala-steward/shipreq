@@ -8,10 +8,22 @@ trait DataSetAccessor[D] {
   def set(p: Project, r: Rev, d: Stream[D]): Project
 }
 
+case class RevAnd[D](rev: Rev, data: D)
+
+object RevAnd {
+  def _data[D] = SimpleLens[RevAnd[D]](_.data)((a, b) => a.copy(data = b))
+}
+
+// TODO change List to Vector
+// TODO this is just RevAnd[List[D]]
 case class DataSet[D](rev: Rev, data: List[D])
 
+object DataSet {
+  def _data[D] = SimpleLens[DataSet[D]](_.data)((a, b) => a.copy(data = b))
+}
+
 object Project {
-  private def l = Lenser[Project]
+  private[this] def l = Lenser[Project]
   val _customIncmpTypes = l(_.customIncmpTypes)
   val _customReqTypes   = l(_.customReqTypes)
 
@@ -29,9 +41,15 @@ object Project {
 }
 
 final case class Project(customIncmpTypes: DataSet[CustomIncmpType],
-                         customReqTypes:   DataSet[CustomReqType]) {
+                         customReqTypes:   DataSet[CustomReqType],
+                         tags:             RevAnd[TagTree]) {
   import shipreq.prop._
   this assertSatisfies DataProp.project
 
-  def rev = customIncmpTypes.rev + customReqTypes.rev
+  def rev = customIncmpTypes.rev + customReqTypes.rev + tags.rev
+
+  override def toString =
+    Stream(customIncmpTypes, customReqTypes, tags)
+      .map("\n    " + _.toString.replace(" -> ", " → "))
+      .mkString("Project(", "", "\n)")
 }

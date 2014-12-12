@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data
 
+import monocle.Lenser
 import shipreq.base.util.TaggedTypes._
 
 /**
@@ -26,4 +27,7 @@ object CustomIncmpType {
     override def mkId(l: Long) = Id(l)
     override def setId(a: CustomIncmpType, b: Id) = a.copy(id = b)
   }
+
+  private[this] def l = Lenser[CustomIncmpType]
+  val _key = l(_.key)
 }

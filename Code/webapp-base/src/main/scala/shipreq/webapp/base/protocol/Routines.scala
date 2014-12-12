@@ -59,7 +59,8 @@ object Routines {
   object ProjectInit extends DescT[Unit, Project]
 
   object CustomIncmpTypeCrud extends Crudable.CAux[CustomIncmpType.Id, (RefKey, Option[String])]
-  object CustomReqTypeCrud   extends Crudable.CAux[CustomReqType.Id, (ReqType.Mnemonic, String, ImplicationRequired)]
+  object CustomReqTypeCrud   extends Crudable.CAux[CustomReqType.Id,   (ReqType.Mnemonic, String, ImplicationRequired)]
+  object TagCrud             extends Crudable.CAux[Tag.Id,             (TagProtocol.Values, TagProtocol.PovRelations)]
 
   object CustomReqTypeImplicationMod extends DescT[(CustomReqType.Id, ImplicationRequired), RemoteDelta]
 
@@ -67,6 +68,7 @@ object Routines {
   case class ForCfgReqType(projectInit: ProjectInit.Remote,
                            incmpCrud: CustomIncmpTypeCrud.Remote,
                            reqTypeCrud: CustomReqTypeCrud.Remote,
-                           reqTypeImpMod: CustomReqTypeImplicationMod.Remote)
+                           reqTypeImpMod: CustomReqTypeImplicationMod.Remote,
+                           tagCrud: TagCrud.Remote)
     extends Group
 }
