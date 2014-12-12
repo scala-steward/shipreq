@@ -1,5 +1,45 @@
-Security
-========
+[webapp] Adding A New Data Type
+===============================
+* Add to .data package.
+* Add to DataObjImplicits.
+* Add to UnsafeTypes.
+* Add to Project.
+* Add to Codecs.
+* Add to DataProp.
+* Add to RandomData (id, data, project).
+
+* Add to Partition and Partition.values.
+* Add to RemoteDelta.
+* Add to Routines.
+* Add to RandomData (delta, routines).
+* Add to ProtocolTest (delta, routines).
+
+
+[webapp] Data Change Protocol
+=============================
+Server sends Δ to clients. Client has Π.
+Client merges Δ into Π which produces 0 or more δ.
+δ is sent to listeners within the client which filter general δ into
+data-domain-specific δᵗ which are then used to process async data changes.
+There are a finite set of τ, each corresponding to specific data domain.
+
+apply  : Δ → Π → Applied(Π, δₙ) | Fail
+filter : τ → δ → Maybe δᵗ
+update : δᵗₙ → Sᵗ → Sᵗ
+
+∀δ.∃t:τ. filter(t)(δ) = Just(δᵗ)
+
+Δ       = RemoteDelta = List[RemoteDeltaG]
+δₙ      = LocalDelta  = List[LocalDeltaG]
+δ       = LocalDeltaG = (p: τ, LocalDeltaP[p])
+δᵗ      = LocalDeltaP
+τ       = Partition
+apply   = ClientData.update
+filter  = LocalDelta.filter
+
+
+[webapp-server] Security
+========================
 
 Pages are protected in `AppSiteMap`. This includes both authentication and authorisation.
 Snippets do not include security logic; they simply render and perform business logic.
@@ -23,8 +63,8 @@ Available snippets:
 Shiro is integrated via `src/main/resources/shiro.ini` and `src/main/webapp/web.xml`.
 
 
-Use Case Textual Features
-=========================
+[webapp-server] Use Case Textual Features
+=========================================
 * What is parsable is defined in `Grammar` with help from `ParsingConfig`.
 * Parsing and translation happens in
     * `FreeText.parseCorrected()`
@@ -41,8 +81,8 @@ Use Case Textual Features
     * Add a case to `respondToChange()` in `FreeText`/`StepText`.
     * Perform the reaction in `TextProps.arbState` in `FreeAndStepTextTests.scala`.
 
-Snippet Testing
-===============
+[webapp-server] Snippet Testing
+===============================
 * TestHelpers
   * inMockSession(...)
   * withSessionAttrs    - S.attr
