@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui
 
-import japgolly.scalajs.react._, vdom.prefix_<*._, ScalazReact._
-import japgolly.scalajs.react.experiment.OnUnmount
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react.extras.OnUnmount
 import scala.language.reflectiveCalls
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
@@ -63,7 +63,7 @@ object CfgReqTypes {
             case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)
           }
           override def deletedRow = p =>
-            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(ImplicationRequired from p.imp)(*.disabled := true))
+            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(ImplicationRequired from p.imp)(^.disabled := true))
 
           override def render = {
             case (mnemonic, oldMnemonics, name, impReq) =>
@@ -71,7 +71,7 @@ object CfgReqTypes {
                 if (oldMnemonics.isEmpty)
                   mnemonic
                 else
-                  Seq(mnemonic, <.div(*.cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
+                  Seq(mnemonic, <.div(^.cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
               Seq(mn, name, impReq)
           }
         }
@@ -82,9 +82,9 @@ object CfgReqTypes {
 
       val staticRows: t.RowStream = {
         def rr(r: ReqType.Static): ReactElement = {
-          val imp = checkbox(ImplicationRequired from r.imp)(*.disabled := true)
+          val imp = checkbox(ImplicationRequired from r.imp)(^.disabled := true)
           val norm: t.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp)
-          t.row("static", RowStatus.Sync, norm, EmptyTag)(*.keyAttr := r.mnemonic.value)
+          t.row("static", RowStatus.Sync, norm, EmptyTag)(^.key := r.mnemonic.value)
         }
         ReqType.static.map(r => r.mnemonic -> rr(r)).toStream
       }

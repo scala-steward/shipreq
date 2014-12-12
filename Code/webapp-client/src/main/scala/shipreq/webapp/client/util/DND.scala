@@ -6,12 +6,9 @@ import scala.scalajs.js
 import scalaz.{Equal, State, StateT}
 import scalaz.std.option.optionEqual
 import scalaz.std.tuple.tuple2Equal
-import scalaz.syntax.bind._
+import scalaz.syntax.bind.ToBindOps
 import scalaz.effect.IO
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.ReactVDom._
-import japgolly.scalajs.react.vdom.ReactVDom.all._
-import japgolly.scalajs.react.ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 
 object DND {
 
@@ -98,23 +95,23 @@ object DND {
       _.preventDefaultIO >> p.onMove
 
     def renderDragHandle[S, A](p: CProps[A], a: A, T: ComponentStateFocus[CState]) =
-      span(
-        className    := "draghandle",
-        draggable    := "true",
-        onDragStart ~~> T._runState(dragStart(a, p).liftS),
-        onDragEnd   ~~> T.runState(dragEnd(p).liftS),
+      <.span(
+        ^.className    := "draghandle",
+        ^.draggable    := "true",
+        ^.onDragStart ~~> T._runState(dragStart(a, p).liftS),
+        ^.onDragEnd   ~~> T.runState(dragEnd(p).liftS),
         // onMouseDown={typeof window.isIE9 != 'undefined' && this.handleIE9DragHack}
         "\u2630")
 
     def renderRow[A](p: CProps[A], a: A, T: ComponentStateFocus[CState]) =
-      div(
-        classSet("dragging" -> T.state, "dragover" -> p.dragover),
-        onDragEnter ~~> preventDefaultIO,
-        onDragOver  ~~> dragOver(a, p, T.state),
-        onDragLeave ~~> p.onDragLeave,
-        onDrop      ~~> drop(p))
+      <.div(
+        ^.classSet("dragging" -> T.state, "dragover" -> p.dragover),
+        ^.onDragEnter ~~> preventDefaultIO,
+        ^.onDragOver  ~~> dragOver(a, p, T.state),
+        ^.onDragLeave ~~> p.onDragLeave,
+        ^.onDrop      ~~> drop(p))
 
-    def dndItemComponent[A](r: (A, Tag) => ReactElement) = ReactComponentB[(A, DND.Child.CProps[A])]("DndItem")
+    def dndItemComponent[A](r: (A, ReactTag) => ReactElement) = ReactComponentB[(A, DND.Child.CProps[A])]("DndItem")
       .initialState(DND.Child.initialState)
       .render(T => {
         val (i,p) = T.props

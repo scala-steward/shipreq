@@ -5,8 +5,9 @@ import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.std.AllInstances._
 import shipreq.webapp.base.protocol.Routines
-import shipreq.webapp.client.util.route._
-import japgolly.scalajs.react._, vdom.ReactVDom._, all._, ScalazReact._, experiment._
+import japgolly.scalajs.react._, vdom.all._, ScalazReact._
+import japgolly.scalajs.react.extras._
+import japgolly.scalajs.react.extras.router._
 import shipreq.webapp.client.app.ui._
 
 object ReactExamples {
