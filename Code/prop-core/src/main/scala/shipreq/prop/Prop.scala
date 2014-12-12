@@ -49,17 +49,8 @@ object Prop {
     reason(a ≟ e, s"Actual: $a\nExpect: $e")
 
   @elidable(elidable.ASSERTION)
-  final def assert[A](l: Prop[A])(a: A): Unit = {
-    val e = l(a)
-    if (e.failure) {
-      val err = e.report
-      val sep = "=" * 120
-      System.err.println(sep)
-      System.err.println(err)
-      System.err.println(sep)
-      throw new java.lang.AssertionError(err)
-    }
-  }
+  def assert[A](l: => Prop[A])(a: => A): Unit =
+    l(a).assertSuccess()
 
   def forall[A, F[_] : Foldable, B](f: A => F[B], lb: Prop[B]): Prop[A] =
     eval[A](a => {

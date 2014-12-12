@@ -1,5 +1,6 @@
 package shipreq.prop
 
+import scala.annotation.elidable
 import scalaz.{Value, Need, Equal, Contravariant}
 import shipreq.prop.util.Multimap
 import shipreq.prop.util.Util
@@ -28,7 +29,7 @@ object Eval {
   def atom(name: => String, a: Any, failure: FailureReasonO): EvalL =
     Atom[Eval_, Nothing](Eval(Need(name), Input(a), failure.fold(root)(root.add(_, Nil))))
 
-  def test[A](name: => String, a: Any, t: Boolean): EvalL =
+  def test(name: => String, a: Any, t: Boolean): EvalL =
     atom(name, a, Prop.reasonBool(t, a))
 
   def equal[A: Equal](name: => String, a: Any, actual: A, expect: A): EvalL =
@@ -38,6 +39,10 @@ object Eval {
   final class EqualB[A](name: String, a: A)  {
     def apply[B: Equal](actual: A => B, expect: A => B): EvalL = equal(name, a, actual(a), expect(a))
   }
+
+  @elidable(elidable.ASSERTION)
+  def assert(l: => EvalL): Unit =
+    run(l).assertSuccess()
 }
 
 import Eval.Failures
@@ -114,4 +119,15 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
     }
     sb.toString()
   }
+
+  @elidable(elidable.ASSERTION)
+  def assertSuccess(): Unit =
+    if (failure) {
+      val err = report
+      val sep = "=" * 120
+      System.err.println(sep)
+      System.err.println(err)
+      System.err.println(sep)
+      throw new java.lang.AssertionError(err)
+    }
 }
