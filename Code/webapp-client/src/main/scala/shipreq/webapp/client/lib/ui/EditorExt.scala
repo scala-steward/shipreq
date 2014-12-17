@@ -39,6 +39,13 @@ object EditorExt extends EditorExt {
           case OnEditFinished(v) => savedStore.setIST(k(a), v)
         })
 
+    def applyRowUpdateAndRevert[K, P, I](savedStores: NewAndSavedStores[S, K, P, I])
+                                        (k: A => Option[K])
+                                        (implicit A: Applicative[M], B: Bind[M],
+                                         wv: B <:< FieldSet[P, I]#FieldValue,
+                                         wf: C <:< FieldSet[P, I]#Field): Editor[A,B,M,S,C,D,V] =
+      applyRowUpdateAndRevert(savedStores.s, savedStores.n)(k)
+
     def applyRowUpdateAndRevert[K, P, I](savedStore: SavedRowStore[S, K, P, I], newStore: NewRowStore[S, I])
                                         (k: A => Option[K])
                                         (implicit A: Applicative[M], B: Bind[M],

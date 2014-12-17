@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import scalaz.NonEmptyList
+import scalaz.{\&/, NonEmptyList}
 import scalaz.Isomorphism.<=>
 import upickle._
 import shipreq.prop.util._
@@ -122,6 +122,22 @@ import Codec._
 
 // =====================================================================================================================
 object DataCodecs {
+
+  implicit def these[A: Reader: Writer, B: Reader: Writer]: ReadWriter[A \&/ B] = {
+    import \&/._
+    ReadWriter[A \&/ B]({
+      case This(a)    => intkeyW(1, a)
+      case That(b)    => intkeyW(2, b)
+      case Both(a, b) => Js.Arr(Js.Num(3), implicitly[Writer[A]] write0 a, implicitly[Writer[B]] write0 b)
+    }, {
+      case Js.Arr(Js.Num(n), v) => n.toInt match {
+        case 1 => This(readJ[A](v))
+        case 2 => That(readJ[B](v))
+      }
+      case Js.Arr(Js.Num(n), a, b) if n.toInt == 3 =>
+        Both(readJ[A](a), readJ[B](b))
+    })
+  }
 
   implicit def rev = tagL(Rev.apply)
   implicit def alive = boolCase(Alive)

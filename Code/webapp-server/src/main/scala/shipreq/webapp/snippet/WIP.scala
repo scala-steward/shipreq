@@ -1,6 +1,7 @@
 package shipreq.webapp.snippet
 
 import net.liftweb.util.Helpers._
+import scalaz.\&/, \&/._
 import shipreq.base.util.ScalaExt._
 import shipreq.prop.util._
 import shipreq.webapp.base.protocol._
@@ -9,6 +10,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta._
 import DeletionAction._
 import shipreq.webapp.util.QuietException
+
 
 class WIP {
 
@@ -187,7 +189,9 @@ class WIP {
 
     def δ(p: Project) = {
       val tt = p.tags.data
-      tt.tags.mapValues(t => PovTag(t, PovRelations(tt.parentToChild(t.id), tt.childToParent(t.id))))
+      tt.tags.mapValues(t => PovTag(t, PovRelations(
+        tt.parentToChild.getOrElse(t.id, Set.empty),
+        tt.childToParent.getOrElse(t.id, Set.empty))))
     }
 
     // TODO Another copy/paste/search/replace
@@ -207,10 +211,16 @@ class WIP {
       mod(tt => tt.tags.get(id).fold(tt)(t =>
         tt.copy(tags = tt.tags + (id -> f(t)))))
 
-    def put(i: Id, v: (Values, PovRelations)): RemoteDelta = {
-      val (t, r) = v map1 build(i)
-      mod(tt => TagTree(tt.tags + (i -> t), tt.structure.addas(r.parents, i).addbs(i, r.children)))
+    def put(i: Id, v: Values \&/ PovRelations): RemoteDelta = v match {
+      case This(a)    => put2(i, a.some, None)
+      case That(b)    => put2(i, None  , b.some)
+      case Both(a, b) => put2(i, a.some, b.some)
     }
+
+    def put2(i: Id, ov: Option[Values], or: Option[PovRelations]): RemoteDelta =
+      mod(tt => TagTree(
+        ov.fold(tt.tags)(v => tt.tags + (i -> build(i)(v))),
+        or.fold(tt.structure)(r => tt.structure.addas(r.parents, i).addbs(i, r.children))))
 
     def nextId = Id(p.tags.data.tags.keySet.map(_.value).max + 1)
 

@@ -14,7 +14,7 @@ import GenericValidators._
 
 object Validators {
 
-  val genericName = mandatoryShortText("Name")
+  val genericName = mandatoryShortText(FieldNames.name)
 
   val genericDesc = optionalLargeText(FieldNames.desc)
 
@@ -77,7 +77,7 @@ object Validators {
     def nameU = genericName
 
     private def nameUniqueness =
-      Uniqueness.entity[CustomReqType].applyO(_.id.some, _.name).fieldName("Name")
+      Uniqueness.entity[CustomReqType].applyO(_.id.some, _.name).fieldName(FieldNames.name)
 
     val nameS = nameU.liftS[S].addValidation(nameUniqueness)
 
@@ -99,20 +99,23 @@ object Validators {
 
   // ===================================================================================================================
   object tag {
-    type S = (Stream[Tag], Option[Tag.Id])
+    type S = (Stream[Tag], shared.RefKeyVS)
 
     def nameU = genericName
-
-    private def nameUniqueness =
-      Uniqueness.entity[Tag].applyO(_.id.some, _.name).fieldName("Name")
-
     val nameS = nameU.liftS[S].addValidation(nameUniqueness)
+    private def nameUniqueness =
+      Uniqueness.entity[Tag].applyO(_.id.some, _.name).fieldName(FieldNames.name)
+        .contramapS[S](r => (r._1, r._2.tagData._1))
 
-//    def keyU  = refKey
+    def keyU = shared.refKeyU
+    def keyS = shared.refKeyS.contramapS[S](_._2)
 
     def descU = genericDesc
+    def descS = descU.liftS[S]
 
-    // refkey - unique
-    // no cycles
+    val tagGroup = nameS ⊗ ValidatorU.nop[IsEnumLike].liftS[S] ⊗ descS
+    val applTag  = nameS ⊗ keyS ⊗ descS
+
+    // TODO prevent cycles
   }
 }

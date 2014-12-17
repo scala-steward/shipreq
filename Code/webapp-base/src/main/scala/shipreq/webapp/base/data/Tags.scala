@@ -80,6 +80,11 @@ final case class TagTree(tags: Map[Tag.Id, Tag], structure: TagTree.Structure) {
   @inline def childToParent = structure.ba.m
 }
 
+// TODO order must be preservable! List or something, not HashSet
+// TODO order must be preservable! List or something, not HashSet
+// TODO order must be preservable! List or something, not HashSet
+// TODO order must be preservable! List or something, not HashSet
+
 object TagTree {
   type Structure = BiMultimap[Tag.Id, Set, Tag.Id]
 

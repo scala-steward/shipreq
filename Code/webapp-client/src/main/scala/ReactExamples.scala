@@ -40,6 +40,7 @@ object ReactExamples {
         val root = Root(index)
         val cfgIncmp    = path("#cfg/incmp",    addBack(root, cfgIncmpR))
         val cfgReqTypes = path("#cfg/reqtypes", addBack(root, cfgReqTypesR))
+        val cfgTags     = path("#cfg/tags",     addBack(root, cfgTagsR))
       }
 
       def index: Renderer[ProjectPage] = router => {
@@ -47,7 +48,8 @@ object ReactExamples {
           .render(_ =>
           ul(
             li(router.link(ProjectPage.cfgIncmp)("Cfg: Incompletions")),
-            li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")))
+            li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")),
+            li(router.link(ProjectPage.cfgTags)("Cfg: Tags")))
           ).buildU
         c()
       }
@@ -57,6 +59,9 @@ object ReactExamples {
 
       def cfgReqTypesR: Renderer[ProjectPage] = _ =>
         CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
+
+      def cfgTagsR: Renderer[ProjectPage] = _ =>
+        CfgTags.Props(cp, r.tagCrud, clientData, false).component
 
       val c = Router.component(BaseUrl("/wip"), ProjectPage)
       c() render document.getElementById("eg2")

@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import scalaz.NonEmptyList
+import scalaz.{NonEmptyList, \&/}
 import upickle.{Reader, Writer}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.RemoteDelta
@@ -60,7 +60,7 @@ object Routines {
 
   object CustomIncmpTypeCrud extends Crudable.CAux[CustomIncmpType.Id, (RefKey, Option[String])]
   object CustomReqTypeCrud   extends Crudable.CAux[CustomReqType.Id,   (ReqType.Mnemonic, String, ImplicationRequired)]
-  object TagCrud             extends Crudable.CAux[Tag.Id,             (TagProtocol.Values, TagProtocol.PovRelations)]
+  object TagCrud             extends Crudable.CAux[Tag.Id,             TagProtocol.Values \&/ TagProtocol.PovRelations]
 
   object CustomReqTypeImplicationMod extends DescT[(CustomReqType.Id, ImplicationRequired), RemoteDelta]
 
