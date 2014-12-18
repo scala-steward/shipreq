@@ -56,7 +56,7 @@ object CfgIncompletions {
         .render(_.backend.render)
         .configure(
           RemoteDeltaListener(CustomIncmpType, CustomIncmpTypeCrud)
-            .install(savedRowStoreS, Partition.CustomIncmpTypes, _.clientData))
+            .installS(savedRowStoreS, Partition.CustomIncmpTypes, _.clientData))
         .build
 
     private def initialState(p: Props): S =
@@ -138,7 +138,7 @@ object CfgIncompletions {
       .render(_.backend.render)
       .configure(
         RemoteDeltaListener(CustomReqType, CustomReqTypeCrud)
-          .install(savedRowStore, Partition.CustomReqTypes, _.clientData))
+          .installS(savedRowStore, Partition.CustomReqTypes, _.clientData))
       .build
 
     private def initialState(p: Props): S =

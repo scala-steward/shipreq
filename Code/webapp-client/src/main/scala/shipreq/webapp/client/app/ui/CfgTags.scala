@@ -24,6 +24,7 @@ import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.CrudIO
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
+import TagProtocol.PovTag
 
 object CfgTags {
 
@@ -77,14 +78,27 @@ object CfgTags {
       None)
   }
 
+  val tagStateFns = new RemoteDeltaListener.StateFns[S, Tag.Id, PovTag](
+    (s, i) =>
+      tg_storesAndStateS.s.remove(i)(
+        at_storesAndStateS.s.remove(i)(
+          s)),
+    (s, i, d) => {
+      val s2 = d.tag match {
+        case t: TagGroup      => tg_storesAndStateS.s.set(i, t)(s)
+        case t: ApplicableTag => at_storesAndStateS.s.set(i, t)(s)
+      }
+      // TODO update tree
+      s2
+    })
+
   val Component =
     ReactComponentB[Props]("Cfg: Tags")
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-//      .configure( TODO
-//        RemoteDeltaListener(Tag, TagCrud)
-//          .install(savedRowStoreS, Partition.Tags, _.clientData))
+      .configure(
+        RemoteDeltaListener(PovTag, TagCrud).install(tagStateFns, Partition.Tags, _.clientData))
       .build
 
   def getAllP(s: S): Stream[Tag] = (
