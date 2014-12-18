@@ -1,9 +1,10 @@
 package shipreq.prop.util
 
 import shipreq.prop._
+import shipreq.prop.util.MultiValues.Commutative
 
-final class BiMultimap[A, L[_]: MultiValues, B](val ab: Multimap[A, L, B], val ba: Multimap[B, L, A]) {
-
+final class BiMultimap[A, L[_] : MultiValues : Commutative, B](val ab: Multimap[A, L, B],
+                                                               val ba: Multimap[B, L, A]) {
   Eval.assert(prop)
 
   def prop =
@@ -38,6 +39,6 @@ final class BiMultimap[A, L[_]: MultiValues, B](val ab: Multimap[A, L, B], val b
 
 object BiMultimap {
 
-  def apply[A, L[_]: MultiValues, B](ab: Multimap[A, L, B]) =
+  def apply[A, L[_] : MultiValues : Commutative, B](ab: Multimap[A, L, B]) =
     new BiMultimap[A, L, B](ab, ab.reverse)
 }

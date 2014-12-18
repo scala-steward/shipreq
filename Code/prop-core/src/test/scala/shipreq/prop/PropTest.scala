@@ -166,7 +166,9 @@ object PropTest extends TestSuite {
       val p = mod235c.forallF[List]
       test(p, List(15, 30, 60, 25), ko >> inputA >> rootCausesN(evenN, mod3N) >> reportIs(
         """
-          |Property [∀{(even ∧ mod3 ∧ mod5)}] failed on input [List(15, 30, 60, 25)].
+          |Property [∀{(even ∧ mod3 ∧ mod5)}] failed.
+          |
+          |Input: [List(15, 30, 60, 25)].
           |
           |Root causes:
           |  2 failed axioms, 2 causes of failure.

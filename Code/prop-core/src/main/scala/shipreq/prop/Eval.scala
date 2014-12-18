@@ -26,6 +26,9 @@ object Eval {
   // -------------------------------------------------------------------------------------------------------------------
   // Logic
 
+  def pass(name: String = "Pass", input: Any = ()): EvalL =
+    test(name, input, true)
+
   def atom(name: => String, a: Any, failure: FailureReasonO): EvalL =
     Atom[Eval_, Nothing](Eval(Need(name), Input(a), failure.fold(root)(root.add(_, Nil))))
 
@@ -109,7 +112,7 @@ final case class Eval private[prop] (name: Name, input: Input, failures: Failure
     if (success)
       sb append "passed."
     else {
-      sb append "failed on input ["
+      sb append "failed.\n\nInput: ["
       sb append input.show
       sb append "]."
       sb append "\n\nRoot causes:\n"

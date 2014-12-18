@@ -1,7 +1,6 @@
 package shipreq.prop.util
 
 import scala.annotation.tailrec
-import scalaz.Memo
 
 object Util {
 
@@ -38,20 +37,33 @@ object Util {
     val cm = "├─ "
     val cl = "└─ "
     var first = true
-    val im = Memo.mutableHashMapMemo[Int, String](i => "\n" + (" " * i))
     @inline def loop2 = loop(_, _, _)
     @tailrec
     def loop(parentLvlLast: Vector[Boolean], fs: List[N], root: Boolean): Unit = fs match {
       case Nil =>
       case h :: t =>
+        def indentPrefix(): Unit = {
+          sb append indent
+          for (b <- parentLvlLast) sb.append(if (b) pl else pm)
+        }
+
         if (first) first = false else sb append '\n'
         var indentlen = sb.length
-        sb append indent
-        for (b <- parentLvlLast) sb.append(if (b) pl else pm)
+        indentPrefix()
         val last = t.isEmpty
         if (!root) sb.append(if (last) cl else cm)
         indentlen = sb.length - indentlen
-        sb append show(h).replaceAll("\n(?=[^\n])", im(indentlen))
+
+        var firstLine = true
+        for (l <- show(h).split("\n")) {
+          if (firstLine) firstLine = false else {
+            sb append '\n'
+            indentPrefix()
+            sb append "   "
+          }
+          sb append l
+        }
+
         val nextLvl = if (root) Vector.empty[Boolean] else parentLvlLast :+ last
         loop2(nextLvl, leaves(h), false)
         loop(parentLvlLast, t, root)

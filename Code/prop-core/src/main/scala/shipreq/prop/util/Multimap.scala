@@ -1,7 +1,13 @@
 package shipreq.prop.util
 
 import scalaz.Equal
+import MultiValues.Commutative
 import Multimap._, Internal._
+
+object MultiValues {
+  trait Commutative[L[_]]
+  @inline def apply[L[_]](implicit F: MultiValues[L]): MultiValues[L] = F
+}
 
 trait MultiValues[L[_]] {
   def empty[A]: L[A]
@@ -10,11 +16,9 @@ trait MultiValues[L[_]] {
   def addn[A](a: L[A], b: L[A]): L[A]
   def deln[A](a: L[A], b: L[A]): L[A]
   def foldl[A, B](a: A, b: L[B])(f: (A, B) => A): A
+  def foldr[A, B](a: A, b: L[B])(f: (A, B) => A): A
   def stream[A](a: L[A]): Stream[A]
   def isEmpty[A](a: L[A]): Boolean
-}
-object MultiValues {
-  @inline def apply[L[_]](implicit F: MultiValues[L]): MultiValues[L] = F
 }
 
 final class Multimap[K, L[_], V](val m: Map[K, L[V]])(implicit L: MultiValues[L]) {
@@ -45,7 +49,8 @@ final class Multimap[K, L[_], V](val m: Map[K, L[V]])(implicit L: MultiValues[L]
   def delvs   (vs: L[V])              = copy(m.mapValues(_ deln vs))
   def setks   (ks: L[K], v: V)        = copy(m.delv(v).addks(ks, v))
   def setvs   (k: K, vs: L[V])        = mod(k, _ => vs)
-  def reverse                         = Multimap.reverse(m)
+
+  def reverse(implicit ev: Commutative[L]) = Multimap.reverse(m)
 
   def ++(n: Map[K, L[V]]) =
     copy(n.foldLeft(m)((q, x) => q.addn(x._1, x._2)))
@@ -90,6 +95,7 @@ object Multimap {
       def addn(b: L[A])                 (implicit L: MultiValues[L]) = L.addn(as, b)
       def deln(b: L[A])                 (implicit L: MultiValues[L]) = L.deln(as, b)
       def foldl[Z](z: Z)(f: (Z, A) => Z)(implicit L: MultiValues[L]) = L.foldl(z, as)(f)
+      def foldr[Z](z: Z)(f: (Z, A) => Z)(implicit L: MultiValues[L]) = L.foldr(z, as)(f)
       def stream                        (implicit L: MultiValues[L]) = L.stream(as)
       def set                           (implicit L: MultiValues[L]) = stream.toSet
       def count                         (implicit L: MultiValues[L]) = foldl(0)((q, _) => q + 1)
@@ -128,6 +134,6 @@ object Multimap {
   def empty[K, L[_]: MultiValues, V] =
     new Multimap[K, L, V](Map.empty)
 
-  def reverse[A, L[_]: MultiValues, B](ab: Map[A, L[B]]): Multimap[B, L, A] =
+  def reverse[A, L[_]: MultiValues, B](ab: Map[A, L[B]])(implicit ev: Commutative[L]): Multimap[B, L, A] =
     (empty[B, L, A] /: ab){ case (q, (a, bs)) => bs.foldl(q)(_.add(_, a)) }
 }
