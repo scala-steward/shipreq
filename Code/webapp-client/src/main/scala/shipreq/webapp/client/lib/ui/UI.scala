@@ -18,8 +18,8 @@ object UI {
     case RowStatus.Failed(_) => "failed"
   }
 
-  def rowStatusCtrls(rs: RowStatus, ctrls: => Modifier): Modifier =
-    rowStatusCtrlsFold(rs, ctrls, t => t, t => t)
+  def rowStatusCtrls(rs: RowStatus, syncCtrls: => Modifier): Modifier =
+    rowStatusCtrlsFold(rs, sync = syncCtrls, t => t, t => t)
 
   def rowStatusCtrlsFold(rs: RowStatus, sync: => Modifier, locked: Tag => Modifier, failed: Tag => Modifier): Modifier = rs match {
     case RowStatus.Sync      => sync

@@ -3,14 +3,16 @@ package shipreq.webapp.client.app.ui
 import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.OnUnmount
 import monocle.Lenser
-import shipreq.base.util.IMap
-import shipreq.prop.util.Multimap
-import shipreq.webapp.base.data.Validators.shared.RefKeyVS
 import scala.language.reflectiveCalls
+import scalajs.js.{undefined, UndefOr, UndefOrOps}
 import scalaz.effect.IO
 import scalaz.\&/
 import scalaz.std.AllInstances._
+import scalaz.syntax.equal._
 
+import shipreq.base.util.IMap
+import shipreq.prop.util.Multimap
+import shipreq.webapp.base.data.Validators.shared.RefKeyVS
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.delta.Partition
@@ -140,7 +142,7 @@ object CfgTags {
     }
 
     val headerRow =
-      CfgTable.header(List("", FieldNames.name, FieldNames.refKey, FieldNames.tagIsEnumLike))
+      CfgTable.header(List(FieldNames.name, FieldNames.refKey, FieldNames.tagIsEnumLike))
 
     private[this] val at_editable = at_editor.editableByRowStatus(c)
     private[this] val tg_editable = tg_editor.editableByRowStatus(c)
@@ -159,41 +161,67 @@ object CfgTags {
         EditorI(a, "", at_editable(r.status))
       }
 
-      type F = (String, ReactTag => ReactTag) => ReactElement
+      type F = (String, ReactTag => ReactTag) => UndefOr[ReactElement]
       @inline def F(f: F): F = f
 
-      val tgs = tg_storesAndStateS.s.getAll(s).map(row => row.p.id -> F((keyp, indent) => {
-      val (n,e,_) = tg_editor render tg_ei(row)
-        <.tr(^.key := s"$keyp.${row.p.id.value}",
-          <.td(),
-          <.td(indent(n)),
-          <.td("-"),
-          <.td(e),
-          <.td())
-      }))
+      val unusedField: ReactNode = "-"
 
-      val ats = at_storesAndStateS.s.getAll(s).map(row => row.p.id -> F((keyp, indent) => {
-        val (n,k,_) = at_editor render at_ei(row)
-        <.tr(^.key := s"$keyp.${row.p.id.value}",
-          <.td(),
-          <.td(indent(n)),
-          <.td(k),
-          <.td("-"),
-          <.td())
-      }))
+      def renderRow(rs: RowStatus, rowKey: String, name: ReactNode, refkey: ReactNode, enum: ReactNode): ReactElement =
+        <.tr(^.key := rowKey, ^.cls := UI.rowStatusRowClass(rs),
+          <.td(name),
+          <.td(refkey),
+          <.td(enum),
+          <.td(UI.rowStatusCtrls(rs, EmptyTag)))
 
-      val m = (tgs #::: ats).foldLeft(Map.empty[Tag.Id, F])(_ + _)
+      def tg_renderRow(row: tg_storesAndStateS.s.Row): F = F { (keyp, indent) =>
+        val tag = row.p
+        def key = s"$keyp.${tag.id.value}"
+        tag.alive match {
+          case Alive =>
+            val (n,e,_) = tg_editor render tg_ei(row)
+            renderRow(row.status, s"$keyp.${row.p.id.value}",
+              name   = indent(n),
+              refkey = unusedField,
+              enum   = e)
+          case Dead if s.showDeleted =>
+            renderRow(row.status, key, tag.name, unusedField, "TODO")
+          case Dead if !s.showDeleted =>
+            undefined
+        }
+      }
+
+      def at_renderRow(row: at_storesAndStateS.s.Row): F = F { (keyp, indent) =>
+        val tag = row.p
+        def key = s"$keyp.${tag.id.value}"
+        tag.alive match {
+          case Alive =>
+            val (n, k, _) = at_editor render at_ei(row)
+            renderRow(row.status, key,
+              name   = indent(n),
+              refkey = k,
+              enum   = unusedField)
+          case Dead if s.showDeleted =>
+            renderRow(row.status, key, tag.name, tag.key.value, unusedField)
+          case Dead if !s.showDeleted =>
+            undefined
+        }
+      }
+
+      val tgs = tg_storesAndStateS.s.getAll(s).map(row => row.p.id -> tg_renderRow(row))
+      val ats = at_storesAndStateS.s.getAll(s).map(row => row.p.id -> at_renderRow(row))
+
+      val all = (tgs #::: ats).foldLeft(Map.empty[Tag.Id, F])(_ + _)
 
       val childToParent = s.tree.reverseM[Set]
-      val topLvlIds = m.keySet -- childToParent.m.keySet
+      val topLvlIds = all.keySet -- childToParent.m.keySet
       val topLvl = tags.filter(topLvlIds contains _.id).sortBy(_.name)
 
       def go(id: Tag.Id, keyp: String, indent: ReactTag => ReactTag): Stream[ReactElement] = {
-        val h = m(id)(keyp, indent)
+        val h = all(id)(keyp, indent)
         val k2 = s"$keyp${id.value}."
         val i2: ReactTag => ReactTag = r => <.div(^.cls := "indent", indent(r))
         val t = s.tree(id).toStream.flatMap(j => go(j, k2, i2))
-        h #:: t
+        h.fold(t)(_ #:: t)
       }
       topLvl.flatMap(t => go(t.id, "", identity)).toReactNodeArray
     }
