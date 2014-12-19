@@ -125,43 +125,11 @@ object CfgTags {
         (tags, RefKeyVS(ts, is))
       }
 
-    val tg_editor = {
-      def crudValues(u: V.tagGroup._V): TagCrud.V = {
-        val (name, enum, desc) = u
-        \&/.This(TagProtocol.TagGroupValues(name, desc, enum))
-      }
-      val saveFn = Persistence.asyncSave2(V.tagGroup, tg_storesAndStateS, crudIO.createIO)(crudIO.updateIO,
-        validatorState,
-        SaveNeed.cmpToExtract(t => (t.name, t.enum, t.desc)),
-        crudValues,
-        c runState _)
-      Editor.merge3S(tg_fields, nameE, enumE, descE).tupleI.zoomU[S]
-        .applyRowUpdateAndRevert(tg_storesAndStateS)(rowIdFromEditorInput)
-        .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
-    }
-
-    val at_editor = {
-      def crudValues(u: V.applTag._V): TagCrud.V = {
-        val (name, key, desc) = u
-        \&/.This(TagProtocol.ApplicableTagValues(name, desc, key))
-      }
-      val saveFn = Persistence.asyncSave2(V.applTag, at_storesAndStateS, crudIO.createIO)(crudIO.updateIO,
-        validatorState,
-        SaveNeed.cmpToExtract(t => (t.name, t.key, t.desc)),
-        crudValues,
-        c runState _)
-      Editor.merge3S(at_fields, nameE, keyE, descE).tupleI.zoomU[S]
-        .applyRowUpdateAndRevert(at_storesAndStateS)(rowIdFromEditorInput)
-        .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
-    }
-
     val headerRow =
       CfgTable.header(List(FieldNames.name, FieldNames.refKey, FieldNames.tagIsEnumLike))
 
     type F = (String, ReactTag => ReactTag) => UndefOr[ReactElement]
     @inline def F(f: F): F = f
-
-    val unusedField: ReactNode = "-"
 
     abstract class TagSubtypeRenderer[T <: Tag, I, B, D, V](
         final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
@@ -177,6 +145,8 @@ object CfgTags {
 
       def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(r: storesAndStateS.s.Row): ReactElement
       def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement
+
+      val unusedField: ReactNode = "-"
 
       def rowTemplate(rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, enum: ReactNode): ReactElement =
         <.tr(^.key := key, ^.cls := UI.rowStatusRowClass(rs),
@@ -197,24 +167,6 @@ object CfgTags {
 
       def all(s: S): Stream[(Tag.Id, F)] =
         storesAndStateS.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
-    }
-
-    val tg_renderer = new TagSubtypeRenderer(tg_editor, tg_storesAndStateS) {
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
-        val (name, enum, _) = editor render ei(s, row)
-        rowTemplate(row.status, key)(indent(name), unusedField, enum)
-      }
-      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, unusedField, "TODO")
-    }
-
-    val at_renderer = new TagSubtypeRenderer(at_editor, at_storesAndStateS) {
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
-        val (name, refkey, _) = editor render ei(s, row)
-        rowTemplate(row.status, key)(indent(name), refkey, unusedField)
-      }
-      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, t.key.value, unusedField)
     }
 
     def rows: TagMod = {
@@ -243,8 +195,61 @@ object CfgTags {
           <.tbody(rows)
         ))
 
-  } // end Backend
+    // -----------------------------------------------------------------------------------------------------------------
+    // TagGroup
 
+    val tg_editor = {
+      def crudValues(u: V.tagGroup._V): TagCrud.V = {
+        val (name, enum, desc) = u
+        \&/.This(TagProtocol.TagGroupValues(name, desc, enum))
+      }
+      val saveFn = Persistence.asyncSave2(V.tagGroup, tg_storesAndStateS, crudIO.createIO)(crudIO.updateIO,
+        validatorState,
+        SaveNeed.cmpToExtract(t => (t.name, t.enum, t.desc)),
+        crudValues,
+        c runState _)
+      Editor.merge3S(tg_fields, nameE, enumE, descE).tupleI.zoomU[S]
+        .applyRowUpdateAndRevert(tg_storesAndStateS)(rowIdFromEditorInput)
+        .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
+    }
+
+    val tg_renderer = new TagSubtypeRenderer(tg_editor, tg_storesAndStateS) {
+      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
+        val (name, enum, _) = editor render ei(s, row)
+        rowTemplate(row.status, key)(indent(name), unusedField, enum)
+      }
+      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
+        rowTemplate(rs, key)(t.name, unusedField, "TODO")
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // ApplicableTag
+
+    val at_editor = {
+      def crudValues(u: V.applTag._V): TagCrud.V = {
+        val (name, key, desc) = u
+        \&/.This(TagProtocol.ApplicableTagValues(name, desc, key))
+      }
+      val saveFn = Persistence.asyncSave2(V.applTag, at_storesAndStateS, crudIO.createIO)(crudIO.updateIO,
+        validatorState,
+        SaveNeed.cmpToExtract(t => (t.name, t.key, t.desc)),
+        crudValues,
+        c runState _)
+      Editor.merge3S(at_fields, nameE, keyE, descE).tupleI.zoomU[S]
+        .applyRowUpdateAndRevert(at_storesAndStateS)(rowIdFromEditorInput)
+        .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
+    }
+
+    val at_renderer = new TagSubtypeRenderer(at_editor, at_storesAndStateS) {
+      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
+        val (name, refkey, _) = editor render ei(s, row)
+        rowTemplate(row.status, key)(indent(name), refkey, unusedField)
+      }
+      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
+        rowTemplate(rs, key)(t.name, t.key.value, unusedField)
+    }
+
+  } // end Backend
 }
 
 /*
