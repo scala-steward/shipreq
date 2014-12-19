@@ -235,8 +235,8 @@ class WIP {
       case CrudAction.Create(v)           => put(nextId, v)
       case CrudAction.Update(i, v)        => put(i, v)
       case CrudAction.Delete(id, HardDel) => mod(_.mapUnderlying(_.mapValues(_ removeChild id) - id)) // copy from RemoteDelta
-      case CrudAction.Delete(id, SoftDel) => upd(id, Tag._alive setF Dead)
-      case CrudAction.Delete(id, Restore) => upd(id, Tag._alive setF Alive)
+      case CrudAction.Delete(id, SoftDel) => upd(id, Tag._alive set Dead)
+      case CrudAction.Delete(id, Restore) => upd(id, Tag._alive set Alive)
     })
   }
 

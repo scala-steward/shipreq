@@ -12,7 +12,7 @@ trait DataSetAccessor[D] {
 case class RevAnd[D](rev: Rev, data: D)
 
 object RevAnd {
-  def _data[D] = SimpleLens[RevAnd[D]](_.data)((a, b) => a.copy(data = b))
+  def _data[D] = Lens((_: RevAnd[D]).data)(b => _.copy(data = b))
 }
 
 // TODO change List to Vector
@@ -20,7 +20,7 @@ object RevAnd {
 case class DataSet[D](rev: Rev, data: List[D])
 
 object DataSet {
-  def _data[D] = SimpleLens[DataSet[D]](_.data)((a, b) => a.copy(data = b))
+  def _data[D] = Lens((_: DataSet[D]).data)(b => _.copy(data = b))
 }
 
 object Project {

@@ -1,6 +1,7 @@
 package shipreq.webapp.base.data
 
-import monocle.{SimpleLens, Lenser}
+import monocle.Lens
+import monocle.macros.Lenser
 import scalaz.Equal
 import scalaz.Isomorphism._
 import scalaz.syntax.equal._
@@ -22,12 +23,12 @@ object Tag {
     }
   }
 
-  val _name = SimpleLens[Tag](_.name)((t, n) => t match {
+  val _name = Lens((_: Tag).name)(n => {
     case TagGroup(a, _, b, c, d)      => TagGroup(a, n, b, c, d)
     case ApplicableTag(a, _, b, c, d) => ApplicableTag(a, n, b, c, d)
   })
 
-  val _alive = SimpleLens[Tag](_.alive)((t, n) => t match {
+  val _alive = Lens((_: Tag).alive)(n => {
     case TagGroup(a, b, c, d, _)      => TagGroup(a, b, c, d, n)
     case ApplicableTag(a, b, c, d, _) => ApplicableTag(a, b, c, d, n)
   })
@@ -159,7 +160,7 @@ object TagProtocol {
     object IdAccess extends ObjDataId[PovTag.type, PovTag, Id] {
       override def id(d: PovTag) = d.id
       override def mkId(l: Long) = Id(l)
-      override def setId(t: PovTag, i: Id) = _tag.modify(t, Tag.IdAccess.setId(_, i))
+      override def setId(t: PovTag, i: Id) = _tag.modify(Tag.IdAccess.setId(_, i))(t)
     }
   }
 

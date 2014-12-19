@@ -1,9 +1,8 @@
 package shipreq.webapp.base
 
-import monocle.SimpleLens
+import monocle.Lens
 import monocle.function.{first, second}
 import monocle.std.tuple2._
-import monocle.syntax.lens.toLensOps
 import scala.annotation.tailrec
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
@@ -176,7 +175,7 @@ object RandomData {
     case t: TagGroup      => t
   }
 
-  def imapToMapLens[K, V] = SimpleLens[IMap[K, V]](_.underlyingMap)(_ replaceUnderlying _)
+  def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   def distinctRefkeys = {
     type A = DataSet[CustomIncmpType]
@@ -185,11 +184,11 @@ object RandomData {
     val refkey = Distinct.fstr.xmap(RefKey.apply)(_.value).distinct
     val incmp = refkey
       .at(CustomIncmpType._key).lift[List]
-      .at(first[T, A] |-> DataSet._data[CustomIncmpType])
+      .at(first[T, A] ^|-> DataSet._data[CustomIncmpType])
     val tags = refkey
       .lift[Option].contramap[Tag](_.keyO, setTagKey)
       .at(TagInTree._tag).liftMapValues[Tag.Id]
-      .at(second[T, B] |-> RevAnd._data[TagTree] |-> imapToMapLens)
+      .at(second[T, B] ^|-> RevAnd._data[TagTree] ^|-> imapToMapLens)
     incmp + tags
   }
 

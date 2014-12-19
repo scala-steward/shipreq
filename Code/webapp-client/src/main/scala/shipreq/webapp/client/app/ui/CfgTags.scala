@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.OnUnmount
-import monocle.Lenser
+import monocle.macros.Lenser
 import scala.language.reflectiveCalls
 import scalajs.js.{undefined, UndefOr, UndefOrOps}
 import scalaz.effect.IO
@@ -242,7 +242,7 @@ object CfgTags {
 
     def render: ReactElement =
       <.div(
-        ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modifyF(b => !b))),
+        ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
           <.tbody(rows)

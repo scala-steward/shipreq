@@ -1,6 +1,6 @@
 package shipreq.webapp.client.lib.ui
 
-import monocle._
+import monocle.Lens
 import monocle.function._
 import monocle.std.tuple2._
 
@@ -28,7 +28,7 @@ case class NewAndSavedStores[S, K, P, I](n: NewRowStore[S, I],
 
   type State = S
 
-  def contramap[T](f: SimpleLens[T, S]): NewAndSavedStores[T, K, P, I] =
+  def contramap[T](f: Lens[T, S]): NewAndSavedStores[T, K, P, I] =
     NewAndSavedStores(n contramap f, s contramap f)
 
   def initState(f: SavedRowStore[S, K, P, I] => SavedRowStore.SS[K, P, I]): SS[K, P, I] =
