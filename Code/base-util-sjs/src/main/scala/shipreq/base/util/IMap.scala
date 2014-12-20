@@ -60,7 +60,13 @@ final class IMap[K, V] private (key: V => K, m: Map[K, V]) {
     replaceUnderlying(f(m))
 
   def mod(k: K, f: V => V)(implicit ev: V <:< AnyRef): IMap[K, V] =
-    m.get(k).fold(this)(v => {
+    _mod(k, f, this)
+
+  def modOrPut(k: K, f: V => V, put: => V)(implicit ev: V <:< AnyRef): IMap[K, V] =
+    _mod(k, f, this add put)
+
+  private def _mod(k: K, f: V => V, nomod: => IMap[K, V])(implicit ev: V <:< AnyRef): IMap[K, V] =
+    m.get(k).fold(nomod)(v => {
       val v2 = f(v)
       if (ev(v) eq ev(v2))
         this
@@ -71,6 +77,7 @@ final class IMap[K, V] private (key: V => K, m: Map[K, V]) {
         setmap(n)
       }
     })
+
 }
 
 /*

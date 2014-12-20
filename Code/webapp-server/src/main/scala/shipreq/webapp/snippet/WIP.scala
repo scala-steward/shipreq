@@ -220,7 +220,10 @@ class WIP {
 
     def put2(i: Id, ov: Option[Values], or: Option[PovRelations]): RemoteDelta =
       mod(tt => {
-        val res = ov.fold(tt)(v => tt.mod(i, _.copy(tag = build(i)(v))))
+        val res = ov.fold(tt) { v =>
+          val newTag = build(i)(v)
+          tt.modOrPut(i, _.copy(tag = newTag), TagInTree(newTag, Vector.empty))
+        }
         or.fold(res)(_(res, i))
       })
 

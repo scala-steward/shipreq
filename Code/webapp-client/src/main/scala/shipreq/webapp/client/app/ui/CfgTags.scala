@@ -3,6 +3,7 @@ package shipreq.webapp.client.app.ui
 import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.OnUnmount
 import monocle.macros.Lenser
+import org.scalajs.dom.HTMLSelectElement
 import scala.language.reflectiveCalls
 import scalajs.js.{undefined, UndefOr, UndefOrOps}
 import scalaz.effect.IO
@@ -26,6 +27,7 @@ import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import TagProtocol.PovTag
 import Tag.Id
+import shipreq.webapp.client.WebappClientTmp.WCTmpImplicits._
 
 object CfgTags {
 
@@ -50,14 +52,16 @@ object CfgTags {
                    tg_state: tg_storesAndState.State,
                    at_state: at_storesAndState.State,
                    tree: TreeState,
+                   newSel: TagType,
                    detailRow: Option[Id])
-                  // DND state
+
   object State {
     private[this] def l = Lenser[State]
     val _showDeleted = l(_.showDeleted)
     val _tg_state    = l(_.tg_state)
     val _at_state    = l(_.at_state)
     val _tree        = l(_.tree)
+    val _newSel      = l(_.newSel)
     val _detailRow   = l(_.detailRow)
   }
 
@@ -79,6 +83,7 @@ object CfgTags {
       tg_storesAndState.initState(_.initStateS(tgs.result(), _.id)),
       at_storesAndState.initState(_.initStateS(ats.result(), _.id)),
       Multimap(tagtree.mapValues(_.children)),
+      ApplicableTagType,
       None)
   }
 
@@ -122,6 +127,34 @@ object CfgTags {
 
   val rowIdFromEditorInput: ((V.S, Any)) => Option[Id] = _._1._2.tagData._1
 
+  sealed abstract class TagType(val key: String, val text: String)
+  case object TagGroupType extends TagType("T", "Tag Group")
+  case object ApplicableTagType extends TagType("A", "Tag")
+  val tagTypes = IMap.empty((_: TagType).key).addAll(TagGroupType, ApplicableTagType)
+
+  case class CreateControlProps(selected: TagType, onChange: TagType => IO[Unit], onCreate: Option[IO[Unit]])
+  val CreateControl = ReactComponentB[CreateControlProps]("CreateControl")
+    .render(p => {
+      def onchange: SyntheticEvent[HTMLSelectElement] => IO[Unit] =
+        e => tagTypes.get(e.target.value).fold(IO(()))(p.onChange)
+      <.div(
+        <.select(
+          ^.value := p.selected.key,
+          ^.onchange ~~> onchange,
+          ^.disabled := p.onCreate.isEmpty,
+          tagTypes.values.map(t => <.option(^.value := t.key, t.text))),
+        <.button(
+          ^.onclick ~~>? p.onCreate,
+          ^.disabled := p.onCreate.isEmpty,
+          "Create"
+    ))})
+    .shouldComponentUpdate((c,p,_) => p != c.props)
+    .build
+
+  def newRowActive(s: State): Boolean =
+    at_storesAndStateS.n.editing(s) ||
+    tg_storesAndStateS.n.editing(s)
+
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
     val crudIO = CrudIO(Tag, TagCrud)(c.props.cp, c.props.remote, c.props.clientData)
@@ -138,6 +171,21 @@ object CfgTags {
             .map(i => (i.id.some, i.key)))
 
         (tags, RefKeyVS(ts, is))
+      }
+
+    def newCtrlProps =
+      CreateControlProps(
+        c.state.newSel,
+        t => c.modStateIO(State._newSel set t),
+        if (newRowActive(c.state)) None else Some(onCreate))
+
+    def onCreate: IO[Unit] =
+      c.modStateIO { s =>
+        val f = s.newSel match {
+          case TagGroupType      => tg_storesAndStateS.n.enableEdit
+          case ApplicableTagType => at_storesAndStateS.n.enableEdit
+        }
+        f(s)
       }
 
     val headerRow =
@@ -158,6 +206,12 @@ object CfgTags {
         EditorI(a, "", editable(r.status))
       }
 
+      def ei(s: S, r: storesAndStateS.n.Row): editor.Input = {
+        val a = (validatorState(None)(s), r.i)
+        EditorI(a, "", editable(r.status))
+      }
+
+      def renderNew  (s: S, r: storesAndStateS.n.Row): ReactElement
       def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(r: storesAndStateS.s.Row): ReactElement
       def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement
 
@@ -182,7 +236,11 @@ object CfgTags {
 
       def all(s: S): Stream[(Id, F)] =
         storesAndStateS.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
-    }
+
+      def newRow(s: S): Option[ReactElement] =
+        storesAndStateS.n.get(s).map(renderNew(s, _))
+
+    } // end TagSubtypeRenderer
 
     def rows: TagMod = {
       val s             = c.state
@@ -199,11 +257,19 @@ object CfgTags {
         val t = s.tree(id).toStream.flatMap(j => go(j, k2, i2))
         h.fold(t)(_ #:: t)
       }
-      topLvl.flatMap(t => go(t.id, "", identity)).toReactNodeArray
+
+      val newRows: Stream[ReactElement] =
+        tg_renderer.newRow(s).toStream #::: at_renderer.newRow(s).toStream
+
+      val allRows =
+        newRows #::: topLvl.flatMap(t => go(t.id, "", identity))
+
+      allRows.toReactNodeArray
     }
 
     def render: ReactElement =
       <.div(
+        CreateControl(newCtrlProps),
         ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
@@ -229,6 +295,10 @@ object CfgTags {
     }
 
     val tg_renderer = new TagSubtypeRenderer(tg_editor, tg_storesAndStateS) {
+      override def renderNew(s: S, row: storesAndStateS.n.Row): ReactElement = {
+        val (name, enum, _) = editor render ei(s, row)
+        rowTemplate(row.status, "n")(name, unusedField, enum)
+      }
       override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
         val (name, enum, _) = editor render ei(s, row)
         rowTemplate(row.status, key)(indent(name), unusedField, enum)
@@ -256,6 +326,10 @@ object CfgTags {
     }
 
     val at_renderer = new TagSubtypeRenderer(at_editor, at_storesAndStateS) {
+      override def renderNew(s: S, row: storesAndStateS.n.Row): ReactElement = {
+        val (name, refkey, _) = editor render ei(s, row)
+        rowTemplate(row.status, "n")(name, refkey, unusedField)
+      }
       override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
         val (name, refkey, _) = editor render ei(s, row)
         rowTemplate(row.status, key)(indent(name), refkey, unusedField)
@@ -266,65 +340,3 @@ object CfgTags {
 
   } // end Backend
 }
-
-/*
-  import storesAndState._
-
-  val Component =
-    ReactComponentB[Props]("Cfg: Req Types")
-      .getInitialState(initialState)
-      .backend(new Backend(_))
-      .render(_.backend.render)
-      .configure(
-        RemoteDeltaListener(CustomReqType, CustomReqTypeCrud)
-          .install(savedRowStoreS, Partition.CustomReqTypes, _.clientData))
-      .build
-
-  // ===================================================================================================================
-  final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
-    val supp = TypicalSupp(storesAndState, crudIO)(c, _.alive)
-
-    val table = {
-      def rowRenderer =
-        new CfgTable.RowRenderer[CustomReqType, rowE.View, (Modifier, Set[ReqType.Mnemonic], Modifier, Modifier)] {
-          override def newRow = {
-            case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)
-          }
-          override def savedRow = {
-            case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)
-          }
-          override def deletedRow = p =>
-            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(ImplicationRequired from p.imp)(*.disabled := true))
-
-          override def render = {
-            case (mnemonic, oldMnemonics, name, impReq) =>
-              val mn: Modifier =
-                if (oldMnemonics.isEmpty)
-                  mnemonic
-                else
-                  Seq(mnemonic, <.div(*.cls := "oldMnemonics", oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
-              Seq(mn, name, impReq)
-          }
-        }
-
-      val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, supp.deletion, c)
-
-      val headerRow = CfgTable.header(List("Mnemonic", "Name", "Implication Required"))
-
-      val staticRows: t.RowStream = {
-        def rr(r: ReqType.Static): ReactElement = {
-          val imp = checkbox(ImplicationRequired from r.imp)(*.disabled := true)
-          val norm: t.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp)
-          t.row("static", RowStatus.Sync, norm, EmptyTag)(*.keyAttr := r.mnemonic.value)
-        }
-        ReqType.static.map(r => r.mnemonic -> rr(r)).toStream
-      }
-
-      () => t.table(headerRow, staticRows)
-    }
-
-    def render: ReactElement =
-      CfgTable.outer(storesAndState)(c, table())
-  }
-}
- */
