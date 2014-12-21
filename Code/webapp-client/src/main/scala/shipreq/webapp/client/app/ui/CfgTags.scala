@@ -27,6 +27,7 @@ import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import TagProtocol.PovTag
 import Tag.Id
+import shipreq.webapp.base.protocol.DeletionAction._
 import shipreq.webapp.client.WebappClientTmp.WCTmpImplicits._
 
 object CfgTags {
@@ -72,19 +73,19 @@ object CfgTags {
   sealed abstract class TagType(val key: String, val text: String) {
     type P <: Tag
     type I
-    val store: NewAndSavedStores[S, Id, P, I]
+    val stores: NewAndSavedStores[S, Id, P, I]
   }
 
   case object TagGroupType extends TagType("T", "Tag Group") {
     override type P = TagGroup
     override type I = tg_storesAndState.Input
-    override val store = tg_storesAndState.contramap(State._tg_state)
+    override val stores = tg_storesAndState.contramap(State._tg_state)
   }
 
   case object ApplicableTagType extends TagType("A", "Tag") {
     override type P = ApplicableTag
     override type I = at_storesAndState.Input
-    override val store = at_storesAndState.contramap(State._at_state)
+    override val stores = at_storesAndState.contramap(State._at_state)
   }
 
   val tagTypes  = List[TagType](TagGroupType, ApplicableTagType)
@@ -119,11 +120,11 @@ object CfgTags {
 
   val tagStateFns = new RemoteDeltaListener.StateFns[S, Id, PovTag](
     (s, i) =>
-      tagTypes.foldLeft(State._tree.modify(_ delkv i))((f, t) => f compose t.store.s.remove(i))(s),
+      tagTypes.foldLeft(State._tree.modify(_ delkv i))((f, t) => f compose t.stores.s.remove(i))(s),
     (s, i, d) => {
       val s2 = d.tag match {
-        case t: TagGroup      => TagGroupType     .store.s.set(i, t)(s)
-        case t: ApplicableTag => ApplicableTagType.store.s.set(i, t)(s)
+        case t: TagGroup      => TagGroupType     .stores.s.set(i, t)(s)
+        case t: ApplicableTag => ApplicableTagType.stores.s.set(i, t)(s)
       }
       State._tree.modify(d.rels.apply(_, i))(s2)
     })
@@ -138,7 +139,7 @@ object CfgTags {
       .build
 
   def getAllP(s: S): Stream[Tag] =
-    tagTypes.foldLeft(Stream.empty[Tag])(_ #::: _.store.s.getAllP(s).map(t => t: Tag))
+    tagTypes.foldLeft(Stream.empty[Tag])(_ #::: _.stores.s.getAllP(s).map(t => t: Tag))
 
   val rowIdFromEditorInput: ((V.S, Any)) => Option[Id] = _._1._2.tagData._1
 
@@ -162,7 +163,10 @@ object CfgTags {
     .build
 
   def newRowActive(s: State): Boolean =
-    tagTypes.foldLeft(false)(_ || _.store.n.editing(s))
+    tagTypes.foldLeft(false)(_ || _.stores.n.editing(s))
+
+  val abortNew: S => S =
+    tagTypes.map(_.stores.n.remove).reduce(_ compose _)
 
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
@@ -189,45 +193,56 @@ object CfgTags {
         if (newRowActive(c.state)) None else Some(onCreate))
 
     def onCreate: IO[Unit] =
-      c.modStateIO(s => s.newSel.store.n.enableEdit(s))
+      c.modStateIO(s => s.newSel.stores.n.enableEdit(s))
 
     val headerRow =
       CfgTable.header(List(FieldNames.name, FieldNames.refKey, FieldNames.tagIsEnumLike))
+
+    def abortNewButton =
+      <.button(
+        ^.onclick ~~> c.modStateIO(abortNew),
+        "Cancel") // TODO sync all abort-new buttons
 
     type F = (String, ReactTag => ReactTag) => UndefOr[ReactElement]
     @inline def F(f: F): F = f
 
     abstract class TagSubtypeRenderer[T <: Tag, I, B, D, V](
         final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
-        final val storesAndStateS: NewAndSavedStores[S, Id, T, I]) {
+        final val stores: NewAndSavedStores[S, Id, T, I]) {
       type TagT = T
 
       val editable = editor.editableByRowStatus(c)
 
-      def ei(s: S, r: storesAndStateS.s.Row): editor.Input = {
+      val deletion =
+        Persistence.asyncDeletionS(stores.s)(_.alive, crudIO._deleteIO, c runState _)
+
+      def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)
         EditorI(a, "", editable(r.status))
       }
 
-      def ei(s: S, r: storesAndStateS.n.Row): editor.Input = {
+      def ei(s: S, r: stores.n.Row): editor.Input = {
         val a = (validatorState(None)(s), r.i)
         EditorI(a, "", editable(r.status))
       }
 
-      def renderNew  (s: S, r: storesAndStateS.n.Row): ReactElement
-      def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(r: storesAndStateS.s.Row): ReactElement
+      def renderNew  (s: S, r: stores.n.Row): ReactElement
+      def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(r: stores.s.Row): ReactElement
       def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement
 
       val unusedField: ReactNode = "-"
 
-      def rowTemplate(rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, enum: ReactNode): ReactElement =
+      def rowTemplate(rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, enum: ReactNode)(ctrls: => TagMod): ReactElement =
         <.tr(^.key := key, ^.cls := UI.rowStatusRowClass(rs),
           <.td(^.cls := "name", name),
           <.td(refkey),
           <.td(enum),
-          <.td(UI.rowStatusCtrls(rs, EmptyTag)))
+          <.td(UI.rowStatusCtrls(rs, ctrls)))
 
-      def renderRow(s: S, row: storesAndStateS.s.Row): F = F { (keyp, indent) =>
+      def newRowTemplate(rs: RowStatus)(name: ReactNode, refkey: ReactNode, enum: ReactNode): ReactElement =
+        rowTemplate(rs, "new")(name, refkey, enum)(abortNewButton)
+
+      def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
         val tag = row.p
         def key = s"$keyp.${tag.id.value}"
         tag.alive match {
@@ -238,10 +253,10 @@ object CfgTags {
       }
 
       def all(s: S): Stream[(Id, F)] =
-        storesAndStateS.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
+        stores.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
 
       def newRow(s: S): Option[ReactElement] =
-        storesAndStateS.n.get(s).map(renderNew(s, _))
+        stores.n.get(s).map(renderNew(s, _))
 
     } // end TagSubtypeRenderer
 
@@ -283,64 +298,64 @@ object CfgTags {
     // TagGroup
 
     val tg_editor = {
-      import TagGroupType.store
+      import TagGroupType.stores
       def crudValues(u: V.tagGroup._V): TagCrud.V = {
         val (name, enum, desc) = u
         \&/.This(TagProtocol.TagGroupValues(name, desc, enum))
       }
-      val saveFn = Persistence.asyncSave2(V.tagGroup, store, crudIO.createIO)(crudIO.updateIO,
+      val saveFn = Persistence.asyncSave2(V.tagGroup, stores, crudIO.createIO)(crudIO.updateIO,
         validatorState,
         SaveNeed.cmpToExtract(t => (t.name, t.enum, t.desc)),
         crudValues,
         c runState _)
       Editor.merge3S(tg_fields, nameE, enumE, descE).tupleI.zoomU[S]
-        .applyRowUpdateAndRevert(store)(rowIdFromEditorInput)
+        .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
     }
 
-    val tg_renderer = new TagSubtypeRenderer(tg_editor, TagGroupType.store) {
-      override def renderNew(s: S, row: storesAndStateS.n.Row): ReactElement = {
+    val tg_renderer = new TagSubtypeRenderer(tg_editor, TagGroupType.stores) {
+      override def renderNew(s: S, row: stores.n.Row): ReactElement = {
         val (name, enum, _) = editor render ei(s, row)
-        rowTemplate(row.status, "n")(name, unusedField, enum)
+        newRowTemplate(row.status)(name, unusedField, enum)
       }
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: stores.s.Row): ReactElement = {
         val (name, enum, _) = editor render ei(s, row)
-        rowTemplate(row.status, key)(indent(name), unusedField, enum)
+        rowTemplate(row.status, key)(indent(name), unusedField, enum)(deletion.button(row.p.id, SoftDel))
       }
       override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, unusedField, "TODO")
+        rowTemplate(rs, key)(t.name, unusedField, "TODO")(deletion.button(t.id, Restore))
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // ApplicableTag
 
     val at_editor = {
-      import ApplicableTagType.store
+      import ApplicableTagType.stores
       def crudValues(u: V.applTag._V): TagCrud.V = {
         val (name, key, desc) = u
         \&/.This(TagProtocol.ApplicableTagValues(name, desc, key))
       }
-      val saveFn = Persistence.asyncSave2(V.applTag, store, crudIO.createIO)(crudIO.updateIO,
+      val saveFn = Persistence.asyncSave2(V.applTag, stores, crudIO.createIO)(crudIO.updateIO,
         validatorState,
         SaveNeed.cmpToExtract(t => (t.name, t.key, t.desc)),
         crudValues,
         c runState _)
       Editor.merge3S(at_fields, nameE, keyE, descE).tupleI.zoomU[S]
-        .applyRowUpdateAndRevert(store)(rowIdFromEditorInput)
+        .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
     }
 
-    val at_renderer = new TagSubtypeRenderer(at_editor, ApplicableTagType.store) {
-      override def renderNew(s: S, row: storesAndStateS.n.Row): ReactElement = {
+    val at_renderer = new TagSubtypeRenderer(at_editor, ApplicableTagType.stores) {
+      override def renderNew(s: S, row: stores.n.Row): ReactElement = {
         val (name, refkey, _) = editor render ei(s, row)
-        rowTemplate(row.status, "n")(name, refkey, unusedField)
+        newRowTemplate(row.status)(name, refkey, unusedField)
       }
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: storesAndStateS.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: stores.s.Row): ReactElement = {
         val (name, refkey, _) = editor render ei(s, row)
-        rowTemplate(row.status, key)(indent(name), refkey, unusedField)
+        rowTemplate(row.status, key)(indent(name), refkey, unusedField)(deletion.button(row.p.id, SoftDel))
       }
       override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, t.key.value, unusedField)
+        rowTemplate(rs, key)(t.name, t.key.value, unusedField)(deletion.button(t.id, Restore))
     }
 
   } // end Backend
