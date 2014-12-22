@@ -203,7 +203,8 @@ object CfgTags {
         ^.onclick ~~> c.modStateIO(abortNew),
         "Cancel") // TODO sync all abort-new buttons
 
-    type F = (String, ReactTag => ReactTag) => UndefOr[ReactElement]
+    type Indenter = ReactTag => ReactTag
+    type F = (String, Indenter) => UndefOr[ReactElement]
     @inline def F(f: F): F = f
 
     abstract class TagSubtypeRenderer[T <: Tag, I, B, D, V](
@@ -227,8 +228,8 @@ object CfgTags {
       }
 
       def renderNew  (s: S, r: stores.n.Row): ReactElement
-      def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(r: stores.s.Row): ReactElement
-      def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement
+      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactElement
+      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement
 
       val unusedField: ReactNode = "-"
 
@@ -268,13 +269,13 @@ object CfgTags {
       val topLvlIds     = all.keySet -- childToParent.m.keySet
       val topLvl        = tags.filter(topLvlIds contains _.id).sortBy(_.name)
 
-      def go(id: Id, keyp: String, indent: ReactTag => ReactTag): Stream[ReactElement] = {
-        val h = all(id)(keyp, indent)
-        val k2 = s"$keyp${id.value}."
-        val i2: ReactTag => ReactTag = r => <.div(^.cls := "indent", indent(r))
-        val t = s.tree(id).toStream.flatMap(j => go(j, k2, i2))
-        h.fold(t)(_ #:: t)
-      }
+      def go(id: Id, keyp: String, indent: Indenter): Stream[ReactElement] =
+        all(id)(keyp, indent).fold(Stream.empty[ReactElement]) { h =>
+          val k2 = s"$keyp${id.value}."
+          val i2: Indenter = r => <.div(^.cls := "indent", indent(r))
+          val t = s.tree(id).toStream.flatMap(j => go(j, k2, i2))
+          h #:: t
+        }
 
       val newRows: Stream[ReactElement] =
         tg_renderer.newRow(s).toStream #::: at_renderer.newRow(s).toStream
@@ -318,12 +319,12 @@ object CfgTags {
         val (name, enum, _) = editor render ei(s, row)
         newRowTemplate(row.status)(name, unusedField, enum)
       }
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: stores.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactElement = {
         val (name, enum, _) = editor render ei(s, row)
         rowTemplate(row.status, key)(indent(name), unusedField, enum)(deletion.button(row.p.id, SoftDel))
       }
-      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, unusedField, "TODO")(deletion.button(t.id, Restore))
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement =
+        rowTemplate(rs, key)(indent(<.span(t.name)), unusedField, "TODO")(deletion.button(t.id, Restore))
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -350,12 +351,12 @@ object CfgTags {
         val (name, refkey, _) = editor render ei(s, row)
         newRowTemplate(row.status)(name, refkey, unusedField)
       }
-      override def renderAlive(s: S, indent: ReactTag => ReactTag, key: String)(row: stores.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactElement = {
         val (name, refkey, _) = editor render ei(s, row)
         rowTemplate(row.status, key)(indent(name), refkey, unusedField)(deletion.button(row.p.id, SoftDel))
       }
-      override def renderDead (s: S, indent: ReactTag => ReactTag, key: String)(rs: RowStatus, t: TagT): ReactElement =
-        rowTemplate(rs, key)(t.name, t.key.value, unusedField)(deletion.button(t.id, Restore))
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement =
+        rowTemplate(rs, key)(indent(<.span(t.name)), t.key.value, unusedField)(deletion.button(t.id, Restore))
     }
 
   } // end Backend

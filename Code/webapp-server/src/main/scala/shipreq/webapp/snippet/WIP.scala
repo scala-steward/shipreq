@@ -2,6 +2,7 @@ package shipreq.webapp.snippet
 
 import net.liftweb.util.Helpers._
 import scalaz.\&/, \&/._
+import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.prop.util._
 import shipreq.webapp.base.protocol._
@@ -10,7 +11,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta._
 import DeletionAction._
 import shipreq.webapp.util.QuietException
-
 
 class WIP {
 
@@ -162,7 +162,7 @@ class WIP {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  val tagCrud = {
+  object tagCrud {
     import Tag.Id
     import TagProtocol._
 
@@ -210,7 +210,10 @@ class WIP {
     }
 
     def upd(id: Id, f: Tag => Tag): RemoteDelta =
-      mod(_.mod(id, v => v.copy(tag = f(v.tag))))
+      mod(updT(id, f))
+
+    def updT(id: Id, f: Tag => Tag): TagTree => TagTree =
+      _.mod(id, v => v.copy(tag = f(v.tag)))
 
     def put(i: Id, v: Values \&/ PovRelations): RemoteDelta = v match {
       case This(a)    => put2(i, a.some, None)
@@ -234,13 +237,37 @@ class WIP {
       case ApplicableTagValues(n, d, k) => ApplicableTag(i, n, d, k, Alive)
     }
 
-    ServerProtocol.routine(Routines.TagCrud)({
-      case CrudAction.Create(v)           => put(nextId, v)
-      case CrudAction.Update(i, v)        => put(i, v)
-      case CrudAction.Delete(id, HardDel) => mod(_.mapUnderlying(_.mapValues(_ removeChild id) - id)) // copy from RemoteDelta
-      case CrudAction.Delete(id, SoftDel) => upd(id, Tag._alive set Dead)
-      case CrudAction.Delete(id, Restore) => upd(id, Tag._alive set Alive)
-    })
+    def setLife(t0: TagTree, id: Id, oa: Option[Alive]): TagTree =
+      t0.get(id).fold(t0){ subj =>
+
+        // Modify children
+        val t1 = subj.children.foldLeft(t0) { (t, childId) =>
+          t.get(childId).map(_.tag) match {
+            case Some(child) if child.alive ≟ subj.tag.alive =>
+              val childToParents = Multimap(t.mapValues(_.children.toSet)).reverse // TODO I *HATE* performance!
+              val hasLiveParent = (childToParents(childId) - id).exists(p => t.underlyingMap(p).tag.alive ≟ Alive)
+              if (hasLiveParent)
+                t
+              else
+                setLife(t, childId, oa)
+            case _ => t
+          }
+        }
+
+        // Modify subject
+        oa match {
+          case None    => t1.mapUnderlying(_.mapValues(_ removeChild id) - id) // copy from RemoteDelta
+          case Some(a) => updT(id, Tag._alive set a)(t1)
+        }
+      }
+
+    val fn = ServerProtocol.routine(Routines.TagCrud)({
+        case CrudAction.Create(v)           => put(nextId, v)
+        case CrudAction.Update(i, v)        => put(i, v)
+        case CrudAction.Delete(id, HardDel) => mod(setLife(_, id, None))
+        case CrudAction.Delete(id, SoftDel) => mod(setLife(_, id, Some(Dead)))
+        case CrudAction.Delete(id, Restore) => mod(setLife(_, id, Some(Alive)))
+      })
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -248,7 +275,7 @@ class WIP {
   def delay(): Unit = () //Thread.sleep(new java.util.Random().nextInt(120)+100)
 
   def render = {
-    val pg = Routines.ForCfgReqType(projectInit, incmpCrud, reqqq.crud, reqqq.imptoggle, tagCrud)
+    val pg = Routines.ForCfgReqType(projectInit, incmpCrud, reqqq.crud, reqqq.imptoggle, tagCrud.fn)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }
