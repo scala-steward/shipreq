@@ -61,7 +61,7 @@ object ReactExamples {
         CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
 
       def cfgTagsR: Renderer[ProjectPage] = _ =>
-        CfgTags.Props(cp, r.tagCrud, clientData, false).component
+        cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, false).component
 
       val c = Router.component(BaseUrl("/wip"), ProjectPage)
       c() render document.getElementById("eg2")

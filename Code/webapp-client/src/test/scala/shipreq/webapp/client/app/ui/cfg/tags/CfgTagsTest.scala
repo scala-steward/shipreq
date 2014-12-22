@@ -1,4 +1,4 @@
-package shipreq.webapp.client.app.ui
+package shipreq.webapp.client.app.ui.cfg.tags
 
 import japgolly.scalajs.react.{TopNode, ReactComponentM_}
 import japgolly.scalajs.react.test._
@@ -17,6 +17,7 @@ import Tag.Id
 import TagProtocol._
 import TestUtil._
 
+
 object CfgTagsTest extends TestSuite {
 
   @tailrec def nameCellToText(d: Sizzle.DOM, prefix: String): String =
@@ -34,7 +35,7 @@ object CfgTagsTest extends TestSuite {
     val clientData = SampleProject.clientData
     val cp         = new TestClientProtocol
     val props      = new CfgTags.Props(cp, remote, clientData, false)
-    val re         = CfgTags.Component(props)
+    val re         = MainTable.Component(props)
     val c          = ReactTestUtils.renderIntoDocument(re)
 
     'recvUpdates {

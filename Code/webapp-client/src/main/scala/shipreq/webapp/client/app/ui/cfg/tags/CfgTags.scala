@@ -1,9 +1,9 @@
-package shipreq.webapp.client.app.ui
+package shipreq.webapp.client.app.ui.cfg.tags
 
 import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.OnUnmount
 import monocle.macros.Lenser
-import org.scalajs.dom.HTMLSelectElement
+import shipreq.webapp.client.app.ui.ShowDeletedToggler
 import scala.language.reflectiveCalls
 import scalajs.js.{undefined, UndefOr, UndefOrOps}
 import scalaz.effect.IO
@@ -11,7 +11,6 @@ import scalaz.\&/
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 
-import shipreq.base.util.IMap
 import shipreq.prop.util.Multimap
 import shipreq.webapp.base.data.Validators.shared.RefKeyVS
 import shipreq.base.util.ScalaExt._
@@ -19,7 +18,6 @@ import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.delta.Partition
 import shipreq.webapp.base.data.Validators.{tag => V}
 import shipreq.webapp.base.protocol.Routines.TagCrud
-import shipreq.webapp.base.TextMod
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.CrudIO
@@ -30,12 +28,16 @@ import Tag.Id
 import shipreq.webapp.base.protocol.DeletionAction._
 import shipreq.webapp.client.WebappClientTmp.WCTmpImplicits._
 
+
 object CfgTags {
-
   case class Props(cp: ClientProtocol, remote: TagCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
-    def component = Component(this)
+    def component: ReactComponentU_ = MainTable.Component(this)
   }
+}
 
+import CfgTags.Props
+
+private[tags] object MainTable {
   val nameE = Editors.textInputEditor.applyValidator(V.nameS)
   val keyE  = Editors.textInputEditor.applyValidator(V.keyS)
   val descE = Editors.textareaEditor.applyValidator(V.descS)
@@ -133,25 +135,6 @@ object CfgTags {
 
   val rowIdFromEditorInput: ((V.S, Any)) => Option[Id] = _._1._2.tagData._1
 
-  case class CreateControlProps(selected: Tag.Type, onChange: Tag.Type => IO[Unit], onCreate: Option[IO[Unit]])
-  val CreateControl = ReactComponentB[CreateControlProps]("CreateControl")
-    .render(p => {
-      def onchange: SyntheticEvent[HTMLSelectElement] => IO[Unit] =
-        e => Tag.Type.byKey.get(e.target.value).fold(IO(()))(p.onChange)
-      <.div(
-        <.select(
-          ^.value := p.selected.key,
-          ^.onchange ~~> onchange,
-          ^.disabled := p.onCreate.isEmpty,
-          Tag.Type.values.map(t => <.option(^.value := t.key, t.name))),
-        <.button(
-          ^.onclick ~~>? p.onCreate,
-          ^.disabled := p.onCreate.isEmpty,
-          "Create"
-    ))})
-    .shouldComponentUpdate((c,p,_) => p != c.props)
-    .build
-
   def newRowActive(s: State): Boolean =
     eachTypesStores.foldLeft(false)(_ || _.n.editing(s))
 
@@ -176,8 +159,8 @@ object CfgTags {
         (tags, RefKeyVS(ts, is))
       }
 
-    def createControlProps =
-      CreateControlProps(
+    def newTagControlProps =
+      NewTagControl.Props(
         c.state.newSel,
         t => c.modStateIO(State._newSel set t),
         if (newRowActive(c.state)) None else Some(onCreate))
@@ -278,7 +261,7 @@ object CfgTags {
 
     def render: ReactElement =
       <.div(
-        CreateControl(createControlProps),
+        NewTagControl.Component(newTagControlProps),
         ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
