@@ -69,7 +69,7 @@ object DataProp {
       Prop.subset[T]("ids refers to available tags")(_.keySet, _.vstreamf(_.children.toStream))
 
     def tagTree =
-      uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks
+      (uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
 
     lazy val all =
       (tagTree.contramap[RevAnd[T]](_.data) ∧ rev.contramap(_.rev)) rename "Tags"

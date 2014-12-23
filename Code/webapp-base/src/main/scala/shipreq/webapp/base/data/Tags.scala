@@ -4,6 +4,7 @@ import monocle.Lens
 import monocle.macros.Lenser
 import scalaz.Equal
 import scalaz.Isomorphism._
+import scalaz.std.vector._
 import scalaz.syntax.equal._
 import shipreq.base.util.IMap
 import shipreq.base.util.TaggedTypes.TaggedLong
@@ -33,13 +34,15 @@ object Tag {
     case ApplicableTag(a, b, c, d, _) => ApplicableTag(a, b, c, d, n)
   })
 
-  sealed abstract class Type(val key: String, val name: String) { type Data <: Tag}
+  sealed abstract class Type(val key: String, val name: String) { type Data <: Tag }
   object Type {
     case object Group      extends Type("G", "Tag Group") { override type Data = TagGroup }
     case object Applicable extends Type("A", "Tag")       { override type Data = ApplicableTag }
     val values = List[Type](Group, Applicable)
     val byKey  = IMap.empty((_: Type).key).addAll(values: _*)
   }
+
+  implicit val equality: Equal[Tag] = Equal.equalA[Tag] // TODO use macros
 }
 
 // =====================================================================================================================
@@ -54,6 +57,7 @@ sealed trait Tag {
   val desc: Option[String]
   val alive: Alive
   def keyO: Option[RefKey]
+  def tagType: Tag.Type
 }
 
 /**
@@ -66,6 +70,7 @@ final case class TagGroup(id: Id,
                           enum: IsEnumLike,
                           alive: Alive) extends Tag {
   override def keyO = None
+  override def tagType = Tag.Type.Group
 }
 
 final case class ApplicableTag(id: Id,
@@ -74,6 +79,7 @@ final case class ApplicableTag(id: Id,
                                key: RefKey,
                                alive: Alive) extends Tag {
   override def keyO = Some(key)
+  override def tagType = Tag.Type.Applicable
 }
 
 /**
@@ -93,6 +99,16 @@ case object NotEnumLike extends IsEnumLike
 
 object TagTree {
   def empty: TagTree = IMap.empty(_.tag.id)
+
+  def prettyPrint(tt: TagTree): String = {
+    def lookup(id: Id) = tt.underlyingMap(id)
+    val rootIds = tt.values.foldLeft(tt.keySet)(_ -- _.children)
+    val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
+    "TagTree\n" +
+    shipreq.prop.util.Util.asciiTree(roots)(_.children.map(lookup),
+      t => s"${t.tag.name} (${t.tag.id.value})${if (t.tag.alive ≟ Dead) " DEAD" else ""}",
+      "  ")
+  }
 }
 
 case class TagInTree(tag: Tag, children: Vector[Id]) {
@@ -102,13 +118,18 @@ case class TagInTree(tag: Tag, children: Vector[Id]) {
   }
 
   def removeChild(id: Id): TagInTree =
-    modChildren(c => if (hasChild(id)) c.filterNot(_ == id) else c)
+    modChildren(c => if (hasChild(id)) c.filterNot(_ ≟ id) else c)
 
   def hasChild(id: Id): Boolean =
     children contains id
 }
 
 object TagInTree {
+  implicit object Equality extends Equal[TagInTree] {
+    override def equalIsNatural                    = Equal[Tag].equalIsNatural
+    override def equal(a: TagInTree, b: TagInTree) = a.tag ≟ b.tag && a.children ≟ b.children
+  }
+
   private[this] def l = Lenser[TagInTree]
   val _tag      = l(_.tag)
   val _children = l(_.children)
@@ -167,6 +188,29 @@ object TagProtocol {
         t = T.removeChild(p, id)(t)
 
       t
+    }
+
+    // For testing
+    def allReferencedIds: Set[Id] =
+      parents.keySet ++
+      parents.values.filter(_.isDefined).map(_.get).toSet ++
+      children.toSet
+  }
+
+  object PovRelations {
+
+    def derive(id: Id, tree: Map[Id, Vector[Id]]): PovRelations = {
+      val children = tree.getOrElse(id, Vector.empty)
+
+      val parents = tree
+        .filter(_._2 contains id)
+        .foldLeft(Map.empty[Tag.Id, Option[Tag.Id]]) { case (m, (parent, sibs)) =>
+          val i = sibs.indexOf(id)
+          val s: Option[Tag.Id] = if (i >= 0 && (i + 1) < sibs.length) Some(sibs(i + 1)) else None
+          m + (parent -> s)
+        }
+
+      PovRelations(parents, children)
     }
   }
 

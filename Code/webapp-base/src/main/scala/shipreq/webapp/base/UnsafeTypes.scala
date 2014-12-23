@@ -18,4 +18,5 @@ object UnsafeTypes {
 
   implicit def autoSome[A](a: A) = Some(a)
 
+  implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
 }

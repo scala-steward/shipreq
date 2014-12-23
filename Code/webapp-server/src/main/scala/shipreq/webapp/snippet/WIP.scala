@@ -181,19 +181,8 @@ class WIP {
 
     def δ(p: Project): Map[Id, PovTag] = {
       val tt = p.tags.data
-      tt.mapValues { case TagInTree(tag, children) =>
-        val id = tag.id
-
-        val parents = tt.underlyingMap
-          .filter(_._2 hasChild id).mapValues(_.children)
-          .foldLeft(Map.empty[Tag.Id, Option[Tag.Id]]) { case (m, (parent, sibs)) =>
-            val i = sibs.indexOf(id)
-            val s: Option[Tag.Id] = if (i >= 0 && (i + 1) < sibs.length) Some(sibs(i + 1)) else None
-            m + (parent -> s)
-          }
-
-        PovTag(tag, PovRelations(parents, children))
-      }
+      val tree = tt.mapValues(_.children)
+      tt.mapValues(v => PovTag(v.tag, PovRelations.derive(v.tag.id, tree)))
     }
 
     // TODO Another copy/paste/search/replace

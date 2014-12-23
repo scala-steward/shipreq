@@ -39,4 +39,5 @@ object SampleProject {
     new Project(customImplTypes, customReqTypes, tags)
   }
 
+  val tagTree = project.tags.data.mapValues(_.children)
 }
