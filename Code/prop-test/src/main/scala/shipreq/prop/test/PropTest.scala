@@ -30,10 +30,11 @@ trait PropTestOps {
     rs match {
       case RunState(_, Satisfied) | RunState(_, Proved) => ()
 
-      case RunState(runs, Falsified(a, f)) =>
-        failinfo(a, v => s"\n${RED}Falsified $WHITE_B[$p]$RESET$RED after $runs runs with:$RESET\n$v\n",
-          println(f.report))
-        fail(s"Failed: $p")
+      case RunState(runs, Falsified(a, e)) =>
+        val name = e.name.value
+        failinfo(a, v => s"\n${RED}Falsified $WHITE_B[$name]$RESET$RED after $runs runs with:$RESET\n$v\n",
+          println(e.report))
+        fail(s"Failed: $name")
 
       case RunState(runs, Error(a, e)) =>
         failinfo(a, v => s"\n${RED_B}Crashed $WHITE_B$RED[$p]$RESET$RED_B after $runs runs with:$RESET\n$v\n",
