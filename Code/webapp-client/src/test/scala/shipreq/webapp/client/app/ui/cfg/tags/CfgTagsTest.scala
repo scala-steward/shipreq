@@ -4,13 +4,14 @@ import japgolly.scalajs.react.{TopNode, ReactComponentM_}
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.{HTMLElement, HTMLInputElement}
 import scala.annotation.tailrec
+import scalaz.effect.IO
 import scalaz.std.AllInstances._
 import utest._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.UnsafeTypes._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.delta.{Partition, RemoteDeltaG}
-import shipreq.webapp.base.test.SampleProject
+import shipreq.webapp.base.test.{SampleProject => S}
 import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.TagCrud
 import shipreq.webapp.client.ClientData
@@ -32,13 +33,23 @@ object CfgTagsTest extends TestSuite {
   def nameAsTextTree(c: ReactComponentM_[TopNode]) =
     Sizzle("td.name", c.getDOMNode()).toVector.map(nameCellToText(_, ""))
 
+  class FakeUpdateIO {
+    var reqs = Vector.empty[(Tag, TagCrud.V)]
+    val u: MainTable.DetailPaneFns.UpdateIO = (t, v, _, _) => IO { reqs :+= ((t, v)) }
+  }
+
+  val remote = Routine.Remote("x", TagCrud)
+  class Tester {
+    lazy val clientData = new ClientData(S.project)
+    lazy val cp         = new TestClientProtocol
+    lazy val props      = new CfgTags.Props(cp, remote, clientData, false)
+    lazy val re         = MainTable.Component(props)
+    lazy val c          = ReactTestUtils.renderIntoDocument(re)
+  }
+
   override def tests = TestSuite {
-    val remote     = Routine.Remote("x", TagCrud)
-    val clientData = new ClientData(SampleProject.project)
-    val cp         = new TestClientProtocol
-    val props      = new CfgTags.Props(cp, remote, clientData, false)
-    val re         = MainTable.Component(props)
-    val c          = ReactTestUtils.renderIntoDocument(re)
+    val t = new Tester
+    import t._
 
     'recvUpdates {
       val rev = clientData.project.tags.rev.succ
@@ -66,6 +77,40 @@ object CfgTagsTest extends TestSuite {
           |- - v1.2
           |- v2.x
         """.stripMargin.trim)
+    }
+
+    'detailPane {
+      import DetailPane.Rels
+      @inline def D = MainTable.DetailPaneFns
+      val s = MainTable.initialState(props)
+      val t = new FakeUpdateIO
+
+      def testUnlink(subj: Tag, rels: Rels, nameOfTagToClick: String)(expectedRels: PovRelations): Unit = {
+        rels.find(_.name == nameOfTagToClick).get.unlink.unsafePerformIO()
+        assertEq(t.reqs.size, 1)
+        val h = t.reqs.head
+        assertEq(h._1, subj)
+        val actualRels = h._2.onlyThat.get
+        assertEq("RFC", actualRels, expectedRels)
+        val tt = actualRels(S.project.tags.data, h._1.id)
+        assertEq("Final result", PovRelations.derive(subj.id, tt), expectedRels)
+      }
+
+      'parentRels {
+        val subj = S.tags.get(23).get.tag
+        val rels = D.parentRels(s, t.u, subj)
+        assertEq(rels.map(_.name).toList.sorted, List("Released", "v1.x"))
+        // Remove parent 'Released' from 'v1.1'
+        testUnlink(subj, rels, "Released")(PovRelations(Map(Id(21) -> Id(24)), Vector.empty))
+      }
+
+      'childRels {
+        val subj = S.tags.get(27).get.tag
+        val rels = D.childrenRels(s, t.u, subj)
+        assertEq(rels.map(_.name).toList, List("v1.0", "v1.1"))
+        // Remove child 'v1.0' from 'Released'
+        testUnlink(subj, rels, "v1.0")(PovRelations(Map(Id(20) -> Id(21)), Vector(23)))
+      }
     }
   }
 }

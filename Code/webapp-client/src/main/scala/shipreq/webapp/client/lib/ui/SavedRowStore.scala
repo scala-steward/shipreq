@@ -63,18 +63,18 @@ final class SavedRowStore[S, K, P, I](_ss: Lens[S, SavedRowStore.SS[K, P, I]],
   private def _i     (k: K): Lens[S, I]         = _row(k) ^|-> rowL.i
   private def _p     (k: K): Lens[S, P]         = _row(k) ^|-> rowL.p
 
-
-  def getAll   (s: S)              : Stream[Row]    = _ss.get(s).values.toStream
-  def getAllP  (s: S)              : Stream[P]      = _ss.get(s).toStream.map(_._2.p)
-  def get      (k: K)              : S => Row       = _row(k).get
-  def getP     (k: K)              : S => P         = _p(k).get
-  def getI     (k: K)              : S => I         = _i(k).get
-  def getStatus(k: K)              : S => RowStatus = _status(k).get
-  def remove   (k: K)              : S => S         = _ss.modify(_ - k)
-  def set      (k: K, p: P)        : S => S         = _ss.modify(_ + (k -> initRow(p)))
-  def setT     (kp: KP)            : S => S         = set(kp._1, kp._2)
-  def setI     (k: K, i: I)        : S => S         = _i(k).set(i)
-  def setStatus(k: K, r: RowStatus): S => S         = _status(k).set(r)
+  def getAll    (s: S)              : Stream[Row]      = _ss.get(s).values.toStream
+  def getAllP   (s: S)              : Stream[P]        = _ss.get(s).toStream.map(_._2.p)
+  def getO      (k: K)              : S => Option[Row] = _ss.get(_).get(k)
+  def get       (k: K)              : S => Row         = _row(k).get
+  def getP      (k: K)              : S => P           = _p(k).get
+  def getI      (k: K)              : S => I           = _i(k).get
+  def getStatus (k: K)              : S => RowStatus   = _status(k).get
+  def remove    (k: K)              : S => S           = _ss.modify(_ - k)
+  def set       (k: K, p: P)        : S => S           = _ss.modify(_ + (k -> initRow(p)))
+  def setT      (kp: KP)            : S => S           = set(kp._1, kp._2)
+  def setI      (k: K, i: I)        : S => S           = _i(k).set(i)
+  def setStatus (k: K, r: RowStatus): S => S           = _status(k).set(r)
 
   def setIST[M[_] : Applicative](k: K, i: I): ReactST[M, S, Unit] =
     ReactS modT setI(k, i)

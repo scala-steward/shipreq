@@ -198,6 +198,7 @@ object TagProtocol {
   }
 
   object PovRelations {
+    implicit val equality = Equal.equalA[PovRelations]
 
     def derive(id: Id, tree: Map[Id, Vector[Id]]): PovRelations = {
       val children = tree.getOrElse(id, Vector.empty)

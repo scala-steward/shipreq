@@ -10,6 +10,7 @@ import scalaz.effect.IO
 import scalaz.\&/
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
+import scalaz.syntax.bind.ToBindOps
 
 import shipreq.prop.util.Multimap
 import shipreq.webapp.base.data.Validators.shared.RefKeyVS
@@ -20,10 +21,10 @@ import shipreq.webapp.base.data.Validators.{tag => V}
 import shipreq.webapp.base.protocol.Routines.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.lib.CrudIO
+import shipreq.webapp.client.lib.{FailureIO, SuccessIO, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
-import TagProtocol.PovTag
+import TagProtocol.{PovTag, PovRelations}
 import Tag.Id
 import shipreq.webapp.base.protocol.DeletionAction._
 import shipreq.webapp.client.WebappClientTmp.WCTmpImplicits._
@@ -90,7 +91,7 @@ private[tags] object MainTable {
 
   val eachTypesStores = Tag.Type.values map storesForType
 
-  private def initialState(p: Props): S = {
+  def initialState(p: Props): S = {
     val tgs = Seq.newBuilder[TagGroup]
     val ats = Seq.newBuilder[ApplicableTag]
     val tagtree = p.clientData.project.tags.data
@@ -145,6 +146,12 @@ private[tags] object MainTable {
   val abortNew: S => S =
     eachTypesStores.map(_.n.remove).reduce(_ compose _)
 
+  def getRowStatus(id: Id): S => Option[RowStatus] =
+    s => eachTypesStores.foldLeft(none[RowStatus])(_ orElse _.s.getO(id)(s).map(_.status))
+
+  def getTag(id: Id): S => Option[Tag] =
+    s => eachTypesStores.foldLeft(none[Tag])(_ orElse _.s.getO(id)(s).map(_.p))
+
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
     val crudIO = CrudIO(Tag, TagCrud)(c.props.cp, c.props.remote, c.props.clientData)
@@ -178,22 +185,6 @@ private[tags] object MainTable {
       <.button(
         ^.onclick ~~> c.modStateIO(abortNew),
         "Cancel") // TODO sync all abort-new buttons
-
-    def detailPane: TagMod = {
-      val s = c.state
-      s.detailRow.fold(EmptyTag) { id =>
-        def rels(ids: Seq[Id]): DetailPane.Rels =
-          ids.map { id =>
-            val t = s.tagStream.find(_.id ≟ id).get // TODO yuk
-            DetailPane.Rel(id, t.name, IO(()))
-          }
-        val props = DetailPane.Props(
-          descEditor = <.div("TODO"),
-          children = rels(s.tree(id)),
-          parents = rels(s.childToParent(id).toSeq))
-        DetailPane.Component(props)
-      }
-    }
 
     type Indenter = ReactTag => ReactTag
     type F = (String, Indenter) => UndefOr[ReactElement]
@@ -291,7 +282,7 @@ private[tags] object MainTable {
           headerRow,
           <.tbody(rows)
         ),
-        detailPane)
+        DetailPaneFns.render(c.state, crudIO.updateIO))
 
     // -----------------------------------------------------------------------------------------------------------------
     // TagGroup
@@ -360,4 +351,50 @@ private[tags] object MainTable {
     }
 
   } // end Backend
+
+  // ===================================================================================================================
+  object DetailPaneFns {
+    // TODO CfgTags' DetailPane doesn't lock rows or handle ajax failure
+
+    type UpdateIO = (Tag, TagCrud.V, SuccessIO, FailureIO) => IO[Unit]
+
+    def removeChild(child: Id): PovRelations => PovRelations =
+      r => r.copy(children = r.children.filterNot(_ ≟ child))
+
+    def removeParent(parent: Id): PovRelations => PovRelations =
+      r => r.copy(parents = r.parents - parent)
+
+    def treeUpdate(s: S, updateIO: UpdateIO, subj: Tag, g: PovRelations => PovRelations): IO[Unit] =
+      IO {
+        val r = PovRelations.derive(subj.id, s.tree.m)
+        val u = \&/.That(g(r))
+        val f = FailureIO.nop
+        updateIO(subj, u, SuccessIO.nop, f)
+        //val lock = c modStateIO storesForType(t.tagType).s.setStatus(t.id, RowStatus.Locked)
+      }.join
+
+    def rels(s: S, updateIO: UpdateIO, subj: Tag, ids: Seq[Id], removeFn: Id => PovRelations => PovRelations): DetailPane.Rels =
+      ids.map { id =>
+        val t = getTag(id)(s).get
+        DetailPane.Rel(id, t.name, treeUpdate(s, updateIO, subj, removeFn(id)))
+      }
+
+    def childrenRels(s: S, updateIO: UpdateIO, subj: Tag): DetailPane.Rels =
+      rels(s, updateIO, subj, s.tree(subj.id), removeChild)
+
+    def parentRels(s: S, updateIO: UpdateIO, subj: Tag): DetailPane.Rels =
+      rels(s, updateIO, subj, s.childToParent(subj.id).toSeq, removeParent)
+
+    def render(s: S, updateIO: UpdateIO): TagMod =
+      s.detailRow match {
+        case Some(id) => //if getRowStatus(id)(s).contains(RowStatus.Sync) =>
+          val subj = getTag(id)(s).get
+          val props = DetailPane.Props(
+            <.div("TODO"),
+            childrenRels(s, updateIO, subj),
+            parentRels(s, updateIO, subj))
+          DetailPane.Component(props)
+        case _ => EmptyTag
+      }
+  }
 }

@@ -14,7 +14,6 @@ import TagProtocol._
 import Tag.Id
 
 object TagsTest extends TestSuite {
-  implicit val povRelationEquality = Equal.equalA[PovRelations]
 
   case class PovRelationProp(tt0: TagTree, povRels: PovRelations, t: Tag) {
     val E = EvalOver(this)
