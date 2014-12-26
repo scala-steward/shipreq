@@ -15,9 +15,7 @@ private[tags] object DetailPane {
 
   type Rels = Seq[Rel]
 
-  case class Props(subjName: String,
-                   descEditor: ReactElement,
-                   children: Rels, parents: Rels, moveChildIO: (Id, Id) => IO[Unit])
+  case class Props(subjName: String, children: Rels, parents: Rels, moveChildIO: (Id, Id) => IO[Unit])
 
   type State = DND.Parent.PState[Rel]
 
@@ -40,7 +38,6 @@ private[tags] object DetailPane {
     def render: ReactElement =
       <.section(
         <.h3(s"Detail: ${p.subjName}"),
-        descPane,
         <.table(
           <.thead(<.tr(
             <.th("Parents"),
@@ -48,11 +45,6 @@ private[tags] object DetailPane {
           <.tbody(<.tr(
             <.td(parentsPane),
             <.td(childrenPane)))))
-
-    def descPane: ReactElement =
-      <.label(
-        "Description:",
-        p.descEditor)
 
     def parentsPane: ReactElement =
       relList(p.parents.sortBy(_.name), <.ul, "This is a top-level tag.", renderRel(_, None))
