@@ -4,12 +4,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.vdom.ReactVDom._
 import japgolly.scalajs.react.vdom.ReactVDom.all._
+import monocle.Lens
 import org.scalajs.dom
 
 import scala.scalajs.js
 import scala.scalajs.js._
 import scalatags.generic.AttrPair
-import scalaz.Maybe
+import scalaz.{Functor, Maybe}
 import scalaz.effect.IO
 
 object WebappClientTmp {
@@ -28,6 +29,9 @@ object WebappClientTmp {
 
       @inline def modStateIO(f: S => S, cb: OpCallback = undefined): IO[Unit] =
         IO(c.modState(f, cb))
+
+      @inline def focusStateL[T](l: Lens[S, T]) =
+        c.focusState[T](l.get)((a,b) => l.set(b)(a))
     }
 
     implicit def fuckyouscala[P,S](b: BackendScope[P,S]) =
@@ -50,5 +54,12 @@ object WebappClientTmp {
 
     implicit def asdlkkjfjhaslkdjasdf[A <% Modifier](x: js.UndefOr[A]): Modifier =
       x.map(v => v: Modifier).toOption
+
+
+    implicit final class SzRExt_ReactSTOps22[M[_], S, A](val s: ReactST[M,S,A]) extends AnyVal {
+      def zoomL[T](l: Lens[T, S])(implicit M: Functor[M]): ReactST[M, T, A] =
+        ReactS.zoom[M, S, T, A](s, l.get, (a,b) => l.set(b)(a))
+    }
+
   }
 }
