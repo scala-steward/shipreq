@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui
 
-import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import scalaz.Equal
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
@@ -29,6 +29,6 @@ object RowDetailButton {
   def render(p: Props): ReactElement =
     <.button(
       ^.cls := "detail",
-      ^.onclick ~~> p.onChange,
+      ^.onClick ~~> p.onChange,
       "Detail")
 }

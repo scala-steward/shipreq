@@ -18,7 +18,7 @@ object UI {
     case RowStatus.Failed(_) => "failed"
   }
 
-  def rowStatusCtrls(rs: RowStatus, ctrls: => TagMod): TagMod =
+  def rowStatusCtrls(rs: RowStatus, syncCtrls: => TagMod): TagMod =
     rowStatusCtrlsFold(rs, sync = syncCtrls, t => t, t => t)
 
   def rowStatusCtrlsFold(rs: RowStatus, sync: => TagMod, locked: ReactTag => TagMod, failed: ReactTag => TagMod): TagMod = rs match {

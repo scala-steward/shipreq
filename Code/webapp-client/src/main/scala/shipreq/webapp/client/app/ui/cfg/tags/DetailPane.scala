@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.cfg.tags
 
-import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import scalaz.Equal
 import scalaz.effect.IO
 import shipreq.webapp.base.data._
@@ -29,7 +29,7 @@ private[tags] object DetailPane {
       r.name,
       <.button(
         ^.marginLeft := "2ex",
-        ^.onclick ~~> r.unlink,
+        ^.onClick ~~> r.unlink,
         "Remove"))
 
   class Backend(c: BackendScope[Props, State]) {

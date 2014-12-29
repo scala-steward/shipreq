@@ -32,32 +32,29 @@ object ReactExamples {
         val root       : Loc = register(rootLocation(index))
         val cfgIncmp   : Loc = register(location("#cfg/incmp",    cfgIncmpR))
         val cfgReqTypes: Loc = register(location("#cfg/reqtypes", cfgReqTypesR))
-        val cfgTags     = path("#cfg/tags",     addBack(root, cfgTagsR))
-        val dnd         = path("#demo/dnd",     addBack(root, dndR))
+        val cfgTags    : Loc = register(location("#cfg/tags",     cfgTagsR))
+        val dnd        : Loc = register(location("#demo/dnd",     DragAndDrop.demo))
 
         private def index: Renderer = router => {
           val c = ReactComponentB[Unit]("Index")
             .render(_ =>
               ul(
                 li(router.link(ProjectPage.cfgIncmp   )("Cfg: Incompletions")),
-            li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")),
-            li(router.link(ProjectPage.cfgTags)("Cfg: Tags")),
-            li(router.link(ProjectPage.dnd)("Demo: Drag 'n' Drop")))
+                li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")),
+                li(router.link(ProjectPage.cfgTags    )("Cfg: Tags")),
+                li(router.link(ProjectPage.dnd        )("Demo: Drag 'n' Drop")))
             ).buildU
           c()
         }
 
         private def cfgIncmpR =
-        cfg.CfgIncompletions.comp(cfg.CfgIncompletions.Props(cp, r.incmpCrud, r.reqTypeImpMod, clientData, false))
+          cfg.CfgIncompletions.comp(cfg.CfgIncompletions.Props(cp, r.incmpCrud, r.reqTypeImpMod, clientData, false))
 
         private def cfgReqTypesR =
-        cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
+          cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
 
-      def cfgTagsR: Renderer[ProjectPage] = _ =>
-        cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, false).component
-
-      def dndR: Renderer[ProjectPage] = _ =>
-        DragAndDrop.demo
+        private def cfgTagsR =
+          cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, false).component
 
         register(removeTrailingSlashes)
 
@@ -84,7 +81,6 @@ object ReactExamples {
       .render(name => div("Hello ", name))
       .build
     React.render(HelloMessage("John"), mountNode)
-  }
   }
 
   // ===================================================================================================================
@@ -130,4 +126,5 @@ object ReactExamples {
         ,DragAndDrop.Item(40, "Thorty")
         ,DragAndDrop.Item(50, "Fipty")
       ))
+  }
 }

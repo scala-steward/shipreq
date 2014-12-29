@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.cfg.tags
 
-import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
-import japgolly.scalajs.react.experiment.OnUnmount
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react.extra.OnUnmount
 import monocle.macros.Lenser
 import shipreq.base.util.IMap
 import scala.annotation.tailrec
@@ -32,7 +32,6 @@ import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.DND
 import TagProtocol.{PovTag, PovRelations}
 import Tag.Id
-import shipreq.webapp.client.WebappClientTmp.WCTmpImplicits._
 
 
 object CfgTags {
@@ -199,7 +198,7 @@ private[tags] object MainTable {
 
     def abortNewButton =
       <.button(
-        ^.onclick ~~> c.modStateIO(abortNew),
+        ^.onClick ~~> c.modStateIO(abortNew),
         "Cancel") // TODO sync all abort-new buttons
 
     type Indenter = ReactTag => ReactTag
