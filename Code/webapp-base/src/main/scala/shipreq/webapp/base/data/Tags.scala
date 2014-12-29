@@ -111,7 +111,7 @@ case object NotEnumLike extends IsEnumLike
 // Many tags
 
 object TagTree {
-  def empty: TagTree = IMap.empty(_.tag.id)
+  def empty: TagTree = IMap.empty(_.id)
 
   def prettyPrint(tt: TagTree): String = {
     def lookup(id: Id) = tt.underlyingMap(id)
@@ -119,12 +119,56 @@ object TagTree {
     val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
     "TagTree\n" +
     shipreq.prop.util.Util.asciiTree(roots)(_.children.map(lookup),
-      t => s"${t.tag.name} (${t.tag.id.value})${if (t.tag.alive ≟ Dead) " DEAD" else ""}",
+      t => s"${t.tag.name} (${t.id.value})${if (t.tag.alive ≟ Dead) " DEAD" else ""}",
       "  ")
+  }
+
+  final case class FlatRow(tag: Tag, depth: Int, parentPath: Vector[Id]) {
+    @inline final def id: Id = tag.id
+
+    def key: String =
+      if (depth == 0)
+        id.value.toString
+      else {
+        val sb = new StringBuilder
+        parentPath.foreach { p =>
+          sb append p.value
+          sb append '.'
+        }
+        sb append id.value
+        sb.toString()
+      }
+  }
+
+  def topLevelIds(tt: TagTree): Set[Id] = {
+    val allChildren = tt.values.foldLeft(Set.empty[Id])((q, t) => t.children.foldLeft(q)(_ + _))
+    tt.keySet -- allChildren
+  }
+
+  def flatten(tt: TagTree, filter: Tag => Boolean): Vector[FlatRow] =
+    flatRows(topLevelIds(tt), tt.get(_).get, filter)
+
+  def flatRows(topLvlIds: Set[Id], lookup: Id => TagInTree, filter: Tag => Boolean): Vector[FlatRow] = {
+    def go(r: Vector[FlatRow], t: TagInTree, depth: Int, parentPath: Vector[Id]): Vector[FlatRow] =
+      if (filter(t.tag)) {
+        val newr = r :+ FlatRow(t.tag, depth, parentPath)
+        if (t.children.isEmpty)
+          newr
+        else {
+          val nextDepth = depth + 1
+          val nextPP = parentPath :+ t.id
+          t.children.foldLeft(newr)((q, id) => go(q, lookup(id), nextDepth, nextPP))
+        }
+      } else
+        r
+    val topLvl = topLvlIds.toStream.map(lookup).sortBy(_.tag.name)
+    topLvl.foldLeft(Vector.empty[FlatRow])(go(_, _, 0, Vector.empty))
   }
 }
 
-case class TagInTree(tag: Tag, children: Vector[Id]) {
+final case class TagInTree(tag: Tag, children: Vector[Id]) {
+  @inline final def id: Id = tag.id
+
   def modChildren(f: Vector[Id] => Vector[Id]): TagInTree = {
     val c = f(children)
     if (c eq children) this else TagInTree(tag, c)

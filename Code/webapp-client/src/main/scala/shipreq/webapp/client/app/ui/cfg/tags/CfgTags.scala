@@ -3,10 +3,13 @@ package shipreq.webapp.client.app.ui.cfg.tags
 import japgolly.scalajs.react._, vdom.prefix_<^.{Tag => ReactTag, Modifier => TagMod, _}, ScalazReact._
 import japgolly.scalajs.react.experiment.OnUnmount
 import monocle.macros.Lenser
+import shipreq.base.util.IMap
+import scala.annotation.tailrec
 import scala.language.reflectiveCalls
-import scalajs.js.{undefined, UndefOr, UndefOrOps}
+import scalajs.js.{undefined, UndefOr, UndefOrOps, Array => JsArray}
+import scalajs.js.JSConverters._
 import scalaz.effect.IO
-import scalaz.\&/
+import scalaz.{Memo, \&/}
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import scalaz.syntax.bind.ToBindOps
@@ -61,11 +64,19 @@ private[tags] object MainTable {
                    newSel: Tag.Type,
                    detailRow: Option[Id]) {
 
-    val childToParent = tree.reverseM[Set]
-    val tagStream = getAllP
+    lazy val childToParent = tree.reverseM[Set]
 
-    private def getAllP: Stream[Tag] =
+    lazy val tagStream: Stream[Tag] =
       eachTypesStores.foldLeft(Stream.empty[Tag])(_ #::: _.s.getAllP(this).map(t => t: Tag))
+
+    lazy val tagTree: TagTree =
+      tagStream.foldLeft(TagTree.empty)((q, t) => q add TagInTree(t, tree(t.id)))
+
+    val tagFilter: Tag => Boolean =
+      if (showDeleted) Function const true
+      else _.alive ≟ Alive
+
+    lazy val flatTree = TagTree.flatten(tagTree, tagFilter)
   }
 
   object State {
@@ -192,7 +203,7 @@ private[tags] object MainTable {
         "Cancel") // TODO sync all abort-new buttons
 
     type Indenter = ReactTag => ReactTag
-    type F = (String, Indenter) => UndefOr[ReactElement]
+    type F = (String, Indenter) => ReactElement
     @inline def F(f: F): F = f
 
     abstract class TagSubtypeRenderer[T <: Tag, I, B, D, V](
@@ -243,9 +254,8 @@ private[tags] object MainTable {
         val tag = row.p
         def key = s"$keyp.${tag.id.value}"
         tag.alive match {
-          case Alive                  => renderAlive(s, indent, key)(row)
-          case Dead if s.showDeleted  => renderDead (s, indent, key)(row.status, tag)
-          case Dead if !s.showDeleted => undefined
+          case Alive => renderAlive(s, indent, key)(row)
+          case Dead  => renderDead (s, indent, key)(row.status, tag)
         }
       }
 
@@ -260,27 +270,28 @@ private[tags] object MainTable {
     def renderDeadDesc(d: Option[String]): ReactNode =
       d getOrElse[String] ""
 
+    val indentation = {
+      @tailrec def indent(d: Int, n: Indenter): Indenter =
+        if (d == 0) n
+        else indent(d - 1, r => <.div(^.cls := "indent", n(r)))
+      Memo.immutableHashMapMemo[Int, Indenter](indent(_, identity))
+    }
+
     def rows: TagMod = {
       val s         = c.state
-      val all       = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(Map.empty[Id, F])(_ + _)
-      val topLvlIds = all.keySet -- s.childToParent.m.keySet
-      val topLvl    = s.tagStream.filter(topLvlIds contains _.id).sortBy(_.name)
+      val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(Map.empty[Id, F])(_ + _)
+      val results   = JsArray.apply[ReactNode]()
+      @inline def append(r: ReactNode): Unit = results push r
 
-      def go(id: Id, keyp: String, indent: Indenter): Stream[ReactElement] =
-        all(id)(keyp, indent).fold(Stream.empty[ReactElement]) { h =>
-          val k2 = s"$keyp${id.value}."
-          val i2: Indenter = r => <.div(^.cls := "indent", indent(r))
-          val t = s.tree(id).toStream.flatMap(j => go(j, k2, i2))
-          h #:: t
-        }
+      // New row
+      tg_renderer.newRow(s) foreach append
+      at_renderer.newRow(s) foreach append
 
-      val newRows: Stream[ReactElement] =
-        tg_renderer.newRow(s).toStream #::: at_renderer.newRow(s).toStream
+      // Saved rows
+      s.flatTree.foreach(row =>
+        append(renderers(row.id)(row.key, indentation(row.depth))))
 
-      val allRows =
-        newRows #::: topLvl.flatMap(t => go(t.id, "", identity))
-
-      allRows.toReactNodeArray
+      results
     }
 
     def render: ReactElement =
