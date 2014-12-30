@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.cfg.tags
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra.OnUnmount
 import monocle.macros.Lenser
 import monocle.Optional
@@ -199,7 +199,7 @@ private[tags] object MainTable {
     def newTagControlProps =
       NewTagControl.Props(
         c.state.newSel,
-        t => c.modStateIO(State._newSel set t),
+        c._setStateL(State._newSel),
         if (newRowActive(c.state)) None else Some(onCreate))
 
     def onCreate: IO[Unit] =
@@ -254,7 +254,7 @@ private[tags] object MainTable {
 
       def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, enum: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
         val focus = oid.map(id =>
-          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), w => c modStateIO setDetail(w)))
+          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
         <.tr(
           ^.key := key,
           ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
@@ -325,8 +325,8 @@ private[tags] object MainTable {
         ),
         DetailPaneFns.render(
           c.state, crudIO.updateIO,
-          parentSel = id => c.modStateIO(State._detailRowSelParent set id),
-          childSel  = id => c.modStateIO(State._detailRowSelChild  set id)))
+          parentSel = c _setStateL State._detailRowSelParent,
+          childSel  = c _setStateL State._detailRowSelChild ))
 
     // -----------------------------------------------------------------------------------------------------------------
     // TagGroup
