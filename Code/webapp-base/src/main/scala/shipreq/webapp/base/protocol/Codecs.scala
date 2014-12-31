@@ -142,49 +142,50 @@ object DataCodecs {
     })
   }
 
-  implicit def rev = tagL(Rev.apply)
-  implicit def alive = boolCase(Alive)
-  implicit def impReq = boolCase(ImplicationRequired)
+  implicit def rev        = tagL(Rev.apply)
+  implicit def alive      = boolCase(Alive)
+  implicit def impReq     = boolCase(ImplicationRequired)
   implicit def isEnumLike = boolCase(IsEnumLike)
-  implicit def refkey = tagS(RefKey.apply)
+  implicit def refkey     = tagS(RefKey.apply)
 
   implicit def customIncmpTypeId = tagL(CustomIncmpType.Id.apply)
-  implicit def customIncmpType = caseclass4(CustomIncmpType.apply, CustomIncmpType.unapply)
+  implicit def customIncmpType   = caseclass4(CustomIncmpType.apply, CustomIncmpType.unapply)
 
   implicit def reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
   implicit def customReqTypeId = tagL(CustomReqType.Id.apply)
-  implicit def customReqType = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+  implicit def customReqType   = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+
+  implicit def tagId         = tagL(Tag.Id.apply)
+  implicit def tagGroup      = caseclass5(TagGroup.apply, TagGroup.unapply)
+  implicit def applicableTag = caseclass5(ApplicableTag.apply, ApplicableTag.unapply)
+  implicit def tag           = ReadWriter[Tag]({
+      case t: TagGroup      => intkeyW(0, t)
+      case t: ApplicableTag => intkeyW(1, t)
+    }, {
+      case Js.Arr(Js.Num(n), v) => n.toInt match {
+        case 0 => readJ[TagGroup](v)
+        case 1 => readJ[ApplicableTag](v)
+      }
+    })
+
+  implicit def tagInTree           = caseclass2(TagInTree.apply, TagInTree.unapply)
+  implicit def tagTree             = iMap[Tag.Id, TagInTree](_.tag.id)
+  implicit def tagPovRelations     = caseclass2(TagProtocol.PovRelations.apply, TagProtocol.PovRelations.unapply)
+  implicit def tagPov              = caseclass2(TagProtocol.PovTag.apply, TagProtocol.PovTag.unapply)
+  implicit def tagGroupValues      = caseclass3(TagProtocol.TagGroupValues.apply, TagProtocol.TagGroupValues.unapply)
+  implicit def applicableTagValues = caseclass3(TagProtocol.ApplicableTagValues.apply, TagProtocol.ApplicableTagValues.unapply)
+  implicit def tagValues           = ReadWriter[TagProtocol.Values]({
+      case t: TagProtocol.TagGroupValues      => intkeyW(0, t)
+      case t: TagProtocol.ApplicableTagValues => intkeyW(1, t)
+    }, {
+      case Js.Arr(Js.Num(n), v) => n.toInt match {
+        case 0 => readJ[TagProtocol.TagGroupValues](v)
+        case 1 => readJ[TagProtocol.ApplicableTagValues](v)
+      }
+    })
 
   implicit def dataset[D, I](implicit D: DataIdAux[D, I], WI: Writer[I], RI: Reader[I], WV: Writer[D], RV: Reader[D]) =
     caseclass2(DataSet.apply[D], DataSet.unapply[D])
-
-  implicit def tagId = tagL(Tag.Id.apply)
-  implicit def tagGroup = caseclass5(TagGroup.apply, TagGroup.unapply)
-  implicit def applicableTag = caseclass5(ApplicableTag.apply, ApplicableTag.unapply)
-  implicit def tag = ReadWriter[Tag]({
-    case t: TagGroup      => intkeyW(0, t)
-    case t: ApplicableTag => intkeyW(1, t)
-  }, {
-    case Js.Arr(Js.Num(n), v) => n.toInt match {
-      case 0 => readJ[TagGroup](v)
-      case 1 => readJ[ApplicableTag](v)
-    }
-  })
-  implicit def tagInTree = caseclass2(TagInTree.apply, TagInTree.unapply)
-  implicit def tagTree = iMap[Tag.Id, TagInTree](_.tag.id)
-  implicit def tagPovRelations = caseclass2(TagProtocol.PovRelations.apply, TagProtocol.PovRelations.unapply)
-  implicit def tagPov = caseclass2(TagProtocol.PovTag.apply, TagProtocol.PovTag.unapply)
-  implicit def tagGroupValues = caseclass3(TagProtocol.TagGroupValues.apply, TagProtocol.TagGroupValues.unapply)
-  implicit def applicableTagValues = caseclass3(TagProtocol.ApplicableTagValues.apply, TagProtocol.ApplicableTagValues.unapply)
-  implicit def tagValues = ReadWriter[TagProtocol.Values]({
-    case t: TagProtocol.TagGroupValues      => intkeyW(0, t)
-    case t: TagProtocol.ApplicableTagValues => intkeyW(1, t)
-  }, {
-    case Js.Arr(Js.Num(n), v) => n.toInt match {
-      case 0 => readJ[TagProtocol.TagGroupValues](v)
-      case 1 => readJ[TagProtocol.ApplicableTagValues](v)
-    }
-  })
 
   implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
     caseclass2(RevAnd.apply[T], RevAnd.unapply[T])
