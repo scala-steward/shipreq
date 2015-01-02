@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import scalaz.Equal
 import scalaz.Isomorphism.<=>
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes._
 
 
 final case class Rev(value: Long) extends TaggedLong {
@@ -27,3 +27,13 @@ case object ImplicationRequired extends ImplicationRequired with (Boolean <=> Im
   override def to = b => if (b) ImplicationRequired else ImplicationNotRequired
 }
 case object ImplicationNotRequired extends ImplicationRequired
+
+
+/**
+ * A key by which users can insert references to corresponding data.
+ *
+ * Examples:
+ * #TBD refers to a custom issue type.
+ * #pri=high refers to a grouping.
+ */
+final case class RefKey(value: String) extends TaggedString
