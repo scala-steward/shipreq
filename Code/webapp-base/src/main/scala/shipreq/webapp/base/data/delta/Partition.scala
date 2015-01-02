@@ -31,9 +31,6 @@ case object Partition {
     else
       None
 
-    def forceEqProof[A <: Partition, B <: Partition]: EqProof[A, B] =
-      new EqProof[A, B]
-
   // ------------------------------------------------------------------------------------------------------------------
 
   type Aux[D, I] = Partition {type Data = D; type Id = I}
