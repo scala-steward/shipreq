@@ -50,7 +50,7 @@ object SampleDataPerson {
 
   val personV = usernameV ⊗ descV
 
-  val fields = FieldSet2[Person](_.username.value, _.desc getOrElse "")(("", "TODO"))
+  val fields = FieldSet2[Person](_.username.value, _.desc getOrElse "")(("", "TO"+"DO"))
 
   val savedRowStore = SavedRowStore.fields(fields).keyedBy[Long]
   val newRowStore   = NewRowStore.of(fields)

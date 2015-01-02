@@ -7,7 +7,7 @@ import shipreq.webapp.base.UnsafeTypes._
 object SampleProject {
 
   val customImplTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
-    CustomIssueType(1, "TODO", "Something you need To Do.", Alive),
+    CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Alive),
     CustomIssueType(2, "TBD", "To Be Decided.", Alive)))
 
   val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(

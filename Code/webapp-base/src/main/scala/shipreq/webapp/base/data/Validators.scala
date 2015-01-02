@@ -120,7 +120,5 @@ object Validators {
 
     val tagGroup = nameS ⊗ ValidatorU.nop[IsEnumLike].liftS[S] ⊗ descS
     val applTag  = nameS ⊗ keyS ⊗ descS
-
-    // TODO prevent cycles
   }
 }

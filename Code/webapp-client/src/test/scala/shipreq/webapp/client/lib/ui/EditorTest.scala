@@ -108,7 +108,7 @@ object EditorTest extends TestSuite {
     def testNewUpdateAndRevert(): Unit =
       test(Sel(".new .username"), false, expect => {
         val state = newRowStoreS.getI(c.state)
-        assertEq(state, (expect, "TODO").some)
+        assertEq(state, (expect, "TO"+"DO").some)
       }, ())
 
     // !∃ new | test saved

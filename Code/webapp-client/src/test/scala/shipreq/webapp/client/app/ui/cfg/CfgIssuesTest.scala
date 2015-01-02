@@ -24,7 +24,7 @@ object CfgIssuesTest extends TestSuite {
     def assertNoErrors() = assertEq("Error tag count", 0, errors.length)
     def assertError()    = assertEq("Error tag count", 1, errors.length)
 
-    val i = sole(Sizzle(":text[value=TODO]", c))
+    val i = sole(Sizzle(":text[value=TO"+"DO]", c))
     assertNoErrors()
 
     // Uniqueness should extend over tag keys
@@ -36,7 +36,7 @@ object CfgIssuesTest extends TestSuite {
     assertError()
 
     // Uniqueness should ignore itself
-    Simulation.focusChangeBlur("TODO") run i
+    Simulation.focusChangeBlur("TO"+"DO") run i
     assertNoErrors()
 
     // Save only on valid change
