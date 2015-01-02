@@ -22,7 +22,7 @@ package object data {
   }
 
   abstract class DataObjImplicits {
-    @inline implicit final def tcCustomIncmpType = CustomIncmpType.IdAccess
+    @inline implicit final def tcCustomIssueType = CustomIssueType.IdAccess
     @inline implicit final def tcCustomReqType   = CustomReqType.IdAccess
     @inline implicit final def tcTag             = Tag.IdAccess
     @inline implicit final def tcTagPov          = TagProtocol.PovTag.IdAccess
@@ -37,7 +37,7 @@ package object data {
   }
 
   type TagTree             = IMap[Tag.Id, TagInTree]
-  type CustomIncmpTypeIMap = IMap[CustomIncmpType.Id, CustomIncmpType]
+  type CustomIssueTypeIMap = IMap[CustomIssueType.Id, CustomIssueType]
   type CustomReqTypeIMap   = IMap[CustomReqType.Id, CustomReqType]
 
   @inline final def emptyDataMap[O, D, Id](o: O)(implicit O: ObjDataId[O, D, Id]): IMap[Id, D] =

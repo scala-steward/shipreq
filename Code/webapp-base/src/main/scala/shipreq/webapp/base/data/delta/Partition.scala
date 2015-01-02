@@ -55,9 +55,9 @@ case object Partition {
   // ------------------------------------------------------------------------------------------------------------------
   // Partition instances
 
-  case object CustomIncmpTypes extends CAux(CustomIncmpType)
+  case object CustomIssueTypes extends CAux(CustomIssueType)
   case object CustomReqTypes   extends CAux(CustomReqType)
   case object Tags             extends CAux(TagProtocol.PovTag)
 
-  val values = NonEmptyList[Partition](CustomIncmpTypes, CustomReqTypes, Tags)
+  val values = NonEmptyList[Partition](CustomIssueTypes, CustomReqTypes, Tags)
 }

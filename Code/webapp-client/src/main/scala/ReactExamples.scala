@@ -30,7 +30,7 @@ object ReactExamples {
 
       object ProjectPage extends RoutingRules {
         val root       : Loc = register(rootLocation(index))
-        val cfgIncmp   : Loc = register(location("#cfg/incmp",    cfgIncmpR))
+        val cfgIssues  : Loc = register(location("#cfg/issues",   cfgIssuesR))
         val cfgReqTypes: Loc = register(location("#cfg/reqtypes", cfgReqTypesR))
         val cfgTags    : Loc = register(location("#cfg/tags",     cfgTagsR))
         val dnd        : Loc = register(location("#demo/dnd",     DragAndDrop.demo))
@@ -39,7 +39,7 @@ object ReactExamples {
           val c = ReactComponentB[Unit]("Index")
             .render(_ =>
               ul(
-                li(router.link(ProjectPage.cfgIncmp   )("Cfg: Incompletions")),
+                li(router.link(ProjectPage.cfgIssues  )("Cfg: Issues")),
                 li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")),
                 li(router.link(ProjectPage.cfgTags    )("Cfg: Tags")),
                 li(router.link(ProjectPage.dnd        )("Demo: Drag 'n' Drop")))
@@ -47,8 +47,8 @@ object ReactExamples {
           c()
         }
 
-        private def cfgIncmpR =
-          cfg.CfgIncompletions.comp(cfg.CfgIncompletions.Props(cp, r.incmpCrud, r.reqTypeImpMod, clientData, false))
+        private def cfgIssuesR =
+          cfg.CfgIssues.comp(cfg.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, clientData, false))
 
         private def cfgReqTypesR =
           cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
@@ -69,7 +69,7 @@ object ReactExamples {
               i.element)
       }
 
-      val c = ProjectPage.router(BaseUrl.fromWindowOrigin / "wip", Router.consoleLogger)
+      val c = ProjectPage.router(BaseUrl.fromWindowOrigin / "wip")
       c() render document.getElementById("eg2")
     })
   }

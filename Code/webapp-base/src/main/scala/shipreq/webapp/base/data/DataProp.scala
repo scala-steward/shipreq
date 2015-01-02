@@ -14,9 +14,9 @@ object DataProp {
     rev.contramap[RevAnd[T]](_.rev)
 
   // -------------------------------------------------------------------------------------------------------------------
-  object customIncmpTypes {
+  object customIssueTypes {
 
-    def all = revAnd[CustomIncmpTypeIMap] rename "CustomIncmpTypes"
+    def all = revAnd[CustomIssueTypeIMap] rename "CustomIssueTypes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -77,12 +77,12 @@ object DataProp {
 
   lazy val uniqueRefkeys =
     Prop.distinct[Project, RefKey]("refkey", p =>
-      p.customIncmpTypes.data.values.toStream.map(_.key) #:::
+      p.customIssueTypes.data.values.toStream.map(_.key) #:::
       p.tags.data.vstreamf(_.tag.keyO.toStream))
 
   lazy val project = (
     uniqueRefkeys
-      ∧ customIncmpTypes.all.contramap[Project](_.customIncmpTypes)
+      ∧ customIssueTypes.all.contramap[Project](_.customIssueTypes)
       ∧ customReqTypes.all.contramap[Project](_.customReqTypes)
       ∧ tags.all.contramap[Project](_.tags)
     ) rename "Project"

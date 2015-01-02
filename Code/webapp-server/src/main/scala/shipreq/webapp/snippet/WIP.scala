@@ -18,9 +18,9 @@ class WIP {
     import shipreq.webapp.base.data._
     import shipreq.webapp.base.UnsafeTypes._
 
-    val customImplTypes = RevAnd(10, emptyDataMap(CustomIncmpType).addAll(
-      CustomIncmpType(1, "TODO", "Something you need To Do.", Alive),
-      CustomIncmpType(2, "TBD", "To Be Decided.", Alive)))
+    val customImplTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
+      CustomIssueType(1, "TODO", "Something you need To Do.", Alive),
+      CustomIssueType(2, "TBD", "To Be Decided.", Alive)))
 
     val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
         CustomReqType(1, "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
@@ -115,28 +115,28 @@ class WIP {
 
   // -------------------------------------------------------------------------------------------------------------------
   // TODO Another copy/paste/search/replace
-  val incmpCrud = {
-    implicit val equality = Equal.equalA[CustomIncmpType]
+  val issueTypeCrud = {
+    implicit val equality = Equal.equalA[CustomIssueType]
 
-    def upd(id: CustomIncmpType.Id, f: CustomIncmpType => CustomIncmpType) =
+    def upd(id: CustomIssueType.Id, f: CustomIssueType => CustomIssueType) =
       mod(_.mod(id, f))
 
-    def modR(f: CustomIncmpTypeIMap => CustomIncmpTypeIMap): Option[Rev] = {
-      val c = p.customIncmpTypes
+    def modR(f: CustomIssueTypeIMap => CustomIssueTypeIMap): Option[Rev] = {
+      val c = p.customIssueTypes
       val a = c.data
       val b = f(a)
       if (a ≟ b)
         None
       else {
         val rev = c.rev.succ
-        p = p.copy(customIncmpTypes = RevAnd(rev, b))
+        p = p.copy(customIssueTypes = RevAnd(rev, b))
         Some(rev)
       }
     }
 
-    def δ(p: Project) = p.customIncmpTypes.data.underlyingMap
+    def δ(p: Project) = p.customIssueTypes.data.underlyingMap
 
-    def mod(f: CustomIncmpTypeIMap => CustomIncmpTypeIMap): RemoteDelta = {
+    def mod(f: CustomIssueTypeIMap => CustomIssueTypeIMap): RemoteDelta = {
       val p1 = p
       delay()
       modR(f).map(rev => {
@@ -144,20 +144,20 @@ class WIP {
         val m2 = δ(p)
         val delIds = m1.keySet -- m2.keySet
         val updates = m2.toStream.filter{ case (k,v) => !m1.contains(k) || m1(k) != v }.map(_._2).toList
-        RemoteDeltaG(Partition.CustomIncmpTypes, rev, rev)(delIds, updates)
+        RemoteDeltaG(Partition.CustomIssueTypes, rev, rev)(delIds, updates)
       }).toList
     }
 
-    ServerProtocol.routine(Routines.CustomIncmpTypeCrud)({
+    ServerProtocol.routine(Routines.CustomIssueTypeCrud)({
       case CrudAction.Create(v)    =>
         val (key, desc) = v
-        val id = CustomIncmpType.Id(p.customIncmpTypes.data.keySet.max.value + 1)
-        val n = CustomIncmpType(id, key, desc, Alive)
+        val id = CustomIssueType.Id(p.customIssueTypes.data.keySet.max.value + 1)
+        val n = CustomIssueType(id, key, desc, Alive)
         mod(_ + n)
 
       case CrudAction.Update(id, v) =>
         val (key, desc) = v
-        upd(id, o => CustomIncmpType(id, key, desc, Alive))
+        upd(id, o => CustomIssueType(id, key, desc, Alive))
 
       case CrudAction.Delete(id, HardDel) => mod(_ - id)
       case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(alive = Dead))
@@ -270,7 +270,7 @@ class WIP {
   def delay(): Unit = () //Thread.sleep(new java.util.Random().nextInt(120)+100)
 
   def render = {
-    val pg = Routines.ForCfgReqType(projectInit, incmpCrud, reqqq.crud, reqqq.imptoggle, tagCrud.fn)
+    val pg = Routines.ForCfgReqType(projectInit, issueTypeCrud, reqqq.crud, reqqq.imptoggle, tagCrud.fn)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }

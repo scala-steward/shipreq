@@ -9,7 +9,7 @@ import scalaz.std.AllInstances._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.delta.Partition
-import shipreq.webapp.base.data.Validators.{customIncmpType => V}
+import shipreq.webapp.base.data.Validators.{customIssueType => V}
 import shipreq.webapp.base.data.Validators.shared.RefKeyVS
 import shipreq.webapp.base.protocol.Routines._
 import shipreq.webapp.base.TextMod
@@ -20,65 +20,65 @@ import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import ReqType.Mnemonic
 
-object CfgIncompletions {
+object CfgIssues {
 
   case class Props(cp: ClientProtocol,
-                   a: CustomIncmpTypeCrud.Remote,
+                   a: CustomIssueTypeCrud.Remote,
                    b: CustomReqTypeImplicationMod.Remote,
                    cd: ClientData,
                    showDeleted: Boolean)
 
-  val comp = ReactComponentB[Props]("Cfg: Incompletions")
+  val comp = ReactComponentB[Props]("Cfg: Issues")
     .render(p =>
       <.div(
-        <.h4("User-Defined Incompletion Types"),
-        UserDefIncompletions.Props(p.cp, p.a, p.cd, p.showDeleted).component,
-        <.h4("Other Causes of Incompletion"),
+        <.h4("User-Defined Issue Types"),
+        UserDefIssues.Props(p.cp, p.a, p.cd, p.showDeleted).component,
+        <.h4("Other Causes of Issues"),
         OtherCauses.Props(p.cp, p.b, p.cd).component)
     ).build
 
   // ===================================================================================================================
 
-  object UserDefIncompletions {
+  object UserDefIssues {
 
-    case class Props(cp: ClientProtocol, remote: CustomIncmpTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
+    case class Props(cp: ClientProtocol, remote: CustomIssueTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
       def component = Component(this)
     }
 
-    val fields = FieldSet2[CustomIncmpType](_.key.value, _.desc getOrElse "")(("", ""))
-    val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomIncmpType.Id]
+    val fields = FieldSet2[CustomIssueType](_.key.value, _.desc getOrElse "")(("", ""))
+    val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomIssueType.Id]
     import storesAndState._
 
     val Component =
-      ReactComponentB[Props]("Cfg: User-Defined Incompletions")
+      ReactComponentB[Props]("Cfg: User-Defined Issue Types")
         .getInitialState(initialState)
         .backend(new Backend(_))
         .render(_.backend.render)
         .configure(
-          RemoteDeltaListener(CustomIncmpType, CustomIncmpTypeCrud)
-            .installS(savedRowStoreS, Partition.CustomIncmpTypes, _.clientData))
+          RemoteDeltaListener(CustomIssueType, CustomIssueTypeCrud)
+            .installS(savedRowStoreS, Partition.CustomIssueTypes, _.clientData))
         .build
 
     private def initialState(p: Props): S =
       State(newRowStore.initState,
-        savedRowStore.initStateIM(p.clientData.project.customIncmpTypes.data),
+        savedRowStore.initStateIM(p.clientData.project.customIssueTypes.data),
         p.showDeleted)
 
-    def validatorState(k: Option[CustomIncmpType.Id], cd: ClientData): S => V.S =
+    def validatorState(k: Option[CustomIssueType.Id], cd: ClientData): S => V.S =
       s => {
         val ts: RefKeyVS.Data[Tag.Id] = // TODO cacheable
           (None, cd.project.tags.data.vstream(_.tag)
             .map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
-        val is: RefKeyVS.Data[CustomIncmpType.Id] =
+        val is: RefKeyVS.Data[CustomIssueType.Id] =
           (k, savedRowStoreS.getAllP(s).map(i => (i.id.some, i.key)))
         RefKeyVS(ts, is)
       }
 
     final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
-      val crudIO = CrudIO(CustomIncmpType, CustomIncmpTypeCrud)(c.props.cp, c.props.remote, c.props.clientData)
+      val crudIO = CrudIO(CustomIssueType, CustomIssueTypeCrud)(c.props.cp, c.props.remote, c.props.clientData)
       val supp = TypicalSupp(storesAndState, crudIO)(c, _.alive)
 
-      def valState(k: Option[CustomIncmpType.Id]) = validatorState(k, c.props.clientData)
+      def valState(k: Option[CustomIssueType.Id]) = validatorState(k, c.props.clientData)
 
       val rowE = {
         val keyE  = Editors.textInputEditor.applyValidator(V.keyS)
@@ -94,12 +94,12 @@ object CfgIncompletions {
           crudIO.createIO, crudIO.updateIO,
           c runState _)
 
-        supp.addEditorFeatures2(e)(saveFn, _._1.incmpData._1)
+        supp.addEditorFeatures2(e)(saveFn, _._1.customIssueData._1)
       }
 
       val table = {
         def rowRenderer =
-          new CfgTable.RowRenderer[CustomIncmpType, rowE.View, (TagMod, TagMod)] {
+          new CfgTable.RowRenderer[CustomIssueType, rowE.View, (TagMod, TagMod)] {
             override def newRow     = identity
             override def savedRow   = (v, p) => v
             override def deletedRow = p => (p.key.value, TextMod.nonBlank from p.desc)

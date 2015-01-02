@@ -38,13 +38,13 @@ object Validators {
 
     /** Validation state (external data) required to validate refkey uniqueness. */
     case class RefKeyVS(tagData: RefKeyVS.Data[Tag.Id],
-                        incmpData: RefKeyVS.Data[CustomIncmpType.Id])
+                        customIssueData: RefKeyVS.Data[CustomIssueType.Id])
 
     private def refKeyUniqueness: ValidationPart[RefKeyVS, RefKey, RefKey] = {
       def vp[I: Equal](f: RefKeyVS => RefKeyVS.Data[I]) =
         Uniqueness.main[RefKeyVS, (Option[I], RefKey), Option[I], RefKey, RefKey](
           f(_)._1, f(_)._2, _._1, _._2, Uniqueness.ignoreO[I], _.≟).fieldName(FieldNames.refKey)
-      val v1 = vp(_.incmpData)
+      val v1 = vp(_.customIssueData)
       val v2 = vp(_.tagData)
       v1 compose v2
     }
@@ -85,7 +85,7 @@ object Validators {
   }
 
   // ===================================================================================================================
-  object customIncmpType {
+  object customIssueType {
     type S = shared.RefKeyVS
 
     def keyU = shared.refKeyU

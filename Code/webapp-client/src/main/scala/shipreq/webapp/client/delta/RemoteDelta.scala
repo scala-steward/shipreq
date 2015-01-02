@@ -35,7 +35,7 @@ object RemoteDelta {
           }
 
         d.p match {
-          case t@ CustomIncmpTypes => x(t, GenericPartitionFns(t, Project._customIncmpTypes))
+          case t@ CustomIssueTypes => x(t, GenericPartitionFns(t, Project._customIssueTypes))
           case t@ CustomReqTypes   => x(t, GenericPartitionFns(t, Project._customReqTypes))
           case t@ Tags             => x(t, TagPartitionFns)
         }

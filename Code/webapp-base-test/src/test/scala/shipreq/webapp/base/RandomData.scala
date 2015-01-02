@@ -56,15 +56,15 @@ object RandomData {
       t <- Gen.charof('.', "_=-", 'a' to 'z', 'A' to 'Z', '0' to '9').list.lim(AppConsts.refKeyLength.end)
     } yield RefKey((h :: t).mkString)
 
-  lazy val customIncmpTypeId =
-    id map CustomIncmpType.Id
+  lazy val customIssueTypeId =
+    id map CustomIssueType.Id
 
-  lazy val customIncmpType =
-    Gen.apply4(CustomIncmpType.apply)(customIncmpTypeId, refKey, optionalLargeText, alive)
+  lazy val customIssueType =
+    Gen.apply4(CustomIssueType.apply)(customIssueTypeId, refKey, optionalLargeText, alive)
 
   /** RefKey uniqueness enforced in Project, not here */
-  lazy val customIncmpTypes =
-    revAndIMap(customIncmpType)(identity)
+  lazy val customIssueTypes =
+    revAndIMap(customIssueType)(identity)
 
   lazy val reqTypeMnemonic =
     Gen.uppers1.lim(6).map(cs => Mnemonic(cs.list.mkString))
@@ -178,30 +178,30 @@ object RandomData {
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   def distinctRefkeys = {
-    type A = RevAnd[CustomIncmpTypeIMap]
+    type A = RevAnd[CustomIssueTypeIMap]
     type B = RevAnd[TagTree]
     type T = (A, B)
     val refkey = Distinct.fstr.xmap(RefKey.apply)(_.value).distinct
-    val incmp = refkey
-      .at(CustomIncmpType._key).liftMapValues[CustomIncmpType.Id]
-      .at(first[T, A] ^|-> RevAnd._data[CustomIncmpTypeIMap] ^|-> imapToMapLens)
+    val issues = refkey
+      .at(CustomIssueType._key).liftMapValues[CustomIssueType.Id]
+      .at(first[T, A] ^|-> RevAnd._data[CustomIssueTypeIMap] ^|-> imapToMapLens)
     val tags = refkey
       .lift[Option].contramap[Tag](_.keyO, setTagKey)
       .at(TagInTree._tag).liftMapValues[Tag.Id]
       .at(second[T, B] ^|-> RevAnd._data[TagTree] ^|-> imapToMapLens)
-    incmp + tags
+    issues + tags
   }
 
   lazy val project =
     for {
-      (incmp, tags) <- Gen.tuple2(customIncmpTypes, revAndTagTree) map distinctRefkeys.run
-      reqtypes      <- customReqTypes
-    } yield Project(incmp, reqtypes, tags)
+      (issues, tags) <- Gen.tuple2(customIssueTypes, revAndTagTree) map distinctRefkeys.run
+      reqtypes       <- customReqTypes
+    } yield Project(issues, reqtypes, tags)
 
   // -------------------------------------------------------------------------------------------------------------------
   object remoteDeltaG {
     def forPart: Partition => Gen[RemoteDeltaG] = {
-      case Partition.CustomIncmpTypes => customIncmpTypesDG
+      case Partition.CustomIssueTypes => customIssueTypesDG
       case Partition.CustomReqTypes   => customReqTypesDG
       case Partition.Tags             => tagsDG
     }
@@ -216,8 +216,8 @@ object RandomData {
       } yield RemoteDeltaG(p, r1, r2)(i, d)
     }
 
-    lazy val customIncmpTypesDG =
-      generic(Partition.CustomIncmpTypes)(customIncmpTypeId, customIncmpType)
+    lazy val customIssueTypesDG =
+      generic(Partition.CustomIssueTypes)(customIssueTypeId, customIssueType)
 
     lazy val customReqTypesDG =
       generic(Partition.CustomReqTypes)(customReqTypeId, customReqType)
@@ -257,7 +257,7 @@ object RandomData {
     lazy val forCfgReqType =
       Gen.apply5(ForCfgReqType)(
         remote(ProjectInit),
-        remote(CustomIncmpTypeCrud),
+        remote(CustomIssueTypeCrud),
         remote(CustomReqTypeCrud),
         remote(CustomReqTypeImplicationMod),
         remote(TagCrud))
@@ -270,8 +270,8 @@ object RandomData {
       lazy val any    = Gen.oneofG[CrudAction[I, V]](create, update, delete)
     }
 
-    lazy val customIncmpTypeCrud = new CrudActionGens(CustomIncmpTypeCrud)(
-      RandomData.customIncmpTypeId,
+    lazy val customIssueTypeCrud = new CrudActionGens(CustomIssueTypeCrud)(
+      RandomData.customIssueTypeId,
       Gen.tuple2(refKey, optionalLargeText))
 
     lazy val customReqTypeCrud = new CrudActionGens(CustomReqTypeCrud)(

@@ -151,8 +151,8 @@ object DataCodecs {
   implicit def isEnumLike = boolCase(IsEnumLike)
   implicit def refkey     = tagS(RefKey.apply)
 
-  implicit def customIncmpTypeId = tagL(CustomIncmpType.Id.apply)
-  implicit def customIncmpType   = caseclass4(CustomIncmpType.apply, CustomIncmpType.unapply)
+  implicit def customIssueTypeId = tagL(CustomIssueType.Id.apply)
+  implicit def customIssueType   = caseclass4(CustomIssueType.apply, CustomIssueType.unapply)
 
   implicit def reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
   implicit def customReqTypeId = tagL(CustomReqType.Id.apply)

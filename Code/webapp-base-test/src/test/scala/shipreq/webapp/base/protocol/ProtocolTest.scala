@@ -71,9 +71,9 @@ object ProtocolTest extends TestSuite {
       }
 
       // TODO copy/paste/search/replace again
-      'CustomIncmpTypeCrud {
-        val prop = kitR(Routines.CustomIncmpTypeCrud).propI
-        import RandomData.routines.customIncmpTypeCrud._
+      'CustomIssueTypeCrud {
+        val prop = kitR(Routines.CustomIssueTypeCrud).propI
+        import RandomData.routines.customIssueTypeCrud._
         'create { create _mustSatisfy prop }
         'update { update _mustSatisfy prop }
         'delete { delete _mustSatisfy prop }
@@ -107,11 +107,11 @@ object ProtocolTest extends TestSuite {
 
       // This just spits out a compiler warning to remind you to add a manual test here
       def confirmTest(p: Partition) = p match {
-        case Partition.CustomIncmpTypes => p
+        case Partition.CustomIssueTypes => p
         case Partition.CustomReqTypes   => p
         case Partition.Tags             => p
       }
-      'CustomIncmpTypes - test(Partition.CustomIncmpTypes)
+      'CustomIssueTypes - test(Partition.CustomIssueTypes)
       'CustomReqTypes   - test(Partition.CustomReqTypes)
       'Tags             - test(Partition.Tags)
     }
