@@ -38,7 +38,7 @@ object CfgReqTypes {
 
   private def initialState(p: Props): S =
     State(newRowStore.initState,
-      savedRowStore.initStateS(p.clientData.project.customReqTypes.data, _.id),
+      savedRowStore.initStateIM(p.clientData.project.customReqTypes.data),
       p.showDeleted)
 
   // ===================================================================================================================

@@ -1,6 +1,8 @@
 package shipreq.base.util
 
 import scala.annotation.elidable
+import scala.collection.GenTraversableOnce
+import scala.collection.generic.Subtractable
 import scalaz.{Order, Equal, Foldable}
 import scalaz.std.iterable._
 import scalaz.std.map._
@@ -13,7 +15,9 @@ object IMap {
   def empty[K, V](k: V => K): IMap[K, V] = new IMap(k, Map.empty)
 }
 
-final class IMap[K, V] private (key: V => K, m: Map[K, V]) {
+final class IMap[K, V] private (key: V => K, m: Map[K, V]) extends Subtractable[K, IMap[K, V]] {
+
+  override protected def repr = this
 
   override def toString = s"I$m"
   override def hashCode = m.hashCode
@@ -37,15 +41,19 @@ final class IMap[K, V] private (key: V => K, m: Map[K, V]) {
 
   def get(k: K): Option[V] = m.get(k)
 
-  def -(k: K) = setmap(m - k)
+  override def -(k: K) = setmap(m - k)
 
   // ------------------------------------------------
+
+  @inline final def +(v: V) = add(v)
 
   def add(v: V) = setmap(m.updated(key(v), v))
 
   def addAll(vs: V*) = addAllF(vs)
 
   def addAllF[F[_]: Foldable](vs: F[V]) = setmap(vs.foldLeft(m)((n, v) => n.updated(key(v), v)))
+
+  def ++(vs: GenTraversableOnce[V]) = setmap(vs.foldLeft(m)((n, v) => n.updated(key(v), v)))
 
   def vstream[A](f: V => A): Stream[A] = values.toStream.map(f)
   def vstreamf[A](f: V => Stream[A]): Stream[A] = values.toStream.flatMap(f)

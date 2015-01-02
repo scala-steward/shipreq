@@ -3,6 +3,7 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.macros.Lenser
+import shipreq.base.util.IMap
 import scalaz.Applicative
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.DataIdAux
@@ -53,9 +54,10 @@ final class SavedRowStore[S, K, P, I](_ss: Lens[S, SavedRowStore.SS[K, P, I]],
   @inline private def initRow(p: P): Row =
     SavedRowStore.Row(RowStatus.Sync, p, pi(p))
 
-  def initStateM(s: Map[K, P])         : SS = s mapValues initRow
-  def initStateS(s: Seq[P], pk: P => K): SS = initStateM(s.foldLeft(Map.empty[K, P])(_ + _.mapStrengthL(pk)))
-  def initStateT(s: Seq[KP])           : SS = initStateM(s.toMap)
+          def initStateM(s: Map[K, P])         : SS = s mapValues initRow
+          def initStateS(s: Seq[P], pk: P => K): SS = initStateM(s.foldLeft(Map.empty[K, P])(_ + _.mapStrengthL(pk)))
+  @inline def initStateT (s: Seq[KP])          : SS = initStateM(s.toMap)
+  @inline def initStateIM(s: IMap[K, P])       : SS = initStateM(s.underlyingMap)
 
   private def __row  (k: K): Lens[SS, Row]      = Lens((_: SS) apply k)(p => _ + (k -> p))
   private def _row   (k: K): Lens[S, Row]       = _ss ^|-> __row(k)

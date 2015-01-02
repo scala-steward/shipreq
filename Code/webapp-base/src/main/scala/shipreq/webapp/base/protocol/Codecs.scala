@@ -142,6 +142,9 @@ object DataCodecs {
     })
   }
 
+  implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
+    iMap(d.id)
+
   implicit def rev        = tagL(Rev.apply)
   implicit def alive      = boolCase(Alive)
   implicit def impReq     = boolCase(ImplicationRequired)
@@ -183,9 +186,6 @@ object DataCodecs {
         case 1 => readJ[TagProtocol.ApplicableTagValues](v)
       }
     })
-
-  implicit def dataset[D, I](implicit D: DataIdAux[D, I], WI: Writer[I], RI: Reader[I], WV: Writer[D], RV: Reader[D]) =
-    caseclass2(DataSet.apply[D], DataSet.unapply[D])
 
   implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
     caseclass2(RevAnd.apply[T], RevAnd.unapply[T])

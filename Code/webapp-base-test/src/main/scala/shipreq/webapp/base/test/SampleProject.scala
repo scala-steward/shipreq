@@ -1,22 +1,22 @@
 package shipreq.webapp.base.test
 
 import shipreq.prop.util._
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.UnsafeTypes._
 
 object SampleProject {
 
-  val customImplTypes = List(
+  val customImplTypes = RevAnd(10, emptyDataMap(CustomIncmpType).addAll(
     CustomIncmpType(1, "TODO", "Something you need To Do.", Alive),
-    CustomIncmpType(2, "TBD", "To Be Decided.", Alive))
+    CustomIncmpType(2, "TBD", "To Be Decided.", Alive)))
 
-  val customReqTypes = List(
+  val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
     CustomReqType(1, "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
     CustomReqType(2, "MF", Set.empty, "Major Feature", ImplicationNotRequired, Alive),
     CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired, Alive),
     CustomReqType(4, "BR", Set.empty, "Business Rule", ImplicationNotRequired, Alive),
     CustomReqType(5, "DD", Set("DA", "DDF"), "Data Definition", ImplicationNotRequired, Dead),
-    CustomReqType(6, "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead))
+    CustomReqType(6, "SI", Set.empty, "Solution Idea", ImplicationRequired, Dead)))
 
   val v10d = Some("Released: 17/14/1976\nFirst release.")
   val v11d = Some("Released: 1/2/2001")
@@ -38,8 +38,8 @@ object SampleProject {
     TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Alive), Vector()))
 
   val project = new Project(
-    DataSet[CustomIncmpType](10, customImplTypes),
-    DataSet[CustomReqType](20, customReqTypes),
+    customImplTypes,
+    customReqTypes,
     RevAnd(30, tags))
 
   val tagTree = project.tags.data.mapValues(_.children)

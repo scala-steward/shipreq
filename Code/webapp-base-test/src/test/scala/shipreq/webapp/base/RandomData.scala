@@ -64,7 +64,7 @@ object RandomData {
 
   /** RefKey uniqueness enforced in Project, not here */
   lazy val customIncmpTypes =
-    dataSet[CustomIncmpType, CustomIncmpType.Id](customIncmpType, identity)
+    revAndIMap(customIncmpType)(identity)
 
   lazy val reqTypeMnemonic =
     Gen.uppers1.lim(6).map(cs => Mnemonic(cs.list.mkString))
@@ -94,17 +94,17 @@ object RandomData {
       cur + old
     }
     val d = (dname * dmnemonic).lift[List]
-    dataSet[CustomReqType, CustomReqType.Id](customReqType, d.run)
+    revAndIMap(customReqType)(d.run)
   }
 
   def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I]) =
     Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[D](i.id, i.setId)
 
-  // TODO I don't wanna specify two types!!!!!!! whaaaaaa
-  def dataSet[D, I <: TaggedLong](r: Gen[D], mod: List[D] => List[D])(implicit i: DataIdAux[D, I]): Gen[DataSet[D]] = {
+  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
     val d = distinctId[D, I].lift[List]
     val f = mod compose d.run
-    Gen.apply2(DataSet[D])(rev, r.list.map(f))
+    val g = f andThen (i.emptyIMap ++ _)
+    Gen.apply2(RevAnd[IMap[I, D]])(rev, r.list map g)
   }
 
   lazy val tagId =
@@ -178,13 +178,13 @@ object RandomData {
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   def distinctRefkeys = {
-    type A = DataSet[CustomIncmpType]
+    type A = RevAnd[CustomIncmpTypeIMap]
     type B = RevAnd[TagTree]
     type T = (A, B)
     val refkey = Distinct.fstr.xmap(RefKey.apply)(_.value).distinct
     val incmp = refkey
-      .at(CustomIncmpType._key).lift[List]
-      .at(first[T, A] ^|-> DataSet._data[CustomIncmpType])
+      .at(CustomIncmpType._key).liftMapValues[CustomIncmpType.Id]
+      .at(first[T, A] ^|-> RevAnd._data[CustomIncmpTypeIMap] ^|-> imapToMapLens)
     val tags = refkey
       .lift[Option].contramap[Tag](_.keyO, setTagKey)
       .at(TagInTree._tag).liftMapValues[Tag.Id]

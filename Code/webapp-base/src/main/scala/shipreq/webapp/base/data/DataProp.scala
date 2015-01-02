@@ -10,12 +10,13 @@ object DataProp {
   lazy val rev =
     Prop.test[Rev]("rev ≥ 0", _.value >= 0)
 
-  private def dataSet[O, D, I <: TaggedLong](o: O)(implicit O: ObjDataId[O, D, I]) =
-    Prop.distinct("ID", (_: DataSet[D]).data.toStream.map(_.id.value)) ∧ rev.contramap(_.rev)
+  def revAnd[T] =
+    rev.contramap[RevAnd[T]](_.rev)
 
   // -------------------------------------------------------------------------------------------------------------------
   object customIncmpTypes {
-    def all = dataSet(CustomIncmpType) rename "CustomIncmpTypes"
+
+    def all = revAnd[CustomIncmpTypeIMap] rename "CustomIncmpTypes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -33,19 +34,19 @@ object DataProp {
   }
 
   object customReqTypes {
-    type DS = DataSet[CustomReqType]
+    type T = CustomReqTypeIMap
 
     lazy val uniqueMnemonics =
-      Prop.distinct("mnemonic", (_: DS).data.toStream.flatMap(b => b.mnemonic #:: b.oldMnemonics.toStream).map(_.value))
+      Prop.distinct("mnemonic", (_: T).values.toStream.flatMap(b => b.mnemonic #:: b.oldMnemonics.toStream).map(_.value))
 
     lazy val uniqueNames =
-      Prop.distinct("name", (_: DS).data.toStream.map(_.name))
+      Prop.distinct("name", (_: T).values.toStream.map(_.name))
 
     lazy val each =
-      customReqType.all.forall[DS, List](_.data)
+      customReqType.all.forall[T, Stream](_.values.toStream)
 
     lazy val all =
-      (dataSet(CustomReqType) ∧ uniqueMnemonics ∧ uniqueNames ∧ each) rename "CustomReqTypes"
+      (revAnd[T] ∧ (uniqueMnemonics ∧ uniqueNames ∧ each).contramap[RevAnd[T]](_.data)) rename "CustomReqTypes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ object DataProp {
 
   lazy val uniqueRefkeys =
     Prop.distinct[Project, RefKey]("refkey", p =>
-      p.customIncmpTypes.data.toStream.map(_.key) #:::
+      p.customIncmpTypes.data.values.toStream.map(_.key) #:::
       p.tags.data.vstreamf(_.tag.keyO.toStream))
 
   lazy val project = (

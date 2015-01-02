@@ -1,6 +1,8 @@
 package shipreq.webapp.client.delta
 
-import scalaz.{-\/, \/-}
+import monocle.Lens
+import scalaz.Leibniz.===
+import shipreq.base.util.IMap
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.TagProtocol.PovRelations
 import shipreq.webapp.base.data._
@@ -33,8 +35,8 @@ object RemoteDelta {
           }
 
         d.p match {
-          case t@ CustomIncmpTypes => x(t, GenericPartitionFns(t))
-          case t@ CustomReqTypes   => x(t, GenericPartitionFns(t))
+          case t@ CustomIncmpTypes => x(t, GenericPartitionFns(t, Project._customIncmpTypes))
+          case t@ CustomReqTypes   => x(t, GenericPartitionFns(t, Project._customReqTypes))
           case t@ Tags             => x(t, TagPartitionFns)
         }
       }
@@ -47,28 +49,24 @@ object RemoteDelta {
 }
 
 object GenericPartitionFns {
-  def apply(q: Partition)(implicit da: DataSetAccessor[q.Data]) =
-    new GenericPartitionFns[q.type, q.Data](q)(da)
-}
+  def apply[Id, D](q: Partition, l: Lens[Project, RevAnd[IMap[Id, D]]])
+                  (implicit evD: q.Data === D, evI: q.Id === Id): Fns[q.type] =
+    new Fns[q.type] {
 
-class GenericPartitionFns[P <: Partition {type Data = D}, D](q: P)(implicit da: DataSetAccessor[D]) extends Fns[P] {
-  import q.di
+      def rev(p: Project): Rev = l.get(p).rev
 
-  def rev(p: Project): Rev = da.getRev(p)
+      def update(p: Project, rev: Rev, ds: RemoteDeltaP[q.type]): Project = {
+        var m = l.get(p).data
 
-  def update(p: Project, rev: Rev, ds: RemoteDeltaP[P]): Project = {
-    var vs = da.getData(p)
+        // Deletions
+        m --= evI.subst(ds.del)
 
-    val dels = ds.del
-    if (dels.nonEmpty)
-      vs = vs.filterNot(data => dels contains data.id)
+        // Updates
+        m = m.addAll(evD.subst(ds.upd): _*)
 
-    val upds = ds.upd.map(data => data.id -> data).toMap
-    if (upds.nonEmpty)
-      vs = vs.map(p => upds.getOrElse(p.id, p))
-
-    da.set(p, rev, vs)
-  }
+        l.set(RevAnd(rev, m))(p)
+      }
+    }
 }
 
 object TagPartitionFns extends Fns[Tags.type] {

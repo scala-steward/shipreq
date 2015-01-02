@@ -3,46 +3,20 @@ package shipreq.webapp.base.data
 import monocle.Lens
 import monocle.macros.Lenser
 
-trait DataSetAccessor[D] {
-  def getRev(p: Project): Rev
-  def getData(p: Project): Stream[D]
-  def set(p: Project, r: Rev, d: Stream[D]): Project
-}
-
 case class RevAnd[D](rev: Rev, data: D)
 
 object RevAnd {
   def _data[D] = Lens((_: RevAnd[D]).data)(b => _.copy(data = b))
 }
 
-// TODO change List to Vector
-// TODO this is just RevAnd[List[D]]
-case class DataSet[D](rev: Rev, data: List[D])
-
-object DataSet {
-  def _data[D] = Lens((_: DataSet[D]).data)(b => _.copy(data = b))
-}
-
 object Project {
   private[this] def l = Lenser[Project]
   val _customIncmpTypes = l(_.customIncmpTypes)
   val _customReqTypes   = l(_.customReqTypes)
-
-  private def dsa[D](ds: Lens[Project, DataSet[D]]): DataSetAccessor[D] =
-    new DataSetAccessor[D] {
-      override def getRev(p: Project)                    = ds.get(p).rev
-      override def getData(p: Project)                   = ds.get(p).data.toStream
-      override def set(p: Project, r: Rev, d: Stream[D]) = ds.set(DataSet[D](r, d.toList))(p)
-    }
-
-  trait Implicits {
-    implicit val dsaCustomIncmpType = dsa(_customIncmpTypes)
-    implicit val dsaCustomReqType   = dsa(_customReqTypes)
-  }
 }
 
-final case class Project(customIncmpTypes: DataSet[CustomIncmpType],
-                         customReqTypes:   DataSet[CustomReqType],
+final case class Project(customIncmpTypes: RevAnd[CustomIncmpTypeIMap],
+                         customReqTypes:   RevAnd[CustomReqTypeIMap],
                          tags:             RevAnd[TagTree]) {
   import shipreq.prop._
   this assertSatisfies DataProp.project

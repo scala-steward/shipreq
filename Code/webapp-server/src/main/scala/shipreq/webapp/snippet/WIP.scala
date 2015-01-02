@@ -1,13 +1,13 @@
 package shipreq.webapp.snippet
 
 import net.liftweb.util.Helpers._
-import scalaz.\&/, \&/._
+import scalaz.{Equal, \&/}, \&/._
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.prop.util._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.lib.ServerProtocol
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.delta._
 import DeletionAction._
 import shipreq.webapp.util.QuietException
@@ -18,11 +18,11 @@ class WIP {
     import shipreq.webapp.base.data._
     import shipreq.webapp.base.UnsafeTypes._
 
-    val customImplTypes = DataSet[CustomIncmpType](10, List(
+    val customImplTypes = RevAnd(10, emptyDataMap(CustomIncmpType).addAll(
       CustomIncmpType(1, "TODO", "Something you need To Do.", Alive),
       CustomIncmpType(2, "TBD", "To Be Decided.", Alive)))
 
-    val customReqTypes = DataSet[CustomReqType](20, List(
+    val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
         CustomReqType(1, "CO", Set.empty, "Constraint", ImplicationNotRequired, Alive),
         CustomReqType(2, "MF", Set.empty, "Major Feature", ImplicationNotRequired, Alive),
         CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired, Alive),
@@ -58,26 +58,27 @@ class WIP {
 
   // -------------------------------------------------------------------------------------------------------------------
   object reqqq {
+    implicit val equality = Equal.equalA[CustomReqType]
 
     def upd(id: CustomReqType.Id, f: CustomReqType => CustomReqType) =
-      mod(_.map(c => if (c.id == id) f(c) else c))
+      mod(_.mod(id, f))
 
-    def modR(f: List[CustomReqType] => List[CustomReqType]): Option[Rev] = {
+    def modR(f: CustomReqTypeIMap => CustomReqTypeIMap): Option[Rev] = {
       val c = p.customReqTypes
       val a = c.data
       val b = f(a)
-      if (a == b)
+      if (a ≟ b)
         None
       else {
         val rev = c.rev.succ
-        p = p.copy(customReqTypes = DataSet[CustomReqType](rev, b))
+        p = p.copy(customReqTypes = RevAnd(rev, b))
         Some(rev)
       }
     }
 
-    def δ(p: Project) = p.customReqTypes.data.map(c => c.id -> c).toMap
+    def δ(p: Project) = p.customReqTypes.data.underlyingMap
 
-    def mod(f: List[CustomReqType] => List[CustomReqType]): RemoteDelta = {
+    def mod(f: CustomReqTypeIMap => CustomReqTypeIMap): RemoteDelta = {
       val p1 = p
       delay()
       modR(f).map(rev => {
@@ -93,15 +94,15 @@ class WIP {
       ServerProtocol.routine(Routines.CustomReqTypeCrud)({
         case CrudAction.Create(v)    =>
           val (mnemonic, name, imp) = v
-          val id = CustomReqType.Id(p.customReqTypes.data.map(_.id.value).max + 1)
+          val id = CustomReqType.Id(p.customReqTypes.data.keySet.max.value + 1)
           val n = CustomReqType(id, mnemonic, Set.empty, name, imp, Alive)
-          mod(n :: _)
+          mod(_ + n)
 
         case CrudAction.Update(id, v) =>
           val (mnemonic, name, imp) = v
           upd(id, o => CustomReqType(id, mnemonic, (o.oldMnemonics + o.mnemonic) - mnemonic, name, imp, Alive))
 
-        case CrudAction.Delete(id, HardDel) => mod(_.filterNot(_.id == id))
+        case CrudAction.Delete(id, HardDel) => mod(_ - id)
         case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(alive = Dead))
         case CrudAction.Delete(id, Restore) => upd(id, _.copy(alive = Alive))
       })
@@ -115,26 +116,27 @@ class WIP {
   // -------------------------------------------------------------------------------------------------------------------
   // TODO Another copy/paste/search/replace
   val incmpCrud = {
+    implicit val equality = Equal.equalA[CustomIncmpType]
 
     def upd(id: CustomIncmpType.Id, f: CustomIncmpType => CustomIncmpType) =
-      mod(_.map(c => if (c.id == id) f(c) else c))
+      mod(_.mod(id, f))
 
-    def modR(f: List[CustomIncmpType] => List[CustomIncmpType]): Option[Rev] = {
+    def modR(f: CustomIncmpTypeIMap => CustomIncmpTypeIMap): Option[Rev] = {
       val c = p.customIncmpTypes
       val a = c.data
       val b = f(a)
-      if (a == b)
+      if (a ≟ b)
         None
       else {
         val rev = c.rev.succ
-        p = p.copy(customIncmpTypes = DataSet[CustomIncmpType](rev, b))
+        p = p.copy(customIncmpTypes = RevAnd(rev, b))
         Some(rev)
       }
     }
 
-    def δ(p: Project) = p.customIncmpTypes.data.map(c => c.id -> c).toMap
+    def δ(p: Project) = p.customIncmpTypes.data.underlyingMap
 
-    def mod(f: List[CustomIncmpType] => List[CustomIncmpType]): RemoteDelta = {
+    def mod(f: CustomIncmpTypeIMap => CustomIncmpTypeIMap): RemoteDelta = {
       val p1 = p
       delay()
       modR(f).map(rev => {
@@ -149,15 +151,15 @@ class WIP {
     ServerProtocol.routine(Routines.CustomIncmpTypeCrud)({
       case CrudAction.Create(v)    =>
         val (key, desc) = v
-        val id = CustomIncmpType.Id(p.customIncmpTypes.data.map(_.id.value).max + 1)
+        val id = CustomIncmpType.Id(p.customIncmpTypes.data.keySet.max.value + 1)
         val n = CustomIncmpType(id, key, desc, Alive)
-        mod(n :: _)
+        mod(_ + n)
 
       case CrudAction.Update(id, v) =>
         val (key, desc) = v
         upd(id, o => CustomIncmpType(id, key, desc, Alive))
 
-      case CrudAction.Delete(id, HardDel) => mod(_.filterNot(_.id == id))
+      case CrudAction.Delete(id, HardDel) => mod(_ - id)
       case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(alive = Dead))
       case CrudAction.Delete(id, Restore) => upd(id, _.copy(alive = Alive))
     })
@@ -172,7 +174,7 @@ class WIP {
       val rd = p.tags
       val a = rd.data
       val b = f(a)
-      if (a == b)
+      if (a ≟ b)
         None
       else {
         val rev = rd.rev.succ

@@ -190,7 +190,7 @@ private[tags] object MainTable {
         val ts: RefKeyVS.Data[Id] =
           (k, s.tagStream.map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
         val is: RefKeyVS.Data[CustomIncmpType.Id] = // TODO cacheable
-          (None, cd.project.customIncmpTypes.data.toStream
+          (None, cd.project.customIncmpTypes.data.values.toStream
             .map(i => (i.id.some, i.key)))
 
         (s.tagStream, RefKeyVS(ts, is))

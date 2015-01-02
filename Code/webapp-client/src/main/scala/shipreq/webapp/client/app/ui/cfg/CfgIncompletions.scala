@@ -61,7 +61,7 @@ object CfgIncompletions {
 
     private def initialState(p: Props): S =
       State(newRowStore.initState,
-        savedRowStore.initStateS(p.clientData.project.customIncmpTypes.data, _.id),
+        savedRowStore.initStateIM(p.clientData.project.customIncmpTypes.data),
         p.showDeleted)
 
     def validatorState(k: Option[CustomIncmpType.Id], cd: ClientData): S => V.S =
@@ -142,7 +142,7 @@ object CfgIncompletions {
       .build
 
     private def initialState(p: Props): S =
-      savedRowStore.initStateS(p.clientData.project.customReqTypes.data, _.id)
+      savedRowStore.initStateIM(p.clientData.project.customReqTypes.data)
 
     def label(r: ReqType): String = s"${r.mnemonic.value}: ${r.name}"
 
