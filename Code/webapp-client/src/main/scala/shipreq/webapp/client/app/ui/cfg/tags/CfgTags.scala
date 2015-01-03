@@ -71,7 +71,7 @@ private[tags] object MainTable {
                    tg_state: tg_storesAndState.State,
                    at_state: at_storesAndState.State,
                    tree: TreeState,
-                   newSel: Tag.Type,
+                   newSel: TagType,
                    detailRow: Option[DetailPaneState]) {
 
     lazy val childToParent = tree.reverseM[Set]
@@ -107,13 +107,13 @@ private[tags] object MainTable {
   val tg_storesAndStateS = tg_storesAndState.contramap(State._tg_state)
   val at_storesAndStateS = at_storesAndState.contramap(State._at_state)
 
-  def storesForType(t: Tag.Type): NewAndSavedStores[S, Id, _ <: Tag, _] =
+  def storesForType(t: TagType): NewAndSavedStores[S, Id, _ <: Tag, _] =
     t match {
-      case Tag.Type.Group      => tg_storesAndStateS
-      case Tag.Type.Applicable => at_storesAndStateS
+      case TagType.Group      => tg_storesAndStateS
+      case TagType.Applicable => at_storesAndStateS
     }
 
-  val eachTypesStores = Tag.Type.values map storesForType
+  val eachTypesStores = TagType.values map storesForType
 
   def initialState(p: Props): S = {
     val tgs = Seq.newBuilder[TagGroup]
@@ -127,7 +127,7 @@ private[tags] object MainTable {
       tg_state  = tg_storesAndState.initState(_.initStateS(tgs.result(), _.id)),
       at_state  = at_storesAndState.initState(_.initStateS(ats.result(), _.id)),
       tree      = Multimap(tagtree.mapValues(_.children)),
-      newSel    = Tag.Type.Applicable,
+      newSel    = TagType.Applicable,
       detailRow = None)
   }
 

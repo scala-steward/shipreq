@@ -14,6 +14,14 @@ import shipreq.base.util.TaggedTypes.TaggedLong
 // =====================================================================================================================
 // Tag meta
 
+sealed abstract class TagType(val key: String, val name: String) { type Data <: Tag }
+object TagType {
+  case object Group      extends TagType("G", "Tag Group") { override type Data = TagGroup }
+  case object Applicable extends TagType("A", "Tag")       { override type Data = ApplicableTag }
+  val values = List[TagType](Group, Applicable)
+  val byKey  = IMap.empty((_: TagType).key).addAll(values: _*)
+}
+
 object Tag {
   final case class Id(value: Long) extends TaggedLong
 
@@ -35,14 +43,6 @@ object Tag {
     case TagGroup(a, b, c, d, _)      => TagGroup(a, b, c, d, n)
     case ApplicableTag(a, b, c, d, _) => ApplicableTag(a, b, c, d, n)
   })
-
-  sealed abstract class Type(val key: String, val name: String) { type Data <: Tag }
-  object Type {
-    case object Group      extends Type("G", "Tag Group") { override type Data = TagGroup }
-    case object Applicable extends Type("A", "Tag")       { override type Data = ApplicableTag }
-    val values = List[Type](Group, Applicable)
-    val byKey  = IMap.empty((_: Type).key).addAll(values: _*)
-  }
 
   implicit val equality: Equal[Tag] = Equal.equalA[Tag] // TODO use macros
 
@@ -70,7 +70,7 @@ sealed trait Tag {
   val desc: Option[String]
   val alive: Alive
   def keyO: Option[RefKey]
-  def tagType: Tag.Type
+  def tagType: TagType
 }
 
 /**
@@ -83,7 +83,7 @@ final case class TagGroup(id: Id,
                           mutexChildren: MutexChildren,
                           alive: Alive) extends Tag {
   override def keyO = None
-  override def tagType = Tag.Type.Group
+  override def tagType = TagType.Group
 }
 
 final case class ApplicableTag(id: Id,
@@ -92,7 +92,7 @@ final case class ApplicableTag(id: Id,
                                key: RefKey,
                                alive: Alive) extends Tag {
   override def keyO = Some(key)
-  override def tagType = Tag.Type.Applicable
+  override def tagType = TagType.Applicable
 }
 
 /**
