@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.cfg.tags
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom.HTMLSelectElement
-import shipreq.base.util.Util
+import shipreq.base.util.ParseLong
 import scalaz.{Equal, Memo}
 import scalaz.effect.IO
 
@@ -79,7 +79,7 @@ private[tags] object DetailPane {
       else {
 
         def dropdownChange: SyntheticEvent[HTMLSelectElement] => IO[Unit] =
-          e => ar.onSelect(Util.parseLong(e.target.value).map(Id.apply))
+          e => ar.onSelect(ParseLong.unapply(e.target.value).map(Id.apply))
 
         def option(r: AddRel) = {
           val base = r.selectable match {

@@ -18,7 +18,7 @@ class WIP {
     import shipreq.webapp.base.data._
     import shipreq.webapp.base.UnsafeTypes._
 
-    val customImplTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
+    val customIssueTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
       CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Alive),
       CustomIssueType(2, "TBD", "To Be Decided.", Alive)))
 
@@ -49,7 +49,14 @@ class WIP {
       TagInTree(TagGroup     (27, "Released",       None, MutexChildren.Not, Alive), Vector(22,23)),
       TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Alive), Vector())))
 
-    new Project(customImplTypes, customReqTypes, tags)
+    val fields = RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
+        CustomField.Text(1, "Description", "desc",  Mandatory,     onlyReqTypes(2, ReqType.UseCase), Alive),
+        CustomField.Text(2, "Notes",       "notes", Mandatory.Not, notReqTypes(4),                   Alive)
+      ), Vector(
+        1, Field.NormalAltStepTree, Field.ExceptionStepTree, Field.StepGraph, 2
+      )))
+
+    new Project(customIssueTypes, customReqTypes, fields, tags)
   }
 
   var p = newProject

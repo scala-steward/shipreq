@@ -4,16 +4,18 @@ import monocle.Lens
 import monocle.function.{first, second}
 import monocle.std.tuple2._
 import scala.annotation.tailrec
+import scalaz.OneAnd
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
 import scalaz.std.set._
 import scalaz.std.stream._
+import scalaz.syntax.equal._
 
 import shipreq.base.util.IMap
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.prop.test.{Distinct, Gen}
-import shipreq.webapp.base.data._, ReqType.Mnemonic
+import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
 import shipreq.webapp.base.protocol._
 import shipreq.base.util.Debug._
@@ -38,6 +40,9 @@ object RandomData {
   lazy val rev =
     Gen.positivelong.map(Rev)
 
+  def revAnd[D](r: Gen[D]): Gen[RevAnd[D]] =
+    Gen.apply2(RevAnd[D])(rev, r)
+
   lazy val revPair =
     for {
       r1 <- rev
@@ -49,6 +54,9 @@ object RandomData {
 
   lazy val implicationRequired =
     Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
+
+  lazy val mandatory =
+    Gen.oneof[Mandatory](Mandatory, Mandatory.Not)
 
   lazy val refKey =
     for {
@@ -86,11 +94,11 @@ object RandomData {
     } yield CustomReqType(id, mn, om - mn, n, ir, a)
 
   lazy val customReqTypes = {
-    def dname = Distinct.str.at(CustomReqTypeL.name)
+    def dname = Distinct.str.at(CustomReqType._name)
     def dmnemonic = {
       val distm = Distinct.fstr.xmap(Mnemonic.apply)(_.value).addhs(ReqType.staticMnemonics).distinct
-      val cur = distm.at(CustomReqTypeL.mnemonic)
-      val old = distm.lift[Set].at(CustomReqTypeL.oldMnemonics)
+      val cur = distm.at(CustomReqType._mnemonic)
+      val old = distm.lift[Set].at(CustomReqType._oldMnemonics)
       cur + old
     }
     val d = (dname * dmnemonic).lift[List]
@@ -104,7 +112,7 @@ object RandomData {
     val d = distinctId[D, I].lift[List]
     val f = mod compose d.run
     val g = f andThen (i.emptyIMap ++ _)
-    Gen.apply2(RevAnd[IMap[I, D]])(rev, r.list map g)
+    revAnd(r.list map g)
   }
 
   lazy val tagId =
@@ -175,6 +183,45 @@ object RandomData {
     case t: TagGroup      => t
   }
 
+  def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
+    def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
+    Gen.oneofG(
+      Gen.insert(ISubset.All()),
+      h(ISubset.Only.apply),
+      h(ISubset.Not.apply))
+  }
+
+  def applicableReqTypes(r: Set[CustomReqType.Id]): Gen[ApplicableReqTypes] = {
+    val all = ReqType.static.foldLeft(r.map(a => a: ReqType.Id))(_ + _).toList
+    val a = Gen.oneof(all.head, all.tail: _*)
+    isubset(a, a.set)
+  }
+
+  lazy val customFieldId =
+    id map CustomField.Id
+
+  def customFieldText(r: Set[CustomReqType.Id]): Gen[CustomField.Text] =
+    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, refKey, mandatory, applicableReqTypes(r), alive)
+
+  def customField(r: Set[CustomReqType.Id]): Gen[CustomField] =
+    Gen.oneofGC(customFieldText(r))
+
+  def customFields(r: Set[CustomReqType.Id]): Gen[IMap[CustomField.Id, CustomField]] = {
+    def id = distinctId(CustomField.IdAccess)
+    // TODO def dname = Distinct.str.at(CustomField.Text._name)
+    val dist = id.lift[Stream]
+    customField(r).stream.map(fs => emptyDataMap(CustomField) ++ dist.run(fs))
+  }
+
+  def fieldSet(r: Set[CustomReqType.Id]): Gen[FieldSet] =
+    for {
+      cf           ← customFields(r)
+      (del, undel) = Field.static.partition(_.deletable ≟ Deletable)
+      mandatoryIds = cf.keySet.map(f => f: Field.Id) ++ undel
+      optionalIds  ← Gen.oneof(del.head, del.tail: _*).set
+      order        ← Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
+    } yield FieldSet(cf, order)
+
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   def distinctRefkeys = {
@@ -196,7 +243,8 @@ object RandomData {
     for {
       (issues, tags) <- Gen.tuple2(customIssueTypes, revAndTagTree) map distinctRefkeys.run
       reqtypes       <- customReqTypes
-    } yield Project(issues, reqtypes, tags)
+      fields         <- revAnd(fieldSet(reqtypes.data.keySet))
+    } yield Project(issues, reqtypes, fields, tags)
 
   // -------------------------------------------------------------------------------------------------------------------
   object remoteDeltaG {

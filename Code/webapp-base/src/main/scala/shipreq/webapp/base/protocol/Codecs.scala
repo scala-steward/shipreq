@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import scalaz.{\&/, NonEmptyList}
+import scalaz.{OneAnd, \&/, NonEmptyList}
 import scalaz.Isomorphism.<=>
 import upickle._
 import shipreq.prop.util._
@@ -103,6 +103,12 @@ private[protocol] object Codec {
   def intkeyW[T](k: Int, t: T)(implicit T: Writer[T]) =
     Js.Arr(Js.Num(k), T write0 t)
 
+  def intkeyW2[A, B](k: Int, a: A, b: B)(implicit A: Writer[A], B: Writer[B]) =
+    Js.Arr(Js.Num(k), A write0 a, B write0 b)
+
+  def strkeyW[T](k: String, t: T)(implicit T: Writer[T]) =
+    Js.Arr(Js.Str(k), T write0 t)
+
   def readJ[T](v: Js.Value)(implicit T: Reader[T]) = T read0 v
 
   def iMap[K: Reader : Writer, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
@@ -142,14 +148,31 @@ object DataCodecs {
     })
   }
 
+  implicit def isubset[F[_], A: Reader: Writer](implicit RF: Reader[F[A]], WF: Writer[F[A]]): ReadWriter[ISubset[F, A]] = {
+    import ISubset._
+    ReadWriter[ISubset[F, A]]({
+      case All()    => Js.Num(0)
+      case Only(as) => intkeyW2(1, as.head, as.tail)
+      case Not(as)  => intkeyW2(2, as.head, as.tail)
+    }, {
+      case Js.Num(n) if n.toInt == 0 => All()
+      case Js.Arr(Js.Num(n), a, as) => n.toInt match {
+        case 1 => Only(OneAnd(readJ[A](a), readJ[F[A]](as)))
+        case 2 => Not (OneAnd(readJ[A](a), readJ[F[A]](as)))
+      }
+    })
+  }
+
   implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
     iMap(d.id)
 
-  implicit def rev        = tagL(Rev.apply)
-  implicit def alive      = boolCase(Alive)
-  implicit def impReq     = boolCase(ImplicationRequired)
-  implicit def isEnumLike = boolCase(MutexChildren)
-  implicit def refkey     = tagS(RefKey.apply)
+  implicit def rev           = tagL(Rev.apply)
+  implicit def alive         = boolCase(Alive)
+  implicit def impReq        = boolCase(ImplicationRequired)
+  implicit def mutexChildren = boolCase(MutexChildren)
+  implicit def mandatory     = boolCase(Mandatory)
+  implicit def deletable     = boolCase(Deletable)
+  implicit def refkey        = tagS(RefKey.apply)
 
   implicit def customIssueTypeId = tagL(CustomIssueType.Id.apply)
   implicit def customIssueType   = caseclass4(CustomIssueType.apply, CustomIssueType.unapply)
@@ -157,6 +180,41 @@ object DataCodecs {
   implicit def reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
   implicit def customReqTypeId = tagL(CustomReqType.Id.apply)
   implicit def customReqType   = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+  implicit def reqTypeId = {
+    import ReqType._
+    ReadWriter[ReqType.Id]({
+      case i: CustomReqType.Id => Js.Str(i.value.toString)
+      case UseCase             => Js.Str("u")
+    }, {
+      case Js.Str(ParseLong(i)) => CustomReqType.Id(i)
+      case Js.Str("u")          => UseCase
+    })
+  }
+
+  implicit def customFieldId   = tagL(CustomField.Id.apply)
+  implicit def customFieldText = caseclass6(CustomField.Text.apply, CustomField.Text.unapply)
+  implicit def customField     = ReadWriter[CustomField]({
+      case f: CustomField.Text => strkeyW("t", f)
+    }, {
+      case Js.Arr(Js.Str(k), v) => k match {
+        case "t" => readJ[CustomField.Text](v)
+      }
+    })
+  implicit def fieldId = {
+    import Field._
+    ReadWriter[Field.Id]({
+      case i: CustomField.Id => Js.Str(i.value.toString)
+      case NormalAltStepTree => Js.Str("n")
+      case ExceptionStepTree => Js.Str("e")
+      case StepGraph         => Js.Str("g")
+    }, {
+      case Js.Str(ParseLong(i)) => CustomField.Id(i)
+      case Js.Str("n")          => NormalAltStepTree
+      case Js.Str("e")          => ExceptionStepTree
+      case Js.Str("g")          => StepGraph
+    })
+  }
+  implicit def fieldSet        = caseclass2(FieldSet.apply, FieldSet.unapply)
 
   implicit def tagId         = tagL(Tag.Id.apply)
   implicit def tagGroup      = caseclass5(TagGroup.apply, TagGroup.unapply)
@@ -190,7 +248,7 @@ object DataCodecs {
   implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
     caseclass2(RevAnd.apply[T], RevAnd.unapply[T])
 
-  implicit def project = caseclass3(Project.apply, Project.unapply)
+  implicit def project = caseclass4(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================

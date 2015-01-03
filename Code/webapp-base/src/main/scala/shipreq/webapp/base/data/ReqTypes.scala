@@ -52,11 +52,9 @@ object CustomReqType {
     override def mkId(l: Long) = Id(l)
     override def setId(a: CustomReqType, b: Id) = a.copy(id = b)
   }
-}
 
-object CustomReqTypeL {
   private[this] def l = Lenser[CustomReqType]
-  val name         = l(_.name)
-  val mnemonic     = l(_.mnemonic)
-  val oldMnemonics = l(_.oldMnemonics)
+  val _name         = l(_.name)
+  val _mnemonic     = l(_.mnemonic)
+  val _oldMnemonics = l(_.oldMnemonics)
 }

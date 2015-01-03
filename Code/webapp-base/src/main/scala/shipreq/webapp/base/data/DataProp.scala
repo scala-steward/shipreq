@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.Debug._
 import scalaz.syntax.equal._
 import scalaz.std.AllInstances._
 import shipreq.prop._
@@ -51,7 +51,9 @@ object DataProp {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  object fieldSet {
+  object fields {
+
+    // TODO unique refkeys?
 
     def orderNoDups =
       Prop.distinct("order", (_: FieldSet).order)
@@ -69,8 +71,10 @@ object DataProp {
         _ => Field.static.filter(_.deletable ≟ Deletable.Not),
         _.order.toSet)
 
-    lazy val all = "FieldSet" rename_: (
+    def fieldSet = "FieldSet" rename_: (
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllUndeletableStaticFields)
+
+    lazy val all = (revAnd[FieldSet] ∧ fieldSet.contramap(_.data)) rename "Fields"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -104,10 +108,11 @@ object DataProp {
       p.customIssueTypes.data.values.toStream.map(_.key) #:::
       p.tags.data.vstreamf(_.tag.keyO.toStream))
 
-  lazy val project = (
+  lazy val project = "Project" rename_: (
     uniqueRefkeys
-      ∧ customIssueTypes.all.contramap[Project](_.customIssueTypes)
-      ∧ customReqTypes.all.contramap[Project](_.customReqTypes)
-      ∧ tags.all.contramap[Project](_.tags)
-    ) rename "Project"
+      ∧ customIssueTypes.all.contramap(_.customIssueTypes)
+      ∧   customReqTypes.all.contramap(_.customReqTypes)
+      ∧           fields.all.contramap(_.fields)
+      ∧             tags.all.contramap(_.tags)
+    )
 }

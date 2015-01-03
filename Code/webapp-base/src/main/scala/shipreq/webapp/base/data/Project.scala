@@ -13,18 +13,26 @@ object Project {
   private[this] def l = Lenser[Project]
   val _customIssueTypes = l(_.customIssueTypes)
   val _customReqTypes   = l(_.customReqTypes)
+  val _fields           = l(_.fields)
+  val _tags             = l(_.tags)
 }
 
 final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
                          customReqTypes:   RevAnd[CustomReqTypeIMap],
+                         fields:           RevAnd[FieldSet],
                          tags:             RevAnd[TagTree]) {
+
   import shipreq.prop._
   this assertSatisfies DataProp.project
 
-  def rev = customIssueTypes.rev + customReqTypes.rev + tags.rev
+  def rev =
+    customIssueTypes.rev +
+    customReqTypes  .rev +
+    fields          .rev +
+    tags            .rev
 
   override def toString =
-    Stream(customIssueTypes, customReqTypes, tags)
+    Stream(customIssueTypes, customReqTypes, fields, tags)
       .map("\n    " + _.toString.replace(" -> ", " → "))
       .mkString("Project(", "", "\n)")
 }

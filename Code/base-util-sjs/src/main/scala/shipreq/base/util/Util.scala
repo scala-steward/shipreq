@@ -40,8 +40,10 @@ object Util {
       s
     else
       s.substring(0, cutoff - 1) + "\u2026"
+}
 
-  def parseLong(s: String): Option[Long] =
+object ParseLong {
+  def unapply(s: String): Option[Long] =
     try {
       Some(s.toLong)
     } catch {

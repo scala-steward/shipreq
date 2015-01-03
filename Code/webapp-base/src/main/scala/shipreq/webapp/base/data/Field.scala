@@ -1,5 +1,7 @@
 package shipreq.webapp.base.data
 
+import monocle.Lens
+import monocle.macros.Lenser
 import shipreq.base.util.IMap
 
 import scalaz.{OneAnd, Equal}
@@ -67,9 +69,9 @@ object Field {
   case object ExceptionStepTree extends Static("Exception Courses",            FieldType.StepTree, useCaseOnly, Deletable.Not)
   case object StepGraph         extends Static("Step Graph",                   FieldType.StepTree, useCaseOnly, Deletable)
 
-  val static: List[Static] =
+  // Not lazy causes crash in DataProp
+  lazy val static: List[Static] =
     List(NormalAltStepTree, ExceptionStepTree, StepGraph)
-
 }
 
 import Field.ApplicableReqTypes
@@ -77,6 +79,7 @@ import Field.ApplicableReqTypes
 /** Custom here just distinguishes user-defined fields from static fields. */
 sealed abstract class CustomField(override final val fieldType: FieldType) extends Field {
   def id: CustomField.Id
+  def alive: Alive
 }
 
 object CustomField {
@@ -90,12 +93,22 @@ object CustomField {
     }
   }
 
+  val _alive = Lens((_: CustomField).alive)(n => {
+    case t: Text => t.copy(alive = n)
+  })
+
   case class Text(id       : Id,
                   name     : String,
                   key      : RefKey,
                   mandatory: Mandatory,
                   reqTypes : ApplicableReqTypes,
                   alive    : Alive) extends CustomField(FieldType.Text)
+//  object Text {
+//    private[this] def l = Lenser[Text]
+//    val _id   = l(_.id)
+//    val _name = l(_.name)
+//    val _key  = l(_.key)
+//  }
 }
 
 // =====================================================================================================================
