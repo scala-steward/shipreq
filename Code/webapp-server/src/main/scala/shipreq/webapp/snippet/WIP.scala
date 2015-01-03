@@ -270,7 +270,7 @@ class WIP {
   def delay(): Unit = () //Thread.sleep(new java.util.Random().nextInt(120)+100)
 
   def render = {
-    val pg = Routines.ForCfgReqType(projectInit, issueTypeCrud, reqqq.crud, reqqq.imptoggle, tagCrud.fn)
+    val pg = Routines.ProjectSPA(projectInit, issueTypeCrud, reqqq.crud, reqqq.imptoggle, tagCrud.fn)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }

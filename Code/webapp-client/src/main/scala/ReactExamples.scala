@@ -15,7 +15,7 @@ import shipreq.webapp.client.app.ui._
 
 object ReactExamples {
 
-  def main(r: Routines.ForCfgReqType) = IO[Unit] {
+  def main(r: Routines.ProjectSPA) = IO[Unit] {
     example1(document getElementById "eg1")
 //    manual()
     projectPage(r).unsafePerformIO()
@@ -23,7 +23,7 @@ object ReactExamples {
 
   // ===================================================================================================================
 
-  def projectPage(r: Routines.ForCfgReqType): IO[Unit] = {
+  def projectPage(r: Routines.ProjectSPA): IO[Unit] = {
     import shipreq.webapp.client._
     val cp = ClientProtocol.Lift
     ClientData.init(cp, r.projectInit, clientData => IO {

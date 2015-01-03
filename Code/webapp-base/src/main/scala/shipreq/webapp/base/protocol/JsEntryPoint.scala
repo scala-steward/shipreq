@@ -21,6 +21,6 @@ object JsEntryPoint {
   final val client = "Bnzklx"
 
   final val reactExamplesN = "x8927nh"
-  final val reactExamples = new JsEntryPoint[Routines.ForCfgReqType, Unit](reactExamplesN)
+  final val reactExamples = new JsEntryPoint[Routines.ProjectSPA, Unit](reactExamplesN)
 
 }

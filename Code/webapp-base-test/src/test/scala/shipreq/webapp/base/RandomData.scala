@@ -254,8 +254,8 @@ object RandomData {
     def remote[D <: Desc](d: D) =
       remoteName.map(Remote(_, d))
 
-    lazy val forCfgReqType =
-      Gen.apply5(ForCfgReqType)(
+    lazy val projectSPA =
+      Gen.apply5(ProjectSPA)(
         remote(ProjectInit),
         remote(CustomIssueTypeCrud),
         remote(CustomReqTypeCrud),

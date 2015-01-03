@@ -98,7 +98,7 @@ object ProtocolTest extends TestSuite {
 
     'JsEntryPoints {
       import JsEntryPoint._, RandomData.routines._
-      'reactExamples { kitEP(reactExamples, "reactExamples").propI mustBeSatisfiedBy forCfgReqType }
+      'reactExamples { kitEP(reactExamples, "reactExamples").propI mustBeSatisfiedBy projectSPA }
     }
 
     'Δ {

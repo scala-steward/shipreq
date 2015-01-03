@@ -218,7 +218,7 @@ object RoutineCodecs {
 object RoutineGroupCodecs {
   import Routines._
 
-  implicit def routinesForCfgReqType = caseclass5(ForCfgReqType.apply, ForCfgReqType.unapply)
+  implicit def routinesProjectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================
