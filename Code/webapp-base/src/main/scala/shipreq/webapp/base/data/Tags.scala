@@ -80,7 +80,7 @@ sealed trait Tag {
 final case class TagGroup(id: Id,
                           name: String,
                           desc: Option[String],
-                          enum: IsEnumLike,
+                          mutexChildren: MutexChildren,
                           alive: Alive) extends Tag {
   override def keyO = None
   override def tagType = Tag.Type.Group
@@ -99,13 +99,13 @@ final case class ApplicableTag(id: Id,
  * FR-253: BA shall be able to specify that a grouping's children are mutually-exclusive (like an enum or sum-type).
  * FR-254: BA shall be able to track when two or more enum-groupings (FR-253) (or its children) are applied to the same req.
  */
-sealed trait IsEnumLike
-case object IsEnumLike extends IsEnumLike with (Boolean <=> IsEnumLike) {
-  implicit val equal = Equal.equalA[IsEnumLike]
-  override def from = _ == IsEnumLike
-  override def to = b => if (b) IsEnumLike else NotEnumLike
+sealed trait MutexChildren
+case object MutexChildren extends MutexChildren with (Boolean <=> MutexChildren) {
+  implicit val equality = Equal.equalA[MutexChildren]
+  override val from     = equality.equal(MutexChildren, _: MutexChildren)
+  override val to       = if (_: Boolean) MutexChildren else Not
+  case object Not extends MutexChildren
 }
-case object NotEnumLike extends IsEnumLike
 
 // =====================================================================================================================
 // Many tags
@@ -273,7 +273,6 @@ object TagProtocol {
    * @param children An ordered list of the subject tag's children.
    */
   final case class PovRelations(parents: Map[Id, Option[Id]], children: Vector[Id]) {
-    // TODO ↑ this could use some props too
 
     // For testing
     def allReferencedIds: Set[Id] =
@@ -358,7 +357,7 @@ object TagProtocol {
 
   final case class TagGroupValues(name: String,
                                   desc: Option[String],
-                                  enum: IsEnumLike) extends Values
+                                  mutexChildren: MutexChildren) extends Values
 
   final case class ApplicableTagValues(name: String,
                                        desc: Option[String],

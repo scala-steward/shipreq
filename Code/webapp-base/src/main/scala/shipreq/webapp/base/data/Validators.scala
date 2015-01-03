@@ -118,7 +118,7 @@ object Validators {
     def descU = genericDesc
     def descS = descU.liftS[S]
 
-    val tagGroup = nameS ⊗ ValidatorU.nop[IsEnumLike].liftS[S] ⊗ descS
+    val tagGroup = nameS ⊗ ValidatorU.nop[MutexChildren].liftS[S] ⊗ descS
     val applTag  = nameS ⊗ keyS ⊗ descS
   }
 }

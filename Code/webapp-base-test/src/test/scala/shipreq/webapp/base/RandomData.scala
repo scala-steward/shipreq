@@ -48,7 +48,7 @@ object RandomData {
     Gen.oneof[Alive](Alive, Dead)
 
   lazy val implicationRequired =
-    Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationNotRequired)
+    Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
 
   lazy val refKey =
     for {
@@ -110,14 +110,14 @@ object RandomData {
   lazy val tagId =
     id map Tag.Id
 
-  lazy val isEnumLike =
-    Gen.oneof[IsEnumLike](IsEnumLike, NotEnumLike)
+  lazy val mutexChildren =
+    Gen.oneof[MutexChildren](MutexChildren, MutexChildren.Not)
 
   def tagName =
     shortText1
 
   lazy val tagGroup =
-    Gen.apply5(TagGroup.apply)(tagId, tagName, optionalLargeText, isEnumLike, alive)
+    Gen.apply5(TagGroup.apply)(tagId, tagName, optionalLargeText, mutexChildren, alive)
 
   lazy val applicableTag =
     Gen.apply5(ApplicableTag.apply)(tagId, tagName, optionalLargeText, refKey, alive)

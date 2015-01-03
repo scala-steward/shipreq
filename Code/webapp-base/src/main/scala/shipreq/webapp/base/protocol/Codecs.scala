@@ -148,7 +148,7 @@ object DataCodecs {
   implicit def rev        = tagL(Rev.apply)
   implicit def alive      = boolCase(Alive)
   implicit def impReq     = boolCase(ImplicationRequired)
-  implicit def isEnumLike = boolCase(IsEnumLike)
+  implicit def isEnumLike = boolCase(MutexChildren)
   implicit def refkey     = tagS(RefKey.apply)
 
   implicit def customIssueTypeId = tagL(CustomIssueType.Id.apply)

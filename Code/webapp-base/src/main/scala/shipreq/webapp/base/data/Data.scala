@@ -13,20 +13,20 @@ final case class Rev(value: Long) extends TaggedLong {
 
 sealed trait Alive
 case object Alive extends Alive with (Boolean <=> Alive) {
-  implicit val equal = Equal.equalA[Alive]
-  override def from = _ == Alive
-  override def to = b => if (b) Alive else Dead
+  implicit val equality = Equal.equalA[Alive]
+  override val from     = equality.equal(Alive, _: Alive)
+  override val to       = if (_: Boolean) Alive else Dead
 }
 case object Dead extends Alive
 
 
 sealed trait ImplicationRequired
 case object ImplicationRequired extends ImplicationRequired with (Boolean <=> ImplicationRequired) {
-  implicit val equal = Equal.equalA[ImplicationRequired]
-  override def from = _ == ImplicationRequired
-  override def to = b => if (b) ImplicationRequired else ImplicationNotRequired
+  implicit val equality = Equal.equalA[ImplicationRequired]
+  override val from     = equality.equal(ImplicationRequired, _: ImplicationRequired)
+  override val to       = if (_: Boolean) ImplicationRequired else Not
+  case object Not extends ImplicationRequired
 }
-case object ImplicationNotRequired extends ImplicationRequired
 
 
 /**

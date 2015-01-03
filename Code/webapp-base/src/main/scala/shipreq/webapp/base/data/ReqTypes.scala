@@ -21,7 +21,7 @@ object ReqType {
     override def mnemonic     = Mnemonic("UC")
     override def oldMnemonics = Set.empty
     override def name         = "Use Case"
-    override def imp          = ImplicationNotRequired
+    override def imp          = ImplicationRequired.Not
   }
 
   val static: List[Static] = List(UseCase)

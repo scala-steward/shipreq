@@ -7,6 +7,6 @@ object UiText {
     def name          = "Name"
     def desc          = "Description"
     def mnemonic      = "Mnemonic"
-    def tagIsEnumLike = "Enum"
+    def mutexChildren = "Choice"
   }
 }

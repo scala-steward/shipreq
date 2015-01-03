@@ -45,12 +45,12 @@ object CfgTags {
 import CfgTags.Props
 
 private[tags] object MainTable {
-  val nameE = Editors.textInputEditor.applyValidator(V.nameS)
-  val keyE  = Editors.textInputEditor.applyValidator(V.keyS)
-  val descE = Editors.textareaEditor.applyValidator(V.descS)
-  val enumE = Editors.checkboxEditor.imap(IsEnumLike).strengthL[V.S]
+  val nameE          = Editors.textInputEditor.applyValidator(V.nameS)
+  val keyE           = Editors.textInputEditor.applyValidator(V.keyS)
+  val descE          = Editors.textareaEditor.applyValidator(V.descS)
+  val mutexChildrenE = Editors.checkboxEditor.imap(MutexChildren).strengthL[V.S]
 
-  val tg_fields = FieldSet3[TagGroup](_.name, _.enum, _.desc getOrElse "")(("", NotEnumLike, ""))
+  val tg_fields = FieldSet3[TagGroup](_.name, _.mutexChildren, _.desc getOrElse "")(("", MutexChildren.Not, ""))
   val at_fields = FieldSet3[ApplicableTag](_.name, _.key.value, _.desc getOrElse "")(("", "", ""))
 
   val tg_storesAndState = NewAndSavedStores.fields(tg_fields).keyedBy[Id]
@@ -206,7 +206,7 @@ private[tags] object MainTable {
       c.modStateIO(s => storesForType(s.newSel).n.enableEdit(s))
 
     val headerRow =
-      CfgTable.header(List(FieldNames.name, FieldNames.refKey, FieldNames.tagIsEnumLike, FieldNames.desc))
+      CfgTable.header(List(FieldNames.name, FieldNames.refKey, FieldNames.mutexChildren, FieldNames.desc))
 
     def abortNewButton =
       <.button(
@@ -252,7 +252,7 @@ private[tags] object MainTable {
 
       val unusedField: ReactNode = "-"
 
-      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, enum: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
+      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
         val focus = oid.map(id =>
           RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
         <.tr(
@@ -260,15 +260,15 @@ private[tags] object MainTable {
           ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
           <.td(^.cls := "name", name),
           <.td(refkey),
-          <.td(enum),
+          <.td(mutexChildren),
           <.td(^.cls := "desc", desc),
           <.td(
             focus.map(_.component),
             UI.rowStatusCtrls(rs, ctrls)))
       }
 
-      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, enum: ReactNode, desc: ReactNode): ReactElement =
-        rowTemplate(s, undefined, rs, "new")(name, refkey, enum, desc)(abortNewButton)
+      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
+        rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
 
       def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
         val tag = row.p
@@ -334,28 +334,28 @@ private[tags] object MainTable {
     val tg_editor = {
       @inline def stores = tg_storesAndStateS
       def crudValues(u: V.tagGroup._V): TagCrud.V = {
-        val (name, enum, desc) = u
-        \&/.This(TagProtocol.TagGroupValues(name, desc, enum))
+        val (name, mutexChildren, desc) = u
+        \&/.This(TagProtocol.TagGroupValues(name, desc, mutexChildren))
       }
       val saveFn = Persistence.asyncSave2(V.tagGroup, stores, crudIO.createIO)(crudIO.updateIO,
         validatorState,
-        SaveNeed.cmpToExtract(t => (t.name, t.enum, t.desc)),
+        SaveNeed.cmpToExtract(t => (t.name, t.mutexChildren, t.desc)),
         crudValues,
         c runState _)
-      Editor.merge3S(tg_fields, nameE, enumE, descE).tupleI.zoomU[S]
+      Editor.merge3S(tg_fields, nameE, mutexChildrenE, descE).tupleI.zoomU[S]
         .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
     }
 
     val tg_renderer = new TagSubtypeRenderer(tg_editor, tg_storesAndStateS) {
       override def renderNew(s: S, row: stores.n.Row): ReactElement = {
-        val (name, enum, desc) = editor render ei(s, row)
-        newRowTemplate(s, row.status)(name, unusedField, enum, desc)
+        val (name, mutexChildren, desc) = editor render ei(s, row)
+        newRowTemplate(s, row.status)(name, unusedField, mutexChildren, desc)
       }
       override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactElement = {
-        val (name, enum, desc) = editor render ei(s, row)
+        val (name, mutexChildren, desc) = editor render ei(s, row)
         val t = row.p
-        rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, enum, desc)(deletion.button(t.id, SoftDel))
+        rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, mutexChildren, desc)(deletion.button(t.id, SoftDel))
       }
       override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement =
         rowTemplate(s, t.id, rs, key)(indent(<.span(t.name)), unusedField, "TODO", renderDeadDesc(t.desc))(deletion.button(t.id, Restore))
