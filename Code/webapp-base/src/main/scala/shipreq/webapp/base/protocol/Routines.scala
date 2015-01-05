@@ -25,5 +25,4 @@ object Routines {
                         reqTypeCrud:   CustomReqTypeCrud          .Remote,
                         reqTypeImpMod: CustomReqTypeImplicationMod.Remote,
                         tagCrud:       TagCrud                    .Remote)
-    extends Bundle
 }

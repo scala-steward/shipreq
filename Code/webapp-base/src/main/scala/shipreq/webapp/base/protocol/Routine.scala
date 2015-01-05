@@ -32,7 +32,4 @@ object Routine {
    * @param n The server-side Lift function key.
    */
   final case class Remote[D <: Desc](n: String, d: D)
-
-  /** Denotes a set of routines. */
-  trait Bundle
 }

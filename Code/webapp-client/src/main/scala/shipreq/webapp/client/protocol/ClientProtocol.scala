@@ -30,9 +30,6 @@ object ClientProtocol {
   private def handleJsonParsingError(a: js.Any, e: Throwable): Unit =
     Console.error(s"Parsing failure: $e\nJS: ", a)
 
-//  def readRemoteBundle[G <: Routine.Bundle : Reader](a: js.Any) =
-//    parseJsObject[G](a)
-
   object Lift extends ClientProtocol {
     override def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, success: r.d.O => IO[Unit], f: FailureIO): IO[Unit] = {
       import r.d.{wi, ro}
