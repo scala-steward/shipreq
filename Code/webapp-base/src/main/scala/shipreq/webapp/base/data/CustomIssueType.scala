@@ -11,7 +11,7 @@ final case class CustomIssueType(id: CustomIssueType.Id,
 object CustomIssueType {
   final case class Id(value: Long) extends TaggedLong
 
-  object IdAccess extends ObjDataId[CustomIssueType.type, CustomIssueType, Id] {
+  object IdAccess extends ObjDataIdM[CustomIssueType.type, CustomIssueType, Id] {
     override def id(d: CustomIssueType) = d.id
     override def mkId(l: Long) = Id(l)
     override def setId(a: CustomIssueType, b: Id) = a.copy(id = b)

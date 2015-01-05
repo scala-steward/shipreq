@@ -47,7 +47,7 @@ final case class CustomReqType(id: CustomReqType.Id,
 object CustomReqType {
   final case class Id(value: Long) extends TaggedLong with ReqType.Id
 
-  object IdAccess extends ObjDataId[CustomReqType.type, CustomReqType, Id] {
+  object IdAccess extends ObjDataIdM[CustomReqType.type, CustomReqType, Id] {
     override def id(d: CustomReqType) = d.id
     override def mkId(l: Long) = Id(l)
     override def setId(a: CustomReqType, b: Id) = a.copy(id = b)

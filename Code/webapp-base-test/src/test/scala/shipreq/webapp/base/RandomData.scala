@@ -107,10 +107,10 @@ object RandomData {
     revAndIMap(customReqType)(d.run)
   }
 
-  def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I]) =
+  def distinctId[D, I <: TaggedLong](implicit i: DataIdMAux[D, I]) =
     Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[D](i.id, i.setId)
 
-  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
+  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdMAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
     val d = distinctId[D, I].lift[List]
     val f = mod compose d.run
     val g = f andThen (i.emptyIMap ++ _)

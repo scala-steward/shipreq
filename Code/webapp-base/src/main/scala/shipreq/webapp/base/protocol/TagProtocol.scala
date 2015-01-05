@@ -118,7 +118,6 @@ object TagProtocol {
     object IdAccess extends ObjDataId[PovTag.type, PovTag, Id] {
       override def id(d: PovTag) = d.id
       override def mkId(l: Long) = Id(l)
-      override def setId(t: PovTag, i: Id) = _tag.modify(Tag.IdAccess.setId(_, i))(t)
     }
   }
 

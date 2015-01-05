@@ -24,7 +24,7 @@ object TagType {
 object Tag {
   final case class Id(value: Long) extends TaggedLong
 
-  object IdAccess extends ObjDataId[Tag.type, Tag, Id] {
+  object IdAccess extends ObjDataIdM[Tag.type, Tag, Id] {
     override def id(d: Tag) = d.id
     override def mkId(l: Long) = Id(l)
     override def setId(t: Tag, i: Id) = t match {

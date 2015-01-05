@@ -85,7 +85,7 @@ sealed abstract class CustomField(override final val fieldType: FieldType) exten
 object CustomField {
   final case class Id(value: Long) extends TaggedLong with Field.Id
 
-  object IdAccess extends ObjDataId[CustomField.type, CustomField, Id] {
+  object IdAccess extends ObjDataIdM[CustomField.type, CustomField, Id] {
     override def id(d: CustomField) = d.id
     override def mkId(l: Long) = Id(l)
     override def setId(cf: CustomField, i: Id) = cf match {
