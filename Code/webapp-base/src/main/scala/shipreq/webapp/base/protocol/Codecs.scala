@@ -160,23 +160,26 @@ object DataCodecs {
   @inline implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
     iMap(d.id)
 
-  implicit def rev        = tagL(Rev.apply)
-  implicit def alive      = boolCase(Alive)
-  implicit def impReq     = boolCase(ImplicationRequired)
-  implicit def isEnumLike = boolCase(MutexChildren)
-  implicit def refkey     = tagS(RefKey.apply)
+  @inline implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
+    caseclass2(RevAnd.apply[T], RevAnd.unapply[T])(rev, rev, RT, WT)
 
-  implicit def customIssueTypeId = tagL(CustomIssueType.Id.apply)
-  implicit def customIssueType   = caseclass4(CustomIssueType.apply, CustomIssueType.unapply)
+  implicit final val rev        = tagL(Rev.apply)
+  implicit final val alive      = boolCase(Alive)
+  implicit final val impReq     = boolCase(ImplicationRequired)
+  implicit final val isEnumLike = boolCase(MutexChildren)
+  implicit final val refkey     = tagS(RefKey.apply)
 
-  implicit def reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
-  implicit def customReqTypeId = tagL(CustomReqType.Id.apply)
-  implicit def customReqType   = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+  implicit final val customIssueTypeId = tagL(CustomIssueType.Id.apply)
+  implicit final val customIssueType   = caseclass4(CustomIssueType.apply, CustomIssueType.unapply)
 
-  implicit def tagId         = tagL(Tag.Id.apply)
-  implicit def tagGroup      = caseclass5(TagGroup.apply, TagGroup.unapply)
-  implicit def applicableTag = caseclass5(ApplicableTag.apply, ApplicableTag.unapply)
-  implicit def tag           = ReadWriter[Tag]({
+  implicit final val reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
+  implicit final val customReqTypeId = tagL(CustomReqType.Id.apply)
+  implicit final val customReqType   = caseclass6(CustomReqType.apply, CustomReqType.unapply)
+
+  implicit final val tagId         = tagL(Tag.Id.apply)
+  implicit final val tagGroup      = caseclass5(TagGroup.apply, TagGroup.unapply)
+  implicit final val applicableTag = caseclass5(ApplicableTag.apply, ApplicableTag.unapply)
+  implicit final val tag           = ReadWriter[Tag]({
       case t: TagGroup      => intkeyW(0, t)
       case t: ApplicableTag => intkeyW(1, t)
     }, {
@@ -186,13 +189,13 @@ object DataCodecs {
       }
     })
 
-  implicit def tagInTree           = caseclass2(TagInTree.apply, TagInTree.unapply)
-  implicit def tagTree             = iMap[Tag.Id, TagInTree](_.tag.id)
-  implicit def tagPovRelations     = caseclass2(TagProtocol.PovRelations.apply, TagProtocol.PovRelations.unapply)
-  implicit def tagPov              = caseclass2(TagProtocol.PovTag.apply, TagProtocol.PovTag.unapply)
-  implicit def tagGroupValues      = caseclass3(TagProtocol.TagGroupValues.apply, TagProtocol.TagGroupValues.unapply)
-  implicit def applicableTagValues = caseclass3(TagProtocol.ApplicableTagValues.apply, TagProtocol.ApplicableTagValues.unapply)
-  implicit def tagValues           = ReadWriter[TagProtocol.Values]({
+  implicit final val tagInTree           = caseclass2(TagInTree.apply, TagInTree.unapply)
+  implicit final val tagTree             = iMap[Tag.Id, TagInTree](_.tag.id)
+  implicit final val tagPovRelations     = caseclass2(TagProtocol.PovRelations.apply, TagProtocol.PovRelations.unapply)
+  implicit final val tagPov              = caseclass2(TagProtocol.PovTag.apply, TagProtocol.PovTag.unapply)
+  implicit final val tagGroupValues      = caseclass3(TagProtocol.TagGroupValues.apply, TagProtocol.TagGroupValues.unapply)
+  implicit final val applicableTagValues = caseclass3(TagProtocol.ApplicableTagValues.apply, TagProtocol.ApplicableTagValues.unapply)
+  implicit final val tagValues           = ReadWriter[TagProtocol.Values]({
       case t: TagProtocol.TagGroupValues      => intkeyW(0, t)
       case t: TagProtocol.ApplicableTagValues => intkeyW(1, t)
     }, {
@@ -202,16 +205,13 @@ object DataCodecs {
       }
     })
 
-  implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
-    caseclass2(RevAnd.apply[T], RevAnd.unapply[T])
-
-  implicit def project = caseclass3(Project.apply, Project.unapply)
+  implicit final val project = caseclass3(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================
 object RoutineDataCodecs {
 
-  implicit def deletionAction = enum(DeletionAction.values)
+  implicit final val deletionAction = enum(DeletionAction.values)
 
   def crudAction[I, V](implicit WI: Writer[I], RI: Reader[I], WV: Writer[V], RV: Reader[V]): ReadWriter[CrudAction[I, V]] =
     ReadWriter[CrudAction[I, V]]({
@@ -232,13 +232,13 @@ object RoutineRemoteCodecs {
   def remoteRoutine[R <: Routine.Desc](d: R): ReadWriter[d.Remote] =
     ReadWriter[d.Remote](r => Js.Str(r.n), { case Js.Str(n) => Routine.Remote(n, d) })
 
-  implicit def projectInit   = remoteRoutine(ProjectInit)
-  implicit def issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
-  implicit def reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
-  implicit def reqTypeImpMod = remoteRoutine(CustomReqTypeImplicationMod)
-  implicit def tagCrud       = remoteRoutine(TagCrud)
+  implicit final val projectInit   = remoteRoutine(ProjectInit)
+  implicit final val issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
+  implicit final val reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
+  implicit final val reqTypeImpMod = remoteRoutine(CustomReqTypeImplicationMod)
+  implicit final val tagCrud       = remoteRoutine(TagCrud)
 
-  implicit def projectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
+  implicit final val projectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================
@@ -246,9 +246,9 @@ object DeltaCodecs {
   import shipreq.webapp.base.delta._
   import DataCodecs.rev
 
-  implicit def partitions = enum(Partition.values)
+  implicit final val partitions = enum(Partition.values)
 
-  implicit def remoteDeltaGW = Writer[RemoteDeltaG](r => {
+  implicit final val remoteDeltaGW = Writer[RemoteDeltaG](r => {
     import r.p.{wi, wd}
     val dp = r.forceDeltaP[r.p.type](r.p)
     val a = partitions write r.p
@@ -259,7 +259,7 @@ object DeltaCodecs {
     Js.Arr(a, b, c, d, e)
   })
 
-  implicit def remoteDeltaGR = Reader[RemoteDeltaG]({
+  implicit final val remoteDeltaGR = Reader[RemoteDeltaG]({
     case Js.Arr(a, b, c, Js.Arr(d@_*), Js.Arr(e@_*)) =>
       val p = partitions read a
       val f = rev read b
@@ -269,8 +269,8 @@ object DeltaCodecs {
       RemoteDeltaG(p, f, t)(x, y)
   })
 
-//  implicit def remoteDelta: ReadWriter[RemoteDelta] = implicitly[ReadWriter[List[RemoteDeltaG]]]
-  implicit def remoteDelta = ReadWriter[RemoteDelta](
+//  implicit final val remoteDelta: ReadWriter[RemoteDelta] = implicitly[ReadWriter[List[RemoteDeltaG]]]
+  implicit final val remoteDelta = ReadWriter[RemoteDelta](
     SeqishW[RemoteDeltaG, List].write,
     SeqishR[RemoteDeltaG, List].read)
 
