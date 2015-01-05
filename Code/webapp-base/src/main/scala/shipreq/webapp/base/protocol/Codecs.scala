@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import scalaz.{OneAnd, \&/, NonEmptyList}
+import scalaz.{OneAnd, NonEmptyList, \&/, \/, -\/, \/-}
 import scalaz.Isomorphism.<=>
 
 import upickle._
@@ -150,6 +150,17 @@ object DataCodecs {
       case Js.Arr(a) => Some(readJs[A](a))
     })
 
+  implicit def disjunction[A: Reader: Writer, B: Reader: Writer]: ReadWriter[A \/ B] =
+    ReadWriter[A \/ B]({
+      case -\/(a)    => intkeyW(0, a)
+      case \/-(b)    => intkeyW(1, b)
+    }, {
+      case Js.Arr(Js.Num(n), v) => n.toInt match {
+        case 0 => -\/(readJs[A](v))
+        case 1 => \/-(readJs[B](v))
+      }
+    })
+
   implicit def these[A: Reader: Writer, B: Reader: Writer]: ReadWriter[A \&/ B] = {
     import \&/._
     ReadWriter[A \&/ B]({
@@ -218,20 +229,25 @@ object DataCodecs {
         case "t" => readJs[CustomField.Text](v)
       }
     })
-  implicit final val fieldId = {
+  implicit final val staticField = {
     import Field._
-    ReadWriter[Field.Id]({
-      case i: CustomField.Id => Js.Str(i.value.toString)
+    ReadWriter[Field.Static]({
       case NormalAltStepTree => Js.Str("n")
       case ExceptionStepTree => Js.Str("e")
       case StepGraph         => Js.Str("g")
     }, {
-      case Js.Str(ParseLong(i)) => CustomField.Id(i)
-      case Js.Str("n")          => NormalAltStepTree
-      case Js.Str("e")          => ExceptionStepTree
-      case Js.Str("g")          => StepGraph
+      case Js.Str("n") => NormalAltStepTree
+      case Js.Str("e") => ExceptionStepTree
+      case Js.Str("g") => StepGraph
     })
   }
+  implicit final val fieldId = ReadWriter[Field.Id]({
+      case i: CustomField.Id => Js.Str(i.value.toString)
+      case s: Field.Static   => staticField.write(s)
+    }, {
+      case Js.Str(ParseLong(i)) => CustomField.Id(i)
+      case s                    => staticField.read(s)
+    })
   implicit final val fieldSet        = caseclass2(FieldSet.apply, FieldSet.unapply)
 
   implicit final val reqTypeMnemonic = tagS(ReqType.Mnemonic.apply)
@@ -275,8 +291,13 @@ object ProtocolDataCodecs {
       case Js.Arr(i, a, _) => CrudAction.Delete(RI read i, deletionAction read a)
     })
 
+  // ------------------------------------------------------------------------------------
+  // Field
+  import shipreq.webapp.base.protocol.{FieldProtocol => FP}
+
+  implicit final val fieldProtocolDelta = caseclass2(FP.Delta.apply, FP.Delta.unapply)
   implicit final val fieldProtocolValues = {
-    import FieldProtocol._, Field.ApplicableReqTypes
+    import FP._, Field.ApplicableReqTypes
     ReadWriter[Values]({
       case TextFieldValues(a, b, c, d) => intkeyW4(0, a, b, c, d)
     }, {
@@ -286,7 +307,7 @@ object ProtocolDataCodecs {
     })
   }
   implicit final val fieldProtocolCfgAction = {
-    import FieldProtocol._, CfgAction._
+    import FP._, CfgAction._
     ReadWriter[CfgAction]({
       case Create(a)          => intkeyW (0, a)
       case UpdateValues(a, b) => intkeyW2(1, a, b)
@@ -304,7 +325,10 @@ object ProtocolDataCodecs {
     })
   }
 
+  // ------------------------------------------------------------------------------------
+  // Tag
   import shipreq.webapp.base.protocol.{TagProtocol => TP}
+
   implicit final val tagPovRelations     = caseclass2(TP.PovRelations.apply,        TP.PovRelations.unapply)
   implicit final val tagPov              = caseclass2(TP.PovTag.apply,              TP.PovTag.unapply)
   implicit final val tagGroupValues      = caseclass3(TP.TagGroupValues.apply,      TP.TagGroupValues.unapply)

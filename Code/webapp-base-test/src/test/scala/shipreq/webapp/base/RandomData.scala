@@ -205,22 +205,22 @@ object RandomData {
   lazy val customFieldId =
     id map CustomField.Id
 
-  def customFieldText(r: Set[CustomReqType.Id]): Gen[CustomField.Text] =
-    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, refKey, mandatory, applicableReqTypes(r), alive)
+  def customFieldText(art: Gen[ApplicableReqTypes]): Gen[CustomField.Text] =
+    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, refKey, mandatory, art, alive)
 
-  def customField(r: Set[CustomReqType.Id]): Gen[CustomField] =
-    Gen.oneofGC(customFieldText(r))
+  def customField(art: Gen[ApplicableReqTypes]): Gen[CustomField] =
+    Gen.oneofGC(customFieldText(art))
 
-  def customFields(r: Set[CustomReqType.Id]): Gen[IMap[CustomField.Id, CustomField]] = {
+  def customFields(cf: Gen[CustomField]): Gen[IMap[CustomField.Id, CustomField]] = {
     def id = distinctId(CustomField.IdAccess)
     // TODO def dname = Distinct.str.at(CustomField.Text._name)
     val dist = id.lift[Stream]
-    customField(r).stream.map(fs => emptyDataMap(CustomField) ++ dist.run(fs))
+    cf.stream.map(fs => emptyDataMap(CustomField) ++ dist.run(fs))
   }
 
   def fieldSet(r: Set[CustomReqType.Id]): Gen[FieldSet] =
     for {
-      cf           ← customFields(r)
+      cf           ← customFields(customField(applicableReqTypes(r)))
       (del, undel) = Field.static.partition(_.deletable ≟ Deletable)
       mandatoryIds = cf.keySet.map(f => f: Field.Id) ++ undel
       optionalIds  ← Gen.oneof(del.head, del.tail: _*).set
@@ -252,51 +252,6 @@ object RandomData {
     } yield Project(issues, reqtypes, fields, tags)
 
   // -------------------------------------------------------------------------------------------------------------------
-  object remoteDeltaG {
-    import shipreq.webapp.base.protocol._
-
-    def forPart: Partition => Gen[RemoteDeltaG] = {
-      case Partition.CustomIssueTypes => customIssueTypesDG
-      case Partition.CustomReqTypes   => customReqTypesDG
-      case Partition.Tags             => tagsDG
-    }
-
-    def generic(p: Partition)(ir: Gen[p.Id], dr: Gen[p.Data]): Gen[RemoteDeltaG] = {
-      import p.di
-      for {
-        d        ← dr.list
-        i0       ← ir.set
-        i        = d.foldLeft(i0)(_ - _.id)
-        (r1, r2) ← revPair
-      } yield RemoteDeltaG(p, r1, r2)(i, d)
-    }
-
-    lazy val customIssueTypesDG =
-      generic(Partition.CustomIssueTypes)(customIssueTypeId, customIssueType)
-
-    lazy val customReqTypesDG =
-      generic(Partition.CustomReqTypes)(customReqTypeId, customReqType)
-
-    lazy val tagsDG =
-      generic(Partition.Tags)(tagId, povTag)
-
-    lazy val povTag =
-      for {
-        t      ← tag
-        (p, c) ← tagId.set.pair
-      } yield {
-        val children = (c - t.id -- p).toVector
-        val parents  = (p - t.id -- c).toStream.map(_ -> none[Tag.Id]).toMap
-        TagProtocol.PovTag(t, TagProtocol.PovRelations(parents, children))
-      }
-  }
-
-  object remoteDelta {
-    def forPart: Partition => Gen[RemoteDelta] =
-      remoteDeltaG.forPart(_).map(List(_))
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
   // Protocol
   object protocol {
     import shipreq.webapp.base.protocol.{FieldProtocol => FP, _}
@@ -323,6 +278,9 @@ object RandomData {
     lazy val fieldValues: Gen[FP.Values] =
       Gen.oneofG(textFieldValues)
 
+    lazy val fieldDelta: Gen[FP.Delta] =
+      Gen.apply2(FP.Delta.apply)(staticField \/ customField(applicableReqTypes), fieldPosition)
+
     object fieldCfgAction {
       import FP.CfgAction, CfgAction._
       lazy val create      : Gen[Create]       = fieldValues map Create
@@ -343,6 +301,56 @@ object RandomData {
         val b = Gen insert t.rels
         a \&/ b
       })
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  object remoteDeltaG {
+    import shipreq.webapp.base.protocol._
+    import RandomData.protocol._
+
+    def forPart: Partition => Gen[RemoteDeltaG] = {
+      case Partition.CustomIssueTypes => customIssueTypesDG
+      case Partition.CustomReqTypes   => customReqTypesDG
+      case Partition.Fields           => fieldsDG
+      case Partition.Tags             => tagsDG
+    }
+
+    def generic(p: Partition)(ir: Gen[p.Id], dr: Gen[p.Data]): Gen[RemoteDeltaG] = {
+      import p.di
+      for {
+        d        ← dr.list
+        i0       ← ir.set
+        i        = d.foldLeft(i0)(_ - _.id)
+        (r1, r2) ← revPair
+      } yield RemoteDeltaG(p, r1, r2)(i, d)
+    }
+
+    lazy val customIssueTypesDG =
+      generic(Partition.CustomIssueTypes)(customIssueTypeId, customIssueType)
+
+    lazy val customReqTypesDG =
+      generic(Partition.CustomReqTypes)(customReqTypeId, customReqType)
+
+    lazy val fieldsDG =
+      generic(Partition.Fields)(fieldId, fieldDelta)
+
+    lazy val tagsDG =
+      generic(Partition.Tags)(tagId, povTag)
+
+    lazy val povTag =
+      for {
+        t      ← tag
+        (p, c) ← tagId.set.pair
+      } yield {
+        val children = (c - t.id -- p).toVector
+        val parents  = (p - t.id -- c).toStream.map(_ -> none[Tag.Id]).toMap
+        TagProtocol.PovTag(t, TagProtocol.PovRelations(parents, children))
+      }
+  }
+
+  object remoteDelta {
+    def forPart: Partition => Gen[RemoteDelta] =
+      remoteDeltaG.forPart(_).map(List(_))
   }
 
   // -------------------------------------------------------------------------------------------------------------------

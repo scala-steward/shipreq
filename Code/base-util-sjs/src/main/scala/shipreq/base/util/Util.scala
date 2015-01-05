@@ -2,7 +2,8 @@ package shipreq.base.util
 
 import java.net.URL
 import scala.util.Try
-import scalaz.Memo
+import scalaz.{Equal, Memo}
+import scalaz.syntax.equal._
 import ScalaExt.StringBuilderExt
 
 object Util {
@@ -40,6 +41,18 @@ object Util {
       s
     else
       s.substring(0, cutoff - 1) + "\u2026"
+
+  /** Inserts `subj` immediately before a given element, or appends if `before` is None. */
+  def reposition[A: Equal](v: Vector[A], subj: A, before: Option[A]): Vector[A] =
+    before match {
+      case Some(b) =>
+        v.foldLeft(Vector.empty[A])((q, e) => {
+          val q2 = if (e ≟ b) q :+ subj else q
+          if (e ≟ subj) q2 else q2 :+ e
+        })
+      case None =>
+        v.filterNot(_ ≟ subj) :+ subj
+    }
 }
 
 object ParseLong {

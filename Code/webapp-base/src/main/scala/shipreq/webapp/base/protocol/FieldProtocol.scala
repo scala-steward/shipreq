@@ -1,5 +1,6 @@
 package shipreq.webapp.base.protocol
 
+import scalaz.\/
 import shipreq.webapp.base.data._
 import Field.ApplicableReqTypes
 
@@ -22,4 +23,13 @@ object FieldProtocol {
     final case class UpdateOrder (id: Field.Id, newPos: Position)        extends CfgAction
     final case class Delete      (id: Field.Id, action: DeletionAction)  extends CfgAction
   }
+
+  case class Delta(field: Field.Static \/ CustomField, pos: Position)
+
+  implicit object Delta extends DataId[Delta] {
+    override type I = Field.Id
+    override def id(d: Delta) = d.field.fold(s => s, _.id)
+    override def mkId(l: Long) = ??? // Method only exists for testing
+  }
+
 }

@@ -1,8 +1,9 @@
 package shipreq.webapp.client.delta
 
 import monocle.Lens
+import scalaz.{-\/, \/-}
 import scalaz.Leibniz.===
-import shipreq.base.util.IMap
+import shipreq.base.util.{Util, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
@@ -36,6 +37,7 @@ object RemoteDelta {
         d.p match {
           case t@ CustomIssueTypes => x(t, GenericPartitionFns(t, Project._customIssueTypes))
           case t@ CustomReqTypes   => x(t, GenericPartitionFns(t, Project._customReqTypes))
+          case t@ Fields           => x(t, FieldPartitionFns)
           case t@ Tags             => x(t, TagPartitionFns)
         }
       }
@@ -66,6 +68,40 @@ object GenericPartitionFns {
         l.set(RevAnd(rev, m))(p)
       }
     }
+}
+
+object FieldPartitionFns extends Fns[Fields.type] {
+  import shipreq.webapp.base.protocol.FieldProtocol._
+
+  def rev(p: Project): Rev =
+    p.fields.rev
+
+  def update(p: Project, rev: Rev, ds: RemoteDeltaP[Fields.type]): Project = {
+    var FieldSet(customFields, order) = p.fields.data
+
+    // Delete fields
+    for (fieldId <- ds.del)
+      fieldId match {
+        case i: CustomField.Id => customFields = customFields - i
+        case _: Field.Static   => ()
+      }
+    order = order.filterNot(ds.del.contains)
+
+    // Insert/update
+    def setOrder(id: Field.Id, pos: Position): Unit =
+      order = Util.reposition(order, id, pos)
+    for (delta <- ds.upd)
+      delta match {
+        case Delta(-\/(staticField), pos) =>
+          setOrder(staticField, pos)
+        case Delta(\/-(customField), pos) =>
+          customFields += customField
+          setOrder(customField.id, pos)
+      }
+
+    // Done
+    p.copy(fields = RevAnd(rev, FieldSet(customFields, order)))
+  }
 }
 
 object TagPartitionFns extends Fns[Tags.type] {

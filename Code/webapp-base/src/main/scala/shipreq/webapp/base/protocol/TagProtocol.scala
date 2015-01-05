@@ -3,7 +3,7 @@ package shipreq.webapp.base.protocol
 import monocle.macros.Lenser
 import scala.collection.GenTraversable
 import scalaz.{\/, Equal}
-import scalaz.syntax.equal._
+import shipreq.base.util.Util
 import shipreq.prop.{CycleFree, CycleDetector}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
@@ -70,12 +70,7 @@ object TagProtocol {
 
       // Add parents
       for ((parent, pos) <- rels.parents)
-        t = T.modChildren(parent, sibs =>
-          pos match {
-            case None    => if (sibs contains id) sibs else sibs :+ id
-            case Some(b) => reposition(sibs, id, before = b)
-          }
-        )(t)
+        t = T.modChildren(parent, Util.reposition(_, id, pos))(t)
 
       // Remove old parents
       val oldParents = T.keySet(t) - id -- rels.parents.keySet
@@ -99,12 +94,6 @@ object TagProtocol {
       PovRelations(parents, children)
     }
   }
-
-  private def reposition[A: Equal](v: Vector[A], ins: A, before: A): Vector[A] =
-    v.foldLeft(Vector.empty[A])((q, e) => {
-      val q2 = if (e ≟ before) q :+ ins else q
-      if (e ≟ ins) q2 else q2 :+ e
-    })
 
   /** A tag and its world from its own point of view. */
   final case class PovTag(tag: Tag, rels: PovRelations) {

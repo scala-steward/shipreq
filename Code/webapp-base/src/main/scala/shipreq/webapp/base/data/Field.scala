@@ -59,6 +59,7 @@ object Field {
 
   // type Id = Static \/ CustomField.Id
   sealed trait Id
+  implicit val idEquality = Equal.equalA[Id]
 
   sealed abstract class Static(override val name     : String,
                                override val fieldType: FieldType,

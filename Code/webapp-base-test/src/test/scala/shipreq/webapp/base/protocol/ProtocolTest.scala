@@ -93,10 +93,12 @@ object ProtocolTest extends TestSuite {
       def confirmTest(p: Partition) = p match {
         case Partition.CustomIssueTypes => p
         case Partition.CustomReqTypes   => p
+        case Partition.Fields           => p
         case Partition.Tags             => p
       }
       'CustomIssueTypes - test(Partition.CustomIssueTypes)
       'CustomReqTypes   - test(Partition.CustomReqTypes)
+      'Fields           - test(Partition.Fields)
       'Tags             - test(Partition.Tags)
     }
   }

@@ -3,7 +3,6 @@ package shipreq.webapp.base.delta
 import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
 import shipreq.webapp.base.data._, DataImplicits._
-import shipreq.webapp.base.protocol.TagProtocol
 import shipreq.webapp.base.protocol.DataCodecs._
 import shipreq.webapp.base.protocol.ProtocolDataCodecs._
 
@@ -33,21 +32,21 @@ case object Partition {
     else
       None
 
-  // ------------------------------------------------------------------------------------------------------------------
-
   type Aux[D, I] = Partition {type Data = D; type Id = I}
 
-  sealed abstract class CAux[T, D, I](t: T)(implicit I: ObjDataId[T, D, I],
-                                           RI: Reader[I], WI: Writer[I],
-                                           RD: Reader[D], WD: Writer[D]) extends Partition {
-    override type Data = D
-    override type Id = I
-    override implicit val di = I
-    override implicit val ri = RI
-    override implicit val wi = WI
-    override implicit val rd = RD
-    override implicit val wd = WD
+  sealed abstract class AuxC[D, I](DI: DataIdAux[D, I])(implicit RI: Reader[I], WI: Writer[I],
+                                                        RD: Reader[D], WD: Writer[D]) extends Partition {
+    override final type Data = D
+    override final type Id = I
+    override final implicit val di = DI
+    override final implicit val ri = RI
+    override final implicit val wi = WI
+    override final implicit val rd = RD
+    override final implicit val wd = WD
   }
+
+  sealed abstract class AuxO[O, D, I](o: O)(implicit DI: ObjDataId[O, D, I], RI: Reader[I], WI: Writer[I],
+                                            RD: Reader[D], WD: Writer[D]) extends AuxC[D, I](DI)
 
   abstract class Fns[P <: Partition] {
     def rev(p: Project): Rev
@@ -57,9 +56,16 @@ case object Partition {
   // ------------------------------------------------------------------------------------------------------------------
   // Partition instances
 
-  case object CustomIssueTypes extends CAux(CustomIssueType)
-  case object CustomReqTypes   extends CAux(CustomReqType)
-  case object Tags             extends CAux(TagProtocol.PovTag)
+  import shipreq.webapp.base.protocol._
 
-  val values = NonEmptyList[Partition](CustomIssueTypes, CustomReqTypes, Tags)
+  case object CustomIssueTypes extends AuxO(CustomIssueType)
+  case object CustomReqTypes   extends AuxO(CustomReqType)
+  case object Fields           extends AuxC(FieldProtocol.Delta)
+  case object Tags             extends AuxO(TagProtocol.PovTag)
+
+  final val values = NonEmptyList[Partition](
+    CustomIssueTypes,
+    CustomReqTypes,
+    Fields,
+    Tags)
 }
