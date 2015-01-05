@@ -7,7 +7,7 @@ import Routine._
 
 import upickle.TupleCodecs._
 import DataCodecs._
-import RoutineDataCodecs._
+import ProtocolDataCodecs._
 import DeltaCodecs._
 
 object Routines {

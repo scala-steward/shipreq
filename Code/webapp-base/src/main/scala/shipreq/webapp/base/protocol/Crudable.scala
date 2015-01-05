@@ -3,7 +3,7 @@ package shipreq.webapp.base.protocol
 import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
 import shipreq.webapp.base.delta.RemoteDelta
-import RoutineDataCodecs._
+import ProtocolDataCodecs._
 import Routine._
 
 trait Crudable extends Desc {

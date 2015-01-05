@@ -198,7 +198,7 @@ object DataCodecs {
 import DataCodecs._
 
 // =====================================================================================================================
-object RoutineDataCodecs {
+object ProtocolDataCodecs {
 
   implicit final val deletionAction = enum(DeletionAction.values)
 
@@ -230,7 +230,7 @@ object RoutineDataCodecs {
 }
 
 // =====================================================================================================================
-object RoutineRemoteCodecs {
+object ProtocolRemoteCodecs {
   import Routines._
 
   def remoteRoutine[R <: Routine.Desc](d: R): ReadWriter[d.Remote] =

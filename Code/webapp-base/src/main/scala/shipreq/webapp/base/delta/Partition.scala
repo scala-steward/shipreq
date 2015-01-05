@@ -5,7 +5,7 @@ import upickle.{Reader, Writer}
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.TagProtocol
 import shipreq.webapp.base.protocol.DataCodecs._
-import shipreq.webapp.base.protocol.RoutineDataCodecs._
+import shipreq.webapp.base.protocol.ProtocolDataCodecs._
 
 sealed trait Partition {
   type Data
