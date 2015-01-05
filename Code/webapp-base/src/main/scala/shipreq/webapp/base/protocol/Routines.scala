@@ -3,9 +3,12 @@ package shipreq.webapp.base.protocol
 import scalaz.\&/
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.RemoteDelta
-import DataCodecs._
-import DeltaCodecs._
 import Routine._
+
+import upickle.TupleCodecs._
+import DataCodecs._
+import RoutineDataCodecs._
+import DeltaCodecs._
 
 object Routines {
 
@@ -22,5 +25,5 @@ object Routines {
                         reqTypeCrud:   CustomReqTypeCrud          .Remote,
                         reqTypeImpMod: CustomReqTypeImplicationMod.Remote,
                         tagCrud:       TagCrud                    .Remote)
-    extends Group
+    extends Bundle
 }

@@ -2,14 +2,21 @@ package shipreq.webapp.base.protocol
 
 import scalaz.{\&/, NonEmptyList}
 import scalaz.Isomorphism.<=>
+
 import upickle._
+import upickle.Fns._
+import upickle.TupleCodecs._
+import upickle.StdlibCodecs.{SeqishR, SeqishW}
+import upickle.StdlibCodecs.{MapR, MapW}
+
 import shipreq.prop.util._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.data._
 import DataImplicits._
 
-private[protocol] object Codec {
+private[protocol] object CodecBase {
+
   //  private def tagS[T <: TaggedString](implicit C: TaggedTypeCtor[T]) =
   //    ReadWriter[T](i => Js.Str(i.value), { case Js.Str(i) => C(i)})
   //  private def tagL[T <: TaggedLong](implicit C: TaggedTypeCtor[T]) =
@@ -42,7 +49,7 @@ private[protocol] object Codec {
   }
 
   def xmap[A, B](f: A => B)(g: B => A)(implicit RB: Reader[B], WB: Writer[B]) =
-    ReadWriter[A](WB.write0 compose f, RB.read0 andThen g)
+    ReadWriter[A](WB.write compose f, RB.read andThen g)
 
   implicit class ReaderExt[T](val r: Reader[T]) extends AnyVal {
     @inline def readSet[TT >: T](s: Seq[Js.Value]): Set[TT] =
@@ -53,57 +60,55 @@ private[protocol] object Codec {
       // foldrSeq[List[T]](s, Nil)(_ :: _)
 
     @inline def foldlSeq[B](s: Seq[Js.Value], z: B)(f: (B, T) => B): B =
-      s.foldLeft(z)((b, j) => f(b, r read0 j))
+      s.foldLeft(z)((b, j) => f(b, r read j))
 
     @inline def foldrSeq[B](s: Seq[Js.Value], z: B)(f: (T, B) => B): B =
-      s.foldRight(z)((j, b) => f(r read0 j, b))
+      s.foldRight(z)((j, b) => f(r read j, b))
   }
 
   def writeIterable[T](ts: Iterable[T])(implicit W: Writer[T]) =
-    Js.Arr(ts.foldLeft(List.empty[Js.Value])((q,i) => W.write0(i) :: q): _*)
+    Js.Arr(ts.foldLeft(List.empty[Js.Value])((q,i) => W.write(i) :: q): _*)
 
   def caseclass1[A, Z](y: A => Z, u: Z => Option[A])(implicit RA: Reader[A], WA: Writer[A]) =
-    ReadWriter[Z](z => WA write0 u(z).get, RA.read0 andThen y)
+    ReadWriter[Z](z => WA write u(z).get, RA.read andThen y)
 
   def caseclass2[A: Reader : Writer, B: Reader : Writer, Z]
   (y: (A, B) => Z, u: Z => Option[(A, B)]): ReadWriter[Z] = {
-    val r = Tuple2R[A, B].read0
-    val w = Tuple2W[A, B].write0
+    val r = Tuple2R[A, B].read
+    val w = Tuple2W[A, B].write
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass3[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, Z]
   (y: (A, B, C) => Z, u: Z => Option[(A, B, C)]): ReadWriter[Z] = {
-    val r = Tuple3R[A, B, C].read0
-    val w = Tuple3W[A, B, C].write0
+    val r = Tuple3R[A, B, C].read
+    val w = Tuple3W[A, B, C].write
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass4[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, Z]
   (y: (A, B, C, D) => Z, u: Z => Option[(A, B, C, D)]): ReadWriter[Z] = {
-    val r = Tuple4R[A, B, C, D].read0
-    val w = Tuple4W[A, B, C, D].write0
+    val r = Tuple4R[A, B, C, D].read
+    val w = Tuple4W[A, B, C, D].write
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
   
   def caseclass5[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, Z]
   (y: (A, B, C, D, E) => Z, u: Z => Option[(A, B, C, D, E)]): ReadWriter[Z] = {
-    val r = Tuple5R[A, B, C, D, E].read0
-    val w = Tuple5W[A, B, C, D, E].write0
+    val r = Tuple5R[A, B, C, D, E].read
+    val w = Tuple5W[A, B, C, D, E].write
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def caseclass6[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, F: Reader : Writer, Z]
   (y: (A, B, C, D, E, F) => Z, u: Z => Option[(A, B, C, D, E, F)]): ReadWriter[Z] = {
-    val r = Tuple6R[A, B, C, D, E, F].read0
-    val w = Tuple6W[A, B, C, D, E, F].write0
+    val r = Tuple6R[A, B, C, D, E, F].read
+    val w = Tuple6W[A, B, C, D, E, F].write
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
   def intkeyW[T](k: Int, t: T)(implicit T: Writer[T]) =
-    Js.Arr(Js.Num(k), T write0 t)
-
-  def readJ[T](v: Js.Value)(implicit T: Reader[T]) = T read0 v
+    Js.Arr(Js.Num(k), T write t)
 
   def iMap[K: Reader : Writer, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
     xmap((_: IMap[K, V]).underlyingMap)(m => IMap.empty(key).replaceUnderlying(m))
@@ -121,28 +126,38 @@ private[protocol] object Codec {
   })
   */
 }
-import Codec._
+import CodecBase._
 
 // =====================================================================================================================
 object DataCodecs {
+
+  @inline implicit def string = BaseCodecs.StringRW
+  @inline implicit def unit   = BaseCodecs.UnitRW
+
+  implicit def option[A: Reader: Writer]: ReadWriter[Option[A]] =
+    ReadWriter[Option[A]](
+    _.fold(Js.Arr())(a => Js.Arr(writeJs(a))), {
+      case Js.Arr()  => None
+      case Js.Arr(a) => Some(readJs[A](a))
+    })
 
   implicit def these[A: Reader: Writer, B: Reader: Writer]: ReadWriter[A \&/ B] = {
     import \&/._
     ReadWriter[A \&/ B]({
       case This(a)    => intkeyW(1, a)
       case That(b)    => intkeyW(2, b)
-      case Both(a, b) => Js.Arr(Js.Num(3), implicitly[Writer[A]] write0 a, implicitly[Writer[B]] write0 b)
+      case Both(a, b) => Js.Arr(Js.Num(3), writeJs(a), writeJs(b))
     }, {
       case Js.Arr(Js.Num(n), v) => n.toInt match {
-        case 1 => This(readJ[A](v))
-        case 2 => That(readJ[B](v))
+        case 1 => This(readJs[A](v))
+        case 2 => That(readJs[B](v))
       }
       case Js.Arr(Js.Num(n), a, b) if n.toInt == 3 =>
-        Both(readJ[A](a), readJ[B](b))
+        Both(readJs[A](a), readJs[B](b))
     })
   }
 
-  implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
+  @inline implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
     iMap(d.id)
 
   implicit def rev        = tagL(Rev.apply)
@@ -166,8 +181,8 @@ object DataCodecs {
       case t: ApplicableTag => intkeyW(1, t)
     }, {
       case Js.Arr(Js.Num(n), v) => n.toInt match {
-        case 0 => readJ[TagGroup](v)
-        case 1 => readJ[ApplicableTag](v)
+        case 0 => readJs[TagGroup](v)
+        case 1 => readJs[ApplicableTag](v)
       }
     })
 
@@ -182,8 +197,8 @@ object DataCodecs {
       case t: TagProtocol.ApplicableTagValues => intkeyW(1, t)
     }, {
       case Js.Arr(Js.Num(n), v) => n.toInt match {
-        case 0 => readJ[TagProtocol.TagGroupValues](v)
-        case 1 => readJ[TagProtocol.ApplicableTagValues](v)
+        case 0 => readJs[TagProtocol.TagGroupValues](v)
+        case 1 => readJs[TagProtocol.ApplicableTagValues](v)
       }
     })
 
@@ -194,31 +209,36 @@ object DataCodecs {
 }
 
 // =====================================================================================================================
-object RoutineCodecs {
-
-  def remoteRoutine[R <: Routine.Desc](d: R) = ReadWriter[d.Remote](
-    r => Js.Str(r.n),
-    {case Js.Str(n) => Routine.Remote(n, d) })
+object RoutineDataCodecs {
 
   implicit def deletionAction = enum(DeletionAction.values)
 
   def crudAction[I, V](implicit WI: Writer[I], RI: Reader[I], WV: Writer[V], RV: Reader[V]): ReadWriter[CrudAction[I, V]] =
     ReadWriter[CrudAction[I, V]]({
-      case CrudAction.Create(v)    => Js.Arr(WV write0 v)
-      case CrudAction.Update(i, v) => Js.Arr(WI write0 i, WV write0 v)
-      case CrudAction.Delete(i, a) => Js.Arr(WI write0 i, deletionAction write0 a, Js.Arr())
+      case CrudAction.Create(v)    => Js.Arr(WV write v)
+      case CrudAction.Update(i, v) => Js.Arr(WI write i, WV write v)
+      case CrudAction.Delete(i, a) => Js.Arr(WI write i, deletionAction write a, Js.Obj())
     }, {
-      case Js.Arr(v)       => CrudAction.Create(RV read0 v)
-      case Js.Arr(i, v)    => CrudAction.Update(RI read0 i, RV read0 v)
-      case Js.Arr(i, a, _) => CrudAction.Delete(RI read0 i, deletionAction read0 a)
+      case Js.Arr(v)       => CrudAction.Create(RV read v)
+      case Js.Arr(i, v)    => CrudAction.Update(RI read i, RV read v)
+      case Js.Arr(i, a, _) => CrudAction.Delete(RI read i, deletionAction read a)
     })
 }
 
 // =====================================================================================================================
-object RoutineGroupCodecs {
+object RoutineRemoteCodecs {
   import Routines._
 
-  implicit def routinesProjectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
+  def remoteRoutine[R <: Routine.Desc](d: R): ReadWriter[d.Remote] =
+    ReadWriter[d.Remote](r => Js.Str(r.n), { case Js.Str(n) => Routine.Remote(n, d) })
+
+  implicit def projectInit   = remoteRoutine(ProjectInit)
+  implicit def issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
+  implicit def reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
+  implicit def reqTypeImpMod = remoteRoutine(CustomReqTypeImplicationMod)
+  implicit def tagCrud       = remoteRoutine(TagCrud)
+
+  implicit def projectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================
@@ -231,9 +251,9 @@ object DeltaCodecs {
   implicit def remoteDeltaGW = Writer[RemoteDeltaG](r => {
     import r.p.{wi, wd}
     val dp = r.forceDeltaP[r.p.type](r.p)
-    val a = partitions write0 r.p
-    val b = rev write0 r.from
-    val c = rev write0 r.to
+    val a = partitions write r.p
+    val b = rev write r.from
+    val c = rev write r.to
     val d = writeIterable(dp.del)(wi)
     val e = writeIterable(dp.upd)(wd)
     Js.Arr(a, b, c, d, e)
@@ -241,11 +261,17 @@ object DeltaCodecs {
 
   implicit def remoteDeltaGR = Reader[RemoteDeltaG]({
     case Js.Arr(a, b, c, Js.Arr(d@_*), Js.Arr(e@_*)) =>
-      val p = partitions read0 a
-      val f = rev read0 b
-      val t = rev read0 c
+      val p = partitions read a
+      val f = rev read b
+      val t = rev read c
       val x = p.ri.readSet(d)
       val y = p.rd.readList(e)
       RemoteDeltaG(p, f, t)(x, y)
   })
+
+//  implicit def remoteDelta: ReadWriter[RemoteDelta] = implicitly[ReadWriter[List[RemoteDeltaG]]]
+  implicit def remoteDelta = ReadWriter[RemoteDelta](
+    SeqishW[RemoteDeltaG, List].write,
+    SeqishR[RemoteDeltaG, List].read)
+
 }
