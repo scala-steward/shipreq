@@ -331,9 +331,10 @@ object ProtocolRemoteCodecs {
   implicit final val issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
   implicit final val reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
   implicit final val reqTypeImpMod = remoteRoutine(CustomReqTypeImplicationMod)
+  implicit final val fieldCrud     = remoteRoutine(FieldCrud)
   implicit final val tagCrud       = remoteRoutine(TagCrud)
 
-  implicit final val projectSPA = caseclass5(ProjectSPA.apply, ProjectSPA.unapply)
+  implicit final val projectSPA = caseclass6(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================

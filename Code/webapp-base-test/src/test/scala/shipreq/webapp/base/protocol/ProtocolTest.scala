@@ -96,6 +96,11 @@ object ProtocolTest extends TestSuite {
         'update { update _mustSatisfy prop }
         'delete { delete _mustSatisfy prop }
       }
+
+      'FieldCrud {
+        val prop = kitR(Routines.FieldCrud).propI
+        RandomData.protocol.fieldCfgAction.any mustSatisfy prop
+      }
     }
 
     'JsEntryPoints {

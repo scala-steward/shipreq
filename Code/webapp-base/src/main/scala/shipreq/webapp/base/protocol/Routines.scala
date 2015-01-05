@@ -26,5 +26,6 @@ object Routines {
                         issueTypeCrud: CustomIssueTypeCrud        .Remote,
                         reqTypeCrud:   CustomReqTypeCrud          .Remote,
                         reqTypeImpMod: CustomReqTypeImplicationMod.Remote,
+                        fieldCrud:     FieldCrud                  .Remote,
                         tagCrud:       TagCrud                    .Remote)
 }

@@ -17,7 +17,6 @@ import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.prop.test.{Distinct, Gen}
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
-import shipreq.webapp.base.protocol._
 import shipreq.base.util.Debug._
 import DataImplicits._
 
@@ -79,6 +78,9 @@ object RandomData {
 
   lazy val customReqTypeId =
     id map CustomReqType.Id
+
+  lazy val staticReqType: Gen[ReqType.Static] =
+    Gen.oneof(ReqType.static.head, ReqType.static.tail: _*)
 
   def customReqTypeName =
     shortText1
@@ -183,6 +185,9 @@ object RandomData {
     case t: TagGroup      => t
   }
 
+  lazy val staticField: Gen[Field.Static] =
+    Gen.oneof(Field.static.head, Field.static.tail: _*)
+
   def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
     def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
     Gen.oneofG(
@@ -248,6 +253,8 @@ object RandomData {
 
   // -------------------------------------------------------------------------------------------------------------------
   object remoteDeltaG {
+    import shipreq.webapp.base.protocol._
+
     def forPart: Partition => Gen[RemoteDeltaG] = {
       case Partition.CustomIssueTypes => customIssueTypesDG
       case Partition.CustomReqTypes   => customReqTypesDG
@@ -290,11 +297,59 @@ object RandomData {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  object routines {
-    import Routine._, Routines._
+  // Protocol
+  object protocol {
+    import shipreq.webapp.base.protocol.{FieldProtocol => FP, _}
+    import Gen.Covariance._
 
     lazy val deletionAction =
       Gen.oneofL(DeletionAction.values)
+
+    lazy val reqTypeId: Gen[ReqType.Id] =
+      Gen.oneofG(customReqTypeId, staticReqType)
+
+    lazy val fieldId: Gen[Field.Id] =
+      Gen.oneofG(customFieldId, staticField)
+
+    lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
+      isubset(reqTypeId, reqTypeId.set)
+
+    lazy val fieldPosition: Gen[FP.Position] =
+      fieldId.option
+
+    lazy val textFieldValues =
+      Gen.apply4(FP.TextFieldValues.apply)(shortText1, refKey, mandatory, applicableReqTypes)
+
+    lazy val fieldValues: Gen[FP.Values] =
+      Gen.oneofG(textFieldValues)
+
+    object fieldCfgAction {
+      import FP.CfgAction, CfgAction._
+      lazy val create      : Gen[Create]       = fieldValues map Create
+      lazy val updateValues: Gen[UpdateValues] = Gen.apply2(UpdateValues)(customFieldId, fieldValues)
+      lazy val updateOrder : Gen[UpdateOrder]  = Gen.apply2(UpdateOrder)(fieldId, fieldPosition)
+      lazy val delete      : Gen[Delete]       = Gen.apply2(Delete)(fieldId, deletionAction)
+      lazy val any         : Gen[CfgAction]    = Gen.oneofG(create, updateValues, updateOrder, delete)
+    }
+
+    def tagProtocolValues: Tag => TagProtocol.Values = {
+      case TagGroup(_, n, d, e, _)      => TagProtocol.TagGroupValues(n, d, e)
+      case ApplicableTag(_, n, d, k, _) => TagProtocol.ApplicableTagValues(n, d, k)
+    }
+
+    lazy val tagCrudInput =
+      remoteDeltaG.povTag.flatMap(t => {
+        val a = Gen insert tagProtocolValues(t.tag)
+        val b = Gen insert t.rels
+        a \&/ b
+      })
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  object routines {
+    import shipreq.webapp.base.protocol._
+    import Routine._, Routines._
+    import RandomData.protocol._
 
     lazy val remoteName =
       Gen.alphanumericstring1
@@ -303,11 +358,12 @@ object RandomData {
       remoteName.map(Remote(_, d))
 
     lazy val projectSPA =
-      Gen.apply5(ProjectSPA)(
+      Gen.apply6(ProjectSPA)(
         remote(ProjectInit),
         remote(CustomIssueTypeCrud),
         remote(CustomReqTypeCrud),
         remote(CustomReqTypeImplicationMod),
+        remote(FieldCrud),
         remote(TagCrud))
 
     class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
@@ -325,18 +381,6 @@ object RandomData {
     lazy val customReqTypeCrud = new CrudActionGens(CustomReqTypeCrud)(
       RandomData.customReqTypeId,
       Gen.tuple3(reqTypeMnemonic, customReqTypeName, implicationRequired))
-
-    def tagProtocolValues: Tag => TagProtocol.Values = {
-      case TagGroup(_, n, d, e, _)      => TagProtocol.TagGroupValues(n, d, e)
-      case ApplicableTag(_, n, d, k, _) => TagProtocol.ApplicableTagValues(n, d, k)
-    }
-
-    lazy val tagCrudInput =
-      remoteDeltaG.povTag.flatMap(t => {
-        val a = Gen insert tagProtocolValues(t.tag)
-        val b = Gen insert t.rels
-        a \&/ b
-      })
 
     lazy val tagCrud =
       new CrudActionGens(TagCrud)(RandomData.tagId, tagCrudInput)
