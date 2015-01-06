@@ -30,6 +30,7 @@ object ReactExamples {
 
       object ProjectPage extends RoutingRules {
         val root       : Loc = register(rootLocation(index))
+        val cfgFields  : Loc = register(location("#cfg/fields",   cfgFieldsR))
         val cfgIssues  : Loc = register(location("#cfg/issues",   cfgIssuesR))
         val cfgReqTypes: Loc = register(location("#cfg/reqtypes", cfgReqTypesR))
         val cfgTags    : Loc = register(location("#cfg/tags",     cfgTagsR))
@@ -39,6 +40,7 @@ object ReactExamples {
           val c = ReactComponentB[Unit]("Index")
             .render(_ =>
               ul(
+                li(router.link(ProjectPage.cfgFields  )("Cfg: Fields")),
                 li(router.link(ProjectPage.cfgIssues  )("Cfg: Issues")),
                 li(router.link(ProjectPage.cfgReqTypes)("Cfg: Requirement Types")),
                 li(router.link(ProjectPage.cfgTags    )("Cfg: Tags")),
@@ -55,6 +57,9 @@ object ReactExamples {
 
         private def cfgTagsR =
           cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, false).component
+
+        private def cfgFieldsR =
+          cfg.fields.CfgFields.Props(cp, r.fieldCrud, clientData, false).component
 
         register(removeTrailingSlashes)
 
