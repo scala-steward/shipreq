@@ -26,8 +26,9 @@ private[tags] object DetailPane {
 
   type State = DND.Parent.PState[Rel]
 
-  val DraggableRel = DND.Child.dndItemComponent[Rel](
-    (r, h) => renderRel(r, Some(h)))
+  val DraggableRel = DND.Child.dndItemComponent[Rel]((outerAttr, hnd, rel) =>
+    <.div(outerAttr,
+      renderRel(rel, Some(hnd))))
 
   def renderRel(r: Rel, dragHandle: Option[ReactTag]): ReactTag =
     <.li(

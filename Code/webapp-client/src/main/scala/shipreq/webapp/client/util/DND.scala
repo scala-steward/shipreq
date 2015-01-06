@@ -147,7 +147,7 @@ object DND {
     def drop[A](p: CProps[A]): ReactDragEvent => IO[Unit] =
       _.preventDefaultIO >> p.eventHandler(DragEvent.Move)
 
-    def renderDragHandle[S, A](p: CProps[A], a: A, T: ComponentStateFocus[CState]) =
+    def renderDragHandle[S, A](p: CProps[A], a: A, T: ComponentStateFocus[CState]): ReactTag =
       <.span(
         ^.className    := "draghandle",
         ^.draggable    := "true",
@@ -156,20 +156,21 @@ object DND {
         // onMouseDown={typeof window.isIE9 != 'undefined' && this.handleIE9DragHack}
         "\u2630")
 
-    def renderRow[A](p: CProps[A], a: A, T: ComponentStateFocus[CState]) =
-      <.div(
-        ^.classSet("dragging" -> T.state, "dragover" -> p.dragover),
-        ^.onDragEnter ~~> preventDefaultIO,
-        ^.onDragOver  ~~> dragOver(a, p, T.state),
-        ^.onDragLeave ~~> p.eventHandler(DragEvent.Leave),
-        ^.onDrop      ~~> drop(p))
+    def outerAttrs[A](p: CProps[A], a: A, state: CState): TagMod = (
+      ^.classSet("dragging" -> state, "dragover" -> p.dragover)
+        + (^.onDragEnter ~~> preventDefaultIO)
+        + (^.onDragOver  ~~> dragOver(a, p, state))
+        + (^.onDragLeave ~~> p.eventHandler(DragEvent.Leave))
+        + (^.onDrop      ~~> drop(p))
+      )
 
-    def dndItemComponent[A](r: (A, ReactTag) => ReactElement) = ReactComponentB[(A, DND.Child.CProps[A])]("DndItem")
-      .initialState(DND.Child.initialState)
-      .render { c =>
-        val (a, cp) = c.props
-        DND.Child.renderRow(cp, a, c)(
-          r(a, DND.Child.renderDragHandle(cp, a, c)))
-      }.build
+    def dndItemComponent[A](f: (TagMod, ReactTag, A) => ReactElement) =
+      ReactComponentB[(A, DND.Child.CProps[A])]("DndItem")
+        .initialState(DND.Child.initialState)
+        .render { c =>
+          val (a, p) = c.props
+          f(outerAttrs(p, a, c.state), renderDragHandle(p, a, c), a)
+        }.build
+
   }
 }
