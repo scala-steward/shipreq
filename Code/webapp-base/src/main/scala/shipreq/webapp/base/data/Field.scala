@@ -9,7 +9,7 @@ import scalaz.syntax.equal._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.IMap
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 
 // =====================================================================================================================
 // Types
@@ -33,6 +33,11 @@ object FieldType {
 
 // =====================================================================================================================
 // Instances
+
+/**
+ * A key by which users can refer to a field.
+ */
+final case class FieldRefKey(value: String) extends TaggedString
 
 sealed trait Mandatory
 case object Mandatory extends Mandatory with (Boolean <=> Mandatory) {
@@ -108,7 +113,7 @@ object CustomField {
 
   case class Text(id       : Id,
                   name     : String,
-                  key      : HashRefKey,
+                  key      : FieldRefKey,
                   mandatory: Mandatory,
                   reqTypes : ApplicableReqTypes,
                   alive    : Alive) extends CustomField(FieldType.Text)

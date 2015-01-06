@@ -16,6 +16,9 @@ object AppConsts {
   /** `HashRefKey` min & max lengths. */
   def hashRefKeyLength = 1 to 20
 
+  /** `FieldRefKey` min & max lengths. */
+  def fieldRefKeyLength = hashRefKeyLength
+
   /** Email address max length. */
   def emailMaxLength = 120
 

@@ -205,6 +205,7 @@ object DataCodecs {
   implicit final val mandatory      = boolCase(Mandatory)
   implicit final val deletable      = boolCase(Deletable)
   implicit final val hashRefKey     = tagS(HashRefKey.apply)
+  implicit final val fieldRefKey    = tagS(FieldRefKey.apply)
   implicit final val deletionAction = enum(DeletionAction.values)
 
   implicit final val customIssueTypeId = tagL(CustomIssueType.Id.apply)
@@ -302,7 +303,7 @@ object ProtocolDataCodecs {
       case TextFieldValues(a, b, c, d) => intkeyW4(0, a, b, c, d)
     }, {
       case Js.Arr(Js.Num(n), a, b, c, d) => n.toInt match {
-        case 0 => TextFieldValues(readJs[String](a), readJs[HashRefKey](b), readJs[Mandatory](c), readJs[ApplicableReqTypes](d))
+        case 0 => TextFieldValues(readJs[String](a), readJs[FieldRefKey](b), readJs[Mandatory](c), readJs[ApplicableReqTypes](d))
       }
     })
   }

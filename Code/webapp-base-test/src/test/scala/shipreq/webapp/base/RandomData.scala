@@ -60,7 +60,7 @@ object RandomData {
   lazy val hashRefKey =
     for {
       h <- Gen.alphanumeric
-      t <- Gen.charof('.', "_=-", 'a' to 'z', 'A' to 'Z', '0' to '9').list.lim(AppConsts.hashRefKeyLength.end)
+      t <- Gen.charof('.', "_=-", 'a' to 'z', 'A' to 'Z', '0' to '9').list.lim(AppConsts.hashRefKeyLength.end - 1)
     } yield HashRefKey((h :: t).mkString)
 
   lazy val customIssueTypeId =
@@ -205,8 +205,14 @@ object RandomData {
   lazy val customFieldId =
     id map CustomField.Id
 
+  lazy val fieldRefKey =
+    for {
+      h <- Gen.lower
+      t <- Gen.charof('_', "", 'a' to 'z', '0' to '9').list.lim(AppConsts.fieldRefKeyLength.end - 1)
+    } yield FieldRefKey((h :: t).mkString)
+
   def customFieldText(art: Gen[ApplicableReqTypes]): Gen[CustomField.Text] =
-    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, hashRefKey, mandatory, art, alive)
+    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, fieldRefKey, mandatory, art, alive)
 
   def customField(art: Gen[ApplicableReqTypes]): Gen[CustomField] =
     Gen.oneofGC(customFieldText(art))
@@ -273,7 +279,7 @@ object RandomData {
       fieldId.option
 
     lazy val textFieldValues =
-      Gen.apply4(FP.TextFieldValues.apply)(shortText1, hashRefKey, mandatory, applicableReqTypes)
+      Gen.apply4(FP.TextFieldValues.apply)(shortText1, fieldRefKey, mandatory, applicableReqTypes)
 
     lazy val fieldValues: Gen[FP.Values] =
       Gen.oneofG(textFieldValues)
