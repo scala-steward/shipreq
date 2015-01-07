@@ -53,8 +53,8 @@ private[tags] object MainTable {
   val tg_fields = FieldSet3[TagGroup](_.name, _.mutexChildren, _.desc getOrElse "")(("", MutexChildren.Not, ""))
   val at_fields = FieldSet3[ApplicableTag](_.name, _.key.value, _.desc getOrElse "")(("", "", ""))
 
-  val tg_storesAndState = NewAndSavedStores.fields(tg_fields).keyedBy[Id]
-  val at_storesAndState = NewAndSavedStores.fields(at_fields).keyedBy[Id]
+  val tg_stores = NewAndSavedStores.fields(tg_fields).keyedBy[Id]
+  val at_stores = NewAndSavedStores.fields(at_fields).keyedBy[Id]
 
   type TreeState = Multimap[Id, Vector, Id]
 
@@ -68,8 +68,8 @@ private[tags] object MainTable {
   }
 
   case class State(showDeleted: Boolean,
-                   tg_state: tg_storesAndState.State,
-                   at_state: at_storesAndState.State,
+                   tg_state: tg_stores.State,
+                   at_state: at_stores.State,
                    tree: TreeState,
                    newSel: TagType,
                    detailRow: Option[DetailPaneState]) {
@@ -100,17 +100,17 @@ private[tags] object MainTable {
     val _detailRowSelChild  = _detailRow ^<-? some ^|-> DetailPaneState._childAddSel
   }
 
-  type S = State
+  type S  = State
   type ST = ReactST[IO, S, Unit]
-  val ST = ReactS.FixT[IO, S]
+  val  ST = ReactS.FixT[IO, S]
 
-  val tg_storesAndStateS = tg_storesAndState.contramap(State._tg_state)
-  val at_storesAndStateS = at_storesAndState.contramap(State._at_state)
+  val tg_storesS = tg_stores.contramap(State._tg_state)
+  val at_storesS = at_stores.contramap(State._at_state)
 
   def storesForType(t: TagType): NewAndSavedStores[S, Id, _ <: Tag, _] =
     t match {
-      case TagType.Group      => tg_storesAndStateS
-      case TagType.Applicable => at_storesAndStateS
+      case TagType.Group      => tg_storesS
+      case TagType.Applicable => at_storesS
     }
 
   val eachTypesStores = TagType.values map storesForType
@@ -124,8 +124,8 @@ private[tags] object MainTable {
       case t: ApplicableTag => ats += t
     }
     State(p.showDeleted,
-      tg_state  = tg_storesAndState.initState(_.initStateS(tgs.result(), _.id)),
-      at_state  = at_storesAndState.initState(_.initStateS(ats.result(), _.id)),
+      tg_state  = tg_stores.initState(_.initStateS(tgs.result(), _.id)),
+      at_state  = at_stores.initState(_.initStateS(ats.result(), _.id)),
       tree      = Multimap(tagtree.mapValues(_.children)),
       newSel    = TagType.Applicable,
       detailRow = None)
@@ -150,8 +150,8 @@ private[tags] object MainTable {
       eachTypesStores.foldLeft(State._tree.modify(_ delkv i))((f, s) => f compose s.s.remove(i))(s),
     (s, i, d) => {
       val s2 = d.tag match {
-        case t: TagGroup      => tg_storesAndStateS.s.set(i, t)(s)
-        case t: ApplicableTag => at_storesAndStateS.s.set(i, t)(s)
+        case t: TagGroup      => tg_storesS.s.set(i, t)(s)
+        case t: ApplicableTag => at_storesS.s.set(i, t)(s)
       }
       State._tree.modify(PovRelations.trustedApply1(d.rels, i, _))(s2)
     })
@@ -178,22 +178,23 @@ private[tags] object MainTable {
   def getTag(id: Id): S => Option[Tag] =
     s => eachTypesStores.foldLeft(none[Tag])(_ orElse _.s.getO(id)(s).map(_.p))
 
+  def validatorState(s: S, cd: ClientData, k: Option[Id]): V.S = {
+    val ts: HashRefKeyVS.Data[Id] =
+      (k, s.tagStream.map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
+
+    val is: HashRefKeyVS.Data[CustomIssueType.Id] = // TODO cacheable
+      (None, cd.project.customIssueTypes.data.values.toStream
+        .map(i => (i.id.some, i.key)))
+
+    (s.tagStream, HashRefKeyVS(ts, is))
+  }
+
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
     val crudIO = CrudIO(Tag, TagCrud)(c.props.cp, c.props.remote, c.props.clientData)
 
     def validatorState(k: Option[Id]): S => V.S =
-      s => {
-        val cd = c.props.clientData
-
-        val ts: HashRefKeyVS.Data[Id] =
-          (k, s.tagStream.map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
-        val is: HashRefKeyVS.Data[CustomIssueType.Id] = // TODO cacheable
-          (None, cd.project.customIssueTypes.data.values.toStream
-            .map(i => (i.id.some, i.key)))
-
-        (s.tagStream, HashRefKeyVS(ts, is))
-      }
+      MainTable.validatorState(_, c.props.clientData, k)
 
     def newTagControlProps =
       NewTagControl.Props(
@@ -204,8 +205,11 @@ private[tags] object MainTable {
     def onCreate: IO[Unit] =
       c.modStateIO(s => storesForType(s.newSel).n.enableEdit(s))
 
-    val headerRow =
-      CfgTable.header(List(FieldNames.name, FieldNames.hashRefKey, FieldNames.mutexChildren, FieldNames.desc))
+    val headerRow = CfgTable.header(List(
+      FieldNames.name,
+      FieldNames.hashRefKey,
+      FieldNames.mutexChildren,
+      FieldNames.desc))
 
     def abortNewButton =
       <.button(
@@ -220,71 +224,6 @@ private[tags] object MainTable {
           case _                    => DetailPaneState(id, None, None).some
         }
       }
-
-    type Indenter = ReactTag => ReactTag
-    type F = (String, Indenter) => ReactElement
-    @inline def F(f: F): F = f
-
-    abstract class TagSubtypeRenderer[T <: Tag, I, B, D, V](
-        final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
-        final val stores: NewAndSavedStores[S, Id, T, I]) {
-      type TagT = T
-
-      val editable = editor.editableByRowStatus(c)
-
-      val deletion =
-        Persistence.asyncDeletionS(stores.s)(_.alive, crudIO._deleteIO, c runState _)
-
-      def ei(s: S, r: stores.s.Row): editor.Input = {
-        val a = (validatorState(r.p.id.some)(s), r.i)
-        EditorI(a, "", editable(r.status))
-      }
-
-      def ei(s: S, r: stores.n.Row): editor.Input = {
-        val a = (validatorState(None)(s), r.i)
-        EditorI(a, "", editable(r.status))
-      }
-
-      def renderNew  (s: S, r: stores.n.Row): ReactElement
-      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactElement
-      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement
-
-      val unusedField: ReactNode = "-"
-
-      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
-        val focus = oid.map(id =>
-          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
-        <.tr(
-          ^.key := key,
-          ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
-          <.td(^.cls := "name", name),
-          <.td(refkey),
-          <.td(mutexChildren),
-          <.td(^.cls := "desc", desc),
-          <.td(
-            focus.map(_.component),
-            UI.rowStatusCtrls(rs, ctrls)))
-      }
-
-      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
-        rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
-
-      def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
-        val tag = row.p
-        def key = s"$keyp.${tag.id.value}"
-        tag.alive match {
-          case Alive => renderAlive(s, indent, key)(row)
-          case Dead  => renderDead (s, indent, key)(row.status, tag)
-        }
-      }
-
-      def all(s: S): Stream[(Id, F)] =
-        stores.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
-
-      def newRow(s: S): Option[ReactElement] =
-        stores.n.get(s).map(renderNew(s, _))
-
-    } // end TagSubtypeRenderer
 
     def renderDeadDesc(d: Option[String]): ReactNode =
       d getOrElse[String] ""
@@ -328,10 +267,76 @@ private[tags] object MainTable {
           childSel  = c _setStateL State._detailRowSelChild ))
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Subtype
+
+    type Indenter = ReactTag => ReactTag
+    type F = (String, Indenter) => ReactElement
+    @inline def F(f: F): F = f
+
+    abstract class SubtypeRenderer[T <: Tag, I, B, D, V](
+        final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
+        final val stores: NewAndSavedStores[S, Id, T, I]) {
+
+      val editable = editor.editableByRowStatus(c)
+
+      val deletion =
+        Persistence.asyncDeletionS(stores.s)(_.alive, crudIO._deleteIO, c runState _)
+
+      def ei(s: S, r: stores.s.Row): editor.Input = {
+        val a = (validatorState(r.p.id.some)(s), r.i)
+        EditorI(a, "", editable(r.status))
+      }
+
+      def ei(s: S, r: stores.n.Row): editor.Input = {
+        val a = (validatorState(None)(s), r.i)
+        EditorI(a, "", editable(r.status))
+      }
+
+      def renderNew  (s: S, r: stores.n.Row): ReactElement
+      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactElement
+      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: T): ReactElement
+
+      val unusedField: ReactNode = "-"
+
+      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
+        val focus = oid.map(id =>
+          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
+        <.tr(
+          ^.key := key,
+          ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
+          <.td(^.cls := "name", name),
+          <.td(refkey),
+          <.td(mutexChildren),
+          <.td(^.cls := "desc", desc),
+          <.td(
+            focus.map(_.component),
+            UI.rowStatusCtrls(rs, ctrls)))
+      }
+
+      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
+        rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
+
+      def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
+        val tag = row.p
+        def key = s"$keyp.${tag.id.value}"
+        tag.alive match {
+          case Alive => renderAlive(s, indent, key)(row)
+          case Dead  => renderDead (s, indent, key)(row.status, tag)
+        }
+      }
+
+      def all(s: S): Stream[(Id, F)] =
+        stores.s.getAll(s).map(row => row.p.id -> renderRow(s, row))
+
+      def newRow(s: S): Option[ReactElement] =
+        stores.n.get(s).map(renderNew(s, _))
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // TagGroup
 
     val tg_editor = {
-      @inline def stores = tg_storesAndStateS
+      @inline def stores = tg_storesS
       def crudValues(u: V.tagGroup._V): TagCrud.V = {
         val (name, mutexChildren, desc) = u
         \&/.This(TagProtocol.TagGroupValues(name, desc, mutexChildren))
@@ -346,7 +351,7 @@ private[tags] object MainTable {
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
     }
 
-    val tg_renderer = new TagSubtypeRenderer(tg_editor, tg_storesAndStateS) {
+    val tg_renderer = new SubtypeRenderer(tg_editor, tg_storesS) {
       override def renderNew(s: S, row: stores.n.Row): ReactElement = {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, unusedField, mutexChildren, desc)
@@ -356,7 +361,7 @@ private[tags] object MainTable {
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, mutexChildren, desc)(deletion.button(t.id, SoftDel))
       }
-      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement =
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagGroup): ReactElement =
         rowTemplate(s, t.id, rs, key)(indent(<.span(t.name)), unusedField, "TODO", renderDeadDesc(t.desc))(deletion.button(t.id, Restore))
     }
 
@@ -364,7 +369,7 @@ private[tags] object MainTable {
     // ApplicableTag
 
     val at_editor = {
-      @inline def stores = at_storesAndStateS
+      @inline def stores = at_storesS
       def crudValues(u: V.applTag._V): TagCrud.V = {
         val (name, key, desc) = u
         \&/.This(TagProtocol.ApplicableTagValues(name, desc, key))
@@ -379,7 +384,7 @@ private[tags] object MainTable {
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
     }
 
-    val at_renderer = new TagSubtypeRenderer(at_editor, at_storesAndStateS) {
+    val at_renderer = new SubtypeRenderer(at_editor, at_storesS) {
       override def renderNew(s: S, row: stores.n.Row): ReactElement = {
         val (name, refkey, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, refkey, unusedField, desc)
@@ -389,7 +394,7 @@ private[tags] object MainTable {
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), refkey, unusedField, desc)(deletion.button(t.id, SoftDel))
       }
-      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagT): ReactElement =
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: ApplicableTag): ReactElement =
         rowTemplate(s, t.id, rs, key)(indent(<.span(t.name)), t.key.value, unusedField, renderDeadDesc(t.desc))(deletion.button(t.id, Restore))
     }
 
