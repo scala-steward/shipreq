@@ -94,44 +94,60 @@ object Prop {
     })
 
   /**
-   * Test that A's Cs form a subset of (A's) Bs.
-   * Detect illegal values.
+   * Test that all of A's Cs are on a whitelist.
    */
-  @inline def subset                 [A](name: String) = new SubsetB[A](name)
-  @inline def prohibitIllegalElements[A](name: String) = new SubsetB[A](name)
-  final class SubsetB[A](val name: String) extends AnyVal {
-    def apply[B, C](legalSuperset: A => Set[B], testData: A => Traversable[C])(implicit ev: C <:< B): Prop[A] =
-      atom[A](name, a => {
-        val legal = legalSuperset(a)
-        val found = testData(a)
-        val bad   = found.foldLeft(Set.empty[C])((q, c) => if (legal contains c) q else q + c)
-        setMembershipResult(a, "Legal", legal, found, "Illegal", bad)
-      })
+  @inline def whitelist[A](name: String) = new WhitelistB[A](name)
+  final class WhitelistB[A](val name: String) extends AnyVal {
+    def apply[B, C](whitelist: A => Set[B], testData: A => Traversable[C])(implicit ev: C <:< B): Prop[A] =
+      setTest(name, true, "Whitelist", whitelist, "Found    ", testData, "Illegal  ")
   }
 
   /**
-   * Test that A's Cs form a superset of (A's) Bs.
-   * Detect missing values.
+   * Test that none of A's Cs are on a blacklist.
    */
-  @inline def superset               [A](name: String) = new SupersetB[A](name)
-  @inline def prohibitMissingElements[A](name: String) = new SupersetB[A](name)
-  final class SupersetB[A](val name: String) extends AnyVal {
-    def apply[B, C](requiredSubset: A => Traversable[B], testData: A => Set[C])(implicit ev: B <:< C): Prop[A] =
+  @inline def blacklist[A](name: String) = new BlacklistB[A](name)
+  final class BlacklistB[A](val name: String) extends AnyVal {
+    def apply[B, C](blacklist: A => Set[B], testData: A => Traversable[C])(implicit ev: C <:< B): Prop[A] =
+      setTest(name, false, "Blacklist", blacklist, "Found    ", testData, "Illegal  ")
+  }
+
+  /**
+   * Test that all (A's) Bs are present in A's Cs.
+   */
+  @inline def allPresent[A](name: String) = new AllPresentB[A](name)
+  final class AllPresentB[A](val name: String) extends AnyVal {
+    def apply[B, C](requiredSubset: A => Set[B], testData: A => Traversable[C])(implicit ev: B <:< C): Prop[A] =
       atom[A](name, a => {
-        val required = requiredSubset(a)
-        val found    = testData(a)
-        val missing  = required.foldLeft(Set.empty[B])((q, b) => if (found contains b) q else q + b)
-        setMembershipResult(a, "Required", required, found, "Missing", missing)
+        val bs  = requiredSubset(a)
+        val cs1 = testData(a)
+        val cs2 = cs1.toSet
+        val rs = bs.filterNot(cs2 contains _)
+        setMembershipResult(a, "Required", bs, "Found   ", cs1, "Missing ", rs)
       })
   }
 
   private[this] def fmtSet(s: Set[_]): String =
     s.toStream.map(_.toString).sorted.distinct.mkString("{", ", ", "}")
 
-  private[this] def setMembershipResult(input: Any, expectName: String, expect: Traversable[_], found: Traversable[_],
+  private[this] def setTest[A, B, C](name: String, expect: Boolean,
+                                     bsName: String, getBs: A => Set[B],
+                                     csName: String, getCs: A => Traversable[C],
+                                     failureName: String)(implicit ev: C <:< B): Prop[A] =
+    atom[A](name, a => {
+      val bs = getBs(a)
+      val cs = getCs(a)
+      val rs = cs.foldLeft(Set.empty[C])((q, c) => if (bs.contains(c) == expect) q else q + c)
+        setMembershipResult(a, bsName, bs, csName, cs, failureName, rs)
+    })
+
+
+
+  private[this] def setMembershipResult(input: Any,
+                                        asName: String, as: Traversable[_],
+                                        bsName: String, bs: Traversable[_],
                                         failureName: String, problems: Set[_]): FailureReasonO =
     if (problems.isEmpty)
       None
     else
-      Some(s"$input\n$expectName: (${expect.size}) $expect\nFound: (${found.size}) $found\n$failureName: ${fmtSet(problems)}")
+      Some(s"$input\n$asName: (${as.size}) $as\n$bsName: (${bs.size}) $bs\n$failureName: ${fmtSet(problems)}")
 }

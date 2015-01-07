@@ -16,12 +16,32 @@ object PropTest extends TestSuite {
     def <<(prev: Tst) = prev >> this
   }
 
+  def assertContains(actual: String, substr: String): Unit =
+    if (!actual.contains(substr)) {
+      println(s"\nExpected to find [$substr] in [$actual]\n")
+      assert(false)
+    }
+
   val sep = "="*120
-  def assertEq[A: Equal](a: A, e: A): Unit = {
-    val actual = a
-    val expect = e
-    assert(actual ≟ expect)
-  }
+  def assertEq[A: Equal](actual: A, expect: A): Unit =
+    assertEq(None, actual, expect)
+
+  def assertEq[A: Equal](name: String, actual: A, expect: A): Unit =
+    assertEq(Some(name), actual, expect)
+
+  def assertEq[A: Equal](name: Option[String], actual: A, expect: A): Unit =
+    if (actual ≠ expect) {
+      println()
+      name.foreach(n => println(s">>>>>>> $n"))
+      val as = actual.toString
+      val es = expect.toString
+      if ((as + es) contains "\n")
+        println(s"actual: ↙[\n$as]\nexpect: ↙[\n$es]")
+      else
+        println(s"actual: [$as]\nexpect: [$es]")
+      println()
+      assert(false)
+    }
 
   val anyEq = Equal.equalA[Any]
 
@@ -43,6 +63,7 @@ object PropTest extends TestSuite {
   def failureTreeIs(e: String)                     = failureTree(a => assertEq(a, e))
   def report       (f: String => Unit)             = Tst(i => v => f(v.report))
   def reportIs     (e: String)                     = report(a => assertEq(a, e))
+  def reportHas    (e: String)                     = report(a => assertContains(a, e))
   def failSimple   (n: String)                     = ko >> name(n) >> inputA
   def failRoot     (n: String)                     = failSimple(n) >> rootCause
 
@@ -185,6 +206,52 @@ object PropTest extends TestSuite {
           |     └─ mod3
         """.stripMargin.trim))
       }
+    }
+    'whitelist {
+      val p = Prop.whitelist[List[Int]]("whitelist!")(_ => Set(1,2,3,7), identity)
+      test(p, Nil, ok)
+      test(p, List(1,1,2), ok)
+      test(p, List(1,1,2,8,8,9), ko >> reportHas(
+        """
+          |Root causes:
+          |  1 failed axioms, 1 causes of failure.
+          |  └─ whitelist!
+          |     └─ List(1, 1, 2, 8, 8, 9)
+          |        Whitelist: (4) Set(1, 2, 3, 7)
+          |        Found    : (6) List(1, 1, 2, 8, 8, 9)
+          |        Illegal  : {8, 9}
+        """.stripMargin.trim))
+    }
+    'blacklist {
+      val p = Prop.blacklist[List[Int]]("blacklist!")(_ => Set(9,5,6), identity)
+      test(p, Nil, ok)
+      test(p, List(1,1,2), ok)
+      test(p, List(5,5,2,8,8,9), ko >> reportHas(
+        """
+          |Root causes:
+          |  1 failed axioms, 1 causes of failure.
+          |  └─ blacklist!
+          |     └─ List(5, 5, 2, 8, 8, 9)
+          |        Blacklist: (3) Set(9, 5, 6)
+          |        Found    : (6) List(5, 5, 2, 8, 8, 9)
+          |        Illegal  : {5, 9}
+        """.stripMargin.trim))
+    }
+    'allPresent {
+      val p = Prop.allPresent[List[Int]]("allPresent!")(_ => Set(1,2,3,0), identity)
+      test(p, List(1,1,2,5), ko >> reportHas(
+        """
+          |Root causes:
+          |  1 failed axioms, 1 causes of failure.
+          |  └─ allPresent!
+          |     └─ List(1, 1, 2, 5)
+          |        Required: (4) Set(1, 2, 3, 0)
+          |        Found   : (4) List(1, 1, 2, 5)
+          |        Missing : {0, 3}
+        """.stripMargin.trim))
+      test(p, Nil, ko)
+      test(p, List(1,3,2,0), ok)
+      test(p, List(1,3,2,0,6,7,8), ok)
     }
   }
 }

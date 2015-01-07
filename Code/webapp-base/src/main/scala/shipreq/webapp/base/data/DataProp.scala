@@ -28,8 +28,8 @@ object DataProp {
 
     // starting to overlap with validation....
     lazy val mnemonicStatic =
-      Prop.test[CustomReqType]("mnemonic doesn't overlap with static",
-        a => (a.oldMnemonics + a.mnemonic).intersect(StaticReqType.mnemonics).isEmpty)
+      Prop.blacklist[CustomReqType]("mnemonic doesn't overlap with static")(
+        _ => StaticReqType.mnemonics, a => a.oldMnemonics + a.mnemonic)
 
     lazy val all = mnemonicStatic ∧ reqType.subst
   }
@@ -71,9 +71,7 @@ object DataProp {
         }))
 
     def orderHasAllUndeletableStaticFields =
-      Prop.prohibitMissingElements[FieldSet]("order ⊇ undeletable static")(
-        _ => StaticField.notDeletable,
-        _.order.toSet)
+      Prop.allPresent[FieldSet]("order ⊇ undeletable static")(Function const StaticField.notDeletable.toSet, _.order)
 
     def fieldSet = "FieldSet" rename_: (
       uniqueNames ∧ uniqueKeys ∧
@@ -97,7 +95,7 @@ object DataProp {
       Tag.CycleDetectors.tagTree.noCycleProp("structure")
 
     def noDeadLinks =
-      Prop.subset[T]("ids refers to available tags")(_.keySet, _.vstreamf(_.children.toStream))
+      Prop.whitelist[T]("ids refers to available tags")(_.keySet, _.vstreamf(_.children.toStream))
 
     def tagTree =
       (uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
