@@ -145,8 +145,8 @@ private[fields] object MainTable {
     }
 
     // TODO staticDeletion doesn't handle failure (or lock row)
-    val staticDeletion = new Deletion[StaticField, Field.Id](
-      _ => Alive, protocol.deleteIO(_, _)(SuccessIO.nop, FailureIO.nop))
+    val staticDeletion = new Deletion[StaticField](
+        protocol.deleteIO(_, _)(SuccessIO.nop, FailureIO.nop))
 
     def validatorState(k: Option[CustomField.Id]): S => V.S =
       MainTable.validatorState(_, k)
@@ -255,8 +255,7 @@ private[fields] object MainTable {
 
       val editable = editor.editableByRowStatus(c)
 
-      val deletion =
-        Persistence.asyncDeletionS(stores.s)(_.alive, protocol.deleteIO, c runState _)
+      val deletion = Persistence.asyncDeletionS(stores.s)(protocol.deleteIO, c runState _)
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)

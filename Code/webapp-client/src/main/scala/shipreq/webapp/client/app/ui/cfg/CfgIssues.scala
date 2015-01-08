@@ -75,7 +75,7 @@ object CfgIssues {
 
     final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
       val crudIO = CrudIO(CustomIssueType, CustomIssueTypeCrud)(c.props.cp, c.props.remote, c.props.clientData)
-      val supp = TypicalSupp(storesAndState, crudIO)(c, _.alive)
+      val supp = TypicalSupp(storesAndState, crudIO)(c)
 
       def valState(k: Option[CustomIssueType.Id]) = validatorState(k, c.props.clientData)
 
@@ -108,7 +108,7 @@ object CfgIssues {
           _.key, rowRenderer,
           i => (valState(None)(c.state), i),
           k => (valState(k.some)(c.state), savedRowStoreS.getI(k)(c.state)),
-          supp.deletion,  _.showDeleted, c)
+          supp.deletion, _.alive, _.showDeleted, c)
         val headerRow = CfgTable.header(List(FieldNames.hashRefKey, FieldNames.desc))
         () => t.table(headerRow, Stream.empty)
       }

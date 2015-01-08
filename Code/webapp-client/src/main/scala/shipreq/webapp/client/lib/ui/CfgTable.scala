@@ -2,6 +2,7 @@ package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import scalaz.effect.IO
+import scalaz.syntax.equal._
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.webapp.base.data.{Alive, Dead, DataIdAux}
 import shipreq.webapp.base.data.DataImplicits._
@@ -17,11 +18,12 @@ object CfgTable {
                                    rr: RowRenderer[P, V, N],
                                    newRowA: I => A,
                                    savedRowA: K => A,
-                                   del: Deletion[P, K],
+                                   del: Deletion[K],
+                                   alive: P => Alive,
                                    showDeleted: S => Boolean,
                                    c: ComponentStateFocus[S])
                                   (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
-        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, showDeleted, c)
+        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, alive, showDeleted, c)
     }
 
   def typical[P, I, K <: TaggedLong](sas: TypicalStoresAndState[P, I, K]) = new {
@@ -29,14 +31,15 @@ object CfgTable {
     def apply[B, C, V](editor: Editor[A, B, IO, sas.S, C, IO[Unit], V]) = new {
       def apply[RowKey, N](rowkey: P => RowKey,
                            rr: RowRenderer[P, V, N],
-                           del: Deletion[P, K],
+                           del: Deletion[K],
+                           alive: P => Alive,
                            c: ComponentStateFocus[sas.S])
                           (implicit I: DataIdAux[P, K], O: Ordering[RowKey])
       : CfgTable[sas.S, K, P, I, A, B, C, V, RowKey, N] = {
           def rowA(k: Option[K], i: I): editor.InputA = (sas.validatorInput(k)(c.state), i)
           def newRowA  (i: I)  = rowA(None, i)
           def savedRowA(id: K) = rowA(Some(id), sas.savedRowStoreS.getI(id)(c.state))
-          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, _.showDeleted, c)
+          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, alive, _.showDeleted, c)
         }
       }
     }
@@ -72,7 +75,8 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
                                                                       rr: CfgTable.RowRenderer[P, V, R],
                                                                       newRowA: I => A,
                                                                       savedRowA: K => A,
-                                                                      deletion: Deletion[P, K],
+                                                                      deletion: Deletion[K],
+                                                                      alive: P => Alive,
                                                                       showDeleted: S => Boolean,
                                                                       c: ComponentStateFocus[S])
                                                                      (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
@@ -85,6 +89,9 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
   private[this] implicit def endofToReactST(f: S => S) = ST modT f
 
   private[this] val editable = editor.editableByRowStatus(c)
+
+  private[this] val rowFilterAlive: savedStore.Row => Boolean =
+    r => alive(r.p) ≟ Alive
 
   private[this] def renderRow(a: A, rs: RowStatus): V =
     editor render EditorI(a, "", editable(rs))
@@ -121,9 +128,9 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
   def savedRows: RowStream = {
     var rs = savedStore.getAll(c.state)
     if (!showDeleted(c.state))
-      rs = rs.filter(r => deletion.filterAlive(r.p))
+      rs = rs.filter(rowFilterAlive)
     rs.map(r => {
-      val el = deletion.alive(r.p) match {
+      val el = alive(r.p) match {
         case Alive => savedLiveRow(r.status, r.p)
         case Dead  => savedDeadRow(r.status, r.p)
       }

@@ -186,10 +186,9 @@ object Persistence {
   }
 
 
-  def asyncDeletionS[S, K, P](store: SavedRowStore[S, K, P, _])
-                             (alive: P => Alive,
-                              deleteIO: (K, DeletionAction) => (SuccessIO, FailureIO) => IO[Unit],
-                              realise: Realise[S]): Deletion[P, K] =
-    new Deletion[P, K](alive, (id, a) =>
+  def asyncDeletionS[S, K](store: SavedRowStore[S, K, _, _])
+                          (deleteIO: (K, DeletionAction) => (SuccessIO, FailureIO) => IO[Unit],
+                           realise: Realise[S]): Deletion[K] =
+    new Deletion[K]((id, a) =>
       realise(asyncDelete(deleteIO(id, a), realise, store.setStatusST[IO](id))))
 }

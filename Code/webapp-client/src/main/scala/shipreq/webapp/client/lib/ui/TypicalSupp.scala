@@ -15,12 +15,11 @@ trait TypicalSupp[P, I, K, U] {
   val sas: TypicalStoresAndState[P, I, K]
   protected val realise: Realise[sas.S]
   protected val crudIO: CrudIO[P, K, U, _]
-  protected val alive: P => Alive
 
   import sas._
 
   lazy val deletion =
-    Persistence.asyncDeletionS(sas.savedRowStoreS)(alive, crudIO._deleteIO, realise)
+    Persistence.asyncDeletionS(sas.savedRowStoreS)(crudIO._deleteIO, realise)
 
   def saveNeed[B: Equal](extract: P => B) =
     SaveNeed.cmpToExtract[P, B](extract)
@@ -47,13 +46,11 @@ trait TypicalSupp[P, I, K, U] {
 object TypicalSupp {
   @inline def apply[P, I, K, U](_sas: TypicalStoresAndState[P, I, K],
                                 _crudIO: CrudIO[P, K, U, _])
-                               (_c: ComponentStateFocus[_sas.S],
-                                _alive: P => Alive)
+                               (_c: ComponentStateFocus[_sas.S])
       : TypicalSupp[P, I, K, U] {val sas: _sas.type} =
     new TypicalSupp[P, I, K, U] {
       override val sas: _sas.type = _sas
       override protected val realise: Realise[sas.S] = _c.runState(_)
       override protected val crudIO = _crudIO
-      override protected val alive = _alive
     }
 }

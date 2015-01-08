@@ -282,7 +282,7 @@ private[tags] object MainTable {
       val editable = editor.editableByRowStatus(c)
 
       val deletion =
-        Persistence.asyncDeletionS(stores.s)(_.alive, crudIO._deleteIO, c runState _)
+        Persistence.asyncDeletionS(stores.s)(crudIO._deleteIO, c runState _)
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)

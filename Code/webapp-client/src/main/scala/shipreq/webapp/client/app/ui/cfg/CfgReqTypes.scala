@@ -43,7 +43,7 @@ object CfgReqTypes {
   // ===================================================================================================================
   final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
     val crudIO = CrudIO(CustomReqType, CustomReqTypeCrud)(c.props.cp, c.props.remote, c.props.clientData)
-    val supp = TypicalSupp(storesAndState, crudIO)(c, _.alive)
+    val supp = TypicalSupp(storesAndState, crudIO)(c)
 
     val rowE = {
       val mnemonicE = Editors.textInputEditor.applyValidator(V.mnemonicS)
@@ -76,7 +76,7 @@ object CfgReqTypes {
           }
         }
 
-      val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, supp.deletion, c)
+      val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, supp.deletion, _.alive, c)
 
       val headerRow = CfgTable.header(List("Mnemonic", "Name", "Implication Required"))
 
