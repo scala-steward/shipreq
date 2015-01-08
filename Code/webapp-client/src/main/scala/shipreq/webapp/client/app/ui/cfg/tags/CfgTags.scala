@@ -270,7 +270,7 @@ private[tags] object MainTable {
     // Subtype
 
     type Indenter = ReactTag => ReactTag
-    type F = (String, Indenter) => ReactElement
+    type F = (String, Indenter) => ReactTag
     @inline def F(f: F): F = f
 
     val unusedField: ReactNode = "-"
@@ -295,10 +295,12 @@ private[tags] object MainTable {
       }
 
       def renderNew  (s: S, r: stores.n.Row): ReactElement
-      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactElement
-      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: T): ReactElement
+      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactTag
+      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: T): ReactTag
 
-      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)(ctrls: => TagMod): ReactElement = {
+      def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)
+                     (name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)
+                     (ctrls: => TagMod): ReactTag = {
         val focus = oid.map(id =>
           RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
         <.tr(
@@ -313,7 +315,7 @@ private[tags] object MainTable {
             UI.rowStatusCtrls(rs, ctrls)))
       }
 
-      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
+      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactTag =
         rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
 
       def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
@@ -321,7 +323,7 @@ private[tags] object MainTable {
         def key = s"$keyp.${tag.id.value}"
         tag.alive match {
           case Alive => renderAlive(s, indent, key)(row)
-          case Dead  => renderDead (s, indent, key)(row.status, tag)
+          case Dead  => renderDead (s, indent, key)(row.status, tag)(^.cls := "dead")
         }
       }
 
@@ -352,12 +354,12 @@ private[tags] object MainTable {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, unusedField, mutexChildren, desc)
       }
-      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, mutexChildren, desc)(deletion.button(t.id, SoftDel))
       }
-      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagGroup): ReactElement =
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagGroup): ReactTag =
         rowTemplate(s, t.id, rs, key)(indent(<.span(t.name)), unusedField, "TODO", renderDeadDesc(t.desc))(deletion.button(t.id, Restore))
     }
 
@@ -381,12 +383,12 @@ private[tags] object MainTable {
         val (name, refkey, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, refkey, unusedField, desc)
       }
-      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactElement = {
+      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, refkey, desc) = editor render ei(s, row)
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), refkey, unusedField, desc)(deletion.button(t.id, SoftDel))
       }
-      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: ApplicableTag): ReactElement =
+      override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: ApplicableTag): ReactTag =
         rowTemplate(s, t.id, rs, key)(indent(<.span(t.name)), t.key.value, unusedField, renderDeadDesc(t.desc))(deletion.button(t.id, Restore))
     }
 
