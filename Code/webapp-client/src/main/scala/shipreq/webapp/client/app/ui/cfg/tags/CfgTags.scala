@@ -190,20 +190,20 @@ private[tags] object MainTable {
   }
 
   // ===================================================================================================================
-  final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
-    val crudIO = CrudIO(Tag, TagCrud)(c.props.cp, c.props.remote, c.props.clientData)
+  final class Backend($: BackendScope[Props, S]) extends OnUnmount {
+    val crudIO = CrudIO(Tag, TagCrud)($.props.cp, $.props.remote, $.props.clientData)
 
     def validatorState(k: Option[Id]): S => V.S =
-      MainTable.validatorState(_, c.props.clientData, k)
+      MainTable.validatorState(_, $.props.clientData, k)
 
     def newTagControlProps =
       NewTagControl.Props(
-        c.state.newSel,
-        c._setStateL(State._newSel),
-        if (newRowActive(c.state)) None else Some(onCreate))
+        $.state.newSel,
+        $._setStateL(State._newSel),
+        if (newRowActive($.state)) None else Some(onCreate))
 
     def onCreate: IO[Unit] =
-      c.modStateIO(s => storesForType(s.newSel).n.enableEdit(s))
+      $.modStateIO(s => storesForType(s.newSel).n.enableEdit(s))
 
     val headerRow = CfgTable.header(List(
       FieldNames.name,
@@ -213,7 +213,7 @@ private[tags] object MainTable {
 
     def abortNewButton =
       <.button(
-        ^.onClick ~~> c.modStateIO(abortNew),
+        ^.onClick ~~> $.modStateIO(abortNew),
         "Cancel") // TODO sync all abort-new buttons
 
     def setDetail(w: Option[Id]): S => S =
@@ -236,7 +236,7 @@ private[tags] object MainTable {
     }
 
     def rows: TagMod = {
-      val s         = c.state
+      val s         = $.state
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(Map.empty[Id, F])(_ + _)
       val flatTree  = TagTree.flatten(s.tagTree)(s.tagFilter, FilterPolicy.OmitAnythingWithBadParent)
       val results   = JsArray.apply[ReactNode]()
@@ -256,15 +256,15 @@ private[tags] object MainTable {
     def render: ReactElement =
       <.div(
         NewTagControl.Component(newTagControlProps),
-        ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modify(b => !b))),
+        ShowDeletedToggler($.state.showDeleted, $ runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
           <.tbody(rows)
         ),
         DetailPaneFns.render(
-          c.state, crudIO.updateIO,
-          parentSel = c _setStateL State._detailRowSelParent,
-          childSel  = c _setStateL State._detailRowSelChild ))
+          $.state, crudIO.updateIO,
+          parentSel = $ _setStateL State._detailRowSelParent,
+          childSel  = $ _setStateL State._detailRowSelChild ))
 
     // -----------------------------------------------------------------------------------------------------------------
     // Subtype
@@ -279,10 +279,10 @@ private[tags] object MainTable {
         final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
         final val stores: NewAndSavedStores[S, Id, T, I]) {
 
-      val editable = editor.editableByRowStatus(c)
+      val editable = editor.editableByRowStatus($)
 
       val deletion =
-        Persistence.asyncDeletionS(stores.s)(crudIO._deleteIO, c runState _)
+        Persistence.asyncDeletionS(stores.s)(crudIO._deleteIO, $ runState _)
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)
@@ -302,7 +302,7 @@ private[tags] object MainTable {
                      (name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)
                      (ctrls: => TagMod): ReactTag = {
         val focus = oid.map(id =>
-          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
+          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), $ _modStateIO setDetail))
         <.tr(
           ^.key := key,
           ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
@@ -343,7 +343,7 @@ private[tags] object MainTable {
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    = Persistence.asyncSaveNS(V.tagGroup map toValuesT, stores, crudIO.createIO)(crudIO.updateIO,
         (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.mutexChildren, t.desc)),
-        validatorState, c runState _)
+        validatorState, $ runState _)
       Editor.merge3S(tg_fields, nameE, mutexChildrenE, descE).tupleI.zoomU[S]
         .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
@@ -372,7 +372,7 @@ private[tags] object MainTable {
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    = Persistence.asyncSaveNS(V.applTag map toValuesT, stores, crudIO.createIO)(crudIO.updateIO,
         (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.key, t.desc)),
-        validatorState, c runState _)
+        validatorState, $ runState _)
       Editor.merge3S(at_fields, nameE, keyE, descE).tupleI.zoomU[S]
         .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)

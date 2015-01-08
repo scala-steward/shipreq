@@ -118,16 +118,16 @@ private[fields] object MainTable {
   val rowIdFromEditorInput: ((V.S, Any)) => Option[CustomField.Id] = _._1._2
 
   // ===================================================================================================================
-  final class Backend(c: BackendScope[Props, S]) extends OnUnmount {
+  final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
-    val clientData = c.props.clientData
+    val clientData = $.props.clientData
 
     def fieldOrder = clientData.project.fields.data.order
 
     object protocol {
       import FieldProtocol._, CfgAction._
-      val remote = c.props.remote
-      val cp     = c.props.cp
+      val remote = $.props.remote
+      val cp     = $.props.cp
 
       private def call(a: CfgAction): (SuccessIO, FailureIO) => IO[Unit] =
         (s, f) => cp.call(remote)(a, clientData.update(_) >> s.io, f)
@@ -152,7 +152,7 @@ private[fields] object MainTable {
     def validatorState(k: Option[CustomField.Id]): S => V.S =
       MainTable.validatorState(_, k)
 
-    val dndState = c.focusStateL(State._dnd)
+    val dndState = $.focusStateL(State._dnd)
 
     val headerRow = CfgTable.header(List(
       FieldNames.dndDragHandleHeader,
@@ -164,7 +164,7 @@ private[fields] object MainTable {
 
     def render =
       <.div(
-        ShowDeletedToggler(c.state.showDeleted, c runState ST.modT(State._showDeleted.modify(b => !b))),
+        ShowDeletedToggler($.state.showDeleted, $ runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
           <.tbody(renderFields)
@@ -172,8 +172,8 @@ private[fields] object MainTable {
 
     def renderFields: TagMod = {
       var content = fieldOrder.toStream
-        .flatMap(_.foldId[Stream[Field]](s => Stream(s), c.state.customFields.get(_).toStream))
-      if (!c.state.showDeleted)
+        .flatMap(_.foldId[Stream[Field]](s => Stream(s), $.state.customFields.get(_).toStream))
+      if (!$.state.showDeleted)
         content = content.filter(Field.filterAlive)
       content.toReactNodeArray(renderField)
     }
@@ -196,7 +196,7 @@ private[fields] object MainTable {
       renderField2(f, dragHandle)(outerAttr))
 
     def renderField2(gf: Field, dragHandle: ReactTag): ReactTag = gf match {
-      case f: CustomField.Text => text_renderer.render(c.state, dragHandle, f.id)
+      case f: CustomField.Text => text_renderer.render($.state, dragHandle, f.id)
       case s: StaticField      => renderStaticField(s, dragHandle)
     }
 
@@ -249,9 +249,9 @@ private[fields] object MainTable {
       final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
       final val stores: NewAndSavedStores[S, CustomField.Id, T, I]) {
 
-      val editable = editor.editableByRowStatus(c)
+      val editable = editor.editableByRowStatus($)
 
-      val deletion = Persistence.asyncDeletionS(stores.s)(protocol.deleteIO, c runState _)
+      val deletion = Persistence.asyncDeletionS(stores.s)(protocol.deleteIO, $ runState _)
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)
@@ -292,7 +292,7 @@ private[fields] object MainTable {
       val toValuesT = toValues.tupled
       val saveFn    = Persistence.asyncSaveNS2(V.text map toValuesT, stores, protocol.createIO)(protocol.updateValuesIO,
         SaveNeed.cmpToExtract(t => toValues(t.name, t.key, t.mandatory, t.reqTypes)),
-        _.id, validatorState, c runState _)
+        _.id, validatorState, $ runState _)
       Editor.merge4S(text_fields, nameE, refkeyE, mandatoryE, reqtypesE).tupleI.zoomU[S]
         .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
         .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
