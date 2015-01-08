@@ -258,7 +258,7 @@ private[fields] object MainTable {
 
     def renderRow(rs: RowStatus)(dragHandle: ReactTag, name: TagMod, ftype: FieldType, refkey: TagMod,
                                  mandatory: TagMod, reqtypes: TagMod, ctrls: => TagMod): ReactTag =
-      <.tr(^.cls := UI.rowStatusRowClass(rs), // TODO overwritten by DND
+      <.tr(^.cls := UI.rowStatusRowClass(rs),
         <.td(^.cls := "dndh", dragHandle),
         <.td(name),
         <.td(ftype.name),
@@ -319,7 +319,7 @@ private[fields] object MainTable {
         val tag = row.p
         tag.alive match {
           case Alive => renderAlive(s, dragHandle, row)
-          case Dead  => renderDead (s, dragHandle, row.status, tag)
+          case Dead  => renderDead (s, dragHandle, row.status, tag)(^.cls := "dead")
         }
       }
 

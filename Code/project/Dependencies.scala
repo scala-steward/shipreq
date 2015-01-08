@@ -41,7 +41,7 @@ object Deps {
 
     val sizzleJs = "org.webjars" % "sizzle" % "2.1.1"
 
-    object React extends Group("0.7.0", "com.github.japgolly.scalajs-react") {
+    object React extends Group("0.7.1", "com.github.japgolly.scalajs-react") {
       val core    = js("core")
       val test    = js("test")
       val scalaz  = js("ext-scalaz71")
