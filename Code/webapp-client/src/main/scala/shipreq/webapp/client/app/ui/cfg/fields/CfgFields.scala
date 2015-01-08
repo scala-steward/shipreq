@@ -57,9 +57,6 @@ private[fields] object MainTable {
                    text_state: text_stores.State,
                    dnd: DND.Parent.PState[Field]) {
 
-//    lazy val customFieldStream: Stream[CustomField] =
-//      customFieldStores.flatMap(_.s.getAllP(this).map(f => f: CustomField))
-
     lazy val customFields =
       customFieldStores.foldLeft(CustomField.IdAccess.emptyIMap)(_ ++ _.s.getAllP(this))
   }
@@ -176,16 +173,9 @@ private[fields] object MainTable {
     def renderFields: TagMod = {
       var content = fieldOrder.toStream
         .flatMap(_.foldId[Stream[Field]](s => Stream(s), c.state.customFields.get(_).toStream))
-
       if (!c.state.showDeleted)
         content = content.filter(Field.filterAlive)
-
       content.toReactNodeArray(renderField)
-
-      // TODO add to scalajs-react ?
-//      val array = new JsArray[ReactNode]()
-//      order.foreach(f => renderField(f).foreach(array push _))
-//      array
     }
 
     // TODO orderIO doesn't handle failure (or lock row)
@@ -209,14 +199,6 @@ private[fields] object MainTable {
       case f: CustomField.Text => text_renderer.render(c.state, dragHandle, f.id)
       case s: StaticField      => renderStaticField(s, dragHandle)
     }
-
-//    def renderField(fid: Field.Id): UndefOr[ReactElement] = fid match {
-//      case id: CustomField.Id =>
-//        c.state.customFields.get(id).orUndefined.map {
-//          case f: CustomField.Text => text_renderer.render(c.state, f.id)
-//        }
-//      case s: StaticField    => renderStaticField(s)
-//    }
 
     def renderStaticField(f: StaticField, dragHandle: ReactTag): ReactTag =
       renderRow(RowStatus.Sync)(
@@ -246,15 +228,6 @@ private[fields] object MainTable {
         case ISubset.All()    => "All."
       }
     }
-
-//    def renderCustomField(f: CustomField): ReactTag =
-//      renderRow(
-//        name      = f.name,
-//        ftype     = f.fieldType.name,
-//        refkey    = renderKeyO(f.keyO),
-//        mandatory = Editors.staticCheckbox(Mandatory from f.mandatory),
-//        reqtypes  = "TODO"
-//      )(^.key := f.id.value)
 
     def renderRow(rs: RowStatus)(dragHandle: ReactTag, name: TagMod, ftype: FieldType, refkey: TagMod,
                                  mandatory: TagMod, reqtypes: TagMod, ctrls: => TagMod): ReactTag =
@@ -293,23 +266,6 @@ private[fields] object MainTable {
 //      def renderNew  (s: S, r: stores.n.Row): ReactElement
       def renderAlive(s: S, dragHandle: ReactTag, r: stores.s.Row): ReactTag
       def renderDead (s: S, dragHandle: ReactTag, rs: RowStatus, t: T): ReactTag
-
-//      def rowTemplate(s: S, oid: UndefOr[CustomField.Id], rs: RowStatus, key: String)
-//                     (name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)
-//                     (ctrls: => TagMod): ReactElement = {
-//        val focus = oid.map(id =>
-//          RowDetailButton.Props.forRow(id)(s.detailRow.map(_.id), c _modStateIO setDetail))
-//        <.tr(
-//          ^.key := key,
-//          ^.classSet1(UI.rowStatusRowClass(rs), "focusrow" -> focus.exists(_.isActive)),
-//          <.td(^.cls := "name", name),
-//          <.td(refkey),
-//          <.td(mutexChildren),
-//          <.td(^.cls := "desc", desc),
-//          <.td(
-//            focus.map(_.component),
-//            UI.rowStatusCtrls(rs, ctrls)))
-//      }
 
 //      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
 //        rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
