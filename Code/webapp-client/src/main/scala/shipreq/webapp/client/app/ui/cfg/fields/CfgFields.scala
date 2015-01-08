@@ -20,8 +20,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
-import shipreq.webapp.base.protocol.DeletionAction._
-import shipreq.webapp.base.protocol.FieldProtocol
+import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
 import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
@@ -32,6 +31,7 @@ import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.DND
 import Field.ApplicableReqTypes
 import FieldProtocol.Delta
+import DeletionAction._
 
 object CfgFields {
   case class Props(cp: ClientProtocol, remote: FieldCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
@@ -139,6 +139,9 @@ private[fields] object MainTable {
 
 //      val updateOrderIO: (Field.Id, Position, SuccessIO, FailureIO) => IO[Unit] =
 //        (i, p, s, f) => call(UpdateOrder(i, p), s, f)
+
+      def deleteIO(i: Field.Id, a: DeletionAction) =
+        call(Delete(i, a))
     }
 
     def validatorState(k: Option[CustomField.Id]): S => V.S =
@@ -248,8 +251,8 @@ private[fields] object MainTable {
 
       val editable = editor.editableByRowStatus(c)
 
-//      val deletion =
-//        Persistence.asyncDeletionS(stores.s)(_.alive, crudIO._deleteIO, c runState _)
+      val deletion =
+        Persistence.asyncDeletionS(stores.s)(_.alive, protocol.deleteIO, c runState _)
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)
@@ -327,9 +330,8 @@ private[fields] object MainTable {
           refkey    = refkey,
           mandatory = mandatory,
           reqtypes  = reqtypes,
-          ctrls     = "TODO"
+          ctrls     = deletion.button(f.id, SoftDel)
         )(^.key := f.id.value)
-//        (deletion.button(t.id, SoftDel))
       }
 
       override def renderDead(s: S, rs: RowStatus, f: CustomField.Text): ReactElement =
@@ -339,9 +341,8 @@ private[fields] object MainTable {
           refkey    = f.key.value,
           mandatory = Editors.staticCheckbox(Mandatory from f.mandatory),
           reqtypes  = renderApReqTypes(f.reqTypes),
-          ctrls     = "TODO"
+          ctrls     = deletion.button(f.id, Restore)
         )(^.key := f.id.value)
-        // deletion.button(t.id, Restore)
     }
 
   }
