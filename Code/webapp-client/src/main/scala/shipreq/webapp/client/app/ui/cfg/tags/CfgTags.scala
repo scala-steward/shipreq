@@ -269,7 +269,7 @@ private[tags] object MainTable {
     // -----------------------------------------------------------------------------------------------------------------
     // Subtype
 
-    type Indenter = ReactTag => ReactTag
+    type Indenter = ReactNode => ReactNode
     type F = (String, Indenter) => ReactTag
     @inline def F(f: F): F = f
 

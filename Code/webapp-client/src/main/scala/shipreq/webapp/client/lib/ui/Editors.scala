@@ -11,9 +11,9 @@ object Editors {
   type ST   = ST.T[Unit]
   val nopST = ST.nop
 
-  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], ReactTag]
+  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], ReactNode]
 
-  def constSimpleEditor[I](v: ReactTag): SimpleEditor[I] =
+  def constSimpleEditor[I](v: ReactNode): SimpleEditor[I] =
     Editor(_ => v)
 
   @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nopST): CallbackH[I, IO, Unit, Unit] =
@@ -70,12 +70,12 @@ object Editors {
   val List(staticCheckboxOn, staticCheckboxOff) = List(true, false).map(b =>
     checkboxEditor render EditorI(b, "", None))
 
-  def staticCheckbox(checked: Boolean): ReactTag =
+  def staticCheckbox(checked: Boolean): ReactNode =
     if (checked) staticCheckboxOn else staticCheckboxOff
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,ReactTag], err: Option[String]): Editor[A,B,M,S,C,D,ReactTag] =
+  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,ReactNode], err: Option[String]): Editor[A,B,M,S,C,D,ReactNode] =
     Editor(i => <.div(
       editor render i,
       err.map(e => <.div(^.cls := "errorMsg", e))))

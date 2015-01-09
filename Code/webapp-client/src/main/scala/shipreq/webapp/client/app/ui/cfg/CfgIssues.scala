@@ -98,7 +98,7 @@ object CfgIssues {
 
       val table = {
         def rowRenderer =
-          new CfgTable.RowRenderer[CustomIssueType, rowE.View, (TagMod, TagMod)] {
+          new CfgTable.RowRenderer[CustomIssueType, rowE.View, (ReactNode, ReactNode)] {
             override def newRow     = identity
             override def savedRow   = (v, p) => v
             override def deletedRow = p => (p.key.value, TextMod.nonBlank from p.desc)

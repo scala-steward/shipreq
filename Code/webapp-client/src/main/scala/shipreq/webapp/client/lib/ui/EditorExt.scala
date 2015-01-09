@@ -6,9 +6,9 @@ import scalaz.effect.IO
 import shipreq.webapp.base.validation._
 
 abstract class EditorExt {
-  @inline implicit final def ___EditorExt_1    [A,B,M[_],S,C,D,V](e: Editor[A,B,M,S,C,D,V       ]): EditorExt.EditorExt_1    [A,B,M,S,C,D,V] = new EditorExt.EditorExt_1(e)
-  @inline implicit final def ___EditorExt_Tag  [A,B,M[_],S,C,D  ](e: Editor[A,B,M,S,C,D,ReactTag]): EditorExt.EditorExt_Tag  [A,B,M,S,C,D  ] = new EditorExt.EditorExt_Tag(e)
-  @inline implicit final def ___EditorExt_IITag[I  ,M[_],S,C,D  ](e: Editor[I,I,M,S,C,D,ReactTag]): EditorExt.EditorExt_IITag[I,  M,S,C,D  ] = new EditorExt.EditorExt_IITag(e)
+  @inline implicit final def ___EditorExt_1    [A,B,M[_],S,C,D,V](e: Editor[A,B,M,S,C,D,V        ]): EditorExt.EditorExt_1    [A,B,M,S,C,D,V] = new EditorExt.EditorExt_1(e)
+  @inline implicit final def ___EditorExt_Tag  [A,B,M[_],S,C,D  ](e: Editor[A,B,M,S,C,D,ReactNode]): EditorExt.EditorExt_Tag  [A,B,M,S,C,D  ] = new EditorExt.EditorExt_Tag(e)
+  @inline implicit final def ___EditorExt_IITag[I  ,M[_],S,C,D  ](e: Editor[I,I,M,S,C,D,ReactNode]): EditorExt.EditorExt_IITag[I,  M,S,C,D  ] = new EditorExt.EditorExt_IITag(e)
 }
 
 object EditorExt extends EditorExt {
@@ -78,35 +78,35 @@ object EditorExt extends EditorExt {
 
   }
 
-  final class EditorExt_Tag[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,ReactTag]) extends AnyVal {
+  final class EditorExt_Tag[A,B,M[_],S,C,D](val e: Editor[A,B,M,S,C,D,ReactNode]) extends AnyVal {
 
-    def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,ReactTag] =
+    def renderOptionalError(f: A => Option[String]): Editor[A,B,M,S,C,D,ReactNode] =
       Editor(i => Editors.renderWithError(e, f(i.data)) render i)
 
-    def wrapInLabel(f: (A, ReactTag) => TagMod): Editor[A,B,M,S,C,D,ReactTag] =
+    def wrapInLabel(f: (A, ReactNode) => TagMod): Editor[A,B,M,S,C,D,ReactNode] =
       Editor(i => <.label(f(i.data, e render i)))
 
-    def labelSuffix(f: A => TagMod): Editor[A,B,M,S,C,D,ReactTag] =
+    def labelSuffix(f: A => ReactNode): Editor[A,B,M,S,C,D,ReactNode] =
       wrapInLabel((a, i) => Seq(i, f(a)))
 
-    def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,ReactTag] =
+    def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,ReactNode] =
       renderOptionalError(i => v.correctAndValidateU(i).swap.toOption.map(_.toText))
 
-    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,ReactTag] =
+    def applyInputValidation[T, I](v: Validator[T, I, _, _])(s: A => T, i: A => I): Editor[A,B,M,S,C,D,ReactNode] =
       renderOptionalError(a => v.correctAndValidate(s(a), i(a)).swap.toOption.map(_.toText))
 
     def applyInputValidationL[T, I](v: Validator[T, A, _, _]) =
       e.strengthL[T].applyInputValidation(v)(_._1, _._2)
   }
 
-  final class EditorExt_IITag[I,M[_],S,C,D](val e: Editor[I,I,M,S,C,D,ReactTag]) extends AnyVal {
+  final class EditorExt_IITag[I,M[_],S,C,D](val e: Editor[I,I,M,S,C,D,ReactNode]) extends AnyVal {
 
-    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I,I,M,S,C,D,ReactTag] =
+    def applyValidatorU(v: ValidatorU[I, _, _]): Editor[I,I,M,S,C,D,ReactNode] =
       e.applyInputValidationU(v)
         .applyLiveCorrection(v)
         .applyPostCorrectionU(v.cp)
 
-    def applyValidator[T](v: Validator[T, I, _, _]): Editor[(T, I), I, M, S, C, D, ReactTag] =
+    def applyValidator[T](v: Validator[T, I, _, _]): Editor[(T, I), I, M, S, C, D, ReactNode] =
       e.applyInputValidationL(v)
         .applyLiveCorrection(v)
         .applyPostCorrection(v.cp)(_._1)
