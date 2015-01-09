@@ -3,23 +3,10 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
-import shipreq.base.util.ScalaExt._
 import UI._
+import SimpleEditor._
 
 object Editors {
-  val ST    = ReactS.FixT[IO, Unit]
-  type ST   = ST.T[Unit]
-  val nopST = ST.nop
-
-  type SimpleEditor[I] = Editor[I, I, IO, Unit, Unit, IO[Unit], ReactNode]
-
-  def constSimpleEditor[I](v: ReactNode): SimpleEditor[I] =
-    Editor(_ => v)
-
-  @inline private def callbackH[I](event: CallbackEvent[I], st: ST = nopST): CallbackH[I, IO, Unit, Unit] =
-    CallbackH(event, st, ())
-
-  // -------------------------------------------------------------------------------------------------------------------
 
   def textEditor(node: ReactTag): SimpleEditor[String] =
     Editor(ei => {
