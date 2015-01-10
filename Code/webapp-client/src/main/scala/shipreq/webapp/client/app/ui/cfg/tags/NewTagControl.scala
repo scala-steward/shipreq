@@ -5,7 +5,7 @@ import org.scalajs.dom.HTMLSelectElement
 import scalaz.effect.IO
 import shipreq.webapp.base.data.TagType
 
-private[tags] object NewTagControl {
+private[tags] object NewTagControl { // TODO Replace with SelectAction
 
   case class Props(selected: TagType, onChange: TagType => IO[Unit], onCreate: Option[IO[Unit]])
 
