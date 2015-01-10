@@ -4,10 +4,9 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra.OnUnmount
 import monocle.macros.Lenser
 import scala.language.reflectiveCalls
-import scalajs.js.{undefined, UndefOr, UndefOrOps, Array => JsArray, Any => JsAny}
+import scalajs.js.{undefined, UndefOr, Any => JsAny}
 import scalaz.effect.IO
-import scalaz.{Equal, Maybe, -\/, \/-}
-import scalaz.std.AllInstances._
+import scalaz.{Equal, Maybe, -\/, \/-, \/}
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
@@ -20,8 +19,8 @@ import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
 import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.app.ui.ShowDeletedToggler
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
+import shipreq.webapp.client.app.ui.{SelectAction, ShowDeletedToggler}
+import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.DND
@@ -45,8 +44,12 @@ private[fields] object MainTable {
 
   val text_stores = NewAndSavedStores.fields(text_fields).keyedBy[CustomField.Id]
 
+  /** The type of options in the combobox, from which users can create new fields. */
+  type NewSelType = StaticField \/ CustomFieldType
+
   case class State(showDeleted    : Boolean,
                    text_state     : text_stores.State,
+                   newFieldTypeSel: Option[NewSelType],
                    appReqTypeState: AppReqTypesEditor.S,
                    dnd            : DND.Parent.PState[Field]) {
 
@@ -58,6 +61,7 @@ private[fields] object MainTable {
     private[this] def l = Lenser[State]
     val _showDeleted      = l(_.showDeleted)
     val _text_state       = l(_.text_state)
+    val _newFieldTypeSel  = l(_.newFieldTypeSel)
     val _appReqTypeState  = l(_.appReqTypeState)
     val _dnd              = l(_.dnd)
 
@@ -84,8 +88,10 @@ private[fields] object MainTable {
     fs.customFields.values.foreach {
       case f: CustomField.Text => textFields += f
     }
-    State(p.showDeleted,
-      text_state = text_stores.initState(_.initStateS(textFields.result(), _.id)),
+    State(
+      showDeleted     = p.showDeleted,
+      text_state      = text_stores.initState(_.initStateS(textFields.result(), _.id)),
+      newFieldTypeSel = Some(\/-(CustomFieldType.Text)),
       AppReqTypesEditor initialState fs,
       DND.Parent.initialState)
   }
@@ -161,6 +167,60 @@ private[fields] object MainTable {
         call(Delete(i, a))
     }
 
+    object newFieldControl {
+      import SelectAction._
+
+      def name: NewSelType => String =
+        _.fold(_.name, _.name)
+
+      val Component = StaticProps[NewSelType]("Create", name).component
+
+      def apply() = {
+        val s = $.state
+
+        var actions = Vector.empty[Action[NewSelType]]
+
+        def addAction(value: NewSelType, invoke: IO[Unit]): Unit =
+          actions :+= Action(
+            value  = value,
+            select = Some($ modStateIO State._newFieldTypeSel.set(Some(value))),
+            invoke = Some(invoke))
+
+        // Add static fields
+        val missingStaticFields: Set[StaticField] =
+          (StaticField.values.list.toSet /: fieldOrder)((q, i) => i.foldId(q - _, _ => q))
+
+        missingStaticFields.foreach(f =>
+          addAction(-\/(f), staticInvoke(f)))
+
+        def staticInvoke(f: StaticField): IO[Unit] =
+          protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling
+
+        // Add custom field types
+        CustomFieldType.values.foreach(t =>
+          addAction(\/-(t), customInvoke(t)))
+
+        def customInvoke(t: CustomFieldType): IO[Unit] =
+          IO(t match {
+            case CustomFieldType.Text => $ modStateIO text_storesS.n.enableEdit
+          }).join
+
+        Component(SelectAction.Props(
+          disabled = customFieldStores.exists(_.n.editing(s)),
+          actions  = actions.sortBy(a => name(a.value)),
+          selected = s.newFieldTypeSel
+        ))
+      }
+
+      val abortNew: S => S =
+        customFieldStores.map(_.n.remove).reduce(_ compose _)
+
+      val abortButton =
+        <.button(
+          ^.onClick ~~> $.modStateIO(abortNew),
+          "Cancel") // TODO sync all abort-new buttons
+    }
+
     // TODO staticDeletion doesn't handle failure (or lock row)
     val staticDeletion = new Deletion[StaticField](
         protocol.deleteIO(_, _)(SuccessIO.nop, FailureIO.nop))
@@ -180,11 +240,17 @@ private[fields] object MainTable {
 
     def render =
       <.div(
+        newFieldControl(),
         ShowDeletedToggler($.state.showDeleted, $ runState ST.modT(State._showDeleted.modify(b => !b))),
         <.table(
           headerRow,
-          <.tbody(renderFields)
+          <.tbody(renderNewField, renderFields)
         ))
+
+    def renderNewField: Option[ReactElement] =
+      CustomFieldType.valueStream.map {
+        case CustomFieldType.Text => text_renderer.renderNewO($.state)
+      }.flatMap(_.toStream).headOption
 
     def renderFields: TagMod = {
       var content = fieldOrder.toStream
@@ -230,13 +296,13 @@ private[fields] object MainTable {
     def renderKeyO(k: Option[FieldRefKey]): TagMod =
       k.fold("-")(_.value)
 
-    def renderRow(rs: RowStatus)(dragHandle: ReactTag, name: TagMod, ftype: FieldType, refkey: TagMod,
+    def renderRow(rs: RowStatus)(dragHandle: UndefOr[ReactTag], name: TagMod, ftype: FieldType, refkey: TagMod,
                                  mandatory: TagMod, reqtypes: TagMod, ctrls: => TagMod): ReactTag =
       <.tr(^.cls := UI.rowStatusRowClass(rs),
         <.td(^.cls := "dndh", dragHandle),
-        <.td(name),
+        <.td(^.cls := "name", name),
         <.td(ftype.name),
-        <.td(refkey),
+        <.td(^.cls := "key", refkey),
         <.td(mandatory),
         <.td(reqtypes),
         <.td(UI.rowStatusCtrls(rs, ctrls)))
@@ -264,12 +330,13 @@ private[fields] object MainTable {
         EditorI(a, "", editable(r.status))
       }
 
-//      def renderNew  (s: S, r: stores.n.Row): ReactElement
+      def renderNew  (s: S, r: stores.n.Row): ReactElement
       def renderAlive(s: S, dragHandle: ReactTag, r: stores.s.Row): ReactTag
       def renderDead (s: S, dragHandle: ReactTag, rs: RowStatus, t: T): ReactTag
 
-//      def newRowTemplate(s: S, rs: RowStatus)(name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode): ReactElement =
-//        rowTemplate(s, undefined, rs, "new")(name, refkey, mutexChildren, desc)(abortNewButton)
+      def renderNewRow(rs: RowStatus)(name: TagMod, ftype: FieldType, refkey: TagMod, mandatory: TagMod, reqtypes: TagMod): ReactElement =
+        renderRow(rs)(undefined, name, ftype, refkey, mandatory, reqtypes, newFieldControl.abortButton)(
+          ^.cls := "new")
 
       def render(s: S, dragHandle: ReactTag, id: CustomField.Id): ReactTag = {
         val row = stores.s.get(id)(s)
@@ -280,8 +347,9 @@ private[fields] object MainTable {
         }
       }
 
-//      def newRow(s: S): Option[ReactElement] =
-//        stores.n.get(s).map(renderNew(s, _))
+      def renderNewO(s: S): Option[ReactElement] =
+        stores.n.get(s).map(renderNew(s, _))
+
     } // SubtypeRenderer
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -300,10 +368,11 @@ private[fields] object MainTable {
     }
 
     val text_renderer = new SubtypeRenderer(text_editor, text_storesS) {
-//      override def renderNew(s: S, row: stores.n.Row): ReactElement = {
-//        val (name, mutexChildren, desc) = editor render ei(s, row)
-//        newRowTemplate(s, row.status)(name, unusedField, mutexChildren, desc)
-//      }
+      override def renderNew(s: S, row: stores.n.Row): ReactElement = {
+        val (name, refkey, mandatory, reqtypes) = editor render ei(s, row)
+        renderNewRow(row.status)(name, CustomFieldType.Text, refkey, mandatory, reqtypes)
+      }
+
       override def renderAlive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
         val (name, refkey, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p

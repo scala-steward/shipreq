@@ -37,6 +37,8 @@ object CustomFieldType {
   val values = NonEmptyList[CustomFieldType](
     Text)
 
+  val valueStream = values.list.toStream
+
   implicit val equality = Equal.equalA[CustomFieldType]
 }
 

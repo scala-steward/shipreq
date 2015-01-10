@@ -63,18 +63,30 @@ object Util {
     if (i >= 0 && (i + 1) < v.length) Some(v(i + 1)) else None
   }
 
-  def foldAndIndex[A, B](as: TraversableOnce[A], z: B)(f: (B, Int, A) => B): (B, Map[Int, A]) = {
+  def foldAndIndex[A, B, K](as: TraversableOnce[A], z: B, ik: Int => K)(f: (B, K, A) => B): (B, Map[K, A]) = {
     var i = 0
-    var m = Map.empty[Int, A]
+    var m = Map.empty[K, A]
     var b = z
     as.foreach { a =>
-      b = f(b, i, a)
-      m = m.updated(i, a)
+      val k = ik(i)
+      b = f(b, k, a)
+      m = m.updated(k, a)
       i += 1
     }
     (b, m)
   }
 
+  def foldAndIndexI[A, B](as: TraversableOnce[A], z: B)(f: (B, Int, A) => B): (B, Map[Int, A]) =
+    foldAndIndex(as, z, identity[Int])(f)
+
+  def foldAndIndexS[A, B](as: TraversableOnce[A], z: B)(f: (B, String, A) => B): (B, Map[String, A]) =
+    foldAndIndex(as, z, i => (i + 33).toChar.toString)(f)
+
+  def indexI[A](as: TraversableOnce[A]): Map[Int, A] =
+    foldAndIndexI(as, ())((_, _, _) => ())._2
+
+  def indexS[A](as: TraversableOnce[A]): Map[String, A] =
+    foldAndIndexS(as, ())((_, _, _) => ())._2
 }
 
 object ParseLong {

@@ -319,7 +319,7 @@ class WIP {
           })
 
         case UpdateOrder(f: StaticField, p) =>
-          mod(fs => if (fs.order contains f) List(Delta(-\/(f), p)) else Nil)
+          mod(fs => List(Delta(-\/(f), p)))
 
         case UpdateOrder(id: CustomField.Id, p) =>
           mod(_.customFields.get(id).fold(∅)(f => List(Delta(\/-(f), p))))

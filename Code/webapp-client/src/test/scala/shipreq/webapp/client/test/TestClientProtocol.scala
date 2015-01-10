@@ -14,6 +14,9 @@ trait Comm {
   val i: r.d.I
   val s: r.d.O => IO[Unit]
   val f: FailureIO
+
+  def force[D2 <: Routine.Desc](r2: Routine.Remote[D2]) =
+    this.asInstanceOf[Comm {type D = D2; val r: r2.type}]
 }
 
 class TestClientProtocol extends ClientProtocol {
@@ -32,4 +35,7 @@ class TestClientProtocol extends ClientProtocol {
 
   def assertCommsSent(count: Int): Unit =
     assertEq("AJAX requests", count, comms.size)
+
+  def respondToLastSuccessfully[D <: Routine.Desc](r: Routine.Remote[D])(o: r.d.O) =
+    comms.last.force(r).s(o).unsafePerformIO()
 }
