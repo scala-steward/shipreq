@@ -47,11 +47,11 @@ private[fields] object MainTable {
   /** The type of options in the combobox, from which users can create new fields. */
   type NewSelType = StaticField \/ CustomFieldType
 
-  case class State(showDeleted    : Boolean,
-                   text_state     : text_stores.State,
-                   newFieldTypeSel: Option[NewSelType],
-                   appReqTypeState: AppReqTypesEditor.S,
-                   dnd            : DND.Parent.PState[Field]) {
+  case class State(showDeleted     : Boolean,
+                   text_state      : text_stores.State,
+                   newFieldTypeSel : Option[NewSelType],
+                   appReqTypeStates: AppReqTypesEditor.S,
+                   dnd             : DND.Parent.PState[Field]) {
 
     lazy val customFields =
       customFieldStores.foldLeft(CustomField.IdAccess.emptyIMap)(_ ++ _.s.getAllP(this))
@@ -62,11 +62,11 @@ private[fields] object MainTable {
     val _showDeleted      = l(_.showDeleted)
     val _text_state       = l(_.text_state)
     val _newFieldTypeSel  = l(_.newFieldTypeSel)
-    val _appReqTypeState  = l(_.appReqTypeState)
+    val _appReqTypeStates = l(_.appReqTypeStates)
     val _dnd              = l(_.dnd)
 
-    @inline final def _appReqTypeStateFor(k: Option[Field.Id]) =
-      _appReqTypeState ^|-> AppReqTypesEditor._stateFor(k)
+    @inline final def _appReqTypeState(k: Option[Field.Id]) =
+      _appReqTypeStates ^|-> AppReqTypesEditor._stateFor(k)
   }
 
   type S  = State
@@ -114,7 +114,7 @@ private[fields] object MainTable {
       })
 
   def clearAppReqTypesEditorState(id: Field.Id): S => S =
-    State._appReqTypeStateFor(Some(id)).set(Maybe.empty)
+    State._appReqTypeState(Some(id)).set(Maybe.empty)
 
   val Component =
     ReactComponentB[Props]("Cfg: Fields")
@@ -144,7 +144,7 @@ private[fields] object MainTable {
     val nameE      = Editors.textInputEditor.applyValidator(V.nameS)
     val refkeyE    = Editors.textInputEditor.applyValidator(V.keyS)
     val mandatoryE = Editors.checkboxEditor.imap(Mandatory).strengthL[V.S]
-    val reqtypesE  = appReqTypesEditor.editor($ focusStateL State._appReqTypeState).cmapA[(V.S, ApplicableReqTypes)](_.map1(_._2))
+    val reqtypesE  = appReqTypesEditor.editor($ focusStateL State._appReqTypeStates).cmapA[(V.S, ApplicableReqTypes)](_.map1(_._2))
 
     object protocol {
       import FieldProtocol._, CfgAction._
