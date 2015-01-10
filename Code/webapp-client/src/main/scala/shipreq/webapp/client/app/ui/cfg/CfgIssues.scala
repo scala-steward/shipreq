@@ -98,9 +98,10 @@ object CfgIssues {
 
       val table = {
         def rowRenderer =
-          new CfgTable.RowRenderer[CustomIssueType, rowE.View, (ReactNode, ReactNode)] {
-            override def newRow     = identity
-            override def savedRow   = (v, p) => v
+          new CfgTable.RowRenderer[CustomIssueType, rowE.View, HomoTuple2[TagMod]] {
+            private val f = implicitly[ReactElement => TagMod].overTuple2
+            override def newRow     = f
+            override def savedRow   = (v, p) => f(v)
             override def deletedRow = p => (p.key.value, TextMod.nonBlank from p.desc)
             override def render     = { case (key, desc) => List(key, desc) }
           }

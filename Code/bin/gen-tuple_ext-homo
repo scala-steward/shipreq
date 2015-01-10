@@ -1,0 +1,29 @@
+#!/bin/env scala
+// vim: set ft=scala :
+
+val comma = ", "
+
+var y = List.empty[String]
+var z = List.empty[String]
+for (a <- (2 to 9)) {
+  def AA = List.fill(a)("A").mkString(comma)
+  def BB = List.fill(a)("B").mkString(comma)
+  def fn (f: Int => String) = (1 to a).toList.map(f)
+  def fnc(f: Int => String) = fn(f).mkString(comma)
+
+  var o = List.empty[String]
+
+  o ::= s"@inline def mapEach[B](f: A ⇒ B): ($BB) = (${fnc(i => s"f(_t._$i)")})"
+
+  y ::= s"type HomoTuple$a[A] = ($AA)"
+  z ::= s"type HomoTuple${a}Map[A,B] = (($AA)) ⇒ ($BB)"
+
+  println(s"@inline final implicit class HomoTuple${a}Ext[A](val _t: ($AA)) extends AnyVal {")
+  println(o.sorted.map("  "+_) mkString "\n")
+  println("}")
+}
+println()
+println(y.reverse mkString "\n")
+println()
+println(z.reverse mkString "\n")
+println()

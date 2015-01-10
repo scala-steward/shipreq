@@ -57,12 +57,12 @@ object Editors {
   val List(staticCheckboxOn, staticCheckboxOff) = List(true, false).map(b =>
     checkboxEditor render EditorI(b, "", None))
 
-  def staticCheckbox(checked: Boolean): ReactNode =
+  def staticCheckbox(checked: Boolean): ReactElement =
     if (checked) staticCheckboxOn else staticCheckboxOff
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,ReactNode], err: Option[String]): Editor[A,B,M,S,C,D,ReactNode] =
+  def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,ReactElement], err: Option[String]): Editor[A,B,M,S,C,D,ReactElement] =
     Editor(i => <.div(
       editor render i,
       err.map(e => <.div(^.cls := "errorMsg", e))))
