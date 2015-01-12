@@ -84,7 +84,7 @@ private[tags] object MainTable {
 
     val tagFilter: Tag => Boolean =
       if (showDeleted) Function const true
-      else _.alive ≟ Alive
+      else Tag.filterAlive
   }
 
   object State {
@@ -435,7 +435,7 @@ private[tags] object MainTable {
     def existingRels(s: S, updateIO: UpdateIO, subj: Tag, ids: Seq[Id], removeFn: Id => PovRelations => PovRelations): Rels = {
       var rs = ids.map(getTag(_)(s).get)
       //if (!s.showDeleted)
-        rs = rs.filter(_.alive ≟ Alive)
+        rs = rs.filter(Tag.filterAlive)
       rs.map(t => Rel(t.id, t.name, treeUpdateIO(s, updateIO, subj, removeFn(t.id))))
     }
 
@@ -447,7 +447,7 @@ private[tags] object MainTable {
 
     def addRelFilter(s: S, subj: Tag, mod: Id => PovRelations => PovRelations,
                      relAlreadyExists: (PovRelations, Id) => Boolean): Tag => Boolean =
-      t => (t.alive ≟ Alive) && {
+      t => Tag.filterAlive(t) && {
         val r = PovRelations.derive(subj.id, s.tree.m)
         !relAlreadyExists(r, t.id) && {
           val r2 = mod(t.id)(r)
