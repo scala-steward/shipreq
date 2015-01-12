@@ -19,7 +19,7 @@ import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
 import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.app.ui.{SelectAndInvoke, ShowDeletedToggler}
+import shipreq.webapp.client.app.ui.{SelectAndInvoke, SelectOne, ShowDeletedToggler}
 import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -53,7 +53,7 @@ private[fields] object MainTable {
   case class State(showDeleted     : Boolean,
                    text_state      : text_stores.State,
                    tag_state       : tag_stores.State,
-                   newFieldTypeSel : Option[NewSelType],
+                   newFieldTypeSel : NewSelType,
                    appReqTypeStates: AppReqTypesEditor.S,
                    dnd             : DND.Parent.PState[Field]) {
 
@@ -104,7 +104,7 @@ private[fields] object MainTable {
       showDeleted     = p.showDeleted,
       text_state      = text_stores.initState(_.initStateS(textFields.result(), _.id)),
       tag_state       = tag_stores .initState(_.initStateS(tagFields .result(), _.id)),
-      newFieldTypeSel = Some(\/-(CustomFieldType.Text)),
+      newFieldTypeSel = \/-(CustomFieldType.Text),
       AppReqTypesEditor initialState fs,
       DND.Parent.initialState)
   }
@@ -186,33 +186,29 @@ private[fields] object MainTable {
     }
 
     object newFieldControl {
-      import SelectAndInvoke._
+      import SelectOne.Choice
 
       def name: NewSelType => String =
         _.fold(_.name, _.name)
 
-      val Component = StaticProps[NewSelType]("Create", name).component
+      val Component = SelectAndInvoke.Component[NewSelType]("NewField")
 
       def apply() = {
         val s = $.state
 
-        var actions = Vector.empty[Choice[NewSelType]]
+        var choices = Vector.empty[Choice[NewSelType]]
 
-        def addAction(value: NewSelType, invoke: IO[Unit]): Unit =
-          actions :+= Choice(
-            value  = value,
-            select = Some($ modStateIO State._newFieldTypeSel.set(Some(value))),
-            invoke = Some(invoke))
+        def addChoice(value: NewSelType, label: String): Unit =
+          choices :+= Choice(
+            value    = value,
+            label    = label,
+            disabled = false)
 
         // Add static fields
         val missingStaticFields: Set[StaticField] =
           (StaticField.values.list.toSet /: fieldOrder)((q, i) => i.foldId(q - _, _ => q))
-
         missingStaticFields.foreach(f =>
-          addAction(-\/(f), staticInvoke(f)))
-
-        def staticInvoke(f: StaticField): IO[Unit] =
-          protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling
+          addChoice(-\/(f), f.name))
 
         // Add custom field types
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
@@ -222,19 +218,28 @@ private[fields] object MainTable {
               .filter(TagInTree.filterAlive)
               .exists(t => !s.tagFieldTags.contains(t.id))
         }
-
         CustomFieldType.values.foreach(t =>
           if (allowNewCustomFieldType(t))
-            addAction(\/-(t), customInvoke(t)))
+            addChoice(\/-(t), t.name))
+
+        def staticInvoke(f: StaticField): IO[Unit] =
+          protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling
 
         def customInvoke(t: CustomFieldType): IO[Unit] =
           IO($ modStateIO storesForType(t).n.enableEdit).join
 
+        def onInvoke: Option[IO[Unit]] =
+          Some(s.newFieldTypeSel.fold(staticInvoke, customInvoke))
+
         Component(SelectAndInvoke.Props(
-          selected = s.newFieldTypeSel,
-          choices  = actions.sortBy(a => name(a.value)),
-          disabled = customFieldStores.exists(_.n.editing(s))
-        ))
+            SelectOne.Props(
+              selected = s.newFieldTypeSel,
+              choices  = choices.sortBy(_.label),
+              onSelect = Some($ _setStateL State._newFieldTypeSel)
+            ),
+            buttonLabel = "Create", // TODO sync all new buttons
+            invoke      = onInvoke,
+            disabled    = customFieldStores.exists(_.n.editing(s))))
       }
 
       val abortNew: S => S =
