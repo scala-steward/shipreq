@@ -59,6 +59,9 @@ private[fields] object MainTable {
 
     lazy val customFields =
       customFieldStores.foldLeft(CustomField.IdAccess.emptyIMap)(_ ++ _.s.getAllP(this))
+
+    lazy val tagFieldTags =
+      tag_stores.s.getAllP(tag_state).map(_.tagId).toSet
   }
 
   object State {
@@ -212,8 +215,17 @@ private[fields] object MainTable {
           protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling
 
         // Add custom field types
+        val allowNewCustomFieldType: CustomFieldType => Boolean = {
+          case CustomFieldType.Text => true
+          case CustomFieldType.Tag  =>
+            clientData.project.tags.data.values.toStream
+              .filter(TagInTree.filterAlive)
+              .exists(t => !s.tagFieldTags.contains(t.id))
+        }
+
         CustomFieldType.values.foreach(t =>
-          addAction(\/-(t), customInvoke(t)))
+          if (allowNewCustomFieldType(t))
+            addAction(\/-(t), customInvoke(t)))
 
         def customInvoke(t: CustomFieldType): IO[Unit] =
           IO($ modStateIO storesForType(t).n.enableEdit).join

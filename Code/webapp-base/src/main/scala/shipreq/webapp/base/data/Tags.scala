@@ -255,6 +255,9 @@ final case class TagInTree(tag: Tag, children: Vector[Id]) {
 object TagInTree {
   implicit val equality = deriveEqual[TagInTree]
 
+  val filterAlive: TagInTree => Boolean =
+    _.tag.alive ≟ Alive
+
   private[this] def l = Lenser[TagInTree]
   val _tag      = l(_.tag)
   val _children = l(_.children)
