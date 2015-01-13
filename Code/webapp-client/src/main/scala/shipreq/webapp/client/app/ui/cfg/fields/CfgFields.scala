@@ -19,7 +19,7 @@ import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
 import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.app.ui.{SelectAndInvoke, SelectOne, ShowDeletedToggler}
+import shipreq.webapp.client.app.ui.{SelectInvoke, SelectOne, ShowDeletedToggler}
 import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -191,7 +191,7 @@ private[fields] object MainTable {
       def name: NewSelType => String =
         _.fold(_.name, _.name)
 
-      val Component = SelectAndInvoke.Component[NewSelType]("NewField")
+      val Component = SelectInvoke.Component[NewSelType]("NewField")
 
       def apply() = {
         val s = $.state
@@ -231,7 +231,7 @@ private[fields] object MainTable {
         def onInvoke: Option[IO[Unit]] =
           Some(s.newFieldTypeSel.fold(staticInvoke, customInvoke))
 
-        Component(SelectAndInvoke.Props(
+        Component(SelectInvoke.Props(
             SelectOne.Props(
               s.newFieldTypeSel,
               choices.sortBy(_.label),

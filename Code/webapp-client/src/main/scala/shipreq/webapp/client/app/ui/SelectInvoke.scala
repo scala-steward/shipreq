@@ -5,7 +5,7 @@ import org.scalajs.dom.HTMLDivElement
 import scalaz.Equal
 import scalaz.effect.IO
 
-object SelectAndInvoke {
+object SelectInvoke {
 
   def Component[A: Equal](name: String) =
     ReactComponentB[Props[A]](name)
