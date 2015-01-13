@@ -14,8 +14,8 @@ object SelectAndInvoke {
       .build
 
   final case class Props[A](selection  : SelectOne.Props[A],
-                            buttonLabel: String,
                             invoke     : Option[IO[Unit]],
+                            buttonLabel: String,
                             disabled   : Boolean)
 
   def render[A: Equal](p: Props[A]): ReactTag = {
@@ -23,8 +23,8 @@ object SelectAndInvoke {
     val select = {
       // Propagate disabledness
       var q = p.selection
-      if (p.disabled && q.onSelect.isDefined)
-        q = q.copy(onSelect = None)
+      if (p.disabled && q.select.isDefined)
+        q = q.copy(select = None)
 
       SelectOne.render(q)
     }

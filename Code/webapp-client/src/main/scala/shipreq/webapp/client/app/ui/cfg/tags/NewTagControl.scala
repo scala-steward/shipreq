@@ -18,5 +18,5 @@ private[tags] object NewTagControl {
 
     SelectAndInvoke.Props(
       SelectOne.Props(selected, choices, Some(select)),
-      "Create", invoke, disabled) // TODO sync all new buttons
+      invoke, "Create", disabled) // TODO sync all new buttons
 }

@@ -17,7 +17,7 @@ object SelectOne {
 
   case class Props[A](selected: A,
                       choices : Seq[Choice[A]],
-                      onSelect: Option[A => IO[Unit]])
+                      select  : Option[A => IO[Unit]])
 
   def optional[A](choices  : Seq[Choice[A]],
                   nopLabel : String = ""): Seq[Choice[Option[A]]] = {
@@ -55,12 +55,12 @@ object SelectOne {
       e => for {
         i  ← ParseInt unapply e.target.value
         v  = props.choices(i).value
-        io ← props.onSelect
+        io ← props.select
       } yield io(v)
 
     <.select(
       ^.value      := selectedValue,
-      ^.disabled   := props.onSelect.isEmpty,
+      ^.disabled   := props.select.isEmpty,
       ^.onChange ~~>? onChange,
       options)
   }

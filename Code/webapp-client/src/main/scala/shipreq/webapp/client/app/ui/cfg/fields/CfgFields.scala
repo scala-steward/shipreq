@@ -233,13 +233,12 @@ private[fields] object MainTable {
 
         Component(SelectAndInvoke.Props(
             SelectOne.Props(
-              selected = s.newFieldTypeSel,
-              choices  = choices.sortBy(_.label),
-              onSelect = Some($ _setStateL State._newFieldTypeSel)
+              s.newFieldTypeSel,
+              choices.sortBy(_.label),
+              Some($ _setStateL State._newFieldTypeSel)
             ),
-            buttonLabel = "Create", // TODO sync all new buttons
-            invoke      = onInvoke,
-            disabled    = customFieldStores.exists(_.n.editing(s))))
+            onInvoke, "Create", // TODO sync all new buttons
+            customFieldStores.exists(_.n.editing(s))))
       }
 
       val abortNew: S => S =
