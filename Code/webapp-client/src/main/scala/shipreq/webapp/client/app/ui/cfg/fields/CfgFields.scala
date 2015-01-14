@@ -109,8 +109,7 @@ private[fields] object MainTable {
       DND.Parent.initialState)
   }
 
-  val deltaFns =
-    new RemoteDeltaListener.StateFns[S, Field.Id, Delta](
+  val fieldDeltaListener = new DeltaListener.OneByOne[S, Field.Id, Delta](
       (s, i) => {
         val s2 = i match {
           case _: StaticField => s
@@ -135,7 +134,7 @@ private[fields] object MainTable {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(RemoteDeltaListener(Delta).install(deltaFns, Partition.Fields, _.clientData))
+      .configure(DeltaListener(_.clientData, fieldDeltaListener.handler(Partition.Fields)))
       .build
 
   def validatorState(s: S, k: Option[CustomField.Id]): V.S = {

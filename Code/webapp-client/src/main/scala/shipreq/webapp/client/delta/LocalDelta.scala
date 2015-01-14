@@ -19,6 +19,9 @@ trait LocalDeltaG {
   type P <: Partition
   def p: P
   def deltaP: LocalDeltaP[P]
+
+  final def matchPartition(p: Partition): Option[LocalDeltaP[p.type]] =
+    Partition.testEq[P, p.type](this.p, p).map(_ subst deltaP)
 }
 
 // Space:

@@ -28,8 +28,7 @@ private[issues] object ReqTypeImplication {
     .getInitialState(initialState)
     .backend(new Backend(_))
     .render(_.backend.render)
-    .configure(
-      RemoteDeltaListener(CustomReqType).installS(rowStore, Partition.CustomReqTypes, _.clientData))
+    .configure(DeltaListener(_.clientData, DeltaListener.store(rowStore).handler(Partition.CustomReqTypes)))
     .build
 
   private def initialState(p: Props): S =
