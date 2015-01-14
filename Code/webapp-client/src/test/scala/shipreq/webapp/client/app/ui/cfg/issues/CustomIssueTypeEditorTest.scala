@@ -1,23 +1,24 @@
-package shipreq.webapp.client.app.ui.cfg
+package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react.test._
-import scalaz.std.AllInstances._
-import utest._
 import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.CustomIssueTypeCrud
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._
-import TestUtil._
+import utest._
 
-object CfgIssuesTest extends TestSuite {
+import scalaz.std.AllInstances._
+
+object CustomIssueTypeEditorTest extends TestSuite {
 
   override def tests = TestSuite {
     val remote     = Routine.Remote("x", CustomIssueTypeCrud)
     val clientData = new ClientData(SampleProject.project)
     val cp         = new TestClientProtocol
-    val props      = new CfgIssues.UserDefIssues.Props(cp, remote, clientData, false)
-    val re         = CfgIssues.UserDefIssues.Component(props)
+    val props      = new CustomIssueTypeEditor.Props(cp, remote, clientData, false)
+    val re         = props.component
     val c          = ReactTestUtils.renderIntoDocument(re)
 
     def errors           = $(".errorMsg", c)

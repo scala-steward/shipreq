@@ -50,7 +50,7 @@ object ReactExamples {
         }
 
         private def cfgIssuesR =
-          cfg.CfgIssues.comp(cfg.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, clientData, false))
+          cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, clientData, false).component
 
         private def cfgReqTypesR =
           cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
