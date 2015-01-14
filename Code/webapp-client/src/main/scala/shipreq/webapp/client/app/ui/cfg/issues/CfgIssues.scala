@@ -11,6 +11,7 @@ object CfgIssues {
   case class Props(cp         : ClientProtocol,
                    a          : CustomIssueTypeCrud.Remote,
                    b          : ReqTypeImplicationMod.Remote,
+                   c          : FieldMandatorinessMod.Remote,
                    cd         : ClientData,
                    showDeleted: Boolean) {
     @inline def component = Component(this)
@@ -23,6 +24,8 @@ object CfgIssues {
           <.h4("User-Defined Issue Types"),
           CustomIssueTypes.Props(*.cp, *.a, *.cd, *.showDeleted).component,
           <.h4("Other Causes of Issues"),
-          ReqTypeImplication.Props(*.cp, *.b, *.cd).component))
+          <.table(<.tbody(
+            <.td(ReqTypeImplication.Props(*.cp, *.b, *.cd).component),
+            <.td(MandatoryFields.Props(*.cp, *.c, *.cd).component)))))
       .build
 }
