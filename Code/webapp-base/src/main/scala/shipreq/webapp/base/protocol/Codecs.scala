@@ -107,6 +107,13 @@ private[protocol] object CodecBase {
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
+  def caseclass7[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, F: Reader : Writer, G: Reader : Writer, Z]
+  (y: (A, B, C, D, E, F, G) => Z, u: Z => Option[(A, B, C, D, E, F, G)]): ReadWriter[Z] = {
+    val r = Tuple7R[A, B, C, D, E, F, G].read
+    val w = Tuple7W[A, B, C, D, E, F, G].write
+    ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
+  }
+
   def intkeyW[T](k: Int, t: T)(implicit T: Writer[T]) =
     Js.Arr(Js.Num(k), T write t)
 
@@ -366,10 +373,11 @@ object ProtocolRemoteCodecs {
   implicit final val issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
   implicit final val reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
   implicit final val reqTypeImpMod = remoteRoutine(ReqTypeImplicationMod)
+  implicit final val fieldMandMod  = remoteRoutine(FieldMandatorinessMod)
   implicit final val fieldCrud     = remoteRoutine(FieldCrud)
   implicit final val tagCrud       = remoteRoutine(TagCrud)
 
-  implicit final val projectSPA = caseclass6(ProjectSPA.apply, ProjectSPA.unapply)
+  implicit final val projectSPA = caseclass7(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================

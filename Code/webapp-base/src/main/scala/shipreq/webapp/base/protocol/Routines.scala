@@ -18,6 +18,7 @@ object Routines {
   object CustomReqTypeCrud   extends Crudable.CAux[CustomReqType.Id,   CustomReqTypeProtocol.Values]
   object TagCrud             extends Crudable.CAux[Tag.Id,             TagProtocol.Values \&/ TagProtocol.PovRelations]
 
+  object FieldMandatorinessMod extends DescT[(CustomField.Id  , Mandatory          ), RemoteDelta]
   object ReqTypeImplicationMod extends DescT[(CustomReqType.Id, ImplicationRequired), RemoteDelta]
 
   object FieldCrud extends DescT[FieldProtocol.CfgAction, RemoteDelta]
@@ -26,6 +27,7 @@ object Routines {
                         issueTypeCrud: CustomIssueTypeCrud  .Remote,
                         reqTypeCrud:   CustomReqTypeCrud    .Remote,
                         reqTypeImpMod: ReqTypeImplicationMod.Remote,
+                        fieldMandMod:  FieldMandatorinessMod.Remote,
                         fieldCrud:     FieldCrud            .Remote,
                         tagCrud:       TagCrud              .Remote)
 }

@@ -350,14 +350,25 @@ class WIP {
         case Delete(id: CustomField.Id, HardDel) =>
           apply(Set(id), Nil)
       }
+
+    val mandmod =
+      ServerProtocol.routine(Routines.FieldMandatorinessMod){
+        case (id, m) => mod(id)(CustomField._mandatory set m)
+      }
+
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def delay(): Unit = () //Thread.sleep(new java.util.Random().nextInt(120)+100)
+  def delay(): Unit = Thread.sleep(new java.util.Random().nextInt(80)+80)
 
   def render = {
-    val pg = Routines.ProjectSPA(projectInit, issueTypeCrud, reqqq.crud, reqqq.imptoggle, fieldCrud.cfgAction, tagCrud.fn)
+    val pg = Routines.ProjectSPA(
+      projectInit,
+      issueTypeCrud,
+      reqqq.crud, reqqq.imptoggle,
+      fieldCrud.mandmod, fieldCrud.cfgAction,
+      tagCrud.fn)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }

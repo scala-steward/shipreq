@@ -215,6 +215,11 @@ object CustomField {
     case f: Tag                 => f
   })
 
+  val _mandatory = Lens[CustomField, Mandatory](_.mandatory)(n => {
+    case f: Text => f.copy(mandatory = n)
+    case f: Tag  => f.copy(mandatory = n)
+  })
+
   val _alive = Lens[CustomField, Alive](_.alive)(n => {
     case f: Text => f.copy(alive = n)
     case f: Tag  => f.copy(alive = n)
