@@ -11,7 +11,7 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.Util
+import shipreq.base.util.{Refreshable, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
@@ -23,7 +23,7 @@ import shipreq.webapp.client.app.ui.{SelectInvoke, SelectOne, ShowDeletedToggler
 import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
-import shipreq.webapp.client.util.{Refreshable, DND}
+import shipreq.webapp.client.util.DND
 import Field.ApplicableReqTypes
 import FieldProtocol.Delta
 import DeletionAction._

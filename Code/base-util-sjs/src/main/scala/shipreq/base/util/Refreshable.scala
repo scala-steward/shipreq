@@ -1,4 +1,4 @@
-package shipreq.webapp.client.util
+package shipreq.base.util
 
 import scalaz.effect.IO
 

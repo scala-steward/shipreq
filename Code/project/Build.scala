@@ -73,7 +73,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        Scalaz.core ++ testScope(μTest.jvm)
+        Scalaz.effect ++ testScope(μTest.jvm)
 
       override def project = typicalProject
         .configure(Common.scalaAndScalaJsShared)
@@ -84,8 +84,8 @@ object ShipReq extends Build {
       val dir = "base-util"
 
       override def deps =
-        SLF4J.api ++ Scalaz.core ++
-        providedScope(Scalaz.effect ++ logback ++ jodaTime) ++
+        SLF4J.api ++ Scalaz.effect ++
+        providedScope(logback ++ jodaTime) ++
         testScope(Specs2.combo ++ Scalaz.scalacheck)
 
       override def project = typicalProject

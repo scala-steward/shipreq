@@ -8,7 +8,7 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.IMap
+import shipreq.base.util.{Refreshable, IMap}
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 
 // =====================================================================================================================
