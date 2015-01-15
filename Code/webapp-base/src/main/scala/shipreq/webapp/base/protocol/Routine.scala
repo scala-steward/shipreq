@@ -27,6 +27,8 @@ object Routine {
     final override implicit def wo = WO
   }
 
+  type Aux[_I, _O] = Desc {type I = _I; type O = _O}
+
   /**
    * Descriptor of a remotely available routine.
    * @param n The server-side Lift function key.

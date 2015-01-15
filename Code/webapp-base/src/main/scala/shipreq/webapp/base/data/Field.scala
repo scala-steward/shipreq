@@ -8,7 +8,7 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.IMap
+import shipreq.base.util.{Refreshable, IMap}
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 
 // =====================================================================================================================
@@ -213,6 +213,11 @@ object CustomField {
   val _key = Optional[CustomField, FieldRefKey](Maybe.optionMaybeIso to _.keyO)(n => {
     case Text(a, b, _, c, d, e) => Text(a, b, n, c, d, e)
     case f: Tag                 => f
+  })
+
+  val _mandatory = Lens[CustomField, Mandatory](_.mandatory)(n => {
+    case f: Text => f.copy(mandatory = n)
+    case f: Tag  => f.copy(mandatory = n)
   })
 
   val _alive = Lens[CustomField, Alive](_.alive)(n => {

@@ -407,11 +407,12 @@ object RandomData {
       remoteName.map(Remote(_, d))
 
     lazy val projectSPA =
-      Gen.apply6(ProjectSPA)(
+      Gen.apply7(ProjectSPA)(
         remote(ProjectInit),
         remote(CustomIssueTypeCrud),
         remote(CustomReqTypeCrud),
         remote(ReqTypeImplicationMod),
+        remote(FieldMandatorinessMod),
         remote(FieldCrud),
         remote(TagCrud))
 

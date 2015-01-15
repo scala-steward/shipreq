@@ -1,6 +1,6 @@
 package shipreq.webapp.base.delta
 
-import scalaz.NonEmptyList
+import scalaz.{Equal, NonEmptyList}
 import upickle.{Reader, Writer}
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.DataCodecs._
@@ -26,6 +26,7 @@ case object Partition {
     def subst[F[_ <: Partition]](a: F[A]) = a.asInstanceOf[F[B]]
   }
 
+  // TODO rename/remove. Use ≟.
   def testEq[A <: Partition, B <: Partition](a: A, b: B): Option[EqProof[A, B]] =
     if (a eq b)
       Some(new EqProof[A, B])
@@ -68,4 +69,6 @@ case object Partition {
     CustomReqTypes,
     Fields,
     Tags)
+
+  implicit val equality = Equal.equalA[Partition]
 }

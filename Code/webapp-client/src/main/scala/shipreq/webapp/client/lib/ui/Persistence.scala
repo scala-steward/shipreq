@@ -3,10 +3,12 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react.ScalazReact._
 import scalaz.{Need, Name}
 import scalaz.effect.IO
-import shipreq.webapp.base.data.{DataIdAux, Alive}
-import shipreq.webapp.base.protocol.DeletionAction
+import shipreq.webapp.base.delta.RemoteDelta
+import shipreq.webapp.base.protocol.{Routine, DeletionAction}
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.lib.{CrudIO, FailureIO, SuccessIO}
+import shipreq.webapp.client.protocol.ClientProtocol
+import shipreq.webapp.client.ClientData
 
 object Persistence {
 
@@ -72,6 +74,24 @@ object Persistence {
       store.getP(k),
       store.setStatusST[IO](k),
       needSave, updateIO, realise)
+
+
+  def simpleAsyncUpdate[S, K, P, I, R <: Routine.Aux[(K, I), RemoteDelta]](store: SavedRowStore[S, K, P, I])
+                                                                          (remote: Routine.Remote[R],
+                                                                           clientData: ClientData,
+                                                                           clientProtocol: ClientProtocol,
+                                                                           realise: Persistence.Realise[S],
+                                                                           id: K): ST[S] =
+    ReactS.liftR[IO, S, Unit](state => {
+      val setStatus = store.setStatusST[IO](id)
+      val saveio = retryably[ReactST[IO, S, Unit]](retry => {
+        val v = store.getI(id)(state)
+        val f = Persistence.failureIO(retry)(realise, setStatus)
+        val io = clientProtocol.call(remote)((id, v), clientData.update, f)
+        ReactS retM io
+      })
+      saveio >> setStatus(RowStatus.Locked)
+    })
 
 
   // ===================================================================================================================

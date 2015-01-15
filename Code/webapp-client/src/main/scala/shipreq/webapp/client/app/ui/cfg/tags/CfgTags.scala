@@ -145,7 +145,7 @@ private[tags] object MainTable {
       Tag.CycleDetectors.multimap.contramap[TreeState](_.m)
   }
 
-  val tagStateFns = new RemoteDeltaListener.StateFns[S, Id, PovTag](
+  val tagDeltaListener = new DeltaListener.OneByOne[S, Id, PovTag](
     (s, i) => {
       val f1 = State._tree.modify(_ delkv i)
       val f2 = eachTypesStores.foldLeft(f1)(_ compose _.s.remove(i))
@@ -170,7 +170,7 @@ private[tags] object MainTable {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(RemoteDeltaListener(PovTag).install(tagStateFns, Partition.Tags, _.clientData))
+      .configure(DeltaListener(_.clientData, tagDeltaListener.handler(Partition.Tags)))
       .build
 
   val rowIdFromEditorInput: ((V.S, Any)) => Option[Id] = _._1._2.tagData._1
