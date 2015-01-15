@@ -39,17 +39,10 @@ private[issues] object ReqTypeImplication {
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
-    def save(p: Props, id: CustomReqType.Id): ST =
-      ReactS.liftR[IO, S, Unit](state => {
-        val setStatus = rowStore.setStatusST[IO](id)
-        val saveio = Persistence.retryably[ST](retry => {
-          val v = rowStore.getI(id)(state)
-          val f = Persistence.failureIO(retry)($ runState _, setStatus)
-          val io = $.props.cp.call(p.remote)((id, v), p.clientData.update, f)
-          ST ret io
-        })
-        saveio >> setStatus(RowStatus.Locked)
-      })
+    def save(id: CustomReqType.Id): ST = {
+      val p = $.props
+      Persistence.simpleAsyncUpdate(rowStore)(p.remote, p.clientData, p.cp, $ runState _, id)
+    }
 
     val genEditor =
       Editors.checkboxEditor.imap(ImplicationRequired)
@@ -58,7 +51,7 @@ private[issues] object ReqTypeImplication {
     val editor =
       genEditor.cmapA[(ImplicationRequired, CustomReqType)](a => a)
         .zoomU[S].applyRowUpdate(rowStore)(_._2.id)
-        .paddSTA(a => { case OnEditFinished(_) => save($.props, a._2.id) })
+        .paddSTA(a => { case OnEditFinished(_) => save(a._2.id) })
 
     val editable = editor.editableByRowStatus($)
 

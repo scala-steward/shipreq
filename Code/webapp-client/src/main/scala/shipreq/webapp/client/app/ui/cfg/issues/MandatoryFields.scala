@@ -62,17 +62,10 @@ private[issues] object MandatoryFields {
     def refreshLabelFn: IO[Unit] =
       $ modStateIO State._labelFn.modify(_ refresh project.tags.data)
 
-    def save(p: Props, id: CustomField.Id): ST =
-      ReactS.liftR[IO, S, Unit](state => {
-        val setStatus = rowStoreS.setStatusST[IO](id)
-        val saveio = Persistence.retryably[ST](retry => {
-          val v = rowStoreS.getI(id)(state)
-          val f = Persistence.failureIO(retry)($ runState _, setStatus)
-          val io = $.props.cp.call(p.remote)((id, v), p.clientData.update, f)
-          ST ret io
-        })
-        saveio >> setStatus(RowStatus.Locked)
-      })
+    def save(id: CustomField.Id): ST = {
+      val p = $.props
+      Persistence.simpleAsyncUpdate(rowStoreS)(p.remote, p.clientData, p.cp, $ runState _, id)
+    }
 
     val genEditor =
       Editors.checkboxEditor.imap(Mandatory)
@@ -81,19 +74,19 @@ private[issues] object MandatoryFields {
     val editor =
       genEditor.cmapA[(Mandatory, CustomField)](a => a)
         .zoomU[S].applyRowUpdate(rowStoreS)(_._2.id)
-        .paddSTA(a => { case OnEditFinished(_) => save($.props, a._2.id) })
+        .paddSTA(a => { case OnEditFinished(_) => save(a._2.id) })
 
     val editable = editor.editableByRowStatus($)
 
     def editorI(r: rowStore.Row): editor.Input =
       EditorI((r.i, r.p), "", editable(r.status))
 
-    def renderStaticField(f: StaticField) = // Near identical
+    def renderStaticField(f: StaticField) =
       <.tr(
         ^.key := f.name,
         <.td(genEditor render EditorI((f.mandatory, f), "", None)))
 
-    def renderCustomField(f: CustomField) = { // Near identical
+    def renderCustomField(f: CustomField) = {
       val r = rowStoreS.get(f.id)($.state)
       <.tr(
         ^.key := f.id.value,
