@@ -6,6 +6,7 @@ import scalaz.std.anyVal.intInstance
 import scalaz.syntax.order._
 import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.TaggedTypes._
+import shipreq.webapp.base.UiText
 import ReqType.Mnemonic
 
 sealed trait ReqType {
@@ -43,6 +44,10 @@ object ReqType {
 
   val filterAlive: ReqType => Boolean =
     _.fold(_ => true, _.alive ≟ Alive)
+
+  def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => String =
+    _.foldId(_.name, c => customReqTypes.get(c).fold(UiText.entityNameNotFound)(_.name))
+
 }
 
 sealed trait StaticReqType extends ReqType with ReqType.Id {
@@ -61,6 +66,9 @@ object StaticReqType {
 
   val values: NonEmptyList[StaticReqType] =
     NonEmptyList(UseCase)
+
+  val valueStream: Stream[StaticReqType] =
+    values.list.toStream
 
   implicit object order extends Order[StaticReqType] {
     private[this] val fixedOrder = values.list.zipWithIndex.toMap

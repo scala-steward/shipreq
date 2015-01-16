@@ -19,12 +19,6 @@ object SelectOne {
                       choices : Seq[Choice[A]],
                       select  : Option[A => IO[Unit]])
 
-  def optional[A](choices  : Seq[Choice[A]],
-                  nopLabel : String = ""): Seq[Choice[Option[A]]] = {
-    val nop = Choice[Option[A]](None, nopLabel, false)
-    choices.foldLeft(Vector(nop))(_ :+ _.map[Option[A]](Some.apply))
-  }
-
   def Component[A: Equal] =
     ReactComponentB[Props[A]]("SelectOne")
       .render(render(_))
@@ -63,5 +57,13 @@ object SelectOne {
       ^.disabled   := props.select.isEmpty,
       ^.onChange ~~>? onChange,
       options)
+  }
+
+  // ===================================================================================================================
+
+  def optional[A](choices  : Seq[Choice[A]],
+                  nopLabel : String = ""): Seq[Choice[Option[A]]] = {
+    val nop = Choice[Option[A]](None, nopLabel, false)
+    choices.foldLeft(Vector(nop))(_ :+ _.map[Option[A]](Some.apply))
   }
 }

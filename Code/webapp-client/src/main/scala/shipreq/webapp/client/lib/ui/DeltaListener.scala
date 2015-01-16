@@ -3,6 +3,7 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react.ComponentScopeM
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.{Listenable, OnUnmount}
+import scalaz.NonEmptyList
 import scalaz.Scalaz.Id
 import scalaz.effect.IO
 import shipreq.webapp.base.delta._
@@ -73,4 +74,7 @@ object DeltaListener {
         IO(())
     )
   }
+
+  def refreshL[P, S, B <: OnUnmount](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B] => IO[Unit], ps: NonEmptyList[Partition]) =
+    refresh(cd, refreshIO)(ps.head, ps.tail: _*)
 }

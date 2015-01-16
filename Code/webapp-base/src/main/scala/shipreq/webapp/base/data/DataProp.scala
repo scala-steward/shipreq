@@ -73,9 +73,21 @@ object DataProp {
     def orderHasAllUndeletableStaticFields =
       Prop.allPresent[FieldSet]("order ⊇ undeletable static")(Function const StaticField.notDeletable.toSet, _.order)
 
+    private def filteredFields[T](f: PartialFunction[CustomField, T]): FieldSet => Stream[T] = {
+      val ff = f.lift
+      _.customFields.values.toStream.flatMap(ff(_).toStream)
+    }
+
+    def tagFieldsUnique =
+      Prop.distinct("Tag field", filteredFields { case t: CustomField.Tag => t.tagId })
+
+    def implicationFieldsUnique =
+      Prop.distinct("Implication field", filteredFields { case t: CustomField.Implication => t.reqTypeId })
+
     def fieldSet = "FieldSet" rename_: (
       uniqueNames ∧ uniqueKeys ∧
-      orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllUndeletableStaticFields)
+      orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllUndeletableStaticFields ∧
+      tagFieldsUnique ∧ implicationFieldsUnique)
 
     lazy val all = (revAnd[FieldSet] ∧ fieldSet.contramap(_.data)) rename "Fields"
   }

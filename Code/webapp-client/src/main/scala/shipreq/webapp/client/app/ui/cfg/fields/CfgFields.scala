@@ -19,7 +19,7 @@ import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
 import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.app.ui.{SelectInvoke, SelectOne, ShowDeletedToggler}
+import shipreq.webapp.client.app.ui._
 import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -44,7 +44,11 @@ private[fields] object MainTable {
   val tag_fields = FieldSet3[CustomField.Tag](_.tagId.some, _.mandatory, _.reqTypes)(
                                              (None, Mandatory.Not, ISubset.All()))
 
+  val impl_fields = FieldSet3[CustomField.Implication](_.reqTypeId.some, _.mandatory, _.reqTypes)(
+                                                      (None, Mandatory.Not, ISubset.All()))
+
   val text_stores = NewAndSavedStores.fields(text_fields).keyedBy[CustomField.Id]
+  val impl_stores = NewAndSavedStores.fields(impl_fields).keyedBy[CustomField.Id]
   val tag_stores  = NewAndSavedStores.fields(tag_fields ).keyedBy[CustomField.Id]
 
   /** The type of options in the combobox, from which users can create new fields. */
@@ -52,6 +56,7 @@ private[fields] object MainTable {
 
   case class State(showDeleted     : Boolean,
                    text_state      : text_stores.State,
+                   impl_state      : impl_stores.State,
                    tag_state       : tag_stores.State,
                    newFieldTypeSel : NewSelType,
                    appReqTypeStates: AppReqTypesEditor.S,
@@ -60,14 +65,18 @@ private[fields] object MainTable {
     lazy val customFields =
       customFieldStores.foldLeft(CustomField.IdAccess.emptyIMap)(_ ++ _.s.getAllP(this))
 
-    lazy val tagFieldTags =
+    lazy val tagFieldTagIds =
       tag_stores.s.getAllP(tag_state).map(_.tagId).toSet
+
+    lazy val implFieldReqTypeIds =
+      impl_stores.s.getAllP(impl_state).map(_.reqTypeId).toSet
   }
 
   object State {
     private[this] def l = Lenser[State]
     val _showDeleted      = l(_.showDeleted)
     val _text_state       = l(_.text_state)
+    val _impl_state       = l(_.impl_state)
     val _tag_state        = l(_.tag_state)
     val _newFieldTypeSel  = l(_.newFieldTypeSel)
     val _appReqTypeStates = l(_.appReqTypeStates)
@@ -82,27 +91,32 @@ private[fields] object MainTable {
   val  ST = ReactS.FixT[IO, S]
 
   val text_storesS = text_stores.contramap(State._text_state)
+  val impl_storesS = impl_stores.contramap(State._impl_state)
   val tag_storesS  = tag_stores .contramap(State._tag_state)
 
   def storesForType(t: CustomFieldType): NewAndSavedStores[S, CustomField.Id, _ <: CustomField, _] =
     t match {
-      case CustomFieldType.Text => text_storesS
-      case CustomFieldType.Tag  => tag_storesS
+      case CustomFieldType.Text        => text_storesS
+      case CustomFieldType.Implication => impl_storesS
+      case CustomFieldType.Tag         => tag_storesS
     }
 
   val customFieldStores = CustomFieldType.values.list map storesForType toStream
 
   def initialState(p: Props): S = {
     val textFields = Seq.newBuilder[CustomField.Text]
+    val implFields = Seq.newBuilder[CustomField.Implication]
     val tagFields  = Seq.newBuilder[CustomField.Tag]
     val fs         = p.clientData.project.fields.data
     fs.customFields.values.foreach {
-      case f: CustomField.Text => textFields += f
-      case f: CustomField.Tag  => tagFields  += f
+      case f: CustomField.Text        => textFields += f
+      case f: CustomField.Implication => implFields += f
+      case f: CustomField.Tag         => tagFields  += f
     }
     State(
       showDeleted     = p.showDeleted,
       text_state      = text_stores.initState(_.initStateS(textFields.result(), _.id)),
+      impl_state      = impl_stores.initState(_.initStateS(implFields.result(), _.id)),
       tag_state       = tag_stores .initState(_.initStateS(tagFields .result(), _.id)),
       newFieldTypeSel = \/-(CustomFieldType.Text),
       AppReqTypesEditor initialState fs,
@@ -119,9 +133,10 @@ private[fields] object MainTable {
       },
       (s, i, d) => {
         val s2 = d match {
-          case Delta(-\/(_: StaticField     ), _) => s
-          case Delta(\/-(f: CustomField.Text), _) => text_storesS.s.set(f.id, f)(s)
-          case Delta(\/-(f: CustomField.Tag ), _) => tag_storesS .s.set(f.id, f)(s)
+          case Delta(-\/(_: StaticField            ), _) => s
+          case Delta(\/-(f: CustomField.Text       ), _) => text_storesS.s.set(f.id, f)(s)
+          case Delta(\/-(f: CustomField.Implication), _) => impl_storesS.s.set(f.id, f)(s)
+          case Delta(\/-(f: CustomField.Tag        ), _) => tag_storesS .s.set(f.id, f)(s)
         }
         clearAppReqTypesEditorState(i)(s2)
       })
@@ -137,8 +152,8 @@ private[fields] object MainTable {
       .configure(
         DeltaListener.apply  [Props, S, Backend](_.clientData, fieldDeltaListener.handler(Partition.Fields)) compose
         DeltaListener.refresh[Props, S, Backend](_.clientData, _.backend.dyn.refresh(()))(
-          Partition.CustomReqTypes, // Refreshes AppReqTypesEditor
-          Partition.Tags          ) // Refreshes TagSelector
+          Partition.CustomReqTypes, // Refreshes AppReqTypesEditor and reqTypeSelector
+          Partition.Tags          ) // Refreshes tagSelector
       )
       .build
 
@@ -206,10 +221,11 @@ private[fields] object MainTable {
     import backend.{dyn => _, _}
 
     val appReqTypesEditor = new AppReqTypesEditor(project.customReqTypes.data.values)
-    val tagSelector       = new TagSelector(project.tags.data)
+    val tagSelector       = SelectOneStartNone.tag(project.tags.data)
+    val reqTypeSelector   = SelectOneStartNone.reqType(project.reqTypes)
 
-    val reqtypesE  = appReqTypesEditor.editor($ focusStateL State._appReqTypeStates).cmapA[(V.S, ApplicableReqTypes)](_.map1(_._2))
-    val tagSelE    = tagSelector.editor.applyValidator(V.tagIdS)
+    val reqtypesE = appReqTypesEditor.editor($ focusStateL State._appReqTypeStates)
+                      .cmapA[(V.S, ApplicableReqTypes)](_.map1(_._2))
 
     object newFieldControl {
       import SelectOne.Choice
@@ -238,11 +254,13 @@ private[fields] object MainTable {
 
         // Add custom field types
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
-          case CustomFieldType.Text => true
-          case CustomFieldType.Tag  =>
-            project.tags.data.values.toStream
-              .filter(TagInTree.filterAlive)
-              .exists(t => !s.tagFieldTags.contains(t.id))
+          case CustomFieldType.Text        => true
+          case CustomFieldType.Tag         => project.tags.data.values.toStream
+                                                .filter(TagInTree.filterAlive)
+                                                .exists(t => !s.tagFieldTagIds.contains(t.id))
+          case CustomFieldType.Implication => project.reqTypes
+                                                .filter(ReqType.filterAlive)
+                                                .exists(r => !s.implFieldReqTypeIds.contains(r.reqTypeId))
         }
         CustomFieldType.values.foreach(t =>
           if (allowNewCustomFieldType(t))
@@ -444,9 +462,10 @@ private[fields] object MainTable {
 
     val tag_editor = {
       @inline def stores = tag_storesS
+      val tagSelE   = tagSelector.editor.applyValidator(V.tagField.tagIdS)
       val toValues  = FieldProtocol.TagFieldValues.apply _
       val toValuesT = toValues.tupled
-      val validator = V.tagField map toValuesT
+      val validator = V.tagField.all map toValuesT
       val saveFn    = Persistence.asyncSaveNS2(validator, stores, protocol.createIO)(protocol.updateValuesIO,
         SaveNeed.cmpToExtract(t => toValues(t.tagId, t.mandatory, t.reqTypes)),
         _.id, validatorState, $ runState _)
@@ -492,11 +511,65 @@ private[fields] object MainTable {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Tag field
+
+    val impl_editor = {
+      @inline def stores = impl_storesS
+      val reqTypeSelE = reqTypeSelector.editor.applyValidator(V.implField.reqTypeIdS)
+      val toValues    = FieldProtocol.ImplicationFieldValues.apply _
+      val toValuesT   = toValues.tupled
+      val validator   = V.implField.all map toValuesT
+      val saveFn      = Persistence.asyncSaveNS2(validator, stores, protocol.createIO)(protocol.updateValuesIO,
+        SaveNeed.cmpToExtract(t => toValues(t.reqTypeId, t.mandatory, t.reqTypes)),
+        _.id, validatorState, $ runState _)
+      Editor.merge3S(impl_fields, reqTypeSelE, mandatoryE, reqtypesE).tupleI.zoomU[S]
+        .applyRowUpdateAndRevert(stores)(rowIdFromEditorInput)
+        .applyOnEditFinishedK(saveFn)(rowIdFromEditorInput)
+    }
+
+    val impl_renderer = new SubtypeRenderer(impl_editor, impl_storesS) {
+      override def fieldType = CustomFieldType.Implication
+
+      override def renderNew(s: S, row: stores.n.Row): ReactElement = {
+        val (name, mandatory, reqtypes) = editor render ei(s, row)
+        renderNewRow(row.status)(
+          name      = name,
+          refkey    = unusedField,
+          mandatory = mandatory,
+          reqtypes  = reqtypes)
+      }
+
+      override def renderAlive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+        val (name, mandatory, reqtypes) = editor render ei(s, row)
+        val f = row.p
+        renderRow(row.status)(
+          dragHandle = dragHandle,
+          name       = name,
+          refkey     = unusedField,
+          mandatory  = mandatory,
+          reqtypes   = reqtypes,
+          ctrls      = deletion.button(f.id, SoftDel)
+        )
+      }
+
+      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication): ReactTag =
+        renderRow(rs)(
+          dragHandle = dragHandle,
+          name       = f.name(project.customReqTypes.data),
+          refkey     = unusedField,
+          mandatory  = Editors.staticCheckbox(Mandatory from f.mandatory),
+          reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
+          ctrls      = deletion.button(f.id, Restore)
+        )
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     def rendererForType(t: CustomFieldType): SubtypeRenderer[_ <: CustomField, _, _, _, _] =
       t match {
-        case CustomFieldType.Text => text_renderer
-        case CustomFieldType.Tag  => tag_renderer
+        case CustomFieldType.Text        => text_renderer
+        case CustomFieldType.Tag         => tag_renderer
+        case CustomFieldType.Implication => impl_renderer
       }
     val customFieldRenderers = CustomFieldType.values.list map rendererForType toStream
   }

@@ -252,15 +252,18 @@ object DataCodecs {
   })
 
   implicit final val customFieldId   = tagL(CustomField.Id.apply)
-  implicit final val customFieldText = caseclass6(CustomField.Text.apply, CustomField.Text.unapply)
-  implicit final val customFieldTag  = caseclass5(CustomField.Tag .apply, CustomField.Tag .unapply)
+  implicit final val customFieldImpl = caseclass5(CustomField.Implication.apply, CustomField.Implication.unapply)
+  implicit final val customFieldText = caseclass6(CustomField.Text       .apply, CustomField.Text       .unapply)
+  implicit final val customFieldTag  = caseclass5(CustomField.Tag        .apply, CustomField.Tag        .unapply)
   implicit final val customField     = ReadWriter[CustomField]({
-    case f: CustomField.Text => strkeyW("x", f)
-    case f: CustomField.Tag  => strkeyW("t", f)
+    case f: CustomField.Text        => strkeyW("x", f)
+    case f: CustomField.Tag         => strkeyW("t", f)
+    case f: CustomField.Implication => strkeyW("i", f)
   }, {
     case Js.Arr(Js.Str(k), v) => k match {
-      case "x" => readJs[CustomField.Text](v)
-      case "t" => readJs[CustomField.Tag ](v)
+      case "x" => readJs[CustomField.Text       ](v)
+      case "t" => readJs[CustomField.Tag        ](v)
+      case "i" => readJs[CustomField.Implication](v)
     }
   })
   implicit final val staticField = {
@@ -313,14 +316,16 @@ object ProtocolDataCodecs {
   implicit final val fieldProtocolValues = {
     import FP._, Field.ApplicableReqTypes
     ReadWriter[Values]({
-      case TextFieldValues(a, b, c, d) => intkeyW4(0, a, b, c, d)
-      case TagFieldValues(a, b, c)     => intkeyW3(1, a, b, c)
+      case TextFieldValues(a, b, c, d)     => intkeyW4(0, a, b, c, d)
+      case TagFieldValues(a, b, c)         => intkeyW3(1, a, b, c)
+      case ImplicationFieldValues(a, b, c) => intkeyW3(2, a, b, c)
     }, {
       case Js.Arr(Js.Num(n), a, b, c, d) => n.toInt match {
         case 0 => TextFieldValues(readJs[String](a), readJs[FieldRefKey](b), readJs[Mandatory](c), readJs[ApplicableReqTypes](d))
       }
       case Js.Arr(Js.Num(n), a, b, c) => n.toInt match {
         case 1 => TagFieldValues(readJs[Tag.Id](a), readJs[Mandatory](b), readJs[ApplicableReqTypes](c))
+        case 2 => ImplicationFieldValues(readJs[ReqType.Id](a), readJs[Mandatory](b), readJs[ApplicableReqTypes](c))
       }
     })
   }

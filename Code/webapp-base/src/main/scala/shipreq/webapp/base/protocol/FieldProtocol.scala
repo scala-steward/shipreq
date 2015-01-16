@@ -23,8 +23,13 @@ object FieldProtocol {
                             mandatory: Mandatory,
                             reqTypes : ApplicableReqTypes) extends Values
 
-  implicit val textFieldValueEquality = deriveEqual[TextFieldValues]
-  implicit val tagFieldValueEquality  = deriveEqual[TagFieldValues]
+  case class ImplicationFieldValues(reqTypeId: ReqType.Id,
+                                    mandatory: Mandatory,
+                                    reqTypes: ApplicableReqTypes) extends Values
+
+  implicit val equalImplication = deriveEqual[ImplicationFieldValues]
+  implicit val equalTag         = deriveEqual[TagFieldValues]
+  implicit val equalText        = deriveEqual[TextFieldValues]
 
   // The field immediately before which the subject field should be ordered. None means append.
   type Position = Option[Field.Id]

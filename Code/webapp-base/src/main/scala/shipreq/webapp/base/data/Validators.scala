@@ -141,17 +141,35 @@ object Validators {
 
     val textField = nameS ⊗ keyS ⊗ mandatoryS ⊗ reqTypesS
 
-    private def tagIdUniqueness =
-      Uniqueness.entity[CustomField].optk(_.id.some).optv {
-        case  f: CustomField.Tag => f.tagId.some
-        case _                   => None
-      }.fieldName(tagIdField)
+    object tagField {
+      @inline private def tagIdField = "Tag"
 
-    @inline private def tagIdField = "Tag"
+      private def tagIdUniqueness =
+        Uniqueness.entity[CustomField].optk(_.id.some).optv {
+          case  f: CustomField.Tag => f.tagId.some
+          case _                   => None
+        }.fieldName(tagIdField)
 
-    val tagIdS = ValidationPartU.requireFromOption[Tag.Id](tagIdField).liftS[S].toValidator.addValidation(tagIdUniqueness)
+      val tagIdS = ValidationPartU.requireFromOption[Tag.Id](tagIdField).liftS[S].toValidator
+                     .addValidation(tagIdUniqueness)
 
-    val tagField = tagIdS ⊗ mandatoryS ⊗ reqTypesS
+      val all = tagIdS ⊗ mandatoryS ⊗ reqTypesS
+    }
+
+    object implField {
+      @inline private def reqTypeIdField = "ReqType"
+
+      private def reqTypeIdUniqueness =
+        Uniqueness.entity[CustomField].optk(_.id.some).optv {
+          case  f: CustomField.Implication => f.reqTypeId.some
+          case _                           => None
+        }.fieldName(reqTypeIdField)
+
+      val reqTypeIdS = ValidationPartU.requireFromOption[ReqType.Id](reqTypeIdField).liftS[S].toValidator
+                         .addValidation(reqTypeIdUniqueness)
+
+      val all = reqTypeIdS ⊗ mandatoryS ⊗ reqTypesS
+    }
   }
 
   // ===================================================================================================================

@@ -23,7 +23,7 @@ private[issues] object MandatoryFields {
   val rowStore = SavedRowStore.data[CustomField](_.mandatory)
 
   case class State(rows   : rowStore.State,
-                   labelFn: Refreshable[TagTree, Field => String])
+                   labelFn: Refreshable[Project, Field => String])
 
   type S = State
   val  ST = ReactS.FixT[IO, S]
@@ -45,22 +45,22 @@ private[issues] object MandatoryFields {
     .backend(new Backend(_))
     .render(_.backend.render)
     .configure(
-      DeltaListener.apply  [Props, S, Backend](_.clientData, fieldListener) compose
-      DeltaListener.refresh[Props, S, Backend](_.clientData, _.backend.refreshLabelFn)(Partition.Tags)
+      DeltaListener.apply   [Props, S, Backend](_.clientData, fieldListener) compose
+      DeltaListener.refreshL[Props, S, Backend](_.clientData, _.backend.refreshLabelFn, Field.nameAffectingPartitions)
     )
     .build
 
   private def initialState(p: Props) =
     State(
       rowStore.initStateIM(p.clientData.project.fields.data.customFields),
-      Refreshable(Field.name)(p.clientData.project.tags.data))
-  
+      Refreshable(Field.nameP)(p.clientData.project))
+
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
     @inline def project = $.props.clientData.project
 
     def refreshLabelFn: IO[Unit] =
-      $ modStateIO State._labelFn.modify(_ refresh project.tags.data)
+      $ modStateIO State._labelFn.modify(_ refresh project)
 
     def save(id: CustomField.Id): ST = {
       val p = $.props

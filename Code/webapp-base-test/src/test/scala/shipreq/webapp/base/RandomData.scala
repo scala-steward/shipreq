@@ -82,6 +82,9 @@ object RandomData {
   lazy val staticReqType: Gen[StaticReqType] =
     Gen.oneofL(StaticReqType.values)
 
+  lazy val reqTypeId: Gen[ReqType.Id] =
+    Gen.oneofG(staticReqType.subst, customReqTypeId.subst)
+
   def customReqTypeName =
     shortText1
 
@@ -225,20 +228,32 @@ object RandomData {
       Gen sequence ids.map(id =>
         customFieldTag(Gen insert id, art)))
 
-  def customField(art: Gen[ApplicableReqTypes], tagFields: Boolean): Gen[CustomField] = {
+  def customFieldImplication(reqTypeId: Gen[ReqType.Id], art: Gen[ApplicableReqTypes]): Gen[CustomField.Implication] =
+    Gen.apply5(CustomField.Implication.apply)(customFieldId, reqTypeId, mandatory, art, alive)
+
+  def customFieldImplicationSome(reqTypeIds: Set[ReqType.Id], art: Gen[ApplicableReqTypes]): Gen[Vector[CustomField.Implication]] =
+    subset(reqTypeIds).flatMap(ids =>
+      Gen sequence ids.map(id =>
+        customFieldImplication(Gen insert id, art)))
+
+  def customField(art: Gen[ApplicableReqTypes],
+                  impFields: Boolean,
+                  tagFields: Boolean): Gen[CustomField] = {
     import Gen.Covariance._
     lazy val txt: Gen[CustomField] = customFieldText(art)
     customFieldType.flatMap {
-      case CustomFieldType.Text => txt
-      case CustomFieldType.Tag  => if (tagFields) customFieldTag(tagId, art) else txt
+      case CustomFieldType.Text        => txt
+      case CustomFieldType.Tag         => if (tagFields) customFieldTag(tagId, art) else txt
+      case CustomFieldType.Implication => if (impFields) customFieldImplication(reqTypeId, art) else txt
     }
   }
 
-  def customFields(tagIds: Set[Tag.Id], art: Gen[ApplicableReqTypes]): Gen[IMap[CustomField.Id, CustomField]] = {
+  def customFields(reqTypeIds: Set[ReqType.Id], tagIds: Set[Tag.Id], art: Gen[ApplicableReqTypes]): Gen[IMap[CustomField.Id, CustomField]] = {
     val cf = for {
-      f1 <- customField(art, false).stream
+      f1 <- customField(art, false, false).stream
       f2 <- customFieldTagSome(tagIds, art)
-    } yield f2.toStream #::: f1
+      f3 <- customFieldImplicationSome(reqTypeIds, art)
+    } yield f3.toStream #::: f2.toStream #::: f1
     def id   = distinctId(CustomField.IdAccess)
     def name = Distinct.str.at(CustomField._independentName)
     def key  = Distinct.fstr.xmap(FieldRefKey.apply)(_.value).distinct.at(CustomField._key)
@@ -260,9 +275,9 @@ object RandomData {
       Gen insert None)(
       Gen.oneof(_, as.tail: _*).option)
 
-  def fieldSet(tagIds: Set[Tag.Id], r: Set[CustomReqType.Id]): Gen[FieldSet] =
+  def fieldSet(reqTypeIds: Set[ReqType.Id], tagIds: Set[Tag.Id], r: Set[CustomReqType.Id]): Gen[FieldSet] =
     for {
-      cf           ← customFields(tagIds, applicableReqTypes(r))
+      cf           ← customFields(reqTypeIds, tagIds, applicableReqTypes(r))
       mandatoryIds = cf.keySet.map(f => f: Field.Id) ++ StaticField.notDeletable
       optionalIds  ← Gen.oneof(StaticField.deletable.head, StaticField.deletable.tail: _*).set
       order        ← Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
@@ -285,11 +300,14 @@ object RandomData {
     issues + tags
   }
 
+  val staticReqTypeIdSet = StaticReqType.values.list.toSet[ReqType.Id]
+
   lazy val project =
     for {
-      (issues, tags) <- Gen.tuple2(customIssueTypes, revAndTagTree) map distinctHashRefKeys.run
-      reqtypes       <- customReqTypes
-      fields         <- revAnd(fieldSet(tags.data.keySet, reqtypes.data.keySet))
+      (issues, tags) ← Gen.tuple2(customIssueTypes, revAndTagTree) map distinctHashRefKeys.run
+      reqtypes       ← customReqTypes
+      reqTypeIdSet   = staticReqTypeIdSet ++ reqtypes.data.keys
+      fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
     } yield Project(issues, reqtypes, fields, tags)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -320,7 +338,7 @@ object RandomData {
       Gen.oneofG(textFieldValues)
 
     lazy val fieldDelta: Gen[FP.Delta] =
-      Gen.apply2(FP.Delta.apply)(staticField \/ customField(applicableReqTypes, true), fieldPosition)
+      Gen.apply2(FP.Delta.apply)(staticField \/ customField(applicableReqTypes, true, true), fieldPosition)
 
     object fieldCfgAction {
       import FP.CfgAction, CfgAction._

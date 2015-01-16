@@ -51,13 +51,14 @@ class WIP {
       TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Alive), Vector())))
 
     val fields = RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
-        CustomField.Text(1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
-        CustomField.Text(2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
-        CustomField.Text(3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
-        CustomField.Tag (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
-        CustomField.Tag (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive)
+        CustomField.Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
+        CustomField.Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
+        CustomField.Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
+        CustomField.Tag        (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
+        CustomField.Tag        (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive),
+        CustomField.Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Alive)
       ), Vector(
-        1, 4, 5, 3, StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph, 2
+        1, 6, 4, 3, StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph, 5, 2
       )))
 
     new Project(customIssueTypes, customReqTypes, fields, tags)
@@ -280,6 +281,7 @@ class WIP {
   object fieldCrud {
     import FieldProtocol._
     import CfgAction._
+    import shipreq.webapp.base.data.{CustomField => CF}
 
     def apply(deletions: Set[Field.Id], updates: List[Delta]): RemoteDelta = {
       delay()
@@ -297,46 +299,54 @@ class WIP {
     def mod(f: FieldSet => List[Delta]): RemoteDelta =
       apply(Set.empty, f(p.fields.data))
 
-    def mod(id: CustomField.Id)(f: CustomField => CustomField): RemoteDelta =
+    def mod(id: CF.Id)(f: CF => CF): RemoteDelta =
       mod(fs => fs.customFields.get(id).fold(∅)(newField =>
         List(Delta(\/-(f(newField)), Util.position(fs.order, id)))))
 
     @inline def ∅ = List.empty[Delta]
 
-    def nextId(fs: FieldSet) = CustomField.Id(fs.customFields.keys.max.value + 1)
+    def nextId(fs: FieldSet) = CF.Id(fs.customFields.keys.max.value + 1)
 
     val cfgAction =
       ServerProtocol.routine(Routines.FieldCrud){
 
         case Create(TextFieldValues(n, k, m, r)) =>
           mod { fs =>
-            val f = CustomField.Text(nextId(fs), n, k, m, r, Alive)
+            val f = CF.Text(nextId(fs), n, k, m, r, Alive)
             List(Delta(\/-(f), None))
           }
 
         case Create(TagFieldValues(t, m, r)) =>
           mod { fs =>
-            val f = CustomField.Tag(nextId(fs), t, m, r, Alive)
+            val f = CF.Tag(nextId(fs), t, m, r, Alive)
             List(Delta(\/-(f), None))
           }
+
+        case Create(ImplicationFieldValues(t, m, r)) =>
+          mod { fs =>
+            val f = CF.Implication(nextId(fs), t, m, r, Alive)
+            List(Delta(\/-(f), None))
+          }
+
         case UpdateValues(id, v) =>
           mod(id)(cf => (cf, v) match {
-            case (CustomField.Text(_, _, _, _, _, Alive), TextFieldValues(n, k, m, r)) => CustomField.Text(id, n, k, m, r, Alive)
-            case (CustomField.Tag (_,    _, _, _, Alive), TagFieldValues (t,    m, r)) => CustomField.Tag (id, t,    m, r, Alive)
+            case (CF.Text       (_, _, _, _, _, Alive), TextFieldValues       (n, k, m, r)) => CF.Text       (id, n, k, m, r, Alive)
+            case (CF.Tag        (_,    _, _, _, Alive), TagFieldValues        (t,    m, r)) => CF.Tag        (id, t,    m, r, Alive)
+            case (CF.Implication(_,    _, _, _, Alive), ImplicationFieldValues(t,    m, r)) => CF.Implication(id, t,    m, r, Alive)
             case _ => cf
           })
 
         case UpdateOrder(f: StaticField, p) =>
           mod(fs => List(Delta(-\/(f), p)))
 
-        case UpdateOrder(id: CustomField.Id, p) =>
+        case UpdateOrder(id: CF.Id, p) =>
           mod(_.customFields.get(id).fold(∅)(f => List(Delta(\/-(f), p))))
 
         case Delete(f: StaticField, Restore) =>
           mod(fs => if (fs.order contains f) Nil else List(Delta(-\/(f), None)))
 
-        case Delete(id: CustomField.Id, Restore) =>
-          mod(id)(CustomField._alive set Alive)
+        case Delete(id: CF.Id, Restore) =>
+          mod(id)(CF._alive set Alive)
 
         case Delete(f: StaticField, HardDel | SoftDel) =>
           f.deletable match {
@@ -344,16 +354,16 @@ class WIP {
             case Deletable.Not => Nil
           }
 
-        case Delete(id: CustomField.Id, SoftDel) =>
-          mod(id)(CustomField._alive set Dead)
+        case Delete(id: CF.Id, SoftDel) =>
+          mod(id)(CF._alive set Dead)
 
-        case Delete(id: CustomField.Id, HardDel) =>
+        case Delete(id: CF.Id, HardDel) =>
           apply(Set(id), Nil)
       }
 
     val mandmod =
       ServerProtocol.routine(Routines.FieldMandatorinessMod){
-        case (id, m) => mod(id)(CustomField._mandatory set m)
+        case (id, m) => mod(id)(CF._mandatory set m)
       }
 
   }

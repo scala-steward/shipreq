@@ -38,4 +38,8 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
 
   def reqType(i: ReqType.Id): Option[ReqType] =
     i.foldId(Some(_), customReqTypes.data.get)
+
+  lazy val reqTypes: Stream[ReqType] =
+    (customReqTypes.data.values.toStream: Stream[ReqType]) #:::
+    (StaticReqType.valueStream          : Stream[ReqType])
 }

@@ -38,13 +38,14 @@ object SampleProject {
 
 
   lazy val fields = RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
-    CustomField.Text(1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
-    CustomField.Text(2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
-    CustomField.Text(3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
-    CustomField.Tag (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
-    CustomField.Tag (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive)
+    CustomField.Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
+    CustomField.Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
+    CustomField.Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
+    CustomField.Tag        (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
+    CustomField.Tag        (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive),
+    CustomField.Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Alive)
   ), Vector(
-    1, 4, 5, 3, StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph, 2
+    1, 6, 4, 3, StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph, 5, 2
   )))
 
   lazy val project = new Project(

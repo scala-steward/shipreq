@@ -2,6 +2,8 @@ package shipreq.webapp.base
 
 object UiText {
 
+  def entityNameNotFound = "?"
+
   object FieldNames {
     def hashRefKey          = "Key"
     def fieldRefKey         = hashRefKey
