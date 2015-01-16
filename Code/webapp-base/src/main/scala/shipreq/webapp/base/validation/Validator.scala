@@ -166,8 +166,6 @@ object ValidationPart {
 
 // =====================================================================================================================
 
-// TODO Determine Validator properties/laws
-
 class Validator[S, I, C, V](val cp: CorrectionPart[S, I, C], val vp: ValidationPart[S, C, V]) {
   final type _S = S
   final type _I = I

@@ -149,15 +149,15 @@ object RandomData {
   type TagTreeStructure = Map[Tag.Id, Vector[Tag.Id]]
 
   @tailrec
-  def preventCycles(m: TagTreeStructure, i: Int = 0): TagTreeStructure =
+  def preventCycles(m: TagTreeStructure /*, i: Int = 0*/): TagTreeStructure =
     Tag.CycleDetectors.multimap.findCycle(m) match {
       case None     =>
         // println(s"No cycles after $i attempts @ size ${m.keyCount}→${m.valueCount}")
         m
       case Some((a, b)) =>
 //        println(s"Found cycle #$i [$a→$b] in ${m.m}")
-//        preventCycles(m.del(a, b).del(b, a), i + 1) // TODO better but slowwwwww
-        preventCycles(m - b, i + 1)
+//        preventCycles(m.del(a, b).del(b, a), i + 1) // better but slowwwwww
+        preventCycles(m - b /*, i + 1*/)
     }
 
   def tagTreeStructure(tags: Set[Tag.Id]): Gen[TagTreeStructure] =
