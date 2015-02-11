@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import org.scalajs.dom.HTMLDivElement
+import org.scalajs.dom.raw.HTMLDivElement
 import scalaz.Equal
 import scalaz.effect.IO
 

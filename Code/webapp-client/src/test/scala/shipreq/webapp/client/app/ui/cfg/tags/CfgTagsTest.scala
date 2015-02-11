@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.cfg.tags
 
 import japgolly.scalajs.react.{TopNode, ReactComponentM_}
 import japgolly.scalajs.react.test._
-import org.scalajs.dom.{HTMLElement, HTMLInputElement}
+import org.scalajs.dom.raw.{HTMLElement, HTMLInputElement}
 import scala.annotation.tailrec
 import scalaz.effect.IO
 import scalaz.std.AllInstances._

@@ -1,7 +1,7 @@
 package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import org.scalajs.dom.extensions.KeyValue
+import org.scalajs.dom.ext.KeyValue
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import UI._

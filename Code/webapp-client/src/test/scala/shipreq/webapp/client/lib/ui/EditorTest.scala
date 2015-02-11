@@ -2,7 +2,7 @@ package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.test._
-import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.raw.HTMLInputElement
 import scalaz.Equal
 import scalaz.effect.IO
 import scalaz.std.AllInstances._
