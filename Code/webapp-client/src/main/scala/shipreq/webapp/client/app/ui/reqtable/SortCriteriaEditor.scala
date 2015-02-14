@@ -105,16 +105,9 @@ object SortCriteriaEditor {
       private val Row = DND.Child.dndItemComponentB[Col, (OSM, Column.NameResolver, ModIO)]({
         case (outerAttr, draghnd, col, (value, columnName, modIO)) =>
 
-          val sortMethodDropdown =
-            smSelectComponent(
-              SelectOne.Props(
-                selected = value,
-                choices  = choicesForColumn(col),
-                select   = Some(updateIO(col, modIO))))
-
           <.li(outerAttr, value.isEmpty ?= (^.cls := "off"),
             draghnd,
-            sortMethodDropdown,
+            smSelectComponent(SelectOne.Props(value, choicesForColumn(col), Some(updateIO(col, modIO)))),
             columnName(col))
       })
 
@@ -147,11 +140,7 @@ object SortCriteriaEditor {
       private val smSelectComponent = SelectOne.Component[SM]
 
       def sortMethodDropdown(value: SM, modIO: ModIO): ReactElement =
-        smSelectComponent(
-          SelectOne.Props(
-            selected = value,
-            choices  = smChoices,
-            select   = Some(v => modIO(_.copy(method = v)))))
+        smSelectComponent(SelectOne.Props(value, smChoices, Some(v => modIO(_.copy(method = v)))))
 
       private val colSelectComponent = SelectOne.Component[Col]
 
@@ -159,12 +148,7 @@ object SortCriteriaEditor {
         val colChoices =
           cols.foldLeft(Vector.empty[Choice[Col]])((q, c) => q :+ Choice(c, columnName(c), false))
             .sortBy(_.label)
-
-        colSelectComponent(
-          SelectOne.Props(
-            selected = value,
-            choices  = colChoices,
-            select   = Some(v => modIO(_.copy(column = v)))))
+        colSelectComponent(SelectOne.Props(value, colChoices, Some(v => modIO(_.copy(column = v)))))
       }
 
       def ctrls(value: SC, cols: Set[Col], columnName: Column.NameResolver, modIO: ModIO) =
