@@ -1,6 +1,4 @@
 digraph G {
-  vs1 [label="View settings #1\nsort & cols\n(data rep)"]
-  sortColsEd [label="Sort & cols editor"]
   ro [label="RO Table"]
   kb [label="KB focus & nav"]
   txt [label="Rich text parser & data rep\n(incl. refs & markdown)"]
@@ -31,7 +29,6 @@ digraph G {
   txt -> fieldCellEText
 
   node [style=filled,fillcolor="#000000"]
-  vs1 -> {sortColsEd,ro}
   ro -> kb
   txt -> txtPoly
   ro -> rw -> cellLock
