@@ -172,21 +172,22 @@ sealed abstract class CustomField(override final val fieldType: CustomFieldType)
 }
 
 object CustomField {
-  final case class Id(value: Long) extends TaggedLong with Field.Id {
-    def foldId[A](s: StaticField => A, c: CustomField.Id => A): A = c(this)
+  sealed abstract class Id extends TaggedLong with Field.Id {
+    final def foldId[A](s: StaticField => A, c: CustomField.Id => A): A = c(this)
   }
 
   object IdAccess extends ObjDataIdM[CustomField.type, CustomField, Id] {
     override def id(d: CustomField) = d.id
-    override def mkId(l: Long) = Id(l)
-    override def setId(cf: CustomField, i: Id) = cf match {
-      case f: Text        => f.copy(id = i)
-      case f: Tag         => f.copy(id = i)
-      case f: Implication => f.copy(id = i)
+    override def mkId(l: Long) = Text.Id(l) // This is declared as being for testing only
+    override def setId(cf: CustomField, i: Id) = cf match { // TODO Ideally this should be hidden from non-test code
+      case f: Text        => f.copy(id = Text       .Id(i.value))
+      case f: Tag         => f.copy(id = Tag        .Id(i.value))
+      case f: Implication => f.copy(id = Implication.Id(i.value))
     }
   }
 
-  case class Text(id       : Id,
+  // -------------------------------------------------------------------------------------------------------------------
+  case class Text(id       : Text.Id,
                   name     : String,
                   key      : FieldRefKey,
                   mandatory: Mandatory,
@@ -195,9 +196,14 @@ object CustomField {
     override def independentName = Some(name)
     override def keyO = Some(key)
   }
+  object Text {
+    final case class Id(value: Long) extends CustomField.Id
+    implicit val equality = deriveEqual[Text]
+  }
 
+  // -------------------------------------------------------------------------------------------------------------------
   import shipreq.webapp.base.data.Tag.{Id => TagId}
-  case class Tag(id       : Id,
+  case class Tag(id       : Tag.Id,
                  tagId    : TagId,
                  mandatory: Mandatory,
                  reqTypes : ApplicableReqTypes,
@@ -208,8 +214,13 @@ object CustomField {
     def name(tags: TagTree): String =
       tags.get(tagId).fold(UiText.entityNameNotFound)(_.tag.name)
   }
+  object Tag {
+    final case class Id(value: Long) extends CustomField.Id
+    implicit val equality = deriveEqual[Tag]
+  }
 
-  case class Implication(id       : Id,
+  // -------------------------------------------------------------------------------------------------------------------
+  case class Implication(id       : Implication.Id,
                          reqTypeId: ReqType.Id,
                          mandatory: Mandatory,
                          reqTypes : ApplicableReqTypes,
@@ -220,6 +231,12 @@ object CustomField {
     def name(customReqTypes: CustomReqTypeIMap): String =
       ReqType.name(customReqTypes)(reqTypeId)
   }
+  object Implication {
+    final case class Id(value: Long) extends CustomField.Id
+    implicit val equality = deriveEqual[Implication]
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   val _independentName = Optional[CustomField, String](optionMaybeIso to _.independentName)(n => {
     case Text(a, _, b, c, d, e) => Text(a, n, b, c, d, e)
@@ -252,10 +269,6 @@ object CustomField {
   }
 
   def nameP(p: Project) = name(p.customReqTypes.data, p.tags.data)
-
-  implicit val equalImplication = deriveEqual[Implication]
-  implicit val equalTag         = deriveEqual[Tag]
-  implicit val equalText        = deriveEqual[Text]
 
   implicit object Equality extends Equal[CustomField] {
     override def equal(a: CustomField, b: CustomField) = a match {

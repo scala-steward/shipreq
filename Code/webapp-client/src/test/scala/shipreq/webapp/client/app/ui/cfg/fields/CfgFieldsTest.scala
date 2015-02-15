@@ -74,7 +74,9 @@ object CfgFieldsTest extends TestSuite {
     Simulation.click run sole(Sizzle("tr:has(:text[value=blahh]) button:contains('Delete')", c))
     cp.assertCommsSent(2)
     rev = rev.succ
-    cp.respondToLastSuccessfully(remote)(List(RemoteDeltaG(Partition.Fields, rev, rev)(Set(666), Nil)))
+    cp.respondToLastSuccessfully(remote)(List(
+      RemoteDeltaG(Partition.Fields, rev, rev)(Set(CustomField.Text.Id(666)), Nil)
+    ))
 
     assertEq(c.state, initialState)
   }

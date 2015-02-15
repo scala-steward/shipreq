@@ -205,8 +205,19 @@ object RandomData {
     isubset(a, a.set)
   }
 
-  lazy val customFieldId =
-    id map CustomField.Id
+  lazy val customFieldTextId =
+    id map CustomField.Text.Id
+
+  lazy val customFieldTagId =
+    id map CustomField.Tag.Id
+
+  lazy val customFieldImplicationId =
+    id map CustomField.Implication.Id
+
+  lazy val customFieldId: Gen[CustomField.Id] = {
+    import Gen.Covariance._
+    Gen.oneofG(customFieldTextId, customFieldTagId, customFieldImplicationId)
+  }
 
   lazy val fieldRefKey =
     for {
@@ -218,10 +229,10 @@ object RandomData {
     Gen.oneofL(CustomFieldType.values)
 
   def customFieldText(art: Gen[ApplicableReqTypes]): Gen[CustomField.Text] =
-    Gen.apply6(CustomField.Text.apply)(customFieldId, shortText1, fieldRefKey, mandatory, art, alive)
+    Gen.apply6(CustomField.Text.apply)(customFieldTextId, shortText1, fieldRefKey, mandatory, art, alive)
 
   def customFieldTag(tagId: Gen[Tag.Id], art: Gen[ApplicableReqTypes]): Gen[CustomField.Tag] =
-    Gen.apply5(CustomField.Tag.apply)(customFieldId, tagId, mandatory, art, alive)
+    Gen.apply5(CustomField.Tag.apply)(customFieldTagId, tagId, mandatory, art, alive)
 
   def customFieldTagSome(tagIds: Set[Tag.Id], art: Gen[ApplicableReqTypes]): Gen[Vector[CustomField.Tag]] =
     Gen.subset(tagIds).flatMap(ids =>
@@ -229,7 +240,7 @@ object RandomData {
         customFieldTag(Gen insert id, art)))
 
   def customFieldImplication(reqTypeId: Gen[ReqType.Id], art: Gen[ApplicableReqTypes]): Gen[CustomField.Implication] =
-    Gen.apply5(CustomField.Implication.apply)(customFieldId, reqTypeId, mandatory, art, alive)
+    Gen.apply5(CustomField.Implication.apply)(customFieldImplicationId, reqTypeId, mandatory, art, alive)
 
   def customFieldImplicationSome(reqTypeIds: Set[ReqType.Id], art: Gen[ApplicableReqTypes]): Gen[Vector[CustomField.Implication]] =
     Gen.subset(reqTypeIds).flatMap(ids =>

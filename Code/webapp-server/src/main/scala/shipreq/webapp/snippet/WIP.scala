@@ -50,16 +50,21 @@ class WIP {
       TagInTree(TagGroup     (27, "Released",       None, MutexChildren.Not, Alive), Vector(22,23)),
       TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Alive), Vector())))
 
-    val fields = RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
-        CustomField.Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
-        CustomField.Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
-        CustomField.Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
-        CustomField.Tag        (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
-        CustomField.Tag        (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive),
-        CustomField.Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Alive)
+    lazy val fields = {
+      import CustomField._
+      RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
+        Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
+        Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
+        Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
+        Tag        (4, 1,                         Mandatory,     ISubset.All(),                             Alive),
+        Tag        (5, 10,                        Mandatory.Not, ISubset.All(),                             Alive),
+        Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Alive)
       ), Vector(
-        1, 6, 4, 3, StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph, 5, 2
+        Text.Id(1), Implication.Id(6), Tag.Id(4), Text.Id(3),
+        StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
+        Tag.Id(5), Text.Id(2)
       )))
+    }
 
     new Project(customIssueTypes, customReqTypes, fields, tags)
   }
@@ -305,7 +310,10 @@ class WIP {
 
     @inline def ∅ = List.empty[Delta]
 
-    def nextId(fs: FieldSet) = CF.Id(fs.customFields.keys.max.value + 1)
+    def nextId(fs: FieldSet): CF.Id = CF.Text.Id(fs.customFields.keys.max.value + 1)
+    implicit def genIdToText(g: CF.Id) = CF.Text.Id(g.value)
+    implicit def genIdToTag (g: CF.Id) = CF.Tag.Id(g.value)
+    implicit def genIdToImpl(g: CF.Id) = CF.Implication.Id(g.value)
 
     val cfgAction =
       ServerProtocol.routine(Routines.FieldCrud){

@@ -19,16 +19,20 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoHashRefKey (s: String) = HashRefKey(s)
   implicit def autoFieldRefKey(s: String) = FieldRefKey(s)
 
-  implicit def autoCustomFieldId    (i: Int) = CustomField.Id(i)
+  implicit def autoCustomFieldImpId (i: Int) = CustomField.Implication.Id(i)
+  implicit def autoCustomFieldTagId (i: Int) = CustomField.Tag.Id(i)
+  implicit def autoCustomFieldTxtId (i: Int) = CustomField.Text.Id(i)
   implicit def autoCustomIssueTypeId(i: Int) = CustomIssueType.Id(i)
   implicit def autoCustomReqTypeId  (i: Int) = CustomReqType.Id(i)
   implicit def autoTagId            (i: Int) = Tag.Id(i)
   implicit def autoRev              (i: Int) = Rev(i)
 
-  implicit def autoCustomFieldIdO    (i: Int): Option[CustomField.Id]     = Some(i)
-  implicit def autoCustomIssueTypeIdO(i: Int): Option[CustomIssueType.Id] = Some(i)
-  implicit def autoCustomReqTypeIdO  (i: Int): Option[CustomReqType.Id]   = Some(i)
-  implicit def autoTagIdO            (i: Int): Option[Tag.Id]             = Some(i)
+  implicit def autoCustomFieldImpIdO (i: Int): Option[CustomField.Implication.Id] = Some(i)
+  implicit def autoCustomFieldTagIdO (i: Int): Option[CustomField.Tag.Id]         = Some(i)
+  implicit def autoCustomFieldTxtIdO (i: Int): Option[CustomField.Text.Id]        = Some(i)
+  implicit def autoCustomIssueTypeIdO(i: Int): Option[CustomIssueType.Id]         = Some(i)
+  implicit def autoCustomReqTypeIdO  (i: Int): Option[CustomReqType.Id]           = Some(i)
+  implicit def autoTagIdO            (i: Int): Option[Tag.Id]                     = Some(i)
 
   implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
 

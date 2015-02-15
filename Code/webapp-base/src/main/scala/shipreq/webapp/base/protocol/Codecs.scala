@@ -238,7 +238,20 @@ object DataCodecs {
     }
   })
 
-  implicit final val customFieldId   = tagL(CustomField.Id.apply)
+  implicit final val customFieldImplId = tagL(CustomField.Implication.Id.apply)
+  implicit final val customFieldTextId = tagL(CustomField.Text       .Id.apply)
+  implicit final val customFieldTagId  = tagL(CustomField.Tag        .Id.apply)
+  implicit final val customFieldId     = ReadWriter[CustomField.Id]({
+    case f: CustomField.Text       .Id => strkeyW("x", f)
+    case f: CustomField.Tag        .Id => strkeyW("t", f)
+    case f: CustomField.Implication.Id => strkeyW("i", f)
+  }, {
+    case Js.Arr(Js.Str(k), v) => k match {
+      case "x" => readJs[CustomField.Text       .Id](v)
+      case "t" => readJs[CustomField.Tag        .Id](v)
+      case "i" => readJs[CustomField.Implication.Id](v)
+    }
+  })
   implicit final val customFieldImpl = caseclass5(CustomField.Implication.apply, CustomField.Implication.unapply)
   implicit final val customFieldText = caseclass6(CustomField.Text       .apply, CustomField.Text       .unapply)
   implicit final val customFieldTag  = caseclass5(CustomField.Tag        .apply, CustomField.Tag        .unapply)
@@ -266,13 +279,13 @@ object DataCodecs {
     })
   }
   implicit final val fieldId = ReadWriter[Field.Id]({
-    case i: CustomField.Id => Js.Str(i.value.toString)
-    case s: StaticField    => staticField.write(s)
-  }, {
-    case Js.Str(ParseLong(i)) => CustomField.Id(i)
-    case s                    => staticField.read(s)
-  })
-  implicit final val fieldSet        = caseclass2(FieldSet.apply, FieldSet.unapply)
+    case i: CustomField.Id => writeJs(i)
+    case i: StaticField    => writeJs(i)
+  },
+    // Shape determines type. Arr(Str(_), _) or Str(_)
+    customFieldId.read orElse staticField.read
+  )
+  implicit final val fieldSet = caseclass2(FieldSet.apply, FieldSet.unapply)
 
   implicit final val project = caseclass4(Project.apply, Project.unapply)
 }
