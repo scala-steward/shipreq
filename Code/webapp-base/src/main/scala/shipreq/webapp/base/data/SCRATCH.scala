@@ -15,9 +15,13 @@ object SCRATCH {
   /**
    * A textual ID that refers to a requirement.
    *
+   * Eg. "system.email.failure" would be ReqCode("failure", "email" :: "system" :: Nil)
+   *
    * Each ReqCode only refers to a single target, but requirements can have 0..n ReqCodes.
    */
   final case class ReqCode(last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node])
+
+  // TODO all req code text should be lowercase
 
   object ReqCode {
 
@@ -59,7 +63,7 @@ object SCRATCH {
      */
     sealed trait Target
 
-    // ReqCodes are unique → ReqCodeGroup | Req
+    // ReqCodes are unique and refer to 0..1 (ReqCodeGroup | Req)
     type Trie = Map[Node, TrieNode]
     object Trie {
       val empty: Trie = Map.empty
@@ -77,7 +81,7 @@ object SCRATCH {
    *
    * Previously called "Semantic Header Row" or "SHR" in the requirements.
    */
-  final case class ReqCodeGroup(id: ReqCodeGroup.Id, desc: String)
+  final case class Group(id: ReqCodeGroup.Id, desc: String)
   object ReqCodeGroup {
     final case class Id(value: Long) extends TaggedLong with ReqCode.Target
   }
@@ -89,6 +93,8 @@ object SCRATCH {
    * A position (oridinal) in a req-type's ordered list of requirements.
    *
    * Eg. the "3" in "FR-3".
+   *
+   * @param value > 0.
    */
   final case class ReqTypePos(value: Int) extends TaggedInt
 
@@ -99,8 +105,16 @@ object SCRATCH {
    */
   final case class PublicReqId(reqTypeId: ReqType.Id, pos: ReqTypePos)
 
-  // ∀ k:PublicReqId ∃! Option[Req]
-  type AllPublicReqIds = Multimap[ReqType.Id, Vector, Req.Id]
+  object PublicReqId {
+
+    /**
+     * Once a (reqtype x position) is allocated, it is never removed.
+     * Thus, the 0-based position in the vector corresponds with 1-based ReqTypePos values.
+     */
+    type Register = Multimap[ReqType.Id, Vector, Req.Id]
+
+    val emptyRegister: Register = Multimap.empty
+  }
 
   // ===================================================================================================================
   // Requirements
