@@ -2,18 +2,23 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenser
+import shipreq.base.util.BiMap
 import shipreq.base.util.TaggedTypes._
 
-import scalaz.{Equal, NonEmptyList}
+import scalaz.{Memo, Equal, NonEmptyList}
 
 object SCRATCH {
+
+  // ===================================================================================================================
+  // ReqCodes: A hierarchy of semantic IDs
 
   /**
    * A textual ID that refers to a requirement.
    *
    * Each ReqCode only refers to a single target, but requirements can have 0..n ReqCodes.
    */
-  final case class ReqCode(head: ReqCode.Node, tail: Vector[ReqCode.Node])
+  final case class ReqCode(last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node])
+
   object ReqCode {
 
     /* TODO Make ReqCode.Node memory-efficient
@@ -54,23 +59,31 @@ object SCRATCH {
      */
     sealed trait Target
 
-    /*
     // ReqCodes are unique → ReqCodeGroup | Req
     type Trie = Map[Node, TrieNode]
     object Trie {
       val empty: Trie = Map.empty
     }
     final case class TrieNode(value: Option[Target], next: Trie)
-    */
+
+    // Creation = O(n)
+    // Lookup   = O(log n)
+    type LookupTable = Map[Target, Set[ReqCode]]
 
   }
 
-  final case class ReqCodeGroup(id: ReqCodeGroup.Id, code: ReqCode, desc: String)
+  /**
+   * A row that exists just to provide a description or summary of its children in the code hierarchy.
+   *
+   * Previously called "Semantic Header Row" or "SHR" in the requirements.
+   */
+  final case class ReqCodeGroup(id: ReqCodeGroup.Id, desc: String)
   object ReqCodeGroup {
     final case class Id(value: Long) extends TaggedLong with ReqCode.Target
   }
 
-  // ---------------------------------------------------------------
+  // ===================================================================================================================
+  // PublicReqIds like MF-3
 
   /**
    * A position (oridinal) in a req-type's ordered list of requirements.
@@ -89,13 +102,8 @@ object SCRATCH {
   // ∀ k:PublicReqId ∃! Option[Req]
   type AllPublicReqIds = Multimap[ReqType.Id, Vector, Req.Id]
 
-  // ---------------------------------------------------------------
-
-  // TODO FieldValues
-  // type FieldValues = Map[Field.Id, ?] -- nope. Think of how tag fields work.
-  // case class FieldValues(textFields: Map[CustomField.(Text)Id, TextAST], tags: Vector[Tag.Id])
-  type FieldValues = Unit
-
+  // ===================================================================================================================
+  // Requirements
 
   /** Req = GenericReq */
   sealed trait Req
@@ -107,13 +115,22 @@ object SCRATCH {
 
   final case class GenericReq(id         : GenericReq.Id,
                               pubId      : PublicReqId,
-                              codes      : Set[ReqCode], // not here
                               desc       : String,
-                              fieldValues: FieldValues,
                               // TODO lastUpdated. Need JS-compat datetimeTZ
                               alive      : Alive) extends Req
   object GenericReq {
     final case class Id(value: Long) extends TaggedLong with Req.Id
   }
+
+  // TODO ReqFieldData should be (Req)CustomFieldData
+  object ReqFieldData {
+    type Text         = Map[CustomField.Text.Id, Map[Req.Id, Unit]] // TODO Unit should be the rich text AST
+    type Tags         = Map[Req.Id, Set[Tag.Id]] // TODO Should be ApplicableTag.Id
+    type Implications = BiMap[Req.Id, Req.Id]
+  }
+
+  case class ReqFieldData(text        : ReqFieldData.Text,
+                          tags        : ReqFieldData.Tags,
+                          implications: ReqFieldData.Implications)
 
 }
