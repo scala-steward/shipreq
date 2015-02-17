@@ -104,6 +104,7 @@ object CustomReqType {
 
   object IdAccess extends ObjDataIdM[CustomReqType.type, CustomReqType, Id] {
     override def id(d: CustomReqType) = d.id
+    override val unapplyData: AnyRef => Option[CustomReqType] = {case r: CustomReqType => Some(r); case _ => None}
     override def mkId(l: Long) = Id(l)
     override def setId(a: CustomReqType, b: Id) = a.copy(id = b)
   }

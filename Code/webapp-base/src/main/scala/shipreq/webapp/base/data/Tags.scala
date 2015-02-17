@@ -79,6 +79,7 @@ object Tag {
 
   object IdAccess extends ObjDataIdM[Tag.type, Tag, Id] {
     override def id(d: Tag) = d.id
+    override val unapplyData: AnyRef => Option[Tag] = {case r: Tag => Some(r); case _ => None}
     override def mkId(l: Long) = ApplicableTag.Id(l) // This is declared as being for testing only
     override def setId(t: Tag, i: Id) = t match { // TODO Ideally this should be hidden from non-test code
       case x: TagGroup      => x.copy(id = TagGroup     .Id(i.value))

@@ -2,9 +2,12 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom
+import shipreq.base.util.Must
+import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import SCRATCH._
 import shipreq.webapp.client.app.ui.widget._
+import SCRATCH._
+import DataImplicits._
 
 object Table {
 
@@ -182,11 +185,10 @@ object ColumnRenderer {
     }
   }
 
-  class CFTag(project: Project, scope: Option[Tag.Id]) extends ColumnRenderer {
+  class CFTag(project: Project, scope: Option[Must[Tag.Id]]) extends ColumnRenderer {
 
     def this(project: Project, fieldId: CustomField.Tag.Id) {
-      this(project, None) //project.fields.data.customFields.get(fieldId).asInstanceOf[CustomField.Tag].tagId.some)
-      // TODO add getField[I,D](I): Err \/ D
+      this(project, project.customField(fieldId).map(_.tagId).some)
     }
 
     // TODO if scope is None, we need to know everyone elses (tagWhitelists : Set[Tag.Id])

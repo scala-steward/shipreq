@@ -10,6 +10,8 @@ package object data {
   trait DataId[D] {
     type I
     def id(d: D): I
+    val unapplyData: AnyRef => Option[D]
+
     def mkId(l: Long): I // For testing
 
     final def pairWithId(d: D): (I, D) = (id(d), d)
@@ -38,10 +40,13 @@ package object data {
   // Implicits
 
   abstract class DataObjImplicits {
-    @inline implicit final def tcCustomFieldType = CustomField.IdAccess
-    @inline implicit final def tcCustomIssueType = CustomIssueType.IdAccess
-    @inline implicit final def tcCustomReqType   = CustomReqType.IdAccess
-    @inline implicit final def tcTag             = Tag.IdAccess
+    @inline implicit final def tcCustomFieldTypeImp = CustomField.Implication.IdAccess
+    @inline implicit final def tcCustomFieldTypeTag = CustomField.Tag        .IdAccess
+    @inline implicit final def tcCustomFieldTypeTxt = CustomField.Text       .IdAccess
+    @inline implicit final def tcCustomFieldType    = CustomField            .IdAccess
+    @inline implicit final def tcCustomIssueType    = CustomIssueType        .IdAccess
+    @inline implicit final def tcCustomReqType      = CustomReqType          .IdAccess
+    @inline implicit final def tcTag                = Tag                    .IdAccess
   }
 
   object DataImplicits extends DataObjImplicits {

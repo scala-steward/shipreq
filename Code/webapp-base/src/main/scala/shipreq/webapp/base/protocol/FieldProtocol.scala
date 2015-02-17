@@ -47,6 +47,7 @@ object FieldProtocol {
   implicit object Delta extends DataId[Delta] {
     override type I = Field.Id
     override def id(d: Delta) = d.field.fold(s => s, _.id)
+    override val unapplyData: AnyRef => Option[Delta] = {case r: Delta => Some(r); case _ => None}
     override def mkId(l: Long) = ??? // Method only exists for testing
   }
 

@@ -37,6 +37,10 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
       .map("\n    " + _.toString.replace(" -> ", " → "))
       .mkString("Project(", "", "\n)")
 
+  def customField[I <: CustomField.Id, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
+    fields.data.customFields(id).flatMap(f =>
+      Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
+
   def reqType(i: ReqType.Id): Must[ReqType] =
     i.foldId[Must[ReqType]](s => s, customReqTypes.data.apply)
 
