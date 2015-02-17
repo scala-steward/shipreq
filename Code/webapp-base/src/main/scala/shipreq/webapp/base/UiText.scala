@@ -6,8 +6,6 @@ object UiText {
 
   def mustFailed = "¿ERR"
 
-  def entityNameNotFound = "?" // TODO remove
-
   def mustA(m: Must[String], outputOnFailure: String = mustFailed): String = {
     m.fold(e => {
       System.err.println(e) // side-effect!

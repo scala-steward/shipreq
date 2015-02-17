@@ -554,7 +554,7 @@ private[fields] object MainTable {
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
-          name       = f.name(project.customReqTypes.data),
+          name       = UI mustA f.name(project.customReqTypes.data), // TODO is this a Must or an Issue?
           refkey     = unusedField,
           mandatory  = Editors.staticCheckbox(Mandatory from f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),

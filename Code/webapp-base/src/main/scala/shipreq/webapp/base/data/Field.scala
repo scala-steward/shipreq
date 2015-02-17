@@ -228,7 +228,7 @@ object CustomField {
     override def independentName = None
     override def keyO = None
 
-    def name(customReqTypes: CustomReqTypeIMap): String =
+    def name(customReqTypes: CustomReqTypeIMap): Must[String] =
       ReqType.name(customReqTypes)(reqTypeId)
   }
   object Implication {

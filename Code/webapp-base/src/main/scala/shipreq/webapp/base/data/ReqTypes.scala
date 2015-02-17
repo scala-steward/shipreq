@@ -5,6 +5,7 @@ import scalaz.{NonEmptyList, Order, Ordering}
 import scalaz.std.anyVal.intInstance
 import scalaz.syntax.order._
 import shapeless.contrib.scalaz.Instances._
+import shipreq.base.util.Must
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.UiText
 import ReqType.Mnemonic
@@ -45,8 +46,8 @@ object ReqType {
   val filterAlive: ReqType => Boolean =
     _.fold(_ => true, _.alive ≟ Alive)
 
-  def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => String =
-    _.foldId(_.name, c => customReqTypes.get(c).fold(UiText.entityNameNotFound)(_.name))
+  def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => Must[String] =
+    _.foldId(_.name, c => customReqTypes(c).map(_.name))
 
 }
 
