@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import monocle._
 import monocle.macros.Lenser
-import scalaz.{NonEmptyList, OneAnd, Equal}
+import scalaz.{Traverse, NonEmptyList, OneAnd, Equal}
 import scalaz.Maybe.optionMaybeIso
 import scalaz.Isomorphism._
 import scalaz.std.AllInstances._
@@ -285,10 +285,10 @@ object CustomField {
 case class FieldSet(customFields: IMap[CustomField.Id, CustomField],
                     order       : Vector[Field.Id]) {
 
-  def fields: Vector[Field] =
-    order.map {
+  lazy val fields: Must[Vector[Field]] =
+    Traverse[Vector].traverseImpl(order) {
       case  f: StaticField    => f
-      case id: CustomField.Id => customFields.get(id).get
+      case id: CustomField.Id => customFields(id)
     }
 }
 

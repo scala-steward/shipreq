@@ -4,6 +4,7 @@ import japgolly.nyaya._
 import scalaz.syntax.equal._
 import scalaz.std.AllInstances._
 import shipreq.base.util.Debug._
+import shipreq.base.util.Must
 import DataImplicits._
 
 object DataProp {
@@ -13,6 +14,14 @@ object DataProp {
 
   def revAnd[T] =
     rev.contramap[RevAnd[T]](_.rev)
+
+  // def must[A](name: => String): Prop[Must[A]] =
+  //   Prop.atom[Must[A]](name, _.fold(Some(_), _ => None))
+
+  def mustThen[A](name: => String, ifExists: Prop[A]): Prop[Must[A]] =
+    Prop.eval[Must[A]](m => m.fold(
+      e => Eval.atom(name, m, Some(e)),
+      a => ifExists(a).liftL))
 
   // -------------------------------------------------------------------------------------------------------------------
   object customIssueTypes {
@@ -53,11 +62,17 @@ object DataProp {
   // -------------------------------------------------------------------------------------------------------------------
   object fields {
 
+    type Fields = Vector[Field]
+
     def uniqueNames =
-      Prop.distinct("name", (_: FieldSet).fields.flatMap(_.independentName.toVector))
+      Prop.distinct("name", (_: Fields).flatMap(_.independentName.toVector))
 
     def uniqueKeys =
-      Prop.distinct("FieldRefKey", (_: FieldSet).fields.flatMap(_.keyO.toVector))
+      Prop.distinct("FieldRefKey", (_: Fields).flatMap(_.keyO.toVector))
+
+    def fields =
+      mustThen[Fields]("FieldSet.fields", uniqueNames ∧ uniqueKeys)
+        .contramap[FieldSet](_.fields)
 
     def orderNoDups =
       Prop.distinct("order", (_: FieldSet).order)
@@ -85,7 +100,7 @@ object DataProp {
       Prop.distinct("Implication field", filteredFields { case t: CustomField.Implication => t.reqTypeId })
 
     def fieldSet = "FieldSet" rename_: (
-      uniqueNames ∧ uniqueKeys ∧
+      fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllUndeletableStaticFields ∧
       tagFieldsUnique ∧ implicationFieldsUnique)
 

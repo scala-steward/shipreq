@@ -95,9 +95,10 @@ private[issues] object MandatoryFields {
           UI.rowStatusCtrls(r.status, EmptyTag)))
     }
 
-    def renderRows =
-      project.fields.data.fields.filter(Field.filterAlive).toReactNodeArray(
-        _.fold(renderStaticField, renderCustomField))
+    def renderRows: ReactNode =
+      UI.must(project.fields.data.fields)(
+        _.filter(Field.filterAlive).toReactNodeArray(
+          _.fold(renderStaticField, renderCustomField)))
 
     def render: ReactElement =
       <.table(
