@@ -49,15 +49,16 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   import SCRATCH._ // TODO Hardcoded ↓
   import shipreq.base.util.IMap
 
-  val publicReqIdRegister: PublicReqId.Register = ???
-  val reqs               : IMap[Req.Id, Req]    = ???
-  val reqCodeTrie        : ReqCode.Trie         = ???
-  val reqFieldData       : ReqFieldData         = ???
+  val pubidRegister: Pubid.Register    = ???
+  val reqs         : IMap[Req.Id, Req] = ???
+  val reqCodeNodes : ReqCode.Nodes     = ???
+  val reqCodeTrie  : ReqCode.Trie      = ???
+  val reqFieldData : ReqFieldData      = ???
 
-  val reqCodesPerTarget = ReqCode.Trie.inverse(reqCodeTrie)
+  lazy val reqCodesPerTarget = ReqCode.PerTarget(reqCodeTrie, reqCodeNodes)
 
-  def publicReqId_reqId(id: PublicReqId): Option[Req.Id] = {
-    val v = publicReqIdRegister(id.reqTypeId)
+  def reqIdByPubid(id: Pubid): Option[Req.Id] = {
+    val v = pubidRegister(id.reqTypeId)
     val i = id.pos.value - 1
     try {
       Some(v(i))
@@ -66,8 +67,8 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     }
   }
 
-  def publicReqId_req(id: PublicReqId): Option[Req] =
-    publicReqId_reqId(id) flatMap req
+  def reqByPubid(id: Pubid): Option[Req] =
+    reqIdByPubid(id) flatMap req
 
   def req(id: Req.Id): Option[Req] =
     reqs.get(id)

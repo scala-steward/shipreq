@@ -4,7 +4,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom
 import shipreq.webapp.base.data._
 import SCRATCH._
-import shipreq.webapp.client.app.ui.{ShowPublicReqId, ShowReqType}
+import shipreq.webapp.client.app.ui.widget._
 
 object Table {
 
@@ -127,7 +127,7 @@ object ColumnRenderer {
       <.span("ID") // Use Column.NameResolver
 
     override val render: Row => ReactElement = {
-      case GenericReqRow(req, _) => ShowPublicReqId(req.pubId, project).render
+      case GenericReqRow(req, _) => PubidW(req.pubId, project).render
       case ReqCodeGroupRow(_, _) => `N/A`
     }
   }
@@ -137,7 +137,7 @@ object ColumnRenderer {
       <.span("ReqType") // Use Column.NameResolver
 
     override val render: Row => ReactElement = {
-      case GenericReqRow(req, _) => ShowReqType(req.reqTypeId, project).render
+      case GenericReqRow(req, _) => ReqTypeW(req.reqTypeId, project).render
       case ReqCodeGroupRow(_, _) => `N/A`
     }
   }

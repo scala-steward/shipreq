@@ -15,17 +15,22 @@ object SCRATCH {
   /**
    * A textual ID that refers to a requirement.
    *
-   * Eg. "system.email.failure" would be ReqCode("failure", "email" :: "system" :: Nil)
+   * Eg. "system.email.failure" would be ???????????????? ReqCode("failure", "email" :: "system" :: Nil)
    *
    * Each ReqCode only refers to a single target, but requirements can have 0..n ReqCodes.
    */
-  final case class ReqCode(last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node]) {
-    def asc = (last :: secondLastToRoot).reverse
-    def txt =  asc.mkString(".")
+  final case class ReqCode(/*last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node]*/) {
+//    def asc = (last :: secondLastToRoot).reverse
+    def txt: String = ???
   }
 
   // TODO all req code text should be lowercase
 
+  /**
+   * [[ReqCode.Trie]] contains the hierarchy of codes and their targets.
+   * [[ReqCode.Node]] contains the textual values of nodes in the trie.
+   * [[ReqCode.PerTarget]] is a view of both types above, built for efficient lookups by target.
+   */
   object ReqCode {
 
     /* TODO Make ReqCode.Node memory-efficient
@@ -59,6 +64,8 @@ object SCRATCH {
      */
     final case class Node(value: String) extends TaggedString
 
+    final case class NodeId(value: Long) extends TaggedLong
+
     /**
      * Something to which a ReqCode can refer.
      *
@@ -67,17 +74,21 @@ object SCRATCH {
     sealed trait Target
 
     // ReqCodes are unique and refer to 0..1 (ReqCodeGroup | Req)
-    type Trie = Map[Node, TrieNode]
+    type Trie = Map[NodeId, TrieNode]
+
     final case class TrieNode(value: Option[Target], next: Trie)
 
     object Trie {
       val empty: Trie = Map.empty
-      def inverse(t: Trie): PerTarget = ???
     }
+
+    type Nodes = IMap[NodeId, Node]
 
     // Creation = O(n)
     // Lookup   = O(log n)
     type PerTarget = Map[Target, Set[ReqCode]]
+
+    def PerTarget(t: Trie, ns: Nodes): PerTarget = ???
   }
 
   /**
@@ -91,7 +102,7 @@ object SCRATCH {
   }
 
   // ===================================================================================================================
-  // PublicReqIds like MF-3
+  // Public IDs (like MF-3)
 
   /**
    * A position (oridinal) in a req-type's ordered list of requirements.
@@ -103,13 +114,13 @@ object SCRATCH {
   final case class ReqTypePos(value: Int) extends TaggedInt
 
   /**
-   * A requirement's ID from the public's point-of-view.
+   * Public ID: A requirement's ID from the public's point-of-view.
    *
    * Eg. "FR-3"
    */
-  final case class PublicReqId(reqTypeId: ReqType.Id, pos: ReqTypePos)
+  final case class Pubid(reqTypeId: ReqType.Id, pos: ReqTypePos)
 
-  object PublicReqId {
+  object Pubid {
 
     /**
      * Once a (reqtype x position) is allocated, it is never removed.
@@ -132,7 +143,7 @@ object SCRATCH {
   }
 
   final case class GenericReq(id         : GenericReq.Id,
-                              pubId      : PublicReqId,
+                              pubId      : Pubid,
                               desc       : String,
                               // TODO lastUpdated. Need JS-compat datetimeTZ
                               alive      : Alive) extends Req {
