@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenser
-import shipreq.base.util.BiMap
+import shipreq.base.util.{IMap, BiMap}
 import shipreq.base.util.TaggedTypes._
 
 import scalaz.{Memo, Equal, NonEmptyList}
@@ -19,7 +19,10 @@ object SCRATCH {
    *
    * Each ReqCode only refers to a single target, but requirements can have 0..n ReqCodes.
    */
-  final case class ReqCode(last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node])
+  final case class ReqCode(last: ReqCode.Node, secondLastToRoot: List[ReqCode.Node]) {
+    def asc = (last :: secondLastToRoot).reverse
+    def txt =  asc.mkString(".")
+  }
 
   // TODO all req code text should be lowercase
 
@@ -65,15 +68,16 @@ object SCRATCH {
 
     // ReqCodes are unique and refer to 0..1 (ReqCodeGroup | Req)
     type Trie = Map[Node, TrieNode]
+    final case class TrieNode(value: Option[Target], next: Trie)
+
     object Trie {
       val empty: Trie = Map.empty
+      def inverse(t: Trie): PerTarget = ???
     }
-    final case class TrieNode(value: Option[Target], next: Trie)
 
     // Creation = O(n)
     // Lookup   = O(log n)
-    type LookupTable = Map[Target, Set[ReqCode]]
-
+    type PerTarget = Map[Target, Set[ReqCode]]
   }
 
   /**
@@ -81,7 +85,7 @@ object SCRATCH {
    *
    * Previously called "Semantic Header Row" or "SHR" in the requirements.
    */
-  final case class Group(id: ReqCodeGroup.Id, desc: String)
+  final case class ReqCodeGroup(id: ReqCodeGroup.Id, desc: String)
   object ReqCodeGroup {
     final case class Id(value: Long) extends TaggedLong with ReqCode.Target
   }
@@ -131,7 +135,9 @@ object SCRATCH {
                               pubId      : PublicReqId,
                               desc       : String,
                               // TODO lastUpdated. Need JS-compat datetimeTZ
-                              alive      : Alive) extends Req
+                              alive      : Alive) extends Req {
+    @inline def reqTypeId = pubId.reqTypeId
+  }
   object GenericReq {
     final case class Id(value: Long) extends TaggedLong with Req.Id
   }

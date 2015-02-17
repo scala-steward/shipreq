@@ -42,4 +42,33 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val reqTypes: Stream[ReqType] =
     (customReqTypes.data.values.toStream: Stream[ReqType]) #:::
     (StaticReqType.valueStream          : Stream[ReqType])
+
+
+  // ------------------------------------------------------------------------------
+  import SCRATCH._ // TODO Hardcoded ↓
+  import shipreq.base.util.IMap
+
+  val publicReqIdRegister: PublicReqId.Register = ???
+  val reqs               : IMap[Req.Id, Req]    = ???
+  val reqCodeTrie        : ReqCode.Trie         = ???
+  val reqFieldData       : ReqFieldData         = ???
+
+  val reqCodesPerTarget = ReqCode.Trie.inverse(reqCodeTrie)
+
+  def publicReqId_reqId(id: PublicReqId): Option[Req.Id] = {
+    val v = publicReqIdRegister(id.reqTypeId)
+    val i = id.pos.value - 1
+    try {
+      Some(v(i))
+    } catch {
+      case _: IndexOutOfBoundsException => None
+    }
+  }
+
+  def publicReqId_req(id: PublicReqId): Option[Req] =
+    publicReqId_reqId(id) flatMap req
+
+  def req(id: Req.Id): Option[Req] =
+    reqs.get(id)
+
 }

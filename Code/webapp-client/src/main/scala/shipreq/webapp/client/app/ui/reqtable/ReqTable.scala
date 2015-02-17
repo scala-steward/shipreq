@@ -24,6 +24,9 @@ object ReqTable {
       ViewSettingsEditor(columnName)
 
     def render =
-      viewSettingsEditor(EVar overState $)
+      <.div(
+        viewSettingsEditor(EVar overState $),
+        Table.Component(Table.Props($.state, project, columnName)))
   }
 }
+

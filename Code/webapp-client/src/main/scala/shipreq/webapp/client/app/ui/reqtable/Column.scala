@@ -24,6 +24,7 @@ object Column {
   case object Code    extends NonField with SortInconclusive
   case object Desc    extends NonField with SortInconclusive
   case object ReqType extends NonField with SortInconclusive
+  // TODO add tags
 
   val nonFieldValues: NonEmptyList[NonField] =
     NonEmptyList(PubId, Code, Desc, ReqType)
