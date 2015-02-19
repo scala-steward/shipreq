@@ -25,15 +25,9 @@ object Must {
       override def bind [A, B](fa: Must[A])(f: A => Must[B]): Must[B] = fa flatMap f
     }
 
-  //implicit def equality[A: Equal]: Equal[Must[A]] =
-  //  def equal(a1: F, a2: F): Boolean
-  //  def equalIsNatural: Boolean = false
-
-  @inline implicit def autoMust[A](a: A): Must[A] = Exists(a)
-
-//  implicit class opeortpewort[A](val o: Option[A]) extends AnyVal {
-//    def toMust(explanation: => String): Must[A] = fromOption(o, explanation)
-//  }
+  object Auto {
+    @inline implicit def autoMust[A](a: A): Must[A] = Exists(a)
+  }
 
   def fromOption[A](o: Option[A], explanation: => String): Must[A] =
     o.fold[Must[A]](Failed(explanation))(Exists(_))

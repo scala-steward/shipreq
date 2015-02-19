@@ -51,7 +51,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
       Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
 
   def reqType(i: ReqType.Id): Must[ReqType] =
-    i.foldId[Must[ReqType]](s => s, customReqTypes.data.apply)
+    i.foldId[Must[ReqType]](Must.Exists(_), customReqTypes.data.apply)
 
   lazy val reqTypes: Stream[ReqType] =
     (customReqTypes.data.values.toStream: Stream[ReqType]) #:::

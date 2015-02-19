@@ -19,6 +19,9 @@ object AppConsts {
   /** `FieldRefKey` min & max lengths. */
   def fieldRefKeyLength = hashRefKeyLength
 
+  /** `ReqCode.Node` min & max lengths. */
+  def reqCodeNodeLength = hashRefKeyLength
+
   /** Email address max length. */
   def emailMaxLength = 120
 

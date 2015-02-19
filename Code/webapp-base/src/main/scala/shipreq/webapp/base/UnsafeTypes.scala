@@ -20,7 +20,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority { // TODO move into test
   implicit def autoFieldRefKey(s: String) = FieldRefKey(s)
   implicit def autoReqCodeNode(s: String) = ReqCode.Node(s)
 
-  implicit def autoReqCodeNodeId    (i: Int) = ReqCode.NodeId(i)
   implicit def autoReqCodeGroupId   (i: Int) = ReqCodeGroup.Id(i)
   implicit def autoReqTypePos       (i: Int) = ReqTypePos(i)
   implicit def autoGenericReqId     (i: Int) = GenericReq.Id(i)
@@ -33,7 +32,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority { // TODO move into test
   implicit def autoApplicableTagId  (i: Int) = ApplicableTag.Id(i)
   implicit def autoRev              (i: Int) = Rev(i)
 
-  implicit def autoReqCodeNodeIdO    (i: Int): Option[ReqCode.NodeId]             = Some(i)
   implicit def autoReqCodeGroupIdO   (i: Int): Option[ReqCodeGroup.Id]            = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)
   implicit def autoGenericReqIdO     (i: Int): Option[GenericReq.Id]              = Some(i)

@@ -1,20 +1,24 @@
 package shipreq.webapp.base
 
+import com.nicta.rng.Rng
+import japgolly.nyaya.util._
+import japgolly.nyaya.test.{Distinct, Gen, GenS}
 import monocle.Lens
-import monocle.function.{first, second}
+import monocle.function.{first, second, third}
 import monocle.std.tuple2._
+import monocle.std.tuple3._
 import scala.annotation.tailrec
-import scalaz.OneAnd
+import scala.collection.GenTraversable
+import scalaz.{NonEmptyList, OneAnd, StateT}
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
 import scalaz.std.set._
 import scalaz.std.stream._
 import scalaz.std.vector._
 
-import shipreq.base.util.IMap
+import shipreq.base.util.{BiMap, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedLong
-import japgolly.nyaya.test.{Distinct, Gen}
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
 import shipreq.base.util.Debug._
@@ -23,6 +27,9 @@ import DataImplicits._
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
 object RandomData {
+
+  type StateG[S, A] = StateT[Gen, S, A]
+  implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
 
   lazy val id =
     Gen.positivelong
@@ -48,6 +55,26 @@ object RandomData {
       r2 <- rev
     } yield if (r1.value <= r2.value) (r1, r2) else (r2, r1)
 
+  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdMAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
+    val d = distinctId[D, I].lift[List]
+    val f = mod compose d.run
+    val g = f andThen (i.emptyIMap ++ _)
+    revAnd(r.list map g)
+  }
+
+  def distinctId[D, I <: TaggedLong](implicit i: DataIdMAux[D, I]) =
+    Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[D](i.id, i.setId)
+
+  def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
+    def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
+    Gen.oneofG(
+      Gen.insert(ISubset.All()),
+      h(ISubset.Only.apply),
+      h(ISubset.Not.apply))
+  }
+
+  def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
+
   lazy val alive =
     Gen.oneof[Alive](Alive, Dead)
 
@@ -63,6 +90,9 @@ object RandomData {
       t <- Gen.charof('.', "_=-", 'a' to 'z', 'A' to 'Z', '0' to '9').list.lim(AppConsts.hashRefKeyLength.end - 1)
     } yield HashRefKey((h :: t).mkString)
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Custom issue types
+
   lazy val customIssueTypeId =
     id map CustomIssueType.Id
 
@@ -72,6 +102,9 @@ object RandomData {
   /** HashRefKey uniqueness enforced in Project, not here */
   lazy val customIssueTypes =
     revAndIMap(customIssueType)(identity)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // ReqTypes
 
   lazy val reqTypeMnemonic =
     Gen.uppers1.lim(6).map(cs => Mnemonic(cs.list.mkString))
@@ -110,15 +143,10 @@ object RandomData {
     revAndIMap(customReqType)(d.run)
   }
 
-  def distinctId[D, I <: TaggedLong](implicit i: DataIdMAux[D, I]) =
-    Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[D](i.id, i.setId)
+  val staticReqTypeIdSet = StaticReqType.values.list.toSet[ReqType.Id]
 
-  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdMAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
-    val d = distinctId[D, I].lift[List]
-    val f = mod compose d.run
-    val g = f andThen (i.emptyIMap ++ _)
-    revAnd(r.list map g)
-  }
+  // -------------------------------------------------------------------------------------------------------------------
+  // Tags
 
   lazy val tagGroupId =
     id map TagGroup.Id
@@ -196,16 +224,11 @@ object RandomData {
     case t: TagGroup      => t
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Fields
+
   lazy val staticField: Gen[StaticField] =
     Gen.oneofL(StaticField.values)
-
-  def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
-    def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
-    Gen.oneofG(
-      Gen.insert(ISubset.All()),
-      h(ISubset.Only.apply),
-      h(ISubset.Not.apply))
-  }
 
   def applicableReqTypes(r: Set[CustomReqType.Id]): Gen[ApplicableReqTypes] = {
     val all = StaticReqType.values.list.foldLeft(r.map(a => a: ReqType.Id))(_ + _).toList
@@ -288,7 +311,112 @@ object RandomData {
       order        ← Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
     } yield FieldSet(cf, order)
 
-  def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
+  // -------------------------------------------------------------------------------------------------------------------
+  // Requirements
+
+  lazy val genericReqId =
+    id map GenericReq.Id
+
+  lazy val reqId: Gen[Req.Id] = {
+    import Gen.Covariance._
+    Gen.oneofG(genericReqId)
+  }
+
+  def pubid(reqTypeIds: NonEmptyList[ReqType.Id])(reqId: Req.Id): StateG[Pubid.Register, Pubid] =
+    StateT(register =>
+      Gen.oneofL(reqTypeIds).map(reqTypeId =>
+        Pubid.alloc(reqId, reqTypeId, register)))
+
+  def genericReq(pubidS: Req.Id => StateG[Pubid.Register, Pubid]): StateG[Pubid.Register, GenericReq] =
+    for {
+      id    <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
+      pubid <- pubidS(id)
+      desc  <- shortText
+      live  <- alive
+    } yield GenericReq(id, pubid, desc, live)
+
+  def requirements(reqTypeIds: NonEmptyList[ReqType.Id]): Gen[Requirements] = {
+    def init = StateT.stateT[Gen, Pubid.Register, IMap[Req.Id, Req]](Req.IdAccess.emptyIMap)
+    Gen.genSize.flatMap(sz => {
+      val prog =
+        Stream.fill(sz.value)(genericReq(pubid(reqTypeIds))).foldLeft(init)((sn, s1) =>
+          for {
+            m <- sn
+            r <- s1
+          } yield m + r
+        )
+      prog(Pubid.emptyRegister).map{ case (p, m) => Requirements(m, p) }
+    })
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Req Data
+
+  def reqFieldDataText(cols: Set[CustomField.Text.Id], reqs: Set[Req.Id]): Gen[ReqFieldData.Text] = {
+    val unit = Gen insert (()) // TODO random text field data
+    unit mapByKeySubset reqs mapByKeySubset cols
+  }
+
+  def reqFieldDataTags(reqs: TraversableOnce[Req.Id], tags: Set[ApplicableTag.Id]): Gen[ReqFieldData.Tags] = {
+    val rndTags = Gen.subset(tags).map(_.toSet)
+    rndTags mapByKeySubset reqs
+  }
+
+  lazy val reqFieldDataImplications: Gen[ReqFieldData.Implications] = Gen insert BiMap.empty // TODO
+
+  def reqFieldData(reqs   : Set[Req.Id],
+                   txtCols: Set[CustomField.Text.Id],
+                   tags   : Set[ApplicableTag.Id]): Gen[ReqFieldData] =
+    Gen.apply3(ReqFieldData.apply)(
+      reqFieldDataText(txtCols, reqs),
+      reqFieldDataTags(reqs, tags),
+      reqFieldDataImplications)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Req Codes
+
+  lazy val reqCodeNode: Gen[ReqCode.Node] =
+    Gen.charof('_', "", 'a' to 'z', '0' to '9').list1.lim(AppConsts.reqCodeNodeLength.max)
+      .map(cs => ReqCode.Node(cs.list.mkString))
+
+  lazy val reqCode: GenS[ReqCode] =
+    reqCodeNode.list1.map(ReqCode.apply)
+
+  lazy val reqCodeDFixer = {
+    def fix(ss: Set[ReqCode]): ReqCode = {
+      var c = ss.head
+      while (ss contains c) {
+        val n1 = c.backwards.head
+        val n2 = ReqCode.Node(n1.value + "x")
+        c = ReqCode(NonEmptyList.nel(n2, c.backwards.tail))
+      }
+      c
+    }
+    Distinct.Fixer lift fix
+  }
+
+  def reqCodeTrie(possibleTargets: TraversableOnce[ReqCode.Target]) = GenS[ReqCode.Trie]({ sz =>
+    import ReqCode._
+    type FlatValue = (Target, ReqCode)
+
+    val flatValues: Gen[Vector[FlatValue]] =
+      Gen.subset(possibleTargets).flatMap { ts =>
+        val gv = Gen.traverse(ts)(reqCode.strengthL)
+        val d  = reqCodeDFixer.distinct.at(second[FlatValue, ReqCode]).lift[Vector]
+        gv map d.run
+      }
+
+    flatValues.map(
+      _.foldLeft(Trie.empty) { case (t, (tgt, c)) =>
+        Trie.put(t)(tgt, c.backwards)
+      })
+  })
+
+  def reqCodes(g: Gen[ReqCode.Trie]) =
+    revAnd(g map ReqCodes.apply)
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Project
 
   def distinctHashRefKeys = {
     type A = RevAnd[CustomIssueTypeIMap]
@@ -305,17 +433,22 @@ object RandomData {
     issues + tags
   }
 
-  val staticReqTypeIdSet = StaticReqType.values.list.toSet[ReqType.Id]
-
-  lazy val project =
+  lazy val project: Gen[Project] =
     for {
       (issues, tags) ← Gen.tuple2(customIssueTypes, revAndTagTree) map distinctHashRefKeys.run
       reqtypes       ← customReqTypes
-      reqTypeIdSet   = staticReqTypeIdSet ++ reqtypes.data.keys
+      reqTypeIds     = StaticReqType.values :::> reqtypes.data.keys.toList
+      reqTypeIdSet   = reqTypeIds.list.toSet
       fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
-    } yield Project(issues, reqtypes, fields, tags)
+      reqs           ← revAnd(requirements(reqTypeIds))
+      reqCodes       ← reqCodes(reqCodeTrie(reqs.data.reqs.keys).lim(7 `|SJS|` 3)) // TODO add SHRs
+      atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+      textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
+      reqIds         = reqs.data.reqs.keySet
+      reqFieldData   ← revAnd(reqFieldData(reqIds, textColIds, atagIds))
+    } yield Project(issues, reqtypes, fields, tags, reqs, reqCodes, reqFieldData)
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
   // Protocol
   object protocol {
     import shipreq.webapp.base.protocol.{FieldProtocol => FP, _}
@@ -367,7 +500,7 @@ object RandomData {
       })
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
   object remoteDeltaG {
     import shipreq.webapp.base.protocol._
     import RandomData.protocol._
@@ -417,7 +550,7 @@ object RandomData {
       remoteDeltaG.forPart(_).map(List(_))
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
   object routines {
     import shipreq.webapp.base.protocol._
     import Routine._, Routines._

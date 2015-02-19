@@ -361,12 +361,11 @@ object DataCodecs {
 
   implicit final val reqCodeGroupId  = tagL(ReqCodeGroup.Id.apply)
   implicit final val reqCodeGroup    = caseclass2(ReqCodeGroup.apply, ReqCodeGroup.unapply)
-  implicit final val reqCodeNodeId   = tagL(ReqCode.NodeId.apply)
   implicit final val reqCodeNode     = tagS(ReqCode.Node.apply)
   implicit final val reqCodeTarget   = _reqCodeTarget
   implicit final val reqCodeTrieNode = _reqCodeTrieNode
   implicit final val reqCodeTrie     = _reqCodeTrie
-  implicit final val reqCodes        = caseclass2(ReqCodes.apply, ReqCodes.unapply)
+  implicit final val reqCodes        = caseclass1(ReqCodes.apply, ReqCodes.unapply)
 
   private def _reqCodeTarget = ReadWriter[ReqCode.Target]({
     case i: Req         .Id => intkeyW(0, i)(reqId)
@@ -394,8 +393,8 @@ object DataCodecs {
   }
   private lazy val _reqCodeTrie: ReadWriter[ReqCode.Trie] = {
     import ReqCode._
-    lazy val w = MapW[NodeId, TrieNode](reqCodeNodeId, _reqCodeTrieNode)
-    lazy val r = MapR[NodeId, TrieNode](reqCodeNodeId, _reqCodeTrieNode)
+    lazy val w = MapW(reqCodeNode, _reqCodeTrieNode)
+    lazy val r = MapR(reqCodeNode, _reqCodeTrieNode)
     ReadWriter[Trie](i => w write i, {case i => r read i})
   }
 

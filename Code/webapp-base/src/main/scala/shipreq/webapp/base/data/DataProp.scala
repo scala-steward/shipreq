@@ -174,19 +174,16 @@ object DataProp {
 
     def branchesMustBranch =
       Prop.test[TrieBranch]("TrieBranch branches", _.next.nonEmpty)
-        .forall[T, List](t => Trie.simpleFold[List[TrieBranch]](t.trie, Nil)((q, n) => n match {
+        .forall[T, List](t => Trie.simpleFold[List[TrieBranch]](t.trie, Nil)((q, _, n) => n match {
           case b: TrieBranch => b :: q
           case _: Target     => q
         })) rename "All TrieBranches branch"
 
-    def consistentNodeIdSet =
-      Prop.equal[T]("nodes.keySet = nodeIdsInTrie")(_.nodeIdsInTrie.toSet, _.nodes.keySet)
-
-    def noSharedTrieBranches =
-      Prop.distinct("No shared trie branches", (_: T).nodeIdsInTrie)
+//    def noSharedTrieBranches =
+//      Prop.distinct("No shared trie branches", (_: T).nodeIdsInTrie)
 
     lazy val all =
-      revAnd(branchesMustBranch ∧ consistentNodeIdSet ∧ noSharedTrieBranches) rename "ReqCodes"
+      revAnd(branchesMustBranch) rename "ReqCodes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -201,6 +198,8 @@ object DataProp {
       ∧             reqs.all.contramap[T](_.reqs)
       ∧         reqCodes.all.contramap[T](_.reqCodes)
     ) rename "constituents"
+
+    // TODO What about cycles in the ReqFieldData.Implications BiMap? Prevent!
 
     def uniqueHashRefKeys =
       Prop.distinct[T, HashRefKey]("HashRefKey", p =>

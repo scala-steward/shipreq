@@ -2,9 +2,11 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenser
-import shipreq.base.util.{Must, IMap, BiMap}
-import shipreq.base.util.TaggedTypes._
+import scala.annotation.tailrec
 import scalaz.NonEmptyList
+import scalaz.syntax.equal._
+import shipreq.base.util.{BiMap, IMap}
+import shipreq.base.util.TaggedTypes._
 
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
@@ -25,7 +27,6 @@ final case class ReqCode(backwards: NonEmptyList[ReqCode.Node]) {
 
 /**
  * [[ReqCode.Trie]] contains the hierarchy of codes and their targets.
- * [[ReqCode.Nodes]] contains the textual values of nodes in the trie.
  * [[ReqCodes]] is a bundle of all req-codes in a project.
  */
 object ReqCode {
@@ -59,9 +60,9 @@ object ReqCode {
    *
    * Eg. "mail" in "system.mail.failure"
    */
-  final case class Node(value: String) extends TaggedString
-
-  final case class NodeId(value: Long) extends TaggedLong
+  final case class Node(value: String) extends TaggedString {
+    override val hashCode = value.##
+  }
 
   /**
    * Something to which a [[ReqCode]] can refer.
@@ -74,29 +75,24 @@ object ReqCode {
   sealed trait TrieNode
   final case class TrieBranch(target: Option[Target], next: Trie) extends TrieNode
 
-  type Trie = Map[NodeId, TrieNode]
+  type Trie = Map[Node, TrieNode]
   object Trie {
     val empty: Trie = Map.empty
 
-//    val target: TrieNode => Option[Target] = {
-//      case TrieBranch(t, _) => t
-//      case t: Target        => Some(t)
-//    }
+    def simpleFold[A](trie: Trie, z: A)(f: (A, Node, TrieNode) => A): A =
+      trie.foldLeft(z) { case (q, (cn, tn)) => tn match {
+        case TrieBranch(_, next) => simpleFold(next, f(q, cn, tn))(f)
+        case _: Target           => f(q, cn, tn)
+      }}
 
-    def simpleFold[A](trie: Trie, z: A)(f: (A, TrieNode) => A): A =
-      trie.values.foldLeft(z)((q, n) => n match {
-        case TrieBranch(_, next) => simpleFold(next, f(q, n))(f)
-        case _: Target           => f(q, n)
-      })
+    def fold[A](trie: Trie, z: A)(f: (A, NonEmptyList[Node], Option[Target]) => A): A =
+      foldP[A, List[Node], NonEmptyList[Node]](trie, z, Nil, _.list)(
+        (p, n) => NonEmptyList.nel(n, p), f)
 
-    def fold[A](trie: Trie, z: A)(f: (A, NonEmptyList[NodeId], Option[Target]) => A): A =
-      foldP[A, List[NodeId], NonEmptyList[NodeId]](trie, z, Nil, _.list)(
-        (p, i) => NonEmptyList.nel(i, p), f)
-
-    def foldP[A, P0, P1](trie: Trie, z: A, pz: => P0, p0: P1 => P0)(p1: (P0, NodeId) => P1, f: (A, P1, Option[Target]) => A): A = {
+    def foldP[A, P0, P1](trie: Trie, z: A, pz: => P0, p0: P1 => P0)(p1: (P0, Node) => P1, f: (A, P1, Option[Target]) => A): A = {
       def traverseT(q: A, path: P0, t: Trie): A =
         t.foldLeft(q) {
-          case (q2, (id, node)) => traverseN(q2, p1(path, id), node)
+          case (q2, (cn, tn)) => traverseN(q2, p1(path, cn), tn)
         }
 
       @inline def traverseN(q: A, path: P1, node: TrieNode): A =
@@ -107,30 +103,45 @@ object ReqCode {
 
       traverseT(z, pz, trie)
     }
-  }
 
-  type Nodes = Map[NodeId, Node]
+    def put(trie: Trie)(target: Target, codeForwards: NonEmptyList[Node]): Trie = {
+      @tailrec def go(t: Trie, codeH: Node, codeT: List[Node], unwind: Trie => Trie): Trie =
+        codeT match {
+
+          // At target-path's end
+          case Nil =>
+            val newTrieNode: TrieNode =
+              t.get(codeH) match {
+                case Some(TrieBranch(_, next)) => TrieBranch(Some(target), next)
+                case Some(_: Target)           => target
+                case None                      => target
+              }
+            unwind(t.updated(codeH, newTrieNode))
+
+          // Still traversing target-path
+          case a :: b =>
+            t.get(codeH) match {
+              case Some(TrieBranch(ot, onext)) => go(onext, a, b, n ⇒ unwind(t.updated(codeH, TrieBranch(ot, n))))
+              case ot @ Some(_: Target)        => go(empty, a, b, n ⇒ unwind(t.updated(codeH, TrieBranch(ot.asInstanceOf[Option[Target]], n))))
+              case None                        => go(empty, a, b, n ⇒ unwind(t.updated(codeH, TrieBranch(None, n))))
+
+            }
+        }
+
+      go(trie, codeForwards.head, codeForwards.tail, identity)
+    }
+  }
 }
 
-final case class ReqCodes(trie: ReqCode.Trie, nodes: ReqCode.Nodes) {
-  import ReqCode.{NodeId, Node, Target, Trie}
+final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
+  import ReqCode.{Node, Target, Trie}
 
-  private def foldN[A](z: A)(f: (A, NonEmptyList[Node], Option[Target]) => A): Must[A] = {
-    val getNode: NodeId => Must[Node] = id => Must.fromOption(nodes get id, s"Node missing for $id\nNodes: $nodes")
-    Trie.foldP[Must[A], Must[List[Node]], Must[NonEmptyList[Node]]](trie, z, Nil, _.map(_.list))(
-        (mp, id)      => mp.flatMap(p => getNode(id).map(n => NonEmptyList.nel(n, p))),
-        (ma, mp, tgt) => ma.flatMap(a => mp.map(p => f(a, p, tgt))))
-  }
-
-  lazy val byTargetMap: Must[Multimap[Target, Set, ReqCode]] =
-    foldN[Multimap[Target, Set, ReqCode]](Multimap.empty)((q, path, tgt) =>
+  lazy val byTargetMap: Multimap[Target, Set, ReqCode] =
+    Trie.fold[Multimap[Target, Set, ReqCode]](trie, Multimap.empty)((q, path, tgt) =>
       tgt.fold(q)(q.add(_, ReqCode(path))))
 
-  val byTarget: Target => Must[Set[ReqCode]] =
-    byTargetMap.fold(e => Function const Must.Failed(e), _.apply)
-
-  def nodeIdsInTrie: List[NodeId] =
-    Trie.foldP[List[NodeId], Unit, NodeId](trie, Nil, (), _ => ())((_,i) => i, (q, i, _) => i :: q)
+  @inline def byTarget(t: Target): Set[ReqCode] =
+    byTargetMap(t)
 }
 
 
@@ -172,6 +183,15 @@ object Pubid {
   type Register = Multimap[ReqType.Id, Vector, Req.Id]
 
   val emptyRegister: Register = Multimap.empty
+
+  def alloc(reqId: Req.Id, reqTypeId: ReqType.Id, register: Register): (Register, Pubid) = {
+    val cur = register(reqTypeId)
+    val i = cur.indexWhere(_ ≟ reqId)
+    if (i >= 0)
+      (register, Pubid(reqTypeId, ReqTypePos(i + 1)))
+    else
+      (register.add(reqTypeId, reqId), Pubid(reqTypeId, ReqTypePos(cur.size + 1)))
+  }
 }
 
 // ===================================================================================================================
@@ -206,11 +226,12 @@ final case class GenericReq(id         : GenericReq.Id,
 }
 object GenericReq {
   final case class Id(value: Long) extends TaggedLong with Req.Id
+
 }
 
 
 object ReqFieldData {
-  type Text         = Map[CustomField.Text.Id, Map[Req.Id, String]] // TODO String should be the rich text AST
+  type Text         = Map[CustomField.Text.Id, Map[Req.Id, Unit]] // TODO Should be the rich text AST
   type Tags         = Map[Req.Id, Set[ApplicableTag.Id]]
   type Implications = BiMap[Req.Id, Req.Id]
 }

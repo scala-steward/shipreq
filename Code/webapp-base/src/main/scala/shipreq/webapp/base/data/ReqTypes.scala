@@ -7,7 +7,6 @@ import scalaz.syntax.order._
 import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.Must
 import shipreq.base.util.TaggedTypes._
-import shipreq.webapp.base.UiText
 import ReqType.Mnemonic
 
 sealed trait ReqType {
@@ -47,7 +46,7 @@ object ReqType {
     _.fold(_ => true, _.alive ≟ Alive)
 
   def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => Must[String] =
-    _.foldId(_.name, c => customReqTypes(c).map(_.name))
+    _.foldId(s => Must.Exists(s.name), c => customReqTypes(c).map(_.name))
 
 }
 

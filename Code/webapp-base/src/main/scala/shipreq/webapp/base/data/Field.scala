@@ -1,7 +1,6 @@
 package shipreq.webapp.base.data
 
 import monocle._
-import monocle.macros.Lenser
 import scalaz.{Traverse, NonEmptyList, OneAnd, Equal}
 import scalaz.Maybe.optionMaybeIso
 import scalaz.Isomorphism._
@@ -11,8 +10,8 @@ import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.{Must, IMap}
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
-import shipreq.webapp.base.UiText
 import shipreq.webapp.base.delta.Partition
+import Must.Auto._
 
 // =====================================================================================================================
 // Types
