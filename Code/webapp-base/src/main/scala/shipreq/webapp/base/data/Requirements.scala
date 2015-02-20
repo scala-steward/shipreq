@@ -3,7 +3,9 @@ package shipreq.webapp.base.data
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenser
 import scala.annotation.tailrec
-import scalaz.NonEmptyList
+import scalaz.{Equal, Order, NonEmptyList}
+import scalaz.std.stream.streamEqual
+import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shipreq.base.util.{BiMap, IMap}
 import shipreq.base.util.TaggedTypes._
@@ -64,6 +66,9 @@ object ReqCode {
     override val hashCode = value.##
   }
 
+  implicit val reqCodeOrder: Order[ReqCode] =
+    Order[NonEmptyList[Node]].contramap(_.backwards)
+
   /**
    * Something to which a [[ReqCode]] can refer.
    *
@@ -71,11 +76,14 @@ object ReqCode {
    */
   sealed trait Target extends TrieNode
 
+  implicit val targetEquality: Equal[Target] = Equal.equalA
+
   /** [[TrieNode]] = [[TrieBranch]] | [[Target]] (terminal/leaf) */
   sealed trait TrieNode
   final case class TrieBranch(target: Option[Target], next: Trie) extends TrieNode
 
   type Trie = Map[Node, TrieNode]
+
   object Trie {
     val empty: Trie = Map.empty
 
@@ -85,6 +93,7 @@ object ReqCode {
         case _: Target           => f(q, cn, tn)
       }}
 
+    /** NonEmptyList[Node] in f is backwards. */
     def fold[A](trie: Trie, z: A)(f: (A, NonEmptyList[Node], Option[Target]) => A): A =
       foldP[A, List[Node], NonEmptyList[Node]](trie, z, Nil, _.list)(
         (p, n) => NonEmptyList.nel(n, p), f)
@@ -104,7 +113,23 @@ object ReqCode {
       traverseT(z, pz, trie)
     }
 
-    def put(trie: Trie)(target: Target, codeForwards: NonEmptyList[Node]): Trie = {
+    def flatStream(trie: Trie): Stream[(ReqCode, Target)] = {
+      @inline def rc(h: Node, p: List[Node])= ReqCode(NonEmptyList.nel(h, p))
+      def go(trie: Trie, p: List[Node]): Stream[(ReqCode, Target)] =
+        trie.toStream.sortBy(_._1.value).flatMap {
+          case (cn, TrieBranch(ot, next)) =>
+            ot.map(t => (rc(cn, p), t)).toStream append go(next, cn :: p)
+          case (cn, t: Target) =>
+            Stream((rc(cn, p), t))
+        }
+      go(trie, Nil)
+    }
+
+    def flatten(trie: Trie): Map[ReqCode, Target] =
+      Trie.fold(trie, Map.empty[ReqCode, Target])((m, p, ot) =>
+        ot.fold(m)(t => m.updated(ReqCode(p), t)))
+
+    def putCF(trie: Trie, codeForwards: NonEmptyList[Node])(target: Target): Trie = {
       @tailrec def go(t: Trie, codeH: Node, codeT: List[Node], unwind: Trie => Trie): Trie =
         codeT match {
 
@@ -130,14 +155,21 @@ object ReqCode {
 
       go(trie, codeForwards.head, codeForwards.tail, identity)
     }
+
+    def put(trie: Trie, code: ReqCode)(target: Target): Trie =
+      putCF(trie, code.backwards.reverse)(target)
   }
+
+  implicit val trieEquality: Equal[Trie] =
+    Equal[Stream[(ReqCode, Target)]] contramap Trie.flatStream
+
 }
 
 final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
   import ReqCode.{Node, Target, Trie}
 
   lazy val byTargetMap: Multimap[Target, Set, ReqCode] =
-    Trie.fold[Multimap[Target, Set, ReqCode]](trie, Multimap.empty)((q, path, tgt) =>
+    Trie.fold(trie, Multimap.empty[Target, Set, ReqCode])((q, path, tgt) =>
       tgt.fold(q)(q.add(_, ReqCode(path))))
 
   @inline def byTarget(t: Target): Set[ReqCode] =
@@ -215,6 +247,8 @@ object Req {
         case r: GenericReq => r.copy(id = GenericReq.Id(i.value))
       }
   }
+
+  implicit val idEquality: Equal[Id] = Equal.equalA
 }
 
 final case class GenericReq(id         : GenericReq.Id,
@@ -226,7 +260,6 @@ final case class GenericReq(id         : GenericReq.Id,
 }
 object GenericReq {
   final case class Id(value: Long) extends TaggedLong with Req.Id
-
 }
 
 

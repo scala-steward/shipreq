@@ -408,7 +408,7 @@ object RandomData {
 
     flatValues.map(
       _.foldLeft(Trie.empty) { case (t, (tgt, c)) =>
-        Trie.put(t)(tgt, c.backwards)
+        Trie.putCF(t, c.backwards)(tgt)
       })
   })
 
