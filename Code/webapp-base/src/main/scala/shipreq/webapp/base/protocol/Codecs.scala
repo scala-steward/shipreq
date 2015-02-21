@@ -361,7 +361,7 @@ object DataCodecs {
 
   implicit final val reqCodeGroupId  = tagL(ReqCodeGroup.Id.apply)
   implicit final val reqCodeGroup    = caseclass2(ReqCodeGroup.apply, ReqCodeGroup.unapply)
-  implicit final val reqCodeNode     = tagS(ReqCode.Node.apply)
+  implicit final val reqCodeNode     = xmap[ReqCode.Node, String](_.value)(ReqCode.Node.applyFn)
   implicit final val reqCodeTarget   = _reqCodeTarget
   implicit final val reqCodeTrieNode = _reqCodeTrieNode
   implicit final val reqCodeTrie     = _reqCodeTrie

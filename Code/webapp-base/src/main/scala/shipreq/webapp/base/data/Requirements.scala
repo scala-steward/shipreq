@@ -5,10 +5,11 @@ import monocle.macros.Lenser
 import scala.annotation.tailrec
 import scalaz.{Equal, Order, NonEmptyList}
 import scalaz.std.stream.streamEqual
+import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.{BiMap, IMap}
+import shipreq.base.util.{BiMap, IMap, Platform}
 import shipreq.base.util.TaggedTypes._
 
 // ===================================================================================================================
@@ -34,37 +35,38 @@ final case class ReqCode(backwards: NonEmptyList[ReqCode.Node]) {
  */
 object ReqCode {
 
-  /* TODO Make ReqCode.Node memory-efficient
-  final class ReqCodeNode private (val value: String) {
-    //override def equals(o: Any) = o match {case b:ReqCodeNode }
-    override def hashCode = value.##
-    override def toString = s"ReqCodeNode($value)"
-  }
-  object ReqCodeNode {
-    implicit val equality: Equal[ReqCodeNode] = Equal.equalRef
-
-    private[this] val cache = new java.util.HashMap[String, ReqCodeNode](128)
-
-    def apply(value: String): ReqCodeNode = {
-      println("yarrrrrrrr")
-      var r = cache.get(value)
-      if (null == r)
-        synchronized {
-          r = cache.get(value) // unnecessary in JS
-          if (null == r)
-            r = cache.put(value, new ReqCodeNode(value))
-        }
-      r
-    }
-  }
-  */
   /**
    * Portion of a [[ReqCode]], separated by ".".
    *
    * Eg. "mail" in "system.mail.failure"
    */
-  final case class Node(value: String) extends TaggedString {
+  final class Node private (val value: String) {
+    override def equals(o: Any) = o match {case b:Node => this eq b; case _ => false }
     override val hashCode = value.##
+    override def toString = value
+  }
+
+  object Node {
+    implicit val order: Order[Node] = {
+      import scalaz.Ordering
+      val S = Order[String]
+      new Order[Node] {
+        override def equal(a: Node, b: Node): Boolean =
+          a eq b
+
+        override def order(a: Node, b: Node): Ordering =
+          if (a eq b)
+            Ordering.EQ
+          else
+            S.order(a.value, b.value)
+      }
+    }
+
+    val applyFn: String => Node =
+      Platform.memo[String, Node](new Node(_))
+
+    @inline def apply(value: String): Node =
+      applyFn(value)
   }
 
   implicit val reqCodeOrder: Order[ReqCode] =

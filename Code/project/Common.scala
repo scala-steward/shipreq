@@ -118,6 +118,15 @@ object Common {
     _.settings(
       testFrameworks += new TestFramework("utest.runner.Framework"))
 
+  private def addSourceDialectFrom(p: Project, name: String): Project => Project =
+    _.settings(unmanagedSourceDirectories in Compile += (baseDirectory in Compile in p).value / s"src/main/scala-$name")
+
+  def addSourceDialectJvm: Project => Project = p => addSourceDialectJvmFrom(p)(p)
+  def addSourceDialectJs : Project => Project = p => addSourceDialectJsFrom (p)(p)
+
+  def addSourceDialectJvmFrom(p: Project) = addSourceDialectFrom(p, "jvm")
+  def addSourceDialectJsFrom (p: Project) = addSourceDialectFrom(p, "js")
+
   trait ExportsTestLib {
     lazy val TestLib = config("test-lib") extend Compile describedAs "Reusable test helpers"
 

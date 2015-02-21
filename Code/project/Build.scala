@@ -77,7 +77,7 @@ object ShipReq extends Build {
         Scalaz.effect ++ testScope(μTest.jvm)
 
       override def project = typicalProject
-        .configure(Common.utestOnJvm)
+        .configure(Common.utestOnJvm, Common.addSourceDialectJvm)
     }
 
     // ----------------------------------------------------
@@ -306,6 +306,7 @@ object ShipReq extends Build {
         .configure(
           jsStyleDependsOn(baseUtilSjs, webappBase),
           jsStyleDependsOnS(webappBaseTest)(Compile -> Test, Test -> Test),
+          Common.addSourceDialectJsFrom(baseUtilSjs),
           testSettings,
           dontInline, // ScalaJS inlines
           debugOrRelease(identity, prodJsSettings))
