@@ -41,9 +41,9 @@ object Text {
       case class MathTeX(value: String) extends Atom
     }
 
-    sealed trait SingleLineText extends Literal with PlainTextMarkup
+    sealed trait SingleLine extends Literal with PlainTextMarkup
 
-    sealed trait MultiLineText extends SingleLineText with NewLine with ListMarkup
+    sealed trait MultiLine extends SingleLine with NewLine with ListMarkup
 
     /** Reference to a requirement, like "UC-4" */
     sealed trait ReqRef extends Generic {
@@ -68,7 +68,7 @@ object Text {
     }
 
     /** The main title/desc of a top-level requirement. */
-    sealed trait ReqTitle extends SingleLineText
+    sealed trait ReqTitle extends SingleLine
       with ReqRef
       with Issue
   }
@@ -82,10 +82,10 @@ object Text {
 
   object GenericReqDesc extends ReqTitle
 
-  object InlineIssueDesc extends SingleLineText
+  object InlineIssueDesc extends SingleLine
     with ReqRef
 
-  object CustomTextField extends MultiLineText
+  object CustomTextField extends MultiLine
     with ReqRef
     with Issue
     with TagRef

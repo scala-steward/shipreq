@@ -350,13 +350,13 @@ object RandomData {
     private[this] def plainTextMarkup(implicit t: PlainTextMarkup): Gen[t.Atom] =
       Gen.oneofG(webAddress, emailAddress, mathTex)
 
-    private[this] def singleLine(implicit t: SingleLineText): NonEmptyList[Gen[t.Atom]] =
+    private[this] def singleLine(implicit t: SingleLine): NonEmptyList[Gen[t.Atom]] =
       NonEmptyList(literal, plainTextMarkup)
 
     /** Probability [0,9] of an increase in recursive depth. */
     val DepthIncrease: Array[Int] = Array(5, 1, 1, 1) `JVM|JS` Array(3, 1)
 
-    private[this] def multiLine(t: MultiLineText, depth: Int)(g: Name[Gen[t.Atom]]): NonEmptyList[(Int, Gen[t.Atom])] = {
+    private[this] def multiLine(t: MultiLine, depth: Int)(g: Name[Gen[t.Atom]]): NonEmptyList[(Int, Gen[t.Atom])] = {
       type G  = Gen[t.Atom]
       type IG = (Int, G)
       var gs = singleLine(t).map[IG]((9, _)) :::> List[IG](
@@ -366,7 +366,7 @@ object RandomData {
       gs
     }
 
-    private[this] def multiLinePlusI(t: MultiLineText)(plus: (Int, Gen[t.Atom])*): Gen[t.Atom] = {
+    private[this] def multiLinePlusI(t: MultiLine)(plus: (Int, Gen[t.Atom])*): Gen[t.Atom] = {
       type G  = Gen[t.Atom]
       type IG = (Int, G)
 
@@ -383,7 +383,7 @@ object RandomData {
       lvls(0).value
     }
 
-    private[this] def multiLinePlus(t: MultiLineText)(plus: Gen[t.Atom]*): Gen[t.Atom] =
+    private[this] def multiLinePlus(t: MultiLine)(plus: Gen[t.Atom]*): Gen[t.Atom] =
       multiLinePlusI(t)(plus.map((9, _)): _*)
 
     private[this] def reqRef(g: Gen[Req.Id])(implicit t: ReqRef): Gen[t.ReqRef] =

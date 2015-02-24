@@ -421,11 +421,11 @@ object DataCodecs {
 
     def readerListItem(T: ListMarkup)(implicit r: Reader[T.Atom]): Reader[T.ListItem] = implicitly
 
-    def readSingleLineText(T: SingleLineText): PR[T.Atom] =
+    def readSingleLine(T: SingleLine): PR[T.Atom] =
       readLiteral(T) orElse readPlainTextMarkup(T)
 
-    def readMultiLineText(T: MultiLineText)(implicit ra: Name[Reader[T.Atom]]): PR[T.Atom] =
-      readSingleLineText(T) orElse readNewLine(T) orElse readListMarkup(T)
+    def readMultiLine(T: MultiLine)(implicit ra: Name[Reader[T.Atom]]): PR[T.Atom] =
+      readSingleLine(T) orElse readNewLine(T) orElse readListMarkup(T)
 
     def readIssue(T: Issue): PR[T.Issue] =
       { case Js.Arr(Js.Str(ISSUE), a, b) => T.Issue(readJs[CustomIssueType.Id](a), readJs[InlineIssueDesc.OptionalText](b)) }
@@ -437,14 +437,14 @@ object DataCodecs {
       { case Js.Arr(Js.Str(TAGREF), v) => T.TagRef(readJs[Tag.Id](v)) }
 
     def readReqTitle(T: ReqTitle): PR[T.Atom] =
-      readSingleLineText(T) orElse readReqRef(T) orElse readIssue(T)
+      readSingleLine(T) orElse readReqRef(T) orElse readIssue(T)
 
 
 //    def stuff(t: Generic)(implicit
 //              lit:    Literal         = null,
 //              nl:     NewLine         = null,
-//              sl:     SingleLineText  = null,
-//              ml:     MultiLineText   = null,
+//              sl:     SingleLine      = null,
+//              ml:     MultiLine       = null,
 //              ptm:    PlainTextMarkup = null,
 //              reqRef: ReqRef          = null,
 //              tagRef: TagRef          = null,
@@ -458,8 +458,8 @@ object DataCodecs {
 //      def pr: PR[t.Atom] = {
 //        var prs: List[PR[t.Atom]] = Nil
 //
-//        if (ml     ne null) prs ::= readMultiLineText  (ml)(castReader(ml)) else
-//        if (sl     ne null) prs ::= readSingleLineText (sl)
+//        if (ml     ne null) prs ::= readMultiLine      (ml)(castReader(ml)) else
+//        if (sl     ne null) prs ::= readSingleLine     (sl)
 //        if (issue  ne null) prs ::= readIssue          (issue)
 //        if (tagRef ne null) prs ::= readTagRef         (tagRef)
 //        if (ptm    ne null) prs ::= readPlainTextMarkup(ptm)
@@ -493,14 +493,14 @@ object DataCodecs {
 
   // lazy because TC.readIssue calls it
   implicit final lazy val (inlineIssueDesc, inlineIssueDescNE) = TC(Text.InlineIssueDesc)((t, _) =>
-    TC.readSingleLineText(t) orElse
-    TC.readReqRef        (t) )
+    TC.readSingleLine(t) orElse
+    TC.readReqRef    (t) )
 
   implicit final val (customTextFieldText, _) = TC(Text.CustomTextField)((t, a) =>
-    TC.readMultiLineText(t)(a) orElse
-    TC.readReqRef       (t)    orElse
-    TC.readIssue        (t)    orElse
-    TC.readTagRef       (t)    )
+    TC.readMultiLine(t)(a) orElse
+    TC.readReqRef   (t)    orElse
+    TC.readIssue    (t)    orElse
+    TC.readTagRef   (t)    )
 
   // -------------------------------------------------------------------------------------------------------------------
   // Requirements
