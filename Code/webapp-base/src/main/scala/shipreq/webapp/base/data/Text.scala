@@ -64,7 +64,7 @@ object Text {
 
     /** An inline tag, like "#pri=high" */
     sealed trait TagRef extends Generic {
-      case class TagRef(value: Tag.Id) extends Atom
+      case class TagRef(value: ApplicableTag.Id) extends Atom
     }
 
     /** The main title/desc of a top-level requirement. */

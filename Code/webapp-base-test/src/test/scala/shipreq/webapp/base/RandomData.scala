@@ -318,6 +318,12 @@ object RandomData {
     import Text._, Generic._
     import Gen.Covariance._
 
+    // private[this] implicit def autoSomeG[A](g: Gen[A]) = g.some
+    private[this] implicit class NELExt[T <: Generic](val _nel: NonEmptyList[Gen[T#Atom]]) extends AnyVal {
+      def <+(o: Option[Gen[T#Atom]]): NonEmptyList[Gen[T#Atom]] =
+        o.fold(_nel)(_ <:: _nel)
+    }
+
     private[this] def literal(implicit t: Literal): Gen[t.Literal] =
       Gen.string1.map(t.Literal)
 
@@ -383,21 +389,23 @@ object RandomData {
       lvls(0).value
     }
 
-    private[this] def multiLinePlus(t: MultiLine)(plus: Gen[t.Atom]*): Gen[t.Atom] =
-      multiLinePlusI(t)(plus.map((9, _)): _*)
+    private[this] def multiLinePlus(t: MultiLine)(plus: Option[Gen[t.Atom]]*): Gen[t.Atom] =
+      multiLinePlusI(t)(
+        plus.foldLeft[List[(Int, Gen[t.Atom])]](Nil)((q, o) =>
+          o.fold(q)(g => (9, g) :: q)): _*)
 
     private[this] def reqRef(g: Gen[Req.Id])(implicit t: ReqRef): Gen[t.ReqRef] =
       g map t.ReqRef
 
-    private[this] def tagRef(g: Gen[Tag.Id])(implicit t: TagRef): Gen[t.TagRef] =
+    private[this] def tagRef(g: Gen[ApplicableTag.Id])(implicit t: TagRef): Gen[t.TagRef] =
       g map t.TagRef
 
-    private[this] def issue(i: Gen[CustomIssueType.Id], r: Gen[Req.Id])(implicit t: Issue): Gen[t.Issue] =
+    private[this] def issue(i: Gen[CustomIssueType.Id], r: Option[Gen[Req.Id]])(implicit t: Issue): Gen[t.Issue] =
       Gen.apply2(t.Issue)(i, inlineIssueDescAtom(r).list)
 
-    private[this] def reqTitle(t: ReqTitle)(r: Gen[Req.Id], i: Gen[CustomIssueType.Id]): Gen[t.Atom] = {
+    private[this] def reqTitle(t: ReqTitle)(r: Option[Gen[Req.Id]], i: Option[Gen[CustomIssueType.Id]]): Gen[t.Atom] = {
       @inline implicit def tt: t.type = t
-      val gs = singleLine(t) :::> List[Gen[t.Atom]](reqRef(r), issue(i, r))
+      val gs = singleLine(t) <+ r.map(reqRef(_)) <+ i.map(issue(_, r))
       Gen oneofGL gs
     }
 
@@ -407,22 +415,30 @@ object RandomData {
 
     def genericReqDescAtom   = reqTitle(GenericReqDesc) _
 
-    def inlineIssueDescAtom(r: Gen[Req.Id]): Gen[InlineIssueDesc.Atom] = {
+    def inlineIssueDescAtom(r: Option[Gen[Req.Id]]): Gen[InlineIssueDesc.Atom] = {
       @inline implicit def t: InlineIssueDesc.type = InlineIssueDesc
-      Gen.oneofGL(reqRef(r) <:: singleLine)
+      val gs = singleLine(t) <+ r.map(reqRef(_))
+      Gen oneofGL gs
     }
 
-    def customTextFieldAtom(gr: Gen[Req.Id], gi: Gen[CustomIssueType.Id], gt: Gen[Tag.Id]): Gen[CustomTextField.Atom] = {
+    def customTextFieldAtom(gr: Option[Gen[Req.Id]],
+                            gi: Option[Gen[CustomIssueType.Id]],
+                            gt: Option[Gen[ApplicableTag.Id]]): Gen[CustomTextField.Atom] = {
       @inline implicit def t: CustomTextField.type = CustomTextField
-      multiLinePlus(t)(reqRef(gr), issue(gi, gr), tagRef(gt))
+      multiLinePlus(t)(gr.map(reqRef(_)), gi.map(issue(_, gr)), gt.map(tagRef(_)))
     }
   }
 
-  val MaxTextAtoms = 20 `JVM|JS` 6
+  val MaxTextAtoms = 30 `JVM|JS` 8
+
+  val MaxTextAtomsInProject = 6 `JVM|JS` 2
 
   implicit class TextGenExt[T <: Text.Generic](val g: Gen[T#Atom]) extends AnyVal {
     def text : GenS[T#OptionalText] = g.list lim MaxTextAtoms
     def text1: GenS[T#NonEmptyText] = g.list1 lim MaxTextAtoms
+
+    def ptext : GenS[T#OptionalText] = g.list lim MaxTextAtomsInProject
+    def ptext1: GenS[T#NonEmptyText] = g.list1 lim MaxTextAtomsInProject
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -479,10 +495,8 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Req Data
 
-  def reqFieldDataText(cols: Set[CustomField.Text.Id], reqs: Set[Req.Id]): Gen[ReqFieldData.Text] = {
-    val unit = Gen insert (()) // TODO random text field data
-    unit mapByKeySubset reqs mapByKeySubset cols
-  }
+  def reqFieldDataText(cols: Set[CustomField.Text.Id], reqs: Set[Req.Id], txt: Gen[Text.CustomTextField.OptionalText]): Gen[ReqFieldData.Text] =
+    txt mapByKeySubset reqs mapByKeySubset cols
 
   def reqFieldDataTags(reqs: TraversableOnce[Req.Id], tags: Set[ApplicableTag.Id]): Gen[ReqFieldData.Tags] = {
     val rndTags = Gen.subset(tags).map(_.toSet)
@@ -491,13 +505,28 @@ object RandomData {
 
   lazy val reqFieldDataImplications: Gen[ReqFieldData.Implications] = Gen insert BiMap.empty // TODO
 
+
+  def oneofO[A](as: Seq[A]): Option[Gen[A]] = // TODO Move to Nyaya
+    if (as.isEmpty)
+      None
+    else
+      Some(Gen.oneof(as.head, as.tail: _*))
+
+  // def customTextFieldAtom(gr: Gen[Req.Id], gi: Gen[CustomIssueType.Id], gt: Gen[ApplicableTag.Id]): Gen[CustomTextField.Atom] = {
   def reqFieldData(reqs   : Set[Req.Id],
                    txtCols: Set[CustomField.Text.Id],
-                   tags   : Set[ApplicableTag.Id]): Gen[ReqFieldData] =
+                   cissues: Set[CustomIssueType.Id],
+                   tags   : Set[ApplicableTag.Id]): Gen[ReqFieldData] = {
+
+    val gr = oneofO(reqs.toSeq)
+    val gt = oneofO(tags.toSeq)
+    val gi = oneofO(cissues.toSeq)
+
     Gen.apply3(ReqFieldData.apply)(
-      reqFieldDataText(txtCols, reqs),
+      reqFieldDataText(txtCols, reqs, TextGen.customTextFieldAtom(gr, gi, gt).ptext),
       reqFieldDataTags(reqs, tags),
       reqFieldDataImplications)
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Req Codes
@@ -563,6 +592,7 @@ object RandomData {
   lazy val project: Gen[Project] =
     for {
       (issues, tags) ← Gen.tuple2(customIssueTypes, revAndTagTree) map distinctHashRefKeys.run
+      cissueIds      = issues.data.keySet
       reqtypes       ← customReqTypes
       reqTypeIds     = StaticReqType.values :::> reqtypes.data.keys.toList
       reqTypeIdSet   = reqTypeIds.list.toSet
@@ -572,7 +602,7 @@ object RandomData {
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
       reqIds         = reqs.data.reqs.keySet
-      reqFieldData   ← revAnd(reqFieldData(reqIds, textColIds, atagIds))
+      reqFieldData   ← revAnd(reqFieldData(reqIds, textColIds, cissueIds, atagIds))
     } yield Project(issues, reqtypes, fields, tags, reqs, reqCodes, reqFieldData)
 
   // ===================================================================================================================

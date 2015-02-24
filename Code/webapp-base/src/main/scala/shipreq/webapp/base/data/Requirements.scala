@@ -1,7 +1,6 @@
 package shipreq.webapp.base.data
 
 import japgolly.nyaya.util.Multimap
-import monocle.macros.Lenser
 import scala.annotation.tailrec
 import scalaz.{Equal, Order, NonEmptyList}
 import scalaz.std.stream.streamEqual
@@ -18,7 +17,7 @@ import shipreq.base.util.TaggedTypes._
 /**
  * A textual ID that refers to a requirement.
  *
- * Eg. "system.email.failure" would be TODO ???????????????? ReqCode("failure", "email" :: "system" :: Nil)
+ * Eg. "system.email.failure" would be `ReqCode("failure", "email" :: "system" :: Nil)`.
  *
  * Each [[ReqCode]] only refers to a single target, but requirements can have 0..n [[ReqCode]]s.
  */
@@ -279,7 +278,7 @@ object GenericReq {
 
 
 object ReqFieldData {
-  type Text         = Map[CustomField.Text.Id, Map[Req.Id, Unit]] // TODO Should be the rich text AST
+  type Text         = Map[CustomField.Text.Id, Map[Req.Id, Text.CustomTextField.OptionalText]]
   type Tags         = Map[Req.Id, Set[ApplicableTag.Id]]
   type Implications = BiMap[Req.Id, Req.Id]
 }

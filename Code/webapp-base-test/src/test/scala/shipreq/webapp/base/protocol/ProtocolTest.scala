@@ -71,15 +71,16 @@ object ProtocolTest extends TestSuite {
 
     'Codecs {
       import DataCodecs._
+      implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
       def test[A: Reader : Writer](name: String, g: Gen[A]): Unit =
-        g.mustSatisfy((new KitIO[A, Unit](name)).propI) //(implicitly[Settings].setDebug.copy(debugMaxLen = 5000))
+        g.mustSatisfy(new KitIO[A, Unit](name).propI)//(implicitly[Settings].setDebug.copy(debugMaxLen = 5000))
 
       'Text {
-        'RecCodeGroupDesc - test("RecCodeGroupDesc", $.TextGen.recCodeGroupDescAtom($.reqId, $.customIssueTypeId         ).text)
-        'GenericReqDesc   - test("GenericReqDesc",   $.TextGen.genericReqDescAtom  ($.reqId, $.customIssueTypeId         ).text)
-        'InlineIssueDesc  - test("InlineIssueDesc",  $.TextGen.inlineIssueDescAtom ($.reqId                              ).text)
-        'CustomTextField  - test("CustomTextField",  $.TextGen.customTextFieldAtom ($.reqId, $.customIssueTypeId, $.tagId).text)
+        'RecCodeGroupDesc - test("RecCodeGroupDesc", $.TextGen.recCodeGroupDescAtom($.reqId, $.customIssueTypeId                   ).text)
+        'GenericReqDesc   - test("GenericReqDesc",   $.TextGen.genericReqDescAtom  ($.reqId, $.customIssueTypeId                   ).text)
+        'InlineIssueDesc  - test("InlineIssueDesc",  $.TextGen.inlineIssueDescAtom ($.reqId                                        ).text)
+        'CustomTextField  - test("CustomTextField",  $.TextGen.customTextFieldAtom ($.reqId, $.customIssueTypeId, $.applicableTagId).text)
       }
     }
 
