@@ -6,6 +6,7 @@ import shipreq.webapp.base.delta.RemoteDelta
 import Routine._
 
 import upickle.TupleCodecs._
+import GenericCodecs._
 import DataCodecs._
 import ProtocolDataCodecs._
 import DeltaCodecs._

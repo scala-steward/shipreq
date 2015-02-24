@@ -70,7 +70,7 @@ object ProtocolTest extends TestSuite {
   override def tests = TestSuite {
 
     'Codecs {
-      import DataCodecs.{unit => _, _}
+      import DataCodecs._
 
       def test[A: Reader : Writer](name: String, g: Gen[A]): Unit =
         g.mustSatisfy((new KitIO[A, Unit](name)).propI) //(implicitly[Settings].setDebug.copy(debugMaxLen = 5000))

@@ -12,9 +12,8 @@ import upickle.StdlibCodecs.{MapR, MapW}
 
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
-import shipreq.webapp.base.data._
-import DataImplicits._
 
+// =====================================================================================================================
 private[protocol] object CodecBase {
 
   def tagS[T <: TaggedString](C: String => T) =
@@ -153,7 +152,8 @@ private[protocol] object CodecBase {
 }
 
 // =====================================================================================================================
-object DataCodecs {
+object GenericCodecs {
+  import shipreq.webapp.base.data.{DataIdAux, ISubset}
   import CodecBase._
 
   @inline implicit def string = BaseCodecs.StringRW
@@ -229,6 +229,14 @@ object DataCodecs {
 
   @inline implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
     iMap(d.id)
+}
+
+// =====================================================================================================================
+object DataCodecs {
+  import shipreq.webapp.base.data._
+  import DataImplicits._
+  import CodecBase._
+  import GenericCodecs._
 
   @inline implicit def revAnd[T](implicit WT: Writer[T], RT: Reader[T]) =
     caseclass2(RevAnd.apply[T], RevAnd.unapply[T])(rev, rev, RT, WT)
@@ -353,8 +361,6 @@ object DataCodecs {
   implicit final val fieldSet = caseclass2(FieldSet.apply, FieldSet.unapply)
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Text
-
   /** Text Codecs */
   private[this] object TC {
     import Text._
@@ -572,7 +578,9 @@ object DataCodecs {
 
 // =====================================================================================================================
 object ProtocolDataCodecs {
+  import shipreq.webapp.base.data._
   import CodecBase._
+  import GenericCodecs._
   import DataCodecs._
 
   implicit final val deletionAction = enum(DeletionAction.values)
