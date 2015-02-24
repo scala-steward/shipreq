@@ -6,22 +6,24 @@ import scala.language.experimental.macros
 import shapeless._
 import shapeless.contrib._
 
+import shipreq.base.util.UnivEq
+
 private trait Empty {
 
-  def emptyProduct = new Monoid[HNil] with Order[HNil] with Show[HNil] {
+  def emptyProduct = new Monoid[HNil] with Order[HNil] with Show[HNil] with UnivEq[HNil] {
     def zero = HNil
     def append(f1: HNil, f2: => HNil) = HNil
-    override def equalIsNatural = true
-    override def equal(a1: HNil, a2: HNil) = true
+//    override def equalIsNatural = true
+//    override def equal(a1: HNil, a2: HNil) = true
     def order(x: HNil, y: HNil) = Monoid[Ordering].zero
     override def shows(f: HNil) = "HNil"
   }
 
-  def emptyCoproduct = new Monoid[CNil] with Order[CNil] with Show[CNil] {
+  def emptyCoproduct = new Monoid[CNil] with Order[CNil] with Show[CNil] with UnivEq[CNil] {
     def zero = ???
     def append(f1: CNil, f2: => CNil) = f1
     def order(x: CNil, y: CNil) = Monoid[Ordering].zero
-    override def equalIsNatural = true
+//    override def equalIsNatural = true
   }
 
 }
@@ -34,7 +36,6 @@ private trait ProductSemigroup[F, T <: HList]
 
   def append(f1: λ, f2: => λ) =
     F.append(f1.head, f2.head) :: T.append(f1.tail, f2.tail)
-
 }
 
 private trait ProductMonoid[F, T <: HList]
@@ -43,8 +44,9 @@ private trait ProductMonoid[F, T <: HList]
   with Product[Monoid, F, T] {
 
   def zero = F.zero :: T.zero
-
 }
+
+private trait ProductUnivEq[F, T <: HList] extends UnivEq[F :: T] with Product[UnivEq, F, T]
 
 private trait ProductEqual[F, T <: HList]
   extends Equal[F :: T]
@@ -55,7 +57,6 @@ private trait ProductEqual[F, T <: HList]
 
   def equal(a1: λ, a2: λ) =
     F.equal(a1.head, a2.head) && T.equal(a1.tail, a2.tail)
-
 }
 
 private trait ProductOrder[F, T <: HList]
@@ -71,7 +72,6 @@ private trait ProductOrder[F, T <: HList]
 
   def order(x: λ, y: λ) =
     Semigroup[Ordering].append(F.order(x.head, y.head), T.order(x.tail, y.tail))
-
 }
 
 private trait ProductShow[F, T <: HList]
@@ -83,10 +83,11 @@ private trait ProductShow[F, T <: HList]
 
   override def show(f: λ) =
     F.show(f.head) ++ Cord(" :: ") ++ T.show(f.tail)
-
 }
 
 // Coproducts
+
+private trait SumUnivEq[L, R <: Coproduct] extends UnivEq[L :+: R] with Sum[UnivEq, L, R]
 
 private trait SumEqual[L, R <: Coproduct]
   extends Equal[L :+: R]
@@ -100,7 +101,6 @@ private trait SumEqual[L, R <: Coproduct]
     case (Inr(r1), Inr(r2)) => R.equal(r1, r2)
     case _ => false
   }
-
 }
 
 private trait SumOrder[L, R <: Coproduct]
@@ -120,7 +120,6 @@ private trait SumOrder[L, R <: Coproduct]
     case (Inr(_), Inl(_)) => Ordering.GT
     case (Inr(a), Inr(b)) => R.order(a, b)
   }
-
 }
 
 private trait SumShow[L, R <: Coproduct]
@@ -136,7 +135,6 @@ private trait SumShow[L, R <: Coproduct]
     case Inl(l) => Cord("Inl(") ++ L.show(l) ++ Cord(")")
     case Inr(r) => Cord("Inr(") ++ R.show(r) ++ Cord(")")
   }
-
 }
 
 // Isos
@@ -147,7 +145,6 @@ private trait IsomorphicSemigroup[A, B]
 
   def append(f1: A, f2: => A) =
     from(B.append(to(f1), to(f2)))
-
 }
 
 private trait IsomorphicMonoid[A, B]
@@ -156,8 +153,9 @@ private trait IsomorphicMonoid[A, B]
   with Isomorphic[Monoid, A, B] {
 
   def zero = from(B.zero)
-
 }
+
+private trait IsomorphicUnivEq[A, B] extends UnivEq[A] with Isomorphic[UnivEq, A, B]
 
 private trait IsomorphicEqual[A, B]
   extends Equal[A]
@@ -168,7 +166,6 @@ private trait IsomorphicEqual[A, B]
 
   override def equal(a1: A, a2: A) =
     B.equal(to(a1), to(a2))
-
 }
 
 private trait IsomorphicOrder[A, B]
@@ -184,7 +181,6 @@ private trait IsomorphicOrder[A, B]
 
   def order(x: A, y: A) =
     B.order(to(x), to(y))
-
 }
 
 private trait IsomorphicShow[A, B]
@@ -196,7 +192,6 @@ private trait IsomorphicShow[A, B]
 
   override def show(f: A) =
     B.show(to(f))
-
 }
 
 object Instances {
@@ -215,6 +210,15 @@ object Instances {
       new ProductMonoid[F, T] { def F = f; def T = t }
     def project[A, B](b: => Monoid[B], ab: A => B, ba: B => A) =
       new IsomorphicMonoid[A, B] { def B = b; def to = ab; def from = ba }
+  }
+
+  implicit final val ShapelessUnivEqI: TypeClass[UnivEq] = new TypeClass[UnivEq] with Empty {
+    def product[F, T <: HList](f: UnivEq[F], t: UnivEq[T]) =
+      new ProductUnivEq[F, T] { def F = f; def T = t }
+    def coproduct[L, R <: Coproduct](l: => UnivEq[L], r: => UnivEq[R]) =
+      new SumUnivEq[L, R] { def L = l; def R = r }
+    def project[A, B](b: => UnivEq[B], ab: A => B, ba: B => A) =
+      new IsomorphicUnivEq[A, B] { def B = b; def to = ab; def from = ba }
   }
 
   implicit final val ShapelessEqualI: TypeClass[Equal] = new TypeClass[Equal] with Empty {
@@ -250,6 +254,14 @@ object Instances {
 
   /*implicit*/ def deriveMonoid[T](implicit ev: ProductTypeClass[Monoid]): Monoid[T] =
     macro GenericMacros.deriveProductInstance[Monoid, T]
+
+  /*implicit*/ def deriveUnivEq[T](implicit ev: TypeClass[UnivEq]): UnivEq[T] =
+    macro GenericMacros.deriveInstance[UnivEq, T]
+
+//  /*implicit*/ def deriveUnivEq2[T](implicit ev: TypeClass[UnivEq]): UnivEq[T] = {
+//    deriveUnivEq[T](ev)
+//    UnivEq.on[T]
+//  }
 
   /*implicit*/ def deriveEqual[T](implicit ev: TypeClass[Equal]): Equal[T] =
     macro GenericMacros.deriveInstance[Equal, T]

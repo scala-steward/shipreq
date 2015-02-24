@@ -2,6 +2,7 @@ package shipreq.webapp.base.protocol
 
 import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
+import shipreq.base.util.UnivEq
 import shipreq.webapp.base.delta.RemoteDelta
 import ProtocolDataCodecs._
 import Routine._
@@ -46,4 +47,5 @@ object DeletionAction {
   case object SoftDel extends DeletionAction
   case object Restore extends DeletionAction
   def values = NonEmptyList[DeletionAction](HardDel, SoftDel, Restore)
+  implicit val equality = UnivEq.on[DeletionAction]
 }

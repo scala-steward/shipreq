@@ -5,7 +5,7 @@ import scalaz.{NonEmptyList, Order, Ordering}
 import scalaz.std.anyVal.intInstance
 import scalaz.syntax.order._
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.Must
+import shipreq.base.util.{UnivEq, Must}
 import shipreq.base.util.TaggedTypes._
 import ReqType.Mnemonic
 
@@ -32,14 +32,15 @@ object ReqType {
     def foldId[A](s: StaticReqType => A, c: CustomReqType.Id => A): A
   }
 
-  implicit object IdOrder extends Order[ReqType.Id] {
+  implicit object IdOrder extends Order[ReqType.Id] with UnivEq[ReqType.Id] {
+    //UnivEq[StaticReqType] - it just is
+    UnivEq[CustomReqType.Id]
     override def order(a: ReqType.Id, b: ReqType.Id) = (a, b) match {
       case (x: CustomReqType.Id, y: CustomReqType.Id) => Order[CustomReqType.Id].order(x, y)
       case (x: StaticReqType   , y: StaticReqType   ) => StaticReqType.order(x, y)
       case (x: StaticReqType   , y: CustomReqType.Id) => Ordering.LT
       case (x: CustomReqType.Id, y: StaticReqType   ) => Ordering.GT
     }
-    override val equalIsNatural = StaticReqType.order.equalIsNatural && Order[CustomReqType.Id].equalIsNatural
   }
 
   val filterAlive: ReqType => Boolean =
@@ -47,7 +48,6 @@ object ReqType {
 
   def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => Must[String] =
     _.foldId(s => Must.Exists(s.name), c => customReqTypes(c).map(_.name))
-
 }
 
 sealed trait StaticReqType extends ReqType with ReqType.Id {
@@ -70,12 +70,7 @@ object StaticReqType {
   val valueStream: Stream[StaticReqType] =
     values.list.toStream
 
-  implicit object order extends Order[StaticReqType] {
-    private[this] val fixedOrder = values.list.zipWithIndex.toMap
-    @inline private[this] def int(s: StaticReqType) = fixedOrder(s)
-    override def order(a: StaticReqType, b: StaticReqType) = Order[Int].order(int(a), int(b))
-    override def equalIsNatural = true
-  }
+  implicit val order = UnivEq.withArbitraryOrder(values.list)
 
   lazy val mnemonics =
     (Set.empty[Mnemonic] /: values.list)(_ ++ _.allMnemonics)

@@ -31,7 +31,7 @@ private[protocol] object CodecBase {
     })
 
   // UNSAFE. Make sure tests using exhaustive pattern matching to cover this hierarchy
-  def enum[T](ts: NonEmptyList[T]) = {
+  def enum[T: UnivEq](ts: NonEmptyList[T]) = {
     val table = BiMap(ts.list.zipWithIndex.map(p => p._1 -> ('0' + p._2).toChar.toString).toMap)
     ReadWriter[T](t => Js.Str(table.ab(t)), {
       case Js.Str(k) if table.ba.contains(k) => table.ba(k)
@@ -131,7 +131,7 @@ private[protocol] object CodecBase {
   def strkeyW2[A, B](k: String, a: A, b: B)(implicit A: Writer[A], B: Writer[B]) =
     Js.Arr(Js.Str(k), A write a, B write b)
 
-  def iMap[K: Reader : Writer, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
+  def iMap[K: UnivEq : Reader : Writer, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
     xmap((_: IMap[K, V]).underlyingMap)(m => IMap.empty(key).replaceUnderlying(m))
 
   @inline def mergeRW[A](implicit r: Reader[A], w: Writer[A]): ReadWriter[A] =
@@ -217,17 +217,17 @@ object GenericCodecs {
     })
   }
 
-  implicit def bimap[K, V](implicit r: Reader[Map[K, V]], w: Writer[Map[K, V]]): ReadWriter[BiMap[K, V]] =
+  implicit def bimap[K: UnivEq, V: UnivEq](implicit r: Reader[Map[K, V]], w: Writer[Map[K, V]]): ReadWriter[BiMap[K, V]] =
     ReadWriter(
       b => w write b.ab,
       r.read.andThen(BiMap(_)))
 
-  implicit def multimap[K, L[_], V](implicit r: Reader[Map[K, L[V]]], w: Writer[Map[K, L[V]]], l: MultiValues[L]): ReadWriter[Multimap[K, L, V]] =
+  implicit def multimap[K: UnivEq, L[_], V](implicit r: Reader[Map[K, L[V]]], w: Writer[Map[K, L[V]]], l: MultiValues[L]): ReadWriter[Multimap[K, L, V]] =
     ReadWriter(
       mm => w write mm.m,
       r.read.andThen(Multimap(_))) // TODO Multimap reader could be optimised
 
-  @inline implicit def iMapAuto[K: Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
+  @inline implicit def iMapAuto[K: UnivEq : Reader : Writer, V: Reader : Writer](implicit d: DataIdAux[V, K]): ReadWriter[IMap[K, V]] =
     iMap(d.id)
 }
 

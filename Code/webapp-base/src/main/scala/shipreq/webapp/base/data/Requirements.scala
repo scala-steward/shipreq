@@ -8,7 +8,7 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.{Must, BiMap, IMap, Platform}
+import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 
 // ===================================================================================================================
@@ -210,7 +210,7 @@ final case class Pubid(reqTypeId: ReqType.Id, pos: ReqTypePos)
 
 object Pubid {
 
-  implicit val equality: Equal[Pubid] = deriveEqual
+  implicit val equality = deriveUnivEq[Pubid].sharedInstance
 
   /**
    * Once a (reqtype x position) is allocated, it is never removed.

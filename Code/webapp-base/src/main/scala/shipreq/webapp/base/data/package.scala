@@ -1,6 +1,6 @@
 package shipreq.webapp.base
 
-import shipreq.base.util.IMap
+import shipreq.base.util.{UnivEq, IMap}
 
 package object data {
 
@@ -16,7 +16,7 @@ package object data {
 
     final def pairWithId(d: D): (I, D) = (id(d), d)
     final def mapById(ds: Traversable[D]): Map[I, D] = (Map.empty[I, D] /: ds)(_ + pairWithId(_))
-    final def emptyIMap = IMap.empty(id)
+    final def emptyIMap(implicit ev: UnivEq[I]) = IMap.empty(id)
   }
 
   type DataIdAux[D, Id] = DataId[D] {type I = Id}
@@ -65,6 +65,6 @@ package object data {
   type CustomReqTypeIMap   = IMap[CustomReqType.Id, CustomReqType]
   type TagTree             = IMap[Tag.Id, TagInTree]
 
-  @inline final def emptyDataMap[O, D, Id](o: O)(implicit O: ObjDataId[O, D, Id]): IMap[Id, D] =
+  @inline final def emptyDataMap[O, D, Id](o: O)(implicit O: ObjDataId[O, D, Id], ev: UnivEq[Id]): IMap[Id, D] =
     IMap.empty(O.id)
 }

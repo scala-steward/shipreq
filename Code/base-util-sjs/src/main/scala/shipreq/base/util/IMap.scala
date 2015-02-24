@@ -12,10 +12,11 @@ object IMap {
   implicit def equality[K: Order, V: Equal]: Equal[IMap[K, V]] =
     Equal.equalBy(_.underlyingMap)
 
-  def empty[K, V](k: V => K): IMap[K, V] = new IMap(k, Map.empty)
+  def empty[K: UnivEq, V](k: V => K): IMap[K, V] =
+    new IMap(k, Map.empty)
 }
 
-final class IMap[K, V] private (key: V => K, m: Map[K, V]) extends Subtractable[K, IMap[K, V]] {
+final class IMap[K: UnivEq, V] private (key: V => K, m: Map[K, V]) extends Subtractable[K, IMap[K, V]] {
 
   override protected def repr = this
 

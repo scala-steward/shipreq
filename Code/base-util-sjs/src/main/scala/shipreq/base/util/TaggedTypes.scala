@@ -35,10 +35,10 @@ object TaggedTypes {
     }
   }
 
-  trait TaggedLong extends TaggedType { final type U = Long }
-  trait TaggedInt extends TaggedType { final type U = Int }
+  trait TaggedLong   extends TaggedType { final type U = Long }
+  trait TaggedInt    extends TaggedType { final type U = Int }
   trait TaggedString extends TaggedType { final type U = String }
-  trait TaggedShort extends TaggedType {
+  trait TaggedShort  extends TaggedType {
     final type U = Short
     final def toInt = value.toInt
   }
@@ -49,9 +49,9 @@ object TaggedTypes {
     object ScalaTC extends scala.Ordering[T] {
       override def compare(x: T, y: T) = SO.compare(x.value, y.value)
     }
-    object ScalazTC extends Order[T] {
-      override def equal(a1: T, a2: T) = O.equal(a1.value, a2.value)
-      override def equalIsNatural      = O.equalIsNatural
+    object ScalazTC extends Order[T] with UnivEq[T] {
+//      override def equal(a1: T, a2: T) = O.equal(a1.value, a2.value)
+//      override def equalIsNatural      = O.equalIsNatural
       override def order(x: T, y: T)   = O.order(x.value, y.value)
     }
   }

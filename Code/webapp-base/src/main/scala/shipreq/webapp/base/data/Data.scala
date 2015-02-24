@@ -4,6 +4,7 @@ import scalaz.{OneAnd, Equal}
 import scalaz.Isomorphism.<=>
 import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.TaggedTypes._
+import shipreq.base.util.UnivEq
 
 
 final case class Rev(value: Long) extends TaggedLong {
@@ -16,7 +17,7 @@ sealed abstract class Alive {
 //  def fold[A](alive: => A, dead: => A): A
 }
 case object Alive extends Alive with (Boolean <=> Alive) {
-  implicit val equality = Equal.equalA[Alive]
+  implicit val equality = UnivEq.on[Alive]
   override val from     = equality.equal(Alive, _: Alive)
   override val to       = if (_: Boolean) Alive else Dead
 
@@ -29,7 +30,7 @@ case object Dead extends Alive {
 
 sealed trait ImplicationRequired
 case object ImplicationRequired extends ImplicationRequired with (Boolean <=> ImplicationRequired) {
-  implicit val equality = Equal.equalA[ImplicationRequired]
+  implicit val equality = UnivEq.on[ImplicationRequired]
   override val from     = equality.equal(ImplicationRequired, _: ImplicationRequired)
   override val to       = if (_: Boolean) ImplicationRequired else Not
   case object Not extends ImplicationRequired

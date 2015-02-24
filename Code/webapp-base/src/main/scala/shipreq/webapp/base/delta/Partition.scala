@@ -1,7 +1,8 @@
 package shipreq.webapp.base.delta
 
-import scalaz.{Equal, NonEmptyList}
+import scalaz.NonEmptyList
 import upickle.{Reader, Writer}
+import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.DataCodecs._
 import shipreq.webapp.base.protocol.ProtocolDataCodecs._
@@ -70,5 +71,5 @@ case object Partition {
     Fields,
     Tags)
 
-  implicit val equality = Equal.equalA[Partition]
+  implicit val equality = UnivEq.on[Partition]
 }

@@ -2,19 +2,24 @@ package shipreq.base.util
 
 object BiMap {
 
-  private val empty_ = BiMap(Map.empty[Any, Any], Map.empty[Any, Any])
+  private val empty_ = BiMap(Map.empty[Any, Any], Map.empty[Any, Any])(null, null)
 
-  def empty[A, B] = empty_.asInstanceOf[BiMap[A, B]]
+  def empty[A: UnivEq, B: UnivEq] =
+    empty_.asInstanceOf[BiMap[A, B]]
 
-  def apply[A, B](ab: Map[A, B]): BiMap[A, B] = BiMap(ab, ab.map(e => e._2 -> e._1))
+  def apply[A: UnivEq, B: UnivEq](ab: Map[A, B]): BiMap[A, B] =
+    BiMap(ab, ab.map(e => e._2 -> e._1))
 
-  def apply[A, B](pairs: Tuple2[A, B]*): BiMap[A, B] = BiMap(Map(pairs: _*))
+  def apply[A: UnivEq, B: UnivEq](pairs: (A, B)*): BiMap[A, B] =
+    BiMap(Map(pairs: _*))
 
-  def flatten[T](pairs: Tuple2[T, T]*): Map[T, T] = Map((pairs ++ pairs.map(t => (t._2, t._1))): _*)
+  def flatten[T: UnivEq](pairs: (T, T)*): Map[T, T] =
+    Map((pairs ++ pairs.map(t => (t._2, t._1))): _*)
 
-  def swapped[A, B](ba: Map[B, A]): BiMap[A, B] = BiMap(ba.map(e => e._2 -> e._1), ba)
+  def swapped[A: UnivEq, B: UnivEq](ba: Map[B, A]): BiMap[A, B] =
+    BiMap(ba.map(e => e._2 -> e._1), ba)
 
-  def index[A](as: TraversableOnce[A]): BiMap[A, Int] = {
+  def index[A: UnivEq](as: TraversableOnce[A]): BiMap[A, Int] = {
     var i = 0
     var m = Map.empty[A, Int]
     as.foreach { a =>
@@ -30,7 +35,7 @@ object BiMap {
  *
  * @since 31/05/2013
  */
-final case class BiMap[A, B](ab: Map[A, B], ba: Map[B, A]) {
+final case class BiMap[A: UnivEq, B: UnivEq](ab: Map[A, B], ba: Map[B, A]) {
   def as = ab.keySet
   def bs = ba.keySet
   def size = ab.size
@@ -51,7 +56,7 @@ final case class BiMap[A, B](ab: Map[A, B], ba: Map[B, A]) {
  *
  * @since 31/05/2013
  */
-final class BiMapBuilder[A, B] {
+final class BiMapBuilder[A: UnivEq, B: UnivEq] {
   final val ab = Map.newBuilder[A, B]
   final val ba = Map.newBuilder[B, A]
 
