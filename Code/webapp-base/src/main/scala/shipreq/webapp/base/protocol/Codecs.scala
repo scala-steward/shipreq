@@ -402,42 +402,42 @@ object DataCodecs {
     // Partial Reader
     type PR[A] = PartialFunction[Js.Value, A]
 
-    def readLiteral(T: Literal): PR[T.Literal] =
-      { case Js.Str(s) => T.Literal(s) }
+    def readLiteral(t: Literal): PR[t.Literal] =
+      { case Js.Str(s) => t.Literal(s) }
 
-    def readNewLine(T: NewLine): PR[T.NewLine] =
-      { case Js.Num(n) if n.toInt == 0 => T.newLine }
+    def readNewLine(t: NewLine): PR[t.NewLine] =
+      { case Js.Num(n) if n.toInt == 0 => t.newLine }
 
-    def readPlainTextMarkup(T: PlainTextMarkup): PR[T.Atom] = {
-      case Js.Arr(Js.Str(WEBADD),   v) => T.WebAddress  (readJs[String](v))
-      case Js.Arr(Js.Str(EMAILADD), v) => T.EmailAddress(readJs[String](v))
-      case Js.Arr(Js.Str(MATHTEX),  v) => T.MathTeX     (readJs[String](v))
+    def readPlainTextMarkup(t: PlainTextMarkup): PR[t.Atom] = {
+      case Js.Arr(Js.Str(WEBADD),   v) => t.WebAddress  (readJs[String](v))
+      case Js.Arr(Js.Str(EMAILADD), v) => t.EmailAddress(readJs[String](v))
+      case Js.Arr(Js.Str(MATHTEX),  v) => t.MathTeX     (readJs[String](v))
     }
 
-    def readListMarkup(T: ListMarkup)(implicit ra: Name[Reader[T.Atom]]): PR[T.Atom] = {
-      lazy val liNel: Reader[NonEmptyList[T.ListItem]] = nonEmptyListR(readerListItem(T)(ra.value));
-      { case Js.Arr(Js.Str(UL), v) => T.UnorderedList(readJs(v)(liNel)) }
+    def readListMarkup(t: ListMarkup)(implicit ra: Name[Reader[t.Atom]]): PR[t.Atom] = {
+      lazy val liNel: Reader[NonEmptyList[t.ListItem]] = nonEmptyListR(readerListItem(t)(ra.value));
+      { case Js.Arr(Js.Str(UL), v) => t.UnorderedList(readJs(v)(liNel)) }
     }
 
-    def readerListItem(T: ListMarkup)(implicit r: Reader[T.Atom]): Reader[T.ListItem] = implicitly
+    def readerListItem(t: ListMarkup)(implicit r: Reader[t.Atom]): Reader[t.ListItem] = implicitly
 
-    def readSingleLine(T: SingleLine): PR[T.Atom] =
-      readLiteral(T) orElse readPlainTextMarkup(T)
+    def readSingleLine(t: SingleLine): PR[t.Atom] =
+      readLiteral(t) orElse readPlainTextMarkup(t)
 
-    def readMultiLine(T: MultiLine)(implicit ra: Name[Reader[T.Atom]]): PR[T.Atom] =
-      readSingleLine(T) orElse readNewLine(T) orElse readListMarkup(T)
+    def readMultiLine(t: MultiLine)(implicit ra: Name[Reader[t.Atom]]): PR[t.Atom] =
+      readSingleLine(t) orElse readNewLine(t) orElse readListMarkup(t)
 
-    def readIssue(T: Issue): PR[T.Issue] =
-      { case Js.Arr(Js.Str(ISSUE), a, b) => T.Issue(readJs[CustomIssueType.Id](a), readJs[InlineIssueDesc.OptionalText](b)) }
+    def readIssue(t: Issue): PR[t.Issue] =
+      { case Js.Arr(Js.Str(ISSUE), a, b) => t.Issue(readJs[CustomIssueType.Id](a), readJs[InlineIssueDesc.OptionalText](b)) }
 
-    def readReqRef(T: ReqRef): PR[T.ReqRef] =
-      { case Js.Arr(Js.Str(REQREF), v) => T.ReqRef(readJs[Req.Id](v)) }
+    def readReqRef(t: ReqRef): PR[t.ReqRef] =
+      { case Js.Arr(Js.Str(REQREF), v) => t.ReqRef(readJs[Req.Id](v)) }
 
-    def readTagRef(T: TagRef): PR[T.TagRef] =
-      { case Js.Arr(Js.Str(TAGREF), v) => T.TagRef(readJs[Tag.Id](v)) }
+    def readTagRef(t: TagRef): PR[t.TagRef] =
+      { case Js.Arr(Js.Str(TAGREF), v) => t.TagRef(readJs[Tag.Id](v)) }
 
-    def readReqTitle(T: ReqTitle): PR[T.Atom] =
-      readSingleLine(T) orElse readReqRef(T) orElse readIssue(T)
+    def readReqTitle(t: ReqTitle): PR[t.Atom] =
+      readSingleLine(t) orElse readReqRef(t) orElse readIssue(t)
 
 
 //    def stuff(t: Generic)(implicit
