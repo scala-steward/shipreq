@@ -12,13 +12,19 @@ final case class Rev(value: Long) extends TaggedLong {
 }
 
 
-sealed trait Alive
+sealed abstract class Alive {
+//  def fold[A](alive: => A, dead: => A): A
+}
 case object Alive extends Alive with (Boolean <=> Alive) {
   implicit val equality = Equal.equalA[Alive]
   override val from     = equality.equal(Alive, _: Alive)
   override val to       = if (_: Boolean) Alive else Dead
+
+//  override def fold[A](alive: => A, dead: => A): A = alive
 }
-case object Dead extends Alive
+case object Dead extends Alive {
+//  override def fold[A](alive: => A, dead: => A): A = dead
+}
 
 
 sealed trait ImplicationRequired

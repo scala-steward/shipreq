@@ -8,7 +8,7 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.{BiMap, IMap, Platform}
+import shipreq.base.util.{Must, BiMap, IMap, Platform}
 import shipreq.base.util.TaggedTypes._
 
 // ===================================================================================================================
@@ -197,7 +197,7 @@ object ReqCodeGroup {
  *
  * Eg. the "3" in "FR-3".
  *
- * @param value > 0.
+ * @param value ≥ 1.
  */
 final case class ReqTypePos(value: Int) extends TaggedInt
 
@@ -247,6 +247,7 @@ object Pubid {
 sealed trait Req {
   val id: Req.Id
   val pubId: Pubid
+  val alive: Alive
 }
 object Req {
 
@@ -291,6 +292,9 @@ case class Requirements(reqs: IMap[Req.Id, Req], pubids: Pubid.Register) {
 
   def req(id: Req.Id): Option[Req] =
     reqs.get(id)
+
+  def reqM(id: Req.Id): Must[Req] =
+    Must.fromOption(req(id), s"Req $id not found.")
 
   def reqByPubid(id: Pubid): Option[Req] =
     reqIdByPubid(id) flatMap req

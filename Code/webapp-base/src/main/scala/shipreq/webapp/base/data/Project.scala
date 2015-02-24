@@ -46,9 +46,20 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
       .map("\n    " + _.toString.replace(" -> ", " → "))
       .mkString("Project(", "", "\n)")
 
+
+  def atag(id: ApplicableTag.Id): Must[ApplicableTag] =
+    Must.fromOption(tags.data.get(id), s"No tag found with $id")
+      .flatMap(t => t.tag match {
+      case a: ApplicableTag => Must.Exists(a)
+      case _                => Must.Failed(s"$t is not an ApplicableTag")
+    })
+
   def customField[I <: CustomField.Id, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
     fields.data.customFields(id).flatMap(f =>
       Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
+
+  def customIssueType(id: CustomIssueType.Id): Must[CustomIssueType] =
+    Must.fromOption(customIssueTypes.data.get(id), s"No CustomIssueType found with $id")
 
   def reqType(i: ReqType.Id): Must[ReqType] =
     i.foldId[Must[ReqType]](Must.Exists(_), customReqTypes.data.apply)
@@ -56,5 +67,4 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val reqTypes: Stream[ReqType] =
     (customReqTypes.data.values.toStream: Stream[ReqType]) #:::
       (StaticReqType.valueStream        : Stream[ReqType])
-
 }
