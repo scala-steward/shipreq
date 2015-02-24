@@ -41,7 +41,7 @@ object ReqCode {
    */
   final class Node private (val value: String) {
     override def equals(o: Any) = o match {case b:Node => this eq b; case _ => false }
-    override val hashCode = value.##
+    override def hashCode = value.##
     override def toString = value
   }
 

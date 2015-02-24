@@ -10,6 +10,7 @@ object TaggedTypes {
     /** The Underlying value type. */
     type U
     def value: U
+    final override def hashCode = value.##
   }
 
   trait PreventToString {
