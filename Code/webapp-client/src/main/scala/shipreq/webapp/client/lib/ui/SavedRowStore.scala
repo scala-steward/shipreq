@@ -3,7 +3,7 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.macros.Lenser
-import shipreq.base.util.IMap
+import shipreq.base.util.{UnivEq, IMap}
 import scalaz.Applicative
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.DataIdAux
@@ -20,17 +20,17 @@ object SavedRowStore {
 
   type SS[K, P, I] = Map[K, Row[P, I]]
 
-  def apply[K, P, I](pi: P => I): SavedRowStore[SS[K, P, I], K, P, I] =
+  def apply[K: UnivEq, P, I](pi: P => I): SavedRowStore[SS[K, P, I], K, P, I] =
     new SavedRowStore(Iso.id.asLens, new RowL, pi)
 
   def data[P] = new BD[P]
   @inline final class BD[P] {
-    @inline def apply[K, I](pi: P => I)(implicit D: DataIdAux[P, K]): SavedRowStore[SS[K, P, I], K, P, I] = SavedRowStore(pi)
+    @inline def apply[K, I](pi: P => I)(implicit D: DataIdAux[P, K], ev: UnivEq[K]): SavedRowStore[SS[K, P, I], K, P, I] = SavedRowStore(pi)
   }
 
   def fields[P, I](f: FieldSet[P, I]) = new BF(f)
   @inline final class BF[P, I](f: FieldSet[P, I]) {
-    @inline def keyedBy[K]: SavedRowStore[SS[K, P, I], K, P, I] = SavedRowStore(f.pi)
+    @inline def keyedBy[K: UnivEq]: SavedRowStore[SS[K, P, I], K, P, I] = SavedRowStore(f.pi)
   }
 }
 
@@ -40,9 +40,9 @@ object SavedRowStore {
  * @tparam P Persisted data. Data known to be saved.
  * @tparam I Input. A subset of P's fields in a form that matches the editor state.
  */
-final class SavedRowStore[S, K, P, I](_ss: Lens[S, SavedRowStore.SS[K, P, I]],
-                                      rowL: SavedRowStore.RowL[P, I],
-                                      pi: P => I) {
+final class SavedRowStore[S, K: UnivEq, P, I](_ss: Lens[S, SavedRowStore.SS[K, P, I]],
+                                             rowL: SavedRowStore.RowL[P, I],
+                                             pi: P => I) {
   type State = S
   type Row   = SavedRowStore.Row[P, I]
   type SS    = SavedRowStore.SS[K, P, I]

@@ -8,7 +8,7 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.{Must, IMap}
+import shipreq.base.util.{Must, IMap, UnivEq}
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 import shipreq.webapp.base.delta.Partition
 import Must.Auto._
@@ -28,7 +28,7 @@ object StaticFieldType {
     StepTree,
     StepGraph)
 
-  implicit val equality = Equal.equalA[StaticFieldType]
+  implicit val equality = UnivEq.on[StaticFieldType]
 }
 
 object CustomFieldType {
@@ -41,14 +41,14 @@ object CustomFieldType {
     Tag,
     Text)
 
-  implicit val equality = Equal.equalA[CustomFieldType]
+  implicit val equality = UnivEq.on[CustomFieldType]
 }
 
 object FieldType {
   val values: NonEmptyList[FieldType] =
     StaticFieldType.values append CustomFieldType.values
 
-  implicit val equality = Equal.equalA[FieldType]
+  implicit val equality = UnivEq.on[FieldType]
 }
 
 // =====================================================================================================================
@@ -61,7 +61,7 @@ final case class FieldRefKey(value: String) extends TaggedString
 
 sealed trait Mandatory
 case object Mandatory extends Mandatory with (Boolean <=> Mandatory) {
-  implicit val equality = Equal.equalA[Mandatory]
+  implicit val equality = UnivEq.on[Mandatory]
   override val from     = equality.equal(Mandatory, _: Mandatory)
   override val to       = if (_: Boolean) Mandatory else Not
   case object Not extends Mandatory
@@ -69,7 +69,7 @@ case object Mandatory extends Mandatory with (Boolean <=> Mandatory) {
 
 sealed trait Deletable
 case object Deletable extends Deletable with (Boolean <=> Deletable) {
-  implicit val equality = Equal.equalA[Deletable]
+  implicit val equality = UnivEq.on[Deletable]
   override val from     = equality.equal(Deletable, _: Deletable)
   override val to       = if (_: Boolean) Deletable else Not
   case object Not extends Deletable
@@ -93,14 +93,19 @@ sealed trait Field {
 object Field {
   type ApplicableReqTypes = ISubset[Set, ReqType.Id]
 
-  // type Id = Static \/ CustomField.Id
+  /** type Id = [[StaticField]] \/ [[CustomField.Id]] */
   sealed trait Id {
     def foldId[A](s: StaticField => A, c: CustomField.Id => A): A
   }
 
   implicit lazy val applicableReqTypesEquality: Equal[ApplicableReqTypes] = implicitly
 
-  implicit val idEquality = Equal.equalA[Id]
+  implicit val idEquality: UnivEq[Id] = {
+    //deriveUnivEq[Id]
+    //UnivEq[StaticField] - works if this object moved below
+    UnivEq[CustomField.Id]
+    UnivEq.on
+  }
 
   val filterAlive: Field => Boolean =
     _.fold(_ => true, _.alive ≟ Alive)
@@ -159,7 +164,7 @@ object StaticField {
   lazy val names: Set[String] =
     values.list.map(_.name).toSet
 
-  implicit val equality = Equal.equalA[StaticField]
+  implicit val equality = UnivEq.on[StaticField]
 }
 
 /** Custom here just distinguishes user-defined fields from static fields. */

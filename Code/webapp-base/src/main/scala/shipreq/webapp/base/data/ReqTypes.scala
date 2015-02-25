@@ -27,13 +27,13 @@ sealed trait ReqType {
 object ReqType {
   final case class Mnemonic(value: String) extends TaggedString
 
-  // type Id = StaticReqType \/ CustomReqType.Id
+  /** type Id = [[StaticReqType]] \/ [[CustomReqType.Id]] */
   sealed trait Id {
     def foldId[A](s: StaticReqType => A, c: CustomReqType.Id => A): A
   }
 
   implicit object IdOrder extends Order[ReqType.Id] with UnivEq[ReqType.Id] {
-    //UnivEq[StaticReqType] - it just is
+    //UnivEq[StaticReqType] - works if this object moved below
     UnivEq[CustomReqType.Id]
     override def order(a: ReqType.Id, b: ReqType.Id) = (a, b) match {
       case (x: CustomReqType.Id, y: CustomReqType.Id) => Order[CustomReqType.Id].order(x, y)

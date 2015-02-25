@@ -1,14 +1,14 @@
 package shipreq.webapp.base.protocol
 
+import japgolly.nyaya.{CycleFree, CycleDetector}
 import monocle.macros.Lenser
 import scala.collection.GenTraversable
 import scalaz.{\/, Equal}
 import scalaz.std.AllInstances._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.Util
+import shipreq.base.util.{UnivEq, Util}
 import shipreq.base.util.ScalaExt._
-import japgolly.nyaya.{CycleFree, CycleDetector}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaP}
@@ -56,7 +56,7 @@ object TagProtocol {
   }
 
   object PovRelations {
-    implicit val equality = Equal.equalA[PovRelations]
+    implicit val equality = UnivEq.on[PovRelations]
 
     def safeApply1[T](rels: PovRelations, id: Id, tt: T)(implicit T: TreeMod[T]): (Id, Id) \/ CycleFree[T] =
       T.cycleDetector cycleFree trustedApply1(rels, id, tt)
@@ -90,7 +90,7 @@ object TagProtocol {
 
       val parents = tree
         .filter(_._2 contains id)
-        .foldLeft(Map.empty[Tag.Id, Option[Tag.Id]]) {
+        .foldLeft(UnivEq.emptyMap[Tag.Id, Option[Tag.Id]]) {
           case (m, (parent, sibs)) => m + (parent -> Util.position(sibs, id))
         }
 

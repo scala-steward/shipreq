@@ -7,7 +7,7 @@ import scalaz.Maybe
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
-import shipreq.base.util.IMap
+import shipreq.base.util.{UnivEq, IMap}
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.ISubsetEditor
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
@@ -21,7 +21,7 @@ private[fields] object AppReqTypesEditor {
   type K = Field.Id
   type S = Map[K, EditState[A]]
 
-  def initialState(fs: FieldSet): S = Map.empty
+  def initialState(fs: FieldSet): S = UnivEq.emptyMap
 
   @inline final def _stateFor(k: K): Lens[S, Maybe[EditState[A]]] = atMap.at(k)
 }

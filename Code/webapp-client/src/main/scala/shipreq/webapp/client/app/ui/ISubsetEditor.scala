@@ -6,7 +6,7 @@ import scalaz.{Equal, OneAnd}
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
-import shipreq.base.util.IMap
+import shipreq.base.util.{UnivEq, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.ISubset
 
@@ -35,7 +35,7 @@ object ISubsetEditor {
     case object Only extends Method("o", "Only…")
     case object Not  extends Method("n", "Not…")
 
-    implicit val equality = Equal.equalA[Method]
+    implicit val equality = UnivEq.on[Method]
 
     val all   = List[Method](All, Only, Not)
     val index = IMap.empty((_: Method).code) ++ all

@@ -9,7 +9,7 @@ import scalaz.syntax.equal._
 import shapeless.TypeClass.deriveConstructors
 import shapeless.contrib.scalaz.Instances._
 import japgolly.nyaya.CycleDetector
-import shipreq.base.util.IMap
+import shipreq.base.util.{UnivEq, IMap}
 import shipreq.base.util.TaggedTypes.TaggedLong
 
 // =====================================================================================================================
@@ -55,7 +55,7 @@ final case class ApplicableTag(id   : ApplicableTag.Id,
  */
 sealed trait MutexChildren
 case object MutexChildren extends MutexChildren with (Boolean <=> MutexChildren) {
-  implicit val equality = Equal.equalA[MutexChildren]
+  implicit val equality = UnivEq.on[MutexChildren]
   override val from     = equality.equal(MutexChildren, _: MutexChildren)
   override val to       = if (_: Boolean) MutexChildren else Not
   case object Not extends MutexChildren
@@ -69,7 +69,7 @@ object TagType {
   case object Group      extends TagType("Tag Group") { override type Data = TagGroup }
   case object Applicable extends TagType("Tag")       { override type Data = ApplicableTag }
 
-  implicit val equality = Equal.equalA[TagType]
+  implicit val equality = UnivEq.on[TagType]
 
   val values = List[TagType](Group, Applicable)
 }
@@ -155,7 +155,7 @@ object TagTree {
       case object Good              extends Status
       case object Bad               extends Status
       case object BadParentGoodKids extends Status
-      implicit val equality: Equal[Status] = Equal.equalA[Status]
+      implicit val equality: Equal[Status] = UnivEq.on[Status]
     }
 
     sealed trait FilterPolicy
@@ -163,7 +163,7 @@ object TagTree {
       case object OmitNothing               extends FilterPolicy
       case object OmitBadBranches           extends FilterPolicy
       case object OmitAnythingWithBadParent extends FilterPolicy
-      implicit val equality: Equal[FilterPolicy] = Equal.equalA[FilterPolicy]
+      implicit val equality: Equal[FilterPolicy] = UnivEq.on[FilterPolicy]
     }
 
     implicit val equality = deriveEqual[FlatRow]

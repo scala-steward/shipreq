@@ -1,8 +1,11 @@
 package shipreq.webapp.base
 
+import japgolly.nyaya.util.Multimap
 import shipreq.base.util.{UnivEq, IMap}
 
 package object data {
+
+  @inline def setMultimap[K: UnivEq, V: UnivEq] = Multimap.empty[K, Set, V]
 
   // ----------------------------------------------------------------------------------------------
   // Data → ID relationship & access

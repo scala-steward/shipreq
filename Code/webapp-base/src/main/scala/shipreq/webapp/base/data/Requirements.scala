@@ -8,6 +8,7 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shapeless.contrib.scalaz.Instances._
+import shapeless.TypeClass.deriveConstructors
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 
@@ -68,8 +69,8 @@ object ReqCode {
       applyFn(value)
   }
 
-  implicit val reqCodeOrder: Order[ReqCode] =
-    Order[NonEmptyList[Node]].contramap(_.backwards)
+  implicit val reqCodeOrder = UnivEq.withOrder[ReqCode](
+    Order[NonEmptyList[Node]].contramap(_.backwards))
 
   /**
    * Something to which a [[ReqCode]] can refer.
@@ -78,7 +79,11 @@ object ReqCode {
    */
   sealed trait Target extends TrieNode
 
-  implicit val targetEquality: Equal[Target] = Equal.equalA
+  implicit val targetEquality: UnivEq[Target] = {
+    UnivEq[ReqCodeGroup.Id]
+    UnivEq[Req.Id]
+    UnivEq.on
+  }
 
   /** [[TrieNode]] = [[TrieBranch]] | [[Target]] (terminal/leaf) */
   sealed trait TrieNode
@@ -128,7 +133,7 @@ object ReqCode {
     }
 
     def flatten(trie: Trie): Map[ReqCode, Target] =
-      Trie.fold(trie, Map.empty[ReqCode, Target])((m, p, ot) =>
+      Trie.fold(trie, UnivEq.emptyMap[ReqCode, Target])((m, p, ot) =>
         ot.fold(m)(t => m.updated(ReqCode(p), t)))
 
     def putCF(trie: Trie, codeForwards: NonEmptyList[Node])(target: Target): Trie = {
@@ -171,7 +176,7 @@ final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
   import ReqCode.{Node, Target, Trie}
 
   lazy val byTargetMap: Multimap[Target, Set, ReqCode] =
-    Trie.fold(trie, Multimap.empty[Target, Set, ReqCode])((q, path, tgt) =>
+    Trie.fold(trie, setMultimap[Target, ReqCode])((q, path, tgt) =>
       tgt.fold(q)(q.add(_, ReqCode(path))))
 
   @inline def byTarget(t: Target): Set[ReqCode] =
@@ -262,8 +267,6 @@ object Req {
         case r: GenericReq => r.copy(id = GenericReq.Id(i.value))
       }
   }
-
-  implicit val idEquality: Equal[Id] = Equal.equalA
 }
 
 final case class GenericReq(id         : GenericReq.Id,

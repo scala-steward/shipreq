@@ -7,7 +7,7 @@ import scalaz.effect.IO
 import scalaz.std.option.optionEqual
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.Util
+import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.util.DND
 
@@ -75,6 +75,7 @@ object SortCriteriaEditor {
       private val unusedChoice: Choice[OSM] =
         Choice(None, "Unused", false) // English
 
+      UnivEq[Col]
       private val choicesForColumn =
         Memo.mutableHashMapMemo[Col, Vector[Choice[OSM]]](c =>
           unusedChoice +:
