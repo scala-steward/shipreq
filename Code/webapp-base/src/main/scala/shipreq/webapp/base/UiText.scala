@@ -14,10 +14,13 @@ object UiText {
   }
 
   object ColumnNames {
-    def reqType = "Type"
-    def pubId   = "ID"
-    def code    = "Code"
-    def desc    = "Desc"
+    def reqType        = "Type"
+    def pubId          = "ID"
+    def code           = "Code"
+    def desc           = "Desc"
+    def tags           = "Tags"
+    def implicationSrc = "Implied By"
+    def implicationTgt = "Implies"
   }
 
   object FieldNames {

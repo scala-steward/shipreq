@@ -38,6 +38,9 @@ object SortMethod {
     case Column.ReqType => ignoreBlanks
     case Column.Code
        | Column.Desc
+       | Column.Tags
+       | Column.ImplicationSrc
+       | Column.ImplicationTgt
        | Column.CustomField(_) => considerBlanks
   }
 }

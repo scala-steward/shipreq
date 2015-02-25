@@ -26,6 +26,9 @@ object ColumnRenderer {
     case Column.ReqType        => new ReqType(project)
     case Column.Code           => new Code
     case Column.Desc           => new Desc
+    case Column.Tags           => new Desc
+    case Column.ImplicationSrc => Null
+    case Column.ImplicationTgt => Null
     case Column.CustomField(f) =>
       f match {
         case id: CustomField.Text       .Id => new CFText(project, id)
@@ -38,7 +41,7 @@ object ColumnRenderer {
   // (renderFn: Row => ReactElement)(project: Project, columnName: Column.NameResolver)(c: Column)
 
   // ===================================================================================================================
-  @deprecated("ColumnRenderer.Null is for dev purposes only.", "")
+//  @deprecated("ColumnRenderer.Null is for dev purposes only.", "")
   object Null extends ColumnRenderer {
     override def header: ReactElement = <.span("NULL")
     override val render: Row => ReactElement = Function const <.span("∅")

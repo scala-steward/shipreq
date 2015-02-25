@@ -14,7 +14,7 @@ object ViewSettings {
   val _order   = l(_.order)
 
   def default =
-    ViewSettings(Column.nonFieldValues.list.toVector, SortCriteria.default)
+    ViewSettings(Column.builtInValues.list.toVector, SortCriteria.default)
 }
 
 // =====================================================================================================================

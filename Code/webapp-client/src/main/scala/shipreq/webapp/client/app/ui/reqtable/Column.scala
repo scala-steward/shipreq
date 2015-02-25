@@ -18,16 +18,17 @@ object Column {
     final protected def __sortConclusiveness = ??? // final for mutual-exclusivity
   }
 
-  // Non-field columns (TODO rename to BuiltIn?)
-  sealed trait NonField extends Column
-  case object PubId   extends NonField with SortConclusive
-  case object Code    extends NonField with SortInconclusive
-  case object Desc    extends NonField with SortInconclusive
-  case object ReqType extends NonField with SortInconclusive
-  // TODO add tags
+  sealed trait BuiltIn extends Column
+  case object PubId          extends BuiltIn with SortConclusive
+  case object Code           extends BuiltIn with SortInconclusive
+  case object Desc           extends BuiltIn with SortInconclusive
+  case object ReqType        extends BuiltIn with SortInconclusive
+  case object Tags           extends BuiltIn with SortInconclusive
+  case object ImplicationSrc extends BuiltIn with SortInconclusive
+  case object ImplicationTgt extends BuiltIn with SortInconclusive
 
-  val nonFieldValues: NonEmptyList[NonField] =
-    NonEmptyList(PubId, Code, Desc, ReqType)
+  val builtInValues: NonEmptyList[BuiltIn] =
+    NonEmptyList(PubId, Code, Desc, ReqType, Tags, ImplicationSrc, ImplicationTgt)
 
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
@@ -41,8 +42,14 @@ object Column {
   implicit val equality : UnivEq[Column]           = UnivEq.on
 
   val mandatory: Column => Boolean = {
-    case CustomField(_) => false
-    case _: NonField    => true
+    case PubId
+       | Code
+       | Desc            => true
+    case ReqType
+       | Tags
+       | ImplicationSrc
+       | ImplicationTgt
+       | CustomField(_)  => false
   }
 
   case class NameResolver(customFields   : IMap[data.CustomField.Id, data.CustomField],
@@ -56,6 +63,9 @@ object Column {
       case Column.PubId           => ColumnNames.pubId
       case Column.Code            => ColumnNames.code
       case Column.Desc            => ColumnNames.desc
+      case Column.Tags            => ColumnNames.tags
+      case Column.ImplicationSrc  => ColumnNames.implicationSrc
+      case Column.ImplicationTgt  => ColumnNames.implicationTgt
     }
   }
 }
