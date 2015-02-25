@@ -1,8 +1,7 @@
 package shipreq.webapp.base.data
 
-import scalaz.{OneAnd, Equal}
+import scalaz.OneAnd
 import scalaz.Isomorphism.<=>
-import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.UnivEq
 
@@ -17,9 +16,9 @@ sealed abstract class Alive {
 //  def fold[A](alive: => A, dead: => A): A
 }
 case object Alive extends Alive with (Boolean <=> Alive) {
-  implicit val equality = UnivEq.on[Alive]
-  override val from     = equality.equal(Alive, _: Alive)
-  override val to       = if (_: Boolean) Alive else Dead
+  @inline implicit def equality = UnivEq.force[Alive]
+  override val from             = equality.equal(Alive, _: Alive)
+  override val to               = if (_: Boolean) Alive else Dead
 
 //  override def fold[A](alive: => A, dead: => A): A = alive
 }
@@ -30,9 +29,9 @@ case object Dead extends Alive {
 
 sealed trait ImplicationRequired
 case object ImplicationRequired extends ImplicationRequired with (Boolean <=> ImplicationRequired) {
-  implicit val equality = UnivEq.on[ImplicationRequired]
-  override val from     = equality.equal(ImplicationRequired, _: ImplicationRequired)
-  override val to       = if (_: Boolean) ImplicationRequired else Not
+  @inline implicit def equality = UnivEq.force[ImplicationRequired]
+  override val from             = equality.equal(ImplicationRequired, _: ImplicationRequired)
+  override val to               = if (_: Boolean) ImplicationRequired else Not
   case object Not extends ImplicationRequired
 }
 
@@ -66,5 +65,6 @@ object ISubset {
   final case class Only[F[_], A](values: OneAnd[F, A]) extends ISubset[F, A]
   final case class Not [F[_], A](values: OneAnd[F, A]) extends ISubset[F, A]
 
-  implicit def equality[F[_], A](implicit FA: Equal[F[A]],  A: Equal[A]) = deriveEqual[ISubset[F, A]]
+  @inline implicit def univEquality[F[_], A](implicit v: UnivEq[OneAnd[F, A]]): UnivEq[ISubset[F, A]] =
+    UnivEq.force
 }

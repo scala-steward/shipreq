@@ -75,5 +75,6 @@ case object Partition {
     Fields,
     Tags)
 
-  implicit val equality = UnivEq.on[Partition]
+  // All instaces are objects
+  @inline implicit def equality = UnivEq.force[Partition]
 }

@@ -4,9 +4,10 @@ import monocle.macros.Lenser
 import scalaz.{NonEmptyList, Order, Ordering}
 import scalaz.std.anyVal.intInstance
 import scalaz.syntax.order._
-import shapeless.contrib.scalaz.Instances._
+import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr, Lazy}
 import shipreq.base.util.{UnivEq, Must}
 import shipreq.base.util.TaggedTypes._
+import shipreq.webapp.base.TypeclassDerivation._
 import ReqType.Mnemonic
 
 sealed trait ReqType {
@@ -27,15 +28,24 @@ sealed trait ReqType {
 object ReqType {
   final case class Mnemonic(value: String) extends TaggedString
 
-  /** type Id = [[StaticReqType]] \/ [[CustomReqType.Id]] */
+  /** type [[Id]] = [[StaticReqType]] | [[CustomReqType.Id]] */
   sealed trait Id {
     def foldId[A](s: StaticReqType => A, c: CustomReqType.Id => A): A
   }
 
-  implicit object IdOrder extends Order[ReqType.Id] with UnivEq[ReqType.Id] {
-    //UnivEq[StaticReqType] - works if this object moved below
-    UnivEq[CustomReqType.Id]
-    override def order(a: ReqType.Id, b: ReqType.Id) = (a, b) match {
+  implicit object IdGeneric extends Generic[Id] {
+    override type Repr = StaticReqType :+: CustomReqType.Id :+: CNil
+    override def to  (id: Id): Repr = id.foldId(Coproduct[Repr](_), Coproduct[Repr](_))
+    override def from(co: Repr): Id = co match {
+      case Inl(s)      => s
+      case Inr(Inl(c)) => c
+      case _           => ???
+    }
+  }
+
+  implicit object IdOrder extends Order[Id] with UnivEq[Id] {
+    implicitly[Lazy[UnivEq[Id]]] // prove Id is actually UnivEq
+    override def order(a: Id, b: Id) = (a, b) match {
       case (x: CustomReqType.Id, y: CustomReqType.Id) => Order[CustomReqType.Id].order(x, y)
       case (x: StaticReqType   , y: StaticReqType   ) => StaticReqType.order(x, y)
       case (x: StaticReqType   , y: CustomReqType.Id) => Ordering.LT
@@ -46,7 +56,7 @@ object ReqType {
   val filterAlive: ReqType => Boolean =
     _.fold(_ => true, _.alive ≟ Alive)
 
-  def name(customReqTypes: CustomReqTypeIMap): ReqType.Id => Must[String] =
+  def name(customReqTypes: CustomReqTypeIMap): Id => Must[String] =
     _.foldId(s => Must.Exists(s.name), c => customReqTypes(c).map(_.name))
 }
 

@@ -6,11 +6,11 @@ import scalaz.Maybe.optionMaybeIso
 import scalaz.Isomorphism._
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
-import shapeless.TypeClass.deriveConstructors
-import shapeless.contrib.scalaz.Instances._
+import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util.{Must, IMap, UnivEq}
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 import shipreq.webapp.base.delta.Partition
+import shipreq.webapp.base.TypeclassDerivation._
 import Must.Auto._
 
 // =====================================================================================================================
@@ -28,7 +28,8 @@ object StaticFieldType {
     StepTree,
     StepGraph)
 
-  implicit val equality = UnivEq.on[StaticFieldType]
+
+  implicit val equality: UnivEq[StaticFieldType] = { import AutoDerive._; deriveUnivEq }
 }
 
 object CustomFieldType {
@@ -41,14 +42,14 @@ object CustomFieldType {
     Tag,
     Text)
 
-  implicit val equality = UnivEq.on[CustomFieldType]
+  implicit val equality: UnivEq[CustomFieldType] = { import AutoDerive._; deriveUnivEq }
 }
 
 object FieldType {
   val values: NonEmptyList[FieldType] =
     StaticFieldType.values append CustomFieldType.values
 
-  implicit val equality = UnivEq.on[FieldType]
+  implicit val equality: UnivEq[FieldType] = { import AutoDerive._; deriveUnivEq }
 }
 
 // =====================================================================================================================
@@ -61,17 +62,17 @@ final case class FieldRefKey(value: String) extends TaggedString
 
 sealed trait Mandatory
 case object Mandatory extends Mandatory with (Boolean <=> Mandatory) {
-  implicit val equality = UnivEq.on[Mandatory]
-  override val from     = equality.equal(Mandatory, _: Mandatory)
-  override val to       = if (_: Boolean) Mandatory else Not
+  @inline implicit def equality = UnivEq.force[Mandatory]
+  override val from             = equality.equal(Mandatory, _: Mandatory)
+  override val to               = if (_: Boolean) Mandatory else Not
   case object Not extends Mandatory
 }
 
 sealed trait Deletable
 case object Deletable extends Deletable with (Boolean <=> Deletable) {
-  implicit val equality = UnivEq.on[Deletable]
-  override val from     = equality.equal(Deletable, _: Deletable)
-  override val to       = if (_: Boolean) Deletable else Not
+  @inline implicit def equality = UnivEq.force[Deletable]
+  override val from             = equality.equal(Deletable, _: Deletable)
+  override val to               = if (_: Boolean) Deletable else Not
   case object Not extends Deletable
 }
 
@@ -93,19 +94,24 @@ sealed trait Field {
 object Field {
   type ApplicableReqTypes = ISubset[Set, ReqType.Id]
 
-  /** type Id = [[StaticField]] \/ [[CustomField.Id]] */
+  /** type [[Id]] = [[StaticField]] | [[CustomField.Id]] */
   sealed trait Id {
     def foldId[A](s: StaticField => A, c: CustomField.Id => A): A
   }
 
-  implicit lazy val applicableReqTypesEquality: Equal[ApplicableReqTypes] = implicitly
-
-  implicit val idEquality: UnivEq[Id] = {
-    //deriveUnivEq[Id]
-    //UnivEq[StaticField] - works if this object moved below
-    UnivEq[CustomField.Id]
-    UnivEq.on
+  implicit object IdGeneric extends Generic[Id] {
+    override type Repr = StaticField :+: CustomField.Id :+: CNil
+    override def to  (id: Id): Repr = id.foldId(Coproduct[Repr](_), Coproduct[Repr](_))
+    override def from(co: Repr): Id = co match {
+      case Inl(s)      => s
+      case Inr(Inl(c)) => c
+      case _           => ???
+    }
   }
+
+  implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
+
+  implicit val idEquality: UnivEq[Id] = deriveUnivEq
 
   val filterAlive: Field => Boolean =
     _.fold(_ => true, _.alive ≟ Alive)
@@ -141,7 +147,8 @@ sealed abstract class StaticField(         val name     : String,
 }
 
 object StaticField {
-  val useCaseOnly: ApplicableReqTypes = ISubset.Only(OneAnd(StaticReqType.UseCase, UnivEq.emptySet))
+  val useCaseOnly: ApplicableReqTypes =
+    ISubset.Only(OneAnd(StaticReqType.UseCase, UnivEq.emptySet))
 
   @inline final private[this] def T = StaticFieldType
 
@@ -164,7 +171,7 @@ object StaticField {
   lazy val names: Set[String] =
     values.list.map(_.name).toSet
 
-  implicit val equality = UnivEq.on[StaticField]
+  implicit val equality: UnivEq[StaticField] = { import AutoDerive._; deriveUnivEq }
 }
 
 /** Custom here just distinguishes user-defined fields from static fields. */
@@ -208,7 +215,7 @@ object CustomField {
       override val unapplyData: AnyRef => Option[Text] = {case r: Text => Some(r); case _ => None}
       override def mkId(l: Long) = Id(l)
     }
-    implicit val equality = deriveEqual[Text]
+    implicit val equality: UnivEq[Text] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -231,7 +238,7 @@ object CustomField {
       override val unapplyData: AnyRef => Option[Tag] = {case r: Tag => Some(r); case _ => None}
       override def mkId(l: Long) = Id(l)
     }
-    implicit val equality = deriveEqual[Tag]
+    implicit val equality: UnivEq[Tag] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -253,7 +260,7 @@ object CustomField {
       override val unapplyData: AnyRef => Option[Implication] = {case r: Implication => Some(r); case _ => None}
       override def mkId(l: Long) = Id(l)
     }
-    implicit val equality = deriveEqual[Implication]
+    implicit val equality: UnivEq[Implication] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -290,13 +297,10 @@ object CustomField {
 
   def nameP(p: Project) = name(p.customReqTypes.data, p.tags.data)
 
-  implicit object Equality extends Equal[CustomField] {
-    override def equal(a: CustomField, b: CustomField) = a match {
-      case x: Text        => b match {case y: Text        => x ≟ y; case _ => false}
-      case x: Tag         => b match {case y: Tag         => x ≟ y; case _ => false}
-      case x: Implication => b match {case y: Implication => x ≟ y; case _ => false}
-    }
-  }
+  implicit val equalImplication: UnivEq[Implication] = deriveUnivEq
+  implicit val equalTag        : UnivEq[Tag]         = deriveUnivEq
+  implicit val equalText       : UnivEq[Text]        = deriveUnivEq
+  implicit val equality        : UnivEq[CustomField] = deriveUnivEq
 }
 
 // =====================================================================================================================
@@ -313,5 +317,5 @@ case class FieldSet(customFields: IMap[CustomField.Id, CustomField],
 }
 
 object FieldSet {
-  implicit val equality = deriveEqual[FieldSet]
+  implicit val equality: Equal[FieldSet] = deriveEqual
 }

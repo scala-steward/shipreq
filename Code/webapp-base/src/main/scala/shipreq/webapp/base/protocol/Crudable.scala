@@ -47,5 +47,5 @@ object DeletionAction {
   case object SoftDel extends DeletionAction
   case object Restore extends DeletionAction
   def values = NonEmptyList[DeletionAction](HardDel, SoftDel, Restore)
-  implicit val equality = UnivEq.on[DeletionAction]
+  @inline implicit def equality = UnivEq.force[DeletionAction]
 }

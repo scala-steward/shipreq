@@ -1,9 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import shapeless.TypeClass.deriveConstructors
-import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.TypeclassDerivation._
 
 /**
  * Replacement values for a requirement at a specific row.
@@ -19,7 +18,7 @@ case class Expansion(implicationSrc: List[Req.Id],
                      implicationTgt: List[Req.Id],
                      reqCodes      : List[ReqCode])
 object Expansion {
-  implicit val equality = deriveUnivEq[Expansion].sharedInstance
+  implicit val equality: UnivEq[Expansion] = deriveUnivEq
 
   val none = Expansion(Nil, Nil, Nil)
 }
@@ -33,7 +32,7 @@ case class GenericReqRow(req: GenericReq, exp: Expansion) extends Row
 case class ReqCodeGroupRow(grp: ReqCodeGroup, code: ReqCode) extends Row
 
 object Row {
-  implicit val equalityG = deriveUnivEq[GenericReqRow].sharedInstance
-  implicit val equalityC = deriveUnivEq[ReqCodeGroupRow].sharedInstance
-  implicit val equality  = UnivEq.on[Row]
+  implicit val equalityG: UnivEq[GenericReqRow]   = deriveUnivEq
+  implicit val equalityC: UnivEq[ReqCodeGroupRow] = deriveUnivEq
+  implicit val equality : UnivEq[Row]             = deriveUnivEq
 }

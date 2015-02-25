@@ -2,12 +2,11 @@ package shipreq.webapp.base.protocol
 
 import scalaz.{\/-, -\/, \/}
 import scalaz.std.AllInstances._
-import shapeless.TypeClass.deriveConstructors
-import shapeless.contrib.scalaz.Instances._
-import shipreq.base.util.Util
+import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.Tag.{Id => TagId}
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaP}
+import shipreq.webapp.base.TypeclassDerivation._
 import Field.ApplicableReqTypes
 
 object FieldProtocol {
@@ -25,11 +24,11 @@ object FieldProtocol {
 
   case class ImplicationFieldValues(reqTypeId: ReqType.Id,
                                     mandatory: Mandatory,
-                                    reqTypes: ApplicableReqTypes) extends Values
+                                    reqTypes : ApplicableReqTypes) extends Values
 
-  implicit val equalImplication = deriveEqual[ImplicationFieldValues]
-  implicit val equalTag         = deriveEqual[TagFieldValues]
-  implicit val equalText        = deriveEqual[TextFieldValues]
+  implicit val equalText       : UnivEq[TextFieldValues]        = deriveUnivEq
+  implicit val equalTag        : UnivEq[TagFieldValues]         = deriveUnivEq
+  implicit val equalImplication: UnivEq[ImplicationFieldValues] = deriveUnivEq
 
   // The field immediately before which the subject field should be ordered. None means append.
   type Position = Option[Field.Id]

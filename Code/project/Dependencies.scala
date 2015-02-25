@@ -121,9 +121,10 @@ object Deps {
     val combo = dd("specs2-core") ++ dd("specs2-scalacheck")
   }
 
-  val shapeless = JvmAndJs("com.github.japgolly.fork.shapeless", "shapeless", "2.0.0")
-  val μPickle   = JvmAndJs("com.github.japgolly.fork.upickle",   "upickle",   "custom-2")
-  val μTest     = JvmAndJs("com.lihaoyi",                        "utest",     "0.3.0")
+  val shapeless = JvmAndJsFork("com.chuusai", "com.github.japgolly.fork.shapeless", "shapeless", "2.1.0")
+
+  val μPickle   = JvmAndJs("com.github.japgolly.fork.upickle", "upickle", "custom-2")
+  val μTest     = JvmAndJs("com.lihaoyi",                      "utest",   "0.3.0")
 
   // Was only needed trying to use Monocle's @Lenses. Monocle's Lenser works without this.
   // val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)

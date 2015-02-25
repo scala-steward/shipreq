@@ -8,10 +8,10 @@ import scalaz.std.stream.streamEqual
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
-import shapeless.contrib.scalaz.Instances._
-import shapeless.TypeClass.deriveConstructors
+import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
+import shipreq.webapp.base.TypeclassDerivation._
 
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
@@ -76,15 +76,24 @@ object ReqCode {
   /**
    * Something to which a [[ReqCode]] can refer.
    *
-   * [[Target]] = [[ReqCodeGroup.Id]] | [[Req.Id]]
+   * type [[Target]] = [[ReqCodeGroup.Id]] | [[Req.Id]]
    */
   sealed trait Target extends TrieNode
 
-  implicit val targetEquality: UnivEq[Target] = {
-    UnivEq[ReqCodeGroup.Id]
-    UnivEq[Req.Id]
-    UnivEq.on
+  implicit object TargetGeneric extends Generic[Target] {
+    override type Repr = ReqCodeGroup.Id :+: Req.Id :+: CNil
+    override def to  (t: Target): Repr = t match {
+      case a: ReqCodeGroup.Id => Coproduct[Repr](a)
+      case a: Req.Id          => Coproduct[Repr](a)
+    }
+    override def from(co: Repr): Target = co match {
+      case Inl(a)      => a
+      case Inr(Inl(a)) => a
+      case _           => ???
+    }
   }
+
+  implicit val targetEquality: UnivEq[Target] = deriveUnivEq
 
   /** [[TrieNode]] = [[TrieBranch]] | [[Target]] (terminal/leaf) */
   sealed trait TrieNode
@@ -168,6 +177,7 @@ object ReqCode {
       putCF(trie, code.backwards.reverse)(target)
   }
 
+  Equal[(ReqCode, Target)]
   implicit val trieEquality: Equal[Trie] =
     Equal[Stream[(ReqCode, Target)]] contramap Trie.flatStream
 
@@ -198,7 +208,7 @@ final case class ReqCodeGroup(id: ReqCodeGroup.Id, desc: String)
 object ReqCodeGroup {
   final case class Id(value: Long) extends TaggedLong with ReqCode.Target
 
-  implicit val equality: UnivEq[ReqCodeGroup] = deriveUnivEq.sharedInstance
+  implicit val equality: UnivEq[ReqCodeGroup] = deriveUnivEq
 }
 
 // ===================================================================================================================
@@ -222,7 +232,7 @@ final case class Pubid(reqTypeId: ReqType.Id, pos: ReqTypePos)
 
 object Pubid {
 
-  implicit val equality = deriveUnivEq[Pubid].sharedInstance
+  implicit val equality: UnivEq[Pubid] = deriveUnivEq
 
   /**
    * Once a (reqtype x position) is allocated, it is never removed.
@@ -263,7 +273,7 @@ sealed trait Req {
 }
 object Req {
 
-  /** [[Req.Id]] = [[GenericReq.Id]] */
+  /** type [[Id]] = [[Req.Id]] | [[GenericReq.Id]] */
   sealed trait Id extends TaggedLong with ReqCode.Target
 
   object IdAccess extends ObjDataIdM[Req.type, Req, Id] {
@@ -285,7 +295,7 @@ final case class GenericReq(id         : GenericReq.Id,
 }
 object GenericReq {
   final case class Id(value: Long) extends TaggedLong with Req.Id
-  implicit val equality: UnivEq[GenericReq] = deriveUnivEq.sharedInstance
+  implicit val equality: UnivEq[GenericReq] = deriveUnivEq
 }
 
 

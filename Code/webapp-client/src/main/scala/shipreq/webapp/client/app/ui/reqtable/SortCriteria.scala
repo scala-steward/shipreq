@@ -28,8 +28,8 @@ object SortMethod {
   case object AscThenBlanks  extends ConsiderBlanks(ascSym   + blankSym, txt2(ascTxt,   blankTxt))
   case object DescThenBlanks extends ConsiderBlanks(descSym  + blankSym, txt2(descTxt,  blankTxt))
 
-  implicit val equalityI: UnivEq[IgnoreBlanks] = UnivEq.on
-  implicit val equality : UnivEq[SortMethod]   = UnivEq.on
+  @inline implicit def equalityI: UnivEq[IgnoreBlanks] = UnivEq.force
+  @inline implicit def equality : UnivEq[SortMethod]   = UnivEq.force
 
   // TODO Lazy due to https://github.com/scala-js/scala-js/issues/1490
   lazy val ignoreBlanks   = NonEmptyList[IgnoreBlanks](Asc, Desc)

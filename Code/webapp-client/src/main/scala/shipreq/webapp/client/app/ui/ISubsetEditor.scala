@@ -2,13 +2,14 @@ package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import shipreq.webapp.client.lib.ClientUtil
-import scalaz.{Equal, OneAnd}
+import scalaz.OneAnd
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 import shipreq.base.util.{UnivEq, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.ISubset
+import shipreq.webapp.base.TypeclassDerivation._
 
 object ISubsetEditor {
 
@@ -35,7 +36,7 @@ object ISubsetEditor {
     case object Only extends Method("o", "Only…")
     case object Not  extends Method("n", "Not…")
 
-    implicit val equality = UnivEq.on[Method]
+    implicit val equality: UnivEq[Method] = { import AutoDerive._; deriveUnivEq }
 
     val all   = List[Method](All, Only, Not)
     val index = IMap.empty((_: Method).code) ++ all

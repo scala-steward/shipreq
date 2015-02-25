@@ -5,13 +5,12 @@ import monocle.macros.Lenser
 import scala.collection.GenTraversable
 import scalaz.{\/, Equal}
 import scalaz.std.AllInstances._
-import shapeless.TypeClass.deriveConstructors
-import shapeless.contrib.scalaz.Instances._
 import shipreq.base.util.{UnivEq, Util}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaP}
+import shipreq.webapp.base.TypeclassDerivation._
 import Tag.Id
 
 object TagProtocol {
@@ -56,7 +55,7 @@ object TagProtocol {
   }
 
   object PovRelations {
-    implicit val equality = UnivEq.on[PovRelations]
+    implicit val equality: UnivEq[PovRelations] = { import AutoDerive._; deriveUnivEq }
 
     def safeApply1[T](rels: PovRelations, id: Id, tt: T)(implicit T: TreeMod[T]): (Id, Id) \/ CycleFree[T] =
       T.cycleDetector cycleFree trustedApply1(rels, id, tt)
@@ -124,9 +123,6 @@ object TagProtocol {
                                        key: HashRefKey,
                                        desc: Option[String]) extends Values
 
-  implicit val tagGroupValueEquality      = deriveEqual[TagGroupValues]
-  implicit val applicableTagValueEquality = deriveEqual[ApplicableTagValues]
-
   object PartitionFns extends Partition.Fns[Partition.Tags.type] {
     def rev(p: Project): Rev =
       p.tags.rev
@@ -148,4 +144,7 @@ object TagProtocol {
     }
   }
 
+  import AutoDerive._
+  implicit val tagGroupValueEquality     : UnivEq[TagGroupValues]      = deriveUnivEq
+  implicit val applicableTagValueEquality: UnivEq[ApplicableTagValues] = deriveUnivEq
 }

@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import scalaz.{NonEmptyList, Order, Equal}
+import scalaz.{OneAnd, NonEmptyList, Order, Equal}
 import scalaz.std.anyVal.intInstance
 
 /**
@@ -9,7 +9,6 @@ import scalaz.std.anyVal.intInstance
 trait UnivEq[A] extends Equal[A] {
   final override def equalIsNatural = true
   final override def equal(a: A, b: A) = a == b
-  final def sharedInstance = UnivEq.on[A]
 }
 
 object UnivEq {
@@ -17,17 +16,21 @@ object UnivEq {
 
   private[this] val instance = new UnivEq[Any] {}
 
-  @inline def on[A]: UnivEq[A] = instance.asInstanceOf[UnivEq[A]]
+  @inline def force[A]: UnivEq[A] = instance.asInstanceOf[UnivEq[A]]
 
-  @inline implicit def string  = on[String]
-  @inline implicit def long    = on[Long]
-  @inline implicit def int     = on[Int]
-  @inline implicit def short   = on[Short]
-  @inline implicit def boolean = on[Boolean]
+  @inline implicit def string : UnivEq[String]  = force
+  @inline implicit def long   : UnivEq[Long]    = force
+  @inline implicit def int    : UnivEq[Int]     = force
+  @inline implicit def short  : UnivEq[Short]   = force
+  @inline implicit def boolean: UnivEq[Boolean] = force
 
-  @inline implicit def set [A: UnivEq] = on[Set[A]]
-  @inline implicit def list[A: UnivEq] = on[List[A]]
-  @inline implicit def nel [A: UnivEq] = on[NonEmptyList[A]]
+  @inline implicit def set   [A: UnivEq]           : UnivEq[Set[A]]          = force
+  @inline implicit def list  [A: UnivEq]           : UnivEq[List[A]]         = force
+  @inline implicit def vector[A: UnivEq]           : UnivEq[Vector[A]]       = force
+  @inline implicit def map   [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = force
+  @inline implicit def nel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = force
+
+  @inline implicit def oneAnd[F[_], A](implicit fa: UnivEq[F[A]], a: UnivEq[A]): UnivEq[OneAnd[F, A]] = force
 
   def withOrder[A](o: Order[A]): Order[A] with UnivEq[A] =
     new Order[A] with UnivEq[A] {

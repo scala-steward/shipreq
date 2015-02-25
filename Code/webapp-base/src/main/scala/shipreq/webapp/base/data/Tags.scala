@@ -1,16 +1,15 @@
 package shipreq.webapp.base.data
 
+import japgolly.nyaya.CycleDetector
 import monocle.Lens
 import monocle.macros.Lenser
 import scalaz.{Memo, Equal}
 import scalaz.Isomorphism._
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
-import shapeless.TypeClass.deriveConstructors
-import shapeless.contrib.scalaz.Instances._
-import japgolly.nyaya.CycleDetector
 import shipreq.base.util.{UnivEq, IMap}
 import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.webapp.base.TypeclassDerivation._
 
 // =====================================================================================================================
 // A single tag. No relationships.
@@ -55,9 +54,9 @@ final case class ApplicableTag(id   : ApplicableTag.Id,
  */
 sealed trait MutexChildren
 case object MutexChildren extends MutexChildren with (Boolean <=> MutexChildren) {
-  implicit val equality = UnivEq.on[MutexChildren]
-  override val from     = equality.equal(MutexChildren, _: MutexChildren)
-  override val to       = if (_: Boolean) MutexChildren else Not
+  @inline implicit def equality = UnivEq.force[MutexChildren]
+  override val from             = equality.equal(MutexChildren, _: MutexChildren)
+  override val to               = if (_: Boolean) MutexChildren else Not
   case object Not extends MutexChildren
 }
 
@@ -69,7 +68,7 @@ object TagType {
   case object Group      extends TagType("Tag Group") { override type Data = TagGroup }
   case object Applicable extends TagType("Tag")       { override type Data = ApplicableTag }
 
-  implicit val equality = UnivEq.on[TagType]
+  implicit val equality: UnivEq[TagType] = { import AutoDerive._; deriveUnivEq }
 
   val values = List[TagType](Group, Applicable)
 }
@@ -84,20 +83,6 @@ object Tag {
     override def setId(t: Tag, i: Id) = t match { // TODO Ideally this should be hidden from non-test code
       case x: TagGroup      => x.copy(id = TagGroup     .Id(i.value))
       case x: ApplicableTag => x.copy(id = ApplicableTag.Id(i.value))
-    }
-  }
-
-  implicit val equalityTG = deriveEqual[TagGroup]
-  implicit val equalityAT = deriveEqual[ApplicableTag]
-
-  //implicit val equality   = deriveEqual[Tag]
-  implicit object Equality extends Equal[Tag] {
-    override val equalIsNatural =
-      Equal[ApplicableTag].equalIsNatural &&
-      Equal[TagGroup     ].equalIsNatural
-    override def equal(a: Tag, b: Tag): Boolean = a match {
-      case x: ApplicableTag  => b match {case y: ApplicableTag  => x ≟ y; case _ => false}
-      case x: TagGroup       => b match {case y: TagGroup       => x ≟ y; case _ => false}
     }
   }
 
@@ -124,6 +109,11 @@ object Tag {
         _.keys.toStream,
         CycleDetector.Directed.check[TagTree, Id, Long](_.get(_).fold(Stream.empty[Id])(_.children.toStream), _.value))
   }
+
+  import AutoDerive._
+  implicit val equalityTG: UnivEq[TagGroup]      = deriveUnivEq
+  implicit val equalityAT: UnivEq[ApplicableTag] = deriveUnivEq
+  implicit val equality  : UnivEq[Tag]           = deriveUnivEq
 }
 
 object TagGroup {
@@ -155,7 +145,7 @@ object TagTree {
       case object Good              extends Status
       case object Bad               extends Status
       case object BadParentGoodKids extends Status
-      implicit val equality: Equal[Status] = UnivEq.on[Status]
+      @inline implicit def equality: UnivEq[Status] = UnivEq.force
     }
 
     sealed trait FilterPolicy
@@ -163,10 +153,10 @@ object TagTree {
       case object OmitNothing               extends FilterPolicy
       case object OmitBadBranches           extends FilterPolicy
       case object OmitAnythingWithBadParent extends FilterPolicy
-      implicit val equality: Equal[FilterPolicy] = UnivEq.on[FilterPolicy]
+      @inline implicit def equality: UnivEq[FilterPolicy] = UnivEq.force
     }
 
-    implicit val equality = deriveEqual[FlatRow]
+    implicit val equality: UnivEq[FlatRow] = deriveUnivEq
   }
 
   import FlatRow.{FilterPolicy, Status}
@@ -262,7 +252,7 @@ final case class TagInTree(tag: Tag, children: Vector[Id]) {
 }
 
 object TagInTree {
-  implicit val equality = deriveEqual[TagInTree]
+  implicit val equality: UnivEq[TagInTree] = deriveUnivEq
 
   val filterAlive: TagInTree => Boolean =
     _.tag.alive ≟ Alive

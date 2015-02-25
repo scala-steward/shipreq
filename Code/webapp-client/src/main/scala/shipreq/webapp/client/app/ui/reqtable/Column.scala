@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import scalaz.{Equal, NonEmptyList}
+import scalaz.NonEmptyList
 import shipreq.base.util.{Must, IMap, UnivEq}
 import shipreq.webapp.base.{UiText, data}
 import shipreq.webapp.base.UiText.ColumnNames
@@ -37,9 +37,9 @@ object Column {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  implicit val equalityI: UnivEq[SortInconclusive] = UnivEq.on
-  implicit val equalityC: UnivEq[SortConclusive]   = UnivEq.on
-  implicit val equality : UnivEq[Column]           = UnivEq.on
+  @inline implicit def equalityI: UnivEq[SortInconclusive] = UnivEq.force
+  @inline implicit def equalityC: UnivEq[SortConclusive]   = UnivEq.force
+  @inline implicit def equality : UnivEq[Column]           = UnivEq.force
 
   val mandatory: Column => Boolean = {
     case PubId
