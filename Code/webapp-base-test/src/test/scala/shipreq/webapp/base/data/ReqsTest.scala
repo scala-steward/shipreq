@@ -35,13 +35,12 @@ object ReqsTest extends TestSuite {
     )
   }
 
-  import ReqCodesTest.newOrOld // TODO DELETE
   def gen: Gen[PubidRegisterProps] =
     for {
       reqTypeIds ← RandomData.reqTypeId.list1
       (pr, reqs) ← RandomData.pubidRegisterAndIds(reqTypeIds)
-      req        ← newOrOld(RandomData.reqId)(reqs)
-      reqType    ← newOrOld(RandomData.reqTypeId)(reqTypeIds.list)
+      req        ← Gen.newOrOld(RandomData.reqId)(reqs)
+      reqType    ← Gen.newOrOld(RandomData.reqTypeId)(reqTypeIds.list)
     } yield PubidRegisterProps(pr, req, reqType)
 
   override def tests = TestSuite {

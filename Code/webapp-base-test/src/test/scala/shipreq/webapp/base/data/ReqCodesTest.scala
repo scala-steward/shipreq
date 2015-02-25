@@ -35,25 +35,12 @@ object ReqCodesTest extends TestSuite {
       flattenEqualsFlatStream ∧ (put ==> createFromFlatten))
   }
 
-  def newOrOld[A](n: => Gen[A])(o: => TraversableOnce[A]): Gen[A] = // TODO Move to Nyaya
-    Gen.boolean.flatMap(b =>
-      if (b)
-        n
-      else {
-        val l = o.toList
-        if (l.isEmpty)
-          n
-        else
-          Gen.oneofL(scalaz.NonEmptyList.nel(l.head, l.tail))
-      }
-    )
-
   def gen: Gen[TrieProps] =
     for {
       targets ← RandomData.reqId.set.sup
       trie    ← RandomData.reqCodeTrie(targets).lim(10)
-      target  ← newOrOld(RandomData.reqId)(targets)
-      code    ← newOrOld(RandomData.reqCode)(Trie.flatStream(trie).map(_._1))
+      target  ← Gen.newOrOld(RandomData.reqId)(targets)
+      code    ← Gen.newOrOld(RandomData.reqCode)(Trie.flatStream(trie).map(_._1))
     } yield TrieProps(trie, target, code)
 
   override def tests = TestSuite {
