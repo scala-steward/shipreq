@@ -230,6 +230,8 @@ object DataProp {
       def validateTagIds(name: String, data: T => Traversable[Tag.Id]) =
         Prop.whitelist[T](name + " are resolvable")(_.tags.data.keySet, data)
 
+      // TODO req code targets
+
       (  validateReqTypeIds("Field.reqTypes",
           _.fields.data.customFields.values.toStream.flatMap(f => isubsetContents(f.reqTypes).toStream))
 
