@@ -42,8 +42,8 @@ private[protocol] object CodecBase {
     ReadWriter[A](WB.write compose f, RB.read andThen g)
 
   implicit class ReaderExt[T](val r: Reader[T]) extends AnyVal {
-    @inline def readSet[TT >: T](s: Seq[Js.Value]): Set[TT] =
-      foldlSeq[Set[TT]](s, Set.empty)(_ + _)
+    @inline def readSet[TT >: T: UnivEq](s: Seq[Js.Value]): Set[TT] =
+      foldlSeq[Set[TT]](s, UnivEq.emptySet)(_ + _)
 
     @inline def readList(s: Seq[Js.Value]): List[T] =
       foldlSeq[List[T]](s, Nil)((a, b) => b :: a)
@@ -698,7 +698,7 @@ object DeltaCodecs {
       val p = partitions read a
       val f = rev read b
       val t = rev read c
-      val x = p.ri.readSet(d)
+      val x = p.ri.readSet(d)(p.ui)
       val y = p.rd.readList(e)
       RemoteDeltaG(p, f, t)(x, y)
   })

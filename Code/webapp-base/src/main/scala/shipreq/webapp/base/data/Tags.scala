@@ -195,7 +195,7 @@ object TagTree {
     Memo.immutableHashMapMemo[Int, String]("\u00A0\u00A0" * _)
 
   def topLevelIds(tt: TagTree): Set[Id] = {
-    val allChildren = tt.values.foldLeft(Set.empty[Id])((q, t) => t.children.foldLeft(q)(_ + _))
+    val allChildren = tt.values.foldLeft(UnivEq.emptySet[Id])((q, t) => t.children.foldLeft(q)(_ + _))
     tt.keySet -- allChildren
   }
 

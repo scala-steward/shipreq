@@ -59,7 +59,7 @@ object StaticReqType {
 
   case object UseCase extends StaticReqType {
     override def mnemonic     = Mnemonic("UC")
-    override def oldMnemonics = Set.empty
+    override def oldMnemonics = UnivEq.emptySet
     override def name         = "Use Case"
     override def imp          = ImplicationRequired.Not
   }
@@ -73,7 +73,7 @@ object StaticReqType {
   implicit val order = UnivEq.withArbitraryOrder(values.list)
 
   lazy val mnemonics =
-    (Set.empty[Mnemonic] /: values.list)(_ ++ _.allMnemonics)
+    (UnivEq.emptySet[Mnemonic] /: values.list)(_ ++ _.allMnemonics)
 }
 
 

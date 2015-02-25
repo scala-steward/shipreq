@@ -17,9 +17,14 @@ package object data {
 
     def mkId(l: Long): I // For testing
 
-    final def pairWithId(d: D): (I, D) = (id(d), d)
-    final def mapById(ds: Traversable[D]): Map[I, D] = (Map.empty[I, D] /: ds)(_ + pairWithId(_))
-    final def emptyIMap(implicit ev: UnivEq[I]) = IMap.empty(id)
+    final def pairWithId(d: D): (I, D) =
+      (id(d), d)
+
+    final def mapById(ds: Traversable[D])(implicit ev: UnivEq[I]): Map[I, D] =
+      (UnivEq.emptyMap[I, D] /: ds)(_ + pairWithId(_))
+
+    final def emptyIMap(implicit ev: UnivEq[I]) =
+      IMap.empty(id)
   }
 
   type DataIdAux[D, Id] = DataId[D] {type I = Id}

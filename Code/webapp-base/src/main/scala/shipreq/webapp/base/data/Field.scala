@@ -141,7 +141,7 @@ sealed abstract class StaticField(         val name     : String,
 }
 
 object StaticField {
-  val useCaseOnly: ApplicableReqTypes = ISubset.Only(OneAnd(StaticReqType.UseCase, Set.empty))
+  val useCaseOnly: ApplicableReqTypes = ISubset.Only(OneAnd(StaticReqType.UseCase, UnivEq.emptySet))
 
   @inline final private[this] def T = StaticFieldType
 

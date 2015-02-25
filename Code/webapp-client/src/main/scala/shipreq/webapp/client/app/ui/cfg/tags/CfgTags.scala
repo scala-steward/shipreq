@@ -18,6 +18,7 @@ import scalaz.syntax.bind.ToBindOps
 import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{tag => V}
@@ -244,7 +245,7 @@ private[tags] object MainTable {
 
     def rows: TagMod = {
       val s         = $.state
-      val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(Map.empty[Id, F])(_ + _)
+      val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
       val flatTree  = TagTree.flatten(s.tagTree)(s.tagFilter, FilterPolicy.OmitAnythingWithBadParent)
       val results   = JsArray.apply[ReactNode]()
       @inline def append(r: ReactNode): Unit = results push r

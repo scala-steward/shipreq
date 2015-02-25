@@ -6,6 +6,7 @@ import scala.language.reflectiveCalls
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
 
+import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{reqType => V}
@@ -56,7 +57,7 @@ object CfgReqTypes {
       def rowRenderer =
         new CfgTable.RowRenderer[CustomReqType, rowE.View, (TagMod, Set[ReqType.Mnemonic], TagMod, TagMod)] {
           override def newRow = {
-            case (mnemonic, name, impReq) => (mnemonic, Set.empty, name, impReq)
+            case (mnemonic, name, impReq) => (mnemonic, UnivEq.emptySet, name, impReq)
           }
           override def savedRow = {
             case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)

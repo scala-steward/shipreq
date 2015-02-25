@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import monocle.macros.Lenser
+import shipreq.base.util.UnivEq
 import shipreq.webapp.client.util.EVar
 
 case class ViewSettings(columns: Vector[Column],
@@ -37,7 +38,7 @@ object ViewSettingsEditor {
       val vs = p.value
 
       def setColumns(cs: Vector[Column]): ViewSettings = {
-        val icols = cs.foldLeft(Set.empty[Column.SortInconclusive])((q, c) => c match {
+        val icols = cs.foldLeft(UnivEq.emptySet[Column.SortInconclusive])((q, c) => c match {
           case i: Column.SortInconclusive => q + i
           case _: Column.SortConclusive   => q
         })

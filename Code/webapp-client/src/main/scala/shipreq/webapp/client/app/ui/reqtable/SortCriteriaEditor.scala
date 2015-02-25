@@ -41,8 +41,8 @@ object SortCriteriaEditor {
       val li = inconclusive.li(_: Column.SortInconclusive, _: inconclusive.OSM, p.columnName, modIO(_, identity))
 
       var lis            = Vector.empty[ReactElement]
-      var activeCols     = Set.empty[Column]
-      var conclusiveCols = Set.empty[Column.SortConclusive]
+      var activeCols     = UnivEq.emptySet[Column]
+      var conclusiveCols = UnivEq.emptySet[Column.SortConclusive]
 
       // Active criteria
       p.value.init.foreach(s =>

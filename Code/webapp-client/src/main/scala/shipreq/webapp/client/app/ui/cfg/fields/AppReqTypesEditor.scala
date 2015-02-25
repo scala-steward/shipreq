@@ -73,7 +73,7 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
               case None =>
                 ViewMode(
                   value     = value,
-                  startEdit = ei.editable.map(_ => setIO(EditState.init(value, Set.empty))))
+                  startEdit = ei.editable.map(_ => setIO(EditState.init(value, UnivEq.emptySet))))
 
               case Some(es) =>
                 EditMode[A](

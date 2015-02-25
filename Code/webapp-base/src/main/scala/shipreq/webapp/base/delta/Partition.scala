@@ -12,6 +12,7 @@ sealed trait Partition {
   type Id
 
   implicit val di: DataIdAux[Data, Id]
+  implicit val ui: UnivEq[Id]
   implicit val ri: Reader[Id]
   implicit val wi: Writer[Id]
   implicit val rd: Reader[Data]
@@ -36,18 +37,21 @@ case object Partition {
 
   type Aux[D, I] = Partition {type Data = D; type Id = I}
 
-  sealed abstract class AuxC[D, I](DI: DataIdAux[D, I])(implicit RI: Reader[I], WI: Writer[I],
+  sealed abstract class AuxC[D, I](DI: DataIdAux[D, I])(implicit UI: UnivEq[I],
+                                                        RI: Reader[I], WI: Writer[I],
                                                         RD: Reader[D], WD: Writer[D]) extends Partition {
     override final type Data = D
     override final type Id = I
     override final implicit val di = DI
+    override final implicit val ui = UI
     override final implicit val ri = RI
     override final implicit val wi = WI
     override final implicit val rd = RD
     override final implicit val wd = WD
   }
 
-  sealed abstract class AuxO[O, D, I](o: O)(implicit DI: ObjDataId[O, D, I], RI: Reader[I], WI: Writer[I],
+  sealed abstract class AuxO[O, D, I](o: O)(implicit DI: ObjDataId[O, D, I], UI: UnivEq[I],
+                                            RI: Reader[I], WI: Writer[I],
                                             RD: Reader[D], WD: Writer[D]) extends AuxC[D, I](DI)
 
   abstract class Fns[P <: Partition] {
