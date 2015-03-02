@@ -32,6 +32,10 @@ object RandomData {
   type StateG[S, A] = StateT[Gen, S, A]
   implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
 
+  def someOfWithDups[A, B](as: Seq[A])(f: A => Gen[B]): Gen[Vector[B]] =
+    Gen.oneofO(as).fold[Gen[Vector[B]]](Gen insert Vector.empty)(
+      _.vector.flatMap(Gen.traverse(_)(f)))
+
   lazy val id =
     Gen.positivelong
 
@@ -585,22 +589,13 @@ object RandomData {
     Distinct.Fixer lift fix
   }
 
-  def reqCodeTrie(possibleTargets: TraversableOnce[ReqCode.Target]) = GenS[ReqCode.Trie]({ sz =>
+  def reqCodeTrie(possibleTargets: Seq[ReqCode.Target]) = GenS[ReqCode.Trie] { sz =>
     import ReqCode._
     type FlatValue = (Target, ReqCode)
-
-    val flatValues: Gen[Vector[FlatValue]] =
-      Gen.subset(possibleTargets).flatMap { ts =>
-        val gv = Gen.traverse(ts)(reqCode.strengthL)
-        val d  = reqCodeDFixer.distinct.at(second[FlatValue, ReqCode]).lift[Vector]
-        gv map d.run
-      }
-
-    flatValues.map(
-      _.foldLeft(Trie.empty) { case (t, (tgt, c)) =>
-        Trie.putCF(t, c.backwards)(tgt)
-      })
-  })
+    someOfWithDups(possibleTargets)(reqCode.strengthL)
+      .map(reqCodeDFixer.distinct.at(second[FlatValue, ReqCode]).lift[Vector].run)
+      .map(_.foldLeft(Trie.empty) { case (t, (tgt, c)) => Trie.putCF(t, c.backwards)(tgt) })
+  }
 
   def reqCodes(g: Gen[ReqCode.Trie]) =
     revAnd(g map ReqCodes.apply)
@@ -632,7 +627,7 @@ object RandomData {
       reqTypeIdSet   = reqTypeIds.list.toSet
       fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
       reqs           ← revAnd(requirements(reqTypeIds))
-      reqCodes       ← reqCodes(reqCodeTrie(reqs.data.reqs.keys).lim(22 `JVM|JS` 8)) // TODO add SHRs
+      reqCodes       ← reqCodes(reqCodeTrie(reqs.data.reqs.keys.toSeq).lim(22 `JVM|JS` 8)) // TODO add SHRs
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
       reqIds         = reqs.data.reqs.keySet

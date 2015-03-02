@@ -38,7 +38,7 @@ object ReqCodesTest extends TestSuite {
   def gen: Gen[TrieProps] =
     for {
       targets ← RandomData.reqId.set.sup
-      trie    ← RandomData.reqCodeTrie(targets).lim(10)
+      trie    ← RandomData.reqCodeTrie(targets.toSeq).lim(10)
       target  ← Gen.newOrOld(RandomData.reqId)(targets)
       code    ← Gen.newOrOld(RandomData.reqCode)(Trie.flatStream(trie).map(_._1))
     } yield TrieProps(trie, target, code)
