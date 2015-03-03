@@ -7,6 +7,7 @@ import shipreq.webapp.base.TypeclassDerivation._
 sealed trait SortCriterion {
   def column: Column
   def method: SortMethod
+  def reverse: SortCriterion
 }
 
 object SortCriterion {
@@ -15,12 +16,20 @@ object SortCriterion {
 
   sealed trait Inconclusive extends SortCriterion {
     override def column: SortInconclusive
+    override def reverse: Inconclusive
   }
 
-  case class InconclusiveCB(column: SortInconclusive with HasBlanks, method: ConsiderBlanks) extends Inconclusive
-  case class InconclusiveIB(column: SortInconclusive with NoBlanks,  method: IgnoreBlanks)   extends Inconclusive
+  case class InconclusiveCB(column: SortInconclusive with HasBlanks, method: ConsiderBlanks) extends Inconclusive {
+    override def reverse: InconclusiveCB = copy(method = this.method.reverse)
+  }
 
-  case class Conclusive(column: SortConclusive, method: IgnoreBlanks) extends SortCriterion
+  case class InconclusiveIB(column: SortInconclusive with NoBlanks,  method: IgnoreBlanks)   extends Inconclusive {
+    override def reverse: InconclusiveIB = copy(method = this.method.reverse)
+  }
+
+  case class Conclusive(column: SortConclusive, method: IgnoreBlanks) extends SortCriterion  {
+    override def reverse: Conclusive = copy(method = this.method.reverse)
+  }
 
   @inline implicit def equalityIIB: UnivEq[InconclusiveIB] = deriveUnivEq
   @inline implicit def equalityICB: UnivEq[InconclusiveCB] = deriveUnivEq
@@ -53,6 +62,9 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 
   def whitelistColumns(w: Set[Column.SortInconclusive]): SortCriteria =
     copy(init = init.filter(w contains _.column))
+
+  def reverse: SortCriteria =
+    SortCriteria(init.map(_.reverse), last.reverse)
 }
 
 object SortCriteria {

@@ -2,11 +2,15 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import scalaz.NonEmptyList
 import shipreq.base.util.UnivEq
+import shipreq.base.util.ScalaExt._
 
 sealed trait SortMethod {
   def symbol: String
   def description: String
   val optionLabel = symbol + " " + description
+  type ReverseHalf <: SortMethod
+  type BlankSpec <: SortMethod
+  def reverse: BlankSpec with ReverseHalf
 }
 
 object SortMethod {
@@ -21,45 +25,59 @@ object SortMethod {
   @inline private def txt2(a: String, b: String) = a + " then " + b // English
 
   /** The half of [[SortMethod]]s which sort in ascending order. */
-  sealed trait AscHalf extends SortMethod
+  sealed trait AscHalf extends SortMethod {
+    final override type ReverseHalf = DescHalf
+  }
 
   /** The half of [[SortMethod]]s which sort in ascending order. */
-  sealed trait DescHalf extends SortMethod
+  sealed trait DescHalf extends SortMethod {
+    final override type ReverseHalf = AscHalf
+  }
 
-  sealed trait IgnoreBlanks extends SortMethod
+  sealed trait IgnoreBlanks extends SortMethod {
+    final override type BlankSpec = IgnoreBlanks
+  }
 
-  sealed trait ConsiderBlanks extends SortMethod
+  sealed trait ConsiderBlanks extends SortMethod {
+    final override type BlankSpec = ConsiderBlanks
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
 
   case object Asc extends IgnoreBlanks with AscHalf {
     override def symbol      = ascSym
     override def description = txt1(ascTxt)
+    override def reverse     = Desc
   }
 
   case object Desc extends IgnoreBlanks with DescHalf {
     override def symbol      = descSym
     override def description = txt1(descTxt)
+    override def reverse     = Asc
   }
 
   case object BlanksThenAsc  extends ConsiderBlanks with AscHalf {
     override def symbol      = blankSym + ascSym
     override def description = txt2(blankTxt, ascTxt)
+    override def reverse     = DescThenBlanks
   }
 
   case object BlanksThenDesc extends ConsiderBlanks with DescHalf {
     override def symbol      = blankSym + descSym
     override def description = txt2(blankTxt, descTxt)
+    override def reverse     = AscThenBlanks
   }
 
   case object AscThenBlanks  extends ConsiderBlanks with AscHalf {
     override def symbol      = ascSym + blankSym
     override def description = txt2(ascTxt, blankTxt)
+    override def reverse     = BlanksThenDesc
   }
 
   case object DescThenBlanks extends ConsiderBlanks with DescHalf {
     override def symbol      = descSym + blankSym
     override def description = txt2(descTxt, blankTxt)
+    override def reverse     = BlanksThenAsc
   }
 
   // -------------------------------------------------------------------------------------------------------------------
