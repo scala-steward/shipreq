@@ -60,11 +60,6 @@ object Row {
 //  implicit val equalityC: UnivEq[ReqCodeGroupRow] = deriveUnivEq
   implicit val equality : UnivEq[Row]             = deriveUnivEq
 
-  val desc: Row => String = {
-    case r: GenericReqRow => r.req.desc
-//    case ReqCodeGroupRow(g, _) => g.desc
-  }
-
   val _expansion = Optional[Row, Expansion] {
     case r: GenericReqRow => Maybe just r.exp
   }(e => {

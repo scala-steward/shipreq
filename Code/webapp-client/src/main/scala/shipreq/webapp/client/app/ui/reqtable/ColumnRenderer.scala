@@ -89,7 +89,7 @@ object ColumnRenderer {
       <.span("Desc") // Use Column.NameResolver
 
     override val render: Row => ReactElement = {
-      case GenericReqRow(req, _, _) => xxx(req.desc)
+      case GenericReqRow(req, _, _) => ??? //xxx(req.desc)
 //      case ReqCodeGroupRow(g, _) => xxx(g.desc)
     }
 

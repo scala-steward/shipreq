@@ -10,6 +10,7 @@ import utest._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.test.ClientTestSettings._
 import SortMethod._
 import Sorter._
@@ -48,6 +49,7 @@ object LogicTest extends TestSuite {
     val rowGReqIds  = gatheredG.map(_.req.id).toSet
     val srcGReqIds  = p.reqs.data.reqs.keys.filterT[GenericReq.Id].toSet
     val srcReqCodes = p.reqCodes.data.codeSet
+    val textToStr   = Presentation.textToString(p)
 
     // -----------------------------------------------------------------------------------------------------------------
     // Gathering
@@ -76,6 +78,9 @@ object LogicTest extends TestSuite {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Sorting
+
+    implicit def textOrd[T <: Text.Generic] =
+      implicitly[Ordering[String]].on[T#OptionalText](t => textToStr(t).toLowerCase)
 
     def universalSort = {
       val revOrder  = vs.order.reverse

@@ -1,6 +1,7 @@
 package shipreq.webapp.base.data
 
 import scalaz.NonEmptyList
+import shipreq.base.util.UnivEq
 
 object Text {
 
@@ -11,6 +12,8 @@ object Text {
     sealed trait Atom
     final type OptionalText = List[Atom]
     final type NonEmptyText = NonEmptyList[Atom]
+
+    implicit def atomEquality: UnivEq[Atom] = UnivEq.force
   }
 
   object Generic {
@@ -73,6 +76,12 @@ object Text {
       with Issue
   }
 
+  // Prove that UnivEq[Atom] is acceptable.
+  // A proof for all atom args should be added here.
+  UnivEq[ApplicableTag.Id]
+  UnivEq[CustomIssueType.Id]
+  UnivEq[Req.Id]
+
   // ===================================================================================================================
   // Specialised
 
@@ -89,5 +98,4 @@ object Text {
     with ReqRef
     with Issue
     with TagRef
-
 }

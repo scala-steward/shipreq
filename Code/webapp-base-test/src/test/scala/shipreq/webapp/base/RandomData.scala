@@ -472,7 +472,7 @@ object RandomData {
     for {
       id    <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
       pubid <- pubidS(id)
-      desc  <- shortText
+      desc  <- TextGen.genericReqDescAtom(None, None).text // TODO GenericReq.desc needs more input
       live  <- alive
     } yield GenericReq(id, pubid, desc, live)
 

@@ -292,7 +292,7 @@ object Req {
 
 final case class GenericReq(id         : GenericReq.Id,
                             pubId      : Pubid,
-                            desc       : String,
+                            desc       : Text.GenericReqDesc.OptionalText,
                             // TODO lastUpdated. Need JS-compat datetimeTZ
                             alive      : Alive) extends Req
 object GenericReq {

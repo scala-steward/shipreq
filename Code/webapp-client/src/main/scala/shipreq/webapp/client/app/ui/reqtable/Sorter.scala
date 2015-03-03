@@ -167,6 +167,8 @@ object Sorter {
    */
   class Setup(val p: Project) {
 
+    val textToString = Presentation.textToString(p)
+
     lazy val reqTypesToMnemonicOrder: Map[ReqType.Id, Int] =
       p.reqTypes.map(_.tmap2(_.mnemonic.value, _.reqTypeId))
         .sortBy(_._1)
@@ -251,6 +253,9 @@ object Sorter {
       }
     })
 
+  def textSorter(f: Row => Text.Generic#OptionalText): SorterForSMCB =
+    stringSorterForSMCB(_.textToString compose f)
+
   // ===================================================================================================================
   // Edge of the island
 
@@ -265,7 +270,7 @@ object Sorter {
         case id: CustomField.Tag        .Id => tagSorter(Row._cfTags ^|-? index(id))
         case id: CustomField.Implication.Id => pubidListSorter(Row._cfImps ^|-? index(id))
       }
-    case C.Desc                             => stringSorterForSMCB(_ => Row.desc)
+    case C.Desc                             => textSorter{ case r: GenericReqRow => r.req.desc }
     case C.Code                             => reqCodeSorter
     case C.Tags                             => tagSorter(Row._tags)
     case C.ImplicationSrc                   => pubidListSorter(Row._implicationSrc)
