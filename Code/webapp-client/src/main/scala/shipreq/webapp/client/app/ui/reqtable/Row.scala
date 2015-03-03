@@ -49,7 +49,9 @@ object MultiValues {
 
 sealed trait Row
 
-case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row
+case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row {
+  override def toString = s"\n$req\n$exp\n$mv\n"
+}
 
 //case class ReqCodeGroupRow(grp: ReqCodeGroup, code: ReqCode) extends Row
 

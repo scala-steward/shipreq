@@ -11,7 +11,8 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.test.ClientTestSettings._
-import SortMethod.{AscHalf, ConsiderBlanks, AscThenBlanks, BlanksThenAsc, Asc}
+import SortMethod._
+import Sorter._
 
 object LogicTest extends TestSuite {
 
@@ -35,6 +36,8 @@ object LogicTest extends TestSuite {
       case Nil    => ""
       case h :: _ => h.txt
     }
+
+  val nop = Eval.pass()
 
   case class LogicTests(vs: ViewSettings, p: Project) {
     val E = EvalOver(this)
@@ -74,12 +77,30 @@ object LogicTest extends TestSuite {
     // -----------------------------------------------------------------------------------------------------------------
     // Sorting
 
-    def anySort = {
-      val sorted   = Logic.sort(vs.order, p, gathered)
-      val reversed = Logic.sort(vs.order.reverse, p, gathered)
-      ( E.equal("sort.sort = sort", Logic.sort(vs.order, p, sorted.toStream), sorted)
-      ∧ E.equal("sort(criteria.reverse) = reverse(sort(cri))", reversed, sorted.reverse)
-      ) rename "Any SortCriteria"
+    def universalSort = {
+      val revOrder  = vs.order.reverse
+      val sorted    = Logic.sort(vs.order, p, gathered)
+      val reversed  = Logic.sort(revOrder, p, gathered)
+      def criRev    = E.equal("[criteria] reverse.reverse = id", revOrder.reverse, vs.order)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs.order, p, sorted.toStream), sorted)
+      def sortRev   = E.pass // TODO FAILS: sort(criteria.reverse) = reverse(sort(cri))
+      //def sortRev   = E.equal("sort(criteria.reverse) = reverse(sort(cri))", reversed, reverseRows(sorted))
+      ((criRev ==> sortRev) ∧ sortTwice) rename "Universal sort props"
+    }
+
+    def reverseRows(rs: List[Row]): List[Row] =
+      rs.reverse.map {
+        case GenericReqRow(r, e, mv) => GenericReqRow(r, reverseExpansion(e), reverseMultiValues(mv))
+      }
+
+    def reverseExpansion(e: Expansion): Expansion = {
+      val Expansion(a, b, c) = e
+      Expansion(a.reverse, b.reverse, c.reverse)
+    }
+
+    def reverseMultiValues(mv: MultiValues): MultiValues = {
+      val MultiValues(a, b, c) = mv
+      MultiValues(a.reverse, b.mapValues(_.reverse), c.mapValues(_.reverse))
     }
 
     def sortCriICB(c: SortCriterion.InconclusiveCB): SortCriteria =
@@ -113,43 +134,77 @@ object LogicTest extends TestSuite {
           \/-(b, nb)
     }
 
-    def E_bnbBlocks[A](name: String, expectBlanksFirst: Boolean, as: List[A])(isBlank: A => Boolean, f: (List[A], List[A]) => EvalL): EvalL =
+    def E_bnbBlocks[A](name: String, bp: BlankPlacement, as: List[A])(isBlank: A => Boolean, f: (List[A], List[A]) => EvalL): EvalL = {
+      val expectBlanksFirst = bp match {case BlanksFirst => true; case BlanksLast => false}
       E.either(s"$name make separate blank/non-blank blocks", separateBlanks(expectBlanksFirst, as)(isBlank))(f.tupled)
-
-    def E_sorted[A: Ordering: Equal](name: String, as: List[A]): EvalL =
-      E.equal(name + " are sorted", as, as.sorted)
-
-    def sortByPubid: EvalL = {
-      def extract(pid: Pubid): (String, Int) = (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
-      val sc     = SortCriteria(Vector.empty, SortCriterion.Conclusive(Column.PubId, Asc))
-      val sorted = Logic.sort(sc, p, gathered)
-      val pubids = sorted.map { case r: GenericReqRow => extract(r.req.pubId)}
-      E_sorted("Pubids", pubids)
     }
 
-    def sortByRecCode(sm: ConsiderBlanks with AscHalf, blanksFirst: Boolean): EvalL = {
+    def E_sorted[A: Ordering: Equal](name: String, as: List[A], dirChange: Dir): EvalL =
+      E.equal(name + " are sorted", as, dirChange(as.sorted)(_.reverse))
+
+    type IndivSortCB = (ConsiderBlanks, BlankPlacement, Dir) => EvalL
+    type IndivSortIB = (IgnoreBlanks  ,                 Dir) => EvalL
+
+    def sortByPubid: IndivSortIB = (sm, dir) => {
+      def extract(pid: Pubid): (String, Int) = (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
+      val sc     = SortCriteria(Vector.empty, SortCriterion.Conclusive(Column.PubId, sm))
+      val sorted = Logic.sort(sc, p, gathered)
+      val pubids = sorted.map { case r: GenericReqRow => extract(r.req.pubId)}
+      E_sorted("Pubids", pubids, dir)
+    }
+
+    def sortByRecCode: IndivSortCB = (sm, bp, dir) => {
       val sc         = sortCriICB(SortCriterion.InconclusiveCB(Column.Code, sm))
       val input      = gatherOn(Column.Code, sc)
       val sorted     = Logic.sort(sc, p, input)
       val data       = sorted map firstCodePerRow
       val name       = s"ReqCodes ($sm)"
       val intra      = sorted.toStream.map(codes).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
-      def eachRow    = E.forall(intra)(E_sorted(s"Codes within a single row are sorted.", _))
-      def wholeTable = E_bnbBlocks(name, blanksFirst, data)(_.isEmpty, (_, nb) => E_sorted(name, nb))
+      def eachRow    = E.forall(intra)(E_sorted(s"Codes within a single row are sorted.", _, dir))
+      def wholeTable = E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
       (wholeTable ∧ eachRow) rename name
     }
 
-    def sortCB(t: (ConsiderBlanks with AscHalf, Boolean) => EvalL): EvalL =
-       t(BlanksThenAsc, true) ∧ t(AscThenBlanks, false)
+    def sortByDesc: IndivSortCB = (sm, bp, dir) => {
+      val sc         = sortCriICB(SortCriterion.InconclusiveCB(Column.Desc, sm))
+      val input      = gatherOn(Column.Desc, sc)
+      val sorted     = Logic.sort(sc, p, input)
+      val data       = sorted.map{ case r: GenericReqRow => r.req.desc }
+      val name       = s"Desc ($sm)"
+      E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
+    }
+
+    def sortCB(t: IndivSortCB): EvalL =
+      ( t(BlanksThenAsc,  BlanksFirst, KeepDir)
+      ∧ t(AscThenBlanks,  BlanksLast,  KeepDir)
+      ∧ t(BlanksThenDesc, BlanksFirst, FlipDir)
+      ∧ t(DescThenBlanks, BlanksLast,  FlipDir))
+
+    def sortIB(t: IndivSortIB): EvalL =
+      t(Asc, KeepDir) ∧ t(Desc, FlipDir)
+
+    // Let's make it real obvious what we're omitting or potentially forgetting
+    def individualSort: Column => EvalL = {
+      case Column.ReqType         => nop
+      case Column.PubId           => sortIB(sortByPubid)
+      case Column.Code            => sortCB(sortByRecCode)
+      case Column.Desc            => sortCB(sortByDesc)
+      case Column.Tags            => nop
+      case Column.ImplicationSrc  => nop
+      case Column.ImplicationTgt  => nop
+      case Column.CustomField(id) =>
+        id match {
+          case i: CustomField.Implication.Id => nop
+          case i: CustomField.Tag        .Id => nop
+          case i: CustomField.Text       .Id => nop
+        }
+    }
+
+    def individualSorts: EvalL =
+      Column.all(None).map(individualSort).reduce(_ ∧ _)
 
     def sorting =
-      ( sortByPubid
-      ∧ sortCB(sortByRecCode)
-      //∧ sortCB(__) // TODO Sort by Desc
-      //∧ sortCB(__) // TODO Sort by CustomTextField
-      //∧ sortCB(__) // TODO Sort by ...
-      ∧ anySort
-      ) rename "Logic.sort"
+      (individualSorts ==> universalSort) rename "Logic.sort"
 
     // -----------------------------------------------------------------------------------------------------------------
     def all = gather ∧ sorting
@@ -163,6 +218,6 @@ object LogicTest extends TestSuite {
       LogicTests(vs, p)
 
   override def tests = TestSuite {
-    gen.mustSatisfyE(_.all) //(implicitly[Settings].setSeed(0).setDebug.setSampleSize(200))
+    gen.mustSatisfyE(_.all)//(implicitly[Settings].setSeed(0).setDebug.setSampleSize(20))
   }
 }

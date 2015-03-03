@@ -27,6 +27,7 @@ import shipreq.webapp.base.TypeclassDerivation._
 final case class ReqCode(backwards: NonEmptyList[ReqCode.Node]) {
   def forwards = backwards.reverse
   def txt: String = forwards.list.mkString(".") // TODO rename. cache. Also should probably be in Presentation
+  override def toString = s"ReqCode($txt)"
 }
 
 // TODO all req code text should be lowercase

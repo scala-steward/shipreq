@@ -190,7 +190,7 @@ private[reqtable] object Logic {
     val sorter  = new FusedSorters(criteria.init map inconclusive, criteria.last |> conclusive)
     val setup   = new Setup(p)
     val prepare = sorter.prepFn(setup)
-    val rowMod  = sorter.rowModFn.map(_(setup, false)).getOrElse((r: Row) => r)
+    val rowMod  = sorter.rowModFn.map(_(setup, KeepDir)).getOrElse((r: Row) => r)
     import sorter.{T => Datum}
 
     // Prepare data

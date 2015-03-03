@@ -26,7 +26,7 @@ object Sorter {
   type SortFn[-A] = (A, A) => Int
 
   /** Sorts values in [[Expansion]] and [[MultiValues]]. */
-  type RowModFn   = Option[(Setup, Boolean) => EndoFn[Row]] // Boolean indicates need to sort in reverse
+  type RowModFn   = Option[(Setup, Dir) => EndoFn[Row]]
 
   def apply[A](prep: PrepFn[A], rowMod: Sorter.RowModFn = None)(implicit sort: SortFn[A]): Sorter =
     new Sorter {
@@ -35,9 +35,6 @@ object Sorter {
       override val sortFn   = sort
       override val rowModFn = rowMod
     }
-
-  // ===================================================================================================================
-  // General
 
   type SorterForSMIB = SM.IgnoreBlanks   => Sorter
   type SorterForSMCB = SM.ConsiderBlanks => Sorter
@@ -48,6 +45,24 @@ object Sorter {
 
   @inline implicit def autoBlanksFirst(a: BlanksThenAsc.type): BlankPlacement = BlanksFirst
   @inline implicit def autoBlanksLast (a: AscThenBlanks.type): BlankPlacement = BlanksLast
+
+  sealed trait Dir {
+    def flip: Dir
+    def apply[A](a: A)(r: A => A): A
+  }
+
+  case object KeepDir extends Dir {
+    override def flip = FlipDir
+    override def apply[A](a: A)(r: A => A): A = a
+  }
+
+  case object FlipDir extends Dir {
+    override def flip = KeepDir
+    override def apply[A](a: A)(r: A => A): A = r(a)
+  }
+
+  // ===================================================================================================================
+  // General
 
   implicit val intSortFn: SortFn[Int] =
     Ordering.Int.compare
@@ -67,9 +82,6 @@ object Sorter {
   def sortFnReverse[A](s: SortFn[A]): SortFn[A] =
     (a, b) => -s(a, b)
 
-  @inline def sortFnReverseM[A](reverse: Boolean, s: SortFn[A]): SortFn[A] =
-    if (reverse) sortFnReverse(s) else s
-
   def sortFnCompose[A, B](fa: SortFn[A], fb: SortFn[B]): SortFn[(A, B)] =
     (a, b) => {
       var         r = fa(a._1, b._1)
@@ -87,7 +99,7 @@ object Sorter {
       override type T                  = orig.T
       override def prepFn  : PrepFn[T] = orig.prepFn
       override val sortFn  : SortFn[T] = sortFnReverse(orig.sortFn)
-      override def rowModFn: RowModFn  = orig.rowModFn.map(f => (s, reverse) => f(s, !reverse))
+      override def rowModFn: RowModFn  = orig.rowModFn.map(f => (s, dir) => f(s, dir.flip))
     }
 
   def SorterForSMIB[A](s: Sorter): SorterForSMIB =
@@ -98,19 +110,6 @@ object Sorter {
       case b@ AscThenBlanks => f(b)
       case b@ BlanksThenAsc => f(b)
     })(reverse)
-
-  //  def composeSorters(a: Sorter, b: Sorter): Sorter = {
-  //    new Sorter {
-  //      override type T = (a.T, b.T)
-  //      override def prepare(p: Project): Row => T = {
-  //        val fa = a prepare p
-  //        val fb = b prepare p
-  //        r => (fa(r), fb(r))
-  //      }
-  //      override val order: Ordering[T] =
-  //        Ordering.Tuple2(a.order, b.order)
-  //    }
-  //  }
 
   def caterForBlanks[A, B, C](isBlank: A => Boolean, onBlank: B, onNonBlank: B, f: (B, A) => C)(bp: BlankPlacement): A => C = {
     def go(ib: B, nb: B): A => C =
@@ -155,8 +154,8 @@ object Sorter {
     a => l.modifyF[Option](mod)(a) getOrElse a
 
   def typicalRowModFn[A, B](l: Optional[Row, List[A]])(f: Setup => A => B)(implicit s: SortFn[B]): RowModFn =
-    Some((setup, reverse) => {
-      val ord = toOrdering(sortFnReverseM(reverse, s)).on(f(setup))
+    Some((setup, dir) => {
+      val ord = toOrdering(dir(s)(sortFnReverse)).on(f(setup))
       trySortEndo(l)(trySortList(ord))
     })
 
@@ -319,7 +318,7 @@ object Sorter {
       if (fns.isEmpty)
         None
       else
-        Some((setup, reverse) => row => fns.foldLeft(row)((r, f) => f(setup, reverse)(r)))
+        Some((setup, dir) => row => fns.foldLeft(row)((r, f) => f(setup, dir)(r)))
     }
 
     private def eachSortFn: Vector[SortFn[T]] =
@@ -339,20 +338,6 @@ object Sorter {
           val r = f(as, bs)
           if (r == 0) g(as, bs) else r
         })
-
-    // method 2
-    // val sortFnsReverse = eachSortFn.reverse.toArray
-    // val starti = sortFnsReverse.length
-    // val totalSortFn: F =
-    //   (as, bs) => {
-    //     var i = starti
-    //     var r = 0
-    //     while (r == 0 && i > 0) {
-    //       i = i - 1
-    //       r = sortFnsReverse(i)(as, bs)
-    //     }
-    //     r
-    //   }
 
     def row(t: T): Row =
       t(rowIndex).asInstanceOf[Row]

@@ -68,6 +68,7 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 }
 
 object SortCriteria {
+  implicit val equality: UnivEq[SortCriteria] = deriveUnivEq
 
   val default =
     SortCriteria(
