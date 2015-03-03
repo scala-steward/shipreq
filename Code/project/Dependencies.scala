@@ -28,9 +28,9 @@ object Deps {
   def JvmAndJs(groupId: String, name: String, version: String) =
     JvmAndJsFork(groupId, groupId, name, version)
 
-  case class JvmAndJsFork(jvmGroupId: String, jsGroupId: String, name: String, version: String) {
+  case class JvmAndJsFork(jvmGroupId: String, jsGroupId: String, name: String, version: String, jsVersion: String = null) {
     final val jvm: MS = (jvmGroupId: GroupID) %% name % version
-    final val js: MS = jsGA(jsGroupId, name) % version
+    final val js: MS = jsGA(jsGroupId, name) % Option(jsVersion).getOrElse(version)
     def apply(jvm: Boolean): MS = if (jvm) this.jvm else js
   }
 
@@ -50,11 +50,11 @@ object Deps {
       val extra   = js("extra")
       val most    = core ++ scalaz ++ monocle ++ extra
     }
-    object Scalaz extends Group(Deps.Scalaz.version, "com.github.japgolly.fork.scalaz") {
+    object Scalaz extends Group(Deps.Scalaz.version + "-2", "com.github.japgolly.fork.scalaz") {
       val core   = js("scalaz-core")
       val effect = js("scalaz-effect")
     }
-    object Monocle extends Group(Deps.Monocle.version, "com.github.japgolly.fork.monocle") {
+    object Monocle extends Group(Deps.Monocle.version + "-2", "com.github.japgolly.fork.monocle") {
       val core   = js("monocle-core")
       val macros = js("monocle-macro") ++ core
     }
@@ -121,9 +121,9 @@ object Deps {
     val combo = dd("specs2-core") ++ dd("specs2-scalacheck")
   }
 
-  val shapeless = JvmAndJsFork("com.chuusai", "com.github.japgolly.fork.shapeless", "shapeless", "2.1.0")
+  val shapeless = JvmAndJsFork("com.chuusai", "com.github.japgolly.fork.shapeless", "shapeless", "2.1.0", "2.1.0-2")
 
-  val μPickle   = JvmAndJs("com.github.japgolly.fork.upickle", "upickle", "custom-2")
+  val μPickle   = JvmAndJs("com.github.japgolly.fork.upickle", "upickle", "custom-3")
   val μTest     = JvmAndJs("com.lihaoyi",                      "utest",   "0.3.0")
 
   // Was only needed trying to use Monocle's @Lenses. Monocle's Lenser works without this.
