@@ -5,39 +5,42 @@ import japgolly.nyaya.test._
 import japgolly.nyaya.util.Multimap
 import scalaz.{\/, \/-, -\/, Equal}
 import scalaz.std.AllInstances._
-import scalaz.syntax.id._
 import utest._
+
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.RandomData
+import shipreq.webapp.base.{UnsafeTypes, RandomData}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.BaseTestUtil._
+import shipreq.webapp.base.test.{SampleProject, ProjectDSL}
 import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.test.ClientTestSettings._
+import shipreq.webapp.client.app.ui.reqtable.{SortCriterion => SC, Column => C}
 import SortMethod._
 import Sorter._
 
 object LogicTest extends TestSuite {
 
-//  private sealed trait ExpType[A] {
-//    def visible(vs: ViewSettings): Boolean
-//    def extract(e: Expansion): List[A]
-//  }
-//  private case object ExpCodes extends ExpType[ReqCode] {
-//    override def visible(vs: ViewSettings) = vs isVisible Column.Code
-//    override def extract(e: Expansion) = e.reqCodes
-//  }
-//
-//  private val exptypes = List(ExpCodes)
-
-  private def codes(r: Row): List[ReqCode] = r match {
+  private def codesInRow(r: Row): List[ReqCode] = r match {
     case g: GenericReqRow => g.exp.reqCodes
   }
 
+  private def tagsInRow(r: Row): List[ApplicableTag.Id] = r match {
+    case g: GenericReqRow => g.mv.tags
+  }
+
   def firstCodePerRow(r: Row): String =
-    codes(r) match {
+    codesInRow(r) match {
       case Nil    => ""
       case h :: _ => h.txt
     }
 
+  def applicableTag(p: Project): ApplicableTag.Id => ApplicableTag =
+    id => p.tags.data.get(id).map(_.tag) match {
+      case Some(t: ApplicableTag) => t
+      case x => sys.error(s"Not an ApplicableTag: $x")
+    }
+
+  // ===================================================================================================================
   val nop = Eval.pass()
 
   case class LogicTests(vs: ViewSettings, p: Project) {
@@ -45,7 +48,7 @@ object LogicTest extends TestSuite {
 
     val gathered    = Logic.gather(vs, p)
     val gatheredG   = gathered.filterT[GenericReqRow]
-    val rowReqCodes = gathered.flatMap(codes(_).toStream)
+    val rowReqCodes = gathered.flatMap(codesInRow(_).toStream)
     val rowGReqIds  = gatheredG.map(_.req.id).toSet
     val srcGReqIds  = p.reqs.data.reqs.keys.filterT[GenericReq.Id].toSet
     val srcReqCodes = p.reqCodes.data.codeSet
@@ -84,10 +87,10 @@ object LogicTest extends TestSuite {
 
     def universalSort = {
       val revOrder  = vs.order.reverse
-      val sorted    = Logic.sort(vs.order, p, gathered)
-      val reversed  = Logic.sort(revOrder, p, gathered)
+      val sorted    = Logic.sort(vs.order, p)(gathered)
+      val reversed  = Logic.sort(revOrder, p)(gathered)
       def criRev    = E.equal("[criteria] reverse.reverse = id", revOrder.reverse, vs.order)
-      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs.order, p, sorted.toStream), sorted)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs.order, p)(sorted.toStream), sorted)
       def sortRev   = E.pass // TODO FAILS: sort(criteria.reverse) = reverse(sort(cri))
       //def sortRev   = E.equal("sort(criteria.reverse) = reverse(sort(cri))", reversed, reverseRows(sorted))
       ((criRev ==> sortRev) ∧ sortTwice) rename "Universal sort props"
@@ -108,11 +111,19 @@ object LogicTest extends TestSuite {
       MultiValues(a.reverse, b.mapValues(_.reverse), c.mapValues(_.reverse))
     }
 
-    def sortCriICB(c: SortCriterion.InconclusiveCB): SortCriteria =
+    def sortCri(c: SC.Inconclusive): SortCriteria =
       this.vs.order.copy(init = Vector(c))
 
-    def gatherOn(c: Column.SortInconclusive, sc: SortCriteria): Stream[Row] =
+    def gatherOn(c: C.SortInconclusive, sc: SortCriteria): Stream[Row] =
       if (vs isVisible c) gathered else Logic.gather(ViewSettings(Vector(c), sc), p)
+
+    def sortCriAndGather(c: SC.Inconclusive) =
+      sortCri(c).mapStrengthR(gatherOn(c.column, _))
+
+    def sortBy(c: SC.Inconclusive) = {
+      val (sc, input) = sortCriAndGather(c)
+      Logic.sort(sc, p)(input)
+    }
 
     /** @return error \/ (blank, non-blank) */
     def separateBlanks[A](expectBlanksFirst: Boolean, as: List[A])(isBlank: A => Boolean): String \/ (List[A], List[A]) = as match {
@@ -152,28 +163,24 @@ object LogicTest extends TestSuite {
 
     def sortByPubid: IndivSortIB = (sm, dir) => {
       def extract(pid: Pubid): (String, Int) = (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
-      val sc     = SortCriteria(Vector.empty, SortCriterion.Conclusive(Column.PubId, sm))
-      val sorted = Logic.sort(sc, p, gathered)
+      val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.PubId, sm))
+      val sorted = Logic.sort(sc, p)(gathered)
       val pubids = sorted.map { case r: GenericReqRow => extract(r.req.pubId)}
       E_sorted("Pubids", pubids, dir)
     }
 
     def sortByRecCode: IndivSortCB = (sm, bp, dir) => {
-      val sc         = sortCriICB(SortCriterion.InconclusiveCB(Column.Code, sm))
-      val input      = gatherOn(Column.Code, sc)
-      val sorted     = Logic.sort(sc, p, input)
+      val sorted     = sortBy(SC.InconclusiveCB(C.Code, sm))
       val data       = sorted map firstCodePerRow
       val name       = s"ReqCodes ($sm)"
-      val intra      = sorted.toStream.map(codes).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
+      val intra      = sorted.toStream.map(codesInRow).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
       def eachRow    = E.forall(intra)(E_sorted(s"Codes within a single row are sorted.", _, dir))
       def wholeTable = E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
       (wholeTable ∧ eachRow) rename name
     }
 
     def sortByDesc: IndivSortCB = (sm, bp, dir) => {
-      val sc         = sortCriICB(SortCriterion.InconclusiveCB(Column.Desc, sm))
-      val input      = gatherOn(Column.Desc, sc)
-      val sorted     = Logic.sort(sc, p, input)
+      val sorted     = sortBy(SC.InconclusiveCB(C.Desc, sm))
       val data       = sorted.map{ case r: GenericReqRow => r.req.desc }
       val name       = s"Desc ($sm)"
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
@@ -189,15 +196,15 @@ object LogicTest extends TestSuite {
       t(Asc, KeepDir) ∧ t(Desc, FlipDir)
 
     // Let's make it real obvious what we're omitting or potentially forgetting
-    def individualSort: Column => EvalL = {
-      case Column.ReqType         => nop
-      case Column.PubId           => sortIB(sortByPubid)
-      case Column.Code            => sortCB(sortByRecCode)
-      case Column.Desc            => sortCB(sortByDesc)
-      case Column.Tags            => nop
-      case Column.ImplicationSrc  => nop
-      case Column.ImplicationTgt  => nop
-      case Column.CustomField(id) =>
+    def individualSort: C => EvalL = {
+      case C.ReqType         => nop
+      case C.PubId           => sortIB(sortByPubid)
+      case C.Code            => sortCB(sortByRecCode)
+      case C.Desc            => sortCB(sortByDesc)
+      case C.Tags            => nop
+      case C.ImplicationSrc  => nop
+      case C.ImplicationTgt  => nop
+      case C.CustomField(id) =>
         id match {
           case i: CustomField.Implication.Id => nop
           case i: CustomField.Tag        .Id => nop
@@ -206,7 +213,7 @@ object LogicTest extends TestSuite {
     }
 
     def individualSorts: EvalL =
-      Column.all(None).map(individualSort).reduce(_ ∧ _)
+      C.all(None).map(individualSort).reduce(_ ∧ _)
 
     def sorting =
       (individualSorts ==> universalSort) rename "Logic.sort"
@@ -222,7 +229,51 @@ object LogicTest extends TestSuite {
     } yield
       LogicTests(vs, p)
 
+  // ===================================================================================================================
+  // Unit tests
+  // Fucking IntelliJ crashes typing these tests inline
+
+  object UnitSort {
+    import ProjectDSL._
+    import UnsafeTypes._
+    private val P = SampleProject.project
+    private type Rows = List[Row]
+
+    private def vsSortedByCB(c: C.SortInconclusive with C.HasBlanks, sm: ConsiderBlanks): ViewSettings =
+      ViewSettings(Vector(c), SortCriteria.default.copy(init = Vector(SC.InconclusiveCB(c, sm))))
+
+    private def test[A: Equal](p: Project, c: C.SortInconclusive with C.HasBlanks, extract: Rows => A)(tests: (ConsiderBlanks, A)*) =
+      for ((sm, expect) <- tests) {
+        val vs = vsSortedByCB(c, sm)
+        val r = Logic.gather(vs, p) |> Logic.sort(vs.order, p)
+        assertEq(sm.toString, extract(r), expect)
+      }
+
+    private def allSorts[A](z: A)(f: (A, A) => A, asc: A, desc: A): Seq[(ConsiderBlanks, A)] =
+      (BlanksThenAsc  -> f(z, asc))  ::
+      (AscThenBlanks  -> f(asc, z))  ::
+      (BlanksThenDesc -> f(z, desc)) ::
+      (DescThenBlanks -> f(desc, z)) :: Nil
+
+    def testTags(): Unit = {
+      def tag(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
+      val p       = GReq() + tag(2) + tag(3) + tag(11) + tag(12) + tag(11, 12) + tag(12, 11) !! P
+      val z       = "∅"
+      val fmtTag  = applicableTag(p).andThen(_.key.value)
+      val fmtRows = (_: Rows).map(tagsInRow(_).ifelse(_.isEmpty, _ => z, _.map(fmtTag).mkString(","))).mkString("  ")
+      test(p, C.Tags, fmtRows)(allSorts(z)(_ + "  " + _,
+        asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
+        desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"): _*)
+    }
+  }
+
+  // ===================================================================================================================
   override def tests = TestSuite {
-    gen.mustSatisfyE(_.all)//(implicitly[Settings].setSeed(0).setDebug.setSampleSize(20))
+    'prop - gen.mustSatisfyE(_.all)//(implicitly[Settings].setSeed(0).setDebug.setSampleSize(20))
+    'unit {
+      'sort {
+        'tags - UnitSort.testTags()
+      }
+    }
   }
 }

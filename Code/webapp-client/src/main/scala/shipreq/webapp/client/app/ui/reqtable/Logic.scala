@@ -183,7 +183,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(criteria: SortCriteria, p: Project, rows: Stream[Row]): List[Row] = {
+  def sort(criteria: SortCriteria, p: Project)(rows: Stream[Row]): List[Row] = {
     import Sorter._
 
     // Prepare sorters
