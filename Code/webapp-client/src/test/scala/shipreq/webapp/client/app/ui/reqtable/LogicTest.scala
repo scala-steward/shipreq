@@ -107,14 +107,14 @@ object LogicTest extends TestSuite {
         case GenericReqRow(r, e, mv) => GenericReqRow(r, reverseExpansion(e), reverseMultiValues(mv))
       }
 
-    def reverseExpansion(e: Expansion): Expansion = {
-      val Expansion(a, b, c) = e
-      Expansion(a.reverse, b.reverse, c.reverse)
+    def reverseExpansion(exp: Expansion): Expansion = {
+      val Expansion(a, b, c, d, e) = exp
+      Expansion(a.reverse, b.reverse, c.reverse, d.mapValues(_.reverse), e.mapValues(_.reverse))
     }
 
     def reverseMultiValues(mv: MultiValues): MultiValues = {
-      val MultiValues(a, b, c) = mv
-      MultiValues(a.reverse, b.mapValues(_.reverse), c.mapValues(_.reverse))
+      val MultiValues(a) = mv
+      MultiValues(a.reverse)
     }
 
     def sortCri(c: SC.Inconclusive): SortCriteria =
@@ -244,6 +244,12 @@ object LogicTest extends TestSuite {
     private val P = SampleProject.project
     private type Rows = List[Row]
 
+    private def testUnsorted[A: Equal](p: Project, c: C.SortInconclusive, extract: Rows => A)(expect: A): Unit = {
+      val vs = ViewSettings(Vector(c), SortCriteria.default)
+      val r = Logic.gather(vs, p) |> Logic.sort(vs.order, p)
+      assertEq(extract(r), expect)
+    }
+
     private def vsSortedByCB(c: C.SortInconclusive with C.HasBlanks, sm: ConsiderBlanks): ViewSettings =
       ViewSettings(Vector(c), SortCriteria.default.copy(init = Vector(SC.InconclusiveCB(c, sm))))
 
@@ -275,8 +281,9 @@ object LogicTest extends TestSuite {
     private def allSortsIB[A](asc: A, desc: A): Seq[(IgnoreBlanks, A)] =
       (Asc  -> asc) :: (Desc -> desc) :: Nil
 
-    private val (z,sep) = ("∅","  ")
-    private val _z = (_: Any) => z
+    private val (z,sep)  = ("∅","  ")
+    private val _z       = (_: Any) => z
+    private val priField = CustomField.Tag.Id(4)
 
     private def rowsToStr (f: GenericReqRow => String) =
       (_: Rows) map (_ fold f) mkString sep
@@ -296,15 +303,22 @@ object LogicTest extends TestSuite {
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
     }
 
-    def testCustomTagField(): Unit = {
+    def testCustomTagField_sorted(): Unit = {
       def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
       val p        = GReq() + t(2) + t(3) + t(2, 3) + t(11, 12, 22, 24, 26) !! P
-      val priField = CustomField.Tag.Id(4)
       val fmtEach  = applicableTag(p).andThen(_.key.value)
-      val fmtRows  = rowsToStrL(_.mv.cfTags(priField))(_ => fmtEach)
+      val fmtRows  = rowsToStrL(_.exp.tagsForCF(priField))(_ => fmtEach)
       testCB(p, C.CustomField(priField), fmtRows)(allSortsCB(z, 2)(_ + sep + _,
-        asc  = "pri=high  pri=high,pri=med  pri=med",
-        desc = "pri=med,pri=high  pri=med  pri=high"))
+        asc  = "pri=high  pri=high  pri=med  pri=med",
+        desc = "pri=med  pri=med  pri=high  pri=high"))
+    }
+
+    def testCustomTagField_unsorted(): Unit = {
+      def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
+      val p        = GReq() + t(2) + t(3) + t(2, 3) + t(11, 12, 22, 24, 26) ! P
+      val fmtEach  = applicableTag(p).andThen(_.key.value)
+      val fmtRows  = rowsToStrL(_.exp.tagsForCF(priField))(_ => fmtEach)
+      testUnsorted(p, C.CustomField(priField), fmtRows)(s"$z  pri=high  pri=med  pri=high,pri=med  $z")
     }
 
     def testDesc(): Unit = {
@@ -363,7 +377,10 @@ object LogicTest extends TestSuite {
         'impSrc  - UnitSort.testImpSrc()
         'impTgt  - UnitSort.testImpTgt()
         'reqType - UnitSort.testReqType()
-        'custTag - UnitSort.testCustomTagField()
+        'custTag {
+          'sorted   - UnitSort.testCustomTagField_sorted()
+          'unsorted - UnitSort.testCustomTagField_unsorted()
+        }
       }
     }
   }

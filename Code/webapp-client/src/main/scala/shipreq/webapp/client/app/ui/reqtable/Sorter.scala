@@ -10,7 +10,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.app.ui.reqtable.{SortMethod => SM, SortCriterion => SC, Column => C}
-import SortMethod.{Asc, AscThenBlanks, BlanksThenAsc, AscHalf}
+import SortMethod.{Asc, AscThenBlanks, BlanksThenAsc}
 
 trait Sorter {
   type T

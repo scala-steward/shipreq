@@ -17,32 +17,44 @@ import shipreq.webapp.base.TypeclassDerivation._
  * Example: if a row is implied by two sources and the table is sorted by implication-source, then the row will
  * appear twice - once for each implicatee.
  */
+// TODO Make imp naming consistent
 case class Expansion(implicationSrc: List[Pubid],
                      implicationTgt: List[Pubid],
-                     reqCodes      : List[ReqCode])
+                     reqCodes      : List[ReqCode],
+                     cfImps        : Map[CustomField.Implication.Id, List[Pubid]],
+                     cfTags        : Map[CustomField.Tag.Id,         List[ApplicableTag.Id]]) {
+
+  def impsForCF(id: CustomField.Implication.Id): List[Pubid] =
+    cfImps.getOrElse(id, Nil)
+
+  def tagsForCF(id: CustomField.Tag.Id): List[ApplicableTag.Id] =
+    cfTags.getOrElse(id, Nil)
+}
+
 object Expansion {
   implicit val equality: UnivEq[Expansion] = deriveUnivEq
 
   private[this] def l = Lenser[Expansion]
-  val _reqCodes       = l(_.reqCodes)
   val _implicationSrc = l(_.implicationSrc)
   val _implicationTgt = l(_.implicationTgt)
+  val _reqCodes       = l(_.reqCodes)
+  val _cfImps         = l(_.cfImps)
+  val _cfTags         = l(_.cfTags)
 
-  val none = Expansion(Nil, Nil, Nil)
+  val none = Expansion(Nil, Nil, Nil, UnivEq.emptyMap, UnivEq.emptyMap)
 }
 
 // =====================================================================================================================
 
-case class MultiValues(tags  : List[ApplicableTag.Id],
-                       cfTags: Map[CustomField.Tag.Id,         List[ApplicableTag.Id]],
-                       cfImps: Map[CustomField.Implication.Id, List[Pubid]])
+/**
+ * Sortable data (ie. lists) that are never expanded.
+ */
+case class MultiValues(tags: List[ApplicableTag.Id])
 object MultiValues {
   implicit val equality: UnivEq[MultiValues] = deriveUnivEq
 
   private[this] def l = Lenser[MultiValues]
   val _tags           = l(_.tags)
-  val _cfTags         = l(_.cfTags)
-  val _cfImps         = l(_.cfImps)
 }
 
 // =====================================================================================================================
@@ -76,11 +88,11 @@ object Row {
   })
 
   // TODO I am now officially fucking over the "_" prefix on optics.
-  val _reqCodes       = Row._expansion   ^|-> Expansion._reqCodes
   val _implicationSrc = Row._expansion   ^|-> Expansion._implicationSrc
   val _implicationTgt = Row._expansion   ^|-> Expansion._implicationTgt
+  val _reqCodes       = Row._expansion   ^|-> Expansion._reqCodes
+  val _cfImps         = Row._expansion   ^|-> Expansion._cfImps
+  val _cfTags         = Row._expansion   ^|-> Expansion._cfTags
   val _tags           = Row._multiValues ^|-> MultiValues._tags
-  val _cfTags         = Row._multiValues ^|-> MultiValues._cfTags
-  val _cfImps         = Row._multiValues ^|-> MultiValues._cfImps
 
 }

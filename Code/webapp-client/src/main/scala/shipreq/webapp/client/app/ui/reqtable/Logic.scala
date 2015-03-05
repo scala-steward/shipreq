@@ -1,6 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import scalaz.{Apply, NonEmptyList}
+import scala.reflect.ClassTag
+import scalaz.NonEmptyList
 import shipreq.base.util.{UnivEq, Must}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
@@ -55,19 +56,7 @@ private[reqtable] object Logic {
   private def expanderC[A](vs: ViewSettings, c: Column.SortInconclusive): Expander[A] =
     expander(vs isVisible c, vs isOrdered c)
 
-  private def expansions(impSrcs: Expanded[Pubid], impTgts: Expanded[Pubid], codes: Expanded[ReqCode]): NonEmptyList[Expansion] =
-    if (isEmptyExp(codes) && isEmptyExp(impSrcs) && isEmptyExp(impTgts))
-      emptyExpansions
-    else
-      Apply[NonEmptyList].apply3(impSrcs, impTgts, codes)(Expansion.apply)
-
-  // ===================================================================================================================
-  // MultiValues
-
-  private final val emptyMultiValues: MultiValues =
-    MultiValues(Nil, UnivEq.emptyMap, UnivEq.emptyMap)
-
-  private def impColFn(p: Project): CustomField.Implication.Id => Req.Id => List[Pubid] = {
+  private def impColValueFn(p: Project): CustomField.Implication.Id => Req.Id => Set[Pubid] = {
     lazy val tc = TransitiveClosure.auto[Req.Id](p.reqs.data.reqs.keys)(
       p.reqFieldData.data.implications.srcToTgt.apply)
 
@@ -81,53 +70,94 @@ private[reqtable] object Logic {
               .map(_.tmap2(_.pubId, _.id |> tc.nonRefl))))
 
       if (srcs.isEmpty)
-        Function const Nil
+        Function const UnivEq.emptySet
       else
-        id => srcs.filter(_._2 contains id).map(_._1).toList
+        id => srcs.filter(_._2 contains id).map(_._1).toSet
     }
   }
 
-  private def impColValuesFn(vs: ViewSettings, p: Project): Req.Id => Map[CustomField.Implication.Id, List[Pubid]] = {
-    val impCols =
-      vs.columns.collect{ case Column.CustomField(id: CustomField.Implication.Id) => id }
-    if (impCols.isEmpty)
-      Function const UnivEq.emptyMap
-    else {
-      val fnfn     = impColFn(p)
-      val fnsByCol = impCols.map(_.mapStrengthR(fnfn)).toMap
-      id => fnsByCol.mapValues(_(id))
-    }
+  private def impColValueExpander(vs: ViewSettings, p: Project): Req.Id => Map[CustomField.Implication.Id, Expanded[Pubid]] = {
+    val valueFn = impColValueFn(p)
+    customFieldExpander[CustomField.Implication.Id, Pubid](vs, valueFn)
   }
 
-  private def tagValuesFn(vs: ViewSettings, p: Project): Req.Id => (List[ApplicableTag.Id], Map[CustomField.Tag.Id, List[ApplicableTag.Id]]) = {
-    implicit val tagTree = p.tags.data
-    val reqTags = p.reqFieldData.data.tags
-
-    val tagCols =
-      vs.columns.collect{ case Column.CustomField(id: CustomField.Tag.Id) => id }
-
+  private def tagColValueExpander(vs: ViewSettings, p: Project): Req.Id => Map[CustomField.Tag.Id, Expanded[ApplicableTag.Id]] = {
     // Traversing the tag tree for used columns is better than calculating the full
     // transitive closure at O(V²) space and O(V²+VE) time.
+    implicit val tagTree = p.tags.data
     def tagsForColumn(fid: CustomField.Tag.Id): Set[Tag.Id] = {
       val m = p.customField(fid).flatMap(field => tagTree(field.tagId).flatMap(_.transitiveChildren))
       m.fold(failedMust(UnivEq.emptySet), identity)
     }
-    val tagsByColumn = tagCols.map(_.mapStrengthR(tagsForColumn)).toMap
 
-    id => {
-      val tags   = reqTags(id).toList
-      val cfTags = tagsByColumn.mapValues(legal => tags.filter(legal contains _))
-      (tags, cfTags)
-    }
+    val reqTags = p.reqFieldData.data.tags
+    customFieldExpander[CustomField.Tag.Id, ApplicableTag.Id](vs, c => {
+      val legal = tagsForColumn(c)
+      id => reqTags(id) filter legal.contains
+    })
+  }
+
+  private def customFieldExpander[K <: CustomField.Id : ClassTag, V]
+      (vs: ViewSettings, f: K => Req.Id => Set[V]): Req.Id => Map[K, Expanded[V]] = {
+
+    val cols = vs.columns.collect{ case Column.CustomField(id: K) => id }
+
+    val expandersPerCol = cols.map { c =>
+        val expander = expanderC[V](vs, Column.CustomField(c))
+        val dataFn   = f(c)
+        val fn       = (id: Req.Id) => expander(() => dataFn(id))
+        (c, fn)
+      }.toMap
+
+    id => expandersPerCol.mapValues(_(id))
+  }
+
+  private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyList[Map[K, List[V]]] = {
+    type M = Map[K, List[V]]
+    def go(keys: List[K], cur: M, r: List[M]): NonEmptyList[M] =
+      keys match {
+        case Nil =>
+          NonEmptyList.nel(cur, r)
+        case k :: ks =>
+          @inline def next(ms: List[M], v: List[V]) = go(ks, cur.updated(k, v), ms)
+          NonEmptyList.nonEmptyList.foldMapLeft1(src(k))(next(r, _))((r2, v) => next(r2.list, v))
+      }
+    go(src.keys.toList, Map.empty, Nil)
+  }
+
+  private def expansions(impSrcs: Expanded[Pubid],
+                         impTgts: Expanded[Pubid],
+                         codes  : Expanded[ReqCode],
+                         cfImps : Map[CustomField.Implication.Id, Expanded[Pubid]],
+                         cfTags : Map[CustomField.Tag.Id,         Expanded[ApplicableTag.Id]]): NonEmptyList[Expansion] =
+    if (   isEmptyExp(codes)
+        && isEmptyExp(impSrcs)
+        && isEmptyExp(impTgts)
+        && cfImps.values.forall(isEmptyExp)
+        && cfTags.values.forall(isEmptyExp))
+      emptyExpansions
+    else
+      for {
+        a <- impSrcs
+        b <- impTgts
+        c <- codes
+        d <- expandMapValues(cfImps)
+        e <- expandMapValues(cfTags)
+      } yield Expansion(a, b, c, d, e)
+
+  // ===================================================================================================================
+  // MultiValues
+
+  private def tagValuesFn(vs: ViewSettings, p: Project): Req.Id => List[ApplicableTag.Id] = {
+    val reqTags = p.reqFieldData.data.tags
+    id => reqTags(id).toList
   }
 
   private def multiValuesFn(vs: ViewSettings, p: Project): Req.Id => MultiValues = {
-    val tagValuesFn    = this.tagValuesFn(vs, p)
-    val impColValuesFn = this.impColValuesFn(vs, p)
+    val tagValuesFn = this.tagValuesFn(vs, p)
     id => {
-      val (tags, cfTags) = tagValuesFn(id)
-      val cfImps         = impColValuesFn(id)
-      MultiValues(tags, cfTags, cfImps)
+      val tags = tagValuesFn(id)
+      MultiValues(tags)
     }
   }
 
@@ -149,6 +179,9 @@ private[reqtable] object Logic {
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode](vs, Column.Code)
+    val expandImpCols = impColValueExpander(vs, p)
+    val expandTagCols = tagColValueExpander(vs, p)
+
     val pReqs         = p.reqs.data
     val pReqCodes     = p.reqCodes.data
     val pImplications = p.reqFieldData.data.implications
@@ -171,13 +204,14 @@ private[reqtable] object Logic {
         val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
         val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
         val codes   = expandCodes  (() => pReqCodes.byTarget(id))
-        val exps    = expansions(impSrcs, impTgts, codes)
+        val cfImps  = expandImpCols(id)
+        val cfTags  = expandTagCols(id)
+        val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
         // Build
         val mv = multiValuesFn(id)
         exps.list.toStream.map(GenericReqRow(r, _, mv))
     }
-
   }
 
   // ===================================================================================================================
