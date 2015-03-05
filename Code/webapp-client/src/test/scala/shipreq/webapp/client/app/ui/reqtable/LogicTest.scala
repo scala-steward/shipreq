@@ -318,7 +318,9 @@ object LogicTest extends TestSuite {
       val p        = GReq() + t(2) + t(3) + t(2, 3) + t(11, 12, 22, 24, 26) ! P
       val fmtEach  = applicableTag(p).andThen(_.key.value)
       val fmtRows  = rowsToStrL(_.exp.tagsForCF(priField))(_ => fmtEach)
-      testUnsorted(p, C.CustomField(priField), fmtRows)(s"$z  pri=high  pri=med  pri=high,pri=med  $z")
+      testUnsorted(p, C.CustomField(priField), fmtRows)(
+        s"$z  pri=high  pri=med  pri=high,pri=med  $z")
+        // TODO s"$z  pri=high  pri=med  pri=high,pri=med  pri=high,pri=med  $z") + t(3, 2)
     }
 
     def testDesc(): Unit = {

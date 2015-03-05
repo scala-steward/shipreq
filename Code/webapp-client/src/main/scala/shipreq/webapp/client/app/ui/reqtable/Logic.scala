@@ -225,6 +225,7 @@ private[reqtable] object Logic {
     val setup   = new Setup(p)
     val prepare = sorter.prepFn(setup)
     val rowMod  = sorter.rowModFn.map(_(setup, KeepDir)).getOrElse((r: Row) => r)
+    // TODO rowMod should also sort visible expansion/multivalue columns that aren't in SortCriteria
     import sorter.{T => Datum}
 
     // Prepare data
