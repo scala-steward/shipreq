@@ -42,7 +42,7 @@ object Deps {
 
     val sizzleJs = "org.webjars" % "sizzle" % "2.1.1"
 
-    object React extends Group("0.8.1", "com.github.japgolly.scalajs-react") {
+    object React extends Group("0.8.2", "com.github.japgolly.scalajs-react") {
       val core    = js("core")
       val test    = js("test")
       val scalaz  = js("ext-scalaz71")
@@ -81,7 +81,7 @@ object Deps {
     val macros = dd("monocle-macro") ++ core
   }
 
-  object Nyaya extends Group("0.5.8-SNAPSHOT", "com.github.japgolly.nyaya") {
+  object Nyaya extends Group("0.5.8", "com.github.japgolly.nyaya") {
     object jvm {
       val core = dd("nyaya-core") ++ Scalaz.core
       val test = dd("nyaya-test")
