@@ -16,14 +16,22 @@ object ProjectDSL {
   type TextInput = String
   val defaultTextInput: TextInput = ""
 
-  case class ProjectState(p: Project, nextId: Long, defaultReqType: ReqType,
-                         reqs: IMap[Req.Id, Req], pubids: Pubid.Register,
-                         text: ReqFieldData.Text, tags: ReqFieldData.Tags, imps: ImplicationsU) {
+  case class ProjectState(p             : Project,
+                          nextId        : Long,
+                          defaultReqType: ReqType,
+                          reqs          : IMap[Req.Id, Req],
+                          pubids        : Pubid.Register,
+                          text          : ReqFieldData.Text,
+                          tags          : ReqFieldData.Tags,
+                          imps          : ImplicationsU) {
     def done: Project =
       p.copy(
         reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
         reqFieldData = succ(p.reqFieldData, ReqFieldData(text, tags, Implications(imps))))
   }
+
+  private def succ[A](r: RevAnd[A], a: A): RevAnd[A] =
+    RevAnd(r.rev.succ, a)
 
   def projectState(p: Project) = ProjectState(p,
     nextId         = p.reqs.data.reqs.keySet.ifelse(_.isEmpty, _ => 1, _.max.value),
@@ -87,21 +95,25 @@ object ProjectDSL {
       }
   }
 
-  private def succ[A](r: RevAnd[A], a: A): RevAnd[A] =
-    RevAnd(r.rev.succ, a)
-
-  case class Composite(ss: NonEmptyList[Mod[_]]) {
+  case class Composite(ss: NonEmptyList[Mod[_]], defaultReqType: Option[ReqType]) {
 
     def +(b: GReq): Composite =
-      Composite(b.state <:: ss)
+      copy(ss = b.state <:: ss)
 
-    def state: Mod[Unit] =
-      ss.list.reduce((a,b) => b >> a).map(_ => ())
+    def state: Mod[Unit] = {
+      var s = ss.list.reduce((a, b) => b >> a).map(_ => ())
+      for (rt <- defaultReqType)
+        s = State.modify[S](_.copy(defaultReqType = rt)) >> s
+      s
+    }
 
     def shuffle: Composite = {
       val x = scala.util.Random.shuffle(ss.list)
-      Composite(NonEmptyList.nel(x.head, x.tail))
+      copy(ss = NonEmptyList.nel(x.head, x.tail))
     }
+
+    def setDefaultReqType(rt: ReqType): Composite =
+      copy(defaultReqType = Some(rt))
 
     def !(p: Project): Project =
       state.exec(projectState(p)).done
@@ -110,5 +122,5 @@ object ProjectDSL {
       shuffle.!(p)
   }
 
-  implicit def autoCompositeGReq(g: GReq) = Composite(NonEmptyList(g.state))
+  implicit def autoCompositeGReq(g: GReq) = Composite(NonEmptyList(g.state), None)
 }

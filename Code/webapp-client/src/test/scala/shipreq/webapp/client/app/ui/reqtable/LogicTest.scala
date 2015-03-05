@@ -410,8 +410,19 @@ object LogicTest extends TestSuite {
         desc = "MF-1  MF-2  FR-1  FR-2  CO-1  CO-2  BR-1  BR-2"))
     }
 
+    def testCustomTextField(): Unit = {
+      val (notes, reporter) = (CustomField.Text.Id(2), CustomField.Text.Id(3))
+      def t(n: TextInput, r: TextInput) = GReq(reqType = 5).cftext(notes -> n, reporter -> r)
+      val p = GReq() + t("HAHA", "zz") + t("", "f") + t("d", "") + t("Abc", "g") !! P
+      val d = p.reqFieldData.data.text(notes)
+      val s = Presentation.textToString(p)
+      val fmtRows = rowsToStr(r => d.get(r.req.id).filter(_.nonEmpty).fold(z)(s))
+      testCB(p, C.CustomField(notes), fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+        asc  = "Abc  d  HAHA",
+        desc = "HAHA  d  Abc"))
+    }
+
     // Code
-    // CustomField.Text       .Id
   }
 
   // ===================================================================================================================
@@ -429,6 +440,7 @@ object LogicTest extends TestSuite {
           'unsorted - UnitSort.testCustomTagField_unsorted()
         }
         'custImp - UnitSort.testCustomImpField()
+        'custTxt - UnitSort.testCustomTextField()
       }
     }
   }
