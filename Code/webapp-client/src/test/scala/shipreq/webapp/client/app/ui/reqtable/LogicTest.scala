@@ -20,13 +20,11 @@ import Sorter._
 
 object LogicTest extends TestSuite {
 
-  private def codesInRow(r: Row): List[ReqCode] = r match {
-    case g: GenericReqRow => g.exp.reqCodes
-  }
+  private def codesInRow(r: Row): List[ReqCode] =
+    r.fold(_.exp.reqCodes)
 
-  private def tagsInRow(r: Row): List[ApplicableTag.Id] = r match {
-    case g: GenericReqRow => g.mv.tags
-  }
+  private def tagsInRow(r: Row): List[ApplicableTag.Id] =
+    r.fold(_.mv.tags)
 
   def pubidExtract(p: Project)(pid: Pubid): (String, Int) =
     (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
@@ -172,7 +170,7 @@ object LogicTest extends TestSuite {
     def sortByPubid: IndivSortIB = (sm, dir) => {
       val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.PubId, sm))
       val sorted = Logic.sort(sc, p)(gathered)
-      val pubids = sorted.map { case r: GenericReqRow => pubidExtract(p)(r.req.pubId)}
+      val pubids = sorted.map(_.fold(r => pubidExtract(p)(r.req.pubId)))
       E_sorted("Pubids", pubids, dir)
     }
 
@@ -188,7 +186,7 @@ object LogicTest extends TestSuite {
 
     def sortByDesc: IndivSortCB = (sm, bp, dir) => {
       val sorted     = sortBy(SC.InconclusiveCB(C.Desc, sm))
-      val data       = sorted.map{ case r: GenericReqRow => r.req.desc }
+      val data       = sorted.map(_.fold(_.req.desc))
       val name       = s"Desc ($sm)"
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
     }
@@ -279,7 +277,7 @@ object LogicTest extends TestSuite {
     private val _z = (_: Any) => z
 
     private def rowsToStr (f: GenericReqRow => String) =
-      (_: Rows) map { case r: GenericReqRow => f(r) } mkString sep
+      (_: Rows) map (_ fold f) mkString sep
 
     private def rowsToStrL[A](f: GenericReqRow => List[A])(g: GenericReqRow => A => String) =
       rowsToStr(r => f(r).ifelse(_.isEmpty, _z, _ map g(r) mkString ","))

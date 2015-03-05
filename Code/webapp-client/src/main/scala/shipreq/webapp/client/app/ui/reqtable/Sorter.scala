@@ -243,7 +243,7 @@ object Sorter {
     prep =
       setup => {
         val n = pubidNormaliser(setup)
-        ;{ case r: GenericReqRow => n(r.req.pubId) }
+        _.fold(r => n(r.req.pubId))
       },
     sort = SortFn.intPair
   )
@@ -264,7 +264,7 @@ object Sorter {
     prep =
       setup => {
         val reqTypeOrder = setup.reqTypesToMnemonicOrder
-        ;{ case r: GenericReqRow => reqTypeOrder(r.req.pubId.reqTypeId) }
+        _.fold(r => reqTypeOrder(r.req.pubId.reqTypeId))
       },
     sort = SortFn.int
   )
@@ -285,7 +285,7 @@ object Sorter {
         prep =
           setup => {
             val tagOrder = setup.tagOrder
-            ;{ case r: GenericReqRow => r.mv.tags.map(tagOrder) }
+            _.fold(_.mv.tags.map(tagOrder))
           },
         sort = SortFn.intList(bp),
         rowMod = typicalRowModFn(loc, SortFn.int)(_.tagOrder.apply)
@@ -305,11 +305,11 @@ object Sorter {
   def customTextFieldSorter(id: CustomField.Text.Id): SorterForSMCB =
     textSorter { setup =>
       val data = setup.p.reqFieldData.data.text.getOrElse(id, Map.empty)
-      ;{ case r: GenericReqRow => data.getOrElse(r.req.id, Nil) }
+      _.fold(r => data.getOrElse(r.req.id, Nil))
     }
 
   val descSorter: SorterForSMCB =
-    textSorter(_ => { case r: GenericReqRow => r.req.desc })
+    textSorter(_ => _.fold(_.req.desc))
 
   // ===================================================================================================================
   // Sort criteria

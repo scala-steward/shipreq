@@ -47,9 +47,12 @@ object MultiValues {
 
 // =====================================================================================================================
 
-sealed trait Row
+sealed trait Row {
+  def fold[A](g: GenericReqRow => A): A
+}
 
 case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row {
+  override def fold[A](g: GenericReqRow => A): A = g(this)
   override def toString = s"\n$req\n$exp\n$mv\n"
 }
 
