@@ -189,7 +189,7 @@ final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
   import ReqCode.{Node, Target, Trie}
 
   lazy val byTargetMap: Multimap[Target, Set, ReqCode] =
-    Trie.fold(trie, setMultimap[Target, ReqCode])((q, path, tgt) =>
+    Trie.fold(trie, UnivEq.emptyMultimap[Target, Set, ReqCode])((q, path, tgt) =>
       tgt.fold(q)(q.add(_, ReqCode(path))))
 
   @inline def byTarget(t: Target): Set[ReqCode] =
@@ -242,7 +242,7 @@ object Pubid {
    */
   type Register = Multimap[ReqType.Id, Vector, Req.Id]
 
-  val emptyRegister: Register = Multimap.empty
+  val emptyRegister: Register = UnivEq.emptyMultimap
 
   def alloc(reqId: Req.Id, reqTypeId: ReqType.Id, register: Register): (Register, Pubid) = {
     val cur = register(reqTypeId)
@@ -342,6 +342,6 @@ case class Requirements(reqs: IMap[Req.Id, Req], pubids: Pubid.Register) {
     Pubid.lookup(pubids, id)
 
   lazy val reqsByType: Multimap[ReqType.Id, Set, Req] =
-    Multimap.empty[ReqType.Id, Set, Req]
+    UnivEq.emptyMultimap[ReqType.Id, Set, Req]
       .addPairs(reqs.vstream(_.mapStrengthL(_.reqTypeId)): _*)
 }

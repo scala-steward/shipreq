@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.nyaya.util._
 import scalaz._
 import scalaz.std.anyVal.intInstance
 
@@ -31,6 +32,8 @@ object UnivEq {
   @inline implicit def disj  [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = force
   @inline implicit def nel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = force
 
+  @inline implicit def multimap[K, L[_], V](implicit ev: UnivEq[Map[K, L[V]]]): UnivEq[Multimap[K, L, V]] = force
+
   @inline implicit def oneAnd[F[_], A](implicit fa: UnivEq[F[A]], a: UnivEq[A]): UnivEq[OneAnd[F, A]] = force
 
   def withOrder[A](o: Order[A]): Order[A] with UnivEq[A] =
@@ -46,6 +49,7 @@ object UnivEq {
     }
   }
 
-  @inline def emptyMap[K: UnivEq, V] = Map.empty[K, V]
-  @inline def emptySet[A: UnivEq]    = Set.empty[A]
+  @inline def emptyMap     [K: UnivEq, V]                    = Map.empty[K, V]
+  @inline def emptySet     [A: UnivEq]                       = Set.empty[A]
+  @inline def emptyMultimap[K: UnivEq, L[_]: MultiValues, V] = Multimap.empty[K, L, V]
 }

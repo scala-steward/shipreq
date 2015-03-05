@@ -74,7 +74,7 @@ object ShipReq extends Build {
       val dir = "base-util-sjs"
 
       override def deps =
-        Scalaz.effect ++ testScope(μTest.jvm)
+        Scalaz.effect ++ Nyaya.jvm.core ++ testScope(μTest.jvm)
 
       override def project = typicalProject
         .configure(Common.utestOnJvm, Common.addSourceDialectJvm)
