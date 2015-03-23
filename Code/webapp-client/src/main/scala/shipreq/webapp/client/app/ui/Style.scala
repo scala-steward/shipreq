@@ -1,8 +1,10 @@
-package shipreq.webapp.client.app.ui
+package shipreq.webapp.client.app
+package ui
 
 import japgolly.scalacss.Defaults._
 import japgolly.scalacss.ScalaCssReact._
 import japgolly.scalacss.StyleS
+import shipreq.webapp.base.AppConsts
 import shipreq.webapp.client.lib.ConsoleIO
 
 object Style extends StyleSheet.Inline {
@@ -35,6 +37,7 @@ object Style extends StyleSheet.Inline {
     color("#000"))
 
   object reqtable {
+    import ui.reqtable.Column
 
     object sortingSettings {
 
@@ -71,9 +74,33 @@ object Style extends StyleSheet.Inline {
 
       val prop = (on: Boolean) => Styles(row, dragHnd = sortingSettings.dragHnd, label = sortingSettings.field(on))
     }
+
+    // http://stackoverflow.com/questions/446624/table-cell-widths-fixing-width-wrapping-truncating-long-words
+    val table = style(
+      marginTop(1.6 ex),
+      width(100 %%),
+      tableLayout.fixed,
+      whiteSpace.nowrap)
+
+    val mnemonicLen = AppConsts.reqTypeMnemonicLength.max
+
+    val columnPubid   = style(maxWidth((mnemonicLen + 5).ex))
+    val columnReqType = style(maxWidth(mnemonicLen.ex))
+//    val columnPubid   = style(maxWidth.fitContent)
+//    val columnReqType = style(maxWidth.fitContent)
+
+    val `N/A` = style(
+      marginLeft.auto,
+      marginRight.auto
+    )
+
   } // reqtable
 
-  reqtable.sortingSettings
-  reqtable.columnSettings
+  def damnit(a: StyleA*) = ()
+  damnit(
+    reqtable.sortingSettings.conclusiveDir,
+    reqtable.columnSettings.row,
+    reqtable.table)
+  ConsoleIO(_.log(render[String])).unsafePerformIO()
   ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }

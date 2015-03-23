@@ -6,6 +6,8 @@ import shipreq.base.util.Must
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.widget._
+import shipreq.webapp.client.app.ui.Style.{reqtable => *}
+import japgolly.scalacss.ScalaCssReact._
 import DataImplicits._
 
 object Table {
@@ -36,17 +38,19 @@ object Table {
       
       // Render
       // TODO handle zero rows nicely. "33 reqs (SHRs?), 11 deleted, 3 excluded by filter."
-      <.table(
+      <.table(*.table,
         <.thead(
           <.tr(
             crs.map(cr =>
               <.th(
+                cr.columnStyle,
                 cr.header)))),
         <.tbody(
           rows.map(r =>
             <.tr(
               crs.map(cr =>
                 <.td(
+                  cr.columnStyle,
                   cr render r))))))
     }
   }

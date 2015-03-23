@@ -1,16 +1,20 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import japgolly.scalacss.ScalaCssReact._
+import japgolly.scalacss.StyleA
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom
 import shipreq.base.util.Must
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.app.ui.widget._
 import DataImplicits._
 
 
 trait ColumnRenderer {
-  //  def column: Column
+  def columnStyle: Option[StyleA]
+  // def column: Column
   def header: ReactElement
   val render: Row => ReactElement
 }
@@ -19,7 +23,7 @@ trait ColumnRenderer {
 object ColumnRenderer {
 
   val `N/A`: ReactElement =
-    <.span(^.marginLeft.auto, ^.marginRight.auto, "–")
+    <.span(*.`N/A`, "–")
 
   def thingy(project: Project, columnName: Column.NameResolver): Column => ColumnRenderer = {
     case Column.PubId          => new PubId(project)
@@ -43,12 +47,16 @@ object ColumnRenderer {
   // ===================================================================================================================
 //  @deprecated("ColumnRenderer.Null is for dev purposes only.", "")
   object Null extends ColumnRenderer {
+    override def columnStyle = None
     override def header: ReactElement = <.span("NULL")
     override val render: Row => ReactElement = Function const <.span("∅")
   }
 
   // ===================================================================================================================
   class PubId(project: Project) extends ColumnRenderer {
+
+    override def columnStyle = Some(*.columnPubid)
+
     override def header: ReactElement =
       <.span("ID") // Use Column.NameResolver
 
@@ -60,6 +68,9 @@ object ColumnRenderer {
 
   // ===================================================================================================================
   class ReqType(project: Project) extends ColumnRenderer {
+
+    override def columnStyle = Some(*.columnReqType)
+
     override def header: ReactElement =
       <.span("ReqType") // Use Column.NameResolver
 
@@ -71,6 +82,9 @@ object ColumnRenderer {
 
   // ===================================================================================================================
   class Code extends ColumnRenderer {
+
+    override def columnStyle = None
+
     override def header: ReactElement =
       <.span("Code") // Use Column.NameResolver
 
@@ -85,6 +99,9 @@ object ColumnRenderer {
 
   // ===================================================================================================================
   class Desc extends ColumnRenderer {
+
+    override def columnStyle = None
+
     override def header: ReactElement =
       <.span("Desc") // Use Column.NameResolver
 
@@ -98,6 +115,9 @@ object ColumnRenderer {
 
   // ===================================================================================================================
   class CFText(project: Project, id: CustomField.Text.Id) extends ColumnRenderer {
+
+    override def columnStyle = None
+
 
     val reqs = project.reqFieldData.data.text(id)
 
@@ -114,6 +134,9 @@ object ColumnRenderer {
 
   // ===================================================================================================================
   class CFTag(project: Project, scope: Option[Must[Tag.Id]]) extends ColumnRenderer {
+
+    override def columnStyle = None
+
 
     def this(project: Project, fieldId: CustomField.Tag.Id) {
       this(project, project.customField(fieldId).map(_.tagId).some)
