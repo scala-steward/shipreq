@@ -262,7 +262,7 @@ object ShipReq extends Build {
       val dir = "webapp-client"
 
       override def deps =
-        ScalaJS.Scalaz.effect ++ ScalaJS.React.most ++ ScalaJS.Monocle.macros ++
+        ScalaJS.Scalaz.effect ++ ScalaJS.React.most ++ ScalaJS.Monocle.macros ++ ScalaJS.ScalaCSS.react ++
         μPickle.js ++ shapeless.js ++ Nyaya.js.core ++
         testScope(ScalaJS.React.test ++ μTest.js ++ Nyaya.js.test)
 
