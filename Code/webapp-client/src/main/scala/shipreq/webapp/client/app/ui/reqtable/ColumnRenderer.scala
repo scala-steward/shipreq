@@ -29,13 +29,13 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     case Column.ReqType        => reqType(c)
     case Column.Code           => code(c)
     case Column.Desc           => placeholder
-    case Column.Tags           => placeholder
+    case Column.Tags           => tags(c)
     case Column.ImplicationSrc => placeholder
     case Column.ImplicationTgt => placeholder
     case Column.CustomField(f) =>
       f match {
         case id: CustomField.Text       .Id => placeholder
-        case id: CustomField.Tag        .Id => placeholder
+        case id: CustomField.Tag        .Id => cfTags(id)(c)
         case id: CustomField.Implication.Id => placeholder
       }
   }
@@ -62,9 +62,17 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     def render(codes: List[ReqCode]): ReactElement =
           <.ul(codes.map(c => <.li(c.txt)))
     make {
-      case GenericReqRow(_, e, _) => render(e.reqCodes)
+      case GenericReqRow(_, exp, _) => render(exp.reqCodes)
       // case ReqCodeGroupRow(_, c) => xxx(c :: Nil)
     }
+  }
+
+  def tags = make {
+    case GenericReqRow(_, _, mv) => widgets.tagList(mv.tags)
+  }
+
+  def cfTags(id: CustomField.Tag.Id) = make {
+    case GenericReqRow(_, exp, _) => widgets.tagList(exp.cfTags.getOrElse(id, Nil))
   }
 
 //  // ===================================================================================================================

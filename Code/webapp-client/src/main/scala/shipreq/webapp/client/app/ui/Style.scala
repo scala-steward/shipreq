@@ -96,11 +96,18 @@ object Style extends StyleSheet.Inline {
 
   } // reqtable
 
+  object widgets {
+    val tag = style(
+      addClassName("label label-default"),
+      marginRight(1 ex))
+  }
+
   def damnit(a: StyleA*) = ()
   damnit(
     reqtable.sortingSettings.conclusiveDir,
     reqtable.columnSettings.row,
-    reqtable.table)
+    reqtable.table,
+    widgets.tag)
   ConsoleIO(_.log(render[String])).unsafePerformIO()
   ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }
