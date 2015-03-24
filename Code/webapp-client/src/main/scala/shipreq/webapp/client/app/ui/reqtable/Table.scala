@@ -5,7 +5,7 @@ import org.scalajs.dom
 import shipreq.base.util.Must
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.client.app.ui.widget._
+import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import japgolly.scalacss.ScalaCssReact._
 import DataImplicits._
@@ -28,14 +28,13 @@ object Table {
       val p = $.props
 
       // Init columns
-      val xxx = ColumnRenderer.thingy(p.project, p.columnName)
-      val crs: Vector[ColumnRenderer] =
-        p.viewSettings.columns.map(xxx)
-
-      val rows = Logic.gather(p.viewSettings, p.project) |> Logic.sort(p.viewSettings.order, p.project)
+      val widgets = new ProjectWidgets(p.project)
+      val renderers = new ColumnRenderers(p.project, p.columnName, widgets)
+      val crs = p.viewSettings.columns.map(renderers.apply)
 
       // Sort
-      
+      val rows = Logic.gather(p.viewSettings, p.project) |> Logic.sort(p.viewSettings.order, p.project)
+
       // Render
       // TODO handle zero rows nicely. "33 reqs (SHRs?), 11 deleted, 3 excluded by filter."
       <.table(*.table,
@@ -46,12 +45,12 @@ object Table {
                 cr.columnStyle,
                 cr.header)))),
         <.tbody(
-          rows.map(r =>
+          rows.map(row =>
             <.tr(
               crs.map(cr =>
                 <.td(
                   cr.columnStyle,
-                  cr render r))))))
+                  cr render row))))))
     }
   }
 }
