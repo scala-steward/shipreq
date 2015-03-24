@@ -22,6 +22,10 @@ final class ProjectWidgets(project: Project) {
   private def memoM[A: UnivEq](n: String, f: A => Must[ReactTag]): A => Widget =
     memo(n, a => UI.mustA(f(a)))
 
+  private def memoMW[A: UnivEq](f: A => Must[Widget]): A => Widget =
+    Memo.mutableHashMapMemo(a =>
+      UI.mustA[Widget, Widget](f(a))(err => ReactComponentB.static("", err).buildU, identity))
+
   def issueO(id: CustomIssueType.Id, desc: Text.InlineIssueDesc.OptionalText): ReactElement =
     desc match {
       case Nil    => issue(id)()
@@ -61,8 +65,16 @@ final class ProjectWidgets(project: Project) {
         *.reqRef(req.alive),
         ^.title := desc,
         s"[${rt.mnemonic.value}-${req.pubId.pos.value}]")
-    }
-  )
+    })
+
+  def reqRefList(reqs: List[Req.Id]): ReactElement =
+    <.div(reqs.map(id => reqRef(id)(): TagMod): _*)
+
+  val pubidRef = memoMW[Pubid](pubid =>
+    project.reqs.data.reqIdByPubidM(pubid) map reqRef)
+
+  def pubidRefList(ids: List[Pubid]): ReactElement =
+    <.div(ids.map(id => pubidRef(id)(): TagMod): _*)
 
   val reqType = memoM[ReqType.Id]("ReqType", id =>
     project.reqType(id).map(rt =>

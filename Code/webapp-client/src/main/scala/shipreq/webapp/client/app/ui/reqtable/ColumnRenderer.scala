@@ -1,9 +1,11 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import monocle.Optional
+import monocle.function.index
+import monocle.std.mapIndex
 import japgolly.scalacss.ScalaCssReact._
 import japgolly.scalacss.StyleA
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import org.scalajs.dom
 import shipreq.base.util.Must
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
@@ -30,22 +32,25 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     case Column.Code           => code(c)
     case Column.Desc           => desc(c)
     case Column.Tags           => tags(c)
-    case Column.ImplicationSrc => placeholder
-    case Column.ImplicationTgt => placeholder
+    case Column.ImplicationSrc => imps(Row._implicationSrc)(c) //("… ⇒")
+    case Column.ImplicationTgt => imps(Row._implicationTgt)(c) //("⇒ …")
     case Column.CustomField(f) =>
       f match {
         case id: CustomField.Text       .Id => cfText(id)(c)
         case id: CustomField.Tag        .Id => cfTags(id)(c)
-        case id: CustomField.Implication.Id => placeholder
+        case id: CustomField.Implication.Id => imps(Row._cfImps ^|-? index(id))(c)
       }
   }
 
-  protected def make(render: Row => ReactElement): Column => ColumnRenderer =
-    make(render, None)
+  protected def makeSY(columnStyle: Option[StyleA])(render: Row => ReactElement): String => ColumnRenderer =
+    s => new ColumnRenderer(<.span(s), render, columnStyle)
 
-  protected def make(render: Row => ReactElement, columnStyle: Option[StyleA]): Column => ColumnRenderer =
-    c => new ColumnRenderer(<.span(columnName(c)), render, columnStyle)
-  
+  protected def make(render: Row => ReactElement): Column => ColumnRenderer =
+    c => makeSY(None)(render)(columnName(c))
+
+  protected def makeS(render: Row => ReactElement): String => ColumnRenderer =
+    makeSY(None)(render)
+
   // @deprecated("placeholder is for dev purposes only.", "")
   def placeholder =
     new ColumnRenderer(<.span("∅"), Function const <.span("∅"), None)
@@ -63,7 +68,6 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
           <.ul(codes.map(c => <.li(c.txt)))
     make {
       case GenericReqRow(_, exp, _) => render(exp.reqCodes)
-      // case ReqCodeGroupRow(_, c) => xxx(c :: Nil)
     }
   }
 
@@ -79,70 +83,15 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     case GenericReqRow(req, _, _) => widgets.text(req.desc)
   }
 
-  val textData = project.reqFieldData.data.text
   val empty: ReactElement = <.span
 
-  def cfText(id: CustomField.Text.Id) = make {
-    case GenericReqRow(req, _, _) => textData.get(id).flatMap(_ get req.id) map (widgets.text1(_)) getOrElse empty
+  def cfText(id: CustomField.Text.Id) = {
+    val textData = project.reqFieldData.data.text.getOrElse(id, Map.empty)
+    make {
+      case GenericReqRow(req, _, _) => textData.get(req.id) map (widgets.text1(_)) getOrElse empty
+    }
   }
-
-  //  // ===================================================================================================================
-//  class Desc extends ColumnRenderer {
-//
-//    override def columnStyle = None
-//
-//    override def header: ReactElement =
-//      <.span("Desc") // Use Column.NameResolver
-//
-//    override val render: Row => ReactElement = {
-//      case GenericReqRow(req, _, _) => ??? //xxx(req.desc)
-////      case ReqCodeGroupRow(g, _) => xxx(g.desc)
-//    }
-//
-//    def xxx(desc: String): ReactElement = <.span(desc)
-//  }
-//
-//  // ===================================================================================================================
-//  class CFText(project: Project, id: CustomField.Text.Id) extends ColumnRenderer {
-//
-//    override def columnStyle = None
-//
-//
-//    val reqs = project.reqFieldData.data.text(id)
-//
-//    override def header: ReactElement =
-//      <.span("TODO") // Use Column.NameResolver
-//
-//    override val render: Row => ReactElement = {
-//      case GenericReqRow(req, _, _) =>
-//        val valueO = reqs.get(req.id)
-//        ???
-////      case ReqCodeGroupRow(_, _) => `N/A`
-//    }
-//  }
-//
-//  // ===================================================================================================================
-//  class CFTag(project: Project, scope: Option[Must[Tag.Id]]) extends ColumnRenderer {
-//
-//    override def columnStyle = None
-//
-//
-//    def this(project: Project, fieldId: CustomField.Tag.Id) {
-//      this(project, project.customField(fieldId).map(_.tagId).some)
-//    }
-//
-//    // TODO if scope is None, we need to know everyone elses (tagWhitelists : Set[Tag.Id])
-//    val tagWhitelist: Option[Set[Tag.Id]] = scope.map(???)
-//
-//    override def header: ReactElement =
-//      <.span(scope.fold("Tags")(???)) // Use Column.NameResolver
-//
-//    override val render: Row => ReactElement = {
-//      case GenericReqRow(req, _, _) =>
-//        var reqtags = project.reqFieldData.data.tags(req.id)
-//        tagWhitelist.foreach{w => reqtags = reqtags.filter(w.contains)}
-//        ???
-////      case ReqCodeGroupRow(_, _) => `N/A`
-//    }
-//  }
+  
+  def imps(l: Optional[Row, List[Pubid]]) = make(
+    l.getMaybe(_).cata(widgets.pubidRefList, empty))
 }

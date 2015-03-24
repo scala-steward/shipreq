@@ -332,14 +332,20 @@ case class Requirements(reqs: IMap[Req.Id, Req], pubids: Pubid.Register) {
   def req(id: Req.Id): Option[Req] =
     reqs.get(id)
 
-  def reqM(id: Req.Id): Must[Req] =
-    Must.fromOption(req(id), s"Req $id not found.")
-
   def reqByPubid(id: Pubid): Option[Req] =
     reqIdByPubid(id) flatMap req
 
   def reqIdByPubid(id: Pubid): Option[Req.Id] =
     Pubid.lookup(pubids, id)
+
+  def reqM(id: Req.Id): Must[Req] =
+    Must.fromOption(req(id), s"Req $id not found.")
+
+  def reqByPubidM(id: Pubid): Must[Req] =
+    Must.fromOption(reqByPubid(id), s"Req for $id not found.")
+
+  def reqIdByPubidM(id: Pubid): Must[Req.Id] =
+    Must.fromOption(reqIdByPubid(id), s"Req for $id not found.")
 
   lazy val reqsByType: Multimap[ReqType.Id, Set, Req] =
     UnivEq.emptyMultimap[ReqType.Id, Set, Req]
