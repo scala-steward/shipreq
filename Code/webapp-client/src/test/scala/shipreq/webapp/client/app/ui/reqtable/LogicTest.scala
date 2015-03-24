@@ -190,9 +190,9 @@ object LogicTest extends TestSuite {
     type IndivSortIB = (IgnoreBlanks  ,                 Dir) => EvalL
 
     def sortByPubid: IndivSortIB = (sm, dir) => {
-      val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.PubId, sm))
+      val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.Pubid, sm))
       val sorted = Logic.sort(newViewSettingsForSort(sc), p)(gathered)
-      val pubids = sorted.map(_.fold(r => pubidExtract(p)(r.req.pubId)))
+      val pubids = sorted.map(_.fold(r => pubidExtract(p)(r.req.pubid)))
       E_sorted("Pubids", pubids, dir)
     }
 
@@ -225,7 +225,7 @@ object LogicTest extends TestSuite {
     // Let's make it real obvious what we're omitting or potentially forgetting
     def individualSort: C => EvalL = {
       case C.ReqType         => nop
-      case C.PubId           => sortIB(sortByPubid)
+      case C.Pubid           => sortIB(sortByPubid)
       case C.Code            => sortCB(sortByRecCode)
       case C.Desc            => sortCB(sortByDesc)
       case C.Tags            => nop
@@ -368,7 +368,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + ">" + pubidToStr(p)(t)
-      val fmtRows = rowsToStrL(_.exp.implicationSrc)(r => fmtEach(_, r.req.pubId))
+      val fmtRows = rowsToStrL(_.exp.implicationSrc)(r => fmtEach(_, r.req.pubid))
       testCB(p, C.ImplicationSrc, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "DD-1>FR-3  DD-1>FR-4  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  FR-2>DD-1  FR-4>FR-5",
         desc = "FR-4>FR-5  FR-2>DD-1  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  DD-1>FR-3  DD-1>FR-4"))
@@ -379,7 +379,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(t) + "<" + pubidToStr(p)(s)
-      val fmtRows = rowsToStrL(_.exp.implicationTgt)(r => fmtEach(r.req.pubId, _))
+      val fmtRows = rowsToStrL(_.exp.implicationTgt)(r => fmtEach(r.req.pubid, _))
       testCB(p, C.ImplicationTgt, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "DD-1<FR-3  DD-1<FR-4  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  FR-2<DD-1  FR-4<FR-5",
         desc = "FR-4<FR-5  FR-2<DD-1  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  DD-1<FR-3  DD-1<FR-4"))
@@ -425,7 +425,7 @@ object LogicTest extends TestSuite {
       // FR-6 ⇐ 3,4
       val cf = CustomField.Implication.Id(6)
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + ">" + pubidToStr(p)(t)
-      val fmtRows = rowsToStrL(_.exp.impsForCF(cf))(r => fmtEach(_, r.req.pubId))
+      val fmtRows = rowsToStrL(_.exp.impsForCF(cf))(r => fmtEach(_, r.req.pubid))
       testCB(p, C.CustomField(cf), fmtRows)(allSortsCB(z, 5)(_ + sep + _,
         asc  = "MF-1>FR-1  MF-1>FR-2  MF-1>FR-3  MF-2>FR-2  MF-2>FR-3  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-4>FR-6",
         desc = "MF-4>FR-6  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-2>FR-2  MF-2>FR-3  MF-1>FR-1  MF-1>FR-2  MF-1>FR-3"))
@@ -435,7 +435,7 @@ object LogicTest extends TestSuite {
       def t(_reqTypeId: ReqType.Id) = GReq(reqType = _reqTypeId)
       val (co, br, mf, fr) = (1, 4, 2, 3)
       val p = t(co) + t(co) + t(br) + t(br) + t(mf) + t(mf) + t(fr) + t(fr) !! P
-      val fmtRows = rowsToStr(_.req.pubId |> pubidToStr(p))
+      val fmtRows = rowsToStr(_.req.pubid |> pubidToStr(p))
       testIB(p, C.ReqType, fmtRows)(allSortsIB(
         asc  = "BR-1  BR-2  CO-1  CO-2  FR-1  FR-2  MF-1  MF-2",
         desc = "MF-1  MF-2  FR-1  FR-2  CO-1  CO-2  BR-1  BR-2"))

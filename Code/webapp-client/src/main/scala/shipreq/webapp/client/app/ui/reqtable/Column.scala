@@ -22,7 +22,7 @@ object Column {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  case object PubId          extends BuiltIn with SortConclusive
+  case object Pubid          extends BuiltIn with SortConclusive
   case object Code           extends BuiltIn with SortInconclusive with HasBlanks
   case object Desc           extends BuiltIn with SortInconclusive with HasBlanks
   case object ReqType        extends BuiltIn with SortInconclusive with NoBlanks
@@ -44,10 +44,10 @@ object Column {
   @inline implicit def equality   : UnivEq[Column]                          = UnivEq.force
 
   val builtInValues: NonEmptyList[BuiltIn] =
-    NonEmptyList(PubId, Code, Desc, ReqType, Tags, ImplicationSrc, ImplicationTgt)
+    NonEmptyList(Pubid, Code, Desc, ReqType, Tags, ImplicationSrc, ImplicationTgt)
 
   val mandatory: Column => Boolean = {
-    case PubId
+    case Pubid
        | Code
        | Desc            => true
     case ReqType
@@ -65,7 +65,7 @@ object Column {
     val fn: Column => String = {
       case CustomField(id) => UiText.mustA(customFields(id) flatMap customFieldName)
       case ReqType         => ColumnNames.reqType
-      case PubId           => ColumnNames.pubId
+      case Pubid           => ColumnNames.pubid
       case Code            => ColumnNames.code
       case Desc            => ColumnNames.desc
       case Tags            => ColumnNames.tags

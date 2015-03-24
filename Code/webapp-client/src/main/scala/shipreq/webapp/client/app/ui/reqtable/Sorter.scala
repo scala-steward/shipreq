@@ -255,7 +255,7 @@ object Sorter {
     prep =
       setup => {
         val n = pubidNormaliser(setup)
-        _.fold(r => n(r.req.pubId))
+        _.fold(r => n(r.req.pubid))
       },
     sort = SortFn.intPair
   )
@@ -273,7 +273,7 @@ object Sorter {
     ))
 
   val reqTypeSorter = Sorter[Int](
-    prep = setup => _.fold(r => setup.reqTypesToMnemonicOrder(r.req.pubId.reqTypeId)),
+    prep = setup => _.fold(r => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)),
     sort = SortFn.int
   )
 
@@ -343,7 +343,7 @@ object Sorter {
 
   def conclusive(sc: SC.Conclusive): Sorter = {
     val r: SorterForSMIB = sc.column match {
-      case C.PubId => SorterForSMIB(pubidSorter)
+      case C.Pubid => SorterForSMIB(pubidSorter)
     }
     r(sc.method)
   }

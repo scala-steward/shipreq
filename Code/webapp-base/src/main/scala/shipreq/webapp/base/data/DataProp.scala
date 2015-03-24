@@ -158,7 +158,7 @@ object DataProp {
       Prop.forall((_: T).reqs.values.toStream)(t =>
         Prop.equal[Req]("Req's pubid refers to itself in the Pubid register")(
           _.id.some,
-          r => t.reqIdByPubid(r.pubId)))
+          r => t.reqIdByPubid(r.pubid)))
 
     def pubidsResolveToReqs =
       Prop.whitelist[T]("Pubid register")(_.reqs.keySet, _.pubids.m.vstreamf(_.toStream))

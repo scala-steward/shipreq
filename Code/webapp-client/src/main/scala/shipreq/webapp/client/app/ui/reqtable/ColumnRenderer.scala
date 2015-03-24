@@ -27,7 +27,7 @@ object ColumnRenderer {
 class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets: ProjectWidgets) {
 
   def apply(c: Column): ColumnRenderer = c match {
-    case Column.PubId          => pubId(c)
+    case Column.Pubid          => pubid(c)
     case Column.ReqType        => reqType(c)
     case Column.Code           => code(c)
     case Column.Desc           => desc(c)
@@ -55,8 +55,8 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   def placeholder =
     new ColumnRenderer(<.span("∅"), Function const <.span("∅"), None)
 
-  def pubId = make {
-    case GenericReqRow(req, _, _) => widgets.pubIdText(req.pubId)()
+  def pubid = make {
+    case GenericReqRow(req, _, _) => widgets.pubidText(req.pubid)()
   }
 
   def reqType = make {

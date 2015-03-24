@@ -270,10 +270,10 @@ object Pubid {
 /** [[Req]] = [[GenericReq]] */
 sealed abstract class Req {
   val id: Req.Id
-  val pubId: Pubid
+  val pubid: Pubid
   val alive: Alive
 
-  @inline final def reqTypeId = pubId.reqTypeId
+  @inline final def reqTypeId = pubid.reqTypeId
 }
 object Req {
 
@@ -291,7 +291,7 @@ object Req {
 }
 
 final case class GenericReq(id         : GenericReq.Id,
-                            pubId      : Pubid, // TODO pubId case
+                            pubid      : Pubid,
                             desc       : Text.GenericReqDesc.OptionalText,
                             // TODO lastUpdated. Need JS-compat datetimeTZ
                             alive      : Alive) extends Req

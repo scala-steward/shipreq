@@ -67,7 +67,7 @@ private[reqtable] object Logic {
           p.customField(fid).map(f =>
             p.reqs.data.reqsByType(f.reqTypeId)
               .toStream
-              .map(_.tmap2(_.pubId, _.id |> tc.nonRefl))))
+              .map(_.tmap2(_.pubid, _.id |> tc.nonRefl))))
 
       if (srcs.isEmpty)
         Function const UnivEq.emptySet
@@ -189,7 +189,7 @@ private[reqtable] object Logic {
 
     def pubids(s: Set[Req.Id]): Set[Pubid] =
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
-        pReqs.reqM(id).fold(failedMust(q), q + _.pubId))
+        pReqs.reqM(id).fold(failedMust(q), q + _.pubid))
 
     // Traverse reqs
     p.reqs.data.reqs.vstreamf {

@@ -15,7 +15,7 @@ object UiText {
 
   object ColumnNames {
     def reqType        = "Type"
-    def pubId          = "ID"
+    def pubid          = "ID"
     def code           = "Code"
     def desc           = "Desc"
     def tags           = "Tags"

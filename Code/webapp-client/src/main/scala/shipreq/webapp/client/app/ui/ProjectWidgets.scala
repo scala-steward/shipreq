@@ -48,7 +48,7 @@ final class ProjectWidgets(project: Project) {
         "}")
     )
 
-  val pubIdText = memoM[Pubid]("ID", pubid =>
+  val pubidText = memoM[Pubid]("ID", pubid =>
     project.reqType(pubid.reqTypeId).map(rt =>
       <.span(s"${rt.mnemonic.value}-${pubid.pos.value}")
     ))
@@ -56,7 +56,7 @@ final class ProjectWidgets(project: Project) {
   val reqRef = memoM[Req.Id]("Req", id =>
     for {
       req <- project.reqs.data.reqM(id)
-      rt  <- project.reqType(req.pubId.reqTypeId)
+      rt  <- project.reqType(req.pubid.reqTypeId)
     } yield {
       val desc = req match {
         case r: GenericReq => txtToStr(r.desc)
@@ -64,7 +64,7 @@ final class ProjectWidgets(project: Project) {
       <.span(
         *.reqRef(req.alive),
         ^.title := desc,
-        s"[${rt.mnemonic.value}-${req.pubId.pos.value}]")
+        s"[${rt.mnemonic.value}-${req.pubid.pos.value}]")
     })
 
   def reqRefList(reqs: List[Req.Id]): ReactElement =

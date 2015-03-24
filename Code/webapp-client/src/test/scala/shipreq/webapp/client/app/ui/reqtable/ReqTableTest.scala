@@ -20,10 +20,10 @@ object ReqTableTest {
     Gen.oneofL(SortMethod.considerBlanks)
 
   def rndSortCriteriaC: Gen[SortCriterion.Conclusive] =
-    rndSortMethodI.map(SortCriterion.Conclusive(Column.PubId, _))
+    rndSortMethodI.map(SortCriterion.Conclusive(Column.Pubid, _))
 
   private def __change_rndSortCriteriaC_if_more_conclusive_criteria_added: Column.SortConclusive => Unit = {
-    case Column.PubId => ()
+    case Column.Pubid => ()
   }
 
   def rndSortCriteriaI(legalCols: Vector[Column.SortInconclusive]): Gen[Vector[SortCriterion.Inconclusive]] =

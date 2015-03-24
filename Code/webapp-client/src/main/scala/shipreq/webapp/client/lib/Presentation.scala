@@ -67,7 +67,7 @@ object Presentation {
   def reqRef(req: Req.Id)(implicit p: Project): Must[String] =
     for {
       r   ← p.reqs.data.reqM(req)
-      pid = r.pubId
+      pid = r.pubid
       rt  ← p.reqType(pid.reqTypeId)
     } yield
       reflink(pubid(rt, pid.pos, r.alive))

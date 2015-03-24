@@ -88,5 +88,5 @@ object SortCriteria {
     SortCriteria(
       Vector(
         InconclusiveCB(Column.Code,  SortMethod.AscThenBlanks)),
-      Conclusive      (Column.PubId, SortMethod.Asc))
+      Conclusive      (Column.Pubid, SortMethod.Asc))
 }

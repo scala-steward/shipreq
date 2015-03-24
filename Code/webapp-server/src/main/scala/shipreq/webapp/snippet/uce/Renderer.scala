@@ -73,7 +73,7 @@ case class Renderer(
   saveUC: Option[() => JsCmd]
   ) extends RendererHelper with Logger {
 
-  @inline final def textFieldPubId(f: TextField) = textFieldIds(f).value + "-p"
+  @inline final def textFieldPubid(f: TextField) = textFieldIds(f).value + "-p"
   @inline final def renderTextFieldPub(f: TextField) = HtmlFieldValuePublishers.textField(f.value)
 
   // *************************************
@@ -104,7 +104,7 @@ case class Renderer(
 
   def renderTextField(f: TextField) = (
     "th *" #> f.defn.title &
-    ".fvpub [id]" #> textFieldPubId(f) &
+    ".fvpub [id]" #> textFieldPubid(f) &
     ".fvpub *" #> renderTextFieldPub(f) &
     "textarea" #> SHtml.ajaxTextarea(f.value.text, modTextField(f)(_), "id" -> textFieldIds(f).value)
   )
@@ -180,6 +180,6 @@ case class Renderer(
     TextFieldUpdateTrigger.trigger(
       TextFieldUpdateMsg(
         textFieldIds(f), f.value.text,
-        textFieldPubId(f), renderTextFieldPub(f)))
+        textFieldPubid(f), renderTextFieldPub(f)))
 
 }

@@ -35,7 +35,7 @@ object StepFieldRenderer {
   /** ID of the textarea that contains a step's text. */
   @inline final def textareaId(id: LocalStepId): String = id.value + "-t"
 
-  @inline final def stepPubId(id: LocalStepId): String = id.value + "-p"
+  @inline final def stepPubid(id: LocalStepId): String = id.value + "-p"
 
   @inline final def renderStepPub(value: StepText) = HtmlFieldValuePublishers.stepField(value)
 
@@ -163,7 +163,7 @@ case class StepFieldRenderer(
         & IfCssSel(cfg.prohibitRemoval_?(id, tree)) {".step [class+]" #> "noDel"}
         & ".lbl span *" #> labelFor(n)
         & ".lbl span [id]" #> labelId(id)
-        & ".fvpub [id]" #> stepPubId(id)
+        & ".fvpub [id]" #> stepPubid(id)
         & ".fvpub *" #> renderStepPub(step(id))
         & "@text" #> ajaxTextarea(text(id), modText(id)(_), "id" -> textareaId(id))
         & ".add" #> ajaxOnClick(%%(f.addStep))
@@ -218,7 +218,7 @@ case class StepFieldRenderer(
     StepUpdateTrigger.trigger(
       StepUpdateMsg(
         textareaId(id), text(id),
-        stepPubId(id), renderStepPub(step(id))))
+        stepPubid(id), renderStepPub(step(id))))
 
   @inline private def jsShowNewStep(node: StepNode) =
     JqId(node.id) ~> JqHide ~> JqSlideDown(Fast).andThen(jsFocus(node))
