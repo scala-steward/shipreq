@@ -336,6 +336,23 @@ object Sorter {
     r(sc.method)
   }
 
+  /**
+   * Sort visible data in [[Expansion]]/[[MultiValues]] that won't be sorted by [[SortCriteria]].
+   */
+  def sortUnspecified(vs: ViewSettings): RowModFn = {
+    val fns =
+      vs.columns
+        .filterT[C.SortInconclusive]
+        .filterNot(vs.isOrdered)
+        .map({
+          case c: C.HasBlanks => inconclusiveCB(c)(SM.BlanksThenAsc)
+          case c: C.NoBlanks  => inconclusiveIB(c)(SM.Asc)
+        })
+        .map(_.rowModFn)
+
+    consolidateRowModFns(fns)
+  }
+
   // ===================================================================================================================
   final class FusedSorters(init: Vector[Sorter], last: Sorter) extends Sorter {
     import scalajs.js.{Array => JArray}
@@ -365,13 +382,8 @@ object Sorter {
         }
       }
 
-    override val rowModFn: RowModFn = {
-      val fns = ss.flatMap(_.rowModFn.toVector)
-      if (fns.isEmpty)
-        None
-      else
-        Some((setup, dir) => row => fns.foldLeft(row)((r, f) => f(setup, dir)(r)))
-    }
+    override val rowModFn: RowModFn =
+      consolidateRowModFns(ss.toStream.map(_.rowModFn))
 
     private def eachSortFn: Vector[(T, T) => Int] =
       ss.zipWithIndex.map {
@@ -396,5 +408,13 @@ object Sorter {
 
     def row(t: T): Row =
       t(rowIndex).asInstanceOf[Row]
+  }
+
+  def consolidateRowModFns(ss: TraversableOnce[RowModFn]): RowModFn = {
+    val fns = ss.toStream.flatMap(_.toStream)
+    if (fns.isEmpty)
+      None
+    else
+      Some((setup, dir) => row => fns.foldLeft(row)((r, f) => f(setup, dir)(r)))
   }
 }

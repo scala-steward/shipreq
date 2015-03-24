@@ -95,9 +95,9 @@ object LogicTest extends TestSuite {
     def universalSort = {
       val revOrder  = vs.order.reverse
       val revCri    = vs.copy(order = revOrder)
-      val sorted    = Logic.sort(vs.order, p)(gathered)
+      val sorted    = Logic.sort(vs, p)(gathered)
       def criRev    = E.equal("cri.rev.rev = cri", revOrder.reverse, vs.order)
-      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs.order, p)(sorted.toStream), sorted)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs, p)(sorted.toStream), sorted)
       def sortRev   = reverseSortOnReverseCri(sorted, revCri)
       ((criRev ==> sortRev) ∧ sortTwice) rename "Universal sort props"
     }
@@ -147,8 +147,11 @@ object LogicTest extends TestSuite {
 
     def sortBy(c: SC.Inconclusive) = {
       val (sc, input) = sortCriAndGather(c)
-      Logic.sort(sc, p)(input)
+      Logic.sort(newViewSettingsForSort(sc), p)(input)
     }
+
+    def newViewSettingsForSort(sc: SortCriteria): ViewSettings =
+      vs.copy(order = sc)
 
     /** @return error \/ (blank, non-blank) */
     def separateBlanks[A](expectBlanksFirst: Boolean, as: List[A])(isBlank: A => Boolean): String \/ (List[A], List[A]) = as match {
@@ -188,7 +191,7 @@ object LogicTest extends TestSuite {
 
     def sortByPubid: IndivSortIB = (sm, dir) => {
       val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.PubId, sm))
-      val sorted = Logic.sort(sc, p)(gathered)
+      val sorted = Logic.sort(newViewSettingsForSort(sc), p)(gathered)
       val pubids = sorted.map(_.fold(r => pubidExtract(p)(r.req.pubId)))
       E_sorted("Pubids", pubids, dir)
     }
@@ -264,8 +267,8 @@ object LogicTest extends TestSuite {
     private type Rows = List[Row]
 
     private def testUnsorted[A: Equal](p: Project, c: C.SortInconclusive, extract: Rows => A)(expect: A): Unit = {
-      val vs = ViewSettings(Vector(c), SortCriteria.default)
-      val r = Logic.gather(vs, p) |> Logic.sort(vs.order, p)
+      val vs = ViewSettings(Vector(c), SortCriteria.default.copy(init = Vector.empty))
+      val r = Logic.gather(vs, p) |> Logic.sort(vs, p)
       assertEq(extract(r), expect)
     }
 
@@ -275,7 +278,7 @@ object LogicTest extends TestSuite {
     private def testCB[A: Equal](p: Project, c: C.SortInconclusive with C.HasBlanks, extract: Rows => A)(tests: Seq[(ConsiderBlanks, A)]) =
       for ((sm, expect) <- tests) {
         val vs = vsSortedByCB(c, sm)
-        val r = Logic.gather(vs, p) |> Logic.sort(vs.order, p)
+        val r = Logic.gather(vs, p) |> Logic.sort(vs, p)
         assertEq(sm.toString, extract(r), expect)
       }
 
@@ -293,7 +296,7 @@ object LogicTest extends TestSuite {
     private def testIB[A: Equal](p: Project, c: C.SortInconclusive with C.NoBlanks, extract: Rows => A)(tests: Seq[(IgnoreBlanks, A)]) =
       for ((sm, expect) <- tests) {
         val vs = vsSortedByIB(c, sm)
-        val r = Logic.gather(vs, p) |> Logic.sort(vs.order, p)
+        val r = Logic.gather(vs, p) |> Logic.sort(vs, p)
         assertEq(sm.toString, extract(r), expect)
       }
 
@@ -312,7 +315,7 @@ object LogicTest extends TestSuite {
 
      // ----------------------------------------------------------------------------------------------------------------
 
-    def testTags(): Unit = {
+    def testTags_sorted(): Unit = {
       def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
       val p       = GReq().times(2) + t(2) + t(3) + t(11) + t(12) + t(11, 12) + t(12, 11) !! P
       val fmtEach = applicableTag(p).andThen(_.key.value)
@@ -320,6 +323,15 @@ object LogicTest extends TestSuite {
       testCB(p, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
+    }
+
+    /** When tags aren't being sorted by SortCriteria they should be sorted by some default. */
+    def testTags_unsorted(): Unit = {
+      def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
+      val p       = t(11, 12, 2, 3, 4) ! P
+      val fmtEach = applicableTag(p).andThen(_.key.value)
+      val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
+      testUnsorted(p, C.Tags, fmtRows)("defer,pri=high,pri=low,pri=med,wip") // TODO this should be by tag tree order
     }
 
     def testCustomTagField_sorted(): Unit = {
@@ -465,11 +477,14 @@ object LogicTest extends TestSuite {
         'reqCodes - UnitSort.testReqCodes()
         'reqType  - UnitSort.testReqType()
         'desc     - UnitSort.testDesc()
-        'tags     - UnitSort.testTags()
         'impSrc   - UnitSort.testImpSrc()
         'impTgt   - UnitSort.testImpTgt()
         'custImp  - UnitSort.testCustomImpField()
         'custTxt  - UnitSort.testCustomTextField()
+        'tags {
+          'sorted   - UnitSort.testTags_sorted()
+          'unsorted - UnitSort.testTags_unsorted()
+        }
         'custTag {
           'sorted   - UnitSort.testCustomTagField_sorted()
           'unsorted - UnitSort.testCustomTagField_unsorted()

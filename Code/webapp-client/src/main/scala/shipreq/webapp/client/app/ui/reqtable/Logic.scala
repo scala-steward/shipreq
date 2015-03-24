@@ -217,22 +217,22 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(criteria: SortCriteria, p: Project)(rows: Stream[Row]): List[Row] = {
+  def sort(vs: ViewSettings, p: Project)(rows: Stream[Row]): List[Row] = {
     import Sorter._
 
     // Prepare sorters
-    val sorter  = new FusedSorters(criteria.init map inconclusive, criteria.last |> conclusive)
+    val sorter  = new FusedSorters(vs.order.init map inconclusive, vs.order.last |> conclusive)
     val setup   = new Setup(p)
     val prepare = sorter.prepFn(setup)
-    val rowMod  = sorter.rowModFn.map(_(setup, KeepDir)).getOrElse((r: Row) => r)
-    // TODO rowMod should also sort visible expansion/multivalue columns that aren't in SortCriteria
+    val rowMod  = Sorter.consolidateRowModFns(Sorter.sortUnspecified(vs) :: sorter.rowModFn :: Nil)
+    val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
     import sorter.{T => Datum}
 
     // Prepare data
     val data = new Array[Datum](rows.length)
     var i = 0
     rows.foreach { r =>
-      data(i) = prepare(rowMod(r))
+      data(i) = prepare(rowEndo(r))
       i = i + 1
     }
 

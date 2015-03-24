@@ -1,6 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import scalaz.NonEmptyList
+import scalaz.syntax.equal._
+import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.TypeclassDerivation._
 
@@ -65,6 +67,18 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 
   def reverse: SortCriteria =
     SortCriteria(init.map(_.reverse), last.reverse)
+
+  def isOrdered(c: Column): Boolean =
+    isOrdered(_ ≟ c)
+
+  def isOrdered(f: Column => Boolean): Boolean =
+    f(last.column) || isOrderedI(f)
+
+  def isOrderedI(c: Column.SortInconclusive): Boolean =
+    isOrderedI(_ ≟ c)
+
+  def isOrderedI(f: Column.SortInconclusive => Boolean): Boolean =
+    init.exists(_.column |> f)
 }
 
 object SortCriteria {

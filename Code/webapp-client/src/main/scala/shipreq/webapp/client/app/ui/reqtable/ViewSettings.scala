@@ -2,7 +2,6 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import monocle.macros.Lenser
 import scalaz.syntax.equal._
-import shipreq.base.util.ScalaExt._
 
 case class ViewSettings(columns: Vector[Column],
                         order  : SortCriteria) {
@@ -13,17 +12,10 @@ case class ViewSettings(columns: Vector[Column],
   def isVisible(f: Column => Boolean): Boolean =
     columns.exists(f)
 
-  def isOrdered(c: Column): Boolean =
-    isOrdered(_ ≟ c)
-
-  def isOrdered(f: Column => Boolean): Boolean =
-    f(order.last.column) || isOrderedI(f)
-
-  def isOrderedI(c: Column.SortInconclusive): Boolean =
-    isOrderedI(_ ≟ c)
-
-  def isOrderedI(f: Column.SortInconclusive => Boolean): Boolean =
-    order.init.exists(_.column |> f)
+  @inline def isOrdered (c: Column)                             = order.isOrdered(c)
+  @inline def isOrdered (f: Column => Boolean)                  = order.isOrdered(f)
+  @inline def isOrderedI(c: Column.SortInconclusive)            = order.isOrderedI(c)
+  @inline def isOrderedI(f: Column.SortInconclusive => Boolean) = order.isOrderedI(f)
 }
 
 
