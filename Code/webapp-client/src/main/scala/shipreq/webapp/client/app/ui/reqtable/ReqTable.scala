@@ -1,32 +1,61 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
-import japgolly.scalajs.react.extra.ExternalVar
+import scalaz.effect.IO
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.util._
 
 object ReqTable {
 
   val WIP =
     ReactComponentB[Project]("WIP")
-      .initialState(ViewSettings.default)
+      .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
       .build
 
-  final class Backend($: BackendScope[Project, ViewSettings]) {
+  def initialState(p: Project): State =
+    new State(p)
 
-    val project = $.props // TODO make Refreshable
+  class State(initialProject: Project) {
+    var project     : Project             = initialProject
+    var colName     : Column.NameResolver = Column.NameResolver(project.fields.data.customFields, CustomField nameP project)
+    var viewSettings: ViewSettings        = ViewSettings.default
+    var content     : Table.Content       = Table.content(viewSettings, project, colName)
+    var focus       : Option[Table.Focus] = None
 
-    val columnName =
-      Column.NameResolver(project.fields.data.customFields, CustomField.nameP(project))
+    def setViewSettings(newVS: ViewSettings): State = {
+      viewSettings = newVS
+      content      = Table.content(newVS, project, colName)
+      focus        = focus // TODO
+      this
+    }
 
-    val viewSettingsEditor =
-      ViewSettingsEditor(columnName)
+    def setFocus(f: Option[Table.Focus]): State = {
+      focus = f
+      this
+    }
 
-    def render =
+    var viewSettingsEditor = ViewSettingsEditor(colName)
+  }
+
+  // TODO modStateR can be in util
+  def modStateR[S, A]($: BackendScope[_, S])(f: S => A => S): A ~=> IO[Unit] =
+    ReusableFn(a => $.modStateIO(s => f(s)(a)))
+
+  final class Backend($: BackendScope[Project, State]) {
+
+    val setViewSettings = modStateR($)(_.setViewSettings)
+    val setFocus        = modStateR($)(_.setFocus)
+
+    def render = {
+      val S = $.state
+      val focusV        = setFocus.extvar(S.focus)
+      val viewSettingsV = setViewSettings.extvarR(S.viewSettings, Reusable.byRef)
+
       <.div(
-        viewSettingsEditor(ExternalVar state $),
-        Table.Component(Table.Props($.state, project, columnName)))
+        S.viewSettingsEditor(viewSettingsV),
+        Table.Component(Table.Props(S.project, S.content, focusV)))
+    }
   }
 }
-

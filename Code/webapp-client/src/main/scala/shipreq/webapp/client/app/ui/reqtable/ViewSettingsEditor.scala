@@ -1,18 +1,19 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
-import japgolly.scalajs.react.extra.ExternalVar
 import shipreq.base.util.UnivEq
+import shipreq.webapp.client.util._
 
 object ViewSettingsEditor {
 
-  type Props = ExternalVar[ViewSettings]
+  type Props = ReusableExternalVar[ViewSettings]
 
   def apply(columnName: Column.NameResolver) =
     ReactComponentB[Props]("ViewSettingsEditor")
       .stateless
       .backend(new Backend(_, columnName))
       .render(_.backend.render)
+      .configure(Reusable.preventUpdates)
       .build
 
   final class Backend($: BackendScope[Props, Unit], columnName: Column.NameResolver) {

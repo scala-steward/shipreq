@@ -4,8 +4,12 @@ import japgolly.scalajs.react.ReactComponentB
 import scala.runtime.AbstractFunction1
 import scalaz.effect.IO
 import shipreq.base.util.UnivEq
+import shipreq.webapp.base.data.Project
 
-final class Reusable[A](val reusable: (A, A) => Boolean) extends AnyVal
+final class Reusable[A](val reusable: (A, A) => Boolean) extends AnyVal {
+  def contramap[B](f: B => A): Reusable[B] =
+    Reusable((x, y) => reusable(f(x), f(y)))
+}
 
 object Reusable {
   def apply[A](f: (A, A) => Boolean): Reusable[A] =
@@ -20,10 +24,32 @@ object Reusable {
   def byRef[A <: AnyRef]: Reusable[A] =
     new Reusable((a, b) => a eq b)
 
-  implicit val int: Reusable[Int] = byUnivEq
+  def byRefThenUnivEq[A <: AnyRef: UnivEq]: Reusable[A] =
+    new Reusable((a, b) => (a eq b) || (a == b))
+
+  def by[A, B](f: A => B)(implicit r: Reusable[B]): Reusable[A] =
+    r contramap f
+
+  implicit val reusableInt    : Reusable[Int]     = byUnivEq
+  implicit val reusableLong   : Reusable[Long]    = byUnivEq
+  implicit val reusableProject: Reusable[Project] = Reusable.by((_: Project).rev.value)
 
   implicit def option[A: Reusable]: Reusable[Option[A]] =
     apply((x, y) => x.fold(y.isEmpty)(a => y.fold(false)(a ~=~ _)))
+
+  def caseclass2[A: Reusable, B: Reusable, Z](f: Z => Option[(A, B)]): Reusable[Z] =
+    apply { (x, y) =>
+      val (xa,xb) = f(x).get
+      val (ya,yb) = f(y).get
+      (xa ~=~ ya) && (xb ~=~ yb)
+    }
+
+  def caseclass3[A: Reusable, B: Reusable, C: Reusable, Z](f: Z => Option[(A, B, C)]): Reusable[Z] =
+    apply { (x, y) =>
+      val (xa,xb,xc) = f(x).get
+      val (ya,yb,yc) = f(y).get
+      (xa ~=~ ya) && (xb ~=~ yb) && (xc ~=~ yc)
+    }
 
   def caseclass4[A: Reusable, B: Reusable, C: Reusable, D: Reusable, Z](f: Z => Option[(A, B, C, D)]): Reusable[Z] =
     apply { (x, y) =>
@@ -68,6 +94,14 @@ object ReusableExternalVar {
 
 trait ReusableFn[A, B] extends AbstractFunction1[A, B] {
   def reusable: PartialFunction[ReusableFn[A, B], Boolean]
+
+  import scalaz.Leibniz._
+
+  def extvar(value: A)(implicit r: Reusable[A], ev: B === IO[Unit]): ReusableExternalVar[A] =
+    ReusableExternalVar(value, ev.subst[({type λ[a] = ReusableFn[A, a]})#λ](this))(r)
+
+  def extvarR(value: A, r: Reusable[A])(implicit ev: B === IO[Unit]): ReusableExternalVar[A] =
+    extvar(value)(r, ev)
 }
 
 object ReusableFn {

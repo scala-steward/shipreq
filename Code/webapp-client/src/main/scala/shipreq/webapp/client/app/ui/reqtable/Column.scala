@@ -4,6 +4,7 @@ import scalaz.NonEmptyList
 import shipreq.base.util.{Must, IMap, UnivEq}
 import shipreq.webapp.base.{UiText, data}
 import shipreq.webapp.base.UiText.ColumnNames
+import shipreq.webapp.client.util.Reusable
 
 sealed trait Column {
   // Ensure correct attribute traits are mixed in
@@ -42,6 +43,7 @@ object Column {
   @inline implicit def equalityI  : UnivEq[SortInconclusive]                = UnivEq.force
   @inline implicit def equalityC  : UnivEq[SortConclusive]                  = UnivEq.force
   @inline implicit def equality   : UnivEq[Column]                          = UnivEq.force
+  @inline implicit def reusability: Reusable[Column]                        = Reusable.byUnivEq
 
   val builtInValues: NonEmptyList[BuiltIn] =
     NonEmptyList(Pubid, Code, Desc, ReqType, Tags, ImplicationSrc, ImplicationTgt)

@@ -22,6 +22,8 @@ object Style extends StyleSheet.Inline {
 
   import Missing._
 
+  import japgolly.scalacss.Color
+
 //  private implicit class boolext(val b: Boolean) extends AnyVal {
 //    import japgolly.scalacss._
 //    import DslBase.ToStyle
@@ -98,6 +100,12 @@ object Style extends StyleSheet.Inline {
       marginRight.auto
     )
 
+    val cell = boolStyle(focus => styleS(
+      styleIf(focus)(
+        backgroundColor("#f4f4ff"),
+        border(2 px, solid, Color("#008")))
+    ))
+
   } // reqtable
 
   object widgets {
@@ -125,6 +133,7 @@ object Style extends StyleSheet.Inline {
       paddingLeft (0.7 ex),
       paddingRight(0.7 ex))
 
+    // TODO Has color conflict
     val reqRef = aliveStyle(a => styleS(
       display.inlineBlock,
       color("#2363A1"),
@@ -138,6 +147,6 @@ object Style extends StyleSheet.Inline {
     reqtable.columnSettings.row,
     reqtable.table,
     widgets.tag)
-  ConsoleIO(_.log(render[String])).unsafePerformIO()
+//  ConsoleIO(_.log(render[String])).unsafePerformIO()
   ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }
