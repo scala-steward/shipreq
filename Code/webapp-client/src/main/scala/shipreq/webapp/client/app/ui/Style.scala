@@ -61,8 +61,8 @@ object Style extends StyleSheet.Inline {
       val field = boolStyle(on => styleS(
         marginLeft(1 ex),
         styleIf(!on)(
-          textDecoration := ^.lineThrough,
-          color("#aaa"))))
+          //textDecoration := ^.lineThrough,
+          color("#999"))))
 
       // ↑ inconclusive | conclusive ↓
 

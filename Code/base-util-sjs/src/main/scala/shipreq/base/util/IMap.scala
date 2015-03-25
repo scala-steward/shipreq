@@ -93,6 +93,13 @@ final class IMap[K: UnivEq, V] private (key: V => K, m: Map[K, V]) extends Subtr
       }
     })
 
+  def filter (f: (K, V) => Boolean): IMap[K, V] = mapUnderlying(_ filter f.tupled)
+  def filterK(f: K      => Boolean): IMap[K, V] = mapUnderlying(_ filterKeys f)
+  def filterV(f: V      => Boolean): IMap[K, V] = mapUnderlying(_.filter(kv => f(kv._2)))
+
+  def filterNot (f: (K, V) => Boolean): IMap[K, V] = mapUnderlying(_ filterNot f.tupled)
+  def filterNotK(f: K      => Boolean): IMap[K, V] = mapUnderlying(_.filterNot(kv => f(kv._1)))
+  def filterNotV(f: V      => Boolean): IMap[K, V] = mapUnderlying(_.filterNot(kv => f(kv._2)))
 }
 
 /*

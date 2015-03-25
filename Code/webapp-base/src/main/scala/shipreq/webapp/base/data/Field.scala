@@ -318,4 +318,6 @@ case class FieldSet(customFields: IMap[CustomField.Id, CustomField],
 
 object FieldSet {
   implicit val equality: Equal[FieldSet] = deriveEqual
+
+  def _customFields = Lens((_: FieldSet).customFields)(b => _.copy(customFields = b))
 }

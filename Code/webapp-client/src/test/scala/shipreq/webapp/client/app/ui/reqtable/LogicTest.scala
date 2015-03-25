@@ -319,23 +319,40 @@ object LogicTest extends TestSuite {
 
      // ----------------------------------------------------------------------------------------------------------------
 
+    val customFieldsL = Project._fields ^|-> RevAnd._data ^|-> FieldSet._customFields
+
+    def clearCustomFields = customFieldsL.modify(_ replaceUnderlying Map.empty)
+
     def testTags_sorted(): Unit = {
       def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
       val p       = GReq().times(2) + t(2) + t(3) + t(11) + t(12) + t(11, 12) + t(12, 11) !! P
+      val p2      = clearCustomFields(p)
       val fmtEach = applicableTag(p).andThen(_.key.value)
       val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
-      testCB(p, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p2, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
+    }
+
+    def testTags_sorted2(): Unit = {
+      def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
+      val p       = GReq() + t(2) + t(11) + t(12) + t(11, 12, 2) + t(3, 12, 11) !! P
+      val p2      = customFieldsL.modify(_.filterK(_ == priField))(p)
+      val fmtEach = applicableTag(p).andThen(_.key.value)
+      val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
+      testCB(p2, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+        asc  = "defer  defer,wip  defer,wip  wip",
+        desc = "wip,defer  wip,defer  wip  defer"))
     }
 
     /** When tags aren't being sorted by SortCriteria they should be sorted by some default. */
     def testTags_unsorted(): Unit = {
       def t(ids: ApplicableTag.Id*) = GReq().tag(ids: _*)
       val p       = t(11, 12, 2, 3, 4) ! P
+      val p2      = clearCustomFields(p)
       val fmtEach = applicableTag(p).andThen(_.key.value)
       val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
-      testUnsorted(p, C.Tags, fmtRows)("defer,pri=high,pri=low,pri=med,wip") // TODO this should be by tag tree order
+      testUnsorted(p2, C.Tags, fmtRows)("defer,pri=high,pri=low,pri=med,wip")
     }
 
     def testCustomTagField_sorted(): Unit = {
@@ -487,6 +504,7 @@ object LogicTest extends TestSuite {
         'custTxt  - UnitSort.testCustomTextField()
         'tags {
           'sorted   - UnitSort.testTags_sorted()
+          'sorted2  - UnitSort.testTags_sorted2()
           'unsorted - UnitSort.testTags_unsorted()
         }
         'custTag {
