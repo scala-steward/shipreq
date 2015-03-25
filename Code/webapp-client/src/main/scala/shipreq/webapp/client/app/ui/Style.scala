@@ -126,6 +126,7 @@ object Style extends StyleSheet.Inline {
       paddingRight(0.7 ex))
 
     val reqRef = aliveStyle(a => styleS(
+      display.inlineBlock,
       color("#2363A1"),
       styleIf(a ≟ Dead)(dead),
       hoverShowsInfo))

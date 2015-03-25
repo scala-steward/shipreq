@@ -64,7 +64,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   def code = {
-    def render(codes: List[ReqCode]): ReactElement =
+    def render(codes: Vector[ReqCode]): ReactElement =
           <.ul(codes.map(c => <.li(c.txt)))
     make {
       case GenericReqRow(_, exp, _) => render(exp.reqCodes)
@@ -72,11 +72,11 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   def tags = make {
-    case GenericReqRow(_, _, mv) => widgets.tagList(mv.tags)
+    case GenericReqRow(_, _, mv) => widgets.tags(mv.tags)
   }
 
   def cfTags(id: CustomField.Tag.Id) = make {
-    case GenericReqRow(_, exp, _) => widgets.tagList(exp.cfTags.getOrElse(id, Nil))
+    case GenericReqRow(_, exp, _) => widgets.tags(exp.cfTags.getOrElse(id, Vector.empty))
   }
 
   def desc = make {
@@ -91,7 +91,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
       case GenericReqRow(req, _, _) => textData.get(req.id) map (widgets.text1(_)) getOrElse empty
     }
   }
-  
-  def imps(l: Optional[Row, List[Pubid]]) = make(
-    l.getMaybe(_).cata(widgets.pubidRefList, empty))
+
+  def imps(l: Optional[Row, Vector[Pubid]]) = make(
+    l.getMaybe(_).cata(widgets.pubidRefs, empty))
 }

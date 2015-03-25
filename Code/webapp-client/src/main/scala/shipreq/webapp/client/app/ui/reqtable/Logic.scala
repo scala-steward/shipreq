@@ -1,8 +1,9 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import japgolly.scalacss.{NonEmptyVector, NonEmptyVectorExt, nonEmptyVectorTraverse1}
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scalaz.{Memo, NonEmptyList}
+import scalaz.{OneAnd, Memo}
 import scalaz.syntax.equal._
 import scalaz.syntax.semigroup._
 import shipreq.base.util.{UnivEq, Must}
@@ -24,20 +25,39 @@ private[reqtable] object Logic {
       }
   }
 
+  @inline def Vector1[A](a: A) = Vector.empty[A] :+ a
+
+  @inline def nev[A](h: A, t: Vector[A] = Vector.empty): NonEmptyVector[A] =
+    OneAnd[Vector, A](h, t)
+
+  @inline implicit class NonEmptyVectorFor[A](val self: NonEmptyVector[A]) extends AnyVal {
+    def flatMap[B](f: A => NonEmptyVector[B]): NonEmptyVector[B] = {
+      val h = f(self.head)
+      val t = self.tail.flatMap(a => f(a).vector)
+      nev(h.head, h.tail ++ t)
+    }
+
+    def map[B](f: A => B): NonEmptyVector[B] = {
+      val h = f(self.head)
+      val t = self.tail map f
+      nev(h, t)
+    }
+  }
+
   // ===================================================================================================================
   // Expansion
 
-  private type Expanded[+A] = NonEmptyList[List[A]]
-  private type Expander[A]  = (() => Set[A]) => Expanded[A]
+  private type Expanded[A] = NonEmptyVector[Vector[A]]
+  private type Expander[A] = (() => Set[A]) => Expanded[A]
 
-  private final val emptyExpansions: NonEmptyList[Expansion] =
-    NonEmptyList(Expansion.none)
+  private final val emptyExpansions: NonEmptyVector[Expansion] =
+    nev(Expansion.none)
 
-  private final val emptyExpanded: Expanded[Nothing] =
-    NonEmptyList(Nil)
+  @inline private def emptyExpanded[A]: Expanded[A] =
+    nev(Vector.empty)
 
   @inline private def isEmptyExp[A](e: Expanded[A]): Boolean =
-    e eq emptyExpanded
+    e.head.isEmpty && e.tail.isEmpty
 
   /**
    * Nothing to expand = [ [] ]
@@ -48,18 +68,21 @@ private[reqtable] object Logic {
    * @param expand  When visible, does the data need to be expanded?
    */
   private def expander[A](visible: Boolean, expand: => Boolean): Expander[A] = {
-    @inline def nonEmpty(f: (A, List[A]) => Expanded[A]): Expander[A] =
-      _().toList match {
-        case Nil    => emptyExpanded
-        case h :: t => f(h, t)
+    @inline def nonEmpty(f: (A, Vector[A]) => Expanded[A]): Expander[A] =
+      e => {
+        val v = e().toVector
+        if (v.isEmpty)
+          emptyExpanded
+        else
+          f(v.head, v.tail)
       }
 
     def doExpand: Expander[A] =
       nonEmpty((h, t) =>
-        NonEmptyList.nel(h :: Nil, t.map(_ :: Nil)))
+        nev(Vector1(h), t map Vector1))
 
     def dontExpand: Expander[A] =
-      nonEmpty((h, t) => NonEmptyList(h :: t))
+      nonEmpty((h, t) => nev(h +: t))
 
     if (visible) {
       if (expand) doExpand else dontExpand
@@ -118,24 +141,25 @@ private[reqtable] object Logic {
     id => expandersPerCol.mapValues(_(id))
   }
 
-  private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyList[Map[K, List[V]]] = {
-    type M = Map[K, List[V]]
-    def go(keys: List[K], cur: M, r: List[M]): NonEmptyList[M] =
-      keys match {
-        case Nil =>
-          NonEmptyList.nel(cur, r)
-        case k :: ks =>
-          @inline def next(ms: List[M], v: List[V]) = go(ks, cur.updated(k, v), ms)
-          NonEmptyList.nonEmptyList.foldMapLeft1(src(k))(next(r, _))((r2, v) => next(r2.list, v))
+  private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyVector[Map[K, Vector[V]]] = {
+    type M = Map[K, Vector[V]]
+    def go(keys: Vector[K], cur: M, r: Vector[M]): NonEmptyVector[M] =
+      if (keys.isEmpty)
+        nev(cur, r)
+      else {
+        val k  = keys.head
+        val ks = keys.tail
+        @inline def next(ms: Vector[M], v: Vector[V]) = go(ks, cur.updated(k, v), ms)
+        nonEmptyVectorTraverse1.foldMapLeft1(src(k))(next(r, _))((r2, v) => next(r2.vector, v))
       }
-    go(src.keys.toList, Map.empty, Nil)
+    go(src.keys.toVector, Map.empty, Vector.empty)
   }
 
   private def expansions(impSrcs: Expanded[Pubid],
                          impTgts: Expanded[Pubid],
                          codes  : Expanded[ReqCode],
                          cfImps : Map[CustomField.Implication.Id, Expanded[Pubid]],
-                         cfTags : Map[CustomField.Tag.Id,         Expanded[ApplicableTag.Id]]): NonEmptyList[Expansion] =
+                         cfTags : Map[CustomField.Tag.Id,         Expanded[ApplicableTag.Id]]): NonEmptyVector[Expansion] =
     if (   isEmptyExp(codes)
         && isEmptyExp(impSrcs)
         && isEmptyExp(impTgts)
@@ -154,7 +178,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // MultiValues
 
-  private def tagValuesFn(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => List[ApplicableTag.Id] = {
+  private def tagValuesFn(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => Vector[ApplicableTag.Id] = {
     val reqTags = p.reqFieldData.data.tags
 
     val customTagFields =
@@ -164,7 +188,7 @@ private[reqtable] object Logic {
     val allTagsUsedInColumns =
       customTagFields.foldLeft(Set.empty[Tag.Id])(_ ++ tagCalc.tagsForColumn(_))
 
-    id => reqTags(id).filterNot(allTagsUsedInColumns.contains).toList
+    id => reqTags(id).filterNot(allTagsUsedInColumns.contains).toVector
   }
 
   private def multiValuesFn(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => MultiValues = {
@@ -225,7 +249,7 @@ private[reqtable] object Logic {
 
         // Build
         val mv = multiValuesFn(id)
-        exps.list.toStream.map(GenericReqRow(r, _, mv))
+        exps.vector.toStream.map(GenericReqRow(r, _, mv))
     }
   }
 

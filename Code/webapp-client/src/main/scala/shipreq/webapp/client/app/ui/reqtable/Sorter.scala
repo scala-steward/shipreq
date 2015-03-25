@@ -67,11 +67,11 @@ object Sorter {
     val intPair: SortFn[(Int, Int)] =
       int.pair
 
-    val intList: BlankPlacement => SortFn[List[Int]] =
-      int.byBlankPlacement(_.list)
+    val intVector: BlankPlacement => SortFn[Vector[Int]] =
+      int.byBlankPlacement(_.vector)
 
-    val intPairList: BlankPlacement => SortFn[List[(Int, Int)]] =
-      intPair.byBlankPlacement(_.list)
+    val intPairVector: BlankPlacement => SortFn[Vector[(Int, Int)]] =
+      intPair.byBlankPlacement(_.vector)
 
     val stringNonEmpty: SortFn[String] =
       SortFn(_ compareTo _)
@@ -97,8 +97,8 @@ object Sorter {
     def option(bp: BlankPlacement): SortFn[Option[A]] =
       considerBlanksF[Option[A]](_.isEmpty)(_.get)(bp)
 
-    def list(bp: BlankPlacement): SortFn[List[A]] = {
-      @tailrec def go(as: List[A], bs: List[A]): Int = {
+    def vector(bp: BlankPlacement): SortFn[Vector[A]] = {
+      @tailrec def go(as: Vector[A], bs: Vector[A]): Int = {
         val ea = as.isEmpty
         val eb = bs.isEmpty
         if (ea) {
@@ -185,14 +185,15 @@ object Sorter {
   def tryModEndo[A, B](l: Optional[A, B])(mod: B => Option[B]): EndoFn[A] =
     a => l.modifyF[Option](mod)(a) getOrElse a
 
-  def typicalRowModFn[A, B](l: Optional[Row, List[A]], s: SortFn[B])(f: Setup => A => B): RowModFn =
+  def typicalRowModFn[A, B](l: Optional[Row, Vector[A]], s: SortFn[B])(f: Setup => A => B): RowModFn =
     Some((setup, dir) => {
       val n = f(setup)
       val o = s.applyDir(dir).strengthR[A].toOrdering
-      val innerSort: List[A] => Option[List[A]] = {
-        case Nil | _ :: Nil => None
-        case as             => as.map(_ mapStrengthL n).sorted(o).map(_._2).some
-      }
+      def innerSort(i: Vector[A]): Option[Vector[A]] =
+        if (i.isEmpty || i.tail.isEmpty)
+          None
+        else
+          i.map(_ mapStrengthL n).sorted(o).map(_._2).some
       tryModEndo(l)(innerSort)
     })
 
@@ -260,16 +261,16 @@ object Sorter {
     sort = SortFn.intPair
   )
 
-  def pubidListSorter(loc: Optional[Row, List[Pubid]]): SorterForSMCB =
+  def pubidVectorSorter(loc: Optional[Row, Vector[Pubid]]): SorterForSMCB =
     SorterForSMCB(bp =>
-      Sorter[List[(Int, Int)]](
+      Sorter[Vector[(Int, Int)]](
         rowMod = typicalRowModFn(loc, SortFn.intPair)(pubidNormaliser),
         prep =
           setup => {
             val n = pubidNormaliser(setup)
-            row => loc.getMaybe(row).cata(_ map n, Nil)
+            row => loc.getMaybe(row).cata(_ map n, Vector.empty)
           },
-        sort = SortFn.intPairList(bp)
+        sort = SortFn.intPairVector(bp)
     ))
 
   val reqTypeSorter = Sorter[Int](
@@ -279,7 +280,7 @@ object Sorter {
 
   def reqCodeSorter: SorterForSMCB =
     SorterForSMCB { bp =>
-      // TODO Sorting reqcodes by txt is inefficient. Trie => List[Int] would be better.
+      // TODO Sorting reqcodes by txt is inefficient. Trie => Vector[Int] would be better.
       val norm: ReqCode => String = _.txt
       Sorter[String](
         rowMod = typicalRowModFn(Row._reqCodes, SortFn.stringNonEmpty)(_ => norm),
@@ -287,12 +288,12 @@ object Sorter {
         sort   = SortFn.string(bp))
     }
 
-  def tagSorter(loc: Optional[Row, List[ApplicableTag.Id]], order: Setup => TagOrder): SorterForSMCB =
+  def tagSorter(loc: Optional[Row, Vector[ApplicableTag.Id]], order: Setup => TagOrder): SorterForSMCB =
     SorterForSMCB(bp =>
-      Sorter[List[Int]](
+      Sorter[Vector[Int]](
         rowMod = typicalRowModFn(loc, SortFn.int)(order(_).apply),
-        prep   = setup => _.fold(loc.getMaybe(_).cata(_ map order(setup), Nil)),
-        sort   = SortFn.intList(bp)
+        prep   = setup => _.fold(loc.getMaybe(_).cata(_ map order(setup), Vector.empty)),
+        sort   = SortFn.intVector(bp)
     ))
 
   def textSorter(f: Setup => Row => Text.Generic#OptionalText): SorterForSMCB =
@@ -327,13 +328,13 @@ object Sorter {
       gid match {
         case id: CustomField.Text       .Id => customTextFieldSorter(id)
         case id: CustomField.Tag        .Id => tagSorter(Row._cfTags ^|-? index(id), _.tagByPosOrder)
-        case id: CustomField.Implication.Id => pubidListSorter(Row._cfImps ^|-? index(id))
+        case id: CustomField.Implication.Id => pubidVectorSorter(Row._cfImps ^|-? index(id))
       }
     case C.Desc                             => descSorter
     case C.Code                             => reqCodeSorter
     case C.Tags                             => tagSorter(Row._tags, _.tagByNameOrder)
-    case C.ImplicationSrc                   => pubidListSorter(Row._implicationSrc)
-    case C.ImplicationTgt                   => pubidListSorter(Row._implicationTgt)
+    case C.ImplicationSrc                   => pubidVectorSorter(Row._implicationSrc)
+    case C.ImplicationTgt                   => pubidVectorSorter(Row._implicationTgt)
   }
 
   val inconclusive: SC.Inconclusive => Sorter = {

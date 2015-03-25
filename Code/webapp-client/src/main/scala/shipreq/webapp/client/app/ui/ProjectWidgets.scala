@@ -67,13 +67,13 @@ final class ProjectWidgets(project: Project) {
         s"[${rt.mnemonic.value}-${req.pubid.pos.value}]")
     })
 
-  def reqRefList(reqs: List[Req.Id]): ReactElement =
+  def reqRefs(reqs: Vector[Req.Id]): ReactElement =
     <.div(reqs.map(id => reqRef(id)(): TagMod): _*)
 
   val pubidRef = memoMW[Pubid](pubid =>
     project.reqs.data.reqIdByPubidM(pubid) map reqRef)
 
-  def pubidRefList(ids: List[Pubid]): ReactElement =
+  def pubidRefs(ids: Vector[Pubid]): ReactElement =
     <.div(ids.map(id => pubidRef(id)(): TagMod): _*)
 
   val reqType = memoM[ReqType.Id]("ReqType", id =>
@@ -92,7 +92,7 @@ final class ProjectWidgets(project: Project) {
       )
     ))
 
-  def tagList(tags: List[ApplicableTag.Id]): ReactElement =
+  def tags(tags: Vector[ApplicableTag.Id]): ReactElement =
     <.div(tags.map(id => tag(id)(): TagMod): _*)
 
   // TODO move

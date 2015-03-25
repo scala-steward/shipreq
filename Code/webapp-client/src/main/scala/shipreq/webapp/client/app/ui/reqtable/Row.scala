@@ -4,7 +4,7 @@ import monocle._
 import monocle.macros.Lenser
 import scalaz.{Monoid, Maybe}
 import scalaz.std.map._
-import scalaz.std.list._
+import scalaz.std.vector._
 import scalaz.syntax.semigroup._
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._
@@ -21,17 +21,17 @@ import shipreq.webapp.base.TypeclassDerivation._
  * appear twice - once for each implicatee.
  */
 // TODO Make imp naming consistent
-case class Expansion(implicationSrc: List[Pubid],
-                     implicationTgt: List[Pubid],
-                     reqCodes      : List[ReqCode],
-                     cfImps        : Map[CustomField.Implication.Id, List[Pubid]],
-                     cfTags        : Map[CustomField.Tag.Id,         List[ApplicableTag.Id]]) {
+case class Expansion(implicationSrc: Vector[Pubid],
+                     implicationTgt: Vector[Pubid],
+                     reqCodes      : Vector[ReqCode],
+                     cfImps        : Map[CustomField.Implication.Id, Vector[Pubid]],
+                     cfTags        : Map[CustomField.Tag.Id,         Vector[ApplicableTag.Id]]) {
 
-  def impsForCF(id: CustomField.Implication.Id): List[Pubid] =
-    cfImps.getOrElse(id, Nil)
+  def impsForCF(id: CustomField.Implication.Id): Vector[Pubid] =
+    cfImps.getOrElse(id, Vector.empty)
 
-  def tagsForCF(id: CustomField.Tag.Id): List[ApplicableTag.Id] =
-    cfTags.getOrElse(id, Nil)
+  def tagsForCF(id: CustomField.Tag.Id): Vector[ApplicableTag.Id] =
+    cfTags.getOrElse(id, Vector.empty)
 }
 
 object Expansion {
@@ -39,8 +39,7 @@ object Expansion {
 
   implicit val monoid: Monoid[Expansion] =
     new Monoid[Expansion] {
-      override def zero =
-        Expansion(Nil, Nil, Nil, UnivEq.emptyMap, UnivEq.emptyMap)
+      override def zero = none
       override def append(a: Expansion, _b: => Expansion) = {
         val b = _b
         Expansion(
@@ -59,7 +58,7 @@ object Expansion {
   val _cfImps         = l(_.cfImps)
   val _cfTags         = l(_.cfTags)
 
-  val none = Expansion(Nil, Nil, Nil, UnivEq.emptyMap, UnivEq.emptyMap)
+  val none = Expansion(Vector.empty, Vector.empty, Vector.empty, UnivEq.emptyMap, UnivEq.emptyMap)
 }
 
 // =====================================================================================================================
@@ -67,14 +66,13 @@ object Expansion {
 /**
  * Sortable data (ie. lists) that are never expanded.
  */
-case class MultiValues(tags: List[ApplicableTag.Id])
+case class MultiValues(tags: Vector[ApplicableTag.Id])
 object MultiValues {
   implicit val equality: UnivEq[MultiValues] = deriveUnivEq
 
   implicit val monoid: Monoid[MultiValues] =
     new Monoid[MultiValues] {
-      override def zero =
-        MultiValues(Nil)
+      override def zero = MultiValues(Vector.empty)
       override def append(a: MultiValues, _b: => MultiValues) = {
         val b = _b
         MultiValues(a.tags |+| b.tags)

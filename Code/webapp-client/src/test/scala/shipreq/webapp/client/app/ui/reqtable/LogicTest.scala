@@ -21,10 +21,10 @@ import Sorter._
 
 object LogicTest extends TestSuite {
 
-  private def codesInRow(r: Row): List[ReqCode] =
+  private def codesInRow(r: Row): Vector[ReqCode] =
     r.fold(_.exp.reqCodes)
 
-  private def tagsInRow(r: Row): List[ApplicableTag.Id] =
+  private def tagsInRow(r: Row): Vector[ApplicableTag.Id] =
     r.fold(_.mv.tags)
 
   def pubidExtract(p: Project)(pid: Pubid): (String, Int) =
@@ -35,11 +35,10 @@ object LogicTest extends TestSuite {
     s"$a-$b"
   }
 
-  def firstCodePerRow(r: Row): String =
-    codesInRow(r) match {
-      case Nil    => ""
-      case h :: _ => h.txt
-    }
+  def firstCodePerRow(r: Row): String = {
+    val c = codesInRow(r)
+    if (c.isEmpty) "" else c.head.txt
+  }
 
   def applicableTag(p: Project): ApplicableTag.Id => ApplicableTag =
     id => p.tags.data.get(id).map(_.tag) match {
@@ -67,8 +66,8 @@ object LogicTest extends TestSuite {
     // Gathering
 
     def noEmptyAndNonEmptyReqCodesMixed = {
-      val data: Stream[List[List[ReqCode]]] =
-        Multimap.empty[Req.Id, List, List[ReqCode]]
+      val data: Stream[Vector[Vector[ReqCode]]] =
+        Multimap.empty[Req.Id, Vector, Vector[ReqCode]]
           .addPairs(gatheredG.map(r => (r.req.id, r.exp.reqCodes)): _*)
           .m.values.toStream
       E.forall(data)(l =>
@@ -106,10 +105,10 @@ object LogicTest extends TestSuite {
 
     def reverseSortOnReverseCri(origSorted: S[Row], revCri: ViewSettings): EvalL = {
       /*
-      def rev[A](c: Column, l: List[A]): List[A] =
+      def rev[A](c: Column, l: Vector[A]): Vector[A] =
         if (revCri isOrdered c) l.reverse else l
 
-      def revmap[K <: CustomField.Id : ClassTag, A](m: Map[K, List[A]]): Map[K, List[A]] =
+      def revmap[K <: CustomField.Id : ClassTag, A](m: Map[K, Vector[A]]): Map[K, Vector[A]] =
         m.map{ case (k, v) => (k, rev(Column.CustomField(k), v)) }
 
       def reverseExpansion(exp: Expansion): Expansion = {
@@ -127,7 +126,7 @@ object LogicTest extends TestSuite {
         MultiValues(rev(C.Tags, tags))
       }
 
-      def reverseRows(rs: List[Row]): List[Row] =
+      def reverseRows(rs: Vector[Row]): Vector[Row] =
         rs.reverse.map {
           case GenericReqRow(r, e, mv) => GenericReqRow(r, reverseExpansion(e), reverseMultiValues(mv))
         }
@@ -204,7 +203,7 @@ object LogicTest extends TestSuite {
       val sorted     = sortBy(SC.InconclusiveCB(C.Code, sm))
       val data       = sorted map firstCodePerRow
       val name       = s"ReqCodes ($sm)"
-      val intra      = sorted.map(codesInRow).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
+      val intra      = sorted.map(codesInRow(_).toList).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
       def eachRow    = E.forall(intra)(E_sorted(s"Codes within a single row are sorted.", _, dir))
       def wholeTable = E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
       (wholeTable ∧ eachRow) rename name
@@ -314,7 +313,7 @@ object LogicTest extends TestSuite {
     private def rowsToStr (f: GenericReqRow => String) =
       (_: Rows) map (_ fold f) mkString sep
 
-    private def rowsToStrL[A](f: GenericReqRow => List[A])(g: GenericReqRow => A => String) =
+    private def rowsToStrL[A](f: GenericReqRow => Vector[A])(g: GenericReqRow => A => String) =
       rowsToStr(r => f(r).ifelse(_.isEmpty, _z, _ map g(r) mkString ","))
 
      // ----------------------------------------------------------------------------------------------------------------
