@@ -101,9 +101,13 @@ object Style extends StyleSheet.Inline {
     )
 
     val cell = boolStyle(focus => styleS(
+      border(1 px, solid, if (focus) Color("#006") else Color("#000")),
+      padding(horizontal = 2.px, vertical = 4.px), // TODO wrong way around in scalacss
       styleIf(focus)(
-        backgroundColor("#f4f4ff"),
-        border(2 px, solid, Color("#008")))
+        backgroundColor("#e9e9ff"),
+        outline(rgba(0, 0, 140, 0.15), 2 px, solid),
+        outlineOffset(-1 px)
+      )
     ))
 
   } // reqtable

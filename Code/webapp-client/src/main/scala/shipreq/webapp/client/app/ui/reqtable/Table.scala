@@ -61,6 +61,10 @@ object Table {
   case object Right extends FocusKB
   case object Clear extends FocusKB
 
+  val rowKey: Row => Int = {
+    case r: GenericReqRow => r.req.id.value.toInt
+  }
+
   final class Backend($: BackendScope[Props, Unit]) extends KeyPressListener.IO {
 
     override val onKeyPressIO = matchNoMods {
@@ -107,10 +111,6 @@ object Table {
     val setFocusFn = ReusableFn[Int, Column, IO[Unit]](
       (i, c) => $.props.focus.set(Some(Focus(i, c, $.props.content))))
 
-    val rowKey: Row => Int = {
-      case r: GenericReqRow => r.req.id.value.toInt
-    }
-
     def render: ReactElement = {
       val p     = $.props
       val crs   = p.content.crs
@@ -149,24 +149,15 @@ object Table {
 
   val RowComponent =
     ReactComponentB[RowProps]("Row")
-      .stateless
-      .backend(new RowBackend(_))
-      .render(_.backend.render)
+      .render(p =>
+        <.tr(
+          p.crs.map(cr =>
+            <.td(
+              *.cell(p.focus.exists(_ ≟ cr.column)),
+              ^.onClick ~~> p.setFocus(cr.column),
+              cr.columnStyle,
+              cr render p.row)))
+      )
       .configure(Reusable.preventUpdates)
       .build
-
-  final class RowBackend($: BackendScope[RowProps, Unit]) {
-    def render: ReactElement = {
-      val p = $.props
-      import p._
-
-      <.tr(
-        crs.map(cr =>
-          <.td(
-            *.cell(focus.exists(_ ≟ cr.column)),
-            ^.onClick ~~> setFocus(cr.column),
-            cr.columnStyle,
-            cr render row)))
-    }
-  }
 }
