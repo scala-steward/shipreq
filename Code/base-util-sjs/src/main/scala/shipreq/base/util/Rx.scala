@@ -28,7 +28,7 @@ sealed abstract class Rx[A] {
   // def map2[B](f: (A, B, A) => Option[B]): Rx.Map[A, B] =
 
   def map[B](f: A => B): Rx.Map[A, B] =
-    new Rx.Map(this, f, (_, _, _) => false)
+    new Rx.Map(this, f)
 
   def flatMap[B](f: A => Rx[B]): Rx[B] =
     new Rx.FlatMap(this, f)
@@ -84,28 +84,17 @@ object Rx {
     }
   }
 
-  //  trait DerivReuse[A, B] {
-  //    type Self
-  //    def reuse(g: (A, B, A) => Boolean): Self
-  //  }
-
-  final class Map[A, B](xa: Rx[A], f: A => B, reuseFn: (A, B, A) => Boolean) extends Rx[B] {
-    private var _lastA = xa.value()
-    private var _value = f(_lastA)
+  final class Map[A, B](xa: Rx[A], f: A => B) extends Rx[B] {
+    private var _value = f(xa.value())
     private var _revA  = xa.rev
-    private var _rev   = _revA
 
-    override def rev  = _rev
+    override def rev  = _revA
     override def peek = _value
 
     override def value(): B = {
       xa.valueSince(_revA).foreach { a =>
+        _value = f(a)
         _revA = xa.rev
-        if (!reuseFn(_lastA, _value, a)) {
-          _value = f(a)
-          _rev = _revA
-        }
-        _lastA = a
       }
       _value
     }
