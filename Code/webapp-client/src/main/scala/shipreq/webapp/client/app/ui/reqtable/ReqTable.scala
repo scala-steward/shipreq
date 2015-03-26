@@ -14,29 +14,27 @@ object ReqTable {
       .render(_.backend.render)
       .build
 
-  def initialState(p: Project): State =
-    new State(p)
+  def initialState(p: Project): State = {
+    val colName = Column.NameResolver(p.fields.data.customFields, CustomField nameP p)
+    val vs      = ViewSettings.default
+    State(p, colName, vs, None, Table.content(vs, p, colName), ViewSettingsEditor(colName))
+  }
 
-  class State(initialProject: Project) {
-    var project     : Project             = initialProject
-    var colName     : Column.NameResolver = Column.NameResolver(project.fields.data.customFields, CustomField nameP project)
-    var viewSettings: ViewSettings        = ViewSettings.default
-    var content     : Table.Content       = Table.content(viewSettings, project, colName)
-    var focus       : Option[Table.Focus] = None
+  case class State(project           : Project,
+                   colName           : Column.NameResolver,
+                   viewSettings      : ViewSettings,
+                   focus             : Option[Table.Focus],
+                   content           : Table.Content,
+                   viewSettingsEditor: ViewSettingsEditor.Component) {
 
-    def setViewSettings(newVS: ViewSettings): State = {
-      viewSettings = newVS
-      content      = Table.content(newVS, project, colName)
-      focus        = focus // TODO
-      this
+    def updateVS(newVS: ViewSettings): State = {
+      val newContent = Table.content(newVS, project, colName)
+      val newFocus   = focus // TODO
+      copy(viewSettings = newVS, content = newContent, focus = newFocus)
     }
 
-    def setFocus(f: Option[Table.Focus]): State = {
-      focus = f
-      this
-    }
-
-    var viewSettingsEditor = ViewSettingsEditor(colName)
+    def updateFocus(newFocus: Option[Table.Focus]): State =
+      copy(focus = newFocus)
   }
 
   // TODO modStateR can be in util
@@ -45,8 +43,8 @@ object ReqTable {
 
   final class Backend($: BackendScope[Project, State]) {
 
-    val setViewSettings = modStateR($)(_.setViewSettings)
-    val setFocus        = modStateR($)(_.setFocus)
+    val setViewSettings = modStateR($)(_.updateVS)
+    val setFocus        = modStateR($)(_.updateFocus)
 
     def render = {
       val S = $.state

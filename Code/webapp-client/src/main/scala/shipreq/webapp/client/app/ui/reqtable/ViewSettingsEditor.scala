@@ -6,9 +6,11 @@ import shipreq.webapp.client.util._
 
 object ViewSettingsEditor {
 
+  type Component = ReactComponentC.ReqProps[Props, _, _, TopNode]
+
   type Props = ReusableExternalVar[ViewSettings]
 
-  def apply(columnName: Column.NameResolver) =
+  def apply(columnName: Column.NameResolver): Component =
     ReactComponentB[Props]("ViewSettingsEditor")
       .stateless
       .backend(new Backend(_, columnName))
