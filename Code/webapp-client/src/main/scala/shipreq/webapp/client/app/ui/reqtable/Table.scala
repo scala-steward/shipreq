@@ -4,6 +4,7 @@ import japgolly.scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom.ext.KeyCode
+import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.std.anyVal.intInstance
 import scalaz.syntax.equal._
@@ -50,8 +51,18 @@ object Table {
   case object Right extends FocusKB
   case object Clear extends FocusKB
 
-  val rowKey: Row => Int = {
-    case r: GenericReqRow => r.req.id.value.toInt
+  class KeyUniqueness {
+    val keysSeen = new scala.collection.mutable.HashMap[js.Any, Int]
+
+    def apply(k: js.Any): js.Any = {
+      var k2 = k
+      val n = keysSeen.get(k).fold(1){r =>
+        k2 = k.toString + "!" + r
+        r + 1
+      }
+      keysSeen.update(k, n)
+      k2
+    }
   }
 
   final class Backend($: BackendScope[Props, Unit]) extends KeyPressListener.IO {
@@ -105,6 +116,11 @@ object Table {
       val crs   = p.content.crs
       val rows  = p.content.rows
       val focus = p.focus.value
+
+      val uniqKey = new KeyUniqueness
+      val rowKey: Row => js.Any = {
+        case r: GenericReqRow => uniqKey(r.req.id.value)
+      }
 
       def renderRows =
         (0 until rows.length).toReactNodeArray { i =>
