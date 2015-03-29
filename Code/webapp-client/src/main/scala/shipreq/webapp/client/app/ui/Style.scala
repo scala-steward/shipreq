@@ -96,13 +96,12 @@ object Style extends StyleSheet.Inline {
 //    val columnReqType = style(maxWidth.fitContent)
 
     val `N/A` = style(
-      marginLeft.auto,
-      marginRight.auto
+      margin.horizontal(auto)
     )
 
     val cell = boolStyle(focus => styleS(
       border(1 px, solid, if (focus) Color("#006") else Color("#000")),
-      padding(horizontal = 2.px, vertical = 4.px), // TODO wrong way around in scalacss
+      padding(v = 2.px, h = 4.px),
       styleIf(focus)(
         backgroundColor("#e9e9ff"),
         outline(rgba(0, 0, 140, 0.15), 2 px, solid),
@@ -134,8 +133,7 @@ object Style extends StyleSheet.Inline {
     val issue = style(hasError)
 
     val issueDesc = style(
-      paddingLeft (0.7 ex),
-      paddingRight(0.7 ex))
+      padding.horizontal(0.7 ex))
 
     // TODO Has color conflict
     val reqRef = aliveStyle(a => styleS(

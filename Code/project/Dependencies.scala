@@ -50,7 +50,7 @@ object Deps {
       val extra   = js("extra")
       val most    = core ++ scalaz ++ monocle ++ extra
     }
-    object ScalaCSS extends Group("0.1.0", "com.github.japgolly.scalacss") {
+    object ScalaCSS extends Group("0.2.0-SNAPSHOT", "com.github.japgolly.scalacss") {
       val core  = js("core")
       val react = js("ext-react") ++ core
     }

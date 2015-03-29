@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.scalacss.{NonEmptyVector, NonEmptyVectorExt, nonEmptyVectorTraverse1}
+import japgolly.scalacss.{NonEmptyVector, NonEmptyVectorExt}
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scalaz.{OneAnd, Memo}
@@ -150,7 +150,7 @@ private[reqtable] object Logic {
         val k  = keys.head
         val ks = keys.tail
         @inline def next(ms: Vector[M], v: Vector[V]) = go(ks, cur.updated(k, v), ms)
-        nonEmptyVectorTraverse1.foldMapLeft1(src(k))(next(r, _))((r2, v) => next(r2.vector, v))
+        src(k).foldMapLeft1(next(r, _))((r2, v) => next(r2.vector, v))
       }
     go(src.keys.toVector, Map.empty, Vector.empty)
   }
