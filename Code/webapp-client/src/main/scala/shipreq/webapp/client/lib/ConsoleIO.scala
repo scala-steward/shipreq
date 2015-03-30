@@ -1,6 +1,7 @@
 package shipreq.webapp.client.lib
 
 import org.scalajs.dom.console
+import shipreq.base.util.effect.IoUtils
 import scala.annotation.elidable
 import scala.scalajs.js
 import scalaz.effect.IO
@@ -38,8 +39,6 @@ object ConsoleIO {
 
   private val instance = newInstance
 
-  private val nopIO = IO(())
-
   @inline final def apply(f: ConsoleIO => IO[Unit]): IO[Unit] =
-    if (instance == null) nopIO else f(instance)
+    if (instance == null) IoUtils.nop else f(instance)
 }
