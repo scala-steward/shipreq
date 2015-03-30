@@ -10,6 +10,7 @@ object ScalaExt {
 
   implicit class BaseUtilExtAny[A](val _a: A) extends AnyVal {
     @inline def |>          [B]   (f: A => B)           : B      = f(_a)
+    @inline def <|                (f: A => Unit)        : A      = {f(_a); _a}
     @inline def mapStrengthL[B]   (f: A => B)           : (B, A) = (f(_a), _a)
     @inline def mapStrengthR[B]   (f: A => B)           : (A, B) = (_a, f(_a))
     @inline def tmap2       [B, C](b: A => B, c: A => C): (B, C) = (b(_a), c(_a))

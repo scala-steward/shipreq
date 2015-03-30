@@ -14,6 +14,9 @@ object IoUtils {
     @inline def tap(f: A => IO[_]): IO[A] = io.flatMap(a => f(a) >> IO(a))
     @inline def <| (f: A => IO[_]): IO[A] = io tap f
 
+    /** Cos >> is screwed in Scalaz */
+    @inline def >>>(next: => IO[Unit]): IO[Unit] = io.flatMap(_ => next)
+
     @inline def castError[B](implicit ev: A =:= ErrorOr[Nothing]): IO[ErrorOr[B]] = io.asInstanceOf[IO[ErrorOr[B]]]
   }
 

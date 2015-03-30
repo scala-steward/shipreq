@@ -109,13 +109,34 @@ object Style extends StyleSheet.Inline {
       )
     ))
 
+    val cellEditor = boolStyle(hasError => styleS(
+//      borderRadius(4 px),
+      width(100 %%),
+//      boxShadow := "inset 0 1px 1px rgba(0,0,0,.075)",
+//      transition := "border-color ease-in-out .15s, box-shadow ease-in-out .15s",
+      //border(1 px, solid, if (hasError) Color("#a94442") else Color("#666")),
+//      outlineColor(if (hasError) Color("#a94442") else Color("#666")),
+      styleIf(hasError)(hasErrorBackground, &.focus(outlineColor("#f88"))),
+      padding.horizontal(0.8 ex)
+    ))
+//    val cellEditorO = boolStyle(hasError => styleS(
+//      addClassNames("form-group", if (hasError) "has-error" else "has-success")
+//    ))
+//    val cellEditorI = boolStyle(hasError => styleS(
+//      addClassNames("form-control")
+//    ))
+
   } // reqtable
+
+
+  val hasErrorBackground =
+    backgroundColor("#fee")
 
   object widgets {
 
     val hasError = styleS(
       color("#c00"),
-      backgroundColor("#fee")
+      hasErrorBackground
     )
 
     val hoverShowsInfo = cursor.help

@@ -59,6 +59,13 @@ object Reusable {
       (xa ~=~ ya) && (xb ~=~ yb) && (xc ~=~ yc) && (xd ~=~ yd)
     }
 
+  def caseclass5[A: Reusable, B: Reusable, C: Reusable, D: Reusable, E: Reusable, Z](f: Z => Option[(A, B, C, D, E)]): Reusable[Z] =
+    apply { (x, y) =>
+      val (xa,xb,xc,xd,xe) = f(x).get
+      val (ya,yb,yc,yd,ye) = f(y).get
+      (xa ~=~ ya) && (xb ~=~ yb) && (xc ~=~ yc) && (xd ~=~ yd) && (xe ~=~ ye)
+    }
+
   def preventUpdates[P, B](implicit r: Reusable[P]) =
     (_: ReactComponentB[P, Unit, B]).shouldComponentUpdate(($, b, _) => $.props ~/~ b)
 

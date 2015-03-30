@@ -2,10 +2,11 @@ package shipreq.webapp.client.util
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import scalajs.js
-import org.scalajs.dom.{document, Event, KeyboardEvent}
+import org.scalajs.dom.{console, document, Event, KeyboardEvent}
 import org.scalajs.dom.ext.KeyCode
+import org.scalajs.dom.raw.HTMLBodyElement
 import scala.collection.immutable.BitSet
+import scalajs.js
 import scalaz.effect.IO
 
 object EventListener {
@@ -43,20 +44,8 @@ object EventListener {
 object KeyPressListener {
 
   def install[P, S, B <: KeyPressListener](useCapture: Boolean = false) =
-    EventListener.install[P,S,B,KeyboardEvent]("keydown", _.backend.onKeyDown, useCapture) compose
-    EventListener.install[P,S,B,KeyboardEvent]("keyup",   _.backend.onKeyUp,   useCapture)
-
-  import scalaz.effect.{IO => IOZ}
-
-  val nopIO = IOZ(())
-
-  trait IO extends KeyPressListener {
-    override final def onKeyPress(keyCode: Int) = onKeyPressIO(keyCode).unsafePerformIO()
-    val onKeyPressIO: Int => IOZ[Unit]
-
-    def matchNoMods(pf: PartialFunction[Int, IOZ[Unit]]): Int => IOZ[Unit] =
-      i => if (modsDown.isEmpty) pf.applyOrElse(i, (_: Int) => nopIO) else nopIO
-  }
+    EventListener.install[P,S,B,KeyboardEvent]("keydown", _.backend._onKeyDown, useCapture) compose
+    EventListener.install[P,S,B,KeyboardEvent]("keyup",   _.backend._onKeyUp,   useCapture)
 
   val modKeys: BitSet =
     BitSet(KeyCode.alt, KeyCode.ctrl, KeyCode.shift,
@@ -72,7 +61,7 @@ trait KeyPressListener extends OnUnmount {
   final def modsDown = _modsDown
   final def keysDown = _keysDown
 
-  @inline private def _keychange(e: KeyboardEvent)(f: (BitSet, Int) => BitSet): Int = {
+  private def _keychange(e: KeyboardEvent)(f: (BitSet, Int) => BitSet): Int = {
     val i = e.keyCode
     if (KeyPressListener.modKeys contains i)
       _modsDown = f(_modsDown, i)
@@ -81,21 +70,42 @@ trait KeyPressListener extends OnUnmount {
     i
   }
 
-  def onKeyDown(e: KeyboardEvent): Unit = {
-    val i = _keychange(e)(_ + _)
-    onKeyPress(i)
+  final def _onKeyDown(e: KeyboardEvent): Unit = {
+    _keychange(e)(_ + _)
+    onKeyDown(e).unsafePerformIO()
   }
 
-  def onKeyUp(e: KeyboardEvent): Unit = {
+  final def _onKeyUp(e: KeyboardEvent): Unit = {
     _keychange(e)(_ - _)
   }
 
-  def onKeyPress(keyCode: Int): Unit
+  def onKeyDown(e: KeyboardEvent): IO[Unit]
 
-//  def singleKeyDown: Int =
-//    if (_keysDown.size == 1)
-//      _keysDown.head
-//    else
-//      -1
+  // ---------------------------------------------------------------------------
+  // Helpers
+
+  protected type KbEventH [O] = KeyboardEvent => O
+  protected type KbEventHO[O] = KbEventH[Option[O]]
+
+  protected def matchKeyCodeNoMods[O](pf: PartialFunction[Int, O]): KbEventHO[O] = {
+    val pf2 = pf.lift
+    e => if (modsDown.isEmpty) pf2(e.keyCode) else None
+  }
+
+  /**
+   * Ignores the event if it has a target with focus (like an &lt;input&gt;, &lt;textarea&gt; etc).
+   */
+  protected def filterUntargeted[O](f: KbEventHO[O]): KbEventHO[O] =
+    e => e.target match {
+      case _: HTMLBodyElement => f(e)
+      case _                  => None
+    }
+
+  protected def consumeHandledKbEvent[A](f: KbEventHO[IO[A]]): KbEventHO[IO[A]] =
+    e => f(e).map(io =>
+      IO {
+        e.preventDefault()
+        e.stopPropagation()
+      }.flatMap(_ => io)
+    )
 }
-

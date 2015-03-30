@@ -95,16 +95,20 @@ object MultiValues {
 
 sealed trait Row {
   def fold[A](g: GenericReqRow => A): A
+  def id: Row.Id
 }
 
 case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row {
   override def fold[A](g: GenericReqRow => A): A = g(this)
+  override def id = req.id
   override def toString = s"\n$req\n$exp\n$mv\n"
 }
 
 //case class ReqCodeGroupRow(grp: ReqCodeGroup, code: ReqCode) extends Row
 
 object Row {
+  type Id = GenericReq.Id
+
   implicit val equalityG: UnivEq[GenericReqRow]   = deriveUnivEq
 //  implicit val equalityC: UnivEq[ReqCodeGroupRow] = deriveUnivEq
   implicit val equality : UnivEq[Row]             = deriveUnivEq
