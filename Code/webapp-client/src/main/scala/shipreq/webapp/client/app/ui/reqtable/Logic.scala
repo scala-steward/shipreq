@@ -3,7 +3,7 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.scalacss.{NonEmptyVector, NonEmptyVectorExt}
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scalaz.{OneAnd, Memo}
+import scalaz.OneAnd
 import scalaz.syntax.equal._
 import scalaz.syntax.semigroup._
 import shipreq.base.util.{UnivEq, Must}
@@ -13,17 +13,6 @@ import shipreq.webapp.base.TransitiveClosure
 import DataImplicits._
 
 private[reqtable] object Logic {
-
-  class TagCalc(p: Project) {
-    // Traversing the tag tree for used columns is better than calculating the full
-    // transitive closure at O(V²) space and O(V²+VE) time.
-    implicit val tagTree = p.tags.data
-    val tagsForColumn: CustomField.Tag.Id => Set[Tag.Id] =
-      Memo.mutableHashMapMemo { fid =>
-        val m = p.customField(fid).flatMap(field => tagTree(field.tagId).flatMap(_.transitiveChildren))
-        m.fold(failedMust(UnivEq.emptySet), identity)
-      }
-  }
 
   @inline def Vector1[A](a: A) = Vector.empty[A] :+ a
 
@@ -100,11 +89,12 @@ private[reqtable] object Logic {
     fid => {
       // (source of implication for this column) → (all it transitively implies)
       val srcs: Stream[(Pubid, Set[Req.Id])] =
-        mustResolve(Stream.empty,
+        mustResolve(
           p.customField(fid).map(f =>
             p.reqs.data.reqsByType(f.reqTypeId)
               .toStream
-              .map(_.tmap2(_.pubid, _.id |> tc.nonRefl))))
+              .map(_.tmap2(_.pubid, _.id |> tc.nonRefl)))
+        )(Stream.empty)
 
       if (srcs.isEmpty)
         Function const UnivEq.emptySet
@@ -118,10 +108,10 @@ private[reqtable] object Logic {
     customFieldExpander[CustomField.Implication.Id, Pubid](vs, valueFn)
   }
 
-  private def tagColValueExpander(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => Map[CustomField.Tag.Id, Expanded[ApplicableTag.Id]] = {
+  private def tagColValueExpander(vs: ViewSettings, p: Project): Req.Id => Map[CustomField.Tag.Id, Expanded[ApplicableTag.Id]] = {
     val reqTags = p.reqFieldData.data.tags
     customFieldExpander[CustomField.Tag.Id, ApplicableTag.Id](vs, c => {
-      val legal = tagCalc.tagsForColumn(c)
+      val legal = mustResolve(p.tagColumnDistribution.tagsForColumn(c))(UnivEq.emptySet)
       id => reqTags(id) filter legal.contains
     })
   }
@@ -178,21 +168,14 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // MultiValues
 
-  private def tagValuesFn(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => Vector[ApplicableTag.Id] = {
+  private def tagValuesFn(vs: ViewSettings, p: Project): Req.Id => Vector[ApplicableTag.Id] = {
     val reqTags = p.reqFieldData.data.tags
-
-    val customTagFields =
-      // vs.columns.collect{ case Column.CustomField(id: CustomField.Tag.Id) => id }
-      p.fields.data.customFields.keys.filterT[CustomField.Tag.Id]
-
-    val allTagsUsedInColumns =
-      customTagFields.foldLeft(Set.empty[Tag.Id])(_ ++ tagCalc.tagsForColumn(_))
-
-    id => reqTags(id).filterNot(allTagsUsedInColumns.contains).toVector
+    val tagsUsedInColumns = mustResolve(p.tagColumnDistribution.tagsUsedInColumns)(UnivEq.emptySet)
+    id => reqTags(id).filterNot(tagsUsedInColumns.contains).toVector
   }
 
-  private def multiValuesFn(vs: ViewSettings, p: Project, tagCalc: TagCalc): Req.Id => MultiValues = {
-    val tagValuesFn = this.tagValuesFn(vs, p, tagCalc)
+  private def multiValuesFn(vs: ViewSettings, p: Project): Req.Id => MultiValues = {
+    val tagValuesFn = this.tagValuesFn(vs, p)
     id => {
       val tags = tagValuesFn(id)
       MultiValues(tags)
@@ -214,17 +197,16 @@ private[reqtable] object Logic {
     //   There can potentially be overlap but culling this could be misleading.
 
     // Init
-    val tagCalc = new TagCalc(p)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p)
-    val expandTagCols = tagColValueExpander(vs, p, tagCalc)
+    val expandTagCols = tagColValueExpander(vs, p)
 
     val pReqs         = p.reqs.data
     val pReqCodes     = p.reqCodes.data
     val pImplications = p.reqFieldData.data.implications
-    val multiValuesFn = this.multiValuesFn(vs, p, tagCalc)
+    val multiValuesFn = this.multiValuesFn(vs, p)
 
     def pubids(s: Set[Req.Id]): Set[Pubid] =
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
