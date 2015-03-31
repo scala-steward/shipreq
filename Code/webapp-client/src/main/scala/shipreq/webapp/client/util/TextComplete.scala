@@ -10,115 +10,117 @@ object TextComplete {
   final val eventShow   = "textComplete:show"
   final val eventHide   = "textComplete:hide"
 
-//  type Matcher   = RegExp // matchRegExpOrFunc
-//  type SearchFn  = JFn3[String, Callback, JArray[String], Unit]
-//  type ReplaceFn = JFn1[String, JAny]
+  type Matcher = RegExp
+  sealed trait SearchFn[A] extends JAny
+  type ReplaceFn[A] = JFn1[A, JAny]
 
-  type Matcher   = RegExp // matchRegExpOrFunc
-  sealed trait SearchFn extends JAny
-  type ReplaceFn = JFn1[String, JAny]
+  /**
+   * @tparam A The type of data returned by the `search` function.
+   */
+  sealed trait Strategy[A] extends Object {
+    var `match`: RegExp       = native
+    var search : SearchFn[A]  = native
+    var replace: ReplaceFn[A] = native
 
-  type Strategies = JArray[Strategy]
-
-  sealed trait Strategy extends Object {
-    var `match`: RegExp     = native
-    var search : SearchFn   = native
-    var replace: ReplaceFn  = native
-
-    var index     : UndefOr[Int]                  = native
-    var template  : UndefOr[JFn1[String, String]] = native
-    var cache     : UndefOr[Boolean]              = native
-    var context   : UndefOr[JFn1[String, JAny]]   = native
-    var idProperty: UndefOr[String]               = native
-  }
-  
-  sealed trait Callback extends JAny {
-    def apply(result: JArray[String], stillSearching: Boolean = false): Unit = native
+    var index     : UndefOr[Int]             = native
+    var template  : UndefOr[JFn1[A, String]] = native
+    var cache     : UndefOr[Boolean]         = native
+    var context   : UndefOr[JFn1[A, JAny]]   = native // returns bool | string | regex | () → regex
+    var idProperty: UndefOr[String]          = native
   }
 
-  trait StrOrFunc extends JAny
+  sealed trait Callback[A] extends JAny {
+    def apply(result: JArray[A], stillSearching: Boolean = false): Unit = native
+  }
 
   def Options: Options = (new Object).asInstanceOf[Options]
   sealed trait Options extends Object {
-    var appendTo:  JAny               = native  // $('body')
-    var height:    UndefOr[Int]       = native  // undefined
-    var maxCount:  Int                = native  // 10
-    var placement: String             = native  // ''
-    var header:    UndefOr[StrOrFunc] = native  // undefined
-    var footer:    UndefOr[StrOrFunc] = native  // undefined
-    var zIndex:    String             = native  // '100'
-    var debounce:  UndefOr[Int]       = native  // undefined. (milliseconds)
-    var adapter:   UndefOr[JAny]      = native  // undefined
-    var className: String             = native  // ''
+    var appendTo:  JAny          = native  // $('body')
+    var height:    UndefOr[Int]  = native  // undefined
+    var maxCount:  Int           = native  // 10
+    var placement: String        = native  // ''
+    var header:    UndefOr[JAny] = native  // undefined. T = string | () → string
+    var footer:    UndefOr[JAny] = native  // undefined. T = string | () → string
+    var zIndex:    String        = native  // '100'
+    var debounce:  UndefOr[Int]  = native  // undefined. T = milliseconds
+    //var adapter:   UndefOr[JAny] = native  // undefined
+    var className: String        = native  // ''
   }
 
-  @inline private implicit class DictionaryExt(val self: Dictionary[JAny]) extends AnyVal {
-    @inline def updated(key: String, value: JAny): Dictionary[JAny] = {
-      self.update(key, value)
-      self
-    }
-  }
+  type Strategies = JArray[Strategy[_]]
 
-  def search(f: (String, Callback) => Unit): SearchFn =
-    (f: JFn2[String, Callback, Unit]).asInstanceOf[SearchFn]
+  @inline def Strategies(ss: Strategy[_]*): Strategies =
+    JArray(ss: _*)
 
-  def search(f: (String, Callback, JArray[String]) => Unit): SearchFn =
-    (f: JFn3[String, Callback, JArray[String], Unit]).asInstanceOf[SearchFn]
+  def search2[A](f: (String, Callback[A]) => Unit): SearchFn[A] =
+    (f: JFn2[String, Callback[A], Unit]).asInstanceOf[SearchFn[A]]
 
-  def replace(f: String => String): ReplaceFn =
-    (f: JFn1[String, String]).asInstanceOf[ReplaceFn]
+  def search3[A](f: (String, Callback[A], JArray[String]) => Unit): SearchFn[A] =
+    (f: JFn3[String, Callback[A], JArray[String], Unit]).asInstanceOf[SearchFn[A]]
 
-  def replace2(f: String => (String, String)): ReplaceFn = {
-    val f2 = (i: String) => {
-      val r = f(i)
+  def replace1[A](f: A => String): ReplaceFn[A] =
+    (f: JFn1[A, String]).asInstanceOf[ReplaceFn[A]]
+
+  def replace2[A](f: A => (String, String)): ReplaceFn[A] = {
+    val f2 = (a: A) => {
+      val r = f(a)
       JArray(r._1, r._2)
     }
-    (f2: JFn1[String, JArray[String]]).asInstanceOf[ReplaceFn]
+    (f2: JFn1[A, JArray[String]]).asInstanceOf[ReplaceFn[A]]
   }
 
   object Strategy {
+    @inline private implicit class DictionaryExt(val self: Dictionary[JAny]) extends AnyVal {
+      @inline def updated(key: String, value: JAny): Dictionary[JAny] = {
+        self.update(key, value)
+        self
+      }
+    }
+
     def apply(r: RegExp)                          : B1 = new B1(Dictionary.empty[JAny].updated("match", r))
     def apply(pattern: String, flags: String = ""): B1 = apply(new RegExp(pattern, flags))
 
     final class B1(val o: Dictionary[JAny]) extends AnyVal {
-      def search(f: SearchFn                                  ): B2 = new B2(o.updated("search", f))
-      def search(f: (String, Callback)                 => Unit): B2 = search(TextComplete search f)
-      def search(f: (String, Callback, JArray[String]) => Unit): B2 = search(TextComplete search f)
+      def apply  [A](f: SearchFn[A])                                  : B2[A] = new B2[A](o.updated("search", f))
+      def search2[A](f: (String, Callback[A])                 => Unit): B2[A] = apply(TextComplete search2 f)
+      def search3[A](f: (String, Callback[A], JArray[String]) => Unit): B2[A] = apply(TextComplete search3 f)
+      def search [A](f: String => Seq[A])                             : B2[A] = search2((t, c) => c(JArray(f(t): _*)))
     }
 
-    final class B2(val o: Dictionary[JAny]) extends AnyVal {
-      def replaceF(f: ReplaceFn)                 : B3 = new B3(o.updated("replace", f))
-      def replace (f: String => String)          : B3 = replaceF(TextComplete replace f)
-      def replace2(f: String => (String, String)): B3 = replaceF(TextComplete replace2 f)
+    final class B2[A](val o: Dictionary[JAny]) extends AnyVal {
+      def apply  (f: ReplaceFn[A])          : B3[A] = new B3(o.updated("replace", f))
+      def replace(f: A => String)           : B3[A] = apply(TextComplete replace1 f)
+      def replace2(f: A => (String, String)): B3[A] = apply(TextComplete replace2 f)
     }
 
-    final class B3(val o: Dictionary[JAny]) extends AnyVal {
-      def update(key: String, value: JAny): B3 = {
+    final class B3[A](val o: Dictionary[JAny]) extends AnyVal {
+      def update(key: String, value: JAny): B3[A] = {
         o.update(key, value)
         this
       }
 
-      def index     (i: Int              ): B3 = update("index",      i)
-      def cache     (i: Boolean          ): B3 = update("cache",      i)
-      def template  (i: String => String ): B3 = update("template",   i: JFn1[String, String])
-      def contextB  (i: String => Boolean): B3 = update("context",    i: JFn1[String, Boolean])
-      def contextS  (i: String => String ): B3 = update("context",    i: JFn1[String, String])
-      def idProperty(i: String           ): B3 = update("idProperty", i)
+      def index     (i: Int         ): B3[A] = update("index",      i)
+      def cache     (i: Boolean     ): B3[A] = update("cache",      i)
+      def template  (i: A => String ): B3[A] = update("template",   i: JFn1[A, String])
+      def contextB  (i: A => Boolean): B3[A] = update("context",    i: JFn1[A, Boolean])
+      def contextS  (i: A => String ): B3[A] = update("context",    i: JFn1[A, String])
+      def contextR  (i: A => RegExp ): B3[A] = update("context",    i: JFn1[A, RegExp])
+      def idProperty(i: String      ): B3[A] = update("idProperty", i)
 
-      @inline def result: Strategy =
-        o.asInstanceOf[Strategy]
+      @inline def result: Strategy[A] =
+        o.asInstanceOf[Strategy[A]]
     }
 
-    @inline implicit def autoResultFromB3(b: B3): Strategy = b.result
+    @inline implicit def autoResultFromB3[A](b: B3[A]): Strategy[A] = b.result
   }
 
   type JQuerySel = Dynamic
 
-  def apply(target: JQuerySel, strategy: Strategy): JQuerySel =
-    apply(target, JArray(strategy))
-
-  def apply(target: JQuerySel, strategy: Strategy, options: UndefOr[Options]): JQuerySel =
-    apply(target, JArray(strategy), options)
+//  def apply(target: JQuerySel, strategy: Strategy[_]): JQuerySel =
+//    apply(target, JArray(strategy))
+//
+//  def apply(target: JQuerySel, strategy: Strategy[_], options: UndefOr[Options]): JQuerySel =
+//    apply(target, JArray(strategy), options)
 
   def apply(target: JQuerySel, strategies: Strategies): JQuerySel =
     target.textcomplete(strategies)
@@ -131,8 +133,8 @@ object TextComplete {
     target.textcomplete("destroy")
 
   /** Fired with the selected value when a dropdown is selected. */
-  def onSelect(target: JQuerySel, f: (Event, String, Strategy) => Unit): JQuerySel =
-    target.on(Dynamic.literal(eventSelect -> (f: JFn3[Event, String, Strategy, Unit])))
+  def onSelect(target: JQuerySel, f: (Event, String, Strategy[_]) => Unit): JQuerySel =
+    target.on(Dynamic.literal(eventSelect -> (f: JFn3[Event, String, Strategy[_], Unit])))
 
   /** Fired with the selected value when a dropdown is selected. */
   def onSelect(target: JQuerySel, f: (Event, String) => Unit): JQuerySel =
@@ -165,47 +167,64 @@ object TextComplete {
   // ===================================================================================================================
   // Additional niceties
 
-  def ignoreUnhelpful(f: String => Stream[String], allowEmptyTerm: Boolean): String => JArray[String] =
-    term =>
-      if (!allowEmptyTerm && term.isEmpty)
-        new JArray(0)
-      else {
-        val r = f(term)
-        if (r.lengthCompare(1) == 0 && r.head == term)
-          new JArray(0)
-        else
-          JArray(r: _*)
-      }
-
-  def search(f: String => Stream[String], allowEmptyTerm: Boolean): SearchFn = {
-    val g = ignoreUnhelpful(f, allowEmptyTerm)
-    search((term, c) => c(g(term)))
-  }
+  type Query[A] = String => Stream[A]
 
   /**
-   * Normalises options and term before comparison.
+   * Prevents auto-complete when the search term is empty.
+   * Prevents showing all options without criteria.
+   *
+   * Note that you can prevent this in your `match` regex.
    */
-  def searchNorm(norm: String => String, cmp: (String, String) => Boolean, opts: Stream[String], allowEmptyTerm: Boolean): SearchFn = {
-    val os = opts.map(s => (norm(s), s))
-    search(term => {
+  def ignoreEmptyTerm[A](f: Query[A]): Query[A] =
+    term =>
+      if (term.isEmpty)
+        Stream.empty
+      else
+        f(term)
+
+  /**
+   * Prevents auto-complete when the only result just what the user already has typed.
+   */
+  def ignorePerfectMatch[A](query: Query[A], perfectMatch: (String, A) => Boolean): Query[A] =
+    term => {
+      val r = query(term)
+      if (r.lengthCompare(1) == 0 && perfectMatch(term, r.head))
+        Stream.empty
+      else
+        r
+    }
+
+  def ignorePerfectMatch(query: Query[String]): Query[String] =
+    ignorePerfectMatch(query, _ == _)
+
+  /**
+   * Normalises term and options before comparison.
+   *
+   * @param options Pre-sorted options.
+   */
+  def normalisedStringQuery[A](norm: String => String, cmp: (String, String) => Boolean, options: Stream[String]): Query[String] = {
+    val os = options.map(s => (norm(s), s))
+    term => {
       val t2 = norm(term)
       os.filter(o => cmp(o._1, t2)).map(_._2)
-    }, allowEmptyTerm)
+    }
   }
 
   /**
    * Matches options containing the search string, where case is ignored.
    *
-   * @param opts Pre-sorted options
+   * @param options Pre-sorted options.
    */
-  def searchContainsCaseInsensitive(opts: Stream[String], allowEmptyTerm: Boolean): SearchFn =
-    searchNorm(_.toLowerCase, _ contains _, opts, allowEmptyTerm)
+  def caseInsensitiveContains(options: Stream[String]): Query[String] =
+    ignorePerfectMatch(
+      normalisedStringQuery(_.toLowerCase, _ contains _, options))
 
   /**
    * Matches options containing the search string, where case is ignored.
    *
-   * @param opts Pre-sorted options
+   * @param options Pre-sorted options.
    */
-  def searchStartsWithCaseInsensitive(opts: Stream[String], allowEmptyTerm: Boolean): SearchFn =
-    searchNorm(_.toLowerCase, _ startsWith _, opts, allowEmptyTerm)
+  def caseInsensitiveStartsWith(options: Stream[String]): Query[String] =
+    ignorePerfectMatch(
+      normalisedStringQuery(_.toLowerCase, _ startsWith _, options))
 }

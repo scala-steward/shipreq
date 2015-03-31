@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import java.util.regex.Pattern
 import japgolly.scalacss.ScalaCssReact._
-import japgolly.scalajs.jquery.TextComplete
+import japgolly.scalajs.jquery.{TextComplete => TC}
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom.console
 import org.scalajs.dom.ext.KeyValue
@@ -27,7 +27,7 @@ object TextSeqEditor {
   type S = String
   type ParseResult[+O] = Option[String] \/ O
 
-  type AutoComplete = Rx[TextComplete.Strategies]
+  type AutoComplete = Rx[TC.Strategies]
 
   final case class Format(normAll: EndoFn[String], sep: Pattern, normEach: EndoFn[String], ignore: String => Boolean) {
     def apply(input: String): Stream[String] =
@@ -68,8 +68,8 @@ final class TextSeqEditor[A](fmt: Format) {
         val strategies = $.props.autoComplete.value()
         if (strategies.nonEmpty) {
           val nn = js.Dynamic.global.$(n)
-          TextComplete(nn, strategies)
-          TextComplete.onSelect(nn) {
+          TC(nn, strategies)
+          TC.onSelect(nn) {
             $.props.stateUpdate(n.value).unsafePerformIO()
           }
         }
@@ -138,11 +138,17 @@ object TagEditor {
             lookup  : Rx[Lookup],
             setState: Option[Cell.State] => IO[Unit]): CellState = {
 
+    val init: S =
+      initial.map { a =>
+        val m = project.atag(a).map(_.key.value)
+        UiText.mustA(m)
+      } mkString " "
+
     val autoComplete: AutoComplete =
       lookup.map(l =>
-        js.Array(
-          TextComplete.Strategy(s"\\b(${Grammar.hashRefKeyChars.+})$$")
-            .search(TextComplete.searchContainsCaseInsensitive(l.keys.toStream.sorted, false))
+        TC.Strategies(
+          TC.Strategy(s"\\b(${Grammar.hashRefKeyChars.+})$$")
+            .search(TC.caseInsensitiveContains(l.keys.toStream.sorted))
             .replace(_ + " ")
             .index(1)
         ))
@@ -159,12 +165,6 @@ object TagEditor {
 
     def newState(s: S) =
       new CellState(lookup, autoComplete, s, update, abort, commit)
-
-    val init: S =
-      initial.map { a =>
-        val m = project.atag(a).map(_.key.value)
-        UiText.mustA(m)
-      } mkString " "
 
     newState(init)
   }
