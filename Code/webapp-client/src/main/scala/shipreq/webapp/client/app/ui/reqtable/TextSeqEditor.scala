@@ -136,18 +136,16 @@ object TagEditor {
   def apply(initial : Vector[A],
             project : Project,
             lookup  : Rx[Lookup],
-            setState: Option[Cell.State] => IO[Unit]): CellEditor = {
+            setState: Option[Cell.State] => IO[Unit]): CellState = {
 
     val autoComplete: AutoComplete =
-      lookup.map { l =>
-        val ks = l.keys.toStream.sorted
-        val searchFn = TextComplete.searchContainsCaseInsensitive(ks, false)
-        val s = TextComplete.Strategy(s"\\b(${Grammar.hashRefKeyChars.+})$$")
-          .search(searchFn)
-          .replace(_ + " ")
-          .index(1)
-        js.Array(s)
-      }
+      lookup.map(l =>
+        js.Array(
+          TextComplete.Strategy(s"\\b(${Grammar.hashRefKeyChars.+})$$")
+            .search(TextComplete.searchContainsCaseInsensitive(l.keys.toStream.sorted, false))
+            .replace(_ + " ")
+            .index(1)
+        ))
 
     val abort: IO[Unit] =
       setState(None)
@@ -156,10 +154,10 @@ object TagEditor {
       s => IO{ println("Send to ze server: " + s) } // TODO
 
     lazy val update: S => IO[Unit] =
-      s => setState(Some(editor(s)))
+      s => setState(Some(newState(s)))
 
-    def editor(s: S) =
-      CellEditor(lookup, autoComplete, s, update, abort, commit)
+    def newState(s: S) =
+      new CellState(lookup, autoComplete, s, update, abort, commit)
 
     val init: S =
       initial.map { a =>
@@ -167,13 +165,13 @@ object TagEditor {
         UiText.mustA(m)
       } mkString " "
 
-    editor(init)
+    newState(init)
   }
 
-  case class CellEditor(lookup      : Rx[Lookup],
+  final class CellState(lookup      : Rx[Lookup],
                         autoComplete: AutoComplete,
                         state       : S,
-                        stateUpdate: S => IO[Unit],
+                        stateUpdate : S => IO[Unit],
                         abort       : IO[Unit],
                         commit      : Vector[A] => IO[Unit]) extends Cell.Editing {
 
@@ -183,9 +181,9 @@ object TagEditor {
         case None     => leftNone
       }
 
-    val p = editor.Props(state, stateUpdate, abort, parse, commit, autoComplete)
-
-    override def render =
+    override def render = {
+      val p = editor.Props(state, stateUpdate, abort, parse, commit, autoComplete)
       editor.component(p)
+    }
   }
 }
