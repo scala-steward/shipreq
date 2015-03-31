@@ -141,7 +141,7 @@ object TagEditor {
     val autoComplete: AutoComplete =
       lookup.map { l =>
         val ks = l.keys.toStream.sorted
-        val searchFn = TextComplete.search(term => ks.filter(_ contains term), false)
+        val searchFn = TextComplete.searchContainsCaseInsensitive(ks, false)
         val s = TextComplete.Strategy(s"\\b(${Grammar.hashRefKeyChars.+})$$")
           .search(searchFn)
           .replace(_ + " ")

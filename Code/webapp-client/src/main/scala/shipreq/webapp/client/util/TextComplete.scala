@@ -182,4 +182,30 @@ object TextComplete {
     search((term, c) => c(g(term)))
   }
 
+  /**
+   * Normalises options and term before comparison.
+   */
+  def searchNorm(norm: String => String, cmp: (String, String) => Boolean, opts: Stream[String], allowEmptyTerm: Boolean): SearchFn = {
+    val os = opts.map(s => (norm(s), s))
+    search(term => {
+      val t2 = norm(term)
+      os.filter(o => cmp(o._1, t2)).map(_._2)
+    }, allowEmptyTerm)
+  }
+
+  /**
+   * Matches options containing the search string, where case is ignored.
+   *
+   * @param opts Pre-sorted options
+   */
+  def searchContainsCaseInsensitive(opts: Stream[String], allowEmptyTerm: Boolean): SearchFn =
+    searchNorm(_.toLowerCase, _ contains _, opts, allowEmptyTerm)
+
+  /**
+   * Matches options containing the search string, where case is ignored.
+   *
+   * @param opts Pre-sorted options
+   */
+  def searchStartsWithCaseInsensitive(opts: Stream[String], allowEmptyTerm: Boolean): SearchFn =
+    searchNorm(_.toLowerCase, _ startsWith _, opts, allowEmptyTerm)
 }
