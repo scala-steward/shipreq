@@ -15,6 +15,10 @@ import shipreq.webapp.util.QuietException
 
 class WIP {
 
+  // =============================================================================
+  // TODO No input should be trusted! Incoming deltas should be validated!
+  // =============================================================================
+
   def newProject = {
     import shipreq.webapp.base.data._
     import shipreq.webapp.base.UnsafeTypes._
@@ -77,7 +81,7 @@ class WIP {
     import shipreq.webapp.base.test.ProjectDSL._
 
     val List(co,mf,fr) = List[ReqType.Id](1,2,3).map(Some(_))
-    val List(p1,p3,p5,rel,wip) = List[ApplicableTag.Id](4,3,2,22,11)
+    val List(p1,p3,p5,rel,wip,v1x) = List[ApplicableTag.Id](4,3,2,22,11,21)
     val (p2,p4) = (p3,p5)
     val mfs = (0 to 28).toVector.map(i => GenericReq.Id(i + 1000))
 
@@ -104,7 +108,7 @@ class WIP {
     + GReq(reqType = mf, id = mfs( 4), desc = "Templates").tag(p2)
     + GReq(reqType = mf, id = mfs( 5), desc = "Field Customisation").tag(p5).tag(wip)
     + GReq(reqType = mf, id = mfs( 6), desc = "Incompletions").tag(p3).tag(wip)
-    + GReq(reqType = mf, id = mfs( 7), desc = "Organisation").tag(p5).tag(wip)
+    + GReq(reqType = mf, id = mfs( 7), desc = "Organisation").tag(p5).tag(wip).tag(v1x).tag(rel)
     + GReq(reqType = mf, id = mfs( 8), desc = "History/Audit").tag(p3)
     + GReq(reqType = mf, id = mfs( 9), desc = "Collaboration: authoring").tag(p5)
     + GReq(reqType = mf, id = mfs(10), desc = "Collaboration: stakeholders").tag(p5)

@@ -2,8 +2,10 @@ package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom
+import scala.scalajs.js.{UndefOr, undefined}
 import scalaz.effect.IO
 import shipreq.base.util.Must
+import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.UiText
 
 object UI {
@@ -49,5 +51,11 @@ object UI {
   /** A is for auto! */
   @inline def mustA[A, N](m: Must[A], outputOnFailure: String = UiText.mustFailed)(implicit x: ReactTag => N, y: A => N): N =
     must(m, outputOnFailure)(y)
+
+  def keyDispatch[A](f: ReactKeyboardEventH => A)(pf: PartialFunction[A, UndefOr[IO[Unit]]]): ReactKeyboardEventH => IO[Unit] =
+    e => {
+      val io: UndefOr[IO[Unit]] = pf.applyOrElse(f(e), (_: A) => undefined)
+      io.fold(IoUtils.nop)(e.preventDefaultIO >>> e.stopPropagationIO >>> _)
+    }
 
 }

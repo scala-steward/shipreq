@@ -7,18 +7,19 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom.console
 import org.scalajs.dom.ext.KeyValue
 import org.scalajs.dom.raw.HTMLInputElement
+import shipreq.webapp.client.lib.ui.UI
 import scalajs.js
 
 import scalaz.{\/, -\/, \/-, Tags}
 import scalaz.effect.IO
-import scalaz.std.list._
+import scalaz.std.vector._
 import scalaz.std.option._
 import scalaz.std.stream._
 import scalaz.syntax.foldable._
 
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Rx
-import shipreq.base.util.effect.IoUtils
+import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.{Grammar, UiText}
 import shipreq.webapp.client.app.ui.Style
 
@@ -78,38 +79,32 @@ final class TextSeqEditor[A](fmt: Format) {
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    val cancelOnEscape: ReactKeyboardEventH => IO[Unit] =
-      e => e.key match {
-        case KeyValue.Escape =>
-//          val t = e.target
-//          val st = ST.callback(e.preventDefaultIO >> e.stopPropagationIO, IO(t.blur()))
-//          f(st)
-          $.props.abort
-        case _ =>
-          IoUtils.nop
-      }
+    val cancelOnEscape = UI.keyDispatch(_.key) {
+      case KeyValue.Escape => $.props.abort
+    }
 
     val onChange: ReactEventI => IO[Unit] =
       e => $.props.stateUpdate(e.target.value)
-
-//    def onBlur: IO[Unit] = {
-//    }
 
     def render: ReactElement = {
       val p = $.props
 
       val parseResult =
         fmt(p.state)
-          .map(p.parse(_).bimap(Tags.First.apply, _ :: Nil))
+          .map(p.parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
           .suml
+
+      def onKeyPress = UI.keyDispatch(_.key) {
+        case KeyValue.Enter => parseResult.fold(_ => js.undefined, p.commit)
+      }
 
       <.input(
         Style.reqtable.cellEditor(parseResult.isLeft),
-        ^.`type` := "text",
-        ^.value := p.state,
-        ^.onChange ~~> onChange,
-        // ^.onBlur    ~~> $.props.,
-        ^.onKeyDown ~~> cancelOnEscape)
+        ^.`type`      := "text",
+        ^.value       := p.state,
+        ^.onChange   ~~> onChange,
+        ^.onKeyDown  ~~> cancelOnEscape,
+        ^.onKeyPress ~~> onKeyPress)
     }
   }
 }
@@ -151,7 +146,8 @@ object TagEditor {
       setState(None)
 
     val commit: Vector[A] => IO[Unit] =
-      s => IO{ println("Send to ze server: " + s) } // TODO
+      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
+      s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
     lazy val update: S => IO[Unit] =
       s => setState(Some(newState(s)))
