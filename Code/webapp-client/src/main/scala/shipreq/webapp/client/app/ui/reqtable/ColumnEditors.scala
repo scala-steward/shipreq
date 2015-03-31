@@ -1,5 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import scalaz.Memo
 import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Rx
@@ -17,6 +18,12 @@ final class ColumnEditors(project: Rx[Project],
       col match {
         case Column.Tags  => startEditingTags
         case Column.Pubid => noEdit
+        case Column.CustomField(f) =>
+          f match {
+            // case id: CustomField.Text       .Id => cfText(id)
+            case id: CustomField.Tag        .Id => startEditingCustomTags(id)
+            // case id: CustomField.Implication.Id => imps(Row._cfImps ^|-? index(id))
+          }
       }
 
     val setLocal: SetLocal =
@@ -30,12 +37,20 @@ final class ColumnEditors(project: Rx[Project],
   val noEdit: ColStartEdit =
     (_, _) => None
 
-  lazy val tagLookup: Rx[TagEditor.Lookup] =
-    TagEditor.lookupX(project)
-
-  val startEditingTags: ColStartEdit = (row, setLocal) => {
-    val initial = (row match {case y: GenericReqRow => y}).mv.tags
-    TagEditor(initial, project.value(), tagLookup, setLocal).some
+  lazy val startEditingTags: ColStartEdit = {
+    val lookup = TagEditor.lookupForNoCol(project)
+    (row, setLocal) => {
+      val initial = row.fold(_.mv.tags)
+      TagEditor(initial, project.value(), lookup, setLocal).some
+    }
   }
 
+  val startEditingCustomTags: CustomField.Tag.Id => ColStartEdit =
+    Memo.mutableHashMapMemo { id =>
+      val lookup = TagEditor.lookupForCol(project, id)
+      (row, setLocal) => {
+        val initial = row.fold(_.exp.cfTags.getOrElse(id, Vector.empty))
+        TagEditor(initial, project.value(), lookup, setLocal).some
+      }
+    }
 }

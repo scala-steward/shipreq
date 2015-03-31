@@ -18,7 +18,7 @@ import scalaz.std.stream._
 import scalaz.syntax.foldable._
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.Rx
+import shipreq.base.util.{Must, UnivEq, Rx}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.{Grammar, UiText}
 import shipreq.webapp.client.app.ui.Style
@@ -116,17 +116,22 @@ object TagEditor {
 
   type A = ApplicableTag.Id
 
-  type Lookup = Map[String, A]
+  type Lookup = Map[String, A] // TODO ¿ case class Lookup(legal: Map[String, A], suggest: Set[String]) ?
 
   final val editor = new TextSeqEditor[A](hashtagSeqFormat)
 
-  def lookupX(project: Rx[Project]): Rx[Lookup] =
-    project.map(
-      _.tags.data.vstream(_.tag)
-        .filterT[ApplicableTag]
+  def lookupForNoCol(p: Rx[Project]): Rx[Lookup] =
+    lookupRx(p, _.tagsNotUsedInColumns)
+
+  def lookupForCol(p: Rx[Project], f: CustomField.Tag.Id): Rx[Lookup] =
+    lookupRx(p, _.tagsForColumn(f))
+
+  def lookupRx(project: Rx[Project], f: TagColumnDistribution => Must[Set[ApplicableTag]]): Rx[Lookup] =
+    project.map(p =>
+      mustResolve(f(p.tagColumnDistribution))(UnivEq.emptySet)
+        .toStream
         .map(_.tmap2(_.key.value, _.id))
-        .toMap
-    )
+        .toMap)
 
   def apply(initial : Vector[A],
             project : Project,

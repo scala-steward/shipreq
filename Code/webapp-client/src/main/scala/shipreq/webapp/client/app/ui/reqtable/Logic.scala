@@ -111,7 +111,7 @@ private[reqtable] object Logic {
   private def tagColValueExpander(vs: ViewSettings, p: Project): Req.Id => Map[CustomField.Tag.Id, Expanded[ApplicableTag.Id]] = {
     val reqTags = p.reqFieldData.data.tags
     customFieldExpander[CustomField.Tag.Id, ApplicableTag.Id](vs, c => {
-      val legal = mustResolve(p.tagColumnDistribution.tagsForColumn(c))(UnivEq.emptySet)
+      val legal = mustResolve(p.tagColumnDistribution.tagIdsForColumn(c))(UnivEq.emptySet)
       id => reqTags(id) filter legal.contains
     })
   }
@@ -170,7 +170,7 @@ private[reqtable] object Logic {
 
   private def tagValuesFn(vs: ViewSettings, p: Project): Req.Id => Vector[ApplicableTag.Id] = {
     val reqTags = p.reqFieldData.data.tags
-    val tagsUsedInColumns = mustResolve(p.tagColumnDistribution.tagsUsedInColumns)(UnivEq.emptySet)
+    val tagsUsedInColumns = mustResolve(p.tagColumnDistribution.tagIdsUsedInColumns)(UnivEq.emptySet)
     id => reqTags(id).filterNot(tagsUsedInColumns.contains).toVector
   }
 

@@ -53,9 +53,12 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   def atag(id: ApplicableTag.Id): Must[ApplicableTag] =
     Must.fromOption(tags.data.get(id), s"No tag found with $id")
       .flatMap(t => t.tag match {
-      case a: ApplicableTag => Must.Exists(a)
-      case _                => Must.Failed(s"$t is not an ApplicableTag")
-    })
+        case a: ApplicableTag => Must(a)
+        case _                => Must.Failed(s"$t is not an ApplicableTag")
+      })
+
+  def atagSet(ids: Set[ApplicableTag.Id]): Must[Set[ApplicableTag]] =
+    Must.foldMapSet(ids)(atag)
 
   def customField[I <: CustomField.Id, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
     fields.data.customFields(id).flatMap(f =>
@@ -82,20 +85,33 @@ final class TagColumnDistribution(p: Project) {
   // transitive closure at O(V²) space and O(V²+VE) time.
   private[this] implicit val tagTree = p.tags.data
 
-  type TagIds = Must[Set[Tag.Id]]
+  type TagIds = Must[Set[ApplicableTag.Id]]
 
-  final val tagsForColumn: CustomField.Tag.Id => TagIds =
+  val tagIdsForColumn: CustomField.Tag.Id => TagIds =
     Memo.mutableHashMapMemo(fid =>
-      p.customField(fid).flatMap(field => tagTree(field.tagId).flatMap(_.transitiveChildren)))
+      p.customField(fid).flatMap(field =>
+        tagTree(field.tagId)
+          .flatMap(_.transitiveChildren)
+          .map(_.filterT[ApplicableTag.Id].toSet)))
 
-  final val tagsUsedInColumns: TagIds =
-    p.customTagFields.foldLeft(Must.Exists(Set.empty): TagIds)((q,c) =>
-      for {
-        s <- q
-        t <- tagsForColumn(c)
-      } yield s ++ t
-    )
+  lazy val tagIdsUsedInColumns: TagIds =
+    Must.foldMapSetF(p.customTagFields)(tagIdsForColumn)
 
-  final val tagsNotUsedInColumns: TagIds =
-    tagsUsedInColumns.map(s => tagTree.vstream(_.tag.id).filterNot(s.contains).toSet)
+  lazy val tagIdsNotUsedInColumns: TagIds =
+    tagIdsUsedInColumns.map(s =>
+      tagTree.vstream(_.tag.id)
+        .filterT[ApplicableTag.Id]
+        .filterNot(s.contains)
+        .toSet)
+
+  type Tags = Must[Set[ApplicableTag]]
+
+  val tagsForColumn: CustomField.Tag.Id => Tags =
+    tagIdsForColumn(_) flatMap p.atagSet
+
+  lazy val tagsUsedInColumns: Tags =
+    tagIdsUsedInColumns flatMap p.atagSet
+
+  lazy val tagsNotUsedInColumns: Tags =
+    tagIdsNotUsedInColumns flatMap p.atagSet
 }

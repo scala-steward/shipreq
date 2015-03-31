@@ -19,6 +19,9 @@ sealed abstract class Must[+A] {
 
 object Must {
 
+  @inline def apply[A](value: A): Must[A] =
+    Exists(value)
+
   final case class Exists[A](value: A) extends Must[A] {
     override def map    [B](f: A => B)                    : Must[B] = Exists(f(value))
     override def flatMap[B](f: A => Must[B])              : Must[B] = f(value)
@@ -49,4 +52,14 @@ object Must {
 
   def fromDisjunction[A](d: String \/ A): Must[A] =
     d.fold[Must[A]](Failed, Exists(_))
+
+  def foldMap[A, B, Q](t: TraversableOnce[A], z: Q)(f: A => Must[B])(g: (Q, B) => Q): Must[Q] =
+    t.foldLeft(Must(z))((mq, a) =>
+      for {q <- mq; b <- f(a)} yield g(q, b))
+
+  def foldMapSet[A, B: UnivEq](t: TraversableOnce[A])(f: A => Must[B]): Must[Set[B]] =
+    foldMap(t, UnivEq.emptySet)(f)(_ + _)
+
+  def foldMapSetF[A, B: UnivEq](t: TraversableOnce[A])(f: A => Must[Set[B]]): Must[Set[B]] =
+    foldMap(t, UnivEq.emptySet)(f)(_ ++ _)
 }
