@@ -55,14 +55,11 @@ object Presentation {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def reqTypeMnemonic(reqType: ReqType, alive: Alive): String =
-    alive match {
-      case Alive => reqType.mnemonic
-      case Dead  => reqType.mnemonic.toLowerCase
-    }
+  def pubid(pid: Pubid)(implicit project: Project): Must[String] =
+    project.reqType(pid.reqTypeId).map(pubid(_, pid.pos))
 
-  def pubid(reqType: ReqType, pos: ReqTypePos, alive: Alive): String =
-    reqTypeMnemonic(reqType, alive) ~ "-" ~ pos.value.toString
+  def pubid(reqType: ReqType, pos: ReqTypePos): String =
+    reqType.mnemonic.value ~ "-" ~ pos.value.toString
 
   def reqRef(req: Req.Id)(implicit p: Project): Must[String] =
     for {
@@ -70,7 +67,7 @@ object Presentation {
       pid = r.pubid
       rt  ← p.reqType(pid.reqTypeId)
     } yield
-      reflink(pubid(rt, pid.pos, r.alive))
+      reflink(pubid(rt, pid.pos))
 
   def tagRef(id: ApplicableTag.Id)(implicit p: Project): Must[String] =
     p.atag(id).map(t => hashtag(t.key))

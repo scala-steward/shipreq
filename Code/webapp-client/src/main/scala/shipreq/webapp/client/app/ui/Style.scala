@@ -126,6 +126,12 @@ object Style extends StyleSheet.Inline {
 //      addClassNames("form-control")
 //    ))
 
+    val reqAutoComplete = styleC {
+      val r = styleS(fontWeight.bold)
+      val d = styleS(color("#444"), fontStyle.italic, overflow.hidden, maxWidth(36 ex))
+      r.named('req) :*: d.named('desc)
+    }
+
   } // reqtable
 
 

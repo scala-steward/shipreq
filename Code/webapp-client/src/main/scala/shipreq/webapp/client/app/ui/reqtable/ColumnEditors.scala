@@ -7,6 +7,7 @@ import shipreq.base.util.Rx
 import shipreq.webapp.base.data._
 
 final class ColumnEditors(project: Rx[Project],
+                          reqDescFn: Rx[Req => String],
                           cellset: Cell.SetIO) {
 
   type SetLocal = Option[Cell.State] => IO[Unit]
@@ -16,8 +17,9 @@ final class ColumnEditors(project: Rx[Project],
   def startCellEditing(row: Row, col: Column): Option[IO[Unit]] = {
     val f: ColStartEdit =
       col match {
-        case Column.Tags  => startEditingTags
-        case Column.Pubid => noEdit
+        case Column.Tags           => startEditingTags
+        case Column.Pubid          => noEdit
+        case Column.ImplicationSrc => startEditingImplications
         case Column.CustomField(f) =>
           f match {
             // case id: CustomField.Text       .Id => cfText(id)
@@ -53,4 +55,13 @@ final class ColumnEditors(project: Rx[Project],
         TagEditor(initial, project.value(), lookup, setLocal).some
       }
     }
+
+  lazy val startEditingImplications: ColStartEdit = {
+    val lookup = ImplicationEditor.lookupRx(project, reqDescFn)
+    (row, setLocal) => {
+      val initial = row.fold(_.exp.implicationSrc)
+      ImplicationEditor(initial, project.value(), lookup, setLocal).some
+    }
+  }
+
 }

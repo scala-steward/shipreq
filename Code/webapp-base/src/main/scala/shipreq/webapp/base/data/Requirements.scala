@@ -347,6 +347,9 @@ case class Requirements(reqs: IMap[Req.Id, Req], pubids: Pubid.Register) {
   def reqIdByPubidM(id: Pubid): Must[Req.Id] =
     Must.fromOption(reqIdByPubid(id), s"Req for $id not found.")
 
+  def reqsByPubidM[M[X] <: TraversableOnce[X]: Monoidish](ids: M[Pubid]): Must[M[Req]] =
+    Must.foldMapM(ids)(reqByPubidM)
+
   lazy val reqsByType: Multimap[ReqType.Id, Set, Req] =
     UnivEq.emptyMultimap[ReqType.Id, Set, Req]
       .addPairs(reqs.vstream(_.mapStrengthL(_.reqTypeId)): _*)

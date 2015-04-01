@@ -49,23 +49,27 @@ final class ProjectWidgets(project: Project) {
     )
 
   val pubidText = memoM[Pubid]("ID", pubid =>
-    project.reqType(pubid.reqTypeId).map(rt =>
-      <.span(s"${rt.mnemonic.value}-${pubid.pos.value}")
-    ))
+    Presentation.pubid(pubid)(project) map (<.span(_))
+  )
+
+  val reqDesc: Req => String = {
+    val m = new scala.collection.mutable.HashMap[Req.Id, String]
+    req =>
+      m.getOrElseUpdate(req.id, req match {
+        case r: GenericReq => txtToStr(r.desc)
+      })
+  }
 
   val reqRef = memoM[Req.Id]("Req", id =>
     for {
       req <- project.reqs.data.reqM(id)
       rt  <- project.reqType(req.pubid.reqTypeId)
-    } yield {
-      val desc = req match {
-        case r: GenericReq => txtToStr(r.desc)
-      }
+    } yield
       <.span(
         *.reqRef(req.alive),
-        ^.title := desc,
-        s"[${rt.mnemonic.value}-${req.pubid.pos.value}]")
-    })
+        ^.title := reqDesc(req),
+        s"[${Presentation.pubid(rt, req.pubid.pos)}]")
+    )
 
   def reqRefs(reqs: Vector[Req.Id]): ReactElement =
     <.div(reqs.map(id => reqRef(id)(): TagMod): _*)

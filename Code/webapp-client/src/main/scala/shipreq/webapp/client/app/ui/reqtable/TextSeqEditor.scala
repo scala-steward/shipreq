@@ -7,21 +7,22 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom.console
 import org.scalajs.dom.ext.KeyValue
 import org.scalajs.dom.raw.HTMLInputElement
-import shipreq.webapp.client.lib.ui.UI
 import scalajs.js
-
 import scalaz.{\/, -\/, \/-, Tags}
 import scalaz.effect.IO
 import scalaz.std.vector._
 import scalaz.std.option._
 import scalaz.std.stream._
 import scalaz.syntax.foldable._
+import shapeless.syntax.singleton._
 
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, UnivEq, Rx}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.{Grammar, UiText}
-import shipreq.webapp.client.app.ui.Style
+import shipreq.webapp.client.app.ui.Style.{reqtable => *}
+import shipreq.webapp.client.lib.Presentation
+import shipreq.webapp.client.lib.ui.UI
 
 object TextSeqEditor {
   type S = String
@@ -33,6 +34,9 @@ object TextSeqEditor {
     def apply(input: String): Stream[String] =
       (input |> normAll |> sep.split).toStream map normEach filterNot ignore
   }
+
+  val pubidSeqFormat =
+    Format(_.trim, "[ ,]+".r.pattern, _.replace("-", "").toUpperCase, _.isEmpty)
 
   val hashtagSeqFormat = {
     val each = "^# *".r
@@ -99,7 +103,7 @@ final class TextSeqEditor[A](fmt: Format) {
       }
 
       <.input(
-        Style.reqtable.cellEditor(parseResult.isLeft),
+        *.cellEditor(parseResult.isLeft),
         ^.`type`      := "text",
         ^.value       := p.state,
         ^.onChange   ~~> onChange,
@@ -110,6 +114,7 @@ final class TextSeqEditor[A](fmt: Format) {
 }
 
 // =====================================================================================================================
+// TODO Hide dead tags & maintain across edits (unless show deleted is on)
 
 object TagEditor {
   import shipreq.webapp.base.data._
@@ -180,6 +185,125 @@ object TagEditor {
       lookup.value().get(s) match {
         case Some(id) => \/-(id)
         case None     => leftNone
+      }
+
+    override def render = {
+      val p = editor.Props(state, stateUpdate, abort, parse, commit, autoComplete)
+      editor.component(p)
+    }
+  }
+}
+
+
+// =====================================================================================================================
+// TODO Hide dead reqs & maintain across edits (unless show deleted is on)
+
+object ImplicationEditor {
+  import shipreq.webapp.base.data._
+
+  type A = Req.Id
+
+  // Vector[Pubid] -> initial str
+  // str -> {pubid, desc, req.id} -> req.id
+
+  case class LookupV(desc: String, req: Req, display: String) {
+    val descNorm = pubidSeqFormat.normEach(desc)
+  }
+
+  type Lookup = Map[String, LookupV]
+
+  final val editor = new TextSeqEditor[A](pubidSeqFormat)
+
+  def lookupRx(project: Rx[Project], reqDescFn: Rx[Req => String]): Rx[Lookup] =
+    for {
+      p       <- project
+      reqDesc <- reqDescFn
+    } yield {
+      val reqs = p.reqs.data.reqs.values.toStream
+      val m = Must.foldMapM[Req, Stream, (String, LookupV)](reqs)(r =>
+        Presentation.pubid(r.pubid)(p).map { pubidTxt =>
+          val key = pubidSeqFormat.normEach(pubidTxt)
+          (key, LookupV(reqDesc(r), r, pubidTxt))
+        }
+      )
+      mustResolve(m)(Stream.empty).toMap
+    }
+
+
+//  def lookupForNoCol(p: Rx[Project]): Rx[Lookup] =
+//    lookupRx(p, _.tagsNotUsedInColumns)
+//
+//  def lookupForCol(p: Rx[Project], f: CustomField.Tag.Id): Rx[Lookup] =
+//    lookupRx(p, _.tagsForColumn(f))
+//
+//  def lookupRx(project: Rx[Project], f: TagColumnDistribution => Must[Set[ApplicableTag]]): Rx[Lookup] =
+//    project.map(p =>
+//      mustResolve(f(p.tagColumnDistribution))(UnivEq.emptySet)
+//        .toStream
+//        .map(_.tmap2(_.key.value, _.id))
+//        .toMap)
+
+  def apply(initial : Vector[Pubid],
+            project : Project,
+            lookup  : Rx[Lookup],
+            setState: Option[Cell.State] => IO[Unit]): CellState = {
+
+    val init: S =
+      initial.map(pid =>
+        UiText mustA Presentation.pubid(pid)(project)
+      ) mkString " "
+
+    val autoComplete: AutoComplete =
+      lookup.map { l =>
+        val sorted = l.toStream.sortBy(_._2.tmap2(_.req.pubid.pos.value, _.display))
+
+        def li(v: LookupV): ReactElement =
+          *.reqAutoComplete('req)(r => _('desc)(d =>
+            <.div(
+              <.div(r, v.display),
+              <.div(d, v.desc))
+          ))
+
+        TC.Strategies(
+          TC.Strategy(s"\\b(\\S+)$$")
+            .search[LookupV](term => {
+              val n = pubidSeqFormat.normEach(term)
+              // TODO [low] Search algorithm won't scale well
+              sorted.filter(x => x._1.contains(n) || x._2.descNorm.contains(n)).map(_._2)
+            })
+            .replace(_.display + " ")
+            .index(1)
+            .template(v => React.renderToStaticMarkup(li(v)))
+        )
+      }
+
+    val abort: IO[Unit] =
+      setState(None)
+
+    val commit: Vector[A] => IO[Unit] =
+    // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
+      s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
+
+    lazy val update: S => IO[Unit] =
+      s => setState(Some(newState(s)))
+
+    def newState(s: S) =
+      new CellState(lookup, autoComplete, s, update, abort, commit)
+
+    newState(init)
+  }
+
+  final class CellState(lookup      : Rx[Lookup],
+                        autoComplete: AutoComplete,
+                        state       : S,
+                        stateUpdate : S => IO[Unit],
+                        abort       : IO[Unit],
+                        commit      : Vector[A] => IO[Unit]) extends Cell.Editing {
+
+    def parse(s: S): ParseResult[A] =
+      lookup.value().get(s) match {
+        case Some(v) => \/-(v.req.id)
+        case None    => leftNone
       }
 
     override def render = {
