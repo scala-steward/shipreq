@@ -20,8 +20,8 @@ final class ColumnEditors(project  : Rx[Project],
       col match {
         case Column.Tags           => tags
         case Column.Pubid          => noEdit
-        case Column.ImplicationSrc => imps(Row.implicationSrc)
-        case Column.ImplicationTgt => imps(Row.implicationTgt)
+        case Column.ImplicationSrc => imps(Row.implicationSrc, ImplicationEditor declFwd Column.ImplicationSrc)
+        case Column.ImplicationTgt => imps(Row.implicationTgt, ImplicationEditor declFwd Column.ImplicationTgt)
         case Column.CustomField(f) =>
           f match {
             // case id: CustomField.Text       .Id => cfText(id)
@@ -42,32 +42,39 @@ final class ColumnEditors(project  : Rx[Project],
     (_, _) => None
 
   lazy val tags: ColStartEdit = {
-    val lookup = TagEditor.lookupForNoCol(project)
+    val lookup = project map TagEditor.lookupForNoCol
     (row, setLocal) => {
-      val initial = row.fold(_.mv.tags)
-      TagEditor(initial, project.value(), lookup, setLocal).some
+      val initialValue = row.fold(_.mv.tags)
+      TagEditor(initialValue, project.value(), lookup, setLocal).some
     }
   }
 
   val cfTag: CustomField.Tag.Id => ColStartEdit =
     Memo.mutableHashMapMemo { id =>
-      val lookup = TagEditor.lookupForCol(project, id)
+      val lookup = project map (TagEditor.lookupForCol(_, id))
       (row, setLocal) => {
-        val initial = row.fold(_.exp.cfTags.getOrElse(id, Vector.empty))
-        TagEditor(initial, project.value(), lookup, setLocal).some
+        val initialValue = row.fold(_.exp.cfTags.getOrElse(id, Vector.empty))
+        TagEditor(initialValue, project.value(), lookup, setLocal).some
       }
     }
 
-  lazy val impsLookup = ImplicationEditor.lookupAll(project, reqDescFn)
+  lazy val impsLookup =
+    Rx.apply2(project, reqDescFn)(ImplicationEditor.lookupAll)
 
-  def imps(l: Optional[Row, Vector[Pubid]]): ColStartEdit = (row, setLocal) =>
-    l.getOption(row).map(
-      ImplicationEditor(_, project.value(), impsLookup, setLocal))
-
-  def cfImp(id: CustomField.Implication.Id): ColStartEdit = (row, setLocal) =>
-    Row.cfImp(id).getOption(row).map { initial =>
-      val lookup = ImplicationEditor.lookupForCol(project, impsLookup, id)
-      ImplicationEditor(initial, project.value(), lookup, setLocal)
+  def imps(l: Optional[Row, Vector[Pubid]], declFwd : Boolean): ColStartEdit = (row, setLocal) =>
+    l.getOption(row).map { initialValue =>
+      val lookup2 = Rx.apply2(project, impsLookup)(ImplicationEditor.lookupForSubject(_, _, row.id, declFwd))
+      ImplicationEditor(initialValue, project, lookup2, setLocal)
     }
 
+  val cfImp: CustomField.Implication.Id => ColStartEdit =
+    Memo.mutableHashMapMemo { id =>
+      val lookup2 = Rx.apply2(project, impsLookup)(ImplicationEditor.lookupForCol(_, _, id))
+      (row, setLocal) =>
+        Row.cfImp(id).getOption(row).map { initialValue =>
+          val declFwd = ImplicationEditor declFwd id
+          val lookup3 = Rx.apply2(project, lookup2)(ImplicationEditor.lookupForSubject(_, _, row.id, declFwd))
+          ImplicationEditor(initialValue, project, lookup3, setLocal)
+        }
+    }
 }

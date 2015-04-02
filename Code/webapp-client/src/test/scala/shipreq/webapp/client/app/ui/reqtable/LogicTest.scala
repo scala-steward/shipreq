@@ -12,7 +12,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.{UnsafeTypes, RandomData}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
-import shipreq.webapp.base.test.{SampleProject, ProjectDSL}
+import shipreq.webapp.base.test.{SampleImplicationGraph, SampleProject, ProjectDSL}
 import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.test.ClientTestSettings._
 import shipreq.webapp.client.app.ui.reqtable.{SortCriterion => SC, Column => C}
@@ -406,29 +406,6 @@ object LogicTest extends TestSuite {
     }
 
     def testCustomImpField(): Unit = {
-      // mf1 → fr1 ̉↘
-      //             fr2 → fr3
-      //     ↗ mf2 ↗
-      // br1             ↗ mf4 → fr6
-      //     ↘ br2 → mf3
-      //                 ↘ fr4 → fr5 → mf5
-      def t(i: GenericReq.Id, rt: ReqType.Id, tgts: Req.Id*) = GReq(id = i, reqType = rt, impTgts = tgts.toSet)
-      val (mf, br, fr) = (2: ReqType.Id, 4: ReqType.Id, 3: ReqType.Id)
-      val p =
-        t(11, mf, 31)     +
-        t(12, mf, 32)     +
-        t(13, mf, 14, 34) +
-        t(14, mf, 36)     +
-        t(15, mf)         +
-        t(21, br, 12, 22) +
-        t(22, br, 13)     +
-        t(31, fr, 32)     +
-        t(32, fr, 33)     +
-        t(33, fr)         +
-        t(34, fr, 35)     +
-        t(35, fr, 15)     +
-        t(36, fr)         ! P
-
       // Expected MFs per row
       // MF-1 ⇐
       // MF-2 ⇐
@@ -443,6 +420,7 @@ object LogicTest extends TestSuite {
       // FR-4 ⇐ 3
       // FR-5 ⇐ 3
       // FR-6 ⇐ 3,4
+      val p = SampleImplicationGraph.project
       val cf = CustomField.Implication.Id(6)
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + ">" + pubidToStr(p)(t)
       val fmtRows = rowsToStrL(_.exp.impsForCF(cf))(r => fmtEach(_, r.req.pubid))

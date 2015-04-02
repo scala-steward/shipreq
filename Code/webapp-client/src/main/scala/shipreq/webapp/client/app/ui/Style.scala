@@ -126,6 +126,10 @@ object Style extends StyleSheet.Inline {
 //      addClassNames("form-control")
 //    ))
 
+    val cellEditorErrMsg = style(
+      color("#a00")
+    )
+
     val reqAutoComplete = styleC {
       val r = styleS(fontWeight.bold)
       val d = styleS(color("#444"), fontStyle.italic, overflow.hidden, maxWidth(36 ex))

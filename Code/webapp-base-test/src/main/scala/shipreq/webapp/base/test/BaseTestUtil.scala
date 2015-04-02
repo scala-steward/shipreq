@@ -28,6 +28,14 @@ trait BaseTestUtil {
       assert(false)
     }
 
+  def assertSet[A](actual: Set[A])(expect: A*): Unit = {
+    val e = expect.toSet
+    val missing = e -- actual
+    val unexpected = actual -- e
+    if (missing.nonEmpty || unexpected.nonEmpty)
+      fail(s"Actual: $actual\nExpect: $e\n   Missing: $missing\nUnexpected: $unexpected")
+  }
+
   def fail(msg: String): Nothing =
     throw new AssertionError(msg)
 }

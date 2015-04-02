@@ -13,6 +13,7 @@ import scalaz.effect.IO
 import scalaz.std.vector._
 import scalaz.std.option._
 import scalaz.std.stream._
+import scalaz.syntax.either._
 import scalaz.syntax.equal._
 import scalaz.syntax.foldable._
 import shapeless.syntax.singleton._
@@ -27,7 +28,9 @@ import shipreq.webapp.client.lib.ui.UI
 
 object TextSeqEditor {
   type S = String
-  type ParseResult[+O] = Option[String] \/ O
+  type ParseRejection  = Option[String]
+  type ParseResult[+O] = ParseRejection \/ O
+  type Parser[+O]      = () => S => ParseResult[O]
 
   type AutoComplete = Rx[TC.Strategies]
 
@@ -50,14 +53,16 @@ object TextSeqEditor {
 
 import TextSeqEditor._
 
-final class TextSeqEditor[A](fmt: Format) {
+final class TextSeqEditor[A](val fmt: Format) {
 
   case class Props(state       : S,
                    stateUpdate : S => IO[Unit],
                    abort       : IO[Unit],
-                   parse       : S => ParseResult[A],
+                   parser      : Parser[A],
                    commit      : Vector[A] => IO[Unit],
                    autoComplete: AutoComplete)
+
+  val inputRef = Ref[HTMLInputElement]("i")
 
   val component =
     ReactComponentB[Props]("TextSeqEditor")
@@ -65,7 +70,7 @@ final class TextSeqEditor[A](fmt: Format) {
       .backend(new Backend(_))
       .render(_.backend.render)
       .componentDidMount { $ =>
-        val n = $.getDOMNode().asInstanceOf[HTMLInputElement]
+        val n = inputRef($).get.getDOMNode()
         n.focus()
         n.select()
 
@@ -94,22 +99,28 @@ final class TextSeqEditor[A](fmt: Format) {
     def render: ReactElement = {
       val p = $.props
 
+      val parse = p.parser()
       val parseResult =
         fmt(p.state)
-          .map(p.parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
+          .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
           .suml
 
       def onKeyPress = UI.keyDispatch(_.key) {
         case KeyValue.Enter => parseResult.fold(_ => js.undefined, p.commit)
       }
 
-      <.input(
-        *.cellEditor(parseResult.isLeft),
-        ^.`type`      := "text",
-        ^.value       := p.state,
-        ^.onChange   ~~> onChange,
-        ^.onKeyDown  ~~> cancelOnEscape,
-        ^.onKeyPress ~~> onKeyPress)
+      <.div(
+        <.input(
+          ^.ref := inputRef,
+          *.cellEditor(parseResult.isLeft),
+          ^.`type`      := "text",
+          ^.value       := p.state,
+          ^.onChange   ~~> onChange,
+          ^.onKeyDown  ~~> cancelOnEscape,
+          ^.onKeyPress ~~> onKeyPress),
+        parseResult.swap.toOption.flatMap(Tags.First.unwrap).map(err =>
+          <.div(*.cellEditorErrMsg, err)
+        ))
     }
   }
 
@@ -125,29 +136,28 @@ object TagEditor {
 
   type A = ApplicableTag.Id
 
-  type Lookup = Map[String, A] // TODO ¿ case class Lookup(legal: Map[String, A], suggest: Set[String]) ?
+  type Lookup = Map[String, A]
 
   final val editor = new TextSeqEditor[A](hashtagSeqFormat)
 
-  def lookupForNoCol(p: Rx[Project]): Rx[Lookup] =
-    lookupRx(p, _.tagsNotUsedInColumns)
+  def lookupForNoCol(p: Project): Lookup =
+    lookupG(p, _.tagsNotUsedInColumns)
 
-  def lookupForCol(p: Rx[Project], f: CustomField.Tag.Id): Rx[Lookup] =
-    lookupRx(p, _.tagsForColumn(f))
+  def lookupForCol(p: Project, f: CustomField.Tag.Id): Lookup =
+    lookupG(p, _.tagsForColumn(f))
 
-  def lookupRx(project: Rx[Project], f: TagColumnDistribution => Must[Set[ApplicableTag]]): Rx[Lookup] =
-    project.map(p =>
-      mustResolve(f(p.tagColumnDistribution))(UnivEq.emptySet)
-        .toStream
-        .map(_.tmap2(_.key.value, _.id))
-        .toMap)
+  def lookupG(p: Project, f: TagColumnDistribution => Must[Set[ApplicableTag]]): Lookup =
+    mustResolve(f(p.tagColumnDistribution))(UnivEq.emptySet)
+      .toStream
+      .map(_.tmap2(_.key.value, _.id))
+      .toMap
 
   def apply(initial : Vector[A],
             project : Project,
             lookup  : Rx[Lookup],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
-    val init: S =
+    def init: S =
       initial.map { a =>
         val m = project.atag(a).map(_.key.value)
         UiText.mustA(m)
@@ -162,11 +172,12 @@ object TagEditor {
             .index(1)
         ))
 
-    def parse(s: S): ParseResult[A] =
-      lookup.value().get(s) match {
-        case Some(id) => \/-(id)
-        case None     => leftNone
-      }
+    val parser: Parser[A] =
+      () => s =>
+        lookup.value().get(s) match {
+          case Some(id) => \/-(id)
+          case None     => leftNone
+        }
 
     val abort: IO[Unit] =
       setState(None)
@@ -179,7 +190,7 @@ object TagEditor {
       s => setState(Some(newState(s)))
 
     def newState(state: S) =
-      editor cellState editor.Props(state, update, abort, parse, commit, autoComplete)
+      editor cellState editor.Props(state, update, abort, parser, commit, autoComplete)
 
     newState(init)
   }
@@ -196,51 +207,78 @@ object ImplicationEditor {
 
   type A = Req.Id
 
-  case class LookupV(desc: String, req: Req, display: String) {
-    val descNorm = pubidSeqFormat.normEach(desc)
-  }
-
-  type Lookup = Map[String, LookupV]
-
   final val editor = new TextSeqEditor[A](pubidSeqFormat)
 
-  def lookupAll(project: Rx[Project], reqDescFn: Rx[Req => String]): Rx[Lookup] =
-    for {
-      p       <- project
-      reqDesc <- reqDescFn
-    } yield {
-      val reqs = p.reqs.data.reqs.values.toStream
-      val m = Must.foldMapM[Req, Stream, (String, LookupV)](reqs)(r =>
-        Presentation.pubid(r.pubid)(p).map { pubidTxt =>
-          val key = pubidSeqFormat.normEach(pubidTxt)
-          (key, LookupV(reqDesc(r), r, pubidTxt))
-        }
-      )
-      mustResolve(m)(Stream.empty).toMap
-    }
+  @inline def norm = editor.fmt.normEach
 
-  def lookupForCol(project: Rx[Project], lookup: Rx[Lookup], fid: CustomField.Implication.Id): Rx[Lookup] =
-    for {
-      p <- project
-      l <- lookup
-    } yield {
-      val m = p.customField(fid).map(f => l.filter(t => t._2.req.reqTypeId ≟ f.reqTypeId))
-      mustResolve(m)(Map.empty)
+  case class LookupV(desc: String, req: Req, display: String) {
+    val descNorm = norm(desc)
+  }
+
+  case class Lookup(legal: Map[String, LookupV], illegal: Map[String, ParseRejection]) {
+    def outlaw(rej: ParseRejection, f: Req => Boolean): Lookup = {
+      var legal2   = legal
+      var illegal2 = illegal
+      for ((k, v) <- legal)
+        if (f(v.req)) {
+          illegal2 = illegal2.updated(k, rej)
+          legal2 -= k
+        }
+      Lookup(legal2, illegal2)
     }
+  }
+
+  // TODO lookups should return Must
+
+  def lookupAll(p: Project, reqDesc: Req => String): Lookup = {
+    val reqs = p.reqs.data.reqs.values.toStream
+    val m = Must.foldMapM[Req, Stream, (String, LookupV)](reqs)(r =>
+      Presentation.pubid(r.pubid)(p).map { pubidTxt =>
+        val key = norm(pubidTxt)
+        (key, LookupV(reqDesc(r), r, pubidTxt))
+      }
+    )
+    val legal = mustResolve(m)(Stream.empty).toMap
+    Lookup(legal, UnivEq.emptyMap)
+  }
+
+  def lookupForCol(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
+    val m = p.customField(fid).map(f =>
+      l.outlaw(None, _.reqTypeId ≠ f.reqTypeId))
+    mustResolve(m)(Lookup(UnivEq.emptyMap, UnivEq.emptyMap))
+  }
+
+  def declFwd(c: Column.ImplicationSrc.type): Boolean = false
+  def declFwd(c: Column.ImplicationTgt.type): Boolean = true
+  def declFwd(c: CustomField.Implication.Id): Boolean = false
+
+  /**
+   * @param declFwd If true, the user edits what this subject implies (ie. subject → edit-specified).
+   *                If false, then it's what implies this subject     (ie. subject ← edit-specified).
+   */
+  def lookupForSubject(p: Project, l: Lookup, subject: Req.Id, declFwd: Boolean): Lookup = {
+    val (a, b) = if (declFwd) (p.implicationTgtToSrcTC, p.implicationSrcToTgtTC)
+                 else         (p.implicationSrcToTgtTC, p.implicationTgtToSrcTC)
+    l.outlaw(
+      Some("That would cause a cycle in your implication graph."),
+      r => a(subject).contains(r.id) || b(r.id).contains(subject))
+  }
 
   def apply(initial : Vector[Pubid],
-            project : Project,
+            project : Rx[Project],
             lookup  : Rx[Lookup],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
-    val init: S =
+    def init: S = {
+      val p = project.value()
       initial.map(pid =>
-        UiText mustA Presentation.pubid(pid)(project)
+        UiText mustA Presentation.pubid(pid)(p)
       ) mkString " "
+    }
 
     val autoComplete: AutoComplete =
       lookup.map { l =>
-        val sorted = l.toStream.sortBy(_._2.tmap2(_.req.pubid.pos.value, _.display))
+        val sorted = l.legal.toStream.sortBy(_._2.tmap2(_.req.pubid.pos.value, _.display))
 
         def li(v: LookupV): ReactElement =
           *.reqAutoComplete('req)(r => _('desc)(d =>
@@ -252,8 +290,8 @@ object ImplicationEditor {
         TC.Strategies(
           TC.Strategy(s"\\b(\\S+)$$")
             .search[LookupV](term => {
-              val n = pubidSeqFormat.normEach(term)
-              // TODO [low] Search algorithm won't scale well
+              val n = norm(term)
+              // TODO [pri=low] Search algorithm won't scale well
               sorted.filter(x => x._1.contains(n) || x._2.descNorm.contains(n)).map(_._2)
             })
             .replace(_.display + " ")
@@ -262,11 +300,13 @@ object ImplicationEditor {
         )
       }
 
-    def parse(s: S): ParseResult[A] =
-      lookup.value().get(s) match {
-        case Some(v) => \/-(v.req.id)
-        case None    => leftNone
-      }
+    val parser: Parser[A] = () => {
+      val l = lookup.value()
+      s =>
+        l.legal.get(s).map(_.req.id.right) orElse
+          l.illegal.get(s).map(-\/.apply) getOrElse
+            leftNone
+    }
 
     val abort: IO[Unit] =
       setState(None)
@@ -279,7 +319,7 @@ object ImplicationEditor {
       s => setState(Some(newState(s)))
 
     def newState(state: S) =
-      editor cellState editor.Props(state, update, abort, parse, commit, autoComplete)
+      editor cellState editor.Props(state, update, abort, parser, commit, autoComplete)
 
     newState(init)
   }

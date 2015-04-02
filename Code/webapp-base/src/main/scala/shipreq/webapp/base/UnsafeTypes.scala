@@ -1,6 +1,7 @@
 package shipreq.webapp.base
 
 import scalaz.OneAnd
+import shipreq.base.util.Must
 import shipreq.webapp.base.data.Field.ApplicableReqTypes
 
 trait UnsafeTypesLowPriority {
@@ -56,4 +57,8 @@ object UnsafeTypes extends UnsafeTypesLowPriority { // TODO move into test
     def TG = TagGroup.Id(a)
   }
 
+  implicit class UnsafeMustExt[A](val m: Must[A]) extends AnyVal {
+    def get = m.fold(sys.error, identity)
+  }
+  implicit def autoMustGet[A](m: Must[A]): A = m.get
 }
