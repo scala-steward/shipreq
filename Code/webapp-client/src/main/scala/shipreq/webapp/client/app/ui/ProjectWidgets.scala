@@ -3,12 +3,13 @@ package shipreq.webapp.client.app.ui
 import japgolly.scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import shipreq.webapp.client.lib.Presentation
 import scalaz.{NonEmptyList, Memo}
 import shipreq.base.util.{Must, UnivEq}
 import shipreq.webapp.base.data._
-import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.app.ui.Style.{widgets => *}
+import shipreq.webapp.client.lib.ui.UI
+import shipreq.webapp.client.lib.Presentation
+import shipreq.webapp.client.util.KaTeX
 
 final class ProjectWidgets(project: Project) {
 
@@ -111,7 +112,7 @@ final class ProjectWidgets(project: Project) {
       case a: TagRef          # TagRef        => tag(a.value)()
       case a: PlainTextMarkup # WebAddress    => <.a(^.href := a.value, a.value)
       case a: PlainTextMarkup # EmailAddress  => <.a(^.href := s"mailto:${a.value}", a.value)
-      case a: PlainTextMarkup # MathTeX       => <.script(^.`type` := "math/tex", a.value)
+      case a: PlainTextMarkup # MathTeX       => <.span(*.math, ^.dangerouslySetInnerHtml(KaTeX renderToString a.value))
       case a: ListMarkup      # UnorderedList => <.ul(a.items.list.map(row => <.li(row map atom: _*)): _*)
       case a: ReqRef          # ReqRef        => reqRef(a.value)()
       case a: Issue           # Issue         => issueO(a.typ, a.desc)

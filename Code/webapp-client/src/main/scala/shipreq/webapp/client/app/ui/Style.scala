@@ -172,6 +172,8 @@ object Style extends StyleSheet.Inline {
       color("#2363A1"),
       styleIf(a ≟ Dead)(dead),
       hoverShowsInfo))
+
+    val math = style(margin.horizontal(0.8 ex))
   }
 
   def damnit(a: StyleA*) = ()
