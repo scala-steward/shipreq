@@ -50,6 +50,10 @@ module.exports = function(grunt) {
         src: '.bower/MathJax',
         out: '<%= cfg.vendor.out %>/mathjax',
       },
+      katex: {
+        src: '.bower/katex',
+        out: '<%= cfg.vendor.out %>/katex',
+      },
     },
 
     // *****************************************************************************************************************
@@ -71,12 +75,15 @@ module.exports = function(grunt) {
       vendor: {
         expand: true,
         cwd: '<%= cfg.vendor.out %>',
-        src: ['**/*', '!mathjax/**/*'],
+        src: ['**/*', '!mathjax/**/*', '!katex/**/*'],
         filter: 'isFile',
       },
 
       // Delete MathJax copy
       mathjax: ['<%= cfg.mathjax.out %>'],
+
+      // Delete KaTeX copy
+      katex: ['<%= cfg.katex.out %>'],
 
       // Delete previously-generated CSS
       css: {
@@ -134,6 +141,16 @@ module.exports = function(grunt) {
             // '!fonts/HTML-CSS/TeX/png/**/*', '!fonts/HTML-CSS/TeX/svg/**/*',
           ],
           dest: '<%= cfg.mathjax.out %>',
+        }]
+      },
+
+      // Copies KaTeX files
+      katex: {
+        files: [{
+          expand: true,
+          cwd: '<%= cfg.katex.src %>',
+          src: ['**/*'],
+          dest: '<%= cfg.katex.out %>',
         }]
       },
 
@@ -331,11 +348,12 @@ module.exports = function(grunt) {
 
   grunt.registerTask('vendor'  , ['clean:dev', 'clean:vendor', 'copy:vendor', 'less:bootstrap', 'replace:jquery']);
   grunt.registerTask('mathjax' , ['clean:mathjax', 'copy:mathjax', 'uglify:mathjax']);
+  grunt.registerTask('katex'   , ['clean:katex', 'copy:katex']);
   grunt.registerTask('js'      , ['clean:js_tmp', 'clean:js', 'concat:js', 'uglify:own']);
   grunt.registerTask('css'     , ['clean:css_tmp', 'clean:css', 'less:app', 'less:other', 'concat:app_css', 'cssmin']); // copy:debug_css
   grunt.registerTask('test'    , ['qunit']);
   grunt.registerTask('default' , ['vendor', 'js', 'css', 'test']);
-  grunt.registerTask('all'     , ['mathjax', 'default']);
+  grunt.registerTask('all'     , ['katex', 'mathjax', 'default']);
   grunt.registerTask('lint-css', ['css', 'csslint']);
 };
 
