@@ -273,7 +273,11 @@ function updateTxtAndPub(taid, tav, pid, pv) {
     $('#' + taid).val(tav).trigger('autosize.resize')
     var p = $('#' + pid)
     p.html(pv)
-    if (p.find('script').length > 0) MathJax.Hub.Queue(["Typeset", MathJax.Hub, p[0]]);
+    replaceMathjaxWithKatex();
+}
+
+function replaceMathjaxWithKatex() {
+    $("script[type='math/tex']").replaceWith(function (){ return katex.renderToString(this.innerHTML) })
 }
 
 // =====================================================================================================================
@@ -423,5 +427,7 @@ function uceSetup() {
             p.show();
         }
     })
+
+    replaceMathjaxWithKatex()
 }
 $(document).ready(uceSetup)

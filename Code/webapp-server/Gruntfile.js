@@ -46,10 +46,6 @@ module.exports = function(grunt) {
         cust: 'vendor',
         out: '<%= cfg.assets %>/vendor',
       },
-      mathjax: {
-        src: '.bower/MathJax',
-        out: '<%= cfg.vendor.out %>/mathjax',
-      },
       katex: {
         src: '.bower/katex',
         out: '<%= cfg.vendor.out %>/katex',
@@ -75,12 +71,9 @@ module.exports = function(grunt) {
       vendor: {
         expand: true,
         cwd: '<%= cfg.vendor.out %>',
-        src: ['**/*', '!mathjax/**/*', '!katex/**/*'],
+        src: ['**/*', '!katex/**/*'],
         filter: 'isFile',
       },
-
-      // Delete MathJax copy
-      mathjax: ['<%= cfg.mathjax.out %>'],
 
       // Delete KaTeX copy
       katex: ['<%= cfg.katex.out %>'],
@@ -116,32 +109,6 @@ module.exports = function(grunt) {
           {src:'.bower/zeroclipboard/ZeroClipboard.swf', dest:'<%= cfg.vendor.out %>/ZeroClipboard.swf', nonull:true},
           {src:'<%= cfg.vendor.cust %>/viz.js',          dest:'<%= cfg.vendor.out %>/viz.js',            nonull:true},
         ]
-      },
-
-      // Copies MathJax files
-      mathjax: {
-        files: [{
-          expand: true,
-          cwd: '<%= cfg.mathjax.src %>',
-          src: [
-            'extensions/**/*',
-            'fonts/HTML-CSS/**/*',
-            'images/**/*',
-            'jax/element/**/*',
-            'jax/input/TeX/**/*',
-            'jax/output/HTML-CSS/**/*',
-            'localization/en/**/*',
-            'MathJax.js',
-            // Remove all fonts except Latin-Modern
-            '!fonts/HTML-CSS/Asana-*/**/*', '!jax/output/HTML-CSS/fonts/Asana-*/**/*',
-            '!fonts/HTML-CSS/Gyre-*/**/*',  '!jax/output/HTML-CSS/fonts/Gyre-*/**/*',
-            '!fonts/HTML-CSS/Neo-*/**/*',   '!jax/output/HTML-CSS/fonts/Neo-*/**/*',
-            '!fonts/HTML-CSS/STIX-*/**/*',  '!jax/output/HTML-CSS/fonts/STIX-*/**/*',
-            '!fonts/HTML-CSS/TeX/**/*',     '!jax/output/HTML-CSS/fonts/TeX/**/*',
-            // '!fonts/HTML-CSS/TeX/png/**/*', '!fonts/HTML-CSS/TeX/svg/**/*',
-          ],
-          dest: '<%= cfg.mathjax.out %>',
-        }]
       },
 
       // Copies KaTeX files
@@ -233,16 +200,6 @@ module.exports = function(grunt) {
           dest: '<%= cfg.js.out %>',
           src: '**/*.js',
           ext: '.js',
-        }]
-      },
-
-      // Shrink MathJax JS
-      mathjax: {
-        files: [{
-          expand: true,
-          cwd : '<%= cfg.mathjax.out %>',
-          dest: '<%= cfg.mathjax.out %>',
-          src: '**/*.js',
         }]
       },
     },
@@ -347,13 +304,12 @@ module.exports = function(grunt) {
   // Task definitions
 
   grunt.registerTask('vendor'  , ['clean:dev', 'clean:vendor', 'copy:vendor', 'less:bootstrap', 'replace:jquery']);
-  grunt.registerTask('mathjax' , ['clean:mathjax', 'copy:mathjax', 'uglify:mathjax']);
   grunt.registerTask('katex'   , ['clean:katex', 'copy:katex']);
   grunt.registerTask('js'      , ['clean:js_tmp', 'clean:js', 'concat:js', 'uglify:own']);
   grunt.registerTask('css'     , ['clean:css_tmp', 'clean:css', 'less:app', 'less:other', 'concat:app_css', 'cssmin']); // copy:debug_css
   grunt.registerTask('test'    , ['qunit']);
   grunt.registerTask('default' , ['vendor', 'js', 'css', 'test']);
-  grunt.registerTask('all'     , ['katex', 'mathjax', 'default']);
+  grunt.registerTask('all'     , ['katex', 'default']);
   grunt.registerTask('lint-css', ['css', 'csslint']);
 };
 
