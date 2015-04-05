@@ -6,6 +6,7 @@ import shipreq.base.util.Must
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.Text._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.{Grammar => G}
 
 /**
  * That which affects users' presentation of their requirements, belongs here.
@@ -39,16 +40,13 @@ object Presentation {
    * A "reflink" is a token that refers to another (sub-)requirement.
    * It can usually be clicked on to navigate to the referenced content.
    */
-  def reflink(in: String) = reflinkPrefix ~ in ~ reflinkSuffix
-  final val reflinkPrefix = "["
-  final val reflinkSuffix = "]"
+  def reflink(in: String) = G.reflinkPrefix ~ in ~ G.reflinkSuffix
 
-  def hashtag(key: HashRefKey) = hashtagPrefix ~ key.value
-  final val hashtagPrefix = "#"
+  def hashtag(key: HashRefKey) = G.hashtagPrefix ~ key.value
 
+  final val issueDescPrefix = G.issueDescPrefix ~ " "
+  final val issueDescSuffix = " " ~ G.issueDescSuffix
   def issueDesc(nonEmptyDesc: String) = issueDescPrefix ~ nonEmptyDesc ~ issueDescSuffix
-  final val issueDescPrefix = "{ "
-  final val issueDescSuffix = " }"
 
   // -------------------------------------------------------------------------------------------------------------------
 

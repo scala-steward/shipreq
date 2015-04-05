@@ -36,4 +36,12 @@ object Grammar {
   /** [[shipreq.webapp.base.data.ReqCode.Node]] min & max lengths. */
   final val reqCodeNodeLength = hashRefKeyLength
 
+  final val issueDescPrefix = "{ "
+  final val issueDescSuffix = " }"
+
+  final val reflinkPrefix = "["
+  final val reflinkSuffix = "]"
+
+  final val hashtagPrefix = "#"
+
 }
