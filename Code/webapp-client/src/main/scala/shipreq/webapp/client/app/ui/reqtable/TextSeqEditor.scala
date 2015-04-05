@@ -21,9 +21,9 @@ import shapeless.syntax.singleton._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, UnivEq, Rx}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
-import shipreq.webapp.base.{Grammar, UiText}
+import shipreq.webapp.base.UiText
+import shipreq.webapp.base.text.{Grammar, Presentation}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.lib.ui.UI
 
 object TextSeqEditor {

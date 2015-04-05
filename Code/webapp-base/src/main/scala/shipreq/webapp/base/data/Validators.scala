@@ -3,10 +3,10 @@ package shipreq.webapp.base.data
 import scalaz.{NonEmptyList, Equal}
 import scalaz.std.string.stringInstance
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.Grammar
 import shipreq.webapp.base.TextMod._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.ReqType.Mnemonic
+import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.validation._
 import Constraints._
 import GenericValidators._

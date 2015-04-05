@@ -6,9 +6,9 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import scalaz.{NonEmptyList, Memo}
 import shipreq.base.util.{Must, UnivEq}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.Presentation
 import shipreq.webapp.client.app.ui.Style.{widgets => *}
 import shipreq.webapp.client.lib.ui.UI
-import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.util.KaTeX
 
 final class ProjectWidgets(project: Project) {

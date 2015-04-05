@@ -1,14 +1,11 @@
-package shipreq.webapp.client.lib
+package shipreq.webapp.base.text
 
-//import Predef.{any2stringadd => _, StringAdd => _, _}
-import Predef.???
 import scala.annotation.tailrec
 import scalaz.NonEmptyList
-
 import shipreq.base.util.Must
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.Text._
 import shipreq.webapp.base.UiText
+import shipreq.webapp.base.data.Text._
+import shipreq.webapp.base.data._
 
 /**
  * That which affects users' presentation of their requirements, belongs here.

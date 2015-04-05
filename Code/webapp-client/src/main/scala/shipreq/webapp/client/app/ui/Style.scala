@@ -4,7 +4,7 @@ package ui
 import japgolly.scalacss.Defaults._
 import japgolly.scalacss.ScalaCssReact._
 import japgolly.scalacss.StyleS
-import shipreq.webapp.base.Grammar
+import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{Alive, Dead}
 import shipreq.webapp.client.lib.ConsoleIO
 import scalaz.syntax.equal._

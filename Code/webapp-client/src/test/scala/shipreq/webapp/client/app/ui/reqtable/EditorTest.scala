@@ -1,12 +1,13 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import shipreq.webapp.base.text.Presentation
+
 import scalaz.std.anyVal._
 import scalaz.std.set._
 import scalaz.std.string._
 import utest._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.UnsafeTypes._
-import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.base.test.SampleImplicationGraph
 

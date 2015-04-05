@@ -3,6 +3,7 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.nyaya._
 import japgolly.nyaya.test._
 import japgolly.nyaya.util.Multimap
+import shipreq.webapp.base.text.Presentation
 import scala.reflect.ClassTag
 import scalaz.{\/, \/-, -\/, Equal}
 import scalaz.std.AllInstances._
@@ -13,7 +14,6 @@ import shipreq.webapp.base.{UnsafeTypes, RandomData}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.{SampleImplicationGraph, SampleProject, ProjectDSL}
-import shipreq.webapp.client.lib.Presentation
 import shipreq.webapp.client.test.ClientTestSettings._
 import shipreq.webapp.client.app.ui.reqtable.{SortCriterion => SC, Column => C}
 import SortMethod._

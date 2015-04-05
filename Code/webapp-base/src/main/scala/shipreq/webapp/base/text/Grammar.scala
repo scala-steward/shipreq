@@ -1,4 +1,4 @@
-package shipreq.webapp.base
+package shipreq.webapp.base.text
 
 import shipreq.webapp.base.validation.Rules
 

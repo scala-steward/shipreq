@@ -19,9 +19,10 @@ import scalaz.std.vector._
 import shipreq.base.util.{BiMap, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
-import shipreq.base.util.Debug._
+import shipreq.webapp.base.text.Grammar
 import DataImplicits._
 import ReqFieldData.{Implications, ImplicationsU}
 
