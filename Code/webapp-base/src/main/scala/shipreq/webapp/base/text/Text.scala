@@ -6,6 +6,36 @@ import shipreq.webapp.base.data._
 
 object Text {
 
+  sealed trait AtomType
+  object AtomType {
+    case object Literal       extends AtomType
+    case object NewLine       extends AtomType
+    case object ReqRef        extends AtomType
+    case object Issue         extends AtomType
+    case object WebAddress    extends AtomType
+    case object EmailAddress  extends AtomType
+    case object MathTeX       extends AtomType
+    case object TagRef        extends AtomType
+    case object UnorderedList extends AtomType
+
+    val values = NonEmptyList[AtomType](
+      Literal, WebAddress, EmailAddress, MathTeX,
+      ReqRef, TagRef, Issue,
+      NewLine, UnorderedList)
+
+    val of: Text.Generic#Atom => AtomType = {
+      case _: Text.Generic.Literal         # Literal       => Literal
+      case _: Text.Generic.NewLine         # NewLine       => NewLine
+      case _: Text.Generic.ReqRef          # ReqRef        => ReqRef
+      case _: Text.Generic.Issue           # Issue         => Issue
+      case _: Text.Generic.PlainTextMarkup # WebAddress    => WebAddress
+      case _: Text.Generic.PlainTextMarkup # EmailAddress  => EmailAddress
+      case _: Text.Generic.PlainTextMarkup # MathTeX       => MathTeX
+      case _: Text.Generic.TagRef          # TagRef        => TagRef
+      case _: Text.Generic.ListMarkup      # UnorderedList => UnorderedList
+    }
+  }
+
   // ===================================================================================================================
   // Generic
 
@@ -14,7 +44,7 @@ object Text {
     final type OptionalText = List[Atom]
     final type NonEmptyText = NonEmptyList[Atom]
 
-    implicit def atomEquality: UnivEq[Atom] = UnivEq.force
+    implicit def atomEquality[A <: Atom]: UnivEq[A] = UnivEq.force
   }
 
   object Generic {

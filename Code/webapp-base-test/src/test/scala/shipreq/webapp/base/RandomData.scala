@@ -445,9 +445,15 @@ object RandomData {
 
     def postProcessAtoms[T <: Text.Generic](as: List[T#Atom]): List[T#Atom] =
       // TODO Use vectors
-      as.foldRight[List[T#Atom]](Nil)((a, q) => {
+      as.foldRight[List[T#Atom]](Nil)((a0, q) => {
         import Text.Generic.{PlainTextMarkup => PTM}
         import Text.Generic._
+
+        val a: T#Atom = a0 match {
+          case i: Issue#Issue => i.copy(desc = postProcessAtoms(i.desc))
+          case o => o
+        }
+
         if (q.isEmpty) a :: q
         else (a, q.head) match {
 
@@ -460,6 +466,7 @@ object RandomData {
           case (x: PTM#WebAddress  , y: Literal#Literal ) => x :: y.map(" " + _) :: q.tail
           case (x: PTM#WebAddress  , _: PTM#EmailAddress) => x :: q.tail
           case (x: PTM#WebAddress  , _: PTM#WebAddress  ) => x :: q.tail
+          case (_: PTM#WebAddress  , y: Issue#Issue     ) => y :: q.tail
 
           case _ => a :: q
         }
@@ -524,11 +531,13 @@ object RandomData {
       _  <- pubidS(id)
     } yield id
 
-  def genericReqS(pubidS: Req.Id => StateG[Pubid.Register, Pubid]): StateG[Pubid.Register, GenericReq] =
+  def genericReqS(pubidS: Req.Id => StateG[Pubid.Register, Pubid],
+//                  genReqId: Option[Gen[Req.Id]],
+                  genIssueType: Option[Gen[CustomIssueType.Id]]): StateG[Pubid.Register, GenericReq] =
     for {
       id    <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
       pubid <- pubidS(id)
-      desc  <- TextGen.genericReqDescAtom(None, None).text // TODO GenericReq.desc needs more input
+      desc  <- TextGen.genericReqDescAtom(None, genIssueType).text
       live  <- alive
     } yield GenericReq(id, pubid, desc, live)
 
@@ -549,8 +558,9 @@ object RandomData {
   def pubidRegisterAndIds(reqTypeIds: NonEmptyList[ReqType.Id]): GenS[(Pubid.Register, Set[Req.Id])] =
     pubidRegisterAnd(Set.empty[Req.Id], genericReqIdS(pubidS(reqTypeIds)))(_ + _)
 
-  def requirements(reqTypeIds: NonEmptyList[ReqType.Id]): GenS[Requirements] =
-    pubidRegisterAnd(Req.IdAccess.emptyIMap, genericReqS(pubidS(reqTypeIds)))(_ + _)
+  def requirements(reqTypeIds: NonEmptyList[ReqType.Id],
+                   genIssueType: Option[Gen[CustomIssueType.Id]]): GenS[Requirements] =
+    pubidRegisterAnd(Req.IdAccess.emptyIMap, genericReqS(pubidS(reqTypeIds), genIssueType))(_ + _)
       .map { case (pr, reqs) => Requirements(reqs, pr) }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -676,7 +686,7 @@ object RandomData {
       reqTypeIds     = StaticReqType.values :::> reqtypes.data.keys.toList
       reqTypeIdSet   = reqTypeIds.list.toSet
       fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
-      reqs           ← revAnd(requirements(reqTypeIds))
+      reqs           ← revAnd(requirements(reqTypeIds, Gen.oneofO(cissueIds.toSeq)))
       reqCodes       ← reqCodes(reqCodeTrie(reqs.data.reqs.keys.toSeq).lim(22 `JVM|JS` 8)) // TODO add SHRs
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet

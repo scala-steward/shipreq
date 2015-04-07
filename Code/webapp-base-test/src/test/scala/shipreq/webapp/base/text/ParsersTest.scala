@@ -6,9 +6,8 @@ import japgolly.nyaya.util._
 import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTest._
 import org.parboiled2._
-import shipreq.webapp.base.util.ShowSize
 import scala.util.{Try, Failure, Success}
-import scalaz.{NonEmptyList, Equal}
+import scalaz.Equal
 import scalaz.std.list._
 import scalaz.std.stream._
 import utest._
@@ -17,39 +16,11 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.{RandomData => $}
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.BaseTestUtil._
+import Text.AtomType
 
 object ParsersTest extends TestSuite {
 
-  sealed trait AtomType
-  object AtomType {
-    case object Literal       extends AtomType
-    case object NewLine       extends AtomType
-    case object ReqRef        extends AtomType
-    case object Issue         extends AtomType
-    case object WebAddress    extends AtomType
-    case object EmailAddress  extends AtomType
-    case object MathTeX       extends AtomType
-    case object TagRef        extends AtomType
-    case object UnorderedList extends AtomType
-
-    val values = NonEmptyList[AtomType](
-      Literal, NewLine, ReqRef, Issue, WebAddress, EmailAddress, MathTeX, TagRef, UnorderedList)
-
-    val of: Text.Generic#Atom => AtomType = {
-      case _: Text.Generic.Literal         # Literal       => Literal
-      case _: Text.Generic.NewLine         # NewLine       => NewLine
-      case _: Text.Generic.ReqRef          # ReqRef        => ReqRef
-      case _: Text.Generic.Issue           # Issue         => Issue
-      case _: Text.Generic.PlainTextMarkup # WebAddress    => WebAddress
-      case _: Text.Generic.PlainTextMarkup # EmailAddress  => EmailAddress
-      case _: Text.Generic.PlainTextMarkup # MathTeX       => MathTeX
-      case _: Text.Generic.TagRef          # TagRef        => TagRef
-      case _: Text.Generic.ListMarkup      # UnorderedList => UnorderedList
-    }
-  }
-
   val counts = AtomType.values.list.map((_, new AtomicInteger)).toMap
-
   def count(as: List[Text.Generic#Atom]): Unit =
     as.foreach { a =>
       val t = AtomType of a
@@ -59,18 +30,36 @@ object ParsersTest extends TestSuite {
   class Tester(p: Project, inputs: List[String]) {
     override def toString = p.toString
 
+    println(p.countAtoms.showTree + "\n")
+
     val E = EvalOver(this)
 
     val txt2str = Presentation.textToString(p)
 
     val genericReqs = p.reqs.data.reqs.values.filterT[GenericReq]
 
+    def cmp[A <: Text.Generic#Atom](t: String, actual: Iterable[A], expect: Iterable[A]): EvalL = {
+
+      var a = actual.toVector
+      var e = expect.toVector
+      while (a.nonEmpty && e.nonEmpty && a.head == e.head) {
+        a = a.tail
+        e = e.tail
+      }
+      while (a.nonEmpty && e.nonEmpty && a.last == e.last) {
+        a = a.init
+        e = e.init
+      }
+
+      E.equal(t, a, e)(Equal.equalA)
+    }
+
     def testGenericReqDesc(r: GenericReq) = {
       val src = r.desc
       count(src)
       val txt = txt2str(src)
       val parsed = new Parsers.GenericReqDescParser(p, txt).main.run().get
-      E.equal(txt, parsed, src)(Equal.equalA)
+      cmp(txt, parsed, src)
     }
 
     def testString(in0: String) = {
@@ -79,12 +68,12 @@ object ParsersTest extends TestSuite {
       val in2  = txt2str(out1)
       val out2 = new Parsers.GenericReqDescParser(p, in2).main.run().get
       count(out1)
-      E.equal(in1, out1, out2)(Equal.equalA)
+      cmp(in1, out1, out2)
     }
 
     def all = (
-      E.forall(genericReqs)(testGenericReqDesc).rename("txt2str |> parse = id")
-        ∧ E.forall(inputs)(testString).rename("parse |> txt2str |> parse = parse")
+      E.forall(genericReqs)(testGenericReqDesc).rename("toStr |> parse = id")
+        ∧ E.forall(inputs)(testString).rename("parse |> toStr |> parse = parse")
       )
   }
 
@@ -113,16 +102,24 @@ object ParsersTest extends TestSuite {
   lazy val newGenericReqDescParser = new Parsers.GenericReqDescParser(SampleProject.project, _: ParserInput)
 
   def propEmailAddress = parserProp("EmailAddress",
-    (_: T.EmailAddress).value, newGenericReqDescParser)(_.emailAddress.run())(Equal.equalA)
+    (_: T.EmailAddress).value, newGenericReqDescParser)(_.emailAddress.run())
 
   def propWebAddress = parserProp("WebAddress",
-    (_: T.WebAddress).value, newGenericReqDescParser)(_.webAddress.run())(Equal.equalA)
+    (_: T.WebAddress).value, newGenericReqDescParser)(_.webAddress.run())
 
   def propMathTeX = parserProp("MathTeX",
-    (_: T.MathTeX).value |> Grammar.mathTexSurround.display, newGenericReqDescParser)(_.mathtex.run())(Equal.equalA)
+    (_: T.MathTeX).value |> Grammar.mathTexSurround.display, newGenericReqDescParser)(_.mathtex.run())
+
+  // #TODO{ <math>\frac{22}</math> }
 
   override val tests = TestSuite {
-    'unit {
+    'manual {
+      'hashHashHash {
+        () // TODO
+      }
+    }
+
+    'small {
       'emailAddress - $.TextGen.emailAddress(T).mustSatisfy(propEmailAddress)
       'webAddress   - $.TextGen.webAddress  (T).mustSatisfy(propWebAddress)
       'mathtex      - $.TextGen.mathTex     (T).mustSatisfy(propMathTeX)

@@ -46,10 +46,14 @@ object ShowSize {
     def +(b: Node): Node =
       Node.append(this, b)
 
+    def sumChildren: Int =
+      children.foldLeft(0)(_ + _.size)
+
     import japgolly.nyaya.util.Util._
 
     def showTree: String =
-      asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => s"${n.name}  ${n.size}")
+      // asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => s"${n.name}  ${n.size}")
+      asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => String.format(">%6d  %s", n.size: java.lang.Integer, n.name))
   }
 
   object Node {
@@ -58,6 +62,11 @@ object ShowSize {
 
     def empty(name: String) =
       new Node(name, 0, Vector.empty)
+
+    def countChildren[A](parent: String, as: Iterable[A])(f: A => String): Node = {
+      val x = empty(parent).countChildren(as)(f)
+      x.copy(size = x.sumChildren)
+    }
 
     def sum(parent: String, children: Node*) =
       Node(parent, children.foldLeft(0)(_ + _.size), children.toVector)

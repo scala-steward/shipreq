@@ -17,7 +17,7 @@ object Parsers {
   val emailCharL = CharPredicate(emailCharArray)
   val emailCharR = emailCharL -- '.'
 
-  val webAddressChar = CharPredicate.Visible -- ('[' :: ']' :: '<' :: '>' :: Nil)
+  val webAddressChar = CharPredicate.Visible -- ('{' :: '}' :: '[' :: ']' :: '<' :: '>' :: Nil)
 
   type RuleAB[-A, +B] = Rule[A :: HNil, B :: HNil]
 
