@@ -6,6 +6,7 @@ import japgolly.nyaya.util._
 import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTest._
 import org.parboiled2._
+import shipreq.webapp.base.util.ShowSize
 import scala.util.{Try, Failure, Success}
 import scalaz.{NonEmptyList, Equal}
 import scalaz.std.list._
@@ -56,7 +57,7 @@ object ParsersTest extends TestSuite {
     }
 
   class Tester(p: Project, inputs: List[String]) {
-    override def toString = "TODO" // TODO add project size info
+    override def toString = p.toString
 
     val E = EvalOver(this)
 

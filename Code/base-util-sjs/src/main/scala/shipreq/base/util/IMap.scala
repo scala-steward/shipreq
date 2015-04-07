@@ -38,6 +38,8 @@ final class IMap[K: UnivEq, V] private (key: V => K, m: Map[K, V]) extends Subtr
 
   def keySet = m.keySet
 
+  def size = m.size
+
   def mapValues[A](f: V => A): Map[K, A] = m.mapValues(f)
 
   def get(k: K): Option[V] = m.get(k)

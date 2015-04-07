@@ -5,6 +5,7 @@ import scalaz.{-\/, \/-, Memo}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Monoidish, Must}
 import shipreq.webapp.base.TransitiveClosure
+import shipreq.webapp.base.util.ShowSize
 import DataImplicits._
 
 final case class RevAnd[D](rev: Rev, data: D)
@@ -44,10 +45,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     reqFieldData    .rev
 
   override def toString =
-    Stream(customIssueTypes, customReqTypes, fields, tags, reqs, reqCodes, reqFieldData)
-      .map("\n    " + _.toString.replace(" -> ", " → "))
-      .mkString("Project(", "", "\n)")
-
+    ShowSize(this).showTree
 
   def atag(id: ApplicableTag.Id): Must[ApplicableTag] =
     Must.fromOption(tags.data.get(id), s"No tag found with $id")
