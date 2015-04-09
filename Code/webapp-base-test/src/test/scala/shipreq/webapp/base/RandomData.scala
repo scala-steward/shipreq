@@ -33,6 +33,8 @@ object RandomData {
   type StateG[S, A] = StateT[Gen, S, A]
   implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
 
+  def stateGen[S, A](g: S => Gen[A]): StateG[S, A] = StateT(s => g(s).map(a => (s,a)))
+
   implicit class CustomGenExt[A](val g: Gen[A]) extends AnyVal {
     def nev: GenS[NonEmptyVector[A]] = for {t <- g.vector; h <- g} yield NonEmptyVector(h, t)
   }
@@ -55,11 +57,24 @@ object RandomData {
   def grammarChars(c: Grammar.Chars): Gen[Char] =
     Gen.charof(c.ch1, c.chn, c.rs: _*)
 
-  def grammarStr1[G](g: G)(f: G => Grammar.FirstChar, w: G => Grammar.CharWhitelist, l: G => Grammar.Length): Gen[String] =
+  def grammarStr1[G](g: G)(f: G => Grammar.Chars, w: G => Grammar.Chars, l: G => Grammar.Length): Gen[String] =
     for {
       h <- grammarChars(f(g))
       t <- grammarChars(w(g)).list.lim(l(g).minus1.max)
     } yield (h :: t).mkString
+
+  def grammarFixer[G](g: G)(first: G => Grammar.Chars, rest: G => Grammar.Chars) = {
+    val g1 = first(g).toStream.map(_.toString)
+    val gn = rest(g).toStream.map(_.toString)
+    def grow(ss: Stream[String]): Stream[String] = {
+      val x = ss append ss.flatMap(s => gn.map(s + _))
+      x append grow(x)
+    }
+    val all = grow(g1)
+    def fix(used: Set[String]): String =
+      all.filter(!used.contains(_)).head
+    Distinct.Fixer.lift(fix)
+  }
 
   def someOfWithDups[A, B](as: Seq[A])(f: A => Gen[B]): Gen[Vector[B]] =
     Gen.oneofO(as).fold[Gen[Vector[B]]](Gen insert Vector.empty)(
@@ -138,7 +153,12 @@ object RandomData {
   // ReqTypes
 
   lazy val reqTypeMnemonic =
-    Gen.uppers1.lim(6).map(cs => Mnemonic(cs.list.mkString))
+    grammarStr1(Grammar.reqTypeMnemonic)(_.chars, _.chars, _.length) map ReqType.Mnemonic
+
+  lazy val reqTypeMnemonicFixer =
+    grammarFixer(Grammar.reqTypeMnemonic)(_.chars, _.chars)
+      .xmap(ReqType.Mnemonic.apply)(_.value)
+      .addhs(StaticReqType.mnemonics)
 
   lazy val customReqTypeId =
     id map CustomReqType.Id
@@ -165,7 +185,7 @@ object RandomData {
   lazy val customReqTypes = {
     def dname = Distinct.str.at(CustomReqType.name)
     def dmnemonic = {
-      val distm = Distinct.fstr.xmap(Mnemonic.apply)(_.value).addhs(StaticReqType.mnemonics).distinct
+      val distm = reqTypeMnemonicFixer.distinct
       val cur = distm.at(CustomReqType.mnemonic)
       val old = distm.lift[Set].at(CustomReqType.oldMnemonics)
       cur + old
@@ -446,7 +466,8 @@ object RandomData {
 
     def reqTitle(t: ReqTitle)(r: Option[Gen[Req.Id]], i: Option[Gen[CustomIssueType.Id]]): Gen[t.Atom] = {
       @inline implicit def tt: t.type = t
-      val gs = singleLineGens(t) <+ r.map(reqRef(_)) <+ i.map(issue(_, r))
+      val x = singleLineGens(t)
+      val gs = (x append x) <+ r.map(reqRef(_)) <+ i.map(issue(_, r))
       Gen oneofGL gs
     }
 
@@ -547,10 +568,11 @@ object RandomData {
 //                  genReqId: Option[Gen[Req.Id]],
                   genIssueType: Option[Gen[CustomIssueType.Id]]): StateG[Pubid.Register, GenericReq] =
     for {
-      id    <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
-      pubid <- pubidS(id)
-      desc  <- TextGen.genericReqDescAtom(None, genIssueType).text
-      live  <- alive
+      id     <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
+      pubid  <- pubidS(id)
+      reqIds <- stateGen((r: Pubid.Register) => Gen insert r.allValues)
+      desc   <- TextGen.genericReqDescAtom(Gen.oneofO(reqIds), genIssueType).text
+      live   <- alive
     } yield GenericReq(id, pubid, desc, live)
 
   def pubidRegisterAnd[A, B](inita: A, genb: StateG[Pubid.Register, B])
@@ -676,19 +698,9 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Project
 
-  lazy val hashRefFixer = {
-    val g = Grammar.hashRefKey
-    val g1 = g.firstChar.toStream.map(_.toString)
-    val gn = g.allChars.toStream.map(_.toString)
-    def grow(ss: Stream[String]): Stream[String] = {
-      val x = ss append ss.flatMap(s => gn.map(s + _))
-      x append grow(x)
-    }
-    val all = grow(g1)
-    def fix(used: Set[String]): String =
-      all.filter(!used.contains(_)).head
-    Distinct.Fixer.lift(fix).xmap(HashRefKey.apply)(_.value)
-  }
+  lazy val hashRefFixer =
+    grammarFixer(Grammar.hashRefKey)(_.firstChar, _.allChars)
+      .xmap(HashRefKey.apply)(_.value)
 
   def distinctHashRefKeys = {
     type A = RevAnd[CustomIssueTypeIMap]

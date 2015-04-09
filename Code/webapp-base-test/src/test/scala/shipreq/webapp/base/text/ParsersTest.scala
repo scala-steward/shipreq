@@ -150,8 +150,11 @@ object ParsersTest extends TestSuite {
       println("========================")
       AtomType.values.foreach { t =>
         val c = counts(t).get()
-        printf("%-13s :%6d | %s\n", t.toString, c, graphChar * (c / graphUnit))
+        printf("%-13s :%7d | %s\n", t.toString, c, graphChar * (c / graphUnit))
       }
+      println("-----------------------+")
+      printf("%-13s :%7d |\n", "Total", counts.values.map(_.get).sum)
+      println("-----------------------+")
       println()
     }
   }
