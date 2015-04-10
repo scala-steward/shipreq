@@ -62,8 +62,7 @@ object Text {
       def inlineEnd = rule(ows ~ G.suffix)
       val inlineUntil = () => rule(inlineEnd | token())
       def inline: Rule1[NonEmptyText] = rule(
-        G.prefix ~ ows ~ oneOrMore(token() | literalUntil(inlineUntil)) ~ inlineEnd ~> atomsToVector ~ runNEV
-      )
+        G.prefix ~ ows ~ oneOrMore(token() | literalUntil(inlineUntil)) ~ inlineEnd ~> atomsToVector ~ popNEV)
     }
   }
 

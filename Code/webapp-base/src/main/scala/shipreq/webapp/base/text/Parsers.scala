@@ -29,42 +29,37 @@ object Parsers {
     /** Optional whitespace */
     def ows = rule( zeroOrMore(' ') )
 
-    /** End Of Token */
-    def EOT = rule( ows | EOI )
-
     /** End Of Line */
     def EOL = rule( "\n" | EOI )
 
+    def trim = (_: String).trim
+
+    /** int ≥ 1 */
     def int1n = rule( capture(CharPredicate.Digit19 ~ CharPredicate.Digit.*) ~> (_.toInt) )
 
-    def pushOptional[A](o: Option[A]): Rule1[A] =
-      rule( test(o.isDefined) ~ push(o.get) )
-
-    def pushPF[A, B](a: A)(pf: PartialFunction[A, B]): Rule1[B] =
-      a |> pf.lift |> pushOptional
-
-    def runPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] =
-      rule(run((a: A) => pushPF(a)(pf)))
-
-    def runNEV[A]: RuleAB[Vector[A], NonEmptyVector[A]] =
-      rule(run((v: Vector[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail))))
-
-    def runO[A]: RuleAB[Option[A], A] =
+    def popOptional[A]: RuleAB[Option[A], A] =
       rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
+
+    def popPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] = {
+      val f = pf.lift
+      rule(MATCH ~> f ~ popOptional)
+    }
+
+    def popNEV[A]: RuleAB[Vector[A], NonEmptyVector[A]] =
+      rule(run((v: Vector[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail))))
 
     def grammarStr[G](g: G)(f: G => Grammar.FirstChar, w: G => Grammar.CharWhitelist, l: G => Grammar.Length): Rule0 =
       rule( f(g).charPredicate ~ (l(g).minus1 times w(g).charPredicate) )
 
-    def nonGreedyCapture(stopAt: () => Rule0): Rule1[String] = rule(
-      capture((!(stopAt()) ~ ANY).+) ~ stopAt()
-    )
+    def nonGreedyCapture(stopAt: () => Rule0): Rule1[String] =
+      rule(capture(oneOrMore(!stopAt() ~ ANY)) ~ stopAt())
 
     def surround(s: Grammar.Surrounds): Rule1[String] =
       surround(s.parsing)
 
     def surround(s: Grammar.Surround): Rule1[String] = {
       val end = () => rule(s.suffix)
-      rule(s.prefix ~ nonGreedyCapture(end) ~> ((_: String).trim))
+      rule(s.prefix ~ nonGreedyCapture(end) ~> trim)
     }
 
     // TODO Not using Grammar because of case-sensitivity
@@ -74,14 +69,15 @@ object Parsers {
 
     def reqTypePos = rule( int1n ~> ReqTypePos )
 
-    def lookupReq(m: ReqType.Mnemonic, n: ReqTypePos): Option[Req.Id] =
-      project.reqTypesByMnemonic.get(m)
-        .map(t => Pubid(t.reqTypeId, n))
-        .flatMap(project.reqs.data.reqIdByPubid)
+    val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[Req.Id] =
+      (m, n) =>
+        project.reqTypesByMnemonic.get(m)
+          .map(t => Pubid(t.reqTypeId, n))
+          .flatMap(project.reqs.data.reqIdByPubid)
 
     def hashRef = rule(
       G.hashRefKey.prefix ~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.allChars, _.length))
-      ~> (HashRefKey(_) |> project.hashRefs.get |> pushOptional)
+      ~> (HashRefKey(_) |> project.hashRefs.get) ~ popOptional
     )
   }
 
@@ -91,56 +87,19 @@ object Parsers {
   trait Literal extends Base {
     override type T <: Atom.Literal
 
-    /*
-    def literal =
-      rule(ANY ~ push(-\/(lastChar)))
-
-    def optionalText(token: () => Rule1[t.Atom]): Rule1[t.OptionalText] = rule(
-      (token().~>(\/-(_)) | literal).* ~> (consolidate(_: Seq[Char \/ t.Atom]))
-    )
-
-    def nonEmptyText(token: () => Rule1[t.Atom]): Rule1[t.NonEmptyText] = rule(
-      (token().~>(\/-(_)) | literal).+ ~> (consolidate(_: Seq[Char \/ t.Atom]) |> forceNEV)
-    )
-
-    def forceNEV[A](as: Vector[A]): NonEmptyVector[A] = // TODO No
-      NonEmptyVector(as.head, as.tail)
-
-    def consolidate(cs: Seq[Char \/ t.Atom]): t.OptionalText = {
-      var lit = Vector.empty[Char]
-
-      def addLit(tgt: t.OptionalText): t.OptionalText =
-        if (lit.isEmpty) tgt else {
-          val l = t.Literal(lit.mkString)
-          lit = Vector.empty
-          tgt :+ l
-        }
-
-      val x =
-        cs.foldLeft[t.OptionalText](Vector.empty)((q, c) =>
-          c match {
-            case -\/(ch) => lit :+= ch; q
-            case \/-(to) => addLit(q) :+ to
-          }
-        )
-
-      addLit(x)
-    }
-    */
-
     protected def atomsToVector = (_: Seq[t.Atom]).toVector
 
-    def literalUntil[O <: HList](stop: () => Rule[HNil, O]): Rule1[t.Literal] = rule(
-      capture(oneOrMore( !(stop()) ~ ANY )) ~> t.Literal)
+    def literalUntil[O <: HList](stop: () => Rule[HNil, O]): Rule1[t.Literal] =
+      rule(capture(oneOrMore( !stop() ~ ANY )) ~> t.Literal)
 
-    def tokenOrLiteral(token: () => Rule1[t.Atom]): Rule1[t.Atom] = rule(
-      token() | literalUntil(token))
+    def tokenOrLiteral(token: () => Rule1[t.Atom]): Rule1[t.Atom] =
+      rule(token() | literalUntil(token))
 
     def optionalText(token: () => Rule1[t.Atom]): Rule1[t.OptionalText] =
       rule(tokenOrLiteral(token).* ~> atomsToVector)
 
     def nonEmptyText(token: () => Rule1[t.Atom]): Rule1[t.NonEmptyText] =
-      rule(optionalText(token) ~ runNEV)
+      rule(optionalText(token) ~ popNEV)
   }
 
   trait PlainTextMarkup extends Base {
@@ -150,18 +109,14 @@ object Parsers {
 
     // TODO ensure webAddress and emailAddress don't follow literal
 
-    def webAddress = rule(
-      capture(webScheme ~ "://" ~ webAddressChar.+) ~> t.WebAddress
-    ) //~ EOT)
+    def webAddress =
+      rule(capture(webScheme ~ "://" ~ webAddressChar.+) ~> t.WebAddress)
 
-    def emailAddress = rule(
-      "mailto:".?
-        ~ capture(emailCharL.+ ~ '@' ~ (emailCharR.+ ~ '.').+ ~ emailCharR.+) ~> t.EmailAddress
-    ) //~ EOT)
+    def emailAddress =
+      rule("mailto:".? ~ capture(emailCharL.+ ~ '@' ~ (emailCharR.+ ~ '.').+ ~ emailCharR.+) ~> t.EmailAddress)
 
-    def mathtex = rule(
-      surround(G.mathTexSurround) ~> (_.trim |> t.MathTeX)
-    ) //~ EOT)
+    def mathtex =
+      rule(surround(G.mathTexSurround) ~> (_.trim |> t.MathTeX))
 
     def plainTextMarkup =
       rule( webAddress | emailAddress | mathtex )
@@ -177,16 +132,13 @@ object Parsers {
 
     def reqRef: Rule1[t.ReqRef] = rule(
       G.reflinkPrefix ~ ows ~ reqTypeMnemonic ~ ows ~ ('-' ~ ows).? ~ reqTypePos ~ ows ~ G.reflinkSuffix
-        //~ EOT
-        ~> (lookupReq(_, _) |> pushOptional) ~> t.ReqRef
-    )
+        ~> lookupReq ~ popOptional[Req.Id] ~> t.ReqRef)
   }
 
   trait TagRef extends Base {
     override type T <: Atom.TagRef
-    def tagRef = runPF[HashRefTarget, t.TagRef] {
-      case -\/(tag) => t.TagRef(tag.id)
-    }
+
+    def tagRef = popPF[HashRefTarget, t.TagRef] { case -\/(tag) => t.TagRef(tag.id) }
   }
 
   trait Issue extends Base {
@@ -194,7 +146,7 @@ object Parsers {
     import Text.{InlineIssueDesc => I}
 
     def issueRef: RuleAB[HashRefTarget, t.Issue] = {
-      def id           = runPF[HashRefTarget, CustomIssueType.Id] { case \/-(i) => i.id }
+      def id           = popPF[HashRefTarget, CustomIssueType.Id] { case \/-(i) => i.id }
       def optionalDesc = rule(issueInnerDesc ~> (_.whole) | push(Vector.empty))
       rule(run(id) ~ optionalDesc ~> t.Issue)
     }
