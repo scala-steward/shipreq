@@ -107,11 +107,11 @@ object Parsers {
     def tokenOrLiteral(token: TokenRule): Rule1[t.Atom] =
       rule(token() | literalUntil(token))
 
-    def optionalText(token: TokenRule): Rule1[t.OptionalText] =
+    def optionalTextT(token: TokenRule): Rule1[t.OptionalText] =
       rule(tokenOrLiteral(token).* ~> atomsToVector)
 
-    def nonEmptyText(token: TokenRule): Rule1[t.NonEmptyText] =
-      rule(optionalText(token) ~ popNEV)
+    def nonEmptyTextT(token: TokenRule): Rule1[t.NonEmptyText] =
+      rule(optionalTextT(token) ~ popNEV)
 
     def optionalTextUntil(token: TokenRule, end: () => Rule0): Rule1[t.OptionalText] = {
       val endOrToken = () => rule(end() | token())
@@ -202,21 +202,17 @@ object Parsers {
       () => rule(unorderedList(listToken) | additionalTokens() | newLine | singleLine)
   }
 
+  // ===================================================================================================================
+
   abstract class TopBase[_T <: Atom.Literal](_t: _T) extends Literal {
     override final type T = _T
     override final val  t: T = _t
     protected val token: TokenRule
+    final def optionalText = rule(optionalTextT(token) ~ EOI)
+    final def nonEmptyText = rule(nonEmptyTextT(token) ~ EOI)
   }
 
-  abstract class DefaultOptional[_T <: Atom.Literal](_t: _T) extends TopBase(_t) {
-    final def main = rule(optionalText(token) ~ EOI)
-  }
-
-  abstract class DefaultNonEmpty[_T <: Atom.Literal](_t: _T) extends TopBase(_t) {
-    final def main = rule(nonEmptyText(token) ~ EOI)
-  }
-
-  abstract class ReqTitle[_T <: Atom.ReqTitle](_t: _T, val project: Project, val input: ParserInput) extends DefaultOptional(_t)
+  abstract class ReqTitle[_T <: Atom.ReqTitle](_t: _T, val project: Project, val input: ParserInput) extends TopBase(_t)
     with SingleLine
     with ReqRef
     with Issue {

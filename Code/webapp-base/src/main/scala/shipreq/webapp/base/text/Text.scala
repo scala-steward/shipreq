@@ -22,25 +22,16 @@ object Text {
     this: Literal =>
     type Parser <: P.TopBase[this.type]
     def parserI(p: Project)(i: ParserInput): Parser
-    def parser(p: Project)(text: String): Parser =
-      parserI(p)(P.preprocess(text))
+    def parser (p: Project)(text: String)  : Parser = parserI(p)(P.preprocess(text))
+
+    final def parse(p: Project)(text: String): OptionalText =
+      parser(p)(text).optionalText.run().get
+
+    final def parseNonEmpty(p: Project)(text: String): Option[NonEmptyText] =
+      parser(p)(text).nonEmptyText.run().toOption
   }
 
-  sealed trait DefaultOptional extends TopBase {
-    this: Literal =>
-    type Parser <: P.DefaultOptional[this.type]
-    def parse(p: Project)(text: String): OptionalText =
-      parser(p)(text).main.run().get
-  }
-
-  sealed trait DefaultNonEmpty extends TopBase {
-    this: Literal =>
-    type Parser <: P.DefaultNonEmpty[this.type]
-    def parse(p: Project)(text: String): Option[NonEmptyText] =
-      parser(p)(text).main.run().toOption
-  }
-
-  sealed trait ReqTitle extends Atom.ReqTitle with DefaultOptional {
+  sealed trait ReqTitle extends Atom.ReqTitle with TopBase {
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(p: Project, i: ParserInput) extends P.ReqTitle[this.type](this, p, i) {
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(p)(_).inline))
@@ -50,12 +41,12 @@ object Text {
   // ===================================================================================================================
   // Text instances
 
-  object InlineIssueDesc extends DefaultNonEmpty
+  object InlineIssueDesc extends TopBase
       with SingleLine
       with ReqRef {
 
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
-    final class Parser(val project: Project, val input: ParserInput) extends P.DefaultNonEmpty(this)
+    final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.ReqRef {
 
@@ -71,14 +62,14 @@ object Text {
 
   object GenericReqDesc extends ReqTitle
 
-  object CustomTextField extends DefaultNonEmpty
+  object CustomTextField extends TopBase
       with MultiLine
       with ReqRef
       with Issue
       with TagRef {
 
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
-    final class Parser(val project: Project, val input: ParserInput) extends P.DefaultNonEmpty(this)
+    final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
         with P.MultiLine
         with P.ReqRef
         with P.Issue

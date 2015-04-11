@@ -85,7 +85,7 @@ object ParsersTest extends TestSuite {
       val src = t.whole
       count(src)
       val txt = txt2str(src)
-      val parsed = NonEmptyVector unwrapOption Text.CustomTextField.parse(p)(txt)
+      val parsed = Text.CustomTextField.parse(p)(txt)
       cmp(s"[CustomTextField] toStr |> parse = id\n<<$txt>>", parsed, src)
     }
 
