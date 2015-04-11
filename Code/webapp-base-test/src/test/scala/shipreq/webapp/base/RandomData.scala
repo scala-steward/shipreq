@@ -400,8 +400,8 @@ object RandomData {
     def literal(implicit t: Literal): Gen[t.Literal] =
       genstr1.map(t.Literal) // TODO Certain things need to be ruled out
 
-    def newLine(implicit t: NewLine): Gen[t.NewLine] =
-      Gen.insert(t.newLine)
+    def blankLine(implicit t: NewLine): Gen[t.BlankLine] =
+      Gen.insert(t.blankLine)
 
     def listItem[T <: ListMarkup](g: Name[Gen[T#Atom]]): Gen[T#ListItem] =
       Gen.insert(g).flatMap(_.value).vector.lim(MaxTextAtoms)
@@ -441,7 +441,7 @@ object RandomData {
       type G  = Gen[t.Atom]
       type IG = (Int, G)
       var gs = singleLineGens(t).map[IG]((9, _)) :::> List[IG](
-                 (9, newLine(t)))
+                 (9, blankLine(t)))
       if (depth < DepthIncrease.length)
         gs = (DepthIncrease(depth), unorderedList(t)(g): G) <:: gs
       gs
@@ -485,8 +485,8 @@ object RandomData {
       Gen oneofGL gs
     }
 
-    val isNewLine: Atom.Generic => Boolean = {
-      case _: NewLine#NewLine => true
+    val isBlankLine: Atom.Generic => Boolean = {
+      case _: NewLine#BlankLine => true
       case _ => false
     }
 
@@ -498,15 +498,16 @@ object RandomData {
          | _: PlainTextMarkup # EmailAddress
          | _: PlainTextMarkup # MathTeX
          | _: TagRef          # TagRef        => true
-      case _: NewLine         # NewLine
+      case _: NewLine         # BlankLine
          | _: ListMarkup      # UnorderedList => false
     }
 
     def postProcessAtoms[T <: Text.Generic](as0: Vector[T#Atom]): Vector[T#Atom] = {
-      type UL = ListMarkup#UnorderedList
+      type Blank = NewLine#BlankLine
+      type UL    = ListMarkup#UnorderedList
 
       // Trim multiline
-      val as = dropLast(dropHead(as0)(isNewLine))(isNewLine)
+      val as = dropLast(dropHead(as0)(isBlankLine))(isBlankLine)
 
       as.foldLeft[Vector[T#Atom]](Vector.empty)((q, a0) => {
         import Atom.{PlainTextMarkup => PTM}
@@ -527,8 +528,8 @@ object RandomData {
         //case (x: Literal#Literal , y: Issue#Issue     ) => i :+ x.map(_ + " ") :+ y
         //case (x: Literal#Literal , y: TagRef#Tagref   ) => i :+ x.map(_ + " ") :+ y
 
-          case (x: NewLine#NewLine , _: NewLine#NewLine ) => i :+ x
-          case (_: NewLine#NewLine , y: UL              ) => i :+ y
+          case (x: Blank           , _: Blank           ) => i :+ x
+          case (_: Blank           , y: UL              ) => i :+ y
 
           case (x: PTM#EmailAddress, y: Literal#Literal ) => i :+ x :+ y.map(" " + _)
           case (x: PTM#EmailAddress, _: PTM#EmailAddress) => i :+ x
@@ -548,7 +549,7 @@ object RandomData {
           case (x: Issue#Issue     , _: PTM#EmailAddress) if x.desc.isEmpty => i :+ x
           case (x: Issue#Issue     , _: PTM#WebAddress  ) if x.desc.isEmpty => i :+ x
 
-          case (x: UL              , _: NewLine#NewLine ) => i :+ x
+          case (x: UL              , _: Blank           ) => i :+ x
           case (x: UL              , y: UL              ) => i :+ x //.copy(items = x.items ++ y.items)
 
           case _ => q :+ a

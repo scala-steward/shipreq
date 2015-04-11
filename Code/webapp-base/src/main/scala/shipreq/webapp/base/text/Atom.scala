@@ -8,7 +8,7 @@ object Atom {
   sealed trait Type
   object Type {
     case object Literal       extends Type
-    case object NewLine       extends Type
+    case object BlankLine     extends Type
     case object ReqRef        extends Type
     case object Issue         extends Type
     case object WebAddress    extends Type
@@ -20,11 +20,11 @@ object Atom {
     val values = NonEmptyVector[Type](
       Literal, WebAddress, EmailAddress, MathTeX,
       ReqRef, TagRef, Issue,
-      NewLine, UnorderedList)
+      BlankLine, UnorderedList)
 
     val of: Generic => Type = {
       case _: Literal         # Literal       => Literal
-      case _: NewLine         # NewLine       => NewLine
+      case _: NewLine         # BlankLine     => BlankLine
       case _: ReqRef          # ReqRef        => ReqRef
       case _: Issue           # Issue         => Issue
       case _: PlainTextMarkup # WebAddress    => WebAddress
@@ -54,8 +54,8 @@ object Atom {
   }
 
   trait NewLine extends Base {
-    case class NewLine() extends Atom
-    final val newLine = NewLine()
+    case class BlankLine() extends Atom
+    final val blankLine = BlankLine()
   }
 
   trait ListMarkup extends Base {

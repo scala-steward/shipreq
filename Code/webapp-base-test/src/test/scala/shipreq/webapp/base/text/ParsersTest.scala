@@ -172,8 +172,8 @@ object ParsersTest extends TestSuite {
         'lit    - test("  hehe  ")(L("hehe"))
         'email  - test("  asd@abc.com  ")(T.EmailAddress("asd@abc.com"))
         'li     - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))))
-        'nl     - test("here\nthere")(L("here"), T.newLine, L("there"))
-        'nls    - test("here \n \n\n there")(L("here"), T.newLine, L("there"))
+        'nl     - test("here\nthere")(L("here"), T.blankLine, L("there"))
+        'nls    - test("here \n \n\n there")(L("here"), T.blankLine, L("there"))
         'listNL - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\n bye")(L("ok"), T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))), L("bye"))
       }
 

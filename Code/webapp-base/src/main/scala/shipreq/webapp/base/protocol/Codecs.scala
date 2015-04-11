@@ -366,7 +366,7 @@ object DataCodecs {
   private[this] object TC {
     import shipreq.webapp.base.text.Atom._
 
-    private[this] final val NEWLINE = 0
+    private[this] final val BLANKLINE = 0
 
     private[this] final val WEBADD   = "/"
     private[this] final val EMAILADD = "@"
@@ -379,7 +379,7 @@ object DataCodecs {
     lazy val writeAny: Writer[Generic] =
       Writer[Generic]({
         case a: Literal         # Literal       => Js.Str(a.value)
-        case a: NewLine         # NewLine       => Js.Num(NEWLINE)
+        case a: NewLine         # BlankLine     => Js.Num(BLANKLINE)
         case a: ReqRef          # ReqRef        => strkeyW (REQREF,   a.value)
         case a: Issue           # Issue         => strkeyW2(ISSUE,    a.typ, a.desc)
         case a: PlainTextMarkup # WebAddress    => strkeyW (WEBADD,   a.value)
@@ -405,8 +405,8 @@ object DataCodecs {
     def readLiteral(t: Literal): PR[t.Literal] =
       { case Js.Str(s) => t.Literal(s) }
 
-    def readNewLine(t: NewLine): PR[t.NewLine] =
-      { case Js.Num(n) if n.toInt == 0 => t.newLine }
+    def readBlankLine(t: NewLine): PR[t.BlankLine] =
+      { case Js.Num(n) if n.toInt == 0 => t.blankLine }
 
     def readPlainTextMarkup(t: PlainTextMarkup): PR[t.Atom] = {
       case Js.Arr(Js.Str(WEBADD),   v) => t.WebAddress  (readJs[String](v))
@@ -425,7 +425,7 @@ object DataCodecs {
       readLiteral(t) orElse readPlainTextMarkup(t)
 
     def readMultiLine(t: MultiLine)(implicit ra: Name[Reader[t.Atom]]): PR[t.Atom] =
-      readSingleLine(t) orElse readNewLine(t) orElse readListMarkup(t)
+      readSingleLine(t) orElse readBlankLine(t) orElse readListMarkup(t)
 
     def readIssue(t: Issue): PR[t.Issue] =
       { case Js.Arr(Js.Str(ISSUE), a, b) => t.Issue(readJs[CustomIssueType.Id](a), readJs[Text.InlineIssueDesc.OptionalText](b)) }

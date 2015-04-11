@@ -156,6 +156,8 @@ object Style extends StyleSheet.Inline {
       hasError
     )
 
+    val blankLine = style(display.block, height(1 em))
+
     val tag = style(
       addClassName("label label-default"),
       hoverShowsInfo,

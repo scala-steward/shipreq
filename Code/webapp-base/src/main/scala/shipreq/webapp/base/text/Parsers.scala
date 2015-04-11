@@ -137,8 +137,7 @@ object Parsers {
 
   trait NewLine extends Base {
     override type T <: Atom.NewLine
-    def newLine = rule(OWS ~ NL ~ OWSNL ~ push(t.newLine))
-    // TODO Rename to BlankLine
+    def blankLine = rule(OWS ~ NL ~ OWSNL ~ push(t.blankLine))
   }
 
   trait ListMarkup extends Literal {
@@ -193,7 +192,7 @@ object Parsers {
     final val listToken: TokenRule =
       () => rule(additionalTokens() | singleLine)
     final val token: TokenRule =
-      () => rule(unorderedList(listToken) | additionalTokens() | newLine | singleLine)
+      () => rule(unorderedList(listToken) | additionalTokens() | blankLine | singleLine)
   }
 
   // ===================================================================================================================

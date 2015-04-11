@@ -81,7 +81,7 @@ object Presentation {
           import Atom._
           val cur = atoms.head match {
             case a: Literal         # Literal       => a.value
-            case a: NewLine         # NewLine       => newline
+            case a: NewLine         # BlankLine     => newline
             case a: ReqRef          # ReqRef        => reqRef(a.value).unmust
             case a: Issue           # Issue         => issue(a.typ, a.desc.asOption map run).unmust
             case a: PlainTextMarkup # WebAddress    => a.value

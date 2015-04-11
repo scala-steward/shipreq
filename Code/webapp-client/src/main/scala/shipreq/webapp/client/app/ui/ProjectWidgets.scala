@@ -104,7 +104,7 @@ final class ProjectWidgets(project: Project) {
 
     lazy val atom: Atom.Generic => TagMod = {
       case a: Literal         # Literal       => <.span(a.value)
-      case a: NewLine         # NewLine       => <.br
+      case a: NewLine         # BlankLine     => <.div(*.blankLine)
       case a: TagRef          # TagRef        => tag(a.value)()
       case a: PlainTextMarkup # WebAddress    => <.a(^.href := a.value, a.value)
       case a: PlainTextMarkup # EmailAddress  => <.a(^.href := s"mailto:${a.value}", a.value)
