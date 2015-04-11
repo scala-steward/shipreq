@@ -29,8 +29,14 @@ object Parsers {
     /** Optional whitespace */
     def ows = rule( zeroOrMore(' ') )
 
+    /** Beginning Of Line */
+//    def BOL = rule(test( cursor == 0 || lastChar == '\n' ))
+//    def BOL = rule('\n' | test(cursor == 0))
+    def BOL = rule('\n' | test(cursor == 0 || lastChar == '\n'))
+
     /** End Of Line */
     def EOL = rule( "\n" | EOI )
+    val _EOL = () => EOL
 
     def trim = (_: String).trim
 
@@ -41,9 +47,13 @@ object Parsers {
       rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
 
     def popPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] = {
-      val f = pf.lift
-      rule(MATCH ~> f ~ popOptional)
+//      val f = pf.lift
+//      rule(MATCH ~> f ~ popOptional)
+      rule(run((a: A) => test(pf isDefinedAt a) ~ push(pf(a))))
     }
+
+    def popSeqToNEV[A]: RuleAB[Seq[A], NonEmptyVector[A]] =
+      rule(run((v: Seq[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail.toVector))))
 
     def popNEV[A]: RuleAB[Vector[A], NonEmptyVector[A]] =
       rule(run((v: Vector[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail))))
@@ -87,19 +97,29 @@ object Parsers {
   trait Literal extends Base {
     override type T <: Atom.Literal
 
+    final type TokenRule = () => Rule1[t.Atom]
+
     protected def atomsToVector = (_: Seq[t.Atom]).toVector
 
     def literalUntil[O <: HList](stop: () => Rule[HNil, O]): Rule1[t.Literal] =
       rule(capture(oneOrMore( !stop() ~ ANY )) ~> t.Literal)
 
-    def tokenOrLiteral(token: () => Rule1[t.Atom]): Rule1[t.Atom] =
+    def tokenOrLiteral(token: TokenRule): Rule1[t.Atom] =
       rule(token() | literalUntil(token))
 
-    def optionalText(token: () => Rule1[t.Atom]): Rule1[t.OptionalText] =
+    def optionalText(token: TokenRule): Rule1[t.OptionalText] =
       rule(tokenOrLiteral(token).* ~> atomsToVector)
 
-    def nonEmptyText(token: () => Rule1[t.Atom]): Rule1[t.NonEmptyText] =
+    def nonEmptyText(token: TokenRule): Rule1[t.NonEmptyText] =
       rule(optionalText(token) ~ popNEV)
+
+    def optionalTextUntil(token: TokenRule, end: () => Rule0): Rule1[t.OptionalText] = {
+      val endOrToken = () => rule(end() | token())
+      rule(zeroOrMore(token() | literalUntil(endOrToken)) ~ end() ~> atomsToVector)
+    }
+
+    def nonEmptyTextUntil(token: TokenRule, end: () => Rule0): Rule1[t.NonEmptyText] =
+      rule(optionalTextUntil(token, end) ~ popNEV)
   }
 
   trait PlainTextMarkup extends Base {
@@ -125,6 +145,16 @@ object Parsers {
   trait NewLine extends Base {
     override type T <: Atom.NewLine
     def newLine = rule( "\n" ~ push(t.NewLine()) )
+  }
+
+  trait ListMarkup extends Literal {
+    override type T <: Atom.ListMarkup with Atom.Literal
+
+    def listItem(listToken: TokenRule): Rule1[t.ListItem] =
+      rule(BOL ~ "* " ~ ows ~ optionalTextUntil(listToken, _EOL))
+
+     def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] =
+       rule(oneOrMore(listItem(listToken)) ~ popSeqToNEV[t.ListItem] ~> t.UnorderedList)
   }
 
   trait ReqRef extends Base {
@@ -159,14 +189,22 @@ object Parsers {
   // ===================================================================================================================
 
   trait SingleLine extends PlainTextMarkup with Literal {
-    override type T <: Atom.PlainTextMarkup with Atom.Literal
+    override type T <: Atom.SingleLine
     def singleLine = plainTextMarkup
+  }
+
+  trait MultiLine extends SingleLine with NewLine with ListMarkup {
+    override type T <: Atom.MultiLine
+    protected val additionalTokens: TokenRule
+    final val listToken: TokenRule =
+      () => rule(additionalTokens() | singleLine)
+    final val token: TokenRule =
+      () => rule(unorderedList(listToken) | additionalTokens() | newLine | singleLine)
   }
 
   abstract class TopBase[_T <: Atom.Literal](_t: _T) extends Literal {
     override final type T = _T
     override final val  t: T = _t
-    final type TokenRule = () => Rule1[t.Atom]
     protected val token: TokenRule
   }
 

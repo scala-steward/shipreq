@@ -88,6 +88,9 @@ object NonEmptyVector extends NonEmptyVectorImplicits0 {
   @inline def option[A](v: Vector[A]): Option[NonEmptyVector[A]] =
     maybe[A, Option[NonEmptyVector[A]]](v, None)(Some.apply)
 
+  def unwrapOption[A](o: Option[NonEmptyVector[A]]): Vector[A] =
+    o.fold(Vector.empty[A])(_.whole)
+
   implicit def univEq[A: UnivEq]: UnivEq[NonEmptyVector[A]] = UnivEq.force
 
   implicit def semigroup[A]: Semigroup[NonEmptyVector[A]] =

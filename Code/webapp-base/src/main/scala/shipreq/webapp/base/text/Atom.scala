@@ -48,6 +48,7 @@ object Atom {
   /** Literal text, like "hello there" */
   trait Literal extends Base {
     case class Literal(value: String) extends Atom {
+      // For tests
       def map(f: String => String): this.type = Literal(f(value)).asInstanceOf[this.type]
     }
   }
@@ -59,7 +60,11 @@ object Atom {
 
   trait ListMarkup extends Base {
     final type ListItem = Vector[Atom]
-    case class UnorderedList(items: NonEmptyVector[ListItem]) extends Atom
+    case class UnorderedList(items: NonEmptyVector[ListItem]) extends Atom {
+      // For tests
+      def filterAtoms(f: Atom => Boolean): this.type = UnorderedList(items.map(_ filter f)).asInstanceOf[this.type]
+      def map(f: ListItem => ListItem): this.type = UnorderedList(items map f).asInstanceOf[this.type]
+    }
   }
 
   trait PlainTextMarkup extends Base {

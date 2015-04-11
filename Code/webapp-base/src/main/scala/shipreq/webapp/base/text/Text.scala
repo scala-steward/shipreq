@@ -11,6 +11,7 @@ object Text {
 
   object Equality {
     @inline implicit final def eqAtom        [A <: Atom.Generic]: UnivEq[A]              = UnivEq.force
+    @inline implicit final def eqAtomVector  [A <: Atom.Generic]: UnivEq[Vector[A]]      = UnivEq.force
     @inline implicit final def eqOptionalText[T <: Text.Generic]: UnivEq[T#OptionalText] = UnivEq.force
     @inline implicit final def eqNonEmptyText[T <: Text.Generic]: UnivEq[T#NonEmptyText] = UnivEq.force
   }
@@ -50,19 +51,19 @@ object Text {
   // Text instances
 
   object InlineIssueDesc extends DefaultNonEmpty
-    with SingleLine
-    with ReqRef {
+      with SingleLine
+      with ReqRef {
+
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(val project: Project, val input: ParserInput) extends P.DefaultNonEmpty(this)
-      with P.SingleLine
-      with P.ReqRef {
+        with P.SingleLine
+        with P.ReqRef {
+
       val token = () => rule(reqRef | singleLine)
 
       import Grammar.issueDescSurround.{parsing => G}
-      def inlineEnd = rule(ows ~ G.suffix)
-      val inlineUntil = () => rule(inlineEnd | token())
-      def inline: Rule1[NonEmptyText] = rule(
-        G.prefix ~ ows ~ oneOrMore(token() | literalUntil(inlineUntil)) ~ inlineEnd ~> atomsToVector ~ popNEV)
+      val inlineEnd = () => rule(ows ~ G.suffix)
+      def inline: Rule1[NonEmptyText] = rule(G.prefix ~ ows ~ nonEmptyTextUntil(token, inlineEnd))
     }
   }
 
@@ -70,8 +71,22 @@ object Text {
 
   object GenericReqDesc extends ReqTitle
 
-  object CustomTextField extends MultiLine
-    with ReqRef
-    with Issue
-    with TagRef
+  object CustomTextField extends DefaultNonEmpty
+      with MultiLine
+      with ReqRef
+      with Issue
+      with TagRef {
+
+    override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
+    final class Parser(val project: Project, val input: ParserInput) extends P.DefaultNonEmpty(this)
+        with P.MultiLine
+        with P.ReqRef
+        with P.Issue
+        with P.TagRef {
+
+      def hashToken = rule(hashRef ~ (tagRef | issueRef))
+      override protected val additionalTokens = () => rule(hashToken | reqRef)
+      override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project)(_).inline))
+    }
+  }
 }

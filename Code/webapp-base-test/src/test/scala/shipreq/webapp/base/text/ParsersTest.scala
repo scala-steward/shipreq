@@ -6,10 +6,11 @@ import japgolly.nyaya.util._
 import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTest._
 import org.parboiled2._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{NonEmptyVector, UnivEq}
 import scala.util.{Try, Failure, Success}
 import scalaz.Equal
 import scalaz.std.list._
+import scalaz.std.string._
 import scalaz.std.stream._
 import utest._
 import shipreq.base.util.ScalaExt._
@@ -31,15 +32,17 @@ object ParsersTest extends TestSuite {
   class Tester(p: Project, inputs: List[String]) {
     override def toString = p.toString
 
-    //println(p.countAtoms.showTree + "\n")
+    println(p.countAtoms.showTree + "\n")
 
     val E = EvalOver(this)
 
     val txt2str = Presentation.textToString(p)
 
-    val genericReqs = p.reqs.data.reqs.values.filterT[GenericReq]
+    val genericReqDescs = p.reqs.data.reqs.values.filterT[GenericReq].map(_.desc)
 
-    def cmp[A <: Atom.Generic](t: String, actual: Iterable[A], expect: Iterable[A]): EvalL = {
+    val customTextFieldValues = p.reqFieldData.data.text.values.toStream.flatMap(_.values.toStream)
+
+    def cmp[A <: Atom.Generic](t: => String, actual: Iterable[A], expect: Iterable[A]): EvalL = {
 
       var a = actual.toVector
       var e = expect.toVector
@@ -71,12 +74,19 @@ object ParsersTest extends TestSuite {
 //      }
 //    }
 
-    def testGenericReqDesc(r: GenericReq) = {
-      val src = r.desc
+    def testGenericReqDesc(src: Text.GenericReqDesc.OptionalText) = {
       count(src)
       val txt = txt2str(src)
       val parsed = Text.GenericReqDesc.parse(p)(txt)
-      cmp(txt, parsed, src)
+      cmp("[GenericReqDesc] toStr |> parse = id", parsed, src)
+    }
+
+    def testCustomTextField(t: Text.CustomTextField.NonEmptyText) = {
+      val src = t.whole
+      count(src)
+      val txt = txt2str(src)
+      val parsed = NonEmptyVector unwrapOption Text.CustomTextField.parse(p)(txt)
+      cmp(s"[CustomTextField] toStr |> parse = id\n<<$txt>>", parsed, src)
     }
 
     def testString(in0: String) = {
@@ -89,8 +99,9 @@ object ParsersTest extends TestSuite {
     }
 
     def all = (
-      E.forall(genericReqs)(testGenericReqDesc).rename("toStr |> parse = id")
-        ∧ E.forall(inputs)(testString).rename("parse |> toStr |> parse = parse")
+        E.forall(genericReqDescs)(testGenericReqDesc).rename("GenericReqDesc")
+      ∧ E.forall(customTextFieldValues)(testCustomTextField).rename("CustomTextField")
+      ∧ E.forall(inputs)(testString).rename("parse |> toStr |> parse = parse")
       )
   }
 
@@ -127,18 +138,27 @@ object ParsersTest extends TestSuite {
   def propMathTeX = parserProp("MathTeX",
     (_: T.MathTeX).value |> Grammar.mathTexSurround.display, T.parserI(P))(_.mathtex.run())
 
+
+
   override val tests = TestSuite {
     'manual {
       import shipreq.webapp.base.UnsafeTypes._
+
+      def test[A <: Atom.Generic](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
+        val e = as.toVector
+        assertEq(parse(p)(text), e)
+        val text2 = Presentation.textToString(p)(e)
+        assertEq(text2, parse(p)(text2), e)
+      }
+
       'hashHashHash -
         // TODO ReqTitle doesn't allow tags
         // assertEq(T.parse(P)("#v1.x#v1.0#TBD#TBD{whatever}#pri=high"),
-        assertEq(T.parse(P)("#TBD#TBD{ whatever}#TO"+"DO"),
-          Vector(T.Issue(2, Vector.empty), T.Issue(2, Vector(I.Literal("whatever"))), T.Issue(1, Vector.empty)))
+        test(P, T.parse, "#TBD#TBD{ whatever}#TO"+"DO")(
+          T.Issue(2, Vector.empty), T.Issue(2, Vector(I.Literal("whatever"))), T.Issue(1, Vector.empty))
 
       'innerBraceInIssueDesc -
-        assertEq(T.parse(P)("#TBD{ <math>\\frac{22}</math> }"),
-          Vector(T.Issue(2, Vector(I.MathTeX("\\frac{22}")))))
+        test(P, T.parse, "#TBD{ <math>\\frac{22}</math> }")(T.Issue(2, Vector(I.MathTeX("\\frac{22}"))))
     }
 
     'small {
