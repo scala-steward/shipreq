@@ -296,7 +296,7 @@ object Sorter {
         sort   = SortFn.intVector(bp)
     ))
 
-  def textSorter(f: Setup => Row => Text.Generic#OptionalText): SorterForSMCB =
+  def textSorter(f: Setup => Row => Text.AnyOptional): SorterForSMCB =
     SorterForSMCB(bp =>
       Sorter[String](
         prep =

@@ -376,8 +376,8 @@ object DataCodecs {
     private[this] final val REQREF   = "r"
     private[this] final val TAGREF   = "t"
 
-    lazy val writeAny: Writer[Generic] =
-      Writer[Generic]({
+    lazy val writeAny: Writer[AnyAtom] =
+      Writer[AnyAtom]({
         case a: Literal         # Literal       => Js.Str(a.value)
         case a: NewLine         # BlankLine     => Js.Num(BLANKLINE)
         case a: ReqRef          # ReqRef        => strkeyW (REQREF,   a.value)

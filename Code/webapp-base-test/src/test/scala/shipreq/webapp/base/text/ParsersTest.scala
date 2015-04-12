@@ -19,11 +19,12 @@ import shipreq.webapp.base.{RandomData => $}
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.BaseTestUtil._
 import Text.Equality._
+import Atom.AnyAtom
 
 object ParsersTest extends TestSuite {
 
   val counts = Atom.Type.values.toStream.map((_, new AtomicInteger)).toMap
-  def count(as: Iterable[Text.Generic#Atom]): Unit =
+  def count(as: Iterable[AnyAtom]): Unit =
     as.foreach { a =>
       val t = Atom.Type of a
       counts(t).incrementAndGet()
@@ -51,7 +52,7 @@ object ParsersTest extends TestSuite {
 
     val customTextFieldValues = p.reqFieldData.data.text.values.toStream.flatMap(_.values.toStream)
 
-    def cmp[A <: Atom.Generic](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
+    def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
 
       val actual = actual0.toVector
       val expect = expect0.toVector
@@ -143,7 +144,7 @@ object ParsersTest extends TestSuite {
   import SampleProject.{project => P}
   @inline val V = Vector
   @inline def NEV[A](h: A, t: A*) = NonEmptyVector(h, t: _*)
-  @inline def LI[A <: Atom.Generic](as: A*) = as.toVector
+  @inline def LI[A <: AnyAtom](as: A*) = as.toVector
   @inline def L(s: String) = T.Literal(s)
 
   def propEmailAddress = parserProp("EmailAddress",
@@ -161,7 +162,7 @@ object ParsersTest extends TestSuite {
     'manual {
       import shipreq.webapp.base.UnsafeTypes._
 
-      def testT[A <: Atom.Generic](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
+      def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
         assertEq(parse(p)(text), e)
         val text2 = Presentation.textToString(p)(e)

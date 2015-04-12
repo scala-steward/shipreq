@@ -5,12 +5,10 @@ import shipreq.base.util.{NonEmptyVector, Must}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
+import Atom.AnyAtom
 
 /**
  * That which affects users' presentation of their requirements, belongs here.
- *
- * Examples:
- * - Token formatting. `[FR-34]`, `[fr-34]` in red when deleted.
  */
 object Presentation {
 
@@ -69,12 +67,12 @@ object Presentation {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def textToString(implicit p: Project): Text.Generic#OptionalText => String = {
+  def textToString(implicit p: Project): Text.AnyOptional => String = {
 
     val outOfListNewline = "\n\n"
 
-    def nest(acc: String, newline: String, atoms: Vector[Atom.Generic]): String = {
-      @tailrec def go(acc: String, atoms: Vector[Atom.Generic]): String =
+    def nest(acc: String, newline: String, atoms: Vector[AnyAtom]): String = {
+      @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
         if (atoms.isEmpty)
           acc
         else {
@@ -98,7 +96,7 @@ object Presentation {
       go(acc, atoms)
     }
 
-    @inline def run: Text.Generic#OptionalText => String = nest("", outOfListNewline, _)
+    @inline def run: Text.AnyOptional => String = nest("", outOfListNewline, _)
     run
   }
 }

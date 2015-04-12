@@ -22,7 +22,7 @@ object Atom {
       ReqRef, TagRef, Issue,
       BlankLine, UnorderedList)
 
-    val of: Generic => Type = {
+    val of: AnyAtom => Type = {
       case _: Literal         # Literal       => Literal
       case _: NewLine         # BlankLine     => BlankLine
       case _: ReqRef          # ReqRef        => ReqRef
@@ -35,7 +35,7 @@ object Atom {
     }
   }
 
-  type Generic = Base#Atom
+  type AnyAtom = Base#Atom
 
   // ===================================================================================================================
 

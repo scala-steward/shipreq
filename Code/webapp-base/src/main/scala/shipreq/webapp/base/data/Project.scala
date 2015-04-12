@@ -55,7 +55,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     //     append reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).map(_.list)
     //   ).flatMap(_.toStream)
     // ShowSize.Node.countChildren("Atoms", all)(AtomType.of(_).toString)
-    def count(name: String, as: Stream[Atom.Generic]) =
+    def count(name: String, as: Stream[Atom.AnyAtom]) =
       ShowSize.Node.countChildren(name, as)(Atom.Type.of(_).toString)
     val grd = count("Generic Req descs",
       reqs.data.reqs.values.filterT[GenericReq].flatMap(_.desc.toStream))

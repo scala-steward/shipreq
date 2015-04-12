@@ -22,7 +22,7 @@ object Parsers {
   type RuleAB[-A, +B] = Rule[A :: HNil, B :: HNil]
 
   abstract class Base extends Parser {
-    type T <: Text.Generic
+    type T <: Atom.Base
     val t: T
     val project: Project
 

@@ -98,11 +98,11 @@ final class ProjectWidgets(project: Project) {
     <.div(tags.map(id => tag(id)(): TagMod): _*)
 
   // TODO move
-  def text1(t: Text.Generic#NonEmptyText, style: TagMod = EmptyTag): ReactElement = text(t.whole, style)
-  def text(t: Text.Generic#OptionalText, style: TagMod = EmptyTag): ReactElement = {
+  def text1(t: Text.AnyNonEmpty, style: TagMod = EmptyTag): ReactElement = text(t.whole, style)
+  def text(t: Text.AnyOptional, style: TagMod = EmptyTag): ReactElement = {
     import Atom._
 
-    lazy val atom: Atom.Generic => TagMod = {
+    lazy val atom: AnyAtom => TagMod = {
       case a: Literal         # Literal       => <.span(a.value)
       case a: NewLine         # BlankLine     => <.div(*.blankLine)
       case a: TagRef          # TagRef        => tag(a.value)()

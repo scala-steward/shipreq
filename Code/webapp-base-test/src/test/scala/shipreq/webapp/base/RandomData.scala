@@ -381,8 +381,8 @@ object RandomData {
 
   object TextGen {
     import shipreq.webapp.base.text._
-    import Atom.{Generic => _, _}
-    import Text.{Generic => _, ReqTitle => _, _}
+    import Atom._
+    import Text.{ReqTitle => _, _}
     import Gen.Covariance._
 
     val allChars = ('\u0001' to '\u0100').seq
@@ -394,8 +394,8 @@ object RandomData {
     lazy val emailR = charPred(Parsers.emailCharR).string1
 
     // private[this] implicit def autoSomeG[A](g: Gen[A]) = g.some
-    private[this] implicit class NELExt[T <: Atom.Generic](val _nel: NonEmptyList[Gen[T]]) extends AnyVal {
-      def <+(o: Option[Gen[T]]): NonEmptyList[Gen[T]] =
+    private[this] implicit class NELExt[A <: AnyAtom](val _nel: NonEmptyList[Gen[A]]) extends AnyVal {
+      def <+(o: Option[Gen[A]]): NonEmptyList[Gen[A]] =
         o.fold(_nel)(_ <:: _nel)
     }
 
@@ -491,12 +491,12 @@ object RandomData {
       Gen oneofGL gs
     }
 
-    val isBlankLine: Atom.Generic => Boolean = {
+    val isBlankLine: AnyAtom => Boolean = {
       case _: NewLine#BlankLine => true
       case _ => false
     }
 
-    val legalListItemAtom: Atom.Generic => Boolean = {
+    val legalListItemAtom: AnyAtom => Boolean = {
       case _: Literal         # Literal
          | _: ReqRef          # ReqRef
          | _: Issue           # Issue
@@ -520,7 +520,7 @@ object RandomData {
     def removeFromLiterals[L <: Literal#Literal](l: L): L =
       l.map(removeFromLiteralsR.replaceAllIn(_, "x$1"))
 
-    def postProcessAtoms[T <: Text.Generic](ctx: AtomCtx)(as0: Vector[T#Atom]): Vector[T#Atom] = {
+    def postProcessAtoms[T <: Atom.Base](ctx: AtomCtx)(as0: Vector[T#Atom]): Vector[T#Atom] = {
       type Blank = NewLine#BlankLine
       type UL    = ListMarkup#UnorderedList
       type Lit   = Literal#Literal
