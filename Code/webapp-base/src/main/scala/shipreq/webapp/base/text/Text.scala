@@ -7,7 +7,7 @@ import shipreq.webapp.base.text.{Parsers => P}
 import Atom.{ReqTitle => _, _}
 
 object Text {
-  type Generic = Atom.Base
+  type Generic = Atom.Base // TODO Delete
 
   object Equality {
     @inline implicit final def eqAtom        [A <: Atom.Generic]: UnivEq[A]              = UnivEq.force

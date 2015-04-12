@@ -29,10 +29,19 @@ object ParsersTest extends TestSuite {
       counts(t).incrementAndGet()
     }
 
+  def assertSuccess[A](parser: Parser, t: Try[A]): A =
+    t match {
+      case Success(a) => a
+      case Failure(e: ParseError) =>
+        fail(parser.formatError(e, new ErrorFormatter(showTraces = true)))
+      case Failure(e) =>
+        fail(e.toString)
+    }
+
   class Tester(p: Project, inputs: List[String]) {
     override def toString = p.toString
 
-    println(p.countAtoms.showTree + "\n")
+//    println(p.countAtoms.showTree + "\n")
 
     val E = EvalOver(this)
 
@@ -79,7 +88,8 @@ object ParsersTest extends TestSuite {
     def testGenericReqDesc(src: Text.GenericReqDesc.OptionalText) = {
       count(src)
       val txt = txt2str(src)
-      val parsed = Text.GenericReqDesc.parse(p)(txt)
+      val parser = Text.GenericReqDesc.parser(p)(txt)
+      val parsed = assertSuccess(parser, parser.optionalText.run())
       cmp("[GenericReqDesc] toStr |> parse = id", parsed, src)
     }
 
@@ -93,9 +103,10 @@ object ParsersTest extends TestSuite {
 
     def testString(in0: String) = {
       val in1  = Parsers.preprocess(in0)
-      val out1 = Text.GenericReqDesc.parse(p)(in1)
+      val parser = Text.CustomTextField.parser(p)(in1)
+      val out1 = assertSuccess(parser, parser.optionalText.run())
       val in2  = txt2str(out1)
-      val out2 = Text.GenericReqDesc.parse(p)(in2)
+      val out2 = Text.CustomTextField.parse(p)(in2)
       count(out1)
       cmp(in1, out1, out2)
     }
@@ -108,7 +119,7 @@ object ParsersTest extends TestSuite {
   }
 
   def tester: Gen[Tester] =
-    for {p <- $.project; ss <- Gen.string1.list1.map(_.list)} yield new Tester(p, ss)
+    for {p <- $.project; ss <- $.TextGen.genstr1.list1.map(_.list)} yield new Tester(p, ss)
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -190,7 +201,7 @@ object ParsersTest extends TestSuite {
     }
 
     'big {
-      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setDebug.setSampleSize(50).setSeed(0).setGenSize(50))
+      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(100).setGenSize(100))
       println()
       val graphUnit = 1000 `JVM|JS` 10
       val graphChar = "#" `JVM|JS` "."

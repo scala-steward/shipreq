@@ -51,6 +51,11 @@ object RandomData {
     def string1: GenS[String] = g.list1.string1
   }
 
+//    val trimLeftR = "^\\s+".r
+//    def trimLeft(s: String) = trimLeftR.replaceAllIn(s, "")
+//    val trimRightR = "\\s+$".r
+//    def trimRight(s: String) = trimRightR.replaceAllIn(s, "")
+
   @tailrec def dropHead[A](v: Vector[A])(f: A => Boolean): Vector[A] =
     if (v.nonEmpty && f(v.head))
       dropHead(v.tail)(f)
@@ -394,11 +399,12 @@ object RandomData {
         o.fold(_nel)(_ <:: _nel)
     }
 
-    private[this] def genstr = Gen.alphanumericstring // TODO
-    private[this] def genstr1 = Gen.alphanumericstring1
+    val strchr  = Gen.oneofG(Gen.chooseint(32, 127), Gen.chooseint(128, 65534)).map(_.toChar)
+    val genstr  = strchr.string
+    val genstr1 = strchr.string1
 
     def literal(implicit t: Literal): Gen[t.Literal] =
-      genstr1.map(t.Literal) // TODO Certain things need to be ruled out
+      genstr1.map(t.Literal)
 
     def blankLine(implicit t: NewLine): Gen[t.BlankLine] =
       Gen.insert(t.blankLine)
@@ -426,7 +432,7 @@ object RandomData {
       } yield t.EmailAddress(l + "@" + (ra :: rb.list).mkString("."))
 
     def mathTex(implicit t: PlainTextMarkup): Gen[t.MathTeX] =
-      genstr1.map(s => t.MathTeX(s.replace("</math>", "")))
+      genstr1.map(_.replace("</math>", "x") |> noWhitespaceLeft |> noWhitespaceRight |> t.MathTeX)
 
     def plainTextMarkup(implicit t: PlainTextMarkup): Gen[t.Atom] =
       Gen.oneofG(webAddress, emailAddress, mathTex)
@@ -502,64 +508,104 @@ object RandomData {
          | _: ListMarkup      # UnorderedList => false
     }
 
-    def postProcessAtoms[T <: Text.Generic](as0: Vector[T#Atom]): Vector[T#Atom] = {
+    sealed trait AtomCtx
+    case object InIssueDesc  extends AtomCtx
+    case object InListItem   extends AtomCtx
+    case object TopLevelAtom extends AtomCtx
+
+    def noWhitespaceLeft(a: String) = "l" + a
+    def noWhitespaceRight(a: String) = a + "r"
+
+    val removeFromLiteralsR = """[#@]+|[a-z]://|\*( )|<math>|\[\s*[a-zA-Z]+\s*(?:-\s*)?\d+\s*\]""".r
+    def removeFromLiterals[L <: Literal#Literal](l: L): L =
+      l.map(removeFromLiteralsR.replaceAllIn(_, "x$1"))
+
+    def postProcessAtoms[T <: Text.Generic](ctx: AtomCtx)(as0: Vector[T#Atom]): Vector[T#Atom] = {
       type Blank = NewLine#BlankLine
       type UL    = ListMarkup#UnorderedList
+      type Lit   = Literal#Literal
+
+      def fixHead: T#Atom => T#Atom = {
+        case l: Lit => l map noWhitespaceLeft
+        case o => o
+      }
+
+      def fixLast: T#Atom => T#Atom = {
+        case l: Lit => l map noWhitespaceRight
+        case o => o
+      }
+
+      def fix2: T#Atom => T#Atom = {
+        case l: Lit => removeFromLiterals(l)
+        case o => o
+      }
 
       // Trim multiline
-      val as = dropLast(dropHead(as0)(isBlankLine))(isBlankLine)
+      val as = {
+        val v = dropLast(dropHead(as0)(isBlankLine))(isBlankLine)
+        if (v.isEmpty) v else v.init :+ fixLast(v.last)
+      }
 
-      as.foldLeft[Vector[T#Atom]](Vector.empty)((q, a0) => {
+      as.foldLeft(Vector.empty[T#Atom])((q, a0) => {
         import Atom.{PlainTextMarkup => PTM}
 
         val a: T#Atom = a0 match {
-          case i: Issue#Issue => i.copy(desc = postProcessAtoms(i.desc))
-          case ul: UL         => ul.filterAtoms(legalListItemAtom).map(postProcessAtoms)
+          case l: Lit if ctx == InIssueDesc => l.map(_.replace('}', 'x'))
+          case i: Issue#Issue               => i.copy(desc = postProcessAtoms(InIssueDesc)(i.desc))
+          case ul: UL                       => ul.filterAtoms(legalListItemAtom).map(postProcessAtoms(InListItem))
           case o => o
         }
 
         def i = q.init
-        if (q.isEmpty) q :+ a
-        else (q.last, a) match {
+        def drop = q
+        if (q.isEmpty)
+          q :+ fixHead(a)
+        else
+          (q.last, a) match {
 
-          case (x: Literal#Literal , y: Literal#Literal ) => i :+ x.map(_ + y.value)
-          case (x: Literal#Literal , y: PTM#EmailAddress) => i :+ x.map(_ + " ") :+ y
-          case (x: Literal#Literal , y: PTM#WebAddress  ) => i :+ x.map(_ + " ") :+ y
-        //case (x: Literal#Literal , y: Issue#Issue     ) => i :+ x.map(_ + " ") :+ y
-        //case (x: Literal#Literal , y: TagRef#Tagref   ) => i :+ x.map(_ + " ") :+ y
+          case (x: Lit             , y: Lit             ) => i :+ x.map(_ + y.value)
+          case (x: Lit             , y: PTM#EmailAddress) => i :+ x.map(_ + " ") :+ y
+          case (x: Lit             , y: PTM#WebAddress  ) => i :+ x.map(_ + " ") :+ y
+        //case (x: Lit             , y: Issue#Issue     ) => i :+ x.map(_ + " ") :+ y
+        //case (x: Lit             , y: TagRef#Tagref   ) => i :+ x.map(_ + " ") :+ y
+          case (x: Lit             , y: Blank           ) => i :+ x.map(noWhitespaceRight) :+ y
+          case (x: Lit             , y: UL              ) => i :+ x.map(noWhitespaceRight) :+ y
 
-          case (x: Blank           , _: Blank           ) => i :+ x
-          case (_: Blank           , y: UL              ) => i :+ y
+          case (x: Blank           , y: Lit             ) => i :+ x :+ y.map(noWhitespaceLeft)
+          case (x: Blank           , _: Blank           ) => drop
+          case (x: Blank           , _: UL              ) => drop
 
-          case (x: PTM#EmailAddress, y: Literal#Literal ) => i :+ x :+ y.map(" " + _)
-          case (x: PTM#EmailAddress, _: PTM#EmailAddress) => i :+ x
-          case (x: PTM#EmailAddress, _: PTM#WebAddress  ) => i :+ x
+          case (x: PTM#EmailAddress, y: Lit             ) => i :+ x :+ y.map(" " + _)
+          case (x: PTM#EmailAddress, _: PTM#EmailAddress) => drop
+          case (x: PTM#EmailAddress, _: PTM#WebAddress  ) => drop
 
-          case (x: PTM#WebAddress  , y: Literal#Literal ) => i :+ x :+ y.map(" " + _)
-          case (x: PTM#WebAddress  , _: PTM#EmailAddress) => i :+ x
-          case (x: PTM#WebAddress  , _: PTM#WebAddress  ) => i :+ x
-          case (_: PTM#WebAddress  , y: Issue#Issue     ) => i :+ y
-          case (_: PTM#WebAddress  , y: TagRef#TagRef   ) => i :+ y
+          case (x: PTM#WebAddress  , y: Lit             ) => i :+ x :+ y.map(" " + _)
+          case (x: PTM#WebAddress  , _: PTM#EmailAddress) => drop
+          case (x: PTM#WebAddress  , _: PTM#WebAddress  ) => drop
+          case (x: PTM#WebAddress  , _: Issue#Issue     ) => drop
+          case (x: PTM#WebAddress  , _: TagRef#TagRef   ) => drop
 
-          case (x: TagRef#TagRef   , y: Literal#Literal ) => i :+ x :+ y.map(" " + _)
-          case (x: TagRef#TagRef   , _: PTM#EmailAddress) => i :+ x
-          case (x: TagRef#TagRef   , _: PTM#WebAddress  ) => i :+ x
+          case (x: TagRef#TagRef   , y: Lit             ) => i :+ x :+ y.map(" " + _)
+          case (x: TagRef#TagRef   , _: PTM#EmailAddress) => drop
+          case (x: TagRef#TagRef   , _: PTM#WebAddress  ) => drop
 
-          case (x: Issue#Issue     , y: Literal#Literal ) if x.desc.isEmpty => i :+ x :+ y.map(" " + _)
-          case (x: Issue#Issue     , _: PTM#EmailAddress) if x.desc.isEmpty => i :+ x
-          case (x: Issue#Issue     , _: PTM#WebAddress  ) if x.desc.isEmpty => i :+ x
+          case (x: Issue#Issue     , y: Lit             ) if x.desc.isEmpty => i :+ x :+ y.map(" " + _)
+          case (x: Issue#Issue     , _: PTM#EmailAddress) if x.desc.isEmpty => drop
+          case (x: Issue#Issue     , _: PTM#WebAddress  ) if x.desc.isEmpty => drop
 
-          case (x: UL              , _: Blank           ) => i :+ x
-          case (x: UL              , y: UL              ) => i :+ x //.copy(items = x.items ++ y.items)
+          case (x: UL              , y: Lit             ) => i :+ x :+ y.map(noWhitespaceLeft)
+          case (x: UL              , _: Blank           ) => drop
+          case (x: UL              , y: UL              ) => drop //.copy(items = x.items ++ y.items)
 
           case _ => q :+ a
         }
       })
+      .map(fix2)
     }
 
-    def postProcessAtoms1[T <: Text.Generic](as: NonEmptyVector[T#Atom]): NonEmptyVector[T#Atom] = {
-      val r = postProcessAtoms(as.whole)
-      NonEmptyVector.maybe(r, NonEmptyVector(Text.GenericReqDesc.Literal("a").asInstanceOf[T#Atom]))(identity)
+    def postProcessAtoms1[T <: Atom.Literal](t: T)(as: NonEmptyVector[T#Atom]): NonEmptyVector[T#Atom] = {
+      val r = postProcessAtoms(TopLevelAtom)(as.whole)
+      NonEmptyVector.maybe(r, NonEmptyVector[T#Atom](t.Literal("a")))(identity)
     }
 
     // Specific text types
@@ -586,12 +632,12 @@ object RandomData {
 
   val MaxTextAtomsInProject = 6 `JVM|JS` 2
 
-  implicit class TextGenExt[T <: Text.Generic](val g: Gen[T#Atom]) extends AnyVal {
-    def text : GenS[T#OptionalText] = g.vector lim MaxTextAtoms map TextGen.postProcessAtoms
-    def text1: GenS[T#NonEmptyText] = g.nev    lim MaxTextAtoms map TextGen.postProcessAtoms1
+  implicit class TextGenExt[T <: text.Atom.Literal](val g: Gen[T#Atom]) extends AnyVal {
+    def text       : GenS[T#OptionalText] = g.vector lim MaxTextAtoms map TextGen.postProcessAtoms(TextGen.TopLevelAtom)
+    def text1(t: T): GenS[T#NonEmptyText] = g.nev    lim MaxTextAtoms map TextGen.postProcessAtoms1(t)
 
-    def ptext : GenS[T#OptionalText] = g.vector lim MaxTextAtomsInProject map TextGen.postProcessAtoms
-    def ptext1: GenS[T#NonEmptyText] = g.nev    lim MaxTextAtomsInProject map TextGen.postProcessAtoms1
+    def ptext       : GenS[T#OptionalText] = g.vector lim MaxTextAtomsInProject map TextGen.postProcessAtoms(TextGen.TopLevelAtom)
+    def ptext1(t: T): GenS[T#NonEmptyText] = g.nev    lim MaxTextAtomsInProject map TextGen.postProcessAtoms1(t)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -707,7 +753,7 @@ object RandomData {
     val gi = Gen.oneofO(cissues.toSeq)
 
     Gen.apply3(ReqFieldData.apply)(
-      reqFieldDataText(txtCols, reqs, TextGen.customTextFieldAtom(gr, gi, gt).ptext1),
+      reqFieldDataText(txtCols, reqs, TextGen.customTextFieldAtom(gr, gi, gt).ptext1(Text.CustomTextField)),
       reqFieldDataTags(reqs, tags),
       reqFieldDataImplications(reqs))
   }
