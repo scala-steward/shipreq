@@ -63,17 +63,19 @@ final class ColumnEditors(project  : Rx[Project],
 
   def imps(l: Optional[Row, Vector[Pubid]], declFwd : Boolean): ColStartEdit = (row, setLocal) =>
     l.getOption(row).map { initialValue =>
-      val lookup2 = Rx.apply2(project, impsLookup)(ImplicationEditor.lookupForSubject(_, _, row.id, declFwd))
+      val lookup2 = for {p <- project; lm <- impsLookup}
+        yield lm.map(ImplicationEditor.lookupForSubject(p, _, row.id, declFwd))
       ImplicationEditor(initialValue, project, lookup2, setLocal)
     }
 
   val cfImp: CustomField.Implication.Id => ColStartEdit =
     Memo.mutableHashMapMemo { id =>
-      val lookup2 = Rx.apply2(project, impsLookup)(ImplicationEditor.lookupForCol(_, _, id))
+      val lookup2 = for {p <- project; lm <- impsLookup} yield lm.flatMap(ImplicationEditor.lookupForCol(p, _, id))
       (row, setLocal) =>
         Row.cfImp(id).getOption(row).map { initialValue =>
           val declFwd = ImplicationEditor declFwd id
-          val lookup3 = Rx.apply2(project, lookup2)(ImplicationEditor.lookupForSubject(_, _, row.id, declFwd))
+          val lookup3 = for {p <- project; lm <- lookup2}
+            yield lm.map(ImplicationEditor.lookupForSubject(p, _, row.id, declFwd))
           ImplicationEditor(initialValue, project, lookup3, setLocal)
         }
     }

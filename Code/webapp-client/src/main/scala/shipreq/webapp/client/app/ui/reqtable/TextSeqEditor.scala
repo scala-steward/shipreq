@@ -141,21 +141,22 @@ object TagEditor {
 
   final val editor = new TextSeqEditor[A](hashtagSeqFormat)
 
-  def lookupForNoCol(p: Project): Lookup =
+  def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tagsNotUsedInColumns)
 
-  def lookupForCol(p: Project, f: CustomField.Tag.Id): Lookup =
+  def lookupForCol(p: Project, f: CustomField.Tag.Id): Must[Lookup] =
     lookupG(p, _.tagsForColumn(f))
 
-  def lookupG(p: Project, f: TagColumnDistribution => Must[Set[ApplicableTag]]): Lookup =
-    mustResolve(f(p.tagColumnDistribution))(UnivEq.emptySet)
-      .toStream
+  def lookupG(p: Project, f: TagColumnDistribution => Must[Set[ApplicableTag]]): Must[Lookup] =
+    f(p.tagColumnDistribution).map(
+      _.toStream
       .map(_.tmap2(_.key.value, _.id))
       .toMap
+    )
 
   def apply(initial : Vector[A],
             project : Project,
-            lookup  : Rx[Lookup],
+            lookupM : Rx[Must[Lookup]],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
     def init: S =
@@ -163,6 +164,8 @@ object TagEditor {
         val m = project.atag(a).map(_.key.value)
         UiText.mustA(m)
       } mkString " "
+
+    val lookup = lookupM.map(mustResolve(_)(UnivEq.emptyMap))
 
     val autoComplete: AutoComplete =
       lookup.map(l =>
@@ -229,9 +232,7 @@ object ImplicationEditor {
     }
   }
 
-  // TODO lookups should return Must
-
-  def lookupAll(p: Project, reqDesc: Req => String): Lookup = {
+  def lookupAll(p: Project, reqDesc: Req => String): Must[Lookup] = {
     val reqs = p.reqs.data.reqs.values.toStream
     val m = Must.foldMapM[Req, Stream, (String, LookupV)](reqs)(r =>
       Presentation.pubid(r.pubid)(p).map { pubidTxt =>
@@ -239,15 +240,12 @@ object ImplicationEditor {
         (key, LookupV(reqDesc(r), r, pubidTxt))
       }
     )
-    val legal = mustResolve(m)(Stream.empty).toMap
-    Lookup(legal, UnivEq.emptyMap)
+    m.map(legal => Lookup(legal.toMap, UnivEq.emptyMap))
   }
 
-  def lookupForCol(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
-    val m = p.customField(fid).map(f =>
+  def lookupForCol(p: Project, l: Lookup, fid: CustomField.Implication.Id): Must[Lookup] =
+    p.customField(fid).map(f =>
       l.outlaw(None, _.reqTypeId ≠ f.reqTypeId))
-    mustResolve(m)(Lookup(UnivEq.emptyMap, UnivEq.emptyMap))
-  }
 
   def declFwd(c: Column.ImplicationSrc.type): Boolean = false
   def declFwd(c: Column.ImplicationTgt.type): Boolean = true
@@ -267,7 +265,7 @@ object ImplicationEditor {
 
   def apply(initial : Vector[Pubid],
             project : Rx[Project],
-            lookup  : Rx[Lookup],
+            lookupM : Rx[Must[Lookup]],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
     def init: S = {
@@ -276,6 +274,8 @@ object ImplicationEditor {
         UiText mustA Presentation.pubid(pid)(p)
       ) mkString " "
     }
+
+    val lookup = lookupM.map(mustResolve(_)(Lookup(UnivEq.emptyMap, UnivEq.emptyMap)))
 
     val autoComplete: AutoComplete =
       lookup.map { l =>
