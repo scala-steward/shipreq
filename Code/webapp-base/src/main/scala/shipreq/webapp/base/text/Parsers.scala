@@ -52,7 +52,8 @@ object Parsers {
       rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
 
     def popPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] =
-      rule(run((a: A) => test(pf isDefinedAt a) ~ push(pf(a)))) // TODO use pf.lift
+      rule(run((a: A) => test(pf isDefinedAt a) ~ push(pf(a))))
+      // rule(run{(a: A) => val o = pf.lift(a); test(o.isDefined) ~ push(o.get)})
 
     def popSeqToNEV[A]: RuleAB[Seq[A], NonEmptyVector[A]] =
       rule(run((v: Seq[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail.toVector))))
