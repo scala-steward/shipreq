@@ -130,9 +130,9 @@ object TagEditor {
 
   type A = ApplicableTag.Id
 
-  type Lookup = Map[String, A]
+  type Lookup = Map[String, ApplicableTag]
 
-  final val editor = new TextSeqEditor[A]("TagEditor", hashtagSeqFormat)
+  final val editor = new TextSeqEditor[ApplicableTag.Id]("TagEditor", hashtagSeqFormat)
 
   def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tagsNotUsedInColumns)
@@ -143,7 +143,7 @@ object TagEditor {
   def lookupG(p: Project, f: TagColumnDistribution => Must[Set[ApplicableTag]]): Must[Lookup] =
     f(p.tagColumnDistribution).map(
       _.toStream
-      .map(_.tmap2(_.key.value, _.id))
+      .map(_.mapStrengthL(_.key.value))
       .toMap
     )
 
@@ -162,18 +162,13 @@ object TagEditor {
 
     val autoComplete: AutoComplete =
       lookup.map(l =>
-        TC.Strategies(
-          TC.Strategy(s"\\b(${G.firstChar.one}${G.allChars.*})$$")
-            .search(TC.caseInsensitiveContains(l.keys.toStream.sorted))
-            .replace(_ + " ")
-            .index(1)
-        ))
+        AutoComplete.tag(l.values.toStream, prefix = false))
 
     val parser: Parser[A] =
       () => s =>
         lookup.value().get(s) match {
-          case Some(id) => \/-(id)
-          case None     => leftNone
+          case Some(t) => \/-(t.id)
+          case None    => leftNone
         }
 
     val abort: IO[Unit] =

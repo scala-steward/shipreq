@@ -99,6 +99,24 @@ object Util {
 
   @inline final def filterOutAndSortByName[A](as: GenTraversable[A])(f: A => Boolean, name: A => String): Iterable[A] =
     filterAndSortByName(as)(!f(_), name)
+
+  /**
+   * Pattern.quote doesn't work in Scala.JS.
+   *
+   * http://stackoverflow.com/questions/2593637/how-to-escape-regular-expression-in-javascript
+   */
+  def regexEscape(s: String): String = {
+    var r = s
+    r = regexEscape1.replaceAllIn(r, """\\$1""")
+    r = regexEscape2.replaceAllIn(r, """\\x08""")
+    r
+  }
+
+  private[this] val regexEscape1 = """([-()\[\]{}+?*.$\^|,:#<!\\])""".r
+  private[this] val regexEscape2 = """\x08""".r
+
+  def regexEscapeAndWrap(s: String): String =
+    s"(?:${regexEscape(s)})"
 }
 
 object ParseLong {

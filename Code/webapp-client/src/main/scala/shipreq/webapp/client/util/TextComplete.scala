@@ -17,7 +17,7 @@ object TextComplete {
   /**
    * @tparam A The type of data returned by the `search` function.
    */
-  sealed trait Strategy[A] extends Object {
+  sealed trait StrategyA[A] extends Object {
     var `match`: RegExp       = native
     var search : SearchFn[A]  = native
     var replace: ReplaceFn[A] = native
@@ -47,10 +47,7 @@ object TextComplete {
     var className: String        = native  // ''
   }
 
-  type Strategies = JArray[Strategy[_]]
-
-  @inline def Strategies(ss: Strategy[_]*): Strategies =
-    JArray(ss: _*)
+  type Strategy = StrategyA[_]
 
   def search2[A](f: (String, Callback[A]) => Unit): SearchFn[A] =
     (f: JFn2[String, Callback[A], Unit]).asInstanceOf[SearchFn[A]]
@@ -77,8 +74,17 @@ object TextComplete {
       }
     }
 
-    def apply(r: RegExp)                          : B1 = new B1(Dictionary.empty[JAny].updated("match", r))
-    def apply(pattern: String, flags: String = ""): B1 = apply(new RegExp(pattern, flags))
+    @inline def apply(pattern: String, flags: String = "", index: UndefOr[Int] = undefined): B1 =
+      apply(new RegExp(pattern, flags), index)
+
+    @inline def apply(r: RegExp): B1 =
+      apply(r, undefined)
+
+    def apply(r: RegExp, index: UndefOr[Int]): B1 = {
+      val d = Dictionary.empty[JAny].updated("match", r)
+      index.foreach(d.update("index", _))
+      new B1(d)
+    }
 
     final class B1(val o: Dictionary[JAny]) extends AnyVal {
       def apply  [A](f: SearchFn[A])                                  : B2[A] = new B2[A](o.updated("search", f))
@@ -107,12 +113,23 @@ object TextComplete {
       def contextR  (i: A => RegExp ): B3[A] = update("context",    i: JFn1[A, RegExp])
       def idProperty(i: String      ): B3[A] = update("idProperty", i)
 
-      @inline def result: Strategy[A] =
-        o.asInstanceOf[Strategy[A]]
+      @inline def result: StrategyA[A] =
+        o.asInstanceOf[StrategyA[A]]
     }
 
-    @inline implicit def autoResultFromB3[A](b: B3[A]): Strategy[A] = b.result
+    @inline implicit def autoResultFromB3[A](b: B3[A]): StrategyA[A] = b.result
   }
+
+  type Strategies = JArray[Strategy]
+
+  @inline implicit def autoSingletonStrategy[A](s: StrategyA[A]): Strategies = {
+    val a: Strategies = new JArray(1)
+    a(0) = s
+    a
+  }
+
+  @inline def Strategies(ss: Strategy*): Strategies =
+    JArray(ss: _*)
 
   type JQuerySel = Dynamic
 
@@ -133,8 +150,8 @@ object TextComplete {
     target.textcomplete("destroy")
 
   /** Fired with the selected value when a dropdown is selected. */
-  def onSelect(target: JQuerySel, f: (Event, String, Strategy[_]) => Unit): JQuerySel =
-    target.on(Dynamic.literal(eventSelect -> (f: JFn3[Event, String, Strategy[_], Unit])))
+  def onSelect(target: JQuerySel, f: (Event, String, Strategy) => Unit): JQuerySel =
+    target.on(Dynamic.literal(eventSelect -> (f: JFn3[Event, String, Strategy, Unit])))
 
   /** Fired with the selected value when a dropdown is selected. */
   def onSelect(target: JQuerySel, f: (Event, String) => Unit): JQuerySel =

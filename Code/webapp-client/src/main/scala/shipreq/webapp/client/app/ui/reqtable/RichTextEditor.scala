@@ -38,7 +38,23 @@ object RichTextEditor {
 
   val textEditorRef = Ref[HTMLTextAreaElement]("i")
 
+  // ===================================================================================================================
   abstract class Base[TextType <: Text.Generic](name: String, final val t: TextType) {
+
+    def supportsTags   = t match { case _: Atom.TagRef => true; case _ => false }
+    def supportsIssues = t match { case _: Atom.Issue  => true; case _ => false }
+
+    def mkAutoComplete(project: Rx[Project]): AutoComplete = {
+      @inline def legalIf[A](guard: Boolean, s: => Stream[A]): Stream[A] =
+        if (guard) s else Stream.empty
+
+      project.map { p =>
+        AutoComplete.hashtag(
+          legalIf(supportsIssues, p.customIssueTypes.data.values.toStream),
+          legalIf(supportsTags  , p.tags.data.vstream(_.tag).filterT[ApplicableTag]),
+          prefix = true)
+      }
+    }
 
     case class Props(state         : S,
                      stateUpdate   : S => IO[Unit],
@@ -112,6 +128,7 @@ object RichTextEditor {
       Cell.Editing(component(p))
   }
 
+  // ===================================================================================================================
   object GenericReqDesc extends Base("GenericReqDesc editor", Text.GenericReqDesc) {
     def apply(initial : t.OptionalText,
               project : Rx[Project],
@@ -128,8 +145,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      def autoComplete: AutoComplete =
-        Rx(TC.Strategies()).noReuse
+      val autoComplete = mkAutoComplete(project)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))
@@ -141,6 +157,7 @@ object RichTextEditor {
     }
   }
 
+  // ===================================================================================================================
   object CustomTextField extends Base("CustomTextField editor", Text.CustomTextField) {
     def apply(initial : t.OptionalText,
               project : Rx[Project],
@@ -157,8 +174,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      def autoComplete: AutoComplete =
-        Rx(TC.Strategies()).noReuse
+      val autoComplete = mkAutoComplete(project)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))
