@@ -18,6 +18,12 @@ object ScalaExt {
     @inline def ifelse[B](c: A => Boolean, t: A => B, f: A => B): B =
       if (c(_a)) t(_a) else f(_a)
 
+    @inline def apif[B >: A](c: A => Boolean, t: A => B): B =
+      if (c(_a)) t(_a) else _a
+
+    @inline def apif[B >: A](c: Boolean)(t: A => B): B =
+      if (c) t(_a) else _a
+
     @inline def some: Option[A] = Some(_a)
   }
 

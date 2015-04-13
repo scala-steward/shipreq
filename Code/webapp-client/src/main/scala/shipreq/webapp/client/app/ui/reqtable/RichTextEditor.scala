@@ -17,7 +17,7 @@ import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.text.{Grammar, Presentation}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.ui.UI
+import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
 
 // TODO Limit size
 
@@ -26,6 +26,17 @@ object RichTextEditor {
 
   type AutoComplete = Rx[TC.Strategies]
   type S = String
+
+  val ignoreEnter = KeyHandler.pf {
+    case k if k.key == KeyValue.Enter && KeyHandler.modKeys(k) => IoUtils.nop
+  }
+
+  val correctSingleLineText: EndoFn[String] = {
+    val r = "[\\r\\n]+".r
+    r.replaceAllIn(_, " ")
+  }
+
+  val textEditorRef = Ref[HTMLTextAreaElement]("i")
 
   abstract class Base[TextType <: Text.Generic](name: String, final val t: TextType) {
 
@@ -36,8 +47,6 @@ object RichTextEditor {
                      project       : Rx[Project],
                      projectWidgets: Rx[ProjectWidgets],
                      autoComplete  : AutoComplete)
-
-    val textEditorRef = Ref[HTMLTextAreaElement]("i")
 
     val component =
       ReactComponentB[Props](name)
@@ -55,27 +64,34 @@ object RichTextEditor {
         }
         .build
 
+    val correctOnChange: EndoFn[String] =
+      if (t.singleLine) correctSingleLineText else identity
+
     class Backend($: BackendScope[Props, Unit]) {
 
-      val cancelOnEscape = UI.keyDispatch(_.key) {
+      val cancelOnEscape = KeyHandler.by(_.key) {
         case KeyValue.Escape => $.props.abort
       }
 
-      val onChange: ReactEventI => IO[Unit] =
-        e => $.props.stateUpdate(e.target.value)
+      val commitOnCtrlEnter = KeyHandler.pf {
+        case k if k.key == KeyValue.Enter && KeyHandler.modKeys(k, ctrl = true) =>
+          $.props.commit(parseState)
+      }
 
-      //val textToString = $.props.project.map(Presentation.textToString)
+      val onChange: ReactEventI => IO[Unit] =
+        e => $.props.stateUpdate(correctOnChange(e.target.value))
+
+      val onKeyDown =
+        (cancelOnEscape | commitOnCtrlEnter).apif(t.singleLine)(_ | ignoreEnter)
+
+      def parseState = {
+        val p = $.props
+        t.parse(p.project.value())(p.state)
+      }
 
       def render: ReactElement = {
         val p = $.props
-
-        // TODO prevent NLs in SingleLine
-
-//        def onKeyPress = UI.keyDispatch(_.key) {
-//          case KeyValue.Enter => parseResult.fold(_ => js.undefined, p.commit)
-//        }
-
-        val parsed = t.parse(p.project.value())(p.state)
+        val parsed = parseState
 
         def editor =
           <.textarea(
@@ -83,8 +99,7 @@ object RichTextEditor {
             *.cellEditor(false),
             ^.value       := p.state,
             ^.onChange   ~~> onChange,
-            //^.onKeyPress ~~> onKeyPress,
-            ^.onKeyDown  ~~> cancelOnEscape)
+            ^.onKeyDown  ~~> onKeyDown)
 
         def preview =
           <.div(*.textEditPreview, p.projectWidgets.value().text(parsed))

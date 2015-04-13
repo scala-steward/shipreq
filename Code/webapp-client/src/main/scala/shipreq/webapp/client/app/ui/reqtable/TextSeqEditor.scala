@@ -24,7 +24,7 @@ import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.text.{Grammar, Presentation}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.ui.UI
+import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
 
 object TextSeqEditor {
   type S = String
@@ -82,7 +82,7 @@ final class TextSeqEditor[A](name: String, val fmt: Format) {
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    val cancelOnEscape = UI.keyDispatch(_.key) {
+    val cancelOnEscape = KeyHandler.by(_.key) {
       case KeyValue.Escape => $.props.abort
     }
 
@@ -98,7 +98,7 @@ final class TextSeqEditor[A](name: String, val fmt: Format) {
           .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
           .suml
 
-      def onKeyPress = UI.keyDispatch(_.key) {
+      def onKeyPress = KeyHandler.by(_.key) {
         case KeyValue.Enter => parseResult.fold(_ => js.undefined, p.commit)
       }
 

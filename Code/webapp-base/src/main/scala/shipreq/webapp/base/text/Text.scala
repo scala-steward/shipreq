@@ -18,11 +18,15 @@ object Text {
 
   // ===================================================================================================================
 
-  sealed trait Base {
+  sealed abstract class Base {
     this: A.Literal =>
+
+    val multiLine: Boolean
+    @inline final def singleLine = !multiLine
+
     type Parser <: P.TopBase[this.type]
     def parserI(p: Project)(i: ParserInput): Parser
-    def parser (p: Project)(text: String)  : Parser = parserI(p)(P.preprocess(text))
+    def parser (p: Project)(text: String)  : Parser = parserI(p)(P.preprocess(text, multiLine))
 
     final def parse(p: Project)(text: String): OptionalText =
       parser(p)(text).optionalText.run().get
@@ -31,7 +35,7 @@ object Text {
       parser(p)(text).nonEmptyText.run().toOption
   }
 
-  sealed trait ReqTitle extends Atom.ReqTitle with Base {
+  sealed trait ReqTitle extends Base with Atom.ReqTitle {
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(p: Project, i: ParserInput) extends P.ReqTitle[this.type](this, p, i) {
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(p)(_).inline))

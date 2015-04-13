@@ -54,12 +54,6 @@ object UI {
   @inline def mustA[A, N](m: Must[A], outputOnFailure: String = UiText.mustFailed)(implicit x: ReactTag => N, y: A => N): N =
     must(m, outputOnFailure)(y)
 
-  def keyDispatch[A](f: ReactKeyboardEventH => A)(pf: PartialFunction[A, UndefOr[IO[Unit]]]): ReactKeyboardEventH => IO[Unit] =
-    e => {
-      val io: UndefOr[IO[Unit]] = pf.applyOrElse(f(e), (_: A) => undefined)
-      io.fold(IoUtils.nop)(e.preventDefaultIO >>> e.stopPropagationIO >>> _)
-    }
-
   def textComplete[E <: html.Element](target: E, strategies: TextComplete.Strategies, onUpdate: => (String => IO[Unit]))(implicit E: TextEditor[E]): Unit = {
     if (strategies.nonEmpty) {
       val tgt = Dynamic.global.$(target)

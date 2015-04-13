@@ -103,7 +103,7 @@ object ParsersTest extends TestSuite {
     }
 
     def testString(in0: String) = {
-      val in1  = Parsers.preprocess(in0)
+      val in1  = String valueOf Parsers.preprocess(in0, multiLine = true)
       val parser = Text.CustomTextField.parser(p)(in1)
       val out1 = assertSuccess(parser, parser.optionalText.run())
       val in2  = txt2str(out1)

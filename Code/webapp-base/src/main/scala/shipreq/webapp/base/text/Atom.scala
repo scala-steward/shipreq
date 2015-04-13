@@ -109,9 +109,13 @@ object Atom {
 
   // ===================================================================================================================
 
-  trait SingleLine extends Literal with PlainTextMarkup
+  trait SingleLine extends Literal with PlainTextMarkup {
+    val multiLine = false
+  }
 
-  trait MultiLine extends SingleLine with NewLine with ListMarkup
+  trait MultiLine extends SingleLine with NewLine with ListMarkup  {
+    override final val multiLine = true
+  }
 
   /** The main title/desc of a top-level requirement. */
   trait ReqTitle extends SingleLine

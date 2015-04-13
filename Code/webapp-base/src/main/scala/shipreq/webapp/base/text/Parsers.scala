@@ -9,8 +9,20 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
 
 object Parsers {
-  def preprocess: String => String =
-    _.replace('\t', ' ')
+  def preprocess(s: String, multiLine: Boolean): Array[Char] = {
+    val a = s.toCharArray
+    var i = a.length
+    val cond: Char => Boolean =
+      if (multiLine)
+        _ == '\t'
+      else
+        c => c == '\t' || c == '\n' || c == '\r'
+    while (i > 0) {
+      i -= 1
+      if (cond(a(i))) a(i) = ' '
+    }
+    a
+  }
 
   // questionable: :;=?\/
   val emailCharArray = """!$%*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~""".toCharArray
