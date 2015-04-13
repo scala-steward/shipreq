@@ -104,10 +104,14 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val implicationTgtToSrcTC: TransitiveClosure[Req.Id] =
     TransitiveClosure.auto[Req.Id](reqs.data.reqs.keys)(reqFieldData.data.implications.tgtToSrc.apply)
 
-  lazy val hashRefs: Map[HashRefKey, HashRefTarget] = (
-      tags.data.vstream(_.tag).filterT[ApplicableTag].map(t => (t.key, -\/(t))) append
-      customIssueTypes.data.vstream(t => (t.key, \/-(t)))
+  /** Keys are lowercase */
+  lazy val hashRefLookupM: Map[String, HashRefTarget] = (
+      tags.data.vstream(_.tag).filterT[ApplicableTag].map(t => (t.key.value.toLowerCase, -\/(t))) append
+      customIssueTypes.data.vstream(t => (t.key.value.toLowerCase, \/-(t)))
     ).toMap
+
+  def hashRefLookup(key: String): Option[HashRefTarget] =
+    hashRefLookupM.get(key.toLowerCase)
 }
 
 

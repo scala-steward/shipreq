@@ -141,7 +141,16 @@ object ParsersTest extends TestSuite {
     )
 
   import Text.{CustomTextField => T, InlineIssueDesc => I}
-  import SampleProject.{project => P}
+  val P = {
+    import shipreq.webapp.base.UnsafeTypes._
+    import shipreq.webapp.base.test.ProjectDSL._
+    val List(co,mf,fr) = List[ReqType.Id](1,2,3).map(Some(_))
+    GReq(reqType = fr, id = 11, desc = "do stuff") +
+    GReq(reqType = fr, id = 12, desc = "do more stuff") +
+    GReq(reqType = mf, id = 21, desc = "Use Case Editor") +
+    GReq(reqType = mf, id = 22, desc = "Templates") +
+    GReq(reqType = mf, id = 23, desc = "Incompletions") ! SampleProject.project
+  }
   @inline val V = Vector
   @inline def NEV[A](h: A, t: A*) = NonEmptyVector(h, t: _*)
   @inline def LI[A <: AnyAtom](as: A*) = as.toVector
@@ -192,6 +201,12 @@ object ParsersTest extends TestSuite {
       'list {
         'empty - test("* ")(T.UnorderedList(NEV(LI())))
         'between - test("before\n* mid\nafter")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+      }
+
+      'altForms {
+        'req - test("[fr1][fr 1][ fr - 2 ][Mf-1 ]")(T.ReqRef(11), T.ReqRef(11), T.ReqRef(12), T.ReqRef(21))
+        'issue - test("#tbd{cool}#Todo")(T.Issue(2, Vector(I.Literal("cool"))), T.Issue(1, Vector.empty))
+        'tag - test("#wip#DEFER#V3.x")(T.TagRef(11), T.TagRef(12), T.TagRef(26))
       }
     }
 

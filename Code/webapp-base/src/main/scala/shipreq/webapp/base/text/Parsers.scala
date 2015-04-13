@@ -90,7 +90,7 @@ object Parsers {
 
     def hashRef = rule(
       G.hashRefKey.prefix ~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.allChars, _.length))
-      ~> (HashRefKey(_) |> project.hashRefs.get) ~ popOptional
+      ~> (project.hashRefLookup _) ~ popOptional
     )
   }
 
