@@ -205,8 +205,9 @@ object ParsersTest extends TestSuite {
 
       'altForms {
         'req - test("[fr1][fr 1][ fr - 2 ][Mf-1 ]")(T.ReqRef(11), T.ReqRef(11), T.ReqRef(12), T.ReqRef(21))
-        'issue - test("#tbd{cool}#Todo")(T.Issue(2, Vector(I.Literal("cool"))), T.Issue(1, Vector.empty))
         'tag - test("#wip#DEFER#V3.x")(T.TagRef(11), T.TagRef(12), T.TagRef(26))
+        'issue - test("#tbd{cool}#Todo#TBD { nice }")(
+          T.Issue(2, Vector(I.Literal("cool"))), T.Issue(1, Vector.empty), T.Issue(2, Vector(I.Literal("nice"))))
       }
     }
 

@@ -610,7 +610,7 @@ object RandomData {
           case (x: TagRef#TagRef   , _: PTM#EmailAddress) => drop
           case (x: TagRef#TagRef   , _: PTM#WebAddress  ) => drop
 
-          case (x: Issue#Issue     , y: Lit             ) if x.desc.isEmpty => i :+ x :+ y.map(" " + _)
+          case (x: Issue#Issue     , y: Lit             ) if x.desc.isEmpty => i :+ x :+ y.map(" i" + _)
           case (x: Issue#Issue     , _: PTM#EmailAddress) if x.desc.isEmpty => drop
           case (x: Issue#Issue     , _: PTM#WebAddress  ) if x.desc.isEmpty => drop
 

@@ -183,7 +183,7 @@ object Parsers {
 
     def issueRef: RuleAB[HashRefTarget, t.Issue] = {
       def id           = popPF[HashRefTarget, CustomIssueType.Id] { case \/-(i) => i.id }
-      def optionalDesc = rule(issueInnerDesc ~> (_.whole) | push(Vector.empty))
+      def optionalDesc = rule(OWS ~ issueInnerDesc ~> (_.whole) | push(Vector.empty))
       rule(run(id) ~ optionalDesc ~> t.Issue)
     }
 
