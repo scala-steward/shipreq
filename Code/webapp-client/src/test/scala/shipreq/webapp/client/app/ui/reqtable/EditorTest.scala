@@ -18,7 +18,7 @@ object EditorTest extends TestSuite {
     import ImplicationEditor._
 
     val reqsAndKeys = project.reqs.data.reqs
-      .vstream(r => (r, norm(Presentation.pubid(r.pubid)(project).get)))
+      .vstream(r => (r, AutoComplete.normaliseReqPubid(Presentation.pubid(r.pubid)(project).get)))
 
     def lall = lookupAll(project, _ => "")
 
@@ -54,7 +54,7 @@ object EditorTest extends TestSuite {
       'src {
         def test(subj: Req.Id, illegal: String): Unit = {
           val l = lookupForSubject(project, impLookupAll, subj, declFwd(Column.ImplicationSrc))
-          val keys = l.illegal.keySet ++ l.legal.keySet
+          val keys = l.illegal.keySet ++ l.legalm.keySet
           assertEq(keys, impAllKeys)
           assertSet(l.illegal.keySet)(illegal.split(" +"): _*)
         }
@@ -77,9 +77,9 @@ object EditorTest extends TestSuite {
           val fid = CustomField.Implication.Id(6) // major feature
           val l1 = lookupForCol(project, impLookupAll, fid)
           val l = lookupForSubject(project, l1, subj, declFwd(fid))
-          val keys = l.illegal.keySet ++ l.legal.keySet
+          val keys = l.illegal.keySet ++ l.legalm.keySet
           assertEq(keys, impAllKeys)
-          assertSet(l.legal.keySet)(legal.split(" +"): _*)
+          assertSet(l.legalm.keySet)(legal.split(" +"): _*)
         }
         test(mf1, "MF2 MF3 MF4 MF5")
         test(fr2, "MF1 MF2 MF3 MF4 MF5")

@@ -113,8 +113,8 @@ object Rx {
     override def rev  = _revA + _value.rev
     override def peek = _value.peek
 
-    override def map[C](g: B => C): Rx[C] =
-      new FlatMap(xa, f(_: A) map g)
+//    override def map[C](g: B => C): Rx[C] =
+//      new FlatMap(xa, f(_: A) map g)
 
     override def value(): B = {
       xa.valueSince(_revA).foreach { a =>
