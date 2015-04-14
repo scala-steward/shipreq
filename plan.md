@@ -1,15 +1,45 @@
-1. Plan UI for:
-     * MF-01: Use Case Editor
-     * MF-05: Field Customisation
-     * MF-06: Incompletions
-     * MF-07: Organisation
-     * MF-12: Low-level Requirements (CO, FR, BR, etc.)
-     * MF-13: Requirement Relationships
-     * MF-22: High-level Requirements (MF, BO, SC, etc.)
+Phase 2
+=======
 
-2. Tech design.
+### ReqTable
 
-3. Code.
+* Modification protocol
+* Filters
+* Highlight empty, mandatory cells
+* Create new req + new req template
+* Req Codes
+  * Display
+  * Edit
+  * Groups
+* [Change req-type] button + modal + logic
+* [Change common sem-ID prefix] button + modal + logic
+* Deleted stuff
+  * Hide
+  * Handle in display widgets
+  * Handle in editors
+* Copy & paste
+* Bulk restore? Or delete? (Re-read reqs)
+* Row detail view
+
+### Other
+
+* Cfg screens & usage/deleted
+  * Count usage
+  * Show usage
+  * Prevent deletion
+* Loose issue
+* Issues screen
+  * Screen (composite of views, filter, buttons, summary)
+  * Distribution view & data representation
+  * Detail view section: Blank
+  * Detail view section: Custom
+  * Detail view section: Loose
+  * Detail view section: Cfg issues
+* Deleting/Restoring Reqs
+  * Data representation + derivation
+  * Tree n-level checkboxes
+  * Component
+
 
 ================================================================================
 
