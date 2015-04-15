@@ -166,8 +166,10 @@ object Parsers {
   trait ReqRef extends Base {
     override type T <: Atom.ReqRef
 
+    import G.reflinkSurround.parsing.{prefix, suffix}
+
     def reqRef: Rule1[t.ReqRef] = rule(
-      G.reflinkPrefix ~ OWS ~ reqTypeMnemonic ~ OWS ~ ('-' ~ OWS).? ~ reqTypePos ~ OWS ~ G.reflinkSuffix
+      prefix ~ OWS ~ reqTypeMnemonic ~ OWS ~ ('-' ~ OWS).? ~ reqTypePos ~ OWS ~ suffix
         ~> lookupReq ~ popOptional[Req.Id] ~> t.ReqRef)
   }
 

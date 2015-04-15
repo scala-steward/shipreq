@@ -2,6 +2,7 @@ package shipreq.webapp.base.text
 
 import scala.collection.immutable.NumericRange
 import scala.runtime.AbstractFunction1
+import shipreq.base.util.Util
 import shipreq.webapp.base.validation.{Constraints, Rules}
 
 object Grammar {
@@ -42,6 +43,9 @@ object Grammar {
 
   class Surround(val prefix: String, val suffix: String) extends AbstractFunction1[String, String] {
     def apply(s: String): String = prefix + s + suffix
+
+    def regexEscapeAndWrap: (String, String) =
+      (Util.regexEscapeAndWrap(prefix), Util.regexEscapeAndWrap(suffix))
   }
   class Surrounds(val parsing: Surround, val display: Surround)
   def surrounds(prefix: String, suffix: String) = {
@@ -89,8 +93,7 @@ object Grammar {
 
   val issueDescSurround = surrounds("{", "}", " ", " ")
 
-  val reflinkPrefix = "["
-  val reflinkSuffix = "]"
+  val reflinkSurround = surrounds("[", "]")
 
   val mathTexSurround = surrounds("<math>", "</math>")
 

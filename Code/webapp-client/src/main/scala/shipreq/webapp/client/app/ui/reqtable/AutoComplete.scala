@@ -63,8 +63,7 @@ object AutoComplete {
   }
 
   def req(legal: Stream[ReqItem], prefix: Boolean): Strategy = {
-    val prefixRegex = Util.regexEscapeAndWrap(Grammar.reflinkPrefix)
-    val suffixRegex = Util.regexEscapeAndWrap(Grammar.reflinkSuffix)
+    val (prefixRegex, suffixRegex) = Grammar.reflinkSurround.parsing.regexEscapeAndWrap
     val mainRegex = s"(\\S+?)$suffixRegex?$$"
 
     // TODO [pri=low] Search algorithm won't scale well
@@ -82,7 +81,7 @@ object AutoComplete {
       ))
 
     optionallyPrefixedStrategy(prefixRegex, mainRegex, searchFn)(
-      _.pubidStr, Grammar.reflinkPrefix + _ + Grammar.reflinkSuffix, " ")(prefix)
+      _.pubidStr, Grammar.reflinkSurround.display.apply, " ")(prefix)
       .template(i => React.renderToStaticMarkup(li(i)))
   }
 

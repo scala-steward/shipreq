@@ -34,12 +34,6 @@ object Presentation {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  /**
-   * A "reflink" is a token that refers to another (sub-)requirement.
-   * It can usually be clicked on to navigate to the referenced content.
-   */
-  def reflink(in: String) = G.reflinkPrefix ~ in ~ G.reflinkSuffix
-
   def hashtag(key: HashRefKey) = G.hashRefKey.prefix ~ key.value
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -56,7 +50,7 @@ object Presentation {
       pid = r.pubid
       rt  ← p.reqType(pid.reqTypeId)
     } yield
-      reflink(pubid(rt, pid.pos))
+      G.reflinkSurround(pubid(rt, pid.pos))
 
   def tagRef(id: ApplicableTag.Id)(implicit p: Project): Must[String] =
     p.atag(id).map(t => hashtag(t.key))
