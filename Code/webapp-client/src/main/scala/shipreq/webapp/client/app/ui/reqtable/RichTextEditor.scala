@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.jquery.{TextComplete => TC}
-import japgolly.scalacss.ScalaCssReact._
+import scalacss.ScalaCssReact._
 import org.scalajs.dom.ext.KeyValue
 import org.scalajs.dom.raw.HTMLTextAreaElement
 import shipreq.webapp.client.app.ui.ProjectWidgets

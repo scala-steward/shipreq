@@ -1,8 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import monocle.Optional
-import japgolly.scalacss.ScalaCssReact._
-import japgolly.scalacss.StyleA
+import scalacss.ScalaCssReact._
+import scalacss.StyleA
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import shipreq.base.util.Must
 import shipreq.base.util.ScalaExt._

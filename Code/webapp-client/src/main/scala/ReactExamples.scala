@@ -9,8 +9,8 @@ import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.std.AllInstances._
 import shipreq.webapp.base.protocol.Routines
-import japgolly.scalacss.Defaults._
-import japgolly.scalacss.ScalaCssReact._
+import scalacss.Defaults._
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router._

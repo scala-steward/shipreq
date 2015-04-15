@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui
 
-import japgolly.scalacss.ScalaCssReact._
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.webapp.base.UiText

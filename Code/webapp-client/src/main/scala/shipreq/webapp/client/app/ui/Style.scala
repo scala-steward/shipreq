@@ -1,9 +1,9 @@
 package shipreq.webapp.client.app
 package ui
 
-import japgolly.scalacss.Defaults._
-import japgolly.scalacss.ScalaCssReact._
-import japgolly.scalacss.StyleS
+import scalacss.Defaults._
+import scalacss.ScalaCssReact._
+import scalacss.StyleS
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{Alive, Dead}
 import shipreq.webapp.client.lib.ConsoleIO
@@ -12,28 +12,11 @@ import scalaz.syntax.equal._
 object Style extends StyleSheet.Inline {
   import dsl._
 
-  object Missing {
-    import japgolly.scalacss._
-    import DslBase.ToStyle
-
-    def styleIf(b: Boolean)(t: ToStyle*)(implicit c: Compose): StyleS =
-      if (b) styleS(t: _*)(c) else StyleS.empty
-  }
-
-  import Missing._
-
-  import japgolly.scalacss.Color
-
-//  private implicit class boolext(val b: Boolean) extends AnyVal {
-//    import japgolly.scalacss._
+//  object Missing {
+//    import scalacss._
 //    import DslBase.ToStyle
-//
-//    def styleIf(t: ToStyle*)(implicit c: Compose): StyleS =
-//      if (b) styleS(t: _*) else StyleS.empty
-//
-//    @inline def styleIfNot(t: ToStyle*)(implicit c: Compose): StyleS =
-//      (!b).styleIf(t: _*)
 //  }
+//  import Missing._
 
    // ==================================================================================================================
 
@@ -50,7 +33,7 @@ object Style extends StyleSheet.Inline {
     object sortingSettings {
 
       val row = boolStyle(on => styleS(
-//        styleIf(!on)(
+//        mixinIf(!on)(
 //          backgroundColor("#e2e2e2")),
         marginBottom(0.7 ex),
         paddingRight(1 ex)))
@@ -62,7 +45,7 @@ object Style extends StyleSheet.Inline {
 
       val field = boolStyle(on => styleS(
         marginLeft(1 ex),
-        styleIf(!on)(
+        mixinIf(!on)(
           //textDecoration := ^.lineThrough,
           color("#999"))))
 
@@ -100,9 +83,9 @@ object Style extends StyleSheet.Inline {
     )
 
     val cell = boolStyle(focus => styleS(
-      border(1 px, solid, if (focus) Color("#006") else Color("#000")),
+      border(1 px, solid, (if (focus) "#006" else "#000").color),
       padding(v = 2.px, h = 4.px),
-      styleIf(focus)(
+      mixinIf(focus)(
         backgroundColor("#e9e9ff"),
         outline(rgba(0, 0, 140, 0.15), 2 px, solid),
         outlineOffset(-1 px)
@@ -116,7 +99,7 @@ object Style extends StyleSheet.Inline {
 //      transition := "border-color ease-in-out .15s, box-shadow ease-in-out .15s",
       //border(1 px, solid, if (hasError) Color("#a94442") else Color("#666")),
 //      outlineColor(if (hasError) Color("#a94442") else Color("#666")),
-      styleIf(hasError)(hasErrorBackground, &.focus(outlineColor("#f88"))),
+      mixinIf(hasError)(hasErrorBackground, &.focus(outlineColor("#f88"))),
       padding.horizontal(0.8 ex)
     ))
 //    val cellEditorO = boolStyle(hasError => styleS(
@@ -138,7 +121,7 @@ object Style extends StyleSheet.Inline {
 
     val textEditPreview = style(
       padding(h = 0.8.ex, v = 0.2.em),
-      border(solid, 1 px, Color("#222")),
+      border(solid, 1 px, "#222".color),
       backgroundColor("#efe")
     )
 
@@ -180,7 +163,7 @@ object Style extends StyleSheet.Inline {
     val reqRef = aliveStyle(a => styleS(
       display.inlineBlock,
       color("#2363A1"),
-      styleIf(a ≟ Dead)(dead),
+      mixinIf(a ≟ Dead)(dead),
       hoverShowsInfo))
 
     val math = style(margin.horizontal(0.8 ex))

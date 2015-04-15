@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.scalacss.ScalaCssReact._
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom

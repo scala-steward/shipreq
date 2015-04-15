@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import java.util.regex.Pattern
-import japgolly.scalacss.ScalaCssReact._
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.jquery.{TextComplete => TC}
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom.console
