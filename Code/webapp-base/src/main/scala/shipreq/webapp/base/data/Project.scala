@@ -5,7 +5,7 @@ import scalaz.{-\/, \/-, Memo}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Monoidish, Must}
 import shipreq.webapp.base.TransitiveClosure
-import shipreq.webapp.base.text.Atom
+import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.ShowSize
 import DataImplicits._
 
@@ -48,20 +48,18 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   override def toString =
     ShowSize(this).showTree
 
+  def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
+    Stream(
+      ("Generic Req descs", reqs.data.reqs.values.filterT[GenericReq].map(_.desc)),
+      ("Text fields", reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).map(_.whole)))
+
   def countAtoms: ShowSize.Node = {
-    // val all = (
-    //     reqs.data.reqs.values.filterT[GenericReq].map(_.desc)
-    //      // append RecCodeGroupDesc
-    //     append reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).map(_.list)
-    //   ).flatMap(_.toStream)
-    // ShowSize.Node.countChildren("Atoms", all)(AtomType.of(_).toString)
-    def count(name: String, as: Stream[Atom.AnyAtom]) =
-      ShowSize.Node.countChildren(name, as)(Atom.Type.of(_).toString)
-    val grd = count("Generic Req descs",
-      reqs.data.reqs.values.filterT[GenericReq].flatMap(_.desc.toStream))
-    val txt = count("Text fields",
-      reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).flatMap(_.toStream))
-    ShowSize.Node.sum("Atoms", grd, txt)
+    val counted =
+      allRichText.map {
+        case (name, txts) =>
+          ShowSize.Node.countChildren(name, txts.flatMap(_.toStream))(Atom.Type.of(_).toString)
+      }
+    ShowSize.Node.sum("Atoms", counted: _*)
   }
 
   def atag(id: ApplicableTag.Id): Must[ApplicableTag] =

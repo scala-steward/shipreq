@@ -46,6 +46,9 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   def ++:[B >: A](as: Vector[B]): NonEmptyVector[B] =
     if (as.isEmpty) this else NonEmptyVector(as.head, as.tail ++ whole)
 
+  def last: A =
+    if (tail.isEmpty) head else tail.last
+
   def whole: Vector[A] =
     head +: tail
 

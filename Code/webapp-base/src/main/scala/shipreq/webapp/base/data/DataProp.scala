@@ -4,11 +4,13 @@ import japgolly.nyaya._
 import scalaz.syntax.equal._
 import scalaz.std.AllInstances._
 import shipreq.base.util.Debug._
-import shipreq.base.util.Must
+import shipreq.base.util.{NonEmptyVector, Must}
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.text.{Atom, Text}
 import DataImplicits._
 
 object DataProp {
+  implicit def autoLiftL(e: Eval) = e.liftL
 
   val rev =
     Prop.test[Rev]("rev ≥ 0", _.value >= 0)
@@ -198,8 +200,75 @@ object DataProp {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  object text {
+    import Atom._
+
+    def show(s: String) = "'" + s.replace("\n", "\\n").replace("\r", "\\r") + "'"
+    def contains(substr: String) = Prop.test[String](s"Contains ${show(substr)}", _ contains substr)
+    def startsWith(substr: String) = Prop.test[String](s"Starts with ${show(substr)}", _ startsWith substr)
+    def endsWith(substr: String) = Prop.test[String](s"Ends with ${show(substr)}", _ endsWith substr)
+    def matches(regex: String) = {
+      val p = regex.r.pattern
+      Prop.test[String](s"Matches ${show(regex)}", p.matcher(_).matches())
+    }
+    def trimmed = ~startsWith(" ") & ~endsWith(" ")
+    val noNLT = ~matches(".*[\r\n\t].*")
+    val noWS = ~matches(".*[\r\n\t ].*")
+    val nonEmpty = Prop.test[String](s"non-empty", _.nonEmpty)
+
+    val isBlankLine: Prop[AnyAtom] =
+      Prop.test("Is a BlankLine", { case _: NewLine#BlankLine => true; case _ => false })
+
+    val literal =
+      (nonEmpty ∧ noNLT).contramap[Literal#Literal](_.value)
+
+    val webAddress =
+      (nonEmpty ∧ noWS ∧ contains("://")).contramap[PlainTextMarkup#WebAddress](_.value)
+
+    val emailAddress =
+      (nonEmpty ∧ noWS ∧ contains("@")).contramap[PlainTextMarkup#EmailAddress](_.value)
+
+    val mathtex =
+      (nonEmpty ∧ trimmed).contramap[PlainTextMarkup#MathTeX](_.value)
+
+    def nonEmptyText: Prop[Text.AnyNonEmpty] = {
+      val litval: AnyAtom => String =
+        { case a: Literal#Literal => a.value; case _ => "" }
+      val head = ~(isBlankLine | startsWith(" ").contramap(litval))
+      val last = ~(isBlankLine | endsWith(" ").contramap(litval))
+      head.contramap[Text.AnyNonEmpty](_.head) ∧ last.contramap[Text.AnyNonEmpty](_.last)
+    }
+
+    lazy val anyText: Prop[Text.AnyOptional] =
+      anyAtom.forallF[Vector] ∧ nonEmptyText.forallF[Option].contramap(NonEmptyVector.option)
+
+    lazy val anyTextV: Prop[Vector[Text.AnyOptional]] = anyText.forallF
+    lazy val anyTextS: Prop[Stream[Text.AnyOptional]] = anyText.forallF
+
+    val nop = Eval.pass()
+
+    lazy val anyAtom: Prop[AnyAtom] = Prop.eval[AnyAtom] {
+      case a: Literal         # Literal       => literal(a)
+      case _: NewLine         # BlankLine     => nop
+      case a: PlainTextMarkup # WebAddress    => webAddress(a)
+      case a: PlainTextMarkup # EmailAddress  => emailAddress(a)
+      case a: PlainTextMarkup # MathTeX       => mathtex(a)
+      case a: ListMarkup      # UnorderedList => anyTextV(a.items.whole)
+      case _: ReqRef          # ReqRef        => nop
+      case a: Issue           # Issue         => anyText(a.desc)
+      case _: TagRef          # TagRef        => nop
+    } rename "AnyAtom"
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
   object project {
     type T = Project
+
+    case class Refs(fieldIds: Set[CustomField.Id], reqIds: Set[Req.Id], reqTypeIds: Set[ReqType.Id], tagIds: Set[Tag.Id])
+
+    def atoms =
+      Prop.eval[(String, Stream[Text.AnyOptional])](t => text.anyTextS(t._2).rename(t._1))
+        .forallF[Stream].contramap[T](_.allRichText) rename "Atoms"
 
     def constituents = (
         customIssueTypes.all.contramap[T](_.customIssueTypes)
@@ -211,7 +280,6 @@ object DataProp {
       ∧     implications.all.contramap[T](_.reqFieldData.data.implications)
     ) rename "constituents"
 
-
     def uniqueHashRefKeys =
       Prop.distinct[T, String]("HashRefKey", p => (
           p.customIssueTypes.data.values.toStream.map(_.key) append
@@ -219,37 +287,55 @@ object DataProp {
         ).map(_.value.toLowerCase))
 
     def validRefs = {
-      def validateFieldIds(name: String, data: T => Traversable[CustomField.Id]) =
-        Prop.whitelist[T](name + " are resolvable")(_.fields.data.customFields.keySet, data)
+      type TR = (T, Refs)
+      import Atom._
 
-      def validateReqIds(name: String, data: T => Traversable[Req.Id]) =
-        Prop.whitelist[T](name + " are resolvable")(_.reqs.data.reqs.vstream(_.id).toSet, data)
+      def mkRefs(p: Project): Refs = Refs(
+        p.fields.data.customFields.keySet,
+        p.reqs.data.reqs.vstream(_.id).toSet,
+        p.reqTypes.map(_.reqTypeId).toSet,
+        p.tags.data.keySet)
 
-      def validateReqTypeIds(name: String, data: T => Traversable[ReqType.Id]) =
-        Prop.whitelist[T](name + " are resolvable")(_.reqTypes.map(_.reqTypeId).toSet, data)
+      def whitelist[A](refs: TR => Set[A])(name: String, test: T => Traversable[A]) =
+        Prop.whitelist[TR](name + " resolve")(refs, _._1 |> test)
 
-      def validateTagIds(name: String, data: T => Traversable[Tag.Id]) =
-        Prop.whitelist[T](name + " are resolvable")(_.tags.data.keySet, data)
+      def validFieldIds   = whitelist(_._2.fieldIds) _
+      def validReqIds     = whitelist(_._2.reqIds) _
+      def validReqTypeIds = whitelist(_._2.reqTypeIds) _
+      def validTagIds     = whitelist(_._2.tagIds) _
+      def validIssueTypes = whitelist(_._1.customIssueTypes.data.keySet) _
+
+      def inText[A](f: PartialFunction[AnyAtom, A]): T => Traversable[A] = {
+        def go(a0: AnyAtom): Stream[A] = a0 match {
+          case a if f.isDefinedAt(a)         => f(a) +: Stream.empty
+          case a: ListMarkup # UnorderedList => a.items.toStream.flatMap(_.toStream).flatMap(go)
+          case a: Issue      # Issue         => a.desc.toStream.flatMap(go)
+          case _                             => Stream.empty
+        }
+        _.allRichText.flatMap(_._2).flatMap(_.toStream).flatMap(go)
+      }
 
       // TODO [assert] req code targets
-      // TODO [assert] no newlines in atoms
 
-      (  validateReqTypeIds("Field.reqTypes",
+      (  validReqTypeIds("Field.reqTypes",
           _.fields.data.customFields.values.toStream.flatMap(f => isubsetContents(f.reqTypes).toStream))
-
-      ∧ validateReqTypeIds("CustomField.Implication.reqTypeIds",
+      ∧ validReqTypeIds("CustomField.Implication.reqTypeIds",
           p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields.data))
-
-      ∧ validateReqTypeIds("Pubid keys",                      _.reqs.data.pubids.m.keys)
-      ∧ validateFieldIds  ("ReqFieldData.text TextField ids", _.reqFieldData.data.text.keys)
-      ∧ validateReqIds    ("ReqFieldData.text.*.reqIds",      _.reqFieldData.data.text.vstreamf(_.keys.toStream))
-      ∧ validateReqIds    ("ReqFieldData.tags keys",          _.reqFieldData.data.tags.keys)
-      ∧ validateTagIds    ("ReqFieldData.tags values",        _.reqFieldData.data.tags.allValues)
-      ∧ validateReqIds    ("ReqFieldData.implications",       _.reqFieldData.data.implications.members)
-      ) rename "Cross-constituent refs"
+      ∧ validReqTypeIds("Pubid keys",                      _.reqs.data.pubids.m.keys)
+      ∧ validFieldIds  ("ReqFieldData.text TextField ids", _.reqFieldData.data.text.keys)
+      ∧ validReqIds    ("ReqFieldData.text.*.reqIds",      _.reqFieldData.data.text.vstreamf(_.keys.toStream))
+      ∧ validReqIds    ("ReqFieldData.tags keys",          _.reqFieldData.data.tags.keys)
+      ∧ validTagIds    ("ReqFieldData.tags values",        _.reqFieldData.data.tags.allValues)
+      ∧ validReqIds    ("ReqFieldData.implications",       _.reqFieldData.data.implications.members)
+      ∧ validReqIds    ("Atoms: ReqRefs",                  inText { case a: ReqRef#ReqRef => a.value })
+      ∧ validTagIds    ("Atoms: TagRefs",                  inText { case a: TagRef#TagRef => a.value })
+      ∧ validIssueTypes("Atoms: Issues",                   inText { case a: Issue#Issue   => a.typ })
+      ).rename("Cross-constituent refs").contramap[T](_ mapStrengthR mkRefs)
     }
 
     lazy val all =
-      "Project" rename_: (constituents ==> (uniqueHashRefKeys ∧ validRefs))
+      "Project" rename_: (
+        (constituents ∧ atoms) ==> (uniqueHashRefKeys ∧ validRefs)
+      )
   }
 }
