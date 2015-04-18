@@ -22,7 +22,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, UnivEq, Px}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.text.{Grammar, Presentation}
+import shipreq.webapp.base.text.{Grammar, PlainText}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
 
@@ -212,8 +212,8 @@ object ImplicationEditor {
     }
   }
 
-  def lookupAll(p: Project, reqDesc: Req => String): Lookup =
-    Lookup(AutoComplete.reqItems(p, reqDesc), UnivEq.emptyMap)
+  def lookupAll(p: Project, pt: PlainText.ForProject): Lookup =
+    Lookup(AutoComplete.reqItems(p, pt), UnivEq.emptyMap)
 
   def lookupForCol(p: Project, l: Lookup, fid: CustomField.Implication.Id): Must[Lookup] =
     p.customField(fid).map(f =>
@@ -243,7 +243,7 @@ object ImplicationEditor {
     def init: S = {
       val p = project.value()
       initial.map(pid =>
-        UiText mustA Presentation.pubid(pid)(p)
+        UiText mustA PlainText.pubid(p, pid)
       ) mkString " "
     }
 

@@ -2,12 +2,12 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scalaz.OneAnd
 import scalaz.syntax.equal._
 import scalaz.syntax.semigroup._
 import shipreq.base.util.{UnivEq, NonEmptyVector, Vector1}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.PlainText
 import DataImplicits._
 
 private[reqtable] object Logic {
@@ -213,12 +213,12 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(vs: ViewSettings, p: Project)(rows: Stream[Row]): Stream[Row] = {
+  def sort(vs: ViewSettings, p: Project, pt: PlainText.ForProject)(rows: Stream[Row]): Stream[Row] = {
     import Sorter._
 
     // Prepare sorters
     val sorter  = new FusedSorters(vs.order.init map inconclusive, vs.order.last |> conclusive)
-    val setup   = new Setup(p)
+    val setup   = new Setup(p, pt)
     val prepare = sorter.prepFn(setup)
     val rowMod  = Sorter.consolidateRowModFns(Sorter.sortUnspecified(vs) :: sorter.rowModFn :: Nil)
     val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
@@ -277,6 +277,6 @@ private[reqtable] object Logic {
     )
 
   // ===================================================================================================================
-  def rowsForTable(vs: ViewSettings, p: Project): Stream[Row] =
-    gather(vs, p) |> sort(vs, p) |> consolidateAdjacentDups
+  def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject): Stream[Row] =
+    gather(vs, p) |> sort(vs, p, pt) |> consolidateAdjacentDups
 }

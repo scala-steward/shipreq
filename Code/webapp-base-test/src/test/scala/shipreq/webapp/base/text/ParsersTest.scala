@@ -46,7 +46,7 @@ object ParsersTest extends TestSuite {
 
     val E = EvalOver(this)
 
-    val txt2str = Presentation.textToString(p)
+    val txt2str = PlainText(p).format
 
     val genericReqDescs = p.reqs.data.reqs.values.filterT[GenericReq].map(_.desc)
 
@@ -174,7 +174,7 @@ object ParsersTest extends TestSuite {
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
         assertEq(parse(p)(text), e)
-        val text2 = Presentation.textToString(p)(e)
+        val text2 = PlainText(p).format(e)
         assertEq(text2, parse(p)(text2), e)
       }
 

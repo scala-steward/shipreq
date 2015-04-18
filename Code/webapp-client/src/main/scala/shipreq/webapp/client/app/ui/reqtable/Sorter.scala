@@ -8,7 +8,7 @@ import scalaz.std.option.optionInstance
 
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Presentation, Text}
+import shipreq.webapp.base.text.{PlainText, Text}
 import shipreq.webapp.client.app.ui.reqtable.{SortMethod => SM, SortCriterion => SC, Column => C}
 import SortMethod.{Asc, AscThenBlanks, BlanksThenAsc}
 
@@ -205,9 +205,10 @@ object Sorter {
   /**
    * Project data prepared in a way that various sorts will use.
    */
-  final class Setup(val p: Project) {
+  final class Setup(val p: Project, plainText: PlainText.ForProject) {
 
-    val textNormalise = stringNormalise compose Presentation.textToString(p)
+    def normalisedText(f: PlainText.ForProject => String) =
+      stringNormalise(f(plainText))
 
     def ordermap[A](name: String, as: Stream[A]): Map[A, Int] =
       as.zipWithIndex.toMap
@@ -296,25 +297,18 @@ object Sorter {
         sort   = SortFn.intVector(bp)
     ))
 
-  def textSorter(f: Setup => Row => Text.AnyOptional): SorterForSMCB =
+  def textSorter(f: Row => PlainText.ForProject => String): SorterForSMCB =
     SorterForSMCB(bp =>
       Sorter[String](
-        prep =
-          setup => {
-            val g = f(setup)
-            row => g(row) |> setup.textNormalise
-          },
+        prep = setup => row => setup.normalisedText(f(row)),
         sort = SortFn.string(bp)
       ))
 
   def customTextFieldSorter(id: CustomField.Text.Id): SorterForSMCB =
-    textSorter { setup =>
-      val data = setup.p.reqFieldData.data.text.getOrElse(id, Map.empty)
-      _.fold(r => data.get(r.req.id).fold[Text.CustomTextField.OptionalText](Vector.empty)(_.whole))
-    }
+    textSorter(row => _.customTextField(id)(row.fold(_.id)) getOrElse "")
 
   val descSorter: SorterForSMCB =
-    textSorter(_ => _.fold(_.req.desc))
+    textSorter(row => _.reqDesc(row.fold(_.req)))
 
   // ===================================================================================================================
   // Sort criteria

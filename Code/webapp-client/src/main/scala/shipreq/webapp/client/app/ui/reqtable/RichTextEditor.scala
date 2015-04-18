@@ -6,16 +6,13 @@ import scalacss.ScalaCssReact._
 import org.scalajs.dom.ext.KeyValue
 import org.scalajs.dom.raw.HTMLTextAreaElement
 import shipreq.webapp.client.app.ui.ProjectWidgets
-import scalajs.js
 import scalaz.effect.IO
-import shipreq.base.util.Px
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, UnivEq, Px}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.text.{Grammar, Presentation}
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
 
@@ -43,19 +40,19 @@ object RichTextEditor {
     def supportsTags   = t match { case _: Atom.TagRef => true; case _ => false }
     def supportsIssues = t match { case _: Atom.Issue  => true; case _ => false }
 
-    def mkAutoComplete(project: Px[Project], projectWidgets: Px[ProjectWidgets]): AutoComplete = {
+    def mkAutoComplete(project: Px[Project], projectText: Px[PlainText.ForProject]): AutoComplete = {
       @inline def legalIf[A](guard: Boolean, s: => Stream[A]): Stream[A] =
         if (guard) s else Stream.empty
       for {
         p <- project
-        w <- projectWidgets
+        t <- projectText
       } yield
         TC.Strategies(
           AutoComplete.hashtag(
             legalIf(supportsIssues, p.customIssueTypes.data.values.toStream),
             legalIf(supportsTags  , p.tags.data.vstream(_.tag).filterT[ApplicableTag]),
             prefix = true),
-          AutoComplete.req(AutoComplete.reqItems(p, w.reqDesc), prefix = true),
+          AutoComplete.req(AutoComplete.reqItems(p, t), prefix = true),
           AutoComplete.math
         )
     }
@@ -122,7 +119,7 @@ object RichTextEditor {
             ^.onKeyDown  ~~> onKeyDown)
 
         def preview =
-          <.div(*.textEditPreview, p.projectWidgets.value().text(parsed))
+          <.div(*.textEditPreview, p.projectWidgets.value() format parsed)
 
         <.div(editor, preview)
       }
@@ -134,13 +131,14 @@ object RichTextEditor {
 
   // ===================================================================================================================
   object GenericReqDesc extends Base("GenericReqDesc editor", Text.GenericReqDesc) {
-    def apply(initial : t.OptionalText,
-              project : Px[Project],
+    def apply(initial       : t.OptionalText,
+              project       : Px[Project],
+              projectText   : Px[PlainText.ForProject],
               projectWidgets: Px[ProjectWidgets],
-              setState: Option[Cell.State] => IO[Unit]): Cell.State = {
+              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
 
       def init: S =
-        Presentation.textToString(project.value())(initial)
+        projectText.value() format initial
 
       val abort: IO[Unit] =
         setState(None)
@@ -149,7 +147,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      val autoComplete = mkAutoComplete(project, projectWidgets)
+      val autoComplete = mkAutoComplete(project, projectText)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))
@@ -163,13 +161,14 @@ object RichTextEditor {
 
   // ===================================================================================================================
   object CustomTextField extends Base("CustomTextField editor", Text.CustomTextField) {
-    def apply(initial : t.OptionalText,
-              project : Px[Project],
+    def apply(initial       : t.OptionalText,
+              project       : Px[Project],
+              projectText   : Px[PlainText.ForProject],
               projectWidgets: Px[ProjectWidgets],
-              setState: Option[Cell.State] => IO[Unit]): Cell.State = {
+              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
 
       def init: S =
-        Presentation.textToString(project.value())(initial)
+        projectText.value() format initial
 
       val abort: IO[Unit] =
         setState(None)
@@ -178,7 +177,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      val autoComplete = mkAutoComplete(project, projectWidgets)
+      val autoComplete = mkAutoComplete(project, projectText)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))

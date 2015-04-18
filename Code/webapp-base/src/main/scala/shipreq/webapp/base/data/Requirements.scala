@@ -27,7 +27,7 @@ import shipreq.webapp.base.TypeclassDerivation._
  */
 final case class ReqCode(backwards: NonEmptyVector[ReqCode.Node]) {
   def forwards = backwards.reverse
-  def txt: String = forwards.whole.mkString(".") // TODO rename. cache. Also should probably be in Presentation
+  def txt: String = forwards.whole.mkString(".") // TODO rename. cache. Also should probably be in PlainText
   override def toString = s"ReqCode($txt)"
 }
 

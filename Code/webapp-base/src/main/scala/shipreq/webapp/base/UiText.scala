@@ -15,6 +15,10 @@ object UiText {
     }, identity)
   }
 
+  @inline implicit class Unmust[A](val _m: Must[String]) extends AnyVal {
+    @inline def unmust: String = UiText.mustA(_m)
+  }
+
   object ColumnNames {
     def reqType        = "Type"
     def pubid          = "ID"

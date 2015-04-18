@@ -6,9 +6,11 @@ import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, Px}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.ProjectWidgets
 
 final class ColumnEditors(project       : Px[Project],
+                          plainText     : Px[PlainText.ForProject],
                           projectWidgets: Px[ProjectWidgets],
                           cellset       : Cell.SetIO) {
 
@@ -47,7 +49,7 @@ final class ColumnEditors(project       : Px[Project],
     //val lookup = project map TagEditor.lookupForNoCol
     (row, setLocal) => {
       val initialValue = row.fold(_.fold(_.req.desc))
-      RichTextEditor.GenericReqDesc(initialValue, project, projectWidgets, setLocal).some
+      RichTextEditor.GenericReqDesc(initialValue, project, plainText, projectWidgets, setLocal).some
     }
   }
 
@@ -69,7 +71,7 @@ final class ColumnEditors(project       : Px[Project],
     }
 
   lazy val impsLookup =
-    Px.apply2(project, projectWidgets.map(_.reqDesc))(ImplicationEditor.lookupAll)
+    Px.apply2(project, plainText)(ImplicationEditor.lookupAll)
 
   def imps(l: Optional[Row, Vector[Pubid]], declFwd : Boolean): ColStartEdit = (row, setLocal) =>
     l.getOption(row).map { initialValue =>
@@ -96,7 +98,7 @@ final class ColumnEditors(project       : Px[Project],
         val textData = p.reqFieldData.data.text.getOrElse(id, Map.empty)
         (row, setLocal) => {
           val initialValue = textData.get(row.id).map(_.whole) getOrElse Vector.empty
-          RichTextEditor.CustomTextField(initialValue, project, projectWidgets, setLocal).some
+          RichTextEditor.CustomTextField(initialValue, project, plainText, projectWidgets, setLocal).some
         }
       }
     )

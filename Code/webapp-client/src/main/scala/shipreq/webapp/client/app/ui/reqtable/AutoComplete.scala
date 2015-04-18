@@ -7,7 +7,7 @@ import shapeless.syntax.singleton._
 import shipreq.base.util.{UnivEq, Must, Util}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Presentation, Grammar}
+import shipreq.webapp.base.text.{PlainText, Grammar}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import TC.{Query, Strategy}
 
@@ -52,13 +52,13 @@ object AutoComplete {
   // ===================================================================================================================
   // [REF]
 
-  def reqItems(p: Project, reqDesc: Req => String): Stream[ReqItem] =
-    reqItems(p, reqDesc, p.reqs.data.reqs.values.toStream)
+  def reqItems(p: Project, pt: PlainText.ForProject): Stream[ReqItem] =
+    reqItems(p, pt, p.reqs.data.reqs.values.toStream)
 
-  def reqItems(p: Project, reqDesc: Req => String, legal: Stream[Req]): Stream[ReqItem] = {
+  def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     val m = Must.foldMapM[Req, Stream, ReqItem](legal)(req =>
       p.reqType(req.pubid.reqTypeId).map(rt =>
-        new ReqItem(req, rt, reqDesc(req))))
+        new ReqItem(req, rt, pt reqDesc req)))
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }
 
@@ -86,7 +86,7 @@ object AutoComplete {
   }
 
   final class ReqItem(val req: Req, val reqType: ReqType, val desc: String) {
-    val pubidStr     = Presentation.pubid(reqType, req.pubid.pos)
+    val pubidStr     = PlainText.pubid(reqType, req.pubid.pos)
     val pubidStrNorm = normaliseReqPubid(pubidStr)
     val descNorm     = normaliseReqDesc(desc)
     val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)

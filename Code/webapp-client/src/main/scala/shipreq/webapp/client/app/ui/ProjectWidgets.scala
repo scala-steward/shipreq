@@ -4,28 +4,30 @@ import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.webapp.base.UiText
-import scalaz.Memo
 import shipreq.base.util.{NonEmptyVector, Must, UnivEq}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Atom, Presentation, Text}
+import shipreq.webapp.base.text.{Atom, ProjectText, PlainText, Text}
 import shipreq.webapp.client.app.ui.Style.{widgets => *}
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.util.KaTeX
 
-final class ProjectWidgets(project: Project) {
+object ProjectWidgets {
+  def apply (project: Project, plainText: PlainText.ForProject) =
+    new ProjectWidgets(project, plainText)
+}
 
-  private val txtToStr = Presentation.textToString(project)
-
+// TODO Maybe make project & plainText vals to reduce shit being passed around
+final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
   type Widget = ReactComponentC.ConstProps[Unit, Unit, Unit, TopNode]
 
   private def memo[A: UnivEq](n: String, f: A => ReactTag): A => Widget =
-    Memo.mutableHashMapMemo((a: A) => ReactComponentB.static(n, f(a)).buildU)
+    UnivEq.mutableHashMapMemo((a: A) => ReactComponentB.static(n, f(a)).buildU)
 
   private def memoM[A: UnivEq](n: String, f: A => Must[ReactTag]): A => Widget =
     memo(n, a => UI.mustA(f(a)))
 
   private def memoMW[A: UnivEq](f: A => Must[Widget]): A => Widget =
-    Memo.mutableHashMapMemo(a =>
+    UnivEq.mutableHashMapMemo(a =>
       UI.mustA[Widget, Widget](f(a))(err => ReactComponentB.static("", err).buildU, identity))
 
   def issueO(id: CustomIssueType.Id, desc: Text.InlineIssueDesc.OptionalText): ReactElement =
@@ -35,7 +37,7 @@ final class ProjectWidgets(project: Project) {
     project.customIssueType(id).map(i =>
       <.span(
         *.issue,
-        s"#${i.key.value}")
+        s"#${i.key.value}") // TOOD use grammar
     ))
 
   def issue1(id: CustomIssueType.Id, desc: Text.InlineIssueDesc.NonEmptyText): ReactElement =
@@ -43,21 +45,13 @@ final class ProjectWidgets(project: Project) {
       <.span(
         *.issue,
         s"#${i.key.value}{",
-        text1(desc, *.issueDesc),
-        "}")
+        format1(desc)(*.issueDesc),
+        "}") // TOOD use grammar
     )
 
   val pubidText = memoM[Pubid]("ID", pubid =>
-    Presentation.pubid(pubid)(project) map (<.span(_))
+    PlainText.pubid(project, pubid) map (<.span(_))
   )
-
-  val reqDesc: Req => String = {
-    val m = new scala.collection.mutable.HashMap[Req.Id, String]
-    req =>
-      m.getOrElseUpdate(req.id, req match {
-        case r: GenericReq => txtToStr(r.desc)
-      })
-  }
 
   val reqRef = memoM[Req.Id]("Req", id =>
     for {
@@ -66,8 +60,8 @@ final class ProjectWidgets(project: Project) {
     } yield
       <.span(
         *.reqRef(req.alive),
-        ^.title := reqDesc(req),
-        s"[${Presentation.pubid(rt, req.pubid.pos)}]")
+        ^.title := plainText.reqDesc(req),
+        s"[${PlainText.pubid(rt, req.pubid.pos)}]") // TOOD use grammar
     )
 
   def reqRefs(reqs: Vector[Req.Id]): ReactElement =
@@ -105,9 +99,7 @@ final class ProjectWidgets(project: Project) {
       case _: Throwable => <.span(*.mathFail, UiText.mathFailed)
     }
 
-  // TODO move
-  def text1(t: Text.AnyNonEmpty, style: TagMod = EmptyTag): ReactElement = text(t.whole, style)
-  def text(t: Text.AnyOptional, style: TagMod = EmptyTag): ReactElement = {
+  override val format = (input: Text.AnyOptional) => {
     import Atom._
 
     lazy val atom: AnyAtom => TagMod = {
@@ -122,6 +114,6 @@ final class ProjectWidgets(project: Project) {
       case a: Issue           # Issue         => issueO(a.typ, a.desc)
     }
 
-    <.span(style)(t map atom: _*)
+    <.span(input map atom: _*)
   }
 }

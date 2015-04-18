@@ -78,13 +78,13 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     Row.cfTag(id).getOption(_).filter(_.nonEmpty).fold(empty)(widgets.tags))
 
   private def desc = make {
-    case GenericReqRow(req, _, _) => widgets.text(req.desc)
+    case GenericReqRow(req, _, _) => widgets.reqDesc(req)
   }
 
   private def cfText(id: CustomField.Text.Id) = {
-    val textData = project.reqFieldData.data.text.getOrElse(id, Map.empty)
+    val f = widgets.customTextField(id)
     make {
-      case GenericReqRow(req, _, _) => textData.get(req.id) map (widgets.text1(_)) getOrElse empty
+      case GenericReqRow(req, _, _) => f(req.id).fold(empty)(w => w)
     }
   }
 

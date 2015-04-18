@@ -52,4 +52,6 @@ object UnivEq {
   @inline def emptyMap     [K: UnivEq, V]                    = Map.empty[K, V]
   @inline def emptySet     [A: UnivEq]                       = Set.empty[A]
   @inline def emptyMultimap[K: UnivEq, L[_]: MultiValues, V] = Multimap.empty[K, L, V]
+
+  @inline def mutableHashMapMemo[K: UnivEq, V](f: K => V) = Memo.mutableHashMapMemo[K, V](f)
 }
