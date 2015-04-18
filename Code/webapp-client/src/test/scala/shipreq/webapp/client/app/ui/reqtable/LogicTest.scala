@@ -211,9 +211,9 @@ object LogicTest extends TestSuite {
       (wholeTable ∧ eachRow) rename name
     }
 
-    def sortByDesc: IndivSortCB = (sm, bp, dir) => {
-      val sorted     = sortBy(SC.InconclusiveCB(C.Desc, sm))
-      val data       = sorted.map(_.fold(_.req.desc))
+    def sortByTitle: IndivSortCB = (sm, bp, dir) => {
+      val sorted     = sortBy(SC.InconclusiveCB(C.Title, sm))
+      val data       = sorted.map(_.fold(_.req.title))
       val name       = s"Desc ($sm)"
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
     }
@@ -232,7 +232,7 @@ object LogicTest extends TestSuite {
       case C.ReqType         => nop
       case C.Pubid           => sortIB(sortByPubid)
       case C.Code            => sortCB(sortByRecCode)
-      case C.Desc            => sortCB(sortByDesc)
+      case C.Title           => sortCB(sortByTitle)
       case C.Tags            => nop
       case C.ImplicationSrc  => nop
       case C.ImplicationTgt  => nop
@@ -381,11 +381,11 @@ object LogicTest extends TestSuite {
         // TODO s"$z  pri=high  pri=med  pri=high,pri=med  pri=high,pri=med  $z") + t(3, 2)
     }
 
-    def testDesc(): Unit = {
+    def testTitle(): Unit = {
       val p       = GReq() + GReq("AT") + GReq("and") + GReq("haha") + GReq("F") !! P
       val pt      = PlainText(p)
-      val fmtRows = rowsToStr(_.req |> pt.reqDesc |> (_.apif(_.isEmpty, _z)))
-      testCB(p, pt, C.Desc, fmtRows)(allSortsCB(z)(_ + sep + _,
+      val fmtRows = rowsToStr(_.req |> pt.reqTitle |> (_.apif(_.isEmpty, _z)))
+      testCB(p, pt, C.Title, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "and  AT  F  haha",
         desc = "haha  F  AT  and"))
     }
@@ -481,7 +481,7 @@ object LogicTest extends TestSuite {
       'sort {
         'reqCodes - UnitSort.testReqCodes()
         'reqType  - UnitSort.testReqType()
-        'desc     - UnitSort.testDesc()
+        'title    - UnitSort.testTitle()
         'impSrc   - UnitSort.testImpSrc()
         'impTgt   - UnitSort.testImpTgt()
         'custImp  - UnitSort.testCustomImpField()

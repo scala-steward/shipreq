@@ -307,8 +307,8 @@ object Sorter {
   def customTextFieldSorter(id: CustomField.Text.Id): SorterForSMCB =
     textSorter(row => _.customTextField(id)(row.fold(_.id)) getOrElse "")
 
-  val descSorter: SorterForSMCB =
-    textSorter(row => _.reqDesc(row.fold(_.req)))
+  val titleSorter: SorterForSMCB =
+    textSorter(row => _.reqTitle(row.fold(_.req)))
 
   // ===================================================================================================================
   // Sort criteria
@@ -324,7 +324,7 @@ object Sorter {
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTags ^|-? index(id), _.tagByPosOrder)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImps ^|-? index(id))
       }
-    case C.Desc                             => descSorter
+    case C.Title                            => titleSorter
     case C.Code                             => reqCodeSorter
     case C.Tags                             => tagSorter(Row.tags, _.tagByNameOrder)
     case C.ImplicationSrc                   => pubidVectorSorter(Row.implicationSrc)

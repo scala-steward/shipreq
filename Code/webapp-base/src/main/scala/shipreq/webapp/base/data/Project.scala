@@ -51,7 +51,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
 
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
-      ("Generic Req descs", reqs.data.reqs.values.filterT[GenericReq].map(_.desc)),
+      ("Generic Req descs", reqs.data.reqs.values.filterT[GenericReq].map(_.title)),
       ("Text fields", reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).map(_.whole)))
 
   def countAtoms: ShowSize.Node = {

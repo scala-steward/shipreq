@@ -208,7 +208,7 @@ final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
  *
  * Previously called "Semantic Header Row" or "SHR" in the requirements.
  */
-final case class ReqCodeGroup(id: ReqCodeGroup.Id, desc: String)
+final case class ReqCodeGroup(id: ReqCodeGroup.Id, title: String)
 object ReqCodeGroup {
   final case class Id(value: Long) extends TaggedLong with ReqCode.Target
 
@@ -294,7 +294,7 @@ object Req {
 
 final case class GenericReq(id         : GenericReq.Id,
                             pubid      : Pubid,
-                            desc       : Text.GenericReqDesc.OptionalText,
+                            title      : Text.GenericReqTitle.OptionalText,
                             // TODO lastUpdated. Need JS-compat datetimeTZ
                             alive      : Alive) extends Req
 object GenericReq {

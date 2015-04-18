@@ -60,7 +60,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     } yield
       <.span(
         *.reqRef(req.alive),
-        ^.title := plainText.reqDesc(req),
+        ^.title := plainText.reqTitle(req),
         s"[${PlainText.pubid(rt, req.pubid.pos)}]") // TOOD use grammar
     )
 

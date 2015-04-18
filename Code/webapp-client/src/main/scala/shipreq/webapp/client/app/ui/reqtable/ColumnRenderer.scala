@@ -30,7 +30,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
         case Column.Pubid          => pubid
         case Column.ReqType        => reqType
         case Column.Code           => code
-        case Column.Desc           => desc
+        case Column.Title          => title
         case Column.Tags           => tags
         case Column.ImplicationSrc => imps(Row.implicationSrc) //("… ⇒")
         case Column.ImplicationTgt => imps(Row.implicationTgt) //("⇒ …")
@@ -77,8 +77,8 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   private def cfTags(id: CustomField.Tag.Id) = make(
     Row.cfTag(id).getOption(_).filter(_.nonEmpty).fold(empty)(widgets.tags))
 
-  private def desc = make {
-    case GenericReqRow(req, _, _) => widgets.reqDesc(req)
+  private def title = make {
+    case GenericReqRow(req, _, _) => widgets.reqTitle(req)
   }
 
   private def cfText(id: CustomField.Text.Id) = {

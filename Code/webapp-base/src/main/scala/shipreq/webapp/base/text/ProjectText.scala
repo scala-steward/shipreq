@@ -19,16 +19,16 @@ abstract class ProjectText[Out](project: Project) {
     nev => format(nev.whole)
 
   private val _reqDesc: Req => Out = {
-    case r: GenericReq => format(r.desc)
+    case r: GenericReq => format(r.title)
   }
 
-  val reqDesc: Req => Out = {
+  val reqTitle: Req => Out = {
     val memo = new scala.collection.mutable.HashMap[Req.Id, Out]
     req => memo.getOrElseUpdate(req.id, _reqDesc(req))
   }
 
-  def reqDescById(id: Req.Id): Must[Out] =
-    project.reqs.data.reqM(id) map reqDesc
+  def reqTitleById(id: Req.Id): Must[Out] =
+    project.reqs.data.reqM(id) map reqTitle
 
   private val _customTextField: CustomField.Text.Id => Req.Id => Option[Out] =
     fid => {

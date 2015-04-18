@@ -58,7 +58,7 @@ object AutoComplete {
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     val m = Must.foldMapM[Req, Stream, ReqItem](legal)(req =>
       p.reqType(req.pubid.reqTypeId).map(rt =>
-        new ReqItem(req, rt, pt reqDesc req)))
+        new ReqItem(req, rt, pt reqTitle req)))
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }
 
@@ -69,8 +69,8 @@ object AutoComplete {
     // TODO [pri=low] Search algorithm won't scale well
     val searchFn: TC.Query[ReqItem] = { term =>
       val np = normaliseReqPubid(term)
-      val nd = normaliseReqDesc(term)
-      legal.filter(i => i.pubidStrNorm.contains(np) || i.descNorm.contains(nd))
+      val nd = normaliseReqTitle(term)
+      legal.filter(i => i.pubidStrNorm.contains(np) || i.titleNorm.contains(nd))
     }
 
     def li(i: ReqItem): ReactElement =
@@ -88,14 +88,14 @@ object AutoComplete {
   final class ReqItem(val req: Req, val reqType: ReqType, val desc: String) {
     val pubidStr     = PlainText.pubid(reqType, req.pubid.pos)
     val pubidStrNorm = normaliseReqPubid(pubidStr)
-    val descNorm     = normaliseReqDesc(desc)
+    val titleNorm    = normaliseReqTitle(desc)
     val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)
   }
 
   def normaliseReqPubid(s: String): String =
     s.replace("-", "").toUpperCase
 
-  def normaliseReqDesc(s: String): String =
+  def normaliseReqTitle(s: String): String =
     normaliseReqPubid(s).replace(" ", "")
 
   // ===================================================================================================================

@@ -87,7 +87,7 @@ class WIP {
     val mfs = (0 to 28).toVector.map(i => GenericReq.Id(i + 1000))
 
     def fr1Desc = {
-      import T.GenericReqDesc._
+      import T.GenericReqTitle._
       Vector(
         EmailAddress("japgolly@gmail.com"), Literal(" is on "), WebAddress("https://github.com"),
         Literal(" cos of "), ReqRef(mfs(6)), Literal(" "), Issue(1, Vector.empty),
@@ -99,41 +99,41 @@ class WIP {
         import T.InlineIssueDesc._
         Vector(Literal("Pending "), ReqRef(mfs(26)))
       }
-      import T.GenericReqDesc._
+      import T.GenericReqTitle._
       Vector(Issue(2, tbd))
     }
 
     val contentByDsl = (
-      GReq(reqType = mf, id = mfs( 1), desc = "Use Case Editor").tag(p5).tag(rel)
-    + GReq(reqType = mf, id = mfs( 2), desc = "Anonymous Share").tag(p2).tag(rel)
-    + GReq(reqType = mf, id = mfs( 3), desc = "Export (Read UCs, PDF, DOC, MD, TXT, XLS)").tag(p4)
-    + GReq(reqType = mf, id = mfs( 4), desc = "Templates").tag(p2)
-    + GReq(reqType = mf, id = mfs( 5), desc = "Field Customisation").tag(p5).tag(wip)
-    + GReq(reqType = mf, id = mfs( 6), desc = "Incompletions").tag(p3).tag(wip)
-    + GReq(reqType = mf, id = mfs( 7), desc = "Organisation").tag(p5).tag(wip).tag(v1x).tag(rel)
-    + GReq(reqType = mf, id = mfs( 8), desc = "History/Audit").tag(p3)
-    + GReq(reqType = mf, id = mfs( 9), desc = "Collaboration: authoring").tag(p5)
-    + GReq(reqType = mf, id = mfs(10), desc = "Collaboration: stakeholders").tag(p5)
-    + GReq(reqType = mf, id = mfs(11), desc = "Collaboration: change mgnt & approval").tag(p4)
-    + GReq(reqType = mf, id = mfs(12), desc = "Low-level Requirements (CO, FR, BR, etc.)").tag(wip).tag(p5)
-    + GReq(reqType = mf, id = mfs(13), desc = "Requirement Relationships").tag(wip).tag(p4)
-    + GReq(reqType = mf, id = mfs(14), desc = "Text-generated Diagrams").tag(p2)
-    + GReq(reqType = mf, id = mfs(15), desc = "Matrixes").tag(p2)
-    + GReq(reqType = mf, id = mfs(16), desc = "CRUDL Matrix").tag(p1)
-    + GReq(reqType = mf, id = mfs(17), desc = "Undo & Auto-save").tag(p2)
-    + GReq(reqType = mf, id = mfs(18), desc = "Data dictionary").tag(p1)
-    + GReq(reqType = mf, id = mfs(19), desc = "Glossary").tag(p1)
-    + GReq(reqType = mf, id = mfs(20), desc = "Generic artifact storage (DOC, PDF, PNG, XLS)").tag(p3)
-    + GReq(reqType = mf, id = mfs(21), desc = "Doc authoring (V&S, URD, SRS)").tag(p2)
-    + GReq(reqType = mf, id = mfs(22), desc = "High-level Requirements").tag(p3).tag(wip)
-    + GReq(reqType = mf, id = mfs(23), desc = "Import external requirements").tag(p2)
-    + GReq(reqType = mf, id = mfs(24), desc = "Requirement Lint").tag(p3)
-    + GReq(reqType = mf, id = mfs(25), desc = "Search").tag(p2)
-    + GReq(reqType = mf, id = mfs(26), desc = "Mass text modification (replace)").tag(p1)
-    + GReq(reqType = mf, id = mfs(27), desc = "External references").tag(p1)
-    + GReq(reqType = mf, id = mfs(28), desc = "Entities").tag(p2)
-    + GReq(reqType = fr, desc = fr1Desc).impSrc(mfs(12))
-    + GReq(reqType = fr, desc = fr2Desc).impSrc(mfs(1)).impSrc(mfs(13)).impSrc(mfs(22))
+      GReq(reqType = mf, id = mfs( 1), title = "Use Case Editor").tag(p5).tag(rel)
+    + GReq(reqType = mf, id = mfs( 2), title = "Anonymous Share").tag(p2).tag(rel)
+    + GReq(reqType = mf, id = mfs( 3), title = "Export (Read UCs, PDF, DOC, MD, TXT, XLS)").tag(p4)
+    + GReq(reqType = mf, id = mfs( 4), title = "Templates").tag(p2)
+    + GReq(reqType = mf, id = mfs( 5), title = "Field Customisation").tag(p5).tag(wip)
+    + GReq(reqType = mf, id = mfs( 6), title = "Incompletions").tag(p3).tag(wip)
+    + GReq(reqType = mf, id = mfs( 7), title = "Organisation").tag(p5).tag(wip).tag(v1x).tag(rel)
+    + GReq(reqType = mf, id = mfs( 8), title = "History/Audit").tag(p3)
+    + GReq(reqType = mf, id = mfs( 9), title = "Collaboration: authoring").tag(p5)
+    + GReq(reqType = mf, id = mfs(10), title = "Collaboration: stakeholders").tag(p5)
+    + GReq(reqType = mf, id = mfs(11), title = "Collaboration: change mgnt & approval").tag(p4)
+    + GReq(reqType = mf, id = mfs(12), title = "Low-level Requirements (CO, FR, BR, etc.)").tag(wip).tag(p5)
+    + GReq(reqType = mf, id = mfs(13), title = "Requirement Relationships").tag(wip).tag(p4)
+    + GReq(reqType = mf, id = mfs(14), title = "Text-generated Diagrams").tag(p2)
+    + GReq(reqType = mf, id = mfs(15), title = "Matrixes").tag(p2)
+    + GReq(reqType = mf, id = mfs(16), title = "CRUDL Matrix").tag(p1)
+    + GReq(reqType = mf, id = mfs(17), title = "Undo & Auto-save").tag(p2)
+    + GReq(reqType = mf, id = mfs(18), title = "Data dictionary").tag(p1)
+    + GReq(reqType = mf, id = mfs(19), title = "Glossary").tag(p1)
+    + GReq(reqType = mf, id = mfs(20), title = "Generic artifact storage (DOC, PDF, PNG, XLS)").tag(p3)
+    + GReq(reqType = mf, id = mfs(21), title = "Doc authoring (V&S, URD, SRS)").tag(p2)
+    + GReq(reqType = mf, id = mfs(22), title = "High-level Requirements").tag(p3).tag(wip)
+    + GReq(reqType = mf, id = mfs(23), title = "Import external requirements").tag(p2)
+    + GReq(reqType = mf, id = mfs(24), title = "Requirement Lint").tag(p3)
+    + GReq(reqType = mf, id = mfs(25), title = "Search").tag(p2)
+    + GReq(reqType = mf, id = mfs(26), title = "Mass text modification (replace)").tag(p1)
+    + GReq(reqType = mf, id = mfs(27), title = "External references").tag(p1)
+    + GReq(reqType = mf, id = mfs(28), title = "Entities").tag(p2)
+    + GReq(reqType = fr, title = fr1Desc).impSrc(mfs(12))
+    + GReq(reqType = fr, title = fr2Desc).impSrc(mfs(1)).impSrc(mfs(13)).impSrc(mfs(22))
     )
 
     contentByDsl ! project

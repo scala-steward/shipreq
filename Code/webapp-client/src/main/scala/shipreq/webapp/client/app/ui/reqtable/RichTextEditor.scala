@@ -130,7 +130,7 @@ object RichTextEditor {
   }
 
   // ===================================================================================================================
-  object GenericReqDesc extends Base("GenericReqDesc editor", Text.GenericReqDesc) {
+  object GenericReqTitle extends Base("GenericReqDesc editor", Text.GenericReqTitle) {
     def apply(initial       : t.OptionalText,
               project       : Px[Project],
               projectText   : Px[PlainText.ForProject],

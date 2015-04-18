@@ -48,7 +48,7 @@ object ParsersTest extends TestSuite {
 
     val txt2str = PlainText(p).format
 
-    val genericReqDescs = p.reqs.data.reqs.values.filterT[GenericReq].map(_.desc)
+    val genericReqTitles = p.reqs.data.reqs.values.filterT[GenericReq].map(_.title)
 
     val customTextFieldValues = p.reqFieldData.data.text.values.toStream.flatMap(_.values.toStream)
 
@@ -86,10 +86,10 @@ object ParsersTest extends TestSuite {
 //      }
 //    }
 
-    def testGenericReqDesc(src: Text.GenericReqDesc.OptionalText) = {
+    def testGenericReqTitle(src: Text.GenericReqTitle.OptionalText) = {
       count(src)
       val txt = txt2str(src)
-      val parser = Text.GenericReqDesc.parser(p)(txt)
+      val parser = Text.GenericReqTitle.parser(p)(txt)
       val parsed = assertSuccess(parser, parser.optionalText.run())
       cmp("[GenericReqDesc] toStr |> parse = id", parsed, src)
     }
@@ -113,7 +113,7 @@ object ParsersTest extends TestSuite {
     }
 
     def all = (
-        E.forall(genericReqDescs)(testGenericReqDesc).rename("GenericReqDesc")
+        E.forall(genericReqTitles)(testGenericReqTitle).rename("GenericReqDesc")
       ∧ E.forall(customTextFieldValues)(testCustomTextField).rename("CustomTextField")
       ∧ E.forall(inputs)(testString).rename("parse |> toStr |> parse = parse")
       )
@@ -145,11 +145,11 @@ object ParsersTest extends TestSuite {
     import shipreq.webapp.base.UnsafeTypes._
     import shipreq.webapp.base.test.ProjectDSL._
     val List(co,mf,fr) = List[ReqType.Id](1,2,3).map(Some(_))
-    GReq(reqType = fr, id = 11, desc = "do stuff") +
-    GReq(reqType = fr, id = 12, desc = "do more stuff") +
-    GReq(reqType = mf, id = 21, desc = "Use Case Editor") +
-    GReq(reqType = mf, id = 22, desc = "Templates") +
-    GReq(reqType = mf, id = 23, desc = "Incompletions") ! SampleProject.project
+    GReq(reqType = fr, id = 11, title = "do stuff") +
+    GReq(reqType = fr, id = 12, title = "do more stuff") +
+    GReq(reqType = mf, id = 21, title = "Use Case Editor") +
+    GReq(reqType = mf, id = 22, title = "Templates") +
+    GReq(reqType = mf, id = 23, title = "Incompletions") ! SampleProject.project
   }
   @inline val V = Vector
   @inline def NEV[A](h: A, t: A*) = NonEmptyVector(h, t: _*)

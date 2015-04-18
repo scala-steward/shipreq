@@ -25,7 +25,7 @@ object Column {
 
   case object Pubid          extends BuiltIn with SortConclusive
   case object Code           extends BuiltIn with SortInconclusive with HasBlanks
-  case object Desc           extends BuiltIn with SortInconclusive with HasBlanks
+  case object Title          extends BuiltIn with SortInconclusive with HasBlanks
   case object ReqType        extends BuiltIn with SortInconclusive with NoBlanks
   case object Tags           extends BuiltIn with SortInconclusive with HasBlanks
   case object ImplicationSrc extends BuiltIn with SortInconclusive with HasBlanks
@@ -46,12 +46,12 @@ object Column {
   @inline implicit def reusability: Reusable[Column]                        = Reusable.byUnivEq
 
   val builtInValues: NonEmptyVector[BuiltIn] =
-    NonEmptyVector(Pubid, Code, Desc, ReqType, Tags, ImplicationSrc, ImplicationTgt)
+    NonEmptyVector(Pubid, Code, Title, ReqType, Tags, ImplicationSrc, ImplicationTgt)
 
   val mandatory: Column => Boolean = {
     case Pubid
        | Code
-       | Desc            => true
+       | Title           => true
     case ReqType
        | Tags
        | ImplicationSrc
@@ -74,7 +74,7 @@ object Column {
       case ReqType         => ColumnNames.reqType
       case Pubid           => ColumnNames.pubid
       case Code            => ColumnNames.code
-      case Desc            => ColumnNames.desc
+      case Title           => ColumnNames.title
       case Tags            => ColumnNames.tags
       case ImplicationSrc  => ColumnNames.implicationSrc
       case ImplicationTgt  => ColumnNames.implicationTgt

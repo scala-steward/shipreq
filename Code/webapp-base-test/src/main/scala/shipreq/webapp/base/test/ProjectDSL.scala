@@ -51,7 +51,7 @@ object ProjectDSL {
   }
 
   
-  case class GReq(desc   : Text.GenericReqDesc.OptionalText                            = Vector.empty,
+  case class GReq(title  : Text.GenericReqTitle.OptionalText                           = Vector.empty,
                   id     : Option[GenericReq.Id]                                       = None,
                   reqType: Option[ReqType.Id]                                          = None,
                   alive  : Alive                                                       = Alive,
@@ -76,7 +76,7 @@ object ProjectDSL {
         val id          = this.id getOrElse GenericReq.Id(p.nextId)
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.reqTypeId)
         val (pr, pubid) = Pubid.alloc(id, reqTypeId, p.pubids)
-        val req         = GenericReq(id, pubid, desc, alive)
+        val req         = GenericReq(id, pubid, title, alive)
         val text        = cftexts.mapValues(t => Map.empty[Req.Id, Text.CustomTextField.NonEmptyText].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)
@@ -125,6 +125,6 @@ object ProjectDSL {
     if (i.isEmpty) sys.error("Text.CustomTextField can't be empty.") else NonEmptyVector(Text.CustomTextField.Literal(i))
   }
 
-  implicit def parseGRD(i: String): Text.GenericReqDesc.OptionalText =
-    if (i.isEmpty) Vector.empty else Vector1(Text.GenericReqDesc.Literal(i))
+  implicit def parseGRD(i: String): Text.GenericReqTitle.OptionalText =
+    if (i.isEmpty) Vector.empty else Vector1(Text.GenericReqTitle.Literal(i))
 }

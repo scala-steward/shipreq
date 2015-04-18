@@ -62,9 +62,9 @@ object Text {
     }
   }
 
-  object RecCodeGroupDesc extends ReqTitle
+  object RecCodeGroupTitle extends ReqTitle
 
-  object GenericReqDesc extends ReqTitle
+  object GenericReqTitle extends ReqTitle
 
   object CustomTextField extends Base
       with A.MultiLine

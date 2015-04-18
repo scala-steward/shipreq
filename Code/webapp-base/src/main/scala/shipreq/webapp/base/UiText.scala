@@ -23,7 +23,7 @@ object UiText {
     def reqType        = "Type"
     def pubid          = "ID"
     def code           = "Code"
-    def desc           = "Desc"
+    def title          = "Title"
     def tags           = "Tags"
     def implicationSrc = "Implied By"
     def implicationTgt = "Implies"

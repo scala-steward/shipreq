@@ -485,10 +485,10 @@ object DataCodecs {
 
   // Specific text types
 
-  implicit final val (recCodeGroupDesc, _) = TC(Text.RecCodeGroupDesc)((t, _) =>
+  implicit final val (recCodeGroupDesc, _) = TC(Text.RecCodeGroupTitle)((t, _) =>
     TC.readReqTitle(t))
 
-  implicit final val (genericReqDesc, _) = TC(Text.GenericReqDesc)((t, _) =>
+  implicit final val (genericReqDesc, _) = TC(Text.GenericReqTitle)((t, _) =>
     TC.readReqTitle(t))
 
   // lazy because TC.readIssue calls it

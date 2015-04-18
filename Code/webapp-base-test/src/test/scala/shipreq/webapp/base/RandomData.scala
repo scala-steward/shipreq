@@ -631,9 +631,9 @@ object RandomData {
 
     // Specific text types
 
-    def recCodeGroupDescAtom = reqTitle(RecCodeGroupDesc) _
+    def recCodeGroupTitleAtom = reqTitle(RecCodeGroupTitle) _
 
-    def genericReqDescAtom   = reqTitle(GenericReqDesc) _
+    def genericReqTitleAtom   = reqTitle(GenericReqTitle) _
 
     def inlineIssueDescAtom(r: Option[Gen[Req.Id]]): Gen[InlineIssueDesc.Atom] = {
       @inline implicit def t: InlineIssueDesc.type = InlineIssueDesc
@@ -690,7 +690,7 @@ object RandomData {
       id     <- genericReqId |> gliftS[Pubid.Register, GenericReq.Id]
       pubid  <- pubidS(id)
       reqIds <- stateGen((r: Pubid.Register) => Gen insert r.allValues)
-      desc   <- TextGen.genericReqDescAtom(Gen.oneofO(reqIds), genIssueType).text
+      desc   <- TextGen.genericReqTitleAtom(Gen.oneofO(reqIds), genIssueType).text
       live   <- alive
     } yield GenericReq(id, pubid, desc, live)
 

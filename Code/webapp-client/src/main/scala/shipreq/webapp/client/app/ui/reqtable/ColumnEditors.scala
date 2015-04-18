@@ -21,7 +21,7 @@ final class ColumnEditors(project       : Px[Project],
   def startCellEditing(row: Row, col: Column): Option[IO[Unit]] = {
     val e: ColStartEdit =
       col match {
-        case Column.Desc           => desc
+        case Column.Title          => title
         case Column.Tags           => tags
         case Column.Pubid          => noEdit
         case Column.ImplicationSrc => imps(Row.implicationSrc, ImplicationEditor declFwd Column.ImplicationSrc)
@@ -45,11 +45,11 @@ final class ColumnEditors(project       : Px[Project],
   val noEdit: ColStartEdit =
     (_, _) => None
 
-  lazy val desc: ColStartEdit = {
+  lazy val title: ColStartEdit = {
     //val lookup = project map TagEditor.lookupForNoCol
     (row, setLocal) => {
-      val initialValue = row.fold(_.fold(_.req.desc))
-      RichTextEditor.GenericReqDesc(initialValue, project, plainText, projectWidgets, setLocal).some
+      val initialValue = row.fold(_.fold(_.req.title))
+      RichTextEditor.GenericReqTitle(initialValue, project, plainText, projectWidgets, setLocal).some
     }
   }
 
