@@ -19,6 +19,7 @@ import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq
+import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{tag => V}
@@ -227,7 +228,7 @@ private[tags] object MainTable {
       @tailrec def indent(d: Int, n: Indenter): Indenter =
         if (d == 0) n
         else indent(d - 1, r => <.div(^.cls := "indent", n(r)))
-      Memo.immutableHashMapMemo[Int, Indenter](indent(_, identity))
+      memo[Int, Indenter](indent(_, identity))
     }
 
     def rows: TagMod = {

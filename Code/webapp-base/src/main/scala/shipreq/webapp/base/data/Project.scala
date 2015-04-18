@@ -1,9 +1,10 @@
 package shipreq.webapp.base.data
 
 import monocle.macros.GenLens
-import scalaz.{-\/, \/-, Memo}
+import scalaz.{-\/, \/-}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Monoidish, Must}
+import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.TransitiveClosure
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.ShowSize
@@ -121,7 +122,7 @@ final class TagColumnDistribution(p: Project) {
   type TagIds = Must[Set[ApplicableTag.Id]]
 
   val tagIdsForColumn: CustomField.Tag.Id => TagIds =
-    Memo.mutableHashMapMemo(fid =>
+    memo(fid =>
       p.customField(fid).flatMap(field =>
         tagTree(field.tagId)
           .flatMap(_.transitiveChildren)

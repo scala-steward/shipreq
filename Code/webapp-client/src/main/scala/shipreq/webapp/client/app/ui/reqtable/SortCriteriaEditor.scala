@@ -3,13 +3,12 @@ package shipreq.webapp.client.app.ui.reqtable
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import org.scalajs.dom
-import scalaz._
+import scalaz.{Equal, \/, -\/, \/-}
 import scalaz.effect.IO
-import scalaz.std.option.optionEqual
 import scalaz.syntax.equal._
-import scalaz.syntax.foldable.ToFoldableOps
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{UnivEq, Util}
+import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.Style.reqtable.{sortingSettings => *}
 import shipreq.webapp.client.util.DND
@@ -76,9 +75,8 @@ object SortCriteriaEditor {
       type OSM   = Col \/ SC
       type ModIO = EndoFn[Vector[SortCriterion.Inconclusive]] => IO[Unit]
 
-      UnivEq[Col] // Prove it's safe to key memo by Col
       private val choicesForColumn =
-        Memo.mutableHashMapMemo[Col, Vector[Choice[OSM]]]{c =>
+        memo[Col, Vector[Choice[OSM]]]{c =>
           val choice  = (sc: SC) => Choice[OSM](\/-(sc), sc.method.optionLabel, false)
           val choices = SortCriterion.possibilitiesI(c) map choice
           val unused  = Choice[OSM](-\/(c), "Unused", false) // English

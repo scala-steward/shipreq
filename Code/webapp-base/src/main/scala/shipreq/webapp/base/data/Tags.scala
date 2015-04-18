@@ -4,12 +4,11 @@ import japgolly.nyaya.CycleDetector
 import monocle.Lens
 import monocle.macros.GenLens
 import scala.annotation.tailrec
-import scalaz.{Memo, Equal}
 import scalaz.Isomorphism._
-import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shipreq.base.util.{Must, UnivEq, IMap}
 import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.TypeclassDerivation._
 
 // =====================================================================================================================
@@ -183,7 +182,7 @@ object TagTree {
   }
 
   val indentation =
-    Memo.immutableHashMapMemo[Int, String]("\u00A0\u00A0" * _)
+    memo[Int, String]("\u00A0\u00A0" * _)
 
   def topLevelIds(tt: TagTree): Set[Id] = {
     val allChildren = tt.values.foldLeft(UnivEq.emptySet[Id])((q, t) => t.children.foldLeft(q)(_ + _))

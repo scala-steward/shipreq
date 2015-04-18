@@ -1,10 +1,10 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import monocle.Optional
-import scalaz.Memo
 import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, Px}
+import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.ProjectWidgets
@@ -62,7 +62,7 @@ final class ColumnEditors(project       : Px[Project],
   }
 
   val cfTag: CustomField.Tag.Id => ColStartEdit =
-    Memo.mutableHashMapMemo { id =>
+    memo { id =>
       val lookup = project map (TagEditor.lookupForCol(_, id))
       (row, setLocal) => {
         val initialValue = row.fold(_.exp.cfTags.getOrElse(id, Vector.empty))
@@ -81,7 +81,7 @@ final class ColumnEditors(project       : Px[Project],
     }
 
   val cfImp: CustomField.Implication.Id => ColStartEdit =
-    Memo.mutableHashMapMemo { id =>
+    memo { id =>
       val lookup2 = for {p <- project; l <- impsLookup} yield ImplicationEditor.lookupForCol(p, l, id)
       (row, setLocal) =>
         Row.cfImp(id).getOption(row).map { initialValue =>
@@ -94,7 +94,7 @@ final class ColumnEditors(project       : Px[Project],
 
   val cfText: Px[CustomField.Text.Id => ColStartEdit] =
     project.map(p =>
-      Memo.mutableHashMapMemo { id =>
+      memo { id =>
         val textData = p.reqFieldData.data.text.getOrElse(id, Map.empty)
         (row, setLocal) => {
           val initialValue = textData.get(row.id).map(_.whole) getOrElse Vector.empty
