@@ -7,9 +7,9 @@ import shapeless.syntax.singleton._
 import shipreq.base.util.{UnivEq, Must, Util}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{PlainText, Grammar}
+import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import TC.{Query, Strategy}
+import TC.{Query, Strategy, StrategyA}
 
 object AutoComplete {
 
@@ -62,22 +62,26 @@ object AutoComplete {
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }
 
-  def req(legal: Stream[ReqItem], prefix: Boolean): Strategy = {
-    val (prefixRegex, suffixRegex) = Grammar.reflinkSurround.parsing.regexEscapeAndWrap
-    val mainRegex = s"(\\S+?)$suffixRegex?$$"
+  def req(textSearch: TextSearch, legal: Stream[ReqItem], prefix: Boolean): StrategyA[ReqItem] = {
+    val searchTitles =
+      textSearch.ignoreCaseNoWhitespace
+        .filterByIds(legal.map(_.req.id).toSet)
+        .searchOnlyTitles
 
-    // TODO [pri=low] Search algorithm won't scale well
     val searchFn: TC.Query[ReqItem] = { term =>
-      val np = normaliseReqPubid(term)
-      val nd = normaliseReqTitle(term)
-      legal.filter(i => i.pubidStrNorm.contains(np) || i.titleNorm.contains(nd))
+      val titles = searchTitles(term).take(10).map(_.id).toSet
+      val np     = normaliseReqPubid(term)
+      // TODO TextComplete should use multiple result tiers. Titles shouldn't be searched when there are matching pubids
+      legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.req.id))
     }
 
+    val (prefixRegex, suffixRegex) = Grammar.reflinkSurround.parsing.regexEscapeAndWrap
+    val mainRegex = s"(\\S+?)$suffixRegex?$$"
     def li(i: ReqItem): ReactElement =
       *.reqAutoComplete('req)(r => _('desc)(d =>
         <.div(
           <.div(r, i.pubidStr),
-          <.div(d, i.desc))
+          <.div(d, i.title))
       ))
 
     optionallyPrefixedStrategy(prefixRegex, mainRegex, searchFn)(
@@ -85,18 +89,14 @@ object AutoComplete {
       .template(i => React.renderToStaticMarkup(li(i)))
   }
 
-  final class ReqItem(val req: Req, val reqType: ReqType, val desc: String) {
+  final class ReqItem(val req: Req, val reqType: ReqType, val title: String) {
     val pubidStr     = PlainText.pubid(reqType, req.pubid.pos)
     val pubidStrNorm = normaliseReqPubid(pubidStr)
-    val titleNorm    = normaliseReqTitle(desc)
     val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)
   }
 
   def normaliseReqPubid(s: String): String =
     s.replace("-", "").toUpperCase
-
-  def normaliseReqTitle(s: String): String =
-    normaliseReqPubid(s).replace(" ", "")
 
   // ===================================================================================================================
   // <math>

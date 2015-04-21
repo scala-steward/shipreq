@@ -40,19 +40,20 @@ object RichTextEditor {
     def supportsTags   = t match { case _: Atom.TagRef => true; case _ => false }
     def supportsIssues = t match { case _: Atom.Issue  => true; case _ => false }
 
-    def mkAutoComplete(project: Px[Project], projectText: Px[PlainText.ForProject]): AutoComplete = {
+    def mkAutoComplete(project: Px[Project], projectText: Px[PlainText.ForProject], textSearch: Px[TextSearch]): AutoComplete = {
       @inline def legalIf[A](guard: Boolean, s: => Stream[A]): Stream[A] =
         if (guard) s else Stream.empty
       for {
         p <- project
         t <- projectText
+        s <- textSearch
       } yield
         TC.Strategies(
           AutoComplete.hashtag(
             legalIf(supportsIssues, p.customIssueTypes.data.values.toStream),
             legalIf(supportsTags  , p.tags.data.vstream(_.tag).filterT[ApplicableTag]),
             prefix = true),
-          AutoComplete.req(AutoComplete.reqItems(p, t), prefix = true),
+          AutoComplete.req(s, AutoComplete.reqItems(p, t), prefix = true),
           AutoComplete.math
         )
     }
@@ -135,6 +136,7 @@ object RichTextEditor {
               project       : Px[Project],
               projectText   : Px[PlainText.ForProject],
               projectWidgets: Px[ProjectWidgets],
+              textSearch    : Px[TextSearch],
               setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
 
       def init: S =
@@ -147,7 +149,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      val autoComplete = mkAutoComplete(project, projectText)
+      val autoComplete = mkAutoComplete(project, projectText, textSearch)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))
@@ -165,6 +167,7 @@ object RichTextEditor {
               project       : Px[Project],
               projectText   : Px[PlainText.ForProject],
               projectWidgets: Px[ProjectWidgets],
+              textSearch    : Px[TextSearch],
               setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
 
       def init: S =
@@ -177,7 +180,7 @@ object RichTextEditor {
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
-      val autoComplete = mkAutoComplete(project, projectText)
+      val autoComplete = mkAutoComplete(project, projectText, textSearch)
 
       lazy val update: S => IO[Unit] =
         s => setState(Some(newState(s)))

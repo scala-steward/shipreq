@@ -22,7 +22,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, UnivEq, Px}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.text.{Grammar, PlainText}
+import shipreq.webapp.base.text.{TextSearch, Grammar, PlainText}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
 
@@ -235,10 +235,11 @@ object ImplicationEditor {
       r => a(subject).contains(r.id) || b(r.id).contains(subject))
   }
 
-  def apply(initial : Vector[Pubid],
-            project : Px[Project],
-            lookupM : Px[Must[Lookup]],
-            setState: Option[Cell.State] => IO[Unit]): Cell.State = {
+  def apply(initial   : Vector[Pubid],
+            project   : Px[Project],
+            textSearch: Px[TextSearch],
+            lookupM   : Px[Must[Lookup]],
+            setState  : Option[Cell.State] => IO[Unit]): Cell.State = {
 
     def init: S = {
       val p = project.value()
@@ -250,8 +251,11 @@ object ImplicationEditor {
     val lookup = lookupM.map(mustResolve(_)(Lookup(Stream.empty, UnivEq.emptyMap)))
 
     val autoComplete: AutoComplete =
-      lookup.map(l =>
-        AutoComplete.req(l.legal, prefix = false))
+      for {
+        l <- lookup
+        s <- textSearch
+      } yield
+        AutoComplete.req(s, l.legal, prefix = false)
 
     val parser: Parser[A] = () => {
       val l = lookup.value()

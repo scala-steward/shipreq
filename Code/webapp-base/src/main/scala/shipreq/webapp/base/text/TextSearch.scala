@@ -1,6 +1,8 @@
 package shipreq.webapp.base.text
 
 import scala.collection.immutable.IntMap
+import scalaz.Need
+import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import TextSearch.{apply => _, _}
@@ -12,11 +14,22 @@ object TextSearch {
 
   type Normaliser = String => Normalised
 
-  val whitespace = "\\s+".r
+  object Normaliser {
+    val whitespace = "\\s+".r
 
-  val defaultNormaliser: Normaliser =
-    s => {
+    val ignoreCaseSingleSpaces: Normaliser = s => {
       val a = whitespace.replaceAllIn(s, " ").toCharArray
+      mkLowerCase(a)
+      new Normalised(a)
+    }
+
+    val ignoreCaseNoWhitespace: Normaliser = s => {
+      val a = whitespace.replaceAllIn(s, "").toCharArray
+      mkLowerCase(a)
+      new Normalised(a)
+    }
+
+    def mkLowerCase(a: Array[Char]): Unit = {
       var i = a.length
       while (i > 0) {
         i -= 1
@@ -25,8 +38,8 @@ object TextSearch {
         if (c >= 'A' && c <= 'Z')
           a(i) = (c + 32).toChar
       }
-      new Normalised(a)
     }
+  }
 
   final class Normalised(val data: Array[Char]) extends AnyVal {
     @inline def length        : Int  = data.length
@@ -139,37 +152,63 @@ object TextSearch {
       false
     }
   }
+
+  case class IndexEntry(req: Req, title: Normalised, textFields: Need[Normalised])
+
+  type SearchFn = BoyerMooreHorspool => IndexEntry => Boolean
+  val searchAll   : SearchFn = a => e => a.search(e.title) || a.search(e.textFields.value)
+  val searchTitles: SearchFn = a => e => a.search(e.title)
 }
 
 final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
 
-  type Index = Stream[(Normalised, Req)]
-
-  private def mkIndex(norm: Normaliser): Index = {
-    val each: Req => Normalised = r => {
-      val title = plainText.reqTitle(r)
-      val str =
-        project.customTextFields.foldLeft(title)((q, f) =>
-          plainText.customTextField(f)(r.id).fold(q)(q + " " + _))
-      norm(str)
-    }
-    project.reqs.data.reqs.vstream(_ mapStrengthL each)
-  }
-
-  private val index = mkIndex(defaultNormaliser)
-
-  def search(substr: String): Stream[Req] = {
-    // Don't parse search string. Later accept a search AST.
-    //whitespace.split(substr).filter(_.nonEmpty)
-
-    val matches =
-      if (substr.isEmpty)
-        index
-      else {
-        val algo = new BoyerMooreHorspool(defaultNormaliser(substr))
-        index.filter(t => algo.search(t._1))
+  private def index(norm: Normaliser): Index = {
+    val index: Stream[IndexEntry] = {
+      val each: Req => IndexEntry = r => {
+        val title = norm(plainText.reqTitle(r))
+        val textFields = Need(norm(
+          project.customTextFields.foldLeft("")((q, f) =>
+            plainText.customTextField(f)(r.id).fold(q)(q + "\n" + _))
+        ))
+        IndexEntry(r, title, textFields)
       }
-
-    matches.map(_._2)
+      project.reqs.data.reqs.vstream(each)
+    }
+    new Index(norm, index, Vector.empty, searchAll)
   }
+
+  final class Index private[TextSearch] (norm    : Normaliser,
+                                         index   : Stream[IndexEntry],
+                                         filter  : Vector[IndexEntry => Boolean],
+                                         searchFn: SearchFn) {
+
+    def filter(f: Req => Boolean): Index =
+      new Index(norm, index, filter :+ ((e: IndexEntry) => f(e.req)), searchFn)
+
+    def filterByIds(ids: Set[Req.Id]): Index =
+      filter(ids contains _.id)
+
+    def searchOnlyTitles: Index =
+      new Index(norm, index, filter, searchTitles)
+
+    def apply(substr: String): Stream[Req] = {
+      // Don't parse search string. Later accept a search AST.
+      //whitespace.split(substr).filter(_.nonEmpty)
+
+      val matches =
+        if (substr.isEmpty)
+          index
+        else {
+          val algo = new BoyerMooreHorspool(norm(substr))
+          val fs = NonEmptyVector.end(filter, searchFn(algo))
+          val f = fs.reduce((a, b) => (e: IndexEntry) => a(e) && b(e))
+          index.filter(f)
+        }
+
+      matches.map(_.req)
+    }
+  }
+
+  val ignoreCaseSingleSpaces = index(Normaliser.ignoreCaseSingleSpaces)
+  val ignoreCaseNoWhitespace = index(Normaliser.ignoreCaseNoWhitespace)
 }

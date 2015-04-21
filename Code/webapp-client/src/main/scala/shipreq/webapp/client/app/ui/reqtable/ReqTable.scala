@@ -3,7 +3,7 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import shipreq.base.util.Px
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.util._
 
@@ -52,16 +52,17 @@ object ReqTable {
     val project      = Px.thunkM($.props).reuseR
     val viewSettings = Px.thunkM($.state.viewSettings).reuseR
 
-    val vsCols    = viewSettings map (_.columns)
-    val colName   = project map Column.NameResolver.byProject
-    val vsEditor  = colName map ViewSettingsEditor.apply
-    val plainText = project map PlainText.apply
-    val widgets   = Px.apply2(project, plainText)(ProjectWidgets.apply)
-    val colRnd    = Px.apply3(project, colName, widgets)(new ColumnRenderers(_, _, _))
-    val colRnds   = for {cols <- vsCols; cr <- colRnd} yield cols map cr.apply
-    val rows      = for {vs <- viewSettings; p <- project; pt <- plainText} yield Logic.rowsForTable(vs, p, pt).toVector
-    val ces       = new ColumnEditors(project, plainText, widgets, setCell)
-    val content   = Px.apply2(colRnds, rows)(Table.Content(_, _, ces))
+    val vsCols     = viewSettings map (_.columns)
+    val colName    = project map Column.NameResolver.byProject
+    val vsEditor   = colName map ViewSettingsEditor.apply
+    val plainText  = project map PlainText.apply
+    val textSearch = Px.apply2(project, plainText)(TextSearch.apply)
+    val widgets    = Px.apply2(project, plainText)(ProjectWidgets.apply)
+    val colRnd     = Px.apply3(project, colName, widgets)(new ColumnRenderers(_, _, _))
+    val colRnds    = for {cols <- vsCols; cr <- colRnd} yield cols map cr.apply
+    val rows       = for {vs <- viewSettings; p <- project; pt <- plainText} yield Logic.rowsForTable(vs, p, pt).toVector
+    val ces        = new ColumnEditors(project, plainText, widgets, textSearch, setCell)
+    val content    = Px.apply2(colRnds, rows)(Table.Content(_, _, ces))
 
     def render = {
       import Px.AutoValue._

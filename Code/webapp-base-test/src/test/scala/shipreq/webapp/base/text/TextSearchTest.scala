@@ -35,11 +35,11 @@ object TextSearchTest extends TestSuite {
 
   override def tests = TestSuite {
     'algorithm {
-      // println(s"Proving text search algorithm with ${domain.size} tests...")
+       println(s"Proving text search algorithm with ${domain.size} samples...")
       domain.mustProve(prop)(DefaultSettings.propSettings.setSingleThreaded)
     }
     'normalisation {
-      assertEq(String valueOf defaultNormaliser("AB cd 3 EF").data, "ab cd 3 ef")
+      assertEq(String valueOf Normaliser.ignoreCaseSingleSpaces("AB cd 3 EF").data, "ab cd 3 ef")
     }
   }
 }

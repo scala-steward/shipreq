@@ -6,12 +6,13 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Must, Px}
 import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
 
 final class ColumnEditors(project       : Px[Project],
                           plainText     : Px[PlainText.ForProject],
                           projectWidgets: Px[ProjectWidgets],
+                          textSearch    : Px[TextSearch],
                           cellset       : Cell.SetIO) {
 
   type SetLocal = Option[Cell.State] => IO[Unit]
@@ -49,7 +50,7 @@ final class ColumnEditors(project       : Px[Project],
     //val lookup = project map TagEditor.lookupForNoCol
     (row, setLocal) => {
       val initialValue = row.fold(_.fold(_.req.title))
-      RichTextEditor.GenericReqTitle(initialValue, project, plainText, projectWidgets, setLocal).some
+      RichTextEditor.GenericReqTitle(initialValue, project, plainText, projectWidgets, textSearch, setLocal).some
     }
   }
 
@@ -77,7 +78,7 @@ final class ColumnEditors(project       : Px[Project],
     l.getOption(row).map { initialValue =>
       val lookup2 = for {p <- project; l <- impsLookup}
         yield Must(ImplicationEditor.lookupForSubject(p, l, row.id, declFwd))
-      ImplicationEditor(initialValue, project, lookup2, setLocal)
+      ImplicationEditor(initialValue, project, textSearch, lookup2, setLocal)
     }
 
   val cfImp: CustomField.Implication.Id => ColStartEdit =
@@ -88,7 +89,7 @@ final class ColumnEditors(project       : Px[Project],
           val declFwd = ImplicationEditor declFwd id
           val lookup3 = for {p <- project; lm <- lookup2}
             yield lm.map(ImplicationEditor.lookupForSubject(p, _, row.id, declFwd))
-          ImplicationEditor(initialValue, project, lookup3, setLocal)
+          ImplicationEditor(initialValue, project, textSearch, lookup3, setLocal)
         }
     }
 
@@ -98,7 +99,7 @@ final class ColumnEditors(project       : Px[Project],
         val textData = p.reqFieldData.data.text.getOrElse(id, Map.empty)
         (row, setLocal) => {
           val initialValue = textData.get(row.id).map(_.whole) getOrElse Vector.empty
-          RichTextEditor.CustomTextField(initialValue, project, plainText, projectWidgets, setLocal).some
+          RichTextEditor.CustomTextField(initialValue, project, plainText, projectWidgets, textSearch, setLocal).some
         }
       }
     )
