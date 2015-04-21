@@ -136,17 +136,16 @@ object TextSearch {
     def search(txt: Normalised): Boolean = {
       val n = txt.length
       if (n > 0) {
+        val stop = n - m
         var start = 0
-        while(n - start >= m) {
+        while (start <= stop) {
           var index = `m - 1`
-          var ch = txt.charAt(start + index)
-          while (ch == pat.charAt(index)) {
+          while (txt.charAt(start + index) == pat.charAt(index)) {
             if (index == 0)
               return true
             index -= 1
-            ch = txt.charAt(start + index)
           }
-          start += badCharShift(ch)
+          start += badCharShift(txt.charAt(start + `m - 1`))
         }
       }
       false
