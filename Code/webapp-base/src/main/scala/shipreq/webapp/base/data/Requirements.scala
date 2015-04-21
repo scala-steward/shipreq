@@ -79,15 +79,15 @@ object ReqCode {
   /**
    * Something to which a [[ReqCode]] can refer.
    *
-   * type [[Target]] = [[ReqCodeGroup.Id]] | [[Req.Id]]
+   * type [[Target]] = [[ReqCodeGroup]] | [[Req.Id]]
    */
   sealed trait Target extends TrieNode
 
   implicit object TargetGeneric extends Generic[Target] {
-    override type Repr = ReqCodeGroup.Id :+: Req.Id :+: CNil
+    override type Repr = Req.Id :+: ReqCodeGroup :+: CNil
     override def to  (t: Target): Repr = t match {
-      case a: ReqCodeGroup.Id => Coproduct[Repr](a)
-      case a: Req.Id          => Coproduct[Repr](a)
+      case a: Req.Id       => Coproduct[Repr](a)
+      case a: ReqCodeGroup => Coproduct[Repr](a)
     }
     override def from(co: Repr): Target = co match {
       case Inl(a)      => a
@@ -98,7 +98,7 @@ object ReqCode {
 
   implicit val targetEquality: UnivEq[Target] = deriveUnivEq
 
-  /** [[TrieNode]] = [[TrieBranch]] | [[Target]] (terminal/leaf) */
+  /** [[TrieNode]] = [[TrieBranch]] (leaf) | [[Target]] (leaf) */
   sealed trait TrieNode
   final case class TrieBranch(target: Option[Target], next: Trie) extends TrieNode
 
@@ -187,7 +187,20 @@ object ReqCode {
 
 }
 
-final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
+/**
+ * A row that exists just to provide a description or summary of its children in the code hierarchy.
+ *
+ * Previously called "Semantic Header Row" or "SHR" in the requirements.
+ */
+final case class ReqCodeGroup(title: Text.RecCodeGroupTitle.OptionalText) extends ReqCode.Target
+object ReqCodeGroup {
+  implicit val equality: UnivEq[ReqCodeGroup] = deriveUnivEq
+}
+
+/**
+ * All req code data for in a project.
+ */
+final case class ReqCodes(trie: ReqCode.Trie) {
   import ReqCode.{Node, Target, Trie}
 
   lazy val byTarget: Multimap[Target, Set, ReqCode] =
@@ -197,19 +210,6 @@ final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
   def codeSet: Set[ReqCode] =
     Trie.fold(trie, UnivEq.emptySet[ReqCode])((q, path, ot) =>
       ot.fold(q)(_ => q + ReqCode(path)))
-}
-
-
-/**
- * A row that exists just to provide a description or summary of its children in the code hierarchy.
- *
- * Previously called "Semantic Header Row" or "SHR" in the requirements.
- */
-final case class ReqCodeGroup(id: ReqCodeGroup.Id, title: String)
-object ReqCodeGroup {
-  final case class Id(value: Long) extends TaggedLong with ReqCode.Target
-
-  implicit val equality: UnivEq[ReqCodeGroup] = deriveUnivEq
 }
 
 // ===================================================================================================================

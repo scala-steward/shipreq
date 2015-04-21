@@ -534,8 +534,7 @@ object DataCodecs {
   // -------------------------------------------------------------------------------------------------------------------
   // Req Codes
 
-  implicit final val reqCodeGroupId  = tagL(ReqCodeGroup.Id.apply)
-  implicit final val reqCodeGroup    = caseclass2(ReqCodeGroup.apply, ReqCodeGroup.unapply)
+  implicit final val reqCodeGroup    = caseclass1(ReqCodeGroup.apply, ReqCodeGroup.unapply)
   implicit final val reqCodeNode     = xmap[ReqCode.Node, String](_.value)(ReqCode.Node.applyFn)
   implicit final val reqCodeTarget   = _reqCodeTarget
   implicit final val reqCodeTrieNode = _reqCodeTrieNode
@@ -543,12 +542,12 @@ object DataCodecs {
   implicit final val reqCodes        = caseclass1(ReqCodes.apply, ReqCodes.unapply)
 
   private def _reqCodeTarget = ReadWriter[ReqCode.Target]({
-    case i: Req         .Id => intkeyW(0, i)(reqId)
-    case i: ReqCodeGroup.Id => intkeyW(1, i)(reqCodeGroupId)
+    case i: Req.Id       => intkeyW(0, i)(reqId)
+    case i: ReqCodeGroup => intkeyW(1, i)(reqCodeGroup)
   }, {
     case Js.Arr(Js.Num(n), v) => n.toInt match {
       case 0 => readJs(v)(reqId)
-      case 1 => readJs(v)(reqCodeGroupId)
+      case 1 => readJs(v)(reqCodeGroup)
     }
   })
 
