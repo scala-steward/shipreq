@@ -266,12 +266,17 @@ object ShipReq extends Build {
         μPickle.js ++ shapeless.js ++ Nyaya.js.core ++ parboiled.js ++
         testScope(ScalaJS.React.test ++ μTest.js ++ Nyaya.js.test)
 
+      def testjs(path: String) = ProvidedJS / s"testjs/$path"
+
       def testSettings = (_: Project)
         .configure(Common.utestOnJs)
         .settings(
           scalaJSStage in Global := stage,
-          jsDependencies += ScalaJS.reactJs % "test" / "react-with-addons.js" commonJSName "React",
-          jsDependencies += ScalaJS.sizzleJs % "test" / "sizzle.min.js" commonJSName "Sizzle",
+          jsDependencies in Test ++= Seq(
+            testjs("react-with-addons.js"),
+            testjs("jquery.min.js"),
+            testjs("jquery.textcomplete.js") dependsOn "testjs/jquery.min.js",
+            testjs("sizzle.min.js")),
           emitSourceMaps in Test := false, // PhantomJS doesn't use
           requiresDOM := true,
           jsEnv in Test := PhantomJSEnv().value)
