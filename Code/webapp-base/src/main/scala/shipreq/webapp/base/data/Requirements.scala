@@ -134,7 +134,7 @@ object ReqCode {
     }
 
     def flatStream(trie: Trie): Stream[(ReqCode, Target)] = {
-      @inline def rc(h: Node, p: Vector[Node])= ReqCode(NonEmptyVector(h, p))
+      @inline def rc(h: Node, p: Vector[Node]) = ReqCode(NonEmptyVector(h, p))
       def go(trie: Trie, p: Vector[Node]): Stream[(ReqCode, Target)] =
         trie.toStream.sortBy(_._1.value).flatMap {
           case (cn, TrieBranch(ot, next)) =>
@@ -190,12 +190,9 @@ object ReqCode {
 final case class ReqCodes(trie: ReqCode.Trie) { // TODO Needed? Also, rename?
   import ReqCode.{Node, Target, Trie}
 
-  lazy val byTargetMap: Multimap[Target, Set, ReqCode] =
+  lazy val byTarget: Multimap[Target, Set, ReqCode] =
     Trie.fold(trie, UnivEq.emptyMultimap[Target, Set, ReqCode])((q, path, tgt) =>
       tgt.fold(q)(q.add(_, ReqCode(path))))
-
-  @inline def byTarget(t: Target): Set[ReqCode] =
-    byTargetMap(t)
 
   def codeSet: Set[ReqCode] =
     Trie.fold(trie, UnivEq.emptySet[ReqCode])((q, path, ot) =>

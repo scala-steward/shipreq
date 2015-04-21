@@ -11,7 +11,7 @@ import java.util.function.{Function => J8Fn}
 
 object Platform {
 
-  def memo[A <: AnyRef, B](f: A => B): A => B = {
+  def memo[A <: AnyRef : UnivEq, B](f: A => B): A => B = {
     val cache = new ConcurrentHashMap[A, B](128)
     val mf    = new J8Fn[A, B] { override def apply(a: A): B = f(a) }
     a => cache.computeIfAbsent(a, mf)

@@ -10,7 +10,7 @@ import scala.collection.mutable.AnyRefMap
 
 object Platform {
 
-  def memo[A <: AnyRef, B](f: A => B): A => B = {
+  def memo[A <: AnyRef : UnivEq, B](f: A => B): A => B = {
     val cache = new AnyRefMap[A, B](128)
     a => cache.getOrElseUpdate(a, f(a))
   }
