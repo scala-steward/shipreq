@@ -187,15 +187,9 @@ object CustomField {
     final def foldId[A](s: StaticField => A, c: CustomField.Id => A): A = c(this)
   }
 
-  object IdAccess extends ObjDataIdM[CustomField.type, CustomField, Id] {
+  object IdAccess extends ObjDataId[CustomField.type, CustomField, Id] {
     override def id(d: CustomField) = d.id
     override val unapplyData: AnyRef => Option[CustomField] = {case r: CustomField => Some(r); case _ => None}
-    override def mkId(l: Long) = Text.Id(l) // This is declared as being for testing only
-    override def setId(cf: CustomField, i: Id) = cf match { // TODO Ideally this should be hidden from non-test code
-      case f: Text        => f.copy(id = Text       .Id(i.value))
-      case f: Tag         => f.copy(id = Tag        .Id(i.value))
-      case f: Implication => f.copy(id = Implication.Id(i.value))
-    }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -213,7 +207,6 @@ object CustomField {
     object IdAccess extends ObjDataId[Text.type, Text, Id] {
       override def id(d: Text) = d.id
       override val unapplyData: AnyRef => Option[Text] = {case r: Text => Some(r); case _ => None}
-      override def mkId(l: Long) = Id(l)
     }
     implicit val equality: UnivEq[Text] = deriveUnivEq
   }
@@ -236,7 +229,6 @@ object CustomField {
     object IdAccess extends ObjDataId[Tag.type, Tag, Id] {
       override def id(d: Tag) = d.id
       override val unapplyData: AnyRef => Option[Tag] = {case r: Tag => Some(r); case _ => None}
-      override def mkId(l: Long) = Id(l)
     }
     implicit val equality: UnivEq[Tag] = deriveUnivEq
   }
@@ -258,7 +250,6 @@ object CustomField {
     object IdAccess extends ObjDataId[Implication.type, Implication, Id] {
       override def id(d: Implication) = d.id
       override val unapplyData: AnyRef => Option[Implication] = {case r: Implication => Some(r); case _ => None}
-      override def mkId(l: Long) = Id(l)
     }
     implicit val equality: UnivEq[Implication] = deriveUnivEq
   }

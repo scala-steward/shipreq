@@ -11,7 +11,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.UnsafeTypes._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.{SampleProject => S}
+import shipreq.webapp.base.test.{SampleProject => S, TagId}
 import shipreq.webapp.base.test.BaseTestUtil._
 import TagProtocol._
 import TagTree.FlatRow
@@ -60,7 +60,7 @@ object TagProtocolTest extends TestSuite {
       t  <- RandomData.remoteDeltaG.povTag
     } yield {
       val tt2 = (tt /: t.rels.allReferencedIds)((q, id) =>
-        q.modOrPut(id, identity, TagInTree(Tag.IdAccess.setId(t.tag, id), Vector.empty)))
+        q.modOrPut(id, identity, TagInTree(TagId.setId(t.tag, id), Vector.empty)))
       TagProps(tt2, t.rels, t.tag)
     }
 

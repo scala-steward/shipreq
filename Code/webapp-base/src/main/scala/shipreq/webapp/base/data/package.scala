@@ -13,8 +13,6 @@ package object data {
     def id(d: D): I
     val unapplyData: AnyRef => Option[D]
 
-    def mkId(l: Long): I // For testing
-
     final def pairWithId(d: D): (I, D) =
       (id(d), d)
 
@@ -30,17 +28,6 @@ package object data {
   trait ObjDataId[O, D, Id] extends DataId[D] {
     override final type I = Id
   }
-
-  // ----------------------------------------------------------------------------------------------
-  // Data ID modification
-
-  trait DataIdM[D] extends DataId[D] {
-    def setId(d: D, id: I): D
-  }
-
-  trait ObjDataIdM[O, D, Id] extends ObjDataId[O, D, Id] with DataIdM[D]
-
-  type DataIdMAux[D, Id] = DataIdM[D] {type I = Id}
 
   // ----------------------------------------------------------------------------------------------
   // Implicits

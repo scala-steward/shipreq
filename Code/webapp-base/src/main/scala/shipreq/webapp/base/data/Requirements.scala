@@ -196,13 +196,9 @@ object Req {
   /** type [[Id]] = [[Req.Id]] | [[GenericReq.Id]] */
   sealed trait Id extends TaggedLong with ReqCode.Target
 
-  object IdAccess extends ObjDataIdM[Req.type, Req, Id] {
+  object IdAccess extends ObjDataId[Req.type, Req, Id] {
     override def id(d: Req) = d.id
     override val unapplyData: AnyRef => Option[Req] = {case r: Req => Some(r); case _ => None}
-    override def mkId(l: Long) = GenericReq.Id(l) // This is declared as being for testing only
-    override def setId(cf: Req, i: Id) = cf match { // TODO Ideally this should be hidden from non-test code
-        case r: GenericReq => r.copy(id = GenericReq.Id(i.value))
-      }
   }
 }
 

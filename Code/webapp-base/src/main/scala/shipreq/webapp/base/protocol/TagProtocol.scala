@@ -108,7 +108,6 @@ object TagProtocol {
     object IdAccess extends ObjDataId[PovTag.type, PovTag, Id] {
       override def id(d: PovTag) = d.id
       override val unapplyData: AnyRef => Option[PovTag] = {case r: PovTag => Some(r); case _ => None}
-      override def mkId(l: Long) = ApplicableTag.Id(l) // This is declared as being for testing only
     }
   }
 

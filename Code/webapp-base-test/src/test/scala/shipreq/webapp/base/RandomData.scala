@@ -1,6 +1,5 @@
 package shipreq.webapp.base
 
-import com.nicta.rng.Rng
 import japgolly.nyaya.util._
 import japgolly.nyaya.test.{Distinct, Gen, GenS}
 import monocle.Lens
@@ -22,6 +21,7 @@ import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
+import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar}
 import DataImplicits._
 import ReqFieldData.{Implications, ImplicationsU}
@@ -130,15 +130,16 @@ object RandomData {
       r2 <- rev
     } yield if (r1.value <= r2.value) (r1, r2) else (r2, r1)
 
-  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])(implicit i: DataIdMAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
+  def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])
+                                    (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
     val d = distinctId[D, I].lift[List]
     val f = mod compose d.run
     val g = f andThen (i.emptyIMap ++ _)
     revAnd(r.list map g)
   }
 
-  def distinctId[D, I <: TaggedLong](implicit i: DataIdMAux[D, I]) =
-    Distinct.flong.xmap(i.mkId)(_.value).distinct.contramap[D](i.id, i.setId)
+  def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
+    Distinct.flong.xmap(j.mkId)(_.value).distinct.contramap[D](i.id, j.setId)
 
   def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
     def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
@@ -370,7 +371,7 @@ object RandomData {
       f2 <- customFieldTagSome(tagIds, art)
       f3 <- customFieldImplicationSome(reqTypeIds, art)
     } yield f3.toStream #::: f2.toStream #::: f1
-    def id   = distinctId(CustomField.IdAccess)
+    def id   = distinctId(CustomField.IdAccess, CustomFieldId)
     def name = Distinct.str.at(CustomField.independentName)
     def key  = Distinct.fstr.xmap(FieldRefKey.apply)(_.value).distinct.at(CustomField.key)
     val dist = (id * name * key).lift[Stream]
