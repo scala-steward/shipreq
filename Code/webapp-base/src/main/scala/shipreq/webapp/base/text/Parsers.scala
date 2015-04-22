@@ -87,10 +87,11 @@ object Parsers {
       rule(s.prefix ~ nonGreedyCapture(end) ~> trim)
     }
 
-    // TODO Not using Grammar because of case-sensitivity
+    val mkReqTypeMnemonic =
+      G.reqTypeMnemonic.parsePost andThen ReqType.Mnemonic.apply
+
     def reqTypeMnemonic = rule(
-      capture(G.reqTypeMnemonic.length.total times CharPredicate.Alpha)
-        ~> (_.toUpperCase |> ReqType.Mnemonic))
+      capture(G.reqTypeMnemonic.length.total times G.reqTypeMnemonic.parseChar) ~> mkReqTypeMnemonic)
 
     def reqTypePos = rule( int1n ~> ReqTypePos )
 

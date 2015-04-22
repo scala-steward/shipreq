@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import org.parboiled2.CharPredicate
 import scala.collection.immutable.NumericRange
 import scala.runtime.AbstractFunction1
 import shipreq.base.util.Util
@@ -19,7 +20,6 @@ object Grammar {
     @inline final def *    = "[" + regex + "]*"
     @inline final def +    = "[" + regex + "]+"
 
-    import org.parboiled2._
     final val charPredicate: CharPredicate =
       rs.foldLeft(CharPredicate(ch1 :: chn.toList))((q, r) => q ++ CharPredicate(r))
   }
@@ -63,7 +63,9 @@ object Grammar {
   /** [[shipreq.webapp.base.data.ReqType.Mnemonic]] */
   object reqTypeMnemonic {
     val length = Length(1 to 6)
-    val chars  = new CharWhitelist("", 'A', 'B' to 'Z')("may only consist of letters.")
+    val chars     = new CharWhitelist("", 'A', 'B' to 'Z')("may only consist of letters.")
+    val parseChar = CharPredicate.Alpha
+    val parsePost = (_: String).toUpperCase
   }
 
   // TODO hashrefkey & mnemonic are both case-insensitive but char ranges are defined differently
