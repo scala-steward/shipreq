@@ -23,7 +23,7 @@ import Text.Equality._
 
 object LogicTest extends TestSuite {
 
-  private def codesInRow(r: Row): Vector[ReqCode] =
+  private def codesInRow(r: Row): Vector[ReqCode.Value] =
     r.fold(_.exp.reqCodes)
 
   private def tagsInRow(r: Row): Vector[ApplicableTag.Id] =
@@ -39,7 +39,7 @@ object LogicTest extends TestSuite {
 
   def firstCodePerRow(r: Row): String = {
     val c = codesInRow(r)
-    if (c.isEmpty) "" else c.head.txt
+    if (c.isEmpty) "" else PlainText.reqCode(c.head)
   }
 
   def applicableTag(p: Project): ApplicableTag.Id => ApplicableTag =
@@ -68,8 +68,8 @@ object LogicTest extends TestSuite {
     // Gathering
 
     def noEmptyAndNonEmptyReqCodesMixed = {
-      val data: Stream[Vector[Vector[ReqCode]]] =
-        Multimap.empty[Req.Id, Vector, Vector[ReqCode]]
+      val data: Stream[Vector[Vector[ReqCode.Value]]] =
+        Multimap.empty[Req.Id, Vector, Vector[ReqCode.Value]]
           .addPairs(gatheredG.map(r => (r.req.id, r.exp.reqCodes)): _*)
           .m.values.toStream
       E.forall(data)(l =>
@@ -205,7 +205,7 @@ object LogicTest extends TestSuite {
       val sorted     = sortBy(SC.InconclusiveCB(C.Code, sm))
       val data       = sorted map firstCodePerRow
       val name       = s"ReqCodes ($sm)"
-      val intra      = sorted.map(codesInRow(_).toList).filter{case _ :: _ :: _ => true; case _ => false}.map(_.map(_.txt))
+      val intra      = sorted.map(codesInRow(_).toList).filter{case _ :: _ :: _ => true; case _ => false}.map(_ map PlainText.reqCode)
       def eachRow    = E.forall(intra)(E_sorted(s"Codes within a single row are sorted.", _, dir))
       def wholeTable = E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
       (wholeTable ∧ eachRow) rename name
@@ -467,7 +467,7 @@ object LogicTest extends TestSuite {
         t("a.boo", "x.z", "y.q") +
         t("abc", "a.b.d")        +
         t("abc.no")              !! P
-      val fmtRows = rowsToStrL(_.exp.reqCodes)(_ => _.txt)
+      val fmtRows = rowsToStrL(_.exp.reqCodes)(_ => PlainText.reqCode)
       testCB(p, PlainText(p), C.Code, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "a  a.b.c  a.b.d  a.boo  abc  abc.no  x.y.z  x.z  y.q",
         desc = "y.q  x.z  x.y.z  abc.no  abc  a.boo  a.b.d  a.b.c  a"))

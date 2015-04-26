@@ -63,8 +63,8 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   private def code = {
-    def render(codes: Vector[ReqCode]): ReactElement =
-          <.ul(codes.map(c => <.li(c.txt)))
+    def render(codes: Vector[ReqCode.Value]): ReactElement =
+          <.ul(codes.map(c => <.li("TODO render ReqCode")))
     make {
       case GenericReqRow(_, exp, _) => render(exp.reqCodes)
     }

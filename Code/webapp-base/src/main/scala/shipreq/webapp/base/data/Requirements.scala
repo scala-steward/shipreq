@@ -18,18 +18,6 @@ import shipreq.webapp.base.TypeclassDerivation._
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
 
-/**
- * A textual ID that refers to a requirement.
- *
- * Eg. "system.email.failure" would be `ReqCode("failure", "email" :: "system" :: Nil)`.
- *
- * Each [[ReqCode]] only refers to a single target, but requirements can have 0..n [[ReqCode]]s.
- */
-final case class ReqCode(code: NonEmptyVector[ReqCode.Node]) {
-  def txt: String = code.whole.mkString(".") // TODO rename. cache. Also should probably be in PlainText
-  override def toString = s"ReqCode($txt)"
-}
-
 // TODO all req code text should be lowercase
 
 /**
@@ -37,6 +25,13 @@ final case class ReqCode(code: NonEmptyVector[ReqCode.Node]) {
  * [[ReqCodes]] is a bundle of all req-codes in a project.
  */
 object ReqCode {
+
+  /**
+   * A textual ID that refers to a requirement.
+   *
+   * Eg. "system.email.failure" would be `NonEmptyVector(Node("system"), Node("email"), Node("failure"))`.
+   */
+  type Value = NonEmptyVector[Node]
 
   /**
    * Portion of a [[ReqCode]], separated by ".".
@@ -75,9 +70,6 @@ object ReqCode {
     @inline def apply(value: String): Node =
       applyFn(value)
   }
-
-  implicit val reqCodeOrder = UnivEq.withOrder[ReqCode](
-    Order[NonEmptyVector[Node]].contramap(_.code))
 
   /**
    * Something to which a [[ReqCode]] can refer.
@@ -119,14 +111,14 @@ object ReqCodeGroup {
  * All req code data for in a project.
  */
 final case class ReqCodes(trie: ReqCode.Trie) {
-  import ReqCode.{Node, Target, Trie}
+  import ReqCode._
   import MTrie.Ops
 
-  lazy val byTarget: Multimap[Target, Set, ReqCode] =
-    trie.byTargetP(ReqCode.apply)
+  lazy val byTarget: Multimap[Target, Set, Value] =
+    trie.byTarget
 
-  def codeSet: Set[ReqCode] =
-    trie.pathSetP(ReqCode.apply)
+  def codeSet: Set[Value] =
+    trie.pathSet
 }
 
 // ===================================================================================================================

@@ -24,7 +24,7 @@ import shipreq.webapp.base.TypeclassDerivation._
 // TODO Make imp naming consistent
 case class Expansion(implicationSrc: Vector[Pubid],
                      implicationTgt: Vector[Pubid],
-                     reqCodes      : Vector[ReqCode],
+                     reqCodes      : Vector[ReqCode.Value],
                      cfImps        : Map[CustomField.Implication.Id, Vector[Pubid]],
                      cfTags        : Map[CustomField.Tag.Id,         Vector[ApplicableTag.Id]]) {
 

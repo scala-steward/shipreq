@@ -30,6 +30,8 @@ object PlainText {
 
   // -------------------------------------------------------------------------------------------------------------------
 
+  def reqCode(c: ReqCode.Value) = c.reduceMapLeft1(_.value)(_ + "." + _)
+
   def hashtag(key: HashRefKey) = G.hashRefKey.prefix ~ key.value
 
   def pubid(p: Project, pid: Pubid): Must[String] =

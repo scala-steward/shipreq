@@ -775,16 +775,16 @@ object RandomData {
     Gen.charof('_', "", 'a' to 'z', '0' to '9').list1.lim(Grammar.reqCodeNodeLength.total.max)
       .map(cs => ReqCode.Node(cs.list.mkString))
 
-  lazy val reqCode: GenS[ReqCode] =
-    reqCodeNode.nev.map(ReqCode.apply)
+  lazy val reqCode: GenS[ReqCode.Value] =
+    reqCodeNode.nev
 
   lazy val reqCodeDFixer = {
-    def fix(ss: Set[ReqCode]): ReqCode = {
+    def fix(ss: Set[ReqCode.Value]): ReqCode.Value = {
       var c = ss.head
       while (ss contains c) {
-        val n1 = c.code.head
+        val n1 = c.head
         val n2 = ReqCode.Node(n1.value + "x")
-        c = ReqCode(NonEmptyVector(n2, c.code.tail))
+        c = NonEmptyVector(n2, c.tail)
       }
       c
     }
@@ -793,10 +793,10 @@ object RandomData {
 
   def reqCodeTrie(possibleTargets: Seq[ReqCode.Target]) = GenS[ReqCode.Trie] { sz =>
     import ReqCode._
-    type FlatValue = (Target, ReqCode)
+    type FlatValue = (Target, ReqCode.Value)
     someOfWithDups(possibleTargets)(reqCode.strengthL)
-      .map(reqCodeDFixer.distinct.at(second[FlatValue, ReqCode]).lift[Vector].run)
-      .map(_.foldLeft(emptyTrie) { case (t, (tgt, c)) => t.put(c.code, tgt) })
+      .map(reqCodeDFixer.distinct.at(second[FlatValue, ReqCode.Value]).lift[Vector].run)
+      .map(_.foldLeft(emptyTrie) { case (t, (tgt, c)) => t.put(c, tgt) })
   }
 
   def reqCodes(g: Gen[ReqCode.Trie]) =

@@ -282,7 +282,7 @@ object Sorter {
   def reqCodeSorter: SorterForSMCB =
     SorterForSMCB { bp =>
       // TODO Sorting reqcodes by txt is inefficient. Trie => Vector[Int] would be better.
-      val norm: ReqCode => String = _.txt
+      val norm: ReqCode.Value => String = PlainText.reqCode
       Sorter[String](
         rowMod = typicalRowModFn(Row.reqCodes, SortFn.stringNonEmpty)(_ => norm),
         prep   = _ => row => Row.reqCodes.getOption(row).flatMap(_.headOption map norm) getOrElse "",

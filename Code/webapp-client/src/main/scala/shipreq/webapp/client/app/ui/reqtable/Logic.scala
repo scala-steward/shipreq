@@ -122,7 +122,7 @@ private[reqtable] object Logic {
 
   private def expansions(impSrcs: Expanded[Pubid],
                          impTgts: Expanded[Pubid],
-                         codes  : Expanded[ReqCode],
+                         codes  : Expanded[ReqCode.Value],
                          cfImps : Map[CustomField.Implication.Id, Expanded[Pubid]],
                          cfTags : Map[CustomField.Tag.Id,         Expanded[ApplicableTag.Id]]): NonEmptyVector[Expansion] =
     if (   isEmptyExp(codes)
@@ -174,7 +174,7 @@ private[reqtable] object Logic {
     // Init
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
-    val expandCodes   = expanderC[ReqCode](vs, Column.Code)
+    val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p)
     val expandTagCols = tagColValueExpander(vs, p)
 
