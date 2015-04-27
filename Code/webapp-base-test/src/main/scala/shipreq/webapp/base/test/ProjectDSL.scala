@@ -22,6 +22,7 @@ object ProjectDSL {
                           reqs          : IMap[Req.Id, Req],
                           pubids        : Pubid.Register,
                           reqCodeTrie   : ReqCode.Trie,
+                          maxReqCodeId  : Long,
                           text          : ReqFieldData.Text,
                           tags          : ReqFieldData.Tags,
                           imps          : ImplicationsU) {
@@ -41,6 +42,7 @@ object ProjectDSL {
     reqs           = p.reqs.data.reqs,
     pubids         = p.reqs.data.pubids,
     reqCodeTrie    = p.reqCodes.data.trie,
+    maxReqCodeId   = p.reqCodes.data.trie.cataV(0L)((q,_,d) => q max d.id.value),
     text           = p.reqFieldData.data.text,
     tags           = p.reqFieldData.data.tags,
     imps           = p.reqFieldData.data.implications.srcToTgt)
@@ -73,6 +75,12 @@ object ProjectDSL {
 
     def state: Mod[GenericReq] =
       State[S, GenericReq]{ p =>
+        var maxReqCodeId = p.maxReqCodeId
+        def nextReqCodeId() = {
+          maxReqCodeId += 1
+          ReqCode.Id(maxReqCodeId)
+        }
+
         val id          = this.id getOrElse GenericReq.Id(p.nextId)
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.reqTypeId)
         val (pr, pubid) = Pubid.alloc(id, reqTypeId, p.pubids)
@@ -80,14 +88,15 @@ object ProjectDSL {
         val text        = cftexts.mapValues(t => Map.empty[Req.Id, Text.CustomTextField.NonEmptyText].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)
-        val codeTrie    = codes.map(parseCode).foldLeft(p.reqCodeTrie)((t, c) => t.put(c, id))
-        val p2          = p.copy(nextId      = this.id.fold(id.value + 1)(_ => p.nextId),
-                                 pubids      = pr,
-                                 reqs        = p.reqs + req,
-                                 reqCodeTrie = codeTrie,
-                                 text        = p.text |+| text,
-                                 tags        = tags,
-                                 imps        = imps)
+        val codeTrie    = codes.map(parseCode).foldLeft(p.reqCodeTrie)((t, c) => t.put(c, ReqCode.Data(nextReqCodeId(), id)))
+        val p2          = p.copy(nextId       = this.id.fold(id.value + 1)(_ => p.nextId),
+                                 pubids       = pr,
+                                 reqs         = p.reqs + req,
+                                 reqCodeTrie  = codeTrie,
+                                 maxReqCodeId = maxReqCodeId,
+                                 text         = p.text |+| text,
+                                 tags         = tags,
+                                 imps         = imps)
         (p2, req)
       }
   }

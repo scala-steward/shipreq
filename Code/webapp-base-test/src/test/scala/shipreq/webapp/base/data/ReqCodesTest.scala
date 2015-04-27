@@ -13,14 +13,14 @@ import shipreq.webapp.base.RandomData
 object ReqCodesTest extends TestSuite {
   import ReqCode._
 
-  case class TrieProps(trie: Trie, target: Target, code: ReqCode.Value) {
+  case class TrieProps(trie: Trie, data: Data, code: ReqCode.Value) {
     val E          = EvalOver(this)
     val flat       = trie.flattenTrie
     val flatStream = trie.flatStream
 
     def put = {
-      val a = flat.updated(code, target)
-      val n = trie.put(code, target).flattenTrie
+      val a = flat.updated(code, data)
+      val n = trie.put(code, data).flattenTrie
       E.equal("put", a, n)
     }
 
@@ -39,10 +39,11 @@ object ReqCodesTest extends TestSuite {
   def gen: Gen[TrieProps] =
     for {
       targets ← RandomData.reqId.set.sup
-      trie    ← RandomData.reqCodeTrie(targets.toSeq).lim(10)
-      target  ← Gen.newOrOld(RandomData.reqId)(targets)
-      code    ← Gen.newOrOld(RandomData.reqCode)(trie.flatStream.map(_._1))
-    } yield TrieProps(trie, target, code)
+      trie    ← RandomData.reqCode.trie(targets).lim(10)
+      target  ← Gen.newOrOld(RandomData.reqId)(targets) // TODO add SHRs
+      id      = ReqCode.Id(trie.cataV(0L)((q,_,d) => q max d.id.value) + 1)
+      code    ← Gen.newOrOld(RandomData.reqCode.value)(trie.flatStream.map(_._1))
+    } yield TrieProps(trie, Data(id, target), code)
 
   override def tests = TestSuite {
     gen.mustSatisfyE(_.all)

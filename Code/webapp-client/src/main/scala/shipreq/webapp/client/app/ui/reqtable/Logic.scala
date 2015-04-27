@@ -199,7 +199,7 @@ private[reqtable] object Logic {
         // Expansion
         val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
         val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-        val codes   = expandCodes  (() => pReqCodes.byTarget(id))
+        val codes   = expandCodes  (() => pReqCodes.reqCodesByTarget(id))
         val cfImps  = expandImpCols(id)
         val cfTags  = expandTagCols(id)
         val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)

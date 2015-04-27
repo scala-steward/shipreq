@@ -2,11 +2,8 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
-import scala.annotation.tailrec
-import scalaz.{Equal, Order}
-import scalaz.std.stream.streamEqual
+import scalaz.Order
 import scalaz.std.string.stringInstance
-import scalaz.std.tuple.tuple2Equal
 import scalaz.syntax.equal._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util._
@@ -78,23 +75,45 @@ object ReqCode {
    */
   sealed trait Target
 
+  /**
+   * No current target. Previous target has been unassociated.
+   *
+   * TODO doc why & usage
+   */
+  case object Tombstone extends Target {
+    implicit def equality = UnivEq.force[this.type]
+  }
+
   implicit object TargetGeneric extends Generic[Target] {
-    override type Repr = Req.Id :+: ReqCodeGroup :+: CNil
+    override type Repr = Req.Id :+: ReqCodeGroup :+: Tombstone.type :+: CNil
+    private val tombstone = Coproduct[Repr](Tombstone)
     override def to  (t: Target): Repr = t match {
       case a: Req.Id       => Coproduct[Repr](a)
       case a: ReqCodeGroup => Coproduct[Repr](a)
+      case    Tombstone    => tombstone
     }
     override def from(co: Repr): Target = co match {
-      case Inl(a)      => a
-      case Inr(Inl(a)) => a
-      case _           => ???
+      case Inl(a)           => a
+      case Inr(Inl(a))      => a
+      case Inr(Inr(Inl(a))) => a
+      case _ => ???
     }
   }
 
   implicit val targetEquality: UnivEq[Target] = deriveUnivEq
 
-  type Trie = MTrie.Trie[Node, Target]
-  def emptyTrie: Trie = MTrie.empty[Node, Target]
+  // TODO Why the hell aren't IDs AnyVals?
+  final case class Id(value: Long) extends TaggedLong
+
+  /**
+   * Data associated with each [[ReqCode.Value]].
+   */
+  final case class Data(id: Id, target: Target)
+
+  implicit val dataEquality: UnivEq[Data] = deriveUnivEq
+
+  type Trie = MTrie.Trie[Node, Data]
+  def emptyTrie: Trie = MTrie.empty[Node, Data]
 }
 
 /**
@@ -114,11 +133,17 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   import ReqCode._
   import MTrie.Ops
 
-  lazy val byTarget: Multimap[Target, Set, Value] =
-    trie.byTarget
+//  lazy val reqCodeById: Map[Id, Value] =
+//    trie.cataV(UnivEq.emptyMap[Id, Value])((q, c, d) =>
+//      q.updated(d.id, c))
 
-  def codeSet: Set[Value] =
-    trie.pathSet
+  lazy val reqCodesByTarget: Multimap[Target, Set, Value] =
+    trie.cataV(UnivEq.emptyMultimap[Target, Set, Value])((q, c, d) =>
+      q.add(d.target, c))
+
+//  lazy val targetToIds: Multimap[Target, Set, Id] =
+//    trie.cataV(UnivEq.emptyMultimap[Target, Set, Id])((q, _, d) =>
+//      q.add(d.target, d.id))
 }
 
 // ===================================================================================================================

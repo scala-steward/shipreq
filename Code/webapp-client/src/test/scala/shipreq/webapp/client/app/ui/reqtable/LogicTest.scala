@@ -56,13 +56,16 @@ object LogicTest extends TestSuite {
 
     type S[A] = Stream[A]
 
-    val gathered    = Logic.gather(vs, p)
-    val gatheredG   = gathered.filterT[GenericReqRow]
-    val rowReqCodes = gathered.flatMap(codesInRow(_).toStream)
-    val rowGReqIds  = gatheredG.map(_.req.id).toSet
-    val srcGReqIds  = p.reqs.data.reqs.keys.filterT[GenericReq.Id].toSet
-    val srcReqCodes = p.reqCodes.data.codeSet
-    val plainText   = PlainText(p)
+    val gathered     = Logic.gather(vs, p)
+    val gatheredG    = gathered.filterT[GenericReqRow]
+    val rowReqCodes  = gathered.flatMap(codesInRow(_).toStream)
+    val rowGReqIds   = gatheredG.map(_.req.id).toSet
+    val srcGReqIds   = p.reqs.data.reqs.keys.filterT[GenericReq.Id].toSet
+    val plainText    = PlainText(p)
+    val liveReqCodes = p.reqCodes.data.trie.cataV(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
+      case ReqCode.Tombstone           => q
+      case _: Req.Id | _: ReqCodeGroup => q + c
+    })
 
     // -----------------------------------------------------------------------------------------------------------------
     // Gathering
@@ -85,7 +88,7 @@ object LogicTest extends TestSuite {
     def gather =
       ( E.distinct("Rows", gathered)
       ∧ E.allPresent("each generic req id has a row", srcGReqIds, rowGReqIds)
-      ∧ E.allPresent("all req codes are displayed", srcReqCodes, rowReqCodes)
+      ∧ E.allPresent("all req codes are displayed", liveReqCodes, rowReqCodes)
       ∧ noEmptyAndNonEmptyReqCodesMixed
       ) rename "Logic.gather"
 

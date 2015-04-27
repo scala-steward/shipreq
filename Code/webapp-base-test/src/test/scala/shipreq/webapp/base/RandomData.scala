@@ -771,37 +771,54 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Req Codes
 
-  lazy val reqCodeNode: Gen[ReqCode.Node] =
-    Gen.charof('_', "", 'a' to 'z', '0' to '9').list1.lim(Grammar.reqCodeNodeLength.total.max)
-      .map(cs => ReqCode.Node(cs.list.mkString))
-
-  lazy val reqCode: GenS[ReqCode.Value] =
-    reqCodeNode.nev
-
-  lazy val reqCodeDFixer = {
-    def fix(ss: Set[ReqCode.Value]): ReqCode.Value = {
-      var c = ss.head
-      while (ss contains c) {
-        val n1 = c.head
-        val n2 = ReqCode.Node(n1.value + "x")
-        c = NonEmptyVector(n2, c.tail)
-      }
-      c
-    }
-    Distinct.Fixer lift fix
-  }
-
-  def reqCodeTrie(possibleTargets: Seq[ReqCode.Target]) = GenS[ReqCode.Trie] { sz =>
+  object reqCode {
     import ReqCode._
-    type FlatValue = (Target, ReqCode.Value)
-    someOfWithDups(possibleTargets)(reqCode.strengthL)
-      .map(reqCodeDFixer.distinct.at(second[FlatValue, ReqCode.Value]).lift[Vector].run)
-      .map(_.foldLeft(emptyTrie) { case (t, (tgt, c)) => t.put(c, tgt) })
+
+    lazy val node: Gen[Node] =
+      Gen.charof('_', "", 'a' to 'z', '0' to '9').list1.lim(Grammar.reqCodeNodeLength.total.max)
+        .map(cs => Node(cs.list.mkString))
+
+    lazy val value: GenS[Value] =
+      node.nev
+
+    lazy val id =
+      RandomData.id map ReqCode.Id
+
+    type FlatInstance = (Id, Value, Target)
+
+    val distinctIds =
+      Distinct.flong.xmap(Id)(_.value).distinct
+
+    val distinctReqCodes = {
+      def fix(ss: Set[ReqCode.Value]): ReqCode.Value = {
+        var c = ss.head
+        while (ss contains c) {
+          val n1 = c.head
+          val n2 = ReqCode.Node(n1.value + "x")
+          c = NonEmptyVector(n2, c.tail)
+        }
+        c
+      }
+      Distinct.Fixer.lift(fix).distinct
+    }
+
+    val distinctFlatInstances = {
+      val id      = distinctIds      at first [FlatInstance, Id]
+      val reqCode = distinctReqCodes at second[FlatInstance, Value]
+      (id * reqCode).lift[Vector]
+    }
+
+    def trie(ids: Iterable[Req.Id]) = GenS[Trie] { sz =>
+      val possibleTargets = (ids.toVector: Vector[Target]) :+ Tombstone
+      someOfWithDups(possibleTargets)(t =>
+          for {c <- value; i <- id} yield (i, c, t))
+        .map(distinctFlatInstances.run)
+        .map(_.foldLeft(emptyTrie) { case (q, (i, c, t)) => q.put(c, Data(i, t)) })
+    }
   }
 
-  def reqCodes(g: Gen[ReqCode.Trie]) =
+  def revAndReqCodes(g: Gen[ReqCode.Trie]) =
     revAnd(g map ReqCodes.apply)
-
 
   // -------------------------------------------------------------------------------------------------------------------
   // Project
@@ -834,7 +851,7 @@ object RandomData {
       reqTypeIdSet   = reqTypeIds.toSet
       fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
       reqs           ← revAnd(requirements(reqTypeIds, Gen.oneofO(cissueIds.toSeq)))
-      reqCodes       ← reqCodes(reqCodeTrie(reqs.data.reqs.keys.toSeq).lim(22 `JVM|JS` 8)) // TODO add SHRs
+      reqCodes       ← revAndReqCodes(reqCode.trie(reqs.data.reqs.keys).lim(22 `JVM|JS` 8)) // TODO add SHRs
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
       reqIds         = reqs.data.reqs.keySet

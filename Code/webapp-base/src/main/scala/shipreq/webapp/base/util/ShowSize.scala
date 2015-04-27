@@ -4,6 +4,7 @@ import scala.runtime.AbstractFunction1
 import scalaz.Semigroup
 import scalaz.std.option._
 import scalaz.syntax.semigroup._
+import shipreq.base.util.MTrie.Ops._
 import ShowSize.Node
 
 class ShowSize[A](f: A => Node) extends AbstractFunction1[A, Node] {
@@ -129,7 +130,7 @@ object ShowSize {
 //      .addChildren(r.reqsByType.m.toList.map(x => (x._1, x._2.size))) )
 
   implicit def reqCodes: ShowSize[ReqCodes] =
-    ShowSize.lift(rc => Node("Req codes", rc.codeSet.size))
+    ShowSize.lift(rc => Node("Req codes", rc.trie.cataV(0)((q, _, _) => q + 1)))
 
   implicit def reqFieldData: ShowSize[ReqFieldData] =
     ShowSize.lift(r => Node.sum("Req field-data",

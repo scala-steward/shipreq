@@ -236,17 +236,17 @@ object GenericCodecs {
 
     lazy val nodeRW: ReadWriter[Node[K, V]] = {
       implicit val targetRW =
-        caseclass1(Target.apply[K, V], Target.unapply[K, V])
+        caseclass1(Value.apply[K, V], Value.unapply[K, V])
       implicit val branchRW =
         caseclass2(MTrie.Branch.apply[K, V], MTrie.Branch.unapply[K, V])(implicitly, implicitly, trieRW, trieRW)
 
       ReadWriter[Node[K, V]]({
         case i: Branch[K, V] => intkeyW(0, i)
-        case i: Target[K, V] => intkeyW(1, i)
+        case i: Value[K, V] => intkeyW(1, i)
       }, {
         case Js.Arr(Js.Num(n), v) => n.toInt match {
           case 0 => readJs[Branch[K, V]](v)
-          case 1 => readJs[Target[K, V]](v)
+          case 1 => readJs[Value[K, V]](v)
         }
       })
     }
@@ -563,19 +563,25 @@ object DataCodecs {
   // -------------------------------------------------------------------------------------------------------------------
   // Req Codes
 
-  implicit final val reqCodeGroup    = caseclass1(ReqCodeGroup.apply, ReqCodeGroup.unapply)
-  implicit final val reqCodeNode     = xmap[ReqCode.Node, String](_.value)(ReqCode.Node.applyFn)
-  implicit final val reqCodeTarget   = _reqCodeTarget
-  implicit final val reqCodeTrie     = (mtrie: ReadWriter[ReqCode.Trie])
-  implicit final val reqCodes        = caseclass1(ReqCodes.apply, ReqCodes.unapply)
+  implicit final val reqCodeGroup  = caseclass1(ReqCodeGroup.apply, ReqCodeGroup.unapply)
+  implicit final val reqCodeNode   = xmap[ReqCode.Node, String](_.value)(ReqCode.Node.applyFn)
+  implicit final val reqCodeTarget = _reqCodeTarget
+  implicit final val reqCodeId     = tagL(ReqCode.Id.apply)
+  implicit final val reqCodeData   = caseclass2(ReqCode.Data.apply, ReqCode.Data.unapply)
+  implicit final val reqCodeTrie   = (mtrie: ReadWriter[ReqCode.Trie])
+  implicit final val reqCodes      = caseclass1(ReqCodes.apply, ReqCodes.unapply)
 
   private def _reqCodeTarget = ReadWriter[ReqCode.Target]({
-    case i: Req.Id       => intkeyW(0, i)(reqId)
-    case i: ReqCodeGroup => intkeyW(1, i)(reqCodeGroup)
+    case i: Req.Id         => intkeyW(0, i)(reqId)
+    case i: ReqCodeGroup   => intkeyW(1, i)(reqCodeGroup)
+    case ReqCode.Tombstone => Js.Num(2)
   }, {
     case Js.Arr(Js.Num(n), v) => n.toInt match {
       case 0 => readJs(v)(reqId)
       case 1 => readJs(v)(reqCodeGroup)
+    }
+    case Js.Num(n) => n.toInt match {
+      case 2 => ReqCode.Tombstone
     }
   })
 

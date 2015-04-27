@@ -173,11 +173,11 @@ object DataProp {
   object reqCodes {
     type T = ReqCodes
     import ReqCode._
-    type TrieBranch = MTrie.Branch[Node, Target]
+    type TrieBranch = MTrie.Branch[Node, Data]
 
     def branchesMustBranch =
       Prop.test[TrieBranch]("TrieBranch branches", _.next.nonEmpty)
-        .forall[T, List](_.trie.foldValues[List[TrieBranch]](Nil)((q, n) => n.fold(_ :: q, _ => q)))
+        .forall[T, List](_.trie.cataN[List[TrieBranch]](Nil)((q, n) => n.fold(_ :: q, _ => q)))
         .rename("All TrieBranches branch")
 
 //    def noSharedTrieBranches =
