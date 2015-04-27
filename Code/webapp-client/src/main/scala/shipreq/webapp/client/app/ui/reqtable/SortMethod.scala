@@ -10,6 +10,9 @@ sealed trait SortMethod {
   type ReverseHalf <: SortMethod
   type BlankSpec <: SortMethod
   def reverse: BlankSpec with ReverseHalf
+
+  def ascending: Boolean
+  final def descending = !ascending
 }
 
 object SortMethod {
@@ -26,11 +29,13 @@ object SortMethod {
   /** The half of [[SortMethod]]s which sort in ascending order. */
   sealed trait AscHalf extends SortMethod {
     final override type ReverseHalf = DescHalf
+    final override def ascending = true
   }
 
   /** The half of [[SortMethod]]s which sort in ascending order. */
   sealed trait DescHalf extends SortMethod {
     final override type ReverseHalf = AscHalf
+    final override def ascending = false
   }
 
   sealed trait IgnoreBlanks extends SortMethod {
