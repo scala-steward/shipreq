@@ -5,6 +5,7 @@ import shipreq.base.util.{NonEmptyVector, Must}
 import shipreq.webapp.base.UiText.Unmust
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
+import shipreq.webapp.base.util.ReqCodeTreeItem
 import Atom.AnyAtom
 
 /**
@@ -30,6 +31,21 @@ object PlainText {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+
+  def reqCodeIndentation(is: NonEmptyVector[ReqCodeTreeItem.Indent]): String = {
+    import ReqCodeTreeItem._
+    val I = "│"
+    is.reduceMapLeft1({
+      case IndentChild    => I
+      case IndentSpace(l) => I ~ (" " * (l - 1))
+    })(_ ~ ' ' ~ _)
+  }
+
+  def reqCodeTreeItem(ti: ReqCodeTreeItem): String =
+    NonEmptyVector.option(ti.indent) match {
+      case None     => reqCode(ti.suffix)
+      case Some(is) => reqCodeIndentation(is) ~ G.reqCode.nodeSeparator ~ reqCode(ti.suffix)
+    }
 
   def reqCode(c: ReqCode.Value) = c.reduceMapLeft1(_.value)(_ ~ G.reqCode.nodeSeparator ~ _)
 

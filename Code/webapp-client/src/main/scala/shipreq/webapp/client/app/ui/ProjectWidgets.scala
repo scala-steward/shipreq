@@ -6,7 +6,8 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.webapp.base.UiText
 import shipreq.base.util.{NonEmptyVector, Must, UnivEq}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Atom, ProjectText, PlainText, Text}
+import shipreq.webapp.base.text._
+import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.app.ui.Style.{widgets => *}
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.util.KaTeX
@@ -116,4 +117,35 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
     <.span(input map atom: _*)
   }
+
+  val reqCodeTreeIdentation =
+    UnivEq.mutableHashMapMemo[NonEmptyVector[ReqCodeTreeItem.Indent], ReactElement](is =>
+      <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
+
+  def reqCodeTreeItem(item: ReqCodeTreeItem): ReactElement = {
+    val indentation = NonEmptyVector.option(item.indent)
+    var code = PlainText.reqCode(item.suffix)
+    if (indentation.isDefined)
+      code = Grammar.reqCode.nodeSeparator + code
+    <.div(
+      indentation map reqCodeTreeIdentation,
+      <.pre(*.reqCodeTreeCode, code))
+  }
+
+  def reqCodeTree(items: Vector[ReqCodeTreeItem]): TagMod =
+    items map reqCodeTreeItem
+
+  def flatReqCode(c: ReqCode.Value): ReactElement =
+    <.pre(*.reqCodeFlat, PlainText reqCode c)
+
+  def flatReqCodes(reqCodes: Vector[ReqCode.Value]): TagMod =
+    reqCodes map flatReqCode
+
+  def reqCodes(tree: Vector[ReqCodeTreeItem], flat: Vector[ReqCode.Value]): ReactElement =
+    <.div(
+      if (tree.nonEmpty)
+        reqCodeTree(tree)
+      else
+        flatReqCodes(flat)
+    )
 }

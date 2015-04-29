@@ -16,6 +16,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{PlainText, Text}
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.{SampleImplicationGraph, SampleProject, ProjectDSL, UnsafeTypes}
+import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.test.ClientTestSettings._
 import shipreq.webapp.client.app.ui.reqtable.{SortCriterion => SC, Column => C}
 import SortMethod._
@@ -478,61 +479,106 @@ object LogicTest extends TestSuite {
   def testReqCodeTree(): Unit = {
     val src =
       """
-        |refs1
-        |refs1.code
-        |refs1.code.short.parse
-        |refs1.code.short.disp
-        |refs1.code.change
-        |refs1.code.change.update
-        |refs1.code.change.warn
-        |refs1.code.display
-        |refs2
-        |refs2.code.short.parse
-        |refs2.code.short.disp
-        |refs2.code.change
-        |refs2.code.change.update
-        |refs2.code.change.warn
-        |refs2.code.display
-      """.stripMargin.trim
+        │a.a.1
+        │a.a.2
+        │a.aaa.1
+        │a.aaa.2
+        │a.c
+        │a.c.d
+        │aaa.a.1
+        │aaa.a.2
+        │aaa.aaa.1
+        │aaa.aaa.2
+        │aaa.c
+        │aaa.c.d
+        │b
+        │b.a.1
+        │b.a.2
+        │b.aaa.1
+        │b.aaa.2
+        │b.c
+        │b.c.d
+        │bbb
+        │bbb.a.1
+        │bbb.a.2
+        │bbb.aaa.1
+        │bbb.aaa.2
+        │bbb.c
+        │bbb.c.d
+        │refs1
+        │refs1.code
+        │refs1.code.short.parse
+        │refs1.code.short.disp
+        │refs1.code.change
+        │refs1.code.change.update
+        │refs1.code.change.warn
+        │refs1.code.display
+        │refs2
+        │refs2.code.short.parse
+        │refs2.code.short.disp
+        │refs2.code.change
+        │refs2.code.change.update
+        │refs2.code.change.warn
+        │refs2.code.display
+      """.stripMargin('│').trim
+
+    // Rule #1: Indent bar lines up with first char (az) of string above.
+    // Rule #2: Child's first char (az) is 2 vertical spaces away from first char (az) of parent. (so gap=1)
 
     val exp =
       """
-        |refs1
-        | ^.code
-        | ^ ^.short.parse
-        | ^ ^ |    .disp
-        | ^ ^.change
-        | ^ ^ ^.update
-        | ^ ^ ^.warn
-        | ^ ^.display
-        |refs2
-        | ^.code.short.parse
-        | ^ |    |    .disp
-        | ^ |   .change
-        | ^ |    ^.update
-        | ^ |    ^.warn
-        | ^ |   .display
-      """.stripMargin.trim
+        │a.a.1
+        │| |.2
+        │|.aaa.1
+        │| |  .2
+        │|.c
+        │| |.d
+        │aaa.a.1
+        │|   |.2
+        │|  .aaa.1
+        │|   |  .2
+        │|  .c
+        │|   |.d
+        │b
+        │|.a.1
+        │| |.2
+        │|.aaa.1
+        │| |  .2
+        │|.c
+        │| |.d
+        │bbb
+        │|.a.1
+        │| |.2
+        │|.aaa.1
+        │| |  .2
+        │|.c
+        │| |.d
+        │refs1
+        │|.code
+        │| |.short.parse
+        │| | |    .disp
+        │| |.change
+        │| | |.update
+        │| | |.warn
+        │| |.display
+        │refs2
+        │|.code.short.parse
+        │| |    |    .disp
+        │| |   .change
+        │| |    |.update
+        │| |    |.warn
+        │| |   .display
+      """.stripMargin('│').trim
 
     import ReqCode._
-    import ReqCodeTreeItem._
 
     val mkReqCode: String => Value = line => {
       val v = line.split("\\.").map(Node.applyFn).toVector
       NonEmptyVector(v.head, v.tail)
     }
 
-    def formatTreeItem(t: ReqCodeTreeItem): String = {
-      val c = PlainText reqCode t.suffix
-      if (t.indent.isEmpty) c else
-        t.indent.map {
-          case IndentChild => " ^"
-          case IndentSpace(l) => " |" + (" " * (l - 1))
-        }.foldRight("." + c)(_ + _)
-    }
-
     def formatTreeItems(ts: Vector[ReqCodeTreeItem]) =
-      ts map formatTreeItem mkString "\n"
+      ts map PlainText.reqCodeTreeItem map (_.replace('│', '|')) mkString "\n"
 
     val srcCodes = src.split("\n").map(mkReqCode)
 

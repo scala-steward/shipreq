@@ -10,6 +10,7 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.util.ReqCodeTreeItem
 import DataImplicits._
 
 private[reqtable] object Logic {
@@ -333,13 +334,19 @@ private[reqtable] object Logic {
     go(Vector.empty, cur)(prevI.indent, prevV)
   }
 
-  def addReqCodeTreeToRows(rows: Stream[Row]): Stream[Row] =
+  val addReqCodeTreeToRows: EndoFn[Stream[Row]] = rows =>
     mkReqCodeTree[Row, Vector, Stream, Row](
       rows,
       Row.reqCodes.getOption(_) getOrElse Vector.empty,
       (i, bs) => Row.reqCodeTree.set(bs)(i))
 
-    // ===================================================================================================================
-  def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject): Stream[Row] =
-    gather(vs, p) |> sort(vs, p, pt) |> consolidateAdjacentDups
+  // ===================================================================================================================
+  def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject): Stream[Row] = {
+    def maybe(cond: Boolean, f: EndoFn[Stream[Row]]): EndoFn[Stream[Row]] = if (cond) f else identity
+
+    gather(vs, p) |>
+      sort(vs, p, pt) |>
+      consolidateAdjacentDups |>
+      maybe(vs.viewReqCodesAsTree, addReqCodeTreeToRows)
+  }
 }

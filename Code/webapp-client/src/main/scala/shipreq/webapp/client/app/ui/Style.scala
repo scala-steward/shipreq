@@ -168,9 +168,26 @@ object Style extends StyleSheet.Inline {
 
     val math = style(margin.horizontal(0.8 ex))
     val mathFail = style(math, hasError)
+
+    // Fucking bootstrap
+    val reqCodePre = mixin(
+      margin.`0`,
+      padding.`0`,
+      display.inline,
+      background := ^.unset,
+      border.none,
+      fontSize(12 px),
+      lineHeight(1.2 em),
+      wordBreak.keepAll,
+      wordWrap.normal,
+      whiteSpace.pre
+    )
+    val reqCodeTreeIndent = style(reqCodePre, color("#d8d8d8".color))
+    val reqCodeTreeCode = style(reqCodePre)
+    val reqCodeFlat = style(reqCodePre)
   }
 
-  def damnit(a: StyleA*) = ()
+  def damnit(a: StyleA*) = () // TODO add to ScalaCSS as (force)init(Objects) or something
   damnit(
     reqtable.sortingSettings.conclusiveDir,
     reqtable.columnSettings.row,

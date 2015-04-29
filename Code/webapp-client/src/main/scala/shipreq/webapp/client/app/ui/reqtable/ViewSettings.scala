@@ -32,6 +32,10 @@ case class ViewSettings(columns: NonEmptyVector[Column],
 
 
 object ViewSettings {
-  def default =
-    ViewSettings(Column.builtInValues, SortCriteria.default)
+  def default = {
+    import Column._
+    ViewSettings(
+      NonEmptyVector(Code, Pubid, Title, Tags, ImplicationSrc),
+      SortCriteria.default)
+  }
 }
