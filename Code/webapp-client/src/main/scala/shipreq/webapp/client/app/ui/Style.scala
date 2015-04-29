@@ -173,7 +173,6 @@ object Style extends StyleSheet.Inline {
     val reqCodePre = mixin(
       margin.`0`,
       padding.`0`,
-      display.inline,
       background := ^.unset,
       border.none,
       fontSize(12 px),
@@ -182,9 +181,10 @@ object Style extends StyleSheet.Inline {
       wordWrap.normal,
       whiteSpace.pre
     )
-    val reqCodeTreeIndent = style(reqCodePre, color("#d8d8d8".color))
-    val reqCodeTreeCode = style(reqCodePre)
-    val reqCodeFlat = style(reqCodePre)
+    val reqCodeTreePre = mixin(reqCodePre, display.inline)
+    val reqCodeTreeIndent = style(reqCodeTreePre, color("#d8d8d8".color))
+    val reqCodeTreeCode = style(reqCodeTreePre)
+    val reqCodeFlat = style(reqCodePre, display.block)
   }
 
   def damnit(a: StyleA*) = () // TODO add to ScalaCSS as (force)init(Objects) or something
