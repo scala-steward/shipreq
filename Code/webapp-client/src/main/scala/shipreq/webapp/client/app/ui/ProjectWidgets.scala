@@ -38,7 +38,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     project.customIssueType(id).map(i =>
       <.span(
         *.issue,
-        s"#${i.key.value}") // TOOD use grammar
+        s"#${i.key.value}") // TODO use grammar
     ))
 
   def issue1(id: CustomIssueType.Id, desc: Text.InlineIssueDesc.NonEmptyText): ReactElement =
@@ -47,7 +47,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         *.issue,
         s"#${i.key.value}{",
         format1(desc)(*.issueDesc),
-        "}") // TOOD use grammar
+        "}") // TODO use grammar
     )
 
   val pubidText = memoM[Pubid]("ID", pubid =>
@@ -62,7 +62,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       <.span(
         *.reqRef(req.alive),
         ^.title := plainText.reqTitle(req),
-        s"[${PlainText.pubid(rt, req.pubid.pos)}]") // TOOD use grammar
+        s"[${PlainText.pubid(rt, req.pubid.pos)}]") // TODO use grammar
     )
 
   def reqRefs(reqs: Vector[Req.Id]): ReactElement =
