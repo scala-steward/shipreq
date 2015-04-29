@@ -27,7 +27,7 @@ case class ViewSettings(columns: NonEmptyVector[Column],
    */
   final val viewReqCodesAsTree: Boolean =
     order.init.headOption.exists(s =>
-      (s.column ≟ Column.Code) && s.method.ascending)
+      s.column ≟ Column.Code)
 }
 
 
