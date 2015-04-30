@@ -16,6 +16,10 @@ object ProjectDSL {
 
   type Mod[A] = State[S, A]
 
+  trait ToState {
+    def state: Mod[_]
+  }
+
   case class ProjectState(p             : Project,
                           nextId        : Long,
                           defaultReqType: ReqType,
@@ -52,26 +56,28 @@ object ProjectDSL {
     NonEmptyVector(ns.head, ns.tail.toVector)
   }
 
-  
-  case class GReq(title  : Text.GenericReqTitle.OptionalText                           = Vector.empty,
-                  id     : Option[GenericReq.Id]                                       = None,
-                  reqType: Option[ReqType.Id]                                          = None,
-                  alive  : Alive                                                       = Alive,
-                  codes  : Set[String]                                                 = Set.empty,
-                  tags   : Set[ApplicableTag.Id]                                       = Set.empty,
-                  impSrcs: Set[Req.Id]                                                 = Set.empty,
-                  impTgts: Set[Req.Id]                                                 = Set.empty,
-                  cftexts: Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText] = Map.empty) {
+  type CFTextId    = CustomField.Text.Id
+  type CFTextValue = Text.CustomTextField.NonEmptyText
 
-    def code   (rcs: String*)                                                 = copy(codes   = this.codes   ++ rcs)
-    def tag    (ids: ApplicableTag.Id*)                                       = copy(tags    = this.tags    ++ ids)
-    def impSrc (ids: Req.Id*)                                                 = copy(impSrcs = this.impSrcs ++ ids)
-    def impTgt (ids: Req.Id*)                                                 = copy(impTgts = this.impTgts ++ ids)
-    def cftext (k: CustomField.Text.Id, v: Text.CustomTextField.NonEmptyText) = copy(cftexts = this.cftexts.updated(k,v))
-    def cftextS(k: CustomField.Text.Id, s: String)                            = if (s.isEmpty) this else cftext(k, s)
+  case class GReq(title  : Text.GenericReqTitle.OptionalText = Vector.empty,
+                  id     : Option[GenericReq.Id]             = None,
+                  reqType: Option[ReqType.Id]                = None,
+                  alive  : Alive                             = Alive,
+                  codes  : Set[String]                       = Set.empty,
+                  tags   : Set[ApplicableTag.Id]             = Set.empty,
+                  impSrcs: Set[Req.Id]                       = Set.empty,
+                  impTgts: Set[Req.Id]                       = Set.empty,
+                  cftexts: Map[CFTextId, CFTextValue]        = Map.empty) extends ToState {
+
+    def code   (rcs: String*)                = copy(codes   = this.codes   ++ rcs)
+    def tag    (ids: ApplicableTag.Id*)      = copy(tags    = this.tags    ++ ids)
+    def impSrc (ids: Req.Id*)                = copy(impSrcs = this.impSrcs ++ ids)
+    def impTgt (ids: Req.Id*)                = copy(impTgts = this.impTgts ++ ids)
+    def cftext (k: CFTextId, v: CFTextValue) = copy(cftexts = this.cftexts.updated(k,v))
+    def cftextS(k: CFTextId, s: String)      = if (s.isEmpty) this else cftext(k, s)
 
     def times(n: Int): Composite =
-      Stream.fill(n - 1)(this).foldLeft(autoCompositeGReq(this))(_ + _)
+      Stream.fill(n - 1)(this).foldLeft(autoComposite(this))(_ + _)
 
     def state: Mod[GenericReq] =
       State[S, GenericReq]{ p =>
@@ -88,7 +94,7 @@ object ProjectDSL {
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.reqTypeId)
         val (pr, pubid) = Pubid.alloc(id, reqTypeId, p.pubids)
         val req         = GenericReq(id, pubid, title, alive)
-        val text        = cftexts.mapValues(t => Map.empty[Req.Id, Text.CustomTextField.NonEmptyText].updated(id, t))
+        val text        = cftexts.mapValues(t => Map.empty[Req.Id, CFTextValue].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)
         val codeTrie    = codes.map(parseCode).foldLeft(p.reqCodeTrie)((t, c) => t.put(c, reqCodeData()))
@@ -104,10 +110,30 @@ object ProjectDSL {
       }
   }
 
+  case class RCGroup(code: String, title: Text.ReqCodeGroupTitle.OptionalText = Vector.empty) extends ToState {
+    def state: Mod[ReqCodeGroup] =
+      State[S, ReqCodeGroup]{ p =>
+
+        var maxReqCodeId = p.maxReqCodeId
+        def nextReqCodeId() = {
+          maxReqCodeId += 1
+          ReqCode.Id(maxReqCodeId)
+        }
+
+        val g  = ReqCodeGroup(title)
+        val ad = ReqCode.ActiveData(nextReqCodeId(), g)
+        val d  = ReqCode.Data(Some(ad), UnivEq.emptySet, UnivEq.emptyMultimap)
+        val c  = parseCode(code)
+        val t  = p.reqCodeTrie.put(c, d)
+        val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = maxReqCodeId)
+        (p2, g)
+      }
+  }
+
   case class Composite(ss: NonEmptyVector[Mod[_]], defaultReqType: Option[ReqType]) {
 
-    def +(b: GReq): Composite =
-      copy(ss = b.state +: ss)
+    def +(n: ToState): Composite =
+      copy(ss = n.state +: ss)
 
     def state: Mod[Unit] = {
       var s = ss.whole.reduce((a, b) => b >> a).map(_ => ())
@@ -131,7 +157,7 @@ object ProjectDSL {
       shuffle.!(p)
   }
 
-  implicit def autoCompositeGReq(g: GReq) = Composite(NonEmptyVector.one(g.state), None)
+  implicit def autoComposite(s: ToState) = Composite(NonEmptyVector.one(s.state), None)
 
   implicit def parseCTF(i: String): Text.CustomTextField.NonEmptyText = {
     if (i.isEmpty) sys.error("Text.CustomTextField can't be empty.") else NonEmptyVector(Text.CustomTextField.Literal(i))

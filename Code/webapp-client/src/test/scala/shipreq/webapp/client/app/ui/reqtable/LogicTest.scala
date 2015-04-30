@@ -496,14 +496,16 @@ object LogicTest extends TestSuite {
     }
 
     def testReqCodes(): Unit = {
-      def t(codes: String*) = GReq(codes = codes.toSet)
+      def req(codes: String*) = GReq(codes = codes.toSet)
+      def grp(code: String)   = RCGroup(code)
       val p =
-        GReq().times(2)          +
-        t("a.b.c", "x.y.z")      +
-        t("a")                   +
-        t("a.boo", "x.z", "y.q") +
-        t("abc", "a.b.d")        +
-        t("abc.no")              !! P
+        GReq().times(2)            +
+        req("a.b.c", "x.y.z")      +
+        req("a")                   +
+        req("a.boo", "x.z", "y.q") +
+        grp("abc")                 +
+        grp("a.b.d")               +
+        req("abc.no")              !! P
       val fmtRows = rowsToStrL1(_.exp.reqCodes, r => Vector1(r.reqCode))(PlainText.reqCode)
       testCB(p, PlainText(p), C.Code, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "a  a.b.c  a.b.d  a.boo  abc  abc.no  x.y.z  x.z  y.q",
