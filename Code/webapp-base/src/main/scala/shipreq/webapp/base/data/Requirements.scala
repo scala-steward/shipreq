@@ -132,7 +132,7 @@ object ReqCode {
  *
  * Previously called "Semantic Header Row" or "SHR" in the requirements.
  */
-final case class ReqCodeGroup(title: Text.RecCodeGroupTitle.OptionalText) extends ReqCode.Target
+final case class ReqCodeGroup(title: Text.ReqCodeGroupTitle.OptionalText) extends ReqCode.Target
 object ReqCodeGroup {
   implicit val equality: UnivEq[ReqCodeGroup] = deriveUnivEq
 }

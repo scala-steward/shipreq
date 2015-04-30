@@ -220,7 +220,7 @@ object LogicTest extends TestSuite {
       E_sorted("Pubids", pubids, dir)
     }
 
-    def sortByRecCode: IndivSortCB = (sm, bp, dir) => {
+    def sortByReqCode: IndivSortCB = (sm, bp, dir) => {
       val sorted     = sortBy(SC.InconclusiveCB(C.Code, sm))
       val data       = sorted map firstCodePerRow
       val name       = s"ReqCodes ($sm)"
@@ -253,7 +253,7 @@ object LogicTest extends TestSuite {
     def individualSort: C => EvalL = {
       case C.ReqType         => nop
       case C.Pubid           => sortIB(sortByPubid)
-      case C.Code            => sortCB(sortByRecCode)
+      case C.Code            => sortCB(sortByReqCode)
       case C.Title           => sortCB(sortByTitle)
       case C.Tags            => nop
       case C.ImplicationSrc  => nop

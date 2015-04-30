@@ -620,7 +620,7 @@ object RandomData {
 
     // Specific text types
 
-    def reqCodeGroupTitleAtom = reqTitle(RecCodeGroupTitle) _
+    def reqCodeGroupTitleAtom = reqTitle(ReqCodeGroupTitle) _
 
     def genericReqTitleAtom   = reqTitle(GenericReqTitle) _
 

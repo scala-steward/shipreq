@@ -62,7 +62,7 @@ object Text {
     }
   }
 
-  object RecCodeGroupTitle extends ReqTitle
+  object ReqCodeGroupTitle extends ReqTitle
 
   object GenericReqTitle extends ReqTitle
 

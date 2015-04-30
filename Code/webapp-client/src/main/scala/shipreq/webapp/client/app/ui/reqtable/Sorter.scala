@@ -250,9 +250,9 @@ object Sorter {
   val stringNormalise: EndoFn[String] =
     _.toLowerCase
 
-  // RecCodeGroups are only displayed when sorting by code.
-  // RecCodeGroups cannot have a blank code.
-  // Therefore, RecCodeGroups cannot affect the conclusivity of a Pubid sort.
+  // ReqCodeGroups are only displayed when sorting by code.
+  // ReqCodeGroups cannot have a blank code.
+  // Therefore, ReqCodeGroups cannot affect the conclusivity of a Pubid sort.
   val pubidSorter = Sorter[(Int, Int)](
     prep =
       setup => {
