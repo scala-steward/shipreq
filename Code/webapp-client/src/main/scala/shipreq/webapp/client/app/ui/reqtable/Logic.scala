@@ -174,8 +174,6 @@ private[reqtable] object Logic {
     // * Column.ImplicationSrc isn't transitive; custom implication columns are.
     //   There can potentially be overlap but culling this could be misleading.
 
-    // TODO: Add SHRs
-
     // Init
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
@@ -192,27 +190,40 @@ private[reqtable] object Logic {
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
         pReqs.reqM(id).fold(failedMust(q), q + _.pubid))
 
-    // Traverse reqs
-    p.reqs.data.reqs.vstreamf {
-      case r: GenericReq =>
-        val id = r.id
+    val reqRows =
+      p.reqs.data.reqs.vstreamf {
+        case r: GenericReq =>
+          val id = r.id
 
-        // TODO: Remove deleted
+          // TODO: Remove deleted
 
-        // TODO: Filter
+          // TODO: Filter
 
-        // Expansion
-        val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
-        val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-        val codes   = expandCodes  (() => pReqCodes(id))
-        val cfImps  = expandImpCols(id)
-        val cfTags  = expandTagCols(id)
-        val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
+          // Expansion
+          val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
+          val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
+          val codes   = expandCodes  (() => pReqCodes(id))
+          val cfImps  = expandImpCols(id)
+          val cfTags  = expandTagCols(id)
+          val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
-        // Build
-        val mv = multiValuesFn(id)
-        exps.toStream.map(GenericReqRow(r, _, mv))
-    }
+          // Build
+          val mv = multiValuesFn(id)
+          exps.toStream.map(GenericReqRow(r, _, mv))
+      }
+
+    val reqCodeGroupRows: Stream[ReqCodeGroupRow] =
+      if (vs.viewReqCodesAsTree)
+        p.reqCodes.data.cataA(Stream.empty[ReqCodeGroupRow])((q, c, d) => d.target match {
+          case _: Req.Id       => q
+          case g: ReqCodeGroup =>
+            // TODO: Filter
+            ReqCodeGroupRow(d.id, g, c, None) #:: q
+        })
+      else
+        Stream.empty
+
+    reqRows append reqCodeGroupRows
   }
 
   // ===================================================================================================================
@@ -276,6 +287,9 @@ private[reqtable] object Logic {
             Some(GenericReqRow(a.req, a.exp |+| b.exp, a.mv |+| b.mv)) // TODO resort
           else
             None
+        case (_: GenericReqRow,   _: ReqCodeGroupRow)
+           | (_: ReqCodeGroupRow, _: GenericReqRow)
+           | (_: ReqCodeGroupRow, _: ReqCodeGroupRow) => None
       }
     )
 
@@ -337,7 +351,7 @@ private[reqtable] object Logic {
   val addReqCodeTreeToRows: EndoFn[Stream[Row]] = rows =>
     mkReqCodeTree[Row, Vector, Stream, Row](
       rows,
-      Row.reqCodes.getOption(_) getOrElse Vector.empty,
+      Row.reqCodes.get,
       (i, bs) => Row.reqCodeTree.set(bs)(i))
 
   // ===================================================================================================================

@@ -26,10 +26,18 @@ import Text.Equality._
 object LogicTest extends TestSuite {
 
   private def codesInRow(r: Row): Vector[ReqCode.Value] =
-    r.fold(_.exp.reqCodes)
+    // Don't use optics here
+    r match {
+      case r: GenericReqRow   => r.exp.reqCodes
+      case r: ReqCodeGroupRow => Vector1(r.reqCode)
+    }
 
   private def tagsInRow(r: Row): Vector[ApplicableTag.Id] =
-    r.fold(_.mv.tags)
+    // Don't use optics here
+    r match {
+      case r: GenericReqRow   => r.mv.tags
+      case r: ReqCodeGroupRow => Vector.empty
+    }
 
   def pubidExtract(p: Project)(pid: Pubid): (String, Int) =
     (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
@@ -204,7 +212,11 @@ object LogicTest extends TestSuite {
     def sortByPubid: IndivSortIB = (sm, dir) => {
       val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.Pubid, sm))
       val sorted = Logic.sort(newViewSettingsForSort(sc), p, plainText)(gathered)
-      val pubids = sorted.map(_.fold(r => pubidExtract(p)(r.req.pubid)))
+      val na     = ("", -1)
+      val pubids = sorted.map {
+        case r: GenericReqRow   => pubidExtract(p)(r.req.pubid)
+        case r: ReqCodeGroupRow => na
+      }
       E_sorted("Pubids", pubids, dir)
     }
 
@@ -220,7 +232,10 @@ object LogicTest extends TestSuite {
 
     def sortByTitle: IndivSortCB = (sm, bp, dir) => {
       val sorted     = sortBy(SC.InconclusiveCB(C.Title, sm))
-      val data       = sorted.map(_.fold(_.req.title))
+      val data       = sorted.map {
+        case r: GenericReqRow   => r.req.title
+        case r: ReqCodeGroupRow => r.group.title
+      }
       val name       = s"Desc ($sm)"
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
     }
@@ -315,15 +330,30 @@ object LogicTest extends TestSuite {
     private def allSortsIB[A](asc: A, desc: A): Seq[(IgnoreBlanks, A)] =
       (Asc  -> asc) :: (Desc -> desc) :: Nil
 
-    private val (z,sep)  = ("∅","  ")
+    private val sep      = "  "
+    private val z        = "∅"
     private val _z       = (_: Any) => z
     private val priField = CustomField.Tag.Id(4)
 
-    private def rowsToStr (f: GenericReqRow => String) =
-      (_: Rows) map (_ fold f) mkString sep
+    private def rowsToStr(f: GenericReqRow => String, g: ReqCodeGroupRow => String, h: String => String): Rows => String =
+      _.map {
+        case r: GenericReqRow   => h(f(r))
+        case r: ReqCodeGroupRow => h(g(r))
+      } mkString sep
 
-    private def rowsToStrL[A](f: GenericReqRow => Vector[A])(g: GenericReqRow => A => String) =
-      rowsToStr(r => f(r).ifelse(_.isEmpty, _z, _ map g(r) mkString ","))
+    private def rowsToStr(f: GenericReqRow => String, g: ReqCodeGroupRow => String): Rows => String =
+      rowsToStr(f, g, identity)
+
+    private def rowsToStrL1[A](f: GenericReqRow => Vector[A])(h: A => String): Rows => String =
+      rowsToStrL1(f, _ => Vector.empty)(h)
+
+    private def rowsToStrL1[A](f: GenericReqRow => Vector[A], g: ReqCodeGroupRow => Vector[A])(h: A => String): Rows => String = {
+      val i = (_: Vector[A]).ifelse(_.isEmpty, _z, _ map h mkString ",")
+      rowsToStr(i compose f, i compose g)
+    }
+
+    private def rowsToStrL2[A](f: GenericReqRow => Vector[A])(g: GenericReqRow => A => String) =
+      rowsToStr(r => f(r).ifelse(_.isEmpty, _z, _ map g(r) mkString ","), _z)
 
      // ----------------------------------------------------------------------------------------------------------------
 
@@ -337,7 +367,7 @@ object LogicTest extends TestSuite {
       val p2      = clearCustomFields(p)
       val pt      = PlainText(p2)
       val fmtEach = applicableTag(p).andThen(_.key.value)
-      val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
+      val fmtRows = rowsToStrL1(_.mv.tags)(fmtEach)
       testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
@@ -349,7 +379,7 @@ object LogicTest extends TestSuite {
       val p2      = customFieldsL.modify(_.filterK(_ == priField))(p)
       val pt      = PlainText(p2)
       val fmtEach = applicableTag(p).andThen(_.key.value)
-      val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
+      val fmtRows = rowsToStrL1(_.mv.tags)(fmtEach)
       testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "defer  defer,wip  defer,wip  wip",
         desc = "wip,defer  wip,defer  wip  defer"))
@@ -362,7 +392,7 @@ object LogicTest extends TestSuite {
       val p2      = clearCustomFields(p)
       val pt      = PlainText(p2)
       val fmtEach = applicableTag(p).andThen(_.key.value)
-      val fmtRows = rowsToStrL(_.mv.tags)(_ => fmtEach)
+      val fmtRows = rowsToStrL1(_.mv.tags)(fmtEach)
       testUnsorted(p2, pt, C.Tags, fmtRows)("defer,pri=high,pri=low,pri=med,wip")
     }
 
@@ -371,7 +401,7 @@ object LogicTest extends TestSuite {
       val p       = GReq() + t(2) + t(3) + t(2, 3) + t(11, 12, 22, 24, 26) !! P
       val pt      = PlainText(p)
       val fmtEach = applicableTag(p).andThen(_.key.value)
-      val fmtRows = rowsToStrL(_.exp.tagsForCF(priField))(_ => fmtEach)
+      val fmtRows = rowsToStrL1(_.exp.tagsForCF(priField))(fmtEach)
       testCB(p, pt, C.CustomField(priField), fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "pri=high  pri=high  pri=med  pri=med",
         desc = "pri=med  pri=med  pri=high  pri=high"))
@@ -382,7 +412,7 @@ object LogicTest extends TestSuite {
       val p       = GReq() + t(2) + t(3) + t(2, 3, 4) + t(11, 12, 22, 24, 26) ! P
       val pt      = PlainText(p)
       val fmtEach = applicableTag(p).andThen(_.key.value)
-      val fmtRows = rowsToStrL(_.exp.tagsForCF(priField))(_ => fmtEach)
+      val fmtRows = rowsToStrL1(_.exp.tagsForCF(priField))(fmtEach)
       testUnsorted(p, pt, C.CustomField(priField), fmtRows)(
         s"$z  pri=high  pri=med  pri=high,pri=med,pri=low  $z")
         // TODO s"$z  pri=high  pri=med  pri=high,pri=med  pri=high,pri=med  $z") + t(3, 2)
@@ -391,7 +421,7 @@ object LogicTest extends TestSuite {
     def testTitle(): Unit = {
       val p       = GReq() + GReq("AT") + GReq("and") + GReq("haha") + GReq("F") !! P
       val pt      = PlainText(p)
-      val fmtRows = rowsToStr(_.req |> pt.reqTitle |> (_.apif(_.isEmpty, _z)))
+      val fmtRows = rowsToStr(_.req |> pt.reqTitle, r => pt.reqCodeGroupTitle(r.reqCodeId, r.group), _.apif(_.isEmpty, _z))
       testCB(p, pt, C.Title, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "and  AT  F  haha",
         desc = "haha  F  AT  and"))
@@ -402,7 +432,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + ">" + pubidToStr(p)(t)
-      val fmtRows = rowsToStrL(_.exp.implicationSrc)(r => fmtEach(_, r.req.pubid))
+      val fmtRows = rowsToStrL2(_.exp.implicationSrc)(r => fmtEach(_, r.req.pubid))
       testCB(p, PlainText(p), C.ImplicationSrc, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "DD-1>FR-3  DD-1>FR-4  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  FR-2>DD-1  FR-4>FR-5",
         desc = "FR-4>FR-5  FR-2>DD-1  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  DD-1>FR-3  DD-1>FR-4"))
@@ -413,7 +443,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(t) + "<" + pubidToStr(p)(s)
-      val fmtRows = rowsToStrL(_.exp.implicationTgt)(r => fmtEach(r.req.pubid, _))
+      val fmtRows = rowsToStrL2(_.exp.implicationTgt)(r => fmtEach(r.req.pubid, _))
       testCB(p, PlainText(p), C.ImplicationTgt, fmtRows)(allSortsCB(z)(_ + sep + _,
         asc  = "DD-1<FR-3  DD-1<FR-4  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  FR-2<DD-1  FR-4<FR-5",
         desc = "FR-4<FR-5  FR-2<DD-1  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  DD-1<FR-3  DD-1<FR-4"))
@@ -437,7 +467,7 @@ object LogicTest extends TestSuite {
       val p = SampleImplicationGraph.project
       val cf = CustomField.Implication.Id(6)
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + ">" + pubidToStr(p)(t)
-      val fmtRows = rowsToStrL(_.exp.impsForCF(cf))(r => fmtEach(_, r.req.pubid))
+      val fmtRows = rowsToStrL2(_.exp.impsForCF(cf))(r => fmtEach(_, r.req.pubid))
       testCB(p, PlainText(p), C.CustomField(cf), fmtRows)(allSortsCB(z, 5)(_ + sep + _,
         asc  = "MF-1>FR-1  MF-1>FR-2  MF-1>FR-3  MF-2>FR-2  MF-2>FR-3  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-4>FR-6",
         desc = "MF-4>FR-6  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-2>FR-2  MF-2>FR-3  MF-1>FR-1  MF-1>FR-2  MF-1>FR-3"))
@@ -447,7 +477,7 @@ object LogicTest extends TestSuite {
       def t(_reqTypeId: ReqType.Id) = GReq(reqType = _reqTypeId)
       val (co, br, mf, fr) = (1, 4, 2, 3)
       val p = t(co) + t(co) + t(br) + t(br) + t(mf) + t(mf) + t(fr) + t(fr) !! P
-      val fmtRows = rowsToStr(_.req.pubid |> pubidToStr(p))
+      val fmtRows = rowsToStr(_.req.pubid |> pubidToStr(p), _z)
       testIB(p, PlainText(p), C.ReqType, fmtRows)(allSortsIB(
         asc  = "BR-1  BR-2  CO-1  CO-2  FR-1  FR-2  MF-1  MF-2",
         desc = "MF-1  MF-2  FR-1  FR-2  CO-1  CO-2  BR-1  BR-2"))
@@ -459,7 +489,7 @@ object LogicTest extends TestSuite {
       val p  = GReq() + t("HAHA", "zz") + t("", "f") + t("d", "") + t("Abc", "g") !! P
       val pt = PlainText(p)
       val d  = pt.customTextField(notes)
-      val fmtRows = rowsToStr(r => d(r.req.id) getOrElse z)
+      val fmtRows = rowsToStr(r => d(r.req.id) getOrElse z, _z)
       testCB(p, pt, C.CustomField(notes), fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "Abc  d  HAHA",
         desc = "HAHA  d  Abc"))
@@ -474,7 +504,7 @@ object LogicTest extends TestSuite {
         t("a.boo", "x.z", "y.q") +
         t("abc", "a.b.d")        +
         t("abc.no")              !! P
-      val fmtRows = rowsToStrL(_.exp.reqCodes)(_ => PlainText.reqCode)
+      val fmtRows = rowsToStrL1(_.exp.reqCodes, r => Vector1(r.reqCode))(PlainText.reqCode)
       testCB(p, PlainText(p), C.Code, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
         asc  = "a  a.b.c  a.b.d  a.boo  abc  abc.no  x.y.z  x.z  y.q",
         desc = "y.q  x.z  x.y.z  abc.no  abc  a.boo  a.b.d  a.b.c  a"))

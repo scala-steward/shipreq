@@ -7,7 +7,7 @@ import monocle.macros.Lenses
 import scalaz.{Equal, Semigroup, Monoid}
 import scalaz.std.map._
 import scalaz.syntax.semigroup._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{UnivEq, Vector1}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.base.TypeclassDerivation._
@@ -95,41 +95,71 @@ object MultiValues {
 // =====================================================================================================================
 
 sealed trait Row {
-  def fold[A](g: GenericReqRow => A): A
   def id: Row.Id
 }
 
 case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row {
-  override def fold[A](g: GenericReqRow => A): A = g(this)
-  override def id = req.id
+  override def id = Row.GenericReqRowId(req.id)
   override def toString = s"\n$req\n$exp\n$mv\n"
 }
 
-//case class ReqCodeGroupRow(grp: ReqCodeGroup, code: ReqCode) extends Row
+case class ReqCodeGroupRow(reqCodeId      : ReqCode.Id,
+                           group          : ReqCodeGroup,
+                           reqCode        : ReqCode.Value,
+                           reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
+  override def id = Row.ReqCodeGroupRowId(reqCodeId)
+}
 
 object Row {
-  type Id = GenericReq.Id
+  sealed trait Id
+  case class GenericReqRowId(value: GenericReq.Id) extends Id
+  case class ReqCodeGroupRowId(value: ReqCode.Id) extends Id
 
-  implicit val equalityG: UnivEq[GenericReqRow]   = deriveUnivEq
-//  implicit val equalityC: UnivEq[ReqCodeGroupRow] = deriveUnivEq
-  implicit val equality : UnivEq[Row]             = deriveUnivEq
+  implicit val idEqualityR : UnivEq[GenericReqRowId]   = deriveUnivEq
+  implicit val idEqualityG : UnivEq[ReqCodeGroupRowId] = deriveUnivEq
+  implicit val idEquality  : UnivEq[Id]                = deriveUnivEq
+  implicit val rowEqualityR: UnivEq[GenericReqRow]     = deriveUnivEq
+  implicit val rowEqualityG: UnivEq[ReqCodeGroupRow]   = deriveUnivEq
+  implicit val rowEquality : UnivEq[Row]               = deriveUnivEq
 
   val expansion = Optional[Row, Expansion] {
-    case r: GenericReqRow => Some(r.exp)
-  }(e => {
-    case GenericReqRow(r, _, m) => GenericReqRow(r, e, m)
+    case r: GenericReqRow   => Some(r.exp)
+    case _: ReqCodeGroupRow => None
+  }(nv => {
+    case GenericReqRow(r, _, m) => GenericReqRow(r, nv, m)
+    case r: ReqCodeGroupRow     => r
   })
 
   val multiValues = Optional[Row, MultiValues] {
-    case r: GenericReqRow => Some(r.mv)
-  }(mv => {
-    case GenericReqRow(r, e, _) => GenericReqRow(r, e, mv)
+    case r: GenericReqRow   => Some(r.mv)
+    case _: ReqCodeGroupRow => None
+  }(nv => {
+    case GenericReqRow(r, e, _) => GenericReqRow(r, e, nv)
+    case r: ReqCodeGroupRow     => r
+  })
+
+  val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
+    case r: GenericReqRow   => r.exp.reqCodes
+    case r: ReqCodeGroupRow => Vector1(r.reqCode)
+  }(nv => {
+    case GenericReqRow(r, e, m) => GenericReqRow(r, e.copy(reqCodes = nv), m)
+    case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCode = nv.head)
+    case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
+  })
+  val reqCodesO = reqCodes.asOptional
+
+  val reqCodeTree = Lens[Row, Vector[ReqCodeTreeItem]] {
+    case r: GenericReqRow   => r.exp.reqCodeTree
+    case r: ReqCodeGroupRow => r.reqCodeTreeItem.toVector
+  }(nv => {
+    case GenericReqRow(r, e, m) => GenericReqRow(r, e.copy(reqCodeTree = nv), m)
+    case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCodeTreeItem = Some(nv.head))
+    case r: ReqCodeGroupRow if nv.length == 0 => r.copy(reqCodeTreeItem = None)
+    case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
 
   val implicationSrc = Row.expansion   ^|-> Expansion.implicationSrc
   val implicationTgt = Row.expansion   ^|-> Expansion.implicationTgt
-  val reqCodes       = Row.expansion   ^|-> Expansion.reqCodes
-  val reqCodeTree    = Row.expansion   ^|-> Expansion.reqCodeTree
   val cfImps         = Row.expansion   ^|-> Expansion.cfImps
   val cfTags         = Row.expansion   ^|-> Expansion.cfTags
   val tags           = Row.multiValues ^|-> MultiValues.tags

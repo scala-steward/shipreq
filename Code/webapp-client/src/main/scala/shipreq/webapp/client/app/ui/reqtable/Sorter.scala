@@ -257,7 +257,11 @@ object Sorter {
     prep =
       setup => {
         val n = pubidNormaliser(setup)
-        _.fold(r => n(r.req.pubid))
+        val `n/a` = (-1, -1)
+        ;{
+          case r: GenericReqRow   => n(r.req.pubid)
+          case r: ReqCodeGroupRow => `n/a`
+        }
       },
     sort = SortFn.intPair
   )
@@ -275,7 +279,10 @@ object Sorter {
     ))
 
   val reqTypeSorter = Sorter[Int](
-    prep = setup => _.fold(r => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)),
+    prep = setup => {
+      case r: GenericReqRow   => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)
+      case r: ReqCodeGroupRow => -1
+    },
     sort = SortFn.int
   )
 
@@ -284,8 +291,8 @@ object Sorter {
       // TODO Sorting reqcodes by txt is inefficient. Trie => Vector[Int] would be better.
       val norm: ReqCode.Value => String = PlainText.reqCode
       Sorter[String](
-        rowMod = typicalRowModFn(Row.reqCodes, SortFn.stringNonEmpty)(_ => norm),
-        prep   = _ => row => Row.reqCodes.getOption(row).flatMap(_.headOption map norm) getOrElse "",
+        rowMod = typicalRowModFn(Row.reqCodesO, SortFn.stringNonEmpty)(_ => norm),
+        prep   = _ => row => Row.reqCodes.get(row).headOption map norm getOrElse "",
         sort   = SortFn.string(bp))
     }
 
@@ -293,22 +300,28 @@ object Sorter {
     SorterForSMCB(bp =>
       Sorter[Vector[Int]](
         rowMod = typicalRowModFn(loc, SortFn.int)(order(_).apply),
-        prep   = setup => _.fold(loc.getOption(_).fold(Vector.empty[Int])(_ map order(setup))),
+        prep   = setup => loc.getOption(_).fold(Vector.empty[Int])(_ map order(setup)),
         sort   = SortFn.intVector(bp)
     ))
 
-  def textSorter(f: Row => PlainText.ForProject => String): SorterForSMCB =
+  def textSorter(f: PlainText.ForProject => Row => String): SorterForSMCB =
     SorterForSMCB(bp =>
       Sorter[String](
-        prep = setup => row => setup.normalisedText(f(row)),
+        prep = setup => row => setup.normalisedText(f(_)(row)),
         sort = SortFn.string(bp)
       ))
 
   def customTextFieldSorter(id: CustomField.Text.Id): SorterForSMCB =
-    textSorter(row => _.customTextField(id)(row.fold(_.id)) getOrElse "")
+    textSorter(p => {
+      case r: GenericReqRow   => p.customTextField(id)(r.req.id) getOrElse ""
+      case r: ReqCodeGroupRow => ""
+    })
 
   val titleSorter: SorterForSMCB =
-    textSorter(row => _.reqTitle(row.fold(_.req)))
+    textSorter(p => {
+      case r: GenericReqRow   => p.reqTitle(r.req)
+      case r: ReqCodeGroupRow => p.reqCodeGroupTitle(r.reqCodeId, r.group)
+    })
 
   // ===================================================================================================================
   // Sort criteria

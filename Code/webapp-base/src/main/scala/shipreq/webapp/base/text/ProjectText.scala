@@ -18,14 +18,20 @@ abstract class ProjectText[Out](project: Project) {
   val format1: Text.AnyNonEmpty => Out =
     nev => format(nev.whole)
 
-  private val _reqDesc: Req => Out = {
+  private val _reqTitle: Req => Out = {
     case r: GenericReq => format(r.title)
   }
 
   val reqTitle: Req => Out = {
     val memo = new scala.collection.mutable.HashMap[Req.Id, Out]
-    req => memo.getOrElseUpdate(req.id, _reqDesc(req))
+    req => memo.getOrElseUpdate(req.id, _reqTitle(req))
   }
+
+  private val reqCodeGroupTitleMemo =
+    new scala.collection.mutable.HashMap[ReqCode.Id, Out]
+
+  def reqCodeGroupTitle(id: ReqCode.Id, g: ReqCodeGroup): Out =
+    reqCodeGroupTitleMemo.getOrElseUpdate(id, format(g.title))
 
   def reqTitleById(id: Req.Id): Must[Out] =
     project.reqs.data.reqM(id) map reqTitle
