@@ -38,7 +38,7 @@ final class ColumnEditors(project       : Px[Project],
         case r: GenericReqRow =>
           col match {
             //case Column.Code           => 
-            case Column.Title          => title(r)
+            case Column.Title          => genericReqTitle(r)
             case Column.Tags           => tags(r)
             case Column.Pubid          => noEditor
             case Column.ImplicationSrc => imps(Row.implicationSrc, ImplicationEditor declFwd Column.ImplicationSrc)(r)
@@ -54,7 +54,7 @@ final class ColumnEditors(project       : Px[Project],
         case r: ReqCodeGroupRow =>
           col match {
             //case Column.Code           => 
-            //case Column.Title          => title(r)
+            case Column.Title          => reqCodeGroupTitle(r)
             case Column.Pubid
                | Column.ReqType
                | Column.Tags
@@ -73,7 +73,10 @@ final class ColumnEditors(project       : Px[Project],
     initialState.map(_ => setState(initialState))
   }
 
-  val title = initEditor[GenericReqRow](r =>
+  val reqCodeGroupTitle = initEditor[ReqCodeGroupRow](r =>
+    RichTextEditor.ReqCodeGroupTitle(r.group.title, project, plainText, projectWidgets, textSearch, _))
+
+  val genericReqTitle = initEditor[GenericReqRow](r =>
     RichTextEditor.GenericReqTitle(r.req.title, project, plainText, projectWidgets, textSearch, _))
 
   val tags = initEditor[GenericReqRow] { r =>

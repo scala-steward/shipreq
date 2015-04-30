@@ -162,6 +162,37 @@ object RichTextEditor {
   }
 
   // ===================================================================================================================
+  object ReqCodeGroupTitle extends Base("ReqCodeGroupTitle editor", Text.ReqCodeGroupTitle) {
+    def apply(initial       : t.OptionalText,
+              project       : Px[Project],
+              projectText   : Px[PlainText.ForProject],
+              projectWidgets: Px[ProjectWidgets],
+              textSearch    : Px[TextSearch],
+              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
+
+      def init: S =
+        projectText.value() format initial
+
+      val abort: IO[Unit] =
+        setState(None)
+
+      val commit: t.OptionalText => IO[Unit] =
+      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
+        s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
+
+      val autoComplete = mkAutoComplete(project, projectText, textSearch)
+
+      lazy val update: S => IO[Unit] =
+        s => setState(Some(newState(s)))
+
+      def newState(state: S) =
+        cellState(Props(state, update, abort, commit, project, projectWidgets, autoComplete))
+
+      newState(init)
+    }
+  }
+
+  // ===================================================================================================================
   object CustomTextField extends Base("CustomTextField editor", Text.CustomTextField) {
     def apply(initial       : t.OptionalText,
               project       : Px[Project],
