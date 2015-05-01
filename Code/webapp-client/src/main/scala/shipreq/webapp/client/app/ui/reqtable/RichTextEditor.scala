@@ -23,19 +23,42 @@ object RichTextEditor {
   type AutoComplete = Px[TC.Strategies]
   type S = String
 
-  val ignoreEnter = KeyHandler.pf {
+  private val ignoreEnter = KeyHandler.pf {
     case k if k.key == KeyValue.Enter && KeyHandler.modKeys(k) => IoUtils.nop
   }
 
-  val correctSingleLineText: EndoFn[String] = {
+  private val correctSingleLineText: EndoFn[String] = {
     val r = "[\\r\\n]+".r
     r.replaceAllIn(_, " ")
   }
 
-  val textEditorRef = Ref[HTMLTextAreaElement]("i")
+  private val textEditorRef = Ref[HTMLTextAreaElement]("i")
 
   // ===================================================================================================================
-  abstract class Base[TextType <: Text.Generic](name: String, final val t: TextType) {
+  sealed abstract class Base[TextType <: Text.Generic](name: String, final val t: TextType) {
+
+    def apply(initial       : t.OptionalText,
+              project       : Px[Project],
+              projectText   : Px[PlainText.ForProject],
+              projectWidgets: Px[ProjectWidgets],
+              textSearch    : Px[TextSearch],
+              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
+
+      def init: S =
+        projectText.value() format initial
+
+      val abort: IO[Unit] =
+        setState(None)
+
+      val commit: t.OptionalText => IO[Unit] =
+      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
+        s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
+
+      val autoComplete = mkAutoComplete(project, projectText, textSearch)
+
+      Cell.selfManage(setState, init)(
+        Props(_, _, abort, commit, project, projectWidgets, autoComplete).asCellState)
+    }
 
     def supportsTags   = t match { case _: Atom.TagRef => true; case _ => false }
     def supportsIssues = t match { case _: Atom.Issue  => true; case _ => false }
@@ -57,6 +80,8 @@ object RichTextEditor {
           AutoComplete.math
         )
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
 
     case class Props(state         : S,
                      stateUpdate   : S => IO[Unit],
@@ -132,80 +157,8 @@ object RichTextEditor {
   }
 
   // ===================================================================================================================
-  object GenericReqTitle extends Base("GenericReqDesc editor", Text.GenericReqTitle) {
-    def apply(initial       : t.OptionalText,
-              project       : Px[Project],
-              projectText   : Px[PlainText.ForProject],
-              projectWidgets: Px[ProjectWidgets],
-              textSearch    : Px[TextSearch],
-              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
 
-      def init: S =
-        projectText.value() format initial
-
-      val abort: IO[Unit] =
-        setState(None)
-
-      val commit: t.OptionalText => IO[Unit] =
-      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
-        s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
-
-      val autoComplete = mkAutoComplete(project, projectText, textSearch)
-
-      Cell.selfManage(setState, init)(
-        Props(_, _, abort, commit, project, projectWidgets, autoComplete).asCellState)
-    }
-  }
-
-  // ===================================================================================================================
-  object ReqCodeGroupTitle extends Base("ReqCodeGroupTitle editor", Text.ReqCodeGroupTitle) {
-    def apply(initial       : t.OptionalText,
-              project       : Px[Project],
-              projectText   : Px[PlainText.ForProject],
-              projectWidgets: Px[ProjectWidgets],
-              textSearch    : Px[TextSearch],
-              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
-
-      def init: S =
-        projectText.value() format initial
-
-      val abort: IO[Unit] =
-        setState(None)
-
-      val commit: t.OptionalText => IO[Unit] =
-      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
-        s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
-
-      val autoComplete = mkAutoComplete(project, projectText, textSearch)
-
-      Cell.selfManage(setState, init)(
-        Props(_, _, abort, commit, project, projectWidgets, autoComplete).asCellState)
-    }
-  }
-
-  // ===================================================================================================================
-  object CustomTextField extends Base("CustomTextField editor", Text.CustomTextField) {
-    def apply(initial       : t.OptionalText,
-              project       : Px[Project],
-              projectText   : Px[PlainText.ForProject],
-              projectWidgets: Px[ProjectWidgets],
-              textSearch    : Px[TextSearch],
-              setState      : Option[Cell.State] => IO[Unit]): Cell.State = {
-
-      def init: S =
-        projectText.value() format initial
-
-      val abort: IO[Unit] =
-        setState(None)
-
-      val commit: t.OptionalText => IO[Unit] =
-      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
-        s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
-
-      val autoComplete = mkAutoComplete(project, projectText, textSearch)
-
-      Cell.selfManage(setState, init)(
-        Props(_, _, abort, commit, project, projectWidgets, autoComplete).asCellState)
-    }
-  }
+  object GenericReqTitle   extends Base("GenericReqDesc editor",    Text.GenericReqTitle)
+  object ReqCodeGroupTitle extends Base("ReqCodeGroupTitle editor", Text.ReqCodeGroupTitle)
+  object CustomTextField   extends Base("CustomTextField editor",   Text.CustomTextField)
 }
