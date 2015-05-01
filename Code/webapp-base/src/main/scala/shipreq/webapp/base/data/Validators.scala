@@ -1,8 +1,12 @@
 package shipreq.webapp.base.data
 
-import scalaz.{NonEmptyList, Equal}
+import scalaz.{NonEmptyList, Equal, Traverse}
 import scalaz.std.string.stringInstance
+import scalaz.std.stream._
+import scalaz.syntax.traverse._
+import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.base.TextMod._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.ReqType.Mnemonic
@@ -145,8 +149,8 @@ object Validators {
 
       private def tagIdUniqueness =
         Uniqueness.entity[CustomField].optk(_.id.some).optv {
-          case  f: CustomField.Tag => f.tagId.some
-          case _                   => None
+          case f: CustomField.Tag => f.tagId.some
+          case _                  => None
         }.fieldName(tagIdField)
 
       val tagIdS = ValidationPartU.requireFromOption[Tag.Id](tagIdField).liftS[S].toValidator
@@ -189,5 +193,55 @@ object Validators {
 
     val tagGroup = nameS ⊗ ValidatorU.nop[MutexChildren].liftS[S] ⊗ descS
     val applTag  = nameS ⊗ keyS ⊗ descS
+  }
+
+  // ===================================================================================================================
+  object reqCode {
+    import Grammar.{reqCode => G}
+    import ReqCode._
+
+    val node: ValidatorU[String, String, Node] =
+      G.allChars.rule
+        .addRule(G.nodeLength.rule)
+        .correct(_ andThen noWhitespace andThen lowerCase)
+        .constraint(c => nonEmpty >> (G.firstChar.constraint + c))
+        .forField(FieldNames.reqCodeNode)
+        .map(Node.applyFn)
+    
+
+    UnivEq[Value] // Prove Set[Value] is ok
+    case class VS(trie: Trie, currentValues: Set[Value])
+
+    val valueU: ValidatorU[Value, Value, Value] =
+      ValidationPartU.test[Value](_.value.length <= G.maxNodes,
+        VFailure.looseMsg(s"A code cannot have more than ${G.maxNodes} nodes.") // english
+      ).toValidator
+
+    def valueUniqueness =
+      ValidationPart.test[VS, Value]({ case (vs, InputCorrected(v)) =>
+        vs.currentValues.contains(v) || !vs.trie.lookup(v).exists(_.active.isDefined)
+      },
+      VFailure.forField1(FieldNames.reqCode, "is already in use.")) // english
+
+    val valueS: Validator[VS, Value, Value, Value] =
+      valueU.liftS[VS].addValidation(valueUniqueness)
+
+    val code: Validator[VS, String, Stream[String], Value] = {
+      def parseNodes = CorrectionPartU[String, Stream[String]](
+        G.nodeSeqFormat.apply,
+        _.mkString(G.nodeSeparator.toString))
+
+      def mkValue = ValidationPartU[Stream[String], Value] { i =>
+        import scalaz.Validation.FlatMap._
+        val r1 = i.value.map(node.correctAndValidateU)
+        val r2: ValidationResult[Stream[Node]] = Traverse[Stream].sequence(r1)
+        val r3 = r2.flatMap(ns => ValidationResult.option(
+          NonEmptyVector option ns.toVector,
+          VFailure.forField1(FieldNames.reqCode, "cannot be blank.")))
+        r3
+      }
+
+      ValidatorU(parseNodes, mkValue).liftS[VS] andThen valueS
+    }
   }
 }

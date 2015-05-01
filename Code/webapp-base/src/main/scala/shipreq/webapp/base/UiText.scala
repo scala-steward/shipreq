@@ -32,6 +32,8 @@ object UiText {
   object FieldNames {
     def hashRefKey          = "Key"
     def fieldRefKey         = hashRefKey
+    def reqCode             = "Code"
+    def reqCodeNode         = "Code node"
     def name                = "Name"
     def desc                = "Description"
     def mnemonic            = "Mnemonic"

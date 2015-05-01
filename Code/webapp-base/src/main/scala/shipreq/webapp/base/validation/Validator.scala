@@ -197,6 +197,9 @@ class Validator[S, I, C, V](val cp: CorrectionPart[S, I, C], val vp: ValidationP
   def addLiveCorrect      (f: I => I)                 : Validator[S, I, C, V]          = Validator(cp addLiveCorrect f, vp)
   def addValidation [X]   (f: ValidationPart[S, V, X]): Validator[S, I, C, X]          = Validator(cp, vp andThen f)
 
+  def andThen[A](that: Validator[S, V, _, A]): Validator[S, I, C, A] =
+    Validator(cp, vp andThen that.vi)
+
   @inline def ***[I2, C2, V2](that: Validator[S, I2, C2, V2]): Validator[S, (I,I2), (C,C2), (V,V2)] =
     this ⊗ that
 
@@ -210,6 +213,9 @@ class Validator[S, I, C, V](val cp: CorrectionPart[S, I, C], val vp: ValidationP
 object ValidatorU {
   def nop[A]: ValidatorU[A, A, A] =
     Validator(CorrectionPartU.nop[A], ValidationPartU.nop[A])
+
+  @inline def apply[I, C, V](cp: CorrectionPartU[I, C], vp: ValidationPartU[C, V]): ValidatorU[I, C, V] =
+    new Validator(cp, vp)
 }
 
 object Validator {

@@ -98,6 +98,20 @@ object MTrie {
       go(trie, Vector.empty)
     }
 
+    def lookup(path: Path): Option[V] = {
+      @tailrec def go(t: Trie, pathH: K, pathT: Vector[K]): Option[V] =
+        t.get(pathH) match {
+          case None               => None
+          case Some(Value(v))     => if (pathT.isEmpty) Some(v) else None
+          case Some(Branch(v, n)) =>
+            NonEmptyVector.option(pathT) match {
+              case None    => v.map(_.value)
+              case Some(p) => go(n, p.head, p.tail)
+            }
+        }
+      go(trie, path.head, path.tail)
+    }
+
     def put(path: Path, value: V): Trie = {
       val v = Value[K, V](value)
       @inline def empty = MTrie.empty[K, V]

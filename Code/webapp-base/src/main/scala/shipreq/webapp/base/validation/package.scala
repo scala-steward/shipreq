@@ -8,6 +8,9 @@ package object validation {
   type ValidationResult[+A] = Validation[VFailure, A]
   object ValidationResult {
     def apply[A](value: A): ValidationResult[A] = Validation.success(value)
+
+    def option[A](value: Option[A], f: => VFailure): ValidationResult[A] =
+      value.fold[ValidationResult[A]](Validation failure f)(Validation.success)
   }
 
   final case class InputCorrected[A](value: A) extends TaggedType {

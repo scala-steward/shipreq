@@ -16,8 +16,6 @@ import shipreq.webapp.base.TypeclassDerivation._
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
 
-// TODO all req code text should be lowercase
-
 /**
  * [[ReqCode.Trie]] contains the hierarchy of codes and their targets.
  * [[ReqCodes]] is a bundle of all req-codes in a project.
