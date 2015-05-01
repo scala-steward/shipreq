@@ -82,12 +82,17 @@ object Style extends StyleSheet.Inline {
       margin.horizontal(auto)
     )
 
+    val columnHeader = style(
+      backgroundColor("#ddd".color),
+      border(1 px, solid, "#777".color)
+    )
+
     val cell = boolStyle(focus => styleS(
-      border(1 px, solid, (if (focus) "#006" else "#000").color),
+      border(1 px, solid, "#ccc".color),
       padding(v = 2.px, h = 4.px),
       mixinIf(focus)(
         backgroundColor("#e9e9ff"),
-        outline(rgba(0, 0, 140, 0.15), 2 px, solid),
+        outline(rgba(0, 0, 200, 0.2), 2 px, solid),
         outlineOffset(-1 px)
       )
     ))
@@ -176,13 +181,13 @@ object Style extends StyleSheet.Inline {
       background := ^.unset,
       border.none,
       fontSize(12 px),
-      lineHeight(1.2 em),
+      lineHeight(1 em),
       wordBreak.keepAll,
       wordWrap.normal,
       whiteSpace.pre
     )
     val reqCodeTreePre = mixin(reqCodePre, display.inline)
-    val reqCodeTreeIndent = style(reqCodeTreePre, color("#d8d8d8".color))
+    val reqCodeTreeIndent = style(reqCodeTreePre, color("#dadada".color))
     val reqCodeTreeCode = style(reqCodeTreePre)
     val reqCodeFlat = style(reqCodePre, display.block)
   }
