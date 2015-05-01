@@ -7,6 +7,7 @@ import scalacss.StyleS
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{Alive, Dead}
 import shipreq.webapp.client.lib.ConsoleIO
+import shipreq.webapp.client.util.{IsOK, NotOK}
 import scalaz.syntax.equal._
 
 object Style extends StyleSheet.Inline {
@@ -18,14 +19,13 @@ object Style extends StyleSheet.Inline {
 //  }
 //  import Missing._
 
+  val aliveDomain = Domain.ofValues[Alive](Alive, Dead)
+  val isOkDomain = Domain.ofValues[IsOK](IsOK, NotOK)
+
    // ==================================================================================================================
 
   val dragHnd = style(
     color("#000"))
-
-  val aliveDomain = Domain.ofValues[Alive](Alive, Dead)
-  private def aliveStyle(f: Alive => StyleS): Alive => StyleA =
-    styleF(aliveDomain)(f)
 
   object reqtable {
     import ui.reqtable.Column
@@ -97,14 +97,14 @@ object Style extends StyleSheet.Inline {
       )
     ))
 
-    val cellEditor = boolStyle(hasError => styleS(
+    val cellEditor = styleF(isOkDomain)(ok => styleS(
 //      borderRadius(4 px),
       width(100 %%),
 //      boxShadow := "inset 0 1px 1px rgba(0,0,0,.075)",
 //      transition := "border-color ease-in-out .15s, box-shadow ease-in-out .15s",
       //border(1 px, solid, if (hasError) Color("#a94442") else Color("#666")),
 //      outlineColor(if (hasError) Color("#a94442") else Color("#666")),
-      mixinIf(hasError)(hasErrorBackground, &.focus(outlineColor("#f88"))),
+      mixinIf(ok ≟ NotOK)(hasErrorBackground, &.focus(outlineColor("#f88"))),
       padding.horizontal(0.8 ex)
     ))
 //    val cellEditorO = boolStyle(hasError => styleS(
@@ -165,7 +165,7 @@ object Style extends StyleSheet.Inline {
       padding.horizontal(0.7 ex))
 
     // TODO Has color conflict
-    val reqRef = aliveStyle(a => styleS(
+    val reqRef = styleF(aliveDomain)(a => styleS(
       display.inlineBlock,
       color("#2363A1"),
       mixinIf(a ≟ Dead)(dead),

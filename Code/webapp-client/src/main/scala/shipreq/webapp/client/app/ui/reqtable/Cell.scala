@@ -35,13 +35,13 @@ object Cell {
 
   def selfManage[V](setState: Option[State] => IO[Unit],
                     initialValue: V)
-                   (updateValue: (V, V => IO[Unit]) => State): State = {
+                   (updateValue: (V, V => IO[Unit]) => ReactElement): State = {
 
     lazy val updateFn: V => IO[Unit] =
       s => setState(Some(stateForValue(s)))
 
     def stateForValue(v: V): State =
-      updateValue(v, updateFn)
+      Editing(updateValue(v, updateFn))
 
     stateForValue(initialValue)
   }

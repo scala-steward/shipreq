@@ -1,141 +1,27 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import java.util.regex.Pattern
-import scalacss.ScalaCssReact._
-import japgolly.scalajs.jquery.{TextComplete => TC}
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import org.scalajs.dom.console
-import org.scalajs.dom.ext.KeyValue
-import org.scalajs.dom.raw.HTMLInputElement
-import scalajs.js
-import scalaz.{\/, -\/, \/-, Tags}
 import scalaz.effect.IO
-import scalaz.std.vector._
-import scalaz.std.option._
-import scalaz.std.stream._
 import scalaz.syntax.either._
 import scalaz.syntax.equal._
-import scalaz.syntax.foldable._
-import shapeless.syntax.singleton._
+import scalaz.{-\/, \/-}
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Must, UnivEq, Px}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
+import shipreq.base.util.{Must, Px, UnivEq}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.text.{TextSearch, Grammar, PlainText}
-import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.ui.{KeyHandler, UI}
-
-object TextSeqEditor {
-  type S = String
-  type ParseRejection  = Option[String]
-  type ParseResult[+O] = ParseRejection \/ O
-  type Parser[+O]      = () => S => ParseResult[O]
-
-  type AutoComplete = Px[TC.Strategies]
-
-  final case class Format(normAll: EndoFn[String], sep: Pattern, normEach: EndoFn[String], ignore: String => Boolean) {
-    def apply(input: String): Stream[String] =
-      (input |> normAll |> sep.split).toStream map normEach filterNot ignore
-  }
-
-  // TODO pubidSeqFormat and hashtagSeqFormat avoid Grammar
-
-  val pubidSeqFormat =
-    Format(_.trim, "[ ,]+".r.pattern, AutoComplete.normaliseReqPubid, _.isEmpty)
-
-  val hashtagSeqFormat = {
-    val each = "^# *".r
-    Format(_.trim, "[# ,]+".r.pattern, each.replaceFirstIn(_, ""), _.isEmpty)
-  }
-
-  val leftNone: ParseResult[Nothing] =
-    -\/(None)
-}
-
-import TextSeqEditor._
-
-final class TextSeqEditor[A](name: String, val fmt: Format) {
-
-  case class Props(state       : S,
-                   stateUpdate : S => IO[Unit],
-                   abort       : IO[Unit],
-                   parser      : Parser[A],
-                   commit      : Vector[A] => IO[Unit],
-                   autoComplete: AutoComplete) {
-
-    def asCellState: Cell.Editing =
-      Cell.Editing(component(this))
-  }
-
-  val textEditorRef = Ref[HTMLInputElement]("i")
-
-  val component =
-    ReactComponentB[Props](name)
-      .stateless
-      .backend(new Backend(_))
-      .render(_.backend.render)
-      .componentDidMount { $ =>
-        val n = textEditorRef($).get.getDOMNode()
-        n.focus()
-        n.select()
-
-        // TODO Should update autoComplete if needed on props change
-        val strategies = $.props.autoComplete.value()
-        UI.textComplete(n, strategies, $.props.stateUpdate)
-      }
-      .build
-
-  class Backend($: BackendScope[Props, Unit]) {
-
-    val cancelOnEscape = KeyHandler.by(_.key) {
-      case KeyValue.Escape => $.props.abort
-    }
-
-    val onChange: ReactEventI => IO[Unit] =
-      e => $.props.stateUpdate(e.target.value)
-
-    def render: ReactElement = {
-      val p = $.props
-
-      val parse = p.parser()
-      val parseResult =
-        fmt(p.state)
-          .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
-          .suml
-
-      def onKeyPress = KeyHandler.by(_.key) {
-        case KeyValue.Enter => parseResult.fold(_ => js.undefined, p.commit)
-      }
-
-      <.div(
-        <.input(
-          ^.ref := textEditorRef,
-          *.cellEditor(parseResult.isLeft),
-          ^.`type`      := "text",
-          ^.value       := p.state,
-          ^.onChange   ~~> onChange,
-          ^.onKeyDown  ~~> cancelOnEscape,
-          ^.onKeyPress ~~> onKeyPress),
-        parseResult.swap.toOption.flatMap(Tags.First.unwrap).map(err =>
-          <.div(*.cellEditorErrMsg, err)
-        ))
-    }
-  }
-}
+import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
 
 // =====================================================================================================================
 // TODO Hide dead tags & maintain across edits (unless show deleted is on)
 
 object TagEditor {
-  import shipreq.webapp.base.data._
-  import Grammar.{hashRefKey => G}
-
-  type A = ApplicableTag.Id
-
+  type A      = ApplicableTag.Id
   type Lookup = Map[String, ApplicableTag]
 
-  final val editor = new TextSeqEditor[ApplicableTag.Id]("TagEditor", hashtagSeqFormat)
+  val editor = textSeqEditor[ApplicableTag.Id]("TagEditor", Grammar.hashRefKey.seqFormat.apply)
 
   def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tagsNotUsedInColumns)
@@ -155,7 +41,7 @@ object TagEditor {
             lookupM : Px[Must[Lookup]],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
-    def init: S =
+    def init: String =
       initial.map { a =>
         val m = project.atag(a).map(_.key.value)
         UiText.mustA(m)
@@ -182,7 +68,7 @@ object TagEditor {
       s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
     Cell.selfManage(setState, init)(
-      editor.Props(_, _, abort, parser, commit, autoComplete).asCellState)
+      editor.Props(_, _, abort, parser, commit, autoComplete).apply)
   }
 }
 
@@ -192,13 +78,12 @@ object TagEditor {
 // TODO ImplicationEditor needs validation
 
 object ImplicationEditor {
-  import shipreq.webapp.base.data._
-  import DataImplicits._
   import AutoComplete.ReqItem
+  import DataImplicits._
 
   type A = Req.Id
 
-  final val editor = new TextSeqEditor[A]("ImplicationEditor", pubidSeqFormat)
+  val editor = textSeqEditor[A]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
 
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, ParseRejection]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap
@@ -239,7 +124,7 @@ object ImplicationEditor {
             lookupM   : Px[Must[Lookup]],
             setState  : Option[Cell.State] => IO[Unit]): Cell.State = {
 
-    def init: S = {
+    def init: String = {
       val p = project.value()
       initial.map(pid =>
         UiText mustA PlainText.pubid(p, pid)
@@ -271,6 +156,6 @@ object ImplicationEditor {
       s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
     Cell.selfManage(setState, init)(
-      editor.Props(_, _, abort, parser, commit, autoComplete).asCellState)
+      editor.Props(_, _, abort, parser, commit, autoComplete).apply)
   }
 }

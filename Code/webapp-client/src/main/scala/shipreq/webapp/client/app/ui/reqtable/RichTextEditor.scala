@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.jquery.{TextComplete => TC}
+import shipreq.webapp.client.util.IsOK
 import scalacss.ScalaCssReact._
 import org.scalajs.dom.ext.KeyValue
 import org.scalajs.dom.raw.HTMLTextAreaElement
@@ -57,7 +58,7 @@ object RichTextEditor {
       val autoComplete = mkAutoComplete(project, projectText, textSearch)
 
       Cell.selfManage(setState, init)(
-        Props(_, _, abort, commit, project, projectWidgets, autoComplete).asCellState)
+        Props(_, _, abort, commit, project, projectWidgets, autoComplete).apply)
     }
 
     def supportsTags   = t match { case _: Atom.TagRef => true; case _ => false }
@@ -91,8 +92,7 @@ object RichTextEditor {
                      projectWidgets: Px[ProjectWidgets],
                      autoComplete  : AutoComplete)  {
 
-      def asCellState: Cell.Editing =
-        Cell.Editing(component(this))
+      def apply = component(this)
     }
 
     val component =
@@ -143,7 +143,7 @@ object RichTextEditor {
         def editor =
           <.textarea(
             ^.ref := textEditorRef,
-            *.cellEditor(false),
+            *.cellEditor(IsOK),
             ^.value       := p.state,
             ^.onChange   ~~> onChange,
             ^.onKeyDown  ~~> onKeyDown)

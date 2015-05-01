@@ -1,8 +1,10 @@
 package shipreq.webapp.base.text
 
+import java.util.regex.Pattern
 import org.parboiled2.CharPredicate
 import scala.collection.immutable.NumericRange
 import scala.runtime.AbstractFunction1
+import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Util
 import shipreq.webapp.base.validation.{Constraints, Rules}
 
@@ -63,6 +65,14 @@ object Grammar {
       new Surround(prefix + innerPrefix, innerSuffix + suffix)
     )
 
+  /**
+   * Describes how to pre-process (for parsing) text representing a sequence of values.
+   */
+  final case class SeqFormat(normAll: EndoFn[String], sep: Pattern, normEach: EndoFn[String], ignore: String => Boolean) {
+    def apply(input: String): Stream[String] =
+      (input |> normAll |> sep.split).toStream map normEach filterNot ignore
+  }
+
   // ===================================================================================================================
 
   /** [[shipreq.webapp.base.data.ReqType.Mnemonic]] */
@@ -72,6 +82,8 @@ object Grammar {
     val parseChar = CharPredicate.Alpha
     val parsePost = (_: String).toUpperCase
   }
+
+  val pubidSeqFormat = SeqFormat(_.trim, "[ ,]+".r.pattern, _.replace("-", "") |> reqTypeMnemonic.parsePost, _.isEmpty)
 
   // TODO hashrefkey & mnemonic are both case-insensitive but char ranges are defined differently
 
@@ -83,6 +95,7 @@ object Grammar {
     def firstChar = FirstChar.azAZ09
     val allChars  = new CharWhitelist("_=-", '.', 'A' to 'Z', 'a' to 'z', '0' to '9')("may only consist of letters, numbers, and these symbols: . _ = -")
     val prefix    = "#"
+    val seqFormat = SeqFormat(_.trim, "[# ,]+".r.pattern, "^# *".r.replaceFirstIn(_, ""), _.isEmpty)
   }
 
   /** [[shipreq.webapp.base.data.FieldRefKey]] */
@@ -113,5 +126,4 @@ object Grammar {
   val reflinkSurround = surrounds("[", "]")
 
   val mathTexSurround = surrounds("<math>", "</math>")
-
 }

@@ -95,8 +95,8 @@ object AutoComplete {
     val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)
   }
 
-  def normaliseReqPubid(s: String): String =
-    s.replace("-", "").toUpperCase
+  @inline def normaliseReqPubid(s: String): String =
+    Grammar.pubidSeqFormat.normEach(s)
 
   // ===================================================================================================================
   // <math>
