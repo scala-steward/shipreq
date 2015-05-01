@@ -40,5 +40,8 @@ object ConsoleIO {
   private val instance = newInstance
 
   @inline final def apply(f: ConsoleIO => IO[Unit]): IO[Unit] =
-    if (instance == null) IoUtils.nop else f(instance)
+    if (instance eq null) IoUtils.nop else f(instance)
+
+  @elidable(L) final def run(f: ConsoleIO => IO[Unit]): Unit =
+    apply(f).unsafePerformIO()
 }
