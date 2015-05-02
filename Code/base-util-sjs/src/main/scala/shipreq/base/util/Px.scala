@@ -127,6 +127,17 @@ object Px {
     }
   }
 
+  final class Const[A](a: A) extends Px[A] {
+    override def rev     = 0
+    override def peek    = a
+    override def value() = a
+  }
+
+  final class LazyConst[A](a: => A) extends Px[A] {
+    override def      rev     = 0
+    override lazy val peek    = a
+    override def      value() = peek
+  }
   // ===================================================================================================================
 
   object AutoValue {
@@ -144,6 +155,9 @@ object Px {
     def reuseR(implicit ev: A <:< AnyRef): R = f((a, b) => ev(a) eq ev(b))
     def reuseE(implicit e: Equal[A])     : R = f(e.equal)
   }
+
+  @inline def const    [A](a: A)   : Px[A] = new Const(a)
+  @inline def lazyConst[A](a: => A): Px[A] = new LazyConst(a)
 
   def apply[A](a: A) =
     new NeedIgnoreChange[A, Var[A]](new Var(a, _))
