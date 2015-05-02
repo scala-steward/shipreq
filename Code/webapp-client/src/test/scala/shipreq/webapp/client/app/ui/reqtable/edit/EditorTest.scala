@@ -12,6 +12,7 @@ import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.base.test.SampleImplicationGraph
 
 object EditorTest extends TestSuite {
+  shipreq.webapp.client.app.ui.Style // Ensure initialised
 
   val (impAllReqsAndKeys, impLookupAll) = {
     import SampleImplicationGraph._

@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app
 package ui
 
-import scalacss.Defaults._
+import scalacss.ProdDefaults._ // TODO Defaults._ Breaks tests due to PhantomJS console.error bug
 import scalacss.ScalaCssReact._
 import scalacss.StyleS
 import shipreq.webapp.base.text.Grammar
