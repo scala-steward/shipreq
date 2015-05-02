@@ -57,7 +57,7 @@ object ImplicationEditor {
       r => a(subject).contains(r.id) || b(r.id).contains(subject))
   }
 
-  def apply(initial   : Vector[Pubid],
+  def apply(initial   : Set[Pubid],
             project   : Px[Project],
             textSearch: Px[TextSearch],
             lookupM   : Px[Must[Lookup]],
@@ -65,9 +65,9 @@ object ImplicationEditor {
 
     def init: String = {
       val p = project.value()
-      initial.map(pid =>
+      initial.toVector.map(pid =>
         UiText mustA PlainText.pubid(p, pid)
-      ) mkString " "
+      ).sorted mkString " "
     }
 
     val lookup = lookupM.map(mustResolve(_)(Lookup(Stream.empty, UnivEq.emptyMap)))

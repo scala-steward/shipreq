@@ -32,16 +32,16 @@ object TagEditor {
       .toMap
     )
 
-  def apply(initial : Vector[A],
+  def apply(initial : Set[A],
             project : Project,
             lookupM : Px[Must[Lookup]],
             setState: Option[Cell.State] => IO[Unit]): Cell.State = {
 
     def init: String =
-      initial.map { a =>
+      initial.toVector.map { a =>
         val m = project.atag(a).map(_.key.value)
         UiText.mustA(m)
-      } mkString " "
+      }.sorted mkString " "
 
     val lookup = lookupM.map(mustResolve(_)(UnivEq.emptyMap))
 
@@ -49,12 +49,13 @@ object TagEditor {
       lookup.map(l =>
         AutoComplete.tag(l.values.toStream, prefix = false))
 
-    val parser: Parser[A] =
-      () => s =>
-        lookup.value().get(s) match {
-          case Some(t) => \/-(t.id)
-          case None    => leftNone
-        }
+    val parser: Parser[A] = () => {
+      val l = lookup.value()
+      s => l.get(s) match {
+        case Some(t) => \/-(t.id)
+        case None    => leftNone
+      }
+    }
 
     val abort: IO[Unit] =
       setState(None)
