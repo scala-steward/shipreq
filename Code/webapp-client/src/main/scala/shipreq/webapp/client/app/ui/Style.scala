@@ -199,5 +199,5 @@ object Style extends StyleSheet.Inline {
     reqtable.table,
     widgets.tag)
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
-  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
+//  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }
