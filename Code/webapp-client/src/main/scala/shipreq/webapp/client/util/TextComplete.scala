@@ -33,7 +33,7 @@ object TextComplete {
     def apply(result: JArray[A], stillSearching: Boolean = false): Unit = native
   }
 
-  def Options: Options = (new Object).asInstanceOf[Options]
+  def Options(): Options = (new Object).asInstanceOf[Options]
   sealed trait Options extends Object {
     var appendTo:  JAny          = native  // $('body')
     var height:    UndefOr[Int]  = native  // undefined
