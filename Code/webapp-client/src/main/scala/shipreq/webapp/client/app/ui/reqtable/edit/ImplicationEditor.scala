@@ -4,7 +4,7 @@ package edit
 import scalaz.effect.IO
 import scalaz.syntax.either._
 import scalaz.syntax.equal._
-import scalaz.-\/
+import scalaz.{\/-, -\/}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.base.util.{Must, Px, UnivEq}
@@ -22,7 +22,7 @@ object ImplicationEditor {
 
   type A = Req.Id
 
-  val editor = textSeqEditor[A]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
+  val editor = textSetEditor[A]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
 
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, ParseRejection]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap
@@ -90,11 +90,11 @@ object ImplicationEditor {
     val abort: IO[Unit] =
       setState(None)
 
-    val commit: Vector[A] => IO[Unit] =
+    val commit: Set[A] => IO[Unit] =
     // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
       s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
     Cell.selfManage(setState, init)(
-      editor.Props(_, _, abort, parser, commit, autoComplete).apply)
+      editor.Props(_, _, abort, parser, toSetWithoutValidation, commit, autoComplete).apply)
   }
 }

@@ -1,16 +1,14 @@
 package shipreq.webapp.client.app.ui.reqtable.edit
 
-import japgolly.scalajs.jquery.TextComplete
-import shipreq.base.util.{UnivEq, Must, Px}
+import scalaz.effect.IO
+import shipreq.base.util.Px
 import shipreq.webapp.base.{TextMod, UiText}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Grammar, PlainText}
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.TextSeqEditor._
 import shipreq.webapp.client.app.ui.reqtable._
 import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
-import scalaz.{-\/, Success, Failure, \/-}
-import scalaz.effect.IO
 import Validators.{reqCode => V}
 
 object ReqCodeEditor {
@@ -21,12 +19,9 @@ object ReqCodeEditor {
   }
 
   object ForReqs {
-
-    // TODO Limit number of codes
-
     val lineSplitter = "\\s*[\n\r]\\s*".r.pattern
 
-    val editor = textSeqEditor[A]("ReqCode editor",
+    val editor = textSetEditor[A]("ReqCode editor",
       s => lineSplitter.split(s.trim).toStream.filter(_.nonEmpty),
       TextEditor.TextArea)
 
@@ -43,21 +38,21 @@ object ReqCodeEditor {
 
       val parser: Parser[A] = () => {
         val vs = validationState.value()
-        codeStr => V.code.correctAndValidate(vs, codeStr) match {
-          case Success(c) => \/-(c)
-          case Failure(f) => -\/(Some(f.toText))
-        }
+        V.code.correctAndValidate(vs, _)
       }
+
+      val validate: Vector[A] => ParseResult[Set[A]] =
+        as => V.codeSet.correctAndValidateU(as.toSet)
 
       val abort: IO[Unit] =
         setState(None)
 
-      val commit: Vector[A] => IO[Unit] =
+      val commit: Set[A] => IO[Unit] =
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
         s => setState(None) >>> IO { println("Sent to ze server: " + s) }
 
       Cell.selfManageC(setState, liveCorrect)(
-        init, editor.Props(_, _, abort, parser, commit, autoComplete).apply)
+        init, editor.Props(_, _, abort, parser, validate, commit, autoComplete).apply)
     }
 
     def fixit(before: String, after: String)(test: String => Boolean, fix: String => String): String =

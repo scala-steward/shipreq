@@ -122,6 +122,9 @@ object Grammar {
     /** Max number of nodes in [[shipreq.webapp.base.data.ReqCode.Value]] */
     def maxNodes = 20
 
+    /** Max number of codes per [[shipreq.webapp.base.data.ReqCode.Target]] */
+    def maxCodes = 20
+
     /** For parsing a single value into nodes */
     val nodeSeqFormat = SeqFormat(whitespace.replaceAllIn(_, ""), quoteCh(nodeSeparator).r.pattern, identity, _ => false)
   }

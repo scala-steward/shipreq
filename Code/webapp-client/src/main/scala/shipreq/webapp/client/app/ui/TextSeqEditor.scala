@@ -4,7 +4,6 @@ import japgolly.scalajs.jquery.{TextComplete => TC}
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom.ext.KeyValue
 import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.std.option._
@@ -33,17 +32,18 @@ object TextSeqEditor {
  *
  * Example: "#tbd #report #pending" or "5,7,9,11".
  */
-final class TextSeqEditor[A](name         : String,
-                             splitFn      : String => Stream[String],
-                             textEditor   : TextEditor,
-                             inputStyle   : IsOK => TagMod,
-                             errorMsgStyle: TagMod) {
+final class TextSeqEditor[A, B](name         : String,
+                                splitFn      : String => Stream[String],
+                                textEditor   : TextEditor,
+                                inputStyle   : IsOK => TagMod,
+                                errorMsgStyle: TagMod) {
 
   case class Props(state       : String,
                    stateUpdate : String => IO[Unit],
                    abort       : IO[Unit],
                    parser      : Parser[A],
-                   commit      : Vector[A] => IO[Unit],
+                   validate    : Vector[A] => ParseResult[B],
+                   commit      : B => IO[Unit],
                    autoComplete: AutoComplete) {
     def apply = component(this)
   }
@@ -75,26 +75,32 @@ final class TextSeqEditor[A](name         : String,
 
     def render: ReactElement = {
       val p = $.props
-
       val parse = p.parser()
-      val parseResult =
+
+      val parseResultA: ParseResult[Vector[A]] =
         splitFn(p.state)
           .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
           .suml
+          .leftMap(Tags.First.unwrap)
+      
+      val parseResult: ParseResult[B] =
+        parseResultA.flatMap(p.validate)
 
-      val keyHandlers =
-        KeyHandlers.commitAndAbort(p.abort, parseResult.fold(_ => js.undefined, p.commit), textEditor.singleLine)
+      val keyHandlers = KeyHandlers.commitAndAbort(
+        p.abort,
+        parseResult.fold(_ => js.undefined, p.commit),
+        textEditor.singleLine)
 
       <.div(
         textEditor.tag(
           inputStyle(IsOK(parseResult)),
           keyHandlers,
-          ^.ref         := textEditorRef,
-          ^.value       := p.state,
-          ^.onChange   ~~> updateState),
-        parseResult.swap.toOption.flatMap(Tags.First.unwrap).map(err =>
-          <.div(errorMsgStyle, err)
-        ))
+          ^.ref       := textEditorRef,
+          ^.value     := p.state,
+          ^.onChange ~~> updateState),
+        parseResult.fold(
+          _.fold(EmptyTag)(err => <.div(errorMsgStyle, err)),
+          _ => EmptyTag))
     }
   }
 }

@@ -239,11 +239,18 @@ object Validators {
         val r2: ValidationResult[Stream[Node]] = Traverse[Stream].sequence(r1)
         val r3 = r2.flatMap(ns => ValidationResult.option(
           NonEmptyVector option ns.toVector,
-          VFailure.forField1(FieldNames.reqCode, "cannot be blank.")))
+          VFailure.forField1(FieldNames.reqCode, "cannot be blank."))) // english
         r3
       }
 
       ValidatorU(parseNodes, mkValue).liftS[VS] andThen valueS
     }
+
+    /** Validate a set of ReqCodes. Each code should already be validated. */
+    val codeSet = ValidationPartU.test[Set[Value]](
+      _.value.size <= G.maxCodes,
+      VFailure.looseMsg(s"You cannot have more than ${G.maxCodes} codes.") // english
+    ).toValidator
   }
+
 }

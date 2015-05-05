@@ -17,7 +17,7 @@ object TagEditor {
   type A      = ApplicableTag.Id
   type Lookup = Map[String, ApplicableTag]
 
-  val editor = textSeqEditor[ApplicableTag.Id]("TagEditor", Grammar.hashRefKey.seqFormat.apply)
+  val editor = textSetEditor[ApplicableTag.Id]("TagEditor", Grammar.hashRefKey.seqFormat.apply)
 
   def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tagsNotUsedInColumns)
@@ -60,11 +60,11 @@ object TagEditor {
     val abort: IO[Unit] =
       setState(None)
 
-    val commit: Vector[A] => IO[Unit] =
+    val commit: Set[A] => IO[Unit] =
       // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
       s => setState(None) >>> IO{ println("Sent to ze server: " + s) }
 
     Cell.selfManage(setState, init)(
-      editor.Props(_, _, abort, parser, commit, autoComplete).apply)
+      editor.Props(_, _, abort, parser, toSetWithoutValidation, commit, autoComplete).apply)
   }
 }
