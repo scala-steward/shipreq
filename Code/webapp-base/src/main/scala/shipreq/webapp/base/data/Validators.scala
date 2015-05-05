@@ -6,7 +6,7 @@ import scalaz.std.stream._
 import scalaz.syntax.traverse._
 import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{NonEmptyVector, UnivEq}
+import shipreq.base.util.{Util, NonEmptyVector, UnivEq}
 import shipreq.webapp.base.TextMod._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.ReqType.Mnemonic
@@ -229,7 +229,14 @@ object Validators {
       valueU.liftS[VS].addValidation(valueUniqueness)
 
     val code: Validator[VS, String, Stream[String], Value] = {
-      def parseNodes = CorrectionPartU[String, Stream[String]](
+      def liveCorrect(code: String): String = {
+        val c1 = noWhitespace(code)
+        val c2 = c1.split('.').map(node.liveCorrect).mkString(".")
+        Util.fixBeforeAfter(c1, c2)(_ endsWith ".", _ + ".")
+      }
+
+      def parse = CorrectionPartU.apply3[String, Stream[String]](
+        liveCorrect,
         G.nodeSeqFormat.apply,
         _.mkString(G.nodeSeparator.toString))
 
@@ -243,7 +250,7 @@ object Validators {
         r3
       }
 
-      ValidatorU(parseNodes, mkValue).liftS[VS] andThen valueS
+      ValidatorU(parse, mkValue).liftS[VS] andThen valueS
     }
 
     /** Validate a set of ReqCodes. Each code should already be validated. */

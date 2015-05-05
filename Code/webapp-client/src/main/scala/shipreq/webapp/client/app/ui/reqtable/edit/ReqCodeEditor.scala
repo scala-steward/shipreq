@@ -1,11 +1,12 @@
 package shipreq.webapp.client.app.ui.reqtable.edit
 
+import scalaz.{\/-, -\/}
 import scalaz.effect.IO
-import shipreq.base.util.Px
-import shipreq.webapp.base.{TextMod, UiText}
+import shipreq.base.util.{Util, Px}
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.app.ui.TextSeqEditor._
+import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
 import shipreq.webapp.client.app.ui.reqtable._
 import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
@@ -15,9 +16,48 @@ object ReqCodeEditor {
 
   type A = ReqCode.Value
 
-  object ForGroup {
+  def mkAutoComplete(validationState: Px[V.VS]): AutoComplete =
+    validationState.map(vs =>
+      AutoComplete.reqCode(vs.trie))
+
+  def mkParser(validationState: Px[V.VS]): Parser[A] = () => {
+    val vs = validationState.value()
+    V.code.correctAndValidate(vs, _)
   }
 
+  // ===================================================================================================================
+  object ForGroup {
+    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input, cellStyle, cellErrorMsgStyle)
+
+    def apply(initial        : A,
+              validationState: Px[V.VS],
+              setState       : Option[Cell.State] => IO[Unit]): Cell.State = {
+
+      def init         = PlainText reqCode initial
+      val autoComplete = mkAutoComplete(validationState)
+      val parser       = mkParser(validationState)
+
+      val validate: Vector[A] => ParseResult[A] =
+        _.headOption match {
+          case None    => -\/(Some(UiText.FieldNames.reqCode + " cannot be blank.")) // english
+          case Some(c) => \/-(c)
+        }
+
+      val abort: IO[Unit] =
+        setState(None)
+
+      val commit: A => IO[Unit] =
+      // TODO If change occurred, send to server & lock cell. (If unchanged, clear state.)
+        s => setState(None) >>> IO { println("Sent to ze server: " + s) }
+
+      Cell.selfManageC(setState, liveCorrect)(
+        init, editor.Props(_, _, abort, parser, validate, commit, autoComplete).apply)
+    }
+
+    @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
+  }
+
+  // ===================================================================================================================
   object ForReqs {
     val lineSplitter = "\\s*[\n\r]\\s*".r.pattern
 
@@ -29,17 +69,9 @@ object ReqCodeEditor {
               validationState: Px[V.VS],
               setState       : Option[Cell.State] => IO[Unit]): Cell.State = {
 
-      def init: String =
-        initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
-
-      val autoComplete: AutoComplete =
-        validationState.map(vs =>
-          AutoComplete.reqCode(vs.trie))
-
-      val parser: Parser[A] = () => {
-        val vs = validationState.value()
-        V.code.correctAndValidate(vs, _)
-      }
+      def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
+      val autoComplete = mkAutoComplete(validationState)
+      val parser       = mkParser(validationState)
 
       val validate: Vector[A] => ParseResult[Set[A]] =
         as => V.codeSet.correctAndValidateU(as.toSet)
@@ -55,23 +87,12 @@ object ReqCodeEditor {
         init, editor.Props(_, _, abort, parser, validate, commit, autoComplete).apply)
     }
 
-    def fixit(before: String, after: String)(test: String => Boolean, fix: String => String): String =
-      if (test(before) && !test(after))
-        fix(after)
-      else
-        after
-
     def liveCorrect(txt: String): String =
       if (txt.trim.isEmpty)
         ""
       else {
-        val r = txt.split("[\n\r]")
-          .map { code =>
-            val c1 = TextMod.noWhitespace(code)
-            val c2 = c1.split('.').map(V.node.liveCorrect).mkString(".")
-            fixit(c1, c2)(_ endsWith ".", _ + ".")
-          }.mkString("\n")
-        fixit(txt, r)(_ endsWith "\n", _ + "\n")
+        val r = txt.split("[\n\r]").map(V.code.liveCorrect).mkString("\n")
+        Util.fixBeforeAfter(txt, r)(_ endsWith "\n", _ + "\n")
       }
   }
 }

@@ -117,6 +117,13 @@ object Util {
 
   def regexEscapeAndWrap(s: String): String =
     s"(?:${regexEscape(s)})"
+
+  //def fix[A, B <: A, C >: A](before: B, after: A)(test: A => Boolean, fix: A => C): C =
+  def fixBeforeAfter[A](before: A, after: A)(test: A => Boolean, fix: A => A): A =
+    if (test(before) && !test(after))
+      fix(after)
+    else
+      after
 }
 
 object ParseLong {

@@ -54,7 +54,7 @@ final class ColumnEditors(project       : Px[Project],
 
         case r: ReqCodeGroupRow =>
           col match {
-            //case Column.Code           => 
+            case Column.Code           => codesForGroup(r)
             case Column.Title          => reqCodeGroupTitle(r)
             case Column.Pubid
                | Column.ReqType
@@ -79,6 +79,12 @@ final class ColumnEditors(project       : Px[Project],
 
   val genericReqTitle = initEditor[GenericReqRow](r =>
     RichTextEditor.GenericReqTitle(r.req.title, project, plainText, projectWidgets, textSearch, _))
+
+  val codesForGroup = initEditor[ReqCodeGroupRow] { r =>
+    val currentValue = r.reqCode
+    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.data.trie, Set(currentValue)))
+    ReqCodeEditor.ForGroup(currentValue, vs, _)
+  }
 
   val codesForReq = initEditor[GenericReqRow] { r =>
     val currentValues = project.value().reqCodes.data.activeReqCodesByTarget(r.req.id)
