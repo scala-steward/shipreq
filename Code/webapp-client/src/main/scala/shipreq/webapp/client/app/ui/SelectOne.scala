@@ -16,7 +16,7 @@ object SelectOne {
   }
 
   case class Props[A](selected: A,
-                      choices : Seq[Choice[A]],
+                      choices : Seq[Choice[A]], // TODO Should be NonEmptyVector
                       select  : Option[A => IO[Unit]],
                       style   : TagMod = EmptyTag)
 
