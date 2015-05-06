@@ -94,13 +94,13 @@ sealed trait Field {
 object Field {
   type ApplicableReqTypes = ISubset[Set, ReqTypeId]
 
-  /** type [[Id]] = [[StaticField]] | [[CustomField.Id]] */
+  /** type [[Id]] = [[StaticField]] | [[CustomFieldId]] */
   sealed trait Id {
-    def foldId[A](s: StaticField => A, c: CustomField.Id => A): A
+    def foldId[A](s: StaticField => A, c: CustomFieldId => A): A
   }
 
   implicit object IdGeneric extends Generic[Id] {
-    override type Repr = StaticField :+: CustomField.Id :+: CNil
+    override type Repr = StaticField :+: CustomFieldId :+: CNil
     override def to  (id: Id): Repr = id.foldId(Coproduct[Repr](_), Coproduct[Repr](_))
     override def from(co: Repr): Id = co match {
       case Inl(s)      => s
@@ -142,8 +142,8 @@ sealed abstract class StaticField(         val name     : String,
 
   override final def independentName = Some(name)
 
-  override final def fold  [A](s: StaticField => A, c: CustomField    => A): A = s(this)
-  override final def foldId[A](s: StaticField => A, c: CustomField.Id => A): A = s(this)
+  override final def fold  [A](s: StaticField => A, c: CustomField   => A): A = s(this)
+  override final def foldId[A](s: StaticField => A, c: CustomFieldId => A): A = s(this)
 }
 
 object StaticField {
@@ -174,20 +174,20 @@ object StaticField {
   implicit val equality: UnivEq[StaticField] = { import AutoDerive._; deriveUnivEq }
 }
 
+sealed abstract class CustomFieldId extends TaggedLong with Field.Id {
+  final def foldId[A](s: StaticField => A, c: CustomFieldId => A): A = c(this)
+}
+
 /** Custom here just distinguishes user-defined fields from static fields. */
 sealed abstract class CustomField(override final val fieldType: CustomFieldType) extends Field {
-  def id: CustomField.Id
+  def id: CustomFieldId
   def alive: Alive
 
   override final def fold[A](s: StaticField => A, c: CustomField => A): A = c(this)
 }
 
 object CustomField {
-  sealed abstract class Id extends TaggedLong with Field.Id {
-    final def foldId[A](s: StaticField => A, c: CustomField.Id => A): A = c(this)
-  }
-
-  object IdAccess extends ObjDataId[CustomField.type, CustomField, Id] {
+  object IdAccess extends ObjDataId[CustomField.type, CustomField, CustomFieldId] {
     override def id(d: CustomField) = d.id
     override val unapplyData: AnyRef => Option[CustomField] = {case r: CustomField => Some(r); case _ => None}
   }
@@ -203,7 +203,7 @@ object CustomField {
     override def keyO = Some(key)
   }
   object Text {
-    final case class Id(value: Long) extends CustomField.Id
+    final case class Id(value: Long) extends CustomFieldId
     object IdAccess extends ObjDataId[Text.type, Text, Id] {
       override def id(d: Text) = d.id
       override val unapplyData: AnyRef => Option[Text] = {case r: Text => Some(r); case _ => None}
@@ -224,7 +224,7 @@ object CustomField {
       tags(tagId).map(_.tag.name)
   }
   object Tag {
-    final case class Id(value: Long) extends CustomField.Id
+    final case class Id(value: Long) extends CustomFieldId
     object IdAccess extends ObjDataId[Tag.type, Tag, Id] {
       override def id(d: Tag) = d.id
       override val unapplyData: AnyRef => Option[Tag] = {case r: Tag => Some(r); case _ => None}
@@ -245,7 +245,7 @@ object CustomField {
       ReqType.name(customReqTypes)(reqTypeId)
   }
   object Implication {
-    final case class Id(value: Long) extends CustomField.Id
+    final case class Id(value: Long) extends CustomFieldId
     object IdAccess extends ObjDataId[Implication.type, Implication, Id] {
       override def id(d: Implication) = d.id
       override val unapplyData: AnyRef => Option[Implication] = {case r: Implication => Some(r); case _ => None}
@@ -296,13 +296,13 @@ object CustomField {
 // =====================================================================================================================
 // Set
 
-case class FieldSet(customFields: IMap[CustomField.Id, CustomField],
+case class FieldSet(customFields: IMap[CustomFieldId, CustomField],
                     order       : Vector[Field.Id]) {
 
   lazy val fields: Must[Vector[Field]] =
     Traverse[Vector].traverseImpl(order) {
       case  f: StaticField    => f
-      case id: CustomField.Id => customFields(id)
+      case id: CustomFieldId => customFields(id)
     }
 }
 

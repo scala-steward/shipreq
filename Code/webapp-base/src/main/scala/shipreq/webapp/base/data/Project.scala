@@ -73,7 +73,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   def atags[M[X] <: TraversableOnce[X]: Monoidish](ids: M[ApplicableTagId]): Must[M[ApplicableTag]] =
     Must.foldMapM(ids)(atag)
 
-  def customField[I <: CustomField.Id, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
+  def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
     fields.data.customFields(id).flatMap(f =>
       Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
 

@@ -359,7 +359,7 @@ class WIP {
   object fieldCrud {
     import FieldProtocol._
     import CfgAction._
-    import shipreq.webapp.base.data.{CustomField => CF}
+    import shipreq.webapp.base.data.{CustomField => CF, CustomFieldId => Id}
 
     def apply(deletions: Set[Field.Id], updates: List[Delta]): RemoteDelta = {
       delay()
@@ -377,16 +377,16 @@ class WIP {
     def mod(f: FieldSet => List[Delta]): RemoteDelta =
       apply(Set.empty, f(p.fields.data))
 
-    def mod(id: CF.Id)(f: CF => CF): RemoteDelta =
+    def mod(id: Id)(f: CF => CF): RemoteDelta =
       mod(fs => fs.customFields.get(id).fold(∅)(newField =>
         List(Delta(\/-(f(newField)), Util.position(fs.order, id)))))
 
     @inline def ∅ = List.empty[Delta]
 
-    def nextId(fs: FieldSet): CF.Id = CF.Text.Id(fs.customFields.keys.max.value + 1)
-    implicit def genIdToText(g: CF.Id) = CF.Text.Id(g.value)
-    implicit def genIdToTag (g: CF.Id) = CF.Tag.Id(g.value)
-    implicit def genIdToImpl(g: CF.Id) = CF.Implication.Id(g.value)
+    def nextId(fs: FieldSet): Id = CF.Text.Id(fs.customFields.keys.max.value + 1)
+    implicit def genIdToText(g: Id) = CF.Text.Id(g.value)
+    implicit def genIdToTag (g: Id) = CF.Tag.Id(g.value)
+    implicit def genIdToImpl(g: Id) = CF.Implication.Id(g.value)
 
     val cfgAction =
       ServerProtocol.routine(Routines.FieldCrud){
@@ -420,13 +420,13 @@ class WIP {
         case UpdateOrder(f: StaticField, p) =>
           mod(fs => List(Delta(-\/(f), p)))
 
-        case UpdateOrder(id: CF.Id, p) =>
+        case UpdateOrder(id: Id, p) =>
           mod(_.customFields.get(id).fold(∅)(f => List(Delta(\/-(f), p))))
 
         case Delete(f: StaticField, Restore) =>
           mod(fs => if (fs.order contains f) Nil else List(Delta(-\/(f), None)))
 
-        case Delete(id: CF.Id, Restore) =>
+        case Delete(id: Id, Restore) =>
           mod(id)(CF.alive set Alive)
 
         case Delete(f: StaticField, HardDel | SoftDel) =>
@@ -435,10 +435,10 @@ class WIP {
             case Deletable.Not => Nil
           }
 
-        case Delete(id: CF.Id, SoftDel) =>
+        case Delete(id: Id, SoftDel) =>
           mod(id)(CF.alive set Dead)
 
-        case Delete(id: CF.Id, HardDel) =>
+        case Delete(id: Id, HardDel) =>
           apply(Set(id), Nil)
       }
 

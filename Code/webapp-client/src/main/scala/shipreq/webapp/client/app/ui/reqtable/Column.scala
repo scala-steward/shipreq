@@ -34,7 +34,7 @@ object Column {
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
-  case class CustomField(id: data.CustomField.Id) extends SortInconclusive with HasBlanks
+  case class CustomField(id: data.CustomFieldId) extends SortInconclusive with HasBlanks
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ object Column {
       Column.NameResolver(p.fields.data.customFields, data.CustomField nameP p)
   }
 
-  case class NameResolver(customFields   : IMap[data.CustomField.Id, data.CustomField],
+  case class NameResolver(customFields   : IMap[data.CustomFieldId, data.CustomField],
                           customFieldName: data.CustomField => Must[String]) {
 
     @inline def apply(column: Column) = fn(column)
@@ -81,6 +81,6 @@ object Column {
     }
   }
 
-  def all(customFieldsIds: TraversableOnce[data.CustomField.Id]): NonEmptyVector[Column] =
+  def all(customFieldsIds: TraversableOnce[data.CustomFieldId]): NonEmptyVector[Column] =
     customFieldsIds.toVector.map(CustomField) ++: builtInValues
 }

@@ -125,7 +125,7 @@ object LogicTest extends TestSuite {
       def rev[A](c: Column, l: Vector[A]): Vector[A] =
         if (revCri isOrdered c) l.reverse else l
 
-      def revmap[K <: CustomField.Id : ClassTag, A](m: Map[K, Vector[A]]): Map[K, Vector[A]] =
+      def revmap[K <: CustomFieldId : ClassTag, A](m: Map[K, Vector[A]]): Map[K, Vector[A]] =
         m.map{ case (k, v) => (k, rev(Column.CustomField(k), v)) }
 
       def reverseExpansion(exp: Expansion): Expansion = {

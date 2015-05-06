@@ -100,8 +100,8 @@ object DataProp {
     def orderCustomFieldsIso =
       Prop.equal[FieldSet]("order.customFields = fieldSet.customFields")(
         _.customFields.keySet,
-        _.order.foldLeft(Set.empty[CustomField.Id])((q, id) => id match {
-          case i: CustomField.Id => q + i
+        _.order.foldLeft(Set.empty[CustomFieldId])((q, id) => id match {
+          case i: CustomFieldId => q + i
           case _: StaticField    => q
         }))
 
@@ -271,7 +271,7 @@ object DataProp {
   object project {
     type T = Project
 
-    case class Refs(fieldIds: Set[CustomField.Id], reqIds: Set[ReqId], reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId])
+    case class Refs(fieldIds: Set[CustomFieldId], reqIds: Set[ReqId], reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId])
 
     def atoms =
       Prop.eval[(String, Stream[Text.AnyOptional])](t => text.anyTextS(t._2).rename(t._1))

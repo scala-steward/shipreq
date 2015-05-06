@@ -57,7 +57,7 @@ private[issues] object MandatoryFields {
     def refreshLabelFn: IO[Unit] =
       $ modStateIO State.labelFn.modify(_ refresh project)
 
-    def save(id: CustomField.Id): ST = {
+    def save(id: CustomFieldId): ST = {
       val p = $.props
       Persistence.simpleAsyncUpdate(rowStoreS)(p.remote, p.clientData, p.cp, $ runState _, id)
     }

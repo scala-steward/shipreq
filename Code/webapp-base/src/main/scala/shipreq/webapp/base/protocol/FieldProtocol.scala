@@ -34,10 +34,10 @@ object FieldProtocol {
 
   sealed trait CfgAction
   object CfgAction {
-    final case class Create      (newValues: Values)                     extends CfgAction
-    final case class UpdateValues(id: CustomField.Id, newValues: Values) extends CfgAction
-    final case class UpdateOrder (id: Field.Id, newPos: Position)        extends CfgAction
-    final case class Delete      (id: Field.Id, action: DeletionAction)  extends CfgAction
+    final case class Create      (newValues: Values)                    extends CfgAction
+    final case class UpdateValues(id: CustomFieldId, newValues: Values) extends CfgAction
+    final case class UpdateOrder (id: Field.Id, newPos: Position)       extends CfgAction
+    final case class Delete      (id: Field.Id, action: DeletionAction) extends CfgAction
   }
 
   case class Delta(field: StaticField \/ CustomField, pos: Position)
@@ -58,8 +58,8 @@ object FieldProtocol {
       // Delete fields
       for (fieldId <- ds.del)
         fieldId match {
-          case i: CustomField.Id => customFields = customFields - i
-          case _: StaticField    => ()
+          case i: CustomFieldId => customFields = customFields - i
+          case _: StaticField   => ()
         }
       order = order.filterNot(ds.del.contains)
 

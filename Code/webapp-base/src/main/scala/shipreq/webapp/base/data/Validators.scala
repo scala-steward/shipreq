@@ -119,7 +119,7 @@ object Validators {
 
   // ===================================================================================================================
   object field {
-    type S = (Stream[CustomField], Option[CustomField.Id])
+    type S = (Stream[CustomField], Option[CustomFieldId])
     import Grammar.{fieldRefKey => G}
 
     // TODO BR-2: A field-set cannot contain more than 30 fields.

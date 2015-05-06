@@ -41,10 +41,10 @@ package object test {
     override def setId(a: CustomReqType, b: CustomReqTypeId) = a.copy(id = b)
   }
 
-  implicit object CustomFieldIdT extends TestObjDataId[CustomField.type, CustomField, CustomField.Id] {
+  implicit object CustomFieldIdT extends TestObjDataId[CustomField.type, CustomField, CustomFieldId] {
     import CustomField._
     override def mkId(l: Long) = Text.Id(l)
-    override def setId(cf: CustomField, i: Id) = cf match {
+    override def setId(cf: CustomField, i: CustomFieldId) = cf match {
         case f: Text        => f.copy(id = Text       .Id(i.value))
         case f: Tag         => f.copy(id = Tag        .Id(i.value))
         case f: Implication => f.copy(id = Implication.Id(i.value))

@@ -16,10 +16,10 @@ object Routines {
   object ProjectInit extends DescT[Unit, Project]
 
   object CustomIssueTypeCrud extends Crudable.CAux[CustomIssueTypeId, CustomIssueTypeProtocol.Values]
-  object CustomReqTypeCrud   extends Crudable.CAux[CustomReqTypeId,    CustomReqTypeProtocol.Values]
-  object TagCrud             extends Crudable.CAux[TagId,              TagProtocol.Values \&/ TagProtocol.PovRelations]
+  object CustomReqTypeCrud   extends Crudable.CAux[CustomReqTypeId,   CustomReqTypeProtocol.Values]
+  object TagCrud             extends Crudable.CAux[TagId,             TagProtocol.Values \&/ TagProtocol.PovRelations]
 
-  object FieldMandatorinessMod extends DescT[(CustomField.Id , Mandatory          ), RemoteDelta]
+  object FieldMandatorinessMod extends DescT[(CustomFieldId , Mandatory           ), RemoteDelta]
   object ReqTypeImplicationMod extends DescT[(CustomReqTypeId, ImplicationRequired), RemoteDelta]
 
   object FieldCrud extends DescT[FieldProtocol.CfgAction, RemoteDelta]

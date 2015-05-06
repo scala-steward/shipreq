@@ -94,7 +94,7 @@ private[reqtable] object Logic {
     })
   }
 
-  private def customFieldExpander[K <: CustomField.Id : ClassTag, V]
+  private def customFieldExpander[K <: CustomFieldId : ClassTag, V]
       (vs: ViewSettings, f: K => ReqId => Set[V]): ReqId => Map[K, Expanded[V]] = {
 
     val cols = vs.columns.whole.collect{ case Column.CustomField(id: K) => id }

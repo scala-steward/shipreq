@@ -340,7 +340,7 @@ object DataCodecs {
   implicit final val customFieldImplId = tagL(CustomField.Implication.Id.apply)
   implicit final val customFieldTextId = tagL(CustomField.Text       .Id.apply)
   implicit final val customFieldTagId  = tagL(CustomField.Tag        .Id.apply)
-  implicit final val customFieldId     = ReadWriter[CustomField.Id]({
+  implicit final val customFieldId     = ReadWriter[CustomFieldId]({
     case f: CustomField.Text       .Id => strkeyW("x", f)
     case f: CustomField.Tag        .Id => strkeyW("t", f)
     case f: CustomField.Implication.Id => strkeyW("i", f)
@@ -381,8 +381,8 @@ object DataCodecs {
   }
 
   implicit final val fieldId = ReadWriter[Field.Id]({
-    case i: CustomField.Id => writeJs(i)
-    case i: StaticField    => writeJs(i)
+    case i: CustomFieldId => writeJs(i)
+    case i: StaticField   => writeJs(i)
   },
     // Shape determines type. Arr(Str(_), _) or Str(_)
     customFieldId.read orElse staticField.read
@@ -640,9 +640,9 @@ object ProtocolDataCodecs {
         case 0 => Create(readJs[Values](a))
       }
       case Js.Arr(Js.Num(n), a, b) => n.toInt match {
-        case 1 => UpdateValues(readJs[CustomField.Id](a), readJs[Values        ](b))
-        case 2 => UpdateOrder (readJs[Field.Id      ](a), readJs[Position      ](b))
-        case 3 => Delete      (readJs[Field.Id      ](a), readJs[DeletionAction](b))
+        case 1 => UpdateValues(readJs[CustomFieldId](a), readJs[Values        ](b))
+        case 2 => UpdateOrder (readJs[Field.Id     ](a), readJs[Position      ](b))
+        case 3 => Delete      (readJs[Field.Id     ](a), readJs[DeletionAction](b))
       }
     })
   }

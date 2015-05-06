@@ -47,9 +47,9 @@ private[fields] object MainTable {
   val impl_fields = FieldSet3[CustomField.Implication](_.reqTypeId.some, _.mandatory, _.reqTypes)(
                                                       (None, Mandatory.Not, ISubset.All()))
 
-  val text_stores = NewAndSavedStores.fields(text_fields).keyedBy[CustomField.Id]
-  val impl_stores = NewAndSavedStores.fields(impl_fields).keyedBy[CustomField.Id]
-  val tag_stores  = NewAndSavedStores.fields(tag_fields ).keyedBy[CustomField.Id]
+  val text_stores = NewAndSavedStores.fields(text_fields).keyedBy[CustomFieldId]
+  val impl_stores = NewAndSavedStores.fields(impl_fields).keyedBy[CustomFieldId]
+  val tag_stores  = NewAndSavedStores.fields(tag_fields ).keyedBy[CustomFieldId]
 
   /** The type of options in the combobox, from which users can create new fields. */
   type NewSelType = StaticField \/ CustomFieldType
@@ -86,7 +86,7 @@ private[fields] object MainTable {
   val impl_storesS = impl_stores.contramap(State.impl_state)
   val tag_storesS  = tag_stores .contramap(State.tag_state)
 
-  def storesForType(t: CustomFieldType): NewAndSavedStores[S, CustomField.Id, _ <: CustomField, _] =
+  def storesForType(t: CustomFieldType): NewAndSavedStores[S, CustomFieldId, _ <: CustomField, _] =
     t match {
       case CustomFieldType.Text        => text_storesS
       case CustomFieldType.Implication => impl_storesS
@@ -119,7 +119,7 @@ private[fields] object MainTable {
       (s, i) => {
         val s2 = i match {
           case _: StaticField => s
-          case j: CustomField.Id => customFieldStores.foldLeft(s)((t, f) => f.s.remove(j)(t))
+          case j: CustomFieldId => customFieldStores.foldLeft(s)((t, f) => f.s.remove(j)(t))
         }
         clearAppReqTypesEditorState(i)(s2)
       },
@@ -149,12 +149,12 @@ private[fields] object MainTable {
       )
       .build
 
-  def validatorStateS(s: S, k: Option[CustomField.Id]): V.S = {
+  def validatorStateS(s: S, k: Option[CustomFieldId]): V.S = {
     val customFieldStream = customFieldStores.flatMap(_.s.getAllP(s))
     (customFieldStream, k)
   }
 
-  val rowIdFromEditorInput: ((V.S, Any)) => Option[CustomField.Id] = _._1._2
+  val rowIdFromEditorInput: ((V.S, Any)) => Option[CustomFieldId] = _._1._2
 
   // ===================================================================================================================
   final class Backend(val $: BackendScope[Props, S]) extends OnUnmount {
@@ -176,7 +176,7 @@ private[fields] object MainTable {
       def createIO(v: FieldProtocol.Values) =
         call(Create(v))
 
-      def updateValuesIO(i: CustomField.Id, v: FieldProtocol.Values) =
+      def updateValuesIO(i: CustomFieldId, v: FieldProtocol.Values) =
         call(UpdateValues(i, v))
 
       def updateOrderIO(i: Field.Id, p: Position) =
@@ -190,7 +190,7 @@ private[fields] object MainTable {
     val staticDeletion = new Deletion[StaticField](
       protocol.deleteIO(_, _)(SuccessIO.nop, FailureIO.nop))
 
-    def validatorState(k: Option[CustomField.Id]): S => V.S =
+    def validatorState(k: Option[CustomFieldId]): S => V.S =
       validatorStateS(_, k)
 
     val dndState = $.focusStateL(State.dnd)
@@ -356,7 +356,7 @@ private[fields] object MainTable {
 
     abstract class SubtypeRenderer[T <: CustomField, I, B, D, V](
       final val editor: Editor[(V.S, I), B, IO, S, D, IO[Unit], V],
-      final val stores: NewAndSavedStores[S, CustomField.Id, T, I]) {
+      final val stores: NewAndSavedStores[S, CustomFieldId, T, I]) {
 
       val editable = editor.editableByRowStatus($)
 
@@ -384,7 +384,7 @@ private[fields] object MainTable {
         r(^.cls := "new")
       }
 
-      def render(s: S, dragHandle: ReactTag, id: CustomField.Id): ReactTag = {
+      def render(s: S, dragHandle: ReactTag, id: CustomFieldId): ReactTag = {
         val row = stores.s.get(id)(s)
         val tag = row.p
         tag.alive match {

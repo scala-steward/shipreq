@@ -323,7 +323,7 @@ object RandomData {
   lazy val customFieldImplicationId =
     id map CustomField.Implication.Id
 
-  lazy val customFieldId: Gen[CustomField.Id] = {
+  lazy val customFieldId: Gen[CustomFieldId] = {
     import Gen.Covariance._
     Gen.oneofG(customFieldTextId, customFieldTagId, customFieldImplicationId)
   }
@@ -365,7 +365,7 @@ object RandomData {
     }
   }
 
-  def customFields(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId], art: Gen[ApplicableReqTypes]): Gen[IMap[CustomField.Id, CustomField]] = {
+  def customFields(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId], art: Gen[ApplicableReqTypes]): Gen[IMap[CustomFieldId, CustomField]] = {
     val cf = for {
       f1 <- customField(art, false, false).stream
       f2 <- customFieldTagSome(tagIds, art)
