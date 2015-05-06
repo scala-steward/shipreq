@@ -4,7 +4,7 @@ import scalaz.{Equal, Order}
 
 object IMap {
   implicit def equality[K: Order, V: Equal]: Equal[IMap[K, V]] =
-    IMapBase.equality[K, V, IMap[K, V]]
+    IMapBaseV.equality[K, V, IMap[K, V]]
 
   def empty[K: UnivEq, V](k: V => K): IMap[K, V] =
     new IMap(k, Map.empty)
@@ -12,13 +12,10 @@ object IMap {
 
 final class IMap[K: UnivEq, V] private (key: V => K, m: Map[K, V]) extends IMapBase[K, V, IMap[K, V]](m) {
 
-  override protected def stringPrefix = "IMap"
-
-  override protected def repr = this
-
+  override protected def stringPrefix         = "IMap"
+  override protected def repr                 = this
   override protected def setmap(n: Map[K, V]) = new IMap(key, n)
-
-  override protected def gkey(v: V) = key(v)
+  override protected def _gkey(v: V)          = key(v)
 
   def get(k: K): Option[V] =
     m.get(k)
