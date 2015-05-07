@@ -1,7 +1,8 @@
 package shipreq.base.util
 
 import scala.collection.GenTraversableOnce
-import scalaz.{Semigroup, Order, Equal}
+import scala.math.Ordering
+import scalaz._
 import scalaz.std.vector.{vectorEqual, vectorOrder}
 
 final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
@@ -16,6 +17,16 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
 
   @inline def length: Int =
     tail.length + 1
+
+  def apply(i: Int): Option[A] =
+    if (i == 0)
+      Some(head)
+    else
+      try {
+        Some(tail(i - 1))
+      } catch {
+        case _: IndexOutOfBoundsException => None
+      }
 
   def map[B](f: A => B): NonEmptyVector[B] =
     NonEmptyVector(f(head), tail map f)
@@ -75,6 +86,43 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
 
   @inline def toNonEmptySet[B >: A : UnivEq]: NonEmptySet[B] =
     NonEmptySet(head, tail.toSet[B])
+
+  private def safeTrans[B](f: Vector[A] => Vector[B]): NonEmptyVector[B] = {
+    val v = f(whole)
+    NonEmptyVector(v.head, v.tail)
+  }
+
+  def sorted[B >: A](implicit ord: Ordering[B])       = safeTrans(_.sorted[B])
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]) = safeTrans(_ sortBy f)
+  def sortWith(lt: (A, A) => Boolean)                 = safeTrans(_ sortWith lt)
+
+  def partitionD[B, C](f: A => B \/ C): (NonEmptyVector[B], Vector[C]) \/ (Vector[B], NonEmptyVector[C]) = {
+    var bs = Vector.empty[B]
+    var cs = Vector.empty[C]
+    for (a <- tail)
+      f(a) match {
+        case -\/(b) => bs :+= b
+        case \/-(c) => cs :+= c
+      }
+    f(head) match {
+      case -\/(b) => -\/((NonEmptyVector(b, bs), cs))
+      case \/-(c) => \/-((bs, NonEmptyVector(c, cs)))
+    }
+  }
+
+  def partitionB(f: A => Boolean): (NonEmptyVector[A], Vector[A]) = {
+    var ts = Vector.empty[A]
+    var fs = Vector.empty[A]
+    for (a <- tail)
+      if (f(a))
+        ts :+= a
+      else
+        fs :+= a
+    if (ts.nonEmpty)
+      (NonEmptyVector(ts.head, ts.tail), fs)
+    else
+      (NonEmptyVector(fs.head, fs.tail), ts)
+  }
 }
 
 // =====================================================================================================================

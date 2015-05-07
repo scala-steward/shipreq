@@ -1,6 +1,7 @@
 package shipreq.webapp.client.app.ui.cfg.tags
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import shipreq.base.util.NonEmptyVector
 import scalaz.Equal
 import scalaz.effect.IO
 import scalaz.std.option.optionEqual
@@ -82,12 +83,12 @@ private[tags] object DetailPane {
         EmptyTag
       else {
 
-        val choices =
-          emptyRelChoice +:
+        val choices = NonEmptyVector(
+          emptyRelChoice,
           ar.rels.map { r =>
             val s = r.selectable
             Choice[Option[Id]](s, r.value.indentedName, disabled = s.isEmpty)
-          }
+          })
 
         val dropdown =
           relDropdownComponent(SelectOne.Props(ar.selected.map(_.id), choices, Some(ar.onSelect)))

@@ -11,7 +11,7 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Refreshable, Util}
+import shipreq.base.util.{NonEmptyVector, Refreshable, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
@@ -230,23 +230,26 @@ private[fields] object MainTable {
       def apply() = {
         val s = $.state
 
-        var choices = Vector.empty[Choice[NewSelType]]
+        def choice(value: NewSelType, label: String): Choice[NewSelType] =
+          Choice(value, label, disabled = false)
 
-        def addChoice(value: NewSelType, label: String): Unit =
-          choices :+= Choice(
-            value    = value,
-            label    = label,
-            disabled = false)
+        def customFieldChoice(t: CustomFieldType) =
+          choice(\/-(t), t.name)
+
+        var choices = NonEmptyVector one customFieldChoice(CustomFieldType.Text)
+
+        @inline def add(choice: Choice[NewSelType]): Unit =
+          choices :+= choice
 
         // Add static fields
         val missingStaticFields: Set[StaticField] =
           (StaticField.values.toSet /: fieldOrder)((q, i) => i.foldId(q - _, _ => q))
-        missingStaticFields.foreach(f =>
-          addChoice(-\/(f), f.name))
+        for (f <- missingStaticFields)
+          add(choice(-\/(f), f.name))
 
         // Add custom field types
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
-          case CustomFieldType.Text        => true
+          case CustomFieldType.Text        => false // Already added as proof of non-emptyness
           case CustomFieldType.Tag         => project.tags.data.values.toStream
                                                 .filter(TagInTree.filterAlive)
                                                 .exists(t => !s.tagFieldTagIds.contains(t.id))
@@ -254,9 +257,8 @@ private[fields] object MainTable {
                                                 .filter(ReqType.filterAlive)
                                                 .exists(r => !s.implFieldReqTypeIds.contains(r.reqTypeId))
         }
-        CustomFieldType.values.foreach(t =>
-          if (allowNewCustomFieldType(t))
-            addChoice(\/-(t), t.name))
+        for (t <- CustomFieldType.values.whole if allowNewCustomFieldType(t))
+          add(customFieldChoice(t))
 
         def staticInvoke(f: StaticField): IO[Unit] =
           protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling

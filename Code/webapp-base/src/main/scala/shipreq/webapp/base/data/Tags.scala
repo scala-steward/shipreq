@@ -6,7 +6,7 @@ import monocle.macros.GenLens
 import scala.annotation.tailrec
 import scalaz.Isomorphism._
 import scalaz.syntax.equal._
-import shipreq.base.util.{Must, UnivEq, IMap}
+import shipreq.base.util.{NonEmptyVector, Must, UnivEq, IMap}
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.TypeclassDerivation._
@@ -71,7 +71,7 @@ object TagType {
 
   implicit val equality: UnivEq[TagType] = { import AutoDerive._; deriveUnivEq }
 
-  val values = List[TagType](Group, Applicable)
+  val values = NonEmptyVector[TagType](Group, Applicable)
 }
 
 object Tag {

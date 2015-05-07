@@ -5,9 +5,12 @@ import org.scalajs.dom.raw.HTMLSelectElement
 import scala.scalajs.js
 import scalaz.Equal
 import scalaz.effect.IO
-import shipreq.base.util.ParseInt
+import shipreq.base.util.{NonEmptyVector, ParseInt}
+import shipreq.base.util.ScalaExt._
 
 object SelectOne {
+
+  type Choices[A] = NonEmptyVector[Choice[A]]
 
   case class Choice[A](value   : A,
                        label   : String,
@@ -16,7 +19,7 @@ object SelectOne {
   }
 
   case class Props[A](selected: A,
-                      choices : Seq[Choice[A]], // TODO Should be NonEmptyVector
+                      choices : Choices[A],
                       select  : Option[A => IO[Unit]],
                       style   : TagMod = EmptyTag)
 
@@ -49,9 +52,9 @@ object SelectOne {
     def onChange: SyntheticEvent[HTMLSelectElement] => Option[IO[Unit]] =
       e => for {
         i  ← ParseInt unapply e.target.value
-        v  = props.choices(i).value
+        c  ← props.choices(i)
         io ← props.select
-      } yield io(v)
+      } yield io(c.value)
 
     <.select(
       props.style,
@@ -63,9 +66,9 @@ object SelectOne {
 
   // ===================================================================================================================
 
-  def optional[A](choices  : Seq[Choice[A]],
-                  nopLabel : String = ""): Seq[Choice[Option[A]]] = {
+  def optional[A](choices: Vector[Choice[A]], nopLabel: String = ""): Choices[Option[A]] = {
     val nop = Choice[Option[A]](None, nopLabel, false)
-    choices.foldLeft(Vector(nop))(_ :+ _.map[Option[A]](Some.apply))
+    val tail = choices.map(_.map(_.some))
+    NonEmptyVector(nop, tail)
   }
 }

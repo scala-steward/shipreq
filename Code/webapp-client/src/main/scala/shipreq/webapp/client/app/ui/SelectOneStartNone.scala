@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui
 
 import scalaz.Equal
 import scalaz.std.option._
+import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.client.lib.ui._
 import SelectOne.{Props, Choice}
 
@@ -10,6 +11,9 @@ import SelectOne.{Props, Choice}
  * Once a choice is selected however, the user can not change it back to empty.
  */
 class SelectOneStartNone[A: Equal](options: Vector[Choice[A]]) {
+
+  private[this] val optionsN =
+    NonEmptyVector.option(options)
 
   private[this] val optionsO =
     SelectOne.optional(options)
@@ -24,9 +28,9 @@ class SelectOneStartNone[A: Equal](options: Vector[Choice[A]]) {
 
       // Once a tag is selected, the blank option (None: Option[TagId]) is removed
 
-      selected match {
-        case Some(s) => ComponentA(Props(s,    options,  onSelect.map(f => s => f(Some(s)))))
-        case None    => ComponentO(Props(None, optionsO, onSelect))
+      (selected, optionsN) match {
+        case (Some(s), Some(o)) => ComponentA(Props(s,    o,        onSelect.map(f => s => f(Some(s)))))
+        case _                  => ComponentO(Props(None, optionsO, onSelect))
       }
     }
 }

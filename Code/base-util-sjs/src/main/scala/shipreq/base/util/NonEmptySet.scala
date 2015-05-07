@@ -24,6 +24,9 @@ final class NonEmptySet[A] private[util] (val head: A, val tail: Set[A]) {
   def whole: Set[A] =
     tail + head
 
+  def contains(a: A): Boolean =
+    (head == a) || (tail contains a)
+
   def map[B: UnivEq](f: A => B): NonEmptySet[B] =
     NonEmptySet(f(head), tail map f)
 

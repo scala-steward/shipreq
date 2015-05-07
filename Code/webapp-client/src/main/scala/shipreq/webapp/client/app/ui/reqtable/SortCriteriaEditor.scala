@@ -7,7 +7,7 @@ import scalaz.{Equal, \/, -\/, \/-}
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{UnivEq, Util}
+import shipreq.base.util.{NonEmptyVector, NonEmptySet, UnivEq, Util}
 import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.Style.reqtable.{sortingSettings => *}
@@ -16,7 +16,7 @@ import shipreq.webapp.client.util.DND
 object SortCriteriaEditor {
 
   case class Props(value          : SortCriteria,
-                   sortableColumns: Set[Column],
+                   sortableColumns: NonEmptySet[Column],
                    columnName     : Column.NameResolver,
                    change         : SortCriteria => IO[Unit]) {
     @inline def component = Component(this)
@@ -54,19 +54,24 @@ object SortCriteriaEditor {
         })
 
       // Inactive criteria
-      Util.filterOutAndSortByName(p.sortableColumns)(activeCols.contains, p.columnName.fn).foreach {
+      Util.filterOutAndSortByName(p.sortableColumns.whole)(activeCols.contains, p.columnName.fn).foreach {
         case c: Column.SortInconclusive => lis :+= li(-\/(c))
         case c: Column.SortConclusive   => conclusiveCols += c
       }
+
+      // Too hard (and invasive, and awkward) to prove non-emptyness
+      // Would first need to prove ViewSettings always contain a Conclusive column, like:
+      // -- class VisibleColumns(a: Vector[Column], b: Column.SortConclusive, c: Vector[Column])
+      val conclusiveColsN = NonEmptySet(conclusiveCols.head, conclusiveCols.tail)
 
       <.div(^.cls := "sortCriteriaEd",
         <.ol(lis),
         <.div(
           "And finally",
-          conclusive.ctrls(p.value.last, conclusiveCols, p.columnName, modIO(identity, _))))
+          conclusive.ctrls(p.value.last, conclusiveColsN, p.columnName, modIO(identity, _))))
     }
 
-    import SelectOne.Choice
+    import SelectOne.{Choice, Choices}
 
     // =================================================================================================================
     object inconclusive {
@@ -76,11 +81,11 @@ object SortCriteriaEditor {
       type ModIO = EndoFn[Vector[SortCriterion.Inconclusive]] => IO[Unit]
 
       private val choicesForColumn =
-        memo[Col, Vector[Choice[OSM]]]{c =>
+        memo[Col, Choices[OSM]]{c =>
           val choice  = (sc: SC) => Choice[OSM](\/-(sc), sc.method.optionLabel, false)
           val choices = SortCriterion.possibilitiesI(c) map choice
           val unused  = Choice[OSM](-\/(c), "Unused", false) // English
-          unused +: choices.whole
+          unused +: choices
         }
 
       private val smSelectComponent = SelectOne.Component[OSM]
@@ -143,8 +148,8 @@ object SortCriteriaEditor {
       type SC    = SortCriterion.Conclusive
       type ModIO = EndoFn[SC] => IO[Unit]
 
-      private val smChoices: Vector[Choice[SM]] =
-        SortMethod.ignoreBlanks.whole.map(m =>
+      private val smChoices: Choices[SM] =
+        SortMethod.ignoreBlanks.map(m =>
           Choice[SM](m, m.optionLabel, false))
 
       private val smSelectComponent = SelectOne.Component[SM]
@@ -156,15 +161,15 @@ object SortCriteriaEditor {
 
       private val colSelectComponent = SelectOne.Component[Col]
 
-      def columnDropdown(value: Col, cols: Set[Col], columnName: Column.NameResolver, modIO: ModIO): ReactElement = {
+      def columnDropdown(value: Col, cols: NonEmptySet[Col], columnName: Column.NameResolver, modIO: ModIO): ReactElement = {
         val colChoices =
-          cols.foldLeft(Vector.empty[Choice[Col]])((q, c) => q :+ Choice(c, columnName(c), false))
+          cols.toNonEmptyVector.map(c => Choice(c, columnName(c), false))
             .sortBy(_.label)
         val onSelect = Some((v: Col) => modIO(_.copy(column = v)))
         colSelectComponent(SelectOne.Props(value, colChoices, onSelect, *.conclusiveField))
       }
 
-      def ctrls(value: SC, cols: Set[Col], columnName: Column.NameResolver, modIO: ModIO) =
+      def ctrls(value: SC, cols: NonEmptySet[Col], columnName: Column.NameResolver, modIO: ModIO) =
         <.div(
           conclusive.sortMethodDropdown(value.method, modIO),
           conclusive.columnDropdown(value.column, cols, columnName, modIO))
