@@ -132,15 +132,11 @@ private[protocol] object CodecBase {
   def strkeyW2[A, B](k: String, a: A, b: B)(implicit A: Writer[A], B: Writer[B]) =
     Js.Arr(Js.Str(k), A write a, B write b)
 
-  // TODO Wait, writing keys in iMap is a waste. k ∈ v
+  def iMap[K: UnivEq, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
+    xmap((_: IMap[K, V]).values)(IMap.empty(key) ++ _)
 
-  def iMap[K: UnivEq : Reader : Writer, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
-    xmap((_: IMap[K, V]).underlyingMap)(m => IMap.empty(key).replaceUnderlying(m))
-
-  def iMapK[T, K[+ _ <: T], V[+ _ <: T]](rel: RelationProof[T, V, K])
-                                        (implicit rm: Reader[Map[K[T], V[T]]], wm: Writer[Map[K[T], V[T]]],
-                                         ue: UnivEq[K[T]]): ReadWriter[IMapK[T, K, V]] =
-    xmap((_: IMapK[T, K, V]).underlyingMap)(m => rel.emptyIMapK.replaceUnderlying(m))
+  def iMapK[T, K[+ _ <: T], V[+ _ <: T]](rel: RelationProof[T, V, K])(implicit rv: Reader[V[T]], wv: Writer[V[T]], ue: UnivEq[K[T]]): ReadWriter[IMapK[T, K, V]] =
+    xmap((_: IMapK[T, K, V]).values)(rel.emptyIMapK ++ _)
 
   @inline def mergeRW[A](implicit r: Reader[A], w: Writer[A]): ReadWriter[A] =
     ReadWriter[A](w.write, r.read)
