@@ -5,7 +5,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
-import scala.scalajs.js
+import scala.scalajs.js, js.{UndefOr, undefined}
 import scalaz.effect.IO
 import scalaz.std.anyVal.intInstance
 import scalaz.syntax.equal._
@@ -192,20 +192,37 @@ object Table {
 
   val RowComponent =
     ReactComponentB[RowProps]("Row")
-      .render(p =>
-        <.tr(
-          p.crs.toStream.map { cr =>
-            val col = cr.column
-            <.td(
-              *.cell(p.focus.exists(_ ≟ col)),
-              ^.onClick ~~> p.setFocus(col),
-              cr.columnStyle,
-              renderCell(p.row, cr, p.cells))
-          }
-        )
-      )
+      .render(renderRow(_))
       .configure(Reusable.preventUpdates)
       .build
+
+  /**
+   * When a button in the cell is clicked, we still get the event here in which case, the focus is set after the
+   * button callback runs, meaning that (because separate modState()s don't compose) we trample the state change made by
+   * the button, and replace it with a focus update.
+   *
+   * Rather than force all cell children to stop propagation of events, we apply so logic here to filter the events to
+   * which we react.
+   */
+  def onCellClick(setFocus: => IO[Unit]): ReactMouseEventH => UndefOr[IO[Unit]] = e =>
+    if (e.target == e.currentTarget || clickToFocusTargets.contains(e.target.tagName.toLowerCase))
+      setFocus
+    else
+      undefined
+
+  private val clickToFocusTargets =
+    Set("span", "div", "label", "pre", "code", "p")
+
+  def renderRow(p: RowProps) =
+    <.tr(
+      p.crs.toStream.map { cr =>
+        val col = cr.column
+        <.td(
+          *.cell(p.focus.exists(_ ≟ col)),
+          ^.onClick ~~>? onCellClick(p setFocus col),
+          cr.columnStyle,
+          renderCell(p.row, cr, p.cells))
+      })
 
   @inline def renderCell(row: Row, cr: ColumnRenderer, cells: Cell.RowState) = {
     def readOnly: ReactElement =
