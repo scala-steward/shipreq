@@ -1,0 +1,101 @@
+package shipreq.base.util
+
+import scala.annotation.elidable
+import scala.collection.GenTraversableOnce
+import scala.collection.generic.Subtractable
+import scalaz.{Order, Equal, Foldable}
+import scalaz.std.iterable._
+import scalaz.std.map._
+import scalaz.syntax.foldable._
+
+object IMapBaseV {
+  def equality[K: Order, V: Equal, M <: IMapBaseV[K, _, V, M]]: Equal[M] =
+    Equal.equalBy(_.underlyingMap)
+}
+
+abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]] private[util] (m: Map[K, VO]) extends Subtractable[K, This_] {
+  final type This = This_
+
+  override final def hashCode = m.##
+  override final def equals(o: Any) = o match {
+    case n: IMapBaseV[_, _, _, _] => m equals n.underlyingMap
+    case n: Map[_, _]             => m equals n
+    case _                        => false
+  }
+
+  override final def toString = {
+    val s = m.toString
+    if (s startsWith m.stringPrefix)
+      stringPrefix + s.drop(m.stringPrefix.length)
+    else
+      s"$stringPrefix($s)"
+  }
+
+  protected def stringPrefix: String
+  protected def setmap(n: Map[K, VO]): This
+  protected def _gkey(v: VI): K
+  protected def _values(v: VO): GenTraversableOnce[VI]
+  protected def _add(to: Map[K, VO], k: K, v: VI): Map[K, VO]
+
+  final protected def __add(to: Map[K, VO], v: VI): Map[K, VO] = _add(to, _gkey(v), v)
+
+  @inline final def underlyingMap = m
+  @inline final def keys          = m.keys
+  @inline final def values        = m.values
+  @inline final def keySet        = m.keySet
+  @inline final def size          = m.size
+
+  @inline final def mapValues[A](f: VO => A): Map[K, A] = m.mapValues(f)
+
+  override final def -(k: K) =
+    setmap(m - k)
+
+  @inline final def +(v: VI) = add(v)
+
+  final def add(v: VI) =
+    setmap(__add(m, v))
+
+  final def addAll(vs: VI*) =
+    addAllF(vs)
+
+  final def addAllF[F[_]: Foldable](vs: F[VI]) =
+    setmap(vs.foldLeft(m)(__add))
+
+  final def ++(vs: GenTraversableOnce[VI]) =
+    setmap(vs.foldLeft(m)(__add))
+
+  final def vstream[A](f: VO => A): Stream[A] =
+    values.toStream.map(f)
+
+  final def vstreamf[A](f: VO => Stream[A]): Stream[A] =
+    values.toStream.flatMap(f)
+
+  @elidable(elidable.ASSERTION)
+  final def assertValidKeys(m: Map[K, VO]): Unit =
+    for {
+      (k1, vo) <- m
+      v        <- _values(vo)
+    } assert(_gkey(v) == k1, s"Expected key for [$v] is [${_gkey(v)}] but [$k1] was found.")
+
+  final def replaceUnderlying(n: Map[K, VO]): This = {
+    assertValidKeys(n)
+    setmap(n)
+  }
+
+  final def mapUnderlying(f: Map[K, VO] => Map[K, VO]): This =
+    replaceUnderlying(f(m))
+
+}
+
+abstract class IMapBase[K: UnivEq, V, This_ <: IMapBase[K, V, This_]] private[util] (m: Map[K, V]) extends IMapBaseV[K, V, V, This_](m) {
+  final override protected def _values(v: V) = v :: Nil
+  final override protected def _add(to: Map[K, V], k: K, v: V) = to.updated(k, v)
+
+  final def filter (f: (K, V) => Boolean): This = mapUnderlying(_ filter f.tupled)
+  final def filterK(f: K      => Boolean): This = mapUnderlying(_ filterKeys f)
+  final def filterV(f: V      => Boolean): This = mapUnderlying(_.filter(kv => f(kv._2)))
+
+  final def filterNot (f: (K, V) => Boolean): This = mapUnderlying(_ filterNot f.tupled)
+  final def filterNotK(f: K      => Boolean): This = mapUnderlying(_.filterNot(kv => f(kv._1)))
+  final def filterNotV(f: V      => Boolean): This = mapUnderlying(_.filterNot(kv => f(kv._2)))
+}
