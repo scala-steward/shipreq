@@ -5,6 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.webapp.base.UiText
 import shipreq.base.util.{NonEmptyVector, Must, UnivEq}
+import shipreq.base.util.SafeStringOps._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G, _}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -20,6 +21,8 @@ object ProjectWidgets {
 // TODO Maybe make project & plainText vals to reduce shit being passed around
 final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
   type Widget = ReactComponentC.ConstProps[Unit, Unit, Unit, TopNode]
+
+  private implicit def surroundDisplay(s: G.Surrounds) = s.display
 
   private def memo[A: UnivEq](n: String, f: A => ReactTag): A => Widget =
     UnivEq.mutableHashMapMemo((a: A) => ReactComponentB.static(n, f(a)).buildU)
@@ -38,16 +41,18 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     project.customIssueType(id).map(i =>
       <.span(
         *.issue,
-        s"#${i.key.value}") // TODO use grammar
+        G.hashRefKey.prefix ~ i.key.value)
     ))
 
+  private val issueDescSurroundPrefix = G.issueDescSurround.prefix.trim
+  private val issueDescSurroundSuffix = G.issueDescSurround.suffix.trim
   def issue1(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText): ReactElement =
     UI.must(project.customIssueType(id))(i =>
       <.span(
         *.issue,
-        s"#${i.key.value}{",
+        G.hashRefKey.prefix ~ i.key.value ~ issueDescSurroundPrefix,
         format1(desc)(*.issueDesc),
-        "}") // TODO use grammar
+        issueDescSurroundSuffix)
     )
 
   val pubidText = memoM[Pubid]("ID", pubid =>
@@ -66,7 +71,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   val reqRef: Boolean => ReqId => Widget = {
     val wo = memoM[ReqId]("Req", _reqRef(identity))
-    val w  = memoM[ReqId]("Req", _reqRef(G.reflinkSurround.display.apply))
+    val w  = memoM[ReqId]("Req", _reqRef(G.reflinkSurround))
     (surround: Boolean) => if (surround) w else wo
   }
 
@@ -96,7 +101,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     project.reqType(id).map(rt =>
       <.span(
         ^.title := rt.name,
-        s"${rt.mnemonic.value}")
+        rt.mnemonic.value)
     ))
 
   val tag = memoM[ApplicableTagId]("Tag", id =>
@@ -126,7 +131,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       case a: NewLine         # BlankLine     => <.div(*.blankLine)
       case a: TagRef          # TagRef        => tag(a.value)()
       case a: PlainTextMarkup # WebAddress    => <.a(^.href := a.value, a.value)
-      case a: PlainTextMarkup # EmailAddress  => <.a(^.href := s"mailto:${a.value}", a.value)
+      case a: PlainTextMarkup # EmailAddress  => <.a(^.href := "mailto:" ~ a.value, a.value)
       case a: PlainTextMarkup # MathTeX       => katex(a)
       case a: ListMarkup      # UnorderedList => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
       case a: ReqRef          # ReqRef        => reqRefS(a.value)()
@@ -144,7 +149,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     val indentation = NonEmptyVector.option(item.indent)
     var code = PlainText.reqCode(item.suffix)
     if (indentation.isDefined)
-      code = G.reqCode.nodeSeparator + code
+      code = G.reqCode.nodeSeparator ~ code
     <.div(
       indentation map reqCodeTreeIdentation,
       <.pre(*.reqCodeTreeCode, code))

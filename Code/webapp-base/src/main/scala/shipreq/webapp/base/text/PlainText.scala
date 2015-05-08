@@ -2,6 +2,7 @@ package shipreq.webapp.base.text
 
 import scala.annotation.tailrec
 import shipreq.base.util.{NonEmptyVector, Must}
+import shipreq.base.util.SafeStringOps._
 import shipreq.webapp.base.UiText.Unmust
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
@@ -14,11 +15,6 @@ import Atom.AnyAtom
 object PlainText {
 
   // ScalaJS StringBuilder just uses String concatenation so fuck it.
-
-  private implicit class StringOps(val _s: String) extends AnyVal {
-    @inline def ~(b: String): String = _s + b
-    @inline def ~(b: Char)  : String = _s + b
-  }
 
   private implicit def surroundDisplay(s: Grammar.Surrounds) = s.display
 
@@ -55,7 +51,7 @@ object PlainText {
     p.reqType(pid.reqTypeId).map(pubid(_, pid.pos))
 
   def pubid(reqType: ReqType, pos: ReqTypePos): String =
-    reqType.mnemonic.value ~ "-" ~ pos.value.toString
+    reqType.mnemonic.value ~ "-" ~ pos.value
 
   // -------------------------------------------------------------------------------------------------------------------
 
