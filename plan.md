@@ -1,3 +1,38 @@
+Next Steps
+==========
+
+Refs in ReqTitles
+
+Rules – ReqTypes / field
+
+ReqCode Refs – parse
+ReqCode Refs – display
+ReqCode Refs – auto-complete
+
+Show deleted – toggle
+Show deleted – filter
+Show deleted – effect on displayed refs
+Show deleted – effect on auto complete
+Show deleted – effect on validation
+
+Table – no rows
+Table – status bar
+
+Issues – Highlight empty cells
+Issues – Highlight imp required
+Issues – Tag enum violations
+
+#### Then…
+
+Filters
+New row
+Cfg hard/soft deletion
+Real project storage
+Project data mod protocol
+Detail view (modal?)
+
+================================================================================
+
 Phase 2
 =======
 
