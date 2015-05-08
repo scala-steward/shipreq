@@ -41,10 +41,10 @@ final class IMapK[T, K[+_ <: T], V[+_ <: T]] private (rel: RelationProof[T, V, K
   type GK = K[T]
   type GV = V[T]
 
-  override protected def stringPrefix           = "IMapK"
-  override protected def repr                   = this
-  override protected def setmap(n: Map[GK, GV]) = new IMapK[T, K, V](rel, n)
-  override protected def _gkey(v: GV)           = rel(v)
+  override protected def stringPrefix = "IMapK"
+  override protected def repr         = this
+  override protected def setmap(n: M) = new IMapK[T, K, V](rel, n)
+  override protected def _gkey(v: GV) = rel(v)
 
   def get[A <: T](k: K[A]): Option[V[A]] =
     rel.forceCastK(m get k)
@@ -71,12 +71,12 @@ final class ISetMapK[T, K[+ _ <: T], V[+ _ <: T]] private[util](rel: RelationPro
   type GV = V[T]
   type VS = Set[GV]
 
-  override protected def stringPrefix                        = "ISetMapK"
-  override protected def repr                                = this
-  override protected def setmap(n: Map[GK, VS])              = new ISetMapK[T, K, V](rel, n)
-  override protected def _gkey(v: GV)                        = rel(v)
-  override protected def _values(vs: VS)                     = vs
-  override protected def _add(to: Map[GK, VS], k: GK, v: GV) = to.updated(k, apply(k) + v)
+  override protected def stringPrefix              = "ISetMapK"
+  override protected def repr                      = this
+  override protected def setmap(n: M)              = new ISetMapK[T, K, V](rel, n)
+  override protected def _gkey(v: GV)              = rel(v)
+  override protected def _values(vs: VS)           = vs
+  override protected def _add(to: M, k: GK, v: GV) = to.updated(k, apply(k) + v)
 
   def apply[A <: T](k: K[A]): Set[V[A]] =
     rel.forceCastK(m.getOrElse(k, Set.empty[GV]))
@@ -100,12 +100,12 @@ final class IMultimapK[T, K[+ _ <: T], L[+_], V[+ _ <: T]] private[util](rel: Re
   type GV = V[T]
   type VS = L[GV]
 
-  override protected def stringPrefix                        = "IMultimapK"
-  override protected def repr                                = this
-  override protected def setmap(n: Map[GK, VS])              = new IMultimapK[T, K, L, V](rel, n)
-  override protected def _gkey(v: GV)                        = rel(v)
-  override protected def _values(vs: VS)                     = L.stream(vs)
-  override protected def _add(to: Map[GK, VS], k: GK, v: GV) = to.updated(k, L.add1(_apply(k), v))
+  override protected def stringPrefix              = "IMultimapK"
+  override protected def repr                      = this
+  override protected def setmap(n: M)              = new IMultimapK[T, K, L, V](rel, n)
+  override protected def _gkey(v: GV)              = rel(v)
+  override protected def _values(vs: VS)           = L.stream(vs)
+  override protected def _add(to: M, k: GK, v: GV) = to.updated(k, L.add1(_apply(k), v))
 
   private def _apply(k: GK): VS =
     m.getOrElse(k, L.empty[GV])

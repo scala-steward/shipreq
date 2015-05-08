@@ -15,6 +15,7 @@ object IMapBaseV {
 
 abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]] private[util] (m: Map[K, VO]) extends Subtractable[K, This_] {
   final type This = This_
+  final type M = Map[K, VO]
 
   override final def hashCode = m.##
   override final def equals(o: Any) = o match {
@@ -32,12 +33,12 @@ abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]
   }
 
   protected def stringPrefix: String
-  protected def setmap(n: Map[K, VO]): This
+  protected def setmap(n: M): This
   protected def _gkey(v: VI): K
   protected def _values(v: VO): GenTraversableOnce[VI]
-  protected def _add(to: Map[K, VO], k: K, v: VI): Map[K, VO]
+  protected def _add(to: M, k: K, v: VI): M
 
-  final protected def __add(to: Map[K, VO], v: VI): Map[K, VO] = _add(to, _gkey(v), v)
+  final protected def __add(to: M, v: VI): M = _add(to, _gkey(v), v)
 
   @inline final def underlyingMap = m
   @inline final def keys          = m.keys
@@ -71,18 +72,18 @@ abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]
     values.toStream.flatMap(f)
 
   @elidable(elidable.ASSERTION)
-  final def assertValidKeys(m: Map[K, VO]): Unit =
+  final def assertValidKeys(m: M): Unit =
     for {
       (k1, vo) <- m
       v        <- _values(vo)
     } assert(_gkey(v) == k1, s"Expected key for [$v] is [${_gkey(v)}] but [$k1] was found.")
 
-  final def replaceUnderlying(n: Map[K, VO]): This = {
+  final def replaceUnderlying(n: M): This = {
     assertValidKeys(n)
     setmap(n)
   }
 
-  final def mapUnderlying(f: Map[K, VO] => Map[K, VO]): This =
+  final def mapUnderlying(f: M => M): This =
     replaceUnderlying(f(m))
 
 }
