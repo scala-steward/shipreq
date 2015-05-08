@@ -4,6 +4,7 @@ import japgolly.nyaya.util._
 import japgolly.nyaya.test.{Distinct, Gen, GenS}
 import monocle.Lens
 import monocle.function.{first, second, third}
+import monocle.std.{some => atSome}
 import monocle.std.tuple2._
 import monocle.std.tuple3._
 import scala.annotation.tailrec
@@ -38,6 +39,9 @@ object RandomData {
   implicit class CustomGenExt[A](val g: Gen[A]) extends AnyVal {
     def nev: GenS[NonEmptyVector[A]] = for {t <- g.vector; h <- g} yield NonEmptyVector(h, t)
   }
+
+  def genmodL[A, B](l: Lens[A, B])(g: B => Gen[B])(a: A): Gen[A] =
+    g(l get a) map (l.set(_)(a))
 
 //    val trimLeftR = "^\\s+".r
 //    def trimLeft(s: String) = trimLeftR.replaceAllIn(s, "")
@@ -121,7 +125,10 @@ object RandomData {
   lazy val rev =
     Gen.positivelong.map(Rev)
 
-  def revAnd[D](r: Gen[D]): Gen[RevAnd[D]] =
+  def revAnd[D](d: D): Gen[RevAnd[D]] =
+    rev.map(RevAnd(_, d))
+
+  def revAndG[D](r: Gen[D]): Gen[RevAnd[D]] =
     Gen.apply2(RevAnd[D])(rev, r)
 
   lazy val revPair =
@@ -135,7 +142,7 @@ object RandomData {
     val d = distinctId[D, I].lift[List]
     val f = mod compose d.run
     val g = f andThen (i.emptyIMap ++ _)
-    revAnd(r.list map g)
+    revAndG(r.list map g)
   }
 
   def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
@@ -661,26 +668,23 @@ object RandomData {
     Gen.oneofG(genericReqId)
   }
 
-  def pubidS(reqTypeIds: NonEmptyVector[CustomReqTypeId])(reqId: ReqIdC): StateG[PubidRegister, PubidC] =
+  def sAllocPubidC(reqTypeIds: NonEmptyVector[CustomReqTypeId])(reqId: ReqIdC): StateG[PubidRegister, PubidC] =
     StateT(register =>
       oneofV(reqTypeIds).map(reqTypeId =>
         register.allocC(reqTypeId)(reqId)))
 
-  def genericReqIdS(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, ReqIdC] =
+  def sGenericReqId(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, ReqIdC] =
     for {
       id <- genericReqId |> gliftS[PubidRegister, GenericReqId]
       _  <- pubidS(id)
     } yield id
 
-  def genericReqS(pubidS: ReqIdC => StateG[PubidRegister, PubidC],
-//                  genReqId: Option[Gen[ReqId]],
-                  genIssueType: Option[Gen[CustomIssueTypeId]]): StateG[PubidRegister, GenericReq] =
+  def sGenericReq(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, GenericReq] =
     for {
-      id     <- genericReqId |> gliftS[PubidRegister, GenericReqId]
-      pubid  <- pubidS(id)
-      reqIds <- stateGen((r: PubidRegister) => Gen insert r.value.allValues)
-      desc   <- TextGen.genericReqTitleAtom(Gen.oneofO(reqIds), genIssueType).text
-      live   <- alive
+      id     ← genericReqId |> gliftS[PubidRegister, GenericReqId]
+      pubid  ← pubidS(id)
+      desc   = Vector.empty
+      live   ← alive
     } yield GenericReq(id, pubid, desc, live)
 
   def pubidRegisterAnd[A, B](inita: A, genb: StateG[PubidRegister, B])
@@ -698,17 +702,23 @@ object RandomData {
   }
 
   def pubidRegisterAndIds(customReqTypeIds: NonEmptyVector[CustomReqTypeId]): GenS[(PubidRegister, Set[ReqIdC])] =
-    pubidRegisterAnd(Set.empty[ReqIdC], genericReqIdS(pubidS(customReqTypeIds)))(_ + _)
+    pubidRegisterAnd(Set.empty[ReqIdC], sGenericReqId(sAllocPubidC(customReqTypeIds)))(_ + _)
 
-  def requirements(customReqTypeIds: Vector[CustomReqTypeId],
-                   genIssueType: Option[Gen[CustomIssueTypeId]]): GenS[Requirements] =
-  NonEmptyVector.maybe(customReqTypeIds,
-    GenS(_ => Gen insert Requirements.empty))( // ← This will change when UseCases are added
-    customReqTypeIdNev =>
-      pubidRegisterAnd(Requirements.emptyData, genericReqS(pubidS(customReqTypeIdNev), genIssueType))(_ + _)
-        .map { case (pr, reqs) => Requirements(reqs, pr) }
-    )
+  def requirements(customReqTypeIds: Vector[CustomReqTypeId]): GenS[Requirements] =
+    NonEmptyVector.maybe(customReqTypeIds,
+      GenS(_ => Gen insert Requirements.empty))( // ← This will change when UseCases are added
+      customReqTypeIdNev =>
+        pubidRegisterAnd(Requirements.emptyData, sGenericReq(sAllocPubidC(customReqTypeIdNev)))(_ + _)
+          .map { case (pr, reqs) => Requirements(reqs, pr) }
+      )
 
+  def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: Requirements.Data): Gen[Requirements.Data] = {
+    val streamOfGens = data.vstream {
+        case v: GenericReq => gt.map(t => v.copy(title = t))
+      }
+    val genStream = Gen.sequence(streamOfGens)
+    genStream.map(Requirements.emptyData ++ _)
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Req Data
@@ -807,9 +817,8 @@ object RandomData {
     }
 
     val distinctFlatInstances = {
-      import monocle.std.some
       val flatData = second[FlatInstance, Data]
-      val dataActive = flatData ^|-? (Data.active ^<-? some)
+      val dataActive = flatData ^|-? (Data.active ^<-? atSome)
 
       val ids1 = distinctIds at ActiveData.id at dataActive
       val ids2 = distinctIds.lift[Set] at Data.refsToGroup at flatData
@@ -853,7 +862,7 @@ object RandomData {
       } yield
         if (x == 0)
           target match {
-            case t: ReqId       => Data(None, refsToGroup, refsToReqs.add(t, i))
+            case t: ReqId        => Data(None, refsToGroup, refsToReqs.add(t, i))
             case _: ReqCodeGroup => Data(None, refsToGroup + i , refsToReqs)
           }
         else
@@ -863,17 +872,35 @@ object RandomData {
     def flatInstance(gData: Gen[Data]): Gen[FlatInstance] =
       Gen.tuple2(value, gData)
 
-    def trie(r: Option[Gen[ReqId]], i: Option[Gen[CustomIssueTypeId]]): GenS[Trie] =
-      trie(r, TextGen.reqCodeGroupTitleAtom(r, i).text map ReqCodeGroup.apply)
-
     def trie(ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
       flatInstance(data(ogReqId, gGroup)).vector
         .map(distinctFlatInstances.run)
         .map(_.foldLeft(emptyTrie) { case (q, (c, d)) => q.put(c, d) })
+
+    val emptyReqCodeGroup = ReqCodeGroup(Vector.empty)
+    val gEmptyReqCodeGroup = Gen insert emptyReqCodeGroup
+
+    val activeGroup = Data.active ^<-? atSome ^|-> ActiveData.target ^<-? Target.reqCodeGroup
+
+    def updateGroupText(gt: Gen[Text.ReqCodeGroupTitle.OptionalText])(src: Trie): Gen[Trie] = {
+      type F = EndoFn[Trie]
+      type G = Gen[F]
+//      val vecOfGens = src.cataV(Vector.empty[G])((q, p, d) =>
+//        d.active.fold(q)(a => a.target match {
+//          case _: GenericReqId => q
+//          case _: ReqCodeGroup => q :+ gt.map[F](t => _.put(p, d.copy(active = Some(a.copy(target = ReqCodeGroup(t))))))
+//        }
+//      ))
+      val vecOfGens = src.cataV(Vector.empty[G])((q, p, d) =>
+        activeGroup.getOption(d).fold(q)(_ =>
+          q :+ gt.map[F](t => _.put(p, activeGroup.set(ReqCodeGroup(t))(d)))))
+      val genVec = Gen.sequence(vecOfGens)
+      genVec.map(_.foldLeft(src)((q, f) => f(q)))
+    }
   }
 
-  def revAndReqCodes(g: Gen[ReqCode.Trie]) =
-    revAnd(g map ReqCodes.apply)
+  def reqCodes(g: Gen[ReqCode.Trie]) =
+    g map ReqCodes.apply
 
   // -------------------------------------------------------------------------------------------------------------------
   // Project
@@ -906,15 +933,19 @@ object RandomData {
       reqTypeIdsC    = reqtypes.data.keys.toVector
       reqTypeIds     = StaticReqType.values ++ reqTypeIdsC
       reqTypeIdSet   = reqTypeIds.toSet
-      fields         ← revAnd(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
-      reqs           ← revAnd(requirements(reqTypeIdsC, cissueIdG))
-      reqIds         = reqs.data.reqs.keys
+      fields         ← revAndG(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
+      reqs1          ← requirements(reqTypeIdsC)
+      reqIds         = reqs1.reqs.keys
+      reqIdSet       = reqIds.toSet
       reqIdG         = Gen oneofO reqIds.toSeq
-      reqCodes       ← revAndReqCodes(reqCode.trie(reqIdG, cissueIdG).lim(20 `JVM|JS` 6))
+      reqCodes1      ← reqCodes(reqCode.trie(reqIdG, reqCode.gEmptyReqCodeGroup).lim(18 `JVM|JS` 6))
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
-      reqIds         = reqs.data.reqs.keySet
-      reqFieldData   ← revAnd(reqFieldData(reqIds, textColIds, cissueIds, atagIds))
+      reqFieldData   ← revAndG(reqFieldData(reqIdSet, textColIds, cissueIds, atagIds))
+      reqs2          ← genmodL(Requirements.reqs)(updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, cissueIdG).text))(reqs1)
+      reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, cissueIdG).text)(reqCodes1.trie)
+      reqs           ← revAnd(reqs2)
+      reqCodes       ← revAnd(ReqCodes(reqCodes2))
     } yield Project(issues, reqtypes, fields, tags, reqs, reqCodes, reqFieldData)
 
   // ===================================================================================================================

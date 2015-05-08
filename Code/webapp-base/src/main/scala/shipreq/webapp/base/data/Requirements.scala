@@ -3,6 +3,7 @@ package shipreq.webapp.base.data
 import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenses
+import monocle.Prism
 import scalaz.Order
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
@@ -77,20 +78,25 @@ object ReqCode {
    */
   sealed trait Target
 
-  implicit object TargetGeneric extends Generic[Target] {
-    override type Repr = ReqId :+: ReqCodeGroup :+: CNil
-    override def to  (t: Target): Repr = t match {
-      case a: ReqId        => Coproduct[Repr](a)
-      case a: ReqCodeGroup => Coproduct[Repr](a)
+  object Target {
+    implicit object GenericInstance extends Generic[Target] {
+      override type Repr = ReqId :+: ReqCodeGroup :+: CNil
+      override def to  (t: Target): Repr = t match {
+        case a: ReqId        => Coproduct[Repr](a)
+        case a: ReqCodeGroup => Coproduct[Repr](a)
+      }
+      override def from(co: Repr): Target = co match {
+        case Inl(a)      => a
+        case Inr(Inl(a)) => a
+        case _ => ???
+      }
     }
-    override def from(co: Repr): Target = co match {
-      case Inl(a)      => a
-      case Inr(Inl(a)) => a
-      case _ => ???
-    }
-  }
 
-  implicit val targetEquality: UnivEq[Target] = deriveUnivEq
+    implicit def equality: UnivEq[Target] = deriveUnivEq
+
+    lazy val reqId        = Prism[Target, ReqId]       ({case a: ReqId        => Some(a); case _ => None})(t => t)
+    lazy val reqCodeGroup = Prism[Target, ReqCodeGroup]({case a: ReqCodeGroup => Some(a); case _ => None})(t => t)
+  }
 
   /**
    * Data associated with a ReqCode in the case that the ReqCode exists in the current user-visible tree of ReqCodes.
@@ -288,6 +294,7 @@ object Requirements {
   def empty = Requirements(emptyData, PubidRegister.empty)
 }
 
+@Lenses
 case class Requirements(reqs: Requirements.Data, pubids: PubidRegister) {
 
   def req[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
