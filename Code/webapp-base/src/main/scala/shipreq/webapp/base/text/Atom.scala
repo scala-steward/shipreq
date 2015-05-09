@@ -83,13 +83,6 @@ object Atom {
     case class ReqRef(value: ReqId) extends Atom
   }
 
-  // ReqCodes need IDs?
-  // TODO ↓ FR-152 needs much thought!
-  //    case class ValidReqCode(tgt: ReqCode.Target, pref: ReqCode) extends Atom
-  //    with ReqTitle
-
-  // UC Step     - pending UC data types
-
   /** An inline issue, like "#TBD" */
   trait Issue extends Base {
     case class Issue(typ: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText) extends Atom

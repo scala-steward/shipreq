@@ -18,7 +18,6 @@ object ProjectWidgets {
     new ProjectWidgets(project, plainText)
 }
 
-// TODO Maybe make project & plainText vals to reduce shit being passed around
 final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
   type Widget = ReactComponentC.ConstProps[Unit, Unit, Unit, TopNode]
 

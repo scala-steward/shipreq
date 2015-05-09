@@ -17,7 +17,6 @@ import shipreq.webapp.base.TypeclassDerivation._
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
 
-// TODO Why the hell aren't IDs AnyVals?
 final case class ReqCodeId(value: Long) extends TaggedLong
 
 /**
