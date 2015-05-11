@@ -168,10 +168,26 @@ object Parsers {
     override type T <: Atom.ReqRef
 
     import G.reflinkSurround.parsing.{prefix, suffix}
+    import ReqCode._
 
-    def reqRef: Rule1[t.ReqRef] = rule(
+    def pubidRef: Rule1[t.ReqRef] = rule(
       prefix ~ OWS ~ reqTypeMnemonic ~ OWS ~ ('-' ~ OWS).? ~ reqTypePos ~ OWS ~ suffix
         ~> lookupReq ~ popOptional[ReqId] ~> t.ReqRef)
+
+    def reqCodeNode: Rule1[Node] = rule(
+      capture(grammarStr(G.reqCode)(_.firstChar, _.allChars, _.nodeLength)) ~> Node.applyFn)
+
+    // Could be optimised to lookup each node as parsed and fail early
+    def codeRef: Rule1[t.CodeRef] = rule(
+      prefix ~ oneOrMore(OWS ~ reqCodeNode).separatedBy(OWS ~ G.reqCode.nodeSeparator) ~ OWS ~ suffix
+        ~> lookupCode ~ popOptional[ReqCodeId] ~> t.CodeRef)
+
+    val lookupCode: Seq[Node] => Option[ReqCodeId] = ss =>
+      NonEmptyVector.maybe(ss.toVector, None: Option[ReqCodeId])(code =>
+        project.reqCodes.data(code).flatMap(_.active.map(_.id)))
+
+    def reqRef: Rule1[t.Atom] =
+      rule(codeRef | pubidRef)
   }
 
   trait TagRef extends Base {

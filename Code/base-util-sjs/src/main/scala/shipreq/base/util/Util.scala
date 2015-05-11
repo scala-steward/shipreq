@@ -124,6 +124,29 @@ object Util {
       fix(after)
     else
       after
+
+  /**
+   * Space = Θ(mn)
+   * Time  = Θ(nᵐ)
+   */
+  def levenshtein(str1: String, str2: String): Int = {
+    val m = str1.length
+    val n = str2.length
+
+    val d: Array[Array[Int]] = Array.ofDim(m + 1, n + 1)
+    for (i <- 0 to m) d(i)(0) = i
+    for (j <- 0 to n) d(0)(j) = j
+
+    for (i <- 1 to m; j <- 1 to n) {
+      val cost = if (str1(i - 1) == str2(j - 1)) 0 else 1
+      val a = d(i-1)(j  ) + 1     // deletion
+      val b = d(i  )(j-1) + 1     // insertion
+      val c = d(i-1)(j-1) + cost  // substitution
+      d(i)(j) = a min b min c
+    }
+
+    d(m)(n)
+  }
 }
 
 object ParseLong {

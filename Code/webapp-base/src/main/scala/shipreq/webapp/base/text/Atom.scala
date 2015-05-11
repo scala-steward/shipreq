@@ -20,7 +20,7 @@ object Atom {
 
     val values = NonEmptyVector[Type](
       Literal, WebAddress, EmailAddress, MathTeX,
-      ReqRef, TagRef, Issue,
+      ReqRef, CodeRef, TagRef, Issue,
       BlankLine, UnorderedList)
 
     val of: AnyAtom => Type = {

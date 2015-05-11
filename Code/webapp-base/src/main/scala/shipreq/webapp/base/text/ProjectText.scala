@@ -1,6 +1,7 @@
 package shipreq.webapp.base.text
 
-import shipreq.base.util.{Must, UnivEq}
+import scalaz.syntax.equal._
+import shipreq.base.util.{Util, NonEmptySet, Must, UnivEq}
 import shipreq.webapp.base.data._
 
 object ProjectText {
@@ -8,6 +9,55 @@ object ProjectText {
     new ProjectText[Out](project) {
       override val format = _format
     }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** Judgement on how a ReqCode-based reference (eg. [email.failure]) should be displayed */
+  sealed trait ReqCodeResolution
+  object ReqCodeResolution {
+    case class ActiveCode     (code: ReqCode.Value, target: ReqCode.Target) extends ReqCodeResolution
+    case class DeadGroup      (code: ReqCode.Value)                         extends ReqCodeResolution
+    case class ReqWithoutCodes(reqId: ReqId)                                extends ReqCodeResolution
+    case class ReqWithAltCode (code: ReqCode.Value, reqId: ReqId)           extends ReqCodeResolution
+  }
+
+  /**
+   * FR-152: For refs to reqs made using semantic ID, System shall render the ref accordingly...
+   *  - If target req has no semIDs anymore, display the pubid.
+   *  - If target req has the semID entered on ref creation, display the semID.
+   *  - If target req doesn't have the semID entered on ref creation, display the closest semID.
+   *
+   * FR-292: For refs to SHRs, System shall render the ref accordingly...
+   *  - If target exists, display the semID.
+   *  - If target doesn't exist, display the semID and mark it as an issue.
+   */
+  def resolveReqCode(id: ReqCodeId, rc: ReqCodes): Must[ReqCodeResolution] = {
+    import ReqCodeResolution._
+    import ReqCode._
+    import Must.Auto._
+    import PlainText.reqCode
+
+    // "display the closest semID" is translated here to closest via Levenshtein distance.
+    // Algorithm could be improved to be more meaningful, like most common (node) prefix, nodes in common, etc.
+    def findAlt(reqId: ReqId, deadCode: Value): Option[ReqWithAltCode] = {
+      val deadCodeStr = reqCode(deadCode)
+      NonEmptySet.option(rc.activeReqCodesByTarget(reqId) - deadCode).map { cs =>
+        val c = cs.whole.minBy(c => Util.levenshtein(deadCodeStr, reqCode(c)))
+        ReqWithAltCode(c, reqId)
+      }
+    }
+
+    rc.reqCode(id).flatMap(code =>
+      rc.applyM(code).flatMap {
+        case Data(Some(ad), _, _) if ad.id ≟ id => ActiveCode(code, ad.target)
+        case d if d.refsToGroup.contains(id)    => DeadGroup(code)
+        case d => d.refsToReqs.m.find(_._2 contains id) match {
+          case Some((reqId, _))                 => findAlt(reqId, code) getOrElse[ReqCodeResolution] ReqWithoutCodes(reqId)
+          case None                             => Must.Failed(s"$id not found in $code: $d")
+        }
+      }
+    )
+  }
 }
 
 abstract class ProjectText[Out](project: Project) {

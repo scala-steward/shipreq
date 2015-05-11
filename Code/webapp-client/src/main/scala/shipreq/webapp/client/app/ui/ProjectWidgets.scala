@@ -3,6 +3,8 @@ package shipreq.webapp.client.app.ui
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import scalacss.StyleA
+import scalajs.js.{undefined, UndefOr}
 import shipreq.webapp.base.UiText
 import shipreq.base.util.{NonEmptyVector, Must, UnivEq}
 import shipreq.base.util.SafeStringOps._
@@ -14,7 +16,7 @@ import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.util.KaTeX
 
 object ProjectWidgets {
-  def apply (project: Project, plainText: PlainText.ForProject) =
+  def apply(project: Project, plainText: PlainText.ForProject) =
     new ProjectWidgets(project, plainText)
 }
 
@@ -23,10 +25,10 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   private implicit def surroundDisplay(s: G.Surrounds) = s.display
 
-  private def memo[A: UnivEq](n: String, f: A => ReactTag): A => Widget =
+  private def memo[A: UnivEq](n: String, f: A => ReactElement): A => Widget =
     UnivEq.mutableHashMapMemo((a: A) => ReactComponentB.static(n, f(a)).buildU)
 
-  private def memoM[A: UnivEq](n: String, f: A => Must[ReactTag]): A => Widget =
+  private def memoM[A: UnivEq](n: String, f: A => Must[ReactElement]): A => Widget =
     memo(n, a => UI.mustA(f(a)))
 
   private def memoMW[A: UnivEq](f: A => Must[Widget]): A => Widget =
@@ -58,7 +60,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     PlainText.pubid(project, pubid) map (<.span(_))
   )
 
-  private def _reqRef(f: String => String): ReqId => Must[ReactTag] = id =>
+  private def _reqRef(f: String => String): ReqId => Must[ReactElement] = id =>
     for {
       req <- project.reqs.data.reqM(id)
       rt  <- project.reqType(req.pubid.reqTypeId)
@@ -95,6 +97,32 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   def pubidRefList(surround: Boolean, ids: Vector[Pubid]): ReactElement =
     list(ids)(pubidRef(surround)(_))
+
+  val codeRef = memoM[ReqCodeId]("CodeRef", id => {
+    import Must.Auto._
+    import ProjectText.ReqCodeResolution._
+
+    def toRef(c: ReqCode.Value, r: ReqId): Must[ReactElement] =
+      for (req <- project.reqs.data.reqM(r))
+        yield ref(c, *.reqRef(req.alive), plainText reqTitle req)
+
+    def toGroup(c: ReqCode.Value, g: ReqCodeGroup): ReactElement =
+      ref(c, *.groupRef(Alive), UiText mustA plainText.reqCodeGroupTitle(id, g))
+
+    def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): ReactElement =
+      <.span(
+        style,
+        ^.title := title,
+        G.reflinkSurround(PlainText reqCode c))
+
+    ProjectText.resolveReqCode(id, project.reqCodes.data).flatMap {
+      case ActiveCode(c, r: ReqId)        => toRef(c, r)
+      case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
+      case DeadGroup(c)                   => ref(c, *.groupRef(Dead), undefined)
+      case ReqWithAltCode(c, r)           => toRef(c, r)
+      case ReqWithoutCodes(r)             => reqRefS(r)()
+    }
+  })
 
   val reqType = memoM[ReqTypeId]("ReqType", id =>
     project.reqType(id).map(rt =>
@@ -134,6 +162,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       case a: PlainTextMarkup # MathTeX       => katex(a)
       case a: ListMarkup      # UnorderedList => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
       case a: ReqRef          # ReqRef        => reqRefS(a.value)()
+      case a: ReqRef          # CodeRef       => codeRef(a.value)()
       case a: Issue           # Issue         => issueO(a.typ, a.desc)
     }
 

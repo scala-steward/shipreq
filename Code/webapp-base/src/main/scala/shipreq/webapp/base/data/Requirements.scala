@@ -157,9 +157,18 @@ final case class ReqCodes(trie: ReqCode.Trie) {
     cataA(UnivEq.emptyMultimap[Target, Set, Value])((q, c, d) =>
       q.add(d.target, c))
 
-  lazy val reqCodeById: Map[ReqCodeId, Value] =
+  lazy val reqCodesById: Map[ReqCodeId, Value] =
     trie.cataV(UnivEq.emptyMap[ReqCodeId, Value])((q, c, d) =>
       d.ids.foldLeft(q)(_.updated(_, c)))
+
+  def reqCode(id: ReqCodeId): Must[Value] =
+    Must.fromOption(reqCodesById get id, s"No req code associated with $id.")
+
+  def apply(code: Value): Option[Data] =
+    trie.lookup(code)
+
+  def applyM(code: Value): Must[Data] =
+    Must.fromOption(apply(code), s"No node at reqcode ${code.whole mkString "."}.")
 
   def allIds: Stream[ReqCodeId] =
     trie.flatStream.flatMap(_._2.ids)

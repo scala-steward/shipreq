@@ -171,6 +171,11 @@ object Style extends StyleSheet.Inline {
       mixinIf(a ≟ Dead)(dead),
       hoverShowsInfo))
 
+    val groupRef = styleF(aliveDomain)(a => styleS(
+      reqRef(a),
+      mixinIf(a ≟ Dead)(hasError)
+    ))
+
     val math = style(margin.horizontal(0.8 ex))
     val mathFail = style(math, hasError)
 

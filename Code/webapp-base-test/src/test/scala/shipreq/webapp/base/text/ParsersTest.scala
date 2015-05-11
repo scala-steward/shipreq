@@ -145,7 +145,9 @@ object ParsersTest extends TestSuite {
     import ProjectDSL._
     import UnsafeTypes._
     val List(co,mf,fr) = List[CustomReqTypeId](1,2,3).map(Some(_))
-    GReq(reqType = fr, id = 11, title = "do stuff") +
+    GReq(reqType = co, id = 31, title = "be fast").code("co2") + // code inversed: [CO-1] [co2] ReqCodeId = 1
+    GReq(reqType = co, id = 32, title = "be good").code("co1") + // code inversed: [CO-2] [co1] ReqCodeId = 2
+    GReq(reqType = fr, id = 11, title = "do stuff").code("here.i.am_3") +
     GReq(reqType = fr, id = 12, title = "do more stuff") +
     GReq(reqType = mf, id = 21, title = "Use Case Editor") +
     GReq(reqType = mf, id = 22, title = "Templates") +
@@ -189,13 +191,14 @@ object ParsersTest extends TestSuite {
         test("#TBD{ <math>\\frac{22}</math> }")(T.Issue(2, Vector(I.MathTeX("\\frac{22}"))))
 
       'whitespace {
-        'empty  - test("    ")()
-        'lit    - test("  hehe  ")(L("hehe"))
-        'email  - test("  asd@abc.com  ")(T.EmailAddress("asd@abc.com"))
-        'li     - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))))
-        'nl     - test("here\nthere")(L("here"), T.blankLine, L("there"))
-        'nls    - test("here \n \n\n there")(L("here"), T.blankLine, L("there"))
-        'listNL - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\n bye")(L("ok"), T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))), L("bye"))
+        'empty   - test("    ")()
+        'lit     - test("  hehe  ")(L("hehe"))
+        'email   - test("  asd@abc.com  ")(T.EmailAddress("asd@abc.com"))
+        'li      - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))))
+        'nl      - test("here\nthere")(L("here"), T.blankLine, L("there"))
+        'nls     - test("here \n \n\n there")(L("here"), T.blankLine, L("there"))
+        'listNL  - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\n bye")(L("ok"), T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))), L("bye"))
+        'codeRef - test("[ here . i . am_3 ]")(T.CodeRef(3))
       }
 
       'list {
@@ -208,6 +211,11 @@ object ParsersTest extends TestSuite {
         'tag - test("#wip#DEFER#V3.x")(T.TagRef(11), T.TagRef(12), T.TagRef(26))
         'issue - test("#tbd{cool}#Todo#TBD { nice }")(
           T.Issue(2, Vector(I.Literal("cool"))), T.Issue(1, Vector.empty), T.Issue(2, Vector(I.Literal("nice"))))
+      }
+
+      'ambiguity {
+        'pubid - test("[CO1][co-1]")(T.ReqRef(31), T.ReqRef(31))
+        'code  - test("[co1][co2]")(T.CodeRef(2), T.CodeRef(1)) // codes inversed
       }
     }
 

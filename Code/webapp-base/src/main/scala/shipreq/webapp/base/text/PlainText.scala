@@ -59,6 +59,17 @@ object PlainText {
 
   def apply(p: Project): ForProject = {
 
+    def codeRef(id: ReqCodeId): Must[String] = {
+      import Must.Auto._
+      import ProjectText.ReqCodeResolution._
+      ProjectText.resolveReqCode(id, p.reqCodes.data).flatMap {
+        case ActiveCode(c, _)     => G reflinkSurround reqCode(c)
+        case DeadGroup(c)         => G reflinkSurround reqCode(c)
+        case ReqWithAltCode(c, _) => G reflinkSurround reqCode(c)
+        case ReqWithoutCodes(r)   => reqRef(r)
+      }
+    }
+
     def reqRef(req: ReqId): Must[String] =
       for {
         r   ← p.reqs.data.reqM(req)
@@ -87,6 +98,7 @@ object PlainText {
               case a: Literal         # Literal       => a.value
               case a: NewLine         # BlankLine     => newline
               case a: ReqRef          # ReqRef        => reqRef(a.value).unmust
+              case a: ReqRef          # CodeRef       => codeRef(a.value).unmust
               case a: Issue           # Issue         => issue(a.typ, a.desc.asOption map run).unmust
               case a: PlainTextMarkup # WebAddress    => a.value
               case a: PlainTextMarkup # EmailAddress  => a.value
