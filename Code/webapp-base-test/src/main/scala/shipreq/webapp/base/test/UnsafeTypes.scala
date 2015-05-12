@@ -1,8 +1,7 @@
 package shipreq.webapp.base.test
 
 import japgolly.nyaya.util.Multimap
-import scalaz.OneAnd
-import shipreq.base.util.{NonEmptyVector, Must}
+import shipreq.base.util.{NonEmptySet, NonEmptyVector, Must}
 import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.text.Grammar
 
@@ -52,9 +51,8 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoTrieData(ad: ReqCode.ActiveData): ReqCode.Data =
     ReqCode.Data(ad, Set.empty, Multimap.empty)
 
-  def reqTypesSet1(a: ReqTypeId, as: ReqTypeId*): OneAnd[Set, ReqTypeId] = OneAnd(a, as.toSet)
-  def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(reqTypesSet1(a, as: _*))
-  def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(reqTypesSet1(a, as: _*))
+  def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(NonEmptySet(a, as: _*))
+  def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(NonEmptySet(a, as: _*))
   val allReqTypes: ApplicableReqTypes = ISubset.All()
 
   implicit class UnsafeIntExt(val a: Int) extends AnyVal {

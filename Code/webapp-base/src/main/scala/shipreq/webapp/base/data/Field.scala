@@ -7,7 +7,7 @@ import scalaz.Isomorphism._
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
-import shipreq.base.util.{Must, IMap, UnivEq, NonEmptyVector}
+import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.TypeclassDerivation._
@@ -111,7 +111,7 @@ sealed trait Field {
 }
 
 object Field {
-  type ApplicableReqTypes = ISubset[Set, ReqTypeId]
+  type ApplicableReqTypes = ISubset[ReqTypeId]
 
   implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
 
@@ -150,7 +150,7 @@ sealed abstract class StaticField(         val name     : String,
 
 object StaticField {
   val useCaseOnly: ApplicableReqTypes =
-    ISubset.Only(OneAnd(StaticReqType.UseCase, UnivEq.emptySet))
+    ISubset.Only(NonEmptySet one StaticReqType.UseCase)
 
   @inline final private[this] def T = StaticFieldType
 

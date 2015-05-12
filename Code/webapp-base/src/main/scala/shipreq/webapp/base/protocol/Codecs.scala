@@ -179,6 +179,12 @@ object GenericCodecs {
 //  implicit def nonEmptyVectorRW[A: Reader: Writer]: ReadWriter[NonEmptyVector[A]] =
 //    xmap[NonEmptyVector[A], Vector[A]](_.whole)(l => NonEmptyVector(l.head, l.tail))
 
+  implicit def nonEmptySetR[A: UnivEq: Reader]: Reader[NonEmptySet[A]] =
+    Reader(implicitly[Reader[Set[A]]].read andThen (l => NonEmptySet(l.head, l.tail)))
+
+  implicit def nonEmptySetW[A: UnivEq: Writer]: Writer[NonEmptySet[A]] =
+    Writer(n => implicitly[Writer[Set[A]]] write n.whole)
+
   implicit def disjunction[A: Reader: Writer, B: Reader: Writer]: ReadWriter[A \/ B] =
     ReadWriter[A \/ B]({
       case -\/(a)    => intkeyW(0, a)
@@ -206,17 +212,17 @@ object GenericCodecs {
     })
   }
 
-  implicit def isubset[F[_], A: Reader: Writer](implicit RF: Reader[F[A]], WF: Writer[F[A]]): ReadWriter[ISubset[F, A]] = {
+  implicit def isubset[A](implicit RF: Reader[NonEmptySet[A]], WF: Writer[NonEmptySet[A]]): ReadWriter[ISubset[A]] = {
     import ISubset._
-    ReadWriter[ISubset[F, A]]({
+    ReadWriter[ISubset[A]]({
       case All()    => Js.Num(0)
-      case Only(as) => intkeyW2(1, as.head, as.tail)
-      case Not(as)  => intkeyW2(2, as.head, as.tail)
+      case Only(as) => intkeyW(1, as)
+      case Not (as) => intkeyW(2, as)
     }, {
       case Js.Num(n) if n.toInt == 0 => All()
-      case Js.Arr(Js.Num(n), a, as) => n.toInt match {
-        case 1 => Only(OneAnd(readJs[A](a), readJs[F[A]](as)))
-        case 2 => Not (OneAnd(readJs[A](a), readJs[F[A]](as)))
+      case Js.Arr(Js.Num(n), as) => n.toInt match {
+        case 1 => Only(RF read as)
+        case 2 => Not (RF read as)
       }
     })
   }

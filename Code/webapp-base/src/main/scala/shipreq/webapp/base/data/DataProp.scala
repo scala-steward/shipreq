@@ -33,10 +33,10 @@ object DataProp {
       e => Eval.atom(name, m, Some(e)),
       a => ifExists(a).liftL))
 
-  def isubsetContents[A]: ISubset[Set, A] => Set[A] = {
+  def isubsetContents[A]: ISubset[A] => Set[A] = {
     case ISubset.All()   => Set.empty[A]
-    case ISubset.Only(v) => v.tail + v.head
-    case ISubset.Not(v)  => v.tail + v.head
+    case ISubset.Only(v) => v.whole
+    case ISubset.Not(v)  => v.whole
   }
 
   private implicit class MapStreamingExt[K, V](val m: Map[K, V]) extends AnyVal {

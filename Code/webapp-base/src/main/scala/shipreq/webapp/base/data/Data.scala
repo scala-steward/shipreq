@@ -1,9 +1,8 @@
 package shipreq.webapp.base.data
 
-import scalaz.OneAnd
 import scalaz.Isomorphism.<=>
 import shipreq.base.util.TaggedTypes._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{NonEmptySet, UnivEq}
 
 
 final case class Rev(value: Long) extends TaggedLong {
@@ -48,9 +47,9 @@ final case class HashRefKey(value: String) extends TaggedString
 
 
 /**
- * An intensional subset over F[A].
+ * An intensional subset over any `Set[A]`.
  */
-sealed abstract class ISubset[F[_], A] {
+sealed abstract class ISubset[A] {
 //  final def filter: Option[A => Boolean] = {
 //    @inline def check(a: A, as: OneAnd[Set, A]) = a == as.head || as.tail.contains(a)
 //    this match {
@@ -61,10 +60,10 @@ sealed abstract class ISubset[F[_], A] {
 //  }
 }
 object ISubset {
-  final case class All [F[_], A]()                     extends ISubset[F, A]
-  final case class Only[F[_], A](values: OneAnd[F, A]) extends ISubset[F, A]
-  final case class Not [F[_], A](values: OneAnd[F, A]) extends ISubset[F, A]
+  final case class All [A]()                       extends ISubset[A]
+  final case class Only[A](values: NonEmptySet[A]) extends ISubset[A]
+  final case class Not [A](values: NonEmptySet[A]) extends ISubset[A]
 
-  @inline implicit def univEquality[F[_], A](implicit v: UnivEq[OneAnd[F, A]]): UnivEq[ISubset[F, A]] =
+  @inline implicit def univEquality[A](implicit v: UnivEq[NonEmptySet[A]]): UnivEq[ISubset[A]] =
     UnivEq.force
 }

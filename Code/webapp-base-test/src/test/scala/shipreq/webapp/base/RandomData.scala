@@ -38,6 +38,7 @@ object RandomData {
 
   implicit class CustomGenExt[A](val g: Gen[A]) extends AnyVal {
     def nev: GenS[NonEmptyVector[A]] = for {t <- g.vector; h <- g} yield NonEmptyVector(h, t)
+    def nes(implicit ev: UnivEq[A]): GenS[NonEmptySet[A]] = for {t <- g.set; h <- g} yield NonEmptySet(h, t)
   }
 
   def genmodL[A, B](l: Lens[A, B])(g: B => Gen[B])(a: A): Gen[A] =
@@ -148,12 +149,11 @@ object RandomData {
   def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
     Distinct.flong.xmap(j.mkId)(_.value).distinct.contramap[D](i.id, j.setId)
 
-  def isubset[F[_], A](ga: Gen[A], gf: Gen[F[A]]): Gen[ISubset[F, A]] = {
-    def h(k: OneAnd[F, A] => ISubset[F, A]) = gf.flatMap(f => ga.map(a => k(OneAnd(a, f))))
+  def isubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] = {
     Gen.oneofG(
-      Gen.insert(ISubset.All()),
-      h(ISubset.Only.apply),
-      h(ISubset.Not.apply))
+      Gen insert ISubset.All(),
+      g map ISubset.Only.apply,
+      g map ISubset.Not.apply)
   }
 
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
@@ -318,7 +318,7 @@ object RandomData {
   def applicableReqTypes(r: Set[CustomReqTypeId]): Gen[ApplicableReqTypes] = {
     val all = StaticReqType.values.foldLeft(r.map(a => a: ReqTypeId))(_ + _).toList
     val a = Gen.oneof(all.head, all.tail: _*)
-    isubset(a, a.set)
+    isubset(a.nes)
   }
 
   lazy val customFieldTextId =
@@ -983,7 +983,7 @@ object RandomData {
       Gen.oneofG(customFieldId, staticField)
 
     lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
-      isubset(reqTypeId, reqTypeId.set)
+      isubset(reqTypeId.nes)
 
     lazy val fieldPosition: Gen[FP.Position] =
       fieldId.option

@@ -2,18 +2,17 @@ package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import shipreq.webapp.client.lib.ClientUtil
-import scalaz.OneAnd
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
-import shipreq.base.util.{UnivEq, IMap}
+import shipreq.base.util.{NonEmptySet, UnivEq, IMap}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.ISubset
 import shipreq.webapp.base.TypeclassDerivation._
 
 object ISubsetEditor {
 
-  def Component[A](staticProps: StaticProps[A]) =
+  def Component[A: UnivEq](staticProps: StaticProps[A]) =
     ReactComponentB[Mode[A]]("ISubsetEditor")
       .stateless
       .backend(new Backend(_, staticProps))
@@ -23,11 +22,11 @@ object ISubsetEditor {
   // -------------------------------------------------------------------------------------------------------------------
   sealed trait Mode[A]
 
-  case class ViewMode[A](value: ISubset[Set, A], startEdit: Option[IO[Unit]]) extends Mode[A]
+  case class ViewMode[A](value: ISubset[A], startEdit: Option[IO[Unit]]) extends Mode[A]
 
-  case class EditMode[A](state: EditState[A],
-                         update: EditState[A] => IO[Unit],
-                         finishEdit: Option[ISubset[Set, A]] => IO[Unit]) extends Mode[A]
+  case class EditMode[A](state     : EditState[A],
+                         update    : EditState[A] => IO[Unit],
+                         finishEdit: Option[ISubset[A]] => IO[Unit]) extends Mode[A]
 
   // -------------------------------------------------------------------------------------------------------------------
   sealed abstract class Method(val code: String, val label: String)
@@ -43,22 +42,16 @@ object ISubsetEditor {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  case class EditState[A](method: Method, values: Set[A]) {
-    def foldv[B](z: => B, f: OneAnd[Set, A] => B): B =
-      if (values.isEmpty)
-        z
-      else
-        f(OneAnd(values.head, values.tail))
-
-    def result: Option[ISubset[Set, A]] = method match {
+  case class EditState[A: UnivEq](method: Method, values: Set[A]) {
+    def result: Option[ISubset[A]] = method match {
       case Method.All  => Some(ISubset.All())
-      case Method.Only => foldv(None, vs => Some(ISubset.Only(vs)))
-      case Method.Not  => foldv(None, vs => Some(ISubset.Not (vs)))
+      case Method.Only => NonEmptySet.option(values).map(ISubset.Only.apply)
+      case Method.Not  => NonEmptySet.option(values).map(ISubset.Not .apply)
     }
   }
 
   object EditState {
-    def init[A](i: ISubset[Set, A], defaultValues: Set[A]): EditState[A] = i match {
+    def init[A: UnivEq](i: ISubset[A], defaultValues: Set[A]): EditState[A] = i match {
       case ISubset.All()    => EditState(Method.All,  defaultValues)
       case ISubset.Only(vs) => EditState(Method.Only, vs.tail + vs.head)
       case ISubset.Not(vs)  => EditState(Method.Not,  vs.tail + vs.head)
@@ -79,7 +72,7 @@ object ISubsetEditor {
   final case class ValueStatic[A](value: A, rendered: ReactTag, checkbox: ReactTag)
 
   // -------------------------------------------------------------------------------------------------------------------
-  final class Backend[A]($: BackendScope[Mode[A], Unit], staticProps: StaticProps[A]) {
+  final class Backend[A: UnivEq]($: BackendScope[Mode[A], Unit], staticProps: StaticProps[A]) {
     import staticProps._
 
     val radioGroupName =
@@ -92,7 +85,7 @@ object ISubsetEditor {
       }
 
     def renderViewMode(m: ViewMode[A]): ReactElement = {
-      def selection(prefix: String, i: OneAnd[Set, A]): TagMod = {
+      def selection(prefix: String, i: NonEmptySet[A]): TagMod = {
         val as = preprocess(i.head #:: i.tail.toStream)
         val ns = as.map(renderValue)
         val vs = ns.head #:: ns.tail.flatMap(v => Stream[ReactNode](", ", v))
