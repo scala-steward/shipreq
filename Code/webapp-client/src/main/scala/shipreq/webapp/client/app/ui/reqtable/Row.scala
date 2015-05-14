@@ -158,15 +158,18 @@ object Row {
     case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
 
-  val implicationSrc = Row.expansion   ^|-> Expansion.implicationSrc
-  val implicationTgt = Row.expansion   ^|-> Expansion.implicationTgt
-  val cfImps         = Row.expansion   ^|-> Expansion.cfImps
-  val cfTags         = Row.expansion   ^|-> Expansion.cfTags
-  val tags           = Row.multiValues ^|-> MultiValues.tags
+  type OV[A]     = Optional[Row, Vector[A]]
+  type OMV[K, V] = Optional[Row, Map[K, Vector[V]]]
+
+  val implicationSrc: OV[Pubid]                                = Row.expansion   ^|-> Expansion.implicationSrc
+  val implicationTgt: OV[Pubid]                                = Row.expansion   ^|-> Expansion.implicationTgt
+  val cfImps        : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
+  val cfTags        : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
+  val tags          : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.tags
 
   private def mmLens[K, V](k: K): Lens[Map[K, Vector[V]], Vector[V]] =
     Lens[Map[K, Vector[V]], Vector[V]](_.getOrElse(k, Vector.empty))(vs => _.updated(k, vs))
 
-  def cfImp(id: CustomField.Implication.Id) = cfImps ^|-> mmLens(id)
-  def cfTag(id: CustomField.Tag        .Id) = cfTags ^|-> mmLens(id)
+  def cfImp(id: CustomField.Implication.Id): OV[Pubid]           = cfImps ^|-> mmLens(id)
+  def cfTag(id: CustomField.Tag        .Id): OV[ApplicableTagId] = cfTags ^|-> mmLens(id)
 }
