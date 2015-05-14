@@ -79,6 +79,7 @@ object Style extends StyleSheet.Inline {
 //    val columnReqType = style(maxWidth.fitContent)
 
     val `N/A` = style(
+      color("#666".color),
       margin.horizontal(auto)
     )
 
