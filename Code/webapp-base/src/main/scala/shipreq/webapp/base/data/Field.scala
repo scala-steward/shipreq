@@ -100,6 +100,7 @@ sealed trait Field {
   def reqTypes : Field.ApplicableReqTypes
   def keyO     : Option[FieldRefKey]
   def mandatory: Mandatory
+  def alive    : Alive
 
   /** Independent as opposed to the name being derived from some external state. */
   def independentName: Option[String]
@@ -114,9 +115,6 @@ object Field {
   type ApplicableReqTypes = ISubset[ReqTypeId]
 
   implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
-
-  val filterAlive: Field => Boolean =
-    _.fold(_ => true, _.alive ≟ Alive)
 
   def name(customReqTypes: CustomReqTypeIMap, tags: TagTree) = {
     val cn: CustomField => Must[String] = CustomField.name(customReqTypes, tags)
@@ -141,6 +139,8 @@ sealed abstract class StaticField(         val name     : String,
                                   override val mandatory: Mandatory,
                                            val deletable: Deletable,
                                   override val keyO     : Option[FieldRefKey]) extends Field with FieldId {
+
+  override final def alive = Alive
 
   override final def independentName = Some(name)
 
@@ -183,7 +183,6 @@ sealed abstract class CustomFieldId extends TaggedLong with FieldId {
 /** Custom here just distinguishes user-defined fields from static fields. */
 sealed abstract class CustomField(override final val fieldType: CustomFieldType) extends Field {
   def id: CustomFieldId
-  def alive: Alive
 
   override final def fold[A](s: StaticField => A, c: CustomField => A): A = c(this)
 }

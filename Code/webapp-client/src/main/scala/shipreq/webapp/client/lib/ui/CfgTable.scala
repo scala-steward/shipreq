@@ -1,13 +1,14 @@
 package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import monocle.Lens
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.webapp.base.data.{Alive, Dead, DataIdAux}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.protocol.DeletionAction._
-import shipreq.webapp.client.app.ui.ShowDeletedToggler
+import shipreq.webapp.client.lib.FilterDead
 
 object CfgTable {
   def apply[S, K <: TaggedLong, P, I, A, B, C, V](editor: Editor[A, B, IO, S, C, IO[Unit], V],
@@ -20,10 +21,10 @@ object CfgTable {
                                    savedRowA: K => A,
                                    del: Deletion[K],
                                    alive: P => Alive,
-                                   showDeleted: S => Boolean,
+                                   filterDead: S => FilterDead,
                                    c: CompStateFocus[S])
                                   (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
-        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, alive, showDeleted, c)
+        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, alive, filterDead, c)
     }
 
   def typical[P, I, K <: TaggedLong](sas: TypicalStoresAndState[P, I, K]) = new {
@@ -39,7 +40,7 @@ object CfgTable {
           def rowA(k: Option[K], i: I): editor.InputA = (sas.validatorInput(k)(c.state), i)
           def newRowA  (i: I)  = rowA(None, i)
           def savedRowA(id: K) = rowA(Some(id), sas.savedRowStoreS.getI(id)(c.state))
-          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, alive, _.showDeleted, c)
+          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, alive, _.filterDead, c)
         }
       }
     }
@@ -48,12 +49,10 @@ object CfgTable {
     <.thead(<.tr(headers.map(<.th(_)), <.th("Ctrls")))
 
 
-  def outer[P, I, K](sas: TypicalStoresAndState[P, I, K])
-                    (c: CompStateFocus[sas.S],
-                     inner: => ReactElement): ReactElement =
-    <.div(
-      ShowDeletedToggler(sas)(c),
-      inner)
+  def outer[P, I, K](sas: TypicalStoresAndState[P, I, K])(c: CompStateFocus[sas.S]): ReactElement => ReactElement = {
+    val checkbox = sas.filterDeadCheckbox(c)
+    <.div(checkbox(), _)
+  }
 
   /**
    * @tparam P Persisted data. Data known to be saved.
@@ -77,7 +76,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
                                                                       savedRowA: K => A,
                                                                       deletion: Deletion[K],
                                                                       alive: P => Alive,
-                                                                      showDeleted: S => Boolean,
+                                                                      filterDead: S => FilterDead,
                                                                       c: CompStateFocus[S])
                                                                      (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
   /** Row content prior to being rendered into DOM. */
@@ -90,8 +89,8 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
 
   private[this] val editable = editor.editableByRowStatus(c)
 
-  private[this] val rowFilterAlive: savedStore.Row => Boolean =
-    r => alive(r.p) ≟ Alive
+  private[this] val rowAlive: savedStore.Row => Alive =
+    r => alive(r.p)
 
   private[this] def renderRow(a: A, rs: RowStatus): V =
     editor render EditorI(a, "", editable(rs))
@@ -126,9 +125,9 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
     newRowO.getOrElse(EmptyTag)
 
   def savedRows: RowStream = {
-    var rs = savedStore.getAll(c.state)
-    if (!showDeleted(c.state))
-      rs = rs.filter(rowFilterAlive)
+    val state = c.state
+    var rs = savedStore.getAll(state)
+    rs = filterDead(state)(rs)(rowAlive)
     rs.map(r => {
       val el = alive(r.p) match {
         case Alive => savedLiveRow(r.status, r.p)

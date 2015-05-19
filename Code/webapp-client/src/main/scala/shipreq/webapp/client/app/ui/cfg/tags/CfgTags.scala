@@ -3,14 +3,13 @@ package shipreq.webapp.client.app.ui.cfg.tags
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra.OnUnmount
 import monocle.macros.Lenses
-import monocle.Optional
 import monocle.std.option.some
 import scala.annotation.tailrec
 import scala.language.reflectiveCalls
 import scalajs.js.{undefined, UndefOr, UndefOrOps, Array => JsArray}
 import scalajs.js.JSConverters._
 import scalaz.effect.IO
-import scalaz.{Maybe, Memo, \&/}
+import scalaz.\&/
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import scalaz.syntax.bind.ToBindOps
@@ -29,8 +28,8 @@ import shipreq.webapp.base.protocol.TagProtocol
 import shipreq.webapp.base.protocol.Routines.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.app.ui.{RowDetailButton, ShowDeletedToggler}
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO, CrudIO}
+import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
+import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.DND
@@ -38,7 +37,7 @@ import TagTree.FlatRow, FlatRow.FilterPolicy
 import TagProtocol.{PovTag, PovRelations}
 
 object CfgTags {
-  case class Props(cp: ClientProtocol, remote: TagCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
+  case class Props(cp: ClientProtocol, remote: TagCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }
@@ -63,12 +62,12 @@ private[tags] object MainTable {
   case class DetailPaneState(id: Id, parentAddSel: Option[Id], childAddSel: Option[Id])
 
   @Lenses
-  case class State(showDeleted: Boolean,
-                   tg_state: tg_stores.State,
-                   at_state: at_stores.State,
-                   tree: TreeState,
-                   newSel: TagType,
-                   detailRow: Option[DetailPaneState]) {
+  case class State(filterDead: FilterDead,
+                   tg_state  : tg_stores.State,
+                   at_state  : at_stores.State,
+                   tree      : TreeState,
+                   newSel    : TagType,
+                   detailRow : Option[DetailPaneState]) {
 
     lazy val childToParent = tree.reverseM[Set]
 
@@ -79,8 +78,7 @@ private[tags] object MainTable {
       tagStream.foldLeft(TagTree.empty)((q, t) => q add TagInTree(t, tree(t.id)))
 
     val tagFilter: Tag => Boolean =
-      if (showDeleted) Function const true
-      else Tag.filterAlive
+      filterDead.filterFnA[Tag](_.alive)
   }
 
   object State {
@@ -111,7 +109,7 @@ private[tags] object MainTable {
       case t: TagGroup      => tgs += t
       case t: ApplicableTag => ats += t
     }
-    State(p.showDeleted,
+    State(p.filterDead,
       tg_state  = tg_stores.initState(_.initStateS(tgs.result(), _.id)),
       at_state  = at_stores.initState(_.initStateS(ats.result(), _.id)),
       tree      = Multimap(tagtree.mapValues(_.children)),
@@ -248,10 +246,12 @@ private[tags] object MainTable {
       results
     }
 
+    val filterDeadCheckbox = Checkbox.filterDead_$($ focusStateL State.filterDead)
+
     def render: ReactElement =
       <.div(
         NewTagControl.Component(newTagControlProps),
-        ShowDeletedToggler($.state.showDeleted, $ runState ST.modT(State.showDeleted.modify(b => !b))),
+        filterDeadCheckbox(),
         <.table(
           headerRow,
           <.tbody(rows)

@@ -15,6 +15,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router._
 import shipreq.webapp.client.app.ui._
+import shipreq.webapp.client.lib.HideDead
 
 object ReactExamples {
 
@@ -58,16 +59,16 @@ object ReactExamples {
           reqtable.ReqTable.WIP(clientData.project)
 
         private def cfgIssuesR =
-          cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, clientData, false).component
+          cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, clientData, HideDead).component
 
         private def cfgReqTypesR =
-          cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, false).component
+          cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, clientData, HideDead).component
 
         private def cfgTagsR =
-          cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, false).component
+          cfg.tags.CfgTags.Props(cp, r.tagCrud, clientData, HideDead).component
 
         private def cfgFieldsR =
-          cfg.fields.CfgFields.Props(cp, r.fieldCrud, clientData, false).component
+          cfg.fields.CfgFields.Props(cp, r.fieldCrud, clientData, HideDead).component
 
         def dragAndDropDemo = <.section(DragAndDrop_ol.demo, DragAndDrop_table.demo)
 

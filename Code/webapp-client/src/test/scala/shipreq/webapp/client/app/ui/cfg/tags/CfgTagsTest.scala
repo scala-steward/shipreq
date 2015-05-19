@@ -16,6 +16,7 @@ import shipreq.webapp.base.protocol.TagProtocol._
 import shipreq.webapp.base.test.{SampleProject => S}
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test._
 import TestUtil._
 
@@ -40,7 +41,7 @@ object CfgTagsTest extends TestSuite {
   class Tester {
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol
-    lazy val props      = new CfgTags.Props(cp, remote, clientData, false)
+    lazy val props      = new CfgTags.Props(cp, remote, clientData, HideDead)
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
   }

@@ -20,7 +20,7 @@ import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.app.ui._
-import shipreq.webapp.client.lib.{ConsoleIO, FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.DND
@@ -29,7 +29,7 @@ import FieldProtocol.Delta
 import DeletionAction._
 
 object CfgFields {
-  case class Props(cp: ClientProtocol, remote: FieldCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
+  case class Props(cp: ClientProtocol, remote: FieldCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }
@@ -55,7 +55,7 @@ private[fields] object MainTable {
   type NewSelType = StaticField \/ CustomFieldType
 
   @Lenses
-  case class State(showDeleted     : Boolean,
+  case class State(filterDead      : FilterDead,
                    text_state      : text_stores.State,
                    impl_state      : impl_stores.State,
                    tag_state       : tag_stores.State,
@@ -106,7 +106,7 @@ private[fields] object MainTable {
       case f: CustomField.Tag         => tagFields  += f
     }
     State(
-      showDeleted     = p.showDeleted,
+      filterDead      = p.filterDead,
       text_state      = text_stores.initState(_.initStateS(textFields.result(), _.id)),
       impl_state      = impl_stores.initState(_.initStateS(implFields.result(), _.id)),
       tag_state       = tag_stores .initState(_.initStateS(tagFields .result(), _.id)),
@@ -286,10 +286,12 @@ private[fields] object MainTable {
         UI.abortNewButton($ modStateIO abortNew)
     }
 
+    val filterDeadCheckbox = Checkbox.filterDead_$($ focusStateL State.filterDead)
+
     def render =
       <.div(
         newFieldControl(),
-        ShowDeletedToggler($.state.showDeleted, $ runState ST.modT(State.showDeleted.modify(b => !b))),
+        filterDeadCheckbox(),
         <.table(
           headerRow,
           <.tbody(renderNewField, renderFields)
@@ -301,8 +303,7 @@ private[fields] object MainTable {
     def renderFields: TagMod = {
       var content = fieldOrder.toStream
         .flatMap(_.foldId[Stream[Field]](s => Stream(s), $.state.customFields.get(_).toStream))
-      if (!$.state.showDeleted)
-        content = content.filter(Field.filterAlive)
+      content = $.state.filterDead(content)(_.alive)
       content.toReactNodeArray(renderField)
     }
 

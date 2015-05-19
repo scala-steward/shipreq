@@ -1,9 +1,13 @@
 package shipreq.webapp.client.lib.ui
 
+import japgolly.scalajs.react.{ReactElement, CompStateFocus}
 import japgolly.scalajs.react.ScalazReact._
+import japgolly.scalajs.react.MonocleReact._
 import monocle.macros.Lenses
+import shipreq.webapp.client.app.ui.Checkbox
 import scalaz.effect.IO
 import shipreq.base.util.UnivEq
+import shipreq.webapp.client.lib.FilterDead
 
 object TypicalStoresAndState {
   def apply[P, I](fields: FieldSet[P, I]) = new B[P, I, fields.type](fields)
@@ -27,7 +31,7 @@ abstract class TypicalStoresAndState[P, I, K: UnivEq](fields: FieldSet[P, I]) {
   val newRowStore   = NewRowStore.of(fields)
 
   @Lenses
-  case class State(newRow: newRowStore.State, savedRows: savedRowStore.State, showDeleted: Boolean)
+  case class State(newRow: newRowStore.State, savedRows: savedRowStore.State, filterDead: FilterDead)
 
   type S  = State
   type ST = ReactST[IO, S, Unit]
@@ -42,6 +46,6 @@ abstract class TypicalStoresAndState[P, I, K: UnivEq](fields: FieldSet[P, I]) {
   def validatorInput(k: Option[K]): S => (Stream[P], Option[K]) =
     s => (savedRowStoreS.getAllP(s), k)
 
-  def toggleShowDeleted =
-    ST.modT(State.showDeleted.modify(v => !v))
+  def filterDeadCheckbox(c: CompStateFocus[S]): () => ReactElement =
+    Checkbox.filterDead_$(c focusStateL State.filterDead)
 }

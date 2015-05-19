@@ -12,14 +12,14 @@ import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{reqType => V}
 import shipreq.webapp.base.protocol.Routines.CustomReqTypeCrud
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.lib.CrudIO
+import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import UI.checkbox
 
 object CfgReqTypes {
 
-  case class Props(cp: ClientProtocol, remote: CustomReqTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
+  case class Props(cp: ClientProtocol, remote: CustomReqTypeCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
     def component = Component(this)
   }
 
@@ -38,7 +38,7 @@ object CfgReqTypes {
   private def initialState(p: Props): S =
     State(newRowStore.initState,
       savedRowStore.initStateIM(p.clientData.project.customReqTypes.data),
-      p.showDeleted)
+      p.filterDead)
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
@@ -92,7 +92,10 @@ object CfgReqTypes {
       () => t.table(headerRow, staticRows)
     }
 
+    val outer =
+      CfgTable.outer(storesAndState)($)
+
     def render: ReactElement =
-      CfgTable.outer(storesAndState)($, table())
+      outer(table())
   }
 }

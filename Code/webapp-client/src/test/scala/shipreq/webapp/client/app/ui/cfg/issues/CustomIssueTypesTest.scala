@@ -5,6 +5,7 @@ import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.CustomIssueTypeCrud
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._
 import utest._
@@ -17,7 +18,7 @@ object CustomIssueTypesTest extends TestSuite {
     val remote     = Routine.Remote("x", CustomIssueTypeCrud)
     val clientData = new ClientData(SampleProject.project)
     val cp         = new TestClientProtocol
-    val props      = new CustomIssueTypes.Props(cp, remote, clientData, false)
+    val props      = new CustomIssueTypes.Props(cp, remote, clientData, HideDead)
     val re         = props.component
     val c          = ReactTestUtils.renderIntoDocument(re)
 

@@ -11,6 +11,7 @@ import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.protocol.Routines._
 import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 
@@ -92,7 +93,7 @@ private[issues] object MandatoryFields {
 
     def renderRows: ReactNode =
       UI.must(project.fields.data.fields)(
-        _.filter(Field.filterAlive).toReactNodeArray(
+        HideDead(_)(_.alive).toReactNodeArray(
           _.fold(renderStaticField, renderCustomField)))
 
     def render: ReactElement =

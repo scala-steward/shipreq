@@ -13,13 +13,13 @@ import shipreq.webapp.base.protocol.Routines._
 import shipreq.webapp.base.TextMod
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
-import shipreq.webapp.client.lib.CrudIO
+import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 
 private[issues] object CustomIssueTypes {
 
-  case class Props(cp: ClientProtocol, remote: CustomIssueTypeCrud.Remote, clientData: ClientData, showDeleted: Boolean) {
+  case class Props(cp: ClientProtocol, remote: CustomIssueTypeCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
     @inline def component = Component(this)
   }
 
@@ -38,7 +38,7 @@ private[issues] object CustomIssueTypes {
   private def initialState(p: Props): S =
     State(newRowStore.initState,
       savedRowStore.initStateIM(p.clientData.project.customIssueTypes.data),
-      p.showDeleted)
+      p.filterDead)
 
   private def validatorState(k: Option[CustomIssueTypeId], cd: ClientData): S => V.S =
     s => {
@@ -86,12 +86,15 @@ private[issues] object CustomIssueTypes {
         _.key, rowRenderer,
         i => (valState(None)($.state), i),
         k => (valState(k.some)($.state), savedRowStoreS.getI(k)($.state)),
-        supp.deletion, _.alive, _.showDeleted, $)
+        supp.deletion, _.alive, _.filterDead, $)
       val headerRow = CfgTable.header(List(FieldNames.hashRefKey, FieldNames.desc))
       () => t.table(headerRow, Stream.empty)
     }
 
+    val outer =
+      CfgTable.outer(storesAndState)($)
+
     def render: ReactElement =
-      CfgTable.outer(storesAndState)($, table())
+      outer(table())
   }
 }
