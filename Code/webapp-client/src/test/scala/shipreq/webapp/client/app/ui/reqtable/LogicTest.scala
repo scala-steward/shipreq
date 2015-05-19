@@ -311,13 +311,16 @@ object LogicTest extends TestSuite {
         assertEq(sm.toString, extract(r), expect)
       }
 
-    private def allSortsCB[A](z: A, zcount: Int = 1)(f: (A, A) => A, asc: A, desc: A): Seq[(ConsiderBlanks, A)] = {
+    private def allSortsCBA[A](z: A, zcount: Int)(f: (A, A) => A, asc: A, desc: A): Seq[(ConsiderBlanks, A)] = {
       val zz: A = if (zcount > 1) Stream.fill(zcount)(z).reduce(f) else z
       (BlanksThenAsc  -> f(zz, asc))  ::
       (AscThenBlanks  -> f(asc, zz))  ::
       (BlanksThenDesc -> f(zz, desc)) ::
       (DescThenBlanks -> f(desc, zz)) :: Nil
     }
+
+    private def allSortsCB(zcount: Int, asc: String, desc: String): Seq[(ConsiderBlanks, String)] =
+      allSortsCBA(z, zcount)(_ + sep + _, asc, desc)
 
     private def vsSortedByIB(c: C.SortInconclusive with C.NoBlanks, sm: IgnoreBlanks): ViewSettings =
       ViewSettings(NonEmptyVector(c), SortCriteria.default.copy(init = Vector(SC.InconclusiveIB(c, sm))))
@@ -389,7 +392,7 @@ object LogicTest extends TestSuite {
     implicit private def customFieldToColumn(id: CustomFieldId) =
       C.CustomField(id)
 
-    // ----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
 
     val customFieldsL = Project.fields ^|-> RevAnd.data ^|-> FieldSet.customFields
 
@@ -401,7 +404,7 @@ object LogicTest extends TestSuite {
       val p2      = clearCustomFields(p)
       val pt      = PlainText(p2)
       val fmtRows = rowToTagTxt(p, Row.tags)
-      testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(2,
         asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
     }
@@ -412,7 +415,7 @@ object LogicTest extends TestSuite {
       val p2      = customFieldsL.modify(_.filterK(_ == priField))(p)
       val pt      = PlainText(p2)
       val fmtRows = rowToTagTxt(p, Row.tags)
-      testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p2, pt, C.Tags, fmtRows)(allSortsCB(2,
         asc  = "defer  defer,wip  defer,wip  wip",
         desc = "wip,defer  wip,defer  wip  defer"))
     }
@@ -431,7 +434,7 @@ object LogicTest extends TestSuite {
       def t(ids: ApplicableTagId*) = GReq(reqType = 5).tag(ids: _*)
       val p       = GReq() + t(2) + t(3) + t(2, 3) + t(11, 12, 22, 24, 26) ! P
       val fmtRows = prefixWithPubid(p, rowToTagTxt(p, Row cfTag priField))
-      testCB(p, PlainText(p), priField, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p, PlainText(p), priField, fmtRows)(allSortsCB(2,
         asc  = "DD-2:pri=high  DD-4:pri=high  DD-3:pri=med  DD-4:pri=med",
         desc = "DD-3:pri=med  DD-4:pri=med  DD-2:pri=high  DD-4:pri=high"))
     }
@@ -440,7 +443,7 @@ object LogicTest extends TestSuite {
       def t(ids: ApplicableTagId*) = GReq(reqType = 5).tag(ids: _*)
       val p       = GReq() + t(2) + t(2, 3) + t(3) + t(11, 12, 22, 24, 26) ! P
       val fmtRows = prefixWithPubid(p, rowToTagTxt(p, Row cfTag priField))
-      testCB(p, PlainText(p), priField, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p, PlainText(p), priField, fmtRows)(allSortsCB(2,
         asc  = "DD-2:pri=high  DD-3:pri=high,pri=med  DD-4:pri=med",
         desc = "DD-3:pri=med  DD-4:pri=med  DD-2:pri=high  DD-3:pri=high"))
     }
@@ -459,7 +462,7 @@ object LogicTest extends TestSuite {
       val p       = GReq() + GReq("AT") + GReq("and") + GReq("haha") + GReq("F") !! P
       val pt      = PlainText(p)
       val fmtRows = rowToStr(_.req |> pt.reqTitle, r => pt.reqCodeGroupTitle(r.reqCodeId, r.group), _.apif(_.isEmpty, _z))
-      testCB(p, pt, C.Title, fmtRows)(allSortsCB(z)(_ + sep + _,
+      testCB(p, pt, C.Title, fmtRows)(allSortsCB(1,
         asc  = "and  AT  F  haha",
         desc = "haha  F  AT  and"))
     }
@@ -469,7 +472,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       val fmtRows = rowToImpTxt(p, Row.implicationSrc, ">")
-      testCB(p, PlainText(p), C.ImplicationSrc, fmtRows)(allSortsCB(z)(_ + sep + _,
+      testCB(p, PlainText(p), C.ImplicationSrc, fmtRows)(allSortsCB(1,
         asc  = "DD-1>FR-3  DD-1>FR-4  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  FR-2>DD-1  FR-4>FR-5",
         desc = "FR-4>FR-5  FR-2>DD-1,FR-1>DD-1  FR-1>FR-2  FR-1>FR-3,DD-1>FR-3  DD-1>FR-4"))
     }
@@ -479,7 +482,7 @@ object LogicTest extends TestSuite {
       //      FR-1   FR-2      DD-1                           FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = 5) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
       val fmtRows = rowToImpTxt(p, Row.implicationTgt, "<")
-      testCB(p, PlainText(p), C.ImplicationTgt, fmtRows)(allSortsCB(z)(_ + sep + _,
+      testCB(p, PlainText(p), C.ImplicationTgt, fmtRows)(allSortsCB(1,
         asc  = "DD-1<FR-3  DD-1<FR-4  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  FR-2<DD-1  FR-4<FR-5",
         desc = "FR-4<FR-5  FR-2<DD-1,FR-1<DD-1  FR-1<FR-2  FR-1<FR-3,DD-1<FR-3  DD-1<FR-4"))
     }
@@ -502,7 +505,7 @@ object LogicTest extends TestSuite {
       val p   = SampleImplicationGraph.project
       val cf  = CustomField.Implication.Id(6)
       val fmt = rowToCustomImpTxt(p, cf)
-      testCB(p, PlainText(p), cf, fmt)(allSortsCB(z, 5)(_ + sep + _,
+      testCB(p, PlainText(p), cf, fmt)(allSortsCB(5,
         asc  = "MF-1>FR-1  MF-1>FR-2  MF-1>FR-3  MF-2>FR-2  MF-2>FR-3  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-4>FR-6",
         desc = "MF-4>FR-6  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-2>FR-2  MF-2>FR-3  MF-1>FR-1  MF-1>FR-2  MF-1>FR-3"))
     }
@@ -523,7 +526,7 @@ object LogicTest extends TestSuite {
       val p   = GReq() + t("HAHA", "zz") + t("", "f") + t("d", "") + t("Abc", "g") !! P
       val pt  = PlainText(p)
       val fmt = rowToCustomText(pt, notes)
-      testCB(p, pt, notes, fmt)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p, pt, notes, fmt)(allSortsCB(2,
         asc  = "Abc  d  HAHA",
         desc = "HAHA  d  Abc"))
     }
@@ -540,7 +543,7 @@ object LogicTest extends TestSuite {
         grp("a.b.d")               +
         req("abc.no")              !! P
       val fmtRows = rowToAsToStr(_.exp.reqCodes, r => Vector1(r.reqCode))(PlainText.reqCode)
-      testCB(p, PlainText(p), C.Code, fmtRows)(allSortsCB(z, 2)(_ + sep + _,
+      testCB(p, PlainText(p), C.Code, fmtRows)(allSortsCB(2,
         asc  = "a  a.b.c  a.b.d  a.boo  abc  abc.no  x.y.z  x.z,y.q",
         desc = "y.q,x.z  x.y.z  abc.no  a.boo  a.b.c  a")) // groups not displayed in DESC
     }
@@ -560,7 +563,7 @@ object LogicTest extends TestSuite {
         ap(c).wrap(rowToCustomText(pt, c))(z)
       def expect(zcount: Int, suffix: String)(prefixes: String*) = {
         val es = prefixes.map(_ + suffix).sorted
-        allSortsCB(z, zcount)(_ + sep + _, es mkString sep, es.reverse mkString sep)
+        allSortsCB(zcount, es mkString sep, es.reverse mkString sep)
       }
       testCB(p, pt, desc, fmt(desc))(expect(2, ".desc.ok")("MF"))
       testCB(p, pt, note, fmt(note))(expect(1, ".note.ok")("CO", "MF"))
@@ -574,7 +577,7 @@ object LogicTest extends TestSuite {
       val p   = GReq(reqType = mf).tag(wip, defer) + GReq(reqType = si).tag(wip, defer) !! P
       val pt  = PlainText(p)
       val fmt = prefixWithPubid(p, rowToTagTxt(p, Row cfTag f))
-      testCB(p, pt, f, fmt)(allSortsCB(z, 1)(_ + sep + _, "MF-1:wip,defer", "MF-1:defer,wip"))
+      testCB(p, pt, f, fmt)(allSortsCB(1, "MF-1:wip,defer", "MF-1:defer,wip"))
       // Order here ↗ looks wrong but is correctly determined by tags' position in the TagTree (thus configurable)
     }
 
@@ -586,7 +589,7 @@ object LogicTest extends TestSuite {
         GReq(id = 31, reqType = fr).impSrc(21,22) +
         GReq(id = 61, reqType = si).impSrc(21,22) ! P
       val fmt = rowToCustomImpTxt(p, f)
-      testCB(p, PlainText(p), f, fmt)(allSortsCB(z, 3)(_ + sep + _, "MF-1>FR-1,MF-2>FR-1", "MF-2>FR-1,MF-1>FR-1"))
+      testCB(p, PlainText(p), f, fmt)(allSortsCB(3, "MF-1>FR-1,MF-2>FR-1", "MF-2>FR-1,MF-1>FR-1"))
     }
   }
 
