@@ -1,6 +1,6 @@
 package shipreq.webapp.client.lib.ui
 
-import japgolly.scalajs.react.ComponentScopeM
+import japgolly.scalajs.react.{TopNode, ComponentScopeM}
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.{Listenable, OnUnmount}
 import shipreq.base.util.NonEmptyVector
@@ -38,8 +38,8 @@ object DeltaListener {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def apply[P, S, B <: OnUnmount](cd: P => ClientData, handler: Handler[S]) =
-    Listenable.installS[P, S, B, Id, LocalDelta](cd, handler.listener)
+  def apply[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, handler: Handler[S]) =
+    Listenable.installS[P, S, B, N, Id, LocalDelta](cd, handler.listener)
 
   class OneByOne[S, I, D](val remove: (S, I) => S,
                           val put: (S, I, D) => S) {
@@ -65,9 +65,9 @@ object DeltaListener {
       (s, i)    => store.remove(i)(s),
       (s, i, d) => store.set(i, d)(s))
 
-  def refresh[P, S, B <: OnUnmount](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B] => IO[Unit])(p1: Partition, pn: Partition*) = {
+  def refresh[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B, N] => IO[Unit])(p1: Partition, pn: Partition*) = {
     val ps = pn.toSet + p1
-    Listenable.installIO[P, S, B, LocalDelta](cd, ($, ds) =>
+    Listenable.installIO[P, S, B, N, LocalDelta](cd, ($, ds) =>
       if (ds.exists(ps contains _.p))
         refreshIO($)
       else
@@ -75,6 +75,6 @@ object DeltaListener {
     )
   }
 
-  def refreshL[P, S, B <: OnUnmount](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B] => IO[Unit], ps: NonEmptyVector[Partition]) =
+  def refreshL[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B, N] => IO[Unit], ps: NonEmptyVector[Partition]) =
     refresh(cd, refreshIO)(ps.head, ps.tail: _*)
 }

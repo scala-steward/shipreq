@@ -1,10 +1,10 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.{NonEmptyVector, Must, IMap, UnivEq}
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.{UiText, data}
 import shipreq.webapp.base.UiText.ColumnNames
-import shipreq.webapp.client.util.Reusable
 
 sealed trait Column {
   // Ensure correct attribute traits are mixed in
@@ -43,7 +43,7 @@ object Column {
   @inline implicit def equalityI  : UnivEq[SortInconclusive]                = UnivEq.force
   @inline implicit def equalityC  : UnivEq[SortConclusive]                  = UnivEq.force
   @inline implicit def equality   : UnivEq[Column]                          = UnivEq.force
-  @inline implicit def reusability: Reusable[Column]                        = Reusable.byUnivEq
+  @inline implicit def reusability: Reusability[Column]                     = Reusability.byEqual
 
   val builtInValues: NonEmptyVector[BuiltIn] =
     NonEmptyVector(Pubid, Code, Title, ReqType, Tags, ImplicationSrc, ImplicationTgt)

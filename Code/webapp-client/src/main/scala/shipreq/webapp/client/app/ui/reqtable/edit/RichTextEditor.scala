@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 package edit
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react.extra._
 import japgolly.scalajs.jquery.{TextComplete => TC}
 import scalacss.ScalaCssReact._
 import org.scalajs.dom.raw.HTMLTextAreaElement
@@ -11,12 +12,11 @@ import scalaz.effect.IO
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Must, UnivEq, Px}
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
-import shipreq.webapp.client.util.{ReusableVal, IsOK}
+import shipreq.webapp.client.util.IsOK
 
 object RichTextEditor {
 
@@ -47,7 +47,7 @@ object RichTextEditor {
         p <- project
         t <- projectText
         s <- textSearch
-      } yield ReusableVal {
+      } yield ReusableVal.byRef {
         var ac: TC.Strategies = new js.Array
 
         if (supportsIssues || supportsTags)

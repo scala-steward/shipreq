@@ -1,10 +1,11 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
-import shipreq.base.util.Px
+import japgolly.scalajs.react.extra._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.util._
 import edit.ColumnEditors
 
@@ -43,12 +44,12 @@ object ReqTable {
 
   final class Backend($: BackendScope[Project, State]) {
 
-    val setViewSettings = ReusableFn.modStateIO($)(_.updateVS)
-    val setFocus        = ReusableFn.modStateIO($)(_.updateFocus)
-    val setCell         = ReusableFn.modStateIO($)(_.updateCell)
+    val setViewSettings = ReusableFn($).modStateIO.endoCall(_.updateVS)
+    val setFocus        = ReusableFn($).modStateIO.endoCall(_.updateFocus)
+    val setCell         = ReusableFn($).modStateIO.endoCall(_.updateCell)
 
-    val project      = Px.thunkM($.props).reuseR
-    val viewSettings = Px.thunkM($.state.viewSettings).reuseR
+    val project      = Px.thunkM($.props)
+    val viewSettings = Px.thunkM($.state.viewSettings)
 
     val vsCols     = viewSettings map (_.columns)
     val colName    = project map Column.NameResolver.byProject
@@ -68,8 +69,8 @@ object ReqTable {
 
       val s = $.state
 
-      val focusV        = setFocus.extvar(s.focus)
-      val viewSettingsV = setViewSettings.extvarR(viewSettings, Reusable.byRef)
+      val focusV        = ReusableVar(s.focus)(setFocus)
+      val viewSettingsV = ReusableVar(viewSettings.value())(setViewSettings)
 
       <.div(
         vsEditor(viewSettingsV),

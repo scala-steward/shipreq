@@ -21,7 +21,7 @@ object CfgTable {
                                    del: Deletion[K],
                                    alive: P => Alive,
                                    showDeleted: S => Boolean,
-                                   c: ComponentStateFocus[S])
+                                   c: CompStateFocus[S])
                                   (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
         new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, alive, showDeleted, c)
     }
@@ -33,7 +33,7 @@ object CfgTable {
                            rr: RowRenderer[P, V, N],
                            del: Deletion[K],
                            alive: P => Alive,
-                           c: ComponentStateFocus[sas.S])
+                           c: CompStateFocus[sas.S])
                           (implicit I: DataIdAux[P, K], O: Ordering[RowKey])
       : CfgTable[sas.S, K, P, I, A, B, C, V, RowKey, N] = {
           def rowA(k: Option[K], i: I): editor.InputA = (sas.validatorInput(k)(c.state), i)
@@ -49,7 +49,7 @@ object CfgTable {
 
 
   def outer[P, I, K](sas: TypicalStoresAndState[P, I, K])
-                    (c: ComponentStateFocus[sas.S],
+                    (c: CompStateFocus[sas.S],
                      inner: => ReactElement): ReactElement =
     <.div(
       ShowDeletedToggler(sas)(c),
@@ -78,7 +78,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
                                                                       deletion: Deletion[K],
                                                                       alive: P => Alive,
                                                                       showDeleted: S => Boolean,
-                                                                      c: ComponentStateFocus[S])
+                                                                      c: CompStateFocus[S])
                                                                      (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
   /** Row content prior to being rendered into DOM. */
   type RowContent = R

@@ -46,7 +46,7 @@ trait TypicalSupp[P, I, K, U] {
 object TypicalSupp {
   @inline def apply[P, I, K, U](_sas: TypicalStoresAndState[P, I, K],
                                 _crudIO: CrudIO[P, K, U, _])
-                               (_c: ComponentStateFocus[_sas.S])
+                               (_c: CompStateFocus[_sas.S])
       : TypicalSupp[P, I, K, U] {val sas: _sas.type} =
     new TypicalSupp[P, I, K, U] {
       override val sas: _sas.type = _sas

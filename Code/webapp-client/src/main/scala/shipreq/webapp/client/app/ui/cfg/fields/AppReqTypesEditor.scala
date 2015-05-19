@@ -54,7 +54,7 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
 
   val component = ISubsetEditor.Component(static)
 
-  def editor($: ComponentStateFocus[S]): SimpleEditor2[(Option[K], ApplicableReqTypes), ApplicableReqTypes] =
+  def editor($: CompStateFocus[S]): SimpleEditor2[(Option[K], ApplicableReqTypes), ApplicableReqTypes] =
     Editor { ei =>
       val (id, value) = ei.data
 

@@ -142,8 +142,8 @@ private[fields] object MainTable {
       .backend(new Backend(_))
       .render(_.backend.dyn.value.render)
       .configure(
-        DeltaListener.apply  [Props, S, Backend](_.clientData, fieldDeltaListener.handler(Partition.Fields)) compose
-        DeltaListener.refresh[Props, S, Backend](_.clientData, _.backend.dyn.refresh(()))(
+        DeltaListener.apply  [Props, S, Backend, TopNode](_.clientData, fieldDeltaListener.handler(Partition.Fields)) compose
+        DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, _.backend.dyn.refresh(()))(
           Partition.CustomReqTypes, // Refreshes AppReqTypesEditor and reqTypeSelector
           Partition.Tags          ) // Refreshes tagSelector
       )

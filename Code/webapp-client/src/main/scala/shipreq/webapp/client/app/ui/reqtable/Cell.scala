@@ -1,9 +1,9 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react.ReactElement
+import japgolly.scalajs.react.extra.~=>
 import scalaz.effect.IO
 import shipreq.base.util.UnivEq
-import shipreq.webapp.client.util.~=>
 
 object Cell {
 

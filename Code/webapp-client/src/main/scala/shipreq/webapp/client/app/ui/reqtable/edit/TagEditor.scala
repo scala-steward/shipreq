@@ -1,16 +1,16 @@
 package shipreq.webapp.client.app.ui.reqtable
 package edit
 
+import japgolly.scalajs.react.extra.{ReusableVal, Px}
 import scalaz.effect.IO
 import scalaz.\/-
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
-import shipreq.base.util.{Must, Px, UnivEq}
+import shipreq.base.util.{Must, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
-import shipreq.webapp.client.util.ReusableVal
 
 // TODO Hide dead tags & maintain across edits (unless show deleted is on)
 
@@ -47,8 +47,9 @@ object TagEditor {
     val lookup = lookupM.map(mustResolve(_)(UnivEq.emptyMap))
 
     val autoComplete: Px[AutoComplete] =
-      lookup.map(l => ReusableVal(
-        AutoComplete.tag(l.values.toStream)(AutoComplete.WithoutSyntax)))
+      lookup.map(l => ReusableVal.byRef(
+        AutoComplete.tag(l.values.toStream)(AutoComplete.WithoutSyntax)
+      ))
 
     val parser: Parser[A] = () => {
       val l = lookup.value()

@@ -21,10 +21,10 @@ object EventListener {
    *                   Events which are bubbling upward through the tree will not trigger a listener designated to use
    *                   capture.
    */
-  def install[P, S, B <: OnUnmount, E <: Event](eventType: String,
-                                                listener: ComponentScopeM[P, S, B] => E => Unit,
-                                                useCapture: Boolean = false) =
-    OnUnmount.install compose ((_: ReactComponentB[P, S, B])
+  def install[P, S, B <: OnUnmount, N <: TopNode, E <: Event](eventType: String,
+                                                              listener: ComponentScopeM[P, S, B, N] => E => Unit,
+                                                              useCapture: Boolean = false) =
+    OnUnmount.install compose ((_: ReactComponentB[P, S, B, N])
       .componentDidMount($ => {
       val fe = listener($)
       val f1: js.Function1[E, Unit] = (e: E) => fe(e)
@@ -34,18 +34,18 @@ object EventListener {
     }))
 
 
-  def installIO[P, S, B <: OnUnmount, E <: Event](eventType: String,
-                                                listener: ComponentScopeM[P, S, B] => E => IO[Unit],
-                                                useCapture: Boolean = false) =
-    install[P, S, B, E](eventType, $ => { val f = listener($); f(_).unsafePerformIO() }, useCapture)
+  def installIO[P, S, B <: OnUnmount, N <: TopNode, E <: Event](eventType: String,
+                                                                listener: ComponentScopeM[P, S, B, N] => E => IO[Unit],
+                                                                useCapture: Boolean = false) =
+    install[P, S, B, N, E](eventType, $ => { val f = listener($); f(_).unsafePerformIO() }, useCapture)
 }
 
 
 object KeyPressListener {
 
-  def install[P, S, B <: KeyPressListener](useCapture: Boolean = false) =
-    EventListener.install[P,S,B,KeyboardEvent]("keydown", _.backend._onKeyDown, useCapture) compose
-    EventListener.install[P,S,B,KeyboardEvent]("keyup",   _.backend._onKeyUp,   useCapture)
+  def install[P, S, B <: KeyPressListener, N <: TopNode](useCapture: Boolean = false) =
+    EventListener.install[P,S,B,N,KeyboardEvent]("keydown", _.backend._onKeyDown, useCapture) compose
+    EventListener.install[P,S,B,N,KeyboardEvent]("keyup",   _.backend._onKeyUp,   useCapture)
 
   val modKeys: BitSet =
     BitSet(KeyCode.alt, KeyCode.ctrl, KeyCode.shift,

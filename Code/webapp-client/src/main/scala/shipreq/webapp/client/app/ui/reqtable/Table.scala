@@ -14,23 +14,23 @@ import shipreq.base.util.effect.IoUtils.{nop, IoExt}
 import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.util._
 import edit.ColumnEditors
 
 object Table {
 
-  implicit val reuseCEs : Reusable[ColumnEditors]                  = Reusable.byRef
-  implicit val reuseCRs : Reusable[NonEmptyVector[ColumnRenderer]] = Reusable.byRef
-  implicit val reuseRows: Reusable[Vector[Row]]                    = Reusable.byRef
-  implicit val reuseRow : Reusable[Row]                            = Reusable.byRef
-  implicit val reuseVSs : Reusable[ViewSettings]                   = Reusable.byRef
-  implicit val reuseCNR : Reusable[Column.NameResolver]            = Reusable.byRef
-  implicit val reuseCTS : Reusable[Cell.TableState]                = Reusable.byRef
-  implicit val reuseCRS : Reusable[Cell.RowState]                  = Reusable.byRef
+  implicit val reusabilityCEs : Reusability[ColumnEditors]                  = Reusability.byRef
+  implicit val reusabilityCRs : Reusability[NonEmptyVector[ColumnRenderer]] = Reusability.byRef
+  implicit val reusabilityRows: Reusability[Vector[Row]]                    = Reusability.byRef
+  implicit val reusabilityRow : Reusability[Row]                            = Reusability.byRef
+  implicit val reusabilityCNR : Reusability[Column.NameResolver]            = Reusability.byRef
+  implicit val reusabilityCTS : Reusability[Cell.TableState]                = Reusability.byRef
+  implicit val reusabilityCRS : Reusability[Cell.RowState]                  = Reusability.byRef
 
-  implicit val propContent = Reusable.caseclass3(Content.unapply)
-  implicit val propFocus   = Reusable.caseclass3(Focus.unapply)
-  implicit val propReuse   = Reusable.caseclass4(Props.unapply)
+  implicit val reusabilityContent = Reusability.caseclass3(Content.unapply)
+  implicit val reusabilityFocus   = Reusability.caseclass3(Focus.unapply)
+  implicit val reusabilityProps   = Reusability.caseclass4(Props.unapply)
 
   case class Content(crs: NonEmptyVector[ColumnRenderer], rows: Vector[Row], ces: ColumnEditors)
 
@@ -42,14 +42,14 @@ object Table {
   case class Props(project: Project,
                    content: Content,
                    cells  : Cell.TableState,
-                   focus  : ReusableExternalVar[Option[Focus]])
+                   focus  : ReusableVar[Option[Focus]])
 
   val Component =
     ReactComponentB[Props]("Table")
       .stateless
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(KeyPressListener.install(), Reusable.preventUpdates)
+      .configure(KeyPressListener.install(), Reusability.shouldComponentUpdate)
       .build
 
   sealed trait KeyboardAction
@@ -181,7 +181,7 @@ object Table {
 
   // ===================================================================================================================
 
-  implicit val rowPropReuse = Reusable.caseclass5(RowProps.unapply)
+  implicit val rowPropReuse = Reusability.caseclass5(RowProps.unapply)
 
   case class RowProps(row     : Row,
                       crs     : NonEmptyVector[ColumnRenderer],
@@ -192,7 +192,7 @@ object Table {
   val RowComponent =
     ReactComponentB[RowProps]("Row")
       .render(renderRow(_))
-      .configure(Reusable.preventUpdates)
+      .configure(Reusability.shouldComponentUpdate)
       .build
 
   /**

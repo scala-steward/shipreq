@@ -67,7 +67,7 @@ object EditorExt extends EditorExt {
         }
       )
 
-    def editableByRowStatus(c: ComponentStateFocus[S])
+    def editableByRowStatus(c: CompStateFocus[S])
                            (implicit ev: IO[Unit] =:= D, M: M ~> IO): RowStatus => Option[e.Editable] = {
       val canedit = e.editable(c runState _.st)
       rs => rs match {

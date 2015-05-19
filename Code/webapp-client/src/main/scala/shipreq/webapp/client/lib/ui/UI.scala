@@ -2,15 +2,15 @@ package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.jquery.TextComplete
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.html
 import scala.scalajs.js.{Dynamic, UndefOr, undefined}
 import scalaz.effect.IO
-import shipreq.base.util.{Px, Must}
+import shipreq.base.util.Must
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.UiText
-import shipreq.webapp.client.util.ReusableVal
 
 object UI {
 
@@ -66,11 +66,11 @@ object UI {
     }
   }
 
-  def installTextComplete[P, S, B, E <: html.Element](
-          getNode   : ComponentScopeM[P, S, B] => E,
+  def installTextComplete[P, S, B, N <: TopNode, E <: html.Element](
+          getNode   : ComponentScopeM[P, S, B, N] => E,
           strategies: (P, B) => ReusableVal[TextComplete.Strategies],
           onUpdate  : (P, B) => String => IO[Unit])
-         (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B]] =
+         (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
     _.componentDidMount { $ =>
       val n = getNode($)
       te.focus(n)
@@ -90,11 +90,11 @@ object UI {
       }
     }
 
-  def installTextComplete2[P, S, B, E <: html.Element](
+  def installTextComplete2[P, S, B, N <: TopNode, E <: html.Element](
           getNode   : RefSimple[E],
           strategies: P => ReusableVal[TextComplete.Strategies],
           onUpdate  : P => String => IO[Unit])
-        (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B]] =
+        (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
     installTextComplete(getNode(_).get.getDOMNode(), (p, _) => strategies(p), (p, _) => onUpdate(p))
 
 }

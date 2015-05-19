@@ -1,9 +1,10 @@
 package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.jquery.{TextComplete => TC}
-import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.extra._
 import scala.scalajs.js
 import scalaz.effect.IO
 import scalaz.std.option._
@@ -13,7 +14,7 @@ import scalaz.syntax.foldable._
 import scalaz.{-\/, Tags, \/}
 
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
-import shipreq.webapp.client.util.{ReusableVal, IsOK}
+import shipreq.webapp.client.util.IsOK
 import TextSeqEditor._
 
 object TextSeqEditor {

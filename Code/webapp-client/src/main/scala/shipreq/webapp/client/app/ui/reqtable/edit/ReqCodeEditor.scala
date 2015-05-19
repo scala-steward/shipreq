@@ -1,15 +1,15 @@
 package shipreq.webapp.client.app.ui.reqtable.edit
 
+import japgolly.scalajs.react.extra.{ReusableVal, Px}
 import scalaz.{\/-, -\/}
 import scalaz.effect.IO
-import shipreq.base.util.{Util, Px}
+import shipreq.base.util.Util
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
 import shipreq.webapp.client.app.ui.reqtable._
 import shipreq.webapp.client.lib.ui.TextEditor
-import shipreq.webapp.client.util.ReusableVal
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import Validators.{reqCode => V}
 
@@ -18,7 +18,7 @@ object ReqCodeEditor {
   type A = ReqCode.Value
 
   def mkAutoComplete(validationState: Px[V.VS]): Px[AutoComplete] =
-    validationState.map(vs => ReusableVal(
+    validationState.map(vs => ReusableVal.byRef(
       AutoComplete.reqCode.prefixes(vs.trie)))
 
   def mkParser(validationState: Px[V.VS]): Parser[A] = () => {

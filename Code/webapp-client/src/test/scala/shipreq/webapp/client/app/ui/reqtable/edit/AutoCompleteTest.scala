@@ -44,12 +44,12 @@ object AutoCompleteTest extends TestSuite {
     //        def change = (e: ReactEventI) => $.setStateIO(e.target.value)
     //        <.textarea(^.value := $.state, ^.onChange ~~> change)
     //      }
+    //      .domType[N]
     //      .componentDidMount { $ =>
-    //        def n = $.getDOMNode().asInstanceOf[N]
+    //        def n = $.getDOMNode()
     //        UI.textComplete(n, ac, $.setStateIO(_))
     //        document.body.appendChild(n)
     //      }
-    //      .domType[N]
     //      .build
     //    ReactTestUtils renderIntoDocument editor(c)("")
 

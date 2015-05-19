@@ -1,18 +1,18 @@
 package shipreq.webapp.client.app.ui.reqtable
 package edit
 
+import japgolly.scalajs.react.extra.{ReusableVal, Px}
 import scalaz.effect.IO
 import scalaz.syntax.either._
 import scalaz.syntax.equal._
 import scalaz.{\/-, -\/}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
-import shipreq.base.util.{Must, Px, UnivEq}
+import shipreq.base.util.{Must, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
-import shipreq.webapp.client.util.ReusableVal
 
 // TODO Hide dead reqs & maintain across edits (unless show deleted is on)
 // TODO ImplicationEditor needs validation
@@ -77,7 +77,7 @@ object ImplicationEditor {
       for {
         l <- lookup
         s <- textSearch
-      } yield ReusableVal(
+      } yield ReusableVal.byRef(
         AutoComplete.req(s, l.legal, AutoComplete.WithoutSyntax))
 
     val parser: Parser[A] = () => {

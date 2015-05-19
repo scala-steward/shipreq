@@ -40,8 +40,8 @@ private[issues] object MandatoryFields {
     .backend(new Backend(_))
     .render(_.backend.render)
     .configure(
-      DeltaListener.apply   [Props, S, Backend](_.clientData, fieldListener) compose
-      DeltaListener.refreshL[Props, S, Backend](_.clientData, _.backend.refreshLabelFn, Field.nameAffectingPartitions)
+      DeltaListener.apply   [Props, S, Backend, TopNode](_.clientData, fieldListener) compose
+      DeltaListener.refreshL[Props, S, Backend, TopNode](_.clientData, _.backend.refreshLabelFn, Field.nameAffectingPartitions)
     )
     .build
 

@@ -1,10 +1,11 @@
 package shipreq.webapp.client.app.ui.reqtable
 package edit
 
+import japgolly.scalajs.react.extra.Px
 import monocle.Optional
 import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Must, Px}
+import shipreq.base.util.Must
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets

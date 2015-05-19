@@ -12,6 +12,6 @@ object ShowDeletedToggler {
       checkbox(show)(^.onChange ~~> toggle),
       if (show) "Show deleted items." else "Showing deleted items.")
 
-  def apply(sas: TypicalStoresAndState[_, _, _])(c: ComponentStateFocus[sas.S]): ReactElement =
+  def apply(sas: TypicalStoresAndState[_, _, _])(c: CompStateFocus[sas.S]): ReactElement =
     apply(c.state.showDeleted, c.runState(sas.toggleShowDeleted))
 }
