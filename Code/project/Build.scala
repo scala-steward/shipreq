@@ -233,8 +233,7 @@ object ShipReq extends Build {
           dontInline, // crashes scalac 2.11.5
           addCommandAliases(
             "tbc" -> ";webapp-base-test/test; webapp-client/test",
-            "js"  -> Client.jsCmd,
-            "wd"  -> ";up;~js"))
+            "wd"  -> ";up;WC;~js"))
         .dependsOn(baseUtilSjs)
     }
 
@@ -317,6 +316,7 @@ object ShipReq extends Build {
           Common.addSourceDialectJsFrom(baseUtilSjs),
           testSettings,
           dontInline, // ScalaJS inlines
+          addCommandAliases("js" -> s";$jsCmd;webapp-server/linkClientJs"),
           debugOrRelease(identity, prodJsSettings))
     }
 
