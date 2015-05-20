@@ -69,16 +69,22 @@ object LogicTest extends TestSuite {
 
     type S[A] = Stream[A]
 
+    val expectVisible: ReqId => Boolean =
+      if (vs.filterDead == HideDead)
+        id => p.reqs.data.req(id).get.alive ≟ Alive
+      else
+        _ => true
+
     val gathered     = Logic.gather(vs, p)
     val gatheredG    = gathered.filterT[GenericReqRow]
     val rowReqCodes  = gathered.flatMap(codesInRow(_).toStream)
     val rowGReqIds   = gatheredG.map(_.req.id).toSet
-    val srcGReqIds   = p.reqs.data.reqs.keys.filterT[GenericReqId].toSet
+    val srcGReqIds   = p.reqs.data.reqs.keys.filterT[GenericReqId].filter(expectVisible).toSet
     val plainText    = PlainText(p)
 
     val expectedVisibleReqCodes =
       p.reqCodes.data.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
-        case _: ReqId        => q + c
+        case id: ReqId       => if (expectVisible(id)) q + c else q
         case _: ReqCodeGroup => if (vs.viewReqCodeGroups) q + c else q
       })
 
@@ -296,7 +302,7 @@ object LogicTest extends TestSuite {
     private val P = SampleProject.project
     private type Rows = Stream[Row]
 
-    private def testUnsorted[A: Equal](p: Project, pt: PlainText.ForProject, c: C.SortInconclusive, fd: FilterDead, extract: Rows => A)(expect: A): Unit = {
+    private def testUnsorted[A: Equal](p: Project, pt: PlainText.ForProject, c: C, fd: FilterDead, extract: Rows => A)(expect: A): Unit = {
       val vs = ViewSettings(NonEmptyVector(c), SortCriteria.default.copy(init = Vector.empty), fd)
       val r = Logic.gather(vs, p) |> Logic.sort(vs, p, pt) |> Logic.consolidateAdjacentDups
       assertEq(extract(r), expect)
@@ -599,6 +605,13 @@ object LogicTest extends TestSuite {
       val fmt = rowToCustomImpTxt(p, f)
       testCB(p, PlainText(p), f, ShowDead, fmt)(allSortsCB(3, "MF-1>FR-1,MF-2>FR-1", "MF-2>FR-1,MF-1>FR-1"))
     }
+
+    def testFilterDead(): Unit = {
+      def dead = GReq(alive = Dead)
+      def alive = GReq()
+      val p = (alive + dead + alive + dead + alive).setDefaultReqType(2) ! P
+      testUnsorted(p, PlainText(p), C.Pubid, HideDead, rowToPubid(p))("MF-1  MF-3  MF-5")
+    }
   }
 
   def testReqCodeTree(): Unit = {
@@ -742,6 +755,7 @@ object LogicTest extends TestSuite {
         'custImp - UnitSort.testApplicabilityOfCustomImpFields()
       }
     'reqCodeTree - testReqCodeTree()
+    'filterDead - UnitSort.testFilterDead()
     }
   }
 }

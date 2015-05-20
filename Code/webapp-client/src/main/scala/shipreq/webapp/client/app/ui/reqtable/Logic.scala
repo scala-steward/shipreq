@@ -193,32 +193,34 @@ private[reqtable] object Logic {
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
         pReqs.reqM(id).fold(failedMust(q), q + _.pubid))
 
+    val filterReqDead = vs.filterDead.filterFnA[GenericReq](_.alive)
+
     val reqRows =
       p.reqs.data.reqs.vstreamf {
         case r: GenericReq =>
-          val id = r.id
+          if (filterReqDead(r)) {
+            val id = r.id
 
-          // TODO: Remove deleted
+            // Expansion
+            val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
+            val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
+            val codes   = expandCodes  (() => pReqCodes(id))
+            val cfImps  = expandImpCols(r)
+            val cfTags  = expandTagCols(r)
+            val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
-          // TODO: Filter
+            // Build
+            val mv = multiValuesFn(id)
+            exps.toStream.map(GenericReqRow(r, _, mv))
 
-          // Expansion
-          val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
-          val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-          val codes   = expandCodes  (() => pReqCodes(id))
-          val cfImps  = expandImpCols(r)
-          val cfTags  = expandTagCols(r)
-          val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
-
-          // Build
-          val mv = multiValuesFn(id)
-          exps.toStream.map(GenericReqRow(r, _, mv))
+          } else
+            Stream.empty[GenericReqRow]
       }
 
     val reqCodeGroupRows: Stream[ReqCodeGroupRow] =
       if (vs.viewReqCodeGroups)
         p.reqCodes.data.cataA(Stream.empty[ReqCodeGroupRow])((q, c, d) => d.target match {
-          case _: ReqId       => q
+          case _: ReqId        => q
           case g: ReqCodeGroup =>
             // TODO: Filter
             ReqCodeGroupRow(d.id, g, c, None) #:: q

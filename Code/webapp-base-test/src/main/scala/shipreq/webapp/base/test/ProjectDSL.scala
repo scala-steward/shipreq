@@ -22,7 +22,7 @@ object ProjectDSL {
 
   case class ProjectState(p             : Project,
                           nextId        : Long,
-                          defaultReqType: Option[CustomReqType],
+                          defaultReqType: Option[CustomReqTypeId],
                           reqs          : IMapK[ReqTypeId, ReqIdT, ReqT],
                           pubids        : PubidRegister,
                           reqCodeTrie   : ReqCode.Trie,
@@ -42,7 +42,7 @@ object ProjectDSL {
 
   def projectState(p: Project) = ProjectState(p,
     nextId         = p.reqs.data.reqs.keySet.ifelse(_.isEmpty, _ => 1, _.max.value),
-    defaultReqType = p.customReqTypes.data.values.headOption,
+    defaultReqType = p.customReqTypes.data.values.headOption.map(_.id),
     reqs           = p.reqs.data.reqs,
     pubids         = p.reqs.data.pubids,
     reqCodeTrie    = p.reqCodes.data.trie,
@@ -86,7 +86,7 @@ object ProjectDSL {
         def reqCodeData() =
           ReqCode.Data(Some(ReqCode.ActiveData(nextReqCodeId(), id)), UnivEq.emptySet, UnivEq.emptySetMultimap)
 
-        val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get.id)
+        val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
         val (pr, pubid) = p.pubids.allocC(reqTypeId)(id)
         val req         = GenericReq(id, pubid, title, alive)
         val text        = cftexts.mapValuesNow(t => Map.empty[ReqId, CFTextValue].updated(id, t))
@@ -125,15 +125,17 @@ object ProjectDSL {
       }
   }
 
-  case class Composite(ss: NonEmptyVector[Mod[_]], defaultReqType: Option[CustomReqType]) {
+  case class Composite(ss: NonEmptyVector[Mod[_]], defaultReqType: Option[CustomReqTypeId]) {
 
     def +(n: ToState): Composite =
       copy(ss = n.state +: ss)
 
     def state: Mod[Unit] = {
       var s = ss.whole.reduce((a, b) => b >> a).map(_ => ())
-      for (rt <- defaultReqType)
-        s = State.modify[S](_.copy(defaultReqType = Some(rt))) >> s
+      for (rt <- defaultReqType) {
+        val s1 = s
+        s = State.modify[S](_.copy(defaultReqType = Some(rt))) >> s1
+      }
       s
     }
 
@@ -142,7 +144,7 @@ object ProjectDSL {
       copy(ss = NonEmptyVector(x.head, x.tail))
     }
 
-    def setDefaultReqType(rt: CustomReqType): Composite =
+    def setDefaultReqType(rt: CustomReqTypeId): Composite =
       copy(defaultReqType = Some(rt))
 
     def !(p: Project): Project =
