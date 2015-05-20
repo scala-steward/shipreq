@@ -3,6 +3,7 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
+import shipreq.webapp.client.app.ui.Checkbox
 
 object ViewSettingsEditor {
 
@@ -22,6 +23,8 @@ object ViewSettingsEditor {
 
     val columnsEditor = new ColumnsEditor(columnName)
 
+    val filterDeadEditor = Checkbox.filterDead($.props setL ViewSettings.filterDead)
+
     def render = {
       val p = $.props
       val vs = p.value
@@ -31,7 +34,7 @@ object ViewSettingsEditor {
           case i: Column.SortInconclusive => q + i
           case _: Column.SortConclusive   => q
         })
-        ViewSettings(cs, vs.order.whitelistColumns(icols))
+        ViewSettings(cs, vs.order.whitelistColumns(icols), vs.filterDead)
       }
 
       def columns =
@@ -40,15 +43,17 @@ object ViewSettingsEditor {
       def sortCriteria =
         SortCriteriaEditor.Props(vs.order, vs.columns.toSet, columnName, p setL ViewSettings.order).component
 
-      <.table(
-        <.thead(
-          <.tr(
-            <.th("Columns"),
-            <.th("Sorting"))),
-        <.tbody(
-          <.tr(
-            <.td(columns),
-            <.td(sortCriteria))))
+      <.div(
+        <.table(
+          <.thead(
+            <.tr(
+              <.th("Columns"),
+              <.th("Sorting"))),
+          <.tbody(
+            <.tr(
+              <.td(columns),
+              <.td(sortCriteria)))),
+        filterDeadEditor(vs.filterDead))
     }
   }
 }

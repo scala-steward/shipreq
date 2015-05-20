@@ -6,8 +6,12 @@ import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.lib.{ShowDead, FilterDead}
 
 object ReqTableTest {
+
+  lazy val rndFilterDead: Gen[FilterDead] =
+    Gen.boolean.map(ShowDead.to)
 
   def rndColumns(p: Project): Gen[NonEmptyVector[Column]] = {
     val allPossibleColumns    = Column.all(p.fields.data.customFields.keys).whole
@@ -41,6 +45,7 @@ object ReqTableTest {
       cols  ← rndColumns(p)
       icols = cols.whole.filterT[Column.SortInconclusive].toVector
       order ← rndSortCriteria(rndSortCriteriaI(icols))
-    } yield ViewSettings(cols, order)
+      fdead ← rndFilterDead
+    } yield ViewSettings(cols, order, fdead)
 
 }

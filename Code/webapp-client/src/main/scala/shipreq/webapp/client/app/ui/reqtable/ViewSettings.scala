@@ -5,10 +5,12 @@ import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.{UnivEq, NonEmptyVector}
 import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.client.lib.{HideDead, FilterDead}
 
 @Lenses
-case class ViewSettings(columns: NonEmptyVector[Column],
-                        order  : SortCriteria) {
+case class ViewSettings(columns   : NonEmptyVector[Column],
+                        order     : SortCriteria,
+                        filterDead: FilterDead) {
 
   def isVisible(c: Column): Boolean =
     isVisible(_ ≟ c)
@@ -46,6 +48,7 @@ object ViewSettings {
     import Column._
     ViewSettings(
       NonEmptyVector(Code, Pubid, Title, Tags, ImplicationSrc),
-      SortCriteria.default)
+      SortCriteria.default,
+      HideDead)
   }
 }
