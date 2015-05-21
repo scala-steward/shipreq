@@ -8,11 +8,12 @@ import utest._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.client.test.PrepareEnv
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.base.test.SampleImplicationGraph
 
 object EditorTest extends TestSuite {
-  shipreq.webapp.client.app.ui.Style // Ensure initialised
+  PrepareEnv()
 
   val (impAllReqsAndKeys, impLookupAll) = {
     import SampleImplicationGraph._

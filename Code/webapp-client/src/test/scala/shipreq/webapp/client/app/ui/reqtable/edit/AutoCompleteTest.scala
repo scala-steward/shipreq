@@ -19,11 +19,10 @@ import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.SampleProject2._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.lib.ui.UI
-import shipreq.webapp.client.test.Sizzle
+import shipreq.webapp.client.test.{PrepareEnv, Sizzle}
 
 object AutoCompleteTest extends TestSuite {
-
-  shipreq.webapp.client.app.ui.Style // Ensure initialised
+  PrepareEnv()
 
   type N = HTMLTextAreaElement
 

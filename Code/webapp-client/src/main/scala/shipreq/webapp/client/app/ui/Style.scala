@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app
 package ui
 
-import scalacss.ProdDefaults._ // TODO Defaults._ Breaks tests due to PhantomJS console.error bug
+import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import scalacss.StyleS
 import shipreq.webapp.base.text.Grammar
@@ -12,12 +12,6 @@ import scalaz.syntax.equal._
 
 object Style extends StyleSheet.Inline {
   import dsl._
-
-//  object Missing {
-//    import scalacss._
-//    import DslBase.ToStyle
-//  }
-//  import Missing._
 
   val aliveDomain = Domain.ofValues[Alive](Alive, Dead)
   val isOkDomain = Domain.ofValues[IsOK](IsOK, NotOK)
