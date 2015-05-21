@@ -279,7 +279,7 @@ object ShipReq extends Build {
             testjs("sizzle.min.js")),
           emitSourceMaps in Test := false, // PhantomJS doesn't use
           requiresDOM := true,
-          jsEnv in Test := PhantomJSEnv().value)
+          jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
       def prodJsSettings = (_: Project).settings(
         emitSourceMaps := false,

@@ -6,7 +6,6 @@ package object test {
 
   object PrepareEnv {
     def apply(): Unit = ()
-    System.setErr(System.out)
     shipreq.webapp.client.app.ui.Style
   }
 }
