@@ -32,7 +32,7 @@ import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
 import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
-import shipreq.webapp.client.util.DND
+import shipreq.webapp.client.util.{Disabled, DND}
 import TagTree.FlatRow, FlatRow.FilterPolicy
 import TagProtocol.{PovTag, PovRelations}
 
@@ -195,7 +195,7 @@ private[tags] object MainTable {
       $.state.newSel,
       onNewInvoke,
       $ _setStateL State.newSel,
-      newRowActive($.state))
+      Disabled to newRowActive($.state))
 
     val onNewInvoke =
       Some($.modStateIO(s => storesForType(s.newSel).n.enableEdit(s)))

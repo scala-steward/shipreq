@@ -15,6 +15,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.reqtable.Cell
+import shipreq.webapp.client.util.Enabled
 import SelectOne.Choice
 
 object ReqTypeSelector {
@@ -59,7 +60,7 @@ object ReqTypeSelector {
     .build
 
   def render(p: Props): ReactElement = {
-    def choice(a: A) = Choice[A](a, a.fullName, false)
+    def choice(a: A) = Choice[A](a, a.fullName, Enabled)
 
     val choices = p.fields.mapV(choice).sortBy(_.label)
 

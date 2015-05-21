@@ -24,7 +24,7 @@ import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
-import shipreq.webapp.client.util.DND
+import shipreq.webapp.client.util.{Disabled, Enabled, DND}
 import Field.ApplicableReqTypes
 import FieldProtocol.Delta
 import DeletionAction._
@@ -238,7 +238,7 @@ private[fields] object MainTable {
         val s = $.state
 
         def choice(value: NewSelType, label: String): Choice[NewSelType] =
-          Choice(value, label, disabled = false)
+          Choice(value, label, Enabled)
 
         def customFieldChoice(t: CustomFieldType) =
           choice(\/-(t), t.name)
@@ -283,7 +283,7 @@ private[fields] object MainTable {
               Some($ _setStateL State.newFieldTypeSel)
             ),
             onInvoke, UiText.Cfg.startNewButton,
-            customFieldStores.exists(_.n.editing(s))))
+            Disabled to customFieldStores.exists(_.n.editing(s))))
       }
 
       val abortNew: S => S =

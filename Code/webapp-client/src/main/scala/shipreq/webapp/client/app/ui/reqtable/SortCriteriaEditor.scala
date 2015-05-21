@@ -7,11 +7,11 @@ import scalaz.{Equal, \/, -\/, \/-}
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{NonEmptyVector, NonEmptySet, UnivEq, Util}
+import shipreq.base.util.{NonEmptySet, UnivEq, Util}
 import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.Style.reqtable.{sortingSettings => *}
-import shipreq.webapp.client.util.DND
+import shipreq.webapp.client.util.{Enabled, DND}
 
 object SortCriteriaEditor {
 
@@ -82,9 +82,9 @@ object SortCriteriaEditor {
 
       private val choicesForColumn =
         memo[Col, Choices[OSM]]{c =>
-          val choice  = (sc: SC) => Choice[OSM](\/-(sc), sc.method.optionLabel, false)
+          val choice  = (sc: SC) => Choice[OSM](\/-(sc), sc.method.optionLabel, Enabled)
           val choices = SortCriterion.possibilitiesI(c) map choice
-          val unused  = Choice[OSM](-\/(c), "Unused", false) // English
+          val unused  = Choice[OSM](-\/(c), "Unused", Enabled) // English
           unused +: choices
         }
 
@@ -150,7 +150,7 @@ object SortCriteriaEditor {
 
       private val smChoices: Choices[SM] =
         SortMethod.ignoreBlanks.map(m =>
-          Choice[SM](m, m.optionLabel, false))
+          Choice[SM](m, m.optionLabel, Enabled))
 
       private val smSelectComponent = SelectOne.Component[SM]
 
@@ -163,7 +163,7 @@ object SortCriteriaEditor {
 
       def columnDropdown(value: Col, cols: NonEmptySet[Col], columnName: Column.NameResolver, modIO: ModIO): ReactElement = {
         val colChoices =
-          cols.toNonEmptyVector.map(c => Choice(c, columnName(c), false))
+          cols.toNonEmptyVector.map(c => Choice(c, columnName(c), Enabled))
             .sortBy(_.label)
         val onSelect = Some((v: Col) => modIO(_.copy(column = v)))
         colSelectComponent(SelectOne.Props(value, colChoices, onSelect, *.conclusiveField))

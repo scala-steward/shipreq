@@ -4,6 +4,7 @@ import scalaz.Equal
 import scalaz.std.option._
 import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.client.lib.ui._
+import shipreq.webapp.client.util.Enabled
 import SelectOne.{Props, Choice}
 
 /**
@@ -41,7 +42,7 @@ object SelectOneStartNone {
 
   def reqType(rs: TraversableOnce[ReqType]): SelectOneStartNone[ReqTypeId] = {
     val opts = rs.toStream
-                .map(r => Choice(r.reqTypeId, r.name, disabled = false))
+                .map(r => Choice(r.reqTypeId, r.name, Enabled))
                 .sortBy(_.label)
                 .toVector
     new SelectOneStartNone(opts)
@@ -49,7 +50,7 @@ object SelectOneStartNone {
 
   def tag(tt: TagTree): SelectOneStartNone[TagId] = {
     val flat = TagTree.flatten(tt)(Tag.filterAlive, FilterPolicy.OmitAnythingWithBadParent)
-    val opts = flat.map(f => Choice(f.id, f.indentedName, disabled = false))
+    val opts = flat.map(f => Choice(f.id, f.indentedName, Enabled))
     new SelectOneStartNone(opts)
   }
 }

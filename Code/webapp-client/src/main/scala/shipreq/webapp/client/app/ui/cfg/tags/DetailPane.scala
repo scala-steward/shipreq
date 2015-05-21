@@ -7,7 +7,7 @@ import scalaz.effect.IO
 import scalaz.std.option.optionEqual
 import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.client.app.ui.SelectOne
-import shipreq.webapp.client.util.DND
+import shipreq.webapp.client.util.{Disabled, Enabled, DND}
 import SelectOne.Choice
 import TagTree.FlatRow
 
@@ -42,7 +42,7 @@ private[tags] object DetailPane {
         "Remove"))
 
   val relDropdownComponent = SelectOne.Component[Option[Id]]
-  val emptyRelChoice       = Choice[Option[Id]](None, "", disabled = false)
+  val emptyRelChoice       = Choice[Option[Id]](None, "", Enabled)
 
   final class Backend($: BackendScope[Props, State]) {
     @inline def p = $.props
@@ -87,7 +87,7 @@ private[tags] object DetailPane {
           emptyRelChoice,
           ar.rels.map { r =>
             val s = r.selectable
-            Choice[Option[Id]](s, r.value.indentedName, disabled = s.isEmpty)
+            Choice[Option[Id]](s, r.value.indentedName, Disabled to s.isEmpty)
           })
 
         val dropdown =

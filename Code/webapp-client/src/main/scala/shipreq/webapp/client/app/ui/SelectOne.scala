@@ -7,14 +7,15 @@ import scalaz.Equal
 import scalaz.effect.IO
 import shipreq.base.util.{NonEmptyVector, ParseInt}
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.client.util.{Disabled, Enabled}
 
 object SelectOne {
 
   type Choices[A] = NonEmptyVector[Choice[A]]
 
-  case class Choice[A](value   : A,
-                       label   : String,
-                       disabled: Boolean) {
+  case class Choice[A](value  : A,
+                       label  : String,
+                       enabled: Enabled) {
     def map[B](f: A => B): Choice[B] = copy(value = f(value))
   }
 
@@ -35,14 +36,14 @@ object SelectOne {
       var sel = -1
       var i = 0
       var j = js.Array[ReactNode]()
-      props.choices.foreach { v =>
+      props.choices.foreach { c =>
         j.push(
           <.option(
             ^.value    := i,
             ^.key      := i,
-            ^.disabled := v.disabled,
-            v.label))
-        if (sel == -1 && E.equal(v.value, props.selected))
+            ^.disabled := Disabled.from(c.enabled),
+            c.label))
+        if (sel == -1 && E.equal(c.value, props.selected))
           sel = i
         i += 1
       }
@@ -67,7 +68,7 @@ object SelectOne {
   // ===================================================================================================================
 
   def optional[A](choices: Vector[Choice[A]], nopLabel: String = ""): Choices[Option[A]] = {
-    val nop = Choice[Option[A]](None, nopLabel, false)
+    val nop = Choice[Option[A]](None, nopLabel, Enabled)
     val tail = choices.map(_.map(_.some))
     NonEmptyVector(nop, tail)
   }
