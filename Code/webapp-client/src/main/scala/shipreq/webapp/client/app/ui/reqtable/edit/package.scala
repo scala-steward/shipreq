@@ -6,13 +6,13 @@ import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-, Failure, Success}
 import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.client.lib.ui.TextEditor
-import shipreq.webapp.client.util.IsOK
+import shipreq.webapp.client.util.Validity
 import Style.{reqtable => *}
 import TextSeqEditor._
 
 package object edit {
 
-  val cellStyle: IsOK => TagMod = *.cellEditor(_)
+  val cellStyle: Validity => TagMod = *.cellEditor(_)
   def cellErrorMsgStyle: TagMod = *.cellEditorErrMsg
 
   def textSetEditor[A](name: String, splitFn: String => Stream[String], textEditor: TextEditor = TextEditor.Input): TextSeqEditor[A, Set[A]] =

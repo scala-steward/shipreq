@@ -14,10 +14,10 @@ object Style extends StyleSheet.Inline {
   import dsl._
 
   object D {
-    val alive   = Domain.ofValues[Alive]  (Alive, Dead)
-    val isOk    = Domain.ofValues[IsOK]   (IsOK, NotOK) // TODO Rename? Valid/Invalid?
-    val enabled = Domain.ofValues[Enabled](Enabled, Disabled)
-    val on      = Domain.ofValues[On]     (On, Off)
+    val alive    = Domain.ofValues[Alive]   (Alive, Dead)
+    val validity = Domain.ofValues[Validity](Valid, Invalid)
+    val enabled  = Domain.ofValues[Enabled] (Enabled, Disabled)
+    val on       = Domain.ofValues[On]      (On, Off)
   }
 
   /** Drag'n'drop handle Ξ */
@@ -107,14 +107,14 @@ object Style extends StyleSheet.Inline {
       )
     }
 
-    val cellEditor = styleF(D.isOk)(ok => styleS(
+    val cellEditor = styleF(D.validity)(v => styleS(
 //      borderRadius(4 px),
       width(100 %%),
 //      boxShadow := "inset 0 1px 1px rgba(0,0,0,.075)",
 //      transition := "border-color ease-in-out .15s, box-shadow ease-in-out .15s",
       //border(1 px, solid, if (hasError) Color("#a94442") else Color("#666")),
 //      outlineColor(if (hasError) Color("#a94442") else Color("#666")),
-      mixinIf(ok ≟ NotOK)(hasErrorBackground, &.focus(outlineColor("#f88"))),
+      mixinIf(v :: Invalid)(hasErrorBackground, &.focus(outlineColor("#f88"))),
       padding.horizontal(0.8 ex)
     ))
 //    val cellEditorO = boolStyle(hasError => styleS(

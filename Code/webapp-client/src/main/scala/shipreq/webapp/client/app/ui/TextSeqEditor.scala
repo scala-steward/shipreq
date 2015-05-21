@@ -14,7 +14,7 @@ import scalaz.syntax.foldable._
 import scalaz.{-\/, Tags, \/}
 
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
-import shipreq.webapp.client.util.IsOK
+import shipreq.webapp.client.util.Validity
 import TextSeqEditor._
 
 object TextSeqEditor {
@@ -35,7 +35,7 @@ object TextSeqEditor {
 final class TextSeqEditor[A, B](name         : String,
                                 splitFn      : String => Stream[String],
                                 textEditor   : TextEditor,
-                                inputStyle   : IsOK => TagMod,
+                                inputStyle   : Validity => TagMod,
                                 errorMsgStyle: TagMod) {
 
   case class Props(state       : String,
@@ -83,7 +83,7 @@ final class TextSeqEditor[A, B](name         : String,
 
       <.div(
         textEditor.tag(
-          inputStyle(IsOK(parseResult)),
+          inputStyle(Validity(parseResult)),
           keyHandlers,
           ^.ref       := textEditorRef,
           ^.value     := p.state,

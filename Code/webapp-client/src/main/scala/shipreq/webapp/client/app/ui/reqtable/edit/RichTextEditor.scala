@@ -16,7 +16,7 @@ import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
-import shipreq.webapp.client.util.IsOK
+import shipreq.webapp.client.util.Validity
 
 object RichTextEditor {
 
@@ -134,7 +134,7 @@ object RichTextEditor {
 
         val editor =
           <.textarea(
-            *.cellEditor(IsOK(parseResult)),
+            *.cellEditor(Validity(parseResult)),
             keyHandlers,
             ^.ref       := textEditorRef,
             ^.value     := p.state,
