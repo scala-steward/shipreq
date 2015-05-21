@@ -4,6 +4,7 @@ import japgolly.nyaya._
 import japgolly.nyaya.test._
 import japgolly.nyaya.util.Multimap
 import monocle.Optional
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scalaz.{\/, \/-, -\/, Equal}
 import scalaz.std.AllInstances._
@@ -375,13 +376,37 @@ object LogicTest extends TestSuite {
       rowToStr(r => f(r.req.id) getOrElse z, _z)
     }
 
-    private def rowToCustomImpTxt(p: Project, id: CustomField.Implication.Id): Row => String =
-      rowToImpTxt(p, Row.cfImp(id), ">")
-
     private def rowToImpTxt(p: Project, lens: Optional[Row, Vector[Pubid]], dir: String): Row => String = {
       def fmtEach(s: Pubid, t: Pubid) = pubidToStr(p)(s) + dir + pubidToStr(p)(t)
-      rowToAsToStr2(lens.getOption(_) getOrElse Vector.empty)(r => fmtEach(_, r.req.pubid))
+      val f = rowToAsToStr2(lens.getOption(_) getOrElse Vector.empty)(r => fmtEach(_, r.req.pubid))
+      impTxtConsolidate compose f
     }
+
+    private val impTxtConsolidate: String => String = {
+      val pubid = "[A-Z]+-\\d+"
+      val pubids = s"$pubid(?:,$pubid)*"
+      val imp = "[<>]"
+      val regex = s"((?:^| )$pubids)($imp$pubid)(,$pubids($imp$pubid))".r
+      @tailrec def go(s: String): String = {
+        val t = regex.replaceAllIn(s, m => {
+          if (m.group(2) == m.group(4))
+            m.group(1) + m.group(3)
+          else
+            m.group(0)
+        })
+        if (s == t) s else go(t)
+      }
+      go
+    }
+
+    private def rowToSrcImpTxt(p: Project): Row => String =
+      rowToImpTxt(p, Row.implicationSrc, ">")
+
+    private def rowToTgtImpTxt(p: Project): Row => String =
+      rowToImpTxt(p, Row.implicationTgt, "<")
+
+    private def rowToCustomImpTxt(p: Project, id: CustomField.Implication.Id): Row => String =
+      rowToImpTxt(p, Row.cfImp(id), ">")
 
     private def rowToTagTxt(p: Project, lens: Optional[Row, Vector[ApplicableTagId]]): Row => String = {
       val fmtEach = applicableTag(p).andThen(_.key.value)
@@ -489,20 +514,18 @@ object LogicTest extends TestSuite {
       def t(_id: GenericReqId, ids: ReqId*) = GReq(id = _id, reqType = fr).impSrc(ids: _*)
       //      FR-1   FR-2      DD-1                            FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = dd) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
-      val fmtRows = rowToImpTxt(p, Row.implicationSrc, ">")
-      testCB(p, PlainText(p), C.ImplicationSrc, ShowDead, fmtRows)(allSortsCB(1,
+      testCB(p, PlainText(p), C.ImplicationSrc, ShowDead, rowToSrcImpTxt(p))(allSortsCB(1,
         asc  = "DD-1>FR-3  DD-1>FR-4  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  FR-2>DD-1  FR-4>FR-5",
-        desc = "FR-4>FR-5  FR-2>DD-1,FR-1>DD-1  FR-1>FR-2  FR-1>FR-3,DD-1>FR-3  DD-1>FR-4"))
+        desc = "FR-4>FR-5  FR-2,FR-1>DD-1  FR-1>FR-2  FR-1,DD-1>FR-3  DD-1>FR-4"))
     }
 
     def testImpTgt(): Unit = {
       def t(_id: GenericReqId, ids: ReqId*) = GReq(id = _id, reqType = fr).impTgt(ids: _*)
       //      FR-1   FR-2      DD-1                            FR-3         FR-4      FR-5
       val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = dd) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! P
-      val fmtRows = rowToImpTxt(p, Row.implicationTgt, "<")
-      testCB(p, PlainText(p), C.ImplicationTgt, ShowDead, fmtRows)(allSortsCB(1,
+      testCB(p, PlainText(p), C.ImplicationTgt, ShowDead, rowToTgtImpTxt(p))(allSortsCB(1,
         asc  = "DD-1<FR-3  DD-1<FR-4  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  FR-2<DD-1  FR-4<FR-5",
-        desc = "FR-4<FR-5  FR-2<DD-1,FR-1<DD-1  FR-1<FR-2  FR-1<FR-3,DD-1<FR-3  DD-1<FR-4"))
+        desc = "FR-4<FR-5  FR-2,FR-1<DD-1  FR-1<FR-2  FR-1,DD-1<FR-3  DD-1<FR-4"))
     }
 
     def testCustomImpField(): Unit = {
@@ -597,7 +620,7 @@ object LogicTest extends TestSuite {
         GReq(id = 31, reqType = fr).impSrc(21,22) +
         GReq(id = 61, reqType = si).impSrc(21,22) ! P
       val fmt = rowToCustomImpTxt(p, mfField)
-      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(3, "MF-1>FR-1,MF-2>FR-1", "MF-2>FR-1,MF-1>FR-1"))
+      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(3, "MF-1,MF-2>FR-1", "MF-2,MF-1>FR-1"))
     }
 
     def testFilterDead(): Unit = {
