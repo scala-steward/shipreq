@@ -1,15 +1,16 @@
 package shipreq.webapp.client.lib.ui
 
-import japgolly.scalajs.react.{TopNode, ComponentScopeM}
+import japgolly.scalajs.react.TopNode
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.{Listenable, OnUnmount}
-import shipreq.base.util.NonEmptyVector
+import shipreq.base.util.NonEmptySet
 import scalaz.Scalaz.Id
 import scalaz.effect.IO
 import shipreq.webapp.base.delta._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.delta._
 
+// TODO Replace DeltaListener with accurately-targetted Px & Reusability.
 object DeltaListener {
 
   class Handler[S](val fs: List[LocalDeltaG => S => S]) {
@@ -65,16 +66,11 @@ object DeltaListener {
       (s, i)    => store.remove(i)(s),
       (s, i, d) => store.set(i, d)(s))
 
-  def refresh[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B, N] => IO[Unit])(p1: Partition, pn: Partition*) = {
-    val ps = pn.toSet + p1
+  def refresh[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, ps: NonEmptySet[Partition]) =
     Listenable.installIO[P, S, B, N, LocalDelta](cd, ($, ds) =>
       if (ds.exists(ps contains _.p))
-        refreshIO($)
+        $.forceUpdateIO
       else
         IO(())
     )
-  }
-
-  def refreshL[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData, refreshIO: ComponentScopeM[P, S, B, N] => IO[Unit], ps: NonEmptyVector[Partition]) =
-    refresh(cd, refreshIO)(ps.head, ps.tail: _*)
 }

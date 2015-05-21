@@ -11,7 +11,7 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{NonEmptyVector, Util}
+import shipreq.base.util.{NonEmptySet, NonEmptyVector, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
@@ -144,9 +144,9 @@ private[fields] object MainTable {
       .render(_.backend.render)
       .configure(
         DeltaListener.apply  [Props, S, Backend, TopNode](_.clientData, fieldDeltaListener.handler(Partition.Fields)) compose
-        DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, _.forceUpdateIO)(
-          Partition.CustomReqTypes, // Refreshes AppReqTypesEditor and reqTypeSelector
-          Partition.Tags          ) // Refreshes tagSelector
+        DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, NonEmptySet(
+          Partition.CustomReqTypes,  // Refreshes AppReqTypesEditor and reqTypeSelector
+          Partition.Tags))           // Refreshes tagSelector
       )
       .build
 

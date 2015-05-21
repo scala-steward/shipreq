@@ -127,8 +127,8 @@ object Field {
 
   def nameP(p: Project) = name(p.customReqTypes.data, p.tags.data)
 
-  def nameAffectingPartitions: NonEmptyVector[Partition] =
-    NonEmptyVector(Partition.CustomReqTypes, Partition.Tags)
+  def nameAffectingPartitions: NonEmptySet[Partition] =
+    NonEmptySet(Partition.CustomReqTypes, Partition.Tags)
 }
 
 import Field.ApplicableReqTypes
