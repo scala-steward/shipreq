@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.cfg.fields
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
-import japgolly.scalajs.react.extra.OnUnmount
+import japgolly.scalajs.react.extra.{Px, OnUnmount}
 import monocle.macros.Lenses
 import scala.language.reflectiveCalls
 import scalajs.js.{undefined, UndefOr, Any => JsAny}
@@ -11,7 +11,7 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{NonEmptyVector, Refreshable, Util}
+import shipreq.base.util.{NonEmptyVector, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
@@ -20,6 +20,7 @@ import shipreq.webapp.base.protocol.Routines.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.app.ui._
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -140,10 +141,10 @@ private[fields] object MainTable {
     ReactComponentB[Props]("Cfg: Fields")
       .getInitialState(initialState)
       .backend(new Backend(_))
-      .render(_.backend.dyn.value.render)
+      .render(_.backend.render)
       .configure(
         DeltaListener.apply  [Props, S, Backend, TopNode](_.clientData, fieldDeltaListener.handler(Partition.Fields)) compose
-        DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, _.backend.dyn.refresh(()))(
+        DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, _.forceUpdateIO)(
           Partition.CustomReqTypes, // Refreshes AppReqTypesEditor and reqTypeSelector
           Partition.Tags          ) // Refreshes tagSelector
       )
@@ -159,11 +160,17 @@ private[fields] object MainTable {
   // ===================================================================================================================
   final class Backend(val $: BackendScope[Props, S]) extends OnUnmount {
 
-    lazy val dyn = Refreshable.thunk(new DynBackend(this, $.props.clientData.project)).asVar
+    val pxProject = Px.thunkM($.props.clientData.project)
+    lazy val backend2 = pxProject.map(new DynBackend(this, _))
 
     val nameE      = Editors.textInputEditor.applyValidator(V.nameS)
     val refkeyE    = Editors.textInputEditor.applyValidator(V.keyS)
     val mandatoryE = Editors.checkboxEditor.imap(Mandatory).strengthL[V.S]
+
+    def render: ReactElement = {
+      pxProject.refresh()
+      backend2.value().render
+    }
 
     object protocol {
       import FieldProtocol._, CfgAction._
@@ -210,7 +217,7 @@ private[fields] object MainTable {
   // Certain vals here depend on parts of Project beyond .fields
 
   final class DynBackend(backend: Backend, project: Project) {
-    import backend.{dyn => _, _}
+    import backend.{backend2 => _, _}
 
     val appReqTypesEditor = new AppReqTypesEditor(project.customReqTypes.data.values)
     val tagSelector       = SelectOneStartNone.tag(project.tags.data)

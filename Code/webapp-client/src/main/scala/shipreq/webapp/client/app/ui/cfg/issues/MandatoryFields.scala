@@ -1,16 +1,15 @@
 package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import japgolly.scalajs.react.extra.OnUnmount
-import monocle.macros.Lenses
+import japgolly.scalajs.react.extra.{Px, OnUnmount}
 import scala.language.reflectiveCalls
 import scalaz.effect.IO
-import shipreq.base.util.{Must, Refreshable}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.protocol.Routines._
 import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -23,18 +22,12 @@ private[issues] object MandatoryFields {
 
   val rowStore = SavedRowStore.data[CustomField](_.mandatory)
 
-  @Lenses
-  case class State(rows   : rowStore.State,
-                   labelFn: Refreshable[Project, Field => Must[String]])
-
-  type S = State
+  type S = rowStore.State
   val  ST = ReactS.FixT[IO, S]
   type ST = ST.T[Unit]
 
-  val rowStoreS = rowStore.contramap(State.rows)
-
   val fieldListener =
-    DeltaListener.store(rowStoreS).partialHandler(Partition.Fields)(_.foldId(_ => None, _.some), _.field.toOption)
+    DeltaListener.store(rowStore).partialHandler(Partition.Fields)(_.foldId(_ => None, _.some), _.field.toOption)
 
   val Component = ReactComponentB[Props]("MandatoryFields")
     .getInitialState(initialState)
@@ -42,34 +35,32 @@ private[issues] object MandatoryFields {
     .render(_.backend.render)
     .configure(
       DeltaListener.apply   [Props, S, Backend, TopNode](_.clientData, fieldListener) compose
-      DeltaListener.refreshL[Props, S, Backend, TopNode](_.clientData, _.backend.refreshLabelFn, Field.nameAffectingPartitions)
+      DeltaListener.refreshL[Props, S, Backend, TopNode](_.clientData, _.forceUpdateIO, Field.nameAffectingPartitions)
     )
     .build
 
   private def initialState(p: Props) =
-    State(
-      rowStore.initStateIM(p.clientData.project.fields.data.customFields),
-      Refreshable(Field.nameP)(p.clientData.project))
+    rowStore.initStateIM(p.clientData.project.fields.data.customFields)
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
     @inline def project = $.props.clientData.project
 
-    def refreshLabelFn: IO[Unit] =
-      $ modStateIO State.labelFn.modify(_ refresh project)
+    val pxProject = Px.thunkM(project)
+    val labelFn   = pxProject map Field.nameP
 
     def save(id: CustomFieldId): ST = {
       val p = $.props
-      Persistence.simpleAsyncUpdate(rowStoreS)(p.remote, p.clientData, p.cp, $ runState _, id)
+      Persistence.simpleAsyncUpdate(rowStore)(p.remote, p.clientData, p.cp, $ runState _, id)
     }
 
     val genEditor =
       Editors.checkboxEditor.imap(Mandatory)
-        .strengthR[Field].labelSuffix(a => UI.mustA($.state.labelFn.value(a._2)))
+        .strengthR[Field].labelSuffix(a => UI.mustA(labelFn.value()(a._2)))
 
     val editor =
       genEditor.cmapA[(Mandatory, CustomField)](a => a)
-        .zoomU[S].applyRowUpdate(rowStoreS)(_._2.id)
+        .zoomU[S].applyRowUpdate(rowStore)(_._2.id)
         .paddSTA(a => { case OnEditFinished(_) => save(a._2.id) })
 
     val editable = editor.editableByRowStatus($)
@@ -83,7 +74,7 @@ private[issues] object MandatoryFields {
         <.td(genEditor render EditorI((f.mandatory, f), "", None)))
 
     def renderCustomField(f: CustomField) = {
-      val r = rowStoreS.get(f.id)($.state)
+      val r = rowStore.get(f.id)($.state)
       <.tr(
         ^.key := f.id.value,
         <.td(
@@ -96,9 +87,11 @@ private[issues] object MandatoryFields {
         HideDead(_)(_.alive).toReactNodeArray(
           _.fold(renderStaticField, renderCustomField)))
 
-    def render: ReactElement =
+    def render: ReactElement = {
+      pxProject.refresh()
       <.table(
         <.thead(<.tr(<.th("Mandatory Fields"))),
         <.tbody(renderRows))
+    }
   }
 }
