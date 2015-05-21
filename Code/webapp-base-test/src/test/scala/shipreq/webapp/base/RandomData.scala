@@ -949,7 +949,7 @@ object RandomData {
       reqtypes       ← customReqTypes
       reqTypeIdsC    = reqtypes.data.keys.toVector
       reqTypeIds     = StaticReqType.values ++ reqTypeIdsC
-      reqTypeIdSet   = reqTypeIds.toSet
+      reqTypeIdSet   = reqTypeIds.whole.toSet
       fields         ← revAndG(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
       reqs1          ← requirements(reqTypeIdsC)
       reqIds         = reqs1.reqs.keys
