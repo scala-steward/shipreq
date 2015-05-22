@@ -90,7 +90,7 @@ private[reqtable] object Logic {
     val reqTags = p.reqFieldData.data.tags
     customFieldExpander[CustomField.Tag.Id, ApplicableTagId](vs, ap, c => {
       val legal = mustResolve(p.tagColumnDistribution.tagIdsForColumn(c))(UnivEq.emptySet)
-      id => reqTags(id) filter legal.contains
+      id => reqTags(id) & legal
     })
   }
 
@@ -151,7 +151,7 @@ private[reqtable] object Logic {
   private def tagValuesFn(vs: ViewSettings, p: Project): ReqId => Vector[ApplicableTagId] = {
     val reqTags = p.reqFieldData.data.tags
     val tagsUsedInColumns = mustResolve(p.tagColumnDistribution.tagIdsUsedInColumns)(UnivEq.emptySet)
-    id => reqTags(id).filterNot(tagsUsedInColumns.contains).toVector
+    id => (reqTags(id) -- tagsUsedInColumns).toVector
   }
 
   private def multiValuesFn(vs: ViewSettings, p: Project): ReqId => MultiValues = {
