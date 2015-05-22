@@ -11,6 +11,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.util.ReqCodeTreeItem
+import shipreq.webapp.client.lib.FilterDead
 import DataImplicits._
 
 private[reqtable] object Logic {
@@ -64,25 +65,25 @@ private[reqtable] object Logic {
   private def expanderC[A](vs: ViewSettings, c: Column.SortInconclusive): Expander[A] =
     expander(vs isVisible c, vs isOrderedI c)
 
-  private def impColValueFn(p: Project): CustomField.Implication.Id => ReqId => Set[Pubid] =
+  private def impColValueFn(p: Project, fd: FilterDead): CustomField.Implication.Id => ReqId => Set[Pubid] =
     fid => {
-      // (source of implication for this column) → (all it transitively implies)
-      val srcs: Stream[(Pubid, Set[ReqId])] =
+
+      val reqsOfSubjectType: Stream[Req] =
         mustResolve(
           p.customField(fid).map(f =>
-            p.reqs.data.reqsByType(f.reqTypeId)
-              .toStream
-              .map(_.tmap2(_.pubid, _.id |> p.implicationSrcToTgtTC.nonRefl)))
+            p.reqs.data.reqsByType(f.reqTypeId).toStream)
         )(Stream.empty)
 
-      if (srcs.isEmpty)
-        Function const UnivEq.emptySet
-      else
-        id => srcs.filter(_._2 contains id).map(_._1).toSet
+      // (source of implication for this column) → (all it transitively implies)
+      val srcs: Stream[(Pubid, Set[ReqId])] =
+        fd(reqsOfSubjectType)(_.alive)
+          .map(r => (r.pubid, p.implicationSrcToTgtTC nonRefl r.id))
+
+      id => srcs.filter(_._2 contains id).map(_._1).toSet
     }
 
-  private def impColValueExpander(vs: ViewSettings, p: Project, ap: Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] = {
-    val valueFn = impColValueFn(p)
+  private def impColValueExpander(vs: ViewSettings, p: Project, fd: FilterDead, ap: Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] = {
+    val valueFn = impColValueFn(p, fd)
     customFieldExpander[CustomField.Implication.Id, Pubid](vs, ap, valueFn)
   }
 
@@ -177,11 +178,12 @@ private[reqtable] object Logic {
     //   There can potentially be overlap but culling this could be misleading.
 
     // Init
+    val filterDead    = vs.filterDead.filterFn
     val applicability = Applicability(p)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
-    val expandImpCols = impColValueExpander(vs, p, applicability)
+    val expandImpCols = impColValueExpander(vs, p, vs.filterDead, applicability)
     val expandTagCols = tagColValueExpander(vs, p, applicability)
 
     val pReqs         = p.reqs.data
@@ -189,16 +191,18 @@ private[reqtable] object Logic {
     val pImplications = p.reqFieldData.data.implications
     val multiValuesFn = this.multiValuesFn(vs, p)
 
+    def pubid(reqId: ReqId): Option[Pubid] =
+      pReqs.reqM(reqId).fold[Option[Pubid]](failedMust(None), req =>
+        if (filterDead(req.alive)) Some(req.pubid) else None)
+
     def pubids(s: Set[ReqId]): Set[Pubid] =
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
-        pReqs.reqM(id).fold(failedMust(q), q + _.pubid))
-
-    val filterReqDead = vs.filterDead.filterFnA[GenericReq](_.alive)
+        pubid(id).fold(q)(q + _))
 
     val reqRows =
       p.reqs.data.reqs.vstreamf {
         case r: GenericReq =>
-          if (filterReqDead(r)) {
+          if (filterDead(r.alive)) {
             val id = r.id
 
             // Expansion

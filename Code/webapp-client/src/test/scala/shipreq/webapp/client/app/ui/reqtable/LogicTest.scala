@@ -632,6 +632,61 @@ object LogicTest extends TestSuite {
       testUnsorted(p, pt, C.Pubid, HideDead, fmt)("MF-1  MF-3  MF-5")
     }
 
+    def testFilterDeadImpsSrc(): Unit = {
+      val p = (GReq(id = 1) + GReq(id = 2, alive = Dead) + GReq(id = 3).impSrc(1,2)).defaultReqType(br) ! P
+      val (pt, c, fmt) = (PlainText(p), C.ImplicationSrc, rowToSrcImpTxt(p))
+      testUnsorted(p, pt, c, ShowDead, fmt)(s"$z  $z  BR-1,BR-2>BR-3")
+      testUnsorted(p, pt, c, HideDead, fmt)(s"$z  BR-1>BR-3")
+    }
+
+    def testFilterDeadImpsTgt(): Unit = {
+      val p = (GReq(id = 1) + GReq(id = 2, alive = Dead) + GReq(id = 3).impTgt(1,2)).defaultReqType(br) ! P
+      val (pt, c, fmt) = (PlainText(p), C.ImplicationTgt, rowToTgtImpTxt(p))
+      testUnsorted(p, pt, c, ShowDead, fmt)(s"$z  $z  BR-1,BR-2<BR-3")
+      testUnsorted(p, pt, c, HideDead, fmt)(s"$z  BR-1<BR-3")
+    }
+
+    def testFilterDeadCustomImps(): Unit = {
+      val p = (
+        // MF-1ᵒ → MF-5ᵒ → FR-1
+        // MF-2ˣ → MF-6ᵒ → FR-1 <-- difficult case - it should be displayed as its part of (a chain with ShowDead)
+        // MF-3ᵒ → MF-7ˣ → FR-1 <-- important case - shouldn't hold for FR-1 even in ShowDead
+        // MF-4ˣ → MF-8ˣ → FR-1
+        GReq(reqType = mf, id = 1) +
+        GReq(reqType = mf, id = 2, alive = Dead) +
+        GReq(reqType = mf, id = 3) +
+        GReq(reqType = mf, id = 4, alive = Dead) +
+        GReq(reqType = mf, id = 5).impSrc(1) +
+        GReq(reqType = mf, id = 6).impSrc(2) +
+        GReq(reqType = mf, id = 7, alive = Dead).impSrc(3) +
+        GReq(reqType = mf, id = 8, alive = Dead).impSrc(4) +
+        GReq(reqType = fr, id = 91).impSrc(5, 6, 7, 8) +
+        // MF-1ᵒ → CO-1ᵒ → FR-2
+        // MF-2ˣ → CO-2ᵒ → FR-2 <-- difficult case - it should be displayed as its part of (a chain with ShowDead)
+        // MF-3ᵒ → CO-3ˣ → FR-2 <-- important case - shouldn't hold for FR-2 even in ShowDead
+        // MF-4ˣ → CO-4ˣ → FR-2
+        GReq(reqType = co, id = 11).impSrc(1) +
+        GReq(reqType = co, id = 12).impSrc(2) +
+        GReq(reqType = co, id = 13, alive = Dead).impSrc(3) +
+        GReq(reqType = co, id = 14, alive = Dead).impSrc(4) +
+        GReq(reqType = fr, id = 92).impSrc(11, 12, 13, 14)
+        ) ! P
+      val (pt, c, fmt) = (PlainText(p), mfField, rowToCustomImpTxt(p, mfField))
+
+      testUnsorted(p, pt, c, ShowDead, fmt)(
+        "MF-1>CO-1  MF-2>CO-2  MF-3>CO-3  MF-4>CO-4  "+
+        "MF-1,MF-2,MF-5,MF-6,MF-7,MF-8>FR-1  "+
+        "MF-1,MF-2>FR-2  "+
+        s"$z  $z  $z  $z  MF-1>MF-5  MF-2>MF-6  MF-3>MF-7  MF-4>MF-8")
+        // self-implications aren't shown: "MF-1>MF-1  MF-2>MF-2  MF-3>MF-3  MF-4>MF-4  MF-1,MF-5>MF-5  MF-2,MF-6>MF-6  MF-3,MF-7>MF-7  MF-4,MF-8>MF-8")
+
+      testUnsorted(p, pt, c, HideDead, fmt)(
+        s"MF-1>CO-1  $z  "+
+        "MF-1,MF-5,MF-6>FR-1  "+
+        "MF-1>FR-2  "+
+        s"$z  $z  MF-1>MF-5  $z")
+    }
+
     def testReqCodeTree(): Unit = {
       val src =
         """
@@ -776,6 +831,9 @@ object LogicTest extends TestSuite {
       }
       'filterDead {
         'rows    - testFilterDeadRows()
+        'impSrc  - testFilterDeadImpsSrc()
+        'impTgt  - testFilterDeadImpsTgt()
+        'impCust - testFilterDeadCustomImps()
       }
       'reqCodeTree - testReqCodeTree()
     }

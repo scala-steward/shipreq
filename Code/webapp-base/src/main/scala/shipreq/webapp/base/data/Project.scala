@@ -9,6 +9,7 @@ import shipreq.webapp.base.TransitiveClosure
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.ShowSize
 import DataImplicits._
+import ReqFieldData.{Implications, ImplicationsU}
 
 final case class RevAnd[D](rev: Rev, data: D)
 
@@ -105,13 +106,27 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
 
   lazy val tagColumnDistribution = new TagColumnDistribution(this)
 
-  /** Transitive closure of implications going source → target. */
+  /**
+   * Transitive closure of implications going source → target.
+   *
+   * Note: Dead reqs are included (reflexively and when direct implications) but are not followed.
+   */
   lazy val implicationSrcToTgtTC: TransitiveClosure[ReqId] =
-    TransitiveClosure.auto[ReqId](reqs.data.reqs.keys)(reqFieldData.data.implications.srcToTgt.apply)
+    implicationTransitiveClosure(_.srcToTgt)
 
-  /** Transitive closure of implications going target → source. */
+  /**
+   * Transitive closure of implications going target → source.
+   *
+   * Note: Dead reqs are included (reflexively and when direct implications) but are not followed.
+   */
   lazy val implicationTgtToSrcTC: TransitiveClosure[ReqId] =
-    TransitiveClosure.auto[ReqId](reqs.data.reqs.keys)(reqFieldData.data.implications.tgtToSrc.apply)
+    implicationTransitiveClosure(_.tgtToSrc)
+
+  private def implicationTransitiveClosure(f: Implications => ImplicationsU): TransitiveClosure[ReqId] = {
+    val dead = reqs.data.dead
+    val is = f(reqFieldData.data.implications)
+    TransitiveClosure.auto[ReqId](reqs.data.reqs.keys)(is.apply, !dead.contains(_))
+  }
 
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] = (

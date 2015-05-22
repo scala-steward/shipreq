@@ -307,6 +307,9 @@ object Requirements {
 @Lenses
 case class Requirements(reqs: Requirements.Data, pubids: PubidRegister) {
 
+  lazy val dead: Set[ReqId] =
+    reqs.filterV(_.alive :: Dead).keySet
+
   def req[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
     reqs.get(id)
 
