@@ -68,10 +68,12 @@ final class TransitiveClosure[A: UnivEq](a2i           : A => Int,
 
   @inline private def empty = UnivEq.emptySet[A]
 
+  /** Reflexive */
   def apply(a: A): Set[A] =
     a2is(a)(i =>
       tc(i).foldLeft(empty)(_ + i2a(_)))
 
+  /** Non-reflexive */
   def nonRefl(a: A): Set[A] =
     a2is(a)(i =>
       tc(i).foldLeft(empty)((q, j) =>

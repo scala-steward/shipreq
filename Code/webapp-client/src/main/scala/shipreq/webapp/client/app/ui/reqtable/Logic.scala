@@ -77,7 +77,7 @@ private[reqtable] object Logic {
       // (source of implication for this column) → (all it transitively implies)
       val srcs: Stream[(Pubid, Set[ReqId])] =
         fd(reqsOfSubjectType)(_.alive)
-          .map(r => (r.pubid, p.implicationSrcToTgtTC nonRefl r.id))
+          .map(r => (r.pubid, p.implicationSrcToTgtTC(r.id)))
 
       id => srcs.filter(_._2 contains id).map(_._1).toSet
     }

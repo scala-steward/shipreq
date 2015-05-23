@@ -545,32 +545,42 @@ object LogicTest extends TestSuite {
       // FR-6 ⇐ 3,4
       val p   = SampleImplicationGraph.project
       val fmt = rowToCustomImpTxt(p, mfField)
-      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(5,
+      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(2,
         asc  = """
                  |MF-1>FR-1
                  |MF-1>FR-2
                  |MF-1>FR-3
+                 |MF-1>MF-1
                  |MF-2>FR-2
                  |MF-2>FR-3
+                 |MF-2>MF-2
                  |MF-3>FR-4
                  |MF-3>FR-5
                  |MF-3>FR-6
+                 |MF-3>MF-3
                  |MF-3>MF-4
                  |MF-3>MF-5
                  |MF-4>FR-6
+                 |MF-4>MF-4
+                 |MF-5>MF-5
                """.stripMargin.replace("\n", sep).trim,
         desc = """
+                 |MF-5>MF-5
                  |MF-4>FR-6
+                 |MF-4>MF-4
                  |MF-3>FR-4
                  |MF-3>FR-5
                  |MF-3>FR-6
+                 |MF-3>MF-3
                  |MF-3>MF-4
                  |MF-3>MF-5
                  |MF-2>FR-2
                  |MF-2>FR-3
+                 |MF-2>MF-2
                  |MF-1>FR-1
                  |MF-1>FR-2
                  |MF-1>FR-3
+                 |MF-1>MF-1
                """.stripMargin.replace("\n", sep).trim))
     }
 
@@ -644,7 +654,9 @@ object LogicTest extends TestSuite {
         GReq(id = 31, reqType = fr).impSrc(21,22) +
         GReq(id = 61, reqType = si).impSrc(21,22) ! P
       val fmt = rowToCustomImpTxt(p, mfField)
-      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(3, "MF-1,MF-2>FR-1", "MF-2,MF-1>FR-1"))
+      testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(1,
+        "MF-1>FR-1  MF-1>MF-1  MF-2>FR-1  MF-2>MF-2",
+        "MF-2>FR-1  MF-2>MF-2  MF-1>FR-1  MF-1>MF-1"))
     }
 
     def testFilterDeadRows(): Unit = {
@@ -705,14 +717,14 @@ object LogicTest extends TestSuite {
           |MF-4>CO-4
           |MF-1,MF-2,MF-5,MF-6,MF-7,MF-8>FR-1
           |MF-1,MF-2>FR-2
-          |$z
-          |$z
-          |$z
-          |$z
-          |MF-1>MF-5
-          |MF-2>MF-6
-          |MF-3>MF-7
-          |MF-4>MF-8
+          |MF-1>MF-1
+          |MF-2>MF-2
+          |MF-3>MF-3
+          |MF-4>MF-4
+          |MF-1,MF-5>MF-5
+          |MF-2,MF-6>MF-6
+          |MF-3,MF-7>MF-7
+          |MF-4,MF-8>MF-8
         """.stripMargin.replace("\n", sep).trim)
 
       testUnsorted(p, pt, c, HideDead, fmt)(
@@ -721,10 +733,10 @@ object LogicTest extends TestSuite {
           |$z
           |MF-1,MF-5,MF-6>FR-1
           |MF-1>FR-2
-          |$z
-          |$z
-          |MF-1>MF-5
-          |$z
+          |MF-1>MF-1
+          |MF-3>MF-3
+          |MF-1,MF-5>MF-5
+          |MF-6>MF-6
         """.stripMargin.replace("\n", sep).trim)
     }
 
