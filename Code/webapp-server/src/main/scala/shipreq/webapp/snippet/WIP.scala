@@ -81,10 +81,12 @@ class WIP {
 
     import shipreq.webapp.base.test.ProjectDSL._
 
-    val List(co,mf,fr) = List[CustomReqTypeId](1,2,3).map(Some(_))
+    val List(co, mf, fr, br, dd, si) = List[CustomReqTypeId](1, 2, 3, 4, 5, 6)
     val List(p1,p3,p5,rel,wip,v1x) = List[ApplicableTagId](4,3,2,22,11,21)
     val (p2,p4) = (p3,p5)
-    val mfs = (0 to 28).toVector.map(i => GenericReqId(i + 1000))
+    val frs = (0 to 10).toVector.map(i => GenericReqId(i + 1000))
+    val mfs = (0 to 28).toVector.map(i => GenericReqId(i + 1100))
+    val cos = (0 to 10).toVector.map(i => GenericReqId(i + 1200))
 
     def fr1Desc = {
       import T.GenericReqTitle._
@@ -100,7 +102,7 @@ class WIP {
         Vector(Literal("Pending "), ReqRef(mfs(26)))
       }
       import T.GenericReqTitle._
-      Vector(Issue(2, tbd))
+      Vector(Issue(2, tbd), Literal(". "), ReqRef(mfs(28)), Literal(" is dead."))
     }
 
     val contentByDsl = (
@@ -122,7 +124,7 @@ class WIP {
     + GReq(reqType = mf, id = mfs(16), title = "CRUDL Matrix"                          ).tag(p1)
     + GReq(reqType = mf, id = mfs(17), title = "Undo & Auto-save"                      ).tag(p2)
     + GReq(reqType = mf, id = mfs(18), title = "Data dictionary"                       ).tag(p1)
-    + GReq(reqType = mf, id = mfs(19), title = "Glossary"                              ).tag(p1)
+    + GReq(reqType = mf, id = mfs(19), title = "Glossary", alive = Dead                ).tag(p1)
     + GReq(reqType = mf, id = mfs(20), title = "Generic artifact storage"              ).tag(p3)
     + GReq(reqType = mf, id = mfs(21), title = "Doc authoring (V&S, URD, SRS)"         ).tag(p2)
     + GReq(reqType = mf, id = mfs(22), title = "High-level Requirements"               ).tag(p3).tag(wip)
@@ -131,10 +133,14 @@ class WIP {
     + GReq(reqType = mf, id = mfs(25), title = "Search"                                ).tag(p2)
     + GReq(reqType = mf, id = mfs(26), title = "Mass text modification (replace)"      ).tag(p1)
     + GReq(reqType = mf, id = mfs(27), title = "External references"                   ).tag(p1)
-    + GReq(reqType = mf, id = mfs(28), title = "Entities"                              ).tag(p2)
-    + GReq(reqType = fr, title = fr1Desc, codes = Set("uce.sample.1", "uce.sample.1b", "demo.whatever")).impSrc(mfs(12))
-    + GReq(reqType = fr, title = fr2Desc, codes = Set("uce.sample.2")).impSrc(mfs(1)).impSrc(mfs(13)).impSrc(mfs(22))
+    + GReq(reqType = mf, id = mfs(28), title = "Entities", alive = Dead                ).tag(p2)
+
+    + GReq(reqType = fr, id = frs(1), title = fr1Desc, codes = Set("uce.sample.1", "uce.sample.1b", "demo.whatever")).impSrc(mfs(12), mfs(19))
+    + GReq(reqType = fr, id = frs(2), title = fr2Desc, codes = Set("uce.sample.2")).impSrc(mfs(1), mfs(13), mfs(22))
     + RCGroup("demo", Vector(T.ReqCodeGroupTitle.Literal("Demo group header")))
+
+    + GReq(reqType = co, id = cos(1), alive = Dead, title = "Search entities!").impSrc(mfs(28), mfs(25))
+    + GReq(reqType = co, id = cos(2), alive = Dead, title = "Entity-search should consider low-level reqs").impSrc(cos(1), frs(1))
     )
 
     contentByDsl ! project
