@@ -546,8 +546,32 @@ object LogicTest extends TestSuite {
       val p   = SampleImplicationGraph.project
       val fmt = rowToCustomImpTxt(p, mfField)
       testCB(p, PlainText(p), mfField, ShowDead, fmt)(allSortsCB(5,
-        asc  = "MF-1>FR-1  MF-1>FR-2  MF-1>FR-3  MF-2>FR-2  MF-2>FR-3  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-4>FR-6",
-        desc = "MF-4>FR-6  MF-3>FR-4  MF-3>FR-5  MF-3>FR-6  MF-3>MF-4  MF-3>MF-5  MF-2>FR-2  MF-2>FR-3  MF-1>FR-1  MF-1>FR-2  MF-1>FR-3"))
+        asc  = """
+                 |MF-1>FR-1
+                 |MF-1>FR-2
+                 |MF-1>FR-3
+                 |MF-2>FR-2
+                 |MF-2>FR-3
+                 |MF-3>FR-4
+                 |MF-3>FR-5
+                 |MF-3>FR-6
+                 |MF-3>MF-4
+                 |MF-3>MF-5
+                 |MF-4>FR-6
+               """.stripMargin.replace("\n", sep).trim,
+        desc = """
+                 |MF-4>FR-6
+                 |MF-3>FR-4
+                 |MF-3>FR-5
+                 |MF-3>FR-6
+                 |MF-3>MF-4
+                 |MF-3>MF-5
+                 |MF-2>FR-2
+                 |MF-2>FR-3
+                 |MF-1>FR-1
+                 |MF-1>FR-2
+                 |MF-1>FR-3
+               """.stripMargin.replace("\n", sep).trim))
     }
 
     def testReqType(): Unit = {
@@ -674,17 +698,34 @@ object LogicTest extends TestSuite {
       val (pt, c, fmt) = (PlainText(p), mfField, rowToCustomImpTxt(p, mfField))
 
       testUnsorted(p, pt, c, ShowDead, fmt)(
-        "MF-1>CO-1  MF-2>CO-2  MF-3>CO-3  MF-4>CO-4  "+
-        "MF-1,MF-2,MF-5,MF-6,MF-7,MF-8>FR-1  "+
-        "MF-1,MF-2>FR-2  "+
-        s"$z  $z  $z  $z  MF-1>MF-5  MF-2>MF-6  MF-3>MF-7  MF-4>MF-8")
-        // self-implications aren't shown: "MF-1>MF-1  MF-2>MF-2  MF-3>MF-3  MF-4>MF-4  MF-1,MF-5>MF-5  MF-2,MF-6>MF-6  MF-3,MF-7>MF-7  MF-4,MF-8>MF-8")
+        s"""
+          |MF-1>CO-1
+          |MF-2>CO-2
+          |MF-3>CO-3
+          |MF-4>CO-4
+          |MF-1,MF-2,MF-5,MF-6,MF-7,MF-8>FR-1
+          |MF-1,MF-2>FR-2
+          |$z
+          |$z
+          |$z
+          |$z
+          |MF-1>MF-5
+          |MF-2>MF-6
+          |MF-3>MF-7
+          |MF-4>MF-8
+        """.stripMargin.replace("\n", sep).trim)
 
       testUnsorted(p, pt, c, HideDead, fmt)(
-        s"MF-1>CO-1  $z  "+
-        "MF-1,MF-5,MF-6>FR-1  "+
-        "MF-1>FR-2  "+
-        s"$z  $z  MF-1>MF-5  $z")
+        s"""
+          |MF-1>CO-1
+          |$z
+          |MF-1,MF-5,MF-6>FR-1
+          |MF-1>FR-2
+          |$z
+          |$z
+          |MF-1>MF-5
+          |$z
+        """.stripMargin.replace("\n", sep).trim)
     }
 
     def testReqCodeTree(): Unit = {
