@@ -5,6 +5,7 @@ Phase 2
 
 * Refs in ReqTitles
 * Show deleted
+  * effect on reqtable view settings
   * effect on displayed refs
   * effect on auto complete
   * effect on validation
