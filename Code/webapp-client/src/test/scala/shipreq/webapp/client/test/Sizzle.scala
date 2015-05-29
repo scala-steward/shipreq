@@ -4,7 +4,8 @@ import scala.scalajs.js
 
 object Sizzle extends js.Object {
 
-  type DOM = org.scalajs.dom.Element
+  type DOM    = org.scalajs.dom.Element
+  type Result = js.Array[DOM]
 
   /*
   Sizzle( String selector[, DOMElement|DOMDocument context[, Array results]] )
@@ -24,7 +25,7 @@ object Sizzle extends js.Object {
 
   def apply(selector: String,
             context: DOM = js.native,
-            results: js.Array[DOM] = js.native): js.Array[DOM] = js.native
+            results: Result = js.native): Result = js.native
 
 
   /*
