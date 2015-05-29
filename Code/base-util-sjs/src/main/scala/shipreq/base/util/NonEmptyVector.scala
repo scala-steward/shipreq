@@ -94,6 +94,12 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
     NonEmptyVector(f(head), r.result())
   }
 
+  def filter(f: A => Boolean): Option[NonEmptyVector[A]] =
+    NonEmptyVector.option(whole filter f)
+
+  def filterNot(f: A => Boolean): Option[NonEmptyVector[A]] =
+    filter(!f(_))
+
   @inline def toStream = whole.toStream
 
   @inline def toSet[B >: A : UnivEq]: NonEmptySet[B] =

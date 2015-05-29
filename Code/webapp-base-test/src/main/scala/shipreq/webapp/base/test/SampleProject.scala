@@ -44,13 +44,14 @@ object SampleProject {
       Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
       Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
       Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
-      Tag        (4, 1.TG,                      Mandatory,     ISubset.All(),                             Alive),
-      Tag        (5, 10.TG,                     Mandatory.Not, notReqTypes(5, 6),                         Alive),
-      Implication(6, 2,                         Mandatory.Not, notReqTypes(6),                            Alive)
+      Tag        (4, 1.TG,  /* Priority */      Mandatory,     ISubset.All(),                             Alive),
+      Tag        (5, 10.TG, /* Status */        Mandatory.Not, notReqTypes(5, 6),                         Alive),
+      Implication(6, 2,     /* Major Feature */ Mandatory.Not, notReqTypes(6),                            Alive),
+      Tag        (7, 27.TG, /* Released */      Mandatory.Not, ISubset.All(),                             Dead)
     ), Vector(
       Text.Id(1), Implication.Id(6), Tag.Id(4), Text.Id(3),
       StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
-      Tag.Id(5), Text.Id(2)
+      Tag.Id(7), Tag.Id(5), Text.Id(2)
     )))
   }
 

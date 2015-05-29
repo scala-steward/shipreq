@@ -23,8 +23,10 @@ object Checkbox {
       .build
   }
 
+  def filterDeadChecked = ShowDead
+
   def filterDead(set: FilterDead ~=> IO[Unit]) =
-    Checkbox(ShowDead)(set, _ => chk => <.label(chk, "Show deleted items."))
+    Checkbox(filterDeadChecked)(set, _ => chk => <.label(chk, "Show deleted content."))
 
   def filterDead_$($: CompStateFocus[FilterDead]): () => ReactElement = {
     val component = filterDead(ReusableFn($).setStateIO)

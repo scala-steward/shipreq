@@ -23,6 +23,20 @@ case class ViewSettings(columns   : NonEmptyVector[Column],
   @inline def isOrderedI(c: Column.SortInconclusive)            = order.isOrderedI(c)
   @inline def isOrderedI(f: Column.SortInconclusive => Boolean) = order.isOrderedI(f)
 
+  def filterColumns(f: Column => Boolean): ViewSettings =
+    columns.filter(f) match {
+      case Some(cols) => ViewSettings(cols, order filterColumns f, filterDead)
+      case None       => ViewSettings.default
+    }
+
+  def setFilterDead(fd: FilterDead): ViewSettings = {
+    val vs = copy(filterDead = fd)
+    fd.filter.fold(vs)(f => vs.filterColumns {
+      case _: Column.BuiltIn        => true
+      case Column.CustomField(_, a) => f(a)
+    })
+  }
+
   /**
    * When `true`, render the reqcode column to resemble a tree. Meaning:
    *  - display reqcode groups.

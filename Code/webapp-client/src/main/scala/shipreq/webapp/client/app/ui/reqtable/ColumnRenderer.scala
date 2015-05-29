@@ -41,7 +41,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
         case Column.Tags           => tags(Row.tags)
         case Column.ImplicationSrc => imps(Row.implicationSrc) //("… ⇒")
         case Column.ImplicationTgt => imps(Row.implicationTgt) //("⇒ …")
-        case Column.CustomField(f) =>
+        case Column.CustomField(f, _) =>
           f match {
             case id: CustomField.Text       .Id => cfText(id)
             case id: CustomField.Tag        .Id => tags(Row cfTag id)

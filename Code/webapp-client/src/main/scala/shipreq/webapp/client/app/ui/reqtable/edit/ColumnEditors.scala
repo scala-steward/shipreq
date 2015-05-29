@@ -49,7 +49,7 @@ final class ColumnEditors(project       : Px[Project],
               case Column.Pubid          => noEditor
               case Column.ImplicationSrc => imps(Row.implicationSrc, ImplicationEditor declFwd Column.ImplicationSrc)(r)
               case Column.ImplicationTgt => imps(Row.implicationTgt, ImplicationEditor declFwd Column.ImplicationTgt)(r)
-              case Column.CustomField(f) =>
+              case Column.CustomField(f, _) =>
                 f match {
                   case id: CustomField.Text       .Id => cfText(id)(r)
                   case id: CustomField.Tag        .Id => cfTag(id)(r)
@@ -66,7 +66,7 @@ final class ColumnEditors(project       : Px[Project],
                  | Column.Tags
                  | Column.ImplicationSrc
                  | Column.ImplicationTgt
-                 | Column.CustomField(_) => noEditor
+                 | _: Column.CustomField => noEditor
             }
         }
       )

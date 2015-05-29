@@ -78,14 +78,21 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 
   def isOrderedI(f: Column.SortInconclusive => Boolean): Boolean =
     init.exists(_.column |> f)
+
+  def filterColumns(f: Column => Boolean): SortCriteria = {
+    val i = init.filter(s => f(s.column))
+    val c = if (f(last.column)) last else SortCriteria.defaultConclusive
+    SortCriteria(i, c)
+  }
 }
 
 object SortCriteria {
   implicit val equality: UnivEq[SortCriteria] = deriveUnivEq
 
-  val default =
-    SortCriteria(
-      Vector(
-        InconclusiveCB(Column.Code,  SortMethod.AscThenBlanks)),
-      Conclusive      (Column.Pubid, SortMethod.Asc))
+  val defaultConclusive =
+    Conclusive(Column.Pubid, SortMethod.Asc)
+
+  val default = SortCriteria(
+    Vector(InconclusiveCB(Column.Code,  SortMethod.AscThenBlanks)),
+    defaultConclusive)
 }

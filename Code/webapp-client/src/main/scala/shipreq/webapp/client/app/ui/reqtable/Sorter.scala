@@ -313,8 +313,8 @@ object Sorter {
         sort = SortFn.string(bp)
       ))
 
-  def customTextFieldSorter(id: CustomField.Text.Id): SorterForSMCB =
-    textSorter(C.CustomField(id), p => {
+  def customTextFieldSorter(id: CustomField.Text.Id, c: Column): SorterForSMCB =
+    textSorter(c, p => {
       case r: GenericReqRow   => p.customTextField(id)(r.req.id) getOrElse ""
       case r: ReqCodeGroupRow => ""
     })
@@ -333,9 +333,9 @@ object Sorter {
   }
 
   val inconclusiveCB: C.SortInconclusive with C.HasBlanks => SorterForSMCB = {
-    case C.CustomField(gid) =>
-      gid match {
-        case id: CustomField.Text       .Id => customTextFieldSorter(id)
+    case c: C.CustomField =>
+      c.id match {
+        case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTags ^|-? index(id), _.tagByPosOrder)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImps ^|-? index(id))
       }

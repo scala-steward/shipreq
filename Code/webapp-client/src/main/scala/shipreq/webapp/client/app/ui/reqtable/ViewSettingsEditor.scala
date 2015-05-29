@@ -23,8 +23,8 @@ object ViewSettingsEditor {
 
     val columnsEditor = new ColumnsEditor(columnName)
 
-    val filterDeadEditor = Checkbox.filterDead(ReusableFn.byName(
-      $.props setL ViewSettings.filterDead))
+    val filterDeadEditor = Checkbox.filterDead(
+      ReusableFn.byName($.props.mod).endoCall(_.setFilterDead))
 
     def render = {
       val p = $.props
@@ -39,12 +39,13 @@ object ViewSettingsEditor {
       }
 
       def columns =
-        columnsEditor.render(vs.columns, p.set compose setColumns)
+        columnsEditor.render(vs.filterDead, vs.columns, p.set compose setColumns)
 
       def sortCriteria =
         SortCriteriaEditor.Props(vs.order, vs.columns.toSet, columnName, p setL ViewSettings.order).component
 
       <.div(
+        filterDeadEditor(vs.filterDead),
         <.table(
           <.thead(
             <.tr(
@@ -53,8 +54,7 @@ object ViewSettingsEditor {
           <.tbody(
             <.tr(
               <.td(columns),
-              <.td(sortCriteria)))),
-        filterDeadEditor(vs.filterDead))
+              <.td(sortCriteria)))))
     }
   }
 }

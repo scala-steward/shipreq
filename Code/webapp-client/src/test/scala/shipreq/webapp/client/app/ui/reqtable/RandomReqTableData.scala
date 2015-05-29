@@ -13,8 +13,9 @@ object RandomReqTableData {
   lazy val filterDead: Gen[FilterDead] =
     Gen.boolean.map(ShowDead.to)
 
-  def columns(p: Project): Gen[NonEmptyVector[Column]] = {
-    val allPossibleColumns    = Column.all(p.fields.data.customFields.values).whole
+  def visibleColumns(p: Project, fd: FilterDead): Gen[NonEmptyVector[Column]] = {
+    val customFields = fd(p.fields.data.customFields.values)(_.alive)
+    val allPossibleColumns    = Column all customFields whole
     val (mandatory, optional) = allPossibleColumns partition Column.mandatory
     Gen.subset(optional).map(_ ++ mandatory).shuffle.map(cs => NonEmptyVector(cs.head, cs.tail))
   }
@@ -42,10 +43,10 @@ object RandomReqTableData {
 
   def viewSettings(p: Project): Gen[ViewSettings] =
     for {
-      cols  ← columns(p)
+      fd    ← filterDead
+      cols  ← visibleColumns(p, fd)
       icols = cols.whole.filterT[Column.SortInconclusive].toVector
       order ← sortCriteria(sortCriteriaI(icols))
-      fdead ← filterDead
-    } yield ViewSettings(cols, order, fdead)
+    } yield ViewSettings(cols, order, fd)
 
 }

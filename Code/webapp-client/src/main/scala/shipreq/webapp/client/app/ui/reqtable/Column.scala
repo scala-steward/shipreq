@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.{NonEmptyVector, Must, IMap, UnivEq}
-import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.data.{Alive, Project}
 import shipreq.webapp.base.{UiText, data}
 import shipreq.webapp.base.UiText.ColumnNames
 
@@ -34,7 +34,7 @@ object Column {
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
-  case class CustomField(id: data.CustomFieldId) extends SortInconclusive with HasBlanks
+  case class CustomField(id: data.CustomFieldId, alive: Alive) extends SortInconclusive with HasBlanks
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -51,17 +51,27 @@ object Column {
   val mandatory: Column => Boolean = {
     case Pubid
        | Code
-       | Title           => true
+       | Title          => true
     case ReqType
        | Tags
        | ImplicationSrc
        | ImplicationTgt
-       | CustomField(_)  => false
+       | _: CustomField => false
   }
 
   object NameResolver {
     def byProject(p: Project): NameResolver =
       Column.NameResolver(p.fields.data.customFields, data.CustomField nameP p)
+
+    val builtIn: BuiltIn => String = {
+      case ReqType        => ColumnNames.reqType
+      case Pubid          => ColumnNames.pubid
+      case Code           => ColumnNames.code
+      case Title          => ColumnNames.title
+      case Tags           => ColumnNames.tags
+      case ImplicationSrc => ColumnNames.implicationSrc
+      case ImplicationTgt => ColumnNames.implicationTgt
+    }
   }
 
   case class NameResolver(customFields   : IMap[data.CustomFieldId, data.CustomField],
@@ -70,17 +80,11 @@ object Column {
     @inline def apply(column: Column) = fn(column)
 
     val fn: Column => String = {
-      case CustomField(id) => UiText.mustA(customFields(id) flatMap customFieldName)
-      case ReqType         => ColumnNames.reqType
-      case Pubid           => ColumnNames.pubid
-      case Code            => ColumnNames.code
-      case Title           => ColumnNames.title
-      case Tags            => ColumnNames.tags
-      case ImplicationSrc  => ColumnNames.implicationSrc
-      case ImplicationTgt  => ColumnNames.implicationTgt
+      case b: BuiltIn         => NameResolver.builtIn(b)
+      case CustomField(id, _) => UiText.mustA(customFields(id) flatMap customFieldName)
     }
   }
 
-  def all(customFieldIds: TraversableOnce[data.CustomFieldId]): NonEmptyVector[Column] =
-    customFieldIds.toVector.map(CustomField) ++: builtInValues
+  def all(customFields: TraversableOnce[data.CustomField]): NonEmptyVector[Column] =
+    customFields.toVector.map(f => CustomField(f.id, f.alive)) ++: builtInValues
 }

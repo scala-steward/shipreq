@@ -98,15 +98,16 @@ private[reqtable] object Logic {
   private def customFieldExpander[K <: CustomFieldId : ClassTag, V: UnivEq]
       (vs: ViewSettings, ap: Applicability, f: K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
 
-    val cols = vs.columns.whole.collect{ case Column.CustomField(id: K) => id }
+    val cols = vs.columns.whole.collect { case c@ Column.CustomField(id: K, _) => (id, c) }
 
-    val expandersPerCol = cols.map { c =>
-        val col      = Column.CustomField(c)
+    val expandersPerCol = cols.map { ct =>
+        val colId    = ct._1
+        val col      = ct._2
         val applic   = ap(col)
         val expander = expanderC[V](vs, col)
-        val dataFn   = f(c)
+        val dataFn   = f(colId)
         val fn       = (r: Req) => expander(() => applic.choose(r, na = UnivEq.emptySet[V])(dataFn(r.id)))
-        (c, fn)
+        (colId, fn)
       }.toMap
 
     req => expandersPerCol mapValuesNow (_(req))

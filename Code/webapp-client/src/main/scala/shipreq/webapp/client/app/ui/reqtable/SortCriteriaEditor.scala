@@ -62,6 +62,7 @@ object SortCriteriaEditor {
       // Too hard (and invasive, and awkward) to prove non-emptyness
       // Would first need to prove ViewSettings always contain a Conclusive column, like:
       // -- class VisibleColumns(a: Vector[Column], b: Column.SortConclusive, c: Vector[Column])
+      assert(conclusiveCols.nonEmpty, "No conclusiveCols found?! Impossible.")
       val conclusiveColsN = NonEmptySet(conclusiveCols.head, conclusiveCols.tail)
 
       <.div(^.cls := "sortCriteriaEd",

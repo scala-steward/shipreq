@@ -268,7 +268,7 @@ object LogicTest extends TestSuite {
       case C.Tags            => nop
       case C.ImplicationSrc  => nop
       case C.ImplicationTgt  => nop
-      case C.CustomField(id) =>
+      case C.CustomField(id, _) =>
         id match {
           case i: CustomField.Implication.Id => nop
           case i: CustomField.Tag        .Id => nop
@@ -426,7 +426,7 @@ object LogicTest extends TestSuite {
       _ map f mkString sep
 
     implicit private def customFieldToColumn(id: CustomFieldId) =
-      C.CustomField(id)
+      C.CustomField(id, Alive)
 
     // -----------------------------------------------------------------------------------------------------------------
 
