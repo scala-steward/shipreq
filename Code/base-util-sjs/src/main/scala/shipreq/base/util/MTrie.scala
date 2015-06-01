@@ -123,9 +123,21 @@ object MTrie {
       go(trie, path.head, path.tail)
     }
 
+    def valueAtPath[A](path: Path, fail: => A)(f: V => A): A = {
+      val g: Value => A = v => f(v.value)
+      atPath(path, fail)(_.value.fold(fail)(g), g)
+    }
+
     def lookup(path: Path): Option[V] =
       atPath(path, None: Option[V])(_.value.map(_.value), t => Some(t.value))
 
+    // I'm cheating by not avoiding deletion here. Will do when needed
+    def modify(path: Path)(f: Option[V] => V): Trie =
+      valueAtPath(path, put(path, f(None)))(v => put(path, f(Some(v))))
+
+    /**
+     * @return A sub-trie beginning at the given path.
+     */
     def dropPath(path: Path): Trie =
       atPath(path, Map.empty: Trie)(_.next, _ => Map.empty)
 

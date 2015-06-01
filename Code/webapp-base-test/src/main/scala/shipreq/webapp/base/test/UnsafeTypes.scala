@@ -6,8 +6,8 @@ import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.text.Grammar
 
 trait UnsafeTypesLowPriority {
-  // implicit def autoSome[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
-  implicit def autoSome[A](a: A): Option[A] = Some(a)
+   implicit def autoSome[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
+//  implicit def autoSome[A, B](a: A)(implicit f: A => B): Option[B] = Some(a)
 }
 
 object UnsafeTypes extends UnsafeTypesLowPriority {
@@ -36,6 +36,7 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoApplicableTagId  (i: Int) = ApplicableTagId(i)
   implicit def autoRev              (i: Int) = Rev(i)
 
+  implicit def autoReqCodeIdO        (i: Int): Option[ReqCodeId]                  = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)
   implicit def autoGenericReqIdO     (i: Int): Option[GenericReqId]               = Some(i)
   implicit def autoCustomFieldImpIdO (i: Int): Option[CustomField.Implication.Id] = Some(i)

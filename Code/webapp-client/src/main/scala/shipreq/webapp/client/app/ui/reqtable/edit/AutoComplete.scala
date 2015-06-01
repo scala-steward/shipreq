@@ -70,13 +70,15 @@ object AutoComplete {
   }
 
   def hashtag(legalIssues: Stream[CustomIssueType], legalTags: Stream[ApplicableTag]): WithSyntax => Strategy =
-    hashtag(legalIssues.map(_.key) append legalTags.map(_.key))
-
-  def tag(legal: Stream[ApplicableTag]): WithSyntax => Strategy =
-    hashtag(legal.map(_.key))
+    hashtag(
+      legalIssues.filter(_.alive :: Alive).map(_.key) append
+        legalTags.filter(_.alive :: Alive).map(_.key))
 
   def issue(legal: Stream[CustomIssueType]): WithSyntax => Strategy =
-    hashtag(legal.map(_.key))
+    hashtag(legal, Stream.empty)
+
+  def tag(legal: Stream[ApplicableTag]): WithSyntax => Strategy =
+    hashtag(Stream.empty, legal)
 
   // ===================================================================================================================
   // [REF]
@@ -93,7 +95,9 @@ object AutoComplete {
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }
 
-  def req(textSearch: TextSearch, legal: Stream[ReqItem], withSyntax: WithSyntax): StrategyA[ReqItem] = {
+  def req(textSearch: TextSearch, legal0: Stream[ReqItem], withSyntax: WithSyntax): StrategyA[ReqItem] = {
+    val legal = legal0.filter(_.req.alive :: Alive)
+
     val searchTitles =
       textSearch.ignoreCaseNoWhitespace
         .filterByIds(legal.map(_.req.id).toSet)

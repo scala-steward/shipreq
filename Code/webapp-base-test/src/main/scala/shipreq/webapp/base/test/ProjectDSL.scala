@@ -30,6 +30,16 @@ object ProjectDSL {
                           text          : ReqFieldData.Text,
                           tags          : ReqFieldData.Tags,
                           imps          : ImplicationsU) {
+
+    private var _newMaxReqCodeId = maxReqCodeId
+
+    def newMaxReqCodeId = _newMaxReqCodeId
+
+    def nextReqCodeId() = {
+      _newMaxReqCodeId += 1
+      ReqCodeId(newMaxReqCodeId)
+    }
+
     def done: Project =
       p.copy(
         reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
@@ -78,13 +88,8 @@ object ProjectDSL {
       State[S, GenericReq]{ p =>
         val id = this.id getOrElse GenericReqId(p.nextId)
 
-        var maxReqCodeId = p.maxReqCodeId
-        def nextReqCodeId() = {
-          maxReqCodeId += 1
-          ReqCodeId(maxReqCodeId)
-        }
         def reqCodeData() =
-          ReqCode.Data(Some(ReqCode.ActiveData(nextReqCodeId(), id)), UnivEq.emptySet, UnivEq.emptySetMultimap)
+          ReqCode.Data(Some(ReqCode.ActiveData(p.nextReqCodeId(), id)), UnivEq.emptySet, UnivEq.emptySetMultimap)
 
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
         val (pr, pubid) = p.pubids.allocC(reqTypeId)(id)
@@ -97,7 +102,7 @@ object ProjectDSL {
                                  pubids       = pr,
                                  reqs         = p.reqs + req,
                                  reqCodeTrie  = codeTrie,
-                                 maxReqCodeId = maxReqCodeId,
+                                 maxReqCodeId = p.newMaxReqCodeId,
                                  text         = p.text |+| text,
                                  tags         = tags,
                                  imps         = imps)
@@ -109,19 +114,31 @@ object ProjectDSL {
                      title: Text.ReqCodeGroupTitle.OptionalText = Vector.empty) extends ToState {
     def state: Mod[ReqCodeGroup] =
       State[S, ReqCodeGroup]{ p =>
-
-        var maxReqCodeId = p.maxReqCodeId
-        def nextReqCodeId() = {
-          maxReqCodeId += 1
-          ReqCodeId(maxReqCodeId)
-        }
-
         val g  = ReqCodeGroup(title)
-        val ad = ReqCode.ActiveData(nextReqCodeId(), g)
-        val d  = ReqCode.Data(Some(ad), UnivEq.emptySet, UnivEq.emptySetMultimap)
-        val t  = p.reqCodeTrie.put(code, d)
-        val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = maxReqCodeId)
+        val ad = ReqCode.ActiveData(p.nextReqCodeId(), g)
+        val t  = p.reqCodeTrie.modify(code)(_.getOrElse(emptyReqCodeData).copy(active = Some(ad)))
+        val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = p.newMaxReqCodeId)
         (p2, g)
+      }
+  }
+
+  private val emptyReqCodeData = ReqCode.Data(None, UnivEq.emptySet, UnivEq.emptySetMultimap)
+
+  case class DeadReqCode(code : ReqCode.Value,
+                         id: Option[ReqCodeId] = None,
+                         target: Option[ReqId] = None) extends ToState {
+    def state: Mod[ReqCodeId] =
+      State[S, ReqCodeId]{ p =>
+        val id = this.id getOrElse p.nextReqCodeId()
+        val t = p.reqCodeTrie.modify(code) { o =>
+          val d = o.getOrElse(emptyReqCodeData) //.copy(active = Some(ReqCode.ActiveData(p.nextReqCodeId(), ReqCodeGroup(Vector.empty))))
+          target match {
+            case None      => d.copy(refsToGroup = d.refsToGroup + id)
+            case Some(tgt) => d.copy(refsToReqs = d.refsToReqs.add(tgt, id))
+          }
+        }
+        val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = p.newMaxReqCodeId)
+        (p2, id)
       }
   }
 

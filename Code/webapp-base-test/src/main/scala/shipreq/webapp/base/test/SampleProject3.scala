@@ -69,6 +69,9 @@ object SampleProject3 {
 
     + GReq(reqType = co, id = cos(1), alive = Dead, title = "Search entities!").impSrc(mfs(28), mfs(25))
     + GReq(reqType = co, id = cos(2), alive = Dead, title = "Entity-search should consider low-level reqs").impSrc(cos(1), frs(1))
+
+    + DeadReqCode("dead.ref", target = mfs(7))
+    + DeadReqCode("dead.group")
   )
 
     contentByDsl ! project0

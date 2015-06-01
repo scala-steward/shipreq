@@ -8,7 +8,8 @@ object SampleProject {
 
   lazy val customIssueTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
     CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Alive),
-    CustomIssueType(2, "TBD", "To Be Decided.", Alive)))
+    CustomIssueType(2, "TBD", "To Be Decided.", Alive),
+    CustomIssueType(3, "PENDING", "Just pendin'", Dead)))
 
   lazy val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
     CustomReqType(1, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Alive),

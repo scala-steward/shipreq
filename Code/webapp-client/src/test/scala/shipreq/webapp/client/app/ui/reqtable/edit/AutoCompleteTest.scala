@@ -18,11 +18,11 @@ import utest._
 
 import shipreq.base.util.MTrie.Ops
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.BaseTestUtil._
-import shipreq.webapp.base.test.SampleProject2._
+import shipreq.webapp.base.test._, BaseTestUtil._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.test.{PrepareEnv, Sizzle}
+import SampleProject3._
 
 object AutoCompleteTest extends TestSuite {
   PrepareEnv()
@@ -123,6 +123,17 @@ object AutoCompleteTest extends TestSuite {
   lazy val acReqP     = AutoComplete.req(textSearch, acReqItems, AutoComplete.WithSyntax)
   lazy val cReqP      = editor(acReqP)
 
+  lazy val cReqCodePrefixes = editor(AutoComplete.reqCode.prefixes(fakeTrie))
+
+  lazy val cReqCodeRefs  = editor(AutoComplete.reqCode.ref(projectC, plainTextC))
+
+  lazy val cIssuesWithSyntax = editor(AutoComplete.issue(project.customIssueTypes.data.values.toStream)(AutoComplete.WithSyntax))
+
+  lazy val cTagsWithSyntax = editor(AutoComplete.tag(project.atags)(AutoComplete.WithSyntax))
+  lazy val cTagsWithoutSyntax = editor(AutoComplete.tag(project.atags)(AutoComplete.WithoutSyntax))
+
+  // ReqCode data - uses SampleProject2
+
   lazy val fakeTrie: ReqCode.Trie = {
     import shipreq.webapp.base.test.UnsafeTypes._
 
@@ -147,22 +158,19 @@ object AutoCompleteTest extends TestSuite {
     )
     tombCodes.foldLeft(t1)((t, c) => t.put(c, tomb))
   }
-  lazy val projectC   = (Project.reqCodes ^|-> RevAnd.data).set(ReqCodes(fakeTrie))(project)
+  lazy val projectC = {
+    import ProjectDSL._, UnsafeTypes._
+    val p = (Project.reqCodes ^|-> RevAnd.data).set(ReqCodes(fakeTrie))(SampleProject2.project)
+    (DeadReqCode("dead.ref", target = 1, id = 90) + DeadReqCode("dead.group", id = 91)) ! p
+  }
   lazy val plainTextC = PlainText(projectC)
-
-  lazy val cReqCodePrefixes = editor(AutoComplete.reqCode.prefixes(fakeTrie))
-
-  lazy val cReqCodeRefs  = editor(AutoComplete.reqCode.ref(projectC, plainTextC))
-
-  lazy val cIssuesWithSyntax = editor(AutoComplete.issue(project.customIssueTypes.data.values.toStream)(AutoComplete.WithSyntax))
-
-  lazy val cTagsWithSyntax = editor(AutoComplete.tag(project.atags)(AutoComplete.WithSyntax))
-  lazy val cTagsWithoutSyntax = editor(AutoComplete.tag(project.atags)(AutoComplete.WithoutSyntax))
 
   override def tests = TestSuite {
 
     'issue {
       implicit val ctx = TestCtx(cIssuesWithSyntax)
+      test("#xxxxxxx")() // Clear previous
+
       'start {
         test("#T")("TBD", "TODO")
         testSelect("#TBD ")
@@ -171,14 +179,16 @@ object AutoCompleteTest extends TestSuite {
         test("#DO")("TODO")
         testSelect("#TODO ")
       }
-      'noSyntax {
-        test("#xxxxxxx")() // Clear previous
+      'noSyntax -
         test("T")()
-      }
+      'filterDead -
+        test("#D")("TBD", "TODO") // PENDING is dead
     }
 
     'tagWithSyntax {
       implicit val ctx = TestCtx(cTagsWithSyntax)
+      test("#xxxxxxx")() // Clear previous
+
       'start {
         test("#pri")("pri=high", "pri=low", "pri=med")
         testSelect("#pri=high ")
@@ -187,14 +197,16 @@ object AutoCompleteTest extends TestSuite {
         test("#1")("v1.0", "v1.1", "v1.2", "v1.x")
         testSelect("#v1.0 ")
       }
-      'noSyntax {
-        test("#xxxxxxx")() // Clear previous
+      'noSyntax -
         test("pri")()
-      }
+      'filterDead -
+        test("#x")("v1.x", "v2.x") // v3.x is dead
     }
 
     'tagWithoutSyntax {
       implicit val ctx = TestCtx(cTagsWithoutSyntax)
+      test("xxxxxxx")() // Clear previous
+
       'start {
         test("pri")("pri=high", "pri=low", "pri=med")
         testSelect("pri=high ")
@@ -203,10 +215,12 @@ object AutoCompleteTest extends TestSuite {
         test("1")("v1.0", "v1.1", "v1.2", "v1.x")
         testSelect("v1.0 ")
       }
-      'noSyntax {
-        test("xxxxxxx")() // Clear previous
-        test("#")()
+      'withSyntax - {
+        test("#pri")("pri=high", "pri=low", "pri=med")
+        testSelect("pri=high ")
       }
+      'filterDead -
+        test("#x")("v1.x", "v2.x") // v3.x is dead
     }
 
     'reqPrefixed {
@@ -224,7 +238,7 @@ object AutoCompleteTest extends TestSuite {
         testSelect("[MF-14] ")
       }
       'title {
-        testMF("[level")(12, 22)
+        testMF("[save")(17)
         testMF("[Collab")(9, 10, 11)
         testSelect("[MF-9] ")
       }
@@ -232,6 +246,10 @@ object AutoCompleteTest extends TestSuite {
         testMF("[require")(12, 13, 22, 23, 24)
         testMF("[REQUIRE")(12, 13, 22, 23, 24)
       }
+      'filterDeadByPubid -
+        testMF("[mf28")()
+      'filterDeadByTitle -
+        testMF("[search")(25) // excludes CO-{1,2}
     }
 
     'reqCodePrefixes {
@@ -283,6 +301,8 @@ object AutoCompleteTest extends TestSuite {
         testML("ap")("apple", "apply")("apple")
       'multilineMid -
         testML(".eggs")("shit.eggs")("shit.eggs")
+      'filterDead -
+        test("dea")()
     }
 
     'reqCodeRefs {
@@ -315,6 +335,8 @@ object AutoCompleteTest extends TestSuite {
         test("[.egg")("goat.damn.egg.crap", "goat.damn.egg.stuff", "goat.damn.egglike", "shit.eggs")
       'dotEnd -
         test("[egg.")("goat.damn.egg.crap", "goat.damn.egg.stuff")
+      'filterDead -
+        test("[dea")()
     }
 
     'math {
