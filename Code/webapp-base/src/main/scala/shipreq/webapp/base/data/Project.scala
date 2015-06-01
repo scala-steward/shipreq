@@ -37,7 +37,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   import japgolly.nyaya.{Atom => _, _}
   this assertSatisfies DataProp.project.all
 
-  def rev =
+  lazy val rev: Rev =
     customIssueTypes.rev +
     customReqTypes  .rev +
     fields          .rev +
@@ -47,7 +47,8 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     reqFieldData    .rev
 
   override def toString =
-    ShowSize(this).showTree
+    s"Project($rev)"
+    //ShowSize(this).showTree
 
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
