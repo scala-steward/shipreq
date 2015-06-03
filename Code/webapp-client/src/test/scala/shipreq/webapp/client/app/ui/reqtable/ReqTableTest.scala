@@ -26,6 +26,104 @@ import shipreq.webapp.client.test.ReactTmpExt._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
 
+/**
+ * Data representation of a rendered ReqTable.
+ *
+ * Inspects actual DOM to derive values.
+ */
+final class ReqTableScreen(root: => DomZipper) {
+  lazy val $ = root
+
+  object viewSettings {
+    lazy val $ = ReqTableScreen.this.$(">div")
+
+    object columns {
+      lazy val entirety: Vector[(On, String)] =
+        $("tbody tr")(2, ">td", 0)(">ol").collectD("li", li =>
+          (On <~ li("input").as[html.Input].checked, li("label span").innerHTML))
+
+      lazy val allColumns: Vector[String] =
+        entirety.map(_._2)
+
+      lazy val onColumns: Vector[String] =
+        entirety.filter(_._1 :: On).map(_._2)
+    }
+
+    object sorting {
+      lazy val $ = viewSettings.this.$("tbody tr")(2, ">td", 1)
+
+      private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
+      private val readSortMethod: String => Option[SortMethod] = {
+        case "Unused" => None
+        case s => all.find(_.optionLabel == s).fold(sys error s"Unknown sort method: $s")(Some(_))
+      }
+
+      private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
+        s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
+
+      lazy val inconclusive: Vector[(Option[SortMethod], String)] =
+        $("ol").collectD("li", li =>
+          (li("select").selectedOptionText |> readSortMethod, li("select + span").innerHTML))
+
+      lazy val conclusiveOrder: SortMethod.IgnoreBlanks =
+        $(2, "ol+div select", 0).selectedOptionText |> readSortMethodIB
+
+      lazy val conclusiveColumnSelected: String =
+        $(2, "ol+div select", 1).selectedOptionText
+
+      lazy val conclusiveColumns: Vector[String] =
+        $(2, "ol+div select", 1) collectInnerHTML "option"
+
+      lazy val visibleColumns: Vector[String] =
+        inconclusive.map(_._2) ++ conclusiveColumns
+    }
+
+    object filterDead {
+      lazy val $ = viewSettings.this.$(">label input")
+
+      lazy val value: FilterDead =
+        Checkbox.filterDeadChecked <~ $.as[html.Input].checked
+    }
+  }
+
+  object table {
+    lazy val $ = ReqTableScreen.this.$(">table")
+    lazy val tbody = $(">tbody")
+
+    lazy val columns: Vector[String] =
+      $(">thead") collectInnerHTML "th span"
+
+    import ColumnRenderer.{Status, Normal, DeadRow}
+
+    private def cell(s: Status, focus: Boolean): String =
+      "td." + Style.reqtable.cell(s, focus).className.value
+
+    private def row(inner: String): String =
+      s">tr:has($inner)"
+
+    private def byFocus(focus: Boolean, wrap: String => String): String =
+      ColumnRenderer.statusDomain.toStream.map(s => wrap(cell(s, focus))).mkString(",")
+
+    private def byStatus(s: Status, wrap: String => String): String =
+      Vector(true, false).map(f => wrap(cell(s, f))).mkString(",")
+
+    lazy val allRows   = tbody getAll ">tr"
+    lazy val deadRows  = tbody getAll byStatus(DeadRow, row)
+    lazy val aliveRows = tbody getAll byStatus(Normal, row)
+    lazy val focusRow  = tbody option byFocus(true, row)
+    lazy val focus     = tbody option byFocus(true, identity)
+
+    lazy val inputsInFocusRow: Option[Int] =
+      focusRow.map(_.getAll("input,select,textarea").length)
+
+    def ensureHasFocus(): Unit =
+      focus getOrElse fail("No focus.")
+  }
+
+  def availCols = viewSettings.columns.allColumns
+}
+
+// =====================================================================================================================
 object ReqTableTest extends TestSuite {
   PrepareEnv()
 
@@ -38,105 +136,13 @@ object ReqTableTest extends TestSuite {
   def reset(): Unit =
     c setState ReqTable.initialState(project)
 
-  // ===================================================================================================================
-  class Screen {
-    lazy val $ = new DomZipper(c.getDOMNode())
-
-    object viewSettings {
-      lazy val $ = Screen.this.$(">div")
-
-      object columns {
-        lazy val entirety: Vector[(On, String)] =
-          $("tbody tr")(2, ">td", 0)(">ol").collectD("li", li =>
-            (On <~ li("input").as[html.Input].checked, li("label span").innerHTML))
-
-        lazy val allColumns: Vector[String] =
-          entirety.map(_._2)
-
-        lazy val onColumns: Vector[String] =
-          entirety.filter(_._1 :: On).map(_._2)
-      }
-
-      object sorting {
-        lazy val $ = viewSettings.this.$("tbody tr")(2, ">td", 1)
-
-        private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
-        private val readSortMethod: String => Option[SortMethod] = {
-          case "Unused" => None
-          case s => all.find(_.optionLabel == s).fold(sys error s"Unknown sort method: $s")(Some(_))
-        }
-
-        private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
-          s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
-
-        lazy val inconclusive: Vector[(Option[SortMethod], String)] =
-          $("ol").collectD("li", li =>
-            (li("select").selectedOptionText |> readSortMethod, li("select + span").innerHTML))
-
-        lazy val conclusiveOrder: SortMethod.IgnoreBlanks =
-          $(2, "ol+div select", 0).selectedOptionText |> readSortMethodIB
-
-        lazy val conclusiveColumnSelected: String =
-          $(2, "ol+div select", 1).selectedOptionText
-
-        lazy val conclusiveColumns: Vector[String] =
-          $(2, "ol+div select", 1) collectInnerHTML "option"
-
-        lazy val visibleColumns: Vector[String] =
-          inconclusive.map(_._2) ++ conclusiveColumns
-      }
-
-      object filterDead {
-        lazy val $ = viewSettings.this.$(">label input")
-
-        lazy val value: FilterDead =
-          Checkbox.filterDeadChecked <~ $.as[html.Input].checked
-      }
-    }
-
-    object table {
-      lazy val $ = Screen.this.$(">table")
-      lazy val tbody = $(">tbody")
-
-      lazy val columns: Vector[String] =
-        $(">thead") collectInnerHTML "th span"
-
-      import ColumnRenderer.{Status, Normal, DeadRow}
-
-      private def cell(s: Status, focus: Boolean): String =
-        "td." + Style.reqtable.cell(s, focus).className.value
-
-      private def row(inner: String): String =
-        s">tr:has($inner)"
-
-      private def byFocus(focus: Boolean, wrap: String => String): String =
-        ColumnRenderer.statusDomain.toStream.map(s => wrap(cell(s, focus))).mkString(",")
-
-      private def byStatus(s: Status, wrap: String => String): String =
-        Vector(true, false).map(f => wrap(cell(s, f))).mkString(",")
-
-      lazy val allRows   = tbody getAll ">tr"
-      lazy val deadRows  = tbody getAll byStatus(DeadRow, row)
-      lazy val aliveRows = tbody getAll byStatus(Normal, row)
-      lazy val focusRow  = tbody option byFocus(true, row)
-      lazy val focus     = tbody option byFocus(true, identity)
-
-      lazy val inputsInFocusRow: Option[Int] =
-        focusRow.map(_.getAll("input,select,textarea").length)
-
-      def ensureHasFocus(): Unit =
-        focus getOrElse fail("No focus.")
-    }
-
-    def availCols = viewSettings.columns.allColumns
-  }
-
-  def * = new Screen
+  def * = new ReqTableScreen(new DomZipper(c.getDOMNode()))
 
   // ===================================================================================================================
   // Properties
 
-  // TODO Rename and move into Nyaya
+  // TODO Move following into Nyaya
+
   @inline def existance[A](name: String) = new ExistanceB[A](name)
   final class ExistanceB[A](val name: String) extends AnyVal {
     def apply[B](expect: A => Boolean, expected: A => Set[B], testData: A => Traversable[B]): Prop[A] = {
@@ -146,7 +152,14 @@ object ReqTableTest extends TestSuite {
     }
   }
 
-  case class PS(project: Project, screen: Screen) {
+  import scala.util.Try
+  def propTrySuccess(name: => String): Prop[Try[Any]] =
+    Prop.test(name, _.isSuccess)
+
+  def propTry[A](name: => String, f: A => Any): Prop[A] =
+    propTrySuccess(name).contramap(a => Try(f(a)))
+
+  case class PS(project: Project, screen: ReqTableScreen) {
     lazy val cfname = CustomField.nameP(project)
 
     def customFieldNames(a: Alive): Set[String] = {
@@ -159,11 +172,11 @@ object ReqTableTest extends TestSuite {
   val builtInColumns = Column.builtInValues.map(Column.NameResolver.builtIn).toSet.whole
 
   val invariants: Prop[PS] = {
-    type S = Screen
+    import shipreq.webapp.client.app.ui.reqtable.{ReqTableScreen => S}
     implicit def autoContraS(p: Prop[S]): Prop[PS] = p.contramap[PS](_.screen)
     def equal(name: => String) = Prop.equal[S](name)
 
-    val availableColumns = {
+    def availableColumns = {
       val uniqueColumns =
         Prop.distinct("Unique columns", (_: S).availCols)
 
@@ -180,32 +193,34 @@ object ReqTableTest extends TestSuite {
       aliveCustomFieldColumnsAlwaysAvailable & builtInColumnsAlwaysAvailable & deadColumns & uniqueColumns
     }
 
-    val sortableColumns = equal("Sortable columns = selected VS columns")(
+    def sortableColumns = equal("Sortable columns = selected VS columns")(
       _.viewSettings.sorting.visibleColumns.sorted, _.viewSettings.columns.onColumns.sorted)
 
-    val tableColumns = equal("Table columns = selected VS columns")(
+    def tableColumns = equal("Table columns = selected VS columns")(
       _.table.columns, _.viewSettings.columns.onColumns)
 
-    val tableContents: Prop[PS] = {
+    def tableContents: Prop[PS] = {
       val rowEitherDeadOrAlive = equal("Rows are either dead or alive")(
         _.table.allRows.length,
         t => t.table.aliveRows.length + t.table.deadRows.length)
 
-      rowEitherDeadOrAlive
+      val oneFocusMax = propTry[S]("Maximum one focus", _.table.focus)
+
+      rowEitherDeadOrAlive & oneFocusMax
     }
 
     availableColumns & sortableColumns & tableColumns & tableContents
   }
 
-  def assertInvariants(s: Screen = new Screen): Unit =
+  def assertInvariants(s: ReqTableScreen = *): Unit =
     invariants assert PS(project, s)
 
   // ===================================================================================================================
   // Actions
 
   object ScreenAction extends ActionTester {
-    override protected type S          = Screen
-    override protected def newState    = new Screen
+    override protected type S          = ReqTableScreen
+    override protected def newState    = *
     override protected def defaultLast = assertInvariants
   }
   import ScreenAction._
@@ -306,6 +321,5 @@ object ReqTableTest extends TestSuite {
         editAllColumns(Alive).testAfter(_ > 0, "[Alive Row] Cells should be in edit-mode").run()
       }
     }
-
   }
 }

@@ -125,7 +125,7 @@ final class ColumnEditors(project       : Px[Project],
   lazy val impsLookup =
     Px.apply2(project, plainText)(ImplicationEditor.lookupAll)
 
-  def imps(l: Optional[Row, Vector[Pubid]], declFwd : Boolean) = initEditorO[GenericReqRow] { r =>
+  def imps(l: Optional[Row, Vector[Pubid]], declFwd: Boolean) = initEditorO[GenericReqRow] { r =>
     l.getOption(r).map { initialValue =>
       val lookup2 = for {p <- project; l <- impsLookup}
         yield Must(ImplicationEditor.lookupForSubject(p, l, r.req.id, declFwd))
