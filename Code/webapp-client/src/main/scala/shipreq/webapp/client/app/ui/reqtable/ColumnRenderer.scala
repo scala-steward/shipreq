@@ -107,7 +107,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   private def tags(lens: Optional[Row, Vector[ApplicableTagId]]) = make {
-    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.tags)
+    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.tagList)
     case _: ReqCodeGroupRow => `N/A`
   }
 

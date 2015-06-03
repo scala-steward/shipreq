@@ -98,16 +98,17 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   private val reqRefInText = reqRef(Contextualise, Invalid)
 
-  private val listSep: TagMod = ", "
+  private val sepComma: TagMod = ", "
+  private val sepSpace: TagMod = " "
 
-  private def list[A, B](as: Vector[A])(f: A => B)(implicit g: B => TagMod): ReactElement =
+  private def list[A, B](as: Vector[A], listSep: TagMod)(f: A => B)(implicit g: B => TagMod): ReactElement =
     <.div(
       NonEmptyVector.option(as)
         .map(_.intercalateF(listSep)(g compose f).whole))
 
   def reqRefList(c: Contextualise, validityWhenDead: Validity)(reqs: Vector[ReqId]): ReactElement = {
     val f = reqRef(c, validityWhenDead)
-    list(reqs)(f)
+    list(reqs, sepComma)(f)
   }
 
   def pubidRef(c: Contextualise, validityWhenDead: Validity): Pubid => ReactElement = {
@@ -116,7 +117,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   }
 
   def pubidRefList(c: Contextualise, validityWhenDead: Validity)(ids: Vector[Pubid]): ReactElement =
-    list(ids)(pubidRef(c, validityWhenDead))
+    list(ids, sepComma)(pubidRef(c, validityWhenDead))
 
   /** Contextualised */
   val codeRef = memoM[ReqCodeId] { id =>
@@ -156,14 +157,14 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   val tag = memoM[ApplicableTagId](id =>
     project.atag(id).map(tag =>
       <.span(
-        *.tag,
+        *.tag(tag.alive),
         ^.title := tag.name,
         tag.key.value
       )
     ))
 
-  def tags(tags: Vector[ApplicableTagId]): ReactElement =
-    <.div(tags.map(id => tag(id): TagMod): _*)
+  def tagList(ids: Vector[ApplicableTagId]): ReactElement =
+    list(ids, sepSpace)(tag)
 
   def katex(m: Atom.PlainTextMarkup#MathTeX) =
     try

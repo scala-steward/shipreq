@@ -194,10 +194,15 @@ object Style extends StyleSheet.Inline {
       display.inlineBlock,
       mixinIf(a :: Dead)(deadAndNotError)))
 
-    val tag = style(
-      addClassName("label label-default"),
-      hoverShowsInfo,
-      marginRight(1 ex))
+    private def tagLabelSuffix(alive: Alive) = alive match {
+      case Alive => "primary"
+      case Dead  => "default"
+    }
+    val tag = styleF(D.alive)(a => styleS(
+      addClassName(s"label label-${tagLabelSuffix(a)}"),
+      hoverShowsInfo))
+
+    // marginRight(1 ex)
 
     val issue = style(hasError)
 
@@ -241,7 +246,7 @@ object Style extends StyleSheet.Inline {
   init(
     reqtable.sortCriteriaEditor.conclusiveColumnName,
     reqtable.table,
-    widgets.tag)
+    widgets.issue)
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
 //  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }

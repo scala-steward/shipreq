@@ -82,7 +82,7 @@ class WIP {
     import shipreq.webapp.base.test.ProjectDSL._
 
     val List(co, mf, fr, br, dd, si) = List[CustomReqTypeId](1, 2, 3, 4, 5, 6)
-    val List(p1,p3,p5,rel,wip,v1x) = List[ApplicableTagId](4,3,2,22,11,21)
+    val List(p1,p3,p5,rel,wip,v1x,v3x) = List[ApplicableTagId](4,3,2,22,11,21,26)
     val (p2,p4) = (p3,p5)
     val frs = (0 to 10).toVector.map(i => GenericReqId(i + 1000))
     val mfs = (0 to 28).toVector.map(i => GenericReqId(i + 1100))
@@ -132,8 +132,8 @@ class WIP {
     + GReq(reqType = mf, id = mfs(24), title = "Requirement Lint"                      ).tag(p3)
     + GReq(reqType = mf, id = mfs(25), title = "Search"                                ).tag(p2)
     + GReq(reqType = mf, id = mfs(26), title = "Mass text modification (replace)"      ).tag(p1)
-    + GReq(reqType = mf, id = mfs(27), title = "External references"                   ).tag(p1)
-    + GReq(reqType = mf, id = mfs(28), title = "Entities", alive = Dead                ).tag(p2)
+    + GReq(reqType = mf, id = mfs(27), title = "External references"                   ).tag(p1).tag(v3x)
+    + GReq(reqType = mf, id = mfs(28), title = "Entities", alive = Dead                ).tag(p2).tag(v3x)
 
     + GReq(reqType = fr, id = frs(1), title = fr1Desc, codes = Set("uce.sample.1", "uce.sample.1b", "demo.whatever")).impSrc(mfs(12), mfs(19))
     + GReq(reqType = fr, id = frs(2), title = fr2Desc, codes = Set("uce.sample.2")).impSrc(mfs(1), mfs(13), mfs(22))
