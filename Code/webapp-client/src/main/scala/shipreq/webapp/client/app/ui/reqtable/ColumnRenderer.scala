@@ -81,12 +81,12 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     makeS("∅", Function const <.span("∅"))
 
   private def pubid = make {
-    case GenericReqRow(req, _, _) => widgets.pubidColumnValue(req.pubid)()
+    case GenericReqRow(req, _, _) => widgets.pubidColumnValue(req.pubid)
     case _: ReqCodeGroupRow       => `N/A`
   }
 
   private def reqType = make {
-    case GenericReqRow(req, _, _) => widgets.reqType(req.reqTypeId)()
+    case GenericReqRow(req, _, _) => widgets.reqType(req.reqTypeId)
     case _: ReqCodeGroupRow       => `N/A`
   }
 

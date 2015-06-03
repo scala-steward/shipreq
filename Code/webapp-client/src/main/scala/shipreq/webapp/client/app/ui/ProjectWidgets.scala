@@ -22,24 +22,19 @@ object ProjectWidgets {
 }
 
 final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
-  type Widget = ReactComponentC.ConstProps[Unit, Unit, Unit, TopNode]
 
   private implicit def surroundDisplay(s: G.Surrounds) = s.display
 
-  private def memo[A: UnivEq](n: String, f: A => ReactElement): A => Widget =
-    UnivEq.mutableHashMapMemo((a: A) => ReactComponentB.static(n, f(a)).buildU)
+  private def memo[A: UnivEq](f: A => ReactElement): A => ReactElement =
+    UnivEq mutableHashMapMemo f
 
-  private def memoM[A: UnivEq](n: String, f: A => Must[ReactElement]): A => Widget =
-    memo(n, a => UI.mustA(f(a)))
-
-  private def memoMW[A: UnivEq](f: A => Must[Widget]): A => Widget =
-    UnivEq.mutableHashMapMemo(a =>
-      UI.mustA[Widget, Widget](f(a))(err => ReactComponentB.static("", err).buildU, identity))
+  private def memoM[A: UnivEq](f: A => Must[ReactElement]): A => ReactElement =
+    memo(a => UI.mustA(f(a)))
 
   def issueO(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText): ReactElement =
-    NonEmptyVector.maybe(desc, issue(id)(): ReactElement)(issue1(id, _))
+    NonEmptyVector.maybe(desc, issue(id))(issue1(id, _))
 
-  val issue = memoM[CustomIssueTypeId]("Issue", id =>
+  val issue = memoM[CustomIssueTypeId](id =>
     project.customIssueType(id).map(i =>
       <.span(
         *.issue,
@@ -57,7 +52,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         issueDescSurroundSuffix)
     )
 
-  val pubidColumnValue = memoM[Pubid]("ID", pubid =>
+  val pubidColumnValue = memoM[Pubid](pubid =>
     for {
       txt <- PlainText.pubid(project, pubid)
       req <- project.reqs.data.reqByPubidM(pubid)
@@ -75,39 +70,39 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         ^.title := plainText.reqTitle(req),
         f(PlainText.pubid(rt, req.pubid.pos)))
 
-  val reqRef: Contextualise => ReqId => Widget =
+  val reqRef: Contextualise => ReqId => ReactElement =
     Contextualise.memo { c =>
       val f: EndoFn[String] = c match {
         case Contextualise => G.reflinkSurround
         case Plain         => identity
       }
-      memoM[ReqId]("Req", _reqRef(f))
+      memoM(_reqRef(f))
     }
 
   private val reqRefC = reqRef(Contextualise)
 
   private val listSep: TagMod = ", "
 
-  def list[A](as: Vector[A])(f: A => TagMod): ReactElement =
+  private def list[A](as: Vector[A])(f: A => TagMod): ReactElement =
     <.div(
       NonEmptyVector.option(as)
         .map(_.intercalateF(listSep)(f).whole))
 
   def reqRefList(c: Contextualise, reqs: Vector[ReqId]): ReactElement = {
     val f = reqRef(c)
-    list(reqs)(f(_)())
+    list(reqs)(f(_))
   }
 
   def pubidRef(c: Contextualise): Pubid => ReactElement = {
     val f = reqRef(c)
-    pubid => UI.must[ReqId, ReactElement](project.reqs.data.reqIdByPubidM(pubid))(f(_)())
+    pubid => UI.must[ReqId, ReactElement](project.reqs.data.reqIdByPubidM(pubid))(f(_))
   }
 
   def pubidRefList(c: Contextualise, ids: Vector[Pubid]): ReactElement =
     list(ids)(pubidRef(c)(_))
 
   /** Contextualised */
-  val codeRef = memoM[ReqCodeId]("CodeRef", id => {
+  val codeRef = memoM[ReqCodeId] { id =>
     import Must.Auto._
     import ProjectText.ReqCodeResolution._
 
@@ -129,18 +124,18 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
       case DeadGroup(c)                   => ref(c, *.groupRef(Dead), undefined)
       case ReqWithAltCode(c, r)           => toRef(c, r)
-      case ReqWithoutCodes(r)             => reqRefC(r)()
+      case ReqWithoutCodes(r)             => reqRefC(r)
     }
-  })
+  }
 
-  val reqType = memoM[ReqTypeId]("ReqType", id =>
+  val reqType = memoM[ReqTypeId](id =>
     project.reqType(id).map(rt =>
       <.span(
         ^.title := rt.name,
         rt.mnemonic.value)
     ))
 
-  val tag = memoM[ApplicableTagId]("Tag", id =>
+  val tag = memoM[ApplicableTagId](id =>
     project.atag(id).map(tag =>
       <.span(
         *.tag,
@@ -150,7 +145,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     ))
 
   def tags(tags: Vector[ApplicableTagId]): ReactElement =
-    <.div(tags.map(id => tag(id)(): TagMod): _*)
+    <.div(tags.map(id => tag(id): TagMod): _*)
 
   def katex(m: Atom.PlainTextMarkup#MathTeX) =
     try
@@ -165,13 +160,13 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     lazy val atom: AnyAtom => TagMod = {
       case a: Literal         # Literal       => <.span(a.value)
       case a: NewLine         # BlankLine     => <.div(*.blankLine)
-      case a: TagRef          # TagRef        => tag(a.value)()
+      case a: TagRef          # TagRef        => tag(a.value)
       case a: PlainTextMarkup # WebAddress    => <.a(^.href := a.value, a.value)
       case a: PlainTextMarkup # EmailAddress  => <.a(^.href := "mailto:" ~ a.value, a.value)
       case a: PlainTextMarkup # MathTeX       => katex(a)
       case a: ListMarkup      # UnorderedList => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
-      case a: ReqRef          # ReqRef        => reqRefC(a.value)()
-      case a: ReqRef          # CodeRef       => codeRef(a.value)()
+      case a: ReqRef          # ReqRef        => reqRefC(a.value)
+      case a: ReqRef          # CodeRef       => codeRef(a.value)
       case a: Issue           # Issue         => issueO(a.typ, a.desc)
     }
 
