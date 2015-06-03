@@ -1,7 +1,8 @@
 package shipreq.webapp.client.test
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import scala.scalajs.js
+import org.scalajs.dom, dom.{EventTarget, KeyboardEvent}
+import scala.scalajs.js, js.{undefined, UndefOr}
 import scalaz.Equal
 import scalaz.std.AllInstances._
 import scalaz.effect.IO
@@ -46,4 +47,34 @@ object TestUtil extends BaseTestUtil {
   }
 
   implicit def autodomnode(c: ComponentScope_M[TopNode]) = c.getDOMNode()
+
+  val nopJsFn: js.Function0[js.Any] = () => ((): js.Any)
+
+  def fakeKeyboardEvent(key            : UndefOr[String]      = undefined,
+                        keyCode        : UndefOr[Int]         = undefined,
+                        target         : UndefOr[EventTarget] = undefined,
+                        location       : UndefOr[Double]      = undefined,
+                        altKey         : Boolean              = false,
+                        ctrlKey        : Boolean              = false,
+                        metaKey        : Boolean              = false,
+                        shiftKey       : Boolean              = false,
+                        repeat         : Boolean              = false,
+                        locale         : String               = "en",
+                        preventDefault : js.Function0[js.Any] = nopJsFn,
+                        stopPropagation: js.Function0[js.Any] = nopJsFn): KeyboardEvent = {
+    val o = js.Dynamic.literal()
+    key     .foreach(v => o.key      = v)
+    keyCode .foreach(v => o.keyCode  = v)
+    target  .foreach(v => o.target   = v)
+    location.foreach(v => o.location = v)
+    o.altKey          = altKey
+    o.ctrlKey         = ctrlKey
+    o.metaKey         = metaKey
+    o.shiftKey        = shiftKey
+    o.repeat          = repeat
+    o.locale          = locale
+    o.preventDefault  = preventDefault
+    o.stopPropagation = stopPropagation
+    o.asInstanceOf[dom.KeyboardEvent]
+  }
 }

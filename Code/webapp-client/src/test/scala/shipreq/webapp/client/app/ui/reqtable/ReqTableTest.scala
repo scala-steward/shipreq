@@ -3,15 +3,18 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.nyaya._
 import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTestOps._
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
-import org.scalajs.dom.html
+import org.scalajs.dom, dom.html
+import scalajs.js
 import scalaz.Equal
+import scalaz.std.option._
 import scalaz.syntax.equal._
 import utest.TestSuite
 import ReactTestUtils.Simulate
 
 import shipreq.webapp.base.data._
-import shipreq.webapp.client.app.ui.Checkbox
+import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
@@ -19,6 +22,8 @@ import shipreq.webapp.base.test.{ActionTester, SampleProject3}
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.test.{DomZipper, PrepareEnv}
+import shipreq.webapp.client.test.ReactTmpExt._
+import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
 
 object ReqTableTest extends TestSuite {
@@ -27,6 +32,11 @@ object ReqTableTest extends TestSuite {
   val project = SampleProject3.project
 
   lazy val c = ReactTestUtils renderIntoDocument ReqTable.WIP(project)
+
+  lazy val cTable = Table.Component castM ReactTestUtils.findRenderedComponentWithType(c, Table.Component.jsCtor)
+
+  def reset(): Unit =
+    c setState ReqTable.initialState(project)
 
   // ===================================================================================================================
   class Screen {
@@ -83,11 +93,39 @@ object ReqTableTest extends TestSuite {
           Checkbox.filterDeadChecked <~ $.as[html.Input].checked
       }
     }
+
     object table {
       lazy val $ = Screen.this.$(">table")
+      lazy val tbody = $(">tbody")
 
-      lazy val  columns: Vector[String] =
+      lazy val columns: Vector[String] =
         $(">thead") collectInnerHTML "th span"
+
+      import ColumnRenderer.{Status, Normal, DeadRow}
+
+      private def cell(s: Status, focus: Boolean): String =
+        "td." + Style.reqtable.cell(s, focus).className.value
+
+      private def row(inner: String): String =
+        s">tr:has($inner)"
+
+      private def byFocus(focus: Boolean, wrap: String => String): String =
+        ColumnRenderer.statusDomain.toStream.map(s => wrap(cell(s, focus))).mkString(",")
+
+      private def byStatus(s: Status, wrap: String => String): String =
+        Vector(true, false).map(f => wrap(cell(s, f))).mkString(",")
+
+      lazy val allRows   = tbody getAll ">tr"
+      lazy val deadRows  = tbody getAll byStatus(DeadRow, row)
+      lazy val aliveRows = tbody getAll byStatus(Normal, row)
+      lazy val focusRow  = tbody option byFocus(true, row)
+      lazy val focus     = tbody option byFocus(true, identity)
+
+      lazy val inputsInFocusRow: Option[Int] =
+        focusRow.map(_.getAll("input,select,textarea").length)
+
+      def ensureHasFocus(): Unit =
+        focus getOrElse fail("No focus.")
     }
 
     def availCols = viewSettings.columns.allColumns
@@ -97,6 +135,16 @@ object ReqTableTest extends TestSuite {
 
   // ===================================================================================================================
   // Properties
+
+  // TODO Rename and move into Nyaya
+  @inline def existance[A](name: String) = new ExistanceB[A](name)
+  final class ExistanceB[A](val name: String) extends AnyVal {
+    def apply[B](expect: A => Boolean, expected: A => Set[B], testData: A => Traversable[B]): Prop[A] = {
+      lazy val yes = Prop.allPresent[A](name + " available")(expected, testData)
+      lazy val no = Prop.blacklist[A](name + " not available")(expected, testData)
+      Prop.test[A](name, expect).ifelse(yes, no)
+    }
+  }
 
   case class PS(project: Project, screen: Screen) {
     lazy val cfname = CustomField.nameP(project)
@@ -115,7 +163,6 @@ object ReqTableTest extends TestSuite {
     implicit def autoContraS(p: Prop[S]): Prop[PS] = p.contramap[PS](_.screen)
     def equal(name: => String) = Prop.equal[S](name)
 
-
     val availableColumns = {
       val uniqueColumns =
         Prop.distinct("Unique columns", (_: S).availCols)
@@ -126,14 +173,9 @@ object ReqTableTest extends TestSuite {
       val aliveCustomFieldColumnsAlwaysAvailable =
         Prop.allPresent[PS]("Alive custom field columns available")(_ customFieldNames Alive, _.screen.availCols)
 
-      val deadColumnsAvailable =
-        Prop.allPresent[PS]("Dead custom field columns available")(_ customFieldNames Dead, _.screen.availCols)
-
-      val deadColumnsNotAvailable =
-        Prop.blacklist[PS]("Dead custom field columns not available")(_ customFieldNames Dead, _.screen.availCols)
-
       val deadColumns =
-        equal("")(_.viewSettings.filterDead.value, _ => ShowDead).ifelse(deadColumnsAvailable, deadColumnsNotAvailable)
+        existance[PS]("Dead custom field columns")(_.screen.viewSettings.filterDead.value :: ShowDead,
+          _ customFieldNames Dead, _.screen.availCols)
 
       aliveCustomFieldColumnsAlwaysAvailable & builtInColumnsAlwaysAvailable & deadColumns & uniqueColumns
     }
@@ -144,7 +186,15 @@ object ReqTableTest extends TestSuite {
     val tableColumns = equal("Table columns = selected VS columns")(
       _.table.columns, _.viewSettings.columns.onColumns)
 
-    availableColumns ==> (sortableColumns & tableColumns)
+    val tableContents: Prop[PS] = {
+      val rowEitherDeadOrAlive = equal("Rows are either dead or alive")(
+        _.table.allRows.length,
+        t => t.table.aliveRows.length + t.table.deadRows.length)
+
+      rowEitherDeadOrAlive
+    }
+
+    availableColumns & sortableColumns & tableColumns & tableContents
   }
 
   def assertInvariants(s: Screen = new Screen): Unit =
@@ -160,19 +210,6 @@ object ReqTableTest extends TestSuite {
   }
   import ScreenAction._
 
-  val filterDeadToggle =
-    Action(Simulate change _.viewSettings.filterDead.$.get)
-      .focus(_.viewSettings.filterDead.value)
-      .assertChange
-
-  val filterDeadShowHide = (
-    filterDeadToggle.unless(_.viewSettings.filterDead.value :: HideDead) >>
-    filterDeadToggle.times(2).focus(_.viewSettings.columns.onColumns).assertNoChange
-  )
-
-  def applyViewSettings(vs: ViewSettings) =
-    Action exec c.modState(_ updateVS vs)
-
   def actionProp[A](f: A => Action[_]): Prop[A] = {
     Prop.atom("action", a =>
       try {
@@ -184,6 +221,39 @@ object ReqTableTest extends TestSuite {
     )
   }
 
+  val filterDeadToggle =
+    Action(Simulate change _.viewSettings.filterDead.$.get)
+      .focus(_.viewSettings.filterDead.value)
+      .assertChange
+
+  def setFilterDead(fd: FilterDead): Action[Unit] =
+    filterDeadToggle.unless(_.viewSettings.filterDead.value == fd)
+
+  val filterDeadShowHide =
+    setFilterDead(HideDead) >>
+    filterDeadToggle.times(2).focus(_.viewSettings.columns.onColumns).assertNoChange
+
+  def applyViewSettings(vs: ViewSettings): Action[Unit] =
+    Action exec c.modState(_ updateVS vs)
+
+  def focusRow(alive: Alive, cellIndex: Int = 0) =
+    Action { s =>
+      val row = alive match {
+        case Alive => DomZipper.first("Alive row", s.table.aliveRows)
+        case Dead  => DomZipper.first("Dead row", s.table.deadRows)
+      }
+      val cell = row.getAll(">td")(cellIndex)
+      Simulate.click(cell)
+    }
+
+  val F2 = fakeKeyboardEvent(keyCode = 113, target = dom.document.body)
+
+  val editFocused = Action { s =>
+    s.table.ensureHasFocus()
+    cTable.backend._onKeyDown(F2)
+    cTable.backend._onKeyUp(F2)
+  }
+
   // ===================================================================================================================
   // Tests
 
@@ -191,12 +261,12 @@ object ReqTableTest extends TestSuite {
 
   import utest.TestableSymbol
   override def tests = TestSuite {
-    c setState ReqTable.initialState(project)
+    reset()
 
     'initialState -
       assertInvariants()
 
-    'filterDead {
+    'dead {
 
       'addDeadCols - run(
         filterDeadToggle.assertAfter(ShowDead).focus(_.availCols.length).assertDelta(2) >>
@@ -207,9 +277,35 @@ object ReqTableTest extends TestSuite {
         RandomReqTableData.viewSettings(project) mustSatisfy
           actionProp(applyViewSettings(_) >> filterDeadShowHide)
       }
+
+      'noEditing {
+        val colCount = *.availCols.length
+
+        val showAllColumns = applyViewSettings {
+          val s  = c.state
+          val vs = s.viewSettings
+          val cn = Column.NameResolver.byProject(s.project)
+          val cs = Column.all(cn.customFields.values)
+          val o  = vs.order.copy(init = Vector.empty) // remove ReqCodeGroups
+          vs.copy(columns = cs, order = o, filterDead = ShowDead)
+        }
+
+        def editAllColumns(rowType: Alive): Action[Int] = {
+          val editEachCell =
+            (0 until colCount).map { c =>
+              focusRow(rowType, c).focus(_.table.focus).assertChange >> editFocused
+            }.reduce(_ >> _)
+
+          (showAllColumns >> editEachCell).focus(_.table.inputsInFocusRow getOrElse 0)
+        }
+
+        editAllColumns(Dead).assertAfter(0).run()
+
+        // Ensure our test logic works
+        reset()
+        editAllColumns(Alive).testAfter(_ > 0, "[Alive Row] Cells should be in edit-mode").run()
+      }
     }
 
-    // randomise view settings > turn off = vs1.alive
-    // randomise view settings > turn on  = vs1 + dead
   }
 }

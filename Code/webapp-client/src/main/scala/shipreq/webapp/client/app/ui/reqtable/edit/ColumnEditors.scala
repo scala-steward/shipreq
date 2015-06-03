@@ -35,7 +35,13 @@ final class ColumnEditors(project       : Px[Project],
 
   private val applicability = project.map(Applicability.apply)
 
-  def startCellEditing(row: Row, col: Column): Option[IO[Unit]] = {
+  def startCellEditing(row: Row, col: Column): Option[IO[Unit]] =
+    row.alive match {
+      case Alive => startCellEditing2(row, col)
+      case Dead  => None
+    }
+
+  private def startCellEditing2(row: Row, col: Column): Option[IO[Unit]] = {
     val init: InitState =
       applicability.value().apply(col).choose(row, na = noEditor)(
         row match {
