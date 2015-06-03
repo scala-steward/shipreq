@@ -7,7 +7,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.util.Plain
+import shipreq.webapp.client.util.{Valid, Plain}
 import ColumnRenderer._
 
 final class ColumnRenderer(
@@ -102,7 +102,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   private def imps(lens: Optional[Row, Vector[Pubid]]) = make {
-    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.pubidRefList(Plain, _))
+    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.pubidRefList(Plain, Valid))
     case _: ReqCodeGroupRow => `N/A`
   }
 

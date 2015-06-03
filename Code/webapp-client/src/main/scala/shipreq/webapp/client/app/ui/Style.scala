@@ -17,7 +17,9 @@ object Style extends StyleSheet.Inline {
     val validity = Domain.ofValues[Validity](Valid, Invalid)
     val enabled  = Domain.ofValues[Enabled] (Enabled, Disabled)
     val on       = Domain.ofValues[On]      (On, Off)
-    val aliveOn  = alive *** on
+
+    val `alive * on`       = alive *** on
+    val `alive * validity` = alive *** validity
   }
 
   /** Drag'n'drop handle Ξ */
@@ -52,7 +54,7 @@ object Style extends StyleSheet.Inline {
       val inconclusiveSortMethod = style(
         width(28 ex))
 
-      val inconclusiveColumnName = styleF(D.aliveOn) { case (alive, on) => styleS(
+      val inconclusiveColumnName = styleF(D.`alive * on`) { case (alive, on) => styleS(
         marginLeft(1 ex),
         mixinIf(on :: Off)(color("#999")),
         deadColumnLabel(alive)
@@ -171,6 +173,11 @@ object Style extends StyleSheet.Inline {
     private val deadMixin = mixin(
       textDecoration := ^.lineThrough)
 
+    private def deadMaybeValid(v: Validity) = v match {
+      case Valid   => deadAndNotError
+      case Invalid => deadAndError
+    }
+
     private val deadAndNotError = mixin(
       deadMixin,
       color("#999"))
@@ -197,17 +204,14 @@ object Style extends StyleSheet.Inline {
     val issueDesc = style(
       padding.horizontal(0.7 ex))
 
-    // TODO Has color conflict
-    val reqRef = styleF(D.alive)(a => styleS(
+    val reqRef = styleF(D.`alive * validity`){ case (a, v) => styleS(
       display.inlineBlock,
-      color("#2363A1"),
-      mixinIf(a :: Dead)(deadAndError), // ← TODO not always an error
-      hoverShowsInfo))
+      mixinIf(a :: Alive)(color("#2363A1")),
+      mixinIf(a :: Dead)(deadMaybeValid(v)),
+      hoverShowsInfo
+    )}
 
-    val groupRef = styleF(D.alive)(a => styleS(
-      reqRef(a),
-      mixinIf(a :: Dead)(hasError)
-    ))
+    def reqCodeGroupRef = reqRef
 
     val math = style(margin.horizontal(0.8 ex))
     val mathFail = style(math, hasError)

@@ -14,7 +14,7 @@ import shipreq.webapp.base.text.{Grammar => G, _}
 import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.app.ui.Style.{widgets => *}
 import shipreq.webapp.client.lib.ui.UI
-import shipreq.webapp.client.util.{Plain, Contextualise, KaTeX}
+import shipreq.webapp.client.util._
 
 object ProjectWidgets {
   def apply(project: Project, plainText: PlainText.ForProject) =
@@ -30,6 +30,16 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   private def memoM[A: UnivEq](f: A => Must[ReactElement]): A => ReactElement =
     memo(a => UI.mustA(f(a)))
+
+  private val deadValidity: Validity => Alive => (Alive, Validity) =
+    Validity.memo(validityWhenDead =>
+      Alive.memo {
+        case Alive => (Alive, Valid)
+        case Dead => (Dead, validityWhenDead)
+      }
+    )
+
+  private val invalidWhenDead = deadValidity(Invalid)
 
   def issueO(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText): ReactElement =
     NonEmptyVector.maybe(desc, issue(id))(issue1(id, _))
@@ -60,58 +70,66 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       <.span(*.pubidColumnValue(req.alive), txt)
   )
 
-  private def _reqRef(f: EndoFn[String]): ReqId => Must[ReactElement] = id =>
+  private def _reqRef1(f: EndoFn[String], style: Req => TagMod): ReqId => Must[ReactElement] = id =>
     for {
       req <- project.reqs.data.reqM(id)
       rt  <- project.reqType(req.pubid.reqTypeId)
     } yield
       <.span(
-        *.reqRef(req.alive),
+        style(req),
         ^.title := plainText.reqTitle(req),
         f(PlainText.pubid(rt, req.pubid.pos)))
 
-  val reqRef: Contextualise => ReqId => ReactElement =
+  private val _reqRef2: Contextualise => Validity => ReqId => ReactElement =
     Contextualise.memo { c =>
       val f: EndoFn[String] = c match {
         case Contextualise => G.reflinkSurround
         case Plain         => identity
       }
-      memoM(_reqRef(f))
+      Validity.memo { v2 =>
+        val g = deadValidity(v2)
+        val style: Req => TagMod = req => *.reqRef(g(req.alive))
+        memoM(_reqRef1(f, style))
+      }
     }
 
-  private val reqRefC = reqRef(Contextualise)
+  def reqRef(c: Contextualise, validityWhenDead: Validity): ReqId => ReactElement =
+    _reqRef2(c)(validityWhenDead)
+
+  private val reqRefInText = reqRef(Contextualise, Invalid)
 
   private val listSep: TagMod = ", "
 
-  private def list[A](as: Vector[A])(f: A => TagMod): ReactElement =
+  private def list[A, B](as: Vector[A])(f: A => B)(implicit g: B => TagMod): ReactElement =
     <.div(
       NonEmptyVector.option(as)
-        .map(_.intercalateF(listSep)(f).whole))
+        .map(_.intercalateF(listSep)(g compose f).whole))
 
-  def reqRefList(c: Contextualise, reqs: Vector[ReqId]): ReactElement = {
-    val f = reqRef(c)
-    list(reqs)(f(_))
+  def reqRefList(c: Contextualise, validityWhenDead: Validity)(reqs: Vector[ReqId]): ReactElement = {
+    val f = reqRef(c, validityWhenDead)
+    list(reqs)(f)
   }
 
-  def pubidRef(c: Contextualise): Pubid => ReactElement = {
-    val f = reqRef(c)
-    pubid => UI.must[ReqId, ReactElement](project.reqs.data.reqIdByPubidM(pubid))(f(_))
+  def pubidRef(c: Contextualise, validityWhenDead: Validity): Pubid => ReactElement = {
+    val f = reqRef(c, validityWhenDead)
+    pubid => UI.must[ReqId, ReactElement](project.reqs.data.reqIdByPubidM(pubid))(f)
   }
 
-  def pubidRefList(c: Contextualise, ids: Vector[Pubid]): ReactElement =
-    list(ids)(pubidRef(c)(_))
+  def pubidRefList(c: Contextualise, validityWhenDead: Validity)(ids: Vector[Pubid]): ReactElement =
+    list(ids)(pubidRef(c, validityWhenDead))
 
   /** Contextualised */
   val codeRef = memoM[ReqCodeId] { id =>
     import Must.Auto._
     import ProjectText.ReqCodeResolution._
+    implicit def aliveWithValidity(a: Alive) = invalidWhenDead(a)
 
     def toRef(c: ReqCode.Value, r: ReqId): Must[ReactElement] =
       for (req <- project.reqs.data.reqM(r))
         yield ref(c, *.reqRef(req.alive), plainText reqTitle req)
 
     def toGroup(c: ReqCode.Value, g: ReqCodeGroup): ReactElement =
-      ref(c, *.groupRef(Alive), UiText mustA plainText.reqCodeGroupTitle(id, g))
+      ref(c, *.reqCodeGroupRef(Alive), UiText mustA plainText.reqCodeGroupTitle(id, g))
 
     def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): ReactElement =
       <.span(
@@ -122,9 +140,9 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     ProjectText.resolveReqCode(id, project.reqCodes.data).flatMap {
       case ActiveCode(c, r: ReqId)        => toRef(c, r)
       case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
-      case DeadGroup(c)                   => ref(c, *.groupRef(Dead), undefined)
+      case DeadGroup(c)                   => ref(c, *.reqCodeGroupRef(Dead), undefined)
       case ReqWithAltCode(c, r)           => toRef(c, r)
-      case ReqWithoutCodes(r)             => reqRefC(r)
+      case ReqWithoutCodes(r)             => reqRefInText(r)
     }
   }
 
@@ -165,7 +183,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       case a: PlainTextMarkup # EmailAddress  => <.a(^.href := "mailto:" ~ a.value, a.value)
       case a: PlainTextMarkup # MathTeX       => katex(a)
       case a: ListMarkup      # UnorderedList => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
-      case a: ReqRef          # ReqRef        => reqRefC(a.value)
+      case a: ReqRef          # ReqRef        => reqRefInText(a.value)
       case a: ReqRef          # CodeRef       => codeRef(a.value)
       case a: Issue           # Issue         => issueO(a.typ, a.desc)
     }
