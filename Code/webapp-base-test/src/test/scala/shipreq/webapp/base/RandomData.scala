@@ -860,11 +860,11 @@ object RandomData {
     val gEmptyRefsToReqs: Gen[Multimap[ReqId, Set, ReqCodeId]] =
       Gen.insert(Multimap.empty)
 
-    def data(ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): Gen[Data] = {
+    def data(ogAliveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): Gen[Data] = {
       import Gen.Covariance._
 
       val gTarget: Gen[Target] =
-        ogReqId match {
+        ogAliveReqId match {
           case Some(g) => Gen.oneofG(g, g, g, g, gGroup)
           case None    => gGroup
         }
@@ -895,8 +895,8 @@ object RandomData {
       Gen.tuple2(value, gData)
 
 
-    def trie(ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
-      flatInstance(data(ogReqId, gGroup)).vector
+    def trie(ogAliveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
+      flatInstance(data(ogAliveReqId, ogReqId, gGroup)).vector
         .map(distinctFlatInstances.run)
         .map(_.foldLeft(emptyTrie) { case (q, (c, d)) => q.put(c, d) })
 
@@ -960,9 +960,11 @@ object RandomData {
       fields         ← revAndG(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
       reqs1          ← requirements(reqTypeIdsC, id => Dead <~ (deadReqtypeIds contains id))
       reqIds         = reqs1.reqs.keys
+      aliveReqIds    = reqs1.reqs.values.toStream.filter(_.alive :: Alive).map(_.id)
       reqIdSet       = reqIds.toSet
       reqIdG         = Gen oneofO reqIds.toSeq
-      reqCodes1      ← reqCodes(reqCode.trie(reqIdG, reqCode.gEmptyReqCodeGroup).lim(18 `JVM|JS` 6))
+      aliveReqIdG    = Gen oneofO aliveReqIds
+      reqCodes1      ← reqCodes(reqCode.trie(aliveReqIdG, reqIdG, reqCode.gEmptyReqCodeGroup).lim(18 `JVM|JS` 6))
       activeCodeIds  = reqCodes1.cataA(Vector.empty[ReqCodeId])((q, _, a) => q :+ a.id)
       activeCodeIdG  = Gen oneofO activeCodeIds
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet

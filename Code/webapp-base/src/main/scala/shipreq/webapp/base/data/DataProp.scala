@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 import scalaz.syntax.equal._
 import scalaz.std.AllInstances._
 import shipreq.base.util.Debug._
-import shipreq.base.util.{NonEmptyVector, Must, MTrie}, MTrie.Ops
+import shipreq.base.util.{UnivEq, NonEmptyVector, Must, MTrie}, MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.text.{Atom, Text}
 import DataImplicits._
@@ -311,6 +311,14 @@ object DataProp {
         _.reqTypes.filter(_.alive :: Alive).map(_.reqTypeId).toSet,
         _.reqs.data.reqs.values.toStream.filter(_.alive :: Alive).map(_.reqTypeId))
 
+    def aliveReqCodeRequiresAliveTarget =
+      Prop.whitelist[Project]("Alive ReqCode requires Alive Target")(
+        _.reqs.data.reqs.values.toStream.filter(_.alive :: Alive).map(_.id).toSet,
+        _.reqCodes.data.cataA(UnivEq.emptySet[ReqId])((q, _, a) => a.target match {
+          case id: ReqId       => q + id
+          case _: ReqCodeGroup => q
+        }))
+
     def uniqueHashRefKeys =
       Prop.distinct[T, String]("HashRefKey", p => (
           p.customIssueTypes.data.values.toStream.map(_.key) append
@@ -367,6 +375,7 @@ object DataProp {
     }
 
     lazy val all: Prop[Project] = "Project" rename_: (
-      constituents ∧ atoms ∧ aliveReqRequiresAliveReqType ∧ uniqueHashRefKeys ∧ validRefs)
+      constituents ∧ atoms ∧ aliveReqRequiresAliveReqType ∧ aliveReqCodeRequiresAliveTarget ∧ uniqueHashRefKeys
+        ∧ validRefs)
   }
 }
