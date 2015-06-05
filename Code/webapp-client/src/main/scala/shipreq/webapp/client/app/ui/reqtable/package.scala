@@ -12,11 +12,14 @@ import shipreq.base.util.Must
  */
 package object reqtable {
 
-  def failedMust[A](a: A)(e: String): A = {
+  def failedMust[A](a: => A)(e: String): A = {
     // TODO Do something more with Must failure
     org.scalajs.dom.console.error(e)
     a
   }
+
+  def unmust[A](m: Must[A]): A =
+    m.fold(e => failedMust(sys error e)(e), identity)
 
   def mustResolve[A](m: Must[A])(fallback: => A): A =
     m.fold(failedMust(fallback), identity)

@@ -53,5 +53,5 @@ object SampleImplicationGraph {
   }
 
   lazy val project =
-    projectDsl ! SampleProject.project
+    TestOptics.projectRevs.set(Rev(153))(projectDsl ! SampleProject.project)
 }

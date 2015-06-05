@@ -319,6 +319,9 @@ case class Requirements(reqs: Requirements.Data, pubids: PubidRegister) {
   def reqM[T <: ReqTypeId](id: ReqIdT[T]): Must[ReqT[T]] =
     Must.fromOption(req(id), s"Req $id not found.")
 
+  def reqsM[M[X] <: TraversableOnce[X]: Monoidish, T <: ReqTypeId](ids: M[ReqIdT[T]]): Must[M[ReqT[T]]] =
+    Must.foldMapM(ids)(reqM)
+
   def reqByPubidM[T <: ReqTypeId](id: PubidT[T]): Must[ReqT[T]] =
     Must.fromOption(reqByPubid(id), s"Req for $id not found.")
 

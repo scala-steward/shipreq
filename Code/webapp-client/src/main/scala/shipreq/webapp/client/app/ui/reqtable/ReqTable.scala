@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
+import monocle.macros.Lenses
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
@@ -22,6 +23,7 @@ object ReqTable {
   def initialState(p: Project): State =
     State(p, ViewSettings.default, Cell.emptyTableState, None)
 
+  @Lenses
   case class State(project     : Project,
                    viewSettings: ViewSettings,
                    cellStates  : Cell.TableState,
@@ -47,7 +49,7 @@ object ReqTable {
     val setFocus        = ReusableFn($).modStateIO.endoCall(_.updateFocus)
     val setCell         = ReusableFn($).modStateIO.endoCall(_.updateCell)
 
-    val project      = Px.thunkM($.props)
+    val project      = Px.thunkM($.state.project)
     val viewSettings = Px.thunkM($.state.viewSettings)
 
     val vsVar      = viewSettings map (ReusableVar(_)(setViewSettings))

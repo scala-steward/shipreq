@@ -19,4 +19,11 @@ object Optics {
     }
   }
 
+  implicit class Monocle_SetterExt[S, A, B](val x: PSetter[S, S, A, B]) extends AnyVal {
+    def merge(y: PSetter[S, S, A, B]): PSetter[S, S, A, B] =
+      PSetter(f => y.modify(f) compose x.modify(f))
+  }
+
+  def compositeSetters[S, A, B](h: PSetter[S, S, A, B], t: PSetter[S, S, A, B]*): PSetter[S, S, A, B] =
+    t.foldLeft(h)(_ merge _)
 }

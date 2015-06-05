@@ -13,6 +13,7 @@ import ReqFieldData.{Implications, ImplicationsU}
 final case class RevAnd[D](rev: Rev, data: D)
 
 object RevAnd {
+  def rev[D] = GenLens[RevAnd[D]](_.rev)
   def data[D] = GenLens[RevAnd[D]](_.data)
 }
 

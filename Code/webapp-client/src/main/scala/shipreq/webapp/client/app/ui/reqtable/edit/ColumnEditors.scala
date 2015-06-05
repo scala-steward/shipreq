@@ -4,11 +4,13 @@ package edit
 import japgolly.scalajs.react.extra.Px
 import monocle.Optional
 import scalaz.effect.IO
+import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Must
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
+import DataImplicits._
 
 final class ColumnEditors(project       : Px[Project],
                           plainText     : Px[PlainText.ForProject],
@@ -53,13 +55,13 @@ final class ColumnEditors(project       : Px[Project],
               case Column.Tags           => tags(r)
               case Column.ReqType        => reqType(r)
               case Column.Pubid          => noEditor
-              case Column.ImplicationSrc => imps(Row.implicationSrc, ImplicationEditor declFwd Column.ImplicationSrc)(r)
-              case Column.ImplicationTgt => imps(Row.implicationTgt, ImplicationEditor declFwd Column.ImplicationTgt)(r)
+              case Column.ImplicationSrc => imps(Row.implicationSrc, col)(r)
+              case Column.ImplicationTgt => imps(Row.implicationTgt, col)(r)
               case Column.CustomField(f, _) =>
                 f match {
                   case id: CustomField.Text       .Id => cfText(id)(r)
                   case id: CustomField.Tag        .Id => cfTag(id)(r)
-                  case id: CustomField.Implication.Id => cfImp(id)(r)
+                  case id: CustomField.Implication.Id => cfImp(id, col)(r)
                 }
             }
 
@@ -122,24 +124,19 @@ final class ColumnEditors(project       : Px[Project],
     TagEditor(r.exp.tagsForCF(id).toSet, project.value(), lookup, _)
   }
 
-  lazy val impsLookup =
+  lazy val impLookup =
     Px.apply2(project, plainText)(ImplicationEditor.lookupAll)
 
-  def imps(l: Optional[Row, Vector[Pubid]], declFwd: Boolean) = initEditorO[GenericReqRow] { r =>
-    l.getOption(r).map { initialValue =>
-      val lookup2 = for {p <- project; l <- impsLookup}
-        yield Must(ImplicationEditor.lookupForSubject(p, l, r.req.id, declFwd))
-      ImplicationEditor(initialValue.toSet, project, textSearch, lookup2, _)
-    }
-  }
+  def imps(l: Optional[Row, Vector[Pubid]], col: Column) = initEditorO[GenericReqRow](r =>
+    l.getOption(r).map(initialValue =>
+      ImplicationEditor(initialValue, r.req.id, col, project, textSearch, impLookup map Must.apply, _)))
 
-  def cfImp(id: CustomField.Implication.Id) = initEditorO[GenericReqRow] { r =>
-    val lookup2 = for {p <- project; l <- impsLookup} yield ImplicationEditor.lookupForCol(p, l, id)
-    Row.cfImp(id).getOption(r).map { initialValue =>
-      val declFwd = ImplicationEditor declFwd id
-      val lookup3 = for {p <- project; lm <- lookup2}
-        yield lm.map(ImplicationEditor.lookupForSubject(p, _, r.req.id, declFwd))
-      ImplicationEditor(initialValue.toSet, project, textSearch, lookup3, _)
+  def cfImp(fid: CustomField.Implication.Id, col: Column) = initEditorO[GenericReqRow] { r =>
+    val lookup = for {p <- project; l <- impLookup} yield ImplicationEditor.lookupForCustomImpCol(p, l, fid)
+    Row.cfImp(fid).getOption(r).map { _ =>
+      val id = r.req.id
+      val initial = ImplicationEditor.initialValueForCustomColumn(project.value(), fid, id)
+      ImplicationEditor(initial, id, col, project, textSearch, lookup, _)
     }
   }
 

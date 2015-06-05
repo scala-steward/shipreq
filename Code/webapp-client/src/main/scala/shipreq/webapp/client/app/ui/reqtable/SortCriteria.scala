@@ -1,5 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
@@ -52,6 +53,7 @@ object SortCriterion {
 
 import SortCriterion._
 
+@Lenses
 case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 //  def removeColumnI(c: Column.SortInconclusive): SortCriteria =
 //    copy(init = init.filterNot(_.column ≟ c))

@@ -179,6 +179,12 @@ trait ActionTester {
 
     def value[A](f: S => A): Action[A] =
       new Action(s => { val a = f(s); Result(a, s, a)}, nopLast)
+
+    def readonly(f: S => Unit): Action[Unit] =
+      Action(f, nopLast)
+
+    lazy val nop: Action[Unit] =
+      apply(nopLast, nopLast)
   }
 
   def run(a: Action[_]): Unit = a.run()

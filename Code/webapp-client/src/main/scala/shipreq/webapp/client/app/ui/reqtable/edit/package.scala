@@ -16,6 +16,9 @@ package object edit {
   def cellErrorMsgStyle: TagMod = *.cellEditorErrMsg
 
   def textSetEditor[A](name: String, splitFn: String => Stream[String], textEditor: TextEditor = TextEditor.Input): TextSeqEditor[A, Set[A]] =
+    textSetEditorB(name, splitFn, textEditor)
+
+  def textSetEditorB[A, B](name: String, splitFn: String => Stream[String], textEditor: TextEditor = TextEditor.Input): TextSeqEditor[A, B] =
     new TextSeqEditor(name, splitFn, textEditor, cellStyle, cellErrorMsgStyle)
 
   implicit def validatorInTextSeqEditor[A](v: ValidationResult[A]): ParseResult[A] =
