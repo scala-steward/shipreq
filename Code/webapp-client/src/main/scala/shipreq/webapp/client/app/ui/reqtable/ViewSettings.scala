@@ -4,7 +4,7 @@ import japgolly.scalajs.react.extra.Reusability
 import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.{UnivEq, NonEmptyVector}
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.client.lib.{HideDead, FilterDead}
 
 @Lenses

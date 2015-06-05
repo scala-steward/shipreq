@@ -13,7 +13,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.text.Text, Text.Equality._
 import shipreq.webapp.base.util.TransitiveClosure
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs

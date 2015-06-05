@@ -1,4 +1,4 @@
-package shipreq.webapp.base
+package shipreq.webapp.base.util
 
 import java.util.regex.Pattern
 import scala.util.matching.Regex

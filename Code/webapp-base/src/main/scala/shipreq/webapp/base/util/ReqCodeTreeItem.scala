@@ -1,7 +1,7 @@
 package shipreq.webapp.base.util
 
 import shipreq.base.util.UnivEq
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.base.data.ReqCode
 
 /**

@@ -10,7 +10,7 @@ import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
 import shipreq.webapp.base.delta.Partition
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 import Must.Auto._
 
 // =====================================================================================================================

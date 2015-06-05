@@ -1,6 +1,6 @@
 package shipreq.webapp.base.validation
 
-import shipreq.webapp.base.TextMod._
+import shipreq.webapp.base.util.TextMod._
 import Constraints._
 
 object GenericValidators {

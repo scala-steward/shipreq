@@ -7,7 +7,7 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 import shipreq.base.util.{NonEmptySet, UnivEq, IMap, ISubset}
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 object ISubsetEditor {
 

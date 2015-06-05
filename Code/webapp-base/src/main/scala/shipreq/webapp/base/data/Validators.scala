@@ -11,7 +11,7 @@ import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.{Text, PlainText, Grammar}
 import shipreq.webapp.base.validation._
 import shipreq.webapp.base.AppConsts
-import shipreq.webapp.base.TextMod._
+import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.UiText.FieldNames
 import Constraints._
 import GenericValidators._

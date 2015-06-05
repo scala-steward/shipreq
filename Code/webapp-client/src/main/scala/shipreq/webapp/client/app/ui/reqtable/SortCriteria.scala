@@ -4,7 +4,7 @@ import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 sealed trait SortCriterion {
   def column: Column

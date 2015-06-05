@@ -4,7 +4,7 @@ import scalaz.{Success, Failure}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
 import shipreq.webapp.base.AppConsts
-import shipreq.webapp.base.TextMod._
+import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation._
 import shipreq.webapp.lib.ScalazSubset._
 import shipreq.webapp.lib.Types._

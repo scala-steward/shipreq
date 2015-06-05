@@ -10,7 +10,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaP}
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 object TagProtocol {
 

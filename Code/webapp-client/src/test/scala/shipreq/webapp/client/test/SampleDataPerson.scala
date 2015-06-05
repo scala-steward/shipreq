@@ -8,7 +8,7 @@ import scalaz.syntax.equal._
 import scalaz.effect.IO
 
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.TextMod._
+import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation.Constraints._
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.lib.{FailureIO, SuccessIO}

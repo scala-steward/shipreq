@@ -10,7 +10,7 @@ import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{customIssueType => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
 import shipreq.webapp.base.protocol.Routines._
-import shipreq.webapp.base.TextMod
+import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}

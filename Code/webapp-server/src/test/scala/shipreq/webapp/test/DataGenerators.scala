@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scalaz.Memo
 
-import shipreq.webapp.base.TextMod
+import shipreq.webapp.base.util.TextMod
 import db.{UseCaseHeader, FieldListRec}
 import lib.Misc.filterCovar
 import lib.Types._

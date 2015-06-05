@@ -7,7 +7,7 @@ import scalaz.syntax.order._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr, Lazy}
 import shipreq.base.util.{UnivEq, Must, NonEmptyVector}
 import shipreq.base.util.TaggedTypes._
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 import ReqType.Mnemonic
 
 /** type [[ReqTypeId]] = [[StaticReqType]] | [[CustomReqTypeId]] */

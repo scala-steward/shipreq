@@ -1,7 +1,7 @@
 package shipreq.webapp.base.validation
 
 import scalaz.Endo
-import shipreq.webapp.base.TextMod
+import shipreq.webapp.base.util.TextMod
 
 class Rule[A](l: Endo[A], c: Endo[A], v: Constraint[A]) {
   private def _l = l

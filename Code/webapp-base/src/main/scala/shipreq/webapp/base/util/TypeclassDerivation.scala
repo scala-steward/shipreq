@@ -1,4 +1,4 @@
-package shipreq.webapp.base
+package shipreq.webapp.base.util
 
 import shapeless._
 import shipreq.base.util.UnivEq

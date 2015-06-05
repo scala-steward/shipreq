@@ -10,7 +10,7 @@ import scalaz.syntax.semigroup._
 import shipreq.base.util.{UnivEq, Vector1}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ReqCodeTreeItem
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 /**
  * Replacement values for a requirement at a specific row.

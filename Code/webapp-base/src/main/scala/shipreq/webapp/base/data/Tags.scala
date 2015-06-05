@@ -8,7 +8,7 @@ import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
-import shipreq.webapp.base.TypeclassDerivation._
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 // =====================================================================================================================
 // A single tag. No relationships.
