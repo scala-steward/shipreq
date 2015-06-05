@@ -18,11 +18,11 @@ final case class TagGroupId     (value: Long) extends TagId with TaggedLong
 final case class ApplicableTagId(value: Long) extends TagId with TaggedLong
 
 sealed trait Tag {
-  val id: TagId
-  val name: String
-  val desc: Option[String]
-  val alive: Alive
-  def keyO: Option[HashRefKey]
+  val id     : TagId
+  val name   : String
+  val desc   : Option[String]
+  val live   : Live
+  def keyO   : Option[HashRefKey]
   def tagType: TagType
 }
 
@@ -34,16 +34,16 @@ final case class TagGroup(id           : TagGroupId,
                           name         : String,
                           desc         : Option[String],
                           mutexChildren: MutexChildren,
-                          alive        : Alive) extends Tag {
+                          live         : Live) extends Tag {
   override def keyO = None
   override def tagType = TagType.Group
 }
 
-final case class ApplicableTag(id   : ApplicableTagId,
-                               name : String,
-                               desc : Option[String],
-                               key  : HashRefKey,
-                               alive: Alive) extends Tag {
+final case class ApplicableTag(id  : ApplicableTagId,
+                               name: String,
+                               desc: Option[String],
+                               key : HashRefKey,
+                               live: Live) extends Tag {
   override def keyO = Some(key)
   override def tagType = TagType.Applicable
 }
@@ -82,13 +82,13 @@ object Tag {
     case ApplicableTag(a, _, b, c, d) => ApplicableTag(a, n, b, c, d)
   })
 
-  val alive = Lens((_: Tag).alive)(n => {
+  val live = Lens((_: Tag).live)(n => {
     case TagGroup(a, b, c, d, _)      => TagGroup(a, b, c, d, n)
     case ApplicableTag(a, b, c, d, _) => ApplicableTag(a, b, c, d, n)
   })
 
-  val filterAlive: Tag => Boolean =
-    _.alive ≟ Alive
+  val filterLive: Tag => Boolean =
+    _.live ≟ Live
 
   object CycleDetectors {
     val multimap =
@@ -119,7 +119,7 @@ object TagTree {
     val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
     "TagTree\n" +
     japgolly.nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
-      t => s"${t.tag.name} (${t.id.value})${if (t.tag.alive ≟ Dead) " DEAD" else ""}",
+      t => s"${t.tag.name} (${t.id.value})${if (t.tag.live ≟ Dead) " DEAD" else ""}",
       "  ")
   }
 
@@ -245,8 +245,8 @@ final case class TagInTree(tag: Tag, children: Vector[TagId]) {
 object TagInTree {
   implicit val equality: UnivEq[TagInTree] = deriveUnivEq
 
-  val filterAlive: TagInTree => Boolean =
-    _.tag.alive ≟ Alive
+  val filterLive: TagInTree => Boolean =
+    _.tag.live ≟ Live
 
   val tag      = GenLens[TagInTree](_.tag)
   val children = GenLens[TagInTree](_.children)

@@ -281,7 +281,7 @@ object DataCodecs {
     caseclass2(RevAnd.apply[T], RevAnd.unapply[T])(rev, rev, RT, WT)
 
   implicit final val rev            = tagL(Rev.apply)
-  implicit final val alive          = boolCase(Alive)
+  implicit final val live           = boolCase(Live)
   implicit final val impReq         = boolCase(ImplicationRequired)
   implicit final val mutexChildren  = boolCase(MutexChildren)
   implicit final val mandatory      = boolCase(Mandatory)

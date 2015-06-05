@@ -65,7 +65,7 @@ object CfgFieldsTest extends TestSuite {
     cp.assertCommsSent(1)
     rev = rev.succ
     cp.respondToLastSuccessfully(remote){
-      val newField = CustomField.Text(666, "blahh", "blahh", Mandatory, ISubset.All(), Alive)
+      val newField = CustomField.Text(666, "blahh", "blahh", Mandatory, ISubset.All(), Live)
       val deltaG   = RemoteDeltaG(Partition.Fields, rev, rev)(Set.empty, List(Delta(\/-(newField), None)))
       List(deltaG)
     }

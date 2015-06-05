@@ -22,7 +22,7 @@ private[reqtable] object Logic {
   def tagFilter(vs: ViewSettings, p: Project): TagFilter =
     vs.filterDead.filter
       .fold[TagFilter](identity) { f =>
-        val bl = p.atags.filter(t => !f(t.alive)).map(_.id)
+        val bl = p.atags.filter(t => !f(t.live)).map(_.id)
         (_: Set[ApplicableTagId]) -- bl
       }
 
@@ -86,7 +86,7 @@ private[reqtable] object Logic {
 
       // (source of implication for this column) → (all it transitively implies)
       val srcs: Stream[(Pubid, Set[ReqId])] =
-        fd(reqsOfSubjectType)(_.alive)
+        fd(reqsOfSubjectType)(_.live)
           .map(r => (r.pubid, p.implicationSrcToTgtTC(r.id)))
 
       id => srcs.filter(_._2 contains id).map(_._1).toSet
@@ -189,14 +189,14 @@ private[reqtable] object Logic {
     //   There can potentially be overlap but culling this could be misleading.
 
     // The Tags column:
-    // 1. never displays tags allocated to alive tag-columns.
+    // 1. never displays tags allocated to live tag-columns.
     // 2. doesn't display tags allocated to visible, dead tag-columns.
     val tagColDist: TagColumnDistribution.TagIds =
       vs.filterDead match {
-        case HideDead => p.aliveTagColumnDistribution
-        case ShowDead => TagColumnDistribution(p, f => f.alive match {
-          case Alive => true
-          case Dead  => vs isVisible Column.CustomField(f.id, Dead)
+        case HideDead => p.liveTagColumnDistribution
+        case ShowDead => TagColumnDistribution(p, f => f.live match {
+          case Live => true
+          case Dead => vs isVisible Column.CustomField(f.id, Dead)
         })
       }
 
@@ -216,7 +216,7 @@ private[reqtable] object Logic {
 
     def pubid(reqId: ReqId): Option[Pubid] =
       pReqs.reqM(reqId).fold[Option[Pubid]](failedMust(None), req =>
-        if (filterDead(req.alive)) Some(req.pubid) else None)
+        if (filterDead(req.live)) Some(req.pubid) else None)
 
     def pubids(s: Set[ReqId]): Set[Pubid] =
       s.foldLeft(UnivEq.emptySet[Pubid])((q, id) =>
@@ -225,7 +225,7 @@ private[reqtable] object Logic {
     val reqRows =
       p.reqs.data.reqs.vstreamf {
         case r: GenericReq =>
-          if (filterDead(r.alive)) {
+          if (filterDead(r.live)) {
             val id = r.id
 
             // Expansion

@@ -31,10 +31,10 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   private def memoM[A: UnivEq](f: A => Must[ReactElement]): A => ReactElement =
     memo(a => UI.mustA(f(a)))
 
-  private val deadValidity: Validity => Alive => (Alive, Validity) =
+  private val deadValidity: Validity => Live => (Live, Validity) =
     Validity.memo(validityWhenDead =>
-      Alive.memo {
-        case Alive => (Alive, Valid)
+      Live.memo {
+        case Live => (Live, Valid)
         case Dead => (Dead, validityWhenDead)
       }
     )
@@ -67,7 +67,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       txt <- PlainText.pubid(project, pubid)
       req <- project.reqs.data.reqByPubidM(pubid)
     } yield
-      <.span(*.pubidColumnValue(req.alive), txt)
+      <.span(*.pubidColumnValue(req.live), txt)
   )
 
   private def _reqRef1(f: EndoFn[String], style: Req => TagMod): ReqId => Must[ReactElement] = id =>
@@ -88,7 +88,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       }
       Validity.memo { v2 =>
         val g = deadValidity(v2)
-        val style: Req => TagMod = req => *.reqRef(g(req.alive))
+        val style: Req => TagMod = req => *.reqRef(g(req.live))
         memoM(_reqRef1(f, style))
       }
     }
@@ -123,14 +123,14 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   val codeRef = memoM[ReqCodeId] { id =>
     import Must.Auto._
     import ProjectText.ReqCodeResolution._
-    implicit def aliveWithValidity(a: Alive) = invalidWhenDead(a)
+    implicit def liveWithValidity(a: Live) = invalidWhenDead(a)
 
     def toRef(c: ReqCode.Value, r: ReqId): Must[ReactElement] =
       for (req <- project.reqs.data.reqM(r))
-        yield ref(c, *.reqRef(req.alive), plainText reqTitle req)
+        yield ref(c, *.reqRef(req.live), plainText reqTitle req)
 
     def toGroup(c: ReqCode.Value, g: ReqCodeGroup): ReactElement =
-      ref(c, *.reqCodeGroupRef(Alive), UiText mustA plainText.reqCodeGroupTitle(id, g))
+      ref(c, *.reqCodeGroupRef(Live), UiText mustA plainText.reqCodeGroupTitle(id, g))
 
     def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): ReactElement =
       <.span(
@@ -150,7 +150,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   val reqType = memoM[ReqTypeId](id =>
     project.reqType(id).map(rt =>
       <.span(
-        *.reqType(rt.alive),
+        *.reqType(rt.live),
         ^.title := rt.name,
         rt.mnemonic.value)
     ))
@@ -158,7 +158,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   val tag = memoM[ApplicableTagId](id =>
     project.atag(id).map(tag =>
       <.span(
-        *.tag(tag.alive),
+        *.tag(tag.live),
         ^.title := tag.name,
         tag.key.value
       )

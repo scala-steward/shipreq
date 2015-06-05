@@ -3,7 +3,7 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react._, ScalazReact._
 import scalaz.Equal
 import scalaz.effect.IO
-import shipreq.webapp.base.data.Alive
+import shipreq.webapp.base.data.Live
 import shipreq.webapp.base.validation.Validator
 import shipreq.webapp.client.lib.CrudIO
 import shipreq.webapp.client.lib.ui.Persistence.Realise

@@ -117,7 +117,7 @@ object SortCriteriaEditor {
           <.li(outerAttr, *.inconclusiveCriterionRow(on),
             draghnd(*.dragHnd),
             smSelectComponent(selectProps),
-            <.span(*.inconclusiveColumnName(col.alive, on), columnName(col)))
+            <.span(*.inconclusiveColumnName(col.live, on), columnName(col)))
       })
 
       val columnFromOSM: OSM => Col = {

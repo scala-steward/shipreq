@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.{NonEmptyVector, Must, IMap, UnivEq}
-import shipreq.webapp.base.data.{Alive, Project}
+import shipreq.webapp.base.data.{Live, Project}
 import shipreq.webapp.base.{UiText, data}
 import shipreq.webapp.base.UiText.ColumnNames
 
@@ -11,7 +11,7 @@ sealed trait Column {
   protected def __sortConcl: Nothing
   protected def __blankable: Nothing
 
-  def alive: Alive
+  def live: Live
 }
 object Column {
 
@@ -22,7 +22,7 @@ object Column {
   sealed trait SortConclusive   extends NoBlanks { final protected def __sortConcl = ??? }
 
   sealed trait BuiltIn extends Column {
-    override def alive = Alive
+    override def live = Live
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ object Column {
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
-  case class CustomField(id: data.CustomFieldId, alive: Alive) extends SortInconclusive with HasBlanks
+  case class CustomField(id: data.CustomFieldId, live: Live) extends SortInconclusive with HasBlanks
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -90,5 +90,5 @@ object Column {
   }
 
   def all(customFields: TraversableOnce[data.CustomField]): NonEmptyVector[Column] =
-    customFields.toVector.map(f => CustomField(f.id, f.alive)) ++: builtInValues
+    customFields.toVector.map(f => CustomField(f.id, f.live)) ++: builtInValues
 }

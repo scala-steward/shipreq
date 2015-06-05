@@ -6,11 +6,11 @@ import shipreq.webapp.base.util.Optics
 
 object TestOptics {
 
-  val customReqTypesAlive: Traversal[Project, Alive] =
+  val customReqTypesLive: Traversal[Project, Live] =
     Project.customReqTypes ^|->
     RevAnd.data            ^|->>
     Optics.imapTraversal   ^|->
-    CustomReqType.alive
+    CustomReqType.live
 
   lazy val projectRevs: Setter[Project, Rev] = {
     val t1 = Project.customIssueTypes ^|-> RevAnd.rev asSetter

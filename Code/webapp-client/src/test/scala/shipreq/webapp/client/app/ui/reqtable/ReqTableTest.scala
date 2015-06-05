@@ -112,11 +112,11 @@ final class ReqTableScreen(root: => DomZipper) {
     private def byStatus(s: Status, wrap: String => String): String =
       Vector(true, false).map(f => wrap(cell(s, f))).mkString(",")
 
-    lazy val allRows   = tbody getAll ">tr"
-    lazy val deadRows  = tbody getAll byStatus(DeadRow, row)
-    lazy val aliveRows = tbody getAll byStatus(Normal, row)
-    lazy val focusRow  = tbody option byFocus(true, row)
-    lazy val focus     = tbody option byFocus(true, identity)
+    lazy val allRows  = tbody getAll ">tr"
+    lazy val deadRows = tbody getAll byStatus(DeadRow, row)
+    lazy val liveRows = tbody getAll byStatus(Normal, row)
+    lazy val focusRow = tbody option byFocus(true, row)
+    lazy val focus    = tbody option byFocus(true, identity)
 
     lazy val inputsInFocusRow: Option[Int] =
       focusRow.map(_.getAll("input,select,textarea").length)
@@ -210,9 +210,9 @@ sealed trait ReqTableTest0 {
   case class PS(project: Project, screen: S) {
     lazy val cfname = CustomField.nameP(project)
 
-    def customFieldNames(a: Alive): Set[String] = {
+    def customFieldNames(a: Live): Set[String] = {
       val cfs   = project.fields.data.customFields.values.toStream
-      val names = cfs.filter(_.alive ≟ a).map(cfname(_).unmust)
+      val names = cfs.filter(_.live ≟ a).map(cfname(_).unmust)
       names.toSet
     }
   }
@@ -230,14 +230,14 @@ sealed trait ReqTableTest0 {
       val builtInColumnsAlwaysAvailable =
         Prop.allPresent[S]("Built-in columns always available")(_ => builtInColumns, _.availCols)
 
-      val aliveCustomFieldColumnsAlwaysAvailable =
-        Prop.allPresent[PS]("Alive custom field columns available")(_ customFieldNames Alive, _.screen.availCols)
+      val liveCustomFieldColumnsAlwaysAvailable =
+        Prop.allPresent[PS]("Live custom field columns available")(_ customFieldNames Live, _.screen.availCols)
 
       val deadColumns =
         existance[PS]("Dead custom field columns")(_.screen.viewSettings.filterDead.value :: ShowDead,
           _ customFieldNames Dead, _.screen.availCols)
 
-      aliveCustomFieldColumnsAlwaysAvailable & builtInColumnsAlwaysAvailable & deadColumns & uniqueColumns
+      liveCustomFieldColumnsAlwaysAvailable & builtInColumnsAlwaysAvailable & deadColumns & uniqueColumns
     }
 
     def sortableColumns = equal("Sortable columns = selected VS columns")(
@@ -247,13 +247,13 @@ sealed trait ReqTableTest0 {
       _.table.columns, _.viewSettings.columns.onColumns)
 
     def tableContents: Prop[PS] = {
-      val rowEitherDeadOrAlive = equal("Rows are either dead or alive")(
+      val rowEitherDeadOrLive = equal("Rows are either dead or live")(
         _.table.allRows.length,
-        t => t.table.aliveRows.length + t.table.deadRows.length)
+        t => t.table.liveRows.length + t.table.deadRows.length)
 
       val oneFocusMax = propTry[S]("Maximum one focus", _.table.focus)
 
-      rowEitherDeadOrAlive & oneFocusMax
+      rowEitherDeadOrLive & oneFocusMax
     }
 
     availableColumns & sortableColumns & tableColumns & tableContents
@@ -367,17 +367,17 @@ sealed trait ReqTableTest0 {
   def testDeadRowsNotEditable(): Unit = {
     val colCount = *.availCols.length
 
-    def focus(rowType: Alive, colIndex: Int) =
+    def focus(rowType: Live, colIndex: Int) =
       Action { s =>
         val row = rowType match {
-          case Alive => DomZipper.first("Alive row", s.table.aliveRows)
+          case Live => DomZipper.first("Live row", s.table.liveRows)
           case Dead  => DomZipper.first("Dead row", s.table.deadRows)
         }
         val cell = row.getAll(">td")(colIndex)
         Simulate.click(cell)
       }
 
-    def editAllColumns(rowType: Alive): Action[Int] = {
+    def editAllColumns(rowType: Live): Action[Int] = {
       val editEachCell =
         (0 until colCount).map { c =>
           focus(rowType, c).focus(_.table.focus).assertChange >> editFocused
@@ -390,7 +390,7 @@ sealed trait ReqTableTest0 {
 
     // Ensure test logic works
     reset()
-    editAllColumns(Alive).testAfter(_ > 0, "[Alive Row] Cells should be in edit-mode").run()
+    editAllColumns(Live).testAfter(_ > 0, "[Live Row] Cells should be in edit-mode").run()
   }
 
   def testImplicationSrcColumnEditor() = {
@@ -439,21 +439,21 @@ sealed trait ReqTableTest0 {
       // MF-12ˣ → CO-4ˣ → MF-13
       //          CO-5ᵒ → MF-1↖
       GReq(reqType = mf, id = 1) +
-      GReq(reqType = mf, id = 2, alive = Dead) +
+      GReq(reqType = mf, id = 2, live = Dead) +
       GReq(reqType = mf, id = 3) +
-      GReq(reqType = mf, id = 4, alive = Dead) +
+      GReq(reqType = mf, id = 4, live = Dead) +
       GReq(reqType = mf, id = 5).impSrc(1) +
       GReq(reqType = mf, id = 6).impSrc(2) +
-      GReq(reqType = mf, id = 7, alive = Dead).impSrc(3) +
-      GReq(reqType = mf, id = 8, alive = Dead).impSrc(4) +
+      GReq(reqType = mf, id = 7, live = Dead).impSrc(3) +
+      GReq(reqType = mf, id = 8, live = Dead).impSrc(4) +
       GReq(reqType = mf, id = 9) +
-      GReq(reqType = mf, id = 10, alive = Dead) +
+      GReq(reqType = mf, id = 10, live = Dead) +
       GReq(reqType = mf, id = 11) +
-      GReq(reqType = mf, id = 12, alive = Dead) +
+      GReq(reqType = mf, id = 12, live = Dead) +
       GReq(reqType = co, id = 51).impSrc(9) +
       GReq(reqType = co, id = 52).impSrc(10) +
-      GReq(reqType = co, id = 53, alive = Dead).impSrc(11) +
-      GReq(reqType = co, id = 54, alive = Dead).impSrc(12) +
+      GReq(reqType = co, id = 53, live = Dead).impSrc(11) +
+      GReq(reqType = co, id = 54, live = Dead).impSrc(12) +
       GReq(reqType = co, id = 55).impTgt(1) +
       GReq(reqType = mf, id = 13).impSrc(5, 6, 7, 8, 51, 52, 53, 54)
     ) ! SampleProject.project |> TestOptics.projectRevs.set(Rev(709))
@@ -465,7 +465,7 @@ sealed trait ReqTableTest0 {
       mfs.sorted.map("MF-" + _) mkString sep
 
     run(setup(p).assertAfter(mfs(", ", 1, 5, 2, 6, 7, 8, 9, 10, 13))
-      >> startEdit.assertAfter(mfs(" ", 5, 6), "Should only show direct & alive")
+      >> startEdit.assertAfter(mfs(" ", 5, 6), "Should only show direct & live")
       >> testInvalid("Target is dead")("MF-4")
       >> testInvalid("Target is dead")("MF-8")
       >> testInvalid("Should prevent cycles")("MF-5 CO-5") // because MF-1 → MF-5 → MF-13 → CO-5 → MF-1

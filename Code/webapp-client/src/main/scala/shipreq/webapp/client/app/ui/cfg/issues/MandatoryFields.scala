@@ -85,7 +85,7 @@ private[issues] object MandatoryFields {
 
     def renderRows: ReactNode =
       UI.must(project.fields.data.fields)(
-        HideDead(_)(_.alive).toReactNodeArray(
+        HideDead(_)(_.live).toReactNodeArray(
           _.fold(renderStaticField, renderCustomField)))
 
     def render: ReactElement = {

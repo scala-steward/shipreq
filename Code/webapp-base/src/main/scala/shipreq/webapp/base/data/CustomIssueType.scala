@@ -5,10 +5,10 @@ import shipreq.base.util.TaggedTypes._
 
 final case class CustomIssueTypeId(value: Long) extends TaggedLong
 
-final case class CustomIssueType(id   : CustomIssueTypeId,
-                                 key  : HashRefKey,
-                                 desc : Option[String],
-                                 alive: Alive)
+final case class CustomIssueType(id  : CustomIssueTypeId,
+                                 key : HashRefKey,
+                                 desc: Option[String],
+                                 live: Live)
 
 object CustomIssueType {
   object IdAccess extends ObjDataId[CustomIssueType.type, CustomIssueType, CustomIssueTypeId] {

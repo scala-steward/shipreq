@@ -263,10 +263,10 @@ private[fields] object MainTable {
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
           case CustomFieldType.Text        => false // Already added as proof of non-emptyness
           case CustomFieldType.Tag         => project.tags.data.values.toStream
-                                                .filter(TagInTree.filterAlive)
+                                                .filter(TagInTree.filterLive)
                                                 .exists(t => !s.tagFieldTagIds.contains(t.id))
           case CustomFieldType.Implication => project.reqTypes
-                                                .filter(_.alive :: Alive)
+                                                .filter(_.live :: Live)
                                                 .exists(r => !s.implFieldReqTypeIds.contains(r.reqTypeId))
         }
         for (t <- CustomFieldType.values.whole if allowNewCustomFieldType(t))
@@ -315,7 +315,7 @@ private[fields] object MainTable {
     def renderFields: TagMod = {
       var content = fieldOrder.toStream
         .flatMap(_.foldId[Stream[Field]](s => Stream(s), $.state.customFields.get(_).toStream))
-      content = $.state.filterDead(content)(_.alive)
+      content = $.state.filterDead(content)(_.live)
       content.toReactNodeArray(renderField)
     }
 
@@ -390,9 +390,9 @@ private[fields] object MainTable {
         EditorI(a, "", editable(r.status))
       }
 
-      def renderNew  (s: S, r: stores.n.Row): ReactElement
-      def renderAlive(s: S, dragHandle: ReactTag, r: stores.s.Row): ReactTag
-      def renderDead (s: S, dragHandle: ReactTag, rs: RowStatus, t: T): ReactTag
+      def renderNew (s: S, r: stores.n.Row): ReactElement
+      def renderLive(s: S, dragHandle: ReactTag, r: stores.s.Row): ReactTag
+      def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, t: T): ReactTag
 
       def renderNewRow(rs: RowStatus)(name: TagMod, refkey: TagMod, mandatory: TagMod, reqtypes: TagMod): ReactElement = {
         val r = renderRow(rs)(undefined, name, refkey, mandatory, reqtypes, newFieldControl.abortButton)
@@ -402,9 +402,9 @@ private[fields] object MainTable {
       def render(s: S, dragHandle: ReactTag, id: CustomFieldId): ReactTag = {
         val row = stores.s.get(id)(s)
         val tag = row.p
-        tag.alive match {
-          case Alive => renderAlive(s, dragHandle, row)
-          case Dead  => renderDead (s, dragHandle, row.status, tag)(^.cls := "dead")
+        tag.live match {
+          case Live => renderLive(s, dragHandle, row)
+          case Dead => renderDead (s, dragHandle, row.status, tag)(^.cls := "dead")
         }
       }
 
@@ -441,7 +441,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderAlive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
         val (name, refkey, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(
@@ -492,7 +492,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderAlive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
         val (name, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(
@@ -545,7 +545,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderAlive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
         val (name, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(

@@ -62,9 +62,9 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
         val e = render(row)
         if (e eq `N/A`.element)
           `N/A`.pair
-        else row.alive match {
-          case Alive => (Normal, e)
-          case Dead  => (DeadRow, e)
+        else row.live match {
+          case Live => (Normal, e)
+          case Dead => (DeadRow, e)
         }
       }
     c => {

@@ -38,11 +38,11 @@ object ReqTypeId {
 }
 
 sealed trait ReqType {
-  def mnemonic: Mnemonic
+  def mnemonic    : Mnemonic
   def oldMnemonics: Set[Mnemonic]
-  def name: String
-  def imp: ImplicationRequired
-  def alive: Alive
+  def name        : String
+  def imp         : ImplicationRequired
+  def live        : Live
 
   def fold[A](s: StaticReqType => A, c: CustomReqType => A): A
 
@@ -63,7 +63,7 @@ object ReqType {
 // =====================================================================================================================
 
 sealed trait StaticReqType extends ReqType with ReqTypeId {
-  override def alive = Alive
+  override def live = Live
   override final def fold  [A](s: StaticReqType => A, c: CustomReqType   => A): A = s(this)
   override final def foldId[A](s: StaticReqType => A, c: CustomReqTypeId => A): A = s(this)
 }
@@ -101,7 +101,7 @@ final case class CustomReqType(id          : CustomReqTypeId,
                                oldMnemonics: Set[Mnemonic],
                                name        : String,
                                imp         : ImplicationRequired,
-                               alive       : Alive) extends ReqType {
+                               live        : Live) extends ReqType {
 
   def fullName = s"${mnemonic.value}: $name"
 

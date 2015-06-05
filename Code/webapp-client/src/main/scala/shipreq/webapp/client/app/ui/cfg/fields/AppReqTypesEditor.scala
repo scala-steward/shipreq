@@ -44,7 +44,7 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
 
   val renderValue: A => ReactNode = id => {
     val a = lookup(id)
-    if (a.fold(_ => true, _.alive ≟ Alive))
+    if (a.fold(_ => true, _.live ≟ Live))
       a.mnemonic.value
     else
       <.span(CSS.deadInline, a.mnemonic.value)

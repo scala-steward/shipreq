@@ -27,9 +27,9 @@ object TagEditor {
     lookupG(p, _.tags inColumn f)
 
   def lookupG(p: Project, f: TagColumnDistribution.TagIds => Must[Set[ApplicableTag]]): Must[Lookup] =
-    f(p.aliveTagColumnDistribution).map(_
+    f(p.liveTagColumnDistribution).map(_
       .toStream
-      .filter(_.alive :: Alive)
+      .filter(_.live :: Live)
       .map(_.mapStrengthL(_.key.value))
       .toMap
     )

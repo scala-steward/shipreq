@@ -248,7 +248,7 @@ sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedLong with ReqCode.Target
 sealed abstract class ReqT[+RT <: ReqTypeId] {
   val id: ReqIdT[RT]
   val pubid: PubidT[RT]
-  val alive: Alive
+  val live: Live
 
   @inline final def reqTypeId: RT = pubid.reqTypeId
 }
@@ -270,7 +270,7 @@ final case class GenericReqId(value: Long) extends TaggedLong with ReqIdT[Custom
 final case class GenericReq(id   : GenericReqId,
                             pubid: PubidC,
                             title: Text.GenericReqTitle.OptionalText,
-                            alive: Alive) extends ReqT[CustomReqTypeId]
+                            live: Live) extends ReqT[CustomReqTypeId]
 
 object GenericReq {
   implicit val equality: UnivEq[GenericReq] = deriveUnivEq
@@ -312,7 +312,7 @@ object Requirements {
 case class Requirements(reqs: Requirements.Data, pubids: PubidRegister) {
 
   lazy val dead: Set[ReqId] =
-    reqs.filterV(_.alive :: Dead).keySet
+    reqs.filterV(_.live :: Dead).keySet
 
   def req[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
     reqs.get(id)

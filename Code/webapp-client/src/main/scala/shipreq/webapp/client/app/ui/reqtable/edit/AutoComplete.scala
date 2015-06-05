@@ -69,8 +69,8 @@ object AutoComplete {
 
   def hashtag(legalIssues: Stream[CustomIssueType], legalTags: Stream[ApplicableTag]): Contextualise => Strategy =
     hashtag(
-      legalIssues.filter(_.alive :: Alive).map(_.key) append
-        legalTags.filter(_.alive :: Alive).map(_.key))
+      legalIssues.filter(_.live :: Live).map(_.key) append
+        legalTags.filter(_.live :: Live).map(_.key))
 
   def issue(legal: Stream[CustomIssueType]): Contextualise => Strategy =
     hashtag(legal, Stream.empty)
@@ -87,14 +87,14 @@ object AutoComplete {
     reqItems(p, pt, p.reqs.data.reqs.values.toStream)
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
-    val m = Must.foldMapM[Req, Stream, ReqItem](legal.filter(_.alive :: Alive))(req =>
+    val m = Must.foldMapM[Req, Stream, ReqItem](legal.filter(_.live :: Live))(req =>
       p.reqType(req.pubid.reqTypeId).map(rt =>
         new ReqItem(req, rt, pt reqTitle req)))
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }
 
   def req(textSearch: TextSearch, legal0: Stream[ReqItem], Contextualise: Contextualise): StrategyA[ReqItem] = {
-    val legal = legal0.filter(_.req.alive :: Alive)
+    val legal = legal0.filter(_.req.live :: Live)
 
     val searchTitles =
       textSearch.ignoreCaseNoWhitespace

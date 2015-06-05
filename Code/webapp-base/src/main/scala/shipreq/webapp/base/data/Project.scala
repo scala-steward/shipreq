@@ -95,8 +95,8 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val reqTypesByMnemonic: Map[ReqType.Mnemonic, ReqType] =
     reqTypes.flatMap(t => t.allMnemonics.toStream.map((_, t))).toMap
 
-  lazy val aliveTagColumnDistribution =
-    TagColumnDistribution(this, _.alive :: Alive)
+  lazy val liveTagColumnDistribution =
+    TagColumnDistribution(this, _.live :: Live)
 
   /**
    * Transitive closure of implications going source → target.

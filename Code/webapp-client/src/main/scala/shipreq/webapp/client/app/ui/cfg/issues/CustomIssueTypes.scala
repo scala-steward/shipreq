@@ -86,7 +86,7 @@ private[issues] object CustomIssueTypes {
         _.key, rowRenderer,
         i => (valState(None)($.state), i),
         k => (valState(k.some)($.state), savedRowStoreS.getI(k)($.state)),
-        supp.deletion, _.alive, _.filterDead, $)
+        supp.deletion, _.live, _.filterDead, $)
       val headerRow = CfgTable.header(List(FieldNames.hashRefKey, FieldNames.desc))
       () => t.table(headerRow, Stream.empty)
     }

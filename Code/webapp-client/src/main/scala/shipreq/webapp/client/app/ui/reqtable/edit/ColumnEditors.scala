@@ -38,8 +38,8 @@ final class ColumnEditors(project       : Px[Project],
   private val applicability = project.map(Applicability.apply)
 
   def startCellEditing(row: Row, col: Column): Option[IO[Unit]] =
-    row.alive match {
-      case Alive => startCellEditing2(row, col)
+    row.live match {
+      case Live => startCellEditing2(row, col)
       case Dead  => None
     }
 

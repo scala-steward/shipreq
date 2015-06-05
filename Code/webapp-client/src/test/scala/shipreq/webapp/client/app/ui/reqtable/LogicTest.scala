@@ -71,7 +71,7 @@ object LogicTest extends TestSuite {
 
     val expectVisible: ReqId => Boolean =
       if (vs.filterDead == HideDead)
-        id => p.reqs.data.req(id).get.alive ≟ Alive
+        id => p.reqs.data.req(id).get.live ≟ Live
       else
         _ => true
 
@@ -302,7 +302,7 @@ object LogicTest extends TestSuite {
     import SampleProject.Values._
 
     private lazy val PD  = SampleProject.project
-    private lazy val PA  = TestOptics.customReqTypesAlive.set(Alive)(PD)
+    private lazy val PA  = TestOptics.customReqTypesLive.set(Live)(PD)
     private      val sep = "  "
     private      val z   = "∅"
     private      val _z  = (_: Any) => z
@@ -425,7 +425,7 @@ object LogicTest extends TestSuite {
       _ map f mkString sep
 
     implicit private def customFieldToColumn(id: CustomFieldId) =
-      C.CustomField(id, if (id == relField) Dead else Alive)
+      C.CustomField(id, if (id == relField) Dead else Live)
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -659,23 +659,23 @@ object LogicTest extends TestSuite {
     }
 
     def testFilterDeadRows(): Unit = {
-      def dead = GReq(alive = Dead)
-      def alive = GReq()
-      val p = (alive + dead + alive + dead + alive).defaultReqType(mf) ! PD
+      def dead = GReq(live = Dead)
+      def live = GReq()
+      val p = (live + dead + live + dead + live).defaultReqType(mf) ! PD
       val (pt, fmt) = (PlainText(p), rowToPubid(p))
       testUnsorted(p, pt, C.Pubid, ShowDead, fmt)("MF-1  MF-2  MF-3  MF-4  MF-5")
       testUnsorted(p, pt, C.Pubid, HideDead, fmt)("MF-1  MF-3  MF-5")
     }
 
     def testFilterDeadImpsSrc(): Unit = {
-      val p = (GReq(id = 1) + GReq(id = 2, alive = Dead) + GReq(id = 3).impSrc(1,2)).defaultReqType(br) ! PD
+      val p = (GReq(id = 1) + GReq(id = 2, live = Dead) + GReq(id = 3).impSrc(1,2)).defaultReqType(br) ! PD
       val (pt, c, fmt) = (PlainText(p), C.ImplicationSrc, rowToSrcImpTxt(p))
       testUnsorted(p, pt, c, ShowDead, fmt)(s"$z  $z  BR-1,BR-2>BR-3")
       testUnsorted(p, pt, c, HideDead, fmt)(s"$z  BR-1>BR-3")
     }
 
     def testFilterDeadImpsTgt(): Unit = {
-      val p = (GReq(id = 1) + GReq(id = 2, alive = Dead) + GReq(id = 3).impTgt(1,2)).defaultReqType(br) ! PD
+      val p = (GReq(id = 1) + GReq(id = 2, live = Dead) + GReq(id = 3).impTgt(1,2)).defaultReqType(br) ! PD
       val (pt, c, fmt) = (PlainText(p), C.ImplicationTgt, rowToTgtImpTxt(p))
       testUnsorted(p, pt, c, ShowDead, fmt)(s"$z  $z  BR-1,BR-2<BR-3")
       testUnsorted(p, pt, c, HideDead, fmt)(s"$z  BR-1<BR-3")
@@ -688,13 +688,13 @@ object LogicTest extends TestSuite {
         // MF-3ᵒ → MF-7ˣ → FR-1 <-- important case - shouldn't hold for FR-1 even in ShowDead
         // MF-4ˣ → MF-8ˣ → FR-1
         GReq(reqType = mf, id = 1) +
-        GReq(reqType = mf, id = 2, alive = Dead) +
+        GReq(reqType = mf, id = 2, live = Dead) +
         GReq(reqType = mf, id = 3) +
-        GReq(reqType = mf, id = 4, alive = Dead) +
+        GReq(reqType = mf, id = 4, live = Dead) +
         GReq(reqType = mf, id = 5).impSrc(1) +
         GReq(reqType = mf, id = 6).impSrc(2) +
-        GReq(reqType = mf, id = 7, alive = Dead).impSrc(3) +
-        GReq(reqType = mf, id = 8, alive = Dead).impSrc(4) +
+        GReq(reqType = mf, id = 7, live = Dead).impSrc(3) +
+        GReq(reqType = mf, id = 8, live = Dead).impSrc(4) +
         GReq(reqType = fr, id = 91).impSrc(5, 6, 7, 8) +
         // MF-1ᵒ → CO-1ᵒ → FR-2
         // MF-2ˣ → CO-2ᵒ → FR-2 <-- difficult case - it should be displayed as its part of (a chain with ShowDead)
@@ -702,8 +702,8 @@ object LogicTest extends TestSuite {
         // MF-4ˣ → CO-4ˣ → FR-2
         GReq(reqType = co, id = 11).impSrc(1) +
         GReq(reqType = co, id = 12).impSrc(2) +
-        GReq(reqType = co, id = 13, alive = Dead).impSrc(3) +
-        GReq(reqType = co, id = 14, alive = Dead).impSrc(4) +
+        GReq(reqType = co, id = 13, live = Dead).impSrc(3) +
+        GReq(reqType = co, id = 14, live = Dead).impSrc(4) +
         GReq(reqType = fr, id = 92).impSrc(11, 12, 13, 14)
         ) ! PD
       val (pt, c, fmt) = (PlainText(p), mfField, rowToCustomImpTxt(p, mfField))

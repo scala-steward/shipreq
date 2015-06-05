@@ -15,7 +15,7 @@ final class ColumnsEditor(columnName: Column.NameResolver) {
 
   val allColumns: FilterDead => Vector[Column] =
     FilterDead.memo { fd =>
-      val f      = fd.filterFnA[CustomField](_.alive)
+      val f      = fd.filterFnA[CustomField](_.live)
       val fields = columnName.customFields.values.toStream filter f
       Column.all(fields).whole
     }
@@ -30,7 +30,7 @@ final class ColumnsEditor(columnName: Column.NameResolver) {
                                               label     = columnName.fn,
                                               mandatory = Column.mandatory,
                                               change    = update2,
-                                              styles    = (c: Column, o) => Style.reqtable.columnsEditor(c.alive)(o))
+                                              styles    = (c: Column, o) => Style.reqtable.columnsEditor(c.live)(o))
     ColumnsEditor.Component(p)
   }
 }

@@ -49,7 +49,7 @@ object SelectOneStartNone {
   }
 
   def tag(tt: TagTree): SelectOneStartNone[TagId] = {
-    val flat = TagTree.flatten(tt)(Tag.filterAlive, FilterPolicy.OmitAnythingWithBadParent)
+    val flat = TagTree.flatten(tt)(Tag.filterLive, FilterPolicy.OmitAnythingWithBadParent)
     val opts = flat.map(f => Choice(f.id, f.indentedName, Enabled))
     new SelectOneStartNone(opts)
   }

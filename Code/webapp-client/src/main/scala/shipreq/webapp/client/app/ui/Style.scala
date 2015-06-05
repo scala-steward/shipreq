@@ -5,7 +5,7 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import scalacss.StyleS
 import shipreq.webapp.base.text.Grammar
-import shipreq.webapp.base.data.{Alive, Dead}
+import shipreq.webapp.base.data.{Live, Dead}
 import shipreq.webapp.client.lib.ConsoleIO
 import shipreq.webapp.client.util._
 
@@ -13,13 +13,13 @@ object Style extends StyleSheet.Inline {
   import dsl._
 
   object D {
-    val alive    = Domain.ofValues[Alive]   (Alive, Dead)
+    val live     = Domain.ofValues[Live]    (Live, Dead)
     val validity = Domain.ofValues[Validity](Valid, Invalid)
     val enabled  = Domain.ofValues[Enabled] (Enabled, Disabled)
     val on       = Domain.ofValues[On]      (On, Off)
 
-    val `alive * on`       = alive *** on
-    val `alive * validity` = alive *** validity
+    val `live * on`       = live *** on
+    val `live * validity` = live *** validity
   }
 
   /** Drag'n'drop handle Ξ */
@@ -32,8 +32,8 @@ object Style extends StyleSheet.Inline {
   private val hasErrorBackground =
     backgroundColor("#fee")
 
-  private def deadColumnLabel(alive: Alive) =
-    mixinIf(alive :: Dead)(textDecoration := ^.lineThrough)
+  private def deadColumnLabel(live: Live) =
+    mixinIf(live :: Dead)(textDecoration := ^.lineThrough)
 
   // ===================================================================================================================
   object reqtable {
@@ -54,10 +54,10 @@ object Style extends StyleSheet.Inline {
       val inconclusiveSortMethod = style(
         width(28 ex))
 
-      val inconclusiveColumnName = styleF(D.`alive * on`) { case (alive, on) => styleS(
+      val inconclusiveColumnName = styleF(D.`live * on`) { case (live, on) => styleS(
         marginLeft(1 ex),
         mixinIf(on :: Off)(color("#999")),
-        deadColumnLabel(alive)
+        deadColumnLabel(live)
       )}
 
       val conclusiveSortMethod = style(
@@ -69,10 +69,10 @@ object Style extends StyleSheet.Inline {
 
     // -----------------------------------------------------------------------------------------------------------------
     val columnsEditor =
-      Alive.memo(alive =>
+      Live.memo(live =>
         On.memo(on => OrderedSubsetEditor.Styles(
           dragHnd = sortCriteriaEditor.dragHnd,
-          label   = sortCriteriaEditor.inconclusiveColumnName(alive, on))))
+          label   = sortCriteriaEditor.inconclusiveColumnName(live, on))))
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -92,8 +92,8 @@ object Style extends StyleSheet.Inline {
       margin.horizontal(auto)
     )
 
-    val columnHeader = styleF(D.alive)(alive => styleS(
-      deadColumnLabel(alive),
+    val columnHeader = styleF(D.live)(live => styleS(
+      deadColumnLabel(live),
       backgroundColor("#ddd".color),
       border(1 px, solid, "#777".color)
     ))
@@ -192,19 +192,19 @@ object Style extends StyleSheet.Inline {
 
     val ul = style(paddingLeft(2.4 ex))
 
-    val pubidColumnValue = styleF(D.alive)(a => styleS(
+    val pubidColumnValue = styleF(D.live)(a => styleS(
       display.inlineBlock,
       mixinIf(a :: Dead)(deadAndNotError)))
 
-    private def tagLabelSuffix(alive: Alive) = alive match {
-      case Alive => "primary"
-      case Dead  => "default"
+    private def tagLabelSuffix(live: Live) = live match {
+      case Live => "primary"
+      case Dead => "default"
     }
-    val tag = styleF(D.alive)(a => styleS(
+    val tag = styleF(D.live)(a => styleS(
       addClassName(s"label label-${tagLabelSuffix(a)}"),
       hoverShowsInfo))
 
-    val reqType = styleF(D.alive)(a => styleS(
+    val reqType = styleF(D.live)(a => styleS(
       hoverShowsInfo,
       mixinIf(a :: Dead)(deadAndNotError)))
 
@@ -213,8 +213,8 @@ object Style extends StyleSheet.Inline {
     val issueDesc = style(
       padding.horizontal(0.7 ex))
 
-    val reqRef = styleF(D.`alive * validity`){ case (a, v) => styleS(
-      mixinIf(a :: Alive)(color("#2363A1")),
+    val reqRef = styleF(D.`live * validity`){ case (a, v) => styleS(
+      mixinIf(a :: Live)(color("#2363A1")),
       mixinIf(a :: Dead)(deadMaybeValid(v)),
       hoverShowsInfo
     )}

@@ -78,7 +78,7 @@ private[tags] object MainTable {
       tagStream.foldLeft(TagTree.empty)((q, t) => q add TagInTree(t, tree(t.id)))
 
     val tagFilter: Tag => Boolean =
-      filterDead.filterFnA[Tag](_.alive)
+      filterDead.filterFnA[Tag](_.live)
   }
 
   object State {
@@ -144,7 +144,7 @@ private[tags] object MainTable {
         case t: ApplicableTag => at_storesS.s.set(i, t)
       }
       val f2 = f1 compose State.tree.modify(PovRelations.trustedApply1(d.rels, i, _))
-      val f3 = f2 compose maybeCloseDetailPane(p => (d.tag.alive ≟ Dead) && (p.id ≟ d.tag.id))
+      val f3 = f2 compose maybeCloseDetailPane(p => (d.tag.live ≟ Dead) && (p.id ≟ d.tag.id))
       f3(s)
     })
 
@@ -289,9 +289,9 @@ private[tags] object MainTable {
         EditorI(a, "", editable(r.status))
       }
 
-      def renderNew  (s: S, r: stores.n.Row): ReactElement
-      def renderAlive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactTag
-      def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: T): ReactTag
+      def renderNew (s: S, r: stores.n.Row): ReactElement
+      def renderLive(s: S, indent: Indenter, key: String)(r: stores.s.Row): ReactTag
+      def renderDead(s: S, indent: Indenter, key: String)(rs: RowStatus, t: T): ReactTag
 
       def rowTemplate(s: S, oid: UndefOr[Id], rs: RowStatus, key: String)
                      (name: ReactNode, refkey: ReactNode, mutexChildren: ReactNode, desc: ReactNode)
@@ -316,9 +316,9 @@ private[tags] object MainTable {
       def renderRow(s: S, row: stores.s.Row): F = F { (keyp, indent) =>
         val tag = row.p
         def key = s"$keyp.${tag.id.value}"
-        tag.alive match {
-          case Alive => renderAlive(s, indent, key)(row)
-          case Dead  => renderDead (s, indent, key)(row.status, tag)(^.cls := "dead")
+        tag.live match {
+          case Live => renderLive(s, indent, key)(row)
+          case Dead => renderDead(s, indent, key)(row.status, tag)(^.cls := "dead")
         }
       }
 
@@ -349,7 +349,7 @@ private[tags] object MainTable {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, unusedField, mutexChildren, desc)
       }
-      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, mutexChildren, desc)(deletion.button(t.id, SoftDel))
@@ -378,7 +378,7 @@ private[tags] object MainTable {
         val (name, refkey, desc) = editor render ei(s, row)
         newRowTemplate(s, row.status)(name, refkey, unusedField, desc)
       }
-      override def renderAlive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, refkey, desc) = editor render ei(s, row)
         val t = row.p
         rowTemplate(s, t.id, row.status, key)(indent(name), refkey, unusedField, desc)(deletion.button(t.id, SoftDel))
@@ -429,7 +429,7 @@ private[tags] object MainTable {
     def existingRels(s: S, updateIO: UpdateIO, subj: Tag, ids: Seq[Id], removeFn: Id => PovRelations => PovRelations): Rels = {
       var rs = ids.map(getTag(_)(s).get)
       //if (!s.showDeleted)
-        rs = rs.filter(Tag.filterAlive)
+        rs = rs.filter(Tag.filterLive)
       rs.map(t => Rel(t.id, t.name, treeUpdateIO(s, updateIO, subj, removeFn(t.id))))
     }
 
@@ -441,7 +441,7 @@ private[tags] object MainTable {
 
     def addRelFilter(s: S, subj: Tag, mod: Id => PovRelations => PovRelations,
                      relAlreadyExists: (PovRelations, Id) => Boolean): Tag => Boolean =
-      t => Tag.filterAlive(t) && {
+      t => Tag.filterLive(t) && {
         val r = PovRelations.derive(subj.id, s.tree.m)
         !relAlreadyExists(r, t.id) && {
           val r2 = mod(t.id)(r)
@@ -455,7 +455,7 @@ private[tags] object MainTable {
                 mod: Id => PovRelations => PovRelations, relAlreadyExists: (PovRelations, Id) => Boolean): AddRels = {
       val filter = addRelFilter(s, subj, mod, relAlreadyExists)
       val rels = TagTree.flatten(s.tagTree)(filter, FilterPolicy.OmitNothing)
-        .filter(_.tag.alive ≟ Alive)
+        .filter(_.tag.live ≟ Live)
         .map(row => AddRel(row,
             if (row.status ≟ FlatRow.Status.Good) row.id.some else None))
       AddRels(rels, selUpdate,

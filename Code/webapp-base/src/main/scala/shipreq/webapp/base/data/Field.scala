@@ -96,7 +96,7 @@ sealed trait Field {
   def reqTypes : Field.ApplicableReqTypes
   def keyO     : Option[FieldRefKey]
   def mandatory: Mandatory
-  def alive    : Alive
+  def live     : Live
 
   /** Independent as opposed to the name being derived from some external state. */
   def independentName: Option[String]
@@ -136,7 +136,7 @@ sealed abstract class StaticField(         val name     : String,
                                            val deletable: Deletable,
                                   override val keyO     : Option[FieldRefKey]) extends Field with FieldId {
 
-  override final def alive = Alive
+  override final def live = Live
 
   override final def independentName = Some(name)
 
@@ -195,7 +195,7 @@ object CustomField {
                   key      : FieldRefKey,
                   mandatory: Mandatory,
                   reqTypes : ApplicableReqTypes,
-                  alive    : Alive) extends CustomField(CustomFieldType.Text) {
+                  live     : Live) extends CustomField(CustomFieldType.Text) {
     override def independentName = Some(name)
     override def keyO = Some(key)
   }
@@ -213,7 +213,7 @@ object CustomField {
                  tagId    : TagId,
                  mandatory: Mandatory,
                  reqTypes : ApplicableReqTypes,
-                 alive    : Alive) extends CustomField(CustomFieldType.Tag) {
+                 live     : Live) extends CustomField(CustomFieldType.Tag) {
     override def independentName = None
     override def keyO = None
 
@@ -234,7 +234,7 @@ object CustomField {
                          reqTypeId: ReqTypeId,
                          mandatory: Mandatory,
                          reqTypes : ApplicableReqTypes,
-                         alive    : Alive) extends CustomField(CustomFieldType.Implication) {
+                         live     : Live) extends CustomField(CustomFieldType.Implication) {
     override def independentName = None
     override def keyO = None
 
@@ -270,10 +270,10 @@ object CustomField {
     case f: Implication => f.copy(mandatory = n)
   })
 
-  def alive = Lens[CustomField, Alive](_.alive)(n => {
-    case f: Text        => f.copy(alive = n)
-    case f: Tag         => f.copy(alive = n)
-    case f: Implication => f.copy(alive = n)
+  def live = Lens[CustomField, Live](_.live)(n => {
+    case f: Text        => f.copy(live = n)
+    case f: Tag         => f.copy(live = n)
+    case f: Implication => f.copy(live = n)
   })
 
   def name(customReqTypes: CustomReqTypeIMap, tags: TagTree): CustomField => Must[String] = {

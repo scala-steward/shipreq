@@ -306,14 +306,14 @@ object DataProp {
       ∧     implications.all.contramap[T](_.reqFieldData.data.implications)
     ) rename "constituents"
 
-    def aliveReqRequiresAliveReqType =
-      Prop.whitelist[Project]("Alive Req requires Alive ReqType")(
-        _.reqTypes.filter(_.alive :: Alive).map(_.reqTypeId).toSet,
-        _.reqs.data.reqs.values.toStream.filter(_.alive :: Alive).map(_.reqTypeId))
+    def liveReqRequiresLiveReqType =
+      Prop.whitelist[Project]("Live Req requires Live ReqType")(
+        _.reqTypes.filter(_.live :: Live).map(_.reqTypeId).toSet,
+        _.reqs.data.reqs.values.toStream.filter(_.live :: Live).map(_.reqTypeId))
 
-    def aliveReqCodeRequiresAliveTarget =
-      Prop.whitelist[Project]("Alive ReqCode requires Alive Target")(
-        _.reqs.data.reqs.values.toStream.filter(_.alive :: Alive).map(_.id).toSet,
+    def liveReqCodeRequiresLiveTarget =
+      Prop.whitelist[Project]("Live ReqCode requires Live Target")(
+        _.reqs.data.reqs.values.toStream.filter(_.live :: Live).map(_.id).toSet,
         _.reqCodes.data.cataA(UnivEq.emptySet[ReqId])((q, _, a) => a.target match {
           case id: ReqId       => q + id
           case _: ReqCodeGroup => q
@@ -375,7 +375,7 @@ object DataProp {
     }
 
     lazy val all: Prop[Project] = "Project" rename_: (
-      constituents ∧ atoms ∧ aliveReqRequiresAliveReqType ∧ aliveReqCodeRequiresAliveTarget ∧ uniqueHashRefKeys
+      constituents ∧ atoms ∧ liveReqRequiresLiveReqType ∧ liveReqCodeRequiresLiveTarget ∧ uniqueHashRefKeys
         ∧ validRefs)
   }
 }

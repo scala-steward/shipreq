@@ -103,7 +103,7 @@ object ProjectDsl {
   case class GReq(title  : Text.GenericReqTitle.OptionalText = Vector.empty,
                   id     : Option[GenericReqId]              = None,
                   reqType: Option[CustomReqTypeId]           = None,
-                  alive  : Alive                             = Alive,
+                  live   : Live                              = Live,
                   codes  : Set[ReqCode.Value]                = Set.empty,
                   tags   : Set[ApplicableTagId]              = Set.empty,
                   impSrcs: Set[ReqId]                        = Set.empty,
@@ -129,7 +129,7 @@ object ProjectDsl {
 
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
         val (pr, pubid) = p.pubids.allocC(reqTypeId)(id)
-        val req         = GenericReq(id, pubid, title, alive)
+        val req         = GenericReq(id, pubid, title, live)
         val text        = cftexts.mapValuesNow(t => Map.empty[ReqId, CFTextValue].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)

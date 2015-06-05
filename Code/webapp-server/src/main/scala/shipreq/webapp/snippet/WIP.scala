@@ -25,14 +25,14 @@ class WIP {
     import shipreq.webapp.base.test.UnsafeTypes._
 
     val customIssueTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
-      CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Alive),
-      CustomIssueType(2, "TBD", "To Be Decided.", Alive)))
+      CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Live),
+      CustomIssueType(2, "TBD", "To Be Decided.", Live)))
 
     val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
-      CustomReqType(1, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Alive),
-      CustomReqType(2, "MF", Set.empty, "Major Feature",          ImplicationRequired.Not, Alive),
-      CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired,     Alive),
-      CustomReqType(4, "BR", Set.empty, "Business Rule",          ImplicationRequired.Not, Alive),
+      CustomReqType(1, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Live),
+      CustomReqType(2, "MF", Set.empty, "Major Feature",          ImplicationRequired.Not, Live),
+      CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired,     Live),
+      CustomReqType(4, "BR", Set.empty, "Business Rule",          ImplicationRequired.Not, Live),
       CustomReqType(5, "DD", Set("DA", "DDF"), "Data Definition", ImplicationRequired.Not, Dead),
       CustomReqType(6, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead)))
 
@@ -40,33 +40,33 @@ class WIP {
     lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
     lazy val v11d = Some("Released: 1/2/2001")
     lazy val tags = TagTree.empty.addAll(
-      TagInTree(TagGroup     (1, "Priority",        None, MutexChildren,     Alive), Vector(2.AT, 3.AT, 4.AT)),
-      TagInTree(ApplicableTag(2, "High Priority",   None, "pri=high",        Alive), Vector()),
-      TagInTree(ApplicableTag(3, "Medium Priority", None, "pri=med",         Alive), Vector()),
-      TagInTree(TagGroup     (10, "Status",         None, MutexChildren.Not, Alive), Vector(11.AT, 12.AT, 13.AT)),
-      TagInTree(ApplicableTag(11, "WIP",            None, "wip",             Alive), Vector()),
-      TagInTree(ApplicableTag(12, "Deferred",       None, "defer",           Alive), Vector()),
+      TagInTree(TagGroup     (1, "Priority",        None, MutexChildren,     Live), Vector(2.AT, 3.AT, 4.AT)),
+      TagInTree(ApplicableTag(2, "High Priority",   None, "pri=high",        Live), Vector()),
+      TagInTree(ApplicableTag(3, "Medium Priority", None, "pri=med",         Live), Vector()),
+      TagInTree(TagGroup     (10, "Status",         None, MutexChildren.Not, Live), Vector(11.AT, 12.AT, 13.AT)),
+      TagInTree(ApplicableTag(11, "WIP",            None, "wip",             Live), Vector()),
+      TagInTree(ApplicableTag(12, "Deferred",       None, "defer",           Live), Vector()),
       TagInTree(ApplicableTag(13, "In UAT",         None, "uat",             Dead ), Vector()),
-      TagInTree(TagGroup     (20, "Version",        None, MutexChildren.Not, Alive), Vector(27.TG, 21.AT, 25.AT, 26.AT)),
-      TagInTree(ApplicableTag(21, "v1.x",           None, "v1.x",            Alive), Vector(22.AT, 23.AT, 24.AT)),
-      TagInTree(ApplicableTag(22, "v1.0",           v10d, "v1.0",            Alive), Vector()),
-      TagInTree(ApplicableTag(23, "v1.1",           v11d, "v1.1",            Alive), Vector()),
-      TagInTree(ApplicableTag(24, "v1.2",           None, "v1.2",            Alive), Vector()),
-      TagInTree(ApplicableTag(25, "v2.x",           None, "v2.x",            Alive), Vector()),
+      TagInTree(TagGroup     (20, "Version",        None, MutexChildren.Not, Live), Vector(27.TG, 21.AT, 25.AT, 26.AT)),
+      TagInTree(ApplicableTag(21, "v1.x",           None, "v1.x",            Live), Vector(22.AT, 23.AT, 24.AT)),
+      TagInTree(ApplicableTag(22, "v1.0",           v10d, "v1.0",            Live), Vector()),
+      TagInTree(ApplicableTag(23, "v1.1",           v11d, "v1.1",            Live), Vector()),
+      TagInTree(ApplicableTag(24, "v1.2",           None, "v1.2",            Live), Vector()),
+      TagInTree(ApplicableTag(25, "v2.x",           None, "v2.x",            Live), Vector()),
       TagInTree(ApplicableTag(26, "v3.x",           None, "v3.x",            Dead ), Vector()),
-      TagInTree(TagGroup     (27, "Released",       None, MutexChildren.Not, Alive), Vector(22.AT, 23.AT)),
-      TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Alive), Vector()))
+      TagInTree(TagGroup     (27, "Released",       None, MutexChildren.Not, Live), Vector(22.AT, 23.AT)),
+      TagInTree(ApplicableTag(4, "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Live), Vector()))
 
 
     lazy val fields = {
       import CustomField._
       RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
-        Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Alive),
-        Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Alive),
+        Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Live),
+        Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Live),
         Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
-        Tag        (4, 1.TG,                      Mandatory,     ISubset.All(),                             Alive),
-        Tag        (5, 10.TG,                     Mandatory.Not, ISubset.All(),                             Alive),
-        Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Alive)
+        Tag        (4, 1.TG,                      Mandatory,     ISubset.All(),                             Live),
+        Tag        (5, 10.TG,                     Mandatory.Not, ISubset.All(),                             Live),
+        Implication(6, 2,                         Mandatory.Not, ISubset.All(),                             Live)
       ), Vector(
         Text.Id(1), Implication.Id(6), Tag.Id(4), Text.Id(3),
         StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
@@ -126,7 +126,7 @@ class WIP {
     + GReq(reqType = mf, id = mfs(16), title = "CRUDL Matrix"                          ).tag(p1)
     + GReq(reqType = mf, id = mfs(17), title = "Undo & Auto-save"                      ).tag(p2)
     + GReq(reqType = mf, id = mfs(18), title = "Data dictionary"                       ).tag(p1)
-    + GReq(reqType = mf, id = mfs(19), title = "Glossary", alive = Dead                ).tag(p1)
+    + GReq(reqType = mf, id = mfs(19), title = "Glossary", live = Dead                 ).tag(p1)
     + GReq(reqType = mf, id = mfs(20), title = "Generic artifact storage"              ).tag(p3)
     + GReq(reqType = mf, id = mfs(21), title = "Doc authoring (V&S, URD, SRS)"         ).tag(p2)
     + GReq(reqType = mf, id = mfs(22), title = "High-level Requirements"               ).tag(p3).tag(wip)
@@ -135,16 +135,16 @@ class WIP {
     + GReq(reqType = mf, id = mfs(25), title = "Search"                                ).tag(p2)
     + GReq(reqType = mf, id = mfs(26), title = "Mass text modification (replace)"      ).tag(p1)
     + GReq(reqType = mf, id = mfs(27), title = "External references"                   ).tag(p1).tag(v3x)
-    + GReq(reqType = mf, id = mfs(28), title = "Entities", alive = Dead                ).tag(p2).tag(v3x)
+    + GReq(reqType = mf, id = mfs(28), title = "Entities", live = Dead                 ).tag(p2).tag(v3x)
 
     + GReq(reqType = fr, id = frs(1), title = fr1Desc, codes = Set("uce.sample.1", "uce.sample.1b", "demo.whatever")).impSrc(mfs(12), mfs(19))
     + GReq(reqType = fr, id = frs(2), title = fr2Desc, codes = Set("uce.sample.2")).impSrc(mfs(1), mfs(13), mfs(22))
     + RCGroup("demo", Vector(T.ReqCodeGroupTitle.Literal("Demo group header")))
 
-    + GReq(reqType = co, id = cos(1), alive = Dead, title = "Search entities!").impSrc(mfs(28), mfs(25))
-    + GReq(reqType = co, id = cos(2), alive = Dead, title = "Entity-search should consider low-level reqs").impSrc(cos(1), frs(1))
+    + GReq(reqType = co, id = cos(1), live = Dead, title = "Search entities!").impSrc(mfs(28), mfs(25))
+    + GReq(reqType = co, id = cos(2), live = Dead, title = "Entity-search should consider low-level reqs").impSrc(cos(1), frs(1))
 
-    + GReq(reqType = si, id = sis(1), alive = Dead, title = "Just use excel!").impSrc(mfs(12))
+    + GReq(reqType = si, id = sis(1), live = Dead, title = "Just use excel!").impSrc(mfs(12))
 
     + DeadReqCode("dead.ref", target = mfs(7))
     + DeadReqCode("dead.group")
@@ -196,16 +196,16 @@ class WIP {
         case CrudAction.Create(v)    =>
           val (mnemonic, name, imp) = v
           val id = CustomReqTypeId(p.customReqTypes.data.keySet.max.value + 1)
-          val n = CustomReqType(id, mnemonic, Set.empty, name, imp, Alive)
+          val n = CustomReqType(id, mnemonic, Set.empty, name, imp, Live)
           mod(_ + n)
 
         case CrudAction.Update(id, v) =>
           val (mnemonic, name, imp) = v
-          upd(id, o => CustomReqType(id, mnemonic, (o.oldMnemonics + o.mnemonic) - mnemonic, name, imp, Alive))
+          upd(id, o => CustomReqType(id, mnemonic, (o.oldMnemonics + o.mnemonic) - mnemonic, name, imp, Live))
 
         case CrudAction.Delete(id, HardDel) => mod(_ - id)
-        case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(alive = Dead))
-        case CrudAction.Delete(id, Restore) => upd(id, _.copy(alive = Alive))
+        case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(live = Dead))
+        case CrudAction.Delete(id, Restore) => upd(id, _.copy(live = Live))
       })
 
     val imptoggle =
@@ -253,16 +253,16 @@ class WIP {
       case CrudAction.Create(v)    =>
         val (key, desc) = v
         val id = CustomIssueTypeId(p.customIssueTypes.data.keySet.max.value + 1)
-        val n = CustomIssueType(id, key, desc, Alive)
+        val n = CustomIssueType(id, key, desc, Live)
         mod(_ + n)
 
       case CrudAction.Update(id, v) =>
         val (key, desc) = v
-        upd(id, o => CustomIssueType(id, key, desc, Alive))
+        upd(id, o => CustomIssueType(id, key, desc, Live))
 
       case CrudAction.Delete(id, HardDel) => mod(_ - id)
-      case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(alive = Dead))
-      case CrudAction.Delete(id, Restore) => upd(id, _.copy(alive = Alive))
+      case CrudAction.Delete(id, SoftDel) => upd(id, _.copy(live = Dead))
+      case CrudAction.Delete(id, Restore) => upd(id, _.copy(live = Live))
     })
   }
 
@@ -331,19 +331,19 @@ class WIP {
     implicit def genIdToAT(g: TagId) = ApplicableTagId(g.value)
 
     def build(i: Id): Values => Tag = {
-      case TagGroupValues(n, mc, d)     => TagGroup(i, n, d, mc, Alive)
-      case ApplicableTagValues(n, k, d) => ApplicableTag(i, n, d, k, Alive)
+      case TagGroupValues(n, mc, d)     => TagGroup(i, n, d, mc, Live)
+      case ApplicableTagValues(n, k, d) => ApplicableTag(i, n, d, k, Live)
     }
 
-    def setLife(t0: TagTree, id: Id, oa: Option[Alive]): TagTree =
+    def setLife(t0: TagTree, id: Id, oa: Option[Live]): TagTree =
       t0.get(id).fold(t0){ subj =>
 
         // Modify children
         val t1 = subj.children.foldLeft(t0) { (t, childId) =>
           t.get(childId).map(_.tag) match {
-            case Some(child) if child.alive ≟ subj.tag.alive =>
+            case Some(child) if child.live ≟ subj.tag.live =>
               val childToParents = Multimap(t.mapValues(_.children.toSet)).reverse // TODO I *HATE* performance!
-              val hasLiveParent = (childToParents(childId) - id).exists(p => t.underlyingMap(p).tag.alive ≟ Alive)
+              val hasLiveParent = (childToParents(childId) - id).exists(p => t.underlyingMap(p).tag.live ≟ Live)
               if (hasLiveParent)
                 t
               else
@@ -355,7 +355,7 @@ class WIP {
         // Modify subject
         oa match {
           case None    => t1.mapUnderlying(_.mapValuesNow(_ removeChild id) - id) // copy from RemoteDelta
-          case Some(a) => updT(id, Tag.alive set a)(t1)
+          case Some(a) => updT(id, Tag.live set a)(t1)
         }
       }
 
@@ -364,7 +364,7 @@ class WIP {
         case CrudAction.Update(i, v)        => put(i, v)
         case CrudAction.Delete(id, HardDel) => mod(setLife(_, id, None))
         case CrudAction.Delete(id, SoftDel) => mod(setLife(_, id, Some(Dead)))
-        case CrudAction.Delete(id, Restore) => mod(setLife(_, id, Some(Alive)))
+        case CrudAction.Delete(id, Restore) => mod(setLife(_, id, Some(Live)))
       })
   }
 
@@ -406,27 +406,27 @@ class WIP {
 
         case Create(TextFieldValues(n, k, m, r)) =>
           mod { fs =>
-            val f = CF.Text(nextId(fs), n, k, m, r, Alive)
+            val f = CF.Text(nextId(fs), n, k, m, r, Live)
             List(Delta(\/-(f), None))
           }
 
         case Create(TagFieldValues(t, m, r)) =>
           mod { fs =>
-            val f = CF.Tag(nextId(fs), t, m, r, Alive)
+            val f = CF.Tag(nextId(fs), t, m, r, Live)
             List(Delta(\/-(f), None))
           }
 
         case Create(ImplicationFieldValues(t, m, r)) =>
           mod { fs =>
-            val f = CF.Implication(nextId(fs), t, m, r, Alive)
+            val f = CF.Implication(nextId(fs), t, m, r, Live)
             List(Delta(\/-(f), None))
           }
 
         case UpdateValues(id, v) =>
           mod(id)(cf => (cf, v) match {
-            case (CF.Text       (_, _, _, _, _, Alive), TextFieldValues       (n, k, m, r)) => CF.Text       (id, n, k, m, r, Alive)
-            case (CF.Tag        (_,    _, _, _, Alive), TagFieldValues        (t,    m, r)) => CF.Tag        (id, t,    m, r, Alive)
-            case (CF.Implication(_,    _, _, _, Alive), ImplicationFieldValues(t,    m, r)) => CF.Implication(id, t,    m, r, Alive)
+            case (CF.Text       (_, _, _, _, _, Live), TextFieldValues       (n, k, m, r)) => CF.Text       (id, n, k, m, r, Live)
+            case (CF.Tag        (_,    _, _, _, Live), TagFieldValues        (t,    m, r)) => CF.Tag        (id, t,    m, r, Live)
+            case (CF.Implication(_,    _, _, _, Live), ImplicationFieldValues(t,    m, r)) => CF.Implication(id, t,    m, r, Live)
             case _ => cf
           })
 
@@ -440,7 +440,7 @@ class WIP {
           mod(fs => if (fs.order contains f) Nil else List(Delta(-\/(f), None)))
 
         case Delete(id: Id, Restore) =>
-          mod(id)(CF.alive set Alive)
+          mod(id)(CF.live set Live)
 
         case Delete(f: StaticField, HardDel | SoftDel) =>
           f.deletable match {
@@ -449,7 +449,7 @@ class WIP {
           }
 
         case Delete(id: Id, SoftDel) =>
-          mod(id)(CF.alive set Dead)
+          mod(id)(CF.live set Dead)
 
         case Delete(id: Id, HardDel) =>
           apply(Set(id), Nil)

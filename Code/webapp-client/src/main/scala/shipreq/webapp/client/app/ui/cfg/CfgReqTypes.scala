@@ -81,7 +81,7 @@ object CfgReqTypes {
           }
         }
 
-      val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, supp.deletion, _.alive, $)
+      val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, supp.deletion, _.live, $)
 
       val headerRow = CfgTable.header(List("Mnemonic", "Name", "Implication Required"))
 

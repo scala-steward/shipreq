@@ -11,12 +11,12 @@ final case class Rev(value: Long) extends TaggedLong {
 }
 
 
-sealed trait Alive
-case object Alive extends Alive with IsoBool.Obj[Alive] {
+sealed trait Live
+case object Live extends Live with IsoBool.Obj[Live] {
   override protected def neg = Dead
 }
-case object Dead extends Alive with IsoBool[Alive] {
-  override protected def neg = Alive
+case object Dead extends Live with IsoBool[Live] {
+  override protected def neg = Live
 }
 
 

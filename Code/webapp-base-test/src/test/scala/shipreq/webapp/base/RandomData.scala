@@ -158,8 +158,8 @@ object RandomData {
 
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
-  lazy val alive =
-    Gen.oneof[Alive](Alive, Dead)
+  lazy val live =
+    Gen.oneof[Live](Live, Dead)
 
   lazy val implicationRequired =
     Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
@@ -177,7 +177,7 @@ object RandomData {
     id map CustomIssueTypeId
 
   lazy val customIssueType =
-    Gen.apply4(CustomIssueType.apply)(customIssueTypeId, hashRefKey, optionalLargeText, alive)
+    Gen.apply4(CustomIssueType.apply)(customIssueTypeId, hashRefKey, optionalLargeText, live)
 
   /** HashRefKey uniqueness enforced in Project, not here */
   lazy val customIssueTypes =
@@ -213,7 +213,7 @@ object RandomData {
       mn <- reqTypeMnemonic
       om <- reqTypeMnemonic.set.lim(16)
       ir <- implicationRequired
-      a  <- alive
+      a  <- live
     } yield CustomReqType(id, mn, om - mn, n, ir, a)
 
   lazy val customReqTypes = {
@@ -251,10 +251,10 @@ object RandomData {
     shortText1
 
   lazy val tagGroup =
-    Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, mutexChildren, alive)
+    Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, mutexChildren, live)
 
   lazy val applicableTag =
-    Gen.apply5(ApplicableTag.apply)(applicableTagId, tagName, optionalLargeText, hashRefKey, alive)
+    Gen.apply5(ApplicableTag.apply)(applicableTagId, tagName, optionalLargeText, hashRefKey, live)
 
   lazy val tag =
     Gen.oneofG[Tag](tagGroup.subst, applicableTag.subst)
@@ -342,10 +342,10 @@ object RandomData {
     oneofV(CustomFieldType.values)
 
   def customFieldText(art: Gen[ApplicableReqTypes]): Gen[CustomField.Text] =
-    Gen.apply6(CustomField.Text.apply)(customFieldTextId, shortText1, fieldRefKey, mandatory, art, alive)
+    Gen.apply6(CustomField.Text.apply)(customFieldTextId, shortText1, fieldRefKey, mandatory, art, live)
 
   def customFieldTag(tagId: Gen[TagId], art: Gen[ApplicableReqTypes]): Gen[CustomField.Tag] =
-    Gen.apply5(CustomField.Tag.apply)(customFieldTagId, tagId, mandatory, art, alive)
+    Gen.apply5(CustomField.Tag.apply)(customFieldTagId, tagId, mandatory, art, live)
 
   def customFieldTagSome(tagIds: Set[TagId], art: Gen[ApplicableReqTypes]): Gen[Vector[CustomField.Tag]] =
     Gen.subset(tagIds).flatMap(ids =>
@@ -353,7 +353,7 @@ object RandomData {
         customFieldTag(Gen insert id, art)))
 
   def customFieldImplication(reqTypeId: Gen[ReqTypeId], art: Gen[ApplicableReqTypes]): Gen[CustomField.Implication] =
-    Gen.apply5(CustomField.Implication.apply)(customFieldImplicationId, reqTypeId, mandatory, art, alive)
+    Gen.apply5(CustomField.Implication.apply)(customFieldImplicationId, reqTypeId, mandatory, art, live)
 
   def customFieldImplicationSome(reqTypeIds: Set[ReqTypeId], art: Gen[ApplicableReqTypes]): Gen[Vector[CustomField.Implication]] =
     Gen.subset(reqTypeIds).flatMap(ids =>
@@ -699,14 +699,14 @@ object RandomData {
       _  <- pubidS(id)
     } yield id
 
-  def sGenericReq(pubidS: ReqIdC => StateG[PubidRegister, PubidC], rtAlive: ReqTypeId => Alive): StateG[PubidRegister, GenericReq] =
+  def sGenericReq(pubidS: ReqIdC => StateG[PubidRegister, PubidC], rtLive: ReqTypeId => Live): StateG[PubidRegister, GenericReq] =
     for {
       id     ← genericReqId |> gliftS[PubidRegister, GenericReqId]
       pubid  ← pubidS(id)
       desc   = Vector.empty
-      live0  ← alive
+      live0  ← live
     } yield {
-      val live = if (rtAlive(pubid.reqTypeId) :: Dead) Dead else live0
+      val live = if (rtLive(pubid.reqTypeId) :: Dead) Dead else live0
       GenericReq(id, pubid, desc, live)
     }
 
@@ -726,11 +726,11 @@ object RandomData {
   def pubidRegisterAndIds(customReqTypeIds: NonEmptyVector[CustomReqTypeId]): GenS[(PubidRegister, Set[ReqIdC])] =
     pubidRegisterAnd(Set.empty[ReqIdC], sGenericReqId(sAllocPubidC(customReqTypeIds)))(_ + _)
 
-  def requirements(customReqTypeIds: Vector[CustomReqTypeId], rtAlive: ReqTypeId => Alive): GenS[Requirements] =
+  def requirements(customReqTypeIds: Vector[CustomReqTypeId], rtLive: ReqTypeId => Live): GenS[Requirements] =
     NonEmptyVector.maybe(customReqTypeIds,
       GenS(_ => Gen insert Requirements.empty))( // ← This will change when UseCases are added
       customReqTypeIdNev =>
-        pubidRegisterAnd(Requirements.emptyData, sGenericReq(sAllocPubidC(customReqTypeIdNev), rtAlive))(_ + _)
+        pubidRegisterAnd(Requirements.emptyData, sGenericReq(sAllocPubidC(customReqTypeIdNev), rtLive))(_ + _)
           .map { case (pr, reqs) => Requirements(reqs, pr) }
       )
 
@@ -860,11 +860,11 @@ object RandomData {
     val gEmptyRefsToReqs: Gen[Multimap[ReqId, Set, ReqCodeId]] =
       Gen.insert(Multimap.empty)
 
-    def data(ogAliveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): Gen[Data] = {
+    def data(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): Gen[Data] = {
       import Gen.Covariance._
 
       val gTarget: Gen[Target] =
-        ogAliveReqId match {
+        ogLiveReqId match {
           case Some(g) => Gen.oneofG(g, g, g, g, gGroup)
           case None    => gGroup
         }
@@ -895,8 +895,8 @@ object RandomData {
       Gen.tuple2(value, gData)
 
 
-    def trie(ogAliveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
-      flatInstance(data(ogAliveReqId, ogReqId, gGroup)).vector
+    def trie(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
+      flatInstance(data(ogLiveReqId, ogReqId, gGroup)).vector
         .map(distinctFlatInstances.run)
         .map(_.foldLeft(emptyTrie) { case (q, (c, d)) => q.put(c, d) })
 
@@ -953,18 +953,18 @@ object RandomData {
       cissueIds      = issues.data.keySet
       cissueIdG      = Gen oneofO cissueIds.toSeq
       reqtypes       ← customReqTypes
-      deadReqtypeIds = reqtypes.data.values.toStream.filter(_.alive :: Dead).map(_.id)
+      deadReqtypeIds = reqtypes.data.values.toStream.filter(_.live :: Dead).map(_.id)
       reqTypeIdsC    = reqtypes.data.keys.toVector
       reqTypeIds     = StaticReqType.values ++ reqTypeIdsC
       reqTypeIdSet   = reqTypeIds.whole.toSet
       fields         ← revAndG(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
       reqs1          ← requirements(reqTypeIdsC, id => Dead <~ (deadReqtypeIds contains id))
       reqIds         = reqs1.reqs.keys
-      aliveReqIds    = reqs1.reqs.values.toStream.filter(_.alive :: Alive).map(_.id)
+      liveReqIds     = reqs1.reqs.values.toStream.filter(_.live :: Live).map(_.id)
       reqIdSet       = reqIds.toSet
       reqIdG         = Gen oneofO reqIds.toSeq
-      aliveReqIdG    = Gen oneofO aliveReqIds
-      reqCodes1      ← reqCodes(reqCode.trie(aliveReqIdG, reqIdG, reqCode.gEmptyReqCodeGroup).lim(18 `JVM|JS` 6))
+      liveReqIdG     = Gen oneofO liveReqIds
+      reqCodes1      ← reqCodes(reqCode.trie(liveReqIdG, reqIdG, reqCode.gEmptyReqCodeGroup).lim(18 `JVM|JS` 6))
       activeCodeIds  = reqCodes1.cataA(Vector.empty[ReqCodeId])((q, _, a) => q :+ a.id)
       activeCodeIdG  = Gen oneofO activeCodeIds
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet

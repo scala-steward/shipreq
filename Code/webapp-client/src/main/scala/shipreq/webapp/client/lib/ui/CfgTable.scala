@@ -5,7 +5,7 @@ import monocle.Lens
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.base.util.TaggedTypes.TaggedLong
-import shipreq.webapp.base.data.{Alive, Dead, DataIdAux}
+import shipreq.webapp.base.data.{Live, Dead, DataIdAux}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.protocol.DeletionAction._
 import shipreq.webapp.client.lib.FilterDead
@@ -20,11 +20,11 @@ object CfgTable {
                                    newRowA: I => A,
                                    savedRowA: K => A,
                                    del: Deletion[K],
-                                   alive: P => Alive,
+                                   live: P => Live,
                                    filterDead: S => FilterDead,
                                    c: CompStateFocus[S])
                                   (implicit O: Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
-        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, alive, filterDead, c)
+        new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, live, filterDead, c)
     }
 
   def typical[P, I, K <: TaggedLong](sas: TypicalStoresAndState[P, I, K]) = new {
@@ -33,14 +33,14 @@ object CfgTable {
       def apply[RowKey, N](rowkey: P => RowKey,
                            rr: RowRenderer[P, V, N],
                            del: Deletion[K],
-                           alive: P => Alive,
+                           live: P => Live,
                            c: CompStateFocus[sas.S])
                           (implicit I: DataIdAux[P, K], O: Ordering[RowKey])
       : CfgTable[sas.S, K, P, I, A, B, C, V, RowKey, N] = {
           def rowA(k: Option[K], i: I): editor.InputA = (sas.validatorInput(k)(c.state), i)
           def newRowA  (i: I)  = rowA(None, i)
           def savedRowA(id: K) = rowA(Some(id), sas.savedRowStoreS.getI(id)(c.state))
-          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, alive, _.filterDead, c)
+          new CfgTable(editor, sas.savedRowStoreS, sas.newRowStoreS, rowkey, rr, newRowA, savedRowA, del, live, _.filterDead, c)
         }
       }
     }
@@ -75,7 +75,7 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
                                                                       newRowA: I => A,
                                                                       savedRowA: K => A,
                                                                       deletion: Deletion[K],
-                                                                      alive: P => Alive,
+                                                                      live: P => Live,
                                                                       filterDead: S => FilterDead,
                                                                       c: CompStateFocus[S])
                                                                      (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
@@ -89,8 +89,8 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
 
   private[this] val editable = editor.editableByRowStatus(c)
 
-  private[this] val rowAlive: savedStore.Row => Alive =
-    r => alive(r.p)
+  private[this] val rowLive: savedStore.Row => Live =
+    r => live(r.p)
 
   private[this] def renderRow(a: A, rs: RowStatus): V =
     editor render EditorI(a, "", editable(rs))
@@ -127,11 +127,11 @@ final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Ed
   def savedRows: RowStream = {
     val state = c.state
     var rs = savedStore.getAll(state)
-    rs = filterDead(state)(rs)(rowAlive)
+    rs = filterDead(state)(rs)(rowLive)
     rs.map(r => {
-      val el = alive(r.p) match {
-        case Alive => savedLiveRow(r.status, r.p)
-        case Dead  => savedDeadRow(r.status, r.p)
+      val el = live(r.p) match {
+        case Live => savedLiveRow(r.status, r.p)
+        case Dead => savedDeadRow(r.status, r.p)
       }
       (rowkey(r.p), el)
     })

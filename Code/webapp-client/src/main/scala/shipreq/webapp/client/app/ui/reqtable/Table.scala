@@ -173,7 +173,7 @@ object Table {
           <.tr(
             crs.toStream.map(cr =>
               <.th(
-                *.columnHeader(cr.column.alive),
+                *.columnHeader(cr.column.live),
                 cr.header)))),
         <.tbody(renderRows))
     }

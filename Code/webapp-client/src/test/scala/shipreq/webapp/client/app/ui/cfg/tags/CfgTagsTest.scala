@@ -53,7 +53,7 @@ object CfgTagsTest extends TestSuite {
     'recvUpdates {
       val rev = clientData.project.tags.rev.succ
       val upd = PovTag(
-        ApplicableTag(22, "Blah", None, "blah", Alive),
+        ApplicableTag(22, "Blah", None, "blah", Live),
         PovRelations(Map(1.TG -> 3.AT.some), Vector(10.TG)))
       val d = RemoteDeltaG(Partition.Tags, rev, rev)(Set.empty, List(upd))
       clientData.update(List(d)).unsafePerformIO()

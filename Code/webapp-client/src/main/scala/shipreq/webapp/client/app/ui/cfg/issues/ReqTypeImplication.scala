@@ -62,7 +62,7 @@ private[issues] object ReqTypeImplication {
     type Rows = Stream[(Mnemonic, ReactElement)]
 
     def customRows: Rows =
-      rowStore.getAll($.state).filter(_.p.alive ≟ Alive).map(r => {
+      rowStore.getAll($.state).filter(_.p.live ≟ Live).map(r => {
         val re: ReactElement =
           <.tr(^.key := r.p.id.value,
             <.td(
