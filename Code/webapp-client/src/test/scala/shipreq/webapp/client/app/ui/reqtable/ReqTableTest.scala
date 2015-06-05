@@ -486,6 +486,33 @@ sealed trait ReqTableTest0 {
       >> testValid("MF-3")
       >> testValid("MF-1"))
   }
+
+  def testTagsColumnEditor(): Unit = {
+    import ProjectDSL.{S => _, _}
+    import UnsafeTypes._
+    val List(co) = List[CustomReqTypeId](1)
+    val List(wip, defer, uat, v09, v10, v11, v1x, v2x, v3x) = List[ApplicableTagId](11, 12, 13, 28, 22, 23, 21, 25, 26)
+    val p = GReq(reqType = co).tag(wip, uat, v1x, v3x) !
+      SampleProject.project |> TestOptics.projectRevs.set(Rev(204))
+
+    val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Tags"))
+    import ce._
+
+    val setup =
+      setProject(p) >> showAllColumns >>
+        Action.value(cell(_).innerText).assertAfter("v1.x v3.x") // wip & uat in Status col
+
+    val startEdit =
+      focusCell(loc) >> editFocused >>
+        Action.value(editorValue).assertAfter("v1.x", "Should remove dead")
+
+    run(setup >> startEdit
+      >> testInvalid("Target is dead")("v0.9")
+      >> testInvalid("Target is dead")("v3.x")
+      >> testValid("v1.x")
+      >> testValid("v1.x v1.0")
+      >> testValid("v1.1"))
+  }
 }
 
 object ReqTableTest extends TestSuite with ReqTableTest0 {
@@ -505,5 +532,6 @@ object ReqTableTest extends TestSuite with ReqTableTest0 {
     'impSrcColEditor    - testImplicationSrcColumnEditor()
     'impTgtColEditor    - testImplicationTgtColumnEditor()
     'customImpColEditor - testCustomImplicationColumnEditor()
+    'tagsColEditor      - testTagsColumnEditor()
   }
 }

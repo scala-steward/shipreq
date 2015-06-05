@@ -19,7 +19,7 @@ object ImplicationEditor {
   import AutoComplete.ReqItem
   import DataImplicits._
 
-  val editor = textSetEditorB[ReqId, SetDiff[ReqId]]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
+  val editor = textSetEditor[ReqId, SetDiff[ReqId]]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
 
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, ParseRejection]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap

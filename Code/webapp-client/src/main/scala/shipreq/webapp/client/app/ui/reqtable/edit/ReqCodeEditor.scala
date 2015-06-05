@@ -62,7 +62,7 @@ object ReqCodeEditor {
   object ForReqs {
     val lineSplitter = "\\s*[\n\r]\\s*".r.pattern
 
-    val editor = textSetEditor[A]("ReqCode editor",
+    val editor = textSetEditor[A, Set[A]]("ReqCode editor",
       s => lineSplitter.split(s.trim).toStream.filter(_.nonEmpty),
       TextEditor.TextArea)
 
