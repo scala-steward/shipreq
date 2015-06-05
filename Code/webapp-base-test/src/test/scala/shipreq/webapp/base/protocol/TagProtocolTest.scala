@@ -91,28 +91,29 @@ object TagProtocolTest extends TestSuite {
   //println(TagTree.prettyPrint(sampleTagTree_f))
 
   override def tests = TestSuite {
+    import S.Values._
 
     'PovRelations {
       'derive {
         // Multiple prepend parents, no children
-        "22" - assertEq(PovRelations.derive(22.AT, S.tagTree), PovRelations(
-          parents = Map(21.AT -> 23.AT, 27.TG -> 23.AT),
+        'v10 - assertEq(PovRelations.derive(v10, S.tagTree), PovRelations(
+          parents = Map(v1x -> v11, 27.TG -> v11),
           children = Vector.empty))
 
         // Append parent, no children
-        "24" - assertEq(PovRelations.derive(24.AT, S.tagTree), PovRelations(
-          parents = Map(21.AT -> None),
+        'v12 - assertEq(PovRelations.derive(v12, S.tagTree), PovRelations(
+          parents = Map(v1x -> None),
           children = Vector.empty))
 
         // No parents, children
-        "10" - assertEq(PovRelations.derive(10.TG, S.tagTree), PovRelations(
+        'status - assertEq(PovRelations.derive(10.TG, S.tagTree), PovRelations(
           parents = Map.empty,
-          children = Vector(11.AT, 12.AT, 13.AT)))
+          children = Vector(wip, defer, uat, uat2)))
 
         // Parents and children
-        "27" - assertEq(PovRelations.derive(27.TG, S.tagTree), PovRelations(
-          parents = Map(20.TG -> 21.AT),
-          children = Vector(28.AT, 22.AT, 23.AT)))
+        'released - assertEq(PovRelations.derive(27.TG, S.tagTree), PovRelations(
+          parents = Map(20.TG -> v1x),
+          children = Vector(v09, v10, v11)))
       }
     }
 

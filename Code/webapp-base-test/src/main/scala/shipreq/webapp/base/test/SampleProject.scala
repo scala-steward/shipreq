@@ -8,7 +8,7 @@ object SampleProject {
 
   trait Values {
     val List(co, mf, fr, br, dd, si)                    = List[CustomReqTypeId           ](1, 2, 3, 4, 5, 6)
-    val List(wip, defer, uat)                           = List[ApplicableTagId           ](11, 12, 13)
+    val List(wip, defer, uat, uat2)                     = List[ApplicableTagId           ](11, 12, 13, 14)
     val List(v09, v10, v11, v12, v1x, v2x, v3x)         = List[ApplicableTagId           ](28, 22, 23, 24, 21, 25, 26)
     val List(descField, notesField, reporterField)      = List[CustomField.Text.Id       ](1, 2, 3)
     val List(priField, statusField, verField, relField) = List[CustomField.Tag.Id        ](4, 5, 20, 7)
@@ -38,10 +38,11 @@ object SampleProject {
     TagInTree(TagGroup     (1    , "Priority",        None, MutexChildren,     Alive), Vector(2.AT, 3.AT, 4.AT)),
     TagInTree(ApplicableTag(2    , "High Priority",   None, "pri=high",        Alive), Vector()),
     TagInTree(ApplicableTag(3    , "Medium Priority", None, "pri=med",         Alive), Vector()),
-    TagInTree(TagGroup     (10   , "Status",          None, MutexChildren.Not, Alive), Vector(wip, defer, uat)),
+    TagInTree(TagGroup     (10   , "Status",          None, MutexChildren.Not, Alive), Vector(wip, defer, uat, uat2)),
     TagInTree(ApplicableTag(wip  , "WIP",             None, "wip",             Alive), Vector()),
     TagInTree(ApplicableTag(defer, "Deferred",        None, "defer",           Alive), Vector()),
-    TagInTree(ApplicableTag(uat  , "In UAT",          None, "uat",             Dead ), Vector()),
+    TagInTree(ApplicableTag(uat  , "In UAT #1",       None, "uat",             Dead ), Vector()),
+    TagInTree(ApplicableTag(uat2 , "In UAT #2",       None, "uat2",            Dead ), Vector()),
     TagInTree(TagGroup     (20   , "Version",         None, MutexChildren.Not, Alive), Vector(27.TG, v1x, v2x, v3x)),
     TagInTree(ApplicableTag(v1x  , "v1.x",            None, "v1.x",            Alive), Vector(v10, v11, v12)),
     TagInTree(ApplicableTag(v10  , "v1.0",            v10d, "v1.0",            Alive), Vector()),
