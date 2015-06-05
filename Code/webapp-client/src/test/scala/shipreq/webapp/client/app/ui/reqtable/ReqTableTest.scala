@@ -166,7 +166,8 @@ final class ReqTableScreen(root: => DomZipper) {
 // =====================================================================================================================
 import shipreq.webapp.client.app.ui.reqtable.{ReqTableScreen => S}
 
-object ReqTableTest extends TestSuite {
+// Mitigate IntelliJ being so slow with μTest
+sealed trait ReqTableTest0 {
   PrepareEnv()
 
   import ReqTable.State
@@ -191,7 +192,7 @@ object ReqTableTest extends TestSuite {
   // TODO Move following into Nyaya
 
   @inline def existance[A](name: String) = new ExistanceB[A](name)
-  final class ExistanceB[A](val name: String) extends AnyVal {
+  final class ExistanceB[A](val name: String) { //extends AnyVal {
     def apply[B](expect: A => Boolean, expected: A => Set[B], testData: A => Traversable[B]): Prop[A] = {
       lazy val yes = Prop.allPresent[A](name + " available")(expected, testData)
       lazy val no = Prop.blacklist[A](name + " not available")(expected, testData)
@@ -329,6 +330,8 @@ object ReqTableTest extends TestSuite {
   // ===================================================================================================================
   // Tests
 
+  implicit val settings = DefaultSettings.propSettings.setSampleSize(8) //.setDebug
+
   case class CellEditor(loc: S => CellLoc) {
     def cell       (s: S) = s.table.cell(loc(s))
     def editor     (s: S) = cell(s)("input").as[html.Input]
@@ -343,7 +346,15 @@ object ReqTableTest extends TestSuite {
     def testInvalid(reason: => String) = test(Invalid, reason)
   }
 
-  def testDeadRowsCantNotEditable(): Unit = {
+  def testDeadColumns(): Unit = run(
+    filterDeadToggle.assertAfter(ShowDead).focus(_.availCols.length).assertDelta(2) >>
+      filterDeadToggle.focus(_.availCols.length).assertDelta(-2))
+
+  def testDeadToggleInvariants(): Unit =
+    RandomReqTableData.viewSettings(project) mustSatisfy
+      actionProp(applyViewSettings(_) >> filterDeadShowHide)
+
+  def testDeadRowsNotEditable(): Unit = {
     val colCount = *.availCols.length
 
     def focus(rowType: Alive, colIndex: Int) =
@@ -475,26 +486,20 @@ object ReqTableTest extends TestSuite {
       >> testValid("MF-3")
       >> testValid("MF-1"))
   }
+}
 
-  implicit val settings = DefaultSettings.propSettings.setSampleSize(8) //.setDebug
+object ReqTableTest extends TestSuite with ReqTableTest0 {
 
   import utest.TestableSymbol
   override def tests = TestSuite {
     reset()
 
-    'initialState -
-      assertInvariants()
+    'initialState - assertInvariants()
 
     'dead {
-      'addDeadCols - run(
-        filterDeadToggle.assertAfter(ShowDead).focus(_.availCols.length).assertDelta(2) >>
-        filterDeadToggle.focus(_.availCols.length).assertDelta(-2)
-      )
-      'restoresOnCols {
-        RandomReqTableData.viewSettings(project) mustSatisfy
-          actionProp(applyViewSettings(_) >> filterDeadShowHide)
-      }
-      'notEditable - testDeadRowsCantNotEditable()
+      'cols        - testDeadColumns()
+      'toggle      - testDeadToggleInvariants()
+      'notEditable - testDeadRowsNotEditable()
     }
 
     'impSrcColEditor    - testImplicationSrcColumnEditor()
