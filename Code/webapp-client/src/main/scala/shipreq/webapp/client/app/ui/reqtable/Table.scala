@@ -169,20 +169,33 @@ object Table {
 
       // Render
       <.div(
-        <.table(
-          *.table,
-          <.thead(
-            <.tr(
-              crs.toStream.map(cr =>
-                <.th(
-                  *.columnHeader(cr.column.live),
-                  cr.header)))),
+        <.table(*.table,
+          HeaderComponent(crs),
           <.tbody(renderRows)),
-        <.div(
-          *.statsSummary,
-          p.stats.summary))
+        FooterComponent(p.stats))
     }
   }
+
+  // ===================================================================================================================
+
+  val HeaderComponent = ReactComponentB[NonEmptyVector[ColumnRenderer]]("Header")
+    .render(crs =>
+      <.thead(
+        <.tr(
+          crs.toStream.map(cr =>
+            <.th(
+              *.columnHeader(cr.column.live),
+              cr.header)))))
+    .configure(shouldComponentUpdate)
+    .build
+
+  val FooterComponent = ReactComponentB[TableStats]("Footer")
+    .render(stats =>
+      <.div(
+        *.statsSummary,
+        stats.summary))
+    .configure(shouldComponentUpdate)
+    .build
 
   // ===================================================================================================================
 
