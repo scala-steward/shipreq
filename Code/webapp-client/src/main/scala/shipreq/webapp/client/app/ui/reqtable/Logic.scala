@@ -287,6 +287,7 @@ private[reqtable] object Logic {
   }
 
   // ===================================================================================================================
+  // Post-processing
 
   def mergeAdjacent[A](input: Stream[A])(m: (A, A) => Option[A]): Stream[A] = {
     @tailrec def go(seen: Stream[A], last: A, queue: Stream[A]): Stream[A] = {
@@ -384,6 +385,41 @@ private[reqtable] object Logic {
       rows,
       Row.reqCodes.get,
       (i, bs) => Row.reqCodeTree.set(bs)(i))
+
+
+  def stats(vs: ViewSettings, p: Project, rows: Iterable[Row]): TableStats = {
+
+    // Scan rows
+    var _codeGroups      = 0
+    var _counts          = UnivEq.emptyMap[ReqId, Int]
+    var _liveVisibleReqs = 0
+    rows foreach {
+      case _: ReqCodeGroupRow =>
+        _codeGroups += 1
+      case r: GenericReqRow =>
+        val id = r.req.id
+        val c = _counts.getOrElse(id, 0)
+        if (c == 0 && r.live :: Live)
+          _liveVisibleReqs += 1
+        _counts = _counts.updated(id, c + 1)
+    }
+
+    // Find expansions
+    var _expandedReqs  = 0
+    var _expansionRows = 0
+    for (c <- _counts.values if c > 1) {
+      _expandedReqs  += 1
+      _expansionRows += c
+    }
+
+    TableStats(vs.filterDead,
+      liveVisibleReqs  = _liveVisibleReqs,
+      liveFilteredReqs = p.reqs.data.reqs.size - p.reqs.data.deadCount - _liveVisibleReqs,
+      deadReqs         = p.reqs.data.deadCount,
+      expandedReqs     = _expandedReqs,
+      expansionRows    = _expansionRows,
+      codeGroups       = _codeGroups)
+  }
 
   // ===================================================================================================================
   def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject): Stream[Row] = {

@@ -27,12 +27,17 @@ object Table {
   implicit val reusabilityCNR : Reusability[Column.NameResolver]            = Reusability.byRef
   implicit val reusabilityCTS : Reusability[Cell.TableState]                = Reusability.byRef
   implicit val reusabilityCRS : Reusability[Cell.RowState]                  = Reusability.byRef
+  implicit val reusabilityTS  : Reusability[TableStats]                     = Reusability.byRef
 
-  implicit val reusabilityContent = Reusability.caseclass3(Content.unapply)
+  implicit val reusabilityContent = Reusability.caseclass4(Content.unapply)
   implicit val reusabilityFocus   = Reusability.caseclass3(Focus.unapply)
   implicit val reusabilityProps   = Reusability.caseclass4(Props.unapply)
 
-  case class Content(crs: NonEmptyVector[ColumnRenderer], rows: Vector[Row], ces: ColumnEditors)
+  // TODO Content shouldn't have crs/ces
+  case class Content(crs  : NonEmptyVector[ColumnRenderer],
+                     rows : Vector[Row],
+                     stats: TableStats,
+                     ces  : ColumnEditors)
 
   case class Focus(rowInd: Int, col: Column, content: Content) {
     @inline def row(rows: Vector[Row]): Option[Row] =
@@ -167,15 +172,19 @@ object Table {
         }
 
       // Render
-      // TODO handle zero rows nicely. "33 reqs (SHRs?), 11 deleted, 3 excluded by filter."
-      <.table(*.table,
-        <.thead(
-          <.tr(
-            crs.toStream.map(cr =>
-              <.th(
-                *.columnHeader(cr.column.live),
-                cr.header)))),
-        <.tbody(renderRows))
+      <.div(
+        <.table(
+          *.table,
+          <.thead(
+            <.tr(
+              crs.toStream.map(cr =>
+                <.th(
+                  *.columnHeader(cr.column.live),
+                  cr.header)))),
+          <.tbody(renderRows)),
+        <.div(
+          *.statsSummary,
+          p.content.stats.summary))
     }
   }
 

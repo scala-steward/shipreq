@@ -19,6 +19,19 @@ object UiText {
     @inline def unmust: String = UiText.mustA(_m)
   }
 
+  @inline implicit class EnglishIntExt(val _i: Int) extends AnyVal {
+    def unitsOf(name: String, pluralised: String = null): String = {
+      val units =
+        if (_i == 1)
+          name
+        else if (pluralised ne null)
+          pluralised
+        else
+          name + "s"
+      s"${_i} $units"
+    }
+  }
+
   object ColumnNames {
     def reqType        = "Type"
     def pubid          = "ID"

@@ -10,8 +10,6 @@ trait IsoBool[B] extends (Boolean <=> B) {
 
   protected def neg: B
 
-  final def negate(b: B): B = if (b == this) neg else this
-
   final val :: : B => Boolean = _ == this
   final val <~ : Boolean => B = if (_) this else neg
 
@@ -26,6 +24,15 @@ trait IsoBool[B] extends (Boolean <=> B) {
       override val from: A => B = IsoBool.this when i
       override val to  : B => A = i when IsoBool.this
     }
+
+  final def negate(b: B): B =
+    if (b :: this) neg else this
+
+  final def negate[N](n: N, b: B)(implicit N: Numeric[N]): N =
+    if (b :: this) N.negate(n) else n
+
+  final def signum(b: B): Int =
+    if (b :: this) 1 else -1
 }
 
 object IsoBool {

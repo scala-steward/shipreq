@@ -76,6 +76,13 @@ object Style extends StyleSheet.Inline {
 
     // -----------------------------------------------------------------------------------------------------------------
 
+    val statsSummary = style(
+      margin(1 em, `0`),
+      padding(0.2 ex, 1 ex),
+      color("#444"),
+      backgroundColor("#ded"),
+      width(100 %%))
+
     // http://stackoverflow.com/questions/446624/table-cell-widths-fixing-width-wrapping-truncating-long-words
     val table = style(
       marginTop(1.6 ex),

@@ -40,7 +40,7 @@ final class ReqTableScreen(root: => DomZipper) {
   lazy val $ = root
 
   object viewSettings {
-    lazy val $ = ReqTableScreen.this.$(">div")
+    lazy val $ = ReqTableScreen.this.$(">div:nth-child(1)")
 
     object columns {
       lazy val entirety: Vector[(On, String)] =
@@ -92,7 +92,7 @@ final class ReqTableScreen(root: => DomZipper) {
   }
 
   object table {
-    lazy val $ = ReqTableScreen.this.$(">table")
+    lazy val $ = ReqTableScreen.this.$(">div:nth-child(2) >table")
     lazy val tbody = $(">tbody")
 
     lazy val columns: Vector[String] =

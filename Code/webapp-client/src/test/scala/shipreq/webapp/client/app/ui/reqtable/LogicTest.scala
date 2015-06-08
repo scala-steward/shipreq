@@ -75,12 +75,14 @@ object LogicTest extends TestSuite {
       else
         _ => true
 
-    val gathered     = Logic.gather(vs, p)
-    val gatheredG    = gathered.filterT[GenericReqRow]
-    val rowReqCodes  = gathered.flatMap(codesInRow(_).toStream)
-    val rowGReqIds   = gatheredG.map(_.req.id).toSet
-    val srcGReqIds   = p.reqs.data.reqs.keys.filterT[GenericReqId].filter(expectVisible).toSet
-    val plainText    = PlainText(p)
+    val gathered    = Logic.gather(vs, p)
+    val gatheredG   = gathered.filterT[GenericReqRow]
+    val rowReqCodes = gathered.flatMap(codesInRow(_).toStream)
+    val rowGReqIds  = gatheredG.map(_.req.id).toSet
+    val srcGReqIds  = p.reqs.data.reqs.keys.filterT[GenericReqId].filter(expectVisible).toSet
+    val plainText   = PlainText(p)
+    val finalRows   = Logic.rowsForTable(vs, p, plainText)
+    val tableStats  = Logic.stats(vs, p, finalRows)
 
     val expectedVisibleReqCodes =
       p.reqCodes.data.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
@@ -282,7 +284,11 @@ object LogicTest extends TestSuite {
       (individualSorts ∧ universalSort) rename "Logic.sort"
 
     // -----------------------------------------------------------------------------------------------------------------
-    def all = gather ∧ sorting
+    def stats =
+      E.equal("stats.visibleRows", tableStats.visibleRows, finalRows.size) ∧
+      E.equal("stats.visibleReqs", tableStats.visibleReqs, rowGReqIds.size)
+
+    def all = gather ∧ sorting ∧ stats
   }
 
   def gen: Gen[LogicTests] =
@@ -905,8 +911,8 @@ object LogicTest extends TestSuite {
           'unsorted - testTags_unsorted()
         }
         'custTag {
-          'sorted1   - testCustomTagField_sorted1()
-          'sorted2   - testCustomTagField_sorted2()
+          'sorted1  - testCustomTagField_sorted1()
+          'sorted2  - testCustomTagField_sorted2()
           'unsorted - testCustomTagField_unsorted()
         }
       }

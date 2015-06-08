@@ -5,7 +5,6 @@ Phase 2
 
 * Refs in ReqTitles
 * Handle no rows
-* Table status bar
 * New req
   * Template
   * Functionality

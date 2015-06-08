@@ -62,8 +62,9 @@ object ReqTable {
     val colRnd     = Px.apply3(project, colName, widgets)(new ColumnRenderers(_, _, _))
     val colRnds    = Px.apply2(vsCols, colRnd)(_ map _.apply)
     val rows       = Px.apply3(viewSettings, project, plainText)(Logic.rowsForTable(_, _, _).toVector)
+    val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
     val ces        = new ColumnEditors(project, plainText, widgets, textSearch, setCell)
-    val content    = Px.apply2(colRnds, rows)(Table.Content(_, _, ces))
+    val content    = Px.apply3(colRnds, rows, stats)(Table.Content(_, _, _, ces))
 
     def render = {
       import Px.AutoValue._
