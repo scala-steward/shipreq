@@ -11,7 +11,7 @@ object BaseTestUtil extends BaseTestUtil
 trait BaseTestUtil {
 
   implicit class MustExtTest[A](m: Must[A]) {
-    def unmust: A = m.fold(fail, identity)
+    def unmust: A = m.fold(fail(_), identity)
   }
 
   def assertEq[A: Equal](actual: A, expect: A): Unit =
@@ -41,7 +41,7 @@ trait BaseTestUtil {
       println(lead("expect:") + pre + BOLD + GREEN + es + RESET + post)
       println(lead("actual:") + pre + BOLD + RED + as + RESET + post)
       println()
-      assert(false)
+      fail("assertEq failed.")
     }
 
   def assertMultiline(actual: String, expect: String): Unit =
@@ -60,7 +60,7 @@ trait BaseTestUtil {
         printf(fmt, i + 1, a, cmp, e)
       }
       println()
-      assert(false)
+      fail("assertMultiline failed.")
     }
 
   def assertSet[A](actual: Set[A])(expect: A*): Unit = {
@@ -71,6 +71,10 @@ trait BaseTestUtil {
       fail(s"Actual: $actual\nExpect: $e\n   Missing: $missing\nUnexpected: $unexpected")
   }
 
-  def fail(msg: String): Nothing =
-    throw new AssertionError(msg)
+  def fail(msg: String, clearStackTrace: Boolean = true): Nothing = {
+    val e = new AssertionError(msg)
+    if (clearStackTrace)
+      e.setStackTrace(Array.empty)
+    throw e
+  }
 }
