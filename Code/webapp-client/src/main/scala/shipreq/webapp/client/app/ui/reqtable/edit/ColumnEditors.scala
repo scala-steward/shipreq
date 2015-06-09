@@ -115,13 +115,17 @@ final class ColumnEditors(project       : Px[Project],
   }
 
   val tags = initEditor[GenericReqRow] { r =>
-    val lookup = project map TagEditor.lookupForNoCol
-    TagEditor(r.mv.tags.toSet, project.value(), lookup, _)
+    val l = project map TagEditor.lookupForNoCol
+    val p = project.value()
+    val i = p.reqFieldData.data.tags(r.req.id)
+    TagEditor(i, p, l, _)
   }
 
-  def cfTag(id: CustomField.Tag.Id) = initEditor[GenericReqRow] { r =>
-    val lookup = project map (TagEditor.lookupForCol(_, id))
-    TagEditor(r.exp.tagsForCF(id).toSet, project.value(), lookup, _)
+  def cfTag(fid: CustomField.Tag.Id) = initEditor[GenericReqRow] { r =>
+    val l = project map (TagEditor.lookupForCol(_, fid))
+    val p = project.value()
+    val i = p.reqFieldData.data.tags(r.req.id) & r.exp.tagsForCF(fid).toSet
+    TagEditor(i, p, l, _)
   }
 
   lazy val impLookup =

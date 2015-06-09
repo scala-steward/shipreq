@@ -3,7 +3,6 @@ Phase 2
 
 ### ReqTable
 
-* Refs in ReqTitles
 * Handle no rows
 * New req
   * Template

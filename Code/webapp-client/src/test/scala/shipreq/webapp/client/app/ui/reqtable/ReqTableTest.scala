@@ -477,35 +477,39 @@ sealed trait ReqTableTest0 {
   }
 
   def testTagsColumnEditor(): Unit = {
-    val p = GReq(reqType = co).tag(wip, uat, v1x, v3x) !
+    val p = GReq(reqType = co, title = reqTitleTagRefs(v11, v13, v4x)).tag(wip, uat, v11, v1x, v3x) !
       SampleProject.project |> TestOptics.projectRevs.set(Rev(204))
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Tags"))
     import ce._
 
-    run(setup(p).assertAfter("v1.x v3.x") // wip & uat in Status col
-      >> startEdit.assertAfter("v1.x", "Should remove dead")
+    run(setup(p).assertAfter("v1.3 v1.x v3.x v4.x") // wip & uat in Status col
+      >> startEdit.assertAfter("v1.1 v1.x", "Should only show direct & live")
       >> testInvalid("Target is dead")("v0.9")
       >> testInvalid("Target is dead")("v3.x")
+      >> testInvalid("Target is dead")("v4.x")
       >> testInvalid("Status has its own column")("wip")
+      >> testValid("v1.3") // declared in text too = ok
       >> testValid("v1.x")
       >> testValid("v1.x v1.0")
       >> testValid("v1.1"))
   }
 
   def testCustomTagColumnEditor(): Unit = {
-    val p = GReq(reqType = co).tag(wip, uat, v1x, v3x) !
+    val p = GReq(reqType = co, title = reqTitleTagRefs(prod, uat3)).tag(wip, uat, v1x, v3x) !
       SampleProject.project |> TestOptics.projectRevs.set(Rev(208))
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Status"))
     import ce._
 
-    run(setup(p).assertAfter("wip uat")
-      >> startEdit.assertAfter("wip", "Should remove dead")
+    run(setup(p).assertAfter("wip uat uat3 prod")
+      >> startEdit.assertAfter("wip", "Should only show direct & live")
       >> testInvalid("Target is dead")("uat")
       >> testInvalid("Target is dead")("uat2")
+      >> testInvalid("Target is dead")("uat3")
       >> testInvalid("Not a status")("v1.0")
       >> testInvalid("Not a status")("v3.x")
+      >> testValid("prod") // declared in text too = ok
       >> testValid("wip")
       >> testValid("wip defer")
       >> testValid("defer"))

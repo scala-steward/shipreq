@@ -41,7 +41,7 @@ trait BaseTestUtil {
       println(lead("expect:") + pre + BOLD + GREEN + es + RESET + post)
       println(lead("actual:") + pre + BOLD + RED + as + RESET + post)
       println()
-      fail("assertEq failed.")
+      fail(s"assertEq${name.fold("")("(" + _ + ")")} failed.")
     }
 
   def assertMultiline(actual: String, expect: String): Unit =
