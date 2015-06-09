@@ -101,14 +101,14 @@ object TagProtocolTest extends TestSuite {
           children = Vector.empty))
 
         // Append parent, no children
-        'v12 - assertEq(PovRelations.derive(v12, S.tagTree), PovRelations(
+        'v13 - assertEq(PovRelations.derive(v13, S.tagTree), PovRelations(
           parents = Map(v1x -> None),
           children = Vector.empty))
 
         // No parents, children
         'status - assertEq(PovRelations.derive(10.TG, S.tagTree), PovRelations(
           parents = Map.empty,
-          children = Vector(wip, defer, uat, uat2)))
+          children = Vector(wip, defer, uat, uat2, uat3, prod)))
 
         // Parents and children
         'released - assertEq(PovRelations.derive(27.TG, S.tagTree), PovRelations(

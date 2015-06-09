@@ -13,7 +13,7 @@ import shipreq.webapp.base.delta.{Partition, RemoteDeltaG}
 import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.TagCrud
 import shipreq.webapp.base.protocol.TagProtocol._
-import shipreq.webapp.base.test.{SampleProject => S}
+import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.HideDead
@@ -54,7 +54,7 @@ object CfgTagsTest extends TestSuite {
       val rev = clientData.project.tags.rev.succ
       val upd = PovTag(
         ApplicableTag(22, "Blah", None, "blah", Live),
-        PovRelations(Map(1.TG -> 3.AT.some), Vector(10.TG)))
+        PovRelations(Map(1.TG -> priMed.some), Vector(10.TG)))
       val d = RemoteDeltaG(Partition.Tags, rev, rev)(Set.empty, List(upd))
       clientData.update(List(d)).unsafePerformIO()
 
@@ -66,6 +66,7 @@ object CfgTagsTest extends TestSuite {
           |- - Status
           |- - - WIP
           |- - - Deferred
+          |- - - In Production
           |- Medium Priority
           |- Low Priority
           |Version
@@ -74,6 +75,7 @@ object CfgTagsTest extends TestSuite {
           |- v1.x
           |- - v1.1
           |- - v1.2
+          |- - v1.3
           |- v2.x
         """.stripMargin.trim)
     }
@@ -96,11 +98,11 @@ object CfgTagsTest extends TestSuite {
       }
 
       'existingParentRels {
-        val subj = S.tags.get(23.AT).get.tag
+        val subj = S.tags.get(v11).get.tag
         val rels = D.existingParentRels(s, t.u, subj)
         assertEq(rels.map(_.name).toList.sorted, List("Released", "v1.x"))
         // Remove parent 'Released' from 'v1.1'
-        testUnlink(subj, rels, "Released")(PovRelations(Map(21.AT -> 24.AT), Vector.empty))
+        testUnlink(subj, rels, "Released")(PovRelations(Map(v1x -> v12), Vector.empty))
       }
 
       'existingChildRels {
@@ -108,7 +110,7 @@ object CfgTagsTest extends TestSuite {
         val rels = D.existingChildrenRels(s, t.u, subj)
         assertEq(rels.map(_.name).toList, List("v1.0", "v1.1"))
         // Remove child 'v1.0' from 'Released'
-        testUnlink(subj, rels, "v1.0")(PovRelations(Map(20.TG -> 21.AT), Vector(28.AT, 23.AT)))
+        testUnlink(subj, rels, "v1.0")(PovRelations(Map(20.TG -> v1x), Vector(v09, v11)))
       }
     }
   }

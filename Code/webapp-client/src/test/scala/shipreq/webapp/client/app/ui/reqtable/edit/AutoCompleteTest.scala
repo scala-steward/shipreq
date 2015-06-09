@@ -194,13 +194,13 @@ object AutoCompleteTest extends TestSuite {
         testSelect("#pri=high ")
       }
       'mid {
-        test("#1")("v1.0", "v1.1", "v1.2", "v1.x")
+        test("#1")("v1.0", "v1.1", "v1.2", "v1.3", "v1.x")
         testSelect("#v1.0 ")
       }
       'noSyntax -
         test("pri")()
       'filterDead -
-        test("#x")("v1.x", "v2.x") // v3.x is dead
+        test("#x")("v1.x", "v2.x") // v3.x & v4.x are dead
     }
 
     'tagP {
@@ -212,7 +212,7 @@ object AutoCompleteTest extends TestSuite {
         testSelect("pri=high ")
       }
       'mid {
-        test("1")("v1.0", "v1.1", "v1.2", "v1.x")
+        test("1")("v1.0", "v1.1", "v1.2", "v1.3", "v1.x")
         testSelect("v1.0 ")
       }
       'withSyntax - {
@@ -220,7 +220,7 @@ object AutoCompleteTest extends TestSuite {
         testSelect("pri=high ")
       }
       'filterDead -
-        test("#x")("v1.x", "v2.x") // v3.x is dead
+        test("#x")("v1.x", "v2.x") // v3.x & v4.x are dead
     }
 
     'reqC {
