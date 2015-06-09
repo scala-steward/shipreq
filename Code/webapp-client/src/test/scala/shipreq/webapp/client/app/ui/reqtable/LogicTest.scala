@@ -16,7 +16,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{PlainText, Text}
+import shipreq.webapp.base.text.{PlainText, Text, Atom => TextAtom}
 import shipreq.webapp.base.test._, BaseTestUtil._
 import shipreq.webapp.base.util.{Optics, ReqCodeTreeItem}
 import shipreq.webapp.client.app.ui.reqtable.{SortCriterion => SC, Column => C}
@@ -338,6 +338,7 @@ object LogicTest extends TestSuite {
       }
 
     private def allSortsCBA[A](z: A, zcount: Int)(f: (A, A) => A, asc: A, desc: A): Seq[(ConsiderBlanks, A)] = {
+      if (zcount < 1) fail("zcount must be ≥ 1")
       val zz: A = if (zcount > 1) Stream.fill(zcount)(z).reduce(f) else z
       (BlanksThenAsc  -> f(zz, asc))  ::
       (AscThenBlanks  -> f(asc, zz))  ::
@@ -456,6 +457,7 @@ object LogicTest extends TestSuite {
       val p2      = clearCustomFields(p)
       val pt      = PlainText(p2)
       val fmtRows = rowToTagTxt(p, Row.tags)
+      // The Tags column is *not* expanded. Only custom tag columns are.
       testCB(p2, pt, C.Tags, ShowDead, fmtRows)(allSortsCB(2,
         asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
         desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
@@ -467,6 +469,7 @@ object LogicTest extends TestSuite {
       val p2      = modCustomFields(_.filterK(_ == priField))(p)
       val pt      = PlainText(p2)
       val fmtRows = rowToTagTxt(p, Row.tags)
+      // The Tags column is *not* expanded. Only custom tag columns are.
       testCB(p2, pt, C.Tags, ShowDead, fmtRows)(allSortsCB(2,
         asc  = "defer  defer,wip  defer,wip  wip",
         desc = "wip,defer  wip,defer  wip  defer"))
@@ -783,6 +786,46 @@ object LogicTest extends TestSuite {
       testUnsorted(p, pt, C.Tags, ShowDead, fmtRowsT)("v0.9,v1.0,v2.x")
     }
 
+    def testTags_inText(): Unit = {
+      def t(direct: ApplicableTagId*)(inTitle: ApplicableTagId*)(inCustomText: ApplicableTagId*) =
+        GReq(title = reqTitleTagRefs(inTitle))
+          .cftextO(descField, customTextTagRefs(inCustomText))
+          .cftext(reporterField, allLiveTags map Text.CustomTextField.TagRef) // dead column has no effect
+          .tag(direct: _*)
+      val p       = t()()() + t(v10)(v12)(v1x, v1x) + t(v2x)(v2x, v11)(v11) ! PA
+      val pt      = PlainText(p)
+      val fmtRows = rowToTagTxt(p, Row.tags)
+      testUnsorted(p, pt, C.Tags, HideDead, fmtRows)(s"$z  v1.0,v1.2,v1.x  v1.1,v2.x")
+      // The Tags column is *not* expanded. Only custom tag columns are.
+//      testCB(p, pt, C.Tags, HideDead, fmtRows)(allSortsCB(1,
+//        asc  = "v1.0  v1.1  v1.2,v1.x  v2.x",
+//        desc = "xxxxxxxxx"))
+    }
+
+    def testCustomTagField_inText(): Unit = {
+      // TODO test tag transitivity: column tag ← mutual tag ← tag in text
+      def t(direct: ApplicableTagId*)(inTitle: ApplicableTagId*)(inCustomText: ApplicableTagId*) =
+        GReq(title = reqTitleTagRefs(inTitle))
+          .cftextO(descField, customTextTagRefs(inCustomText))
+          .cftext(reporterField, customTextTagRefs(allLiveTags)) // dead column has no effect
+          .tag(direct: _*)
+      val p       = t(wip)(wip, priHigh)(priLow, priLow) + t()()() + t(priMed)(priHigh, priMed)(priHigh, defer) ! PA
+      val pt      = PlainText(p)
+      val fmtRows = rowToTagTxt(p, Row cfTag priField)
+      testUnsorted(p, pt, priField, HideDead, fmtRows)(s"pri=high,pri=low  $z  pri=high,pri=med")
+      testCB(p, pt, priField, HideDead, fmtRows)(allSortsCB(1,
+        asc  = "pri=high  pri=high,pri=med  pri=low",
+        desc = "pri=low  pri=med  pri=high  pri=high"))
+    }
+
+    def testFilterDeadTagsInText(): Unit = {
+      val p       = GReq(reqType = fr, title = reqTitleTagRefs(v09)).tag(v1x).cftext(descField, customTextTagRefs(v3x)) ! PD
+      val pt      = PlainText(p)
+      val fmtRows = rowToTagTxt(p, Row.tags)
+      testUnsorted(p, pt, C.Tags, ShowDead, fmtRows)("v0.9,v1.x,v3.x")
+      testUnsorted(p, pt, C.Tags, HideDead, fmtRows)("v1.x")
+    }
+
     def testReqCodeTree(): Unit = {
       val src =
         """
@@ -897,6 +940,9 @@ object LogicTest extends TestSuite {
   }
 
   // ===================================================================================================================
+
+  // NOTE: The Tags column is *not* expanded. Only custom tag columns are.
+
   override def tests = TestSuite {
     'prop - gen.mustSatisfyE(_.all)//(implicitly[Settings].setSeed(0).setDebug.setSampleSize(20))
     'unit {
@@ -913,11 +959,13 @@ object LogicTest extends TestSuite {
           'sorted1  - testTags_sorted1()
           'sorted2  - testTags_sorted2()
           'unsorted - testTags_unsorted()
+          'inText   - testTags_inText()
         }
         'custTag {
           'sorted1  - testCustomTagField_sorted1()
           'sorted2  - testCustomTagField_sorted2()
           'unsorted - testCustomTagField_unsorted()
+          'inText   - testCustomTagField_inText()
         }
       }
       'applicability {
@@ -926,13 +974,14 @@ object LogicTest extends TestSuite {
         'custImp - testApplicabilityOfCustomImpFields()
       }
       'filterDead {
-        'rows     - testFilterDeadRows()
-        'impSrc   - testFilterDeadImpsSrc()
-        'impTgt   - testFilterDeadImpsTgt()
-        'impCust  - testFilterDeadCustomImps()
-        'tags     - testFilterDeadTags()
-        'tagsCust - testFilterDeadTagsInCustomTagField()
-        'tagField - testFilterDeadCustomTagField()
+        'rows       - testFilterDeadRows()
+        'impSrc     - testFilterDeadImpsSrc()
+        'impTgt     - testFilterDeadImpsTgt()
+        'impCust    - testFilterDeadCustomImps()
+        'tags       - testFilterDeadTags()
+        'tagsInText - testFilterDeadTagsInText()
+        'tagsCust   - testFilterDeadTagsInCustomTagField()
+        'tagField   - testFilterDeadCustomTagField()
       }
       'reqCodeTree - testReqCodeTree()
     }

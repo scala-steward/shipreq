@@ -18,12 +18,20 @@ private[reqtable] object Logic {
 
   private type TagFilter = EndoFn[Set[ApplicableTagId]]
 
-  def tagFilter(vs: ViewSettings, p: Project): TagFilter =
+  private def tagFilter(vs: ViewSettings, p: Project): TagFilter =
     vs.filterDead.filter
       .fold[TagFilter](identity) { f =>
         val bl = p.atags.filter(t => !f(t.live)).map(_.id)
         (_: Set[ApplicableTagId]) -- bl
       }
+
+  private type TagLookup = ReqId => Set[ApplicableTagId]
+
+  private def tagLookup(p: Project): TagLookup = {
+    val reqTags    = p.reqFieldData.data.tags
+    val tagsInText = p.tagsInText
+    id => reqTags(id) | tagsInText(id)
+  }
 
   // ===================================================================================================================
   // Expansion
@@ -96,11 +104,15 @@ private[reqtable] object Logic {
     customFieldExpander[CustomField.Implication.Id, Pubid](vs, ap, valueFn)
   }
 
-  private def tagColValueExpander(vs: ViewSettings, p: Project, ap: Applicability, tagColDist: TagColumnDistribution.TagIds, tagFilter: TagFilter): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] = {
-    val reqTags = p.reqFieldData.data.tags
+  private def tagColValueExpander(vs        : ViewSettings,
+                                  p         : Project,
+                                  ap        : Applicability,
+                                  tagColDist: TagColumnDistribution.TagIds,
+                                  tagLookup : TagLookup,
+                                  tagFilter : TagFilter): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] = {
     customFieldExpander[CustomField.Tag.Id, ApplicableTagId](vs, ap, c => {
       val legal = mustResolve(tagColDist inColumn c)(UnivEq.emptySet)
-      id => tagFilter(reqTags(id) & legal)
+      id => tagFilter(tagLookup(id) & legal)
     })
   }
 
@@ -159,14 +171,21 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // MultiValues
 
-  private def tagValuesFn(vs: ViewSettings, p: Project, tagColDist: TagColumnDistribution.TagIds, tagFilter: TagFilter): ReqId => Vector[ApplicableTagId] = {
-    val reqTags = p.reqFieldData.data.tags
+  private def tagValuesFn(vs        : ViewSettings,
+                          p         : Project,
+                          tagColDist: TagColumnDistribution.TagIds,
+                          tagLookup : TagLookup,
+                          tagFilter : TagFilter): ReqId => Vector[ApplicableTagId] = {
     val tagsUsedInColumns = mustResolve(tagColDist.usedInColumns)(UnivEq.emptySet)
-    id => tagFilter(reqTags(id) -- tagsUsedInColumns).toVector
+    id => tagFilter(tagLookup(id) -- tagsUsedInColumns).toVector
   }
 
-  private def multiValuesFn(vs: ViewSettings, p: Project, tagColDist: TagColumnDistribution.TagIds, tagFilter: TagFilter): ReqId => MultiValues = {
-    val tagValuesFn = this.tagValuesFn(vs, p, tagColDist, tagFilter)
+  private def multiValuesFn(vs        : ViewSettings,
+                            p         : Project,
+                            tagColDist: TagColumnDistribution.TagIds,
+                            tagLookup : TagLookup,
+                            tagFilter : TagFilter): ReqId => MultiValues = {
+    val tagValuesFn = this.tagValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
     id => {
       val tags = tagValuesFn(id)
       MultiValues(tags)
@@ -183,9 +202,12 @@ private[reqtable] object Logic {
    */
   def gather(vs: ViewSettings, p: Project): Stream[Row] = {
 
-    // NOTE:
+    // NOTES:
+    //
     // * Column.ImplicationSrc isn't transitive; custom implication columns are.
     //   There can potentially be overlap but culling this could be misleading.
+    //
+    // * The Tags column is not expanded. Only custom tag columns are.
 
     // The Tags column:
     // 1. never displays tags allocated to live tag-columns.
@@ -200,18 +222,19 @@ private[reqtable] object Logic {
       }
 
     val filterDead    = vs.filterDead.filterFn
+    val tagLookup     = this.tagLookup(p)
     val tagFilter     = this.tagFilter(vs, p)
     val applicability = Applicability(p)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p, applicability)
-    val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagFilter)
+    val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup, tagFilter)
 
     val pReqs         = p.reqs.data
     val pReqCodes     = p.reqCodes.data.activeReqCodesByTarget
     val pImplications = p.reqFieldData.data.implications
-    val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagFilter)
+    val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
 
     def pubid(reqId: ReqId): Option[Pubid] =
       pReqs.reqM(reqId).fold[Option[Pubid]](failedMust(None), req =>

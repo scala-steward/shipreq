@@ -1,9 +1,10 @@
 package shipreq.webapp.base.data
 
+import japgolly.nyaya.util.Multimap
 import monocle.macros.{GenLens, Lenses}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Monoidish, Must}
+import shipreq.base.util.{UnivEq, Monoidish, Must}
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.{TransitiveClosure, ShowSize}
 import DataImplicits._
@@ -127,6 +128,39 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
 
   def hashRefLookup(key: String): Option[HashRefTarget] =
     hashRefLookupM.get(key.toLowerCase)
+
+  /**
+   * Searches all (live) text fields in each reqs for TagRefs.
+   */
+  lazy val tagsInText: Multimap[ReqId, Set, ApplicableTagId] = {
+    type Tags = Set[ApplicableTagId]
+    val empty: Tags = UnivEq.emptySet
+
+    def searchText[T <: Atom.TagRef](text: Vector[T#Atom]): EndoFn[Tags] =
+      text.foldLeft(_)((q, a) => a match {
+        case t: Atom.TagRef # TagRef => q + t.value
+        case _                       => q
+      })
+
+    val textData   = reqFieldData.data.text
+    val textFields = customTextFields.filter(_.live :: Live).map(_.id)
+
+    def searchCustomTextFields(id: ReqId): EndoFn[Tags] =
+      textFields.foldLeft(_)((q, f) =>
+        textData.get(f).flatMap(_ get id) match {
+          case None      => q
+          case Some(txt) => searchText(txt.whole)(q)
+        }
+      )
+
+    def findAll(req: Req): Tags =
+      (req match {
+        case r: GenericReq => searchCustomTextFields(r.id) compose searchText(r.title)
+      })(empty)
+
+    val m = reqs.data.reqs.mapValues(findAll)
+    Multimap(m)
+  }
 
   // Finally, ensure validity
   import japgolly.nyaya._

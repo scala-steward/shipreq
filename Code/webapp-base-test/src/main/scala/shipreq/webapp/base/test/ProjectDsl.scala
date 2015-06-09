@@ -7,7 +7,7 @@ import scalaz.syntax.semigroup._
 import shipreq.base.util._, MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.text.{Atom, Text}
 import ReqFieldData.{Implications, ImplicationsU}
 
 object ProjectDslInternals {
@@ -58,8 +58,9 @@ object ProjectDslInternals {
     tags           = p.reqFieldData.data.tags,
     imps           = p.reqFieldData.data.implications.srcToTgt)
 
-  type CFTextId    = CustomField.Text.Id
-  type CFTextValue = Text.CustomTextField.NonEmptyText
+  type CFTextId     = CustomField.Text.Id
+  type CFTextValue  = Text.CustomTextField.NonEmptyText
+  type CFTextValueO = Text.CustomTextField.OptionalText
 
   val emptyReqCodeData = ReqCode.Data(None, UnivEq.emptySet, UnivEq.emptySetMultimap)
 
@@ -91,6 +92,12 @@ object ProjectDslInternals {
     def !!(p: Project): Project =
       shuffle.!(p)
   }
+
+  class MrTagRef[T <: Atom.TagRef](val t: T) extends AnyVal {
+    def apply(ids: Seq[ApplicableTagId])                  : t.OptionalText = ids.toVector map t.TagRef
+    def apply(id1: ApplicableTagId, ids: ApplicableTagId*): t.NonEmptyText = apply(NonEmptyVector(id1, ids.toVector))
+    def apply(ids: NonEmptyVector[ApplicableTagId])       : t.NonEmptyText = ids map t.TagRef
+  }
 }
 
 // =====================================================================================================================
@@ -110,12 +117,13 @@ object ProjectDsl {
                   impTgts: Set[ReqId]                        = Set.empty,
                   cftexts: Map[CFTextId, CFTextValue]        = Map.empty) extends ToState {
 
-    def code   (rcs: ReqCode.Value*)         = copy(codes   = this.codes   ++ rcs)
-    def tag    (ids: ApplicableTagId*)       = copy(tags    = this.tags    ++ ids)
-    def impSrc (ids: ReqId*)                 = copy(impSrcs = this.impSrcs ++ ids)
-    def impTgt (ids: ReqId*)                 = copy(impTgts = this.impTgts ++ ids)
-    def cftext (k: CFTextId, v: CFTextValue) = copy(cftexts = this.cftexts.updated(k,v))
-    def cftextS(k: CFTextId, s: String)      = if (s.isEmpty) this else cftext(k, s)
+    def code   (rcs: ReqCode.Value*)         : GReq = copy(codes   = this.codes   ++ rcs)
+    def tag    (ids: ApplicableTagId*)       : GReq = copy(tags    = this.tags    ++ ids)
+    def impSrc (ids: ReqId*)                 : GReq = copy(impSrcs = this.impSrcs ++ ids)
+    def impTgt (ids: ReqId*)                 : GReq = copy(impTgts = this.impTgts ++ ids)
+    def cftext (k: CFTextId, v: CFTextValue) : GReq = copy(cftexts = this.cftexts.updated(k,v))
+    def cftextO(k: CFTextId, v: CFTextValueO): GReq = NonEmptyVector.maybe(v, this)(cftext(k, _))
+    def cftextS(k: CFTextId, s: String)      : GReq = if (s.isEmpty) this else cftext(k, s)
 
     def times(n: Int): Composite =
       Stream.fill(n - 1)(this).foldLeft(this: Composite)(_ + _)
@@ -182,4 +190,7 @@ object ProjectDsl {
 
   implicit def projectDsl_parseGRD(i: String): Text.GenericReqTitle.OptionalText =
     if (i.isEmpty) Vector.empty else Vector1(Text.GenericReqTitle.Literal(i))
+
+  def reqTitleTagRefs   = new MrTagRef(Text.GenericReqTitle)
+  def customTextTagRefs = new MrTagRef(Text.CustomTextField)
 }
