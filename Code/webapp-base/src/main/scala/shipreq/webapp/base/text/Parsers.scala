@@ -7,6 +7,7 @@ import shapeless._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
+import shipreq.webapp.base.util.ParsingUtil
 
 object Parsers {
   def preprocess(s: String, multiLine: Boolean): Array[Char] = {
@@ -31,69 +32,20 @@ object Parsers {
 
   val webAddressChar = CharPredicate.Visible -- ('{' :: '}' :: '[' :: ']' :: '<' :: '>' :: Nil)
 
-  type RuleAB[-A, +B] = Rule[A :: HNil, B :: HNil]
-
-  abstract class Base extends Parser {
+  abstract class Base extends ParsingUtil {
     type T <: Atom.Base
     val t: T
     val project: Project
 
-    /** Beginning Of Input */
-    def BOI = rule(test(cursor == 0))
-
     /** Optional whitespace */
-    def OWS = rule(zeroOrMore(' '))
-
-    /** newline */
-    def NL = rule('\n' | ('\r' ~ '\n'.?))
+    def OWS: Rule0 =
+      rule(zeroOrMore(' '))
 
     /** Optional whitespace and/or newlines */
-    def OWSNL = rule(anyOf(" \r\n").*)
-
-    /** End Of Line (consumes NL) */
-    def EOL = rule(NL | EOI)
+    def OWSNL: Rule0 =
+      rule(anyOf(" \r\n").*)
 
     val untilEOL = () => rule(OWS ~ EOL)
-
-    def trim = (_: String).trim
-
-    /** int ≥ 1 */
-    def int1n = rule( capture(CharPredicate.Digit19 ~ CharPredicate.Digit.*) ~> (_.toInt) )
-
-    def popOptional[A]: RuleAB[Option[A], A] =
-      rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
-
-    def popPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] =
-      rule(run((a: A) => test(pf isDefinedAt a) ~ push(pf(a))))
-      // rule(run{(a: A) => val o = pf.lift(a); test(o.isDefined) ~ push(o.get)})
-
-    def popSeqToNEV[A]: RuleAB[Seq[A], NonEmptyVector[A]] =
-      rule(run((v: Seq[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail.toVector))))
-
-    def popNEV[A]: RuleAB[Vector[A], NonEmptyVector[A]] =
-      rule(run((v: Vector[A]) => test(v.nonEmpty) ~ push(NonEmptyVector(v.head, v.tail))))
-
-    def grammarStr[G](g: G)(f: G => Grammar.FirstChar, w: G => Grammar.CharWhitelist, l: G => Grammar.Length): Rule0 =
-      rule( f(g).charPredicate ~ (l(g).minus1 times w(g).charPredicate) )
-
-    def nonGreedyCapture(stopAt: () => Rule0): Rule1[String] =
-      rule(capture(oneOrMore(!stopAt() ~ ANY)) ~ stopAt())
-
-    def surround(s: Grammar.Surrounds): Rule1[String] =
-      surround(s.parsing)
-
-    def surround(s: Grammar.Surround): Rule1[String] = {
-      val end = () => rule(s.suffix)
-      rule(s.prefix ~ nonGreedyCapture(end) ~> trim)
-    }
-
-    val mkReqTypeMnemonic =
-      G.reqTypeMnemonic.parsePost andThen ReqType.Mnemonic.apply
-
-    def reqTypeMnemonic = rule(
-      capture(G.reqTypeMnemonic.length.total times G.reqTypeMnemonic.parseChar) ~> mkReqTypeMnemonic)
-
-    def reqTypePos = rule( int1n ~> ReqTypePos )
 
     val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[ReqId] =
       (m, n) =>
@@ -101,10 +53,8 @@ object Parsers {
           .map(t => PubidT(t.reqTypeId, n))
           .flatMap(project.reqs.data.pubids.apply)
 
-    def hashRef = rule(
-      G.hashRefKey.prefix ~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.allChars, _.length))
-      ~> (project.hashRefLookup _) ~ popOptional
-    )
+    def hashRef: Rule1[HashRefTarget] =
+      rule(hashRefStr ~> (project.hashRefLookup _) ~ popOptional)
   }
 
   // ===================================================================================================================

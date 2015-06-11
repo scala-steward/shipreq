@@ -29,6 +29,12 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
         case _: IndexOutOfBoundsException => None
       }
 
+  def init: Vector[A] =
+    if (tail.isEmpty)
+      Vector.empty
+    else
+      head +: tail.init
+
   def map[B](f: A => B): NonEmptyVector[B] =
     NonEmptyVector(f(head), tail map f)
 
@@ -81,6 +87,10 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
 
   def reduce[B >: A](f: (B, B) => B): B =
     reduceMapLeft1[B](a => a)(f)
+
+  // Reduce bullshit red in IntelliJ
+  @inline def traverseD[L, B](f: A => L \/ B): L \/ NonEmptyVector[B] =
+    NonEmptyVector.traverse1.traverseU(this)(f)
 
   def intercalate[B >: A](b: B): NonEmptyVector[B] =
     intercalateF(b)(a => a)
@@ -182,6 +192,21 @@ object NonEmptyVector extends NonEmptyVectorImplicits0 {
     new Semigroup[NonEmptyVector[A]] {
       override def append(a: NonEmptyVector[A], b: => NonEmptyVector[A]): NonEmptyVector[A] = a ++ b
     }
+
+  implicit val traverse1: Traverse1[NonEmptyVector] = new Traverse1[NonEmptyVector] {
+    override def traverse1Impl[G[_], A, B](fa: NonEmptyVector[A])(f: A => G[B])(implicit ap: Apply[G]): G[NonEmptyVector[B]] = {
+      val gh = f(fa.head)
+      if (fa.tail.isEmpty)
+        ap.map(gh)(one)
+      else {
+        val gz = ap.map(gh)(_ => Vector.empty[B])
+        val gt = fa.tail.foldLeft(gz)((q, a) => ap.apply2(q, f(a))(_ :+ _))
+        ap.apply2(gh, gt)(new NonEmptyVector(_, _))
+      }
+    }
+    override def foldMapRight1[A, B](fa: NonEmptyVector[A])(z: A => B)(f: (A, => B) => B): B =
+      fa.init.reverseIterator.foldLeft(z(fa.last))((b, a) => f(a, b))
+  }
 
   object Sole {
     def unapply[A](v: NonEmptyVector[A]) = new Unapply(v)

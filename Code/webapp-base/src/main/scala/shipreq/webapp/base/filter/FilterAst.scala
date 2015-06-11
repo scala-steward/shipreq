@@ -1,0 +1,117 @@
+package shipreq.webapp.base.filter
+
+import java.util.regex.{Pattern, PatternSyntaxException}
+import scalaz.{-\/, \/-, \/}
+import shipreq.base.util.NonEmptyVector
+import shipreq.webapp.base.data
+
+/**
+ * A valid filter, ready to be applied to data.
+ */
+sealed trait FilterAst
+
+object FilterAst {
+
+  type Reqs = Set[data.ReqId] // If empty, then it's instant fail for the filter.
+
+  sealed abstract class Attr(val name: String, val additionalNames: String*)
+  object Attr {
+    case object AnyIssue extends Attr("issue", "issues")
+    case object AnyTag   extends Attr("tag", "tags")
+
+    val values: NonEmptyVector[Attr] =
+      NonEmptyVector(AnyTag, AnyIssue)
+
+    def availableText: String =
+      values.whole.map(_.name).mkString(", ")
+
+    val names: Map[String, Attr] =
+      values.foldLeft(Map.empty[String, Attr])((m, a) =>
+        a.additionalNames.foldLeft(m.updated(a.name, a))(_.updated(_, a)))
+
+    def apply(n: String): Option[Attr] =
+      names.get(n.toLowerCase)
+  }
+
+  case class Presence      (attr: Attr)                                       extends FilterAst
+  case class Lack          (attr: Attr)                                       extends FilterAst
+  case class ReqType       (id: data.ReqTypeId)                               extends FilterAst
+  case class Tag           (id: data.ApplicableTagId)                         extends FilterAst
+  case class CustomIssue   (id: data.CustomIssueTypeId)                       extends FilterAst
+  case class Text          (substring: String)                                extends FilterAst
+  case class TextPattern   (regex: Pattern)                                   extends FilterAst
+  case class ImpliesAnyOf  (reqs: Reqs)                                       extends FilterAst
+  case class ImpliedByAnyOf(reqs: Reqs)                                       extends FilterAst
+  case class AllOf         (head: FilterAst, tail: NonEmptyVector[FilterAst]) extends FilterAst
+  case class AnyOf         (head: FilterAst, tail: NonEmptyVector[FilterAst]) extends FilterAst
+  case class Not           (expr: FilterAst)                                  extends FilterAst
+
+  def apply(p: data.Project, filterSpec: FilterSpec): String \/ FilterAst = {
+    import shipreq.webapp.base.filter.{FilterSpec => S}
+    type R = String \/ FilterAst
+    @inline implicit def autoR(a: FilterAst): R = \/-(a)
+    @inline def error(msg: String) = -\/(msg)
+
+    val reqTypesByMnemonic = p.reqTypesByMnemonic
+
+    def byAttr(f: Attr => FilterAst, n: String): R =
+      Attr(n) match {
+        case Some(a) => f(a)
+        case None    => error(s"Unknown attribute: '$n'. Known: ${Attr.availableText}.") // English
+      }
+
+    def lookupReqType(mn: data.ReqType.Mnemonic): String \/ data.ReqType =
+      reqTypesByMnemonic.get(mn) match {
+        case Some(rt) => \/-(rt)
+        case None     => error(s"Unknown type: '${mn.value}'") // English
+      }
+
+    def lookupReqsByType(mn: data.ReqType.Mnemonic): String \/ Vector[data.ReqId] =
+      lookupReqType(mn).map(rt => p.reqs.data.pubids.value(rt.reqTypeId))
+
+    val lookupReqs: S.ReqsSpec => String \/ Reqs = {
+      case S.ReqsSpec.SomeOfType(mn, nums) =>
+        lookupReqsByType(mn).map(vec =>
+          nums.foldLeft[Reqs](Set.empty)((q, num) =>
+            if (num > vec.length) q else q + vec(num - 1)))
+      case S.ReqsSpec.WholeType(mn) =>
+        lookupReqsByType(mn).map(_.toSet)
+    }
+
+    def byReqs(f: Reqs => FilterAst, reqs: S.Reqs): R =
+      reqs.traverseD(lookupReqs).map(sets =>
+        f(sets.reduce(_ ++ _)))
+
+    def composite(f: (FilterAst, NonEmptyVector[FilterAst]) => FilterAst, specs: NonEmptyVector[FilterSpec]): R =
+      specs.traverseD(translate).map(asts =>
+        NonEmptyVector.maybe(asts.tail, asts.head)(f(asts.head, _)))
+
+    def translate(spec: FilterSpec): R =
+      spec match {
+        case S.SimpleText(text)    => Text(text)
+        case S.QuotedText(text, _) => Text(text)
+        case S.Presence(attr)      => byAttr(Presence, attr)
+        case S.Lack(attr)          => byAttr(Lack, attr)
+        case S.ReqType(mn)         => lookupReqType(mn).map(rt => ReqType(rt.reqTypeId))
+        case S.Implies(reqs)       => byReqs(ImpliesAnyOf, reqs)
+        case S.ImpliedBy(reqs)     => byReqs(ImpliedByAnyOf, reqs)
+        case S.AllOf(clause)       => composite(AllOf, clause)
+        case S.AnyOf(clause)       => composite(AnyOf, clause)
+        case S.Not(expr)           => translate(expr) map Not
+
+        case S.Regex(regex) =>
+          try TextPattern(Pattern compile regex) catch {
+            case e: PatternSyntaxException => error(e.getDescription)
+          }
+
+        case S.HashRef(text) =>
+          p.hashRefLookup(text) match {
+            case Some(-\/(t)) => Tag(t.id)
+            case Some(\/-(i)) => CustomIssue(i.id)
+            case None         => error(s"Unknown tag or issue: '$text'") // English
+          }
+      }
+
+    translate(filterSpec)
+  }
+}
