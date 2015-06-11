@@ -328,7 +328,7 @@ private[reqtable] object Logic {
    * Performs expansion.
    * Does not perform any sorting.
    */
-  def gather(vs: ViewSettings, p: Project): Stream[Row] = {
+  def gather(vs: ViewSettings, p: Project, pt: PlainText.ForProject, ts: TextSearch): Stream[Row] = {
 
     // NOTES:
     //
@@ -574,10 +574,10 @@ private[reqtable] object Logic {
   }
 
   // ===================================================================================================================
-  def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject): Stream[Row] = {
+  def rowsForTable(vs: ViewSettings, p: Project, pt: PlainText.ForProject, ts: TextSearch): Stream[Row] = {
     def maybe(cond: Boolean, f: EndoFn[Stream[Row]]): EndoFn[Stream[Row]] = if (cond) f else identity
 
-    gather(vs, p) |>
+    gather(vs, p, pt, ts) |>
       sort(vs, p, pt) |>
       consolidateAdjacentDups |>
       maybe(vs.viewReqCodesAsTree, addReqCodeTreeToRows)
