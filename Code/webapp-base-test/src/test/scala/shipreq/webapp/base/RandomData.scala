@@ -645,7 +645,14 @@ object RandomData {
       Gen oneofGL gs
     }
 
-    def reqCodeGroupTitleAtom = reqTitle(ReqCodeGroupTitle) _
+    def reqCodeGroupTitleAtom(r: Option[Gen[ReqId]],
+                              c: Option[Gen[ReqCodeId]],
+                              i: Option[Gen[CustomIssueTypeId]]): Gen[ReqCodeGroupTitle.Atom] = {
+      @inline implicit def t: ReqCodeGroupTitle.type = ReqCodeGroupTitle
+      val x = singleLineGens(t)
+      val gs = (x append x) <++ reqRefs(r, c) <+ i.map(issue(_, r, c))
+      Gen oneofGL gs
+    }
 
     def genericReqTitleAtom   = reqTitle(GenericReqTitle) _
 
@@ -973,7 +980,7 @@ object RandomData {
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
       reqFieldData   ← revAndG(reqFieldData(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG, atagIds))
       reqs2          ← genmodL(Requirements.reqs)(updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text))(reqs1)
-      reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text)(reqCodes1.trie)
+      reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
       reqs           ← revAnd(reqs2)
       reqCodes       ← revAnd(ReqCodes(reqCodes2))
     } yield Project(issues, reqtypes, fields, tags, reqs, reqCodes, reqFieldData)

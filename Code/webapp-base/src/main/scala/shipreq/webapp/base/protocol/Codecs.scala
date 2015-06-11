@@ -528,7 +528,9 @@ object DataCodecs {
   // Specific text types
 
   implicit final val (reqCodeGroupDesc, _) = TC(Text.ReqCodeGroupTitle)((t, _) =>
-    TC.readReqTitle(t))
+    TC.readSingleLine(t) orElse
+    TC.readIssue     (t) orElse
+    TC.readReqRef    (t) )
 
   implicit final val (genericReqDesc, _) = TC(Text.GenericReqTitle)((t, _) =>
     TC.readReqTitle(t))

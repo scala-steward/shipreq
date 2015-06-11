@@ -35,7 +35,7 @@ object Text {
       parser(p)(text).nonEmptyText.run().toOption
   }
 
-  sealed trait ReqTitle extends Base with Atom.ReqTitle {
+  sealed trait ReqTitle extends Base with A.ReqTitle {
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(p: Project, i: ParserInput) extends P.ReqTitle[this.type](this, p, i) {
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(p)(_).inline))
@@ -53,43 +53,55 @@ object Text {
   object InlineIssueDesc extends Base
       with A.SingleLine
       with A.ReqRef {
-
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.ReqRef {
-
       val token = () => rule(reqRef | singleLine)
-
       import Grammar.issueDescSurround.{parsing => G}
       val inlineEnd = () => rule(OWS ~ G.suffix)
       def inline: Rule1[NonEmptyText] = rule(G.prefix ~ OWS ~ textUntil(token, inlineEnd) ~ popNEV)
     }
   }
 
-  object ReqCodeGroupTitle extends ReqTitle
-
-  /** Title of a [[shipreq.webapp.base.data.GenericReq]]. Not a generic req-title. */
-  object GenericReqTitle extends ReqTitle
+  object ReqCodeGroupTitle extends Base
+      with A.SingleLine
+      with A.Issue
+      with A.ReqRef {
+    override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
+    final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
+        with P.SingleLine
+        with P.Issue
+        with P.ReqRef {
+      def hashToken = rule(hashRef ~ issueRef)
+      val token = () => rule(hashToken | reqRef | singleLine)
+      override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project)(_).inline))
+    }
+  }
 
   object CustomTextField extends Base
       with A.MultiLine
       with A.Issue
       with A.ReqRef
       with A.TagRef {
-
     override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
     final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
         with P.MultiLine
         with P.Issue
         with P.ReqRef
         with P.TagRef {
-
       def hashToken = rule(hashRef ~ (tagRef | issueRef))
       override protected val additionalTokens = () => rule(hashToken | reqRef)
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project)(_).inline))
     }
   }
+
+  /**
+   * A "generic-req title", not a "generic req-title".
+   * Title of a [[shipreq.webapp.base.data.GenericReq]].
+   */
+  object GenericReqTitle extends ReqTitle
+
 
   // ===================================================================================================================
   // Utilities
