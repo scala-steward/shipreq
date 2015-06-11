@@ -132,30 +132,28 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   def hashRefLookup(key: String): Option[HashRefTarget] =
     hashRefLookupM.get(key.toLowerCase)
 
-  /**
-   * Searches all (live) text fields in each reqs for TagRefs.
-   */
-  lazy val tagsInText: Multimap[ReqId, Set, ApplicableTagId] = {
-    type Tags      = Set[ApplicableTagId]
+  lazy val tagsInTextR  : Multimap[ReqId,     Set,  ApplicableTagId] = Multimap(scanAllLiveTextR(Text.findTags(_),   Text.findTags))
+  lazy val issuesInTextR: Multimap[ReqId,     Vector, Atom.AnyIssue] = Multimap(scanAllLiveTextR(Text.findIssues(_), Text.findIssues))
+  lazy val issuesInTextG: Multimap[ReqCodeId, Vector, Atom.AnyIssue] = Multimap(scanAllLiveTextG(Text.findIssues(_)))
+
+  private def scanAllLiveTextR[R](f1: Text.GenericReqTitle.OptionalText => R,
+                                  f2: (Text.CustomTextField.OptionalText, R) => R): Map[ReqId, R] = {
     val textData   = reqFieldData.data.text
     val textFields = liveCustomTextFields.map(_.id)
 
-    def searchCustomTextFields(id: ReqId, into: Tags): Tags =
+    def searchCustomTextFields(id: ReqId, into: R): R =
       textFields.foldLeft(into)((q, f) =>
-        textData.get(f).flatMap(_ get id) match {
-          case None      => q
-          case Some(txt) => Text.findTags(txt.whole, q)
-        }
-      )
+        textData.get(f).flatMap(_ get id).fold(q)(txt => f2(txt.whole, q)))
 
-    def findAll(req: Req): Tags =
-      req match {
-        case r: GenericReq => searchCustomTextFields(r.id, Text.findTags(r.title))
-      }
-
-    val m = reqs.data.reqs.mapValues(findAll)
-    Multimap(m)
+    reqs.data.reqs.mapValues {
+      case r: GenericReq => searchCustomTextFields(r.id, f1(r.title))
+    }
   }
+
+  private def scanAllLiveTextG[R](f: Text.ReqCodeGroupTitle.OptionalText => R): Map[ReqCodeId, R] =
+    reqCodes.data.activeGroups
+      .foldLeft(Map.empty[ReqCodeId, R])((m, g) =>
+        m.updated(g.id, f(g.group.title)))
 
   // Finally, ensure validity
   import japgolly.nyaya._

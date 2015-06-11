@@ -37,7 +37,8 @@ object Atom {
     }
   }
 
-  type AnyAtom = Base#Atom
+  type AnyAtom  = Base#Atom
+  type AnyIssue = Issue#Issue
 
   // ===================================================================================================================
 

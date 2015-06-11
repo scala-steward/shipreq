@@ -2,7 +2,7 @@ package shipreq.webapp.base.text
 
 import scala.collection.immutable.IntMap
 import scalaz.Need
-import shipreq.base.util.{IMap, NonEmptyVector}
+import shipreq.base.util.{FilterFn, FilterFn2, IMap, NonEmptyVector}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import TextSearch.{apply => _, _}
@@ -11,6 +11,8 @@ object TextSearch {
 
   def apply(project: Project,  plainText: PlainText.ForProject): TextSearch =
     new TextSearch(project, plainText)
+
+  // ===================================================================================================================
 
   type Normaliser = String => Normalised
 
@@ -152,56 +154,49 @@ object TextSearch {
     }
   }
 
-  case class IndexEntry(req: Req, title: Normalised, textFields: Need[Normalised])
-  val emptyIndexMap = IMap.empty[ReqId, IndexEntry](_.req.id)
+  // ===================================================================================================================
 
-  type SearchFn = BoyerMooreHorspool => IndexEntry => Boolean
-  val searchAll   : SearchFn = a => e => a.search(e.title) || a.search(e.textFields.value)
-  val searchTitles: SearchFn = a => e => a.search(e.title)
-}
+  @inline private implicit def autoNeedValue[A](n: Need[A]): A = n.value
 
-final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
+  type IndexEntryFilter = FilterFn2[IndexEntryR, IndexEntryG]
+  @inline private def IEF(a: IndexEntryR => Boolean, b: IndexEntryG => Boolean): IndexEntryFilter = FilterFn2(a, b)
+  import FilterFn.`n/a`
 
-  private def index(norm: Normaliser): Index = {
-    val indexValues: Stream[IndexEntry] = {
-      val each: Req => IndexEntry = r => {
-        val title = norm(plainText.reqTitle(r))
-        val textFields = Need(norm(
-          project.liveCustomTextFields.foldLeft("")((q, f) =>
-            plainText.customTextField(f.id)(r.id).fold(q)(q + "\n" + _))
-        ))
-        IndexEntry(r, title, textFields)
-      }
-      project.reqs.data.reqs.vstream(each)
-    }
+  private type SearchFn = BoyerMooreHorspool => IndexEntryFilter
 
-    val index = emptyIndexMap ++ indexValues
-    new Index(norm, index, None, searchAll)
-  }
+  private val searchAll: SearchFn =
+    a => FilterFn2(e => a.search(e.title) || a.search(e.textFields), _.title |> a.search)
 
-  final class Index private[TextSearch] (norm    : Normaliser,
-                                         index   : IMap[ReqId, IndexEntry],
-                                         filter  : Option[IndexEntry => Boolean],
-                                         searchFn: SearchFn) {
+  private val searchTitles: SearchFn =
+    a => FilterFn2(_.title |> a.search, _.title |> a.search)
 
-    private def newFilter(f: IndexEntry => Boolean): IndexEntry => Boolean =
+  // Indexes
+
+  case class IndexEntryG(group: ReqCodeGroup.AndId, title: Normalised)
+  case class IndexEntryR(req: Req, title: Normalised, textFields: Need[Normalised])
+
+  final class Index private[TextSearch](norm    : Normaliser,
+                                        indexR  : IMap[ReqId,     IndexEntryR],
+                                        indexG  : IMap[ReqCodeId, IndexEntryG],
+                                        filter  : Option[IndexEntryFilter],
+                                        searchFn: SearchFn) {
+
+    private def newFilter(f: IndexEntryFilter): IndexEntryFilter =
       filter.fold(f)(_ && f)
 
-    private def withNewFilter(f: IndexEntry => Boolean): Index =
-      new Index(norm, index, Some(newFilter(f)), searchFn)
+    private def withNewFilter(f: IndexEntryFilter): Index =
+      new Index(norm, indexR, indexG, Some(newFilter(f)), searchFn)
 
-    def filter(f: Req => Boolean): Index =
-      withNewFilter(ie => f(ie.req))
+    def filterReq(f: Req => Boolean): Index =
+      withNewFilter(IEF(_.req |> f, `n/a`))
 
-    def filterByIds(ids: Set[ReqId]): Index =
-      filter(ids contains _.id)
+    def filterReqsIds(ids: Set[ReqId]): Index =
+      filterReq(ids contains _.id)
 
-    def searchOnlyTitles: Index =
-      new Index(norm, index, filter, searchTitles)
+    def titlesOnly: Index =
+      new Index(norm, indexR, indexG, filter, searchTitles)
 
-    private def all = index.values.toStream
-
-    private def search[A](substr: String, matchEverything: => A)(s: (IndexEntry => Boolean) => A): A =
+    private def search[A](substr: String, matchEverything: => A)(s: IndexEntryFilter => A): A =
       if (substr.isEmpty)
         matchEverything
       else {
@@ -210,13 +205,49 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
         s(f)
       }
 
-    def searchFilter(substr: String): ReqId => Boolean =
-      search[ReqId => Boolean](substr, _ => true)(f => index.get(_) exists f)
+    def searchFilter(substr: String): FilterFn2[ReqId, ReqCodeId] =
+      search(substr, FilterFn2[ReqId, ReqCodeId](`n/a`, `n/a`))(f =>
+        FilterFn2[ReqId, ReqCodeId](
+          indexR.get(_) exists f.a,
+          indexG.get(_) exists f.b))
 
     def searchAll(substr: String): Stream[Req] = {
       // whitespace.split(substr).filter(_.nonEmpty)
-      search(substr, all)(all.filter).map(_.req)
+      def all = indexR.values.toStream
+      search(substr, all)(all filter _.a).map(_.req)
     }
+  }
+
+}
+
+final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
+
+  private def index(norm: Normaliser): Index = {
+
+    val indexValuesR: Stream[IndexEntryR] = {
+      def each(r: Req): IndexEntryR = {
+        val title      = norm(plainText reqTitle r)
+        val textFields = Need(norm(
+          project.liveCustomTextFields.foldLeft("")((q, f) =>
+            plainText.customTextField(f.id)(r.id).fold(q)(q + "\n" + _))
+        ))
+        IndexEntryR(r, title, textFields)
+      }
+      project.reqs.data.reqs vstream each
+    }
+
+    val indexValuesG: Stream[IndexEntryG] = {
+      def each(g: ReqCodeGroup.AndId): IndexEntryG = {
+        val title = norm(plainText reqCodeGroupTitle g)
+        IndexEntryG(g, title)
+      }
+      project.reqCodes.data.activeGroups map each
+    }
+
+    val indexR = IMap.empty[ReqId,     IndexEntryR](_.req.id)   ++ indexValuesR
+    val indexG = IMap.empty[ReqCodeId, IndexEntryG](_.group.id) ++ indexValuesG
+
+    new Index(norm, indexR, indexG, None, searchAll)
   }
 
   val ignoreCaseSingleSpaces = index(Normaliser.ignoreCaseSingleSpaces)

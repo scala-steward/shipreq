@@ -98,8 +98,8 @@ object AutoComplete {
 
     val searchTitles =
       textSearch.ignoreCaseNoWhitespace
-        .filterByIds(legal.map(_.req.id).toSet)
-        .searchOnlyTitles
+        .filterReqsIds(legal.map(_.req.id).toSet)
+        .titlesOnly
 
     val searchFn: TC.Query[ReqItem] = { term =>
       val titles = searchTitles.searchAll(term).take(10).map(_.id).toSet

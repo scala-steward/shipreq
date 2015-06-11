@@ -160,6 +160,12 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   def cataA[A](z: A)(f: (A, Value, ActiveData) => A): A =
     trie.cataV(z)((a, v, d) => d.active.fold(a)(f(a, v, _)))
 
+  lazy val activeGroups: Stream[ReqCodeGroup.AndId] =
+    cataA(Stream.empty[ReqCodeGroup.AndId])((q, c, d) => d.target match {
+      case _: ReqId        => q
+      case g: ReqCodeGroup => (g and d.id) +: q
+    })
+
   lazy val activeReqCodesByTarget: Multimap[Target, Set, Value] =
     cataA(UnivEq.emptySetMultimap[Target, Value])((q, c, d) =>
       q.add(d.target, c))

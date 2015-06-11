@@ -1,7 +1,5 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import shipreq.webapp.base.filter.FilterAst
-
 import scala.annotation.tailrec
 import scala.collection.GenTraversable
 import scala.collection.generic.CanBuildFrom
@@ -13,8 +11,10 @@ import scalaz.syntax.traverse1._
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.text.Atom.AnyIssue
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.base.util.ReqCodeTreeItem
+import shipreq.webapp.base.util.{TransitiveClosure, ReqCodeTreeItem}
 import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
 import UnivEq.{mutableHashMapMemo => memo}
@@ -34,9 +34,14 @@ private[reqtable] object Logic {
 
   private def tagLookup(p: Project): TagLookup = {
     val reqTags    = p.reqFieldData.data.tags
-    val tagsInText = p.tagsInText
+    val tagsInText = p.tagsInTextR
     memo(id => reqTags(id) | tagsInText(id))
   }
+
+  private case class IssueLookup(r: ReqId => Vector[AnyIssue], g: ReqCodeId => Vector[AnyIssue])
+
+  private def issueLookup(p: Project): IssueLookup =
+    IssueLookup(p.issuesInTextR.apply, p.issuesInTextG.apply)
 
   // ===================================================================================================================
   // Expansion
@@ -200,7 +205,6 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-
   private def filterOrderFn(max: Int)(eval: FilterAst => Int): EndoFn[NonEmptyVector[FilterAst]] = {
     // Oh the simplicity of single-threaded guarantees
     val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[FilterAst])
@@ -213,216 +217,108 @@ private[reqtable] object Logic {
     }
   }
 
-/*
-  /**
-   * @return None means filter everything out. Function const false. Fail-early to an empty set.
-   */
-  def filterReqs(filterAst: FilterAst, p: Project, tagLookup: TagLookup, pt: PlainText.ForProject, ts: TextSearch): Option[Req => Boolean] = {
-    import FilterAst._, Attr.{AnyIssue, AnyTag}
-    type F = Req => Boolean
-    type R = Option[F]
-    @inline def fn(f: F) = Some(f)
-
+  val filterFastestFirst = {
+    import FilterAst._
     @tailrec def evalSpeed(a: FilterAst): Int =
       a match {
         case _: Presence
            | _: Lack
            | _: ReqType
            | _: Tag
-           | _: CustomIssue
            | _: ImpliesAnyOf
            | _: ImpliedByAnyOf => 0
-        case _: AllOf          => 1
-        case _: AnyOf          => 2
+        case _: CustomIssue    => 2
+        case _: AllOf          => 2
+        case _: AnyOf          => 1
         case _: Text           => 2
         case _: TextPattern    => 3
         case Not(e)            => evalSpeed(e)
       }
-    val orderFastestFirst = filterOrderFn(3)(evalSpeed)
-
-    def interpretN(asts: NonEmptyVector[FilterAst], f: (F, F) => F): R =
-      orderFastestFirst(asts)
-        .traverse(interpret)
-        .map(_ reduce f)
-
-    // issues
-    // implication
-    def interpret(subj: FilterAst): R = subj match {
-      case ReqType(rt)          => fn(_.reqTypeId ≟ rt)
-      case Tag(tag)             => fn(r => tagLookup(r.id).contains(tag))
-      case Presence(AnyTag)     => fn(r => tagLookup(r.id).nonEmpty)
-      case Presence(AnyIssue)   => ???
-      case CustomIssue(it)      => ???
-      case AllOf(h, t)          => interpretN(h +: t, _ && _)
-      case AnyOf(h, t)          => interpretN(h +: t, _ || _)
-      case Not(Not(expr))       => interpret(expr)
-      case Not(expr)            => interpret(expr).map(f => !f(_))
-      case Lack(a)              => interpret(Not(Presence(a)))
-      case ImpliesAnyOf(reqs)   => if (reqs.isEmpty) None else ???
-      case ImpliedByAnyOf(reqs) => if (reqs.isEmpty) None else ???
-
-      case Text(substr) =>
-        val f = ts.ignoreCaseSingleSpaces.searchFilter(substr)
-        fn(r => f(r.id))
-
-      case TextPattern(pat) =>
-        val m: String => Boolean = pat.matcher(_).matches
-        fn { r =>
-          def title  = m(pt reqTitle r)
-          def custom = p.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r.id) exists m)
-          title || custom
-        }
-    }
-
-    interpret(filterAst)
+    filterOrderFn(3)(evalSpeed)
   }
 
-  def filterRecCodeGroups(filterAst: FilterAst, p: Project, pt: PlainText.ForProject, ts: TextSearch): Option[(ReqCodeId, ReqCodeGroup) => Boolean] = {
-    import FilterAst._, Attr.{AnyIssue, AnyTag}
-    type F = (ReqCodeId, ReqCodeGroup) => Boolean
-    type R = Option[F]
-    @inline def fn(f: F) = Some(f)
-    val naF: F = (_, _) => true
-    val `n/a`: R = Some(naF)
-
-    @tailrec def evalSpeed(a: FilterAst): Int =
-      a match {
-        case _: Presence
-             | _: Lack
-             | _: ReqType
-             | _: Tag
-             | _: CustomIssue
-             | _: ImpliesAnyOf
-             | _: ImpliedByAnyOf => 0
-        case _: AllOf          => 1
-        case _: AnyOf          => 2
-        case _: Text           => 2
-        case _: TextPattern    => 3
-        case Not(e)            => evalSpeed(e)
-      }
-    val orderFastestFirst = filterOrderFn(3)(evalSpeed)
-
-    def interpretN(asts: NonEmptyVector[FilterAst], f: (F, F) => F): R =
-      orderFastestFirst(asts)
-        .traverse(interpret)
-        .map(_
-          .filter(_ ne naF)
-          .fold(naF)(_ reduce f))
-
-    // tags
-    // issues
-    // textsearch - Change TextSearch to remove the Stream[IndexEntry] layer. I want to query one by one.
-    // implication
-    def interpret(subj: FilterAst): R = subj match {
-      case _: ReqType
-         | _: ImpliesAnyOf
-         | _: ImpliedByAnyOf => `n/a`
-      case Tag(tag)             => ???
-      case Presence(AnyTag)     => ???
-      case Presence(AnyIssue)   => ???
-      case CustomIssue(it)      => ???
-      case Text(substr)         => ???
-      case AllOf(h, t)          => interpretN(h +: t, _ && _)
-      case AnyOf(h, t)          => interpretN(h +: t, _ || _)
-      case Not(Not(expr))       => interpret(expr)
-      case Not(expr)            => interpret(expr).map(f => !f(_, _))
-      case Lack(a)              => interpret(Not(Presence(a)))
-      case TextPattern(pat)     => fn((id, g) => pat.matcher(pt.reqCodeGroupTitle(id, g)).matches)
-    }
-
-    interpret(filterAst)
-  }
-  */
-
-  type FilterReq = Req => Boolean
-  type FilterRCG = (ReqCodeId, ReqCodeGroup) => Boolean
-
-  private val naFG: FilterRCG =
-    (_, _) => true
-
-  case class Filter(req: FilterReq, rcg: FilterRCG) {
-    def unary_!       = Filter(!req, !rcg)
-    def &&(g: Filter) = Filter(req && g.req, omitNA(naFG)(rcg, g.rcg)(_ && _))
-    def ||(g: Filter) = Filter(req || g.req, omitNA(naFG)(rcg, g.rcg)(_ || _))
-
-    private def omitNA[A <: AnyRef](na: A)(x: A, y: A)(f: (A, A) => A): A =
-      if (x eq na)
-        y
-      else if (y eq na)
-        x
-      else
-        f(x, y)
-  }
+  type Filter = FilterFn2[Req, ReqCodeGroup.AndId]
 
   /**
    * @return None means filter everything out. Function const false. Fail-early to an empty set. No results.
    */
-  def filterReqs(filterAst: FilterAst, p: Project, tagLookup: TagLookup, pt: PlainText.ForProject, ts: TextSearch): Option[Filter] = {
+  def filterReqs(filterAst  : FilterAst,
+                 p          : Project,
+                 pt         : PlainText.ForProject,
+                 ts         : TextSearch,
+                 issueLookup: IssueLookup,
+                 tagLookup  : TagLookup): Option[Filter] = {
+
     import FilterAst._, Attr.{AnyIssue, AnyTag}
     type F  = Filter
-    type FR = FilterReq
-    type FG = FilterRCG
     type R  = Option[Filter]
+    type FR = Req => Boolean
+    type FG = ReqCodeGroup.AndId => Boolean
+    import FilterFn.`n/a`
     @inline implicit def autoSomeFilter(f: Filter): R = Some(f)
-//    @inline def fn(fr: FR,  fg: FG) = Filter(fr, fg)
+    @inline def F(a: FR, b: FG): F = FilterFn2(a, b)
 
-    @tailrec def evalSpeed(a: FilterAst): Int =
-      a match {
-        case _: Presence
-           | _: Lack
-           | _: ReqType
-           | _: Tag
-           | _: CustomIssue
-           | _: ImpliesAnyOf
-           | _: ImpliedByAnyOf => 0
-        case _: AllOf          => 1
-        case _: AnyOf          => 2
-        case _: Text           => 2
-        case _: TextPattern    => 3
-        case Not(e)            => evalSpeed(e)
-      }
-    val orderFastestFirst = filterOrderFn(3)(evalSpeed)
+    // Possible optimisations:
+    // - overlap between has Tag & Presence/Lack(AnyTag)
+    // - overlap between has Issue & Presence/Lack(AnyIssue)
+    // - cycle in ImpliesAnyOf & ImpliedByAnyOf is impossible to satisfy
+    // - lack & presense of α
+    // - AnyOf with 2 contradictions = always pass
+    // - AllOf with 2 contradictions = always fail
+    // - AnyOf stops when match found, AllOf stops when non-match found. DeMorgan to the faster case.
 
     def interpretN(asts: NonEmptyVector[FilterAst], f: (F, F) => F): R =
-      orderFastestFirst(asts)
+      filterFastestFirst(asts)
         .traverse(interpret)
         .map(_ reduce f)
 
-    // issues
-    // implication
-    def interpret(subj: FilterAst): R = subj match {
-      case ReqType(rt)          => Filter(_.reqTypeId ≟ rt, naFG)
-      case Tag(tag)             => ??? //fn(r => tagLookup(r.id).contains(tag))
-      case Presence(AnyTag)     => ??? //fn(r => tagLookup(r.id).nonEmpty)
-      case Presence(AnyIssue)   => ???
-      case CustomIssue(it)      => ???
-      case AllOf(h, t)          => interpretN(h +: t, _ && _)
-      case AnyOf(h, t)          => interpretN(h +: t, _ || _)
-      case Not(Not(expr))       => interpret(expr)
-      case Not(expr)            => interpret(expr).map(!_)
-      case Lack(a)              => interpret(Not(Presence(a)))
-      case ImpliesAnyOf(reqs)   => if (reqs.isEmpty) None else ???
-      case ImpliedByAnyOf(reqs) => if (reqs.isEmpty) None else ???
+    def byTag(f: Set[ApplicableTagId] => Boolean) =
+      F(r => f(tagLookup(r.id)), `n/a`)
 
-      case Text(substr) =>
-//        val f = ts.ignoreCaseSingleSpaces.searchFilter(substr)
-//        fn(r => f(r.id))
-        ???
+    def byIssueType(f: Vector[AnyIssue] => Boolean) = F(
+      r => f(issueLookup.r(r.id)),
+      g => f(issueLookup.g(g.id)))
 
-      case TextPattern(pat) =>
-        val m: String => Boolean = pat.matcher(_).matches
-        Filter(
-          r => {
-            def title  = m(pt reqTitle r)
-            def custom = p.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r.id) exists m)
-            title || custom
-          },
-          (id, g) => m(pt.reqCodeGroupTitle(id, g)))
-
+    def byImplication(reqs: FilterAst.Reqs, tc: TransitiveClosure[ReqId]): R = {
+      val whitelist = reqs.foldLeft(Set.empty[ReqId])(_ ++ tc(_))
+      if (whitelist.isEmpty)
+        None
+      else
+        F(whitelist contains _.id, `n/a`)
     }
-        interpret(filterAst)
-  }
 
+    def interpret(subj: FilterAst): R =
+      subj match {
+        case ReqType(rt)          => F(_.reqTypeId ≟ rt, `n/a`)
+        case Tag(tag)             => byTag(_ contains tag)
+        case Presence(AnyTag)     => byTag(_.nonEmpty)
+        case Presence(AnyIssue)   => byIssueType(_.nonEmpty)
+        case CustomIssue(it)      => byIssueType(_.exists(_.typ ≟ it))
+        case Lack(a)              => interpret(Not(Presence(a)))
+        case AllOf(h, t)          => interpretN(h +: t, _ && _)
+        case AnyOf(h, t)          => interpretN(h +: t, _ || _)
+        case Not(Not(expr))       => interpret(expr)
+        case Not(expr)            => interpret(expr).map(!_)
+        case ImpliesAnyOf(reqs)   => byImplication(reqs, p.implicationSrcToTgtTC)
+        case ImpliedByAnyOf(reqs) => byImplication(reqs, p.implicationTgtToSrcTC)
+
+        case Text(substr) =>
+          val f = ts.ignoreCaseSingleSpaces.searchFilter(substr)
+          f.contramap(_.id, _.id): F
+
+        case TextPattern(pat) =>
+          val m: String => Boolean = pat.matcher(_).matches
+          F(
+            r => {
+              def title  = m(pt reqTitle r)
+              def custom = p.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r.id) exists m)
+              title || custom
+            },
+            g => m(pt reqCodeGroupTitle g))
+      }
+
+    interpret(filterAst)
+  }
 
   // ===================================================================================================================
   // Gathering
