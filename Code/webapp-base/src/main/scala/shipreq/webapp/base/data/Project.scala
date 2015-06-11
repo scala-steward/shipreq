@@ -79,6 +79,9 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val customTextFields =
     fields.data.customFields.values.filterT[CustomField.Text]
 
+  lazy val liveCustomTextFields =
+    customTextFields.filter(_.live :: Live)
+
   def reqType(i: ReqTypeId): Must[ReqType] =
     i.foldId[Must[ReqType]](Must.apply, customReqTypes.data.apply)
 
@@ -89,7 +92,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     }
 
   lazy val reqTypes: Stream[ReqType] =
-    (customReqTypes.data.values.toStream: Stream[ReqType]) #:::
+    (customReqTypes.data.values.toStream: Stream[ReqType]) append
       (StaticReqType.valueStream        : Stream[ReqType])
 
   lazy val reqTypesByMnemonic: Map[ReqType.Mnemonic, ReqType] =
@@ -135,7 +138,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   lazy val tagsInText: Multimap[ReqId, Set, ApplicableTagId] = {
     type Tags      = Set[ApplicableTagId]
     val textData   = reqFieldData.data.text
-    val textFields = customTextFields.filter(_.live :: Live).map(_.id)
+    val textFields = liveCustomTextFields.map(_.id)
 
     def searchCustomTextFields(id: ReqId, into: Tags): Tags =
       textFields.foldLeft(into)((q, f) =>

@@ -102,7 +102,7 @@ object AutoComplete {
         .searchOnlyTitles
 
     val searchFn: TC.Query[ReqItem] = { term =>
-      val titles = searchTitles(term).take(10).map(_.id).toSet
+      val titles = searchTitles.searchAll(term).take(10).map(_.id).toSet
       val np     = normaliseReqPubid(term)
       // TODO TextComplete should use multiple result tiers. Titles shouldn't be searched when there are matching pubids
       legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.req.id))

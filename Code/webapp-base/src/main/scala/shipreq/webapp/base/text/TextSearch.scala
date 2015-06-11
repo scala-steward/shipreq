@@ -2,7 +2,7 @@ package shipreq.webapp.base.text
 
 import scala.collection.immutable.IntMap
 import scalaz.Need
-import shipreq.base.util.NonEmptyVector
+import shipreq.base.util.{IMap, NonEmptyVector}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import TextSearch.{apply => _, _}
@@ -153,6 +153,7 @@ object TextSearch {
   }
 
   case class IndexEntry(req: Req, title: Normalised, textFields: Need[Normalised])
+  val emptyIndexMap = IMap.empty[ReqId, IndexEntry](_.req.id)
 
   type SearchFn = BoyerMooreHorspool => IndexEntry => Boolean
   val searchAll   : SearchFn = a => e => a.search(e.title) || a.search(e.textFields.value)
@@ -162,27 +163,35 @@ object TextSearch {
 final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
 
   private def index(norm: Normaliser): Index = {
-    val index: Stream[IndexEntry] = {
+    val indexValues: Stream[IndexEntry] = {
       val each: Req => IndexEntry = r => {
         val title = norm(plainText.reqTitle(r))
         val textFields = Need(norm(
-          project.customTextFields.foldLeft("")((q, f) =>
+          project.liveCustomTextFields.foldLeft("")((q, f) =>
             plainText.customTextField(f.id)(r.id).fold(q)(q + "\n" + _))
         ))
         IndexEntry(r, title, textFields)
       }
       project.reqs.data.reqs.vstream(each)
     }
-    new Index(norm, index, Vector.empty, searchAll)
+
+    val index = emptyIndexMap ++ indexValues
+    new Index(norm, index, None, searchAll)
   }
 
   final class Index private[TextSearch] (norm    : Normaliser,
-                                         index   : Stream[IndexEntry],
-                                         filter  : Vector[IndexEntry => Boolean],
+                                         index   : IMap[ReqId, IndexEntry],
+                                         filter  : Option[IndexEntry => Boolean],
                                          searchFn: SearchFn) {
 
+    private def newFilter(f: IndexEntry => Boolean): IndexEntry => Boolean =
+      filter.fold(f)(_ && f)
+
+    private def withNewFilter(f: IndexEntry => Boolean): Index =
+      new Index(norm, index, Some(newFilter(f)), searchFn)
+
     def filter(f: Req => Boolean): Index =
-      new Index(norm, index, filter :+ ((e: IndexEntry) => f(e.req)), searchFn)
+      withNewFilter(ie => f(ie.req))
 
     def filterByIds(ids: Set[ReqId]): Index =
       filter(ids contains _.id)
@@ -190,21 +199,23 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
     def searchOnlyTitles: Index =
       new Index(norm, index, filter, searchTitles)
 
-    def apply(substr: String): Stream[Req] = {
-      // Don't parse search string. Later accept a search AST.
-      //whitespace.split(substr).filter(_.nonEmpty)
+    private def all = index.values.toStream
 
-      val matches =
-        if (substr.isEmpty)
-          index
-        else {
-          val algo = new BoyerMooreHorspool(norm(substr))
-          val fs = NonEmptyVector.end(filter, searchFn(algo))
-          val f = fs.reduce((a, b) => (e: IndexEntry) => a(e) && b(e))
-          index.filter(f)
-        }
+    private def search[A](substr: String, matchEverything: => A)(s: (IndexEntry => Boolean) => A): A =
+      if (substr.isEmpty)
+        matchEverything
+      else {
+        val algo = new BoyerMooreHorspool(norm(substr))
+        val f = newFilter(searchFn(algo))
+        s(f)
+      }
 
-      matches.map(_.req)
+    def searchFilter(substr: String): ReqId => Boolean =
+      search[ReqId => Boolean](substr, _ => true)(f => index.get(_) exists f)
+
+    def searchAll(substr: String): Stream[Req] = {
+      // whitespace.split(substr).filter(_.nonEmpty)
+      search(substr, all)(all.filter).map(_.req)
     }
   }
 
