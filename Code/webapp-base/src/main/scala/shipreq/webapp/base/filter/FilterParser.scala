@@ -1,7 +1,7 @@
 package shipreq.webapp.base.filter
 
 import org.parboiled2.{Parser => _, _}
-import shipreq.base.util.NonEmptyVector
+import shipreq.base.util.{NonEmptyVector, NonEmptySet}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.util.ParsingUtil
 import ParsingUtil._
@@ -10,27 +10,32 @@ import FilterSpec._
 object FilterParser {
 
   // Allows ' / -
-  private val simpleTextChar =
+  val simpleTextChar =
     CharPredicate("""#:"`(){}""".toCharArray).negated -- whitespace -- EOI
 
-  private val attrChar =
+  val attrChar =
     CharPredicate.AlphaNum
 
-  private val mkIntSet1: Int => Set[Int] =
-    Set.empty[Int].+
+  private val endGap =
+    CharPredicate("""#(){}""".toCharArray) ++ whitespace ++ EOI
 
-  private val mkIntSet: (Int, Option[Int]) => Set[Int] =
+  private val mkIntSet1: Int => NonEmptySet[Int] =
+    NonEmptySet.one[Int]
+
+  private val mkIntSet: (Int, Option[Int]) => NonEmptySet[Int] =
     (a, o) =>
-      o.fold(Set.empty[Int] + a)(b =>
-        (if (a < b) (a to b) else (b to a)).toSet)
+      o.fold(NonEmptySet one a) { b =>
+        val s = (if (a < b) (a to b) else (b to a)).toSet
+        NonEmptySet force s
+      }
 
-  private val flattenIntSets: Seq[Set[Int]] => Set[Int] =
-    s => if (s.isEmpty) Set.empty else s.reduce(_ ++ _)
+  private val flattenIntSets1: Seq[NonEmptySet[Int]] => NonEmptySet[Int] =
+    _.reduce(_ ++ _)
 
-  private val mkReqsSpec: (Mnemonic, Option[Set[Int]]) => ReqsSpec =
+  private val mkReqsSpec: (Mnemonic, Option[NonEmptySet[Int]]) => ReqsSpec =
     (rt, ons) => ons match {
-      case None     => ReqsSpec.WholeType(rt)
-      case Some(ns) => ReqsSpec.SomeOfType(rt, ns)
+      case None     => WholeType(rt)
+      case Some(ns) => SomeOfType(rt, ns)
     }
 
   private type ImpType = Reqs => FilterSpec
@@ -38,15 +43,15 @@ object FilterParser {
   private val mkImpliedBy: ImpType = ImpliedBy
   private val mkImplication: (ImpType, Reqs) => FilterSpec = _(_)
 
-  private val mkAllOf: Seq[FilterSpec] => AllOf = a => AllOf(NonEmptyVector(a.head, a.tail: _*))
-  private val mkAnyOf: Seq[FilterSpec] => AnyOf = a => AnyOf(NonEmptyVector(a.head, a.tail: _*))
+  private val mkClause: (FilterSpec, Seq[FilterSpec]) => NonEmptyVector[FilterSpec] =
+    (h, t) => NonEmptyVector(h, t: _*)
 
-  private val mkMain: Seq[FilterSpec] => Option[FilterSpec] = a =>
-    NonEmptyVector.maybe(a.toVector, None: Option[FilterSpec])(nev =>
+  private val mkMain: Option[NonEmptyVector[FilterSpec]] => Option[FilterSpec] =
+    _.map(nev =>
       if (nev.tail.isEmpty)
-        Some(nev.head)
+        nev.head
       else
-        Some(AllOf(nev)))
+        AllOf(nev))
 }
 
 class FilterParser(val input: ParserInput) extends ParsingUtil {
@@ -55,16 +60,19 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
   private def WS  = rule(oneOrMore(whitespace))
   private def OWS = rule(zeroOrMore(whitespace))
 
+  /** Where this is present, whitespace is required between the current and (most) other FilterSpecs */
+  private def end = rule(&(endGap))
+
   /** 1 or 1-5 */
-  def numberRangeElement: Rule1[Set[Int]] =
+  def numberRangeElement: Rule1[NonEmptySet[Int]] =
     rule(int1n ~ optional('-' ~ int1n) ~> mkIntSet)
 
   /** 1,3,5-9,12 */
-  def numberRange: Rule1[Set[Int]] =
-    rule((numberRangeElement + ',') ~> flattenIntSets)
+  def numberRange: Rule1[NonEmptySet[Int]] =
+    rule((numberRangeElement + ',') ~> flattenIntSets1)
 
   /** 1 or {1,3,5-9,12} */
-  def numberOrRange: Rule1[Set[Int]] =
+  def numberOrRange: Rule1[NonEmptySet[Int]] =
     rule((int1n ~> mkIntSet1) | ('{' ~ numberRange ~ '}'))
 
   /** MF or MF-3 or MF-{1,3,5-9,12} */
@@ -84,25 +92,25 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
   private val quote3 = QuoteRule('`')
 
   def quotedText: Rule1[QuotedText] =
-    rule(quote1.toRule | quote2.toRule | quote3.toRule)
+    rule((quote1.toRule | quote2.toRule | quote3.toRule) ~ end)
 
   def simpleText: Rule1[SimpleText] =
-    rule(capture(simpleTextChar.+) ~> SimpleText)
+    rule(capture(simpleTextChar.+) ~ end ~> SimpleText)
 
   def regexChar: Rule0 =
     rule(!'/' ~ '\\'.? ~ ANY)
 
   def regex: Rule1[Regex] =
-    rule('/' ~!~ capture(regexChar.+) ~!~ '/' ~> ((s: String) => Regex(s.replace("\\/", "/"))))
+    rule('/' ~!~ capture(regexChar.+) ~!~ '/' ~!~ end ~> ((s: String) => Regex(s.replace("\\/", "/"))))
 
   def hashRef: Rule1[HashRef] =
-    rule(hashRefStr_! ~> HashRef)
+    rule(hashRefStr_! ~ end ~> HashRef)
 
   def reqType: Rule1[ReqType] =
-    rule(reqTypeMnemonicCS ~> ReqType)
+    rule(reqTypeMnemonicCS ~ end ~> ReqType)
 
   def attr: Rule1[String] =
-    rule(capture(attrChar.+))
+    rule(capture(attrChar.+) ~ end)
 
   def presence: Rule1[Presence] =
     rule("has:" ~!~ attr ~> Presence)
@@ -114,13 +122,10 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
   def implication: Rule1[FilterSpec] =
     rule("implie" ~ (
       ('s' ~ push(mkImplies)) | ("dBy" ~ push(mkImpliedBy))
-    ) ~ ':' ~!~ reqs ~> mkImplication)
+      ) ~ ':' ~!~ reqs ~ end ~> mkImplication)
 
-  def allOf: Rule1[AllOf] =
-    rule('(' ~!~ OWS ~ oneOrMore(expr ~ OWS) ~ ')' ~> mkAllOf)
-
-  def anyOf: Rule1[AnyOf] =
-    rule('{' ~!~ OWS ~ oneOrMore(expr ~ OWS) ~ '}' ~> mkAnyOf)
+  def not: Rule1[FilterSpec] =
+    rule('-' ~!~ (('-' ~!~ expr) | (expr ~> Not)))
 
   def positive: Rule1[FilterSpec] =
     rule(allOf | anyOf | quotedText | regex | hashRef | presence | lack | implication | reqType | simpleText)
@@ -131,6 +136,15 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
   def expr: Rule1[FilterSpec] =
     rule(negative | positive)
 
+  def clause: Rule1[NonEmptyVector[FilterSpec]] =
+    rule(OWS ~ expr ~ zeroOrMore(OWS ~ expr) ~ OWS ~> mkClause)
+
+  def allOf: Rule1[AllOf] =
+    rule('(' ~!~ clause ~ ')' ~> AllOf)
+
+  def anyOf: Rule1[AnyOf] =
+    rule('{' ~!~ clause ~ '}' ~> AnyOf)
+
   def main: Rule1[Option[FilterSpec]] =
-    rule(OWS ~ zeroOrMore(expr ~ OWS) ~ EOI ~> mkMain)
+    rule(OWS ~ clause.? ~ EOI ~> mkMain)
 }

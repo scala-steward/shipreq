@@ -1,13 +1,17 @@
 package shipreq.webapp.base.filter
 
+import japgolly.nyaya._
+import japgolly.nyaya.test._
+import japgolly.nyaya.test.PropTestOps._
 import org.parboiled2.{ErrorFormatter, ParseError}
 import scala.util.{Failure, Success}
 import utest._
-import shipreq.base.util.{NonEmptyVector, UnivEq}, UnivEq._
+import shipreq.base.util.Debug._
+import shipreq.base.util.{NonEmptySet, NonEmptyVector, UnivEq}, UnivEq._
+import shipreq.webapp.base.{RandomData => $}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.test.BaseTestUtil._
 import FilterSpec._
-import ReqsSpec._
 
 object FilterParserTest extends TestSuite {
 
@@ -16,15 +20,36 @@ object FilterParserTest extends TestSuite {
   implicit def autoSome(f: FilterSpec) = Option(f)
   implicit def autoMne(s: String) = Mnemonic(s)
   implicit def autoNev[A](a: A) = NonEmptyVector(a)
+  implicit def NES[A: UnivEq](a: A, as: A*) = NonEmptySet(a, as.toSet)
 
   def allOf(a: FilterSpec, b: FilterSpec*) = AllOf(NonEmptyVector(a, b: _*))
   def anyOf(a: FilterSpec, b: FilterSpec*) = AnyOf(NonEmptyVector(a, b: _*))
+
+  val prism = monocle.Prism[String, Option[FilterSpec]](
+    new FilterParser(_).main.run().toOption)(_.fold("")(toText))
+
+  val prismFromString =
+    Prop.eval[String] { str =>
+      val e = EvalOver(string)
+      def norm(s: String) = s.filterNot(_.isWhitespace)
+      prism.getOrModify(str).toOption match {
+        case Some(os) => e.equal("toText . parse = id", norm(prism reverseGet os), norm(str))
+        case None     => e.pass
+      }
+    }
+
+  val prismFromSpec =
+    Prop.test[FilterSpec]("prismFromSpec", spec => {
+      val s = Some(spec)
+      test(prism reverseGet s, s)
+      true
+    })
 
   def test(str: String, exp: Option[FilterSpec]): Unit = {
     val p = new FilterParser(str)
     p.main.run() match {
       case Success(a)             => assertEq(s"[$str]", a, exp)
-      case Failure(e: ParseError) => fail("Parser failed: " + p.formatError(e, new ErrorFormatter()))
+      case Failure(e: ParseError) => println(p.formatError(e, new ErrorFormatter(showTraces = true))); fail("Parser failed.")
       case Failure(e: Throwable)  => fail("Parser failed: " + Option(e.getMessage).getOrElse(e.toString))
     }
   }
@@ -37,6 +62,13 @@ object FilterParserTest extends TestSuite {
 
   override def tests = TestSuite {
 
+    'prop {
+      import PropTest.defaultPropSettings
+//      implicit def settings = DefaultSettings.propSettings.setSampleSize(10000)
+      'fromString - prismFromString.mustBeSatisfiedBy($.unicodeString)
+      'fromSpec   - prismFromSpec  .mustBeSatisfiedBy($.filter.spec.filterSpec)
+    }
+
     'empty {
       test("", None)
       test("   ", None)
@@ -46,6 +78,7 @@ object FilterParserTest extends TestSuite {
       'simple      - test("a",         SimpleText("a"))
       'blurt       - test("weqfd351!", SimpleText("weqfd351!"))
       'singleQuote - test("they're",   SimpleText("they're"))
+      'longUpper   - test("Q"*30,      SimpleText("Q"*30))
     }
 
     'quotedText {
@@ -89,11 +122,11 @@ object FilterParserTest extends TestSuite {
       'open2     - testFail("impliedBy:MF-{")
       'open3     - testFail("impliedBy:MF-{3,4")
       'wholeType - test("impliedBy:MF",                  ImpliedBy(WholeType("MF")))
-      'single    - test("implies:MF-2",                  Implies  (SomeOfType("MF", Set(2))))
-      'specific  - test("impliedBy:CO-{3,5,7}",          ImpliedBy(SomeOfType("CO", Set(3,5,7))))
-      'range     - test("implies:CO-{3-6}",              Implies  (SomeOfType("CO", Set(3,4,5,6))))
-      'rangeRev  - test("impliedBy:CO-{9-7}",            ImpliedBy(SomeOfType("CO", Set(7,8,9))))
-      'combo     - test("implies:SI,DD-{3-5,9,12-14,1}", Implies  (NonEmptyVector(WholeType("SI"), SomeOfType("DD", Set(3,4,5,9,12,13,14,1)))))
+      'single    - test("implies:MF-2",                  Implies  (SomeOfType("MF", NES(2))))
+      'specific  - test("impliedBy:CO-{3,5,7}",          ImpliedBy(SomeOfType("CO", NES(3,5,7))))
+      'range     - test("implies:CO-{3-6}",              Implies  (SomeOfType("CO", NES(3,4,5,6))))
+      'rangeRev  - test("impliedBy:CO-{9-7}",            ImpliedBy(SomeOfType("CO", NES(7,8,9))))
+      'combo     - test("implies:SI,DD-{3-5,9,12-14,1}", Implies  (NonEmptyVector(WholeType("SI"), SomeOfType("DD", NES(3,4,5,9,12,13,14,1)))))
       'lower     - test("impliedBy:dgh",                 ImpliedBy(WholeType("DGH")))
     }
 
@@ -148,7 +181,7 @@ object FilterParserTest extends TestSuite {
       'reqType    - test("-MF",             Not(ReqType   ("MF")))
       'hashRef    - test("-#boo",           Not(HashRef   ("boo")))
       'implies    - test("-implies:XYZ",    Not(Implies   (WholeType("XYZ"))))
-      'impliedBy  - test("-impliedBy:B-12", Not(ImpliedBy (SomeOfType("B", Set(12)))))
+      'impliedBy  - test("-impliedBy:B-12", Not(ImpliedBy (SomeOfType("B", NES(12)))))
       'presence   - test("-has:face",       Not(Presence  ("face")))
       'lack       - test("-no:hair",        Not(Lack      ("hair")))
       'allOf      - test("-(my god)",       Not(allOf     (SimpleText("my"), SimpleText("god"))))
@@ -156,7 +189,9 @@ object FilterParserTest extends TestSuite {
       'not        - test("--whip",          SimpleText("whip"))
     }
 
-    // MF FR should warn and recommend {MF FR}
+    // TODO {has,no,implies,impliedBy}: etc case insensitive
+
+    // TODO MF FR should warn and recommend {MF FR}
     // Or do it automatically if parsing isn't live
 
     'combos {

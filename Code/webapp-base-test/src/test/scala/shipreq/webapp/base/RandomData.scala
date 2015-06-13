@@ -61,6 +61,25 @@ object RandomData {
     else
       v
 
+  // JS + Parboiled2 no like \u001e
+  val mkChar: Int => Char =
+    ((_: Int).toChar) `JVM|JS` ((i: Int) => if (i == 30) ' ' else i.toChar)
+
+  def asciiChar   : Gen[Char]   = Gen.chooseint(1, 255) map mkChar
+  def asciiString : Gen[String] = asciiChar.string
+  def asciiString1: Gen[String] = asciiChar.string1
+
+  def unicodeChar   : Gen[Char]   = Gen.chooseint(0, 0xd7ff) map mkChar
+  def unicodeString : Gen[String] = unicodeChar.string
+  def unicodeString1: Gen[String] = unicodeChar.string1
+
+//  private val _charPredAllChars = ('\u0001' to '\ud7ff').seq
+  private val _charPredAllChars = ('\u0001' to '\u0100').seq
+//  private val _charPredAllChars = ('\u0020' to '\u0100').seq
+//  private val _charPredAllChars = ('\u0020' to '\u0080').seq
+  def charPred(p: org.parboiled2.CharPredicate): Gen[Char] =
+    Gen.oneofO(_charPredAllChars filter p.apply).get
+
   def oneofV[A](as: NonEmptyVector[A]): Gen[A] =
     Gen.oneof(as.head, as.tail: _*)
 
@@ -401,10 +420,6 @@ object RandomData {
     import Atom._
     import Text.{ReqTitle => _, _}
     import Gen.Covariance._
-
-    val allChars = ('\u0001' to '\u0100').seq
-    def charPred(p: org.parboiled2.CharPredicate): Gen[Char] =
-      Gen.oneofO(allChars.filter(p.apply)).get
 
     lazy val webAddressR = charPred(Parsers.webAddressChar).string1
     lazy val emailL = charPred(Parsers.emailCharL).string1
@@ -1127,5 +1142,100 @@ object RandomData {
 
     lazy val tagCrud =
       new CrudActionGens(TagCrud)(RandomData.tagId, tagCrudInput)
+  }
+
+  // ===================================================================================================================
+  object filter {
+    import shipreq.webapp.base.filter._
+
+    object spec {
+      import FilterSpec._
+
+      val wholeType =
+        reqTypeMnemonic map WholeType
+
+      val someOfType =
+        Gen.apply2(SomeOfType)(reqTypeMnemonic, Gen.chooseint(1,10000).nes.lim(20 `JVM|JS` 6))
+
+      val reqsSpec: Gen[ReqsSpec] = {
+        import Gen.Covariance._
+        Gen.oneofG(wholeType, someOfType)
+      }
+
+      val reqs: Gen[Reqs] =
+        reqsSpec.nev.lim(8)
+
+      val attr: Gen[String] =
+        charPred(FilterParser.attrChar).string1
+
+      val quotedText =
+        for {
+          q <- Gen.oneof('\'', '"', '`')
+          s <- unicodeString1
+        } yield QuotedText(s.replace(q, '_'), q)
+
+      private val illegalSimpleTextStart = "/-#(){}'`\"".toCharArray.toSet
+      def fixSimpleText(s: String): String =
+        if (s.headOption exists illegalSimpleTextStart.contains)
+          "!" + s
+        else if (Validators.reqType.mnemonicU isValidU s)
+          s + "?"
+        else
+          s
+
+
+      /** An odd number of backslashes cannot precede a slash */
+      private val fixSlashEscaping = """(^|[^\\])(?:\\(?:\\\\)*)/""".r
+
+      def fixRegex(s: String): String =
+        if (s endsWith "\\")
+          s + "d"
+        else
+          fixSlashEscaping.replaceAllIn(s, "$1/")
+
+      val simpleText = charPred(FilterParser.simpleTextChar).string1.map(s => SimpleText(fixSimpleText(s)))
+      val regex      = unicodeString1.map(s => Regex(fixRegex(s)))
+      val reqType    = reqTypeMnemonic map ReqType
+      val hashRef    = hashRefKey.map(h => HashRef(h.value))
+      val implies    = reqs map Implies
+      val impliedBy  = reqs map ImpliedBy
+      val presence   = attr map Presence
+      val lack       = attr map Lack
+
+      val flat: Gen[FilterSpec] = {
+        import Gen.Covariance._
+        Gen.oneofG(quotedText, simpleText, regex, reqType, hashRef, implies, impliedBy, presence, lack)
+      }
+
+      val fixRoot: EndoFn[FilterSpec] = {
+        case AllOf(n) if n.tail.isEmpty => n.head
+        case s => s
+      }
+
+      private def expr(depth: Int): Gen[FilterSpec] =
+        if (depth <= 1)
+          flat
+        else {
+          val next   = expr(depth - 1)
+          val clause = next.nev.lim(8 `JVM|JS` 3)
+
+          val allOf: Gen[FilterSpec] =
+            clause.map(c => if (c.tail.isEmpty) c.head else AllOf(c))
+
+          val anyOf: Gen[FilterSpec] =
+            clause map AnyOf
+
+          val not: Gen[FilterSpec] =
+            next map {
+              case n: Not => n
+              case e      => Not(e)
+            }
+
+          Gen.oneofG(flat, allOf, anyOf, not)
+        }
+
+      val filterSpec  = expr(4 `JVM|JS` 3)
+      val filterSpecO = filterSpec.option
+    }
   }
 }

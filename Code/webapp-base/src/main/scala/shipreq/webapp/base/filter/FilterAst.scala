@@ -1,9 +1,10 @@
 package shipreq.webapp.base.filter
 
-import java.util.regex.{Pattern, PatternSyntaxException}
+import java.util.regex.Pattern // PatternSyntaxException not available in Scala.JS
 import scalaz.{-\/, \/-, \/}
 import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.base.data
+import shipreq.webapp.base.filter.{FilterSpec => S}
 
 /**
  * A valid filter, ready to be applied to data.
@@ -46,8 +47,9 @@ object FilterAst {
   case class AnyOf         (head: FilterAst, tail: NonEmptyVector[FilterAst]) extends FilterAst
   case class Not           (expr: FilterAst)                                  extends FilterAst
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   def apply(p: data.Project, filterSpec: FilterSpec): String \/ FilterAst = {
-    import shipreq.webapp.base.filter.{FilterSpec => S}
     type R = String \/ FilterAst
     @inline implicit def autoR(a: FilterAst): R = \/-(a)
     @inline def error(msg: String) = -\/(msg)
@@ -70,11 +72,11 @@ object FilterAst {
       lookupReqType(mn).map(rt => p.reqs.data.pubids.value(rt.reqTypeId))
 
     val lookupReqs: S.ReqsSpec => String \/ Reqs = {
-      case S.ReqsSpec.SomeOfType(mn, nums) =>
+      case S.SomeOfType(mn, nums) =>
         lookupReqsByType(mn).map(vec =>
           nums.foldLeft[Reqs](Set.empty)((q, num) =>
             if (num > vec.length) q else q + vec(num - 1)))
-      case S.ReqsSpec.WholeType(mn) =>
+      case S.WholeType(mn) =>
         lookupReqsByType(mn).map(_.toSet)
     }
 
@@ -101,7 +103,8 @@ object FilterAst {
 
         case S.Regex(regex) =>
           try TextPattern(Pattern compile regex) catch {
-            case e: PatternSyntaxException => error(e.getDescription)
+            // case e: PatternSyntaxException => error(e.getDescription)
+            case e: Throwable => error(e.getMessage)
           }
 
         case S.HashRef(text) =>
@@ -114,4 +117,46 @@ object FilterAst {
 
     translate(filterSpec)
   }
+
+  /*
+  def toSpec(p: data.Project, f: FilterAst): String \/ FilterSpec = {
+    type R = String \/ FilterSpec
+    implicit def mustToOpt(m: Must[FilterSpec]): R = m.fold(-\/.apply, \/-.apply)
+
+    def byReqs(f: S.Reqs => FilterSpec, reqs: Reqs): R = {
+      val a: Must[Set[data.Req]] = p.reqs.data.reqsM(reqs)
+      a.map(NonEmptySet.maybe(_, -\/("Empty <reqs>"): R)(rs =>
+        rs.toStream.map(
+      ))
+    }
+
+    def translateN(asts: NonEmptyVector[FilterAst]): String \/ NonEmptyVector[FilterSpec] =
+      asts.traverseD(translate)
+
+    def translate(f: FilterAst): R = {
+      case Presence(a)          => S.Presence(a.name)
+      case Lack(a)              => S.Lack(a.name)
+      case ReqType(id)          => p.reqType        (id).map(r => S.ReqType(r.mnemonic))
+      case Tag(id)              => p.atag           (id).map(t => S.HashRef(t.key))
+      case CustomIssue(id)      => p.customIssueType(id).map(i => S.HashRef(i.key))
+      case TextPattern(pat)     => S.Regex(pat.pattern)
+      case ImpliesAnyOf(reqs)   => S.Implies(reqs)
+      case ImpliedByAnyOf(reqs) => S.ImpliedBy(reqs)
+      case AllOf(h, t)          => translateN(h +: t) map S.AllOf
+      case AnyOf(h, t)          => translateN(h +: t) map S.AnyOf
+      case Not(expr)            => translate(expr) map S.Not
+
+      case Text(t) =>
+        def check(q: Char) = t.indexOf(q) >= 0
+        (check('\''), check('"'), check('`'))  match {
+          case (false, false, false) => S.SimpleText(t)
+          case (true , false, false) => S.QuotedText(t, '\'')
+          case (false, true , false) => S.QuotedText(t, '"')
+          case (false, false, true ) => S.QuotedText(t, '`')
+          case _ => -\/(s"No suitable quote character for [$t]")
+        }
+    }
+    translate(f)
+  }
+  */
 }
