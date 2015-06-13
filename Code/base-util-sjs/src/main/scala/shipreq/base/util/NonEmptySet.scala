@@ -102,6 +102,9 @@ object NonEmptySet {
   @inline def option[A: UnivEq](s: Set[A]): Option[NonEmptySet[A]] =
     maybe[A, Option[NonEmptySet[A]]](s, None)(Some.apply)
 
+  @inline def force[A: UnivEq](s: Set[A]): NonEmptySet[A] =
+    apply(s.head, s.tail)
+
   def unwrapOption[A](o: Option[NonEmptySet[A]]): Set[A] =
     o.fold(Set.empty[A])(_.whole)
 

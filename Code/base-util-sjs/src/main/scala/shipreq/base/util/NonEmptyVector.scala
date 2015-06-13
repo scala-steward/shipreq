@@ -183,6 +183,9 @@ object NonEmptyVector extends NonEmptyVectorImplicits0 {
   @inline def option[A](v: Vector[A]): Option[NonEmptyVector[A]] =
     maybe[A, Option[NonEmptyVector[A]]](v, None)(Some.apply)
 
+  @inline def force[A](v: Vector[A]): NonEmptyVector[A] =
+    apply(v.head, v.tail)
+
   def unwrapOption[A](o: Option[NonEmptyVector[A]]): Vector[A] =
     o.fold(Vector.empty[A])(_.whole)
 

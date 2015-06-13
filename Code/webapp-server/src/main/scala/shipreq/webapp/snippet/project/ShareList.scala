@@ -5,6 +5,7 @@ import net.liftweb.http.js._
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 
+import shipreq.base.util.{ConciseIntSetFormat, NonEmptySet}
 import app.{RequestVars, AppSiteMap}
 import db.ShareSummary
 import feature.UcFilter
@@ -13,7 +14,7 @@ import lib.SingleOpStatefulSnippet
 import lib.Types._
 import security.PasswordAndSalt
 import snippet.DynModal
-import util.{NonEmptyTemplate, ConciseIntListDesc}
+import util.NonEmptyTemplate
 import util.JsExt._
 import AppSiteMap.Implicits._
 import ShareListConsts._
@@ -76,8 +77,8 @@ class ShareList(projectId: ProjectId) extends SingleOpStatefulSnippet {
       case 0 => "0 use cases."
       case 1 => s"1 use case: UC-${m.head.number.value}."
       case _ =>
-        val mnel = nel(m.head, m.tail)
-        val idDesc = ConciseIntListDesc.compute(mnel)(_.number.toInt)
+        val ids = NonEmptySet force m.map(_.number.toInt).toSet
+        val idDesc = ConciseIntSetFormat spaced ids
         s"$msize use cases: $idDesc."
     }
   }
