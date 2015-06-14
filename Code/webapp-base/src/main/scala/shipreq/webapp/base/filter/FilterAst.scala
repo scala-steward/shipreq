@@ -1,6 +1,6 @@
 package shipreq.webapp.base.filter
 
-import java.util.regex.Pattern // PatternSyntaxException not available in Scala.JS
+import java.util.regex.Pattern
 import scalaz.{-\/, \/-, \/}
 import shipreq.base.util.{UnivEq, NonEmptyVector}
 import shipreq.webapp.base.data
@@ -111,9 +111,15 @@ object FilterAst {
         case S.Not(expr)           => translate(expr) map Not
 
         case S.Regex(regex) =>
-          try TextPattern(Pattern compile regex) catch {
+          try {
+            val p = Pattern compile regex
+            // Validate regex (Pattern.compile always succeeds in JS)
+            p.matcher("").matches()
+            TextPattern(p)
+          } catch {
+            // PatternSyntaxException not available in Scala.JS
             // case e: PatternSyntaxException => error(e.getDescription)
-            case e: Throwable => error(e.getMessage)
+            case e: Throwable => error(s"Invalid regex: /$regex/")
           }
 
         case S.HashRef(text) =>
