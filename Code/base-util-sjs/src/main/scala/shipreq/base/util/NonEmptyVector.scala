@@ -115,10 +115,8 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   @inline def toNES[B >: A : UnivEq]: NonEmptySet[B] =
     NonEmptySet(head, tail.toSet[B])
 
-  private def safeTrans[B](f: Vector[A] => Vector[B]): NonEmptyVector[B] = {
-    val v = f(whole)
-    NonEmptyVector(v.head, v.tail)
-  }
+  private def safeTrans[B](f: Vector[A] => Vector[B]): NonEmptyVector[B] =
+    NonEmptyVector force f(whole)
 
   def sorted[B >: A](implicit ord: Ordering[B])       = safeTrans(_.sorted[B])
   def sortBy[B](f: A => B)(implicit ord: Ordering[B]) = safeTrans(_ sortBy f)
@@ -147,9 +145,9 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
       else
         fs :+= a
     if (ts.nonEmpty)
-      (NonEmptyVector(ts.head, ts.tail), fs)
+      (NonEmptyVector force ts, fs)
     else
-      (NonEmptyVector(fs.head, fs.tail), ts)
+      (NonEmptyVector force fs, ts)
   }
 }
 

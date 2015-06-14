@@ -46,7 +46,7 @@ final class NonEmptySet[A] private[util] (val head: A, val tail: Set[A]) {
     f(head) || tail.exists(f)
 
   def +(a: A): NonEmptySet[A] =
-    if (head == a)
+    if (contains(a))
       this
     else
       new NonEmptySet(head, tail + a)
@@ -74,11 +74,11 @@ final class NonEmptySet[A] private[util] (val head: A, val tail: Set[A]) {
 
   @inline def toStream = whole.toStream
 
-  def toNEV: NonEmptyVector[A] =
+  @inline def toNEV: NonEmptyVector[A] =
     NonEmptyVector(head, tail.toVector)
 
   def mapV[B](f: A => B): NonEmptyVector[B] = {
-    val b = implicitly[CanBuildFrom[Nothing, B, Vector[B]]].apply
+    val b = implicitly[CanBuildFrom[Nothing, B, Vector[B]]].apply()
     tail.foreach(b += f(_))
     NonEmptyVector(f(head), b.result())
   }
