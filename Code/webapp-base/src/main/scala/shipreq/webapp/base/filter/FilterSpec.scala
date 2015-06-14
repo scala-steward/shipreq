@@ -1,6 +1,6 @@
 package shipreq.webapp.base.filter
 
-import shipreq.base.util.{ConciseIntSetFormat, NonEmptySet, NonEmptyVector}
+import shipreq.base.util._
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.Grammar
 
@@ -17,20 +17,18 @@ object FilterSpec {
 
   type Reqs = NonEmptyVector[ReqsSpec]
 
-  // TODO Use NonEmptySets instead of NonEmptyVectors
-
-  case class SimpleText(text: String)                       extends FilterSpec
-  case class QuotedText(text: String, quoteChar: Char)      extends FilterSpec
-  case class Regex     (text: String)                       extends FilterSpec
-  case class ReqType   (value: Mnemonic)                    extends FilterSpec
-  case class HashRef   (text: String)                       extends FilterSpec
-  case class Implies   (reqs: Reqs)                         extends FilterSpec
-  case class ImpliedBy (reqs: Reqs)                         extends FilterSpec
-  case class Presence  (attr: String)                       extends FilterSpec
-  case class Lack      (attr: String)                       extends FilterSpec
-  case class AllOf     (clause: NonEmptyVector[FilterSpec]) extends FilterSpec
-  case class AnyOf     (clause: NonEmptyVector[FilterSpec]) extends FilterSpec
-  case class Not       (expr: FilterSpec)                   extends FilterSpec
+  case class SimpleText(text: String)                      extends FilterSpec
+  case class QuotedText(text: String, quoteChar: Char)     extends FilterSpec
+  case class Regex     (text: String)                      extends FilterSpec
+  case class ReqType   (value: Mnemonic)                   extends FilterSpec
+  case class HashRef   (text: String)                      extends FilterSpec
+  case class Implies   (reqs: Reqs)                        extends FilterSpec
+  case class ImpliedBy (reqs: Reqs)                        extends FilterSpec
+  case class Presence  (attr: String)                      extends FilterSpec
+  case class Lack      (attr: String)                      extends FilterSpec
+  case class AllOf     (inner: NonEmptyVector[FilterSpec]) extends FilterSpec
+  case class AnyOf     (inner: NonEmptyVector[FilterSpec]) extends FilterSpec
+  case class Not       (expr: FilterSpec)                  extends FilterSpec
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -66,14 +64,14 @@ object FilterSpec {
         case ImpliedBy (reqs)        => "impliedBy:" ~ fmtReqs(reqs)
         case Presence  (attr)        => "has:" ~ attr
         case Lack      (attr)        => "no:" ~ attr
-        case AllOf     (clause)      => '(' ~ fmtClause(clause) ~ ')'
-        case AnyOf     (clause)      => '{' ~ fmtClause(clause) ~ '}'
+        case AllOf     (inner)       => '(' ~ fmtClause(inner) ~ ')'
+        case AnyOf     (inner)       => '{' ~ fmtClause(inner) ~ '}'
         case Not       (expr)        => '-' ~ fmtExpr(expr)
       }
 
     fs match {
-      case AllOf(clause) => fmtClause(clause)
-      case _             => fmtExpr(fs)
+      case AllOf(inner) => fmtClause(inner)
+      case _            => fmtExpr(fs)
     }
   }
 }

@@ -210,7 +210,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-  private def filterOrderFn(max: Int)(eval: FilterAst => Int): EndoFn[NonEmptyVector[FilterAst]] = {
+  private def filterOrderFn(max: Int)(eval: FilterAst => Int): EndoFn[Min2Vector[FilterAst]] = {
     // Oh the simplicity of single-threaded guarantees
     val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[FilterAst])
     as => {
@@ -218,7 +218,7 @@ private[reqtable] object Logic {
       for (a <- as)
         buckets(eval(a)) += a
       val all = buckets.foldLeft(Vector.empty[FilterAst])(_ ++ _)
-      NonEmptyVector(all.head, all.tail)
+      Min2Vector force all
     }
   }
 
@@ -274,8 +274,8 @@ private[reqtable] object Logic {
     // - AnyOf stops when match found, AllOf stops when non-match found. DeMorgan to the faster case.
     // - Remove duplicates
 
-    def interpretN(asts: NonEmptyVector[FilterAst], f: (F, F) => F): R =
-      filterFastestFirst(asts)
+    def interpretN(asts: Min2Set[FilterAst], f: (F, F) => F): R =
+      filterFastestFirst(asts.toMin2Vector)
         .traverse(interpret)
         .map(_ reduce f)
 
@@ -303,8 +303,8 @@ private[reqtable] object Logic {
         case Presence(AnyIssue)   => byIssueType(_.nonEmpty)
         case CustomIssue(it)      => byIssueType(_.exists(_.typ ≟ it))
         case Lack(a)              => interpret(Not(Presence(a)))
-        case AllOf(h, t)          => interpretN(h +: t, _ && _)
-        case AnyOf(h, t)          => interpretN(h +: t, _ || _)
+        case AllOf(as)            => interpretN(as, _ && _)
+        case AnyOf(as)            => interpretN(as, _ || _)
         case Not(Not(expr))       => interpret(expr)
         case Not(expr)            => interpret(expr).map(!_)
         case ImpliesAnyOf(reqs)   => byImplication(reqs, p.implicationTgtToSrcTC)

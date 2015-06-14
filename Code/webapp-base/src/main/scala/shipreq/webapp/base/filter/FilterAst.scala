@@ -2,7 +2,7 @@ package shipreq.webapp.base.filter
 
 import java.util.regex.Pattern
 import scalaz.{-\/, \/-, \/}
-import shipreq.base.util.{UnivEq, NonEmptyVector}
+import shipreq.base.util._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.filter.{FilterSpec => S}
 
@@ -34,17 +34,17 @@ object FilterAst {
       names.get(n.toLowerCase)
   }
 
-  case class Presence      (attr: Attr)                                       extends FilterAst
-  case class Lack          (attr: Attr)                                       extends FilterAst
-  case class ReqType       (id: data.ReqTypeId)                               extends FilterAst
-  case class Tag           (id: data.ApplicableTagId)                         extends FilterAst
-  case class CustomIssue   (id: data.CustomIssueTypeId)                       extends FilterAst
-  case class Text          (substring: String)                                extends FilterAst
-  case class ImpliesAnyOf  (reqs: Reqs)                                       extends FilterAst
-  case class ImpliedByAnyOf(reqs: Reqs)                                       extends FilterAst
-  case class AllOf         (head: FilterAst, tail: NonEmptyVector[FilterAst]) extends FilterAst
-  case class AnyOf         (head: FilterAst, tail: NonEmptyVector[FilterAst]) extends FilterAst
-  case class Not           (expr: FilterAst)                                  extends FilterAst
+  case class Presence      (attr: Attr)                 extends FilterAst
+  case class Lack          (attr: Attr)                 extends FilterAst
+  case class ReqType       (id: data.ReqTypeId)         extends FilterAst
+  case class Tag           (id: data.ApplicableTagId)   extends FilterAst
+  case class CustomIssue   (id: data.CustomIssueTypeId) extends FilterAst
+  case class Text          (substring: String)          extends FilterAst
+  case class ImpliesAnyOf  (reqs: Reqs)                 extends FilterAst
+  case class ImpliedByAnyOf(reqs: Reqs)                 extends FilterAst
+  case class AllOf         (inner: Min2Set[FilterAst])  extends FilterAst
+  case class AnyOf         (inner: Min2Set[FilterAst])  extends FilterAst
+  case class Not           (expr: FilterAst)            extends FilterAst
 
   case class TextPattern(pattern: Pattern) extends FilterAst {
     override def hashCode = pattern.pattern.##
@@ -93,9 +93,9 @@ object FilterAst {
       reqs.traverseD(lookupReqs).map(sets =>
         f(sets.reduce(_ ++ _)))
 
-    def composite(f: (FilterAst, NonEmptyVector[FilterAst]) => FilterAst, specs: NonEmptyVector[FilterSpec]): R =
-      specs.traverseD(translate).map(asts =>
-        NonEmptyVector.maybe(asts.tail, asts.head)(f(asts.head, _)))
+    def composite(f: Min2Set[FilterAst] => FilterAst, specs: NonEmptyVector[FilterSpec]): R =
+      specs.traverseD(translate).map( v =>
+        Min2Set.maybe1(v.toNES)(identity)(f))
 
     def translate(spec: FilterSpec): R =
       spec match {
@@ -106,8 +106,8 @@ object FilterAst {
         case S.ReqType(mn)         => lookupReqType(mn).map(rt => ReqType(rt.reqTypeId))
         case S.Implies(reqs)       => byReqs(ImpliesAnyOf, reqs)
         case S.ImpliedBy(reqs)     => byReqs(ImpliedByAnyOf, reqs)
-        case S.AllOf(clause)       => composite(AllOf, clause)
-        case S.AnyOf(clause)       => composite(AnyOf, clause)
+        case S.AllOf(inner)        => composite(AllOf, inner)
+        case S.AnyOf(inner)        => composite(AnyOf, inner)
         case S.Not(expr)           => translate(expr) map Not
 
         case S.Regex(regex) =>
@@ -145,7 +145,7 @@ object FilterAst {
       ))
     }
 
-    def translateN(asts: NonEmptyVector[FilterAst]): String \/ NonEmptyVector[FilterSpec] =
+    def translateN(asts: NonEmptySet[FilterAst]): String \/ NonEmptySet[FilterSpec] =
       asts.traverseD(translate)
 
     def translate(f: FilterAst): R = {
