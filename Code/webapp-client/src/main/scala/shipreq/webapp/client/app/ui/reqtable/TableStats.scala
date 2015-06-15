@@ -13,8 +13,9 @@ object TableStats {
       Prop.test[TableStats](s"$name must be positive", f(_) >= 0)
 
     ( positive("liveVisibleReqs",  _.liveVisibleReqs)
+    ∧ positive("deadVisibleReqs",  _.deadVisibleReqs)
     ∧ positive("liveFilteredReqs", _.liveFilteredReqs)
-    ∧ positive("deadReqs",         _.deadReqs)
+    ∧ positive("deadFilteredReqs", _.deadFilteredReqs)
     ∧ positive("expandedReqs",     _.expandedReqs)
     ∧ positive("expansionRows",    _.expansionRows)
     ∧ positive("codeGroups",       _.codeGroups)
@@ -31,16 +32,18 @@ object TableStats {
 
 case class TableStats(filterDead      : FilterDead,
                       liveVisibleReqs : Int,
+                      deadVisibleReqs : Int,
                       liveFilteredReqs: Int,
-                      deadReqs        : Int,
+                      deadFilteredReqs: Int,
                       expandedReqs    : Int,
                       expansionRows   : Int,
                       codeGroups      : Int) {
 
   val reappearances = expansionRows - expandedReqs
   val liveReqs      = liveVisibleReqs + liveFilteredReqs
+  val deadReqs      = deadVisibleReqs + deadFilteredReqs
   val totalReqs     = liveReqs + deadReqs
-  val visibleReqs   = liveVisibleReqs + (if (filterDead :: ShowDead) deadReqs else 0)
+  val visibleReqs   = liveVisibleReqs + deadVisibleReqs
   val visibleRows   = visibleReqs + reappearances + codeGroups
 
   this assertSatisfies TableStats.props
@@ -58,20 +61,24 @@ case class TableStats(filterDead      : FilterDead,
       if (i > 0)
         s ~= " + " ~ i.unitsOf(u, us)
 
-    val filterUsed = liveFilteredReqs != 0
-
-    def minusFiltered() =
-      if (filterUsed)
-        s ~= s" - $liveFilteredReqs filtered"
+    def minusFiltered(n: Int) =
+      if (n != 0)
+        s ~= s" - $n filtered"
 
     filterDead match {
+
       case HideDead =>
+        val filtered = liveFilteredReqs
+        val filterUsed = filtered != 0
         if (filterUsed)
           bracket {
             s ~= s"$liveReqs live"
-            minusFiltered()
+            minusFiltered(filtered)
           }
+
       case ShowDead =>
+        val filtered = liveFilteredReqs + deadFilteredReqs
+        val filterUsed = filtered != 0
         if (liveReqs != 0 && deadReqs == 0 && !filterUsed)
           bracket {
             s ~= "0 deleted"
@@ -79,7 +86,7 @@ case class TableStats(filterDead      : FilterDead,
         else if (liveReqs != 0 || deadReqs != 0 || filterUsed)
           bracket {
             s ~= s"$liveReqs live + $deadReqs deleted"
-            minusFiltered()
+            minusFiltered(filtered)
           }
     }
 

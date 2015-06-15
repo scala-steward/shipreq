@@ -5,6 +5,7 @@ import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTestOps._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
+import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom, dom.html
 import scalajs.js
 import scalaz.Equal
@@ -28,6 +29,12 @@ import shipreq.webapp.client.util._
 
 object ReqTableScreen {
   case class CellLoc(row: Int, col: Int)
+
+  val reportedRowCount = "^(\\d+) row.*".r
+  val reportedReqCount = ".*\\D(\\d+) reqs?.*".r
+  val reportedReqFormula = ".*\\d reqs? +\\((.+?)\\).*".r.pattern
+
+  val nonFormula = "[^0-9+-]+".r
 }
 import ReqTableScreen.CellLoc
 
@@ -37,6 +44,8 @@ import ReqTableScreen.CellLoc
  * Inspects actual DOM to derive values.
  */
 final class ReqTableScreen(root: => DomZipper) {
+  import ReqTableScreen._
+
   lazy val $ = root
 
   object viewSettings {
@@ -84,12 +93,19 @@ final class ReqTableScreen(root: => DomZipper) {
         inconclusive.map(_._2) ++ conclusiveColumns
     }
 
+    object filter {
+      lazy val $ = vsCol(2)
+
+      lazy val input = $("textarea")
+    }
+
     object filterDead {
-      lazy val $ = vsCol(2)("label input")
+      lazy val $ = filter.$("label input")
 
       lazy val value: FilterDead =
         Checkbox.filterDeadChecked <~ $.as[html.Input].checked
     }
+
   }
 
   object table {
@@ -159,6 +175,39 @@ final class ReqTableScreen(root: => DomZipper) {
       tbody.collectD(">tr",
         _.collectInnerText(">td").mkString("│ ", " │ ", " │")
       ).mkString("\n")
+  }
+
+  object stats {
+    lazy val text = $(">div").innerText
+
+    lazy val reportedRows: Int =
+      text match {
+        case reportedRowCount(n) => n.toInt
+        case u => fail(s"Unable to extract row count from [$u].")
+      }
+
+    lazy val reportedReqs: Int =
+      text match {
+        case reportedReqCount(n) => n.toInt
+        case u => fail(s"Unable to extract req count from [$u].")
+      }
+
+    lazy val reportedReqFormulaText: Option[String] = {
+      val m = reportedReqFormula.matcher(text)
+      if (m.matches) {
+        val f = m group 1
+        if (f == "0 deleted") None else Some(f)
+      } else
+        None
+    }
+
+    lazy val reportedReqFormulaValue: Option[Int] =
+      reportedReqFormulaText.map{ t =>
+        val f = nonFormula.replaceAllIn(t, "")
+        val i = new Calculator(f).InputLine.run()
+        //println(s"$t  ==>  $f  ==  $i")
+        i
+      }
   }
 
   def availCols = viewSettings.columns.allColumns
@@ -257,7 +306,23 @@ sealed trait ReqTableTest0 {
       rowEitherDeadOrLive & oneFocusMax
     }
 
-    availableColumns & sortableColumns & tableColumns & tableContents
+    def stats = {
+      val rowCount = equal("Reported row count")(_.table.allRows.length, _.stats.reportedRows)
+
+      val reqFormula = Prop.atom[S]("Req formula", s => {
+        s.stats.reportedReqFormulaValue.flatMap(fv =>
+          if (fv == s.stats.reportedReqs)
+            None
+          else
+            Some(s"${s.stats.reportedReqs} ≠ $fv (${s.stats.reportedReqFormulaText})")
+        )
+      })
+
+      "Stats" rename_: (rowCount & reqFormula)
+    }
+
+    "Invariants" rename_: (
+      availableColumns & sortableColumns & tableColumns & tableContents & stats)
   }
 
   def assertInvariants(s: S = *): Unit =
@@ -284,6 +349,11 @@ sealed trait ReqTableTest0 {
     )
   }
 
+  def enterFilter(f: String) = {
+    val e = ChangeEventData(f)
+    Action(e simulate _.viewSettings.filter.input.get)
+  }
+
   val filterDeadToggle =
     Action(Simulate change _.viewSettings.filterDead.$.get)
       .focus(_.viewSettings.filterDead.value)
@@ -301,6 +371,9 @@ sealed trait ReqTableTest0 {
 
   def applyViewSettings(vs: => ViewSettings): Action[Unit] =
     Action exec c.modState(_ updateVS vs)
+
+  val sortByPubid = applyViewSettings(
+    c.state.viewSettings.copy(order = SortCriteria.byPubidOnly))
 
   val showAllColumns = applyViewSettings {
     val s  = c.state
@@ -515,6 +588,18 @@ sealed trait ReqTableTest0 {
       >> testValid("wip defer")
       >> testValid("defer"))
   }
+
+  def testFilter(): Unit = run(
+    sortByPubid
+      >> enterFilter("-MF")
+      >> filterDeadToggle.focus(_.table.rowPubids)
+          .assertBefore(Vector("FR-1", "FR-2"))
+          .assertAfter(Vector("CO-1", "CO-2", "FR-1", "FR-2"))
+      >> enterFilter("FR")
+      >> filterDeadToggle.focus(_.table.rowPubids)
+          .assertBefore(Vector("FR-1", "FR-2"))
+          .assertAfter(Vector("FR-1", "FR-2"))
+  )
 }
 
 object ReqTableTest extends TestSuite with ReqTableTest0 {
@@ -538,5 +623,7 @@ object ReqTableTest extends TestSuite with ReqTableTest0 {
       'tags         - testTagsColumnEditor()
       'customTagCol - testCustomTagColumnEditor()
     }
+
+    'filter - testFilter()
   }
 }

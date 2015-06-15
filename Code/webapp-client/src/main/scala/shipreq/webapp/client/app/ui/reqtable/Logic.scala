@@ -561,14 +561,18 @@ private[reqtable] object Logic {
     var _codeGroups      = 0
     var _counts          = UnivEq.emptyMap[ReqId, Int]
     var _liveVisibleReqs = 0
+    var _deadVisibleReqs = 0
     rows foreach {
       case _: ReqCodeGroupRow =>
         _codeGroups += 1
       case r: GenericReqRow =>
         val id = r.req.id
         val c = _counts.getOrElse(id, 0)
-        if (c == 0 && r.live :: Live)
-          _liveVisibleReqs += 1
+        if (c == 0)
+          r.live match {
+            case Live => _liveVisibleReqs += 1
+            case Dead => _deadVisibleReqs += 1
+          }
         _counts = _counts.updated(id, c + 1)
     }
 
@@ -580,10 +584,14 @@ private[reqtable] object Logic {
       _expansionRows += c
     }
 
+    val totalDead = p.reqs.data.deadCount
+    val totalLive = p.reqs.data.reqs.size - totalDead
+
     TableStats(vs.filterDead,
       liveVisibleReqs  = _liveVisibleReqs,
-      liveFilteredReqs = p.reqs.data.reqs.size - p.reqs.data.deadCount - _liveVisibleReqs,
-      deadReqs         = p.reqs.data.deadCount,
+      deadVisibleReqs  = _deadVisibleReqs,
+      liveFilteredReqs = totalLive - _liveVisibleReqs,
+      deadFilteredReqs = totalDead - _deadVisibleReqs,
       expandedReqs     = _expandedReqs,
       expansionRows    = _expansionRows,
       codeGroups       = _codeGroups)
