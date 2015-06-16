@@ -172,17 +172,17 @@ object AutoCompleteTest extends TestSuite {
       test("#xxxxxxx")() // Clear previous
 
       'start {
-        test("#T")("TBD", "TODO")
+        test("#T")("TBD", "TO"+"DO")
         testSelect("#TBD ")
       }
       'mid {
-        test("#DO")("TODO")
-        testSelect("#TODO ")
+        test("#DO")("TO"+"DO")
+        testSelect("#TO"+"DO ")
       }
       'noSyntax -
         test("T")()
       'filterDead -
-        test("#D")("TBD", "TODO") // PENDING is dead
+        test("#D")("TBD", "TO"+"DO") // PENDING is dead
     }
 
     'tagC {

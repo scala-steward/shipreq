@@ -13,8 +13,6 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
 import shipreq.webapp.client.lib.{Plain, HideDead}
 
-// TODO Hide dead tags & maintain across edits (unless show deleted is on)
-
 object TagEditor {
   type Lookup = Map[String, ApplicableTag]
 

@@ -167,8 +167,6 @@ object ParsersTest extends TestSuite {
   def propMathTeX = parserProp("MathTeX",
     (_: T.MathTeX).value |> Grammar.mathTexSurround.display, T.parserI(P))(_.mathtex.run())
 
-  // TODO ReqTitle doesn't allow tags. Rethink this?
-
   override val tests = TestSuite {
     'manual {
       import UnsafeTypes._

@@ -364,7 +364,7 @@ private[reqtable] object Logic {
     // - overlap between has Issue & Presence/Lack(AnyIssue)
     // - overlap between WholeType & SomeOfType
     // - cycle in ImpliesAnyOf & ImpliedByAnyOf is impossible to satisfy
-    // - lack & presense of α
+    // - lack & presence of α
     // - AnyOf with 2 contradictions = always pass
     // - AllOf with 2 contradictions = always fail
     // - AnyOf stops when match found, AllOf stops when non-match found. DeMorgan to the faster case.

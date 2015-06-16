@@ -112,7 +112,7 @@ object FilterParserTest extends TestSuite {
       'empty2  - testFail("# ")
       'simple1 - test("#x",       HashRef("x"))
       'simple2 - test("#pri=123", HashRef("pri=123"))
-      'anyCase - test("#TODO",    HashRef("TODO"))
+      'anyCase - test("#TO"+"DO", HashRef("TO"+"DO"))
     }
 
     'implication {
