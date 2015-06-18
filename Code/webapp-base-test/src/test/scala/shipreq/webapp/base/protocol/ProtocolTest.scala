@@ -1,7 +1,11 @@
 package shipreq.webapp.base.protocol
 
 import java.util.concurrent.atomic.AtomicBoolean
+import scalaz.Equal
 import scalaz.Leibniz.===
+import scalaz.std.anyVal.unitInstance
+import scalaz.std.stream.streamEqual
+import scalaz.syntax.equal._
 import utest._
 import upickle._
 import upickle.Fns._
@@ -9,14 +13,30 @@ import upickle.BaseCodecs.UnitRW
 import japgolly.nyaya._
 import japgolly.nyaya.test.{Gen, Settings}
 import japgolly.nyaya.test.PropTest._
+import shipreq.base.util.UnivEq
+import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta._
+import shipreq.webapp.base.text.Text.Equality._
+import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.base.{RandomData => $}
 import $.TextGenExt
 
 object ProtocolTest extends TestSuite {
 
-  implicit def equality[A] = scalaz.Equal.equalA[A]
+  implicit val equalityRemoteDeltaP = Equal.equal[RemoteDeltaP]((a, b) =>
+    (a.partition == b.partition) &&
+    (a.delete    == b.delete) &&
+    (a.update    == b.update))
+
+  implicit def equalityRemoteDeltaPR: Equal[RemoteDeltaPR] = deriveEqual
+
+  implicit val equalityRemoteDelta = Equal.equal[RemoteDelta]((a, b) =>
+    a.values.toStream ≟ b.values.toStream)
+
+  implicit def equalProjectSPA: Equal[Routines.ProjectSPA] = {import AutoDerive._; deriveEqual}
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   def kitR[R <: Routine.Desc](r: R) = {
     import r.{ri, wi, ro, wo}
@@ -35,22 +55,22 @@ object ProtocolTest extends TestSuite {
     private val logFmtI: LogFmt = (a, j) => s"  C ⇒ ${c("36", a)}\n    ⇒ ${c("34;1", j)} ⇒ S"
     private val logFmtO: LogFmt = (a, j) => s"  S ⇒ ${c("36", a)}\n    ⇒ ${c("34;1", j)} ⇒ C"
 
-    def testI(is: I*): Unit = is.foreach(testA(_, logFmtI))
-    def testO(os: O*): Unit = os.foreach(testA(_, logFmtO))
+    def testI(is: I*)(implicit e: Equal[I]): Unit = is.foreach(testA(_, logFmtI))
+    def testO(os: O*)(implicit e: Equal[O]): Unit = os.foreach(testA(_, logFmtO))
 
-    def testIO(is: I*)(implicit ev: I === O): Unit = {
+    def testIO(is: I*)(implicit e: Equal[I], ev: I === O): Unit = {
       testI(is: _*)
-      testO(ev.subst(is): _*)
+      testO(ev.subst(is): _*)(ev.subst(e))
     }
 
-    def testA[A: Reader : Writer](a: A, lf: LogFmt) = {
+    def testA[A: Reader : Writer : Equal](a: A, lf: LogFmt) = {
       val j = write(a)
       println(lf(a.toString, j))
       val b = read[A](j)
-      assert(b == a)
+      assertEq(b, a)
     }
 
-    def propA[A: Reader : Writer](lf: LogFmt, name: String) = Prop.equalSelf[A](name, {
+    def propA[A: Reader : Writer : Equal](lf: LogFmt, name: String) = Prop.equalSelf[A](name, {
       val first = new AtomicBoolean(true)
       a => {
         val j = write(a)
@@ -62,8 +82,8 @@ object ProtocolTest extends TestSuite {
       }
     })
 
-    def propI = propA[I](logFmtI, s"$subject⁻: read(write(a)) = a")
-    def propO = propA[O](logFmtO, s"$subject⁺: read(write(a)) = a")
+    def propI(implicit e: Equal[I]) = propA[I](logFmtI, s"$subject⁻: read(write(a)) = a")
+    def propO(implicit e: Equal[O]) = propA[O](logFmtO, s"$subject⁺: read(write(a)) = a")
   }
 
 
@@ -73,7 +93,7 @@ object ProtocolTest extends TestSuite {
       import DataCodecs._
       implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
-      def test[A: Reader : Writer](name: String, g: Gen[A]): Unit =
+      def test[A: Reader : Writer : Equal](name: String, g: Gen[A]): Unit =
         g.mustSatisfy(new KitIO[A, Unit](name).propI)//(implicitly[Settings].setDebug.copy(debugMaxLen = 5000))
 
       'Text {
@@ -90,8 +110,12 @@ object ProtocolTest extends TestSuite {
     }
 
     'Routines {
-      def testCrud(r: Routine.Desc {type O = RemoteDelta})(g: Gen[r.I]): Unit = kitR(r).propI mustBeSatisfiedBy g
-      def testUnitI(r: Routine.Desc {type I = Unit})(g: Gen[r.O]): Unit = kitR(r).propO mustBeSatisfiedBy g
+      import Routine.=>|=>
+      def testCrud[I](r: Routine.Desc {type O = RemoteDelta})(g: Gen[r.I])(implicit e: Equal[r.I]): Unit =
+        kitR(r).propI mustBeSatisfiedBy g
+
+      def testUnitI[O](r: Unit =>|=> O)(g: Gen[O])(implicit e: Equal[O]): Unit =
+        kitR(r).propO mustBeSatisfiedBy g
 
       'ProjectInit         - testUnitI(Routines.ProjectInit       )($.project)
       'CustomIssueTypeCrud - testCrud(Routines.CustomIssueTypeCrud)($.routines.customIssueTypeCrud.any)
@@ -102,7 +126,7 @@ object ProtocolTest extends TestSuite {
 
     'JsEntryPoints {
       import JsEntryPoint._
-      def test[I](ep: JsEntryPoint[I, Unit], name: String)(g: Gen[I]): Unit = kitEP(ep, name).propI mustBeSatisfiedBy g
+      def test[I: Equal](ep: JsEntryPoint[I, Unit], name: String)(g: Gen[I]): Unit = kitEP(ep, name).propI mustBeSatisfiedBy g
 
       'reactExamples - test(reactExamples, "reactExamples")($.routines.projectSPA)
     }

@@ -1,7 +1,8 @@
 package shipreq.webapp.base
 
-import scalaz.\/
+import scalaz.{Equal, \/}
 import shipreq.base.util.{UnivEq, IMap}
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 package object data {
 

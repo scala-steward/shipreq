@@ -120,6 +120,8 @@ object TagProtocol {
                                        key: HashRefKey,
                                        desc: Option[String]) extends Values
 
+  implicit lazy val equalValues: UnivEq[Values] = {import AutoDerive._; deriveUnivEq}
+
   object PPI extends delta.PPI[Partition.Tags.type] {
     def rev(p: Project): Rev =
       p.tags.rev

@@ -31,6 +31,7 @@ object UnivEq {
   @inline implicit def vector[A: UnivEq]           : UnivEq[Vector[A]]       = force
   @inline implicit def map   [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = force
   @inline implicit def disj  [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = force
+  @inline implicit def these [A: UnivEq, B: UnivEq]: UnivEq[A \&/ B]         = force
   @inline implicit def nel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = force
 
   @inline implicit def multimap[K, L[_], V](implicit ev: UnivEq[Map[K, L[V]]]): UnivEq[Multimap[K, L, V]] = force

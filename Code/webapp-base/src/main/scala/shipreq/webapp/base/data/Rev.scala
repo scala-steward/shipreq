@@ -2,6 +2,8 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya._
 import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.UnivEq
+import shipreq.webapp.base.util.TypeclassDerivation._
 
 /** A monotonic revision number. */
 case class Rev(value: Long) extends TaggedLong {
@@ -21,6 +23,8 @@ case class RevRange(fromInclusive: Rev, toInclusive: Rev) {
 }
 
 object RevRange {
+  implicit def equality: UnivEq[RevRange] = deriveUnivEq
+
   def single(rev: Rev) = RevRange(rev, rev)
 
   lazy val prop =

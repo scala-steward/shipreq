@@ -1,5 +1,6 @@
 package shipreq.webapp.base.protocol
 
+import scalaz.Equal
 import upickle.{Reader, Writer}
 
 object Routine {
@@ -35,4 +36,8 @@ object Routine {
    * @param n The server-side Lift function key.
    */
   final case class Remote[D <: Desc](n: String, d: D)
+
+  implicit def equalDesc[D <: Desc]: Equal[D] = Equal.equalRef
+  implicit def equalRemove[D <: Desc]: Equal[Remote[D]] =
+    Equal.equal((a, b) => a.n == b.n && (a.d eq b.d))
 }

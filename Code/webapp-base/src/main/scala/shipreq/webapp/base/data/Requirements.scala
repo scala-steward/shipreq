@@ -4,7 +4,7 @@ import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenses
 import monocle.Prism
-import scalaz.Order
+import scalaz.{Equal, Order}
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
@@ -191,6 +191,10 @@ final case class ReqCodes(trie: ReqCode.Trie) {
 //      q.add(d.target, d.id))
 }
 
+object ReqCodes {
+  implicit lazy val equality: Equal[ReqCodes] = deriveEqual
+}
+
 // ===================================================================================================================
 // Public IDs (like MF-3)
 
@@ -266,6 +270,8 @@ sealed abstract class ReqT[+RT <: ReqTypeId] {
 }
 
 object ReqT {
+  implicit def equalReq(implicit g: UnivEq[GenericReq]): UnivEq[Req] = UnivEq.force
+
   object IdAccess extends ObjDataId[ReqT.type, Req, ReqId] {
     override def id(d: Req) = d.id
     override val unapplyData: AnyRef => Option[Req] = {case r: Req => Some(r); case _ => None}
@@ -285,8 +291,12 @@ final case class GenericReq(id   : GenericReqId,
                             live: Live) extends ReqT[CustomReqTypeId]
 
 object GenericReq {
-  implicit val equality: UnivEq[GenericReq] = deriveUnivEq
+  implicit def equality: UnivEq[GenericReq] = deriveUnivEq
 }
+
+case class ReqFieldData(text        : ReqFieldData.Text,
+                        tags        : ReqFieldData.Tags,
+                        implications: ReqFieldData.Implications)
 
 object ReqFieldData {
   /** U = Unidirectional */
@@ -308,16 +318,18 @@ object ReqFieldData {
         case (q, (k, vs)) => q + k ++ vs
       }
   }
-}
 
-case class ReqFieldData(text        : ReqFieldData.Text,
-                        tags        : ReqFieldData.Tags,
-                        implications: ReqFieldData.Implications)
+  implicit def equalityI: UnivEq[Implications] = deriveUnivEq
+  implicit def equality: UnivEq[ReqFieldData] = deriveUnivEq
+}
 
 object Requirements {
   type Data = IMapK[ReqTypeId, ReqIdT, ReqT]
   def emptyData = ReqT.idProof.emptyIMapK
   def empty = Requirements(emptyData, PubidRegister.empty)
+
+  implicit def equalityData: Equal[Data] = IMapK.equality[ReqTypeId, ReqIdT, ReqT]
+  implicit lazy val equality: Equal[Requirements] = deriveEqual
 }
 
 @Lenses

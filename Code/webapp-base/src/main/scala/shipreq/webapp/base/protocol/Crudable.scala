@@ -38,6 +38,8 @@ object CrudAction {
   final case class Create[V]    (newValues: V)                   extends CrudAction[Nothing, V]
   final case class Update[Id, V](id: Id, newValues: V)           extends CrudAction[Id     , V]
   final case class Delete[Id]   (id: Id, action: DeletionAction) extends CrudAction[Id     , Nothing]
+
+  @inline implicit def equality[I: UnivEq, V: UnivEq]: UnivEq[CrudAction[I, V]] = UnivEq.force
 }
 
 sealed abstract class DeletionAction
@@ -46,5 +48,5 @@ object DeletionAction {
   case object SoftDel extends DeletionAction
   case object Restore extends DeletionAction
   def values = NonEmptyVector[DeletionAction](HardDel, SoftDel, Restore)
-  @inline implicit def equality = UnivEq.force[DeletionAction]
+  @inline implicit def equality: UnivEq[DeletionAction] = UnivEq.force
 }
