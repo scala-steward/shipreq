@@ -13,16 +13,16 @@ import DeltaCodecs._
 
 object Routines {
 
-  object ProjectInit extends DescT[Unit, Project]
+  object ProjectInit extends (Unit =>|=> Project)
 
-  object CustomIssueTypeCrud extends Crudable.CAux[CustomIssueTypeId, CustomIssueTypeProtocol.Values]
-  object CustomReqTypeCrud   extends Crudable.CAux[CustomReqTypeId,   CustomReqTypeProtocol.Values]
-  object TagCrud             extends Crudable.CAux[TagId,             TagProtocol.Values \&/ TagProtocol.PovRelations]
+  // Project config
+  object CustomIssueTypeCrud   extends Crudable.CAux[CustomIssueTypeId, CustomIssueTypeProtocol.Values]
+  object CustomReqTypeCrud     extends Crudable.CAux[CustomReqTypeId,   CustomReqTypeProtocol.Values]
+  object TagCrud               extends Crudable.CAux[TagId,             TagProtocol.Values \&/ TagProtocol.PovRelations]
+  object FieldCrud             extends (FieldProtocol.CfgAction                =>|=> RemoteDelta)
+  object FieldMandatorinessMod extends ((CustomFieldId,   Mandatory          ) =>|=> RemoteDelta)
+  object ReqTypeImplicationMod extends ((CustomReqTypeId, ImplicationRequired) =>|=> RemoteDelta)
 
-  object FieldMandatorinessMod extends DescT[(CustomFieldId , Mandatory           ), RemoteDelta]
-  object ReqTypeImplicationMod extends DescT[(CustomReqTypeId, ImplicationRequired), RemoteDelta]
-
-  object FieldCrud extends DescT[FieldProtocol.CfgAction, RemoteDelta]
 
   case class ProjectSPA(projectInit:   ProjectInit          .Remote,
                         issueTypeCrud: CustomIssueTypeCrud  .Remote,

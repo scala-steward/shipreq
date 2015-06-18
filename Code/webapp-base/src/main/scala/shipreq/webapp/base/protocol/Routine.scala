@@ -5,7 +5,7 @@ import upickle.{Reader, Writer}
 object Routine {
 
   /**
-   * Description of a remote routine.
+   * Description of a server-side routine (function).
    */
   abstract class Desc {
     type I
@@ -18,7 +18,7 @@ object Routine {
   }
 
   /** Syntactic convenience that allows for single-line declaration. */
-  abstract class DescT[_I, _O](implicit RI: Reader[_I], WI: Writer[_I], RO: Reader[_O], WO: Writer[_O]) extends Desc {
+  abstract class =>|=>[_I, _O](implicit RI: Reader[_I], WI: Writer[_I], RO: Reader[_O], WO: Writer[_O]) extends Desc {
     final override type I = _I
     final override type O = _O
     final override implicit def ri = RI
@@ -30,7 +30,8 @@ object Routine {
   type Aux[_I, _O] = Desc {type I = _I; type O = _O}
 
   /**
-   * Descriptor of a remotely available routine.
+   * A routine ready for remote invocation.
+   *
    * @param n The server-side Lift function key.
    */
   final case class Remote[D <: Desc](n: String, d: D)
