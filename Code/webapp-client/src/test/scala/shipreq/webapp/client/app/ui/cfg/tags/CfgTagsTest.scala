@@ -9,7 +9,7 @@ import scalaz.std.AllInstances._
 import utest._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.delta.{Partition, RemoteDeltaG}
+import shipreq.webapp.base.delta.{Partition, RemoteDeltaPR, RemoteDelta}
 import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.TagCrud
 import shipreq.webapp.base.protocol.TagProtocol._
@@ -51,12 +51,12 @@ object CfgTagsTest extends TestSuite {
     import t._
 
     'recvUpdates {
-      val rev = clientData.project.tags.rev.succ
+      val rev = RevRange single clientData.project.tags.rev
       val upd = PovTag(
         ApplicableTag(22, "Blah", None, "blah", Live),
         PovRelations(Map(1.TG -> priMed.some), Vector(10.TG)))
-      val d = RemoteDeltaG(Partition.Tags, rev, rev)(Set.empty, List(upd))
-      clientData.update(List(d)).unsafePerformIO()
+      val d = RemoteDeltaPR(Partition.Tags, rev)(Set.empty, upd :: Nil)
+      clientData.update(RemoteDelta.empty + d).unsafePerformIO()
 
       assertEq(nameAsTextTree(c).mkString("\n"),
         """

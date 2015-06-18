@@ -32,7 +32,7 @@ private[issues] object CustomIssueTypes {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(DeltaListener(_.clientData, DeltaListener.store(savedRowStoreS).handler(Partition.CustomIssueTypes)))
+      .configure(DeltaListener.store(savedRowStoreS)(Partition.CustomIssueTypes).install(_.clientData))
       .build
 
   private def initialState(p: Props): S =

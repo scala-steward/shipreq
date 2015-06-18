@@ -6,7 +6,7 @@ import scalaz.{Equal, \/-}
 import utest._
 import shipreq.base.util.ISubset
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.delta.{Partition, RemoteDeltaG}
+import shipreq.webapp.base.delta.{Partition, RemoteDeltaPR, RemoteDelta}
 import shipreq.webapp.base.protocol.FieldProtocol._
 import shipreq.webapp.base.protocol.Routine
 import shipreq.webapp.base.protocol.Routines.FieldCrud
@@ -64,21 +64,21 @@ object CfgFieldsTest extends TestSuite {
 
     // Server communication
     cp.assertCommsSent(1)
-    rev = rev.succ
     cp.respondToLastSuccessfully(remote){
       val newField = CustomField.Text(666, "blahh", "blahh", Mandatory, ISubset.All(), Live)
-      val deltaG   = RemoteDeltaG(Partition.Fields, rev, rev)(Set.empty, List(Delta(\/-(newField), None)))
-      List(deltaG)
+      val delta    = RemoteDeltaPR(Partition.Fields, RevRange single rev)(Set.empty, Delta(\/-(newField), None) :: Nil)
+      RemoteDelta.empty + delta
     }
+    rev = rev.succ
     assert(getNewRow.isEmpty)
 
     // Delete newly saved row
     Simulation.click run sole(Sizzle("tr:has(:text[value=blahh]) button:contains('Delete')", c))
     cp.assertCommsSent(2)
+    cp.respondToLastSuccessfully(remote)(RemoteDelta.empty +
+      RemoteDeltaPR(Partition.Fields, RevRange single rev)(Set(CustomField.Text.Id(666)), Nil)
+    )
     rev = rev.succ
-    cp.respondToLastSuccessfully(remote)(List(
-      RemoteDeltaG(Partition.Fields, rev, rev)(Set(CustomField.Text.Id(666)), Nil)
-    ))
 
     assertEq(c.state, initialState)
   }

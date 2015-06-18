@@ -32,7 +32,7 @@ object CfgReqTypes {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(DeltaListener(_.clientData, DeltaListener.store(savedRowStoreS).handler(Partition.CustomReqTypes)))
+      .configure(DeltaListener.store(savedRowStoreS)(Partition.CustomReqTypes).install(_.clientData))
       .build
 
   private def initialState(p: Props): S =

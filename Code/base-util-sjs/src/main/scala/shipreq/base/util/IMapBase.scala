@@ -47,6 +47,9 @@ abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]
   @inline final def keySet        = m.keySet
   @inline final def size          = m.size
 
+  final def containsK(k: K): Boolean = m.contains(k)
+  final def containsV(v: VI): Boolean = containsK(_gkey(v))
+
   @inline final def mapValues[A](f: VO => A): Map[K, A] =
     m mapValuesNow f
 

@@ -159,11 +159,11 @@ object RandomData {
   def revAndG[D](r: Gen[D]): Gen[RevAnd[D]] =
     Gen.apply2(RevAnd[D])(rev, r)
 
-  lazy val revPair =
+  lazy val revRange =
     for {
       r1 <- rev
       r2 <- rev
-    } yield if (r1.value <= r2.value) (r1, r2) else (r2, r1)
+    } yield if (r1.value <= r2.value) RevRange(r1, r2) else RevRange(r2, r1)
 
   def revAndIMap[D, I <: TaggedLong](r: Gen[D])(mod: List[D] => List[D])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
@@ -1041,7 +1041,7 @@ object RandomData {
     }
 
     lazy val tagCrudInput =
-      remoteDeltaG.povTag.flatMap(t => {
+      remoteDeltaPR.povTag.flatMap(t => {
         val a = Gen insert tagProtocolValues(t.tag)
         val b = Gen insert t.rels
         a \&/ b
@@ -1049,37 +1049,37 @@ object RandomData {
   }
 
   // ===================================================================================================================
-  object remoteDeltaG {
+  object remoteDeltaPR {
     import shipreq.webapp.base.protocol._
     import RandomData.protocol._
 
-    def forPart: Partition => Gen[RemoteDeltaG] = {
-      case Partition.CustomIssueTypes => customIssueTypesDG
-      case Partition.CustomReqTypes   => customReqTypesDG
-      case Partition.Fields           => fieldsDG
-      case Partition.Tags             => tagsDG
+    def forPart: Partition => Gen[RemoteDeltaPR] = {
+      case Partition.CustomIssueTypes => customIssueTypesD
+      case Partition.CustomReqTypes   => customReqTypesD
+      case Partition.Fields           => fieldsD
+      case Partition.Tags             => tagsD
     }
 
-    def generic(p: Partition)(ir: Gen[p.Id], dr: Gen[p.Data]): Gen[RemoteDeltaG] = {
+    def generic(p: Partition)(ir: Gen[p.Id], dr: Gen[p.Data])(implicit ev: UnivEq[p.Id]): Gen[RemoteDeltaPR] = {
       import p.di
       for {
-        d        ← dr.list
-        i0       ← ir.set
-        i        = d.foldLeft(i0)(_ - _.id)
-        (r1, r2) ← revPair
-      } yield RemoteDeltaG(p, r1, r2)(i, d)
+        d  ← dr.list
+        i0 ← ir.set
+        i  = d.foldLeft(i0)(_ - _.id)
+        rr ← revRange
+      } yield RemoteDeltaPR(p, rr)(i, d)
     }
 
-    lazy val customIssueTypesDG =
+    lazy val customIssueTypesD =
       generic(Partition.CustomIssueTypes)(customIssueTypeId, customIssueType)
 
-    lazy val customReqTypesDG =
+    lazy val customReqTypesD =
       generic(Partition.CustomReqTypes)(customReqTypeId, customReqType)
 
-    lazy val fieldsDG =
+    lazy val fieldsD =
       generic(Partition.Fields)(fieldId, fieldDelta)
 
-    lazy val tagsDG =
+    lazy val tagsD =
       generic(Partition.Tags)(tagId, povTag)
 
     lazy val povTag =
@@ -1095,7 +1095,7 @@ object RandomData {
 
   object remoteDelta {
     def forPart: Partition => Gen[RemoteDelta] =
-      remoteDeltaG.forPart(_).map(List(_))
+      remoteDeltaPR.forPart(_).map(RemoteDelta.empty + _)
   }
 
   // ===================================================================================================================

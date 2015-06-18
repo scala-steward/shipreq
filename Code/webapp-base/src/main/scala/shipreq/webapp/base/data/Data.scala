@@ -4,12 +4,6 @@ import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.IsoBool
 
 
-final case class Rev(value: Long) extends TaggedLong {
-  @inline def succ      = Rev(value + 1L)
-  @inline def +(r: Rev) = Rev(value + r.value)
-}
-
-
 sealed trait Live
 case object Live extends Live with IsoBool.Obj[Live] {
   override protected def neg = Dead

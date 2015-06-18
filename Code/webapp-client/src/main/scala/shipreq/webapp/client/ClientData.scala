@@ -15,15 +15,15 @@ final class ClientData(init: Project) extends Broadcaster[LocalDelta] {
 
   @inline def project = pvar
 
-  def update(d: RemoteDelta): IO[Unit] =
-      RemoteDelta(project, d) match {
-        case Applied(p2, d2) => IO[Unit] {
-          pvar = p2
-          broadcast(d2)
-        }
-        case CouldntApply =>
-          ConsoleIO(_ error s"Update failed.\n\nΠ: $project\n\nΔ: $d")
+  def update(rd: RemoteDelta): IO[Unit] =
+    RemoteDeltaAp(project, rd) match {
+      case RemoteDeltaAp.Success(newProject, localDelta) => IO[Unit] {
+        pvar = newProject
+        broadcast(localDelta)
       }
+      case RemoteDeltaAp.Failure =>
+        ConsoleIO(_ error s"Update failed.\n\nΠ: $project\n\nΔ: $rd")
+    }
 }
 
 object ClientData {

@@ -4,7 +4,7 @@ import scalaz.{\/-, -\/, \/}
 import scalaz.std.AllInstances._
 import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.delta.{Partition, RemoteDeltaP}
+import shipreq.webapp.base.delta, delta.{Partition, RemoteDeltaP}
 import shipreq.webapp.base.util.TypeclassDerivation._
 import Field.ApplicableReqTypes
 
@@ -48,25 +48,25 @@ object FieldProtocol {
     override val unapplyData: AnyRef => Option[Delta] = {case r: Delta => Some(r); case _ => None}
   }
 
-  object PartitionFns extends Partition.Fns[Partition.Fields.type] {
+  object PPI extends delta.PPI[Partition.Fields.type] {
     def rev(p: Project): Rev =
       p.fields.rev
 
-    def update(p: Project, rev: Rev, ds: RemoteDeltaP[Partition.Fields.type]): Project = {
+    def update(p: Project, newRev: Rev, delta: RemoteDeltaP.Aux[Partition.Fields.type]): Project = {
       var FieldSet(customFields, order) = p.fields.data
 
       // Delete fields
-      for (fieldId <- ds.del)
+      for (fieldId <- delta.delete)
         fieldId match {
           case i: CustomFieldId => customFields = customFields - i
           case _: StaticField   => ()
         }
-      order = order.filterNot(ds.del.contains)
+      order = order.filterNot(delta.delete.contains)
 
       // Insert/update
       def setOrder(id: FieldId, pos: Position): Unit =
         order = Util.reposition(order, id, pos)
-      for (delta <- ds.upd)
+      for (delta <- delta.update)
         delta match {
           case Delta(-\/(staticField), pos) =>
             setOrder(staticField, pos)
@@ -76,7 +76,7 @@ object FieldProtocol {
         }
 
       // Done
-      p.copy(fields = RevAnd(rev, FieldSet(customFields, order)))
+      p.copy(fields = RevAnd(newRev, FieldSet(customFields, order)))
     }
   }
 

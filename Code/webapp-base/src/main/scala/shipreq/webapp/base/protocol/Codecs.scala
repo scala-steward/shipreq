@@ -39,6 +39,9 @@ private[protocol] object CodecBase {
     })
   }
 
+  // UNSAFE. Make sure tests using exhaustive pattern matching to cover this hierarchy
+  def enumS[T: UnivEq](ts: NonEmptySet[T]) = enum(ts.toNEV)
+
   def xmap[A, B](f: A => B)(g: B => A)(implicit RB: Reader[B], WB: Writer[B]) =
     ReadWriter[A](WB.write compose f, RB.read andThen g)
 
@@ -703,35 +706,34 @@ object ProtocolRemoteCodecs {
 
 // =====================================================================================================================
 object DeltaCodecs {
+  import shipreq.webapp.base.data.RevRange
   import shipreq.webapp.base.delta._
   import CodecBase._
   import DataCodecs.rev
 
-  implicit final val partitions = enum(Partition.values)
+  implicit final val partitionRW: ReadWriter[Partition] =
+    enumS(Partition.values)
 
-  implicit final val remoteDeltaGW = Writer[RemoteDeltaG](r => {
-    import r.p.{wi, wd}
-    val dp = r.forceDeltaP[r.p.type](r.p)
-    val a = partitions write r.p
-    val b = rev write r.from
-    val c = rev write r.to
-    val d = writeIterable(dp.del)(wi)
-    val e = writeIterable(dp.upd)(wd)
+  implicit final val remoteDeltaPR_W = Writer[RemoteDeltaPR](r => {
+    import r.delta.partition.{wi, wd}
+    val a = partitionRW write r.partition
+    val b = rev write r.revRange.fromInclusive
+    val c = rev write r.revRange.toInclusive
+    val d = writeIterable(r.delta.delete)(wi)
+    val e = writeIterable(r.delta.update)(wd)
     Js.Arr(a, b, c, d, e)
   })
 
-  implicit final val remoteDeltaGR = Reader[RemoteDeltaG]({
+  implicit final val remoteDeltaPR_R = Reader[RemoteDeltaPR]({
     case Js.Arr(a, b, c, Js.Arr(d@_*), Js.Arr(e@_*)) =>
-      val p = partitions read a
+      val p = partitionRW read a
       val f = rev read b
       val t = rev read c
       val x = p.ri.readSet(d)(p.ui)
       val y = p.rd.readList(e)
-      RemoteDeltaG(p, f, t)(x, y)
+      RemoteDeltaPR(p, RevRange(f, t))(x, y)(UnivEq.force)
   })
 
-//  implicit final val remoteDelta: ReadWriter[RemoteDelta] = implicitly[ReadWriter[List[RemoteDeltaG]]]
-  implicit final val remoteDelta = ReadWriter[RemoteDelta](
-    SeqishW[RemoteDeltaG, List].write,
-    SeqishR[RemoteDeltaG, List].read)
+  implicit final val remoteDelta: ReadWriter[RemoteDelta] =
+    iMap(_.partition)
 }

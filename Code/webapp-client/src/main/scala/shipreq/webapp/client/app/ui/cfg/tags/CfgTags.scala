@@ -156,7 +156,7 @@ private[tags] object MainTable {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(DeltaListener(_.clientData, tagDeltaListener.handler(Partition.Tags)))
+      .configure(tagDeltaListener(Partition.Tags).install(_.clientData))
       .build
 
   val rowIdFromEditorInput: ((V.S, Any)) => Option[Id] = _._1._2.tagData._1

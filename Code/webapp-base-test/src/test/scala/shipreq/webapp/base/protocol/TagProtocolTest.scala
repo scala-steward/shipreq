@@ -57,7 +57,7 @@ object TagProtocolTest extends TestSuite {
   val tagPropGen: Gen[TagProps] =
     for {
       tt <- RandomData.tagTree
-      t  <- RandomData.remoteDeltaG.povTag
+      t  <- RandomData.remoteDeltaPR.povTag
     } yield {
       val tt2 = (tt /: t.rels.allReferencedIds)((q, id) =>
         q.modOrPut(id, identity, TagInTree(TagId_T.setId(t.tag, id), Vector.empty)))

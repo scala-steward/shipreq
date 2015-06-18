@@ -28,15 +28,15 @@ private[issues] object MandatoryFields {
   type ST = ST.T[Unit]
 
   val fieldListener =
-    DeltaListener.store(rowStore).partialHandler(Partition.Fields)(_.foldId(_ => None, _.some), _.field.toOption)
+    DeltaListener.store(rowStore).partial(Partition.Fields)(_.foldId(_ => None, _.some), _.field.toOption)
 
   val Component = ReactComponentB[Props]("MandatoryFields")
     .getInitialState(initialState)
     .backend(new Backend(_))
     .render(_.backend.render)
     .configure(
-      DeltaListener.apply  [Props, S, Backend, TopNode](_.clientData, fieldListener) compose
-      DeltaListener.refresh[Props, S, Backend, TopNode](_.clientData, Field.nameAffectingPartitions)
+      fieldListener.install(_.clientData),
+      DeltaListener.refreshOnChange(_.clientData, Field.nameAffectingPartitions)
     )
     .build
 

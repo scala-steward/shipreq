@@ -1,7 +1,7 @@
 package shipreq.webapp.base.delta
 
 import upickle.{Reader, Writer}
-import shipreq.base.util.{NonEmptyVector, UnivEq}
+import shipreq.base.util.{NonEmptySet, UnivEq}
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.DataCodecs._
 import shipreq.webapp.base.protocol.ProtocolDataCodecs._
@@ -16,24 +16,9 @@ sealed trait Partition {
   implicit val wi: Writer[Id]
   implicit val rd: Reader[Data]
   implicit val wd: Writer[Data]
-
-  final def unapply[B <: Partition](b: B): Option[Partition.EqProof[B, this.type]] =
-    Partition.testEq[B, this.type](b, this)
 }
 
-case object Partition {
-
-  final class EqProof[A <: Partition, B <: Partition] private[Partition]() {
-    def subst[F[_ <: Partition]](a: F[A]) = a.asInstanceOf[F[B]]
-  }
-
-  // TODO rename/remove. Use ≟.
-  def testEq[A <: Partition, B <: Partition](a: A, b: B): Option[EqProof[A, B]] =
-    if (a eq b)
-      Some(new EqProof[A, B])
-    else
-      None
-
+object Partition {
   type Aux[D, I] = Partition {type Data = D; type Id = I}
 
   sealed abstract class AuxC[D, I](DI: DataIdAux[D, I])(implicit UI: UnivEq[I],
@@ -53,11 +38,6 @@ case object Partition {
                                             RI: Reader[I], WI: Writer[I],
                                             RD: Reader[D], WD: Writer[D]) extends AuxC[D, I](DI)
 
-  abstract class Fns[P <: Partition] {
-    def rev(p: Project): Rev
-    def update(p: Project, rev: Rev, ds: RemoteDeltaP[P]): Project
-  }
-
   // ------------------------------------------------------------------------------------------------------------------
   // Partition instances
 
@@ -68,12 +48,12 @@ case object Partition {
   case object Fields           extends AuxC(FieldProtocol.Delta)
   case object Tags             extends AuxO(TagProtocol.PovTag)
 
-  val values = NonEmptyVector[Partition](
+  // All instances are objects
+  @inline implicit def equality: UnivEq[Partition] = UnivEq.force
+
+  val values = NonEmptySet[Partition](
     CustomIssueTypes,
     CustomReqTypes,
     Fields,
     Tags)
-
-  // All instaces are objects
-  @inline implicit def equality = UnivEq.force[Partition]
 }

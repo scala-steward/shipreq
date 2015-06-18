@@ -157,6 +157,11 @@ class WIP {
 
   val projectInit = ServerProtocol.routine(Routines.ProjectInit)(_ => p)
 
+  def emptyDelta = RemoteDelta.empty
+
+  implicit def singleOptionalDelta(r: Option[RemoteDeltaPR]): RemoteDelta =
+    r.fold(emptyDelta)(emptyDelta + _)
+
   // -------------------------------------------------------------------------------------------------------------------
   object reqqq {
     implicit val equality = Equal.equalA[CustomReqType]
@@ -171,9 +176,9 @@ class WIP {
       if (a ≟ b)
         None
       else {
-        val rev = c.rev.succ
-        p = p.copy(customReqTypes = RevAnd(rev, b))
-        Some(rev)
+        val newRev = c.rev.succ
+        p = p.copy(customReqTypes = RevAnd(newRev, b))
+        Some(c.rev)
       }
     }
 
@@ -182,13 +187,13 @@ class WIP {
     def mod(f: CustomReqTypeIMap => CustomReqTypeIMap): RemoteDelta = {
       val p1 = p
       delay()
-      modR(f).map(rev => {
+      modR(f).map(oldRev => {
         val m1 = δ(p1)
         val m2 = δ(p)
         val delIds = m1.keySet -- m2.keySet
         val updates = m2.toStream.filter{ case (k,v) => !m1.contains(k) || m1(k) != v }.map(_._2).toList
-        RemoteDeltaG(Partition.CustomReqTypes, rev, rev)(delIds, updates)
-      }).toList
+        RemoteDeltaPR(Partition.CustomReqTypes, RevRange single oldRev)(delIds, updates)
+      })
     }
 
     val crud =
@@ -229,9 +234,9 @@ class WIP {
       if (a ≟ b)
         None
       else {
-        val rev = c.rev.succ
-        p = p.copy(customIssueTypes = RevAnd(rev, b))
-        Some(rev)
+        val newRev = c.rev.succ
+        p = p.copy(customIssueTypes = RevAnd(newRev, b))
+        Some(c.rev)
       }
     }
 
@@ -240,13 +245,13 @@ class WIP {
     def mod(f: CustomIssueTypeIMap => CustomIssueTypeIMap): RemoteDelta = {
       val p1 = p
       delay()
-      modR(f).map(rev => {
+      modR(f).map(oldRev => {
         val m1 = δ(p1)
         val m2 = δ(p)
         val delIds = m1.keySet -- m2.keySet
         val updates = m2.toStream.filter{ case (k,v) => !m1.contains(k) || m1(k) != v }.map(_._2).toList
-        RemoteDeltaG(Partition.CustomIssueTypes, rev, rev)(delIds, updates)
-      }).toList
+        RemoteDeltaPR(Partition.CustomIssueTypes, RevRange single oldRev)(delIds, updates)
+      })
     }
 
     ServerProtocol.routine(Routines.CustomIssueTypeCrud)({
@@ -278,9 +283,9 @@ class WIP {
       if (a ≟ b)
         None
       else {
-        val rev = rd.rev.succ
-        p = p.copy(tags = RevAnd(rev, b))
-        Some(rev)
+        val newRev = rd.rev.succ
+        p = p.copy(tags = RevAnd(newRev, b))
+        Some(rd.rev)
       }
     }
 
@@ -294,13 +299,13 @@ class WIP {
     def mod(f: TagTree => TagTree): RemoteDelta = {
       val p1 = p
       delay()
-      modR(f).map(rev => {
+      modR(f).map(oldRev => {
         val m1 = δ(p1)
         val m2 = δ(p)
         val delIds = m1.keySet -- m2.keySet
         val updates = m2.toStream.filter{ case (k,v) => !m1.contains(k) || m1(k) != v }.map(_._2).toList
-        RemoteDeltaG(Partition.Tags, rev, rev)(delIds, updates)
-      }).toList
+        RemoteDeltaPR(Partition.Tags, RevRange single oldRev)(delIds, updates)
+      })
     }
 
     def upd(id: Id, f: Tag => Tag): RemoteDelta =
@@ -376,14 +381,14 @@ class WIP {
 
     def apply(deletions: Set[FieldId], updates: List[Delta]): RemoteDelta = {
       delay()
-      val rev = p.fields.rev.succ
-      val rdg = RemoteDeltaG(Partition.Fields, rev, rev)(deletions, updates)
-      val p2 = PartitionFns.update(p, rev, rdg.forceDeltaP(Partition.Fields))
+      val oldRev = p.fields.rev
+      val rd = RemoteDeltaP(Partition.Fields)(deletions, updates)
+      val p2 = PPI.update(p, oldRev.succ, rd)
       if (p.fields.data ≟ p2.fields.data)
-        Nil
+        emptyDelta
       else {
         p = p2
-        List(rdg)
+        emptyDelta + RemoteDeltaPR(rd, RevRange single oldRev)
       }
     }
 
@@ -445,7 +450,7 @@ class WIP {
         case Delete(f: StaticField, HardDel | SoftDel) =>
           f.deletable match {
             case Deletable     => apply(Set(f), Nil)
-            case Deletable.Not => Nil
+            case Deletable.Not => emptyDelta
           }
 
         case Delete(id: Id, SoftDel) =>

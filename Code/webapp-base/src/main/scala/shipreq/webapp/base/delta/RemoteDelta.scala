@@ -1,62 +1,89 @@
 package shipreq.webapp.base.delta
 
-import japgolly.nyaya._
-import shipreq.webapp.base.data.Rev
+import shipreq.base.util.UnivEq
+import shipreq.webapp.base.data.{RevRange, Rev}
 
-final case class RemoteDeltaP[P <: Partition] private[delta](
-    del: Set[P#Id],
-    upd: List[P#Data]) {
+/**
+ * Delta for a partition, sent by server to client.
+ *
+ * P suffix = Partition.
+ */
+trait RemoteDeltaP {
+  val partition: Partition
+  val delete: Set[partition.Id]
+  val update: List[partition.Data]
 
-  override def toString = s"Δᵖ($del, $upd)"
+  override def toString = s"Δᵖ($partition)($delete, $update)"
 
-  def isEmpty = del.isEmpty && upd.isEmpty
+  def isEmpty = delete.isEmpty && update.isEmpty
   def nonEmpty = !isEmpty
+
+  // TODO Better way? (Partition + asInstanceOf)
+  import RemoteDeltaP.Aux
+  import Partition._
+  def fold[A](a: Aux[CustomIssueTypes.type] => A,
+              b: Aux[CustomReqTypes  .type] => A,
+              c: Aux[Fields          .type] => A,
+              d: Aux[Tags            .type] => A): A = {
+    def force[P <: Partition]: Aux[P] = this.asInstanceOf[Aux[P]]
+    partition match {
+      case CustomIssueTypes => a(force)
+      case CustomReqTypes   => b(force)
+      case Fields           => c(force)
+      case Tags             => d(force)
+    }
+  }
+}
+
+object RemoteDeltaP {
+  type Aux[P <: Partition] = RemoteDeltaP {val partition: P}
+
+  def apply(p: Partition)(del: Set[p.Id], upd: List[p.Data])(implicit ev: UnivEq[p.Id]): Aux[p.type] =
+    new RemoteDeltaP {
+      override val partition: p.type = p
+      override val delete            = del
+      override val update            = upd
+    }
 }
 
 // =====================================================================================================================
 
-object RemoteDeltaG {
-  def apply(p: Partition, from: Rev, to: Rev)(del: Set[p.Id], upd: List[p.Data]) =
-    new RemoteDeltaG(p, from, to, RemoteDeltaP(del, upd))
+object RemoteDeltaPR {
+  def apply(p: Partition, revRange: RevRange)(del: Set[p.Id], upd: List[p.Data])(implicit ev: UnivEq[p.Id]): RemoteDeltaPR =
+    new RemoteDeltaPR(RemoteDeltaP(p)(del, upd), revRange)
 
-  lazy val prop =
-    Prop.test[RemoteDeltaG]("from ≥ 0", _.from.value >= 0) ∧
-    Prop.test[RemoteDeltaG]("from ≤ to", r => r.from.value <= r.to.value)
+  def apply(d: RemoteDeltaP, revRange: RevRange): RemoteDeltaPR =
+    new RemoteDeltaPR(d, revRange)
 }
 
-final class RemoteDeltaG private(
-    val p: Partition,
-    val from: Rev,
-    val to: Rev,
-    delta: RemoteDeltaP[_]) {
+/**
+ * Delta for a partition, and partition-specific revisions for which the delta is applicable.
+ * Sent by server to client.
+ *
+ * PR suffix = Partition & Revision.
+ */
+final class RemoteDeltaPR private(val delta: RemoteDeltaP, val revRange: RevRange) {
 
-  this assertSatisfies RemoteDeltaG.prop
+  def partition: Partition =
+    delta.partition
 
-  override def hashCode = p.hashCode + delta.hashCode + from.hashCode + to.hashCode
-  override def equals(o: Any): Boolean = o match {
-    case b: RemoteDeltaG => p==b.p && b.forceDeltaP(p)==delta && from==b.from && to==b.to
-    case _ => false
-  }
-
-  override def toString = s"Δᵍ($p [${from.value}..${to.value}] $delta)"
+  override def toString = s"Δᵖʳ($revRange $delta)"
 
   def isEmpty = delta.isEmpty
   def nonEmpty = !isEmpty
 
-  def forceDeltaP[P <: Partition](p: P) = delta.asInstanceOf[RemoteDeltaP[P]]
-
-  def applicableToRev(tgt: Rev): Applicability =
-    if (tgt.value < from.value - 1)
-      Unapplicable
-    else if (tgt.value >= to.value)
-      NoNeed
+  def applicability(target: Rev): Applicability =
+    if (revRange contains target)
+      Applicable
+    else if (target > revRange.toInclusive)
+      Irrelevant
     else
-      Applies
+      Inapplicable
 }
 
 // =====================================================================================================================
 
 sealed trait Applicability
-case object Applies extends Applicability
-case object NoNeed extends Applicability
-case object Unapplicable extends Applicability
+case object Applicable   extends Applicability
+case object Inapplicable extends Applicability
+case object Irrelevant   extends Applicability
