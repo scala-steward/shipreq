@@ -20,24 +20,21 @@
 [webapp] Data Change Protocol
 =============================
 Server sends Δ to clients. Client has Π.
-Client merges Δ into Π which produces 0 or more δ.
-δ is sent to listeners within the client which filter general δ into
+Client merges Δ into Π which produces δ.
+δ is sent to listeners within the client which filter it into
 data-domain-specific δᵗ which are then used to process async data changes.
 There are a finite set of τ, each corresponding to specific data domain.
 
-apply  : Δ → Π → Applied(Π, δₙ) | Fail
-filter : τ → δ → Maybe δᵗ
-update : δᵗₙ → Sᵗ → Sᵗ
+apply  : Δ → Π → Applied(Π, δ) | Fail
+filter : τ → δ → Option δᵗ
+update : δᵗ → Sᵗ → Sᵗ
 
-∀δ.∃t:τ. filter(t)(δ) = Just(δᵗ)
-
-Δ       = RemoteDelta = List[RemoteDeltaG]
-δₙ      = LocalDelta  = List[LocalDeltaG]
-δ       = LocalDeltaG = (p: τ, LocalDeltaP[p])
-δᵗ      = LocalDeltaP
-τ       = Partition
-apply   = ClientData.update
-filter  = LocalDelta.filter
+Δ      = RemoteDelta = IMap[Partition, RemoteDeltaPR]
+δ      = LocalDelta  = IMap[Partition, LocalDeltaP]
+δᵗ     = LocalDeltaP
+τ      = Partition
+apply  = RemoteDeltaAp
+filter = LocalDelta.get
 
 
 [webapp-server] Security
