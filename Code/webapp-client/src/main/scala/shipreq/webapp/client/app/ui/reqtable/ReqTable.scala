@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
-import shipreq.webapp.base.protocol.ProjectChange
+import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -86,7 +86,7 @@ object ReqTable {
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
-    val saveIO: (ProjectChange, SuccessIO, FailureIO) => IO[Unit] = (pc, sio, fio) => {
+    val saveIO: (ContentUpdate, SuccessIO, FailureIO) => IO[Unit] = (pc, sio, fio) => {
       IO(println(s"Fake-sending: $pc"))
     }
     val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, modTable, saveIO)

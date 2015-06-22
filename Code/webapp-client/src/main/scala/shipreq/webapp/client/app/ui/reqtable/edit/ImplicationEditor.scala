@@ -8,7 +8,7 @@ import scalaz.{\/-, -\/}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{SetDiff, Must, UnivEq}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ProjectChange
+import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.TextSeqEditor._
@@ -50,7 +50,7 @@ object ImplicationEditor {
             textSearch: Px[TextSearch],
             lookupM   : Px[Must[Lookup]])
            (modCell   : Cell.ModCell,
-            editIO    : EditIO[ProjectChange]): Cell.Cmd = {
+            editIO    : EditIO[ContentUpdate]): Cell.Cmd = {
 
     /**
      * If true, the user edits what this subject implies (ie. subject → edit-specified).
@@ -97,8 +97,8 @@ object ImplicationEditor {
     }
 
     val (abort, commit) = {
-      import ProjectChange._
-      val f: SetDiff[ReqId] => ProjectChange =
+      import ContentUpdate._
+      val f: SetDiff[ReqId] => ContentUpdate =
         if (declFwd)
           PatchImplicationTgt(subjectId, _)
         else

@@ -8,7 +8,7 @@ import scalaz.syntax.bind.ToBindOps
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Must
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ProjectChange
+import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
@@ -25,7 +25,7 @@ final class ColumnEditors(project       : Px[Project],
                           projectWidgets: Px[ProjectWidgets],
                           textSearch    : Px[TextSearch],
                           modTable      : Cell.ModTable,
-                          saveIO        : (ProjectChange, SuccessIO, FailureIO) => IO[Unit]) {
+                          saveIO        : (ContentUpdate, SuccessIO, FailureIO) => IO[Unit]) {
 
   import ColumnEditors._
 
@@ -85,10 +85,10 @@ final class ColumnEditors(project       : Px[Project],
 
   // ===================================================================================================================
 
-  private def mkEditor[R <: Row](f: R => (Cell.ModCell, EditIO[ProjectChange]) => Cell.Cmd) =
+  private def mkEditor[R <: Row](f: R => (Cell.ModCell, EditIO[ContentUpdate]) => Cell.Cmd) =
     mkEditorO[R](r => Some(f(r)))
 
-  private def mkEditorO[R <: Row](f: R => Option[(Cell.ModCell, EditIO[ProjectChange]) => Cell.Cmd]): R => CellEditor =
+  private def mkEditorO[R <: Row](f: R => Option[(Cell.ModCell, EditIO[ContentUpdate]) => Cell.Cmd]): R => CellEditor =
     r => f(r) match {
       case Some(g) =>
         CellEditor { m =>
@@ -98,8 +98,8 @@ final class ColumnEditors(project       : Px[Project],
       case None => noEditor
     }
 
-  private def mkEditIO(modCell: Cell.ModCell): EditIO[ProjectChange] = {
-    def saveLockRespond(modCell: Cell.ModCell, pc: ProjectChange, edit: () => Cell.Edit): IO[Unit] = {
+  private def mkEditIO(modCell: Cell.ModCell): EditIO[ContentUpdate] = {
+    def saveLockRespond(modCell: Cell.ModCell, pc: ContentUpdate, edit: () => Cell.Edit): IO[Unit] = {
       def io: IO[Unit] = {
         val sio  = SuccessIO(modCell(Cell.Clear))
         def fcmd = Cell.Fail(() => io, () => modCell(edit()))
