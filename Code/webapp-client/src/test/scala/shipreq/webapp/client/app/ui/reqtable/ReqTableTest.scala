@@ -15,14 +15,16 @@ import utest.TestSuite
 import ReactTestUtils.Simulate
 
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.protocol.{Routine, Routines}
 import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.BaseTestUtil._
+import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib._
-import shipreq.webapp.client.test.{DomZipper, PrepareEnv}
+import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
 import shipreq.webapp.client.test.ReactTmpExt._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
@@ -225,14 +227,25 @@ sealed trait ReqTableTest0 {
   lazy val s_order_init = State.viewSettings ^|-> vs_order_init
   lazy val s_filterDead = State.viewSettings ^|-> ViewSettings.filterDead
 
-  val project = SampleProject3.project
+  lazy val project = SampleProject3.project
 
-  lazy val c = ReactTestUtils renderIntoDocument ReqTable.WIP(project)
+  val cp = new TestClientProtocol
+
+  val remote = Routine.Remote("x", Routines.UpdateProjectContent)
+
+  def propsForProject(p: Project) =
+    ReqTable.Props(new ClientData(p), cp, remote, HideDead)
+
+  lazy val initialProps = propsForProject(project)
+
+  lazy val initialState = ReqTable.initialState(initialProps)
+
+  lazy val c = ReactTestUtils renderIntoDocument initialProps.component
 
   lazy val cTable = Table.Component castM ReactTestUtils.findRenderedComponentWithType(c, Table.Component.jsCtor)
 
   def reset(): Unit =
-    c setState ReqTable.initialState(project)
+    c setState initialState
 
   def * = new S(new DomZipper(c.getDOMNode()))
 
@@ -367,7 +380,7 @@ sealed trait ReqTableTest0 {
     filterDeadToggle.times(2).focus(_.viewSettings.columns.onColumns).assertNoChange
 
   def setProject(p: Project): Action[Unit] =
-    Action.exec(c setState ReqTable.initialState(p))
+    Action.exec(c setState ReqTable.initialState(propsForProject(p)))
 
   def applyViewSettings(vs: => ViewSettings): Action[Unit] =
     Action exec c.modState(_ updateVS vs)

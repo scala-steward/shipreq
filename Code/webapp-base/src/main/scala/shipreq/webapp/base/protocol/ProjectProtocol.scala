@@ -20,16 +20,6 @@ This could be useful to send back to client.
 Same code could be used on server & client to patch projects.
 
 Or are there changes (knock-on effects) that require new instructions that would be server→client only?
-
-Rename:
-
-  Project | Req(uirement)
-  Content | Data
-  Delta | Change | Diff | Mod(ification) | Upd(ate)
-  Cmd | Instruction
-
-
-Good if this is a noun, and the remote a verb
  */
 
 /**

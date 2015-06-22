@@ -6,36 +6,37 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.ContentUpdate
+import shipreq.webapp.base.protocol.Routines.UpdateProjectContent
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO}
+import shipreq.webapp.client.protocol.ClientProtocol
+import shipreq.webapp.client.ClientData
 import edit.ColumnEditors
 
 object ReqTable {
 
-  val WIP =
-    ReactComponentB[Project]("WIP")
+  val Component =
+    ReactComponentB[Props]("WIP")
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
       .build
 
-  val StatsSummary = ReactComponentB[TableStats]("Stats")
-    .render(stats =>
-      <.div(
-        *.statsSummary,
-        stats.summary))
-    .configure(shouldComponentUpdate)
-    .build
+  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateProjectContent.Remote, fd: FilterDead) {
+    def component = Component(this)
+  }
 
-  // -------------------------------------------------------------------------------------------------------------------
-
-  def initialState(p: Project): State =
-    State(p, ViewSettings.default, FilterEditor.initialState, Cell.emptyTableState, None)
+  def initialState(p: Props): State =
+    State(p.cd.project,
+      ViewSettings.default.copy(filterDead = p.fd),
+      FilterEditor.initialState,
+      Cell.emptyTableState,
+      None)
 
   @Lenses
   case class State(project     : Project,
@@ -64,7 +65,7 @@ object ReqTable {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final class Backend($: BackendScope[Project, State]) {
+  final class Backend($: BackendScope[Props, State]) {
 
     val setViewSettings = ReusableFn($).modStateIO.endoCall(_.updateVS)
     val setFocus        = ReusableFn($).modStateIO.endoCall(_.updateFocus)
@@ -86,8 +87,11 @@ object ReqTable {
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
-    val saveIO: (ContentUpdate, SuccessIO, FailureIO) => IO[Unit] = (pc, sio, fio) => {
-      IO(println(s"Fake-sending: $pc"))
+    val saveIO: (ContentUpdate, SuccessIO, FailureIO) => IO[Unit] = (i, sio, fio) => {
+      val p = $.props
+      val io = p.cp.call(p.remote)(i, p.cd.update(_).flatMap(_ => sio.io), fio)
+      //IO(println(s"Fake-sending: $i")) >> io
+      io
     }
     val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, modTable, saveIO)
 
@@ -114,4 +118,14 @@ object ReqTable {
         Table.Component(tableProps))
     }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  val StatsSummary = ReactComponentB[TableStats]("Stats")
+    .render(stats =>
+    <.div(
+      *.statsSummary,
+      stats.summary))
+    .configure(shouldComponentUpdate)
+    .build
 }

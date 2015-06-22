@@ -17,7 +17,8 @@ import shipreq.webapp.util.QuietException
 class WIP {
 
   // =============================================================================
-  // TODO No input should be trusted! Incoming deltas should be validated!
+  // No input should be trusted! Incoming deltas should be validated!
+  // Needless updates should be avoided.
   // =============================================================================
 
   def newProject = {
@@ -468,8 +469,17 @@ class WIP {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  val updateProjectContent =
+    ServerProtocol.routine(Routines.UpdateProjectContent){ i =>
+      println(s"RECEIVED: $i")
+      delay()
+      RemoteDelta.empty
+    }
 
-  def delay(): Unit = Thread.sleep(new java.util.Random().nextInt(80)+80)
+  // -------------------------------------------------------------------------------------------------------------------
+
+  def delay(): Unit = Thread.sleep(300)
+//  def delay(): Unit = Thread.sleep(new java.util.Random().nextInt(80)+80)
 
   def render = {
     val pg = Routines.ProjectSPA(
@@ -477,7 +487,8 @@ class WIP {
       issueTypeCrud,
       reqqq.crud, reqqq.imptoggle,
       fieldCrud.mandmod, fieldCrud.cfgAction,
-      tagCrud.fn)
+      tagCrud.fn,
+      updateProjectContent)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js
   }

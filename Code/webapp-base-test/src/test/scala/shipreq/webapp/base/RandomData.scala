@@ -1111,14 +1111,15 @@ object RandomData {
       remoteName.map(Remote(_, d))
 
     lazy val projectSPA =
-      Gen.apply7(ProjectSPA)(
+      Gen.apply8(ProjectSPA)(
         remote(ProjectInit),
         remote(CustomIssueTypeCrud),
         remote(CustomReqTypeCrud),
         remote(ReqTypeImplicationMod),
         remote(FieldMandatorinessMod),
         remote(FieldCrud),
-        remote(TagCrud))
+        remote(TagCrud),
+        remote(UpdateProjectContent))
 
     class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._

@@ -117,6 +117,13 @@ private[protocol] object CodecBase {
     ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
   }
 
+  def caseclass8[A: Reader : Writer, B: Reader : Writer, C: Reader : Writer, D: Reader : Writer, E: Reader : Writer, F: Reader : Writer, G: Reader : Writer, H: Reader : Writer, Z]
+  (y: (A, B, C, D, E, F, G, H) => Z, u: Z => Option[(A, B, C, D, E, F, G, H)]): ReadWriter[Z] = {
+    val r = Tuple8R[A, B, C, D, E, F, G, H].read
+    val w = Tuple8W[A, B, C, D, E, F, G, H].write
+    ReadWriter[Z](z => w(u(z).get), r andThen y.tupled)
+  }
+
   def intkeyW[T](k: Int, t: T)(implicit T: Writer[T]) =
     Js.Arr(Js.Num(k), T write t)
 
@@ -271,6 +278,9 @@ object GenericCodecs {
 
     trieRW
   }
+
+  implicit def setDiff[A: UnivEq](implicit r: Reader[A], w: Writer[A]): ReadWriter[SetDiff[A]] =
+    xmap((s: SetDiff[A]) => (s.removed, s.added))(t => SetDiff(t._1, t._2))
 }
 
 // =====================================================================================================================
@@ -543,7 +553,7 @@ object DataCodecs {
     TC.readSingleLine(t) orElse
     TC.readReqRef    (t) )
 
-  implicit final val (_, customTextFieldText) = TC(Text.CustomTextField)((t, a) =>
+  implicit final val (customTextFieldTextO, customTextFieldText) = TC(Text.CustomTextField)((t, a) =>
     TC.readMultiLine(t)(a) orElse
     TC.readReqRef   (t)    orElse
     TC.readIssue    (t)    orElse
@@ -683,6 +693,45 @@ object ProtocolDataCodecs {
       case 1 => readJs(v)(applicableTagValues)
     }
   })
+
+  // ------------------------------------------------------------------------------------
+  // ContentUpdate
+  import shipreq.webapp.base.protocol.{ContentUpdate => CU}
+
+  implicit final val cuPatchReqTags         = caseclass2(CU.PatchReqTags        .apply, CU.PatchReqTags        .unapply)
+  implicit final val cuPatchImplicationSrc  = caseclass2(CU.PatchImplicationSrc .apply, CU.PatchImplicationSrc .unapply)
+  implicit final val cuPatchImplicationTgt  = caseclass2(CU.PatchImplicationTgt .apply, CU.PatchImplicationTgt .unapply)
+  implicit final val cuPatchReqCodes        = caseclass2(CU.PatchReqCodes       .apply, CU.PatchReqCodes       .unapply)
+  implicit final val cuSetGenericReqType    = caseclass2(CU.SetGenericReqType   .apply, CU.SetGenericReqType   .unapply)
+  implicit final val cuSetReqCodeGroupCode  = caseclass2(CU.SetReqCodeGroupCode .apply, CU.SetReqCodeGroupCode .unapply)
+  implicit final val cuSetReqCodeGroupTitle = caseclass2(CU.SetReqCodeGroupTitle.apply, CU.SetReqCodeGroupTitle.unapply)
+  implicit final val cuSetGenericReqTitle   = caseclass2(CU.SetGenericReqTitle  .apply, CU.SetGenericReqTitle  .unapply)
+  implicit final val cuSetCustomTextField   = caseclass3(CU.SetCustomTextField  .apply, CU.SetCustomTextField  .unapply)
+  implicit final val contentUpdate = ReadWriter[CU]({
+    case t: CU.PatchReqTags         => intkeyW(0, t)(cuPatchReqTags        )
+    case t: CU.PatchImplicationSrc  => intkeyW(1, t)(cuPatchImplicationSrc )
+    case t: CU.PatchImplicationTgt  => intkeyW(2, t)(cuPatchImplicationTgt )
+    case t: CU.PatchReqCodes        => intkeyW(3, t)(cuPatchReqCodes       )
+    case t: CU.SetGenericReqType    => intkeyW(4, t)(cuSetGenericReqType   )
+    case t: CU.SetReqCodeGroupCode  => intkeyW(5, t)(cuSetReqCodeGroupCode )
+    case t: CU.SetReqCodeGroupTitle => intkeyW(6, t)(cuSetReqCodeGroupTitle)
+    case t: CU.SetGenericReqTitle   => intkeyW(7, t)(cuSetGenericReqTitle  )
+    case t: CU.SetCustomTextField   => intkeyW(8, t)(cuSetCustomTextField  )
+  }, {
+    case Js.Arr(Js.Num(n), v) => n.toInt match {
+      case 0 => readJs(v)(cuPatchReqTags        )
+      case 1 => readJs(v)(cuPatchImplicationSrc )
+      case 2 => readJs(v)(cuPatchImplicationTgt )
+      case 3 => readJs(v)(cuPatchReqCodes       )
+      case 4 => readJs(v)(cuSetGenericReqType   )
+      case 5 => readJs(v)(cuSetReqCodeGroupCode )
+      case 6 => readJs(v)(cuSetReqCodeGroupTitle)
+      case 7 => readJs(v)(cuSetGenericReqTitle  )
+      case 8 => readJs(v)(cuSetCustomTextField  )
+    }
+  })
+
+
 }
 
 // =====================================================================================================================
@@ -693,15 +742,16 @@ object ProtocolRemoteCodecs {
   def remoteRoutine[R <: Routine.Desc](d: R): ReadWriter[d.Remote] =
     ReadWriter[d.Remote](r => Js.Str(r.n), { case Js.Str(n) => Routine.Remote(n, d) })
 
-  implicit final val projectInit   = remoteRoutine(ProjectInit)
-  implicit final val issueTypeCrud = remoteRoutine(CustomIssueTypeCrud)
-  implicit final val reqTypeCrud   = remoteRoutine(CustomReqTypeCrud)
-  implicit final val reqTypeImpMod = remoteRoutine(ReqTypeImplicationMod)
-  implicit final val fieldMandMod  = remoteRoutine(FieldMandatorinessMod)
-  implicit final val fieldCrud     = remoteRoutine(FieldCrud)
-  implicit final val tagCrud       = remoteRoutine(TagCrud)
+  implicit final val projectInit          = remoteRoutine(ProjectInit)
+  implicit final val issueTypeCrud        = remoteRoutine(CustomIssueTypeCrud)
+  implicit final val reqTypeCrud          = remoteRoutine(CustomReqTypeCrud)
+  implicit final val reqTypeImpMod        = remoteRoutine(ReqTypeImplicationMod)
+  implicit final val fieldMandMod         = remoteRoutine(FieldMandatorinessMod)
+  implicit final val fieldCrud            = remoteRoutine(FieldCrud)
+  implicit final val tagCrud              = remoteRoutine(TagCrud)
+  implicit final val updateProjectContent = remoteRoutine(UpdateProjectContent)
 
-  implicit final val projectSPA = caseclass7(ProjectSPA.apply, ProjectSPA.unapply)
+  implicit final val projectSPA = caseclass8(ProjectSPA.apply, ProjectSPA.unapply)
 }
 
 // =====================================================================================================================

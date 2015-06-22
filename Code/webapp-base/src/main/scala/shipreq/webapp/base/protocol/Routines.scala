@@ -12,6 +12,10 @@ import ProtocolDataCodecs._
 import DeltaCodecs._
 
 object Routines {
+  // After adding a new Routine, also update the following:
+  // - ProtocolRemoteCodecs
+  // - RandomData
+
 
   object ProjectInit extends (Unit =>|=> Project)
 
@@ -23,6 +27,8 @@ object Routines {
   object FieldMandatorinessMod extends ((CustomFieldId,   Mandatory          ) =>|=> RemoteDelta)
   object ReqTypeImplicationMod extends ((CustomReqTypeId, ImplicationRequired) =>|=> RemoteDelta)
 
+  object UpdateProjectContent extends (ContentUpdate =>|=> RemoteDelta)
+
 
   case class ProjectSPA(projectInit:   ProjectInit          .Remote,
                         issueTypeCrud: CustomIssueTypeCrud  .Remote,
@@ -30,5 +36,6 @@ object Routines {
                         reqTypeImpMod: ReqTypeImplicationMod.Remote,
                         fieldMandMod:  FieldMandatorinessMod.Remote,
                         fieldCrud:     FieldCrud            .Remote,
-                        tagCrud:       TagCrud              .Remote)
+                        tagCrud:       TagCrud              .Remote,
+                        updateContent: UpdateProjectContent .Remote)
 }
