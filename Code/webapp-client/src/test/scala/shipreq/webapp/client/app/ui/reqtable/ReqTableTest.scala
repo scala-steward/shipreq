@@ -369,11 +369,11 @@ sealed trait ReqTableTest0 {
 
   def enterFilter(f: String) = {
     val e = ChangeEventData(f)
-    Action(e simulate _.viewSettings.filter.input.get)
+    Action(s"enterFilter($f)", e simulate _.viewSettings.filter.input.get)
   }
 
   val filterDeadToggle =
-    Action(Simulate change _.viewSettings.filterDead.$.get)
+    Action("filterDeadToggle", Simulate change _.viewSettings.filterDead.$.get)
       .focus(_.viewSettings.filterDead.value)
       .assertChange
 
@@ -385,36 +385,40 @@ sealed trait ReqTableTest0 {
     filterDeadToggle.times(2).focus(_.viewSettings.columns.onColumns).assertNoChange
 
   def setProject(p: Project): Action[Unit] =
-    Action.exec(c setState ReqTable.initialState(propsForProject(p)))
+    Action.exec(s"setProject($p)", c setState ReqTable.initialState(propsForProject(p)))
 
-  def applyViewSettings(vs: => ViewSettings): Action[Unit] =
-    Action exec c.modState(_ updateVS vs)
+  def applyViewSettings(name: => String, vs: => ViewSettings): Action[Unit] =
+    Action.exec(name, c.modState(_ updateVS vs))
 
-  val sortByPubid = applyViewSettings(
+  val sortByPubid = applyViewSettings("sortByPubid",
     c.state.viewSettings.copy(order = SortCriteria.byPubidOnly))
 
-  val showAllColumns = applyViewSettings {
+  val showAllColumns = applyViewSettings("showAllColumns", {
     val s  = c.state
     val vs = s.viewSettings
     val cn = Column.NameResolver.byProject(s.project)
     val cs = Column.all(cn.customFields.values)
     val o  = vs.order.copy(init = Vector.empty) // remove ReqCodeGroups
     vs.copy(columns = cs, order = o, filterDead = ShowDead)
-  }
+  })
 
   def focusCell(loc: S => CellLoc): Action[Unit] =
-    Action { s =>
-      val cell = s.table.cell(loc(s)).get
+    Action.apply2({ s =>
+      val l = loc(s)
+      //(s"focusCell($l)", l)
+      ("focusCell", l)
+    })((s, l) => {
+      val cell = s.table.cell(l).get
       Simulate.click(cell)
-    }
+    })
 
   val F2 = fakeKeyboardEvent(keyCode = KeyCode.F2, target = dom.document.body)
 
-  val editFocused = Action { s =>
+  val editFocused = Action("editFocused", { s =>
     s.table.ensureHasFocus()
     cTable.backend._onKeyDown(F2)
     cTable.backend._onKeyUp(F2)
-  }
+  })
 
   val printTableContent =
     Action.readonly(s => println("\n" + s.table.entireContent + "\n"))
@@ -429,6 +433,8 @@ sealed trait ReqTableTest0 {
   def ioAssertReqsSent(expect: Int) = Action.assert(cp assertReqsSent expect)
 
   val ioAssertLastTwoRequestsEqual = Action.assert(cp.assertLastTwoRequestsEqual(remote))
+
+  val ioFailLast = Action.exec("failLast", cp.failLast())
 
   // ===================================================================================================================
   // Tests
@@ -481,7 +487,7 @@ sealed trait ReqTableTest0 {
       tryStartEdit.focus(editing_?).assertAfter(false)
 
     def enterValue(text: String) =
-      Action.exec2(editor)(ChangeEventData(text) simulate _)
+      Action.exec2(s"enterValue($text)", editor)(ChangeEventData(text) simulate _)
 
     def test(expect: Validity, err: => String) = (value: String) =>
       enterValue(value)
@@ -492,13 +498,13 @@ sealed trait ReqTableTest0 {
     def testInvalid(reason: => String) = test(Invalid, reason)
 
     val commit =
-      Action.exec2(editor)(ctrlEnter simulateKeyDown _).assertNoLongerEditing
+      Action.exec2("commit", editor)(ctrlEnter simulateKeyDown _).assertNoLongerEditing
 
     val clickRetry =
-      Action.exec2(retryButton)(Simulate click _)
+      Action.exec2("clickRetry", retryButton)(Simulate click _)
 
     val clickFailOk =
-      Action.exec2(failOkButton)(Simulate click _)
+      Action.exec2("clickFailOk", failOkButton)(Simulate click _)
   }
 
   def testDeadColumns(): Unit = run(
@@ -507,20 +513,20 @@ sealed trait ReqTableTest0 {
 
   def testDeadToggleInvariants(): Unit =
     RandomReqTableData.viewSettings(project, allowFilter = true) mustSatisfy
-      actionProp(applyViewSettings(_) >> filterDeadShowHide)
+      actionProp(applyViewSettings("testDeadToggleInvariants", _) >> filterDeadShowHide)
 
   def testDeadRowsNotEditable(): Unit = {
     val colCount = *.availCols.length
 
     def focus(rowType: Live, colIndex: Int) =
-      Action { s =>
+      Action(s"focus($rowType, $colIndex)", { s =>
         val row = rowType match {
           case Live => DomZipper.first("Live row", s.table.liveRows)
           case Dead => DomZipper.first("Dead row", s.table.deadRows)
         }
         val cell = row.getAll(">td")(colIndex)
         Simulate.click(cell)
-      }
+      })
 
     def editAllColumns(rowType: Live): Action[Int] = {
       val editEachCell =
@@ -543,7 +549,7 @@ sealed trait ReqTableTest0 {
     import ce._
 
     val setup =
-      applyViewSettings(ViewSettings(Column.builtInValues, SortCriteria.byPubidOnly, None, ShowDead))
+      applyViewSettings("setup", ViewSettings(Column.builtInValues, SortCriteria.byPubidOnly, None, ShowDead))
         .focus(cell(_).innerText).assertAfter("MF-12, MF-19")
 
     // TODO What about an implication cycle with a dead link. Ok? Not ok? What about when when link is undeleted?
@@ -678,7 +684,7 @@ sealed trait ReqTableTest0 {
         >> Action.assert(assert(cp.last.i.toString contains newValue)))
 
     val fail = (
-      Action.exec(cp.failLast()).focus(failed_?).assertAfter(true, "Should be in failed state after I/O failure")
+      ioFailLast.focus(failed_?).assertAfter(true, "Should be in failed state after I/O failure")
         >> assertEditDoesNothing)
 
     val retry = (
@@ -694,7 +700,7 @@ sealed trait ReqTableTest0 {
         >> ioAssertLastTwoRequestsEqual)
 
     val saveSucceeds = (
-      Action.exec(cp.respondToLast(remote)(RemoteDelta.empty))
+      Action.exec("saveSucceeds", cp.respondToLast(remote)(RemoteDelta.empty))
         >> Action.nop.assertNoCellState)
 
     run(editCommitWithoutChange >> editChangeCommit >> fail >> retry >> fail >> cancelSaveCommitAgain >> saveSucceeds)
