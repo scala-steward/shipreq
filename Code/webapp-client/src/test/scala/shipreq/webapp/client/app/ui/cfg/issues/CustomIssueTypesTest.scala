@@ -42,9 +42,9 @@ object CustomIssueTypesTest extends TestSuite {
     assertNoErrors()
 
     // Save only on valid change
-    cp.assertCommsSent(0)
+    cp.assertReqsSent(0)
     Simulation.focusChangeBlur("BipBop") run i
     assertNoErrors()
-    cp.assertCommsSent(1)
+    cp.assertReqsSent(1)
   }
 }

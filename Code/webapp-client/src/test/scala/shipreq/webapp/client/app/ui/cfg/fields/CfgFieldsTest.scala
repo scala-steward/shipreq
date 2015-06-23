@@ -63,8 +63,8 @@ object CfgFieldsTest extends TestSuite {
       sole(Sizzle(".key :text", newRow)))
 
     // Server communication
-    cp.assertCommsSent(1)
-    cp.respondToLastSuccessfully(remote){
+    cp.assertReqsSent(1)
+    cp.respondToLast(remote){
       val newField = CustomField.Text(666, "blahh", "blahh", Mandatory, ISubset.All(), Live)
       val delta    = RemoteDeltaPR(Partition.Fields, RevRange single rev)(Set.empty, Delta(\/-(newField), None) :: Nil)
       RemoteDelta.empty + delta
@@ -74,8 +74,8 @@ object CfgFieldsTest extends TestSuite {
 
     // Delete newly saved row
     Simulation.click run sole(Sizzle("tr:has(:text[value=blahh]) button:contains('Delete')", c))
-    cp.assertCommsSent(2)
-    cp.respondToLastSuccessfully(remote)(RemoteDelta.empty +
+    cp.assertReqsSent(2)
+    cp.respondToLast(remote)(RemoteDelta.empty +
       RemoteDeltaPR(Partition.Fields, RevRange single rev)(Set(CustomField.Text.Id(666)), Nil)
     )
     rev = rev.succ
