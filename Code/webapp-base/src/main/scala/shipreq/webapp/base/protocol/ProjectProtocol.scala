@@ -1,8 +1,10 @@
 package shipreq.webapp.base.protocol
 
-import shipreq.base.util.SetDiff
+import shipreq.base.util.{SetDiff, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.util.TypeclassDerivation._
+import Text.Equality._
 
 /**
  * Protocol for editing a project.
@@ -40,4 +42,5 @@ object ContentUpdate {
   case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle.OptionalText)   extends ContentUpdate
   case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField.OptionalText)   extends ContentUpdate
 
+  implicit val contentUpdateEquality: UnivEq[ContentUpdate] = { import AutoDerive._; deriveUnivEq }
 }

@@ -104,9 +104,9 @@ final class ColumnEditors(project       : Px[Project],
         val sio  = SuccessIO(modCell(Cell.Clear))
         def fcmd = Cell.Fail(() => io, () => modCell(edit()))
         val fio  = FailureIO.lazily(modCell(fcmd))
-        saveIO(pc, sio, fio)
+        saveIO(pc, sio, fio) >> modCell(Cell.Lock)
       }
-      io >> modCell(Cell.Lock)
+      io
     }
 
     EditIO {

@@ -183,6 +183,9 @@ trait ActionTester {
     def readonly(f: S => Unit): Action[Unit] =
       Action(f, nopLast)
 
+    def assert(f: => Unit): Action[Unit] =
+      Action(_ => f, nopLast)
+
     lazy val nop: Action[Unit] =
       apply(nopLast, nopLast)
   }

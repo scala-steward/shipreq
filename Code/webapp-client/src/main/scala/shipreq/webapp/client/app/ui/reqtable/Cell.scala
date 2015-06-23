@@ -4,6 +4,7 @@ import japgolly.scalajs.react.ReactElement
 import japgolly.scalajs.react.extra.{Reusability, ~=>}
 import scalaz.effect.IO
 import shipreq.base.util.UnivEq
+import shipreq.webapp.client.lib.ui.UI
 
 object Cell {
 
@@ -20,7 +21,7 @@ object Cell {
     import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 
     lazy val locked =
-      Some(const(<.div("LOCKED!"))) // English
+      Some(const(UI.spinner))
 
     def retry(retryFn: => IO[Unit], resumeFn: => IO[Unit]) =
       const(
@@ -95,7 +96,7 @@ object Cell {
       cmdForValue(initialValue)
 
     def cmdForValue(c: C): Edit =
-      Edit(() => updateValue(c, updateFn, () => thisCmd))
+      Edit(() => updateValue(c, updateFn, () => cmdForValue(c)))
 
     thisCmd
   }

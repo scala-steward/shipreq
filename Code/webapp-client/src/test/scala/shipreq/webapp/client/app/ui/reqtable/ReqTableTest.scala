@@ -7,6 +7,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom, dom.html
+import org.scalajs.dom.ext.{KeyCode, KeyValue}
 import scalajs.js
 import scalaz.Equal
 import scalaz.std.option._
@@ -15,11 +16,13 @@ import utest.TestSuite
 import ReactTestUtils.Simulate
 
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.delta.RemoteDelta
 import shipreq.webapp.base.protocol.{Routine, Routines}
 import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
+import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.client.ClientData
@@ -28,6 +31,7 @@ import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
 import shipreq.webapp.client.test.ReactTmpExt._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
+import ContentUpdate._
 
 object ReqTableScreen {
   case class CellLoc(row: Int, col: Int)
@@ -107,7 +111,6 @@ final class ReqTableScreen(root: => DomZipper) {
       lazy val value: FilterDead =
         Checkbox.filterDeadChecked <~ $.as[html.Input].checked
     }
-
   }
 
   object table {
@@ -244,8 +247,10 @@ sealed trait ReqTableTest0 {
 
   lazy val cTable = Table.Component castM ReactTestUtils.findRenderedComponentWithType(c, Table.Component.jsCtor)
 
-  def reset(): Unit =
+  def reset(): Unit = {
+    cp.reset()
     c setState initialState
+  }
 
   def * = new S(new DomZipper(c.getDOMNode()))
 
@@ -403,7 +408,7 @@ sealed trait ReqTableTest0 {
       Simulate.click(cell)
     }
 
-  val F2 = fakeKeyboardEvent(keyCode = 113, target = dom.document.body)
+  val F2 = fakeKeyboardEvent(keyCode = KeyCode.F2, target = dom.document.body)
 
   val editFocused = Action { s =>
     s.table.ensureHasFocus()
@@ -413,6 +418,17 @@ sealed trait ReqTableTest0 {
 
   val printTableContent =
     Action.readonly(s => println("\n" + s.table.entireContent + "\n"))
+
+  def baseKeyboardEventData = // TODO Replace when scalajs-react 0.9.2
+    KeyboardEventData(key = "", keyCode = 0, ctrlKey = false, altKey = false, metaKey = false, shiftKey = false)
+
+  val ctrlEnter = baseKeyboardEventData.copy(key = KeyValue.Enter, keyCode = KeyCode.Enter, ctrlKey = true)
+
+  val escape = KeyboardEventData(key = KeyValue.Escape, keyCode = KeyCode.Escape)
+
+  def ioAssertReqsSent(expect: Int) = Action.assert(cp assertReqsSent expect)
+
+  val ioAssertLastTwoRequestsEqual = Action.assert(cp.assertLastTwoRequestsEqual(remote))
 
   // ===================================================================================================================
   // Tests
@@ -424,23 +440,65 @@ sealed trait ReqTableTest0 {
   import SampleProject.Values._
 
   case class CellEditor(loc: S => CellLoc) {
-    def cell       (s: S) = s.table.cell(loc(s))
-    def editor     (s: S) = cell(s)("input").as[html.Input]
-    def editorValue(s: S) = editor(s).value
+    private def editorCss       = "input,textarea"
+    private def retryButtonCss  = "button:contains(Retry)"
+    private def failOkButtonCss = "button:contains(OK)"
+
+    def cell        (s: S) = s.table.cell(loc(s))
+    def editing_?   (s: S) = cell(s).collectInnerHTML(editorCss).nonEmpty
+    def locked_?    (s: S) = cell(s).collectInnerHTML("img").nonEmpty
+    def failed_?    (s: S) = cell(s).collectInnerHTML(retryButtonCss).nonEmpty
+    def editor      (s: S) = cell(s)(editorCss).as[html.Input]
+    def editorValue (s: S) = editor(s).value
+    def retryButton (s: S) = cell(s)(retryButtonCss).as[html.Button]
+    def failOkButton(s: S) = cell(s)(failOkButtonCss).as[html.Button]
+
+    implicit class CEActionExt[A](a: Action[A]) {
+      def assertNowEditing      = a.focus(editing_?).assertBefore(false).assertAfter(true)
+      def assertNowLocked       = a.focus(locked_?) .assertBefore(false).assertAfter(true)
+      def assertNoLongerEditing = a.focus(editing_?).assertBefore(true).assertAfter(false)
+      def assertNoLongerLocked  = a.focus(locked_?) .assertBefore(true).assertAfter(false)
+
+      def assertNoCellState = a
+        .focus(editing_?).assertAfter(false)
+        .focus(locked_?).assertAfter(false)
+        .focus(failed_?).assertAfter(false)
+    }
+
+    def printCell(): Unit =
+      println(cell(*).outerHTML)
 
     def setup(p: Project) =
       setProject(p) >> showAllColumns >> Action.value(cell(_).innerText)
 
-    def startEdit =
-      focusCell(loc) >> editFocused >> Action.value(editorValue)
+    val tryStartEdit =
+      focusCell(loc) >> editFocused
+
+    val startEdit =
+      tryStartEdit >> Action.value(editorValue)
+
+    val assertEditDoesNothing =
+      tryStartEdit.focus(editing_?).assertAfter(false)
+
+    def enterValue(text: String) =
+      Action.exec2(editor)(ChangeEventData(text) simulate _)
 
     def test(expect: Validity, err: => String) = (value: String) =>
-      Action.exec2(editor)(ChangeEventData(value) simulate _)
+      enterValue(value)
         .focus(editorValue).assertAfter(value)
         .focus(editor(_).className).assertAfter(Style.reqtable.cellEditor(expect).className.value, s"$err: [$value]")
 
-    def testValid                      = test(Valid, "Should be valid")
+    val testValid                      = test(Valid, "Should be valid")
     def testInvalid(reason: => String) = test(Invalid, reason)
+
+    val commit =
+      Action.exec2(editor)(ctrlEnter simulateKeyDown _).assertNoLongerEditing
+
+    val clickRetry =
+      Action.exec2(retryButton)(Simulate click _)
+
+    val clickFailOk =
+      Action.exec2(failOkButton)(Simulate click _)
   }
 
   def testDeadColumns(): Unit = run(
@@ -458,7 +516,7 @@ sealed trait ReqTableTest0 {
       Action { s =>
         val row = rowType match {
           case Live => DomZipper.first("Live row", s.table.liveRows)
-          case Dead  => DomZipper.first("Dead row", s.table.deadRows)
+          case Dead => DomZipper.first("Dead row", s.table.deadRows)
         }
         val cell = row.getAll(">td")(colIndex)
         Simulate.click(cell)
@@ -602,6 +660,46 @@ sealed trait ReqTableTest0 {
       >> testValid("defer"))
   }
 
+  def testEditIO(): Unit = {
+    val ce = CellEditor(_.table.cellLoc(pubid = "MF-6", col = "Title"))
+    import ce._
+
+    val newValue = "issues!"
+
+    val editCommitWithoutChange =
+      startEdit.assertAfter("Incompletions") >> commit >> ioAssertReqsSent(0)
+
+    val editChangeCommit = (
+      startEdit.assertAfter("Incompletions")
+        >> enterValue(newValue)
+        >> commit.assertNowLocked
+        >> assertEditDoesNothing
+        >> ioAssertReqsSent(1)
+        >> Action.assert(assert(cp.last.i.toString contains newValue)))
+
+    val fail = (
+      Action.exec(cp.failLast()).focus(failed_?).assertAfter(true, "Should be in failed state after I/O failure")
+        >> assertEditDoesNothing)
+
+    val retry = (
+      clickRetry.assertNowLocked
+        >> ioAssertReqsSent(2)
+        >> ioAssertLastTwoRequestsEqual)
+
+    val cancelSaveCommitAgain = (
+      clickFailOk.assertNowEditing
+        >> Action.nop.focus(editorValue).assertAfter(newValue)
+        >> commit.assertNowLocked
+        >> ioAssertReqsSent(3)
+        >> ioAssertLastTwoRequestsEqual)
+
+    val saveSucceeds = (
+      Action.exec(cp.respondToLast(remote)(RemoteDelta.empty))
+        >> Action.nop.assertNoCellState)
+
+    run(editCommitWithoutChange >> editChangeCommit >> fail >> retry >> fail >> cancelSaveCommitAgain >> saveSucceeds)
+  }
+
   def testFilter(): Unit = run(
     sortByPubid
       >> enterFilter("-MF")
@@ -635,6 +733,7 @@ object ReqTableTest extends TestSuite with ReqTableTest0 {
       'customImpCol - testCustomImplicationColumnEditor()
       'tags         - testTagsColumnEditor()
       'customTagCol - testCustomTagColumnEditor()
+      'io           - testEditIO()
     }
 
     'filter - testFilter()
