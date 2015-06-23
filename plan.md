@@ -4,11 +4,6 @@ Phase 2
 ### ReqTable
 
 * Row detail view (modal?)
-* IO
-  * Modification protocol (fake on server-side)
-  * Async update
-  * Cell locking
-  * Failure handling
 * New req
   * Template
   * Functionality
