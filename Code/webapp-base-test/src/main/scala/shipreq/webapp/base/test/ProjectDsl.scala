@@ -8,7 +8,6 @@ import shipreq.base.util._, MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Atom, Text}
-import ReqData.{Implications, ImplicationsU}
 
 object ProjectDslInternals {
   type Mod[A] = State[ProjectState, A]
@@ -26,7 +25,7 @@ object ProjectDslInternals {
                           maxReqCodeId  : Long,
                           text          : ReqData.Text,
                           tags          : ReqData.Tags,
-                          imps          : ImplicationsU) {
+                          imps          : Implications.Uni) {
 
     private var _newMaxReqCodeId = maxReqCodeId
 

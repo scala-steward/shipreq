@@ -26,7 +26,7 @@ final case class Project(config      : ProjectConfig,
                          reqCodes    : RevAnd[ReqCodes],
                          reqText     : RevAnd[ReqData.Text],
                          reqTags     : RevAnd[ReqData.Tags],
-                         implications: RevAnd[ReqData.Implications]) {
+                         implications: RevAnd[Implications]) {
 
 
   def contentRev: Rev =
@@ -73,8 +73,8 @@ final case class Project(config      : ProjectConfig,
   lazy val implicationTgtToSrcTC: TransitiveClosure[ReqId] =
     implicationTransitiveClosure(_.tgtToSrc)
 
-  private def implicationTransitiveClosure(f: ReqData.Implications => ReqData.ImplicationsU): TransitiveClosure[ReqId] =
-    ReqData.implicationTransitiveClosure(
+  private def implicationTransitiveClosure(f: Implications => Implications.Uni): TransitiveClosure[ReqId] =
+    Implications.transitiveClosure(
       reqs.data.reqs.keys,
       reqs.data.dead,
       f(implications.data))

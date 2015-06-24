@@ -84,7 +84,7 @@ object SampleProject {
   lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
   lazy val reqText  = RevAnd(60, ReqData.emptyText)
   lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
-  lazy val reqImps  = RevAnd(80, ReqData.emptyImplications)
+  lazy val reqImps  = RevAnd(80, Implications.empty)
 
   lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
   lazy val project       = Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps)

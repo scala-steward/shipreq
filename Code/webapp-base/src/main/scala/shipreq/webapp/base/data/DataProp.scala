@@ -212,11 +212,10 @@ object DataProp {
 
   // -------------------------------------------------------------------------------------------------------------------
   object implications {
-    type T = ReqData.Implications
+    type T = Implications
 
     def noCycles =
-      ReqData.implicationCycleDetector.noCycleProp("implications")
-        .contramap[T](_.srcToTgt.m)
+      Implications.cycleDetector.noCycleProp("implications").contramap[T](_.srcToTgt.m)
 
     lazy val all = noCycles
   }

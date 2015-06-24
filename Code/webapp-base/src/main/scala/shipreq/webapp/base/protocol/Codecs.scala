@@ -571,7 +571,7 @@ object DataCodecs {
   implicit final val pubidRegister = xmap((_: PubidRegister).value)(PubidRegister.apply)
   implicit final val requirementsD = iMapK[ReqTypeId, ReqIdT, ReqT](ReqT.idProof)
   implicit final val requirements  = caseclass2(Requirements.apply, Requirements.unapply)
-  implicit final val implications  = xmap((_: ReqData.Implications).srcToTgt)(ReqData.Implications)
+  implicit final val implications  = xmap((_: Implications).srcToTgt)(Implications.apply)
 
   private def _req = ReadWriter[Req]({
     case r: GenericReq => intkeyW(0, r)(genericReq)

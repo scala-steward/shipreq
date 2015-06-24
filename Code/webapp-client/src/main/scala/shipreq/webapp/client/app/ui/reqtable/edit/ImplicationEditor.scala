@@ -113,7 +113,7 @@ object ImplicationEditor {
       val pi = project.value().implications.data
       var is = if (declFwd) pi.srcToTgt else pi.tgtToSrc
       is = is.mod(subjectId, diff.apply)
-      if (ReqData.implicationCycleDetector.hasCycle(is.m))
+      if (Implications.cycleDetector.hasCycle(is.m))
         -\/(Some("That would cause a cycle in your implication graph."))
       else
         \/-(diff)

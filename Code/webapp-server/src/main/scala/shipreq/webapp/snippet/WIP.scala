@@ -79,7 +79,7 @@ class WIP {
     lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
     lazy val reqText  = RevAnd(60, ReqData.emptyText)
     lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
-    lazy val reqImps  = RevAnd(80, ReqData.emptyImplications)
+    lazy val reqImps  = RevAnd(80, Implications.empty)
 
     lazy val cfg = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
     lazy val project = Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)

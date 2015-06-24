@@ -164,7 +164,7 @@ object ShowSize {
   implicit def reqDataTags: ShowSize[ReqData.Tags] =
     ShowSize.lift(r => Node("Tags", r.vstream(_.size).sum))
 
-  implicit def reqDataImplications: ShowSize[ReqData.Implications] =
+  implicit def implications: ShowSize[Implications] =
     ShowSize.lift(r => Node("Implications", r.srcToTgt.vstream(_.size).sum))
 
   implicit def tagTree: ShowSize[TagTree] =

@@ -25,7 +25,6 @@ import shipreq.webapp.base.delta._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar}
 import DataImplicits._
-import ReqData.{Implications, ImplicationsU}
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -774,12 +773,12 @@ object RandomData {
 
   type ImplicationsUM = Map[ReqId, Set[ReqId]]
   @tailrec def preventImplicationCycles(m: ImplicationsUM): ImplicationsUM =
-    ReqData.implicationCycleDetector.findCycle(m) match {
+    Implications.cycleDetector.findCycle(m) match {
       case None         => m
       case Some((a, b)) => preventImplicationCycles(m - b)
     }
 
-  val emptyImplicationsU: ImplicationsU = Multimap.empty
+  val emptyImplicationsU = Implications.emptyUni
 
   val MaxImplicationPairs = 100 `JVM|JS` 40
   // val MaxImplicationsPerSrc = 2  `JVM|JS` 4
