@@ -19,8 +19,10 @@ object TestOptics {
     val t4 = Project.tags             ^|-> RevAnd.rev asSetter
     val t5 = Project.reqs             ^|-> RevAnd.rev asSetter
     val t6 = Project.reqCodes         ^|-> RevAnd.rev asSetter
-    val t7 = Project.reqFieldData     ^|-> RevAnd.rev asSetter
+    val t7 = Project.reqText          ^|-> RevAnd.rev asSetter
+    val t8 = Project.reqTags          ^|-> RevAnd.rev asSetter
+    val t9 = Project.implications     ^|-> RevAnd.rev asSetter
 
-    Optics.compositeSetters(t1, t2, t3, t4, t5, t6, t7)
+    Optics.compositeSetters(t1, t2, t3, t4, t5, t6, t7, t8, t9)
   }
 }

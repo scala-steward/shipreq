@@ -34,6 +34,14 @@ object ShowSize {
                                    (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D]): ShowSize[X] =
     ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)) ))
 
+  def data5[X, A, B, C, D, E](parent: String, a: X => A, b: X => B, c: X => C, d: X => D, e: X => E)
+                                   (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D], E: ShowSize[E]): ShowSize[X] =
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)), E(e(x)) ))
+
+  def data6[X, A, B, C, D, E, F](parent: String, a: X => A, b: X => B, c: X => C, d: X => D, e: X => E, f: X => F)
+                                   (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D], E: ShowSize[E], F: ShowSize[F]): ShowSize[X] =
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)), E(e(x)), F(f(x)) ))
+
   def data7[X, A, B, C, D, E, F, G](parent: String, a: X => A, b: X => B, c: X => C, d: X => D, e: X => E, f: X => F, g: X => G)
                                    (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D], E: ShowSize[E], F: ShowSize[F], G: ShowSize[G]): ShowSize[X] =
     ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)), E(e(x)), F(f(x)), G(g(x)) ))
@@ -150,11 +158,14 @@ object ShowSize {
           case None                  => "Tombstones"
         })
 
-  implicit def reqFieldData: ShowSize[ReqFieldData] =
-    ShowSize.lift(r => Node.sum("Req field-data",
-      Node("Implications", r.implications.srcToTgt.vstream(_.size).sum),
-      Node("Tags", r.tags.vstream(_.size).sum),
-      Node("Text", r.text.values.toStream.flatMap(_.values.toStream).size)))
+  implicit def reqDataText: ShowSize[ReqData.Text] =
+    ShowSize.lift(r => Node("Text", r.values.toStream.flatMap(_.values.toStream).size))
+
+  implicit def reqDataTags: ShowSize[ReqData.Tags] =
+    ShowSize.lift(r => Node("Tags", r.vstream(_.size).sum))
+
+  implicit def reqDataImplications: ShowSize[ReqData.Implications] =
+    ShowSize.lift(r => Node("Implications", r.srcToTgt.vstream(_.size).sum))
 
   implicit def tagTree: ShowSize[TagTree] =
     ShowSize.lift(tt =>
@@ -173,7 +184,7 @@ object ShowSize {
     ShowSize.data4("Project config", _.customIssueTypes, _.customReqTypes, _.fields, _.tags)
 
   def projectContent: ShowSize[Project] =
-    ShowSize.data3("Project content", _.reqs, _.reqCodes, _.reqFieldData)
+    ShowSize.data5("Project content", _.reqs, _.reqCodes, _.reqText, _.reqTags, _.implications)
 
   implicit def project: ShowSize[Project] =
     ShowSize.data2("Project", (_: Project).config, (p: Project) => p)(projectConfig, projectContent)

@@ -8,7 +8,7 @@ import shipreq.base.util._, MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Atom, Text}
-import ReqFieldData.{Implications, ImplicationsU}
+import ReqData.{Implications, ImplicationsU}
 
 object ProjectDslInternals {
   type Mod[A] = State[ProjectState, A]
@@ -24,8 +24,8 @@ object ProjectDslInternals {
                           pubids        : PubidRegister,
                           reqCodeTrie   : ReqCode.Trie,
                           maxReqCodeId  : Long,
-                          text          : ReqFieldData.Text,
-                          tags          : ReqFieldData.Tags,
+                          text          : ReqData.Text,
+                          tags          : ReqData.Tags,
                           imps          : ImplicationsU) {
 
     private var _newMaxReqCodeId = maxReqCodeId
@@ -41,7 +41,9 @@ object ProjectDslInternals {
       p.copy(
         reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
         reqCodes     = succ(p.reqCodes,     ReqCodes(reqCodeTrie)),
-        reqFieldData = succ(p.reqFieldData, ReqFieldData(text, tags, Implications(imps))))
+        reqText      = succ(p.reqText,      text),
+        reqTags      = succ(p.reqTags,      tags),
+        implications = succ(p.implications, Implications(imps)))
   }
 
   private def succ[A](r: RevAnd[A], a: A): RevAnd[A] =
@@ -54,9 +56,9 @@ object ProjectDslInternals {
     pubids         = p.reqs.data.pubids,
     reqCodeTrie    = p.reqCodes.data.trie,
     maxReqCodeId   = p.reqCodes.data.cataA(0L)((q,_,d) => q max d.id.value),
-    text           = p.reqFieldData.data.text,
-    tags           = p.reqFieldData.data.tags,
-    imps           = p.reqFieldData.data.implications.srcToTgt)
+    text           = p.reqText.data,
+    tags           = p.reqTags.data,
+    imps           = p.implications.data.srcToTgt)
 
   type CFTextId     = CustomField.Text.Id
   type CFTextValue  = Text.CustomTextField.NonEmptyText

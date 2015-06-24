@@ -88,7 +88,7 @@ abstract class ProjectText[Out](project: Project) {
 
   private val _customTextField: CustomField.Text.Id => ReqId => Option[Out] =
     fid => {
-      val m = project.reqFieldData.data.text.getOrElse(fid, Map.empty)
+      val m = project.reqText.data.getOrElse(fid, Map.empty)
       m.get(_) map format1
     }
 

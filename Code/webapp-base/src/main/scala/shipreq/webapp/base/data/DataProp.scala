@@ -212,10 +212,10 @@ object DataProp {
 
   // -------------------------------------------------------------------------------------------------------------------
   object implications {
-    type T = ReqFieldData.Implications
+    type T = ReqData.Implications
 
     def noCycles =
-      ReqFieldData.implicationCycleDetector.noCycleProp("implications")
+      ReqData.implicationCycleDetector.noCycleProp("implications")
         .contramap[T](_.srcToTgt.m)
 
     lazy val all = noCycles
@@ -340,7 +340,7 @@ object DataProp {
     def constituents = (
                 reqs.all.contramap[P](_.reqs)
       ∧     reqCodes.all.contramap[P](_.reqCodes)
-      ∧ implications.all.contramap[P](_.reqFieldData.data.implications)
+      ∧ implications.all.contramap[P](_.implications.data)
     ) rename "constituents"
 
     def liveReqRequiresLiveReqType =
@@ -389,17 +389,17 @@ object DataProp {
         _.allRichText.flatMap(_._2).flatMap(_.toStream).flatMap(go)
       }
 
-      ( validReqTypeIds("Pubid keys",                      _.reqs.data.pubids.value.m.keys)
-      ∧ validReqIds    ("ReqCode targets"                , _.reqCodes.data.trie.cataV(Set.empty[ReqId])((q, _, d) => q ++ d.reqIds))
-      ∧ validFieldIds  ("ReqFieldData.text TextField ids", _.reqFieldData.data.text.keys)
-      ∧ validReqIds    ("ReqFieldData.text.*.reqIds",      _.reqFieldData.data.text.vstreamf(_.keys.toStream))
-      ∧ validReqIds    ("ReqFieldData.config.tags keys",          _.reqFieldData.data.tags.keys)
-      ∧ validTagIds    ("ReqFieldData.config.tags values",        _.reqFieldData.data.tags.allValues)
-      ∧ validReqIds    ("ReqFieldData.implications",       _.reqFieldData.data.implications.members)
-      ∧ validReqIds    ("Atoms: ReqRefs",                  inText { case a: ReqRef # ReqRef  => a.value })
-      ∧ validReqCodeIds("Atoms: CodeRefs",                 inText { case a: ReqRef # CodeRef => a.value })
-      ∧ validTagIds    ("Atoms: TagRefs",                  inText { case a: TagRef # TagRef  => a.value })
-      ∧ validIssueTypes("Atoms: Issues",                   inText { case a: Issue  # Issue   => a.typ })
+      ( validReqTypeIds("Pubid keys",                 _.reqs.data.pubids.value.m.keys)
+      ∧ validReqIds    ("ReqCode targets"             , _.reqCodes.data.trie.cataV(Set.empty[ReqId])((q, _, d) => q ++ d.reqIds))
+      ∧ validFieldIds  ("ReqData.text TextField ids", _.reqText.data.keys)
+      ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.data.vstreamf(_.keys.toStream))
+      ∧ validReqIds    ("ReqData.config.tags keys",   _.reqTags.data.keys)
+      ∧ validTagIds    ("ReqData.config.tags values", _.reqTags.data.allValues)
+      ∧ validReqIds    ("ReqData.implications",       _.implications.data.members)
+      ∧ validReqIds    ("Atoms: ReqRefs",             inText { case a: ReqRef # ReqRef  => a.value })
+      ∧ validReqCodeIds("Atoms: CodeRefs",            inText { case a: ReqRef # CodeRef => a.value })
+      ∧ validTagIds    ("Atoms: TagRefs",             inText { case a: TagRef # TagRef  => a.value })
+      ∧ validIssueTypes("Atoms: Issues",              inText { case a: Issue  # Issue   => a.typ })
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 

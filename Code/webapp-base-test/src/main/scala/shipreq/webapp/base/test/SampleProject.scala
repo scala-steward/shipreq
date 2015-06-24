@@ -82,10 +82,12 @@ object SampleProject {
 
   lazy val reqs     = RevAnd(40, Requirements.empty)
   lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
-  lazy val reqData  = RevAnd(60, ReqFieldData(Map.empty, Multimap.empty, ReqFieldData.Implications(Multimap.empty)))
+  lazy val reqText  = RevAnd(60, ReqData.emptyText)
+  lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
+  lazy val reqImps  = RevAnd(80, ReqData.emptyImplications)
 
   lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
-  lazy val project       = Project(projectConfig, reqs, reqCodes, reqData)
+  lazy val project       = Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps)
 
   lazy val tagTree = project.config.tags.data.mapValues(_.children)
 

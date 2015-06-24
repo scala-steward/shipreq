@@ -38,7 +38,7 @@ object ImplicationEditor {
       l.outlaw(None, _.reqTypeId ≠ f.reqTypeId))
 
   def initialValueForCustomColumn(p: Project, fid: CustomField.Implication.Id, id: ReqId): Stream[Pubid] = {
-    val impIds = p.reqFieldData.data.implications.tgtToSrc(id).toStream
+    val impIds = p.implications.data.tgtToSrc(id).toStream
     val impReqs = unmust(p.reqs.data.reqsM(impIds))
     impReqs.map(_.pubid)
   }
@@ -110,10 +110,10 @@ object ImplicationEditor {
       val newValues = in.toSet - subjectId // Tolerate reflexivity
       val diff = SetDiff.compare(initialValues, newValues)
 
-      val pi = project.value().reqFieldData.data.implications
+      val pi = project.value().implications.data
       var is = if (declFwd) pi.srcToTgt else pi.tgtToSrc
       is = is.mod(subjectId, diff.apply)
-      if (ReqFieldData.implicationCycleDetector.hasCycle(is.m))
+      if (ReqData.implicationCycleDetector.hasCycle(is.m))
         -\/(Some("That would cause a cycle in your implication graph."))
       else
         \/-(diff)

@@ -139,7 +139,7 @@ final class ColumnEditors(project       : Px[Project],
   }
 
   def cfText(fid: CustomField.Text.Id) = mkEditor[GenericReqRow] { r =>
-    val td = project.value().reqFieldData.data.text.getOrElse(fid, Map.empty)
+    val td = project.value().reqText.data.getOrElse(fid, Map.empty)
     val id = r.req.id
     val iv = td.get(id).map(_.whole) getOrElse Vector.empty
     val fe = new RichTextEditor.CustomTextField(fid)
@@ -164,7 +164,7 @@ final class ColumnEditors(project       : Px[Project],
     val id = r.req.id
     val l  = project map TagEditor.lookupForNoCol
     val p  = project.value()
-    val iv = p.reqFieldData.data.tags(id)
+    val iv = p.reqTags.data(id)
     TagEditor(iv, id, p, l)
   }
 
@@ -172,7 +172,7 @@ final class ColumnEditors(project       : Px[Project],
     val id = r.req.id
     val l  = project map (TagEditor.lookupForCol(_, fid))
     val p  = project.value()
-    val iv = p.reqFieldData.data.tags(id) & r.exp.tagsForCF(fid).toSet
+    val iv = p.reqTags.data(id) & r.exp.tagsForCF(fid).toSet
     TagEditor(iv, id, p, l)
   }
 

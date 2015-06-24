@@ -25,7 +25,7 @@ import shipreq.webapp.base.delta._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar}
 import DataImplicits._
-import ReqFieldData.{Implications, ImplicationsU}
+import ReqData.{Implications, ImplicationsU}
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -749,32 +749,32 @@ object RandomData {
     NonEmptyVector.maybe(customReqTypeIds,
       GenS(_ => Gen insert Requirements.empty))( // ← This will change when UseCases are added
       customReqTypeIdNev =>
-        pubidRegisterAnd(Requirements.emptyData, sGenericReq(sAllocPubidC(customReqTypeIdNev), rtLive))(_ + _)
+        pubidRegisterAnd(Requirements.emptyById, sGenericReq(sAllocPubidC(customReqTypeIdNev), rtLive))(_ + _)
           .map { case (pr, reqs) => Requirements(reqs, pr) }
       )
 
-  def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: Requirements.Data): Gen[Requirements.Data] = {
+  def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: Requirements.ById): Gen[Requirements.ById] = {
     val streamOfGens = data.vstream {
         case v: GenericReq => gt.map(t => v.copy(title = t))
       }
     val genStream = Gen.sequence(streamOfGens)
-    genStream.map(Requirements.emptyData ++ _)
+    genStream.map(Requirements.emptyById ++ _)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Req Data
 
-  def reqFieldDataText(cols: Set[CustomField.Text.Id], reqs: Set[ReqId], txt: Gen[Text.CustomTextField.NonEmptyText]): Gen[ReqFieldData.Text] =
+  def reqFieldDataText(cols: Set[CustomField.Text.Id], reqs: Set[ReqId], txt: Gen[Text.CustomTextField.NonEmptyText]): Gen[ReqData.Text] =
     txt mapByKeySubset reqs mapByKeySubset cols
 
-  def reqFieldDataTags(reqs: TraversableOnce[ReqId], tags: Set[ApplicableTagId]): Gen[ReqFieldData.Tags] = {
+  def reqFieldDataTags(reqs: TraversableOnce[ReqId], tags: Set[ApplicableTagId]): Gen[ReqData.Tags] = {
     val rndTags = Gen.subset(tags).map(_.toSet)
     (rndTags mapByKeySubset reqs).map(Multimap(_))
   }
 
   type ImplicationsUM = Map[ReqId, Set[ReqId]]
   @tailrec def preventImplicationCycles(m: ImplicationsUM): ImplicationsUM =
-    ReqFieldData.implicationCycleDetector.findCycle(m) match {
+    ReqData.implicationCycleDetector.findCycle(m) match {
       case None         => m
       case Some((a, b)) => preventImplicationCycles(m - b)
     }
@@ -809,16 +809,16 @@ object RandomData {
   }
 
   // def customTextFieldAtom(gr: Gen[ReqId], gi: Gen[CustomIssueTypeId], gt: Gen[ApplicableTagId]): Gen[CustomTextField.Atom] = {
-  def reqFieldData(reqs    : Set[ReqId],
-                   txtCols : Set[CustomField.Text.Id],
-                   reqCodeG: Option[Gen[ReqCodeId]],
-                   cissueG : Option[Gen[CustomIssueTypeId]],
-                   tagG    : Option[Gen[ApplicableTagId]],
-                   tags    : Set[ApplicableTagId]): Gen[ReqFieldData] = {
+  def reqData(reqs    : Set[ReqId],
+              txtCols : Set[CustomField.Text.Id],
+              reqCodeG: Option[Gen[ReqCodeId]],
+              cissueG : Option[Gen[CustomIssueTypeId]],
+              tagG    : Option[Gen[ApplicableTagId]],
+              tags    : Set[ApplicableTagId]) = {
 
     val gr = Gen.oneofO(reqs.toSeq)
 
-    Gen.apply3(ReqFieldData.apply)(
+    Gen.tuple3(
       reqFieldDataText(txtCols, reqs, TextGen.customTextFieldAtom(gr, reqCodeG, cissueG, tagG).ptext1(Text.CustomTextField)),
       reqFieldDataTags(reqs, tags),
       reqFieldDataImplications(reqs))
@@ -989,12 +989,15 @@ object RandomData {
       atagIds        = tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       atagIdG        = Gen.oneofO(atagIds.toSeq)
       textColIds     = fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
-      reqFieldData   ← revAndG(reqFieldData(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG, atagIds))
+      reqData        ← reqData(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG, atagIds)
+      reqText        ← revAnd(reqData._1)
+      reqTags        ← revAnd(reqData._2)
+      reqImps        ← revAnd(reqData._3)
       reqs2          ← genmodL(Requirements.reqs)(updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text))(reqs1)
       reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
       reqs           ← revAnd(reqs2)
       reqCodes       ← revAnd(ReqCodes(reqCodes2))
-    } yield Project(ProjectConfig(issues, reqtypes, fields, tags), reqs, reqCodes, reqFieldData)
+    } yield Project(ProjectConfig(issues, reqtypes, fields, tags), reqs, reqCodes, reqText, reqTags, reqImps)
 
   // ===================================================================================================================
   // Protocol

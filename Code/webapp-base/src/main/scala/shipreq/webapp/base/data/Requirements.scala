@@ -254,7 +254,7 @@ object PubidRegister {
   def empty = PubidRegister(UnivEq.emptyMultimap)
 }
 
-// ===================================================================================================================
+// =====================================================================================================================
 // Requirements
 
 /** type [[ReqIdT]] = [[GenericReqId]] */
@@ -283,6 +283,8 @@ object ReqT {
     }
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 final case class GenericReqId(value: Long) extends TaggedLong with ReqIdT[CustomReqTypeId]
 
 final case class GenericReq(id   : GenericReqId,
@@ -294,46 +296,19 @@ object GenericReq {
   implicit def equality: UnivEq[GenericReq] = deriveUnivEq
 }
 
-case class ReqFieldData(text        : ReqFieldData.Text,
-                        tags        : ReqFieldData.Tags,
-                        implications: ReqFieldData.Implications)
-
-object ReqFieldData {
-  /** U = Unidirectional */
-  type ImplicationsU = Multimap[ReqId, Set, ReqId]
-  type Tags          = Multimap[ReqId, Set, ApplicableTagId]
-  type Text          = Map[CustomField.Text.Id, Map[ReqId, Text.CustomTextField.NonEmptyText]]
-
-  def implicationCycleDetector =
-    CycleDetector.Directed.multimap[Set, ReqId, Long](_.value, UnivEq.emptySet)
-
-  def implicationTransitiveClosure(keys: Iterable[ReqId], dead: Set[ReqId], is: ImplicationsU): TransitiveClosure[ReqId] =
-    TransitiveClosure.auto[ReqId](keys)(is.apply, !dead.contains(_))
-
-  case class Implications(srcToTgt: ImplicationsU) {
-    lazy val tgtToSrc: ImplicationsU = srcToTgt.reverse
-
-    def members: Set[ReqId] =
-      srcToTgt.m.toStream.foldLeft(UnivEq.emptySet[ReqId]) {
-        case (q, (k, vs)) => q + k ++ vs
-      }
-  }
-
-  implicit def equalityI: UnivEq[Implications] = deriveUnivEq
-  implicit def equality: UnivEq[ReqFieldData] = deriveUnivEq
-}
+// ---------------------------------------------------------------------------------------------------------------------
 
 object Requirements {
-  type Data = IMapK[ReqTypeId, ReqIdT, ReqT]
-  def emptyData = ReqT.idProof.emptyIMapK
-  def empty = Requirements(emptyData, PubidRegister.empty)
+  type ById = IMapK[ReqTypeId, ReqIdT, ReqT]
+  def emptyById = ReqT.idProof.emptyIMapK
+  def empty = Requirements(emptyById, PubidRegister.empty)
 
-  implicit def equalityData: Equal[Data] = IMapK.equality[ReqTypeId, ReqIdT, ReqT]
+  implicit def equalityById: Equal[ById] = IMapK.equality[ReqTypeId, ReqIdT, ReqT]
   implicit lazy val equality: Equal[Requirements] = deriveEqual
 }
 
 @Lenses
-case class Requirements(reqs: Requirements.Data, pubids: PubidRegister) {
+case class Requirements(reqs: Requirements.ById, pubids: PubidRegister) {
 
   lazy val dead: Set[ReqId] =
     reqs.filterV(_.live :: Dead).keySet

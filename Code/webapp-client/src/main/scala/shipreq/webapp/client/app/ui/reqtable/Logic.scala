@@ -34,7 +34,7 @@ private[reqtable] object Logic {
   private type TagLookup = ReqId => Set[ApplicableTagId]
 
   private def tagLookup(p: Project): TagLookup = {
-    val reqTags    = p.reqFieldData.data.tags
+    val reqTags    = p.reqTags.data
     val tagsInText = p.tagsInTextR
     memo(id => reqTags(id) | tagsInText(id))
   }
@@ -249,7 +249,7 @@ private[reqtable] object Logic {
 
     val pReqs         = p.reqs.data
     val pReqCodes     = p.reqCodes.data.activeReqCodesByTarget
-    val pImplications = p.reqFieldData.data.implications
+    val pImplications = p.implications.data
     val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
 
     def pubid(reqId: ReqId): Option[Pubid] =

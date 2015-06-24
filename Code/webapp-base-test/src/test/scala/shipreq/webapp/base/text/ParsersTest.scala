@@ -50,7 +50,7 @@ object ParsersTest extends TestSuite {
 
     val genericReqTitles = p.reqs.data.reqs.values.filterT[GenericReq].map(_.title)
 
-    val customTextFieldValues = p.reqFieldData.data.text.values.toStream.flatMap(_.values.toStream)
+    val customTextFieldValues = p.reqText.data.values.toStream.flatMap(_.values.toStream)
 
     def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
 

@@ -571,8 +571,7 @@ object DataCodecs {
   implicit final val pubidRegister = xmap((_: PubidRegister).value)(PubidRegister.apply)
   implicit final val requirementsD = iMapK[ReqTypeId, ReqIdT, ReqT](ReqT.idProof)
   implicit final val requirements  = caseclass2(Requirements.apply, Requirements.unapply)
-  implicit final val implications  = xmap((_: ReqFieldData.Implications).srcToTgt)(ReqFieldData.Implications)
-  implicit final val reqFieldData  = caseclass3(ReqFieldData.apply, ReqFieldData.unapply)
+  implicit final val implications  = xmap((_: ReqData.Implications).srcToTgt)(ReqData.Implications)
 
   private def _req = ReadWriter[Req]({
     case r: GenericReq => intkeyW(0, r)(genericReq)
@@ -614,7 +613,7 @@ object DataCodecs {
 
   // -------------------------------------------------------------------------------------------------------------------
   implicit final val projectConfig = caseclass4(ProjectConfig.apply, ProjectConfig.unapply)
-  implicit final val project       = caseclass4(Project.apply, Project.unapply)
+  implicit final val project       = caseclass6(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================

@@ -3,34 +3,38 @@ package shipreq.webapp.base.data
 import japgolly.nyaya.util.Multimap
 import monocle.Lens
 import monocle.macros.Lenses
-import scalaz.{Equal, -\/, \/-}
+import scalaz.Equal
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{UnivEq, Monoidish, Must}
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.{TransitiveClosure, ShowSize}
 import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
-import ReqFieldData.{Implications, ImplicationsU}
 
 object Project {
-  implicit def equality: Equal[Project] = deriveEqual
-
   val customIssueTypes: Lens[Project, RevAnd[CustomIssueTypeIMap]] = config ^|-> ProjectConfig.customIssueTypes
   val customReqTypes  : Lens[Project, RevAnd[CustomReqTypeIMap]  ] = config ^|-> ProjectConfig.customReqTypes
   val fields          : Lens[Project, RevAnd[FieldSet]           ] = config ^|-> ProjectConfig.fields
   val tags            : Lens[Project, RevAnd[TagTree]            ] = config ^|-> ProjectConfig.tags
+
+  import ReqData._ // for equality
+  implicit def equality: Equal[Project] = deriveEqual
 }
 
 @Lenses
 final case class Project(config      : ProjectConfig,
                          reqs        : RevAnd[Requirements],
                          reqCodes    : RevAnd[ReqCodes],
-                         reqFieldData: RevAnd[ReqFieldData]) {
+                         reqText     : RevAnd[ReqData.Text],
+                         reqTags     : RevAnd[ReqData.Tags],
+                         implications: RevAnd[ReqData.Implications]) {
+
 
   def contentRev: Rev =
-    reqs            .rev +
-    reqCodes        .rev +
-    reqFieldData    .rev
+    reqs        .rev +
+    reqCodes    .rev +
+    reqText     .rev +
+    reqTags     .rev +
+    implications.rev
 
   val rev: Rev =
     config.rev + contentRev
@@ -42,7 +46,7 @@ final case class Project(config      : ProjectConfig,
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
       ("Generic Req descs", reqs.data.reqs.values.filterT[GenericReq].map(_.title)),
-      ("Text fields", reqFieldData.data.text.values.toStream.flatMap(_.values.toStream).map(_.whole)))
+      ("Text fields", reqText.data.values.toStream.flatMap(_.values.toStream).map(_.whole)))
 
   def countAtoms: ShowSize.Node = {
     val counted =
@@ -69,11 +73,11 @@ final case class Project(config      : ProjectConfig,
   lazy val implicationTgtToSrcTC: TransitiveClosure[ReqId] =
     implicationTransitiveClosure(_.tgtToSrc)
 
-  private def implicationTransitiveClosure(f: Implications => ImplicationsU): TransitiveClosure[ReqId] =
-    ReqFieldData.implicationTransitiveClosure(
+  private def implicationTransitiveClosure(f: ReqData.Implications => ReqData.ImplicationsU): TransitiveClosure[ReqId] =
+    ReqData.implicationTransitiveClosure(
       reqs.data.reqs.keys,
       reqs.data.dead,
-      f(reqFieldData.data.implications))
+      f(implications.data))
 
   lazy val tagsInTextR  : Multimap[ReqId,     Set,  ApplicableTagId] = Multimap(scanAllLiveTextR(Text.findTags(_),   Text.findTags))
   lazy val issuesInTextR: Multimap[ReqId,     Vector, Atom.AnyIssue] = Multimap(scanAllLiveTextR(Text.findIssues(_), Text.findIssues))
@@ -81,7 +85,7 @@ final case class Project(config      : ProjectConfig,
 
   private def scanAllLiveTextR[R](f1: Text.GenericReqTitle.OptionalText => R,
                                   f2: (Text.CustomTextField.OptionalText, R) => R): Map[ReqId, R] = {
-    val textData   = reqFieldData.data.text
+    val textData   = reqText.data
     val textFields = config.liveCustomTextFields.map(_.id)
 
     def searchCustomTextFields(id: ReqId, into: R): R =

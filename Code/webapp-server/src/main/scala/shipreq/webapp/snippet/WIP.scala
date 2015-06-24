@@ -77,9 +77,12 @@ class WIP {
 
     lazy val reqs     = RevAnd(40, Requirements.empty)
     lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
-    lazy val reqData  = RevAnd(60, ReqFieldData(Map.empty, Multimap.empty, ReqFieldData.Implications(Multimap.empty)))
+    lazy val reqText  = RevAnd(60, ReqData.emptyText)
+    lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
+    lazy val reqImps  = RevAnd(80, ReqData.emptyImplications)
 
-    lazy val project = Project(ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR), reqs, reqCodes, reqData)
+    lazy val cfg = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
+    lazy val project = Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
 
     import shipreq.webapp.base.test.ProjectDsl._
 
