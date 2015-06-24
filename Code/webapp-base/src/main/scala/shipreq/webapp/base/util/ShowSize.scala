@@ -22,9 +22,21 @@ object ShowSize {
   @inline def lift[A](f: A => Node): ShowSize[A] = new ShowSize(f)
 
 
+  def data2[X, A, B](parent: String, a: X => A, b: X => B)
+                       (implicit A: ShowSize[A], B: ShowSize[B]): ShowSize[X] =
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)) ))
+
+  def data3[X, A, B, C](parent: String, a: X => A, b: X => B, c: X => C)
+                          (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C]): ShowSize[X] =
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)) ))
+
+  def data4[X, A, B, C, D](parent: String, a: X => A, b: X => B, c: X => C, d: X => D)
+                                   (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D]): ShowSize[X] =
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)) ))
+
   def data7[X, A, B, C, D, E, F, G](parent: String, a: X => A, b: X => B, c: X => C, d: X => D, e: X => E, f: X => F, g: X => G)
                                    (implicit A: ShowSize[A], B: ShowSize[B], C: ShowSize[C], D: ShowSize[D], E: ShowSize[E], F: ShowSize[F], G: ShowSize[G]): ShowSize[X] =
-    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)), E(e(x)), F(f(x)), G(g(x))))
+    ShowSize.lift(x => Node.sum(parent, A(a(x)), B(b(x)), C(c(x)), D(d(x)), E(e(x)), F(f(x)), G(g(x)) ))
 
   // ===================================================================================================================
   final case class Node(name: String, size: Int, children: Vector[Node]) {
@@ -157,7 +169,12 @@ object ShowSize {
   implicit def revData[D](implicit d: ShowSize[D]): ShowSize[RevAnd[D]] =
     d.contramap(_.data)
 
+  implicit def projectConfig: ShowSize[ProjectConfig] =
+    ShowSize.data4("Project config", _.customIssueTypes, _.customReqTypes, _.fields, _.tags)
+
+  def projectContent: ShowSize[Project] =
+    ShowSize.data3("Project content", _.reqs, _.reqCodes, _.reqFieldData)
+
   implicit def project: ShowSize[Project] =
-    ShowSize.data7("Project",
-      _.customIssueTypes, _.customReqTypes, _.fields, _.tags, _.reqs, _.reqCodes, _.reqFieldData)
+    ShowSize.data2("Project", (_: Project).config, (p: Project) => p)(projectConfig, projectContent)
 }

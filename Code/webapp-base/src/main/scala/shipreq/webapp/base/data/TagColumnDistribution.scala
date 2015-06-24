@@ -16,11 +16,11 @@ abstract class TagColumnDistribution[A] {
 
 object TagColumnDistribution {
 
-  def apply(p: Project, tagColumnFilter: CustomField.Tag => Boolean) =
+  def apply(p: ProjectConfig, tagColumnFilter: CustomField.Tag => Boolean) =
     new TagIds(p, tagColumnFilter)
 
   // ===================================================================================================================
-  final class TagIds(p: Project, tagColumnFilter: CustomField.Tag => Boolean) extends TagColumnDistribution[Must[Set[ApplicableTagId]]] {
+  final class TagIds(p: ProjectConfig, tagColumnFilter: CustomField.Tag => Boolean) extends TagColumnDistribution[Must[Set[ApplicableTagId]]] {
     // Traversing the tag tree for used columns is better than calculating the full
     // transitive closure at O(V²) space and O(V²+VE) time.
     private[this] implicit val tagTree = p.tags.data

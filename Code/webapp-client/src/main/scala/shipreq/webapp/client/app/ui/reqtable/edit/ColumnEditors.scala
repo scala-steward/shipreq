@@ -118,10 +118,10 @@ final class ColumnEditors(project       : Px[Project],
   // ===================================================================================================================
 
   val reqType = mkEditorO[GenericReqRow] { r =>
-    val initialM = project.value().reqTypeC(r.req.reqTypeId)
+    val initialM = project.value().config.reqTypeC(r.req.reqTypeId)
     mustResolveO(initialM).map { iv =>
       val id = r.req.id
-      val fields = project.map(_.customReqTypes.data.values.toSet)
+      val fields = project.map(_.config.customReqTypes.data.values.toSet)
       ReqTypeSelector(iv, id, fields)
     }
   }

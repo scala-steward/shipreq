@@ -4,7 +4,7 @@ import scalaz.{\/-, -\/, \/}
 import scalaz.std.AllInstances._
 import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.delta, delta.{Partition, RemoteDeltaP}
+import shipreq.webapp.base.delta.{Partition, PPI}
 import shipreq.webapp.base.util.TypeclassDerivation._
 import Field.ApplicableReqTypes
 
@@ -50,35 +50,30 @@ object FieldProtocol {
     override val unapplyData: AnyRef => Option[Delta] = {case r: Delta => Some(r); case _ => None}
   }
 
-  object PPI extends delta.PPI[Partition.Fields.type] {
-    def rev(p: Project): Rev =
-      p.fields.rev
+  val ppi = PPI.lens(Partition.Fields, Project.fields) { (delta, orig) =>
+    var FieldSet(customFields, order) = orig
 
-    def update(p: Project, newRev: Rev, delta: RemoteDeltaP.Aux[Partition.Fields.type]): Project = {
-      var FieldSet(customFields, order) = p.fields.data
+    // Delete fields
+    for (fieldId <- delta.delete)
+      fieldId match {
+        case i: CustomFieldId => customFields = customFields - i
+        case _: StaticField   => ()
+      }
+    order = order.filterNot(delta.delete.contains)
 
-      // Delete fields
-      for (fieldId <- delta.delete)
-        fieldId match {
-          case i: CustomFieldId => customFields = customFields - i
-          case _: StaticField   => ()
-        }
-      order = order.filterNot(delta.delete.contains)
+    // Insert/update
+    def setOrder(id: FieldId, pos: Position): Unit =
+      order = Util.reposition(order, id, pos)
+    for (delta <- delta.update)
+      delta match {
+        case Delta(-\/(staticField), pos) =>
+          setOrder(staticField, pos)
+        case Delta(\/-(customField), pos) =>
+          customFields += customField
+          setOrder(customField.id, pos)
+      }
 
-      // Insert/update
-      def setOrder(id: FieldId, pos: Position): Unit =
-        order = Util.reposition(order, id, pos)
-      for (delta <- delta.update)
-        delta match {
-          case Delta(-\/(staticField), pos) =>
-            setOrder(staticField, pos)
-          case Delta(\/-(customField), pos) =>
-            customFields += customField
-            setOrder(customField.id, pos)
-        }
-
-      // Done
-      p.copy(fields = RevAnd(newRev, FieldSet(customFields, order)))
-    }
+    // Done
+    FieldSet(customFields, order)
   }
 }

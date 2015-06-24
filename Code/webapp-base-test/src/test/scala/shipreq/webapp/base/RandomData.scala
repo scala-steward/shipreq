@@ -994,7 +994,7 @@ object RandomData {
       reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
       reqs           ← revAnd(reqs2)
       reqCodes       ← revAnd(ReqCodes(reqCodes2))
-    } yield Project(issues, reqtypes, fields, tags, reqs, reqCodes, reqFieldData)
+    } yield Project(ProjectConfig(issues, reqtypes, fields, tags), reqs, reqCodes, reqFieldData)
 
   // ===================================================================================================================
   // Protocol
@@ -1311,9 +1311,9 @@ object RandomData {
 
       def forProject(p: Project): Gen[FilterAst] = {
         val gr: Option[Gen[ReqId]]             = Gen oneofO p.reqs.data.reqs.keys.toSeq
-        val gy: Option[Gen[ReqTypeId]]         = Gen oneofO p.reqTypes.map(_.reqTypeId)
-        val gt: Option[Gen[ApplicableTagId]]   = Gen oneofO p.atags.map(_.id)
-        val gi: Option[Gen[CustomIssueTypeId]] = Gen oneofO p.customIssueTypes.data.keys.toSeq
+        val gy: Option[Gen[ReqTypeId]]         = Gen oneofO p.config.reqTypes.map(_.reqTypeId)
+        val gt: Option[Gen[ApplicableTagId]]   = Gen oneofO p.config.atags.map(_.id)
+        val gi: Option[Gen[CustomIssueTypeId]] = Gen oneofO p.config.customIssueTypes.data.keys.toSeq
         filterAst(flat(gr, gy, gt, gi))
       }
     }

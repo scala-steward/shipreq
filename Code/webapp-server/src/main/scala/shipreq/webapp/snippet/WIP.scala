@@ -79,7 +79,7 @@ class WIP {
     lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
     lazy val reqData  = RevAnd(60, ReqFieldData(Map.empty, Multimap.empty, ReqFieldData.Implications(Multimap.empty)))
 
-    lazy val project = new Project(customIssueTypes, customReqTypes, fields, tagsR, reqs, reqCodes, reqData)
+    lazy val project = Project(ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR), reqs, reqCodes, reqData)
 
     import shipreq.webapp.base.test.ProjectDsl._
 
@@ -171,19 +171,19 @@ class WIP {
       mod(_.mod(id, f))
 
     def modR(f: CustomReqTypeIMap => CustomReqTypeIMap): Option[Rev] = {
-      val c = p.customReqTypes
+      val c = p.config.customReqTypes
       val a = c.data
       val b = f(a)
       if (a ≟ b)
         None
       else {
         val newRev = c.rev.succ
-        p = p.copy(customReqTypes = RevAnd(newRev, b))
+        p = Project.customReqTypes.set(RevAnd(newRev, b))(p)
         Some(c.rev)
       }
     }
 
-    def δ(p: Project) = p.customReqTypes.data.underlyingMap
+    def δ(p: Project) = p.config.customReqTypes.data.underlyingMap
 
     def mod(f: CustomReqTypeIMap => CustomReqTypeIMap): RemoteDelta = {
       val p1 = p
@@ -201,7 +201,7 @@ class WIP {
       ServerProtocol.routine(Routines.CustomReqTypeCrud)({
         case CrudAction.Create(v)    =>
           val (mnemonic, name, imp) = v
-          val id = CustomReqTypeId(p.customReqTypes.data.keySet.max.value + 1)
+          val id = CustomReqTypeId(p.config.customReqTypes.data.keySet.max.value + 1)
           val n = CustomReqType(id, mnemonic, Set.empty, name, imp, Live)
           mod(_ + n)
 
@@ -229,19 +229,19 @@ class WIP {
       mod(_.mod(id, f))
 
     def modR(f: CustomIssueTypeIMap => CustomIssueTypeIMap): Option[Rev] = {
-      val c = p.customIssueTypes
+      val c = p.config.customIssueTypes
       val a = c.data
       val b = f(a)
       if (a ≟ b)
         None
       else {
         val newRev = c.rev.succ
-        p = p.copy(customIssueTypes = RevAnd(newRev, b))
+        p = Project.customIssueTypes.set(RevAnd(newRev, b))(p)
         Some(c.rev)
       }
     }
 
-    def δ(p: Project) = p.customIssueTypes.data.underlyingMap
+    def δ(p: Project) = p.config.customIssueTypes.data.underlyingMap
 
     def mod(f: CustomIssueTypeIMap => CustomIssueTypeIMap): RemoteDelta = {
       val p1 = p
@@ -258,7 +258,7 @@ class WIP {
     ServerProtocol.routine(Routines.CustomIssueTypeCrud)({
       case CrudAction.Create(v)    =>
         val (key, desc) = v
-        val id = CustomIssueTypeId(p.customIssueTypes.data.keySet.max.value + 1)
+        val id = CustomIssueTypeId(p.config.customIssueTypes.data.keySet.max.value + 1)
         val n = CustomIssueType(id, key, desc, Live)
         mod(_ + n)
 
@@ -278,20 +278,20 @@ class WIP {
     import TagProtocol._
 
     def modR(f: TagTree => TagTree): Option[Rev] = {
-      val rd = p.tags
+      val rd = p.config.tags
       val a = rd.data
       val b = f(a)
       if (a ≟ b)
         None
       else {
         val newRev = rd.rev.succ
-        p = p.copy(tags = RevAnd(newRev, b))
+        p = Project.tags.set(RevAnd(newRev, b))(p)
         Some(rd.rev)
       }
     }
 
     def δ(p: Project): Map[Id, PovTag] = {
-      val tt = p.tags.data
+      val tt = p.config.tags.data
       val tree = tt.mapValues(_.children)
       tt.mapValues(v => PovTag(v.tag, PovRelations.derive(v.tag.id, tree)))
     }
@@ -332,7 +332,7 @@ class WIP {
         or.fold(res)(PovRelations.trustedApply1(_, i, res)) // TODO Possible cycle error
       })
 
-    def nextId: TagId = TagGroupId(p.tags.data.keySet.map(_.value).max + 1)
+    def nextId: TagId = TagGroupId(p.config.tags.data.keySet.map(_.value).max + 1)
     implicit def genIdToTG(g: TagId) = TagGroupId(g.value)
     implicit def genIdToAT(g: TagId) = ApplicableTagId(g.value)
 
@@ -382,10 +382,10 @@ class WIP {
 
     def apply(deletions: Set[FieldId], updates: List[Delta]): RemoteDelta = {
       delay()
-      val oldRev = p.fields.rev
+      val oldRev = p.config.fields.rev
       val rd = RemoteDeltaP(Partition.Fields)(deletions, updates)
-      val p2 = PPI.update(p, oldRev.succ, rd)
-      if (p.fields.data ≟ p2.fields.data)
+      val p2 = ppi.update(p, oldRev.succ, rd)
+      if (p.config.fields.data ≟ p2.config.fields.data)
         emptyDelta
       else {
         p = p2
@@ -394,7 +394,7 @@ class WIP {
     }
 
     def mod(f: FieldSet => List[Delta]): RemoteDelta =
-      apply(Set.empty, f(p.fields.data))
+      apply(Set.empty, f(p.config.fields.data))
 
     def mod(id: Id)(f: CF => CF): RemoteDelta =
       mod(fs => fs.customFields.get(id).fold(∅)(newField =>

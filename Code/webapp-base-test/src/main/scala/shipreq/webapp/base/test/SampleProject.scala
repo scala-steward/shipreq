@@ -84,9 +84,10 @@ object SampleProject {
   lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
   lazy val reqData  = RevAnd(60, ReqFieldData(Map.empty, Multimap.empty, ReqFieldData.Implications(Multimap.empty)))
 
-  lazy val project = new Project(customIssueTypes, customReqTypes, fields, tagsR, reqs, reqCodes, reqData)
+  lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
+  lazy val project       = Project(projectConfig, reqs, reqCodes, reqData)
 
-  lazy val tagTree = project.tags.data.mapValues(_.children)
+  lazy val tagTree = project.config.tags.data.mapValues(_.children)
 
   // lazy val tagTreeB = BiMultimap(Multimap(tagTree.mapValues(_.toSet)))
 }

@@ -34,7 +34,7 @@ object ImplicationEditor {
     Lookup(AutoComplete.reqItems(p, pt), UnivEq.emptyMap)
 
   def lookupForCustomImpCol(p: Project, l: Lookup, fid: CustomField.Implication.Id): Must[Lookup] =
-    p.customField(fid).map(f =>
+    p.config.customField(fid).map(f =>
       l.outlaw(None, _.reqTypeId ≠ f.reqTypeId))
 
   def initialValueForCustomColumn(p: Project, fid: CustomField.Implication.Id, id: ReqId): Stream[Pubid] = {

@@ -75,7 +75,7 @@ object FilterAst {
     @inline implicit def autoR(a: FilterAst): R = \/-(a)
     @inline def error(msg: String) = -\/(msg)
 
-    val reqTypesByMnemonic = p.reqTypesByMnemonic
+    val reqTypesByMnemonic = p.config.reqTypesByMnemonic
 
     def byAttr(f: Attr => FilterAst, n: String): R =
       Attr(n) match {
@@ -124,7 +124,7 @@ object FilterAst {
         case S.Regex(regex)        => textPattern(regex)
 
         case S.HashRef(text) =>
-          p.hashRefLookup(text) match {
+          p.config.hashRefLookup(text) match {
             case Some(-\/(t)) => Tag(t.id)
             case Some(\/-(i)) => CustomIssue(i.id)
             case None         => error(s"Unknown tag or issue: '$text'") // English
@@ -152,9 +152,9 @@ object FilterAst {
     def translate(f: FilterAst): R = {
       case Presence(a)          => S.Presence(a.name)
       case Lack(a)              => S.Lack(a.name)
-      case ReqType(id)          => p.reqType        (id).map(r => S.ReqType(r.mnemonic))
-      case Tag(id)              => p.atag           (id).map(t => S.HashRef(t.key))
-      case CustomIssue(id)      => p.customIssueType(id).map(i => S.HashRef(i.key))
+      case ReqType(id)          => p.config.reqType        (id).map(r => S.ReqType(r.mnemonic))
+      case Tag(id)              => p.config.atag           (id).map(t => S.HashRef(t.key))
+      case CustomIssue(id)      => p.config.customIssueType(id).map(i => S.HashRef(i.key))
       case TextPattern(pat)     => S.Regex(pat.pattern)
       case ImpliesAnyOf(reqs)   => S.Implies(reqs)
       case ImpliedByAnyOf(reqs) => S.ImpliedBy(reqs)

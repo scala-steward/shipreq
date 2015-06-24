@@ -46,7 +46,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     NonEmptyVector.maybe(desc, issue(id))(issue1(id, _))
 
   val issue = memoM[CustomIssueTypeId](id =>
-    project.customIssueType(id).map(i =>
+    project.config.customIssueType(id).map(i =>
       <.span(
         *.issue,
         G.hashRefKey.prefix ~ i.key.value)
@@ -55,7 +55,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   private val issueDescSurroundPrefix = G.issueDescSurround.prefix.trim
   private val issueDescSurroundSuffix = G.issueDescSurround.suffix.trim
   def issue1(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText): ReactElement =
-    UI.must(project.customIssueType(id))(i =>
+    UI.must(project.config.customIssueType(id))(i =>
       <.span(
         *.issue,
         G.hashRefKey.prefix ~ i.key.value ~ issueDescSurroundPrefix,
@@ -74,7 +74,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   private def _reqRef1(f: EndoFn[String], style: Req => TagMod): ReqId => Must[ReactElement] = id =>
     for {
       req <- project.reqs.data.reqM(id)
-      rt  <- project.reqType(req.pubid.reqTypeId)
+      rt  <- project.config.reqType(req.pubid.reqTypeId)
     } yield
       <.span(
         style(req),
@@ -149,7 +149,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   }
 
   val reqType = memoM[ReqTypeId](id =>
-    project.reqType(id).map(rt =>
+    project.config.reqType(id).map(rt =>
       <.span(
         *.reqType(rt.live),
         ^.title := rt.name,
@@ -157,7 +157,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     ))
 
   val tag = memoM[ApplicableTagId](id =>
-    project.atag(id).map(tag =>
+    project.config.atag(id).map(tag =>
       <.span(
         *.tag(tag.live),
         ^.title := tag.name,

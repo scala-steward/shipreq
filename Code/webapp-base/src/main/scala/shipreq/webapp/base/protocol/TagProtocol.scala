@@ -9,7 +9,7 @@ import shipreq.base.util.{UnivEq, Util}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.delta, delta.{Partition, RemoteDeltaP}
+import shipreq.webapp.base.delta.{Partition, PPI}
 import shipreq.webapp.base.util.TypeclassDerivation._
 
 object TagProtocol {
@@ -122,25 +122,19 @@ object TagProtocol {
 
   implicit lazy val equalValues: UnivEq[Values] = {import AutoDerive._; deriveUnivEq}
 
-  object PPI extends delta.PPI[Partition.Tags.type] {
-    def rev(p: Project): Rev =
-      p.tags.rev
+  val ppi = PPI.lens(Partition.Tags, Project.tags) { (delta, orig) =>
+    var t = orig
 
-    def update(p: Project, newRev: Rev, delta: RemoteDeltaP.Aux[Partition.Tags.type]): Project = {
-      var t = p.tags.data
+    // Delete tags
+    for (id <- delta.delete)
+      t = t.mapUnderlying(_.mapValuesNow(_ removeChild id) - id)
 
-      // Delete tags
-      for (id <- delta.delete)
-        t = t.mapUnderlying(_.mapValuesNow(_ removeChild id) - id)
+    // Insert/update
+    // (Separate phases ∵ all ids must exist before updating structure)
+    t = t.addAll(delta.update.map(u => TagInTree(u.tag, Vector.empty)): _*)
+    t = PovRelations.trustedApplyN(delta.update.map(_.tmap2(_.id, _.rels)), t)
 
-      // Insert/update
-      // (Separate phases ∵ all ids must exist before updating structure)
-      t = t.addAll(delta.update.map(u => TagInTree(u.tag, Vector.empty)): _*)
-      t = PovRelations.trustedApplyN(delta.update.map(_.tmap2(_.id, _.rels)), t)
-
-      // Done
-      p.copy(tags = RevAnd(newRev, t))
-    }
+    t
   }
 
   import AutoDerive._

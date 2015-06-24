@@ -1,6 +1,7 @@
 package shipreq.webapp.base.data
 
 import japgolly.nyaya.util.Multimap
+import monocle.Lens
 import monocle.macros.Lenses
 import scalaz.{Equal, -\/, \/-}
 import shipreq.base.util.ScalaExt._
@@ -11,20 +12,20 @@ import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
 import ReqFieldData.{Implications, ImplicationsU}
 
-@Lenses
-final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
-                         customReqTypes  : RevAnd[CustomReqTypeIMap],
-                         fields          : RevAnd[FieldSet],
-                         tags            : RevAnd[TagTree],
-                         reqs            : RevAnd[Requirements],
-                         reqCodes        : RevAnd[ReqCodes],
-                         reqFieldData    : RevAnd[ReqFieldData]) {
+object Project {
+  implicit def equality: Equal[Project] = deriveEqual
 
-  def configRev: Rev =
-    customIssueTypes.rev +
-    customReqTypes  .rev +
-    fields          .rev +
-    tags            .rev
+  val customIssueTypes: Lens[Project, RevAnd[CustomIssueTypeIMap]] = config ^|-> ProjectConfig.customIssueTypes
+  val customReqTypes  : Lens[Project, RevAnd[CustomReqTypeIMap]  ] = config ^|-> ProjectConfig.customReqTypes
+  val fields          : Lens[Project, RevAnd[FieldSet]           ] = config ^|-> ProjectConfig.fields
+  val tags            : Lens[Project, RevAnd[TagTree]            ] = config ^|-> ProjectConfig.tags
+}
+
+@Lenses
+final case class Project(config      : ProjectConfig,
+                         reqs        : RevAnd[Requirements],
+                         reqCodes    : RevAnd[ReqCodes],
+                         reqFieldData: RevAnd[ReqFieldData]) {
 
   def contentRev: Rev =
     reqs            .rev +
@@ -32,10 +33,10 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     reqFieldData    .rev
 
   val rev: Rev =
-    configRev + contentRev
+    config.rev + contentRev
 
   override def toString =
-    s"Project(config: $configRev, content: $contentRev)"
+    s"Project(config: ${config.rev}, content: $contentRev)"
     //ShowSize(this).showTree
 
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
@@ -51,54 +52,6 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
       }
     ShowSize.Node.sum("Atoms", counted: _*)
   }
-
-  def atag(id: ApplicableTagId): Must[ApplicableTag] =
-    Must.fromOption(tags.data.get(id), s"No tag found with $id")
-      .flatMap(t => t.tag match {
-        case a: ApplicableTag => Must(a)
-        case _                => Must.Failed(s"$t is not an ApplicableTag")
-      })
-
-  def atags[M[X] <: TraversableOnce[X]: Monoidish](ids: M[ApplicableTagId]): Must[M[ApplicableTag]] =
-    Must.foldMapM(ids)(atag)
-
-  def atags: Stream[ApplicableTag] =
-    tags.data.vstream(_.tag).filterT[ApplicableTag]
-
-  def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
-    fields.data.customFields(id).flatMap(f =>
-      Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
-
-  def customIssueType(id: CustomIssueTypeId): Must[CustomIssueType] =
-    Must.fromOption(customIssueTypes.data.get(id), s"No CustomIssueType found with $id")
-
-  lazy val customTagFields =
-    fields.data.customFields.values.filterT[CustomField.Tag]
-
-  lazy val customTextFields =
-    fields.data.customFields.values.filterT[CustomField.Text]
-
-  lazy val liveCustomTextFields =
-    customTextFields.filter(_.live :: Live)
-
-  def reqType(i: ReqTypeId): Must[ReqType] =
-    i.foldId[Must[ReqType]](Must.apply, customReqTypes.data.apply)
-
-  def reqTypeC(i: CustomReqTypeId): Must[CustomReqType] =
-    reqType(i).flatMap {
-      case c: CustomReqType => Must(c)
-      case f                => Must.Failed(s"$f must be a CustomReqType")
-    }
-
-  lazy val reqTypes: Stream[ReqType] =
-    (customReqTypes.data.values.toStream: Stream[ReqType]) append
-      (StaticReqType.valueStream        : Stream[ReqType])
-
-  lazy val reqTypesByMnemonic: Map[ReqType.Mnemonic, ReqType] =
-    reqTypes.flatMap(t => t.allMnemonics.toStream.map((_, t))).toMap
-
-  lazy val liveTagColumnDistribution =
-    TagColumnDistribution(this, _.live :: Live)
 
   /**
    * Transitive closure of implications going source → target.
@@ -122,15 +75,6 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
       reqs.data.dead,
       f(reqFieldData.data.implications))
 
-  /** Keys are lowercase */
-  lazy val hashRefLookupM: Map[String, HashRefTarget] = (
-      atags.map(t => (t.key.value.toLowerCase, -\/(t))) append
-      customIssueTypes.data.vstream(t => (t.key.value.toLowerCase, \/-(t)))
-    ).toMap
-
-  def hashRefLookup(key: String): Option[HashRefTarget] =
-    hashRefLookupM.get(key.toLowerCase)
-
   lazy val tagsInTextR  : Multimap[ReqId,     Set,  ApplicableTagId] = Multimap(scanAllLiveTextR(Text.findTags(_),   Text.findTags))
   lazy val issuesInTextR: Multimap[ReqId,     Vector, Atom.AnyIssue] = Multimap(scanAllLiveTextR(Text.findIssues(_), Text.findIssues))
   lazy val issuesInTextG: Multimap[ReqCodeId, Vector, Atom.AnyIssue] = Multimap(scanAllLiveTextG(Text.findIssues(_)))
@@ -138,7 +82,7 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   private def scanAllLiveTextR[R](f1: Text.GenericReqTitle.OptionalText => R,
                                   f2: (Text.CustomTextField.OptionalText, R) => R): Map[ReqId, R] = {
     val textData   = reqFieldData.data.text
-    val textFields = liveCustomTextFields.map(_.id)
+    val textFields = config.liveCustomTextFields.map(_.id)
 
     def searchCustomTextFields(id: ReqId, into: R): R =
       textFields.foldLeft(into)((q, f) =>
@@ -157,8 +101,4 @@ final case class Project(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   // Finally, ensure validity
   import japgolly.nyaya._
   this assertSatisfies DataProp.project.all
-}
-
-object Project {
-  implicit def equality: Equal[Project] = deriveEqual
 }

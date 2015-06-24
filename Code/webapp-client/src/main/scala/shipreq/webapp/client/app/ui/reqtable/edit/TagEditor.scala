@@ -25,7 +25,7 @@ object TagEditor {
     lookupG(p, _.tags inColumn f)
 
   def lookupG(p: Project, f: TagColumnDistribution.TagIds => Must[Set[ApplicableTag]]): Must[Lookup] =
-    f(p.liveTagColumnDistribution).map(_
+    f(p.config.liveTagColumnDistribution).map(_
       .toStream
       .filter(_.live :: Live)
       .map(_.mapStrengthL(_.key.value))
@@ -48,7 +48,7 @@ object TagEditor {
 
       val text =
         ids.toVector.map { a =>
-          val m = project.atag(a).map(_.key.value)
+          val m = project.config.atag(a).map(_.key.value)
           UiText.mustA(m)
         }.sorted mkString " "
 

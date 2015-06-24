@@ -65,7 +65,7 @@ object Column {
 
   object NameResolver {
     def byProject(p: Project): NameResolver =
-      Column.NameResolver(p.fields.data.customFields, data.CustomField nameP p)
+      Column.NameResolver(p.config.fields.data.customFields, data.CustomField nameP p)
 
     val builtIn: BuiltIn => String = {
       case ReqType        => ColumnNames.reqType

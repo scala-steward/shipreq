@@ -121,7 +121,7 @@ object Field {
     fn
   }
 
-  def nameP(p: Project) = name(p.customReqTypes.data, p.tags.data)
+  def nameP(p: Project) = name(p.config.customReqTypes.data, p.config.tags.data)
 
   def nameAffectingPartitions: NonEmptySet[Partition] =
     NonEmptySet(Partition.CustomReqTypes, Partition.Tags)
@@ -288,7 +288,7 @@ object CustomField {
     case f: Implication => f.name(customReqTypes)
   }
 
-  def nameP(p: Project) = name(p.customReqTypes.data, p.tags.data)
+  def nameP(p: Project) = name(p.config.customReqTypes.data, p.config.tags.data)
 
   implicit val equalImplication: UnivEq[Implication] = deriveUnivEq
   implicit val equalTag        : UnivEq[Tag]         = deriveUnivEq

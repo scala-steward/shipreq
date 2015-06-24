@@ -32,8 +32,8 @@ object RemoteDeltaAp {
       rd.delta.fold(
         go(CustomIssueTypeProtocol.ppi),
         go(CustomReqTypeProtocol  .ppi),
-        go(FieldProtocol          .PPI),
-        go(TagProtocol            .PPI))
+        go(FieldProtocol          .ppi),
+        go(TagProtocol            .ppi))
     }
 
     acc match {

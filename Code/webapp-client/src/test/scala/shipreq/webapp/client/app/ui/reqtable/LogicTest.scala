@@ -44,7 +44,7 @@ object LogicTest extends TestSuite {
     }
 
   def pubidExtract(p: Project)(pid: Pubid): (String, Int) =
-    (p.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
+    (p.config.reqType(pid.reqTypeId).fold(sys.error, _.mnemonic.value), pid.pos.value)
 
   def pubidToStr(p: Project)(pid: Pubid): String = {
     val (a, b) = pubidExtract(p)(pid)
@@ -57,7 +57,7 @@ object LogicTest extends TestSuite {
   }
 
   def applicableTag(p: Project): ApplicableTagId => ApplicableTag =
-    id => p.tags.data.get(id).map(_.tag) match {
+    id => p.config.tags.data.get(id).map(_.tag) match {
       case Some(t: ApplicableTag) => t
       case x => sys.error(s"Not an ApplicableTag: $x")
     }

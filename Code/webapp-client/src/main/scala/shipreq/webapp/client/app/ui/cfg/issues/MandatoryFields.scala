@@ -41,7 +41,7 @@ private[issues] object MandatoryFields {
     .build
 
   private def initialState(p: Props) =
-    rowStore.initStateIM(p.clientData.project.fields.data.customFields)
+    rowStore.initStateIM(p.clientData.project.config.fields.data.customFields)
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
@@ -84,7 +84,7 @@ private[issues] object MandatoryFields {
     }
 
     def renderRows: ReactNode =
-      UI.must(project.fields.data.fields)(
+      UI.must(project.config.fields.data.fields)(
         HideDead(_)(_.live).toReactNodeArray(
           _.fold(renderStaticField, renderCustomField)))
 

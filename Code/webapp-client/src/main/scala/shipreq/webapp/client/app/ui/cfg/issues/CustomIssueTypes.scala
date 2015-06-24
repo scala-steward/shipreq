@@ -37,13 +37,13 @@ private[issues] object CustomIssueTypes {
 
   private def initialState(p: Props): S =
     State(newRowStore.initState,
-      savedRowStore.initStateIM(p.clientData.project.customIssueTypes.data),
+      savedRowStore.initStateIM(p.clientData.project.config.customIssueTypes.data),
       p.filterDead)
 
   private def validatorState(k: Option[CustomIssueTypeId], cd: ClientData): S => V.S =
     s => {
       val ts: HashRefKeyVS.Data[TagId] = // TODO cacheable
-        (None, cd.project.tags.data.vstream(_.tag)
+        (None, cd.project.config.tags.data.vstream(_.tag)
           .map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
       val is: HashRefKeyVS.Data[CustomIssueTypeId] =
         (k, savedRowStoreS.getAllP(s).map(i => (i.id.some, i.key)))

@@ -33,7 +33,7 @@ private[issues] object ReqTypeImplication {
     .build
 
   private def initialState(p: Props): S =
-    rowStore.initStateIM(p.clientData.project.customReqTypes.data)
+    rowStore.initStateIM(p.clientData.project.config.customReqTypes.data)
 
   private def label(r: ReqType): String =
     s"${r.mnemonic.value}: ${r.name}"

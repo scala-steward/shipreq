@@ -16,22 +16,29 @@ abstract class PPI[P <: Partition] {
 }
 
 object PPI {
-  def imap(p: Partition)(lens: Lens[Project, RevAnd[IMap[p.Id, p.Data]]]): PPI[p.type] =
+
+  def lens[D](p: Partition, lens: Lens[Project, RevAnd[D]])
+                    (updateFn: (RemoteDeltaP.Aux[p.type], D) => D): PPI[p.type] =
     new PPI[p.type] {
 
       def rev(project: Project): Rev =
         lens.get(project).rev
 
       def update(project: Project, newRev: Rev, delta: RemoteDeltaP.Aux[p.type]): Project = {
-        var m = lens.get(project).data
-
-        // Deletions
-        m --= delta.delete
-
-        // Updates
-        m = m.addAll(delta.update: _*)
-
-        lens.set(RevAnd(newRev, m))(project)
+        val oldData  = lens.get(project).data
+        val newData  = updateFn(delta, oldData)
+        val newValue = RevAnd(newRev, newData)
+        lens.set(newValue)(project)
       }
+    }
+
+  def imap(p: Partition)(l: Lens[Project, RevAnd[IMap[p.Id, p.Data]]]): PPI[p.type] =
+    lens(p, l) { (delta, d0) =>
+
+      // Deletions
+      val d1 = d0 -- delta.delete
+
+      // Updates
+      d1.addAll(delta.update: _*)
     }
 }

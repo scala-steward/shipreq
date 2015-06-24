@@ -13,7 +13,7 @@ object Applicability {
 
   def apply(project: Project): Applicability = {
     val reqTypeFilter: Column => ReqTypeId => Boolean = {
-      case Column.CustomField(id, _) => mustResolve(project.customField(id).map(_.reqTypes))(ISubset.All()).filter
+      case Column.CustomField(id, _) => mustResolve(project.config.customField(id).map(_.reqTypes))(ISubset.All()).filter
       case _: Column.BuiltIn         => pass
     }
     new Applicability(reqTypeFilter)

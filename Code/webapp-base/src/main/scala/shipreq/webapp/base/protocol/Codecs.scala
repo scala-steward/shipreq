@@ -613,7 +613,8 @@ object DataCodecs {
   })
 
   // -------------------------------------------------------------------------------------------------------------------
-  implicit final val project = caseclass7(Project.apply, Project.unapply)
+  implicit final val projectConfig = caseclass4(ProjectConfig.apply, ProjectConfig.unapply)
+  implicit final val project       = caseclass4(Project.apply, Project.unapply)
 }
 
 // =====================================================================================================================

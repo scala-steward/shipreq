@@ -49,12 +49,12 @@ object Parsers {
 
     val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[ReqId] =
       (m, n) =>
-        project.reqTypesByMnemonic.get(m)
+        project.config.reqTypesByMnemonic.get(m)
           .map(t => PubidT(t.reqTypeId, n))
           .flatMap(project.reqs.data.pubids.apply)
 
     def hashRef: Rule1[HashRefTarget] =
-      rule(hashRefStr ~> (project.hashRefLookup _) ~ popOptional)
+      rule(hashRefStr ~> (project.config.hashRefLookup _) ~ popOptional)
   }
 
   // ===================================================================================================================

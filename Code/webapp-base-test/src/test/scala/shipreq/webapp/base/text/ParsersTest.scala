@@ -80,7 +80,7 @@ object ParsersTest extends TestSuite {
 //        println()
 //        println(t)
 //        println()
-//        p.customIssueTypes.data.values.toStream.map(_.toString).sorted foreach println
+//        p.config.customIssueTypes.data.values.toStream.map(_.toString).sorted foreach println
 //        println()
 //        println("<"*200)
 //      }

@@ -52,7 +52,7 @@ object PlainText {
       .flatMap(r => pubid(p, r.pubid))
 
   def pubid(p: Project, pid: Pubid): Must[String] =
-    p.reqType(pid.reqTypeId).map(pubid(_, pid.pos))
+    p.config.reqType(pid.reqTypeId).map(pubid(_, pid.pos))
 
   def pubid(reqType: ReqType, pos: ReqTypePos): String =
     reqType.mnemonic.value ~ "-" ~ pos.value
@@ -78,15 +78,15 @@ object PlainText {
       for {
         r   ← p.reqs.data.reqM(req)
         pid = r.pubid
-        rt  ← p.reqType(pid.reqTypeId)
+        rt  ← p.config.reqType(pid.reqTypeId)
       } yield
       G.reflinkSurround(pubid(rt, pid.pos))
 
     def tagRef(id: ApplicableTagId): Must[String] =
-      p.atag(id).map(t => hashtag(t.key))
+      p.config.atag(id).map(t => hashtag(t.key))
 
     def issue(id: CustomIssueTypeId, desc: Option[String]): Must[String] =
-      p.customIssueType(id).map(it =>
+      p.config.customIssueType(id).map(it =>
         (hashtag(it.key) /: desc)(_ ~ G.issueDescSurround(_)))
 
     val outOfListNewline = "\n\n"

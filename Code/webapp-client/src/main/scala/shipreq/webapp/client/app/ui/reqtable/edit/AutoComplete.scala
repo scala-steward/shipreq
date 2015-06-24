@@ -75,7 +75,7 @@ object AutoComplete {
       fd(tags  )(_.live).map(_.key))
 
   def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategy =
-    hashtag(p.customIssueTypes.data.values.toStream, p.atags, fd)
+    hashtag(p.config.customIssueTypes.data.values.toStream, p.config.atags, fd)
 
   def issue(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategy =
     hashtag(legal, Stream.empty, fd)
@@ -93,7 +93,7 @@ object AutoComplete {
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     val m = Must.foldMapM[Req, Stream, ReqItem](legal.filter(_.live :: Live))(req =>
-      p.reqType(req.pubid.reqTypeId).map(rt =>
+      p.config.reqType(req.pubid.reqTypeId).map(rt =>
         new ReqItem(req, rt, pt reqTitle req)))
     mustResolve(m)(Stream.empty).sortBy(_.sortKey)
   }

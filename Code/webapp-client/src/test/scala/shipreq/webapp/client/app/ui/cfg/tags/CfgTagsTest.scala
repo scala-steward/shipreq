@@ -51,7 +51,7 @@ object CfgTagsTest extends TestSuite {
     import t._
 
     'recvUpdates {
-      val rev = RevRange single clientData.project.tags.rev
+      val rev = RevRange single clientData.project.config.tags.rev
       val upd = PovTag(
         ApplicableTag(22, "Blah", None, "blah", Live),
         PovRelations(Map(1.TG -> priMed.some), Vector(10.TG)))
@@ -93,7 +93,7 @@ object CfgTagsTest extends TestSuite {
         assertEq(h._1, subj)
         val actualRels = h._2.onlyThat.get
         assertEq("RFC", actualRels, expectedRels)
-        val tt = PovRelations.trustedApply1(actualRels, h._1.id, S.project.tags.data)
+        val tt = PovRelations.trustedApply1(actualRels, h._1.id, S.project.config.tags.data)
         assertEq("Final result", PovRelations.derive(subj.id, tt), expectedRels)
       }
 

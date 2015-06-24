@@ -218,14 +218,14 @@ object Sorter {
 
     lazy val reqTypesToMnemonicOrder: Map[ReqTypeId, Int] =
       ordermap("reqtype",
-        p.reqTypes.map(_.tmap2(_.mnemonic.value, _.reqTypeId))
+        p.config.reqTypes.map(_.tmap2(_.mnemonic.value, _.reqTypeId))
           .sortBy(_._1)
           .map(_._2)
       )
 
     lazy val tagByNameOrder: TagOrder =
       ordermap("tag",
-        p.tags.data.vstream(_.tag)
+        p.config.tags.data.vstream(_.tag)
           .filterT[ApplicableTag]
           .map(_.tmap2(_.key.value |> stringNormalise, _.id))
           .sortBy(_._1)
@@ -234,7 +234,7 @@ object Sorter {
 
     lazy val tagByPosOrder: TagOrder =
       ordermap("tag",
-        TagTree.flatten(p.tags.data)(_ => true, TagTree.FlatRow.FilterPolicy.OmitNothing)
+        TagTree.flatten(p.config.tags.data)(_ => true, TagTree.FlatRow.FilterPolicy.OmitNothing)
           .toStream
           .map(_.id)
           .filterT[ApplicableTagId]

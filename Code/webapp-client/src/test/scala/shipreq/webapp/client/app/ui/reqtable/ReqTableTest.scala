@@ -279,7 +279,7 @@ sealed trait ReqTableTest0 {
     lazy val cfname = CustomField.nameP(project)
 
     def customFieldNames(a: Live): Set[String] = {
-      val cfs   = project.fields.data.customFields.values.toStream
+      val cfs   = project.config.fields.data.customFields.values.toStream
       val names = cfs.filter(_.live ≟ a).map(cfname(_).unmust)
       names.toSet
     }

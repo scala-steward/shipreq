@@ -27,7 +27,7 @@ private[reqtable] object Logic {
   private def tagFilter(vs: ViewSettings, p: Project): TagFilter =
     vs.filterDead.filter
       .fold[TagFilter](identity) { f =>
-        val bl = p.atags.filter(t => !f(t.live)).map(_.id)
+        val bl = p.config.atags.filter(t => !f(t.live)).map(_.id)
         (_: Set[ApplicableTagId]) -- bl
       }
 
@@ -102,7 +102,7 @@ private[reqtable] object Logic {
 
       val reqsOfSubjectType: Stream[Req] =
         mustResolve(
-          p.customField(fid).map(f =>
+          p.config.customField(fid).map(f =>
             p.reqs.data.reqsByType(f.reqTypeId).toStream)
         )(Stream.empty)
 
@@ -229,8 +229,8 @@ private[reqtable] object Logic {
     // 2. doesn't display tags allocated to visible, dead tag-columns.
     val tagColDist: TagColumnDistribution.TagIds =
       vs.filterDead match {
-        case HideDead => p.liveTagColumnDistribution
-        case ShowDead => TagColumnDistribution(p, f => f.live match {
+        case HideDead => p.config.liveTagColumnDistribution
+        case ShowDead => TagColumnDistribution(p.config, f => f.live match {
           case Live => true
           case Dead => vs isVisible Column.CustomField(f.id, Dead)
         })
@@ -416,7 +416,7 @@ private[reqtable] object Logic {
           Filter(
             r => {
               def title  = m(pt reqTitle r)
-              def custom = p.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r.id) exists m)
+              def custom = p.config.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r.id) exists m)
               title || custom
             },
             g => m(pt reqCodeGroupTitle g))
