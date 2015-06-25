@@ -1,1 +1,1 @@
-../../../../../webapp-server/.bower/jquery-textcomplete/dist/jquery.textcomplete.js
+../../../../../.bower/jquery-textcomplete/dist/jquery.textcomplete.js

@@ -56,18 +56,18 @@ The version of SBT itself is configured in `project/build.properties`.
 
 ### Web Front-End
 
-First, be in webapp-server/
-
 * Updating
   1. bower list
   2. bower update
-  3. grunt
+  3. cd webapp-server/
+  4. grunt
 
 * Adding/Removing
   1. Edit bower.json
   2. bower install
-  3. Edit Gruntfile.js
-  4. grunt
+  3. cd webapp-server/
+  4. Edit Gruntfile.js
+  5. grunt
 
 ### Jetty
 

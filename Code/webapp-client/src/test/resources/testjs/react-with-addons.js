@@ -1,1 +1,1 @@
-../../../../../webapp-server/.bower/react/react-with-addons.js
+../../../../../.bower/react/react-with-addons.js

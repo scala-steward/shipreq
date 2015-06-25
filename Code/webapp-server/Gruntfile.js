@@ -22,7 +22,7 @@ module.exports = function(grunt) {
     ext: '.css',
   }
 
-  var jQueryVersion = grunt.file.readJSON('.bower/jquery/bower.json').version;
+  var jQueryVersion = grunt.file.readJSON('../.bower/jquery/bower.json').version;
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -30,6 +30,7 @@ module.exports = function(grunt) {
     cfg: {
       assets: 'src/main/webapp/assets',
       assets_dev: '<%= cfg.assets %>/dev',
+      bower: '../.bower',
       css: {
         src: 'src/main/styles',
         out: '<%= cfg.assets %>',
@@ -47,7 +48,7 @@ module.exports = function(grunt) {
         out: '<%= cfg.assets %>/vendor',
       },
       katex: {
-        src: '.bower/katex',
+        src: '<%= cfg.bower %>/katex',
         out: '<%= cfg.vendor.out %>/katex',
       },
     },
@@ -101,12 +102,12 @@ module.exports = function(grunt) {
       // Copies required 3rd-party files
       vendor: {
         files: [
-          {src:'.bower/jquery/dist/jquery.min.js',       dest:'<%= cfg.vendor.out %>/jquery.js',         nonull:true},
-          {src:'.bower/jquery/dist/jquery.min.js',       dest:'<%= cfg.assets_dev %>/jquery.js',         nonull:true},
-          {src:'.bower/jquery/dist/jquery.min.map',      dest:'<%= cfg.assets_dev %>/jquery.min.map',    nonull:true},
-          {src:'.bower/react/react.min.js',              dest:'<%= cfg.vendor.out %>/react.js',          nonull:true},
-          {src:'.bower/react/react-with-addons.js',      dest:'<%= cfg.assets_dev %>/react.js',          nonull:true},
-          {src:'.bower/zeroclipboard/ZeroClipboard.swf', dest:'<%= cfg.vendor.out %>/ZeroClipboard.swf', nonull:true},
+          {src:'<%= cfg.bower %>/jquery/dist/jquery.min.js',       dest:'<%= cfg.vendor.out %>/jquery.js',         nonull:true},
+          {src:'<%= cfg.bower %>/jquery/dist/jquery.min.js',       dest:'<%= cfg.assets_dev %>/jquery.js',         nonull:true},
+          {src:'<%= cfg.bower %>/jquery/dist/jquery.min.map',      dest:'<%= cfg.assets_dev %>/jquery.min.map',    nonull:true},
+          {src:'<%= cfg.bower %>/react/react.min.js',              dest:'<%= cfg.vendor.out %>/react.js',          nonull:true},
+          {src:'<%= cfg.bower %>/react/react-with-addons.js',      dest:'<%= cfg.assets_dev %>/react.js',          nonull:true},
+          {src:'<%= cfg.bower %>/zeroclipboard/ZeroClipboard.swf', dest:'<%= cfg.vendor.out %>/ZeroClipboard.swf', nonull:true},
           {src:'<%= cfg.vendor.cust %>/viz.js',          dest:'<%= cfg.vendor.out %>/viz.js',            nonull:true},
         ]
       },
@@ -134,27 +135,27 @@ module.exports = function(grunt) {
             jsConcatTask('app', [
               // jquery is loaded via CDN, else it would be here too. TODO Change?
               '<%= cfg.js.src %>/google-analytics.js',
-              '.bower/bootstrap/js/alert.js',
-              '.bower/bootstrap/js/dropdown.js',
-              '.bower/bootstrap/js/modal.js',
-              '.bower/bootstrap/js/tab.js',
-              '.bower/bootstrap/js/transition.js',
-              '.bower/jquery.ui/ui/jquery.ui.core.js',
-              '.bower/jquery.ui/ui/jquery.ui.effect.js',
-              '.bower/jquery.ui/ui/jquery.ui.effect-drop.js',
-              '.bower/jquery.ui/ui/jquery.ui.effect-fade.js',
-              '.bower/jquery.ui/ui/jquery.ui.effect-highlight.js',
-              '.bower/jquery.ui/ui/jquery.ui.effect-slide.js',
-              '.bower/jquery-autosize/jquery.autosize.min.js',
-              '.bower/jquery-timeago/jquery.timeago.js',
-              '.bower/jquery.livequery/dist/jquery.livequery.min.js',
-              '.bower/jquery-rangyinputs/rangyinputs-jquery.js',
-              '.bower/jquery-textcomplete/dist/jquery.textcomplete.min.js',
-              '.bower/mousetrap/mousetrap.min.js',
-              '.bower/mousetrap/plugins/global-bind/mousetrap-global-bind.min.js',
+              '<%= cfg.bower %>/bootstrap/js/alert.js',
+              '<%= cfg.bower %>/bootstrap/js/dropdown.js',
+              '<%= cfg.bower %>/bootstrap/js/modal.js',
+              '<%= cfg.bower %>/bootstrap/js/tab.js',
+              '<%= cfg.bower %>/bootstrap/js/transition.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.core.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.effect.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.effect-drop.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.effect-fade.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.effect-highlight.js',
+              '<%= cfg.bower %>/jquery.ui/ui/jquery.ui.effect-slide.js',
+              '<%= cfg.bower %>/jquery-autosize/jquery.autosize.min.js',
+              '<%= cfg.bower %>/jquery-timeago/jquery.timeago.js',
+              '<%= cfg.bower %>/jquery.livequery/dist/jquery.livequery.min.js',
+              '<%= cfg.bower %>/jquery-rangyinputs/rangyinputs-jquery.js',
+              '<%= cfg.bower %>/jquery-textcomplete/dist/jquery.textcomplete.min.js',
+              '<%= cfg.bower %>/mousetrap/mousetrap.min.js',
+              '<%= cfg.bower %>/mousetrap/plugins/global-bind/mousetrap-global-bind.min.js',
             ]),
           jsConcatTask('zeroclipboard', [
-            '.bower/zeroclipboard/ZeroClipboard.js',
+            '<%= cfg.bower %>/zeroclipboard/ZeroClipboard.js',
           ]),
           {
             expand: true,
@@ -207,7 +208,7 @@ module.exports = function(grunt) {
     // *****************************************************************************************************************
     less: {
         options: {
-          paths: '.bower/bootstrap/less',
+          paths: '<%= cfg.bower %>/bootstrap/less',
         },
 
       // Build custom bootstrap.css
