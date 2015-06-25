@@ -916,7 +916,7 @@ object RandomData {
     def trie(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup]): GenS[Trie] =
       flatInstance(data(ogLiveReqId, ogReqId, gGroup)).vector
         .map(distinctFlatInstances.run)
-        .map(_.foldLeft(emptyTrie) { case (q, (c, d)) => q.put(c, d) })
+        .map(_.foldLeft(Trie.empty) { case (q, (c, d)) => q.put(c, d) })
 
     val emptyReqCodeGroup = ReqCodeGroup(Vector.empty)
     val gEmptyReqCodeGroup = Gen insert emptyReqCodeGroup

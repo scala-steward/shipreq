@@ -35,6 +35,16 @@ object MTrie {
 
   // ===================================================================================================================
 
+  class Types[K: UnivEq, V] {
+    type Trie   = MTrie.Trie[K, V]
+    type Node   = MTrie.Node[K, V]
+    type Branch = MTrie.Branch[K, V]
+    type Value  = MTrie.Value[K, V]
+    val  Branch = MTrie.Branch.apply[K, V] _
+    val  Value  = MTrie.Value.apply[K, V] _
+    def  empty  = MTrie.empty[K, V]
+  }
+
   def empty[K: UnivEq, V]: Trie[K, V] = UnivEq.emptyMap
 
   implicit def equality[K: Order, V: Equal]: Equal[Trie[K, V]] =

@@ -10,7 +10,7 @@ import Validators.reqCode._
 
 object ReqCodeTest extends TestSuite {
 
-  val sampleCodeTrie = emptyTrie
+  val sampleCodeTrie = Trie.empty
       .put("aa",     ActiveData(1, 100))
       .put("aa.b.c", ActiveData(2, 100))
       .put("aa.b.d", ActiveData(3, ReqCodeGroup(Vector.empty)))

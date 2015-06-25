@@ -37,6 +37,8 @@ object ShipReq extends Build {
   lazy val benchmarkJvm  = Benchmark.Jvm.project
   lazy val benchmarkJs   = Benchmark.Js.project
 
+  lazy val utils = Utils.project
+
   sealed trait Module {
     def project: Project
     def dir: String
@@ -67,7 +69,7 @@ object ShipReq extends Build {
     def dir = "."
     override def project = Project("root", file(dir))
       .configure(commonSettings, Common.useHiddenTargetDir)
-      .aggregate(base, webapp, taskman, benchmark)
+      .aggregate(base, webapp, taskman, benchmark, utils)
   }
 
   // ===================================================================================================================
@@ -418,6 +420,18 @@ object ShipReq extends Build {
         .dependsOn(baseDb, taskmanApi, webappBase)
         .dependsOn(baseUtil, taskmanApiLogic, taskmanApiImpl) // Stupid IDEA auto-import needs this
       }
+  }
+
+  // ===================================================================================================================
+  object Utils extends Module {
+    val dir = "utils"
+
+    override def deps =
+      commonsLang ++ testScope(Nyaya.jvm.test)
+
+    override def project = typicalProject
+      .configure(Common.utestOnJvm)
+      .dependsOn(webappBaseTest)
   }
 
   // ===================================================================================================================

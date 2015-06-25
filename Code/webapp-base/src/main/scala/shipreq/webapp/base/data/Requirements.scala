@@ -130,8 +130,8 @@ object ReqCode {
   implicit val activeDataEquality: UnivEq[ActiveData] = deriveUnivEq
   implicit val dataEquality      : UnivEq[Data]       = deriveUnivEq
 
-  type Trie = MTrie.Trie[Node, Data]
-  def emptyTrie: Trie = MTrie.empty[Node, Data]
+  val  Trie = new MTrie.Types[Node, Data]
+  type Trie = Trie.Trie
 }
 
 /**
@@ -251,7 +251,8 @@ case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
 
 object PubidRegister {
   implicit def equality: UnivEq[PubidRegister] = deriveUnivEq
-  def empty = PubidRegister(UnivEq.emptyMultimap)
+  def emptyMM: Multimap[ReqTypeId, Vector, ReqId] = UnivEq.emptyMultimap
+  def empty = PubidRegister(emptyMM)
 }
 
 // =====================================================================================================================
@@ -290,7 +291,7 @@ final case class GenericReqId(value: Long) extends TaggedLong with ReqIdT[Custom
 final case class GenericReq(id   : GenericReqId,
                             pubid: PubidC,
                             title: Text.GenericReqTitle.OptionalText,
-                            live: Live) extends ReqT[CustomReqTypeId]
+                            live : Live) extends ReqT[CustomReqTypeId]
 
 object GenericReq {
   implicit def equality: UnivEq[GenericReq] = deriveUnivEq
@@ -309,6 +310,9 @@ object Requirements {
 
 @Lenses
 case class Requirements(reqs: Requirements.ById, pubids: PubidRegister) {
+
+  def isEmpty = reqs.isEmpty
+  def nonEmpty = !isEmpty
 
   lazy val dead: Set[ReqId] =
     reqs.filterV(_.live :: Dead).keySet

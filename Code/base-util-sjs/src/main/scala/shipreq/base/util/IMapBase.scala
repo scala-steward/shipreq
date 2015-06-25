@@ -97,6 +97,9 @@ abstract class IMapBase[K: UnivEq, V, This_ <: IMapBase[K, V, This_]] private[ut
   final override protected def _values(v: V) = v :: Nil
   final override protected def _add(to: Map[K, V], k: K, v: V) = to.updated(k, v)
 
+  final def isEmpty = m.isEmpty
+  final def nonEmpty = !isEmpty
+
   final def filter (f: (K, V) => Boolean): This = mapUnderlying(_ filter f.tupled)
   final def filterK(f: K      => Boolean): This = mapUnderlying(_ filter(kv => f(kv._1)))
   final def filterV(f: V      => Boolean): This = mapUnderlying(_.filter(kv => f(kv._2)))
