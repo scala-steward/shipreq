@@ -460,14 +460,21 @@ object ShipReq extends Build {
 
     // ----------------------------------------------------
     object Js extends BenchmarkModule {
+      import org.scalajs.sbtplugin._
+      import ScalaJSPlugin.autoImport._
+
       val dir = "benchmark-js"
 
       override def project = typicalProject
         .enablePlugins(ScalaJSPlugin)
-        .dependsOn(benchmarkBase, webappClient)
+        .dependsOn(webappClient)
         .configure(
+          jsStyleDependsOn(benchmarkBase),
           useMacroParadise,
           Webapp.Client.prodJsSettings)
+        .settings(
+          artifactPath in (Compile, fastOptJS) := ((target in Compile).value / "shipreq-benchmark.js"),
+          scalaJSStage in Test := Stage.PreLink)
     }
   }
 }

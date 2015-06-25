@@ -1,0 +1,5 @@
+#!/bin/bash
+cd "$(dirname "$(readlink -e "$0")")" || exit 1
+
+google-chrome-stable --incognito --user-data-dir=/tmp/chrome-session --enable-benchmarking "$(pwd)/index.html"
+

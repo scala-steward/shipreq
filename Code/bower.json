@@ -18,6 +18,12 @@
 
     "qunit": "*",
     "sizzle": "*",
-    "syn": "*"
+    "syn": "*",
+
+    "benchmark": "https://github.com/bestiejs/benchmark.js.git#master"
+  },
+
+  "resolutions": {
+    "benchmark": "master"
   }
 }
