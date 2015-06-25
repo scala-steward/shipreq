@@ -41,6 +41,17 @@ subgraph cluster_t {
   taskman [label="[aggregate]\ntaskman" fillcolor="#ffff80"]
 }
 
+subgraph cluster_supp {
+  style=filled fillcolor="#fff2f2" node[fillcolor="#ffcccc"]
+
+  benchmark [label="[aggregate]\nbenchmark" fillcolor="#ffffdd"]
+  benchmarkJvm [label="benchmark JVM"]
+  benchmarkJs [label="benchmark JS"]
+  benchmarkShared [label="benchmark\nbase"]
+
+  utils [label="utils" fillcolor="#ffffdd"]
+}
+
 root [label="[aggregate]\nroot" fillcolor="#cccccc"]
 
 // Deps
@@ -65,6 +76,12 @@ webappBack -> webappShared
 webappBack -> webappFront [style=dashed]
 webappShared -> baseRaw
 
+benchmarkJvm,benchmarkJs -> benchmarkShared
+benchmarkJvm -> webappBack
+benchmarkJs -> webappFront
+
+utils -> webappShared
+
 // Aggregation
 edge[dir=forward style=dashed arrowhead=vee color="#aaaaaa"]
 taskmanApi -> taskmanApiLogic,taskmanApiImpl
@@ -72,5 +89,6 @@ taskmanServer -> taskmanServerLogic,taskmanServerImpl,taskmanDb
 taskman -> taskmanApi,taskmanServer
 webapp -> webappFront,webappBack
 base -> baseUtil,baseDb,baseTest
-root -> base,webapp,taskman
+benchmark -> benchmarkJvm,benchmarkJs
+root -> base,webapp,taskman,benchmark,utils
 }
