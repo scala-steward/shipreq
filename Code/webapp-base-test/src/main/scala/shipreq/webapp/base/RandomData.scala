@@ -292,8 +292,10 @@ object RandomData {
   lazy val applicableTag =
     Gen.apply5(ApplicableTag.apply)(applicableTagId, tagName, optionalLargeText, hashRefKey, live)
 
-  lazy val tag =
-    Gen.oneofG[Tag](tagGroup.subst, applicableTag.subst, applicableTag.subst)
+  lazy val tag = {
+    val atag = applicableTag.subst[Tag]
+    Gen.oneofG[Tag](tagGroup.subst, atag, atag, atag)
+  }
 
   /** HashRefKey uniqueness enforced in Project, not here */
   lazy val tags: Gen[List[Tag]] = {
