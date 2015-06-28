@@ -68,18 +68,46 @@ object GenerateProject {
     r
   }
 
-  object Size {
+  object Size10 {
+    val CfgTags              = 10
+    val CfgCustomIssueTypes  = 10
+    val CfgCustomReqTypes    = 10
+    val CfgFields            = 10
+
+    val Reqs         = 10
+    val ReqCodeDepth = 2
+    val ReqCodeSize  = 2
+    val Tags         = Reqs
+    val Implications = Reqs
+  }
+
+  object Size100 {
+    val CfgTags              = 30
+    val CfgCustomIssueTypes  = 15
+    val CfgCustomReqTypes    = 30
+    val CfgFields            = 25
+
+    val Reqs         = 100
+    val ReqCodeDepth = 6
+    val ReqCodeSize  = 5
+    val Tags         = Reqs * 2
+    val Implications = Reqs * 2
+  }
+
+  object Size1000 {
     val CfgTags              = 100
     val CfgCustomIssueTypes  =  20
     val CfgCustomReqTypes    =  50
     val CfgFields            =  30
 
-    val Reqs         = 10000
+    val Reqs         = 1000
     val ReqCodeDepth = 8
     val ReqCodeSize  = 6
     val Tags         = Reqs * 2
     val Implications = Reqs * 2
   }
+
+  val Size = Size100
 
 /*
   def main(args: Array[String]): Unit = {
@@ -129,7 +157,7 @@ object GenerateProject {
   */
 
   def main(args: Array[String]): Unit = {
-    autoSelect = false
+//    autoSelect = true
 
     val tags0           = sample(RandomData.revAndTagTree, Size.CfgTags)
     val issues0         = sample(RandomData.customIssueTypes, Size.CfgCustomIssueTypes)
@@ -157,16 +185,17 @@ object GenerateProject {
     lastPromptResponse = '?'
     val p               = sample(RandomData.genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps), 100)
 
-    val code = ShowSrc.generateVar("generated", p)
+    val objName = s"Project_${Size.Reqs}"
+    val code = ShowSrc.generateObject("shipreq.benchmark.data", objName, "project")(p)
+
+    //    println("=" * 120)
+    //    println(code)
+    //    println("=" * 120)
 
     println()
-    val fout = s"/tmp/shipreq-project-${Size.Reqs}.scala"
+    val fout = s"/tmp/$objName.scala"
     println(s"Writing ${String.format("%,d", java.lang.Integer valueOf code.length)} bytes to $fout ...")
     writeFile(fout, code)
-
-//    println("=" * 120)
-//    println(code)
-//    println("=" * 120)
 
     println("Done.")
   }
