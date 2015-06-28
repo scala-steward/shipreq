@@ -174,14 +174,11 @@ object ShowSrcGenericImp {
         s.fnN(".addAll", imap.values)
     }
 
-  def imapk[T, K[+_ <: T], V[+_ <: T]](empty: String)(implicit sm: ShowSrc[Map[K[T], V[T]]]): ShowSrc[IMapK[T, K, V]] =
+  def imapk[T, K[+_ <: T], V[+_ <: T]](empty: String)(implicit sv: ShowSrc[V[T]]): ShowSrc[IMapK[T, K, V]] =
     ShowSrc { (s, imap) =>
       s append empty
-      if (imap.nonEmpty) {
-        s append ".replaceUnderlying("
-        s.<~(imap.underlyingMap)(sm)
-        s append ')'
-      }
+      if (imap.nonEmpty)
+        s.fnN(".addAll", imap.values.toSeq)
     }
 
   def isubset[A: ShowSrc]: ShowSrc[ISubset[A]] = {
@@ -344,8 +341,10 @@ object ShowSrcDataImp {
   implicit lazy val (inlineIssueDescZ  , inlineIssueDescN  ) = text (Text.InlineIssueDesc)  ("IID")
 
   implicit lazy val reqDataText: ShowSrc[ReqData.Text] = {
-    implicit val vs = map[ReqId, Text.CustomTextField.NonEmptyText]("ReqId", "CTF.NonEmptyText")
-      .init(textImport(Text.CustomTextField)("CTF"))
+    implicit val vs =
+      map[ReqId, Text.CustomTextField.NonEmptyText]("ReqId", "CTF.NonEmptyText")
+        .init(textImport(Text.CustomTextField)("CTF"))
+        .intoVar("customTextForReq")
     "reqDataText" @@ wrapAndType(map(): ShowSrc[ReqData.Text], "ReqData.Text")
   }
 
@@ -373,7 +372,7 @@ object ShowSrcDataImp {
          val valueO                       = option(value)
     lazy val branch: ShowSrc[Branch[K, V]] = ShowSrc((s, t) => s.cc2(branchCtor, Branch unapply t)(valueO, trie))
     lazy val node  : ShowSrc[Node[K, V]]   = ShowSrc((s, n) => n.fold(s.<~(_)(branch), s.<~(_)(value)))
-    lazy val trie  : ShowSrc[Trie[K, V]]   = map()(implicitly, node)
+    lazy val trie  : ShowSrc[Trie[K, V]]   = "trie" @@ map()(implicitly, node)
     trie
   }
 
@@ -389,7 +388,7 @@ object ShowSrcDataImp {
     })
 
   implicit val reqTypeId: ShowSrc[ReqTypeId] =
-    data((s, a) => a match {
+    ShowSrc((s, a) => a match {
       case id: CustomReqTypeId => s <~ id
       case rt: StaticReqType   => s <~ rt
     })
@@ -407,17 +406,16 @@ object ShowSrcDataImp {
   }
 
   implicit val genericReq: ShowSrc[GenericReq] =
-    data((s, r) => s.cc4("GenericReq", GenericReq unapply r)(implicitly, implicitly, genericReqTitleZ, implicitly))
+    "greq" @@ data((s, r) =>
+      s.cc4("GenericReq", GenericReq unapply r)(implicitly, implicitly, genericReqTitleZ, implicitly))
 
   implicit val req: ShowSrc[Req] =
-    data((s, req) => req match {
+    ShowSrc((s, req) => req match {
       case gr: GenericReq => s <~ gr
     })
 
-  implicit val requirementsById: ShowSrc[Requirements.ById] = {
-    implicit val m = map[ReqId, Req]("ReqId", "Req")
+  implicit val requirementsById: ShowSrc[Requirements.ById] =
     "reqsById" @@ imapk[ReqTypeId, ReqIdT, ReqT]("Requirements.emptyById")
-  }
 
   implicit val requirements: ShowSrc[Requirements] =
     data((s, r) =>
@@ -448,7 +446,7 @@ object ShowSrcDataImp {
     })
 
   implicit val fieldId: ShowSrc[FieldId] =
-    data((s, a) => a match {
+    ShowSrc((s, a) => a match {
       case id: CustomFieldId => s <~ id
       case sf: StaticField   => s <~ sf
     })
@@ -463,7 +461,7 @@ object ShowSrcDataImp {
     data((s, a) => s.cc5("CustomField.Implication", CustomField.Implication unapply a))
 
   implicit val customField: ShowSrc[CustomField] =
-    data((s, a) => a match {
+    ShowSrc((s, a) => a match {
       case f: CustomField.Tag         => s <~ f
       case f: CustomField.Text        => s <~ f
       case f: CustomField.Implication => s <~ f
@@ -482,7 +480,7 @@ object ShowSrcDataImp {
     data((s, a) => s.cc5("ApplicableTag", ApplicableTag unapply a))
 
   implicit val tag: ShowSrc[Tag] =
-    data((s, a) => a match {
+    ShowSrc((s, a) => a match {
       case f: ApplicableTag => s <~ f
       case f: TagGroup      => s <~ f
     })

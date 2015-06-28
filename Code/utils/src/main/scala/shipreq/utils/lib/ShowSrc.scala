@@ -72,25 +72,22 @@ object ShowSrc {
     val (head, tmpvars, body) = generate(a, "def")
 
     // Stupid issue #2: SBT incremental compiler crashes on objects with too many methods
+    val partitions = {
+      val sep = "\n\n"
 
-    val sep = "\n\n"
+      val tmpvarGroups =
+        (tmpvars map indent(1) getOrElse "").split(sep).grouped(1000).toVector
 
-    val tmpvarGroups =
-      (tmpvars map indent(1) getOrElse "").split(sep).grouped(1000).toVector
-
-    val partitions =
-      if (tmpvarGroups.size > 1)
-        tmpvarGroups.init.zipWithIndex.map{case (xs, i) =>
-          val o = s"${obj}__$i"
-          s"""
-            |object $o {
-            |${xs mkString sep}
-            |}
-            |import ${o}._
-          """.stripMargin.trim
-        }.mkString("\n\n")
-      else
-        ""
+      tmpvarGroups.zipWithIndex.map{case (xs, i) =>
+        val o = s"__${obj}_${i + 1}"
+        s"""
+          |object $o {
+          |${xs mkString sep}
+          |}
+          |import ${o}._
+        """.stripMargin.trim
+      }.mkString("\n\n")
+    }
 
     s"""
        |package $pkg
@@ -100,9 +97,6 @@ object ShowSrc {
        |$partitions
        |
        |object $obj {
-       |
-       |${tmpvarGroups.last mkString sep}
-       |
        |  val $term =
        |${indent(2)(body)}
        |}
@@ -140,17 +134,21 @@ object ShowSrc {
   implicit def stateToSB(s: State): StringBuilder = s.sb
 
   object State {
-    def empty = new State(mutable.SortedSet.empty, mutable.MutableList.empty, new StringBuilder)
+    def empty = new State(
+      mutable.SortedSet.empty,
+      mutable.MutableList.empty,
+      mutable.Set.empty,
+      mutable.Map.empty,
+      new StringBuilder)
   }
 
-  class State(initLines: mutable.SortedSet[String],
-              tmpVars  : mutable.MutableList[(String, String)],
-              val sb   : StringBuilder) {
+  class State(initLines   : mutable.SortedSet[String],
+              tmpVars     : mutable.MutableList[(String, String)],
+              tmpVarNames : mutable.Set[String],
+              tmpVarValues: mutable.Map[String, String],
+              val sb      : StringBuilder) {
 
     // Stupid issue #1: JVM & compile crash when expressions are too long
-    var tmpVarNames  = Set.empty[String]
-    var tmpVarValues = Map.empty[String, String]
-
     private def getFreeName(name: String): String = {
       @tailrec
       def go(i: Int): String = {
@@ -166,11 +164,8 @@ object ShowSrc {
         name
     }
 
-    def intoVar(f: State => Unit): Unit =
-      intoVar("tmp", f)
-
     def intoVar(name: String, f: State => Unit): Unit = {
-      val state2 = new State(initLines, tmpVars, new StringBuilder)
+      val state2 = new State(initLines, tmpVars, tmpVarNames, tmpVarValues, new StringBuilder)
       f(state2)
       val varValue = state2.sb.toString
       val varName2 =
@@ -178,7 +173,7 @@ object ShowSrc {
           val varName = getFreeName(name)
           tmpVars += (varName -> varValue)
           tmpVarNames += varName
-          tmpVarValues = tmpVarValues.updated(varValue, varName)
+          tmpVarValues.update(varValue, varName)
           varName
         }
       sb append varName2
