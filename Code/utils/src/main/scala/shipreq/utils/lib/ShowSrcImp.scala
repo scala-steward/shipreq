@@ -195,6 +195,13 @@ object ShowSrcGenericImp {
       }
     }
   }
+
+  def wrapAndType[A](ss: ShowSrc[A], typ: String): ShowSrc[A] =
+    ShowSrc { (s, a) =>
+      ss(s, a)
+      s append ": "
+      s append typ
+    }
 }
 
 // =====================================================================================================================
@@ -209,6 +216,10 @@ object ShowSrcDataImp {
   val importRCTrie   = "import shipreq.webapp.base.data.ReqCode.Trie.{Branch => τb, Value => τv}"
   val importMnemonic = "import shipreq.webapp.base.data.ReqType.Mnemonic"
   val importUnivEq   = "import shipreq.base.util.UnivEq"
+
+  private implicit class StringExt(val s: String) extends AnyVal {
+    def @@[A](a: ShowSrc[A]): ShowSrc[A] = a.intoVar(s)
+  }
 
   private def data[A](f: (State, A) => Unit): ShowSrc[A] =
     ShowSrc.init(importData)(f)
@@ -233,7 +244,7 @@ object ShowSrcDataImp {
   implicit val reqTypePos               = taggedType[ReqTypePos                ]("ReqTypePos                ")
   implicit val fieldRefKey              = taggedType[FieldRefKey               ]("FieldRefKey               ")
 
-  implicit val reqTypeMnemonic = taggedType[ReqType.Mnemonic]("Mnemonic") prep importMnemonic
+  implicit val reqTypeMnemonic = taggedType[ReqType.Mnemonic]("Mnemonic") init importMnemonic
 
   implicit val tagId: ShowSrc[TagId] =
     data((s, a) => a match {
@@ -277,14 +288,14 @@ object ShowSrcDataImp {
     multimap("Implications.emptyUni")(reqId, setReqId)
 
   implicit val implications: ShowSrc[Implications] =
-    data((s, a) =>
+    "implications" @@ data((s, a) =>
       if (a.srcToTgt.isEmpty)
         s append "Implications.empty"
       else
         s.cc1("Implications", Implications unapply a))
 
   implicit val reqDataTags: ShowSrc[ReqData.Tags] =
-    multimap("ReqData.emptyTags")
+    "reqDataTags" @@ multimap("ReqData.emptyTags")
 
   def textAtom(prefix: String): ShowSrc[Atom.AnyAtom] = {
     import Atom._
@@ -321,15 +332,21 @@ object ShowSrcDataImp {
     (z, n)
   }
 
-  implicit      val (reqCodeGroupTitleZ, reqCodeGroupTitleN) = text(Text.ReqCodeGroupTitle)("RCGT")
-  implicit      val (genericReqTitleZ  , genericReqTitleN  ) = text(Text.GenericReqTitle)  ("GRT")
-  implicit lazy val (inlineIssueDescZ  , inlineIssueDescN  ) = text(Text.InlineIssueDesc)  ("IID")
-  implicit      val (customTextFieldZ  , customTextFieldN  ) = text(Text.CustomTextField)  ("CTF")
+  def text2(t: Text.Generic)(abbrev: String): (ShowSrc[t.OptionalText], ShowSrc[t.NonEmptyText]) = {
+    val (z, n) = text(t)(abbrev)
+    val name = abbrev.toLowerCase
+    (z intoVar name, n intoVar name)
+  }
+
+  implicit      val (reqCodeGroupTitleZ, reqCodeGroupTitleN) = text2(Text.ReqCodeGroupTitle)("RCGT")
+  implicit      val (genericReqTitleZ  , genericReqTitleN  ) = text2(Text.GenericReqTitle)  ("GRT")
+  implicit      val (customTextFieldZ  , customTextFieldN  ) = text2(Text.CustomTextField)  ("CTF")
+  implicit lazy val (inlineIssueDescZ  , inlineIssueDescN  ) = text (Text.InlineIssueDesc)  ("IID")
 
   implicit lazy val reqDataText: ShowSrc[ReqData.Text] = {
     implicit val vs = map[ReqId, Text.CustomTextField.NonEmptyText]("ReqId", "CTF.NonEmptyText")
       .init(textImport(Text.CustomTextField)("CTF"))
-    map()
+    "reqDataText" @@ wrapAndType(map(): ShowSrc[ReqData.Text], "ReqData.Text")
   }
 
   implicit val reqCodeNode: ShowSrc[ReqCode.Node] =
@@ -361,7 +378,7 @@ object ShowSrcDataImp {
   }
 
   implicit val reqCodeTrie: ShowSrc[ReqCode.Trie] =
-    (trie("τb", "τv"): ShowSrc[ReqCode.Trie]) init importRCTrie
+    (trie("τb", "τv"): ShowSrc[ReqCode.Trie]) init importRCTrie intoVar "reqCodeTrie"
 
   implicit val reqCodes: ShowSrc[ReqCodes] =
     data((s, rc) => s.cc1("ReqCodes", ReqCodes unapply rc)(reqCodeTrie))
@@ -382,7 +399,7 @@ object ShowSrcDataImp {
 
   implicit val pubidRegister: ShowSrc[PubidRegister] = {
     implicit val mm = multimap[ReqTypeId, Vector, ReqId]("PubidRegister.emptyMM")
-    data((s, r) =>
+    "pubidRegister" @@ data((s, r) =>
       if (r.value.isEmpty)
         s append "PubidRegister.empty"
       else
@@ -399,7 +416,7 @@ object ShowSrcDataImp {
 
   implicit val requirementsById: ShowSrc[Requirements.ById] = {
     implicit val m = map[ReqId, Req]("ReqId", "Req")
-    imapk[ReqTypeId, ReqIdT, ReqT]("Requirements.emptyById")
+    "reqsById" @@ imapk[ReqTypeId, ReqIdT, ReqT]("Requirements.emptyById")
   }
 
   implicit val requirements: ShowSrc[Requirements] =
@@ -412,12 +429,14 @@ object ShowSrcDataImp {
   implicit val customIssueType: ShowSrc[CustomIssueType] =
     data((s, a) => s.cc4("CustomIssueType", CustomIssueType unapply a))
 
-  implicit val customIssueTypeIMap: ShowSrc[CustomIssueTypeIMap] = imapI("CustomIssueType")
+  implicit val customIssueTypeIMap: ShowSrc[CustomIssueTypeIMap] =
+    "customIssueTypes" @@ imapI("CustomIssueType")
 
   implicit val customReqType: ShowSrc[CustomReqType] =
     data((s, a) => s.cc6("CustomReqType", CustomReqType unapply a))
 
-  implicit val customReqTypeIMap: ShowSrc[CustomReqTypeIMap] = imapI("CustomReqType")
+  implicit val customReqTypeIMap: ShowSrc[CustomReqTypeIMap] =
+    "customReqTypes" @@ imapI("CustomReqType")
 
   implicit val applicableReqTypes: ShowSrc[Field.ApplicableReqTypes] = isubset
 
@@ -450,10 +469,11 @@ object ShowSrcDataImp {
       case f: CustomField.Implication => s <~ f
     })
 
-  implicit val customFieldIMap: ShowSrc[IMap[CustomFieldId, CustomField]] = imapI("CustomField")
+  implicit val customFieldIMap: ShowSrc[IMap[CustomFieldId, CustomField]] =
+    "customFields" @@ imapI("CustomField")
 
   implicit val fieldSet: ShowSrc[FieldSet] =
-    data((s, a) => s.cc2("FieldSet", FieldSet unapply a))
+    "fieldSet" @@ data((s, a) => s.cc2("FieldSet", FieldSet unapply a))
 
   implicit val tagGroup: ShowSrc[TagGroup] =
     data((s, a) => s.cc5("TagGroup", TagGroup unapply a))
@@ -470,7 +490,8 @@ object ShowSrcDataImp {
   implicit val tagInTree: ShowSrc[TagInTree] =
     data((s, a) => s.cc2("TagInTree", TagInTree unapply a))
 
-  implicit val tagTree: ShowSrc[TagTree] = imap("TagTree.empty")
+  implicit val tagTree: ShowSrc[TagTree] =
+    "tagTree" @@ imap("TagTree.empty")
 
   implicit val projectConfig: ShowSrc[ProjectConfig] =
     data((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a, "\n    "))

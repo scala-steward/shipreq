@@ -1,5 +1,7 @@
 package shipreq.utils.lib
 
+import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.collection.GenTraversable
 import ShowSrc.State
 
@@ -16,48 +18,90 @@ trait ShowSrc[A] {
 
   def narrow[B <: A]: ShowSrc[B] =
     this.asInstanceOf[ShowSrc[B]]
+
+  def intoTmpVar = intoVar("tmp")
+
+  def intoVar(name: String): ShowSrc[A] = {
+    val self = this
+    new ShowSrc[A] {
+      override def apply(state: State, a: A): Unit =
+        state.intoVar(name, self(_, a))
+    }
+  }
 }
 
 object ShowSrc {
 
-  def generate[A](a: A)(implicit s: ShowSrc[A]): (Option[String], String) = {
+  def generate[A](a: A, tmpvarDecl: String = "def")(implicit s: ShowSrc[A]): (Option[String], Option[String], String) = {
     val state = State.empty
     s(state, a)
-    val body = state.sb.toString()
-    val head: Option[String] =
-      if (state.initLines.isEmpty)
-        None
-      else {
-        val sb = new StringBuilder
-        for (p <- state.initLines) {
-          sb append p
-          sb append '\n'
-        }
-        Some(sb.toString())
-      }
-    (head, body)
-  }
+    val result = state.toResult
 
-  def generateBlock[A: ShowSrc](a: A): String = {
-    val (head, body) = generate(a)
-    head match {
-      case Some(h) => s"{\n$h$body\n}"
-      case None    => body
+    def nonEmptyStr(f: StringBuilder => Unit): Option[String] = {
+      val sb = new StringBuilder
+      f(sb)
+      Some(sb.toString.trim).filter(_.nonEmpty)
     }
+
+    val head = nonEmptyStr { sb =>
+      for (p <- result.initLines) {
+        sb append p
+        sb append '\n'
+      }
+    }
+
+    val tmpvars = nonEmptyStr { sb =>
+      for ((k,v) <- result.tmpVars) {
+        sb append tmpvarDecl
+        sb append ' '
+        sb append k
+        sb append " = "
+        sb append v
+        sb append '\n'
+        sb append '\n'
+      }
+    }
+
+    (head, tmpvars, result.body)
   }
 
-  private def indent(i: Int, subj: String) = {
+//  def generateBlock[A: ShowSrc](a: A): String = {
+//    val (head, body) = generate(a)
+//    head match {
+//      case Some(h) => s"{\n$h$body\n}"
+//      case None    => body
+//    }
+//  }
+
+  private def indent(i: Int)(subj: String) = {
     val ind = "  " * i
     ind + subj.replaceAll("(?<=\n)(?!\n)", ind)
   }
 
-  def generateVar[A: ShowSrc](name: String, a: A): String = {
-    val (head, body) = generate(a)
-    head match {
-      case Some(h) => s"val $name = {\n${indent(1, h + body)}\n}\n"
-      case None    => s"val $name =\n${indent(1, body)}\n"
-    }
+//  def generateVar[A: ShowSrc](name: String, a: A): String = {
+//    val (head, body) = generate(a)
+//    head match {
+//      case Some(h) => s"val $name = {\n${indent(1, h + body)}\n}\n"
+//      case None    => s"val $name =\n${indent(1, body)}\n"
+//    }
+//  }
+
+  def generateObject[A: ShowSrc](pkg: String, obj: String, value: String)(a: A): String = {
+    val (head, tmpvars, body) = generate(a, "def")
+    s"""
+       |package $pkg
+       |
+       |${head getOrElse ""}
+       |
+       |object $obj {
+       |
+       |${tmpvars map indent(1) getOrElse ""}
+       |
+       |${indent(1)(body)}
+       |}
+     """.stripMargin.trim
   }
+
 
   // ===================================================================================================================
 
@@ -85,10 +129,54 @@ object ShowSrc {
   implicit def stateToSB(s: State): StringBuilder = s.sb
 
   object State {
-    def empty = State(collection.mutable.SortedSet.empty, new StringBuilder)
+    def empty = new State(mutable.SortedSet.empty, mutable.MutableList.empty, new StringBuilder)
   }
 
-  case class State(initLines: collection.mutable.SortedSet[String], sb: StringBuilder) {
+  case class Result(initLines: Stream[String],
+                    tmpVars  : Stream[(String, String)],
+                    body     : String)
+
+  class State(initLines: mutable.SortedSet[String],
+              tmpVars  : mutable.MutableList[(String, String)],
+              val sb   : StringBuilder) {
+
+    var tmpVarNames = Set.empty[String]
+    var tmpVarValues = Map.empty[String, String]
+
+    private def getFreeName(name: String): String = {
+      @tailrec
+      def go(i: Int): String = {
+        val n = name + i
+        if (tmpVarNames contains n)
+          go(i + 1)
+        else
+          n
+      }
+      if (tmpVarNames contains name)
+        go(2)
+      else
+        name
+    }
+
+    def intoVar(f: State => Unit): Unit =
+      intoVar("tmp", f)
+
+    def intoVar(name: String, f: State => Unit): Unit = {
+      val state2 = new State(initLines, tmpVars, new StringBuilder)
+      f(state2)
+      val varValue = state2.sb.toString
+      val varName2 =
+        tmpVarValues.get(varValue) getOrElse {
+          val varName = getFreeName(name)
+          tmpVars += (varName -> varValue)
+          tmpVarNames += varName
+          tmpVarValues = tmpVarValues.updated(varValue, varName)
+          varName
+        }
+      sb append varName2
+    }
+
+    def toResult = Result(initLines.toStream, tmpVars.toStream, sb.toString)
 
     def init(s: String): Unit =
       initLines += s
