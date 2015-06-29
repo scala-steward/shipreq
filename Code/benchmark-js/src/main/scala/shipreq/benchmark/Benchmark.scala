@@ -40,7 +40,7 @@ object Benchmark {
     val o        = Options()
     o.async      = false
     o.minSamples = 40
-    o.maxTime    = 60 * 10
+    o.maxTime    = 60 * 20
     o.onStart    = JsBenchmark.cb(e => log(s"${e.target.name} started"))
     o.onCycle    = onCycleN(10, logWithStatus("Running"))
     o.onComplete = JsBenchmark.cb { e => logWithStatus("Done")(e); log("") }
