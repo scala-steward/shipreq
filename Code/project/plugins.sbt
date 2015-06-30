@@ -7,7 +7,7 @@ addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "0.9.0")
 // addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.3.0")
 
 // SBT IntelliJ Idea
-addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
+// addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
 
 // Dependency graph
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
@@ -17,3 +17,9 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
 // Benchmarking
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.1")
+
+// https://github.com/JetBrains/sbt-ide-settings
+resolvers += Resolver.url("jetbrains-bintray", url("http://dl.bintray.com/jetbrains/sbt-plugins/"))(Resolver.ivyStylePatterns)
+
+addSbtPlugin("org.jetbrains" % "sbt-ide-settings" % "0.1.1")
+

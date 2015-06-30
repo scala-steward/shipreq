@@ -13,7 +13,7 @@ object ShipReq extends Build {
 
   lazy val root =
     Project("root", file("."))
-      .configure(Common.settings)
+      .configure(Common.settings, IdeSettings.settingsForRoot)
       .aggregate(base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
 
   // ===================================================================================================================
