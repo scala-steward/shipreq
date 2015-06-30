@@ -116,6 +116,11 @@ object Common {
     .configure(
       debugAndReleaseCompilerFlags)
 
+  def definesMacros: Project => Project =
+    _.settings(
+      scalacOptions += "-language:experimental.macros",
+      libraryDependencies ++= Dependencies.Scala.macroDef(JVM))
+
   // ===================================================================================================================
   object Values {
 
