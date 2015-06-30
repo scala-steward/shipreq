@@ -23,10 +23,6 @@ object ShipReq extends Build {
     project("base")
       .configure(Common.settings)
       .aggregate(baseUtilJvm, baseUtilJs, baseDb, baseTest)
-//    crossProject
-//      .aggregate(baseUtil)
-//      .aggregateJvm(baseDb, baseTest)
-//      .configureBoth(Common.settings)
 
   lazy val baseUtilJvm = baseUtil.jvm
   lazy val baseUtilJs  = baseUtil.js
@@ -157,11 +153,6 @@ object ShipReq extends Build {
     project("webapp")
       .configure(webappSettings)
       .aggregate(webappBaseJvm, webappBaseJs, webappBaseTestJvm, webappBaseTestJs, webappClient, webappServer)
-//    crossProject.in(file("webapp"))
-//      .configureBoth(webappSettings)
-//      .aggregate(webappBase, webappBaseTest)
-//      .aggregateJs(webappClient)
-//      .aggregateJvm(webappServer)
 
   lazy val webappSettings =
     Common.settings.andThen(_.configure(webappCmdAliases))
