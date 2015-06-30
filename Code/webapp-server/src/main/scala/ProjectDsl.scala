@@ -1,1 +1,1 @@
-../../../../webapp-base-test/src/main/scala/shipreq/webapp/base/test/ProjectDsl.scala
+../../../../webapp-base-test/shared/src/main/scala/shipreq/webapp/base/test/ProjectDsl.scala

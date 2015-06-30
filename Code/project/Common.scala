@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import java.nio.file.{Files, Path}
+import org.scalajs.sbtplugin.cross.CrossProject
+import DependencyLib.{Dep, HasJs, HasJvm, HasBoth, JVM, JS, ModDepScope}
 
 object Common {
   import Functions._
@@ -80,7 +82,8 @@ object Common {
       incOptions               := incOptions.value.withNameHashing(true),
       updateOptions            := updateOptions.value.withCachedResolution(true),
       aggregate in update      := false,
-      scalaVersion             := Deps.Scala.version)
+      scalaVersion             := Dependencies.Scala.version,
+      testFrameworks           += new TestFramework("utest.runner.Framework"))
     .configure(
       addCommandAliases(
         "/"    -> "project root",
@@ -112,38 +115,6 @@ object Common {
       testOptions   in Test  += Tests.Cleanup(shutdownTestDb(_)))
     .configure(
       debugAndReleaseCompilerFlags)
-
-  def useHiddenTargetDir: Project => Project =
-    _.settings(target <<= baseDirectory(_ / ".target"))
-
-  def utestOnJvm = utestSettings
-  def utestOnJs  = utestSettings
-
-  def utestSettings: Project => Project =
-    _.settings(
-      testFrameworks += new TestFramework("utest.runner.Framework"))
-
-  private def addSourceDialectFrom(p: Project, name: String): Project => Project =
-    _.settings(unmanagedSourceDirectories in Compile += (baseDirectory in Compile in p).value / s"src/main/scala-$name")
-
-  def addSourceDialectJvm: Project => Project = p => addSourceDialectJvmFrom(p)(p)
-  def addSourceDialectJs : Project => Project = p => addSourceDialectJsFrom (p)(p)
-
-  def addSourceDialectJvmFrom(p: Project) = addSourceDialectFrom(p, "jvm")
-  def addSourceDialectJsFrom (p: Project) = addSourceDialectFrom(p, "js")
-
-  trait ExportsTestLib {
-    lazy val TestLib = config("test-lib") extend Compile describedAs "Reusable test helpers"
-
-    def testLibSettings = (p: Project) =>
-      p.configs(TestLib)
-      .settings(inConfig(TestLib)(Defaults.configSettings): _*)
-      .settings(
-        classpathConfiguration in Test := Test extend TestLib,
-        scalacOptions in TestLib <<= scalacOptions in Test,
-        javacOptions in TestLib <<= javacOptions in Test
-      )
-  }
 
   // ===================================================================================================================
   object Values {
@@ -206,18 +177,44 @@ object Common {
       (_: Project).settings(s: _*)
     }
 
-    // Recompile shared source rather than depending directly
-    // https://github.com/scala-js/scala-js/issues/1067
-    def jsStyleDependsOn(deps: Project*) =
-      deps.foldLeft(identity[Project]_)(_ compose jsStyleDependsOnS(_)(Compile -> Compile, Test -> Test))
+    implicit class CrossProjectExt(val p: CrossProject) extends AnyVal {
 
-    def jsStyleDependsOnS(deps: Project*)(scopes: (Configuration, Configuration)*) = (_: Project)
-      .settings((
-      for {
-        dep    <- deps
-        (a, b) <- scopes
-      } yield
-      unmanagedSourceDirectories in b += (scalaSource in a in dep).value
-      ): _*)
+      def configureBoth(fs: (Project => Project)*): CrossProject =
+        fs.foldLeft(p)((q,f) => q.jvmConfigure(f).jsConfigure(f))
+
+      def configureJvm(fs: (Project => Project)*): CrossProject =
+        fs.foldLeft(p)((q,f) => q.jvmConfigure(f))
+
+      def configureJs(fs: (Project => Project)*): CrossProject =
+        fs.foldLeft(p)((q,f) => q.jsConfigure(f))
+
+      def depsForBoth(deps: Dep[HasBoth]): CrossProject =
+        depsForJvm(deps.widen).depsForJs(deps.widen)
+
+      def depsForJvm(deps: Dep[HasJvm]): CrossProject =
+        p.jvmSettings(libraryDependencies ++= deps(JVM))
+
+      def depsForJs(deps: Dep[HasJs]): CrossProject =
+        p.jsSettings(libraryDependencies ++= deps(JS))
+
+      def aggregateJvm(refs: sbt.ProjectReference*):  CrossProject =
+        p.jvmConfigure(_.aggregate(refs: _*))
+
+      def aggregateJs(refs: sbt.ProjectReference*):  CrossProject =
+        p.jsConfigure(_.aggregate(refs: _*))
+    }
+
+    implicit class ProjectExt(val p: Project) extends AnyVal {
+      def deps(deps: Dep[HasJvm]): Project =
+        p.settings(libraryDependencies ++= deps(JVM))
+
+      def depsForJs(deps: Dep[HasJs]): Project =
+        p.settings(libraryDependencies ++= deps(JS))
+    }
+
+    def depScope(s: String): ModDepScope = ModDepScope(s)
+    def depScope(c: Configuration): ModDepScope = depScope(c.name)
+    def testScope = depScope("test")
+    def providedScope = depScope("provided")
   }
 }

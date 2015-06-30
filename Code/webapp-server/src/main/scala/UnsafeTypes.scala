@@ -1,1 +1,1 @@
-../../../../webapp-base-test/src/main/scala/shipreq/webapp/base/test/UnsafeTypes.scala
+../../../../webapp-base-test/shared/src/main/scala/shipreq/webapp/base/test/UnsafeTypes.scala
