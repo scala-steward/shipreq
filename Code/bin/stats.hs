@@ -48,9 +48,10 @@ parseCloc a = parse $ listToMaybe $ filter (isPrefixOf "Scala") $ lines a
 ------------------------------------------------------------------------------------------------------------------------
 -- Stats gathering
 
-groups = ["base", "taskman", "webapp"]
-mainPaths = ["src/main/scala", "src/main/scala-jvm", "src/main/scala-js"]
-testPaths = ["src/test-lib/scala", "src/test/scala"]
+groups = ["base", "taskman", "webapp", "utils"]
+pathPrefixes = ["", "shared/", "jvm/", "js/"]
+mainPaths = fmap (\x -> x ++ "src/main/scala") pathPrefixes
+testPaths = fmap (\x -> x ++ "src/test/scala") pathPrefixes
 
 type Group = String
 type Module = String
@@ -106,9 +107,9 @@ gatherAllStats = do dirs <- dirsIn "."
 
 deps = M.fromList [
          ("webapp-server",         ["webapp-base-test", "base-db", "taskman-api"]) ,
-         ("webapp-client",         ["webapp-base-test", "base-util-sjs"]) ,
+         ("webapp-client",         ["webapp-base-test", "base-util"]) ,
          ("webapp-base-test",      ["webapp-base"]) ,
-         ("webapp-base",           ["base-util-sjs"]) ,
+         ("webapp-base",           ["webapp-macros", "base-util"]) ,
          ("taskman",               ["taskman-api", "taskman-server"]) ,
          ("taskman-api",           ["taskman-api-impl", "taskman-api-logic"]) ,
          ("taskman-api-impl",      ["taskman-api-logic"]) ,
@@ -117,8 +118,7 @@ deps = M.fromList [
          ("taskman-server-impl",   ["taskman-server-logic", "taskman-server-schema", "taskman-api"]) ,
          ("taskman-server-schema", ["base-db"]) ,
          ("taskman-server-logic",  ["taskman-api-logic"]) ,
-         ("base-db",               ["base-util"]) ,
-         ("base-util",             ["base-util-sjs"]) ]
+         ("base-db",               ["base-util"]) ]
 
 topLevelModules = ["taskman", "webapp-client", "webapp-server"]
 
