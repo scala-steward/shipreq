@@ -366,18 +366,21 @@ object ShowSrcDataImp {
     data((s, d) => s.cc3("ReqCode.Data", ReqCode.Data unapply d))
   }
 
-  def trie[K: ShowSrc, V: ShowSrc](branchCtor: String, valueCtor: String): ShowSrc[MTrie.Trie[K, V]] = {
+  def trie[K: ShowSrc, V: ShowSrc](branchCtor: String, valueCtor: String, trieType: String, trieVarname: String): ShowSrc[MTrie.Trie[K, V]] = {
     import MTrie.{Branch, Node, Trie, Value}
          val value : ShowSrc[Value[K, V]]  = ShowSrc((s, v) => s.cc1(valueCtor, Value unapply v))
-         val valueO                       = option(value)
+         val valueO                        = option(value)
     lazy val branch: ShowSrc[Branch[K, V]] = ShowSrc((s, t) => s.cc2(branchCtor, Branch unapply t)(valueO, trie))
     lazy val node  : ShowSrc[Node[K, V]]   = ShowSrc((s, n) => n.fold(s.<~(_)(branch), s.<~(_)(value)))
-    lazy val trie  : ShowSrc[Trie[K, V]]   = "trie" @@ map()(implicitly, node)
+    lazy val trie  : ShowSrc[Trie[K, V]]   = {
+      val t: ShowSrc[Trie[K, V]] = map()(implicitly, node)
+      wrapAndType(t, trieType) intoVar trieVarname
+    }
     trie
   }
 
   implicit val reqCodeTrie: ShowSrc[ReqCode.Trie] =
-    (trie("τb", "τv"): ShowSrc[ReqCode.Trie]) init importRCTrie intoVar "reqCodeTrie"
+    (trie("τb", "τv", "ReqCode.Trie", "reqCodeTrie"): ShowSrc[ReqCode.Trie]) init importRCTrie init importData
 
   implicit val reqCodes: ShowSrc[ReqCodes] =
     data((s, rc) => s.cc1("ReqCodes", ReqCodes unapply rc)(reqCodeTrie))

@@ -68,6 +68,19 @@ object ShowSrc {
     (head, tmpvars, result.body)
   }
 
+  /**
+   * Both the JVM and Scala have limits on the size of an expression.
+   * If this fails, use [[generateObject()]].
+   */
+  def generateExpr[A: ShowSrc](a: A): String = {
+    val (head, tmpvars, body) = generate(a)
+    val l = head.toList ::: tmpvars.toList ::: body :: Nil
+    if (l.size == 1)
+      l.head
+    else
+      l.mkString("{\n", "\n", "\n}")
+  }
+
   def generateObject[A: ShowSrc](pkg: String, obj: String, term: String)(a: A): String = {
     val (head, tmpvars, body) = generate(a, "def")
 
