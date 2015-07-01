@@ -6,7 +6,7 @@ import scala.scalajs.js.JSApp
 
 object Main extends JSApp {
 
-  def run() = Deserialisiation.run()
+  def run() = Hashing.run()
 
   def main(): Unit = {
     val delay = 5

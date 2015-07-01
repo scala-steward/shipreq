@@ -10,8 +10,8 @@ import shipreq.webapp.base.protocol.DataCodecs
 class Serialisation {
 
   implicit val projectCodec = DataCodecs.project
-  private val p100  = data.Project_100.project
-  private val p1000 = data.Project_1000.project
+  val p100  = data.project_100
+  val p1000 = data.project_1000
 
   @Benchmark
   def write_100 = upickle.Fns write p100
