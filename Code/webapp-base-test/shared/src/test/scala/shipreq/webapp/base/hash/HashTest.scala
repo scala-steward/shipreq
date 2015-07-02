@@ -84,7 +84,7 @@ object HashTest extends TestSuite {
   def testAlgo(a: Hash.Algorithm, expect: AlgorithmResults): Unit =
     algorithmProp(expect).assert(a)
 
-  val murmur3 = AlgorithmResults(1231,1237,1000,-1294967296,1842429670,381277126,-914897307,-1390910323,586134407,2075563892,-1936667874,-1122530123)
+  val murmur3 = AlgorithmResults(1231,1237,-3506311,528568105,1842429670,607967924,438654265,-1390910323,586134407,2075563892,-1936667874,-1122530123)
 
   // ===================================================================================================================
   // Data hashing

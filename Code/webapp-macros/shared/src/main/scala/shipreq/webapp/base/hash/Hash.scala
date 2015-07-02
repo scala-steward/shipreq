@@ -52,11 +52,5 @@ object Hash {
 
     def hashUnordered[T[x] <: TraversableOnce[x], A: Hash]: Hash[T[A]]
   }
-
-  trait Primitives {
-    implicit final val hashBoolean : Hash[Boolean] = Hash.internal
-    implicit final val hashInt     : Hash[Int]     = Hash.fn(i => i)
-    implicit final val hashLong    : Hash[Long]    = Hash.fn(l => (l ^ (l >>> 32)).toInt)
-  }
 }
 

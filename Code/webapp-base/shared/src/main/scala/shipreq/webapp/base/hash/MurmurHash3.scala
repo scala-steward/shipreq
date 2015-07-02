@@ -5,9 +5,11 @@ import Hash.HashableValueOps
 import *.{mix, mixLast, finalizeHash}
 
 /**
- * MurmurHash 3. Uses Scala implementation with tweaks.
+ * MurmurHash 3.
+ *
+ * https://en.wikipedia.org/wiki/MurmurHash
  */
-object MurmurHash3 extends Hash.Algorithm with Hash.Primitives {
+object MurmurHash3 extends Hash.Algorithm {
   private val joinSeed  = *.stringHash("join")
   private val unordSeed = *.stringHash("unord")
 
@@ -25,6 +27,7 @@ object MurmurHash3 extends Hash.Algorithm with Hash.Primitives {
     finalizeHash(h, n)
   }
 
+  implicit override val hashBoolean                  : Hash[Boolean]   = Hash.fn(a => if (a) 1231 else 1237)
   implicit override val hashString                   : Hash[String]    = Hash.fn(*.stringHash)
   override implicit def hashPair   [A: Hash, B: Hash]: Hash[(A, B)]    = Hash.fn(t => mixLast(t._1.hash, t._2.hash))
   implicit override def hashMap    [K: Hash, V: Hash]: Hash[Map[K, V]] = Hash.fn(unorderedHash(_, *.mapSeed))
@@ -34,6 +37,24 @@ object MurmurHash3 extends Hash.Algorithm with Hash.Primitives {
 
   override def hashUnordered[T[x] <: TraversableOnce[x], A: Hash]: Hash[T[A]] =
     Hash.fn(unorderedHash(_, unordSeed))
+
+  // ===================================================================================================================
+  // Copied from Clojure
+  // Changed to remove special case for 0.
+  // https://github.com/clojure/clojure/blob/6aaaa0a88da15fb814e12a8a4e9af864edfafd6f/src/jvm/clojure/lang/Murmur3.java
+
+  implicit override val hashInt: Hash[Int] = Hash.fn { a =>
+    val h = mix(0, a)
+    finalizeHash(h, 4)
+  }
+
+  implicit override val hashLong: Hash[Long] = Hash.fn { a =>
+    val low  = a.toInt
+    val high = (a >>> 32).toInt
+    var h = mix(0, low)
+        h = mix(h, high)
+    finalizeHash(h, 8)
+  }
 
   // ===================================================================================================================
   // Copied from Scala 2.11.7

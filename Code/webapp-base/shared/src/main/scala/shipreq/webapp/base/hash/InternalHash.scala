@@ -5,10 +5,13 @@ package shipreq.webapp.base.hash
  *
  * Useless really but here for playing around.
  */
-object InternalHash extends Hash.Algorithm with Hash.Primitives {
+object InternalHash extends Hash.Algorithm {
 
+  implicit override val hashBoolean                  : Hash[Boolean]   = Hash.internal
+  implicit override val hashInt                      : Hash[Int]       = Hash.internal
+  implicit override val hashLong                     : Hash[Long]      = Hash.internal
   implicit override val hashString                   : Hash[String]    = Hash.internal
-  override implicit def hashPair   [A: Hash, B: Hash]: Hash[(A, B)]    = Hash.internal
+  implicit override def hashPair   [A: Hash, B: Hash]: Hash[(A, B)]    = Hash.internal
   implicit override def hashMap    [K: Hash, V: Hash]: Hash[Map[K, V]] = Hash.internal
   implicit override def hashSet    [A: Hash]         : Hash[Set[A]]    = Hash.internal
   implicit override def hashList   [A: Hash]         : Hash[List[A]]   = Hash.internal
