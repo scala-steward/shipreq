@@ -8,14 +8,27 @@ abstract class GenericData[Data] {
   /**
    * An attribute of [[Data]].
    */
-  type Attr
+  trait AttrBase {
+    this: Attr =>
+    type A
+    val lens: monocle.Lens[Data, A]
+    def value(a: A): ValueFor[this.type]
+  }
+
+  type Attr <: AttrBase
 
   /**
    * A value and the attribute to which it applies.
    */
-  type Value
+  trait ValueBase {
+    this: Value =>
+    val attr: Attr
+    val value: attr.A
+  }
 
-  type ValueFor[A <: Attr]
+  type Value <: ValueBase
+
+  type ValueFor[A <: Attr] = Value {val attr: A}
 
   implicit def equality: UnivEq[Attr]
 
@@ -23,7 +36,7 @@ abstract class GenericData[Data] {
 
   type IMap = IM[Attr, Value]
 
-  def emptyIMap: IMap
+  def emptyIMap: IMap = IM.empty(_.attr)
 }
 
 // =====================================================================================================================
@@ -70,7 +83,7 @@ object GenericDataMacros {
             override def value(a: A) = $valueNameT(a)
           }
           final case class $valueNameY(value: $attrNameT.A) extends Value {
-            val attr: $attrNameT.type = $attrNameT
+            override val attr: $attrNameT.type = $attrNameT
           }
         """
 
@@ -86,41 +99,27 @@ object GenericDataMacros {
             object $objName extends $parent[$T] {
               import shipreq.base.util.{IMap => IM, NonEmptySet, UnivEq}
 
-              sealed trait Attr {
-                type A
-                val lens: monocle.Lens[$T, A]
-                def value(a: A): ValueFor[this.type]
+              sealed trait Attr extends AttrBase
+
+              sealed abstract class AttrA[_A](override final val lens: monocle.Lens[$T, _A]) extends Attr {
+                final override type A = _A
               }
 
-              sealed abstract class AttrA[_A](override val lens: monocle.Lens[$T, _A]) extends Attr {
-                final type A = _A
-              }
-
-              sealed trait Value {
-                val attr: Attr
-                val value: attr.A
-              }
-
-              override type ValueFor[A <: Attr] = Value {val attr: A}
+              sealed trait Value extends ValueBase
 
               ..${flattenBlocks(c)(defns)}
 
               override implicit def equality: UnivEq[Attr] = UnivEq.force
 
               override val attrs: NonEmptySet[Attr] = NonEmptySet(..$attrNames)
-
-              override type IMap = IM[Attr, Value]
-
-              override def emptyIMap: IMap = IM.empty(_.attr)
             }
            """
 
         case _ => fail(c, "You must annotate an object definition with an empty body.")
       }
 
-//    println()
-//    println(impl)
-//    println()
+//    val sep = ("="*120)+"\n"
+//    println(sep + impl + "\n" + sep)
 
     c.Expr[Any](impl)
   }
