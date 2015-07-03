@@ -6,7 +6,14 @@ import sbtide.Keys._
 object IdeSettings {
 
   private object excludes {
-    def common = List("project/target", "target")
+    val moduleTargets = List(
+      "project",
+      "webapp-base",
+      "webapp-base-test",
+      "webapp-server")
+      .map(_ + "/target")
+
+    def common = "target" :: moduleTargets
     def root   = common ++ List(".idea", ".idea_modules", ".settings", ".target", "log", ".bower")
     def webapp = List("vendor", "node_modules", "src/it/scala", "src/main/webapp/assets/vendor")
   }
