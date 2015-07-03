@@ -6,7 +6,7 @@ object Dependencies {
 
   object Scala {
     private val mm = MultiModule.java("org.scala-lang", version)
-    def version  = "2.11.6"
+    def version  = "2.11.7"
     val compiler = mm("scala-compiler")
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
