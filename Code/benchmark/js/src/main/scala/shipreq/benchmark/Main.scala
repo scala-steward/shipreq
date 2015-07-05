@@ -85,6 +85,7 @@ object Main extends JSApp {
 
   def main(): Unit = {
     val bms = Vector(
+      Serialisiation,
       Deserialisiation,
       Hashing)
     React.render(MainComp(bms), document.body)

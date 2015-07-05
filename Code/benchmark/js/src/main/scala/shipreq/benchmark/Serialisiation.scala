@@ -4,6 +4,21 @@ import shipreq.benchmark.lib.BenchmarkSuite
 import shipreq.webapp.base.protocol.DataCodecs
 import upickle._
 
+object Serialisiation extends BenchmarkSuite("Serialisiation") {
+  implicit val projectCodec = DataCodecs.project
+
+  def benchmarkWrite[A: ReadWriter](name: String, start: => A): Unit =
+    initBenchmark(s"write_$name", start)(Fns write _)
+
+  override def configureOptions =
+    _.minSamples = 50
+
+  benchmarkWrite("100", data.project_100)
+
+  benchmarkWrite("1000", data.project_1000)
+}
+
+
 object Deserialisiation extends BenchmarkSuite("Deserialisiation") {
   implicit val projectCodec = DataCodecs.project
 

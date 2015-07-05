@@ -2,6 +2,7 @@ package shipreq.benchmark
 
 import org.openjdk.jmh.annotations._
 import java.util.concurrent.TimeUnit
+import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.protocol.DataCodecs
 
 @State(Scope.Benchmark)
@@ -18,5 +19,18 @@ class Serialisation {
 
   @Benchmark
   def write_1000 = upickle.Fns write p1000
+}
 
+@State(Scope.Benchmark)
+class Deserialisation {
+
+  implicit val projectCodec = DataCodecs.project
+  val p100  = upickle.Fns write data.project_100
+  val p1000 = upickle.Fns write data.project_1000
+
+  @Benchmark
+  def read_100: Project = upickle.Fns read p100
+
+  @Benchmark
+  def read_1000: Project = upickle.Fns read p1000
 }
