@@ -5,7 +5,7 @@ import scalaz.\/
 import shipreq.base.util.TaggedTypes.TaggedType
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Atom, Text}
+import shipreq.webapp.base.text.AtomTC
 import Hash.HashableValueOps
 
 abstract class GenericDashHash {
@@ -106,47 +106,41 @@ final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDas
 
   implicit val hashReqDataTags: Hash[ReqData.Tags] = hashMultimap
 
-  object HashAtoms {
-    @inline implicit def hashTextNE[T <: Text.Generic]: Hash[T#NonEmptyText] = hashTextImplNE.narrow
-    @inline implicit def hashTextO[T <: Text.Generic] : Hash[T#OptionalText] = hashTextImplO.narrow
+  object HashAtoms extends AtomTC[Hash] {
+    import shipreq.webapp.base.text._
+    import Atom._
 
-    implicit      val hashAtomBlankLine   : Hash[Atom.NewLine        #BlankLine    ] = hashConstClass("BL")
-    implicit      val hashAtomLiteral     : Hash[Atom.Literal        #Literal      ] = "LI" @@ hashCaseClass
-    implicit      val hashAtomReqRef      : Hash[Atom.ReqRef         #ReqRef       ] = "RR" @@ hashCaseClass
-    implicit      val hashAtomCodeRef     : Hash[Atom.ReqRef         #CodeRef      ] = "CR" @@ hashCaseClass
-    implicit      val hashAtomWebAddress  : Hash[Atom.PlainTextMarkup#WebAddress   ] = "WA" @@ hashCaseClass
-    implicit      val hashAtomEmailAddress: Hash[Atom.PlainTextMarkup#EmailAddress ] = "EA" @@ hashCaseClass
-    implicit      val hashAtomMathTeX     : Hash[Atom.PlainTextMarkup#MathTeX      ] = "MX" @@ hashCaseClass
-    implicit      val hashAtomTagRef      : Hash[Atom.TagRef         #TagRef       ] = "TR" @@ hashCaseClass
-    implicit lazy val hashAtomIssue       : Hash[Atom.Issue          #Issue        ] = "IS" @@ hashCaseClass
-    implicit lazy val hashAtomUL          : Hash[Atom.ListMarkup     #UnorderedList] = "UL" @@ hashCaseClass
-
-    lazy val hashAtomImpl: Hash[Atom.AnyAtom] = {
-      import Atom._
-      Hash.fn {
-        case a: NewLine         # BlankLine     => a.hash
-        case a: Literal         # Literal       => a.hash
-        case a: ReqRef          # ReqRef        => a.hash
-        case a: ReqRef          # CodeRef       => a.hash
-        case a: Issue           # Issue         => a.hash
-        case a: PlainTextMarkup # WebAddress    => a.hash
-        case a: PlainTextMarkup # EmailAddress  => a.hash
-        case a: PlainTextMarkup # MathTeX       => a.hash
-        case a: TagRef          # TagRef        => a.hash
-        case a: ListMarkup      # UnorderedList => a.hash
-      }
+    override def lazily[A](a: => Hash[A]): Hash[A] = {
+      lazy val b = a
+      Hash.fn(a => b hash a)
     }
 
-    @inline implicit def hashAtom[T <: Atom.Base]: Hash[T#Atom] = hashAtomImpl.narrow
+    override def vec[A](implicit a: Hash[A]) =
+      hashVector(a)
 
-    lazy val hashTextImplNE = hashNEV(hashAtomImpl)
-    lazy val hashTextImplO  = hashVector(hashAtomImpl)
+    override def nev[A](as: Hash[Vector[A]])(implicit a: Hash[A]) =
+      hashNEV(a)
+
+    override def sum[T <: Atom.Base](t: T)(f: t.Atom => Hash[t.Atom], all: Vector[Hash[t.Atom]]): Hash[t.Atom] =
+      Hash.fn[t.Atom](a => f(a) hash a)
+
+    override def blankLine   [T <: NewLine        ](t: T): Hash[t.BlankLine   ] = hashConstClass("BL")
+    override def literal     [T <: Literal        ](t: T): Hash[t.Literal     ] = "LI" @@ hashCaseClass
+    override def webAddress  [T <: PlainTextMarkup](t: T): Hash[t.WebAddress  ] = "WA" @@ hashCaseClass
+    override def emailAddress[T <: PlainTextMarkup](t: T): Hash[t.EmailAddress] = "EA" @@ hashCaseClass
+    override def mathTeX     [T <: PlainTextMarkup](t: T): Hash[t.MathTeX     ] = "MX" @@ hashCaseClass
+    override def reqRef      [T <: ReqRef         ](t: T): Hash[t.ReqRef      ] = "RR" @@ hashCaseClass
+    override def codeRef     [T <: ReqRef         ](t: T): Hash[t.CodeRef     ] = "CR" @@ hashCaseClass
+    override def tagRef      [T <: TagRef         ](t: T): Hash[t.TagRef      ] = "TR" @@ hashCaseClass
+
+    override def issue[T <: Issue](t: T)(implicit h: Hash[Text.InlineIssueDesc.OptionalText]): Hash[t.Issue] =
+      "IS" @@ hashCaseClass
+
+    override def unorderedList[T <: ListMarkup](t: T)(implicit h: Hash[NonEmptyVector[t.ListItem]]): Hash[t.UnorderedList] =
+      "UL" @@ hashCaseClass
   }
 
-  private val hashTextImplNE = HashAtoms.hashTextImplNE
-  private val hashTextImplO  = HashAtoms.hashTextImplO
-  @inline implicit def hashTextNE[T <: Text.Generic]: Hash[T#NonEmptyText] = hashTextImplNE.narrow
-  @inline implicit def hashTextO [T <: Text.Generic]: Hash[T#OptionalText] = hashTextImplO.narrow
+  import HashAtoms.instances._
 
   implicit val hashReqDataText       : Hash[ReqData.Text]       = hashMap
   implicit val hashReqCodeNode       : Hash[ReqCode.Node]       = hashCaseClass

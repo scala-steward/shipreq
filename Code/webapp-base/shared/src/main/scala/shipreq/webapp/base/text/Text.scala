@@ -46,6 +46,7 @@ object Text {
   // Text instances
 
   // After changing the structure of a text type, also update the following:
+  // - AtomTC & TextTC
   // - Codecs
   // - Parsing rules in top-level text objects and Parsers
   // - RandomData

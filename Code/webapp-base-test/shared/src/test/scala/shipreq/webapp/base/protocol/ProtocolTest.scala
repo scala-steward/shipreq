@@ -91,6 +91,7 @@ object ProtocolTest extends TestSuite {
 
     'Codecs {
       import DataCodecs._
+      import TextCodecs.instances._
       implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
       def test[A: Reader : Writer : Equal](name: String, g: Gen[A]): Unit =

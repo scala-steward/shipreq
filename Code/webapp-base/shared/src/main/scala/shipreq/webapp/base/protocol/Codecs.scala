@@ -363,150 +363,78 @@ object DataCodecs {
 
   // -------------------------------------------------------------------------------------------------------------------
   /** Text Codecs */
-  private[this] object TC {
-    import shipreq.webapp.base.text.Atom._
+  import shipreq.webapp.base.text.AtomTC
+  object TextCodecs extends AtomTC[ReadWriter] {
+    import shipreq.webapp.base.text._
+    import Atom._
+
+    override def lazily[A](a: => ReadWriter[A]): ReadWriter[A] = {
+      lazy val b = a
+      ReadWriter(a => b write a, { case j => b read j })
+    }
+
+    override def vec[A](implicit a: ReadWriter[A]) = mergeRW
+
+    override def nev[A](as: ReadWriter[Vector[A]])(implicit a: ReadWriter[A]) = mergeRW
 
     private[this] final val BLANKLINE = 0
+    private[this] final val WEBADD    = "/"
+    private[this] final val EMAILADD  = "@"
+    private[this] final val MATHTEX   = "="
+    private[this] final val UL        = "*"
+    private[this] final val ISSUE     = "i"
+    private[this] final val REQREF    = "r"
+    private[this] final val CODEREF   = "c"
+    private[this] final val TAGREF    = "t"
 
-    private[this] final val WEBADD   = "/"
-    private[this] final val EMAILADD = "@"
-    private[this] final val MATHTEX  = "="
-    private[this] final val UL       = "*"
-    private[this] final val ISSUE    = "i"
-    private[this] final val REQREF   = "r"
-    private[this] final val CODEREF  = "c"
-    private[this] final val TAGREF   = "t"
-
-    lazy val writeAny: Writer[AnyAtom] =
-      Writer[AnyAtom]({
-        case a: Literal         # Literal       => Js.Str(a.value)
-        case a: NewLine         # BlankLine     => Js.Num(BLANKLINE)
-        case a: ReqRef          # ReqRef        => strkeyW (REQREF,   a.value)
-        case a: ReqRef          # CodeRef       => strkeyW (CODEREF,  a.value)
-        case a: Issue           # Issue         => strkeyW2(ISSUE,    a.typ, a.desc)
-        case a: PlainTextMarkup # WebAddress    => strkeyW (WEBADD,   a.value)
-        case a: PlainTextMarkup # EmailAddress  => strkeyW (EMAILADD, a.value)
-        case a: PlainTextMarkup # MathTeX       => strkeyW (MATHTEX,  a.value)
-        case a: ListMarkup      # UnorderedList => strkeyW (UL,       a.items)(writeListItemNEV)
-        case a: TagRef          # TagRef        => strkeyW (TAGREF,   a.value)
-      })
-
-    lazy val writeListItem: Writer[ListMarkup#ListItem] = {
-      implicit val a: Writer[ListMarkup#Atom] = writeAny.narrow
-      implicitly
+    override def sum[T <: Atom.Base](t: T)(f: t.Atom => ReadWriter[t.Atom], all: Vector[ReadWriter[t.Atom]]): ReadWriter[t.Atom] = {
+      val rs = all.map(rw => rw.read.lift).toStream
+      ReadWriter[t.Atom](
+        a => f(a).write(a),
+        { case j => rs.map(_ apply j).filter(_.isDefined).head.get })
     }
 
-    lazy val writeListItemNEV: Writer[NonEmptyVector[ListMarkup#ListItem]] = {
-      implicit val li = writeListItem
-      implicitly
-    }
+    override def blankLine[T <: NewLine](t: T): ReadWriter[t.BlankLine] = ReadWriter[t.BlankLine](
+      a => Js.Num(BLANKLINE),
+    { case Js.Num(n) if n.toInt == 0 => t.blankLine })
 
-    // Partial Reader
-    type PR[A] = PartialFunction[Js.Value, A]
+    override def literal[T <: Literal](t: T): ReadWriter[t.Literal] = ReadWriter[t.Literal](
+    a => Js.Str(a.value),
+    { case Js.Str(s) => t.Literal(s) })
 
-    def readLiteral(t: Literal): PR[t.Literal] =
-      { case Js.Str(s) => t.Literal(s) }
+    override def webAddress[T <: PlainTextMarkup](t: T): ReadWriter[t.WebAddress] = ReadWriter[t.WebAddress](
+      a => strkeyW(WEBADD, a.value),
+      { case Js.Arr(Js.Str(WEBADD), v) => t.WebAddress(readJs[String](v)) })
 
-    def readBlankLine(t: NewLine): PR[t.BlankLine] =
-      { case Js.Num(n) if n.toInt == 0 => t.blankLine }
+    override def emailAddress[T <: PlainTextMarkup](t: T): ReadWriter[t.EmailAddress] = ReadWriter[t.EmailAddress](
+      a => strkeyW(EMAILADD, a.value),
+      { case Js.Arr(Js.Str(EMAILADD), v) => t.EmailAddress(readJs[String](v)) })
 
-    def readPlainTextMarkup(t: PlainTextMarkup): PR[t.Atom] = {
-      case Js.Arr(Js.Str(WEBADD),   v) => t.WebAddress  (readJs[String](v))
-      case Js.Arr(Js.Str(EMAILADD), v) => t.EmailAddress(readJs[String](v))
-      case Js.Arr(Js.Str(MATHTEX),  v) => t.MathTeX     (readJs[String](v))
-    }
+    override def mathTeX[T <: PlainTextMarkup](t: T): ReadWriter[t.MathTeX] = ReadWriter[t.MathTeX](
+      a => strkeyW(MATHTEX, a.value),
+      { case Js.Arr(Js.Str(MATHTEX), v) => t.MathTeX(readJs[String](v)) })
 
-    def readListMarkup(t: ListMarkup)(implicit ra: Name[Reader[t.Atom]]): PR[t.Atom] = {
-      lazy val liNev: Reader[NonEmptyVector[t.ListItem]] = nonEmptyVectorR(readerListItem(t)(ra.value));
-      { case Js.Arr(Js.Str(UL), v) => t.UnorderedList(readJs(v)(liNev)) }
-    }
+    override def reqRef[T <: ReqRef](t: T): ReadWriter[t.ReqRef] = ReadWriter[t.ReqRef](
+      a => strkeyW(REQREF, a.value),
+      { case Js.Arr(Js.Str(REQREF), v) => t.ReqRef(readJs[ReqId](v)) })
 
-    def readerListItem(t: ListMarkup)(implicit r: Reader[t.Atom]): Reader[t.ListItem] = implicitly
+    override def codeRef[T <: ReqRef](t: T): ReadWriter[t.CodeRef] = ReadWriter[t.CodeRef](
+      a => strkeyW(CODEREF, a.value),
+      { case Js.Arr(Js.Str(CODEREF), v) => t.CodeRef(readJs[ReqCodeId](v)) })
 
-    def readSingleLine(t: SingleLine): PR[t.Atom] =
-      readLiteral(t) orElse readPlainTextMarkup(t)
+    override def tagRef[T <: TagRef](t: T): ReadWriter[t.TagRef] = ReadWriter[t.TagRef](
+      a => strkeyW(TAGREF, a.value),
+      { case Js.Arr(Js.Str(TAGREF), v) => t.TagRef(readJs[ApplicableTagId](v)) })
 
-    def readMultiLine(t: MultiLine)(implicit ra: Name[Reader[t.Atom]]): PR[t.Atom] =
-      readSingleLine(t) orElse readBlankLine(t) orElse readListMarkup(t)
+    override def issue[T <: Issue](t: T)(implicit s: ReadWriter[Text.InlineIssueDesc.OptionalText]): ReadWriter[t.Issue] = ReadWriter[t.Issue](
+      a => strkeyW2(ISSUE, a.typ, a.desc),
+      { case Js.Arr(Js.Str(ISSUE), a, b) => t.Issue(readJs[CustomIssueTypeId](a), readJs[Text.InlineIssueDesc.OptionalText](b)) })
 
-    def readIssue(t: Issue): PR[t.Issue] =
-      { case Js.Arr(Js.Str(ISSUE), a, b) => t.Issue(readJs[CustomIssueTypeId](a), readJs[Text.InlineIssueDesc.OptionalText](b)) }
-
-    def readReqRef(t: ReqRef): PR[t.Atom] = {
-      case Js.Arr(Js.Str(REQREF),  v) => t.ReqRef (readJs[ReqId]    (v))
-      case Js.Arr(Js.Str(CODEREF), v) => t.CodeRef(readJs[ReqCodeId](v))
-    }
-
-    def readTagRef(t: TagRef): PR[t.TagRef] =
-      { case Js.Arr(Js.Str(TAGREF), v) => t.TagRef(readJs[ApplicableTagId](v)) }
-
-    def readReqTitle(t: ReqTitle): PR[t.Atom] =
-      readSingleLine(t) orElse readReqRef(t) orElse readTagRef(t) orElse readIssue(t)
-
-
-//    def stuff(t: Generic)(implicit
-//              lit:    Literal         = null,
-//              nl:     NewLine         = null,
-//              sl:     SingleLine      = null,
-//              ml:     MultiLine       = null,
-//              ptm:    PlainTextMarkup = null,
-//              reqRef: ReqRef          = null,
-//              tagRef: TagRef          = null,
-//              issue:  Issue           = null): ReadWriter[t.Atom] = {
-//
-//      lazy val rw: Name[ReadWriter[t.Atom]] =
-//        Need(ReadWriter(writeAny.write, pr))
-//
-//      @inline def castReader(a: Generic) = rw.asInstanceOf[Name[Reader[a.Atom]]]
-//
-//      def pr: PR[t.Atom] = {
-//        var prs: List[PR[t.Atom]] = Nil
-//
-//        if (ml     ne null) prs ::= readMultiLine      (ml)(castReader(ml)) else
-//        if (sl     ne null) prs ::= readSingleLine     (sl)
-//        if (issue  ne null) prs ::= readIssue          (issue)
-//        if (tagRef ne null) prs ::= readTagRef         (tagRef)
-//        if (ptm    ne null) prs ::= readPlainTextMarkup(ptm)
-//        if (reqRef ne null) prs ::= readReqRef         (reqRef)
-//        if (nl     ne null) prs ::= readNewLine        (nl)
-//        if (lit    ne null) prs ::= readLiteral        (lit)
-//
-//        println("PRs = "+(prs.length))
-//        prs.reduce(_ orElse _)
-//      }
-//
-//      rw.value
-//    }
-
-    def apply(t: Text.Generic)(pr: (t.type, Name[Reader[t.Atom]]) => PR[t.Atom]): (ReadWriter[t.OptionalText], ReadWriter[t.NonEmptyText]) = {
-      type A = t.Atom
-      implicit lazy val a: ReadWriter[A] = ReadWriter(writeAny.write, pr(t, Name(a)))
-      val otxt  = mergeRW[Vector[A]]
-      val netxt = mergeRW[NonEmptyVector[A]]
-      (otxt, netxt)
-    }
+    override def unorderedList[T <: ListMarkup](t: T)(implicit s: ReadWriter[NonEmptyVector[t.ListItem]]): ReadWriter[t.UnorderedList] = ReadWriter[t.UnorderedList](
+      a => strkeyW(UL, a.items),
+      { case Js.Arr(Js.Str(UL), v) => t.UnorderedList(readJs(v)(s)) })
   }
-
-  // Specific text types
-
-  implicit final val (reqCodeGroupDesc, _) = TC(Text.ReqCodeGroupTitle)((t, _) =>
-    TC.readSingleLine(t) orElse
-    TC.readIssue     (t) orElse
-    TC.readReqRef    (t) )
-
-  implicit final val (genericReqDesc, _) = TC(Text.GenericReqTitle)((t, _) =>
-    TC.readReqTitle(t))
-
-  // lazy because TC.readIssue calls it
-  implicit final lazy val (inlineIssueDesc, inlineIssueDescNE) = TC(Text.InlineIssueDesc)((t, _) =>
-    TC.readSingleLine(t) orElse
-    TC.readReqRef    (t) )
-
-  implicit final val (customTextFieldTextO, customTextFieldText) = TC(Text.CustomTextField)((t, a) =>
-    TC.readMultiLine(t)(a) orElse
-    TC.readReqRef   (t)    orElse
-    TC.readIssue    (t)    orElse
-    TC.readTagRef   (t)    )
+  import TextCodecs.instances._
 
   // -------------------------------------------------------------------------------------------------------------------
   // Requirements
@@ -571,6 +499,7 @@ object ProtocolDataCodecs {
   import CodecBase._
   import GenericCodecs._
   import DataCodecs._
+  import TextCodecs.instances._
 
   implicit final val deletionAction = enum(DeletionAction.values)
 
@@ -679,8 +608,6 @@ object ProtocolDataCodecs {
       case 8 => readJs(v)(cuSetCustomTextField  )
     }
   })
-
-
 }
 
 // =====================================================================================================================
