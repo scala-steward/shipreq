@@ -187,16 +187,23 @@ object MacroUtils {
     }
   }
 
-  def selectFQN(c: Context)(s: String): c.universe.RefTree = {
+  def selectFQN(c: Context)(s: String, lastIsType: Boolean): c.universe.RefTree = {
     import c.universe._
     val terms = s.split('.').map(TermName(_): Name)
     val l = terms.length - 1
-    terms(l) = terms(l).toTypeName
+    // Bad hack
+    if (lastIsType)
+      terms(l) = terms(l).toTypeName
     val h = Ident(terms.head): RefTree
     if (l == 0)
       h
     else
       terms.tail.foldLeft(h)(Select(_, _))
+  }
+
+  def toSelectFQN(c: Context)(t: c.universe.TypeSymbol): c.universe.RefTree = {
+    // Do this properly later
+    selectFQN(c)(t.fullName, !t.isModuleClass)
   }
 }
 
