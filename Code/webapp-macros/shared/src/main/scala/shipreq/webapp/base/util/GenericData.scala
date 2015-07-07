@@ -7,19 +7,22 @@ abstract class GenericData {
   /**
    * A data attribute.
    */
-  trait AttrBase {
+  trait AttrBase extends Product with Serializable {
     this: Attr =>
-    type A
-    def value(a: A): ValueFor[this.type]
+    type Data
+    def :=(d: Data): ValueFor[this.type]
+
+    final def apply(vs: Values): Option[ValueFor[this.type]] =
+      vs.get(this).asInstanceOf[Option[ValueFor[this.type]]]
   }
 
   /**
    * A value and the attribute to which it applies.
    */
-  trait ValueBase {
+  trait ValueBase extends Product with Serializable {
     this: Value =>
     val attr: Attr
-    val value: attr.A
+    val value: attr.Data
   }
 
   type Attr  <: AttrBase
@@ -37,6 +40,12 @@ abstract class GenericData {
   def emptyValues: Values =
     IMap.empty(_.attr)
 
+  def values(vs: Value*): Values =
+    emptyValues ++ vs
+
+  def nev(v1: Value, vn: Value*): NonEmptyValues =
+    NonEmpty.force(emptyValues + v1 ++ vn)
+
   protected implicit class FieldDeclarationSyntax(val name: Symbol) {
     def apply[T] = ???
   }
@@ -47,7 +56,7 @@ import scala.annotation.StaticAnnotation
 import scala.annotation.compileTimeOnly
 
 @compileTimeOnly("Enable macro paradise to expand macro annotations")
-class GenericDataAttrs extends StaticAnnotation {
+class CreateGenericData extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro GenericDataMacros.objectImpl
 }
 
@@ -70,17 +79,17 @@ object GenericDataMacros {
           val prefix     = n.value.value.toString
           val attrName   = prefix
           val attrNameT  = TermName(attrName)
-          val valueName  = prefix + "Value"
+          val valueName  = "ValueFor" + prefix
           val valueNameT = TermName(valueName)
           val valueNameY = TypeName(valueName)
 
           val defn =
             q"""
               case object $attrNameT extends Attr {
-                override type A = $attrType
-                override def value(a: A) = $valueNameT(a)
+                override type Data = $attrType
+                override def :=(data: Data) = $valueNameT(data)
               }
-              final case class $valueNameY(value: $attrNameT.A) extends Value {
+              final case class $valueNameY(value: $attrNameT.Data) extends Value {
                 override val attr: $attrNameT.type = $attrNameT
               }
             """

@@ -13,6 +13,8 @@ object NonEmpty {
 
   @inline implicit def nonEmptyUnivEq[A: UnivEq]: UnivEq[NonEmpty[A]] = UnivEq.force
 
+  @inline def force[A](a: A): NonEmpty[A] = NonEmpty(a)
+
   def tryO[I, O](i: I)(implicit proof: Proof[I, O]): Option[NonEmpty[O]] =
     proof.test(i).map(NonEmpty(_))
 
