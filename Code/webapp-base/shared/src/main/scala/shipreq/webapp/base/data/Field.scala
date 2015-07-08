@@ -301,7 +301,7 @@ object CustomField {
 
 @Lenses
 case class FieldSet(customFields: IMap[CustomFieldId, CustomField],
-                    order       : Vector[FieldId]) {
+                    order       : Vector[FieldId]) { // TODO This should be NonEmptyVector
 
   lazy val fields: Must[Vector[Field]] =
     Traverse[Vector].traverseImpl(order) {
