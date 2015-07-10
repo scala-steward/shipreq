@@ -123,6 +123,21 @@ object TagTree {
       "  ")
   }
 
+  implicit object TagTreeMMTree extends MMTree[TagId, TagTree] {
+
+    override def modChildren(id: TagId, f: Vector[TagId] => Vector[TagId]): TagTree => TagTree =
+      _.mod(id, _ modChildren f)
+
+    override def removeChild(parent: TagId, child: TagId): TagTree => TagTree =
+      _.mod(parent, _ removeChild child)
+
+    override def keySet(t: TagTree): Set[TagId] =
+      t.keySet
+
+    override val cycleDetector =
+      Tag.CycleDetectors.tagTree
+  }
+
   object FlatRow {
     sealed trait Status
     object Status {
@@ -146,7 +161,7 @@ object TagTree {
   import FlatRow.{FilterPolicy, Status}
 
   final case class FlatRow(tag: Tag, depth: Int, parentPath: Vector[TagId], status: Status) {
-    @inline final def id: TagId = tag.id
+    @inline def id: TagId = tag.id
 
     def key: String =
       if (depth == 0)
@@ -220,10 +235,12 @@ object TagTree {
   }
 }
 
-final case class TagInTree(tag: Tag, children: Vector[TagId]) {
+final case class TagInTree(tag: Tag, children: TagInTree.Children) {
+  import TagInTree.Children
+
   @inline def id: TagId = tag.id
 
-  def modChildren(f: Vector[TagId] => Vector[TagId]): TagInTree = {
+  def modChildren(f: Children => Children): TagInTree = {
     val c = f(children)
     if (c eq children) this else TagInTree(tag, c)
   }
@@ -243,6 +260,8 @@ final case class TagInTree(tag: Tag, children: Vector[TagId]) {
 }
 
 object TagInTree {
+  type Children = MMTree.Children[TagId]
+
   implicit val equality: UnivEq[TagInTree] = deriveUnivEq
 
   val filterLive: TagInTree => Boolean =

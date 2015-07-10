@@ -7,16 +7,20 @@ import utest._
 import japgolly.nyaya._
 import japgolly.nyaya.test._
 import japgolly.nyaya.test.PropTest._
+import shipreq.base.util.MMTree
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.{SampleProject => S, TagId_T}
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
+import DataImplicits._
 import TagProtocol._
 import TagTree.FlatRow
 import FlatRow._
 import FilterPolicy._
+import MMTree.Relations
+import Relations.derive
 
 object TagProtocolTest extends TestSuite {
 
@@ -24,14 +28,14 @@ object TagProtocolTest extends TestSuite {
     val E = EvalOver(this)
     val tt = tt0.add(TagInTree(t, Vector.empty))
     val id = tt.keys.head
-    import PovRelations._
+    import MMTree.ApplyRelations._
 
     def prop =
       DataProp.tags.tagTree(tt).liftL ==> (povRelationProps ∧ flatTreeProps)
 
     def povRelationProps = (
-        E.equal("deriveRels(applyRels(r)) = r", derive(id, trustedApply1(povRels, id, tt)), povRels)
-      ∧ E.equal("applyRels(deriveRels(t) = t",  trustedApply1(derive(id, tt), id, tt)     , tt)
+        E.equal("deriveRels(applyRels(r)) = r", derive(id, trustedApply1(tt, id)(povRels)), povRels)
+      ∧ E.equal("applyRels(deriveRels(t) = t",  trustedApply1(tt, id)(derive(id, tt))     , tt)
       )
 
     def flatTreeProps = {
@@ -96,22 +100,22 @@ object TagProtocolTest extends TestSuite {
     'PovRelations {
       'derive {
         // Multiple prepend parents, no children
-        'v10 - assertEq(PovRelations.derive(v10, S.tagTree), PovRelations(
+        'v10 - assertEq(derive(v10, S.tagTree), Relations[TagId](
           parents = Map(v1x -> v11, 27.TG -> v11),
           children = Vector.empty))
 
         // Append parent, no children
-        'v13 - assertEq(PovRelations.derive(v13, S.tagTree), PovRelations(
+        'v13 - assertEq(derive(v13, S.tagTree), Relations[TagId](
           parents = Map(v1x -> None),
           children = Vector.empty))
 
         // No parents, children
-        'status - assertEq(PovRelations.derive(10.TG, S.tagTree), PovRelations(
+        'status - assertEq(derive(10.TG, S.tagTree), Relations[TagId](
           parents = Map.empty,
           children = Vector(wip, defer, uat, uat2, uat3, prod)))
 
         // Parents and children
-        'released - assertEq(PovRelations.derive(27.TG, S.tagTree), PovRelations(
+        'released - assertEq(derive(27.TG, S.tagTree), Relations[TagId](
           parents = Map(20.TG -> v1x),
           children = Vector(v09, v10, v11)))
       }

@@ -1238,7 +1238,7 @@ object RandomData {
       } yield {
         val children = (c - t.id -- p).toVector
         val parents  = (p - t.id -- c).toStream.map(_ -> none[TagId]).toMap
-        TagProtocol.PovTag(t, TagProtocol.PovRelations(parents, children))
+        TagProtocol.PovTag(t, MMTree.Relations(parents, children))
       }
   }
 

@@ -17,7 +17,7 @@ import scalaz.syntax.bind.ToBindOps
 import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{MMTree, UnivEq}
 import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.base.data.{TagId => Id, _}, DataImplicits._
 import shipreq.webapp.base.delta.Partition
@@ -117,7 +117,7 @@ private[tags] object MainTable {
       detailRow = None)
   }
 
-  implicit object TreeStateMod extends TagProtocol.TreeMod[TreeState] {
+  implicit object TreeStateMod extends MMTree[Id, TreeState] {
     override def modChildren(id: Id, f: Vector[Id] => Vector[Id]): TreeState => TreeState =
       _.mod(id, f)
 
@@ -143,7 +143,7 @@ private[tags] object MainTable {
         case t: TagGroup      => tg_storesS.s.set(i, t)
         case t: ApplicableTag => at_storesS.s.set(i, t)
       }
-      val f2 = f1 compose State.tree.modify(PovRelations.trustedApply1(d.rels, i, _))
+      val f2 = f1 compose State.tree.modify(MMTree.ApplyRelations.trustedApply1(_, i)(d.rels))
       val f3 = f2 compose maybeCloseDetailPane(p => (d.tag.live ≟ Dead) && (p.id ≟ d.tag.id))
       f3(s)
     })
@@ -419,7 +419,7 @@ private[tags] object MainTable {
 
     def treeUpdateIO(s: S, updateIO: UpdateIO, subj: Tag, g: PovRelations => PovRelations): IO[Unit] =
       IO {
-        val r = PovRelations.derive(subj.id, s.tree.m)
+        val r = MMTree.Relations.derive(subj.id, s.tree.m)
         val u = \&/.That(g(r))
         val f = FailureIO.nop
         updateIO(subj, u, SuccessIO.nop, f)
@@ -442,10 +442,10 @@ private[tags] object MainTable {
     def addRelFilter(s: S, subj: Tag, mod: Id => PovRelations => PovRelations,
                      relAlreadyExists: (PovRelations, Id) => Boolean): Tag => Boolean =
       t => Tag.filterLive(t) && {
-        val r = PovRelations.derive(subj.id, s.tree.m)
+        val r = MMTree.Relations.derive(subj.id, s.tree.m)
         !relAlreadyExists(r, t.id) && {
           val r2 = mod(t.id)(r)
-          val x = PovRelations.safeApply1(r2, subj.id, s.tagTree)
+          val x = MMTree.ApplyRelations.safeApply1(s.tagTree, subj.id)(r2)
           // if (x.isLeft) println(s"Preventing: $subj → $t")
           x.isRight
         }

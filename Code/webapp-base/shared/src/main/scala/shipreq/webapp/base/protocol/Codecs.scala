@@ -1,22 +1,29 @@
 package shipreq.webapp.base.protocol
 
 import japgolly.nyaya.util.{MultiValues, Multimap}
+import scala.collection.generic.CanBuildFrom
 import scalaz.{OneAnd, \&/, \/, -\/, \/-, Name, Need}
 import scalaz.Isomorphism.<=>
 
 import upickle._
 import upickle.Fns._
 import upickle.TupleCodecs._
-import upickle.StdlibCodecs.{SeqishR, SeqishW}
-import upickle.StdlibCodecs.{MapR, MapW}
-import CodecMacros.caseClass
+import CodecMacros.{caseClass, _caseClass}
 
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.text.Text
 
 // =====================================================================================================================
-private[protocol] object CodecBase {
+private[protocol] trait CodecBaseLowPri2 {
+  implicit def SeqishR[T: Reader, V[_]](implicit cbf: CanBuildFrom[Nothing, T, V[T]]) = upickle.StdlibCodecs.SeqishR[T, V]
+  implicit def SeqishW[T: Writer, V[_] <: Iterable[_]]                                = upickle.StdlibCodecs.SeqishW[T, V]
+}
+private[protocol] trait CodecBaseLowPri extends CodecBaseLowPri2 {
+  implicit def MapW[K: Writer, V: Writer] = upickle.StdlibCodecs.MapW[K, V]
+  implicit def MapR[K: Reader, V: Reader] = upickle.StdlibCodecs.MapR[K, V]
+}
+private[protocol] object CodecBase extends CodecBaseLowPri {
 
   def tagS[T <: TaggedString](C: String => T) =
     ReadWriter[T](i => Js.Str(i.value), { case Js.Str(i) => C(i)})
@@ -556,7 +563,7 @@ object ProtocolDataCodecs {
   // Tag
   import shipreq.webapp.base.protocol.{TagProtocol => TP}
 
-  implicit final val tagPovRelations     = caseClass[TP.PovRelations]
+  implicit final val tagPovRelations     = caseClass[MMTree.Relations[TagId]]
   implicit final val tagPov              = caseClass[TP.PovTag]
   implicit final val tagGroupValues      = caseClass[TP.TagGroupValues]
   implicit final val applicableTagValues = caseClass[TP.ApplicableTagValues]

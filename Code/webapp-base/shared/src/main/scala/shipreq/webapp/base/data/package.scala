@@ -1,7 +1,7 @@
 package shipreq.webapp.base
 
 import scalaz.{Equal, \/}
-import shipreq.base.util.{UnivEq, IMap}
+import shipreq.base.util.{MMTree, UnivEq, IMap}
 import shipreq.webapp.base.util.TypeclassDerivation._
 
 package object data {
@@ -45,8 +45,9 @@ package object data {
   }
 
   object DataImplicits extends DataObjImplicits {
+    implicit val tagTreeMMTree: MMTree[TagId, TagTree] = TagTree.TagTreeMMTree
 
-    implicit final class DataAnyExt[D](val d: D) extends AnyVal {
+    implicit final class DataAnyExt[D](private val d: D) extends AnyVal {
       @inline def id[I](implicit i: DataIdAux[D, I]): I = i.id(d)
       @inline def id_(implicit i: DataId[D]): i.I = i.id(d)
     }

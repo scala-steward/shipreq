@@ -1,100 +1,18 @@
 package shipreq.webapp.base.protocol
 
-import japgolly.nyaya.{CycleFree, CycleDetector}
 import monocle.macros.GenLens
-import scala.collection.GenTraversable
-import scalaz.{\/, Equal}
-import scalaz.std.AllInstances._
-import shipreq.base.util.{UnivEq, Util}
+import shipreq.base.util.{MMTree, UnivEq}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.{TagId => Id, _}
-import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.delta.{Partition, PPI}
 import shipreq.webapp.base.util.TypeclassDerivation._
+import DataImplicits._
 
 object TagProtocol {
 
   @inline implicit final def tcTagPov = PovTag.IdAccess
 
-  trait TreeMod[T] {
-    def modChildren(id: Id, f: Vector[Id] => Vector[Id]): T => T
-    def removeChild(parent: Id, child: Id): T => T
-    def keySet(t: T): Set[Id]
-    def cycleDetector: CycleDetector[T, Id]
-  }
-
-  implicit object TagTreeMod extends TreeMod[TagTree] {
-    override def modChildren(id: Id, f: Vector[Id] => Vector[Id]): TagTree => TagTree =
-      _.mod(id, _ modChildren f)
-
-    override def removeChild(parent: Id, child: Id): TagTree => TagTree =
-      _.mod(parent, _ removeChild child)
-
-    override def keySet(t: TagTree): Set[Id] =
-      t.keySet
-
-    override val cycleDetector =
-      Tag.CycleDetectors.tagTree
-  }
-
-  /**
-   * A tag's relations from its own point of view.
-   *
-   * @param parents Each key is a parent of the subject tag.
-   *                Each value is the sibling before which the subject tag should be inserted. (None ⇒ append.)
-   * @param children An ordered list of the subject tag's children.
-   */
-  final case class PovRelations(parents: Map[Id, Option[Id]], children: Vector[Id]) {
-
-    // For testing
-    def allReferencedIds: Set[Id] =
-      parents.keySet ++
-      parents.values.filter(_.isDefined).map(_.get).toSet ++
-      children.toSet
-  }
-
-  object PovRelations {
-    implicit val equality: UnivEq[PovRelations] = { import AutoDerive._; deriveUnivEq }
-
-    def safeApply1[T](rels: PovRelations, id: Id, tt: T)(implicit T: TreeMod[T]): (Id, Id) \/ CycleFree[T] =
-      T.cycleDetector cycleFree trustedApply1(rels, id, tt)
-
-    def safeApplyN[T](rels: GenTraversable[(Id, PovRelations)], tt: T)(implicit T: TreeMod[T]): (Id, Id) \/ CycleFree[T] =
-      T.cycleDetector cycleFree trustedApplyN(rels, tt)
-
-    def trustedApplyN[T](rels: GenTraversable[(Id, PovRelations)], tt: T)(implicit T: TreeMod[T]): T =
-      rels.foldLeft(tt) { case (t, (id, r)) => trustedApply1(r, id, t) }
-
-    def trustedApply1[T](rels: PovRelations, id: Id, tt: T)(implicit T: TreeMod[T]): T = {
-      var t = tt
-
-      // Add children
-      t = T.modChildren(id, _ => rels.children)(t)
-
-      // Add parents
-      for ((parent, pos) <- rels.parents)
-        t = T.modChildren(parent, Util.reposition(_, id, pos))(t)
-
-      // Remove old parents
-      val oldParents = T.keySet(t) - id -- rels.parents.keySet
-      for (p <- oldParents)
-        t = T.removeChild(p, id)(t)
-
-      t
-    }
-
-    def derive(id: Id, tree: Map[Id, Vector[Id]]): PovRelations = {
-      val children = tree.getOrElse(id, Vector.empty)
-
-      val parents = tree
-        .filter(_._2 contains id)
-        .foldLeft(UnivEq.emptyMap[Id, Option[Id]]) {
-          case (m, (parent, sibs)) => m + (parent -> Util.position(sibs, id))
-        }
-
-      PovRelations(parents, children)
-    }
-  }
+  type PovRelations = MMTree.Relations[Id]
 
   /** A tag and its world from its own point of view. */
   final case class PovTag(tag: Tag, rels: PovRelations) {
@@ -132,7 +50,7 @@ object TagProtocol {
     // Insert/update
     // (Separate phases ∵ all ids must exist before updating structure)
     t = t.addAll(delta.update.map(u => TagInTree(u.tag, Vector.empty)): _*)
-    t = PovRelations.trustedApplyN(delta.update.map(_.tmap2(_.id, _.rels)), t)
+    t = MMTree.ApplyRelations.trustedApplyN(t, delta.update.map(_.tmap2(_.id, _.rels)))
 
     t
   }

@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 import scalaz.effect.IO
 import scalaz.std.AllInstances._
 import utest._
+import shipreq.base.util.MMTree
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaPR, RemoteDelta}
@@ -18,6 +19,8 @@ import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test._
+import DataImplicits._
+import MMTree.{Relations, ApplyRelations}
 import TestUtil._
 
 object CfgTagsTest extends TestSuite {
@@ -54,7 +57,7 @@ object CfgTagsTest extends TestSuite {
       val rev = RevRange single clientData.project.config.tags.rev
       val upd = PovTag(
         ApplicableTag(22, "Blah", None, "blah", Live),
-        PovRelations(Map(1.TG -> priMed.some), Vector(10.TG)))
+        Relations(Map(1.TG -> priMed.some), Vector(10.TG)))
       val d = RemoteDeltaPR(Partition.Tags, rev)(Set.empty, upd :: Nil)
       clientData.update(RemoteDelta.empty + d).unsafePerformIO()
 
@@ -93,8 +96,8 @@ object CfgTagsTest extends TestSuite {
         assertEq(h._1, subj)
         val actualRels = h._2.onlyThat.get
         assertEq("RFC", actualRels, expectedRels)
-        val tt = PovRelations.trustedApply1(actualRels, h._1.id, S.project.config.tags.data)
-        assertEq("Final result", PovRelations.derive(subj.id, tt), expectedRels)
+        val tt = ApplyRelations.trustedApply1(S.project.config.tags.data, h._1.id)(actualRels)
+        assertEq("Final result", Relations.derive(subj.id, tt), expectedRels)
       }
 
       'existingParentRels {
@@ -102,7 +105,7 @@ object CfgTagsTest extends TestSuite {
         val rels = D.existingParentRels(s, t.u, subj)
         assertEq(rels.map(_.name).toList.sorted, List("Released", "v1.x"))
         // Remove parent 'Released' from 'v1.1'
-        testUnlink(subj, rels, "Released")(PovRelations(Map(v1x -> v12), Vector.empty))
+        testUnlink(subj, rels, "Released")(Relations(Map(v1x -> v12), Vector.empty))
       }
 
       'existingChildRels {
@@ -110,7 +113,7 @@ object CfgTagsTest extends TestSuite {
         val rels = D.existingChildrenRels(s, t.u, subj)
         assertEq(rels.map(_.name).toList, List("v1.0", "v1.1"))
         // Remove child 'v1.0' from 'Released'
-        testUnlink(subj, rels, "v1.0")(PovRelations(Map(20.TG -> v1x), Vector(v09, v11)))
+        testUnlink(subj, rels, "v1.0")(Relations(Map(20.TG -> v1x), Vector(v09, v11)))
       }
     }
   }

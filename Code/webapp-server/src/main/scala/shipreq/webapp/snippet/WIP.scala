@@ -296,7 +296,7 @@ class WIP {
     def δ(p: Project): Map[Id, PovTag] = {
       val tt = p.config.tags.data
       val tree = tt.mapValues(_.children)
-      tt.mapValues(v => PovTag(v.tag, PovRelations.derive(v.tag.id, tree)))
+      tt.mapValues(v => PovTag(v.tag, MMTree.Relations.derive(v.tag.id, tree)))
     }
 
     // TODO Another copy/paste/search/replace
@@ -332,7 +332,7 @@ class WIP {
           val newTag = build(i)(v)
           tt.modOrPut(i, _.copy(tag = newTag), TagInTree(newTag, Vector.empty))
         }
-        or.fold(res)(PovRelations.trustedApply1(_, i, res)) // TODO Possible cycle error
+        or.fold(res)(MMTree.ApplyRelations.trustedApply1(res, i)) // TODO Possible cycle error
       })
 
     def nextId: TagId = TagGroupId(p.config.tags.data.keySet.map(_.value).max + 1)
