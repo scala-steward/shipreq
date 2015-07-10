@@ -6,9 +6,13 @@ import upickle._
 
 object CodecMacros {
 
-  def caseClass[T]: ReadWriter[T] = macro __caseClassImpl[T]
+  def caseClass [T]: ReadWriter[T] = macro quietCaseClass[T]
+  def _caseClass[T]: ReadWriter[T] = macro debugCaseClass[T]
 
-  def __caseClassImpl[T: c.WeakTypeTag](c: Context): c.Expr[ReadWriter[T]] = {
+  def quietCaseClass[T: c.WeakTypeTag](c: Context): c.Expr[ReadWriter[T]] = implCaseClass[T](c, false)
+  def debugCaseClass[T: c.WeakTypeTag](c: Context): c.Expr[ReadWriter[T]] = implCaseClass[T](c, true)
+
+  def implCaseClass[T: c.WeakTypeTag](c: Context, debug: Boolean): c.Expr[ReadWriter[T]] = {
     import c.universe._
 
     val T      = concreteWeakTypeOf[T](c)
@@ -52,7 +56,7 @@ object CodecMacros {
           q"$ReadWriter[$T](t => $JsArr(..$writes), {case $readCase})"
       }
 
-    //println("\n" + impl + "\n")
+    if (debug) println("\n" + impl + "\n")
     c.Expr[ReadWriter[T]](impl)
   }
 }
