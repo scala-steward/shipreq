@@ -9,6 +9,7 @@ import org.scalajs.dom.raw.HTMLTextAreaElement
 import scalajs.js
 import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.Validity
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.text._
@@ -16,7 +17,6 @@ import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.{HideDead, Contextualise}
 import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
-import shipreq.webapp.client.util.Validity
 import Text.Equality._
 import ContentUpdate._
 

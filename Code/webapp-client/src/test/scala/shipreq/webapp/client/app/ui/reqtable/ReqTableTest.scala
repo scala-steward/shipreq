@@ -19,6 +19,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.RemoteDelta
 import shipreq.webapp.base.protocol.{Routine, Routines}
 import shipreq.webapp.client.app.ui.{Style, Checkbox}
+import shipreq.base.util._
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}

@@ -4,9 +4,9 @@ package reqtable
 import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-, Failure, Success}
+import shipreq.base.util.Validity
 import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.client.lib.ui.TextEditor
-import shipreq.webapp.client.util.Validity
 import Style.{reqtable => *}
 import TextSeqEditor._
 

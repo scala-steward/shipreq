@@ -1,7 +1,6 @@
-package shipreq.webapp.client.util
+package shipreq.base.util
 
 import scalaz.\/
-import shipreq.base.util.IsoBool
 
 sealed trait Validity
 

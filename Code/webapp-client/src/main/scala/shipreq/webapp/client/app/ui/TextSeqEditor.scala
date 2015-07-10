@@ -14,7 +14,7 @@ import scalaz.syntax.foldable._
 import scalaz.{-\/, Tags, \/}
 
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
-import shipreq.webapp.client.util.Validity
+import shipreq.base.util.Validity
 import TextSeqEditor._
 
 object TextSeqEditor {

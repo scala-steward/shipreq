@@ -5,10 +5,10 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.StyleA
 import scalajs.js.{undefined, UndefOr}
-import shipreq.webapp.base.UiText
-import shipreq.base.util.{NonEmptyVector, Must, UnivEq}
+import shipreq.base.util._
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G, _}
 import shipreq.webapp.base.util.ReqCodeTreeItem

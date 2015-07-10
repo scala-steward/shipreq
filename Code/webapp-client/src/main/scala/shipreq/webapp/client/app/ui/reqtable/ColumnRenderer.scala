@@ -4,11 +4,11 @@ import monocle.Optional
 import scalacss.ScalaCssReact._
 import scalacss.Domain
 import japgolly.scalajs.react._, vdom.prefix_<^._
+import shipreq.base.util.Valid
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.Plain
-import shipreq.webapp.client.util.Valid
 import ColumnRenderer._
 
 final class ColumnRenderer(

@@ -10,13 +10,13 @@ import scala.util.{Failure, Success}
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
 import scalaz.effect.IO
+import shipreq.base.util.Valid
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.filter._
 import shipreq.webapp.client.app.ui.Style.reqtable.{filterEditor => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.AutoComplete
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.lib.{ShowDead, Contextualise}
-import shipreq.webapp.client.util.Valid
 
 object FilterEditor {
 
