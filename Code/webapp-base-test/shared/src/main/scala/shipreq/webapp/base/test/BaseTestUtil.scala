@@ -72,7 +72,7 @@ trait BaseTestUtil {
   }
 
   def fail(msg: String, clearStackTrace: Boolean = true): Nothing = {
-    val e = new AssertionError(msg)
+    val e = new AssertionError(BOLD + MAGENTA + msg.replace("\n", s"\n$BOLD$MAGENTA") + RESET)
     if (clearStackTrace)
       e.setStackTrace(Array.empty)
     throw e

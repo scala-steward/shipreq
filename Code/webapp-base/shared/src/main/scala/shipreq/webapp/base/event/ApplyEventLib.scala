@@ -2,8 +2,9 @@ package shipreq.webapp.base.event
 
 import monocle._
 import scala.collection.GenTraversable
+import scala.reflect.ClassTag
 import scalaz.{-\/, \/, \/-}
-import shipreq.base.util.IMap
+import shipreq.base.util.{IMap, Valid, Validity}
 import shipreq.webapp.base.data.{ObjDataId, Project, Live}
 import shipreq.webapp.base.util.GenericData
 import shipreq.webapp.base.validation.{ValidatorU, ValidationResult}
@@ -41,6 +42,9 @@ private[event] object ApplyEventLib {
   @inline def ok[A](a: A): Result[A] = \/-(a)
   @inline def fail(f: String): Result[Nothing] = -\/(f)
 
+  def test[A](a: A, f: Validity)(err: => String): Result[A] =
+    if (f :: Valid) ok(a) else fail(err)
+
   implicit class ResultOps[A](private val r: Result[A]) extends AnyVal {
 
     def ?=>>[B, C](f: => (A => App[B, C])): App[B, C] =
@@ -76,11 +80,28 @@ private[event] object ApplyEventLib {
 
     @inline def <=@[S, T, AA <: A, BB >: B](l: PLens[S, T, AA, BB]): App[S, T] =
       App(l.modifyF[Result](run))
+
+    def map[C](f: B => C): App[A, C] =
+      App(run(_) map f)
+
+    @inline def cmap[Z](f: Z => A): App[Z, B] =
+      App(run compose f)
   }
 
   object App {
+    import ApplyEventLib.{ok => OK}
+
     @inline def ok[A, B](f: A => B): App[A, B] =
-      App(a => ApplyEventLib.ok(f(a)))
+      App(a => OK(f(a)))
+
+    def test[A](t: A => Validity, err: A => String): AE[A] =
+      App(a => if (t(a) :: Valid) OK(a) else fail(err(a)))
+
+    @deprecated("Use nop instead of App.id.", "")
+    def id[A]: AE[A] = nop
+
+//    def feed[A, B](f: A => App[A, B]): App[A, B] =
+//      App(a => f(a) run a)
   }
 
   /** App Endo */
@@ -123,7 +144,7 @@ private[event] object ApplyEventLib {
   @inline implicit def autoRun[A, B](f: App[A, B])(implicit a: A): Result[B] =
     f run a
 
-  def apFoldLeft[A, B](f: A => AE[B])(as: GenTraversable[A]): AE[B] =
+  def apFoldLeft[A, B](as: GenTraversable[A])(f: A => AE[B]): AE[B] =
     App(b => as.foldLeft(ok(b))(_ ?=> f(_)))
     // ↓ Should be a tiny bit faster - save for benchmarks
     // vs => App { start =>
@@ -161,10 +182,19 @@ private[event] object ApplyEventLib {
   def ensureLiveBy[V](live: V => Live)(implicit trust: Trust): AE[V] =
     whenUntrusted(App(v => if (live(v) :: Live) ok(v) else fail(s"Subject is dead: $v")))
 
+  def narrowCC[A, B <: A](implicit cc: ClassTag[B], trust: Trust): App[A, B] =
+    if (trust :: Untrusted)
+      App(a => cc.unapply(a) match {
+        case Some(b) => ok(b)
+        case None    => fail(s"Expected a ${cc.runtimeClass.getName}, got: $a.")
+      })
+    else
+      App.ok(a => a.asInstanceOf[B])
+
   // -------------------------------------------------------------------------------------------------------------------
   object IMapApp {
     @inline def apply[K, V](implicit trust: Trust) = new IMapApp[K, V]
-    @inline def like[K, V](m: IMap[K, V])(implicit trust: Trust) = apply[K, V]
+    @inline def like[K, V](m: => IMap[K, V])(implicit trust: Trust) = apply[K, V]
     @inline def data[O, D, Id](o: O)(implicit O: ObjDataId[O, D, Id], trust: Trust) = apply[Id, D]
   }
 
@@ -200,6 +230,9 @@ private[event] object ApplyEventLib {
         k => App.ok(_ - k)
       else
         k => App(m => if (m containsK k) ok(m - k) else fail(s"$k not found."))
+
+    def needM[R](k: K)(f: M => App[V, R]): App[M, R] =
+      App(m => need(k).run(m) ?=> f(m))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -241,6 +274,6 @@ private[event] object ApplyEventLib {
       App.ok(a(_).map(_.value))
 
     final def updateEachValue(updateFn: ^.Value => AD): ^.NonEmptyValues => AD =
-      vs => apFoldLeft(updateFn)(vs.values)
+      vs => apFoldLeft(vs.values)(updateFn)
   }
 }

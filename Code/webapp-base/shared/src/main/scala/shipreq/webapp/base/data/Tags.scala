@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.CycleDetector
 import monocle.Lens
-import monocle.macros.GenLens
+import monocle.macros.{Lenses, GenLens}
 import scala.annotation.tailrec
 import scalaz.syntax.equal._
 import shipreq.base.util._
@@ -30,6 +30,7 @@ sealed trait Tag {
  * FR-246: BA shall be able to specify that a grouping cannot be applied.
  *         e.g. “Priority” shouldn't be applicable but its children should.
  */
+@Lenses
 final case class TagGroup(id           : TagGroupId,
                           name         : String,
                           desc         : Option[String],
@@ -39,6 +40,7 @@ final case class TagGroup(id           : TagGroupId,
   override def tagType = TagType.Group
 }
 
+@Lenses
 final case class ApplicableTag(id  : ApplicableTagId,
                                name: String,
                                desc: Option[String],
@@ -260,6 +262,7 @@ final case class TagInTree(tag: Tag, children: TagInTree.Children) {
 }
 
 object TagInTree {
+  type Parents  = MMTree.Parents [TagId]
   type Children = MMTree.Children[TagId]
 
   implicit val equality: UnivEq[TagInTree] = deriveUnivEq
@@ -269,6 +272,7 @@ object TagInTree {
 
   val tag      = GenLens[TagInTree](_.tag)
   val children = GenLens[TagInTree](_.children)
+  val live     = tag ^|-> Tag.live
 
   /** @return Itself and all reachable children. */
   @tailrec def transitiveChildren(queue: Stream[Must[TagInTree]], seen: Set[TagId])(implicit tt: TagTree): Must[Set[TagId]] =

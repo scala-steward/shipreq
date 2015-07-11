@@ -140,6 +140,9 @@ object DataProp {
   object tags {
     type T = TagTree
 
+    def ids =
+      id[TagId].forall((_: T).keys.toStream)
+
     def uniqueNames =
       Prop.distinct("name", (_: T).vstream(_.tag.name))
 
@@ -153,7 +156,7 @@ object DataProp {
       Prop.whitelist[T]("ids refer to available tags")(_.keySet, _.vstreamf(_.children.toStream))
 
     def tagTree =
-      (uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
+      (ids ∧ uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
 
     lazy val all =
       revAnd(tagTree) rename "Tags"

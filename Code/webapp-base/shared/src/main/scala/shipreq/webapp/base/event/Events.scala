@@ -50,35 +50,33 @@ case class DeleteCustomReqType(id: CustomReqTypeId, da: DeletionAction)         
 // =====================================================================================================================
 // Config: Tags
 
-// Move this into Tag along with stuff from TagProtocol
-//type TagParents  = Map[TagId, Option[TagId]]
-//type TagChildren = Vector[TagId]
-//
-//@CreateGenericData
-//object TagGroupGD extends GenericData {
-//  val Name          = defAttr[String]
-//  val Desc          = defAttr[Option[String]]
-//  val MutexChildren = defAttr[MutexChildren]
-//  val Parents       = defAttr[TagParents]
-//  val Children      = defAttr[TagChildren]
-//}
-//
-//case class CreateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-//case class UpdateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-//case class DeleteTagGroup(id: TagGroupId, da: DeletionAction)            extends ActiveEvent
-//
-//@CreateGenericData
-//object ApplicableTagGD extends GenericData {
-//  val Name     = defAttr[String]
-//  val Desc     = defAttr[Option[String]]
-//  val Key      = defAttr[HashRefKey]
-//  val Parents  = defAttr[TagParents]
-//  val Children = defAttr[TagChildren]
-//}
-//
-//case class CreateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-//case class UpdateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-//case class DeleteApplicableTag(id: ApplicableTagId, da: DeletionAction)                 extends ActiveEvent
+@CreateGenericData
+object TagGroupGD extends GenericData {
+  val Name          = defAttr[String]
+  val Desc          = defAttr[Option[String]]
+  val MutexChildren = defAttr[MutexChildren]
+  val Parents       = defAttr[TagInTree.Parents]
+  val Children      = defAttr[TagInTree.Children]
+}
+
+case class CreateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
+case class UpdateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
+case class DeleteTagGroup(id: TagGroupId, da: DeletionAction)            extends ActiveEvent
+
+@CreateGenericData
+object ApplicableTagGD extends GenericData {
+  val Name     = defAttr[String]
+  val Desc     = defAttr[Option[String]]
+  val Key      = defAttr[HashRefKey]
+  val Parents  = defAttr[TagInTree.Parents]
+  val Children = defAttr[TagInTree.Children]
+}
+
+case class CreateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+case class UpdateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+case class DeleteApplicableTag(id: ApplicableTagId, da: DeletionAction)                 extends ActiveEvent
+
+// TODO Should there be a RepositionTag event?
 
 // =====================================================================================================================
 // Config: Fields

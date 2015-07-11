@@ -71,4 +71,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
 
   def min2set[A: UnivEq](a: A, b: A, t: A*): Min2Set[A] =
     Min2Set(NonEmptySet(a, t.toSet + b)).fold(nes => sys.error(s"Not make a Min2Set from $nes"), a => a)
+
+  implicit def boolToMutexChildren(b: Boolean) = MutexChildren <~ b
 }
