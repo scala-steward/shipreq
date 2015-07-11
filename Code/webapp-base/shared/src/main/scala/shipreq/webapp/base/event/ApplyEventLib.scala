@@ -5,9 +5,10 @@ import scala.collection.GenTraversable
 import scala.reflect.ClassTag
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{IMap, Valid, Validity}
-import shipreq.webapp.base.data.{ObjDataId, Project, Live}
+import shipreq.webapp.base.data.{Dead, Live, ObjDataId, Project}
 import shipreq.webapp.base.util.GenericData
 import shipreq.webapp.base.validation.{ValidatorU, ValidationResult}
+import DeletionAction._
 
 /**
  * Syntax summary:
@@ -275,5 +276,38 @@ private[event] object ApplyEventLib {
 
     final def updateEachValue(updateFn: ^.Value => AD): ^.NonEmptyValues => AD =
       vs => apFoldLeft(vs.values)(updateFn)
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  /**
+   * Logic for CRUD events that simply update an ID-keyed IMap.
+   */
+  trait IMapStore {
+    this: GenericDataApp =>
+
+    type Id
+    val L: Lens[Project, IMap[Id, Data]]
+    def liveLens: Lens[Data, Live]
+    protected implicit def trust: Trust
+
+    final val imap       = IMapApp[Id, Data]
+    final val ensureLive = ensureLiveBy(liveLens.get)
+    final val updateLive = updateL(liveLens)
+
+    final def create(newObject: Result[Data]): AP =
+      L @=> (newObject ?=>> imap.add)
+
+    final def update(id: Id, updateValues: AD): AP =
+      L @=> imap.update(id, ensureLive >=> updateValues)
+
+    final def delete(id: Id, da: DeletionAction): AP =
+      da match {
+        case Restore => setLive(id, Live)
+        case SoftDel => setLive(id, Dead)
+        case HardDel => L @=> imap.remove(id)
+      }
+
+    private def setLive(id: Id, newValue: Live): AP =
+      L @=> imap.update(id, updateLive(newValue))
   }
 }

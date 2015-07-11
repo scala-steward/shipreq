@@ -49,12 +49,13 @@ class ApplyEvent(implicit val trust: Trust) {
     }
 
   // ===================================================================================================================
-  object CustomIssueTypeEvents extends GenericDataApp {
-    override val ^ = CustomIssueTypeGD
-    override type Data = CustomIssueType
-
-    val L = Project.customIssueTypes ^|-> RevAnd.data
-    val imap = IMapApp.data(CustomIssueType)
+  object CustomIssueTypeEvents extends GenericDataApp with IMapStore {
+    override protected implicit def trust = ApplyEvent.this.trust
+    override val ^        = CustomIssueTypeGD
+    override type Id      = CustomIssueTypeId
+    override type Data    = CustomIssueType
+    override val L        = Project.customIssueTypes ^|-> RevAnd.data
+    override def liveLens = CustomIssueType.live
 
     val validateKey  = validateWithF(V.customIssueType.keyU)(_.value)
     val validateDesc = validateWithF(V.customIssueType.descU)(_ getOrElse "")
@@ -64,48 +65,37 @@ class ApplyEvent(implicit val trust: Trust) {
 
     val updateKey  = updateL(CustomIssueType.key)  <<=< validateKey
     val updateDesc = updateL(CustomIssueType.desc) <<=< validateDesc
-    val updateLive = updateL(CustomIssueType.live)
 
     val updateValues = updateEachValue {
       case v: ^.ValueForKey  => updateKey (v.value)
       case v: ^.ValueForDesc => updateDesc(v.value)
     }
 
-    val ensureLive = ensureLiveBy[Data](_.live)
-
     def applyCreate(e: CreateCustomIssueType): AP = {
       implicit val vs = e.vs
-
-      val newObject =
+      create(
         for {
           k <- readKey
           d <- readDesc
         } yield CustomIssueType(e.id, k, d, Live)
-
-      L @=> (newObject ?=>> imap.add)
+      )
     }
 
     def applyUpdate(e: UpdateCustomIssueType): AP =
-      L @=> imap.update(e.id, ensureLive >=> updateValues(e.vs))
+      update(e.id, updateValues(e.vs))
 
     def applyDelete(e: DeleteCustomIssueType): AP =
-      e.da match {
-        case Restore => setLive(e.id, Live)
-        case SoftDel => setLive(e.id, Dead)
-        case HardDel => L @=> imap.remove(e.id)
-      }
-
-    private def setLive(id: CustomIssueTypeId, newValue: Live): AP =
-      L @=> imap.update(id, updateLive(newValue))
+      delete(e.id, e.da)
   }
 
   // ===================================================================================================================
-  object CustomReqTypeEvents extends GenericDataApp {
-    override val ^ = CustomReqTypeGD
-    override type Data = CustomReqType
-
-    val L = Project.customReqTypes ^|-> RevAnd.data
-    val imap = IMapApp.data(CustomReqType)
+  object CustomReqTypeEvents extends GenericDataApp with IMapStore {
+    override protected implicit def trust = ApplyEvent.this.trust
+    override val ^        = CustomReqTypeGD
+    override type Id      = CustomReqTypeId
+    override type Data    = CustomReqType
+    override val L        = Project.customReqTypes ^|-> RevAnd.data
+    override def liveLens = CustomReqType.live
 
     val validateName     = validateWith (V.reqType.nameU)
     val validateMnemonic = validateWithF(V.reqType.mnemonicU)(_.value)
@@ -117,7 +107,6 @@ class ApplyEvent(implicit val trust: Trust) {
     val updateName     = updateL(CustomReqType.name)              <<=< validateName
     val updateMnemonic = updateF[Data, Mnemonic](_ setMnemonic _) <<=< validateMnemonic
     val updateImp      = updateL(CustomReqType.imp)
-    val updateLive     = updateL(CustomReqType.live)
 
     val updateValues = updateEachValue {
       case v: ^.ValueForName     => updateName    (v.value)
@@ -125,33 +114,22 @@ class ApplyEvent(implicit val trust: Trust) {
       case v: ^.ValueForMnemonic => updateMnemonic(v.value)
     }
 
-    val ensureLive = ensureLiveBy[Data](_.live)
-
     def applyCreate(e: CreateCustomReqType): AP = {
       implicit val vs = e.vs
-
-      val newObject =
+      create(
         for {
           n <- readName
           m <- readMnemonic
           i <- readImp
         } yield CustomReqType(e.id, m, Set.empty, n, i, Live)
-
-      L @=> (newObject ?=>> imap.add)
+      )
     }
 
     def applyUpdate(e: UpdateCustomReqType): AP =
-      L @=> imap.update(e.id, ensureLive >=> updateValues(e.vs))
+      update(e.id, updateValues(e.vs))
 
     def applyDelete(e: DeleteCustomReqType): AP =
-      e.da match {
-        case Restore => setLive(e.id, Live)
-        case SoftDel => setLive(e.id, Dead)
-        case HardDel => L @=> imap.remove(e.id)
-      }
-
-    private def setLive(id: CustomReqTypeId, newValue: Live): AP =
-      L @=> imap.update(id, updateLive(newValue))
+      delete(e.id, e.da)
   }
 
   // ===================================================================================================================
