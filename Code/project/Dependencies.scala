@@ -103,7 +103,7 @@ object Dependencies {
   val bonecp      = jvmOnly("com.jolbox"                  % "bonecp"                % "0.8.0.RELEASE") ++
                     jvmOnly("com.google.code.findbugs"    % "jsr305"                % "2.0.2") // required by Guava (which is required by BoneCP)
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.2")
+  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.3")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.7.1") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.6.1") // why again?
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.3.2")
