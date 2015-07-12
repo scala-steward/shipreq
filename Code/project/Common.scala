@@ -102,6 +102,8 @@ object Common {
         "WT"   -> "project webapp-base-test-jvm",
         "WC"   -> "project webapp-client",
         "WS"   -> "project webapp-server",
+        "BM"   -> "project benchmark-jvm",
+        "BMJ"  -> "project benchmark-js",
         "cc"   -> ";clear;compile",
         "ctc"  -> ";clear;test:compile",
         "ct"   -> ";clear;test",
