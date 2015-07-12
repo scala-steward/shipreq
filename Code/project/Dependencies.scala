@@ -106,7 +106,7 @@ object Dependencies {
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.3")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.7.1") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.6.1") // why again?
-  val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.3.2")
+  val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.4")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.24.0")
   val jetty       = jvmOnly("org.eclipse.jetty"           % "jetty-webapp"          % "9.2.3.v20140905")
