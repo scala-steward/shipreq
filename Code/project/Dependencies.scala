@@ -89,7 +89,7 @@ object Dependencies {
 
   val parboiled = jvmAndJsFork("org.parboiled", "parboiled", "2.1.0")("com.github.japgolly.fork.parboiled")
 
-  val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.2.2")
+  val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.2.4")
   val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-3")
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.3.1")
 
