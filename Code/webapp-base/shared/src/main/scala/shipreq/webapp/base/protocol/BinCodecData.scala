@@ -16,16 +16,16 @@ object BinCodecData {
   implicit val pickleDeletable    : Pickler[Deletable]           = pickleBool(Deletable)
   implicit val pickleMutexChildren: Pickler[MutexChildren]       = pickleBool(MutexChildren)
 
-  implicit val pickleRev                      = pickleTaggedL(Rev                       )
-  implicit val pickleGenericReqId             = pickleTaggedL(GenericReqId              ).reuseByUnivEq
-  implicit val pickleReqCodeId                = pickleTaggedL(ReqCodeId                 ).reuseByUnivEq
-  implicit val pickleCustomReqTypeId          = pickleTaggedL(CustomReqTypeId           ).reuseByUnivEq
-  implicit val pickleCustomIssueTypeId        = pickleTaggedL(CustomIssueTypeId         ).reuseByUnivEq
-  implicit val pickleApplicableTagId          = pickleTaggedL(ApplicableTagId           ).reuseByUnivEq
-  implicit val pickleTagGroupId               = pickleTaggedL(TagGroupId                ).reuseByUnivEq
-  implicit val pickleCustomFieldTagId         = pickleTaggedL(CustomField.Tag.Id        ).reuseByUnivEq
-  implicit val pickleCustomFieldTextId        = pickleTaggedL(CustomField.Text.Id       ).reuseByUnivEq
-  implicit val pickleCustomFieldImplicationId = pickleTaggedL(CustomField.Implication.Id).reuseByUnivEq
+  implicit val pickleRev                      = pickleTaggedI(Rev                       )
+  implicit val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
+  implicit val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
+  implicit val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
+  implicit val pickleCustomIssueTypeId        = pickleTaggedI(CustomIssueTypeId         ).reuseByUnivEq
+  implicit val pickleApplicableTagId          = pickleTaggedI(ApplicableTagId           ).reuseByUnivEq
+  implicit val pickleTagGroupId               = pickleTaggedI(TagGroupId                ).reuseByUnivEq
+  implicit val pickleCustomFieldTagId         = pickleTaggedI(CustomField.Tag.Id        ).reuseByUnivEq
+  implicit val pickleCustomFieldTextId        = pickleTaggedI(CustomField.Text.Id       ).reuseByUnivEq
+  implicit val pickleCustomFieldImplicationId = pickleTaggedI(CustomField.Implication.Id).reuseByUnivEq
   implicit val pickleReqTypePos               = pickleTaggedI(ReqTypePos)
   implicit val pickleHashRefKey               = pickleTaggedS(HashRefKey)
   implicit val pickleFieldRefKey              = pickleTaggedS(FieldRefKey)

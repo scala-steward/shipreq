@@ -6,16 +6,16 @@ import scalaz.syntax.equal._
 import scalaz.std.AllInstances._
 import shipreq.base.util._, MTrie.Ops, ScalaExt._, Debug._
 import shipreq.webapp.base.text.{Atom, Text}
-import TaggedTypes.TaggedLong
+import TaggedTypes.TaggedInt
 import DataImplicits._
 
 object DataProp {
   implicit def autoLiftL(e: Eval) = e.liftL
 
-  def id[T <: TaggedLong] =
+  def id[T <: TaggedInt] =
     Prop.test[T]("id > 0", _.value > 0)
 
-  def dataId[O, D, Id <: TaggedLong](o: O)(implicit O: ObjDataId[O, D, Id]) =
+  def dataId[O, D, Id <: TaggedInt](o: O)(implicit O: ObjDataId[O, D, Id]) =
     id[Id].contramap[D](O.id)
 
   val rev =

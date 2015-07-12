@@ -91,7 +91,7 @@ object StaticReqType {
 
 // =====================================================================================================================
 
-final case class CustomReqTypeId(value: Long) extends TaggedLong with ReqTypeId {
+final case class CustomReqTypeId(value: Int) extends TaggedInt with ReqTypeId {
   override def foldId[A](s: StaticReqType => A, c: CustomReqTypeId => A): A = c(this)
 }
 

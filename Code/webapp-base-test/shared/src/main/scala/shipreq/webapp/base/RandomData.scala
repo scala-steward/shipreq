@@ -18,7 +18,7 @@ import scalaz.std.vector._
 
 import shipreq.base.util._, MTrie.Ops
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.delta._
@@ -146,7 +146,7 @@ object RandomData {
       _.vector.flatMap(Gen.traverse(_)(f)))
 
   lazy val id =
-    Gen.positivelong
+    Gen.int.map(i => if (i == 0) 1 else Math.abs(i))
 
   def shortText1 =
     unicodeString1.lim(AppConsts.shortTextMaxLength)
@@ -158,7 +158,7 @@ object RandomData {
     shortText1.lim(AppConsts.largeTextMaxLength).option
 
   lazy val rev =
-    Gen.positivelong.map(Rev)
+    Gen.positiveint.map(Rev)
 
   def revAnd[D](d: D): Gen[RevAnd[D]] =
     rev.map(RevAnd(_, d))
@@ -172,15 +172,15 @@ object RandomData {
       r2 <- rev
     } yield if (r1.value <= r2.value) RevRange(r1, r2) else RevRange(r2, r1)
 
-  def revAndIMap[D, I <: TaggedLong](r: Gen[List[D]])
+  def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
     val d = distinctId[D, I].lift[List]
     val g = d.run andThen (i.emptyIMap ++ _)
     revAndG(r map g)
   }
 
-  def distinctId[D, I <: TaggedLong](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
-    Distinct.flong.xmap(j.mkId)(_.value).distinct.contramap[D](i.id, j.setId)
+  def distinctId[D, I <: TaggedInt](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
+    Distinct.fint.xmap(j.mkId)(_.value).distinct.contramap[D](i.id, j.setId)
 
   def isubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] = {
     Gen.oneofG(
@@ -950,7 +950,7 @@ object RandomData {
       RandomData.id map ReqCodeId
 
     val distinctIds =
-      Distinct.flong.xmap(ReqCodeId)(_.value).distinct
+      Distinct.fint.xmap(ReqCodeId)(_.value).distinct
 
     val reqCodeTrieFixK = Trie.fixk
     val reqCodeTrieValueTraversal: Traversal[Trie, Data] =

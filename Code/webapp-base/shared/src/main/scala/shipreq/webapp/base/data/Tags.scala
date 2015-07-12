@@ -6,16 +6,16 @@ import monocle.macros.{Lenses, GenLens}
 import scala.annotation.tailrec
 import scalaz.syntax.equal._
 import shipreq.base.util._
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.util.TypeclassDerivation._
 
 // =====================================================================================================================
 // A single tag. No relationships.
 
-sealed trait TagId extends TaggedLong
-final case class TagGroupId     (value: Long) extends TagId with TaggedLong
-final case class ApplicableTagId(value: Long) extends TagId with TaggedLong
+sealed trait TagId extends TaggedInt
+final case class TagGroupId     (value: Int) extends TagId with TaggedInt
+final case class ApplicableTagId(value: Int) extends TagId with TaggedInt
 
 sealed trait Tag {
   val id     : TagId
@@ -94,13 +94,13 @@ object Tag {
 
   object CycleDetectors {
     val multimap =
-      CycleDetector.Directed.multimap[Vector, TagId, Long](_.value, Vector.empty)
+      CycleDetector.Directed.multimap[Vector, TagId, Int](_.value, Vector.empty)
     // val tagTree = multimap.contramap((_: TagTree).mapValues(_.children))
 
     val tagTree =
       CycleDetector[TagTree, TagId](
         _.keys.toStream,
-        CycleDetector.Directed.check[TagTree, TagId, Long](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
+        CycleDetector.Directed.check[TagTree, TagId, Int](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
   }
 
   import AutoDerive._

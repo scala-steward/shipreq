@@ -5,7 +5,7 @@ import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.util.TypeclassDerivation._
 
-final case class CustomIssueTypeId(value: Long) extends TaggedLong
+final case class CustomIssueTypeId(value: Int) extends TaggedInt
 
 @Lenses
 final case class CustomIssueType(id  : CustomIssueTypeId,

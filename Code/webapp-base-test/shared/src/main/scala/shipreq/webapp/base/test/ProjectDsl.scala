@@ -17,12 +17,12 @@ object ProjectDslInternals {
   }
 
   case class ProjectState(p             : Project,
-                          nextId        : Long,
+                          nextId        : Int,
                           defaultReqType: Option[CustomReqTypeId],
                           reqs          : GenericReqIMap,
                           pubids        : PubidRegister,
                           reqCodeTrie   : ReqCode.Trie,
-                          maxReqCodeId  : Long,
+                          maxReqCodeId  : Int,
                           text          : ReqData.Text,
                           tags          : ReqData.Tags,
                           imps          : Implications.Uni) {
@@ -54,7 +54,7 @@ object ProjectDslInternals {
     reqs           = p.reqs.data.genericReqs,
     pubids         = p.reqs.data.pubids,
     reqCodeTrie    = p.reqCodes.data.trie,
-    maxReqCodeId   = p.reqCodes.data.cataA(0L)((q,_,d) => q max d.id.value),
+    maxReqCodeId   = p.reqCodes.data.cataA(0)((q,_,d) => q max d.id.value),
     text           = p.reqText.data,
     tags           = p.reqTags.data,
     imps           = p.implications.data.srcToTgt)

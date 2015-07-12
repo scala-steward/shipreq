@@ -8,7 +8,7 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util._
-import shipreq.base.util.TaggedTypes.{TaggedString, TaggedLong}
+import shipreq.base.util.TaggedTypes.{TaggedString, TaggedInt}
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.util.TypeclassDerivation._
 import Must.Auto._
@@ -172,7 +172,7 @@ object StaticField {
   implicit val equality: UnivEq[StaticField] = { import AutoDerive._; deriveUnivEq }
 }
 
-sealed abstract class CustomFieldId extends TaggedLong with FieldId {
+sealed abstract class CustomFieldId extends TaggedInt with FieldId {
   final def foldId[A](s: StaticField => A, c: CustomFieldId => A): A = c(this)
 }
 
@@ -200,7 +200,7 @@ object CustomField {
     override def keyO = Some(key)
   }
   object Text {
-    final case class Id(value: Long) extends CustomFieldId {
+    final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Text.Id($value)"
     }
     object IdAccess extends ObjDataId[Text.type, Text, Id] {
@@ -223,7 +223,7 @@ object CustomField {
       tags(tagId).map(_.tag.name)
   }
   object Tag {
-    final case class Id(value: Long) extends CustomFieldId  {
+    final case class Id(value: Int) extends CustomFieldId  {
       override def toString = s"CustomField.Tag.Id($value)"
     }
     object IdAccess extends ObjDataId[Tag.type, Tag, Id] {
@@ -246,7 +246,7 @@ object CustomField {
       ReqType.name(customReqTypes)(reqTypeId)
   }
   object Implication {
-    final case class Id(value: Long) extends CustomFieldId {
+    final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Implication.Id($value)"
     }
     object IdAccess extends ObjDataId[Implication.type, Implication, Id] {

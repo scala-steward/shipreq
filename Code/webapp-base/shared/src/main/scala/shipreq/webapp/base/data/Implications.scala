@@ -13,7 +13,7 @@ object Implications {
   type Uni = Multimap[ReqId, Set, ReqId]
 
   def cycleDetector =
-    CycleDetector.Directed.multimap[Set, ReqId, Long](_.value, UnivEq.emptySet)
+    CycleDetector.Directed.multimap[Set, ReqId, Int](_.value, UnivEq.emptySet)
 
   def transitiveClosure(keys: Iterable[ReqId], dead: Set[ReqId], uni: Uni): TransitiveClosure[ReqId] =
     TransitiveClosure.auto[ReqId](keys)(uni.apply, !dead.contains(_))

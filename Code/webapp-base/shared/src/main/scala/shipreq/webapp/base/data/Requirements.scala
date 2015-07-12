@@ -19,7 +19,7 @@ import DataImplicits._
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
 
-final case class ReqCodeId(value: Long) extends TaggedLong
+final case class ReqCodeId(value: Int) extends TaggedInt
 
 /**
  * [[ReqCode.Trie]] contains the hierarchy of codes and their targets.
@@ -261,7 +261,7 @@ object PubidRegister {
 // Requirements
 
 /** type [[ReqIdT]] = [[GenericReqId]] */
-sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedLong with ReqCode.Target
+sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedInt with ReqCode.Target
 
 /** [[Req]] = [[GenericReq]] */
 sealed abstract class ReqT[+RT <: ReqTypeId] {
@@ -283,7 +283,7 @@ object ReqT {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-final case class GenericReqId(value: Long) extends TaggedLong with ReqIdT[CustomReqTypeId]
+final case class GenericReqId(value: Int) extends TaggedInt with ReqIdT[CustomReqTypeId]
 
 final case class GenericReq(id   : GenericReqId,
                             pubid: PubidC,

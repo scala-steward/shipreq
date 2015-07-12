@@ -3,15 +3,15 @@ package shipreq.webapp.base.data
 import japgolly.nyaya._
 import monocle.macros.GenLens
 import scalaz.Equal
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.util.TypeclassDerivation._
 
 // =====================================================================================================================
 
 /** A monotonic revision number. */
-case class Rev(value: Long) extends TaggedLong {
-  @inline def succ      = Rev(value + 1L)
+case class Rev(value: Int) extends TaggedInt {
+  @inline def succ      = Rev(value + 1)
   @inline def +(r: Rev) = Rev(value + r.value)
 }
 
