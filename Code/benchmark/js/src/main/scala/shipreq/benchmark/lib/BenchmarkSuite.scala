@@ -1,6 +1,7 @@
 package shipreq.benchmark.lib
 
 import shipreq.benchmark.jslib.JsBenchmark.Options
+import Benchmark.Logger
 
 abstract class BenchmarkSuite(val suiteName: String) {
 
@@ -17,8 +18,8 @@ abstract class BenchmarkSuite(val suiteName: String) {
 
   def configureOptions: Options => Unit = _ => ()
 
-  def run(log: Benchmark.Logger): Unit = {
-    val o = Benchmark.defaultOptions(log)
+  def run(log: Logger, resultLog: Logger): Unit = {
+    val o = Benchmark.defaultOptions(log, resultLog)
     configureOptions(o)
     Benchmark.run(bms: _*)(o)
   }

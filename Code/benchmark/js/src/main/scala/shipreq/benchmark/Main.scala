@@ -8,11 +8,13 @@ import shipreq.benchmark.lib.{Benchmark, BenchmarkSuite}
 
 object Main extends JSApp {
 
-  case class State(logs: Option[String]) {
+  case class State(logs: Option[String], results: Vector[String]) {
     def add(msg: String): State = {
       val v = logs.filter(_.nonEmpty).fold("")(_ + "\n")
-      State(Some(v + msg))
+      copy(logs = Some(v + msg))
     }
+    def addResult(result: String): State =
+      copy(results = (results :+ result).sorted)
   }
 
   case class BenchProps(suite: BenchmarkSuite, onStart: () => Unit) {
@@ -54,7 +56,7 @@ object Main extends JSApp {
   }
 
   val MainComp = ReactComponentB[Vector[BenchmarkSuite]]("M")
-    .initialState(State(None))
+    .initialState(State(None, Vector.empty))
     .backend(new MainBackend(_))
     .render(_.backend.render)
     .build
@@ -64,16 +66,20 @@ object Main extends JSApp {
     def log: Benchmark.Logger =
       msg => $.modState(_ add msg)
 
+    def logResult: Benchmark.Logger =
+      msg => $.modState(_ addResult msg)
+
     def start(suite: BenchmarkSuite): Unit = {
       //$.setState(State(Some("")), () => suite.run(log))
-      $.setState(State(Some("")))
-      setTimeout(() => suite.run(log), 100)
+      $.setState(State(Some(""), Vector.empty))
+      setTimeout(() => suite.run(log, logResult), 100)
     }
 
     def render: ReactElement = {
-      $.state.logs match {
+      val s = $.state
+      s.logs match {
         case Some(l) =>
-          ConsoleComp(l)
+          ConsoleComp(s.results.mkString("\n") + "\n\n\n" + l)
         case None =>
           val ss = $.props.map { suite =>
             BenchProps(suite, () => start(suite)).render

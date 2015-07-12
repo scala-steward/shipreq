@@ -33,7 +33,7 @@ object Benchmark {
     log(s"$s -- $status [$min:$sec]")
   }
 
-  def defaultOptions(log: Logger): Options = {
+  def defaultOptions(log: Logger, resultLog: Logger): Options = {
     val o = Options()
     o.async = true
 
@@ -66,7 +66,7 @@ object Benchmark {
 
     o.onComplete = JsBenchmark.cb { e =>
       val totalTime = currentTime() - startTime
-      logWithStatus(log, "Done")(e, totalTime)
+      logWithStatus(resultLog, "Done")(e, totalTime)
     }
 
     o
