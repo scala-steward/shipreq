@@ -14,6 +14,7 @@ import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.text.Text, Text.Equality._
 import shipreq.webapp.base.util.TransitiveClosure
 import shipreq.webapp.base.util.TypeclassDerivation._
+import DataImplicits._
 
 // ===================================================================================================================
 // ReqCodes: A hierarchy of semantic IDs
@@ -277,11 +278,6 @@ object ReqT {
     override def id(d: Req) = d.id
     override val unapplyData: AnyRef => Option[Req] = {case r: Req => Some(r); case _ => None}
   }
-
-  val idProof: RelationProof[ReqTypeId, ReqT, ReqIdT] =
-    new RelationProof[ReqTypeId, ReqT, ReqIdT] {
-      override def apply[A <: ReqTypeId](v: ReqT[A]): ReqIdT[A] = v.id
-    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -295,21 +291,27 @@ final case class GenericReq(id   : GenericReqId,
 
 object GenericReq {
   implicit def equality: UnivEq[GenericReq] = deriveUnivEq
+
+  object IdAccess extends ObjDataId[GenericReq.type, GenericReq, GenericReqId] {
+    override def id(d: GenericReq) = d.id
+    override val unapplyData: AnyRef => Option[GenericReq] = {case r: GenericReq => Some(r); case _ => None}
+  }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 object Requirements {
-  type ById = IMapK[ReqTypeId, ReqIdT, ReqT]
-  def emptyById = ReqT.idProof.emptyIMapK
-  def empty = Requirements(emptyById, PubidRegister.empty)
+  def empty = Requirements(emptyDataMap(GenericReq), PubidRegister.empty)
 
-  implicit def equalityById: Equal[ById] = IMapK.equality[ReqTypeId, ReqIdT, ReqT]
   implicit lazy val equality: Equal[Requirements] = deriveEqual
 }
 
 @Lenses
-case class Requirements(reqs: Requirements.ById, pubids: PubidRegister) {
+case class Requirements(genericReqs: GenericReqIMap, pubids: PubidRegister) {
+
+  val reqs: IMap[ReqId, Req] =
+    // Temporary. Will do this properly when next Req type added
+    genericReqs.asInstanceOf[IMap[ReqId, Req]]
 
   def isEmpty = reqs.isEmpty
   def nonEmpty = !isEmpty
@@ -321,7 +323,9 @@ case class Requirements(reqs: Requirements.ById, pubids: PubidRegister) {
     dead.size
 
   def req[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
-    reqs.get(id)
+    id match {
+      case i: GenericReqId => genericReqs.get(i)
+    }
 
   def reqByPubid[T <: ReqTypeId](id: PubidT[T]): Option[ReqT[T]] =
     pubids(id) flatMap req

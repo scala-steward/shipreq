@@ -42,6 +42,7 @@ package object data {
     @inline implicit final def tcCustomReqType      = CustomReqType          .IdAccess
     @inline implicit final def tcTag                = Tag                    .IdAccess
     @inline implicit final def tcReq                = ReqT                   .IdAccess
+    @inline implicit final def tcGenericReq         = GenericReq             .IdAccess
   }
 
   object DataImplicits extends DataObjImplicits {
@@ -59,6 +60,7 @@ package object data {
   type HashRefTarget       = ApplicableTag \/ CustomIssueType
   type CustomIssueTypeIMap = IMap[CustomIssueTypeId, CustomIssueType]
   type CustomReqTypeIMap   = IMap[CustomReqTypeId, CustomReqType]
+  type GenericReqIMap      = IMap[GenericReqId, GenericReq]
   type TagTree             = IMap[TagId, TagInTree]
 
   type Req   = ReqT  [ReqTypeId]

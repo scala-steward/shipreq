@@ -93,9 +93,6 @@ private[protocol] object CodecBase extends StdlibCodecs.Maps {
   def iMap[K: UnivEq, V: Reader : Writer](key: V => K): ReadWriter[IMap[K, V]] =
     xmap((_: IMap[K, V]).values)(IMap.empty(key) ++ _)
 
-  def iMapK[T, K[+ _ <: T], V[+ _ <: T]](rel: RelationProof[T, V, K])(implicit rv: Reader[V[T]], wv: Writer[V[T]], ue: UnivEq[K[T]]): ReadWriter[IMapK[T, K, V]] =
-    xmap((_: IMapK[T, K, V]).values)(rel.emptyIMapK ++ _)
-
   @inline def mergeRW[A](implicit r: Reader[A], w: Writer[A]): ReadWriter[A] =
     ReadWriter[A](w.write, r.read)
 
@@ -443,7 +440,6 @@ object DataCodecs {
   implicit final val reqId         = _reqId
   implicit final val req           = _req
   implicit final val pubidRegister = xmap((_: PubidRegister).value)(PubidRegister.apply)
-  implicit final val requirementsD = iMapK[ReqTypeId, ReqIdT, ReqT](ReqT.idProof)
   implicit final val requirements  = caseClass[Requirements]
   implicit final val implications  = xmap((_: Implications).srcToTgt)(Implications.apply)
 

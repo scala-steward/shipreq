@@ -49,9 +49,6 @@ abstract class GenericDashHash {
   implicit def hashIMap[K, V: Hash]: Hash[IMap[K, V]] =
     hashUnordered[Iterable, V].cmap(_.values)
 
-  implicit def hashIMapK[T, K[+_ <: T], V[+_ <: T]](implicit h: Hash[V[T]]): Hash[IMapK[T, K, V]] =
-    hashUnordered[Iterable, V[T]].cmap(_.values)
-
   implicit def disjunction[A: Hash, B: Hash]: Hash[A \/ B] = {
     val l = "!" @@ Hash[A]
     val r = Hash[B]
@@ -160,7 +157,6 @@ final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDas
   implicit def hashPubidT[T <: ReqTypeId]: Hash[PubidT[T]]         = hashPubid.narrow
   implicit val hashGenericReq            : Hash[GenericReq]        = hashCaseClass
   implicit val hashReq                   : Hash[Req]               = hashADT
-  implicit val hashReqsById              : Hash[Requirements.ById] = hashIMapK[ReqTypeId, ReqIdT, ReqT]
   implicit val hashRequirements          : Hash[Requirements]      = hashCaseClass
 
   implicit val hashCustomIssueType : Hash[CustomIssueType]     = hashCaseClass

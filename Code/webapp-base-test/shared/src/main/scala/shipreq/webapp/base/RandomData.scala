@@ -775,7 +775,7 @@ object RandomData {
     NonEmptyVector.maybe(customReqTypeIds,
       Gen insert Requirements.empty)( // ← This will change when UseCases are added
       customReqTypeIdNev =>
-        pubidRegisterAnd(reqCount, Requirements.emptyById, sGenericReq(sAllocPubidC(customReqTypeIdNev), rtLive))(_ + _)
+        pubidRegisterAnd(reqCount, emptyDataMap(GenericReq), sGenericReq(sAllocPubidC(customReqTypeIdNev), rtLive))(_ + _)
           .map { case (pr, reqs) => Requirements(reqs, pr) }
       )
 
@@ -859,12 +859,12 @@ object RandomData {
 //    }
 //  }
 
-  def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: Requirements.ById): Gen[Requirements.ById] = {
+  def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: GenericReqIMap): Gen[GenericReqIMap] = {
     val streamOfGens = data.vstream {
         case v: GenericReq => gt.map(t => v.copy(title = t))
       }
     val genStream = Gen.sequence(streamOfGens)
-    genStream.map(Requirements.emptyById ++ _)
+    genStream.map(emptyDataMap(GenericReq) ++ _)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -1120,7 +1120,7 @@ object RandomData {
       reqText        ← revAndG(reqFieldDataText2(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG))
       reqImps        ← revAnd(reqImps1)
       updReqText     = updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text) _
-      reqs2          ← genmodL(Requirements.reqs)(updReqText)(reqsWithoutText)
+      reqs2          ← genmodL(Requirements.genericReqs)(updReqText)(reqsWithoutText)
       reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
       reqs           ← revAnd(reqs2)
       reqCodes       ← revAnd(ReqCodes(reqCodes2))

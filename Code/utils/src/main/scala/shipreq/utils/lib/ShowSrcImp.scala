@@ -174,13 +174,6 @@ object ShowSrcGenericImp {
         s.fnN(".addAll", imap.values)
     }
 
-  def imapk[T, K[+_ <: T], V[+_ <: T]](empty: String)(implicit sv: ShowSrc[V[T]]): ShowSrc[IMapK[T, K, V]] =
-    ShowSrc { (s, imap) =>
-      s append empty
-      if (imap.nonEmpty)
-        s.fnN(".addAll", imap.values.toSeq)
-    }
-
   def isubset[A: ShowSrc]: ShowSrc[ISubset[A]] = {
     implicit val anes = nes[A]
     ShowSrc.init(importISubset){(s, a) =>
@@ -417,8 +410,8 @@ object ShowSrcDataImp {
       case gr: GenericReq => s <~ gr
     })
 
-  implicit val requirementsById: ShowSrc[Requirements.ById] =
-    "reqsById" @@ imapk[ReqTypeId, ReqIdT, ReqT]("Requirements.emptyById")
+  implicit val requirementsById: ShowSrc[GenericReqIMap] =
+    "genericReqs" @@ imapI("GenericReq")
 
   implicit val requirements: ShowSrc[Requirements] =
     data((s, r) =>

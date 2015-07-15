@@ -12,6 +12,7 @@ object CodecMacros {
   def quietCaseClass[T: c.WeakTypeTag](c: Context): c.Expr[ReadWriter[T]] = implCaseClass[T](c, false)
   def debugCaseClass[T: c.WeakTypeTag](c: Context): c.Expr[ReadWriter[T]] = implCaseClass[T](c, true)
 
+  // TODO Store implicits in vals first
   def implCaseClass[T: c.WeakTypeTag](c: Context, debug: Boolean): c.Expr[ReadWriter[T]] = {
     import c.universe._
 
