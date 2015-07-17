@@ -110,6 +110,7 @@ object ApplyEventTestFns {
          | _: PatchImplicationTgt
          | _: SetGenericReqType
          | _: SetGenericReqTitle
+         | _: SetCustomTextField
          | _: UpdateReqCodeGroup
          | _: UpdateApplicableTag
          | _: UpdateTagGroup => ()

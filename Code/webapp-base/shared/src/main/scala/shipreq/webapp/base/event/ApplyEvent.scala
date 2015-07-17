@@ -67,6 +67,7 @@ class ApplyEvent(implicit val trust: Trust) {
       case e: PatchImplicationTgt => ReqEvents    applyPatchImplicationTgt e
       case e: SetGenericReqTitle  => ReqEvents    applySetGenericReqTitle  e
       case e: SetGenericReqType   => ReqEvents    applySetGenericReqType   e
+      case e: SetCustomTextField  => ReqEvents    applySetCustomTextField  e
       case e: DeleteReq           => ReqEvents    applyDelete              e
 
       case e: CreateReqCodeGroup => ReqCodeGroupEvents applyCreate e
@@ -544,24 +545,24 @@ class ApplyEvent(implicit val trust: Trust) {
 
   // ===================================================================================================================
   object ReqEvents {
-    val R = Project.reqs ^|-> RevAnd.data
+    val R  = Project.reqs ^|-> RevAnd.data
     val GR = R ^|-> Requirements.genericReqs
-    val T = Project.reqTags ^|-> RevAnd.data
-    val I = Project.implications ^|-> RevAnd.data ^|-> Implications.srcToTgt
-    val C = Project.reqCodes ^|-> RevAnd.data
+    val TX = Project.reqText ^|-> RevAnd.data
+    val T  = Project.reqTags ^|-> RevAnd.data
+    val I  = Project.implications ^|-> RevAnd.data ^|-> Implications.srcToTgt
+    val C  = Project.reqCodes ^|-> RevAnd.data
     val CT = C ^|-> ReqCodes.trie
 
     val grIMap = IMapApp.data(GenericReq)
     val grLive = LiveApp(GenericReq.live)
 
-    val ensureLive = whenUntrusted[ReqId => App[Project, Any]] {
-      case id: GenericReqId =>
-        App(_.reqs.data.genericReqs.get(id) match {
-          case Some(r) if r.live :: Live => okUnit
-          case Some(_)                   => fail(s"$id is dead.")
-          case None                      => fail(s"$id not found.")
-        })
-    }
+    val ensureLive =
+      ensureLiveFn((p, reqId: ReqId) => reqId match {
+        case id: GenericReqId => p.reqs.data.genericReqs.get(id)
+      })(_.live)
+
+    val ensureLiveTextField =
+      ensureLiveFn((p, id: CustomField.Text.Id) => p.config.fields.data.customFields.get(id))(_.live)
 
     def needCustomReqType(id: CustomReqTypeId): App[Project, CustomReqType] =
       App(p => CustomReqTypeEvents.imap.need(id)(p.config.customReqTypes.data))
@@ -655,6 +656,26 @@ class ApplyEvent(implicit val trust: Trust) {
     def applySetGenericReqTitle(e: SetGenericReqTitle): AP = {
       val f = grIMap.update(e.id, App.ok(_.copy(title = e.value)))
       ensureLive(e.id) >-> (GR @=> f)
+    }
+
+    def applySetCustomTextField(e: SetCustomTextField): AP = {
+      val modText: AE[ReqData.Text] = App.ok { t =>
+        val m = t.get(e.fid) getOrElse Map.empty
+
+        // TODO Pretty-much same logic repeated twice here - should use Monocle
+
+        val m2 = NonEmptyVector.option(e.value) match {
+          case Some(nev) => m.updated(e.id, nev)
+          case None      => m - e.id
+        }
+
+        if (m2.nonEmpty)
+          t.updated(e.fid, m2)
+        else
+          t - e.fid
+      }
+
+      ensureLive(e.id) >-> ensureLiveTextField(e.fid) >-> (TX @=> modText)
     }
 
   }

@@ -7,7 +7,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT, ReqCodeGroupTitle}
+import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT, CustomTextField => CTF, ReqCodeGroupTitle}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.util.TypeclassDerivation._
 import ApplyEventTestFns._
@@ -73,8 +73,6 @@ object GenericReqEventTest extends TestSuite {
     CreateTagGroup(tg1, nev(Name("TG #1"), Desc(None), MutexChildren(false)))
   }
 
-  implicit val init = InitialEvents(createMF, createFR, createAT1, createAT2, createTG1)
-
   implicit class ProjectExt(private val p: Project) extends AnyVal {
     def @@(id: GenericReqId) = ReqFull.extract(p, id)
   }
@@ -91,6 +89,20 @@ object GenericReqEventTest extends TestSuite {
     Vector(GRT.Literal("Look at "), GRT.WebAddress("https://google.com"))
 
   val setGRT1 = SetGenericReqTitle(1, someGRTitle)
+
+  val createCTF1 = {
+    import CustomTextFieldGD._
+    CreateCustomTextField(80, nev(Name("asdf"), Key("qwer"), Mandatory(true), ReqTypes(allReqTypes)))
+  }
+  val cf1 = createCTF1.id
+
+  val someCTF1: CTF.NonEmptyText =
+    NonEmptyVector(CTF.Literal("hi!"), CTF.blankLine, CTF.Literal("bye."))
+
+//  val someCTF2: CTF.OptionalText =
+//    Vector(CTF.Literal("hi again!"), CTF.blankLine, CTF.Literal("bye again."))
+
+  implicit val init = InitialEvents(createMF, createFR, createAT1, createAT2, createTG1, createCTF1)
 
   def assertReq(p: Project, id: GenericReqId)(req      : GenericReq,
                                               tags     : Set[ApplicableTagId] = UnivEq.emptySet,
@@ -586,6 +598,28 @@ object GenericReqEventTest extends TestSuite {
       }
       'reqNotFound - assertFail("found")(setGRT1)
       'reqIsDead   - assertFail("dead")(empty1, del1, setGRT1)
+    }
+
+    'setCustomTextField {
+      def e = SetCustomTextField(1, cf1, someCTF1)
+      'add {
+        val p = _assertPass(empty1, e)
+        val d = p.reqText.data
+        assertEq(d.size, 1)
+        val m = d(cf1)
+        assertEq(m.size, 1)
+        assertEq(m(1), someCTF1)
+      }
+      'remove {
+        val p = _assertPass(empty1, e, SetCustomTextField(1, cf1, ∅))
+        val d = p.reqText.data
+        assertEq(d.size, 0)
+      }
+      'reqNotFound   - assertFail("found")(e)
+      'reqIsDead     - assertFail("dead") (empty1, del1, e)
+      'fieldNotFound - assertFail("found")(empty1, SetCustomTextField(1, 321, someCTF1))
+      'fieldDead     - assertFail("dead") (empty1, DeleteCustomField(cf1, SoftDel), e)
+      // TODO test not applicable to target reqtype
     }
 
   }

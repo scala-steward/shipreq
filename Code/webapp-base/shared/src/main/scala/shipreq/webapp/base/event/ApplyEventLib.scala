@@ -244,6 +244,15 @@ private[event] object ApplyEventLib {
   def untrustedTest(mustPass: => Boolean, err: => String)(implicit trust: Trust): Result[Unit] =
     if ((trust :: Trusted) || mustPass) okUnit else fail(err)
 
+  def ensureLiveFn[I, D](f: (Project, I) => Option[D])(getLive: D => Live)(implicit trust: Trust): I => App[Project, Any] =
+    whenUntrusted(id =>
+      App(p => f(p, id) match {
+        case Some(d) if getLive(d) :: Live => okUnit
+        case Some(_)                       => fail(s"$id is dead.")
+        case None                          => fail(s"$id not found.")
+      })
+    )
+
   def ensureEqual[A](expect: A)(implicit e: Equal[A], trust: Trust): AE[A] =
     if (trust :: Trusted) nop else
       App(a => if (e.equal(a, expect)) ok(a) else fail(s"Expected $expect, got $a"))

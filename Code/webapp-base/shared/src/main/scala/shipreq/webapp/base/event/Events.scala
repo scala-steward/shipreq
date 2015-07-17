@@ -164,7 +164,7 @@ case class SetGenericReqType(id: GenericReqId, value: CustomReqTypeId) extends A
 
 case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText) extends ActiveEvent
 
-//case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
+case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
 
 // =====================================================================================================================
 // Content: ReqCode groups
