@@ -5,9 +5,21 @@ import scalaz.{-\/, Equal, \/-}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Monoidish, Must}
 import shipreq.webapp.base.util.TypeclassDerivation._
+import DataImplicits._
 
 object ProjectConfig {
   implicit def equality: Equal[ProjectConfig] = deriveEqual
+
+  val empty: ProjectConfig = {
+    val rev = Rev(0)
+    implicit def autoRevAnd[D](d: D): RevAnd[D] = RevAnd(rev, d)
+
+    val cit = emptyDataMap(CustomIssueType)
+    val crt = emptyDataMap(CustomReqType)
+    val fs  = FieldSet(emptyDataMap(CustomField), StaticField.values.whole)
+    val tt  = TagTree.empty
+    ProjectConfig(cit, crt, fs, tt)
+  }
 }
 
 @Lenses

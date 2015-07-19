@@ -17,6 +17,20 @@ object Project {
 
   import ReqData._ // for equality
   implicit def equality: Equal[Project] = deriveEqual
+
+  val empty: Project = {
+    val rev = Rev(0)
+    implicit def autoRevAnd[D](d: D): RevAnd[D] = RevAnd(rev, d)
+
+    val cfg      = ProjectConfig.empty
+    val reqs     = Requirements.empty
+    val reqCodes = ReqCodes.empty
+    val reqText  = ReqData.emptyText
+    val reqTags  = ReqData.emptyTags
+    val reqImps  = Implications.empty
+
+    Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
+  }
 }
 
 @Lenses

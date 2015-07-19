@@ -13,27 +13,6 @@ object ApplyEventTestFns {
 
   val tooLongStr = "a" * (AppConsts.largeTextMaxLength + 1)
 
-  // TODO Move to Project once Rev is removed
-  val emptyProject = {
-    import DataImplicits._
-    val rev = Rev(0)
-    implicit def autoRevAnd[D](d: D): RevAnd[D] = RevAnd(rev, d)
-
-    val cit = emptyDataMap(CustomIssueType)
-    val crt = emptyDataMap(CustomReqType)
-    val fs  = FieldSet(emptyDataMap(CustomField), StaticField.values.whole)
-    val tt  = TagTree.empty
-    val cfg = ProjectConfig(cit, crt, fs, tt)
-
-    val reqs     = Requirements.empty
-    val reqCodes = ReqCodes.empty
-    val reqText  = ReqData.emptyText
-    val reqTags  = ReqData.emptyTags
-    val reqImps  = Implications.empty
-
-    Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
-  }
-
   val apply = new ApplyEvent()(Untrusted)
 
   def fmtEvents(es: Seq[Event]): String = {
@@ -46,7 +25,7 @@ object ApplyEventTestFns {
 
   def _assertPass(es: Event*)(implicit init: InitialEvents): Project = {
     val es2 = init ++ es
-    val r = apply(es2)(emptyProject)
+    val r = apply(es2)(Project.empty)
     val p =
       r match {
         case \/-(v) => v
@@ -57,7 +36,7 @@ object ApplyEventTestFns {
   }
 
   def assertFail(errFrag: String)(es: Event*)(implicit init: InitialEvents): Unit = {
-    val r = apply(init ++ es)(emptyProject)
+    val r = apply(init ++ es)(Project.empty)
     r match {
       case -\/(e) => assertContainsCI(e, errFrag)
       case \/-(_) => fail(s"\nFailure expected but didn't occur.\nEvents were:\n${fmtEvents(es)}")
@@ -69,7 +48,7 @@ object ApplyEventTestFns {
     var customReqTypes   = 0
     var tags             = 0
     var customFields     = 0
-    var activeFields     = emptyProject.config.fields.data.order.length
+    var activeFields     = Project.empty.config.fields.data.order.length
     var activeReqs       = 0
     var rcgs             = 0
 
