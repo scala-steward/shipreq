@@ -5,6 +5,11 @@ import scala.collection.GenTraversable
 import shipreq.webapp.base.data.DataProp
 import ApplyEventLib._
 
+object ApplyEvent {
+  val trusted   = new ApplyEvent()(Trusted)
+  val untrusted = new ApplyEvent()(Untrusted)
+}
+
 class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
 
   def apply(events: GenTraversable[Event]): AP =

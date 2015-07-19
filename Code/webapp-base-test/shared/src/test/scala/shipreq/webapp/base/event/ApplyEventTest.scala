@@ -13,7 +13,7 @@ object ApplyEventTestFns {
 
   val tooLongStr = "a" * (AppConsts.largeTextMaxLength + 1)
 
-  val apply = new ApplyEvent()(Untrusted)
+  val apply = ApplyEvent.untrusted
 
   def fmtEvents(es: Seq[Event]): String = {
     val t = es.length
