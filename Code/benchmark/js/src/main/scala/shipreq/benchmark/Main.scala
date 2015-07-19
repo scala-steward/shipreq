@@ -93,6 +93,8 @@ object Main extends JSApp {
 
   def main(): Unit = {
     val bms = Vector(
+      BinSerialisation,
+      BinDeserialisation,
       Serialisation,
       Deserialisation,
       Hashing)

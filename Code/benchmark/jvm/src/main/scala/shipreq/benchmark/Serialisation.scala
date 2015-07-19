@@ -1,9 +1,11 @@
 package shipreq.benchmark
 
-import org.openjdk.jmh.annotations._
+import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
+import org.openjdk.jmh.annotations._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.protocol.DataCodecs
+import shipreq.webapp.base.protocol.BinDataCodecs
 
 @State(Scope.Benchmark)
 //@BenchmarkMode(Array(Mode.SampleTime))
@@ -33,4 +35,42 @@ class Deserialisation {
 
 //  @Benchmark
 //  def read_1000: Project = upickle.Fns read p1000
+}
+
+// ===================================================================================================
+
+import boopickle.{PickleImpl, UnpickleImpl}
+
+@State(Scope.Benchmark)
+class BinSerialisation {
+
+  implicit val projectCodec = BinDataCodecs.pickleProject
+  val p100  = data.project_100
+//  val p1000 = data.project_1000
+
+  @Benchmark
+  def write_100 = PickleImpl intoBytes p100
+
+//  @Benchmark
+//  def write_1000 = PickleImpl intoBytes p1000
+}
+
+@State(Scope.Benchmark)
+class BinDeserialisation {
+
+  implicit val projectCodec = BinDataCodecs.pickleProject
+  val p100  = PickleImpl intoBytes data.project_100
+//  val p1000 = PickleImpl intoBytes data.project_1000
+
+  val u = UnpickleImpl[Project]
+  def read(bb: ByteBuffer): Project = {
+    bb.rewind()
+    u fromBytes bb
+  }
+
+  @Benchmark
+  def read_100 = read(p100)
+
+//  @Benchmark
+//  def read_1000 = read(p1000)
 }
