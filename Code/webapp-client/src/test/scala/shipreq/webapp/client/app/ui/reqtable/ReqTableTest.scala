@@ -17,7 +17,7 @@ import ReactTestUtils.Simulate
 
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.RemoteDelta
-import shipreq.webapp.base.protocol.{Routine, Routines}
+import shipreq.webapp.base.protocol.{RemoteFn, RemoteFns}
 import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.base.util._
 import shipreq.base.util.Debug._
@@ -235,7 +235,7 @@ sealed trait ReqTableTest0 {
 
   val cp = new TestClientProtocol
 
-  val remote = Routine.Remote("x", Routines.UpdateProjectContent)
+  val remote = RemoteFn.Instance("x", RemoteFns.UpdateProjectContent)
 
   def propsForProject(p: Project) =
     ReqTable.Props(new ClientData(p), cp, remote, HideDead)
@@ -682,7 +682,7 @@ sealed trait ReqTableTest0 {
         >> commit.assertNowLocked
         >> assertEditDoesNothing
         >> ioAssertReqsSent(1)
-        >> Action.assert(assert(cp.last.i.toString contains newValue)))
+        >> Action.assert(assert(cp.last.input.toString contains newValue)))
 
     val fail = (
       ioFailLast.focus(failed_?).assertAfter(true, "Should be in failed state after I/O failure")

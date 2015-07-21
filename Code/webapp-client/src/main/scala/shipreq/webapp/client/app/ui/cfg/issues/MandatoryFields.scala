@@ -7,7 +7,7 @@ import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
-import shipreq.webapp.base.protocol.Routines._
+import shipreq.webapp.base.protocol.RemoteFns._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.HideDead
@@ -17,7 +17,7 @@ import shipreq.webapp.client.util.On
 
 private[issues] object MandatoryFields {
 
-  case class Props(cp: ClientProtocol, remote: FieldMandatorinessMod.Remote, clientData: ClientData) {
+  case class Props(cp: ClientProtocol, remote: FieldMandatorinessMod.Instance, clientData: ClientData) {
     @inline def component = Component(this)
   }
 

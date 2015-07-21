@@ -7,7 +7,7 @@ import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
-import shipreq.webapp.base.protocol.Routines._
+import shipreq.webapp.base.protocol.RemoteFns._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -16,7 +16,7 @@ import ReqType.Mnemonic
 
 private[issues] object ReqTypeImplication {
 
-  case class Props(cp: ClientProtocol, remote: ReqTypeImplicationMod.Remote, clientData: ClientData) {
+  case class Props(cp: ClientProtocol, remote: ReqTypeImplicationMod.Instance, clientData: ClientData) {
     @inline def component = Component(this)
   }
 

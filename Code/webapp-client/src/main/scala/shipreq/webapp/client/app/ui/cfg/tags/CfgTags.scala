@@ -25,7 +25,7 @@ import shipreq.webapp.base.data.Validators.{tag => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
 import shipreq.webapp.base.protocol.DeletionAction._
 import shipreq.webapp.base.protocol.TagProtocol
-import shipreq.webapp.base.protocol.Routines.TagCrud
+import shipreq.webapp.base.protocol.RemoteFns.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
@@ -37,7 +37,7 @@ import TagTree.FlatRow, FlatRow.FilterPolicy
 import TagProtocol.{PovTag, PovRelations}
 
 object CfgTags {
-  case class Props(cp: ClientProtocol, remote: TagCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp: ClientProtocol, remote: TagCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }

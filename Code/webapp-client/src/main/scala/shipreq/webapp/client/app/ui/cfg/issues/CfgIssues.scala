@@ -3,16 +3,16 @@ package shipreq.webapp.client.app.ui.cfg.issues
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import shipreq.webapp.client.lib.FilterDead
 import scala.language.reflectiveCalls
-import shipreq.webapp.base.protocol.Routines._
+import shipreq.webapp.base.protocol.RemoteFns._
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.protocol.ClientProtocol
 
 object CfgIssues {
 
   case class Props(cp        : ClientProtocol,
-                   a         : CustomIssueTypeCrud.Remote,
-                   b         : ReqTypeImplicationMod.Remote,
-                   c         : FieldMandatorinessMod.Remote,
+                   a         : CustomIssueTypeCrud.Instance,
+                   b         : ReqTypeImplicationMod.Instance,
+                   c         : FieldMandatorinessMod.Instance,
                    cd        : ClientData,
                    filterDead: FilterDead) {
     @inline def component = Component(this)

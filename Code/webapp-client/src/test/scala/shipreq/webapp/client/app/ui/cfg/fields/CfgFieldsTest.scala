@@ -8,8 +8,8 @@ import shipreq.base.util.ISubset
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaPR, RemoteDelta}
 import shipreq.webapp.base.protocol.FieldProtocol._
-import shipreq.webapp.base.protocol.Routine
-import shipreq.webapp.base.protocol.Routines.FieldCrud
+import shipreq.webapp.base.protocol.RemoteFn
+import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
 import shipreq.webapp.base.test.{SampleProject => S}
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.ClientData
@@ -20,7 +20,7 @@ import MainTable.State
 
 object CfgFieldsTest extends TestSuite {
 
-  val remote = Routine.Remote("x", FieldCrud)
+  val remote = RemoteFn.Instance("x", FieldCrud)
   class Tester {
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol

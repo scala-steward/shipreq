@@ -6,7 +6,7 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.ContentUpdate
-import shipreq.webapp.base.protocol.Routines.UpdateProjectContent
+import shipreq.webapp.base.protocol.RemoteFns.UpdateProjectContent
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -27,7 +27,7 @@ object ReqTable {
       .render(_.backend.render)
       .build
 
-  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateProjectContent.Remote, fd: FilterDead) {
+  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateProjectContent.Instance, fd: FilterDead) {
     def component = Component(this)
   }
 
@@ -89,7 +89,10 @@ object ReqTable {
     val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
     val saveIO: (ContentUpdate, SuccessIO, FailureIO) => IO[Unit] = (i, sio, fio) => {
       val p = $.props
-      val io = p.cp.call(p.remote)(i, p.cd.update(_).flatMap(_ => sio.io), fio)
+      import p._
+      val io = cp.call(remote)(i,
+        sio << cd.applyRemoteDelta(_),
+        cp.consumeGenericFailure(_) >> fio.io)
       //IO(println(s"Fake-sending: $i")) >> io
       io
     }

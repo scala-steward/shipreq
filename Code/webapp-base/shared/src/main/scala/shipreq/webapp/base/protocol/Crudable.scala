@@ -3,13 +3,18 @@ package shipreq.webapp.base.protocol
 import boopickle.Pickler
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.base.delta.RemoteDelta
-import Routine._
 
-trait Crudable extends Desc {
+trait Crudable extends RemoteFn {
   type Id
   type V
-  override final type I  = CrudAction[Id, V]
-  override final type O  = RemoteDelta
+
+  final override type Input   = CrudAction[Id, V]
+  final override type Output  = RemoteDelta
+  final override type Failure = GenericFailure
+
+  final override implicit val pickleOutput  : Pickler[Output]   = BinCodecDelta.pickleRemoteDelta
+  final override implicit val pickleFailure : Pickler[Failure]  = BinCodecProtocolData.pickleGenericFailure
+  final override implicit val pickleResponse: Pickler[Response] = BinCodecGeneric.pickleXor
 
   final type Action = CrudAction[Id, V]
   @inline final def create(v: V)                     : Action = CrudAction.Create[Id, V](v)
@@ -20,12 +25,12 @@ trait Crudable extends Desc {
 object Crudable {
   type Aux[_I, _V] = Crudable { type Id = _I; type V = _V }
 
-  class CAux[_Id, _V] private[protocol](implicit PI: Pickler[_Id], PV: Pickler[_V], PO: Pickler[RemoteDelta]) extends Crudable {
+  class CAux[_Id, _V] private[protocol](implicit PI: Pickler[_Id], PV: Pickler[_V]) extends Crudable {
     override final type Id = _Id
     override final type V  = _V
 
-    override implicit final def pi: Pickler[I] = BinCodecProtocolData.pickleCrudAction[_Id, _V]
-    override implicit final def po: Pickler[O] = PO
+    override implicit final val pickleInput: Pickler[Input] =
+      BinCodecProtocolData.pickleCrudAction[_Id, _V]
   }
 }
 

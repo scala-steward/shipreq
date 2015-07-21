@@ -1,7 +1,7 @@
 package shipreq.webapp.snippet
 
 import net.liftweb.util.Helpers._
-import scalaz.{Equal, \&/, -\/, \/-}, \&/._
+import scalaz.{Equal, \/, \&/, -\/, \/-}, \&/._
 import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
@@ -159,7 +159,9 @@ class WIP {
 
   var p = newProject
 
-  val projectInit = ServerProtocol.routine(Routines.ProjectInit)(_ => p)
+  implicit def blahblah[A](a: A): GenericFailure \/ A = \/-(a)
+
+  val projectInit = ServerProtocol.routine(RemoteFns.ProjectInit)(_ => p)
 
   def emptyDelta = RemoteDelta.empty
 
@@ -201,7 +203,7 @@ class WIP {
     }
 
     val crud =
-      ServerProtocol.routine(Routines.CustomReqTypeCrud)({
+      ServerProtocol.routine(RemoteFns.CustomReqTypeCrud)({
         case CrudAction.Create(v)    =>
           val (mnemonic, name, imp) = v
           val id = CustomReqTypeId(p.config.customReqTypes.data.keySet.max.value + 1)
@@ -218,7 +220,7 @@ class WIP {
       })
 
     val imptoggle =
-      ServerProtocol.routine(Routines.ReqTypeImplicationMod){
+      ServerProtocol.routine(RemoteFns.ReqTypeImplicationMod){
         case (id, imp2) => upd(id, _.copy(imp = imp2))
       }
   }
@@ -258,7 +260,7 @@ class WIP {
       })
     }
 
-    ServerProtocol.routine(Routines.CustomIssueTypeCrud)({
+    ServerProtocol.routine(RemoteFns.CustomIssueTypeCrud)({
       case CrudAction.Create(v)    =>
         val (key, desc) = v
         val id = CustomIssueTypeId(p.config.customIssueTypes.data.keySet.max.value + 1)
@@ -368,7 +370,7 @@ class WIP {
         }
       }
 
-    val fn = ServerProtocol.routine(Routines.TagCrud)({
+    val fn = ServerProtocol.routine(RemoteFns.TagCrud)({
         case CrudAction.Create(v)           => put(nextId, v)
         case CrudAction.Update(i, v)        => put(i, v)
         case CrudAction.Delete(id, HardDel) => mod(setLife(_, id, None))
@@ -411,7 +413,7 @@ class WIP {
     implicit def genIdToImpl(g: Id) = CF.Implication.Id(g.value)
 
     val cfgAction =
-      ServerProtocol.routine(Routines.FieldCrud){
+      ServerProtocol.routine(RemoteFns.FieldCrud){
 
         case Create(TextFieldValues(n, k, m, r)) =>
           mod { fs =>
@@ -465,7 +467,7 @@ class WIP {
       }
 
     val mandmod =
-      ServerProtocol.routine(Routines.FieldMandatorinessMod){
+      ServerProtocol.routine(RemoteFns.FieldMandatorinessMod){
         case (id, m) => mod(id)(CF.mandatory set m)
       }
 
@@ -473,7 +475,7 @@ class WIP {
 
   // -------------------------------------------------------------------------------------------------------------------
   val updateProjectContent =
-    ServerProtocol.routine(Routines.UpdateProjectContent){ i =>
+    ServerProtocol.routine(RemoteFns.UpdateProjectContent){ i =>
       println(s"RECEIVED: $i")
       delay()
       RemoteDelta.empty
@@ -485,7 +487,7 @@ class WIP {
 //  def delay(): Unit = Thread.sleep(new java.util.Random().nextInt(80)+80)
 
   def render = {
-    val pg = Routines.ProjectSPA(
+    val pg = RemoteFns.ProjectSPA(
       projectInit,
       issueTypeCrud,
       reqqq.crud, reqqq.imptoggle,

@@ -1251,25 +1251,25 @@ object RandomData {
   // ===================================================================================================================
   object routines {
     import shipreq.webapp.base.protocol._
-    import Routine._, Routines._
+    import RemoteFn._, RemoteFns._
     import RandomData.protocol._
 
-    lazy val remoteName =
+    lazy val remoteFnKey =
       Gen.alphanumericstring1
 
-    def remote[D <: Desc](d: D) =
-      remoteName.map(Remote(_, d))
+    def remoteFn(f: RemoteFn) =
+      remoteFnKey.map(RemoteFn.Instance(_, f))
 
     lazy val projectSPA =
       Gen.apply8(ProjectSPA)(
-        remote(ProjectInit),
-        remote(CustomIssueTypeCrud),
-        remote(CustomReqTypeCrud),
-        remote(ReqTypeImplicationMod),
-        remote(FieldMandatorinessMod),
-        remote(FieldCrud),
-        remote(TagCrud),
-        remote(UpdateProjectContent))
+        remoteFn(ProjectInit),
+        remoteFn(CustomIssueTypeCrud),
+        remoteFn(CustomReqTypeCrud),
+        remoteFn(ReqTypeImplicationMod),
+        remoteFn(FieldMandatorinessMod),
+        remoteFn(FieldCrud),
+        remoteFn(TagCrud),
+        remoteFn(UpdateProjectContent))
 
     class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._

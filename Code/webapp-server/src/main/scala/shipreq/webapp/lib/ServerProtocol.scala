@@ -4,13 +4,14 @@ import boopickle._
 import java.nio.ByteBuffer
 import java.util.Base64
 import net.liftweb.common.{Full, Empty, Failure => BoxFailure}
-import net.liftweb.http.{BadResponse, S}
-import scala.util.{Success, Failure => TryFailure}
+import net.liftweb.http.{S, LiftResponse, BadResponse, InternalServerErrorResponse}
+import scalaz.{\/-, -\/, \/}
 import shipreq.base.util.Debug._
 import shipreq.base.util.Util.quickSB
-import shipreq.webapp.base.protocol.{JsEntryPoint, Routine}
+import shipreq.base.util.log.HasLogger
+import shipreq.webapp.base.protocol.{JsEntryPoint, RemoteFn}
 
-object ServerProtocol {
+object ServerProtocol extends HasLogger {
 
   def binaryToBase64(bb: ByteBuffer): String = {
     val size = bb.limit()
@@ -19,37 +20,60 @@ object ServerProtocol {
     Base64.getEncoder.encodeToString(a)
   }
 
-  def routine[D <: Routine.Desc](d: D)(f: d.I => d.O): Routine.Remote[D] = {
-    import d.po
-
-    def fail = BadResponse() // TODO log invalid request to support?
+  def routine(fn: RemoteFn)(localFn: fn.Input => fn.Response): fn.Instance = {
+    import fn._
 
     val proc = S.NFuncHolder { () =>
-      val tmp =
-        for {
-          req  <- S.request
-          body <- req.body
-        } yield
-          UnpickleImpl(d.pi).tryFromBytes(ByteBuffer wrap body) match {
-            case Success(input) =>
-              val output = f(input)
-              val binary = PickleImpl.intoBytes(output)
-              BinaryResponse(binary)
+      type T[A] = LiftResponse \/ A
+      @inline implicit def autoL[A](r: LiftResponse): T[A] = -\/(r)
+      @inline implicit def autoR[A](a: A): T[A] = \/-(a)
 
-            case TryFailure(_) => fail
-          }
+      // TODO log errors to support
 
-      tmp match {
-        case Full(resp)          => resp
-        case Empty               => fail
-        case BoxFailure(_, _, _) => fail
-      }
+      def readReqBody: T[Array[Byte]] =
+        S.request.flatMap(_.body) match {
+          case Full(body)    => body
+          case Empty         => BadResponse()
+          case e: BoxFailure =>
+            log.error(s"Error reading $fn request: $e")
+            BadResponse()
+        }
+
+      def unpickle(b: Array[Byte]): T[Input] =
+        try {
+          UnpickleImpl(pickleInput).fromBytes(ByteBuffer wrap b)
+        } catch {
+          case e: Throwable => BadResponse()
+        }
+
+      def process(i: Input): T[Response] =
+        try {
+          localFn(i)
+        } catch {
+          case e: Throwable =>
+            log.error(s"Error processing $fn request $i: $e")
+            InternalServerErrorResponse()
+        }
+
+      def sendResponse(r: Response): T[LiftResponse] =
+        try {
+          val binary = PickleImpl.intoBytes(r)
+          BinaryResponse(binary)
+        } catch {
+          case e: Throwable =>
+            log.error(s"Error responding to $fn with $r: $e")
+            InternalServerErrorResponse()
+        }
+
+//      val r = readReqBody flatMap unpickle flatMap process flatMap sendResponse
+      val r = readReqBody.flatMap(b => unpickle(b).flatMap(i => process(i).flatMap(o => sendResponse(o))))
+      r.merge[LiftResponse]
     }
 
     val fnName = S.formFuncName
     S.addFunctionMap(fnName, proc)
 
-    Routine.Remote[D](fnName, d)
+    RemoteFn.Instance(fnName, fn)
   }
 
   def invokeClientJs[I, O](ep: JsEntryPoint[I, O])(i: I): String = {

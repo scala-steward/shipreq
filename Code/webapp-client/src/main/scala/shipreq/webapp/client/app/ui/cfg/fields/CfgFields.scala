@@ -16,7 +16,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
 import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
-import shipreq.webapp.base.protocol.Routines.FieldCrud
+import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.app.ui._
@@ -30,7 +30,7 @@ import FieldProtocol.Delta
 import DeletionAction._
 
 object CfgFields {
-  case class Props(cp: ClientProtocol, remote: FieldCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp: ClientProtocol, remote: FieldCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }
@@ -183,7 +183,9 @@ private[fields] object MainTable {
       val cp     = $.props.cp
 
       private def call(a: CfgAction): (SuccessIO, FailureIO) => IO[Unit] =
-        (s, f) => cp.call(remote)(a, $.props.clientData.update(_) >> s.io, f)
+        (s, f) => cp.call(remote)(a,
+          s << $.props.clientData.applyRemoteDelta(_),
+          cp.consumeGenericFailure(_) >> f.io)
 
       def createIO(v: FieldProtocol.Values) =
         call(Create(v))

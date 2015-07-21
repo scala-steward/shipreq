@@ -1,8 +1,8 @@
 package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react.test._
-import shipreq.webapp.base.protocol.Routine
-import shipreq.webapp.base.protocol.Routines.CustomIssueTypeCrud
+import shipreq.webapp.base.protocol.RemoteFn
+import shipreq.webapp.base.protocol.RemoteFns.CustomIssueTypeCrud
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.HideDead
@@ -15,7 +15,7 @@ import scalaz.std.AllInstances._
 object CustomIssueTypesTest extends TestSuite {
 
   override def tests = TestSuite {
-    val remote     = Routine.Remote("x", CustomIssueTypeCrud)
+    val remote     = RemoteFn.Instance("x", CustomIssueTypeCrud)
     val clientData = new ClientData(SampleProject.project)
     val cp         = new TestClientProtocol
     val props      = new CustomIssueTypes.Props(cp, remote, clientData, HideDead)

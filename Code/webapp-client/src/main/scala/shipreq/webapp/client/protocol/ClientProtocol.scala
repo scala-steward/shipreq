@@ -1,17 +1,30 @@
 package shipreq.webapp.client.protocol
 
-import shipreq.webapp.base.AppConsts
-import scala.scalajs.js
+import scalaz.{-\/, \/-, \/}
 import scalaz.effect.IO
-import shipreq.webapp.base.protocol.Routine
-import shipreq.webapp.client.lib.FailureIO
+import shipreq.webapp.base.protocol.{GenericFailure, RemoteFn}
+import shipreq.webapp.client.lib.{ConsoleIO, SuccessIO, FailureIO}
+import ClientProtocol._
 
 trait ClientProtocol {
-  // TODO Should not this accept a SuccessIO?
-  def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, success: r.d.O => IO[Unit], f: FailureIO): IO[Unit]
+  def call(i: RemoteFn.Instance)(input  : i.fn.Input,
+                                 success: i.fn.Output => SuccessIO,
+                                 failure: Failed[i.fn.Failure] => FailureIO): IO[Unit]
+
+  /**
+   * Generic means of handling and consuming generic (protocol/ajax) failure.
+   *
+   * Eventually this should be replaced with something better.
+   */
+  def consumeGenericFailure(f: Failed[GenericFailure]): FailureIO =
+    FailureIO(f match {
+      case -\/(t) => ConsoleIO(_.error("AJAX error: ", t.getMessage))
+      case \/-(e) => ConsoleIO(_.error("Remote error occurred: ", e.msg))
+    })
 }
 
 object ClientProtocol {
+  type Failed[O] = Throwable \/ O
 
   object Default extends ClientProtocol {
     import boopickle._
@@ -19,9 +32,11 @@ object ClientProtocol {
     import org.scalajs.dom
     import org.scalajs.dom.ext.AjaxException
     import scala.concurrent.{Future, Promise}
+    import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
+    import scala.scalajs.js
     import scala.scalajs.js.typedarray._
     import scala.scalajs.js.typedarray.TypedArrayBufferOps._
-    import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
+    import shipreq.webapp.base.AppConsts
 
     val ajaxPath = "/" + AppConsts.ajaxPath + "/"
     val timeoutMs = 120 * 1000
@@ -37,7 +52,7 @@ object ClientProtocol {
       TypedArrayBuffer.wrap(buf)
     }
 
-    // Scala.js DOM 0.8.0 does not support binary data, so we implement this here
+    // Initially copied from http://ochrons.github.io/scalajs-spa-tutorial/autowire-and-boopickle.html
     def postBinary(url: String, data: ByteBuffer): Future[ByteBuffer] = {
       val array = data.typedArray().subarray(0, data.limit)
       val req = new dom.XMLHttpRequest()
@@ -60,13 +75,16 @@ object ClientProtocol {
       promise.future.map(r => TypedArrayBuffer.wrap(r.response.asInstanceOf[ArrayBuffer]))
     }
 
-    override def call[D <: Routine.Desc](r: Routine.Remote[D])(input: r.d.I, success: r.d.O => IO[Unit], failure: FailureIO): IO[Unit] = IO {
-      import r.d.{pi, po}
-      val url = LiftAjax.addPageNameAndVersion(ajaxPath, js.undefined) + "?" + r.n
-      val inb = PickleImpl.intoBytes(input)
-      val fut = postBinary(url, inb).map(UnpickleImpl(po) fromBytes _)
-      fut.onSuccess { case v => success(v).unsafePerformIO() }
-      fut.onFailure { case t => failure.io.unsafePerformIO() }
+    override def call(i: RemoteFn.Instance)(input  : i.fn.Input,
+                                            success: i.fn.Output => SuccessIO,
+                                            failure: Failed[i.fn.Failure] => FailureIO): IO[Unit] = IO {
+      import i.fn._
+      val url = LiftAjax.addPageNameAndVersion(ajaxPath, js.undefined) + "?" + i.key
+      val bin = PickleImpl.intoBytes(input)
+      val res = postBinary(url, bin).map(UnpickleImpl(pickleResponse) fromBytes _)
+      res.onSuccess { case \/-(o) => success(o)     .io.unsafePerformIO() }
+      res.onSuccess { case -\/(f) => failure(\/-(f)).io.unsafePerformIO() }
+      res.onFailure { case t      => failure(-\/(t)).io.unsafePerformIO() }
     }
   }
 }

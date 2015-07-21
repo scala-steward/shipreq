@@ -2,13 +2,15 @@ package shipreq.webapp.base.protocol
 
 import boopickle._
 import shipreq.base.util._
+import shipreq.webapp.base.data._
 import BoopickleMacros._
 import BinCodecGeneric._
+import BinCodecData._
+import AtomPicklers.instances._
 
-// =====================================================================================================================
 object BinCodecProtocolData {
-  import shipreq.webapp.base.data._
-  import BinCodecData._, AtomPicklers.instances._
+
+  implicit final val pickleGenericFailure = pickleCaseClass[GenericFailure]
 
   implicit final val pickleDeletionAction = pickleEnum(DeletionAction.values)
 
@@ -105,55 +107,5 @@ object BinCodecProtocolData {
       case _: CU.SetGenericReqTitle   => 7
       case _: CU.SetCustomTextField   => 8
     }
-  }
 
-// =====================================================================================================================
-object BinCodecProtocolRemotes {
-  import Routines._
-
-  private def remoteRoutine[R <: Routine.Desc](d: R): Pickler[d.Remote] =
-    xmap[d.Remote, String](Routine.Remote(_, d))(_.n)
-
-  implicit final val pickleProjectInit          = remoteRoutine(ProjectInit)
-  implicit final val pickleIssueTypeCrud        = remoteRoutine(CustomIssueTypeCrud)
-  implicit final val pickleReqTypeCrud          = remoteRoutine(CustomReqTypeCrud)
-  implicit final val pickleReqTypeImpMod        = remoteRoutine(ReqTypeImplicationMod)
-  implicit final val pickleFieldMandMod         = remoteRoutine(FieldMandatorinessMod)
-  implicit final val pickleFieldCrud            = remoteRoutine(FieldCrud)
-  implicit final val pickleTagCrud              = remoteRoutine(TagCrud)
-  implicit final val pickleUpdateProjectContent = remoteRoutine(UpdateProjectContent)
-
-  implicit final val pickleProjectSPA = pickleCaseClass[ProjectSPA]
-}
-
-// =====================================================================================================================
-object BinCodecDelta {
-  import shipreq.webapp.base.data.RevRange
-  import shipreq.webapp.base.delta._
-  import BinCodecData.pickleRevRange
-
-  implicit final val picklePartition = pickleEnum(Partition.values)
-
-  implicit object PickleRemoteDeltaPR extends Pickler[RemoteDeltaPR] {
-    override def pickle(r: RemoteDeltaPR)(implicit state: PickleState): Unit = {
-      import r.delta.partition.{pi, pd}
-      state pickle r.partition
-      state pickle r.revRange
-      state pickle r.delta.delete
-      state pickle r.delta.update
-    }
-    override def unpickle(implicit state: UnpickleState): RemoteDeltaPR = {
-      val p = state.unpickle[Partition]
-      val r = state.unpickle[RevRange]
-
-      val pi: Pickler[Set[p.Id]]    = iterablePickler(p.pi, implicitly)
-      val pd: Pickler[List[p.Data]] = iterablePickler(p.pd, implicitly)
-      val x = state.unpickle(pi)
-      val y = state.unpickle(pd)
-
-      RemoteDeltaPR(p, r)(x, y)(UnivEq.force)
-    }
-  }
-
-  implicit final val pickleRemoteDelta = pickleIMap(RemoteDelta.empty)
 }

@@ -6,8 +6,8 @@ import shipreq.webapp.client.delta._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.delta.RemoteDelta
-import shipreq.webapp.base.protocol.Routines.ProjectInit
-import shipreq.webapp.client.lib.{FailureIO, ConsoleIO}
+import shipreq.webapp.base.protocol.RemoteFns.ProjectInit
+import shipreq.webapp.client.lib.{SuccessIO, FailureIO, ConsoleIO}
 
 final class ClientData(init: Project) extends Broadcaster[LocalDelta] {
 
@@ -15,7 +15,7 @@ final class ClientData(init: Project) extends Broadcaster[LocalDelta] {
 
   @inline def project = pvar
 
-  def update(rd: RemoteDelta): IO[Unit] =
+  def applyRemoteDelta(rd: RemoteDelta): IO[Unit] =
     RemoteDeltaAp(project, rd) match {
       case RemoteDeltaAp.Success(newProject, localDelta) => IO[Unit] {
         pvar = newProject
@@ -28,9 +28,8 @@ final class ClientData(init: Project) extends Broadcaster[LocalDelta] {
 
 object ClientData {
 
-  def init(cp: ClientProtocol, rpc: ProjectInit.Remote, s: ClientData => IO[Unit]): IO[Unit] = {
-    val f = FailureIO(ConsoleIO(_ error "Page initialisation failed.")) // TODO handle failure properly
-    cp.call(rpc)((), p => s(new ClientData(p)), f)
-  }
-
+  def init(cp: ClientProtocol, remoteInit: ProjectInit.Instance, onSuccess: ClientData => IO[Unit]): IO[Unit] =
+    cp.call(remoteInit)((),
+      p => SuccessIO(onSuccess(new ClientData(p))),
+      cp.consumeGenericFailure) // TODO handle failure properly
 }

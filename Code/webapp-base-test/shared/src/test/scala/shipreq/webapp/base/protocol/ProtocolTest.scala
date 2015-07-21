@@ -33,13 +33,16 @@ object ProtocolTest extends TestSuite {
   implicit val equalityRemoteDelta = Equal.equal[RemoteDelta]((a, b) =>
     a.values.toStream ≟ b.values.toStream)
 
-  implicit def equalProjectSPA: Equal[Routines.ProjectSPA] = {import AutoDerive._; deriveEqual}
+  implicit def equalProjectSPA: Equal[RemoteFns.ProjectSPA] = {
+//    import AutoDerive._; deriveEqual
+    Equal.equalBy(_.productIterator.toStream.map(_.asInstanceOf[RemoteFn.Instance]))
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def kitR[R <: Routine.Desc](r: R) = {
-    import r.{pi, po}
-    new KitIO[r.I, r.O]("Routines." + r.getClass.getSimpleName.replace("$",""))
+  def kitR(r: RemoteFn) = {
+    import r._
+    new KitIO[Input, Output]("Routines." + r.getClass.getSimpleName.replace("$",""))
   }
 
   def kitEP[I](ep: JsEntryPoint[I, Unit], name: String) = {
@@ -89,18 +92,20 @@ object ProtocolTest extends TestSuite {
   override def tests = TestSuite {
 
     'Routines {
-      import Routine.=>|=>
-      def testCrud[I](r: Routine.Desc {type O = RemoteDelta})(g: Gen[r.I])(implicit e: Equal[r.I]): Unit =
+      import RemoteFn.=>|=>
+      type CrudFn[I] = RemoteFn.AuxG[I, RemoteDelta]
+
+      def testCrud[I](r: CrudFn[I])(g: Gen[r.Input])(implicit e: Equal[r.Input]): Unit =
         kitR(r).propI mustBeSatisfiedBy g
 
       def testUnitI[O](r: Unit =>|=> O)(g: Gen[O])(implicit e: Equal[O]): Unit =
         kitR(r).propO mustBeSatisfiedBy g
 
-      'ProjectInit         - testUnitI(Routines.ProjectInit       )($.project)
-      'CustomIssueTypeCrud - testCrud(Routines.CustomIssueTypeCrud)($.routines.customIssueTypeCrud.any)
-      'CustomReqTypeCrud   - testCrud(Routines.CustomReqTypeCrud  )($.routines.customReqTypeCrud.any)
-      'TagCrud             - testCrud(Routines.TagCrud            )($.routines.tagCrud.any)
-      'FieldCrud           - testCrud(Routines.FieldCrud          )($.protocol.fieldCfgAction.any)
+      'ProjectInit         - testUnitI(RemoteFns.ProjectInit       )($.project)
+      'CustomIssueTypeCrud - testCrud(RemoteFns.CustomIssueTypeCrud)($.routines.customIssueTypeCrud.any)
+      'CustomReqTypeCrud   - testCrud(RemoteFns.CustomReqTypeCrud  )($.routines.customReqTypeCrud.any)
+      'TagCrud             - testCrud(RemoteFns.TagCrud            )($.routines.tagCrud.any)
+      'FieldCrud           - testCrud(RemoteFns.FieldCrud          )($.protocol.fieldCfgAction.any)
     }
 
     'JsEntryPoints {
@@ -111,7 +116,7 @@ object ProtocolTest extends TestSuite {
     }
 
     'Δ {
-      val prop = kitR(Routines.CustomReqTypeCrud).propO
+      val prop = kitR(RemoteFns.CustomReqTypeCrud).propO
       def test(p: Partition) = $.remoteDelta forPart confirmTest(p) mustSatisfy prop
 
       // This just spits out a compiler warning to remind you to add a manual test here

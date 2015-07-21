@@ -10,7 +10,7 @@ import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{reqType => V}
-import shipreq.webapp.base.protocol.Routines.CustomReqTypeCrud
+import shipreq.webapp.base.protocol.RemoteFns.CustomReqTypeCrud
 import shipreq.webapp.client.ClientData
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
@@ -19,7 +19,7 @@ import shipreq.webapp.client.util.On
 
 object CfgReqTypes {
 
-  case class Props(cp: ClientProtocol, remote: CustomReqTypeCrud.Remote, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp: ClientProtocol, remote: CustomReqTypeCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
     def component = Component(this)
   }
 

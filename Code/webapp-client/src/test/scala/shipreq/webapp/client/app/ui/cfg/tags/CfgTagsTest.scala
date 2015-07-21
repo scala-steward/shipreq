@@ -11,8 +11,8 @@ import shipreq.base.util.MMTree
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.{Partition, RemoteDeltaPR, RemoteDelta}
-import shipreq.webapp.base.protocol.Routine
-import shipreq.webapp.base.protocol.Routines.TagCrud
+import shipreq.webapp.base.protocol.RemoteFn
+import shipreq.webapp.base.protocol.RemoteFns.TagCrud
 import shipreq.webapp.base.protocol.TagProtocol._
 import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
@@ -40,7 +40,7 @@ object CfgTagsTest extends TestSuite {
     val u: MainTable.DetailPaneFns.UpdateIO = (t, v, _, _) => IO { reqs :+= ((t, v)) }
   }
 
-  val remote = Routine.Remote("x", TagCrud)
+  val remote = RemoteFn.Instance("x", TagCrud)
   class Tester {
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol
@@ -59,7 +59,7 @@ object CfgTagsTest extends TestSuite {
         ApplicableTag(22, "Blah", None, "blah", Live),
         Relations(Map(1.TG -> priMed.some), Vector(10.TG)))
       val d = RemoteDeltaPR(Partition.Tags, rev)(Set.empty, upd :: Nil)
-      clientData.update(RemoteDelta.empty + d).unsafePerformIO()
+      clientData.applyRemoteDelta(RemoteDelta.empty + d).unsafePerformIO()
 
       assertEq(nameAsTextTree(c).mkString("\n"),
         """
