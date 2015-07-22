@@ -48,15 +48,19 @@ object MMTree {
   object Relations {
     implicit def equality[I: UnivEq]: UnivEq[Relations[I]] = UnivEq.force
 
-    def derive[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Relations[I] = {
-      val children = tree.getOrElse(id, Vector.empty)
+    def empty[I]: Relations[I] =
+      Relations(Map.empty, Vector.empty)
 
-      val parents = tree
+    def deriveParents[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Parents[I] =
+      tree
         .filter(_._2 contains id)
         .foldLeft(UnivEq.emptyMap: Parents[I]) {
-        case (m, (parent, sibs)) => m + (parent -> Position.get(sibs, id))
-      }
+          case (m, (parent, sibs)) => m + (parent -> Position.get(sibs, id))
+        }
 
+    def derive[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Relations[I] = {
+      val children = tree.getOrElse(id, Vector.empty)
+      val parents = deriveParents(id, tree)
       Relations(parents, children)
     }
   }

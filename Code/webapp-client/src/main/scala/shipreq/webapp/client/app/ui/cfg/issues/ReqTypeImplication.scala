@@ -42,7 +42,7 @@ private[issues] object ReqTypeImplication {
 
     def save(id: CustomReqTypeId): ST = {
       val p = $.props
-      Persistence.simpleAsyncUpdate(rowStore)(p.remote, p.clientData, p.cp, $ runState _, id)
+      Persistence.simpleAsyncUpdate2(rowStore)(p.remote, p.clientData, p.cp, $ runState _, id)
     }
 
     val genEditor =

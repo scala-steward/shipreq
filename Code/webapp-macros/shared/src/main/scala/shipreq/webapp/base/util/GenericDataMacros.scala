@@ -6,6 +6,12 @@ import boopickle._
 import upickle._
 
 object GenericDataMacros {
+  def gdAllValues(d: GenericData, ctx: String): d.NonEmptyValues = macro GenericDataMacroImpls.quietAllValues
+  def _gdAllValues(d: GenericData, ctx: String): d.NonEmptyValues = macro GenericDataMacroImpls.debugAllValues
+
+  def gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.quietUnequalValues
+  def _gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.debugUnequalValues
+
   def upickler (d: GenericData)(keys: d.Attr => String): ReadWriter[d.NonEmptyValues] = macro GenericDataMacroImpls.quietMPickler
   def _upickler(d: GenericData)(keys: d.Attr => String): ReadWriter[d.NonEmptyValues] = macro GenericDataMacroImpls.debugMPickler
 
@@ -132,6 +138,68 @@ object GenericDataMacroImpls {
     attrs zip values
   }
 
+  // ===================================================================================================================
+
+  private def localNameToExpr(c: blackbox.Context)(ctx: c.Expr[String]): String => c.universe.RefTree = {
+    import c.universe._
+    Some(getStringLiteral(c)(ctx)).filter(_.nonEmpty) match {
+      case None      => n => Ident(TermName(n))
+      case Some(pre) => n => Select(Ident(TermName(pre)), TermName(n))
+    }
+  }
+
+  def debugAllValues(c: blackbox.Context)(d: c.Expr[GenericData], ctx: c.Expr[String]) = implAllValues(c, true )(d, ctx)
+  def quietAllValues(c: blackbox.Context)(d: c.Expr[GenericData], ctx: c.Expr[String]) = implAllValues(c, false)(d, ctx)
+
+  def implAllValues(c: blackbox.Context, debug: Boolean)(d: c.Expr[GenericData], ctx: c.Expr[String]): c.Expr[d.value.NonEmptyValues] = {
+    import c.universe._
+
+    val D = d.actualType.asInstanceOf[SingleType]
+    val attrsAndValues = resolveAttrsAndValues(c, debug)(D)
+    val nameToExpr = localNameToExpr(c)(ctx)
+
+    val parts = for ((a,v) <- attrsAndValues) yield {
+      val n = lowerCaseHead(a.name.toString)
+      val g = nameToExpr(n)
+      q"$a($g)"
+    }
+
+    val values = parts.foldLeft(q"$d.emptyValues": Tree)((a,b) => q"$a + $b")
+
+    val impl = q"shipreq.base.util.NonEmpty.force($values)"
+
+    if (debug) println("\n" + impl + "\n" + sep)
+
+    c.Expr[d.value.NonEmptyValues](impl)
+  }
+
+  def debugUnequalValues(c: blackbox.Context)(d: c.Expr[GenericData], ref: c.Expr[Any], ctx: c.Expr[String]) = implUnequalValues(c, true )(d, ref, ctx)
+  def quietUnequalValues(c: blackbox.Context)(d: c.Expr[GenericData], ref: c.Expr[Any], ctx: c.Expr[String]) = implUnequalValues(c, false)(d, ref, ctx)
+
+  def implUnequalValues(c: blackbox.Context, debug: Boolean)(d: c.Expr[GenericData], ref: c.Expr[Any], ctx: c.Expr[String]): c.Expr[d.value.Values] = {
+    import c.universe._
+
+    val D = d.actualType.asInstanceOf[SingleType]
+    val attrsAndValues = resolveAttrsAndValues(c, debug)(D)
+    val nameToExpr = localNameToExpr(c)(ctx)
+
+    val stmts = for ((a,v) <- attrsAndValues) yield {
+      val n = lowerCaseHead(a.name.toString)
+      val local = nameToExpr(n)
+      val refVal = q"$ref.${TermName(n)}"
+      q"if (!implicitly[_root_.scalaz.Equal[$a.Data]].equal($refVal, $local)) us += $a($local)"
+    }
+
+    val impl = q""" {
+        var us = $d.emptyValues
+        ..${flattenBlocks(c)(stmts.toList)}
+        us
+      } """
+
+    if (debug) println("\n" + impl + "\n" + sep)
+
+    c.Expr[d.value.Values](impl)
+  }
   // ===================================================================================================================
 
   def debugMPickler(c: blackbox.Context)(d: c.Expr[GenericData])(keys: c.Expr[d.value.Attr => String]) = implMPickler(c, true )(d)(keys)

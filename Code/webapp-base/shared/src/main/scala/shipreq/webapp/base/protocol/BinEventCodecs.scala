@@ -2,6 +2,7 @@ package shipreq.webapp.base.protocol
 
 import boopickle._
 import shipreq.webapp.base.event._
+import shipreq.webapp.base.hash.HashScheme
 import shipreq.webapp.base.util.GenericDataMacros._
 import BoopickleMacros._
 import BinCodecGeneric._
@@ -59,4 +60,9 @@ object BinEventCodecs {
 
   implicit val pickleActiveEvent: Pickler[ActiveEvent] = pickleADT
   implicit val pickleEvent      : Pickler[Event]       = pickleADT
+
+  implicit val pickleHashScheme: Pickler[HashScheme] = ConstPickler(HashScheme.latest) // TODO
+
+  implicit val pickleVerifiedEvent : Pickler[VerifiedEvent]  = pickleCaseClass
+  implicit val pickleVerifiedEvents: Pickler[VerifiedEvents] = iterablePickler
 }

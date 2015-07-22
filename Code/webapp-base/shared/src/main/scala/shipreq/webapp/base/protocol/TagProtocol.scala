@@ -14,6 +14,9 @@ object TagProtocol {
 
   type PovRelations = MMTree.Relations[Id]
 
+  val noRelations: PovRelations =
+    MMTree.Relations.empty
+
   /** A tag and its world from its own point of view. */
   final case class PovTag(tag: Tag, rels: PovRelations) {
     @inline def id = tag.id

@@ -3,12 +3,14 @@ package shipreq.webapp.base.protocol
 import scalaz.\&/
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.delta.RemoteDelta
+import shipreq.webapp.base.event.VerifiedEvents
 import RemoteFn._
 
 import BinCodecGeneric._
 import BinCodecData._
 import BinCodecProtocolData._
 import BinCodecDelta._
+import BinEventCodecs._
 
 object RemoteFns {
   // After adding a new Routine, also update the following:
@@ -24,7 +26,7 @@ object RemoteFns {
   object TagCrud               extends Crudable.CAux[TagId,             TagProtocol.Values \&/ TagProtocol.PovRelations]
   object FieldCrud             extends (FieldProtocol.CfgAction                =>|=> RemoteDelta)
   object FieldMandatorinessMod extends ((CustomFieldId,   Mandatory          ) =>|=> RemoteDelta)
-  object ReqTypeImplicationMod extends ((CustomReqTypeId, ImplicationRequired) =>|=> RemoteDelta)
+  object ReqTypeImplicationMod extends ((CustomReqTypeId, ImplicationRequired) =>|=> VerifiedEvents)
 
   object UpdateProjectContent extends (ContentUpdate =>|=> RemoteDelta)
 

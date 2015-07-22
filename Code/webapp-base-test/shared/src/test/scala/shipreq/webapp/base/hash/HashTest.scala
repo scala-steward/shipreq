@@ -88,7 +88,7 @@ object HashTest extends TestSuite {
   // ===================================================================================================================
   // Data hashing
 
-  import HashScheme.default._
+  import HashScheme.latest._
 
   case class DataHashTest[A: Hash : Pickler](a1: A, a2: A, a3: A) {
     val E = EvalOver(this)

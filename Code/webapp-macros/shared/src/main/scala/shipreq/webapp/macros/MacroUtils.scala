@@ -164,6 +164,14 @@ object MacroUtils {
   def lowerCaseHead(s: String): String =
     modStringHead(s, _.toLower)
 
+  def getStringLiteral(c: Context)(e: c.Expr[String]): String = {
+    import c.universe._
+    e match {
+      case Expr(Literal(Constant(s: String))) => s
+      case _ => fail(c, s"Expected a literal string, got: ${showRaw(e)}")
+    }
+  }
+
   /**
    * Create code for a function that will call .apply() on a given type's type companion object.
    */

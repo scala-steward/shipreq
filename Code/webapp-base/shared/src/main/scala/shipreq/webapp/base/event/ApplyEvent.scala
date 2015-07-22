@@ -2,7 +2,7 @@ package shipreq.webapp.base.event
 
 import japgolly.nyaya.LogicPropExt
 import scala.collection.GenTraversable
-import shipreq.webapp.base.data.DataProp
+import shipreq.webapp.base.data.{Project, DataProp}
 import ApplyEventLib._
 
 object ApplyEvent {
@@ -18,15 +18,33 @@ class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
   def apply1(event: Event): AP =
     _apply1(event) >=> validateDataProps
 
-  private val validateDataProps: AP = {
+  private val validateDataProps: AP = whenUntrusted {
     val prop = DataProp.project.allIncludingConfig
-    whenUntrusted(App { p =>
+    App { p =>
       val e = prop(p)
       if (e.success)
         ok(p)
       else
         fail(e.report)
-    })
+    }
+  }
+
+  def applyVerified(ves: GenTraversable[VerifiedEvent]): AP =
+    if (ves.isEmpty)
+      nop
+    else
+      App { p =>
+        val applyAll = apFoldLeft(ves)(ve => _apply1(ve.event)) >=> validateDataProps
+        applyAll(p).flatMap(validateHash(_, ves.last))
+        // TODO On failure, replay to find the first mismatching event
+      }
+
+  def validateHash(p: Project, ve: VerifiedEvent): Result[Project] = {
+    val h2 = ve.hashScheme.hashProject hash p
+    if (ve.hash == h2)
+      ok(p)
+    else
+      fail(s"Hash mismatch on $ve. Got $h2.")
   }
 
   private def _apply1(event: Event): AP =
