@@ -62,6 +62,7 @@ object ApplyEventTestFns {
       case _: CreateCustomTextField
          | _: CreateCustomTagField
          | _: CreateCustomImpField  => activeFields += 1; customFields += 1
+      case _: AddStaticField        => activeFields += 1
       case _: CreateTagGroup
          | _: CreateApplicableTag   => tags += 1
       case _: CreateReqCodeGroup    => rcgs += 1

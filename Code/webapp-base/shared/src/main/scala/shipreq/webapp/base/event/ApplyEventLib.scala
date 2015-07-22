@@ -304,6 +304,19 @@ private[event] object ApplyEventLib {
     else
       App.ok(a => a.asInstanceOf[B])
 
+  def appendNewToVector[A: Equal](implicit trust: Trust): A => AE[Vector[A]] = {
+    def doit(a: A, as: Vector[A]): Vector[A] = as :+ a
+    if (trust :: Trusted)
+      a => App.ok(doit(a, _))
+    else
+      a => App { as =>
+        if (as.exists(_ ≟ a))
+          fail(s"Element $a already exists in $as.")
+        else
+          ok(doit(a, as))
+      }
+  }
+
   def removeFromVector[A: Equal](implicit trust: Trust): A => AE[Vector[A]] = {
     def doit(a: A, as: Vector[A]): Vector[A] = as.filterNot(_ ≟ a)
     if (trust :: Trusted)

@@ -53,6 +53,7 @@ class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
       case e: UpdateCustomImpField  => CustomImpFieldEvents  applyUpdate e
       case e: DeleteCustomField     => FieldEvents           applyDeleteC e
       case e: DeleteStaticField     => FieldEvents           applyDeleteS e
+      case e: AddStaticField        => FieldEvents           applyAddStaticField e
       case e: RepositionField       => FieldEvents           applyReposition e
 
       case e: CreateGenericReq    => ReqEvents    createGeneric            e

@@ -335,6 +335,8 @@ trait ApplyConfigEvent extends AskTrust {
 
     val deleteSF = ensureDeletableSF >=>> removeFromOrder
 
+    val addSF = appendNewToVector[FieldId]
+
     def hardDeleteCustomField(id: CustomFieldId): AE[FieldSet] =
       App(fs =>
         for {
@@ -349,6 +351,9 @@ trait ApplyConfigEvent extends AskTrust {
         case SoftDel => M @=> setLive(e.id, Dead)
         case Restore => M @=> setLive(e.id, Live)
       }
+
+    def applyAddStaticField(e: AddStaticField): AP =
+      O @=> addSF(e.f)
 
     def applyDeleteS(e: DeleteStaticField): AP =
       O @=> deleteSF(e.f)

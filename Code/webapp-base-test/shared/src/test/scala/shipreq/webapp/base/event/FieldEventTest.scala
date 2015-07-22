@@ -38,6 +38,12 @@ object CustomFieldEventTest extends TestSuite {
       assertEq(o, Vector(NormalAltStepTree, t1, StepGraph, t2, ExceptionStepTree))
     }
 
+    'addStaticField {
+      'ok - assertPass(DeleteStaticField(StepGraph), AddStaticField(StepGraph))
+      'failIfExists     - assertFail("exists")(AddStaticField(StepGraph))
+      'failIfNotDelable - assertFail("exists")(AddStaticField(NormalAltStepTree))
+    }
+
     'deleteStatic {
       // assertQty allows less detail here
       'ok - {
@@ -52,6 +58,7 @@ object CustomFieldEventTest extends TestSuite {
         val d = DeleteStaticField(StepGraph)
         assertFail("not found")(d, d)
       }
+      'delAddDel - assertPass(DeleteStaticField(StepGraph), AddStaticField(StepGraph), DeleteStaticField(StepGraph))
     }
   }
 }
