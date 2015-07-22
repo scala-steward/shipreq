@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 import scalaz.{Equal, -\/, \/, \/-, Traverse}
 import scalaz.syntax.equal._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{Dead, Live, ObjDataId, Project}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.GenericData
 import shipreq.webapp.base.validation.{ValidatorU, ValidationResult}
 
@@ -341,6 +341,17 @@ private[event] object ApplyEventLib {
         else
           ok(Position.set(as, a, pos))
       }
+  }
+
+  def updateIdCeilingFn(lens: Lens[IdCeilings, Int]): Int => AP = {
+    val l = Project.idCeilings ^|-> lens
+    n => App.ok { p =>
+      val i = l.get(p)
+      if (n > i)
+        l.set(n)(p)
+      else
+        p
+    }
   }
 
   trait AskTrust {

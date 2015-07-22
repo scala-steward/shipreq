@@ -140,6 +140,7 @@ object BinCodecData {
   implicit val pickleCustomFields     : Pickler[FieldSet.CustomFields]              = pickleIMap(FieldSet.emptyCustomFields)
   implicit val pickleFieldSet         : Pickler[FieldSet]                           = pickleCaseClass
 
+  implicit val pickleIdCeilings   : Pickler[IdCeilings]    = pickleCaseClass
   implicit val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass
   implicit val pickleProject      : Pickler[Project]       = pickleCaseClass
 }

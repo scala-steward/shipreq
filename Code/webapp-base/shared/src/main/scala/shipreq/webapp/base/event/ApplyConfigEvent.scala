@@ -38,6 +38,8 @@ trait ApplyConfigEvent extends AskTrust {
       case v: ^.ValueForDesc => updateDesc(v.value)
     }
 
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customIssueType)
+
     def applyCreate(e: CreateCustomIssueType): AP = {
       implicit val vs = e.vs
       create(
@@ -45,7 +47,7 @@ trait ApplyConfigEvent extends AskTrust {
           k <- readKey
           d <- readDesc
         } yield CustomIssueType(e.id, k, d, Live)
-      )
+      ) >=> updateIdCeiling(e.id)
     }
 
     def applyUpdate(e: UpdateCustomIssueType): AP =
@@ -80,6 +82,8 @@ trait ApplyConfigEvent extends AskTrust {
       case v: ^.ValueForMnemonic => updateMnemonic(v.value)
     }
 
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customReqType)
+
     def applyCreate(e: CreateCustomReqType): AP = {
       implicit val vs = e.vs
       create(
@@ -88,7 +92,7 @@ trait ApplyConfigEvent extends AskTrust {
           m <- readMnemonic
           i <- readImp
         } yield CustomReqType(e.id, m, Set.empty, n, i, Live)
-      )
+      ) >=> updateIdCeiling(e.id)
     }
 
     def applyUpdate(e: UpdateCustomReqType): AP =
@@ -105,6 +109,7 @@ trait ApplyConfigEvent extends AskTrust {
 
     val L = Project.tags ^|-> RevAnd.data
     val imap = IMapApp.like(TagTree.empty)
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.tag)
 
     val validateName = validateWith(V.tag.nameU)
     val validateDesc = validateWithF(V.tag.descU)(_ getOrElse "")
@@ -124,7 +129,8 @@ trait ApplyConfigEvent extends AskTrust {
           case None    => nop
           case Some(p) => setParents(id, p)
         }
-      L @=> (newTag ?=>> (t => imap.add(t) >=> applyParents(t.id)))
+      newTag ?=>> (t =>
+        L @=> (imap.add(t) >=> applyParents(t.id)) >=> updateIdCeiling(t.id))
     }
 
     def applyDelete(e: DeleteTag): AP =
@@ -309,6 +315,7 @@ trait ApplyConfigEvent extends AskTrust {
     val M = L ^|-> FieldSet.customFields
     val O = L ^|-> FieldSet.order
     val imap = IMapApp[CustomFieldId, CustomField]
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customField)
 
     val validateName = validateWith(V.field.nameU)
     val validateKey  = validateWithF(V.field.keyU)(_.value)
@@ -319,7 +326,8 @@ trait ApplyConfigEvent extends AskTrust {
     def create(cf: CustomField): AP =
       L @=> App(fs =>
         for (cfs <- imap.add(cf)(fs.customFields))
-          yield FieldSet(cfs, fs.order :+ cf.id))
+          yield FieldSet(cfs, fs.order :+ cf.id)
+      ) >=> updateIdCeiling(cf.id)
 
     val repositionField = reposition[FieldId]
 

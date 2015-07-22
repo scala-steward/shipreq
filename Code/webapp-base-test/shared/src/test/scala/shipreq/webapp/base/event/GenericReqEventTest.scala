@@ -130,6 +130,7 @@ object GenericReqEventTest extends TestSuite {
 
   class ScriptTester {
     var p = _assertPass()
+    var es = implicitly[InitialEvents].es.toVector
 
     def fmtRCs(rc: ReqCodes): Set[String] =
       rc.trie.cataV(Set.empty[String]) { (q, p, d) =>
@@ -156,6 +157,8 @@ object GenericReqEventTest extends TestSuite {
         case -\/(err) => fail(s"$e was expected to pass but failed with: $err")
       }
       assertEq(s"Step #$testNo", fmtRCs(p.reqCodes.data), expected.toSet)
+      es :+= e
+      assertQty(p, es: _*)
     }
   }
 

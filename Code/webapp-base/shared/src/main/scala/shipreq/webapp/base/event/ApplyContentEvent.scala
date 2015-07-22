@@ -19,6 +19,8 @@ trait ApplyContentEvent extends ApplyConfigEvent {
     val C  = Project.reqCodes ^|-> RevAnd.data
     val CT = C ^|-> ReqCodes.trie
 
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
+
     val grIMap = IMapApp.data(GenericReq)
     val grLive = LiveApp(GenericReq.live)
 
@@ -53,10 +55,10 @@ trait ApplyContentEvent extends ApplyConfigEvent {
           case ValueForTags    (v) => result = result.map(T.modify(_.addvs(id, v.whole)))
           case ValueForImpTgts (v) => result = result.map(I.modify(_.addvs(id, v.whole)))
           case ValueForImpSrcs (v) => result = result.map(I.modify(_.addks(v.whole, id)))
-          case ValueForReqCodes(v) => result = result ?=> (CT @=> ReqCodeLogic.addAll_IVs(v.whole, id, true))
+          case ValueForReqCodes(v) => result = result ?=> ReqCodeLogic.addAll_IVs(v.whole, id, true)
         }
 
-        result
+        result ?=> updateIdCeiling(e.id)
       }
 
     def applyDelete(e: DeleteReq): AP =
@@ -177,6 +179,8 @@ trait ApplyContentEvent extends ApplyConfigEvent {
     type ARC = AE[ReqCodes]
     type AT = AE[Trie]
 
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.reqCode)
+
     val validateCode = validateWith(V.reqCode.valueAndNodesU)
 
     val ensureInactive: AE[Data] = {
@@ -260,14 +264,16 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         t.valueAtPath(value, createNode)(modifyNode)
       }
 
-    def addAll_IVs(vs: GenTraversable[IdAndValue], target: Target, addToActive: Boolean): AT =
-      apFoldLeft(vs)(iv => add(iv.id, iv.value, target, addToActive))
+    def addAll_IVs(vs: GenTraversable[IdAndValue], target: Target, addToActive: Boolean): AP =
+      CT @=> apFoldLeft(vs)(iv => add(iv.id, iv.value, target, addToActive)) >=>
+        updateIdCeiling(IdCeilings.maxOfF(vs)(_.id))
 
-    def addAll_VIs(vs: GenTraversable[(Value, ReqCodeId)], target: Target, addToActive: Boolean): AT =
-      apFoldLeft(vs)(vi => add(vi._2, vi._1, target, addToActive))
+//    def addAll_VIs(vs: GenTraversable[(Value, ReqCodeId)], target: Target, addToActive: Boolean): AT =
+//      apFoldLeft(vs)(vi => add(vi._2, vi._1, target, addToActive))
 
     def addAll_V_Is(v: Value, ids: GenTraversable[ReqCodeId], target: Target, addToActive: Boolean): AT =
       apFoldLeft(ids)(id => add(id, v, target, addToActive))
+
 
     /**
      * Remove a single code, then perform an addition action with the `ActiveData` found.
@@ -402,12 +408,15 @@ trait ApplyContentEvent extends ApplyConfigEvent {
 
       val restoreAndAdd = restore >=> addCodes
 
+      val maxId = IdCeilings.maxOfF(e.add.values)(IdCeilings maxOf _)
+
       App { (p: Project) =>
         val referenced = p.atomScan.codeRefs
         val keepRefIds = referenced -- addIds
         val remove = removeIds(e.remove, ensureEqual(target), keepRefIds.contains)
 
-        (C @=> (remove >=> restoreAndAdd))(p)
+        val app = C @=> (remove >=> restoreAndAdd) >=> updateIdCeiling(maxId)
+        app(p)
       }
     }
 
@@ -459,7 +468,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
           t <- readTitle
         } yield {
           val g = if (t.isEmpty) ReqCodeGroup.empty else ReqCodeGroup(t)
-          CT @=> add(e.id, c, g, true)
+          CT @=> add(e.id, c, g, true) >=> updateIdCeiling(e.id)
         }
       app.joinE
     }

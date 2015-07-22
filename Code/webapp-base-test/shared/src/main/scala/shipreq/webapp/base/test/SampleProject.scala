@@ -87,7 +87,7 @@ object SampleProject {
   lazy val reqImps  = RevAnd(80, Implications.empty)
 
   lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
-  lazy val project       = Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps)
+  lazy val project       = IdCeilings.supply(Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps, _))
 
   lazy val tagTree = project.config.tags.data.mapValues(_.children)
 

@@ -487,11 +487,14 @@ object ShowSrcDataImp {
   implicit val tagTree: ShowSrc[TagTree] =
     "tagTree" @@ imap("TagTree.empty")
 
+  implicit val idCeilings: ShowSrc[IdCeilings] =
+    data((s, a) => s.cc6("IdCeilings", IdCeilings unapply a))
+
   implicit val projectConfig: ShowSrc[ProjectConfig] =
     data((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a, "\n    "))
 //    source((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a))
 
   implicit val project: ShowSrc[Project] =
-    data((s, a) => s.cc6("Project", Project unapply a, "\n  "))
+    data((s, a) => s.cc7("Project", Project unapply a, "\n  "))
 //    source((s, a) => s.cc6("Project", Project unapply a))
 }

@@ -37,12 +37,14 @@ object ProjectDslInternals {
     }
 
     def done: Project =
-      p.copy(
-        reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
-        reqCodes     = succ(p.reqCodes,     ReqCodes(reqCodeTrie)),
-        reqText      = succ(p.reqText,      text),
-        reqTags      = succ(p.reqTags,      tags),
-        implications = succ(p.implications, Implications(imps)))
+      IdCeilings.supply(ids =>
+        p.copy(
+          reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
+          reqCodes     = succ(p.reqCodes,     ReqCodes(reqCodeTrie)),
+          reqText      = succ(p.reqText,      text),
+          reqTags      = succ(p.reqTags,      tags),
+          implications = succ(p.implications, Implications(imps)),
+          idCeilings   = ids))
   }
 
   private def succ[A](r: RevAnd[A], a: A): RevAnd[A] =

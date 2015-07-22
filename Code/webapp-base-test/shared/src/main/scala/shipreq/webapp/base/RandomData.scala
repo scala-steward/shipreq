@@ -1126,7 +1126,7 @@ object RandomData {
       reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
       reqs           ← revAnd(reqs2)
       reqCodes       ← revAnd(ReqCodes(reqCodes2))
-    } yield Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
+    } yield IdCeilings.supply(Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, _))
   }
 
   lazy val project: Gen[Project] =

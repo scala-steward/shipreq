@@ -191,6 +191,7 @@ final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDas
   implicit val hashFieldId          : Hash[FieldId]                            = hashADT
   implicit val hashFieldSet         : Hash[FieldSet]                           = hashCaseClass
 
+  implicit val hashIdCeilings   : Hash[IdCeilings]    = hashCaseClass
   implicit val hashProjectConfig: Hash[ProjectConfig] = hashCaseClass
   implicit val hashProject      : Hash[Project]       = hashCaseClass
 }

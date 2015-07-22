@@ -441,6 +441,8 @@ object DataProp {
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 
+    // TODO Validate IdCeiling
+
     val allExcludingConfig: Prop[Project] = "Project" rename_: (
       constituents ∧ atoms ∧ liveReqRequiresLiveReqType ∧ liveReqCodeRequiresLiveTarget ∧ validRefs)
 

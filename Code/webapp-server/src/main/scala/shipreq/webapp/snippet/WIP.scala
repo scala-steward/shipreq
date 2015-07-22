@@ -82,7 +82,7 @@ class WIP {
     lazy val reqImps  = RevAnd(80, Implications.empty)
 
     lazy val cfg = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
-    lazy val project = Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
+    lazy val project = IdCeilings.supply(Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, _))
 
     import shipreq.webapp.base.test.ProjectDsl._
 

@@ -94,9 +94,7 @@ object UpdateProject {
     applyEventR(state)(a match {
 
       case CrudAction.Create(vs) =>
-        // TODO This can conflict with hard-deleted ids
-        val i = state.project.config.customIssueTypes.data.keys.foldLeft(0)(_ max _.value)
-        val id = CustomIssueTypeId(i + 1)
+        val id = CustomIssueTypeId(state.project.idCeilings.customIssueType + 1)
         val (key, desc) = vs
         val values = gdAllValues(CustomIssueTypeGD , "")
         CreateCustomIssueType(id, values)
@@ -117,9 +115,7 @@ object UpdateProject {
     applyEventR(state)(a match {
 
       case CrudAction.Create(vs) =>
-        // TODO This can conflict with hard-deleted ids
-        val i = state.project.config.customReqTypes.data.keys.foldLeft(0)(_ max _.value)
-        val id = CustomReqTypeId(i + 1)
+        val id = CustomReqTypeId(state.project.idCeilings.customReqType + 1)
         val (mnemonic, name, imp) = vs
         val values = gdAllValues(CustomReqTypeGD , "")
         CreateCustomReqType(id, values)
@@ -138,21 +134,22 @@ object UpdateProject {
 
   def fieldCrud(a: RemoteFns.FieldCrud.Input, state: State): UpdateResult = {
     import FieldProtocol._
+    def nextId = state.project.idCeilings.customField + 1
     applyEventR(state)(a match {
 
       case CfgAction.UpdateOrder(id, pos) =>
         RepositionField(id, pos)
 
       case CfgAction.Create(vs: TextFieldValues) =>
-        val id: CustomField.Text.Id = ??? /////////////////////////////////////////////
+        val id = CustomField.Text.Id(nextId)
         CreateCustomTextField(id, gdAllValues(CustomTextFieldGD, "vs"))
 
       case CfgAction.Create(vs: TagFieldValues) =>
-        val id: CustomField.Tag.Id = ??? /////////////////////////////////////////////
+        val id = CustomField.Tag.Id(nextId)
         CreateCustomTagField(id, gdAllValues(CustomTagFieldGD, "vs"))
 
       case CfgAction.Create(vs: ImplicationFieldValues) =>
-        val id: CustomField.Implication.Id = ??? /////////////////////////////////////////////
+        val id = CustomField.Implication.Id(nextId)
         CreateCustomImpField(id, gdAllValues(CustomImpFieldGD, "vs"))
 
       case CfgAction.UpdateValues(id: CustomField.Text.Id, vs: TextFieldValues) =>
@@ -196,6 +193,7 @@ object UpdateProject {
   // TODO tagCrud protocol is crap. Redo it.
   def tagCrud(a: RemoteFns.TagCrud.Action, state: State): UpdateResult = {
     import TagProtocol.{TagGroupValues, ApplicableTagValues, noRelations}
+    def nextId = state.project.idCeilings.tag + 1
     applyEventR(state)(a match {
 
       case CrudAction.Create(vs) =>
@@ -204,12 +202,12 @@ object UpdateProject {
 
         vs.a match {
           case Some(v: ApplicableTagValues) =>
-            val id: ApplicableTagId = ??? /////////////////////////////////////////////
+            val id = ApplicableTagId(nextId)
             import v._
             CreateApplicableTag(id, gdAllValues(ApplicableTagGD, ""))
 
           case Some(v: TagGroupValues) =>
-            val id: TagGroupId = ??? /////////////////////////////////////////////
+            val id = TagGroupId(nextId)
             import v._
             CreateTagGroup(id, gdAllValues(TagGroupGD, ""))
 

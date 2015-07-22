@@ -28,8 +28,9 @@ object Project {
     val reqText  = ReqData.emptyText
     val reqTags  = ReqData.emptyTags
     val reqImps  = Implications.empty
+    val ids      = IdCeilings.zero
 
-    Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps)
+    Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, ids)
   }
 }
 
@@ -39,7 +40,8 @@ final case class Project(config      : ProjectConfig,
                          reqCodes    : RevAnd[ReqCodes],
                          reqText     : RevAnd[ReqData.Text],
                          reqTags     : RevAnd[ReqData.Tags],
-                         implications: RevAnd[Implications]) {
+                         implications: RevAnd[Implications],
+                         idCeilings  : IdCeilings) {
 
 
   def contentRev: Rev =

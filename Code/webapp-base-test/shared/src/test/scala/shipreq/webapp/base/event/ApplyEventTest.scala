@@ -103,6 +103,19 @@ object ApplyEventTestFns {
     assertEq("Σ ActiveFields", activeFields, p.config.fields.data.fields.unmust.count(_.live :: Live))
     assertEq("Σ ActiveReqs", activeReqs, p.reqs.data.reqs.values.filter(_.live :: Live).size)
     assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.data.activeGroups.size)
+    validateIdCeilings(p)
+  }
+
+  def validateIdCeilings(p: Project): Unit = {
+    val a = p.idCeilings
+    val b = IdCeilings.calculate(p)
+    if ( a.customIssueType < b.customIssueType
+      || a.customReqType   < b.customReqType
+      || a.customField     < b.customField
+      || a.tag             < b.tag
+      || a.req             < b.req
+      || a.reqCode         < b.reqCode
+      ) fail(s"Have $a < Calc $b")
   }
 }
 
