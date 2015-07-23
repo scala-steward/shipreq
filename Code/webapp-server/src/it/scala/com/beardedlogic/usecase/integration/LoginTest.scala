@@ -2,8 +2,8 @@ package shipreq.webapp.integration
 
 import org.scalatest.FunSuite
 import scala.slick.jdbc.StaticQuery
-import shipreq.webapp.test.TestDB
-import shipreq.webapp.test.fixture.UserFixture
+import shipreq.webapp.server.test.TestDB
+import shipreq.webapp.server.test.fixture.UserFixture
 import support.SeleniumTest
 
 class LoginTest extends FunSuite with SeleniumTest with UserFixture {

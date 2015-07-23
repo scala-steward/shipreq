@@ -1,7 +1,7 @@
 package shipreq.webapp.integration.support
 
 import org.scalatest.{Informing, Suite, GivenWhenThen}
-import shipreq.webapp.test.TestHelpers
+import shipreq.webapp.server.test.TestHelpers
 
 trait SeleniumTest extends SeleniumTestSupport with TestHelpers with GivenWhenThen {
   this: Suite with Informing =>

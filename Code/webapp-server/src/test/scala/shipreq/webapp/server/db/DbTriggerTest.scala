@@ -1,0 +1,209 @@
+package shipreq.webapp.server.db
+
+import org.scalatest.FunSpec
+import shipreq.webapp.server.lib.Types.ProjectId
+import scala.slick.jdbc.StaticQuery.{queryNA, updateNA, update => updateQ, query => queryQ}
+import org.postgresql.util.PSQLException
+import shipreq.webapp.server.db.SqlHelpers._
+import shipreq.webapp.server.test.TestDatabaseSupport
+
+class DbTriggerTest extends FunSpec with TestDatabaseSupport {
+
+  class SampleFKs {
+    val txtFieldTypeId = queryNA[Short]("INSERT INTO field_key_type VALUES(3250,'txt',1) RETURNING id").first
+    val stepFieldTypeId = queryNA[Short]("INSERT INTO field_key_type VALUES(3251,'stp',NULL) RETURNING id").first
+    val txtField1 = queryNA[Long](s"INSERT INTO field_key(type_id,data) VALUES($txtFieldTypeId,'TF1') RETURNING id").first
+    val txtField2 = queryNA[Long](s"INSERT INTO field_key(type_id,data) VALUES($txtFieldTypeId,'TF1') RETURNING id").first
+    val ncId = queryNA[Long](s"INSERT INTO field_key(type_id,data) VALUES($stepFieldTypeId,'NC') RETURNING id").first
+    val ecId = queryNA[Long](s"INSERT INTO field_key(type_id,data) VALUES($stepFieldTypeId,'EC') RETURNING id").first
+  }
+
+  case class SampleUC(ucn: Short, fks: SampleFKs) {
+    import fks._
+    val projectId = newProjectId()
+    val ucId: Long = queryQ[(ProjectId,Short),Long]("INSERT INTO usecase(project_id,number) VALUES(?,?) RETURNING id").apply(projectId,ucn).first
+    def insertText(fkId: Long) = SampleText(this, fkId)
+    val txt1 = insertText(txtField1)
+    val txt2 = insertText(txtField2)
+    val ncStep1, ncStep2, ncStep3, ncStep4 = insertText(ncId)
+    val ecStep1 = insertText(ecId)
+    def latestRevId = queryNA[Long](s"SELECT latest_rev_id FROM usecase WHERE id = $ucId").first
+    def insertRev(rev: Int, title: String): Long =
+      queryQ[(Long,Int,String), Long]("INSERT INTO usecase_rev(ident_id,rev,title) VALUES(?,?,?) RETURNING id").apply(ucId,rev,title).first
+  }
+
+  case class SampleText(uc: SampleUC, fkId: Long) {
+    def ucId = uc.ucId
+    val id = queryNA[Long](s"INSERT INTO text(uc_id,fk_id) VALUES($ucId,$fkId) RETURNING id").first
+    def insertRev(rev: Int, text: String): Long =
+      queryQ[(Long,Int,String), Long]("INSERT INTO text_rev(ident_id,rev,text) VALUES(?,?,?) RETURNING id").apply(id,rev,text).first
+  }
+
+  it("Only 1 value per-UC per-text-field allowed") {
+    // TODO remove manual field_key stuff
+    val fk = new SampleFKs
+    val smp = new SampleUC(1, fk)
+    new SampleUC(2, fk) // Ensure other UCs = no prob
+
+    // UC already has a value for text-field #1
+    intercept[PSQLException] {smp.insertText(fk.txtField1)}
+  }
+
+  it("usecase.latest_rev_id") {
+    val TMP = -1
+    val fk = new SampleFKs
+    val smp = new SampleUC(9, fk)
+    val smp2 = new SampleUC(8, fk)
+
+    // INSERT
+    smp.latestRevId should be(TMP)
+    val rev2 = smp.insertRev(2, "ah")
+    smp.latestRevId should be(rev2)
+    val rev1 = smp.insertRev(1, "ah")
+    smp.latestRevId should be(rev2)
+    val rev3 = smp.insertRev(3, "ah")
+    smp.latestRevId should be(rev3)
+
+    // UC-SCOPE
+    smp2.latestRevId should be(TMP)
+    val revB1 = smp2.insertRev(2, "qwe")
+    smp2.latestRevId should be(revB1)
+
+    // UPDATE rev
+    updateNA(s"UPDATE usecase_rev set rev=rev+5000 WHERE ident_id = ${smp.ucId} AND id = $rev2").execute
+    smp.latestRevId should be(rev2)
+    updateNA(s"UPDATE usecase_rev set rev=rev-5000 WHERE ident_id = ${smp.ucId} AND id = $rev2").execute
+    smp.latestRevId should be(rev3)
+
+    // UPDATE ident_id
+    updateNA(s"UPDATE usecase_rev set ident_id = ${smp2.ucId} WHERE ident_id = ${smp.ucId} AND id = $rev3").execute
+    smp.latestRevId should be(rev2)
+    smp2.latestRevId should be(rev3)
+
+    // DELETE
+    updateNA(s"DELETE FROM usecase_rev where id = $rev3").execute
+    smp2.latestRevId should be(revB1)
+    updateNA(s"DELETE FROM usecase_rev where id = $revB1").execute
+    smp2.latestRevId should be(TMP)
+
+    // UPDATE ident_id of latest rev
+    val revB2 = smp2.insertRev(8, "qwe")
+    smp2.latestRevId should be(revB2)
+    updateNA(s"UPDATE usecase_rev set ident_id = ${smp.ucId} WHERE ident_id = ${smp2.ucId} AND id = $revB2").execute
+    smp2.latestRevId should be(TMP)
+  }
+
+  def linkText(ucRevId: Long, txtRevId: Long) =
+    updateNA(s"INSERT INTO uc_field(uc_rev_id,text_rev_id) VALUES($ucRevId, $txtRevId)").execute
+
+  def linkStep(ucRevId: Long, index: Int, txtRevId: Long) =
+    updateNA(s"""INSERT INTO uc_field VALUES($ucRevId, 'R.$index.$txtRevId', NULL, $index, $txtRevId)""").execute
+
+  def linkStep(ucRevId: Long, index: Int, txtRevId: Long, parent: Long) =
+    updateNA(s"""INSERT INTO uc_field VALUES($ucRevId, '$parent.$index.$txtRevId', $parent, $index, $txtRevId)""").execute
+
+  describe(Tables.UcField.name) {
+    class Data(fk: SampleFKs) {
+      val uc = new SampleUC(1, fk)
+
+      val ucr = uc.insertRev(1, "My UC")
+      val t1r = uc.txt1.insertRev(1, "text 1")
+      val t2r = uc.txt2.insertRev(1, "text 2")
+      linkText(ucr, t1r)
+
+      val s1 = uc.ncStep1.insertRev(1, "step 1")
+      val s2 = uc.ncStep2.insertRev(1, "step 2")
+      val s3 = uc.ncStep3.insertRev(1, "step 3")
+      val s4 = uc.ncStep4.insertRev(1, "step 4")
+      val e1 = uc.ecStep1.insertRev(1, "EC 1")
+      linkStep(ucr, 0, s1)
+      linkStep(ucr, 1, s2)
+      linkStep(ucr, 0, s3, s1)
+    }
+
+    def testErr(fn: (Data, Data) => Any): Unit = withNewTransaction {
+      val fk = new SampleFKs
+      val d1, d2 = new Data(fk)
+      intercept[PSQLException] {fn(d1, d2)}
+    }
+
+    it("UC must match Text UC") {
+      testErr((d1, d2) => linkText(d1.ucr, d2.t2r))
+      testErr((d1, d2) => linkStep(d1.ucr, 2, d2.s1))
+    }
+
+    it("Parent-text UC must match that of Text") {
+      testErr((d1, d2) => linkStep(d1.ucr, 0, d1.s4, d2.s1))
+    }
+
+    it("Parent-text FK must match that of Text") {
+      testErr((d1, d2) => linkStep(d1.ucr, 0, d1.s4, d1.e1)) // EC(e1) doesn't match NC(s4)
+    }
+
+    it("Text cannot be used as a step") {
+      testErr((d1, d2) => linkStep(d1.ucr, 0, d1.t2r))
+    }
+
+    it("Steps cannot be used as text") {
+      testErr((d1, d2) => linkText(d1.ucr, d1.s4))
+    }
+  }
+
+  describe(Tables.ShareViewLog.name) {
+    def shareViewCount(shareId: Long): Long = queryNA[Long](s"SELECT view_count FROM share WHERE id = $shareId").first
+
+    it("should update agg view stats by trigger") {
+      val a, b = newShare()
+      def viewCounts = (shareViewCount(a), shareViewCount(b))
+      viewCounts shouldBe (0,0)
+      dao.logShareView(a, None); viewCounts shouldBe (1,0)
+      dao.logShareView(a, None); viewCounts shouldBe (2,0)
+      dao.logShareView(b, None); viewCounts shouldBe (2,1)
+    }
+  }
+
+  describe(Tables.UsrLoginLog.name) {
+    def loginCount(userId: Long): Long = queryNA[Long](s"SELECT login_count FROM usr WHERE id = $userId").first
+
+    it("should update agg view stats by trigger") {
+      val a, b = newUserId()
+      def viewCounts = (loginCount(a), loginCount(b))
+      viewCounts shouldBe (0,0)
+      dao.logUserLogin(a, None); viewCounts shouldBe (1,0)
+      dao.logUserLogin(a, None); viewCounts shouldBe (2,0)
+      dao.logUserLogin(b, None); viewCounts shouldBe (2,1)
+    }
+  }
+
+  describe(Tables.Usrd.name) {
+    def nameHistory(userId: Long) =
+      queryNA[String](s"select name from usrh_name where usr_id=$userId order by updated_at").list
+
+    def insert(userId: Long, name: String, newsletter: Boolean) =
+      updateQ[(Long, String, Boolean)]("insert into usrd values(?,?,?)")
+        .apply(userId, name, newsletter).execute
+
+    def update(userId: Long, name: String, newsletter: Boolean) =
+      updateQ[(String, Boolean, Long)]("update usrd set name=?, newsletter=? where usr_id=?")
+        .apply(name, newsletter, userId).execute
+
+    def read(userId: Long) =
+      queryNA[(String,Boolean)](s"select name, newsletter from usrd where usr_id=$userId").first
+
+    it("should record name changes") {
+      val u = newUserId()
+      val (a,b,c) = ("Alice","Bob","Yay")
+      insert(u, a, true)
+      nameHistory(u) shouldBe Nil
+      List(b,b,b,c).foreach(update(u, _, true))
+      nameHistory(u) shouldBe List(a, b)
+    }
+
+    it("should updates without altercation by triggers") {
+      val u = newUserId()
+      insert(u, "A", true)
+      update(u, "B", false)
+      read(u) shouldBe ("B", false)
+    }
+  }
+}

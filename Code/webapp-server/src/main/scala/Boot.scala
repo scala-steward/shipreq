@@ -5,12 +5,12 @@ import net.liftweb.http.{LiftRules, LiftSession, S}
 import net.liftweb.http.provider.HTTPParam
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.Test
-import shipreq.webapp.app.{ExceptionHandler, DI, Defaults, AppSiteMap}
 import shipreq.webapp.base.AppConsts
-import shipreq.webapp.db.DB
-import shipreq.webapp.feature.SessionStats
-import shipreq.webapp.lib.Taskman
-import shipreq.webapp.security.Oshiro
+import shipreq.webapp.server.app.{ExceptionHandler, DI, Defaults, AppSiteMap}
+import shipreq.webapp.server.db.DB
+import shipreq.webapp.server.feature.SessionStats
+import shipreq.webapp.server.lib.Taskman
+import shipreq.webapp.server.security.Oshiro
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -20,7 +20,7 @@ class Boot extends DI {
 
   LiftRules.configureLogging()
 
-  val packageRoot = "shipreq.webapp"
+  val packageRoot = "shipreq.webapp.server"
   lazy val logger = Logger(s"$packageRoot.Boot")
 
   def boot(): Unit = {
@@ -82,7 +82,7 @@ class Boot extends DI {
     }
 
   def preloadTemplates(): Unit = {
-    import shipreq.webapp.snippet._
+    import shipreq.webapp.server.snippet._
     DynModal
     Quotes
     ShareEditConsts
@@ -93,7 +93,7 @@ class Boot extends DI {
   }
 
   def logImportantSettings(): Unit = {
-    import shipreq.webapp.app.AppConfig._
+    import shipreq.webapp.server.app.AppConfig._
     logger.info(s"Signup allowed: ${AllowRegister()}")
   }
 }
