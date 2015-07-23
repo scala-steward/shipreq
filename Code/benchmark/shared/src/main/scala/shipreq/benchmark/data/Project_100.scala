@@ -760,14 +760,14 @@ object Project_100 {
     IdCeilings.supply(
       Project(
         ProjectConfig(
-          RevAnd(Rev(1764077044350812039L),customIssueTypes),
-          RevAnd(Rev(9128770254683383185L),customReqTypes),
-          RevAnd(Rev(3513976225304201129L),fieldSet),
-          RevAnd(Rev(7181727812633467818L),tagTree)),
-        RevAnd(Rev(7570240558498828141L),Requirements(reqsById,pubidRegister)),
-        RevAnd(Rev(4750688293653538558L),ReqCodes(reqCodeTrie)),
-        RevAnd(Rev(3344109571285448754L),reqDataText),
-        RevAnd(Rev(9029728873197075455L),reqDataTags),
-        RevAnd(Rev(5180349416137195301L),implications),
+          customIssueTypes,
+          customReqTypes,
+          fieldSet,
+          tagTree),
+        Requirements(reqsById,pubidRegister),
+        ReqCodes(reqCodeTrie),
+        reqDataText,
+        reqDataTags,
+        implications,
         _))
 }

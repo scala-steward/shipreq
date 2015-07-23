@@ -66,14 +66,14 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   val pubidColumnValue = memoM[Pubid](pubid =>
     for {
       txt <- PlainText.pubid(project, pubid)
-      req <- project.reqs.data.reqByPubidM(pubid)
+      req <- project.reqs.reqByPubidM(pubid)
     } yield
       <.span(*.pubidColumnValue(req.live), txt)
   )
 
   private def _reqRef1(f: EndoFn[String], style: Req => TagMod): ReqId => Must[ReactElement] = id =>
     for {
-      req <- project.reqs.data.reqM(id)
+      req <- project.reqs.reqM(id)
       rt  <- project.config.reqType(req.pubid.reqTypeId)
     } yield
       <.span(
@@ -114,7 +114,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   def pubidRef(c: Contextualise, validityWhenDead: Validity): Pubid => ReactElement = {
     val f = reqRef(c, validityWhenDead)
-    pubid => UI.must[ReqId, ReactElement](project.reqs.data.reqIdByPubidM(pubid))(f)
+    pubid => UI.must[ReqId, ReactElement](project.reqs.reqIdByPubidM(pubid))(f)
   }
 
   def pubidRefList(c: Contextualise, validityWhenDead: Validity)(ids: Vector[Pubid]): ReactElement =
@@ -127,7 +127,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     implicit def liveWithValidity(a: Live) = invalidWhenDead(a)
 
     def toRef(c: ReqCode.Value, r: ReqId): Must[ReactElement] =
-      for (req <- project.reqs.data.reqM(r))
+      for (req <- project.reqs.reqM(r))
         yield ref(c, *.reqRef(req.live), plainText reqTitle req)
 
     def toGroup(c: ReqCode.Value, g: ReqCodeGroup): ReactElement =
@@ -139,7 +139,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         ^.title := title,
         G.reflinkSurround(PlainText reqCode c))
 
-    ProjectText.resolveReqCode(id, project.reqCodes.data).flatMap {
+    ProjectText.resolveReqCode(id, project.reqCodes).flatMap {
       case ActiveCode(c, r: ReqId)        => toRef(c, r)
       case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
       case DeadGroup(c)                   => ref(c, *.reqCodeGroupRef(Dead), undefined)

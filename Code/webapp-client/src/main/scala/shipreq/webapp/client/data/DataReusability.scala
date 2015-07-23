@@ -5,6 +5,6 @@ import shipreq.webapp.base.data._
 
 object DataReusability {
 
-  implicit val reusabilityProject: Reusability[Project] = Reusability.by(_.rev.value)
+  implicit val reusabilityProject: Reusability[Project] = Reusability.byRef
 
 }

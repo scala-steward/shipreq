@@ -11,12 +11,12 @@ import MTrie.Ops
 trait ApplyContentEvent extends ApplyConfigEvent {
 
   object ReqEvents {
-    val R  = Project.reqs ^|-> RevAnd.data
+    val R  = Project.reqs
     val GR = R ^|-> Requirements.genericReqs
-    val TX = Project.reqText ^|-> RevAnd.data
-    val T  = Project.reqTags ^|-> RevAnd.data
-    val I  = Project.implications ^|-> RevAnd.data ^|-> Implications.srcToTgt
-    val C  = Project.reqCodes ^|-> RevAnd.data
+    val TX = Project.reqText
+    val T  = Project.reqTags
+    val I  = Project.implications ^|-> Implications.srcToTgt
+    val C  = Project.reqCodes
     val CT = C ^|-> ReqCodes.trie
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
@@ -26,20 +26,20 @@ trait ApplyContentEvent extends ApplyConfigEvent {
 
     val ensureLive =
       ensureLiveFn((p, reqId: ReqId) => reqId match {
-        case id: GenericReqId => p.reqs.data.genericReqs.get(id)
+        case id: GenericReqId => p.reqs.genericReqs.get(id)
       })(_.live)
 
     val ensureLiveTextField =
-      ensureLiveFn((p, id: CustomField.Text.Id) => p.config.fields.data.customFields.get(id))(_.live)
+      ensureLiveFn((p, id: CustomField.Text.Id) => p.config.fields.customFields.get(id))(_.live)
 
     def needCustomReqType(id: CustomReqTypeId): App[Project, CustomReqType] =
-      App(p => CustomReqTypeEvents.imap.need(id)(p.config.customReqTypes.data))
+      App(p => CustomReqTypeEvents.imap.need(id)(p.config.customReqTypes))
 
     def createGeneric(e: CreateGenericReq): AP =
       App[Project, Project] { p =>
         import CreateGenericReqGD._
         val id      = e.id
-        val reqData = p.reqs.data
+        val reqData = p.reqs
 
         var result =
           for {
@@ -173,7 +173,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
   object ReqCodeLogic {
     import ReqCode._
 
-    val C = Project.reqCodes ^|-> RevAnd.data
+    val C = Project.reqCodes
     val CT = C ^|-> ReqCodes.trie
 
     type ARC = AE[ReqCodes]

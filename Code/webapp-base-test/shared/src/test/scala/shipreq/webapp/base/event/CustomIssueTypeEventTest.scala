@@ -44,7 +44,7 @@ object CustomIssueTypeEventTest extends TestSuite with CustomIssueTypeEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r = _assertPass(es: _*).config.customIssueTypes.data.get(1).get
+        def r = _assertPass(es: _*).config.customIssueTypes.get(1).get
         assertEq(r, CustomIssueType(1, "TD", None, Live))
 
         es :+= UpdateCustomIssueType(1, nev(Key("X"), Desc("xxx")))

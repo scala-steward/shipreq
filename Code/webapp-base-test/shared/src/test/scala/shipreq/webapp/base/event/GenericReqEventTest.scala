@@ -25,12 +25,12 @@ object ReqFull {
   implicit val equality: UnivEq[ReqFull] = deriveUnivEq
 
   def extract(p: Project, id: GenericReqId): Option[ReqFull] =
-    p.reqs.data.req(id).map{ r2 =>
+    p.reqs.req(id).map{ r2 =>
       val r = r2 match {case x: GenericReq => x}
-      val tags      = p.reqTags.data(id)
-      val impliedBy = p.implications.data.tgtToSrc(id)
-      val implies   = p.implications.data.srcToTgt(id)
-      val reqCodes  = p.reqCodes.data.activeReqCodesByTarget(id)
+      val tags      = p.reqTags(id)
+      val impliedBy = p.implications.tgtToSrc(id)
+      val implies   = p.implications.srcToTgt(id)
+      val reqCodes  = p.reqCodes.activeReqCodesByTarget(id)
       ReqFull(r, tags, impliedBy, implies, reqCodes)
     }
 }
@@ -156,7 +156,7 @@ object GenericReqEventTest extends TestSuite {
         case \/-(p2) => p = p2
         case -\/(err) => fail(s"$e was expected to pass but failed with: $err")
       }
-      assertEq(s"Step #$testNo", fmtRCs(p.reqCodes.data), expected.toSet)
+      assertEq(s"Step #$testNo", fmtRCs(p.reqCodes), expected.toSet)
       es :+= e
       assertQty(p, es: _*)
     }
@@ -229,7 +229,7 @@ object GenericReqEventTest extends TestSuite {
         val rcs = NonEmptySet[ReqCode.IdAndValue](7 -> "a.b.c", 8 -> "d")
         val p = _assertPass(empty1.copy(vs = nev(ReqCodes(rcs))))
         assertReq(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), reqCodes = rcs.whole.map(_.value))
-        assertEq(p.reqCodes.data.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
+        assertEq(p.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
 
       'badId           - List(0, -1).foreach(i => assertFail("id")(empty1.copy(id = i)))
@@ -267,7 +267,7 @@ object GenericReqEventTest extends TestSuite {
         import ReqCodeGroupGD._
         val t = Vector(ReqCodeGroupTitle.Literal("hi there"))
         val p = _assertPass(createRCG(1, "a"), UpdateReqCodeGroup(1, nev(Title(t))))
-        val g = p.reqCodes.data.activeGroups.head.group
+        val g = p.reqCodes.activeGroups.head.group
         assertEq(g, ReqCodeGroup(t))
       }
 
@@ -286,7 +286,7 @@ object GenericReqEventTest extends TestSuite {
     'deleteCodeGroup {
       'ok - {
         val p = _assertPass(createRCG(1, "a"), delRCG1)
-        assertEq("No CodeRefs means no need to retain anything.", p.reqCodes.data.trie.isEmpty, true)
+        assertEq("No CodeRefs means no need to retain anything.", p.reqCodes.trie.isEmpty, true)
       }
       'notFound - assertFail("not found")(delRCG1)
       'twice    - assertFail("not found")(createRCG(1, "a"), delRCG1, delRCG1)
@@ -505,7 +505,7 @@ object GenericReqEventTest extends TestSuite {
         def test(remove: ApplicableTagId*)(add: ApplicableTagId*)(expect: ApplicableTagId*): Unit = {
           es :+= patch(1)(remove: _*)(add: _*)
           val p = _assertPass(es: _*)
-          val a = p.reqTags.data(1)
+          val a = p.reqTags(1)
           assertEq(a, expect.toSet)
         }
         test()(at1, at2)(at1, at2)
@@ -543,7 +543,7 @@ object GenericReqEventTest extends TestSuite {
           else
             PatchImplicationSrc(subj, sd))
           val p = _assertPass(es: _*)
-          val a = p.implications.data.srcToTgt.m
+          val a = p.implications.srcToTgt.m
           assertEq(a, expect.toMap)
         }
         implicit def ii(t: (Int, Int)): (ReqId, Set[ReqId]) = (t._1, Set(t._2))
@@ -579,7 +579,7 @@ object GenericReqEventTest extends TestSuite {
         def test(e: Event)(expect: PubidC): Unit = {
           es :+= e
           val p = _assertPass(es: _*)
-          val d = p.reqs.data
+          val d = p.reqs
           assertEq(d.genericReqs.size, 2)
           assertEq(d.genericReqs.get(1).get.pubid, expect)
         }
@@ -597,7 +597,7 @@ object GenericReqEventTest extends TestSuite {
     'setGenericReqTitle {
       'ok {
         val p = _assertPass(empty1, setGRT1)
-        assertEq(p.reqs.data.genericReqs.get(1).get.title, someGRTitle)
+        assertEq(p.reqs.genericReqs.get(1).get.title, someGRTitle)
       }
       'reqNotFound - assertFail("found")(setGRT1)
       'reqIsDead   - assertFail("dead")(empty1, del1, setGRT1)
@@ -607,7 +607,7 @@ object GenericReqEventTest extends TestSuite {
       def e = SetCustomTextField(1, cf1, someCTF1)
       'add {
         val p = _assertPass(empty1, e)
-        val d = p.reqText.data
+        val d = p.reqText
         assertEq(d.size, 1)
         val m = d(cf1)
         assertEq(m.size, 1)
@@ -615,7 +615,7 @@ object GenericReqEventTest extends TestSuite {
       }
       'remove {
         val p = _assertPass(empty1, e, SetCustomTextField(1, cf1, ∅))
-        val d = p.reqText.data
+        val d = p.reqText
         assertEq(d.size, 0)
       }
       'reqNotFound   - assertFail("found")(e)

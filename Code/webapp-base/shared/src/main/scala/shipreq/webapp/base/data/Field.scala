@@ -120,7 +120,7 @@ object Field {
     fn
   }
 
-  def nameP(p: Project) = name(p.config.customReqTypes.data, p.config.tags.data)
+  def nameP(p: Project) = name(p.config.customReqTypes, p.config.tags)
 }
 
 import Field.ApplicableReqTypes
@@ -287,7 +287,7 @@ object CustomField {
     case f: Implication => f.name(customReqTypes)
   }
 
-  def nameP(p: Project) = name(p.config.customReqTypes.data, p.config.tags.data)
+  def nameP(p: Project) = name(p.config.customReqTypes, p.config.tags)
 
   implicit val equalImplication: UnivEq[Implication] = deriveUnivEq
   implicit val equalTag        : UnivEq[Tag]         = deriveUnivEq

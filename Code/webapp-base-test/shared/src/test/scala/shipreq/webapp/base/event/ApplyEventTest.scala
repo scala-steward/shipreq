@@ -48,7 +48,7 @@ object ApplyEventTestFns {
     var customReqTypes   = 0
     var tags             = 0
     var customFields     = 0
-    var activeFields     = Project.empty.config.fields.data.order.length
+    var activeFields     = Project.empty.config.fields.order.length
     var activeReqs       = 0
     var rcgs             = 0
 
@@ -96,13 +96,13 @@ object ApplyEventTestFns {
          | _: UpdateTagGroup => ()
     }
 
-    assertEq("Σ CustomIssueTypes", p.config.customIssueTypes.data.size, customIssueTypes)
-    assertEq("Σ CustomReqTypes", p.config.customReqTypes.data.size, customReqTypes)
-    assertEq("Σ Tags", tags, p.config.tags.data.size)
-    assertEq("Σ CustomFields", customFields, p.config.fields.data.customFields.size)
-    assertEq("Σ ActiveFields", activeFields, p.config.fields.data.fields.unmust.count(_.live :: Live))
-    assertEq("Σ ActiveReqs", activeReqs, p.reqs.data.reqs.values.filter(_.live :: Live).size)
-    assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.data.activeGroups.size)
+    assertEq("Σ CustomIssueTypes", p.config.customIssueTypes.size, customIssueTypes)
+    assertEq("Σ CustomReqTypes", p.config.customReqTypes.size, customReqTypes)
+    assertEq("Σ Tags", tags, p.config.tags.size)
+    assertEq("Σ CustomFields", customFields, p.config.fields.customFields.size)
+    assertEq("Σ ActiveFields", activeFields, p.config.fields.fields.unmust.count(_.live :: Live))
+    assertEq("Σ ActiveReqs", activeReqs, p.reqs.reqs.values.filter(_.live :: Live).size)
+    assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.activeGroups.size)
     validateIdCeilings(p)
   }
 

@@ -51,7 +51,7 @@ object Parsers {
       (m, n) =>
         project.config.reqTypesByMnemonic.get(m)
           .map(t => PubidT(t.reqTypeId, n))
-          .flatMap(project.reqs.data.pubids.apply)
+          .flatMap(project.reqs.pubids.apply)
 
     def hashRef: Rule1[HashRefTarget] =
       rule(hashRefStr ~> (project.config.hashRefLookup _) ~ popOptional)
@@ -134,7 +134,7 @@ object Parsers {
 
     val lookupCode: Seq[Node] => Option[ReqCodeId] = ss =>
       NonEmptyVector.maybe(ss.toVector, None: Option[ReqCodeId])(code =>
-        project.reqCodes.data(code).flatMap(_.active.map(_.id)))
+        project.reqCodes(code).flatMap(_.active.map(_.id)))
 
     def reqRef: Rule1[t.Atom] =
       rule(codeRef | pubidRef)

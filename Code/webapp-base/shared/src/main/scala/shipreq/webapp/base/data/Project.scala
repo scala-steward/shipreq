@@ -10,18 +10,15 @@ import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
 
 object Project {
-  val customIssueTypes: Lens[Project, RevAnd[CustomIssueTypeIMap]] = config ^|-> ProjectConfig.customIssueTypes
-  val customReqTypes  : Lens[Project, RevAnd[CustomReqTypeIMap]  ] = config ^|-> ProjectConfig.customReqTypes
-  val fields          : Lens[Project, RevAnd[FieldSet]           ] = config ^|-> ProjectConfig.fields
-  val tags            : Lens[Project, RevAnd[TagTree]            ] = config ^|-> ProjectConfig.tags
+  val customIssueTypes: Lens[Project, CustomIssueTypeIMap] = config ^|-> ProjectConfig.customIssueTypes
+  val customReqTypes  : Lens[Project, CustomReqTypeIMap  ] = config ^|-> ProjectConfig.customReqTypes
+  val fields          : Lens[Project, FieldSet           ] = config ^|-> ProjectConfig.fields
+  val tags            : Lens[Project, TagTree            ] = config ^|-> ProjectConfig.tags
 
   import ReqData._ // for equality
   implicit def equality: Equal[Project] = deriveEqual
 
   val empty: Project = {
-    val rev = Rev(0)
-    implicit def autoRevAnd[D](d: D): RevAnd[D] = RevAnd(rev, d)
-
     val cfg      = ProjectConfig.empty
     val reqs     = Requirements.empty
     val reqCodes = ReqCodes.empty
@@ -29,40 +26,28 @@ object Project {
     val reqTags  = ReqData.emptyTags
     val reqImps  = Implications.empty
     val ids      = IdCeilings.zero
-
     Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, ids)
   }
 }
 
 @Lenses
 final case class Project(config      : ProjectConfig,
-                         reqs        : RevAnd[Requirements],
-                         reqCodes    : RevAnd[ReqCodes],
-                         reqText     : RevAnd[ReqData.Text],
-                         reqTags     : RevAnd[ReqData.Tags],
-                         implications: RevAnd[Implications],
+                         reqs        : Requirements,
+                         reqCodes    : ReqCodes,
+                         reqText     : ReqData.Text,
+                         reqTags     : ReqData.Tags,
+                         implications: Implications,
                          idCeilings  : IdCeilings) {
 
-
-  def contentRev: Rev =
-    reqs        .rev +
-    reqCodes    .rev +
-    reqText     .rev +
-    reqTags     .rev +
-    implications.rev
-
-  val rev: Rev =
-    config.rev + contentRev
-
   override def toString =
-    s"Project(config: ${config.rev}, content: $contentRev)"
+    s"Project($idCeilings)"
     //ShowSize(this).showTree
 
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
-      ("ReqCodeGroups", reqCodes.data.activeGroups.map(_.group.title)),
-      ("GenericReq titles", reqs.data.reqs.values.filterT[GenericReq].map(_.title)),
-      ("Text fields", reqText.data.values.toStream.flatMap(_.values.toStream).map(_.whole)))
+      ("ReqCodeGroups", reqCodes.activeGroups.map(_.group.title)),
+      ("GenericReq titles", reqs.reqs.values.filterT[GenericReq].map(_.title)),
+      ("Text fields", reqText.values.toStream.flatMap(_.values.toStream).map(_.whole)))
 
   def countAtoms: ShowSize.Node = {
     val counted =
@@ -93,9 +78,9 @@ final case class Project(config      : ProjectConfig,
 
   private def implicationTransitiveClosure(f: Implications => Implications.Uni): TransitiveClosure[ReqId] =
     Implications.transitiveClosure(
-      reqs.data.reqs.keys,
-      reqs.data.dead,
-      f(implications.data))
+      reqs.reqs.keys,
+      reqs.dead,
+      f(implications))
 
   // Finally, ensure validity
 //  import japgolly.nyaya._

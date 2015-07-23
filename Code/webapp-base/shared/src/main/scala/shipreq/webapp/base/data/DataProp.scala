@@ -18,15 +18,6 @@ object DataProp {
   def dataId[O, D, Id <: TaggedInt](o: O)(implicit O: ObjDataId[O, D, Id]) =
     id[Id].contramap[D](O.id)
 
-  val rev =
-    Prop.test[Rev]("rev ≥ 0", _.value >= 0)
-
-  def justRevAnd[T]: Prop[RevAnd[T]] =
-    rev.contramap[RevAnd[T]](_.rev)
-
-  def revAnd[T](p: Prop[T]): Prop[RevAnd[T]] =
-    justRevAnd ∧ p.contramap[RevAnd[T]](_.data)
-
   def must[A](name: => String): Prop[Must[A]] =
     Prop.atom[Must[A]](name, _.fold(Some(_), _ => None))
 
@@ -56,7 +47,7 @@ object DataProp {
     def ids =
       id[CustomIssueTypeId].forall((_: T).keys.toStream)
 
-    def all = revAnd(ids) rename "CustomIssueTypes"
+    def all = ids rename "CustomIssueTypes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -88,7 +79,7 @@ object DataProp {
       customReqType.all.forall[T, Stream](_.values.toStream)
 
     lazy val all =
-      revAnd[T](uniqueMnemonics ∧ uniqueNames ∧ each) rename "CustomReqTypes"
+      (uniqueMnemonics ∧ uniqueNames ∧ each) rename "CustomReqTypes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -140,7 +131,7 @@ object DataProp {
       tagFieldsUnique ∧ implicationFieldsUnique)
 
     lazy val all =
-      revAnd(fieldSet) rename "Fields"
+      fieldSet rename "Fields"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -166,7 +157,7 @@ object DataProp {
       (ids ∧ uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
 
     lazy val all =
-      revAnd(tagTree) rename "Tags"
+      tagTree rename "Tags"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -202,7 +193,7 @@ object DataProp {
     }
 
     lazy val all =
-      revAnd(ids ∧ reqPubidsInRegister ∧ pubidsResolveToReqs ∧ pubidReqTypeAssociations) rename "Requirements"
+      (ids ∧ reqPubidsInRegister ∧ pubidsResolveToReqs ∧ pubidReqTypeAssociations) rename "Requirements"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -232,7 +223,7 @@ object DataProp {
       Prop.distinct("ID", (_: T).allIds)
 
     lazy val all =
-      revAnd(branchesMustBranch ∧ nonEmptyTerminals ∧ uniqueIds ∧ ids) rename "ReqCodes"
+      (branchesMustBranch ∧ nonEmptyTerminals ∧ uniqueIds ∧ ids) rename "ReqCodes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -322,26 +313,26 @@ object DataProp {
 
     def uniqueHashRefKeys =
       Prop.distinct[P, String]("HashRefKey", p => (
-          p.customIssueTypes.data.values.toStream.map(_.key) append
-          p.tags.data.vstreamf(_.tag.keyO.toStream)
+          p.customIssueTypes.values.toStream.map(_.key) append
+          p.tags.vstreamf(_.tag.keyO.toStream)
         ).map(_.value.toLowerCase))
 
     def liveTagFieldRequiresLiveTag =
       Prop.whitelist[P]("Live tag-field requires a live tag")(
-        _.tags.data.values.filter(_.tag.live :: Live).map(_.id).toSet,
-        p => fields.filteredFields({ case t: CustomField.Tag if t.live :: Live => t.tagId})(p.fields.data))
+        _.tags.values.filter(_.tag.live :: Live).map(_.id).toSet,
+        p => fields.filteredFields({ case t: CustomField.Tag if t.live :: Live => t.tagId})(p.fields))
 
     def liveImpFieldRequiresLiveReqType =
       Prop.whitelist[P]("Live implication-field requires a live req-type")(
         _.reqTypes.filter(_.live :: Live).map(_.reqTypeId).toSet,
-        p => fields.filteredFields({ case t: CustomField.Implication if t.live :: Live => t.reqTypeId})(p.fields.data))
+        p => fields.filteredFields({ case t: CustomField.Implication if t.live :: Live => t.reqTypeId})(p.fields))
 
     def validRefs = {
       type TR = (P, Refs)
 
       def mkRefs(p: ProjectConfig): Refs = Refs(
         p.reqTypes.map(_.reqTypeId).toSet,
-        p.tags.data.keySet)
+        p.tags.keySet)
 
       def whitelist[A](refs: TR => Set[A])(name: String, test: P => Traversable[A]) =
         // Two steps here results in better failure messages
@@ -352,11 +343,11 @@ object DataProp {
       def validTagIds     = whitelist(_._2.tagIds) _
 
       (  validReqTypeIds("Field.reqTypes",
-          _.fields.data.customFields.values.toStream.flatMap(f => isubsetContents(f.reqTypes).toStream))
+          _.fields.customFields.values.toStream.flatMap(f => isubsetContents(f.reqTypes).toStream))
       ∧ validTagIds("CustomField.Tag.tagIds",
-        p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields.data))
+        p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields))
       ∧ validReqTypeIds("CustomField.Implication.reqTypeIds",
-          p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields.data))
+          p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields))
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 
@@ -378,18 +369,18 @@ object DataProp {
     def constituents = (
                 reqs.all.contramap[P](_.reqs)
       ∧     reqCodes.all.contramap[P](_.reqCodes)
-      ∧ implications.all.contramap[P](_.implications.data)
+      ∧ implications.all.contramap[P](_.implications)
     ) rename "constituents"
 
     def liveReqRequiresLiveReqType =
       Prop.whitelist[Project]("Live Req requires Live ReqType")(
         _.config.reqTypes.filter(_.live :: Live).map(_.reqTypeId).toSet,
-        _.reqs.data.reqs.values.toStream.filter(_.live :: Live).map(_.reqTypeId))
+        _.reqs.reqs.values.toStream.filter(_.live :: Live).map(_.reqTypeId))
 
     def liveReqCodeRequiresLiveTarget =
       Prop.whitelist[Project]("Live ReqCode requires Live Target")(
-        _.reqs.data.reqs.values.toStream.filter(_.live :: Live).map(_.id).toSet,
-        _.reqCodes.data.cataA(UnivEq.emptySet[ReqId])((q, _, a) => a.target match {
+        _.reqs.reqs.values.toStream.filter(_.live :: Live).map(_.id).toSet,
+        _.reqCodes.cataA(UnivEq.emptySet[ReqId])((q, _, a) => a.target match {
           case id: ReqId       => q + id
           case _: ReqCodeGroup => q
         }))
@@ -399,11 +390,11 @@ object DataProp {
       import Atom._
 
       def mkRefs(p: Project): Refs = Refs(
-        p.config.fields.data.customFields.keySet,
-        p.reqs.data.reqs.vstream(_.id).toSet,
-        p.reqCodes.data.allIds.toSet,
+        p.config.fields.customFields.keySet,
+        p.reqs.reqs.vstream(_.id).toSet,
+        p.reqCodes.allIds.toSet,
         p.config.reqTypes.map(_.reqTypeId).toSet,
-        p.config.tags.data.keySet)
+        p.config.tags.keySet)
 
       def whitelist[A](refs: TR => Set[A])(name: String, test: P => Traversable[A]) =
         // Two steps here results in better failure messages
@@ -415,7 +406,7 @@ object DataProp {
       def validReqCodeIds = whitelist(_._2.reqCodeIds) _
       def validReqTypeIds = whitelist(_._2.reqTypeIds) _
       def validTagIds     = whitelist(_._2.tagIds) _
-      def validIssueTypes = whitelist(_._1.config.customIssueTypes.data.keySet) _
+      def validIssueTypes = whitelist(_._1.config.customIssueTypes.keySet) _
 
       def inText[A](f: PartialFunction[AnyAtom, A]): P => Traversable[A] = {
         def go(a0: AnyAtom): Stream[A] = a0 match {
@@ -427,13 +418,13 @@ object DataProp {
         _.allRichText.flatMap(_._2).flatMap(_.toStream).flatMap(go)
       }
 
-      ( validReqTypeIds("Pubid keys",                 _.reqs.data.pubids.value.m.keys)
-      ∧ validReqIds    ("ReqCode targets"             , _.reqCodes.data.trie.cataV(Set.empty[ReqId])((q, _, d) => q ++ d.reqIds))
-      ∧ validFieldIds  ("ReqData.text TextField ids", _.reqText.data.keys)
-      ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.data.vstreamf(_.keys.toStream))
-      ∧ validReqIds    ("ReqData.config.tags keys",   _.reqTags.data.keys)
-      ∧ validTagIds    ("ReqData.config.tags values", _.reqTags.data.allValues)
-      ∧ validReqIds    ("ReqData.implications",       _.implications.data.members)
+      ( validReqTypeIds("Pubid keys",                 _.reqs.pubids.value.m.keys)
+      ∧ validReqIds    ("ReqCode targets"             , _.reqCodes.trie.cataV(Set.empty[ReqId])((q, _, d) => q ++ d.reqIds))
+      ∧ validFieldIds  ("ReqData.text TextField ids", _.reqText.keys)
+      ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.vstreamf(_.keys.toStream))
+      ∧ validReqIds    ("ReqData.config.tags keys",   _.reqTags.keys)
+      ∧ validTagIds    ("ReqData.config.tags values", _.reqTags.allValues)
+      ∧ validReqIds    ("ReqData.implications",       _.implications.members)
       ∧ validReqIds    ("Atoms: ReqRefs",             inText { case a: ReqRef # ReqRef  => a.value })
       ∧ validReqCodeIds("Atoms: CodeRefs",            inText { case a: ReqRef # CodeRef => a.value })
       ∧ validTagIds    ("Atoms: TagRefs",             inText { case a: TagRef # TagRef  => a.value })

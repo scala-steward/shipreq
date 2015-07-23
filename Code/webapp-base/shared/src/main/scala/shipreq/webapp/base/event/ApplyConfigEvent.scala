@@ -21,7 +21,7 @@ trait ApplyConfigEvent extends AskTrust {
     override val ^        = CustomIssueTypeGD
     override type Id      = CustomIssueTypeId
     override type Data    = CustomIssueType
-    override val L        = Project.customIssueTypes ^|-> RevAnd.data
+    override val L        = Project.customIssueTypes
     override def liveLens = CustomIssueType.live
 
     val validateKey  = validateWithF(V.customIssueType.keyU)(_.value)
@@ -62,7 +62,7 @@ trait ApplyConfigEvent extends AskTrust {
     override val ^        = CustomReqTypeGD
     override type Id      = CustomReqTypeId
     override type Data    = CustomReqType
-    override val L        = Project.customReqTypes ^|-> RevAnd.data
+    override val L        = Project.customReqTypes
     override def liveLens = CustomReqType.live
 
     val validateName     = validateWith (V.reqType.nameU)
@@ -107,7 +107,7 @@ trait ApplyConfigEvent extends AskTrust {
     type Children = TagInTree.Children
     type Parents  = TagInTree.Parents
 
-    val L = Project.tags ^|-> RevAnd.data
+    val L = Project.tags
     val imap = IMapApp.like(TagTree.empty)
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.tag)
 
@@ -311,7 +311,7 @@ trait ApplyConfigEvent extends AskTrust {
 
   // ===================================================================================================================
   object FieldEvents {
-    val L = Project.fields ^|-> RevAnd.data
+    val L = Project.fields
     val M = L ^|-> FieldSet.customFields
     val O = L ^|-> FieldSet.order
     val imap = IMapApp[CustomFieldId, CustomField]

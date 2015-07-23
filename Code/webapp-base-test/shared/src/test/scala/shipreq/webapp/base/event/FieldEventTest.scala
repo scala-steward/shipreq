@@ -28,7 +28,7 @@ object CustomFieldEventTest extends TestSuite {
 
     'reposition {
       var es = Vector[Event]()
-      def o = _assertPass(es: _*).config.fields.data.order
+      def o = _assertPass(es: _*).config.fields.order
       assertEq(o, Vector(NormalAltStepTree, ExceptionStepTree, StepGraph, t1, t2))
 
       es :+= RepositionField(t1, Some(ExceptionStepTree))
@@ -108,7 +108,7 @@ object CustomTextFieldEventTest extends TestSuite with CustomTextFieldEvents {
     'update {
       'ok - {
         var es = Vector[Event](c1, u1)
-        def r = _assertPass(es: _*).config.fields.data.customFields.get(c1.id).get
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
         assertEq(r, CustomField.Text(1, c1Name, "stuff", true, allReqTypes, Live))
 
         es :+= UpdateCustomTextField(1, nev(Name("AH"), Mandatory(false)))
@@ -179,7 +179,7 @@ object CustomTagFieldEventTest extends TestSuite with CustomTagFieldEvents {
     'update {
       'ok - {
         var es = Vector[Event](c1, u1)
-        def r = _assertPass(es: _*).config.fields.data.customFields.get(c1.id).get
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
         assertEq(r, CustomField.Tag(1, 1.TG, false, allReqTypes, Live))
 
         es :+= UpdateCustomTagField(1, nev(TagId(2.AT), Mandatory(true)))
@@ -242,7 +242,7 @@ object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
     'update {
       'ok - {
         var es = Vector[Event](c1, u1)
-        def r = _assertPass(es: _*).config.fields.data.customFields.get(c1.id).get
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
         assertEq(r, CustomField.Implication(1, 1, false, onlyUC, Live))
 
         es :+= CustomReqTypeEventTest.c2

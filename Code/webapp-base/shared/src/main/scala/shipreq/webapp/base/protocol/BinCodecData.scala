@@ -16,7 +16,6 @@ object BinCodecData {
   implicit val pickleDeletable    : Pickler[Deletable]           = pickleBool(Deletable)
   implicit val pickleMutexChildren: Pickler[MutexChildren]       = pickleBool(MutexChildren)
 
-  implicit val pickleRev                      = pickleTaggedI(Rev                       )
   implicit val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
   implicit val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
   implicit val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
@@ -31,16 +30,9 @@ object BinCodecData {
   implicit val pickleFieldRefKey              = pickleTaggedS(FieldRefKey)
   implicit val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic)
 
-  implicit final val pickleRevRange = pickleCaseClass[RevRange]
-
-  implicit def pickleRevAnd[A: Pickler]: Pickler[RevAnd[A]] = pickleCaseClass
-
   implicit val pickleReqId: Pickler[ReqId] = pickleADT
 
   implicit val pickleImplications: Pickler[Implications] = pickleCaseClass
-
-  implicit val pickleReqDataTags: Pickler[ReqData.Tags] = pickleMultimap
-  implicit val pickleRevAndReqDataTags = pickleRevAnd(pickleReqDataTags)
 
   object AtomPicklers extends AtomTC[Pickler] {
     import shipreq.webapp.base.text._

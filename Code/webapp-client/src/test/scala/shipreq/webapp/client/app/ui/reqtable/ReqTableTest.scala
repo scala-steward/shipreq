@@ -279,7 +279,7 @@ sealed trait ReqTableTest0 {
     lazy val cfname = CustomField.nameP(project)
 
     def customFieldNames(a: Live): Set[String] = {
-      val cfs   = project.config.fields.data.customFields.values.toStream
+      val cfs   = project.config.fields.customFields.values.toStream
       val names = cfs.filter(_.live ≟ a).map(cfname(_).unmust)
       names.toSet
     }
@@ -607,7 +607,7 @@ sealed trait ReqTableTest0 {
       GReq(reqType = co, id = 54, live = Dead).impSrc(12) +
       GReq(reqType = co, id = 55).impTgt(1) +
       GReq(reqType = mf, id = 13).impSrc(5, 6, 7, 8, 51, 52, 53, 54)
-    ) ! SampleProject.project |> TestOptics.projectRevs.set(Rev(709))
+    ) ! SampleProject.project
 
     val ce = CellEditor(_.table.cellLoc(pubid = "MF-13", col = "Major Feature"))
     import ce._
@@ -629,7 +629,7 @@ sealed trait ReqTableTest0 {
 
   def testTagsColumnEditor(): Unit = {
     val p = GReq(reqType = co, title = reqTitleTagRefs(v11, v13, v4x)).tag(wip, uat, v11, v1x, v3x) !
-      SampleProject.project |> TestOptics.projectRevs.set(Rev(204))
+      SampleProject.project
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Tags"))
     import ce._
@@ -648,7 +648,7 @@ sealed trait ReqTableTest0 {
 
   def testCustomTagColumnEditor(): Unit = {
     val p = GReq(reqType = co, title = reqTitleTagRefs(prod, uat3)).tag(wip, uat, v1x, v3x) !
-      SampleProject.project |> TestOptics.projectRevs.set(Rev(208))
+      SampleProject.project
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Status"))
     import ce._

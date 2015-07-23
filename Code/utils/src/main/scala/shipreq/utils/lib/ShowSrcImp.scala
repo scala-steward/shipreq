@@ -220,7 +220,6 @@ object ShowSrcDataImp {
   private def imapI[K, V: ShowSrc](objName: String): ShowSrc[IMap[K, V]] =
     imap[K, V](s"emptyDataMap($objName)") init importDataI
 
-  implicit val rev                      = taggedType[Rev                       ]("Rev                       ")
   implicit val genericReqId             = taggedType[GenericReqId              ]("GenericReqId              ")
   implicit val reqCodeId                = taggedType[ReqCodeId                 ]("ReqCodeId                 ")
   implicit val customReqTypeId          = taggedType[CustomReqTypeId           ]("CustomReqTypeId           ")
@@ -263,9 +262,6 @@ object ShowSrcDataImp {
   implicit val deletable = dataBool(Deletable.from, "Deletable", "Deletable.Not")
 
   implicit val mutexChildren = dataBool(MutexChildren.from, "MutexChildren", "MutexChildren.Not")
-
-  implicit def revAnd[A: ShowSrc]: ShowSrc[RevAnd[A]] =
-    data((s, ra) => s.cc2("RevAnd", RevAnd unapply[A] ra))
 
   implicit val setTagId = set("TagId")(tagId)
   implicit val setReqId = set("ReqId")(reqId)

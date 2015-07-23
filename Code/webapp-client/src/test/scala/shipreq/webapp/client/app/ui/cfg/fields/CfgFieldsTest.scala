@@ -28,8 +28,6 @@ object CfgFieldsTest extends TestSuite {
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
 
-    var rev = S.fields.rev
-
     def selectNewText() =
       c.modState(State.newFieldTypeSel set \/-(CustomFieldType.Text))
 
@@ -69,7 +67,6 @@ object CfgFieldsTest extends TestSuite {
       val e = CreateCustomTextField(666, nev(Name("blahh"), Key("blahh"), Mandatory(true), ReqTypes(allReqTypes)))
       verifyEvents(clientData.project)(e)
     }
-    rev = rev.succ
     assert(getNewRow.isEmpty)
 
     // Delete newly saved row
@@ -77,7 +74,6 @@ object CfgFieldsTest extends TestSuite {
     cp.assertReqsSent(2)
     cp.respondToLast(remote)(
       verifyEvents(clientData.project)(DeleteCustomField(666.CFText, HardDel)))
-    rev = rev.succ
 
     assertEq(c.state, initialState)
   }

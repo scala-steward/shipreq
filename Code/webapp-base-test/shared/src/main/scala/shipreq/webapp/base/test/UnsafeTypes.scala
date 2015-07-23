@@ -34,7 +34,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoCustomReqTypeId  (i: Int) = CustomReqTypeId(i)
   implicit def autoTagGroupId       (i: Int) = TagGroupId(i)
   implicit def autoApplicableTagId  (i: Int) = ApplicableTagId(i)
-  implicit def autoRev              (i: Int) = Rev(i)
 
   implicit def autoReqCodeIdO        (i: Int): Option[ReqCodeId]                  = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)

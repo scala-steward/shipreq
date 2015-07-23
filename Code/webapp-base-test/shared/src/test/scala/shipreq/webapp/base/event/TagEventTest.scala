@@ -86,7 +86,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1)
         def test(e: Event, ab: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags.data
+          val t = _assertPass(es: _*).config.tags
           val List(a, b) = ttget(t, 1, 2)
           assertEq((a, b) mapEach getChildren, (Vector(2), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
@@ -109,7 +109,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2)
         def test(e: Event, acb: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags.data
+          val t = _assertPass(es: _*).config.tags
           val List(a, b, c) = ttget(t, 1, 2, 3)
           assertEq((a, c, b) mapEach getChildren, (Vector(2), Vector(2), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
@@ -131,7 +131,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2, cC)
         def test(e: Event, state: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags.data
+          val t = _assertPass(es: _*).config.tags
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, d, b, c) mapEach getChildren, (Vector(2), Vector(2), Vector(3), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
@@ -150,7 +150,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2, cC)
         def test(e: Event, state: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags.data
+          val t = _assertPass(es: _*).config.tags
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, b, c, d) mapEach getChildren, (Vector(2), Vector(3), Vector.empty, Vector(3)))
           def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
@@ -239,8 +239,8 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r1 = _assertPass(es: _*).config.tags.data.get(1.TG).get
-        def r2 = _assertPass(es: _*).config.tags.data.get(2.TG).get
+        def r1 = _assertPass(es: _*).config.tags.get(1.TG).get
+        def r2 = _assertPass(es: _*).config.tags.get(2.TG).get
         assertEq(r1, TagInTree(TagGroup(1, c1Name, Some("versionness"), false, Live), Vector.empty))
 
         es :+= c2
@@ -312,8 +312,8 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r1 = _assertPass(es: _*).config.tags.data.get(1.AT).get
-        def r2 = _assertPass(es: _*).config.tags.data.get(2.AT).get
+        def r1 = _assertPass(es: _*).config.tags.get(1.AT).get
+        def r2 = _assertPass(es: _*).config.tags.get(2.AT).get
         assertEq(r1, TagInTree(ApplicableTag(1, c1Name, Some("versionness"), "c1", Live), Vector.empty))
 
         es :+= c2

@@ -24,19 +24,18 @@ class WIP {
     import shipreq.webapp.base.data._
     import shipreq.webapp.base.test.UnsafeTypes._
 
-    val customIssueTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
+    val customIssueTypes = emptyDataMap(CustomIssueType).addAll(
       CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Live),
-      CustomIssueType(2, "TBD", "To Be Decided.", Live)))
+      CustomIssueType(2, "TBD", "To Be Decided.", Live))
 
-    val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
+    val customReqTypes = emptyDataMap(CustomReqType).addAll(
       CustomReqType(1, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Live),
       CustomReqType(2, "MF", Set.empty, "Major Feature",          ImplicationRequired.Not, Live),
       CustomReqType(3, "FR", Set.empty, "Functional Requirement", ImplicationRequired,     Live),
       CustomReqType(4, "BR", Set.empty, "Business Rule",          ImplicationRequired.Not, Live),
       CustomReqType(5, "DD", Set("DA", "DDF"), "Data Definition", ImplicationRequired.Not, Dead),
-      CustomReqType(6, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead)))
+      CustomReqType(6, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead))
 
-    lazy val tagsR = RevAnd(30, tags)
     lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
     lazy val v11d = Some("Released: 1/2/2001")
     lazy val tags = TagTree.empty.addAll(
@@ -60,7 +59,7 @@ class WIP {
 
     lazy val fields = {
       import CustomField._
-      RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
+      FieldSet(emptyDataMap(CustomField).addAll(
         Text       (1, "Description", "desc",     Mandatory,     onlyReqTypes(2, 6, StaticReqType.UseCase), Live),
         Text       (2, "Notes",       "notes",    Mandatory.Not, notReqTypes(4),                            Live),
         Text       (3, "Reporter",    "reporter", Mandatory,     onlyReqTypes(5, StaticReqType.UseCase),    Dead),
@@ -71,16 +70,16 @@ class WIP {
         Text.Id(1), Implication.Id(6), Tag.Id(4), Text.Id(3),
         StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
         Tag.Id(5), Text.Id(2)
-      )))
+      ))
     }
 
-    lazy val reqs     = RevAnd(40, Requirements.empty)
-    lazy val reqCodes = RevAnd(50, ReqCodes.empty)
-    lazy val reqText  = RevAnd(60, ReqData.emptyText)
-    lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
-    lazy val reqImps  = RevAnd(80, Implications.empty)
+    lazy val reqs     = Requirements.empty
+    lazy val reqCodes = ReqCodes.empty
+    lazy val reqText  = ReqData.emptyText
+    lazy val reqTags  = ReqData.emptyTags
+    lazy val reqImps  = Implications.empty
 
-    lazy val cfg = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
+    lazy val cfg = ProjectConfig(customIssueTypes, customReqTypes, fields, tags)
     lazy val project = IdCeilings.supply(Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, _))
 
     import shipreq.webapp.base.test.ProjectDsl._

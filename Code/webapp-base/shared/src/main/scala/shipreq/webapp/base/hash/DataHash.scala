@@ -68,8 +68,6 @@ abstract class GenericDashHash {
       case a: Not [A] => not  hash a
     }
   }
-
-  implicit def hashRevAnd[A](implicit hr: Hash[Rev], ha: Hash[A]): Hash[RevAnd[A]] = hashCaseClass
 }
 
 final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDashHash {
@@ -81,7 +79,6 @@ final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDas
   implicit val hashDeletable    : Hash[Deletable]           = Hash by Deletable.from
   implicit val hashMutexChildren: Hash[MutexChildren]       = Hash by MutexChildren.from
 
-  implicit val hashRev                      = hashTaggedType[Rev]
   implicit val hashGenericReqId             = hashTaggedType[GenericReqId]
   implicit val hashReqCodeId                = hashTaggedType[ReqCodeId]
   implicit val hashCustomReqTypeId          = hashTaggedType[CustomReqTypeId]

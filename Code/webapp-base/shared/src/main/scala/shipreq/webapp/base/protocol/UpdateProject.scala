@@ -215,7 +215,7 @@ object UpdateProject {
         }
 
       case CrudAction.Update(tagId, vs) =>
-        state.project.config.tags.data.get(tagId) match {
+        state.project.config.tags.get(tagId) match {
           case Some(tit) =>
 
             var children: Option[TagInTree.Children] = None
@@ -224,7 +224,7 @@ object UpdateProject {
               if (tit.children ≠ rels.children)
                 children = Some(rels.children)
               // TODO Shouldn't need to rebuild treeStructure
-              val treeStructure = state.project.config.tags.data.mapValues(_.children)
+              val treeStructure = state.project.config.tags.mapValues(_.children)
               val ps = MMTree.Relations.deriveParents(tagId, treeStructure)
               if (ps ≠ rels.parents)
                 parents = Some(rels.parents)

@@ -24,7 +24,7 @@ private[issues] object ReqTypeImplication {
   val  ST = ReactS.FixT[IO, S]
   type ST = ST.T[Unit]
 
-  val changeListener = ChangeListener.store(rowStore)(_.customReqTypes, _.config.customReqTypes.data.get)
+  val changeListener = ChangeListener.store(rowStore)(_.customReqTypes, _.config.customReqTypes.get)
 
   val Component = ReactComponentB[Props]("ReqTypeImplication")
     .getInitialState(initialState)
@@ -34,7 +34,7 @@ private[issues] object ReqTypeImplication {
     .build
 
   private def initialState(p: Props): S =
-    rowStore.initStateIM(p.clientData.project.config.customReqTypes.data)
+    rowStore.initStateIM(p.clientData.project.config.customReqTypes)
 
   private def label(r: ReqType): String =
     s"${r.mnemonic.value}: ${r.name}"

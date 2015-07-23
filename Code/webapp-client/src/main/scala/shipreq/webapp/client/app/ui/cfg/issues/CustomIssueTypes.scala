@@ -25,7 +25,7 @@ private[issues] object CustomIssueTypes {
   val fields = FieldSet2[CustomIssueType](_.key.value, _.desc getOrElse "")(("", ""))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomIssueTypeId]
   import storesAndState._
-  val changeListener = ChangeListener.store(savedRowStoreS)(_.customIssueTypes, _.config.customIssueTypes.data.get)
+  val changeListener = ChangeListener.store(savedRowStoreS)(_.customIssueTypes, _.config.customIssueTypes.get)
 
   val Component =
     ReactComponentB[Props]("Cfg: User-Defined Issue Types")
@@ -37,13 +37,13 @@ private[issues] object CustomIssueTypes {
 
   private def initialState(p: Props): S =
     State(newRowStore.initState,
-      savedRowStore.initStateIM(p.clientData.project.config.customIssueTypes.data),
+      savedRowStore.initStateIM(p.clientData.project.config.customIssueTypes),
       p.filterDead)
 
   private def validatorState(k: Option[CustomIssueTypeId], cd: ClientData): S => V.S =
     s => {
       val ts: HashRefKeyVS.Data[TagId] = // TODO cacheable
-        (None, cd.project.config.tags.data.vstream(_.tag)
+        (None, cd.project.config.tags.vstream(_.tag)
           .map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
       val is: HashRefKeyVS.Data[CustomIssueTypeId] =
         (k, savedRowStoreS.getAllP(s).map(i => (i.id.some, i.key)))

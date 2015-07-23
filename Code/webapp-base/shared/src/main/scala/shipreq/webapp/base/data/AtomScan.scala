@@ -49,13 +49,13 @@ object AtomScan {
       text foreach parser
 
     // Parse reqs
-    p.reqs.data.reqs.values.foreach {
+    p.reqs.reqs.values.foreach {
       case r: GenericReq =>
         parse(parseR(r.id), r.title)
     }
 
     // Parse custom-text-field text
-    val customTextFieldText = p.reqText.data
+    val customTextFieldText = p.reqText
     val liveTextFields      = p.config.liveCustomTextFields.map(_.id).toSet
     for {
       (tf, m2) <- customTextFieldText
@@ -68,7 +68,7 @@ object AtomScan {
     }
 
     // Parse ReqCode groups
-    for (gi <- p.reqCodes.data.activeGroups)
+    for (gi <- p.reqCodes.activeGroups)
       parse(parseG(gi.id), gi.group.title)
 
     new AtomScan(tagsR, issuesR, issuesG, codeRefs)

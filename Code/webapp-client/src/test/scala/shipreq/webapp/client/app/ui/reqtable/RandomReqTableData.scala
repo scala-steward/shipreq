@@ -15,7 +15,7 @@ object RandomReqTableData {
     Gen.boolean.map(ShowDead.to)
 
   def visibleColumns(p: Project, fd: FilterDead): Gen[NonEmptyVector[Column]] = {
-    val customFields = fd(p.config.fields.data.customFields.values)(_.live)
+    val customFields = fd(p.config.fields.customFields.values)(_.live)
     val allPossibleColumns    = Column all customFields whole
     val (mandatory, optional) = allPossibleColumns partition Column.mandatory
     Gen.subset(optional).map(_ ++ mandatory).shuffle.map(cs => NonEmptyVector(cs.head, cs.tail))

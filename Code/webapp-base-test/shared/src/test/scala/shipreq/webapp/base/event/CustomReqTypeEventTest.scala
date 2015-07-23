@@ -47,7 +47,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r = _assertPass(es: _*).config.customReqTypes.data.get(1).get
+        def r = _assertPass(es: _*).config.customReqTypes.get(1).get
         assertEq(r, CustomReqType(1, "M", Set("MF"), mfName, ImplicationRequired, Live))
 
         es :+= UpdateCustomReqType(1, nev(Mnemonic("X"), Name("xxx")))

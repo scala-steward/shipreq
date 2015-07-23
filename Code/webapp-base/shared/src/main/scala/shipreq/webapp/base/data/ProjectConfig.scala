@@ -11,9 +11,6 @@ object ProjectConfig {
   implicit def equality: Equal[ProjectConfig] = deriveEqual
 
   val empty: ProjectConfig = {
-    val rev = Rev(0)
-    implicit def autoRevAnd[D](d: D): RevAnd[D] = RevAnd(rev, d)
-
     val cit = emptyDataMap(CustomIssueType)
     val crt = emptyDataMap(CustomReqType)
     val fs  = FieldSet(emptyDataMap(CustomField), StaticField.values.whole)
@@ -23,21 +20,13 @@ object ProjectConfig {
 }
 
 @Lenses
-final case class ProjectConfig(customIssueTypes: RevAnd[CustomIssueTypeIMap],
-                               customReqTypes  : RevAnd[CustomReqTypeIMap],
-                               fields          : RevAnd[FieldSet],
-                               tags            : RevAnd[TagTree]) {
-  val rev: Rev =
-    customIssueTypes.rev +
-    customReqTypes  .rev +
-    fields          .rev +
-    tags            .rev
-
-  override def toString =
-    s"ProjectConfig($rev)"
+final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
+                               customReqTypes  : CustomReqTypeIMap,
+                               fields          : FieldSet,
+                               tags            : TagTree) {
 
   def atag(id: ApplicableTagId): Must[ApplicableTag] =
-    Must.fromOption(tags.data.get(id), s"No tag found with $id")
+    Must.fromOption(tags.get(id), s"No tag found with $id")
       .flatMap(t => t.tag match {
       case a: ApplicableTag => Must(a)
       case _                => Must.Failed(s"$t is not an ApplicableTag")
@@ -47,26 +36,26 @@ final case class ProjectConfig(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     Must.foldMapM(ids)(atag)
 
   def atags: Stream[ApplicableTag] =
-    tags.data.vstream(_.tag).filterT[ApplicableTag]
+    tags.vstream(_.tag).filterT[ApplicableTag]
 
   def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
-    fields.data.customFields(id).flatMap(f =>
+    fields.customFields(id).flatMap(f =>
       Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))
 
   def customIssueType(id: CustomIssueTypeId): Must[CustomIssueType] =
-    Must.fromOption(customIssueTypes.data.get(id), s"No CustomIssueType found with $id")
+    Must.fromOption(customIssueTypes.get(id), s"No CustomIssueType found with $id")
 
   lazy val customTagFields =
-    fields.data.customFields.values.filterT[CustomField.Tag]
+    fields.customFields.values.filterT[CustomField.Tag]
 
   lazy val customTextFields =
-    fields.data.customFields.values.filterT[CustomField.Text]
+    fields.customFields.values.filterT[CustomField.Text]
 
   lazy val liveCustomTextFields =
     customTextFields.filter(_.live :: Live)
 
   def reqType(i: ReqTypeId): Must[ReqType] =
-    i.foldId[Must[ReqType]](Must.apply, customReqTypes.data.apply)
+    i.foldId[Must[ReqType]](Must.apply, customReqTypes.apply)
 
   def reqTypeC(i: CustomReqTypeId): Must[CustomReqType] =
     reqType(i).flatMap {
@@ -75,8 +64,8 @@ final case class ProjectConfig(customIssueTypes: RevAnd[CustomIssueTypeIMap],
     }
 
   lazy val reqTypes: Stream[ReqType] =
-    (customReqTypes.data.values.toStream: Stream[ReqType]) append
-      (StaticReqType.valueStream        : Stream[ReqType])
+    (customReqTypes.values.toStream: Stream[ReqType]) append
+      (StaticReqType.valueStream   : Stream[ReqType])
 
   lazy val reqTypesByMnemonic: Map[ReqType.Mnemonic, ReqType] =
     reqTypes.flatMap(t => t.allMnemonics.toStream.map((_, t))).toMap
@@ -87,7 +76,7 @@ final case class ProjectConfig(customIssueTypes: RevAnd[CustomIssueTypeIMap],
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] = (
     atags.map(t => (t.key.value.toLowerCase, -\/(t))) append
-      customIssueTypes.data.vstream(t => (t.key.value.toLowerCase, \/-(t)))
+      customIssueTypes.vstream(t => (t.key.value.toLowerCase, \/-(t)))
     ).toMap
 
   def hashRefLookup(key: String): Option[HashRefTarget] =

@@ -1,10 +1,9 @@
 package shipreq.webapp.base.data
 
 import monocle.macros.Lenses
+import scala.collection.GenTraversable
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.{IMap, UnivEq}
-
-import scala.collection.GenTraversable
 
 /**
  * A record of the largest values used (although not necessarily in-use) as IDs. A high-water mark.
@@ -43,12 +42,12 @@ object IdCeilings {
   def calculate(p: Project): IdCeilings = {
     def imapKeys[K <: TaggedInt](m: IMap[K, _]) = maxOf(m.keys)
     IdCeilings(
-      customIssueType = imapKeys(p.config.customIssueTypes.data),
-      customReqType   = imapKeys(p.config.customReqTypes.data),
-      customField     = imapKeys(p.config.fields.data.customFields),
-      tag             = imapKeys(p.config.tags.data),
-      req             = imapKeys(p.reqs.data.genericReqs),
-      reqCode         = maxOf(p.reqCodes.data.allIds))
+      customIssueType = imapKeys(p.config.customIssueTypes),
+      customReqType   = imapKeys(p.config.customReqTypes),
+      customField     = imapKeys(p.config.fields.customFields),
+      tag             = imapKeys(p.config.tags),
+      req             = imapKeys(p.reqs.genericReqs),
+      reqCode         = maxOf(p.reqCodes.allIds))
   }
 
   /**

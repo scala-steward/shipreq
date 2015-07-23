@@ -48,7 +48,7 @@ object PlainText {
   def hashtag(key: HashRefKey) = G.hashRefKey.prefix ~ key.value
 
   def pubid(p: Project, id: ReqId): Must[String] =
-    p.reqs.data.reqM(id)
+    p.reqs.reqM(id)
       .flatMap(r => pubid(p, r.pubid))
 
   def pubid(p: Project, pid: Pubid): Must[String] =
@@ -66,7 +66,7 @@ object PlainText {
     def codeRef(id: ReqCodeId): Must[String] = {
       import Must.Auto._
       import ProjectText.ReqCodeResolution._
-      ProjectText.resolveReqCode(id, p.reqCodes.data).flatMap {
+      ProjectText.resolveReqCode(id, p.reqCodes).flatMap {
         case ActiveCode(c, _)     => G reflinkSurround reqCode(c)
         case DeadGroup(c)         => G reflinkSurround reqCode(c)
         case ReqWithAltCode(c, _) => G reflinkSurround reqCode(c)
@@ -76,7 +76,7 @@ object PlainText {
 
     def reqRef(req: ReqId): Must[String] =
       for {
-        r   ← p.reqs.data.reqM(req)
+        r   ← p.reqs.reqM(req)
         pid = r.pubid
         rt  ← p.config.reqType(pid.reqTypeId)
       } yield

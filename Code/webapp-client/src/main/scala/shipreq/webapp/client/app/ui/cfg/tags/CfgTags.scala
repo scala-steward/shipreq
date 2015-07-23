@@ -103,7 +103,7 @@ private[tags] object MainTable {
   def initialState(p: Props): S = {
     val tgs = Seq.newBuilder[TagGroup]
     val ats = Seq.newBuilder[ApplicableTag]
-    val tagtree = p.clientData.project.config.tags.data
+    val tagtree = p.clientData.project.config.tags
     tagtree.vstream(_.tag).foreach {
       case t: TagGroup      => tgs += t
       case t: ApplicableTag => ats += t
@@ -133,7 +133,7 @@ private[tags] object MainTable {
   case class PovTag(tag: Tag, rels: TagInTree.Relations)
 
   def povTagLookup(p: Project): Id => Option[PovTag] = {
-    val tt = p.config.tags.data
+    val tt = p.config.tags
     val tree = tt.mapValues(_.children)
     id => tt.get(id).map(v => PovTag(v.tag, MMTree.Relations.derive(v.tag.id, tree)))
   }
@@ -185,7 +185,7 @@ private[tags] object MainTable {
       (k, s.tagStream.map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
 
     val is: HashRefKeyVS.Data[CustomIssueTypeId] = // TODO cacheable
-      (None, cd.project.config.customIssueTypes.data.values.toStream
+      (None, cd.project.config.customIssueTypes.values.toStream
         .map(i => (i.id.some, i.key)))
 
     (s.tagStream, HashRefKeyVS(ts, is))

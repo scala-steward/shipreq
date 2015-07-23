@@ -25,7 +25,7 @@ object CfgReqTypes {
   val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationRequired.Not))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomReqTypeId]
   import storesAndState._
-  val changeListener = ChangeListener.store(savedRowStoreS)(_.customReqTypes, _.config.customReqTypes.data.get)
+  val changeListener = ChangeListener.store(savedRowStoreS)(_.customReqTypes, _.config.customReqTypes.get)
 
   val Component =
     ReactComponentB[Props]("Cfg: Req Types")
@@ -37,7 +37,7 @@ object CfgReqTypes {
 
   private def initialState(p: Props): S =
     State(newRowStore.initState,
-      savedRowStore.initStateIM(p.clientData.project.config.customReqTypes.data),
+      savedRowStore.initStateIM(p.clientData.project.config.customReqTypes),
       p.filterDead)
 
   // ===================================================================================================================

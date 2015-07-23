@@ -157,26 +157,11 @@ object RandomData {
   lazy val optionalLargeText =
     shortText1.lim(AppConsts.largeTextMaxLength).option
 
-  lazy val rev =
-    Gen.positiveint.map(Rev)
-
-  def revAnd[D](d: D): Gen[RevAnd[D]] =
-    rev.map(RevAnd(_, d))
-
-  def revAndG[D](r: Gen[D]): Gen[RevAnd[D]] =
-    Gen.apply2(RevAnd[D])(rev, r)
-
-  lazy val revRange =
-    for {
-      r1 <- rev
-      r2 <- rev
-    } yield if (r1.value <= r2.value) RevRange(r1, r2) else RevRange(r2, r1)
-
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
-                                    (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[RevAnd[IMap[I, D]]] = {
+                                    (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {
     val d = distinctId[D, I].lift[List]
     val g = d.run andThen (i.emptyIMap ++ _)
-    revAndG(r map g)
+    r map g
   }
 
   def distinctId[D, I <: TaggedInt](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
@@ -348,9 +333,6 @@ object RandomData {
     } yield
       m.values.foldLeft(TagTree.empty)((q, t) =>
         q.add(TagInTree(t, s.getOrElse(t.id, Vector.empty))))
-
-  lazy val revAndTagTree: Gen[RevAnd[TagTree]] =
-    Gen.apply2(RevAnd.apply[TagTree])(rev, tagTree)
 
   def setTagKey(tt: Tag, kk: Option[HashRefKey]): Tag = tt match {
     case t: ApplicableTag => kk.fold(t)(k => t.copy(key = k))
@@ -791,8 +773,8 @@ object RandomData {
       )
 
   def reqsWithoutText(reqCount: Int, cfg: ProjectConfig): Gen[Requirements] = {
-    val reqTypeIdsC    = cfg.customReqTypes.data.keys.toVector
-    val deadReqtypeIds = cfg.customReqTypes.data.values.toStream.filter(_.live :: Dead).map(_.id)
+    val reqTypeIdsC    = cfg.customReqTypes.keys.toVector
+    val deadReqtypeIds = cfg.customReqTypes.values.toStream.filter(_.live :: Dead).map(_.id)
     requirements(reqCount, reqTypeIdsC, id => Dead <~ (deadReqtypeIds contains id))
   }
 
@@ -1088,60 +1070,56 @@ object RandomData {
       .xmap(HashRefKey.apply)(_.value)
 
   def distinctHashRefKeys = {
-    type A = RevAnd[CustomIssueTypeIMap]
-    type B = RevAnd[TagTree]
+    type A = CustomIssueTypeIMap
+    type B = TagTree
     type T = (A, B)
     val keyDist = hashRefFixer.distinct
     val issues = keyDist
       .at(CustomIssueType.key).liftMapValues[CustomIssueTypeId]
-      .at(first[T, A] ^|-> RevAnd.data[CustomIssueTypeIMap] ^|-> imapToMapLens)
+      .at(first[T, A] ^|-> imapToMapLens)
     val tags = keyDist
       .lift[Option].contramap[Tag](_.keyO, setTagKey)
       .at(TagInTree.tag).liftMapValues[TagId]
-      .at(second[T, B] ^|-> RevAnd.data[TagTree] ^|-> imapToMapLens)
+      .at(second[T, B] ^|-> imapToMapLens)
     issues + tags
   }
 
   lazy val projectConfig: Gen[ProjectConfig] =
     for {
-      (issues, tags) ← Gen.tuple2(customIssueTypes, revAndTagTree) map distinctHashRefKeys.run
+      (issues, tags) ← Gen.tuple2(customIssueTypes, tagTree) map distinctHashRefKeys.run
       reqtypes       ← customReqTypes
-      reqTypeIds     = StaticReqType.values ++ reqtypes.data.keys
+      reqTypeIds     = StaticReqType.values ++ reqtypes.keys
       reqTypeIdSet   = reqTypeIds.whole.toSet
-      fields         ← revAndG(fieldSet(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet))
+      fields         ← fieldSet(reqTypeIdSet, tags.keySet, reqtypes.keySet)
     } yield ProjectConfig(issues, reqtypes, fields, tags)
 
   def genProject(cfg            : ProjectConfig,
                  reqsWithoutText: Requirements,
                  reqCodes1      : ReqCodes,
-                 reqTags1       : ReqData.Tags,
-                 reqImps1       : Implications): Gen[Project] = {
-    val cissueIds      = cfg.customIssueTypes.data.keySet
+                 reqTags        : ReqData.Tags,
+                 reqImps        : Implications): Gen[Project] = {
+    val cissueIds      = cfg.customIssueTypes.keySet
     val cissueIdG      = Gen oneofO cissueIds.toSeq
     val reqIds         = reqsWithoutText.reqs.keys
     val reqIdG         = Gen oneofO reqIds.toSeq
     val reqIdSet       = reqIds.toSet
     val activeCodeIds  = reqCodes1.cataA(Vector.empty[ReqCodeId])((q, _, a) => q :+ a.id)
     val activeCodeIdG  = Gen oneofO activeCodeIds
-    val atagIds        = cfg.tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+    val atagIds        = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
     val atagIdG        = Gen.oneofO(atagIds.toSeq)
-    val textColIds     = cfg.fields.data.customFields.values.filterT[CustomField.Text].map(_.id).toSet
+    val textColIds     = cfg.fields.customFields.values.filterT[CustomField.Text].map(_.id).toSet
     for {
-      reqTags        ← revAnd(reqTags1)
-      reqText        ← revAndG(reqFieldDataText2(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG))
-      reqImps        ← revAnd(reqImps1)
+      reqText        ← reqFieldDataText2(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG)
       updReqText     = updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text) _
-      reqs2          ← genmodL(Requirements.genericReqs)(updReqText)(reqsWithoutText)
+      reqs           ← genmodL(Requirements.genericReqs)(updReqText)(reqsWithoutText)
       reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
-      reqs           ← revAnd(reqs2)
-      reqCodes       ← revAnd(ReqCodes(reqCodes2))
-    } yield IdCeilings.supply(Project(cfg, reqs, reqCodes, reqText, reqTags, reqImps, _))
+    } yield IdCeilings.supply(Project(cfg, reqs, ReqCodes(reqCodes2), reqText, reqTags, reqImps, _))
   }
 
   lazy val project: Gen[Project] =
     for {
       cfg             ← projectConfig
-      atagIds         = cfg.tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+      atagIds         = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
       reqCount        ← GenS.choosesize.sup
       reqsWithoutText ← reqsWithoutText(reqCount, cfg)
       reqIds          = reqsWithoutText.reqs.keys
@@ -1417,10 +1395,10 @@ object RandomData {
         expr(genFlat, 4 `JVM|JS` 3)
 
       def forProject(p: Project): Gen[FilterAst] = {
-        val gr: Option[Gen[ReqId]]             = Gen oneofO p.reqs.data.reqs.keys.toSeq
+        val gr: Option[Gen[ReqId]]             = Gen oneofO p.reqs.reqs.keys.toSeq
         val gy: Option[Gen[ReqTypeId]]         = Gen oneofO p.config.reqTypes.map(_.reqTypeId)
         val gt: Option[Gen[ApplicableTagId]]   = Gen oneofO p.config.atags.map(_.id)
-        val gi: Option[Gen[CustomIssueTypeId]] = Gen oneofO p.config.customIssueTypes.data.keys.toSeq
+        val gi: Option[Gen[CustomIssueTypeId]] = Gen oneofO p.config.customIssueTypes.keys.toSeq
         filterAst(flat(gr, gy, gt, gi))
       }
     }

@@ -26,7 +26,7 @@ private[issues] object MandatoryFields {
   val  ST = ReactS.FixT[IO, S]
   type ST = ST.T[Unit]
 
-  val changeListener = ChangeListener.store(rowStore)(_.customFieldTypes, _.config.fields.data.customFields.get)
+  val changeListener = ChangeListener.store(rowStore)(_.customFieldTypes, _.config.fields.customFields.get)
 
   val Component = ReactComponentB[Props]("MandatoryFields")
     .getInitialState(initialState)
@@ -39,7 +39,7 @@ private[issues] object MandatoryFields {
     .build
 
   private def initialState(p: Props) =
-    rowStore.initStateIM(p.clientData.project.config.fields.data.customFields)
+    rowStore.initStateIM(p.clientData.project.config.fields.customFields)
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
@@ -82,7 +82,7 @@ private[issues] object MandatoryFields {
     }
 
     def renderRows: ReactNode =
-      UI.must(project.config.fields.data.fields)(
+      UI.must(project.config.fields.fields)(
         HideDead(_)(_.live).toReactNodeArray(
           _.fold(renderStaticField, renderCustomField)))
 

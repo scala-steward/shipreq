@@ -34,7 +34,7 @@ private[reqtable] object Logic {
   private type TagLookup = ReqId => Set[ApplicableTagId]
 
   private def tagLookup(p: Project): TagLookup = {
-    val reqTags    = p.reqTags.data
+    val reqTags    = p.reqTags
     val tagsInText = p.atomScan.tagsInReqText
     memo(id => reqTags(id) | tagsInText(id))
   }
@@ -105,7 +105,7 @@ private[reqtable] object Logic {
       val reqsOfSubjectType: Stream[Req] =
         mustResolve(
           p.config.customField(fid).map(f =>
-            p.reqs.data.reqsByType(f.reqTypeId).toStream)
+            p.reqs.reqsByType(f.reqTypeId).toStream)
         )(Stream.empty)
 
       // (source of implication for this column) → (all it transitively implies)
@@ -249,9 +249,9 @@ private[reqtable] object Logic {
     val expandImpCols = impColValueExpander(vs, p, applicability)
     val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup, tagFilter)
 
-    val pReqs         = p.reqs.data
-    val pReqCodes     = p.reqCodes.data.activeReqCodesByTarget
-    val pImplications = p.implications.data
+    val pReqs         = p.reqs
+    val pReqCodes     = p.reqCodes.activeReqCodesByTarget
+    val pImplications = p.implications
     val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
 
     def pubid(reqId: ReqId): Option[Pubid] =
@@ -273,7 +273,7 @@ private[reqtable] object Logic {
     fullFilter.fold(Stream.empty[Row]) { filter =>
 
       def reqRows =
-        p.reqs.data.reqs.vstreamf {
+        p.reqs.reqs.vstreamf {
           case r: GenericReq =>
             maybeUse(filter a r) {
               val id = r.id
@@ -294,7 +294,7 @@ private[reqtable] object Logic {
 
       def reqCodeGroupRows: Stream[ReqCodeGroupRow] =
         maybeUse(vs.viewReqCodeGroups)(
-          p.reqCodes.data.cataA(Stream.empty[ReqCodeGroupRow])((q, c, d) => d.target match {
+          p.reqCodes.cataA(Stream.empty[ReqCodeGroupRow])((q, c, d) => d.target match {
             case _: ReqId        => q
             case g: ReqCodeGroup =>
               val groupAndId = g and d.id
@@ -586,8 +586,8 @@ private[reqtable] object Logic {
       _expansionRows += c
     }
 
-    val totalDead = p.reqs.data.deadCount
-    val totalLive = p.reqs.data.reqs.size - totalDead
+    val totalDead = p.reqs.deadCount
+    val totalLive = p.reqs.reqs.size - totalDead
 
     TableStats(vs.filterDead,
       liveVisibleReqs  = _liveVisibleReqs,

@@ -98,7 +98,7 @@ private[fields] object MainTable {
     val textFields = Seq.newBuilder[CustomField.Text]
     val implFields = Seq.newBuilder[CustomField.Implication]
     val tagFields  = Seq.newBuilder[CustomField.Tag]
-    val fs         = p.clientData.project.config.fields.data
+    val fs         = p.clientData.project.config.fields
     fs.customFields.values.foreach {
       case f: CustomField.Text        => textFields += f
       case f: CustomField.Implication => implFields += f
@@ -115,7 +115,7 @@ private[fields] object MainTable {
   }
 
   val customFieldChangeListener = ChangeListener.oneByOne[S, CustomFieldId, CustomField](
-      _.customFieldTypes, _.config.fields.data.customFields.get)(
+      _.customFieldTypes, _.config.fields.customFields.get)(
       (s, i) => {
         val s2 = customFieldStores.foldLeft(s)((t, f) => f.s.remove(i)(t))
         clearAppReqTypesEditorState(i)(s2)
@@ -215,7 +215,7 @@ private[fields] object MainTable {
       FieldNames.mandatory,
       FieldNames.applicableReqTypes))
 
-    def fieldOrder = $.props.clientData.project.config.fields.data.order
+    def fieldOrder = $.props.clientData.project.config.fields.order
   }
 
   // ===================================================================================================================
@@ -224,8 +224,8 @@ private[fields] object MainTable {
   final class DynBackend(backend: Backend, project: Project) {
     import backend.{backend2 => _, _}
 
-    val appReqTypesEditor = new AppReqTypesEditor(project.config.customReqTypes.data.values)
-    val tagSelector       = SelectOneStartNone.tag(project.config.tags.data)
+    val appReqTypesEditor = new AppReqTypesEditor(project.config.customReqTypes.values)
+    val tagSelector       = SelectOneStartNone.tag(project.config.tags)
     val reqTypeSelector   = SelectOneStartNone.reqType(project.config.reqTypes)
 
     val reqtypesE = appReqTypesEditor.editor($ focusStateL State.appReqTypeStates)
@@ -262,7 +262,7 @@ private[fields] object MainTable {
         // Add custom field types
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
           case CustomFieldType.Text        => false // Already added as proof of non-emptyness
-          case CustomFieldType.Tag         => project.config.tags.data.values.toStream
+          case CustomFieldType.Tag         => project.config.tags.values.toStream
                                                 .filter(TagInTree.filterLive)
                                                 .exists(t => !s.tagFieldTagIds.contains(t.id))
           case CustomFieldType.Implication => project.config.reqTypes
@@ -508,7 +508,7 @@ private[fields] object MainTable {
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Tag): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
-          name       = UI mustA f.name(project.config.tags.data), // TODO is this a Must or an Issue?
+          name       = UI mustA f.name(project.config.tags), // TODO is this a Must or an Issue?
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
@@ -561,7 +561,7 @@ private[fields] object MainTable {
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
-          name       = UI mustA f.name(project.config.customReqTypes.data), // TODO is this a Must or an Issue?
+          name       = UI mustA f.name(project.config.customReqTypes), // TODO is this a Must or an Issue?
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),

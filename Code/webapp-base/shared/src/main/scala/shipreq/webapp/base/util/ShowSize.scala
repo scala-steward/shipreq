@@ -177,12 +177,6 @@ object ShowSize {
         case _: ApplicableTag => "ApplicableTag"
       })
 
-  def rev[D](name: String): ShowSize[RevAnd[D]] =
-    ShowSize.lift(r => Node(name, r.rev.value.toInt))
-
-  implicit def revData[D](implicit d: ShowSize[D]): ShowSize[RevAnd[D]] =
-    d.contramap(_.data)
-
   implicit def projectConfig: ShowSize[ProjectConfig] =
     ShowSize.data4("Project config", _.customIssueTypes, _.customReqTypes, _.fields, _.tags)
 
