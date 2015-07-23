@@ -1,7 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
-import BinCodecProtocolRemoteFns._
+import BinCodecRemoteFns._
 
 /**
  * Describes a function exposed in client JS, that the server can invoke.
@@ -20,6 +20,6 @@ object JsEntryPoint {
   final val client = "Bnzklx"
 
   final val reactExamplesN = "x8927nh"
-  final val reactExamples = new JsEntryPoint[RemoteFns.ProjectSPA, Unit](reactExamplesN)
+  final val reactExamples = new JsEntryPoint[ProjectSPA, Unit](reactExamplesN)
 
 }

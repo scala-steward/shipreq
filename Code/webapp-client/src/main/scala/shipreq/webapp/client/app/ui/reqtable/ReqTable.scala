@@ -6,7 +6,6 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.ContentUpdate
-import shipreq.webapp.base.protocol.RemoteFns.UpdateProjectContent
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -27,7 +26,7 @@ object ReqTable {
       .render(_.backend.render)
       .build
 
-  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateProjectContent.Instance, fd: FilterDead) {
+  case class Props(cd: ClientData, cp: ClientProtocol, remote: ContentUpdate.Fn.Instance, fd: FilterDead) {
     def component = Component(this)
   }
 

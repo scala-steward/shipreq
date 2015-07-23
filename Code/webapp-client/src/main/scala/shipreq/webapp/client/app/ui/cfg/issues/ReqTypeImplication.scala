@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra.OnUnmount
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data._, DataImplicits._
-import shipreq.webapp.base.protocol.RemoteFns._
+import shipreq.webapp.base.protocol.ReqTypeImplicationMod
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol

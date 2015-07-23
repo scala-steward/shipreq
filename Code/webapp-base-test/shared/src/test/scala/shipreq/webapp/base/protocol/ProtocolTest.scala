@@ -23,7 +23,7 @@ import $.TextGenExt
 
 object ProtocolTest extends TestSuite {
 
-  implicit def equalProjectSPA: Equal[RemoteFns.ProjectSPA] = {
+  implicit def equalProjectSPA: Equal[ProjectSPA] = {
 //    import AutoDerive._; deriveEqual
     Equal.equalBy(_.productIterator.toStream.map(_.asInstanceOf[RemoteFn.Instance]))
   }
@@ -82,7 +82,6 @@ object ProtocolTest extends TestSuite {
   override def tests = TestSuite {
 
     'RemoteFns {
-      import RemoteFn.=>|=>
       type CrudFn[I] = RemoteFn.AuxG[I, VerifiedEvents]
 
       def testCrud[I](r: CrudFn[I])(g: Gen[r.Input])(implicit e: Equal[r.Input]): Unit =
@@ -91,11 +90,11 @@ object ProtocolTest extends TestSuite {
       def testUnitI[O](r: Unit =>|=> O)(g: Gen[O])(implicit e: Equal[O]): Unit =
         kitR(r).propO mustBeSatisfiedBy g
 
-      'ProjectInit         - testUnitI(RemoteFns.ProjectInit       )($.project)
-      'CustomIssueTypeCrud - testCrud(RemoteFns.CustomIssueTypeCrud)($.routines.customIssueTypeCrud.any)
-      'CustomReqTypeCrud   - testCrud(RemoteFns.CustomReqTypeCrud  )($.routines.customReqTypeCrud.any)
-      'TagCrud             - testCrud(RemoteFns.TagCrud            )($.routines.tagCrud.any)
-      'FieldCrud           - testCrud(RemoteFns.FieldCrud          )($.protocol.fieldCfgAction.any)
+      'ProjectInit         - testUnitI(ProjectInit       )($.project)
+      'CustomIssueTypeCrud - testCrud(CustomIssueTypeCrud)($.routines.customIssueTypeCrud.any)
+      'CustomReqTypeCrud   - testCrud(CustomReqTypeCrud  )($.routines.customReqTypeCrud.any)
+      'TagCrud             - testCrud(TagCrud.Fn         )($.routines.tagCrud.any)
+      'FieldCrud           - testCrud(FieldCrud.Fn       )($.protocol.fieldCfgAction.any)
     }
 
     'JsEntryPoints {

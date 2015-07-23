@@ -4,8 +4,7 @@ import boopickle._
 import BoopickleMacros._
 import BinCodecGeneric._
 
-object BinCodecProtocolRemoteFns {
-  import RemoteFns._
+object BinCodecRemoteFns {
 
   private def pickleRemoteFn(fn: RemoteFn): Pickler[fn.Instance] =
     xmap[fn.Instance, String](RemoteFn.Instance(_, fn))(_.key)
@@ -15,9 +14,9 @@ object BinCodecProtocolRemoteFns {
   implicit final val pickleReqTypeCrud          = pickleRemoteFn(CustomReqTypeCrud)
   implicit final val pickleReqTypeImpMod        = pickleRemoteFn(ReqTypeImplicationMod)
   implicit final val pickleFieldMandMod         = pickleRemoteFn(FieldMandatorinessMod)
-  implicit final val pickleFieldCrud            = pickleRemoteFn(FieldCrud)
-  implicit final val pickleTagCrud              = pickleRemoteFn(TagCrud)
-  implicit final val pickleUpdateProjectContent = pickleRemoteFn(UpdateProjectContent)
+  implicit final val pickleFieldCrud            = pickleRemoteFn(FieldCrud.Fn)
+  implicit final val pickleTagCrud              = pickleRemoteFn(TagCrud.Fn)
+  implicit final val pickleUpdateProjectContent = pickleRemoteFn(ContentUpdate.Fn)
 
   implicit final val pickleProjectSPA = pickleCaseClass[ProjectSPA]
 }

@@ -1,8 +1,7 @@
 package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react.test._
-import shipreq.webapp.base.protocol.RemoteFn
-import shipreq.webapp.base.protocol.RemoteFns.CustomIssueTypeCrud
+import shipreq.webapp.base.protocol.{CustomIssueTypeCrud, RemoteFn}
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.lib.HideDead

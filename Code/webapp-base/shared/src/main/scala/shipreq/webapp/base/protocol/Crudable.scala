@@ -3,6 +3,7 @@ package shipreq.webapp.base.protocol
 import boopickle.Pickler
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
+import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._
 
 trait Crudable extends RemoteFn {
   type Id
@@ -12,9 +13,9 @@ trait Crudable extends RemoteFn {
   final override type Output  = VerifiedEvents
   final override type Failure = GenericFailure
 
-  final override implicit val pickleOutput  : Pickler[Output]   = BinCodecEvents.pickleVerifiedEvents
-  final override implicit val pickleFailure : Pickler[Failure]  = BinCodecProtocolData.pickleGenericFailure
-  final override implicit val pickleResponse: Pickler[Response] = BinCodecGeneric.pickleXor
+  final override implicit val pickleOutput  : Pickler[Output]   = pickleVerifiedEvents
+  final override implicit val pickleFailure : Pickler[Failure]  = GenericFailure.pickleGenericFailure
+  final override implicit val pickleResponse: Pickler[Response] = pickleXor(pickleFailure, pickleOutput)
 
   final type Action = CrudAction[Id, V]
   @inline final def create(v: V)                     : Action = CrudAction.Create[Id, V](v)
@@ -30,7 +31,7 @@ object Crudable {
     override final type V  = _V
 
     override implicit final val pickleInput: Pickler[Input] =
-      BinCodecProtocolData.pickleCrudAction[_Id, _V]
+      CrudAction.pickleCrudAction[_Id, _V]
   }
 }
 
@@ -41,4 +42,11 @@ object CrudAction {
   final case class Delete[Id, V](id: Id, action: DeletionAction) extends CrudAction[Id, V]
 
   @inline implicit def equality[I: UnivEq, V: UnivEq]: UnivEq[CrudAction[I, V]] = UnivEq.force
+
+  def pickleCrudAction[I, V](implicit PI: Pickler[I], PV: Pickler[V]): Pickler[CrudAction[I, V]] = {
+    implicit val create: Pickler[Create[I, V]] = pickleCaseClass
+    implicit val update: Pickler[Update[I, V]] = pickleCaseClass
+    implicit val delete: Pickler[Delete[I, V]] = pickleCaseClass
+    pickleADT
+  }
 }

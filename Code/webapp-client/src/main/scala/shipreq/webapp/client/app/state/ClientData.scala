@@ -5,7 +5,7 @@ import scalaz.effect.IO
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{ApplyEvent, VerifiedEvents}
-import shipreq.webapp.base.protocol.RemoteFns.ProjectInit
+import shipreq.webapp.base.protocol.ProjectInit
 import shipreq.webapp.client.lib.{ConsoleIO, SuccessIO}
 import shipreq.webapp.client.protocol.ClientProtocol
 

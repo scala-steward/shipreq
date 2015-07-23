@@ -15,8 +15,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.Validators.{field => V}
 import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
-import shipreq.webapp.base.protocol.FieldProtocol
-import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
+import shipreq.webapp.base.protocol.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui._
@@ -28,7 +27,7 @@ import shipreq.webapp.client.util.{Disabled, Enabled, DND, On}
 import Field.ApplicableReqTypes
 
 object CfgFields {
-  case class Props(cp: ClientProtocol, remote: FieldCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp: ClientProtocol, remote: FieldCrud.Fn.Instance, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }
@@ -176,7 +175,7 @@ private[fields] object MainTable {
     }
 
     object protocol {
-      import FieldProtocol._, CfgAction._
+      import FieldCrud._, CfgAction._
       val remote = $.props.remote
       val cp     = $.props.cp
 
@@ -185,10 +184,10 @@ private[fields] object MainTable {
           s << $.props.clientData.applyEvents(_),
           cp.consumeGenericFailure(_) >> f.io)
 
-      def createIO(v: FieldProtocol.Values) =
+      def createIO(v: Values) =
         call(Create(v))
 
-      def updateValuesIO(i: CustomFieldId, v: FieldProtocol.Values) =
+      def updateValuesIO(i: CustomFieldId, v: Values) =
         call(UpdateValues(i, v))
 
       def updateOrderIO(i: FieldId, p: Position) =
@@ -418,7 +417,7 @@ private[fields] object MainTable {
 
     val text_editor = {
       @inline def stores = text_storesS
-      val toValues  = FieldProtocol.TextFieldValues.apply _
+      val toValues  = FieldCrud.TextFieldValues.apply _
       val toValuesT = toValues.tupled
       val validator = V.textField map toValuesT
       val saveFn    = Persistence.asyncSaveNS2(validator, stores, protocol.createIO)(protocol.updateValuesIO,
@@ -469,7 +468,7 @@ private[fields] object MainTable {
     val tag_editor = {
       @inline def stores = tag_storesS
       val tagSelE   = tagSelector.editor.applyValidator(V.tagField.tagIdS)
-      val toValues  = FieldProtocol.TagFieldValues.apply _
+      val toValues  = FieldCrud.TagFieldValues.apply _
       val toValuesT = toValues.tupled
       val validator = V.tagField.all map toValuesT
       val saveFn    = Persistence.asyncSaveNS2(validator, stores, protocol.createIO)(protocol.updateValuesIO,
@@ -522,7 +521,7 @@ private[fields] object MainTable {
     val impl_editor = {
       @inline def stores = impl_storesS
       val reqTypeSelE = reqTypeSelector.editor.applyValidator(V.implField.reqTypeIdS)
-      val toValues    = FieldProtocol.ImplicationFieldValues.apply _
+      val toValues    = FieldCrud.ImplicationFieldValues.apply _
       val toValuesT   = toValues.tupled
       val validator   = V.implField.all map toValuesT
       val saveFn      = Persistence.asyncSaveNS2(validator, stores, protocol.createIO)(protocol.updateValuesIO,

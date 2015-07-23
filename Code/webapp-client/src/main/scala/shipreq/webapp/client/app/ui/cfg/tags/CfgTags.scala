@@ -23,8 +23,7 @@ import shipreq.webapp.base.data.{TagId => Id, _}, DataImplicits._
 import shipreq.webapp.base.data.Validators.{tag => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
 import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
-import shipreq.webapp.base.protocol.TagProtocol
-import shipreq.webapp.base.protocol.RemoteFns.TagCrud
+import shipreq.webapp.base.protocol.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
@@ -36,7 +35,7 @@ import TagTree.FlatRow, FlatRow.FilterPolicy
 import TagInTree.Relations
 
 object CfgTags {
-  case class Props(cp: ClientProtocol, remote: TagCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp: ClientProtocol, remote: TagCrud.Fn.Instance, clientData: ClientData, filterDead: FilterDead) {
     def component: ReactComponentU_ = MainTable.Component(this)
   }
 }
@@ -193,7 +192,7 @@ private[tags] object MainTable {
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
-    val crudIO = CrudIO(Tag, TagCrud)($.props.cp, $.props.remote, $.props.clientData)
+    val crudIO = CrudIO(Tag, TagCrud.Fn)($.props.cp, $.props.remote, $.props.clientData)
 
     def validatorState(k: Option[Id]): S => V.S =
       MainTable.validatorState(_, $.props.clientData, k)
@@ -341,7 +340,7 @@ private[tags] object MainTable {
 
     val tg_editor = {
       @inline def stores = tg_storesS
-      val toValues  = TagProtocol.TagGroupValues.apply _
+      val toValues  = TagCrud.TagGroupValues.apply _
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    = Persistence.asyncSaveNS(V.tagGroup map toValuesT, stores, crudIO.createIO)(crudIO.updateIO,
         (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.mutexChildren, t.desc)),
@@ -370,7 +369,7 @@ private[tags] object MainTable {
 
     val at_editor = {
       @inline def stores = at_storesS
-      val toValues  = TagProtocol.ApplicableTagValues.apply _
+      val toValues  = TagCrud.ApplicableTagValues.apply _
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    = Persistence.asyncSaveNS(V.applTag map toValuesT, stores, crudIO.createIO)(crudIO.updateIO,
         (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.key, t.desc)),
@@ -403,7 +402,7 @@ private[tags] object MainTable {
     
     import DetailPane.{Rel, Rels, AddRel, AddRels, AddSelected}
 
-    type UpdateIO = (Tag, TagCrud.V, SuccessIO, FailureIO) => IO[Unit]
+    type UpdateIO = (Tag, TagCrud.Fn.V, SuccessIO, FailureIO) => IO[Unit]
     type SelUpdate = Option[Id] => IO[Unit]
 
     def removeChild(child: Id): Relations => Relations =

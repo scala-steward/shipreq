@@ -74,13 +74,13 @@ object UpdateProject {
   def initState(p: Project): State =
     State(hashProject hash p, p)
 
-  def reqTypeImplicationMod(input: RemoteFns.ReqTypeImplicationMod.Input, state: State): UpdateResult = {
+  def reqTypeImplicationMod(input: ReqTypeImplicationMod.Input, state: State): UpdateResult = {
     val (id, imp) = input
     val e = UpdateCustomReqType(id, CustomReqTypeGD.Imp(imp))
     applyEvent(e, state)
   }
 
-  def fieldMandatorinessMod(input: RemoteFns.FieldMandatorinessMod.Input, state: State): UpdateResult = {
+  def fieldMandatorinessMod(input: FieldMandatorinessMod.Input, state: State): UpdateResult = {
     val m = input._2
     val e = input._1 match {
       case id: CustomField.Text       .Id => UpdateCustomTextField(id, CustomTextFieldGD.Mandatory(m))
@@ -90,7 +90,7 @@ object UpdateProject {
     applyEvent(e, state)
   }
 
-  def customIssueTypeCrud(a: RemoteFns.CustomIssueTypeCrud.Action, state: State): UpdateResult = {
+  def customIssueTypeCrud(a: CustomIssueTypeCrud.Action, state: State): UpdateResult = {
     applyEventR(state)(a match {
 
       case CrudAction.Create(vs) =>
@@ -111,7 +111,7 @@ object UpdateProject {
     })
   }
 
-  def customReqTypeCrud(a: RemoteFns.CustomReqTypeCrud.Action, state: State): UpdateResult = {
+  def customReqTypeCrud(a: CustomReqTypeCrud.Action, state: State): UpdateResult = {
     applyEventR(state)(a match {
 
       case CrudAction.Create(vs) =>
@@ -132,8 +132,8 @@ object UpdateProject {
     })
   }
 
-  def fieldCrud(a: RemoteFns.FieldCrud.Input, state: State): UpdateResult = {
-    import FieldProtocol._
+  def fieldCrud(a: FieldCrud.Fn.Input, state: State): UpdateResult = {
+    import FieldCrud._
     def nextId = state.project.idCeilings.customField + 1
     applyEventR(state)(a match {
 
@@ -191,8 +191,8 @@ object UpdateProject {
   }
 
   // TODO tagCrud protocol is crap. Redo it.
-  def tagCrud(a: RemoteFns.TagCrud.Action, state: State): UpdateResult = {
-    import TagProtocol.{TagGroupValues, ApplicableTagValues}
+  def tagCrud(a: TagCrud.Fn.Action, state: State): UpdateResult = {
+    import TagCrud.{TagGroupValues, ApplicableTagValues}
     def nextId = state.project.idCeilings.tag + 1
     applyEventR(state)(a match {
 

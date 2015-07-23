@@ -12,7 +12,7 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 
 import shipreq.base.util.{NonEmptyVector, NonEmptySet, UnivEq}
-import shipreq.webapp.base.protocol.RemoteFns
+import shipreq.webapp.base.protocol.ProjectSPA
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.app.ui
 import shipreq.webapp.client.lib.ConsoleIO
@@ -42,7 +42,7 @@ object ShipreqWip {
     case CfgTags     => "Cfg: Tags"
   }
 
-  def routes(r: RemoteFns.ProjectSPA, cp: ClientProtocol, cd: ClientData) = RouterConfigDsl[Page].buildRule { dsl =>
+  def routes(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) = RouterConfigDsl[Page].buildRule { dsl =>
 
     def reqTable =
       ui.reqtable.ReqTable.Props(cd, cp, r.updateContent, HideDead).component
@@ -74,7 +74,7 @@ object ShipreqWip {
 
 object ReactExamples {
 
-  def main(r: RemoteFns.ProjectSPA) = IO[Unit] {
+  def main(r: ProjectSPA) = IO[Unit] {
     example1(document getElementById "eg1")
 //    manual()
     projectPage(r).unsafePerformIO()
@@ -110,7 +110,7 @@ object ReactExamples {
           res.render())
     }
 
-  def projectPage(r: RemoteFns.ProjectSPA): IO[Unit] = {
+  def projectPage(r: ProjectSPA): IO[Unit] = {
     val cp = ClientProtocol.Default
     ClientData.init(cp, r.projectInit, clientData => IO {
 

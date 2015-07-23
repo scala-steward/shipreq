@@ -4,6 +4,7 @@ import shipreq.base.util.{SetDiff, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.util.TypeclassDerivation._
+import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, AtomPicklers.instances._
 import Text.Equality._
 
 /**
@@ -11,9 +12,8 @@ import Text.Equality._
  *
  * Note: The project itself is never explicitly specified here.
  */
-object ProjectProtocol {
-
-}
+//object ProjectProtocol {
+//}
 
 /*
 Send ProjectRev alongside cmd?
@@ -43,4 +43,17 @@ object ContentUpdate {
   case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField.OptionalText)   extends ContentUpdate
 
   implicit val contentUpdateEquality: UnivEq[ContentUpdate] = { import AutoDerive._; deriveUnivEq }
+
+  implicit val picklePatchReqTags        : Pickler[PatchReqTags]         = pickleCaseClass
+  implicit val picklePatchImplicationSrc : Pickler[PatchImplicationSrc]  = pickleCaseClass
+  implicit val picklePatchImplicationTgt : Pickler[PatchImplicationTgt]  = pickleCaseClass
+  implicit val picklePatchReqCodes       : Pickler[PatchReqCodes]        = pickleCaseClass
+  implicit val pickleSetGenericReqType   : Pickler[SetGenericReqType]    = pickleCaseClass
+  implicit val pickleSetReqCodeGroupCode : Pickler[SetReqCodeGroupCode]  = pickleCaseClass
+  implicit val pickleSetReqCodeGroupTitle: Pickler[SetReqCodeGroupTitle] = pickleCaseClass
+  implicit val pickleSetGenericReqTitle  : Pickler[SetGenericReqTitle]   = pickleCaseClass
+  implicit val pickleSetCustomTextField  : Pickler[SetCustomTextField]   = pickleCaseClass
+  implicit val pickleContentUpdate       : Pickler[ContentUpdate]        = pickleADT
+
+  object Fn extends RemoteFn.ToVE[ContentUpdate]
 }

@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.Pickler
+import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecEvents._
+import shipreq.webapp.base.event.VerifiedEvents
 import scalaz.{\/, Equal}
 
 /**
@@ -19,7 +20,13 @@ abstract class RemoteFn {
   implicit val pickleResponse: Pickler[Response]
 }
 
+/** Convenience constructor using [[GenericFailure]]. */
+abstract class =>|=>[I, O](implicit I: Pickler[I], O: Pickler[O]) extends RemoteFn.AuxC[I, O, GenericFailure]
+
 object RemoteFn {
+
+  /** Convenience constructor returning [[VerifiedEvents]] and using [[GenericFailure]]. */
+  abstract class ToVE[I](implicit I: Pickler[I]) extends (I =>|=> VerifiedEvents)
 
   /** Syntactic convenience that allows for single-line declaration. */
   abstract class AuxC[I, O, F](implicit I: Pickler[I], O: Pickler[O], F: Pickler[F]) extends RemoteFn {
@@ -31,10 +38,6 @@ object RemoteFn {
     final override implicit val pickleFailure  = F
     final override implicit val pickleResponse = BinCodecGeneric.pickleXor(F, O)
   }
-
-  /** Convenience constructor using [[GenericFailure]]. */
-  abstract class =>|=>[I, O](implicit I: Pickler[I], O: Pickler[O])
-    extends AuxC[I, O, GenericFailure]()(I, O, BinCodecProtocolData.pickleGenericFailure)
 
   type Aux[I, O, F] = RemoteFn {type Input = I; type Output = O; type Failure = F}
   type AuxG[I, O] = Aux[I, O, GenericFailure]
@@ -65,3 +68,7 @@ object RemoteFn {
 
 /** The default representation of [[RemoteFn]] failure. */
 case class GenericFailure(msg: String)
+
+object GenericFailure {
+  implicit val pickleGenericFailure: Pickler[GenericFailure] = pickleCaseClass
+}

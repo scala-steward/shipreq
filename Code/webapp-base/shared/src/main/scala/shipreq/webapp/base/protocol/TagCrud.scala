@@ -1,10 +1,13 @@
 package shipreq.webapp.base.protocol
 
+import scalaz.\&/
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.TypeclassDerivation._
+import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._
+import TagInTree.Relations
 
-object TagProtocol {
+object TagCrud {
 
   sealed trait Values
 
@@ -21,4 +24,11 @@ object TagProtocol {
   import AutoDerive._
   implicit val tagGroupValueEquality     : UnivEq[TagGroupValues]      = deriveUnivEq
   implicit val applicableTagValueEquality: UnivEq[ApplicableTagValues] = deriveUnivEq
+
+  implicit val pickleTagPovRelations    : Pickler[Relations]           = pickleCaseClass
+  implicit val pickleTagGroupValues     : Pickler[TagGroupValues]      = pickleCaseClass
+  implicit val pickleApplicableTagValues: Pickler[ApplicableTagValues] = pickleCaseClass
+  implicit val pickleTagValues          : Pickler[Values]              = pickleADT
+
+  object Fn extends Crudable.CAux[TagId, Values \&/ Relations]
 }

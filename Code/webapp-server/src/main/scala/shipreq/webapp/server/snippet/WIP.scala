@@ -172,44 +172,44 @@ class WIP {
 
   implicit def blahblah[A](a: A): GenericFailure \/ A = \/-(a)
 
-  val projectInit = ServerProtocol.routine(RemoteFns.ProjectInit)(_ => p)
+  val projectInit = ServerProtocol.routine(ProjectInit)(_ => p)
 
   // -------------------------------------------------------------------------------------------------------------------
   object reqqq {
 
     val crud =
-      ServerProtocol.routine(RemoteFns.CustomReqTypeCrud)(input =>
+      ServerProtocol.routine(CustomReqTypeCrud)(input =>
         updateProject(UpdateProject.customReqTypeCrud(input, _)))
 
     val imptoggle =
-      ServerProtocol.routine(RemoteFns.ReqTypeImplicationMod)(input =>
+      ServerProtocol.routine(ReqTypeImplicationMod)(input =>
         updateProject(UpdateProject.reqTypeImplicationMod(input, _)))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   val issueTypeCrud =
-    ServerProtocol.routine(RemoteFns.CustomIssueTypeCrud)(input =>
+    ServerProtocol.routine(CustomIssueTypeCrud)(input =>
       updateProject(UpdateProject.customIssueTypeCrud(input, _)))
 
   // -------------------------------------------------------------------------------------------------------------------
   val tagCrud =
-    ServerProtocol.routine(RemoteFns.TagCrud)(input =>
+    ServerProtocol.routine(TagCrud.Fn)(input =>
       updateProject(UpdateProject.tagCrud(input, _)))
 
   // -------------------------------------------------------------------------------------------------------------------
   object fieldCrud {
     val cfgAction =
-      ServerProtocol.routine(RemoteFns.FieldCrud)(input =>
+      ServerProtocol.routine(FieldCrud.Fn)(input =>
         updateProject(UpdateProject.fieldCrud(input, _)))
 
     val mandmod =
-      ServerProtocol.routine(RemoteFns.FieldMandatorinessMod)(input =>
+      ServerProtocol.routine(FieldMandatorinessMod)(input =>
         updateProject(UpdateProject.fieldMandatorinessMod(input, _)))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   val updateProjectContent =
-    ServerProtocol.routine(RemoteFns.UpdateProjectContent){ i =>
+    ServerProtocol.routine(ContentUpdate.Fn){ i =>
       println(s"RECEIVED: $i")
       delay()
       Vector.empty: VerifiedEvents
@@ -221,7 +221,7 @@ class WIP {
 //  def delay(): Unit = Thread.sleep(new java.util.Random().nextInt(80)+80)
 
   def render = {
-    val pg = RemoteFns.ProjectSPA(
+    val pg = ProjectSPA(
       projectInit,
       issueTypeCrud,
       reqqq.crud, reqqq.imptoggle,

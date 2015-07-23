@@ -1137,7 +1137,7 @@ object RandomData {
   // ===================================================================================================================
   // Protocol
   object protocol {
-    import shipreq.webapp.base.protocol.{FieldProtocol => FP, _}
+    import shipreq.webapp.base.protocol._
     import Gen.Covariance._
 
     lazy val deletionAction =
@@ -1152,17 +1152,17 @@ object RandomData {
     lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
       isubset(reqTypeId.nes)
 
-    lazy val fieldPosition: Gen[FP.Position] =
+    lazy val fieldPosition: Gen[FieldCrud.Position] =
       fieldId.option
 
     lazy val textFieldValues =
-      Gen.apply4(FP.TextFieldValues.apply)(shortText1, fieldRefKey, mandatory, applicableReqTypes)
+      Gen.apply4(FieldCrud.TextFieldValues.apply)(shortText1, fieldRefKey, mandatory, applicableReqTypes)
 
-    lazy val fieldValues: Gen[FP.Values] =
+    lazy val fieldValues: Gen[FieldCrud.Values] =
       Gen.oneofG(textFieldValues)
 
     object fieldCfgAction {
-      import FP.CfgAction, CfgAction._
+      import FieldCrud.CfgAction, CfgAction._
       lazy val create      : Gen[Create]       = fieldValues map Create
       lazy val updateValues: Gen[UpdateValues] = Gen.apply2(UpdateValues)(customFieldId, fieldValues)
       lazy val updateOrder : Gen[UpdateOrder]  = Gen.apply2(UpdateOrder)(fieldId, fieldPosition)
@@ -1170,9 +1170,9 @@ object RandomData {
       lazy val any         : Gen[CfgAction]    = Gen.oneofG(create, updateValues, updateOrder, delete)
     }
 
-    def tagProtocolValues: Tag => TagProtocol.Values = {
-      case TagGroup(_, n, d, mc, _)     => TagProtocol.TagGroupValues(n, mc, d)
-      case ApplicableTag(_, n, d, k, _) => TagProtocol.ApplicableTagValues(n, k, d)
+    def tagProtocolValues: Tag => TagCrud.Values = {
+      case TagGroup(_, n, d, mc, _)     => TagCrud.TagGroupValues(n, mc, d)
+      case ApplicableTag(_, n, d, k, _) => TagCrud.ApplicableTagValues(n, k, d)
     }
 
     lazy val tagCrudInput =
@@ -1186,7 +1186,7 @@ object RandomData {
   // ===================================================================================================================
   object routines {
     import shipreq.webapp.base.protocol._
-    import RemoteFn._, RemoteFns._
+    import RemoteFn._
     import RandomData.protocol._
 
     lazy val remoteFnKey =
@@ -1202,9 +1202,9 @@ object RandomData {
         remoteFn(CustomReqTypeCrud),
         remoteFn(ReqTypeImplicationMod),
         remoteFn(FieldMandatorinessMod),
-        remoteFn(FieldCrud),
-        remoteFn(TagCrud),
-        remoteFn(UpdateProjectContent))
+        remoteFn(FieldCrud.Fn),
+        remoteFn(TagCrud.Fn),
+        remoteFn(ContentUpdate.Fn))
 
     class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._
@@ -1223,7 +1223,7 @@ object RandomData {
       Gen.tuple3(reqTypeMnemonic, customReqTypeName, implicationRequired))
 
     lazy val tagCrud =
-      new CrudActionGens(TagCrud)(RandomData.tagId, tagCrudInput)
+      new CrudActionGens(TagCrud.Fn)(RandomData.tagId, tagCrudInput)
   }
 
   // ===================================================================================================================
