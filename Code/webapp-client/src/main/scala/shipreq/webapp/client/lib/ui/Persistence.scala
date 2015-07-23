@@ -6,9 +6,9 @@ import scalaz.effect.IO
 import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.validation._
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.lib.{CrudIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.protocol.ClientProtocol
-import shipreq.webapp.client.ClientData
 
 object Persistence {
 

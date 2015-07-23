@@ -4,7 +4,7 @@ import japgolly.scalajs.react.test._
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.protocol.RemoteFns.CustomIssueTypeCrud
 import shipreq.webapp.base.test.SampleProject
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._

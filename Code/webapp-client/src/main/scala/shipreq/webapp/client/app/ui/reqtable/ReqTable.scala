@@ -10,12 +10,12 @@ import shipreq.webapp.base.protocol.RemoteFns.UpdateProjectContent
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO}
 import shipreq.webapp.client.protocol.ClientProtocol
-import shipreq.webapp.client.ClientData
 import edit.ColumnEditors
 
 object ReqTable {

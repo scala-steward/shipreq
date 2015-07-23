@@ -1,4 +1,4 @@
-package shipreq.webapp.client
+package shipreq.webapp.client.app.state
 
 import japgolly.scalajs.react.TopNode
 import japgolly.scalajs.react.extra.{Listenable, OnUnmount}

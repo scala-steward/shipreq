@@ -26,7 +26,7 @@ import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
 import shipreq.webapp.base.protocol.TagProtocol
 import shipreq.webapp.base.protocol.RemoteFns.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.client.{ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
 import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO, CrudIO}
 import shipreq.webapp.client.lib.ui._

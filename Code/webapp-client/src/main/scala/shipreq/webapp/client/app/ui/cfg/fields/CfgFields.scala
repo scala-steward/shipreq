@@ -18,7 +18,7 @@ import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
 import shipreq.webapp.base.protocol.FieldProtocol
 import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
-import shipreq.webapp.client.{ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui._
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}

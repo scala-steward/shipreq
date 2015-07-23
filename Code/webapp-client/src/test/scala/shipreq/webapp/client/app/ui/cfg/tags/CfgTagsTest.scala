@@ -16,7 +16,7 @@ import shipreq.webapp.base.protocol.RemoteFns.TagCrud
 import shipreq.webapp.base.protocol.TagProtocol._
 import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test._
 import DataImplicits._

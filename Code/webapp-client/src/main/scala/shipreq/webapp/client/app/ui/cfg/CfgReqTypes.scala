@@ -10,7 +10,7 @@ import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.Validators.{reqType => V}
 import shipreq.webapp.base.protocol.RemoteFns.CustomReqTypeCrud
-import shipreq.webapp.client.{ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol

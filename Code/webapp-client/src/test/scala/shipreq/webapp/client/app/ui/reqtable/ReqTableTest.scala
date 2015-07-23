@@ -15,17 +15,17 @@ import scalaz.syntax.equal._
 import utest.TestSuite
 import ReactTestUtils.Simulate
 
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.{RemoteFn, RemoteFns}
-import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.base.util._
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.protocol.{RemoteFn, RemoteFns}
 import shipreq.webapp.base.protocol.ContentUpdate
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.BaseTestUtil._
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.app.state.ClientData
+import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
 import shipreq.webapp.client.test.ReactTmpExt._

@@ -12,7 +12,7 @@ import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
 import shipreq.webapp.base.test.{SampleProject => S}
 import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._

@@ -2,12 +2,11 @@ package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra.OnUnmount
-import scala.language.reflectiveCalls
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.RemoteFns._
-import shipreq.webapp.client.{ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.On

@@ -13,7 +13,7 @@ import scalacss.ScalaCssReact._
 
 import shipreq.base.util.{NonEmptyVector, NonEmptySet, UnivEq}
 import shipreq.webapp.base.protocol.RemoteFns
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.app.ui
 import shipreq.webapp.client.lib.ConsoleIO
 import shipreq.webapp.client.protocol.ClientProtocol

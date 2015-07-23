@@ -2,12 +2,11 @@ package shipreq.webapp.client.app.ui.cfg.issues
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.extra.{Px, OnUnmount}
-import scala.language.reflectiveCalls
 import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.RemoteFns._
-import shipreq.webapp.client.{ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.HideDead
 import shipreq.webapp.client.lib.ui._

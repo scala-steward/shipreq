@@ -11,7 +11,7 @@ import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
 import shipreq.webapp.base.protocol.RemoteFns._
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.client.{ClientData, ChangeListener}
+import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol

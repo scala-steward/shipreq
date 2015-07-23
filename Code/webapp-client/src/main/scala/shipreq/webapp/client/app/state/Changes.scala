@@ -1,4 +1,4 @@
-package shipreq.webapp.client
+package shipreq.webapp.client.app.state
 
 import shipreq.base.util.UnivEq.emptySet
 import shipreq.webapp.base.data._
