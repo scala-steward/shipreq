@@ -23,20 +23,19 @@ object SampleProject {
   object Values extends Values
   import Values._
 
-  lazy val customIssueTypes = RevAnd(10, emptyDataMap(CustomIssueType).addAll(
+  lazy val customIssueTypes = emptyDataMap(CustomIssueType).addAll(
     CustomIssueType(1, "TO"+"DO", "Something you need To Do.", Live),
     CustomIssueType(2, "TBD", "To Be Decided.", Live),
-    CustomIssueType(3, "PENDING", "Just pendin'", Dead)))
+    CustomIssueType(3, "PENDING", "Just pendin'", Dead))
 
-  lazy val customReqTypes = RevAnd(20, emptyDataMap(CustomReqType).addAll(
+  lazy val customReqTypes = emptyDataMap(CustomReqType).addAll(
     CustomReqType(co, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Live),
     CustomReqType(mf, "MF", Set.empty, "Major Feature",          ImplicationRequired.Not, Live),
     CustomReqType(fr, "FR", Set.empty, "Functional Requirement", ImplicationRequired,     Live),
     CustomReqType(br, "BR", Set.empty, "Business Rule",          ImplicationRequired.Not, Live),
     CustomReqType(dd, "DD", Set("DA", "DDF"), "Data Definition", ImplicationRequired.Not, Dead),
-    CustomReqType(si, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead)))
+    CustomReqType(si, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead))
 
-  lazy val tagsR = RevAnd(30, tags)
   lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
   lazy val v11d = Some("Released: 1/2/2001")
   lazy val tags = TagTree.empty.addAll(
@@ -65,7 +64,7 @@ object SampleProject {
 
   lazy val fields = {
     import CustomField._
-    RevAnd(40, FieldSet(emptyDataMap(CustomField).addAll(
+    FieldSet(emptyDataMap(CustomField).addAll(
       Text       (descField    , "Description", "desc",     Mandatory,     onlyReqTypes(mf, si, StaticReqType.UseCase), Live),
       Text       (notesField   , "Notes",       "notes",    Mandatory.Not, notReqTypes(br),                             Live),
       Text       (reporterField, "Reporter",    "reporter", Mandatory,     onlyReqTypes(dd, StaticReqType.UseCase),     Dead),
@@ -77,19 +76,19 @@ object SampleProject {
       descField, mfField, priField, reporterField,
       StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
       relField, statusField, notesField
-    )))
+    ))
   }
 
-  lazy val reqs     = RevAnd(40, Requirements.empty)
-  lazy val reqCodes = RevAnd(50, ReqCodes(Map.empty))
-  lazy val reqText  = RevAnd(60, ReqData.emptyText)
-  lazy val reqTags  = RevAnd(70, ReqData.emptyTags)
-  lazy val reqImps  = RevAnd(80, Implications.empty)
+  lazy val reqs     = Requirements.empty
+  lazy val reqCodes = ReqCodes.empty
+  lazy val reqText  = ReqData.emptyText
+  lazy val reqTags  = ReqData.emptyTags
+  lazy val reqImps  = Implications.empty
 
-  lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tagsR)
-  lazy val project       = Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps)
+  lazy val projectConfig = ProjectConfig(customIssueTypes, customReqTypes, fields, tags)
+  lazy val project       = IdCeilings.supply(Project(projectConfig, reqs, reqCodes, reqText, reqTags, reqImps, _))
 
-  lazy val tagTree = project.config.tags.data.mapValues(_.children)
+  lazy val tagTree = project.config.tags.mapValues(_.children)
 
   // lazy val tagTreeB = BiMultimap(Multimap(tagTree.mapValues(_.toSet)))
 }

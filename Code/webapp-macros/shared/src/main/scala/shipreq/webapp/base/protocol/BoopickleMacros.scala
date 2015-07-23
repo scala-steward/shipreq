@@ -209,12 +209,11 @@ object BoopickleMacroImpls {
         else {
           // Take the FQN and re-evaluate. Why? I don't know.
           // But without this there'll be spurious exhaustiveness warnings
-          val fqn = t.typeSymbol.asClass.fullName
-          val tmp = selectFQN(c)(fqn)
+          val fqn = toSelectFQN(c)(t.typeSymbol.asType)
           if (t.typeArgs.isEmpty)
-            tmp
+            fqn
           else
-            AppliedTypeTree(tmp, t.typeArgs.map(TypeTree(_)))
+            AppliedTypeTree(fqn, t.typeArgs.map(TypeTree(_)))
         }
 
       val fp = TermName(c.freshName())

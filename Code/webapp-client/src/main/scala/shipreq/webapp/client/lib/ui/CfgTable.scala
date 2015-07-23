@@ -4,14 +4,14 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import monocle.Lens
 import scalaz.effect.IO
 import scalaz.syntax.equal._
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.webapp.base.data.{Live, Dead, DataIdAux}
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.protocol.DeletionAction._
+import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
 import shipreq.webapp.client.lib.FilterDead
 
 object CfgTable {
-  def apply[S, K <: TaggedLong, P, I, A, B, C, V](editor: Editor[A, B, IO, S, C, IO[Unit], V],
+  def apply[S, K <: TaggedInt, P, I, A, B, C, V](editor: Editor[A, B, IO, S, C, IO[Unit], V],
                                                   savedStore: SavedRowStore[S, K, P, I],
                                                   newStore: NewRowStore[S, I])(implicit I: DataIdAux[P, K]) =
     new {
@@ -27,7 +27,7 @@ object CfgTable {
         new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, live, filterDead, c)
     }
 
-  def typical[P, I, K <: TaggedLong](sas: TypicalStoresAndState[P, I, K]) = new {
+  def typical[P, I, K <: TaggedInt](sas: TypicalStoresAndState[P, I, K]) = new {
     type A = ((Stream[P], Option[K]), I)
     def apply[B, C, V](editor: Editor[A, B, IO, sas.S, C, IO[Unit], V]) = new {
       def apply[RowKey, N](rowkey: P => RowKey,
@@ -67,7 +67,7 @@ object CfgTable {
   }
 }
 
-final class CfgTable[S, K <: TaggedLong, P, I, A, B, C, V, RowKey, R](editor: Editor[A, B, IO, S, C, IO[Unit], V],
+final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor: Editor[A, B, IO, S, C, IO[Unit], V],
                                                                       savedStore: SavedRowStore[S, K, P, I],
                                                                       newStore: NewRowStore[S, I],
                                                                       rowkey: P => RowKey,

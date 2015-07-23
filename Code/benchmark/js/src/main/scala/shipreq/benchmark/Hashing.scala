@@ -5,7 +5,7 @@ import shipreq.webapp.base.hash.Hash.HashableValueOps
 import shipreq.webapp.base.hash.HashScheme
 
 object Hashing extends BenchmarkSuite("Hashing") {
-  implicit val projectHash = HashScheme.default.hashProject
+  implicit val projectHash = HashScheme.latest.hashProject
   val p100  = data.project_100
 //  val p1000 = data.project_1000
 

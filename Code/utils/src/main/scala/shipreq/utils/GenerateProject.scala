@@ -56,16 +56,15 @@ object GenerateProject {
   def main(args: Array[String]): Unit = {
 //    autoSelect = true
 
-    val tags0           = sample($.revAndTagTree, Size.CfgTags)
+    val tags0           = sample($.tagTree, Size.CfgTags)
     val issues0         = firstSample($.revAndIMap($.customIssueType fill Size.CfgCustomIssueTypes), 50)
     val (issues, tags)  = $.distinctHashRefKeys.run((issues0, tags0))
     val reqtypes        = firstSample($.genCustomReqTypes($.customReqType fill Size.CfgCustomReqTypes), 50)
-    val reqTypeIds      = StaticReqType.values ++ reqtypes.data.keys
+    val reqTypeIds      = StaticReqType.values ++ reqtypes.keys
     val reqTypeIdSet    = reqTypeIds.whole.toSet
-    val fields1         = sample($.fieldSet2(reqTypeIdSet, tags.data.keySet, reqtypes.data.keySet), Size.CfgFields)
-    val fields          = firstSample($.revAnd(fields1), 500)
+    val fields          = sample($.fieldSet2(reqTypeIdSet, tags.keySet, reqtypes.keySet), Size.CfgFields)
     val cfg             = ProjectConfig(issues, reqtypes, fields, tags)
-    val atagIds         = cfg.tags.data.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+    val atagIds         = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
     val reqsWithoutText = firstSample($.reqsWithoutText(Size.Reqs, cfg), 0)
     val reqIds          = reqsWithoutText.reqs.keys
     val reqIdG          = Gen oneofO reqIds.toSeq
@@ -81,7 +80,7 @@ object GenerateProject {
     val p               = sample($.genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps), Size.Reqs)
 
     val objName = s"Project_${Size.Reqs}"
-    val code    = ShowSrc.generateObject("shipreq.benchmark.data", objName, "project")(p)
+    val code    = ShowSrc.generateObject("shipreq.benchmark", objName, "project")(p)
     val fout    = s"/tmp/$objName.scala"
 
     println()

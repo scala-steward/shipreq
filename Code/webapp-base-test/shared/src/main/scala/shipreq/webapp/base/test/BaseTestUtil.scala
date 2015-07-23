@@ -1,10 +1,13 @@
 package shipreq.webapp.base.test
 
-import shipreq.base.util.Must
-import shipreq.base.util.ScalaExt._
+import scala.io.AnsiColor._
 import scalaz.Equal
 import scalaz.syntax.equal._
-import scala.io.AnsiColor._
+import shipreq.base.util.Must
+import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.event._
+import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.hash.HashScheme
 
 object BaseTestUtil extends BaseTestUtil
 
@@ -71,10 +74,44 @@ trait BaseTestUtil {
       fail(s"Actual: $actual\nExpect: $e\n   Missing: $missing\nUnexpected: $unexpected")
   }
 
-  def fail(msg: String, clearStackTrace: Boolean = true): Nothing = {
+  def fail(msg: String, clearStackTrace: Boolean = true): Nothing =
+    _fail(colourMultiline(msg, BOLD + MAGENTA), clearStackTrace)
+
+  def _fail(msg: String, clearStackTrace: Boolean = true): Nothing = {
     val e = new AssertionError(msg)
     if (clearStackTrace)
       e.setStackTrace(Array.empty)
     throw e
+  }
+
+  private def colourMultiline(text: String, colour: String): String =
+    colour + text.replace("\n", "\n" + colour) + RESET
+
+  def assertContainsCI(actual: String, expectFrag: String): Unit =
+    assertContains(actual.toLowerCase, expectFrag.toLowerCase)
+
+  def assertContains(actual: String, expectFrag: String): Unit =
+    if (!actual.contains(expectFrag)) {
+      val a = colourMultiline(actual, BOLD + CYAN)
+      _fail(s"${BOLD}${MAGENTA}Expected [${GREEN}$expectFrag${MAGENTA}] in:$RESET\n$a")
+    }
+
+  def verifyEvent(p: Project, e: Event): VerifiedEvent =
+    _verifyEvent(p, e)._2
+
+  def _verifyEvent(p: Project, e: Event): (Project, VerifiedEvent) = {
+    val p2 = ApplyEvent.untrusted.apply1(e)(p).fold(sys.error, identity)
+    val hs = HashScheme.latest
+    val h = hs.hashProject hash p2
+    (p2, VerifiedEvent(hs, h, e))
+  }
+
+  def verifyEvents(p0: Project)(es: Event*): VerifiedEvents = {
+    var p = p0
+    es.toVector.map { e =>
+      val (p2, ve) = _verifyEvent(p, e)
+      p = p2
+      ve
+    }
   }
 }

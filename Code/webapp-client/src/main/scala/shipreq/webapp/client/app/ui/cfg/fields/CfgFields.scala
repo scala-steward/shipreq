@@ -10,15 +10,15 @@ import scalaz.{Equal, -\/, \/-, \/}
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 
+import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{NonEmptySet, NonEmptyVector, Util, ISubset}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.data.Validators.{field => V}
-import shipreq.webapp.base.protocol.{DeletionAction, FieldProtocol}
+import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
+import shipreq.webapp.base.protocol.FieldProtocol
 import shipreq.webapp.base.protocol.RemoteFns.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.{ChangeListener, ClientData}
 import shipreq.webapp.client.app.ui._
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}
@@ -26,8 +26,6 @@ import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.{Disabled, Enabled, DND, On}
 import Field.ApplicableReqTypes
-import FieldProtocol.Delta
-import DeletionAction._
 
 object CfgFields {
   case class Props(cp: ClientProtocol, remote: FieldCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
@@ -100,7 +98,7 @@ private[fields] object MainTable {
     val textFields = Seq.newBuilder[CustomField.Text]
     val implFields = Seq.newBuilder[CustomField.Implication]
     val tagFields  = Seq.newBuilder[CustomField.Tag]
-    val fs         = p.clientData.project.config.fields.data
+    val fs         = p.clientData.project.config.fields
     fs.customFields.values.foreach {
       case f: CustomField.Text        => textFields += f
       case f: CustomField.Implication => implFields += f
@@ -116,20 +114,17 @@ private[fields] object MainTable {
       DND.Parent.initialState)
   }
 
-  val fieldDeltaListener = new DeltaListener.OneByOne[S, FieldId, Delta](
+  val customFieldChangeListener = ChangeListener.oneByOne[S, CustomFieldId, CustomField](
+      _.customFieldTypes, _.config.fields.customFields.get)(
       (s, i) => {
-        val s2 = i match {
-          case _: StaticField => s
-          case j: CustomFieldId => customFieldStores.foldLeft(s)((t, f) => f.s.remove(j)(t))
-        }
+        val s2 = customFieldStores.foldLeft(s)((t, f) => f.s.remove(i)(t))
         clearAppReqTypesEditorState(i)(s2)
       },
       (s, i, d) => {
         val s2 = d match {
-          case Delta(-\/(_: StaticField            ), _) => s
-          case Delta(\/-(f: CustomField.Text       ), _) => text_storesS.s.set(f.id, f)(s)
-          case Delta(\/-(f: CustomField.Implication), _) => impl_storesS.s.set(f.id, f)(s)
-          case Delta(\/-(f: CustomField.Tag        ), _) => tag_storesS .s.set(f.id, f)(s)
+          case f: CustomField.Text        => text_storesS.s.set(f.id, f)(s)
+          case f: CustomField.Implication => impl_storesS.s.set(f.id, f)(s)
+          case f: CustomField.Tag         => tag_storesS .s.set(f.id, f)(s)
         }
         clearAppReqTypesEditorState(i)(s2)
       })
@@ -143,10 +138,13 @@ private[fields] object MainTable {
       .backend(new Backend(_))
       .render(_.backend.render)
       .configure(
-        fieldDeltaListener(Partition.Fields).install(_.clientData),
-        DeltaListener.refreshOnChange(_.clientData, NonEmptySet(
-          Partition.CustomReqTypes,  // Refreshes AppReqTypesEditor and reqTypeSelector
-          Partition.Tags))           // Refreshes tagSelector
+        customFieldChangeListener.install(_.clientData),
+        ChangeListener.refreshWhen(c =>
+          c.fieldOrder
+          || c.staticFields // TODO should this trigger a clearAppReqTypesEditorState(i)?
+          || c.customReqTypes.nonEmpty // Refreshes AppReqTypesEditor and reqTypeSelector
+          || c.tags.nonEmpty)          // Refreshes tagSelector
+          .install(_.clientData)
       )
       .build
 
@@ -184,7 +182,7 @@ private[fields] object MainTable {
 
       private def call(a: CfgAction): (SuccessIO, FailureIO) => IO[Unit] =
         (s, f) => cp.call(remote)(a,
-          s << $.props.clientData.applyRemoteDelta(_),
+          s << $.props.clientData.applyEvents(_),
           cp.consumeGenericFailure(_) >> f.io)
 
       def createIO(v: FieldProtocol.Values) =
@@ -217,7 +215,7 @@ private[fields] object MainTable {
       FieldNames.mandatory,
       FieldNames.applicableReqTypes))
 
-    def fieldOrder = $.props.clientData.project.config.fields.data.order
+    def fieldOrder = $.props.clientData.project.config.fields.order
   }
 
   // ===================================================================================================================
@@ -226,8 +224,8 @@ private[fields] object MainTable {
   final class DynBackend(backend: Backend, project: Project) {
     import backend.{backend2 => _, _}
 
-    val appReqTypesEditor = new AppReqTypesEditor(project.config.customReqTypes.data.values)
-    val tagSelector       = SelectOneStartNone.tag(project.config.tags.data)
+    val appReqTypesEditor = new AppReqTypesEditor(project.config.customReqTypes.values)
+    val tagSelector       = SelectOneStartNone.tag(project.config.tags)
     val reqTypeSelector   = SelectOneStartNone.reqType(project.config.reqTypes)
 
     val reqtypesE = appReqTypesEditor.editor($ focusStateL State.appReqTypeStates)
@@ -264,7 +262,7 @@ private[fields] object MainTable {
         // Add custom field types
         val allowNewCustomFieldType: CustomFieldType => Boolean = {
           case CustomFieldType.Text        => false // Already added as proof of non-emptyness
-          case CustomFieldType.Tag         => project.config.tags.data.values.toStream
+          case CustomFieldType.Tag         => project.config.tags.values.toStream
                                                 .filter(TagInTree.filterLive)
                                                 .exists(t => !s.tagFieldTagIds.contains(t.id))
           case CustomFieldType.Implication => project.config.reqTypes
@@ -325,7 +323,7 @@ private[fields] object MainTable {
     def orderIO(from: Field, to: Field): IO[Unit] = {
       val id       = from.fieldId
       val newOrder = DND.move(id, to.fieldId)(fieldOrder)
-      val pos      = Util.position(newOrder, id)
+      val pos      = Position.get(newOrder, id)
       protocol.updateOrderIO(id, pos)(SuccessIO.nop, FailureIO.nop)
     }
 
@@ -510,7 +508,7 @@ private[fields] object MainTable {
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Tag): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
-          name       = UI mustA f.name(project.config.tags.data), // TODO is this a Must or an Issue?
+          name       = UI mustA f.name(project.config.tags), // TODO is this a Must or an Issue?
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
@@ -563,7 +561,7 @@ private[fields] object MainTable {
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
-          name       = UI mustA f.name(project.config.customReqTypes.data), // TODO is this a Must or an Issue?
+          name       = UI mustA f.name(project.config.customReqTypes), // TODO is this a Must or an Issue?
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),

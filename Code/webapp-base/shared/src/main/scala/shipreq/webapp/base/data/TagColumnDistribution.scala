@@ -23,7 +23,7 @@ object TagColumnDistribution {
   final class TagIds(p: ProjectConfig, tagColumnFilter: CustomField.Tag => Boolean) extends TagColumnDistribution[Must[Set[ApplicableTagId]]] {
     // Traversing the tag tree for used columns is better than calculating the full
     // transitive closure at O(V²) space and O(V²+VE) time.
-    private[this] implicit val tagTree = p.tags.data
+    private[this] implicit val tagTree = p.tags
 
     override val inColumn =
       memo((fid: CustomField.Tag.Id) =>

@@ -16,31 +16,23 @@ object BinCodecData {
   implicit val pickleDeletable    : Pickler[Deletable]           = pickleBool(Deletable)
   implicit val pickleMutexChildren: Pickler[MutexChildren]       = pickleBool(MutexChildren)
 
-  implicit val pickleRev                      = pickleTaggedL(Rev                       )
-  implicit val pickleGenericReqId             = pickleTaggedL(GenericReqId              ).reuseByUnivEq
-  implicit val pickleReqCodeId                = pickleTaggedL(ReqCodeId                 ).reuseByUnivEq
-  implicit val pickleCustomReqTypeId          = pickleTaggedL(CustomReqTypeId           ).reuseByUnivEq
-  implicit val pickleCustomIssueTypeId        = pickleTaggedL(CustomIssueTypeId         ).reuseByUnivEq
-  implicit val pickleApplicableTagId          = pickleTaggedL(ApplicableTagId           ).reuseByUnivEq
-  implicit val pickleTagGroupId               = pickleTaggedL(TagGroupId                ).reuseByUnivEq
-  implicit val pickleCustomFieldTagId         = pickleTaggedL(CustomField.Tag.Id        ).reuseByUnivEq
-  implicit val pickleCustomFieldTextId        = pickleTaggedL(CustomField.Text.Id       ).reuseByUnivEq
-  implicit val pickleCustomFieldImplicationId = pickleTaggedL(CustomField.Implication.Id).reuseByUnivEq
+  implicit val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
+  implicit val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
+  implicit val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
+  implicit val pickleCustomIssueTypeId        = pickleTaggedI(CustomIssueTypeId         ).reuseByUnivEq
+  implicit val pickleApplicableTagId          = pickleTaggedI(ApplicableTagId           ).reuseByUnivEq
+  implicit val pickleTagGroupId               = pickleTaggedI(TagGroupId                ).reuseByUnivEq
+  implicit val pickleCustomFieldTagId         = pickleTaggedI(CustomField.Tag.Id        ).reuseByUnivEq
+  implicit val pickleCustomFieldTextId        = pickleTaggedI(CustomField.Text.Id       ).reuseByUnivEq
+  implicit val pickleCustomFieldImplicationId = pickleTaggedI(CustomField.Implication.Id).reuseByUnivEq
   implicit val pickleReqTypePos               = pickleTaggedI(ReqTypePos)
   implicit val pickleHashRefKey               = pickleTaggedS(HashRefKey)
   implicit val pickleFieldRefKey              = pickleTaggedS(FieldRefKey)
   implicit val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic)
 
-  implicit final val pickleRevRange = pickleCaseClass[RevRange]
-
-  implicit def pickleRevAnd[A: Pickler]: Pickler[RevAnd[A]] = pickleCaseClass
-
   implicit val pickleReqId: Pickler[ReqId] = pickleADT
 
   implicit val pickleImplications: Pickler[Implications] = pickleCaseClass
-
-  implicit val pickleReqDataTags: Pickler[ReqData.Tags] = pickleMultimap
-  implicit val pickleRevAndReqDataTags = pickleRevAnd(pickleReqDataTags)
 
   object AtomPicklers extends AtomTC[Pickler] {
     import shipreq.webapp.base.text._
@@ -90,6 +82,7 @@ object BinCodecData {
   implicit val pickleReqCodeTarget     : Pickler[ReqCode.Target]     = pickleADT
   implicit val pickleReqCodeActiveData : Pickler[ReqCode.ActiveData] = pickleCaseClass
   implicit val pickleReqCodeData       : Pickler[ReqCode.Data]       = pickleCaseClass
+  implicit val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue] = pickleCaseClass
   implicit val pickleReqCodeTrie       : Pickler[ReqCode.Trie]       = pickleTrie
   implicit val pickleReqCodes          : Pickler[ReqCodes]           = pickleCaseClass
 
@@ -139,6 +132,7 @@ object BinCodecData {
   implicit val pickleCustomFields     : Pickler[FieldSet.CustomFields]              = pickleIMap(FieldSet.emptyCustomFields)
   implicit val pickleFieldSet         : Pickler[FieldSet]                           = pickleCaseClass
 
+  implicit val pickleIdCeilings   : Pickler[IdCeilings]    = pickleCaseClass
   implicit val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass
   implicit val pickleProject      : Pickler[Project]       = pickleCaseClass
 }

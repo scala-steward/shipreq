@@ -121,7 +121,7 @@ final class ColumnEditors(project       : Px[Project],
     val initialM = project.value().config.reqTypeC(r.req.reqTypeId)
     mustResolveO(initialM).map { iv =>
       val id = r.req.id
-      val fields = project.map(_.config.customReqTypes.data.values.toSet)
+      val fields = project.map(_.config.customReqTypes.values.toSet)
       ReqTypeSelector(iv, id, fields)
     }
   }
@@ -139,7 +139,7 @@ final class ColumnEditors(project       : Px[Project],
   }
 
   def cfText(fid: CustomField.Text.Id) = mkEditor[GenericReqRow] { r =>
-    val td = project.value().reqText.data.getOrElse(fid, Map.empty)
+    val td = project.value().reqText.getOrElse(fid, Map.empty)
     val id = r.req.id
     val iv = td.get(id).map(_.whole) getOrElse Vector.empty
     val fe = new RichTextEditor.CustomTextField(fid)
@@ -148,15 +148,15 @@ final class ColumnEditors(project       : Px[Project],
 
   val codesForReq = mkEditor[GenericReqRow] { r =>
     val id = r.req.id
-    val iv = project.value().reqCodes.data.activeReqCodesByTarget(r.req.id)
-    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.data.trie, iv))
+    val iv = project.value().reqCodes.activeReqCodesByTarget(r.req.id)
+    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.trie, iv))
     ReqCodeEditor.ForReqs(iv, id, vs)
   }
 
   val codeForGroup = mkEditor[ReqCodeGroupRow] { r =>
     val id = r.reqCodeId
     val iv = r.reqCode
-    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.data.trie, Set(iv)))
+    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.trie, Set(iv)))
     ReqCodeEditor.ForGroup(iv, id, vs)
   }
 
@@ -164,7 +164,7 @@ final class ColumnEditors(project       : Px[Project],
     val id = r.req.id
     val l  = project map TagEditor.lookupForNoCol
     val p  = project.value()
-    val iv = p.reqTags.data(id)
+    val iv = p.reqTags(id)
     TagEditor(iv, id, p, l)
   }
 
@@ -172,7 +172,7 @@ final class ColumnEditors(project       : Px[Project],
     val id = r.req.id
     val l  = project map (TagEditor.lookupForCol(_, fid))
     val p  = project.value()
-    val iv = p.reqTags.data(id) & r.exp.tagsForCF(fid).toSet
+    val iv = p.reqTags(id) & r.exp.tagsForCF(fid).toSet
     TagEditor(iv, id, p, l)
   }
 

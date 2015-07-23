@@ -48,9 +48,9 @@ object ParsersTest extends TestSuite {
 
     val txt2str = PlainText(p).format
 
-    val genericReqTitles = p.reqs.data.reqs.values.filterT[GenericReq].map(_.title)
+    val genericReqTitles = p.reqs.reqs.values.filterT[GenericReq].map(_.title)
 
-    val customTextFieldValues = p.reqText.data.values.toStream.flatMap(_.values.toStream)
+    val customTextFieldValues = p.reqText.values.toStream.flatMap(_.values.toStream)
 
     def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
 
@@ -80,7 +80,7 @@ object ParsersTest extends TestSuite {
 //        println()
 //        println(t)
 //        println()
-//        p.config.customIssueTypes.data.values.toStream.map(_.toString).sorted foreach println
+//        p.config.customIssueTypes.values.toStream.map(_.toString).sorted foreach println
 //        println()
 //        println("<"*200)
 //      }

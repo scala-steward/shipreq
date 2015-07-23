@@ -57,7 +57,7 @@ object LogicTest extends TestSuite {
   }
 
   def applicableTag(p: Project): ApplicableTagId => ApplicableTag =
-    id => p.config.tags.data.get(id).map(_.tag) match {
+    id => p.config.tags.get(id).map(_.tag) match {
       case Some(t: ApplicableTag) => t
       case x => sys.error(s"Not an ApplicableTag: $x")
     }
@@ -72,7 +72,7 @@ object LogicTest extends TestSuite {
 
     val expectVisible: ReqId => Boolean =
       if (vs.filterDead == HideDead)
-        id => p.reqs.data.req(id).get.live ≟ Live
+        id => p.reqs.req(id).get.live ≟ Live
       else
         _ => true
 
@@ -82,12 +82,12 @@ object LogicTest extends TestSuite {
     val gatheredG   = gathered.filterT[GenericReqRow]
     val rowReqCodes = gathered.flatMap(codesInRow(_).toStream)
     val rowGReqIds  = gatheredG.map(_.req.id).toSet
-    val srcGReqIds  = p.reqs.data.reqs.keys.filterT[GenericReqId].filter(expectVisible).toSet
+    val srcGReqIds  = p.reqs.reqs.keys.filterT[GenericReqId].filter(expectVisible).toSet
     val finalRows   = Logic.rowsForTable(vs, p, plainText, textSearch)
     val tableStats  = Logic.stats(vs, p, finalRows)
 
     val expectedVisibleReqCodes =
-      p.reqCodes.data.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
+      p.reqCodes.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
         case id: ReqId       => if (expectVisible(id))    q + c else q
         case _: ReqCodeGroup => if (vs.viewReqCodeGroups) q + c else q
       })
@@ -484,7 +484,7 @@ object LogicTest extends TestSuite {
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    val fieldSetL = Project.fields ^|-> RevAnd.data
+    val fieldSetL = Project.fields
 
     def modCustomFields(f: EndoFn[IMap[CustomFieldId, CustomField]]): EndoFn[Project] =
       fieldSetL.modify { fs =>

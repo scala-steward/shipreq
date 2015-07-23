@@ -75,7 +75,7 @@ object AutoComplete {
       fd(tags  )(_.live).map(_.key))
 
   def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategy =
-    hashtag(p.config.customIssueTypes.data.values.toStream, p.config.atags, fd)
+    hashtag(p.config.customIssueTypes.values.toStream, p.config.atags, fd)
 
   def issue(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategy =
     hashtag(legal, Stream.empty, fd)
@@ -89,7 +89,7 @@ object AutoComplete {
   private val reflinkContext = Context(Grammar.reflinkSurround)
 
   def reqItems(p: Project, pt: PlainText.ForProject): Stream[ReqItem] =
-    reqItems(p, pt, p.reqs.data.reqs.values.toStream)
+    reqItems(p, pt, p.reqs.reqs.values.toStream)
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     val m = Must.foldMapM[Req, Stream, ReqItem](legal.filter(_.live :: Live))(req =>
@@ -231,7 +231,7 @@ object AutoComplete {
       type A = (String, ActiveData)
 
       val activePaths: Stream[A] =
-        project.reqCodes.data.trie.flatStream
+        project.reqCodes.trie.flatStream
           .filter(_._2.active.isDefined)
           .map(x => (PlainText reqCode x._1, x._2.active.get))
           .sortBy(_._1)

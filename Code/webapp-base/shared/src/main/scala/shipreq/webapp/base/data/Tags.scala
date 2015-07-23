@@ -2,20 +2,20 @@ package shipreq.webapp.base.data
 
 import japgolly.nyaya.CycleDetector
 import monocle.Lens
-import monocle.macros.GenLens
+import monocle.macros.{Lenses, GenLens}
 import scala.annotation.tailrec
 import scalaz.syntax.equal._
 import shipreq.base.util._
-import shipreq.base.util.TaggedTypes.TaggedLong
+import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.util.TypeclassDerivation._
 
 // =====================================================================================================================
 // A single tag. No relationships.
 
-sealed trait TagId extends TaggedLong
-final case class TagGroupId     (value: Long) extends TagId with TaggedLong
-final case class ApplicableTagId(value: Long) extends TagId with TaggedLong
+sealed trait TagId extends TaggedInt
+final case class TagGroupId     (value: Int) extends TagId with TaggedInt
+final case class ApplicableTagId(value: Int) extends TagId with TaggedInt
 
 sealed trait Tag {
   val id     : TagId
@@ -30,6 +30,7 @@ sealed trait Tag {
  * FR-246: BA shall be able to specify that a grouping cannot be applied.
  *         e.g. “Priority” shouldn't be applicable but its children should.
  */
+@Lenses
 final case class TagGroup(id           : TagGroupId,
                           name         : String,
                           desc         : Option[String],
@@ -39,6 +40,7 @@ final case class TagGroup(id           : TagGroupId,
   override def tagType = TagType.Group
 }
 
+@Lenses
 final case class ApplicableTag(id  : ApplicableTagId,
                                name: String,
                                desc: Option[String],
@@ -92,13 +94,13 @@ object Tag {
 
   object CycleDetectors {
     val multimap =
-      CycleDetector.Directed.multimap[Vector, TagId, Long](_.value, Vector.empty)
+      CycleDetector.Directed.multimap[Vector, TagId, Int](_.value, Vector.empty)
     // val tagTree = multimap.contramap((_: TagTree).mapValues(_.children))
 
     val tagTree =
       CycleDetector[TagTree, TagId](
         _.keys.toStream,
-        CycleDetector.Directed.check[TagTree, TagId, Long](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
+        CycleDetector.Directed.check[TagTree, TagId, Int](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
   }
 
   import AutoDerive._
@@ -260,7 +262,12 @@ final case class TagInTree(tag: Tag, children: TagInTree.Children) {
 }
 
 object TagInTree {
-  type Children = MMTree.Children[TagId]
+  type Relations = MMTree.Relations[TagId]
+  type Parents   = MMTree.Parents  [TagId]
+  type Children  = MMTree.Children [TagId]
+
+  val noRelations: Relations =
+    MMTree.Relations.empty
 
   implicit val equality: UnivEq[TagInTree] = deriveUnivEq
 
@@ -269,6 +276,7 @@ object TagInTree {
 
   val tag      = GenLens[TagInTree](_.tag)
   val children = GenLens[TagInTree](_.children)
+  val live     = tag ^|-> Tag.live
 
   /** @return Itself and all reachable children. */
   @tailrec def transitiveChildren(queue: Stream[Must[TagInTree]], seen: Set[TagId])(implicit tt: TagTree): Must[Set[TagId]] =

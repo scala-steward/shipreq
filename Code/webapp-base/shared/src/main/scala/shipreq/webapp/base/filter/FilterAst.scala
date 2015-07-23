@@ -87,7 +87,7 @@ object FilterAst {
       }
 
     def lookupReqsByType(mn: data.ReqType.Mnemonic): String \/ Vector[data.ReqId] =
-      lookupReqType(mn).map(rt => p.reqs.data.pubids.value(rt.reqTypeId))
+      lookupReqType(mn).map(rt => p.reqs.pubids.value(rt.reqTypeId))
 
     val lookupReqs: S.ReqsSpec => String \/ Reqs = {
       case S.SomeOfType(mn, nums) =>

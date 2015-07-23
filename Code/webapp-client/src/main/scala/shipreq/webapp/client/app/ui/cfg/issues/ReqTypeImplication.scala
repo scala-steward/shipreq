@@ -6,9 +6,8 @@ import scala.language.reflectiveCalls
 import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data._, DataImplicits._
-import shipreq.webapp.base.delta.Partition
 import shipreq.webapp.base.protocol.RemoteFns._
-import shipreq.webapp.client.ClientData
+import shipreq.webapp.client.{ChangeListener, ClientData}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.On
@@ -25,15 +24,17 @@ private[issues] object ReqTypeImplication {
   val  ST = ReactS.FixT[IO, S]
   type ST = ST.T[Unit]
 
+  val changeListener = ChangeListener.store(rowStore)(_.customReqTypes, _.config.customReqTypes.get)
+
   val Component = ReactComponentB[Props]("ReqTypeImplication")
     .getInitialState(initialState)
     .backend(new Backend(_))
     .render(_.backend.render)
-    .configure(DeltaListener.store(rowStore)(Partition.CustomReqTypes).install(_.clientData))
+    .configure(changeListener.install(_.clientData))
     .build
 
   private def initialState(p: Props): S =
-    rowStore.initStateIM(p.clientData.project.config.customReqTypes.data)
+    rowStore.initStateIM(p.clientData.project.config.customReqTypes)
 
   private def label(r: ReqType): String =
     s"${r.mnemonic.value}: ${r.name}"

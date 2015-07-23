@@ -220,7 +220,6 @@ object ShowSrcDataImp {
   private def imapI[K, V: ShowSrc](objName: String): ShowSrc[IMap[K, V]] =
     imap[K, V](s"emptyDataMap($objName)") init importDataI
 
-  implicit val rev                      = taggedType[Rev                       ]("Rev                       ")
   implicit val genericReqId             = taggedType[GenericReqId              ]("GenericReqId              ")
   implicit val reqCodeId                = taggedType[ReqCodeId                 ]("ReqCodeId                 ")
   implicit val customReqTypeId          = taggedType[CustomReqTypeId           ]("CustomReqTypeId           ")
@@ -263,9 +262,6 @@ object ShowSrcDataImp {
   implicit val deletable = dataBool(Deletable.from, "Deletable", "Deletable.Not")
 
   implicit val mutexChildren = dataBool(MutexChildren.from, "MutexChildren", "MutexChildren.Not")
-
-  implicit def revAnd[A: ShowSrc]: ShowSrc[RevAnd[A]] =
-    data((s, ra) => s.cc2("RevAnd", RevAnd unapply[A] ra))
 
   implicit val setTagId = set("TagId")(tagId)
   implicit val setReqId = set("ReqId")(reqId)
@@ -487,11 +483,14 @@ object ShowSrcDataImp {
   implicit val tagTree: ShowSrc[TagTree] =
     "tagTree" @@ imap("TagTree.empty")
 
+  implicit val idCeilings: ShowSrc[IdCeilings] =
+    data((s, a) => s.cc6("IdCeilings", IdCeilings unapply a))
+
   implicit val projectConfig: ShowSrc[ProjectConfig] =
     data((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a, "\n    "))
 //    source((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a))
 
   implicit val project: ShowSrc[Project] =
-    data((s, a) => s.cc6("Project", Project unapply a, "\n  "))
+    data((s, a) => s.cc7("Project", Project unapply a, "\n  "))
 //    source((s, a) => s.cc6("Project", Project unapply a))
 }

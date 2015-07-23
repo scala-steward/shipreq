@@ -3,8 +3,8 @@ package shipreq.webapp.client.lib.ui
 import japgolly.scalajs.react.ScalazReact._
 import scalaz.{Need, Name}
 import scalaz.effect.IO
-import shipreq.webapp.base.delta.RemoteDelta
-import shipreq.webapp.base.protocol.{RemoteFn, DeletionAction}
+import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
+import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.lib.{CrudIO, FailureIO, SuccessIO}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -76,23 +76,22 @@ object Persistence {
       needSave, updateIO, realise)
 
 
-  def simpleAsyncUpdate[S, K, P, I, R <: RemoteFn.AuxG[(K, I), RemoteDelta]](store   : SavedRowStore[S, K, P, I])
-                                                                            (remoteFn: RemoteFn.InstanceFor[R],
-                                                                             cd      : ClientData,
-                                                                             cp      : ClientProtocol,
-                                                                             realise : Persistence.Realise[S],
-                                                                             id      : K): ST[S] =
+  def simpleAsyncUpdate[S, K, P, I, R <: RemoteFn.AuxG[(K, I), VerifiedEvents]](store   : SavedRowStore[S, K, P, I])
+                                                                               (remoteFn: RemoteFn.InstanceFor[R],
+                                                                                cd      : ClientData,
+                                                                                cp      : ClientProtocol,
+                                                                                realise : Persistence.Realise[S],
+                                                                                id      : K): ST[S] =
     ReactS.liftR[IO, S, Unit](state => {
       val setStatus = store.setStatusST[IO](id)
       val saveio = retryably[ReactST[IO, S, Unit]](retry => {
         val v = store.getI(id)(state)
         val f = Persistence.failureIO(retry)(realise, setStatus)
-        val io = cp.call(remoteFn)((id, v),d => SuccessIO(cd applyRemoteDelta d), cp.consumeGenericFailure(_) >> f.io)
+        val io = cp.call(remoteFn)((id, v), cd.applyEventsS, cp.consumeGenericFailure(_) >> f.io)
         ReactS retM io
       })
       saveio >> setStatus(RowStatus.Locked)
     })
-
 
   // ===================================================================================================================
   // Create

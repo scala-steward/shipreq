@@ -1,18 +1,18 @@
 package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
-import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.delta.RemoteDelta
+import shipreq.base.util.UnivEq
+import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
 
 trait Crudable extends RemoteFn {
   type Id
   type V
 
   final override type Input   = CrudAction[Id, V]
-  final override type Output  = RemoteDelta
+  final override type Output  = VerifiedEvents
   final override type Failure = GenericFailure
 
-  final override implicit val pickleOutput  : Pickler[Output]   = BinCodecDelta.pickleRemoteDelta
+  final override implicit val pickleOutput  : Pickler[Output]   = BinCodecEvents.pickleVerifiedEvents
   final override implicit val pickleFailure : Pickler[Failure]  = BinCodecProtocolData.pickleGenericFailure
   final override implicit val pickleResponse: Pickler[Response] = BinCodecGeneric.pickleXor
 
@@ -41,13 +41,4 @@ object CrudAction {
   final case class Delete[Id, V](id: Id, action: DeletionAction) extends CrudAction[Id, V]
 
   @inline implicit def equality[I: UnivEq, V: UnivEq]: UnivEq[CrudAction[I, V]] = UnivEq.force
-}
-
-sealed abstract class DeletionAction
-object DeletionAction {
-  case object HardDel extends DeletionAction
-  case object SoftDel extends DeletionAction
-  case object Restore extends DeletionAction
-  def values = NonEmptyVector[DeletionAction](HardDel, SoftDel, Restore)
-  @inline implicit def equality: UnivEq[DeletionAction] = UnivEq.force
 }

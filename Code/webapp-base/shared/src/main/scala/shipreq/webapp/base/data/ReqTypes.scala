@@ -91,7 +91,7 @@ object StaticReqType {
 
 // =====================================================================================================================
 
-final case class CustomReqTypeId(value: Long) extends TaggedLong with ReqTypeId {
+final case class CustomReqTypeId(value: Int) extends TaggedInt with ReqTypeId {
   override def foldId[A](s: StaticReqType => A, c: CustomReqTypeId => A): A = c(this)
 }
 
@@ -106,6 +106,9 @@ final case class CustomReqType(id          : CustomReqTypeId,
   def fullName = s"${mnemonic.value}: $name"
 
   override def fold[A](s: StaticReqType => A, c: CustomReqType => A): A = c(this)
+
+  def setMnemonic(nv: Mnemonic): CustomReqType =
+    copy(mnemonic = nv, oldMnemonics = allMnemonics - nv)
 }
 
 object CustomReqType {

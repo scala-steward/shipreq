@@ -233,7 +233,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
         ))
         IndexEntryR(r, title, textFields)
       }
-      project.reqs.data.reqs vstream each
+      project.reqs.reqs vstream each
     }
 
     val indexValuesG: Stream[IndexEntryG] = {
@@ -241,7 +241,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
         val title = norm(plainText reqCodeGroupTitle g)
         IndexEntryG(g, title)
       }
-      project.reqCodes.data.activeGroups map each
+      project.reqCodes.activeGroups map each
     }
 
     val indexR = IMap.empty[ReqId,     IndexEntryR](_.req.id)   ++ indexValuesR

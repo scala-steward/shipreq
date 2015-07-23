@@ -1,6 +1,7 @@
 package shipreq.webapp.base.test
 
 import japgolly.nyaya.util.Multimap
+import scala.collection.generic.CanBuildFrom
 import shipreq.base.util._
 import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.text.Grammar
@@ -12,7 +13,6 @@ trait UnsafeTypesLowPriority {
 
 object UnsafeTypes extends UnsafeTypesLowPriority {
   import shipreq.webapp.base.data._
-  import shipreq.webapp.base.delta._
 
   implicit def autoMnemonic   (s: String) = ReqType.Mnemonic(s)
   implicit def autoHashRefKey (s: String) = HashRefKey(s)
@@ -34,7 +34,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoCustomReqTypeId  (i: Int) = CustomReqTypeId(i)
   implicit def autoTagGroupId       (i: Int) = TagGroupId(i)
   implicit def autoApplicableTagId  (i: Int) = ApplicableTagId(i)
-  implicit def autoRev              (i: Int) = Rev(i)
 
   implicit def autoReqCodeIdO        (i: Int): Option[ReqCodeId]                  = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)
@@ -59,6 +58,9 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit class UnsafeIntExt(val a: Int) extends AnyVal {
     def AT = ApplicableTagId(a)
     def TG = TagGroupId(a)
+    def CFText = CustomField.Text.Id(a)
+    def CFTag  = CustomField.Tag.Id(a)
+    def CFImp  = CustomField.Implication.Id(a)
   }
 
   implicit class UnsafeMustExt[A](val m: Must[A]) extends AnyVal {
@@ -71,4 +73,10 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
 
   def min2set[A: UnivEq](a: A, b: A, t: A*): Min2Set[A] =
     Min2Set(NonEmptySet(a, t.toSet + b)).fold(nes => sys.error(s"Not make a Min2Set from $nes"), a => a)
+
+  implicit def boolToMutexChildren(b: Boolean) = MutexChildren <~ b
+  implicit def boolToMandatory(b: Boolean) = Mandatory <~ b
+  implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired <~ b
+
+  def ∅[A](implicit cbf: CanBuildFrom[Nothing, Nothing, A]): A = cbf().result()
 }

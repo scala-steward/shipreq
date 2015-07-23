@@ -84,11 +84,11 @@ abstract class ProjectText[Out](project: Project) {
     reqCodeGroupTitleMemo.getOrElseUpdate(g.id, format(g.group.title))
 
   def reqTitleById(id: ReqId): Must[Out] =
-    project.reqs.data.reqM(id) map reqTitle
+    project.reqs.reqM(id) map reqTitle
 
   private val _customTextField: CustomField.Text.Id => ReqId => Option[Out] =
     fid => {
-      val m = project.reqText.data.getOrElse(fid, Map.empty)
+      val m = project.reqText.getOrElse(fid, Map.empty)
       m.get(_) map format1
     }
 

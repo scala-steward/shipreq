@@ -38,8 +38,8 @@ object ImplicationEditor {
       l.outlaw(None, _.reqTypeId ≠ f.reqTypeId))
 
   def initialValueForCustomColumn(p: Project, fid: CustomField.Implication.Id, id: ReqId): Stream[Pubid] = {
-    val impIds = p.implications.data.tgtToSrc(id).toStream
-    val impReqs = unmust(p.reqs.data.reqsM(impIds))
+    val impIds = p.implications.tgtToSrc(id).toStream
+    val impReqs = unmust(p.reqs.reqsM(impIds))
     impReqs.map(_.pubid)
   }
 
@@ -68,7 +68,7 @@ object ImplicationEditor {
         for {
           lu ← lookupM.value()
           ls = lu.legal.map(_.req.id).toSet - subjectId
-          rs ← p.reqs.data.reqsByPubidM(initial0.toVector)
+          rs ← p.reqs.reqsByPubidM(initial0.toVector)
         } yield rs.filter(ls contains _.id))
 
       val text = reqs
@@ -110,7 +110,7 @@ object ImplicationEditor {
       val newValues = in.toSet - subjectId // Tolerate reflexivity
       val diff = SetDiff.compare(initialValues, newValues)
 
-      val pi = project.value().implications.data
+      val pi = project.value().implications
       var is = if (declFwd) pi.srcToTgt else pi.tgtToSrc
       is = is.mod(subjectId, diff.apply)
       if (Implications.cycleDetector.hasCycle(is.m))

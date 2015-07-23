@@ -262,6 +262,18 @@ object ShowSrc {
       arg(preArg, f, ')')
     }
 
+    def fn7[A: ShowSrc, B: ShowSrc, C: ShowSrc, D: ShowSrc, E: ShowSrc, F: ShowSrc, G: ShowSrc](name: String, a: A, b: B, c: C, d: D, e: E, f: F, g: G, preArg: String = ""): Unit = {
+      sb append name
+      sb append '('
+      arg(preArg, a)
+      arg(preArg, b)
+      arg(preArg, c)
+      arg(preArg, d)
+      arg(preArg, e)
+      arg(preArg, f)
+      arg(preArg, g, ')')
+    }
+
     def cc1[A: ShowSrc](name: String, t: Option[A], preArg: String = ""): Unit = {
       val a = t.get
       fn1(name,a,preArg)
@@ -285,6 +297,10 @@ object ShowSrc {
     def cc6[A: ShowSrc, B: ShowSrc, C: ShowSrc, D: ShowSrc, E: ShowSrc, F: ShowSrc](name: String, t: Option[(A,B,C,D,E,F)], preArg: String = ""): Unit = {
       val (a,b,c,d,e,f) = t.get
       fn6(name,a,b,c,d,e,f,preArg)
+    }
+    def cc7[A: ShowSrc, B: ShowSrc, C: ShowSrc, D: ShowSrc, E: ShowSrc, F: ShowSrc, G: ShowSrc](name: String, t: Option[(A,B,C,D,E,F,G)], preArg: String = ""): Unit = {
+      val (a,b,c,d,e,f,g) = t.get
+      fn7(name,a,b,c,d,e,f,g,preArg)
     }
 
     def intercalate[S[x] <: GenTraversable[x], A: ShowSrc](as: S[A], sep: State => Unit) = {

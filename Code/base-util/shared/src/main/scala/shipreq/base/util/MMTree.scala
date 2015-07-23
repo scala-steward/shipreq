@@ -24,7 +24,7 @@ object MMTree {
    * Each key is a parent of the subject node.
    * Each value is the sibling before which the subject tag should be inserted. (None ⇒ append.)
    */
-  type Parents[I] = Map[I, Option[I]]
+  type Parents[I] = Map[I, Position[I]]
 
   /**
    * An ordered list of the subject's children.
@@ -48,15 +48,19 @@ object MMTree {
   object Relations {
     implicit def equality[I: UnivEq]: UnivEq[Relations[I]] = UnivEq.force
 
-    def derive[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Relations[I] = {
-      val children = tree.getOrElse(id, Vector.empty)
+    def empty[I]: Relations[I] =
+      Relations(Map.empty, Vector.empty)
 
-      val parents = tree
+    def deriveParents[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Parents[I] =
+      tree
         .filter(_._2 contains id)
         .foldLeft(UnivEq.emptyMap: Parents[I]) {
-        case (m, (parent, sibs)) => m + (parent -> Util.position(sibs, id))
-      }
+          case (m, (parent, sibs)) => m + (parent -> Position.get(sibs, id))
+        }
 
+    def derive[I: UnivEq](id: I, tree: Map[I, Vector[I]]): Relations[I] = {
+      val children = tree.getOrElse(id, Vector.empty)
+      val parents = deriveParents(id, tree)
       Relations(parents, children)
     }
   }
@@ -85,7 +89,7 @@ object MMTree {
 
       // Add parents
       for ((parent, pos) <- parents)
-        t = T.modChildren(parent, Util.reposition(_, id, pos))(t)
+        t = T.modChildren(parent, Position.set(_, id, pos))(t)
 
       // Remove old parents
       val oldParents = T.keySet(t) - id -- parents.keySet

@@ -17,12 +17,12 @@ object ProjectDslInternals {
   }
 
   case class ProjectState(p             : Project,
-                          nextId        : Long,
+                          nextId        : Int,
                           defaultReqType: Option[CustomReqTypeId],
                           reqs          : GenericReqIMap,
                           pubids        : PubidRegister,
                           reqCodeTrie   : ReqCode.Trie,
-                          maxReqCodeId  : Long,
+                          maxReqCodeId  : Int,
                           text          : ReqData.Text,
                           tags          : ReqData.Tags,
                           imps          : Implications.Uni) {
@@ -37,27 +37,28 @@ object ProjectDslInternals {
     }
 
     def done: Project =
-      p.copy(
-        reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
-        reqCodes     = succ(p.reqCodes,     ReqCodes(reqCodeTrie)),
-        reqText      = succ(p.reqText,      text),
-        reqTags      = succ(p.reqTags,      tags),
-        implications = succ(p.implications, Implications(imps)))
+      IdCeilings.supply(ids =>
+        p.copy(
+          reqs         = succ(p.reqs,         Requirements(reqs, pubids)),
+          reqCodes     = succ(p.reqCodes,     ReqCodes(reqCodeTrie)),
+          reqText      = succ(p.reqText,      text),
+          reqTags      = succ(p.reqTags,      tags),
+          implications = succ(p.implications, Implications(imps)),
+          idCeilings   = ids))
   }
 
-  private def succ[A](r: RevAnd[A], a: A): RevAnd[A] =
-    RevAnd(r.rev.succ, a)
+  private def succ[A](old: A, n: A) = n // obsolete. Used to increse Rev
 
   def projectState(p: Project) = ProjectState(p,
-    nextId         = p.reqs.data.reqs.keySet.ifelse(_.isEmpty, _ => 1, _.max.value),
-    defaultReqType = p.config.customReqTypes.data.values.headOption.map(_.id),
-    reqs           = p.reqs.data.genericReqs,
-    pubids         = p.reqs.data.pubids,
-    reqCodeTrie    = p.reqCodes.data.trie,
-    maxReqCodeId   = p.reqCodes.data.cataA(0L)((q,_,d) => q max d.id.value),
-    text           = p.reqText.data,
-    tags           = p.reqTags.data,
-    imps           = p.implications.data.srcToTgt)
+    nextId         = p.reqs.reqs.keySet.ifelse(_.isEmpty, _ => 1, _.max.value),
+    defaultReqType = p.config.customReqTypes.values.headOption.map(_.id),
+    reqs           = p.reqs.genericReqs,
+    pubids         = p.reqs.pubids,
+    reqCodeTrie    = p.reqCodes.trie,
+    maxReqCodeId   = p.reqCodes.cataA(0)((q,_,d) => q max d.id.value),
+    text           = p.reqText,
+    tags           = p.reqTags,
+    imps           = p.implications.srcToTgt)
 
   type CFTextId     = CustomField.Text.Id
   type CFTextValue  = Text.CustomTextField.NonEmptyText
