@@ -85,7 +85,7 @@ object Common {
       shellPrompt in ThisBuild    := { (s: State) => Project.extract(s).currentRef.project + "> " },
       incOptions                  := incOptions.value.withNameHashing(true),
       updateOptions               := updateOptions.value.withCachedResolution(true),
-      aggregate in update         := false,
+      aggregate in update         := true,
       scalaVersion                := Dependencies.Scala.version,
       dependencyUpdatesExclusions := moduleFilter(name = new PatternFilter("^jetty-(?:server|websocket)$".r.pattern)),
       testFrameworks              += new TestFramework("utest.runner.Framework"))
