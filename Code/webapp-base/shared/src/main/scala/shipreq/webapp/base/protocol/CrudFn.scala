@@ -5,7 +5,7 @@ import shipreq.base.util.UnivEq
 import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
 import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._
 
-trait Crudable extends RemoteFn {
+trait CrudFn extends RemoteFn {
   type Id
   type V
 
@@ -23,10 +23,10 @@ trait Crudable extends RemoteFn {
   @inline final def delete(id: Id, a: DeletionAction): Action = CrudAction.Delete[Id, V](id, a)
 }
 
-object Crudable {
-  type Aux[_I, _V] = Crudable { type Id = _I; type V = _V }
+object CrudFn {
+  type Aux[_I, _V] = CrudFn { type Id = _I; type V = _V }
 
-  class CAux[_Id, _V] private[protocol](implicit PI: Pickler[_Id], PV: Pickler[_V]) extends Crudable {
+  class CAux[_Id, _V] private[protocol](implicit PI: Pickler[_Id], PV: Pickler[_V]) extends CrudFn {
     override final type Id = _Id
     override final type V  = _V
 

@@ -30,5 +30,5 @@ object TagCrud {
   implicit val pickleApplicableTagValues: Pickler[ApplicableTagValues] = pickleCaseClass
   implicit val pickleTagValues          : Pickler[Values]              = pickleADT
 
-  object Fn extends Crudable.CAux[TagId, Values \&/ Relations]
+  object Fn extends CrudFn.CAux[TagId, Values \&/ Relations]
 }

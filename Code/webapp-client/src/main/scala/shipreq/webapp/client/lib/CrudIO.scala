@@ -9,7 +9,7 @@ import shipreq.webapp.client.protocol.ClientProtocol
 import DataImplicits._
 
 object CrudIO {
-  def apply[O, D, I, U](o: O, rd: Crudable.Aux[I, U])
+  def apply[O, D, I, U](o: O, rd: CrudFn.Aux[I, U])
                        (cp: ClientProtocol, remote: rd.Instance, clientData: ClientData)
                        (implicit O: ObjDataId[O, D, I]) =
     new CrudIO[D, I, U, rd.type](cp, remote, clientData)
@@ -20,10 +20,10 @@ object CrudIO {
  * @tparam I Data ID.
  * @tparam U Updated data values.
  */
-final class CrudIO[D, I, U, RD <: Crudable.Aux[I, U]](cp: ClientProtocol,
-                                                      remote: RemoteFn.InstanceFor[RD],
-                                                      clientData: ClientData)
-                                                     (implicit I: DataIdAux[D, I]) {
+final class CrudIO[D, I, U, RD <: CrudFn.Aux[I, U]](cp: ClientProtocol,
+                                                    remote: RemoteFn.InstanceFor[RD],
+                                                    clientData: ClientData)
+                                                   (implicit I: DataIdAux[D, I]) {
 
   private def crudIO(s: SuccessIO, f: FailureIO, a: CrudAction[I, U]): IO[Unit] = {
     cp.call(remote)(a,

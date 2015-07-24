@@ -6,9 +6,9 @@ import BinCodecData._
 
 object ProjectInit extends (Unit =>|=> Project)
 
-object CustomIssueTypeCrud extends Crudable.CAux[CustomIssueTypeId, (HashRefKey, Option[String])]
+object CustomIssueTypeCrud extends CrudFn.CAux[CustomIssueTypeId, (HashRefKey, Option[String])]
 
-object CustomReqTypeCrud extends Crudable.CAux[CustomReqTypeId, (ReqType.Mnemonic, String, ImplicationRequired)]
+object CustomReqTypeCrud extends CrudFn.CAux[CustomReqTypeId, (ReqType.Mnemonic, String, ImplicationRequired)]
 
 object FieldMandatorinessMod extends RemoteFn.ToVE[(CustomFieldId, Mandatory)]
 

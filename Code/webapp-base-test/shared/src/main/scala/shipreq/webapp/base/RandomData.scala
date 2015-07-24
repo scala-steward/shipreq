@@ -1206,7 +1206,7 @@ object RandomData {
         remoteFn(TagCrud.Fn),
         remoteFn(ContentUpdate.Fn))
 
-    class CrudActionGens[I, V](c: Crudable.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
+    class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._
       lazy val create = vG.map(CrudAction.Create[I, V])
       lazy val update = Gen.apply2(CrudAction.Update[I, V])(idG, vG)
