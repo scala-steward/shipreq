@@ -38,7 +38,6 @@ class SelectOneStartNone[A: Equal](options: Vector[Choice[A]]) {
 
 object SelectOneStartNone {
   import shipreq.webapp.base.data._
-  import shipreq.webapp.base.data.TagTree.FlatRow.FilterPolicy
 
   def reqType(rs: TraversableOnce[ReqType]): SelectOneStartNone[ReqTypeId] = {
     val opts = rs.toStream
@@ -49,7 +48,8 @@ object SelectOneStartNone {
   }
 
   def tag(tt: TagTree): SelectOneStartNone[TagId] = {
-    val flat = TagTree.flatten(tt)(Tag.filterLive, FilterPolicy.OmitAnythingWithBadParent)
+    import FlatTag._
+    val flat = flatten(tt)(Tag.filterLive, FilterPolicy.OmitAnythingWithBadParent)
     val opts = flat.map(f => Choice(f.id, f.indentedName, Enabled))
     new SelectOneStartNone(opts)
   }

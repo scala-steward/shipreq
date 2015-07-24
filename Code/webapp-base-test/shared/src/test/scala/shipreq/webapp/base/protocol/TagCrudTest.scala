@@ -16,8 +16,7 @@ import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import DataImplicits._
 import TagCrud._
-import TagTree.FlatRow
-import FlatRow._
+import FlatTag._
 import FilterPolicy._
 import MMTree.Relations
 import Relations.derive
@@ -39,8 +38,8 @@ object TagCrudTest extends TestSuite {
       )
 
     def flatTreeProps = {
-      def flatTree(policy: FilterPolicy) = TagTree.flatten(tt)(_.id.value % 3 == 0, policy)
-      def removeBad(rows: Vector[FlatRow]) = rows.filterNot(_.status ≟ Status.Bad)
+      def flatTree(policy: FilterPolicy) = flatten(tt)(_.id.value % 3 == 0, policy)
+      def removeBad(rows: Vector[FlatTag]) = rows.filterNot(_.status ≟ Status.Bad)
       val fno = flatTree(OmitNothing)
       val fbb = flatTree(OmitBadBranches)
       val fbp = flatTree(OmitAnythingWithBadParent)
@@ -122,12 +121,12 @@ object TagCrudTest extends TestSuite {
     }
 
     'flatTagTree {
-      def show(rows: Vector[FlatRow]) = rows
+      def show(rows: Vector[FlatTag]) = rows
         .map(r => s"${"  "*r.depth}${r.tag.name} - ${r.status} - {${r.parentPath.map(_.value).mkString(",")}}")
         .mkString("\n")
 
       def test(p: FilterPolicy, expect: String): Unit = {
-        val a = TagTree.flatten(sampleTagTree_f)(_.live ≟ Live, p)
+        val a = flatten(sampleTagTree_f)(_.live :: Live, p)
         val aa = show(a)
         assertEq(p.toString, aa, expect.trim)
       }

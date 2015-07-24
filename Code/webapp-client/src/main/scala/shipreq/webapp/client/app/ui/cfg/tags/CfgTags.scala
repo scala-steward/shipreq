@@ -31,7 +31,7 @@ import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.{Disabled, DND, On}
-import TagTree.FlatRow, FlatRow.FilterPolicy
+import FlatTag.FilterPolicy
 import TagInTree.Relations
 
 object CfgTags {
@@ -237,7 +237,7 @@ private[tags] object MainTable {
     def rows: TagMod = {
       val s         = $.state
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
-      val flatTree  = TagTree.flatten(s.tagTree)(s.tagFilter, FilterPolicy.OmitAnythingWithBadParent)
+      val flatTree  = FlatTag.flatten(s.tagTree)(s.tagFilter, FilterPolicy.OmitAnythingWithBadParent)
       val results   = JsArray.apply[ReactNode]()
       @inline def append(r: ReactNode): Unit = results push r
 
@@ -460,10 +460,10 @@ private[tags] object MainTable {
     def addRels(s: S, subj: Tag, updateIO: UpdateIO, sel: Option[Id], selUpdate: SelUpdate,
                 mod: Id => Relations => Relations, relAlreadyExists: (Relations, Id) => Boolean): AddRels = {
       val filter = addRelFilter(s, subj, mod, relAlreadyExists)
-      val rels = TagTree.flatten(s.tagTree)(filter, FilterPolicy.OmitNothing)
-        .filter(_.tag.live ≟ Live)
+      val rels = FlatTag.flatten(s.tagTree)(filter, FilterPolicy.OmitNothing)
+        .filter(_.tag.live :: Live)
         .map(row => AddRel(row,
-            if (row.status ≟ FlatRow.Status.Good) row.id.some else None))
+            if (row.status ≟ FlatTag.Status.Good) row.id.some else None))
       AddRels(rels, selUpdate,
         sel.map(selId => AddSelected(selId, treeUpdateIO(s, updateIO, subj, mod(selId)))))
     }

@@ -9,7 +9,6 @@ import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.util.{Disabled, Enabled, DND}
 import SelectOne.Choice
-import TagTree.FlatRow
 
 private[tags] object DetailPane {
 
@@ -17,7 +16,7 @@ private[tags] object DetailPane {
   implicit val relEquivalence = Equal.equalBy((_: Rel).id)
   type Rels = Seq[Rel]
 
-  case class AddRel(value: FlatRow, selectable: Option[Id])
+  case class AddRel(value: FlatTag, selectable: Option[Id])
   case class AddSelected(id: Id, onAdd: IO[Unit])
   case class AddRels(rels: Vector[AddRel], onSelect: Option[Id] => IO[Unit], selected: Option[AddSelected])
 

@@ -234,7 +234,7 @@ object Sorter {
 
     lazy val tagByPosOrder: TagOrder =
       ordermap("tag",
-        TagTree.flatten(p.config.tags)(_ => true, TagTree.FlatRow.FilterPolicy.OmitNothing)
+        FlatTag.flatten(p.config.tags)(_ => true, FlatTag.FilterPolicy.OmitNothing)
           .toStream
           .map(_.id)
           .filterT[ApplicableTagId]
