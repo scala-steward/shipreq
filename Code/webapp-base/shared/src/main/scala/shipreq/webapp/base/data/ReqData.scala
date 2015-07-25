@@ -14,7 +14,7 @@ object ReqData {
 
   def emptyText: Text = Map.empty
 
-  implicit def equalityText: UnivEq[Text] = UnivEq.map
+  implicit def equalityText: UnivEq[Text] = UnivEq.univEqMap
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -22,5 +22,5 @@ object ReqData {
 
   def emptyTags: Tags = Multimap.empty
 
-  implicit def equalityTags: UnivEq[Tags] = UnivEq.multimap
+  implicit def equalityTags: UnivEq[Tags] = UnivEq.univEqMultimap
 }

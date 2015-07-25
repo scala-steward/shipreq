@@ -6,7 +6,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.util.GenericDataMacros._
 import DataImplicits._
-import UnivEq.{string, option, vector, map}
+import UnivEq.Implicits._
 
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.

@@ -7,7 +7,7 @@ import org.parboiled2.{ErrorFormatter, ParseError}
 import scala.util.{Failure, Success}
 import utest._
 import shipreq.base.util.Debug._
-import shipreq.base.util.{NonEmptySet, NonEmptyVector, UnivEq}, UnivEq._
+import shipreq.base.util.{NonEmptySet, NonEmptyVector, UnivEq}, UnivEq.Implicits._
 import shipreq.webapp.base.{RandomData => $}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.test.BaseTestUtil._
@@ -30,7 +30,7 @@ object FilterParserTest extends TestSuite {
 
   val prismFromString =
     Prop.eval[String] { str =>
-      val e = EvalOver(string)
+      val e = EvalOver(str)
       def norm(s: String) = s.filterNot(_.isWhitespace)
       prism.getOrModify(str).toOption match {
         case Some(os) => e.equal("toText . parse = id", norm(prism reverseGet os), norm(str))

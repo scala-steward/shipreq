@@ -3,7 +3,7 @@ package shipreq.webapp.base.event
 import utest._
 import shipreq.base.util.NonEmpty
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.UnivEq._
+import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._

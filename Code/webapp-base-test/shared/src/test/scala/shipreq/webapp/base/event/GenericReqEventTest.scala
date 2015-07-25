@@ -13,7 +13,7 @@ import shipreq.webapp.base.util.TypeclassDerivation._
 import ApplyEventTestFns._
 import DeletionAction._
 import MTrie.Ops
-import UnivEq.{option, map, set, boolean, int}
+import UnivEq.Implicits._
 
 case class ReqFull(req      : GenericReq,
                    tags     : Set[ApplicableTagId],

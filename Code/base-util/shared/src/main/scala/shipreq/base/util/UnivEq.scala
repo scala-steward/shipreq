@@ -12,40 +12,47 @@ trait UnivEq[A] extends Equal[A] {
   final override def equal(a: A, b: A) = a == b
 }
 
-object UnivEq {
+sealed abstract class UnivEqImplicits {
+  protected val instance = new UnivEq[Any] {}
+
+  @inline protected def univEqForce[A]: UnivEq[A] = instance.asInstanceOf[UnivEq[A]]
+
+  @inline implicit def univEqString : UnivEq[String]  = univEqForce
+  @inline implicit def univEqLong   : UnivEq[Long]    = univEqForce
+  @inline implicit def univEqInt    : UnivEq[Int]     = univEqForce
+  @inline implicit def univEqShort  : UnivEq[Short]   = univEqForce
+  @inline implicit def univEqBoolean: UnivEq[Boolean] = univEqForce
+
+  @inline implicit def univEqOption[A: UnivEq]           : UnivEq[Option[A]]       = univEqForce
+  @inline implicit def univEqSet   [A: UnivEq]           : UnivEq[Set[A]]          = univEqForce
+  @inline implicit def univEqList  [A: UnivEq]           : UnivEq[List[A]]         = univEqForce
+  @inline implicit def univEqVector[A: UnivEq]           : UnivEq[Vector[A]]       = univEqForce
+  @inline implicit def univEqMap   [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = univEqForce
+  @inline implicit def univEqDisj  [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = univEqForce
+  @inline implicit def univEqThese [A: UnivEq, B: UnivEq]: UnivEq[A \&/ B]         = univEqForce
+  @inline implicit def univEqNel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = univEqForce
+
+  @inline implicit def univEqMultimap[K, L[_], V](implicit ev: UnivEq[Map[K, L[V]]]): UnivEq[Multimap[K, L, V]] = univEqForce
+
+  @inline implicit def univEqOneAnd[F[_], A](implicit fa: UnivEq[F[A]], a: UnivEq[A]): UnivEq[OneAnd[F, A]] = univEqForce
+
+  @inline implicit def univEqTuple2[A:UnivEq, B:UnivEq]: UnivEq[(A,B)] = univEqForce
+  @inline implicit def univEqTuple3[A:UnivEq, B:UnivEq, C:UnivEq]: UnivEq[(A,B,C)] = univEqForce
+  @inline implicit def univEqTuple4[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq]: UnivEq[(A,B,C,D)] = univEqForce
+  @inline implicit def univEqTuple5[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq]: UnivEq[(A,B,C,D,E)] = univEqForce
+  @inline implicit def univEqTuple6[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq]: UnivEq[(A,B,C,D,E,F)] = univEqForce
+  @inline implicit def univEqTuple7[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq]: UnivEq[(A,B,C,D,E,F,G)] = univEqForce
+  @inline implicit def univEqTuple8[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H)] = univEqForce
+  @inline implicit def univEqTuple9[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq, I:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H,I)] = univEqForce
+}
+
+object UnivEq extends UnivEqImplicits {
   @inline def apply[F](implicit u: UnivEq[F]): UnivEq[F] = u
 
-  private[this] val instance = new UnivEq[Any] {}
+  @inline def force[A]: UnivEq[A] =
+    instance.asInstanceOf[UnivEq[A]]
 
-  @inline def force[A]: UnivEq[A] = instance.asInstanceOf[UnivEq[A]]
-
-  @inline implicit def string : UnivEq[String]  = force
-  @inline implicit def long   : UnivEq[Long]    = force
-  @inline implicit def int    : UnivEq[Int]     = force
-  @inline implicit def short  : UnivEq[Short]   = force
-  @inline implicit def boolean: UnivEq[Boolean] = force
-
-  @inline implicit def option[A: UnivEq]           : UnivEq[Option[A]]       = force
-  @inline implicit def set   [A: UnivEq]           : UnivEq[Set[A]]          = force
-  @inline implicit def list  [A: UnivEq]           : UnivEq[List[A]]         = force
-  @inline implicit def vector[A: UnivEq]           : UnivEq[Vector[A]]       = force
-  @inline implicit def map   [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = force
-  @inline implicit def disj  [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = force
-  @inline implicit def these [A: UnivEq, B: UnivEq]: UnivEq[A \&/ B]         = force
-  @inline implicit def nel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = force
-
-  @inline implicit def multimap[K, L[_], V](implicit ev: UnivEq[Map[K, L[V]]]): UnivEq[Multimap[K, L, V]] = force
-
-  @inline implicit def oneAnd[F[_], A](implicit fa: UnivEq[F[A]], a: UnivEq[A]): UnivEq[OneAnd[F, A]] = force
-
-  @inline implicit def tuple2[A:UnivEq, B:UnivEq]: UnivEq[(A,B)] = force
-  @inline implicit def tuple3[A:UnivEq, B:UnivEq, C:UnivEq]: UnivEq[(A,B,C)] = force
-  @inline implicit def tuple4[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq]: UnivEq[(A,B,C,D)] = force
-  @inline implicit def tuple5[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq]: UnivEq[(A,B,C,D,E)] = force
-  @inline implicit def tuple6[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq]: UnivEq[(A,B,C,D,E,F)] = force
-  @inline implicit def tuple7[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq]: UnivEq[(A,B,C,D,E,F,G)] = force
-  @inline implicit def tuple8[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H)] = force
-  @inline implicit def tuple9[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq, I:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H,I)] = force
+  object Implicits extends UnivEqImplicits
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -68,7 +75,6 @@ object UnivEq {
   implicit def _neq[A, B] : A =:!= B = null.asInstanceOf[A =:!= B] //new =:!=[A, B] {}
   implicit def _neqAmbig1[A] : A =:!= A = _unexpected
   implicit def _neqAmbig2[A] : A =:!= A = _unexpected
-
 
   @inline def emptyMap        [K: UnivEq, V]         = Map.empty[K, V]
   @inline def emptySet        [A: UnivEq]            = Set.empty[A]

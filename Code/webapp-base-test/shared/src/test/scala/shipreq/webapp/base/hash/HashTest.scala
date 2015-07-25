@@ -8,7 +8,7 @@ import japgolly.nyaya.test.PropTestOps._
 import utest._
 
 import shipreq.webapp.base.test.BaseTestUtil.assertEq
-import shipreq.base.util.UnivEq.int
+import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.BinCodecData._
