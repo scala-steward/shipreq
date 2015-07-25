@@ -2,24 +2,27 @@ digraph G {
 
 // BLOCKED
 removeS [label="Remove from server:\nUnsafeTypes, ProjectDSL"]
-db [label="DB table, event load, event add"]
 realspa [label="Replace /wip with\nreal SPA using real project"]
 testDbCodec [label="Ensure db event codec stability"]
 localProd [label="Get a local prod env working"]
 
-// NEXT
-node [style=filled fillcolor="#ffcccc"]
-newReq [label="Ability to create reqs"]
-newRCG [label="Ability to create ReqCodeGroups"]
-realCU [label="Real responses\nto ContentUpdate cmds"]
-devx [label="Get /x working again and document"]
-template [label="Create template event"]
-devmd [label="Update DEV.md"]
-tesths [label="Ensure hash scheme stability"]
+// NEXT (client)
+node [style=filled fillcolor="#ffcc99"]
+newReq [label="Create reqs\n(UI, Protocol, MakeEvent)"]
+newRCG [label="Create ReqCodeGroups\n(UI, Protocol, MakeEvent)"]
 cfgcss [label="Replace CSS WIP with ScalaCSS"]
+
+// NEXT (server)
+node [style=filled fillcolor="#ffcccc"]
+realCU [label="MakeEvent with\nContentUpdate cmds"]
+devx [label="Get /x working again and document"]
+db [label="DB table, event load, event add"]
 
 // COMPLETE
 node [style=filled fillcolor="#ddffcc"]
+template [label="Create template event"]
+tesths [label="Ensure hash scheme stability"]
+devmd [label="Update DEV.md"]
 nowip [label="Use real RemoteFn responses in WIP"]
 hash [label="Hashing"]
 tp [label="Trim .protocol code"]
@@ -59,7 +62,5 @@ devx,cfgcss,db -> realspa
 hash -> tesths,eventap
 devx -> localProd
 nowip -> realCU,newReq,newRCG
-newReq,newRCG -> db
-realCU -> realspa
 }
 
