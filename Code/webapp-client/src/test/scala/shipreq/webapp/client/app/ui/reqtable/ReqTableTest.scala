@@ -20,7 +20,7 @@ import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.{RemoteFn, ContentUpdate}
+import shipreq.webapp.base.protocol.{UpdateContentFn, UpdateContentCmd, RemoteFn}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.client.app.state.ClientData
@@ -30,7 +30,7 @@ import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
 import shipreq.webapp.client.test.ReactTmpExt._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
-import ContentUpdate._
+import UpdateContentCmd._
 
 object ReqTableScreen {
   case class CellLoc(row: Int, col: Int)
@@ -233,7 +233,7 @@ sealed trait ReqTableTest0 {
 
   val cp = new TestClientProtocol
 
-  val remote = RemoteFn.Instance("x", ContentUpdate.Fn)
+  val remote = RemoteFn.Instance("x", UpdateContentFn)
 
   def propsForProject(p: Project) =
     ReqTable.Props(new ClientData(p), cp, remote, HideDead)

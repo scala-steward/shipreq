@@ -11,13 +11,13 @@ import scalaz.effect.IO
 import scalaz.syntax.equal._
 import shipreq.base.util.NonEmptySet
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ContentUpdate
+import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.reqtable.Cell
 import shipreq.webapp.client.util.Enabled
 import SelectOne.Choice
-import ContentUpdate.SetGenericReqType
+import UpdateContentCmd.SetGenericReqType
 
 object ReqTypeSelector {
 
@@ -29,7 +29,7 @@ object ReqTypeSelector {
             subjectId: GenericReqId,
             fields   : Px[Set[A]])
            (modCell  : Cell.ModCell,
-            editIO   : EditIO[ContentUpdate]): Cell.Cmd = {
+            editIO   : EditIO[UpdateContentCmd]): Cell.Cmd = {
 
     val fieldsN = fields
       .map(_.filter(_.live :: Live))

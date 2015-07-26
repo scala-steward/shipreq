@@ -11,14 +11,14 @@ import scalaz.effect.IO
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Validity
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ContentUpdate
+import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.{HideDead, Contextualise}
 import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
 import Text.Equality._
-import ContentUpdate._
+import UpdateContentCmd._
 
 object RichTextEditor {
 
@@ -66,7 +66,7 @@ object RichTextEditor {
 
     type SubjectId
 
-    def mkChange: (SubjectId, t.OptionalText) => ContentUpdate
+    def mkChange: (SubjectId, t.OptionalText) => UpdateContentCmd
 
     def apply(initial       : t.OptionalText,
               subjectId     : SubjectId,
@@ -75,7 +75,7 @@ object RichTextEditor {
               projectWidgets: Px[ProjectWidgets],
               textSearch    : Px[TextSearch])
              (modCell       : Cell.ModCell,
-              editIO        : EditIO[ContentUpdate]): Cell.Cmd = {
+              editIO        : EditIO[UpdateContentCmd]): Cell.Cmd = {
 
       def init: String =
         projectText.value() format initial

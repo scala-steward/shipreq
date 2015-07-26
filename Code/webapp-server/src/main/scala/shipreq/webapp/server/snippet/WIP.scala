@@ -211,7 +211,7 @@ class WIP {
 
   // -------------------------------------------------------------------------------------------------------------------
   val updateProjectContent =
-    ServerProtocol.remoteFn(ContentUpdate.Fn){ i =>
+    ServerProtocol.remoteFn(UpdateContentFn){ i =>
       println(s"RECEIVED: $i")
       delay()
       Vector.empty: VerifiedEvents

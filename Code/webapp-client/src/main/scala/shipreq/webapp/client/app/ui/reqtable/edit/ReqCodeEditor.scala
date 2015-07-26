@@ -5,13 +5,13 @@ import scalaz.{\/-, -\/}
 import shipreq.base.util.{SetDiff, Util}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ContentUpdate
+import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.TextSeqEditor, TextSeqEditor._
 import shipreq.webapp.client.app.ui.reqtable._
 import shipreq.webapp.client.lib.ui.TextEditor
 import Validators.{reqCode => V}
-import ContentUpdate.{PatchReqCodes, SetReqCodeGroupCode}
+import UpdateContentCmd.{PatchReqCodes, SetReqCodeGroupCode}
 
 object ReqCodeEditor {
 
@@ -34,7 +34,7 @@ object ReqCodeEditor {
               subjectId      : ReqCodeId,
               validationState: Px[V.VS])
              (modCell        : Cell.ModCell,
-              editIO         : EditIO[ContentUpdate]): Cell.Cmd = {
+              editIO         : EditIO[UpdateContentCmd]): Cell.Cmd = {
 
       def init         = PlainText reqCode initial
       val autoComplete = mkAutoComplete(validationState)
@@ -67,7 +67,7 @@ object ReqCodeEditor {
               subjectId      : ReqId,
               validationState: Px[V.VS])
              (modCell        : Cell.ModCell,
-              editIO         : EditIO[ContentUpdate]): Cell.Cmd = {
+              editIO         : EditIO[UpdateContentCmd]): Cell.Cmd = {
 
       def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
       val autoComplete = mkAutoComplete(validationState)

@@ -1204,7 +1204,7 @@ object RandomData {
         remoteFn(FieldMandatorinessMod),
         remoteFn(FieldCrud.Fn),
         remoteFn(TagCrud.Fn),
-        remoteFn(ContentUpdate.Fn))
+        remoteFn(UpdateContentFn))
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       import Gen.Covariance._

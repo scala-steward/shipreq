@@ -1,0 +1,42 @@
+package shipreq.webapp.base.protocol
+
+import shipreq.base.util.{SetDiff, UnivEq}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.util.TypeclassDerivation._
+import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, AtomPicklers.instances._
+import Text.Equality._
+
+/**
+ * A command to change a Project's content.
+ */
+sealed trait UpdateContentCmd
+object UpdateContentCmd {
+
+  case class PatchReqTags        (id: ReqId, patch: SetDiff[ApplicableTagId]) extends UpdateContentCmd
+  case class PatchImplicationSrc (id: ReqId, patch: SetDiff[ReqId])           extends UpdateContentCmd
+  case class PatchImplicationTgt (id: ReqId, patch: SetDiff[ReqId])           extends UpdateContentCmd
+  case class PatchReqCodes       (id: ReqId, patch: SetDiff[ReqCode.Value])   extends UpdateContentCmd
+
+  case class SetGenericReqType   (id: GenericReqId, value: CustomReqTypeId) extends UpdateContentCmd
+  case class SetReqCodeGroupCode (id: ReqCodeId,    value: ReqCode.Value)   extends UpdateContentCmd
+
+  case class SetReqCodeGroupTitle(id: ReqCodeId,                              value: Text.ReqCodeGroupTitle.OptionalText) extends UpdateContentCmd
+  case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle.OptionalText)   extends UpdateContentCmd
+  case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField.OptionalText)   extends UpdateContentCmd
+
+  implicit val cmdEquality: UnivEq[UpdateContentCmd] = { import AutoDerive._; deriveUnivEq }
+
+  implicit val picklePatchReqTags        : Pickler[PatchReqTags]         = pickleCaseClass
+  implicit val picklePatchImplicationSrc : Pickler[PatchImplicationSrc]  = pickleCaseClass
+  implicit val picklePatchImplicationTgt : Pickler[PatchImplicationTgt]  = pickleCaseClass
+  implicit val picklePatchReqCodes       : Pickler[PatchReqCodes]        = pickleCaseClass
+  implicit val pickleSetGenericReqType   : Pickler[SetGenericReqType]    = pickleCaseClass
+  implicit val pickleSetReqCodeGroupCode : Pickler[SetReqCodeGroupCode]  = pickleCaseClass
+  implicit val pickleSetReqCodeGroupTitle: Pickler[SetReqCodeGroupTitle] = pickleCaseClass
+  implicit val pickleSetGenericReqTitle  : Pickler[SetGenericReqTitle]   = pickleCaseClass
+  implicit val pickleSetCustomTextField  : Pickler[SetCustomTextField]   = pickleCaseClass
+  implicit val pickleCmd                 : Pickler[UpdateContentCmd]     = pickleADT
+}
+
+object UpdateContentFn extends RemoteFn.ToVE[UpdateContentCmd]

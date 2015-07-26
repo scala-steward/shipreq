@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
-import shipreq.webapp.base.protocol.ContentUpdate
+import shipreq.webapp.base.protocol.{UpdateContentFn, UpdateContentCmd}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -26,7 +26,7 @@ object ReqTable {
       .render(_.backend.render)
       .build
 
-  case class Props(cd: ClientData, cp: ClientProtocol, remote: ContentUpdate.Fn.Instance, fd: FilterDead) {
+  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateContentFn.Instance, fd: FilterDead) {
     def component = Component(this)
   }
 
@@ -86,7 +86,7 @@ object ReqTable {
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
-    val saveIO: (ContentUpdate, SuccessIO, FailureIO) => IO[Unit] = (i, sio, fio) => {
+    val saveIO: (UpdateContentCmd, SuccessIO, FailureIO) => IO[Unit] = (i, sio, fio) => {
       val p = $.props
       import p._
       val io = cp.call(remote)(i,

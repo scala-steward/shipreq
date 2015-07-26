@@ -19,6 +19,6 @@ case class ProjectSPA(projectInit:   ProjectInit          .Instance,
                       reqTypeCrud:   CustomReqTypeCrud    .Instance,
                       reqTypeImpMod: ReqTypeImplicationMod.Instance,
                       fieldMandMod:  FieldMandatorinessMod.Instance,
-                      fieldCrud:     FieldCrud            .Fn.Instance,
-                      tagCrud:       TagCrud              .Fn.Instance,
-                      updateContent: ContentUpdate        .Fn.Instance)
+                      fieldCrud:     FieldCrud.Fn         .Instance,
+                      tagCrud:       TagCrud.Fn           .Instance,
+                      updateContent: UpdateContentFn      .Instance)

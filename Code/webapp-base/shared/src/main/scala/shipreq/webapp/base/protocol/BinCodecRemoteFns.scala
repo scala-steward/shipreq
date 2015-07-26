@@ -16,7 +16,7 @@ object BinCodecRemoteFns {
   implicit final val pickleFieldMandMod         = pickleRemoteFn(FieldMandatorinessMod)
   implicit final val pickleFieldCrud            = pickleRemoteFn(FieldCrud.Fn)
   implicit final val pickleTagCrud              = pickleRemoteFn(TagCrud.Fn)
-  implicit final val pickleUpdateProjectContent = pickleRemoteFn(ContentUpdate.Fn)
+  implicit final val pickleUpdateProjectContent = pickleRemoteFn(UpdateContentFn)
 
   implicit final val pickleProjectSPA = pickleCaseClass[ProjectSPA]
 }
