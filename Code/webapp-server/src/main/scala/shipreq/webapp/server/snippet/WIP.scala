@@ -217,6 +217,13 @@ class WIP {
       Vector.empty: VerifiedEvents
     }
 
+  val createProjectContent =
+    ServerProtocol.remoteFn(CreateContentFn){ i =>
+      println(s"RECEIVED: $i")
+      delay()
+      Vector.empty: VerifiedEvents
+    }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   def delay(): Unit = Thread.sleep(300)
@@ -229,6 +236,7 @@ class WIP {
       reqqq.crud, reqqq.imptoggle,
       fieldCrud.mandmod, fieldCrud.cfgAction,
       tagCrud,
+      createProjectContent,
       updateProjectContent)
     val js = ServerProtocol.invokeClientHtml(JsEntryPoint.reactExamples)(pg)
     "*" #> js

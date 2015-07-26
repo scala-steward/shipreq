@@ -1196,7 +1196,7 @@ object RandomData {
       remoteFnKey.map(RemoteFn.Instance(_, f))
 
     lazy val projectSPA =
-      Gen.apply8(ProjectSPA)(
+      Gen.apply9(ProjectSPA)(
         remoteFn(ProjectInit),
         remoteFn(CustomIssueTypeCrud),
         remoteFn(CustomReqTypeCrud),
@@ -1204,6 +1204,7 @@ object RandomData {
         remoteFn(FieldMandatorinessMod),
         remoteFn(FieldCrud.Fn),
         remoteFn(TagCrud.Fn),
+        remoteFn(CreateContentFn),
         remoteFn(UpdateContentFn))
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {

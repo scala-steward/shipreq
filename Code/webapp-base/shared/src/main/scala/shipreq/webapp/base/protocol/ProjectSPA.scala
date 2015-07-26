@@ -21,4 +21,5 @@ case class ProjectSPA(projectInit:   ProjectInit          .Instance,
                       fieldMandMod:  FieldMandatorinessMod.Instance,
                       fieldCrud:     FieldCrud.Fn         .Instance,
                       tagCrud:       TagCrud.Fn           .Instance,
+                      createContent: CreateContentFn      .Instance,
                       updateContent: UpdateContentFn      .Instance)
