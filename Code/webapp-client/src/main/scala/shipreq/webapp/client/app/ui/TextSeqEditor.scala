@@ -5,8 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import scala.scalajs.js
-import scalaz.{-\/, Tags, \/}
+import scalaz.{\/, -\/, Tags}
 import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.std.stream._
@@ -32,19 +31,17 @@ object TextSeqEditor {
  *
  * Example: "#tbd #report #pending" or "5,7,9,11".
  */
-final class TextSeqEditor[A, B](name         : String,
-                                splitFn      : String => Stream[String],
-                                textEditor   : TextEditor,
-                                inputStyle   : Validity => TagMod,
-                                errorMsgStyle: TagMod) {
+final class TextSeqEditor[A, B](name: String, splitFn: String => Stream[String], textEditor: TextEditor) {
 
-  case class Props(state       : String,
-                   stateUpdate : String => IO[Unit],
-                   abort       : TIO.Abort,
-                   parser      : Parser[A],
-                   validate    : Vector[A] => ParseResult[B],
-                   commit      : B => TIO.Commit,
-                   autoComplete: AutoComplete) {
+  case class Props(state        : String,
+                   stateUpdate  : String => IO[Unit],
+                   abort        : TIO.Abort,
+                   parser       : Parser[A],
+                   validate     : Vector[A] => ParseResult[B],
+                   commit       : B => TIO.Commit,
+                   autoComplete : AutoComplete,
+                   inputStyle   : Validity => TagMod,
+                   errorMsgStyle: TagMod) {
     def apply = component(this)
   }
 
@@ -83,13 +80,13 @@ final class TextSeqEditor[A, B](name         : String,
 
       <.div(
         textEditor.tag(
-          inputStyle(Validity(parseResult)),
+          p.inputStyle(Validity(parseResult)),
           keyHandlers,
           ^.ref       := textEditorRef,
           ^.value     := p.state,
           ^.onChange ~~> updateState),
         parseResult.fold(
-          _.fold(EmptyTag)(err => <.div(errorMsgStyle, err)),
+          _.fold(EmptyTag)(err => <.div(p.errorMsgStyle, err)),
           _ => EmptyTag))
     }
   }

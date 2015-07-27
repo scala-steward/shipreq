@@ -29,7 +29,7 @@ object ReqCodeEditor {
 
   // ===================================================================================================================
   object ForGroup {
-    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input, cellStyle, cellErrorMsgStyle)
+    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input)
 
     def apply(initial        : A,
               subjectId      : ReqCodeId,
@@ -52,7 +52,7 @@ object ReqCodeEditor {
       Some(RemoteDataEditor.default[String, String](
         init, liveCorrect, modCell,
         (s, u, abort, commit) =>
-          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply))
     }
 
     @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
@@ -62,7 +62,7 @@ object ReqCodeEditor {
   object ForReqs {
     val lineSplitter = "\\s*[\n\r]\\s*".r.pattern
 
-    val editor = textSetEditor[A, SetDiff[A]]("ReqCode editor",
+    val editor = new TextSeqEditor[A, SetDiff[A]]("ReqCode editor",
       s => lineSplitter.split(s.trim).toStream.filter(_.nonEmpty),
       TextEditor.TextArea)
 
@@ -84,7 +84,7 @@ object ReqCodeEditor {
       Some(RemoteDataEditor.default[String, String](
         init, liveCorrect, modCell,
         (s, u, abort, commit) =>
-          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply))
     }
 
     def liveCorrect(txt: String): String =

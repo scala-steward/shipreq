@@ -10,6 +10,7 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor}
+import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.webapp.client.lib.{Plain, HideDead}
 import TextSeqEditor._
 import UpdateContentCmd.PatchReqTags
@@ -17,7 +18,8 @@ import UpdateContentCmd.PatchReqTags
 object TagEditor {
   type Lookup = Map[String, ApplicableTag]
 
-  val editor = textSetEditor[ApplicableTagId, SetDiff[ApplicableTagId]]("TagEditor", Grammar.hashRefKey.seqFormat.apply)
+  val editor = new TextSeqEditor[ApplicableTagId, SetDiff[ApplicableTagId]](
+    "TagEditor", Grammar.hashRefKey.seqFormat.apply, TextEditor.Input)
 
   def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tags.notUsedInColumns)
@@ -77,6 +79,6 @@ object TagEditor {
     Some(RemoteDataEditor.default[String, String](
       initialTextValue, identity, modCell,
       (s, u, abort, commit) =>
-        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply))
   }
 }

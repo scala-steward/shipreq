@@ -12,14 +12,17 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.RemoteDataEditor
-import shipreq.webapp.client.app.ui.TextSeqEditor._
+import shipreq.webapp.client.app.ui.TextSeqEditor
+import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.webapp.client.lib.Plain
+import TextSeqEditor._
 
 object ImplicationEditor {
   import AutoComplete.ReqItem
   import DataImplicits._
 
-  val editor = textSetEditor[ReqId, SetDiff[ReqId]]("ImplicationEditor", Grammar.pubidSeqFormat.apply)
+  val editor = new TextSeqEditor[ReqId, SetDiff[ReqId]](
+    "ImplicationEditor", Grammar.pubidSeqFormat.apply, TextEditor.Input)
 
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, ParseRejection]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap
@@ -123,6 +126,6 @@ object ImplicationEditor {
     Some(RemoteDataEditor.default[String, String](
       initialTextValue, identity, modCell,
       (s, u, abort, commit) =>
-        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply))
   }
 }
