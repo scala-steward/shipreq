@@ -15,6 +15,7 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.SelectOne
 import shipreq.webapp.client.app.ui.reqtable.Cell
+import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.util.Enabled
 import SelectOne.Choice
 import UpdateContentCmd.SetGenericReqType
@@ -53,8 +54,8 @@ object ReqTypeSelector {
 
   case class Props(state      : A,
                    stateUpdate: A => IO[Unit],
-                   abort      : IO[Unit],
-                   commit     : UndefOr[IO[Unit]],
+                   abort      : TIO.Abort,
+                   commit     : UndefOr[TIO.Commit],
                    fields     : NonEmptySet[A])
 
   val component = ReactComponentB[Props]("ReqTypeSelector")

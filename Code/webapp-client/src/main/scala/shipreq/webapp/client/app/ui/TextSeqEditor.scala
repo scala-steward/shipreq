@@ -6,13 +6,13 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
 import scala.scalajs.js
+import scalaz.{-\/, Tags, \/}
 import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.std.stream._
 import scalaz.std.vector._
 import scalaz.syntax.foldable._
-import scalaz.{-\/, Tags, \/}
-
+import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
 import shipreq.base.util.Validity
 import TextSeqEditor._
@@ -40,10 +40,10 @@ final class TextSeqEditor[A, B](name         : String,
 
   case class Props(state       : String,
                    stateUpdate : String => IO[Unit],
-                   abort       : IO[Unit],
+                   abort       : TIO.Abort,
                    parser      : Parser[A],
                    validate    : Vector[A] => ParseResult[B],
-                   commit      : B => IO[Unit],
+                   commit      : B => TIO.Commit,
                    autoComplete: AutoComplete) {
     def apply = component(this)
   }

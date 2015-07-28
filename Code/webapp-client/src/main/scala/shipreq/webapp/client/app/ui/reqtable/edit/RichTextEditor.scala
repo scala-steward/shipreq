@@ -15,7 +15,7 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.{HideDead, Contextualise}
+import shipreq.webapp.client.lib.{TIO, HideDead, Contextualise}
 import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
 import Text.Equality._
 import UpdateContentCmd._
@@ -92,8 +92,8 @@ object RichTextEditor {
 
     case class Props(state         : String,
                      stateUpdate   : String => IO[Unit],
-                     abort         : IO[Unit],
-                     commit        : t.OptionalText => IO[Unit],
+                     abort         : TIO.Abort,
+                     commit        : t.OptionalText => TIO.Commit,
                      project       : Px[Project],
                      projectText   : Px[PlainText.ForProject],
                      projectWidgets: Px[ProjectWidgets],

@@ -45,4 +45,12 @@ object TIO {
   sealed trait TypeFailure extends Type
   type Failure = TIO[TypeFailure]
   val Failure = new Ctor[TypeFailure]()
+
+  sealed trait TypeAbort extends Type
+  type Abort = TIO[TypeAbort]
+  val Abort = new Ctor[TypeAbort]()
+
+  sealed trait TypeCommit extends Type
+  type Commit = TIO[TypeCommit]
+  val Commit = new Ctor[TypeCommit]()
 }

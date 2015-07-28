@@ -8,6 +8,7 @@ import scalaz.\/
 import scalaz.effect.IO
 import shipreq.base.util.UndefOrExt
 import shipreq.base.util.effect.IoUtils, IoUtils.IoExt
+import shipreq.webapp.client.lib.TIO
 
 final class KeyHandler(val run: ReactKeyboardEventH => UndefOr[IO[Unit]]) extends AbstractFunction1[ReactKeyboardEventH, IO[Unit]] {
   override def apply(e: ReactKeyboardEventH): IO[Unit] =
@@ -83,9 +84,9 @@ object KeyHandlers {
    * - Enter either inserts a newline, or commits.
    * - Ctrl-enter commits.
    */
-  def commitAndAbort(abort: => IO[Unit], commit: => UndefOr[IO[Unit]], singleLine: Boolean) = {
-    val cancelOnEscape = KeyHandler.byKey { case KeyValue.Escape => abort }
-    val commitOnEnter  = KeyHandler.byKey { case KeyValue.Enter => commit }
+  def commitAndAbort(abort: => TIO.Abort, commit: => UndefOr[TIO.Commit], singleLine: Boolean) = {
+    val cancelOnEscape = KeyHandler.byKey { case KeyValue.Escape => abort.io }
+    val commitOnEnter  = KeyHandler.byKey { case KeyValue.Enter => commit.map(_.io) }
 
     var r = KeyHandlers(
       onKeyDown = cancelOnEscape | commitOnEnter.filterModKeys(ctrl = true))
@@ -97,6 +98,6 @@ object KeyHandlers {
     r
   }
 
-  def commitAndAbortD[A](abort: => IO[Unit], parsed: Any \/ A, commit: A => IO[Unit], singleLine: Boolean) =
-    commitAndAbort(abort, parsed.fold(_ => undefined, commit), singleLine)
+  def commitAndAbortD[A](abort: => TIO.Abort, parsed: Any \/ A, commit: A => TIO.Commit, singleLine: Boolean) =
+    commitAndAbort(abort, parsed.fold(_ => undefined, commit(_)), singleLine)
 }

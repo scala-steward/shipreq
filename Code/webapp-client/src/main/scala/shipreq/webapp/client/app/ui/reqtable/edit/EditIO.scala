@@ -4,6 +4,7 @@ import scalaz.Equal
 import scalaz.effect.IO
 import shipreq.base.util.SetDiff
 import shipreq.webapp.client.app.ui.reqtable.Cell
+import shipreq.webapp.client.lib.TIO
 
 /**
  * When an editor is ready to be closed, this is the result.
@@ -45,9 +46,9 @@ case class EditIO[A](io: EditResult[A] => IO[Unit]) extends AnyVal {
   def setDiff[B](f: SetDiff[B] => A): EditIO[SetDiff[B]] =
     cmap(f).ignore(_.isEmpty)
 
-  def abortCommit: (IO[Unit], (() => Cell.Edit) => A => IO[Unit]) = {
-    val abort = io(Abort)
-    val commit = (e: () => Cell.Edit) => (a: A) => io(Save(a, e))
+  def abortCommit: (TIO.Abort, (() => Cell.Edit) => A => TIO.Commit) = {
+    val abort = TIO.Abort(io(Abort))
+    val commit = (e: () => Cell.Edit) => (a: A) => TIO.Commit(io(Save(a, e)))
     (abort, commit)
   }
 }
