@@ -27,7 +27,7 @@ import shipreq.webapp.base.protocol.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui.{Checkbox, RowDetailButton}
-import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO, CrudIO}
+import shipreq.webapp.client.lib.{FilterDead, TIO, CrudIO}
 import shipreq.webapp.client.lib.ui._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.{Disabled, DND, On}
@@ -402,7 +402,7 @@ private[tags] object MainTable {
     
     import DetailPane.{Rel, Rels, AddRel, AddRels, AddSelected}
 
-    type UpdateIO = (Tag, TagCrud.Fn.V, SuccessIO, FailureIO) => IO[Unit]
+    type UpdateIO = (Tag, TagCrud.Fn.V, TIO.Success, TIO.Failure) => IO[Unit]
     type SelUpdate = Option[Id] => IO[Unit]
 
     def removeChild(child: Id): Relations => Relations =
@@ -427,8 +427,8 @@ private[tags] object MainTable {
       IO {
         val r = MMTree.Relations.derive(subj.id, s.tree.m)
         val u = \&/.That(g(r))
-        val f = FailureIO.nop
-        updateIO(subj, u, SuccessIO.nop, f)
+        val f = TIO.Failure.nop
+        updateIO(subj, u, TIO.Success.nop, f)
         //val lock = c modStateIO storesForType(t.tagType).s.setStatus(t.id, RowStatus.Locked)
       }.join
 

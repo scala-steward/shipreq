@@ -7,7 +7,7 @@ import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.app.state.ClientData
-import shipreq.webapp.client.lib.{CrudIO, FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.{CrudIO, TIO}
 import shipreq.webapp.client.protocol.ClientProtocol
 
 object Persistence {
@@ -22,9 +22,9 @@ object Persistence {
     a
   }
 
-  def failureIO[S](retry: Retry[S])(realise: Realise[S], setStatus: SetRowStatus[S]): FailureIO = {
+  def failureIO[S](retry: Retry[S])(realise: Realise[S], setStatus: SetRowStatus[S]): TIO.Failure = {
     def failedStatus = RowStatus.Failed.lazily(realise(retry.value))
-    FailureIO(realise(setStatus(failedStatus)))
+    TIO.Failure(realise(setStatus(failedStatus)))
   }
 
 
@@ -37,7 +37,7 @@ object Persistence {
                                  sp: S => P,
                                  setStatus: SetRowStatus[S],
                                  needSave: (P, U) => SaveNeed,
-                                 updateIO: (P, U, SuccessIO, FailureIO) => IO[Unit],
+                                 updateIO: (P, U, TIO.Success, TIO.Failure) => IO[Unit],
                                  realise: Realise[S]): ST[S] = {
     val Fix = ReactS.FixT[IO, S]
     type R = Fix.T[Unit]
@@ -52,7 +52,7 @@ object Persistence {
         }
       }
       def save(p: P, u: U): R = {
-        val s: SuccessIO = SuccessIO.nop
+        val s: TIO.Success = TIO.Success.nop
         val f = failureIO(retry)(realise, setStatus)
         Fix.ret(updateIO(p, u, s, f))
       }
@@ -66,7 +66,7 @@ object Persistence {
   def asyncUpdateS[S, T, K, P, U, I](validator: Validator[T, I, _, U], store: SavedRowStore[S, K, P, I])
                                     (st: K => S => T,
                                      needSave: (P, U) => SaveNeed,
-                                     updateIO: (P, U, SuccessIO, FailureIO) => IO[Unit],
+                                     updateIO: (P, U, TIO.Success, TIO.Failure) => IO[Unit],
                                      realise: Realise[S]): K => ST[S] =
     k => asyncUpdate(
       validator, st(k),
@@ -101,7 +101,7 @@ object Persistence {
                               si: S => Option[I],
                               removeNew: ReactS[S, Unit],
                               setStatus: SetRowStatus[S],
-                              createIO: (U, SuccessIO, FailureIO) => IO[Unit],
+                              createIO: (U, TIO.Success, TIO.Failure) => IO[Unit],
                               realise: Realise[S]): ST[S] = {
     val Fix = ReactS.FixT[IO, S]
     type R = Fix.T[Unit]
@@ -112,7 +112,7 @@ object Persistence {
         save(u) >> setStatus(RowStatus.Locked)
       }
       def save(u: U): R = {
-        val s = SuccessIO(realise(removeNew.liftIO))
+        val s = TIO.Success(realise(removeNew.liftIO))
         val f = failureIO(retry)(realise, setStatus)
         Fix.ret(createIO(u, s, f))
       }
@@ -126,7 +126,7 @@ object Persistence {
 
   def asyncCreateS[S, T, U, I](validator: Validator[T, I, _, U], store: NewRowStore[S, I])
                               (st: S => T,
-                               createIO: (U, SuccessIO, FailureIO) => IO[Unit],
+                               createIO: (U, TIO.Success, TIO.Failure) => IO[Unit],
                                realise: Realise[S]): ST[S] =
     asyncCreate(
       validator, st,
@@ -144,8 +144,8 @@ object Persistence {
                                    createT: S => T,
                                    updateT: K => S => T,
                                    needSave: (P, U) => SaveNeed,
-                                   createIO: (U, SuccessIO, FailureIO) => IO[Unit],
-                                   updateIO: (P, U, SuccessIO, FailureIO) => IO[Unit],
+                                   createIO: (U, TIO.Success, TIO.Failure) => IO[Unit],
+                                   updateIO: (P, U, TIO.Success, TIO.Failure) => IO[Unit],
                                    realise: Realise[S]): Option[K] => ST[S] = {
     val create = asyncCreateS(v, newStore)(createT, createIO, realise)
     val update = asyncUpdateS(v, savedStore)(updateT, needSave, updateIO, realise)
@@ -165,8 +165,8 @@ object Persistence {
 
   def asyncSaveNS[S, T, K, P, U, I](v: Validator[T, I, _, U],
                                     stores: NewAndSavedStores[S, K, P, I],
-                                    createIO: (U, SuccessIO, FailureIO) => IO[Unit])
-                                   (updateIO: (P, U, SuccessIO, FailureIO) => IO[Unit],
+                                    createIO: (U, TIO.Success, TIO.Failure) => IO[Unit])
+                                   (updateIO: (P, U, TIO.Success, TIO.Failure) => IO[Unit],
                                     needSave: (P, U) => SaveNeed,
                                     t: Option[K] => S => T,
                                     realise: Realise[S]): Option[K] => ST[S] =
@@ -175,8 +175,8 @@ object Persistence {
 
   def asyncSaveNS2[S, T, K, P, U, I](v: Validator[T, I, _, U],
                                      stores: NewAndSavedStores[S, K, P, I],
-                                     createIO: U => (SuccessIO, FailureIO) => IO[Unit])
-                                    (updateIO: (K, U) => (SuccessIO, FailureIO) => IO[Unit],
+                                     createIO: U => (TIO.Success, TIO.Failure) => IO[Unit])
+                                    (updateIO: (K, U) => (TIO.Success, TIO.Failure) => IO[Unit],
                                      needSave: (P, U) => SaveNeed,
                                      pk: P => K,
                                      t: Option[K] => S => T,
@@ -191,14 +191,14 @@ object Persistence {
   // ===================================================================================================================
   // Delete
 
-  def asyncDelete[S](deleteIO: (SuccessIO, FailureIO) => IO[Unit],
+  def asyncDelete[S](deleteIO: (TIO.Success, TIO.Failure) => IO[Unit],
                      realise: Realise[S],
                      setStatus: SetRowStatus[S]): ST[S] = {
     val Fix = ReactS.FixT[IO, S]
     type R = Fix.T[Unit]
 
     retryably[R](retry => {
-      val s = SuccessIO.nop
+      val s = TIO.Success.nop
       val f = failureIO(retry)(realise, setStatus)
       Fix.ret(deleteIO(s, f)) >> setStatus(RowStatus.Locked)
     })
@@ -206,7 +206,7 @@ object Persistence {
 
 
   def asyncDeletionS[S, K](store: SavedRowStore[S, K, _, _])
-                          (deleteIO: (K, DeletionAction) => (SuccessIO, FailureIO) => IO[Unit],
+                          (deleteIO: (K, DeletionAction) => (TIO.Success, TIO.Failure) => IO[Unit],
                            realise: Realise[S]): Deletion[K] =
     new Deletion[K]((id, a) =>
       realise(asyncDelete(deleteIO(id, a), realise, store.setStatusST[IO](id))))

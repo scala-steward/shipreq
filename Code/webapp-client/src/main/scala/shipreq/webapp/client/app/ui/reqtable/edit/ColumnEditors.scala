@@ -11,7 +11,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.ProjectWidgets
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.TIO
 import DataImplicits._
 
 object ColumnEditors {
@@ -25,7 +25,7 @@ final class ColumnEditors(project       : Px[Project],
                           projectWidgets: Px[ProjectWidgets],
                           textSearch    : Px[TextSearch],
                           modTable      : Cell.ModTable,
-                          saveIO        : (UpdateContentCmd, SuccessIO, FailureIO) => IO[Unit]) {
+                          saveIO        : (UpdateContentCmd, TIO.Success, TIO.Failure) => IO[Unit]) {
 
   import ColumnEditors._
 
@@ -101,9 +101,9 @@ final class ColumnEditors(project       : Px[Project],
   private def mkEditIO(modCell: Cell.ModCell): EditIO[UpdateContentCmd] = {
     def saveLockRespond(modCell: Cell.ModCell, pc: UpdateContentCmd, edit: () => Cell.Edit): IO[Unit] = {
       def io: IO[Unit] = {
-        val sio  = SuccessIO(modCell(Cell.Clear))
+        val sio  = TIO.Success(modCell(Cell.Clear))
         def fcmd = Cell.Fail(() => io, () => modCell(edit()))
-        val fio  = FailureIO.lazily(modCell(fcmd))
+        val fio  = TIO.Failure.lazily(modCell(fcmd))
         saveIO(pc, sio, fio) >> modCell(Cell.Lock)
       }
       io

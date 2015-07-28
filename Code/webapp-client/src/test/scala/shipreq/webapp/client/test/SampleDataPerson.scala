@@ -11,7 +11,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation.Constraints._
 import shipreq.webapp.base.validation._
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.lib.ui._
 import Editors._
 
@@ -71,7 +71,7 @@ object SampleDataPerson {
 
     val initialState = NewAndSavedRowState(newRowStore.initState, savedRowStore.initStateS(sampleData, _.id))
 
-    case class SaveI(p: Option[Person], u: (Username, Option[String]), s: SuccessIO, f: FailureIO)
+    case class SaveI(p: Option[Person], u: (Username, Option[String]), s: TIO.Success, f: TIO.Failure)
     type SaveIO = SaveI => IO[Unit]
 
     case class Props(fieldValidation: Boolean, updateRevert: Boolean, saveIO: Option[SaveIO]) {

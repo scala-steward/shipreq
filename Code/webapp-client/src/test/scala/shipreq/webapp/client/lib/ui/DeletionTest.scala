@@ -4,7 +4,7 @@ import japgolly.scalajs.react.ScalazReact._
 import scalaz.effect.IO
 import utest._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.client.lib.{FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.test.TestUtil._
 
 object DeletionTest extends TestSuite {
@@ -13,7 +13,7 @@ object DeletionTest extends TestSuite {
   val setRowStatus: Persistence.SetRowStatus[MockState] = r => ReactS.modT(_.copy(status = r))
 
   override def tests = TestSuite {
-    var cb: Option[(SuccessIO, FailureIO)] = None
+    var cb: Option[(TIO.Success, TIO.Failure)] = None
     var s = MockState(RowStatus.Sync)
     val r = (st: ReactST[IO, MockState, Unit]) => ReactS.unlift(st).exec(s).map { s2 => s = s2}
     val d = Persistence.asyncDelete[MockState]((s, f) => IO{cb = (s,f).some}, r, setRowStatus)

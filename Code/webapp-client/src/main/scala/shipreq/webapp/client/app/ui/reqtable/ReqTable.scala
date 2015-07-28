@@ -13,7 +13,7 @@ import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.lib.{FilterDead, FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.{FilterDead, TIO}
 import shipreq.webapp.client.protocol.ClientProtocol
 import edit.ColumnEditors
 
@@ -86,7 +86,7 @@ object ReqTable {
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
-    val saveIO: (UpdateContentCmd, SuccessIO, FailureIO) => IO[Unit] = (i, sio, fio) => {
+    val saveIO: (UpdateContentCmd, TIO.Success, TIO.Failure) => IO[Unit] = (i, sio, fio) => {
       val p = $.props
       import p._
       val io = cp.call(remote)(i,

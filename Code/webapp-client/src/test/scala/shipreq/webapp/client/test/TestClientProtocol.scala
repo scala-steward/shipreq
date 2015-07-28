@@ -4,7 +4,7 @@ import scalaz.{-\/, Equal}
 import scalaz.std.AllInstances._
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.RemoteFn
-import shipreq.webapp.client.lib.{SuccessIO, FailureIO}
+import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.protocol.ClientProtocol.Failed
 import shipreq.webapp.client.test.TestUtil._
@@ -13,8 +13,8 @@ object TestClientProtocol {
   trait Req {
     val r      : RemoteFn.Instance
     val input  : r.fn.Input
-    val success: r.fn.Output => SuccessIO
-    val failure: Failed[r.fn.Failure] => FailureIO
+    val success: r.fn.Output => TIO.Success
+    val failure: Failed[r.fn.Failure] => TIO.Failure
 
     def force(r2: RemoteFn.Instance) =
       this.asInstanceOf[Req {val r: r2.type}]
@@ -30,8 +30,8 @@ class TestClientProtocol extends ClientProtocol {
     reqs = Vector.empty
 
   def call(i: RemoteFn.Instance)(_input  : i.fn.Input,
-                                 _success: i.fn.Output => SuccessIO,
-                                 _failure: Failed[i.fn.Failure] => FailureIO): IO[Unit] = {
+                                 _success: i.fn.Output => TIO.Success,
+                                 _failure: Failed[i.fn.Failure] => TIO.Failure): IO[Unit] = {
     //println(s"RPC: ${_r.d}(${_r.n}) ← ${_i}")
     IO {
       reqs :+= new Req {

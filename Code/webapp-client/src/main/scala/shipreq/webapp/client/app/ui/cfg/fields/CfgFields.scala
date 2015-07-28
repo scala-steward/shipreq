@@ -20,7 +20,7 @@ import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui._
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, FailureIO, SuccessIO}
+import shipreq.webapp.client.lib.{FilterDead, ConsoleIO, TIO}
 import shipreq.webapp.client.lib.ui.{FieldSet => _, _}
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.util.{Disabled, Enabled, DND, On}
@@ -179,7 +179,7 @@ private[fields] object MainTable {
       val remote = $.props.remote
       val cp     = $.props.cp
 
-      private def call(a: CfgAction): (SuccessIO, FailureIO) => IO[Unit] =
+      private def call(a: CfgAction): (TIO.Success, TIO.Failure) => IO[Unit] =
         (s, f) => cp.call(remote)(a,
           s << $.props.clientData.applyEvents(_),
           cp.consumeGenericFailure(_) >> f.io)
@@ -199,7 +199,7 @@ private[fields] object MainTable {
 
     // TODO staticDeletion doesn't handle failure (or lock row)
     val staticDeletion = new Deletion[StaticField](
-      protocol.deleteIO(_, _)(SuccessIO.nop, FailureIO.nop))
+      protocol.deleteIO(_, _)(TIO.Success.nop, TIO.Failure.nop))
 
     def validatorState(k: Option[CustomFieldId]): S => V.S =
       validatorStateS(_, k)
@@ -272,7 +272,7 @@ private[fields] object MainTable {
           add(customFieldChoice(t))
 
         def staticInvoke(f: StaticField): IO[Unit] =
-          protocol.updateOrderIO(f, None)(SuccessIO.nop, FailureIO.nop) // TODO no failure handling
+          protocol.updateOrderIO(f, None)(TIO.Success.nop, TIO.Failure.nop) // TODO no failure handling
 
         def customInvoke(t: CustomFieldType): IO[Unit] =
           IO($ modStateIO storesForType(t).n.enableEdit).join
@@ -323,7 +323,7 @@ private[fields] object MainTable {
       val id       = from.fieldId
       val newOrder = DND.move(id, to.fieldId)(fieldOrder)
       val pos      = Position.get(newOrder, id)
-      protocol.updateOrderIO(id, pos)(SuccessIO.nop, FailureIO.nop)
+      protocol.updateOrderIO(id, pos)(TIO.Success.nop, TIO.Failure.nop)
     }
 
     val renderField: Field => ReactElement = {

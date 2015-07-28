@@ -3,21 +3,21 @@ package shipreq.webapp.client.protocol
 import scalaz.{-\/, \/-, \/}
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.{GenericFailure, RemoteFn}
-import shipreq.webapp.client.lib.{ConsoleIO, SuccessIO, FailureIO}
+import shipreq.webapp.client.lib.{ConsoleIO, TIO}
 import ClientProtocol._
 
 trait ClientProtocol {
   def call(i: RemoteFn.Instance)(input  : i.fn.Input,
-                                 success: i.fn.Output => SuccessIO,
-                                 failure: Failed[i.fn.Failure] => FailureIO): IO[Unit]
+                                 success: i.fn.Output => TIO.Success,
+                                 failure: Failed[i.fn.Failure] => TIO.Failure): IO[Unit]
 
   /**
    * Generic means of handling and consuming generic (protocol/ajax) failure.
    *
    * Eventually this should be replaced with something better.
    */
-  def consumeGenericFailure(f: Failed[GenericFailure]): FailureIO =
-    FailureIO(f match {
+  def consumeGenericFailure(f: Failed[GenericFailure]): TIO.Failure =
+    TIO.Failure(f match {
       case -\/(t) => ConsoleIO(_.error("AJAX error: ", t.getMessage))
       case \/-(e) => ConsoleIO(_.error("Remote error occurred: ", e.msg))
     })
@@ -76,15 +76,15 @@ object ClientProtocol {
     }
 
     override def call(i: RemoteFn.Instance)(input  : i.fn.Input,
-                                            success: i.fn.Output => SuccessIO,
-                                            failure: Failed[i.fn.Failure] => FailureIO): IO[Unit] = IO {
+                                            success: i.fn.Output => TIO.Success,
+                                            failure: Failed[i.fn.Failure] => TIO.Failure): IO[Unit] = IO {
       import i.fn._
       val url = LiftAjax.addPageNameAndVersion(ajaxPath, js.undefined) + "?" + i.key
       val bin = PickleImpl.intoBytes(input)
       val res = postBinary(url, bin).map(UnpickleImpl(pickleResponse) fromBytes _)
-      res.onSuccess { case \/-(o) => success(o)     .io.unsafePerformIO() }
-      res.onSuccess { case -\/(f) => failure(\/-(f)).io.unsafePerformIO() }
-      res.onFailure { case t      => failure(-\/(t)).io.unsafePerformIO() }
+      res.onSuccess { case \/-(o) => success(o)     .unsafePerformIO() }
+      res.onSuccess { case -\/(f) => failure(\/-(f)).unsafePerformIO() }
+      res.onFailure { case t      => failure(-\/(t)).unsafePerformIO() }
     }
   }
 }

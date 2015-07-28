@@ -6,7 +6,7 @@ import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{ApplyEvent, VerifiedEvents}
 import shipreq.webapp.base.protocol.ProjectInit
-import shipreq.webapp.client.lib.{ConsoleIO, SuccessIO}
+import shipreq.webapp.client.lib.{ConsoleIO, TIO}
 import shipreq.webapp.client.protocol.ClientProtocol
 
 final class ClientData(init: Project) extends Broadcaster[Changes] {
@@ -27,14 +27,14 @@ final class ClientData(init: Project) extends Broadcaster[Changes] {
     }
   }
 
-  def applyEventsS(ves: VerifiedEvents): SuccessIO =
-    SuccessIO(applyEvents(ves))
+  def applyEventsS(ves: VerifiedEvents): TIO.Success =
+    TIO.Success(applyEvents(ves))
 }
 
 object ClientData {
 
   def init(cp: ClientProtocol, remoteInit: ProjectInit.Instance, onSuccess: ClientData => IO[Unit]): IO[Unit] =
     cp.call(remoteInit)((),
-      p => SuccessIO(onSuccess(new ClientData(p))),
+      p => TIO.Success(onSuccess(new ClientData(p))),
       cp.consumeGenericFailure) // TODO handle failure properly
 }
