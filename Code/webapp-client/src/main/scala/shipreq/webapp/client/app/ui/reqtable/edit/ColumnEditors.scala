@@ -5,17 +5,15 @@ import japgolly.scalajs.react.extra.Px
 import monocle.Optional
 import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
-import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Must
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.ui.{ProjectWidgets, RemoteDataEditor}
 import shipreq.webapp.client.lib.TIO
-import DataImplicits._
 
 object ColumnEditors {
-  case class CellEditor(init: Cell.ModCell => Option[Cell.State]) extends AnyVal
+  case class CellEditor(init: RemoteDataEditor.SetState => Option[Cell.State]) extends AnyVal
 
   def noEditor = CellEditor(_ => None)
 }
@@ -90,10 +88,10 @@ final class ColumnEditors(project       : Px[Project],
       cmd => cb =>
         cb.lock >> saveIO(cmd, cb.succeeded, cb.failed))
 
-  private def mkEditor[R <: Row](f: R => (Cell.ModCell, UpdateContentOnCommit) => Cell.State) =
+  private def mkEditor[R <: Row](f: R => (RemoteDataEditor.SetState, UpdateContentOnCommit) => Cell.State) =
     mkEditorO[R](r => Some(f(r)))
 
-  private def mkEditorO[R <: Row](f: R => Option[(Cell.ModCell, UpdateContentOnCommit) => Cell.State]): R => CellEditor =
+  private def mkEditorO[R <: Row](f: R => Option[(RemoteDataEditor.SetState, UpdateContentOnCommit) => Cell.State]): R => CellEditor =
     r => f(r) match {
       case Some(g) => CellEditor(m => Some(g(m, updateContentOnCommit)))
       case None    => noEditor

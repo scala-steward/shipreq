@@ -1,11 +1,11 @@
 package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import shipreq.base.util.SetDiff
-import shipreq.webapp.client.lib.ui.UI
 import scalaz.Equal
 import scalaz.effect.IO
+import shipreq.base.util.SetDiff
 import shipreq.webapp.client.lib.TIO
+import shipreq.webapp.client.lib.ui.UI
 
 /**
  * An abstraction of a editor with the following properties:
@@ -28,6 +28,12 @@ object RemoteDataEditor {
       renderFn()
   }
 
+  type OpState        = Option[State]
+  type OpStateFor[+A] = Option[StateFor[A]]
+
+  type SetState       = OpState => IO[Unit]
+  type SetStateFor[A] = OpStateFor[A] => IO[Unit]
+
   class Callbacks(
     val abort    : TIO.Abort,
     val lock     : IO[Unit],
@@ -40,7 +46,7 @@ object RemoteDataEditor {
 
   def apply[S, A](initial   : A,
                   convInput : S => A,
-                  setSelf   : Option[StateFor[A]] => IO[Unit],
+                  setSelf   : SetStateFor[A],
                   renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement,
                   renderLock: A => ReactElement,
                   renderFail: (A, Failed) => ReactElement): StateFor[A] = {
@@ -101,7 +107,7 @@ object RemoteDataEditor {
 
   def default[S, A](initial   : A,
                     convInput : S => A,
-                    setSelf   : Option[StateFor[A]] => IO[Unit],
+                    setSelf   : SetStateFor[A],
                     renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement): StateFor[A] =
     apply(initial, convInput, setSelf, renderEdit, defaultRenderLock, defaultRenderFail)
 

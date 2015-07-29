@@ -1,13 +1,12 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react.extra.{Reusability, ~=>}
-import scalaz.effect.IO
 import shipreq.base.util.UnivEq
 import shipreq.webapp.client.app.ui.RemoteDataEditor
 
 object Cell {
 
-  type State = Option[RemoteDataEditor.State]
+  type State = RemoteDataEditor.OpState
 
   type R = Row.Id
   type C = Column
@@ -40,6 +39,5 @@ object Cell {
   def emptyTableState: TableState =
     new TableState(UnivEq.emptyMap)
 
-  type ModTable = Loc ~=> ModCell
-  type ModCell  = State ~=> IO[Unit]
+  type ModTable = Loc ~=> RemoteDataEditor.SetState
 }

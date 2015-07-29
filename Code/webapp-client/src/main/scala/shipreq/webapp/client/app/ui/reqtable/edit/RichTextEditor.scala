@@ -74,7 +74,7 @@ object RichTextEditor {
               projectText   : Px[PlainText.ForProject],
               projectWidgets: Px[ProjectWidgets],
               textSearch    : Px[TextSearch])
-             (modCell       : Cell.ModCell,
+             (setSelf       : RemoteDataEditor.SetState,
               onCommit0     : UpdateContentOnCommit): Cell.State = {
 
       def init: String =
@@ -85,7 +85,7 @@ object RichTextEditor {
       val autoComplete = mkAutoComplete(project, projectText, textSearch)
 
       Some(RemoteDataEditor.default[String, String](
-        init, identity, modCell,
+        init, identity, setSelf,
         (s, u, abort, commit) =>
           Props(s, u, abort, v => commit(onCommit(v)), project, projectText, projectWidgets, autoComplete.value()).apply))
     }

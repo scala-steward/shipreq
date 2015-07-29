@@ -34,7 +34,7 @@ object ReqCodeEditor {
     def apply(initial        : A,
               subjectId      : ReqCodeId,
               validationState: Px[V.VS])
-             (modCell        : Cell.ModCell,
+             (setSelf        : RemoteDataEditor.SetState,
               onCommit0      : UpdateContentOnCommit): Cell.State = {
 
       def init         = PlainText reqCode initial
@@ -50,7 +50,7 @@ object ReqCodeEditor {
       val onCommit = onCommit0.cmapToInitial(initial)(SetReqCodeGroupCode(subjectId, _))
 
       Some(RemoteDataEditor.default[String, String](
-        init, liveCorrect, modCell,
+        init, liveCorrect, setSelf,
         (s, u, abort, commit) =>
           editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply))
     }
@@ -69,7 +69,7 @@ object ReqCodeEditor {
     def apply(initial        : Set[A],
               subjectId      : ReqId,
               validationState: Px[V.VS])
-             (modCell        : Cell.ModCell,
+             (modCell        : RemoteDataEditor.SetState,
               onCommit0      : UpdateContentOnCommit): Cell.State = {
 
       def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"

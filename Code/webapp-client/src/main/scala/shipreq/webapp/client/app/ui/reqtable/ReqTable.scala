@@ -88,7 +88,7 @@ object ReqTable {
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
-    val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
+    val modTable: Cell.ModTable = ReusableFn(loc => s => $.modStateIO(_.updateCell(loc, s)))
     val saveIO: (UpdateContentCmd, TIO.Success, TIO.Failure) => IO[Unit] = (i, sio, fio) => {
       val p = $.props
       import p._
