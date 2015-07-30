@@ -84,7 +84,7 @@ object RichTextEditor {
 
       val autoComplete = mkAutoComplete(project, projectText, textSearch)
 
-      RemoteDataEditor.opDefault[String, String](
+      RemoteDataEditor.default[String, String](
         init, identity, setSelf,
         (s, u, abort, commit) =>
           Props(s, u, abort, v => commit(onCommit(v)), project, projectText, projectWidgets, autoComplete.value()).apply)

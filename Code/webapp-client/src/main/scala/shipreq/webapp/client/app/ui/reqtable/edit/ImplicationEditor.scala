@@ -123,7 +123,7 @@ object ImplicationEditor {
         \/-(diff)
     }
 
-    RemoteDataEditor.opDefault[String, String](
+    RemoteDataEditor.default[String, String](
       initialTextValue, identity, setSelf,
       (s, u, abort, commit) =>
         editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)

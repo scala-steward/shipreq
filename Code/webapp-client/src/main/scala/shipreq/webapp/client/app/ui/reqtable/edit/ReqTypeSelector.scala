@@ -44,7 +44,7 @@ object ReqTypeSelector {
       else
         commit(onCommit(a))
 
-    RemoteDataEditor.opDefault[A, A](
+    RemoteDataEditor.default[A, A](
       initial, identity, setSelf,
       (s, u, abort, commit) =>
         component(Props(s, u, abort, commitIfChanged(s, commit), fieldsN.value())))

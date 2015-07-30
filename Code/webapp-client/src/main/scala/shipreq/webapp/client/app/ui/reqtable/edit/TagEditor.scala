@@ -76,7 +76,7 @@ object TagEditor {
     val validate: Vector[ApplicableTagId] => ParseResult[SetDiff[ApplicableTagId]] =
       nvs => \/-(SetDiff.compare(initialValues, nvs.toSet))
 
-    RemoteDataEditor.opDefault[String, String](
+    RemoteDataEditor.default[String, String](
       initialTextValue, identity, setSelf,
       (s, u, abort, commit) =>
         editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)

@@ -49,7 +49,7 @@ object ReqCodeEditor {
 
       val onCommit = onCommit0.cmapToInitial(initial)(SetReqCodeGroupCode(subjectId, _))
 
-      RemoteDataEditor.opDefault[String, String](
+      RemoteDataEditor.default[String, String](
         init, liveCorrect, setSelf,
         (s, u, abort, commit) =>
           editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)
@@ -81,7 +81,7 @@ object ReqCodeEditor {
 
       val onCommit = onCommit0.setDiff[A](PatchReqCodes(subjectId, _))
 
-      RemoteDataEditor.opDefault[String, String](
+      RemoteDataEditor.default[String, String](
         init, liveCorrect, modCell,
         (s, u, abort, commit) =>
           editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)
