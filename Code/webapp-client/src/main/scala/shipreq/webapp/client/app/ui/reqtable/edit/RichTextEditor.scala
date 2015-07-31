@@ -75,7 +75,7 @@ object RichTextEditor {
               projectWidgets: Px[ProjectWidgets],
               textSearch    : Px[TextSearch])
              (setSelf       : RemoteDataEditor.SetOpState,
-              onCommit0     : UpdateContentOnCommit): Cell.State = {
+              onCommit0     : UpdateContentOnCommit): RemoteDataEditor.State = {
 
       def init: String =
         projectText.value() format initial

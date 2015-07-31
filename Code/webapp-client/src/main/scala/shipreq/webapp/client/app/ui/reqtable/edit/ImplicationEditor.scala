@@ -54,7 +54,7 @@ object ImplicationEditor {
             textSearch: Px[TextSearch],
             lookupM   : Px[Must[Lookup]])
            (setSelf   : RemoteDataEditor.SetOpState,
-            onCommit0 : UpdateContentOnCommit): Cell.State = {
+            onCommit0 : UpdateContentOnCommit): RemoteDataEditor.State = {
 
     /**
      * If true, the user edits what this subject implies (ie. subject → edit-specified).

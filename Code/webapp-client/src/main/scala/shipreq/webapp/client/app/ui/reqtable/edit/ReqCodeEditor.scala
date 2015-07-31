@@ -8,7 +8,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor}
-import shipreq.webapp.client.app.ui.reqtable._
 import shipreq.webapp.client.lib.ui.TextEditor
 import TextSeqEditor._
 import Validators.{reqCode => V}
@@ -35,7 +34,7 @@ object ReqCodeEditor {
               subjectId      : ReqCodeId,
               validationState: Px[V.VS])
              (setSelf        : RemoteDataEditor.SetOpState,
-              onCommit0      : UpdateContentOnCommit): Cell.State = {
+              onCommit0      : UpdateContentOnCommit): RemoteDataEditor.State = {
 
       def init         = PlainText reqCode initial
       val autoComplete = mkAutoComplete(validationState)
@@ -70,7 +69,7 @@ object ReqCodeEditor {
               subjectId      : ReqId,
               validationState: Px[V.VS])
              (modCell        : RemoteDataEditor.SetOpState,
-              onCommit0      : UpdateContentOnCommit): Cell.State = {
+              onCommit0      : UpdateContentOnCommit): RemoteDataEditor.State = {
 
       def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
       val autoComplete = mkAutoComplete(validationState)

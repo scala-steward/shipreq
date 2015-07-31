@@ -26,6 +26,9 @@ object RemoteDataEditor {
       renderFn()
   }
 
+  @inline implicit def autoOpState[A](s: StateFor[A]): OpStateFor[A] =
+    Some(s)
+
   type State = StateFor[Any]
 
   type OpState        = Option[State]
@@ -54,7 +57,7 @@ object RemoteDataEditor {
 //                         successFn : TIO.Abort => TIO.Success,
                          renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement,
                          renderLock: A => ReactElement,
-                         renderFail: (A, Failed) => ReactElement): OpStateFor[A] = {
+                         renderFail: (A, Failed) => ReactElement): StateFor[A] = {
 
 //    lazy val abort = abortFn(state)
 //    lazy val success = successFn(abort)
@@ -80,20 +83,20 @@ object RemoteDataEditor {
       }
 
 
-    def state(a: A, status: Status): OpStateFor[A] = {
+    def state(a: A, status: Status): StateFor[A] = {
       def render: ReactElement =
         status match {
           case Editing   => renderEdit(a, recvEdit, abort, commit(a))
           case Locked    => renderLock(a)
           case f: Failed => renderFail(a, f)
         }
-      Some(StateFor(a, status, () => render))
+      StateFor(a, status, () => render)
     }
 
     def recvEdit: S => IO[Unit] =
       s => setSelf(editState(convInput(s)))
 
-    def editState(a: A): OpStateFor[A] =
+    def editState(a: A): StateFor[A] =
       state(a, Editing)
 
     editState(initial)
@@ -102,7 +105,7 @@ object RemoteDataEditor {
   def default[S, A](initial   : A,
                     convInput : S => A,
                     setSelf   : SetOpStateFor[A],
-                    renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement): OpStateFor[A] =
+                    renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement): StateFor[A] =
     core[S, A](
       initial, convInput, setSelf,
 //      _ => TIO.Abort(setSelf(None)),

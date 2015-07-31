@@ -40,7 +40,7 @@ object TagEditor {
             project  : Project,
             lookupM  : Px[Must[Lookup]])
            (setSelf  : RemoteDataEditor.SetOpState,
-            onCommit0: UpdateContentOnCommit): Cell.State = {
+            onCommit0: UpdateContentOnCommit): RemoteDataEditor.State = {
 
     val lookup = lookupM.map(mustResolve(_)(UnivEq.emptyMap))
 
