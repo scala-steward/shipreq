@@ -30,15 +30,15 @@ object ReqCodeEditor {
   object ForGroup {
     val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input)
 
-    def apply(initial        : A,
-              subjectId      : ReqCodeId,
-              validationState: Px[V.VS])
-             (setSelf        : RemoteDataEditor.SetOpState,
-              onCommit0      : UpdateContentOnCommit): RemoteDataEditor.State = {
+    def apply(initial : Option[A],
+              trie    : Px[ReqCode.Trie],
+              setSelf : RemoteDataEditor.SetOpStateFor[String],
+              commitFn: A => RemoteDataEditor.OnCommit): RemoteDataEditor.StateFor[String] = {
 
-      def init         = PlainText reqCode initial
-      val autoComplete = mkAutoComplete(validationState)
-      val parser       = mkParser(validationState)
+      def init            = initial.fold("")(PlainText.reqCode)
+      val validationState = trie.map(V.VS(_, initial.toSet))
+      val autoComplete    = mkAutoComplete(validationState)
+      val parser          = mkParser(validationState)
 
       val validate: Vector[A] => ParseResult[A] =
         _.headOption match {
@@ -46,7 +46,7 @@ object ReqCodeEditor {
           case Some(c) => \/-(c)
         }
 
-      val onCommit = onCommit0.cmapToInitial(initial)(SetReqCodeGroupCode(subjectId, _))
+      val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignoreIfEqualO(initial)
 
       RemoteDataEditor.default[String, String](
         init, liveCorrect, setSelf,
@@ -55,6 +55,13 @@ object ReqCodeEditor {
     }
 
     @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
+
+    def edit(subjectId: ReqCodeId,
+             initial  : A,
+             trie     : Px[ReqCode.Trie],
+             setSelf  : RemoteDataEditor.SetOpStateFor[String],
+             commitFn : UpdateContentOnCommit) =
+      apply(Some(initial), trie, setSelf, commitFn.cmap[A](SetReqCodeGroupCode(subjectId, _)))
   }
 
   // ===================================================================================================================
@@ -65,23 +72,24 @@ object ReqCodeEditor {
       s => lineSplitter.split(s.trim).toStream.filter(_.nonEmpty),
       TextEditor.TextArea)
 
-    def apply(initial        : Set[A],
-              subjectId      : ReqId,
-              validationState: Px[V.VS])
-             (modCell        : RemoteDataEditor.SetOpState,
-              onCommit0      : UpdateContentOnCommit): RemoteDataEditor.State = {
+    def edit(subjectId: ReqId,
+             initial  : Set[A],
+             trie     : Px[ReqCode.Trie],
+             setSelf  : RemoteDataEditor.SetOpStateFor[String],
+             commitFn : UpdateContentOnCommit): RemoteDataEditor.StateFor[String] = {
 
-      def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
-      val autoComplete = mkAutoComplete(validationState)
-      val parser       = mkParser(validationState)
+      def init            = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
+      val validationState = trie.map(V.VS(_, initial))
+      val autoComplete    = mkAutoComplete(validationState)
+      val parser          = mkParser(validationState)
 
       val validate: Vector[A] => ParseResult[SetDiff[A]] =
         as => V.codeSet.correctAndValidateU(as.toSet).map(SetDiff.compare(initial, _))
 
-      val onCommit = onCommit0.setDiff[A](PatchReqCodes(subjectId, _))
+      val onCommit = commitFn.setDiff[A](PatchReqCodes(subjectId, _))
 
       RemoteDataEditor.default[String, String](
-        init, liveCorrect, modCell,
+        init, liveCorrect, setSelf,
         (s, u, abort, commit) =>
           editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)
     }

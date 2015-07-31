@@ -128,6 +128,8 @@ object RemoteDataEditor {
 
   // ===================================================================================================================
 
+  @inline implicit def autoUnpackCommitFilter[A](f: CommitFilter[A]): A => OnCommit = f.f
+
   case class CommitFilter[A](f: A => OnCommit) extends AnyVal {
     def cmapo[B](g: B => Option[A]): CommitFilter[B] =
       CommitFilter(b =>
@@ -146,14 +148,14 @@ object RemoteDataEditor {
     def ignoreIfEqual(initial: A)(implicit e: Equal[A]): CommitFilter[A] =
       ignore(e.equal(initial, _))
 
+    def ignoreIfEqualO(initial: Option[A])(implicit e: Equal[A]): CommitFilter[A] =
+      initial.fold(this)(ignoreIfEqual)
+
     def cmapToInitial[B: Equal](initial: B)(f: B => A): CommitFilter[B] =
       cmap(f).ignoreIfEqual(initial)
 
     def setDiff[B](f: SetDiff[B] => A): CommitFilter[SetDiff[B]] =
       cmap(f).ignore(_.isEmpty)
-
-    @inline def apply(a: A): OnCommit =
-      f(a)
   }
   
 }

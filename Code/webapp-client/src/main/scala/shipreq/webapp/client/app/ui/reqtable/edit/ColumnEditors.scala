@@ -13,9 +13,10 @@ import shipreq.webapp.client.app.ui.{ProjectWidgets, RemoteDataEditor}
 import shipreq.webapp.client.lib.TIO
 
 object ColumnEditors {
-  case class CellEditor(init: RemoteDataEditor.SetOpState => Option[Cell.State]) extends AnyVal
+  type CellEditor = RemoteDataEditor.SetOpState => Option[Cell.State]
 
-  def noEditor = CellEditor(_ => None)
+  def noEditor: CellEditor =
+    _ => None
 }
 
 final class ColumnEditors(project       : Px[Project],
@@ -75,7 +76,7 @@ final class ColumnEditors(project       : Px[Project],
 
     val modCell = modTable(loc)
 
-    editor.init(modCell) match {
+    editor(modCell) match {
       case Some(cmd) => Some(modCell(cmd))
       case None      => None // init returns None = editing not allowed = nothing to do
     }
@@ -93,7 +94,7 @@ final class ColumnEditors(project       : Px[Project],
 
   private def mkEditorO[R <: Row](f: R => Option[(RemoteDataEditor.SetOpState, UpdateContentOnCommit) => Cell.State]): R => CellEditor =
     r => f(r) match {
-      case Some(g) => CellEditor(m => Some(g(m, updateContentOnCommit)))
+      case Some(g) => setOpState => Some(g(setOpState, updateContentOnCommit))
       case None    => noEditor
     }
 
@@ -128,18 +129,18 @@ final class ColumnEditors(project       : Px[Project],
     fe(iv, id, project, plainText, projectWidgets, textSearch)
   }
 
+  private val reqCodeTrie = project.map(_.reqCodes.trie)
+
   val codesForReq = mkEditor[GenericReqRow] { r =>
     val id = r.req.id
     val iv = project.value().reqCodes.activeReqCodesByTarget(r.req.id)
-    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.trie, iv))
-    ReqCodeEditor.ForReqs(iv, id, vs)
+    ReqCodeEditor.ForReqs.edit(id, iv, reqCodeTrie, _, _)
   }
 
   val codeForGroup = mkEditor[ReqCodeGroupRow] { r =>
-    val id = r.reqCodeId
-    val iv = r.reqCode
-    val vs = project.map(p => Validators.reqCode.VS(p.reqCodes.trie, Set(iv)))
-    ReqCodeEditor.ForGroup(iv, id, vs)
+    val id   = r.reqCodeId
+    val iv   = r.reqCode
+    ReqCodeEditor.ForGroup.edit(id, iv, reqCodeTrie, _, _)
   }
 
   val tags = mkEditor[GenericReqRow] { r =>
