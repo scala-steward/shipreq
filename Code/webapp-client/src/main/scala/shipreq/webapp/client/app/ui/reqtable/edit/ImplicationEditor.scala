@@ -11,8 +11,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.UiText
-import shipreq.webapp.client.app.ui.RemoteDataEditor
-import shipreq.webapp.client.app.ui.TextSeqEditor
+import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
 import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.webapp.client.lib.Plain
 import TextSeqEditor._
@@ -59,13 +58,11 @@ object ImplicationEditor {
       case _                     => false
     }
 
-  def apply(initial   : Option[(ReqId, Seq[Pubid])],
-            column    : Column,
-            project   : Px[Project],
-            textSearch: Px[TextSearch],
-            lookupM   : Px[Must[Lookup]],
-            setSelf   : RemoteDataEditor.SetOpStateFor[String],
-            commitFn  : ImpDiff => RemoteDataEditor.OnCommit): RemoteDataEditor.StateFor[String] = {
+  def prepare(initial   : Option[(ReqId, Seq[Pubid])],
+              column    : Column,
+              project   : Px[Project],
+              textSearch: Px[TextSearch],
+              lookupM   : Px[Must[Lookup]]): (VUCA[String, ImpDiff] => editor.Props, String) = {
 
     val declFwd = isDeclFwd(column)
 
@@ -96,15 +93,12 @@ object ImplicationEditor {
       } yield ReusableVal.byRef(
         AutoComplete.req(s, l.legal, Plain))
 
-    val parser: Parser[ReqId] = () => {
+    val parser: Parser[ReqId] = s => {
       val l = lookup.value()
-      s =>
-        l.legalm.get(s).map(_.req.id.right) orElse
-          l.illegal.get(s).map(-\/.apply) getOrElse
-          leftNone
+      l.legalm.get(s).map(_.req.id.right) orElse
+        l.illegal.get(s).map(-\/.apply) getOrElse
+        leftNone
     }
-
-    val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignore(_.isEmpty)
 
     val validate: Vector[ReqId] => ParseResult[ImpDiff] = in => {
       val newValues = initial.foldLeft(in.toSet)(_ - _._1) // Tolerate reflexivity
@@ -120,10 +114,24 @@ object ImplicationEditor {
         \/-(diff)
     }
 
+    (editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle), initialTextValue)
+  }
+
+  def selfManaged(initial   : Option[(ReqId, Seq[Pubid])],
+                  column    : Column,
+                  project   : Px[Project],
+                  textSearch: Px[TextSearch],
+                  lookupM   : Px[Must[Lookup]],
+                  setSelf   : RemoteDataEditor.SetOpStateFor[String],
+                  commitFn  : ImpDiff => RemoteDataEditor.OnCommit): RemoteDataEditor.StateFor[String] = {
+
+    val (props, initialTextValue) = prepare(initial, column, project, textSearch, lookupM)
+
+    val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignore(_.isEmpty)
+
     RemoteDataEditor.default[String, String](
       initialTextValue, identity, setSelf,
-      (s, u, abort, commit) =>
-        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value(), cellStyle, cellErrorMsgStyle).apply)
+      (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
   }
 
   def edit(subjectId : ReqId,
@@ -147,6 +155,6 @@ object ImplicationEditor {
       commitFn cmap f
     }
 
-    apply(Some((subjectId, initial)), column, project, textSearch, lookupM, setSelf,  onCommit)
+    selfManaged(Some((subjectId, initial)), column, project, textSearch, lookupM, setSelf,  onCommit)
   }
 }

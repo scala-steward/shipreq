@@ -11,7 +11,6 @@ import scalaz.std.option._
 import scalaz.std.stream._
 import scalaz.std.vector._
 import scalaz.syntax.foldable._
-import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
 import shipreq.base.util.Validity
 import TextSeqEditor._
@@ -19,7 +18,7 @@ import TextSeqEditor._
 object TextSeqEditor {
   type ParseRejection  = Option[String]
   type ParseResult[+O] = ParseRejection \/ O
-  type Parser[+O]      = () => String => ParseResult[O]
+  type Parser[+O]      = String => ParseResult[O]
   type AutoComplete    = ReusableVal[TC.Strategies]
 
   val leftNone: ParseResult[Nothing] =
@@ -33,16 +32,21 @@ object TextSeqEditor {
  */
 final class TextSeqEditor[A, B](name: String, splitFn: String => Stream[String], textEditor: TextEditor) {
 
-  case class Props(state        : String,
-                   stateUpdate  : String => IO[Unit],
-                   abort        : TIO.Abort,
+  case class Props(vuca         : VUCA[String, B],
                    parser       : Parser[A],
                    validate     : Vector[A] => ParseResult[B],
-                   commit       : B => TIO.Commit,
                    autoComplete : AutoComplete,
                    inputStyle   : Validity => TagMod,
                    errorMsgStyle: TagMod) {
-    def apply = component(this)
+
+    val parseResult: ParseResult[B] =
+      splitFn(vuca.value)
+        .map(parser(_).bimap(Tags.First.apply, Vector.empty :+ _))
+        .suml
+        .leftMap(Tags.First.unwrap)
+        .flatMap(validate)
+
+    def render = component(this)
   }
 
   @inline private implicit def impTextEditor = textEditor.asImplicit
@@ -54,36 +58,27 @@ final class TextSeqEditor[A, B](name: String, splitFn: String => Stream[String],
       .stateless
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(UI.installTextCompleteP(textEditorRef, _.autoComplete, _.stateUpdate))
+      .configure(UI.installTextCompleteP(textEditorRef, _.autoComplete, _.vuca.update))
       .build
 
   class Backend($: BackendScope[Props, Unit]) {
 
     val updateState: ReactEventI => IO[Unit] =
-      e => $.props.stateUpdate(e.target.value)
+      e => $.props.vuca.update(e.target.value)
 
     def render: ReactElement = {
       val p = $.props
-      val parse = p.parser()
-
-      val parseResultA: ParseResult[Vector[A]] =
-        splitFn(p.state)
-          .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
-          .suml
-          .leftMap(Tags.First.unwrap)
-      
-      val parseResult: ParseResult[B] =
-        parseResultA.flatMap(p.validate)
+      val parseResult = p.parseResult
 
       val keyHandlers =
-        KeyHandlers.commitAndAbortD(p.abort, parseResult, p.commit, textEditor.singleLine)
+        KeyHandlers.commitAndAbortD(p.vuca.abort, parseResult, p.vuca.commit, textEditor.singleLine)
 
       <.div(
         textEditor.tag(
           p.inputStyle(Validity(parseResult)),
           keyHandlers,
           ^.ref       := textEditorRef,
-          ^.value     := p.state,
+          ^.value     := p.vuca.value,
           ^.onChange ~~> updateState),
         parseResult.fold(
           _.fold(EmptyTag)(err => <.div(p.errorMsgStyle, err)),
