@@ -9,7 +9,8 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.UiText
-import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor}
+import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
+import shipreq.webapp.client.lib.ui.TextEditor
 import shipreq.webapp.client.lib.{Plain, HideDead}
 import TextSeqEditor._
 import UpdateContentCmd.PatchReqTags
@@ -17,7 +18,10 @@ import UpdateContentCmd.PatchReqTags
 object TagEditor {
   type Lookup = Map[String, ApplicableTag]
 
-  val editor = textSetEditor[ApplicableTagId, SetDiff[ApplicableTagId]]("TagEditor", Grammar.hashRefKey.seqFormat.apply)
+  type TagDiff = SetDiff[ApplicableTagId]
+
+  val editor = new TextSeqEditor[ApplicableTagId, TagDiff](
+    "TagEditor", Grammar.hashRefKey.seqFormat.apply, TextEditor.Input)
 
   def lookupForNoCol(p: Project): Must[Lookup] =
     lookupG(p, _.tags.notUsedInColumns)
@@ -33,12 +37,9 @@ object TagEditor {
       .toMap
     )
 
-  def apply(initial  : Set[ApplicableTagId],
-            subjectId: ReqId,
-            project  : Project,
-            lookupM  : Px[Must[Lookup]])
-           (modCell  : Cell.ModCell,
-            onCommit0: UpdateContentOnCommit): Cell.State = {
+  def prepare(initial : Set[ApplicableTagId],
+              project : Project,
+              lookupM : Px[Must[Lookup]]): (VUCA[String, TagDiff] => editor.Props, String) = {
 
     val lookup = lookupM.map(mustResolve(_)(UnivEq.emptyMap))
 
@@ -61,22 +62,40 @@ object TagEditor {
         AutoComplete.tag(l.values.toStream, HideDead)(Plain)
       ))
 
-    val parser: Parser[ApplicableTagId] = () => {
+    val parser: Parser[ApplicableTagId] = s => {
       val l = lookup.value()
-      s => l.get(s) match {
+      l.get(s) match {
         case Some(t) => \/-(t.id)
         case None    => leftNone
       }
     }
 
-    val onCommit = onCommit0.setDiff[ApplicableTagId](PatchReqTags(subjectId, _))
-
-    val validate: Vector[ApplicableTagId] => ParseResult[SetDiff[ApplicableTagId]] =
+    val validate: Vector[ApplicableTagId] => ParseResult[TagDiff] =
       nvs => \/-(SetDiff.compare(initialValues, nvs.toSet))
 
-    Some(RemoteDataEditor.default[String, String](
-      initialTextValue, identity, modCell,
-      (s, u, abort, commit) =>
-        editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+    (editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle), initialTextValue)
   }
+
+  def selfManaged(initial : Set[ApplicableTagId],
+                  project : Project,
+                  lookupM : Px[Must[Lookup]],
+                  setSelf : RemoteDataEditor.SetOpStateFor[String],
+                  commitFn: TagDiff => RemoteDataEditor.OnCommit): RemoteDataEditor.StateFor[String] = {
+
+    val (props, initialTextValue) = prepare(initial, project, lookupM)
+
+    val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignore(_.isEmpty)
+
+    RemoteDataEditor.default[String, String](
+      initialTextValue, identity, setSelf,
+      (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
+  }
+
+  def edit(subjectId: ReqId,
+           initial  : Set[ApplicableTagId],
+           project  : Project,
+           lookupM  : Px[Must[Lookup]],
+           setSelf  : RemoteDataEditor.SetOpStateFor[String],
+           commitFn : UpdateContentOnCommit): RemoteDataEditor.StateFor[String] =
+    selfManaged(initial, project, lookupM, setSelf, commitFn.cmap[TagDiff](PatchReqTags(subjectId, _)))
 }

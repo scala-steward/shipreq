@@ -7,8 +7,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor}
-import shipreq.webapp.client.app.ui.reqtable._
+import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
 import shipreq.webapp.client.lib.ui.TextEditor
 import TextSeqEditor._
 import Validators.{reqCode => V}
@@ -22,24 +21,21 @@ object ReqCodeEditor {
     validationState.map(vs => ReusableVal.byRef(
       AutoComplete.reqCode.prefixes(vs.trie)))
 
-  def mkParser(validationState: Px[V.VS]): Parser[A] = () => {
+  def mkParser(validationState: Px[V.VS]): Parser[A] = str => {
     val vs = validationState.value()
-    V.code.correctAndValidate(vs, _)
+    V.code.correctAndValidate(vs, str)
   }
 
   // ===================================================================================================================
   object ForGroup {
-    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input, cellStyle, cellErrorMsgStyle)
+    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input)
 
-    def apply(initial        : A,
-              subjectId      : ReqCodeId,
-              validationState: Px[V.VS])
-             (modCell        : Cell.ModCell,
-              onCommit0      : UpdateContentOnCommit): Cell.State = {
+    @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
 
-      def init         = PlainText reqCode initial
-      val autoComplete = mkAutoComplete(validationState)
-      val parser       = mkParser(validationState)
+    def prepare(initial: Option[A], trie: Px[ReqCode.Trie]): VUCA[String, A] => editor.Props = {
+      val validationState = trie.map(V.VS(_, initial.toSet))
+      val autoComplete    = mkAutoComplete(validationState)
+      val parser          = mkParser(validationState)
 
       val validate: Vector[A] => ParseResult[A] =
         _.headOption match {
@@ -47,45 +43,37 @@ object ReqCodeEditor {
           case Some(c) => \/-(c)
         }
 
-      val onCommit = onCommit0.cmapToInitial(initial)(SetReqCodeGroupCode(subjectId, _))
-
-      Some(RemoteDataEditor.default[String, String](
-        init, liveCorrect, modCell,
-        (s, u, abort, commit) =>
-          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
+      editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle)
     }
 
-    @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
+    def selfManaged(initial : Option[A],
+                    trie    : Px[ReqCode.Trie],
+                    setSelf : RemoteDataEditor.SetOpStateFor[String],
+                    commitFn: A => RemoteDataEditor.OnCommit): RemoteDataEditor.StateFor[String] = {
+
+      def init     = initial.fold("")(PlainText.reqCode)
+      val props    = prepare(initial, trie)
+      val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignoreIfEqualO(initial)
+
+      RemoteDataEditor.default[String, String](
+        init, liveCorrect, setSelf,
+        (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
+    }
+
+    def edit(subjectId: ReqCodeId,
+             initial  : A,
+             trie     : Px[ReqCode.Trie],
+             setSelf  : RemoteDataEditor.SetOpStateFor[String],
+             commitFn : UpdateContentOnCommit) =
+      selfManaged(Some(initial), trie, setSelf, commitFn.cmap[A](SetReqCodeGroupCode(subjectId, _)))
   }
 
   // ===================================================================================================================
   object ForReqs {
-    val lineSplitter = "\\s*[\n\r]\\s*".r.pattern
+    val lineSplitPat = "\\s*[\n\r]\\s*".r.pattern
+    val lineSplit = (s: String) => lineSplitPat.split(s.trim).toStream.filter(_.nonEmpty)
 
-    val editor = textSetEditor[A, SetDiff[A]]("ReqCode editor",
-      s => lineSplitter.split(s.trim).toStream.filter(_.nonEmpty),
-      TextEditor.TextArea)
-
-    def apply(initial        : Set[A],
-              subjectId      : ReqId,
-              validationState: Px[V.VS])
-             (modCell        : Cell.ModCell,
-              onCommit0      : UpdateContentOnCommit): Cell.State = {
-
-      def init         = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
-      val autoComplete = mkAutoComplete(validationState)
-      val parser       = mkParser(validationState)
-
-      val validate: Vector[A] => ParseResult[SetDiff[A]] =
-        as => V.codeSet.correctAndValidateU(as.toSet).map(SetDiff.compare(initial, _))
-
-      val onCommit = onCommit0.setDiff[A](PatchReqCodes(subjectId, _))
-
-      Some(RemoteDataEditor.default[String, String](
-        init, liveCorrect, modCell,
-        (s, u, abort, commit) =>
-          editor.Props(s, u, abort, parser, validate, v => commit(onCommit(v)), autoComplete.value()).apply))
-    }
+    val editor = new TextSeqEditor[A, SetDiff[A]]("ReqCode editor", lineSplit, TextEditor.TextArea)
 
     def liveCorrect(txt: String): String =
       if (txt.trim.isEmpty)
@@ -94,5 +82,31 @@ object ReqCodeEditor {
         val r = txt.split("[\n\r]").map(V.code.liveCorrect).mkString("\n")
         Util.fixBeforeAfter(txt, r)(_ endsWith "\n", _ + "\n")
       }
+
+    def prepare(initial: Set[A], trie: Px[ReqCode.Trie]): VUCA[String, SetDiff[A]] => editor.Props = {
+      val validationState = trie.map(V.VS(_, initial))
+      val autoComplete    = mkAutoComplete(validationState)
+      val parser          = mkParser(validationState)
+
+      val validate: Vector[A] => ParseResult[SetDiff[A]] =
+        as => V.codeSet.correctAndValidateU(as.toSet).map(SetDiff.compare(initial, _))
+
+      editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle)
+    }
+
+    def edit(subjectId: ReqId,
+             initial  : Set[A],
+             trie     : Px[ReqCode.Trie],
+             setSelf  : RemoteDataEditor.SetOpStateFor[String],
+             commitFn : UpdateContentOnCommit): RemoteDataEditor.StateFor[String] = {
+
+      def init     = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
+      val props    = prepare(initial, trie)
+      val onCommit = commitFn.setDiff[A](PatchReqCodes(subjectId, _))
+
+      RemoteDataEditor.default[String, String](
+        init, liveCorrect, setSelf,
+        (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
+    }
   }
 }

@@ -14,7 +14,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.app.ui.{RemoteDataEditor, SelectOne}
-import shipreq.webapp.client.app.ui.reqtable.Cell
 import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.util.Enabled
 import SelectOne.Choice
@@ -29,8 +28,8 @@ object ReqTypeSelector {
   def apply(initial  : A,
             subjectId: GenericReqId,
             fields   : Px[Set[A]])
-           (modCell  : Cell.ModCell,
-            onCommit0: UpdateContentOnCommit): Cell.State = {
+           (setSelf  : RemoteDataEditor.SetOpState,
+            onCommit0: UpdateContentOnCommit): RemoteDataEditor.State = {
 
     val fieldsN = fields
       .map(_.filter(_.live :: Live))
@@ -44,10 +43,10 @@ object ReqTypeSelector {
       else
         commit(onCommit(a))
 
-    Some(RemoteDataEditor.default[A, A](
-      initial, identity, modCell,
+    RemoteDataEditor.default[A, A](
+      initial, identity, setSelf,
       (s, u, abort, commit) =>
-        component(Props(s, u, abort, commitIfChanged(s, commit), fieldsN.value()))))
+        component(Props(s, u, abort, commitIfChanged(s, commit), fieldsN.value())))
   }
 
   val selectComp = SelectOne.Component[A]

@@ -25,8 +25,11 @@ object TIO {
     @inline def apply(io: IO[Unit]): TIO[T] =
       new TIO(io)
 
-    @inline def nop =
+    val nop: TIO[T] =
       apply(IoUtils.nop)
+
+    val _nop: Any => TIO[T] =
+      _ => nop
 
     def lazily(f: => IO[Unit]) =
       apply(Bind[IO] join IO(f))

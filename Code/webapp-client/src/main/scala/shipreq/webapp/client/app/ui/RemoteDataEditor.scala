@@ -1,11 +1,11 @@
 package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import shipreq.base.util.SetDiff
-import shipreq.webapp.client.lib.ui.UI
 import scalaz.Equal
 import scalaz.effect.IO
+import shipreq.base.util.SetDiff
 import shipreq.webapp.client.lib.TIO
+import shipreq.webapp.client.lib.ui.UI
 
 /**
  * An abstraction of a editor with the following properties:
@@ -21,12 +21,21 @@ object RemoteDataEditor {
   case object Locked extends Status
   case class Failed(retry: () => IO[Unit], resumeEdit: () => IO[Unit]) extends Status
 
-  type State = StateFor[Any]
-
   case class StateFor[+A](value: A, status: Status, renderFn: () => ReactElement) {
     @inline def render: ReactElement =
       renderFn()
   }
+
+  @inline implicit def autoOpState[A](s: StateFor[A]): OpStateFor[A] =
+    Some(s)
+
+  type State = StateFor[Any]
+
+  type OpState        = Option[State]
+  type OpStateFor[+A] = Option[StateFor[A]]
+
+  type SetOpState        = OpState => IO[Unit]
+  type SetOpStateFor[-A] = OpStateFor[A] => IO[Unit]
 
   class Callbacks(
     val abort    : TIO.Abort,
@@ -35,15 +44,23 @@ object RemoteDataEditor {
     val failed   : TIO.Failure)
 
   type OnCommit = Callbacks => IO[Unit]
-
   type CommitFn = OnCommit => TIO.Commit
 
-  def apply[S, A](initial   : A,
-                  convInput : S => A,
-                  setSelf   : Option[StateFor[A]] => IO[Unit],
-                  renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement,
-                  renderLock: A => ReactElement,
-                  renderFail: (A, Failed) => ReactElement): StateFor[A] = {
+  type MakeOpStateFor[A] = (A, Status) => OpStateFor[A]
+
+  // ===================================================================================================================
+
+  private def core[S, A](initial   : A,
+                         convInput : S => A,
+                         setSelf   : SetOpStateFor[A],
+//                         abortFn   : MakeOpStateFor[A] => TIO.Abort,
+//                         successFn : TIO.Abort => TIO.Success,
+                         renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement,
+                         renderLock: A => ReactElement,
+                         renderFail: (A, Failed) => ReactElement): StateFor[A] = {
+
+//    lazy val abort = abortFn(state)
+//    lazy val success = successFn(abort)
 
     val abort = TIO.Abort(setSelf(None))
     val success = TIO.Success(abort)
@@ -51,18 +68,18 @@ object RemoteDataEditor {
     def commit(a: A): CommitFn =
       onCommit => {
         def onFailure: TIO.Failure = TIO.Failure.lazily {
-          def ff = Failed(() => onCommit(callbacks), () => setSelf(Some(editState(a))))
-          setSelf(Some(state(a, ff)))
+          def ff = Failed(() => onCommit(callbacks), () => setSelf(editState(a)))
+          setSelf(state(a, ff))
         }
 
         def callbacks: Callbacks =
           new Callbacks(
             abort,
-            setSelf(Some(state(a, Locked))),
+            setSelf(state(a, Locked)),
             success,
             onFailure)
 
-        TIO.Commit(onCommit(callbacks))
+        TIO.Commit.lazily(onCommit(callbacks))
       }
 
 
@@ -77,13 +94,23 @@ object RemoteDataEditor {
     }
 
     def recvEdit: S => IO[Unit] =
-      s => setSelf(Some(editState(convInput(s))))
+      s => setSelf(editState(convInput(s)))
 
     def editState(a: A): StateFor[A] =
       state(a, Editing)
 
     editState(initial)
   }
+
+  def default[S, A](initial   : A,
+                    convInput : S => A,
+                    setSelf   : SetOpStateFor[A],
+                    renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement): StateFor[A] =
+    core[S, A](
+      initial, convInput, setSelf,
+//      _ => TIO.Abort(setSelf(None)),
+//      TIO.Success(_),
+      renderEdit, defaultRenderLock, defaultRenderFail)
 
   // ===================================================================================================================
 
@@ -99,13 +126,9 @@ object RemoteDataEditor {
       <.button("Retry", ^.onClick ~~> retryFn), // English
       <.button("OK", ^.onClick ~~> resumeFn)) // English
 
-  def default[S, A](initial   : A,
-                    convInput : S => A,
-                    setSelf   : Option[StateFor[A]] => IO[Unit],
-                    renderEdit: (A, S => IO[Unit], TIO.Abort, CommitFn) => ReactElement): StateFor[A] =
-    apply(initial, convInput, setSelf, renderEdit, defaultRenderLock, defaultRenderFail)
-
   // ===================================================================================================================
+
+  @inline implicit def autoUnpackCommitFilter[A](f: CommitFilter[A]): A => OnCommit = f.f
 
   case class CommitFilter[A](f: A => OnCommit) extends AnyVal {
     def cmapo[B](g: B => Option[A]): CommitFilter[B] =
@@ -125,14 +148,14 @@ object RemoteDataEditor {
     def ignoreIfEqual(initial: A)(implicit e: Equal[A]): CommitFilter[A] =
       ignore(e.equal(initial, _))
 
+    def ignoreIfEqualO(initial: Option[A])(implicit e: Equal[A]): CommitFilter[A] =
+      initial.fold(this)(ignoreIfEqual)
+
     def cmapToInitial[B: Equal](initial: B)(f: B => A): CommitFilter[B] =
       cmap(f).ignoreIfEqual(initial)
 
     def setDiff[B](f: SetDiff[B] => A): CommitFilter[SetDiff[B]] =
       cmap(f).ignore(_.isEmpty)
-
-    @inline def apply(a: A): OnCommit =
-      f(a)
   }
   
 }

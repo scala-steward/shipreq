@@ -5,14 +5,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import scala.scalajs.js
-import scalaz.{-\/, Tags, \/}
+import scalaz.{\/, -\/, Tags}
 import scalaz.effect.IO
 import scalaz.std.option._
 import scalaz.std.stream._
 import scalaz.std.vector._
 import scalaz.syntax.foldable._
-import shipreq.webapp.client.lib.TIO
 import shipreq.webapp.client.lib.ui.{KeyHandlers, TextEditor, UI}
 import shipreq.base.util.Validity
 import TextSeqEditor._
@@ -20,7 +18,7 @@ import TextSeqEditor._
 object TextSeqEditor {
   type ParseRejection  = Option[String]
   type ParseResult[+O] = ParseRejection \/ O
-  type Parser[+O]      = () => String => ParseResult[O]
+  type Parser[+O]      = String => ParseResult[O]
   type AutoComplete    = ReusableVal[TC.Strategies]
 
   val leftNone: ParseResult[Nothing] =
@@ -32,20 +30,23 @@ object TextSeqEditor {
  *
  * Example: "#tbd #report #pending" or "5,7,9,11".
  */
-final class TextSeqEditor[A, B](name         : String,
-                                splitFn      : String => Stream[String],
-                                textEditor   : TextEditor,
-                                inputStyle   : Validity => TagMod,
-                                errorMsgStyle: TagMod) {
+final class TextSeqEditor[A, B](name: String, splitFn: String => Stream[String], textEditor: TextEditor) {
 
-  case class Props(state       : String,
-                   stateUpdate : String => IO[Unit],
-                   abort       : TIO.Abort,
-                   parser      : Parser[A],
-                   validate    : Vector[A] => ParseResult[B],
-                   commit      : B => TIO.Commit,
-                   autoComplete: AutoComplete) {
-    def apply = component(this)
+  case class Props(vuca         : VUCA[String, B],
+                   parser       : Parser[A],
+                   validate     : Vector[A] => ParseResult[B],
+                   autoComplete : AutoComplete,
+                   inputStyle   : Validity => TagMod,
+                   errorMsgStyle: TagMod) {
+
+    val parseResult: ParseResult[B] =
+      splitFn(vuca.value)
+        .map(parser(_).bimap(Tags.First.apply, Vector.empty :+ _))
+        .suml
+        .leftMap(Tags.First.unwrap)
+        .flatMap(validate)
+
+    def render = component(this)
   }
 
   @inline private implicit def impTextEditor = textEditor.asImplicit
@@ -57,39 +58,30 @@ final class TextSeqEditor[A, B](name         : String,
       .stateless
       .backend(new Backend(_))
       .render(_.backend.render)
-      .configure(UI.installTextCompleteP(textEditorRef, _.autoComplete, _.stateUpdate))
+      .configure(UI.installTextCompleteP(textEditorRef, _.autoComplete, _.vuca.update))
       .build
 
   class Backend($: BackendScope[Props, Unit]) {
 
     val updateState: ReactEventI => IO[Unit] =
-      e => $.props.stateUpdate(e.target.value)
+      e => $.props.vuca.update(e.target.value)
 
     def render: ReactElement = {
       val p = $.props
-      val parse = p.parser()
-
-      val parseResultA: ParseResult[Vector[A]] =
-        splitFn(p.state)
-          .map(parse(_).bimap(Tags.First.apply, Vector.empty :+ _))
-          .suml
-          .leftMap(Tags.First.unwrap)
-      
-      val parseResult: ParseResult[B] =
-        parseResultA.flatMap(p.validate)
+      val parseResult = p.parseResult
 
       val keyHandlers =
-        KeyHandlers.commitAndAbortD(p.abort, parseResult, p.commit, textEditor.singleLine)
+        KeyHandlers.commitAndAbortD(p.vuca.abort, parseResult, p.vuca.commit, textEditor.singleLine)
 
       <.div(
         textEditor.tag(
-          inputStyle(Validity(parseResult)),
+          p.inputStyle(Validity(parseResult)),
           keyHandlers,
           ^.ref       := textEditorRef,
-          ^.value     := p.state,
+          ^.value     := p.vuca.value,
           ^.onChange ~~> updateState),
         parseResult.fold(
-          _.fold(EmptyTag)(err => <.div(errorMsgStyle, err)),
+          _.fold(EmptyTag)(err => <.div(p.errorMsgStyle, err)),
           _ => EmptyTag))
     }
   }

@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.effect.IO
-import shipreq.webapp.base.protocol.{UpdateContentFn, UpdateContentCmd}
+import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateContentFn, UpdateContentCmd}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -26,7 +26,10 @@ object ReqTable {
       .render(_.backend.render)
       .build
 
-  case class Props(cd: ClientData, cp: ClientProtocol, remote: UpdateContentFn.Instance, fd: FilterDead) {
+  case class Props(cd: ClientData, cp: ClientProtocol,
+                   createContentFn: CreateContentFn.Instance,
+                   updateContentFn: UpdateContentFn.Instance,
+                   fd: FilterDead) {
     def component = Component(this)
   }
 
@@ -34,6 +37,7 @@ object ReqTable {
     State(p.cd.project,
       ViewSettings.default.copy(filterDead = p.fd),
       FilterEditor.initialState,
+      CreationInterface.initState,
       Cell.emptyTableState,
       None)
 
@@ -41,6 +45,7 @@ object ReqTable {
   case class State(project     : Project,
                    viewSettings: ViewSettings,
                    filter      : FilterEditor.State,
+                   creation    : CreationInterface.State,
                    cellStates  : Cell.TableState,
                    focus       : Option[Table.Focus]) {
 
@@ -68,6 +73,7 @@ object ReqTable {
 
     val setViewSettings = ReusableFn($).modStateIO.endoCall(_.updateVS)
     val setFocus        = ReusableFn($).modStateIO.endoCall(_.updateFocus)
+    val setCreation     = $ focusStateL State.creation
 
     val project      = Px.thunkM($.state.project)
     val viewSettings = Px.thunkM($.state.viewSettings)
@@ -85,11 +91,22 @@ object ReqTable {
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
-    val modTable: Cell.ModTable = ReusableFn($).modStateIO.endoCall2(_.updateCell)
+    val modTable: Cell.ModTable = ReusableFn(loc => s => $.modStateIO(_.updateCell(loc, s)))
+    // TODO OMG THE COPY-AND-PASTE!
+    // TODO Too much repetition of (? => Events) calls
+    val createIO: (CreateContentCmd, TIO.Success, String => TIO.Failure) => IO[Unit] = (i, sio, fio) => {
+      val p = $.props
+      import p._
+      val io = cp.call(createContentFn)(i,
+        sio << cd.applyEvents(_),
+        f => cp.consumeGenericFailure(f) >> fio(cp.genericFailureToText(f)))
+      //IO(println(s"Fake-sending: $i")) >> io
+      io
+    }
     val saveIO: (UpdateContentCmd, TIO.Success, TIO.Failure) => IO[Unit] = (i, sio, fio) => {
       val p = $.props
       import p._
-      val io = cp.call(remote)(i,
+      val io = cp.call(updateContentFn)(i,
         sio << cd.applyEvents(_),
         cp.consumeGenericFailure(_) >> fio.io)
       //IO(println(s"Fake-sending: $i")) >> io
@@ -104,6 +121,8 @@ object ReqTable {
 
     val filterEditor = filterState.map(ReusableVal renderComponent filterComp)
 
+    val creationInterface = new CreationInterface(setCreation, project, plainText, widgets, textSearch)
+
     def render = {
       import Px.AutoValue._
       Px.refresh(project, viewSettings, filterState)
@@ -111,11 +130,14 @@ object ReqTable {
 
       val vsProps = ViewSettingsEditor.Props(vsVar, filterEditor)
 
+      val creationProps = CreationInterface.Props(createIO, s.creation)
+
       val tableProps = Table.Props(
-        project, rows, colRnds, colEditors, s.cellStates, ReusableVar(s.focus)(setFocus))
+        project, rows, colRnds, colEditors, s.cellStates, setFocus.asVar(s.focus))
 
       <.div(
         vsEditor(vsProps),
+        creationInterface.Component(creationProps),
         StatsSummary(stats),
         Table.Component(tableProps))
     }
