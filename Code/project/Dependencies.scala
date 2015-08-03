@@ -83,7 +83,7 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "2.4.2")
+    private val mm = MultiModule.scala("org.specs2", "2.4.17")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
