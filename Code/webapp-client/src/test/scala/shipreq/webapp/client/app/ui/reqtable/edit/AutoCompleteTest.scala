@@ -13,7 +13,7 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple.tuple2Equal
 import scalaz.std.vector.vectorEqual
 import org.scalajs.dom.document
-import org.scalajs.dom.raw.HTMLTextAreaElement
+import org.scalajs.dom.raw.{HTMLTextAreaElement, HTMLUListElement}
 import utest._
 
 import shipreq.base.util.MTrie.Ops
@@ -67,7 +67,15 @@ object AutoCompleteTest extends TestSuite {
     def $ = Dynamic.global.$(editor.getDOMNode())
   }
 
+  def allTextCompleteULs =
+    Sizzle("ul.textcomplete-dropdown").map(_.asInstanceOf[HTMLUListElement])
+
   def suggest(text: String)(implicit ctx: TestCtx): Unit = {
+    // Hide prev dropdowns so they don't confuse expected results
+    val uls = allTextCompleteULs
+    if (uls.length > 1)
+      uls.dropRight(1).foreach(_.style.display = "none")
+
     ctx.editor.setState(text.replace("|", ""))
     val n = ctx.editor.getDOMNode()
     var p = text.indexOf('|')
@@ -79,7 +87,11 @@ object AutoCompleteTest extends TestSuite {
 
   def suggestions(implicit ctx: TestCtx): Vector[String] = {
     // println(Sizzle(".textcomplete-item").headOption.fold("NADA!")(_.outerHTML))
-    Sizzle(".textcomplete-item a " + ctx.acDomSel).map(_.textContent).toVector
+    allTextCompleteULs
+      .filterNot(_.style.display == "none")
+      .lastOption
+      .map(ul => Sizzle(".textcomplete-item a " + ctx.acDomSel, ul).map(_.textContent).toVector)
+      .getOrElse(Vector.empty)
   }
 
   def quote(s: String) = s""""${s.replace("\n", "\\n")}""""
@@ -169,7 +181,6 @@ object AutoCompleteTest extends TestSuite {
 
     'issue {
       implicit val ctx = TestCtx(cIssuesC)
-      test("#xxxxxxx")() // Clear previous
 
       'start {
         test("#T")("TBD", "TO"+"DO")
@@ -187,7 +198,6 @@ object AutoCompleteTest extends TestSuite {
 
     'tagC {
       implicit val ctx = TestCtx(cTagsC)
-      test("#xxxxxxx")() // Clear previous
 
       'start {
         test("#pri")("pri=high", "pri=low", "pri=med")
@@ -205,7 +215,6 @@ object AutoCompleteTest extends TestSuite {
 
     'tagP {
       implicit val ctx = TestCtx(cTagsP)
-      test("xxxxxxx")() // Clear previous
 
       'start {
         test("pri")("pri=high", "pri=low", "pri=med")

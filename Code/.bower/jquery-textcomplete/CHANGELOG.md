@@ -1,5 +1,35 @@
 # Changelog
 
+## `master`
+- [#179] Add support for a "no results" message like the header/footer. (thanks for [@wbinnssmith](https://github.com/wbinnssmith))
+- [#177] Yield the search term to the template function. (thanks for [@wbinnssmith](https://github.com/wbinnssmith))
+- Stop sharing a dropdown element.
+- [#167] Add amd wrapper. (thanks for [@Mavrin](https://github.com/Mavrin))
+- [#163] Added touch devices support. (thanks for [@corvis](https://github.com/corvis))
+
+## `v0.6.1` - Jun 30, 2015.
+- Fix bug that Dropdown.\_fitToBottom does not consider window scroll
+
+## `v0.6.0` - Jun 30, 2015.
+- Now dropdown elements have "textcomplete-dropdown" class.
+
+## `v0.5.2` - Jun 29, 2015.
+
+- [#172] Keep dropdown list in browser window. (thanks for [@kambayashia](https://github.com/kambayashia))
+
+## `v0.5.1` - Jun 8, 2015.
+
+- Now a replace function is invoked with a user event.
+
+## `v0.5.0` - Jun 8, 2015.
+
+- Support `onKeydown` option.
+
+## `v0.4.0` - Mar 10, 2015.
+
+- Publish to [npmjs](https://www.npmjs.com/package/jquery-textcomplete).
+- Support giving a function which returns a regexp to `match` option for dynamic matching.
+
 ## `v0.3.9` - Mar 3, 2015.
 
 - [#155] Deactivate dropdown on escape. (thanks for [@EnTeQuAk](https://github.com/EnTeQuAk))

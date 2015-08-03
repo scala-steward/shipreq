@@ -34,12 +34,12 @@ object AutoComplete {
                     replacementEnd: String): Contextualise => Strategy.B3[A] = {
 
       case Contextualise =>
-        Strategy(s"$prefixRegex$mainRegex$suffixRegex?$$", index = 1)
+        Strategy.pattern(s"$prefixRegex$mainRegex$suffixRegex?$$", index = 1)
           .search(searchFn)
           .replace(s => applyContext(replacementA(s)) + replacementEnd)
 
       case Plain =>
-        Strategy(s"(^|\\s)$prefixRegex?$mainRegex$suffixRegex?$$", index = 2)
+        Strategy.pattern(s"(^|\\s)$prefixRegex?$mainRegex$suffixRegex?$$", index = 2)
           .search(searchFn)
           .replace(s => "$1" + replacementA(s) + replacementEnd)
     }
@@ -121,7 +121,7 @@ object AutoComplete {
       ))
 
     reflinkContext.strategy(s"(\\S+?)", searchFn)(_.pubidStr, " ")(Contextualise)
-      .template(i => React.renderToStaticMarkup(li(i)))
+      .template((i, _) => React.renderToStaticMarkup(li(i)))
   }
 
   final class ReqItem(val req: Req, val reqType: ReqType, val title: String) {
@@ -184,7 +184,7 @@ object AutoComplete {
           (r._1.map(_.value) :+ r._2).mkString(G.nodeSeparator.toString)
   
         reflinkContext.strategy(mainRegex, searchFn)(replace, "")(contextualise)
-          .template(_._2)
+          .template((v, _) => v._2)
       }
   
       // Example: .xyz
@@ -282,7 +282,7 @@ object AutoComplete {
       }
 
       reflinkContext.strategy(mainRegex, searchFn)(_._1, " ")(Contextualise)
-        .template(i => React.renderToStaticMarkup(li(i)))
+        .template((i, _) => React.renderToStaticMarkup(li(i)))
     }
 
   }
@@ -293,7 +293,7 @@ object AutoComplete {
   private def htmllike = Stream("math")
 
   def math: Strategy =
-    Strategy("""(^|\s)<([a-z]+)$""", index = 2)
+    Strategy.pattern("""(^|\s)<([a-z]+)$""", index = 2)
     .search(term => htmllike.filter(_ startsWith term))
     .replace2(tag => (s"$$1<$tag>", s"</$tag>"))
 }

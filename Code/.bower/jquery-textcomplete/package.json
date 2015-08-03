@@ -1,12 +1,17 @@
 {
   "author": "Yuku Takahashi <taka84u9@gmail.com>",
   "name": "jquery-textcomplete",
-  "version": "0.3.9",
+  "main": "dist/jquery.textcomplete",
+  "version": "0.7.0",
   "homepage": "http://yuku-t.com/jquery-textcomplete",
   "repository": {
     "type": "git",
     "url": "git://github.com/yuku-t/jquery-textcomplete.git"
   },
+  "keywords": [
+    "jquery-plugin",
+    "zepto-plugin"
+  ],
   "bugs": {
     "url": "https://github.com/yuku-t/jquery-textcompelte/issues"
   },

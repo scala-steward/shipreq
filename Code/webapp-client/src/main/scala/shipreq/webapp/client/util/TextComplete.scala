@@ -10,23 +10,24 @@ object TextComplete {
   final val eventShow   = "textComplete:show"
   final val eventHide   = "textComplete:hide"
 
-  type Matcher = RegExp
+  type MatchType = RegExp // TODO | JFn1[String, RegExp]
+  type MatchFn = JFn1[String, RegExp]
   sealed trait SearchFn[A] extends JAny
-  type ReplaceFn[A] = JFn1[A, JAny]
+  type ReplaceFn[A] = JFn2[A, Event, JAny]
 
   /**
    * @tparam A The type of data returned by the `search` function.
    */
   sealed trait StrategyA[A] extends Object {
-    var `match`: RegExp       = native
+    var `match`: MatchType    = native
     var search : SearchFn[A]  = native
     var replace: ReplaceFn[A] = native
 
-    var index     : UndefOr[Int]             = native
-    var template  : UndefOr[JFn1[A, String]] = native
-    var cache     : UndefOr[Boolean]         = native
-    var context   : UndefOr[JFn1[A, JAny]]   = native // returns bool | string | regex | () → regex
-    var idProperty: UndefOr[String]          = native
+    var index     : UndefOr[Int]                     = native
+    var template  : UndefOr[JFn2[A, String, String]] = native
+    var cache     : UndefOr[Boolean]                 = native
+    var context   : UndefOr[JFn1[A, JAny]]           = native // returns bool | string | regex | () → regex
+    var idProperty: UndefOr[String]                  = native
   }
 
   sealed trait Callback[A] extends JAny {
@@ -55,15 +56,15 @@ object TextComplete {
   def search3[A](f: (String, Callback[A], JArray[String]) => Unit): SearchFn[A] =
     (f: JFn3[String, Callback[A], JArray[String], Unit]).asInstanceOf[SearchFn[A]]
 
-  def replace1[A](f: A => String): ReplaceFn[A] =
-    (f: JFn1[A, String]).asInstanceOf[ReplaceFn[A]]
+  def replace1[A](f: (A, Event) => String): ReplaceFn[A] =
+    (f: JFn2[A, Event, String]).asInstanceOf[ReplaceFn[A]]
 
-  def replace2[A](f: A => (String, String)): ReplaceFn[A] = {
-    val f2 = (a: A) => {
-      val r = f(a)
+  def replace2[A](f: (A, Event) => (String, String)): ReplaceFn[A] = {
+    val f2 = (a: A, e: Event) => {
+      val r = f(a, e)
       JArray(r._1, r._2)
     }
-    (f2: JFn1[A, JArray[String]]).asInstanceOf[ReplaceFn[A]]
+    (f2: JFn2[A, Event, JArray[String]]).asInstanceOf[ReplaceFn[A]]
   }
 
   object Strategy {
@@ -74,14 +75,17 @@ object TextComplete {
       }
     }
 
-    @inline def apply(pattern: String, flags: String = "", index: UndefOr[Int] = undefined): B1 =
-      apply(new RegExp(pattern, flags), index)
+    def pattern(pattern: String, flags: String = "", index: UndefOr[Int] = undefined): B1 =
+      regexp(new RegExp(pattern, flags), index)
 
-    @inline def apply(r: RegExp): B1 =
-      apply(r, undefined)
+    def regexp(r: RegExp, index: UndefOr[Int] = undefined): B1 = {
+      val d = Dictionary.empty[JAny].updated("match", r: MatchType)
+      index.foreach(d.update("index", _))
+      new B1(d)
+    }
 
-    def apply(r: RegExp, index: UndefOr[Int]): B1 = {
-      val d = Dictionary.empty[JAny].updated("match", r)
+    def apply(f: String => RegExp, index: UndefOr[Int] = undefined): B1 = {
+      val d = Dictionary.empty[JAny].updated("match", f: MatchFn)
       index.foreach(d.update("index", _))
       new B1(d)
     }
@@ -94,9 +98,11 @@ object TextComplete {
     }
 
     final class B2[A](val o: Dictionary[JAny]) extends AnyVal {
-      def apply  (f: ReplaceFn[A])          : B3[A] = new B3(o.updated("replace", f))
-      def replace(f: A => String)           : B3[A] = apply(TextComplete replace1 f)
-      def replace2(f: A => (String, String)): B3[A] = apply(TextComplete replace2 f)
+      def apply    (f: ReplaceFn[A])                  : B3[A] = new B3(o.updated("replace", f))
+      def replace  (f: A => String)                   : B3[A] = replaceE((a, _) => f(a))
+      def replaceE (f: (A, Event) => String)          : B3[A] = apply(TextComplete replace1 f)
+      def replace2 (f: A => (String, String))         : B3[A] = replaceE2((a, _) => f(a))
+      def replaceE2(f: (A, Event) => (String, String)): B3[A] = apply(TextComplete replace2 f)
     }
 
     final class B3[A](val o: Dictionary[JAny]) extends AnyVal {
@@ -105,13 +111,13 @@ object TextComplete {
         this
       }
 
-      def index     (i: Int         ): B3[A] = update("index",      i)
-      def cache     (i: Boolean     ): B3[A] = update("cache",      i)
-      def template  (i: A => String ): B3[A] = update("template",   i: JFn1[A, String])
-      def contextB  (i: A => Boolean): B3[A] = update("context",    i: JFn1[A, Boolean])
-      def contextS  (i: A => String ): B3[A] = update("context",    i: JFn1[A, String])
-      def contextR  (i: A => RegExp ): B3[A] = update("context",    i: JFn1[A, RegExp])
-      def idProperty(i: String      ): B3[A] = update("idProperty", i)
+      def index     (i: Int                  ): B3[A] = update("index",      i)
+      def cache     (i: Boolean              ): B3[A] = update("cache",      i)
+      def template  (i: (A, String) => String): B3[A] = update("template",   i: JFn2[A, String, String])
+      def contextB  (i: A => Boolean         ): B3[A] = update("context",    i: JFn1[A, Boolean])
+      def contextS  (i: A => String          ): B3[A] = update("context",    i: JFn1[A, String])
+      def contextR  (i: A => RegExp          ): B3[A] = update("context",    i: JFn1[A, RegExp])
+      def idProperty(i: String               ): B3[A] = update("idProperty", i)
 
       @inline def result: StrategyA[A] =
         o.asInstanceOf[StrategyA[A]]

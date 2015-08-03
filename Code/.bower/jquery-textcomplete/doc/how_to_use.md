@@ -31,7 +31,7 @@ The `strategy` is an Object which MUST have `match`, `search` and `replace` and 
 ```js
 var strategy = {
   // Required
-  match:      matchRegExp,
+  match:      matchRegExpOrFunc,
   search:     searchFunc,
   replace:    replaceFunc,
 
@@ -44,15 +44,16 @@ var strategy = {
 }
 ```
 
-The `matchRegExp`, `indexNumber` and `contextFunc` MUST be a RegExp, a Number and a Function respectively.
+The `matchRegExpOrFunc` MUST be a RegExp or a Function which returns a RegExp.
+And `indexNumber` and `contextFunc` MUST be a Number and a Function respectively.
 
-`contextFunc` is called with the current value of the target textarea and it works as a preprocessor. When it returns `false`, the strategy is skipped. When it returns a String, `matchRegExp` tests the returned string.
+`contextFunc` is called with the current value of the target textarea and it works as a preprocessor. When it returns `false`, the strategy is skipped. When it returns a String, `matchRegExpOrFunc` tests the returned string.
 
-`matchRegExp` MUST contain capturing groups and SHOULD end with `$`. The word captured by `indexNumber`-th group is going to be the `term` argument of `searchFunc`. `indexNumber` defaults to 2.
+`matchRegExpOrFunc` MUST contain capturing groups and SHOULD end with `$`. The word captured by `indexNumber`-th group is going to be the `term` argument of `searchFunc`. `indexNumber` defaults to 2.
 
 ```js
 // Detect the word starting with '@' as a query term.
-var matchRegExp = /(^|\s)@(\w*)$/;
+var matchRegExpOrFunc = /(^|\s)@(\w*)$/;
 var indexNumber = 2;
 // Normalizing the input text.
 var contextFunc = function (text) { return text.toLowerCase(); };
@@ -84,7 +85,7 @@ var searchFunc = function (term, callback, match) {
 The `templateFunc` MUST be a Function which returns a string. The function is going to be called as an iteretor for the array given to the `callback` of `searchFunc`. You can change the style of each dropdown item.
 
 ```js
-var templateFunc = function (value) {
+var templateFunc = function (value, term) {
   // `value` is an element of array callbacked by searchFunc.
   return '<b>' + value + '</b>';
 };
@@ -92,16 +93,16 @@ var templateFunc = function (value) {
 //   templateFunc = function (value) { return value; };
 ```
 
-The `replaceFunc` MUST be a Function which returns a String or an Array of two Strings. It is going to be invoked when a user will click and select an item of autocomplete dropdown.
+The `replaceFunc` MUST be a Function which returns a String or an Array of two Strings. It is invoked when a user will click and select an item of autocomplete dropdown.
 
 ```js
-var replaceFunc = function (value) { return '$1@' + value + ' '; };
+var replaceFunc = function (value, event) { return '$1@' + value + ' '; };
 ```
 
-The result is going to be used to replace the value of textarea using `String.prototype.replace` with `matchRegExp`:
+The result is going to be used to replace the value of textarea using `String.prototype.replace` with `matchRegExpOrFunc`:
 
 ```js
-textarea.value = textarea.value.replace(matchRegExp, replaceFunc(value));
+textarea.value = textarea.value.replace(matchRegExpOrFunc, replaceFunc(value, event));
 ```
 
 Suppose you want to do autocomplete for HTML elements, you may want to reposition the cursor in the middle of elements after the autocomplete. In this case, you can do that by making `replaceFunc` return an Array of two Strings. Then the cursor points between these two strings.
@@ -112,7 +113,7 @@ var replaceFunc = function (value) {
 };
 ```
 
-The `option` is an optional Object which MAY have `appendTo`, `height` , `maxCount`, `placement`, `header`, `footer`, `zIndex` and `debounce`. If `appendTo` is given, the element of dropdown is appended into the specified element. If `height` is given, the dropdown element's height will be fixed.
+The `option` is an optional Object which MAY have `appendTo`, `height` , `maxCount`, `placement`, `header`, `footer`, `zIndex`, `debounce` and `onKeydown`. If `appendTo` is given, the element of dropdown is appended into the specified element. If `height` is given, the dropdown element's height will be fixed.
 
 ```js
 var option = {
@@ -125,7 +126,9 @@ var option = {
   zIndex:    zIndexStr,       // '100'
   debounce:  debounceNumber,  // undefined
   adapter:   adapterClass,    // undefined
-  className: classNameStr     // ''
+  className: classNameStr,    // ''
+  onKeydown: onKeydownFunc,   // undefined
+  noResultMessage: noResultMessageStrOrFunc  // undefined
 };
 ```
 
@@ -134,6 +137,21 @@ The `maxCountNumber` MUST be a Number and default to 10. Even if `searchFunc` ca
 If `placementStr` includes 'top', it positions the drop-down to above the caret. If `placementStr` includes 'absleft' and 'absright', it positions the drop-down absolutely to the very left and right respectively. You can mix them.
 
 You can override the z-index property and the class attribute of dropdown element using `zIndex` and `className` option respectively.
+
+If you want to add some additional keyboard shortcut, set a function to `onKeydown` option. The function will be called with two arguments, the keydown event and commands hash.
+
+```js
+var onKeydownFunc = function (e, commands) {
+  // `commands` has `KEY_UP`, `KEY_DOWN`, `KEY_ENTER`, `KEY_PAGEUP`, `KEY_PAGEDOWN`,
+  // `KEY_ESCAPE` and `SKIP_DEFAULT`.
+  if (e.ctrlKey && e.keyCode === 74) {
+    // Treat CTRL-J as enter key.
+    return commands.KEY_ENTER;
+  }
+  // If the function does not return a result or undefined is returned,
+  // the plugin uses default behavior.
+};
+```
 
 Textcomplete debounces `debounceNumber` milliseconds, so `searchFunc` is not called until user stops typing.
 

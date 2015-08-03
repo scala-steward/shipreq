@@ -48,12 +48,12 @@ object FilterEditor {
 
 
   private val acCommand =
-    TC.Strategy("""(^|[^\w:])([a-z]+)$""", index = 2)
+    TC.Strategy.pattern("""(^|[^\w:])([a-z]+)$""", index = 2)
       .search(TC caseInsensitiveStartsWith Stream("has", "no", "implies", "impliedBy"))
       .replace("$1" + _ + ":")
 
   private val acPresenceLackAttr =
-    TC.Strategy("""\b((?:has|no):)([a-z]*)$""", index = 2)
+    TC.Strategy.pattern("""\b((?:has|no):)([a-z]*)$""", index = 2)
       .search(TC caseInsensitiveStartsWith FilterAst.Attr.values.toStream.map(_.name))
       .replace("$1" + _ + " ")
 

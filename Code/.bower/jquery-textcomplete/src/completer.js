@@ -61,6 +61,10 @@
     return Object.prototype.toString.call(obj) === '[object String]';
   };
 
+  var isFunction = function (obj) {
+    return Object.prototype.toString.call(obj) === '[object Function]';
+  };
+
   var uniqueId = 0;
 
   function Completer(element, option) {
@@ -170,8 +174,9 @@
     //
     // value    - The selected element of the array callbacked from search func.
     // strategy - The Strategy object.
-    select: function (value, strategy) {
-      this.adapter.select(value, strategy);
+    // e        - Click or keydown event object.
+    select: function (value, strategy, e) {
+      this.adapter.select(value, strategy, e);
       this.fire('change').fire('textComplete:select', value, strategy);
       this.adapter.focus();
     },
@@ -194,8 +199,9 @@
         var strategy = this.strategies[i];
         var context = strategy.context(text);
         if (context || context === '') {
+          var matchRegexp = isFunction(strategy.match) ? strategy.match(text) : strategy.match;
           if (isString(context)) { text = context; }
-          var match = text.match(strategy.match);
+          var match = text.match(matchRegexp);
           if (match) { return [strategy, match[strategy.index], match]; }
         }
       }
@@ -208,14 +214,14 @@
       strategy.search(term, function (data, stillSearching) {
         if (!self.dropdown.shown) {
           self.dropdown.activate();
-          self.dropdown.setPosition(self.adapter.getCaretPosition());
         }
         if (self._clearAtNext) {
           // The first callback in the current lock.
           self.dropdown.clear();
           self._clearAtNext = false;
         }
-        self.dropdown.render(self._zip(data, strategy));
+        self.dropdown.setPosition(self.adapter.getCaretPosition());
+        self.dropdown.render(self._zip(data, strategy, term));
         if (!stillSearching) {
           // The last callback in the current lock.
           free();
@@ -230,9 +236,9 @@
     //
     //  this._zip(['a', 'b'], 's');
     //  //=> [{ value: 'a', strategy: 's' }, { value: 'b', strategy: 's' }]
-    _zip: function (data, strategy) {
+    _zip: function (data, strategy, term) {
       return $.map(data, function (value) {
-        return { value: value, strategy: strategy };
+        return { value: value, strategy: strategy, term: term };
       });
     }
   });
