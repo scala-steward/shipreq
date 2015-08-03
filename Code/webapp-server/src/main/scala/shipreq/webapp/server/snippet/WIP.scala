@@ -210,15 +210,12 @@ class WIP {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
+  val createProjectContent =
+    ServerProtocol.remoteFn(CreateContentFn)(input =>
+      updateProject(MakeEvent.createContent(input, _)))
+
   val updateProjectContent =
     ServerProtocol.remoteFn(UpdateContentFn){ i =>
-      println(s"RECEIVED: $i")
-      delay()
-      Vector.empty: VerifiedEvents
-    }
-
-  val createProjectContent =
-    ServerProtocol.remoteFn(CreateContentFn){ i =>
       println(s"RECEIVED: $i")
       delay()
       Vector.empty: VerifiedEvents

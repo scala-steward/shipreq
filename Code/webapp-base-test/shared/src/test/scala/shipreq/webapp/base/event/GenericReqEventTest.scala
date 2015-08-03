@@ -342,7 +342,6 @@ object GenericReqEventTest extends TestSuite {
         test(DeleteReqCodeGroup(3))("a.x: RG[#3]")
 
         // 1.4: Restore RCG
-        // TODO hmmm: when creating the event, it will need to check to reuse the existing id
         test(createRCG(3, "a.x"))("a.x: AD[#3Grp]")
 
         // 1.5: Delete RCG
@@ -356,7 +355,6 @@ object GenericReqEventTest extends TestSuite {
         test(patchA(remove = Set(4), add = Set(4 -> "y")))("y: AD[#4Req(#a)]", "a.x: RG[#3]")
 
         // 1.8: Restore RCG
-        // TODO hmmm: when creating the event, it will need to check to reuse the existing id
         test(createRCG(3, "a.x"))("y: AD[#4Req(#a)]", "a.x: AD[#3Grp]")
       }
 

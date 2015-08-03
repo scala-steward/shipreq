@@ -234,4 +234,37 @@ object MakeEvent {
     }
   }
 
+  def createContent(cmd: CreateContentCmd, project: Project): Result = {
+    val nextCodeId: () => ReqCodeId = {
+      var i = project.idCeilings.reqCode
+      () => {
+        i += 1
+        ReqCodeId(i)
+      }
+    }
+
+    cmd match {
+      case CreateContentCmd.CreateReqCodeGroup(code, title) =>
+        def makeEvent(id: ReqCodeId) =
+          MadeEvent(CreateReqCodeGroup(id, gdAllValues(ReqCodeGroupGD, "")))
+        project.reqCodes.apply(code) match {
+          case Some(d) if d.active.isDefined     => Failed("Code in use.")
+          case Some(d) if d.refsToGroup.nonEmpty => makeEvent(d.refsToGroup.min)
+          case _                                 => makeEvent(nextCodeId())
+        }
+
+      case i: CreateContentCmd.CreateGenericReq =>
+        var vs = CreateGenericReqGD.emptyValues
+        for (v <- NonEmptyVector.option(i.title)) vs += CreateGenericReqGD.Title(v)
+        for (v <- NonEmptySet.option(i.tags))     vs += CreateGenericReqGD.Tags(v)
+        for (v <- NonEmptySet.option(i.impSrcs))  vs += CreateGenericReqGD.ImpSrcs(v)
+        for (cs <- NonEmptySet.option(i.reqCodes)) {
+          // If a code is in use, ApplyEvent will catch it
+          val v = cs.map(c => ReqCode.IdAndValue(nextCodeId(), c))
+          vs += CreateGenericReqGD.ReqCodes(v)
+        }
+        val id = GenericReqId(project.idCeilings.req + 1)
+        CreateGenericReq(id, i.rt, vs)
+    }
+  }
 }

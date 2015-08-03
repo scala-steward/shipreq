@@ -332,10 +332,12 @@ object ShipReq extends Build {
         b
       })
 
-    def testSettings = (_: Project).settings(
-      // Put webapp on test classpath so templates load
-      unmanagedResourceDirectories in Test += baseDirectory.value / "src/main/webapp",
-      parallelExecution in Test := false)
+    def testSettings = (_: Project)
+      .dependsOn(webappBaseTestJvm % "test->compile")
+      .settings(
+        // Put webapp on test classpath so templates load
+        unmanagedResourceDirectories in Test += baseDirectory.value / "src/main/webapp",
+        parallelExecution in Test := false)
 
     lazy val IntegrationTest = config("it") extend Test
     def integrationTestSettings = (_: Project)
@@ -354,7 +356,7 @@ object ShipReq extends Build {
         //.dependsOn(baseUtilJvm, taskmanApiLogic, taskmanApiImpl) // Stupid IDEA auto-import needs this
         .deps(
           Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
-          testScope(scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
+          testScope(μTest ++ scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
           depScope("it")(selenium) ++
           (jetty % "container,test") ++ (servlet % "container,test,provided")
         )
