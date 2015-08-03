@@ -67,8 +67,9 @@ class CreationInterface($             : CompStateFocus[State],
     project.map { p =>
       val blank = Choice[SelType](None, "", Enabled)
       val rcg   = Choice[SelType](Some(ReqCodeGroupType), UiText.reqCodeGroup, Enabled)
-      val rts   = p.config.liveCustomReqTypes.map(rt =>
-                    Choice[SelType](Some(GenericReqType(rt.id)), rt.fullName, Enabled))
+      val rts   = p.config.liveCustomReqTypes
+                    .map(rt => Choice[SelType](Some(GenericReqType(rt.id)), rt.fullName, Enabled))
+                    .sortBy(_.label)
       (NonEmptyVector(blank) :+ rcg) ++ rts
     }
 
