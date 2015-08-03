@@ -9,7 +9,7 @@ import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateCo
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.client.app.state.ClientData
+import shipreq.webapp.client.app.state.{Changes, ChangeListener, ClientData}
 import shipreq.webapp.client.app.ui.ProjectWidgets
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
@@ -24,6 +24,7 @@ object ReqTable {
       .getInitialState(initialState)
       .backend(new Backend(_))
       .render(_.backend.render)
+      .configure(ChangeListener.update[State](c => _.recvChanges(c)).install(_.cd))
       .build
 
   case class Props(cd: ClientData, cp: ClientProtocol,
@@ -49,6 +50,9 @@ object ReqTable {
                    cellStates  : Cell.TableState,
                    focus       : Option[Table.Focus]) {
 
+    def recvChanges(changes: Changes): State =
+      copy(project = changes.p2) // TODO This obviously affects other things
+
     def updateVS(newVS: ViewSettings): State = {
       val newFocus   = focus // TODO
       copy(viewSettings = newVS, focus = newFocus)
@@ -69,7 +73,7 @@ object ReqTable {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final class Backend($: BackendScope[Props, State]) {
+  final class Backend($: BackendScope[Props, State]) extends OnUnmount {
 
     val setViewSettings = ReusableFn($).modStateIO.endoCall(_.updateVS)
     val setFocus        = ReusableFn($).modStateIO.endoCall(_.updateFocus)

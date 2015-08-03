@@ -13,6 +13,8 @@ object ChangeListener {
         $.modState(h(changes)))
   }
 
+  @inline def update[S](h: Changes => S => S) = new Updater(h)
+
   def store[S, Id, Data](store: SavedRowStore[S, Id, Data, _])(ids: Changes => Set[Id], get: Project => Id => Option[Data]): Updater[S] =
     oneByOne(ids, get)((s, i) => store.remove(i)(s), (s, i, d) => store.set(i, d)(s))
 
