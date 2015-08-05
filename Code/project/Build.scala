@@ -184,7 +184,7 @@ object ShipReq extends Build {
   lazy val webappMacros =
     crossProject("webapp-macros")
       .configureBoth(webappSettings)
-      .configureJs(Common.jsSettings)
+      .configureJs(Common.jsSettings, Common.noJsTests)
       .dependsOn(baseUtil)
       .depsForBoth(
         μPickle ++ boopickle ++ Monocle.core ++
@@ -202,7 +202,7 @@ object ShipReq extends Build {
   lazy val webappBase =
     crossProject("webapp-base")
       .configureBoth(webappSettings)
-      .configureJs(Common.jsSettings)
+      .configureJs(Common.jsSettings, Common.noJsTests)
       .depsForBoth(
         μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.core ++ parboiled ++ boopickle ++
         testScope(μTest) // TODO Move tests into this

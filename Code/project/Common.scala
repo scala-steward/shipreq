@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import java.nio.file.{Files, Path}
 import org.scalajs.sbtplugin.cross.CrossProject
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import com.timushev.sbt.updates.UpdatesKeys._
 import DependencyLib.{Dep, HasJs, HasJvm, HasBoth, JVM, JS, ModDepScope}
 
@@ -139,6 +140,16 @@ object Common {
       ))
     )
   }
+
+  /**
+   * Prevent modules without any tests creating a test-fastops,js.
+   *
+   * Might not be needed after Scala.JS 0.6.5 is out.
+   */
+  def noJsTests: Project => Project =
+    _.settings(
+      scalaJSStage in Test := PreLinkStage,
+      test := ())
 
   // ===================================================================================================================
   object Values {
