@@ -65,6 +65,7 @@ case class DeleteCustomReqType(id: CustomReqTypeId, da: DeletionAction)         
 // Config: Tags
 
 // TODO Should there be a RepositionTag event?
+case class DeleteTag(id: TagId, da: DeletionAction) extends ActiveEvent
 
 @CreateGenericData
 object TagGroupGD extends GenericData {
@@ -77,7 +78,6 @@ object TagGroupGD extends GenericData {
 
 case class CreateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
 case class UpdateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-case class DeleteTagGroup(id: TagGroupId, da: DeletionAction)            extends ActiveEvent
 
 @CreateGenericData
 object ApplicableTagGD extends GenericData {
@@ -90,7 +90,6 @@ object ApplicableTagGD extends GenericData {
 
 case class CreateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
 case class UpdateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-case class DeleteApplicableTag(id: ApplicableTagId, da: DeletionAction)                 extends ActiveEvent
 
 // =====================================================================================================================
 // Config: Fields
