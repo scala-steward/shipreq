@@ -304,9 +304,9 @@ object GenericDataMacroImpls {
       import _root_.shipreq.webapp.base.protocol.BoopickleMacros._
       import $d._
       ..${flattenBlocks(c)(init.toList)}
-      implicit val value: Pickler[Value] = pickleADT
-      implicit val values: Pickler[Values] = pickleIMap(emptyValues)
-      implicit val nev: Pickler[NonEmptyValues] = pickleNonEmpty(values, implicitly)
+      implicit val value : Pickler[Value]          = pickleADT
+      implicit val values: Pickler[Values]         = pickleIMap(emptyValues)
+      implicit val nev   : Pickler[NonEmptyValues] = pickleNonEmptyA(values, implicitly)
       ValueTypeClasses(value, values, nev)
     } """
 

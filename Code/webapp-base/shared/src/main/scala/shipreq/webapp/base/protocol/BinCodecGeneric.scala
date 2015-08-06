@@ -49,14 +49,17 @@ object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
   @inline def pickleIMapD[K: UnivEq : Pickler, V: Pickler](implicit d: DataIdAux[V, K]): Pickler[IMap[K, V]] =
     pickleIMap(d.emptyIMap)
 
+  def pickleNonEmpty[N, E](f: N => E)(implicit p: Pickler[E], proof: NonEmpty.Proof[E, N]): Pickler[N] =
+    p.xmap(NonEmpty require_! _)(f)
+
+  implicit def pickleNonEmptyA[A](implicit p: Pickler[A], proof: NonEmpty.ProofA[A]): Pickler[NonEmpty[A]] =
+    pickleNonEmpty(_.value)
+
   implicit def pickleNEV[A](implicit p: Pickler[Vector[A]]): Pickler[NonEmptyVector[A]] =
-    p.xmap(l => NonEmptyVector(l.head, l.tail))(_.whole)
+    pickleNonEmpty(_.whole)
 
   implicit def pickleNES[A: UnivEq](implicit p: Pickler[Set[A]]): Pickler[NonEmptySet[A]] =
-    p.xmap(l => NonEmptySet(l.head, l.tail))(_.whole)
-
-  implicit def pickleNonEmpty[A](implicit a: Pickler[A], proof: NonEmpty.ProofA[A]): Pickler[NonEmpty[A]] =
-    a.xmap(NonEmpty.tryO(_).getOrElse(sys error "Invalid data"))(_.value)
+    pickleNonEmpty(_.whole)
 
   implicit def pickleISubset[A: UnivEq](implicit as: Pickler[NonEmptySet[A]]): Pickler[ISubset[A]] = {
     import ISubset._

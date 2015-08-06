@@ -30,7 +30,7 @@ object MakeEvent {
   }
 
   private def eventIfNonEmpty[A](a: A)(f: NonEmpty[A] => Result)(implicit proof: NonEmpty.ProofA[A]): Result =
-    NonEmpty.tryO(a) match {
+    NonEmpty(a) match {
       case Some(b) => f(b)
       case None    => NoChange
     }

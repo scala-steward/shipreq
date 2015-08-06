@@ -1,39 +1,47 @@
 package shipreq.base.util
 
-import scalaz.{\/, -\/, \/-}
-
 /**
  * Type indicating that its value has been proven to be non-empty.
  */
-case class NonEmpty[A] private[NonEmpty] (value: A) extends AnyVal
+final class NonEmpty[A] private[NonEmpty] (val value: A) extends AnyVal
 
 object NonEmpty {
 
-  @inline implicit def autoNonEmptyValue[A](n: NonEmpty[A]): A = n.value
+  @inline implicit def autoNonEmptyValue[A](n: NonEmpty[A]): A =
+    n.value
 
-  @inline implicit def nonEmptyUnivEq[A: UnivEq]: UnivEq[NonEmpty[A]] = UnivEq.force
+  /*
+   * scala> class X(val i: Int) extends AnyVal
+   * defined class X
+   *
+   * scala> new X(3) == new X(3)
+   * res0: Boolean = true
+   */
+  @inline implicit def nonEmptyUnivEq[A: UnivEq]: UnivEq[NonEmpty[A]] =
+    UnivEq.force
 
-  @inline def force[A](a: A): NonEmpty[A] = NonEmpty(a)
+  @inline def force[A](a: A): NonEmpty[A] =
+    new NonEmpty(a)
 
-  def tryO[I, O](i: I)(implicit proof: Proof[I, O]): Option[NonEmpty[O]] =
-    proof.test(i).map(NonEmpty(_))
+  @inline def apply[I, O](i: I)(implicit proof: Proof[I, O]): Option[O] =
+    proof.tryProve(i)
 
-  def tryD[I, O](i: I)(implicit proof: Proof[I, O]): I \/ NonEmpty[O] =
-    proof.test(i).fold[I \/ NonEmpty[O]](-\/(i))(o => \/-(NonEmpty(o)))
+  @inline def require_![I, O](i: I)(implicit proof: Proof[I, O]): O =
+    NonEmpty(i) getOrElse sys.error(s"Data is empty: $i")
+
+//  def disj[I, O](i: I)(implicit proof: Proof[I, O]): I \/ O =
+//    NonEmpty(i).fold[I \/ O](-\/(i))(\/-.apply)
 
   // -------------------------------------------------------------------------------------------------------------------
   //  Proofs
 
-  case class Proof[I, O](test: I => Option[O]) extends AnyVal
+  case class Proof[I, O](tryProve: I => Option[O]) extends AnyVal
 
-  type ProofA[A] = Proof[A, A]
+  type ProofA[A] = Proof[A, NonEmpty[A]]
 
   object Proof {
-    def testEmptiness[A](f: A => Boolean): Proof[A, A] =
-      Proof(a => if (f(a)) None else Some(a))
-
-    def testNonEmptiness[A](f: A => Boolean): Proof[A, A] =
-      Proof(a => if (f(a)) Some(a) else None)
+    def testEmptinessA[A](isEmpty: A => Boolean): ProofA[A] =
+      Proof(a => if (isEmpty(a)) None else Some(new NonEmpty(a)))
   }
 
   implicit def proveNES[A: UnivEq]: Proof[Set[A], NonEmptySet[A]] =
@@ -43,14 +51,11 @@ object NonEmpty {
     Proof(NonEmptyVector.option[A])
 
   implicit def proveSetDiff[A]: ProofA[SetDiff[A]] =
-    Proof.testEmptiness(_.isEmpty)
-
-//  implicit def proveIMap[M <: IMapBase[K, V, T], K, V, T <: IMapBase[K, V, T]]: ProofA[M] =
-//    Proof.testEmptiness(_.isEmpty)
+    Proof.testEmptinessA(_.isEmpty)
 
   implicit def proveIMap[K, V]: ProofA[IMap[K, V]] =
-    Proof.testEmptiness(_.isEmpty)
+    Proof.testEmptinessA(_.isEmpty)
 
-  implicit def proveMap[M <: Map[K, V], K, V]: ProofA[M] =
-    Proof.testEmptiness(_.isEmpty)
+//  implicit def proveMap[M <: Map[K, V], K, V]: ProofA[M] =
+//    Proof.testEmptinessA(_.isEmpty)
 }
