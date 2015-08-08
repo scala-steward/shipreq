@@ -10,6 +10,8 @@ import shipreq.webapp.server.stress.GenerateUCs
 import shipreq.webapp.server.test.{TestHelpers, TestDB}
 import TestDB.withDbHelpers
 
+// Temporarily disabled to reduce test time.
+/*
 class ParSaveTest extends FunSuite with TestHelpers with DI {
 
   // Number of UC revisions to save
@@ -107,4 +109,4 @@ class ParSaveTest extends FunSuite with TestHelpers with DI {
       })
   }
 }
-
+*/

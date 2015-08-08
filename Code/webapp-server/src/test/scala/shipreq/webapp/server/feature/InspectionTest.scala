@@ -8,6 +8,8 @@ import shipreq.webapp.server.feature.uc.UseCase
 import Inspection._
 import uc.text.FreeTextTerms.MathTexTerm
 
+// Temporarily disabled to reduce test time.
+/*
 class InspectionTest extends FunSuite with TestData {
 
   val imports = "import scalaz.{Name,Need,Value}, shipreq.base.util._, shipreq.webapp.server._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._;"
@@ -31,3 +33,4 @@ class InspectionTest extends FunSuite with TestData {
     x ==== y
   }
 }
+*/

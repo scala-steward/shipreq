@@ -17,6 +17,8 @@ import test.DataGenerators._
 import app.Defaults
 import shipreq.webapp.server.lib.Locks
 
+// Temporarily disabled to reduce test time.
+/*
 class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Checkers {
 
   // Each check pass will run in its own transaction
@@ -191,3 +193,4 @@ class UseCasePersistenceProps extends FunSuite with TestDatabaseSupport with Che
     (aa != bb) :|| s"Use cases should differ.\n$aa"
   }
 }
+*/
