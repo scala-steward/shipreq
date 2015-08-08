@@ -5,9 +5,9 @@ import scala.slick.jdbc.{GetResult, SetParameter, PositionedResult, PositionedPa
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.db.JodaTimeSqlHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
-import lib.Types._
-import feature.UcFilter
-import security.PasswordAndSalt
+import shipreq.webapp.server.lib.Types._
+import shipreq.webapp.server.feature.UcFilter
+import shipreq.webapp.server.security.PasswordAndSalt
 
 object SqlHelpers {
 
@@ -38,20 +38,20 @@ object SqlHelpers {
     def apply(v: FieldKeyType, pp: PositionedParameters): Unit = pp.setShort(v.id)
   }
 
-  implicit val GR_FieldKey = GetResult(r => FieldKeyRec(r.<<, r.<<, r.<<))
-  implicit val GR_PasswordAndSalt = GetResult(r => PasswordAndSalt.restore(r.<<, r.<<))
-  implicit val GR_Project = GetResult(r => Project(r.<<, r.<<, r.<<))
-  implicit val GR_ProjectSummary = GetResult(r => ProjectSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_ResetPasswordInfo = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
-  implicit val GR_Share = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_ShareSummary = GetResult(r => ShareSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_TextRev = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_UcFieldText = GetResult(r => UcFieldText(r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_UcFieldTextWithFK = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
-  implicit val GR_UseCaseIdent = GetResult(r => UseCaseIdent(r.<<, r.<<, r.<<))
-  implicit val GR_UseCaseRev = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<), r.<<))
-  implicit val GR_UseCaseSummary = GetResult(r => UseCaseSummary(r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_UserDescriptor = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
+  implicit val GR_FieldKey             = GetResult(r => FieldKeyRec(r.<<, r.<<, r.<<))
+  implicit val GR_PasswordAndSalt      = GetResult(r => PasswordAndSalt.restore(r.<<, r.<<))
+  implicit val GR_Project              = GetResult(r => Project(r.<<, r.<<, r.<<))
+  implicit val GR_ProjectSummary       = GetResult(r => ProjectSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ResetPasswordInfo    = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
+  implicit val GR_Share                = GetResult(r => Share(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_ShareSummary         = GetResult(r => ShareSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_TextRev              = GetResult(r => TextRev(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_UcFieldText          = GetResult(r => UcFieldText(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_UcFieldTextWithFK    = GetResult(r => UcFieldTextWithFK(r.<<, r.<<))
+  implicit val GR_UseCaseIdent         = GetResult(r => UseCaseIdent(r.<<, r.<<, r.<<))
+  implicit val GR_UseCaseRev           = GetResult(r => UseCaseRev(r.<<, r.<<, r.<<, UseCaseHeader(r.<<), r.<<))
+  implicit val GR_UseCaseSummary       = GetResult(r => UseCaseSummary(r.<<, r.<<, r.<<, r.<<))
+  implicit val GR_UserDescriptor       = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
   implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
