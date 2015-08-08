@@ -7,6 +7,18 @@ import upickle._
 object MPickleMacros {
   def  caseClass[T]: ReadWriter[T] = macro MPickleMacroImpls.quietCaseClass[T]
   def _caseClass[T]: ReadWriter[T] = macro MPickleMacroImpls.debugCaseClass[T]
+
+  /**
+   * ADT to a String and/or Object.
+   */
+  def  pickleAdtOS[T](keys: T => String): ReadWriter[T] = macro MPickleMacroImpls.quietAdtOS[T]
+  def _pickleAdtOS[T](keys: T => String): ReadWriter[T] = macro MPickleMacroImpls.debugAdtOS[T]
+
+  /**
+   * ADT to a Number.
+   */
+  def  pickleAdtN[T](keys: T => Int): ReadWriter[T] = macro MPickleMacroImpls.quietAdtN[T]
+  def _pickleAdtN[T](keys: T => Int): ReadWriter[T] = macro MPickleMacroImpls.debugAdtN[T]
 }
 
 // =====================================================================================================================
@@ -89,6 +101,135 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       }
 
     if (debug) println("\n" + impl + "\n")
+    c.Expr[ReadWriter[T]](impl)
+  }
+
+  def debugAdtOS[T: c.WeakTypeTag](keys: c.Expr[T => String]) = implAdtOS(true )(keys)
+  def quietAdtOS[T: c.WeakTypeTag](keys: c.Expr[T => String]) = implAdtOS(false)(keys)
+  def implAdtOS[T: c.WeakTypeTag](debug: Boolean)(keys: c.Expr[T => String]): c.Expr[ReadWriter[T]] = {
+    if (debug) println(sep)
+
+    val T     = weakTypeOf[T]
+    val types = findConcreteTypesNE(T, LeavesOnly).toVector.map(t => determineAdtType(T, t))
+    if (debug) println("TYPES: " + types)
+
+    val keyCases = readMacroArg_tToLitFn(keys)
+    if (debug) println(s"Keys: $keyCases")
+
+    val init        = Init(importMPickle)
+    var wCases      = Vector.empty[CaseDef]
+    var roCases     = Vector.empty[CaseDef]
+    var rsCases     = Vector.empty[CaseDef]
+    var unseenTypes = types
+
+    for ((te, key) <- keyCases)
+      te match {
+
+        // case Obj => key
+        case Left(s) =>
+          val t = s.tpe
+          val (matchedTypes, remaining) = unseenTypes.partition(_ <:< t)
+          unseenTypes = remaining
+          if (matchedTypes.isEmpty)
+            fail(s"A type you specified doesn't match any cases: $t")
+
+          wCases  :+= cq"$s => Js.Str($key)"
+          rsCases :+= cq"$key => $s"
+
+        // case _: Type => key
+        case Right(t) =>
+          val (matchedTypes, remaining) = unseenTypes.partition(_ <:< t)
+          unseenTypes = remaining
+          if (matchedTypes.isEmpty)
+            fail(s"A type you specified doesn't match any cases: $t")
+
+          if (matchedTypes.length == 1 && primaryConstructorParams(t).isEmpty) {
+            // Zero-arg case class
+            val apply = tcApplyFn(t)
+            val v     = init.valDef(q"$apply(): $t")
+            wCases  :+= cq"_: $t => Js.Str($key)"
+            rsCases :+= cq"$key  => $v"
+
+          } else {
+            // Pickle class
+            val (vr, vw) = summonRW(init, t)
+            wCases  :+= cq"v: $t => Js.Obj(($key, $vw write v))"
+            roCases :+= cq"$key  => $vr read v"
+          }
+      }
+
+    if (unseenTypes.nonEmpty)
+      fail(s"The following types do not have keys: $unseenTypes")
+
+    var rCases = Vector.empty[CaseDef]
+    if (rsCases.nonEmpty)
+      rCases :+= cq"Js.Str(x) => x match {case ..$rsCases}"
+    if (roCases.nonEmpty)
+      rCases :+= cq"Js.Obj(x) => val v = x._2; x._1 match {case ..$roCases}"
+
+    val impl = newReadWriter(init, T)(q"{ case ..$wCases }", q"{ case ..$rCases }")
+
+    if (debug) println("\n" + impl + "\n" + sep)
+
+    c.Expr[ReadWriter[T]](impl)
+  }
+
+  def debugAdtN[T: c.WeakTypeTag](keys: c.Expr[T => Int]) = implAdtN(true )(keys)
+  def quietAdtN[T: c.WeakTypeTag](keys: c.Expr[T => Int]) = implAdtN(false)(keys)
+  def implAdtN[T: c.WeakTypeTag](debug: Boolean)(keys: c.Expr[T => Int]): c.Expr[ReadWriter[T]] = {
+    if (debug) println(sep)
+
+    val T     = weakTypeOf[T]
+    val types = findConcreteTypesNE(T, LeavesOnly).toVector.map(t => determineAdtType(T, t))
+    if (debug) println("TYPES: " + types)
+
+    val keyCases = readMacroArg_tToLitFn(keys)
+    if (debug) println(s"Keys: $keyCases")
+
+    val init        = Init(importMPickle)
+    var wCases      = Vector.empty[CaseDef]
+    var rCases      = Vector.empty[CaseDef]
+    var unseenTypes = types
+
+    for ((te, key) <- keyCases)
+      te match {
+
+        // case Obj => key
+        case Left(s) =>
+          val t = s.tpe
+          val (matchedTypes, remaining) = unseenTypes.partition(_ <:< t)
+          unseenTypes = remaining
+          if (matchedTypes.isEmpty)
+            fail(s"A type you specified doesn't match any cases: $t")
+
+          wCases :+= cq"$s => Js.Num($key)"
+          rCases :+= cq"$key => $s"
+
+        // case _: Type => key
+        case Right(t) =>
+          val (matchedTypes, remaining) = unseenTypes.partition(_ <:< t)
+          unseenTypes = remaining
+          if (matchedTypes.isEmpty)
+            fail(s"A type you specified doesn't match any cases: $t")
+
+          if (matchedTypes.length == 1 && primaryConstructorParams(t).isEmpty) {
+            // Zero-arg case class
+            val apply = tcApplyFn(t)
+            val v     = init.valDef(q"$apply(): $t")
+            wCases  :+= cq"_: $t => Js.Num($key)"
+            rCases  :+= cq"$key  => $v"
+
+          } else
+            fail(s"Invalid type: $t")
+      }
+
+    if (unseenTypes.nonEmpty)
+      fail(s"The following types do not have keys: $unseenTypes")
+
+    val impl = newReadWriter(init, T)(q"{ case ..$wCases }", q"{ case Js.Num(n) => n.toInt match {case ..$rCases}}")
+
+    if (debug) println("\n" + impl + "\n" + sep)
+
     c.Expr[ReadWriter[T]](impl)
   }
 }

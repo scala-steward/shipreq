@@ -193,10 +193,40 @@ abstract class MacroUtils {
   final def lowerCaseHead(s: String): String =
     modStringHead(s, _.toLower)
 
+  final def readMacroArg_boolean(e: c.Expr[Boolean]): Boolean =
+    e match {
+      case Expr(Literal(Constant(b: Boolean))) => b
+      case _ => fail(s"Expected a literal boolean, got: ${showRaw(e)}")
+    }
+
   final def readMacroArg_string(e: c.Expr[String]): String =
     e match {
       case Expr(Literal(Constant(s: String))) => s
       case _ => fail(s"Expected a literal string, got: ${showRaw(e)}")
+    }
+
+  final def readMacroArg_symbol(e: c.Expr[scala.Symbol]): String =
+    e match {
+      case Expr(Apply(_, List(Literal(Constant(n: String))))) => n
+      case _ => fail(s"Expected a symbol, got: ${showRaw(e)}")
+    }
+
+  final def readMacroArg_stringString(e: c.Expr[(String, String)]): (String, Literal) =
+    e match {
+      // "k" -> "v"
+      case Expr(Apply(TypeApply(Select(Apply(_, List(Literal(Constant(k: String)))), mg), _), List(v@Literal(Constant(_: String))))) =>
+        (k, v)
+      case x =>
+        fail(s"""Expected "k" -> "v", got: $x\n${showRaw(x)}""")
+    }
+
+  final def readMacroArg_symbolString(e: c.Expr[(scala.Symbol, String)]): (String, Literal) =
+    e match {
+      // 'k -> "v"
+      case Expr(Apply(TypeApply(Select(Apply(_, List(Apply(_, List(Literal(Constant(k: String)))))), mg), _), List(v@Literal(Constant(_: String))))) =>
+        (k, v)
+      case x =>
+        fail(s"""Expected 'k -> "v", got: $x\n${showRaw(x)}""")
     }
 
   final def readMacroArg_tToLitFn[T, V: scala.reflect.Manifest](e: c.Expr[T => V]): List[(Either[Select, Type], Literal)] =

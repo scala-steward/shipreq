@@ -7,7 +7,7 @@ import shipreq.webapp.base.hash.HashScheme
 @State(Scope.Benchmark)
 class Hashing {
 
-  implicit val projectHash = HashScheme.latest.hashProject
+  implicit val projectHash = HashScheme.latest.value.hashProject
   val p100  = data.project_100
 //  val p1000 = data.project_1000
 

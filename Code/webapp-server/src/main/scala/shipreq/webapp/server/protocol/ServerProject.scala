@@ -12,7 +12,6 @@ object ServerProject { // TODO Move and rename later
   // Alternative hash schemes exist so that Project can evolve without breaking old hashes.
   // New events should NEVER use old hash schemes.
   val hashScheme = HashScheme.latest
-  val hashProject = hashScheme.hashProject
 
   case class State(hash: Int, project: Project)
 
@@ -22,12 +21,12 @@ object ServerProject { // TODO Move and rename later
   case object NoChange                                      extends Result
 
   def initState(p: Project): State =
-    State(hashProject hash p, p)
+    State(hashScheme hash p, p)
 
   def applyEvent(e: Event, state: State): Result =
     ApplyEvent.untrusted.apply1(e)(state.project) match {
       case \/-(p2) =>
-        val h2 = hashProject.hash(p2)
+        val h2 = hashScheme hash p2
         if (h2 == state.hash)
           NoChange
         else {

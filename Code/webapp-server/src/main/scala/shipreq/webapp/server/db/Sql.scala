@@ -7,11 +7,14 @@ import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.db.JodaTimeSqlHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
-import shipreq.webapp.server.db.SqlHelpers._
-import lib.Types._
-import feature.UcFilter
-import security.PasswordAndSalt
+import shipreq.webapp.base.event.ActiveEvent
+import shipreq.webapp.base.hash.ProjectHash
+import shipreq.webapp.server.lib.Types._
+import shipreq.webapp.server.feature.UcFilter
+import shipreq.webapp.server.security.PasswordAndSalt
 import StaticQuery.{query, queryNA, update, updateNA}
+import SqlHelpers._
+import EventSqlHelpers._
 
 /**
  * SQL for all functions exposed in the DAO.
@@ -271,6 +274,21 @@ private[db] object Sql {
   val SummariseShares = query[ProjectId, ShareSummary](
     "SELECT id, url_token, name, uc_filter, view_count, to_iso8601_str(last_viewed_at)" +
       " FROM share WHERE project_id=? ORDER by name")
+
+  // ###################################################################################################################
+  // Events
+
+  import EventDao.EventSeq
+
+  private val eventAEPH = "type_id, data_id_type, data_id, data, hash_scheme, hash".replace(" ","")
+  private val eventAEPH_? = "?,?,?,?,?,?"
+
+  // select coalesce(max(seq)+1,1) from event where project_id=?
+  @Insert val InsertEvent = update[(ProjectId, EventSeq, ActiveEvent, ProjectHash)](
+      s"INSERT INTO event(project_id,seq,$eventAEPH) VALUES(?,?,${eventAEPH_?})")
+
+  val SelectEvent = query[(ProjectId, EventSeq), (ActiveEvent, ProjectHash)](
+    s"SELECT $eventAEPH FROM event WHERE project_id=? AND seq=?")
 }
 
 

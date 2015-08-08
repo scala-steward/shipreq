@@ -91,7 +91,7 @@ object Dependencies {
 
   val boopickle = jvmAndJs("me.chrons",                        "boopickle", "1.1.0")
   val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.2.5")
-  val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-4")
+  val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-5")
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.3.1")
 
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")

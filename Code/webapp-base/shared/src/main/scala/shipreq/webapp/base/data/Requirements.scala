@@ -42,6 +42,20 @@ object ReqCode {
    */
   type Value = NonEmptyVector[Node]
 
+  /** For speed/mem effeciency */
+  def valueToStr(v: Value, sep: Char): String = {
+    val head = v.head.value
+    if (v.tail.isEmpty)
+      head
+    else
+      Util.quickSB(head, sb =>
+        v.tail.foreach { n =>
+          sb append sep
+          sb append n.value
+        }
+      )
+  }
+
   /**
    * Portion of a [[ReqCode]], separated by ".".
    *

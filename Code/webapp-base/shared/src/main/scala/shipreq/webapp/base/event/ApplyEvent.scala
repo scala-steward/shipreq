@@ -40,8 +40,8 @@ class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
       }
 
   def validateHash(p: Project, ve: VerifiedEvent): Result[Project] = {
-    val h2 = ve.hashScheme.hashProject hash p
-    if (ve.hash == h2)
+    val h2 = ve.projectHash.scheme hash p
+    if (ve.projectHash.hash == h2)
       ok(p)
     else
       fail(s"Hash mismatch on $ve. Got $h2.")

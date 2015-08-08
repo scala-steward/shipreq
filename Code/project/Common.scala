@@ -33,6 +33,7 @@ object Common {
     "-unchecked",
     "-deprecation",
     "-target:jvm-" + targetJdk,
+    "-Ypatmat-exhaust-depth", "off",
     //"-Ybackend:GenBCode",
     //"-Ydelambdafy:method",
     // "-Xstrict-inference", // Don't infer known-unsound types

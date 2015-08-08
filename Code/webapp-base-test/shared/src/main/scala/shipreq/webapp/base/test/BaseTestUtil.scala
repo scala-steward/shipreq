@@ -102,7 +102,7 @@ trait BaseTestUtil {
   def _verifyEvent(p: Project, e: Event): (Project, VerifiedEvent) = {
     val p2 = ApplyEvent.untrusted.apply1(e)(p).fold(sys.error, identity)
     val hs = HashScheme.latest
-    val h = hs.hashProject hash p2
+    val h = hs hash p2
     (p2, VerifiedEvent(hs, h, e))
   }
 

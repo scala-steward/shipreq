@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import shipreq.webapp.base.hash.HashScheme
+import shipreq.webapp.base.hash.{ProjectHash, HashScheme}
 
 /**
  * A verified event is an event that has been validated by the server, proven applicable, and retains a hash expected
@@ -10,4 +10,7 @@ import shipreq.webapp.base.hash.HashScheme
  */
 case class VerifiedEvent(hashScheme: HashScheme,
                          hash      : Int,
-                         event     : Event)
+                         event     : Event) {
+
+  def projectHash = ProjectHash(hashScheme, hash)
+}

@@ -43,9 +43,11 @@ object PlainText {
       case Some(is) => reqCodeIndentation(is) ~ G.reqCode.nodeSeparator ~ reqCode(ti.suffix)
     }
 
-  def reqCode(c: ReqCode.Value) = c.reduceMapLeft1(_.value)(_ ~ G.reqCode.nodeSeparator ~ _)
+  def reqCode(c: ReqCode.Value): String =
+    ReqCode.valueToStr(c, G.reqCode.nodeSeparator)
 
-  def hashtag(key: HashRefKey) = G.hashRefKey.prefix ~ key.value
+  def hashtag(key: HashRefKey): String =
+    G.hashRefKey.prefix ~ key.value
 
   def pubid(p: Project, id: ReqId): Must[String] =
     p.reqs.reqM(id)

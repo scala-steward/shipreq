@@ -52,6 +52,17 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   def mapTail[B >: A](f: Vector[A] => Vector[B]): NonEmptyVector[B] =
     NonEmptyVector(head, f(tail))
 
+  def mapWithIndex[B](f: (A, Int) => B): NonEmptyVector[B] = {
+    val h = f(head, 0)
+    var i = 0
+    var t = Vector.empty[B]
+    for (a <- tail) {
+      i += 1
+      t :+= f(a, i)
+    }
+    NonEmptyVector(h, t)
+  }
+
   def :+[B >: A](a: B): NonEmptyVector[B] =
     mapTail(_ :+ a)
 

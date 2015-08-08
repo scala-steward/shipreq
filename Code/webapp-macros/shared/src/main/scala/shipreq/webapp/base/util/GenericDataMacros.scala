@@ -3,6 +3,7 @@ package shipreq.webapp.base.util
 import scala.annotation.StaticAnnotation
 import scala.annotation.compileTimeOnly
 import shipreq.webapp.macros._
+import shipreq.webapp.base.protocol.MPickleMacroUtils
 import boopickle._
 import upickle._
 
@@ -13,8 +14,8 @@ object GenericDataMacros {
   def gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.quietUnequalValues
   def _gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.debugUnequalValues
 
-  def gdMPickler (d: GenericData)(keys: d.Attr => String): ReadWriter[d.NonEmptyValues] = macro GenericDataMacroImpls.quietMPickler
-  def _gdMPickler(d: GenericData)(keys: d.Attr => String): ReadWriter[d.NonEmptyValues] = macro GenericDataMacroImpls.debugMPickler
+  def gdMPickler (d: GenericData, failUnrecognisedKeys: Boolean)(keys: d.Attr => String): d.ValueTypeClasses[ReadWriter] = macro GenericDataMacroImpls.quietMPickler
+  def _gdMPickler(d: GenericData, failUnrecognisedKeys: Boolean)(keys: d.Attr => String): d.ValueTypeClasses[ReadWriter] = macro GenericDataMacroImpls.debugMPickler
 
   def binpickler (d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.quietBinPickler
   def _binpickler(d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.debugBinPickler
@@ -103,7 +104,7 @@ class GenericDataMacroImplsW(val c: scala.reflect.macros.whitebox.Context) exten
   }
 }
 
-class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extends MacroUtils {
+class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extends MacroUtils with MPickleMacroUtils {
   import c.universe._
 
   def resolveAttrsAndValues(debug: Boolean)(D: SingleType): Vector[(ModuleSymbol, ClassSymbol)] = {
@@ -192,12 +193,13 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
   }
   // ===================================================================================================================
 
-  def debugMPickler(d: c.Expr[GenericData])(keys: c.Expr[d.value.Attr => String]) = implMPickler(true )(d)(keys)
-  def quietMPickler(d: c.Expr[GenericData])(keys: c.Expr[d.value.Attr => String]) = implMPickler(false)(d)(keys)
-  def implMPickler(debug: Boolean)(d: c.Expr[GenericData])(keys: c.Expr[d.value.Attr => String]): c.Expr[ReadWriter[d.value.NonEmptyValues]] = {
+  def debugMPickler(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]) = implMPickler(true )(d, failUnrecognisedKeys)(keys)
+  def quietMPickler(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]) = implMPickler(false)(d, failUnrecognisedKeys)(keys)
+  def implMPickler(debug: Boolean)(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]): c.Expr[d.value.ValueTypeClasses[ReadWriter]] = {
     if (debug) println(sep)
 
     val D = d.actualType.asInstanceOf[SingleType]
+    val DFQN = toSelectFQN(D.typeSymbol.asType)
 
     val keyLookup: List[(String, Literal)] =
       keys match {
@@ -213,57 +215,59 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
 
     val attrsAndValues = resolveAttrsAndValues(debug)(D)
 
-    var init     = List.empty[ValDef]
+    val init     = Init(importMPickle)
     var wCases   = List.empty[CaseDef]
     var rCases   = List.empty[CaseDef]
     var keysUsed = Set.empty[String]
 
     for ((attr, value) <- attrsAndValues) {
-      val name = attr.name.toString
-      val key = keyLookup.find(_._1 == name).map(_._2) getOrElse fail(s"Key not found for $name.\nKeys = $keyLookup")
-      val rw = TermName(c.freshName("rw"))
-      val rwDef = q"val $rw = implicitly[ReadWriter[$attr.Data]]": ValDef
-      init    ::= rwDef
-      wCases  ::= cq"v: $value => kvs :+= (($key, $rw write v.value))"
-      rCases  ::= cq"$key => $attr apply $rw.read(kv._2)"
-      keysUsed += key.toString()
+      val name     = attr.name.toString
+      val key      = keyLookup.find(_._1 == name).map(_._2) getOrElse fail(s"Key not found for $name.\nKeys = $keyLookup")
+      val (vr, vw) = summonRW(init, tq"$attr.Data")
+      wCases     ::= cq"v: $value => kvs :+= (($key, $vw write v.value))"
+      rCases     ::= cq"$key => kvs += $attr apply $vr.read(kv._2)"
+      keysUsed    += key.toString()
     }
 
     if (keysUsed.size != attrsAndValues.size)
       fail(s"Keys must be unique: $keyLookup")
 
-    val DFQN = toSelectFQN(D.typeSymbol.asType)
+    val onUnrecognisedKey =
+      if (readMacroArg_boolean(failUnrecognisedKeys))
+        q"""sys.error("Unknown key '"+what+"' in "+o)"""
+      else
+        Literal(Constant(()))
 
     val impl = q""" {
-      import _root_.upickle.{ReadWriter, Js}
-      ..${flattenBlocks(init)}
+      ..$init
       val empty = $DFQN.emptyValues
-      ReadWriter[$DFQN.NonEmptyValues](
-        vs => {
-          var kvs = Vector.empty[(String, Js.Value)]
-          vs.value.values foreach { case ..$wCases }
-          Js.Obj(kvs: _*)
-        },
-        { case o: Js.Obj =>
-          var kvs = empty
-          o.value.foreach { kv =>
-            val v = kv._1 match {
-              case ..$rCases
-              case what => sys.error("Unknown key '"+what+"' in "+o)
-            }
-            kvs += v
-          }
-          if (kvs.isEmpty)
-            sys.error("At least one value required.")
-          else
-            shipreq.base.util.NonEmpty.force(kvs)
-        }
-      )
+      val rwValues =
+        ReadWriter[$DFQN.Values](
+          vs => {
+            var kvs = Vector.empty[(String, Js.Value)]
+            vs.values foreach { case ..$wCases }
+            Js.Obj(kvs: _*)
+          },
+          { case o: Js.Obj =>
+            var kvs = empty
+            o.value.foreach(kv =>
+              kv._1 match {
+                case ..$rCases
+                case what => $onUnrecognisedKey
+              }
+            )
+            kvs
+          })
+      val rwValue = rwValues.xmap(_.values.head)(empty + _)
+      val rwNev   = rwValues.xmap[$DFQN.NonEmptyValues](NonEmpty require_! _)(_.value)
+      $DFQN.ValueTypeClasses[ReadWriter](rwValue, rwValues, rwNev)
     } """
+
+    // ↑ rwValue isn't used so I don't care right now
 
     if (debug) println("\n" + impl + "\n" + sep)
 
-    c.Expr[ReadWriter[d.value.NonEmptyValues]](impl)
+    c.Expr[d.value.ValueTypeClasses[ReadWriter]](impl)
   }
 
   // ===================================================================================================================

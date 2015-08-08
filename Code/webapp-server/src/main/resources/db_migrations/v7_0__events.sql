@@ -1,7 +1,7 @@
 CREATE TABLE event (
   project_id   BIGINT      NOT NULL REFERENCES project,
   seq          INTEGER     NOT NULL CHECK (seq >= 0),
-  type_id      SMALLINT    NOT NULL,
+  type_id      SMALLINT    NOT NULL CHECK (type_id >= 0),
   data_id_type "char"      NOT NULL,
   data_id      INTEGER     NULL,
   data         JSON        NULL,
