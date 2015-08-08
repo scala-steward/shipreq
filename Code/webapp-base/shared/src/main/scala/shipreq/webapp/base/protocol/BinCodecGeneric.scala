@@ -70,7 +70,7 @@ object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
   }
 
   implicit def pickleMultimap[K: UnivEq, L[_], V](implicit p: Pickler[Map[K, L[V]]], l: MultiValues[L]): Pickler[Multimap[K, L, V]] =
-    p.xmap(Multimap(_))(_.m)
+    p.xmap(Multimap(_))(_.m) // TODO optimise
 
   implicit def pickleSetDiff[A: UnivEq](implicit rw: Pickler[Set[A]]): Pickler[SetDiff[A]] =
     pickleCaseClass
