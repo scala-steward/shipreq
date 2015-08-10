@@ -44,7 +44,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         var result =
           for {
             rt    ← needCustomReqType(e.rt)(p)
-            title = Title(e.vs).fold(Vector.empty: Text.GenericReqTitle.OptionalText)(_.value.whole)
+            title = Title.get(e.vs).fold(Vector.empty: Text.GenericReqTitle.OptionalText)(_.value.whole)
             pp    = reqData.pubids.allocC(rt.id)(id)
             req   = GenericReq(id, pp._2, title, Live)
             reqs  ← grIMap.add(req)(reqData.genericReqs)

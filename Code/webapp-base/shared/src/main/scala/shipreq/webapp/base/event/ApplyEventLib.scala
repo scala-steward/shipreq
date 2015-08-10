@@ -427,7 +427,7 @@ private[event] object ApplyEventLib {
      */
     final def need[A](attr: ^.Attr): App[^.NonEmptyValues, attr.Data] =
       App(vs =>
-        attr(vs) match {
+        attr.get(vs) match {
           case Some(v) => ok(v.value)
           case None    => fail(s"Attribute $attr required but missing from [${vs.value.values mkString ", "}].")
         }
@@ -438,7 +438,7 @@ private[event] object ApplyEventLib {
      */
     final def want[A](a: ^.Attr)(default: a.Data): App[^.NonEmptyValues, a.Data] =
       App.ok(vs =>
-        a(vs) match {
+        a.get(vs) match {
           case Some(v) => v.value
           case None    => default
         }
@@ -448,7 +448,7 @@ private[event] object ApplyEventLib {
      * Get a value if it exists.
      */
     final def read[A](a: ^.Attr): App[^.NonEmptyValues, Option[a.Data]] =
-      App.ok(a(_).map(_.value))
+      App.ok(a.get(_).map(_.value))
 
     final def updateEachValue(updateFn: ^.Value => AD): ^.NonEmptyValues => AD =
       vs => apFoldLeft(vs.values)(updateFn)

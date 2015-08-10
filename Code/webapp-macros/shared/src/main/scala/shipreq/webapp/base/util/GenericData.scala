@@ -13,9 +13,10 @@ abstract class GenericData {
   trait AttrBase extends Product with Serializable {
     this: Attr =>
     type Data
+
     def apply(d: Data): ValueFor[this.type]
 
-    final def apply(vs: Values): Option[ValueFor[this.type]] =
+    final def get(vs: Values): Option[ValueFor[this.type]] =
       vs.get(this).asInstanceOf[Option[ValueFor[this.type]]]
   }
 
@@ -38,7 +39,7 @@ abstract class GenericData {
 
   val attrs: Attrs
 
-  implicit def equality: UnivEq[Attr]
+  implicit def attrEquality: UnivEq[Attr]
 
   def emptyValues: Values =
     IMap.empty(_.attr)

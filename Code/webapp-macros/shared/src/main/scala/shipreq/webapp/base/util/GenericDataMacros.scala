@@ -88,7 +88,7 @@ class GenericDataMacroImplsW(val c: scala.reflect.macros.whitebox.Context) exten
 
             ..${flattenBlocks(attrDefns)}
 
-            override implicit def equality = UnivEq.force[Attr]
+            override implicit def attrEquality = UnivEq.force[Attr]
 
             override val attrs = NonEmptySet[Attr](..$attrNames)
           }
