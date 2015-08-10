@@ -1,6 +1,5 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.CycleDetector
 import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenses
 import monocle.Prism
@@ -12,7 +11,6 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.text.Text, Text.Equality._
-import shipreq.webapp.base.util.TransitiveClosure
 import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
 
@@ -33,7 +31,7 @@ object ReqCode {
     @inline def toTupleVI: (Value, ReqCodeId) =
       (value, id)
   }
-  implicit def idAndValueEquality: UnivEq[IdAndValue] = deriveUnivEq
+  implicit def idAndValueEquality: UnivEq[IdAndValue] = UnivEq.derive
 
   /**
    * A textual ID that refers to a requirement.
@@ -151,8 +149,8 @@ object ReqCode {
       refsToReqs.keys.toStream append active.map(_.target).toList.filterT[ReqId]
   }
 
-  implicit val activeDataEquality: UnivEq[ActiveData] = deriveUnivEq
-  implicit val dataEquality      : UnivEq[Data]       = deriveUnivEq
+  implicit def activeDataEquality: UnivEq[ActiveData] = UnivEq.derive
+  implicit def dataEquality      : UnivEq[Data]       = UnivEq.derive
 
   val  Trie = new MTrie.Types[Node, Data]
   type Trie = Trie.Trie
@@ -172,8 +170,8 @@ object ReqCodeGroup {
 
   final case class AndId(id: ReqCodeId, group: ReqCodeGroup)
 
-  implicit val equality     : UnivEq[ReqCodeGroup] = deriveUnivEq
-  implicit val andIdEquality: UnivEq[AndId]        = deriveUnivEq
+  implicit def equality     : UnivEq[ReqCodeGroup] = UnivEq.derive
+  implicit def andIdEquality: UnivEq[AndId]        = UnivEq.derive
 }
 
 /**
@@ -247,8 +245,7 @@ final case class ReqTypePos(value: Int) extends TaggedInt
 final case class PubidT[+T <: ReqTypeId](reqTypeId: T, pos: ReqTypePos)
 
 object PubidT {
-  UnivEq[ReqTypePos]
-  implicit def equality[T <: ReqTypeId : UnivEq]: UnivEq[PubidT[T]] = UnivEq.force
+  implicit def equality[T <: ReqTypeId : UnivEq]: UnivEq[PubidT[T]] = UnivEq.derive
 }
 
 /**
@@ -282,7 +279,7 @@ case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
 }
 
 object PubidRegister {
-  implicit def equality: UnivEq[PubidRegister] = deriveUnivEq
+  implicit def equality: UnivEq[PubidRegister] = UnivEq.derive
   def emptyMM: Multimap[ReqTypeId, Vector, ReqId] = UnivEq.emptyMultimap
   def empty = PubidRegister(emptyMM)
 }
@@ -322,7 +319,7 @@ final case class GenericReq(id   : GenericReqId,
                             live : Live) extends ReqT[CustomReqTypeId]
 
 object GenericReq {
-  implicit def equality: UnivEq[GenericReq] = deriveUnivEq
+  implicit def equality: UnivEq[GenericReq] = UnivEq.derive
 
   object IdAccess extends ObjDataId[GenericReq.type, GenericReq, GenericReqId] {
     override def id(d: GenericReq) = d.id

@@ -3,7 +3,6 @@ package shipreq.webapp.base.data
 import monocle.macros.Lenses
 import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.UnivEq
-import shipreq.webapp.base.util.TypeclassDerivation._
 
 final case class CustomIssueTypeId(value: Int) extends TaggedInt
 
@@ -14,7 +13,7 @@ final case class CustomIssueType(id  : CustomIssueTypeId,
                                  live: Live)
 
 object CustomIssueType {
-  implicit def equality: UnivEq[CustomIssueType] = deriveUnivEq
+  implicit def equality: UnivEq[CustomIssueType] = UnivEq.derive
 
   object IdAccess extends ObjDataId[CustomIssueType.type, CustomIssueType, CustomIssueTypeId] {
     override def id(d: CustomIssueType) = d.id

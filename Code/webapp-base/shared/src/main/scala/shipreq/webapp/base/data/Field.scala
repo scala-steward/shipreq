@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import monocle._
 import monocle.macros.Lenses
-import scalaz.{Traverse, OneAnd, Equal}
+import scalaz.{Traverse, Equal}
 import scalaz.Isomorphism._
 import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
@@ -27,8 +27,7 @@ object StaticFieldType {
     StepTree,
     StepGraph)
 
-
-  implicit val equality: UnivEq[StaticFieldType] = { import AutoDerive._; deriveUnivEq }
+  implicit def equality: UnivEq[StaticFieldType] = UnivEq.derive
 }
 
 object CustomFieldType {
@@ -41,14 +40,14 @@ object CustomFieldType {
     Tag,
     Text)
 
-  implicit val equality: UnivEq[CustomFieldType] = { import AutoDerive._; deriveUnivEq }
+  implicit def equality: UnivEq[CustomFieldType] = UnivEq.derive
 }
 
 object FieldType {
   val values: NonEmptyVector[FieldType] =
     StaticFieldType.values ++ CustomFieldType.values
 
-  implicit val equality: UnivEq[FieldType] = { import AutoDerive._; deriveUnivEq }
+  implicit def equality: UnivEq[FieldType] = UnivEq.derive
 }
 
 // =====================================================================================================================
@@ -87,7 +86,7 @@ object FieldId {
     }
   }
 
-  implicit val idEquality: UnivEq[FieldId] = deriveUnivEq
+  implicit def idEquality: UnivEq[FieldId] = deriveUnivEq
 }
 
 sealed trait Field {
@@ -165,7 +164,7 @@ object StaticField {
   lazy val names: Set[String] =
     values.toStream.map(_.name).toSet
 
-  implicit val equality: UnivEq[StaticField] = { import AutoDerive._; deriveUnivEq }
+  implicit def equality: UnivEq[StaticField] = UnivEq.derive
 }
 
 sealed abstract class CustomFieldId extends TaggedInt with FieldId {
@@ -204,7 +203,6 @@ object CustomField {
       override def id(d: Text) = d.id
       override val unapplyData: AnyRef => Option[Text] = {case r: Text => Some(r); case _ => None}
     }
-    implicit val equality: UnivEq[Text] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -228,7 +226,6 @@ object CustomField {
       override def id(d: Tag) = d.id
       override val unapplyData: AnyRef => Option[Tag] = {case r: Tag => Some(r); case _ => None}
     }
-    implicit val equality: UnivEq[Tag] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -252,7 +249,6 @@ object CustomField {
       override def id(d: Implication) = d.id
       override val unapplyData: AnyRef => Option[Implication] = {case r: Implication => Some(r); case _ => None}
     }
-    implicit val equality: UnivEq[Implication] = deriveUnivEq
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -289,10 +285,10 @@ object CustomField {
 
   def nameP(p: Project) = name(p.config.customReqTypes, p.config.tags)
 
-  implicit val equalImplication: UnivEq[Implication] = deriveUnivEq
-  implicit val equalTag        : UnivEq[Tag]         = deriveUnivEq
-  implicit val equalText       : UnivEq[Text]        = deriveUnivEq
-  implicit val equality        : UnivEq[CustomField] = deriveUnivEq
+  implicit def equalImplication: UnivEq[Implication] = UnivEq.derive
+  implicit def equalTag        : UnivEq[Tag]         = UnivEq.derive
+  implicit def equalText       : UnivEq[Text]        = UnivEq.derive
+  implicit def equality        : UnivEq[CustomField] = UnivEq.derive
 }
 
 // =====================================================================================================================

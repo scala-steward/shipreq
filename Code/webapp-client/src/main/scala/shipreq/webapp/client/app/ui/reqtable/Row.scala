@@ -11,7 +11,6 @@ import scalaz.syntax.semigroup._
 import shipreq.base.util.{UnivEq, Vector1}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ReqCodeTreeItem
-import shipreq.webapp.base.util.TypeclassDerivation._
 
 /**
  * Replacement values for a requirement at a specific row.
@@ -46,7 +45,7 @@ case class Expansion(implicationSrc: Vector[Pubid],
 object Expansion {
   val none = Expansion(Vector.empty, Vector.empty, Vector.empty, Vector.empty, UnivEq.emptyMap, UnivEq.emptyMap)
 
-  implicit val equality: UnivEq[Expansion] = deriveUnivEq
+  implicit def equality: UnivEq[Expansion] = UnivEq.derive
 
   implicit val reqCodeTreeM: Monoid[Vector[ReqCodeTreeItem]] =
     scalaz.std.vector.vectorMonoid
@@ -83,7 +82,7 @@ object Expansion {
 case class MultiValues(tags: Vector[ApplicableTagId])
 
 object MultiValues {
-  implicit val equality: UnivEq[MultiValues] = deriveUnivEq
+  implicit def equality: UnivEq[MultiValues] = UnivEq.derive
 
   import Expansion.vectorUniqSemigroup
 
@@ -124,12 +123,12 @@ object Row {
   case class GenericReqRowId(value: GenericReqId) extends Id
   case class ReqCodeGroupRowId(value: ReqCodeId) extends Id
 
-  implicit val idEqualityR : UnivEq[GenericReqRowId]   = deriveUnivEq
-  implicit val idEqualityG : UnivEq[ReqCodeGroupRowId] = deriveUnivEq
-  implicit val idEquality  : UnivEq[Id]                = deriveUnivEq
-  implicit val rowEqualityR: UnivEq[GenericReqRow]     = deriveUnivEq
-  implicit val rowEqualityG: UnivEq[ReqCodeGroupRow]   = deriveUnivEq
-  implicit val rowEquality : UnivEq[Row]               = deriveUnivEq
+  implicit def idEqualityR : UnivEq[GenericReqRowId]   = UnivEq.derive
+  implicit def idEqualityG : UnivEq[ReqCodeGroupRowId] = UnivEq.derive
+  implicit def idEquality  : UnivEq[Id]                = UnivEq.derive
+  implicit def rowEqualityR: UnivEq[GenericReqRow]     = UnivEq.derive
+  implicit def rowEqualityG: UnivEq[ReqCodeGroupRow]   = UnivEq.derive
+  implicit def rowEquality : UnivEq[Row]               = UnivEq.derive
 
   implicit val idReusability: Reusability[Id] = Reusability.byEqual
 

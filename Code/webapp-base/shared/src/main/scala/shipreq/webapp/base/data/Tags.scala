@@ -8,7 +8,6 @@ import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
-import shipreq.webapp.base.util.TypeclassDerivation._
 
 sealed trait TagId extends TaggedInt
 final case class TagGroupId     (value: Int) extends TagId with TaggedInt
@@ -63,7 +62,7 @@ object TagType {
   case object Group      extends TagType("Tag Group") { override type Data = TagGroup }
   case object Applicable extends TagType("Tag")       { override type Data = ApplicableTag }
 
-  implicit val equality: UnivEq[TagType] = { import AutoDerive._; deriveUnivEq }
+  implicit def equality: UnivEq[TagType] = UnivEq.derive
 
   val values = NonEmptyVector[TagType](Group, Applicable)
 }
@@ -98,10 +97,9 @@ object Tag {
         CycleDetector.Directed.check[TagTree, TagId, Int](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
   }
 
-  import AutoDerive._
-  implicit val equalityTG: UnivEq[TagGroup]      = deriveUnivEq
-  implicit val equalityAT: UnivEq[ApplicableTag] = deriveUnivEq
-  implicit val equality  : UnivEq[Tag]           = deriveUnivEq
+  implicit def equalityTG: UnivEq[TagGroup]      = UnivEq.derive
+  implicit def equalityAT: UnivEq[ApplicableTag] = UnivEq.derive
+  implicit def equality  : UnivEq[Tag]           = UnivEq.derive
 }
 
 // =====================================================================================================================
@@ -173,7 +171,7 @@ object TagInTree {
   val noRelations: Relations =
     MMTree.Relations.empty
 
-  implicit val equality: UnivEq[TagInTree] = deriveUnivEq
+  implicit def equality: UnivEq[TagInTree] = UnivEq.derive
 
   val filterLive: TagInTree => Boolean =
     _.tag.live :: Live
@@ -225,7 +223,7 @@ object FlatTag {
     case object Good              extends Status
     case object Bad               extends Status
     case object BadParentGoodKids extends Status
-    @inline implicit def equality: UnivEq[Status] = UnivEq.force
+    implicit def equality: UnivEq[Status] = UnivEq.derive
   }
 
   sealed trait FilterPolicy
@@ -233,10 +231,10 @@ object FlatTag {
     case object OmitNothing               extends FilterPolicy
     case object OmitBadBranches           extends FilterPolicy
     case object OmitAnythingWithBadParent extends FilterPolicy
-    @inline implicit def equality: UnivEq[FilterPolicy] = UnivEq.force
+    implicit def equality: UnivEq[FilterPolicy] = UnivEq.derive
   }
 
-  implicit val equality: UnivEq[FlatTag] = deriveUnivEq
+  implicit def equality: UnivEq[FlatTag] = UnivEq.derive
 
   val indentation =
     memo[Int, String]("\u00A0\u00A0" * _)

@@ -82,12 +82,7 @@ abstract class MacroUtils {
     (a, A)
   }
 
-  /**
-   * Constraints:
-   * - Type must be sealed.
-   * - Type must be abstract or a trait.
-   */
-  final def findConcreteTypes(tpe: Type, f: FindSubClasses): Set[ClassSymbol] = {
+  final def ensureValidAdtBase(tpe: Type): ClassSymbol = {
     tpe.typeConstructor // https://issues.scala-lang.org/browse/SI-7755
     val sym = tpe.typeSymbol.asClass
 
@@ -99,6 +94,38 @@ abstract class MacroUtils {
 
     if (sym.knownDirectSubclasses.isEmpty)
       fail(s"${sym.name} does not have any sub-classes. This may happen due to a limitation of scalac (SI-7046).")
+
+    sym
+  }
+
+  final def crawlADT[A](tpe: Type, f: ClassSymbol => Option[A], errMsg: ClassSymbol => String): Vector[A] = {
+    def go(t: Type, as: Vector[A]): Vector[A] = {
+      val tb = ensureValidAdtBase(t)
+      tb.knownDirectSubclasses.foldLeft(as) { (q, sub) =>
+        val subClass = sub.asClass
+        val subType = sub.asType.toType
+
+        f(subClass) match {
+          case Some(a) =>
+            q :+ a
+          case None =>
+            if (subClass.isAbstract || subClass.isTrait)
+              go(subType, q)
+            else
+              fail(errMsg(subClass))
+        }
+      }
+    }
+    go(tpe, Vector.empty)
+  }
+
+  /**
+   * Constraints:
+   * - Type must be sealed.
+   * - Type must be abstract or a trait.
+   */
+  final def findConcreteTypes(tpe: Type, f: FindSubClasses): Set[ClassSymbol] = {
+     val sym = ensureValidAdtBase(tpe)
 
     def findSubClasses(p: ClassSymbol): Set[ClassSymbol] = {
       p.knownDirectSubclasses.flatMap { sub =>

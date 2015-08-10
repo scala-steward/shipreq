@@ -9,7 +9,6 @@ import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT, CustomTextField => CTF, ReqCodeGroupTitle}
 import shipreq.webapp.base.text.Text.Equality._
-import shipreq.webapp.base.util.TypeclassDerivation._
 import ApplyEventTestFns._
 import DeletionAction._
 import MTrie.Ops
@@ -22,7 +21,7 @@ case class ReqFull(req      : GenericReq,
                    reqCodes : Set[ReqCode.Value])
 
 object ReqFull {
-  implicit val equality: UnivEq[ReqFull] = deriveUnivEq
+  implicit def equality: UnivEq[ReqFull] = UnivEq.derive
 
   def extract(p: Project, id: GenericReqId): Option[ReqFull] =
     p.reqs.req(id).map{ r2 =>

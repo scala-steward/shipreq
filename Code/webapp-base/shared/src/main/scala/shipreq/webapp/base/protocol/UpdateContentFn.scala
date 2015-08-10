@@ -3,7 +3,6 @@ package shipreq.webapp.base.protocol
 import shipreq.base.util.{SetDiff, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
-import shipreq.webapp.base.util.TypeclassDerivation._
 import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, AtomPicklers.instances._
 import Text.Equality._
 
@@ -25,7 +24,7 @@ object UpdateContentCmd {
   case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle.OptionalText)   extends UpdateContentCmd
   case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField.OptionalText)   extends UpdateContentCmd
 
-  implicit val cmdEquality: UnivEq[UpdateContentCmd] = { import AutoDerive._; deriveUnivEq }
+  implicit val cmdEquality: UnivEq[UpdateContentCmd] = UnivEq._deriveAuto
 
   implicit val picklePatchReqTags        : Pickler[PatchReqTags]         = pickleCaseClass
   implicit val picklePatchImplicationSrc : Pickler[PatchImplicationSrc]  = pickleCaseClass

@@ -7,7 +7,6 @@ import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.equal._
 import shipreq.base.util.{NonEmptySet, UnivEq, IMap, ISubset}
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.util.TypeclassDerivation._
 
 object ISubsetEditor {
 
@@ -34,7 +33,7 @@ object ISubsetEditor {
     case object Only extends Method("o", "Only…")
     case object Not  extends Method("n", "Not…")
 
-    implicit val equality: UnivEq[Method] = { import AutoDerive._; deriveUnivEq }
+    implicit def equality: UnivEq[Method] = UnivEq.derive
 
     val all   = List[Method](All, Only, Not)
     val index = IMap.empty((_: Method).code) ++ all

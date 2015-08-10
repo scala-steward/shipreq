@@ -3,7 +3,6 @@ package shipreq.webapp.base.protocol
 import shipreq.base.util.{UnivEq, Position => Pos}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.DeletionAction
-import shipreq.webapp.base.util.TypeclassDerivation._
 import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._
 import Field.ApplicableReqTypes
 
@@ -24,10 +23,10 @@ object FieldCrud {
                                     mandatory: Mandatory,
                                     reqTypes : ApplicableReqTypes) extends Values
 
-  implicit val equalText       : UnivEq[TextFieldValues]        = deriveUnivEq
-  implicit val equalTag        : UnivEq[TagFieldValues]         = deriveUnivEq
-  implicit val equalImplication: UnivEq[ImplicationFieldValues] = deriveUnivEq
-  implicit def equalValues     : UnivEq[Values]                 = deriveUnivEq
+  implicit def equalText       : UnivEq[TextFieldValues]        = UnivEq.derive
+  implicit def equalTag        : UnivEq[TagFieldValues]         = UnivEq.derive
+  implicit def equalImplication: UnivEq[ImplicationFieldValues] = UnivEq.derive
+  implicit def equalValues     : UnivEq[Values]                 = UnivEq.derive
 
   implicit val pickleFieldProtocolValues: Pickler[Values] = {
     implicit val pText        = pickleCaseClass[TextFieldValues]
@@ -47,7 +46,7 @@ object FieldCrud {
     final case class UpdateOrder (id: FieldId, newPos: Position)        extends CfgAction
     final case class Delete      (id: FieldId, action: DeletionAction)  extends CfgAction
 
-    implicit lazy val equality: UnivEq[CfgAction] = {import AutoDerive._; deriveUnivEq}
+    implicit def equality: UnivEq[CfgAction] = UnivEq.deriveAuto
 
     implicit val pickleFieldProtocolCfgAction: Pickler[CfgAction] = {
       implicit val pCreate       = pickleCaseClass[Create]

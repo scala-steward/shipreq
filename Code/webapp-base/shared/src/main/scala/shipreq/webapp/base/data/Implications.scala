@@ -5,7 +5,6 @@ import japgolly.nyaya.util.Multimap
 import monocle.macros.Lenses
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.util.TransitiveClosure
-import shipreq.webapp.base.util.TypeclassDerivation._
 import Implications.Uni
 
 object Implications {
@@ -22,7 +21,7 @@ object Implications {
   def emptyUni: Uni = Multimap.empty
   def empty = Implications(emptyUni)
 
-  implicit def equality: UnivEq[Implications] = deriveUnivEq
+  implicit def equality: UnivEq[Implications] = UnivEq.derive
 }
 
 /**

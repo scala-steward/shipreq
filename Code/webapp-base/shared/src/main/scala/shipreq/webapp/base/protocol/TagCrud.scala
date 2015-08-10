@@ -3,7 +3,6 @@ package shipreq.webapp.base.protocol
 import scalaz.\&/
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.util.TypeclassDerivation._
 import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._
 import TagInTree.Relations
 
@@ -19,11 +18,9 @@ object TagCrud {
                                        key: HashRefKey,
                                        desc: Option[String]) extends Values
 
-  implicit lazy val equalValues: UnivEq[Values] = {import AutoDerive._; deriveUnivEq}
-
-  import AutoDerive._
-  implicit val tagGroupValueEquality     : UnivEq[TagGroupValues]      = deriveUnivEq
-  implicit val applicableTagValueEquality: UnivEq[ApplicableTagValues] = deriveUnivEq
+  implicit def tagGroupValueEquality     : UnivEq[TagGroupValues]      = UnivEq.derive
+  implicit def applicableTagValueEquality: UnivEq[ApplicableTagValues] = UnivEq.derive
+  implicit def equalValues               : UnivEq[Values]              = UnivEq.derive
 
   implicit val pickleTagPovRelations    : Pickler[Relations]           = pickleCaseClass
   implicit val pickleTagGroupValues     : Pickler[TagGroupValues]      = pickleCaseClass

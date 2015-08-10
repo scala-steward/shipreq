@@ -1,3 +1,4 @@
+
 package shipreq.webapp.base.data
 
 import monocle.macros.Lenses
@@ -7,7 +8,6 @@ import scalaz.syntax.order._
 import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr, Lazy}
 import shipreq.base.util.{UnivEq, Must, NonEmptyVector}
 import shipreq.base.util.TaggedTypes._
-import shipreq.webapp.base.util.TypeclassDerivation._
 import ReqType.Mnemonic
 
 /** type [[ReqTypeId]] = [[StaticReqType]] | [[CustomReqTypeId]] */
@@ -112,7 +112,7 @@ final case class CustomReqType(id          : CustomReqTypeId,
 }
 
 object CustomReqType {
-  implicit def equality: UnivEq[CustomReqType] = deriveUnivEq
+  implicit def equality: UnivEq[CustomReqType] = UnivEq.derive
 
   object IdAccess extends ObjDataId[CustomReqType.type, CustomReqType, CustomReqTypeId] {
     override def id(d: CustomReqType) = d.id

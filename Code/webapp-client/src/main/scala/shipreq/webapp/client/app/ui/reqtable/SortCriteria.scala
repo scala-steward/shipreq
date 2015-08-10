@@ -4,7 +4,6 @@ import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.util.TypeclassDerivation._
 
 sealed trait SortCriterion {
   def column: Column
@@ -33,11 +32,11 @@ object SortCriterion {
     override def reverse: Conclusive = copy(method = this.method.reverse)
   }
 
-  @inline implicit def equalityIIB: UnivEq[InconclusiveIB] = deriveUnivEq
-  @inline implicit def equalityICB: UnivEq[InconclusiveCB] = deriveUnivEq
-  @inline implicit def equalityI  : UnivEq[Inconclusive]   = deriveUnivEq
-  @inline implicit def equalityC  : UnivEq[Conclusive]     = deriveUnivEq
-  @inline implicit def equality   : UnivEq[SortCriterion]  = deriveUnivEq
+  implicit def equalityIIB: UnivEq[InconclusiveIB] = UnivEq.derive
+  implicit def equalityICB: UnivEq[InconclusiveCB] = UnivEq.derive
+  implicit def equalityI  : UnivEq[Inconclusive]   = UnivEq.derive
+  implicit def equalityC  : UnivEq[Conclusive]     = UnivEq.derive
+  implicit def equality   : UnivEq[SortCriterion]  = UnivEq.derive
 
   def possibilitiesICB(c: SortInconclusive with HasBlanks): NonEmptyVector[InconclusiveCB] =
     SortMethod.considerBlanks.map(InconclusiveCB(c, _))
@@ -89,7 +88,7 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
 }
 
 object SortCriteria {
-  implicit val equality: UnivEq[SortCriteria] = deriveUnivEq
+  implicit def equality: UnivEq[SortCriteria] = UnivEq.derive
 
   val defaultConclusive =
     Conclusive(Column.Pubid, SortMethod.Asc)

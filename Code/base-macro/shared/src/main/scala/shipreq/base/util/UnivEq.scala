@@ -52,6 +52,11 @@ object UnivEq extends UnivEqImplicits {
   @inline def force[A]: UnivEq[A] =
     instance.asInstanceOf[UnivEq[A]]
 
+  def  derive[A]: UnivEq[A] = macro MacroImpl.quietDerive[A]
+  def _derive[A]: UnivEq[A] = macro MacroImpl.debugDerive[A]
+  def  deriveAuto[A]: UnivEq[A] = macro MacroImpl.quietDeriveAuto[A]
+  def _deriveAuto[A]: UnivEq[A] = macro MacroImpl.debugDeriveAuto[A]
+
   object Implicits extends UnivEqImplicits
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -83,4 +88,72 @@ object UnivEq extends UnivEqImplicits {
 
   @inline def mutableHashMapMemo[K: UnivEq, V](f: K => V)   = Memo.mutableHashMapMemo[K, V](f)
   @inline def immutableHashMapMemo[K: UnivEq, V](f: K => V) = Memo.immutableHashMapMemo[K, V](f)
+
+  // ===================================================================================================================
+
+  import scala.reflect.macros.blackbox.Context
+  import shipreq.base.macros.MacroUtils
+
+  object AutoDerive {
+    implicit def autoDeriveUnivEq[A]: UnivEq[A] = macro UnivEq.MacroImpl.quietDerive[A]
+  }
+
+  class MacroImpl(val c: Context) extends MacroUtils {
+    import c.universe._
+
+    def quietDeriveAuto[T: c.WeakTypeTag]: c.Expr[UnivEq[T]] = implDeriveAuto(false)
+    def debugDeriveAuto[T: c.WeakTypeTag]: c.Expr[UnivEq[T]] = implDeriveAuto(true)
+    def implDeriveAuto[T: c.WeakTypeTag](debug: Boolean): c.Expr[UnivEq[T]] = {
+      val T = weakTypeOf[T]
+      val m = TermName(if (debug) "_derive" else "derive")
+      c.Expr[UnivEq[T]](q"""
+      import _root_.shipreq.base.util.UnivEq.AutoDerive._
+             _root_.shipreq.base.util.UnivEq.$m[$T]
+      """)
+    }
+
+    def quietDerive[T: c.WeakTypeTag]: c.Expr[UnivEq[T]] = implDerive(false)
+    def debugDerive[T: c.WeakTypeTag]: c.Expr[UnivEq[T]] = implDerive(true)
+    def implDerive[T: c.WeakTypeTag](debug: Boolean): c.Expr[UnivEq[T]] = {
+      if (debug) println()
+
+      val T = weakTypeOf[T]
+      val t = T.typeSymbol
+      var n = 0
+      val univEq = c.typeOf[UnivEq[_]]
+
+      def found(t: Type, p: Any): Unit =
+        if (debug) {
+          n += 1
+          printf("%2d. %-90s = %s\n", n, t.toString, p.toString())
+        }
+
+      if (t.isClass && t.asClass.isCaseClass) {
+        // Case class
+        ensureConcrete(T)
+        val params = primaryConstructorParams(T)
+        for (p <- params) {
+          val (_, pt) = nameAndType(p)
+          found(pt, needInferImplicit(appliedType(univEq, pt)))
+        }
+      } else
+        // ADT
+        crawlADT(T, p => {
+          val pt = p.asType.toType
+          if (p.isModuleClass) {
+            found(pt, "case object")
+            Some(())
+          }
+          else
+            tryInferImplicit(appliedType(univEq, pt)).map(found(pt, _))
+        }, p => s"Unable to prove UnivEq[$p]")
+
+      val impl =
+        TypeApply(Select(Select(Select(Select(Select(Ident(termNames.ROOTPKG), TermName("shipreq")),
+        TermName("base")), TermName("util")), TermName("UnivEq")), TermName("force")), TypeTree(T) :: Nil)
+
+      if (debug) println()
+      c.Expr[UnivEq[T]](impl)
+    }
+  }
 }

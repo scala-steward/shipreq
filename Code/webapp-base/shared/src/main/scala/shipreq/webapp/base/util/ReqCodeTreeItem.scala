@@ -1,7 +1,6 @@
 package shipreq.webapp.base.util
 
 import shipreq.base.util.UnivEq
-import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.base.data.ReqCode
 
 /**
@@ -26,6 +25,7 @@ object ReqCodeTreeItem {
    */
   case class IndentSpace(length: Int) extends Indent
 
-  implicit def indentEquality: UnivEq[Indent] = UnivEq.force
-  implicit val itemEquality: UnivEq[ReqCodeTreeItem] = deriveUnivEq
+  implicit def indentSpaceEquality: UnivEq[IndentSpace]     = UnivEq.derive
+  implicit def indentEquality     : UnivEq[Indent]          = UnivEq.derive
+  implicit def itemEquality       : UnivEq[ReqCodeTreeItem] = UnivEq.derive
 }

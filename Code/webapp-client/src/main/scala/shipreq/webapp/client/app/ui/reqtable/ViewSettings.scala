@@ -5,7 +5,6 @@ import monocle.macros.Lenses
 import scalaz.syntax.equal._
 import shipreq.base.util.{UnivEq, NonEmptyVector}
 import shipreq.webapp.base.filter.FilterAst
-import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.client.lib.{HideDead, FilterDead}
 
 @Lenses
@@ -57,7 +56,7 @@ case class ViewSettings(columns   : NonEmptyVector[Column],
 
 
 object ViewSettings {
-  implicit val equality   : UnivEq[ViewSettings]      = deriveUnivEq
+  implicit def equality   : UnivEq[ViewSettings]      = UnivEq.derive
   implicit val reusability: Reusability[ViewSettings] = Reusability.byEqual
 
   def default = {
