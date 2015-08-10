@@ -26,7 +26,7 @@ object IdeSettings {
       "webapp-base",
       "webapp-base-test",
       "webapp-client",
-      "webapp-macros",
+      "webapp-macro",
       "webapp-server")
       .flatMap(r => List(r, r + "/jvm", r + "/js", r + "/shared"))
       .map(_ + "/target")

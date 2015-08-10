@@ -109,7 +109,7 @@ deps = M.fromList [
          ("webapp-server",         ["webapp-base-test", "base-db", "taskman-api"]) ,
          ("webapp-client",         ["webapp-base-test", "base-util"]) ,
          ("webapp-base-test",      ["webapp-base"]) ,
-         ("webapp-base",           ["webapp-macros", "base-util"]) ,
+         ("webapp-base",           ["webapp-macro", "base-util"]) ,
          ("taskman",               ["taskman-api", "taskman-server"]) ,
          ("taskman-api",           ["taskman-api-impl", "taskman-api-logic"]) ,
          ("taskman-api-impl",      ["taskman-api-logic"]) ,

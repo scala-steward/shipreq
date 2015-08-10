@@ -158,7 +158,7 @@ object ShipReq extends Build {
     project("webapp")
       .configure(webappSettings)
       .aggregate(
-        webappMacrosJvm, webappMacrosJs, webappBaseJvm, webappBaseJs,
+        webappMacroJvm, webappMacroJs, webappBaseJvm, webappBaseJs,
         // webappBaseTestJvm, webappBaseTestJs, // Don't want this included by compile. Tests will pull it in when needed
         webappClient, webappServer)
 
@@ -179,10 +179,10 @@ object ShipReq extends Build {
       "wd"  -> ";up ;~js")                                                 // WebDev
   }
 
-  lazy val webappMacrosJvm = webappMacros.jvm
-  lazy val webappMacrosJs  = webappMacros.js
-  lazy val webappMacros =
-    crossProject("webapp-macros")
+  lazy val webappMacroJvm = webappMacro.jvm
+  lazy val webappMacroJs  = webappMacro.js
+  lazy val webappMacro =
+    crossProject("webapp-macro")
       .configureBoth(webappSettings)
       .configureJs(Common.jsSettings, Common.noJsTests)
       .dependsOn(baseUtil)
@@ -211,7 +211,7 @@ object ShipReq extends Build {
         useMacroParadise,
         dontInline // crashes scalac 2.11.5
       )
-      .dependsOn(baseUtil, webappMacros)
+      .dependsOn(baseUtil, webappMacro)
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
