@@ -7,14 +7,32 @@ object IdeSettings {
 
   private object excludes {
     val moduleTargets = List(
+      "base",
+      "base-db",
+      "base-test",
+      "base-util",
+      "benchmark",
       "project",
+      "taskman",
+      "taskman-api",
+      "taskman-api-impl",
+      "taskman-api-logic",
+      "taskman-server",
+      "taskman-server-impl",
+      "taskman-server-logic",
+      "taskman-server-schema",
+      "utils",
+      "webapp",
       "webapp-base",
       "webapp-base-test",
+      "webapp-client",
+      "webapp-macros",
       "webapp-server")
+      .flatMap(r => List(r, r + "/jvm", r + "/js", r + "/shared"))
       .map(_ + "/target")
 
     def common = "target" :: moduleTargets
-    def root   = common ++ List(".idea", ".idea_modules", ".settings", ".target", "log", ".bower")
+    def root   = common ++ List(".idea", ".idea_modules", ".settings", "target", "log", ".bower")
     def webapp = List("vendor", "node_modules", "src/it/scala", "src/main/webapp/assets/vendor")
   }
 
