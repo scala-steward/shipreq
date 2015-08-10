@@ -9,7 +9,7 @@ import monocle.std.tuple2._
 import monocle.std.tuple3._
 import scala.annotation.tailrec
 import scala.collection.GenTraversable
-import scalaz.{NonEmptyList, OneAnd, State, StateT, Name, Need}
+import scalaz.{NonEmptyList, OneAnd, State, StateT, Need}
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
 import scalaz.std.set._
@@ -21,9 +21,11 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
-import shipreq.webapp.base.event.DeletionAction
+import shipreq.webapp.base.event.{SoftDeletionAction, DeletionAction}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar}
+import shipreq.webapp.base.util.GenericData
+import shipreq.webapp.base.util.UtilMacros._
 import DataImplicits._
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
@@ -97,6 +99,12 @@ object RandomData {
 
   def oneofV[A](as: NonEmptyVector[A]): Gen[A] =
     Gen.oneof(as.head, as.tail: _*)
+
+  def oneofS[A](as: NonEmptySet[A]): Gen[A] =
+    oneofV(as.toNEV)
+
+  def oneofVG[A](as: NonEmptyVector[Gen[A]]): Gen[A] =
+    Gen.oneofG(as.head, as.tail: _*)
 
   def grammarChars(c: Grammar.Chars): Gen[Char] =
     Gen.charof(c.ch1, c.chn, c.rs: _*)
@@ -176,17 +184,23 @@ object RandomData {
 
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
-  lazy val live =
+  val live =
     Gen.oneof[Live](Live, Dead)
 
-  lazy val implicationRequired =
+  val implicationRequired =
     Gen.oneof[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
 
-  lazy val mandatory =
+  val mandatory =
     Gen.oneof[Mandatory](Mandatory, Mandatory.Not)
 
-  lazy val hashRefKey: Gen[HashRefKey] =
+  val hashRefKey: Gen[HashRefKey] =
     grammarStr1(Grammar.hashRefKey)(_.firstChar, _.allChars, _.length) map HashRefKey
+
+  val deletionAction =
+    oneofV(DeletionAction.values)
+
+  val softDeletionAction =
+    oneofV(SoftDeletionAction.values)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -439,6 +453,7 @@ object RandomData {
   // Text
 
   object TextGen {
+    import scalaz.Name
     import shipreq.webapp.base.text._
     import Atom._
     import Text.{ReqTitle => _, _}
@@ -1140,9 +1155,6 @@ object RandomData {
     import shipreq.webapp.base.protocol._
     import Gen.Covariance._
 
-    lazy val deletionAction =
-      oneofV(DeletionAction.values)
-
     lazy val reqTypeId: Gen[ReqTypeId] =
       Gen.oneofG(customReqTypeId, staticReqType)
 
@@ -1403,5 +1415,312 @@ object RandomData {
         filterAst(flat(gr, gy, gt, gi))
       }
     }
+  }
+
+  // ===================================================================================================================
+  object events {
+    import shipreq.webapp.base.event._
+
+    val tagChildren: Gen[TagInTree.Children] =
+      tagId.vector
+
+    val tagParents: Gen[TagInTree.Parents] =
+      tagId.option mapBy tagId
+
+    val anyApplicableReqTypes =
+      customReqTypeId.set flatMap applicableReqTypes
+
+    val reqCodeIdAndValue =
+      Gen.apply2(ReqCode.IdAndValue)(reqCode.id, reqCode.value)
+
+    val fieldId: Gen[FieldId] = {
+      import Gen.Covariance._
+      Gen.oneofG(staticField, customFieldId)
+    }
+
+    val customTextField =
+      TextGen.customTextFieldAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId), Some(applicableTagId)).text
+
+    val reqCodeGroupTitle =
+      TextGen.reqCodeGroupTitleAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId)).text
+
+    val genericReqTitleAtom =
+      TextGen.genericReqTitleAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId), Some(applicableTagId))
+
+    val genericReqTitle =
+      genericReqTitleAtom.text
+
+    val genericReqTitle1 =
+      genericReqTitleAtom.text1(Text.GenericReqTitle)
+
+    def nesd[A: UnivEq](g: Gen[A]): Gen[NonEmpty[SetDiff[A]]] = {
+      val set = g.set
+      val attempt =
+        for {
+          a <- set
+          b <- set
+        } yield SetDiff(a, b -- a)
+      attempt.flatMap(d =>
+        NonEmpty(d) match {
+          case Some(ne) => Gen insert ne
+          case None     => g.map(a => NonEmpty.force(SetDiff(Set.empty[A], Set(a))))
+        }
+      )
+    }
+
+    abstract class GenericDataGen[GD <: GenericData](final val gd: GD) {
+      import gd.attrEquality
+
+      def valueFor(a: gd.Attr): Gen[gd.Value]
+
+      val attr = oneofS(gd.attrs)
+
+      lazy val values: Gen[gd.Values] =
+        attr.set
+          .flatMap(as => Gen sequence as.toVector.map(valueFor))
+          .map(_.foldLeft(gd.emptyValues)(_ + _))
+
+      val nonEmptyValues: Gen[gd.NonEmptyValues] =
+        attr.nes
+          .flatMap(as => Gen sequence as.toNEV.map(valueFor))
+          .map(vs => gd.nev(vs.head, vs.tail: _*))
+    }
+
+    object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Key  => hashRefKey            map Key .apply
+        case Desc => unicodeString1.option map Desc.apply
+      }
+    }
+
+    object customReqTypeGD extends GenericDataGen(CustomReqTypeGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name        => unicodeString1.sup  map Name       .apply
+        case Imp         => implicationRequired map Imp        .apply
+        case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
+      }
+    }
+
+    object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name      => unicodeString1.sup    map Name    .apply
+        case Key       => fieldRefKey           map Key      .apply
+        case Mandatory => mandatory             map Mandatory.apply
+        case ReqTypes  => anyApplicableReqTypes map ReqTypes .apply
+      }
+    }
+
+    object customTagFieldGD extends GenericDataGen(CustomTagFieldGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case TagId     => tagId                 map TagId    .apply
+        case Mandatory => mandatory             map Mandatory.apply
+        case ReqTypes  => anyApplicableReqTypes map ReqTypes .apply
+      }
+    }
+
+    object customImpFieldGD extends GenericDataGen(CustomImpFieldGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case ReqTypeId => reqTypeId             map ReqTypeId.apply
+        case Mandatory => mandatory             map Mandatory.apply
+        case ReqTypes  => anyApplicableReqTypes map ReqTypes .apply
+      }
+    }
+
+    object createGenericReqGD extends GenericDataGen(CreateGenericReqGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Title    => genericReqTitle1      map Title   .apply
+        case ReqCodes => reqCodeIdAndValue.nes map ReqCodes.apply
+        case Tags     => applicableTagId.nes   map Tags    .apply
+        case ImpSrcs  => reqId.nes             map ImpSrcs .apply
+        case ImpTgts  => reqId.nes             map ImpTgts .apply
+      }
+    }
+
+    object reqCodeGroupGD extends GenericDataGen(ReqCodeGroupGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Code  => reqCode.value     map Code .apply
+        case Title => reqCodeGroupTitle map Title.apply
+      }
+    }
+
+    object applicableTagGD extends GenericDataGen(ApplicableTagGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name     => unicodeString1.sup    map Name    .apply
+        case Desc     => unicodeString1.option map Desc    .apply
+        case Key      => hashRefKey            map Key     .apply
+        case Children => tagChildren           map Children.apply
+        case Parents  => tagParents            map Parents .apply
+      }
+    }
+
+    object tagGroupGD extends GenericDataGen(TagGroupGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name          => unicodeString1.sup    map Name         .apply
+        case Desc          => unicodeString1.option map Desc         .apply
+        case MutexChildren => mutexChildren         map MutexChildren.apply
+        case Children      => tagChildren           map Children     .apply
+        case Parents       => tagParents            map Parents      .apply
+      }
+    }
+
+    val addStaticField: Gen[AddStaticField] =
+      staticField map AddStaticField
+
+    val projectTemplate: Gen[ProjectTemplate] =
+      oneofV(ProjectTemplate.values)
+
+    val applyTemplate: Gen[ApplyTemplate] =
+      projectTemplate map ApplyTemplate
+
+    val createApplicableTag: Gen[CreateApplicableTag] =
+      Gen.apply2(CreateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
+
+    val createCustomImpField: Gen[CreateCustomImpField] =
+      Gen.apply2(CreateCustomImpField)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
+
+    val createCustomIssueType: Gen[CreateCustomIssueType] =
+      Gen.apply2(CreateCustomIssueType)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
+
+    val createCustomReqType: Gen[CreateCustomReqType] =
+      Gen.apply2(CreateCustomReqType)(customReqTypeId, customReqTypeGD.nonEmptyValues)
+
+    val createCustomTagField: Gen[CreateCustomTagField] =
+      Gen.apply2(CreateCustomTagField)(customFieldTagId, customTagFieldGD.nonEmptyValues)
+
+    val createCustomTextField: Gen[CreateCustomTextField] =
+      Gen.apply2(CreateCustomTextField)(customFieldTextId, customTextFieldGD.nonEmptyValues)
+
+    val createGenericReq: Gen[CreateGenericReq] =
+      Gen.apply3(CreateGenericReq)(genericReqId, customReqTypeId, createGenericReqGD.values)
+
+    val createReqCodeGroup: Gen[CreateReqCodeGroup] =
+      Gen.apply2(CreateReqCodeGroup)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+
+    val createTagGroup: Gen[CreateTagGroup] =
+      Gen.apply2(CreateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
+
+    val deleteCustomField: Gen[DeleteCustomField] =
+      Gen.apply2(DeleteCustomField)(customFieldId, deletionAction)
+
+    val deleteCustomIssueType: Gen[DeleteCustomIssueType] =
+      Gen.apply2(DeleteCustomIssueType)(customIssueTypeId, deletionAction)
+
+    val deleteCustomReqType: Gen[DeleteCustomReqType] =
+      Gen.apply2(DeleteCustomReqType)(customReqTypeId, deletionAction)
+
+    val deleteReqCodeGroup: Gen[DeleteReqCodeGroup] =
+      reqCode.id map DeleteReqCodeGroup
+
+    val deleteReq: Gen[DeleteReq] =
+      Gen.apply2(DeleteReq)(reqId, softDeletionAction)
+
+    val deleteStaticField: Gen[DeleteStaticField] =
+      staticField map DeleteStaticField
+
+    val deleteTag: Gen[DeleteTag] =
+      Gen.apply2(DeleteTag)(tagId, deletionAction)
+
+    val patchImplicationSrc: Gen[PatchImplicationSrc] =
+      Gen.apply2(PatchImplicationSrc)(reqId, nesd(reqId))
+
+    val patchImplicationTgt: Gen[PatchImplicationTgt] =
+      Gen.apply2(PatchImplicationTgt)(reqId, nesd(reqId))
+
+    val patchReqCodes: Gen[PatchReqCodes] = {
+      val codes = reqCode.id.set
+      for {
+        id      ← reqId
+        add     ← codes.mapBy(reqCode.value).map(Multimap(_)) // TODO Could have same ID with different codes
+        addIds  = add.allValues.toSet
+        remove  ← codes.map(_ -- addIds)
+        restore ← codes.map(_ -- addIds -- remove)
+      } yield PatchReqCodes(id, remove, restore, add)
+    }
+
+    val patchReqTags: Gen[PatchReqTags] =
+      Gen.apply2(PatchReqTags)(reqId, nesd(applicableTagId))
+
+    val repositionField: Gen[RepositionField] =
+      Gen.apply2(RepositionField)(fieldId, fieldId.option)
+
+    val setCustomTextField: Gen[SetCustomTextField] =
+      Gen.apply3(SetCustomTextField)(reqId, customFieldTextId, customTextField)
+
+    val setGenericReqTitle: Gen[SetGenericReqTitle] =
+      Gen.apply2(SetGenericReqTitle)(genericReqId, genericReqTitle)
+
+    val setGenericReqType: Gen[SetGenericReqType] =
+      Gen.apply2(SetGenericReqType)(genericReqId, customReqTypeId)
+
+    val updateApplicableTag: Gen[UpdateApplicableTag] =
+      Gen.apply2(UpdateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
+
+    val updateCustomImpField: Gen[UpdateCustomImpField] =
+      Gen.apply2(UpdateCustomImpField)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
+
+    val updateCustomIssueType: Gen[UpdateCustomIssueType] =
+      Gen.apply2(UpdateCustomIssueType)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
+
+    val updateCustomReqType: Gen[UpdateCustomReqType] =
+      Gen.apply2(UpdateCustomReqType)(customReqTypeId, customReqTypeGD.nonEmptyValues)
+
+    val updateCustomTagField: Gen[UpdateCustomTagField] =
+      Gen.apply2(UpdateCustomTagField)(customFieldTagId, customTagFieldGD.nonEmptyValues)
+
+    val updateCustomTextField: Gen[UpdateCustomTextField] =
+      Gen.apply2(UpdateCustomTextField)(customFieldTextId, customTextFieldGD.nonEmptyValues)
+
+    val updateReqCodeGroup: Gen[UpdateReqCodeGroup] =
+      Gen.apply2(UpdateReqCodeGroup)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+
+    val updateTagGroup: Gen[UpdateTagGroup] =
+      Gen.apply2(UpdateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
+
+    val event: Gen[Event] =
+      oneofVG(valuesForAdt[Event, Gen[Event]] {
+        case _: AddStaticField        => addStaticField        .subst
+        case _: ApplyTemplate         => applyTemplate         .subst
+        case _: CreateApplicableTag   => createApplicableTag   .subst
+        case _: CreateCustomImpField  => createCustomImpField  .subst
+        case _: CreateCustomIssueType => createCustomIssueType .subst
+        case _: CreateCustomReqType   => createCustomReqType   .subst
+        case _: CreateCustomTagField  => createCustomTagField  .subst
+        case _: CreateCustomTextField => createCustomTextField .subst
+        case _: CreateGenericReq      => createGenericReq      .subst
+        case _: CreateReqCodeGroup    => createReqCodeGroup    .subst
+        case _: CreateTagGroup        => createTagGroup        .subst
+        case _: DeleteCustomField     => deleteCustomField     .subst
+        case _: DeleteCustomIssueType => deleteCustomIssueType .subst
+        case _: DeleteCustomReqType   => deleteCustomReqType   .subst
+        case _: DeleteReqCodeGroup    => deleteReqCodeGroup    .subst
+        case _: DeleteReq             => deleteReq             .subst
+        case _: DeleteStaticField     => deleteStaticField     .subst
+        case _: DeleteTag             => deleteTag             .subst
+        case _: PatchImplicationSrc   => patchImplicationSrc   .subst
+        case _: PatchImplicationTgt   => patchImplicationTgt   .subst
+        case _: PatchReqCodes         => patchReqCodes         .subst
+        case _: PatchReqTags          => patchReqTags          .subst
+        case _: RepositionField       => repositionField       .subst
+        case _: SetCustomTextField    => setCustomTextField    .subst
+        case _: SetGenericReqTitle    => setGenericReqTitle    .subst
+        case _: SetGenericReqType     => setGenericReqType     .subst
+        case _: UpdateApplicableTag   => updateApplicableTag   .subst
+        case _: UpdateCustomImpField  => updateCustomImpField  .subst
+        case _: UpdateCustomIssueType => updateCustomIssueType .subst
+        case _: UpdateCustomReqType   => updateCustomReqType   .subst
+        case _: UpdateCustomTagField  => updateCustomTagField  .subst
+        case _: UpdateCustomTextField => updateCustomTextField .subst
+        case _: UpdateReqCodeGroup    => updateReqCodeGroup    .subst
+        case _: UpdateTagGroup        => updateTagGroup        .subst
+      })
   }
 }

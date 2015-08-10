@@ -1,5 +1,6 @@
 package shipreq.webapp.macros
 
+import shipreq.base.util.ScalaExt._
 import scala.annotation.tailrec
 
 object MacroUtils {
@@ -28,6 +29,9 @@ abstract class MacroUtils {
 
   final def fail(msg: String): Nothing =
     c.abort(c.enclosingPosition, msg)
+
+  final def warn(msg: String): Unit =
+    c.warning(c.enclosingPosition, msg)
 
   final def concreteWeakTypeOf[T: c.WeakTypeTag]: Type = {
     val t = weakTypeOf[T]
@@ -230,23 +234,29 @@ abstract class MacroUtils {
     }
 
   final def readMacroArg_tToLitFn[T, V: scala.reflect.Manifest](e: c.Expr[T => V]): List[(Either[Select, Type], Literal)] =
+    readMacroArg_tToTree(e).map(_.map2 {
+      case lit @ Literal(Constant(_: V)) => lit
+      case x => fail(s"Expecting a literal value, got: ${showRaw(x)}")
+    })
+
+  final def readMacroArg_tToTree[T, V](e: c.Expr[T => V]): List[(Either[Select, Type], Tree)] =
     e match {
       case Expr(Function(_, Match(_, caseDefs))) =>
         caseDefs map {
 
           // case _: Class => "k"
-          case CaseDef(Typed(_, t: TypeTree), _, key@ Literal(Constant(_: V))) =>
-            (Right(t.tpe), key)
+          case CaseDef(Typed(_, t: TypeTree), _, tree) =>
+            (Right(t.tpe), tree)
 
           // case Object => "k"
-          case CaseDef(s@ Select(_, _), _, key@ Literal(Constant(_: V))) =>
-            (Left(s), key)
+          case CaseDef(s@ Select(_, _), _, tree) =>
+            (Left(s), tree)
 
           case x =>
-            fail(s"Expecting a case like: {case Type => String}\nGot: ${showRaw(x)}")
+            fail(s"Expecting a case like: {case Type => ?}\nGot: ${showRaw(x)}")
         }
       case _ =>
-        fail(s"Expecting a function like: {case Type => String}\nGot: ${showRaw(e)}")
+        fail(s"Expecting a function like: {case Type => ?}\nGot: ${showRaw(e)}")
     }
 
   /**
