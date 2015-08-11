@@ -4,9 +4,9 @@ import monocle.Lens
 import monocle.macros.Lenses
 import scalaz.Equal
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.UtilMacros
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.{TransitiveClosure, ShowSize}
-import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
 
 object Project {
@@ -16,7 +16,7 @@ object Project {
   val tags            : Lens[Project, TagTree            ] = config ^|-> ProjectConfig.tags
 
   import ReqData._ // for equality
-  implicit def equality: Equal[Project] = deriveEqual
+  implicit lazy val equality: Equal[Project] = UtilMacros.deriveEqual
 
   val empty: Project = {
     val cfg      = ProjectConfig.empty

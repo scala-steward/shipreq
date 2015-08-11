@@ -10,7 +10,6 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.base.text.Text, Text.Equality._
-import shipreq.webapp.base.util.TypeclassDerivation._
 import DataImplicits._
 
 // ===================================================================================================================
@@ -205,7 +204,7 @@ final case class ReqCodes(trie: ReqCode.Trie) {
 }
 
 object ReqCodes {
-  implicit lazy val equality: Equal[ReqCodes] = deriveEqual
+  implicit lazy val equality: Equal[ReqCodes] = UtilMacros.deriveEqual
   def empty: ReqCodes = ReqCodes(Map.empty)
 }
 
@@ -316,7 +315,7 @@ object GenericReq {
 object Requirements {
   def empty = Requirements(emptyDataMap(GenericReq), PubidRegister.empty)
 
-  implicit lazy val equality: Equal[Requirements] = deriveEqual
+  implicit lazy val equality: Equal[Requirements] = UtilMacros.deriveEqual
 }
 
 @Lenses

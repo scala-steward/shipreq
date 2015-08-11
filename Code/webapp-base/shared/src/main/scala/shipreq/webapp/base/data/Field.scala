@@ -7,7 +7,6 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.{TaggedString, TaggedInt}
-import shipreq.webapp.base.util.TypeclassDerivation._
 import Must.Auto._
 
 // =====================================================================================================================
@@ -302,5 +301,5 @@ object FieldSet {
   type CustomFields = IMap[CustomFieldId, CustomField]
   def emptyCustomFields: CustomFields = IMap.empty(_.id)
 
-  implicit val equality: Equal[FieldSet] = deriveEqual
+  implicit val equality: Equal[FieldSet] = UtilMacros.deriveEqual
 }

@@ -3,12 +3,11 @@ package shipreq.webapp.base.data
 import monocle.macros.Lenses
 import scalaz.{-\/, Equal, \/-}
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Monoidish, Must}
-import shipreq.webapp.base.util.TypeclassDerivation._
+import shipreq.base.util.{UtilMacros, Monoidish, Must}
 import DataImplicits._
 
 object ProjectConfig {
-  implicit def equality: Equal[ProjectConfig] = deriveEqual
+  implicit lazy val equality: Equal[ProjectConfig] = UtilMacros.deriveEqual
 
   val empty: ProjectConfig = {
     val cit = emptyDataMap(CustomIssueType)

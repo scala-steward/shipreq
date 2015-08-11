@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import scalaz.Equal
 import scala.reflect.macros.blackbox
 import shipreq.base.macros.MacroUtils
 
@@ -8,6 +9,8 @@ object UtilMacros {
   def  valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.quietValuesForAdt[T, V]
   def _valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.debugValuesForAdt[T, V]
 
+  def  deriveEqual[A]: Equal[A] = macro UtilMacroImpls.quietDeriveEqual[A]
+  def _deriveEqual[A]: Equal[A] = macro UtilMacroImpls.debugDeriveEqual[A]
 }
 
 class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
@@ -30,5 +33,47 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
 
     if (debug) println("\n" + impl + "\n")
     c.Expr[NonEmptyVector[V]](impl)
+  }
+
+  private val equal = c.typeOf[Equal[_]]
+
+  def quietDeriveEqual[T: c.WeakTypeTag]: c.Expr[Equal[T]] = implDeriveEqual(false)
+  def debugDeriveEqual[T: c.WeakTypeTag]: c.Expr[Equal[T]] = implDeriveEqual(true )
+  def implDeriveEqual[T: c.WeakTypeTag](debug: Boolean): c.Expr[Equal[T]] = {
+    if (debug) println()
+    val T = weakTypeOf[T]
+    val t = T.typeSymbol
+
+    def caseClass0: Tree =
+      q"_root_.scalaz.Equal.equal[$T]((_, _) => true)"
+
+    def caseClass1up(params: List[Symbol]): Tree = {
+      val init = Init()
+      var cmps = Vector.empty[Tree]
+      for (p <- params) {
+        val (pn, pt) = nameAndType(T, p)
+        val e = init.valImp(appliedType(equal, pt))
+        cmps :+= q"$e.equal(a.$pn,b.$pn)"
+      }
+      val expr = cmps.reduce((a, b) => q"$a && $b")
+      q"""
+        ..$init
+        _root_.scalaz.Equal.equal[$T]((a, b) => $expr)
+      """
+    }
+
+    val impl =
+      if (t.isClass && t.asClass.isCaseClass) {
+        ensureConcrete(T)
+        val params = primaryConstructorParams(T)
+        if (params.isEmpty)
+          caseClass0
+        else
+          caseClass1up(params)
+      } else
+        fail(s"Derivation not yet supported: Equal[$T]")
+
+    if (debug) println("\n" + impl + "\n")
+    c.Expr[Equal[T]](impl)
   }
 }

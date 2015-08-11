@@ -62,7 +62,7 @@ object RemoteFn {
   implicit def equalFn[F <: RemoteFn]: Equal[F] =
     Equal.equalRef
 
-  implicit def equalInstance: Equal[Instance] =
+  implicit def equalInstance[I <: Instance]: Equal[I] =
     Equal.equal((a, b) => (a.key == b.key) && equalFn.equal(a.fn, b.fn))
 }
 

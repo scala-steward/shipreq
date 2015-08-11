@@ -12,21 +12,18 @@ import utest._
 import japgolly.nyaya._
 import japgolly.nyaya.test.{Gen, Settings}
 import japgolly.nyaya.test.PropTest._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{UtilMacros, UnivEq}
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.text.Text.Equality._
-import shipreq.webapp.base.util.TypeclassDerivation._
 import shipreq.webapp.base.{RandomData => $}
 import $.TextGenExt
 
 object ProtocolTest extends TestSuite {
 
-  implicit def equalProjectSPA: Equal[ProjectSPA] = {
-//    import AutoDerive._; deriveEqual
-    Equal.equalBy(_.productIterator.toStream.map(_.asInstanceOf[RemoteFn.Instance]))
-  }
+  implicit val equalProjectSPA: Equal[ProjectSPA] =
+    UtilMacros.deriveEqual
 
   // -------------------------------------------------------------------------------------------------------------------
 
