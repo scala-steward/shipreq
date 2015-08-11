@@ -6,7 +6,6 @@ import monocle.Prism
 import scalaz.{Equal, Order}
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
-import shapeless.{Generic, :+:, CNil, Coproduct, Inl, Inr}
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
@@ -40,7 +39,7 @@ object ReqCode {
    */
   type Value = NonEmptyVector[Node]
 
-  /** For speed/mem effeciency */
+  /** For speed/mem efficiency */
   def valueToStr(v: Value, sep: Char): String = {
     val head = v.head.value
     if (v.tail.isEmpty)
@@ -99,22 +98,7 @@ object ReqCode {
    */
   sealed trait Target
 
-  object Target {
-    implicit object GenericInstance extends Generic[Target] {
-      override type Repr = ReqId :+: ReqCodeGroup :+: CNil
-      override def to  (t: Target): Repr = t match {
-        case a: ReqId        => Coproduct[Repr](a)
-        case a: ReqCodeGroup => Coproduct[Repr](a)
-      }
-      override def from(co: Repr): Target = co match {
-        case Inl(a)      => a
-        case Inr(Inl(a)) => a
-        case _ => ???
-      }
-    }
-
-    implicit def equality: UnivEq[Target] = deriveUnivEq
-
+  object Target extends TargetEquality {
     lazy val reqId        = Prism[Target, ReqId]       ({case a: ReqId        => Some(a); case _ => None})(t => t)
     lazy val reqCodeGroup = Prism[Target, ReqCodeGroup]({case a: ReqCodeGroup => Some(a); case _ => None})(t => t)
   }
@@ -377,4 +361,9 @@ case class Requirements(genericReqs: GenericReqIMap, pubids: PubidRegister) {
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
     UnivEq.emptyMultimap[ReqTypeId, Vector, Req]
       .addPairs(reqs.vstream(_.mapStrengthL(_.reqTypeId)): _*)
+}
+
+// At bottom of file to workaround SI-7046
+trait TargetEquality {
+  implicit def equality: UnivEq[ReqCode.Target] = UnivEq.derive
 }
