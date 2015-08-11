@@ -493,7 +493,7 @@ object GenericReqEventTest extends TestSuite {
 
     'patchTags {
       def patch(id: ReqId)(remove: ApplicableTagId*)(add: ApplicableTagId*): PatchReqTags =
-        NonEmpty.tryO(SetDiff(removed = remove.toSet, added = add.toSet))
+        NonEmpty(SetDiff(removed = remove.toSet, added = add.toSet))
           .map(PatchReqTags(id, _))
           .getOrElse(sys error "Empty set diff")
 
@@ -524,7 +524,7 @@ object GenericReqEventTest extends TestSuite {
 
     'patchImps {
       def setdiff(remove: ReqId*)(add: ReqId*) =
-        NonEmpty.tryO(SetDiff(removed = remove.toSet, added = add.toSet)).getOrElse(sys error "Empty set diff")
+        NonEmpty(SetDiff(removed = remove.toSet, added = add.toSet)).getOrElse(sys error "Empty set diff")
       def testFailure(msgFrag: String)(subj: ReqId, events: Event*)(remove: ReqId*)(add: ReqId*): Unit = {
         val sd = setdiff(remove: _*)(add: _*)
         assertFail(msgFrag)(events :+ PatchImplicationSrc(subj, sd): _*)

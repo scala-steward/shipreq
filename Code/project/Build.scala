@@ -161,8 +161,7 @@ object ShipReq extends Build {
     project("webapp")
       .configure(webappSettings)
       .aggregate(
-        webappMacroJvm, webappMacroJs, webappBaseJvm, webappBaseJs,
-        // webappBaseTestJvm, webappBaseTestJs, // Don't want this included by compile. Tests will pull it in when needed
+        webappMacroJvm, webappMacroJs, webappBaseJvm, webappBaseJs, webappBaseTestJvm, webappBaseTestJs,
         webappClient, webappServer)
 
   lazy val webappSettings =
