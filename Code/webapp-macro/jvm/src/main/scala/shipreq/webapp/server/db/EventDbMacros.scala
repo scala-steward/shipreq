@@ -1,6 +1,5 @@
 package shipreq.webapp.server.db
 
-import scala.collection.GenTraversable
 import scala.reflect.macros.blackbox.Context
 import shipreq.base.macros.MacroUtils
 import shipreq.webapp.base.protocol.MPickleMacroUtils
@@ -32,7 +31,7 @@ object DbCodec {
 }
 
 object EventDbMacros {
-  val noDataIdType: Byte = ' '
+  final val noDataIdType: Byte = ' '
 
   def dbCodecIdOnly [E]: DbCodec[E] = macro EventDbMacroImpls.quietDbCodecIdOnly[E]
   def _dbCodecIdOnly[E]: DbCodec[E] = macro EventDbMacroImpls.debugDbCodecIdOnly[E]

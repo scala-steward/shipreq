@@ -498,43 +498,59 @@ object EventDbCodecs {
   implicit val dbCodecUpdateReqCodeGroup   : DbCodec[UpdateReqCodeGroup]    = dbCodec2
   implicit val dbCodecUpdateTagGroup       : DbCodec[UpdateTagGroup]        = dbCodec2
 
-  // BooPickle only uses 1 byte for ints in [0,127]
+  /**
+   * Assigns each event a `type_id`.
+   *
+   * This is only seen by the DB and doesn't affect binary codecs, thus there's no need to keep IDs in [0,127] for
+   * efficient BooPickle int encoding.
+   */
   val eventCodecRegistry = DbCodec.registry[ActiveEvent] {
-    case _: ApplyTemplate         =>   0
-    case _: CreateReqCodeGroup    =>   1
-    case _: DeleteReqCodeGroup    =>   2
-    case _: UpdateReqCodeGroup    =>   3
-    case _: CreateGenericReq      =>   4
-    case _: DeleteReq             =>   5
-    case _: PatchImplicationSrc   =>   6
-    case _: PatchImplicationTgt   =>   7
-    case _: PatchReqCodes         =>   8
-    case _: PatchReqTags          =>   9
-    case _: SetCustomTextField    =>  10
-    case _: SetGenericReqTitle    =>  11
-    case _: SetGenericReqType     =>  12
+    // Content
 
-    case _: AddStaticField        => 127
-    case _: CreateApplicableTag   => 126
-    case _: CreateCustomImpField  => 125
-    case _: CreateCustomIssueType => 124
-    case _: CreateCustomReqType   => 123
-    case _: CreateCustomTagField  => 122
-    case _: CreateCustomTextField => 121
-    case _: CreateTagGroup        => 120
-    case _: DeleteCustomField     => 119
-    case _: DeleteCustomIssueType => 118
-    case _: DeleteCustomReqType   => 117
-    case _: DeleteStaticField     => 116
-    case _: DeleteTag             => 115
-    case _: RepositionField       => 114
-    case _: UpdateApplicableTag   => 113
-    case _: UpdateCustomImpField  => 112
-    case _: UpdateCustomIssueType => 111
-    case _: UpdateCustomReqType   => 110
-    case _: UpdateCustomTagField  => 109
-    case _: UpdateCustomTextField => 108
-    case _: UpdateTagGroup        => 107
+    case _: DeleteReq             => 200
+    case _: PatchImplicationSrc   => 201
+    case _: PatchImplicationTgt   => 202
+    case _: PatchReqCodes         => 203
+    case _: PatchReqTags          => 204
+    case _: SetCustomTextField    => 205
+
+    case _: CreateGenericReq      => 230
+    case _: SetGenericReqTitle    => 231
+    case _: SetGenericReqType     => 232
+
+    case _: CreateReqCodeGroup    => 240
+    case _: UpdateReqCodeGroup    => 241
+    case _: DeleteReqCodeGroup    => 242
+
+    // Config
+
+    case _: ApplyTemplate         =>   0
+
+    case _: CreateCustomReqType   =>  10
+    case _: UpdateCustomReqType   =>  11
+    case _: DeleteCustomReqType   =>  12
+
+    case _: CreateCustomIssueType =>  20
+    case _: UpdateCustomIssueType =>  21
+    case _: DeleteCustomIssueType =>  22
+
+    case _: DeleteTag             =>  30
+    case _: CreateApplicableTag   =>  31
+    case _: UpdateApplicableTag   =>  32
+    case _: CreateTagGroup        =>  33
+    case _: UpdateTagGroup        =>  34
+
+    case _: AddStaticField        =>  40
+    case _: DeleteStaticField     =>  41
+    case _: RepositionField       =>  42
+
+    case _: DeleteCustomField     =>  50
+    case _: CreateCustomTextField =>  51
+    case _: UpdateCustomTextField =>  52
+    case _: CreateCustomTagField  =>  53
+    case _: UpdateCustomTagField  =>  54
+    case _: CreateCustomImpField  =>  55
+    case _: UpdateCustomImpField  =>  56
   }
 }
 
@@ -568,10 +584,7 @@ object EventSqlHelpers {
   implicit object GR_ActiveEvent extends GetResult[ActiveEvent] {
     def apply(r: PositionedResult) = {
       val typeId     = r.nextShort()
-//      val dataIdType = r.nextByte()
-      val dataIdType = r.nextShort().toByte
-//      val dataIdType = r.nextInt().toByte
-//println(s"READ: $dataIdType")
+      val dataIdType = r.nextString().head.toByte
       val dataId     = r.nextObject().asInstanceOf[Integer]
       val data       = r.nextString()
       val codec      = eventCodecRegistry.reader(typeId)
@@ -584,11 +597,7 @@ object EventSqlHelpers {
       val c = eventCodecRegistry.writer(e)
       val d = c._2.write(e)
       pp setShort c._1
-      pp setShort d._1
-//      pp setByte  d._1
-//      pp.setObject(pgObject("char", d._1.toString), java.sql.Types.OTHER)
-//      pp.setObject(pgObject(null, s"""d._1::"char"""".toString), java.sql.Types.OTHER)
-//      println(s"WRITE: ${d._1} ($e)")
+      pp.setObject(pgObject("char", d._1.toChar.toString), java.sql.Types.OTHER)
       pp.setObject(d._2, java.sql.Types.INTEGER)
       pp.setObject(pgObject("json", d._3), java.sql.Types.OTHER)
     }
@@ -598,9 +607,7 @@ object EventSqlHelpers {
 // =====================================================================================================================
 
 object EventDao {
-  case class EventSeq(value: Int) extends AnyVal {
-    //def succ = EventSeq(value + 1)
-  }
+  case class EventSeq(value: Int) extends AnyVal
 }
 
 trait EventDao {
