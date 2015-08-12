@@ -20,9 +20,12 @@ freshdesk.org.landingPage          = Sales / Lead
 freshdesk.org.failure              = QA / Incident
 freshdesk.logLevel                 = trace
 
+# Ensure [Allow less secure apps] is enabled in Gmail
+# https://support.google.com/accounts/answer/6010255
 mail.smtp.host                     = smtp.gmail.com
 mail.smtp.socketFactory.port       = 465
 mail.smtp.socketFactory.class      = javax.net.ssl.SSLSocketFactory
+mail.smtp.ssl.enable               = true
 mail.smtp.auth                     = true
 mail.smtp.port                     = 465
 mail.user                          = yoar.mum@gmail.com

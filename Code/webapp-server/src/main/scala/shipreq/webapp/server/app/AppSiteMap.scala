@@ -147,7 +147,7 @@ WIP,
     import org.apache.shiro.authc.UsernamePasswordToken, org.apache.shiro.SecurityUtils.getSubject
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
-      getSubject.login(new UsernamePasswordToken("golly", "asdasd123"))
+      getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
       SessionStats.onLogin(S.session, Oshiro.loggedInUser.get)
       Full(redirectHomeResp)
       // Full(RedirectResponse("/project/cUZ0/share"))

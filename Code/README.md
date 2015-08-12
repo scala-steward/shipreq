@@ -5,14 +5,12 @@ Development Environment Setup
 
 * Install SBT.
 
-### Web Front-End
-
-First, be in webapp/
+### Webapp
 
 * yaourt -S --needed --noconfirm nodejs-{bower,grunt-cli}
 * npm install
 * bower list
-* grunt
+* cd webapp-server && grunt
 
 ### Database
 
@@ -41,10 +39,31 @@ First, be in webapp/
 * Initialise
   1. Setup the taskman schema.
      Required so that webapp can startup and issue `CfgPut`s.
-     `bin/taskman/migrate_db`
+     `bin/taskman/db-migrate`
   2. Start the webapp.
      Issues `CfgPuts` required by Taskman on startup.
      `bin/webapp/run`
+
+### Dev account for web front-end
+
+1. `bin/run`
+2. Open http://localhost:8080/register
+3. Create an account with
+    Email:    japgolly@gmail.com
+    Username: devuser
+    Password: dev123123
+4. Auto login at http://localhost:8080/x (dev-mode only)
+
+
+If Taskman runs into trouble, tickets should be raised at http://yoarmum.freshdesk.com/
+
+You can also inspect the message queue via:
+1. `bin/db/connect dev`
+2. `set search_path TO taskman`
+3. `select * from msgq;`
+
+Also useful: `update msgq set effective_from = now();`
+
 
 
 Updating Dependencies
@@ -53,10 +72,10 @@ Updating Dependencies
 ### Scala
 
 Dependencies and their versions are declared in `project/Dependencies.scala`.
-Dependencies are assigned to modules in `project/Build.scala`, see `def deps` and `dependsOn`.
+Dependencies are assigned to modules in `project/Build.scala`.
 The version of SBT itself is configured in `project/build.properties`.
 
-### Web Front-End
+### Webapp
 
 * Updating
   1. bower list
