@@ -3,23 +3,23 @@ digraph G {
 // BLOCKED
 removeS [label="Remove from server:\nUnsafeTypes, ProjectDSL"]
 realspa [label="Replace /wip with\nreal SPA using real project"]
-testDbCodec [label="Ensure db event codec stability"]
 localProd [label="Get a local prod env working"]
 
 // NEXT (client)
 node [style=filled fillcolor="#ffcc99"]
-newReq [label="Create reqs\n(UI, Protocol, MakeEvent)"]
-newRCG [label="Create ReqCodeGroups\n(UI, Protocol, MakeEvent)"]
-cfgcss [label="Replace CSS WIP with ScalaCSS"]
+// cfgcss [label="Replace CSS WIP with ScalaCSS"]
 
 // NEXT (server)
 node [style=filled fillcolor="#ffcccc"]
-realCU [label="MakeEvent with\nContentUpdate cmds"]
+testDbCodec [label="Ensure db event codec stability"]
 devx [label="Get /x working again and document"]
-db [label="DB table, event load, event add"]
 
 // COMPLETE
 node [style=filled fillcolor="#ddffcc"]
+realCU [label="MakeEvent with\nContentUpdate cmds"]
+db [label="DB table, event load, event add"]
+newReq [label="Create reqs\n(UI, Protocol, MakeEvent)"]
+newRCG [label="Create ReqCodeGroups\n(UI, Protocol, MakeEvent)"]
 template [label="Create template event"]
 tesths [label="Ensure hash scheme stability"]
 devmd [label="Update DEV.md"]
@@ -58,7 +58,7 @@ realspa -> removeS
 remove -> nwo -> devmd
 
 template -> db -> testDbCodec
-devx,cfgcss,db -> realspa
+devx,db -> realspa
 hash -> tesths,eventap
 devx -> localProd
 nowip -> realCU,newReq,newRCG
