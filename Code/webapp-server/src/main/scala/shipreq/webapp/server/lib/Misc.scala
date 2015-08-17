@@ -1,6 +1,5 @@
 package shipreq.webapp.server.lib
 
-import net.liftweb.common.Logger
 import net.liftweb.http.S
 import org.joda.time.{DateTimeUtils, Period, DateTime}
 import org.joda.time.format.DateTimeFormat
@@ -11,12 +10,13 @@ import scala.util.hashing.Hashing
 import scala.util.Random
 import scalaz.{Memo, Cord}
 
+import shipreq.base.util.log.HasLogger
 import shipreq.webapp.server.app.AppConfig
 import shipreq.webapp.server.feature.uc.field.{TextFieldDefinition, TextField, Field}
 import Types._
 import AppConfig._
 
-object Misc extends Misc with Logger {
+object Misc extends Misc {
 
   val RNG = new Random()
 
@@ -42,7 +42,7 @@ object Misc extends Misc with Logger {
   }
 }
 
-trait Misc {
+trait Misc extends HasLogger {
   import Misc._
 
   implicit def impAnyExt[V](v: V) = AnyExt(v)
@@ -79,7 +79,7 @@ trait Misc {
       case Success(result)      => result
       case Failure(e) if n > 0  => retry(n - 1, firstError orElse Some(e))(fn)
       case Failure(e) if n <= 0 =>
-        firstError.foreach(debug("First retry failure.", _))
+        firstError.foreach(log.debug("First retry failure.", _))
         throw e
     }
   }

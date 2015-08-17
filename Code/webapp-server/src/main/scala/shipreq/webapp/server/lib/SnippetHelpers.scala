@@ -1,12 +1,13 @@
 package shipreq.webapp.server.lib
 
-import net.liftweb.common.{ParamFailure, Failure => FailBox, Full, Box, Logger, Empty}
+import net.liftweb.common.{ParamFailure, Failure => FailBox, Full, Box, Empty}
 import net.liftweb.http.js.{JsCmd, JsExp}
 import net.liftweb.http.js.JsCmds.Noop
 import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet, ResponseShortcutException, LiftResponse}
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
+import shipreq.base.util.log.HasLogger
 import scala.slick.jdbc.JdbcBackend.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 import scalaz.Monoid
@@ -58,7 +59,7 @@ import SnippetHelpers.{ErrorAlertId, NoticeContainerExp}
 /**
  * Snippet helpers without Misc, DI and implicit vals/defs.
  */
-trait StaticSnippetHelpers extends Logger {
+trait StaticSnippetHelpers extends HasLogger {
 
   @inline implicit final def jsExpToJsCmd(in: JsExp): JsCmd = in.cmd
   @inline implicit final def str2txt(s: String): NodeSeq = Text(s)
@@ -78,7 +79,7 @@ trait StaticSnippetHelpers extends Logger {
     import Props.RunModes._
     Props.mode match {
       case Production | Pilot | Staging =>
-        error(msg)
+        log.error(msg)
         fallback
       case Test | Development | Profile =>
         shouldNeverHappen_!(msg)
@@ -97,7 +98,7 @@ trait StaticSnippetHelpers extends Logger {
     case ParamFailure(_, _, _, m: Menu)          => redirectTo(m)
     case ParamFailure(_, _, _, m: Menu.Menuable) => redirectTo(m)
     case ParamFailure(_, _, _, NotFoundResponse) => respondImmediately(NotFoundResponse())
-    case _                                       => error(s"Don't know how to react to $box"); shouldNeverHappen_!
+    case _                                       => log.error(s"Don't know how to react to $box"); shouldNeverHappen_!
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -121,7 +122,7 @@ trait StaticSnippetHelpers extends Logger {
     else alert match {
       case NodeSeq.Empty => NodeSeq.Empty
       case e: Elem => e % new UnprefixedAttribute("id", id, xml.Null)
-      case _ => warn("Don't know how to add id to: " + alert.getClass); alert
+      case _ => log.warn("Don't know how to add id to: " + alert.getClass); alert
     }
 
   def jsClearError(implicit id: ErrorAlertId): JsCmd =
@@ -163,7 +164,7 @@ trait StaticSnippetHelpers extends Logger {
  *
  * @since 11/06/2013
  */
-trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with Logger {
+trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with HasLogger {
   import SnippetHelpers.{DefaultNoticesContainerExp, DefaultAjaxErrorId, DefaultJsonFormat}
 
   protected implicit def noticesContainerExp = DefaultNoticesContainerExp
