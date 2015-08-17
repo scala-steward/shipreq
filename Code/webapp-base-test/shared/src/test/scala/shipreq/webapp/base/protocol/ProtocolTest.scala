@@ -98,7 +98,7 @@ object ProtocolTest extends TestSuite {
       import JsEntryPoint._
       def test[I: Equal](ep: JsEntryPoint[I, Unit], name: String)(g: Gen[I]): Unit = kitEP(ep, name).propI mustBeSatisfiedBy g
 
-      'reactExamples - test(reactExamples, "reactExamples")($.routines.projectSPA)
+      'project - test(project, "project")($.routines.projectSPA)
     }
 
     'Codecs {

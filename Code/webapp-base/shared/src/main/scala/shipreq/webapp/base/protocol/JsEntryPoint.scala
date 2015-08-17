@@ -19,7 +19,7 @@ object JsEntryPoint {
 
   final val client = "Bnzklx"
 
-  final val reactExamplesN = "x8927nh"
-  final val reactExamples = new JsEntryPoint[ProjectSPA, Unit](reactExamplesN)
+  final val projectN = "x8927nh"
+  val project = new JsEntryPoint[ProjectSPA, Unit](projectN)
 
 }

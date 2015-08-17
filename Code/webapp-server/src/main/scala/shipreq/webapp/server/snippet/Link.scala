@@ -22,6 +22,7 @@ object Link extends DispatchSnippet with SnippetHelpers {
     case "App"      => appLink
     case "jquery"   => jqueryLink
     case "clientJs" => clientJs
+    case "katex"    => katex
     case name       => ToPage(name)
   }
 
@@ -52,6 +53,14 @@ object Link extends DispatchSnippet with SnippetHelpers {
     static(
       <script type="text/javascript" src={reactUrl}></script>
       <script type="text/javascript" src={clientJsUrl}></script>)
+  }
+
+  val katex = {
+    val js  = s"$vendorAssetPath/katex/katex.min.js"
+    val css = s"$vendorAssetPath/katex/katex.min.css"
+    static(
+      <script type="text/javascript" src={js}></script>
+      <link data-lift="head" type="text/css" rel="stylesheet" href={css} />)
   }
 
   object ToPage {

@@ -1,11 +1,17 @@
 package shipreq.webapp.server.snippet
 
+import scalaz.{\/, -\/, \/-}
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
+import shipreq.taskman.api.UserId
+import shipreq.webapp.base.event.{ApplyTemplate, ProjectTemplate}
 import shipreq.webapp.server.app.AppSiteMap
 import shipreq.webapp.server.db.CreateProjectResult._
+import shipreq.webapp.server.db.DaoT
+import shipreq.webapp.server.db.EventDao.EventSeq
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet}
+import shipreq.webapp.server.lib.Types.ProjectId
 import shipreq.webapp.server.util.HtmlTransformExt.ajaxSubmitOnClick
 
 /**
@@ -24,10 +30,23 @@ object ProjectCreate extends SingleOpStatefulSnippet {
   }
 
   def onSubmit(vars: form.Var): JsCmd =
-    ifValid(form validate vars)(name =>
-      daoProvider.withSession(_.createProject(currentUserId_!, name)) match {
-        case DbSuccess(id)    => redirectTo(AppSiteMap.Project)(id)
-        case NameAlreadyInUse => jsShowError("You already have a project with that name.")
+    ifValid(form validate vars) { name =>
+      val uid = currentUserId_!()
+      daoProvider.withTransaction(create(_, uid, name)) match {
+        case \/-(id) => redirectTo(AppSiteMap.Project)(id)
+        case -\/(err) => jsShowError(err)
       }
-    )
+    }
+
+  private def create(dao: DaoT, userId: UserId, name: String): String \/ ProjectId =
+    dao.createProject(userId, name) match {
+
+      case DbSuccess(id) =>
+        val t = ProjectTemplate.Default
+        dao.createEvent(id, EventSeq(0), ApplyTemplate(t), t.projectHash)
+        \/-(id)
+
+      case NameAlreadyInUse =>
+        -\/("You already have a project with that name.")
+    }
 }

@@ -38,8 +38,6 @@ object AppSiteMap {
     >> UseEitherTemplate(Oshiro.isAuthenticated, "loggedin/index")(landingPageTemplate)
   )
 
-  val WIP = pageWithStaticUrl("wip", "WIP")(_ / "wip") // TODO Remove
-
   val Land_BusinessCard = pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
 
   val About = pageWithStaticUrl("about", "About")(_ / "about")
@@ -65,10 +63,10 @@ object AppSiteMap {
     )
 
   val Project: PM[ProjectId] = (
-    MenuWithIdParam(ExternalId.Project)("project") / "project" / *
+    MenuWithIdParam(ExternalId.Project)("project_spa") / "project" / * / **
     >> TitleFromProjectName
     >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("loggedin/project")
+    >> UseTemplate("loggedin/project_spa")
     >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.CurrentProject) {
         RequestVars.ProjectId.setByParam(Project, "Project --> ProjectId")
         RequestVars.Project.deriveFromProjectId()
@@ -96,7 +94,6 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-WIP,
     Home, About, TermsOfService, PrivacyPolicy, Land_BusinessCard
     , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
     , Project, UseCaseEditor
@@ -111,7 +108,7 @@ WIP,
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
       SessionStats.onLogin(S.session, Oshiro.loggedInUser.get)
       Full(redirectHomeResp)
-      // Full(RedirectResponse("/project/cUZ0/share"))
+      Full(RedirectResponse("/project/oLctx/"))
     })
 
     def apiLogin = Menu.i("login.api") / "login.api" >> EarlyResponse(() => for {

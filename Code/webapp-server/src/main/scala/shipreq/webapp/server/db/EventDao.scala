@@ -616,7 +616,9 @@ object EventSqlHelpers {
 // =====================================================================================================================
 
 object EventDao {
-  case class EventSeq(value: Int) extends AnyVal
+  case class EventSeq(value: Int) extends AnyVal {
+    def succ = EventSeq(value + 1)
+  }
 }
 
 trait EventDao {
@@ -632,6 +634,6 @@ trait EventDao {
   /**
    * @return Events in order from lowest to highest seq.
    */
-  def findAllEvents(p: ProjectId): List[(EventSeq, VerifiedEvent)] =
-    SelectAllEvents(p).list
+  def findAllEvents(p: ProjectId): Vector[(EventSeq, VerifiedEvent)] =
+    SelectAllEvents(p).buildColl[Vector]
 }

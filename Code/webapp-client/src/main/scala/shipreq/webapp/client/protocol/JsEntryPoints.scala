@@ -5,6 +5,7 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
 import scalaz.effect.IO
 import shipreq.webapp.base.protocol.{JsEntryPoint => EP}
+import shipreq.webapp.client.app
 
 @JSExport(EP.client)
 object JsEntryPoints {
@@ -16,6 +17,6 @@ object JsEntryPoints {
       f(i).unsafePerformIO()
     }
 
-  @JSExport(EP.reactExamplesN)
-  final val reactExamples = entryPoint(EP.reactExamples)(hahaa.ReactExamples.main)
+  @JSExport(EP.projectN)
+  val project = entryPoint(EP.project)(app.ProjectSpaMain.main)
 }

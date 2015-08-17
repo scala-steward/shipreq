@@ -1,7 +1,6 @@
 %div(data-lift="surround?with=default;at=content")
   %script(data-lift="Link.clientJs")
-  %script(data-lift="head" type="text/javascript" src="/assets/vendor/katex/katex.min.js")
-  %link(data-lift="head" rel="stylesheet" type="text/css" href="/assets/vendor/katex/katex.min.css")
+  %script(data-lift="Link.katex")
   :css
     table {border-collapse:collapse}
     td, th {border: solid 1px #333}
@@ -50,9 +49,6 @@
     .isubsetM > input {margin-right: 3px}
     .isubsetM.checked > span, .isubsetV.checked > span {font-weight: bold; color: #060}
 
-  %section
-    #eg1 Eg 1
-    %hr
-    #eg2 Eg 2
+  #tgt Initialising...
 
-  %div(data-lift="WIP")
+  %div(data-lift="ProjectSPA")

@@ -15,7 +15,7 @@ import UnivEq.Implicits._
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.
  */
-object MakeEvent {
+object MakeEvent { // TODO Move
 
   sealed trait Result
   case class  MadeEvent(e: ActiveEvent) extends Result

@@ -52,7 +52,7 @@ class PermissionTest extends FunSpec with LiveTest with UserFixture {
 
     it("should allow owner") {
       val r = doLogin(user1).get(url) ! 200
-      r.responseText should include("project-title")
+      r.responseText should include(""" id="tgt"""")
     }
 
     it("should deny non-owner") {
