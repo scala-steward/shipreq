@@ -3,9 +3,9 @@ cd $(dirname "$0") || exit 1
 
 cd jetty \
   && echo "Removing crap..." \
-  && git rm -r */*{jaas,jsp}[.-]* lib/jsp etc/keystore \
+  && git rm -r */*{jaas,jsp}[.-]* lib/apache-jsp \
   && echo "Applying patches..." \
   && ../jetty-patch-no_logs_dir \
   && ../jetty-patch-start_patience \
   && echo "Done." \
-  && echo && git st
+  && echo && git st .

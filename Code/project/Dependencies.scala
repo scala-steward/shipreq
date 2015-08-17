@@ -88,7 +88,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.2.3.v20140905")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.3.2.v20150730")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
   }

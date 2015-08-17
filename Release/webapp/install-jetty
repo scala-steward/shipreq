@@ -21,4 +21,4 @@ tar xzf "$j" \
   && ln -s $tgt $ja \
   && git add $tgt $ja \
   && du -sh $tgt \
-  && echo && echo "git commit -m 'Upgrade Jetty to $v [1/2]'" && echo
+  && echo && echo "git commit -m 'Upgrade Jetty to $v [1/2]' ." && echo
