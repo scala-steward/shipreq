@@ -6,6 +6,8 @@ import shipreq.base.macros.MacroUtils
 
 object UtilMacros {
 
+  // TODO Add a method that builds values for ADT that is all case objects
+
   def  valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.quietValuesForAdt[T, V]
   def _valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.debugValuesForAdt[T, V]
 
