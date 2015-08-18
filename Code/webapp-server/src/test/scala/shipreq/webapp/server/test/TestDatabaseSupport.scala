@@ -63,6 +63,9 @@ object TestDB {
 
   def threadLocalResH(rollback: Boolean = true) =
     threadLocalRes(rollback).strength(TestDatabaseHelpers(_))
+
+  def threadLocalResHP(rollback: Boolean = true) =
+    threadLocalResH(rollback).xmap(t => (t._1, t._2, t._2.newProjectId()))(t => (t._1, t._2))
 }
 
 trait TestDatabaseSupport extends TestHelpers with TestDatabaseHelpers {

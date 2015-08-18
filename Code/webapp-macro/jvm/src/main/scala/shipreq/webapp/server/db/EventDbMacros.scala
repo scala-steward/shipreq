@@ -239,29 +239,49 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
         case Some((gn, gt)) if gn eq pn =>
           val gr = summonR(init, gt)
           dataR :+= q"$gr read o"
+
         case _ =>
-          val kn = pn.decodedName.toString
-          val key = keyLookup get kn getOrElse fail(s"Key missing for field: $kn")
           val (vr, vw) = summonRW(init, pt)
-          dataW :+= q"(($key, $vw write e.$pn))"
-          dataR :+= q"$vr read m($key)"
+          val kn = pn.decodedName.toString
+          keyLookup.get(kn) match {
+
+            // Mandatory field
+            case Some(key) =>
+              dataW :+= q"vs :+= (($key, $vw write e.$pn))"
+              dataR :+= q"$vr read m($key)"
+
+            // Optional field
+            case None => keyLookup.get(kn + "_?") match {
+              case Some(key) =>
+                val o = optionalJsonObjectFieldHelper(pt)
+                val e = init valDef o.createEmpty
+                val p = q"e.$pn"
+                dataW :+= q"if (!${o isEmpty p}) vs :+= (($key, $vw write $p))"
+                dataR :+= q"m.get($key).fold($e)($vr.read)"
+
+              case None => fail(s"Key missing for field: $kn")
+            }
+          }
       }
 
     val f1 = params.head
     val (f1n, f1t) = nameAndType(T, f1)
     val (idByte, idInteger, idMake) = implicitIdFns(f1t)
 
-    val writeToObj: Tree = gdNT match {
-      case None =>
-        q"json write Js.Obj(..$dataW)"
-      case Some((gn, gt)) =>
-        val gw = summonW(init, gt)
-        // We know we have a Vector by looking at GenericDataMacros. Unit tests will catch change.
-        q"""
-          val gvs = $gw.write(e.$gn).asInstanceOf[Js.Obj].value.asInstanceOf[Vector[(String, Js.Value)]]
-          val vs = ${dataW.foldLeft[Tree](q"gvs")((q, expr) => q"$q :+ $expr")}
-          json write Js.Obj(vs: _*)
-        """
+    val writeToObj: Tree = {
+      val initVec = gdNT match {
+        case None => q"Vector.empty[(String, Js.Value)]"
+        case Some((gn, gt)) =>
+          val gw = summonW(init, gt)
+          // We know we have a Vector by looking at GenericDataMacros. Unit tests will catch change.
+          q"$gw.write(e.$gn).asInstanceOf[Js.Obj].value.asInstanceOf[Vector[(String, Js.Value)]]"
+      }
+
+      q"""
+        var vs = $initVec
+        ..$dataW
+        json write Js.Obj(vs: _*)
+      """
     }
 
     val writeFn = writeIdAnd(T)(f1n, idByte, idInteger)(writeToObj)
@@ -279,6 +299,17 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
 
     if (debug) println("\n" + impl + "\n")
     c.Expr[DbCodec[T]](impl)
+  }
+
+  case class OptionalJsonObjectFieldHelper(createEmpty: Tree, isEmpty: Tree => Tree = t => q"$t.isEmpty")
+  def optionalJsonObjectFieldHelper(t: Type): OptionalJsonObjectFieldHelper = {
+    val s = t.toString
+    if (s startsWith "Set[")
+      OptionalJsonObjectFieldHelper(q"Set.empty: $t")
+    else if (s startsWith "japgolly.nyaya.util.Multimap[")
+      OptionalJsonObjectFieldHelper(q"japgolly.nyaya.util.Multimap.empty: $t")
+    else
+      fail(s"Don't know how to handle optional JSON field of type: $s")
   }
 
   def quietRegistry[R: c.WeakTypeTag, W <: R: c.WeakTypeTag](typeIds: c.Expr[R => Short]): c.Expr[DbCodec.Registry[R, W]] = implRegistry[R, W](false)(typeIds)

@@ -79,4 +79,9 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired <~ b
 
   def ∅[A](implicit cbf: CanBuildFrom[Nothing, Nothing, A]): A = cbf().result()
+
+  def nesd[A: UnivEq](remove: A*)(add: A*): NonEmpty[SetDiff[A]] = {
+    val sd = SetDiff(removed = remove.toSet, add.toSet)
+    NonEmpty(sd) getOrElse sys.error(s"nesd()() called with no data.")
+  }
 }

@@ -20,6 +20,7 @@ sealed abstract class UnivEqImplicits {
   @inline implicit def univEqString : UnivEq[String]  = univEqForce
   @inline implicit def univEqLong   : UnivEq[Long]    = univEqForce
   @inline implicit def univEqInt    : UnivEq[Int]     = univEqForce
+  @inline implicit def univEqInteger: UnivEq[Integer] = univEqForce
   @inline implicit def univEqShort  : UnivEq[Short]   = univEqForce
   @inline implicit def univEqBoolean: UnivEq[Boolean] = univEqForce
 

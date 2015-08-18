@@ -24,12 +24,33 @@ object EventDbCodecs {
   implicit val pickleInt: ReadWriter[Int] =
     ReadWriter(i => Js.Num(i), { case Js.Num(i) => i.toInt })
 
+  private def isOneElemSet[A](s: Set[A]): Boolean = {
+    val i = s.iterator
+    if (i.hasNext) {
+      i.next()
+      !i.hasNext
+    } else
+      false // empty set
+  }
+
   implicit class ReadWriterExt[A](private val rw: ReadWriter[A]) extends AnyVal {
     import StdlibCodecs.All._
     private implicit def _rw = rw
 
     def set(implicit ev: UnivEq[A]): ReadWriter[Set[A]] =
       ReadWriter.merge(SeqishR[A, Set], SeqishW[A, Set])
+
+    /** A single-value set is stored as just that sole value directly.
+      * Unambiguous as long as A itself never encodes to a Js.Arr. */
+    def setNice(implicit ev: UnivEq[A]): ReadWriter[Set[A]] = {
+      val rws = set
+      val es = Set.empty[A]
+      val r1 = rw.read.andThen(es + _)
+      val w1 = rw.write
+      ReadWriter(
+        s => if (isOneElemSet(s)) w1(s.head) else rws.write(s),
+        r1 orElse rws.read)
+    }
 
     def vector: ReadWriter[Vector[A]] =
       ReadWriter.merge(SeqishR[A, Vector], SeqishW[A, Vector])
@@ -56,7 +77,7 @@ object EventDbCodecs {
     })
 
   def setDiff[A: UnivEq](implicit rw: ReadWriter[A]): ReadWriter[SetDiff[A]] = {
-    val rws = rw.set
+    val rws = rw.setNice
     ReadWriter(sd => {
       var kvs: List[(String, Js.Value)] = Nil
       if (sd.added.nonEmpty)
@@ -120,7 +141,7 @@ object EventDbCodecs {
   implicit val pickleReqIdNESD = pickleNESD[ReqId]
 
   implicit val pickleReqCodeIdSet: ReadWriter[Set[ReqCodeId]] =
-    pickleReqCodeId.set
+    pickleReqCodeId.setNice
 
   implicit val pickleFieldId: ReadWriter[FieldId] = pickleAdtOS {
     case _: CustomField.Text       .Id => "x"
@@ -483,7 +504,7 @@ object EventDbCodecs {
   implicit val dbCodecDeleteTagGroup       : DbCodec[DeleteTag]             = dbCodec2
   implicit val dbCodecPatchImplicationSrc  : DbCodec[PatchImplicationSrc]   = dbCodec2
   implicit val dbCodecPatchImplicationTgt  : DbCodec[PatchImplicationTgt]   = dbCodec2
-  implicit val dbCodecPatchReqCodes        : DbCodec[PatchReqCodes]         = dbCodecIdAnd('remove -> "-", 'add -> "+", 'restore -> "^")
+  implicit val dbCodecPatchReqCodes        : DbCodec[PatchReqCodes]         = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
   implicit val dbCodecPatchReqTags         : DbCodec[PatchReqTags]          = dbCodec2
   implicit val dbCodecRepositionField      : DbCodec[RepositionField]       = dbCodec2
   implicit val dbCodecSetCustomTextField   : DbCodec[SetCustomTextField]    = dbCodecIdAnd('fid -> "f", 'value -> "t")
