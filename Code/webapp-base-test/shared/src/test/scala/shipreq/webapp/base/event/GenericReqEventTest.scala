@@ -78,8 +78,6 @@ object GenericReqEventTest extends TestSuite {
 
   import CreateGenericReqGD._
 
-  implicit def autoNES[A, B: UnivEq](a: A)(implicit f: A => B) = NonEmptySet[B](f(a))
-
   val empty1 = CreateGenericReq(1, mf, emptyValues)
   val implied2 = CreateGenericReq(2, mf, nev(ImpSrcs(NonEmptySet(empty1.id))))
   val empty3 = CreateGenericReq(3, mf, emptyValues)
