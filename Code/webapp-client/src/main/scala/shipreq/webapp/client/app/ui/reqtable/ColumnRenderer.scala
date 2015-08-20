@@ -82,23 +82,23 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     makeS("∅", Function const <.span("∅"))
 
   private def pubid = make {
-    case GenericReqRow(req, _, _) => widgets.pubidColumnValue(req.pubid)
-    case _: ReqCodeGroupRow       => `N/A`
+    case r: GenericReqRow   => widgets.pubidColumnValue(r.req.pubid)
+    case _: ReqCodeGroupRow => `N/A`
   }
 
   private def reqType = make {
-    case GenericReqRow(req, _, _) => widgets.reqType(req.reqTypeId)
-    case _: ReqCodeGroupRow       => `N/A`
+    case r: GenericReqRow   => widgets.reqType(r.req.reqTypeId)
+    case _: ReqCodeGroupRow => `N/A`
   }
 
   private def code = make {
-    case GenericReqRow(_, exp, _)       => widgets.reqCodes(exp.reqCodeTree, exp.reqCodes)
+    case GenericReqRow(_, exp, _, _)    => widgets.reqCodes(exp.reqCodeTree, exp.reqCodes)
     case ReqCodeGroupRow(_, _, Some(t)) => widgets.reqCodeTreeItem(t)
     case ReqCodeGroupRow(_, c, None)    => widgets.flatReqCode(c)
   }
 
   private def title = make {
-    case GenericReqRow(req, _, _) => widgets.reqTitle(req)
+    case r: GenericReqRow         => widgets.reqTitle(r.req)
     case ReqCodeGroupRow(g, _, _) => widgets.reqCodeGroupTitle(g)
   }
 
@@ -115,8 +115,8 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   private def cfText(id: CustomField.Text.Id) = {
     val f = widgets.customTextField(id)
     make {
-      case GenericReqRow(req, _, _) => f(req.id).fold(empty)(w => w)
-      case _: ReqCodeGroupRow       => `N/A`
+      case r: GenericReqRow   => f(r.req.id).fold(empty)(w => w)
+      case _: ReqCodeGroupRow => `N/A`
     }
   }
 }

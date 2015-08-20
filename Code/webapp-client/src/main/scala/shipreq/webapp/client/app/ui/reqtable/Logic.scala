@@ -288,7 +288,8 @@ private[reqtable] object Logic {
 
               // Build
               val mv = multiValuesFn(id)
-              exps.toStream.map(GenericReqRow(r, _, mv))
+              exps.toStream.zipWithIndex.map(x =>
+                GenericReqRow(r, x._1, mv, x._2))
             }
         }
 
@@ -486,7 +487,7 @@ private[reqtable] object Logic {
       (x, y) match {
         case (a: GenericReqRow, b: GenericReqRow) =>
           if (a.req.id ≟ b.req.id)
-            Some(GenericReqRow(a.req, a.exp |+| b.exp, a.mv |+| b.mv)) // TODO resort
+            Some(GenericReqRow(a.req, a.exp |+| b.exp, a.mv |+| b.mv, a.instanceId)) // TODO resort
           else
             None
         case (_: GenericReqRow,   _: ReqCodeGroupRow)

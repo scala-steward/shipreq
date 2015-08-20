@@ -57,20 +57,6 @@ object Table {
   case object FocusNone  extends KeyboardAction
   case object EditStart  extends KeyboardAction
 
-  class KeyUniqueness {
-    val keysSeen = new scala.collection.mutable.HashMap[js.Any, Int]
-
-    def apply(k: js.Any): js.Any = {
-      var k2 = k
-      val n = keysSeen.get(k).fold(1){r =>
-        k2 = k.toString + "!" + r
-        r + 1
-      }
-      keysSeen.update(k, n)
-      k2
-    }
-  }
-
   final class Backend($: BackendScope[Props, Unit]) extends KeyPressListener {
 
     val keyDispatch =
@@ -146,19 +132,13 @@ object Table {
       val rows  = p.rows
       val focus = p.focus.value
 
-      val uniqKey = new KeyUniqueness
-      val rowKey: Row => js.Any = {
-        case r: GenericReqRow   => uniqKey(r.req.id.value)
-        case r: ReqCodeGroupRow => "g" + r.id.value.value.toString
-      }
-
       def renderRows =
-        (0 until rows.length).toReactNodeArray { i =>
+        rows.indices.toReactNodeArray { i =>
           val row = rows(i)
           val curFocus = focus.filter(_.rowInd ≟ i).map(_.col)
           val rowCells = p.cells(row.id)
           val rp = RowProps(row, crs, rowCells, curFocus, setFocusFn(i))
-          RowComponent.withKey(rowKey(row))(rp)
+          RowComponent.withKey(row.id.key)(rp)
         }
 
       // Render

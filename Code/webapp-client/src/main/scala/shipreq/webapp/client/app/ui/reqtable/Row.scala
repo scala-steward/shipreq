@@ -6,6 +6,7 @@ import monocle.{Lens, Optional}
 import monocle.function.index
 import monocle.std.mapIndex
 import monocle.macros.Lenses
+import scala.scalajs.js
 import scalaz.{Equal, Semigroup, Monoid}
 import scalaz.std.map._
 import scalaz.syntax.semigroup._
@@ -100,12 +101,16 @@ object MultiValues {
 // =====================================================================================================================
 
 sealed trait Row {
-  def id: Row.Id
+  val id: Row.Id
   def live: Live
 }
 
-case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) extends Row {
-  override def id = Row.GenericReqRowId(req.id)
+/**
+ * @param instanceId An arbitrary number that, coupled with `req.id` serves to uniquely identify a row.
+ *                   Reason is that the same GenericReq can appear in multiple rows.
+ */
+case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues, instanceId: Int) extends Row {
+  override val id = Row.GenericReqRowId(req.id, instanceId)
   override def live = req.live
   override def toString = s"\n$req\n$exp\n$mv\n"
 }
@@ -113,16 +118,34 @@ case class GenericReqRow(req: GenericReq, exp: Expansion, mv: MultiValues) exten
 case class ReqCodeGroupRow(groupAndId     : ReqCodeGroup.AndId,
                            reqCode        : ReqCode.Value,
                            reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
-  override def id   = Row.ReqCodeGroupRowId(reqCodeId)
+  override val id   = Row.ReqCodeGroupRowId(reqCodeId)
   override def live = Live
   def reqCodeId     = groupAndId.id
   def group         = groupAndId.group
 }
 
 object Row {
-  sealed trait Id
-  case class GenericReqRowId(value: GenericReqId) extends Id
-  case class ReqCodeGroupRowId(value: ReqCodeId) extends Id
+  sealed trait Id {
+    /** A stable, unique value so that React can correctly identify each row. */
+    def key: js.Any
+  }
+
+  /**
+   * @param instanceId An arbitrary number that, coupled with `reqId` serves to uniquely identify a row.
+   *                   Reason is that the same GenericReq can appear in multiple rows.
+   */
+  case class GenericReqRowId(reqId: GenericReqId, instanceId: Int) extends Id {
+    override def key =
+      if (instanceId == 0)
+        reqId.value
+      else
+        reqId.value.toString + (' ' + instanceId).toChar.toString
+  }
+
+  case class ReqCodeGroupRowId(value: ReqCodeId) extends Id {
+    override def key =
+      "C" + value.value
+  }
 
   implicit def idEqualityR : UnivEq[GenericReqRowId]   = UnivEq.derive
   implicit def idEqualityG : UnivEq[ReqCodeGroupRowId] = UnivEq.derive
@@ -137,23 +160,23 @@ object Row {
     case r: GenericReqRow   => Some(r.exp)
     case _: ReqCodeGroupRow => None
   }(nv => {
-    case GenericReqRow(r, _, m) => GenericReqRow(r, nv, m)
-    case r: ReqCodeGroupRow     => r
+    case GenericReqRow(r, _, m, i) => GenericReqRow(r, nv, m, i)
+    case r: ReqCodeGroupRow        => r
   })
 
   val multiValues = Optional[Row, MultiValues] {
     case r: GenericReqRow   => Some(r.mv)
     case _: ReqCodeGroupRow => None
   }(nv => {
-    case GenericReqRow(r, e, _) => GenericReqRow(r, e, nv)
-    case r: ReqCodeGroupRow     => r
+    case GenericReqRow(r, e, _, i) => GenericReqRow(r, e, nv, i)
+    case r: ReqCodeGroupRow        => r
   })
 
   val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
     case r: GenericReqRow   => r.exp.reqCodes
     case r: ReqCodeGroupRow => Vector1(r.reqCode)
   }(nv => {
-    case GenericReqRow(r, e, m) => GenericReqRow(r, e.copyReqCodes(nv), m)
+    case GenericReqRow(r, e, m, i) => GenericReqRow(r, e.copyReqCodes(nv), m, i)
     case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCode = nv.head)
     case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
@@ -163,7 +186,7 @@ object Row {
     case r: GenericReqRow   => r.exp.reqCodeTree
     case r: ReqCodeGroupRow => r.reqCodeTreeItem.toVector
   }(nv => {
-    case GenericReqRow(r, e, m) => GenericReqRow(r, e.copyReqCodeTree(nv), m)
+    case GenericReqRow(r, e, m, i) => GenericReqRow(r, e.copyReqCodeTree(nv), m, i)
     case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCodeTreeItem = Some(nv.head))
     case r: ReqCodeGroupRow if nv.length == 0 => r.copy(reqCodeTreeItem = None)
     case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r

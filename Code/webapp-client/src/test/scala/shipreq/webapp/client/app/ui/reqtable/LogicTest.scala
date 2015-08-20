@@ -297,7 +297,10 @@ object LogicTest extends TestSuite {
       E.equal("stats.visibleRows", tableStats.visibleRows, finalRows.size) ∧
       E.equal("stats.visibleReqs", tableStats.visibleReqs, rowGReqIds.size)
 
-    def all = gather ∧ sorting ∧ stats
+    def uniqueKeys =
+      E.distinct("Row keys must be unique", finalRows.map(_.id.key))
+
+    def all = gather ∧ sorting ∧ stats ∧ uniqueKeys
   }
 
   def gen: Gen[LogicTests] =
