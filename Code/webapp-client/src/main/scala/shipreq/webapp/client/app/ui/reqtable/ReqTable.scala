@@ -38,27 +38,20 @@ object ReqTable {
       ViewSettings.default.copy(filterDead = p.fd),
       FilterEditor.initialState,
       CreationInterface.initState,
-      Cell.emptyTableState,
-      None)
+      Cell.emptyTableState)
 
   @Lenses
   case class State(project     : Project,
                    viewSettings: ViewSettings,
                    filter      : FilterEditor.State,
                    creation    : CreationInterface.State,
-                   cellStates  : Cell.TableState,
-                   focus       : Option[Table.Focus]) {
+                   cellStates  : Cell.TableState) {
 
     def recvChanges(changes: Changes): State =
       copy(project = changes.p2) // TODO This obviously affects other things
 
-    def updateVS(newVS: ViewSettings): State = {
-      val newFocus   = focus // TODO
-      copy(viewSettings = newVS, focus = newFocus)
-    }
-
-    def updateFocus(newFocus: Option[Table.Focus]): State =
-      copy(focus = newFocus)
+    def updateVS(newVS: ViewSettings): State =
+      copy(viewSettings = newVS)
 
     def updateCell(loc: Cell.Loc, state: Cell.State): State =
       copy(cellStates = cellStates.set(loc, state))
@@ -75,7 +68,6 @@ object ReqTable {
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
 
     val setViewSettings = ReusableFn($).modState.endoCall(_.updateVS)
-    val setFocus        = ReusableFn($).modState.endoCall(_.updateFocus)
     val setCreation     = $ zoomL State.creation
 
     val project      = Px.thunkM($.state.project)
@@ -136,7 +128,7 @@ object ReqTable {
       val creationProps = CreationInterface.Props(createIO, s.creation)
 
       val tableProps = Table.Props(
-        project, rows, colRnds, colEditors, s.cellStates, setFocus.asVar(s.focus))
+        project, rows, colRnds, colEditors, s.cellStates)
 
       <.div(
         vsEditor(vsProps),

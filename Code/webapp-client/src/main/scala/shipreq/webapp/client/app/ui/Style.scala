@@ -139,14 +139,11 @@ object Style extends StyleSheet.Inline {
       border(1 px, solid, c"#777")
     ))
 
-    val cell = styleF[(ColumnRenderer.Status, Boolean)](ColumnRenderer.statusDomain *** Domain.boolean){
-      case (status, focus) => styleS(
+    val cell = styleF(ColumnRenderer.statusDomain){ status =>
+      styleS(
         border(1 px, solid, c"#ccc"),
-        mixinIf(focus)(
-          backgroundColor(c"#e9e9ff"),
-          outline(rgba(0, 0, 200, 0.2), 2 px, solid),
-          outlineOffset(-1 px)
-        ),
+        &.focus(
+          backgroundColor(c"#e9e9ff")),
         (status match {
           case ColumnRenderer.Normal => mixin(
             padding(v = 2.px, h = 4.px))
