@@ -75,7 +75,7 @@ object ProjectSPA extends DI with HasLogger {
       case \/-(s) => s
       case -\/((err, seqs)) => sys.error(
         s"Error building project #${projectId.value} from DB events: $err"
-        + s"\n\nSeqs: ${seqs mkString ", "}"
+        + s"\n\nSeqs: ${seqs.map(_.value) mkString ", "}"
       )
     }
 
@@ -87,6 +87,8 @@ object ProjectSPA extends DI with HasLogger {
 
 class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
   import ProjectSPA._
+
+  // TODO ProjectSPA needs thread-safety. Invalid hash generation is possible!!!
 
   // val project = RequestVars.Project.get.value
 
