@@ -7,7 +7,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT, CustomTextField => CTF, ReqCodeGroupTitle}
+import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT, CustomTextField => CTF, InlineIssueDesc => IID, ReqCodeGroupTitle}
 import shipreq.webapp.base.text.Text.Equality._
 import ApplyEventTestFns._
 import DeletionAction._
@@ -99,7 +99,13 @@ object GenericReqEventTest extends TestSuite {
 //  val someCTF2: CTF.OptionalText =
 //    Vector(CTF.Literal("hi again!"), CTF.blankLine, CTF.Literal("bye again."))
 
-  implicit val init = InitialEvents(createMF, createFR, createAT1, createAT2, createTG1, createCTF1)
+  val createIssueType1 = {
+    import CustomIssueTypeGD._
+    CreateCustomIssueType(1, nev(Key("TBD"), Desc(None)))
+  }
+  val issueType1 = createIssueType1.id
+
+  implicit val init = InitialEvents(createIssueType1, createMF, createFR, createAT1, createAT2, createTG1, createCTF1)
 
   def assertReq(p: Project, id: GenericReqId)(req      : GenericReq,
                                               tags     : Set[ApplicableTagId] = UnivEq.emptySet,
@@ -180,6 +186,11 @@ object GenericReqEventTest extends TestSuite {
 
   val createRefToCode3 = CreateGenericReq(500, mf, nev(
     Title(NonEmptyVector(GRT.Literal("Ref to #3: "), GRT.CodeRef(3)))))
+
+  // As above but hides the ref in an IssueDesc
+  val createRefToCode3I = CreateGenericReq(500, mf, nev(
+    Title(NonEmptyVector(GRT.Issue(issueType1, Vector(
+      IID.Literal("Ref to #3: "), IID.CodeRef(3)))))))
 
   val del1 = DeleteReq(1, SoftDel)
   val delA = DeleteReq(reqA, SoftDel)
@@ -330,7 +341,7 @@ object GenericReqEventTest extends TestSuite {
         test(createRCG(3, "a.b.c"))("a.b.c: AD[#3Grp]")
 
         // Create a CodeRef to #3
-        test(createRefToCode3)("a.b.c: AD[#3Grp]")
+        test(createRefToCode3I)("a.b.c: AD[#3Grp]")
 
         // 1.2: Rename 1→1'
         test(updateRCGCode(3, "a.x"))("a.x: AD[#3Grp]")

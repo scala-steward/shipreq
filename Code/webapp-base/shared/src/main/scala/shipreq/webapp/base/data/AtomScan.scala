@@ -24,52 +24,60 @@ object AtomScan {
     var issuesG : Multimap[ReqCodeId, Vector, AnyIssue]        = UnivEq.emptyMultimap
     var codeRefs: Set[ReqCodeId]                               = UnivEq.emptySet
 
-    def parseR(k: ReqId)(atom: AnyAtom): Unit =
-      atom match {
-        case a: AnyIssue       => issuesR = issuesR.add(k, a)
-        case a: TagRef#TagRef  => tagsR = tagsR.add(k, a.value)
-        case a: ReqRef#CodeRef => codeRefs += a.value
-        case _                 => ()
-      }
+    def scan(reqId    : ReqId     = null,
+             reqCodeId: ReqCodeId = null)
+            (text: Text.AnyOptional): Unit = {
 
-    def parseD(atom: AnyAtom): Unit =
-      atom match {
-        case a: ReqRef#CodeRef => codeRefs += a.value
-        case _                 => ()
-      }
+      def go(as: Text.AnyOptional): Unit =
+        as foreach {
+          case _: Literal         # Literal
+             | _: ReqRef          # ReqRef
+             | _: PlainTextMarkup # EmailAddress
+             | _: PlainTextMarkup # WebAddress
+             | _: PlainTextMarkup # MathTeX
+             | _: NewLine         # BlankLine => ()
 
-    def parseG(k: ReqCodeId)(atom: AnyAtom): Unit =
-      atom match {
-        case a: AnyIssue       => issuesG = issuesG.add(k, a)
-        case a: ReqRef#CodeRef => codeRefs += a.value
-        case _                 => ()
-      }
+          case a: ReqRef#CodeRef =>
+            codeRefs += a.value
 
-    def parse(parser: AnyAtom => Unit, text: Text.AnyOptional): Unit =
-      text foreach parser
+          case a: Issue#Issue =>
+            if (reqId     ne null) issuesR = issuesR.add(reqId,     a)
+            if (reqCodeId ne null) issuesG = issuesG.add(reqCodeId, a)
+            go(a.desc)
+
+          case a: TagRef#TagRef =>
+            if (reqId ne null) tagsR = tagsR.add(reqId, a.value)
+
+          case a: ListMarkup#UnorderedList =>
+            a.items foreach go
+        }
+
+      go(text)
+    }
 
     // Parse reqs
     p.reqs.reqs.values.foreach {
       case r: GenericReq =>
-        parse(parseR(r.id), r.title)
+        scan(reqId = r.id)(r.title)
     }
 
     // Parse custom-text-field text
     val customTextFieldText = p.reqText
     val liveTextFields      = p.config.liveCustomTextFields.map(_.id).toSet
     for {
-      (tf, m2) <- customTextFieldText
-      (reqId, txt) <- m2
+      (tf, textByReqId) <- customTextFieldText
+      (id, txt)         <- textByReqId
     } {
+      val t = txt.whole
       if (liveTextFields contains tf)
-        parse(parseR(reqId), txt.whole)
+        scan(reqId = id)(t)
       else
-        parse(parseD, txt.whole)
+        scan()(t)
     }
 
     // Parse ReqCode groups
     for (gi <- p.reqCodes.activeGroups)
-      parse(parseG(gi.id), gi.group.title)
+      scan(reqCodeId = gi.id)(gi.group.title)
 
     new AtomScan(tagsR, issuesR, issuesG, codeRefs)
   }
