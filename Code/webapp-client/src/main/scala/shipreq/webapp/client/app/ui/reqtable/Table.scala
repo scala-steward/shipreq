@@ -116,14 +116,18 @@ object Table {
 
     def render = {
       val crs = $.props
-      <.thead(
-        <.tr(
-          crs.toStream.map(cr =>
-            <.th(
-              *.columnHeader(cr.column.live),
-              ^.tabIndex := 0,
-              ^.onKeyDown ==> onKeyDown,
-              cr.header))))
+      def headerCells = {
+        var first = true
+        crs.toStream.map { cr =>
+          val isFirst = first && { first = false; true }
+          <.th(
+            *.columnHeader(cr.column.live),
+            ^.tabIndex := (if (isFirst) 0 else -1),
+            ^.onKeyDown ==> onKeyDown,
+            cr.header)
+        }
+      }
+      <.thead(<.tr(headerCells))
     }
   }
 
