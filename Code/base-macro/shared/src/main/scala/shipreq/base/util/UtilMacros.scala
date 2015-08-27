@@ -33,7 +33,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
 
     val impl = q"_root_.shipreq.base.util.NonEmptyVector.varargs[$V](..$values)"
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[NonEmptyVector[V]](impl)
   }
 
@@ -91,7 +91,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
       } else
         adt
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Equal[T]](impl)
   }
 }

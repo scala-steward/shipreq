@@ -176,7 +176,7 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
 
     val impl = q"shipreq.base.util.NonEmpty.force($values)"
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[d.value.NonEmptyValues](impl)
   }
@@ -207,7 +207,7 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
         us
       } """
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[d.value.Values](impl)
   }
@@ -285,7 +285,7 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
 
     // ↑ rwValue isn't used so I don't care right now
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[d.value.ValueTypeClasses[ReadWriter]](impl)
   }
@@ -318,7 +318,7 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
       ValueTypeClasses(value, values, nev)
     } """
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[d.value.ValueTypeClasses[Pickler]](impl)
   }

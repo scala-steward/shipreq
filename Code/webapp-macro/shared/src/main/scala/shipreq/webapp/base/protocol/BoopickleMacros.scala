@@ -89,7 +89,7 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
 
     val impl = q"ConstPickler($t)"
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Pickler[T]](impl)
   }
 
@@ -141,7 +141,7 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
           } """
       }
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Pickler[T]](impl)
   }
 
@@ -211,7 +211,7 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
         """
       }
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Pickler[T]](impl)
   }
 }

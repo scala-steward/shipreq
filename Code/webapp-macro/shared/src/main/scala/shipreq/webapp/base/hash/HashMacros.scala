@@ -57,7 +57,7 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
           q"$Hash.fn[$T](t => joinHashes($hashes))"
       }
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Hash[T]](impl)
   }
 
@@ -85,7 +85,7 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
           fail(s"Class constructor has ${params.length} parameters. Expected 0.")
       }
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Hash[T]](impl)
   }
 
@@ -105,7 +105,7 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
     val cases = types.map(t => cq"$a : $t => Hash[$t].hash($a)")
     val impl  = q"Hash.fn[$T]{ case ..$cases }"
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Hash[T]](impl)
   }
 }

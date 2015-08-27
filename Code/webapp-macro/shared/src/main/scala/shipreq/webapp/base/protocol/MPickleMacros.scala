@@ -106,7 +106,7 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
           init.wrap(q"ReadWriter[$T](j => Js.Arr(..$writes), {case $rCases} )")
       }
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[ReadWriter[T]](impl)
   }
 
@@ -207,7 +207,7 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
 
     val impl = newReadWriter(init, T)(wFn, rFn)
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[ReadWriter[T]](impl)
   }
@@ -266,7 +266,7 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
 
     val impl = newReadWriter(init, T)(q"{ case ..$wCases }", q"{ case Js.Num(n) => n.toInt match {case ..$rCases}}")
 
-    if (debug) println("\n" + impl + "\n" + sep)
+    if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[ReadWriter[T]](impl)
   }

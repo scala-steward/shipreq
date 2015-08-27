@@ -94,7 +94,7 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
       (atom, vec, nev): (TC[$tTerm.Atom], TC[$tTerm.OptionalText], TC[$tTerm.NonEmptyText])
     } """
 
-    debug("\n" + impl + "\n")
+    debug("\n" + showCode(impl) + "\n")
 
     c.Expr[Any](impl)
   }

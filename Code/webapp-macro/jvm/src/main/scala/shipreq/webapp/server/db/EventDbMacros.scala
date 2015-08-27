@@ -125,7 +125,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       new DbCodec.PolyId[$T]({case ..$byteCases}, {case ..$intCases}, {case ..$makeCases})
     """
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec.PolyId[T]](impl)
   }
 
@@ -150,7 +150,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
 
     val impl = q"new DbCodec[$T]((b, i, _) => $apply($idMake), $writeFn)"
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec[T]](impl)
   }
 
@@ -173,7 +173,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
         e => (noDataIdTypePG, null, $writeData))
     """
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec[T]](impl)
   }
 
@@ -197,7 +197,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       new DbCodec[$T]((b, i, d) => $apply($idMake, $readData), $writeFn)
     """
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec[T]](impl)
   }
 
@@ -308,7 +308,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
         $writeFn)
     """
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec[T]](impl)
   }
 
@@ -365,7 +365,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       new DbCodec.Registry[$R, $W](i => (i: @scala.annotation.switch) match {case ..$rCases}, {case ..$wCases})
     """
 
-    if (debug) println("\n" + impl + "\n")
+    if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec.Registry[R, W]](impl)
   }
 }
