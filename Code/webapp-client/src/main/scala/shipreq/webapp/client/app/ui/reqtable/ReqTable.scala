@@ -4,6 +4,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
+import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateContentFn, UpdateContentCmd}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
@@ -72,6 +73,7 @@ object ReqTable {
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
 
     val setViewSettings = ReusableFn($).modState.endoCall(_.updateVS)
+    val modViewSettings = setViewSettings.contramap[EndoFn[ViewSettings]](_($.state.viewSettings))
     val setCreation     = $ zoomL State.creation
 
     val project      = Px.thunkM($.state.project)
@@ -136,7 +138,7 @@ object ReqTable {
       val creationProps = CreationInterface.Props(createIO, s.creation)
 
       val tableProps = Table.Props(
-        project, rows, colRnds, colEditors, s.cellStates)
+        project, rows, colRnds, colEditors, s.cellStates, modViewSettings)
 
       <.div(
         ViewSettingsEditor.Component(vsProps),

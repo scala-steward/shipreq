@@ -48,6 +48,17 @@ object SortCriterion {
     case d: SortInconclusive with HasBlanks => possibilitiesICB(d)
     case d: SortInconclusive with NoBlanks  => possibilitiesIIB(d)
   }
+
+  // Syntax Helpers
+  @inline implicit class SortCriterionExt1(private val c: SortInconclusive with HasBlanks) extends AnyVal {
+    @inline def /(sm: ConsiderBlanks) = InconclusiveCB(c, sm)
+  }
+  @inline implicit class SortCriterionExt2(private val c: SortInconclusive with NoBlanks) extends AnyVal {
+    @inline def /(sm: IgnoreBlanks) = InconclusiveIB(c, sm)
+  }
+  @inline implicit class SortCriterionExt3(private val c: SortConclusive) extends AnyVal {
+    @inline def /(sm: IgnoreBlanks) = Conclusive(c, sm)
+  }
 }
 
 import SortCriterion._
@@ -85,18 +96,73 @@ case class SortCriteria(init: Vector[Inconclusive], last: Conclusive) {
     val c = if (f(last.column)) last else SortCriteria.defaultConclusive
     SortCriteria(i, c)
   }
+
+  /**
+   * The user "wants" this column, in the context of sort criteria.
+   * The user's desire has been delivered through a very limited information stream consisting only of a column,
+   * (i.e. usually indicated by a click on a column name), and so without additional information to help interpret
+   * our masters' desire, we apply some rules:
+   *
+   * 1. User wants column to be primary sort column.
+   * 2. If column is already the primary sort column, user wants to change its direction.
+   */
+  def want(column: Column): SortCriteria = {
+    import SortMethod._
+
+    def next[A: UnivEq](as: Vector[A])(a: A): A =
+      as((as.indexOf(a) + 1) % as.length)
+
+    column match {
+      case c: Column.SortInconclusive =>
+        val newInit =
+          if (init.headOption.exists(_.column ≟ c)) {
+            // Column(I) already primary
+            val h = init.head match {
+              case ex: InconclusiveCB => ex.column / next(considerBlanks.whole)(ex.method)
+              case ex: InconclusiveIB => ex.column / next(ignoreBlanks  .whole)(ex.method)
+            }
+            h +: init.tail
+          } else init.find(_.column ≟ c) match {
+            case Some(existing) =>
+              //  Column(I) exists but isn't primary
+              existing +: init.filterNot(_ eq existing)
+            case None =>
+              //  Column(I) is new
+              val h = c match {
+                case c2: Column.HasBlanks => c2 / considerBlanks.head
+                case c2: Column.NoBlanks  => c2 / ignoreBlanks  .head
+              }
+              h +: init
+          }
+        SortCriteria(newInit, last)
+
+      case c: Column.SortConclusive =>
+        val newLast =
+          if (c ≟ last.column) {
+            if (init.isEmpty)
+              // Column(C) already primary
+              c / next(ignoreBlanks.whole)(last.method)
+            else
+              // Column(C) exists but isn't primary
+              last
+          } else
+            // Column(C) change
+            c / ignoreBlanks.head
+        SortCriteria(Vector.empty, newLast)
+    }
+  }
 }
 
 object SortCriteria {
   implicit def equality: UnivEq[SortCriteria] = UnivEq.derive
 
   val defaultConclusive =
-    Conclusive(Column.Pubid, SortMethod.Asc)
+    Column.Pubid / SortMethod.Asc
 
   def byPubidOnly =
     SortCriteria(Vector.empty, defaultConclusive)
 
   val default = SortCriteria(
-    Vector(InconclusiveCB(Column.Code, SortMethod.AscThenBlanks)),
+    Vector(Column.Code / SortMethod.AscThenBlanks),
     defaultConclusive)
 }

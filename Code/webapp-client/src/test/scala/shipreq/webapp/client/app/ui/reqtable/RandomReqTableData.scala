@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.nyaya.test._
 import scalaz.std.vector._
+import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
@@ -39,20 +40,49 @@ object RandomReqTableData {
   def sortMethodB: Gen[SortMethod.ConsiderBlanks] =
     RandomData.oneofV(SortMethod.considerBlanks)
 
-  def sortCriteriaC: Gen[SortCriterion.Conclusive] =
-    sortMethodI.map(SortCriterion.Conclusive(Column.Pubid, _))
+  def columnC: Gen[Column.SortConclusive] =
+    Gen insert Column.Pubid
 
-  private def `change ↖sortCriteriaC↖ if more conclusive criteria added`: Column.SortConclusive => Unit = {
+  private def `change ↖columnCon↖ if more conclusive criteria added`: Column.SortConclusive => Unit = {
     case Column.Pubid => ()
   }
 
-  def sortCriteriaI(legalCols: Vector[Column.SortInconclusive]): Gen[Vector[SortCriterion.Inconclusive]] =
-    Gen.subset(legalCols).shuffle.flatMap(cs =>
-      Gen.sequence(cs.map(c =>
-        RandomData.oneofV(SortCriterion possibilitiesI c))))
+  def sortCriteriaC: Gen[SortCriterion.Conclusive] =
+    Gen.apply2(SortCriterion.Conclusive)(columnC, sortMethodI)
 
-  def sortCriteria(gi: Gen[Vector[SortCriterion.Inconclusive]]): Gen[SortCriteria] =
-    Gen.apply2(SortCriteria.apply)(gi, sortCriteriaC)
+  val builtInColumnIs: NonEmptyVector[Column.SortInconclusive] =
+    NonEmptyVector force (Column.builtInValues.whole: Vector[Column]).filterT[Column.SortInconclusive].toVector
+
+  val builtInColumnIsG: Gen[Column.SortInconclusive] =
+    RandomData oneofV builtInColumnIs
+
+  case class ColumnIGen(legalCustomFieldColumns: Vector[Column.CustomField]) {
+    val legalCustomFieldColumnNEV = NonEmptyVector option legalCustomFieldColumns
+
+    val legalColumnIs: NonEmptyVector[Column.SortInconclusive] =
+      builtInColumnIs ++ legalCustomFieldColumns
+
+    def columnI: Gen[Column.SortInconclusive] =
+      RandomData oneofV legalColumnIs
+
+    def colIs: Gen[Vector[Column.SortInconclusive]] =
+      Gen.subset(legalColumnIs.whole).shuffle
+
+    def sortCriIs: Gen[Vector[SortCriterion.Inconclusive]] =
+      colIs flatMap RandomReqTableData.sortCriIs
+  }
+
+  def customFieldColumn: Gen[Column.CustomField] =
+    Gen.apply2(Column.CustomField)(RandomData.customFieldId, RandomData.live)
+
+  def sortCriI(colI: Column.SortInconclusive): Gen[SortCriterion.Inconclusive] =
+    RandomData.oneofV(SortCriterion possibilitiesI colI)
+
+  def sortCriIs(colIs: Vector[Column.SortInconclusive]): Gen[Vector[SortCriterion.Inconclusive]] =
+    Gen.sequence(colIs map sortCriI)
+
+  def sortCriteria(scIs: Vector[SortCriterion.Inconclusive]): Gen[SortCriteria] =
+    sortCriteriaC.map(SortCriteria(scIs, _))
 
   val noFilter: Gen[Option[FilterAst]] =
     Gen insert None
@@ -61,7 +91,8 @@ object RandomReqTableData {
     for {
       cs     ← columnState(p)
       icols  = cs.on.filterT[Column.SortInconclusive].toVector
-      order  ← sortCriteria(sortCriteriaI(icols))
+      scis   ← Gen.subset(icols).shuffle flatMap sortCriIs
+      order  ← sortCriteria(scis)
       filter ← if (allowFilter) RandomData.filter.ast.forProject(p).option else noFilter
       fd     ← filterDead
     } yield ViewSettings(cs, order, filter, fd)

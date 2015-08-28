@@ -134,6 +134,7 @@ object Style extends StyleSheet.Inline {
     )
 
     val columnHeader = styleF(D.live)(live => styleS(
+      cursor.pointer,
       deadColumnLabel(live),
       backgroundColor(c"#e0e8f8"),
       border(1 px, solid, c"#777")

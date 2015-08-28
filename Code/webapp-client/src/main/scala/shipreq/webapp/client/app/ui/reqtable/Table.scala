@@ -6,6 +6,7 @@ import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import shipreq.base.util.NonEmptyVector
+import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.ColumnEditors
@@ -30,11 +31,12 @@ object Table {
 
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
-  case class Props(project     : Project,
-                   rows        : Vector[Row],
-                   colRenderers: NonEmptyVector[ColumnRenderer],
-                   colEditors  : ColumnEditors,
-                   cells       : Cell.TableState)
+  case class Props(project        : Project,
+                   rows           : Vector[Row],
+                   colRenderers   : NonEmptyVector[ColumnRenderer],
+                   colEditors     : ColumnEditors,
+                   cells          : Cell.TableState,
+                   modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
   val Component =
     ReactComponentB[Props]("Table")
@@ -54,6 +56,10 @@ object Table {
       }
     )
 
+    val clickHeaderToSort = ReusableFn((col: Column) =>
+      $.props.modViewSettings(
+        ViewSettings.order.modify(_ want col)))
+
     def render: ReactElement = {
       val p     = $.props
       val crs   = p.colRenderers
@@ -69,7 +75,7 @@ object Table {
 
       // Render
       <.table(*.table,
-        HeaderComponent(crs),
+        HeaderComponent(HeaderProps(crs, clickHeaderToSort)),
         <.tbody(renderRows))
     }
   }
@@ -77,13 +83,18 @@ object Table {
   // ===================================================================================================================
   // Header row
 
-  val HeaderComponent = ReactComponentB[NonEmptyVector[ColumnRenderer]]("Header")
+  case class HeaderProps(crs      : NonEmptyVector[ColumnRenderer],
+                         clickSort: Column ~=> Callback)
+
+  implicit val headerPropReuse = Reusability.caseClass[HeaderProps]
+
+  val HeaderComponent = ReactComponentB[HeaderProps]("Header")
     .backend(new HeaderBackend(_))
     .render(_.backend.render)
     .configure(shouldComponentUpdate)
     .build
 
-  class HeaderBackend($: BackendScope[NonEmptyVector[ColumnRenderer], Unit]) {
+  class HeaderBackend($: BackendScope[HeaderProps, Unit]) {
 
     def onKeyDown(e: ReactKeyboardEventH): Callback =
       (e.nativeEvent.keyCode match {
@@ -115,15 +126,16 @@ object Table {
       }
 
     def render = {
-      val crs = $.props
+      val p = $.props
       def headerCells = {
         var first = true
-        crs.toStream.map { cr =>
+        p.crs.toStream.map { cr =>
           val isFirst = first && { first = false; true }
           <.th(
             *.columnHeader(cr.column.live),
             ^.tabIndex := (if (isFirst) 0 else -1),
             ^.onKeyDown ==> onKeyDown,
+            ^.onClick --> p.clickSort(cr.column),
             cr.header)
         }
       }
@@ -134,12 +146,12 @@ object Table {
   // ===================================================================================================================
   // Rows
 
-  implicit val rowPropReuse = Reusability.caseClass[RowProps]
-
   case class RowProps(row      : Row,
                       crs      : NonEmptyVector[ColumnRenderer],
                       cells    : Cell.RowState,
                       startEdit: Column ~=> (TCB.Finally ~=> Callback))
+
+  implicit val rowPropReuse = Reusability.caseClass[RowProps]
 
   val RowComponent =
     ReactComponentB[RowProps]("Row")
@@ -159,12 +171,12 @@ object Table {
   // ===================================================================================================================
   // Cells
 
-  implicit val cellPropReuse = Reusability.caseClass[CellProps]
-
   case class CellProps(row      : Row,
                        cr       : ColumnRenderer,
                        cellState: Cell.State,
                        startEdit: TCB.Finally ~=> Callback)
+
+  implicit val cellPropReuse = Reusability.caseClass[CellProps]
 
   val CellComponent =
     ReactComponentB[CellProps]("Cell")
