@@ -5,7 +5,7 @@ import js.{native, Any => *}
 import js.annotation.JSName
 import JsBenchmark._
 
-@JSName("Benchmark")
+@JSName("Benchmark") @native
 class JsBenchmark(name: String, fn: FN, o: Options = native) extends js.Object {
   def run(options: Options = native): Unit = native
 }
@@ -15,6 +15,7 @@ object JsBenchmark {
   type FN = js.Function0[*]
   type CB = js.Function1[Event, Unit]
 
+  @native
   trait Options extends js.Object {
     var async     : Boolean = native
 
@@ -50,6 +51,7 @@ object JsBenchmark {
 
   def Options(): Options = js.Object().asInstanceOf[Options]
 
+  @native
   trait Event extends js.Object {
     val aborted       : Boolean = native
     val cancelled     : Boolean = native
@@ -60,6 +62,7 @@ object JsBenchmark {
     val `type`        : String  = native
   }
 
+  @native
   trait Benchmark extends js.Object {
     val async     : Boolean = native
     val defer     : Boolean = native
@@ -89,6 +92,7 @@ object JsBenchmark {
 //    val cycle: js.Array[*] = native
 //  }
 
+  @native
   trait Stats extends js.Object {
     val deviation : Double           = native
     val mean      : Double           = native
@@ -99,6 +103,7 @@ object JsBenchmark {
     val variance  : Double           = native
   }
 
+  @native
   trait Times extends js.Object {
     val cycle     : Double = native
     val elapsed   : Double = native

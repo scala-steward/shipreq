@@ -2,6 +2,7 @@ package shipreq.webapp.client.test
 
 import scala.scalajs.js
 
+@js.native
 object Sizzle extends js.Object {
 
   type DOM    = org.scalajs.dom.Element

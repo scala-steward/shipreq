@@ -3,7 +3,7 @@ package shipreq.webapp.client.protocol
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSName
 
-@JSName("liftAjax")
+@JSName("liftAjax") @js.native
 object LiftAjax extends js.Object {
 
   def lift_ajaxHandler(input: String,

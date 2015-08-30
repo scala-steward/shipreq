@@ -10,7 +10,7 @@ import scalajs.js._
  * https://github.com/Khan/KaTeX
  * http://khan.github.io/KaTeX/
  */
-@JSName("katex")
+@JSName("katex") @native
 object KaTeX extends Object {
 
   //def render(math: String, element: Element): Unit = native

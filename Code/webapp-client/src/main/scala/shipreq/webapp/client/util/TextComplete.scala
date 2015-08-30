@@ -12,12 +12,13 @@ object TextComplete {
 
   type MatchType = RegExp // TODO | JFn1[String, RegExp]
   type MatchFn = JFn1[String, RegExp]
-  sealed trait SearchFn[A] extends JAny
+  @native sealed trait SearchFn[A] extends JAny
   type ReplaceFn[A] = JFn2[A, Event, JAny]
 
   /**
    * @tparam A The type of data returned by the `search` function.
    */
+  @native
   sealed trait StrategyA[A] extends Object {
     var `match`: MatchType    = native
     var search : SearchFn[A]  = native
@@ -30,11 +31,14 @@ object TextComplete {
     var idProperty: UndefOr[String]                  = native
   }
 
+  @native
   sealed trait Callback[A] extends JAny {
     def apply(result: JArray[A], stillSearching: Boolean = false): Unit = native
   }
 
   def Options(): Options = (new Object).asInstanceOf[Options]
+
+  @native
   sealed trait Options extends Object {
     var appendTo:  JAny          = native  // $('body')
     var height:    UndefOr[Int]  = native  // undefined

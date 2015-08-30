@@ -16,6 +16,7 @@ object DomPatches {
    *
    * https://developer.mozilla.org/en-US/docs/Web/API/NonDocumentTypeChildNode
    */
+  @js.native
   trait NonDocumentTypeChildNode extends js.Object {
 
     /**
