@@ -10,7 +10,8 @@ import shipreq.webapp.client.lib.TCB
 
 final class KeyHandler(val run: ReactKeyboardEventH => UndefOr[Callback]) extends AbstractFunction1[ReactKeyboardEventH, Callback] {
   override def apply(e: ReactKeyboardEventH): Callback =
-    run(e).fold(Callback.empty)(_ << e.preventDefaultCB << e.stopPropagationCB)
+    Callback.ifTrue(!e.defaultPrevented,
+      run(e).fold(Callback.empty)(_ << e.preventDefaultCB))
 
   def |(b: KeyHandler): KeyHandler =
     new KeyHandler(e => run(e) orElse b.run(e))
