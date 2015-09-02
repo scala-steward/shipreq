@@ -7,6 +7,33 @@ object DomPatches {
 
   // TODO Remove when scala-js-dom 0.8.2 released
 
+  object DragEffect {
+
+    /** no operation is permitted */
+    val None = "none"
+
+    /** copy only */
+    val Copy = "copy"
+
+    /** move only */
+    val Move = "move"
+
+    /** link only */
+    val Link = "link"
+
+    /** copy or move only */
+    val CopyMove = "copyMove"
+
+    /** copy or link only */
+    val CopyLink = "copyLink"
+
+    /** link or move only */
+    val LinkMove = "linkMove"
+
+    /** copy, move, or link */
+    val All = "all"
+  }
+
   /**
    * The NonDocumentTypeChildNode interface contains methods that are particular to
    * Node objects that can have a parent, but not suitable for DocumentType.

@@ -1,0 +1,208 @@
+package shipreq.webapp.client.app.ui
+
+import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react.vdom.TagMod
+import japgolly.scalajs.react.extra._
+import scalaz.syntax.equal._
+import shipreq.base.util.UnivEq
+import shipreq.webapp.client.util.DND
+import shipreq.webapp.client.util.DomPatches._
+import shipreq.base.util.UnivEq.Implicits._
+import tmp.ReactPatches._
+
+object DragToReorder {
+
+  sealed trait Status
+
+  case object Normal extends Status
+
+  /** Item is being dragged. You'd normally draw it with a dashed border, or `visibility: hidden`. */
+  case object DragSource extends Status
+
+  /**
+   * Item has been dragged out to indicate deletion.
+   * 
+   * You must still render a node for this, do not omit it because it will prevent expected events from firing.
+   * Use `display: none` instead.
+   */
+  case object Tombstone extends Status
+
+  case class Item[A](data: A, mod: TagMod, status: Status)
+
+  case class Content[A](rootMod: TagMod, items: Vector[Item[A]])
+
+  case class Props[A](items      : Vector[A],
+                      updateItems: Vector[A] ~=> Callback,
+                      render     : Content[A] ~=> ReactElement)
+
+  /** Where the drag cursor is currently located. */
+  private[DragToReorder] sealed trait DragLoc
+  private[DragToReorder] case object Outside        extends DragLoc
+  private[DragToReorder] case object InParent       extends DragLoc
+  private[DragToReorder] case class InChild(i: Int) extends DragLoc
+
+  private[DragToReorder] implicit def dragLocEquality   : UnivEq[DragLoc]      = UnivEq.deriveAuto
+  private[DragToReorder] implicit val dragLocReusability: Reusability[DragLoc] = Reusability.byEqual
+}
+
+// =====================================================================================================================
+final class DragToReorder[A: Reusability] {
+  import DragToReorder._
+
+  type Item    = DragToReorder.Item [A]
+  type Props   = DragToReorder.Props[A]
+  type Content = DragToReorder.Content[A]
+
+  case class DragState(items       : Vector[A],
+                       dragSource  : Int,
+                       dragLoc     : DragLoc,
+                       currentOrder: Vector[Int]) {
+
+    override def toString = s"DragState($dragSource, $dragLoc, $currentOrder)"
+
+    def originalOrder = items.indices.toVector
+
+    def orderWithoutTombstone: Vector[Int] =
+      dragLoc match {
+        case Outside               => currentOrder.filterNot(_ ≟ dragSource)
+        case InParent | InChild(_) => currentOrder
+      }
+  }
+
+  type State = Option[DragState]
+
+  private implicit val reusabilityAs    = Reusability.vector[A]
+  private implicit def reusabilityDS    = Reusability.caseClass[DragState]
+          implicit val reusabilityProps = Reusability.caseClass[Props]
+
+  final class Backend($: BackendScope[Props, State]) {
+    type EH = ReactDragEvent => Callback
+
+    import CallbackOption.{require, unless}
+
+    @inline private implicit def autoSomeState(s: DragState): State = Some(s)
+
+    def requireDirectTarget(e: ReactDragEvent) =
+      require(e.target == e.currentTarget)
+
+    // This prevents the need to check e.dataTransfer.types
+    val getDragState: CallbackOption[DragState] = $.stateCB.asCBO
+
+    def clearLocOnLeave(expectedLoc: DragLoc): EH =
+      e => for {
+        _ <- requireDirectTarget(e)
+        s <- getDragState
+        _ <- require(s.dragLoc ≟ expectedLoc)
+        _ <- $ setState s.copy(dragLoc = Outside, currentOrder = s.originalOrder)
+      } yield ()
+
+    val dragOver: EH =
+      e => for {
+        _ <- requireDirectTarget(e)
+        _ <- getDragState
+        _ <- e.preventDefaultCB
+      } yield ()
+
+    val parentTagMod: TagMod = {
+      val dragEnter: EH =
+        e => for {
+          _ <- requireDirectTarget(e)
+          s <- getDragState
+          _ <- e.preventDefaultCB
+          _ <- $ setState s.copy(dragLoc = InParent)
+        } yield ()
+
+      val dragLeave: EH =
+        clearLocOnLeave(InParent)
+
+      TagMod(
+        ^.onDragEnter ==> dragEnter,
+        ^.onDragOver  ==> dragOver,
+        ^.onDragLeave ==> dragLeave
+      )
+    }
+
+    val childTagMod: Int => TagMod =
+      UnivEq.mutableHashMapMemo { i =>
+        def dragStart: EH =
+          e => for {
+            _  ← requireDirectTarget(e)
+            p  ← $.propsCB
+            is = p.items
+            _  ← $.setState(DragState(is, i, InChild(i), is.indices.toVector)).async
+          } yield {
+            val dt = e.dataTransfer
+            dt.setData("application/null", "")
+            dt.effectAllowed = DragEffect.Move
+          }
+
+        def dragEnd: EH =
+          e => for {
+            _ ← requireDirectTarget(e)
+            s ← getDragState
+            p ← $.propsCB.toCBO
+            _ ← $ setState None
+            o = s.orderWithoutTombstone
+            _ ← unless(o ≟ s.originalOrder)
+            _ ← p updateItems o.map(s.items.apply)
+          } yield ()
+
+        def dragEnter: EH =
+          e => for {
+            _ ← requireDirectTarget(e)
+            s ← getDragState
+            _ ← e.preventDefaultCB
+            _ ← Callback(e.dataTransfer.dropEffect = DragEffect.Move)
+            l = InChild(i)
+            _ ← unless((s.dragSource ≟ i) && (s.dragLoc ≟ l))
+            _ ← $ setState s.copy(dragLoc = l, currentOrder = DND.moveE(s.dragSource, i)(s.currentOrder))
+          } yield ()
+
+        val dragLeave: EH =
+          clearLocOnLeave(InChild(i))
+
+        TagMod(
+          ^.key          := i,
+          ^.draggable    := true,
+          ^.onDragStart ==> dragStart,
+          ^.onDragEnd   ==> dragEnd,
+          ^.onDragEnter ==> dragEnter,
+          ^.onDragOver  ==> dragOver,
+          ^.onDragLeave ==> dragLeave)
+      }
+
+    def render: ReactElement = {
+      val p = $.props
+      val s = $.state
+
+      def mkItems(order: Iterable[Int], as: Vector[A], status: Int => Status): Vector[Item] = {
+        val v = Vector.newBuilder[Item]
+        for (i <- order)
+          v += Item(as(i), childTagMod(i), status(i))
+        v.result()
+      }
+
+      val items: Vector[Item] =
+        s match {
+          case None =>
+            mkItems(p.items.indices, p.items, _ => Normal)
+
+          case Some(ds) =>
+            val onDragSrc = ds.dragLoc match {
+              case Outside               => Tombstone
+              case InParent | InChild(_) => DragSource
+            }
+            mkItems(ds.currentOrder, ds.items, i => if (i ≟ ds.dragSource) onDragSrc else Normal)
+        }
+
+      p render Content(parentTagMod, items)
+    }
+  }
+
+  val Component = ReactComponentB[Props]("DND")
+    .initialState[State](None)
+    .backend(new Backend(_))
+    .render(_.backend.render)
+    .configure(Reusability.shouldComponentUpdate)
+    .build
+}
