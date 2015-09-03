@@ -1,0 +1,14 @@
+#!/bin/bash
+cd "$(dirname "$(readlink -e "$0")")" || exit 1
+webapp=../Code/webapp-server/src/main/webapp
+assets=$webapp/assets
+
+function copy {
+  for svg in "$@"; do
+    echo -n "$svg"
+    ./svgo -i "$svg" -o "$assets/$svg"
+  done
+}
+
+copy sort-*.svg
+

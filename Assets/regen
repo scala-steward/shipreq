@@ -39,6 +39,6 @@ echo
 identify *.png *.ico
 echo
 
-webapp=../Code/webapp/src/main/webapp
+webapp=../Code/webapp-server/src/main/webapp
 cp -v favicon-a.ico $webapp/assets/favicon.ico
 cp -v $lt-1024.png $webapp/assets/shipreq.png
