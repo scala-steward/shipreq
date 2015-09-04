@@ -197,12 +197,19 @@ object Style extends StyleSheet.Inline {
       margin.horizontal(auto)
     )
 
-    val columnHeader = styleF(D.live)(live => styleS(
+    val columnHeader = styleF(D.live *** D.dragStatus) { case (live, status) => styleS(
       cursor.pointer,
       deadColumnLabel(live),
       backgroundColor(c"#e0e8f8"),
-      border(1 px, solid, c"#777")
-    ))
+      cursor.pointer, // Because click affects sorting
+      (status match {
+        case DragToReorder.Normal => mixin(
+          border(1 px, solid, c"#777"))
+        case DragToReorder.DragSource | DragToReorder.Tombstone => mixin(
+          opacity(.4),
+          border(2 px, dashed, c"#779"))
+      }): StyleS
+    )}
 
     val cell = styleF(ColumnRenderer.statusDomain){ status =>
       styleS(

@@ -8,6 +8,7 @@ import org.scalajs.dom.ext.KeyCode
 import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.app.ui.DragToReorder
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.ColumnEditors
 import shipreq.webapp.client.data.DataReusability._
@@ -20,6 +21,7 @@ object Table {
 
   implicit val reusabilityCEs : Reusability[ColumnEditors]                  = Reusability.byRef
   implicit val reusabilityCR  : Reusability[ColumnRenderer]                 = Reusability.byRef // TODO This is a problem
+  implicit val reusabilityCs  : Reusability[NonEmptyVector[Column]]         = reusabilityNonEmptyVector
   implicit val reusabilityCRs : Reusability[NonEmptyVector[ColumnRenderer]] = reusabilityNonEmptyVector
   implicit val reusabilityCTS : Reusability[Cell.TableState]                = Reusability.byRef
   implicit val reusabilityCRS : Reusability[Cell.RowState]                  = Reusability.byRef
@@ -33,6 +35,7 @@ object Table {
 
   case class Props(project        : Project,
                    rows           : Vector[Row],
+                   colName        : Column.NameResolver,
                    colRenderers   : NonEmptyVector[ColumnRenderer],
                    colEditors     : ColumnEditors,
                    cells          : Cell.TableState,
@@ -54,6 +57,9 @@ object Table {
       }
     )
 
+    val reorderColumns = ReusableFn((cols: NonEmptyVector[Column]) =>
+      $.props.modViewSettings(_ setColumns cols))
+
     val clickHeaderToSort = ReusableFn((col: Column) =>
       $.props.modViewSettings(
         ViewSettings.order.modify(_ want col)))
@@ -72,7 +78,7 @@ object Table {
 
       // Render
       <.table(*.table,
-        HeaderComponent(HeaderProps(crs, clickHeaderToSort)),
+        HeaderComponent(HeaderProps(crs.map(_.column), p.colName, reorderColumns, clickHeaderToSort)),
         <.tbody(renderRows))
     }
   }
@@ -80,10 +86,14 @@ object Table {
   // ===================================================================================================================
   // Header row
 
-  case class HeaderProps(crs      : NonEmptyVector[ColumnRenderer],
+  case class HeaderProps(cols     : NonEmptyVector[Column],
+                         colName  : Column.NameResolver,
+                         reorder  : NonEmptyVector[Column] ~=> Callback,
                          clickSort: Column ~=> Callback)
 
   implicit val headerPropReuse = Reusability.caseClass[HeaderProps]
+
+  val ColumnDND = new DragToReorder[Column]
 
   val HeaderComponent = ReactComponentB[HeaderProps]("Header")
     .renderBackend[HeaderBackend]
@@ -124,21 +134,33 @@ object Table {
         }
       }
 
-    def render(p: HeaderProps) = {
-      def headerCells = {
+    val dnd = ColumnDND.helper(
+      newOrder =>
+        NonEmptyVector.maybe(newOrder, Callback.empty)(no =>
+          $.propsCB.flatMap(_ reorder no)),
+
+      content => {
+        val name = $.props.colName
         var first = true
-        p.crs.toStream.map { cr =>
-          val isFirst = first && { first = false; true }
-          <.th(
-            *.columnHeader(cr.column.live),
-            ^.tabIndex := (if (isFirst) 0 else -1),
-            ^.onKeyDown ==> onKeyDown,
-            ^.onClick --> p.clickSort(cr.column),
-            cr.header)
-        }
+        <.thead(
+          content.rootMod,
+          <.tr(
+            content.items.map { i =>
+              val isFirst = first && { first = false; true }
+              val c = i.data
+              <.th(
+                *.columnHeader(c.live, i.status),
+                i.mod,
+                ^.tabIndex   := (if (isFirst) 0 else -1),
+                ^.onKeyDown ==> onKeyDown,
+                ^.onClick   --> $.props.clickSort(c),
+                name(c)
+              )}))
       }
-      <.thead(<.tr(headerCells))
-    }
+    )
+
+    def render(p: HeaderProps) =
+      dnd(p.cols.whole)
   }
 
   // ===================================================================================================================

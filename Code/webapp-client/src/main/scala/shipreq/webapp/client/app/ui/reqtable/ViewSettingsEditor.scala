@@ -35,13 +35,8 @@ object ViewSettingsEditor {
     def render(p: Props) = {
       val vs = p.vs.value
 
-      def setColumns(s: ColumnsEditor.State): ViewSettings = {
-        val icols = s.on.foldLeft(UnivEq.emptySet[Column.SortInconclusive])((q, c) => c match {
-          case i: Column.SortInconclusive => q + i
-          case _: Column.SortConclusive   => q
-        })
-        ViewSettings(NonEmptyVector force s.on, vs.order.whitelistColumns(icols), vs.filter, vs.filterDead)
-      }
+      def setColumns(s: ColumnsEditor.State): ViewSettings =
+        vs.setColumns(NonEmptyVector force s.on)
 
       def columns =
         ColumnsEditor(

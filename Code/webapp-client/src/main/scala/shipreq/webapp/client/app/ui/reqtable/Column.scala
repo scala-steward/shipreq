@@ -61,21 +61,19 @@ object Column {
   @inline implicit def equalityINB: UnivEq[SortInconclusive with NoBlanks]  = UnivEq.force
   @inline implicit def equalityI  : UnivEq[SortInconclusive]                = UnivEq.derive
   @inline implicit def equalityC  : UnivEq[SortConclusive]                  = UnivEq.derive
+  @inline implicit def equalityB  : UnivEq[BuiltIn]                         = UnivEq.derive
   @inline implicit def equality   : UnivEq[Column]                          = UnivEq.derive
   @inline implicit def reusability: Reusability[Column]                     = Reusability.byEqual
 
   val builtInValues: NonEmptyVector[BuiltIn] =
     NonEmptyVector(Pubid, Code, Title, ReqType, Tags, ImplicationSrc, ImplicationTgt)
 
-  val mandatory: Column => Boolean = {
-    case Pubid
-       | Title          => true
-    case ReqType
-       | Code
-       | Tags
-       | ImplicationSrc
-       | ImplicationTgt
-       | _: CustomField => false
+  val mandatory: Set[BuiltIn] =
+    UnivEq.emptySet[BuiltIn] + Pubid + Title
+
+  val isMandatory: Column => Boolean = {
+    case b: BuiltIn     => mandatory contains b
+    case _: CustomField => false
   }
 
   def allInProject(p: Project): NonEmptyVector[Column] =

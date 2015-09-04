@@ -12,9 +12,8 @@ import shipreq.webapp.client.lib.Plain
 import ColumnRenderer._
 
 final class ColumnRenderer(
-  val column     : Column,
-  val header     : ReactElement,
-  val render     : Row => (Status, ReactElement))
+  val column: Column,
+  val render: Row => (Status, ReactElement))
 
 object ColumnRenderer {
   sealed trait Status
@@ -33,7 +32,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   @inline private implicit def naobjtoel(n: `N/A`.type) = n.element
 
   def apply(c: Column): ColumnRenderer = {
-    val cr: Column => ColumnRenderer = 
+    val cr: Column => ColumnRenderer =
       c match {
         case Column.Pubid          => pubid
         case Column.ReqType        => reqType
@@ -54,10 +53,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
 
   private val applicability = Applicability(project)
 
-  private def make(render: Row => ReactElement): Column => ColumnRenderer =
-    c => makeS(columnName(c), render)(c)
-
-  private def makeS(headerName: String, render: Row => ReactElement): Column => ColumnRenderer = {
+  private def make(render: Row => ReactElement): Column => ColumnRenderer = {
     val render2: Row => (Status, ReactElement) =
       row => {
         val e = render(row)
@@ -70,7 +66,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
       }
     c => {
       val render3 = applicability(c).wrap(render2)(`N/A`.pair)
-      new ColumnRenderer(c, <.span(headerName), render3)
+      new ColumnRenderer(c, render3)
     }
   }
 
@@ -79,7 +75,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
 
   @deprecated("placeholder is for dev purposes only.", "")
   private def placeholder =
-    makeS("∅", Function const <.span("∅"))
+    make(Function const <.span("∅"))
 
   private def pubid = make {
     case r: GenericReqRow   => widgets.pubidColumnValue(r.req.pubid)

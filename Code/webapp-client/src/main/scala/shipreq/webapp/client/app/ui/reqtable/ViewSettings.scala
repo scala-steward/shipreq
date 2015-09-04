@@ -36,6 +36,21 @@ case class ViewSettings(columns    : NonEmptyVector[Column],
       case None     => ViewSettings.default(fd)
     }
 
+  def setColumns(newCols0: NonEmptyVector[Column]): ViewSettings = {
+    // Ensure mandatory columns are present
+    val set = newCols0.toNES
+    val newCols = newCols0 ++ Column.mandatory.filterNot(set.contains)
+
+    // Filter order
+    val icols = newCols.foldLeft(UnivEq.emptySet[Column.SortInconclusive])((q, c) => c match {
+      case i: Column.SortInconclusive => q + i
+      case _: Column.SortConclusive   => q
+    })
+    val newOrder = order.whitelistColumns(icols)
+
+    ViewSettings(newCols, newOrder, filter, filterDead)
+  }
+
   /**
    * When `true`, render the reqcode column to resemble a tree. Meaning:
    *  - display reqcode groups.

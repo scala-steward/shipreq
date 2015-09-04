@@ -145,7 +145,7 @@ object ReqTable {
       val creationProps = CreationInterface.Props(createIO, s.creation)
 
       val tableProps = Table.Props(
-        project, rows, colRnds, colEditors, s.cellStates, modViewSettings)
+        project, rows, colName, colRnds, colEditors, s.cellStates, modViewSettings)
 
       <.div(
         ViewSettingsEditor.Component(vsProps),

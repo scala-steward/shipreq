@@ -23,7 +23,7 @@ object RandomReqTableData {
     } yield {
       var i = long
       ColumnsEditor.State.init(cols)(c =>
-        if (Column mandatory c)
+        if (Column isMandatory c)
           On
         else {
           val j = i

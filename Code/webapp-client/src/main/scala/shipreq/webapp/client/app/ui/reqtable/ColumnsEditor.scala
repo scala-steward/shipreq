@@ -17,7 +17,7 @@ object ColumnsEditor {
 
     val p = OSE.Props(state, update,
                       label     = columnNames.fn,
-                      mandatory = Column.mandatory,
+                      mandatory = Column.isMandatory,
                       filter    = filterFn,
                       styles    = (c: Column, o) => Style.reqtable.columnsEditor(c.live)(o))
     OSE.Component(p)
