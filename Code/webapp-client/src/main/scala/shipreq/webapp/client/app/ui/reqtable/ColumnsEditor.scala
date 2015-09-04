@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.base.util.NonEmptySet
 import shipreq.webapp.client.app.ui.CheckboxList
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.util.{Disabled, On}
+import shipreq.webapp.client.util.{Enabled, On}
 
 object ColumnsEditor {
 
@@ -26,7 +26,8 @@ object ColumnsEditor {
   private def render(p: Props) = {
     val items =
       p.all.toStream
-        .map(c => CheckboxList.Item(c, p.columnNames(c), On <~ p.on.contains(c), Disabled <~ Column.isMandatory(c)))
+        .filter(!Column.isMandatory(_))
+        .map(c => CheckboxList.Item(c, p.columnNames(c), On <~ p.on.contains(c), Enabled))
         .sortBy(_.label)
         .toVector
 
