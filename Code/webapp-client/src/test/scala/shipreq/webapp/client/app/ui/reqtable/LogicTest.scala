@@ -311,11 +311,12 @@ object LogicTest extends TestSuite {
     } yield
       LogicTests(vs, p)
 
-  private def columnState(p: Project, c: Column): ColumnsEditor.State =
+  private def columnState(p: Project, c: Column): NonEmptyVector[Column] =
     columnState(p, NonEmptyVector one c)
 
-  private def columnState(p: Project, cs: NonEmptyVector[Column]): ColumnsEditor.State =
-    ColumnsEditor.State.init(Column.allInProject(p).whole)(On <~ cs.whole.contains(_))
+  private def columnState(p: Project, cs: NonEmptyVector[Column]): NonEmptyVector[Column] =
+    // it's rumoured that an older civilisation did more with this function once...
+    cs
 
   // ===================================================================================================================
   // Unit tests

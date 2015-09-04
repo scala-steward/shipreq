@@ -8,30 +8,30 @@ import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.client.lib.{ShowDead, FilterDead}
-import shipreq.webapp.client.util.On
 
 object RandomReqTableData {
 
   lazy val filterDead: Gen[FilterDead] =
     Gen.boolean.map(ShowDead.to)
 
-  def columnState(p: Project): Gen[ColumnsEditor.State] =
+  def visibleColumns(p: Project): Gen[NonEmptyVector[Column]] =
     for {
       long ← Gen.long
       all  = Column allInProject p
       cols ← Gen shuffle all.whole
     } yield {
       var i = long
-      ColumnsEditor.State.init(cols)(c =>
+      val vs = cols.filter(c =>
         if (Column isMandatory c)
-          On
+          true
         else {
           val j = i
           i = i >>> 1
           if (i == 0) i = System.currentTimeMillis()
-          On <~ ((j & 1) == 1)
+          (j & 1) == 1
         }
       )
+      NonEmptyVector force vs
   }
 
   def sortMethodI: Gen[SortMethod.IgnoreBlanks] =
@@ -89,8 +89,8 @@ object RandomReqTableData {
 
   def viewSettings(p: Project, allowFilter: Boolean): Gen[ViewSettings] =
     for {
-      cs     ← columnState(p)
-      icols  = cs.on.filterT[Column.SortInconclusive].toVector
+      cs     ← visibleColumns(p)
+      icols  = cs.toStream.filterT[Column.SortInconclusive].toVector
       scis   ← Gen.subset(icols).shuffle flatMap sortCriIs
       order  ← sortCriteria(scis)
       filter ← if (allowFilter) RandomData.filter.ast.forProject(p).option else noFilter
