@@ -56,7 +56,11 @@ final class DragToReorder[A: Reusability] {
   type Props   = DragToReorder.Props[A]
   type Content = DragToReorder.Content[A]
 
-  val Props = DragToReorder.Props.apply[A] _
+  def helper(update: Vector[A] => Callback, render: Content => ReactElement): Vector[A] => ReactElement = {
+    val u = ReusableFn(update)
+    val r = ReusableFn(render)
+    as => Component(Props(as, u, r))
+  }
 
   case class DragState(items       : Vector[A],
                        dragSource  : Int,

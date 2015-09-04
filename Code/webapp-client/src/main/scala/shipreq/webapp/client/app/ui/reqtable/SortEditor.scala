@@ -1,10 +1,9 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import shipreq.base.util.UnivEq
-
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
+import shipreq.base.util.UnivEq
 import shipreq.webapp.client.app.ui.DragToReorder
 import shipreq.webapp.client.app.ui.Style.reqtable.{sortEditor => *}
 import shipreq.webapp.client.lib.ui.Assets
@@ -44,13 +43,6 @@ object SortEditor {
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    val updateFn = ReusableFn { (newOrder: Vector[SortCriterion]) =>
-      $.propsCB >>= { p =>
-        val newValue = SortCriteria.attempt(newOrder) getOrElse p.value.copy(last = SortCriteria.defaultConclusive)
-        p update newValue
-      }
-    }
-
     def rotateSortMethod(c: Column): Callback =
       $.propsCB >>= { p =>
         val sc = p.value
@@ -58,45 +50,51 @@ object SortEditor {
         p update nv
       }
 
-    val renderFn = ReusableFn { (c: D.Content) =>
-      val nameResolver = $.props.nameResolver
-      var conclusiveSeen = false
+    val component = D.helper(
+      newOrder =>
+        $.propsCB >>= { p =>
+          val newValue = SortCriteria.attempt(newOrder) getOrElse p.value.copy(last = SortCriteria.defaultConclusive)
+          p update newValue
+        },
+      content => {
+        val nameResolver = $.props.nameResolver
+        var conclusiveSeen = false
 
-      def renderItem(i:  D.Item) = {
-        val col = i.data.column
-        val conclusive = i.data.isConclusive
-        val status =
-          if (conclusiveSeen && !conclusive)
-            DragToReorder.Tombstone
-          else
-            i.status
-        conclusiveSeen |= conclusive
+        def renderItem(i:  D.Item) = {
+          val col = i.data.column
+          val conclusive = i.data.isConclusive
+          val status =
+            if (conclusiveSeen && !conclusive)
+              DragToReorder.Tombstone
+            else
+              i.status
+          conclusiveSeen |= conclusive
 
-        <.table(
-          *.itemOuter(status),
-          i.mod,
-          ^.onClick --> rotateSortMethod(col),
-          <.tbody(
-            <.tr(
-              <.td(
-                *.itemSortMethod,
-                renderSortMethod(i.data.method)),
-              <.td(
-                *.itemName(conclusive),
-                nameResolver(col)))))
-      }
+          <.table(
+            *.itemOuter(status),
+            i.mod,
+            ^.onClick --> rotateSortMethod(col),
+            <.tbody(
+              <.tr(
+                <.td(
+                  *.itemSortMethod,
+                  renderSortMethod(i.data.method)),
+                <.td(
+                  *.itemName(conclusive),
+                  nameResolver(col)))))
+        }
 
-      <.div(*.outer,
-        "Sort: ",
-        <.div(
-          *.dragArea,
-          c.rootMod,
-          c.items map renderItem)
-      ): ReactElement
-    }
+        <.div(*.outer,
+          "Sort: ",
+          <.div(
+            *.dragArea,
+            content.rootMod,
+            content.items map renderItem)
+        )
+      })
 
     def render(p: Props) =
-      D.Component(D.Props(p.value.all.whole, updateFn, renderFn))
+      component(p.value.all.whole)
   }
 
   val Component = ReactComponentB[Props]("SortEditor")
