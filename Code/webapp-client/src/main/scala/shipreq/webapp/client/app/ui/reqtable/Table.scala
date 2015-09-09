@@ -140,26 +140,25 @@ object Table {
         NonEmptyVector.maybe(newOrder, Callback.empty)(no =>
           $.props.flatMap(_ reorder no)),
 
-      content => {
-        val p = $.props.runNow()
-        val name = p.colName
-        var first = true
-        <.thead(
-          content.rootMod,
-          <.tr(
-            content.items.map { i =>
-              val isFirst = first && { first = false; true }
-              val c = i.data
-              <.th(
-                *.columnHeader(c.live, i.status),
-                i.mod,
-                ^.tabIndex   := (if (isFirst) 0 else -1),
-                ^.onKeyDown ==> onKeyDown(c),
-                ^.onClick   --> p.clickSort(c),
-                name(c)
-              )}))
-      }
-    )
+      content =>
+        $.props map { p =>
+          val name = p.colName
+          var first = true
+          <.thead(
+            content.rootMod,
+            <.tr(
+              content.items.map { i =>
+                val isFirst = first && { first = false; true }
+                val c = i.data
+                <.th(
+                  *.columnHeader(c.live, i.status),
+                  i.mod,
+                  ^.tabIndex   := (if (isFirst) 0 else -1),
+                  ^.onKeyDown ==> onKeyDown(c),
+                  ^.onClick   --> p.clickSort(c),
+                  name(c)
+                )}))
+      })
 
     def render(p: HeaderProps) =
       dnd(p.cols.whole)

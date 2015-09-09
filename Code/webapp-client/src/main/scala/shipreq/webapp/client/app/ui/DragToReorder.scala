@@ -34,7 +34,7 @@ object DragToReorder {
 
   case class Props[A](items      : Vector[A],
                       updateItems: Vector[A] ~=> Callback,
-                      render     : Content[A] ~=> ReactElement)
+                      render     : Content[A] ~=> CallbackTo[ReactElement])
 
   /** Where the drag cursor is currently located. */
   private[DragToReorder] sealed trait DragLoc
@@ -56,7 +56,7 @@ final class DragToReorder[A: Reusability] {
   type Props   = DragToReorder.Props[A]
   type Content = DragToReorder.Content[A]
 
-  def helper(update: Vector[A] => Callback, render: Content => ReactElement): Vector[A] => ReactElement = {
+  def helper(update: Vector[A] => Callback, render: Content => CallbackTo[ReactElement]): Vector[A] => ReactElement = {
     val u = ReusableFn(update)
     val r = ReusableFn(render)
     as => Component(Props(as, u, r))
@@ -231,7 +231,7 @@ final class DragToReorder[A: Reusability] {
             mkItems(ds.currentOrder, ds.items, i => if (i ≟ ds.dragSource) onDragSrc else Normal)
         }
 
-      p render Content(parentTagMod, items)
+      p.render(Content(parentTagMod, items)).runNow()
     }
   }
 
