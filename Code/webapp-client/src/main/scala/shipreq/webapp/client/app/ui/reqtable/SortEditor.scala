@@ -44,7 +44,7 @@ object SortEditor {
   class Backend($: BackendScope[Props, Unit]) {
 
     def rotateSortMethod(c: Column): Callback =
-      $.propsCB >>= { p =>
+      $.props >>= { p =>
         val sc = p.value
         val nv = sc.rotateSortMethod(c) getOrElse sc
         p update nv
@@ -52,12 +52,12 @@ object SortEditor {
 
     val component = D.helper(
       newOrder =>
-        $.propsCB >>= { p =>
+        $.props >>= { p =>
           val newValue = SortCriteria.attempt(newOrder) getOrElse p.value.copy(last = SortCriteria.defaultConclusive)
           p update newValue
         },
       content => {
-        val nameResolver = $.props.nameResolver
+        val nameResolver = $.props.runNow().nameResolver
         var conclusiveSeen = false
 
         def renderItem(i:  D.Item) = {
