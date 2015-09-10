@@ -70,7 +70,7 @@ object UI {
   }
 
   def installTextComplete[P, S, B, N <: TopNode, E <: html.Element](
-          getNode   : ComponentScope.DuringCallbackM[P, S, B, N] => E,
+          getNode   : CompScope.DuringCallbackM[P, S, B, N] => E,
           strategies: (P, B) => ReusableVal[TextComplete.Strategies],
           onUpdate  : (P, B) => String => Callback)
          (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
