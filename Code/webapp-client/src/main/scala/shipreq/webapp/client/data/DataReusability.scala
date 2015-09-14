@@ -10,6 +10,10 @@ object DataReusability {
 
   implicit val reusabilityProject: Reusability[Project] = Reusability.byRef
 
+  implicit val reusabilityProjectConfig: Reusability[ProjectConfig] = Reusability.byRef
+
+  implicit val reusabilityTagTree: Reusability[TagTree] = Reusability.byRef
+
   implicit val reusabilityCustomFields: Reusability[FieldSet.CustomFields] = Reusability.byRefOrEqual
 
   def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =

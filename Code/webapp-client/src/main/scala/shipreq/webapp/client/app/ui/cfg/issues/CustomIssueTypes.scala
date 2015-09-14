@@ -41,15 +41,17 @@ private[issues] object CustomIssueTypes {
       savedRowStore.initStateIM(p.clientData.project.config.customIssueTypes),
       p.filterDead)
 
-  private def validatorState(k: Option[CustomIssueTypeId], cd: CallbackTo[ClientData]): S => V.S =
+  private def validatorState(k: Option[CustomIssueTypeId], cd: CallbackTo[ClientData]): S => V.S = {
+    val tags: Px[HashRefKeyVS.Data[TagId]] =
+      Px.cbA(cd.map(_.project.config.tags))
+        .map(_.vstream(_.tag).map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
+        .map((None, _))
     s => {
-      val ts: HashRefKeyVS.Data[TagId] = // TODO cacheable
-        (None, cd.runNow().project.config.tags.vstream(_.tag)
-          .map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
       val is: HashRefKeyVS.Data[CustomIssueTypeId] =
         (k, savedRowStoreS.getAllP(s).map(i => (i.id.some, i.key)))
-      HashRefKeyVS(ts, is)
+      HashRefKeyVS(tags.value(), is)
     }
+  }
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
     val crudIO =
