@@ -20,7 +20,7 @@ import edit.ColumnEditors
 object ReqTable {
 
   val Component =
-    ReactComponentB[Props]("WIP")
+    ReactComponentB[Props]("ReqTable")
       .initialState_P(initialState)
       .renderBackend[Backend]
       .configure(ChangeListener.update[State](c => _.recvChanges(c)).install(_.cd))
