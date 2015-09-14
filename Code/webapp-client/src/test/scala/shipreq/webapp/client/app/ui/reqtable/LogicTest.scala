@@ -9,6 +9,7 @@ import utest._
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.NonEmptyVector
+import shipreq.webapp.base.{event => E}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.{TextSearch, PlainText, Text}
@@ -219,6 +220,9 @@ object LogicTest extends TestSuite {
 
   private def prefixWithPubid(p: Project, f: Row => String): Row => String =
     rowToStrAp2(rowToPubid(p), f)((a, b) => if (b ≟ z) z else a + ":" + b)
+
+  private def prefixWithPubidNoZ(p: Project, f: Row => String): Row => String =
+    rowToStrAp2(rowToPubid(p), f)((a, b) => if (b ≟ z) a else a + ":" + b)
 
   private val pubidSep = " +".r.pattern
   private val pubidFmt = "^([A-Z]+)-(\\d+)$".r
@@ -579,6 +583,70 @@ object LogicTest extends TestSuite {
     testUnsorted(p, C.Tags, None, ShowDead, fmtRowsT)("v0.9,v1.0,v2.x")
   }
 
+  // ----------------------------------------------------------------------------------
+  /** See `Requirements/analysis-deletion.ods`. */
+  object FilterDeadTagsComprehensive {
+    private val liveCF = notesField
+    private val deadCF = reporterField
+
+    // TagPool, LiveText, LiveText, DeadText
+    private def batch(reqLive: Live, tag: ApplicableTagId) =
+      GReq(live = reqLive).tag(tag) +
+      GReq(live = reqLive, title = reqTitleTagRefs(tag)) +
+      GReq(live = reqLive).cftext(liveCF, customTextTagRefs(tag)) +
+      GReq(live = reqLive).cftext(deadCF, customTextTagRefs(tag))
+
+    private val liveTag = defer
+    private val deadTag = uat
+
+    private val p0 =
+      ( batch(Live, liveTag) // DD-[ 1, 4]
+      + batch(Live, deadTag) // DD-[ 5, 8]
+      + batch(Dead, liveTag) // DD-[ 9,12]
+      + batch(Dead, deadTag) // DD-[13,16]
+      ).defaultReqType(dd) ! PA
+
+    private val p = applyEventsSuccessfully(p0,
+      E.DeleteCustomField(priField, E.HardDel),
+      E.DeleteCustomField(statusField, E.HardDel))
+
+    private val Z = ""
+    private val L = ":defer"
+    private val D = ":uat"
+
+    private val fmtRowsNoFilter = prefixWithPubidNoZ(p, rowToTagTxt(p, Row.tags))
+    private val fmtRowsHasFilter = rowToPubid(p)
+
+    private def testNoFilter(fd: FilterDead)(tags: String*): Unit = {
+      val withIds = tags.zipWithIndex.map(_.map2(_ + 1))
+
+      // No filter
+      val expect = (for ((t,i) <- withIds) yield s"DD-$i$t") mkString sep
+      testUnsorted(p, C.Tags, None, fd, fmtRowsNoFilter)(expect)
+
+      // With filters
+      def testWithFilters(tag: ApplicableTagId, tagStr: String): Unit = {
+        val ids = withIds.filter(_._1 == tagStr).map(_._2)
+        val expect = ids.map("DD-" + _) mkString sep
+        testUnsorted(p, C.Tags, F.Tag(tag), fd, fmtRowsHasFilter)(expect)
+      }
+      testWithFilters(liveTag, L)
+      testWithFilters(deadTag, D)
+    }
+
+    def testHideDead(): Unit =
+      testNoFilter(HideDead)(
+        L, L, L, Z, // live req, live tag
+        Z, D, D, Z) // live req, dead tag - Ds here cos they're in live text = not auto-removable = issues = show
+
+    def testShowDead(): Unit =
+      testNoFilter(ShowDead)(
+        L, L, L, L, // live req, live tag
+        D, D, D, D, // live req, dead tag
+        L, L, L, L, // dead req, live tag
+        D, D, D, D) // dead req, dead tag
+  }
+
   def testTags_inText(): Unit = {
     def t(direct: ApplicableTagId*)(inTitle: ApplicableTagId*)(inCustomText: ApplicableTagId*) =
       GReq(title = reqTitleTagRefs(inTitle))
@@ -607,13 +675,6 @@ object LogicTest extends TestSuite {
     testCB(p, priField, None, HideDead, fmtRows)(allSortsCB(1,
       asc  = "pri=high  pri=high,pri=med  pri=low",
       desc = "pri=low  pri=med  pri=high  pri=high"))
-  }
-
-  def testFilterDeadTagsInText(): Unit = {
-    val p       = GReq(reqType = fr, title = reqTitleTagRefs(v09)).tag(v1x).cftext(descField, customTextTagRefs(v3x)) ! PD
-    val fmtRows = rowToTagTxt(p, Row.tags)
-    testUnsorted(p, C.Tags, None, ShowDead, fmtRows)("v0.9,v1.x,v3.x")
-    testUnsorted(p, C.Tags, None, HideDead, fmtRows)("v1.x")
   }
 
   def testReqCodeTree(): Unit = {
@@ -835,9 +896,12 @@ object LogicTest extends TestSuite {
       'impTgt     - testFilterDeadImpsTgt()
       'impCust    - testFilterDeadCustomImps()
       'tags       - testFilterDeadTags()
-      'tagsInText - testFilterDeadTagsInText()
       'tagsCust   - testFilterDeadTagsInCustomTagField()
       'tagField   - testFilterDeadCustomTagField()
+      'tagComprehensive {
+        'hideDead - FilterDeadTagsComprehensive.testHideDead()
+        'showDead - FilterDeadTagsComprehensive.testShowDead()
+      }
     }
     'filter {
       'text           - testFilterText()

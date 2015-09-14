@@ -19,24 +19,45 @@ import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
 import UnivEq.{mutableHashMapMemo => memo}
 import Util.{maybeAdd, maybeUse}
+import Debug._
 
+/*
+ * Deletion complicates everything. See `Requirements/analysis-deletion.ods` for details.
+ */
 private[reqtable] object Logic {
 
-  private type TagFilter = EndoFn[Set[ApplicableTagId]]
+  /**
+   * Set of tags associated with a requirement.
+   */
+  private case class ReqTags(other: Set[ApplicableTagId], deadTagsInLiveText: Set[ApplicableTagId]) {
+    def all: Set[ApplicableTagId] =
+      other | deadTagsInLiveText
 
-  private def tagFilter(vs: ViewSettings, p: Project): TagFilter =
-    vs.filterDead.filter
-      .fold[TagFilter](identity) { f =>
-        val bl = p.config.atags.filter(t => !f(t.live)).map(_.id)
-        (_: Set[ApplicableTagId]) -- bl
-      }
+    def exists(f: Set[ApplicableTagId] => Boolean): Boolean =
+      f(other) || f(deadTagsInLiveText)
+  }
 
-  private type TagLookup = ReqId => Set[ApplicableTagId]
+  private type TagLookup = ReqId => ReqTags
 
-  private def tagLookup(p: Project): TagLookup = {
-    val reqTags    = p.reqTags
-    val tagsInText = p.atomScan.tagsInReqText
-    memo(id => reqTags(id) | tagsInText(id))
+  private def tagLookup(p: Project, fd: FilterDead): TagLookup = {
+    val reqTags = p.reqTags
+
+    fd match {
+      case HideDead =>
+        val deadTags = p.config.deadATagIds
+        val tagsInText = p.atomScan.tagsInLiveReqText.apply _
+        memo { id =>
+          val inText = tagsInText(id)
+          val liveTags = (reqTags(id) | inText) &~ deadTags // Dead tags on live reqs are ignored unless in text
+          ReqTags(liveTags, deadTagsInLiveText = inText & deadTags)
+        }
+
+      case ShowDead =>
+        val tagsInText = p.atomScan.tagsInAllReqText.apply _
+        // [deadTagsInLiveText = Set.empty] is technically wrong but when (FilterDead == ShowDead) putting everything
+        // in `other` is more efficient and achieves the same result (confirmed in LogicTest.filterDead.tagComprehensive)
+        memo(id => ReqTags(reqTags(id) | tagsInText(id), deadTagsInLiveText = Set.empty))
+    }
   }
 
   private class IssueLookup(_r: => (ReqId     => Vector[AnyIssue]),
@@ -125,11 +146,10 @@ private[reqtable] object Logic {
                                   p         : Project,
                                   ap        : Applicability,
                                   tagColDist: TagColumnDistribution.TagIds,
-                                  tagLookup : TagLookup,
-                                  tagFilter : TagFilter): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] = {
+                                  tagLookup : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] = {
     customFieldExpander[CustomField.Tag.Id, ApplicableTagId](vs, ap, c => {
       val legal = mustResolve(tagColDist inColumn c)(UnivEq.emptySet)
-      id => tagFilter(tagLookup(id) & legal)
+      id => tagLookup(id).all & legal
     })
   }
 
@@ -191,18 +211,16 @@ private[reqtable] object Logic {
   private def tagValuesFn(vs        : ViewSettings,
                           p         : Project,
                           tagColDist: TagColumnDistribution.TagIds,
-                          tagLookup : TagLookup,
-                          tagFilter : TagFilter): ReqId => Vector[ApplicableTagId] = {
+                          tagLookup : TagLookup): ReqId => Vector[ApplicableTagId] = {
     val tagsUsedInColumns = mustResolve(tagColDist.usedInColumns)(UnivEq.emptySet)
-    id => tagFilter(tagLookup(id) -- tagsUsedInColumns).toVector
+    id => (tagLookup(id).all &~ tagsUsedInColumns).toVector
   }
 
   private def multiValuesFn(vs        : ViewSettings,
                             p         : Project,
                             tagColDist: TagColumnDistribution.TagIds,
-                            tagLookup : TagLookup,
-                            tagFilter : TagFilter): ReqId => MultiValues = {
-    val tagValuesFn = this.tagValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
+                            tagLookup : TagLookup): ReqId => MultiValues = {
+    val tagValuesFn = this.tagValuesFn(vs, p, tagColDist, tagLookup)
     id => {
       val tags = tagValuesFn(id)
       MultiValues(tags)
@@ -239,20 +257,19 @@ private[reqtable] object Logic {
       }
 
     val filterDead    = Filter(vs.filterDead.filterFnA(_.live), FilterFn.`n/a`)
-    val tagLookup     = this.tagLookup(p)
-    val tagFilter     = this.tagFilter(vs, p)
+    val tagLookup     = this.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p)
     val applicability = Applicability(p)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p, applicability)
-    val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup, tagFilter)
+    val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup)
 
     val pReqs         = p.reqs
     val pReqCodes     = p.reqCodes.activeReqCodesByTarget
     val pImplications = p.implications
-    val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup, tagFilter)
+    val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup)
 
     def pubid(reqId: ReqId): Option[Pubid] =
       pReqs.reqM(reqId).fold[Option[Pubid]](failedMust(None), req =>
@@ -380,7 +397,7 @@ private[reqtable] object Logic {
         .map(_ reduce f)
 
     def byTag(f: Set[ApplicableTagId] => Boolean) =
-      Filter(r => f(tagLookup(r.id)), `n/a`)
+      Filter(r => tagLookup(r.id) exists f, `n/a`)
 
     def byIssueType(f: Vector[AnyIssue] => Boolean) =
       Filter(

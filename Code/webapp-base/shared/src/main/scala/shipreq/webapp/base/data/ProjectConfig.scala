@@ -37,6 +37,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def atags: Stream[ApplicableTag] =
     tags.vstream(_.tag).filterT[ApplicableTag]
 
+  lazy val deadATagIds: Set[ApplicableTagId] =
+    atags.filter(_.live :: Dead).map(_.id).toSet
+
   def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): Must[D] =
     fields.customFields(id).flatMap(f =>
       Must.fromOption(d.unapplyData(f), s"$id associated with wrong type: $f"))

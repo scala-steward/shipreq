@@ -120,4 +120,10 @@ trait BaseTestUtil {
       ve
     }
   }
+
+  def applyEventSuccessfully(p: Project, e: Event): Project =
+    _verifyEvent(p, e)._1
+
+  def applyEventsSuccessfully(p: Project, es: Event*): Project =
+    es.foldLeft(p)(applyEventSuccessfully)
 }

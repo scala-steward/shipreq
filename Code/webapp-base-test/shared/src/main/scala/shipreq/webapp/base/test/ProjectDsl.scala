@@ -66,7 +66,7 @@ object ProjectDslInternals {
 
   val emptyReqCodeData = ReqCode.Data(None, UnivEq.emptySet, UnivEq.emptySetMultimap)
 
-  case class Composite(ss: NonEmptyVector[Mod[_]], defaultReqType: Option[CustomReqTypeId]) {
+  case class Composite(ss: NonEmptyVector[Mod[_]], defaultReqType: Option[CustomReqTypeId]) extends ToState {
 
     def +(n: ToState): Composite =
       copy(ss = n.state +: ss)
