@@ -41,35 +41,43 @@ private[reqtable] object Logic {
 
   private def tagLookup(p: Project, fd: FilterDead): TagLookup = {
     val reqTags = p.reqTags
+    val tagsInText = p.atomScan.tagRefs
 
     fd match {
       case HideDead =>
         val deadTags = p.config.deadATagIds
-        val tagsInText = p.atomScan.tagsInLiveReqText.apply _
         memo { id =>
-          val inText = tagsInText(id)
+          val inText = tagsInText(id).live
           val liveTags = (reqTags(id) | inText) &~ deadTags // Dead tags on live reqs are ignored unless in text
           ReqTags(liveTags, deadTagsInLiveText = inText & deadTags)
         }
 
       case ShowDead =>
-        val tagsInText = p.atomScan.tagsInAllReqText.apply _
         // [deadTagsInLiveText = Set.empty] is technically wrong but when (FilterDead == ShowDead) putting everything
         // in `other` is more efficient and achieves the same result (confirmed in LogicTest.filterDead.tagComprehensive)
-        memo(id => ReqTags(reqTags(id) | tagsInText(id), deadTagsInLiveText = Set.empty))
+        memo(id => ReqTags(reqTags(id) | tagsInText(id).all, deadTagsInLiveText = Set.empty))
     }
   }
 
-  private class IssueLookup(_r: => (ReqId     => Vector[AnyIssue]),
-                            _g: => (ReqCodeId => Vector[AnyIssue])) {
-    lazy val r = _r
-    lazy val g = _g
+  private final class IssueLookup(p: Project, fd: FilterDead) {
+    import AtomScan._
+
+    type Issues = Vector[AnyIssue]
+
+    private val get = fd.ldStatAccessor[Issues]
+
+    private def forLoc(loc: IssueLoc): Issues =
+      get(p.atomScan.issues(loc))
+
+    def forReq(id: ReqId): Issues =
+      forLoc(InReq(id))
+
+    def forReqCode(id: ReqCodeId): Issues =
+      forLoc(InRCG(id))
   }
 
-  private def issueLookup(p: Project): IssueLookup = {
-    val as = p.atomScan
-    new IssueLookup(as.issuesInReqText.apply, as.issuesInGroupText.apply)
-  }
+  private def issueLookup(p: Project, fd: FilterDead): IssueLookup =
+    new IssueLookup(p, fd)
 
   // ===================================================================================================================
   // Expansion
@@ -258,7 +266,7 @@ private[reqtable] object Logic {
 
     val filterDead    = Filter(vs.filterDead.filterFnA(_.live), FilterFn.`n/a`)
     val tagLookup     = this.tagLookup(p, vs.filterDead)
-    val issueLookup   = this.issueLookup(p)
+    val issueLookup   = this.issueLookup(p, vs.filterDead)
     val applicability = Applicability(p)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
@@ -401,8 +409,8 @@ private[reqtable] object Logic {
 
     def byIssueType(f: Vector[AnyIssue] => Boolean) =
       Filter(
-        r => f(issueLookup.r(r.id)),
-        g => f(issueLookup.g(g.id)))
+        r => f(issueLookup.forReq(r.id)),
+        g => f(issueLookup.forReqCode(g.id)))
 
     def byImplication(reqs: FilterAst.Reqs, tc: TransitiveClosure[ReqId]): R = {
       val whitelist = reqs.foldLeft(Set.empty[ReqId])(_ ++ tc(_))

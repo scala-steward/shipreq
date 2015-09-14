@@ -1,30 +1,35 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.util.Multimap
+import scalaz.std.vector.vectorMonoid
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.text.{Atom, Text}
 import Atom._
+import AtomScan.IssueLoc
 
 /**
  * Scanning includes dead reqs.
  *
  * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
  */
-class AtomScan(val tagsInLiveReqText: Multimap[ReqId,     Set,    ApplicableTagId],
-               val tagsInAllReqText : Multimap[ReqId,     Set,    ApplicableTagId],
-               val issuesInReqText  : Multimap[ReqId,     Vector, AnyIssue],
-               val issuesInGroupText: Multimap[ReqCodeId, Vector, AnyIssue],
-               val codeRefs         : Set[ReqCodeId])
+class AtomScan(val tagRefs : LDStats[ReqId, Set[ApplicableTagId]],
+               val issues  : LDStats[IssueLoc, Vector[AnyIssue]],
+               val codeRefs: Set[ReqCodeId])
 
 object AtomScan {
-  def apply(p: Project): AtomScan = {
-    var tagsInLiveReqText: Multimap[ReqId,     Set,    ApplicableTagId] = UnivEq.emptySetMultimap
-    var tagsInAllReqText : Multimap[ReqId,     Set,    ApplicableTagId] = UnivEq.emptySetMultimap
-    var issuesR          : Multimap[ReqId,     Vector, AnyIssue]        = UnivEq.emptyMultimap
-    var issuesG          : Multimap[ReqCodeId, Vector, AnyIssue]        = UnivEq.emptyMultimap
-    var codeRefs         : Set[ReqCodeId]                               = UnivEq.emptySet
 
-    def scan(liveText : Live,
+  sealed trait IssueLoc
+  case class InReq(id: ReqId)     extends IssueLoc
+  case class InRCG(id: ReqCodeId) extends IssueLoc
+  implicit def issueLocEq: UnivEq[IssueLoc] = UnivEq.deriveAuto
+
+  private implicit val tagSetMonoid = UnivEq.setMonoid[ApplicableTagId]
+
+  def apply(p: Project): AtomScan = {
+    val tagRefs  = new LDStats.Builder[ReqId, Set[ApplicableTagId]]
+    val issues   = new LDStats.Builder[IssueLoc, Vector[AnyIssue]]
+    var codeRefs = UnivEq.emptySet[ReqCodeId]
+
+    def scan(live     : Live,
              reqId    : ReqId     = null,
              reqCodeId: ReqCodeId = null)
             (text: Text.AnyOptional): Unit = {
@@ -42,16 +47,12 @@ object AtomScan {
             codeRefs += a.value
 
           case a: Issue#Issue =>
-            if (reqId     ne null) issuesR = issuesR.add(reqId,     a)
-            if (reqCodeId ne null) issuesG = issuesG.add(reqCodeId, a)
+            if (reqId     ne null) issues(InReq(reqId))    .mod(live)(_ :+ a)
+            if (reqCodeId ne null) issues(InRCG(reqCodeId)).mod(live)(_ :+ a)
             go(a.desc)
 
           case a: TagRef#TagRef =>
-            if (reqId ne null) {
-              tagsInAllReqText = tagsInAllReqText.add(reqId, a.value)
-              if (liveText :: Live)
-                tagsInLiveReqText = tagsInLiveReqText.add(reqId, a.value)
-            }
+            if (reqId ne null) tagRefs(reqId).mod(live)(_ + a.value)
 
           case a: ListMarkup#UnorderedList =>
             a.items foreach go
@@ -81,6 +82,6 @@ object AtomScan {
     for (gi <- p.reqCodes.activeGroups)
       scan(Live, reqCodeId = gi.id)(gi.group.title)
 
-    new AtomScan(tagsInLiveReqText, tagsInAllReqText, issuesR, issuesG, codeRefs)
+    new AtomScan(tagRefs.result(), issues.result(), codeRefs)
   }
 }

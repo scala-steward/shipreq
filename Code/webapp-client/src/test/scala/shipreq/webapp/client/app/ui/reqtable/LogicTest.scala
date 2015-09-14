@@ -646,6 +646,63 @@ object LogicTest extends TestSuite {
         D, D, D, D) // dead req, dead tag
   }
 
+  /** See `Requirements/analysis-deletion.ods`. */
+  object DeadIssues {
+    private val liveCF = notesField
+    private val deadCF = reporterField
+
+    // LiveText, LiveText, DeadText
+    private def batch(reqLive: Live, issue: CustomIssueTypeId) =
+      GReq(live = reqLive, title = Vector1(Text.GenericReqTitle.Issue(issue, ∅))) +
+      GReq(live = reqLive).cftext(liveCF, NonEmptyVector one Text.CustomTextField.Issue(issue, ∅)) +
+      GReq(live = reqLive).cftext(deadCF, NonEmptyVector one Text.CustomTextField.Issue(issue, ∅))
+
+    private val liveIssue = CustomIssueTypeId(2)
+    private val deadIssue = CustomIssueTypeId(3)
+
+    private val p =
+      ( batch(Live, liveIssue) // DD-[ 1, 3]
+      + batch(Live, deadIssue) // DD-[ 4, 6]
+      + batch(Dead, liveIssue) // DD-[ 7, 9]
+      + batch(Dead, deadIssue) // DD-[10,12]
+      ).defaultReqType(dd) ! PA
+
+    private val fmtRows = rowToPubid(p)
+
+    private def Z = "Z" // Doesn't have issue, filter by issue removes these
+    private def L = "L" // Has live issue,     filter by live issue keeps these
+    private def D = "D" // Has dead issue,     filter by dead issue keeps these
+
+    private def test(fd: FilterDead)(issues: String*): Unit = {
+      val withIds = issues.zipWithIndex.map(_.map2(_ + 1))
+
+      // No filter
+      val expect = withIds.map("DD-" + _._2) mkString sep
+      testUnsorted(p, C.Tags, None, fd, fmtRows)(expect)
+
+      // With filters
+      def testWithFilters(issue: CustomIssueTypeId, issueStr: String): Unit = {
+        val ids = withIds.filter(_._1 == issueStr).map(_._2)
+        val expect = ids.map("DD-" + _) mkString sep
+        testUnsorted(p, C.Tags, F.CustomIssue(issue), fd, fmtRows)(expect)
+      }
+      testWithFilters(liveIssue, L)
+      testWithFilters(deadIssue, D)
+    }
+
+    def testHideDead(): Unit =
+      test(HideDead)(
+        L, L, Z, // live req, live issue
+        D, D, Z) // live req, dead issue - Ds here cos they're in live text = not auto-removable = issues = show
+
+    def testShowDead(): Unit =
+      test(ShowDead)(
+        L, L, L, // live req, live issue
+        D, D, D, // live req, dead issue
+        L, L, L, // dead req, live issue
+        D, D, D) // dead req, dead issue
+  }
+
   def testTags_inText(): Unit = {
     def t(direct: ApplicableTagId*)(inTitle: ApplicableTagId*)(inCustomText: ApplicableTagId*) =
       GReq(title = reqTitleTagRefs(inTitle))
@@ -903,6 +960,10 @@ object LogicTest extends TestSuite {
       'tags {
         'hideDead - DeadTags.testHideDead()
         'showDead - DeadTags.testShowDead()
+      }
+      'issues {
+        'hideDead - DeadIssues.testHideDead()
+        'showDead - DeadIssues.testShowDead()
       }
     }
     'filter {

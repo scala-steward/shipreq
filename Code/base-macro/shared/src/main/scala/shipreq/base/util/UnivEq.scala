@@ -75,6 +75,12 @@ object UnivEq extends UnivEqImplicits {
     }
   }
 
+  def setMonoid[A: UnivEq]: Monoid[Set[A]] =
+    new Monoid[Set[A]] {
+      override def zero = Set.empty
+      override def append(a: Set[A], b: => Set[A]) = a | b
+    }
+
   // Copied from Shapeless
   trait =:!=[A, B]
   def _unexpected : Nothing = sys.error("Unexpected invocation")
