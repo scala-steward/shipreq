@@ -64,7 +64,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
     def applyDelete(e: DeleteReq): AP =
       e.id match {
         case id: GenericReqId => e.da match {
-          case SoftDel => deleteGenericReq(id)
+          case Delete  => deleteGenericReq(id)
           case Restore => restoreGenericReq(id)
         }
       }

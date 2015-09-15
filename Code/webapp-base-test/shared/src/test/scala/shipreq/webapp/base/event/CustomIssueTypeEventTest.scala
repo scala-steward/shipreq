@@ -15,8 +15,7 @@ trait CustomIssueTypeEvents {
   val c1  = CreateCustomIssueType(1, nev(Key("TBD"), Desc(None)))
   val c2  = CreateCustomIssueType(2, nev(Key("PEND"), Desc(Some("pending"))))
   val u1  = UpdateCustomIssueType(1, nev(Key("TD")))
-  val sd1 = DeleteCustomIssueType(1, SoftDel)
-  val hd1 = DeleteCustomIssueType(1, HardDel)
+  val sd1 = DeleteCustomIssueType(1, Delete)
   val r1  = DeleteCustomIssueType(1, Restore)
 }
 
@@ -55,7 +54,5 @@ object CustomIssueTypeEventTest extends TestSuite with CustomIssueTypeEvents {
       'badDesc - assertFail("Desc")  (c1, UpdateCustomIssueType(1, nev(Desc(tooLongStr))))
       'dupKey  - assertFail("unique")(c1, c2, UpdateCustomIssueType(2, nev(Key("TBD"))))
     }
-
-    // TODO Add tests of HardDeletion failing when subject in use
   }
 }

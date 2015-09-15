@@ -53,7 +53,7 @@ object ApplyEventTestFns {
     var rcgs             = 0
 
     def ifHard(d: DeletionAction, f: => Unit): Unit =
-      if (d == HardDel) f
+      () //if (d == HardDel) f
 
     es foreach {
       case _: CreateGenericReq      => activeReqs += 1
@@ -71,10 +71,9 @@ object ApplyEventTestFns {
       case DeleteCustomReqType  (_, d)       => ifHard(d, customReqTypes -= 1)
       case DeleteTag            (_, d)       => ifHard(d, tags -= 1)
       case DeleteStaticField    (_)          => activeFields -= 1
-      case DeleteReq            (_, SoftDel) => activeReqs -= 1
+      case DeleteReq            (_, Delete ) => activeReqs -= 1
       case DeleteReq            (_, Restore) => activeReqs += 1
-      case DeleteCustomField    (_, HardDel) => activeFields -= 1; customFields -= 1
-      case DeleteCustomField    (_, SoftDel) => activeFields -= 1
+      case DeleteCustomField    (_, Delete ) => activeFields -= 1
       case DeleteCustomField    (_, Restore) => activeFields += 1
       case DeleteReqCodeGroup   (_)          => rcgs -= 1
 
@@ -143,7 +142,6 @@ abstract class SharedTests(implicit val init: InitialEvents) extends TestSuite {
   val c2 : CE
   val u1 : Event
   val sd1: Event
-  val hd1: Event
   val r1 : Event
 
   def setId(c: CE, id: Int): CE
@@ -160,18 +158,20 @@ abstract class SharedTests(implicit val init: InitialEvents) extends TestSuite {
 
     'update {
       'notFound - assertFail("not found")(u1)
-      'afterHD  - assertFail("not found")(c1, hd1, u1)
       'dead     - assertFail("dead")     (c1, sd1, u1)
+      //'afterHD  - assertFail("not found")(c1, hd1, u1)
     }
 
     'delete {
-      'okHard    - assertPass(c1, hd1)
       'okSoft    - assertPass(c1, sd1)
       'okRest    - assertPass(c1, sd1, r1)
-      'okMulti   - assertPass(c1, sd1, r1, sd1, r1, hd1)
-      'notFound  - List(hd1, sd1, r1).foreach(d => assertFail("not found")(d))
-      'hardTwice - assertFail("not found")(c1, hd1, hd1)
-      'hardRest  - assertFail("not found")(c1, hd1, r1)
+      'okMulti   - assertPass(c1, sd1, r1, sd1, r1)
+      'notFound  - List(sd1, r1).foreach(d => assertFail("not found")(d))
+
+      // All hard-deletion has been removed
+      // 'okHard    - assertPass(c1, hd1)
+      // 'hardTwice - assertFail("not found")(c1, hd1, hd1)
+      // 'hardRest  - assertFail("not found")(c1, hd1, r1)
 
       // Disabling for now. These are NOP issues, not integrity issues.
       // 'softTwice - assertFail("x")(c1, sd1, sd1)

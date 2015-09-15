@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import scalaz.{Equal, \/-}
 import utest._
-import shipreq.base.util.ISubset
+import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol.{FieldCrud, RemoteFn}
@@ -47,7 +47,8 @@ object CfgFieldsTest extends TestSuite {
     import t._
 
     selectNewText()
-    val initialState = c.state
+    def html = c.getDOMNode().outerHTML
+    val initialView = html
 
     // Create new text row
     assert(getNewRow.isEmpty)
@@ -72,8 +73,8 @@ object CfgFieldsTest extends TestSuite {
     Simulation.click run sole(Sizzle("tr:has(:text[value=blahh]) button:contains('Delete')", c))
     cp.assertReqsSent(2)
     cp.respondToLast(remote)(
-      verifyEvents(clientData.project)(DeleteCustomField(666.CFText, HardDel)))
+      verifyEvents(clientData.project)(DeleteCustomField(666.CFText, Delete)))
 
-    assertEq(c.state, initialState)
+    assertEq(html, initialView)
   }
 }

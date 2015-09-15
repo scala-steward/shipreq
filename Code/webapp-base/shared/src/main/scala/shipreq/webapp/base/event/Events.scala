@@ -151,7 +151,7 @@ object CreateGenericReqGD extends GenericData {
 
 case class CreateGenericReq(id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
 
-case class DeleteReq(id: ReqId, da: SoftDeletionAction) extends ActiveEvent
+case class DeleteReq(id: ReqId, da: DeletionAction) extends ActiveEvent
 
 /**
  * Updates a requirement's reqcodes.

@@ -335,13 +335,7 @@ object EventDbCodecs {
     pickleApplicableTagId.nesNice
 
   implicit val pickleDeletionAction: ReadWriter[DeletionAction] = pickleAdtOS {
-    case SoftDel => "s"
-    case Restore => "r"
-    case HardDel => "h"
-  }
-
-  implicit val pickleSoftDeletionAction: ReadWriter[SoftDeletionAction] = pickleAdtOS {
-    case SoftDel => "s"
+    case Delete  => "d"
     case Restore => "r"
   }
 

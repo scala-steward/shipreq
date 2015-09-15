@@ -136,21 +136,17 @@ trait ApplyConfigEvent extends AskTrust {
     def applyDelete(e: DeleteTag): AP =
       L @=> (e.da match {
         case Restore => restore(e.id)
-        case SoftDel => softDel(e.id)
-        case HardDel => hardDel(e.id)
+        case Delete  => delete(e.id)
       })
 
-    private def setLife(ol: Option[Live]): TagId => AE[TagTree] = {
+    private def setLife(newLife: Live): TagId => AE[TagTree] = {
 
       val modifySubject: TagId => AE[TagTree] =
-        ol match {
-          case Some(a) =>
-            id => App.ok(_.mod(id, TagInTree.live set a))
-          case None =>
-            withUntrustedCheck[TagTree, TagId](
-              (tt, id) => if (tt containsK id) None else Some(s"$id not found."))(
-              (tt, id) => tt.mapUnderlying(_.mapValuesNow(_ removeChild id) - id))
-        }
+        id => App.ok(_.mod(id, TagInTree.live set newLife))
+//      Hard-deletion
+//      withUntrustedCheck[TagTree, TagId](
+//        (tt, id) => if (tt containsK id) None else Some(s"$id not found."))(
+//        (tt, id) => tt.mapUnderlying(_.mapValuesNow(_ removeChild id) - id))
 
       def go(id: TagId): AE[TagTree] =
         imap.needM(id)(t0 => App { subj =>
@@ -182,9 +178,8 @@ trait ApplyConfigEvent extends AskTrust {
       go
     }
 
-    val hardDel = setLife(None)
-    val softDel = setLife(Some(Dead))
-    val restore = setLife(Some(Live))
+    val delete  = setLife(Dead)
+    val restore = setLife(Live)
   }
 
   abstract class TagEvents[D <: Tag : ClassTag] extends GenericDataApp {
@@ -345,18 +340,17 @@ trait ApplyConfigEvent extends AskTrust {
 
     val addSF = appendNewToVector[FieldId]
 
-    def hardDeleteCustomField(id: CustomFieldId): AE[FieldSet] =
-      App(fs =>
-        for {
-          m <- imap.remove(id)(fs.customFields)
-          o <- removeFromOrder(id)(fs.order)
-        } yield FieldSet(m, o)
-      )
+//    def hardDeleteCustomField(id: CustomFieldId): AE[FieldSet] =
+//      App(fs =>
+//        for {
+//          m <- imap.remove(id)(fs.customFields)
+//          o <- removeFromOrder(id)(fs.order)
+//        } yield FieldSet(m, o)
+//      )
 
     def applyDeleteC(e: DeleteCustomField): AP =
       e.da match {
-        case HardDel => L @=> hardDeleteCustomField(e.id)
-        case SoftDel => M @=> setLive(e.id, Dead)
+        case Delete  => M @=> setLive(e.id, Dead)
         case Restore => M @=> setLive(e.id, Live)
       }
 

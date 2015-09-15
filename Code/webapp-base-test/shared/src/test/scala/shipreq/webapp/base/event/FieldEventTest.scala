@@ -73,8 +73,7 @@ trait CustomTextFieldEvents {
   val c1  = CreateCustomTextField(1, nev(Name(c1Name), Key(c1Key), Mandatory(true), ReqTypes(allReqTypes)))
   val c2  = CreateCustomTextField(2, nev(Name("Roar"), Key("r"), Mandatory(false), ReqTypes(onlyUC)))
   val u1  = UpdateCustomTextField(1, nev(Key("stuff")))
-  val sd1 = DeleteCustomField(1.CFText, SoftDel)
-  val hd1 = DeleteCustomField(1.CFText, HardDel)
+  val sd1 = DeleteCustomField(1.CFText, Delete)
   val r1  = DeleteCustomField(1.CFText, Restore)
 }
 
@@ -125,8 +124,6 @@ object CustomTextFieldEventTest extends TestSuite with CustomTextFieldEvents {
       'dupName     - assertFail("unique")(c1, c2, UpdateCustomTextField(2, nev(Name(c1Name))))
       'dupKey      - assertFail("unique")(c1, c2, UpdateCustomTextField(2, nev(Key(c1Key))))
     }
-
-    // TODO Add tests of HardDeletion failing when subject in use
   }
 }
 
@@ -140,8 +137,7 @@ trait CustomTagFieldEvents {
   val c1  = mkC1(1.TG)
   val c2  = CreateCustomTagField(2, nev(TagId(2.AT), Mandatory(false), ReqTypes(onlyUC)))
   val u1  = UpdateCustomTagField(1, nev(Mandatory(false)))
-  val sd1 = DeleteCustomField(1.CFTag, SoftDel)
-  val hd1 = DeleteCustomField(1.CFTag, HardDel)
+  val sd1 = DeleteCustomField(1.CFTag, Delete)
   val r1  = DeleteCustomField(1.CFTag, Restore)
 }
 
@@ -193,8 +189,6 @@ object CustomTagFieldEventTest extends TestSuite with CustomTagFieldEvents {
       'badReqTypes   - assertFail("Types")    (c1, UpdateCustomTagField(1, nev(ReqTypes(onlyRT1)))) // RT1 doesn't exist
       'dupTagId      - assertFail("unique")   (c1, c2, UpdateCustomTagField(2, nev(TagId(1.TG))))
     }
-
-    // TODO Add tests of HardDeletion failing when subject in use
   }
 }
 
@@ -206,8 +200,7 @@ trait CustomImpFieldEvents {
   val c1  = CreateCustomImpField(1, nev(ReqTypeId(1), Mandatory(true), ReqTypes(onlyUC)))
   val c2  = CreateCustomImpField(2, nev(ReqTypeId(StaticReqType.UseCase), Mandatory(false), ReqTypes(allReqTypes)))
   val u1  = UpdateCustomImpField(1, nev(Mandatory(false)))
-  val sd1 = DeleteCustomField(1.CFImp, SoftDel)
-  val hd1 = DeleteCustomField(1.CFImp, HardDel)
+  val sd1 = DeleteCustomField(1.CFImp, Delete)
   val r1  = DeleteCustomField(1.CFImp, Restore)
 }
 
@@ -253,7 +246,5 @@ object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
       'badReqTypes       - assertFail("Types") (c1, UpdateCustomImpField(1, nev(ReqTypes(notRT2)))) // RT2 doesn't exist
       'dupReqTypeId      - assertFail("unique")(c1, c2, UpdateCustomImpField(2, nev(ReqTypeId(1))))
     }
-
-    // TODO Add tests of HardDeletion failing when subject in use
   }
 }

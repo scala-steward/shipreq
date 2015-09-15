@@ -16,8 +16,7 @@ trait CustomReqTypeEvents {
   val c1  = CreateCustomReqType(1, nev(Mnemonic("MF"), Name(mfName), Imp(ImplicationRequired)))
   val c2  = CreateCustomReqType(2, nev(Mnemonic("FR"), Name("Functional Req"), Imp(ImplicationRequired.Not)))
   val u1  = UpdateCustomReqType(1, nev(Mnemonic("M")))
-  val sd1 = DeleteCustomReqType(1, SoftDel)
-  val hd1 = DeleteCustomReqType(1, HardDel)
+  val sd1 = DeleteCustomReqType(1, Delete)
   val r1  = DeleteCustomReqType(1, Restore)
 }
 
@@ -63,11 +62,8 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     }
 
     'delete {
-      'whenLiveImpFieldS - assertFail("")(c1, CustomImpFieldEventTest.c1, sd1)
-      'whenLiveImpFieldH - assertFail("")(c1, CustomImpFieldEventTest.c1, hd1)
-      'whenDeadImpFieldS - assertPass    (c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1)
-      'whenDeadImpFieldH - assertFail("")(c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, hd1)
+      'whenLiveImpField - assertFail("")(c1, CustomImpFieldEventTest.c1, sd1)
+      'whenDeadImpField - assertPass    (c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1)
     }
-    // TODO Add tests of HardDeletion failing when subject in use
   }
 }

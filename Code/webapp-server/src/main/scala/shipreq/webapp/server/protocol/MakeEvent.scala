@@ -134,7 +134,7 @@ object MakeEvent { // TODO Move
       case CfgAction.Delete(f: StaticField, Restore) =>
         AddStaticField(f)
 
-      case CfgAction.Delete(f: StaticField, HardDel | SoftDel) =>
+      case CfgAction.Delete(f: StaticField, Delete) =>
         DeleteStaticField(f)
 
       case CfgAction.Delete(id: CustomFieldId, da) =>

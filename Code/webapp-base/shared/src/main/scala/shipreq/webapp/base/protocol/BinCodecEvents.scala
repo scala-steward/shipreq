@@ -11,7 +11,6 @@ import AtomPicklers.instances._
 
 object BinCodecEvents {
 
-  implicit val pickleSoftDeletionAction = pickleEnum(SoftDeletionAction.values)
   implicit val pickleDeletionAction     = pickleEnum(DeletionAction.values)
 
   implicit val pickleCustomIssueTypeGD  = binpickler(CustomIssueTypeGD).nev

@@ -13,7 +13,7 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.Validators.{field => V}
-import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
+import shipreq.webapp.base.event.{DeletionAction, Delete, Restore}
 import shipreq.webapp.base.protocol.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
@@ -189,7 +189,7 @@ private[fields] object MainTable {
 
   // ===================================================================================================================
   case class ProtocolBackend(cp: ClientProtocol, remote: FieldCrud.Fn.Instance, cd: ClientData) {
-    import FieldCrud._, CfgAction._
+    import FieldCrud._
 
     private def call(a: CfgAction): (TCB.Success, TCB.Failure) => Callback =
       (s, f) => cp.call(remote)(a,
@@ -197,16 +197,16 @@ private[fields] object MainTable {
         cp.consumeGenericFailure(_) >> f)
 
     def createIO(v: Values) =
-      call(Create(v))
+      call(CfgAction.Create(v))
 
     def updateValuesIO(i: CustomFieldId, v: Values) =
-      call(UpdateValues(i, v))
+      call(CfgAction.UpdateValues(i, v))
 
     def updateOrderIO(i: FieldId, p: Position) =
-      call(UpdateOrder(i, p))
+      call(CfgAction.UpdateOrder(i, p))
 
     def deleteIO(i: FieldId, a: DeletionAction) =
-      call(Delete(i, a))
+      call(CfgAction.Delete(i, a))
 
     // TODO staticDeletion doesn't handle failure (or lock row)
     val staticDeletion = new Deletion[StaticField](
@@ -342,7 +342,7 @@ private[fields] object MainTable {
         refkey     = renderKeyO(f.keyO),
         mandatory  = staticMandatoryCheckbox(f.mandatory),
         reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-        ctrls      = (f.deletable ≟ Deletable) ?= protocol.value().staticDeletion.button(f, SoftDel)
+        ctrls      = (f.deletable ≟ Deletable) ?= protocol.value().staticDeletion.button(f, Delete)
       )(f.fieldType)
 
     def renderKeyO(k: Option[FieldRefKey]): TagMod =
@@ -449,7 +449,7 @@ private[fields] object MainTable {
           refkey     = refkey,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, SoftDel))
+          ctrls      = deletion.button(f.id, Delete))
       }
 
       override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Text): ReactTag =
@@ -503,7 +503,7 @@ private[fields] object MainTable {
           refkey     = unusedField,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, SoftDel)
+          ctrls      = deletion.button(f.id, Delete)
         )
       }
 
@@ -559,7 +559,7 @@ private[fields] object MainTable {
           refkey     = unusedField,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, SoftDel)
+          ctrls      = deletion.button(f.id, Delete)
         )
       }
 

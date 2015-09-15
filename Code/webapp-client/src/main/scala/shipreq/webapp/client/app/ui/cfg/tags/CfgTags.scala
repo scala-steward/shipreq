@@ -21,7 +21,7 @@ import shipreq.base.util.UnivEq.{mutableHashMapMemo => memo}
 import shipreq.webapp.base.data.{TagId => Id, _}, DataImplicits._
 import shipreq.webapp.base.data.Validators.{tag => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
-import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
+import shipreq.webapp.base.event.{DeletionAction, Delete, Restore}
 import shipreq.webapp.base.protocol.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
@@ -363,7 +363,7 @@ private[tags] object MainTable {
       override def renderLive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, mutexChildren, desc) = editor render ei(s, row)
         val t = row.p
-        val del = deletion.value().button(t.id, SoftDel)
+        val del = deletion.value().button(t.id, Delete)
         rowTemplate(s, t.id, row.status, key)(indent(name), unusedField, mutexChildren, desc)(del)
       }
       override def renderDead (s: S, indent: Indenter, key: String)(rs: RowStatus, t: TagGroup): ReactTag = {
@@ -398,7 +398,7 @@ private[tags] object MainTable {
       override def renderLive(s: S, indent: Indenter, key: String)(row: stores.s.Row): ReactTag = {
         val (name, refkey, desc) = editor render ei(s, row)
         val t = row.p
-        val del = deletion.value().button(t.id, SoftDel)
+        val del = deletion.value().button(t.id, Delete)
         rowTemplate(s, t.id, row.status, key)(indent(name), refkey, unusedField, desc)(del)
       }
       override def renderDead(s: S, indent: Indenter, key: String)(rs: RowStatus, t: ApplicableTag): ReactTag = {

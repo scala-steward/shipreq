@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
-import shipreq.webapp.base.event.{SoftDeletionAction, DeletionAction}
+import shipreq.webapp.base.event.DeletionAction
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar}
 import shipreq.webapp.base.util.GenericData
@@ -198,9 +198,6 @@ object RandomData {
 
   val deletionAction =
     oneofV(DeletionAction.values)
-
-  val softDeletionAction =
-    oneofV(SoftDeletionAction.values)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -1622,7 +1619,7 @@ object RandomData {
       reqCode.id map DeleteReqCodeGroup
 
     val deleteReq: Gen[DeleteReq] =
-      Gen.apply2(DeleteReq)(reqId, softDeletionAction)
+      Gen.apply2(DeleteReq)(reqId, deletionAction)
 
     val deleteStaticField: Gen[DeleteStaticField] =
       staticField map DeleteStaticField

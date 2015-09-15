@@ -18,16 +18,12 @@ abstract class SharedTagEventTests extends TestSuite {
   val c3 : CE
   val u1 : Event
   val sd1: Event
-  val hd1: Event
   val  r1: Event
   val sd2: Event
-  val hd2: Event
   val  r2: Event
   val sd3: Event
-  val hd3: Event
   val  r3: Event
   val sd4: Event
-  val hd4: Event
   val  r4: Event
 
   val c1Name: String
@@ -163,20 +159,8 @@ abstract class SharedTagEventTests extends TestSuite {
         test(r1,  "{AB,D}C")
       }
 
-      'whenLiveTagFieldS - assertFail("")(c1, createTagField1, sd1)
-      'whenLiveTagFieldH - assertFail("")(c1, createTagField1, hd1)
-      'whenDeadTagFieldS - assertPass    (c1, createTagField1, CustomTagFieldEventTest.sd1, sd1)
-      'whenDeadTagFieldH - assertFail("")(c1, createTagField1, CustomTagFieldEventTest.sd1, hd1)
-
-      // TODO HardDeletion: If tag in use in [project content]     , prevent hard delete
-      // TODO HardDeletion: If tag in use in [tag tree]            , it should be allowed
-      // TODO HardDeletion: If tag in use in [other project config], should it should be allowed?
-//      'hardTree {
-//        def test(es: Event*) = assertFail("??")((c1 :: c2 :: es.toList): _*)
-//        test(hd1) // live child
-//        test(hd2) // live parent
-//        test(hd2) // dead child
-//      }
+      'whenLiveTagField - assertFail("")(c1, createTagField1, sd1)
+      'whenDeadTagField - assertPass    (c1, createTagField1, CustomTagFieldEventTest.sd1, sd1)
     }
   }
 }
@@ -200,8 +184,7 @@ trait TagGroupEvents {
   val c2 = CreateTagGroup(2, nev(Name("Released"), Desc(Some("r")), MutexChildren(true), parent(1)))
   val c3 = CreateTagGroup(3, nev(Name("All"), Desc(None), MutexChildren(false), child(1)))
   val u1 = UpdateTagGroup(1, nev(Desc(Some("versionness"))))
-  val List(hd1,hd2,hd3,hd4) = List(1,2,3,4).map(i => DeleteTag(i.TG, HardDel))
-  val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => DeleteTag(i.TG, SoftDel))
+  val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => DeleteTag(i.TG, Delete ))
   val List( r1, r2, r3, r4) = List(1,2,3,4).map(i => DeleteTag(i.TG, Restore))
 
   implicit class CreateTagGroupExt(private val a: CreateTagGroup) {
@@ -272,8 +255,7 @@ trait ApplicableTagEvents {
   val c2 = CreateApplicableTag(2, nev(Name("Released"), Desc(Some("r")), Key("c2"), parent(1)))
   val c3 = CreateApplicableTag(3, nev(Name("All"), Desc(None), Key("c3"), child(1)))
   val u1 = UpdateApplicableTag(1, nev(Desc(Some("versionness"))))
-  val List(hd1,hd2,hd3,hd4) = List(1,2,3,4).map(i => DeleteTag(i.AT, HardDel))
-  val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => DeleteTag(i.AT, SoftDel))
+  val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => DeleteTag(i.AT, Delete))
   val List( r1, r2, r3, r4) = List(1,2,3,4).map(i => DeleteTag(i.AT, Restore))
 
   implicit class CreateApplicableTagExt(private val a: CreateApplicableTag) {

@@ -6,7 +6,7 @@ import scalaz.syntax.equal._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.webapp.base.data.{Live, Dead, DataIdAux}
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.event.{DeletionAction, HardDel, SoftDel, Restore}
+import shipreq.webapp.base.event.{DeletionAction, Delete, Restore}
 import shipreq.webapp.client.lib.FilterDead
 
 // TODO So many c.state.runNow()s in CfgTable
@@ -139,10 +139,9 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor: Edi
   }
 
   private def savedLiveRow(rs: RowStatus, p: P, d: Deletion[K]): ReactElement = {
-    def del1 = d.button(p.id, HardDel)
-    def del2 = d.button(p.id, SoftDel)
+    def del = d.button(p.id, Delete)
     val v = renderRow(savedRowA(p.id), rs)
-    row("live", rs, rr.savedRow(v, p), <.span(del1, del2))(^.key := p.id.value)
+    row("live", rs, rr.savedRow(v, p), del)(^.key := p.id.value)
   }
 
   private def savedDeadRow(rs: RowStatus, p: P, d: Deletion[K]): ReactElement = {

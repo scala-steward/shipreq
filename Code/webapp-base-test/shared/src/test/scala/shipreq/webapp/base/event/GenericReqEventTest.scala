@@ -192,9 +192,9 @@ object GenericReqEventTest extends TestSuite {
     Title(NonEmptyVector(GRT.Issue(issueType1, Vector(
       IID.Literal("Ref to #3: "), IID.CodeRef(3)))))))
 
-  val del1 = DeleteReq(1, SoftDel)
-  val delA = DeleteReq(reqA, SoftDel)
-  val delB = DeleteReq(reqB, SoftDel)
+  val del1 = DeleteReq(1, Delete)
+  val delA = DeleteReq(reqA, Delete)
+  val delB = DeleteReq(reqB, Delete)
   val restoreA = DeleteReq(reqA, Restore)
   val restoreCode3From1 = patch(1, restore = Set(3))
   val removeCode3From1 = patch(1, remove = Set(3))
@@ -243,7 +243,7 @@ object GenericReqEventTest extends TestSuite {
       'badId           - List(0, -1).foreach(i => assertFail("id")(empty1.copy(id = i)))
       'idInUse         - assertFail("exists")(empty1, empty1)
       'reqTypeNotFound - assertFail("found")(empty1.copy(rt = 666))
-      'reqTypeDead     - assertFail("live")(DeleteCustomReqType(mf, SoftDel), empty1)
+      'reqTypeDead     - assertFail("live")(DeleteCustomReqType(mf, Delete), empty1)
       'tagNotFound     - assertFail("tag")(empty1.copy(vs = nev(Tags(6.AT))))
       'tagIsGroup      - assertFail("tag")(empty1.copy(vs = nev(Tags(tg1.value.AT))))
       // tagIsDead - allow it
@@ -597,7 +597,7 @@ object GenericReqEventTest extends TestSuite {
       'reqNotFound     - assertFail("found")(SetGenericReqType(1, fr))
       'reqIsDead       - assertFail("dead")(empty1, del1, SetGenericReqType(1, fr))
       'reqTypeNotFound - assertFail("found")(empty1, SetGenericReqType(1, 321))
-      'reqTypeIsDead   - assertFail("live")(empty1, DeleteCustomReqType(fr, SoftDel), SetGenericReqType(1, fr))
+      'reqTypeIsDead   - assertFail("live")(empty1, DeleteCustomReqType(fr, Delete), SetGenericReqType(1, fr))
     }
 
     'setGenericReqTitle {
@@ -627,7 +627,7 @@ object GenericReqEventTest extends TestSuite {
       'reqNotFound   - assertFail("found")(e)
       'reqIsDead     - assertFail("dead") (empty1, del1, e)
       'fieldNotFound - assertFail("found")(empty1, SetCustomTextField(1, 321, someCTF1))
-      'fieldDead     - assertFail("dead") (empty1, DeleteCustomField(cf1, SoftDel), e)
+      'fieldDead     - assertFail("dead") (empty1, DeleteCustomField(cf1, Delete), e)
       // TODO test not applicable to target reqtype
     }
 

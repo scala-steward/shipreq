@@ -477,9 +477,8 @@ private[event] object ApplyEventLib {
 
     final def delete(id: Id, da: DeletionAction): AP =
       da match {
+        case Delete  => setLive(id, Dead)
         case Restore => setLive(id, Live)
-        case SoftDel => setLive(id, Dead)
-        case HardDel => L @=> imap.remove(id)
       }
 
     private def setLive(id: Id, newValue: Live): AP =
