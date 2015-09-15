@@ -2,6 +2,7 @@ package shipreq.webapp.base.filter
 
 import org.parboiled2.{Parser => _, _}
 import shipreq.base.util.{NonEmptyVector, NonEmptySet}
+import shipreq.webapp.base.data.HashRefKey
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.util.ParsingUtil
 import ParsingUtil._
@@ -104,7 +105,7 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
     rule('/' ~!~ capture(regexChar.+) ~!~ '/' ~!~ end ~> ((s: String) => Regex(s.replace("\\/", "/"))))
 
   def hashRef: Rule1[HashRef] =
-    rule(hashRefStr_! ~ end ~> HashRef)
+    rule(hashRefStr_! ~ end ~> HashRefKey ~> HashRef)
 
   def reqType: Rule1[ReqType] =
     rule(reqTypeMnemonicCS ~ end ~> ReqType)

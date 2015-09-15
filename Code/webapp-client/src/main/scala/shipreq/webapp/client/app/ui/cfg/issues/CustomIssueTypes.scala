@@ -11,6 +11,7 @@ import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
 import shipreq.webapp.base.protocol.CustomIssueTypeCrud
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.UiText.FieldNames
+import shipreq.webapp.client.app.ProjectSpaMain
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}
@@ -19,7 +20,11 @@ import shipreq.webapp.client.protocol.ClientProtocol
 
 private[issues] object CustomIssueTypes {
 
-  case class Props(cp: ClientProtocol, remote: CustomIssueTypeCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp        : ClientProtocol,
+                   remote    : CustomIssueTypeCrud.Instance,
+                   clientData: ClientData,
+                   filterDead: FilterDead,
+                   routerCtl : ProjectSpaMain.RouterCtl) {
     @inline def component = Component(this)
   }
   implicit val reusability = Reusability.caseClass[Props]
@@ -54,6 +59,10 @@ private[issues] object CustomIssueTypes {
   }
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
+    val project    = Px.bs($).propsM(_.clientData.project)
+    val filterDead = Px.bs($).stateM(_.filterDead)
+    val routerCtl  = Px.bs($).propsM(_.routerCtl)
+
     val crudIO =
       Px.bs($).propsA.map(p =>
         CrudIO(CustomIssueType, CustomIssueTypeCrud)(p.cp, p.remote, p.clientData))
@@ -81,29 +90,68 @@ private[issues] object CustomIssueTypes {
       supp.addEditorFeatures2(e)(saveFn, _._1.customIssueData._1)
     }
 
-    // TODO Few c.state.runNow()s in CustomIssueTypes
+    type UsageView = ReactElement
+    val usageFn: CustomIssueType => UsageView = {
+      val px =
+        for {
+          rc <- routerCtl
+          fd <- filterDead
+          p  <- project
+        } yield {
+          val lookup = fd ldStatsAccessor p.atomScan.issueCounts
+          (i: CustomIssueType) => {
+            val count = lookup(i.id)
+            def desc = count// + " occurrences"
+            if (count == 0)
+              <.span(desc)
+            else {
+              import ProjectSpaMain._
+              import shipreq.webapp.base.filter.FilterSpec.HashRef
+              def showReqTable(e: ReactEvent) =
+                ReqTableNextState(fd, Some(HashRef(i.key))).set >> rc.setEH(ReqTable)(e)
+              <.a(^.href := "#", ^.onClick ==> showReqTable, desc)
+            }
+          }: UsageView
+        }
+      px.extract
+    }
+
     val table = {
       def rowRenderer =
-        new CfgTable.RowRenderer[CustomIssueType, rowE.View, HomoTuple2[TagMod]] {
-          private val f = implicitly[ReactElement => TagMod].overTuple2
-          override def newRow     = f
-          override def savedRow   = (v, p) => f(v)
-          override def deletedRow = p => (p.key.value, TextMod.nonBlank from p.desc)
-          override def render     = { case (key, desc) => List(key, desc) }
+        new CfgTable.RowRenderer[CustomIssueType, rowE.View, (TagMod, TagMod, Option[UsageView])] {
+          override def newRow = {
+            case (key, desc) => (key, desc, None)
+          }
+          override def savedRow = {
+            case ((key, desc), i) => (key, desc, Some(usageFn(i)))
+          }
+          override def deletedRow = i =>
+            (i.key.value, TextMod.nonBlank from i.desc, Some(usageFn(i)))
+
+          override def render = {
+            case (key, desc, usage) =>
+              Seq(key, desc, usage)
         }
+      }
+
+      // TODO Few c.state.runNow()s in CustomIssueTypes
       val t = CfgTable(rowE, savedRowStoreS, newRowStoreS).build(
         _.key, rowRenderer,
         i => (valState(None)($.state.runNow()), i),
         k => (valState(k.some)($.state.runNow()), savedRowStoreS.getI(k)($.state.runNow())),
         () => supp.deletion.value(), _.live, _.filterDead, $)
-      val headerRow = CfgTable.header(List(FieldNames.hashRefKey, FieldNames.desc))
+
+      val headerRow = CfgTable.header(List(FieldNames.hashRefKey, FieldNames.desc, FieldNames.usage))
+
       () => t.table(headerRow, Stream.empty)
     }
 
     val outer =
       CfgTable.outer(storesAndState)($)
 
-    def render: ReactElement =
+    def render: ReactElement = {
+      Px.refresh(project, filterDead, routerCtl)
       outer(table())
+    }
   }
 }

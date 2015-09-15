@@ -2,6 +2,7 @@ package shipreq.webapp.base.data
 
 import scala.collection.{mutable, GenTraversable}
 import scalaz.{Monoid, Semigroup}
+import scalaz.std.anyVal.intInstance
 import scalaz.syntax.semigroup._
 import shipreq.base.util.UnivEq
 
@@ -75,6 +76,15 @@ final class LDStats[Key: UnivEq, A: Monoid] private[LDStats](val raw: Map[Key, L
       }
       LDStats(m)
     }
+
+  def countByValues[B: UnivEq](f: A => GenTraversable[B]): LDStats[B, Int] = {
+    val r = new LDStats.Builder[B, Int]
+    for (stat <- raw.values) {
+      f(stat.live) foreach (r(_).live += 1)
+      f(stat.dead) foreach (r(_).dead += 1)
+    }
+    r.result()
+  }
 }
 
 object LDStats {

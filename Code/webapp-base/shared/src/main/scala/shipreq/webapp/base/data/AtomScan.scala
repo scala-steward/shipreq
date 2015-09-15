@@ -13,7 +13,11 @@ import AtomScan.IssueLoc
  */
 class AtomScan(val tagRefs : LDStats[ReqId, Set[ApplicableTagId]],
                val issues  : LDStats[IssueLoc, Vector[AnyIssue]],
-               val codeRefs: Set[ReqCodeId])
+               val codeRefs: Set[ReqCodeId]) {
+
+  lazy val issueCounts: LDStats[CustomIssueTypeId, Int] =
+    issues.countByValues(_.toStream.map(_.typ))
+}
 
 object AtomScan {
 

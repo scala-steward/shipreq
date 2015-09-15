@@ -4,21 +4,26 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import scala.collection.GenTraversableLike
 import shipreq.base.util.IsoBool
-import shipreq.webapp.base.data.{LDStat, Live}
+import shipreq.webapp.base.data.{LDStats, LDStat, Live}
 
 sealed trait FilterDead {
   val filter: Option[Live => Boolean]
 
-  def apply[A, C[x] <: GenTraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
+  final def apply[A, C[x] <: GenTraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
     filter.fold(as)(g => as.filter(g compose f))
 
-  def filterFn: Live => Boolean =
+  final def filterFn: Live => Boolean =
     filter.getOrElse(_ => true)
 
-  def filterFnA[A](f: A => Live): A => Boolean =
+  final def filterFnA[A](f: A => Live): A => Boolean =
     filter.fold((_: A) => true)(_ compose f)
 
   def ldStatAccessor[A]: LDStat[A] => A
+
+  final def ldStatsAccessor[K, A](stats: LDStats[K, A]): K => A = {
+    val get = ldStatAccessor[A]
+    k => get(stats(k))
+  }
 }
 
 object FilterDead extends IsoBool.ObjOnly[FilterDead] {

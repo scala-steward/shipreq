@@ -9,6 +9,7 @@ import utest._
 import shipreq.base.util.Debug._
 import shipreq.base.util.{NonEmptySet, NonEmptyVector, UnivEq}, UnivEq.Implicits._
 import shipreq.webapp.base.{RandomData => $}
+import shipreq.webapp.base.data.HashRefKey
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.test.BaseTestUtil._
 import FilterSpec._
@@ -19,6 +20,7 @@ object FilterParserTest extends TestSuite {
 
   implicit def autoSome(f: FilterSpec) = Option(f)
   implicit def autoMne(s: String) = Mnemonic(s)
+  implicit def autoHRK(s: String) = HashRefKey(s)
   implicit def autoNev[A](a: A) = NonEmptyVector(a)
   implicit def NES[A: UnivEq](a: A, as: A*) = NonEmptySet(a, as.toSet)
 

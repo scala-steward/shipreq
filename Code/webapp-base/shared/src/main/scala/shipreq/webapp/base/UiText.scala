@@ -55,6 +55,7 @@ object UiText {
     def mandatory           = "Mandatory"
     def applicableReqTypes  = "Req Types"
     def dndDragHandleHeader = ""
+    def usage               = "Usage"
   }
 
   object Cfg {

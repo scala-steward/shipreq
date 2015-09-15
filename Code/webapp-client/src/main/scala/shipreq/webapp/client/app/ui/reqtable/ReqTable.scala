@@ -4,10 +4,12 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
+import scalaz.{\/-, -\/}
+import scalaz.syntax.equal._
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateContentFn, UpdateContentCmd}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.state.{Changes, ChangeListener, ClientData}
 import shipreq.webapp.client.app.ui.ProjectWidgets
@@ -24,22 +26,27 @@ object ReqTable {
       .initialState_P(initialState)
       .renderBackend[Backend]
       .configure(ChangeListener.update[State](c => _.recvChanges(c)).install(_.cd))
+      .componentWillReceiveProps(($, p) => $.backend.willReceiveProps($.props, p))
       .build
 
-  case class Props(cd: ClientData, cp: ClientProtocol,
+  case class Props(cd             : ClientData,
+                   cp             : ClientProtocol,
                    createContentFn: CreateContentFn.Instance,
                    updateContentFn: UpdateContentFn.Instance,
-                   fd: FilterDead) {
+                   fd             : FilterDead,
+                   filterSpec     : Option[FilterSpec]) {
     def component = Component(this)
   }
 
   def initialState(p: Props): State = {
     val proj = p.cd.project
-    State(proj,
+    var s = State(proj,
       ViewSettings.default(p.fd),
       FilterEditor.initialState,
       CreationInterface.initState,
       Cell.emptyTableState)
+    p.filterSpec.foreach(f => s = s setFilterSpec f)
+    s
   }
 
   @Lenses
@@ -63,6 +70,14 @@ object ReqTable {
       val vs = viewSettings.copy(filter = fs._2)
       copy(viewSettings = vs, filter = fs._1)
     }
+
+    def setFilterSpec(fs: FilterSpec): State = {
+      val txt = FilterSpec toText fs
+      FilterAst(project, fs) match {
+        case \/-(ast) => filterSuccess(FilterEditor.State(txt, None), Some(ast))
+        case -\/(err) => filterFailure(FilterEditor.State(txt, Some(err)))
+      }
+    }
   }
 
   object State {
@@ -72,6 +87,20 @@ object ReqTable {
   // -------------------------------------------------------------------------------------------------------------------
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
+
+    val ST = ReactS.FixCB[State]
+
+    def willReceiveProps(oldProps: Props, nextProps: Props): Callback = {
+      val updateFD =
+        if (oldProps.fd ≟ nextProps.fd) ST.nop else
+          ST.modT(State.viewSettings.modify(_ setFilterDead nextProps.fd))
+
+      val updateFS =
+        nextProps.filterSpec.fold(ST.nop)(fs =>
+          ST.modT(_ setFilterSpec fs))
+
+      $.runState(updateFD >> updateFS)
+    }
 
     val setViewSettings = ReusableFn($ zoomL State.viewSettings).setState
     val modViewSettings = ReusableFn($ zoomL State.viewSettings).modState

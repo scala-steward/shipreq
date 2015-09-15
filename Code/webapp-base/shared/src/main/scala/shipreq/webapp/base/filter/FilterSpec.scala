@@ -1,6 +1,7 @@
 package shipreq.webapp.base.filter
 
 import shipreq.base.util._
+import shipreq.webapp.base.data.HashRefKey
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.Grammar
 
@@ -21,7 +22,7 @@ object FilterSpec {
   case class QuotedText(text: String, quoteChar: Char)     extends FilterSpec
   case class Regex     (text: String)                      extends FilterSpec
   case class ReqType   (value: Mnemonic)                   extends FilterSpec
-  case class HashRef   (text: String)                      extends FilterSpec
+  case class HashRef   (text: HashRefKey)                  extends FilterSpec
   case class Implies   (reqs: Reqs)                        extends FilterSpec
   case class ImpliedBy (reqs: Reqs)                        extends FilterSpec
   case class Presence  (attr: String)                      extends FilterSpec

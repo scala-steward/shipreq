@@ -1296,7 +1296,7 @@ object RandomData {
         charPred(FilterParser.attrChar).string1
 
       val reqType    = reqTypeMnemonic map ReqType
-      val hashRef    = hashRefKey.map(h => HashRef(h.value))
+      val hashRef    = hashRefKey map HashRef
       val implies    = reqs map Implies
       val impliedBy  = reqs map ImpliedBy
       val presence   = attr map Presence
