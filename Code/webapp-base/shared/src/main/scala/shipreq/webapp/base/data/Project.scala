@@ -3,6 +3,7 @@ package shipreq.webapp.base.data
 import monocle.Lens
 import monocle.macros.Lenses
 import scalaz.Equal
+import scalaz.std.anyVal.intInstance
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.UtilMacros
 import shipreq.webapp.base.text.{Atom, Text}
@@ -48,6 +49,15 @@ final case class Project(config      : ProjectConfig,
 
   lazy val deadReqCount: Int =
     deadReqIds.size
+
+  lazy val reqTypeCount: LDStats[ReqTypeId, Int] = {
+    val b = new LDStats.Builder[ReqTypeId, Int]
+    for (r <- reqs.reqs.values) {
+      val live = r.live(config.customReqTypes)
+      b(r.reqTypeId).mod(live)(_ + 1)
+    }
+    b.result()
+  }
 
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(

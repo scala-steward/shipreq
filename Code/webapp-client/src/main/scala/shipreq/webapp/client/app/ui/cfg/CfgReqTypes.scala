@@ -8,9 +8,12 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
 
 import shipreq.base.util.UnivEq
+import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.Validators.{reqType => V}
+import shipreq.webapp.base.filter.FilterSpec
 import shipreq.webapp.base.protocol.CustomReqTypeCrud
+import shipreq.webapp.client.app.ProjectSpaMain
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.ui.Style
 import shipreq.webapp.client.data.DataReusability._
@@ -21,7 +24,11 @@ import shipreq.webapp.client.util.On
 
 object CfgReqTypes {
 
-  case class Props(cp: ClientProtocol, remote: CustomReqTypeCrud.Instance, clientData: ClientData, filterDead: FilterDead) {
+  case class Props(cp        : ClientProtocol,
+                   remote    : CustomReqTypeCrud.Instance,
+                   clientData: ClientData,
+                   filterDead: FilterDead,
+                   routerCtl : ProjectSpaMain.RouterCtl) {
     def component = Component(this)
   }
   implicit val reusability = Reusability.caseClass[Props]
@@ -45,6 +52,10 @@ object CfgReqTypes {
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
+    val project    = Px.bs($).propsM(_.clientData.project)
+    val filterDead = Px.bs($).stateM(_.filterDead)
+    val routerCtl  = Px.bs($).propsM(_.routerCtl)
+
     val crudIO = Px.bs($).propsA.map(p => CrudIO(CustomReqType, CustomReqTypeCrud)(p.cp, p.remote, p.clientData))
     val supp = TypicalSupp(storesAndState)(crudIO.value(), $)
 
@@ -61,37 +72,47 @@ object CfgReqTypes {
     def checkbox(i: ImplicationRequired) =
       UI checkbox (onWhenImplicationRequired from i)
 
+    val usageFn = Usage((_: ReqType).reqTypeId)(
+      _.reqTypeCount,
+      FilterSpec ReqType _.mnemonic,
+      project, filterDead, routerCtl)
+
     val table = {
       def rowRenderer =
-        new CfgTable.RowRenderer[CustomReqType, rowE.View, (TagMod, Set[ReqType.Mnemonic], TagMod, TagMod)] {
+        new CfgTable.RowRenderer[CustomReqType, rowE.View, (TagMod, Set[ReqType.Mnemonic], TagMod, TagMod, Option[Usage.View])] {
           override def newRow = {
-            case (mnemonic, name, impReq) => (mnemonic, UnivEq.emptySet, name, impReq)
+            case (mnemonic, name, impReq) => (mnemonic, UnivEq.emptySet, name, impReq, None)
           }
           override def savedRow = {
-            case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq)
+            case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq, Some(usageFn(p)))
           }
           override def deletedRow = p =>
-            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(p.imp)(^.disabled := true))
+            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(p.imp)(^.disabled := true), Some(usageFn(p)))
 
           override def render = {
-            case (mnemonic, oldMnemonics, name, impReq) =>
+            case (mnemonic, oldMnemonics, name, impReq, usage) =>
               val mn: TagMod =
                 if (oldMnemonics.isEmpty)
                   mnemonic
                 else
                   Seq(mnemonic, <.div(Style.cfg.deadMnemonic, oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
-              Seq(mn, name, impReq)
+              Seq(mn, name, impReq, usage)
           }
         }
 
       val t = CfgTable.typical(storesAndState)(rowE)(_.mnemonic, rowRenderer, () => supp.deletion.value(), _.live, $)
 
-      val headerRow = CfgTable.header(List("Mnemonic", "Name", "Implication Required"))
+      val headerRow = CfgTable.header(List(
+        FieldNames.mnemonic,
+        FieldNames.name,
+        FieldNames.implicationRequired,
+        FieldNames.usage))
 
       val staticRows: t.RowStream = {
         def rr(r: StaticReqType): ReactElement = {
           val imp = checkbox(r.imp)(^.disabled := true)
-          val norm: t.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp)
+          val usage = Some(usageFn(r))
+          val norm: t.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp, usage)
           t.row("static", RowStatus.Sync, norm, EmptyTag)(^.key := r.mnemonic.value)
         }
         StaticReqType.values.toStream.map(r => r.mnemonic -> rr(r))
@@ -103,7 +124,9 @@ object CfgReqTypes {
     val outer =
       CfgTable.outer(storesAndState)($)
 
-    def render: ReactElement =
+    def render: ReactElement = {
+      Px.refresh(project, filterDead, routerCtl)
       outer(table())
+    }
   }
 }

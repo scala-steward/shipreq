@@ -8,11 +8,13 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.Validators.{customIssueType => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
+import shipreq.webapp.base.filter.FilterSpec
 import shipreq.webapp.base.protocol.CustomIssueTypeCrud
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.app.ProjectSpaMain
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
+import shipreq.webapp.client.app.ui.cfg.Usage
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.{FilterDead, CrudIO}
 import shipreq.webapp.client.lib.ui._
@@ -90,35 +92,14 @@ private[issues] object CustomIssueTypes {
       supp.addEditorFeatures2(e)(saveFn, _._1.customIssueData._1)
     }
 
-    type UsageView = ReactElement
-    val usageFn: CustomIssueType => UsageView = {
-      val px =
-        for {
-          rc <- routerCtl
-          fd <- filterDead
-          p  <- project
-        } yield {
-          val lookup = fd ldStatsAccessor p.atomScan.issueCounts
-          (i: CustomIssueType) => {
-            val count = lookup(i.id)
-            def desc = count// + " occurrences"
-            if (count == 0)
-              <.span(desc)
-            else {
-              import ProjectSpaMain._
-              import shipreq.webapp.base.filter.FilterSpec.HashRef
-              def showReqTable(e: ReactEvent) =
-                ReqTableNextState(fd, Some(HashRef(i.key))).set >> rc.setEH(ReqTable)(e)
-              <.a(^.href := "#", ^.onClick ==> showReqTable, desc)
-            }
-          }: UsageView
-        }
-      px.extract
-    }
+    val usageFn = Usage((_: CustomIssueType).id)(
+      _.atomScan.issueCounts,
+      FilterSpec HashRef _.key,
+      project, filterDead, routerCtl)
 
     val table = {
       def rowRenderer =
-        new CfgTable.RowRenderer[CustomIssueType, rowE.View, (TagMod, TagMod, Option[UsageView])] {
+        new CfgTable.RowRenderer[CustomIssueType, rowE.View, (TagMod, TagMod, Option[Usage.View])] {
           override def newRow = {
             case (key, desc) => (key, desc, None)
           }

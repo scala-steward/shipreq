@@ -75,8 +75,8 @@ object ProjectSpaMain {
       def cfgIssues(ctl: RouterCtl) =
         ui.cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, cd, HideDead, ctl).component
 
-      def cfgReqTypes =
-        ui.cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, HideDead).component
+      def cfgReqTypes(ctl: RouterCtl) =
+        ui.cfg.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, HideDead, ctl).component
 
       def cfgTags =
         ui.cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, HideDead).component
@@ -90,7 +90,7 @@ object ProjectSpaMain {
       | staticRoute("/table",        ReqTable   ) ~> render(reqTable)
       | staticRoute("/cfg/fields",   CfgFields  ) ~> render(cfgFields)
       | staticRoute("/cfg/issues",   CfgIssues  ) ~> renderR(cfgIssues)
-      | staticRoute("/cfg/reqtypes", CfgReqTypes) ~> render(cfgReqTypes)
+      | staticRoute("/cfg/reqtypes", CfgReqTypes) ~> renderR(cfgReqTypes)
       | staticRoute("/cfg/tags",     CfgTags    ) ~> render(cfgTags)
       | trimSlashes
       ).notFound(redirectToPage(Index)(Redirect.Replace))
