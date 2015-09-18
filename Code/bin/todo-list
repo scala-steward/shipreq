@@ -3,7 +3,7 @@ cd "$(dirname "$(readlink -e "$0")")"/.. || exit 1
 
 [ -z "$colour" ] && colour=always
 
-find project */src -type f \
+find project */src */*/src -type f \
   | egrep -v '/_scalate/|vendor|src/it/|/assets/' \
   | fgrep -v 'webapp-server' \
   | sort \
