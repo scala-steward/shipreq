@@ -11,10 +11,14 @@ import shipreq.webapp.base.util.{TransitiveClosure, ShowSize}
 import DataImplicits._
 
 object Project {
-  val customIssueTypes: Lens[Project, CustomIssueTypeIMap] = config ^|-> ProjectConfig.customIssueTypes
-  val customReqTypes  : Lens[Project, CustomReqTypeIMap  ] = config ^|-> ProjectConfig.customReqTypes
-  val fields          : Lens[Project, FieldSet           ] = config ^|-> ProjectConfig.fields
-  val tags            : Lens[Project, TagTree            ] = config ^|-> ProjectConfig.tags
+  val customIssueTypes    : Lens[Project, CustomIssueTypeIMap] = config ^|-> ProjectConfig.customIssueTypes
+  val customReqTypes      : Lens[Project, CustomReqTypeIMap  ] = config ^|-> ProjectConfig.customReqTypes
+  val fields              : Lens[Project, FieldSet           ] = config ^|-> ProjectConfig.fields
+  val tags                : Lens[Project, TagTree            ] = config ^|-> ProjectConfig.tags
+  val genericReqs         : Lens[Project, GenericReqIMap     ] = reqs ^|-> Requirements.genericReqs
+  val pubidRegister       : Lens[Project, PubidRegister      ] = reqs ^|-> Requirements.pubids
+  val implicationsSrcToTgt: Lens[Project, Implications.Uni   ] = implications ^|-> Implications.srcToTgt
+  val reqCodeTrie         : Lens[Project, ReqCode.Trie       ] = reqCodes ^|-> ReqCodes.trie
 
   import ReqData._ // for equality
   implicit lazy val equality: Equal[Project] = UtilMacros.deriveEqual

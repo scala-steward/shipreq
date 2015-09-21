@@ -155,7 +155,7 @@ object GenericReqEventTest extends TestSuite {
     def test(e: Event)(expected: String*): Unit = {
       testNo += 1
       ApplyEventTestFns.apply.apply1(e)(p) match {
-        case \/-(p2) => p = p2
+        case \/-(p2)  => p = p2
         case -\/(err) => fail(s"$e was expected to pass but failed with: $err")
       }
       assertEq(s"Step #$testNo", fmtRCs(p.reqCodes), expected.toSet)
@@ -265,8 +265,8 @@ object GenericReqEventTest extends TestSuite {
       'codeInCaps     - assertFail("code")  (createRCG(1, "NO"))
       'idInUseByReq   - assertFail("")      (createGR(9, codes = Set(1 -> "a")), createRCG(1, "b"))
       'idInUseByGrp   - assertFail("")      (createRCG(1, "a"),                  createRCG(1, "b"))
-      'codeInUseByReq - assertFail("active")(createGR(9, codes = Set(1 -> "a")), createRCG(2, "a"))
-      'codeInUseByGrp - assertFail("active")(createRCG(1, "a"),                  createRCG(2, "a"))
+      'codeInUseByReq - assertFail("in use")(createGR(9, codes = Set(1 -> "a")), createRCG(2, "a"))
+      'codeInUseByGrp - assertFail("in use")(createRCG(1, "a"),                  createRCG(2, "a"))
     }
 
     'updateCodeGroup {
@@ -284,10 +284,10 @@ object GenericReqEventTest extends TestSuite {
       'idIsReq    - assertFail("group")    (createGR(1, codes = Set(1 -> "a")), updateRCGCode(1, "b"))
 
       'tgtCodeInUseByReq -
-        assertFail("active")(createRCG(1, "old"), createGR(2, codes = Set(3 -> "new")), updateRCGCode(1, "new"))
+        assertFail("in use")(createRCG(1, "old"), createGR(2, codes = Set(3 -> "new")), updateRCGCode(1, "new"))
 
       'tgtCodeInUseByGrp -
-        assertFail("active")(createRCG(1, "old"), createRCG(2, "new"), updateRCGCode(1, "new"))
+        assertFail("in use")(createRCG(1, "old"), createRCG(2, "new"), updateRCGCode(1, "new"))
     }
 
     'deleteCodeGroup {
@@ -414,12 +414,11 @@ object GenericReqEventTest extends TestSuite {
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.ee: AD[#5Req(#a)]", "n.ef: AD[#6Req(#a)]")
 
         // 2.12: Rename n+1→n
-        test(patchA(remove = Set(1, 3)))(
+        test(patchA(remove = Set(1)))(
           "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.ee: AD[#5Req(#a)]", "n.ef: AD[#6Req(#a)]")
 
         // 2.13: Rename n→1
-        // TODO hmmm: restore = Set(1) should be the proper behaviour here really as only one id per target is restored
-        test(patchA(remove = Set(5, 6), restore = Set(1, 3)))(
+        test(patchA(remove = Set(5, 6), restore = Set(1)))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
         // 2.14: Rename 1→n+1
@@ -427,11 +426,11 @@ object GenericReqEventTest extends TestSuite {
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.f: AD[#7Req(#a)]")
 
         // 2.15: Rename n+1→0
-        test(patchA(remove = Set(1, 3, 7)))(
+        test(patchA(remove = Set(1, 7)))(
           "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
         // 2.16: Restore RCᵣ + n
-        test(patchA(restore = Set(1, 3), add = Set(8 -> "n.h")))(
+        test(patchA(restore = Set(1), add = Set(8 -> "n.h")))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.h: AD[#8Req(#a)]")
 
         // 2.17: Delete RCᵣ + n

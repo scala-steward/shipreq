@@ -1,71 +1,86 @@
 package shipreq.webapp.base.event
 
-import scala.collection.GenTraversable
+import japgolly.nyaya.util.Multimap
+import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.webapp.base.data.{Validators => V, _}
 import shipreq.webapp.base.text.Text
-import ApplyEventLib._
+import ApplyEventLib._, SE.SE
 import DataImplicits._
 import MTrie.Ops
 
 trait ApplyContentEvent extends ApplyConfigEvent {
 
   object ReqEvents {
-    val R  = Project.reqs
-    val GR = R ^|-> Requirements.genericReqs
-    val TX = Project.reqText
-    val T  = Project.reqTags
-    val I  = Project.implications ^|-> Implications.srcToTgt
-    val C  = Project.reqCodes
-    val CT = C ^|-> ReqCodes.trie
+
+    private val imap = IMapStore(Project.genericReqs)
+
+    val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
 
-    val grIMap = IMapApp.data(GenericReq)
+    def ensureLiveReqId(reqId: ReqId): SE[Unit] =
+      whenUntrusted(
+        needReq(reqId) >>= ensureLiveReq)
 
-    val grLiveExplicitly = LiveApp(GenericReq.liveExplicitly)
+    def ensureLiveReq(req: Req): SE[Unit] =
+      whenUntrusted(
+        SE.test(p => req.live(p.config.customReqTypes) :: Live, s"${show(req)} is dead."))
 
-    val ensureLive =
-      ensureLiveFnP((p, reqId: ReqId) => reqId match {
-        case id: GenericReqId => p.reqs.genericReqs.get(id)
-      })(_ live _.config.customReqTypes)
+    def ensureLiveTextFieldId(id: CustomField.Text.Id): SE[Unit] =
+      whenUntrusted(
+        SE.getE(_.config.customFieldAttempt(id)) >>= ensureLiveTextField)
 
-    val ensureLiveTextField =
-      ensureLiveFn((p, id: CustomField.Text.Id) => p.config.fields.customFields.get(id))(_.live)
+    def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
+      ensureLive(cf.live)(show(cf))
 
-    val ensureLiveCustomReqTypeId =
-      ensureLiveFn((p, id: CustomReqTypeId) => p.config.customReqTypes get id)(_.live)
+    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
+      ensureLive(rt.live)(show(rt))
 
-    def needCustomReqType(id: CustomReqTypeId): App[Project, CustomReqType] =
-      App(p => CustomReqTypeEvents.imap.need(id)(p.config.customReqTypes))
+    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
+      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
 
-    def createGeneric(e: CreateGenericReq): AP =
-      App[Project, Project] { p =>
-        import CreateGenericReqGD._
-        val id      = e.id
-        val reqData = p.reqs
-
-        var result =
-          for {
-            rt    ← (needCustomReqType(e.rt) >=> ensureLiveBy(_.live))(p)
-            title = Title.get(e.vs).fold(Vector.empty: Text.GenericReqTitle.OptionalText)(_.value.whole)
-            pp    = reqData.pubids.allocC(rt.id)(id)
-            req   = GenericReq(id, pp._2, title, Live)
-            reqs  ← grIMap.add(req)(reqData.genericReqs)
-          } yield R.set(Requirements(reqs, pp._1))(p)
-
-        e.vs.values.foreach {
-          case ValueForTitle   (v) => () // Already used
-          case ValueForTags    (v) => result = result.map(T.modify(_.addvs(id, v.whole)))
-          case ValueForImpTgts (v) => result = result.map(I.modify(_.addvs(id, v.whole)))
-          case ValueForImpSrcs (v) => result = result.map(I.modify(_.addks(v.whole, id)))
-          case ValueForReqCodes(v) => result = result ?=> ReqCodeLogic.addAll_IVs(v.whole, id, true)
-        }
-
-        result ?=> updateIdCeiling(e.id)
+    def needReq(reqId: ReqId): SE[Req] =
+      reqId match {
+        case id: GenericReqId => imap.need(id)
       }
 
-    def applyDelete(e: DeleteReq): AP =
+    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      CustomReqTypeEvents.imap need id
+
+    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
+
+    val createGeneric: CreateGenericReq => SE[Unit] = {
+      val ^ = CreateGenericReqGD
+
+      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
+        SE.foldMapRun(vs.values) {
+          case ^.ValueForTitle   (v) => SE.nop // Handled below
+          case ^.ValueForTags    (v) => Project.reqTags.modify(_.addvs(id, v.whole))
+          case ^.ValueForImpTgts (v) => Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
+          case ^.ValueForImpSrcs (v) => Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
+          case ^.ValueForReqCodes(v) => ReqCodeLogic.addAll_IVs(v.whole, id, true)
+      }
+
+      @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
+        Vector.empty
+
+      e => for {
+        rt      ← needLiveCustomReqType(e.rt)
+        reqData ← SE.get(_.reqs)
+        id      = e.id
+        title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
+        pp      = reqData.pubids.allocC(rt.id)(id)
+        req     = GenericReq(id, pp._2, title, Live)
+        reqs    ← imap.create(req)
+        _       ← Project.pubidRegister set pp._1
+        _       ← foreachValue(id, e.vs)
+        _       ← updateIdCeiling(id)
+      } yield ()
+    }
+
+    def applyDelete(e: DeleteReq): SE[Unit] =
       e.id match {
         case id: GenericReqId => e.da match {
           case Delete  => deleteGenericReq(id)
@@ -73,73 +88,66 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         }
       }
 
-    def deleteGenericReq(id: GenericReqId): AP = {
-      val a = grIMap.update(id, grLiveExplicitly.makeDead)
-      val b = ReqCodeLogic.removeBelongingToReq(id)
-      (GR @=> a) >=> b
-    }
+    def deleteGenericReq(id: GenericReqId): SE[Unit] =
+      imap.update(id, grLiveExplicitly.makeDead) >>
+      ReqCodeLogic.removeBelongingToReq(id)
 
-    def restoreGenericReq(id: GenericReqId): AP = {
-      val a = grIMap.update(id, grLiveExplicitly.makeLive)
-      val b = ReqCodeLogic.restoreBelongingToReq(id)
-      (GR @=> a) >=> (C @=> b)
-    }
+    def restoreGenericReq(id: GenericReqId): SE[Unit] =
+      imap.update(id, grLiveExplicitly.makeLive) >>
+      ReqCodeLogic.restoreBelongingToReq(id)
 
-    val validateTags = whenUntrusted[Set[ApplicableTagId] => App[Project, Any]](
-      tags => App(p =>
-        tags.toStream.map(p.config.atagValidate).find(_.isDefined) match {
-          case Some(None) | None => okUnit
-          case Some(Some(err))   => fail(err)
+    def validateTags(tagIds: => Iterable[ApplicableTagId]): SE[Unit] =
+      whenUntrusted(
+        SE.testO(p =>
+        tagIds.toStream.map(p.config.atagValidate).find(_.isDefined) match {
+          case Some(None) | None => None
+          case Some(Some(err))   => Some(err)
         }
       ))
 
-    def applyPatchTags(e: PatchReqTags): AP = {
-      val d = e.patch.value
-      val a = validateTags(d.allValues) >-> ensureLive(e.id)
-      val b = App.ok(T.modify(_.mod(e.id, d.apply)))
-      a >-> b
-    }
+    def applyPatchTags(e: PatchReqTags): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+      validateTags(e.patch.value.allValues) >>
+      Project.reqTags.modify(_.mod(e.id, e.patch.value.apply))
 
-    def applyPatchImplicationTgt(e: PatchImplicationTgt): AP = {
-      val s = e.id
-      val d = e.patch.value
-      val a = ensureLive(e.id)
-      val b = App.ok(I.modify(_.mod(s, d.apply)))
-      a >-> b
-    }
+    def applyPatchImplicationTgt(e: PatchImplicationTgt): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+      Project.implicationsSrcToTgt.modify(_.mod(e.id, e.patch.value.apply))
 
-    def applyPatchImplicationSrc(e: PatchImplicationSrc): AP = {
+    def applyPatchImplicationSrc(e: PatchImplicationSrc): SE[Unit] = {
       val t = e.id
       val d = e.patch.value
-      val a = ensureLive(e.id)
-      val b = App.ok(I.modify { mm0 =>
+      ensureLiveReqId(e.id) >> Project.implicationsSrcToTgt.modify { mm0 =>
         var mm = mm0
         d.removed.foreach(id => mm = mm.del(id, t))
         d.added  .foreach(id => mm = mm.add(id, t))
         mm
-      })
-      a >-> b
-    }
-
-    def applySetGenericReqType(e: SetGenericReqType): AP = {
-      val f: AE[Requirements] = App { r =>
-        val t = r.pubids.allocC(e.value)(e.id)
-        for (m <- grIMap.update(e.id, App.ok(_.copy(pubid = t._2)))(r.genericReqs))
-          yield Requirements(m, t._1)
       }
-      ensureLive(e.id) >-> ensureLiveCustomReqTypeId(e.value) >-> (R @=> f)
     }
 
-    def applySetGenericReqTitle(e: SetGenericReqTitle): AP = {
-      val f = grIMap.update(e.id, App.ok(_.copy(title = e.value)))
-      ensureLive(e.id) >-> (GR @=> f)
-    }
+    def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
+      for {
+        r <- imap.need(e.id)
+        _ <- ensureLiveReq(r)
+        _ <- ensureLiveCustomReqTypeId(e.value)
+        _ <- Project.reqs.modify { reqs =>
+          val pp = reqs.pubids.allocC(e.value)(e.id)
+          val r2 = r.copy(pubid = pp._2)
+          Requirements(reqs.genericReqs + r2, pp._1)
+        }
+      } yield ()
 
-    def applySetCustomTextField(e: SetCustomTextField): AP = {
-      val modText: AE[ReqData.Text] = App.ok(ReqData.textAt(e.fid, e.id).set(e.value))
-      ensureLive(e.id) >-> ensureLiveTextField(e.fid) >-> (TX @=> modText)
-    }
+    def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+        imap.updateF(e.id, _.copy(title = e.value))
+
+    def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+      ensureLiveTextFieldId(e.fid) >>
+      (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
   }
+
+  // ===================================================================================================================
 
   /**
    * Why the hell is all this req-code changing logic so complicated?
@@ -166,162 +174,169 @@ trait ApplyContentEvent extends ApplyConfigEvent {
   object ReqCodeLogic {
     import ReqCode._
 
-    val C = Project.reqCodes
-    val CT = C ^|-> ReqCodes.trie
-
-    type ARC = AE[ReqCodes]
-    type AT = AE[Trie]
-
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.reqCode)
 
     val validateCode = validateWith(V.reqCode.valueAndNodesU)
 
-    val ensureInactive: AE[Data] = {
-      val f = ensureNone[ActiveData](a => s"ReqCode should be inactive: $a.")
-      App(d => f(d.active).map(_ => d))
-    }
+    val getTrie = SE get Project.reqCodeTrie.get
 
-    val ensureActive: App[Data, ActiveData] = {
-      val f = ensureSome[ActiveData]("ReqCode should be active.")
-      App(d => f(d.active))
-    }
+    def ensureInactiveData(d: Data, v: Value): SE[Unit] =
+      ensureNone(d.active)(_ => s"${show(v)} shouldn't be in use.")
 
-    val ensureReqCodeGroup: App[Target, ReqCodeGroup] =
-      App {
-        case g: ReqCodeGroup => ok(g)
-        case x => fail(s"Expect a ReqCodeGroup, found: $x")
+    def ensureActiveDataTargetIs(t: Target): ActiveData => SE[Unit] =
+      whenUntrusted(ad => SE.test(ad.target ≟ t, s"Expected ReqCode target to be $t, found: ${ad.target}."))
+
+    def ensureReqCodeGroup(t: Target): SE[Unit] =
+      whenUntrusted(needReqCodeGroup(t).void)
+
+    def needReqCodeGroup(t: Target): SE[ReqCodeGroup] =
+      t match {
+        case g: ReqCodeGroup => SE ret g
+        case x               => SE fail s"Expected a ReqCodeGroup, found: $x"
       }
 
-    private def needData(t: Trie, v: Value): Result[Data] =
-      t.valueAtPath[Result[Data]](v, fail(s"Trie data found for $v"))(ok)
+    def needData(t: Trie, v: Value): SE[Data] =
+      t.valueAtPath[SE[Data]](v, SE fail s"${show(v)} not found.")(SE.ret)
 
-    private def needValue(rc: ReqCodes): App[ReqCodeId, Value] = {
-      val m = rc.reqCodesById
-      App(id => m.get(id) ensureSome s"ReqCode not found: $id")
+    def needActiveData(d: Data, v: Value): SE[ActiveData] =
+      optionGet(d.active, s"${show(v)} should be in use.")
+
+    def needValue(id: ReqCodeId): SE[Value] =
+      SE.get(_.reqCodes.reqCodesById) >>= (m =>
+        optionGet(m get id, s"${show(id)} not found."))
+
+    def needValues[A](ids: Iterable[ReqCodeId], f: (ReqCodeId, Value) => A): SE[Vector[A]] = {
+      SE { p =>
+        val m = p.reqCodes.reqCodesById
+        val found = Vector.newBuilder[A]
+        var missing = Vector.empty[ReqCodeId]
+        for (id <- ids)
+          m.get(id) match {
+            case Some(v) => found += f(id, v)
+            case None    => missing :+= id
+          }
+        if (missing.nonEmpty)
+          SE Failure s"Codes not found: ${missing.map(_.value).sorted.map("#" + _).mkString(", ")}"
+        else
+          SE.Ok(p, found.result())
+      }
     }
-
-    private def needValues(rc: ReqCodes, ids: GenTraversable[ReqCodeId]): Result[Vector[IdAndValue]] = {
-      val nv = needValue(rc)
-      apFoldLeft(ids)(id => App((q: Vector[IdAndValue]) =>
-        nv(id).map(v => q :+ IdAndValue(id, v))
-      ))(Vector.empty)
-    }
-
-    def modifyTrieRC(f: ReqCodes => AT): ARC =
-      App(rc => f(rc)(rc.trie) map ReqCodes.apply)
-
-    def modifyTrieP(f: (Project, ReqCodes) => AT): AP =
-      App(p => (CT @=> f(p, C get p))(p))
 
     /**
-     * Add a ReqCode.
+     * Note: Doesn't call [[updateIdCeiling]]. Surround with [[doAdd]].
+     *
+     * @param v The validated req code to add.
+     * @param addToActive If true the new ReqCode will be active, else it will be added to the dormant ref collections.
+     */
+    private def _addValidated(t: Trie, id: ReqCodeId, v: Value, target: Target, addToActive: Boolean): SE[Trie] = {
+      type R = SE[Trie]
+
+      def createNode: R =
+        if (addToActive) {
+          val ad = ActiveData(id, target)
+          val d = Data(Some(ad), UnivEq.emptySet, UnivEq.emptySetMultimap)
+          SE ret t.put(v, d)
+        } else
+          SE fail s"${show(v)} not found."
+
+      def modifyNode(d: Data): R =
+        if (addToActive)
+          ensureInactiveData(d, v) |>> {
+            val ad = ActiveData(id, target)
+            var rg = d.refsToGroup
+            var rr = d.refsToReqs
+            target match {
+              case r: ReqId        => rr = rr.del(r, id)
+              case g: ReqCodeGroup => rg = rg - id
+            }
+            t.put(v, Data(Some(ad), rg, rr))
+          }
+        else
+          needActiveData(d, v) |>> {
+            var rr = d.refsToReqs
+            target match {
+              case reqId: ReqId => rr = rr.add(reqId, id)
+              case g: ReqCodeGroup =>
+                // This should never happen
+                sys.error(s"addReqCode → mod → (grp ∧ ¬addToActive) - $id $v $target ⇏ $g")
+            }
+            t.put(v, d.copy(refsToReqs = rr))
+          }
+
+      t.valueAtPath(v, createNode)(modifyNode)
+    }
+
+    /**
+     * Note: Doesn't call [[updateIdCeiling]]. Surround with [[doAdd]].
      *
      * @param addToActive If true the new ReqCode will be active, else it will be added to the dormant ref collections.
      */
-    def add(id: ReqCodeId, value: Value, target: Target, addToActive: Boolean): AT =
-      validateCode(value) ?-> App { t =>
-        type R = Result[Trie]
+    def _addUnvalidated(t: Trie, id: ReqCodeId, v: Value, target: Target, addToActive: Boolean): SE[Trie] =
+      validateCode(v) >>= (_addValidated(t, id, _, target, addToActive))
 
-        def createNode: R =
-          if (addToActive) {
-            val ad = ActiveData(id, target)
-            val d = Data(Some(ad), UnivEq.emptySet, UnivEq.emptySetMultimap)
-            ok(t.put(value, d))
-          } else
-            fail(s"ReqCode not found: $value")
+    def addOne(id: ReqCodeId, v: Value, target: Target, addToActive: Boolean): SE[Unit] =
+      doAdd(_addUnvalidated(_, id, v, target, addToActive), id.value)
 
-        def modifyNode(d: Data): R =
-          if (addToActive)
-            ensureInactive(d).map { _ =>
-              val ad = ActiveData(id, target)
-              var rg = d.refsToGroup
-              var rr = d.refsToReqs
-              target match {
-                case r: ReqId        => rr = rr.del(r, id)
-                case g: ReqCodeGroup => rg = rg - id
-              }
-              t.put(value, Data(Some(ad), rg, rr))
-            }
-          else
-            ensureActive(d).map { _ =>
-              var rr = d.refsToReqs
-              target match {
-                case reqId: ReqId => rr = rr.add(reqId, id)
-                case g: ReqCodeGroup =>
-                  // This should never happen
-                  sys.error(s"addReqCode → mod → (grp ∧ ¬addToActive) - $id $value $target ⇏ $g")
-              }
-              t.put(value, d.copy(refsToReqs = rr))
-            }
+    private def _addAll[A](t: Trie, as: Iterable[A], target: Target, addToActive: Boolean)(getId: A => ReqCodeId, getV: A => Value): SE[Trie] =
+      foldMapBind(t, as)(a => _addUnvalidated(_, getId(a), getV(a), target, addToActive))
 
-        t.valueAtPath(value, createNode)(modifyNode)
-      }
+    def addAll_IVs(vs: Iterable[IdAndValue], target: Target, addToActive: Boolean): SE[Unit] =
+      doAdd(
+        _addAll(_, vs, target, addToActive)(_.id, _.value),
+        IdCeilings.maxOfF(vs)(_.id.value))
 
-    def addAll_IVs(vs: GenTraversable[IdAndValue], target: Target, addToActive: Boolean): AP =
-      CT @=> apFoldLeft(vs)(iv => add(iv.id, iv.value, target, addToActive)) >=>
-        updateIdCeiling(IdCeilings.maxOfF(vs)(_.id))
-
-//    def addAll_VIs(vs: GenTraversable[(Value, ReqCodeId)], target: Target, addToActive: Boolean): AT =
-//      apFoldLeft(vs)(vi => add(vi._2, vi._1, target, addToActive))
-
-    def addAll_V_Is(v: Value, ids: GenTraversable[ReqCodeId], target: Target, addToActive: Boolean): AT =
-      apFoldLeft(ids)(id => add(id, v, target, addToActive))
-
+    private def doAdd(f: Trie => SE[Trie], maxId: Int): SE[Unit] =
+      (getTrie >>= f >>= Project.reqCodeTrie.set) >> updateIdCeiling(maxId)
 
     /**
-     * Remove a single code, then perform an addition action with the `ActiveData` found.
+     * Remove a single code.
      *
-     * @param checkTarget Validate the existing `ActiveData` target before making a change.
-     * @param keepRef Determine whether a reference should be kept of the current id and target. If false, the data is
-     *                gone completely.
-     * @param and Perform an additional action at the end, using the `ActiveData` found before removal.
+     * @param keepRef Determine whether a reference should be kept of the current id and target.
+     *                If `false`, the data is gone completely.
      */
-    def remove1And(v: Value, checkTarget: AE[Target], keepRef: ReqCodeId => Boolean, and: ActiveData => AT): AT =
-      App { trie =>
-
-        def remove(d: Data, a: ActiveData): Trie = {
-          var refsToGroup = d.refsToGroup
-          var refsToReqs  = d.refsToReqs
-          val id = a.id
-          if (keepRef(id))
-            a.target match {
-              case t: ReqId        => refsToReqs = refsToReqs.add(t, id)
-              case _: ReqCodeGroup => refsToGroup += id
-            }
-          if (refsToGroup.nonEmpty || refsToReqs.nonEmpty)
-            trie.put(v, Data(None, refsToGroup, refsToReqs))
-          else
-            trie.remove(v)
+    private def _remove(trie: Trie, v: Value, d: Data, a: ActiveData, keepRef: ReqCodeId => Boolean): Trie = {
+      var refsToGroup = d.refsToGroup
+      var refsToReqs  = d.refsToReqs
+      val id = a.id
+      if (keepRef(id))
+        a.target match {
+          case t: ReqId        => refsToReqs = refsToReqs.add(t, id)
+          case _: ReqCodeGroup => refsToGroup += id
         }
+      if (refsToGroup.nonEmpty || refsToReqs.nonEmpty)
+        trie.put(v, Data(None, refsToGroup, refsToReqs))
+      else
+        trie.remove(v)
+    }
 
+    /**
+     * @param keepRef Determine whether a reference should be kept of the current id and target.
+     *                If `false`, the data is gone completely.
+     */
+    def removeValues(vs: Iterable[Value], keepRef: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
+      getTrie.foldMapBind(vs)(v => t =>
         for {
-          d  ← needData(trie, v)
-          a  ← ensureActive(d)
-          _  ← checkTarget(a.target)
-          t2 = remove(d, a)
-          t3 ← and(a)(t2)
-        } yield t3
-      }
+          d <- needData(t, v)
+          a <- needActiveData(d, v)
+          _ <- validateTarget(a)
+        } yield _remove(t, v, d, a, keepRef)
+      ) >>= Project.reqCodeTrie.set
 
-    def removeValue(v: Value, checkTarget: AE[Target], keepRef: ReqCodeId => Boolean): AT =
-      remove1And(v, checkTarget, keepRef, _ => nop)
+    def removeValue(v: Value, keepRef: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
+      removeValues(set1(v), keepRef, validateTarget)
 
-    def removeValues(vs: Set[Value], checkTarget: AE[Target], keepRef: ReqCodeId => Boolean): AT =
-      apFoldLeft(vs)(removeValue(_, checkTarget, keepRef))
+    def removeId(id: ReqCodeId, keepRef: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
+      removeIds(set1(id), keepRef, validateTarget)
 
-    def removeIds(ids: Set[ReqCodeId], checkTarget: AE[Target], keepRef: ReqCodeId => Boolean): ARC =
-      App { rc =>
-        for {
-          vs <- needValue(rc).traverseSet(ids)
-          t  <- apFoldLeft(vs)(removeValue(_, checkTarget, keepRef))(rc.trie)
-        } yield ReqCodes(t)
-      }
+    def removeIds(ids: Set[ReqCodeId], keepRef: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
+      needValues(ids, (_, v) => v) >>= (vs =>
+        removeValues(vs, keepRef, validateTarget))
 
-    def removeBelongingToReq(reqId: ReqId): AP =
-      modifyTrieP { (p, rc) =>
-        val referenced = p.atomScan.codeRefs
-        val vs = rc.activeReqCodesByTarget(reqId)
-        removeValues(vs, ensureEqual(reqId), referenced.contains)
+    def removeBelongingToReq(reqId: ReqId): SE[Unit] =
+      SE.get >>= { p =>
+        val refd = p.atomScan.codeRefs
+        val vs   = p.reqCodes.activeReqCodesByTarget(reqId)
+        removeValues(vs, refd.contains, ensureActiveDataTargetIs(reqId))
       }
 
     /**
@@ -330,158 +345,127 @@ trait ApplyContentEvent extends ApplyConfigEvent {
      * If the ReqCode is already active with another ID, then it has been usurped while inactive, in which case this
      * function returns without modification or error.
      */
-    def restoreReqCode(reqId: ReqId, id: ReqCodeId, v: Value): AT =
-      App(trie =>
-        for {
-          d <- needData(trie, v)
-          _ <- untrustedTest(d.refsToReqs(reqId) contains id, s"$reqId not found in $v")
-        } yield
-        if (d.active.isEmpty) {
-          val ad = ActiveData(id, reqId)
-          val rr = d.refsToReqs.del(reqId, id)
-          trie.put(v, Data(Some(ad), d.refsToGroup, rr))
-        } else
+    def restoreReqCode(trie: Trie, reqId: ReqId, id: ReqCodeId, v: Value): SE[Trie] =
+      for {
+        d <- needData(trie, v)
+        _ <- whenUntrusted(SE.test(d.refsToReqs(reqId) contains id, s"${show(reqId)} not found in $v"))
+      } yield
+      if (d.active.isEmpty) {
+        val ad = ActiveData(id, reqId)
+        val rr = d.refsToReqs.del(reqId, id)
+        trie.put(v, Data(Some(ad), d.refsToGroup, rr))
+      } else
         // ReqCode has been usurped while it was inactive - now it will have to stay inactive
-          trie
-      )
+        trie
 
     /**
      * Restore a requirement's inactive ReqCodes back to active status.
      *
      * If more than one id refers to the same ReqCode, then only the id with the smallest value is activated.
      */
-    def restoreReqCodesById(reqId: ReqId, ids: GenTraversable[ReqCodeId]): ARC =
-      App { rc =>
+    def restoreReqCodesById(reqId: ReqId, ids: Iterable[ReqCodeId]): SE[Unit] = {
+      // Sort IDs here because only the first ID/reqcode is restored and we want determinism
+      val idsSorted = ids.toVector.sorted
 
+      needValues(idsSorted, IdAndValue) >>= { ivs =>
         var valuesSeen = Set.empty[Value]
-        def fold(iv: IdAndValue): AT =
+        ivs.foldLeft(getTrie)((acc, iv) =>
           if (valuesSeen contains iv.value)
-            nop
+            acc
           else {
             valuesSeen += iv.value
-            restoreReqCode(reqId, iv.id, iv.value)
+            acc >>= (restoreReqCode(_, reqId, iv.id, iv.value))
           }
-
-        // Sort IDs here because only the first ID/reqcode is restored and we want determinism
-        val ids2 = ids.toVector.sorted
-
-        for {
-          ivList <- needValues(rc, ids2)
-          t      <- apFoldLeft(ivList)(fold)(rc.trie)
-        } yield ReqCodes(t)
+        ) >>= Project.reqCodeTrie.set
       }
+    }
 
-    def restoreBelongingToReq(reqId: ReqId): ARC =
-      App { rc =>
-        val ids = rc.inactiveIdsByReqId(reqId)
-        restoreReqCodesById(reqId, ids)(rc)
-      }
+    def restoreBelongingToReq(reqId: ReqId): SE[Unit] =
+      SE.get(_.reqCodes inactiveIdsByReqId reqId) >>=
+        (restoreReqCodesById(reqId, _))
 
-    def applyPatchReqCodes(e: PatchReqCodes): AP = {
-      val addIds = e.add.values.foldLeft(Set.empty[ReqCodeId])(_ ++ _)
-      val target = e.id
-
-      val addCodes: ARC =
-        if (e.add.isEmpty)
-          nop
-        else
-          ReqCodes.trie @=> apFoldLeft(e.add.m) { x =>
+    def addCodesToTarget(target: Target, mm: Multimap[ReqCode.Value, Set, ReqCodeId]): SE[Unit] =
+      if (mm.isEmpty)
+        SE.nop
+      else {
+        def modTrie: Trie => SE[Trie] = t0 =>
+          foldMapBind(t0, mm.m){ x => t =>
             val v    = x._1
             val ids1 = x._2
             if (ids1.size == 1)
-              add(ids1.head, v, target, true)
+              _addUnvalidated(t, ids1.head, v, target, true)
             else {
               // Sort IDs here because only the first ID/reqcode becomes the ActiveData and we want determinism
               val ids2 = ids1.toVector.sorted
-              add(ids2.head, v, target, true) >=> addAll_V_Is(v, ids2.tail, target, false)
+              _addUnvalidated(t, ids2.head, v, target, true) >>=
+                (_addAll(_, ids2.tail, target, false)(identity, _ => v))
             }
           }
-
-      val restore = restoreReqCodesById(target, e.restore)
-
-      val restoreAndAdd = restore >=> addCodes
-
-      val maxId = IdCeilings.maxOfF(e.add.values)(IdCeilings maxOf _)
-
-      App { (p: Project) =>
-        val referenced = p.atomScan.codeRefs
-        val keepRefIds = referenced -- addIds
-        val remove = removeIds(e.remove, ensureEqual(target), keepRefIds.contains)
-
-        val app = C @=> (remove >=> restoreAndAdd) >=> updateIdCeiling(maxId)
-        app(p)
-      }
-    }
-
-    def updateGroupCode(id: ReqCodeId, newCode: Value): ARC =
-      modifyTrieRC { rc =>
-        def relocate(a: ActiveData): AT =
-          ensureReqCodeGroup(a.target) ?=>> (add(id, newCode, _, true))
-
-        def update(curCode: Value): AT =
-          remove1And(curCode, nop, _ => false, relocate)
-
-        needValue(rc)(id) ?=>> update
+        val maxId = IdCeilings.maxOfF(mm.values)(IdCeilings maxOf _)
+        doAdd(modTrie, maxId)
       }
 
-    def modifyGroup(id: ReqCodeId, f: ReqCodeGroup => ReqCodeGroup): ARC =
-      modifyTrieRC { rc =>
-        def update(v: Value): AT =
-          App(t =>
-            for {
-              d <- needData(t, v)
-              a <- ensureActive(d)
-              g <- ensureReqCodeGroup(a.target)
-            } yield {
-              val g2 = f(g)
-              val a2 = a.copy(target = g2)
-              val d2 = d.copy(active = Some(a2))
-              t.put(v, d2)
-            }
-          )
+    def applyPatchReqCodes(e: PatchReqCodes): SE[Unit] =
+      for {
+        referenced ← SE.get(_.atomScan.codeRefs)
+        keepRefIds = e.add.values.foldLeft(referenced)(_ &~_)
+        _          ← removeIds(e.remove, keepRefIds.contains, ensureActiveDataTargetIs(e.id))
+        _          ← restoreReqCodesById(e.id, e.restore)
+        _          ← addCodesToTarget(e.id, e.add)
+      } yield ()
 
-        needValue(rc)(id) ?=>> update
-      }
+    def updateGroupCode(id: ReqCodeId, newCode: Value): SE[Unit] =
+      for {
+        v  ← needValue(id)
+        t  ← getTrie
+        d  ← needData(t, v)
+        a  ← needActiveData(d, v)
+        g  ← needReqCodeGroup(a.target)
+        t2 = _remove(t, v, d, a, _ => false)
+        t3 ← _addUnvalidated(t2, id, newCode, g, addToActive = true)
+        _  ← Project.reqCodeTrie set t3
+      } yield ()
+
+    def modifyGroup(id: ReqCodeId, f: ReqCodeGroup => ReqCodeGroup): SE[Unit] =
+      for {
+        v  ← needValue(id)
+        t  ← getTrie
+        d  ← needData(t, v)
+        a  ← needActiveData(d, v)
+        g  ← needReqCodeGroup(a.target)
+        g2 = f(g)
+        a2 = a.copy(target = g2)
+        d2 = d.copy(active = Some(a2))
+        t2 = t.put(v, d2)
+        _  ← Project.reqCodeTrie set t2
+      } yield ()
   }
 
-  object ReqCodeGroupEvents extends GenericDataApp {
-    import ReqCodeLogic._
+  // ===================================================================================================================
+  object ReqCodeGroupEvents {
+    val ^ = ReqCodeGroupGD
+    val GD = GenericDataApp[ReqCodes](^)
 
-    override val ^ = ReqCodeGroupGD
-    override type Data = ReqCodes
-
-    val readCode  = need(^.Code)
-    val readTitle = want(^.Title)(Vector.empty)
-
-    def applyCreate(e: CreateReqCodeGroup): AP = {
+    def applyCreate(e: CreateReqCodeGroup): SE[Unit] = {
       implicit val vs = e.vs
-      val app =
-        for {
-          c <- readCode
-          t <- readTitle
-        } yield {
-          val g = if (t.isEmpty) ReqCodeGroup.empty else ReqCodeGroup(t)
-          CT @=> add(e.id, c, g, true) >=> updateIdCeiling(e.id)
-        }
-      app.joinE
+      for {
+        c ← GD.need(^.Code)
+        t = GD.want(^.Title)(Vector.empty)
+        g = if (t.isEmpty) ReqCodeGroup.empty else ReqCodeGroup(t)
+        _ ← ReqCodeLogic.addOne(e.id, c, g, true)
+      } yield ()
     }
 
-    def applyUpdate(e: UpdateReqCodeGroup): AP = {
-      val id = e.id
-
-      val updateValues = updateEachValue {
-        case ^.ValueForTitle(t) => modifyGroup(id, _.copy(title = t))
-        case ^.ValueForCode (v) => updateGroupCode(id, v)
+    def applyUpdate(e: UpdateReqCodeGroup): SE[Unit] =
+      SE.foldMapRun(e.vs.values) {
+        case ^.ValueForTitle(t) => ReqCodeLogic.modifyGroup(e.id, _.copy(title = t))
+        case ^.ValueForCode (v) => ReqCodeLogic.updateGroupCode(e.id, v)
       }
 
-      C @=> updateValues(e.vs)
-    }
-
-    def applyDelete(e: DeleteReqCodeGroup): AP =
-      App { (p: Project) =>
-        val referenced = p.atomScan.codeRefs
-        val rc = removeIds(Set(e.id), ensureReqCodeGroup, referenced.contains)
-        (C @=> rc)(p)
-      }
+    def applyDelete(e: DeleteReqCodeGroup): SE[Unit] =
+      for {
+        refd ← SE.get(_.atomScan.codeRefs)
+        _    ← ReqCodeLogic.removeId(e.id, refd.contains, ReqCodeLogic ensureReqCodeGroup _.target)
+      } yield ()
   }
 }

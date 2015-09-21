@@ -1,13 +1,11 @@
 package shipreq.webapp.base.event
 
 import scala.reflect.ClassTag
-import scalaz.{-\/, \/-}
 import scalaz.syntax.equal._
-import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.data.{Validators => V, _}
-import shipreq.webapp.base.data.ReqType.Mnemonic
-import ApplyEventLib._
+import shipreq.webapp.base.util.GenericData
+import ApplyEventLib._, SE.SE
 import DataImplicits._
 
 trait ApplyConfigEvent extends AskTrust {
@@ -17,89 +15,74 @@ trait ApplyConfigEvent extends AskTrust {
   }
 
   // ===================================================================================================================
-  object CustomIssueTypeEvents extends GenericDataApp with IMapStore with TellTrust {
-    override val ^        = CustomIssueTypeGD
-    override type Id      = CustomIssueTypeId
-    override type Data    = CustomIssueType
-    override val L        = Project.customIssueTypes
-    override def liveLens = CustomIssueType.live
+  object CustomIssueTypeEvents extends TellTrust {
+    val ^    = CustomIssueTypeGD
+    val GD   = GenericDataApp[CustomIssueType](^)
+    val imap = IMapStoreL(Project.customIssueTypes)(CustomIssueType.live)
 
     val validateKey  = validateWithF(V.customIssueType.keyU)(_.value)
     val validateDesc = validateWithF(V.customIssueType.descU)(_ getOrElse "")
 
-    val readKey  = need(^.Key)  >=> validateKey
-    val readDesc = need(^.Desc) >=> validateDesc
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customIssueType)
 
-    val updateKey  = updateL(CustomIssueType.key)  <<=< validateKey
-    val updateDesc = updateL(CustomIssueType.desc) <<=< validateDesc
+    def applyCreate(e: CreateCustomIssueType): SE[Unit] =
+      for {
+        k <- GD.need(^.Key )(e.vs) >>= validateKey
+        d <- GD.need(^.Desc)(e.vs) >>= validateDesc
+        _ <- imap create CustomIssueType(e.id, k, d, Live)
+        _ <- updateIdCeiling(e.id)
+      } yield ()
 
-    val updateValues = updateEachValue {
+    val updateKey  = validateKey  >>=@ CustomIssueType.key
+    val updateDesc = validateDesc >>=@ CustomIssueType.desc
+
+    val updateValues = GD.updateEachValue {
       case v: ^.ValueForKey  => updateKey (v.value)
       case v: ^.ValueForDesc => updateDesc(v.value)
     }
 
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customIssueType)
+    def applyUpdate(e: UpdateCustomIssueType): SE[Unit] =
+      imap.updateLive(e.id, updateValues(e.vs))
 
-    def applyCreate(e: CreateCustomIssueType): AP = {
-      implicit val vs = e.vs
-      create(
-        for {
-          k <- readKey
-          d <- readDesc
-        } yield CustomIssueType(e.id, k, d, Live)
-      ) >=> updateIdCeiling(e.id)
-    }
-
-    def applyUpdate(e: UpdateCustomIssueType): AP =
-      update(e.id, updateValues(e.vs))
-
-    def applyDelete(e: DeleteCustomIssueType): AP =
-      delete(e.id, e.da)
+    def applyDelete(e: DeleteCustomIssueType): SE[Unit] =
+      imap.deleteOrRestore(e.id, e.da)
   }
 
   // ===================================================================================================================
-  object CustomReqTypeEvents extends GenericDataApp with IMapStore with TellTrust {
-    override val ^        = CustomReqTypeGD
-    override type Id      = CustomReqTypeId
-    override type Data    = CustomReqType
-    override val L        = Project.customReqTypes
-    override def liveLens = CustomReqType.live
+  object CustomReqTypeEvents extends TellTrust {
+    val ^    = CustomReqTypeGD
+    val GD   = GenericDataApp[CustomReqType](^)
+    val imap = IMapStoreL(Project.customReqTypes)(CustomReqType.live)
 
     val validateName     = validateWith (V.reqType.nameU)
     val validateMnemonic = validateWithF(V.reqType.mnemonicU)(_.value)
 
-    val readName     = need(^.Name)     >=> validateName
-    val readMnemonic = need(^.Mnemonic) >=> validateMnemonic
-    val readImp      = need(^.Imp)
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customReqType)
 
-    val updateName     = updateL(CustomReqType.name)              <<=< validateName
-    val updateMnemonic = updateF[Data, Mnemonic](_ setMnemonic _) <<=< validateMnemonic
-    val updateImp      = updateL(CustomReqType.imp)
+    def applyCreate(e: CreateCustomReqType): SE[Unit] =
+      for {
+        n <- GD.need(^.Name)    (e.vs) >>= validateName
+        m <- GD.need(^.Mnemonic)(e.vs) >>= validateMnemonic
+        i <- GD.need(^.Imp)     (e.vs)
+        _ <- imap create CustomReqType(e.id, m, Set.empty, n, i, Live)
+        _ <- updateIdCeiling(e.id)
+      } yield ()
 
-    val updateValues = updateEachValue {
+    val updateName     = validateName >>=@ CustomReqType.name
+    val updateMnemonic = validateMnemonic thenUpdate ((_: CustomReqType) setMnemonic _) // TODO fix lens
+    val updateImp      = fieldUpdateFn(CustomReqType.imp)
+
+    val updateValues = GD.updateEachValue {
       case v: ^.ValueForName     => updateName    (v.value)
       case v: ^.ValueForImp      => updateImp     (v.value)
       case v: ^.ValueForMnemonic => updateMnemonic(v.value)
     }
 
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customReqType)
+    def applyUpdate(e: UpdateCustomReqType): SE[Unit] =
+      imap.updateLive(e.id, updateValues(e.vs))
 
-    def applyCreate(e: CreateCustomReqType): AP = {
-      implicit val vs = e.vs
-      create(
-        for {
-          n <- readName
-          m <- readMnemonic
-          i <- readImp
-        } yield CustomReqType(e.id, m, Set.empty, n, i, Live)
-      ) >=> updateIdCeiling(e.id)
-    }
-
-    def applyUpdate(e: UpdateCustomReqType): AP =
-      update(e.id, updateValues(e.vs))
-
-    def applyDelete(e: DeleteCustomReqType): AP =
-      delete(e.id, e.da)
+    def applyDelete(e: DeleteCustomReqType): SE[Unit] =
+      imap.deleteOrRestore(e.id, e.da)
   }
 
   // ===================================================================================================================
@@ -107,150 +90,137 @@ trait ApplyConfigEvent extends AskTrust {
     type Children = TagInTree.Children
     type Parents  = TagInTree.Parents
 
-    val L = Project.tags
-    val imap = IMapApp.like(TagTree.empty)
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.tag)
+    val imap = IMapStore(Project.tags)
 
     val validateName = validateWith(V.tag.nameU)
     val validateDesc = validateWithF(V.tag.descU)(_ getOrElse "")
     val validateKey  = validateWithF(V.tag.keyU)(_.value)
 
-    def ensureParentsValid(id: TagId, p: Parents): AE[TagTree] =
-      whenUntrusted(App.test(
-        tt => Valid <~ p.keys.forall(k => (k ≠ id) && tt.containsK(k)),
-        tt => s"Invalid parent(s) for $id: ${p.keySet -- (tt - id).keySet}"))
+    val updateIdCeiling = updateIdCeilingFn(IdCeilings.tag)
 
-    def setParents(id: TagId, p: Parents): AE[TagTree] =
-      ensureParentsValid(id, p) >=> App.ok(MMTree.ApplyParents.trustedApply1(_, id, p))
+    def debugPrintTagTree(name: String): SE[Unit] =
+      SE.get(_.config.tags).map(tt =>
+        println(s"\n$name\n${TagTree prettyPrint tt}\n"))
 
-    def create(newTag: Result[TagInTree], parents: Result[Option[Parents]]): AP = {
-      def applyParents(id: TagId): AE[TagTree] =
-        parents ?=>> {
-          case None    => nop
-          case Some(p) => setParents(id, p)
-        }
-      newTag ?=>> (t =>
-        L @=> (imap.add(t) >=> applyParents(t.id)) >=> updateIdCeiling(t.id))
-    }
+    def ensureParentsValid(id: TagId, p: Parents, tt: TagTree): SE[Unit] =
+      whenUntrusted(SE.test(
+        p.keys.forall(k => (k ≠ id) && tt.containsK(k)),
+        s"Invalid parent(s) for ${show(id)}: ${p.keySet -- (tt - id).keySet}"))
 
-    def applyDelete(e: DeleteTag): AP =
-      L @=> (e.da match {
+    def updateParents(tt: TagTree, id: TagId, p: Parents): SE[TagTree] =
+        ensureParentsValid(id, p, tt) |>>
+          MMTree.ApplyParents.trustedApply1(tt, id, p)
+
+    def create(tit: TagInTree, parents: Option[Parents]): SE[Unit] =
+      imap.create(tit) >>
+      parents.fold(SE.nop)(p => lensMod(Project.tags)(updateParents(_, tit.id, p))) >>
+      updateIdCeiling(tit.id)
+
+    def applyDelete(e: DeleteTag): SE[Unit] =
+      e.da match {
         case Restore => restore(e.id)
         case Delete  => delete(e.id)
-      })
+      }
 
-    private def setLife(newLife: Live): TagId => AE[TagTree] = {
+    def delete (id: TagId): SE[Unit] = setLife(id, Dead)
+    def restore(id: TagId): SE[Unit] = setLife(id, Live)
 
-      val modifySubject: TagId => AE[TagTree] =
-        id => App.ok(_.mod(id, TagInTree.live set newLife))
-//      Hard-deletion
-//      withUntrustedCheck[TagTree, TagId](
-//        (tt, id) => if (tt containsK id) None else Some(s"$id not found."))(
-//        (tt, id) => tt.mapUnderlying(_.mapValuesNow(_ removeChild id) - id))
+    private def setLife(rootId: TagId, newLife: Live): SE[Unit] = {
+      def modifySubject(id: TagId, tt: TagTree): TagTree =
+        tt.mod(id, TagInTree.live set newLife)
 
-      def go(id: TagId): AE[TagTree] =
-        imap.needM(id)(t0 => App { subj =>
+      def childNeedsModification(child: TagInTree, parentId: TagId, parentLive: Live, tt: TagTree): Boolean =
+        (child.tag.live ≟ parentLive) && {
+          val cid = child.tag.id
+          !tt.values.exists(x =>
+            (x.id ≠ parentId) &&
+              (x.tag.live ≟ parentLive) &&
+              x.children.exists(_ ≟ cid)
+          )
+        }
 
+      def modifyChildren(children: Children, parentId: TagId, parentLive: Live, tt0: TagTree): SE[TagTree] =
+        foldMapBind(tt0, children)(childId => tt =>
+          imapNeed(tt)(childId) >>= (child =>
+            if (childNeedsModification(child, parentId, parentLive, tt))
+              go(childId, tt)
+            else
+              SE.ret(tt)
+            )
+        )
+
+      def go(id: TagId, tt: TagTree): SE[TagTree] =
+        imapNeed(tt)(id) >>= { subj =>
           val subjLive = subj.tag.live
+          val tt2 = modifySubject(id, tt)
+          modifyChildren(subj.children, id, subjLive, tt2)
+        }
 
-          def childNeedsModification(child: TagInTree, t: TagTree): Boolean =
-            (child.tag.live ≟ subjLive) && {
-              val cid = child.tag.id
-              !t.values.exists(x =>
-                (x.id ≠ id) &&
-                (x.tag.live ≟ subjLive) &&
-                x.children.exists(_ ≟ cid)
-              )
-            }
-
-          val modifyChildren =
-            apFoldLeft[TagId, TagTree](subj.children)(childId =>
-              imap.needM(childId)(t => App { child =>
-                if (childNeedsModification(child, t))
-                  go(childId)(t)
-                else
-                  ok(t)
-              }))
-
-          (modifyChildren >=> modifySubject(id))(t0)
-        })
-
-      go
+      lensMod(Project.tags)(go(rootId, _))
     }
-
-    val delete  = setLife(Dead)
-    val restore = setLife(Live)
   }
 
-  abstract class TagEvents[D <: Tag : ClassTag] extends GenericDataApp {
+  abstract class TagEvents[Data <: Tag : ClassTag, GD <: GenericData](final val ^ : GD) {
+    final val GD = GenericDataApp[Data](^)
     import TagEvents._
-    override final type Data = D
 
-    final val updatableTag = narrowCC[Tag, Data] >=> ensureLiveBy(_.live)
+    protected final class UpdateVars(id: TagId, tagTree: TagTree, tit: TagInTree) {
+      private var sed: SE[Data] =
+        for {
+          d <- narrowCC[Tag, Data](tit.tag)
+          _ <- ensureLive(d.live)(show(id))
+        } yield d
 
-    final class UpdateVars(id: TagId, tagTree: TagTree, tagInTree: TagInTree) {
-      private var tag      = updatableTag(tagInTree.tag)
-      private var children = tagInTree.children
-      private var tt       = tagTree
+      private var children = tit.children
+      private var parentsSE: Option[TagTree => SE[TagTree]] = None
 
-      def apply(f: AE[D]): Unit =
-        tag = tag ?=> f
+      def apply(f: Data => SE[Data]): Unit =
+        sed = sed >>= f
 
       def setChildren(v: Children): Unit =
         children = v
 
       def setParents(p: Parents): Unit =
-        TagEvents.setParents(id, p)(tt) match {
-          case \/-(tt2)  => tt = tt2
-          case e@ -\/(_) => tag = e
-        }
+        parentsSE = Some(TagEvents.updateParents(_, id, p))
 
-      def result =
-        tag.map(tt + TagInTree(_, children))
+      def result(): SE[TagTree] = {
+        val r = sed.map(tag => tagTree + TagInTree(tag, children))
+        parentsSE.fold(r)(r >>= _)
+      }
     }
 
-    protected def update(id: TagId, f: UpdateVars => Unit): AP = {
-      val update: AE[TagTree] =
-        imap.needM(id)(tagTree => App { tit =>
-          val vars = new UpdateVars(id, tagTree, tit)
+    protected final def update(id: TagId, f: UpdateVars => Unit): SE[Unit] =
+      lensMod(Project.tags)(tt =>
+        imapNeed(tt)(id) >>= { tit =>
+          val vars = new UpdateVars(id, tt, tit)
           f(vars)
-          vars.result
+          vars.result()
         })
-      L @=> update
-    }
   }
 
   // -----------------------------------------------------------------------------------------------
-  object ApplicableTagEvents extends TagEvents[ApplicableTag] {
+  object ApplicableTagEvents extends TagEvents[ApplicableTag, ApplicableTagGD.type](ApplicableTagGD) {
     import TagEvents._
-    override val ^ = ApplicableTagGD
 
-    val readName     = need(^.Name) >=> validateName
-    val readDesc     = need(^.Desc) >=> validateDesc
-    val readKey      = need(^.Key)  >=> validateKey
-    val readParents  = read(^.Parents)
-    val readChildren = read(^.Children)
-
-    val updateName = updateL(ApplicableTag.name) <<=< validateName
-    val updateDesc = updateL(ApplicableTag.desc) <<=< validateDesc
-    val updateKey  = updateL(ApplicableTag.key)  <<=< validateKey
-
-    def applyCreate(e: CreateApplicableTag): AP = {
+    def applyCreate(e: CreateApplicableTag): SE[Unit] = {
       implicit val vs = e.vs
-      val newTag =
-        for {
-          n <- readName
-          d <- readDesc
-          k <- readKey
-          c <- readChildren
-        } yield {
-          val tag = ApplicableTag(e.id, n, d, k, Live)
-          TagInTree(tag, c getOrElse Vector.empty)
-        }
-      create(newTag, readParents)
+      for {
+        n   ← GD.need(^.Name) >>= validateName
+        d   ← GD.need(^.Desc) >>= validateDesc
+        k   ← GD.need(^.Key)  >>= validateKey
+        oc  = GD.read(^.Children)
+        op  = GD.read(^.Parents)
+        tag = ApplicableTag(e.id, n, d, k, Live)
+        tit = TagInTree(tag, oc getOrElse Vector.empty)
+        _   ← create(tit, op)
+      } yield ()
     }
 
-    def applyUpdate(e: UpdateApplicableTag): AP =
+    val updateName = validateName >>=@ ApplicableTag.name
+    val updateDesc = validateDesc >>=@ ApplicableTag.desc
+    val updateKey  = validateKey  >>=@ ApplicableTag.key
+
+    def applyUpdate(e: UpdateApplicableTag): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
           case v: ^.ValueForName     => vars apply updateName(v.value)
@@ -263,36 +233,28 @@ trait ApplyConfigEvent extends AskTrust {
   }
 
   // -----------------------------------------------------------------------------------------------
-  object TagGroupEvents extends TagEvents[TagGroup] {
+  object TagGroupEvents extends TagEvents[TagGroup, TagGroupGD.type](TagGroupGD) {
     import TagEvents._
-    override val ^ = TagGroupGD
 
-    val readName          = need(^.Name) >=> validateName
-    val readDesc          = need(^.Desc) >=> validateDesc
-    val readMutexChildren = need(^.MutexChildren)
-    val readParents       = read(^.Parents)
-    val readChildren      = read(^.Children)
-
-    val updateName          = updateL(TagGroup.name) <<=< validateName
-    val updateDesc          = updateL(TagGroup.desc) <<=< validateDesc
-    val updateMutexChildren = updateL(TagGroup.mutexChildren)
-
-    def applyCreate(e: CreateTagGroup): AP = {
+    def applyCreate(e: CreateTagGroup): SE[Unit] = {
       implicit val vs = e.vs
-      val newTag =
-        for {
-          n <- readName
-          d <- readDesc
-          m <- readMutexChildren
-          c <- readChildren
-        } yield {
-          val tag = TagGroup(e.id, n, d, m, Live)
-          TagInTree(tag, c getOrElse Vector.empty)
-        }
-      create(newTag, readParents)
+      for {
+        n   ← GD.need(^.Name) >>= validateName
+        d   ← GD.need(^.Desc) >>= validateDesc
+        mc  ← GD.need(^.MutexChildren)
+        oc  = GD.read(^.Children)
+        op  = GD.read(^.Parents)
+        tag = TagGroup(e.id, n, d, mc, Live)
+        tit = TagInTree(tag, oc getOrElse Vector.empty)
+        _   ← create(tit, op)
+      } yield ()
     }
 
-    def applyUpdate(e: UpdateTagGroup): AP =
+    val updateName          = validateName >>=@ TagGroup.name
+    val updateDesc          = validateDesc >>=@ TagGroup.desc
+    val updateMutexChildren = fieldUpdateFn(TagGroup.mutexChildren)
+
+    def applyUpdate(e: UpdateTagGroup): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
           case v: ^.ValueForName          => vars apply updateName(v.value)
@@ -306,39 +268,54 @@ trait ApplyConfigEvent extends AskTrust {
 
   // ===================================================================================================================
   object FieldEvents {
-    val L = Project.fields
-    val M = L ^|-> FieldSet.customFields
-    val O = L ^|-> FieldSet.order
-    val imap = IMapApp[CustomFieldId, CustomField]
+    private val customFieldsL = Project.fields ^|-> FieldSet.customFields
+    private val fieldOrderL   = Project.fields ^|-> FieldSet.order
+
+    private val imap = IMapStoreL(customFieldsL)(CustomField.live)
+
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.customField)
 
     val validateName = validateWith(V.field.nameU)
     val validateKey  = validateWithF(V.field.keyU)(_.value)
 
-    val ensureLive = ensureLiveBy[CustomField](_.live)
-    val updateLive = updateL(CustomField.live)
+    def create(cf: CustomField): SE[Unit] =
+      for {
+        fs  ← SE get Project.fields.get
+        cfs ← imapCreate(fs.customFields)(cf)
+        fs2 = FieldSet(cfs, fs.order :+ cf.id)
+        _   ← Project.fields set fs2
+        _   ← updateIdCeiling(cf.id)
+      } yield ()
 
-    def create(cf: CustomField): AP =
-      L @=> App(fs =>
-        for (cfs <- imap.add(cf)(fs.customFields))
-          yield FieldSet(cfs, fs.order :+ cf.id)
-      ) >=> updateIdCeiling(cf.id)
+    def update[Data <: CustomField : ClassTag](id: CustomFieldId, mod: Data => SE[Data]): SE[Unit] =
+      lensMod(customFieldsL)(cfs =>
+        for {
+          d1 <- imapNeed(cfs)(id)
+          d2 <- narrowCC[CustomField, Data](d1)
+          _  <- ensureLive(d2.live)(show(id))
+          d3 <- mod(d2)
+        } yield cfs + d3)
 
-    val repositionField = reposition[FieldId]
+    private val repositionField = repositionFn[FieldId]
 
-    def applyReposition(e: RepositionField): AP =
-      O @=> repositionField(e.id, e.newPos)
+    def applyReposition(e: RepositionField): SE[Unit] =
+      lensMod(fieldOrderL)(repositionField(e.id, e.newPos))
 
-    val ensureDeletableSF =
-      App.test[StaticField](
-        sf => Valid <~ (sf.deletable :: Deletable),
-        sf => s"Static field $sf cannot be deleted.")
+    private val removeFromOrder = removeFromVector[FieldId]
 
-    val removeFromOrder = removeFromVector[FieldId]
+    private val addSF = appendNewToVector[FieldId]
 
-    val deleteSF = ensureDeletableSF >=>> removeFromOrder
+    def applyAddStaticField(e: AddStaticField): SE[Unit] =
+      lensMod(fieldOrderL)(addSF(e.f))
 
-    val addSF = appendNewToVector[FieldId]
+    def ensureDeletableSF(sf: StaticField): SE[Unit] =
+      SE.test(
+        sf.deletable :: Deletable,
+        s"Static field $sf cannot be deleted.")
+
+    def applyDeleteSF(e: DeleteStaticField): SE[Unit] =
+      ensureDeletableSF(e.f) >>
+        lensMod(fieldOrderL)(removeFromOrder(e.f))
 
 //    def hardDeleteCustomField(id: CustomFieldId): AE[FieldSet] =
 //      App(fs =>
@@ -348,141 +325,103 @@ trait ApplyConfigEvent extends AskTrust {
 //        } yield FieldSet(m, o)
 //      )
 
-    def applyDeleteC(e: DeleteCustomField): AP =
-      e.da match {
-        case Delete  => M @=> setLive(e.id, Dead)
-        case Restore => M @=> setLive(e.id, Live)
-      }
-
-    def applyAddStaticField(e: AddStaticField): AP =
-      O @=> addSF(e.f)
-
-    def applyDeleteS(e: DeleteStaticField): AP =
-      O @=> deleteSF(e.f)
-
-    def setLive(id: CustomFieldId, newValue: Live): AE[imap.M] =
-      imap.update(id, updateLive(newValue))
-  }
-
-  trait CustomFieldApp extends GenericDataApp {
-    import FieldEvents._
-
-    type Data <: CustomField
-    val updateValues: ^.NonEmptyValues => AD
-
-    final def update(id: CustomFieldId, vs: ^.NonEmptyValues)(implicit cc: ClassTag[Data]): AP =
-      M @=> imap.update(id, ensureLive >=> narrowCC[CustomField, Data] >=> updateValues(vs))
+    def applyDeleteCF(e: DeleteCustomField): SE[Unit] =
+      imap.deleteOrRestore(e.id, e.da)
   }
 
   // -----------------------------------------------------------------------------------------------
-  object CustomTextFieldEvents extends CustomFieldApp {
-    import FieldEvents._
+  object CustomTextFieldEvents {
+    import FieldEvents.{validateName, validateKey, create, update}
 
-    override val ^ = CustomTextFieldGD
-    override type Data = CustomField.Text
+    val ^ = CustomTextFieldGD
+    val GD = GenericDataApp[CustomField.Text](^)
 
-    val readName      = need(^.Name) >=> validateName
-    val readKey       = need(^.Key)  >=> validateKey
-    val readMandatory = need(^.Mandatory)
-    val readReqTypes  = need(^.ReqTypes)
+    def applyCreate(e: CreateCustomTextField): SE[Unit] = {
+      implicit val vs = e.vs
+      for {
+        n <- GD.need(^.Name) >>= validateName
+        k <- GD.need(^.Key)  >>= validateKey
+        m <- GD.need(^.Mandatory)
+        r <- GD.need(^.ReqTypes)
+        _ <- create(CustomField.Text(e.id, n, k, m, r, Live))
+      } yield ()
+    }
 
-    val updateName      = updateL(CustomField.Text.name) <<=< validateName
-    val updateKey       = updateL(CustomField.Text.key)  <<=< validateKey
-    val updateMandatory = updateL(CustomField.Text.mandatory)
-    val updateReqTypes  = updateL(CustomField.Text.reqTypes)
+    val updateName      = validateName >>=@ CustomField.Text.name
+    val updateKey       = validateKey  >>=@ CustomField.Text.key
+    val updateMandatory = fieldUpdateFn(CustomField.Text.mandatory)
+    val updateReqTypes  = fieldUpdateFn(CustomField.Text.reqTypes)
 
-    val updateValues = updateEachValue {
+    val updateValues = GD.updateEachValue {
       case v: ^.ValueForName      => updateName     (v.value)
       case v: ^.ValueForKey       => updateKey      (v.value)
       case v: ^.ValueForMandatory => updateMandatory(v.value)
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyCreate(e: CreateCustomTextField): AP = {
-      implicit val vs = e.vs
-      val newField =
-        for {
-          n <- readName
-          k <- readKey
-          m <- readMandatory
-          r <- readReqTypes
-        } yield CustomField.Text(e.id, n, k, m, r, Live)
-      newField ?=>> create
-    }
-
-    def applyUpdate(e: UpdateCustomTextField): AP =
-      update(e.id, e.vs)
+    def applyUpdate(e: UpdateCustomTextField): SE[Unit] =
+      update(e.id, updateValues(e.vs))
   }
 
   // -----------------------------------------------------------------------------------------------
-  object CustomTagFieldEvents extends CustomFieldApp {
-    import FieldEvents._
+  object CustomTagFieldEvents {
+    import FieldEvents.{create, update}
 
-    override val ^ = CustomTagFieldGD
-    override type Data = CustomField.Tag
+    val ^ = CustomTagFieldGD
+    val GD = GenericDataApp[CustomField.Tag](^)
 
-    val readTagId     = need(^.TagId)
-    val readMandatory = need(^.Mandatory)
-    val readReqTypes  = need(^.ReqTypes)
+    def applyCreate(e: CreateCustomTagField): SE[Unit] = {
+      implicit val vs = e.vs
+      for {
+        t <- GD.need(^.TagId)
+        m <- GD.need(^.Mandatory)
+        r <- GD.need(^.ReqTypes)
+        _ <- create(CustomField.Tag(e.id, t, m, r, Live))
+      } yield ()
+    }
 
-    val updateTagId     = updateL(CustomField.Tag.tagId)
-    val updateMandatory = updateL(CustomField.Tag.mandatory)
-    val updateReqTypes  = updateL(CustomField.Tag.reqTypes)
+    val updateTagId     = fieldUpdateFn(CustomField.Tag.tagId)
+    val updateMandatory = fieldUpdateFn(CustomField.Tag.mandatory)
+    val updateReqTypes  = fieldUpdateFn(CustomField.Tag.reqTypes)
 
-    val updateValues = updateEachValue {
+    val updateValues = GD.updateEachValue {
       case v: ^.ValueForTagId     => updateTagId    (v.value)
       case v: ^.ValueForMandatory => updateMandatory(v.value)
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyCreate(e: CreateCustomTagField): AP = {
-      implicit val vs = e.vs
-      val newField =
-        for {
-          t <- readTagId
-          m <- readMandatory
-          r <- readReqTypes
-        } yield CustomField.Tag(e.id, t, m, r, Live)
-      newField ?=>> create
-    }
-
-    def applyUpdate(e: UpdateCustomTagField): AP =
-      update(e.id, e.vs)
+    def applyUpdate(e: UpdateCustomTagField): SE[Unit] =
+      update(e.id, updateValues(e.vs))
   }
 
   // -----------------------------------------------------------------------------------------------
-  object CustomImpFieldEvents extends CustomFieldApp {
-    import FieldEvents._
+  object CustomImpFieldEvents {
+    import FieldEvents.{create, update}
 
-    override val ^ = CustomImpFieldGD
-    override type Data = CustomField.Implication
+    val ^ = CustomImpFieldGD
+    val GD = GenericDataApp[CustomField.Implication](^)
 
-    val readReqTypeId = need(^.ReqTypeId)
-    val readMandatory = need(^.Mandatory)
-    val readReqTypes  = need(^.ReqTypes)
+    def applyCreate(e: CreateCustomImpField): SE[Unit] = {
+      implicit val vs = e.vs
+      for {
+        t <- GD.need(^.ReqTypeId)
+        m <- GD.need(^.Mandatory)
+        r <- GD.need(^.ReqTypes)
+        _ <- create(CustomField.Implication(e.id, t, m, r, Live))
+      } yield ()
+    }
 
-    val updateReqTypeId = updateL(CustomField.Implication.reqTypeId)
-    val updateMandatory = updateL(CustomField.Implication.mandatory)
-    val updateReqTypes  = updateL(CustomField.Implication.reqTypes)
+    val updateReqTypeId = fieldUpdateFn(CustomField.Implication.reqTypeId)
+    val updateMandatory = fieldUpdateFn(CustomField.Implication.mandatory)
+    val updateReqTypes  = fieldUpdateFn(CustomField.Implication.reqTypes)
 
-    val updateValues = updateEachValue {
+    val updateValues = GD.updateEachValue {
       case v: ^.ValueForReqTypeId => updateReqTypeId(v.value)
       case v: ^.ValueForMandatory => updateMandatory(v.value)
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyCreate(e: CreateCustomImpField): AP = {
-      implicit val vs = e.vs
-      val newField =
-        for {
-          t <- readReqTypeId
-          m <- readMandatory
-          r <- readReqTypes
-        } yield CustomField.Implication(e.id, t, m, r, Live)
-      newField ?=>> create
-    }
-
-    def applyUpdate(e: UpdateCustomImpField): AP =
-      update(e.id, e.vs)
+    def applyUpdate(e: UpdateCustomImpField): SE[Unit] =
+      update(e.id, updateValues(e.vs))
   }
 }

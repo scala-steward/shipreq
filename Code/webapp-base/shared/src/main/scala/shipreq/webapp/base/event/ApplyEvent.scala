@@ -1,56 +1,64 @@
 package shipreq.webapp.base.event
 
 import japgolly.nyaya.LogicPropExt
-import scala.collection.GenTraversable
+import scalaz.{\/-, \/}
 import shipreq.webapp.base.data.{Project, DataProp}
-import ApplyEventLib._
+import ApplyEventLib._, SE.SE
 
 object ApplyEvent {
   val trusted   = new ApplyEvent()(Trusted)
   val untrusted = new ApplyEvent()(Untrusted)
 }
 
-class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
+final class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
+  type Result = String \/ Project
+  type Events = Iterable[Event]
+  type VerifiedEvents = Iterable[VerifiedEvent]
 
-  def apply(events: GenTraversable[Event]): AP =
-    apFoldLeft(events)(apply1Safe) >=> validateDataProps
+  def apply(events: Events)(p: Project): Result =
+    applyAllSafe(events) exec p
 
-  def apply1(event: Event): AP =
-    apply1Safe(event) >=> validateDataProps
+  def apply1(event: Event)(p: Project): Result =
+    apply1Safe(event) exec p
 
-  private val validateDataProps: AP = whenUntrusted {
-    val prop = DataProp.project.allIncludingConfig
-    App { p =>
-      val e = prop(p)
-      if (e.success)
-        ok(p)
-      else
-        fail(e.report)
-    }
-  }
-
-  def applyVerified(ves: GenTraversable[VerifiedEvent]): AP =
-    if (ves.isEmpty)
-      nop
-    else
-      App { p =>
-        val applyAll = apFoldLeft(ves)(ve => apply1Safe(ve.event)) >=> validateDataProps
-        applyAll(p).flatMap(validateHash(_, ves.last))
-        // TODO On failure, replay to find the first mismatching event
+  private val validateDataProps: SE[Unit] =
+    whenUntrusted {
+      val prop = DataProp.project.allIncludingConfig
+      SE.testO { p =>
+        val e = prop(p)
+        if (e.success)
+          None
+        else
+          Some(e.report)
       }
+    }
 
-  def validateHash(p: Project, ve: VerifiedEvent): Result[Project] = {
-    val h2 = ve.projectHash.scheme hash p
-    if (ve.projectHash.hash == h2)
-      ok(p)
+  def applyVerified(ves: VerifiedEvents)(p: Project): Result =
+    if (ves.isEmpty)
+      \/-(p)
     else
-      fail(s"Hash mismatch on $ve. Got $h2.")
-  }
+      // TODO On failure, replay to find the first mismatching event
+      (applyAllSafe(ves.map(_.event)) >> validateHash(ves.last)) exec p
 
-  private def apply1Safe(event: Event): AP =
-    apply1Unsafe(event).attempt
+  private def validateHash(ve: VerifiedEvent): SE[Unit] =
+    SE.testO { p =>
+      val h2 = ve.projectHash.scheme hash p
+      if (ve.projectHash.hash == h2)
+        None
+      else
+        Some(s"Hash mismatch on $ve. Got $h2.")
+    }
 
-  private def apply1Unsafe(event: Event): AP =
+  private def safely(apply: SE[Unit]): SE[Unit] =
+    (apply >> validateDataProps) attempt onError
+
+  private val onError: Throwable => String =
+    e => {
+      val msg = Option(e.getMessage).filter(_.nonEmpty)
+      msg getOrElse s"Error occurred: $e"
+    }
+
+  private def apply1Unsafe(event: Event): SE[Unit] =
     event match {
       case e: CreateCustomIssueType => CustomIssueTypeEvents applyCreate e
       case e: UpdateCustomIssueType => CustomIssueTypeEvents applyUpdate e
@@ -72,8 +80,8 @@ class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
       case e: UpdateCustomTagField  => CustomTagFieldEvents  applyUpdate e
       case e: CreateCustomImpField  => CustomImpFieldEvents  applyCreate e
       case e: UpdateCustomImpField  => CustomImpFieldEvents  applyUpdate e
-      case e: DeleteCustomField     => FieldEvents           applyDeleteC e
-      case e: DeleteStaticField     => FieldEvents           applyDeleteS e
+      case e: DeleteCustomField     => FieldEvents           applyDeleteCF e
+      case e: DeleteStaticField     => FieldEvents           applyDeleteSF e
       case e: AddStaticField        => FieldEvents           applyAddStaticField e
       case e: RepositionField       => FieldEvents           applyReposition e
 
@@ -91,6 +99,15 @@ class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
       case e: UpdateReqCodeGroup => ReqCodeGroupEvents applyUpdate e
       case e: DeleteReqCodeGroup => ReqCodeGroupEvents applyDelete e
 
-      case e: ApplyTemplate => apply(e.t.events)
+      case e: ApplyTemplate => safely(applyAllUnsafe(e.t.events))
     }
+
+  private def apply1Safe(event: Event): SE[Unit] =
+    safely(apply1Unsafe(event))
+
+  private def applyAllUnsafe(events: Events): SE[Unit] =
+    SE.foldMapRun(events)(apply1Unsafe)
+
+  private def applyAllSafe(events: Events): SE[Unit] =
+    safely(applyAllUnsafe(events))
 }
