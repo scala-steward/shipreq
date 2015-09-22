@@ -3,10 +3,14 @@ package shipreq.base.util
 import scalaz.Equal
 import scala.reflect.macros.blackbox
 import shipreq.base.macros.MacroUtils
+import UtilMacros.AdtIso
 
 object UtilMacros {
 
-  // TODO Add a method that builds values for ADT that is all case objects
+  type AdtIso[Adt, T] = (Adt => T, T => Adt, NonEmptySet[Adt], NonEmptySet[T])
+
+  def  adtIso[Adt, T](f: Adt => T): AdtIso[Adt, T] = macro UtilMacroImpls.quietAdtIso[Adt, T]
+  def _adtIso[Adt, T](f: Adt => T): AdtIso[Adt, T] = macro UtilMacroImpls.debugAdtIso[Adt, T]
 
   def  valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.quietValuesForAdt[T, V]
   def _valuesForAdt[T, V](f: T => V): NonEmptyVector[V] = macro UtilMacroImpls.debugValuesForAdt[T, V]
@@ -17,6 +21,57 @@ object UtilMacros {
 
 class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
   import c.universe._
+
+  def quietAdtIso[Adt: c.WeakTypeTag, T: c.WeakTypeTag](f: c.Expr[Adt => T]): c.Expr[AdtIso[Adt, T]] = implAdtIso(false)(f)
+  def debugAdtIso[Adt: c.WeakTypeTag, T: c.WeakTypeTag](f: c.Expr[Adt => T]): c.Expr[AdtIso[Adt, T]] = implAdtIso(true)(f)
+  def implAdtIso[Adt: c.WeakTypeTag, T: c.WeakTypeTag](debug: Boolean)(f: c.Expr[Adt => T]): c.Expr[AdtIso[Adt, T]] = {
+    val Adt       = weakTypeOf[Adt]
+    val T         = weakTypeOf[T]
+    val fromFn    = readMacroArg_tToTree(f).toStream
+    val adtTypes  = findConcreteTypesNE(Adt, LeavesOnly)
+    var toCases   = Vector.empty[CaseDef]
+    var toValues  = Set.empty[Any]
+    var adtValues = Vector.empty[Tree]
+
+    for (adtClass <- adtTypes) {
+      val adt = determineAdtType(Adt, adtClass)
+
+      ensureConcrete(adt)
+      if (primaryConstructorParams(adt).nonEmpty)
+        fail(s"$adt requires constructor params.")
+
+      val matchingCases = fromFn.filter(adt <:< _._1.fold(_.tpe, identity))
+      if (matchingCases.size != 1)
+        fail(s"Found ${matchingCases.size} cases for ${adt}.")
+
+      val fromCase = matchingCases.head
+      val toValue = fromCase._2 match {
+        case Literal(Constant(v)) => v
+        case x => fail(s"Expected a constant literal, got: ${showRaw(x)} ")
+      }
+      if (toValues contains toValue)
+        fail(s"Non-unique value encountered: $toValue")
+      toValues += toValue
+
+      val adtObj = toSelectFQN(adtClass)
+      adtValues :+= adtObj
+      toCases :+= cq"${fromCase._2} => $adtObj"
+    }
+
+    val impl = q"""
+      import shipreq.base.util.UnivEq.Implicits._
+      val from: $Adt => $T = $f
+      val to: $T => $Adt = {case ..$toCases}
+      val adts = NonEmptySet[$Adt](..$adtValues)
+      val tos = NonEmptySet[$T](..${fromFn.map(_._2)})
+      assert(adts.size == tos.size)
+      assert(adts.forall(a => to(from(a)) == a))
+      (from,to,adts,tos)
+    """
+
+    if (debug) println("\n" + showCode(impl) + "\n")
+    c.Expr[AdtIso[Adt, T]](impl)
+  }
 
   def quietValuesForAdt[T: c.WeakTypeTag, V: c.WeakTypeTag](f: c.Expr[T => V]): c.Expr[NonEmptyVector[V]] = implValuesForAdt(false)(f)
   def debugValuesForAdt[T: c.WeakTypeTag, V: c.WeakTypeTag](f: c.Expr[T => V]): c.Expr[NonEmptyVector[V]] = implValuesForAdt(true)(f)

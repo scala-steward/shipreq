@@ -42,6 +42,9 @@ final class NonEmptySet[A] private[util] (val head: A, val tail: Set[A]) {
     tail foreach f
   }
 
+  def forall(f: A => Boolean): Boolean =
+    f(head) && tail.forall(f)
+
   def exists(f: A => Boolean): Boolean =
     f(head) || tail.exists(f)
 
