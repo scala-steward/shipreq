@@ -15,7 +15,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
 
     private val imap = IMapStore(Project.genericReqs)
 
-    val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
+    private val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
 
@@ -148,7 +148,6 @@ trait ApplyContentEvent extends ApplyConfigEvent {
   }
 
   // ===================================================================================================================
-
   /**
    * Why the hell is all this req-code changing logic so complicated?
    *
@@ -294,7 +293,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
      * @param keepRef Determine whether a reference should be kept of the current id and target.
      *                If `false`, the data is gone completely.
      */
-    private def _remove(trie: Trie, v: Value, d: Data, a: ActiveData, keepRef: ReqCodeId => Boolean): Trie = {
+    def remove(trie: Trie, v: Value, d: Data, a: ActiveData, keepRef: ReqCodeId => Boolean): Trie = {
       var refsToGroup = d.refsToGroup
       var refsToReqs  = d.refsToReqs
       val id = a.id
@@ -319,7 +318,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
           d <- needData(t, v)
           a <- needActiveData(d, v)
           _ <- validateTarget(a)
-        } yield _remove(t, v, d, a, keepRef)
+        } yield remove(t, v, d, a, keepRef)
       ) >>= Project.reqCodeTrie.set
 
     def removeValue(v: Value, keepRef: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
@@ -369,12 +368,12 @@ trait ApplyContentEvent extends ApplyConfigEvent {
 
       needValues(idsSorted, IdAndValue) >>= { ivs =>
         var valuesSeen = Set.empty[Value]
-        ivs.foldLeft(getTrie)((acc, iv) =>
+        ivs.foldLeft(getTrie)((seTrie, iv) =>
           if (valuesSeen contains iv.value)
-            acc
+            seTrie
           else {
             valuesSeen += iv.value
-            acc >>= (restoreReqCode(_, reqId, iv.id, iv.value))
+            seTrie >>= (restoreReqCode(_, reqId, iv.id, iv.value))
           }
         ) >>= Project.reqCodeTrie.set
       }
@@ -413,36 +412,12 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         _          ← restoreReqCodesById(e.id, e.restore)
         _          ← addCodesToTarget(e.id, e.add)
       } yield ()
-
-    def updateGroupCode(id: ReqCodeId, newCode: Value): SE[Unit] =
-      for {
-        v  ← needValue(id)
-        t  ← getTrie
-        d  ← needData(t, v)
-        a  ← needActiveData(d, v)
-        g  ← needReqCodeGroup(a.target)
-        t2 = _remove(t, v, d, a, _ => false)
-        t3 ← _addUnvalidated(t2, id, newCode, g, addToActive = true)
-        _  ← Project.reqCodeTrie set t3
-      } yield ()
-
-    def modifyGroup(id: ReqCodeId, f: ReqCodeGroup => ReqCodeGroup): SE[Unit] =
-      for {
-        v  ← needValue(id)
-        t  ← getTrie
-        d  ← needData(t, v)
-        a  ← needActiveData(d, v)
-        g  ← needReqCodeGroup(a.target)
-        g2 = f(g)
-        a2 = a.copy(target = g2)
-        d2 = d.copy(active = Some(a2))
-        t2 = t.put(v, d2)
-        _  ← Project.reqCodeTrie set t2
-      } yield ()
   }
 
   // ===================================================================================================================
   object ReqCodeGroupEvents {
+    import ReqCodeLogic._
+
     val ^ = ReqCodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
@@ -452,20 +427,46 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         c ← GD.need(^.Code)
         t = GD.want(^.Title)(Vector.empty)
         g = if (t.isEmpty) ReqCodeGroup.empty else ReqCodeGroup(t)
-        _ ← ReqCodeLogic.addOne(e.id, c, g, true)
+        _ ← addOne(e.id, c, g, true)
       } yield ()
     }
 
+    private def updateGroupCode(id: ReqCodeId, newCode: ReqCode.Value): SE[Unit] =
+      for {
+        t  ← getTrie
+        v  ← needValue(id)
+        d  ← needData(t, v)
+        a  ← needActiveData(d, v)
+        g  ← needReqCodeGroup(a.target)
+        t2 = remove(t, v, d, a, _ => false)
+        t3 ← _addUnvalidated(t2, id, newCode, g, addToActive = true)
+        _  ← Project.reqCodeTrie set t3
+      } yield ()
+
+    private def modifyGroup(id: ReqCodeId, f: ReqCodeGroup => ReqCodeGroup): SE[Unit] =
+      for {
+        t  ← getTrie
+        v  ← needValue(id)
+        d  ← needData(t, v)
+        a  ← needActiveData(d, v)
+        g  ← needReqCodeGroup(a.target)
+        g2 = f(g)
+        a2 = a.copy(target = g2)
+        d2 = d.copy(active = Some(a2))
+        t2 = t.put(v, d2)
+        _  ← Project.reqCodeTrie set t2
+      } yield ()
+
     def applyUpdate(e: UpdateReqCodeGroup): SE[Unit] =
       SE.foldMapRun(e.vs.values) {
-        case ^.ValueForTitle(t) => ReqCodeLogic.modifyGroup(e.id, _.copy(title = t))
-        case ^.ValueForCode (v) => ReqCodeLogic.updateGroupCode(e.id, v)
+        case ^.ValueForTitle(t) => modifyGroup(e.id, _.copy(title = t))
+        case ^.ValueForCode (v) => updateGroupCode(e.id, v)
       }
 
     def applyDelete(e: DeleteReqCodeGroup): SE[Unit] =
       for {
         refd ← SE.get(_.atomScan.codeRefs)
-        _    ← ReqCodeLogic.removeId(e.id, refd.contains, ReqCodeLogic ensureReqCodeGroup _.target)
+        _    ← removeId(e.id, refd.contains, ad => ensureReqCodeGroup(ad.target))
       } yield ()
   }
 }
