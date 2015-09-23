@@ -18,10 +18,6 @@ private[event] object ApplyEventLib {
   // ===================================================================================================================
   // Trust & validation
 
-  trait AskTrust {
-    protected implicit def trust: Trust
-  }
-
   final class TrustedAlt[+A](val trusted: A) extends AnyVal
   object TrustedAlt {
     implicit val unit    = new TrustedAlt[SE[Unit]       ](nop)

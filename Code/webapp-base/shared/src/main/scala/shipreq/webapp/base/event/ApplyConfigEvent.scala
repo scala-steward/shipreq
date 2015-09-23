@@ -8,14 +8,11 @@ import shipreq.webapp.base.util.GenericData
 import ApplyEventLib._, SE.SE
 import DataImplicits._
 
-trait ApplyConfigEvent extends AskTrust {
-
-  trait TellTrust extends AskTrust {
-    override final protected implicit def trust = ApplyConfigEvent.this.trust
-  }
+trait ApplyConfigEvent {
+  this: ApplyEvent =>
 
   // ===================================================================================================================
-  object CustomIssueTypeEvents extends TellTrust {
+  object CustomIssueTypeEvents {
     val ^    = CustomIssueTypeGD
     val GD   = GenericDataApp[CustomIssueType](^)
     val imap = IMapStoreL(Project.customIssueTypes)(CustomIssueType.live)
@@ -49,7 +46,7 @@ trait ApplyConfigEvent extends AskTrust {
   }
 
   // ===================================================================================================================
-  object CustomReqTypeEvents extends TellTrust {
+  object CustomReqTypeEvents {
     val ^    = CustomReqTypeGD
     val GD   = GenericDataApp[CustomReqType](^)
     val imap = IMapStoreL(Project.customReqTypes)(CustomReqType.live)

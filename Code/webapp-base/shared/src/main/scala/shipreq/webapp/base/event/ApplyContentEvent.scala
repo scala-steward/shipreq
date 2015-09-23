@@ -10,7 +10,8 @@ import ApplyEventLib._, SE.SE
 import DataImplicits._
 import MTrie.Ops
 
-trait ApplyContentEvent extends ApplyConfigEvent {
+trait ApplyContentEvent {
+  this: ApplyEvent =>
 
   object ReqEvents {
 

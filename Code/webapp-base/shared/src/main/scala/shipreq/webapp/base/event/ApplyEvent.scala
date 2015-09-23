@@ -38,7 +38,7 @@ object ApplyEvent {
   }
 }
 
-final class ApplyEvent(implicit val trust: Trust) extends ApplyContentEvent {
+final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with ApplyContentEvent {
   type Result = String \/ Project
   type Events = Iterable[Event]
 
