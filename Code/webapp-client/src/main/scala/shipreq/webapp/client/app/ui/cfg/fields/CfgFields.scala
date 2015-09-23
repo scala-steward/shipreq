@@ -386,8 +386,8 @@ private[fields] object MainTable {
       }
 
       def renderNew (s: S, r: stores.n.Row): ReactElement
-      def renderLive(s: S, dragHandle: ReactTag, r: stores.s.Row): ReactTag
-      def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, t: T): ReactTag
+      def renderLive(s: S, dragHandle: ReactTag, r: stores.s.Row, deleteButton: TagMod): ReactTag
+      def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, t: T, restoreButton: TagMod): ReactTag
 
       def renderNewRow(rs: RowStatus)(name: TagMod, refkey: TagMod, mandatory: TagMod, reqtypes: TagMod): ReactElement = {
         val r = renderRow(rs)(undefined, name, refkey, mandatory, reqtypes, newFieldControl.abortButton)
@@ -396,10 +396,18 @@ private[fields] object MainTable {
 
       def render(s: S, dragHandle: ReactTag, id: CustomFieldId): ReactTag = {
         val row = stores.s.get(id)(s)
-        val tag = row.p
-        tag.live(project.config) match {
-          case Live => renderLive(s, dragHandle, row)
-          case Dead => renderDead(s, dragHandle, row.status, tag)(^.cls := "dead")
+        val cf = row.p
+        val cfg = project.config
+        cf.live(cfg) match {
+          case Live =>
+            renderLive(s, dragHandle, row, deletion.button(cf.id, Delete))
+          case Dead =>
+            val resultIfRestored = CustomField.liveExplicitly.set(Live)(cf).live(cfg)
+            val restoreButton: TagMod = resultIfRestored match {
+              case Live => deletion.button(cf.id, Restore)
+              case Dead => EmptyTag
+            }
+            renderDead(s, dragHandle, row.status, cf, restoreButton)(^.cls := "dead")
         }
       }
 
@@ -439,7 +447,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row, deleteButton: TagMod): ReactTag = {
         val (name, refkey, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(
@@ -448,17 +456,17 @@ private[fields] object MainTable {
           refkey     = refkey,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, Delete))
+          ctrls      = deleteButton)
       }
 
-      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Text): ReactTag =
+      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Text, restoreButton: TagMod): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
           name       = f.name,
           refkey     = f.key.value,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-          ctrls      = deletion.button(f.id, Restore))
+          ctrls      = restoreButton)
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -493,7 +501,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row, deleteButton: TagMod): ReactTag = {
         val (name, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(
@@ -502,19 +510,17 @@ private[fields] object MainTable {
           refkey     = unusedField,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, Delete)
-        )
+          ctrls      = deleteButton)
       }
 
-      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Tag): ReactTag =
+      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Tag, restoreButton: TagMod): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
           name       = f.name(project.config.tags),
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-          ctrls      = deletion.button(f.id, Restore)
-        )
+          ctrls      = restoreButton)
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -549,7 +555,7 @@ private[fields] object MainTable {
           reqtypes  = reqtypes)
       }
 
-      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row): ReactTag = {
+      override def renderLive(s: S, dragHandle: ReactTag, row: stores.s.Row, deleteButton: TagMod): ReactTag = {
         val (name, mandatory, reqtypes) = editor render ei(s, row)
         val f = row.p
         renderRow(row.status)(
@@ -558,19 +564,17 @@ private[fields] object MainTable {
           refkey     = unusedField,
           mandatory  = mandatory,
           reqtypes   = reqtypes,
-          ctrls      = deletion.button(f.id, Delete)
-        )
+          ctrls      = deleteButton)
       }
 
-      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication): ReactTag =
+      override def renderDead(s: S, dragHandle: ReactTag, rs: RowStatus, f: CustomField.Implication, restoreButton: TagMod): ReactTag =
         renderRow(rs)(
           dragHandle = dragHandle,
           name       = f.name(project.config.customReqTypes),
           refkey     = unusedField,
           mandatory  = staticMandatoryCheckbox(f.mandatory),
           reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-          ctrls      = deletion.button(f.id, Restore)
-        )
+          ctrls      = restoreButton)
     }
 
     // -----------------------------------------------------------------------------------------------------------------
