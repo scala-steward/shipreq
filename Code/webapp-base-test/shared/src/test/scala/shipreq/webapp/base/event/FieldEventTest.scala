@@ -167,7 +167,7 @@ object CustomTagFieldEventTest extends TestSuite with CustomTagFieldEvents {
       'needMandatory - assertFail("Mandatory")(c1.mod(_ - Mandatory))
       'needReqTypes  - assertFail("Types")    (c1.mod(_ - ReqTypes))
       'tagIdNotFound - assertFail("Tag")      (c1.mod(_ + TagId(9.TG)))
-      'tagIdDead     - assertFail("live tag") (softDelTG1, c1)
+      'tagIdDead     - assertFail("dead")     (softDelTG1, c1)
       'badReqTypes   - assertFail("Types")    (c1.mod(_ + ReqTypes(onlyRT1))) // RT1 doesn't exist
       'dupTagId      - assertFail("unique")   (c1, c2.mod(_ + TagId(1.TG)))
     }
@@ -227,7 +227,7 @@ object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
       'needMandatory     - assertFail("Mandatory")(c1.mod(_ - Mandatory))
       'needReqTypes      - assertFail("Types")    (c1.mod(_ - ReqTypes))
       'reqTypeIdNotFound - assertFail("ReqType")  (c1.mod(_ + ReqTypeId(9)))
-      'reqTypeIdDead     - assertFail("live")     (softDelRT1, c1)
+      'reqTypeIdDead     - assertFail("dead")     (softDelRT1, c1)
       'badReqTypes       - assertFail("Types")    (c1.mod(_ + ReqTypes(notRT2))) // RT2 doesn't exist
       'dupReqTypeId      - assertFail("unique")   (c1, c2.mod(_ + ReqTypeId(1)))
     }

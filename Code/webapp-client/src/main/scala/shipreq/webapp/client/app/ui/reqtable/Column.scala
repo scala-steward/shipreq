@@ -4,7 +4,7 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import scala.scalajs.js
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.data.{Live, Project}
+import shipreq.webapp.base.data.{Live, Project, ProjectConfig}
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.client.lib.FilterDead
@@ -76,11 +76,8 @@ object Column {
     case _: CustomField => false
   }
 
-  def allInProject(p: Project): NonEmptyVector[Column] =
-    all(p.config.fields.customFields.values)
-
-  def all(customFields: TraversableOnce[data.CustomField]): NonEmptyVector[Column] =
-    customFields.toVector.map(f => CustomField(f.id, f.live)) ++: builtInValues
+  def all(c: ProjectConfig): NonEmptyVector[Column] =
+    c.fields.customFields.values.toVector.map(f => CustomField(f.id, f live c)) ++: builtInValues
 
   val filterDead: FilterDead => Column => Boolean =
     FilterDead.memo(_.filterFnA[Column](_.live))

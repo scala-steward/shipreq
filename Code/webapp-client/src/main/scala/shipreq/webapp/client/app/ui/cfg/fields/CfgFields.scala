@@ -301,8 +301,7 @@ private[fields] object MainTable {
         filterDeadCheckbox(),
         <.table(
           headerRow,
-          <.tbody(renderNewField(s), renderFields(s))
-        ))
+          <.tbody(renderNewField(s), renderFields(s))))
 
     def renderNewField(s: S): Option[ReactElement] =
       customFieldRenderers.map(_ renderNewO s).flatMap(_.toStream).headOption
@@ -310,7 +309,7 @@ private[fields] object MainTable {
     def renderFields(s: S): TagMod = {
       var content = fieldOrder.toStream
         .flatMap(_.foldId[Stream[Field]](s => Stream(s), s.customFields.get(_).toStream))
-      content = s.filterDead(content)(_.live)
+      content = s.filterDead(content)(_ live project.config)
       content.toReactNodeArray(renderField)
     }
 
@@ -398,7 +397,7 @@ private[fields] object MainTable {
       def render(s: S, dragHandle: ReactTag, id: CustomFieldId): ReactTag = {
         val row = stores.s.get(id)(s)
         val tag = row.p
-        tag.live match {
+        tag.live(project.config) match {
           case Live => renderLive(s, dragHandle, row)
           case Dead => renderDead(s, dragHandle, row.status, tag)(^.cls := "dead")
         }

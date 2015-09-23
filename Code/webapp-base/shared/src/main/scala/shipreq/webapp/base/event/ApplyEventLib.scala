@@ -55,7 +55,7 @@ private[event] object ApplyEventLib {
       })
 
   @inline def ensureLiveIsNot(actual: Live)(expect: Live, name: => String)(implicit trust: Trust): SE[Unit] =
-    whenUntrusted(ensureLiveIs(actual)(Live negate expect, name))
+    ensureLiveIs(actual)(Live negate expect, name)
 
   def ensureLive(l: Live)(name: => String)(implicit trust: Trust): SE[Unit] =
     whenUntrusted(test(l :: Live, s"$name is dead."))
@@ -63,17 +63,40 @@ private[event] object ApplyEventLib {
   def ensureDead(l: Live)(name: => String)(implicit trust: Trust): SE[Unit] =
     whenUntrusted(test(l :: Dead, s"$name is live."))
 
+  def ensureTagIsLive(id: TagId)(implicit trust: Trust): SE[Unit] =
+    whenUntrusted(
+      for {
+        p <- SE.get
+        t <- imapNeed(p.config.tags)(id)
+        _ <- ensureLive(t.tag.live)(show(id))
+      } yield ())
+
+  def ensureReqTypeIsLive(id: ReqTypeId)(implicit trust: Trust): SE[Unit] =
+    whenUntrusted(
+      id.foldId(f => ensureLive(f.live)(show(id)), ensureCustomReqTypeIsLive))
+
+  def ensureCustomReqTypeIsLive(id: CustomReqTypeId)(implicit trust: Trust): SE[Unit] =
+    whenUntrusted(
+      for {
+        p  <- SE.get
+        rt <- imapNeed(p.config.customReqTypes)(id)
+        _  <- ensureLive(rt.live)(show(id))
+      } yield ())
+
   // ===================================================================================================================
   // Lib
 
   def show(v: ReqCode.Value   ): String = s"Code [${PlainText reqCode v}]"
   def show(v: ReqCodeId       ): String = s"Code #${v.value}"
-  def show(v: TagId           ): String = v.toString
+  def show(v: TagId           ): String = s"Tag #${v.value}"
   def show(v: CustomFieldId   ): String = v.toString
   def show(v: Req             ): String = show(v.id)
   def show(v: ReqId           ): String = v.toString
+  def show(v: CustomField     ): String = s"Field #${v.id.value}"
   def show(v: CustomField.Text): String = s"Text field [${v.name}]"
   def show(v: ReqType         ): String = s"ReqType [${v.mnemonic.value}]"
+  def show(v: ReqTypeId       ): String = v.foldId(r => show(r: ReqType), show)
+  def show(v: CustomReqTypeId ): String = s"ReqType #${v.value}"
 
   def set1[A](a: A): Set[A] =
     Set.empty[A] + a
@@ -184,6 +207,19 @@ private[event] object ApplyEventLib {
       SE.test(!imap.containsV(v), s"$v already exists.") |>> updated
   }
 
+  def toggleLiveCheckBeforeAfter[V](v1: V, newLive: Live)(get: V => Live, set: Live => V => V, name: => String)(implicit trust: Trust): SE[V] = {
+    val v2 = set(newLive)(v1)
+    trust match {
+      case Trusted =>
+        SE ret v2
+      case Untrusted =>
+        for {
+          _ <- ensureLiveIsNot(newLive)(get(v1), name)
+          _ <- ensureLiveIs(newLive)(get(v2), name + " after change")
+        } yield v2
+    }
+  }
+
   sealed abstract class LiveAccessor[V] {
     val ensureLive: V => SE[Unit]
     val ensureDead: V => SE[Unit]
@@ -248,10 +284,7 @@ private[event] object ApplyEventLib {
         ensureLive(liveLens get d)(id.toString) >> updateFn(d))
 
     def deleteOrRestore(id: Id, da: DeletionAction): SE[Unit] =
-      da match {
-        case Delete  => setLive(id, Dead)
-        case Restore => setLive(id, Live)
-      }
+      setLive(id, da.targetState)
 
     private def setLive(id: Id, newValue: Live): SE[Unit] =
       update(id, d =>

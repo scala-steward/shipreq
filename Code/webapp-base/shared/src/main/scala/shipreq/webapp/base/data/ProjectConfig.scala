@@ -70,7 +70,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     fields.customFields.values.filterT[CustomField.Text]
 
   lazy val liveCustomTextFields =
-    customTextFields.filter(_.live :: Live)
+    customTextFields.filter(_.live(this) :: Live)
 
   def reqType(i: ReqTypeId): ReqType =
     i.foldId[ReqType](identity, customReqTypes.need)
@@ -92,7 +92,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     reqTypes.flatMap(t => t.allMnemonics.toStream.map((_, t))).toMap
 
   lazy val liveTagColumnDistribution =
-    TagColumnDistribution(this, _.live :: Live)
+    TagColumnDistribution(this, _.live(this) :: Live)
 
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] = (
@@ -102,4 +102,8 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
 
   def hashRefLookup(key: String): Option[HashRefTarget] =
     hashRefLookupM.get(key.toLowerCase)
+
+  def live(id: TagId          ): Live = tags.need(id).tag.live
+  def live(id: ReqTypeId      ): Live = id.foldId(_.live, live)
+  def live(id: CustomReqTypeId): Live = customReqTypes.need(id).live
 }

@@ -167,9 +167,7 @@ object ReqTable {
       import Px.AutoValue._
       Px.refresh(project, viewSettings, filterState)
 
-      val customFields = s.project.config.fields.customFields
-
-      val vsProps = ViewSettingsEditor.Props(colName, customFields, vsVar, filterEditor)
+      val vsProps = ViewSettingsEditor.Props(colName, s.project.config, vsVar, filterEditor)
 
       val creationProps = CreationInterface.Props(createIO, s.creation)
 

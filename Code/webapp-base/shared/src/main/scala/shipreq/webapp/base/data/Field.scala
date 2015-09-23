@@ -76,7 +76,8 @@ sealed trait Field {
   def reqTypes : Field.ApplicableReqTypes
   def keyO     : Option[FieldRefKey]
   def mandatory: Mandatory
-  def live     : Live
+
+  def live(cfg: ProjectConfig): Live
 
   /** Independent as opposed to the name being derived from some external state. */
   def independentName: Option[String]
@@ -113,7 +114,7 @@ sealed abstract class StaticField(         val name     : String,
                                            val deletable: Deletable,
                                   override val keyO     : Option[FieldRefKey]) extends Field with FieldId {
 
-  override final def live = Live
+  override final def live(cfg: ProjectConfig) = Live
 
   override final def independentName = Some(name)
 
@@ -157,6 +158,9 @@ sealed abstract class CustomFieldId extends TaggedInt with FieldId {
 sealed abstract class CustomField(override final val fieldType: CustomFieldType) extends Field {
   def id: CustomFieldId
 
+  /** Whether the user has explicitly marked this field as deleted or not. */
+  val liveExplicitly: Live
+
   override final def fold[A](s: StaticField => A, c: CustomField => A): A = c(this)
 }
 
@@ -168,14 +172,15 @@ object CustomField {
 
   // -------------------------------------------------------------------------------------------------------------------
   @Lenses
-  case class Text(id       : Text.Id,
-                  name     : String,
-                  key      : FieldRefKey,
-                  mandatory: Mandatory,
-                  reqTypes : ApplicableReqTypes,
-                  live     : Live) extends CustomField(CustomFieldType.Text) {
+  case class Text(id            : Text.Id,
+                  name          : String,
+                  key           : FieldRefKey,
+                  mandatory     : Mandatory,
+                  reqTypes      : ApplicableReqTypes,
+                  liveExplicitly: Live) extends CustomField(CustomFieldType.Text) {
     override def independentName = Some(name)
     override def keyO = Some(key)
+    override def live(cfg: ProjectConfig) = liveExplicitly
   }
   object Text {
     final case class Id(value: Int) extends CustomFieldId {
@@ -189,16 +194,22 @@ object CustomField {
 
   // -------------------------------------------------------------------------------------------------------------------
   @Lenses
-  case class Tag(id       : Tag.Id,
-                 tagId    : TagId,
-                 mandatory: Mandatory,
-                 reqTypes : ApplicableReqTypes,
-                 live     : Live) extends CustomField(CustomFieldType.Tag) {
+  case class Tag(id            : Tag.Id,
+                 tagId         : TagId,
+                 mandatory     : Mandatory,
+                 reqTypes      : ApplicableReqTypes,
+                 liveExplicitly: Live) extends CustomField(CustomFieldType.Tag) {
     override def independentName = None
     override def keyO = None
 
     def name(tags: TagTree): String =
       tags.need(tagId).tag.name
+
+    override def live(cfg: ProjectConfig) =
+      liveExplicitly match {
+        case Live => cfg.live(tagId)
+        case Dead => Dead
+      }
   }
   object Tag {
     final case class Id(value: Int) extends CustomFieldId  {
@@ -212,16 +223,22 @@ object CustomField {
 
   // -------------------------------------------------------------------------------------------------------------------
   @Lenses
-  case class Implication(id       : Implication.Id,
-                         reqTypeId: ReqTypeId,
-                         mandatory: Mandatory,
-                         reqTypes : ApplicableReqTypes,
-                         live     : Live) extends CustomField(CustomFieldType.Implication) {
+  case class Implication(id            : Implication.Id,
+                         reqTypeId     : ReqTypeId,
+                         mandatory     : Mandatory,
+                         reqTypes      : ApplicableReqTypes,
+                         liveExplicitly: Live) extends CustomField(CustomFieldType.Implication) {
     override def independentName = None
     override def keyO = None
 
     def name(customReqTypes: CustomReqTypeIMap): String =
       ReqType.name(customReqTypes)(reqTypeId)
+
+    override def live(cfg: ProjectConfig) =
+      liveExplicitly match {
+        case Live => cfg.live(reqTypeId)
+        case Dead => Dead
+      }
   }
   object Implication {
     final case class Id(value: Int) extends CustomFieldId {
@@ -253,10 +270,10 @@ object CustomField {
     case f: Implication => f.copy(mandatory = n)
   })
 
-  def live = Lens[CustomField, Live](_.live)(n => {
-    case f: Text        => f.copy(live = n)
-    case f: Tag         => f.copy(live = n)
-    case f: Implication => f.copy(live = n)
+  def liveExplicitly = Lens[CustomField, Live](_.liveExplicitly)(n => {
+    case f: Text        => f.copy(liveExplicitly = n)
+    case f: Tag         => f.copy(liveExplicitly = n)
+    case f: Implication => f.copy(liveExplicitly = n)
   })
 
   def name(customReqTypes: CustomReqTypeIMap, tags: TagTree): CustomField => String = {

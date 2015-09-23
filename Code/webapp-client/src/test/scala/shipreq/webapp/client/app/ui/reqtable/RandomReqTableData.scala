@@ -17,7 +17,7 @@ object RandomReqTableData {
   def visibleColumns(p: Project): Gen[NonEmptyVector[Column]] =
     for {
       long ← Gen.long
-      all  = Column allInProject p
+      all  = Column all p.config
       cols ← Gen shuffle all.whole
     } yield {
       var i = long

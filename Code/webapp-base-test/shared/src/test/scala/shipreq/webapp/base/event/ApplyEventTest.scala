@@ -48,12 +48,8 @@ object ApplyEventTestFns {
     var customReqTypes   = 0
     var tags             = 0
     var customFields     = 0
-    var activeFields     = Project.empty.config.fields.order.length
     var activeReqs       = 0
     var rcgs             = 0
-
-    def ifHard(d: DeletionAction, f: => Unit): Unit =
-      () //if (d == HardDel) f
 
     es foreach {
       case _: CreateGenericReq      => activeReqs += 1
@@ -61,20 +57,13 @@ object ApplyEventTestFns {
       case _: CreateCustomReqType   => customReqTypes += 1
       case _: CreateCustomTextField
          | _: CreateCustomTagField
-         | _: CreateCustomImpField  => activeFields += 1; customFields += 1
-      case _: AddStaticField        => activeFields += 1
+         | _: CreateCustomImpField  => customFields += 1
       case _: CreateTagGroup
          | _: CreateApplicableTag   => tags += 1
       case _: CreateReqCodeGroup    => rcgs += 1
 
-      case DeleteCustomIssueType(_, d)       => ifHard(d, customIssueTypes -= 1)
-      case DeleteCustomReqType  (_, d)       => ifHard(d, customReqTypes -= 1)
-      case DeleteTag            (_, d)       => ifHard(d, tags -= 1)
-      case DeleteStaticField    (_)          => activeFields -= 1
       case DeleteReq            (_, Delete ) => activeReqs -= 1
       case DeleteReq            (_, Restore) => activeReqs += 1
-      case DeleteCustomField    (_, Delete ) => activeFields -= 1
-      case DeleteCustomField    (_, Restore) => activeFields += 1
       case DeleteReqCodeGroup   (_)          => rcgs -= 1
 
       case ApplyTemplate(t) => t match {
@@ -83,7 +72,6 @@ object ApplyEventTestFns {
           customIssueTypes +=  3
           tags             += 16
           customFields     +=  5
-          activeFields     +=  5
       }
 
       case _: UpdateCustomIssueType
@@ -91,6 +79,12 @@ object ApplyEventTestFns {
          | _: UpdateCustomTextField
          | _: UpdateCustomTagField
          | _: UpdateCustomImpField
+         | _: DeleteCustomIssueType
+         | _: DeleteCustomReqType
+         | _: DeleteTag
+         | _: DeleteCustomField
+         | _: DeleteStaticField
+         | _: AddStaticField
          | _: RepositionField
          | _: PatchReqCodes
          | _: PatchReqTags
@@ -104,12 +98,12 @@ object ApplyEventTestFns {
          | _: UpdateTagGroup => ()
     }
 
-    assertEq("Σ CustomIssueTypes", p.config.customIssueTypes.size, customIssueTypes)
-    assertEq("Σ CustomReqTypes", p.config.customReqTypes.size, customReqTypes)
-    assertEq("Σ Tags", tags, p.config.tags.size)
-    assertEq("Σ CustomFields", customFields, p.config.fields.customFields.size)
-    assertEq("Σ ActiveFields", activeFields, p.config.fields.fields.count(_.live :: Live))
-    assertEq("Σ ActiveReqs", activeReqs, p.reqs.reqs.values.count(_.live(p.config.customReqTypes) :: Live))
+    val cfg = p.config
+    assertEq("Σ CustomIssueTypes", cfg.customIssueTypes.size, customIssueTypes)
+    assertEq("Σ CustomReqTypes", cfg.customReqTypes.size, customReqTypes)
+    assertEq("Σ Tags", tags, cfg.tags.size)
+    assertEq("Σ CustomFields", customFields, cfg.fields.customFields.size)
+    assertEq("Σ ActiveReqs", activeReqs, p.reqs.reqs.values.count(_.live(cfg.customReqTypes) :: Live))
     assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.activeGroups.size)
     validateIdCeilings(p)
   }

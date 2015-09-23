@@ -33,7 +33,7 @@ trait ApplyContentEvent extends ApplyConfigEvent {
         SE.getE(_.config.customFieldAttempt(id)) >>= ensureLiveTextField)
 
     def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
-      ensureLive(cf.live)(show(cf))
+      SE.get >>= (p => ensureLive(cf live p.config)(show(cf)))
 
     def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
       ensureLive(rt.live)(show(rt))

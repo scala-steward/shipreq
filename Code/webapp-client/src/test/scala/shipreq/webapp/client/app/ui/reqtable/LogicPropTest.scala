@@ -243,7 +243,7 @@ object LogicPropTest extends TestSuite {
     }
 
     def individualSorts: EvalL =
-      C.all(None).map(individualSort).reduce(_ ∧ _)
+      C.all(ProjectConfig.empty).map(individualSort).reduce(_ ∧ _)
 
     def sorting =
       (individualSorts ∧ universalSort) rename "Logic.sort"

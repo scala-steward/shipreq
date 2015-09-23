@@ -257,7 +257,7 @@ private[reqtable] object Logic {
     val tagColDist: TagColumnDistribution.TagIds =
       vs.filterDead match {
         case HideDead => p.config.liveTagColumnDistribution
-        case ShowDead => TagColumnDistribution(p.config, f => f.live match {
+        case ShowDead => TagColumnDistribution(p.config, f => f.live(p.config) match {
           case Live => true
           case Dead => vs isVisible Column.CustomField(f.id, Dead)
         })

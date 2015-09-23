@@ -6,17 +6,17 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import scalaz.syntax.equal._
 import shipreq.base.util.NonEmptySet
-import shipreq.webapp.base.data.FieldSet
+import shipreq.webapp.base.data.ProjectConfig
 import shipreq.webapp.client.app.ui.Checkbox
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
 
 object ViewSettingsEditor {
 
-  case class Props(columnName  : Column.NameResolver,
-                   customFields: FieldSet.CustomFields,
-                   vs          : ReusableVar[ViewSettings],
-                   filter      : ReusableVal[ReactElement])
+  case class Props(columnName   : Column.NameResolver,
+                   projectConfig: ProjectConfig,
+                   vs           : ReusableVar[ViewSettings],
+                   filter       : ReusableVal[ReactElement])
 
   implicit val propsReuse = Reusability.caseClass[Props]
 
@@ -49,7 +49,7 @@ object ViewSettingsEditor {
       val vs = p.vs.value
 
       def columns = {
-        val all = Column.all(p.customFields.values).toNES.whole filter Column.filterDead(vs.filterDead)
+        val all = Column.all(p.projectConfig).toNES.whole filter Column.filterDead(vs.filterDead)
         val p2 = ColumnsEditor.Props(
           vs.columns.toNES,
           toggleColumn,

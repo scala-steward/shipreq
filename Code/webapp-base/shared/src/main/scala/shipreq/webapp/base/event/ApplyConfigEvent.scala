@@ -117,13 +117,7 @@ trait ApplyConfigEvent extends AskTrust {
       updateIdCeiling(tit.id)
 
     def applyDelete(e: DeleteTag): SE[Unit] =
-      e.da match {
-        case Restore => restore(e.id)
-        case Delete  => delete(e.id)
-      }
-
-    def delete (id: TagId): SE[Unit] = setLife(id, Dead)
-    def restore(id: TagId): SE[Unit] = setLife(id, Live)
+      setLife(e.id, e.da.targetState)
 
     private def setLife(rootId: TagId, newLife: Live): SE[Unit] = {
       def modifySubject(id: TagId, tt: TagTree): TagTree =
@@ -271,8 +265,6 @@ trait ApplyConfigEvent extends AskTrust {
     private val customFieldsL = Project.fields ^|-> FieldSet.customFields
     private val fieldOrderL   = Project.fields ^|-> FieldSet.order
 
-    private val imap = IMapStoreL(customFieldsL)(CustomField.live)
-
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.customField)
 
     val validateName = validateWith(V.field.nameU)
@@ -287,14 +279,16 @@ trait ApplyConfigEvent extends AskTrust {
         _   ← updateIdCeiling(cf.id)
       } yield ()
 
-    def update[Data <: CustomField : ClassTag](id: CustomFieldId, mod: Data => SE[Data]): SE[Unit] =
-      lensMod(customFieldsL)(cfs =>
-        for {
-          d1 <- imapNeed(cfs)(id)
-          d2 <- narrowCC[CustomField, Data](d1)
-          _  <- ensureLive(d2.live)(show(id))
-          d3 <- mod(d2)
-        } yield cfs + d3)
+    def update[CF <: CustomField : ClassTag](id: CustomFieldId, mod: CF => SE[CF]): SE[Unit] =
+      for {
+        p  ← SE.get
+        m  = customFieldsL get p
+        f1 ← imapNeed(m)(id)
+        f2 ← narrowCC[CustomField, CF](f1)
+        _  ← ensureLive(f2 live p.config)(show(id))
+        f3 ← mod(f2)
+        _  ← customFieldsL set (m + f3)
+      } yield ()
 
     private val repositionField = repositionFn[FieldId]
 
@@ -317,16 +311,14 @@ trait ApplyConfigEvent extends AskTrust {
       ensureDeletableSF(e.f) >>
         lensMod(fieldOrderL)(removeFromOrder(e.f))
 
-//    def hardDeleteCustomField(id: CustomFieldId): AE[FieldSet] =
-//      App(fs =>
-//        for {
-//          m <- imap.remove(id)(fs.customFields)
-//          o <- removeFromOrder(id)(fs.order)
-//        } yield FieldSet(m, o)
-//      )
-
     def applyDeleteCF(e: DeleteCustomField): SE[Unit] =
-      imap.deleteOrRestore(e.id, e.da)
+      for {
+        p  ← SE.get
+        m  = customFieldsL get p
+        f1 ← imapNeed(m)(e.id)
+        f2 ← toggleLiveCheckBeforeAfter(f1, e.da.targetState)(_ live p.config, CustomField.liveExplicitly.set, show(f1))
+        _  ← customFieldsL set (m + f2)
+      } yield ()
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -376,6 +368,7 @@ trait ApplyConfigEvent extends AskTrust {
         t <- GD.need(^.TagId)
         m <- GD.need(^.Mandatory)
         r <- GD.need(^.ReqTypes)
+        _ <- ensureTagIsLive(t)
         _ <- create(CustomField.Tag(e.id, t, m, r, Live))
       } yield ()
     }
@@ -407,6 +400,7 @@ trait ApplyConfigEvent extends AskTrust {
         t <- GD.need(^.ReqTypeId)
         m <- GD.need(^.Mandatory)
         r <- GD.need(^.ReqTypes)
+        _ <- ensureReqTypeIsLive(t)
         _ <- create(CustomField.Implication(e.id, t, m, r, Live))
       } yield ()
     }

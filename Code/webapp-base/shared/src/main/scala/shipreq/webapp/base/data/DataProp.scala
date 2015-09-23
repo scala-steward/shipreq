@@ -305,16 +305,6 @@ object DataProp {
           p.tags.vstreamf(_.tag.keyO.toStream)
         ).map(_.value.toLowerCase))
 
-    def liveTagFieldRequiresLiveTag =
-      Prop.whitelist[P]("Live tag-field requires a live tag")(
-        _.tags.values.filter(_.tag.live :: Live).map(_.id).toSet,
-        p => fields.filteredFields({ case t: CustomField.Tag if t.live :: Live => t.tagId})(p.fields))
-
-    def liveImpFieldRequiresLiveReqType =
-      Prop.whitelist[P]("Live implication-field requires a live req-type")(
-        _.reqTypes.filter(_.live :: Live).map(_.reqTypeId).toSet,
-        p => fields.filteredFields({ case t: CustomField.Implication if t.live :: Live => t.reqTypeId})(p.fields))
-
     def validRefs = {
       type TR = (P, Refs)
 
@@ -340,7 +330,7 @@ object DataProp {
     }
 
     val all: Prop[ProjectConfig] = "ProjectConfig" rename_: (
-      constituents ∧ uniqueHashRefKeys ∧ validRefs ∧ liveTagFieldRequiresLiveTag ∧ liveImpFieldRequiresLiveReqType)
+      constituents ∧ uniqueHashRefKeys ∧ validRefs)
   }
 
   // ===================================================================================================================

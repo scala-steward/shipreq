@@ -7,7 +7,7 @@ import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import ApplyEventTestFns._
 import CustomReqTypeGD._
-import DeletionAction._
+import DataImplicits._
 import NoInitialEvents._
 
 trait CustomReqTypeEvents {
@@ -62,8 +62,20 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     }
 
     'delete {
-      'whenLiveImpField - assertFail("")(c1, CustomImpFieldEventTest.c1, sd1)
-      'whenDeadImpField - assertPass    (c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1)
+      def testImpFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
+        val p = _assertPass(es: _*)
+        val f = p.config.customField(CustomImpFieldEventTest.c1.id)
+        assertEq("live", imp, f live p.config)
+        assertEq("liveExplicitly", exp, f.liveExplicitly)
+      }
+      'whenLiveImpField {
+        testImpFieldLiveness(Dead, Live)(c1, CustomImpFieldEventTest.c1, sd1)
+        testImpFieldLiveness(Live, Live)(c1, CustomImpFieldEventTest.c1, sd1, r1)
+      }
+      'whenDeadImpField {
+        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1)
+        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1, r1)
+      }
     }
   }
 }

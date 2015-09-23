@@ -77,7 +77,7 @@ private[issues] object MandatoryFields {
 
     def renderRows(p: Project, s: S): ReactNode = {
       val fs = p.config.fields.fields
-      HideDead(fs)(_.live).toReactNodeArray(
+      HideDead(fs)(_ live p.config).toReactNodeArray(
         _.fold(renderStaticField, renderCustomField(_, s)))
     }
 

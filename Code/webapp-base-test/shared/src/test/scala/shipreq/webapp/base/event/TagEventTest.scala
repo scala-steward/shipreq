@@ -8,7 +8,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import ApplyEventTestFns._
-import DeletionAction._
+import DataImplicits._
 import NoInitialEvents._
 
 abstract class SharedTagEventTests extends TestSuite {
@@ -159,8 +159,20 @@ abstract class SharedTagEventTests extends TestSuite {
         test(r1,  "{AB,D}C")
       }
 
-      'whenLiveTagField - assertFail("")(c1, createTagField1, sd1)
-      'whenDeadTagField - assertPass    (c1, createTagField1, CustomTagFieldEventTest.sd1, sd1)
+      def testTagFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
+        val p = _assertPass(es: _*)
+        val f = p.config.customField(createTagField1.id)
+        assertEq("live", imp, f live p.config)
+        assertEq("liveExplicitly", exp, f.liveExplicitly)
+      }
+      'whenLiveTagField {
+        testTagFieldLiveness(Dead, Live)(c1, createTagField1, sd1)
+        testTagFieldLiveness(Live, Live)(c1, createTagField1, sd1, r1)
+      }
+      'whenDeadTagField {
+        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventTest.sd1, sd1)
+        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventTest.sd1, sd1, r1)
+      }
     }
   }
 }
