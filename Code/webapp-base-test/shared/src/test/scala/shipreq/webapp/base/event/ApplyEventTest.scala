@@ -48,11 +48,11 @@ object ApplyEventTestFns {
     var customReqTypes   = 0
     var tags             = 0
     var customFields     = 0
-    var activeReqs       = 0
     var rcgs             = 0
+    var reqs             = 0
 
     es foreach {
-      case _: CreateGenericReq      => activeReqs += 1
+      case _: CreateGenericReq      => reqs += 1
       case _: CreateCustomIssueType => customIssueTypes += 1
       case _: CreateCustomReqType   => customReqTypes += 1
       case _: CreateCustomTextField
@@ -61,10 +61,7 @@ object ApplyEventTestFns {
       case _: CreateTagGroup
          | _: CreateApplicableTag   => tags += 1
       case _: CreateReqCodeGroup    => rcgs += 1
-
-      case DeleteReq            (_, Delete ) => activeReqs -= 1
-      case DeleteReq            (_, Restore) => activeReqs += 1
-      case DeleteReqCodeGroup   (_)          => rcgs -= 1
+      case _: DeleteReqCodeGroup    => rcgs -= 1
 
       case ApplyTemplate(t) => t match {
         case ProjectTemplate.Default =>
@@ -86,6 +83,8 @@ object ApplyEventTestFns {
          | _: DeleteStaticField
          | _: AddStaticField
          | _: RepositionField
+         | _: DeleteReq
+         | _: DeleteReq
          | _: PatchReqCodes
          | _: PatchReqTags
          | _: PatchImplicationSrc
@@ -103,7 +102,7 @@ object ApplyEventTestFns {
     assertEq("Σ CustomReqTypes", cfg.customReqTypes.size, customReqTypes)
     assertEq("Σ Tags", tags, cfg.tags.size)
     assertEq("Σ CustomFields", customFields, cfg.fields.customFields.size)
-    assertEq("Σ ActiveReqs", activeReqs, p.reqs.reqs.values.count(_.live(cfg.customReqTypes) :: Live))
+    assertEq("Σ Reqs", reqs, p.reqs.reqs.size)
     assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.activeGroups.size)
     validateIdCeilings(p)
   }
@@ -130,22 +129,26 @@ trait NoInitialEvents {
 object NoInitialEvents extends NoInitialEvents
 
 class EventTester(implicit init: InitialEvents) {
-  var p = _assertPass()
+  var p = _assertPass()(init)
   var es = init.es.toVector
+
+  var makeName: (Int, Event) => String =
+    (i, e) => s"Step #$i (${e.getClass.getSimpleName})"
 
   var testNo = 0
 
   def justApply(es: Event*): Unit =
     es foreach (apply(_)(_ => ()))
 
-  def apply(e: Event)(assert: (=> String) => Unit): Unit = {
+  def apply(e: Event)(test: (=> String) => Unit): Unit = {
     testNo += 1
+    def name = makeName(testNo, e)
     ApplyEventTestFns.apply.apply1(e)(p) match {
       case \/-(p2)  => p = p2
-      case -\/(err) => fail(s"$e was expected to pass but failed with: $err")
+      case -\/(err) => fail(s"$name failed: $err")
     }
     es :+= e
-    assert(s"Step #$testNo")
+    test(name)
     assertQty(p, es: _*)
   }
 }

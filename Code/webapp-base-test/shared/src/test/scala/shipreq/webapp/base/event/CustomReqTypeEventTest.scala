@@ -2,6 +2,7 @@ package shipreq.webapp.base.event
 
 import utest._
 import shipreq.base.util.NonEmpty
+import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
@@ -75,6 +76,24 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
       'whenDeadImpField {
         testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1)
         testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTest.c1, CustomImpFieldEventTest.sd1, sd1, r1)
+      }
+
+      'deleteRestoreReqsAndReqCodes {
+        val t     = new EventTester
+        t.makeName = (i, e) => s"#$i: $e"
+        val reqId = GenericReqId(8)
+        val rc    = ReqCode.IdAndValue(9, "oh.good")
+        def test(grLiveImp: Live)(e: Event): Unit =
+          t(e) { name =>
+            val r = t.p.reqs.genericReqs.need(reqId)
+            assertEq(s"$name - req.live", r live t.p.config.customReqTypes, grLiveImp)
+            assertEq(s"$name - req.expLive", r.liveExplicitly, Live)
+            assertEq(s"$name - RC.active?", t.p.reqCodes(rc.value).active.isDefined, grLiveImp :: Live)
+          }
+        t.justApply(c1)
+        test(Live)(CreateGenericReq(reqId, c1.id, CreateGenericReqGD.ReqCodes(rc)))
+        test(Dead)(sd1)
+        test(Live)(r1)
       }
     }
   }

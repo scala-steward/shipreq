@@ -131,7 +131,9 @@ object GenericReqEventTest extends TestSuite {
     UpdateReqCodeGroup(id, nev(Code(code)))
   }
 
-  class ScriptTester extends EventTester {
+  class ScriptTester(namePrefix: String) extends EventTester {
+    makeName = (i, e) => s"Step $namePrefix.$i (${e.getClass.getSimpleName})"
+
     def fmtRCs(rc: ReqCodes): Set[String] =
       rc.trie.cataV(Set.empty[String]) { (q, p, d) =>
         var n = Set.empty[String]
@@ -149,11 +151,21 @@ object GenericReqEventTest extends TestSuite {
         q ++ n.map(p.reduceMapLeft1(_.value)(_ + "." + _) + ": " + _)
       }
 
-    def test(e: Event)(expected: String*): Unit =
-      this(e) { name =>
-        def norm(s: Set[String]) = s.toVector.sorted
-        assertEq(name, norm(fmtRCs(p.reqCodes)), norm(expected.toSet))
-      }
+    def test(e: Event) = new Ah(e)
+    class Ah(e: Event) {
+      def apply(expected: Set[String], more: String*): Unit = apply((expected ++ more).toSeq: _*)
+      def apply(expected: String*): Unit =
+        ScriptTester.this(e) { name =>
+          val act: Set[String] = fmtRCs(p.reqCodes)
+          val exp: Set[String] = expected.map(_.replaceFirst(" +:", ":")).toSet
+          if (act != exp) {
+            val same = act & exp
+//            def norm(s: Set[String]) = same.toVector.sorted ++ (s &~ same).toVector.sorted
+            def norm(s: Set[String]) = (s &~ same).toVector.sorted
+            assertEq(name, norm(act), norm(exp))
+          }
+        }
+    }
   }
 
   val reqA = GenericReqId(97)
@@ -325,7 +337,7 @@ object GenericReqEventTest extends TestSuite {
     // See Design/req_codes.ods
     'reqCodes {
       'script1 {
-        val tester = new ScriptTester
+        val tester = new ScriptTester("1")
         import tester.test
 
         // 1.1: Create RCG ref
@@ -358,7 +370,7 @@ object GenericReqEventTest extends TestSuite {
       }
 
       'script2 {
-        val tester = new ScriptTester
+        val tester = new ScriptTester("2")
         import tester.test
 
         // 2.1: Create RCᵣ ref
@@ -386,137 +398,190 @@ object GenericReqEventTest extends TestSuite {
         val expect27 = Seq("n.b: AD[#3Req(#a)]", "n.c: AD[#4Req(#a)]", "y.y.z: RR[#1Req(#a)]")
         test(patchA(remove = Set(1), add = Set(3 -> "n.b", 4 -> "n.c")))(expect27: _*)
 
-        // Create a CodeRef to #3
+        // 2.8: Create a CodeRef to #3
         test(createRefToCode3)(expect27: _*)
 
-        // 2.8: Rename n→n+1
+        // 2.9: Rename n→n+1
         test(patchA(restore = Set(1)))(
           "n.b: AD[#3Req(#a)]", "n.c: AD[#4Req(#a)]", "y.y.z: AD[#1Req(#a)]")
 
-        // 2.9: Rename n+1→1'
+        // 2.10: Rename n+1→1'
         test(patchA(remove = Set(1,3,4), add = mm.addvs("aaa", Set(1, 3))))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // 2.10: Rename 1→n+1
+        // 2.11: Rename 1→n+1
         test(patchA(add = Set(50 -> "n.d")))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.d: AD[#50Req(#a)]")
 
-        // 2.11: Rename n+1→n+1
+        // 2.12: Rename n+1→n+1
         test(patchA(remove = Set(50), add = Set(5 -> "n.ee", 6 -> "n.ef")))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.ee: AD[#5Req(#a)]", "n.ef: AD[#6Req(#a)]")
 
-        // 2.12: Rename n+1→n
+        // 2.13: Rename n+1→n
         test(patchA(remove = Set(1)))(
           "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.ee: AD[#5Req(#a)]", "n.ef: AD[#6Req(#a)]")
 
-        // 2.13: Rename n→1
+        // 2.14: Rename n→1
         test(patchA(remove = Set(5, 6), restore = Set(1)))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // 2.14: Rename 1→n+1
+        // 2.15: Rename 1→n+1
         test(patchA(add = Set(7 -> "n.f")))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.f: AD[#7Req(#a)]")
 
-        // 2.15: Rename n+1→0
+        // 2.16: Rename n+1→0
         test(patchA(remove = Set(1, 7)))(
           "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // 2.16: Restore RCᵣ + n
+        // 2.17: Restore RCᵣ + n
         test(patchA(restore = Set(1), add = Set(8 -> "n.h")))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.h: AD[#8Req(#a)]")
 
-        // 2.17: Delete RCᵣ + n
-        // n.h goes because it has no refs
-        test(delA)("aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+        // 2.18: Delete RCᵣ + n
+        val delA_state = Set("aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.h: RR[#8Req(#a)]")
+        test(delA)(delA_state)
 
-        // 2.18: Create RCG
-        test(createRCG(9, "aaa"))(
-          "aaa: AD[#9Grp]", "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+        // 2.19: Create RCG
+        test(createRCG(9, "aaa"))(delA_state + "aaa: AD[#9Grp]")
 
-        // 2.19: Rename RCG
-        test(updateRCGCode(9, "ggg"))(
-          "ggg: AD[#9Grp]", "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+        // 2.20: Rename RCG
+        test(updateRCGCode(9, "ggg"))(delA_state + "ggg: AD[#9Grp]")
 
-        // 2.20: Create RCᵣ #b
+        // 2.21: Create RCᵣ #b
         test(CreateGenericReq(98, mf, nev(ReqCodes(10 -> "aaa"))))(
-          "ggg: AD[#9Grp]", "aaa: AD[#10Req(#b)]", "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+          delA_state + "ggg: AD[#9Grp]" + "aaa: AD[#10Req(#b)]")
 
-        // 2.21: Rename RCᵣ #b
+        // 2.22: Rename RCᵣ #b
         test(patchB(remove = Set(10), add = Set(10 -> "bbb")))(
-          "ggg: AD[#9Grp]", "bbb: AD[#10Req(#b)]", "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+          delA_state + "ggg: AD[#9Grp]" + "bbb: AD[#10Req(#b)]")
 
-        // 2.22: Restore RCᵣ
+        // 2.23: Restore RCᵣ
         test(restoreA)(
-          "ggg: AD[#9Grp]", "bbb: AD[#10Req(#b)]", "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
+          "ggg: AD[#9Grp]", "bbb: AD[#10Req(#b)]", "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "n.h: AD[#8Req(#a)]")
       }
 
       // Tests req restoration with reqcode conflict resolution
       'script3a {
-        val tester = new ScriptTester
+        val tester = new ScriptTester("3a")
         import tester.test
 
-        // Create req a
+        // 3a.1: Create req a
         test(createGR(reqA, codes = Set(1 -> "one", 3 -> "three")))(
           "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
-        // Create refs to it
+        // 3a.2: Create refs to it
         val refs = CreateGenericReq(500, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
         test(refs)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
-        // Delete req a
+        // 3a.3: Delete req a
         test(delA)("one: RR[#1Req(#a)]", "three: RR[#3Req(#a)]")
 
-        // Create req b - usurp the reqcode [three]
+        // 3a.4: Create req b - usurp the reqcode [three]
         test(createGR(reqB, codes = Set(9 -> "three", 4 -> "four")))(
           "one: RR[#1Req(#a)]", "three: RR[#3Req(#a)]", "three: AD[#9Req(#b)]", "four: AD[#4Req(#b)]")
 
-        // Restore req a
+        // 3a.5: Restore req a
         test(restoreA)("one: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]", "three: AD[#9Req(#b)]", "four: AD[#4Req(#b)]")
 
-        // Delete req b
-        test(delB)("one: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]")
+        // 3a.6: Delete req b
+        val deadBs = Set("three: RR[#9Req(#b)]", "four: RR[#4Req(#b)]")
+        test(delB)(deadBs, "one: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]")
 
-        // Delete req a
-        test(delA)("one: RR[#1Req(#a)]", "three_2: RR[#3Req(#a)]")
+        // 3a.7: Delete req a
+        test(delA)(deadBs, "one: RR[#1Req(#a)]", "three_2: RR[#3Req(#a)]")
 
-        // Create group - usurp the reqcode [one]
-        test(createRCG(8, "one"))("one: RR[#1Req(#a)]", "three_2: RR[#3Req(#a)]", "one: AD[#8Grp]")
+        // 3a.8: Create group - usurp the reqcode [one]
+        test(createRCG(8, "one"))(deadBs, "one: RR[#1Req(#a)]", "three_2: RR[#3Req(#a)]", "one: AD[#8Grp]")
 
-        // Restore req a
-        test(restoreA)("one_2: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]", "one: AD[#8Grp]")
+        // 3a.9: Restore req a
+        test(restoreA)(deadBs, "one_2: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]", "one: AD[#8Grp]")
 
-        // Delete group
-        test(DeleteReqCodeGroup(8))("one_2: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]")
+        // 3a.10: Delete group
+        test(DeleteReqCodeGroup(8))(deadBs, "one_2: AD[#1Req(#a)]", "three_2: AD[#3Req(#a)]")
       }
 
       // Tests req restoration with reqcode conflict resolution (including a ref-to-req being migrated)
       'script3b {
-        val tester = new ScriptTester
+        val tester = new ScriptTester("3b")
         import tester.test
 
-        // Create req a
+        // 3b.1: Create req a
         test(createGR(reqA, codes = Set(1 -> "one", 3 -> "three")))(
           "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
-        // Create refs to it
+        // 3b.2: Create refs to it
         val refs = CreateGenericReq(500, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
         test(refs)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
-        // Merge refs
+        // 3b.3: Merge refs
         test(patchA(remove = Set(1, 3), add = mm.addvs("aaa", Set(1, 3))))(
           "aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // Delete req a
+        // 3b.4: Delete req a
         test(delA)("aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // Usurp reqcode [aaa]
+        // 3b.5: Usurp reqcode [aaa]
         test(createGR(reqB, codes = Set(7 -> "aaa")))(
           "aaa: AD[#7Req(#b)]", "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]")
 
-        // Restore req a
+        // 3b.6: Restore req a
         test(restoreA)("aaa: AD[#7Req(#b)]", "aaa_2: AD[#1Req(#a)]", "aaa_2: RR[#3Req(#a)]")
+      }
+
+      // This comes from [Design/req_codes.ods@logic #2]
+      // It tests reqcodes upon req deletion & restoration, including without CodeRefs
+      'script4 {
+        val tester = new ScriptTester("4")
+        import tester.test
+
+        // 4.1: Create req a
+        test(createGR(reqA, codes = Set(1 -> "one", 3 -> "three", 2 -> "other")))(
+          "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]", "other: AD[#2Req(#a)]")
+
+        // 4.2: Create refs to some of it
+        val refsA = CreateGenericReq(500, mf, nev(
+          Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
+        test(refsA)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]", "other: AD[#2Req(#a)]")
+
+        // 4.3: Merge refs
+        val origLiveA = Set("aaa: AD[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: AD[#2Req(#a)]")
+        test(patchA(remove = Set(1, 3), add = mm.addvs("aaa", Set(1, 3))))(origLiveA)
+
+        // 4.4: Delete req a
+        def deleteReqA() = test(delA)("aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: RR[#2Req(#a)]")
+        deleteReqA()
+
+        // 4.5: Restore req a
+        test(restoreA)(origLiveA)
+
+        // 4.6: Delete req a
+        deleteReqA()
+
+        // 4.7: Create b - Usurp reqcodes
+        test(createGR(reqB, codes = Set(4 -> "aaa", 5 -> "bbb", 6 -> "other")))(
+          "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: RR[#2Req(#a)]",
+          "aaa: AD[#4Req(#b)]", "bbb: AD[#5Req(#b)]", "other: AD[#6Req(#b)]")
+
+        // 4.8: Create refs to some of B
+        val refsB = CreateGenericReq(501, mf, nev(
+          Title(NonEmptyVector(GRT.Literal("Refs to #4 and #5: "), GRT.CodeRef(4), GRT.CodeRef(5)))))
+        test(refsB)(
+          "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: RR[#2Req(#a)]",
+          "aaa: AD[#4Req(#b)]", "bbb: AD[#5Req(#b)]", "other: AD[#6Req(#b)]")
+
+        // 4.9: Merge refs
+        // What event should represent {a,b} → {a} when there's a ref to b? What about when b.id < a.id?
+        // TODO This ↓ works but does MakeEvent generate such an event?
+        test(patchB(remove = Set(4, 5), add = mm.addvs("aaa", Set(4, 5))))(
+          "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: RR[#2Req(#a)]",
+          "aaa: AD[#4Req(#b)]", "aaa: RR[#5Req(#b)]", "other: AD[#6Req(#b)]")
+
+        // 4.10: Restore req a
+        test(restoreA)(
+          "aaa_2: AD[#1Req(#a)]", "aaa_2: RR[#3Req(#a)]", "other_2: AD[#2Req(#a)]",
+          "aaa  : AD[#4Req(#b)]", "aaa  : RR[#5Req(#b)]", "other  : AD[#6Req(#b)]")
       }
 
       'autoConflictResolution {

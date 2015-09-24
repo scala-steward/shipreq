@@ -136,6 +136,9 @@ private[event] object ApplyEventLib {
   def optionGet[A](oa: Option[A], err: => String): SE[A] =
     oa.fold[SE[A]](fail(err))(ret)
 
+  def optionGetR[A](p: Project, oa: Option[A], err: => String): Result[A] =
+    oa.fold[Result[A]](Failure(err))(Ok(p, _))
+
   def narrowCC[A, B <: A](a: A)(implicit cc: ClassTag[B], trust: Trust): SE[B] =
     if (trust :: Untrusted)
       cc.unapply(a) match {

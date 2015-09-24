@@ -34,7 +34,7 @@ trait ApplyContentEvent {
         SE.getE(_.config.customFieldAttempt(id)) >>= ensureLiveTextField)
 
     def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
-      SE.get >>= (p => ensureLive(cf live p.config)(show(cf)))
+      SE.feed(p => ensureLive(cf live p.config)(show(cf)))
 
     def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
       ensureLive(rt.live)(show(rt))
@@ -92,11 +92,11 @@ trait ApplyContentEvent {
 
     def deleteGenericReq(id: GenericReqId): SE[Unit] =
       imap.update(id, grLiveExplicitly.makeDead) >>
-      ReqCodeLogic.removeBelongingToReq(id)
+      ReqCodeLogic.makeInactiveAllBelongingToReq(id)
 
     def restoreGenericReq(id: GenericReqId): SE[Unit] =
       imap.update(id, grLiveExplicitly.makeLive) >>
-      ReqCodeLogic.restoreBelongingToReq(id)
+      ReqCodeLogic.restoreAllBelongingToReq(id)
 
     def validateTags(tagIds: => Iterable[ApplicableTagId]): SE[Unit] =
       whenUntrusted(
@@ -207,10 +207,9 @@ trait ApplyContentEvent {
       optionGet(d.active, s"${show(v)} should be in use.")
 
     def needValue(id: ReqCodeId): SE[Value] =
-      SE.get(_.reqCodes.reqCodesById) >>= (m =>
-        optionGet(m get id, s"${show(id)} not found."))
+      SE(p => optionGetR(p, p.reqCodes.reqCodesById get id, s"${show(id)} not found."))
 
-    def needValues[A](ids: Iterable[ReqCodeId], f: (ReqCodeId, Value) => A): SE[Vector[A]] = {
+    def needValues[A](ids: TraversableOnce[ReqCodeId], f: (ReqCodeId, Value) => A): SE[Vector[A]] = {
       SE { p =>
         val m = p.reqCodes.reqCodesById
         val found = Vector.newBuilder[A]
@@ -318,14 +317,21 @@ trait ApplyContentEvent {
      * @param makeInactive Determine whether a reference should be kept of the current id and target.
      *                     If `false`, the data is gone completely.
      */
-    def removeValues(vs: Iterable[Value], makeInactive: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
-      getTrie.foldMapBind(vs)(v => t =>
+    def _removeValues(t: Trie, vs: Iterable[Value], makeInactive: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Trie] =
+      foldMapBind(t, vs)(v => t =>
         for {
           d <- needData(t, v)
           a <- needActiveData(d, v)
           _ <- validateTarget(a)
         } yield remove(t, v, d, a, makeInactive)
-      ) >>= Project.reqCodeTrie.set
+      )
+
+    /**
+     * @param makeInactive Determine whether a reference should be kept of the current id and target.
+     *                     If `false`, the data is gone completely.
+     */
+    def removeValues(vs: Iterable[Value], makeInactive: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
+      lensMod(Project.reqCodeTrie)(_removeValues(_, vs, makeInactive, validateTarget))
 
     def removeValue(v: Value, makeInactive: ReqCodeId => Boolean, validateTarget: ActiveData => SE[Unit]): SE[Unit] =
       removeValues(set1(v), makeInactive, validateTarget)
@@ -337,12 +343,17 @@ trait ApplyContentEvent {
       needValues(ids, (_, v) => v) >>= (vs =>
         removeValues(vs, makeInactive, validateTarget))
 
-    def removeBelongingToReq(reqId: ReqId): SE[Unit] =
-      SE.get >>= { p =>
-        val refd = p.atomScan.codeRefs
-        val vs   = p.reqCodes.activeReqCodesByTarget(reqId)
-        removeValues(vs, refd.contains, ensureActiveDataTargetIs(reqId))
-      }
+    def makeInactiveAllBelongingToReq(reqId: ReqId): SE[Unit] =
+      makeInactiveAllBelongingToReqs(set1(reqId))
+
+    def makeInactiveAllBelongingToReqs(reqIds: Set[ReqId]): SE[Unit] =
+      for {
+        p  ← SE.get
+        m  = p.reqCodes.activeReqCodesByTarget
+        t1 = p.reqCodes.trie
+        t2 ← foldMapBind(t1, reqIds)(reqId => _removeValues(_, m(reqId), _ => true, ensureActiveDataTargetIs(reqId)))
+        _  ← Project.reqCodeTrie set t2
+      } yield ()
 
     /**
      * Restore a requirement's inactive ReqCode back to active status.
@@ -406,26 +417,39 @@ trait ApplyContentEvent {
      *
      * If more than one id refers to the same ReqCode, then only the id with the smallest value is activated.
      */
-    def restoreReqCodesById(reqId: ReqId, ids: Iterable[ReqCodeId]): SE[Unit] = {
+    def restoreReqCodesById(reqId: ReqId, ids: Iterable[ReqCodeId]): SE[Unit] =
+      lensMod(Project.reqCodeTrie)(_restoreReqCodesById(_, reqId, ids))
+
+    def _restoreReqCodesById(t0: Trie, reqId: ReqId, ids: Iterable[ReqCodeId]): SE[Trie] = {
       // Sort IDs here because only the first ID/reqcode is restored and we want determinism
-      val idsSorted = ids.toVector.sorted
+      var idsSorted = ids.toVector
+      if (idsSorted.length > 1)
+        idsSorted = idsSorted.sorted
 
       needValues(idsSorted, IdAndValue) >>= { ivs =>
         var valuesSeen = Set.empty[Value]
-        ivs.foldLeft(getTrie)((seTrie, iv) =>
+        foldMapBind(t0, ivs)(iv => t =>
           if (valuesSeen contains iv.value)
-            seTrie
+            SE ret t
           else {
             valuesSeen += iv.value
-            seTrie >>= (restoreReqCode(_, reqId, iv.id, iv.value))
+            restoreReqCode(t, reqId, iv.id, iv.value)
           }
-        ) >>= Project.reqCodeTrie.set
+        )
       }
     }
 
-    def restoreBelongingToReq(reqId: ReqId): SE[Unit] =
-      SE.get(_.reqCodes inactiveIdsByReqId reqId) >>=
-        (restoreReqCodesById(reqId, _))
+    def restoreAllBelongingToReq(reqId: ReqId): SE[Unit] =
+      restoreAllBelongingToReqs(set1(reqId))
+
+    def restoreAllBelongingToReqs(reqIds: Set[ReqId]): SE[Unit] =
+      for {
+        p  ← SE.get
+        m  = p.reqCodes.inactiveIdsByReqId
+        t1 = p.reqCodes.trie
+        t2 ← foldMapBind(t1, reqIds)(reqId => _restoreReqCodesById(_, reqId, m(reqId)))
+        _  ← Project.reqCodeTrie set t2
+      } yield ()
 
     def addCodesToTarget(target: Target, mm: Multimap[ReqCode.Value, Set, ReqCodeId]): SE[Unit] =
       if (mm.isEmpty)

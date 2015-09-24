@@ -78,8 +78,21 @@ trait ApplyConfigEvent {
     def applyUpdate(e: UpdateCustomReqType): SE[Unit] =
       imap.updateLive(e.id, updateValues(e.vs))
 
-    def applyDelete(e: DeleteCustomReqType): SE[Unit] =
-      imap.deleteOrRestore(e.id, e.da)
+    def applyDelete(e: DeleteCustomReqType): SE[Unit] = {
+      val cascade: Set[ReqId] => SE[Unit] =
+        e.da match {
+          case Delete  => ReqCodeLogic.makeInactiveAllBelongingToReqs
+          case Restore => ReqCodeLogic.restoreAllBelongingToReqs
+        }
+      imap.deleteOrRestore(e.id, e.da) >> reqsToCascadeReqTypeLiveChange(e.id) >>= cascade
+    }
+
+    private def reqsToCascadeReqTypeLiveChange(id: CustomReqTypeId): SE[Set[ReqId]] =
+      SE.get(_.reqs.genericReqs
+        .values.toStream
+        .filter(r => (r.reqTypeId ≟ id) && (r.liveExplicitly :: Live))
+        .map(_.id: ReqId)
+        .toSet)
   }
 
   // ===================================================================================================================

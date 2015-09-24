@@ -159,7 +159,7 @@ case class DeleteReq(id: ReqId, da: DeletionAction) extends ActiveEvent
  * When a reqcode is renamed it appears both in `remove` and `add`.
  * Eg. `remove=3, add=(new.name: 3)`.
  *
- * @param remove Code to remove. Any referenced in text will be soft-deleted.
+ * @param remove Codes to remove. Those referenced in text will be soft-deleted.
  * @param restore Soft-deleted codes to restore back to active status.
  * @param add Codes to add. A code can have multiple IDs (see [[ApplyEvent.ReqCodeLogic]] for details) in which case,
  *            only one becomes active and the rest go into `reqInactive`.
