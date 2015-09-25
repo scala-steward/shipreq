@@ -16,19 +16,13 @@ import shipreq.webapp.client.app.ui.Style.{widgets => *}
 import shipreq.webapp.client.lib.{Contextualise, Plain}
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.util._
+import ProjectWidgets.{deadValidity, invalidWhenDead}
 
 object ProjectWidgets {
   def apply(project: Project, plainText: PlainText.ForProject) =
     new ProjectWidgets(project, plainText)
-}
 
-final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
-
-  private implicit def surroundDisplay(s: G.Surrounds) = s.display
-
-  @inline private def memo[A: UnivEq](f: A => ReactElement) = Memo(f)
-
-  private val deadValidity: Validity => Live => (Live, Validity) =
+  val deadValidity: Validity => Live => (Live, Validity) =
     Validity.memo(validityWhenDead =>
       Live.memo {
         case Live => (Live, Valid)
@@ -36,7 +30,14 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       }
     )
 
-  private val invalidWhenDead = deadValidity(Invalid)
+  val invalidWhenDead = deadValidity(Invalid)
+}
+
+final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
+
+  private implicit def surroundDisplay(s: G.Surrounds) = s.display
+
+  @inline private def memo[A: UnivEq](f: A => ReactElement) = Memo(f)
 
   def issueO(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText): ReactElement =
     NonEmptyVector.maybe(desc, issue(id))(issue1(id, _))
