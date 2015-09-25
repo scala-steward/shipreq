@@ -279,10 +279,10 @@ abstract class MacroUtils {
             (Left(s), tree)
 
           case x =>
-            fail(s"Expecting a case like: {case Type => ?}\nGot: ${showRaw(x)}")
+            fail(s"Expecting a case like: {case Type => ?}\n    Got: ${showRaw(x)}")
         }
       case _ =>
-        fail(s"Expecting a function like: {case Type => ?}\nGot: ${showRaw(e)}")
+        fail(s"Expecting a function like: {case Type => ?}\n    Got: ${showRaw(e)}")
     }
 
   /**
