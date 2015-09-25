@@ -37,7 +37,7 @@ final class OrderedSubsetEditor[A: Equal] {
 
     def toggle(a: A): State =
       State(all.map {
-        case (a2, o) if a ≟ a2 => (a2, On negate o)
+        case (a2, o) if a ≟ a2 => (a2, !o)
         case t                 => t
       })
 

@@ -1,59 +1,72 @@
 package shipreq.base.util
 
 import scalaz.Isomorphism.<=>
+import IsoBool._
 
 /**
  * Boolean isomorphism.
+ *
+ * Mix into the base type and override [[this.companion]] there.
  */
-trait IsoBool[B] extends (Boolean <=> B) {
+trait IsoBool[B <: IsoBool[B]] extends (Boolean <=> B) {
   this: B =>
 
-  protected def neg: B
+  def companion: Object[B]
+
+  final def unary_! : B =
+    if (this == companion.positive)
+      companion.negative
+    else
+      companion.positive
 
   final val :: : B => Boolean = _ == this
-  final val <~ : Boolean => B = if (_) this else neg
+  final val <~ : Boolean => B = if (_) this else !this
 
   final override def from = ::
   final override def to   = <~
 
-  final def when[A](i: IsoBool[A]): A => B =
-    a => this <~ (a :: i)
+  final def when[A](b: Boolean <=> A): A => B =
+    a => this <~ (b from a)
 
-  final def <=>[A](i: IsoBool[A]): B <=> A =
+  final def <=>[A <: IsoBool[A]](A: IsoBool[A]): B <=> A =
     new (B <=> A) {
-      override val from: A => B = IsoBool.this when i
-      override val to  : B => A = i when IsoBool.this
+      override val from: A => B = IsoBool.this when A
+      override val to  : B => A = A when IsoBool.this
     }
-
-  final def negate(b: B): B =
-    if (b :: this) neg else this
-
-  final def negate[N](n: N, b: B)(implicit N: Numeric[N]): N =
-    if (b :: this) N.negate(n) else n
-
-  final def signum(b: B): Int =
-    if (b :: this) 1 else -1
 }
 
 object IsoBool {
 
-  trait ObjOnly[B] {
+  /**
+   * Mix into the companion object for the type.
+   */
+  trait Object[B <: IsoBool[B]] {
     implicit final def equality = UnivEq.force[B]
-    protected def pos: B with IsoBool[B]
-    protected def neg: B
+
+    def positive: B with IsoBool[B]
+    def negative: B with IsoBool[B]
 
     final def memo[A](f: B => A): B => A = {
-      val p = f(pos)
-      val n = f(neg)
-      b => if (b :: pos) p else n
+      val p = f(positive)
+      val n = f(negative)
+      b => if (b :: positive) p else n
     }
   }
 
   /**
-   * Boolean isomorphism: case + object.
+   * Adds boolean ops with `companion.positive` being the equivalent of `true`.
    */
-  trait Obj[B] extends IsoBool[B] with ObjOnly[B] {
+  trait WithBoolOps[B <: IsoBool[B]] extends IsoBool[B] {
     this: B =>
-    final override protected def pos = this
+
+    final def &&(that: => B): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) && (that :: pos))
+    }
+
+    final def ||(that: => B): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) || (that :: pos))
+    }
   }
 }

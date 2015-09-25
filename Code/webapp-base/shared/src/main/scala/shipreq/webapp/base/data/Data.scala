@@ -4,24 +4,22 @@ import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.IsoBool
 
 
-sealed abstract class Live {
-  final def &&(that: => Live): Live =
-    Live <~ ((this :: Live) && (that :: Live))
-
-  final def ||(that: => Live): Live =
-    Live <~ ((this :: Live) || (that :: Live))
+sealed abstract class Live extends IsoBool.WithBoolOps[Live] {
+  override final def companion = Live
 }
-case object Live extends Live with IsoBool.Obj[Live] {
-  override protected def neg = Dead
+case object Live extends Live with IsoBool.Object[Live] {
+  override def positive = this
+  override def negative = Dead
 }
-case object Dead extends Live with IsoBool[Live] {
-  override protected def neg = Live
-}
+case object Dead extends Live
 
 
-sealed trait ImplicationRequired
-case object ImplicationRequired extends ImplicationRequired with IsoBool.Obj[ImplicationRequired] {
-  override protected def neg = Not
+sealed trait ImplicationRequired extends IsoBool[ImplicationRequired] {
+  override final def companion = ImplicationRequired
+}
+case object ImplicationRequired extends ImplicationRequired with IsoBool.Object[ImplicationRequired] {
+  override def positive = this
+  override def negative = Not
   case object Not extends ImplicationRequired
 }
 

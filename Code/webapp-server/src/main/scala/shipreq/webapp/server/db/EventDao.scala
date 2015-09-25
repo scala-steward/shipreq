@@ -1,6 +1,7 @@
 package shipreq.webapp.server.db
 
 import scala.annotation.tailrec
+import scalaz.Isomorphism.<=>
 import shipreq.base.util._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.hash._
@@ -74,10 +75,10 @@ object EventDbCodecs {
       pickleNES(ev, set)
   }
 
-  private def boolCase[T](iso: IsoBool[T]): ReadWriter[T] =
+  private def boolCase[T](iso: Boolean <=> T): ReadWriter[T] =
     ReadWriter(
-      t => if (t :: iso) jsNum1 else jsNum0,
-      { case Js.Num(n) => iso <~ (n.toInt != 0) })
+      t => if (iso from t) jsNum1 else jsNum0,
+      { case Js.Num(n) => iso to (n.toInt != 0) })
 
   def addOptionWithNoneAs0[A](rw: ReadWriter[A]): ReadWriter[Option[A]] =
     ReadWriter({

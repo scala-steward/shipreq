@@ -2,20 +2,17 @@ package shipreq.base.util
 
 import scalaz.\/
 
-sealed trait Validity
+sealed trait Validity extends IsoBool[Validity] {
+  override final def companion = Validity
+}
 
-object Validity extends IsoBool.ObjOnly[Validity] {
-  override protected def pos = Valid
-  override protected def neg = Invalid
+object Validity extends IsoBool.Object[Validity] {
+  override def positive = Valid
+  override def negative = Invalid
 
   def apply(d: Any \/ Any): Validity =
     Valid <~ d.isRight
 }
 
-case object Valid extends Validity with IsoBool[Validity] {
-  override protected def neg = Invalid
-}
-
-case object Invalid extends Validity with IsoBool[Validity] {
-  override protected def neg = Valid
-}
+case object Valid extends Validity
+case object Invalid extends Validity

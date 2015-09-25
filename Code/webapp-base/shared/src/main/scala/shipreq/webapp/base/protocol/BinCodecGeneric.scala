@@ -3,6 +3,7 @@ package shipreq.webapp.base.protocol
 import boopickle._
 import japgolly.nyaya.util.{Multimap, MultiValues}
 import scalaz.{\/, -\/, \/-, \&/}
+import scalaz.Isomorphism.<=>
 import shipreq.base.util._
 import BoopickleMacros._
 
@@ -37,7 +38,7 @@ object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
   def pickleTaggedI[T <: TaggedTypes.TaggedInt]   (apply: Int    => T) = xmap(apply)(_.value)
   def pickleTaggedS[T <: TaggedTypes.TaggedString](apply: String => T) = xmap(apply)(_.value)
 
-  def pickleBool[T](iso: IsoBool[T]): Pickler[T] =
+  def pickleBool[T](iso: Boolean <=> T): Pickler[T] =
     xmap(iso.to)(iso.from)
 
   implicit def pickleMap[K: Pickler, V: Pickler]: Pickler[Map[K, V]] =

@@ -5,7 +5,14 @@ import shipreq.base.util.IsoBool
 /**
  * Specifies the level of trust associated with data.
  */
-sealed trait Trust
+sealed trait Trust extends IsoBool[Trust] {
+  override final def companion = Trust
+}
+
+object Trust extends IsoBool.Object[Trust] {
+  override def positive = Trusted
+  override def negative = Untrusted
+}
 
 /**
  * The data has already been verified by the server as being acceptable/valid.
@@ -13,9 +20,7 @@ sealed trait Trust
  *
  * Perform no validation. Speed is king.
  */
-case object Trusted extends Trust with IsoBool[Trust] {
-  override protected def neg = Untrusted
-}
+case object Trusted extends Trust
 
 /**
  * The data has not been verified and could be invalid/malicious.
@@ -23,6 +28,4 @@ case object Trusted extends Trust with IsoBool[Trust] {
  *
  * Validate everything. Data integrity is king.
  */
-case object Untrusted extends Trust with IsoBool[Trust] {
-  override protected def neg = Trusted
-}
+case object Untrusted extends Trust

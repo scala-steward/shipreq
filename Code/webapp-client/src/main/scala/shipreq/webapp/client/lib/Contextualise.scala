@@ -12,12 +12,13 @@ import shipreq.base.util.IsoBool
  * - Requirement pubids - `MF-17` vs `[MF-17]`.
  * - Tags - `defer` vs `#defer`.
  */
-sealed trait Contextualise
-
-case object Contextualise extends Contextualise with IsoBool.Obj[Contextualise] {
-  override protected def neg = Plain
+sealed trait Contextualise extends IsoBool[Contextualise] {
+  override final def companion = Contextualise
 }
 
-case object Plain extends Contextualise with IsoBool[Contextualise] {
-  override protected def neg = Contextualise
+case object Contextualise extends Contextualise with IsoBool.Object[Contextualise] {
+  override def positive = Contextualise
+  override def negative = Plain
 }
+
+case object Plain extends Contextualise

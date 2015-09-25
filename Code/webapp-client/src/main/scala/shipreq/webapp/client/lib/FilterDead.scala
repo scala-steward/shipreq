@@ -6,7 +6,9 @@ import scala.collection.GenTraversableLike
 import shipreq.base.util.IsoBool
 import shipreq.webapp.base.data.{LDStats, LDStat, Live}
 
-sealed trait FilterDead {
+sealed trait FilterDead extends IsoBool[FilterDead] {
+  override final def companion = FilterDead
+
   val filter: Option[Live => Boolean]
 
   final def apply[A, C[x] <: GenTraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
@@ -26,20 +28,18 @@ sealed trait FilterDead {
   }
 }
 
-object FilterDead extends IsoBool.ObjOnly[FilterDead] {
-  override protected def pos = HideDead
-  override protected def neg = ShowDead
+object FilterDead extends IsoBool.Object[FilterDead] {
+  override def positive = HideDead
+  override def negative = ShowDead
   implicit val reusability = Reusability.byEqual[FilterDead]
 }
 
-case object HideDead extends FilterDead with IsoBool[FilterDead] {
-  override protected def neg = ShowDead
+case object HideDead extends FilterDead {
   override val filter: Option[Live => Boolean] = Some(Live.equality.equal(Live, _))
   override def ldStatAccessor[A] = _.live
 }
 
-case object ShowDead extends FilterDead with IsoBool[FilterDead] {
-  override protected def neg = HideDead
+case object ShowDead extends FilterDead {
   override val filter: Option[Live => Boolean] = None
   override def ldStatAccessor[A] = _.all
 }

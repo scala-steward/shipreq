@@ -50,8 +50,8 @@ private[event] object ApplyEventLib {
         case Dead => ensureDead(actual)(name)
       })
 
-  @inline def ensureLiveIsNot(actual: Live)(expect: Live, name: => String)(implicit trust: Trust): SE[Unit] =
-    ensureLiveIs(actual)(Live negate expect, name)
+  @inline def ensureLiveIsNot(actual: Live)(expectNot: Live, name: => String)(implicit trust: Trust): SE[Unit] =
+    ensureLiveIs(actual)(!expectNot, name)
 
   def ensureLive(l: Live)(name: => String)(implicit trust: Trust): SE[Unit] =
     whenUntrusted(test(l :: Live, s"$name is dead."))

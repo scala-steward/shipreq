@@ -9,13 +9,13 @@ import shipreq.webapp.client.util.On
 
 object Checkbox {
 
-  def apply[A](bool: IsoBool[A])(set: A => Callback, decor: A => ReactTag => ReactElement) = {
+  def apply[A <: IsoBool[A]](bool: IsoBool[A])(set: A => Callback, decor: A => ReactTag => ReactElement) = {
     implicit val reusability = Reusability.by(bool.from)
     val on = On when bool
 
     ReactComponentB[A]("Checkbox")
       .render_P { a =>
-        val t = UI.checkbox(on(a))(^.onChange --> set(bool negate a))
+        val t = UI.checkbox(on(a))(^.onChange --> set(!a))
         decor(a)(t)
       }
       .configure(shouldComponentUpdate)
