@@ -4,7 +4,7 @@ import java.net.URL
 import scala.collection.GenTraversable
 import scala.collection.immutable.TreeMap
 import scala.util.Try
-import scalaz.{Equal, Memo}
+import scalaz.Equal
 import scalaz.syntax.equal._
 import ScalaExt.StringBuilderExt
 
@@ -31,8 +31,8 @@ object Util {
   def simpleName(c: Class[_]): String =
     simpleClassNameRegex.replaceFirstIn(c.getName, "")
 
-  val simpleNameMemo =
-    Memo.immutableHashMapMemo[Class[_], String](simpleName _)
+  val simpleNameMemo: Class[_] => String =
+    Memo(simpleName)
 
   def existentLocalResources(paths: List[String]): Stream[URL] =
     paths.toStream.map(f => Try(getClass.getResource(f)).getOrElse(null)).filter(_ ne null)

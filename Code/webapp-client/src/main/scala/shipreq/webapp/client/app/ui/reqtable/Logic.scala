@@ -17,7 +17,6 @@ import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.base.util.{TransitiveClosure, ReqCodeTreeItem}
 import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
-import UnivEq.{mutableHashMapMemo => memo}
 import Util.{maybeAdd, maybeUse}
 import Debug._
 
@@ -46,7 +45,7 @@ private[reqtable] object Logic {
     fd match {
       case HideDead =>
         val deadTags = p.config.deadATagIds
-        memo { id =>
+        Memo { id =>
           val inText = tagsInText(id).live
           val liveTags = (reqTags(id) | inText) &~ deadTags // Dead tags on live reqs are ignored unless in text
           ReqTags(liveTags, deadTagsInLiveText = inText & deadTags)
@@ -55,7 +54,7 @@ private[reqtable] object Logic {
       case ShowDead =>
         // [deadTagsInLiveText = Set.empty] is technically wrong but when (FilterDead == ShowDead) putting everything
         // in `other` is more efficient and achieves the same result (confirmed in LogicTest.filterDead.tagComprehensive)
-        memo(id => ReqTags(reqTags(id) | tagsInText(id).all, deadTagsInLiveText = Set.empty))
+        Memo(id => ReqTags(reqTags(id) | tagsInText(id).all, deadTagsInLiveText = Set.empty))
     }
   }
 

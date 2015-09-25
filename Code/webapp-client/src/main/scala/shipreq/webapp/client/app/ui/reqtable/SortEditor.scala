@@ -3,7 +3,7 @@ package shipreq.webapp.client.app.ui.reqtable
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.Memo
 import shipreq.webapp.client.app.ui.DragToReorder
 import shipreq.webapp.client.app.ui.Style.reqtable.{sortEditor => *}
 import shipreq.webapp.client.lib.ui.Assets
@@ -27,7 +27,7 @@ object SortEditor {
 
   implicit val reusability = Reusability.caseClass[Props]
 
-  val renderSortMethod = UnivEq.mutableHashMapMemo[SortMethod, ReactElement] { m =>
+  val renderSortMethod = Memo[SortMethod, ReactElement] { m =>
     import Assets._
     def pair(a: ReactTag, b: ReactTag) = <.div(a(*.sortMethodHalfTop), b(*.sortMethodHalfBottom))
     val tag = m match {

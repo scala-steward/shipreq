@@ -1,0 +1,11 @@
+package shipreq.base.util
+
+trait PlatformShared {
+
+  def memo[A: UnivEq, B](f: A => B): A => B
+
+  final type LooseMemo[A, B] = (A, => B) => B
+  def looseMemo[A: UnivEq, B](): LooseMemo[A, B]
+
+  def memoInt[A](f: Int => A): Int => A
+}

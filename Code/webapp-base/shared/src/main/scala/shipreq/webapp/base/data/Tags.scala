@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes.TaggedInt
-import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 
 sealed trait TagId extends TaggedInt
 final case class TagGroupId     (value: Int) extends TagId with TaggedInt
@@ -236,7 +235,7 @@ object FlatTag {
   implicit def equality: UnivEq[FlatTag] = UnivEq.derive
 
   val indentation =
-    memo[Int, String]("\u00A0\u00A0" * _)
+    Memo.int("\u00A0\u00A0" * _)
 
   def flatten(tt: TagTree) =
     flatRows(TagTree.topLevelIds(tt), tt.get(_).get) _

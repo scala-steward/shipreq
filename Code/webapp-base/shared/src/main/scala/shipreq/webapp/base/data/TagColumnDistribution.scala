@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
+import shipreq.base.util.Memo
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.UnivEq.{immutableHashMapMemo => memo}
 import shipreq.webapp.base.data.DataImplicits._
 
 abstract class TagColumnDistribution[A] {
@@ -32,7 +32,7 @@ object TagColumnDistribution {
       allStream.toSet
 
     override val inColumn =
-      memo { (fid: CustomField.Tag.Id) =>
+      Memo { (fid: CustomField.Tag.Id) =>
         val field = p.customField(fid)
         val tag = tagTree.need(field.tagId)
         tag.transitiveChildren.filterT[ApplicableTagId].toSet

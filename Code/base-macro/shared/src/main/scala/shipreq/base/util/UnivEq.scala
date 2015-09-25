@@ -46,6 +46,8 @@ sealed abstract class UnivEqImplicits {
   @inline implicit def univEqTuple7[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq]: UnivEq[(A,B,C,D,E,F,G)] = univEqForce
   @inline implicit def univEqTuple8[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H)] = univEqForce
   @inline implicit def univEqTuple9[A:UnivEq, B:UnivEq, C:UnivEq, D:UnivEq, E:UnivEq, F:UnivEq, G:UnivEq, H:UnivEq, I:UnivEq]: UnivEq[(A,B,C,D,E,F,G,H,I)] = univEqForce
+
+  @inline implicit def univEqJavaClass = univEqForce[Class[_]]
 }
 
 object UnivEq extends UnivEqImplicits {
@@ -93,9 +95,6 @@ object UnivEq extends UnivEqImplicits {
   @inline def emptySet        [A: UnivEq]            = Set.empty[A]
   @inline def emptySetMultimap[K: UnivEq, V: UnivEq] = Multimap.empty[K, Set, V]
   @inline def emptyMultimap   [K: UnivEq, L[_] : MultiValues, V](implicit ev: L[V] =:!= Set[V]) = Multimap.empty[K, L, V]
-
-  @inline def mutableHashMapMemo[K: UnivEq, V](f: K => V)   = Memo.mutableHashMapMemo[K, V](f)
-  @inline def immutableHashMapMemo[K: UnivEq, V](f: K => V) = Memo.immutableHashMapMemo[K, V](f)
 
   // ===================================================================================================================
 

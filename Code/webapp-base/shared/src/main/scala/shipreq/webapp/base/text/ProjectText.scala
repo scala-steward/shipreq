@@ -1,7 +1,7 @@
 package shipreq.webapp.base.text
 
 import scalaz.syntax.equal._
-import shipreq.base.util.{NonEmptySet, UnivEq, Util}
+import shipreq.base.util.{Memo, NonEmptySet, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.Must._
 
@@ -61,37 +61,26 @@ object ProjectText {
 }
 
 abstract class ProjectText[Out](project: Project) {
-  import UnivEq.{mutableHashMapMemo => memo}
 
   val format: Text.AnyOptional => Out
 
   val format1: Text.AnyNonEmpty => Out =
     nev => format(nev.whole)
 
-  private val _reqTitle: Req => Out = {
-    case r: GenericReq => format(r.title)
-  }
+  val reqTitle: Req => Out =
+    Memo.by[Req, ReqId, Out](_.id) {
+      case r: GenericReq => format(r.title)
+    }
 
-  val reqTitle: Req => Out = {
-    val memo = new scala.collection.mutable.HashMap[ReqId, Out]
-    req => memo.getOrElseUpdate(req.id, _reqTitle(req))
-  }
-
-  private val reqCodeGroupTitleMemo =
-    new scala.collection.mutable.HashMap[ReqCodeId, Out]
-
-  def reqCodeGroupTitle(g: ReqCodeGroup.AndId): Out =
-    reqCodeGroupTitleMemo.getOrElseUpdate(g.id, format(g.group.title))
+  val reqCodeGroupTitle: ReqCodeGroup.AndId => Out =
+    Memo.by((_: ReqCodeGroup.AndId).id)(g => format(g.group.title))
 
   def reqTitleById(id: ReqId): Out =
     reqTitle(project.reqs.req(id))
 
-  private val _customTextField: CustomField.Text.Id => ReqId => Option[Out] =
-    fid => {
+  val customTextField: CustomField.Text.Id => ReqId => Option[Out] =
+    Memo.curry2 { fid =>
       val m = project.reqText.getOrElse(fid, Map.empty)
       m.get(_) map format1
     }
-
-  val customTextField: CustomField.Text.Id => ReqId => Option[Out] =
-    memo { fid => val g = _customTextField(fid); memo(g) }
 }

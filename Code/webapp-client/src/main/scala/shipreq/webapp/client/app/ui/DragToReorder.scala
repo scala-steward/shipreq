@@ -4,7 +4,7 @@ import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.extra._
 import scalaz.syntax.equal._
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{Memo, UnivEq}
 import shipreq.webapp.client.util.DND
 import shipreq.webapp.client.util.DomPatches._
 import shipreq.webapp.client.util.DomUtil._
@@ -161,7 +161,7 @@ final class DragToReorder[A: Reusability] {
     }
 
     val childTagMod: Int => TagMod =
-      UnivEq.mutableHashMapMemo { i =>
+      Memo.int { i =>
         def dragStart: EH =
           e => for {
             _  ← unless(e.defaultPrevented)

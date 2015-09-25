@@ -26,8 +26,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   private implicit def surroundDisplay(s: G.Surrounds) = s.display
 
-  private def memo[A: UnivEq](f: A => ReactElement): A => ReactElement =
-    UnivEq mutableHashMapMemo f
+  @inline private def memo[A: UnivEq](f: A => ReactElement) = Memo(f)
 
   private val deadValidity: Validity => Live => (Live, Validity) =
     Validity.memo(validityWhenDead =>
@@ -189,7 +188,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   }
 
   val reqCodeTreeIdentation =
-    UnivEq.mutableHashMapMemo[NonEmptyVector[ReqCodeTreeItem.Indent], ReactElement](is =>
+    memo[NonEmptyVector[ReqCodeTreeItem.Indent]](is =>
       <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
 
   def reqCodeTreeItem(item: ReqCodeTreeItem): ReactElement = {

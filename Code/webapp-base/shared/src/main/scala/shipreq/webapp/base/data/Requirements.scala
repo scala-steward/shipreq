@@ -85,7 +85,7 @@ object ReqCode {
     }
 
     val applyFn: String => Node =
-      Platform.memo[String, Node](new Node(_))
+      Memo(new Node(_))
 
     @inline def apply(value: String): Node =
       applyFn(value)
