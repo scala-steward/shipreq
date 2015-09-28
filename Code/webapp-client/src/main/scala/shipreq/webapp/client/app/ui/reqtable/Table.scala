@@ -219,7 +219,7 @@ object Table {
         *.cell(rowStatus),
         ^.onKeyDown ==> selCellKeyDown,
         ^.onClick   --> p.setSelection(p.selection oneToggle row.sourceId),
-        p.selection.oneCheckbox(row.sourceId, p.setSelection))
+        p.selection.oneCheckbox(row.sourceId, p.setSelection)(^.tabIndex := -1))
 
     val cols =
       p.crs.toStream.map { cr =>
