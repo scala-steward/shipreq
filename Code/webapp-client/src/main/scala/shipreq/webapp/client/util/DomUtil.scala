@@ -12,6 +12,26 @@ object DomUtil {
     @inline def castHtml = castDom[html.Element]
   }
 
+  @inline implicit class DOMStringListExt(private val d: DOMStringList) extends AnyVal {
+    def exists(f: String => Boolean): Boolean = {
+      @tailrec def go(i: Int): Boolean =
+        if (i == -1)
+          false
+        else if (f(d(i)))
+          true
+        else
+          go(i - 1)
+      go(d.length - 1)
+    }
+  }
+
+  def isDragWithinNode(e: ReactDragEvent, node: Node): Boolean = {
+    @inline def between(value: Double, from: Double, to: Double) =
+      value >= from && value <= to
+    val r = node.castHtml.getBoundingClientRect()
+    between(e.clientX, r.left, r.right) && between(e.clientY, r.top, r.bottom)
+  }
+
   def checkModKeys(e       : ReactKeyboardEventH,
                    altKey  : Boolean = false,
                    ctrlKey : Boolean = false,
@@ -63,25 +83,5 @@ object DomUtil {
         i += max
       sibs(i)
     }
-
-  def isDragWithinNode(e: ReactDragEvent, node: Node): Boolean = {
-    @inline def between(value: Double, from: Double, to: Double) =
-      value >= from && value <= to
-    val r = node.castHtml.getBoundingClientRect()
-    between(e.clientX, r.left, r.right) && between(e.clientY, r.top, r.bottom)
-  }
-
-  @inline implicit class DOMStringListExt(private val d: DOMStringList) extends AnyVal {
-    def exists(f: String => Boolean): Boolean = {
-      @tailrec def go(i: Int): Boolean =
-        if (i == -1)
-          false
-        else if (f(d(i)))
-          true
-        else
-          go(i - 1)
-      go(d.length - 1)
-    }
-  }
 
 }
