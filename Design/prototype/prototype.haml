@@ -42,6 +42,10 @@
       .cfggrp .e {text-align:center}
       .usage {text-align:right}
 
+      .del3 td {border:none;}
+      .del3 tr:hover td {background:#ddf}
+      .del3 tr > td {padding-right: 3ex}
+
   %body
     %h1 SHIPREQ PHASE-2 PROTOTYPE
 
@@ -1058,6 +1062,7 @@
       %a#delete
         %h1 Deleting/Restoring Reqs
 
+      %h3 Approach #1
       %div
         %input(type="checkbox")
         \ All
@@ -1107,8 +1112,41 @@
       %button(style="margin-top:2em") Delete 3 Reqs
       %button Cancel
 
+      %h3 Approach #3
+      %table.del3(style="margin-top:1em")
+        %tr
+          %td
+            %input(type="checkbox" checked="checked" disabled="disabled")
+            %input(type="checkbox" checked="checked")
+            \ UC-4: Do The Stuff To The Things
+          %td ⇐ MF-4
+        %tr
+          %td
+            %input(type="checkbox" checked="checked" disabled="disabled" style="visibility:hidden")
+            %input(type="checkbox" checked="checked")
+            \ FR-22: BA shall be able to drink the wake on peace in seven.
+          %td ⇐ <span class="del">UC-4</span>
+        %tr
+          %td
+            %input(type="checkbox" checked="checked" disabled="disabled" style="visibility:hidden")
+            %input(type="checkbox" checked="checked")
+            %input(type="checkbox")
+            \ FR-48: BA shall be able to specify incompletion tags in reqs.
+          %td ⇐ MF-6, <span class="del">UC-4</span>
+        %tr
+          %td
+            %input(type="checkbox" checked="checked" disabled="disabled" style="visibility:hidden")
+            %input(type="checkbox" checked="checked" disabled="disabled" style="visibility:hidden")
+            %input(type="checkbox")
+            \ FR-241: BA shall be able to read the stuff on the box.
+          %td ⇐ <span class="del">FR-48</span>
+
+      %button(style="margin-top:2em") Delete 3 Reqs
+      %button Cancel
+
       .notes Notes.
         %ol
           %li As reqs are (de)selected, the reqs that they imply (dis)appear.
           %li In the right-most column refs selected for deletion get strike-through too.
           %li For restoration instead of deletion, the ⇐ column simply becomes ⇒.
+          %li For restoration instead of deletion, add another column after Title to show Deletion Reason.
