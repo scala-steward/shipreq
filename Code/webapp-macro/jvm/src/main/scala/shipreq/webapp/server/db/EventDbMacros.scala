@@ -328,7 +328,7 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
   def  implRegistry[R: c.WeakTypeTag, W <: R: c.WeakTypeTag](debug: Boolean)(typeIds: c.Expr[R => Short]): c.Expr[DbCodec.Registry[R, W]] = {
     val R         = weakTypeOf[R]
     val W         = weakTypeOf[W]
-    val types     = findConcreteTypesNE(R, LeavesOnly).map(t => determineAdtType(R, t))
+    val types     = findConcreteAdtTypesNE(R, LeavesOnly)
     val dbCodec_  = typeOf[DbCodec[_]]
     val dbCodecR  = appliedType(dbCodec_, R)
     val dbCodecW  = appliedType(dbCodec_, W)

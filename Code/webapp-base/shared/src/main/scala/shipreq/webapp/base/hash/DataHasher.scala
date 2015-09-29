@@ -64,12 +64,7 @@ sealed abstract class GenericDashHasher {
     implicit val all : Hash[All [A]] = hashConstClass("Al")
     implicit val only: Hash[Only[A]] = withName("On", hashCaseClass)
     implicit val not : Hash[Not [A]] = withName("No", hashCaseClass)
-    // TODO hashADT can't handle this ↓
-    Hash.fn {
-      case a: All [A] => all  hash a
-      case a: Only[A] => only hash a
-      case a: Not [A] => not  hash a
-    }
+    hashADT
   }
 }
 

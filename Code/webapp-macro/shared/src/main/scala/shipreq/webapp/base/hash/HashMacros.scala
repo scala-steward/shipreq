@@ -35,8 +35,6 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
   def quietCaseClass[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implCaseClass[T](false, identity)
   def debugCaseClass[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implCaseClass[T](true , identity)
   def implCaseClass[T: c.WeakTypeTag](debug: Boolean, preprocessParams: List[NameAndType] => List[NameAndType]): c.Expr[Hash[T]] = {
-    import c.universe._
-
     val T      = concreteWeakTypeOf[T]
     val params = preprocessParams(primaryConstructorParams(T).map(nameAndType(T, _)))
     val Hash   = this.Hash
@@ -47,15 +45,16 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
           fail("Class constructor has no parameters.")
 
         case (pName, pType) :: Nil =>
-          q"$Hash[$pType].cmap[$T](_.$pName)"
+          val h = needInferImplicit(HashType(pType))
+          q"$h.cmap[$T](_.$pName)"
 
         case _ =>
-          val nil = Ident(c.mirror staticModule "scala.collection.immutable.Nil")
-          val hashes = params.foldLeft(nil: c.universe.Tree) { case (q, (pName, pType)) =>
-            q"$q.::($Hash[$pType].hash(t.$pName))"
+          val init = new Init
+          val hashes = params.foldLeft(LitNil: c.universe.Tree) { case (q, (pName, pType)) =>
+            val h = init.valImp(HashType(pType))
+            q"$q.::($h hash t.$pName)"
           }
-
-          q"$Hash.fn[$T](t => joinHashes($hashes))"
+          q"..$init; $Hash.fn[$T](t => joinHashes($hashes))"
       }
 
     if (debug) println("\n" + showCode(impl) + "\n")
@@ -99,8 +98,6 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
   def quietConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[Hash[T]] = implConstClass[T](false)(key)
   def debugConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[Hash[T]] = implConstClass[T](true)(key)
   def implConstClass[T: c.WeakTypeTag](debug: Boolean)(key: c.Expr[String]): c.Expr[Hash[T]] = {
-    import c.universe._
-
     val T      = concreteWeakTypeOf[T]
     val params = primaryConstructorParams(T)
     val Hash   = this.Hash
@@ -126,15 +123,20 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
   def quietADT[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implADT[T](false)
   def debugADT[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implADT[T](true)
   def implADT[T: c.WeakTypeTag](debug: Boolean): c.Expr[Hash[T]] = {
-    import c.universe._
-
     val T     = weakTypeOf[T]
-    val types = findConcreteTypesNE(T, DirectOnly)
+    val types = findConcreteAdtTypesNE(T, DirectOnly)
     val a     = TermName("a")
-    val cases = types.map(t => cq"$a : $t => Hash[$t].hash($a)")
-    val impl  = q"Hash.fn[$T]{ case ..$cases }"
+    val init  = new Init
+    val cases = types.map { t =>
+      val h = init.valImp(HashType(t))
+      cq"$a : $t => $h.hash($a)"
+    }
+    val impl = q"..$init; Hash.fn[$T]{ case ..$cases }"
 
     if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[Hash[T]](impl)
   }
+
+  def HashType(t: Type): Type =
+    appliedType(c.typeOf[Hash[_]], t)
 }

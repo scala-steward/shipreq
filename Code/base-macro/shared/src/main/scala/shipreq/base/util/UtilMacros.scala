@@ -81,7 +81,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
     val V       = weakTypeOf[V]
     val valueFn = readMacroArg_tToTree(f)
     val values  = valueFn.map(_._2)
-    val types   = findConcreteTypesNE(T, LeavesOnly).toVector.map(t => determineAdtType(T, t))
+    val types   = findConcreteAdtTypesNE(T, LeavesOnly).toVector
     val unseen  = types.filterNot(t => valueFn.exists(t <:< _._1.fold(_.tpe, identity)))
 
     if (unseen.nonEmpty)

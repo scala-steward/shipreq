@@ -116,7 +116,7 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
     if (debug) println(sep)
 
     val T     = weakTypeOf[T]
-    val types = findConcreteTypesNE(T, LeavesOnly).toVector.map(t => determineAdtType(T, t))
+    val types = findConcreteAdtTypesNE(T, LeavesOnly).toVector
     if (debug) println("TYPES: " + types)
 
     val keyCases = readMacroArg_tToLitFn(keys)
@@ -218,7 +218,7 @@ class MPickleMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
     if (debug) println(sep)
 
     val T     = weakTypeOf[T]
-    val types = findConcreteTypesNE(T, LeavesOnly).toVector.map(t => determineAdtType(T, t))
+    val types = findConcreteAdtTypesNE(T, LeavesOnly).toVector
     if (debug) println("TYPES: " + types)
 
     val keyCases = readMacroArg_tToLitFn(keys)

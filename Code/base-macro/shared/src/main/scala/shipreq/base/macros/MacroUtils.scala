@@ -154,6 +154,12 @@ abstract class MacroUtils {
     r
   }
 
+  final def findConcreteAdtTypes(tpe: Type, f: FindSubClasses): Set[Type] =
+    findConcreteTypes(tpe, f) map (determineAdtType(tpe, _))
+
+  final def findConcreteAdtTypesNE(tpe: Type, f: FindSubClasses): Set[Type] =
+    findConcreteTypesNE(tpe, f) map (determineAdtType(tpe, _))
+
   /**
    * findConcreteTypes will spit out type constructors. This will turn them into types.
    *
@@ -390,4 +396,6 @@ abstract class MacroUtils {
     stmts foreach (i += _)
     i
   }
+
+  def LitNil = Ident(c.mirror staticModule "scala.collection.immutable.Nil")
 }
