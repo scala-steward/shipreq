@@ -402,11 +402,11 @@ private[fields] object MainTable {
           case Live =>
             renderLive(s, dragHandle, row, deletion.button(cf.id, Delete))
           case Dead =>
-            val resultIfRestored = CustomField.liveExplicitly.set(Live)(cf).live(cfg)
-            val restoreButton: TagMod = resultIfRestored match {
-              case Live => deletion.button(cf.id, Restore)
-              case Dead => EmptyTag
-            }
+            val restoreButton: TagMod =
+              if (cf recoverable cfg)
+                deletion.button(cf.id, Restore)
+              else
+                EmptyTag
             renderDead(s, dragHandle, row.status, cf, restoreButton)(^.cls := "dead")
         }
       }

@@ -148,7 +148,7 @@ object StaticField {
     NonEmptyVector(NormalAltStepTree, ExceptionStepTree, StepGraph)
 
   lazy val (deletable, notDeletable) =
-    values.whole.partition(_.deletable ≟ Deletable)
+    values.whole.partition(_.deletable :: Deletable)
 
   lazy val names: Set[String] =
     values.toStream.map(_.name).toSet
@@ -166,6 +166,12 @@ sealed abstract class CustomField(override final val fieldType: CustomFieldType)
 
   /** Whether the user has explicitly marked this field as deleted or not. */
   val liveExplicitly: Live
+
+  /**
+   * If [[liveExplicitly]] was [[Live]], would the final live value be [[Live]] too.
+   */
+  final def recoverable(cfg: ProjectConfig): Boolean =
+    CustomField.liveExplicitly.set(Live)(this).live(cfg) :: Live
 
   override final def fold[A](s: StaticField => A, c: CustomField => A): A = c(this)
 }
@@ -212,10 +218,7 @@ object CustomField {
       tags.need(tagId).tag.name
 
     override def live(cfg: ProjectConfig) =
-      liveExplicitly match {
-        case Live => cfg.live(tagId)
-        case Dead => Dead
-      }
+      liveExplicitly && cfg.live(tagId)
   }
   object Tag {
     final case class Id(value: Int) extends CustomFieldId  {
@@ -241,10 +244,7 @@ object CustomField {
       ReqType.name(customReqTypes)(reqTypeId)
 
     override def live(cfg: ProjectConfig) =
-      liveExplicitly match {
-        case Live => cfg.live(reqTypeId)
-        case Dead => Dead
-      }
+      liveExplicitly && cfg.live(reqTypeId)
   }
   object Implication {
     final case class Id(value: Int) extends CustomFieldId {
