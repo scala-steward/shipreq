@@ -4,7 +4,7 @@ import shipreq.base.util.{NonEmptyVector, UnivEq}
 
 final case class HashSchemeId(value: Char) extends AnyVal
 
-final case class HashScheme private[HashScheme](value: DataHash, id: HashSchemeId) {
+final case class HashScheme private[HashScheme](value: DataHasher, id: HashSchemeId) {
   override val hashCode = value.##
   override def equals(o: Any): Boolean =
     o match {
@@ -22,8 +22,8 @@ object HashScheme {
    *
    * APPEND-ONLY. DO NOT ALTER POSITION OF EXISTING ENTRIES.
    */
-  private[this] val raw: NonEmptyVector[DataHash] =
-    NonEmptyVector(new DataHash(MurmurHash3))
+  private[this] val raw: NonEmptyVector[DataHasher] =
+    NonEmptyVector(new DataHasher(MurmurHash3))
 
   val all: NonEmptyVector[HashScheme] =
     raw.mapWithIndex((h, i) => HashScheme(h, HashSchemeId((i + 97).toChar)))

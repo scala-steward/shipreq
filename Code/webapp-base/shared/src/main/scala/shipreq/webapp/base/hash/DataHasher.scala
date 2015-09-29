@@ -8,7 +8,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.AtomTC
 import Hash.HashableValueOps
 
-abstract class GenericDashHash {
+abstract class GenericDashHasher {
   protected val algorithm: Hash.Algorithm
   import algorithm._
 
@@ -70,7 +70,7 @@ abstract class GenericDashHash {
   }
 }
 
-final class DataHash(protected val algorithm: Hash.Algorithm) extends GenericDashHash {
+final class DataHasher(protected val algorithm: Hash.Algorithm) extends GenericDashHasher {
   import algorithm._
 
   implicit val hashLive         : Hash[Live]                = Hash by Live.from

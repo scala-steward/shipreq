@@ -38,7 +38,7 @@ object HashScope {
     (a == b) ||
     (a == WholeProject || b == WholeProject)
 
-  def hash(scope: HashScope, h: DataHash, p: Project): Int =
+  def hash(scope: HashScope, h: DataHasher, p: Project): Int =
     scope match {
       case WholeProject    => h.hashProject          hash p
       case CfgIssueTypes   => h.hashCustomIssueTypes hash p.config.customIssueTypes
