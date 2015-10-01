@@ -340,10 +340,13 @@ object ShowSrcDataImp {
   implicit val reqCodeNode: ShowSrc[ReqCode.Node] =
     data((s, n) => s.fn1("ReqCode.Node", n.value))
 
+  implicit val reqCodeGroup: ShowSrc[ReqCodeGroup] =
+    data((s, g) => s.cc1("ReqCodeGroup", ReqCodeGroup unapply g)(reqCodeGroupTitleZ))
+
   implicit lazy val reqCodeTarget: ShowSrc[ReqCode.Target] =
     data((s, t) => t match {
       case id: ReqId       => s <~ id
-      case g: ReqCodeGroup => s.cc1("ReqCodeGroup", ReqCodeGroup unapply g)(reqCodeGroupTitleZ)
+      case g: ReqCodeGroup => s <~ g
     })
 
   implicit val reqCodeActiveData: ShowSrc[ReqCode.ActiveData] =
@@ -352,7 +355,7 @@ object ShowSrcDataImp {
   implicit val reqCodeData: ShowSrc[ReqCode.Data] = {
     implicit val reqInactive: ShowSrc[Multimap[ReqId, Set, ReqCodeId]] =
       multimap[ReqId, Set, ReqCodeId]("UnivEq.emptySetMultimap[ReqId, ReqCodeId]") init importUnivEq
-    data((s, d) => s.cc3("ReqCode.Data", ReqCode.Data unapply d))
+    data((s, d) => s.cc4("ReqCode.Data", ReqCode.Data unapply d))
   }
 
   def trie[K: ShowSrc, V: ShowSrc](branchCtor: String, valueCtor: String, trieType: String, trieVarname: String): ShowSrc[MTrie.Trie[K, V]] = {
