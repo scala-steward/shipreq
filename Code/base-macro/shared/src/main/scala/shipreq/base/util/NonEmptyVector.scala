@@ -46,6 +46,15 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
     tail foreach f
   }
 
+  def foreachWithIndex[U](f: (A, Int) => U): Unit = {
+    f(head, 0)
+    var i = 0
+    for (a <- tail) {
+      i += 1
+      f(a, i)
+    }
+  }
+
   def exists(f: A => Boolean): Boolean =
     f(head) || tail.exists(f)
 

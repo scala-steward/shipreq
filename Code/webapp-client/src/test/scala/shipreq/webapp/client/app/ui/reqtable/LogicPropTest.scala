@@ -72,7 +72,7 @@ object LogicPropTest extends TestSuite {
         ∧ noEmptyAndNonEmptyReqCodesMixed)
 
     def gather =
-      ( E.distinct("Rows", gathered)
+      ( E.distinct("Rows", gathered.toStream)
       ∧ E.allPresent("each generic req id has a row", srcGReqIds, rowGReqIds)
       ∧ reqCodeProps
       ) rename "Logic.gather"
@@ -87,8 +87,9 @@ object LogicPropTest extends TestSuite {
       val revOrder  = vs.order.reverse
       val revCri    = vs.copy(order = revOrder)
       val sorted    = Logic.sort(vs, p, plainText)(gathered)
+      val sortedV   = sorted.toVector
       def criRev    = E.equal("cri.rev.rev = cri", revOrder.reverse, vs.order)
-      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs, p, plainText)(sorted.toStream), sorted)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sort(vs, p, plainText)(sortedV).toVector, sortedV)
       def sortRev   = reverseSortOnReverseCri(sorted, revCri)
       (criRev ∧ sortRev ∧ sortTwice) rename "Universal sort props"
     }
@@ -130,7 +131,7 @@ object LogicPropTest extends TestSuite {
     def sortCri(c: SC.Inconclusive): SortCriteria =
       this.vs.order.copy(init = Vector(c))
 
-    def gatherOn(c: C.SortInconclusive, sc: SortCriteria): Stream[Row] =
+    def gatherOn(c: C.SortInconclusive, sc: SortCriteria): Vector[Row] =
       if (vs isVisible c)
         gathered
       else

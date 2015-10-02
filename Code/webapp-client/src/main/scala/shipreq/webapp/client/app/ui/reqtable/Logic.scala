@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import scala.annotation.tailrec
-import scala.collection.GenTraversable
+import scala.collection.Traversable
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import scalaz.std.option.optionInstance
@@ -241,7 +241,7 @@ private[reqtable] object Logic {
    * Performs expansion.
    * Does not perform any sorting.
    */
-  def gather(vs: ViewSettings, p: Project, pt: PlainText.ForProject, ts: TextSearch): Stream[Row] = {
+  def gather(vs: ViewSettings, p: Project, pt: PlainText.ForProject, ts: TextSearch): Vector[Row] = {
 
     // NOTES:
     //
@@ -297,39 +297,44 @@ private[reqtable] object Logic {
         case Some(None)         => None
       }
 
-    fullFilter.fold(Stream.empty[Row]) { filter =>
+    fullFilter.fold(Vector.empty[Row]) { filter =>
+      var output = Vector.empty[Row]
 
-      def reqRows =
-        p.reqs.reqs.vstreamf {
-          case r: GenericReq =>
-            maybeUse(filter a r) {
-              val id = r.id
+      // Add requirements
+      p.reqs.reqs.values.foreach {
+        case r: GenericReq =>
+          if (filter a r) {
+            val id = r.id
 
-              // Expansion
-              val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
-              val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-              val codes   = expandCodes  (() => pReqCodes(id))
-              val cfImps  = expandImpCols(r)
-              val cfTags  = expandTagCols(r)
-              val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
+            // Expansion
+            val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
+            val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
+            val codes   = expandCodes  (() => pReqCodes(id))
+            val cfImps  = expandImpCols(r)
+            val cfTags  = expandTagCols(r)
+            val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
-              // Build
-              val mv = multiValuesFn(id)
-              exps.toStream.zipWithIndex.map(x =>
-                GenericReqRow(r, r live p.config.customReqTypes, x._1, mv, x._2))
+            // Build
+            val mv = multiValuesFn(id)
+            exps.foreachWithIndex { (exp, i) =>
+              val live = r live p.config.customReqTypes
+              output :+= GenericReqRow(r, live, exp, mv, i)
             }
-        }
+          }
+      }
 
-      def reqCodeGroupRows: Stream[ReqCodeGroupRow] =
-        maybeUse(vs.viewReqCodeGroups)(
-          p.reqCodes.cataA(Stream.empty[ReqCodeGroupRow])((q, c, d) => d.target match {
-            case _: ReqId        => q
-            case g: ReqCodeGroup =>
-              val groupAndId = g and d.id
-              maybeAdd(q, filter b groupAndId)(ReqCodeGroupRow(groupAndId, c, None))
-          }))
+      // Add ReqCodeGroups
+      if (vs.viewReqCodeGroups) {
+        p.reqCodes.cataA(())((_, c, d) => d.target match {
+          case _: ReqId        =>
+          case g: ReqCodeGroup =>
+            val groupAndId = g and d.id
+            if (filter b groupAndId)
+              output :+= ReqCodeGroupRow(groupAndId, c, None)
+        })
+      }
 
-      reqRows append reqCodeGroupRows
+      output
     }
   }
 
@@ -458,7 +463,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(vs: ViewSettings, p: Project, pt: PlainText.ForProject)(rows: Stream[Row]): Stream[Row] = {
+  def sort(vs: ViewSettings, p: Project, pt: PlainText.ForProject)(rows: Vector[Row]): Stream[Row] = {
     import Sorter._
 
     // Prepare sorters
@@ -523,9 +528,15 @@ private[reqtable] object Logic {
       }
     )
 
-  /** Map with history */
-  def hmap[I, V[x] <: GenTraversable[x], A >: Null <: AnyRef, B >: Null, S[_], O]
-      (input: GenTraversable[I], extract: I => V[A], put: (I, V[B]) => O, f: A => B, g: (A, B, A) => B)
+  /**
+   * Map with history.
+   */
+  def hmap[I, V[x] <: Traversable[x], A >: Null <: AnyRef, B >: Null, S[_], O]
+      (input  : Traversable[I],
+       extract: I => V[A],
+       put    : (I, V[B]) => O,
+       firstA : A => B,
+       foldA  : (A, B, A) => B)
       (implicit cbfV: CanBuildFrom[Nothing, B, V[B]], cbfS: CanBuildFrom[Nothing, O, S[O]]): S[O] = {
     var lastA: A = null
     var lastB: B = null
@@ -533,7 +544,7 @@ private[reqtable] object Logic {
     for (i <- input) {
       val bv = cbfV()
       for (a <- extract(i)) {
-        val b = if (lastA eq null) f(a) else g(lastA, lastB, a)
+        val b = if (lastA eq null) firstA(a) else foldA(lastA, lastB, a)
         bv += b
         lastA = a
         lastB = b
@@ -543,8 +554,10 @@ private[reqtable] object Logic {
     bs.result()
   }
 
-  def mkReqCodeTree[I, V[x] <: GenTraversable[x], S[_], O]
-      (input: GenTraversable[I], extract: I => V[ReqCode.Value], put: (I, V[ReqCodeTreeItem]) => O)
+  def mkReqCodeTree[I, V[x] <: Traversable[x], S[_], O]
+      (input  : Traversable[I],
+       extract: I => V[ReqCode.Value],
+       put    : (I, V[ReqCodeTreeItem]) => O)
       (implicit cbfV: CanBuildFrom[Nothing, ReqCodeTreeItem, V[ReqCodeTreeItem]], cbfS: CanBuildFrom[Nothing, O, S[O]])
       : S[O] =
     hmap[I, V, ReqCode.Value, ReqCodeTreeItem, S, O](
@@ -582,7 +595,7 @@ private[reqtable] object Logic {
     mkReqCodeTree[Row, Vector, Stream, Row](
       rows,
       Row.reqCodes.get,
-      (i, bs) => Row.reqCodeTree.set(bs)(i))
+      (row, items) => Row.reqCodeTree.set(items)(row))
 
 
   def stats(vs: ViewSettings, p: Project, rows: Iterable[Row]): TableStats = {
