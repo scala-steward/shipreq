@@ -59,50 +59,50 @@ object HashSchemeTest extends TestSuite {
       assertHashes(h, P0,
         0xed4fcf48 ~ WholeProject,
         0x47de4849 ~ CfgIssueTypes,
-        0xa0139eb8 ~ ReqCodes,
-        0xa0139eb8 ~ ImplicationData,
-        0x47de4849 ~ CfgTags,
-        0xa0139eb8 ~ TextFieldData,
         0x47de4849 ~ CfgReqTypes,
         0xbd8a78f7 ~ CfgFields,
+        0x47de4849 ~ CfgTags,
         0x57815d25 ~ Reqs,
-        0xa0139eb8 ~ TagData)
+        0xa0139eb8 ~ ReqCodes,
+        0xa0139eb8 ~ TextFieldData,
+        0xa0139eb8 ~ TagData,
+        0xa0139eb8 ~ ImplicationData)
       assertHashes(h, P3,
         0x6a210433 ~ WholeProject,
         0x67a3e1b9 ~ CfgIssueTypes,
-        0xdcbd2f53 ~ ReqCodes,
-        0xb31f8764 ~ ImplicationData,
-        0x5a1d6a0a ~ CfgTags,
-        0xa0139eb8 ~ TextFieldData,
         0x4b71a1ac ~ CfgReqTypes,
         0x3e1ac0cb ~ CfgFields,
+        0x5a1d6a0a ~ CfgTags,
         0x45f6c01d ~ Reqs,
-        0x314932cc ~ TagData)
+        0xdcbd2f53 ~ ReqCodes,
+        0xa0139eb8 ~ TextFieldData,
+        0x314932cc ~ TagData,
+        0xb31f8764 ~ ImplicationData)
     }
     'latest - {
       val h = hL
       assertHashes(h, P0,
         0xed4fcf48 ~ WholeProject,
         0x47de4849 ~ CfgIssueTypes,
-        0xa0139eb8 ~ ReqCodes,
-        0xa0139eb8 ~ ImplicationData,
-        0x47de4849 ~ CfgTags,
-        0xa0139eb8 ~ TextFieldData,
         0x47de4849 ~ CfgReqTypes,
         0xbd8a78f7 ~ CfgFields,
+        0x47de4849 ~ CfgTags,
         0x57815d25 ~ Reqs,
-        0xa0139eb8 ~ TagData)
+        0xa0139eb8 ~ ReqCodes,
+        0xa0139eb8 ~ TextFieldData,
+        0xa0139eb8 ~ TagData,
+        0xa0139eb8 ~ ImplicationData)
       assertHashes(h, P3,
         0xa1493797 ~ WholeProject,
         0x67a3e1b9 ~ CfgIssueTypes,
-        0x4e7f121c ~ ReqCodes,
-        0xb31f8764 ~ ImplicationData,
-        0x5a1d6a0a ~ CfgTags,
-        0xa0139eb8 ~ TextFieldData, // TODO same as empty - P3 doesn't use
         0x4b71a1ac ~ CfgReqTypes,
         0x3e1ac0cb ~ CfgFields,
+        0x5a1d6a0a ~ CfgTags,
         0x45f6c01d ~ Reqs,
-        0x314932cc ~ TagData)
+        0x4e7f121c ~ ReqCodes,
+        0xa0139eb8 ~ TextFieldData, // TODO same as empty - P3 doesn't use
+        0x314932cc ~ TagData,
+        0xb31f8764 ~ ImplicationData)
     }
   }
 }
