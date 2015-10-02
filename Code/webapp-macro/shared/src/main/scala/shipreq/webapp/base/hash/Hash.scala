@@ -37,6 +37,12 @@ object Hash {
   @inline def internal[A]: Hash[A] =
     new Hash(_.##)
 
+  final val UnsupportedValue: Int =
+    0xffffffff
+
+  @inline def unsupported[A]: Hash[A] =
+    const(UnsupportedValue)
+
   // -------------------------------------------------------------------------------------------------------------------
 
   trait Algorithm extends HashMacros {
