@@ -81,7 +81,19 @@ object Common {
     getMethod(loader, "shipreq.webapp.server.db.DB",          "shutdown").foreach(_ invoke null)
   }
 
-  private val shipreqCodePathRegex = "^.+/Code/".r
+  val redirectTargetDir: File => File =
+    System.getenv("SHIPREQ_TARGET") match {
+      case null | "" => identity
+      case envValue =>
+        val newTarget = envValue.replaceFirst("/*$", "/")
+        val codePathRegex = "^.+/Code/".r
+        println(s"[info] Redirecting targets to $newTarget")
+        oldTarget => {
+          val a = oldTarget.getAbsolutePath
+          val b = codePathRegex.replaceFirstIn(a, newTarget)
+          file(b)
+        }
+    }
 
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
@@ -101,11 +113,7 @@ object Common {
       scalacOptions              ++= scalacFlags,
       dependencyUpdatesExclusions := moduleFilter(name = new PatternFilter("^jetty-(?:server|websocket)$".r.pattern)),
       testFrameworks              += new TestFramework("utest.runner.Framework"),
-      target := {
-        val a = target.value.getAbsolutePath
-        val b = shipreqCodePathRegex.replaceFirstIn(a, "/tmp/shipreq.sbt/")
-        file(b)
-      }
+      target                      := redirectTargetDir(target.value)
     )
     .configure(
       addCommandAliases(
