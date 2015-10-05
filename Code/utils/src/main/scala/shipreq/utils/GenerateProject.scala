@@ -72,7 +72,7 @@ object GenerateProject {
     val liveReqIds      = reqsWithoutText.reqs.values.toStream.filter(_.live(cfg.customReqTypes) :: Live).map(_.id)
     val liveReqIdG      = Gen tryGenChoose liveReqIds
     val reqCodeDataG    = $.reqCode.data(liveReqIdG, reqIdG, $.reqCode.gEmptyReqCodeGroup)
-    val reqCodesG       = $.reqCodes($.reqCode.trie(Size.ReqCodeDepth, reqCodeDataG))
+    val reqCodesG       = $.reqCodes($.reqCode.trie(reqCodeDataG, Size.ReqCodeDepth))
     val reqCodes        = sample(reqCodesG, Size.ReqCodeSize)
     val reqTags         = sample($.reqFieldDataTags(reqIdSet, atagIds), Size.Tags)
     val impMethod       = $.implicationsMethod2(Size.ImplicationsPerSrc, Size.Implications)

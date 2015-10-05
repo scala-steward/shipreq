@@ -192,6 +192,24 @@ object RandomData {
   val deletionAction =
     chooseV(DeletionAction.values)
 
+  def mtrie[K: UnivEq, V](genK: Gen[K], genV: Gen[V], maxDepth: Int): Gen[MTrie.Trie[K, V]] = {
+    val valueN   = genV map MTrie.Value[K, V]
+    val valueO   = valueN.option
+    val midDepth = maxDepth >> 1
+
+    def level(depth: Int): Gen[MTrie.Trie[K, V]] =
+      if (depth <= 1)
+        Gen pure Map.empty
+      else {
+        val branch  = Gen.apply2(MTrie.Branch[K, V])(valueO, level(depth - 1))
+        val branchN = branch.flatMap[MTrie.Node[K, V]](b => if (b.next.nonEmpty) Gen.pure(b) else b.value.fold(valueN)(Gen.pure))
+        val node    = Gen.chooseGen(branchN, valueN, if (depth > midDepth) branchN else valueN)
+        node.mapBy(genK)
+      }
+
+    level(maxDepth)
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
 
@@ -985,26 +1003,8 @@ object RandomData {
 
     def trieValue(d: Gen[Data]): Gen[Trie.Value] = d map Trie.Value
 
-    val emptyTrie: Gen[Trie] = Gen pure Trie.empty
-
-    def trie(maxDepth: Int, d: Gen[Data]): Gen[Trie] = {
-      import ReqCode.Trie._
-      val valueN   = trieValue(d)
-      val valueO   = valueN.option
-      val midDepth = maxDepth >> 1
-
-      def level(depth: Int): Gen[Trie] =
-        if (depth <= 1)
-          emptyTrie
-        else {
-          val branch  = Gen.apply2(Branch)(valueO, level(depth - 1))
-          val branchN = branch.flatMap[Node](b => if (b.next.nonEmpty) Gen.pure(b) else b.value.fold(valueN)(Gen.pure))
-          val node    = Gen.chooseGen(branchN, valueN, if (depth > midDepth) branchN else valueN)
-          node.mapBy(reqCode.node)
-        }
-
-      level(maxDepth) map distinctReqCodeTrie.run
-    }
+    def trie(d: Gen[Data], maxDepth: Int): Gen[Trie] =
+      mtrie(node, d, maxDepth) map distinctReqCodeTrie.run
 
     val emptyReqCodeGroup = ReqCodeGroup(Vector.empty)
     val gEmptyReqCodeGroup = Gen pure emptyReqCodeGroup
@@ -1097,7 +1097,7 @@ object RandomData {
       liveReqIds      = reqsWithoutText.reqs.values.toStream.filter(_.live(cfg.customReqTypes) :: Live).map(_.id)
       liveReqIdG      = Gen tryGenChoose liveReqIds
       reqCodeDataG    = reqCode.data(liveReqIdG, reqIdG, reqCode.gEmptyReqCodeGroup)(0 to (3 `JVM|JS` 2))
-      reqCodes        ← reqCodes(reqCode.trie(2 `JVM|JS` 2, reqCodeDataG))
+      reqCodes        ← reqCodes(reqCode.trie(reqCodeDataG, 2 `JVM|JS` 2))
       reqTags         ← reqFieldDataTags(reqIdSet, atagIds)
       reqImps         ← reqFieldDataImplications(reqIdSet)
       p               ← genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps)
