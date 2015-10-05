@@ -17,6 +17,7 @@ sealed abstract class UnivEqImplicits {
 
   @inline protected def univEqForce[A]: UnivEq[A] = instance.asInstanceOf[UnivEq[A]]
 
+  @inline implicit def univEqUnit   : UnivEq[Unit]    = univEqForce
   @inline implicit def univEqString : UnivEq[String]  = univEqForce
   @inline implicit def univEqChar   : UnivEq[Char]    = univEqForce
   @inline implicit def univEqLong   : UnivEq[Long]    = univEqForce
