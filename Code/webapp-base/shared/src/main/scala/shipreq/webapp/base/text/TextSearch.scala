@@ -224,7 +224,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
 
   private def index(norm: Normaliser): Index = {
 
-    val indexValuesR: Stream[IndexEntryR] = {
+    val indexValuesR: TraversableOnce[IndexEntryR] = {
       def each(r: Req): IndexEntryR = {
         val title      = norm(plainText reqTitle r)
         val textFields = Need(norm(
@@ -236,7 +236,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
       project.reqs.reqs vstream each
     }
 
-    val indexValuesG: Stream[IndexEntryG] = {
+    val indexValuesG: TraversableOnce[IndexEntryG] = {
       def each(g: ReqCodeGroup.AndId): IndexEntryG = {
         val title = norm(plainText reqCodeGroupTitle g)
         IndexEntryG(g, title)

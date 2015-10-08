@@ -151,6 +151,9 @@ object EventDbCodecs {
     case _: GenericReqId => ""
   }
 
+  implicit val pickleReqIdSet: ReadWriter[Set[ReqId]] =
+    pickleReqId.setNice
+
   implicit val pickleReqIdNES: ReadWriter[NonEmptySet[ReqId]] =
     pickleReqId.nesNice
 
@@ -158,6 +161,9 @@ object EventDbCodecs {
 
   implicit val pickleReqCodeIdSet: ReadWriter[Set[ReqCodeId]] =
     pickleReqCodeId.setNice
+
+  implicit val pickleReqCodeIdNES: ReadWriter[NonEmptySet[ReqCodeId]] =
+    pickleReqCodeId.nesNice
 
   implicit val pickleFieldId: ReadWriter[FieldId] = pickleAdtOS {
     case _: CustomField.Text       .Id => "x"
@@ -514,8 +520,8 @@ object EventDbCodecs {
   implicit val dbCodecDeleteCustomField    : DbCodec[DeleteCustomField]     = dbCodec2
   implicit val dbCodecDeleteCustomIssueType: DbCodec[DeleteCustomIssueType] = dbCodec2
   implicit val dbCodecDeleteCustomReqType  : DbCodec[DeleteCustomReqType]   = dbCodec2
-  implicit val dbCodecDeleteReqCodeGroup   : DbCodec[DeleteReqCodeGroup]    = dbCodecIdOnly
-  implicit val dbCodecDeleteReq            : DbCodec[DeleteReq]             = dbCodec2
+  implicit val dbCodecDeleteReqCodeGroups  : DbCodec[DeleteReqCodeGroups]   = dbCodecDataOnly
+  implicit val dbCodecDeleteReqs           : DbCodec[DeleteReqs]            = dbCodecJust('reqs -> "r", 'reqCodeGroups_? -> "g", 'reason_? -> "j")
   implicit val dbCodecDeleteStaticField    : DbCodec[DeleteStaticField]     = dbCodecIdOnly
   implicit val dbCodecDeleteTagGroup       : DbCodec[DeleteTag]             = dbCodec2
   implicit val dbCodecPatchImplicationSrc  : DbCodec[PatchImplicationSrc]   = dbCodec2
@@ -523,6 +529,7 @@ object EventDbCodecs {
   implicit val dbCodecPatchReqCodes        : DbCodec[PatchReqCodes]         = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
   implicit val dbCodecPatchReqTags         : DbCodec[PatchReqTags]          = dbCodec2
   implicit val dbCodecRepositionField      : DbCodec[RepositionField]       = dbCodec2
+  implicit val dbCodecRestoreContent       : DbCodec[RestoreContent]        = dbCodecJust('reqs_? -> "r", 'reqCodes_? -> "c")
   implicit val dbCodecSetCustomTextField   : DbCodec[SetCustomTextField]    = dbCodecIdAnd('fid -> "f", 'value -> "t")
   implicit val dbCodecSetGenericReqTitle   : DbCodec[SetGenericReqTitle]    = dbCodec2
   implicit val dbCodecSetGenericReqType    : DbCodec[SetGenericReqType]     = dbCodec2
@@ -544,12 +551,13 @@ object EventDbCodecs {
   val eventCodecRegistry = DbCodec.registry[Event, ActiveEvent] {
     // Content
 
-    case _: DeleteReq             => 200
+    case _: DeleteReqs            => 200
     case _: PatchImplicationSrc   => 201
     case _: PatchImplicationTgt   => 202
     case _: PatchReqCodes         => 203
     case _: PatchReqTags          => 204
     case _: SetCustomTextField    => 205
+    case _: RestoreContent        => 206 // TODO Redo event DB ids
 
     case _: CreateGenericReq      => 230
     case _: SetGenericReqTitle    => 231
@@ -557,7 +565,7 @@ object EventDbCodecs {
 
     case _: CreateReqCodeGroup    => 240
     case _: UpdateReqCodeGroup    => 241
-    case _: DeleteReqCodeGroup    => 242
+    case _: DeleteReqCodeGroups   => 242
 
     // Config
 

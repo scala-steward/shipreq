@@ -17,7 +17,7 @@ import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.base.util.{TransitiveClosure, ReqCodeTreeItem}
 import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
-import Util.{maybeAdd, maybeUse}
+import MTrie.Ops
 import Debug._
 
 /*
@@ -273,7 +273,7 @@ private[reqtable] object Logic {
     val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup)
 
     val pReqs         = p.reqs
-    val pReqCodes     = p.reqCodes.activeReqCodesByTarget
+    val pReqCodes     = p.reqCodes.activeReqCodesByReqId
     val pImplications = p.implications
     val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup)
 
@@ -343,18 +343,23 @@ private[reqtable] object Logic {
 
       // Add ReqCodeGroups
       if (vs.viewReqCodeGroups) {
-        p.reqCodes.cataA(())((_, c, d) => d.target match {
-          case _: ReqId        =>
-          case g: ReqCodeGroup =>
-            val groupAndId = g and d.id
-            val row = ReqCodeGroupRow(groupAndId, c, None)
-            if (filter b groupAndId) {
-              codesSeen.add(c)
-              output :+= row
-            } else
-              // TODO if (filterDead allows rcg)
-              restorableRCGs.add(row)
-        })
+
+        def processGroup(groupAndId: ReqCodeGroup.AndId): Unit = {
+          val code = p.reqCodes reqCode groupAndId.id
+          val row = ReqCodeGroupRow(groupAndId, code, None)
+          if (filter b groupAndId) {
+            codesSeen.add(row.reqCode)
+            output :+= row
+          } else
+            restorableRCGs.add(row)
+        }
+
+        // TODO This is shit
+        for (g <- p.reqCodes.activeGroups)
+          processGroup(g)
+        if (vs.filterDead :: ShowDead)
+          for (g <- p.reqCodes.inactiveGroups)
+            processGroup(g)
       }
 
       // Add back filtered out ReqCodeGroups

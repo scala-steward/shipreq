@@ -135,11 +135,11 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         G.reflinkSurround(PlainText reqCode c))
 
     ProjectText.resolveReqCode(id, project.reqCodes) match {
-      case ActiveCode(c, r: ReqId)        => toRef(c, r)
-      case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
-      case DeadGroup(c)                   => ref(c, *.reqCodeGroupRef(Dead), undefined)
-      case ReqWithAltCode(c, r)           => toRef(c, r)
-      case ReqWithoutCodes(r)             => reqRefInText(r)
+      case ActiveCodeToReq(c, r)      => toRef(c, r)
+      case ActiveCodeToGroup(c, g)    => toGroup(c, g.group)
+      case DeadGroup(c)               => ref(c, *.reqCodeGroupRef(Dead), undefined)
+      case ReqWithAltCode(c, r)       => toRef(c, r)
+      case ReqWithoutActiveCode(_, r) => reqRefInText(r)
     }
   }
 

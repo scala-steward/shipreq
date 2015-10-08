@@ -37,14 +37,20 @@ object EventDbMacros {
   final val noDataIdType: Byte = ' '
   val noDataIdTypePG = EventDbMacroImpls.makeTypeIdPG(noDataIdType)
 
+  /** Codec for event with 1 field, which will go in the `data_id` column. */
   def dbCodecIdOnly [E]: DbCodec[E] = macro EventDbMacroImpls.quietDbCodecIdOnly[E]
   def _dbCodecIdOnly[E]: DbCodec[E] = macro EventDbMacroImpls.debugDbCodecIdOnly[E]
 
+  /** Codec for event with 1 field, which will go in the `data` column. */
   def dbCodecDataOnly [E]: DbCodec[E] = macro EventDbMacroImpls.quietDbCodecDataOnly[E]
   def _dbCodecDataOnly[E]: DbCodec[E] = macro EventDbMacroImpls.debugDbCodecDataOnly[E]
 
+  /** Codec for event with 2 fields. */
   def dbCodec2 [E]: DbCodec[E] = macro EventDbMacroImpls.quietDbCodec2[E]
   def _dbCodec2[E]: DbCodec[E] = macro EventDbMacroImpls.debugDbCodec2[E]
+
+  def dbCodecJust [E](keys: (Symbol, String)*): DbCodec[E] = macro EventDbMacroImpls.quietDbCodecJust[E]
+  def _dbCodecJust[E](keys: (Symbol, String)*): DbCodec[E] = macro EventDbMacroImpls.debugDbCodecJust[E]
 
   def dbCodecIdAnd [E](keys: (Symbol, String)*): DbCodec[E] = macro EventDbMacroImpls.quietDbCodecIdAnd[E]
   def _dbCodecIdAnd[E](keys: (Symbol, String)*): DbCodec[E] = macro EventDbMacroImpls.debugDbCodecIdAnd[E]
@@ -129,6 +135,9 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
     c.Expr[DbCodec.PolyId[T]](impl)
   }
 
+  private def writeDataOnly(T: Type)(data: Tree) =
+    q""" (e: $T) => (noDataIdTypePG, null, $data) """
+
   private def writeIdAnd(T: Type)(idField: TermName, idByte: Tree, idInteger: Tree)(data: Tree) =
     q"""
       (e: $T) => {
@@ -165,12 +174,13 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
     val (fr, fw)  = summonRW(init, ft)
     val readData  = readFromJsonStr(fr, q"d")
     val writeData = writeToJsonStr(fw, q"e.$fn")
+    val writeFn   = writeDataOnly(T)(writeData)
 
     val impl = q"""
       ..$init
       new DbCodec[$T](
         (_, _, d) => $apply($readData),
-        e => (noDataIdTypePG, null, $writeData))
+        $writeFn)
     """
 
     if (debug) println("\n" + showCode(impl) + "\n")
@@ -202,24 +212,27 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
   }
 
   type SymStrPair = (scala.Symbol, String)
-  def quietDbCodecIdAnd[T: c.WeakTypeTag](keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecIdGdAnd[T](false)(None, keys)
-  def debugDbCodecIdAnd[T: c.WeakTypeTag](keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecIdGdAnd[T](true )(None, keys)
-  def quietDbCodecIdGdAnd[T: c.WeakTypeTag](gd: c.Expr[scala.Symbol], keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecIdGdAnd[T](false)(Some(gd), keys)
-  def debugDbCodecIdGdAnd[T: c.WeakTypeTag](gd: c.Expr[scala.Symbol], keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecIdGdAnd[T](true )(Some(gd), keys)
-  def implDbCodecIdGdAnd[T: c.WeakTypeTag](debug: Boolean)(gdArg: Option[c.Expr[scala.Symbol]], keys: Seq[c.Expr[SymStrPair]]): c.Expr[DbCodec[T]] = {
+  def quietDbCodecJust   [T: c.WeakTypeTag]                          (keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](false)(false, None,     keys)
+  def debugDbCodecJust   [T: c.WeakTypeTag]                          (keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](true )(false, None,     keys)
+  def quietDbCodecIdAnd  [T: c.WeakTypeTag]                          (keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](false)(true,  None,     keys)
+  def debugDbCodecIdAnd  [T: c.WeakTypeTag]                          (keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](true )(true,  None,     keys)
+  def quietDbCodecIdGdAnd[T: c.WeakTypeTag](gd: c.Expr[scala.Symbol], keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](false)(true,  Some(gd), keys)
+  def debugDbCodecIdGdAnd[T: c.WeakTypeTag](gd: c.Expr[scala.Symbol], keys: c.Expr[SymStrPair]*): c.Expr[DbCodec[T]] = implDbCodecPlusKeys[T](true )(true,  Some(gd), keys)
+
+  def implDbCodecPlusKeys[T: c.WeakTypeTag](debug: Boolean)(hasId: Boolean, gdArg: Option[c.Expr[scala.Symbol]], keys: Seq[c.Expr[SymStrPair]]): c.Expr[DbCodec[T]] = {
     val T      = concreteWeakTypeOf[T]
     val apply  = tcApplyFn(T)
     val params = primaryConstructorParams(T).toVector
 
-    if (params.length < 3)
-      fail(s"Expected at least 3 fields. Found: $params")
-
     val keyLookup: Map[String, Literal] =
-      keys map (readMacroArg_symbolString(_)) toMap
+      keys map readMacroArg_symbolString toMap
 
     if (debug) println(s"KeyLookup: $keyLookup")
 
-    val ps         = params.tail map (nameAndType(T, _))
+    var ps = params map (nameAndType(T, _))
+    if (hasId) // ID expected to be first
+      ps = ps.tail
+
     val expKeySize = ps.length - gdArg.size
     if (keyLookup.size != expKeySize)
       fail(s"Expected $expKeySize keys, got ${keyLookup.size}.\n  Fields: $ps\n  Keys: $keyLookup")
@@ -266,10 +279,6 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
           }
       }
 
-    val f1 = params.head
-    val (f1n, f1t) = nameAndType(T, f1)
-    val (idByte, idInteger, idMake) = implicitIdFns(f1t)
-
     val writeToObj: Tree = {
       def applyWrites(tt: TT): Tree =
         q"..${dataW map (_(tt))}"
@@ -295,18 +304,27 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       }
     }
 
-    val writeFn = writeIdAnd(T)(f1n, idByte, idInteger)(writeToObj)
+    val (readFn: Tree, writeFn: Tree) =
+      if (hasId) {
+        val f1 = params.head
+        val (f1n, f1t) = nameAndType(T, f1)
+        val (idByte, idInteger, idMake) = implicitIdFns(f1t)
+        val writeFn = writeIdAnd(T)(f1n, idByte, idInteger)(writeToObj)
+        (q"$apply($idMake, ..$dataR)", writeFn)
+      } else
+        (q"$apply(..$dataR)", writeDataOnly(T)(writeToObj))
 
-    val impl = q"""
-      ..$init
-      new DbCodec[$T](
-        (b, i, d) => {
-          val o = EventDbMacroImpls readPickledObject d
-          val m = o.value.toMap
-          $apply($idMake, ..$dataR)
-        },
-        $writeFn)
-    """
+    val impl =
+      q"""
+        ..$init
+        new DbCodec[$T](
+          (b, i, d) => {
+            val o = EventDbMacroImpls readPickledObject d
+            val m = o.value.toMap
+            $readFn
+          },
+          $writeFn)
+      """
 
     if (debug) println("\n" + showCode(impl) + "\n")
     c.Expr[DbCodec[T]](impl)
@@ -319,6 +337,8 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
       OptionalJsonObjectFieldHelper(q"Set.empty: $t")
     else if (s startsWith "nyaya.util.Multimap[")
       OptionalJsonObjectFieldHelper(q"nyaya.util.Multimap.empty: $t")
+    else if (s matches "^shipreq.webapp.base.text.Text..+.OptionalText")
+      OptionalJsonObjectFieldHelper(q"Vector.empty: $t")
     else
       fail(s"Don't know how to handle optional JSON field of type: $s")
   }

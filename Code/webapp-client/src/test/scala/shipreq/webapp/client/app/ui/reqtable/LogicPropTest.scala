@@ -43,11 +43,14 @@ object LogicPropTest extends TestSuite {
     val finalRows   = Logic.rowsForTable(vs, p, plainText, textSearch)
     val tableStats  = Logic.stats(vs, p, finalRows)
 
-    val expectedVisibleReqCodes =
-      p.reqCodes.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
-        case id: ReqId       => if (expectVisible(id))    q + c else q
-        case _: ReqCodeGroup => if (vs.viewReqCodeGroups) q + c else q
-      })
+    val expectedVisibleReqCodes = {
+      val b = Set.newBuilder[ReqCode.Value]
+      p.reqCodes.activeReqCodesByReqId.values.foreach(b ++= _)
+      if (vs.viewReqCodeGroups)
+        p.reqCodes.activeGroups.foreach(g =>
+          b += p.reqCodes.reqCode(g.id))
+      b.result()
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Gathering

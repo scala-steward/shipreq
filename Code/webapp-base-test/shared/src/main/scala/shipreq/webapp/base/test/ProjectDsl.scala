@@ -36,6 +36,12 @@ object ProjectDslInternals {
       ReqCodeId(newMaxReqCodeId)
     }
 
+    def newActiveGroup(g: ReqCodeGroup) =
+      ReqCode.ActiveGroup(g and nextReqCodeId(), ReqCode.emptyReqInactive)
+
+    def newActiveReq(reqId: ReqId) =
+      ReqCode.ActiveReq(nextReqCodeId(), reqId, None, ReqCode.emptyReqInactive)
+
     def done: Project =
       IdCeilings.supply(ids =>
         p.copy(
@@ -55,7 +61,7 @@ object ProjectDslInternals {
     reqs           = p.reqs.genericReqs,
     pubids         = p.reqs.pubids,
     reqCodeTrie    = p.reqCodes.trie,
-    maxReqCodeId   = p.reqCodes.cataA(0)((q,_,d) => q max d.id.value),
+    maxReqCodeId   = (0 #:: p.reqCodes.idStream.map(_.value)).max,
     text           = p.reqText,
     tags           = p.reqTags,
     imps           = p.implications.srcToTgt)
@@ -132,16 +138,13 @@ object ProjectDsl {
       State[ProjectState, GenericReq]{ p =>
         val id = this.id getOrElse GenericReqId(p.nextId)
 
-        def reqCodeData() =
-          ReqCode.Data.empty.copy(active = Some(ReqCode.ActiveData(p.nextReqCodeId(), id)))
-
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
         val (pr, pubid) = p.pubids.allocC(reqTypeId)(id)
         val req         = GenericReq(id, pubid, title, live)
         val text        = cftexts.mapValuesNow(t => Map.empty[ReqId, CFTextValue].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)
-        val codeTrie    = codes.foldLeft(p.reqCodeTrie)((t, c) => t.put(c, reqCodeData()))
+        val codeTrie    = codes.foldLeft(p.reqCodeTrie)((t, c) => t.put(c, p.newActiveReq(id)))
         val p2          = p.copy(nextId       = this.id.fold(id.value + 1)(_ => p.nextId),
                                  pubids       = pr,
                                  reqs         = p.reqs + req,
@@ -159,24 +162,30 @@ object ProjectDsl {
     def state: Mod[ReqCodeGroup] =
       State[ProjectState, ReqCodeGroup]{ p =>
         val g  = ReqCodeGroup(title)
-        val ad = ReqCode.ActiveData(p.nextReqCodeId(), g)
-        val t  = p.reqCodeTrie.modify(code)(_.getOrElse(ReqCode.Data.empty).copy(active = Some(ad)))
+        val ad = p.newActiveGroup(g)
+        val t  = p.reqCodeTrie.modify(code)(_.fold(ad)(old => ad.copy(reqInactive = old.reqInactive)))
         val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = p.newMaxReqCodeId)
         (p2, g)
       }
   }
 
-  case class DeadReqCode(code : ReqCode.Value,
-                         id: Option[ReqCodeId] = None,
-                         target: Option[ReqId] = None) extends ToState {
+  /**
+   * Adds a dead ReqCode.
+   *
+   * If `oldReqId` is defined, the ReqCode used to belong to a requirement, else a dead group will be added.
+   */
+  case class DeadReqCode(code    : ReqCode.Value,
+                         id      : Option[ReqCodeId] = None,
+                         oldReqId: Option[ReqId] = None) extends ToState {
     def state: Mod[ReqCodeId] =
       State[ProjectState, ReqCodeId]{ p =>
+        import UnsafeTypes._
         val id = this.id getOrElse p.nextReqCodeId()
         val t = p.reqCodeTrie.modify(code) { o =>
-          val d = o.getOrElse(ReqCode.Data.empty) //.copy(active = Some(ReqCode.ActiveData(p.nextReqCodeId(), ReqCodeGroup(Vector.empty))))
-          target match {
-            case None      => d.copy(refsToGroup = d.refsToGroup + id)
-            case Some(tgt) => d.copy(reqInactive = d.reqInactive.add(tgt, id))
+          val d = o.getOrElse(ReqCode.Data.empty)
+          oldReqId match {
+            case None    => TestOptics.reqCodeDataDeadGroup.set(Some(ReqCodeGroup("dead group") and id))(d)
+            case Some(r) => TestOptics.reqCodeDataReqInactive.modify(_.add(r, id))(d)
           }
         }
         val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = p.newMaxReqCodeId)

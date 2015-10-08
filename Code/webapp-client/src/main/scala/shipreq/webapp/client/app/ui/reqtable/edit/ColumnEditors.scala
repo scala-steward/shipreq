@@ -139,7 +139,7 @@ final class ColumnEditors(project       : Px[Project],
 
   val codesForReq = mkEditor[GenericReqRow, String] { r =>
     val id = r.req.id
-    val iv = project.value().reqCodes.activeReqCodesByTarget(r.req.id)
+    val iv = project.value().reqCodes.activeReqCodesByReqId(r.req.id)
     ReqCodeEditor.ForReqs.edit(id, iv, reqCodeTrie, _)
   }
 

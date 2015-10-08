@@ -19,10 +19,11 @@ object ProjectText {
   /** Judgement on how a ReqCode-based reference (eg. [email.failure]) should be displayed */
   sealed trait ReqCodeResolution
   object ReqCodeResolution {
-    case class ActiveCode     (code: ReqCode.Value, target: ReqCode.Target) extends ReqCodeResolution
-    case class DeadGroup      (code: ReqCode.Value)                         extends ReqCodeResolution
-    case class ReqWithoutCodes(reqId: ReqId)                                extends ReqCodeResolution
-    case class ReqWithAltCode (code: ReqCode.Value, reqId: ReqId)           extends ReqCodeResolution
+    case class ActiveCodeToReq     (code: ReqCode.Value, reqId: ReqId)              extends ReqCodeResolution
+    case class ReqWithAltCode      (code: ReqCode.Value, reqId: ReqId)              extends ReqCodeResolution
+    case class ReqWithoutActiveCode(code: ReqCode.Value, reqId: ReqId)              extends ReqCodeResolution
+    case class ActiveCodeToGroup   (code: ReqCode.Value, group: ReqCodeGroup.AndId) extends ReqCodeResolution
+    case class DeadGroup           (code: ReqCode.Value)                            extends ReqCodeResolution
   }
 
   /**
@@ -44,25 +45,22 @@ object ProjectText {
     // Algorithm could be improved to be more meaningful, like most common (node) prefix, nodes in common, etc.
     def findAlt(reqId: ReqId, deadCode: Value): Option[ReqWithAltCode] = {
       val deadCodeStr = reqCode(deadCode)
-      NonEmptySet.option(rc.activeReqCodesByTarget(reqId) - deadCode).map { cs =>
+      NonEmptySet.option(rc.activeReqCodesByReqId(reqId) - deadCode).map { cs =>
         val c = cs.whole.minBy(c => Util.levenshtein(deadCodeStr, reqCode(c)))
         ReqWithAltCode(c, reqId)
       }
     }
 
     val code = rc.reqCode(id)
-    val data = rc(code)
-    data.active match {
-      case Some(ad) if ad.id ≟ id =>
-        ActiveCode(code, ad.target)
-      case None =>
-        if (data.refsToGroup contains id)
-          DeadGroup (code)
-        else
-          data.reqInactive.m.find(_._2 contains id) match {
-            case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutCodes(reqId)
-            case None             => mustNotHappen(s"$id not found in $code: $data")
-          }
+    rc(code) match {
+      case d: ActiveReq   if d.id ≟ id        => ActiveCodeToReq(code, d.reqId)
+      case d: ActiveGroup if d.id ≟ id        => ActiveCodeToGroup(code, d.groupAndId)
+      case d if d.deadGroup.exists(_.id ≟ id) => DeadGroup(code)
+      case data =>
+        data.reqInactive.m.find(_._2 contains id) match {
+          case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutActiveCode(code, reqId)
+          case None             => mustNotHappen(s"$id not found in $code: $data")
+        }
     }
   }
 }

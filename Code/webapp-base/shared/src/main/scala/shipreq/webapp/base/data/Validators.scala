@@ -242,7 +242,7 @@ object Validators {
 
     def valueUniqueness =
       ValidationPart.test[VS, Value]({ case (vs, InputCorrected(v)) =>
-        vs.currentValues.contains(v) || !vs.trie.lookup(v).exists(_.active.isDefined)
+        vs.currentValues.contains(v) || !vs.trie.lookup(v).exists(_.isActive)
       },
       VFailure.forField1(FieldNames.reqCode, "is already in use.")) // english
 

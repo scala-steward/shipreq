@@ -24,6 +24,12 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
     NonEmptyVector(v.head, v.tail)
   }
 
+  implicit def autoReqCodeSet[C <% ReqCode.Value](c: C): ReqCode.CodeSet =
+    ReqCode.CodeSet.empty.put(c, ())
+
+  implicit def autoReqCodeSetFromSet[C <% ReqCode.Value](cs: Set[C]): ReqCode.CodeSet =
+    cs.foldLeft(ReqCode.CodeSet.empty)(_.put(_, ()))
+
   implicit def autoReqCodeId        (i: Int) = ReqCodeId(i)
   implicit def autoReqTypePos       (i: Int) = ReqTypePos(i)
   implicit def autoGenericReqId     (i: Int) = GenericReqId(i)
@@ -48,10 +54,9 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = Some(i)
   implicit def autoDeletionReasonIdO (i: Int): Option[DeletionReasonId]           = Some(i)
 
-  implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
+  implicit def autoReqCodeIdS(i: Int): Set[ReqCodeId] = Set(i)
 
-  implicit def autoTrieData(ad: ReqCode.ActiveData): ReqCode.Data =
-    ReqCode.Data.empty.copy(active = ad)
+  implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
 
   def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(NonEmptySet(a, as: _*))
   def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(NonEmptySet(a, as: _*))
@@ -71,6 +76,9 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   //  implicit def autoNes[A: UnivEq](a: A): NonEmptySet[A] = NonEmptySet one a
   implicit def autoNes[A, B: UnivEq](a: A)(implicit ev: A => B): NonEmptySet[B] =
     NonEmptySet one a
+
+//  implicit def autoSet[A, B: UnivEq](a: A)(implicit ev: A => B): Set[B] =
+//    Set(a)
 
   def min2set[A: UnivEq](a: A, b: A, t: A*): Min2Set[A] =
     Min2Set(NonEmptySet(a, t.toSet + b)).fold(nes => sys.error(s"Not make a Min2Set from $nes"), a => a)

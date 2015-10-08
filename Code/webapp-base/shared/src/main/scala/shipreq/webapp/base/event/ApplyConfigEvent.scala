@@ -81,8 +81,8 @@ trait ApplyConfigEvent {
     def applyDelete(e: DeleteCustomReqType): SE[Unit] = {
       val cascade: Set[ReqId] => SE[Unit] =
         e.da match {
-          case Delete  => ReqCodeLogic.makeInactiveAllBelongingToReqs
-          case Restore => ReqCodeLogic.restoreAllBelongingToReqs
+          case Delete  => ReqCodeLogic.inactivateBelongingToReqs
+          case Restore => ReqCodeLogic.restoreBelongingToReqs
         }
       imap.deleteOrRestore(e.id, e.da) >> reqsToCascadeReqTypeLiveChange(e.id) >>= cascade
     }

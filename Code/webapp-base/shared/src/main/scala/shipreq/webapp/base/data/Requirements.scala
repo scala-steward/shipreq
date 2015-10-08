@@ -2,7 +2,7 @@ package shipreq.webapp.base.data
 
 import nyaya.util.Multimap
 import monocle.macros.Lenses
-import monocle.Prism
+import scala.annotation.tailrec
 import scalaz.{Equal, Order}
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
@@ -92,65 +92,98 @@ object ReqCode {
   }
 
   /**
-   * Something to which a [[ReqCode]] can refer.
+   * Inactive associations to a ReqCode by reqs.
    *
-   * type [[Target]] = [[ReqCodeGroup]] | [[ReqId]]
+   * When a req is dead, all its ReqCodes move into this.
+   *
+   * When a req is live, it can also contain IDs referenced in rich text that have been renamed such that they now share
+   * a ReqCode (i.e. Give a req two codes [a] & [b], create refs to both, change req's codes to just [c], [c] gets [a]'s
+   * ID actively and [b]'s ID inactively here).
    */
-  sealed trait Target
+  type ReqInactive = Multimap[ReqId, Set, ReqCodeId]
+  def emptyReqInactive: ReqInactive = UnivEq.emptySetMultimap
 
-  object Target extends TargetEquality {
-    lazy val reqId        = Prism[Target, ReqId]       ({case a: ReqId        => Some(a); case _ => None})(t => t)
-    lazy val reqCodeGroup = Prism[Target, ReqCodeGroup]({case a: ReqCodeGroup => Some(a); case _ => None})(t => t)
+  /**
+   * A [[ReqCodeGroup]] previously assigned to a ReqCode, since deleted.
+   */
+  type DeadGroup = Option[ReqCodeGroup.AndId]
+
+  /**
+   * Data stored at each node in the ReqCode trie.
+   */
+  sealed abstract class Data {
+    def nonEmpty: Boolean
+
+    @inline final def isEmpty = !nonEmpty
+
+    def isActive: Boolean
+
+    def activeId: Option[ReqCodeId]
+
+    val reqInactive: ReqInactive
+
+    def modReqInactive(f: ReqInactive => ReqInactive): Data
+
+    def deadGroup: DeadGroup
+
+    /** Active & inactive */
+    def ids: Stream[ReqCodeId]
+
+    protected final def _inactiveIds: Stream[ReqCodeId] =
+      deadGroup.toStream.map(_.id) append reqInactive.allValues
   }
 
-  /**
-   * Data associated with a ReqCode in the case that the ReqCode exists in the current user-visible tree of ReqCodes.
-   * (As opposed to a ReqCode that exists for technical reasons and doesn't exist as far as the user is concerned.)
-   */
   @Lenses
-  final case class ActiveData(id: ReqCodeId, target: Target)
+  case class Inactive(deadGroup: DeadGroup, reqInactive: ReqInactive) extends Data {
+    override def nonEmpty = deadGroup.nonEmpty || reqInactive.nonEmpty
+    override def isActive = false
+    override def activeId = None
+    override def ids      = _inactiveIds
+    override def modReqInactive(f: ReqInactive => ReqInactive) =
+      copy(reqInactive = f(reqInactive))
+  }
 
-  /**
-   * Data associated with each [[ReqCode.Value]].
-   *
-   * See `Design/req_codes.ods`.
-   *
-   * @param lastGroup A group previously assigned to this reqcode, since deleted.
-   *                  If `active` is a group, then this must be `None`.
-   * @param refsToGroup Previous IDs still referenced in rich text.
-   * @param reqInactive Inactive associations to this reqcode by reqs.
-   *                    When a req is dead, all its reqcodes move into this.
-   *                    When a req is live, it can also contain IDs referenced in rich text that have been renamed such
-   *                    that they now share this reqcode (i.e. Give a req two codes [a] & [b], create refs to both,
-   *                    change req's codes to just [c], [c] gets [a]'s ID actively and [b]'s ID inactively here).
-   */
   @Lenses
-  final case class Data(active     : Option[ActiveData],
-                        lastGroup  : Option[ReqCodeGroup],
-                        refsToGroup: Set[ReqCodeId],
-                        reqInactive: Multimap[ReqId, Set, ReqCodeId]) {
+  case class ActiveReq(id: ReqCodeId, reqId: ReqId, deadGroup: DeadGroup, reqInactive: ReqInactive) extends Data {
+    override def nonEmpty = true
+    override def isActive = true
+    override def activeId = Some(id)
+    override def ids      = id #:: _inactiveIds
+    override def modReqInactive(f: ReqInactive => ReqInactive) =
+      copy(reqInactive = f(reqInactive))
+  }
 
-    def nonEmpty: Boolean =
-      active.nonEmpty || lastGroup.nonEmpty || refsToGroup.nonEmpty || reqInactive.nonEmpty
-
-    def ids: Stream[ReqCodeId] =
-      active.toStream.map(_.id) append
-        refsToGroup.toStream append
-        reqInactive.allValues
-
-    def reqIds: Stream[ReqId] =
-      reqInactive.keys.toStream append active.map(_.target).toList.filterT[ReqId]
+  @Lenses
+  case class ActiveGroup(groupAndId: ReqCodeGroup.AndId, reqInactive: ReqInactive) extends Data {
+    @inline  def id        = groupAndId.id
+    @inline  def group     = groupAndId.group
+    override def nonEmpty  = true
+    override def isActive  = true
+    override def activeId  = Some(id)
+    override def deadGroup = None
+    override def ids       = id #:: _inactiveIds
+    override def modReqInactive(f: ReqInactive => ReqInactive) =
+      copy(reqInactive = f(reqInactive))
+  }
+  object ActiveGroup {
+    val group = groupAndId ^|-> ReqCodeGroup.AndId.group
+    val id    = groupAndId ^|-> ReqCodeGroup.AndId.id
   }
 
   object Data {
-    val empty = Data(None, None, UnivEq.emptySet, UnivEq.emptySetMultimap)
+    val empty = Inactive(None, UnivEq.emptySetMultimap)
   }
 
-  implicit def activeDataEquality: UnivEq[ActiveData] = UnivEq.derive
-  implicit def dataEquality      : UnivEq[Data]       = UnivEq.derive
+  implicit def equalInactive   : UnivEq[Inactive]    = UnivEq.derive
+  implicit def equalActiveReq  : UnivEq[ActiveReq]   = UnivEq.derive
+  implicit def equalActiveGroup: UnivEq[ActiveGroup] = UnivEq.derive
+  implicit def equalData       : UnivEq[Data]        = UnivEq.derive
 
   val  Trie = new MTrie.Types[Node, Data]
   type Trie = Trie.Trie
+
+  val  CodeSet = new MTrie.Types[Node, Unit]
+  type CodeSet = CodeSet.Trie
 }
 
 /**
@@ -158,7 +191,8 @@ object ReqCode {
  *
  * Previously called "Semantic Header Row" or "SHR" in the requirements.
  */
-final case class ReqCodeGroup(title: Text.ReqCodeGroupTitle.OptionalText) extends ReqCode.Target {
+@Lenses
+final case class ReqCodeGroup(title: Text.ReqCodeGroupTitle.OptionalText) {
   @inline def isEmpty : Boolean = title.isEmpty
   @inline def nonEmpty: Boolean = !isEmpty
 
@@ -167,9 +201,11 @@ final case class ReqCodeGroup(title: Text.ReqCodeGroupTitle.OptionalText) extend
 
   def live = Live
 }
+
 object ReqCodeGroup {
   val empty = ReqCodeGroup(Vector.empty)
 
+  @Lenses
   final case class AndId(id: ReqCodeId, group: ReqCodeGroup)
 
   implicit def equality     : UnivEq[ReqCodeGroup] = UnivEq.derive
@@ -184,42 +220,64 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   import ReqCode._
   import MTrie.Ops
 
-  def cataA[A](z: A)(f: (A, Value, ActiveData) => A): A =
-    trie.cataV(z)((a, v, d) => d.active.fold(a)(f(a, v, _)))
-
-  lazy val activeGroups: Stream[ReqCodeGroup.AndId] =
-    cataA(Stream.empty[ReqCodeGroup.AndId])((q, c, d) => d.target match {
-      case _: ReqId        => q
-      case g: ReqCodeGroup => (g and d.id) +: q
-    })
-
-  lazy val activeReqCodesByTarget: Multimap[Target, Set, Value] =
-    cataA(UnivEq.emptySetMultimap[Target, Value])((q, c, d) =>
-      q.add(d.target, c))
-
-  lazy val inactiveIdsByReqId: Multimap[ReqId, Set, ReqCodeId] =
-    trie.cataV(UnivEq.emptySetMultimap[ReqId, ReqCodeId])((q, c, d) =>
-      q ++ d.reqInactive.m)
-
-  lazy val reqCodesById: Map[ReqCodeId, Value] =
-    trie.cataV(UnivEq.emptyMap[ReqCodeId, Value])((q, c, d) =>
-      d.ids.foldLeft(q)(_.updated(_, c)))
-
-  def reqCode(id: ReqCodeId): Value =
-    reqCodesById get id mustExistElse s"No req code associated with $id."
+  def apply(code: Value): Data =
+    get(code) mustExistElse s"No node at reqcode ${code.whole mkString "."}."
 
   def get(code: Value): Option[Data] =
     trie.lookup(code)
 
-  def apply(code: Value): Data =
-    get(code) mustExistElse s"No node at reqcode ${code.whole mkString "."}."
+  def lookup(id: ReqCodeId): Data =
+    apply(reqCode(id))
 
-  def allIds: Stream[ReqCodeId] =
-    trie.flatStream.flatMap(_._2.ids)
+  def reqCode(id: ReqCodeId): Value =
+    reqCodesById get id mustExistElse s"No req code associated with $id."
 
-//  lazy val targetToIds: Multimap[Target, Set, Id] =
-//    trie.cataV(UnivEq.emptySetMultimap[Target, Id])((q, _, d) =>
-//      q.add(d.target, d.id))
+  private lazy val scan = new Scan
+  private class Scan {
+    private val _allIds         = Stream.newBuilder[ReqCodeId]
+    private val _activeGroups   = List.newBuilder[ReqCodeGroup.AndId]
+    private val _inactiveGroups = List.newBuilder[ReqCodeGroup.AndId]
+    private val _reqCodesById   = Map.newBuilder[ReqCodeId, Value]
+    var _activeReqCodesByReqId: Multimap[ReqId, Set, Value] = UnivEq.emptySetMultimap
+    var _inactiveIdsByReqId: Multimap[ReqId, Set, ReqCodeId] = UnivEq.emptySetMultimap
+
+    trie.foreachPathAndValue { (code, data) =>
+
+      val ids = data.ids
+      _allIds ++= ids
+      _reqCodesById ++= ids.map((_, code))
+
+      _inactiveIdsByReqId ++= data.reqInactive.m
+
+      data.deadGroup.map(_inactiveGroups += _)
+
+      data match {
+        case d: ActiveReq   => _activeReqCodesByReqId = _activeReqCodesByReqId.add(d.reqId, code)
+        case d: ActiveGroup => _activeGroups += d.groupAndId
+        case _: Inactive    => ()
+      }
+    }
+
+    val activeGroups          = _activeGroups.result()
+    val inactiveGroups        = _inactiveGroups.result()
+    val reqCodesById          = _reqCodesById.result()
+    val allIds                = _allIds.result()
+    val activeReqCodesByReqId = _activeReqCodesByReqId
+    val inactiveIdsByReqId    = _inactiveIdsByReqId
+  }
+
+  // TODO Are {in,}activeGroups useful really?
+  // 1) (RCG,id) likely isn't enough anymore, better would be (RCG,id,live, maybe code too?)
+  // 2) Logic.gather doesn't use this
+  @inline def activeGroups         : List[ReqCodeGroup.AndId]        = scan.activeGroups
+  @inline def inactiveGroups       : List[ReqCodeGroup.AndId]        = scan.inactiveGroups
+  @inline def reqCodesById         : Map[ReqCodeId, Value]           = scan.reqCodesById
+  @inline def activeReqCodesByReqId: Multimap[ReqId, Set, Value]     = scan.activeReqCodesByReqId
+  @inline def inactiveIdsByReqId   : Multimap[ReqId, Set, ReqCodeId] = scan.inactiveIdsByReqId
+  @inline def idStream             : Stream[ReqCodeId]               = scan.allIds
+
+  /** Active and inactive [[ReqCodeId]]s alike. */
+  lazy val idSet = idStream.toSet
 }
 
 object ReqCodes {
@@ -290,7 +348,7 @@ object PubidRegister {
 // Requirements
 
 /** type [[ReqIdT]] = [[GenericReqId]] */
-sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedInt with ReqCode.Target
+sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedInt
 
 /** [[Req]] = [[GenericReq]] */
 sealed abstract class ReqT[+RT <: ReqTypeId] {
@@ -381,9 +439,4 @@ case class Requirements(genericReqs: GenericReqIMap, pubids: PubidRegister) {
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
     UnivEq.emptyMultimap[ReqTypeId, Vector, Req]
       .addPairs(reqs.vstream(_.mapStrengthL(_.reqTypeId)): _*)
-}
-
-// At bottom of file to workaround SI-7046
-trait TargetEquality {
-  implicit def equality: UnivEq[ReqCode.Target] = UnivEq.derive
 }

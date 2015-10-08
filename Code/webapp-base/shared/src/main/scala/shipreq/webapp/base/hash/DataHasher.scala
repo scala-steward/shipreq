@@ -138,8 +138,7 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashReqDataText       : Hash[ReqData.Text]       = hashMap
   implicit val hashReqCodeNode       : Hash[ReqCode.Node]       = hashCaseClass
   implicit val hashReqCodeGroup      : Hash[ReqCodeGroup]       = hashCaseClass
-  implicit val hashReqCodeTarget     : Hash[ReqCode.Target]     = hashADT
-  implicit val hashReqCodeActiveData : Hash[ReqCode.ActiveData] = hashCaseClass
+  implicit val hashReqCodeGroupAndId : Hash[ReqCodeGroup.AndId] = hashCaseClass
 
   implicit val hashStaticReqTypeUC: Hash[StaticReqType.UseCase.type] = hashConstClass("UC")
   implicit val hashStaticReqType  : Hash[StaticReqType]              = hashADT
@@ -194,9 +193,40 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashProject        : Hash[Project]
 }
 
+object DataHasherV1 {
+  sealed trait Target
+  case class ReqTarget(id: ReqId) extends Target
+  case class GrpTarget(grp: ReqCodeGroup) extends Target
+  final case class ActiveData(id: ReqCodeId, target: Target)
+  final case class Data(active: Option[ActiveData],
+                        oldGroups: Set[ReqCodeId],
+                        reqInactive: Multimap[ReqId, Set, ReqCodeId])
+}
 final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHasher {
   import algorithm._
-  implicit val hashReqCodeData    : Hash[ReqCode.Data]    = hashCaseClassExcept('lastGroup)
+  import DataHasherV1._
+  implicit val hashReqCodeTarget1: Hash[ReqTarget] = hashCaseClass
+  implicit val hashReqCodeTarget2: Hash[GrpTarget] = hashCaseClass
+  implicit val hashReqCodeTarget: Hash[Target] = hashADT
+  implicit val hashReqCodeActiveData: Hash[ActiveData] = hashCaseClass
+  implicit val hashReqCodeDataProxy: Hash[Data] = hashCaseClass
+
+  implicit val hashReqCodeData: Hash[ReqCode.Data] = hashReqCodeDataProxy.cmap {
+    case d: ReqCode.Inactive => Data(None, d.deadGroup.map(_.id).toSet, d.reqInactive)
+    case d: ReqCode.ActiveGroup => Data(Some(ActiveData(d.id, GrpTarget(d.group))), Set.empty, d.reqInactive)
+    case d: ReqCode.ActiveReq => Data(Some(ActiveData(d.id, ReqTarget(d.reqId))), d.deadGroup.map(_.id).toSet, d.reqInactive)
+  }
+
+//  implicit val hashReqCodeData    : Hash[ReqCode.Data]    = {
+//    val fresh$macro$103 = hashOption(hashReqCodeActiveData)
+//    val fresh$macro$104 = hashSet(hashReqCodeId)
+//    val fresh$macro$105 = hashMultimap[shipreq.webapp.base.data.ReqId, Set, shipreq.webapp.base.data.ReqCodeId](algorithm.hashMap[shipreq.webapp.base.data.ReqId, Set[shipreq.webapp.base.data.ReqCodeId]](hashReqId, algorithm.hashSet[shipreq.webapp.base.data.ReqCodeId](hashReqCodeId)));
+//    Hash.fn[ReqCode.Data](t => joinHashes(
+//      fresh$macro$105.hash(t.reqInactive) ::
+//      fresh$macro$104.hash(t.inactiveGroup.map(_.id).toSet) ::
+//      fresh$macro$103.hash(t.active) :: Nil))
+//  }
+
   implicit val hashReqCodeTrie    : Hash[ReqCode.Trie]    = hashTrie
   implicit val hashReqCodes       : Hash[ReqCodes]        = hashCaseClass
   implicit val hashDeletionReasons: Hash[DeletionReasons] = Hash.unsupported
@@ -206,9 +236,12 @@ final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHa
 final class DataHasherCurrent(protected val algorithm: Hash.Algorithm) extends DataHasher {
   import algorithm._
   import HashAtoms.instances._
-  implicit val hashReqCodeData    : Hash[ReqCode.Data]    = hashCaseClass
-  implicit val hashReqCodeTrie    : Hash[ReqCode.Trie]    = hashTrie
-  implicit val hashReqCodes       : Hash[ReqCodes]        = hashCaseClass
-  implicit val hashDeletionReasons: Hash[DeletionReasons] = hashCaseClass
-  implicit val hashProject        : Hash[Project]         = hashCaseClass
+  implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive]    = hashCaseClass
+  implicit val hashReqCodeActiveGroup: Hash[ReqCode.ActiveGroup] = hashCaseClass
+  implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq]   = hashCaseClass
+  implicit val hashReqCodeData       : Hash[ReqCode.Data]        = hashADT
+  implicit val hashReqCodeTrie       : Hash[ReqCode.Trie]        = hashTrie
+  implicit val hashReqCodes          : Hash[ReqCodes]            = hashCaseClass
+  implicit val hashDeletionReasons   : Hash[DeletionReasons]     = hashCaseClass
+  implicit val hashProject           : Hash[Project]             = hashCaseClass
 }

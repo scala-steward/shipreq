@@ -6,6 +6,7 @@ import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.jquery.{TextComplete => TC}
 import scalajs.js.{UndefOr, undefined}
+import scalaz.{\/-, -\/, \/}
 import scalaz.std.string.stringInstance
 import scalaz.syntax.equal._
 import shapeless.syntax.singleton._
@@ -134,7 +135,7 @@ object AutoComplete {
 
   object reqCode {
     import Grammar.{reqCode => G}
-    import ReqCode.{Node, Trie, ActiveData, Value => Path}
+    import ReqCode.{Node, Trie, Value => Path, ActiveGroup, ActiveReq}
 
     private val sepStr = G.nodeSeparator.toString
     private val sep    = Util regexEscapeAndWrap sepStr
@@ -168,7 +169,7 @@ object AutoComplete {
   
           // Find suggestions
           val t = NonEmptyVector.maybe(path, trie)(trie.dropPath)
-          var r = t.toStream.filter(_._2.existsV(_.active.isDefined)).map(_._1.value)
+          var r = t.toStream.filter(_._2.existsV(_.isActive)).map(_._1.value)
           for (l <- lead)
             r = r.filter(_ startsWith l)
           r.sorted.map((path, _))
@@ -188,7 +189,7 @@ object AutoComplete {
         val mainRegex = s"$sep($node)"
 
         val activePaths: Stream[Path] =
-          trie.flatStream.filter(_._2.active.isDefined).map(_._1)
+          trie.flatStream.filter(_._2.isActive).map(_._1)
 
         def isMatch(term: String, path: Path): UndefOr[Path] = {
           @tailrec def go(prefix: Path, suffix: Vector[Node]): UndefOr[Path] =
@@ -224,12 +225,14 @@ object AutoComplete {
     def ref(project: Project, pt: PlainText.ForProject): Strategy = {
       val mainRegex = s"($sep?$node($sep$node)*$sep?)"
 
-      type A = (String, ActiveData)
+      type A = (String, ActiveGroup \/ ActiveReq)
 
       val activePaths: Stream[A] =
         project.reqCodes.trie.flatStream
-          .filter(_._2.active.isDefined)
-          .map(x => (PlainText reqCode x._1, x._2.active.get))
+          .collect {
+            case (c, a: ActiveReq)   => (PlainText reqCode c, \/-(a))
+            case (c, a: ActiveGroup) => (PlainText reqCode c, -\/(a))
+          }
           .sortBy(_._1)
 
       def termToRegex(term0: String) = {
@@ -258,21 +261,21 @@ object AutoComplete {
       }
 
       def li(a: A): ReactElement = {
-        val (code, data) = a
-        data.target match {
-          case id: ReqId =>
+        val code = a._1
+        a._2 match {
+          case \/-(a) =>
             *.codeRefToReqAutoComplete('code)(c => _('pubid)(p => _('desc)(d =>
               <.div(
                 <.div(
                   <.span(c, code),
-                  <.span(p, s"(${PlainText.pubid(project, id)})"),
-                <.div(d, pt.reqTitleById(id))))
+                  <.span(p, s"(${PlainText.pubid(project, a.reqId)})"),
+                <.div(d, pt.reqTitleById(a.reqId))))
             )))
-          case g: ReqCodeGroup =>
+          case -\/(a) =>
             *.codeRefToGroupAutoComplete('req)(r => _('desc)(d =>
               <.div(
                 <.div(r, code),
-                <.div(d, pt.reqCodeGroupTitle(g and data.id)))
+                <.div(d, pt.reqCodeGroupTitle(a.groupAndId)))
             ))
         }
       }

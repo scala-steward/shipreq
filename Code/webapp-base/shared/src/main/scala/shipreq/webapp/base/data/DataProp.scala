@@ -1,3 +1,4 @@
+
 package shipreq.webapp.base.data
 
 import nyaya.prop._
@@ -201,27 +202,18 @@ object DataProp {
     def nonEmptyData: Prop[Data] =
       Prop.test[Data]("Data not empty.", _.nonEmpty)
 
-    def activeGroupPreventsInactiveGroup: Prop[Data] =
-      Prop.atom("Active group prevents inactive group.", d =>
-        d.active match {
-          case Some(ActiveData(id, _: ReqCodeGroup)) if d.lastGroup.nonEmpty =>
-            Some(s"ReqCode #$id has active & inactive groups.")
-          case _ => None
-        }
-      )
-
     def allData: Prop[T] =
-      (nonEmptyData ∧ activeGroupPreventsInactiveGroup)
+      nonEmptyData
         .forall[T, List](_.trie.cataV[List[Data]](Nil)((q, _, d) => d :: q))
 
-    def ids =
-      id[ReqCodeId].forall((_: T).allIds)
+    def idFormat =
+      id[ReqCodeId].forall((_: T).idStream)
 
     def uniqueIds =
-      Prop.distinct("ID", (_: T).allIds)
+      Prop.distinct("ID", (_: T).idStream)
 
     lazy val all =
-      (branchesMustBranch ∧ allData ∧ uniqueIds ∧ ids) rename "ReqCodes"
+      (branchesMustBranch ∧ allData ∧ uniqueIds ∧ idFormat) rename "ReqCodes"
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -426,10 +418,7 @@ object DataProp {
     def liveReqCodeRequiresLiveTarget =
       Prop.whitelist[Project]("Live ReqCode requires Live Target")(
         p => p.reqs.reqs.values.toStream.filter(_.live(p.config.customReqTypes) :: Live).map(_.id).toSet,
-        _.reqCodes.cataA(UnivEq.emptySet[ReqId])((q, _, a) => a.target match {
-          case id: ReqId       => q + id
-          case _: ReqCodeGroup => q
-        }))
+        _.reqCodes.activeReqCodesByReqId.keySet)
 
     def validRefs = {
       type TR = (P, Refs)
@@ -438,7 +427,7 @@ object DataProp {
       def mkRefs(p: Project): Refs = Refs(
         p.config.fields.customFields.keySet,
         p.reqs.reqs.vstream(_.id).toSet,
-        p.reqCodes.allIds.toSet,
+        p.reqCodes.idSet,
         p.config.reqTypes.map(_.reqTypeId).toSet,
         p.config.tags.keySet)
 
@@ -465,7 +454,8 @@ object DataProp {
       }
 
       ( validReqTypeIds("Pubid keys",                 _.reqs.pubids.value.m.keys)
-      ∧ validReqIds    ("ReqCode targets"             , _.reqCodes.trie.cataV(Set.empty[ReqId])((q, _, d) => q ++ d.reqIds))
+      ∧ validReqIds    ("ReqCode ReqIds (active)",    _.reqCodes.activeReqCodesByReqId.keys)
+      ∧ validReqIds    ("ReqCode ReqIds (inactive)",  _.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids", _.reqText.keys)
       ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.vstreamf(_.keys.toStream))
       ∧ validReqIds    ("ReqData.config.tags keys",   _.reqTags.keys)

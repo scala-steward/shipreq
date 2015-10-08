@@ -44,14 +44,22 @@ object ParsersTest extends TestSuite {
     override def toString = p.toString
 
 //    println(p.countAtoms.showTree + "\n")
+//    println()
+//    p.reqCodes.trie.foreachPathAndValue((c,d) => println(s"${d.activeId.fold("-")(_.value.toString)} : ${PlainText reqCode c} - $d"))
+//    println()
 
     val E = EvalOver(this)
 
     val txt2str = PlainText(p).format(Live, _: Text.AnyOptional)
 
-    val genericReqTitles = p.reqs.reqs.values.filterT[GenericReq].map(_.title)
+    val genericReqTitles =
+      p.reqs.reqs.values
+        .filterT[GenericReq]
+        //.filter(_.live(p.config.customReqTypes) :: Live)
+        .map(_.title)
 
-    val customTextFieldValues = p.reqText.values.toStream.flatMap(_.values.toStream)
+    val customTextFieldValues =
+      p.reqText.values.toStream.flatMap(_.values.toStream)
 
     def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
 
@@ -224,8 +232,11 @@ object ParsersTest extends TestSuite {
       'mathtex      - $.TextGen.mathTex     (T).mustSatisfy(propMathTeX)
     }
 
+    // The [parse . toString = id] property doesn't hold with dead dead/alternate CodeRefs.
+    // Eg. Dead text can have CodeRefs to dead codes.
+    // Parsing text only happens to live text, and it only looks at active codes.
     'big {
-      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(100).setGenSize(100))
+      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(1).setGenSize(4).setDebug.setSingleThreaded)
       println()
       val graphUnit = 1000 `JVM|JS` 10
       val graphChar = "#" `JVM|JS` "."

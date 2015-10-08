@@ -20,8 +20,8 @@ object EventEquality {
   implicit val equalDeleteCustomField    : Equal[DeleteCustomField]     = UtilMacros.deriveEqual
   implicit val equalDeleteCustomIssueType: Equal[DeleteCustomIssueType] = UtilMacros.deriveEqual
   implicit val equalDeleteCustomReqType  : Equal[DeleteCustomReqType]   = UtilMacros.deriveEqual
-  implicit val equalDeleteReqCodeGroup   : Equal[DeleteReqCodeGroup]    = UtilMacros.deriveEqual
-  implicit val equalDeleteReq            : Equal[DeleteReq]             = UtilMacros.deriveEqual
+  implicit val equalDeleteReqCodeGroups  : Equal[DeleteReqCodeGroups]   = UtilMacros.deriveEqual
+  implicit val equalDeleteReqs           : Equal[DeleteReqs]            = UtilMacros.deriveEqual
   implicit val equalDeleteStaticField    : Equal[DeleteStaticField]     = UtilMacros.deriveEqual
   implicit val equalDeleteTag            : Equal[DeleteTag]             = UtilMacros.deriveEqual
   implicit val equalPatchImplicationSrc  : Equal[PatchImplicationSrc]   = UtilMacros.deriveEqual
@@ -29,6 +29,7 @@ object EventEquality {
   implicit val equalPatchReqCodes        : Equal[PatchReqCodes]         = UtilMacros.deriveEqual
   implicit val equalPatchReqTags         : Equal[PatchReqTags]          = UtilMacros.deriveEqual
   implicit val equalRepositionField      : Equal[RepositionField]       = UtilMacros.deriveEqual
+  implicit val equalRestoreContent       : Equal[RestoreContent]        = UtilMacros.deriveEqual
   implicit val equalSetCustomTextField   : Equal[SetCustomTextField]    = UtilMacros.deriveEqual
   implicit val equalSetGenericReqTitle   : Equal[SetGenericReqTitle]    = UtilMacros.deriveEqual
   implicit val equalSetGenericReqType    : Equal[SetGenericReqType]     = UtilMacros.deriveEqual

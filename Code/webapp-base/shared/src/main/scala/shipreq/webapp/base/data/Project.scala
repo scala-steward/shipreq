@@ -64,9 +64,11 @@ final case class Project(config         : ProjectConfig,
     b.result()
   }
 
+  /** Dead or alive */
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
-      ("ReqCodeGroups", reqCodes.activeGroups.map(_.group.title)),
+      ("ReqCodeGroups", reqCodes.activeGroups.toStream.map(_.group.title)),
+      ("ReqCodeGroups (inactive)", reqCodes.inactiveGroups.toStream.map(_.group.title)),
       ("GenericReq titles", reqs.reqs.values.filterT[GenericReq].map(_.title)),
       ("Text fields", reqText.values.toStream.flatMap(_.values.toStream).map(_.whole)))
 
