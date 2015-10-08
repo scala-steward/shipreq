@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.nyaya._
+import nyaya.prop._
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.SafeStringOps._
 import shipreq.webapp.base.UiText.EnglishIntExt

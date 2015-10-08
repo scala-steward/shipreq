@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.CycleDetector
+import nyaya.prop.CycleDetector
 import monocle.Lens
 import monocle.macros.{Lenses, GenLens}
 import scala.annotation.tailrec
@@ -115,7 +115,7 @@ object TagTree {
     val rootIds = tt.values.foldLeft(tt.keySet)(_ -- _.children)
     val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
     "TagTree\n" +
-    japgolly.nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
+    nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
       t => s"${t.tag.name} (${t.id.value})${if (t.tag.live ≟ Dead) " DEAD" else ""}",
       "  ")
   }

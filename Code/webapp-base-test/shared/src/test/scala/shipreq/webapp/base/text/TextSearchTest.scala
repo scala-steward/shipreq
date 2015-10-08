@@ -1,8 +1,8 @@
 package shipreq.webapp.base.text
 
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTest._
 import scalaz.Memo
 import scalaz.std.anyVal.booleanInstance
 import scalaz.std.string.stringInstance

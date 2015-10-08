@@ -1,6 +1,6 @@
 package shipreq.webapp.base.test
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import scala.collection.generic.CanBuildFrom
 import shipreq.base.util._
 import shipreq.webapp.base.data.Field.ApplicableReqTypes

@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import monocle.macros.Lenses
 import monocle.Prism
 import scalaz.{Equal, Order}

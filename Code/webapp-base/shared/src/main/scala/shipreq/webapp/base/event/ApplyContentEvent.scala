@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import scala.annotation.tailrec
 import scalaz.syntax.equal._
 import shipreq.base.util._

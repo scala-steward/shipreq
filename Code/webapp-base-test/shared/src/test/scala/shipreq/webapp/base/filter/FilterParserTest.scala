@@ -1,8 +1,8 @@
 package shipreq.webapp.base.filter
 
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTestOps._
 import org.parboiled2.{ErrorFormatter, ParseError}
 import scala.util.{Failure, Success}
 import utest._

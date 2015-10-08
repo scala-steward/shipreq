@@ -1,6 +1,7 @@
 package shipreq.utils
 
-import japgolly.nyaya.test._
+import nyaya.gen._
+import nyaya.test._
 import scala.annotation.tailrec
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
@@ -92,7 +93,7 @@ object GenerateProject {
   // ===================================================================================================================
 
   def firstSample[A](gen: Gen[A], size: Int): A =
-    gen.samples(GenCtx(GenSize(size)), 1).next()
+    gen.samplesSized(size).next()
 
   var autoSelect         = false
   var lastPromptResponse = '?'

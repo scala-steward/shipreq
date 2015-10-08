@@ -1,6 +1,6 @@
 package shipreq.webapp.client.test
 
-import japgolly.nyaya.test.{PropTestOps, DefaultSettings}
+import nyaya.test.{PropTestOps, DefaultSettings}
 
 /**
  * For properties that are tested on both JVM and JS, it is acceptable to run less here in JS.

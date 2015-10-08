@@ -35,7 +35,7 @@ object ShipReq extends Build {
     crossProject("base-macro")
       .configureBoth(Common.macroModuleSettings)
       .configureJs(Common.jsSettings(NoTests))
-      .depsForBoth(Scalaz.core ++ Nyaya.core)
+      .depsForBoth(Scalaz.core ++ Nyaya.util)
 
   lazy val baseUtilJvm = baseUtil.jvm
   lazy val baseUtilJs  = baseUtil.js
@@ -45,7 +45,7 @@ object ShipReq extends Build {
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseMacro)
       .depsForBoth(
-        Scalaz.effect ++ Nyaya.core ++ testScope(μTest))
+        Scalaz.effect ++ Nyaya.prop ++ testScope(μTest))
       .depsForJvm(
         SLF4J.api ++ Scalaz.effect ++
         providedScope(logback ++ jodaTime) ++
@@ -202,7 +202,7 @@ object ShipReq extends Build {
       .configureBoth(webappSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(
-        μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.core ++ parboiled ++ boopickle ++
+        μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
         testScope(μTest) // TODO Move tests into this
       )
       .configureBoth(
@@ -261,7 +261,7 @@ object ShipReq extends Build {
         .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test->compile")
         .depsForJs(
           Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
-          μPickle ++ shapeless ++ Nyaya.core ++ parboiled ++ boopickle ++
+          μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
           testScope(React.test ++ μTest ++ Nyaya.test)
         )
         .configure(

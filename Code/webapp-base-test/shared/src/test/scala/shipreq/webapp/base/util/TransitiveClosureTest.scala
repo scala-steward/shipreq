@@ -1,7 +1,7 @@
 package shipreq.webapp.base.util
 
-import japgolly.nyaya._
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.test.PropTest._
 import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._

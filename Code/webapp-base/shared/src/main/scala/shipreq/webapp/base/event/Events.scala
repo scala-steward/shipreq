@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text

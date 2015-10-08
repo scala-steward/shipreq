@@ -70,7 +70,7 @@ object ShowSize {
     def sumChildren: Int =
       children.foldLeft(0)(_ + _.size)
 
-    import japgolly.nyaya.util.Util._
+    import nyaya.util.Util._
 
     def showTree: String =
       // asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => s"${n.name}  ${n.size}")

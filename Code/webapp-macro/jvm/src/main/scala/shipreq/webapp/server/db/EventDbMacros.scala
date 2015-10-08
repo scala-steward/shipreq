@@ -317,8 +317,8 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
     val s = t.toString
     if (s startsWith "Set[")
       OptionalJsonObjectFieldHelper(q"Set.empty: $t")
-    else if (s startsWith "japgolly.nyaya.util.Multimap[")
-      OptionalJsonObjectFieldHelper(q"japgolly.nyaya.util.Multimap.empty: $t")
+    else if (s startsWith "nyaya.util.Multimap[")
+      OptionalJsonObjectFieldHelper(q"nyaya.util.Multimap.empty: $t")
     else
       fail(s"Don't know how to handle optional JSON field of type: $s")
   }

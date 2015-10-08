@@ -1,7 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
-import japgolly.nyaya.util.{Multimap, MultiValues}
+import nyaya.util.{Multimap, MultiValues}
 import scalaz.{\/, -\/, \/-, \&/}
 import scalaz.Isomorphism.<=>
 import shipreq.base.util._

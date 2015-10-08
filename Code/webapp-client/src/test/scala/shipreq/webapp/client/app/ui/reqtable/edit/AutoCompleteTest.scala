@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 package edit
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import japgolly.scalajs.jquery.{TextComplete => TC}
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.test._

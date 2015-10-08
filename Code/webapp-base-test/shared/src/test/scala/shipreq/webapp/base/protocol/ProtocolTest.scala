@@ -9,9 +9,10 @@ import scalaz.std.anyVal.unitInstance
 import scalaz.std.stream.streamEqual
 import scalaz.syntax.equal._
 import utest._
-import japgolly.nyaya._
-import japgolly.nyaya.test.{Gen, Settings}
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.gen.Gen
+import nyaya.test.Settings
+import nyaya.test.PropTest._
 import shipreq.base.util.{UtilMacros, UnivEq}
 import shipreq.webapp.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._

@@ -1,8 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTest._
 import scalaz.syntax.equal._
 import utest._
 import shipreq.base.util.UnivEq.Implicits._

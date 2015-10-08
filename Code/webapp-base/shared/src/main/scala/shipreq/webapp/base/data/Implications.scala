@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.CycleDetector
-import japgolly.nyaya.util.Multimap
+import nyaya.prop.CycleDetector
+import nyaya.util.Multimap
 import monocle.macros.Lenses
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.util.TransitiveClosure

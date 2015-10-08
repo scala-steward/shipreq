@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import shipreq.webapp.base.text.Grammar
 import utest._
 import shipreq.webapp.base.test.BaseTestUtil._

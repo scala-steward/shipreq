@@ -1,6 +1,6 @@
 package shipreq.webapp.server.protocol
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import scalaz.\/
 import scalaz.syntax.equal._
 import shipreq.base.util._

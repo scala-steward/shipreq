@@ -1,10 +1,11 @@
 package shipreq.webapp.base.text
 
 import java.util.concurrent.atomic.AtomicInteger
-import japgolly.nyaya._
-import japgolly.nyaya.util._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.gen._
+import nyaya.util._
+import nyaya.test._
+import nyaya.test.PropTest._
 import org.parboiled2._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import scala.util.{Try, Failure, Success}

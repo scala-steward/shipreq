@@ -1,6 +1,6 @@
 package shipreq.webapp.base.hash
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import scalaz.\/
 import shipreq.base.util.TaggedTypes.TaggedType
 import shipreq.base.util._

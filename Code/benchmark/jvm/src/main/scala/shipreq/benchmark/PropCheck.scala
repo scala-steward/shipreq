@@ -1,6 +1,6 @@
 package shipreq.benchmark
 
-import japgolly.nyaya.LogicPropExt
+import nyaya.prop.LogicPropExt
 import org.openjdk.jmh.annotations._
 import shipreq.webapp.base.data.DataProp
 

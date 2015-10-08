@@ -1,9 +1,9 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
-import japgolly.nyaya._
-import japgolly.nyaya.test.DefaultSettings
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.prop._
+import nyaya.test.DefaultSettings
+import nyaya.test.PropTestOps._
 import scalaz.Equal
 import utest._
 import shipreq.webapp.base.RandomData

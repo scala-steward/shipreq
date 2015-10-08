@@ -1,9 +1,10 @@
 package shipreq.webapp.server.db
 
 import java.util.concurrent.atomic.AtomicInteger
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.gen.Gen
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTestOps._
 import scalaz.std.vector.vectorEqual
 import scalaz.std.tuple.tuple2Equal
 import utest._
@@ -46,7 +47,7 @@ object DaoTest2 extends TestSuite {
       },
       Vector1(_))
 
-    val rnd = Gen.tuple2(RandomData.events.activeEvent, RandomData.events.hashRecs)
+    val rnd = RandomData.events.activeEvent *** RandomData.events.hashRecs
 
     tldb around prop.mustBeSatisfiedBy(rnd)
   }
@@ -54,7 +55,7 @@ object DaoTest2 extends TestSuite {
   private val q3 = "\"\"\""
   def demo[E <: ActiveEvent](gen: Gen[E]) = {
     import EventDbCodecs.eventCodecRegistry
-    val es = gen.samples(GenCtx(GenSize(3)), 10).toList
+    val es = gen.samplesSized(3).take(10)
     println("_"*120)
     for (e <- es) {
       val c = eventCodecRegistry.writer(e)

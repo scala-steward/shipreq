@@ -5,7 +5,7 @@ import org.scalajs.dom, dom.{EventTarget, KeyboardEvent}
 import scala.scalajs.js, js.{undefined, UndefOr}
 import scalaz.Equal
 import scalaz.std.AllInstances._
-import japgolly.nyaya.test.Gen
+import nyaya.gen.Gen
 import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.test.BaseTestUtil

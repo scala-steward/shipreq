@@ -4,9 +4,10 @@ import scalaz.std.vector._
 import scalaz.std.string._
 import scalaz.syntax.equal._
 import utest._
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTest._
+import nyaya.prop._
+import nyaya.gen.Gen
+import nyaya.test._
+import nyaya.test.PropTest._
 import shipreq.base.util.MMTree
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData

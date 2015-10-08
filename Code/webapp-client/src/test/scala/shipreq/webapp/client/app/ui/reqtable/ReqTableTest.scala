@@ -1,8 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTestOps._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.test._

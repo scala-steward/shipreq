@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import japgolly.nyaya.{CycleFree, CycleDetector}
+import nyaya.prop.{CycleFree, CycleDetector}
 import scala.collection.GenTraversable
 import scalaz.\/
 import shipreq.base.util.MMTree.Children

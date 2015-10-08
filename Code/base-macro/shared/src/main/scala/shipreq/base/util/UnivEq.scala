@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import japgolly.nyaya.util._
+import nyaya.util._
 import scalaz._
 import scalaz.std.anyVal.intInstance
 

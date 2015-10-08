@@ -1,9 +1,9 @@
 package shipreq.utils.lib
 
 import com.twitter.util.Eval
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.prop._
+import nyaya.test._
+import nyaya.test.PropTestOps._
 import scala.util.{Failure, Success, Try}
 import scalaz.Equal
 import scalaz.syntax.equal._

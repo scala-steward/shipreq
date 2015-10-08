@@ -1,10 +1,11 @@
 package shipreq.webapp.base.hash
 
 import boopickle._
-import japgolly.nyaya._
-import japgolly.nyaya.util.NyayaUtilAnyExt
-import japgolly.nyaya.test._
-import japgolly.nyaya.test.PropTestOps._
+import nyaya.gen.Gen
+import nyaya.prop._
+import nyaya.util.NyayaUtilAnyExt
+import nyaya.test._
+import nyaya.test.PropTestOps._
 import utest._
 
 import shipreq.webapp.base.test.BaseTestUtil.assertEq

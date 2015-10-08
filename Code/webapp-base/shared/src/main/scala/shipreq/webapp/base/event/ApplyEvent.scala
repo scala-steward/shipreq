@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import japgolly.nyaya.LogicPropExt
+import nyaya.prop.LogicPropExt
 import scala.annotation.tailrec
 import scalaz.{-\/, \/-, \/}
 import shipreq.base.util.UnivEq

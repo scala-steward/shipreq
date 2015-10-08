@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import monocle.Lens
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.text.Text

@@ -1,6 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.nyaya.test._
+import nyaya.gen._
+import nyaya.test._
 import scalaz.std.vector._
 import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._

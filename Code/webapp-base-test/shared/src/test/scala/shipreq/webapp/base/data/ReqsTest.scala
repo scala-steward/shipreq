@@ -1,8 +1,9 @@
 package shipreq.webapp.base.data
 
-import japgolly.nyaya._
-import japgolly.nyaya.test.PropTest._
-import japgolly.nyaya.test._
+import nyaya.prop._
+import nyaya.gen._
+import nyaya.test.PropTest._
+import nyaya.test._
 import utest._
 import scalaz.std.AllInstances._
 import shipreq.base.util.ScalaExt._

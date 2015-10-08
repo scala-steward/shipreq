@@ -4,8 +4,9 @@ import monocle.Lens
 import scalaz.Equal
 import scalaz.std.AllInstances._
 import utest._
-import japgolly.nyaya._
-import japgolly.nyaya.test._
+import nyaya.prop._
+import nyaya.gen._
+import nyaya.test._
 import shipreq.webapp.client.test.ClientTestSettings._
 import shipreq.webapp.client.test.TestUtil._
 import RowStatus._

@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import scalaz.{-\/, \/-}
 import utest._
 import shipreq.base.util._

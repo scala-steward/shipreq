@@ -1,6 +1,6 @@
 package shipreq.webapp.base.test
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import shipreq.base.util.{NonEmptyVector, ISubset}
 import shipreq.webapp.base.data._, DataImplicits._
 import UnsafeTypes._

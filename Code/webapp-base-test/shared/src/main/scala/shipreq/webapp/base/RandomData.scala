@@ -1,7 +1,7 @@
 package shipreq.webapp.base
 
-import japgolly.nyaya.util._
-import japgolly.nyaya.test.{Distinct, Gen, SizeSpec}
+import nyaya.gen._
+import nyaya.util._
 import monocle.{Lens, Traversal, PTraversal}
 import monocle.function.{first, second, third}
 import monocle.std.{some => atSome}

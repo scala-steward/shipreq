@@ -10,7 +10,7 @@ import ApplyEvent.LogicVer
 import EventDao.EventSeq
 
 object EventDbCodecs {
-  import japgolly.nyaya.util.{Multimap, MultiValues}
+  import nyaya.util.{Multimap, MultiValues}
   import upickle._
   import upickle.Fns._
   import upickle.BaseCodecs.StringRW

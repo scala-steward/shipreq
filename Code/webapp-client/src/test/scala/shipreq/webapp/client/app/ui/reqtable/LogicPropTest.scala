@@ -1,8 +1,9 @@
 package shipreq.webapp.client.app.ui.reqtable
 
-import japgolly.nyaya._
-import japgolly.nyaya.test._
-import japgolly.nyaya.util.Multimap
+import nyaya.gen.Gen
+import nyaya.prop._
+import nyaya.test._
+import nyaya.util.Multimap
 import scalaz.{\/, \/-, -\/, Equal}
 import scalaz.std.AllInstances._
 import utest._

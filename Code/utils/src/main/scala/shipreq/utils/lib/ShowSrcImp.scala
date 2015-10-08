@@ -1,6 +1,6 @@
 package shipreq.utils.lib
 
-import japgolly.nyaya.util.Multimap
+import nyaya.util.Multimap
 import org.apache.commons.lang3.StringEscapeUtils.escapeJava
 import scala.collection.GenTraversable
 import scalaz.{-\/, \/, \/-}

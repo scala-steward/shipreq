@@ -13,8 +13,8 @@ import scalaz.std.AllInstances._
 import scalaz.syntax.equal._
 import scalaz.syntax.bind.ToBindOps
 
-import japgolly.nyaya.CycleDetector
-import japgolly.nyaya.util.Multimap
+import nyaya.prop.CycleDetector
+import nyaya.util.Multimap
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{MMTree, Memo, UnivEq}
 import shipreq.webapp.base.data.{TagId => Id, _}, DataImplicits._
