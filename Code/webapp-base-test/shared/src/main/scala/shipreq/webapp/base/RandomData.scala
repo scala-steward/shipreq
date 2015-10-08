@@ -1155,7 +1155,7 @@ object RandomData {
     import RandomData.protocol._
 
     lazy val remoteFnKey =
-      Gen.alphaNumericString1(4)
+      Gen.alphaNumeric.string(4)
 
     def remoteFn(f: RemoteFn) =
       remoteFnKey.map(RemoteFn.Instance(_, f))
