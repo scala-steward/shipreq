@@ -105,6 +105,12 @@ object MTrie {
     type Path   = NonEmptyVector[K]
     @inline implicit private[this] def keyUnivEq: UnivEq[K] = UnivEq.force // evident from existence of trie
 
+    def foreachValue[U](f: V => U): Unit =
+      allValues.foreach(f)
+
+    def foreachPathAndValue[U](f: (Path, V) => U): Unit =
+      flatStream.foreach(f.tupled)
+
     /**
      * Flat left fold. Sugar to expand the key-value tuple.
      */
@@ -282,5 +288,14 @@ object MTrie {
         case Some(Value(_))     => true
         case Some(Branch(v, _)) => v.isDefined
       }
+
+    def allValues: Stream[V] =
+      trie.values.toStream.flatMap {
+        case b: Branch => b.value.toStream.map(_.value) append b.next.allValues
+        case v: Value  => v.value #:: Stream.empty[V]
+      }
+
+    @inline def add(path: Path)(implicit ev: Unit =:= V): Trie =
+      put(path, ())
   }
 }

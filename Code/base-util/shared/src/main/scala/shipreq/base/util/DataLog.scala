@@ -68,5 +68,5 @@ object DataLog {
     apply[A, Vector[A]](Vector.empty, _ :+ _)
 
   def mtrie[N]: DataLog[NonEmptyVector[N], MTrie.Trie[N, Unit]] =
-    apply[NonEmptyVector[N], MTrie.Trie[N, Unit]](Map.empty, _.put(_, ()))
+    apply[NonEmptyVector[N], MTrie.Trie[N, Unit]](Map.empty, _ add _)
 }
