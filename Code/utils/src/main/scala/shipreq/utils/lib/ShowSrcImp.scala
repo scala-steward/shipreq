@@ -220,6 +220,7 @@ object ShowSrcDataImp {
   private def imapI[K, V: ShowSrc](objName: String): ShowSrc[IMap[K, V]] =
     imap[K, V](s"emptyDataMap($objName)") init importDataI
 
+  implicit val deletionReasonId         = taggedType[DeletionReasonId          ]("DeletionReasonId          ")
   implicit val genericReqId             = taggedType[GenericReqId              ]("GenericReqId              ")
   implicit val reqCodeId                = taggedType[ReqCodeId                 ]("ReqCodeId                 ")
   implicit val customReqTypeId          = taggedType[CustomReqTypeId           ]("CustomReqTypeId           ")
@@ -327,6 +328,7 @@ object ShowSrcDataImp {
   implicit      val (reqCodeGroupTitleZ, reqCodeGroupTitleN) = text2(Text.ReqCodeGroupTitle)("RCGT")
   implicit      val (genericReqTitleZ  , genericReqTitleN  ) = text2(Text.GenericReqTitle)  ("GRT")
   implicit      val (customTextFieldZ  , customTextFieldN  ) = text2(Text.CustomTextField)  ("CTF")
+  implicit      val (deletionReasonZ   , deletionReasonN   ) = text2(Text.DeletionReason)   ("DR")
   implicit lazy val (inlineIssueDescZ  , inlineIssueDescN  ) = text (Text.InlineIssueDesc)  ("IID")
 
   implicit lazy val reqDataText: ShowSrc[ReqData.Text] = {
@@ -340,23 +342,39 @@ object ShowSrcDataImp {
   implicit val reqCodeNode: ShowSrc[ReqCode.Node] =
     data((s, n) => s.fn1("ReqCode.Node", n.value))
 
-  implicit val reqCodeGroup: ShowSrc[ReqCodeGroup] =
-    data((s, g) => s.cc1("ReqCodeGroup", ReqCodeGroup unapply g)(reqCodeGroupTitleZ))
+  implicit val deadReqCodeGroup: ShowSrc[DeadReqCodeGroup] =
+    data((s, g) => s.cc2("DeadReqCodeGroup", DeadReqCodeGroup unapply g)(reqCodeId, reqCodeGroupTitleZ))
 
-  implicit lazy val reqCodeTarget: ShowSrc[ReqCode.Target] =
+  implicit val deadReqCodeGroupField: ShowSrc[ReqCode.DeadGroup] =
+    option(deadReqCodeGroup)
+
+  implicit val liveReqCodeGroup: ShowSrc[LiveReqCodeGroup] =
+    data((s, g) => s.cc2("LiveReqCodeGroup", LiveReqCodeGroup unapply g)(reqCodeId, reqCodeGroupTitleZ))
+
+  implicit val reqCodeGroup: ShowSrc[ReqCodeGroup] =
     data((s, t) => t match {
-      case id: ReqId       => s <~ id
-      case g: ReqCodeGroup => s <~ g
+      case g: LiveReqCodeGroup => s <~ g
+      case g: DeadReqCodeGroup => s <~ g
     })
 
-  implicit val reqCodeActiveData: ShowSrc[ReqCode.ActiveData] =
-    data((s, d) => s.cc2("ReqCode.ActiveData", ReqCode.ActiveData unapply d))
+  implicit val reqCodeDataReqInactive: ShowSrc[ReqCode.ReqInactive] =
+    multimap[ReqId, Set, ReqCodeId]("ReqCode.emptyReqInactive")
 
-  implicit val reqCodeData: ShowSrc[ReqCode.Data] = {
-    implicit val reqInactive: ShowSrc[Multimap[ReqId, Set, ReqCodeId]] =
-      multimap[ReqId, Set, ReqCodeId]("UnivEq.emptySetMultimap[ReqId, ReqCodeId]") init importUnivEq
-    data((s, d) => s.cc4("ReqCode.Data", ReqCode.Data unapply d))
-  }
+  implicit val reqCodeActiveReq: ShowSrc[ReqCode.ActiveReq] =
+    data((s, d) => s.cc4("ReqCode.ActiveReq", ReqCode.ActiveReq unapply d))
+
+  implicit val reqCodeActiveGroup: ShowSrc[ReqCode.ActiveGroup] =
+    data((s, d) => s.cc2("ReqCode.ActiveGroup", ReqCode.ActiveGroup unapply d))
+
+  implicit val reqCodeInactive: ShowSrc[ReqCode.Inactive] =
+    data((s, d) => s.cc2("ReqCode.Inactive", ReqCode.Inactive unapply d))
+
+  implicit val reqCodeData: ShowSrc[ReqCode.Data] =
+    data((s, t) => t match {
+      case d: ReqCode.ActiveReq   => s <~ d
+      case d: ReqCode.ActiveGroup => s <~ d
+      case d: ReqCode.Inactive    => s <~ d
+    })
 
   def trie[K: ShowSrc, V: ShowSrc](branchCtor: String, valueCtor: String, trieType: String, trieVarname: String): ShowSrc[MTrie.Trie[K, V]] = {
     import MTrie.{Branch, Node, Trie, Value}
@@ -489,11 +507,17 @@ object ShowSrcDataImp {
   implicit val idCeilings: ShowSrc[IdCeilings] =
     data((s, a) => s.cc6("IdCeilings", IdCeilings unapply a))
 
+  implicit val deletionReasonsReqApplication: ShowSrc[DeletionReasons.ReqApplication] =
+    multimap[ReqId, Vector, Option[DeletionReasonId]]("DeletionReasons.emptyReqApplication")
+
+  implicit val deletionReasons: ShowSrc[DeletionReasons] =
+    data((s, a) => s.cc2("DeletionReasons", DeletionReasons unapply a, "\n    "))
+
   implicit val projectConfig: ShowSrc[ProjectConfig] =
     data((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a, "\n    "))
 //    source((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a))
 
   implicit val project: ShowSrc[Project] =
-    data((s, a) => s.cc7("Project", Project unapply a, "\n  "))
+    data((s, a) => s.cc8("Project", Project unapply a, "\n  "))
 //    source((s, a) => s.cc6("Project", Project unapply a))
 }

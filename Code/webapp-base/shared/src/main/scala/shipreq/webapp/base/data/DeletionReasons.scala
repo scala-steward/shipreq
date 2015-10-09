@@ -5,6 +5,7 @@ import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.UnivEq
 import shipreq.webapp.base.text.Text.DeletionReason
 import shipreq.webapp.base.text.Text.Equality._
+import DeletionReasons.ReqApplication
 
 final case class DeletionReasonId(value: Int) extends TaggedInt
 
@@ -17,7 +18,7 @@ final case class DeletionReasonId(value: Int) extends TaggedInt
  * The vectors in [[reqApplication]] are append-only and so order shows deletion chronology.
  */
 case class DeletionReasons(reasons       : Vector[DeletionReason.NonEmptyText],
-                           reqApplication: Multimap[ReqId, Vector, Option[DeletionReasonId]]) {
+                           reqApplication: ReqApplication) {
 
   def apply(id: DeletionReasonId): DeletionReason.NonEmptyText =
     reasons(id.value)
@@ -40,7 +41,9 @@ object DeletionReasons {
   def empty: DeletionReasons =
     DeletionReasons(Vector.empty, emptyReqApplication)
 
-  def emptyReqApplication: Multimap[ReqId, Vector, Option[DeletionReasonId]] =
+  type ReqApplication = Multimap[ReqId, Vector, Option[DeletionReasonId]]
+
+  def emptyReqApplication: ReqApplication =
     UnivEq.emptyMultimap
 
   implicit def equality: UnivEq[DeletionReasons] = UnivEq.deriveAuto
