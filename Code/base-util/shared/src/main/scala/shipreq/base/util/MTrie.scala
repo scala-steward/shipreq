@@ -20,6 +20,12 @@ object MTrie {
       val g = (v: Value[K, V]) => f(v.value)
       exists(_.value exists g, g)
     }
+
+    final def getValueOrElse[A >: V](default: => A): A =
+      fold(_.value.fold(default)(_.value), _.value)
+
+    final def foldValue[A](z: => A, f: V => A): A =
+      fold(_.value.fold(z)(x => f(x.value)), x => f(x.value))
   }
 
   final case class Branch[K, V](value: Option[Value[K, V]], next: Trie[K, V]) extends Node[K, V] {
@@ -42,6 +48,7 @@ object MTrie {
     type Node   = MTrie.Node[K, V]
     type Branch = MTrie.Branch[K, V]
     type Value  = MTrie.Value[K, V]
+    type Entry  = (K, Node)
     val  Branch = MTrie.Branch.apply[K, V] _
     val  Value  = MTrie.Value.apply[K, V] _
     def  empty  = MTrie.empty[K, V]
@@ -189,6 +196,9 @@ object MTrie {
       atPath(path, fail)(_.value.fold(fail)(g), g)
     }
 
+    def getNode[A](path: Path): Option[Node] =
+      atPath(path, None: Option[Node])(Some.apply, Some.apply)
+
     def lookup(path: Path): Option[V] =
       atPath(path, None: Option[V])(_.value.map(_.value), t => Some(t.value))
 
@@ -232,6 +242,9 @@ object MTrie {
 
       notLast(trie, path.init, path.last)
     }
+
+    def removeAll(paths: TraversableOnce[Path]): Trie =
+      paths.foldLeft(trie)(_ remove _)
 
     /**
      * @return A sub-trie beginning at the given path.
@@ -297,5 +310,13 @@ object MTrie {
 
     @inline def add(path: Path)(implicit ev: Unit =:= V): Trie =
       put(path, ())
+
+    def addAll(paths: TraversableOnce[Path])(implicit ev: Unit =:= V): Trie =
+      paths.foldLeft(trie)(_ add _)
+
+    @inline def @+ (path: Path)(implicit ev: Unit =:= V)                  : Trie = add(path)
+    @inline def @++(paths: TraversableOnce[Path])(implicit ev: Unit =:= V): Trie = addAll(paths)
+    @inline def @- (path: Path)                                           : Trie = remove(path)
+    @inline def @--(paths: TraversableOnce[Path])                         : Trie = removeAll(paths)
   }
 }
