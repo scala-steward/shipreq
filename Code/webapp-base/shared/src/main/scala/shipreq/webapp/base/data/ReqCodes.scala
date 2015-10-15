@@ -48,6 +48,12 @@ object ReqCode {
       )
   }
 
+  def debugShowCodes(codes: TraversableOnce[Value]): String =
+    codes.toList
+      .map(valueToStr(_, '.'))
+      .sorted
+      .map("\n  - " + _).mkString("")
+
   /**
    * Portion of a [[ReqCode]], separated by ".".
    *
