@@ -325,15 +325,13 @@ object Deletion {
         import rr._
         val live = liveGivenState(req)
 
-        val isRoot = indent == 0
+        val sel = if (indent == 0) None else Some(selAll(req.id))
 
-        val sel = if (isRoot) None else Some(selAll(req.id))
-
-        val td = <.td(*.reqRow(isRoot, live), sel.map(_.onClick))
+        val td = <.td(*.row(live), sel.map(_.onClick))
 
         val reqTitle =
           <.span(
-            *.reqItem,
+            *.reqDesc,
             PlainText.pubid(project, req.pubid) + ": ",
             widgets reqTitle req)
 
@@ -373,13 +371,19 @@ object Deletion {
 
         val sel = selAll(r.id)
 
-        val td = <.td(sel.onClick)
+        val td = <.td(*.row(groupLive(r.id)), sel.onClick)
+
+        def subCodes: TagMod =
+          TagMod(
+            *.subCodeCount(Live <~ liveCodes.nonEmpty),
+            liveCodes.length,
+          ^.title := liveCodes.mkString("\n"))
 
         <.tr(
           td(sel.checkbox),
           td(r.codeStr),
           td(widgets reqCodeGroupTitle r.group),
-          td(liveCodes.length, ^.title := liveCodes.mkString("\n")))
+          td(subCodes))
       }
 
       def selAllBox: TagMod =
@@ -402,16 +406,23 @@ object Deletion {
     // -----------------------------------------------------------------------------------------------------------------
     def render(p: Props, s: State): ReactElement = {
 
+      def reqSection =
+        <.section(
+          <.div(*.section, "Requirements to delete"),
+          renderReqs(p, s))
+
+      def groupSection: TagMod =
+        if (p.deletableGroups.isEmpty)
+          EmptyTag
+        else
+          <.section(
+            <.div(*.section, UiText.reqCodeGroups + " to delete"),
+            renderGroups(p, s))
+
       <.div(
-        <.div("Requirements to delete"),
-        renderReqs(p, s),
-
-        // if (p.deletableGroups.nonEmpty)
-        <.div(UiText.reqCodeGroups + " to delete"),
-        renderGroups(p, s),
-
-        <.div("Reason"),
-
+        reqSection,
+        groupSection,
+        <.section(<.div(*.section, "Reason")),
         <.div("Delete"),
         cancelButton)
     }

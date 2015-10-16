@@ -280,12 +280,19 @@ object Style extends StyleSheet.Inline {
 
     object deleteRestore {
 
-      val reqRow = styleF(Domain.boolean *** D.live) { case (root, live) => styleS(
-        mixinIf(!root)(cursor.pointer), // Because clicking the row toggles selection
-        mixinIf(live :: Dead)(backgroundColor(c"#fee"), color(c"#a00"))
-      )}
+      val section = style(
+        marginTop(2.3 em),
+        marginBottom(1 em),
+        fontWeight.bold)
 
-      val reqItem =
+      val row = styleF(D.live)(live => styleS(
+        mixinIf(live :: Dead)(backgroundColor(c"#fee"), color(c"#a00"))
+      ))
+
+      val indent: Int => TagMod =
+        Memo(n => TagMod(^^.display.`inline-block`, ^^.width := s"${n * 3}ex"))
+
+      val reqDesc =
         style(marginLeft(0.5 ex))
 
       val impliedByPrefix =
@@ -299,9 +306,7 @@ object Style extends StyleSheet.Inline {
           color(c"#daa"))
       ))
 
-      val indent: Int => TagMod =
-        Memo(n => TagMod(^^.display.`inline-block`, ^^.width := s"${n * 3}ex"))
-
+      def subCodeCount = impliedByItem
     }
 
   } // reqtable
