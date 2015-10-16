@@ -16,10 +16,27 @@ import shipreq.webapp.client.app.ui.Style.reqtable.{deleteRestore => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.RichTextEditor
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.ui.UI
-import shipreq.webapp.client.util.On
 import MTrie.Ops
 
 object Deletion {
+
+  case class Props(project        : Project,
+                   widgets        : ProjectWidgets,
+                   projectText    : PlainText.ForProject,
+                   textSearch     : TextSearch,
+                   cancel         : Callback,
+                   deletableReqs  : DeletableReqs,
+                   deletableGroups: DeletableGroups,
+                   initialState   : State)
+
+  def makeProps(props1     : Props1,
+                widgets    : ProjectWidgets,
+                projectText: PlainText.ForProject,
+                textSearch : TextSearch,
+                cancel     : Callback): Props = {
+    import props1._
+    Props(project, widgets, projectText, textSearch, cancel, deletableReqs, deletableGroups, initialState)
+  }
 
   case class ReqRow(req: Req, indent: Int, impliedBy: Vector[Req])
 
@@ -275,28 +292,8 @@ object Deletion {
   // Logic End
   // ===================================================================================================================
 
-  case class Props(project        : Project,
-                   widgets        : ProjectWidgets,
-                   projectText    : PlainText.ForProject,
-                   textSearch     : TextSearch,
-                   cancel         : Callback,
-                   deletableReqs  : DeletableReqs,
-                   deletableGroups: DeletableGroups,
-                   initialState   : State)
-
-  def makeProps(props1     : Props1,
-                widgets    : ProjectWidgets,
-                projectText: PlainText.ForProject,
-                textSearch : TextSearch,
-                cancel     : Callback): Props = {
-    import props1._
-    Props(project, widgets, projectText, textSearch, cancel, deletableReqs, deletableGroups, initialState)
-  }
-
   @Lenses
   case class State(selectedReqIds: Selection[ReqId], selectedRCGs: Selection[ReqCodeId], reason: String)
-
-  val alwaysOn = UI.checkbox(On)(^.readOnly := true, ^.disabled := true)
 
   class Backend($: BackendScope[Props, State]) {
     // Not worried about concurrent project updates.
@@ -361,7 +358,7 @@ object Deletion {
               UI.vector(impliedBy, UI.sepComma)(renderImpliedByItem))
 
         <.tr(
-          td(<.span(*.indent(indent)), sel.fold(alwaysOn)(_.checkbox), reqTitle),
+          td(<.span(*.indent(indent)), sel.fold(UI.checkboxAlwaysOn)(_.checkbox), reqTitle),
           td(impBy))
       }
 

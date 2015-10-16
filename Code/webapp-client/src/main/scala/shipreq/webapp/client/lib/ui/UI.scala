@@ -23,6 +23,9 @@ object UI {
         ^.`type` := "checkbox",
         ^.checked := (on :: On)))
 
+  val checkboxAlwaysOn =
+    UI.checkbox(On)(^.readOnly := true, ^.disabled := true)
+
   def checkboxOfSetPresence[A](as: Set[A])(a: A, update: Set[A] => Callback): ReactTag = {
     val currentState = On <~ as.contains(a)
     def toggled = currentState match {
