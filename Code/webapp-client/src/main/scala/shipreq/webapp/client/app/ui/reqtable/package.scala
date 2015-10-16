@@ -14,8 +14,8 @@ package object reqtable {
   type Rows = Vector[Row]
   implicit val reusabilityRows: Reusability[Rows] = Reusability.byRef // Each row will be checked anyway
 
-  type RowSelection = Selection[Row.SourceId]
-  type RowSelectionVisible = Selection.Visible[Row.SourceId]
+  type RowSelection        = Selection[Row.SourceId]
+  type RowSelectionVisible = Selection.VisibleWithUpdateFn[Row.SourceId]
 
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.ui.shouldComponentUpdate[P, S, B, N]

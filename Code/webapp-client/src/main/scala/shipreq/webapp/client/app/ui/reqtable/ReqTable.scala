@@ -127,7 +127,13 @@ object ReqTable {
     val colRnds    = Px.apply2(vsCols, colRnd)(_ map _.apply)
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
-    val selVis     = for {rs <- rows; s <- selection} yield s visible rs.foldLeft(Set.empty[Row.SourceId])(_ + _.sourceId)
+
+    val visibleSelection =
+      for {
+        rs <- rows
+        s  <- selection
+      } yield
+        s.updateBy(setSelection).visible(rs.iterator.map(_.sourceId).toSet)
 
     val sortEditorProps =
       for {
@@ -181,9 +187,9 @@ object ReqTable {
       val creationProps = CreationInterface.Props(createIO, s.creation)
 
       val tableProps = Table.Props(
-        project, rows, colName, colRnds, colEditors, s.cellStates, selVis, setSelection, modViewSettings)
+        project, rows, colName, colRnds, colEditors, s.cellStates, visibleSelection, modViewSettings)
 
-      val selCtrlProps = SelectionCtrls.Props(selVis, cfg, rows, setModal, project, widgets)
+      val selCtrlProps = SelectionCtrls.Props(visibleSelection, cfg, rows, setModal, project, widgets)
 
       def mainScreen =
         <.div(

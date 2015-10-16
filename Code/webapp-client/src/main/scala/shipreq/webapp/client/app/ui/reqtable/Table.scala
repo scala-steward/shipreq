@@ -39,7 +39,6 @@ object Table {
                    colEditors     : ColumnEditors,
                    cells          : Cell.TableState,
                    selection      : RowSelectionVisible,
-                   setSelection   : RowSelection ~=> Callback,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
   val Component =
@@ -70,13 +69,13 @@ object Table {
       val rows = p.rows
 
       val headerProps = HeaderProps(
-        crs.map(_.column), p.colName, p.selection, p.setSelection, reorderColumns, clickHeaderToSort)
+        crs.map(_.column), p.colName, p.selection, reorderColumns, clickHeaderToSort)
 
       val renderRows =
         rows.indices.toReactNodeArray { i =>
           val row   = rows(i)
           val cells = p.cells(row.sourceId)
-          val rp    = RowProps(row, crs, cells, p.selection, p.setSelection, startCellEdit(row))
+          val rp    = RowProps(row, crs, cells, p.selection, startCellEdit(row))
           RowComponent.withKey(row.id.key)(rp)
         }
 
@@ -125,7 +124,6 @@ object Table {
   case class HeaderProps(cols        : NonEmptyVector[Column],
                          colName     : Column.NameResolver,
                          selection   : RowSelectionVisible,
-                         setSelection: RowSelection ~=> Callback,
                          reorder     : NonEmptyVector[Column] ~=> Callback,
                          clickSort   : Column ~=> Callback)
 
@@ -159,8 +157,7 @@ object Table {
             <.th(
               *.selectionRowHeader,
               ^.onKeyDown ==> selColKeyDown,
-              ^.onClick   --> p.setSelection(p.selection.totalToggle),
-              p.selection totalCheckbox p.setSelection)
+              p.selection.total.checkboxAndOnClick)
 
           val cols =
             content.items.map { i =>
@@ -189,12 +186,11 @@ object Table {
   // ===================================================================================================================
   // Rows
 
-  case class RowProps(row         : Row,
-                      crs         : NonEmptyVector[ColumnRenderer],
-                      cells       : Cell.RowState,
-                      selection   : RowSelectionVisible,
-                      setSelection: RowSelection ~=> Callback,
-                      startEdit   : Column ~=> (TCB.Finally ~=> Callback))
+  case class RowProps(row      : Row,
+                      crs      : NonEmptyVector[ColumnRenderer],
+                      cells    : Cell.RowState,
+                      selection: RowSelectionVisible,
+                      startEdit: Column ~=> (TCB.Finally ~=> Callback))
 
   implicit val rowPropReuse = Reusability.caseClass[RowProps]
 
@@ -213,12 +209,14 @@ object Table {
     def selCellKeyDown(e: ReactKeyboardEventH): Callback =
       focusKeyHandlers(e)
 
+    val sel = p.selection(row.sourceId)
+
     val selectionCell =
       <.td(
         *.cell(rowStatus),
         ^.onKeyDown ==> selCellKeyDown,
-        ^.onClick   --> p.setSelection(p.selection oneToggle row.sourceId),
-        p.selection.oneCheckbox(row.sourceId, p.setSelection)(^.tabIndex := -1))
+        sel.onClick,
+        sel.checkbox(^.tabIndex := -1))
 
     val cols =
       p.crs.toStream.map { cr =>
