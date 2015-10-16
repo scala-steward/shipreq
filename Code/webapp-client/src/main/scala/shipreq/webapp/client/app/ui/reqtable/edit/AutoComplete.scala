@@ -75,7 +75,10 @@ object AutoComplete {
       fd(tags  )(_.live).map(_.key))
 
   def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategy =
-    hashtag(p.config.customIssueTypes.values.toStream, p.config.atags, fd)
+    hashtag(
+      if (issues) p.config.customIssueTypes.values.toStream else Stream.empty,
+      if (tags)   p.config.atags                            else Stream.empty,
+      fd)
 
   def issue(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategy =
     hashtag(legal, Stream.empty, fd)
