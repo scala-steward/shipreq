@@ -4,7 +4,6 @@ package edit
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.Px
 import monocle.Optional
-import scalaz.syntax.bind.ToBindOps
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -23,7 +22,7 @@ final class ColumnEditors(project       : Px[Project],
                           projectWidgets: Px[ProjectWidgets],
                           textSearch    : Px[TextSearch],
                           modTable      : Cell.ModTable,
-                          saveIO        : (UpdateContentCmd, TCB.Success, TCB.Failure) => Callback) {
+                          saveIO        : CallServer[UpdateContentCmd]) {
 
   import ColumnEditors._
 

@@ -25,7 +25,7 @@ object CreationInterface {
   type SelType = Option[Type]
   val selectComponent = SelectOne.Component[SelType]
 
-  case class Props(createIO: (CreateContentCmd, TCB.Success, String => TCB.Failure) => Callback, state: State)
+  case class Props(createIO: CallServer[CreateContentCmd], state: State)
 
   @Lenses
   case class State(selectedType: SelType,

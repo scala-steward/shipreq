@@ -6,15 +6,16 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.equal._
-import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateContentFn, UpdateContentCmd}
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.state.{Changes, ChangeListener, ClientData}
 import shipreq.webapp.client.app.ui.{Modal, ProjectWidgets, Selection}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.lib.{FilterDead, TCB}
+import shipreq.webapp.client.lib.FilterDead
 import shipreq.webapp.client.protocol.ClientProtocol
 import edit.ColumnEditors
 
@@ -142,26 +143,20 @@ object ReqTable {
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
 
     val modTable: Cell.ModTable = ReusableFn(loc => (s, cb) => $.modState(_.updateCell(loc, s), cb))
-    // TODO OMG THE COPY-AND-PASTE!
-    // TODO Too much repetition of (? => Events) calls
-    val createIO: (CreateContentCmd, TCB.Success, String => TCB.Failure) => Callback =
-      (i, sio, fio) => $.props >>= { p =>
-        import p._
-        val io = cp.call(createContentFn)(i,
-          sio << cd.applyEvents(_),
-          f => cp.consumeGenericFailure(f) >> fio(cp.genericFailureToText(f)))
-        //IO(println(s"Fake-sending: $i")) >> io
-        io
-      }
-    val saveIO: (UpdateContentCmd, TCB.Success, TCB.Failure) => Callback =
-      (i, sio, fio) => $.props >>= { p =>
-        import p._
-        val io = cp.call(updateContentFn)(i,
-          sio << cd.applyEvents(_),
-          cp.consumeGenericFailure(_) >> fio)
-        //IO(println(s"Fake-sending: $i")) >> io
-        io
-      }
+
+    private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: Props => RemoteFn.InstanceFor[F]): CallServer[I] =
+      (i, sio, fio) => $.props >>= (p =>
+        p.cp.call(remoteFn(p))(
+          i,
+          s => p.cd.applyEventsS(s) >> sio,
+          f => p.cp.consumeGenericFailure(f) >> fio(p.cp.genericFailureToText(f))))
+
+    val createIO: CallServer[CreateContentCmd] =
+      callServer(_.createContentFn)
+
+    val saveIO: CallServer[UpdateContentCmd] =
+      callServer(_.updateContentFn)
+
     val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, modTable, saveIO)
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {

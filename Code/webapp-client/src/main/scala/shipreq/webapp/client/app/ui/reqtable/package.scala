@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
+import shipreq.webapp.client.lib.TCB
 
 /**
  * Requirements Table.
@@ -16,6 +17,9 @@ package object reqtable {
 
   type RowSelection        = Selection[Row.SourceId]
   type RowSelectionVisible = Selection.VisibleWithUpdateFn[Row.SourceId]
+
+  type CallServer[-I] = (I, TCB.Success, String => TCB.Failure) => Callback
+  implicit def callServerReusability[I] = Reusability.byRef[CallServer[I]] // All are vals in ReqTable
 
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.ui.shouldComponentUpdate[P, S, B, N]
