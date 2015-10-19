@@ -392,6 +392,7 @@ object ShipReq extends Build {
           dontInline // crashes scalac 2.11.7
         )
         .settings(
+          addCommandAlias("livejs", "~;clear;jsp"),
           containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()),
           javaOptions in Jetty += "-Xmx1g",
           initialCommands += consoleCmds,
