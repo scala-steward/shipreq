@@ -51,7 +51,7 @@ object Table {
 
     val startCellEdit = ReusableFn[Row, Column, TCB.Finally, Callback]((row, col, fin) =>
       $.props.map { p =>
-        if (p.cells(row.sourceId, col).isEmpty)
+        if (p.cells(row.sourceId)(col).isEmpty)
           p.colEditors.startCellEditing(row, col, fin)
             .foreach(_.runNow())
       }
@@ -221,7 +221,7 @@ object Table {
     val cols =
       p.crs.toStream.map { cr =>
         val col = cr.column
-        val cp = CellProps(row, cr, p.cells get col, p startEdit col)
+        val cp = CellProps(row, cr, p cells col, p startEdit col)
         CellComponent.withKey(col.key)(cp)
       }
 
