@@ -100,8 +100,7 @@ object SelectionCtrls {
 
     def deleteModal(p: Props, selected: DelRest): Modal = {
       val perform: UpdateContentCmd.DeleteReqs => Callback =
-        dr => $.props >>= { p =>
-
+        dr => {
           val locs = {
             import Cell.Loc
 
@@ -115,30 +114,37 @@ object SelectionCtrls {
           }
 
           def setRowStates(state: Cell.State) =
-            p.modCellStates(ts => locs.foldLeft(ts)(_.set(_, state)))
-
-          val lockRows = {
-            import RemoteDataEditor._
-            val locked = Some(StateFor((), Locked, () => defaultRenderLock))
-            setRowStates(locked)
-          }
+            $.props >>= (_.modCellStates(ts => locs.foldLeft(ts)(_.set(_, state))))
 
           def unlockRows =
             setRowStates(None)
 
-          def callServer: Callback = {
-            val s = TCB.Success(unlockRows)
-            val f = (err: String) => TCB.Failure.lazily(
-              if (dom.confirm(s"Deletion failed. $err\n\nRetry?"))
-                callServer
-              else
-                unlockRows
-            )
-            p.saveIO(dr, s, f)
-          }
+          def uncheckRows =
+            $.props >>= { p =>
+              val newSel = p.sel clearAll locs.map(_.row)
+              p.sel updateFn newSel
+            }
 
-          // TODO Should also deselect all
-          lockRows >> callServer >> p.setModal(None)
+          $.props >>= { p =>
+            val lockRows = {
+              import RemoteDataEditor._
+              val locked = Some(StateFor((), Locked, () => defaultRenderLock))
+              setRowStates(locked)
+            }
+
+            def callServer: Callback = {
+              val s = TCB.Success(unlockRows >> uncheckRows)
+              val f = (err: String) => TCB.Failure.lazily(
+                if (dom.confirm(s"Deletion failed. $err\n\nRetry?"))
+                  callServer
+                else
+                  unlockRows
+              )
+              p.saveIO(dr, s, f)
+            }
+
+            lockRows >> p.setModal(None) >> callServer
+          }
         }
 
       val props1 = Deletion.initProps1(p.project, selected.reqs, selected.rcgs.map(_.id)(collection.breakOut))

@@ -43,9 +43,9 @@ object Cell {
 
   implicit val locReusability: Reusability[Loc] = Reusability.caseClass
 
-  final class TableState(m: AllState) {
+  case class TableState(all: AllState) {
     def apply(row: R): RowState =
-      m.getOrElse(row, RowState.Empty)
+      all.getOrElse(row, RowState.Empty)
 
     def set(loc: Loc, state: State): TableState = {
       import RowState._
@@ -55,7 +55,7 @@ object Cell {
         case (Some(s), None   ) => WholeRow(s)
         case (None   , _      ) => Empty
       }
-      new TableState(m.updated(loc.row, rs2))
+      new TableState(all.updated(loc.row, rs2))
     }
   }
 

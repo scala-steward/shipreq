@@ -11,7 +11,7 @@ import Selection._
 /**
  * Data selected by the user.
  */
-final class Selection[A] private[Selection](val selected: Set[A]) {
+final class Selection[A] private[Selection](val selected: Set[A]) extends Selection.Base[A] {
   override def toString = s"Selection($selected)"
 
   def updateBy(f: UpdateFn[A]): WithUpdateFn[A] =
@@ -30,27 +30,29 @@ object Selection {
 
   type UpdateFn[A] = Selection[A] ~=> Callback
 
-  final class WithUpdateFn[A] private[Selection](val selected: Set[A], val updateFn: UpdateFn[A]) {
-    override def toString = s"Selection($selected)"
+  // ===================================================================================================================
+  // Traits
+  // ===================================================================================================================
 
-    def apply(a: A) =
-      new OneUI(a, selected, updateFn)
+  sealed trait Base[A] {
+    val selected: Set[A]
 
-    def legal(legal: Set[A]) =
-      new LegalWithUpdateFn(selected, legal, updateFn)
+    def clearAll(as: TraversableOnce[A]): Selection[A] =
+      Selection(selected -- as)
   }
 
-  final class LegalWithUpdateFn[A] private[Selection](val selected: Set[A], val legal: Set[A], val updateFn: UpdateFn[A]) {
-    override def toString = s"Selection.Legal(\n  selected: $selected,\n  legal: $legal)"
+  sealed trait HasUpdateFn[A] extends Base[A] {
+    val updateFn: UpdateFn[A]
+  }
+
+  sealed trait HasLegalSubset[A] extends Base[A] {
+    val legal: Set[A]
 
     val (legalSelection, hiddenSelection) =
       selected partition legal.contains
-
-    def apply(a: A) =
-      new OneUI(a, selected, updateFn)
-
-    val total = new TotalUI(legal, legalSelection, hiddenSelection, updateFn)
   }
+
+  // These are specialised and so don't extend Base
 
   sealed trait Focus[A, Get] {
     val get: Get
@@ -67,6 +69,37 @@ object Selection {
     final def onClick: TagMod =
       TagMod (^.onClick --> toggleFn, ^.cursor.pointer)
   }
+
+  // ===================================================================================================================
+  // Classes
+  // ===================================================================================================================
+
+  final class WithUpdateFn[A] private[Selection](val selected: Set[A], val updateFn: UpdateFn[A])
+      extends HasUpdateFn[A] {
+
+    override def toString = s"Selection($selected)"
+
+    def apply(a: A) =
+      new OneUI(a, selected, updateFn)
+
+    def legal(legal: Set[A]) =
+      new LegalWithUpdateFn(selected, legal, updateFn)
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  final class LegalWithUpdateFn[A] private[Selection](val selected: Set[A], val legal: Set[A], val updateFn: UpdateFn[A])
+      extends HasUpdateFn[A] with HasLegalSubset[A] {
+
+    override def toString = s"Selection.Legal(\n  selected: $selected,\n  legal: $legal)"
+
+    def apply(a: A) =
+      new OneUI(a, selected, updateFn)
+
+    val total = new TotalUI(legal, legalSelection, hiddenSelection, updateFn)
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   final class OneUI[A](a: A, selected: Set[A], override val updateFn: UpdateFn[A]) extends UI[A, On, ReactTag] {
     override val get =
@@ -87,6 +120,8 @@ object Selection {
     override def checkboxAndOnClick: TagMod =
       TagMod(checkbox, onClick)
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   final class TotalUI[A](legal: Set[A], legalSelection: Set[A], hiddenSelection: Set[A],
                          override val updateFn: UpdateFn[A]) extends UI[A, Option[On], ReactElement] {
@@ -116,7 +151,8 @@ object Selection {
       TagMod(checkbox, onClick)
   }
 
+  // ===================================================================================================================
 
-  implicit def reuseSel[A]: Reusability[Selection[A]]           = Reusability.byRef || Reusability.by(_.selected)
+  implicit def reuseSel[A]: Reusability[Selection[A]]         = Reusability.byRef || Reusability.by(_.selected)
   implicit def reuseVis[A]: Reusability[LegalWithUpdateFn[A]] = Reusability.byRef || Reusability.by(v => (v.selected, v.legal, v.updateFn))
 }

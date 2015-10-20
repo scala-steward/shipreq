@@ -129,12 +129,22 @@ object ReqTable {
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
+    val wholeRowsWithState: Px.ThunkM[Set[Row.SourceId]] =
+      Px.bs($).stateM(_.cellStates.all.iterator
+        .filter(_._2 match {
+          case _: Cell.RowState.Cells | Cell.RowState.Empty => false
+          case _: Cell.RowState.WholeRow => true
+        })
+        .map(_._1)
+        .toSet)
+
     val visibleSelection =
       for {
         rs <- rows
         s  <- selection
+        wr <- wholeRowsWithState
       } yield
-        s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet)
+        s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
     val sortEditorProps =
       for {
@@ -175,9 +185,10 @@ object ReqTable {
 
     val creationInterface = new CreationInterface(setCreation, project, plainText, widgets, textSearch)
 
+    // -----------------------------------------------------------------------------------------------------------------
     def render(s: State): ReactElement = {
       import Px.AutoValue._
-      Px.refresh(project, viewSettings, filterState, selection)
+      Px.refresh(project, viewSettings, filterState, selection, wholeRowsWithState)
 
       val cfg = s.project.config
 
@@ -204,7 +215,7 @@ object ReqTable {
     }
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
 
   val StatsSummary = ReactComponentB[TableStats]("Stats")
     .render_P(stats =>
