@@ -12,11 +12,9 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.base.util.Must._
 import shipreq.webapp.client.app.ui.{VUCA, Selection, ProjectWidgets}
 import shipreq.webapp.client.app.ui.Style.reqtable.{deleteRestore => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.RichTextEditor
-import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.ui.UI
 import MTrie.Ops
 
@@ -297,7 +295,7 @@ object Deletion {
   // ===================================================================================================================
 
   @Lenses
-  case class State(selectedReqIds: Selection[ReqId], selectedRCGs: Selection[ReqCodeId], reason: String)
+  case class State(selectedReqs: Selection[ReqId], selectedGroups: Selection[ReqCodeId], reason: String)
 
   class Backend($: BackendScope[Props, State]) {
     // Not worried about concurrent project updates.
@@ -309,8 +307,8 @@ object Deletion {
 
     val visibleRCGs: Set[ReqCodeId] = $.props.runNow().deletableGroups.map(_.id)(collection.breakOut)
 
-    val setReqSel = ReusableFn($ _setStateL State.selectedReqIds)
-    val setRcgSel = ReusableFn($ _setStateL State.selectedRCGs)
+    val setReqSel = ReusableFn($ _setStateL State.selectedReqs)
+    val setRcgSel = ReusableFn($ _setStateL State.selectedGroups)
 
     val reasonEditorProps: State => RichTextEditor.DeletionReason.Props = {
       implicit def autoPx[A](a: A): Px[A] = Px.const(a)
@@ -330,11 +328,11 @@ object Deletion {
 
     // -----------------------------------------------------------------------------------------------------------------
     def renderReqs(p: Props, s: State): TagMod = {
-      val selAll = s.selectedReqIds.updateBy(setReqSel)
+      val selAll = s.selectedReqs.updateBy(setReqSel)
 
       // Copy-paste with initProps()
       def liveGivenState(r: Req): Live =
-        (Dead <~ s.selectedReqIds.selected.contains(r.id)) && r.live(customReqTypes)
+        (Dead <~ s.selectedReqs.selected.contains(r.id)) && r.live(customReqTypes)
 
       def renderImpliedByItem(req: Req): ReactElement =
         renderImpliedByItemMemo(liveGivenState(req))(req)
@@ -373,13 +371,13 @@ object Deletion {
 
     // -----------------------------------------------------------------------------------------------------------------
     def renderGroups(p: Props, s: State): TagMod = {
-      val selAll = s.selectedRCGs.updateBy(setRcgSel).legal(visibleRCGs)
+      val selAll = s.selectedGroups.updateBy(setRcgSel).legal(visibleRCGs)
 
       val reqLive: ReqId => Live =
-        Dead <~ s.selectedReqIds.selected.contains(_)
+        Dead <~ s.selectedReqs.selected.contains(_)
 
       val groupLive: ReqCodeId => Live =
-        Dead <~ s.selectedRCGs.selected.contains(_)
+        Dead <~ s.selectedGroups.selected.contains(_)
 
       def groupRow(r: GroupRow): TagMod = {
         val liveCodes: Vector[String] = {
@@ -445,8 +443,8 @@ object Deletion {
 
       val commit: Option[Callback] =
         for {
-          reqs          ← NonEmptySet.option(s.selectedReqIds.selected)
-          reqCodeGroups = s.selectedRCGs.selected
+          reqs          ← NonEmptySet.option(s.selectedReqs.selected)
+          reqCodeGroups = s.selectedGroups.selected
           dr            ← reason.parseResult.toOption
         } yield
         p perform DeleteReqs(reqs, reqCodeGroups, dr)

@@ -240,7 +240,7 @@ object DeletionTest extends TestSuite {
         assertEq("Deletable RCG", ar, er)
     }
 
-    'initialSelReqs   - assertSet("Initially reqs"  , result.initialState.selectedReqIds.selected, expectInitialReqs)
-    'initialSelGroups - assertSet("Initially groups", result.initialState.selectedRCGs  .selected, expectInitialRCGs)
+    'initialSelReqs   - assertSet("Initially reqs"  , result.initialState.selectedReqs  .selected, expectInitialReqs)
+    'initialSelGroups - assertSet("Initially groups", result.initialState.selectedGroups.selected, expectInitialRCGs)
   }
 }
