@@ -373,7 +373,7 @@ object Deletion {
 
     // -----------------------------------------------------------------------------------------------------------------
     def renderGroups(p: Props, s: State): TagMod = {
-      val selAll = s.selectedRCGs.updateBy(setRcgSel).visible(visibleRCGs)
+      val selAll = s.selectedRCGs.updateBy(setRcgSel).legal(visibleRCGs)
 
       val reqLive: ReqId => Live =
         Dead <~ s.selectedReqIds.selected.contains(_)

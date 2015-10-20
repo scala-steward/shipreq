@@ -36,20 +36,20 @@ object Selection {
     def apply(a: A) =
       new OneUI(a, selected, updateFn)
 
-    def visible(visible: Set[A]) =
-      new VisibleWithUpdateFn(selected, visible, updateFn)
+    def legal(legal: Set[A]) =
+      new LegalWithUpdateFn(selected, legal, updateFn)
   }
 
-  final class VisibleWithUpdateFn[A] private[Selection](val selected: Set[A], val visible: Set[A], val updateFn: UpdateFn[A]) {
-    override def toString = s"Selection.Visible(\n  selected: $selected,\n  visible: $visible)"
+  final class LegalWithUpdateFn[A] private[Selection](val selected: Set[A], val legal: Set[A], val updateFn: UpdateFn[A]) {
+    override def toString = s"Selection.Legal(\n  selected: $selected,\n  legal: $legal)"
 
-    val (visibleSelection, hiddenSelection) =
-      selected partition visible.contains
+    val (legalSelection, hiddenSelection) =
+      selected partition legal.contains
 
     def apply(a: A) =
       new OneUI(a, selected, updateFn)
 
-    val total = new TotalUI(visible, visibleSelection, hiddenSelection, updateFn)
+    val total = new TotalUI(legal, legalSelection, hiddenSelection, updateFn)
   }
 
   sealed trait Focus[A, Get] {
@@ -88,21 +88,21 @@ object Selection {
       TagMod(checkbox, onClick)
   }
 
-  final class TotalUI[A](visible: Set[A], visibleSelection: Set[A], hiddenSelection: Set[A],
+  final class TotalUI[A](legal: Set[A], legalSelection: Set[A], hiddenSelection: Set[A],
                          override val updateFn: UpdateFn[A]) extends UI[A, Option[On], ReactElement] {
     override val get =
-      if (visible.isEmpty)
+      if (legal.isEmpty)
         None
-      else if (visibleSelection.isEmpty)
+      else if (legalSelection.isEmpty)
         Some(Off)
-      else if (visibleSelection.size == visible.size)
+      else if (legalSelection.size == legal.size)
         Some(On)
       else
         None
 
     override def set(newState: On): Selection[A] =
       newState match {
-        case On  => Selection(hiddenSelection | visible)
+        case On  => Selection(hiddenSelection | legal)
         case Off => Selection(hiddenSelection)
       }
 
@@ -118,5 +118,5 @@ object Selection {
 
 
   implicit def reuseSel[A]: Reusability[Selection[A]]           = Reusability.byRef || Reusability.by(_.selected)
-  implicit def reuseVis[A]: Reusability[VisibleWithUpdateFn[A]] = Reusability.byRef || Reusability.by(v => (v.selected, v.visible, v.updateFn))
+  implicit def reuseVis[A]: Reusability[LegalWithUpdateFn[A]] = Reusability.byRef || Reusability.by(v => (v.selected, v.legal, v.updateFn))
 }

@@ -16,7 +16,7 @@ package object reqtable {
   implicit val reusabilityRows: Reusability[Rows] = Reusability.byRef // Each row will be checked anyway
 
   type RowSelection        = Selection[Row.SourceId]
-  type RowSelectionVisible = Selection.VisibleWithUpdateFn[Row.SourceId]
+  type RowSelectionVisible = Selection.LegalWithUpdateFn[Row.SourceId]
 
   type CallServer[-I] = (I, TCB.Success, String => TCB.Failure) => Callback
   implicit def callServerReusability[I] = Reusability.byRef[CallServer[I]] // All are vals in ReqTable

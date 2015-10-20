@@ -40,13 +40,13 @@ object SelectionCtrls {
 
     def render(p: Props) = {
 
-      val totalSelected = p.sel.visibleSelection.size
+      val totalSelected = p.sel.legalSelection.size
 
       var deletable = new DelRest
       var restorable = new DelRest
 
       if (totalSelected != 0) {
-        var remaining = p.sel.visibleSelection // because the same sourceId can appear more than once
+        var remaining = p.sel.legalSelection // because the same sourceId can appear more than once
         p.rows foreach { row =>
           val id = row.sourceId
           if (remaining contains id) {

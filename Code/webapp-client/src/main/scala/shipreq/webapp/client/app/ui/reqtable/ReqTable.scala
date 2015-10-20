@@ -134,7 +134,7 @@ object ReqTable {
         rs <- rows
         s  <- selection
       } yield
-        s.updateBy(setSelection).visible(rs.iterator.map(_.sourceId).toSet)
+        s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet)
 
     val sortEditorProps =
       for {
