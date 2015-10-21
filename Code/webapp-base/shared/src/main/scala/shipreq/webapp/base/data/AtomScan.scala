@@ -19,6 +19,7 @@ class AtomScan(val tagRefs : LDStats[ReqId, Set[ApplicableTagId]],
     issues.countByValues(_.toStream.map(_.typ))
 }
 
+// TODO AtomScan doesn't scan deletion reasons
 object AtomScan {
 
   sealed trait IssueLoc

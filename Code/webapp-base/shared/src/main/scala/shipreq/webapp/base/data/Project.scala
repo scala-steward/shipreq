@@ -67,6 +67,7 @@ final case class Project(config         : ProjectConfig,
   /** Dead or alive */
   def allRichText: Stream[(String, Stream[Text.AnyOptional])] =
     Stream(
+      ("Deletion reasons", deletionReasons.reasons.toStream.map(_.whole)),
       ("ReqCodeGroups", reqCodes.groups.map(_.title)),
       ("GenericReq titles", reqs.reqs.values.filterT[GenericReq].map(_.title)),
       ("Text fields", reqText.values.toStream.flatMap(_.values.toStream).map(_.whole)))
