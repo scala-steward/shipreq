@@ -62,19 +62,16 @@ object Deletion {
                     initialState   : State)
 
   def initProps1(p              : Project,
-                 directSelReqs  : Traversable[Req],
+                 directSelReqs  : NonEmptySet[ReqId],
                  directSelGroups: Set[ReqCodeId]): Props1 = {
-
-    val directSelReqIds: Set[ReqId] =
-      directSelReqs.map(_.id)(collection.breakOut)
 
     val directSelRcgCodes: Set[ReqCode.Value] =
       directSelGroups.map(p.reqCodes.reqCode)
 
-    val deletableReqs   = calcDeletableReqs(p, directSelReqs, directSelReqIds)
+    val deletableReqs   = calcDeletableReqs(p, directSelReqs)
     val deletableGroups = calcDeletableGroups(p, directSelRcgCodes, deletableReqs)
 
-    val initSelReqs   = calcInitiallySelectedReqs(p, deletableReqs, directSelReqIds)
+    val initSelReqs   = calcInitiallySelectedReqs(p, deletableReqs, directSelReqs).whole
     val initSelGroups = calcInitiallySelectedGroups(p, directSelGroups, deletableGroups, initSelReqs)
 
     val state = State(Selection(initSelReqs), Selection(initSelGroups), "")
@@ -85,7 +82,7 @@ object Deletion {
   // Requirement logic
   // ===================================================================================================================
 
-  private def calcDeletableReqs(p: Project, directSel: Traversable[Req], directSelReqIds: Set[ReqId]): DeletableReqs = {
+  private def calcDeletableReqs(p: Project, directSel: NonEmptySet[ReqId]): DeletableReqs = {
     val lookupReq = p.reqs.reqs.need _
     val imps_>    = p.implications.srcToTgt
     val imps_<    = p.implications.tgtToSrc
@@ -95,43 +92,35 @@ object Deletion {
     def sortReqs(a: Array[Req]): Unit =
       java.util.Arrays.sort(a, reqOrder)
 
-    var reqRows = Vector.newBuilder[ReqRow]
-
     val reqFilter: Req => Boolean =
       _.live(p.config.customReqTypes) :: Live
 
-    def go(reqs: TraversableOnce[Req], level: Int): Unit = {
+    def lookupAll(reqIds: TraversableOnce[ReqId]): Array[Req] = {
+      val a = reqIds.toIterator.map(lookupReq).filter(reqFilter).toArray
+      sortReqs(a)
+      a
+    }
 
-      // Sort current tier of reqs
-      val reqArray = reqs.toIterator.filter(reqFilter).toArray
-      sortReqs(reqArray)
+    var reqRows = Vector.newBuilder[ReqRow]
 
-      for (r <- reqArray) {
-
-        // Gather implied-by
-        val impByArray: Array[Req] = imps_<(r.id).iterator.map(lookupReq).filter(reqFilter).toArray
-        sortReqs(impByArray)
-        val impBy = impByArray.toVector
+    def go(reqIds: TraversableOnce[ReqId], level: Int): Unit =
+      for (r <- lookupAll(reqIds)) {
 
         // Add row
+        val impBy = lookupAll(imps_<(r.id)).toVector
         reqRows += ReqRow(r, level, impBy)
 
         // Add implied reqs
-        val kids: List[Req] =
-          imps_>(r.id).iterator
-            .filterNot(directSelReqIds.contains)
-            .map(lookupReq)
-            .toList
+        val kids = imps_>(r.id).iterator.filterNot(directSel.contains)
         go(kids, level + 1)
       }
-    }
 
-    go(directSel, 0)
+    go(directSel.whole, 0)
 
     reqRows.result()
   }
 
-  private def calcInitiallySelectedReqs(p: Project, deletableReqs: DeletableReqs, directSel: Set[ReqId]): Set[ReqId] = {
+  private def calcInitiallySelectedReqs(p: Project, deletableReqs: DeletableReqs, directSel: NonEmptySet[ReqId]): NonEmptySet[ReqId] = {
 
     // Means we don't know yet whether the deletion should be cascaded by default to this item
     class CascadePending(val req: Req, val imp: Vector[Req], var pending: Boolean)

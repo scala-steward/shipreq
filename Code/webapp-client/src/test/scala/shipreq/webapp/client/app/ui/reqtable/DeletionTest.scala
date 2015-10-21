@@ -2,7 +2,7 @@ package shipreq.webapp.client.app.ui.reqtable
 
 import utest._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{UnivEq, IMap, Util}
+import shipreq.base.util.{NonEmptySet, UnivEq, IMap, Util}
 import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
@@ -15,7 +15,7 @@ object DeletionTestData {
   import ProjectDslInternals.{ToState, Composite}
   import SampleProject.Values._
 
-  private var _selectedReqIds = Vector.empty[ReqId]
+  private var _selectedReqIds = Set.empty[ReqId]
   private var _selectedRCGs = Set.empty[ReqCodeId]
 
   private var _expectInitialReqs = Set.empty[ReqId]
@@ -27,7 +27,7 @@ object DeletionTestData {
   private implicit class GReqExt(private val x: GReq) {
     private val id = x.id.getOrElse(sys error s"$x needs an id.")
     def select = {
-      _selectedReqIds :+= id
+      _selectedReqIds += id
       auto
     }
     /** Expect to be selected automatically */
@@ -198,10 +198,7 @@ object DeletionTestData {
     |. 512 <- 510 511
   """.stripMargin.trim
 
-  private val selectedReqs: Vector[Req] =
-    _selectedReqIds.map(p.reqs.req)
-
-  lazy val result               = Deletion.initProps1(p, selectedReqs, _selectedRCGs)
+  lazy val result               = Deletion.initProps1(p, NonEmptySet force _selectedReqIds, _selectedRCGs)
   lazy val expectInitialReqs    = _expectInitialReqs
   lazy val expectInitialRCGs    = _expectInitialRCGs
   lazy val expectUnselectedReqs = _expectUnselectedReqs

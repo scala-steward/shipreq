@@ -41,6 +41,9 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   def map[B](f: A => B): NonEmptyVector[B] =
     NonEmptyVector(f(head), tail map f)
 
+  def mapToNES[B: UnivEq](f: A => B): NonEmptySet[B] =
+    NonEmptySet force whole.iterator.map(f).toSet
+
   def flatMap[B](f: A => NonEmptyVector[B]): NonEmptyVector[B] =
     reduceMapLeft1(f)(_ ++ _)
 
