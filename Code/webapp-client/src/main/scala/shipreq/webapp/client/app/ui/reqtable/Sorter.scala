@@ -62,7 +62,7 @@ object Sorter {
 
   object SortFn {
     val int: SortFn[Int] =
-      SortFn((x, y) => if (x < y) -1 else if (x == y) 0 else 1)
+      SortFn(_ - _)
 
     val intPair: SortFn[(Int, Int)] =
       int.pair
