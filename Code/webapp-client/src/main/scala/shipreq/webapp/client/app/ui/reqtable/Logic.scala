@@ -274,13 +274,21 @@ private[reqtable] object Logic {
     val expandImpCols = impColValueExpander(vs, p, applicability)
     val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup)
 
-    val pReqs         = p.reqs
-    val pReqCodes     = p.reqCodes.activeReqCodesByReqId
+    // The segregation of live/dead is because live reqs can have inactive reqcodes (leftovers of CodeRefs).
+    // It would be errornous to display inactive reqs for a live req.
+    val reqCodesByReq = Live.memo {
+      case Live =>
+        p.reqCodes.activeReqCodesByReqId
+      case Dead =>
+        UnivEq.emptySetMultimap[ReqId, ReqCode.Value] ++
+          p.reqCodes.inactiveIdsByReqId.m.mapValuesNow(_ map p.reqCodes.reqCode)
+    }
+
     val pImplications = p.implications
     val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup)
 
     def pubid(reqId: ReqId): Option[Pubid] = {
-      val req = pReqs.req(reqId)
+      val req = p.reqs.req(reqId)
       if (filterDead a req)
         Some(req.pubid)
       else
@@ -323,21 +331,20 @@ private[reqtable] object Logic {
         case r: GenericReq =>
           if (filter a r) {
             val id = r.id
+            val live = r live p.config.customReqTypes
 
             // Expansion
             val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
             val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-            val codes   = expandCodes  (() => pReqCodes(id))
+            val codes   = expandCodes  (() => reqCodesByReq(live)(id))
             val cfImps  = expandImpCols(r)
             val cfTags  = expandTagCols(r)
             val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
             // Build
             val mv = multiValuesFn(id)
-            exps.foreachWithIndex { (exp, i) =>
-              val live = r live p.config.customReqTypes
-              output :+= GenericReqRow(r, live, exp, mv, i)
-            }
+            exps.foreachWithIndex((exp, i) =>
+              output :+= GenericReqRow(r, live, exp, mv, i))
 
             seeExpandedCodes(codes)
           }
