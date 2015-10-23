@@ -459,9 +459,13 @@ object RandomData {
     import Atom._
     import Text.{ReqTitle => _, _}
 
-    val genChar = Gen.chooseGen(Gen.chooseInt(32, 127), Gen.chooseInt(128, 0xd7ff)).map(_.toChar)
-    private val literalStr  = genChar                         .string(1 to 100)
-    private val mathTexStr  = genChar                         .string(1 to  20)
+    private val asciiSL     = (32.toChar to 127.toChar).toArray
+    private val asciiML     = ('\n' :: '\r' :: asciiSL.toList).toArray
+    private val highChars   = Gen.chooseInt(128, 0xd7ff).map(_.toChar)
+            val genCharSL   = Gen.chooseGen(Gen chooseArray_! asciiSL, highChars)
+            val genCharML   = Gen.chooseGen(Gen chooseArray_! asciiML, highChars)
+    private val literalStr  = genCharSL                       .string(1 to 100)
+    private val mathTexStr  = genCharSL                       .string(1 to  20)
     private val webAddressR = charPred(Parsers.webAddressChar).string(1 to  40)
     private val emailL      = charPred(Parsers.emailCharL)    .string(1 to  20)
     private val emailR      = charPred(Parsers.emailCharR)    .string(1 to  14)
