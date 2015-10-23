@@ -150,25 +150,30 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       rt.mnemonic.value)
   }
 
-  private def tagWithoutStyle(t: ApplicableTag): ReactTag = {
+  private def tagWithoutStyle(c: Contextualise, t: ApplicableTag): ReactTag = {
     var desc = if (t.name.compareToIgnoreCase(t.key.value) == 0) "" else t.name
     for (d <- t.desc) {
       if (desc.nonEmpty)
         desc += "\n\n"
       desc += d
     }
+    val keyTxt = t.key.value
+    val displayTxt = c match {
+      case Contextualise => G.hashRefKey.prefix ~ keyTxt
+      case Plain         => keyTxt
+    }
     <.span(
       desc.nonEmpty ?= (^.title := desc),
-      t.key.value)
+      displayTxt)
   }
 
-  val tag = memo[ApplicableTagId] { id =>
+  val tagPlain = memo[ApplicableTagId] { id =>
     val tag = project.config.atag(id)
-    tagWithoutStyle(tag)(*.tag(tag.live))
+    tagWithoutStyle(Plain, tag)(*.tag(tag.live))
   }
 
   def tagList(ids: Vector[ApplicableTagId]): ReactElement =
-    UI.vector(ids, sepSpace)(tag)
+    UI.vector(ids, sepSpace)(tagPlain)
 
   val tagInText: Live => ApplicableTagId => ReactElement =
     Live.memo { liveText =>
@@ -176,7 +181,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         val tag = project.config.atag(id)
         val liveTag = tag.live
         val valid = Invalid <~ ((liveText :: Live) && (liveTag :: Dead))
-        tagWithoutStyle(tag)(*.tagInText(liveTag, valid))
+        tagWithoutStyle(Contextualise, tag)(*.tagInText(liveTag, valid))
       }
     }
 
