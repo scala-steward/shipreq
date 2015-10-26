@@ -13,12 +13,14 @@ import AtomScan.IssueLoc
  */
 class AtomScan(val tagRefs : LDStats[ReqId, Set[ApplicableTagId]],
                val issues  : LDStats[IssueLoc, Vector[AnyIssue]],
+               val reqRefs : Set[ReqId],
                val codeRefs: Set[ReqCodeId]) {
 
   lazy val issueCounts: LDStats[CustomIssueTypeId, Int] =
     issues.countByValues(_.toStream.map(_.typ))
 }
 
+// TODO AtomScan doesn't scan deletion reasons
 object AtomScan {
 
   sealed trait IssueLoc
@@ -31,7 +33,8 @@ object AtomScan {
   def apply(p: Project): AtomScan = {
     val tagRefs  = new LDStats.Builder[ReqId, Set[ApplicableTagId]]
     val issues   = new LDStats.Builder[IssueLoc, Vector[AnyIssue]]
-    var codeRefs = UnivEq.emptySet[ReqCodeId]
+    val reqRefs  = UnivEq.setBuilder[ReqId]
+    val codeRefs = UnivEq.setBuilder[ReqCodeId]
 
     def scan(live     : Live,
              reqId    : ReqId     = null,
@@ -41,11 +44,13 @@ object AtomScan {
       def go(as: Text.AnyOptional): Unit =
         as foreach {
           case _: Literal         # Literal
-             | _: ReqRef          # ReqRef
              | _: PlainTextMarkup # EmailAddress
              | _: PlainTextMarkup # WebAddress
              | _: PlainTextMarkup # MathTeX
              | _: NewLine         # BlankLine => ()
+
+          case a: ReqRef#ReqRef =>
+            reqRefs += a.value
 
           case a: ReqRef#CodeRef =>
             codeRefs += a.value
@@ -84,9 +89,9 @@ object AtomScan {
     }
 
     // Parse ReqCode groups
-    for (gi <- p.reqCodes.activeGroups)
-      scan(Live, reqCodeId = gi.id)(gi.group.title)
+    for (g <- p.reqCodes.groups)
+      scan(g.live, reqCodeId = g.id)(g.title)
 
-    new AtomScan(tagRefs.result(), issues.result(), codeRefs)
+    new AtomScan(tagRefs.result(), issues.result(), reqRefs.result(), codeRefs.result())
   }
 }

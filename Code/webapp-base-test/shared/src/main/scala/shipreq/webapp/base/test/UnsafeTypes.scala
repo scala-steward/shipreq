@@ -24,6 +24,12 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
     NonEmptyVector(v.head, v.tail)
   }
 
+  implicit def autoReqCodeSet[C <% ReqCode.Value](c: C): ReqCode.CodeSet =
+    ReqCode.CodeSet.empty.put(c, ())
+
+  implicit def autoReqCodeSetFromSet[C <% ReqCode.Value](cs: Set[C]): ReqCode.CodeSet =
+    cs.foldLeft(ReqCode.CodeSet.empty)(_.put(_, ()))
+
   implicit def autoReqCodeId        (i: Int) = ReqCodeId(i)
   implicit def autoReqTypePos       (i: Int) = ReqTypePos(i)
   implicit def autoGenericReqId     (i: Int) = GenericReqId(i)
@@ -34,6 +40,7 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoCustomReqTypeId  (i: Int) = CustomReqTypeId(i)
   implicit def autoTagGroupId       (i: Int) = TagGroupId(i)
   implicit def autoApplicableTagId  (i: Int) = ApplicableTagId(i)
+  implicit def autoDeletionReasonId (i: Int) = DeletionReasonId(i)
 
   implicit def autoReqCodeIdO        (i: Int): Option[ReqCodeId]                  = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)
@@ -45,11 +52,11 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoCustomReqTypeIdO  (i: Int): Option[CustomReqTypeId]            = Some(i)
   implicit def autoTagGroupIdO       (i: Int): Option[TagGroupId]                 = Some(i)
   implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = Some(i)
+  implicit def autoDeletionReasonIdO (i: Int): Option[DeletionReasonId]           = Some(i)
+
+  implicit def autoReqCodeIdS(i: Int): Set[ReqCodeId] = Set(i)
 
   implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
-
-  implicit def autoTrieData(ad: ReqCode.ActiveData): ReqCode.Data =
-    ReqCode.Data.empty.copy(active = ad)
 
   def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(NonEmptySet(a, as: _*))
   def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(NonEmptySet(a, as: _*))
@@ -69,6 +76,9 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   //  implicit def autoNes[A: UnivEq](a: A): NonEmptySet[A] = NonEmptySet one a
   implicit def autoNes[A, B: UnivEq](a: A)(implicit ev: A => B): NonEmptySet[B] =
     NonEmptySet one a
+
+//  implicit def autoSet[A, B: UnivEq](a: A)(implicit ev: A => B): Set[B] =
+//    Set(a)
 
   def min2set[A: UnivEq](a: A, b: A, t: A*): Min2Set[A] =
     Min2Set(NonEmptySet(a, t.toSet + b)).fold(nes => sys.error(s"Not make a Min2Set from $nes"), a => a)
@@ -96,14 +106,17 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoTextA_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.Atom = Text.ReqCodeGroupTitle Literal __checkLiteral(s)
   implicit def autoTextA_GenericReqTitle  (s: String): Text.GenericReqTitle  .Atom = Text.GenericReqTitle   Literal __checkLiteral(s)
   implicit def autoTextA_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .Atom = Text.InlineIssueDesc   Literal __checkLiteral(s)
+  implicit def autoTextA_DeletionReason   (s: String): Text.DeletionReason   .Atom = Text.DeletionReason    Literal __checkLiteral(s)
 
   implicit def autoTextO_CustomTextField  (s: String): Text.CustomTextField  .OptionalText = Vector1(s)
   implicit def autoTextO_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.OptionalText = Vector1(s)
   implicit def autoTextO_GenericReqTitle  (s: String): Text.GenericReqTitle  .OptionalText = Vector1(s)
   implicit def autoTextO_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .OptionalText = Vector1(s)
+  implicit def autoTextO_DeletionReason   (s: String): Text.DeletionReason   .OptionalText = Vector1(s)
 
   implicit def autoTextN_CustomTextField  (s: String): Text.CustomTextField  .NonEmptyText = NonEmptyVector one s
   implicit def autoTextN_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.NonEmptyText = NonEmptyVector one s
   implicit def autoTextN_GenericReqTitle  (s: String): Text.GenericReqTitle  .NonEmptyText = NonEmptyVector one s
   implicit def autoTextN_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .NonEmptyText = NonEmptyVector one s
+  implicit def autoTextN_DeletionReason   (s: String): Text.DeletionReason   .NonEmptyText = NonEmptyVector one s
 }

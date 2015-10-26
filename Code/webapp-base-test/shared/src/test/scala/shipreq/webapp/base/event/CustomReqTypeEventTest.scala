@@ -88,7 +88,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
             val r = t.p.reqs.genericReqs.need(reqId)
             assertEq(s"$name - req.live", r live t.p.config.customReqTypes, grLiveImp)
             assertEq(s"$name - req.expLive", r.liveExplicitly, Live)
-            assertEq(s"$name - RC.active?", t.p.reqCodes(rc.value).active.isDefined, grLiveImp :: Live)
+            assertEq(s"$name - RC.active?", t.p.reqCodes(rc.value).isActive, grLiveImp :: Live)
           }
         t.justApply(c1)
         test(Live)(CreateGenericReq(reqId, c1.id, CreateGenericReqGD.ReqCodes(rc)))

@@ -76,15 +76,18 @@ object BinCodecData {
 
   import AtomPicklers.instances._
 
-  implicit val pickleReqDataText       : Pickler[ReqData.Text]       = pickleMap
-  implicit val pickleReqCodeNode       : Pickler[ReqCode.Node]       = pickleCaseClass // xmap[String] already reuses
-  implicit val pickleReqCodeGroup      : Pickler[ReqCodeGroup]       = pickleCaseClass
-  implicit val pickleReqCodeTarget     : Pickler[ReqCode.Target]     = pickleADT
-  implicit val pickleReqCodeActiveData : Pickler[ReqCode.ActiveData] = pickleCaseClass
-  implicit val pickleReqCodeData       : Pickler[ReqCode.Data]       = pickleCaseClass
-  implicit val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue] = pickleCaseClass
-  implicit val pickleReqCodeTrie       : Pickler[ReqCode.Trie]       = pickleTrie
-  implicit val pickleReqCodes          : Pickler[ReqCodes]           = pickleCaseClass
+  implicit val pickleReqDataText       : Pickler[ReqData.Text]        = pickleMap
+  implicit val pickleReqCodeNode       : Pickler[ReqCode.Node]        = pickleCaseClass // xmap[String] already reuses
+  implicit val pickleLiveReqCodeGroup  : Pickler[LiveReqCodeGroup]    = pickleCaseClass
+  implicit val pickleDeadReqCodeGroup  : Pickler[DeadReqCodeGroup]    = pickleCaseClass
+  implicit val pickleReqCodeGroup      : Pickler[ReqCodeGroup]        = pickleADT
+  implicit val pickleReqCodeInactive   : Pickler[ReqCode.Inactive]    = pickleCaseClass
+  implicit val pickleReqCodeActiveGroup: Pickler[ReqCode.ActiveGroup] = pickleCaseClass
+  implicit val pickleReqCodeActiveReq  : Pickler[ReqCode.ActiveReq]   = pickleCaseClass
+  implicit val pickleReqCodeData       : Pickler[ReqCode.Data]        = pickleADT
+  implicit val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue]  = pickleCaseClass
+  implicit val pickleReqCodeTrie       : Pickler[ReqCode.Trie]        = pickleTrie
+  implicit val pickleReqCodes          : Pickler[ReqCodes]            = pickleCaseClass
 
   implicit val pickleStaticReqTypeUC: Pickler[StaticReqType.UseCase.type] = pickleObject
   implicit val pickleStaticReqType  : Pickler[StaticReqType]              = pickleADT
@@ -131,6 +134,9 @@ object BinCodecData {
   implicit val pickleFieldId          : Pickler[FieldId]                            = pickleADT
   implicit val pickleCustomFields     : Pickler[FieldSet.CustomFields]              = pickleIMap(FieldSet.emptyCustomFields)
   implicit val pickleFieldSet         : Pickler[FieldSet]                           = pickleCaseClass
+
+  implicit val pickleDeletionReasonIdO = optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq
+  implicit val pickleDeletionReasons   = pickleCaseClass[DeletionReasons]
 
   implicit val pickleIdCeilings   : Pickler[IdCeilings]    = pickleCaseClass
   implicit val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass

@@ -17,6 +17,7 @@ import shipreq.webapp.client.lib.{Contextualise, Plain}
 import shipreq.webapp.client.lib.ui.UI
 import shipreq.webapp.client.util._
 import ProjectWidgets.{deadValidity, invalidWhenDead}
+import UI.{sepComma, sepSpace}
 
 object ProjectWidgets {
   def apply(project: Project, plainText: PlainText.ForProject) =
@@ -66,15 +67,21 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     <.span(*.pubidColumnValue(req live project.config.customReqTypes), txt)
   }
 
-  private def _reqRef1(f: EndoFn[String], style: Req => TagMod): ReqId => ReactElement =
-    id => {
-      val req = project.reqs.req(id)
-      val rt  = project.config.reqType(req.pubid.reqTypeId)
-      <.span(
-        style(req),
-        ^.title := plainText.reqTitle(req),
-        f(PlainText.pubid(rt, req.pubid.pos)))
-    }
+  /**
+   * A reference to a requirement.
+   *
+   * "Basic" because it isn't memoised, and isn't meant to be used directly.
+   */
+  def reqRefBasic(req: Req, modifyPubidText: EndoFn[String], style: Req => TagMod): ReactElement = {
+    val rt  = project.config.reqType(req.pubid.reqTypeId)
+    <.span(
+      style(req),
+      ^.title := plainText.reqTitle(req),
+      modifyPubidText(PlainText.pubid(rt, req.pubid.pos)))
+  }
+
+  def reqRefBasicById(id: ReqId, modifyPubidText: EndoFn[String], style: Req => TagMod): ReactElement =
+    reqRefBasic(project.reqs req id, modifyPubidText, style)
 
   private val _reqRef2: Contextualise => Validity => ReqId => ReactElement =
     Contextualise.memo { c =>
@@ -85,7 +92,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       Validity.memo { v2 =>
         val g = deadValidity(v2)
         val style: Req => TagMod = req => *.reqRef(g(req live project.config.customReqTypes))
-        memo(_reqRef1(f, style))
+        memo(reqRefBasicById(_, f, style))
       }
     }
 
@@ -94,17 +101,9 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
 
   private val reqRefInText = reqRef(Contextualise, Invalid)
 
-  private val sepComma: TagMod = ", "
-  private val sepSpace: TagMod = " "
-
-  private def list[A, B](as: Vector[A], listSep: TagMod)(f: A => B)(implicit g: B => TagMod): ReactElement =
-    <.div(
-      NonEmptyVector.option(as)
-        .map(_.intercalateF(listSep)(g compose f).whole))
-
   def reqRefList(c: Contextualise, validityWhenDead: Validity)(reqs: Vector[ReqId]): ReactElement = {
     val f = reqRef(c, validityWhenDead)
-    list(reqs, sepComma)(f)
+    UI.vector(reqs, sepComma)(f)
   }
 
   def pubidRef(c: Contextualise, validityWhenDead: Validity): Pubid => ReactElement = {
@@ -113,7 +112,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
   }
 
   def pubidRefList(c: Contextualise, validityWhenDead: Validity)(ids: Vector[Pubid]): ReactElement =
-    list(ids, sepComma)(pubidRef(c, validityWhenDead))
+    UI.vector(ids, sepComma)(pubidRef(c, validityWhenDead))
 
   /** Contextualised */
   val codeRef = memo[ReqCodeId] { id =>
@@ -126,7 +125,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
     }
 
     def toGroup(c: ReqCode.Value, g: ReqCodeGroup): ReactElement =
-      ref(c, *.reqCodeGroupRef(Live), plainText.reqCodeGroupTitle(g and id))
+      ref(c, *.reqCodeGroupRef(g.live), plainText.reqCodeGroupTitle(g))
 
     def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): ReactElement =
       <.span(
@@ -135,11 +134,11 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         G.reflinkSurround(PlainText reqCode c))
 
     ProjectText.resolveReqCode(id, project.reqCodes) match {
-      case ActiveCode(c, r: ReqId)        => toRef(c, r)
-      case ActiveCode(c, g: ReqCodeGroup) => toGroup(c, g)
-      case DeadGroup(c)                   => ref(c, *.reqCodeGroupRef(Dead), undefined)
-      case ReqWithAltCode(c, r)           => toRef(c, r)
-      case ReqWithoutCodes(r)             => reqRefInText(r)
+      case ActiveCodeToReq     (c, r) => toRef(c, r)
+      case ActiveCodeToGroup   (c, g) => toGroup(c, g)
+      case DeadGroup           (c, g) => toGroup(c, g)
+      case ReqWithAltCode      (c, r) => toRef(c, r)
+      case ReqWithoutActiveCode(_, r) => reqRefInText(r)
     }
   }
 
@@ -151,25 +150,30 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       rt.mnemonic.value)
   }
 
-  private def tagWithoutStyle(t: ApplicableTag): ReactTag = {
+  private def tagWithoutStyle(c: Contextualise, t: ApplicableTag): ReactTag = {
     var desc = if (t.name.compareToIgnoreCase(t.key.value) == 0) "" else t.name
     for (d <- t.desc) {
       if (desc.nonEmpty)
         desc += "\n\n"
       desc += d
     }
+    val keyTxt = t.key.value
+    val displayTxt = c match {
+      case Contextualise => G.hashRefKey.prefix ~ keyTxt
+      case Plain         => keyTxt
+    }
     <.span(
       desc.nonEmpty ?= (^.title := desc),
-      t.key.value)
+      displayTxt)
   }
 
-  val tag = memo[ApplicableTagId] { id =>
+  val tagPlain = memo[ApplicableTagId] { id =>
     val tag = project.config.atag(id)
-    tagWithoutStyle(tag)(*.tag(tag.live))
+    tagWithoutStyle(Plain, tag)(*.tag(tag.live))
   }
 
   def tagList(ids: Vector[ApplicableTagId]): ReactElement =
-    list(ids, sepSpace)(tag)
+    UI.vector(ids, sepSpace)(tagPlain)
 
   val tagInText: Live => ApplicableTagId => ReactElement =
     Live.memo { liveText =>
@@ -177,7 +181,7 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
         val tag = project.config.atag(id)
         val liveTag = tag.live
         val valid = Invalid <~ ((liveText :: Live) && (liveTag :: Dead))
-        tagWithoutStyle(tag)(*.tagInText(liveTag, valid))
+        tagWithoutStyle(Contextualise, tag)(*.tagInText(liveTag, valid))
       }
     }
 

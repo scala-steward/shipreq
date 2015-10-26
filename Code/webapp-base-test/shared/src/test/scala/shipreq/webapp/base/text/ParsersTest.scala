@@ -40,18 +40,26 @@ object ParsersTest extends TestSuite {
         fail(e.toString)
     }
 
-  class Tester(p: Project, inputs: List[String]) {
+  class Tester(p: Project, inputsML: List[String]) {
     override def toString = p.toString
 
 //    println(p.countAtoms.showTree + "\n")
+//    println()
+//    p.reqCodes.trie.foreachPathAndValue((c,d) => println(s"${d.activeId.fold("-")(_.value.toString)} : ${PlainText reqCode c} - $d"))
+//    println()
 
     val E = EvalOver(this)
 
     val txt2str = PlainText(p).format(Live, _: Text.AnyOptional)
 
-    val genericReqTitles = p.reqs.reqs.values.filterT[GenericReq].map(_.title)
+    val genericReqTitles =
+      p.reqs.reqs.values
+        .filterT[GenericReq]
+        //.filter(_.live(p.config.customReqTypes) :: Live)
+        .map(_.title)
 
-    val customTextFieldValues = p.reqText.values.toStream.flatMap(_.values.toStream)
+    val customTextFieldValues =
+      p.reqText.values.toStream.flatMap(_.values.toStream)
 
     def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
 
@@ -103,25 +111,26 @@ object ParsersTest extends TestSuite {
       cmp(s"[CustomTextField] toStr |> parse = id\n'''$txt'''", parsed, src)
     }
 
-    def testString(in0: String) = {
-      val in1  = String valueOf Parsers.preprocess(in0, multiLine = true)
-      val parser = Text.CustomTextField.parser(p)(in1)
-      val out1 = assertSuccess(parser, parser.optionalText.run())
-      val in2  = txt2str(out1)
-      val out2 = Text.CustomTextField.parse(p)(in2)
-      count(out1)
-      cmp(in1, out1, out2)
+    def testStringML(in0: String) = {
+      val in1    = String valueOf Parsers.preprocess(in0, multiLine = true)
+      val parser = Text.CustomTextField.parser(p)(in0) // in0, not in1, cos it should preprocess by itself
+      val par1   = assertSuccess(parser, parser.optionalText.run())
+      val in2    = txt2str(par1)
+      val par2   = Text.CustomTextField.parse(p)(in2)
+      count(par1)
+      cmp(in1, par1, par2).rename("parse |> toStr |> parse = parse") ∧
+      DataProp.text.anyText(par1).liftL.rename("DataProp.anyText")
     }
 
     def all = (
         E.forall(genericReqTitles)(testGenericReqTitle).rename("GenericReqDesc")
       ∧ E.forall(customTextFieldValues)(testCustomTextField).rename("CustomTextField")
-      ∧ E.forall(inputs)(testString).rename("parse |> toStr |> parse = parse")
+      ∧ E.forall(inputsML)(testStringML).rename("Parse inputs (multiline)")
       )
   }
 
   def tester: Gen[Tester] =
-    for {p <- $.project; ss <- $.TextGen.genChar.string1.list1} yield new Tester(p, ss)
+    Gen.lift2($.project, $.TextGen.genCharML.string1.list1)(new Tester(_, _))
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -169,6 +178,16 @@ object ParsersTest extends TestSuite {
     (_: T.MathTeX).value |> Grammar.mathTexSurround.display, T.parserI(P))(_.mathtex.run())
 
   override val tests = TestSuite {
+    'preprocess {
+      // This isn't a standard trim - see preprocess() for explanation
+      def post(s: String) = ">" + s.replace('\n', '_') + "<"
+      val g = Gen.chooseGen(Gen.alphaNumeric, Gen pure '\n').string(0 to 20)
+      val p = Prop.equal[String]("trim")(
+        s => post(String.valueOf(Parsers.preprocess(s, true))),
+        s => post(s.trim))
+      p mustBeSatisfiedBy g
+    }
+
     'manual {
       import UnsafeTypes._
 
@@ -224,8 +243,11 @@ object ParsersTest extends TestSuite {
       'mathtex      - $.TextGen.mathTex     (T).mustSatisfy(propMathTeX)
     }
 
+    // The [parse . toString = id] property doesn't hold with dead dead/alternate CodeRefs.
+    // Eg. Dead text can have CodeRefs to dead codes.
+    // Parsing text only happens to live text, and it only looks at active codes.
     'big {
-      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(100).setGenSize(100))
+      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(1).setGenSize(4).setDebug.setSingleThreaded)
       println()
       val graphUnit = 1000 `JVM|JS` 10
       val graphChar = "#" `JVM|JS` "."

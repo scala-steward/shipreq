@@ -45,10 +45,11 @@ case class Changes(ves: VerifiedEvents, p1: Project, p2: Project) {
       case e: SetGenericReqTitle    =>
       case e: SetGenericReqType     =>
       case e: SetCustomTextField    =>
-      case e: DeleteReq             =>
+      case e: DeleteReqs            =>
       case e: CreateReqCodeGroup    =>
       case e: UpdateReqCodeGroup    =>
-      case e: DeleteReqCodeGroup    =>
+      case e: DeleteReqCodeGroups   =>
+      case e: RestoreContent        =>
 
       case e: ApplyTemplate         => // Always event #0 only - ignore
     }

@@ -4,7 +4,6 @@ package edit
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.Px
 import monocle.Optional
-import scalaz.syntax.bind.ToBindOps
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{TextSearch, PlainText}
@@ -18,12 +17,12 @@ object ColumnEditors {
     _ => None
 }
 
-final class ColumnEditors(project       : Px[Project],
-                          plainText     : Px[PlainText.ForProject],
-                          projectWidgets: Px[ProjectWidgets],
-                          textSearch    : Px[TextSearch],
-                          modTable      : Cell.ModTable,
-                          saveIO        : (UpdateContentCmd, TCB.Success, TCB.Failure) => Callback) {
+final class ColumnEditors(project        : Px[Project],
+                          plainText      : Px[PlainText.ForProject],
+                          projectWidgets : Px[ProjectWidgets],
+                          textSearch     : Px[TextSearch],
+                          cellSetLocState: Cell.SetLocState,
+                          saveIO         : CallServer[UpdateContentCmd]) {
 
   import ColumnEditors._
 
@@ -46,9 +45,10 @@ final class ColumnEditors(project       : Px[Project],
               case Column.Title          => genericReqTitle(r, fin)
               case Column.Tags           => tags(r, fin)
               case Column.ReqType        => reqType(r, fin)
-              case Column.Pubid          => noEditor
               case Column.ImplicationSrc => imps(Row.implicationSrc, col)(r, fin)
               case Column.ImplicationTgt => imps(Row.implicationTgt, col)(r, fin)
+              case Column.Pubid
+                 | Column.DeletionReason => noEditor
               case Column.CustomField(f, _) =>
                 f match {
                   case id: CustomField.Text       .Id => cfText(id)(r, fin)
@@ -66,14 +66,15 @@ final class ColumnEditors(project       : Px[Project],
                  | Column.Tags
                  | Column.ImplicationSrc
                  | Column.ImplicationTgt
+                 | Column.DeletionReason
                  | _: Column.CustomField => noEditor
             }
         }
       )
 
-    val loc = Cell.Loc(row.sourceId, col)
+    val loc = Cell.Loc(row.sourceId, Some(col))
 
-    val modCell = modTable(loc)
+    val modCell = cellSetLocState(loc)
 
     editor(modCell) match {
       case Some(cmd) => Some(modCell(cmd, Callback.empty))
@@ -139,7 +140,7 @@ final class ColumnEditors(project       : Px[Project],
 
   val codesForReq = mkEditor[GenericReqRow, String] { r =>
     val id = r.req.id
-    val iv = project.value().reqCodes.activeReqCodesByTarget(r.req.id)
+    val iv = project.value().reqCodes.activeReqCodesByReqId(r.req.id)
     ReqCodeEditor.ForReqs.edit(id, iv, reqCodeTrie, _)
   }
 

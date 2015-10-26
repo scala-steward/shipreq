@@ -65,7 +65,7 @@ abstract class MacroUtils {
   final def primaryConstructorParams_require2(t: Type): (Symbol, Symbol) =
     primaryConstructorParams(t) match {
       case a :: b :: Nil => (a, b)
-      case x        => fail(s"Two fields expected. ${t.typeSymbol.name} has: $x")
+      case x             => fail(s"Two fields expected. ${t.typeSymbol.name} has: $x")
     }
 
   type NameAndType = (TermName, Type)

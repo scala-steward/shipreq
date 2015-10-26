@@ -1,7 +1,9 @@
 package shipreq.webapp.base.test
 
 import monocle._
+import monocle.std.{some => atSome}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.Text.ReqCodeGroupTitle
 import shipreq.webapp.base.util.Optics
 
 object TestOptics {
@@ -10,4 +12,54 @@ object TestOptics {
     Project.customReqTypes ^|->>
     Optics.imapTraversal   ^|->
     CustomReqType.live
+
+
+  import ReqCode._
+
+  val reqCodeDataDeadGroup = Lens[Data, DeadGroup](_.deadGroup)(dg => {
+    case d: Inactive    => d.copy(deadGroup = dg)
+    case d: ActiveReq   => d.copy(deadGroup = dg)
+    case d: ActiveGroup => d
+  })
+
+  private val reqCodeDataDeadGroupSome = reqCodeDataDeadGroup ^<-? atSome
+
+  val reqCodeDataDeadGroupId: Optional[Data, ReqCodeId] =
+    reqCodeDataDeadGroupSome ^|-> DeadReqCodeGroup.id
+
+  private val reqCodeActiveGroupId: Lens[ActiveGroup, ReqCodeId] =
+    ActiveGroup.group ^|-> LiveReqCodeGroup.id
+
+  private val reqCodeActiveGroupTitle: Lens[ActiveGroup, ReqCodeGroupTitle.OptionalText] =
+    ActiveGroup.group ^|-> LiveReqCodeGroup.title
+
+  val reqCodeDataActiveId = Optional[Data, ReqCodeId]({
+    case d: ActiveReq   => Some(d.id)
+    case d: ActiveGroup => Some(d.id)
+    case d: Inactive    => None
+  })(n => {
+    case d: ActiveReq   => d.copy(id = n)
+    case d: ActiveGroup => reqCodeActiveGroupId.set(n)(d)
+    case d: Inactive    => d
+  })
+
+  val reqCodeDataReqInactive = Lens[Data, ReqInactive](_.reqInactive)(n => {
+    case d: ActiveReq   => d.copy(reqInactive = n)
+    case d: ActiveGroup => d.copy(reqInactive = n)
+    case d: Inactive    => d.copy(reqInactive = n)
+  })
+
+  val reqCodeDataGroupTitle = Optional[Data, ReqCodeGroupTitle.OptionalText]({
+    case d: ActiveGroup => Some(d.group.title)
+    case d: ActiveReq   => d.deadGroup.map(_.title)
+    case d: Inactive    => d.deadGroup.map(_.title)
+  })(n => {
+    case d: ActiveGroup => reqCodeActiveGroupTitle.set(n)(d)
+    case d: ActiveReq   => d.copy(deadGroup = d.deadGroup.map(DeadReqCodeGroup.title set n))
+    case d: Inactive    => d.copy(deadGroup = d.deadGroup.map(DeadReqCodeGroup.title set n))
+  })
+
+  private val reqCodeTrieFixK = Trie.fixk
+  val reqCodeTrieValueTraversal: Traversal[Trie, Data] =
+    PTraversal.fromTraverse[reqCodeTrieFixK.Trie, Data, Data](reqCodeTrieFixK.traverseTrie)
 }

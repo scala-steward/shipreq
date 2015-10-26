@@ -25,6 +25,7 @@ object UiText {
     def tags           = "Tags"
     def implicationSrc = "Implied By"
     def implicationTgt = "Implies"
+    def deletionReason = "Deletion Reason"
   }
 
   object FieldNames {
@@ -51,6 +52,7 @@ object UiText {
   }
 
   def reqCodeGroup = "Code Group"
+  def reqCodeGroups = "Code Groups"
 
   def buttonCommitChange = "OK"
   def buttonAbortChange = "Cancel"

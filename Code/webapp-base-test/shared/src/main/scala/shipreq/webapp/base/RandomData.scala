@@ -2,7 +2,7 @@ package shipreq.webapp.base
 
 import nyaya.gen._
 import nyaya.util._
-import monocle.{Lens, Traversal, PTraversal}
+import monocle._
 import monocle.function.{first, second, third}
 import monocle.std.{some => atSome}
 import monocle.std.tuple2._
@@ -28,6 +28,7 @@ import shipreq.webapp.base.text.{Text, Grammar}
 import shipreq.webapp.base.util.GenericData
 import shipreq.base.util.UtilMacros._
 import DataImplicits._
+import TestOptics.{customReqTypesLive => _, _}
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -151,7 +152,7 @@ object RandomData {
     Gen.tryGenChoose(as).fold[Gen[Vector[B]]](Gen pure Vector.empty)(
       _.vector.flatMap(Gen.traverse(_)(f)))
 
-  lazy val id =
+  val id =
     Gen.int.map(i => if (i == 0) 1 else Math.abs(i))
 
   val shortText1        = unicodeChar.string(1 to AppConsts.shortTextMaxLength)
@@ -458,9 +459,13 @@ object RandomData {
     import Atom._
     import Text.{ReqTitle => _, _}
 
-    val genChar = Gen.chooseGen(Gen.chooseInt(32, 127), Gen.chooseInt(128, 0xd7ff)).map(_.toChar)
-    private val literalStr  = genChar                         .string(1 to 100)
-    private val mathTexStr  = genChar                         .string(1 to  20)
+    private val asciiSL     = (32.toChar to 127.toChar).toArray
+    private val asciiML     = ('\n' :: '\r' :: asciiSL.toList).toArray
+    private val highChars   = Gen.chooseInt(128, 0xd7ff).map(_.toChar)
+            val genCharSL   = Gen.chooseGen(Gen chooseArray_! asciiSL, highChars)
+            val genCharML   = Gen.chooseGen(Gen chooseArray_! asciiML, highChars)
+    private val literalStr  = genCharSL                       .string(1 to 100)
+    private val mathTexStr  = genCharSL                       .string(1 to  20)
     private val webAddressR = charPred(Parsers.webAddressChar).string(1 to  40)
     private val emailL      = charPred(Parsers.emailCharL)    .string(1 to  20)
     private val emailR      = charPred(Parsers.emailCharR)    .string(1 to  14)
@@ -709,6 +714,15 @@ object RandomData {
       gs :+= a.map(tagRef(_))
       multiLinePlus(t)(gs: _*)
     }
+
+    def deletionReasonAtom(r: Option[Gen[ReqId]],
+                           c: Option[Gen[ReqCodeId]],
+                           a: Option[Gen[ApplicableTagId]]): Gen[DeletionReason.Atom] = {
+      implicit val t: DeletionReason.type = DeletionReason
+      var gs: Vector[Option[Gen[t.Atom]]] = reqRefs(r, c).map(_.some)
+      gs :+= a.map(tagRef(_))
+      multiLinePlus(t)(gs: _*)
+    }
   }
 
   val MaxTextAtoms: SizeSpec = 0 to (30 `JVM|JS` 8)
@@ -938,67 +952,62 @@ object RandomData {
     val node: Gen[Node] =
       grammarStr1(Grammar.reqCode)(_.firstChar, _.allChars, _.nodeLength) map Node.applyFn
 
-    lazy val value: Gen[Value] =
+    val value: Gen[Value] =
       node.nev
 
-    lazy val id =
+    val id =
       RandomData.id map ReqCodeId
 
     val distinctIds =
       Distinct.fint.xmap(ReqCodeId)(_.value).distinct
 
-    val reqCodeTrieFixK = Trie.fixk
-    val reqCodeTrieValueTraversal: Traversal[Trie, Data] =
-      PTraversal.fromTraverse[reqCodeTrieFixK.Trie, Data, Data](reqCodeTrieFixK.traverseTrie)
-
     val distinctReqCodeTrie = {
-      val dataActive = Data.active ^<-? atSome
-      val ids1       = distinctIds at ActiveData.id at dataActive
-      val ids2       = distinctIds.lift[Set] at Data.refsToGroup
-      val ids3       = distinctIds.lift[Set].liftMultimapValues[ReqId, Set, ReqCodeId, ReqCodeId] at Data.reqInactive
-      val id         = ids1 + ids2 + ids3
-      val idsInTrie  = id traversal reqCodeTrieValueTraversal
+      val ids1      = distinctIds at reqCodeDataActiveId
+      val ids2      = distinctIds at reqCodeDataDeadGroupId
+      val ids3      = distinctIds.lift[Set].liftMultimapValues[ReqId, Set, ReqCodeId, ReqCodeId] at reqCodeDataReqInactive
+      val id        = ids1 + ids2 + ids3
+      val idsInTrie = id traversal reqCodeTrieValueTraversal
       idsInTrie
     }
 
     val smallIdSet = id.set(0 to 3)
 
-    val gEmptyReqInactive: Gen[Multimap[ReqId, Set, ReqCodeId]] =
-      Gen.pure(Multimap.empty)
+    val gEmptyReqInactive: Gen[ReqInactive] =
+      Gen pure emptyReqInactive
 
-    def data(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]], gGroup: Gen[ReqCodeGroup])(implicit ss: SizeSpec): Gen[Data] =
+    private val gEmptyText: Gen[Text.ReqCodeGroupTitle.OptionalText] =
+      Gen pure Vector.empty
+
+    def data(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]],
+             gGroupText: Gen[Text.ReqCodeGroupTitle.OptionalText] = gEmptyText)(implicit ss: SizeSpec): Gen[Data] =
+
       ss.gen flatMap { sz =>
-
-        val gTarget: Gen[Target] =
-          ogLiveReqId match {
-            case Some(g) => Gen.chooseGen(g, g, g, g, gGroup)
-            case None    => gGroup
-          }
-
-        val gReqInactive: Gen[Multimap[ReqId, Set, ReqCodeId]] =
+        val gReqInactive: Gen[ReqInactive] =
           ogReqId match {
             case Some(g) => g.mapTo(smallIdSet)(0 to sz).map(Multimap(_))
             case None    => gEmptyReqInactive
           }
 
-        for {
-          i           <- id
-          target      <- gTarget
-          lastGroup   <- gGroup.option
-          refsToGroup <- smallIdSet
-          reqInactive <- gReqInactive
-          x           <- Gen.chooseInt(0, 9)
-        } yield
-          if (x == 0)
-            target match {
-              case t: ReqId        => Data(None, lastGroup, refsToGroup    , reqInactive.add(t, i))
-              case _: ReqCodeGroup => Data(None, lastGroup, refsToGroup + i, reqInactive)
-            }
-          else
-            target match {
-              case t: ReqId        => Data(Some(ActiveData(i, target)), lastGroup, refsToGroup, reqInactive)
-              case _: ReqCodeGroup => Data(Some(ActiveData(i, target)), None     , refsToGroup, reqInactive)
-            }
+        val gLiveReqCodeGroup: Gen[LiveReqCodeGroup] =
+          Gen.apply2(LiveReqCodeGroup.apply)(id, gGroupText)
+
+        val gDeadGroup: Gen[DeadGroup] =
+          Gen.apply2(DeadReqCodeGroup.apply)(id, gGroupText).option
+
+        val gInactive: Gen[Inactive] =
+          Gen.apply2(Inactive.apply)(gDeadGroup, gReqInactive)
+
+        val gActiveGroup: Gen[ActiveGroup] =
+          Gen.apply2(ActiveGroup.apply)(gLiveReqCodeGroup, gReqInactive)
+
+        val gActiveReq: Option[Gen[ActiveReq]] =
+          ogLiveReqId map (gReqId =>
+            Gen.apply4(ActiveReq.apply)(id, gReqId, gDeadGroup, gReqInactive))
+
+        gActiveReq match {
+          case None    => Gen.chooseGen(gInactive, gActiveGroup)
+          case Some(g) => Gen.chooseGen(gInactive, gActiveGroup, g, g)
+        }
     }
 
     def trieValue(d: Gen[Data]): Gen[Trie.Value] = d map Trie.Value
@@ -1006,23 +1015,20 @@ object RandomData {
     def trie(d: Gen[Data], maxDepth: Int): Gen[Trie] =
       mtrie(node, d, maxDepth) map distinctReqCodeTrie.run
 
-    val emptyReqCodeGroup = ReqCodeGroup(Vector.empty)
-    val gEmptyReqCodeGroup = Gen pure emptyReqCodeGroup
-
-    val activeGroup = Data.active ^<-? atSome ^|-> ActiveData.target ^<-? Target.reqCodeGroup
+    def codeSet(maxDepth: Int): Gen[CodeSet] =
+      mtrie(node, Gen.unit, maxDepth)
 
     def updateGroupText(gt: Gen[Text.ReqCodeGroupTitle.OptionalText])(src: Trie): Gen[Trie] = {
       type F = EndoFn[Trie]
       type G = Gen[F]
-//      val vecOfGens = src.cataV(Vector.empty[G])((q, p, d) =>
-//        d.active.fold(q)(a => a.target match {
-//          case _: GenericReqId => q
-//          case _: ReqCodeGroup => q :+ gt.map[F](t => _.put(p, d.copy(active = Some(a.copy(target = ReqCodeGroup(t))))))
-//        }
-//      ))
-      val vecOfGens = src.cataV(Vector.empty[G])((q, p, d) =>
-        activeGroup.getOption(d).fold(q)(_ =>
-          q :+ gt.map[F](t => _.put(p, activeGroup.set(ReqCodeGroup(t))(d)))))
+
+      val vecOfGens = src.cataV(Vector.empty[G])((q, code, data) =>
+        reqCodeDataGroupTitle.getOption(data) match {
+          case Some(txt) => q :+ gt.map[F](txt => _.put(code, reqCodeDataGroupTitle.set(txt)(data)))
+          case None      => q
+        }
+      )
+
       val genVec = Gen.sequence(vecOfGens)
       genVec.map(_.foldLeft(src)((q, f) => f(q)))
     }
@@ -1053,6 +1059,30 @@ object RandomData {
     issues + tags
   }
 
+  def deletionReasons(gReqId: Option[Gen[ReqId]], gText: Gen[Text.DeletionReason.NonEmptyText]): Gen[DeletionReasons] =
+    //Gen insert DeletionReasons.empty/*
+    gReqId match {
+      case None => Gen pure DeletionReasons.empty
+      case Some(g) =>
+        for {
+          reasons  ← gText.vector
+          ids      = reasons.indices.toStream.map(i => Option(DeletionReasonId(i)))
+          idToReqs ← g.set1.fill(reasons.length).map(ids zip _)
+        } yield {
+          var ra = DeletionReasons.emptyReqApplication
+          idToReqs.foreach { t =>
+            val t1h = t._1.hashCode
+            t._2.foreach { reqId =>
+              val h = reqId.hashCode ^ t1h
+              if ((h &  3) == 0) ra = ra.add(reqId, None) // 25% chance
+                                 ra = ra.add(reqId, t._1)
+              if ((h & 12) == 0) ra = ra.add(reqId, None) // 25% chance
+            }
+          }
+          DeletionReasons(reasons, ra)
+        }
+    }
+
   lazy val projectConfig: Gen[ProjectConfig] =
     for {
       (issues, tags) ← Gen.tuple2(customIssueTypes, tagTree) map distinctHashRefKeys.run
@@ -1072,17 +1102,20 @@ object RandomData {
     val reqIds         = reqsWithoutText.reqs.keys
     val reqIdG         = Gen tryGenChoose reqIds.toSeq
     val reqIdSet       = reqIds.toSet
-    val activeCodeIds  = reqCodes1.cataA(Vector.empty[ReqCodeId])((q, _, a) => q :+ a.id)
+    val activeCodeIds  = reqCodes1.trie.allValues.flatMap(_.activeId.toStream)
     val activeCodeIdG  = Gen tryGenChoose activeCodeIds
     val atagIds        = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
     val atagIdG        = Gen.tryGenChoose(atagIds.toSeq)
     val textColIds     = cfg.fields.customFields.values.filterT[CustomField.Text].map(_.id).toSet
+    val rcgTitleText   = TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text
+    val delReasonText  = TextGen.deletionReasonAtom(reqIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     for {
-      reqText        ← reqFieldDataText2(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG)
-      updReqText     = updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text) _
-      reqs           ← genmodL(Requirements.genericReqs)(updReqText)(reqsWithoutText)
-      reqCodes2      ← reqCode.updateGroupText(TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text)(reqCodes1.trie)
-    } yield IdCeilings.supply(Project(cfg, reqs, ReqCodes(reqCodes2), reqText, reqTags, reqImps, _))
+      reqText    ← reqFieldDataText2(reqIdSet, textColIds, activeCodeIdG, cissueIdG, atagIdG)
+      updReqText = updateRequirementText(TextGen.genericReqTitleAtom(reqIdG, activeCodeIdG, cissueIdG, atagIdG).text) _
+      reqs       ← genmodL(Requirements.genericReqs)(updReqText)(reqsWithoutText)
+      reqCodes2  ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
+      dr         ← deletionReasons(reqIdG, delReasonText)
+    } yield IdCeilings.supply(Project(cfg, reqs, ReqCodes(reqCodes2), reqText, reqTags, reqImps, dr, _))
   }
 
   lazy val project: Gen[Project] =
@@ -1096,7 +1129,7 @@ object RandomData {
       reqIdSet        = reqIds.toSet
       liveReqIds      = reqsWithoutText.reqs.values.toStream.filter(_.live(cfg.customReqTypes) :: Live).map(_.id)
       liveReqIdG      = Gen tryGenChoose liveReqIds
-      reqCodeDataG    = reqCode.data(liveReqIdG, reqIdG, reqCode.gEmptyReqCodeGroup)(0 to (3 `JVM|JS` 2))
+      reqCodeDataG    = reqCode.data(liveReqIdG, reqIdG)(0 to (3 `JVM|JS` 2))
       reqCodes        ← reqCodes(reqCode.trie(reqCodeDataG, 2 `JVM|JS` 2))
       reqTags         ← reqFieldDataTags(reqIdSet, atagIds)
       reqImps         ← reqFieldDataImplications(reqIdSet)
@@ -1399,6 +1432,9 @@ object RandomData {
     val genericReqTitle1 =
       genericReqTitleAtom.text1(Text.GenericReqTitle)
 
+    val deletionReason =
+      TextGen.deletionReasonAtom(Some(reqId), Some(reqCode.id), Some(applicableTagId)).text
+
     def nesd[A: UnivEq](g: Gen[A]): Gen[NonEmpty[SetDiff[A]]] = {
       val set = g.set
       val attempt =
@@ -1563,11 +1599,11 @@ object RandomData {
     val deleteCustomReqType: Gen[DeleteCustomReqType] =
       Gen.apply2(DeleteCustomReqType)(customReqTypeId, deletionAction)
 
-    val deleteReqCodeGroup: Gen[DeleteReqCodeGroup] =
-      reqCode.id map DeleteReqCodeGroup
+    val deleteReqCodeGroups: Gen[DeleteReqCodeGroups] =
+      reqCode.id.nes map DeleteReqCodeGroups
 
-    val deleteReq: Gen[DeleteReq] =
-      Gen.apply2(DeleteReq)(reqId, deletionAction)
+    val deleteReqs: Gen[DeleteReqs] =
+      Gen.apply3(DeleteReqs)(reqId.nes, reqCode.id.set, deletionReason)
 
     val deleteStaticField: Gen[DeleteStaticField] =
       staticField map DeleteStaticField
@@ -1597,6 +1633,9 @@ object RandomData {
 
     val repositionField: Gen[RepositionField] =
       Gen.apply2(RepositionField)(fieldId, fieldId.option)
+
+    val restoreContent: Gen[RestoreContent] =
+      Gen.apply2(RestoreContent)(reqId.set, reqCode.id.set)
 
     val setCustomTextField: Gen[SetCustomTextField] =
       Gen.apply3(SetCustomTextField)(reqId, customFieldTextId, customTextField)
@@ -1647,8 +1686,8 @@ object RandomData {
         case _: DeleteCustomField     => deleteCustomField
         case _: DeleteCustomIssueType => deleteCustomIssueType
         case _: DeleteCustomReqType   => deleteCustomReqType
-        case _: DeleteReqCodeGroup    => deleteReqCodeGroup
-        case _: DeleteReq             => deleteReq
+        case _: DeleteReqCodeGroups   => deleteReqCodeGroups
+        case _: DeleteReqs            => deleteReqs
         case _: DeleteStaticField     => deleteStaticField
         case _: DeleteTag             => deleteTag
         case _: PatchImplicationSrc   => patchImplicationSrc
@@ -1656,6 +1695,7 @@ object RandomData {
         case _: PatchReqCodes         => patchReqCodes
         case _: PatchReqTags          => patchReqTags
         case _: RepositionField       => repositionField
+        case _: RestoreContent        => restoreContent
         case _: SetCustomTextField    => setCustomTextField
         case _: SetGenericReqTitle    => setGenericReqTitle
         case _: SetGenericReqType     => setGenericReqType

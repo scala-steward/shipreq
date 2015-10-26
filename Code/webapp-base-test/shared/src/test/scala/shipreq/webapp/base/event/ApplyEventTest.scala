@@ -56,8 +56,9 @@ object ApplyEventTestFns {
     var customReqTypes   = 0
     var tags             = 0
     var customFields     = 0
-    var rcgs             = 0
+    var activeRCGs       = 0
     var reqs             = 0
+    var delReasons       = 0
 
     es foreach {
       case _: CreateGenericReq      => reqs += 1
@@ -68,8 +69,8 @@ object ApplyEventTestFns {
          | _: CreateCustomImpField  => customFields += 1
       case _: CreateTagGroup
          | _: CreateApplicableTag   => tags += 1
-      case _: CreateReqCodeGroup    => rcgs += 1
-      case _: DeleteReqCodeGroup    => rcgs -= 1
+      case _: CreateReqCodeGroup    => activeRCGs += 1
+      case e: DeleteReqCodeGroups   => activeRCGs -= e.ids.size
 
       case ApplyTemplate(t) => t match {
         case ProjectTemplate.Default =>
@@ -78,6 +79,14 @@ object ApplyEventTestFns {
           tags             += 16
           customFields     +=  5
       }
+
+      case d: DeleteReqs =>
+        if (d.reason.nonEmpty)
+          delReasons += 1
+        activeRCGs -= d.reqCodeGroups.size
+
+      case r: RestoreContent =>
+        activeRCGs += r.reqCodes.size
 
       case _: UpdateCustomIssueType
          | _: UpdateCustomReqType
@@ -91,8 +100,6 @@ object ApplyEventTestFns {
          | _: DeleteStaticField
          | _: AddStaticField
          | _: RepositionField
-         | _: DeleteReq
-         | _: DeleteReq
          | _: PatchReqCodes
          | _: PatchReqTags
          | _: PatchImplicationSrc
@@ -111,7 +118,8 @@ object ApplyEventTestFns {
     assertEq("Σ Tags", tags, cfg.tags.size)
     assertEq("Σ CustomFields", customFields, cfg.fields.customFields.size)
     assertEq("Σ Reqs", reqs, p.reqs.reqs.size)
-    assertEq("Σ ReqCodeGroups", rcgs, p.reqCodes.activeGroups.size)
+    assertEq("Σ ReqCodeGroups (active)", activeRCGs, p.reqCodes.groups.count(_.live :: Live))
+    assertEq("Σ DeletionReasons", delReasons, p.deletionReasons.reasons.size)
     validateIdCeilings(p)
   }
 
@@ -130,6 +138,7 @@ object ApplyEventTestFns {
 
 case class InitialEvents(es: Event*) {
   def ++(next: Seq[Event]) = es ++ next
+  def add(es: Event*) = InitialEvents(this.es ++ es: _*)
 }
 trait NoInitialEvents {
   implicit val init = InitialEvents()

@@ -1,43 +1,68 @@
 package shipreq.webapp.client.app.ui.reqtable
 
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.{Reusability, ~=>}
+import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.base.util.UnivEq
 import shipreq.webapp.client.app.ui.RemoteDataEditor
 
 object Cell {
 
-  type State = RemoteDataEditor.OpState
-
   type R = Row.SourceId
   type C = Column
-  type RowState = Map[C, RemoteDataEditor.State]
+  type S = RemoteDataEditor.State
 
-  case class Loc(row: R, col: C)
+  // Cell.State
+  type State = Option[S]
+
+  private type AllState = Map[R, RowState]
+
+  sealed trait RowState {
+    def apply(c: C): State = None
+    def byColumns: Map[C, S] = UnivEq.emptyMap
+    def allowEdit(c: C): Boolean
+  }
+
+  object RowState {
+    case object Empty extends RowState {
+      override def allowEdit(c: C) = true
+    }
+
+    case class WholeRow(state: S) extends RowState {
+      override def allowEdit(c: C) = false
+    }
+
+    case class Cells(state: Map[C, S]) extends RowState {
+      override def apply(c: C) = state get c
+      override def byColumns: Map[C, S] = state
+      override def allowEdit(c: C) = !state.contains(c)
+    }
+  }
+
+  case class Loc(row: R, col: Option[C])
 
   implicit val locReusability: Reusability[Loc] = Reusability.caseClass
 
-  final class TableState(m: Map[R, RowState]) {
-    def apply(id: R): RowState =
-      m.getOrElse(id, UnivEq.emptyMap)
+  case class TableState(all: AllState) {
+    def apply(row: R): RowState =
+      all.getOrElse(row, RowState.Empty)
 
-    def apply(row: R, col: C): State =
-      m.get(row).flatMap(_ get col)
-
-    def apply(loc: Loc): State =
-      apply(loc.row, loc.col)
-
-    def set(row: R, col: C)(s: State): TableState = {
-      val r1 = apply(row)
-      val r2 = s.fold(r1 - col)(r1.updated(col, _))
-      new TableState(m.updated(row, r2))
+    def set(loc: Loc, state: State): TableState = {
+      import RowState._
+      def rs = apply(loc.row)
+      val rs2 = (state, loc.col) match {
+        case (Some(s), Some(c)) => Cells(rs.byColumns.updated(c, s))
+        case (Some(s), None   ) => WholeRow(s)
+        case (None   , _      ) => Empty
+      }
+      new TableState(all.updated(loc.row, rs2))
     }
-
-    def set(loc: Loc, s: State): TableState =
-      set(loc.row, loc.col)(s)
   }
 
   def emptyTableState: TableState =
     new TableState(UnivEq.emptyMap)
 
-  type ModTable = Loc ~=> RemoteDataEditor.SetOpState
+  type SetLocState = Loc ~=> RemoteDataEditor.SetOpState
+
+  type ModifyFn = EndoFn[TableState] ~=> Callback
 }

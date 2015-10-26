@@ -19,10 +19,11 @@ object ProjectText {
   /** Judgement on how a ReqCode-based reference (eg. [email.failure]) should be displayed */
   sealed trait ReqCodeResolution
   object ReqCodeResolution {
-    case class ActiveCode     (code: ReqCode.Value, target: ReqCode.Target) extends ReqCodeResolution
-    case class DeadGroup      (code: ReqCode.Value)                         extends ReqCodeResolution
-    case class ReqWithoutCodes(reqId: ReqId)                                extends ReqCodeResolution
-    case class ReqWithAltCode (code: ReqCode.Value, reqId: ReqId)           extends ReqCodeResolution
+    case class ActiveCodeToReq     (code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
+    case class ReqWithAltCode      (code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
+    case class ReqWithoutActiveCode(code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
+    case class ActiveCodeToGroup   (code: ReqCode.Value, group: LiveReqCodeGroup) extends ReqCodeResolution
+    case class DeadGroup           (code: ReqCode.Value, group: DeadReqCodeGroup) extends ReqCodeResolution
   }
 
   /**
@@ -44,26 +45,52 @@ object ProjectText {
     // Algorithm could be improved to be more meaningful, like most common (node) prefix, nodes in common, etc.
     def findAlt(reqId: ReqId, deadCode: Value): Option[ReqWithAltCode] = {
       val deadCodeStr = reqCode(deadCode)
-      NonEmptySet.option(rc.activeReqCodesByTarget(reqId) - deadCode).map { cs =>
+      NonEmptySet.option(rc.activeReqCodesByReqId(reqId) - deadCode).map { cs =>
         val c = cs.whole.minBy(c => Util.levenshtein(deadCodeStr, reqCode(c)))
         ReqWithAltCode(c, reqId)
       }
     }
 
     val code = rc.reqCode(id)
-    val data = rc(code)
-    data.active match {
-      case Some(ad) if ad.id ≟ id =>
-        ActiveCode(code, ad.target)
-      case None =>
-        if (data.refsToGroup contains id)
-          DeadGroup (code)
-        else
-          data.reqInactive.m.find(_._2 contains id) match {
-            case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutCodes(reqId)
-            case None             => mustNotHappen(s"$id not found in $code: $data")
-          }
+    rc(code) match {
+      case d: ActiveReq   if d.id ≟ id => ActiveCodeToReq(code, d.reqId)
+      case d: ActiveGroup if d.id ≟ id => ActiveCodeToGroup(code, d.group)
+      case d =>
+        d.deadGroup match {
+          case Some(g) if g.id ≟ id => DeadGroup(code, g)
+          case _ =>
+            d.reqInactive.m.find(_._2 contains id) match {
+              case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutActiveCode(code, reqId)
+              case None             => mustNotHappen(s"$id not found in $code: $d")
+            }
+        }
     }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  abstract class DeletionReasonFormatter[Out] {
+    type PT <: ProjectText[Out]
+
+    protected def `n/a`: Out
+    protected def noReasonGiven: Out
+    protected def reqTypeIsDead(pt: PT, rt: ReqType): Out
+
+    final def reqCodeGroup = `n/a`
+
+    final def req(p: Project, pt: PT, req: Req): Out =
+      req match {
+        case r: GenericReq =>
+          import GenericReq.ImplicitLiveStatus._
+          r.liveExplicitly match { // explicit must be checked before implicit
+            case Live =>
+              r.implicitLiveStatus(p.config.customReqTypes) match {
+                case NoImpact      => `n/a` // req is live
+                case ReqTypeIsDead => reqTypeIsDead(pt, p.config.reqType(r.pubid.reqTypeId))
+              }
+            case Dead => pt.latestDeletionReason(r.id) getOrElse noReasonGiven
+          }
+      }
   }
 }
 
@@ -82,9 +109,9 @@ abstract class ProjectText[Out](project: Project) {
       case r: GenericReq => format(r live cfg.customReqTypes, r.title)
     }
 
-  val reqCodeGroupTitle: ReqCodeGroup.AndId => Out =
-    Memo.by((_: ReqCodeGroup.AndId).id)(g =>
-      format(g.group.live, g.group.title))
+  val reqCodeGroupTitle: ReqCodeGroup => Out =
+    Memo.by((_: ReqCodeGroup).id)(g =>
+      format(g.live, g.title))
 
   def reqTitleById(id: ReqId): Out =
     reqTitle(project.reqs.req(id))
@@ -100,4 +127,8 @@ abstract class ProjectText[Out](project: Project) {
           Function const None
       }
     }
+
+  val latestDeletionReason: ReqId => Option[Out] =
+    Memo(id =>
+      project.deletionReasons.getLatest(id).map(format1(Dead, _)))
 }

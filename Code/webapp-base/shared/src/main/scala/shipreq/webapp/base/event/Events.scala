@@ -6,7 +6,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.util._
 import Event.NESD
-import Text.{GenericReqTitle, CustomTextField, ReqCodeGroupTitle}
+import Text.{GenericReqTitle, CustomTextField, ReqCodeGroupTitle, DeletionReason}
 import Text.Equality._
 import UnivEq.Implicits._
 
@@ -151,8 +151,6 @@ object CreateGenericReqGD extends GenericData {
 
 case class CreateGenericReq(id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
 
-case class DeleteReq(id: ReqId, da: DeletionAction) extends ActiveEvent
-
 /**
  * Updates a requirement's reqcodes.
  *
@@ -179,6 +177,8 @@ case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalT
 
 case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
 
+case class DeleteReqs(reqs: NonEmptySet[ReqId], reqCodeGroups: Set[ReqCodeId], reason: DeletionReason.OptionalText) extends ActiveEvent
+
 // =====================================================================================================================
 // Content: ReqCode groups
 
@@ -190,4 +190,10 @@ object ReqCodeGroupGD extends GenericData {
 
 case class CreateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
 case class UpdateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
-case class DeleteReqCodeGroup(id: ReqCodeId) extends ActiveEvent
+
+case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
+
+// =====================================================================================================================
+// Content: Shared
+
+case class RestoreContent(reqs: Set[ReqId], reqCodes: Set[ReqCodeId]) extends ActiveEvent

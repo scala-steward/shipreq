@@ -29,6 +29,9 @@ object Memo {
       i => m(k(i), f(i))
     }
   }
+
+  def byRef[A <: AnyRef, B](f: A => B): A => B =
+    by[A, Ref[A]](Ref.apply)(f)
 }
 
 /*

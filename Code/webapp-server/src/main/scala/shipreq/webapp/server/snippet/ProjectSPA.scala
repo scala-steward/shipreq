@@ -85,7 +85,9 @@ class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
   var state = loadProjectEvents_!(projectId)
 
-  private def updateProject(f: Project => MakeEvent.Result): GenericFailure \/ VerifiedEvents =
+  private def updateProject(f: Project => MakeEvent.Result): GenericFailure \/ VerifiedEvents = {
+//    Thread.sleep(2000)
+//    sys error "NO!"
     applyMakeEventResult(f(state.project), state) match {
       case u: Updated  =>
         applyNewEvent(u).map(_ => Vector1(u.ve))
@@ -94,6 +96,7 @@ class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
       case Failed(err) =>
         -\/(GenericFailure(err))
     }
+  }
 
   private def applyNewEvent(u: Updated): GenericFailure \/ Unit = {
     val seq = state.seq.succ

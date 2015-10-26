@@ -43,11 +43,15 @@ object LogicPropTest extends TestSuite {
     val finalRows   = Logic.rowsForTable(vs, p, plainText, textSearch)
     val tableStats  = Logic.stats(vs, p, finalRows)
 
-    val expectedVisibleReqCodes =
-      p.reqCodes.cataA(Set.empty[ReqCode.Value])((q, c, d) => d.target match {
-        case id: ReqId       => if (expectVisible(id))    q + c else q
-        case _: ReqCodeGroup => if (vs.viewReqCodeGroups) q + c else q
-      })
+    val expectedVisibleReqCodes = {
+      val b = Set.newBuilder[ReqCode.Value]
+      p.reqCodes.activeReqCodesByReqId.values.foreach(b ++= _)
+      if (vs.viewReqCodeGroups)
+        p.reqCodes.groups.foreach(g =>
+          if ((g.live :: Live) || (vs.filterDead :: ShowDead))
+            b += p.reqCodes.reqCode(g.id))
+      b.result()
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Gathering
@@ -236,6 +240,7 @@ object LogicPropTest extends TestSuite {
       case C.Tags            => nop
       case C.ImplicationSrc  => nop
       case C.ImplicationTgt  => nop
+      case C.DeletionReason  => nop
       case C.CustomField(id, _) =>
         id match {
           case i: CustomField.Implication.Id => nop

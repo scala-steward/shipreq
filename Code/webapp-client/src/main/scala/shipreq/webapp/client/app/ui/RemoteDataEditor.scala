@@ -18,7 +18,7 @@ object RemoteDataEditor {
   sealed trait Status
   case object Editing extends Status
   case object Locked extends Status
-  case class Failed(retry: () => Callback, resumeEdit: () => Callback) extends Status
+  case class Failed(reason: String, retry: () => Callback, resumeEdit: () => Callback) extends Status
 
   case class StateFor[+A](value: A, status: Status, renderFn: () => ReactElement) {
     @inline def render: ReactElement =
@@ -40,7 +40,7 @@ object RemoteDataEditor {
     val abort    : TCB.Abort,
     val lock     : Callback,
     val succeeded: TCB.Success,
-    val failed   : TCB.Failure)
+    val failed   : String => TCB.Failure)
 
   type OnCommit = Callbacks => Callback
   type CommitFn = OnCommit => TCB.Commit
@@ -83,10 +83,11 @@ object RemoteDataEditor {
 
     def commit(a: A): CommitFn =
       onCommit => {
-        def onFailure: TCB.Failure = TCB.Failure.lazily {
-          def ff = Failed(() => onCommit(callbacks), () => setSelf(editState(a)))
-          setSelf(state(a, ff))
-        }
+        def onFailure: String => TCB.Failure =
+          reason => TCB.Failure.lazily {
+            def ff = Failed(reason, () => onCommit(callbacks), () => setSelf(editState(a)))
+            setSelf(state(a, ff))
+          }
 
         def callbacks: Callbacks =
           new Callbacks(
@@ -129,19 +130,22 @@ object RemoteDataEditor {
       postAbort, postLock,
 //      _ => TIO.Abort(setSelf(None)),
 //      TIO.Success(_),
-      renderEdit, defaultRenderLock, defaultRenderFail)
+      renderEdit, _defaultRenderLock, defaultRenderFail)
 
   // ===================================================================================================================
 
-  val defaultRenderLock: Any => ReactElement =
-    _ => UI.spinner
+  @inline def defaultRenderLock: ReactElement =
+    UI.spinner
+
+  val _defaultRenderLock: Any => ReactElement =
+    _ => defaultRenderLock
 
   val defaultRenderFail: (Any, Failed) => ReactElement =
-    (_, f) => renderRetry(f.retry(), f.resumeEdit())
+    (_, f) => renderRetry(f.reason, f.retry(), f.resumeEdit())
 
-  private def renderRetry(retryFn: => Callback, resumeFn: => Callback) =
+  private def renderRetry(reason: String, retryFn: => Callback, resumeFn: => Callback) =
     <.div(
-      "Network error occurred.",
+      reason,
       <.button("Retry", ^.onClick --> retryFn), // English
       <.button("OK", ^.onClick --> resumeFn)) // English
 

@@ -79,7 +79,7 @@ object MakeEventTest extends TestSuite {
       assertEq(e3.id, ReqCodeId(3))
 
       // Should reuse ID on restore
-      assertApplies(DeleteReqCodeGroup(e1.id))
+      assertApplies(DeleteReqCodeGroups(e1.id))
       val e1b = apply(cmd1)
       assertEq(e1b.id, e1.id)
     }

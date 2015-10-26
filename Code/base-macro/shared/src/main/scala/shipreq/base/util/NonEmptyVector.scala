@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import scala.collection.GenTraversableOnce
+import scala.collection.{AbstractIterator, GenTraversableOnce}
 import scala.collection.generic.CanBuildFrom
 import scala.math.Ordering
 import scalaz._
@@ -35,8 +35,14 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
     else
       head +: tail.init
 
+  def initNonEmpty: Option[NonEmptyVector[A]] = NonEmptyVector option init
+  def tailNonEmpty: Option[NonEmptyVector[A]] = NonEmptyVector option tail
+
   def map[B](f: A => B): NonEmptyVector[B] =
     NonEmptyVector(f(head), tail map f)
+
+  def mapToNES[B: UnivEq](f: A => B): NonEmptySet[B] =
+    NonEmptySet force iterator.map(f).toSet
 
   def flatMap[B](f: A => NonEmptyVector[B]): NonEmptyVector[B] =
     reduceMapLeft1(f)(_ ++ _)
@@ -130,6 +136,9 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   def filterNot(f: A => Boolean): Option[NonEmptyVector[A]] =
     filter(!f(_))
 
+  def iterator: Iterator[A] =
+    whole.iterator
+
   def toStream = whole.toStream
 
   def toNES[B >: A : UnivEq]: NonEmptySet[B] =
@@ -169,6 +178,29 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
     else
       (NonEmptyVector force fs, ts)
   }
+
+  /**
+   * Peels away elements from the end until there are no elements left.
+   *
+   * Example:
+   *
+   * NonEmptyVector(2,4,6,8) will yield
+   *
+   *   NonEmptyVector(2,4,6,8)
+   *   NonEmptyVector(2,4,6)
+   *   NonEmptyVector(2,4)
+   *   NonEmptyVector(2)
+   */
+  def peelFromEnd: Iterator[NonEmptyVector[A]] =
+    new AbstractIterator[NonEmptyVector[A]] {
+      var cur: NonEmptyVector[A] = NonEmptyVector.this
+      override def hasNext = cur ne null
+      override def next() = {
+        val r = cur
+        cur = r.initNonEmpty.orNull
+        r
+      }
+    }
 }
 
 // =====================================================================================================================

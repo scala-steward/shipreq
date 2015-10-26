@@ -15,6 +15,23 @@ private[event] object ApplyEventLib {
   val SE = StateEither.Fix[Project, Error]
   import SE._
 
+  /** Has a subject been validated or not yet? */
+  sealed trait Validated extends IsoBool.WithBoolOps[Validated] {
+    override final def companion = Validated
+    def mapValidated[I, O](input: I)(validate: I => SE[I])(f: I => SE[O]): SE[O]
+  }
+
+  case object Validated extends Validated with IsoBool.Object[Validated] {
+    override def positive = Validated
+    override def negative = Unvalidated
+    override def mapValidated[I, O](input: I)(validate: I => SE[I])(f: I => SE[O]): SE[O] = f(input)
+  }
+
+  case object Unvalidated extends Validated {
+    override def mapValidated[I, O](input: I)(validate: I => SE[I])(f: I => SE[O]): SE[O] =
+      validate(input) >>= f
+  }
+
   // ===================================================================================================================
   // Trust & validation
 
@@ -140,10 +157,13 @@ private[event] object ApplyEventLib {
     oa.fold[Result[A]](Failure(err))(Ok(p, _))
 
   def narrowCC[A, B <: A](a: A)(implicit cc: ClassTag[B], trust: Trust): SE[B] =
+    narrowCC[A, B](a, s"${cc.runtimeClass.getSimpleName} ∌ $a")
+
+  def narrowCC[A, B <: A](a: A, failure: => Error)(implicit cc: ClassTag[B], trust: Trust): SE[B] =
     if (trust :: Untrusted)
       cc.unapply(a) match {
         case Some(b) => ret(b)
-        case None    => fail(s"Expected a ${cc.runtimeClass.getName}, got: $a.")
+        case None    => fail(failure)
       }
     else
       ret(a.asInstanceOf[B])

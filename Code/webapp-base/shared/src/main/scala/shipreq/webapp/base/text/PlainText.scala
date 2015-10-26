@@ -70,10 +70,11 @@ object PlainText {
     def codeRef(id: ReqCodeId): String = {
       import ProjectText.ReqCodeResolution._
       ProjectText.resolveReqCode(id, p.reqCodes) match {
-        case ActiveCode(c, _)     => G reflinkSurround reqCode(c)
-        case DeadGroup(c)         => G reflinkSurround reqCode(c)
-        case ReqWithAltCode(c, _) => G reflinkSurround reqCode(c)
-        case ReqWithoutCodes(r)   => reqRef(r)
+        case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
+        case ActiveCodeToGroup   (c, _) => G reflinkSurround reqCode(c)
+        case DeadGroup           (c, _) => G reflinkSurround reqCode(c)
+        case ReqWithAltCode      (c, _) => G reflinkSurround reqCode(c)
+        case ReqWithoutActiveCode(_, r) => reqRef(r)
       }
     }
 

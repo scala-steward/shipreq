@@ -1,9 +1,10 @@
 package shipreq.webapp.base.text
 
 import org.parboiled2._
-import shipreq.base.util.NonEmptyVector
+import scala.annotation.switch
 import scalaz.{\/, -\/, \/-}
 import shapeless._
+import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
@@ -12,17 +13,53 @@ import shipreq.webapp.base.util.ParsingUtil
 object Parsers {
   def preprocess(s: String, multiLine: Boolean): Array[Char] = {
     val a = s.toCharArray
+
+    // ----------------------------------------------------------------
+    // Replace bad chars
+
     var i = a.length
-    val cond: Char => Boolean =
+
+    @inline def fixSingleLineChar(c: Char): Unit =
+      if (c < 32) a(i) = ' '
+
+    val fixChar: () => Unit =
       if (multiLine)
-        _ == '\t'
+        () => (a(i): @switch) match {
+          case '\n' | '\r' => ()
+          case c => fixSingleLineChar(c)
+        }
       else
-        c => c == '\t' || c == '\n' || c == '\r'
+        () => fixSingleLineChar(a(i))
+
     while (i > 0) {
       i -= 1
-      if (cond(a(i))) a(i) = ' '
+      fixChar()
     }
-    a
+
+    // ----------------------------------------------------------------
+    // Trim
+
+    // This only trims newlines and not spaces because
+    // 1) "* " is a valid multiline bullet with no content. "*" is not.
+    // 2) The parser already contains space handing such that literals are trimmed, as confirmed by tests.
+    def isWhitespace(c: Char): Boolean =
+      (c: @switch) match {
+        case '\n' | '\r' => true
+        case _           => false
+      }
+
+    val last = a.length - 1
+    var x = 0
+    var y = last
+
+    while (y >= 0 && isWhitespace(a(y))) y -= 1
+    while (x < y  && isWhitespace(a(x))) x += 1
+    if (y < 0)
+      Array.empty[Char]
+    else if (x == 0 && y == last)
+      a
+    else
+      java.util.Arrays.copyOfRange(a, x, y + 1)
   }
 
   // questionable: :;=?\/
@@ -134,7 +171,7 @@ object Parsers {
 
     val lookupCode: Seq[Node] => Option[ReqCodeId] = ss =>
       NonEmptyVector.maybe(ss.toVector, None: Option[ReqCodeId])(code =>
-        project.reqCodes.get(code).flatMap(_.active.map(_.id)))
+        project.reqCodes.get(code).flatMap(_.activeId))
 
     def reqRef: Rule1[t.Atom] =
       rule(codeRef | pubidRef)

@@ -172,7 +172,7 @@ object TextSearch {
 
   // Indexes
 
-  case class IndexEntryG(group: ReqCodeGroup.AndId, title: Normalised)
+  case class IndexEntryG(group: ReqCodeGroup, title: Normalised)
   case class IndexEntryR(req: Req, title: Normalised, textFields: Need[Normalised])
 
   final class Index private[TextSearch](norm    : Normaliser,
@@ -224,7 +224,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
 
   private def index(norm: Normaliser): Index = {
 
-    val indexValuesR: Stream[IndexEntryR] = {
+    val indexValuesR: TraversableOnce[IndexEntryR] = {
       def each(r: Req): IndexEntryR = {
         val title      = norm(plainText reqTitle r)
         val textFields = Need(norm(
@@ -236,12 +236,12 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
       project.reqs.reqs vstream each
     }
 
-    val indexValuesG: Stream[IndexEntryG] = {
-      def each(g: ReqCodeGroup.AndId): IndexEntryG = {
+    val indexValuesG: TraversableOnce[IndexEntryG] = {
+      def each(g: ReqCodeGroup): IndexEntryG = {
         val title = norm(plainText reqCodeGroupTitle g)
         IndexEntryG(g, title)
       }
-      project.reqCodes.activeGroups map each
+      project.reqCodes.groups.iterator map each
     }
 
     val indexR = IMap.empty[ReqId,     IndexEntryR](_.req.id)   ++ indexValuesR

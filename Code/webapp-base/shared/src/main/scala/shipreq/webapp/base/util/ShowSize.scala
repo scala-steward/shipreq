@@ -152,11 +152,11 @@ object ShowSize {
   implicit def reqCodeTrie: ShowSize[ReqCode.Trie] =
     ShowSize.lift(trie =>
       Node("Req codes", trie.cataV(0)((q, _, _) => q + 1))
-        .countChildren(trie.flatStream.map(_._2.active.map(_.target))) {
-        case Some(_: ReqId)        => "Codes @ reqs"
-        case Some(_: ReqCodeGroup) => "Codes @ groups"
-        case None                  => "Tombstones"
-      })
+        .countChildren(trie.flatStream.map(_._2)) {
+          case _: ReqCode.ActiveReq   => "Codes @ reqs"
+          case _: ReqCode.ActiveGroup => "Codes @ groups"
+          case _: ReqCode.Inactive    => "Tombstones"
+        })
 
   implicit def reqCodes: ShowSize[ReqCodes] =
     reqCodeTrie.contramap(_.trie)

@@ -8,7 +8,7 @@ import org.scalajs.dom.ext.KeyCode
 import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.webapp.base.data._
-import shipreq.webapp.client.app.ui.DragToReorder
+import shipreq.webapp.client.app.ui.{RemoteDataEditor, DragToReorder}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.app.ui.reqtable.edit.ColumnEditors
 import shipreq.webapp.client.data.DataReusability._
@@ -26,7 +26,6 @@ object Table {
   implicit val reusabilityCTS : Reusability[Cell.TableState]                = Reusability.byRef
   implicit val reusabilityCRS : Reusability[Cell.RowState]                  = Reusability.byRef
   implicit val reusabilityCCS : Reusability[Cell.State]                     = Reusability.byRef
-  implicit val reusabilityRows: Reusability[Vector[Row]]                    = Reusability.byRef // Each row will be checked anyway
 
   // ===================================================================================================================
   // Table
@@ -34,13 +33,12 @@ object Table {
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
   case class Props(project        : Project,
-                   rows           : Vector[Row],
+                   rows           : Rows,
                    colName        : Column.NameResolver,
                    colRenderers   : NonEmptyVector[ColumnRenderer],
                    colEditors     : ColumnEditors,
                    cells          : Cell.TableState,
                    selection      : RowSelectionVisible,
-                   setSelection   : RowSelection ~=> Callback,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
   val Component =
@@ -53,7 +51,7 @@ object Table {
 
     val startCellEdit = ReusableFn[Row, Column, TCB.Finally, Callback]((row, col, fin) =>
       $.props.map { p =>
-        if (p.cells(row.sourceId, col).isEmpty)
+        if (p.cells(row.sourceId).allowEdit(col))
           p.colEditors.startCellEditing(row, col, fin)
             .foreach(_.runNow())
       }
@@ -71,13 +69,13 @@ object Table {
       val rows = p.rows
 
       val headerProps = HeaderProps(
-        crs.map(_.column), p.colName, p.selection, p.setSelection, reorderColumns, clickHeaderToSort)
+        crs.map(_.column), p.colName, p.selection, reorderColumns, clickHeaderToSort)
 
       val renderRows =
         rows.indices.toReactNodeArray { i =>
-          val row   = rows(i)
-          val cells = p.cells(row.sourceId)
-          val rp    = RowProps(row, crs, cells, p.selection, p.setSelection, startCellEdit(row))
+          val row = rows(i)
+          val rs  = p.cells(row.sourceId)
+          val rp  = RowProps(row, crs, rs, p.selection, startCellEdit(row))
           RowComponent.withKey(row.id.key)(rp)
         }
 
@@ -126,7 +124,6 @@ object Table {
   case class HeaderProps(cols        : NonEmptyVector[Column],
                          colName     : Column.NameResolver,
                          selection   : RowSelectionVisible,
-                         setSelection: RowSelection ~=> Callback,
                          reorder     : NonEmptyVector[Column] ~=> Callback,
                          clickSort   : Column ~=> Callback)
 
@@ -160,14 +157,17 @@ object Table {
             <.th(
               *.selectionRowHeader,
               ^.onKeyDown ==> selColKeyDown,
-              ^.onClick   --> p.setSelection(p.selection.totalToggle),
-              p.selection totalCheckbox p.setSelection)
+              p.selection.total.checkboxAndOnClick)
 
           val cols =
             content.items.map { i =>
               val c = i.data
+              val live = c match {
+                case Column.DeletionReason => Live // Don't render this title with strike-through
+                case _                     => c.live
+              }
               <.th(
-                *.columnHeader(c.live, i.status),
+                *.columnHeader(live, i.status),
                 i.mod,
                 ^.tabIndex   := -1,
                 ^.onKeyDown ==> dataColKeyDown(c),
@@ -190,12 +190,11 @@ object Table {
   // ===================================================================================================================
   // Rows
 
-  case class RowProps(row         : Row,
-                      crs         : NonEmptyVector[ColumnRenderer],
-                      cells       : Cell.RowState,
-                      selection   : RowSelectionVisible,
-                      setSelection: RowSelection ~=> Callback,
-                      startEdit   : Column ~=> (TCB.Finally ~=> Callback))
+  case class RowProps(row      : Row,
+                      crs      : NonEmptyVector[ColumnRenderer],
+                      cells    : Cell.RowState,
+                      selection: RowSelectionVisible,
+                      startEdit: Column ~=> (TCB.Finally ~=> Callback))
 
   implicit val rowPropReuse = Reusability.caseClass[RowProps]
 
@@ -215,16 +214,34 @@ object Table {
       focusKeyHandlers(e)
 
     val selectionCell =
-      <.td(
-        *.cell(rowStatus),
-        ^.onKeyDown ==> selCellKeyDown,
-        ^.onClick   --> p.setSelection(p.selection oneToggle row.sourceId),
-        p.selection.oneCheckbox(row.sourceId, p.setSelection)(^.tabIndex := -1))
+      p.cells match {
+
+        case Cell.RowState.Empty | _: Cell.RowState.Cells =>
+          val sel = p.selection(row.sourceId)
+          <.td(
+            *.cell(rowStatus),
+            ^.onKeyDown ==> selCellKeyDown,
+            sel.onClick,
+            sel.checkbox(^.tabIndex := -1))
+
+        case Cell.RowState.WholeRow(w) =>
+          w.status match {
+            case RemoteDataEditor.Locked =>
+              <.td(*.cell(rowStatus), w.render)
+
+            case _ =>
+              // Currently, whole-row state is only used when a row is being deleted/restored.
+              // To save dev-time, if the RPC fails an alert popups asking to retry/cancel, thus this part of the code
+              // should only execute when the row is locked. Whole-row editing + failure won't occur.
+              dom.console.warn(w.toString)
+              <.td(*.cell(rowStatus))
+          }
+      }
 
     val cols =
       p.crs.toStream.map { cr =>
         val col = cr.column
-        val cp = CellProps(row, cr, p.cells get col, p startEdit col)
+        val cp = CellProps(row, cr, p cells col, p startEdit col)
         CellComponent.withKey(col.key)(cp)
       }
 

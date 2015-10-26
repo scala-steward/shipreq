@@ -20,6 +20,12 @@ object MTrie {
       val g = (v: Value[K, V]) => f(v.value)
       exists(_.value exists g, g)
     }
+
+    final def getValueOrElse[A >: V](default: => A): A =
+      fold(_.value.fold(default)(_.value), _.value)
+
+    final def foldValue[A](z: => A, f: V => A): A =
+      fold(_.value.fold(z)(x => f(x.value)), x => f(x.value))
   }
 
   final case class Branch[K, V](value: Option[Value[K, V]], next: Trie[K, V]) extends Node[K, V] {
@@ -42,6 +48,8 @@ object MTrie {
     type Node   = MTrie.Node[K, V]
     type Branch = MTrie.Branch[K, V]
     type Value  = MTrie.Value[K, V]
+    type Entry  = (K, Node)
+    type Path   = NonEmptyVector[K]
     val  Branch = MTrie.Branch.apply[K, V] _
     val  Value  = MTrie.Value.apply[K, V] _
     def  empty  = MTrie.empty[K, V]
@@ -189,6 +197,9 @@ object MTrie {
       atPath(path, fail)(_.value.fold(fail)(g), g)
     }
 
+    def getNode[A](path: Path): Option[Node] =
+      atPath(path, None: Option[Node])(Some.apply, Some.apply)
+
     def lookup(path: Path): Option[V] =
       atPath(path, None: Option[V])(_.value.map(_.value), t => Some(t.value))
 
@@ -202,15 +213,6 @@ object MTrie {
       valueAtPath[Option[Trie]](path, None)(v => Some(put(path, f(v))))
 
     def remove(path: Path): Trie = {
-      @inline def fail: Trie = trie
-
-      def last(t: Trie, k: K): Trie =
-        t.get(k) match {
-          case Some(Branch(None, _))       => fail
-          case Some(Branch(Some(_), next)) => t.updated(k, Branch(None, next))
-          case Some(_: Value)              => t - k
-          case None                        => fail
-        }
 
       def notLast(t: Trie, ki: Vector[K], kl: K): Trie =
         if (ki.isEmpty)
@@ -219,19 +221,33 @@ object MTrie {
           val k = ki.head
           t.get(k) match {
             case Some(b: Branch) =>
-              val t2 = notLast(b.next, ki.tail, kl)
-              if (t2.nonEmpty)
-                t.updated(k, b.copy(next = t2))
+              val next0 = b.next
+              val next = notLast(next0, ki.tail, kl)
+              if (next eq next0)
+                t
+              else if (next.nonEmpty)
+                t.updated(k, b.copy(next = next))
               else b.value match {
                 case Some(v) => t.updated(k, v)
                 case None    => t - k
               }
-            case Some(_: Value) | None => fail
+            case Some(_: Value) | None => t
           }
+        }
+
+      def last(t: Trie, k: K): Trie =
+        t.get(k) match {
+          case Some(Branch(None, _))       => t
+          case Some(Branch(Some(_), next)) => t.updated(k, Branch(None, next))
+          case Some(_: Value)              => t - k
+          case None                        => t
         }
 
       notLast(trie, path.init, path.last)
     }
+
+    def removeAll(paths: TraversableOnce[Path]): Trie =
+      paths.foldLeft(trie)(_ remove _)
 
     /**
      * @return A sub-trie beginning at the given path.
@@ -297,5 +313,13 @@ object MTrie {
 
     @inline def add(path: Path)(implicit ev: Unit =:= V): Trie =
       put(path, ())
+
+    def addAll(paths: TraversableOnce[Path])(implicit ev: Unit =:= V): Trie =
+      paths.foldLeft(trie)(_ add _)
+
+    @inline def @+ (path: Path)(implicit ev: Unit =:= V)                  : Trie = add(path)
+    @inline def @++(paths: TraversableOnce[Path])(implicit ev: Unit =:= V): Trie = addAll(paths)
+    @inline def @- (path: Path)                                           : Trie = remove(path)
+    @inline def @--(paths: TraversableOnce[Path])                         : Trie = removeAll(paths)
   }
 }

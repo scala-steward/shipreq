@@ -159,10 +159,10 @@ object AutoCompleteTest extends TestSuite {
       var v = 0
       () => { v += 1; v}
     }
-    def tgt: ReqCode.Data = ReqCode.ActiveData(nextId(), 1)
+    def tgt: ReqCode.Data = ReqCode.ActiveReq(nextId(), 1, None, ReqCode.emptyReqInactive)
     val t1 = codes.foldLeft(ReqCode.Trie.empty)((t, c) => t.put(c, tgt))
 
-    def tomb = ReqCode.Data.empty.copy(refsToGroup = Set(nextId()))
+    def tomb = ReqCode.Data.empty.copy(deadGroup = Some(DeadReqCodeGroup(nextId(), "asdf")))
     val tombCodes = Set[ReqCode.Value](
       "apple.dead", "ahhdead", "dead.eggs"
     )
@@ -171,7 +171,7 @@ object AutoCompleteTest extends TestSuite {
   lazy val project2 = {
     import ProjectDsl._, UnsafeTypes._
     val p = Project.reqCodes.set(ReqCodes(fakeTrie))(SampleProject2.project)
-    (DeadReqCode("dead.ref", target = 1, id = 90) + DeadReqCode("dead.group", id = 91)) ! p
+    (DeadReqCode("dead.ref", oldReqId = 1, id = 90) + DeadReqCode("dead.group", id = 91)) ! p
   }
   lazy val plainText2 = PlainText(project2)
 

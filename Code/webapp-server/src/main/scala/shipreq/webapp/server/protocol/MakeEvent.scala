@@ -254,10 +254,17 @@ object MakeEvent { // TODO Move
       case CreateContentCmd.CreateReqCodeGroup(code, title) =>
         def makeEvent(id: ReqCodeId) =
           MadeEvent(CreateReqCodeGroup(id, gdAllValues(ReqCodeGroupGD, "")))
+
         project.reqCodes.get(code) match {
-          case Some(d) if d.active.isDefined     => Failed("Code in use.")
-          case Some(d) if d.refsToGroup.nonEmpty => makeEvent(d.refsToGroup.min)
-          case _                                 => makeEvent(nextCodeId())
+          case None => makeEvent(nextCodeId())
+          case Some(d) =>
+            if (d.isActive)
+              Failed("Code in use.")
+            else
+              d.deadGroup match {
+                case Some(dg) => makeEvent(dg.id)
+                case None     => makeEvent(nextCodeId())
+              }
         }
 
       case i: CreateContentCmd.CreateGenericReq =>
@@ -293,7 +300,7 @@ object MakeEvent { // TODO Move
       case UpdateContentCmd.PatchImplicationTgt(id, v) =>
         eventIfNonEmpty(v)(PatchImplicationTgt(id, _))
 
-      case UpdateContentCmd.PatchReqCodes(id, v) =>
+      case UpdateContentCmd.PatchReqCodes(reqId, v) =>
         eventIfNonEmpty(v) { cs =>
           var remove : Set[ReqCodeId]                          = UnivEq.emptySet
           var restore: Set[ReqCodeId]                          = UnivEq.emptySet
@@ -303,28 +310,29 @@ object MakeEvent { // TODO Move
           def fail(err: String): Unit =
             r = Some(Failed(err))
 
+          import ReqCode._
           for (c <- cs.value.removed)
-            project.reqCodes.get(c).flatMap(_.active) match {
-              case Some(a) if a.target ≟ id => remove += a.id
-              case Some(_)                  => fail(s"Cannot remove ${PlainText reqCode c}: Doesn't belong to $id.")
-              case None                     => fail(s"Cannot remove ${PlainText reqCode c}: Not found.")
+            project.reqCodes.get(c) match {
+              case Some(a: ActiveReq) if a.reqId ≟ reqId => remove += a.id
+              case od if od.exists(_.isActive)           => fail(s"Cannot remove ${PlainText reqCode c}: Doesn't belong to $reqId.")
+              case _                                     => fail(s"Cannot remove ${PlainText reqCode c}: Not found.")
             }
 
           if (r.isEmpty) {
             val nextCodeId = reqCodeIdCounter(project)
             for (c <- cs.value.added)
               project.reqCodes.get(c) match {
-                case Some(d) if d.active.isDefined =>
+                case Some(d) if d.isActive =>
                   Failed(s"Code in use: ${PlainText reqCode c}.")
 
-                case od => od.flatMap(_.reqInactive(id).ifNonEmpty(_.min)) match {
+                case od => od.flatMap(_.reqInactive(reqId).ifNonEmpty(_.min)) match {
                   case None    => add = add.add(c, nextCodeId())
                   case Some(i) => restore += i
                 }
               }
           }
 
-          r getOrElse PatchReqCodes(id, remove, restore, add)
+          r getOrElse PatchReqCodes(reqId, remove, restore, add)
         }
 
       case UpdateContentCmd.SetGenericReqType(id, v) =>
@@ -335,6 +343,18 @@ object MakeEvent { // TODO Move
 
       case UpdateContentCmd.SetReqCodeGroupCode(id, v) =>
         UpdateReqCodeGroup(id, ReqCodeGroupGD.Code(v))
+
+      case UpdateContentCmd.DeleteReqs(reqs, reqCodeGroups, reason) =>
+        DeleteReqs(reqs, reqCodeGroups, reason)
+
+      case UpdateContentCmd.DeleteReqCodeGroups(ids) =>
+        DeleteReqCodeGroups(ids)
+
+      case UpdateContentCmd.RestoreContent(reqs, reqCodes) =>
+        if (reqs.isEmpty && reqCodes.isEmpty)
+          Failed("No content specified.")
+        else
+          RestoreContent(reqs, reqCodes)
     }
   }
 

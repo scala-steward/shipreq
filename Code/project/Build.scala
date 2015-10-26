@@ -45,7 +45,8 @@ object ShipReq extends Build {
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseMacro)
       .depsForBoth(
-        Scalaz.effect ++ Nyaya.prop ++ testScope(μTest))
+        Scalaz.effect ++ Nyaya.prop ++
+        testScope(μTest ++ Nyaya.test))
       .depsForJvm(
         SLF4J.api ++ Scalaz.effect ++
         providedScope(logback ++ jodaTime) ++
@@ -174,6 +175,7 @@ object ShipReq extends Build {
       "ctbc"-> ";clean ;clear ;tbc",                                       // Clean Test Base & Client
       "tbc" -> s";$WT/test:compile ;$WC/test:compile ;$WT/test ;$WC/test", // Test Base & Client
       "js"  -> s";$WC/${WebappClient.jsCmd} ;$WS/linkClientJs",            // compile JavaScript
+      "jsp" -> s";$WC/${WebappClient.jsCmd} ;$WS/webappPrepare",           // compile JavaScript, auto deploy
       "up"  -> s";$WS/jetty:stop ;clear ;$WS/jetty:start",                 // webapp: UP
       "d"   -> s"$WS/jetty:stop",                                          // webapp: Down
       "wd"  -> ";up ;~js")                                                 // WebDev
@@ -312,6 +314,7 @@ object ShipReq extends Build {
       clientJsLinks := new ClientJsLinks((target in webappClient).value, baseDirectory.value),
       cleanFiles ++= clientJsLinks.value.cleanable.toSeq,
       { val k = Keys.`package`; k <<= k.dependsOn(linkClientJs) },
+      { val k = webappPrepare ; k <<= k.dependsOn(linkClientJs) },
       // { val k = start in Jetty; k <<= k.dependsOn(linkClientJs) },
       // { val k = test in Test;   k <<= k.dependsOn(linkClientJs) },
       linkClientJs := {
@@ -389,6 +392,7 @@ object ShipReq extends Build {
           dontInline // crashes scalac 2.11.7
         )
         .settings(
+          addCommandAlias("livejs", "~;clear;jsp"),
           containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()),
           javaOptions in Jetty += "-Xmx1g",
           initialCommands += consoleCmds,

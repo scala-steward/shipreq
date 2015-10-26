@@ -6,16 +6,16 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.{\/-, -\/}
 import scalaz.syntax.equal._
-import shipreq.base.util.ScalaExt.EndoFn
-import shipreq.webapp.base.protocol.{CreateContentFn, CreateContentCmd, UpdateContentFn, UpdateContentCmd}
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.state.{Changes, ChangeListener, ClientData}
-import shipreq.webapp.client.app.ui.{Selection, ProjectWidgets}
+import shipreq.webapp.client.app.ui.{Modal, ProjectWidgets, Selection}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
-import shipreq.webapp.client.lib.{FilterDead, TCB}
+import shipreq.webapp.client.lib.FilterDead
 import shipreq.webapp.client.protocol.ClientProtocol
 import edit.ColumnEditors
 
@@ -45,7 +45,8 @@ object ReqTable {
       FilterEditor.initialState,
       Selection.empty,
       CreationInterface.initState,
-      Cell.emptyTableState)
+      Cell.emptyTableState,
+      Modal.none)
     p.filterSpec.foreach(f => s = s setFilterSpec f)
     s
   }
@@ -56,13 +57,14 @@ object ReqTable {
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   cellStates  : Cell.TableState) {
+                   cellStates  : Cell.TableState,
+                   modal       : Modal.State) {
 
     def recvChanges(changes: Changes): State =
       copy(project = changes.p2) // TODO This obviously affects other things
       // TODO A custom field removal/addition should affect ViewSettings
 
-    def updateCell(loc: Cell.Loc, state: Cell.State): State =
+    def updateCellLoc(loc: Cell.Loc, state: Cell.State): State =
       copy(cellStates = cellStates.set(loc, state))
 
     def filterFailure(s: FilterEditor.State): State =
@@ -107,7 +109,8 @@ object ReqTable {
     val setViewSettings = ReusableFn($ zoomL State.viewSettings).setState
     val modViewSettings = ReusableFn($ zoomL State.viewSettings).modState
     val setSortCriteria = ReusableFn($ zoomL State.sortCriteria).setState
-    val setSelection    = ReusableFn($ zoomL State.selection).setState
+    val setSelection    = ReusableFn($ zoomL State.selection   ).setState
+    val setModal        = ReusableFn($ zoomL State.modal       ).setState
     val setCreation     = $ zoomL State.creation
 
     val project      = Px.bs($).stateM(_.project)
@@ -125,7 +128,23 @@ object ReqTable {
     val colRnds    = Px.apply2(vsCols, colRnd)(_ map _.apply)
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
-    val selVis     = for {rs <- rows; s <- selection} yield s visible rs.foldLeft(Set.empty[Row.SourceId])(_ + _.sourceId)
+
+    val wholeRowsWithState: Px.ThunkM[Set[Row.SourceId]] =
+      Px.bs($).stateM(_.cellStates.all.iterator
+        .filter(_._2 match {
+          case _: Cell.RowState.Cells | Cell.RowState.Empty => false
+          case _: Cell.RowState.WholeRow => true
+        })
+        .map(_._1)
+        .toSet)
+
+    val visibleSelection =
+      for {
+        rs <- rows
+        s  <- selection
+        wr <- wholeRowsWithState
+      } yield
+        s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
     val sortEditorProps =
       for {
@@ -133,28 +152,26 @@ object ReqTable {
         nr  <- colName
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
 
-    val modTable: Cell.ModTable = ReusableFn(loc => (s, cb) => $.modState(_.updateCell(loc, s), cb))
-    // TODO OMG THE COPY-AND-PASTE!
-    // TODO Too much repetition of (? => Events) calls
-    val createIO: (CreateContentCmd, TCB.Success, String => TCB.Failure) => Callback =
-      (i, sio, fio) => $.props >>= { p =>
-        import p._
-        val io = cp.call(createContentFn)(i,
-          sio << cd.applyEvents(_),
-          f => cp.consumeGenericFailure(f) >> fio(cp.genericFailureToText(f)))
-        //IO(println(s"Fake-sending: $i")) >> io
-        io
-      }
-    val saveIO: (UpdateContentCmd, TCB.Success, TCB.Failure) => Callback =
-      (i, sio, fio) => $.props >>= { p =>
-        import p._
-        val io = cp.call(updateContentFn)(i,
-          sio << cd.applyEvents(_),
-          cp.consumeGenericFailure(_) >> fio)
-        //IO(println(s"Fake-sending: $i")) >> io
-        io
-      }
-    val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, modTable, saveIO)
+    val cellSetLocState: Cell.SetLocState =
+      ReusableFn(loc => (s, cb) => $.modState(_.updateCellLoc(loc, s), cb))
+
+    val cellModifyFn: Cell.ModifyFn =
+      ReusableFn(f => $.modState(State.cellStates modify f))
+
+    private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: Props => RemoteFn.InstanceFor[F]): CallServer[I] =
+      (i, sio, fio) => $.props >>= (p =>
+        p.cp.call(remoteFn(p))(
+          i,
+          s => p.cd.applyEventsS(s) >> sio,
+          f => p.cp.consumeGenericFailure(f) >> fio(p.cp.genericFailureToText(f))))
+
+    val createIO: CallServer[CreateContentCmd] =
+      callServer(_.createContentFn)
+
+    val saveIO: CallServer[UpdateContentCmd] =
+      callServer(_.updateContentFn)
+
+    val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, cellSetLocState, saveIO)
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {
       import FilterEditor._
@@ -168,27 +185,37 @@ object ReqTable {
 
     val creationInterface = new CreationInterface(setCreation, project, plainText, widgets, textSearch)
 
-    def render(s: State) = {
+    // -----------------------------------------------------------------------------------------------------------------
+    def render(s: State): ReactElement = {
       import Px.AutoValue._
-      Px.refresh(project, viewSettings, filterState, selection)
+      Px.refresh(project, viewSettings, filterState, selection, wholeRowsWithState)
 
-      val vsProps = ViewSettingsEditor.Props(colName, s.project.config, vsVar, filterEditor)
+      val cfg = s.project.config
+
+      val vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
 
       val creationProps = CreationInterface.Props(createIO, s.creation)
 
       val tableProps = Table.Props(
-        project, rows, colName, colRnds, colEditors, s.cellStates, selVis, setSelection, modViewSettings)
+        project, rows, colName, colRnds, colEditors, s.cellStates, visibleSelection, modViewSettings)
 
-      <.div(
-        ViewSettingsEditor.Component(vsProps),
-        creationInterface.Component(creationProps),
-        StatsSummary(stats),
-        SortEditor.Component(sortEditorProps),
-        Table.Component(tableProps))
+      val selCtrlProps = SelectionCtrls.Props(
+        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, saveIO, cellModifyFn)
+
+      def mainScreen =
+        <.div(
+          ViewSettingsEditor.Component(vsProps),
+          creationInterface.Component(creationProps),
+          StatsSummary(stats),
+          SelectionCtrls.Component(selCtrlProps),
+          SortEditor.Component(sortEditorProps),
+          Table.Component(tableProps))
+
+      s.modal renderOrElse mainScreen
     }
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
 
   val StatsSummary = ReactComponentB[TableStats]("Stats")
     .render_P(stats =>

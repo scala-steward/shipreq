@@ -26,7 +26,8 @@ object DaoTest2 extends TestSuite {
 
   def eventPropTest(): Unit = {
     // implicit val settings = DefaultSettings.propSettings.setSampleSize(10).setGenSize(10).setDebug.setSingleThreaded.setSeed(0)
-    implicit val settings = DefaultSettings.propSettings.setSampleSize(320).setGenSize(30)
+    // implicit val settings = DefaultSettings.propSettings.setSampleSize(20000).setGenSize(4).setDebug
+    implicit val settings = DefaultSettings.propSettings.setSampleSize(320).setGenSize(16)
 
     val seqCounter = new AtomicInteger()
 

@@ -47,7 +47,7 @@ object IdCeilings {
       customField     = imapKeys(p.config.fields.customFields),
       tag             = imapKeys(p.config.tags),
       req             = imapKeys(p.reqs.genericReqs),
-      reqCode         = maxOf(p.reqCodes.allIds))
+      reqCode         = maxOf(p.reqCodes.idList))
   }
 
   /**

@@ -11,10 +11,10 @@ import Validators.reqCode._
 object ReqCodeTest extends TestSuite {
 
   val sampleCodeTrie = Trie.empty
-      .put("aa",     ActiveData(1, 100))
-      .put("aa.b.c", ActiveData(2, 100))
-      .put("aa.b.d", ActiveData(3, ReqCodeGroup(Vector.empty)))
-      .put("aa.b.e", Data(None, None, Set(1), Multimap.empty))
+      .put("aa",     ActiveReq(1, 100, None, emptyReqInactive))
+      .put("aa.b.c", ActiveReq(2, 100, None, emptyReqInactive))
+      .put("aa.b.d", ActiveGroup(LiveReqCodeGroup(3, ∅), emptyReqInactive))
+      .put("aa.b.e", Inactive(Some(DeadReqCodeGroup(1, "ah")), emptyReqInactive))
 
   val vs0 = VS(sampleCodeTrie, Set.empty)
   val vs2 = VS(sampleCodeTrie, Set("aa.b.c"))

@@ -17,7 +17,7 @@ import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.base.util.{TransitiveClosure, ReqCodeTreeItem}
 import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
-import Util.{maybeAdd, maybeUse}
+import MTrie.Ops
 import Debug._
 
 /*
@@ -262,7 +262,9 @@ private[reqtable] object Logic {
         })
       }
 
-    val filterDead    = Filter(vs.filterDead.filterFnA(_ live p.config.customReqTypes), FilterFn.`n/a`)
+    val filterDeadReq = vs.filterDead.filterFnA[Req](_ live p.config.customReqTypes)
+    val filterDeadRCG = vs.filterDead.filterFnA[ReqCodeGroup](_.live)
+    val filterDead    = Filter(filterDeadReq, filterDeadRCG)
     val tagLookup     = this.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p, vs.filterDead)
     val applicability = Applicability(p)
@@ -272,13 +274,21 @@ private[reqtable] object Logic {
     val expandImpCols = impColValueExpander(vs, p, applicability)
     val expandTagCols = tagColValueExpander(vs, p, applicability, tagColDist, tagLookup)
 
-    val pReqs         = p.reqs
-    val pReqCodes     = p.reqCodes.activeReqCodesByTarget
+    // The segregation of live/dead is because live reqs can have inactive reqcodes (leftovers of CodeRefs).
+    // It would be errornous to display inactive reqs for a live req.
+    val reqCodesByReq = Live.memo {
+      case Live =>
+        p.reqCodes.activeReqCodesByReqId
+      case Dead =>
+        UnivEq.emptySetMultimap[ReqId, ReqCode.Value] ++
+          p.reqCodes.inactiveIdsByReqId.m.mapValuesNow(_ map p.reqCodes.reqCode)
+    }
+
     val pImplications = p.implications
     val multiValuesFn = this.multiValuesFn(vs, p, tagColDist, tagLookup)
 
     def pubid(reqId: ReqId): Option[Pubid] = {
-      val req = pReqs.req(reqId)
+      val req = p.reqs.req(reqId)
       if (filterDead a req)
         Some(req.pubid)
       else
@@ -321,41 +331,37 @@ private[reqtable] object Logic {
         case r: GenericReq =>
           if (filter a r) {
             val id = r.id
+            val live = r live p.config.customReqTypes
 
             // Expansion
             val impSrcs = expandImpSrcs(() => pImplications.tgtToSrc(id) |> pubids)
             val impTgts = expandImpTgts(() => pImplications.srcToTgt(id) |> pubids)
-            val codes   = expandCodes  (() => pReqCodes(id))
+            val codes   = expandCodes  (() => reqCodesByReq(live)(id))
             val cfImps  = expandImpCols(r)
             val cfTags  = expandTagCols(r)
             val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
 
             // Build
             val mv = multiValuesFn(id)
-            exps.foreachWithIndex { (exp, i) =>
-              val live = r live p.config.customReqTypes
-              output :+= GenericReqRow(r, live, exp, mv, i)
-            }
+            exps.foreachWithIndex((exp, i) =>
+              output :+= GenericReqRow(r, live, exp, mv, i))
 
             seeExpandedCodes(codes)
           }
       }
 
       // Add ReqCodeGroups
-      if (vs.viewReqCodeGroups) {
-        p.reqCodes.cataA(())((_, c, d) => d.target match {
-          case _: ReqId        =>
-          case g: ReqCodeGroup =>
-            val groupAndId = g and d.id
-            val row = ReqCodeGroupRow(groupAndId, c, None)
-            if (filter b groupAndId) {
-              codesSeen.add(c)
-              output :+= row
-            } else
-              // TODO if (filterDead allows rcg)
+      if (vs.viewReqCodeGroups)
+        for (g <- p.reqCodes.groups) {
+          val code = p.reqCodes reqCode g.id
+          val row = ReqCodeGroupRow(g, code, None)
+          if (filter b g) {
+            codesSeen.add(row.reqCode)
+            output :+= row
+          } else
+            if (filterDeadRCG(g))
               restorableRCGs.add(row)
-        })
-      }
+        }
 
       // Add back filtered out ReqCodeGroups
       if (restoreFilteredRCGs) {
@@ -404,8 +410,8 @@ private[reqtable] object Logic {
     filterOrderFn(3)(evalSpeed)
   }
 
-  type Filter = FilterFn2[Req, ReqCodeGroup.AndId]
-  @inline def Filter(a: Req => Boolean, b: ReqCodeGroup.AndId => Boolean): Filter = FilterFn2(a, b)
+  type Filter = FilterFn2[Req, ReqCodeGroup]
+  @inline def Filter(a: Req => Boolean, b: ReqCodeGroup => Boolean): Filter = FilterFn2(a, b)
 
   /**
    * @return None means filter everything out. Function const false. Fail-early to an empty set. No results.
@@ -421,7 +427,7 @@ private[reqtable] object Logic {
     type F  = Filter
     type R  = Option[Filter]
     type FR = Req => Boolean
-    type FG = ReqCodeGroup.AndId => Boolean
+    type FG = ReqCodeGroup => Boolean
     import FilterFn.`n/a`
     @inline implicit def autoSomeFilter(f: Filter): R = Some(f)
 
