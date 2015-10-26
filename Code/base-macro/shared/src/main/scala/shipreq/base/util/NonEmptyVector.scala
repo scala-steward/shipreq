@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import scala.collection.GenTraversableOnce
+import scala.collection.{AbstractIterator, GenTraversableOnce}
 import scala.collection.generic.CanBuildFrom
 import scala.math.Ordering
 import scalaz._
@@ -178,6 +178,29 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
     else
       (NonEmptyVector force fs, ts)
   }
+
+  /**
+   * Peels away elements from the end until there are no elements left.
+   *
+   * Example:
+   *
+   * NonEmptyVector(2,4,6,8) will yield
+   *
+   *   NonEmptyVector(2,4,6,8)
+   *   NonEmptyVector(2,4,6)
+   *   NonEmptyVector(2,4)
+   *   NonEmptyVector(2)
+   */
+  def peelFromEnd: Iterator[NonEmptyVector[A]] =
+    new AbstractIterator[NonEmptyVector[A]] {
+      var cur: NonEmptyVector[A] = NonEmptyVector.this
+      override def hasNext = cur ne null
+      override def next() = {
+        val r = cur
+        cur = r.initNonEmpty.orNull
+        r
+      }
+    }
 }
 
 // =====================================================================================================================
