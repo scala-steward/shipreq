@@ -3,7 +3,6 @@ package shipreq.webapp.base.data
 import nyaya.util.Multimap
 import monocle.macros.Lenses
 import scalaz.Equal
-import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
@@ -11,72 +10,18 @@ import shipreq.webapp.base.text.Text, Text.Equality._
 import shipreq.webapp.base.util.Must._
 import DataImplicits._
 
-// ===================================================================================================================
-// Public IDs (like MF-3)
-
 /**
- * A position (ordinal) in a req-type's ordered list of requirements.
+ * The ID of a requirement.
  *
- * Eg. the "3" in "FR-3".
- *
- * @param value ≥ 1.
+ * The `T` suffix means typed with `ReqId` being `ReqIdT[_]`.
  */
-final case class ReqTypePos(value: Int) extends TaggedInt
-
-/**
- * Public ID: A requirement's ID from the public's point-of-view.
- *
- * Eg. "FR-3"
- */
-final case class PubidT[+T <: ReqTypeId](reqTypeId: T, pos: ReqTypePos)
-
-object PubidT {
-  implicit def equality[T <: ReqTypeId : UnivEq]: UnivEq[PubidT[T]] = UnivEq.derive
-}
-
-/**
- * Once a (reqtype x position) is allocated, it is never removed.
- * Thus, the 0-based position in the vector corresponds with 1-based [[ReqTypePos]] values.
- */
-case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
-
-  def allocC(reqTypeId: CustomReqTypeId)(reqId: ReqIdC): (PubidRegister, PubidC) =
-    _alloc(reqTypeId)(reqId)
-
-  private def _alloc[T <: ReqTypeId](reqTypeId: T)(reqId: ReqIdT[T]): (PubidRegister, PubidT[T]) = {
-    val cur = value(reqTypeId)
-    val i = cur.indexWhere(_ ≟ reqId)
-    if (i >= 0)
-      (this, PubidT(reqTypeId, ReqTypePos(i + 1)))
-    else
-      (PubidRegister(value.add(reqTypeId, reqId)), PubidT(reqTypeId, ReqTypePos(cur.size + 1)))
-  }
-
-   def apply[T <: ReqTypeId](id: PubidT[T]): Option[ReqIdT[T]] = {
-    val v = value(id.reqTypeId)
-    val i = id.pos.value - 1
-    @inline def cast(r: ReqId) = r.asInstanceOf[ReqIdT[T]]
-    try {
-      Some(cast(v(i)))
-    } catch {
-      case _: IndexOutOfBoundsException => None
-    }
-  }
-}
-
-object PubidRegister {
-  implicit def equality: UnivEq[PubidRegister] = UnivEq.derive
-  def emptyMM: Multimap[ReqTypeId, Vector, ReqId] = UnivEq.emptyMultimap
-  def empty = PubidRegister(emptyMM)
-}
-
-// =====================================================================================================================
-// Requirements
-
-/** type [[ReqIdT]] = [[GenericReqId]] */
 sealed trait ReqIdT[+RT <: ReqTypeId] extends TaggedInt
 
-/** [[Req]] = [[GenericReq]] */
+/**
+ * An abstract requirement.
+ *
+ * The `T` suffix means typed with `Req` being `ReqT[_]`.
+ */
 sealed abstract class ReqT[+RT <: ReqTypeId] {
   val id: ReqIdT[RT]
   val pubid: PubidT[RT]
@@ -88,15 +33,13 @@ sealed abstract class ReqT[+RT <: ReqTypeId] {
 }
 
 object ReqT {
-  implicit def equalReq(implicit g: UnivEq[GenericReq]): UnivEq[Req] = UnivEq.force
-
   object IdAccess extends ObjDataId[ReqT.type, Req, ReqId] {
     override def id(d: Req) = d.id
     override val unapplyData: AnyRef => Option[Req] = {case r: Req => Some(r); case _ => None}
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Generic
 
 final case class GenericReqId(value: Int) extends TaggedInt with ReqIdT[CustomReqTypeId]
@@ -146,7 +89,7 @@ object GenericReq {
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
 // Collective
 
 object Requirements {
