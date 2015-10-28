@@ -16,6 +16,7 @@ import scalaz.std.set._
 import scalaz.std.stream._
 import scalaz.std.vector._
 
+import shipreq.base.test.BaseUtilGen._
 import shipreq.base.util._, MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
@@ -38,17 +39,6 @@ object RandomData {
   implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
 
   def stateGen[S, A](g: S => Gen[A]): StateG[S, A] = StateT(s => g(s).map(a => (s,a)))
-
-  implicit def CustomGenExt[A](g: Gen[A]) = new CustomGenExt(g.run)
-  class CustomGenExt[A](private val _g: Gen.Run[A]) extends AnyVal {
-    private implicit def g = Gen(_g)
-
-    def nev(implicit ss: SizeSpec): Gen[NonEmptyVector[A]] =
-      for {t <- g.vector; h <- g} yield NonEmptyVector(h, t)
-
-    def nes(implicit ss: SizeSpec, ev: UnivEq[A]): Gen[NonEmptySet[A]] =
-      for {t <- g.set; h <- g} yield NonEmptySet(h, t)
-  }
 
   def genmodL[A, B](l: Lens[A, B])(g: B => Gen[B])(a: A): Gen[A] =
     g(l get a) map (l.set(_)(a))
@@ -169,13 +159,6 @@ object RandomData {
   def distinctId[D, I <: TaggedInt](implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]) =
     Distinct.fint.xmap(j.mkId)(_.value).distinct.contramap[D](i.id, j.setId)
 
-  def isubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] = {
-    Gen.chooseGen(
-      Gen pure ISubset.All(),
-      g map ISubset.Only.apply,
-      g map ISubset.Not.apply)
-  }
-
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   val live =
@@ -192,24 +175,6 @@ object RandomData {
 
   val deletionAction =
     chooseV(DeletionAction.values)
-
-  def mtrie[K: UnivEq, V](genK: Gen[K], genV: Gen[V], maxDepth: Int): Gen[MTrie.Trie[K, V]] = {
-    val valueN   = genV map MTrie.Value[K, V]
-    val valueO   = valueN.option
-    val midDepth = maxDepth >> 1
-
-    def level(depth: Int): Gen[MTrie.Trie[K, V]] =
-      if (depth <= 1)
-        Gen pure Map.empty
-      else {
-        val branch  = Gen.apply2(MTrie.Branch[K, V])(valueO, level(depth - 1))
-        val branchN = branch.flatMap[MTrie.Node[K, V]](b => if (b.next.nonEmpty) Gen.pure(b) else b.value.fold(valueN)(Gen.pure))
-        val node    = Gen.chooseGen(branchN, valueN, if (depth > midDepth) branchN else valueN)
-        node.mapBy(genK)
-      }
-
-    level(maxDepth)
-  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -366,7 +331,7 @@ object RandomData {
   def applicableReqTypes(r: Set[CustomReqTypeId]): Gen[ApplicableReqTypes] = {
     val all = StaticReqType.values.whole ++ r
     val nes = Gen.subset1(all).map(NonEmptySet force _.toSet)
-    isubset(nes)
+    genISubset(nes)
   }
 
   lazy val customFieldTextId =
@@ -1013,10 +978,10 @@ object RandomData {
     def trieValue(d: Gen[Data]): Gen[Trie.Value] = d map Trie.Value
 
     def trie(d: Gen[Data], maxDepth: Int): Gen[Trie] =
-      mtrie(node, d, maxDepth) map distinctReqCodeTrie.run
+      genMTrie(node, d, maxDepth) map distinctReqCodeTrie.run
 
     def codeSet(maxDepth: Int): Gen[CodeSet] =
-      mtrie(node, Gen.unit, maxDepth)
+      genMTrie(node, Gen.unit, maxDepth)
 
     def updateGroupText(gt: Gen[Text.ReqCodeGroupTitle.OptionalText])(src: Trie): Gen[Trie] = {
       type F = EndoFn[Trie]
@@ -1148,7 +1113,7 @@ object RandomData {
       Gen.chooseGen(customFieldId, staticField)
 
     lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
-      isubset(reqTypeId.nes)
+      genISubset(reqTypeId.nes)
 
     lazy val fieldPosition: Gen[FieldCrud.Position] =
       fieldId.option
@@ -1435,21 +1400,6 @@ object RandomData {
     val deletionReason =
       TextGen.deletionReasonAtom(Some(reqId), Some(reqCode.id), Some(applicableTagId)).text
 
-    def nesd[A: UnivEq](g: Gen[A]): Gen[NonEmpty[SetDiff[A]]] = {
-      val set = g.set
-      val attempt =
-        for {
-          a <- set
-          b <- set
-        } yield SetDiff(a, b -- a)
-      attempt.flatMap(d =>
-        NonEmpty(d) match {
-          case Some(ne) => Gen pure ne
-          case None     => g.map(a => NonEmpty.force(SetDiff(Set.empty[A], Set(a))))
-        }
-      )
-    }
-
     abstract class GenericDataGen[GD <: GenericData](final val gd: GD) {
       import gd.equalityAttr
 
@@ -1612,10 +1562,10 @@ object RandomData {
       Gen.apply2(DeleteTag)(tagId, deletionAction)
 
     val patchImplicationSrc: Gen[PatchImplicationSrc] =
-      Gen.apply2(PatchImplicationSrc)(reqId, nesd(reqId))
+      Gen.apply2(PatchImplicationSrc)(reqId, genNonEmptySetDiff(reqId))
 
     val patchImplicationTgt: Gen[PatchImplicationTgt] =
-      Gen.apply2(PatchImplicationTgt)(reqId, nesd(reqId))
+      Gen.apply2(PatchImplicationTgt)(reqId, genNonEmptySetDiff(reqId))
 
     val patchReqCodes: Gen[PatchReqCodes] = {
       val codes = reqCode.id.set
@@ -1629,7 +1579,7 @@ object RandomData {
     }
 
     val patchReqTags: Gen[PatchReqTags] =
-      Gen.apply2(PatchReqTags)(reqId, nesd(applicableTagId))
+      Gen.apply2(PatchReqTags)(reqId, genNonEmptySetDiff(applicableTagId))
 
     val repositionField: Gen[RepositionField] =
       Gen.apply2(RepositionField)(fieldId, fieldId.option)
