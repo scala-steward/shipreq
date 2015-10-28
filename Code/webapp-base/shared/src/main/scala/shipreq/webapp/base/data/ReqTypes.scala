@@ -47,11 +47,12 @@ sealed trait StaticReqType extends ReqType with ReqTypeId {
 
 object StaticReqType {
 
+  type UseCase = UseCase.type
   case object UseCase extends StaticReqType {
     override def mnemonic     = Mnemonic("UC")
     override def oldMnemonics = UnivEq.emptySet
     override def name         = "Use Case"
-    override def imp          = ImplicationRequired.Not
+    override def imp          = ImplicationRequired.Not // TODO Should be configurable
   }
 
   val values: NonEmptyVector[StaticReqType] =

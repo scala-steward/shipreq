@@ -49,6 +49,13 @@ sealed abstract class GenericDashHasher {
     trie
   }
 
+  implicit def hashVectorTree[A: Hash]: Hash[VectorTree[A]] = {
+    import VectorTree._
+    implicit lazy val node    : Hash[Node[A]]     = hashCaseClass
+    implicit lazy val children: Hash[Children[A]] = hashVector[Node[A]]
+    hashCaseClass
+  }
+
   implicit def hashIMap[K, V: Hash]: Hash[IMap[K, V]] =
     hashUnordered[Iterable, V].cmap(_.values)
 
@@ -77,6 +84,8 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashDeletable    : Hash[Deletable]           = Hash by Deletable.from
   implicit val hashMutexChildren: Hash[MutexChildren]       = Hash by MutexChildren.from
 
+  implicit val hashUseCaseStepId            = hashTaggedType[UseCaseStepId]
+  implicit val hashUseCaseId                = hashTaggedType[UseCaseId]
   implicit val hashDeletionReasonId         = hashTaggedType[DeletionReasonId]
   implicit val hashGenericReqId             = hashTaggedType[GenericReqId]
   implicit val hashReqCodeId                = hashTaggedType[ReqCodeId]
@@ -149,6 +158,8 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashPubid                 : Hash[Pubid]             = hashCaseClass
   implicit def hashPubidT[T <: ReqTypeId]: Hash[PubidT[T]]         = hashPubid.narrow
   implicit val hashGenericReq            : Hash[GenericReq]        = hashCaseClass
+  implicit val hashUseCaseStep           : Hash[UseCaseStep]       = hashCaseClass
+  implicit val hashUseCase               : Hash[UseCase]           = hashCaseClass
   implicit val hashReq                   : Hash[Req]               = hashADT
   implicit val hashRequirements          : Hash[Requirements]      = hashCaseClass
 

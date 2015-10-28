@@ -16,11 +16,15 @@ trait ApplyContentEvent {
 
   object ReqEvents {
 
-    private val imap = IMapStore(Project.genericReqs)
+    // TODO Should probably merge these separate gr/uc constructs
+
+    private val grIMap = IMapStore(Project.genericReqs)
+    private val ucIMap = IMapStore(Project.useCases)
 
     private val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
+    private val ucLiveExplicitly = LiveAccessor(UseCase.liveExplicitly)(_.id.toString)
 
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
+    val updateGenericReqIdCeiling = updateIdCeilingFn(IdCeilings.genericReq)
 
     def ensureLiveReqId(reqId: ReqId): SE[Unit] =
       whenUntrusted(
@@ -43,9 +47,10 @@ trait ApplyContentEvent {
     def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
       whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
 
-    def needReq(reqId: ReqId): SE[Req] =
+    def needReq[T <: ReqTypeId](reqId: ReqIdT[T]): SE[ReqT[T]] =
       reqId match {
-        case id: GenericReqId => imap.need(id)
+        case id: GenericReqId => grIMap.need(id)
+        case id: UseCaseId    => ucIMap.need(id)
       }
 
     def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
@@ -76,21 +81,23 @@ trait ApplyContentEvent {
         title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
         pp      = reqData.pubids.allocC(rt.id)(id)
         req     = GenericReq(id, pp._2, title, Live)
-        reqs    ← imap.create(req)
+        reqs    ← grIMap.create(req)
         _       ← Project.pubidRegister set pp._1
         _       ← foreachValue(id, e.vs)
-        _       ← updateIdCeiling(id)
+        _       ← updateGenericReqIdCeiling(id)
       } yield ()
     }
 
     private def deleteReq(id: ReqId): SE[Unit] =
       id match {
-        case g: GenericReqId => imap.update(g, grLiveExplicitly.makeDead)
+        case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeDead)
+        case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeDead)
       }
 
     private def restoreReq(id: ReqId): SE[Unit] =
       id match {
-        case g: GenericReqId => imap.update(g, grLiveExplicitly.makeLive)
+        case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeLive)
+        case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeLive)
       }
 
     /** Ignores reqcodes */
@@ -164,19 +171,19 @@ trait ApplyContentEvent {
 
     def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
       for {
-        r <- imap.need(e.id)
+        r <- grIMap.need(e.id)
         _ <- ensureLiveReq(r)
         _ <- ensureLiveCustomReqTypeId(e.value)
         _ <- Project.reqs.modify { reqs =>
                val pp = reqs.pubids.allocC(e.value)(e.id)
                val r2 = r.copy(pubid = pp._2)
-               Requirements(reqs.genericReqs + r2, pp._1)
+               Requirements(reqs.genericReqs + r2, reqs.useCases, pp._1)
              }
       } yield ()
 
     def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
       ensureLiveReqId(e.id) >>
-        imap.updateF(e.id, _.copy(title = e.value))
+        grIMap.updateF(e.id, _.copy(title = e.value))
 
     def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
       ensureLiveReqId(e.id) >>

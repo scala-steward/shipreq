@@ -102,4 +102,14 @@ object BaseUtilGen {
       }
     go(m)
   }
+
+  def genVectorTree[A](genValue: Gen[A], maxDepth: Int)(implicit ss: SizeSpec): Gen[VectorTree[A]] = {
+    import VectorTree._
+    def children(rem: Int): Gen[Children[A]] =
+      if (rem == 0)
+        Gen pure noChildren
+      else
+        Gen.lift2(genValue, children(rem - 1))(Node.apply).vector(ss)
+    children(maxDepth).map(VectorTree(_))
+  }
 }

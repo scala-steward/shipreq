@@ -16,14 +16,16 @@ case class IdCeilings(
   customReqType   : Int,
   customField     : Int,
   tag             : Int,
-  req             : Int,
+  genericReq      : Int,
+  useCase         : Int,
+  useCaseStep     : Int,
   reqCode         : Int)
 
 object IdCeilings {
   implicit def equality: UnivEq[IdCeilings] = UnivEq.derive
 
   def init(z: Int): IdCeilings =
-    IdCeilings(z, z, z, z, z, z)
+    IdCeilings(z, z, z, z, z, z, z, z)
 
   def zero = init(0)
 
@@ -46,7 +48,9 @@ object IdCeilings {
       customReqType   = imapKeys(p.config.customReqTypes),
       customField     = imapKeys(p.config.fields.customFields),
       tag             = imapKeys(p.config.tags),
-      req             = imapKeys(p.reqs.genericReqs),
+      genericReq      = imapKeys(p.reqs.genericReqs),
+      useCase         = imapKeys(p.reqs.useCases),
+      useCaseStep     = imapKeys(p.reqs.useCaseSteps),
       reqCode         = maxOf(p.reqCodes.idList))
   }
 

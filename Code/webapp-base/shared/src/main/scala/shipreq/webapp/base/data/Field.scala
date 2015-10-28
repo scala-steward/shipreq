@@ -132,11 +132,17 @@ object StaticField {
 
   @inline final private[this] def T = StaticFieldType
 
+  sealed trait UseCaseStepTree {
+    this: StaticField =>
+  }
+
   case object NormalAltStepTree extends StaticField(
     "Normal and Alternate Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None)
+    with UseCaseStepTree
 
   case object ExceptionStepTree extends StaticField(
     "Exception Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None)
+    with UseCaseStepTree
 
   case object StepGraph extends StaticField(
     "Step Graph", T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)

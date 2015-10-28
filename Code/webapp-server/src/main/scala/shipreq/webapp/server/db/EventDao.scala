@@ -133,6 +133,7 @@ object EventDbCodecs {
   implicit val pickleDeletable     = boolCase(Deletable)
   implicit val pickleMutexChildren = boolCase(MutexChildren)
 
+  implicit val pickleUseCaseId               : ReadWriter[UseCaseId                 ] = caseClass
   implicit val pickleGenericReqId            : ReadWriter[GenericReqId              ] = caseClass
   implicit val pickleReqCodeId               : ReadWriter[ReqCodeId                 ] = caseClass
   implicit val pickleCustomReqTypeId         : ReadWriter[CustomReqTypeId           ] = caseClass
@@ -149,6 +150,7 @@ object EventDbCodecs {
 
   implicit val pickleReqId: ReadWriter[ReqId] = pickleAdtOS {
     case _: GenericReqId => ""
+    case _: UseCaseId    => "u"
   }
 
   implicit val pickleReqIdSet: ReadWriter[Set[ReqId]] =
@@ -471,6 +473,7 @@ object EventDbCodecs {
   implicit val idTypeCustomReqTypeId          = DbCodec.monoId('r', CustomReqTypeId)
   implicit val idTypeCustomIssueTypeId        = DbCodec.monoId('i', CustomIssueTypeId)
 
+  implicit val idTypeUseCaseId                = DbCodec.monoId('u', UseCaseId)
   implicit val idTypeGenericReqId             = DbCodec.monoId('g', GenericReqId)
   implicit val idTypeReqId                    = DbCodec.polyId[ReqId]
 

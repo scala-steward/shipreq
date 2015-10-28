@@ -39,9 +39,9 @@ object AtomScan {
     def scan(live     : Live,
              reqId    : ReqId     = null,
              reqCodeId: ReqCodeId = null)
-            (text: Text.AnyOptional): Unit = {
+            (text     : TraversableOnce[AnyAtom]): Unit = {
 
-      def go(as: Text.AnyOptional): Unit =
+      def go(as: TraversableOnce[AnyAtom]): Unit =
         as foreach {
           case _: Literal         # Literal
              | _: PlainTextMarkup # EmailAddress
@@ -73,8 +73,13 @@ object AtomScan {
     // Parse reqs
     val rts = p.config.customReqTypes
     p.reqs.reqs.values.foreach {
+
       case r: GenericReq =>
         scan(r.live(rts), reqId = r.id)(r.title)
+
+      case uc: UseCase =>
+        scan(uc.liveUC, reqId = uc.id)(uc.title)
+        scan(uc.liveUC, reqId = uc.id)(uc.stepIterator.flatMap(_.title))
     }
 
     // Parse custom-text-field text
