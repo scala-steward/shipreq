@@ -3,9 +3,21 @@ package shipreq.base.util
 import monocle._
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
-import scalaz.Applicative
+import scalaz.{Applicative, Functor}
 
 object Optics {
+
+  object Implicits {
+    implicit class LensOps[S, T, A, B](private val t: PLens[S, T, A, B]) extends AnyVal {
+      def setF[F[_] : Functor](f: F[B])(s: S): F[T] =
+        t.modifyF(_ => f)(s)
+    }
+
+    implicit class TraversalOps[S, T, A, B](private val t: PTraversal[S, T, A, B]) extends AnyVal {
+      def setF[F[_] : Applicative](f: F[B])(s: S): F[T] =
+        t.modifyF(_ => f)(s)
+    }
+  }
 
   def cbfTraversal[M[x] <: Traversable[x], A, N[_], B](implicit cbf: CanBuildFrom[M[A], B, N[B]]): PTraversal[M[A], N[B], A, B] =
     new PTraversal[M[A], N[B], A, B] {

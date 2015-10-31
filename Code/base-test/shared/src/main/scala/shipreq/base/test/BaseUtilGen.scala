@@ -4,6 +4,7 @@ import nyaya.gen._
 import nyaya.prop.CycleDetector
 import nyaya.util.Multimap
 import scala.annotation.tailrec
+import scala.collection.AbstractIterator
 import shipreq.base.util._
 import SizeSpec.DisableDefault._
 
@@ -27,12 +28,52 @@ object BaseUtilGen {
       g.set(ss).flatMap(vs =>
         NonEmptySet.maybe(vs, single)(Gen.pure))
     }
+
+    def unique_!(implicit ev: UnivEq[A]): Gen[A] =
+      liftIterator_!(uniqueIterator)
+
+    def uniqueIterator(implicit ev: UnivEq[A]): Gen[Iterator[A]] = {
+      val MaxTries = 1000
+      Gen { ctx =>
+        new AbstractIterator[A] {
+          val seen = UnivEq.emptyMutableSet[A]
+
+          @tailrec
+          def nextUnique(rem: Int): A = {
+            val a = g.run(ctx)
+            if (seen contains a) {
+              if (rem == 1)
+                sys.error(s"Failed to generate a unique value after $MaxTries tries. Last = $a")
+              else
+                nextUnique(rem - 1)
+            } else {
+              seen += a
+              a
+            }
+          }
+
+          override def hasNext = true
+          override def next() = nextUnique(MaxTries)
+        }
+      }
+    }
   }
 
   implicit class BaseUtilGen_OptionGenExt[A](private val o: Option[Gen[A]]) extends AnyVal {
     def setE(implicit ss: SizeSpec): Gen[Set[A]] =
       o.fold(Gen pure Set.empty[A])(_.set(ss))
   }
+
+  def liftIterator_![A](g: Gen[Iterator[A]]): Gen[A] = {
+    var it: Iterator[A] = null
+    Gen { ctx =>
+      if (it eq null)
+        it = g.run(ctx)
+      it.next()
+    }
+  }
+
+  // ===================================================================================================================
 
   def genISubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] =
     Gen.chooseGen(

@@ -1,7 +1,9 @@
 package shipreq.base.util
 
+import monocle._
 import scala.annotation.tailrec
 import scala.collection.AbstractIterator
+import scalaz.Applicative
 import ScalaExt._
 import VectorTree._
 
@@ -137,4 +139,29 @@ object VectorTree {
 
   implicit def univEqForNode[A: UnivEq]: UnivEq[Node[A]]       = UnivEq.derive
   implicit def univEqForRoot[A: UnivEq]: UnivEq[VectorTree[A]] = UnivEq.derive
+
+  def ptraversal[A, B]: PTraversal[VectorTree[A], VectorTree[B], A, B] =
+    new PTraversal[VectorTree[A], VectorTree[B], A, B] {
+      val ch = Optics.vectorPTraversal[Node[A], Node[B]] ^|->> nodePTraversal
+      override def modifyF[F[_]](f: A => F[B])(va: VectorTree[A])(implicit F: Applicative[F]): F[VectorTree[B]] = {
+        val fcb = ch.modifyF(f)(va.children)
+        F.map(fcb)(VectorTree.apply)
+      }
+    }
+
+  def traversal[A]: Traversal[VectorTree[A], A] =
+    ptraversal[A, A]
+
+  def nodePTraversal[A, B]: PTraversal[Node[A], Node[B], A, B] =
+    new PTraversal[Node[A], Node[B], A, B] {
+      val ch = Optics.vectorPTraversal[Node[A], Node[B]] ^|->> this
+      override def modifyF[F[_]](f: A => F[B])(na: Node[A])(implicit F: Applicative[F]): F[Node[B]] = {
+        val fb = f(na.value)
+        val fcb = ch.modifyF(f)(na.children)
+        F.apply2(fb, fcb)(Node.apply)
+      }
+    }
+
+  def nodeTraversal[A]: Traversal[Node[A], A] =
+    nodePTraversal[A, A]
 }
