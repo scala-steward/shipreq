@@ -169,40 +169,40 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
 
-  lazy val customIssueTypeId =
+  val customIssueTypeId =
     id map CustomIssueTypeId
 
-  lazy val customIssueType =
+  val customIssueType =
     Gen.apply4(CustomIssueType.apply)(customIssueTypeId, hashRefKey, optionalLargeText, live)
 
   /** HashRefKey uniqueness enforced in Project, not here */
-  lazy val customIssueTypes =
+  val customIssueTypes =
     revAndIMap(customIssueType.list)
 
   // -------------------------------------------------------------------------------------------------------------------
   // ReqTypes
 
-  lazy val reqTypeMnemonic =
+  val reqTypeMnemonic =
     grammarStr1(Grammar.reqTypeMnemonic)(_.chars, _.chars, _.length) map ReqType.Mnemonic
 
-  lazy val reqTypeMnemonicFixer =
+  val reqTypeMnemonicFixer =
     grammarFixer(Grammar.reqTypeMnemonic)(_.chars, _.chars)
       .xmap(ReqType.Mnemonic.apply)(_.value)
       .addhs(StaticReqType.mnemonics)
 
-  lazy val customReqTypeId =
+  val customReqTypeId =
     id map CustomReqTypeId
 
-  lazy val staticReqType: Gen[StaticReqType] =
+  val staticReqType: Gen[StaticReqType] =
     Gen.chooseNE(StaticReqType.values)
 
-  lazy val reqTypeId: Gen[ReqTypeId] =
+  val reqTypeId: Gen[ReqTypeId] =
     Gen.chooseGen(staticReqType, customReqTypeId)
 
   def customReqTypeName =
     shortText1
 
-  lazy val customReqType =
+  val customReqType =
     for {
       id <- customReqTypeId
       n  <- customReqTypeName
@@ -224,7 +224,7 @@ object RandomData {
     revAndIMap(g map d.run)
   }
 
-  lazy val customReqTypes =
+  val customReqTypes =
     genCustomReqTypes(customReqType.list)
 
   val staticReqTypeIdSet = StaticReqType.values.toNES[ReqTypeId]
@@ -232,31 +232,31 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Tags
 
-  lazy val tagGroupId =
+  val tagGroupId =
     id map TagGroupId
 
-  lazy val applicableTagId =
+  val applicableTagId =
     id map ApplicableTagId
 
-  lazy val tagId: Gen[TagId] =
+  val tagId: Gen[TagId] =
     Gen.chooseGen(tagGroupId, applicableTagId)
 
-  lazy val mutexChildren =
+  val mutexChildren =
     Gen.choose[MutexChildren](MutexChildren, MutexChildren.Not)
 
   def tagName =
     shortText1
 
-  lazy val tagGroup =
+  val tagGroup =
     Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, mutexChildren, live)
 
-  lazy val applicableTag =
+  val applicableTag =
     Gen.apply5(ApplicableTag.apply)(applicableTagId, tagName, optionalLargeText, hashRefKey, live)
 
-  lazy val tag =
+  val tag =
     Gen.chooseGen[Tag](tagGroup, applicableTag, applicableTag, applicableTag)
 
-  lazy val tagAndRels: Gen[(Tag, TagInTree.Relations)] =
+  val tagAndRels: Gen[(Tag, TagInTree.Relations)] =
     for {
       t      ← tag
       (p, c) ← tagId.set.pair
@@ -267,7 +267,7 @@ object RandomData {
     }
 
   /** HashRefKey uniqueness enforced in Project, not here */
-  lazy val tags: Gen[List[Tag]] = {
+  val tags: Gen[List[Tag]] = {
     val di = distinctId[Tag, TagId]
     val dn = Distinct.str.at(Tag.name)
     val d = (di * dn).lift[List]
@@ -286,7 +286,7 @@ object RandomData {
         .map(s => preventCycles(Tag.CycleDetectors.multimap)(s.toMap))
     }
 
-  lazy val tagTree: Gen[TagTree] =
+  val tagTree: Gen[TagTree] =
     for {
       l ← tags
       m = Tag.IdAccess.mapById(l)
@@ -303,7 +303,7 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Fields
 
-  lazy val staticField: Gen[StaticField] =
+  val staticField: Gen[StaticField] =
     Gen.chooseNE(StaticField.values)
 
   def applicableReqTypes(r: Set[CustomReqTypeId]): Gen[ApplicableReqTypes] = {
@@ -312,19 +312,19 @@ object RandomData {
     genISubset(nes)
   }
 
-  lazy val customFieldTextId =
+  val customFieldTextId =
     id map CustomField.Text.Id
 
-  lazy val customFieldTagId =
+  val customFieldTagId =
     id map CustomField.Tag.Id
 
-  lazy val customFieldImplicationId =
+  val customFieldImplicationId =
     id map CustomField.Implication.Id
 
-  lazy val customFieldId: Gen[CustomFieldId] =
+  val customFieldId: Gen[CustomFieldId] =
     Gen.chooseGen(customFieldTextId, customFieldTagId, customFieldImplicationId)
 
-  lazy val fieldRefKey =
+  val fieldRefKey =
     grammarStr1(Grammar.fieldRefKey)(_.firstChar, _.allChars, _.length) map FieldRefKey
 
   def customFieldType =
@@ -1104,31 +1104,31 @@ object RandomData {
   object protocol {
     import shipreq.webapp.base.protocol._
 
-    lazy val reqTypeId: Gen[ReqTypeId] =
+    val reqTypeId: Gen[ReqTypeId] =
       Gen.chooseGen(customReqTypeId, staticReqType)
 
-    lazy val fieldId: Gen[FieldId] =
+    val fieldId: Gen[FieldId] =
       Gen.chooseGen(customFieldId, staticField)
 
-    lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
+    val applicableReqTypes: Gen[ApplicableReqTypes] =
       genISubset(reqTypeId.nes)
 
-    lazy val fieldPosition: Gen[FieldCrud.Position] =
+    val fieldPosition: Gen[FieldCrud.Position] =
       fieldId.option
 
-    lazy val textFieldValues =
+    val textFieldValues =
       Gen.apply4(FieldCrud.TextFieldValues.apply)(shortText1, fieldRefKey, mandatory, applicableReqTypes)
 
-    lazy val fieldValues: Gen[FieldCrud.Values] =
+    val fieldValues: Gen[FieldCrud.Values] =
       Gen.chooseGen(textFieldValues)
 
     object fieldCfgAction {
       import FieldCrud.CfgAction, CfgAction._
-      lazy val create      : Gen[Create]       = fieldValues map Create
-      lazy val updateValues: Gen[UpdateValues] = Gen.apply2(UpdateValues)(customFieldId, fieldValues)
-      lazy val updateOrder : Gen[UpdateOrder]  = Gen.apply2(UpdateOrder)(fieldId, fieldPosition)
-      lazy val delete      : Gen[Delete]       = Gen.apply2(Delete)(fieldId, deletionAction)
-      lazy val any         : Gen[CfgAction]    = Gen.chooseGen(create, updateValues, updateOrder, delete)
+      val create      : Gen[Create]       = fieldValues map Create
+      val updateValues: Gen[UpdateValues] = Gen.apply2(UpdateValues)(customFieldId, fieldValues)
+      val updateOrder : Gen[UpdateOrder]  = Gen.apply2(UpdateOrder)(fieldId, fieldPosition)
+      val delete      : Gen[Delete]       = Gen.apply2(Delete)(fieldId, deletionAction)
+      val any         : Gen[CfgAction]    = Gen.chooseGen(create, updateValues, updateOrder, delete)
     }
 
     def tagProtocolValues: Tag => TagCrud.Values = {
@@ -1136,7 +1136,7 @@ object RandomData {
       case ApplicableTag(_, n, d, k, _) => TagCrud.ApplicableTagValues(n, k, d)
     }
 
-    lazy val tagCrudInput =
+    val tagCrudInput =
       tagAndRels.flatMap(t => {
         val a = Gen pure tagProtocolValues(t._1)
         val b = Gen pure t._2
@@ -1150,13 +1150,13 @@ object RandomData {
     import RemoteFn._
     import RandomData.protocol._
 
-    lazy val remoteFnKey =
+    val remoteFnKey =
       Gen.alphaNumeric.string(4)
 
     def remoteFn(f: RemoteFn) =
       remoteFnKey.map(RemoteFn.Instance(_, f))
 
-    lazy val projectSPA =
+    val projectSPA =
       Gen.apply9(ProjectSPA)(
         remoteFn(ProjectInit),
         remoteFn(CustomIssueTypeCrud),
@@ -1175,15 +1175,15 @@ object RandomData {
       lazy val any    = Gen.chooseGen[CrudAction[I, V]](create, update, delete)
     }
 
-    lazy val customIssueTypeCrud = new CrudActionGens(CustomIssueTypeCrud)(
+    val customIssueTypeCrud = new CrudActionGens(CustomIssueTypeCrud)(
       RandomData.customIssueTypeId,
       Gen.tuple2(hashRefKey, optionalLargeText))
 
-    lazy val customReqTypeCrud = new CrudActionGens(CustomReqTypeCrud)(
+    val customReqTypeCrud = new CrudActionGens(CustomReqTypeCrud)(
       RandomData.customReqTypeId,
       Gen.tuple3(reqTypeMnemonic, customReqTypeName, implicationRequired))
 
-    lazy val tagCrud =
+    val tagCrud =
       new CrudActionGens(TagCrud.Fn)(RandomData.tagId, tagCrudInput)
   }
 
