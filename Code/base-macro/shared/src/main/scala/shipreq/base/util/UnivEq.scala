@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import nyaya.util._
+import scala.collection.immutable.ListSet
 import scalaz._
 import scalaz.std.anyVal.intInstance
 
@@ -26,14 +27,15 @@ sealed abstract class UnivEqImplicits {
   @inline implicit def univEqShort  : UnivEq[Short]   = univEqForce
   @inline implicit def univEqBoolean: UnivEq[Boolean] = univEqForce
 
-  @inline implicit def univEqOption[A: UnivEq]           : UnivEq[Option[A]]       = univEqForce
-  @inline implicit def univEqSet   [A: UnivEq]           : UnivEq[Set[A]]          = univEqForce
-  @inline implicit def univEqList  [A: UnivEq]           : UnivEq[List[A]]         = univEqForce
-  @inline implicit def univEqVector[A: UnivEq]           : UnivEq[Vector[A]]       = univEqForce
-  @inline implicit def univEqMap   [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = univEqForce
-  @inline implicit def univEqDisj  [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = univEqForce
-  @inline implicit def univEqThese [A: UnivEq, B: UnivEq]: UnivEq[A \&/ B]         = univEqForce
-  @inline implicit def univEqNel   [A: UnivEq]           : UnivEq[NonEmptyList[A]] = univEqForce
+  @inline implicit def univEqOption [A: UnivEq]           : UnivEq[Option[A]]       = univEqForce
+  @inline implicit def univEqSet    [A: UnivEq]           : UnivEq[Set[A]]          = univEqForce
+  @inline implicit def univEqList   [A: UnivEq]           : UnivEq[List[A]]         = univEqForce
+  @inline implicit def univEqListSet[A: UnivEq]           : UnivEq[ListSet[A]]      = univEqForce
+  @inline implicit def univEqVector [A: UnivEq]           : UnivEq[Vector[A]]       = univEqForce
+  @inline implicit def univEqMap    [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = univEqForce
+  @inline implicit def univEqDisj   [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = univEqForce
+  @inline implicit def univEqThese  [A: UnivEq, B: UnivEq]: UnivEq[A \&/ B]         = univEqForce
+  @inline implicit def univEqNel    [A: UnivEq]           : UnivEq[NonEmptyList[A]] = univEqForce
 
   @inline implicit def univEqMultimap[K, L[_], V](implicit ev: UnivEq[Map[K, L[V]]]): UnivEq[Multimap[K, L, V]] = univEqForce
 
