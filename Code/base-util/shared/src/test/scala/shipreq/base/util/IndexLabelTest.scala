@@ -1,36 +1,36 @@
-package shipreq.webapp.base.util
+package shipreq.base.util
 
 import utest._
-import shipreq.base.test.BaseTestUtil._
-import shipreq.base.util.UnivEq.Implicits._
-import UseCaseStepLabels._
+import IndexLabel._
 
-object UseCaseStepLabelsTest extends TestSuite {
+object IndexLabelTest extends TestSuite {
 
-  def testFn(ll: LevelLabeler): (Int, String) => Unit =
+  def testFn(ll: IndexLabel): (Int, String) => Unit =
     (i, s) => {
-      assertEq(ll.label(i), s)
-      assertEq(ll.parse(s), Some(i))
+      val al = ll.label(i)
+      val ap = ll.parse(s)
+      assert(al == s)
+      assert(ap == Option(i))
     }
 
   override def tests = TestSuite {
 
     'numeric0 {
-      val test = testFn(Numeric0)
+      val test = testFn(NumericFrom0)
       " 0 ↔ 0"  - test( 0,  "0")
       " 1 ↔ 1"  - test( 1,  "1")
       "50 ↔ 50" - test(50, "50")
     }
 
     'numeric1 {
-      val test = testFn(Numeric1)
+      val test = testFn(NumericFrom1)
       " 0 ↔ 1"  - test( 0,  "1")
       " 1 ↔ 2"  - test( 1,  "2")
       "50 ↔ 51" - test(50, "51")
     }
 
     'alpha {
-      val test = testFn(Alpha1)
+      val test = testFn(Alpha)
       " 0 ↔ a"  - test( 0, "a" )
       " 1 ↔ b"  - test( 1, "b" )
       " 4 ↔ e"  - test( 4, "e" )
@@ -42,7 +42,7 @@ object UseCaseStepLabelsTest extends TestSuite {
     }
 
     'roman {
-      val test = testFn(Roman1)
+      val test = testFn(Roman)
       " 0 ↔ i"       - test( 0, "i"      )
       " 1 ↔ ii"      - test( 1, "ii"     )
       " 2 ↔ iii"     - test( 2, "iii"    )

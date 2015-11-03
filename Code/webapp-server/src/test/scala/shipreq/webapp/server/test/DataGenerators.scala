@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scalaz.Memo
 
+import shipreq.base.util.IndexLabel
 import shipreq.webapp.base.util.TextMod
 import db.{UseCaseHeader, FieldListRec}
 import lib.Misc.filterCovar
@@ -23,7 +24,7 @@ import shipreq.webapp.base.AppConsts.{useCaseStepsMaxLength => MaxStepsPerLevel,
 import text.ParsingConfig._
 import TreeOps._
 import UseCaseFns.generateStepAndLabelBiMap
-import shipreq.webapp.base.util.UseCaseStepLabels.{Labelers, LevelLabeler}
+import shipreq.webapp.base.AppConsts.UseCaseStepLabels
 
 object DataGenerators extends Logger {
   import TestHelpers._
@@ -32,7 +33,7 @@ object DataGenerators extends Logger {
     def matches(str: String) = x.pattern.matcher(str).matches()
   }
 
-  private val LabelMakerList = Labelers.toList
+  private val LabelMakerList = UseCaseStepLabels.toList
 
   implicit class BooleanExt(val x: Boolean) extends AnyVal {
     def :||(err: => String): Prop = Prop(x) :| (if (x) "" else err)
@@ -189,7 +190,7 @@ object DataGenerators extends Logger {
   }
 
   def stepPlaceholderTree(prefix: String, sli: StartingLabelIndices, minSteps: Int): Gen[StepPlaceholderTree] = {
-    def go(prefix: String, level: Int, labels: List[LevelLabeler], minSteps: Int): Gen[List[StepPlaceholderNode]] =
+    def go(prefix: String, level: Int, labels: List[IndexLabel], minSteps: Int): Gen[List[StepPlaceholderNode]] =
       labels match {
         case Nil => Nil
         case labelMaker :: nextLabels =>

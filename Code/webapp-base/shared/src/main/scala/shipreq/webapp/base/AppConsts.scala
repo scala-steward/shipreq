@@ -1,7 +1,8 @@
 package shipreq.webapp.base
 
+import shipreq.base.util.IndexLabel
 import shipreq.webapp.base.util.EnvMacros
-import shipreq.webapp.base.util.UseCaseStepLabels
+import IndexLabel._
 
 object AppConsts {
 
@@ -28,10 +29,19 @@ object AppConsts {
   /** Limit the length of seemingly-unbound inputs. Prevents a malicious user creating 1GB rows. */
   final val largeTextMaxLength = 20000
 
+
+  // (UC-8.)0.1.a.i.4
+  val UseCaseStepLabels = Vector[IndexLabel](
+    NumericFrom0,
+    NumericFrom1,
+    Alpha,
+    Roman,
+    NumericFrom1)
+
   /**
    * Maximum number of levels (inclusive) where the root (no steps) is 0.
    */
-  val useCaseStepsMaxDepth = UseCaseStepLabels.Labelers.length
+  val useCaseStepsMaxDepth = UseCaseStepLabels.length
 
   /**
    * Maximum number of children per parent (inclusive).

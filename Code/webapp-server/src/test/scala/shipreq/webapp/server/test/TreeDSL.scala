@@ -1,7 +1,7 @@
 package shipreq.webapp.server.test
 
 import shipreq.webapp.server.lib.Types._
-import shipreq.webapp.base.util.UseCaseStepLabels.Labelers
+import shipreq.webapp.base.AppConsts.UseCaseStepLabels
 
 /**
  * Very old way of generating trees.
@@ -25,7 +25,7 @@ object TreeDSL {
       val id = idPrefix + lbl
       val ch = nc.children.toStepNodes(lvl + 1, id + ".", genIds)
       val labelSplit(lblPrefix, lblSuffix) = lbl
-      val lblIndex = Labelers(lvl).parseTmp(lblSuffix)
+      val lblIndex = UseCaseStepLabels(lvl).parseTmp(lblSuffix)
       val id2 = if (genIds) id else null
       StepNodeWithText(LocalStepId(id2), lvl, lblIndex, txt, ch)
     }
