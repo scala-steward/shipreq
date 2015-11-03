@@ -1,6 +1,7 @@
 package shipreq.webapp.base
 
 import shipreq.webapp.base.util.EnvMacros
+import shipreq.webapp.base.util.UseCaseStepLabels
 
 object AppConsts {
 
@@ -30,8 +31,7 @@ object AppConsts {
   /**
    * Maximum number of levels (inclusive) where the root (no steps) is 0.
    */
-  // TODO Determine from StepLabels
-  final val useCaseStepsMaxDepth = 5
+  val useCaseStepsMaxDepth = UseCaseStepLabels.Labelers.length
 
   /**
    * Maximum number of children per parent (inclusive).

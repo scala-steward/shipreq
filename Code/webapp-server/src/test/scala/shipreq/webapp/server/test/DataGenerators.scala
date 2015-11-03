@@ -19,10 +19,11 @@ import feature.uc.field._
 import feature.uc.step._
 import text.{StepText, FreeText}
 import StepFieldConsts.StartingLabelIndices
-import StepLabels._
+import shipreq.webapp.base.AppConsts.{useCaseStepsMaxLength => MaxStepsPerLevel, useCaseStepsMaxDepth => MaxStepDepth}
 import text.ParsingConfig._
 import TreeOps._
 import UseCaseFns.generateStepAndLabelBiMap
+import shipreq.webapp.base.util.UseCaseStepLabels.{Labelers, LevelLabeler}
 
 object DataGenerators extends Logger {
   import TestHelpers._
@@ -31,7 +32,7 @@ object DataGenerators extends Logger {
     def matches(str: String) = x.pattern.matcher(str).matches()
   }
 
-  private val LabelMakerList = LabelMakers.toList
+  private val LabelMakerList = Labelers.toList
 
   implicit class BooleanExt(val x: Boolean) extends AnyVal {
     def :||(err: => String): Prop = Prop(x) :| (if (x) "" else err)
@@ -188,14 +189,14 @@ object DataGenerators extends Logger {
   }
 
   def stepPlaceholderTree(prefix: String, sli: StartingLabelIndices, minSteps: Int): Gen[StepPlaceholderTree] = {
-    def go(prefix: String, level: Int, labels: List[LabelMaker], minSteps: Int): Gen[List[StepPlaceholderNode]] =
+    def go(prefix: String, level: Int, labels: List[LevelLabeler], minSteps: Int): Gen[List[StepPlaceholderNode]] =
       labels match {
         case Nil => Nil
         case labelMaker :: nextLabels =>
           numberOfSteps(minSteps, sli.startingLabelIndex(level)).flatMap(size => {
             val listOfGens = (0 to (size - 1)).toList.map(i => {
               val ind = i + sli.startingLabelIndex(level)
-              val lbl = StepLabel(prefix + labelMaker(ind).value)
+              val lbl = StepLabel(prefix + labelMaker.labelTmp(ind))
               go(lbl.value + ".", level + 1, nextLabels, 0).map(StepPlaceholderNode(lbl, _))
             })
             Gen.sequence[List, StepPlaceholderNode](listOfGens)

@@ -2,7 +2,7 @@ package shipreq.webapp.server.feature.uc.step
 
 import net.liftweb.util.Helpers.nextFuncName
 import shipreq.webapp.server.lib.Types._
-import StepLabels.LabelMakers
+import shipreq.webapp.base.util.UseCaseStepLabels
 
 /**
  * A full tree of steps.
@@ -25,8 +25,8 @@ case class StepNode(id: LocalStepId, level: Int, labelIndex: Int, children: List
 //  assert(level < LabelMakers.size, s"Level (${level}) must be less than ${LabelMakers.size}.")
 //  assert(labelIndex >= labelMaker.min, s"Label index (${labelIndex}) at level (${level}) must be ${labelMaker.min} or larger.")
 
-  @inline final def labelMaker = LabelMakers(level)
-  override final def label = labelMaker(labelIndex)
+  @inline final def labelMaker = UseCaseStepLabels.Labelers(level)
+  override final def label = StepLabel(labelMaker.labelTmp(labelIndex))
 
   // Manually specify else it will recurse forever because this is Traversable
   override def toString = s"StepNode(${id.value}, $level.$labelIndex, $children)"

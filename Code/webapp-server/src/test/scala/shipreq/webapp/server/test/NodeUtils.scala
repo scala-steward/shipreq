@@ -5,7 +5,7 @@ import scala.collection.mutable.MutableList
 import scala.collection.mutable.{ Map => MutableMap }
 import lib.Types._
 import feature.uc.step._
-import StepLabels.LabelMakers
+import shipreq.webapp.base.util.UseCaseStepLabels.Labelers
 
 /**
  * @since 06/05/2013
@@ -53,13 +53,13 @@ object NodeUtils {
       val n =
         if (indent == 0) {
           val topLevelLabel(labelPrefix, labelSuffix) = label
-          val labelIndex = LabelMakers(0)(labelSuffix)
+          val labelIndex = Labelers(0).parseTmp(labelSuffix)
           val n = StepNodeWithText(LocalStepId(idOverride.getOrElse(label)), 0, labelIndex, stepText)
           nodes += n
           n
         } else {
           val p = parents(indent - 1)
-          val labelIndex = LabelMakers(indent)(label)
+          val labelIndex = Labelers(indent).parseTmp(label)
           val n = StepNodeWithText(LocalStepId(idOverride.getOrElse(s"${p.id.value}.${label}")), indent, labelIndex, stepText)
           children(p) += n
           n

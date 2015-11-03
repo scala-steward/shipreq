@@ -1,3 +1,4 @@
+
 package shipreq.webapp.server.feature.uc
 package field
 
@@ -8,13 +9,13 @@ import shipreq.webapp.base.validation.VFailure
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.util.AppliedLens
 import change._
-import step.StepLabels.{MaxStepsPerLevel, MaxStepDepth}
 import step.{StepTree, StepNodeBuilder, StepNode}
 import step.TreeOps._
 import text.StepTextUpdater
 import Changes._
 import Lenses._
 import StepFieldConsts._
+import shipreq.webapp.base.AppConsts.{useCaseStepsMaxLength => MaxStepsPerLevel, useCaseStepsMaxDepth => MaxStepDepth}
 
 object StepFieldConsts {
   def MaxStepViolationMsg = Some(s"That would cause you to have ${MaxStepsPerLevel + 1} steps at the same level, which exceeds the maximum allowed.")
