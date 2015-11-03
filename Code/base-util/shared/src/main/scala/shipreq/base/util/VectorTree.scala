@@ -37,7 +37,23 @@ object VectorTree {
    * @param maxLength Largest number of children per parent.
    * @param maxDepth Root is depth 0, root→children is depth 1, root→children→children is depth 2, etc.
    */
-  case class Dims(maxLength: Int, maxDepth: Int)
+  case class Dims(maxLength: Int, maxDepth: Int) {
+    def +(d: Dims): Dims =
+      ++(d :: Nil)
+
+    def ++(ds: TraversableOnce[Dims]): Dims =
+      if (ds.isEmpty)
+        this
+      else {
+        var ml = maxLength
+        var md = maxDepth
+        for (d <- ds) {
+          if (d.maxLength > ml) ml = d.maxLength
+          if (d.maxDepth  > md) md = d.maxDepth
+        }
+        Dims(ml, md)
+      }
+  }
 
   implicit def dimsEquality: UnivEq[Dims] = UnivEq.derive
 
