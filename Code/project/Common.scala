@@ -120,6 +120,8 @@ object Common {
         "C"    -> "root/clean",
         "/"    -> "project root",
         "B"    -> "project base",
+        "BU"   -> "project base-util-jvm",
+        "BT"   -> "project base-test-jvm",
         "T"    -> "project taskman",
         "W"    -> "project webapp",
         "TAI"  -> "project taskman-api-impl",
