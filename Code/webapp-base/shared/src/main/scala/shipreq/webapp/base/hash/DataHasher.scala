@@ -164,10 +164,11 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashPubid                 : Hash[Pubid]             = hashCaseClass
   implicit def hashPubidT[T <: ReqTypeId]: Hash[PubidT[T]]         = hashPubid.narrow
   implicit val hashGenericReq            : Hash[GenericReq]        = hashCaseClass
+  implicit val hashGenericReqs           : Hash[GenericReqIMap]    = hashIMap
   implicit val hashUseCaseStep           : Hash[UseCaseStep]       = hashCaseClass
   implicit val hashUseCase               : Hash[UseCase]           = hashCaseClass
+  implicit val hashUseCases              : Hash[UseCaseIMap]       = hashIMap
   implicit val hashReq                   : Hash[Req]               = hashADT
-  implicit val hashRequirements          : Hash[Requirements]      = hashCaseClass
 
   implicit val hashCustomIssueType : Hash[CustomIssueType]     = hashCaseClass
   implicit val hashCustomIssueTypes: Hash[CustomIssueTypeIMap] = hashIMap
@@ -204,6 +205,7 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashIdCeilings   : Hash[IdCeilings]    = hashCaseClass
   implicit val hashProjectConfig: Hash[ProjectConfig] = hashCaseClass
 
+  implicit val hashRequirements   : Hash[Requirements]
   implicit val hashReqCodeData    : Hash[ReqCode.Data]
   implicit val hashReqCodeTrie    : Hash[ReqCode.Trie]
   implicit val hashReqCodes       : Hash[ReqCodes]
@@ -211,6 +213,8 @@ sealed abstract class DataHasher extends GenericDashHasher {
            val hashProjectContent : Hash[Project]
   implicit val hashProject        : Hash[Project]
 }
+
+// =====================================================================================================================
 
 object DataHasherV1 {
   sealed trait Target
@@ -226,6 +230,9 @@ final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHa
   import algorithm._
   import DataHasherV1._
   import HashAtoms.instances._
+
+  override implicit val hashRequirements: Hash[Requirements] = hashCaseClassExcept('useCases)
+
   implicit val hashReqCodeGroup2: Hash[OldReqCodeGroup] = hashCaseClass
   implicit val hashReqCodeTarget1: Hash[ReqTarget] = hashCaseClass
   implicit val hashReqCodeTarget2: Hash[GrpTarget] = hashCaseClass
@@ -256,9 +263,33 @@ final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHa
   implicit val hashProject        : Hash[Project]         = hashCaseClassExcept('deletionReasons)
 }
 
+// =====================================================================================================================
+
+final class DataHasherV2(protected val algorithm: Hash.Algorithm) extends DataHasher {
+  import algorithm._
+  import HashAtoms.instances._
+
+  override implicit val hashRequirements: Hash[Requirements] = hashCaseClassExcept('useCases)
+
+  implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive]    = hashCaseClass
+  implicit val hashReqCodeActiveGroup: Hash[ReqCode.ActiveGroup] = hashCaseClass
+  implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq]   = hashCaseClass
+  implicit val hashReqCodeData       : Hash[ReqCode.Data]        = hashADT
+  implicit val hashReqCodeTrie       : Hash[ReqCode.Trie]        = hashTrie
+  implicit val hashReqCodes          : Hash[ReqCodes]            = hashCaseClass
+  implicit val hashDeletionReasons   : Hash[DeletionReasons]     = hashCaseClass
+           val hashProjectContent    : Hash[Project]             = hashCaseClassExcept('config)
+  implicit val hashProject           : Hash[Project]             = hashCaseClass
+}
+
+// =====================================================================================================================
+
 final class DataHasherCurrent(protected val algorithm: Hash.Algorithm) extends DataHasher {
   import algorithm._
   import HashAtoms.instances._
+
+  override implicit val hashRequirements: Hash[Requirements] = hashCaseClass
+
   implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive]    = hashCaseClass
   implicit val hashReqCodeActiveGroup: Hash[ReqCode.ActiveGroup] = hashCaseClass
   implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq]   = hashCaseClass

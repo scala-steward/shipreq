@@ -49,6 +49,23 @@ object HashRecTest extends TestSuite {
 
   override def tests = TestSuite {
 
+    'scope {
+      def refl(s: HashScope) = HashRec.reflSubsets(hr(s)(Some(1)))
+      def nonRefl(s: HashScope) = refl(s) - s
+
+      'defaultAllSmallest {
+        val expect =
+          HashScope.all.iterator
+            .filter(s => nonRefl(s).isEmpty)
+            .toSet
+        assertSet(HashScope.defaultSet.whole, expect)
+      }
+
+      'wholeProjectCoversAll {
+        assertSet(refl(HashScope.WholeProject), HashScope.all.whole.toSet)
+      }
+    }
+
     'merge {
       def test(earlier: HashRec*)(later: HashRec*)(expect: HashRec*): Unit = {
         val a = HashRec.merge(earlier.to[ListSet], later.to[ListSet])
@@ -138,7 +155,7 @@ object HashRecTest extends TestSuite {
         test(id1, dr1, ct1)(ct3)(dr1, ct3)      // oldScheme invalidates id<n>
         test(id1, dr1     )(ct3)(dr1, ct3)      // oldScheme invalidates id<n>
       }
-
     }
+
   }
 }

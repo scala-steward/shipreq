@@ -16,7 +16,7 @@ import shipreq.webapp.base.test.SampleProject3
  */
 object HashSchemeTest extends TestSuite {
 
-  val Vector(hV1, hL) = HashScheme.all.whole
+  lazy val Vector(hV1, hV2, hL) = HashScheme.all.whole
 
   val P0 = Project.empty
   lazy val P3 = SampleProject3.project

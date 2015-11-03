@@ -63,7 +63,28 @@ object HashScheme {
            | TextFieldData
            | TagData
            | ImplicationData => Valid
-        case DeletionReasons => Invalid
+        case DeletionReasons
+           | GenericReqs
+           | PubidRegister
+           | UseCases        => Invalid
+      },
+      make(new DataHasherV2(MurmurHash3)) {
+        case WholeProject
+           | Config
+           | CfgIssueTypes
+           | CfgReqTypes
+           | CfgFields
+           | CfgTags
+           | Content
+           | DeletionReasons
+           | Reqs
+           | ReqCodes
+           | TextFieldData
+           | TagData
+           | ImplicationData => Valid
+        case GenericReqs
+           | PubidRegister
+           | UseCases        => Invalid
       },
       make(new DataHasherCurrent(MurmurHash3))(_ => Valid))
   }
@@ -74,5 +95,5 @@ object HashScheme {
   private[this] val allWhole = all.whole
 
   def unsafeGet(id: HashSchemeId): HashScheme =
-    allWhole(id.value.toInt - 97)
+    allWhole(id.value - 'a')
 }
