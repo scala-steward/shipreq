@@ -66,7 +66,9 @@ object ShipReq extends Build {
     crossProject("base-test")
       .configureBoth(Common.testModuleSettings)
       .dependsOn(baseUtil)
-      .depsForBoth(providedScope(Nyaya.gen))
+      .depsForBoth(
+        providedScope(Nyaya.gen) ++
+        testScope(Nyaya.test))
       .configureBoth(_
         // TODO Delete after upgrade to 2.11 and switch from Manifest to TypeTag
         .settings(scalacOptions in Compile ~= removeValues("-deprecation"))
