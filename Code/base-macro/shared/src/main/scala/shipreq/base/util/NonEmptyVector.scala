@@ -2,6 +2,7 @@ package shipreq.base.util
 
 import scala.collection.{AbstractIterator, GenTraversableOnce}
 import scala.collection.generic.CanBuildFrom
+import scala.collection.immutable.Range
 import scala.math.Ordering
 import scalaz._
 import scalaz.std.vector.{vectorEqual, vectorOrder}
@@ -60,6 +61,9 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
       f(a, i)
     }
   }
+
+  def indices: Range =
+    0 until length
 
   def exists(f: A => Boolean): Boolean =
     f(head) || tail.exists(f)
