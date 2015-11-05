@@ -3,11 +3,14 @@ import Keys._
 import Common.Functions._
 import Common.Values.releaseMode
 import Dependencies._
+import DependencyLib.JVM
+
+import org.scalajs.core.tools.sem._
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.cross.{CrossProject, CrossType}
 import ScalaJSPlugin.autoImport.{crossProject => _, _}
-import DependencyLib.JVM
-// import org.scalajs.core.tools.sem._
+
+import com.lihaoyi.workbench.Plugin._
 
 object ShipReqExperiments extends Build {
 
@@ -32,8 +35,12 @@ object ShipReqExperiments extends Build {
         Common.settings,
         Common.jsSettings(NeedDom),
         useMacroParadise)
+      .settings(workbenchSettings: _*)
       .settings(
         emitSourceMaps in Compile := false, // I want speed
-        scalaJSOptimizerOptions in fastOptJS ~= (_ withDisableOptimizer true))
+        scalaJSOptimizerOptions in fastOptJS ~= (_ withDisableOptimizer true),
+        bootSnippet := "exp.Main().main();",
+        refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile)
+      )
 
 }
