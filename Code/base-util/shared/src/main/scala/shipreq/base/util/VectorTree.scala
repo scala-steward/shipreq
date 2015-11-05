@@ -74,7 +74,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.0.2.a      --> 1.0.3
     * 1.3.4.b.iii  --> 1.3.4.c
     */
-  def indentDecrease(at: Location): Option[VectorTree[A]] =
+  def shiftLeft(at: Location): Option[VectorTree[A]] =
     if (at.length < 2)
       None // Root level can't be decreased
     else {
@@ -101,7 +101,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.0.2      --> 1.0.1.a
     * 1.3.4.b    --> 1.3.4.a.ii
     */
-  def indentIncrease(at: Location): Option[VectorTree[A]] =
+  def shiftRight(at: Location): Option[VectorTree[A]] =
     modifyChildren(at.init) { ps =>
       val ic = at.last
       val ip = ic - 1

@@ -354,7 +354,7 @@ object VectorTreeTest extends TestSuite {
         }
       }
 
-      "removing 1.0.1" -
+      "1.0.1" -
         test("1.0.1".toLoc,
           """
             |1.0. Step:1.0
@@ -381,7 +381,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.0.2" -
+      "1.0.2" -
         test("1.0.2".toLoc,
           """
             |1.0. Step:1.0
@@ -400,7 +400,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.0.2.a" -
+      "1.0.2.a" -
         test("1.0.2.a".toLoc,
           """
             |1.0. Step:1.0
@@ -424,7 +424,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.0.2.a.i" -
+      "1.0.2.a.i" -
         test("1.0.2.a.i".toLoc,
           """
             |1.0. Step:1.0
@@ -451,7 +451,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.0.3.a.i" -
+      "1.0.3.a.i" -
         test("1.0.3.a.i".toLoc,
           """
             |1.0. Step:1.0
@@ -478,7 +478,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.1" -
+      "1.1" -
         test("1.1".toLoc,
           """
             |1.0. Step:1.0
@@ -502,7 +502,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.1.1" -
+      "1.1.1" -
         test("1.1.1".toLoc,
           """
             |1.0. Step:1.0
@@ -529,7 +529,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.1.3" -
+      "1.1.3" -
         test("1.1.3".toLoc,
           """
             |1.0. Step:1.0
@@ -556,7 +556,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "removing 1.2" -
+      "1.2" -
         test("1.2".toLoc,
           """
             |1.0. Step:1.0
@@ -581,7 +581,7 @@ object VectorTreeTest extends TestSuite {
             |  3. Step:3
           """.stripMargin)
 
-      "removing 1.2.2" -
+      "1.2.2" -
         test("1.2.2".toLoc,
           """
             |1.0. Step:1.0
@@ -652,16 +652,16 @@ object VectorTreeTest extends TestSuite {
       $(".lvl-0 .inc").hide()
    */
 
-    "indentDecrease" - {
+    "shiftLeft" - {
       def test(loc: Location, expectedTreeTxt: String): Unit = {
         val expected = parseStepTree(expectedTreeTxt)
-        Steps.BigTree.indentDecrease(loc) match {
+        Steps.BigTree.shiftLeft(loc) match {
           case Some(actual) => assertTreeValues(actual, expected)
-          case None         => fail("indentDecrease failed")
+          case None         => fail("shiftLeft failed")
         }
       }
 
-      "decreasing 1.0.3.b" -
+      "1.0.3.b" -
         test("1.0.3.b".toLoc,
           """
             |1.0. Step:1.0
@@ -689,7 +689,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.3.a" -
+      "1.0.3.a" -
         test("1.0.3.a".toLoc,
           """
             |1.0. Step:1.0
@@ -717,7 +717,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.3.a.i" -
+      "1.0.3.a.i" -
         test("1.0.3.a.i".toLoc,
           """
             |1.0. Step:1.0
@@ -745,7 +745,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2.a" -
+      "1.0.2.a" -
         test("1.0.2.a".toLoc,
           """
             |1.0. Step:1.0
@@ -773,7 +773,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2.a.i" -
+      "1.0.2.a.i" -
         test("1.0.2.a.i".toLoc,
           """
             |1.0. Step:1.0
@@ -801,7 +801,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2.a.ii" -
+      "1.0.2.a.ii" -
         test("1.0.2.a.ii".toLoc,
           """
             |1.0. Step:1.0
@@ -829,7 +829,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2.a.iii" -
+      "1.0.2.a.iii" -
         test("1.0.2.a.iii".toLoc,
           """
             |1.0. Step:1.0
@@ -857,7 +857,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.1.2" -
+      "1.1.2" -
         test("1.1.2".toLoc,
           """
             |1.0. Step:1.0
@@ -885,7 +885,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2.b" -
+      "1.0.2.b" -
         test("1.0.2.b".toLoc,
           """
             |1.0. Step:1.0
@@ -913,7 +913,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "decreasing 1.0.2" -
+      "1.0.2" -
         test("1.0.2".toLoc,
           """
             |1.0. Step:1.0
@@ -941,18 +941,18 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-    } // indentDecrease
+    } // shiftLeft
 
-    "indentIncrease" - {
+    "shiftRight" - {
       def test(loc: Location, expectedTreeTxt: String): Unit = {
         val expected = parseStepTree(expectedTreeTxt)
-        Steps.BigTree.indentIncrease(loc) match {
+        Steps.BigTree.shiftRight(loc) match {
           case Some(actual) => assertTreeValues(actual, expected)
-          case None         => fail("indentIncrease failed")
+          case None         => fail("shiftRight failed")
         }
       }
 
-      "increasing 1.0.2" -
+      "1.0.2" -
         test("1.0.2".toLoc,
           """
             |1.0. Step:1.0
@@ -980,7 +980,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.0.3" -
+      "1.0.3" -
         test("1.0.3".toLoc,
           """
             |1.0. Step:1.0
@@ -1008,7 +1008,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.0.3.b" -
+      "1.0.3.b" -
         test("1.0.3.b".toLoc,
           """
             |1.0. Step:1.0
@@ -1036,7 +1036,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.0.4" -
+      "1.0.4" -
         test("1.0.4".toLoc,
           """
             |1.0. Step:1.0
@@ -1064,7 +1064,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.1" -
+      "1.1" -
         test("1.1".toLoc,
           """
             |1.0. Step:1.0
@@ -1092,7 +1092,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.1.2" -
+      "1.1.2" -
         test("1.1.2".toLoc,
           """
             |1.0. Step:1.0
@@ -1120,7 +1120,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-      "increasing 1.1.3" -
+      "1.1.3" -
         test("1.1.3".toLoc,
           """
             |1.0. Step:1.0
@@ -1148,7 +1148,7 @@ object VectorTreeTest extends TestSuite {
             |  2. Step:2
           """.stripMargin)
 
-    } // indentIncrease
+    } // shiftRight
 
     // =================================================================================================================
 
