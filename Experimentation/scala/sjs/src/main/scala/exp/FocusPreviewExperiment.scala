@@ -116,7 +116,7 @@ object FocusPreviewExperiment {
     }
 
     // Values here correspond to values in CSS in index.html
-    val tg = Addons.ReactCssTransitionGroup("fadeanim", enterTimeout = 110, leaveTimeout = 110, component = "div")
+//    val tg = Addons.ReactCssTransitionGroup("fadeanim", enterTimeout = 110, leaveTimeout = 110, component = "div")
 
     class Backend($: BackendScope[Props, State]) {
 
@@ -166,13 +166,10 @@ object FocusPreviewExperiment {
             val showPreview = s.focus && (s.changedSinceFocus || s.value != t)
 
             def preview =
-              if (showPreview)
-                tg(
-                  <.div(^.key := 9,
-                    <.div("Preview:"),
-                    <.div(^.backgroundColor := "#efe", SimpleParser(t))))
-              else
-                tg()
+              ReactCollapse(showPreview)(
+                <.div(^.key := 9,
+                  <.div("Preview:"),
+                  <.div(^.backgroundColor := "#efe", SimpleParser(t))))
 
             <.div(input, preview)
         }
