@@ -97,7 +97,7 @@ case class UpdateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmpty
 // =====================================================================================================================
 // Config: Fields
 
-case class RepositionField(id: FieldId, newPos: Position[FieldId]) extends ActiveEvent
+case class RepositionField(id: FieldId, newPos: RelPos[FieldId]) extends ActiveEvent
 
 case class AddStaticField(f: StaticField) extends ActiveEvent
 case class DeleteStaticField(f: StaticField) extends ActiveEvent

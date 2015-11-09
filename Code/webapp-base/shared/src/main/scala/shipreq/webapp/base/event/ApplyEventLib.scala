@@ -196,13 +196,13 @@ private[event] object ApplyEventLib {
 
   def repositionFn[A: Equal](implicit trust: Trust): (A, Option[A]) => Vector[A] => SE[Vector[A]] =
     if (trust :: Trusted)
-      (a, pos) => as => ret(Position.set(as, a, pos))
+      (a, pos) => as => ret(RelPos.set(as, a, pos))
     else
       (a, pos) => as =>
         if (!as.exists(_ ≟ a))
           fail(s"Element not found: Expected to find $a in $as.")
         else
-          ret(Position.set(as, a, pos))
+          ret(RelPos.set(as, a, pos))
 
   def updateIdCeilingFn(lens: Lens[IdCeilings, Int]): Int => SE[Unit] = {
     val l = Project.idCeilings ^|-> lens

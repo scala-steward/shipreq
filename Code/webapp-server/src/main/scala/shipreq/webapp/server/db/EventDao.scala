@@ -174,7 +174,7 @@ object EventDbCodecs {
     case StaticField.StepGraph         => "g"
   }
 
-  implicit val pickleFieldIdPosition: ReadWriter[Position[FieldId]] =
+  implicit val pickleFieldIdPosition: ReadWriter[RelPos[FieldId]] =
     addOptionWithNoneAs0(pickleFieldId)
 
   implicit val pickleTagId: ReadWriter[TagId] = pickleAdtOS[TagId] {
@@ -184,7 +184,7 @@ object EventDbCodecs {
 
   implicit val pickleApplicableTagIdNESD = pickleNESD[ApplicableTagId]
 
-  implicit val pickleTagPosition: ReadWriter[Position[TagId]] =
+  implicit val pickleTagPosition: ReadWriter[RelPos[TagId]] =
     addOptionWithNoneAs0(pickleTagId)
 
   implicit val pickleTagTreeParents: ReadWriter[TagInTree.Parents] = {

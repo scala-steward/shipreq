@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import shipreq.base.util.{UnivEq, Position => Pos}
+import shipreq.base.util.{UnivEq, RelPos => Pos}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.DeletionAction
 import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._

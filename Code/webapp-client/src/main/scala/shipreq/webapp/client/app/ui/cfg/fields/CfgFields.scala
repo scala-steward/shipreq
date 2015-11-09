@@ -317,7 +317,7 @@ private[fields] object MainTable {
     def orderIO(from: Field, to: Field): Callback = {
       val id       = from.fieldId
       val newOrder = DND.moveE(id, to.fieldId)(fieldOrder)
-      val pos      = Position.get(newOrder, id)
+      val pos      = RelPos.get(newOrder, id)
       protocol.value().updateOrderIO(id, pos)(TCB.Success.nop, TCB.Failure.nop)
     }
 
