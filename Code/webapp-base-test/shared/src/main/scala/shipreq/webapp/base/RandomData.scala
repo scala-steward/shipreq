@@ -287,18 +287,6 @@ object RandomData {
 
   type TagTreeStructure = Map[TagId, Vector[TagId]]
 
-  @tailrec
-  def preventTagTreeCycles(m: TagTreeStructure /*, i: Int = 0*/): TagTreeStructure =
-    Tag.CycleDetectors.multimap.findCycle(m) match {
-      case None     =>
-        // println(s"No cycles after $i attempts @ size ${m.keyCount}→${m.valueCount}")
-        m
-      case Some((a, b)) =>
-//        println(s"Found cycle #$i [$a→$b] in ${m.m}")
-//        preventCycles(m.del(a, b).del(b, a), i + 1) // better but slowwwwww
-        preventTagTreeCycles(m - b /*, i + 1*/)
-    }
-
   def tagTreeStructure(tags: Set[TagId]): Gen[TagTreeStructure] =
     if (tags.isEmpty)
       Gen.pure(Map.empty)
@@ -306,7 +294,7 @@ object RandomData {
       val idset = Gen.subset(tags)
       idset.map(_.toStream)
         .flatMap(ks => Gen sequence ks.map(k => idset.map(ids => (k, (ids - k).toVector))))
-        .map(s => preventTagTreeCycles(s.toMap))
+        .map(s => preventCycles(Tag.CycleDetectors.multimap)(s.toMap))
     }
 
   lazy val tagTree: Gen[TagTree] =

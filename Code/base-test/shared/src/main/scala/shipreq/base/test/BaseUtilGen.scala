@@ -1,6 +1,9 @@
 package shipreq.base.test
 
 import nyaya.gen._
+import nyaya.prop.CycleDetector
+import nyaya.util.Multimap
+import scala.annotation.tailrec
 import shipreq.base.util._
 import SizeSpec.DisableDefault._
 
@@ -56,4 +59,33 @@ object BaseUtilGen {
     )
   }
 
+  private def genDigraphUniMap[A](ga: Gen[A])(implicit ss: SizeSpec) =
+    ga.set1(ss).mapBy(ga)(ss)
+
+  def genDigraphUni[A: UnivEq](ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    genDigraphUniMap(ga)(ss).map(Multimap(_))
+
+  def genDigraphBi[A: UnivEq](ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    genDigraphUni(ga)(implicitly, ss).map(Digraph.BiDir(_))
+
+  def genDagUni[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    genDigraphUniMap(ga)(ss).map(m => Multimap(preventCycles(fix.cycleDetector)(m)))
+
+  def genDagBi[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    genDagUni(fix)(ga)(implicitly, ss).map(Digraph.BiDir(_))
+
+  def preventCycles[A, B](cd: CycleDetector[Map[A, B], A])(m: Map[A, B]): Map[A, B] = {
+    @tailrec
+    def go(m: Map[A, B] /*, i: Int = 0*/): Map[A, B] =
+      cd.findCycle(m) match {
+        case None =>
+          // println(s"No cycles after $i attempts @ size ${m.keyCount}→${m.valueCount}")
+          m
+        case Some((a, b)) =>
+          // println(s"Found cycle #$i [$a→$b] in ${m.m}")
+          // preventCycles(m.del(a, b).del(b, a), i + 1) // better but slowwwwww
+          go(m - b /*, i + 1*/)
+      }
+    go(m)
+  }
 }
