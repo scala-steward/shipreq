@@ -280,6 +280,7 @@ object ShowSrcDataImp {
 
   implicit val setTagId = set("TagId")(tagId)
   implicit val setReqId = set("ReqId")(reqId)
+  implicit val setUseCaseStepId = set("UseCaseStepId")(useCaseStepId)
 
   implicit val setReqCodeId       = set(null)(reqCodeId)
   implicit val setReqTypeMnemonic = set(null)(reqTypeMnemonic)
@@ -462,7 +463,16 @@ object ShowSrcDataImp {
     "genericReqs" @@ imapI("GenericReq")
 
   implicit val useCaseIMap: ShowSrc[UseCaseIMap] =
-    "useCases" @@ imapI("UseCase")
+    "useCaseIMap" @@ imapI("UseCase")
+
+  implicit val useCaseStepFlowUni: ShowSrc[UseCases.StepFlow.UniDir] =
+    digraphUni[UseCaseStepId]("UseCases.StepFlow")
+
+  implicit val useCaseStepFlow: ShowSrc[UseCases.StepFlow.BiDir] =
+    "useCaseStepFlow" @@ digraphBi("UseCases.StepFlow")
+
+  implicit val useCases: ShowSrc[UseCases] =
+    "useCases" @@ data((s, a) => s.cc2("UseCases", UseCases unapply a))
 
   implicit val requirements: ShowSrc[Requirements] =
     data((s, r) =>

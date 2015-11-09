@@ -67,7 +67,7 @@ object TestOptics {
     Requirements.genericReqs ^|->> IMap.traversal[GenericReqId, GenericReq] ^|-> GenericReq.title
 
   val useCasesInReqs: Traversal[Requirements, UseCase] =
-    Requirements.useCases ^|->> IMap.traversal[UseCaseId, UseCase]
+    Requirements.useCases ^|-> UseCases.imap ^|->> IMap.traversal[UseCaseId, UseCase]
 
   val useCaseStepTextsInUseCase: Traversal[UseCase, Text.UseCaseStep.OptionalText] =
     UseCase.stepsTraversal ^|->> VectorTree.traversal ^|-> UseCaseStep.title

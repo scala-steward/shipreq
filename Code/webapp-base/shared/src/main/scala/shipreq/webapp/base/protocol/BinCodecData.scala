@@ -97,17 +97,19 @@ object BinCodecData {
   implicit val pickleStaticReqType  : Pickler[StaticReqType]              = pickleADT
   implicit val pickleReqTypeId      : Pickler[ReqTypeId]                  = pickleADT
 
-  implicit val picklePubidRegister         : Pickler[PubidRegister]  = pickleCaseClass
-  implicit val picklePubid                 : Pickler[Pubid]          = pickleCaseClass
-  implicit def picklePubidT[T <: ReqTypeId]: Pickler[PubidT[T]]      = picklePubid.asInstanceOf[Pickler[PubidT[T]]]
-  implicit val pickleGenericReq            : Pickler[GenericReq]     = pickleCaseClass
-  implicit val pickleUseCaseStep           : Pickler[UseCaseStep]    = pickleCaseClass
-  implicit val pickleUseCaseSteps          : Pickler[UseCase.Steps]  = pickleVectorTree
-  implicit val pickleUseCase               : Pickler[UseCase]        = pickleCaseClass
-  implicit val pickleReq                   : Pickler[Req]            = pickleADT
-  implicit val pickleGenericReqsById       : Pickler[GenericReqIMap] = pickleIMapD
-  implicit val pickleUseCasesById          : Pickler[UseCaseIMap]    = pickleIMapD
-  implicit val pickleRequirements          : Pickler[Requirements]   = pickleCaseClass
+  implicit val picklePubidRegister         : Pickler[PubidRegister]     = pickleCaseClass
+  implicit val picklePubid                 : Pickler[Pubid]             = pickleCaseClass
+  implicit def picklePubidT[T <: ReqTypeId]: Pickler[PubidT[T ]]        = picklePubid.asInstanceOf[Pickler[PubidT[T]]]
+  implicit val pickleGenericReq            : Pickler[GenericReq]        = pickleCaseClass
+  implicit val pickleUseCaseStep           : Pickler[UseCaseStep]       = pickleCaseClass
+  implicit val pickleUseCaseSteps          : Pickler[UseCase.Steps]     = pickleVectorTree
+  implicit val pickleUseCase               : Pickler[UseCase]           = pickleCaseClass
+  implicit val pickleReq                   : Pickler[Req]               = pickleADT
+  implicit val pickleGenericReqsById       : Pickler[GenericReqIMap]    = pickleIMapD
+  implicit val pickleUseCasesById          : Pickler[UseCaseIMap]       = pickleIMapD
+  implicit val pickleUseCasesStepFlow      : Pickler[UseCases.StepFlow] = pickleCaseClass
+  implicit val pickleUseCases              : Pickler[UseCases]          = pickleCaseClass
+  implicit val pickleRequirements          : Pickler[Requirements]      = pickleCaseClass
 
   implicit val pickleCustomIssueType : Pickler[CustomIssueType]     = pickleCaseClass
   implicit val pickleCustomIssueTypes: Pickler[CustomIssueTypeIMap] = pickleIMapD

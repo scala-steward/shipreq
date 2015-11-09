@@ -16,7 +16,7 @@ object Project {
   val fields              : Lens[Project, FieldSet           ] = config ^|-> ProjectConfig.fields
   val tags                : Lens[Project, TagTree            ] = config ^|-> ProjectConfig.tags
   val genericReqs         : Lens[Project, GenericReqIMap     ] = reqs ^|-> Requirements.genericReqs
-  val useCases            : Lens[Project, UseCaseIMap        ] = reqs ^|-> Requirements.useCases
+  val useCases            : Lens[Project, UseCaseIMap        ] = reqs ^|-> Requirements.useCases ^|-> UseCases.imap
   val pubidRegister       : Lens[Project, PubidRegister      ] = reqs ^|-> Requirements.pubids
   val implicationsSrcToTgt: Lens[Project, Implications.UniDir] = implications ^<-> Implications.biToUni
   val reqCodeTrie         : Lens[Project, ReqCode.Trie       ] = reqCodes ^|-> ReqCodes.trie
@@ -70,8 +70,8 @@ final case class Project(config         : ProjectConfig,
     ("Deletion reasons",  deletionReasons.reasons.iterator.map(_.whole))                 ::
     ("ReqCodeGroups",     reqCodes.groups.iterator.map(_.title))                         ::
     ("GenericReq titles", reqs.genericReqs.valuesIterator.map(_.title))                  ::
-    ("UseCase titles",    reqs.useCases.valuesIterator.map(_.title))                     ::
-    ("UseCase steps",     reqs.useCaseStepIterator.map(_.title))                         ::
+    ("UseCase titles",    reqs.useCases.imap.valuesIterator.map(_.title))                ::
+    ("UseCase steps",     reqs.useCases.stepIterator.map(_.title))                       ::
     ("Text fields",       reqText.valuesIterator.flatMap(_.valuesIterator).map(_.whole)) ::
     Nil
 

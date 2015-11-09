@@ -181,7 +181,7 @@ object DataProp {
     def idsUnique =
       Prop.equal[T]("Req IDs are unique")(
         _.reqs.size,
-        r => r.genericReqs.size + r.useCases.size)
+        r => r.genericReqs.size + r.useCases.imap.size)
 
     def reqPubidsInRegister =
       Prop.forall((_: T).reqs.valuesIterator)(t =>
@@ -220,16 +220,21 @@ object DataProp {
           eachTree(N).contramap[UseCase](_.stepsNA).rename(N.name) ∧
           eachTree(E).contramap[UseCase](_.stepsE ).rename(E.name)
 
-        treesInUseCase.forall((_: T).useCases.valuesIterator) rename "UC trees"
+        treesInUseCase.forall((_: T).useCases.imap.valuesIterator) rename "UC trees"
       }
 
       def ids = {
         val valid  = id[UseCaseStepId].forallF[Stream]
         val unique = Prop.distinctC[Stream, UseCaseStepId]("ids")
-        (valid ∧ unique).contramap[T](_.useCaseStepIterator.map(_.id).toStream) rename "ids"
+        (valid ∧ unique).contramap[T](_.useCases.stepIterator.map(_.id).toStream) rename "ids"
       }
 
-      (ids ∧ stepTrees) rename "UC steps"
+      def flowIds =
+        Prop.whitelist[T]("flow")(
+          _.useCases.stepIterator.map(_.id).toSet,
+          _.useCases.stepFlow.memberIterator.toList)
+
+      (ids ∧ stepTrees ∧ flowIds) rename "UC steps"
     }
 
     val all = "Requirements" rename_: (

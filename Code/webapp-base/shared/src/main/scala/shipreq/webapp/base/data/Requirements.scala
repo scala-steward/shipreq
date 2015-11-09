@@ -197,18 +197,46 @@ object UseCaseStepWithCtx {
   }
 }
 
+@Lenses
+case class UseCases(imap: UseCaseIMap, stepFlow: UseCases.StepFlow) {
+
+  /**
+    * This may be used in cases where calculating [[allSteps]] will be a waste of time and memory.
+    * The penalty is that no contextual info is preserved.
+    */
+  def stepIterator: Iterator[UseCaseStep] =
+    imap.valuesIterator.flatMap(_.stepIterator)
+
+  lazy val allSteps: UseCaseStepIMap =
+    imap.valuesIterator.foldLeft(emptyDataMap(UseCaseStepWithCtx))((m, uc) =>
+      m addAllF uc.stepsWithCtx)
+}
+
+object UseCases {
+  val StepFlow = new Digraph.Fix[UseCaseStepId]
+  type StepFlow = StepFlow.BiDir
+
+  implicit lazy val equality: Equal[UseCases] =
+    UtilMacros.deriveEqual
+
+  def empty: UseCases =
+    UseCases(emptyDataMap(UseCase), StepFlow.emptyBiDir)
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Collective
 
 object Requirements {
-  def empty = Requirements(emptyDataMap(GenericReq), emptyDataMap(UseCase), PubidRegister.empty)
+  implicit lazy val equality: Equal[Requirements] =
+    UtilMacros.deriveEqual
 
-  implicit lazy val equality: Equal[Requirements] = UtilMacros.deriveEqual
+  def empty: Requirements =
+    Requirements(emptyDataMap(GenericReq), UseCases.empty, PubidRegister.empty)
 }
 
 @Lenses
 case class Requirements(genericReqs: GenericReqIMap,
-                        useCases   : UseCaseIMap,
+                        useCases   : UseCases,
                         pubids     : PubidRegister) {
 
   def isEmpty = reqs.isEmpty
@@ -217,12 +245,12 @@ case class Requirements(genericReqs: GenericReqIMap,
   lazy val reqs: IMap[ReqId, Req] =
     IMap.empty[ReqId, Req](_.id) ++
       genericReqs.valuesIterator ++
-      useCases.valuesIterator
+      useCases.imap.valuesIterator
 
   def getReq[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
     id match {
       case i: GenericReqId => genericReqs.get(i)
-      case i: UseCaseId    => useCases   .get(i)
+      case i: UseCaseId    => useCases.imap.get(i)
     }
 
   def getReqByPubid[T <: ReqTypeId](id: PubidT[T]): Option[ReqT[T]] =
@@ -240,13 +268,4 @@ case class Requirements(genericReqs: GenericReqIMap,
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
     reqs.valuesIterator.foldLeft(UnivEq.emptyMultimap[ReqTypeId, Vector, Req])((q, r) =>
       q.add(r.reqTypeId, r))
-
-  // This may be used in cases where calculating useCaseSteps will be a waste of time and memory.
-  // The penalty is that no contextual info is preserved.
-  def useCaseStepIterator: Iterator[UseCaseStep] =
-    useCases.valuesIterator.flatMap(_.stepIterator)
-
-  lazy val useCaseSteps: UseCaseStepIMap =
-    useCases.valuesIterator.foldLeft(emptyDataMap(UseCaseStepWithCtx))((m, uc) =>
-      m addAllF uc.stepsWithCtx)
 }

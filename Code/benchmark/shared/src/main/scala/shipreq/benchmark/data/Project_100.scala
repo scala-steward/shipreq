@@ -764,7 +764,7 @@ object Project_100 {
           customReqTypes,
           fieldSet,
           tagTree),
-        Requirements(reqsById, emptyDataMap(UseCase), pubidRegister),
+        Requirements(reqsById, UseCases.empty, pubidRegister),
         ReqCodes(reqCodeTrie),
         reqDataText,
         reqDataTags,

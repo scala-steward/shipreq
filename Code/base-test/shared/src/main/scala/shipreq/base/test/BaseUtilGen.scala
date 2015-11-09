@@ -129,6 +129,18 @@ object BaseUtilGen {
   def genDagBi[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
     genDagUni(fix)(ga)(implicitly, ss).map(Digraph.BiDir(_))
 
+  def genDigraphUniO[A: UnivEq](og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    og.fold(Gen pure Digraph.emptyUniDir)(genDigraphUni(_)(implicitly, ss))
+
+  def genDigraphBiO[A: UnivEq](og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    og.fold(Gen pure Digraph.emptyBiDir)(genDigraphBi(_)(implicitly, ss))
+
+  def genDagUniO[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    og.fold(Gen pure Digraph.emptyUniDir)(genDagUni(fix)(_)(implicitly, ss))
+
+  def genDagBiO[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    og.fold(Gen pure Digraph.emptyBiDir)(genDagBi(fix)(_)(implicitly, ss))
+
   def preventCycles[A, B](cd: CycleDetector[Map[A, B], A])(m: Map[A, B]): Map[A, B] = {
     @tailrec
     def go(m: Map[A, B] /*, i: Int = 0*/): Map[A, B] =
