@@ -5,9 +5,9 @@ import monocle.macros.Lenses
 import scalaz.Equal
 import scalaz.std.anyVal.intInstance
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.UtilMacros
+import shipreq.base.util.{TransitiveClosure, UtilMacros}
 import shipreq.webapp.base.text.{Atom, Text}
-import shipreq.webapp.base.util.{TransitiveClosure, ShowSize}
+import shipreq.webapp.base.util.ShowSize
 import DataImplicits._
 
 object Project {

@@ -1,9 +1,8 @@
-package shipreq.webapp.base.util
+package shipreq.base.util
 
 import scala.collection.immutable.BitSet
 import scala.reflect.ClassTag
 import scalaz.Need
-import shipreq.base.util.UnivEq
 
 object TransitiveClosure {
   def auto[A: UnivEq: ClassTag](as: TraversableOnce[A])(directChildren: A => Iterable[A], follow: A => Boolean) = {

@@ -5,7 +5,6 @@ import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.ApplyEvent.LogicVer
-import shipreq.webapp.base.util.TransitiveClosure
 import UnivEq.Implicits.univEqInt
 
 /**

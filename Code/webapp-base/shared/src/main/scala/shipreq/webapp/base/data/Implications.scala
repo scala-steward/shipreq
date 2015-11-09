@@ -3,8 +3,7 @@ package shipreq.webapp.base.data
 import nyaya.prop.CycleDetector
 import nyaya.util.Multimap
 import monocle.macros.Lenses
-import shipreq.base.util.UnivEq
-import shipreq.webapp.base.util.TransitiveClosure
+import shipreq.base.util.{TransitiveClosure, UnivEq}
 import Implications.Uni
 
 object Implications {

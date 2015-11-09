@@ -14,7 +14,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.base.text.Atom.AnyIssue
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.base.util.{TransitiveClosure, ReqCodeTreeItem}
+import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.lib.{HideDead, ShowDead, FilterDead}
 import DataImplicits._
 import MTrie.Ops

@@ -2,12 +2,12 @@ package shipreq.webapp.base.util
 
 import nyaya.prop._
 import nyaya.test.PropTest._
+import scalaz.std.stream._
+import utest._
+import shipreq.base.util.TransitiveClosure
 import shipreq.base.util.UnivEq.Implicits._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
-import utest._
-
-import scalaz.std.stream._
 
 object TransitiveClosureTest extends TestSuite {
 
