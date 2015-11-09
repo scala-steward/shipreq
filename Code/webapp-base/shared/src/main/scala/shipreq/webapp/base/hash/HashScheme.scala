@@ -36,7 +36,6 @@ object HashScheme {
    * Order is oldest to most recent.
    */
   val all: NonEmptyVector[HashScheme] = {
-
     var i = 'a'.toInt - 1
 
     def make(d: DataHasher)(scopeValidity: HashScope => Validity): HashScheme = {
@@ -50,42 +49,6 @@ object HashScheme {
 
     // APPEND-ONLY. DO NOT ALTER POSITION OF EXISTING ENTRIES.
     NonEmptyVector(
-      make(new DataHasherV1(MurmurHash3)) {
-        case WholeProject
-           | Config
-           | CfgIssueTypes
-           | CfgReqTypes
-           | CfgFields
-           | CfgTags
-           | Content
-           | Reqs
-           | ReqCodes
-           | TextFieldData
-           | TagData
-           | ImplicationData => Valid
-        case DeletionReasons
-           | GenericReqs
-           | PubidRegister
-           | UseCases        => Invalid
-      },
-      make(new DataHasherV2(MurmurHash3)) {
-        case WholeProject
-           | Config
-           | CfgIssueTypes
-           | CfgReqTypes
-           | CfgFields
-           | CfgTags
-           | Content
-           | DeletionReasons
-           | Reqs
-           | ReqCodes
-           | TextFieldData
-           | TagData
-           | ImplicationData => Valid
-        case GenericReqs
-           | PubidRegister
-           | UseCases        => Invalid
-      },
       make(new DataHasherCurrent(MurmurHash3))(_ => Valid))
   }
 
