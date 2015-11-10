@@ -536,6 +536,7 @@ object EventDbCodecs {
   implicit val dbCodecSetCustomTextField   : DbCodec[SetCustomTextField]    = dbCodecIdAnd('fid -> "f", 'value -> "t")
   implicit val dbCodecSetGenericReqTitle   : DbCodec[SetGenericReqTitle]    = dbCodec2
   implicit val dbCodecSetGenericReqType    : DbCodec[SetGenericReqType]     = dbCodec2
+  implicit val dbCodecSetUseCaseTitle      : DbCodec[SetUseCaseTitle]       = dbCodec2
   implicit val dbCodecUpdateApplicableTag  : DbCodec[UpdateApplicableTag]   = dbCodec2
   implicit val dbCodecUpdateCustomImpField : DbCodec[UpdateCustomImpField]  = dbCodec2
   implicit val dbCodecUpdateCustomIssueType: DbCodec[UpdateCustomIssueType] = dbCodec2
@@ -569,6 +570,8 @@ object EventDbCodecs {
     case _: CreateReqCodeGroup    => 240
     case _: UpdateReqCodeGroup    => 241
     case _: DeleteReqCodeGroups   => 242
+
+    case _: SetUseCaseTitle       => 250
 
     // Config
 

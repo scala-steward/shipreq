@@ -1414,6 +1414,12 @@ object RandomData {
     val genericReqTitle1 =
       genericReqTitleAtom.text1(Text.GenericReqTitle)
 
+    val useCaseTitleAtom =
+      TextGen.useCaseTitleAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId), Some(applicableTagId))
+
+    val useCaseTitle =
+      useCaseTitleAtom.text
+
     val deletionReason =
       TextGen.deletionReasonAtom(Some(reqId), Some(reqCode.id), Some(applicableTagId)).text
 
@@ -1595,6 +1601,9 @@ object RandomData {
     val setGenericReqType: Gen[SetGenericReqType] =
       Gen.apply2(SetGenericReqType)(genericReqId, customReqTypeId)
 
+    val setUseCaseTitle: Gen[SetUseCaseTitle] =
+      Gen.apply2(SetUseCaseTitle)(useCaseId, useCaseTitle)
+
     val updateApplicableTag: Gen[UpdateApplicableTag] =
       Gen.apply2(UpdateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
 
@@ -1648,6 +1657,7 @@ object RandomData {
         case _: SetCustomTextField    => setCustomTextField
         case _: SetGenericReqTitle    => setGenericReqTitle
         case _: SetGenericReqType     => setGenericReqType
+        case _: SetUseCaseTitle       => setUseCaseTitle
         case _: UpdateApplicableTag   => updateApplicableTag
         case _: UpdateCustomImpField  => updateCustomImpField
         case _: UpdateCustomIssueType => updateCustomIssueType

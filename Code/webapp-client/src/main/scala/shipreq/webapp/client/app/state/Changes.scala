@@ -44,6 +44,7 @@ case class Changes(ves: VerifiedEvents, p1: Project, p2: Project) {
       case e: PatchImplicationTgt   =>
       case e: SetGenericReqTitle    =>
       case e: SetGenericReqType     =>
+      case e: SetUseCaseTitle       =>
       case e: SetCustomTextField    =>
       case e: DeleteReqs            =>
       case e: CreateReqCodeGroup    =>

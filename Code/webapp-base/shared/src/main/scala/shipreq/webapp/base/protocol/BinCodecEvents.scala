@@ -53,6 +53,7 @@ object BinCodecEvents {
   implicit val pickleSetCustomTextField   : Pickler[SetCustomTextField]    = pickleCaseClass
   implicit val pickleSetGenericReqTitle   : Pickler[SetGenericReqTitle]    = pickleCaseClass
   implicit val pickleSetGenericReqType    : Pickler[SetGenericReqType]     = pickleCaseClass
+  implicit val pickleSetUseCaseTitle      : Pickler[SetUseCaseTitle]       = pickleCaseClass
   implicit val pickleUpdateApplicableTag  : Pickler[UpdateApplicableTag]   = pickleCaseClass
   implicit val pickleUpdateCustomImpField : Pickler[UpdateCustomImpField]  = pickleCaseClass
   implicit val pickleUpdateCustomIssueType: Pickler[UpdateCustomIssueType] = pickleCaseClass

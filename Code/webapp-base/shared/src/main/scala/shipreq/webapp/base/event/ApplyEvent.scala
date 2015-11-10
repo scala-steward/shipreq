@@ -200,6 +200,8 @@ final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with 
       case e: SetCustomTextField  => ReqEvents    applySetCustomTextField  e
       case e: DeleteReqs          => ReqEvents    applyDelete              e
 
+      case e: SetUseCaseTitle => ReqEvents applySetUseCaseTitle e
+
       case e: CreateReqCodeGroup  => ReqCodeGroupEvents applyCreate e
       case e: UpdateReqCodeGroup  => ReqCodeGroupEvents applyUpdate e
       case e: DeleteReqCodeGroups => ReqCodeGroupEvents applyDelete e

@@ -282,11 +282,13 @@ object MakeEvent { // TODO Move
     }
   }
 
-  def updateContent(cmd: UpdateContentCmd, project: Project): Result = {
-
+  def updateContent(cmd: UpdateContentCmd, project: Project): Result =
     cmd match {
       case UpdateContentCmd.SetGenericReqTitle(id, v) =>
         SetGenericReqTitle(id, v)
+
+      case UpdateContentCmd.SetUseCaseTitle(id, v) =>
+        SetUseCaseTitle(id, v)
 
       case UpdateContentCmd.PatchReqTags(id, v) =>
         eventIfNonEmpty(v)(PatchReqTags(id, _))
@@ -356,6 +358,5 @@ object MakeEvent { // TODO Move
         else
           RestoreContent(reqs, reqCodes)
     }
-  }
 
 }

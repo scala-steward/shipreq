@@ -21,8 +21,9 @@ object UpdateContentCmd {
   case class SetReqCodeGroupCode (id: ReqCodeId,    value: ReqCode.Value)   extends UpdateContentCmd
 
   case class SetReqCodeGroupTitle(id: ReqCodeId,                              value: Text.ReqCodeGroupTitle.OptionalText) extends UpdateContentCmd
-  case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle.OptionalText)   extends UpdateContentCmd
-  case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField.OptionalText)   extends UpdateContentCmd
+  case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle  .OptionalText) extends UpdateContentCmd
+  case class SetUseCaseTitle     (id: UseCaseId,                              value: Text.UseCaseTitle     .OptionalText) extends UpdateContentCmd
+  case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField  .OptionalText) extends UpdateContentCmd
 
   case class DeleteReqs         (reqs: NonEmptySet[ReqId], reqCodeGroups: Set[ReqCodeId], reason: Text.DeletionReason.OptionalText) extends UpdateContentCmd
   case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId])                                                                       extends UpdateContentCmd
@@ -38,6 +39,7 @@ object UpdateContentCmd {
   implicit val pickleSetReqCodeGroupCode : Pickler[SetReqCodeGroupCode ] = pickleCaseClass
   implicit val pickleSetReqCodeGroupTitle: Pickler[SetReqCodeGroupTitle] = pickleCaseClass
   implicit val pickleSetGenericReqTitle  : Pickler[SetGenericReqTitle  ] = pickleCaseClass
+  implicit val pickleSetUseCaseTitle     : Pickler[SetUseCaseTitle     ] = pickleCaseClass
   implicit val pickleSetCustomTextField  : Pickler[SetCustomTextField  ] = pickleCaseClass
   implicit val pickleDeleteReqs          : Pickler[DeleteReqs          ] = pickleCaseClass
   implicit val pickleDeleteReqCodeGroups : Pickler[DeleteReqCodeGroups ] = pickleCaseClass

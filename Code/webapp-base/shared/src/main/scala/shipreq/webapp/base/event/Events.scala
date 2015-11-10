@@ -6,7 +6,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.util._
 import Event.NESD
-import Text.{GenericReqTitle, CustomTextField, ReqCodeGroupTitle, DeletionReason}
+import Text._
 import Text.Equality._
 import UnivEq.Implicits._
 
@@ -150,6 +150,10 @@ object CreateGenericReqGD extends GenericData {
 }
 
 case class CreateGenericReq(id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
+case class SetGenericReqType(id: GenericReqId, value: CustomReqTypeId) extends ActiveEvent
+case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText) extends ActiveEvent
+
+case class SetUseCaseTitle(id: UseCaseId, value: UseCaseTitle.OptionalText) extends ActiveEvent
 
 /**
  * Updates a requirement's reqcodes.
@@ -170,10 +174,6 @@ case class PatchReqCodes(id     : ReqId,
 case class PatchReqTags        (id: ReqId, patch: NESD[ApplicableTagId]) extends ActiveEvent
 case class PatchImplicationSrc (id: ReqId, patch: NESD[ReqId])           extends ActiveEvent
 case class PatchImplicationTgt (id: ReqId, patch: NESD[ReqId])           extends ActiveEvent
-
-case class SetGenericReqType(id: GenericReqId, value: CustomReqTypeId) extends ActiveEvent
-
-case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText) extends ActiveEvent
 
 case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
 

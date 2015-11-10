@@ -114,6 +114,7 @@ object ApplyEventTestFns {
          | _: SetGenericReqType
          | _: SetGenericReqTitle
          | _: SetCustomTextField
+         | _: SetUseCaseTitle
          | _: UpdateReqCodeGroup
          | _: UpdateApplicableTag
          | _: UpdateTagGroup => ()

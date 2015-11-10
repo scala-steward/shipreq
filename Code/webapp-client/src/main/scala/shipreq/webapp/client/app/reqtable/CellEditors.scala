@@ -393,15 +393,25 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
     def reqTitle(reqRow: ReqRow) =
       reqRow.req match {
         case gr: GenericReq => GenericReqTitle(reqRow.sourceId, gr)
+        case uc: UseCase    => UseCaseTitle(reqRow.sourceId, uc)
       }
 
     object GenericReqTitle extends Base(RichTextEditor.GenericReqTitle) {
-      def apply(rowId: Row.ReqRowSourceId, req: GenericReq): StartEditFn =
+      def apply(rowId: Row.ReqRowSourceId, gr: GenericReq): StartEditFn =
         startEdit(
           rowId        = rowId,
           col          = Column.Title,
-          cmd          = SetGenericReqTitle(req.id, _),
-          initialValue = req.title)
+          cmd          = SetGenericReqTitle(gr.id, _),
+          initialValue = gr.title)
+    }
+
+    object UseCaseTitle extends Base(RichTextEditor.UseCaseTitle) {
+      def apply(rowId: Row.ReqRowSourceId, uc: UseCase): StartEditFn =
+        startEdit(
+          rowId        = rowId,
+          col          = Column.Title,
+          cmd          = SetUseCaseTitle(uc.id, _),
+          initialValue = uc.title)
     }
 
     object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {

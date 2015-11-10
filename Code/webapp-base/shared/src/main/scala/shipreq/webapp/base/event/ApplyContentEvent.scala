@@ -189,6 +189,10 @@ trait ApplyContentEvent {
       ensureLiveReqId(e.id) >>
       ensureLiveTextFieldId(e.fid) >>
       (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
+
+    def applySetUseCaseTitle(e: SetUseCaseTitle): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+        ucIMap.updateF(e.id, _.copy(title = e.value))
   }
 
   // ===================================================================================================================
