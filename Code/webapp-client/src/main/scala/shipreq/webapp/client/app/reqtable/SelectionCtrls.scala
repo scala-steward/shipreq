@@ -67,20 +67,21 @@ object SelectionCtrls {
         if (remaining contains id) {
           remaining -= id
           row match {
-            case r: ReqRow =>
 
-              r.live match {
-                case Live => delReqs += r.req
-                case Dead =>
-                  r.req match {
-                    case gr: GenericReq =>
-                      import GenericReq.ImplicitLiveStatus._
-                      gr.implicitLiveStatus(p.cfg.customReqTypes) match {
-                        case NoImpact      => resReqs += gr
-                        case ReqTypeIsDead => ()
-                      }
-                  }
+            case ReqRow(r, Live, _, _, _) =>
+              delReqs += r
+
+            case ReqRow(gr: GenericReq, Dead, _, _, _) =>
+              import GenericReq.ImplicitLiveStatus._
+              gr.implicitLiveStatus(p.cfg.customReqTypes) match {
+                case NoImpact      => resReqs += gr
+                case ReqTypeIsDead => ()
               }
+
+            case ReqRow(uc: UseCase, Dead, _, _, _) =>
+              uc.liveUC // Will give a compiler-error reminder if removed in place of a implicitLiveStatus() like GR
+              resReqs += uc
+
             case r: ReqCodeGroupRow =>
               r.live match {
                 case Live => delGroups += r.group
