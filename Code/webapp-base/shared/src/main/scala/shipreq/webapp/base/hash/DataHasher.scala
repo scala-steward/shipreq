@@ -150,73 +150,73 @@ sealed abstract class DataHasher extends GenericDashHasher {
 
   import HashAtoms.instances._
 
-  implicit val hashReqDataText       : Hash[ReqData.Text]        = withName("RDText", hashMap)
-  implicit val hashReqCodeNode       : Hash[ReqCode.Node]        = hashCaseClass
-  implicit val hashLiveReqCodeGroup  : Hash[LiveReqCodeGroup]    = hashCaseClass
-  implicit val hashDeadReqCodeGroup  : Hash[DeadReqCodeGroup]    = hashCaseClass
-  implicit val hashReqCodeGroup      : Hash[ReqCodeGroup]        = hashADT
-  implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive]    = hashCaseClass
+  implicit val hashReqDataText       : Hash[ReqData.Text       ] = withName("RDText", hashMap)
+  implicit val hashReqCodeNode       : Hash[ReqCode.Node       ] = hashCaseClass
+  implicit val hashLiveReqCodeGroup  : Hash[LiveReqCodeGroup   ] = hashCaseClass
+  implicit val hashDeadReqCodeGroup  : Hash[DeadReqCodeGroup   ] = hashCaseClass
+  implicit val hashReqCodeGroup      : Hash[ReqCodeGroup       ] = hashADT
+  implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive   ] = hashCaseClass
   implicit val hashReqCodeActiveGroup: Hash[ReqCode.ActiveGroup] = hashCaseClass
-  implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq]   = hashCaseClass
-  implicit val hashReqCodeData       : Hash[ReqCode.Data]        = hashADT
-  implicit val hashReqCodeTrie       : Hash[ReqCode.Trie]        = hashTrie
-  implicit val hashReqCodes          : Hash[ReqCodes]            = withName("RCs", hashCaseClass)
+  implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq  ] = hashCaseClass
+  implicit val hashReqCodeData       : Hash[ReqCode.Data       ] = hashADT
+  implicit val hashReqCodeTrie       : Hash[ReqCode.Trie       ] = hashTrie
+  implicit val hashReqCodes          : Hash[ReqCodes           ] = withName("RCs", hashCaseClass)
 
   implicit val hashStaticReqTypeUC: Hash[StaticReqType.UseCase.type] = hashConstClass("UC")
-  implicit val hashStaticReqType  : Hash[StaticReqType]              = hashADT
-  implicit val hashReqTypeId      : Hash[ReqTypeId]                  = hashADT
+  implicit val hashStaticReqType  : Hash[StaticReqType             ] = hashADT
+  implicit val hashReqTypeId      : Hash[ReqTypeId                 ] = hashADT
 
-  implicit val hashPubidRegister         : Hash[PubidRegister]     = withName("PR", hashCaseClass)
-  implicit val hashPubid                 : Hash[Pubid]             = hashCaseClass
-  implicit def hashPubidT[T <: ReqTypeId]: Hash[PubidT[T]]         = hashPubid.narrow
-  implicit val hashGenericReq            : Hash[GenericReq]        = hashCaseClass
-  implicit val hashGenericReqs           : Hash[GenericReqIMap]    = withName("GRs", hashIMap)
-  implicit val hashUseCaseStep           : Hash[UseCaseStep]       = hashCaseClass
-  implicit val hashUseCase               : Hash[UseCase]           = hashCaseClass
-  implicit val hashUseCaseIMap           : Hash[UseCaseIMap]       = withName("UCs", hashIMap)
+  implicit val hashPubidRegister         : Hash[PubidRegister    ] = withName("PR", hashCaseClass)
+  implicit val hashPubid                 : Hash[Pubid            ] = hashCaseClass
+  implicit def hashPubidT[T <: ReqTypeId]: Hash[PubidT[T]        ] = hashPubid.narrow
+  implicit val hashGenericReq            : Hash[GenericReq       ] = hashCaseClass
+  implicit val hashGenericReqs           : Hash[GenericReqIMap   ] = withName("GRs", hashIMap)
+  implicit val hashUseCaseStep           : Hash[UseCaseStep      ] = hashCaseClass
+  implicit val hashUseCase               : Hash[UseCase          ] = hashCaseClass
+  implicit val hashUseCaseIMap           : Hash[UseCaseIMap      ] = withName("UCs", hashIMap)
   implicit val hashUseCasesStepFlow      : Hash[UseCases.StepFlow] = hashCaseClass
-  implicit val hashUseCases              : Hash[UseCases]          = hashCaseClass
-  implicit val hashReq                   : Hash[Req]               = hashADT
-  implicit val hashRequirements          : Hash[Requirements]      = hashCaseClass
+  implicit val hashUseCases              : Hash[UseCases         ] = hashCaseClass
+  implicit val hashReq                   : Hash[Req              ] = hashADT
+  implicit val hashRequirements          : Hash[Requirements     ] = hashCaseClass
 
-  implicit val hashCustomIssueType : Hash[CustomIssueType]     = hashCaseClass
+  implicit val hashCustomIssueType : Hash[CustomIssueType    ] = hashCaseClass
   implicit val hashCustomIssueTypes: Hash[CustomIssueTypeIMap] = withName("CIT", hashIMap)
-  implicit val hashCustomReqType   : Hash[CustomReqType]       = hashCaseClass
-  implicit val hashCustomReqTypes  : Hash[CustomReqTypeIMap]   = withName("CRT", hashIMap)
+  implicit val hashCustomReqType   : Hash[CustomReqType      ] = hashCaseClass
+  implicit val hashCustomReqTypes  : Hash[CustomReqTypeIMap  ] = withName("CRT", hashIMap)
 
-  implicit val hashTagId        : Hash[TagId]         = hashADT
+  implicit val hashTagId        : Hash[TagId        ] = hashADT
   implicit val hashApplicableTag: Hash[ApplicableTag] = hashCaseClass
-  implicit val hashTagGroup     : Hash[TagGroup]      = hashCaseClass
-  implicit val hashTag          : Hash[Tag]           = hashADT
-  implicit val hashTagInTree    : Hash[TagInTree]     = hashCaseClass
-  implicit val hashTagTree      : Hash[TagTree]       = withName("TT", hashIMap)
+  implicit val hashTagGroup     : Hash[TagGroup     ] = hashCaseClass
+  implicit val hashTag          : Hash[Tag          ] = hashADT
+  implicit val hashTagInTree    : Hash[TagInTree    ] = hashCaseClass
+  implicit val hashTagTree      : Hash[TagTree      ] = withName("TT", hashIMap)
 
-  implicit val hashApplReqTypes     : Hash[Field.ApplicableReqTypes]           = hashISubset
-  implicit val hashCustomFieldTypeIM: Hash[CustomFieldType.Implication.type]   = hashConstClass("IM")
-  implicit val hashCustomFieldTypeTA: Hash[CustomFieldType.Tag.type]           = hashConstClass("TA")
-  implicit val hashCustomFieldTypeTX: Hash[CustomFieldType.Text.type]          = hashConstClass("TX")
-  implicit val hashStaticFieldTypeSG: Hash[StaticFieldType.StepGraph.type]     = hashConstClass("SG")
-  implicit val hashStaticFieldTypeST: Hash[StaticFieldType.StepTree.type]      = hashConstClass("ST")
-  implicit val hashCustomFieldType  : Hash[CustomFieldType]                    = hashADT
-  implicit val hashStaticFieldType  : Hash[StaticFieldType]                    = hashADT
-  implicit val hashFieldType        : Hash[FieldType]                          = hashADT
-  implicit val hashCustomFieldIM    : Hash[CustomField.Implication]            = hashCaseClass
-  implicit val hashCustomFieldTA    : Hash[CustomField.Tag]                    = hashCaseClass
-  implicit val hashCustomFieldTX    : Hash[CustomField.Text]                   = hashCaseClass
-  implicit val hashStaticFieldSG    : Hash[StaticField.StepGraph.type]         = hashConstClass("SG")
+  implicit val hashApplReqTypes     : Hash[Field.ApplicableReqTypes          ] = hashISubset
+  implicit val hashCustomFieldTypeIM: Hash[CustomFieldType.Implication.type  ] = hashConstClass("IM")
+  implicit val hashCustomFieldTypeTA: Hash[CustomFieldType.Tag.type          ] = hashConstClass("TA")
+  implicit val hashCustomFieldTypeTX: Hash[CustomFieldType.Text.type         ] = hashConstClass("TX")
+  implicit val hashStaticFieldTypeSG: Hash[StaticFieldType.StepGraph.type    ] = hashConstClass("SG")
+  implicit val hashStaticFieldTypeST: Hash[StaticFieldType.StepTree.type     ] = hashConstClass("ST")
+  implicit val hashCustomFieldType  : Hash[CustomFieldType                   ] = hashADT
+  implicit val hashStaticFieldType  : Hash[StaticFieldType                   ] = hashADT
+  implicit val hashFieldType        : Hash[FieldType                         ] = hashADT
+  implicit val hashCustomFieldIM    : Hash[CustomField.Implication           ] = hashCaseClass
+  implicit val hashCustomFieldTA    : Hash[CustomField.Tag                   ] = hashCaseClass
+  implicit val hashCustomFieldTX    : Hash[CustomField.Text                  ] = hashCaseClass
+  implicit val hashStaticFieldSG    : Hash[StaticField.StepGraph.type        ] = hashConstClass("SG")
   implicit val hashStaticFieldNS    : Hash[StaticField.NormalAltStepTree.type] = hashConstClass("NS")
   implicit val hashStaticFieldES    : Hash[StaticField.ExceptionStepTree.type] = hashConstClass("ES")
-  implicit val hashCustomField      : Hash[CustomField]                        = hashADT
-  implicit val hashStaticField      : Hash[StaticField]                        = hashADT
-  implicit val hashFieldId          : Hash[FieldId]                            = hashADT
-  implicit val hashFieldSet         : Hash[FieldSet]                           = hashCaseClass
+  implicit val hashCustomField      : Hash[CustomField                       ] = hashADT
+  implicit val hashStaticField      : Hash[StaticField                       ] = hashADT
+  implicit val hashFieldId          : Hash[FieldId                           ] = hashADT
+  implicit val hashFieldSet         : Hash[FieldSet                          ] = hashCaseClass
 
   implicit val hashDeletionReasons: Hash[DeletionReasons] = hashCaseClass
 
-  implicit val hashIdCeilings    : Hash[IdCeilings]    = hashCaseClass
+  implicit val hashIdCeilings    : Hash[IdCeilings   ] = hashCaseClass
   implicit val hashProjectConfig : Hash[ProjectConfig] = hashCaseClass
-           val hashProjectContent: Hash[Project]       = hashCaseClassExcept('config)
-  implicit val hashProject       : Hash[Project]       = hashCaseClass
+           val hashProjectContent: Hash[Project      ] = hashCaseClassExcept('config)
+  implicit val hashProject       : Hash[Project      ] = hashCaseClass
 }
 
 final class DataHasherCurrent(protected val algorithm: Hash.Algorithm) extends DataHasher
