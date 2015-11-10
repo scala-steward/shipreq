@@ -4,7 +4,6 @@ import japgolly.scalajs.react._
 import scala.annotation.tailrec
 import org.scalajs.dom._
 import shipreq.base.util.Util
-import DomPatches._
 
 object DomUtil {
 

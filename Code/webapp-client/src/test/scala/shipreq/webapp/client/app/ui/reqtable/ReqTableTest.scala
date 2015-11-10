@@ -28,7 +28,6 @@ import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.app.ui.{Style, Checkbox}
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
-import shipreq.webapp.client.test.ReactTmpExt._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.util._
 import UpdateContentCmd._

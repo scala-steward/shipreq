@@ -2,13 +2,12 @@ package shipreq.webapp.client.app.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
 import japgolly.scalajs.react.vdom.TagMod
+import org.scalajs.dom.raw.DragEffect
 import scalaz.syntax.equal._
 import shipreq.base.util.{Memo, UnivEq}
 import shipreq.webapp.client.util.DND
-import shipreq.webapp.client.util.DomPatches._
 import shipreq.webapp.client.util.DomUtil._
 import shipreq.base.util.UnivEq.Implicits._
-import tmp.ReactPatches._
 
 object DragToReorder {
 

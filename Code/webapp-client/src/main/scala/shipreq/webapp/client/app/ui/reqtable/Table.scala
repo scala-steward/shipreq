@@ -15,7 +15,6 @@ import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.TCB
 import shipreq.webapp.client.util._
 import DomUtil._
-import tmp.ReactPatches._
 
 object Table {
 
