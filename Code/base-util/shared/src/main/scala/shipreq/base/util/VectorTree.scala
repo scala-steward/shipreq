@@ -9,6 +9,16 @@ import scalaz.syntax.equal._
 import ScalaExt._
 import VectorTree._
 
+/**
+  * An ordered, rooted tree.
+  *
+  * {{{
+  * (root)
+  *   m in [0..n): (value m)
+  *     m' in [0..n'): (value m.m')
+  *       ...
+  * }}}
+  */
 final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
 
   override def getValue = None
@@ -20,15 +30,6 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
 
   def setChildren[B >: A](c: Children[B]): VectorTree[B] =
     VectorTree(c)
-
-  def foreach[U](f: (Location, A) => U): Unit =
-    locAndValueIterator(f).foreach(_ => ())
-
-  def locIterator: Iterator[Location] =
-    locAndValueIterator((l, _) => l)
-
-  def locAndValueIterator[B](f: (Location, A) => B): Iterator[B] =
-    childrenIterator(Vector.empty, f)
 
   def modifyChildren[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] = {
     def go(rem: ParentLocation, c: Children[A]): Option[Children[B]] =
@@ -51,6 +52,22 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     children.tryUpdateIndex(loc.head, go(loc.tail)) map VectorTree.apply
   }
 
+  def foreach[U](f: (Location, A) => U): Unit =
+    locAndValueIterator(f).foreach(_ => ())
+
+  def locIterator: Iterator[Location] =
+    locAndValueIterator((l, _) => l)
+
+  def locAndValueIterator[B](f: (Location, A) => B): Iterator[B] =
+    childrenIterator(Vector.empty, f)
+
+  def append[B >: A](n: Node[B]): VectorTree[B] =
+    VectorTree(children :+ n)
+
+  /**
+    * Inserts a node after an existing node in such a way that it would be at the level and position intuitively
+    * expected when viewing the [[VectorTree]] as a flat list.
+    */
   def insertAfter[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
     modifyChildren[B](at.init) { c =>
       val i = at.last
@@ -122,8 +139,8 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       )
     }
 
-  def prettyPrintIndented(fmt   : A => String = (_: A).toString,
-                          indent: String      = "  "): String =
+  def prettyPrintIndented(fmt: A => String = (_: A).toString,
+                          indent: String = "  "): String =
     Util.quickSB(sb =>
       foreach { (loc, a) =>
         if (sb.nonEmpty)
@@ -134,10 +151,10 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       }
     )
 
-  def prettyPrintLabeled(fmt   : A => String       = (_: A).toString,
-                         label : Int => IndexLabel = (_: Int) => IndexLabel.NumericFrom0,
-                         colSep: String            = "       \t",
-                         indent: String            = "  "): String =
+  def prettyPrintLabeled(fmt: A => String = (_: A).toString,
+                         label: Int => IndexLabel = (_: Int) => IndexLabel.NumericFrom0,
+                         colSep: String = "       \t",
+                         indent: String = "  "): String =
     Util.quickSB(sb =>
       foreach { (loc, a) =>
         if (sb.nonEmpty)
@@ -154,6 +171,8 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     )
 }
 
+// =====================================================================================================================
+
 trait VectorTreeLowPri {
   private def equalityForChildren[A](n: Equal[Node[A]]): Equal[Children[A]] =
     Equal.equal((a, b) => a.corresponds(b)(n.equal))
@@ -168,87 +187,46 @@ trait VectorTreeLowPri {
     equalityForChildren(equalityForNode[A]).contramap(_.children)
 }
 
-/**
- * {root}
- *   m in [0..n): {value m}
- *     m' in [0..n'): {value m.m'}
- *       ...
- */
 object VectorTree extends VectorTreeLowPri {
-  // TODO Clean this file up - it's a fucking mess.
 
-  /**
-   * Dimensions of a [[VectorTree]].
-   *
-   * @param maxLength Largest number of children per parent.
-   * @param maxDepth Root is depth 0, root→children is depth 1, root→children→children is depth 2, etc.
-   */
-  case class Dims(maxLength: Int, maxDepth: Int) {
-    def +(d: Dims): Dims =
-      ++(d :: Nil)
+  type Children[+A] = Vector[Node[A]]
 
-    def ++(ds: TraversableOnce[Dims]): Dims =
-      if (ds.isEmpty)
-        this
-      else {
-        var ml = maxLength
-        var md = maxDepth
-        for (d <- ds) {
-          if (d.maxLength > ml) ml = d.maxLength
-          if (d.maxDepth  > md) md = d.maxDepth
-        }
-        Dims(ml, md)
-      }
-  }
+  type Location = NonEmptyVector[Int]
 
-  implicit def dimsEquality: UnivEq[Dims] = UnivEq.derive
+  type ParentLocation = Vector[Int]
 
-//  class Types[A] {
-//    type Root     = VectorTree[A]
-//    type Parent   = VectorTree.Parent[A]
-//    type Children = VectorTree.Children[A]
-//    type Node     = VectorTree.Node[A]
-//    def empty: Root = VectorTree.empty
-//  }
+  def Location(head: Int, tail: Int*): Location =
+    NonEmptyVector.varargs(head, tail: _*)
+
+  @inline def noChildren: Children[Nothing] =
+    Vector.empty
+
+  val empty: VectorTree[Nothing] =
+    VectorTree(noChildren)
+
+  // ===================================================================================================================
 
   sealed abstract class Parent[+A] {
 
     val children: Children[A]
+
     def getValue: Option[A]
 
-//    def map[B](f: A => B): This[B]
-
-//    def setChildren[B >: A](c: Children[B]): This[B]
-
-//    final def modChildren[B >: A](f: Children[A] => Children[B]): This[B] =
-//      setChildren(f(children))
-
-    def dims: Dims = {
-      var maxDepth = 0
-      var maxLength = 0
-
-      def go(depth: Int, p: Parent[A]): Unit =
-        if (p.children.isEmpty) {
-
-          if (depth > maxDepth)
-            maxDepth = depth
-
-        } else {
-          val l = p.children.length
-          if (l > maxLength)
-            maxLength = l
-
-          val d2 = depth + 1
-          p.children foreach (go(d2, _))
-        }
-
-      go(0, this)
-
-      Dims(maxLength, maxDepth)
-    }
-
-    final def needAtLocation(pos: Location): A =
-      getAtLocation(pos) getOrElse sys.error(s"Node not found at position ${pos.whole mkString "."}.")
+    final def at(loc: Location): Option[Node[A]] =
+      children.getOrNull(loc.head) match {
+        case null => None
+        case first =>
+          val it = loc.tail.iterator
+          @tailrec def go(cur: Node[A]): Option[Node[A]] =
+            if (it.hasNext)
+              cur.children.getOrNull(it.next()) match {
+                case null => None
+                case next => go(next)
+              }
+            else
+              Some(cur)
+          go(first)
+      }
 
     final def getAtLocation(pos: Location): Option[A] = {
       val it = pos.iterator
@@ -266,6 +244,9 @@ object VectorTree extends VectorTreeLowPri {
       }
       go(this)
     }
+
+    final def needAtLocation(pos: Location): A =
+      getAtLocation(pos) getOrElse sys.error(s"Node not found at position ${pos.whole mkString "."}.")
 
     final def valueIterator: Iterator[A] =
       new AbstractIterator[A] {
@@ -301,12 +282,10 @@ object VectorTree extends VectorTreeLowPri {
               val n = children(index)
               val p = NonEmptyVector.end(posInit, index)
               val b = f(p, n.value)
-
               index += 1
               val i = n.childrenIterator(p.whole, f)
               if (i.hasNext)
                 queue ::= i
-
               b
 
             case qh :: qt =>
@@ -317,24 +296,32 @@ object VectorTree extends VectorTreeLowPri {
           }
       }
 
-    def at(loc: Location): Option[Node[A]] =
-      children.getOrNull(loc.head) match {
-        case null  => None
-        case first =>
-          val it = loc.tail.iterator
-          @tailrec def go(cur: Node[A]): Option[Node[A]] =
-            if (it.hasNext)
-              cur.children.getOrNull(it.next()) match {
-                case null => None
-                case next => go(next)
-              }
-            else
-              Some(cur)
-          go(first)
-      }
+    final def dims: Dims = {
+      var maxDepth = 0
+      var maxLength = 0
+
+      def go(depth: Int, p: Parent[A]): Unit =
+        if (p.children.isEmpty) {
+
+          if (depth > maxDepth)
+            maxDepth = depth
+
+        } else {
+          val l = p.children.length
+          if (l > maxLength)
+            maxLength = l
+
+          val d2 = depth + 1
+          p.children foreach (go(d2, _))
+        }
+
+      go(0, this)
+
+      Dims(maxLength, maxDepth)
+    }
   }
 
-  type Children[+A] = Vector[Node[A]]
+  // ===================================================================================================================
 
   final case class Node[+A](value: A, children: Children[A]) extends Parent[A] {
     override def getValue = Some(value)
@@ -344,24 +331,53 @@ object VectorTree extends VectorTreeLowPri {
 
     def setChildren[B >: A](c: Children[B]): Node[B] =
       Node(value, c)
-
-  //    def valuesWithLocations[B](p: Location, f: (Location, A) => B): Iterator[B] =
-//      Iterator.single(f(p, value)) ++ iterateChildren(p.whole, f)
   }
 
-  type Location = NonEmptyVector[Int]
-  type ParentLocation = Vector[Int]
+  // ===================================================================================================================
 
-  def Location(head: Int, tail: Int*): Location =
-    NonEmptyVector.varargs(head, tail: _*)
+  /**
+    * Dimensions of a [[VectorTree]].
+    *
+    * @param maxLength Largest number of children per parent.
+    * @param maxDepth Root is depth 0, root→children is depth 1, root→children→children is depth 2, etc.
+    */
+  case class Dims(maxLength: Int, maxDepth: Int) {
+    def +(d: Dims): Dims =
+      ++(d :: Nil)
 
-  @inline def noChildren: Children[Nothing] =
-    Vector.empty
+    def ++(ds: TraversableOnce[Dims]): Dims =
+      if (ds.isEmpty)
+        this
+      else {
+        var ml = maxLength
+        var md = maxDepth
+        for (d <- ds) {
+          if (d.maxLength > ml) ml = d.maxLength
+          if (d.maxDepth > md) md = d.maxDepth
+        }
+        Dims(ml, md)
+      }
+  }
 
-  val empty: VectorTree[Nothing] =
-    VectorTree(noChildren)
+  implicit def dimsEquality: UnivEq[Dims] = UnivEq.derive
 
-  implicit def univEqForNode[A: UnivEq]: UnivEq[Node[A]]       = UnivEq.derive
+  def maxDimsProp(maxLengthInclusive: Int, maxDepthInclusive: Int): Prop[VectorTree[Any]] = {
+    def checkDim(name: String, actual: Dims => Int, maxInc: Int) =
+      Prop.atom[Dims]("VectorTree max " + name, d => {
+        val a = actual(d)
+        if (a <= maxInc)
+          None
+        else
+          Some(s"$a exceeds limit of $maxInc.")
+      })
+
+    (checkDim("length", _.maxLength, maxLengthInclusive) ∧ checkDim("depth", _.maxDepth, maxDepthInclusive)).
+      contramap[VectorTree[Any]](_.dims).rename("VectorTree max dimensions")
+  }
+
+  // ===================================================================================================================
+
+  implicit def univEqForNode[A: UnivEq]: UnivEq[Node      [A]] = UnivEq.derive
   implicit def univEqForRoot[A: UnivEq]: UnivEq[VectorTree[A]] = UnivEq.derive
 
   def ptraversal[A, B]: PTraversal[VectorTree[A], VectorTree[B], A, B] =
@@ -388,18 +404,4 @@ object VectorTree extends VectorTreeLowPri {
 
   def nodeTraversal[A]: Traversal[Node[A], A] =
     nodePTraversal[A, A]
-
-  def maxDimsProp(maxLengthInclusive: Int, maxDepthInclusive: Int): Prop[VectorTree[Any]] = {
-    def checkDim(name: String, actual: Dims => Int, maxInc: Int) =
-      Prop.atom[Dims]("VectorTree max " + name, d => {
-        val a = actual(d)
-        if (a <= maxInc)
-          None
-        else
-          Some(s"$a exceeds limit of $maxInc.")
-      })
-
-    (checkDim("length", _.maxLength, maxLengthInclusive) ∧ checkDim("depth", _.maxDepth, maxDepthInclusive)).
-      contramap[VectorTree[Any]](_.dims).rename("VectorTree max dimensions")
-  }
 }

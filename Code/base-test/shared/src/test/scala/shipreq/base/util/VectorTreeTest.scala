@@ -7,7 +7,6 @@ import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.test.UseCaseStepUtils._
-import IndexLabel._
 import VectorTree.{apply => _, _}
 
 object VectorTreeTest extends TestSuite {
@@ -1162,37 +1161,6 @@ object VectorTreeTest extends TestSuite {
           """.stripMargin)
 
     } // shiftRight
-
-    // =================================================================================================================
-
-//  "mapIdsAndFullLabels()" should {
-//
-//    def oneLevel: StepTree = StepNode("X1", 0, 0) :: StepNode("X2", 0, 1) :: Nil
-//
-//    "map ids to labels" in {
-//      val map = mapIdsToFullLabels(oneLevel, "1.")
-//      map("X1").value shouldEqual "1.0"
-//      map("X2").value shouldEqual "1.1"
-//    }
-//
-//    "map children and generate full labels" in {
-//      val map = mapIdsToFullLabels(
-//        StepNode("X5", 0, 1,  // 1.E.1
-//          new StepNode("X3", 1, 1, // 1.E.1.1
-//            new StepNode("X4", 2, 1, Nil) :: Nil // 1.E.1.1.a
-//          ) ::
-//          new StepNode("X2", 1, 2, Nil) ::  // 1.E.1.2
-//          Nil
-//        ) ::
-//        StepNode("X1", 0, 2, Nil) :: // 1.E.2
-//        Nil, "1.E.")
-//      map("X5").value shouldEqual "1.E.1"
-//      map("X3").value shouldEqual "1.E.1.1"
-//      map("X4").value shouldEqual "1.E.1.1.a"
-//      map("X2").value shouldEqual "1.E.1.2"
-//      map("X1").value shouldEqual "1.E.2"
-//    }
-//  }
 
   }
 }
