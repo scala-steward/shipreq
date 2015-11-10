@@ -3,16 +3,17 @@ package shipreq.webapp.base.test
 import nyaya.util.Multimap
 import scala.collection.generic.CanBuildFrom
 import shipreq.base.util._
-import shipreq.webapp.base.data.Field.ApplicableReqTypes
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar, Text}
+import Field.ApplicableReqTypes
+import ScalaExt._
 
 trait UnsafeTypesLowPriority {
 //   implicit def autoSome[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
   implicit def autoSome[A](a: A): Option[A] = Some(a)
 }
 
-object UnsafeTypes extends UnsafeTypesLowPriority {
-  import shipreq.webapp.base.data._
+trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def autoMnemonic   (s: String) = ReqType.Mnemonic(s)
   implicit def autoHashRefKey (s: String) = HashRefKey(s)
@@ -33,6 +34,8 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoReqCodeId        (i: Int) = ReqCodeId(i)
   implicit def autoReqTypePos       (i: Int) = ReqTypePos(i)
   implicit def autoGenericReqId     (i: Int) = GenericReqId(i)
+//  implicit def autoUseCaseId        (i: Int) = UseCaseId(i)
+  implicit def autoUseCaseStepId    (i: Int) = UseCaseStepId(i)
   implicit def autoCustomFieldImpId (i: Int) = CustomField.Implication.Id(i)
   implicit def autoCustomFieldTagId (i: Int) = CustomField.Tag.Id(i)
   implicit def autoCustomFieldTxtId (i: Int) = CustomField.Text.Id(i)
@@ -45,6 +48,8 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoReqCodeIdO        (i: Int): Option[ReqCodeId]                  = Some(i)
   implicit def autoReqTypePosO       (i: Int): Option[ReqTypePos]                 = Some(i)
   implicit def autoGenericReqIdO     (i: Int): Option[GenericReqId]               = Some(i)
+//  implicit def autoUseCaseIdO        (i: Int): Option[UseCaseId]                  = Some(i)
+  implicit def autoUseCaseStepIdO    (i: Int): Option[UseCaseStepId]              = Some(i)
   implicit def autoCustomFieldImpIdO (i: Int): Option[CustomField.Implication.Id] = Some(i)
   implicit def autoCustomFieldTagIdO (i: Int): Option[CustomField.Tag.Id]         = Some(i)
   implicit def autoCustomFieldTxtIdO (i: Int): Option[CustomField.Text.Id]        = Some(i)
@@ -54,6 +59,8 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = Some(i)
   implicit def autoDeletionReasonIdO (i: Int): Option[DeletionReasonId]           = Some(i)
 
+  implicit def autoUseCaseStepIdPair(p: (Int, Int)): (UseCaseStepId, UseCaseStepId) = p.mapEach(UseCaseStepId)
+
   implicit def autoReqCodeIdS(i: Int): Set[ReqCodeId] = Set(i)
 
   implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
@@ -61,14 +68,6 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(NonEmptySet(a, as: _*))
   def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(NonEmptySet(a, as: _*))
   val allReqTypes: ApplicableReqTypes = ISubset.All()
-
-  implicit class UnsafeIntExt(val a: Int) extends AnyVal {
-    def AT = ApplicableTagId(a)
-    def TG = TagGroupId(a)
-    def CFText = CustomField.Text.Id(a)
-    def CFTag  = CustomField.Tag.Id(a)
-    def CFImp  = CustomField.Implication.Id(a)
-  }
 
   implicit def autoNevWhole[A](as: NonEmptyVector[A]): Vector[A] = as.whole
   implicit def autoNesWhole[A](as: NonEmptySet[A]): Set[A] = as.whole
@@ -102,21 +101,50 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
     else
       s
 
-  implicit def autoTextA_CustomTextField  (s: String): Text.CustomTextField  .Atom = Text.CustomTextField   Literal __checkLiteral(s)
-  implicit def autoTextA_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.Atom = Text.ReqCodeGroupTitle Literal __checkLiteral(s)
-  implicit def autoTextA_GenericReqTitle  (s: String): Text.GenericReqTitle  .Atom = Text.GenericReqTitle   Literal __checkLiteral(s)
-  implicit def autoTextA_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .Atom = Text.InlineIssueDesc   Literal __checkLiteral(s)
-  implicit def autoTextA_DeletionReason   (s: String): Text.DeletionReason   .Atom = Text.DeletionReason    Literal __checkLiteral(s)
+  implicit def autoText_CustomTextFieldA(s: String): Text.CustomTextField.Atom = Text.CustomTextField Literal __checkLiteral(s)
+  implicit def autoText_CustomTextFieldN(s: String): Text.CustomTextField.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_CustomTextFieldO(s: String): Text.CustomTextField.OptionalText = Vector1(s)
 
-  implicit def autoTextO_CustomTextField  (s: String): Text.CustomTextField  .OptionalText = Vector1(s)
-  implicit def autoTextO_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.OptionalText = Vector1(s)
-  implicit def autoTextO_GenericReqTitle  (s: String): Text.GenericReqTitle  .OptionalText = Vector1(s)
-  implicit def autoTextO_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .OptionalText = Vector1(s)
-  implicit def autoTextO_DeletionReason   (s: String): Text.DeletionReason   .OptionalText = Vector1(s)
+  implicit def autoText_DeletionReasonA(s: String): Text.DeletionReason.Atom = Text.DeletionReason Literal __checkLiteral(s)
+  implicit def autoText_DeletionReasonN(s: String): Text.DeletionReason.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_DeletionReasonO(s: String): Text.DeletionReason.OptionalText = Vector1(s)
 
-  implicit def autoTextN_CustomTextField  (s: String): Text.CustomTextField  .NonEmptyText = NonEmptyVector one s
-  implicit def autoTextN_ReqCodeGroupTitle(s: String): Text.ReqCodeGroupTitle.NonEmptyText = NonEmptyVector one s
-  implicit def autoTextN_GenericReqTitle  (s: String): Text.GenericReqTitle  .NonEmptyText = NonEmptyVector one s
-  implicit def autoTextN_InlineIssueDesc  (s: String): Text.InlineIssueDesc  .NonEmptyText = NonEmptyVector one s
-  implicit def autoTextN_DeletionReason   (s: String): Text.DeletionReason   .NonEmptyText = NonEmptyVector one s
+  implicit def autoText_GenericReqTitleA(s: String): Text.GenericReqTitle.Atom = Text.GenericReqTitle Literal __checkLiteral(s)
+  implicit def autoText_GenericReqTitleN(s: String): Text.GenericReqTitle.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_GenericReqTitleO(s: String): Text.GenericReqTitle.OptionalText = Vector1(s)
+
+  implicit def autoText_InlineIssueDescA(s: String): Text.InlineIssueDesc.Atom = Text.InlineIssueDesc Literal __checkLiteral(s)
+  implicit def autoText_InlineIssueDescN(s: String): Text.InlineIssueDesc.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_InlineIssueDescO(s: String): Text.InlineIssueDesc.OptionalText = Vector1(s)
+
+  implicit def autoText_ReqCodeGroupTitleA(s: String): Text.ReqCodeGroupTitle.Atom = Text.ReqCodeGroupTitle Literal __checkLiteral(s)
+  implicit def autoText_ReqCodeGroupTitleN(s: String): Text.ReqCodeGroupTitle.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_ReqCodeGroupTitleO(s: String): Text.ReqCodeGroupTitle.OptionalText = Vector1(s)
+
+  implicit def autoText_UseCaseTitleA(s: String): Text.UseCaseTitle.Atom = Text.UseCaseTitle Literal __checkLiteral(s)
+  implicit def autoText_UseCaseTitleN(s: String): Text.UseCaseTitle.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_UseCaseTitleO(s: String): Text.UseCaseTitle.OptionalText = Vector1(s)
+
+  implicit def autoText_UseCaseStepA(s: String): Text.UseCaseStep.Atom = Text.UseCaseStep Literal __checkLiteral(s)
+  implicit def autoText_UseCaseStepN(s: String): Text.UseCaseStep.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_UseCaseStepO(s: String): Text.UseCaseStep.OptionalText = Vector1(s)
+
+//  /** "0.0" ⇒ NonEmptyVector(0,0) */
+//  implicit def vectorTreeLocFromString(s: String): VectorTree.Location =
+//    NonEmptyVector force
+//      s.split('.').iterator
+//        .map(s => IndexLabel.NumericFrom0.parse(s).get)
+//        .toVector
+}
+
+object UnsafeTypes extends UnsafeTypesMedPriority {
+  implicit class UnsafeIntExt(val a: Int) extends AnyVal {
+    def AT = ApplicableTagId(a)
+    def TG = TagGroupId(a)
+    def CFText = CustomField.Text.Id(a)
+    def CFTag  = CustomField.Tag.Id(a)
+    def CFImp  = CustomField.Implication.Id(a)
+    def GR = GenericReqId(a)
+    def UC = UseCaseId(a)
+  }
 }

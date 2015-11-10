@@ -2,8 +2,8 @@ package shipreq.webapp.base.hash
 
 import utest._
 import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test.SampleProject3
+import shipreq.webapp.base.test._
+import WebappTestUtil._
 
 /**
  * These tests ensure the stability of [[HashScheme]]s.
@@ -20,6 +20,7 @@ object HashSchemeTest extends TestSuite {
 
   val P0 = Project.empty
   lazy val P3 = SampleProject3.project
+  lazy val P4 = SampleProject4.project
 
   def hashes(h: HashScheme, p: Project): Map[HashScope, Int] =
     HashScope.all.whole.map(s => s -> HashScope.hash(s, h.value, p)).toMap
@@ -37,7 +38,7 @@ object HashSchemeTest extends TestSuite {
 
   def assertHashes(h: HashScheme, p: Project, ts: (HashScope, Int)*): Unit = {
     def nameH = if (h eq hL) "latest" else h.toString
-    def nameP = if (p eq P0) "P0" else if (p eq P3) "P3" else p.toString
+    def nameP = if (p eq P0) "P0" else if (p eq P3) "P3" else if (p eq P4) "P4" else p.toString
     def name = s"$nameH : $nameP"
     var a = makeSet(hashes(h, p))
     var e = makeSet(ts.toMap)
@@ -86,9 +87,27 @@ object HashSchemeTest extends TestSuite {
         0x6f1d8f9b ~ ReqCodes,
         0x5ac4920c ~ Reqs,
         0x174ee061 ~ TagData,
-        0xc32727ce ~ TextFieldData, // TODO Untested: same as empty, P3 doesn't use
-        0x43b92d0f ~ UseCases,      // TODO Untested: same as empty, P3 doesn't use
+        0xc32727ce ~ TextFieldData, // Note: same as empty, P3 doesn't use
+        0x43b92d0f ~ UseCases,      // Note: same as empty, P3 doesn't use
         0x8ba09927 ~ WholeProject)
+
+      'P4 - assertHashes(hL, P4,
+        0x3e1ac0cb ~ CfgFields,
+        0x25b0e4e6 ~ CfgIssueTypes,
+        0x36b43113 ~ CfgReqTypes,
+        0x7e949e3c ~ CfgTags,
+        0x7801ef17 ~ Config,
+        0x7b08fe4b ~ Content,
+        0x17af358b ~ DeletionReasons,
+        0x8090fed8 ~ GenericReqs,
+        0x34c6056e ~ ImplicationData,
+        0x719d13b1 ~ PubidRegister,
+        0x6f1d8f9b ~ ReqCodes,
+        0xced74d4f ~ Reqs,
+        0x174ee061 ~ TagData,
+        0xcef27507 ~ TextFieldData,
+        0x08f463b3 ~ UseCases,
+        0x84b0a450 ~ WholeProject)
     }
   }
 }

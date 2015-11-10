@@ -65,14 +65,20 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def locAndValueIterator[B](f: (Location, A) => B): Iterator[B] =
     childrenIterator(Vector.empty, f)
 
-  def append[B >: A](n: Node[B]): VectorTree[B] =
+  def append[B >: A](value: B): VectorTree[B] =
+    appendN(leaf(value))
+
+  def appendN[B >: A](n: Node[B]): VectorTree[B] =
     VectorTree(children :+ n)
 
   /**
     * Inserts a node after an existing node in such a way that it would be at the level and position intuitively
     * expected when viewing the [[VectorTree]] as a flat list.
     */
-  def insertAfter[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
+  def insertAfter[B >: A](at: Location, value: B): Option[VectorTree[B]] =
+    insertAfterN(at, leaf(value))
+
+  def insertAfterN[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
     modifyChildren[B](at.init) { c =>
       val i = at.last
       if (c isIndexValid i) {
@@ -207,6 +213,12 @@ object VectorTree extends VectorTreeLowPri {
 
   val empty: VectorTree[Nothing] =
     VectorTree(noChildren)
+
+  def leaf[A](value: A): Node[A] =
+    Node(value, noChildren)
+
+  def single[A](value: A): VectorTree[A] =
+    VectorTree(Vector1(leaf(value)))
 
   // ===================================================================================================================
 

@@ -87,7 +87,7 @@ object VectorTreeTest extends TestSuite {
       n("1.1", n("1"), n("2"), n("3")),
       n("1.2", n("1"), n("2")))
 
-    val N = Node(FakeStep("N", "N"), Vector.empty)
+    val N = FakeStep("N", "N")
   }
 
   implicit class StrExt(private val str: String) extends AnyVal {

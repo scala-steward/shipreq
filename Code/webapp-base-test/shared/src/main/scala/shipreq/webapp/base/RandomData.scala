@@ -715,7 +715,7 @@ object RandomData {
         Gen { ctx =>
           val t = gt run ctx
           if (t.isEmpty)
-            VectorTree(Vector(VectorTree.Node(g run ctx, Vector.empty)))
+            VectorTree.single(g run ctx)
           else
             t
         }
