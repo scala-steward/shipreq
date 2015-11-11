@@ -165,4 +165,10 @@ object BaseUtilGen {
         Gen.lift2(genValue, children(rem - 1))(Node.apply).vector(ss)
     children(maxDepth).map(VectorTree(_))
   }
+
+  def genVectorTreeLoc(implicit ss: SizeSpec): Gen[VectorTree.Location] =
+    Gen.int.vector1(ss).map(NonEmptyVector.force)
+
+  def genVectorTreeParLoc(implicit ss: SizeSpec): Gen[VectorTree.ParentLocation] =
+    Gen.int.vector(ss)
 }

@@ -208,6 +208,9 @@ object StaticField {
   lazy val values: NonEmptyVector[StaticField] =
     UtilMacros.adtValuesManual[StaticField](NormalAltStepTree, ExceptionStepTree, StepGraph)
 
+  lazy val useCaseStepTrees: NonEmptyVector[UseCaseStepTree] =
+    UtilMacros.adtValuesManual[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)
+
   lazy val (deletable, notDeletable) =
     values.whole.partition(_.deletable :: Deletable)
 
@@ -215,6 +218,8 @@ object StaticField {
     values.toStream.map(_.name).toSet
 
   implicit def equality: UnivEq[StaticField] = UnivEq.derive
+
+  implicit def useCaseStepTreeEquality: UnivEq[UseCaseStepTree] = UnivEq.derive
 }
 
 sealed abstract class CustomFieldId extends TaggedInt with FieldId {

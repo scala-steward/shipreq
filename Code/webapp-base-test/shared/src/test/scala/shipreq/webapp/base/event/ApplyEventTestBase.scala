@@ -64,11 +64,13 @@ object ApplyEventTestFns {
     var tags             = 0
     var customFields     = 0
     var activeRCGs       = 0
-    var reqs             = 0
+    var useCases         = 0
+    var genericReqs      = 0
     var delReasons       = 0
 
     es foreach {
-      case _: CreateGenericReq      => reqs += 1
+      case _: CreateGenericReq      => genericReqs += 1
+      case _: CreateUseCase         => useCases += 1
       case _: CreateCustomIssueType => customIssueTypes += 1
       case _: CreateCustomReqType   => customReqTypes += 1
       case _: CreateCustomTextField
@@ -95,28 +97,33 @@ object ApplyEventTestFns {
       case r: RestoreContent =>
         activeRCGs += r.reqCodeGroups.size
 
-      case _: UpdateCustomIssueType
-         | _: UpdateCustomReqType
-         | _: UpdateCustomTextField
-         | _: UpdateCustomTagField
-         | _: UpdateCustomImpField
+      case _: AddStaticField
+         | _: AddUseCaseStep
+         | _: DeleteCustomField
          | _: DeleteCustomIssueType
          | _: DeleteCustomReqType
-         | _: DeleteTag
-         | _: DeleteCustomField
          | _: DeleteStaticField
-         | _: AddStaticField
-         | _: RepositionField
-         | _: PatchReqCodes
-         | _: PatchReqTags
+         | _: DeleteTag
+         | _: DeleteUseCaseStep
          | _: PatchImplicationSrc
          | _: PatchImplicationTgt
-         | _: SetGenericReqType
-         | _: SetGenericReqTitle
+         | _: PatchReqCodes
+         | _: PatchReqTags
+         | _: RepositionField
          | _: SetCustomTextField
+         | _: SetGenericReqTitle
+         | _: SetGenericReqType
+         | _: SetUseCaseStepText
          | _: SetUseCaseTitle
-         | _: UpdateReqCodeGroup
+         | _: ShiftUseCaseStepLeft
+         | _: ShiftUseCaseStepRight
          | _: UpdateApplicableTag
+         | _: UpdateCustomImpField
+         | _: UpdateCustomIssueType
+         | _: UpdateCustomReqType
+         | _: UpdateCustomTagField
+         | _: UpdateCustomTextField
+         | _: UpdateReqCodeGroup
          | _: UpdateTagGroup => ()
     }
 
@@ -125,7 +132,9 @@ object ApplyEventTestFns {
     assertEq("Σ CustomReqTypes", cfg.customReqTypes.size, customReqTypes)
     assertEq("Σ Tags", tags, cfg.tags.size)
     assertEq("Σ CustomFields", customFields, cfg.fields.customFields.size)
-    assertEq("Σ Reqs", reqs, p.reqs.reqs.size)
+    assertEq("Σ Generic Reqs", genericReqs, p.reqs.genericReqs.size)
+    assertEq("Σ Use Cases", useCases, p.reqs.useCases.imap.size)
+    assertEq("Σ Reqs", genericReqs + useCases, p.reqs.reqs.size)
     assertEq("Σ ReqCodeGroups (active)", activeRCGs, p.reqCodes.groups.count(_.live :: Live))
     assertEq("Σ DeletionReasons", delReasons, p.deletionReasons.reasons.size)
     validateIdCeilings(p)

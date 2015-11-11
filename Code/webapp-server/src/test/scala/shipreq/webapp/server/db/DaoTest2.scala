@@ -235,6 +235,14 @@ object DaoTest2 extends TestSuite {
 
         //'updateTagGroup         - demo(RandomData.events.updateTagGroup        )
 
+        //'addUseCaseStep        - demo(RandomData.events.addUseCaseStep       )
+        //'shiftUseCaseStepLeft  - demo(RandomData.events.shiftUseCaseStepLeft )
+        //'shiftUseCaseStepRight - demo(RandomData.events.shiftUseCaseStepRight)
+        //'deleteUseCaseStep     - demo(RandomData.events.deleteUseCaseStep    )
+        //'setUseCaseStepText    - demo(RandomData.events.setUseCaseStepText   )
+        //'setUseCaseTitle       - demo(RandomData.events.setUseCaseTitle      )
+        //'createUseCase         - demo(RandomData.events.createUseCase        )
+
       }
     }
   }

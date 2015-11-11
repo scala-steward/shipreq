@@ -331,14 +331,18 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
   }
 
   case class OptionalJsonObjectFieldHelper(createEmpty: Tree, isEmpty: Tree => Tree = t => q"$t.isEmpty")
-  def optionalJsonObjectFieldHelper(t: Type): OptionalJsonObjectFieldHelper = {
+  def optionalJsonObjectFieldHelper(t: Type, dealiased: Boolean = false): OptionalJsonObjectFieldHelper = {
     val s = t.toString
     if (s startsWith "Set[")
       OptionalJsonObjectFieldHelper(q"Set.empty: $t")
+    else if (s startsWith "scala.collection.immutable.Vector[")
+      OptionalJsonObjectFieldHelper(q"Vector.empty: $t")
     else if (s startsWith "nyaya.util.Multimap[")
       OptionalJsonObjectFieldHelper(q"nyaya.util.Multimap.empty: $t")
     else if (s matches "^shipreq.webapp.base.text.Text..+.OptionalText")
       OptionalJsonObjectFieldHelper(q"Vector.empty: $t")
+    else if (!dealiased)
+      optionalJsonObjectFieldHelper(t.dealias, true)
     else
       fail(s"Don't know how to handle optional JSON field of type: $s")
   }

@@ -1399,6 +1399,9 @@ object RandomData {
     val fieldId: Gen[FieldId] =
       Gen.chooseGen(staticField, customFieldId)
 
+    val useCaseStepTreeField: Gen[StaticField.UseCaseStepTree] =
+      Gen.chooseNE(StaticField.useCaseStepTrees)
+
     val customTextField =
       TextGen.customTextFieldAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId), Some(applicableTagId)).text
 
@@ -1419,6 +1422,15 @@ object RandomData {
 
     val useCaseTitle =
       useCaseTitleAtom.text
+
+    val useCaseTitle1 =
+      useCaseTitleAtom.text1(Text.UseCaseTitle)
+
+    val useCaseStepTextAtom =
+      TextGen.useCaseStepAtom(Some(reqId), Some(reqCode.id), Some(customIssueTypeId), Some(applicableTagId))
+
+    val useCaseStepText =
+      useCaseStepTextAtom.text
 
     val deletionReason =
       TextGen.deletionReasonAtom(Some(reqId), Some(reqCode.id), Some(applicableTagId)).text
@@ -1479,6 +1491,17 @@ object RandomData {
       }
     }
 
+    object createUseCaseGD extends GenericDataGen(CreateUseCaseGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Title    => useCaseTitle1         map Title   .apply
+        case ReqCodes => reqCodeIdAndValue.nes map ReqCodes.apply
+        case Tags     => applicableTagId.nes   map Tags    .apply
+        case ImpSrcs  => reqId.nes             map ImpSrcs .apply
+        case ImpTgts  => reqId.nes             map ImpTgts .apply
+      }
+    }
+
     object reqCodeGroupGD extends GenericDataGen(ReqCodeGroupGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
@@ -1508,6 +1531,9 @@ object RandomData {
         case Parents       => tagParents            map Parents      .apply
       }
     }
+
+    val addUseCaseStep: Gen[AddUseCaseStep] =
+      Gen.apply4(AddUseCaseStep)(useCaseStepId, useCaseId, useCaseStepTreeField, genVectorTreeParLoc)
 
     val addStaticField: Gen[AddStaticField] =
       staticField map AddStaticField
@@ -1545,6 +1571,9 @@ object RandomData {
     val createTagGroup: Gen[CreateTagGroup] =
       Gen.apply2(CreateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
 
+    val createUseCase: Gen[CreateUseCase] =
+      Gen.apply2(CreateUseCase)(useCaseId, createUseCaseGD.values)
+
     val deleteCustomField: Gen[DeleteCustomField] =
       Gen.apply2(DeleteCustomField)(customFieldId, deletionAction)
 
@@ -1565,6 +1594,9 @@ object RandomData {
 
     val deleteTag: Gen[DeleteTag] =
       Gen.apply2(DeleteTag)(tagId, deletionAction)
+
+    val deleteUseCaseStep: Gen[DeleteUseCaseStep] =
+      useCaseStepId map DeleteUseCaseStep
 
     val patchImplicationSrc: Gen[PatchImplicationSrc] =
       Gen.apply2(PatchImplicationSrc)(reqId, genNonEmptySetDiff(reqId))
@@ -1601,8 +1633,17 @@ object RandomData {
     val setGenericReqType: Gen[SetGenericReqType] =
       Gen.apply2(SetGenericReqType)(genericReqId, customReqTypeId)
 
+    val setUseCaseStepText: Gen[SetUseCaseStepText] =
+      Gen.apply2(SetUseCaseStepText)(useCaseStepId, useCaseStepText)
+
     val setUseCaseTitle: Gen[SetUseCaseTitle] =
       Gen.apply2(SetUseCaseTitle)(useCaseId, useCaseTitle)
+
+    val shiftUseCaseStepLeft: Gen[ShiftUseCaseStepLeft] =
+      useCaseStepId map ShiftUseCaseStepLeft
+
+    val shiftUseCaseStepRight: Gen[ShiftUseCaseStepRight] =
+      useCaseStepId map ShiftUseCaseStepRight
 
     val updateApplicableTag: Gen[UpdateApplicableTag] =
       Gen.apply2(UpdateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
@@ -1631,6 +1672,7 @@ object RandomData {
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
         case _: AddStaticField        => addStaticField
+        case _: AddUseCaseStep        => addUseCaseStep
         case _: ApplyTemplate         => applyTemplate
         case _: CreateApplicableTag   => createApplicableTag
         case _: CreateCustomImpField  => createCustomImpField
@@ -1641,6 +1683,7 @@ object RandomData {
         case _: CreateGenericReq      => createGenericReq
         case _: CreateReqCodeGroup    => createReqCodeGroup
         case _: CreateTagGroup        => createTagGroup
+        case _: CreateUseCase         => createUseCase
         case _: DeleteCustomField     => deleteCustomField
         case _: DeleteCustomIssueType => deleteCustomIssueType
         case _: DeleteCustomReqType   => deleteCustomReqType
@@ -1648,6 +1691,7 @@ object RandomData {
         case _: DeleteReqs            => deleteReqs
         case _: DeleteStaticField     => deleteStaticField
         case _: DeleteTag             => deleteTag
+        case _: DeleteUseCaseStep     => deleteUseCaseStep
         case _: PatchImplicationSrc   => patchImplicationSrc
         case _: PatchImplicationTgt   => patchImplicationTgt
         case _: PatchReqCodes         => patchReqCodes
@@ -1658,6 +1702,9 @@ object RandomData {
         case _: SetGenericReqTitle    => setGenericReqTitle
         case _: SetGenericReqType     => setGenericReqType
         case _: SetUseCaseTitle       => setUseCaseTitle
+        case _: SetUseCaseStepText    => setUseCaseStepText
+        case _: ShiftUseCaseStepLeft  => shiftUseCaseStepLeft
+        case _: ShiftUseCaseStepRight => shiftUseCaseStepRight
         case _: UpdateApplicableTag   => updateApplicableTag
         case _: UpdateCustomImpField  => updateCustomImpField
         case _: UpdateCustomIssueType => updateCustomIssueType

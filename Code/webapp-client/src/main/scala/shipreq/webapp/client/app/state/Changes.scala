@@ -35,24 +35,30 @@ case class Changes(ves: VerifiedEvents, p1: Project, p2: Project) {
       case e: DeleteCustomField     => _customFieldTypes += e.id
       case e: DeleteStaticField     => _staticFields = true
       case e: AddStaticField        => _staticFields = true
-      case e: RepositionField       =>
 
-      case e: CreateGenericReq      =>
-      case e: PatchReqCodes         =>
-      case e: PatchReqTags          =>
-      case e: PatchImplicationSrc   =>
-      case e: PatchImplicationTgt   =>
-      case e: SetGenericReqTitle    =>
-      case e: SetGenericReqType     =>
-      case e: SetUseCaseTitle       =>
-      case e: SetCustomTextField    =>
-      case e: DeleteReqs            =>
-      case e: CreateReqCodeGroup    =>
-      case e: UpdateReqCodeGroup    =>
-      case e: DeleteReqCodeGroups   =>
-      case e: RestoreContent        =>
+      case _: AddUseCaseStep
+         | _: CreateGenericReq
+         | _: CreateReqCodeGroup
+         | _: CreateUseCase
+         | _: DeleteReqCodeGroups
+         | _: DeleteReqs
+         | _: DeleteUseCaseStep
+         | _: PatchImplicationSrc
+         | _: PatchImplicationTgt
+         | _: PatchReqCodes
+         | _: PatchReqTags
+         | _: RepositionField
+         | _: RestoreContent
+         | _: SetCustomTextField
+         | _: SetGenericReqTitle
+         | _: SetGenericReqType
+         | _: SetUseCaseStepText
+         | _: SetUseCaseTitle
+         | _: ShiftUseCaseStepLeft
+         | _: ShiftUseCaseStepRight
+         | _: UpdateReqCodeGroup
 
-      case e: ApplyTemplate         => // Always event #0 only - ignore
+         | _: ApplyTemplate         => () // Always event #0 only - ignore
     }
 
   private def changed[A: Equal](f: Project => A): Boolean =

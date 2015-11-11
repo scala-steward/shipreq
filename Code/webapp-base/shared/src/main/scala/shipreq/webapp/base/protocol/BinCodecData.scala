@@ -138,6 +138,7 @@ object BinCodecData {
   implicit val pickleStaticFieldSG    : Pickler[StaticField.StepGraph.type        ] = pickleObject
   implicit val pickleStaticFieldNS    : Pickler[StaticField.NormalAltStepTree.type] = pickleObject
   implicit val pickleStaticFieldES    : Pickler[StaticField.ExceptionStepTree.type] = pickleObject
+  implicit val pickleStaticFieldUCST  : Pickler[StaticField.UseCaseStepTree       ] = pickleADT
   implicit val pickleStaticField      : Pickler[StaticField                       ] = pickleADT
   implicit val pickleCustomFieldId    : Pickler[CustomFieldId                     ] = pickleADT
   implicit val pickleCustomField      : Pickler[CustomField                       ] = pickleADT
