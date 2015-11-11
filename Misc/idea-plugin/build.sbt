@@ -1,18 +1,18 @@
 onLoad in Global := ((s: State) => { "updateIdea" :: s}) compose (onLoad in Global).value
 
 lazy val sbtIdeaExample: Project =
-  Project("sbt-idea-example", file("."))
+  Project("shipreq-idea-plugin", file("."))
     .enablePlugins(SbtIdeaPlugin)
     .settings(
-      name := "sbt-idea-example",
+      name := "shipreq-idea-plugin",
       version := "1.0",
       scalaVersion := "2.11.7",
       assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
       ideaInternalPlugins := Seq(),
-      ideaExternalPlugins := Seq(IdeaPlugin.Zip("scala-plugin", url("https://plugins.jetbrains.com/files/1347/21610/scala-intellij-bin-1.9.2.zip"))),
+      ideaExternalPlugins := Seq(IdeaPlugin.Zip("scala-plugin", url("https://plugins.jetbrains.com/files/1347/22150/scala-intellij-bin-2.0.1.zip"))),
       aggregate in updateIdea := false,
       assemblyExcludedJars in assembly <<= ideaFullJars,
-      ideaBuild := "143.116.4" //IDEA 15 public preview
+      ideaBuild := "143.381.42" //IDEA 15.0
     )
 
 lazy val ideaRunner: Project = project.in(file("ideaRunner"))
@@ -31,7 +31,7 @@ lazy val packagePlugin = TaskKey[File]("package-plugin", "Create plugin's zip fi
 packagePlugin in sbtIdeaExample <<= (assembly in sbtIdeaExample,
   target in sbtIdeaExample,
   ivyPaths) map { (ideaJar, target, paths) =>
-  val pluginName = "sbt-idea-example"
+  val pluginName = "shipreq-idea-plugin"
   val ivyLocal = paths.ivyHome.getOrElse(file(System.getProperty("user.home")) / ".ivy2") / "local"
   val sources = Seq(
     ideaJar -> s"$pluginName/lib/${ideaJar.getName}"
@@ -40,4 +40,4 @@ packagePlugin in sbtIdeaExample <<= (assembly in sbtIdeaExample,
   IO.zip(sources, out)
   out
 }
-    
+
