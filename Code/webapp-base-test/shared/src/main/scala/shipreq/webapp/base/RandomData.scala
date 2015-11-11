@@ -1572,7 +1572,7 @@ object RandomData {
       Gen.apply2(CreateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
 
     val createUseCase: Gen[CreateUseCase] =
-      Gen.apply2(CreateUseCase)(useCaseId, createUseCaseGD.values)
+      Gen.apply3(CreateUseCase)(useCaseId, useCaseStepId, createUseCaseGD.values)
 
     val deleteCustomField: Gen[DeleteCustomField] =
       Gen.apply2(DeleteCustomField)(customFieldId, deletionAction)

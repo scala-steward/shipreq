@@ -170,7 +170,10 @@ object CreateUseCaseGD extends GenericData {
   val ImpTgts  = defAttr[NonEmptySet[ReqId]]
 }
 
-case class CreateUseCase(id: UseCaseId, vs: CreateUseCaseGD.Values) extends ActiveEvent
+/**
+ * @param stepId Use cases have a mandatory root step. This guarantees the determinism of the root step ID.
+ */
+case class CreateUseCase(id: UseCaseId, stepId: UseCaseStepId, vs: CreateUseCaseGD.Values) extends ActiveEvent
 
 case class SetUseCaseTitle(id: UseCaseId, value: UseCaseTitle.OptionalText) extends ActiveEvent
 

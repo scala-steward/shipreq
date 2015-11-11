@@ -453,6 +453,7 @@ object EventDbCodecs {
 
   implicit val pickleCreateUseCaseGD = {
     implicit val x = pickleReqCodeIdAndValueNES
+    // Using "s" for stepId
     gdMPickler(CreateUseCaseGD, false) {
       case CreateUseCaseGD.Title    => "t"
       case CreateUseCaseGD.ReqCodes => "c"
@@ -555,7 +556,7 @@ object EventDbCodecs {
   implicit val dbCodecCreateGenericReq     : DbCodec[CreateGenericReq     ] = dbCodecIdGdAnd('vs, 'rt -> "T")
   implicit val dbCodecCreateReqCodeGroup   : DbCodec[CreateReqCodeGroup   ] = dbCodec2
   implicit val dbCodecCreateTagGroup       : DbCodec[CreateTagGroup       ] = dbCodec2
-  implicit val dbCodecCreateUseCase        : DbCodec[CreateUseCase        ] = dbCodec2
+  implicit val dbCodecCreateUseCase        : DbCodec[CreateUseCase        ] = dbCodecIdGdAnd('vs, 'stepId -> "s")
   implicit val dbCodecDeleteCustomField    : DbCodec[DeleteCustomField    ] = dbCodec2
   implicit val dbCodecDeleteCustomIssueType: DbCodec[DeleteCustomIssueType] = dbCodec2
   implicit val dbCodecDeleteCustomReqType  : DbCodec[DeleteCustomReqType  ] = dbCodec2
