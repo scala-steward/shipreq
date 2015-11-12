@@ -165,50 +165,42 @@ final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with 
 
   private def apply1Unsafe(event: Event): SE[Unit] =
     event match {
-      case e: CreateCustomIssueType => CustomIssueTypeEvents applyCreate e
-      case e: UpdateCustomIssueType => CustomIssueTypeEvents applyUpdate e
-      case e: DeleteCustomIssueType => CustomIssueTypeEvents applyDelete e
-
-      case e: CreateCustomReqType => CustomReqTypeEvents applyCreate e
-      case e: UpdateCustomReqType => CustomReqTypeEvents applyUpdate e
-      case e: DeleteCustomReqType => CustomReqTypeEvents applyDelete e
-
-      case e: CreateApplicableTag => ApplicableTagEvents applyCreate e
-      case e: UpdateApplicableTag => ApplicableTagEvents applyUpdate e
-      case e: CreateTagGroup      => TagGroupEvents      applyCreate e
-      case e: UpdateTagGroup      => TagGroupEvents      applyUpdate e
-      case e: DeleteTag           => TagEvents           applyDelete e
-
-      case e: CreateCustomTextField => CustomTextFieldEvents applyCreate e
-      case e: UpdateCustomTextField => CustomTextFieldEvents applyUpdate e
-      case e: CreateCustomTagField  => CustomTagFieldEvents  applyCreate e
-      case e: UpdateCustomTagField  => CustomTagFieldEvents  applyUpdate e
-      case e: CreateCustomImpField  => CustomImpFieldEvents  applyCreate e
-      case e: UpdateCustomImpField  => CustomImpFieldEvents  applyUpdate e
-      case e: DeleteCustomField     => FieldEvents           applyDeleteCF e
-      case e: DeleteStaticField     => FieldEvents           applyDeleteSF e
-      case e: AddStaticField        => FieldEvents           applyAddStaticField e
-      case e: RepositionField       => FieldEvents           applyReposition e
-
-      case e: CreateGenericReq    => ReqEvents    createGeneric            e
-      case e: PatchReqCodes       => ReqCodeLogic applyPatchReqCodes       e
-      case e: PatchReqTags        => ReqEvents    applyPatchTags           e
-      case e: PatchImplicationSrc => ReqEvents    applyPatchImplicationSrc e
-      case e: PatchImplicationTgt => ReqEvents    applyPatchImplicationTgt e
-      case e: SetGenericReqTitle  => ReqEvents    applySetGenericReqTitle  e
-      case e: SetGenericReqType   => ReqEvents    applySetGenericReqType   e
-      case e: SetCustomTextField  => ReqEvents    applySetCustomTextField  e
-      case e: DeleteReqs          => ReqEvents    applyDelete              e
-
-      case e: SetUseCaseTitle => ReqEvents applySetUseCaseTitle e
-
-      case e: CreateReqCodeGroup  => ReqCodeGroupEvents applyCreate e
-      case e: UpdateReqCodeGroup  => ReqCodeGroupEvents applyUpdate e
-      case e: DeleteReqCodeGroups => ReqCodeGroupEvents applyDelete e
-
-      case e: RestoreContent => applyRestoreContent(e)
-
-      case e: ApplyTemplate => safely(applyAllUnsafe(e.t.events))
+      case e: CreateCustomIssueType => CustomIssueTypeEvents  applyCreate              e
+      case e: UpdateCustomIssueType => CustomIssueTypeEvents  applyUpdate              e
+      case e: DeleteCustomIssueType => CustomIssueTypeEvents  applyDelete              e
+      case e: CreateCustomReqType   => CustomReqTypeEvents    applyCreate              e
+      case e: UpdateCustomReqType   => CustomReqTypeEvents    applyUpdate              e
+      case e: DeleteCustomReqType   => CustomReqTypeEvents    applyDelete              e
+      case e: CreateApplicableTag   => ApplicableTagEvents    applyCreate              e
+      case e: UpdateApplicableTag   => ApplicableTagEvents    applyUpdate              e
+      case e: CreateTagGroup        => TagGroupEvents         applyCreate              e
+      case e: UpdateTagGroup        => TagGroupEvents         applyUpdate              e
+      case e: DeleteTag             => TagEvents              applyDelete              e
+      case e: CreateCustomTextField => CustomTextFieldEvents  applyCreate              e
+      case e: UpdateCustomTextField => CustomTextFieldEvents  applyUpdate              e
+      case e: CreateCustomTagField  => CustomTagFieldEvents   applyCreate              e
+      case e: UpdateCustomTagField  => CustomTagFieldEvents   applyUpdate              e
+      case e: CreateCustomImpField  => CustomImpFieldEvents   applyCreate              e
+      case e: UpdateCustomImpField  => CustomImpFieldEvents   applyUpdate              e
+      case e: DeleteCustomField     => FieldEvents            applyDeleteCF            e
+      case e: DeleteStaticField     => FieldEvents            applyDeleteSF            e
+      case e: AddStaticField        => FieldEvents            applyAddStaticField      e
+      case e: RepositionField       => FieldEvents            applyReposition          e
+      case e: PatchReqTags          => ContentCommon          applyPatchTags           e
+      case e: PatchImplicationSrc   => ContentCommon          applyPatchImplicationSrc e
+      case e: PatchImplicationTgt   => ContentCommon          applyPatchImplicationTgt e
+      case e: SetCustomTextField    => ContentCommon          applySetCustomTextField  e
+      case e: DeleteReqs            => ContentCommon          applyDelete              e
+      case e: RestoreContent        => ContentCommon          applyRestoreContent      e
+      case e: CreateGenericReq      => GenericReqEvents       applyCreateGenericReq    e
+      case e: SetGenericReqTitle    => GenericReqEvents       applySetGenericReqTitle  e
+      case e: SetGenericReqType     => GenericReqEvents       applySetGenericReqType   e
+      case e: SetUseCaseTitle       => UseCaseEvents          applySetUseCaseTitle     e
+      case e: PatchReqCodes         => ReqCodeLogic           applyPatchReqCodes       e
+      case e: CreateReqCodeGroup    => ReqCodeGroupEvents     applyCreate              e
+      case e: UpdateReqCodeGroup    => ReqCodeGroupEvents     applyUpdate              e
+      case e: DeleteReqCodeGroups   => ReqCodeGroupEvents     applyDelete              e
+      case e: ApplyTemplate         => safely(applyAllUnsafe(e.t.events))
     }
 
   private def apply1Safe(event: Event): SE[Unit] =

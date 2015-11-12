@@ -14,12 +14,9 @@ import MTrie.Ops
 trait ApplyContentEvent {
   this: ApplyEvent =>
 
-  object ReqEvents {
-
-    // TODO Should probably merge these separate gr/uc constructs
-
-    private val grIMap = IMapStore(Project.genericReqs)
-    private val ucIMap = IMapStore(Project.useCases)
+  object ContentCommon {
+    val grIMap = IMapStore(Project.genericReqs)
+    val ucIMap = IMapStore(Project.useCases)
 
     private val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
     private val ucLiveExplicitly = LiveAccessor(UseCase.liveExplicitly)(_.id.toString)
@@ -41,52 +38,11 @@ trait ApplyContentEvent {
     def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
       SE.feed(p => ensureLive(cf live p.config)(show(cf)))
 
-    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
-      ensureLive(rt.live)(show(rt))
-
-    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
-      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
-
     def needReq[T <: ReqTypeId](reqId: ReqIdT[T]): SE[ReqT[T]] =
       reqId match {
         case id: GenericReqId => grIMap.need(id)
         case id: UseCaseId    => ucIMap.need(id)
       }
-
-    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
-      CustomReqTypeEvents.imap need id
-
-    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
-      needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
-
-    val createGeneric: CreateGenericReq => SE[Unit] = {
-      val ^ = CreateGenericReqGD
-
-      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
-        SE.foldMapRun(vs.values) {
-          case ^.ValueForTitle   (v) => SE.nop // Handled below
-          case ^.ValueForTags    (v) => Project.reqTags.modify(_.addvs(id, v.whole))
-          case ^.ValueForImpTgts (v) => Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
-          case ^.ValueForImpSrcs (v) => Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
-          case ^.ValueForReqCodes(v) => ReqCodeLogic.addAllToReq(v.whole, id, addToActive = true)
-      }
-
-      @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
-        Vector.empty
-
-      e => for {
-        rt      ← needLiveCustomReqType(e.rt)
-        reqData ← SE.get(_.reqs)
-        id      = e.id
-        title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
-        pp      = reqData.pubids.allocC(rt.id)(id)
-        req     = GenericReq(id, pp._2, title, Live)
-        reqs    ← grIMap.create(req)
-        _       ← Project.pubidRegister set pp._1
-        _       ← foreachValue(id, e.vs)
-        _       ← updateReqIdCeiling(id)
-      } yield ()
-    }
 
     private def deleteReq(id: ReqId): SE[Unit] =
       id match {
@@ -169,6 +125,67 @@ trait ApplyContentEvent {
       }
     }
 
+    def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+      ensureLiveTextFieldId(e.fid) >>
+      (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
+
+    def applyRestoreContent(e: RestoreContent): SE[Unit] =
+      for {
+        _  <- ContentCommon.restore(e.reqs)
+        t1 <- ReqCodeLogic.getTrie
+        t2 <- ReqCodeLogic.restoreBelongingToReqsT(t1, e.reqs)
+        t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.reqCodeGroups)
+        _  <- Project.reqCodeTrie set t3
+      } yield ()
+  }
+
+  // ===================================================================================================================
+
+  object GenericReqEvents {
+    import ContentCommon.{grIMap, updateReqIdCeiling, ensureLiveReqId, ensureLiveReq}
+
+    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
+      ensureLive(rt.live)(show(rt))
+
+    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
+      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
+
+    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      CustomReqTypeEvents.imap need id
+
+    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
+
+    val applyCreateGenericReq: CreateGenericReq => SE[Unit] = {
+      val ^ = CreateGenericReqGD
+
+      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
+        SE.foldMapRun(vs.values) {
+          case ^.ValueForTitle   (v) => SE.nop // Handled below
+          case ^.ValueForTags    (v) => Project.reqTags.modify(_.addvs(id, v.whole))
+          case ^.ValueForImpTgts (v) => Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
+          case ^.ValueForImpSrcs (v) => Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
+          case ^.ValueForReqCodes(v) => ReqCodeLogic.addAllToReq(v.whole, id, addToActive = true)
+      }
+
+      @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
+        Vector.empty
+
+      e => for {
+        rt      ← needLiveCustomReqType(e.rt)
+        reqData ← SE.get(_.reqs)
+        id      = e.id
+        title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
+        pp      = reqData.pubids.allocC(rt.id)(id)
+        req     = GenericReq(id, pp._2, title, Live)
+        reqs    ← grIMap.create(req)
+        _       ← Project.pubidRegister set pp._1
+        _       ← foreachValue(id, e.vs)
+        _       ← updateReqIdCeiling(id)
+      } yield ()
+    }
+
     def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
       for {
         r <- grIMap.need(e.id)
@@ -184,11 +201,12 @@ trait ApplyContentEvent {
     def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
       ensureLiveReqId(e.id) >>
         grIMap.updateF(e.id, _.copy(title = e.value))
+  }
 
-    def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
-      ensureLiveReqId(e.id) >>
-      ensureLiveTextFieldId(e.fid) >>
-      (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
+  // ===================================================================================================================
+
+  object UseCaseEvents {
+    import ContentCommon.{ucIMap, ensureLiveReqId}
 
     def applySetUseCaseTitle(e: SetUseCaseTitle): SE[Unit] =
       ensureLiveReqId(e.id) >>
@@ -196,6 +214,7 @@ trait ApplyContentEvent {
   }
 
   // ===================================================================================================================
+
   /**
    * Why the hell is all this req-code changing logic so complicated?
    *
@@ -618,17 +637,4 @@ trait ApplyContentEvent {
     def applyDelete(e: DeleteReqCodeGroups): SE[Unit] =
       getTrie >>= (inactivateGroupsByIdT(_, e.ids.whole, true)) >>= Project.reqCodeTrie.set
   }
-
-  // =====================================================================================================================
-  // Content: Shared
-
-  def applyRestoreContent(e: RestoreContent): SE[Unit] =
-    for {
-      _  <- ReqEvents.restore(e.reqs)
-      t1 <- ReqCodeLogic.getTrie
-      t2 <- ReqCodeLogic.restoreBelongingToReqsT(t1, e.reqs)
-      t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.reqCodeGroups)
-      _  <- Project.reqCodeTrie set t3
-    } yield ()
-
 }
