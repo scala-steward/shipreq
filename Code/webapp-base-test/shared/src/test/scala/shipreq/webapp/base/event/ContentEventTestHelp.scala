@@ -161,21 +161,21 @@ object ContentEventTestHelp {
       DetachedUseCase.extract(p, id),
       Some(DetachedUseCase(uc, tags, impliedBy, implies, reqCodes)))
 
-  def assertUcSteps(s: UseCase.Steps, keys: String*): Unit =
+  def assertUcSteps(s: UseCaseSteps.Tree, keys: String*): Unit =
     assertUcStepsO(None, s, keys: _*)
 
-  def assertUcSteps(name: => String, s: UseCase.Steps, keys: String*): Unit =
+  def assertUcSteps(name: => String, s: UseCaseSteps.Tree, keys: String*): Unit =
     assertUcStepsO(Some(name), s, keys: _*)
 
-  def assertUcStepsO(name: => Option[String], s: UseCase.Steps, keys: String*): Unit =
+  def assertUcStepsO(name: => Option[String], s: UseCaseSteps.Tree, keys: String*): Unit =
     assertSetO(name,
       s.locIterator.map(_.map(_.toString).mkString(".")).toSet,
       keys.toSet)
 
   def assertAllUcSteps(uc: UseCase)(nc: String*)(e: String*): Unit = {
     def prefix = "UC-" + uc.pos.value + " "
-    assertUcSteps(prefix + "NC/AC", uc.stepsNA, nc: _*)
-    assertUcSteps(prefix + "EC"   , uc.stepsE , e: _*)
+    assertUcSteps(prefix + "NC/AC", uc.stepsNA.tree, nc: _*)
+    assertUcSteps(prefix + "EC"   , uc.stepsE .tree, e: _*)
   }
 
   def assertBadIdsRejected(f: Int => ActiveEvent)(implicit ie: InitialEvents): Unit =

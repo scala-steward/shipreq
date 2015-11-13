@@ -1,6 +1,6 @@
 package shipreq.webapp.base.data
 
-import monocle.Traversal
+import monocle.{Iso, Traversal}
 import nyaya.util.Multimap
 import monocle.macros.Lenses
 import scalaz.Equal
@@ -116,8 +116,8 @@ final case class UseCaseId(value: Int) extends ReqIdT[StaticReqType.UseCase]
 final case class UseCase(id            : UseCaseId,
                          pos           : ReqTypePos,
                          title         : Text.UseCaseTitle.OptionalText,
-                         stepsNA       : UseCase.Steps,
-                         stepsE        : UseCase.Steps,
+                         stepsNA       : UseCaseSteps,
+                         stepsE        : UseCaseSteps,
                          liveExplicitly: Live) extends ReqT[StaticReqType.UseCase] {
 
   override val pubid: PubidT[StaticReqType.UseCase] =
@@ -133,22 +133,14 @@ final case class UseCase(id            : UseCaseId,
   override def live(customReqTypes: CustomReqTypeIMap): Live =
     liveUC
 
-  def steps(f: StaticField.UseCaseStepTree): UseCase.Steps =
+  def steps(f: StaticField.UseCaseStepTree): UseCaseSteps =
     f match {
       case StaticField.NormalAltStepTree => stepsNA
       case StaticField.ExceptionStepTree => stepsE
     }
 
-  val stepsWithCtx: Stream[UseCaseStepWithCtx] = {
-    def go(field: StaticField.UseCaseStepTree, tree: UseCase.Steps) =
-      tree.locAndValueIterator(UseCaseStepWithCtx(this, field, _, _))
-
-    go(StaticField.NormalAltStepTree, stepsNA).toStream append
-      go(StaticField.ExceptionStepTree, stepsE)
-  }
-
   def stepIterator: Iterator[UseCaseStep] =
-    stepsNA.valueIterator ++ stepsE.valueIterator
+    stepsNA.tree.valueIterator ++ stepsE.tree.valueIterator
 }
 
 object UseCase {
@@ -157,22 +149,13 @@ object UseCase {
     override val unapplyData: AnyRef => Option[UseCase] = {case r: UseCase => Some(r); case _ => None}
   }
 
-  type Steps = VectorTree[UseCaseStep]
-
   val stepsTraversal =
-    Traversal.apply2[UseCase, UseCase.Steps](_.stepsNA, _.stepsE)((na, e, uc) => uc.copy(stepsNA = na, stepsE = e))
-
-  @inline def emptySteps: Steps =
-    VectorTree.empty
-
-  def emptyStepsWithRoot(id: UseCaseStepId): Steps =
-    VectorTree single UseCaseStep(id, Vector.empty)
+    Traversal.apply2[UseCase, UseCaseSteps](_.stepsNA, _.stepsE)((na, e, uc) => uc.copy(stepsNA = na, stepsE = e))
 
   def empty(id: UseCaseId, pos: ReqTypePos, title: Text.UseCaseTitle.OptionalText, stepId: UseCaseStepId): UseCase =
-    UseCase(id, pos, title, emptyStepsWithRoot(stepId), emptySteps, Live)
+    UseCase(id, pos, title, UseCaseSteps emptyRoot stepId, UseCaseSteps.empty, Live)
 
-  implicit def stepEquality: UnivEq[UseCaseStep] = UnivEq.derive
-  implicit def equality    : UnivEq[UseCase]     = UnivEq.derive
+  implicit def equality: UnivEq[UseCase] = UnivEq.derive
 }
 
 case class UseCaseStepId(value: Int) extends SubReqId
@@ -185,6 +168,28 @@ object UseCaseStep {
     override def id(d: UseCaseStep) = d.id
     override val unapplyData: AnyRef => Option[UseCaseStep] = {case r: UseCaseStep => Some(r); case _ => None}
   }
+  implicit def equality: UnivEq[UseCaseStep] = UnivEq.derive
+}
+
+@Lenses
+case class UseCaseSteps(tree: UseCaseSteps.Tree) {
+  lazy val withCtx: UseCaseStepWithCtx.ByStep =
+    UseCaseStepWithCtx.emptyByStep ++
+      tree.locAndValueIterator(UseCaseStepWithCtx.apply)
+}
+
+object UseCaseSteps {
+  type Tree = VectorTree[UseCaseStep]
+  implicit def equality: UnivEq[UseCaseSteps] = UnivEq.derive
+
+  val empty: UseCaseSteps =
+    UseCaseSteps(VectorTree.empty)
+
+  def emptyRoot(id: UseCaseStepId): UseCaseSteps =
+    single(UseCaseStep(id, Text.UseCaseStep.empty))
+
+  def single(s: UseCaseStep): UseCaseSteps =
+    UseCaseSteps(VectorTree single s)
 }
 
 /**
@@ -192,15 +197,11 @@ object UseCaseStep {
  *
  * Always generated; never stored.
  */
-case class UseCaseStepWithCtx(useCase: UseCase,
-                              field  : StaticField.UseCaseStepTree,
-                              loc    : VectorTree.Location,
-                              step   : UseCaseStep) {
-  @inline def useCaseId = useCase.id
-  @inline def stepId    = step.id
+case class UseCaseStepWithCtx(loc: VectorTree.Location, step: UseCaseStep) {
+  @inline def stepId = step.id
 
-  def label(mnemonicPrefix: Boolean): String =
-    field.stepLabel(useCase.pos, loc, mnemonicPrefix)
+//  def label(mnemonicPrefix: Boolean): String =
+//    field.stepLabel(useCase.pos, loc, mnemonicPrefix)
 }
 
 object UseCaseStepWithCtx {
@@ -208,24 +209,46 @@ object UseCaseStepWithCtx {
     override def id(d: UseCaseStepWithCtx) = d.stepId
     override val unapplyData: AnyRef => Option[UseCaseStepWithCtx] = {case r: UseCaseStepWithCtx => Some(r); case _ => None}
   }
+
+  type ByStep = IMap[UseCaseStepId, UseCaseStepWithCtx]
+
+  val emptyByStep: ByStep =
+    IMap.empty(_.stepId)
 }
 
+/**
+ * @param stepIndex An index of all [[UseCaseStep]]s and the static portions of their locations.
+ *                  This is calculable state which is normally never manually-managed, but is in this case due to the
+ *                  frequency of step lookup and the ease of maintaining it (only two events affect it).
+ */
 @Lenses
-case class UseCases(imap: UseCaseIMap, stepFlow: UseCases.StepFlow) {
-
-  /**
-    * This may be used in cases where calculating [[allSteps]] will be a waste of time and memory.
-    * The penalty is that no contextual info is preserved.
-    */
+case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
-
-  lazy val allSteps: UseCaseStepIMap =
-    imap.valuesIterator.foldLeft(emptyDataMap(UseCaseStepWithCtx))((m, uc) =>
-      m addAllF uc.stepsWithCtx)
 }
 
 object UseCases {
+  case class StepTreePtr(useCaseId: UseCaseId, field: StaticField.UseCaseStepTree)
+
+  implicit def equalStepTreePtr: UnivEq[StepTreePtr] = UnivEq.derive
+
+  type StepIndex = Map[UseCaseStepId, StepTreePtr]
+
+  implicit def equalStepIndex: UnivEq[StepIndex] = UnivEq.univEqMap
+
+  def emptyStepIndex: StepIndex = Map.empty
+
+  def calcStepIndex(imap: UseCaseIMap): StepIndex = {
+    var m = emptyStepIndex
+    for {
+      uc ← imap.valuesIterator
+      id = uc.id
+      f  ← StaticField.useCaseStepTrees
+      s  ← uc.steps(f).tree.valueIterator
+    } m = m.updated(s.id, StepTreePtr(id, f))
+    m
+  }
+
   val StepFlow = new Digraph.Fix[UseCaseStepId]
   type StepFlow = StepFlow.BiDir
 
@@ -233,7 +256,17 @@ object UseCases {
     UtilMacros.deriveEqual
 
   def empty: UseCases =
-    UseCases(emptyDataMap(UseCase), StepFlow.emptyBiDir)
+    UseCases(emptyDataMap(UseCase), emptyStepIndex, StepFlow.emptyBiDir)
+
+  case class Stateless(imap: UseCaseIMap, stepFlow: StepFlow) {
+    def withState: UseCases =
+      statelessIso get this
+  }
+
+  val statelessIso: Iso[Stateless, UseCases] =
+    Iso[Stateless, UseCases](
+      s => UseCases(s.imap, calcStepIndex(s.imap), s.stepFlow))(
+      u => Stateless(u.imap, u.stepFlow))
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

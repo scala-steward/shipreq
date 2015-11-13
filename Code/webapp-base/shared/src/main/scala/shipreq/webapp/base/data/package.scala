@@ -68,7 +68,6 @@ package object data {
   type TagTree             = IMap[TagId, TagInTree]
   type GenericReqIMap      = IMap[GenericReqId, GenericReq]
   type UseCaseIMap         = IMap[UseCaseId, UseCase]
-  type UseCaseStepIMap     = IMap[UseCaseStepId, UseCaseStepWithCtx]
 
   type Req   = ReqT  [ReqTypeId]
   type ReqId = ReqIdT[ReqTypeId]

@@ -217,7 +217,7 @@ object UseCaseEventTest extends TestSuite {
     'setUseCaseStepText {
       'ok {
         val p = _assertPass(emptyUC1, addStepTo1, setStepTitle4)
-        assertEq(p.reqs.useCases.allSteps.need(4).step.title, someStepText)
+        assertEq(p.reqs.useCases.imap.need(1).stepsNA.withCtx.need(4).step.title, someStepText)
       }
       'stepNotFound - assertFail("found")(setStepTitle4)
       'ucIsDead     - assertFail("dead")(emptyUC1, addStepTo1, delReq1, setStepTitle4)

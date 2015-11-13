@@ -172,10 +172,11 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashGenericReq            : Hash[GenericReq       ] = hashCaseClass
   implicit val hashGenericReqs           : Hash[GenericReqIMap   ] = withName("GRs", hashIMap)
   implicit val hashUseCaseStep           : Hash[UseCaseStep      ] = hashCaseClass
+  implicit val hashUseCaseSteps          : Hash[UseCaseSteps     ] = hashCaseClass
   implicit val hashUseCase               : Hash[UseCase          ] = hashCaseClass
   implicit val hashUseCaseIMap           : Hash[UseCaseIMap      ] = withName("UCs", hashIMap)
   implicit val hashUseCasesStepFlow      : Hash[UseCases.StepFlow] = hashCaseClass
-  implicit val hashUseCases              : Hash[UseCases         ] = hashCaseClass
+  implicit val hashUseCases              : Hash[UseCases         ] = hashCaseClassExcept('stepIndex)
   implicit val hashReq                   : Hash[Req              ] = hashADT
   implicit val hashRequirements          : Hash[Requirements     ] = hashCaseClass
 

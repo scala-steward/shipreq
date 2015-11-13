@@ -120,6 +120,8 @@ private[event] object ApplyEventLib {
   def show(v: ReqType         ): String = s"ReqType [${v.mnemonic.value}]"
   def show(v: ReqTypeId       ): String = v.foldId(r => show(r: ReqType), show)
   def show(v: CustomReqTypeId ): String = s"ReqType #${v.value}"
+  def show(v: UseCaseId       ): String = s"Use case #${v.value}"
+  def show(v: UseCaseStepId   ): String = s"Use case step #${v.value}"
 
   def set1[A](a: A): Set[A] =
     Set.empty[A] + a

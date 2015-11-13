@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
+import monocle.Iso
 import nyaya.util.{Multimap, MultiValues}
 import scalaz.{\/, -\/, \/-, \&/}
 import scalaz.Isomorphism.<=>
@@ -9,6 +10,11 @@ import BoopickleMacros._
 
 object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
   import shipreq.webapp.base.data.DataIdAux
+
+  @inline implicit class PicklerExt[A](private val p: Pickler[A]) extends AnyVal {
+    def imap[B](iso: Iso[A, B]): Pickler[B] =
+      p.xmap(iso.get)(iso.reverseGet)
+  }
 
   def pickleLazily[A](f: => Pickler[A]): Pickler[A] = {
     lazy val p = f

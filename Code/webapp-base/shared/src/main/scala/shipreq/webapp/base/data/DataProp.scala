@@ -217,16 +217,16 @@ object DataProp {
     type T = UseCases
 
     def stepIds = {
-      val valid  = id[UseCaseStepId].forallF[Stream]
-      val unique = Prop.distinctC[Stream, UseCaseStepId]("step id")
-      (valid ∧ unique).contramap[T](_.stepIterator.map(_.id).toStream) rename "step ids"
+      val valid  = id[UseCaseStepId].forallF[Set]
+      val unique = Prop.distinctC[Set, UseCaseStepId]("step id")
+      (valid ∧ unique).contramap[T](_.stepIndex.keySet) rename "step ids"
     }
 
     def stepTrees = {
       import StaticField.{NormalAltStepTree => N, ExceptionStepTree => E}
 
       def rootStepExists =
-        Prop.test[UseCase]("Root step", _.stepsNA.nonEmpty)
+        Prop.test[UseCase]("Root step", _.stepsNA.tree.nonEmpty)
 
       def eachTree(f: StaticField.UseCaseStepTree) =
         VectorTree.maxDimsProp(
@@ -234,19 +234,47 @@ object DataProp {
           maxDepthInclusive  = f.maxDepth)
 
       val treesInUseCase: Prop[UseCase] =
-        eachTree(N).contramap[UseCase](_.stepsNA).rename(N.name) ∧
-        eachTree(E).contramap[UseCase](_.stepsE ).rename(E.name) ∧
+        eachTree(N).contramap[UseCase](_.stepsNA.tree).rename(N.name) ∧
+        eachTree(E).contramap[UseCase](_.stepsE .tree).rename(E.name) ∧
         rootStepExists
 
       treesInUseCase.forall((_: T).imap.valuesIterator) rename "UC trees"
     }
 
+    def stepIndex: Prop[T] =
+      Prop.atom("Step index", ucs => {
+        var count = 0
+        var errors: Set[UseCaseStepId] = UnivEq.emptySet
+        for {
+          uc ← ucs.imap.valuesIterator
+          id = uc.id
+          f  ← StaticField.useCaseStepTrees
+          s  ← uc.steps(f).tree.valueIterator
+        } {
+          count += 1
+          ucs.stepIndex.get(s.id) match {
+            case Some(p) =>
+              if (p.useCaseId !=*id || p.field !=* f)
+                errors += s.id
+            case None =>
+              errors += s.id
+          }
+        }
+
+        if (errors.nonEmpty)
+          Some("Incorrect indexes for steps: " + errors.iterator.map(_.value).toList.sorted.mkString(","))
+        else if (count != ucs.stepIndex.size)
+          Some(s"Expected $count steps in index, found ${ucs.stepIndex.size}.")
+        else
+          None
+      })
+
     def idsInStepFlow =
       Prop.whitelist[T]("StepFlow ids")(
-        _.stepIterator.map(_.id).toSet,
+        _.stepIndex.keySet,
         _.stepFlow.memberIterator.toList)
 
-    val all = stepIds ∧ stepTrees ∧ idsInStepFlow
+    val all = stepIds ∧ stepIndex ∧ stepTrees ∧ idsInStepFlow
   }
 
   // -------------------------------------------------------------------------------------------------------------------

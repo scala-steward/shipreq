@@ -191,7 +191,7 @@ trait ApplyContentEvent {
         title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
         pp      = reqData.pubids.allocC(rt.id)(id)
         req     = GenericReq(id, pp._2, title, Live)
-        reqs    ← grIMap.create(req)
+        _       ← grIMap.create(req)
         _       ← Project.pubidRegister set pp._1
         _       ← foreachValue(id, e.vs)
         _       ← updateReqIdCeiling(id)
@@ -220,6 +220,9 @@ trait ApplyContentEvent {
   object UseCaseEvents {
     import ContentCommon.{grIMap => _, _}
 
+    def ensureStepDoesntExist(id: UseCaseStepId): SE[Unit] =
+      whenUntrusted(SE.test(!_.reqs.useCases.stepIndex.contains(id), s"${show(id)} already exists."))
+
     def applySetUseCaseTitle(e: SetUseCaseTitle): SE[Unit] =
       ensureLiveReqId(e.id) >>
         ucIMap.updateF(e.id, _.copy(title = e.value))
@@ -236,19 +239,33 @@ trait ApplyContentEvent {
           case ^.ValueForReqCodes(v) => setReqCodes  (id, v)
       }
 
+      def bulkUpdateProject(pr: PubidRegister, id: UseCaseId, stepId: UseCaseStepId): Project => Project = p => {
+        // Update step index
+        val ptr = UseCases.StepTreePtr(id, StaticField.NormalAltStepTree)
+        val si2 = p.reqs.useCases.stepIndex.updated(stepId, ptr)
+        val ucs2 = p.reqs.useCases.copy(stepIndex = si2)
+
+        // Update PR
+        val reqs2 = p.reqs.copy(useCases = ucs2, pubids = pr)
+
+        // Update ID ceilings
+        val ic = p.idCeilings
+        val ic2 = ic.copy(
+                    req         = ic.req         max id,
+                    useCaseStep = ic.useCaseStep max stepId)
+
+        p.copy(reqs = reqs2, idCeilings = ic2)
+      }
+
       e => for {
-        p       ← SE.get
+        _       <- ensureStepDoesntExist(e.stepId)
         id      = e.id
-        // TODO validate step id
         title   = ^.Title.get(e.vs).fold(Text.UseCaseTitle.empty)(_.value.whole)
-        pp      = p.reqs.pubids.allocUC(id)
+        pp      ← SE get (_.reqs.pubids allocUC id)
         uc      = UseCase.empty(id, pp._2.pos, title, e.stepId)
-        ucs     ← ucIMap.create(uc)
-        _       ← Project.pubidRegister set pp._1
+        _       ← ucIMap.create(uc)
+        _       ← SE mod bulkUpdateProject(pp._1, id, e.stepId)
         _       ← foreachValue(id, e.vs)
-        _       ← Project.idCeilings.modify(i => i.copy(
-                    req         = i.req         max id,
-                    useCaseStep = i.useCaseStep max e.stepId))
       } yield ()
     }
   }

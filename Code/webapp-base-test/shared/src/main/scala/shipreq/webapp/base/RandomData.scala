@@ -707,20 +707,22 @@ object RandomData {
   val reqId: Gen[ReqId] =
     Gen.chooseGen(genericReqId, genericReqId, useCaseId)
 
-  def useCaseSteps(g: Gen[UseCaseStep], f: StaticField.UseCaseStepTree)(implicit ss: SizeSpec): Gen[UseCase.Steps] = {
+  def useCaseSteps(g: Gen[UseCaseStep], f: StaticField.UseCaseStepTree)(implicit ss: SizeSpec): Gen[UseCaseSteps] = {
     val gt = genVectorTree(g, f.maxDepth)
-    f match {
-      case StaticField.NormalAltStepTree =>
-        // Root step is required
-        Gen { ctx =>
-          val t = gt run ctx
-          if (t.isEmpty)
-            VectorTree.single(g run ctx)
-          else
-            t
-        }
-      case _ => gt
-    }
+    val gt2 =
+      f match {
+        case StaticField.NormalAltStepTree =>
+          // Root step is required
+          Gen { ctx =>
+            val t = gt run ctx
+            if (t.isEmpty)
+              VectorTree.single(g run ctx)
+            else
+              t
+          }
+        case _ => gt
+      }
+    gt2 map UseCaseSteps.apply
   }
 
   class PubidRegisterBuilder {
@@ -820,7 +822,7 @@ object RandomData {
       val stepFlow: UseCases.StepFlow =
         genDigraphBiO(Gen.tryGenChoose(ucStepIds))(implicitly, 0 to 4) run ctx
 
-      Requirements(grs, UseCases(ucs, stepFlow), pr)
+      Requirements(grs, UseCases.Stateless(ucs, stepFlow).withState, pr)
     }
   }
 
