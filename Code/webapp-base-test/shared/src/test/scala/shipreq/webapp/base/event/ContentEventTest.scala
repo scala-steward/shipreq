@@ -89,21 +89,6 @@ object ContentEventTest extends TestSuite {
       case (None,    None)    => sys.error("At least 1 ID required.")
     }
 
-  val RCG1_code   = "abc.def": ReqCode.Value
-  val createRCG1  = createRCG(1, RCG1_code, "hehe")
-  val delRCG1     = delRCG(1)
-  val restoreRCG1 = restoreRCG(1)
-
-  val RCG2_code   = "abc.x.why": ReqCode.Value
-  val createRCG2  = createRCG(2, RCG2_code, "OMG #2")
-  val delRCG2     = delRCG(2)
-  val restoreRCG2 = restoreRCG(2)
-
-  val RCG3_code   = "abc.zed": ReqCode.Value
-  val createRCG3  = createRCG(3, RCG3_code, "group 3 mate")
-  val delRCG3     = delRCG(3)
-  val restoreRCG3 = restoreRCG(3)
-
   val createRefToCode3 = CreateGenericReq(500, mf, nev(
     Title(NonEmptyVector(GRT.Literal("Ref to #3: "), GRT.CodeRef(3)))))
 
@@ -112,11 +97,11 @@ object ContentEventTest extends TestSuite {
     Title(NonEmptyVector(GRT.Issue(issueType1, Vector(
       IID.Literal("Ref to #3: "), IID.CodeRef(3)))))))
 
-  val delA = delReq(reqA)
-  val delB = delReq(reqB)
-  val restoreA = restoreReq(reqA)
+  val delA              = delGR(reqA)
+  val delB              = delGR(reqB)
+  val restoreA          = restoreGR(reqA)
   val restoreCode3From1 = patchReqCodes(1, restore = Set(3))
-  val removeCode3From1 = patchReqCodes(1, remove = Set(3))
+  val removeCode3From1  = patchReqCodes(1, remove = Set(3))
 
   override def tests = TestSuite {
 
@@ -171,7 +156,7 @@ object ContentEventTest extends TestSuite {
       // positive tests are in the script tests below
 
       'reqIdNotFound     - assertFail("")(patchA(add = Set(1 -> "mm")))
-      'reqDead           - assertFail("live")(emptyGR1, delReq1, patchReqCodes(1, add = Set(5 -> "yay")))
+      'reqDead           - assertFail("live")(emptyGR1, delGR1, patchReqCodes(1, add = Set(5 -> "yay")))
       'addcodeSym        - assertFail("")(emptyGR1, patchReqCodes(1, add = Set(7 -> "!!")))
       'addcodeCaps       - assertFail("")(emptyGR1, patchReqCodes(1, add = Set(7 -> "NO")))
       'addIdInUseByGR    - assertFail("")(emptyGR1, createGR(2, codes = Set(3 -> "x")), patchReqCodes(1, add = Set(3 -> "y")))
@@ -505,7 +490,7 @@ object ContentEventTest extends TestSuite {
         test(at2)()()
       }
 
-      'reqIsDead      - assertFail("dead")(emptyGR1, delReq1, patch(1)()(at1))
+      'reqIsDead      - assertFail("dead")(emptyGR1, delGR1, patch(1)()(at1))
       'reqNotFound    - assertFail("found")(patch(1)()(at1))
       'addBadTag      - assertFail("not found")(emptyGR1, patch(1)()(123))
       'removeBadTag   - assertFail("not found")(emptyGR1, patch(1)(123)())
@@ -550,7 +535,7 @@ object ContentEventTest extends TestSuite {
       }
 
       'reqNotFound - testFailure("found")(1, emptyGR3)()(3)
-      'reqIsDead   - testFailure("dead") (1, emptyGR1, emptyGR3, delReq1)()(3)
+      'reqIsDead   - testFailure("dead") (1, emptyGR1, emptyGR3, delGR1)()(3)
       'impNotFound - testFailure("found")(1, emptyGR1)()(8)
       'impSelf     - testFailure("cycle")(1, emptyGR1)()(1)
 
@@ -580,7 +565,7 @@ object ContentEventTest extends TestSuite {
         assertEq(d.size, 0)
       }
       'reqNotFound   - assertFail("found")(e)
-      'reqIsDead     - assertFail("dead") (emptyGR1, delReq1, e)
+      'reqIsDead     - assertFail("dead") (emptyGR1, delGR1, e)
       'fieldNotFound - assertFail("found")(emptyGR1, SetCustomTextField(1, 321, someCTF1))
       'fieldDead     - assertFail("dead") (emptyGR1, DeleteCustomField(cf1, Delete), e)
       // TODO test not applicable to target reqtype
@@ -589,9 +574,9 @@ object ContentEventTest extends TestSuite {
     'deleteRestore {
 
       'deleteReq {
-        'notFound - assertFail("not found")(delReq1)
-        'twice    - assertFail("is dead")(createGR(1), delReq1, delReq1)
-        'ok       - assertPass(createGR(1), delReq1)
+        'notFound - assertFail("not found")(delGR1)
+        'twice    - assertFail("is dead")(createGR(1), delGR1, delGR1)
+        'ok       - assertPass(createGR(1), delGR1)
       }
 
       'deleteRCG {
@@ -614,39 +599,6 @@ object ContentEventTest extends TestSuite {
           val d = assertSoleReqCode(p, "abc.def")
           assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadReqCodeGroup(1, "hehe"))))
         }
-      }
-
-      'deleteBoth {
-        implicit val init = ContentEventTest.init.add(createRCG1, emptyGR1, createGR(5), createRCG2)
-        'reqNotFound   - assertFail("not found")(DeleteReqs(9, 2, ∅))
-        'groupNotFound - assertFail("not found")(DeleteReqs(1, 9, ∅))
-        'reqDead       - assertFail("dead")(delReq(5), DeleteReqs(5, 2, ∅))
-        'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, DeleteReqs(5, 2, ∅))
-        'ok {
-          val p = _assertPass(DeleteReqs(5, 2, ∅))
-          assertEq("RC#1", p.reqCodes(RCG1_code).isActive, true)
-          assertEq("RC#2", p.reqCodes(RCG2_code).isActive, false)
-          assertEq("Req #1", p.reqs.genericReqs.need(1).liveExplicitly, Live)
-          assertEq("Req #5", p.reqs.genericReqs.need(5).liveExplicitly, Dead)
-        }
-      }
-
-      'restoreReq {
-        'notFound - assertFail("not found")(restoreReq1)
-      }
-
-      'restoreGR {
-        'live  - assertFail("is live")(emptyGR1, restoreReq1)
-        'live2 - assertFail("is live")(emptyGR1, delReq1, restoreReq1, restoreReq1)
-        'ok    - assertPass(emptyGR1, delReq1, restoreReq1)
-        'ok2   - assertPass(emptyGR1, delReq1, restoreReq1, delReq1, restoreReq1)
-      }
-
-      'restoreUC {
-        'live  - assertFail("is live")(emptyUC1, restoreReq1)
-        'live2 - assertFail("is live")(emptyUC1, delReq1, restoreReq1, restoreReq1)
-        'ok    - assertPass(emptyUC1, delReq1, restoreReq1)
-        'ok2   - assertPass(emptyUC1, delReq1, restoreReq1, delReq1, restoreReq1)
       }
 
       'restoreRCG {

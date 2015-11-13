@@ -15,6 +15,7 @@ object UseCaseEventTest extends TestSuite {
   import CreateUseCaseGD._
 
   implicit def autoUseCaseId(i: Int) = UseCaseId(i)
+  implicit def autoUseCaseIdNes(i: Int) = NonEmptySet[ReqId](UseCaseId(i))
 
   val someTitleUC: UCT.OptionalText =
     Vector(UCT.Literal("Look at "), UCT.WebAddress("https://google.com"))
@@ -73,14 +74,14 @@ object UseCaseEventTest extends TestSuite {
       'impSrc {
         val v = NonEmptySet[ReqId](emptyUC1.id)
         val p = _assertPass(emptyUC1, CreateUseCase(5, 7, nev(ImpSrcs(v))))
-        assertUC(p, 5)(expect(5, 7), impliedBy = v.whole)
+        assertUC(p, 5)(expect(5, 2, stepId = 7), impliedBy = v.whole)
         assertUC(p, 1)(UC1, implies = Set(5.UC))
       }
 
       'impTgt {
         val v = NonEmptySet[ReqId](emptyUC1.id)
         val p = _assertPass(emptyUC1, CreateUseCase(5, 7, nev(ImpTgts(v))))
-        assertUC(p, 5)(expect(5, 7), implies = v.whole)
+        assertUC(p, 5)(expect(5, 2, stepId = 7), implies = v.whole)
         assertUC(p, 1)(UC1, impliedBy = Set(5.UC))
       }
 
@@ -92,7 +93,7 @@ object UseCaseEventTest extends TestSuite {
       }
 
       'badId           - assertBadIdsRejected(i => emptyUC1.copy(id = i))
-      'idInUseByGR     - assertFail("exists")(createGR(emptyUC1.id.value.GR), emptyUC1)
+      'idInUseByGR     - assertFail("unique req id")(createGR(emptyUC1.id.value.GR), emptyUC1)
       'idInUseByUC     - assertFail("exists")(emptyUC1, emptyUC1.copy(stepId = 234))
       'tagNotFound     - assertFail("tag")(emptyUC1.copy(vs = nev(Tags(6.AT))))
       'tagIsGroup      - assertFail("tag")(emptyUC1.copy(vs = nev(Tags(tg1.value.AT))))
@@ -114,13 +115,36 @@ object UseCaseEventTest extends TestSuite {
       'stepIdInUse        - assertFail("exists")(emptyUC1, emptyUC1.copy(id = 98))
     }
 
+    'delete {
+      implicit val init = ContentEventTest.init.add(createRCG1, emptyUC1, createUC(5, 9), createRCG2)
+      'reqNotFound   - assertFail("not found")(DeleteReqs(9, 2, ∅))
+      'groupNotFound - assertFail("not found")(DeleteReqs(1, 9, ∅))
+      'reqDead       - assertFail("dead")(delUC(5), DeleteReqs(5, 2, ∅))
+      'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, DeleteReqs(5, 2, ∅))
+      'ok {
+        val p = _assertPass(DeleteReqs(5, 2, ∅))
+        assertEq("RC#1", p.reqCodes(RCG1_code).isActive, true)
+        assertEq("RC#2", p.reqCodes(RCG2_code).isActive, false)
+        assertEq("UC #1", p.reqs.useCases.imap.need(1).liveExplicitly, Live)
+        assertEq("UC #5", p.reqs.useCases.imap.need(5).liveExplicitly, Dead)
+      }
+    }
+
+    'restore {
+      'live     - assertFail("is live")(emptyUC1, restoreUC1)
+      'live2    - assertFail("is live")(emptyUC1, delUC1, restoreUC1, restoreUC1)
+      'ok       - assertPass(emptyUC1, delUC1, restoreUC1)
+      'ok2      - assertPass(emptyUC1, delUC1, restoreUC1, delUC1, restoreUC1)
+      'notFound - assertFail("not found")(restoreUC1)
+    }
+
     'setUseCaseTitle {
       'ok {
         val p = _assertPass(emptyUC1, setTitleUC1)
         assertEq(p.reqs.genericReqs.get(1).get.title, someTitleUC)
       }
       'ucNotFound - assertFail("found")(setTitleUC1)
-      'ucIsDead   - assertFail("dead")(emptyUC1, delReq1, setTitleUC1)
+      'ucIsDead   - assertFail("dead")(emptyUC1, delUC1, setTitleUC1)
     }
 
     'addUseCaseStep {
@@ -132,7 +156,7 @@ object UseCaseEventTest extends TestSuite {
       'okInsertNCAC - testSteps(AddUseCaseStep(4, 1, NCAC, V0))("0", "0.0")()
       'okInsertEC   - testSteps(AddUseCaseStep(4, 1, EC, ∅), AddUseCaseStep(5, 1, EC, V0))("0")("0", "0.0")
       'ucNotFound   - assertFail("found")(addStepTo1)
-      'ucDead       - assertFail("dead")(emptyUC1, delReq1, addStepTo1)
+      'ucDead       - assertFail("dead")(emptyUC1, delUC1, addStepTo1)
       'badId        - assertBadIdsRejected(AddUseCaseStep(_, 1, NCAC, ∅))(init.add(emptyUC1))
       'idInUse      - assertFail("exists")(emptyUC1, addStepTo1, addStepTo1)
       'locNotFound  - assertFail("???")(emptyUC1, AddUseCaseStep(5, 1, EC, V0))
@@ -146,7 +170,7 @@ object UseCaseEventTest extends TestSuite {
 
       'ok           - testSteps(add, shift)("0", "1")()
       'stepNotFound - assertFail("found")(shift)
-      'ucDead       - assertFail("dead")(emptyUC1, add, delReq1, shift)
+      'ucDead       - assertFail("dead")(emptyUC1, add, delUC1, shift)
       'notRoot      - assertFail("???")(emptyUC1, ShiftUseCaseStepLeft(1))
       'notLvl0      - assertFail("???")(emptyUC1, add, shift, shift)
     }
@@ -157,7 +181,7 @@ object UseCaseEventTest extends TestSuite {
 
       'ok           - testSteps(add, shift)("0", "0.0")()
       'stepNotFound - assertFail("found")(shift)
-      'ucDead       - assertFail("dead")(emptyUC1, add, delReq1, shift)
+      'ucDead       - assertFail("dead")(emptyUC1, add, delUC1, shift)
       'notRoot      - assertFail("???")(emptyUC1, ShiftUseCaseStepRight(1))
       'noParent     - assertFail("???")(emptyUC1, add, shift, shift)
 
@@ -209,7 +233,7 @@ object UseCaseEventTest extends TestSuite {
       'okLeaf       - testSteps(create3 :+ DeleteUseCaseStep(8): _*)("0", "0.0")()
       'okParent     - testSteps(create3 :+ DeleteUseCaseStep(7): _*)("0")()
       'stepNotFound - assertFail("found")(DeleteUseCaseStep(7))
-      'ucDead       - assertFail("dead")(create3 :+ delReq1 :+ DeleteUseCaseStep(8): _*)
+      'ucDead       - assertFail("dead")(create3 :+ delUC1 :+ DeleteUseCaseStep(8): _*)
       'notRootN     - assertFail("???")(emptyUC1, DeleteUseCaseStep(1))
       'okRootE      - testSteps(AddUseCaseStep(6, 1, EC, ∅), DeleteUseCaseStep(6))("0")()
     }
@@ -220,7 +244,7 @@ object UseCaseEventTest extends TestSuite {
         assertEq(p.reqs.useCases.imap.need(1).stepsNA.withCtx.need(4).step.title, someStepText)
       }
       'stepNotFound - assertFail("found")(setStepTitle4)
-      'ucIsDead     - assertFail("dead")(emptyUC1, addStepTo1, delReq1, setStepTitle4)
+      'ucIsDead     - assertFail("dead")(emptyUC1, addStepTo1, delUC1, setStepTitle4)
     }
 
     // TODO Test step flow changes

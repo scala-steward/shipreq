@@ -86,9 +86,9 @@ object ContentEventTestHelp {
     import CreateGenericReqGD._
     var vs = emptyValues
     NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
-    NonEmptyVector.maybe(title,   ())(vs += Title(_))
-    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs(_))
-    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts(_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
+    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
     CreateGenericReq(id, rt, vs)
   }
 
@@ -101,16 +101,22 @@ object ContentEventTestHelp {
     import CreateUseCaseGD._
     var vs = emptyValues
     NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
-    NonEmptyVector.maybe(title,   ())(vs += Title(_))
-    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs(_))
-    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts(_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
+    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
     CreateUseCase(id, stepId, vs)
   }
 
-  def delReq(id: ReqId): DeleteReqs =
+  def delGR(id: GenericReqId): DeleteReqs =
     DeleteReqs(NonEmptySet(id), ∅, ∅)
 
-  def restoreReq(id: ReqId): RestoreContent =
+  def delUC(id: UseCaseId): DeleteReqs =
+    DeleteReqs(NonEmptySet(id), ∅, ∅)
+
+  def restoreGR(id: GenericReqId): RestoreContent =
+    RestoreContent(Set(id), ∅)
+
+  def restoreUC(id: UseCaseId): RestoreContent =
     RestoreContent(Set(id), ∅)
 
   val patchRcAdd0 = Multimap.empty[ReqCode.Value, Set, ReqCodeId]
@@ -223,14 +229,30 @@ object ContentEventTestHelp {
 
   val testHelpInit = InitialEvents(createIssueType1, createMF, createFR, createAT1, createAT2, createTG1, createCTF1)
 
-  val delReq1     = delReq(1)
-  val restoreReq1 = restoreReq(1)
-
   val emptyGR1   = createGR(1)
   val impliedGR2 = createGR(2, impSrcs = Set(emptyGR1.id))
   val emptyGR3   = createGR(3)
+  val delGR1     = delGR(1)
+  val restoreGR1 = restoreGR(1)
 
   val emptyUC1   = createUC(1.UC, 1)
   val impliedUC2 = createUC(2.UC, 2, impSrcs = Set(emptyUC1.id))
   val emptyUC3   = createUC(3.UC, 3)
+  val delUC1     = delUC(1.UC)
+  val restoreUC1 = restoreUC(1.UC)
+
+  val RCG1_code   = "abc.def": ReqCode.Value
+  val createRCG1  = createRCG(1, RCG1_code, "hehe")
+  val delRCG1     = delRCG(1)
+  val restoreRCG1 = restoreRCG(1)
+
+  val RCG2_code   = "abc.x.why": ReqCode.Value
+  val createRCG2  = createRCG(2, RCG2_code, "OMG #2")
+  val delRCG2     = delRCG(2)
+  val restoreRCG2 = restoreRCG(2)
+
+  val RCG3_code   = "abc.zed": ReqCode.Value
+  val createRCG3  = createRCG(3, RCG3_code, "group 3 mate")
+  val delRCG3     = delRCG(3)
+  val restoreRCG3 = restoreRCG(3)
 }

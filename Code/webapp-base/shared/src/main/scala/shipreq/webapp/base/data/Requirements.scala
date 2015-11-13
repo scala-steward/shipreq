@@ -1,10 +1,9 @@
 package shipreq.webapp.base.data
 
 import monocle.{Iso, Traversal}
-import nyaya.util.Multimap
 import monocle.macros.Lenses
+import nyaya.util.Multimap
 import scalaz.Equal
-import scalaz.std.stream.streamInstance
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._

@@ -2,7 +2,6 @@ package shipreq.webapp.base.event
 
 import nyaya.util.Multimap
 import scala.annotation.tailrec
-import scalaz.syntax.equal._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.{Validators => V, _}
