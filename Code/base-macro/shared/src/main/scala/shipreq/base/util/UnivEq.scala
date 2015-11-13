@@ -68,6 +68,14 @@ object UnivEq extends UnivEqImplicits {
 
   object Implicits extends UnivEqImplicits
 
+  final class Ops[A](private val a: A) extends AnyVal {
+    @inline def ==*[B >: A : UnivEq](b: B): Boolean =
+      a == b
+
+    @inline def !=*[B >: A : UnivEq](b: B): Boolean =
+      a != b
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   def withOrder[A](o: Order[A]): Order[A] with UnivEq[A] =
