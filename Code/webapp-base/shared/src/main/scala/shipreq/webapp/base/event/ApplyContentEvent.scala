@@ -220,6 +220,7 @@ trait ApplyContentEvent {
 
   object UseCaseEvents {
     import ContentCommon.{grIMap => _, _}
+    import StaticField.{UseCaseStepTree => StepField, NormalAltStepTree => NCAC}
 
     def ensureStepDoesntExist(id: UseCaseStepId): SE[Unit] =
       whenUntrusted(SE.test(!_.reqs.useCases.stepIndex.contains(id), s"${show(id)} already exists."))
@@ -228,12 +229,12 @@ trait ApplyContentEvent {
       ensureLiveReqId(e.id) >>
         ucIMap.updateF(e.id, _.copy(title = e.value))
 
-    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StaticField.UseCaseStepTree): SE[Unit] =
+    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField): SE[Unit] =
       postAddStep(ucId, stepId, field,
         (r, ucs) => r.copy(useCases = ucs),
         (ic, i) => ic.copy(useCaseStep = i))
 
-    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StaticField.UseCaseStepTree,
+    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField,
                     updReqs: (Requirements, UseCases) => Requirements,
                     updStepIdCeil: (IdCeilings, Int) => IdCeilings): SE[Unit] =
       SE.mod { p =>
@@ -264,7 +265,7 @@ trait ApplyContentEvent {
       }
 
       def postAdd(pr: PubidRegister, ucId: UseCaseId, stepId: UseCaseStepId): SE[Unit] =
-        postAddStep(ucId, stepId, StaticField.NormalAltStepTree,
+        postAddStep(ucId, stepId, NCAC,
           (r, ucs) => r.copy(useCases = ucs, pubids = pr),
           (ic, i) => ic.copy(useCaseStep = i, req = ic.req max ucId))
 
@@ -307,25 +308,55 @@ trait ApplyContentEvent {
     def needStepIndex(id: UseCaseStepId): SE[UseCases.StepTreeKey] =
       SE.get(_.reqs.useCases.stepIndex.get(id)) >>= (optionGet(_, s"${show(id)} not found."))
 
-    def modStep(id: UseCaseStepId)(mod: (UseCaseSteps.Tree, VectorTree.Location) => SE[UseCaseSteps.Tree]): SE[Unit] =
+    def modStep(id: UseCaseStepId)(mod: (UseCaseSteps.Tree, StepField, VectorTree.Location) => SE[UseCaseSteps.Tree]): SE[Unit] =
       for {
         idx  ← needStepIndex(id)
         ucId = idx.useCaseId
         f    = idx.field
         _    ← ucIMap.update(ucId, uc => {
-                 // TODO would be faster to just scan rather than use withCtx if withCtx isn't used otherwise (so far it's not)
                  val ctx = f.useCaseSteps.get(uc).withCtx.need(id)
-                 ensureLiveReq(uc) >> f.useCaseStepTree.modifyF[SE](mod(_, ctx.loc))(uc)
+                 ensureLiveReq(uc) >> f.useCaseStepTree.modifyF[SE](mod(_, f, ctx.loc))(uc)
                })
       } yield ()
 
     def applyShiftUseCaseStepLeft(e: ShiftUseCaseStepLeft): SE[Unit] =
-      modStep(e.id)((t, l) =>
+      modStep(e.id)((t, _, l) =>
         optionGet(t shiftLeft l, s"${show(e.id)} cannot be shifted left."))
 
     def applyShiftUseCaseStepRight(e: ShiftUseCaseStepRight): SE[Unit] =
-      modStep(e.id)((t, l) =>
+      modStep(e.id)((t, _, l) =>
         optionGet(t shiftRight l, s"${show(e.id)} cannot be shifted right."))
+
+    // TODO would be faster to just scan rather than use withCtx if withCtx isn't used otherwise (so far it's not)
+    // withCtx used when:
+    // - step shifted
+    // - step value modified
+    // - step removed
+    // withCtx recalc ANY TIME tree changes; so:
+    // - step shifted
+    // - step value modified
+    // - step added
+    // - step removed
+
+    private def badStepIndex(id: UseCaseStepId) =
+      s"${show(id)} at index location."
+
+    // TODO Rename SetUseCaseStepText => UpdateUseCaseStep
+    def applyUpdateUseCaseStep(e: SetUseCaseStepText): SE[Unit] =
+      modStep(e.id)((t, _, l) =>
+        optionGet(t.modifyValue(l)(_.copy(title = e.value)), badStepIndex(e.id)))
+
+    def isRoot(loc: VectorTree.Location): Boolean =
+      loc.head ==* 0 && loc.tail.isEmpty
+
+    def applyDeleteUseCaseStep(e: DeleteUseCaseStep): SE[Unit] =
+      modStep(e.id)((t1, f, l) =>
+        for {
+          _ <- whenUntrusted(SE.test(!(f ==* NCAC && isRoot(l)), "Root step cannot be deleted."))
+          g <- optionGet(t1.removeNodeO(l), badStepIndex(e.id))
+          _ ← Project.useCaseStepIndex.modify(_ -- g._2.valueIterator.map(_.id))
+        } yield g._1
+      )
   }
 
   // ===================================================================================================================

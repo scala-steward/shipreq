@@ -23,7 +23,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
 
   override def getValue = None
 
-  override def toString = s"VectorTree($deepSize nodes)"
+//  override def toString = s"VectorTree($deepSize nodes)"
 
   def isEmpty = children.isEmpty
 
@@ -35,26 +35,61 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def setChildren[B >: A](c: Children[B]): VectorTree[B] =
     VectorTree(c)
 
-  def modifyChildren[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] = {
-    def go(rem: ParentLocation, c: Children[A]): Option[Children[B]] =
-      if (rem.isEmpty)
-        f(c)
-      else
-        c.tryUpdateIndex(rem.head, n => go(rem.tail, n.children).map(Node(n.value, _)))
-    go(loc, children) map VectorTree.apply
-  }
+  private def _modify[B >: A, R](loc: ParentLocation)
+                                (mod: (Children[A], Int, Node[A]) => Option[Children[B]])
+                                (result: (Children[B], Node[A]) => R): Option[R] =
+    if (loc.isEmpty)
+      None
+    else {
+      val last = loc.length - 1
+      var old: Node[A] = null
 
-  def modifyNode[B >: A](loc: Location)(f: Node[A] => Option[Node[B]]): Option[VectorTree[B]] = {
-    def go(rem: ParentLocation): Node[A] => Option[Node[B]] = n =>
-      if (rem.isEmpty)
-        f(n)
-      else
-        n.children.tryUpdateIndexOrNull(rem.head, go(rem.tail)) match {
-          case null => None
-          case n2   => Some(Node(n.value, n2))
-        }
-    children.tryUpdateIndex(loc.head, go(loc.tail)) map VectorTree.apply
-  }
+      @tailrec
+      def go[X](locInd: Int, ch: Children[A])(f: Children[B] => X): Option[X] = {
+        val i = loc(locInd)
+        if (ch isIndexValid i) {
+          val n = ch(i)
+          if (locInd == last) {
+            old = n
+            mod(ch, i, n) map f
+          } else
+            go(locInd + 1, n.children)(c2 => f(ch.updated(i, n.copy(children = c2))))
+        } else
+          None
+      }
+
+      go(0, children)(result(_, old))
+    }
+
+  /**
+   * @return `None` if nothing was changed.
+   */
+  def modifyChildren[B >: A](loc: ParentLocation)(f: Children[A] => Children[B]): Option[VectorTree[B]] =
+    modifyChildrenA[B](loc)(c => Some(f(c)))
+
+  /**
+   * The `A` suffix means abortable.
+   *
+   * @param f Return `None` to abort (not delete).
+   * @return `None` if nothing was changed.
+   */
+  def modifyChildrenA[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] =
+    _modify[B, VectorTree[B]](loc :+ 0)((c, i, n) => f(c))((c, _) => VectorTree(c))
+
+  def modifyNode[B >: A](loc: Location)(f: Node[A] => Node[B]): Option[VectorTree[B]] =
+    _modify[B, VectorTree[B]](loc.whole)((c, i, n) => Some(c.updated(i, f(n))))((c, _) => VectorTree(c))
+
+  def modifyValue[B >: A](loc: Location)(f: A => B): Option[VectorTree[B]] =
+    modifyNode[B](loc)(n => n.copy(value = f(n.value)))
+
+  def remove(loc: Location): Option[VectorTree[A]] =
+    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, _) => VectorTree(c))
+
+  /**
+   * The `O` suffix means "old", denoting that the old value is returned.
+   */
+  def removeNodeO(loc: Location): Option[(VectorTree[A], Node[A])] =
+    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, o) => (VectorTree(c), o))
 
   def foreach[U](f: (Location, A) => U): Unit =
     locAndValueIterator(f).foreach(_ => ())
@@ -79,7 +114,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     insertAfterN(at, leaf(value))
 
   def insertAfterN[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
-    modifyChildren[B](at.init) { c =>
+    modifyChildrenA[B](at.init) { c =>
       val i = at.last
       if (c isIndexValid i) {
         val f = c(i)
@@ -93,9 +128,6 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       } else
         None
     }
-
-  def remove(at: Location): Option[VectorTree[A]] =
-    modifyChildren(at.init)(_ delete at.last)
 
   def canShiftLeft(at: Location): Boolean =
     at.length >= 2
@@ -114,7 +146,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       val w = at.whole
       val ip = w(at.length - 2)
       val ic = w(at.length - 1)
-      modifyChildren(w.dropRight(2))(ps =>
+      modifyChildrenA(w.dropRight(2))(ps =>
         ps.getFlatMap(ip)(p =>
           p.children.getFlatMap(ic) { c =>
             val left  = p.children take ic
@@ -138,7 +170,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.3.4.b    --> 1.3.4.a.ii
     */
   def shiftRight(at: Location): Option[VectorTree[A]] =
-    modifyChildren(at.init) { ps =>
+    modifyChildrenA(at.init) { ps =>
       val ic = at.last
       val ip = ic - 1
       ps.getFlatMap(ip)(p =>
@@ -266,8 +298,12 @@ object VectorTree extends VectorTreeLowPri {
 
     final def valueIterator: Iterator[A] =
       new AbstractIterator[A] {
-        var queue = List.empty[Children[A]]
-        var focus = children.iterator
+        var queue: List[Children[A]] = Nil
+        var focus: Iterator[Node[A]] =
+          Parent.this match {
+            case _: VectorTree[A] => children.iterator
+            case n: Node[A]       => Iterator.single(n)
+          }
 
         override def hasNext: Boolean =
           focus.hasNext

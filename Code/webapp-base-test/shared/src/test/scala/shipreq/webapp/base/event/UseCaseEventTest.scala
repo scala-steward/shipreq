@@ -226,15 +226,16 @@ object UseCaseEventTest extends TestSuite {
 
     'deleteUseCaseStep {
       def create3 = Vector[ActiveEvent](
-        emptyUC1,                                                           // 1.0
-        AddUseCaseStep(7, 1, NCAC, V0),                                     // 1.0.1
-        AddUseCaseStep(8, 1, NCAC, Vector(0, 0)), ShiftUseCaseStepRight(8)) // 1.0.1.a
+        emptyUC1,                                 // 1.0
+        AddUseCaseStep(7, 1, NCAC, V0),           // 1.0.1
+        AddUseCaseStep(8, 1, NCAC, Vector(0, 0)),
+        ShiftUseCaseStepRight(8))                 // 1.0.1.a
 
       'okLeaf       - testSteps(create3 :+ DeleteUseCaseStep(8): _*)("0", "0.0")()
       'okParent     - testSteps(create3 :+ DeleteUseCaseStep(7): _*)("0")()
       'stepNotFound - assertFail("found")(DeleteUseCaseStep(7))
       'ucDead       - assertFail("dead")(create3 :+ delUC1 :+ DeleteUseCaseStep(8): _*)
-      'notRootN     - assertFail("???")(emptyUC1, DeleteUseCaseStep(1))
+      'notRootN     - assertFail("root")(emptyUC1, DeleteUseCaseStep(1))
       'okRootE      - testSteps(AddUseCaseStep(6, 1, EC, ∅), DeleteUseCaseStep(6))("0")()
     }
 
@@ -247,6 +248,6 @@ object UseCaseEventTest extends TestSuite {
       'ucIsDead     - assertFail("dead")(emptyUC1, addStepTo1, delUC1, setStepTitle4)
     }
 
-    // TODO Test step flow changes
+    // TODO Test step flow changes - add | mod | del node + children
   }
 }

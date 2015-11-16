@@ -13,22 +13,30 @@ object VectorTreeTest extends TestSuite {
 
   val genIntTree = genVectorTree(Gen.int, 4)(0 to 4)
 
+  def allNodesT[A](n: VectorTree[A]): Vector[A] =
+    n.children.flatMap(allNodes)
+
   def allNodes[A](n: Node[A]): Vector[A] =
     n.children.flatMap(allNodes) :+ n.value
 
   type VTI = VectorTree[Int]
   type PV = Prop[VTI]
 
-  def values: PV =
-    Prop.equal("values")(
+  def valueIterator: PV =
+    Prop.equal("valueIterator")(
       _.valueIterator.toVector.sorted,
-      _.children.flatMap(allNodes).sorted)
+      allNodesT(_).sorted)
+
+  def nodeValueIterator: PV =
+    Prop.equal("node.valueIterator")(
+      _.children.headOption.map(_.valueIterator.toVector.sorted),
+      _.children.headOption.map(allNodes(_).sorted))
 
   def locAndValueIterator: PV = {
     def values: PV =
       Prop.equal("values")(
-        t => t.locAndValueIterator((_, i) => i).toVector.sorted,
-        _.children.flatMap(allNodes).sorted)
+        _.locAndValueIterator((_, i) => i).toVector.sorted,
+        allNodesT(_).sorted)
 
     def locations: PV =
       Prop.atom("locs", t => {
@@ -66,16 +74,13 @@ object VectorTreeTest extends TestSuite {
   }
 
   def props: PV =
-    (values ∧ locAndValueIterator ∧ dims ∧ canShift) rename "VectorTree props"
+    (valueIterator ∧ nodeValueIterator ∧ locAndValueIterator ∧ dims ∧ canShift) rename "VectorTree props"
 
   // ===================================================================================================================
 
   object Steps {
-    def n(value: String, c: Node[FakeStep]*): Node[FakeStep] =
-      Node(FakeStep(value, "Step:" + value), c.toVector)
-
-    def r(c: Node[FakeStep]*): VectorTree[FakeStep] =
-      VectorTree(c.toVector)
+    def n(value: String, c: Node[FakeStep]*): Node[FakeStep] = Node(FakeStep(value, "Step:" + value), c.toVector)
+    def r(c: Node[FakeStep]*): VectorTree[FakeStep] = VectorTree(c.toVector)
 
     val InitialTree = r(n("1.0", n("1")))
     val Tree_10_11 = r(n("1.0"), n("1.1"))
@@ -101,6 +106,25 @@ object VectorTreeTest extends TestSuite {
 
   override def tests = TestSuite {
     'props { props mustBeSatisfiedBy genIntTree }
+
+    'modifyChildren {
+      def n(value: Int, c: Node[Int]*): Node[Int] = Node(value, c.toVector)
+      def r(c: Node[Int]*): VectorTree[Int] = VectorTree(c.toVector)
+
+      val t = r(n(1, n(2, n(3))), n(9))
+
+      def test(l: Int*)(expect: Option[VectorTree[Int]], subj: VectorTree[Int] = t): Unit =
+        assertEq(l.mkString("."),
+          subj.modifyChildren(l.toVector)(_.map(_.map(_ * 10))),
+          expect)
+
+      test(          )(Some(r(n(10, n(20, n(30))), n(90))))
+      test(0         )(Some(r(n(1, n(20, n(30))), n(9))))
+      test(0, 0      )(Some(r(n(1, n(2, n(30))), n(9))))
+      test(0, 0, 0   )(None)
+      test(0, 0, 0, 0)(None)
+      test(          )(None, r())
+    }
 
     // =================================================================================================================
     'insertAfter {

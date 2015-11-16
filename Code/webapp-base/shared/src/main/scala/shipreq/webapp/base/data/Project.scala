@@ -18,6 +18,7 @@ object Project {
   val genericReqs         : Lens[Project, GenericReqIMap     ] = reqs ^|-> Requirements.genericReqs
   val useCases            : Lens[Project, UseCases           ] = reqs ^|-> Requirements.useCases
   val useCaseIMap         : Lens[Project, UseCaseIMap        ] = useCases ^|-> UseCases.imap
+  val useCaseStepIndex    : Lens[Project, UseCases.StepIndex ] = useCases ^|-> UseCases.stepIndex
   val pubidRegister       : Lens[Project, PubidRegister      ] = reqs ^|-> Requirements.pubids
   val implicationsSrcToTgt: Lens[Project, Implications.UniDir] = implications ^<-> Implications.biToUni
   val reqCodeTrie         : Lens[Project, ReqCode.Trie       ] = reqCodes ^|-> ReqCodes.trie
