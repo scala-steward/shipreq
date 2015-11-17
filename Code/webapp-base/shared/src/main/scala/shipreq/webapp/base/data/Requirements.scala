@@ -166,9 +166,9 @@ object UseCaseStep {
 
 @Lenses
 case class UseCaseSteps(tree: UseCaseSteps.Tree) {
-  lazy val withCtx: UseCaseStepWithCtx.ByStep =
-    UseCaseStepWithCtx.emptyByStep ++
-      tree.locAndValueIterator(UseCaseStepWithCtx.apply)
+//  lazy val withCtx: UseCaseStepWithCtx.ByStep =
+//    UseCaseStepWithCtx.emptyByStep ++
+//      tree.locAndValueIterator(UseCaseStepWithCtx.apply)
 }
 
 object UseCaseSteps {
@@ -185,29 +185,29 @@ object UseCaseSteps {
     UseCaseSteps(VectorTree single s)
 }
 
-/**
- * A [[UseCaseStep]] with context that clarifies it when viewed from at project-level, rather than the use-case-level.
- *
- * Always generated; never stored.
- */
-case class UseCaseStepWithCtx(loc: VectorTree.Location, step: UseCaseStep) {
-  @inline def stepId = step.id
-
-//  def label(mnemonicPrefix: Boolean): String =
-//    field.stepLabel(useCase.pos, loc, mnemonicPrefix)
-}
-
-object UseCaseStepWithCtx {
-  object IdAccess extends ObjDataId[UseCaseStepWithCtx.type, UseCaseStepWithCtx, UseCaseStepId] {
-    override def id(d: UseCaseStepWithCtx) = d.stepId
-    override val unapplyData: AnyRef => Option[UseCaseStepWithCtx] = {case r: UseCaseStepWithCtx => Some(r); case _ => None}
-  }
-
-  type ByStep = IMap[UseCaseStepId, UseCaseStepWithCtx]
-
-  val emptyByStep: ByStep =
-    IMap.empty(_.stepId)
-}
+///**
+// * A [[UseCaseStep]] with context that clarifies it when viewed from at project-level, rather than the use-case-level.
+// *
+// * Always generated; never stored.
+// */
+//case class UseCaseStepWithCtx(loc: VectorTree.Location, step: UseCaseStep) {
+//  @inline def stepId = step.id
+//
+////  def label(mnemonicPrefix: Boolean): String =
+////    field.stepLabel(useCase.pos, loc, mnemonicPrefix)
+//}
+//
+//object UseCaseStepWithCtx {
+//  object IdAccess extends ObjDataId[UseCaseStepWithCtx.type, UseCaseStepWithCtx, UseCaseStepId] {
+//    override def id(d: UseCaseStepWithCtx) = d.stepId
+//    override val unapplyData: AnyRef => Option[UseCaseStepWithCtx] = {case r: UseCaseStepWithCtx => Some(r); case _ => None}
+//  }
+//
+//  type ByStep = IMap[UseCaseStepId, UseCaseStepWithCtx]
+//
+//  val emptyByStep: ByStep =
+//    IMap.empty(_.stepId)
+//}
 
 /**
  * @param stepIndex An index of all [[UseCaseStep]]s and the static portions of their locations.

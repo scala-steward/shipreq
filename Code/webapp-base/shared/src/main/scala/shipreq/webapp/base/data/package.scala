@@ -44,7 +44,6 @@ package object data {
     @inline implicit final def tcGenericReq         = GenericReq             .IdAccess
     @inline implicit final def tcUseCase            = UseCase                .IdAccess
     @inline implicit final def tcUseCaseStep        = UseCaseStep            .IdAccess
-    @inline implicit final def tcUseCaseStepWithCtx = UseCaseStepWithCtx     .IdAccess
   }
 
   object DataImplicits extends DataObjImplicits {

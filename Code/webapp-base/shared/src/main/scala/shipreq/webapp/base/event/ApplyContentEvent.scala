@@ -326,15 +326,18 @@ trait ApplyContentEvent {
       SE.get(_.reqs.useCases.stepIndex.get(id)) >>= (optionGet(_, s"${show(id)} not found."))
 
     def modStep(id: UseCaseStepId)(mod: (UseCaseSteps.Tree, StepField, VectorTree.Location) => SE[UseCaseSteps.Tree]): SE[Unit] =
-      for {
-        idx  ← needStepIndex(id)
-        ucId = idx.useCaseId
-        f    = idx.field
-        _    ← ucIMap.update(ucId, uc => {
-                 val ctx = f.useCaseSteps.get(uc).withCtx.need(id)
-                 ensureLiveReq(uc) >> f.useCaseStepTree.modifyF[SE](mod(_, f, ctx.loc))(uc)
-               })
-      } yield ()
+      needStepIndex(id) >>= { idx =>
+        val ucId = idx.useCaseId
+        val f    = idx.field
+        // It's fast to use locWhere below to find the step location rather than using some lazy index because
+        // 1) The index would need to be recalculated every time a step in the tree is changed
+        //    (meaning the index is only used once before being discarded).
+        // 2) locWhere will stop when it finds the step. An index scans the whole tree.
+        ucIMap.update(ucId, uc =>
+          ensureLiveReq(uc) >>
+            optionGet(f.useCaseSteps.get(uc).tree.locWhere(_.id ==* id), s"${show(id)} not found.") >>= (loc =>
+            f.useCaseStepTree.modifyF[SE](mod(_, f, loc))(uc)))
+      }
 
     def applyShiftUseCaseStepLeft(e: ShiftUseCaseStepLeft): SE[Unit] =
       modStep(e.id)((t, _, l) =>
@@ -343,17 +346,6 @@ trait ApplyContentEvent {
     def applyShiftUseCaseStepRight(e: ShiftUseCaseStepRight): SE[Unit] =
       modStep(e.id)((t, _, l) =>
         optionGet(t shiftRight l, s"${show(e.id)} cannot be shifted right."))
-
-    // TODO would be faster to just scan rather than use withCtx if withCtx isn't used otherwise (so far it's not)
-    // withCtx used when:
-    // - step shifted
-    // - step value modified
-    // - step removed
-    // withCtx recalc ANY TIME tree changes; so:
-    // - step shifted
-    // - step value modified
-    // - step added
-    // - step removed
 
     private def badStepIndex(id: UseCaseStepId) =
       s"${show(id)} at index location."
