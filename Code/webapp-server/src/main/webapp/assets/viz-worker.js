@@ -1,1 +1,0 @@
-importScripts("vendor/viz.js"),onmessage=function(a){var b=a.data;b.svg=Viz(b.dot,"svg"),b.dot=void 0,self.postMessage(b)};
