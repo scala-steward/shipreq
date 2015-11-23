@@ -10,7 +10,6 @@
     "grunt-contrib-csslint": "*",
     "grunt-contrib-jshint": "*",
     "grunt-contrib-less": "*",
-    "grunt-contrib-qunit": "*",
     "grunt-contrib-uglify": "*",
     "grunt-contrib-watch": "*",
     "grunt-text-replace": "*",

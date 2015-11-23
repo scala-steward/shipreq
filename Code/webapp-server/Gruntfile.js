@@ -289,17 +289,8 @@ module.exports = function(grunt) {
       },
       js: {
         files: ['<%= cfg.js.src %>/**/*.js'],
-        tasks: ['js','qunit'],
+        tasks: ['js'],
       },
-      qunit: {
-        files: ['src/test/javascript/**/*'],
-        tasks: ['qunit'],
-      },
-    },
-
-    // *****************************************************************************************************************
-    qunit: {
-      all: ['src/test/javascript/**/*.html'],
     },
 
   });
@@ -311,8 +302,7 @@ module.exports = function(grunt) {
   grunt.registerTask('vendor'  , ['clean:dev', 'clean:vendor', 'copy:vendor', 'less:bootstrap', 'replace:jquery', 'katex']);
   grunt.registerTask('js'      , ['clean:js_tmp', 'clean:js', 'concat:js', 'uglify:own']);
   grunt.registerTask('css'     , ['clean:css_tmp', 'clean:css', 'less:app', 'less:other', 'concat:app_css', 'cssmin']); // copy:debug_css
-  grunt.registerTask('test'    , []); // qunit disabled as it freezes - will be removed in favour of Scala.JS soon anyway
-  grunt.registerTask('default' , ['vendor', 'js', 'css', 'test']);
+  grunt.registerTask('default' , ['vendor', 'js', 'css']);
   grunt.registerTask('lint-css', ['css', 'csslint']);
 };
 
