@@ -620,7 +620,7 @@ object EventSqlHelpers {
 
   private val (hashScopeToChar, charToHashScope, _, _) =
     UtilMacros.adtIso[HashScope, Char] {
-      case HashScope.WholeProject    => 'P'
+      case HashScope.WholeProject    => '*'
       case HashScope.Config          => 'C'
       case HashScope.CfgIssueTypes   => 'I'
       case HashScope.CfgReqTypes     => 'R'
