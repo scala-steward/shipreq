@@ -297,20 +297,20 @@ object ShipReq extends Build {
 
     class ClientJsLinks(sRoot: File, tRoot: File) {
       private val s = sRoot / "scala-2.11"
-      private val t = tRoot / "src/main/webapp/assets"
+      private val w = tRoot / "src/main/webapp"
       private def sPrefix = WebappClient.dir + "-"
+      private def tName = "client.js"
       private val devMap = {
-        val o = t/"dev"
+        val t = w / "assets"
         val js = s"${sPrefix}fastopt.js"
-        val map = js + ".map"
-        Map(s/js -> o/js, s/map -> o/map)
+        Map(s/js -> t/tName,
+            s/(js + ".map") -> t/(tName + ".map"))
       }
       private val releaseMap =
-        Map(s/s"${sPrefix}opt.js" -> t/"C.js")
-      def links =
-        if (releaseMode) releaseMap else devMap
-      def cleanable =
-        (devMap.values ++ releaseMap.values).map(_.asFile).toSet[File]
+        Map(s/s"${sPrefix}opt.js" -> w/"a"/tName)
+
+      def links     = if (releaseMode) releaseMap else devMap
+      def cleanable = (devMap.values.iterator ++ releaseMap.values).map(_.asFile).toSet[File]
     }
 
     lazy val jsBuildTask =

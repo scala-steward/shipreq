@@ -50,12 +50,4 @@ object AppConfig {
     val v = tryNeed("allow.register", true)
     () => v
   }
-
-  final val jQueryVersion = "2.1.1"
-
-  /** URL prefix for dev & test only assets */
-  final val devAssetPath = "/assets/dev"
-
-  /** URL prefix for vendor assets */
-  final val vendorAssetPath = "/assets/vendor"
 }

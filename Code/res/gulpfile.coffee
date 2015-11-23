@@ -11,8 +11,8 @@ uglify    = require 'gulp-uglify'
 cfg_bower        = 'bower/'
 cfg_ws_root      = '../webapp-server/'
 cfg_ws_webapp    = cfg_ws_root + 'src/main/webapp/'
-cfg_ws_dev       = cfg_ws_webapp + 'assets'
-cfg_ws_prod      = cfg_ws_webapp + 'a'
+cfg_ws_dev       = cfg_ws_webapp + 'assets/'
+cfg_ws_prod      = cfg_ws_webapp + 'a/'
 cfg_ws_customJs  = cfg_ws_root + 'src/main/javascript/'
 cfg_ws_customCss = cfg_ws_root + 'src/main/styles/'
 
@@ -44,7 +44,8 @@ devProdJs = (name, outfile, srcs) ->
 # JS versions ⇒ Scala consts for CDN
 
 gulp.task 'ws:clean', ->
-  del [cfg_ws_dev, cfg_ws_prod], force: true
+  dirs = [cfg_ws_dev, cfg_ws_prod]
+  del (d + '**/*' for d in dirs), force: true
 
 gulp.task 'ws:vendor', ->
   nonRetardedSrc [
@@ -55,9 +56,10 @@ gulp.task 'ws:vendor', ->
     .pipe gulp.dest cfg_ws_dev
     .pipe gulp.dest cfg_ws_prod
 
-devProdJs 'ws:anon', 'app.js', (f) ->
+devProdJs 'ws:anon', 'anon.js', (f) ->
   [
     cfg_ws_customJs + 'google-analytics.js'
+    cfg_bower + 'jquery/dist/jquery.min.js'
     cfg_bower + 'bootstrap/js/alert.js'
     cfg_bower + 'bootstrap/js/dropdown.js'
     cfg_bower + 'bootstrap/js/modal.js'
@@ -86,14 +88,18 @@ devProdJs 'ws:project', 'project.js', (f) ->
   ]
 
 gulp.task 'ws:css', ->
-  nonRetardedSrc [cfg_ws_customCss + '**/*.less', '!bootstrap-*']
-    .pipe less paths: [cfg_bower + 'bootstrap/less']
-    .pipe concat 'app.css'
+  nonRetardedSrc cfg_ws_customCss + '*.less'
+    .pipe less paths: [cfg_bower + 'bootstrap/less', cfg_ws_customCss + 'include']
     .pipe gulp.dest cfg_ws_dev
     .pipe minifycss()
     .pipe gulp.dest cfg_ws_prod
 
+gulp.task 'ws:images', ->
+  gulp.src 'images/**/*'
+    .pipe gulp.dest cfg_ws_dev
+    .pipe gulp.dest cfg_ws_prod
+
 gulp.task 'ws', ['ws:clean'], ->
-  gulp.start ['ws:vendor', 'ws:anon', 'ws:project', 'ws:css']
+  gulp.start ['ws:vendor', 'ws:anon', 'ws:project', 'ws:css', 'ws:images']
 
 gulp.task 'default', ['ws']

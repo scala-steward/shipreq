@@ -16,6 +16,7 @@ import shipreq.webapp.server.feature.uc.field.{TextFieldDefinition, TextField, F
 import Types._
 import AppConfig._
 
+// TODO shipreq.webapp.server.lib.Misc should be salvaged and pruned
 object Misc extends Misc {
 
   val RNG = new Random()
