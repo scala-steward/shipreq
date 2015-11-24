@@ -9,6 +9,7 @@ import org.scalajs.dom.html
 import scala.scalajs.js.{Dynamic, UndefOr, undefined}
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.base.util.{NonEmptyVector, Util}
+import shipreq.webapp.base.AppConsts.assetPath
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.util.{DomUtil, Off, On}
 
@@ -74,7 +75,7 @@ object UI {
   val spinner =
     <.img(
       ^.cls := "spinner",
-      ^.src := "/assets/loading-spin.svg")
+      ^.src := s"$assetPath/loading-spin.svg")
 
   def abortNewButton(cb: Callback): ReactTag =
     <.button(^.onClick --> cb, UiText.Cfg.abortNewButton)

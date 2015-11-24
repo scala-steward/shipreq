@@ -1,8 +1,7 @@
 package shipreq.webapp.server.snippet
 
 import net.liftweb.http.DispatchSnippet
-import net.liftweb.util.Props
-import net.liftweb.util.Props.RunModes.{Development, Test}
+import shipreq.webapp.base.AppConsts.assetPath_/
 import shipreq.webapp.server.lib.SnippetHelpers
 
 /**
@@ -10,24 +9,14 @@ import shipreq.webapp.server.lib.SnippetHelpers
   */
 object Assets extends DispatchSnippet with SnippetHelpers {
 
-  private val assetPath: String = {
-    def sbtInReleaseMode =
-      sys.props get "MODE" contains "release"
-
-    (Props.mode, sbtInReleaseMode) match {
-      case (Development | Test, false) => "/assets/"
-      case _ => "/a/"
-    }
-  }
-
   private def js(path: String) =
-    <script type="text/javascript" src={assetPath + path}></script>
+    <script type="text/javascript" src={assetPath_/ + path}></script>
 
   private def css(path: String) =
-    <link data-lift="head" type="text/css" rel="stylesheet" href={assetPath + path}/>
+    <link data-lift="head" type="text/css" rel="stylesheet" href={assetPath_/ + path}/>
 
   private def png(path: String, alt: String) =
-    staticHtml(<img src={assetPath + path} alt={alt} />)
+    staticHtml(<img src={assetPath_/ + path} alt={alt} />)
 
   override def dispatch = {
     case "favicon"     => favicon
@@ -39,7 +28,7 @@ object Assets extends DispatchSnippet with SnippetHelpers {
   }
 
   val favicon = staticHtml(
-      <link href={assetPath + "favicon.ico"} type="image/x-icon" rel="icon"/>)
+      <link href={assetPath_/ + "favicon.ico"} type="image/x-icon" rel="icon"/>)
 
   val shipreqPng =
     png("shipreq.png", "ShipReq")

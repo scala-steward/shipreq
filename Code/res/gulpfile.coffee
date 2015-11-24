@@ -11,7 +11,7 @@ uglify    = require 'gulp-uglify'
 cfg_bower        = 'bower/'
 cfg_ws_root      = '../webapp-server/'
 cfg_ws_webapp    = cfg_ws_root + 'src/main/webapp/'
-cfg_ws_dev       = cfg_ws_webapp + 'assets/'
+cfg_ws_dev       = cfg_ws_webapp + 'dev/'
 cfg_ws_prod      = cfg_ws_webapp + 'a/'
 cfg_ws_customJs  = cfg_ws_root + 'src/main/javascript/'
 cfg_ws_customCss = cfg_ws_root + 'src/main/styles/'
@@ -24,7 +24,7 @@ devProdTasks = (name, srcs, mapBoth, mapDevTask, mapProdTask) ->
     nonRetardedSrc srcs devprod
   nameD = name + ':dev'
   nameP = name + ':prod'
-  gulp.task(nameD, -> mapDevTask mapBoth mkSrc true)
+  gulp.task(nameD, -> mapDevTask  mapBoth mkSrc true)
   gulp.task(nameP, -> mapProdTask mapBoth mkSrc false)
   gulp.task name, [nameD, nameP]
 
@@ -35,13 +35,10 @@ devProdJs = (name, outfile, srcs) ->
   p = (p) -> p.pipe(uglify()).pipe gulp.dest cfg_ws_prod
   devProdTasks(name, srcs, b, d, p)
 
-# WEBAPP-CLIENT
+# ======================================================================================================================
+# webapp-server
 #
-# create JS for unit tests
-
-# WEBSERVER
-
-# JS versions ⇒ Scala consts for CDN
+# TODO: bootstrap.less expects Dejavu fonts. From memory it was so that the UC arrows work on windows.
 
 gulp.task 'ws:clean', ->
   dirs = [cfg_ws_dev, cfg_ws_prod]
@@ -102,4 +99,10 @@ gulp.task 'ws:images', ->
 gulp.task 'ws', ['ws:clean'], ->
   gulp.start ['ws:vendor', 'ws:anon', 'ws:project', 'ws:css', 'ws:images']
 
+# ======================================================================================================================
+# webapp-client
+#
+# create JS for unit tests
+
+# ======================================================================================================================
 gulp.task 'default', ['ws']

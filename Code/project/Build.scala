@@ -301,7 +301,7 @@ object ShipReq extends Build {
       private def sPrefix = WebappClient.dir + "-"
       private def tName = "client.js"
       private val devMap = {
-        val t = w / "assets"
+        val t = w / "dev"
         val js = s"${sPrefix}fastopt.js"
         Map(s/js -> t/tName,
             s/(js + ".map") -> t/(tName + ".map"))

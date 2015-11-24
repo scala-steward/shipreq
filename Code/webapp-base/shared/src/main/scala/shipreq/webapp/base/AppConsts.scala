@@ -1,11 +1,16 @@
 package shipreq.webapp.base
 
+import shipreq.webapp.base.util.EnvMacros
+
 object AppConsts {
 
   val appName = "ShipReq"
 
   /** The URL path under which AJAX requests are serviced. */
   val ajaxPath = "A"
+
+  val assetPath   = EnvMacros.devOrRel("/dev", "/a")
+  val assetPath_/ = assetPath + "/"
 
   /** Passwords' min & max lengths. */
   val passwordLength = 8 to 128
