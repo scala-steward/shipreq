@@ -96,7 +96,7 @@ object Dependencies {
     val runner = mm("jetty-runner")
   }
 
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark" % "0.1.0")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark" % "0.2.0")
 
   val parboiled = jvmAndJsFork("org.parboiled", "parboiled", "2.1.0")("com.github.japgolly.fork.parboiled")
 
