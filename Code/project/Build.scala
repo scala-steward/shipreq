@@ -239,16 +239,9 @@ object ShipReq extends Build {
     def jsTask = if (releaseMode) fullOptJS   else fastOptJS
     def jsCmd  = if (releaseMode) "fullOptJS" else "fastOptJS"
 
-    def testjs(path: String) = ProvidedJS / s"testjs/$path"
-
     def testSettings = (_: Project)
       .settings(
-        jsDependencies in Test ++= Seq(
-          testjs("react-with-addons.js"),
-          testjs("react-dom.js"),
-          testjs("jquery.min.js"),
-          testjs("jquery.textcomplete.js") dependsOn "testjs/jquery.min.js",
-          testjs("sizzle.min.js")),
+        jsDependencies in Test += ProvidedJS / "test.js",
         // emitSourceMaps in Compile := false, // I want speed
         scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) })
 
@@ -297,20 +290,20 @@ object ShipReq extends Build {
 
     class ClientJsLinks(sRoot: File, tRoot: File) {
       private val s = sRoot / "scala-2.11"
-      private val t = tRoot / "src/main/webapp/assets"
+      private val w = tRoot / "src/main/webapp"
       private def sPrefix = WebappClient.dir + "-"
+      private def tName = "client.js"
       private val devMap = {
-        val o = t/"dev"
+        val t = w / "dev"
         val js = s"${sPrefix}fastopt.js"
-        val map = js + ".map"
-        Map(s/js -> o/js, s/map -> o/map)
+        Map(s/js -> t/tName,
+            s/(js + ".map") -> t/(tName + ".map"))
       }
       private val releaseMap =
-        Map(s/s"${sPrefix}opt.js" -> t/"C.js")
-      def links =
-        if (releaseMode) releaseMap else devMap
-      def cleanable =
-        (devMap.values ++ releaseMap.values).map(_.asFile).toSet[File]
+        Map(s/s"${sPrefix}opt.js" -> w/"a"/tName)
+
+      def links     = if (releaseMode) releaseMap else devMap
+      def cleanable = (devMap.values.iterator ++ releaseMap.values).map(_.asFile).toSet[File]
     }
 
     lazy val jsBuildTask =

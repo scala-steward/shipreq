@@ -7,11 +7,12 @@ import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet,
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
-import shipreq.base.util.log.HasLogger
 import scala.slick.jdbc.JdbcBackend.Session
 import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
 import scalaz.Monoid
+import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.base.util.TaggedTypes.{JsonStr, TaggedString}
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.UserId
 import shipreq.webapp.server.app.{DI, AppSiteMap}
 import shipreq.webapp.server.db.{DaoS, UserDescriptor}
@@ -63,6 +64,9 @@ trait StaticSnippetHelpers extends HasLogger {
 
   @inline implicit final def jsExpToJsCmd(in: JsExp): JsCmd = in.cmd
   @inline implicit final def str2txt(s: String): NodeSeq = Text(s)
+
+  @inline def staticHtml(link: NodeSeq): EndoFn[NodeSeq] =
+    _ => link
 
   def redirectHome                                      : Nothing = S.redirectTo(AppSiteMap.Home.relativeUrl)
   def redirectTo(page: Menu)                            : Nothing = S.redirectTo(page.relativeUrl)
