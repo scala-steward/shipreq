@@ -37,6 +37,7 @@ object ShipReqExperiments extends Build {
         useMacroParadise)
       .settings(workbenchSettings: _*)
       .settings(
+        triggeredMessage in ThisBuild := Watched.clearWhenTriggered,
         emitSourceMaps in Compile := false, // I want speed
         scalaJSOptimizerOptions in fastOptJS ~= (_ withDisableOptimizer true),
         bootSnippet := "exp.Main().main();",
