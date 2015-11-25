@@ -5,6 +5,10 @@ import monocle.macros.Lenses
 import org.scalajs.dom, dom.ext.KeyCode
 import shipreq.base.util.Util
 import scalajs.js
+import scalaz.Equal
+import scalaz.std.anyVal.intInstance
+import scalaz.std.string.stringInstance
+import scalaz.syntax.equal._
 import japgolly.scalajs.react._, vdom.prefix_<^._, MonocleReact._
 import japgolly.scalajs.react.extra._
 
@@ -39,28 +43,177 @@ object FocusPreviewExperiment {
       $.modState(L.set(l)(b), cb)
   }
 
-
   def main(): Unit = {
     val tgt = dom.document.getElementById("target")
     ReactDOM.render(Table.Comp(), tgt)
   }
 
-  @Lenses
-  case class FocusInfo(index: Int, changedSinceFocus: Boolean)
-//            def onChange(e: ReactEventI): Callback =
-//              $.modState(s => s.copy(edit = Some(e.target.value), changedSinceFocus = true))
-//            def onFocus: Callback =
-//              $.modState(s => s.copy(focus = true, changedSinceFocus = false))
-//            def onBlur: Callback =
-//              $.modState { s =>
-//                val newEdit = s.edit.filter(_ != s.value)
-//                s.copy(edit = newEdit, focus = false, changedSinceFocus = false)
-//              }
+  // ===================================================================================================================
+/*
+  object Lib {
 
-  @Lenses
-  case class FocusCmds(focusUp: Callback, focusDown: Callback,
-                       focusSelf: Callback, //focusNothing: Callback,
-                       onFocus: Callback, onBlur: Callback)
+    @Lenses
+    case class FocusInfo[+K](key: K, changedSinceFocus: Boolean)
+
+    @Lenses
+    case class FocusCmds(focusUp: Callback, focusDown: Callback,
+                         focusSelf: Callback,
+                         onFocus: Callback, onBlur: Callback)
+
+    case class DataThingy[A, S](value: A, edit: ExternalVar[Option[S]], focusInfo: Option[FocusInfo], focusCmds: FocusCmds) {
+
+      def abort: Callback =
+        edit set None
+
+      def showPreviewE(implicit ev: S =:= A, equal: Equal[A]): Boolean =
+        showPreview(equal.equal(_, _))
+
+      def showPreview(equal: (A, S) => Boolean): Boolean =
+        focusInfo.exists { fi =>
+          def isDirty = edit.value.exists(e => !equal(value, e))
+          fi.changedSinceFocus || isDirty
+        }
+    }
+
+
+    def doBlur[S, K, V, E](focusLens: Lens[S, Option[FocusInfo[K]]])
+                          (getValue: S => V,
+                           editLens: K => Lens[S, Option[E]]): K => S => S =
+      k => s0 => {
+        var s = s0
+        if (focusLens.get(s).exists(hasKey(k)))
+          s = focusLens.set(None)(s)
+
+        if (es.exists(_ == v))
+          s = lens.set(None)(s)
+
+        s
+      }
+  }
+  */
+
+  object Lib {
+
+    case class FocusInfo[+K](key: K, changedSinceFocus: Boolean)
+
+    case class DataThingy[V, E, +K](value: V, edit: ExternalVar[Option[E]], focusInfo: Option[FocusInfo[K]],
+                                    focusSelf: Callback, onFocus: Callback, onBlur: Callback) {
+
+      def abort: Callback =
+        edit set None
+
+      def editorMod: TagMod =
+        TagMod(
+          ^.onFocus --> onFocus,
+          ^.onBlur --> onBlur)
+
+      def showPreviewE(implicit ev: E =:= V, equal: Equal[V]): Boolean =
+        showPreview(equal.equal(_, _))
+
+      def showPreview(equal: (V, E) => Boolean): Boolean =
+        focusInfo.exists { fi =>
+          def isDirty = edit.value.exists(e => !equal(value, e))
+          fi.changedSinceFocus || isDirty
+        }
+
+      def focusOnClick: TagMod =
+        edit.value match {
+          case None    => TagMod(^.onClick --> focusSelf)
+          case Some(_) => EmptyTag
+        }
+
+    }
+
+    implicit class DataThingyES[V, K](private val d: DataThingy[V, String, K]) extends AnyVal {
+      def inputText(e: String): ReactTagOf[dom.html.Input] =
+        <.input(
+          ^.`type` := "text",
+          d.editorMod,
+          ^.onChange ==> ((e: ReactEventI) => d.edit set Some(e.target.value)),
+          ^.value := e)
+    }
+
+    class Methods[S, K: Equal, V, E]($: BackendScope[_, S])
+                                    (focusLens: Lens[S, Option[FocusInfo[K]]])
+                                    (editLens: K => Lens[S, Option[E]])
+                                    (getValue: (S, K) => V)
+                                    (isEditUseless: (V, E) => Boolean,
+                                     initEdit: V => E,
+                                     tryToFocus: K => Callback) {
+      private val EK = Equal[K]
+
+      private val hasKey: K => FocusInfo[K] => Boolean =
+        if (EK.equalIsNatural)
+          k => _.key == k
+        else
+          k => fi => EK.equal(fi.key, k)
+
+      def onFocus(k: K): Callback =
+        $.modState(s =>
+         if (focusLens.get(s) exists hasKey(k))
+           s
+         else
+           focusLens.set(Some(FocusInfo(k, false)))(s))
+
+      def onBlur(k: K): Callback =
+        $.modState {
+        val el = editLens(k)
+        s0 => {
+          var s = s0
+          if (focusLens.get(s) exists hasKey(k))
+            s = focusLens.set(None)(s)
+
+          for (e <- el.get(s))
+            if (isEditUseless(getValue(s, k), e))
+              s = el.set(None)(s)
+
+          s
+        }
+      }
+
+     def onEdit(k: K): Option[E] => Callback =
+       no => $.modState{s0 =>
+         val lens = editLens(k)
+         var s = lens.set(no)(s0)
+         no match {
+           case None => // remove focus? No, editor will be removed when state cleared
+           case Some(n) =>
+             // TODO make efficient
+             s = focusLens.set(Some(FocusInfo(k, true)))(s)
+         }
+         s
+       }
+
+      def editVar(s: S, k: K): ExternalVar[Option[E]] =
+        ExternalVar(editLens(k) get s)(onEdit(k))
+
+      def startEditor(k: K): Callback =
+        $.modState(
+          s => editLens(k).modify(_ orElse Some(initEdit(getValue(s, k))))(s),
+          tryToFocus(k))
+
+      def focus(k: K)(s: S): Callback = {
+        editLens(k).get(s) match {
+          case None    => startEditor(k)
+          case Some(_) => tryToFocus(k)
+        }
+      }
+
+      def dataThingy(s: S, k: K): DataThingy[V, E, K] =
+        DataThingy[V, E, K](
+          getValue(s, k),
+          editVar(s, k),
+          focusLens get s filter hasKey(k),
+          Callback byName focus(k)(s),
+          onFocus(k),
+          onBlur(k))
+    }
+
+  }
+
+  // ===================================================================================================================
+  import Lib._
+
 
   object Table {
     val sampleData = Vector[String](
@@ -72,7 +225,7 @@ object FocusPreviewExperiment {
     val Id = "FocusPreviewExperiment"
 
     @Lenses
-    case class State(values: Vector[String], editorStates: Map[Int, String],focus: Option[FocusInfo])
+    case class State(values: Vector[String], editorStates: Map[Int, String], focus: Option[FocusInfo[Int]])
 
     object State {
       import monocle._, Monocle._
@@ -85,6 +238,7 @@ object FocusPreviewExperiment {
     }
 
     class Backend($: BackendScope[Unit, State]) {
+      val FM = new Methods[State, Int, String, String]($)(State.focus)(State.forRow)(_ values _)(_ == _, identity, tryFocus)
 
       def ref(i: Int) = Ref.to(Row.Comp, "row_" + i)
 
@@ -94,33 +248,13 @@ object FocusPreviewExperiment {
       def getRowEditor(i: Int): CallbackTo[js.UndefOr[dom.html.Input]] =
         getRowComp(i) map (c => c.backend.ref(c))
 
-      def startEditor(i: Int): Callback =
-        $.modState(
-          s => State.forRow(i).modify(_ orElse Some(s.values(i)))(s),
-          focusRowEditor(i))
-
-      def focusRowEditor(i: Int): Callback =
+      def tryFocus(i: Int): Callback =
         getRowEditor(i).flatMap(_.tryFocus)
 
-      def focusMove(s: State, i: Int): Callback = {
+      def moveFocus(s: State, i: Int): Callback = {
         val newIndex = Util.fitCollectionIndex(i, s.values.length)
-        focusI(newIndex)(s)
+        FM.focus(newIndex)(s)
       }
-
-      def focusI(i: Int)(s: State): Callback = {
-        State.forRow(i).get(s) match {
-          case None    => startEditor(i)
-          case Some(_) => focusRowEditor(i)
-        }
-      }
-
-      def doFocus(i: Int): Callback =
-        $.modState(s =>
-          s.focus.filter(_.index == i) match {
-            case None => s.copy(focus = Some(FocusInfo(i, false)))
-            case Some(fi) => s
-          }
-        )
 
       def render(s: State) =
         <.table(
@@ -128,48 +262,14 @@ object FocusPreviewExperiment {
           <.tbody(
             s.values.zipWithIndex.map { case (v, i) =>
 
+              val dt = FM.dataThingy(s, i)
+
               val lens = State.forRow(i)
-              val es = lens get s
+              val focusUp  : Callback = moveFocus(s, i-1)
+              val focusDown: Callback = moveFocus(s, i+1)
+              val commit: String => Callback = n => $.modState(lens.set(None) compose State.forValue(i).set(n))
 
-              def doEdit(no: Option[String]): Callback =
-                $.modState{s0 =>
-                  var s = lens.set(no)(s0)
-                  no match {
-                    case None => // remove focus? No, editor will be removed when state cleared
-                    case Some(n) =>
-                      // TODO make efficient
-                      s = s.copy(focus = Some(FocusInfo(i, true)))
-                  }
-                  s
-                }
-              def doBlur: Callback =
-                $.modState{s0 =>
-                  var s = s0
-                  s.focus.filter(_.index == i) match {
-                    case None => ()
-                    case Some(fi) => s = s.copy(focus = None)
-                  }
-
-                  if (es.exists(_ == v))
-                    s = lens.set(None)(s)
-
-                  s
-                }
-
-              val focusUp     : Callback = focusMove(s, i-1)
-              val focusDown   : Callback = focusMove(s, i+1)
-              val focusSelf   : Callback = focusI(i)(s)
-//            val focusNothing: Callback =
-              val onFocus     : Callback = doFocus(i)
-              val onBlur      : Callback = doBlur
-
-              val value: String                     = v
-              val edit: ExternalVar[Option[String]] = ExternalVar(es)(doEdit)
-              val commit: String => Callback        = n => $.modState(lens.set(None) compose State.forValue(i).set(n))
-              val focusInfo: Option[FocusInfo]      = s.focus.filter(_.index == i)
-              val focusCmds: FocusCmds              = FocusCmds(focusUp,focusDown,focusSelf,onFocus,onBlur)
-
-              val rp = Row.Props(value, edit, commit, focusInfo, focusCmds)
+              val rp = Row.Props(dt, commit, focusUp, focusDown)
 
               <.tr(
                 ^.key := i,
@@ -185,8 +285,7 @@ object FocusPreviewExperiment {
 
   object Row {
 
-    // Option[(ExternalVar[String], Option[FocusInfo])]
-    case class Props(value: String, edit: ExternalVar[Option[String]], commit: String => Callback, focusInfo: Option[FocusInfo], focusCmds: FocusCmds)
+    case class Props(d: DataThingy[String, String, Any], commit: String => Callback, focusUp: Callback, focusDown: Callback)
 
     object SimpleParser {
       val token = """^(.*?)\[([^\[]+?)\](.*)$""".r
@@ -217,49 +316,30 @@ object FocusPreviewExperiment {
 
       val ref = Ref[dom.html.Input]("i")
 
-//      val startEdit: Callback =
-//        $.props >>= (p => p.edit set Some(p.value))
-//        $.modState(s => s.copy(edit = Some(s.value)), Callback byName ref($).tryFocus)
-
-      def render(p: Props): ReactElement = {
+      def render(pp: Props): ReactElement = {
+        val p = pp.d
 
         val inner = p.edit.value match {
           case None =>
             SimpleParser(p.value)
 
           case Some(es) =>
-            def onChange(e: ReactEventI): Callback =
-              p.edit set Some(e.target.value)
-
             def onKey(e: ReactKeyboardEventI): Callback =
               CallbackOption.keyCodeSwitch(e) {
-                case KeyCode.Escape => p.edit set None
-                case KeyCode.Enter => p commit es
-                case KeyCode.Down => p.focusCmds.focusDown
-                case KeyCode.Up => p.focusCmds.focusUp
+                case KeyCode.Escape => p.abort
+                case KeyCode.Enter => pp commit es
+                case KeyCode.Down => pp.focusDown
+                case KeyCode.Up => pp.focusUp
               }
 
             val input =
-              <.input(
+              p.inputText(es)(
                 ^.backgroundColor := (if (p.focusInfo.isDefined) "#ffc" else "#f2f2d6"),
                 ^.ref := ref,
-                ^.`type` := "text",
-                ^.onChange ==> onChange,
-                ^.onKeyDown ==> onKey,
-                ^.onFocus --> p.focusCmds.onFocus,
-                ^.onBlur --> p.focusCmds.onBlur,
-                ^.value := es)
-
-            val showPreview =
-              p.focusInfo match {
-                case None => false
-                case Some(i) =>
-                  def isDirty = es != p.value
-                  i.changedSinceFocus || isDirty
-              }
+                ^.onKeyDown ==> onKey)
 
             def preview =
-              ReactCollapse(showPreview)(
+              ReactCollapse(p.showPreviewE)(
                 <.div(^.key := 9,
                   <.div("Preview:"),
                   <.div(^.backgroundColor := "#efe", SimpleParser(es))))
@@ -267,20 +347,11 @@ object FocusPreviewExperiment {
             <.div(input, preview)
         }
 
-        val outer = p.edit.value match {
-          case None =>
-            TagMod(
-              ^.onClick --> p.focusCmds.focusSelf)
-
-          case Some(_) =>
-            TagMod()
-        }
-
         <.td(
           ^.border := "solid 1px #444",
           ^.padding := "0.5ex 1ex",
           ^.width := "30ex",
-          outer,
+          p.focusOnClick,
           inner)
       }
     }
