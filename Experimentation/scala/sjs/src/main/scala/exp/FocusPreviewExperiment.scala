@@ -198,6 +198,97 @@ object FocusPreviewExperiment {
       edit set Some(e)
   }
 
+
+  /**
+    * For a bunch of rows and columns:
+    *
+    * Each:
+    * - entire row
+    * - cell (i.e. row*col)
+    * can have a status:
+    * - locked
+    * - failed
+    *
+    * A renderer for when locked.
+    * A renderer for when failure has occurred.
+    * The logic to wrap a remote call so that it
+    * - locks
+    * - on remote success, clears the status
+    * - on remote success, clears the edit state <---------------- ??????
+    * - on remote failure, sets the failure status
+    * - is retryable by the failure status
+    *
+    * Out of scope
+    * ============
+    * Checking for no-ops (comparing edit value against saved value) to avoid calls.
+    *
+    * Usage
+    * =====
+    * When rendering a row, get the row status. -- R => RowStatus
+    * When rendering a cell, get the cell status. -- R => C => CellStatus
+    * Wrap a remote call -- ∀ f: RemoteFn. (f, f.INPUT, f.OUTPUT => CB, Failed[f.FAILURE] => CB) => CB ?
+    * ---- Take 2. ((CBˢ, F => CBᶠ) => CB¹) => CB²
+    */
+  object RemoteDataStuff {
+
+  }
+
+  object RemoteDataStuff_NoRows_JustCells {
+    sealed trait Status[+F]
+    case object Locked extends Status[Nothing]
+    case class Failed[F](failure: F, retry: Callback, resumeEdit: Callback) extends Status[F] {
+      def retryButton = <.button("Retry", ^.onClick --> retry)
+      def resumeEditButton = <.button("Cancel", ^.onClick --> resumeEdit)
+    }
+
+    type ParentState[C, +F] = Map[C, Status[F]]
+    def initParentState[C, F]: ParentState[C, F] = Map.empty
+
+    def renderLocked = <.div("LOCKED, MATE.")
+
+    type CB_OnSuccess = Callback
+
+    class InBackend[S, C, F]($: BackendScope[_, S],
+                             stateLens: Lens[S, ParentState[C, F]]
+                             //,renderFailed: Failed[F] => ReactElement?
+                            ) {
+      private type M = ParentState[C, F]
+      private def cellLens(c: C): Lens[S, Option[Status[F]]] =
+        stateLens ^|-> Lens[M, Option[Status[F]]](
+          _.get(c)
+        )({
+          case None => _ - c
+          case Some(s) => _.updated(c, s)
+        })
+
+      def getStatus(c: C)(s: S): Option[Status[F]] =
+        cellLens(c) get s
+
+      def wrapRemoteCall(c: C, call: (CB_OnSuccess, F => Callback) => Callback): Callback = {
+        val l = cellLens(c)
+        val clearStatus = $.modState(l set None)
+        def onSuccess = clearStatus
+        def onFailure: F => Callback = f => $.modState(l set Some(Failed(f, Callback byName doIt, clearStatus)))
+        lazy val doIt = call(onSuccess, onFailure) >> $.modState(l set Some(Locked))
+        doIt
+      }
+
+      def forChild(s: S, c: C) =
+        new ForChild[C, F] {
+          override def status: Option[Status[F]] =
+            getStatus(c)(s)
+          override def wrapRemoteCall(call: (CB_OnSuccess, F => Callback) => Callback): Callback =
+            InBackend.this.wrapRemoteCall(c, call)
+        }
+    }
+
+    trait ForChild[C, F] {
+      def status: Option[Status[F]]
+      def wrapRemoteCall(call: (CB_OnSuccess, F => Callback) => Callback): Callback
+    }
+
+  }
+
   /*
   object Lib {
 
@@ -303,7 +394,6 @@ object FocusPreviewExperiment {
   // ===================================================================================================================
   import PreviewLogic._
 
-
   object Table {
     val sampleData = Vector[String](
       "blah [blah] #1",
@@ -314,7 +404,11 @@ object FocusPreviewExperiment {
     val Id = "FocusPreviewExperiment"
 
     @Lenses
-    case class State(values: Vector[String], editorStates: Map[Int, String], focus: Option[FocusData[Int]])
+    case class State(values: Vector[String],
+                     editorStates: Map[Int, String],
+                     focus: Option[FocusData[Int]],
+                     remoteState: RemoteDataStuff_NoRows_JustCells.ParentState[Int, String]
+                    )
 
     object State {
       import monocle._, Monocle._
@@ -331,7 +425,7 @@ object FocusPreviewExperiment {
 
       val FM = new PreviewStuff[State, String, Int]($, State.focus)
       val E = new EditorLogicStuff[State, String, String, Int]($, State.forRow, _.values(_), identity, tryToFocus, _ == _)
-
+      val RS = new RemoteDataStuff_NoRows_JustCells.InBackend[State, Int, String]($, State.remoteState)
 
       def ref(i: Int) = Ref.to(Row.Comp, "row_" + i)
 
@@ -349,7 +443,6 @@ object FocusPreviewExperiment {
         E.focus(newIndex)(s)
       }
 
-
       def render(s: State) =
         <.table(
           ^.id := Id,
@@ -362,20 +455,42 @@ object FocusPreviewExperiment {
               val lens = State.forRow(i)
               val focusUp  : Callback = moveFocus(s, i-1)
               val focusDown: Callback = moveFocus(s, i+1)
-              val commit: String => Callback = n => $.modState(lens.set(None) compose State.forValue(i).set(n))
+
+              val commitForReal: String => Callback =
+                n => $.modState(lens.set(None) compose State.forValue(i).set(n))
+
+              val commitToFakeServer: String => Callback =
+                n => RS.wrapRemoteCall(i, (succ, onFail) =>
+                  CallbackTo[Callback] {
+                    println(s"Server responded to [$n].")
+                    if (n.contains("xxx"))
+                      onFail("Fake failure!!")
+                    else
+                      commitForReal(n) >> succ
+                  }
+                  .flatMap(identity) // TODO scalajs-react
+                  .delayMs(2000).void << Callback.log("Fake-Calling server...")
+                )
 
 //              val edit = ExternalVar.state($ zoomL State.forRow(i)) // TODO scalajs-react
 
-              val rp = Row.Props(E.forChild(s, i), fc, commit, focusUp, focusDown)
+              val content: ReactElement =
+                RS.getStatus(i)(s) match {
+                  case None =>
+                    val rp = Row.Props(E.forChild(s, i), fc, commitToFakeServer, focusUp, focusDown)
+                    Row.Comp.withRef(ref(i))(rp)
+                  case Some(RemoteDataStuff_NoRows_JustCells.Locked) =>
+                    <.td(RemoteDataStuff_NoRows_JustCells.renderLocked)
+                  case Some(f: RemoteDataStuff_NoRows_JustCells.Failed[String]) =>
+                    <.td(f.failure, f.retryButton, f.resumeEditButton)
+                }
 
-              <.tr(
-                ^.key := i,
-                Row.Comp.withRef(ref(i))(rp))
+              <.tr(^.key := i, content)
             }))
     }
 
     val Comp = ReactComponentB[Unit]("Outer")
-      .initialState(State(sampleData, Map.empty, None))
+      .initialState(State(sampleData, Map.empty, None, Map.empty))
       .renderBackend[Backend]
       .buildU
   }
