@@ -27,35 +27,35 @@ import japgolly.scalajs.react.extra._
   */
 object FocusPreviewExperiment {
 
-  import CompState._
-
-  @inline implicit def MonocleReactCompStateOpsDD2[$, S]($: $)(implicit ops: $ => ReadDirectWriteDirectOps[S]) =
-    new MonocleReactCompStateOps2[ReadDirectWriteDirectOps[S], S, Unit](ops($))
-
-  @inline implicit def MonocleReactCompStateOpsDC2[$, S]($: $)(implicit ops: $ => ReadDirectWriteCallbackOps[S]) =
-    new MonocleReactCompStateOps2[ReadDirectWriteCallbackOps[S], S, Callback](ops($))
-
-  @inline implicit def MonocleReactCompStateOpsCC2[$, S]($: $)(implicit ops: $ => ReadCallbackWriteCallbackOps[S]) =
-    new MonocleReactCompStateOps2[ReadCallbackWriteCallbackOps[S], S, Callback](ops($))
-
-  final class MonocleReactCompStateOps2[Ops <: WriteOpAux[S, W], S, W](private val $: Ops) extends AnyVal {
-    def setStateL[L[_, _, _, _], B](l: L[S, S, _, B])(b: B, cb: Callback = Callback.empty)(implicit L: SetterMonocle[L]): W =
-      $.modState(L.set(l)(b), cb)
-  }
-
-  object _ExternalVar {
-    def ss[S](s: S, $: CompState.WriteCallbackOps[S]): ExternalVar[S] =
-      new ExternalVar(s, $ setState _)
-  }
-  @inline implicit final class MonocleReactExternalVarObjOps(private val x: ExternalVar.type) extends AnyVal {
-    def at[S, A](lens: Lens[S, A])(s: S, $: CompState.WriteCallbackOps[S]): ExternalVar[A] =
-      new ExternalVar(lens get s, $ modState lens.set(_))
-  }
-
-  @inline implicit final class MonocleReactReusableVarObjOps(private val x: ReusableVar.type) extends AnyVal {
-    def at[S, A: Reusability](lens: Lens[S, A])(s: S, $: CompState.WriteCallbackOps[S]): ReusableVar[A] =
-      new ReusableVar[A](lens get s, ReusableFn($ modState lens.set(_)))
-  }
+//  import CompState._
+//
+//  @inline implicit def MonocleReactCompStateOpsDD2[$, S]($: $)(implicit ops: $ => ReadDirectWriteDirectOps[S]) =
+//    new MonocleReactCompStateOps2[ReadDirectWriteDirectOps[S], S, Unit](ops($))
+//
+//  @inline implicit def MonocleReactCompStateOpsDC2[$, S]($: $)(implicit ops: $ => ReadDirectWriteCallbackOps[S]) =
+//    new MonocleReactCompStateOps2[ReadDirectWriteCallbackOps[S], S, Callback](ops($))
+//
+//  @inline implicit def MonocleReactCompStateOpsCC2[$, S]($: $)(implicit ops: $ => ReadCallbackWriteCallbackOps[S]) =
+//    new MonocleReactCompStateOps2[ReadCallbackWriteCallbackOps[S], S, Callback](ops($))
+//
+//  final class MonocleReactCompStateOps2[Ops <: WriteOpAux[S, W], S, W](private val $: Ops) extends AnyVal {
+//    def setStateL[L[_, _, _, _], B](l: L[S, S, _, B])(b: B, cb: Callback = Callback.empty)(implicit L: SetterMonocle[L]): W =
+//      $.modState(L.set(l)(b), cb)
+//  }
+//
+//  object _ExternalVar {
+//    def ss[S](s: S, $: CompState.WriteCallbackOps[S]): ExternalVar[S] =
+//      new ExternalVar(s, $ setState _)
+//  }
+//  @inline implicit final class MonocleReactExternalVarObjOps(private val x: ExternalVar.type) extends AnyVal {
+//    def at[S, A](lens: Lens[S, A])(s: S, $: CompState.WriteCallbackOps[S]): ExternalVar[A] =
+//      new ExternalVar(lens get s, $ modState lens.set(_))
+//  }
+//
+//  @inline implicit final class MonocleReactReusableVarObjOps(private val x: ReusableVar.type) extends AnyVal {
+//    def at[S, A: Reusability](lens: Lens[S, A])(s: S, $: CompState.WriteCallbackOps[S]): ReusableVar[A] =
+//      new ReusableVar[A](lens get s, ReusableFn($ modState lens.set(_)))
+//  }
 
   def main(): Unit = {
     val tgt = dom.document.getElementById("target")
@@ -72,7 +72,7 @@ object FocusPreviewExperiment {
 
     case class FocusData[+K](key: K, changedSinceFocus: Boolean)
 
-    class PreviewStuff[S, E, K]($: BackendScope[_, S],
+    class PreviewStuff[S, E, K]($: CompState.WriteAccess[S],
                          focusLens: Lens[S, Option[FocusData[K]]]
                          //,isDirty: (S, E) => Boolean
                          )
@@ -148,7 +148,7 @@ object FocusPreviewExperiment {
     * - on abort (escape)
     * - when loses focus and there is no change
     */
-  class EditorLogicStuff[S, V, E, K]($: BackendScope[_, S],
+  class EditorLogicStuff[S, V, E, K]($: CompState.WriteAccess[S],
                                      editLens: K => Lens[S, Option[E]],
                                      getValue: (S, K) => V,
                                      initEdit: V => E,
@@ -233,55 +233,6 @@ object FocusPreviewExperiment {
   object RemoteDataStuff {
     import RemoteDataStuff_NoRows_JustCells.{Status, genericWrapRemoteCall, ParentState => CellStates}
 
-    /*
-    sealed trait RowState[+C, +F]
-    sealed trait RowStatus[+F] extends RowState[Nothing, F]
-    case class WholeRow[F](status: Status[F]) extends RowStatus[F]
-    case class Cells[C, F](state: CellStates[C, F]) extends RowState[C, F] {
-      assert(state.nonEmpty)
-    }
-
-    type ParentState[R, +C, +F] = Map[R, RowState[C, F]]
-    def initParentState[R]: ParentState[R, Any, Any] = Map.empty
-
-    class InBackendR[S, R, C, F]($: BackendScope[_, S],
-                                 stateLens: Lens[S, ParentState[R, C, F]]) {
-
-      private def rowLens(r: R): Lens[S, Option[RowState[C, F]]] = {
-        import monocle._, Monocle._
-        stateLens ^|-> at(r)
-      }
-
-      private val rowStatusPrism: Prism[RowState[C, F], RowStatus[F]] =
-        monocle.macros.GenPrism[RowState[C, F], RowStatus[F]]
-
-      private val cellStatesPrism: Prism[RowState[C, F], Cells[C, F]] =
-        monocle.macros.GenPrism[RowState[C, F], Cells[C, F]]
-
-      private def cellStatesLens(r: R): Lens[S, CellStates[C, F]] = {
-        val rl = rowLens(r)
-        //val cs = rl ^<-? cellStatesPrism
-        Lens[S, CellStates[C, F]](
-          s => rl.get(s).flatMap(cellStatesPrism.getOption).fold[CellStates[C, F]](Map.empty)(_.state)
-        )(
-          n => if (n.isEmpty)
-            rl set None
-          else
-            rl set Some(Cells(n))
-        )
-      }
-
-      def getRowState(r: R)(s: S): Option[RowState[C, F]] =
-        rowLens(r).get(s)
-
-      def getRowStatus(r: R)(s: S): Option[RowStatus[F]] =
-        getRowState(r)(s) flatMap rowStatusPrism.getOption
-
-//      def inBackendC(r: R) =
-//        new RemoteDataStuff_NoRows_JustCells.InBackend[S, C, F]($, )
-    }
-    */
-
     type RowStatus[+F] = Status[F]
 
     case class RowState[C, +F](rowStatus: Option[RowStatus[F]], cells: CellStates[C, F])
@@ -289,7 +240,7 @@ object FocusPreviewExperiment {
     type ParentState[R, C, +F] = Map[R, RowState[C, F]]
     def initParentState[R]: ParentState[R, Any, Any] = Map.empty
 
-    class InBackendR[S, R, C, F]($: BackendScope[_, S],
+    class InBackendR[S, R, C, F]($: CompState.WriteAccess[S],
                                  stateLens: Lens[S, ParentState[R, C, F]]) {
 
       private val emptyRowState = RowState[C, F](None, Map.empty)
@@ -353,7 +304,7 @@ object FocusPreviewExperiment {
       doIt
     }
 
-    class InBackend[S, C, F]($: BackendScope[_, S],
+    class InBackend[S, C, F]($: CompState.WriteAccess[S],
                              stateLens: Lens[S, ParentState[C, F]]
                              //,renderFailed: Failed[F] => ReactElement?
                             ) {
@@ -361,12 +312,6 @@ object FocusPreviewExperiment {
       private def cellLens(c: C): Lens[S, Option[Status[F]]] = {
         import monocle._, Monocle._
         stateLens ^|-> at(c)
-//        stateLens ^|-> Lens[M, Option[Status[F]]](
-//          _.get(c)
-//        )({
-//          case None => _ - c
-//          case Some(s) => _.updated(c, s)
-//        })
       }
 
       def getStatus(c: C)(s: S): Option[Status[F]] =
@@ -392,108 +337,6 @@ object FocusPreviewExperiment {
 //    }
 
   }
-
-  /*
-  object Lib {
-
-    case class DataThingy[V, E, +K](value: V, edit: ExternalVar[Option[E]], focusInfo: Option[FocusInfo[K]],
-                                    focusSelf: Callback, onFocus: Callback, onBlur: Callback) {
-
-      def focusOnClick: TagMod =
-        edit.value match {
-          case None    => TagMod(^.onClick --> focusSelf)
-          case Some(_) => EmptyTag
-        }
-
-    }
-
-    implicit class DataThingyES[V, K](private val d: DataThingy[V, String, K]) extends AnyVal {
-      def inputText(e: String): ReactTagOf[dom.html.Input] =
-        <.input(
-          ^.`type` := "text",
-          d.editorMod,
-          ^.onChange ==> ((e: ReactEventI) => d.edit set Some(e.target.value)),
-          ^.value := e)
-    }
-
-    class Methods[S, K: Equal, V, E]($: BackendScope[_, S])
-                                    (focusLens: Lens[S, Option[FocusInfo[K]]])
-                                    (editLens: K => Lens[S, Option[E]])
-                                    (getValue: (S, K) => V)
-                                    (isEditUseless: (V, E) => Boolean,
-                                     initEdit: V => E,
-                                     tryToFocus: K => Callback) {
-      private val EK = Equal[K]
-
-      private val hasKey: K => FocusInfo[K] => Boolean =
-        if (EK.equalIsNatural)
-          k => _.key == k
-        else
-          k => fi => EK.equal(fi.key, k)
-
-      def onFocus(k: K): Callback =
-        $.modState(s =>
-         if (focusLens.get(s) exists hasKey(k))
-           s
-         else
-           focusLens.set(Some(FocusInfo(k, false)))(s))
-
-      def onBlur(k: K): Callback =
-        $.modState {
-        val el = editLens(k)
-        s0 => {
-          var s = s0
-          if (focusLens.get(s) exists hasKey(k))
-            s = focusLens.set(None)(s)
-
-          for (e <- el.get(s))
-            if (isEditUseless(getValue(s, k), e))
-              s = el.set(None)(s)
-
-          s
-        }
-      }
-
-     def onEdit(k: K): Option[E] => Callback =
-       no => $.modState{s0 =>
-         val lens = editLens(k)
-         var s = lens.set(no)(s0)
-         no match {
-           case None => // remove focus? No, editor will be removed when state cleared
-           case Some(n) =>
-             // TODO make efficient
-             s = focusLens.set(Some(FocusInfo(k, true)))(s)
-         }
-         s
-       }
-
-      def editVar(s: S, k: K): ExternalVar[Option[E]] =
-        ExternalVar(editLens(k) get s)(onEdit(k))
-
-      def startEditor(k: K): Callback =
-        $.modState(
-          s => editLens(k).modify(_ orElse Some(initEdit(getValue(s, k))))(s),
-          tryToFocus(k))
-
-      def focus(k: K)(s: S): Callback = {
-        editLens(k).get(s) match {
-          case None    => startEditor(k)
-          case Some(_) => tryToFocus(k)
-        }
-      }
-
-      def dataThingy(s: S, k: K): DataThingy[V, E, K] =
-        DataThingy[V, E, K](
-          getValue(s, k),
-          editVar(s, k),
-          focusLens get s filter hasKey(k),
-          Callback byName focus(k)(s),
-          onFocus(k),
-          onBlur(k))
-    }
-
-  }
-  */
 
   // ===================================================================================================================
   import PreviewLogic._
@@ -525,8 +368,6 @@ object FocusPreviewExperiment {
     }
 
     class Backend($: BackendScope[Unit, State]) {
-//      val FM = new Methods[State, Int, String, String]($)(State.focus)(State.forRow)(_ values _)(_ == _, identity, tryFocus)
-
       val FM = new PreviewStuff[State, String, Int]($, State.focus)
       val E = new EditorLogicStuff[State, String, String, Int]($, State.forRow, _.values(_), identity, tryToFocus, _ == _)
       val RS = new RemoteDataStuff_NoRows_JustCells.InBackend[State, Int, String]($, State.remoteState)
@@ -572,11 +413,9 @@ object FocusPreviewExperiment {
                     else
                       commitForReal(n) >> succ
                   }
-                  .flatMap(identity) // TODO scalajs-react
+                  .flatten
                   .delayMs(2000).void << Callback.log("Fake-Calling server...")
                 )
-
-//              val edit = ExternalVar.state($ zoomL State.forRow(i)) // TODO scalajs-react
 
               val content: ReactElement =
                 RS.getStatus(i)(s) match {
@@ -599,6 +438,7 @@ object FocusPreviewExperiment {
       .buildU
   }
 
+  // ====================================================================================================
   object Row {
 
     case class Props(editStuff: EditorStuffForChild[String, String],
