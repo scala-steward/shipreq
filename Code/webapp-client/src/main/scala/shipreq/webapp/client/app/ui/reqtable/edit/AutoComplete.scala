@@ -172,10 +172,10 @@ object AutoComplete {
 
           // Find suggestions
           val t = NonEmptyVector.maybe(path, trie)(trie.dropPath)
-          var r = t.toStream.filter(_._2.existsV(_.isActive)).map(_._1.value)
+          var r = t.iterator.filter(_._2.existsV(_.isActive)).map(_._1.value)
           for (l <- lead)
             r = r.filter(_ startsWith l)
-          r.sorted.map((path, _))
+          r.toStream.sorted.map((path, _))
         }
 
         val searchFn = TC.ignorePerfectMatch(searchFn0)(_ ==* _._2)
