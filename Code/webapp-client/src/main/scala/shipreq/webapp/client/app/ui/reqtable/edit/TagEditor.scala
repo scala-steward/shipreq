@@ -19,8 +19,10 @@ object TagEditor {
 
   type TagDiff = SetDiff[ApplicableTagId]
 
+  private def G = Grammar.hashRefKey
+
   val editor = new TextSeqEditor[ApplicableTagId, TagDiff](
-    "TagEditor", Grammar.hashRefKey.seqFormat.apply, TextEditor.Input)
+    "TagEditor", G.seqFormat.stream, TextEditor.Input)
 
   def lookupForNoCol(p: Project): Lookup =
     lookupG(p, _.tags.notUsedInColumns)
@@ -47,8 +49,8 @@ object TagEditor {
       val text =
         ids.toVector
           .map(a => project.config.atag(a).key.value)
-          .sorted
-          .mkString(" ")
+          .sorted |>
+          G.seqFormat.merge
 
       (ids, text)
     }

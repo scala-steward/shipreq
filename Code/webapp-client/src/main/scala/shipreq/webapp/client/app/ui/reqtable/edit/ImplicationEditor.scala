@@ -21,8 +21,10 @@ object ImplicationEditor {
 
   type ImpDiff = SetDiff[ReqId]
 
+  private def G = Grammar.pubidSeqFormat
+
   val editor = new TextSeqEditor[ReqId, ImpDiff](
-    "ImplicationEditor", Grammar.pubidSeqFormat.apply, TextEditor.Input)
+    "ImplicationEditor", G.stream, TextEditor.Input)
 
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, ParseRejection]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap
@@ -76,10 +78,10 @@ object ImplicationEditor {
       }
 
 
-      val text = reqs
-        .map(r => PlainText.pubid(p, r.pubid))
-        .sorted
-        .mkString(" ")
+      val text =
+        reqs.map(r => PlainText.pubid(p, r.pubid))
+          .sorted |>
+          G.merge
 
       (reqs.map(_.id).toSet, text)
     }

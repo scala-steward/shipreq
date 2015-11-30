@@ -20,7 +20,7 @@ object UnsafeTypes extends UnsafeTypesLowPriority {
   implicit def autoReqCodeNode(s: String) = ReqCode.Node(s)
 
   implicit def autoReqCode(s: String): ReqCode.Value = {
-    val v = Grammar.reqCode.nodeSeqFormat(s).map(ReqCode.Node.applyFn).toVector
+    val v = Grammar.reqCode.nodeSeqFormat.split(s).map(ReqCode.Node.applyFn).toVector
     NonEmptyVector(v.head, v.tail)
   }
 

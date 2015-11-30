@@ -220,7 +220,7 @@ object Validators {
         .constraint(c => nonEmpty >> (G.firstChar.constraint + c))
         .forField(FieldNames.reqCodeNode)
         .map(Node.applyFn)
-    
+
 
     UnivEq[Value] // Prove Set[Value] is ok
     case class VS(trie: Trie, currentValues: Set[Value])
@@ -258,8 +258,8 @@ object Validators {
 
       def parse = CorrectionPartU.apply3[String, Stream[String]](
         liveCorrect,
-        G.nodeSeqFormat.apply,
-        _.mkString(G.nodeSeparator.toString))
+        G.nodeSeqFormat.stream,
+        G.nodeSeqFormat.merge)
 
       def mkValue = ValidationPartU[Stream[String], Value] { i =>
         import scalaz.Validation.FlatMap._
