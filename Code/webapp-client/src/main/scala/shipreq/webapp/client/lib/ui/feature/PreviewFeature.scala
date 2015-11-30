@@ -67,4 +67,12 @@ object PreviewFeature {
     final def preview[A](isDirty: => Boolean)(a: => A): Option[A] =
       if (showPreview_?(isDirty)) Some(a) else None
   }
+
+  object AlwaysShow extends ForChild {
+    override val focusData                          = Some(FocusData((), true))
+    override def showPreview_?(isDirty: => Boolean) = true
+    override def onFocus                            = Callback.empty
+    override def onBlur                             = Callback.empty
+    override def onEdit                             = Callback.empty
+  }
 }

@@ -50,7 +50,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                    preview       : PreviewFeature.ForChild,
                    preEditValue  : Option[text.OptionalText],
                    commit        : text.OptionalText => Callback,
-                   keyHandlers   : KeyHandlers)
+                   keyHandlers   : KeyHandlers = KeyHandlers.empty) {
+
+    val richText = text.parse(project)(edit.value)
+    val validated = EditValidationFeature(Validators.genericRichText(plainText, richText))
+  }
 
   private val editorRef = Ref[dom.html.TextArea]("i")
 
@@ -75,15 +79,12 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       e => $.props >>= (_.edit.set(liveCorrect(e.target.value)))
 
     def render(p: Props) = {
-      val richText = text.parse(p.project)(p.edit.value)
-      val validated = EditValidationFeature(Validators.genericRichText(p.plainText, richText))
-
       def keyHandlers: KeyHandlers =
-        p.keyHandlers + validated.commitByKeyboard(p.commit, text.singleLine)
+        p.keyHandlers + p.validated.commitByKeyboard(p.commit, text.singleLine)
 
       def editor =
         <.textarea(
-          *.cellEditor(validated.validity),
+          *.cellEditor(p.validated.validity),
           keyHandlers,
           ^.ref := editorRef,
           ^.value := p.edit.value,
@@ -92,16 +93,16 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       def preview =
         <.div(
           "Preview",
-          <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, richText)))
+          <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, p.richText)))
 
       <.div(
         editor,
-        validated.renderFailure,
-        p.preview.preview(p.preEditValue.forall(richText !=* _))(preview))
+        p.validated.renderFailure,
+        p.preview.preview(p.preEditValue.forall(p.richText !=* _))(preview))
     }
   }
 
-  val component =
+  val Component =
     ReactComponentB[Props]("TagEditor")
       .renderBackend[Backend]
       // TODO .configure(Reusability.shouldComponentUpdate)

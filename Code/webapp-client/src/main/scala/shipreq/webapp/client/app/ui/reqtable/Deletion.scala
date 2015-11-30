@@ -12,9 +12,10 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.client.app.ui.{VUCA, Selection, ProjectWidgets}
+import shipreq.webapp.client.app.ui.{Selection, ProjectWidgets}
 import shipreq.webapp.client.app.ui.Style.reqtable.{deleteRestore => *}
-import shipreq.webapp.client.app.ui.reqtable.edit.RichTextEditor
+import shipreq.webapp.client.lib.ui.feature.PreviewFeature
+import shipreq.webapp.client.app.ui.newui.RichTextEditor
 import shipreq.webapp.client.lib.ui.UI
 import MTrie.Ops
 
@@ -302,13 +303,16 @@ object Deletion {
     val setReqSel = ReusableFn($ _setStateL State.selectedReqs)
     val setRcgSel = ReusableFn($ _setStateL State.selectedGroups)
 
-    val reasonEditorProps: State => RichTextEditor.DeletionReason.Props = {
-      implicit def autoPx[A](a: A): Px[A] = Px.const(a)
-      val p = $.props.runNow()
-      val e = RichTextEditor.DeletionReason.prepare(p.project, p.projectText, p.widgets, p.textSearch)
-      val u = $ _setStateL State.reason
-      s => e(VUCA.vu(s.reason, u))
-    }
+    def reasonEditorProps(p: Props, s: State): RichTextEditor.DeletionReason.Props =
+      RichTextEditor.DeletionReason.Props(
+        project        = p.project,
+        plainText      = p.projectText,
+        textSearch     = p.textSearch,
+        projectWidgets = p.widgets,
+        edit           = ExternalVar.at(State.reason)(s, $),
+        preview        = PreviewFeature.AlwaysShow,
+        preEditValue   = None,
+        commit         = _ => Callback.empty)
 
     val cancelButton: ReactElement =
       <.button(^.onClick --> $.props.flatMap(_.cancel), "Cancel")
@@ -427,17 +431,18 @@ object Deletion {
             <.div(*.section, UiText.reqCodeGroups + " to delete"),
             renderGroups(p, s))
 
-      val reason = reasonEditorProps(s)
+      val reasonTextProps = reasonEditorProps(p, s)
+
       def reasonSection =
         <.section(
           <.div(*.section, "Reason for deletion"),
-          reason.render)
+          RichTextEditor.DeletionReason.Component(reasonTextProps))
 
       val commit: Option[Callback] =
         for {
           reqs          ← NonEmptySet.option(s.selectedReqs.selected)
           reqCodeGroups = s.selectedGroups.selected
-          dr            ← reason.parseResult.toOption
+          dr            ← reasonTextProps.validated.validated
         } yield
         p perform DeleteReqs(reqs, reqCodeGroups, dr)
 
