@@ -6,8 +6,24 @@ import scalaz.Equal
 import PreviewFeature.{FocusData, ForChild}
 
 /**
+ * Supplies logic to determine whether or not to show a preview for some rich-text editor.
+ *
  * Preview available:
  * - when editing and focused and (dirty or has been edited since receiving focus)
+ *
+ * Usage: Parent
+ * =============
+ *
+ * Create an "key" ADT to uniquely identify all types of children that will use this feature.
+ * Embed a single instance of `PreviewFeature.State` in the top-most component's state.
+ * Initialise it with `PreviewFeature.initState`.
+ *
+ * Usage: Child
+ * ============
+ *
+ * Request a `PreviewFeature.ForChild` in the component's props.
+ * Use `showPreview_?` to see whether a preview should be rendered or not.
+ * Wire up all the `onXxxx` callbacks.
  */
 final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Option[FocusData[K]]])
                                 (implicit EK: Equal[K]) {
@@ -56,6 +72,7 @@ final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Opti
       override def onFocus                            = self onFocus k
       override def onBlur                             = self onBlur k
       override def onEdit                             = self onEdit k
+      override def toString                           = focusData.toString
     }
   }
 }

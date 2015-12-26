@@ -74,7 +74,8 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       Px.apply3(pxProject, pxPlainText, pxTextSearch)(mkAutoComplete)
 
     val updateState: ReactEventTA => Callback =
-      e => $.props >>= (_.edit.set(liveCorrect(e.target.value)))
+      e => $.props >>= (p =>
+        p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit)
 
     def render(p: Props) = {
       def editor =
@@ -83,6 +84,8 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
           p.tagMod(p.validated.validated),
           ^.ref       := editorRef,
           ^.value     := p.edit.value,
+          ^.onBlur   --> p.preview.onBlur,
+          ^.onFocus  --> p.preview.onFocus,
           ^.onChange ==> updateState)
 
       def preview =
