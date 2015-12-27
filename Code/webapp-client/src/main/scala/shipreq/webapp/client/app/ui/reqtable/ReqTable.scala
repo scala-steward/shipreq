@@ -200,7 +200,7 @@ object ReqTable {
                                  textSearch,
                                  saveIO)
 
-    val creationInterface = new CreationInterface(setCreation, project, plainText, widgets, textSearch)
+    val creationInterface = new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(s: State): ReactElement = {
@@ -211,7 +211,7 @@ object ReqTable {
 
       val vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
 
-      val creationProps = CreationInterface.Props(createIO, s.creation)
+      val creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
 
       val tableProps = Table.Props(
         project, rows, colName, colRnds, cellEditors, s.editStates,s.asyncStates, visibleSelection, modViewSettings)

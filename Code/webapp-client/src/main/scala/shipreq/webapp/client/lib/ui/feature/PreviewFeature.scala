@@ -3,7 +3,7 @@ package shipreq.webapp.client.lib.ui.feature
 import japgolly.scalajs.react._
 import monocle._
 import scalaz.Equal
-import PreviewFeature.{FocusData, ForChild}
+import PreviewFeature._
 
 /**
  * Supplies logic to determine whether or not to show a preview for some rich-text editor.
@@ -18,15 +18,22 @@ import PreviewFeature.{FocusData, ForChild}
  * Embed a single instance of `PreviewFeature.State` in the top-most component's state.
  * Initialise it with `PreviewFeature.initState`.
  *
- * Usage: Child
- * ============
+ * Usage: Child (direct)
+ * =====================
  *
  * Request a `PreviewFeature.ForChild` in the component's props.
  * Use `showPreview_?` to see whether a preview should be rendered or not.
  * Wire up all the `onXxxx` callbacks.
+ *
+ * Usage: Child (composite) / Sandwich-Meat
+ * ========================================
+ *
+ * Request a `PreviewFeature.ForChildren[K]` in the component's props.
+ * Request a `PreviewFeature.State[K]` in the component's props.
+ * Call `ForChildren.forChild` for each child.
  */
-final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Option[FocusData[K]]])
-                                (implicit EK: Equal[K]) {
+final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, State[K]])(implicit EK: Equal[K])
+  extends ForChildren[K] {
 
   private val hasKey: K => FocusData[K] => Boolean =
     if (EK.equalIsNatural)
@@ -55,19 +62,19 @@ final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Opti
       else
         s)
 
-  def showPreview_?(focusData: Option[FocusData[K]], isDirty: => Boolean): Boolean =
-    focusData.exists(_.changedSinceFocus || isDirty)
+  def showPreview_?(state: State[K], isDirty: => Boolean): Boolean =
+    state.exists(_.changedSinceFocus || isDirty)
 
-  def state(s: S): Option[FocusData[K]] =
+  def state(s: S): State[K] =
     lens.get(s)
 
   def forChild(k: K, s: S): ForChild =
     forChild(k, state(s))
 
-  def forChild(k: K, fi: Option[FocusData[K]]): ForChild = {
+  override def forChild(k: K, s: State[K]): ForChild = {
     val self = this
     new ForChild {
-      override val focusData                          = fi.filter(hasKey(k))
+      override val focusData                          = s.filter(hasKey(k))
       override def showPreview_?(isDirty: => Boolean) = self.showPreview_?(focusData, isDirty)
       override def onFocus                            = self onFocus k
       override def onBlur                             = self onBlur k
@@ -85,6 +92,10 @@ object PreviewFeature {
     None
 
   case class FocusData[+K](key: K, changedSinceFocus: Boolean)
+
+  trait ForChildren[-K] {
+    def forChild(k: K, s: State[K]): ForChild
+  }
 
   trait ForChild {
     val focusData: Option[FocusData[Any]]

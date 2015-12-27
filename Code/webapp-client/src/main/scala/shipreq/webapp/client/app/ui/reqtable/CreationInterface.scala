@@ -25,7 +25,9 @@ object CreationInterface {
   type SelType = Option[Type]
   val selectComponent = SelectOne.Component[SelType]
 
-  case class Props(createIO: CallServer[CreateContentCmd], state: State)
+  case class Props(createIO    : CallServer[CreateContentCmd],
+                   state       : State,
+                   previewState: PreviewFeature.State[FocusId])
 
   @Lenses
   case class State(selectedType: SelType,
@@ -56,6 +58,7 @@ object CreationInterface {
 import shipreq.webapp.client.app.ui.reqtable.CreationInterface._
 
 class CreationInterface($               : CompState.Access[State],
+                        previewFeature  : PreviewFeature.ForChildren[FocusId],
                         pxProject       : Px[Project],
                         pxProjectText   : Px[PlainText.ForProject],
                         pxProjectWidgets: Px[ProjectWidgets],
@@ -131,6 +134,8 @@ class CreationInterface($               : CompState.Access[State],
     val setReqCode = $$ zoomL CreateReqCodeGroupState.reqCode setState (_: String)
     val setTitle   = $$ zoomL CreateReqCodeGroupState.title   setState (_: String)
 
+    val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
+
     def render(p: Props) = {
       import Px.AutoValue._
 
@@ -150,7 +155,7 @@ class CreationInterface($               : CompState.Access[State],
           pxTextSearch,
           pxProjectWidgets,
           ExternalVar(state.title)(setTitle),
-          PreviewFeature.NeverShow, // TODO Enable preview in CreationInterface
+          previewFeature.forChild(titleFocus, p.previewState),
           None,
           _emptyTag)
 
@@ -189,6 +194,8 @@ class CreationInterface($               : CompState.Access[State],
     val setTags     = $$ zoomL CreateGenericReqState.tags     setState (_: String)
     val setImp      = $$ zoomL CreateGenericReqState.imp      setState (_: String)
 
+    val titleFocus = FocusId.InCI(GenericReqType(CustomReqTypeId(-1)), Column.Title)
+
     val pxImpLookup = Px.apply2(pxProject, pxProjectText)(ImplicationEditor.Lookup.all)
 
     val pxImpValidationFn =
@@ -197,10 +204,11 @@ class CreationInterface($               : CompState.Access[State],
 
     val pxTagLookup = pxProject map TagEditor.Lookup.all
 
-    def render(p: Props) = {
+    def render(pp: Props) = {
       import Px.AutoValue._
 
-      val state = p._1.state.greq
+      val p = pp._1
+      val state = p.state.greq
 
       val propsReqCodes =
         ReqCodeEditor.Multiple.Props(
@@ -222,7 +230,7 @@ class CreationInterface($               : CompState.Access[State],
           pxTextSearch,
           pxProjectWidgets,
           ExternalVar(state.title)(setTitle),
-          PreviewFeature.NeverShow, // TODO Enable preview in CreationInterface
+          previewFeature.forChild(titleFocus, p.previewState),
           None,
           _emptyTag)
 
@@ -243,8 +251,8 @@ class CreationInterface($               : CompState.Access[State],
           if state.status !=* Locked
         } yield {
           val tagIds = tags.map(_.id).toSet
-          val cmd = CreateContentCmd.CreateGenericReq(p._2, title, codes, tagIds, impSrcs.added)
-          ajax(p._1, setStatus, cmd)
+          val cmd = CreateContentCmd.CreateGenericReq(pp._2, title, codes, tagIds, impSrcs.added)
+          ajax(p, setStatus, cmd)
         }
 
       <.table(
