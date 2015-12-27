@@ -24,9 +24,6 @@ object Table {
   implicit val reusabilityCR  : Reusability[ColumnRenderer]                 = Reusability.byRef // TODO This is a problem
   implicit val reusabilityCs  : Reusability[NonEmptyVector[Column]]         = reusabilityNonEmptyVector
   implicit val reusabilityCRs : Reusability[NonEmptyVector[ColumnRenderer]] = reusabilityNonEmptyVector
-  implicit val reusabilityCTS : Reusability[Cell.TableState]                = Reusability.byRef
-  implicit val reusabilityCRS : Reusability[Cell.RowState]                  = Reusability.byRef
-  implicit val reusabilityCCS : Reusability[Cell.State]                     = Reusability.byRef
 
   implicit val reusabilityCCSAasdqwasd1: Reusability[CellEditor] = Reusability.never
   implicit val reusabilityCCSAasdqw1: Reusability[CellEditors] = Reusability.never

@@ -47,15 +47,11 @@ object ReqTable {
                    editStates  : EditState.Table,
                    asyncStates : AsyncState.TableState,
                    previewState: Preview.State,
-                   cellStates  : Cell.TableState,
                    modal       : Modal.State) {
 
     def recvChanges(changes: Changes): State =
       copy(project = changes.p2) // TODO This obviously affects other things
       // TODO A custom field removal/addition should affect ViewSettings
-
-    def updateCellLoc(loc: Cell.Loc, state: Cell.State): State =
-      copy(cellStates = cellStates.set(loc, state))
 
     def filterFailure(s: FilterEditor.State): State =
       copy(filter = s)
@@ -87,7 +83,6 @@ object ReqTable {
         EditState         .empty,
         AsyncState        .initState,
         PreviewFeature    .initState,
-        Cell              .emptyTableState,
         Modal             .none)
       p.filterSpec.foreach(f => s = s setFilterSpec f)
       s
@@ -135,12 +130,9 @@ object ReqTable {
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
-    val wholeRowsWithState: Px.ThunkM[Set[Row.SourceId]] =
-      Px.bs($).stateM(_.cellStates.all.iterator
-        .filter(_._2 match {
-          case _: Cell.RowState.Cells | Cell.RowState.Empty => false
-          case _: Cell.RowState.WholeRow => true
-        })
+    val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
+      Px.bs($).stateM(_.asyncStates.iterator
+        .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
 
@@ -148,7 +140,7 @@ object ReqTable {
       for {
         rs <- rows
         s  <- selection
-        wr <- wholeRowsWithState
+        wr <- rowsWithAsyncWholeRowStatuses
       } yield
         s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
@@ -157,12 +149,6 @@ object ReqTable {
         vs  <- viewSettings
         nr  <- colName
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
-
-    val cellSetLocState: Cell.SetLocState =
-      ReusableFn(loc => (s, cb) => $.modState(_.updateCellLoc(loc, s), cb))
-
-    val cellModifyFn: Cell.ModifyFn =
-      ReusableFn(f => $.modState(State.cellStates modify f))
 
     private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: Props => RemoteFn.InstanceFor[F]): CallServer[I] =
       (i, sio, fio) => $.props >>= (p =>
@@ -207,7 +193,7 @@ object ReqTable {
     // -----------------------------------------------------------------------------------------------------------------
     def render(s: State): ReactElement = {
       import Px.AutoValue._
-      Px.refresh(project, viewSettings, filterState, selection, wholeRowsWithState)
+      Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
 
       val cfg = s.project.config
 

@@ -17,7 +17,6 @@
 
 * Remove:
   * RemoteDataEditor
-  * Cell
   * PolyMap (?)
   * reqtable.edit
   * LocalEditorFeature (?)
