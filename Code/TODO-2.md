@@ -1,3 +1,5 @@
+* SelectionCtrls needs updating.
+
 * Each editor should get focus when opened -
   either make the focus callback passed in though CellEditors.startEdit work,
   or use each component's didMount CB like ReqTypeSelector.
@@ -13,7 +15,6 @@
   * Fix any ???s in patch.
 
 * Remove:
-  * ColumnEditors
   * RemoteDataEditor
   * Cell
   * PolyMap (?)
