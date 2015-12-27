@@ -16,12 +16,9 @@
 * Reenable Reusability.
 
 * Remove:
-  * RemoteDataEditor
   * PolyMap (?)
   * reqtable.edit
   * LocalEditorFeature (?)
-  * TextSeqEditor (?)
-  * VUCA
 
 * Reorganise all UI packages include the shit in .lib.ui
 
