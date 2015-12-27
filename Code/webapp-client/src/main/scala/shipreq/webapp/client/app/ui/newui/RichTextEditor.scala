@@ -50,8 +50,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                    preEditValue  : Option[text.OptionalText],
                    tagMod        : Option[text.OptionalText] => TagMod) {
 
-    val richText = text.parse(project)(edit.value)
-    val validated = EditValidationFeature(Validators.genericRichText(plainText, richText))
+    val richText    = text.parse(project)(edit.value)
+    val parseResult = Validators.genericRichText(plainText, richText)
+    val validated   = EditValidationFeature(parseResult)
+
+    def render = Component(this)
   }
 
   private val editorRef = Ref[dom.html.TextArea]("i")

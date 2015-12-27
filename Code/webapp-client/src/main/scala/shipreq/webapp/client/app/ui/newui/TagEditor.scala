@@ -29,6 +29,9 @@ object TagEditor {
     def apply(tags: TraversableOnce[ApplicableTag]): Lookup =
       empty ++ tags.toIterator.filter(_.live :: Live)
 
+    def all(p: Project): Lookup =
+      apply(p.config.liveTagColumnDistribution.tags.all)
+
     def forTagField(f: CustomField.Tag.Id)(p: Project): Lookup =
       apply(p.config.liveTagColumnDistribution.tags inColumn f)
 
@@ -49,7 +52,13 @@ object TagEditor {
 
   case class Props(edit  : ExternalVar[String],
                    lookup: Lookup,
-                   tagMod: Option[Stream[ApplicableTag]] => TagMod)
+                   tagMod: Option[Stream[ApplicableTag]] => TagMod) {
+
+    val parseResult =
+      validator.correctAndValidate(lookup, edit.value)
+
+    def render = Component(this)
+  }
 
   implicit val reusabilityLookup: Reusability[Lookup] =
     Reusability.byRef[Lookup] || Reusability.byUnivEq(_.underlyingMap)
@@ -68,7 +77,7 @@ object TagEditor {
         AutoComplete.tag(l.values.toStream, HideDead)(Plain)))
 
     def render(p: Props) = {
-      val validated = EditValidationFeature(validator.correctAndValidate(p.lookup, p.edit.value))
+      val validated = EditValidationFeature(p.parseResult)
 
       <.div(
         <.input.text(

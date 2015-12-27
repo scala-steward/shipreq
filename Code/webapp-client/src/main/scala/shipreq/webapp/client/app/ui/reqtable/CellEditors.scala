@@ -183,7 +183,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       def props = ReqCodeEditor.Single.Props(evar, initial.some, pxProject.value().reqCodes.trie, tagMod)
 
       override val rendered =
-        renderOnce(ReqCodeEditor.Single.Component(props))
+        renderOnce(props.render)
     }
 
     private case class StateMultiple(text   : String,
@@ -200,7 +200,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       def props = ReqCodeEditor.Multiple.Props(evar, initial.some, pxProject.value().reqCodes.trie, tagMod)
 
       override val rendered =
-        renderOnce(ReqCodeEditor.Multiple.Component(props))
+        renderOnce(props.render)
     }
   }
 
@@ -306,7 +306,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       def props = ImplicationEditor.Props(evar, lookup, valFn, pxTextSearch, tagMod)
 
       override val rendered =
-        renderOnce(ImplicationEditor.Component(props))
+        renderOnce(props.render)
     }
   }
 
@@ -345,7 +345,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       def props = TagEditor.Props(evar, lookup, tagMod)
 
       override val rendered =
-        renderOnce(TagEditor.Component(props))
+        renderOnce(props.render)
     }
   }
 
@@ -400,7 +400,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
 
         override val rendered =
           props.map(p =>
-            Some(editor.Component(p): ReactElement))
+            Some(p.render: ReactElement))
       }
     }
 

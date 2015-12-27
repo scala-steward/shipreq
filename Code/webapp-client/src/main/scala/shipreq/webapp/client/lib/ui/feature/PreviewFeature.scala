@@ -104,4 +104,12 @@ object PreviewFeature {
     override def onBlur                             = Callback.empty
     override def onEdit                             = Callback.empty
   }
+
+  object NeverShow extends ForChild {
+    override val focusData                          = None
+    override def showPreview_?(isDirty: => Boolean) = false
+    override def onFocus                            = Callback.empty
+    override def onBlur                             = Callback.empty
+    override def onEdit                             = Callback.empty
+  }
 }

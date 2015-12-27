@@ -2,21 +2,14 @@ package shipreq.webapp.client.app.ui.newui
 
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react._, vdom.prefix_<^._
-import org.scalajs.dom
 import shipreq.webapp.base.validation.Validator
 import shipreq.webapp.client.app.ui.reqtable.edit.AutoComplete
 import shipreq.webapp.client.lib.ui.feature._
-import scalaz.{\/-, -\/}
-import shipreq.base.util.{UnivEq, SetDiff, Util}
-import shipreq.webapp.base.UiText
+import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.UpdateContentCmd
-import shipreq.webapp.base.text.{Grammar, PlainText}
-import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
+import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.client.lib.ui.TextEditor
-import TextSeqEditor._
 import Validators.{reqCode => V}
-import UpdateContentCmd.{PatchReqCodes, SetReqCodeGroupCode}
 import shipreq.webapp.client.data.DataReusability._
 
 sealed abstract class ReqCodeEditor[Data: Reusability] {
@@ -32,7 +25,13 @@ sealed abstract class ReqCodeEditor[Data: Reusability] {
   case class Props(edit        : ExternalVar[String],
                    initialValue: Option[Data],
                    trie        : ReqCode.Trie,
-                   tagMod      : Option[Data] => TagMod)
+                   tagMod      : Option[Data] => TagMod) {
+
+    val parseResult =
+      validator.correctAndValidate(V.VS(trie, dataToSet(initialValue)), edit.value)
+
+    def render = Component(this)
+  }
 
   private val editorRef = Ref[textEditor.Dom]("i")
 
@@ -40,16 +39,12 @@ sealed abstract class ReqCodeEditor[Data: Reusability] {
     private val pxTrie = Px.bs($).propsA(_.trie)
     private val pxInit = Px.bs($).propsA(_.initialValue)
 
-    val pxValidationState =
-      Px.apply2(pxTrie, pxInit)((t, i) => V.VS(t, dataToSet(i)))
-
     val pxAutoComplete = pxTrie.map(t =>
       AutoCompleteFeature.Strategies( // TODO Fix AutoComplete
         AutoComplete.reqCode.prefixes(t): _*))
 
     def render(p: Props) = {
-      val vs = pxValidationState.value()
-      val validated = EditValidationFeature(validator.correctAndValidate(vs, p.edit.value))
+      val validated = EditValidationFeature(p.parseResult)
 
       <.div(
         textEditor.tag(

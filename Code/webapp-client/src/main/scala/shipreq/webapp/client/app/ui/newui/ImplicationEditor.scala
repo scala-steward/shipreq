@@ -71,11 +71,17 @@ object ImplicationEditor {
       case _                     => false
     }
 
-  case class Props(edit  : ExternalVar[String],
-                   lookup: Lookup,
+  case class Props(edit        : ExternalVar[String],
+                   lookup      : Lookup,
                    validationFn: ValidationFn,
-                   textSearch: TextSearch,
-                   tagMod: Option[SetDiff[ReqId]] => TagMod)
+                   textSearch  : TextSearch,
+                   tagMod      : Option[SetDiff[ReqId]] => TagMod) {
+
+    val parseResult =
+      validationFn.correctAndValidate(lookup, edit.value)
+
+    def render = Component(this)
+  }
 
 //  implicit def univEqLookup: UnivEq[Lookup] =
 //    UnivEq.derive
@@ -135,7 +141,7 @@ object ImplicationEditor {
           AutoComplete.req(s, l.legal, Plain))
 
     def render(p: Props) = {
-      val validated = EditValidationFeature(p.validationFn.correctAndValidate(p.lookup, p.edit.value))
+      val validated = EditValidationFeature(p.parseResult)
 
       <.div(
         <.input.text(
