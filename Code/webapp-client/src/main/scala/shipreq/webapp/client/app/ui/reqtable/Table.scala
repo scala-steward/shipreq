@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import shipreq.base.util.NonEmptyVector
-import shipreq.base.util.ScalaExt.EndoFn
+import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.ui.DragToReorder
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
@@ -35,24 +35,6 @@ object Table {
 
   // ===================================================================================================================
   // Table
-
-  object TODO_DELETE {
-    def traverse[T[X] <: TraversableOnce[X], A](ta: => T[A])(f: A => Callback): Callback =
-      Callback(
-        ta.foreach(a =>
-          f(a).runNow()))
-
-    @inline def sequence[T[X] <: TraversableOnce[X]](tca: => T[Callback]): Callback =
-      traverse(tca)(identity)
-
-    def traverseO[A](oa: => Option[A])(f: A => Callback): Callback =
-      Callback(
-        oa.foreach(a =>
-          f(a).runNow()))
-
-    @inline def sequenceO[A](oca: => Option[Callback]): Callback =
-      traverseO(oca)(identity)
-  }
 
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
@@ -110,8 +92,6 @@ object Table {
     }
   }
 
-  // ===================================================================================================================
-
   def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
     Callback {
       val cell: dom.html.Element =
@@ -145,11 +125,11 @@ object Table {
   // ===================================================================================================================
   // Header row
 
-  case class HeaderProps(cols        : NonEmptyVector[Column],
-                         colName     : Column.NameResolver,
-                         selection   : RowSelectionVisible,
-                         reorder     : NonEmptyVector[Column] ~=> Callback,
-                         clickSort   : Column ~=> Callback)
+  case class HeaderProps(cols     : NonEmptyVector[Column],
+                         colName  : Column.NameResolver,
+                         selection: RowSelectionVisible,
+                         reorder  : NonEmptyVector[Column] ~=> Callback,
+                         clickSort: Column ~=> Callback)
 
   implicit val headerPropReuse = Reusability.caseClass[HeaderProps]
 
@@ -291,11 +271,11 @@ object Table {
   // ===================================================================================================================
   // Cells
 
-  case class CellProps(row        : Row,
-                       cr         : ColumnRenderer,
-                       cellEditor : Option[CellEditor],
-                       asyncState : AsyncState.Single,
-                       startEdit  : StartEdit)
+  case class CellProps(row       : Row,
+                       cr        : ColumnRenderer,
+                       cellEditor: Option[CellEditor],
+                       asyncState: AsyncState.Single,
+                       startEdit : StartEdit)
 
   implicit val cellPropReuse = Reusability.caseClass[CellProps]
 
@@ -330,8 +310,14 @@ object Table {
         }
       )
 
+    def focus: Callback =
+      domNode.map { n =>
+        val target = focusableChildren(n).nextOption() getOrElse n
+        target.focus()
+      }
+
     def startEdit: Callback =
-      $.props >>= (_ startEdit domNode.map(_.focus()))
+      $.props >>= (_ startEdit focus)
 
     def render(p: CellProps) = {
       val col = p.cr.column

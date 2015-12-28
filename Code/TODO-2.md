@@ -1,7 +1,3 @@
-* Each editor should get focus when opened -
-  either make the focus callback passed in though CellEditors.startEdit work,
-  or use each component's didMount CB like ReqTypeSelector.
-
 * Manually test all the editors and all the expected features.
   * Preview (including when multiple are open/dirty)
   * Create manual test script.
@@ -19,6 +15,8 @@
   * PolyMap (?)
   * reqtable.edit
   * LocalEditorFeature (?)
+
+* Add React Collapse and use in previews. (NOT HERE - there's a branch for this)
 
 * Reorganise all UI packages include the shit in .lib.ui
 

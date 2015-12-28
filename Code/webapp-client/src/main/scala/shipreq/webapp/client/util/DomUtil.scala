@@ -2,14 +2,22 @@ package shipreq.webapp.client.util
 
 import japgolly.scalajs.react._
 import scala.annotation.tailrec
+import scalajs.js
 import org.scalajs.dom._
 import shipreq.base.util.Util
+import shipreq.base.util.ScalaExt._
 
 object DomUtil {
 
   @inline implicit class PatchNode(private val n: Node) extends AnyVal {
     @inline def castDom[T <: Node] = n.asInstanceOf[T]
     @inline def castHtml = castDom[html.Element]
+    // TODO Is above needed after scalajs-react upgrade?
+  }
+
+  @inline implicit class PatchHtmlElement(private val e: html.Element) extends AnyVal {
+    def disabledU: js.UndefOr[Boolean] =
+      e.asInstanceOf[js.Dynamic].disabled.asInstanceOf[js.UndefOr[Boolean]]
   }
 
   @inline implicit class DOMStringListExt(private val d: DOMStringList) extends AnyVal {
@@ -26,9 +34,41 @@ object DomUtil {
   }
 
   @inline implicit class PatchHTMLCollection(private val c: raw.HTMLCollection) extends AnyVal {
-    def head: Element = c(0)
-    def last: Element = c(c.length - 1)
+    def nonEmpty: Boolean =
+      c.length > 0
+
+    def isEmpty: Boolean =
+      !nonEmpty
+
+    def headOption: Option[Element] =
+      if (nonEmpty) Some(head) else None
+
+    def lastOption: Option[Element] =
+      if (nonEmpty) Some(last) else None
+
+    def head: Element =
+      c(0)
+
+    def last: Element =
+      c(c.length - 1)
+
+    def iterator: Iterator[Element] =
+      (0 until c.length).iterator.map(c.apply)
+
+    def deepIteratorDepthFirst: Iterator[Element] =
+      iterator.flatMap(e => Iterator.single(e) ++ e.children.deepIteratorDepthFirst)
+
+    def deepIteratorBreadthFirst: Iterator[Element] =
+      iterator ++ iterator.flatMap(_.children.deepIteratorBreadthFirst)
   }
+
+  def focusableChildren(e: Element): Iterator[html.Element] =
+    focusable(e.children.deepIteratorDepthFirst)
+
+  def focusable(es: Iterator[Element]): Iterator[html.Element] =
+    es.filterT[html.Element]
+      .filter(_.tabIndex >= 0)
+      .filter(_.disabledU.forall(!_)) // ignore disabled
 
   def isDragWithinNode(e: ReactDragEvent, node: Node): Boolean = {
     @inline def between(value: Double, from: Double, to: Double) =

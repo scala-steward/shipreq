@@ -76,6 +76,9 @@ object ScalaExt extends Platform.ScalaExt {
   implicit class IteratorExt[A](private val as: Iterator[A]) extends AnyVal {
     def filterT[T <: A](implicit t: ClassTag[T]): Iterator[T] =
       as.flatMap(t.unapply(_).iterator)
+
+    def nextOption(): Option[A] =
+      if (as.hasNext) Some(as.next()) else None
   }
 
   implicit class IterableExt[A](private val as: Iterable[A]) extends AnyVal {
