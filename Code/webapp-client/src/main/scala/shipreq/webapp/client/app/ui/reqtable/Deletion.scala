@@ -290,7 +290,7 @@ object Deletion {
   @Lenses
   case class State(selectedReqs: Selection[ReqId], selectedGroups: Selection[ReqCodeId], reason: String)
 
-  class Backend($: BackendScope[Props, State]) {
+  final class Backend($: BackendScope[Props, State]) {
     // Not worried about concurrent project updates.
     // Usage is that Props are only assigned once to create the component - all subsequent updates are by state
 
@@ -302,6 +302,7 @@ object Deletion {
 
     val setReqSel = ReusableFn($ _setStateL State.selectedReqs)
     val setRcgSel = ReusableFn($ _setStateL State.selectedGroups)
+    val setReason = ReusableFn($ _setStateL State.reason)
 
     def reasonEditorProps(p: Props, s: State): RichTextEditor.DeletionReason.Props =
       RichTextEditor.DeletionReason.Props(
@@ -309,10 +310,10 @@ object Deletion {
         plainText      = p.projectText,
         textSearch     = p.textSearch,
         projectWidgets = p.widgets,
-        edit           = ExternalVar.at(State.reason)(s, $),
+        edit           = ReusableVar(s.reason)(setReason),
         preview        = PreviewFeature.AlwaysShow,
         preEditValue   = None,
-        tagMod         = _ => EmptyTag)
+        extra          = RichTextEditor.DeletionReason.noExtra)
 
     val cancelButton: ReactElement =
       <.button(^.onClick --> $.props.flatMap(_.cancel), "Cancel")

@@ -96,21 +96,21 @@ object AutoComplete {
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     legal.filter(_.live(p.config.customReqTypes) :: Live)
-      .map(req => new ReqItem(req, p.config.reqType(req.pubid.reqTypeId), pt reqTitle req))
+      .map(req => new ReqItem(req.id, req.pubid, p.config.reqType(req.pubid.reqTypeId), pt reqTitle req))
       .sortBy(_.sortKey)
   }
 
   def req(textSearch: TextSearch, legal: Stream[ReqItem], Contextualise: Contextualise): Strategies = {
     val searchTitles =
       textSearch.ignoreCaseNoWhitespace
-        .filterReqsIds(legal.map(_.req.id).toSet)
+        .filterReqsIds(legal.map(_.reqId).toSet)
         .titlesOnly
 
     val searchFn: TC.Query[ReqItem] = { term =>
       val titles = searchTitles.searchAll(term).take(10).map(_.id).toSet
       val np     = normaliseReqPubid(term)
       // TODO TextComplete should use multiple result tiers. Titles shouldn't be searched when there are matching pubids
-      legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.req.id))
+      legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.reqId))
     }
 
     def li(i: ReqItem): ReactElement =
@@ -124,11 +124,14 @@ object AutoComplete {
       .template((i, _) => React.renderToStaticMarkup(li(i)))
   }
 
-  final class ReqItem(val req: Req, val reqType: ReqType, val title: String) {
-    val pubidStr     = PlainText.pubid(reqType, req.pubid.pos)
+  case class ReqItem(reqId: ReqId, pubid: Pubid, reqType: ReqType, title: String) {
+    val pubidStr     = PlainText.pubid(reqType, pubid.pos)
     val pubidStrNorm = normaliseReqPubid(pubidStr)
-    val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)
+    val sortKey      = (reqType.mnemonic.value, pubid.pos.value)
   }
+
+  implicit def univEqReqItem: UnivEq[ReqItem] =
+    UnivEq.derive
 
   @inline def normaliseReqPubid(s: String): String =
     Grammar.pubidSeqFormat.normEach(s)

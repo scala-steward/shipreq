@@ -39,14 +39,20 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     ac
   }
 
+  /** Extra properties to apply to the tag. */
+  type Extra = Option[text.OptionalText] ~=> TagMod
+
+  val noExtra: Extra =
+    ReusableFn(_ => EmptyTag)
+
   case class Props(project       : Project,
                    plainText     : PlainText.ForProject,
                    textSearch    : TextSearch,
                    projectWidgets: ProjectWidgets,
-                   edit          : ExternalVar[String],
+                   edit          : ReusableVar[String],
                    preview       : PreviewFeature.ForChild,
                    preEditValue  : Option[text.OptionalText],
-                   tagMod        : Option[text.OptionalText] => TagMod) {
+                   extra         : Extra) {
 
     val richText    = text.parse(project)(edit.value)
     val parseResult = Validators.genericRichText(plainText, richText)
@@ -54,6 +60,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     def render = Component(this)
   }
+
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
 
   private val editorRef = Ref[dom.html.TextArea]("i")
 
@@ -82,7 +91,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       def editor =
         <.textarea(
           *.cellEditor(p.validated.validity),
-          p.tagMod(p.validated.validated),
+          p.extra(p.validated.validated),
           ^.ref       := editorRef,
           ^.value     := p.edit.value,
           ^.onBlur   --> p.preview.onBlur,
@@ -105,7 +114,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   val Component =
     ReactComponentB[Props]("RichTextEditor:" + name)
       .renderBackend[Backend]
-      // TODO .configure(Reusability.shouldComponentUpdate)
+      .configure(Reusability.shouldComponentUpdate)
       .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
       .build
 }

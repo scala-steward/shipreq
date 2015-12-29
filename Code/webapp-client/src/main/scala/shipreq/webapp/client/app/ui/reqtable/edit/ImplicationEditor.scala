@@ -22,8 +22,8 @@ object ImplicationEditor {
   case class Lookup(legal: Stream[ReqItem], illegal: Map[String, String]) {
     lazy val legalm = legal.map(_.mapStrengthL(_.pubidStrNorm)).toMap
 
-    def outlaw(isBad: Req => Boolean, rej: ReqItem => String): Lookup = {
-      val (ko, ok) = legal.partition(i => isBad(i.req))
+    def outlaw(isBad: ReqItem => Boolean, rej: ReqItem => String): Lookup = {
+      val (ko, ok) = legal.partition(isBad)
       val illegal2 = ko.foldLeft(illegal)((m, i) => m.updated(i.pubidStrNorm, rej(i)))
       Lookup(ok, illegal2)
     }
@@ -35,9 +35,12 @@ object ImplicationEditor {
 
     def forCustomColumn(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
       val f = p.config.customField(fid)
-      l.outlaw(_.reqTypeId !=* f.reqTypeId, _.pubidStr + " is not applicable in this column")
+      l.outlaw(_.reqType.reqTypeId !=* f.reqTypeId, _.pubidStr + " is not applicable in this column")
     }
   }
+
+  implicit def univEqLookup: UnivEq[Lookup] =
+    UnivEq.derive
 
   def initialValueForCustomColumn(p: Project, fid: CustomField.Implication.Id, id: ReqId): Stream[Pubid] =
     p.implications.backwards(id)
@@ -46,7 +49,7 @@ object ImplicationEditor {
 
   def initialValueAndText(initial: Option[(ReqId, Seq[Pubid])], p: Project, l: Lookup): (Set[ReqId], String) = {
     val reqs = {
-      val legal = initial.foldLeft(l.legal.map(_.req.id).toSet)(_ - _._1)
+      val legal = initial.foldLeft(l.legal.map(_.reqId).toSet)(_ - _._1)
       initial.fold(Stream.empty[Pubid])(_._2.toStream)
         .map(p.reqs.reqByPubid)
         .filter(legal contains _.id)
@@ -70,11 +73,14 @@ object ImplicationEditor {
       case _                     => false
     }
 
-  case class Props(edit        : ExternalVar[String],
+  /** Extra properties to apply to the tag. */
+  type Extra = Option[SetDiff[ReqId]] ~=> TagMod
+
+  case class Props(edit        : ReusableVar[String],
                    lookup      : Lookup,
                    validationFn: ValidationFn,
                    textSearch  : TextSearch,
-                   tagMod      : Option[SetDiff[ReqId]] => TagMod) {
+                   extra       : Extra) {
 
     val parseResult =
       validationFn.correctAndValidate(lookup, edit.value)
@@ -82,19 +88,11 @@ object ImplicationEditor {
     def render = Component(this)
   }
 
-//  implicit def univEqLookup: UnivEq[Lookup] =
-//    UnivEq.derive
-
-  implicit val reusabilityLookup: Reusability[Lookup] =
-    Reusability.byRef[Lookup] //|| Reusability.byUnivEq
-
-  private val editorRef = Ref[dom.html.Input]("i")
-
   type ValidationFn = Validator[Lookup, String, _, SetDiff[ReqId]]
 
   private val validator1 = {
     def checkEach(l: Lookup, s: String): String \/ ReqId =
-      l.legalm.get(s).map(_.req.id.right) orElse
+      l.legalm.get(s).map(_.reqId.right) orElse
         l.illegal.get(s).map(-\/.apply) getOrElse
         -\/("Invalid: " + s)
 
@@ -127,7 +125,9 @@ object ImplicationEditor {
       .map(_.toSet)
       .addValidation(validator2(p, subject, initialValues, declFwd).liftS)
 
-  class Backend($: BackendScope[Props, Unit]) {
+  private val editorRef = Ref[dom.html.Input]("i")
+
+  final class Backend($: BackendScope[Props, Unit]) {
     private val pxLookup = Px.bs($).propsA(_.lookup)
     private val pxTextSearch = Px.bs($).propsA(_.textSearch)
 
@@ -143,7 +143,7 @@ object ImplicationEditor {
 
       <.div(
         <.input.text(
-          p.tagMod(validated.validated),
+          p.extra(validated.validated),
           ^.onChange  ==> ((e: ReactEventI) => p.edit.set(e.target.value)),
           ^.ref        := editorRef,
           ^.value      := p.edit.value),
@@ -151,10 +151,18 @@ object ImplicationEditor {
     }
   }
 
+  private implicit def reusabilityValidationFn: Reusability[ValidationFn] = Reusability.byRef
+
+  implicit val reusabilityLookup: Reusability[Lookup] =
+    Reusability.byRef[Lookup] || Reusability.byUnivEq
+
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
+
   val Component =
     ReactComponentB[Props]("ImpEditor")
       .renderBackend[Backend]
-      // TODO .configure(Reusability.shouldComponentUpdate)
+      .configure(Reusability.shouldComponentUpdate)
       .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
       .build
 }

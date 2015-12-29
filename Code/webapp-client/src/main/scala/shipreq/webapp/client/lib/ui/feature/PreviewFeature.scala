@@ -1,8 +1,10 @@
 package shipreq.webapp.client.lib.ui.feature
 
-import japgolly.scalajs.react._
+import japgolly.scalajs.react._, ScalazReact._
+import japgolly.scalajs.react.extra.Reusability
 import monocle._
 import scalaz.Equal
+import scalaz.std.option.optionEqual
 import PreviewFeature._
 
 /**
@@ -32,7 +34,7 @@ import PreviewFeature._
  * Request a `PreviewFeature.State[K]` in the component's props.
  * Call `ForChildren.forChild` for each child.
  */
-final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, State[K]])(implicit EK: Equal[K])
+final class PreviewFeature[S, K]($: CompState.Access[S], lens: Lens[S, State[K]])(implicit EK: Equal[K])
   extends ForChildren[K] {
 
   private val hasKey: K => FocusData[K] => Boolean =
@@ -49,11 +51,9 @@ final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Stat
         lens.set(Some(FocusData(k, false)))(s))
 
   def onBlur(k: K): Callback =
-    $.modState(s =>
-      if (lens.get(s) exists hasKey(k))
-        lens.set(None)(s)
-      else
-        s)
+    $.state.flatMap(s =>
+      Callback.ifTrue(lens.get(s) exists hasKey(k),
+        $.setState(lens.set(None)(s))))
 
   def onEdit(k: K): Callback =
     $.modState(s =>
@@ -74,6 +74,7 @@ final class PreviewFeature[S, K]($: CompState.WriteAccess[S], lens: Lens[S, Stat
   override def forChild(k: K, s: State[K]): ForChild = {
     val self = this
     new ForChild {
+      override val underlyingFeature                  = Some(self)
       override val focusData                          = s.filter(hasKey(k))
       override def showPreview_?(isDirty: => Boolean) = self.showPreview_?(focusData, isDirty)
       override def onFocus                            = self onFocus k
@@ -98,6 +99,7 @@ object PreviewFeature {
   }
 
   trait ForChild {
+    def underlyingFeature: Option[PreviewFeature[_, _]]
     val focusData: Option[FocusData[Any]]
     def showPreview_?(isDirty: => Boolean): Boolean
     def onFocus: Callback
@@ -108,7 +110,22 @@ object PreviewFeature {
       if (showPreview_?(isDirty)) Some(a) else None
   }
 
+  private val equalUnderlyingFeature: Equal[Option[PreviewFeature[_, _]]] =
+    optionEqual(Equal.equalRef)
+
+  private val equalFocusData: Equal[Option[FocusData[Any]]] =
+    optionEqual(Equal.equal((a, b) => (a eq b) || (a == b)))
+
+  implicit val equalForChild: Equal[ForChild] =
+    Equal.equal((a, b) =>
+      equalUnderlyingFeature.equal(a.underlyingFeature, b.underlyingFeature) &&
+        equalFocusData.equal(a.focusData, b.focusData))
+
+  implicit val reusabilityForChild: Reusability[ForChild] =
+    Reusability.byRefOrEqual
+
   object AlwaysShow extends ForChild {
+    override def underlyingFeature                  = None
     override val focusData                          = Some(FocusData((), true))
     override def showPreview_?(isDirty: => Boolean) = true
     override def onFocus                            = Callback.empty
@@ -117,6 +134,7 @@ object PreviewFeature {
   }
 
   object NeverShow extends ForChild {
+    override def underlyingFeature                  = None
     override val focusData                          = None
     override def showPreview_?(isDirty: => Boolean) = false
     override def onFocus                            = Callback.empty

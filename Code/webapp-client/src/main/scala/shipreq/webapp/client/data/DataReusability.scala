@@ -5,7 +5,9 @@ import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.{UnivEq, NonEmptySet, NonEmptyVector}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.RemoteFn
-import shipreq.webapp.base.text.{TextSearch, PlainText}
+import shipreq.webapp.base.text.{Atom, TextSearch, PlainText}
+import shipreq.webapp.base.text.Text.Equality._
+import shipreq.webapp.base.validation.Validator
 import shipreq.webapp.client.app.ui.ProjectWidgets
 
 object DataReusability {
@@ -42,6 +44,8 @@ object DataReusability {
 
   implicit val reusabilityCustomFields: Reusability[FieldSet.CustomFields] = Reusability.byRefOrEqual
 
+  implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[Vector[A]] = Reusability.byRefOrUnivEq
+
   def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =
     Reusability.by(_.whole)
 
@@ -49,4 +53,6 @@ object DataReusability {
     Reusability.by(_.whole)
 
   implicit def reusabilityRemote[Fn <: RemoteFn.Instance] = Reusability.by((_: Fn).key)
+
+  //implicit def reusabilityValidation[S, I, C, V]: Reusability[Validator[S, I, C, V]] = Reusability.byRef
 }

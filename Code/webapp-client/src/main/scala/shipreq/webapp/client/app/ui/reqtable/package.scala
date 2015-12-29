@@ -25,13 +25,18 @@ package object reqtable {
   type RowSelectionVisible = Selection.LegalWithUpdateFn[Row.SourceId]
 
   type CallServer[-I] = (I, TCB.Success, String => TCB.Failure) => Callback
-  implicit def reusabilityCallServer[I]: Reusability[CallServer[I]] = Reusability.byRef // All are vals in ReqTable
 
-  implicit def reusabilityCR : Reusability[ColumnRenderer]                 = Reusability.byRef // TODO This is a problem
-  implicit val reusabilityCRs: Reusability[NonEmptyVector[ColumnRenderer]] = Reusability.byRef || reusabilityNonEmptyVector
-  implicit val reusabilityCs : Reusability[NonEmptyVector[Column]]         = Reusability.byRef || reusabilityNonEmptyVector
-  implicit def reusabilityCE : Reusability[CellEditor]                     = Reusability.byRef
-  implicit def reusabilityCEs: Reusability[CellEditors]                    = Reusability.byRef
+  implicit def reusabilityCallServer[I]: Reusability[CallServer[I]] =
+    Reusability.byRef // All are vals in ReqTable
+
+  implicit def reusabilityCR: Reusability[ColumnRenderer] =
+    Reusability.byRef // TODO This is a problem
+
+  implicit val reusabilityCRs: Reusability[NonEmptyVector[ColumnRenderer]] =
+    Reusability.byRef || reusabilityNonEmptyVector
+
+  implicit val reusabilityCs: Reusability[NonEmptyVector[Column]] =
+    Reusability.byRef || reusabilityNonEmptyVector
 
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.ui.shouldComponentUpdate[P, S, B, N]
@@ -60,8 +65,19 @@ package object reqtable {
       atRow(r) ^|-> at(c)
   }
 
-  implicit def reusabilityEditStateTable: Reusability[EditState.Table] = Reusability.byRef
-  implicit def reusabilityEditStateAtRow: Reusability[EditState.AtRow] = Reusability.byRef
+  implicit def reusabilityCE: Reusability[CellEditor] =
+    Reusability.never // ∵ renderCB changes with state (i.e. the Pxs and reading of PreviewFeature state)
+
+  implicit def reusabilityCEs: Reusability[CellEditors] =
+    Reusability.byRef
+
+  implicit def reusabilityEditStateTable: Reusability[EditState.Table] =
+    // Contents are effectively mutable (see reusabilityCE comment)
+    Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
+
+  implicit def reusabilityEditStateAtRow: Reusability[EditState.AtRow] =
+    // Contents are effectively mutable (see reusabilityCE comment)
+    Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
 
   // -----------------------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.{ExternalVar, Px}
+import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.TagMod
 import monocle.{Lens, Optional}
 import shipreq.base.util.ScalaExt._
@@ -23,6 +23,9 @@ trait CellEditors {
   def startEdit(row: Row, col: Column, focus: => Callback): Option[Callback]
 }
 
+/**
+ * This is effectively mutable because of the usage of Pxs and reading of PreviewFeature state.
+ */
 trait CellEditor {
   def render(row: Row, col: Column): Option[ReactElement]
 }
@@ -51,32 +54,33 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
 
   private type CellLens = Lens[S, Option[CellEditor]]
 
-  private trait CellEditorImpl[State] extends CellEditor { this: State =>
-    val rowId   : Row.SourceId
-    val lens    : CellLens
-    val rendered: CallbackTo[Some[ReactElement]]
+  private def abort(implicit lens: CellLens): Callback =
+    $.modState(lens set None)
 
-    protected def renderOnce[A](a: A)(implicit e: A => ReactElement): CallbackTo[Some[ReactElement]] =
+  private def commit(cmd: UpdateContentCmd)(implicit rowId: Row.SourceId, lens: CellLens): Callback =
+    async.wrapAsync(rowId, (s, f) => saveIO(cmd, s >> abort, f))
+
+  private def commitOrIgnore[A, B](a: A)(filterIgnorable: A => Option[B])(cmd: B => UpdateContentCmd)(implicit rowId: Row.SourceId, lens: CellLens): Callback =
+    filterIgnorable(a) match {
+      case Some(b) => commit(cmd(b))
+      case None    => abort
+    }
+
+  private def commitAndAbort[A, B](singleLine: Boolean, o: Option[A])(commitFn: A => Callback)(implicit lens: CellLens) =
+    KeyHandlers.commit(o map commitFn, singleLine) + KeyHandlers.abort(abort)
+
+  private trait CellEditorImpl[State] extends CellEditor { this: State =>
+    val renderCB: CallbackTo[Some[ReactElement]]
+
+    protected def renderStatic[A](a: A)(implicit e: A => ReactElement): CallbackTo[Some[ReactElement]] =
       CallbackTo pure Some(e(a))
 
-    final def abort: Callback =
-      $.modState(lens set None)
-
-    final def commit(cmd: UpdateContentCmd): Callback =
-      async.wrapAsync(rowId, (s, f) => saveIO(cmd, s >> abort, f))
-
-    final def commitOrIgnore[A, B](a: A)(filterIgnorable: A => Option[B])(cmd: B => UpdateContentCmd): Callback =
-      filterIgnorable(a) match {
-        case Some(b) => commit(cmd(b))
-        case None    => abort
-      }
-
-    final def commitAndAbort[A, B](singleLine: Boolean, o: Option[A])(commitFn: A => Callback) =
-      KeyHandlers.commit(o map commitFn, singleLine) + KeyHandlers.abort(abort)
+    protected def renderDynamic[A](a: => A)(implicit e: A => ReactElement): CallbackTo[Some[ReactElement]] =
+      CallbackTo(Some(e(a)))
 
     final override def render(row: Row, col: Column) =
       if (areEditPreConditionsSatisfied(row, col))
-        rendered.runNow() // TODO Would this not mess with reusability?
+        renderCB.runNow()
       else
         None
   }
@@ -95,7 +99,19 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
   private def ignoreEmptySetDiff[A, B: UnivEq](initial: Set[B], f: A => Set[B]): A => Option[NESD[B]] =
     ignoreEmptySetDiff(initial) compose f
 
-  private type StartEdit = S => S
+  private type StartEditFn = S => S
+
+  def startEditFn(init: CellEditor)(implicit lens: CellLens): StartEditFn =
+    lens set init.some
+
+  private def rvarToCellEditor[A: Reusability, B <: CellEditor](f: ReusableVar[A] => B)(implicit lens: CellLens): A => B = {
+    lazy val update: A ~=> Callback =
+      ReusableFn(a => $.modState(lens set f(ReusableVar(a)(update)).some))
+    a => f(ReusableVar(a)(update))
+  }
+
+  private def rvarStrToStartEditFn[B <: CellEditor](f: ReusableVar[String] => B, initial: String)(implicit lens: CellLens): StartEditFn =
+    startEditFn(rvarToCellEditor(f) apply initial)
 
   override def startEdit(row: Row, col: Column, focus: => Callback): Option[Callback] =
     if (areEditPreConditionsSatisfied(row, col))
@@ -103,9 +119,9 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
     else
       None
 
-  private def startEditWithoutChecks(row: Row, col: Column): Option[StartEdit] = {
+  private def startEditWithoutChecks(row: Row, col: Column): Option[StartEditFn] = {
     @inline def noEditor = None
-    @inline implicit def autoSome(f: StartEdit) = f.some
+    @inline implicit def autoSome(f: StartEditFn) = f.some
     row match {
 
       case r: GenericReqRow =>
@@ -142,62 +158,56 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
   object ForReqCodes {
     import shipreq.webapp.client.app.ui.reqtable.edit.ReqCodeEditor
 
-    def forReq(row: GenericReqRow): StartEdit = {
-      val id      = row.req.id
-      val initial = pxProject.value().reqCodes.activeReqCodesByReqId(id)
-      val text    = ReqCodeEditor.Multiple.seqFmt merge initial.toVector.map(PlainText.reqCode).sorted
+    def trie() = pxProject.value().reqCodes.trie
 
-      val lens: CellLens =
-        editLens ^|-> EditState.atCell(row.sourceId, Column.Code)
+    def forReq(row: GenericReqRow): StartEditFn = {
+      val id            = row.req.id
+      val initialValues = pxProject.value().reqCodes.activeReqCodesByReqId(id)
+      val initialText   = ReqCodeEditor.Multiple.seqFmt merge initialValues.toVector.map(PlainText.reqCode).sorted
 
-      val is = new StateMultiple(text, row.sourceId, initial, PatchReqCodes(id, _), lens)
-      lens set is.some
+      implicit def rowId = row.sourceId
+
+      implicit val lens: CellLens =
+        editLens ^|-> EditState.atCell(rowId, Column.Code)
+
+      val extra: ReqCodeEditor.Multiple.Extra =
+        ReusableFn(i =>
+          commitAndAbort(false, i)(
+            commitOrIgnore(_)(ignoreEmptySetDiff(initialValues))(PatchReqCodes(id, _))))
+
+      rvarStrToStartEditFn(new StateMultiple(_, Some(initialValues), extra), initialText)
     }
 
-    def forGroup(row: ReqCodeGroupRow): StartEdit = {
-      val id      = row.reqCodeId
-      val initial = row.reqCode
-      val text    = PlainText reqCode initial
-
-      val lens: CellLens =
-        editLens ^|-> EditState.atCell(row.sourceId, Column.Code)
-
-      val is = new StateSingle(text, row.sourceId, initial, SetReqCodeGroupCode(id, _), lens)
-      lens set is.some
+    private class StateMultiple(rvar   : ReusableVar[String],
+                                initial: Some[Set[ReqCode.Value]],
+                                extra  : ReqCodeEditor.Multiple.Extra) extends CellEditorImpl[StateMultiple] {
+      def props = ReqCodeEditor.Multiple.Props(rvar, initial, trie(), extra)
+      override val renderCB = renderDynamic(props.render)
     }
 
-    private case class StateSingle(text   : String,
-                                   rowId  : Row.SourceId,
-                                   initial: ReqCode.Value,
-                                   cmd    : ReqCode.Value => UpdateContentCmd,
-                                   lens   : CellLens) extends CellEditorImpl[StateSingle] {
+    def forGroup(row: ReqCodeGroupRow): StartEditFn = {
+      val id           = row.reqCodeId
+      val initialValue = row.reqCode
+      val initialText  = PlainText reqCode initialValue
 
-      def evar = ExternalVar(text)(s => $.modState(lens set copy(text = s).some))
+      implicit def rowId = row.sourceId
 
-      def tagMod: Option[ReqCode.Value] => TagMod =
-        commitAndAbort(true, _)(commitOrIgnore(_)(ignoreEqual(initial))(cmd))
+      implicit val lens: CellLens =
+        editLens ^|-> EditState.atCell(rowId, Column.Code)
 
-      def props = ReqCodeEditor.Single.Props(evar, initial.some, pxProject.value().reqCodes.trie, tagMod)
+      val extra: ReqCodeEditor.Single.Extra =
+        ReusableFn(i =>
+          commitAndAbort(true, i)(
+            commitOrIgnore(_)(ignoreEqual(initialValue))(SetReqCodeGroupCode(id, _))))
 
-      override val rendered =
-        renderOnce(props.render)
+      rvarStrToStartEditFn(new StateSingle(_, Some(initialValue), extra), initialText)
     }
 
-    private case class StateMultiple(text   : String,
-                                     rowId  : Row.SourceId,
-                                     initial: Set[ReqCode.Value],
-                                     cmd    : NESD[ReqCode.Value] => UpdateContentCmd,
-                                     lens   : CellLens) extends CellEditorImpl[StateMultiple] {
-
-      def evar = ExternalVar(text)(s => $.modState(lens set copy(text = s).some))
-
-      def tagMod: Option[Set[ReqCode.Value]] => TagMod =
-        commitAndAbort(false, _)(commitOrIgnore(_)(ignoreEmptySetDiff(initial))(cmd))
-
-      def props = ReqCodeEditor.Multiple.Props(evar, initial.some, pxProject.value().reqCodes.trie, tagMod)
-
-      override val rendered =
-        renderOnce(props.render)
+    private class StateSingle(rvar   : ReusableVar[String],
+                              initial: Some[ReqCode.Value],
+                              extra  : ReqCodeEditor.Single.Extra) extends CellEditorImpl[StateSingle] {
+      def props = ReqCodeEditor.Single.Props(rvar, initial, trie(), extra)
+      override val renderCB = renderDynamic(props.render)
     }
   }
 
@@ -208,34 +218,35 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
 
     val pxCustomReqTypes = ReqTypeSelector.pxCustomReqTypes(pxProject)
 
-    def apply(row: GenericReqRow): StartEdit = {
+    def apply(row: GenericReqRow): StartEditFn = {
       val id        = row.req.id
       val initial   = pxProject.value().config.reqTypeC(row.req.reqTypeId)
       val pxChoices = ReqTypeSelector.pxChoices(initial, pxCustomReqTypes)
 
-      val lens: CellLens =
-        editLens ^|-> EditState.atCell(row.sourceId, Column.ReqType)
+      implicit def rowId = row.sourceId
 
-      val is = new State(ignoreEqual(initial), initial, pxChoices, t => SetGenericReqType(id, t.id), row.sourceId, lens)
-      lens set is.some
+      implicit val lens: CellLens =
+        editLens ^|-> EditState.atCell(rowId, Column.ReqType)
+
+      val is = new State(ignoreEqual(initial), initial, pxChoices, t => SetGenericReqType(id, t.id))
+      startEditFn(is)
     }
 
     private case class State(ignoreInitial: A => Option[A],
                              edit         : A,
                              pxChoices    : Px[NonEmptySet[A]],
-                             cmd          : A => SetGenericReqType,
-                             rowId        : Row.SourceId,
+                             cmd          : A => SetGenericReqType)
+                   (implicit rowId        : Row.SourceId,
                              lens         : CellLens) extends CellEditorImpl[State] {
 
       def evar = ExternalVar(edit)(e => $.modState(lens set copy(edit = e).some))
 
-      def commit: Option[TCB.Commit] =
+      def commitCB: Option[TCB.Commit] =
         ignoreInitial(edit).map(a => TCB.Commit(commit(cmd(a))))
 
-      def props = ReqTypeSelector.Props(evar, Some(TCB Abort abort), commit, pxChoices.value())
+      def props = ReqTypeSelector.Props(evar, Some(TCB Abort abort), commitCB, pxChoices.value())
 
-      override val rendered =
-        renderOnce(ReqTypeSelector.Component(props))
+      override val renderCB = renderDynamic(ReqTypeSelector.Component(props))
     }
   }
 
@@ -247,11 +258,11 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
 
     val pxLookupAll = Px.apply2(pxProject, pxPlainText)(ImplicationEditor.Lookup.all)
 
-    def apply(row: GenericReqRow, col: Column, rowLens: Optional[Row, Vector[Pubid]]): Option[StartEdit] =
+    def apply(row: GenericReqRow, col: Column, rowLens: Optional[Row, Vector[Pubid]]): Option[StartEditFn] =
       rowLens.getOption(row).map(pubids =>
         startEdit(row, col, pxLookupAll, pubids))
 
-    def apply(row: GenericReqRow, col: Column, fid: CustomField.Implication.Id): Option[StartEdit] = {
+    def apply(row: GenericReqRow, col: Column, fid: CustomField.Implication.Id): Option[StartEditFn] = {
       val lookup = Px.apply2(pxProject, pxLookupAll)(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
       Row.cfImp(fid).getOption(row).map { _ =>
         val pubids = ImplicationEditor.initialValueForCustomColumn(pxProject.value(), fid, row.req.id)
@@ -259,17 +270,15 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       }
     }
 
-    private def startEdit(row: GenericReqRow, col: Column, pxLookup: Px[Lookup], pubids: Seq[Pubid]): StartEdit = {
+    private def startEdit(row: GenericReqRow, col: Column, pxLookup: Px[Lookup], pubids: Seq[Pubid]): StartEditFn = {
       val subjectId = row.req.id
 
       val declFwd = ImplicationEditor.isDeclFwd(col)
 
-      val p = pxProject.value()
+      val (initialValues, initialText) = ImplicationEditor.initialValueAndText(
+        (subjectId, pubids).some, pxProject.value(), pxLookup.value())
 
-      val (initialValues, text) = ImplicationEditor.initialValueAndText(
-        (subjectId, pubids).some, p, pxLookup.value())
-
-      val valFn =
+      val pxValFn =
         pxProject.map(p =>
           ImplicationEditor.validationFn(p, subjectId.some, initialValues, declFwd))
 
@@ -279,31 +288,25 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
         else
           PatchImplicationSrc(subjectId, _)
 
-      val lens: CellLens =
-        editLens ^|-> EditState.atCell(row.sourceId, col)
+      implicit def rowId = row.sourceId
 
-      val is = new State(text, cmd, row.sourceId, pxLookup, valFn, lens)
-      lens set is.some
+      implicit val lens: CellLens =
+        editLens ^|-> EditState.atCell(rowId, col)
+
+      val extra: ImplicationEditor.Extra =
+        ReusableFn(i =>
+          commitAndAbort(true, i)(
+            commitOrIgnore(_)(NonEmpty(_))(cmd)))
+
+      rvarStrToStartEditFn(new State(_, pxLookup, pxValFn, extra), initialText)
     }
 
-    private case class State(text  : String,
-                             cmd   : NESD[ReqId] => UpdateContentCmd,
-                             rowId : Row.SourceId,
-                             lookup: Px[Lookup],
-                             valFn : Px[ValidationFn],
-                             lens  : CellLens) extends CellEditorImpl[State] {
-
-      def evar = ExternalVar(text)(s => $.modState(lens set copy(text = s).some))
-
-      def tagMod: Option[SetDiff[ReqId]] => TagMod =
-        commitAndAbort(true, _)(commitOrIgnore(_)(NonEmpty(_))(cmd))
-
-      import Px.AutoValue._
-
-      def props = ImplicationEditor.Props(evar, lookup, valFn, pxTextSearch, tagMod)
-
-      override val rendered =
-        renderOnce(props.render)
+    private class State(rvar  : ReusableVar[String],
+                        lookup: Px[Lookup],
+                        valFn : Px[ValidationFn],
+                        extra : ImplicationEditor.Extra) extends CellEditorImpl[State] {
+      def props = ImplicationEditor.Props(rvar, lookup.value(), valFn.value(), pxTextSearch.value(), extra)
+      override val renderCB = renderDynamic(props.render)
     }
   }
 
@@ -313,36 +316,34 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
     import shipreq.webapp.client.app.ui.reqtable.edit.TagEditor
     import TagEditor.Lookup
 
-    def apply(row: GenericReqRow, fid: Option[CustomField.Tag.Id]): StartEdit = {
-      val lookupFn        = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
-      val p               = pxProject.value()
-      val lookup          = lookupFn(p)
-      val id              = row.req.id
-      val (initial, text) = TagEditor.initialValues(p.reqTags(id), p.config, lookup)
+    def apply(row: GenericReqRow, fid: Option[CustomField.Tag.Id]): StartEditFn = {
+      val id       = row.req.id
+      val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
+      val pxLookup = pxProject map lookupFn
 
-      val lens: CellLens =
-        editLens ^|-> EditState.atCell(row.sourceId, fid.fold[Column](Column.Tags)(Column.CustomField(_, Live)))
+      val (initialValues, initialText) = {
+        val p = pxProject.value()
+        TagEditor.initialValues(p.reqTags(id), p.config, pxLookup.value())
+      }
 
-      val is = new State(text, PatchReqTags(id, _), row.sourceId, initial, lookup, lens)
-      lens set is.some
+      implicit def rowId = row.sourceId
+
+      implicit val lens: CellLens =
+        editLens ^|-> EditState.atCell(rowId, fid.fold[Column](Column.Tags)(Column.CustomField(_, Live)))
+
+      val extra: TagEditor.Extra =
+        ReusableFn(i =>
+          commitAndAbort(true, i)(
+            commitOrIgnore(_)(ignoreEmptySetDiff(initialValues, _.map(_.id).toSet))(PatchReqTags(id, _))))
+
+      rvarStrToStartEditFn(new State(_, pxLookup, extra), initialText)
     }
 
-    private case class State(text   : String,
-                             cmd    : NESD[ApplicableTagId] => PatchReqTags,
-                             rowId  : Row.SourceId,
-                             initial: Set[ApplicableTagId],
-                             lookup : Lookup, // TODO Should make dynamic
-                             lens   : CellLens) extends CellEditorImpl[State] {
-
-      def evar = ExternalVar(text)(s => $.modState(lens set copy(text = s).some))
-
-      def tagMod: Option[Stream[ApplicableTag]] => TagMod =
-        commitAndAbort(true, _)(commitOrIgnore(_)(ignoreEmptySetDiff(initial, _.map(_.id).toSet))(cmd))
-
-      def props = TagEditor.Props(evar, lookup, tagMod)
-
-      override val rendered =
-        renderOnce(props.render)
+    private class State(rvar  : ReusableVar[String],
+                        lookup: Px[Lookup],
+                        extra : TagEditor.Extra) extends CellEditorImpl[State] {
+      def props = TagEditor.Props(rvar, lookup.value(), extra)
+      override val renderCB = renderDynamic(props.render)
     }
   }
 
@@ -357,52 +358,44 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       def startEdit(rowId       : Row.SourceId,
                     col         : Column,
                     cmd         : T.OptionalText => UpdateContentCmd,
-                    initialValue: T.OptionalText): StartEdit = {
+                    initialValue: T.OptionalText): StartEditFn = {
 
-        val it: String =
-          pxPlainText.value().format(editor.hardcodedLive, initialValue)
+        @inline implicit def _rowId = rowId
 
-        val lens: CellLens =
+        implicit val lens: CellLens =
           editLens ^|-> EditState.atCell(rowId, col)
 
         val focusId = FocusId.AtCell(rowId, col)
 
-        val is = new State(it, rowId, focusId, cmd, Some(initialValue), lens)
-        lens set is.some
+        val extra: editor.Extra =
+          ReusableFn(i =>
+            commitAndAbort(T.singleLine, i)(
+              t => commit(cmd(t))))
+
+        val initialText: String =
+          pxPlainText.value().format(editor.hardcodedLive, initialValue)
+
+        rvarStrToStartEditFn(new State(_, focusId, Some(initialValue), extra), initialText)
       }
 
-      private case class State(text   : String,
-                               rowId  : Row.SourceId,
-                               focusId: FocusId.AtCell,
-                               cmd    : T.OptionalText => UpdateContentCmd,
-                               initial: Some[T.OptionalText],
-                               lens   : CellLens) extends CellEditorImpl[State] {
+      private class State(rvar   : ReusableVar[String],
+                          focusId: FocusId.AtCell,
+                          initial: Some[T.OptionalText],
+                          extra  : editor.Extra) extends CellEditorImpl[State] {
 
-        def evar = ExternalVar(text)(s => $.modState(lens set copy(text = s).some))
-
-        def tagMod: Option[T.OptionalText] => TagMod =
-          commitAndAbort(T.singleLine, _)(t => commit(cmd(t)))
-
-        def preview =
-          $.state.map(s =>
-            previewFeature.forChild(focusId, s))
-
-        import Px.AutoValue._
-
-        def props =
-          preview.map(p =>
-            editor.Props(
+        override val renderCB =
+          $.state.map { s =>
+            import Px.AutoValue._
+            val props = editor.Props(
               pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
-              evar, p, initial, tagMod))
-
-        override val rendered =
-          props.map(p =>
-            Some(p.render: ReactElement))
+              rvar, previewFeature.forChild(focusId, s), initial, extra)
+            Some(props.render: ReactElement)
+          }
       }
     }
 
     object GenericReqTitle extends Base(RichTextEditor.GenericReqTitle) {
-      def apply(r: GenericReqRow): StartEdit =
+      def apply(r: GenericReqRow): StartEditFn =
         startEdit(
           rowId        = r.sourceId,
           col          = Column.Title,
@@ -411,7 +404,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
     }
 
     object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {
-      def apply(r: ReqCodeGroupRow): StartEdit =
+      def apply(r: ReqCodeGroupRow): StartEditFn =
         startEdit(
           rowId        = r.sourceId,
           col          = Column.Title,
@@ -420,7 +413,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
     }
 
     object CustomTextField extends Base(RichTextEditor.CustomTextField) {
-      def apply(r: GenericReqRow, id: CustomField.Text.Id): StartEdit =
+      def apply(r: GenericReqRow, id: CustomField.Text.Id): StartEditFn =
         startEdit(
           rowId        = r.sourceId,
           col          = Column.CustomField(id, Live),

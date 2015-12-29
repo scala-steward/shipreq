@@ -124,15 +124,19 @@ class CreationInterface($               : CompState.Access[State],
     remoteCall >> setStatus(Locked)
   }
 
-  private val _emptyTag: Any => TagMod =
-    _ => EmptyTag
+  private val _noExtra: Any ~=> TagMod =
+    ReusableFn(_ => EmptyTag)
+
+  // TODO  If this works, it should be in scalajs-react
+  implicit def contravariantReusableFnInput[A, B, C <: A](f: A ~=> B): C ~=> B =
+    f.asInstanceOf[C ~=> B]
 
   object CreateReqCodeGroup { // ---------------------------------------------------------------------------------------
 
     val $$ = $ zoomL State.rcg
     val setStatus  = $$ zoomL CreateReqCodeGroupState.status  setState (_: Status)
-    val setReqCode = $$ zoomL CreateReqCodeGroupState.reqCode setState (_: String)
-    val setTitle   = $$ zoomL CreateReqCodeGroupState.title   setState (_: String)
+    val setReqCode = ReusableFn($$ zoomL CreateReqCodeGroupState.reqCode setState (_: String))
+    val setTitle   = ReusableFn($$ zoomL CreateReqCodeGroupState.title   setState (_: String))
 
     val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
 
@@ -143,10 +147,10 @@ class CreationInterface($               : CompState.Access[State],
 
       val propsReqCode =
         ReqCodeEditor.Single.Props(
-          ExternalVar(state.reqCode)(setReqCode),
+          ReusableVar(state.reqCode)(setReqCode),
           None,
           pxProject.reqCodes.trie,
-          _emptyTag)
+          _noExtra)
 
       val propsTitle =
         RichTextEditor.ReqCodeGroupTitle.Props(
@@ -154,10 +158,10 @@ class CreationInterface($               : CompState.Access[State],
           pxProjectText,
           pxTextSearch,
           pxProjectWidgets,
-          ExternalVar(state.title)(setTitle),
+          ReusableVar(state.title)(setTitle),
           previewFeature.forChild(titleFocus, p.previewState),
           None,
-          _emptyTag)
+          _noExtra)
 
       val create: Option[Callback] =
         for {
@@ -189,10 +193,10 @@ class CreationInterface($               : CompState.Access[State],
 
     val $$ = $ zoomL State.greq
     val setStatus   = $$ zoomL CreateGenericReqState.status   setState (_: Status)
-    val setReqCodes = $$ zoomL CreateGenericReqState.reqCodes setState (_: String)
-    val setTitle    = $$ zoomL CreateGenericReqState.title    setState (_: String)
-    val setTags     = $$ zoomL CreateGenericReqState.tags     setState (_: String)
-    val setImp      = $$ zoomL CreateGenericReqState.imp      setState (_: String)
+    val setImp      = ReusableFn($$ zoomL CreateGenericReqState.imp      setState (_: String))
+    val setReqCodes = ReusableFn($$ zoomL CreateGenericReqState.reqCodes setState (_: String))
+    val setTitle    = ReusableFn($$ zoomL CreateGenericReqState.title    setState (_: String))
+    val setTags     = ReusableFn($$ zoomL CreateGenericReqState.tags     setState (_: String))
 
     val titleFocus = FocusId.InCI(GenericReqType(CustomReqTypeId(-1)), Column.Title)
 
@@ -212,16 +216,16 @@ class CreationInterface($               : CompState.Access[State],
 
       val propsReqCodes =
         ReqCodeEditor.Multiple.Props(
-          ExternalVar(state.reqCodes)(setReqCodes),
+          ReusableVar(state.reqCodes)(setReqCodes),
           None,
           pxProject.reqCodes.trie,
-          _emptyTag)
+          _noExtra)
 
       val propsTags =
         TagEditor.Props(
-          ExternalVar(state.tags)(setTags),
+          ReusableVar(state.tags)(setTags),
           pxTagLookup,
-          _emptyTag)
+          _noExtra)
 
       val propsTitle =
         RichTextEditor.GenericReqTitle.Props(
@@ -229,18 +233,18 @@ class CreationInterface($               : CompState.Access[State],
           pxProjectText,
           pxTextSearch,
           pxProjectWidgets,
-          ExternalVar(state.title)(setTitle),
+          ReusableVar(state.title)(setTitle),
           previewFeature.forChild(titleFocus, p.previewState),
           None,
-          _emptyTag)
+          _noExtra)
 
       val propsImp =
         ImplicationEditor.Props(
-          ExternalVar(state.imp)(setImp),
+          ReusableVar(state.imp)(setImp),
           pxImpLookup,
           pxImpValidationFn,
           pxTextSearch,
-          _emptyTag)
+          _noExtra)
 
       val create: Option[Callback] =
         for {

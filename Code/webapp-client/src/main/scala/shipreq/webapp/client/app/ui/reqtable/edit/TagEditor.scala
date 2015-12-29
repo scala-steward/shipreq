@@ -49,9 +49,12 @@ object TagEditor {
     (ids, text)
   }
 
-  case class Props(edit  : ExternalVar[String],
+  /** Extra properties to apply to the tag. Input is parsed tags, if valid. */
+  type Extra = Option[Stream[ApplicableTag]] ~=> TagMod
+
+  case class Props(edit  : ReusableVar[String],
                    lookup: Lookup,
-                   tagMod: Option[Stream[ApplicableTag]] => TagMod) {
+                   extra : Extra) {
 
     val parseResult =
       validator.correctAndValidate(lookup, edit.value)
@@ -62,13 +65,16 @@ object TagEditor {
   implicit val reusabilityLookup: Reusability[Lookup] =
     Reusability.byRef[Lookup] || Reusability.byUnivEq(_.underlyingMap)
 
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
+
   private val editorRef = Ref[dom.html.Input]("i")
 
   val validator =
     Validator.seqText(G.seqFormat)((l: Lookup) =>
       i => ValidationResult.option(l get i, VFailure looseMsg s"Invalid tag: $i"))
 
-  class Backend($: BackendScope[Props, Unit]) {
+  final class Backend($: BackendScope[Props, Unit]) {
     private val pxLookup = Px.bs($).propsA(_.lookup)
 
     val pxAutoComplete = pxLookup.map(l =>
@@ -79,7 +85,7 @@ object TagEditor {
 
       <.div(
         <.input.text(
-          p.tagMod(validated.validated),
+          p.extra(validated.validated),
           ^.onChange  ==> ((e: ReactEventI) => p.edit.set(e.target.value)),
           ^.ref        := editorRef,
           ^.value      := p.edit.value),
@@ -90,7 +96,7 @@ object TagEditor {
   val Component =
     ReactComponentB[Props]("TagEditor")
       .renderBackend[Backend]
-      // TODO .configure(Reusability.shouldComponentUpdate)
+      .configure(Reusability.shouldComponentUpdate)
       .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
       .build
 }

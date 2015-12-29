@@ -21,16 +21,22 @@ sealed abstract class ReqCodeEditor[Data: Reusability] {
 
   def dataToSet(d: Option[Data]): Set[ReqCode.Value]
 
-  case class Props(edit        : ExternalVar[String],
+  /** Extra properties to apply to the tag. */
+  type Extra = Option[Data] ~=> TagMod
+
+  case class Props(edit        : ReusableVar[String],
                    initialValue: Option[Data],
                    trie        : ReqCode.Trie,
-                   tagMod      : Option[Data] => TagMod) {
+                   extra       : Extra) {
 
     val parseResult =
       validator.correctAndValidate(V.VS(trie, dataToSet(initialValue)), edit.value)
 
     def render = Component(this)
   }
+
+  implicit lazy val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
 
   private val editorRef = Ref[textEditor.Dom]("i")
 
@@ -48,7 +54,7 @@ sealed abstract class ReqCodeEditor[Data: Reusability] {
           ^.ref        := editorRef,
           ^.value      := p.edit.value,
           ^.onChange  ==> ((e: ReactEventI) => p.edit.set(liveCorrect(e.target.value))),
-          p.tagMod(validated.validated)),
+          p.extra(validated.validated)),
         validated.renderFailure)
     }
   }
@@ -59,7 +65,7 @@ sealed abstract class ReqCodeEditor[Data: Reusability] {
   lazy val Component =
     ReactComponentB[Props]("ReqCodeEditor")
       .renderBackend[Backend]
-      // TODO .configure(Reusability.shouldComponentUpdate)
+      .configure(Reusability.shouldComponentUpdate)
       .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
       .build
 }

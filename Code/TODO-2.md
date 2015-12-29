@@ -3,8 +3,6 @@
   * Fix new TODOs in patch.
   * Fix any ???s in patch.
 
-* Reenable Reusability.
-
 * Remove:
   * LocalEditorFeature (?)
 
