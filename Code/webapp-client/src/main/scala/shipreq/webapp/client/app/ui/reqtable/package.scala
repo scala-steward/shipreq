@@ -3,7 +3,10 @@ package shipreq.webapp.client.app.ui
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
 import monocle.Lens
-import shipreq.base.util.UnivEq
+import monocle.function.At.at
+import monocle.std.map.atMap
+import shipreq.base.util.{NonEmptyVector, UnivEq}
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.TCB
 import shipreq.webapp.client.lib.ui.feature._
 
@@ -22,23 +25,28 @@ package object reqtable {
   type RowSelectionVisible = Selection.LegalWithUpdateFn[Row.SourceId]
 
   type CallServer[-I] = (I, TCB.Success, String => TCB.Failure) => Callback
-  implicit def callServerReusability[I] = Reusability.byRef[CallServer[I]] // All are vals in ReqTable
+  implicit def reusabilityCallServer[I]: Reusability[CallServer[I]] = Reusability.byRef // All are vals in ReqTable
+
+  implicit def reusabilityCR : Reusability[ColumnRenderer]                 = Reusability.byRef // TODO This is a problem
+  implicit val reusabilityCRs: Reusability[NonEmptyVector[ColumnRenderer]] = Reusability.byRef || reusabilityNonEmptyVector
+  implicit val reusabilityCs : Reusability[NonEmptyVector[Column]]         = Reusability.byRef || reusabilityNonEmptyVector
+  implicit def reusabilityCE : Reusability[CellEditor]                     = Reusability.byRef
+  implicit def reusabilityCEs: Reusability[CellEditors]                    = Reusability.byRef
 
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.ui.shouldComponentUpdate[P, S, B, N]
-    // Reusability.shouldComponentUpdateWithOverlay[P, S, B, N]
+  // Reusability.shouldComponentUpdateWithOverlay[P, S, B, N]
+
+  // -----------------------------------------------------------------------------------------------
 
   object EditState {
-    type R = Row.SourceId
-    type C = Column
+    type R     = Row.SourceId
+    type C     = Column
     type Table = Map[R, AtRow]
     type AtRow = Map[C, CellEditor]
 
     def empty: Table =
       UnivEq.emptyMap
-
-    import monocle.function.At.at
-    import monocle.std.map.atMap
 
     def getRow(t: Table, r: R): AtRow =
       t.getOrElse(r, UnivEq.emptyMap)
@@ -52,6 +60,11 @@ package object reqtable {
       atRow(r) ^|-> at(c)
   }
 
+  implicit def reusabilityEditStateTable: Reusability[EditState.Table] = Reusability.byRef
+  implicit def reusabilityEditStateAtRow: Reusability[EditState.AtRow] = Reusability.byRef
+
+  // -----------------------------------------------------------------------------------------------
+
   val AsyncState = AsyncActionFeature.Table.Fix[Row.SourceId, Column, String]
 
   def renderAsyncState(s: AsyncState.Status): ReactTag =
@@ -63,11 +76,14 @@ package object reqtable {
         <.div(f.failure, f.retryButton, f.resumeEditButton)
     }
 
+  // -----------------------------------------------------------------------------------------------
+
   sealed trait FocusId
   object FocusId {
     case class AtCell(row: Row.SourceId, col: Column) extends FocusId
     case class InCI(typ: CreationInterface.Type, col: Column) extends FocusId
     implicit def equality: UnivEq[FocusId] = UnivEq.deriveAuto
   }
+
   val Preview = PreviewFeature.FixKey[FocusId]
 }

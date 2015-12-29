@@ -160,7 +160,7 @@ object ReqTable {
     val createIO: CallServer[CreateContentCmd] =
       callServer(_.createContentFn)
 
-    val saveIO: CallServer[UpdateContentCmd] =
+    val updateIO: CallServer[UpdateContentCmd] =
       callServer(_.updateContentFn)
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {
@@ -178,34 +178,27 @@ object ReqTable {
     val previewFeature = new PreviewFeature($, State.previewState)
 
     val cellEditors: CellEditors =
-      new CellEditorsImpl[State]($,
-                                 State.editStates,
-                                 asyncFeature,
-                                 previewFeature,
-                                 project,
-                                 plainText,
-                                 widgets,
-                                 textSearch,
-                                 saveIO)
+      new CellEditorsImpl[State]($, State.editStates, asyncFeature, previewFeature, project, plainText, widgets,
+        textSearch, updateIO)
 
     val creationInterface = new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(s: State): ReactElement = {
-      import Px.AutoValue._
       Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
+      import Px.AutoValue._
 
       val cfg = s.project.config
 
-      val vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
+      def vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
 
-      val creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
+      def creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
 
-      val tableProps = Table.Props(
+      def tableProps = Table.Props(
         project, rows, colName, colRnds, cellEditors, s.editStates,s.asyncStates, visibleSelection, modViewSettings)
 
-      val selCtrlProps = SelectionCtrls.Props(
-        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, saveIO, asyncFeature)
+      def selCtrlProps = SelectionCtrls.Props(
+        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, updateIO, asyncFeature)
 
       def mainScreen =
         <.div(

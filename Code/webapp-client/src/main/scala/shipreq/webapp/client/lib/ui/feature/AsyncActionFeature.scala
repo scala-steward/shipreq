@@ -39,6 +39,9 @@ object AsyncActionFeature {
       <.button("Abort", ^.onClick --> resumeEdit)
   }
 
+  implicit def reusabilityStatus[F]: Reusability[Status[F]] =
+    Reusability.byRef
+
   def renderLocked =
     UI.spinner
 
@@ -173,7 +176,9 @@ object AsyncActionFeature {
         setRowStatuses(r :: Nil, value)
     }
 
-     implicit def reusabilityTableFeatureAnon[R, C, F]: Reusability[FeatureAnon[R, C, F]] = Reusability.byRef
+    implicit def reusabilityFeatureAnon[R, C, F]: Reusability[FeatureAnon[R, C, F]] = Reusability.byRef
+    implicit def reusabilityState      [R, C, F]: Reusability[State      [R, C, F]] = Reusability.byRef
+    implicit def reusabilityRowState      [C, F]: Reusability[RowState      [C, F]] = Reusability.byRef
 
     def Fix[R: UnivEq, C: UnivEq, F] = new Fix[R, C, F]
     final class Fix[R: UnivEq, C: UnivEq, F] {

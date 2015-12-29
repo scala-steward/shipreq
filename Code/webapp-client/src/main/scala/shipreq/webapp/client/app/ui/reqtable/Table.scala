@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import scalacss.ScalaCssReact._
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
@@ -13,28 +13,11 @@ import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.ui.feature.AsyncActionFeature
 import shipreq.webapp.client.util._
+import AsyncActionFeature.Table.RowState
+import AsyncActionFeature.{Locked, renderLocked}
 import DomUtil._
 
-import AsyncActionFeature.Table.RowState
-import AsyncActionFeature.{Locked, Failed, renderLocked}
-
-
 object Table {
-
-  implicit val reusabilityCR  : Reusability[ColumnRenderer]                 = Reusability.byRef // TODO This is a problem
-  implicit val reusabilityCs  : Reusability[NonEmptyVector[Column]]         = reusabilityNonEmptyVector
-  implicit val reusabilityCRs : Reusability[NonEmptyVector[ColumnRenderer]] = reusabilityNonEmptyVector
-
-  implicit val reusabilityCCSAasdqwasd1: Reusability[CellEditor] = Reusability.never
-  implicit val reusabilityCCSAasdqw1: Reusability[CellEditors] = Reusability.never
-  implicit val reusabilityCCSAasdqwe1: Reusability[AsyncState.TableState] = Reusability.never
-  implicit val reusabilityCCSAasdqwe2: Reusability[AsyncState.RowState] = Reusability.never
-  implicit val reusabilityCCSAasdqwe3: Reusability[AsyncState.Single] = Reusability.never
-  implicit val reusabilityCCSAasd: Reusability[EditState.Table] = Reusability.never
-  implicit val reusabilityCCSAr0d: Reusability[EditState.AtRow] = Reusability.never
-
-  // ===================================================================================================================
-  // Table
 
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
@@ -91,36 +74,6 @@ object Table {
         <.tbody(renderRows))
     }
   }
-
-  def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
-    Callback {
-      val cell: dom.html.Element =
-        if ("INPUT" == cur.tagName) // Selection checkbox
-          cur.parentElement
-        else
-          cur
-      val z = TableCellZipper(cell) move_- ↔ move_| ↕
-      val f: dom.html.Element =
-        if (z.colIndex == 0)
-          z.focus.children(0).castHtml // Selection checkbox
-        else
-          z.focus
-      f.focus()
-    }
-
-  def focusKeyHandlers(e: ReactKeyboardEventH): CallbackOption[Unit] =
-    keyCodeSwitch(e) {
-      case KeyCode.Up       => moveFocus(e.currentTarget, ↕ = Movement.Prev)
-      case KeyCode.Down     => moveFocus(e.currentTarget, ↕ = Movement.Next)
-      case KeyCode.Left     => moveFocus(e.currentTarget, ↔ = Movement.Prev)
-      case KeyCode.Right    => moveFocus(e.currentTarget, ↔ = Movement.Next)
-      case KeyCode.Home     => moveFocus(e.currentTarget, ↔ = Movement.Head)
-      case KeyCode.End      => moveFocus(e.currentTarget, ↔ = Movement.Last)
-      case KeyCode.Escape   => Callback(e.target.blur())
-    } | keyCodeSwitch(e, ctrlKey = true) {
-      case KeyCode.Home     => moveFocus(e.currentTarget, Movement.Head, Movement.Head)
-      case KeyCode.End      => moveFocus(e.currentTarget, Movement.Last, Movement.Last)
-    }
 
   // ===================================================================================================================
   // Header row
@@ -337,4 +290,37 @@ object Table {
         })
     }
   }
+
+  // ===================================================================================================================
+  // Shared fns
+
+  def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
+    Callback {
+      val cell: dom.html.Element =
+        if ("INPUT" == cur.tagName) // Selection checkbox
+          cur.parentElement
+        else
+          cur
+      val z = TableCellZipper(cell) move_- ↔ move_| ↕
+      val f: dom.html.Element =
+        if (z.colIndex == 0)
+          z.focus.children(0).castHtml // Selection checkbox
+        else
+          z.focus
+      f.focus()
+    }
+
+  def focusKeyHandlers(e: ReactKeyboardEventH): CallbackOption[Unit] =
+    keyCodeSwitch(e) {
+      case KeyCode.Up       => moveFocus(e.currentTarget, ↕ = Movement.Prev)
+      case KeyCode.Down     => moveFocus(e.currentTarget, ↕ = Movement.Next)
+      case KeyCode.Left     => moveFocus(e.currentTarget, ↔ = Movement.Prev)
+      case KeyCode.Right    => moveFocus(e.currentTarget, ↔ = Movement.Next)
+      case KeyCode.Home     => moveFocus(e.currentTarget, ↔ = Movement.Head)
+      case KeyCode.End      => moveFocus(e.currentTarget, ↔ = Movement.Last)
+      case KeyCode.Escape   => Callback(e.target.blur())
+    } | keyCodeSwitch(e, ctrlKey = true) {
+      case KeyCode.Home     => moveFocus(e.currentTarget, Movement.Head, Movement.Head)
+      case KeyCode.End      => moveFocus(e.currentTarget, Movement.Last, Movement.Last)
+    }
 }
