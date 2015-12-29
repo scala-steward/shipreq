@@ -2,6 +2,7 @@ package shipreq.base.util
 
 import scala.collection.GenTraversable
 import scala.reflect.ClassTag
+import scalaz.Semigroup
 
 object ScalaExt extends Platform.ScalaExt {
 
@@ -61,6 +62,13 @@ object ScalaExt extends Platform.ScalaExt {
       Util.quickSB(sb => s.foreach(c => f(c, sb)))
   }
 
+  implicit class OptionExt[A](private val o: Option[A]) extends AnyVal {
+    def ++(n: Option[A])(implicit s: Semigroup[A]): Option[A] =
+      o.fold(n)(a =>
+        n.fold(o)(b =>
+          Some(s.append(a, b))))
+  }
+
   implicit class FuckingSomeExt[A](private val s: Some[A]) extends AnyVal {
     @inline def castOption: Option[A] = s.asInstanceOf[Option[A]]
   }
@@ -68,6 +76,9 @@ object ScalaExt extends Platform.ScalaExt {
   implicit class IteratorExt[A](private val as: Iterator[A]) extends AnyVal {
     def filterT[T <: A](implicit t: ClassTag[T]): Iterator[T] =
       as.flatMap(t.unapply(_).iterator)
+
+    def nextOption(): Option[A] =
+      if (as.hasNext) Some(as.next()) else None
   }
 
   implicit class IterableExt[A](private val as: Iterable[A]) extends AnyVal {

@@ -8,11 +8,12 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.base.text.{PlainText, TextSearch}
-import shipreq.webapp.client.app.ui.SelectOne.{Choice, Choices}
-import shipreq.webapp.client.app.ui.reqtable.edit.{ImplicationEditor, TagEditor, ReqCodeEditor, RichTextEditor}
-import shipreq.webapp.client.app.ui.{ProjectWidgets, SelectOne, VUCA}
+import shipreq.webapp.client.app.ui.{ProjectWidgets, SelectOne}
+import shipreq.webapp.client.app.ui.reqtable.edit.{ImplicationEditor, ReqCodeEditor, RichTextEditor, TagEditor}
 import shipreq.webapp.client.lib.TCB
+import shipreq.webapp.client.lib.ui.feature.PreviewFeature
 import shipreq.webapp.client.util.Enabled
+import SelectOne.{Choice, Choices}
 import UnivEq.univEqOption
 
 object CreationInterface {
@@ -24,7 +25,9 @@ object CreationInterface {
   type SelType = Option[Type]
   val selectComponent = SelectOne.Component[SelType]
 
-  case class Props(createIO: CallServer[CreateContentCmd], state: State)
+  case class Props(createIO    : CallServer[CreateContentCmd],
+                   state       : State,
+                   previewState: Preview.State)
 
   @Lenses
   case class State(selectedType: SelType,
@@ -54,14 +57,15 @@ object CreationInterface {
 // =====================================================================================================================
 import shipreq.webapp.client.app.ui.reqtable.CreationInterface._
 
-class CreationInterface($             : CompState.Access[State],
-                        project       : Px[Project],
-                        projectText   : Px[PlainText.ForProject],
-                        projectWidgets: Px[ProjectWidgets],
-                        textSearch    : Px[TextSearch]) {
+class CreationInterface($               : CompState.Access[State],
+                        previewFeature  : Preview.ForChildren,
+                        pxProject       : Px[Project],
+                        pxProjectText   : Px[PlainText.ForProject],
+                        pxProjectWidgets: Px[ProjectWidgets],
+                        pxTextSearch    : Px[TextSearch]) {
 
   val types: Px[Choices[SelType]] =
-    project.map { p =>
+    pxProject.map { p =>
       val blank = Choice[SelType](None, "", Enabled)
       val rcg   = Choice[SelType](Some(ReqCodeGroupType), UiText.reqCodeGroup, Enabled)
       val rts   = p.config.liveCustomReqTypes
@@ -120,21 +124,44 @@ class CreationInterface($             : CompState.Access[State],
     remoteCall >> setStatus(Locked)
   }
 
+  private val _noExtra: Any ~=> TagMod =
+    ReusableFn(_ => EmptyTag)
+
+  // TODO  If this works, it should be in scalajs-react
+  implicit def contravariantReusableFnInput[A, B, C <: A](f: A ~=> B): C ~=> B =
+    f.asInstanceOf[C ~=> B]
+
   object CreateReqCodeGroup { // ---------------------------------------------------------------------------------------
 
     val $$ = $ zoomL State.rcg
     val setStatus  = $$ zoomL CreateReqCodeGroupState.status  setState (_: Status)
-    val setReqCode = $$ zoomL CreateReqCodeGroupState.reqCode setState (_: String)
-    val setTitle   = $$ zoomL CreateReqCodeGroupState.title   setState (_: String)
+    val setReqCode = ReusableFn($$ zoomL CreateReqCodeGroupState.reqCode setState (_: String))
+    val setTitle   = ReusableFn($$ zoomL CreateReqCodeGroupState.title   setState (_: String))
 
-    val mkPropsReqCode = ReqCodeEditor.ForGroup.prepare(None, project.map(_.reqCodes.trie))
-    val mkPropsTitle   = RichTextEditor.ReqCodeGroupTitle.prepare(project, projectText, projectWidgets, textSearch)
+    val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
 
     def render(p: Props) = {
+      import Px.AutoValue._
+
       val state = p.state.rcg
 
-      val propsReqCode = mkPropsReqCode(VUCA.vu(state.reqCode, setReqCode))
-      val propsTitle   = mkPropsTitle  (VUCA.vu(state.title,   setTitle))
+      val propsReqCode =
+        ReqCodeEditor.Single.Props(
+          ReusableVar(state.reqCode)(setReqCode),
+          None,
+          pxProject.reqCodes.trie,
+          _noExtra)
+
+      val propsTitle =
+        RichTextEditor.ReqCodeGroupTitle.Props(
+          pxProject,
+          pxProjectText,
+          pxTextSearch,
+          pxProjectWidgets,
+          ReusableVar(state.title)(setTitle),
+          previewFeature.forChild(titleFocus, p.previewState),
+          None,
+          _noExtra)
 
       val create: Option[Callback] =
         for {
@@ -166,26 +193,58 @@ class CreationInterface($             : CompState.Access[State],
 
     val $$ = $ zoomL State.greq
     val setStatus   = $$ zoomL CreateGenericReqState.status   setState (_: Status)
-    val setReqCodes = $$ zoomL CreateGenericReqState.reqCodes setState (_: String)
-    val setTitle    = $$ zoomL CreateGenericReqState.title    setState (_: String)
-    val setTags     = $$ zoomL CreateGenericReqState.tags     setState (_: String)
-    val setImp      = $$ zoomL CreateGenericReqState.imp      setState (_: String)
+    val setImp      = ReusableFn($$ zoomL CreateGenericReqState.imp      setState (_: String))
+    val setReqCodes = ReusableFn($$ zoomL CreateGenericReqState.reqCodes setState (_: String))
+    val setTitle    = ReusableFn($$ zoomL CreateGenericReqState.title    setState (_: String))
+    val setTags     = ReusableFn($$ zoomL CreateGenericReqState.tags     setState (_: String))
 
-    val tagLookup = project.map(p => TagEditor.lookupG(p, _.tags.all))
-    val impLookup = Px.apply2(project, projectText)(ImplicationEditor.lookupAll)
+    val titleFocus = FocusId.InCI(GenericReqType(CustomReqTypeId(-1)), Column.Title)
 
-    val mkPropsReqCodes = ReqCodeEditor.ForReqs.prepare(Set.empty, project.map(_.reqCodes.trie))
-    val mkPropsTitle    = RichTextEditor.GenericReqTitle.prepare(project, projectText, projectWidgets, textSearch)
-    val mkPropsTags     = TagEditor.prepare(Set.empty, project.value(), tagLookup)._1
-    val mkPropsImp      = ImplicationEditor.prepare(None, Column.ImplicationSrc, project, textSearch, impLookup)._1
+    val pxImpLookup = Px.apply2(pxProject, pxProjectText)(ImplicationEditor.Lookup.all)
 
-    def render(p: Props) = {
-      val state = p._1.state.greq
+    val pxImpValidationFn =
+      pxProject.map(p =>
+        ImplicationEditor.validationFn(p, None, Set.empty, ImplicationEditor isDeclFwd Column.ImplicationSrc))
 
-      val propsReqCodes = mkPropsReqCodes(VUCA.vu(state.reqCodes, setReqCodes))
-      val propsTitle    = mkPropsTitle   (VUCA.vu(state.title,    setTitle))
-      val propsTags     = mkPropsTags    (VUCA.vu(state.tags,     setTags))
-      val propsImp      = mkPropsImp     (VUCA.vu(state.imp,      setImp))
+    val pxTagLookup = pxProject map TagEditor.Lookup.all
+
+    def render(pp: Props) = {
+      import Px.AutoValue._
+
+      val p = pp._1
+      val state = p.state.greq
+
+      val propsReqCodes =
+        ReqCodeEditor.Multiple.Props(
+          ReusableVar(state.reqCodes)(setReqCodes),
+          None,
+          pxProject.reqCodes.trie,
+          _noExtra)
+
+      val propsTags =
+        TagEditor.Props(
+          ReusableVar(state.tags)(setTags),
+          pxTagLookup,
+          _noExtra)
+
+      val propsTitle =
+        RichTextEditor.GenericReqTitle.Props(
+          pxProject,
+          pxProjectText,
+          pxTextSearch,
+          pxProjectWidgets,
+          ReusableVar(state.title)(setTitle),
+          previewFeature.forChild(titleFocus, p.previewState),
+          None,
+          _noExtra)
+
+      val propsImp =
+        ImplicationEditor.Props(
+          ReusableVar(state.imp)(setImp),
+          pxImpLookup,
+          pxImpValidationFn,
+          pxTextSearch,
+          _noExtra)
 
       val create: Option[Callback] =
         for {
@@ -194,8 +253,11 @@ class CreationInterface($             : CompState.Access[State],
           tags    <- propsTags    .parseResult.toOption
           impSrcs <- propsImp     .parseResult.toOption
           if state.status !=* Locked
-        } yield
-          ajax(p._1, setStatus, CreateContentCmd.CreateGenericReq(p._2, title, codes.added, tags.added, impSrcs.added))
+        } yield {
+          val tagIds = tags.map(_.id).toSet
+          val cmd = CreateContentCmd.CreateGenericReq(pp._2, title, codes, tagIds, impSrcs.added)
+          ajax(p, setStatus, cmd)
+        }
 
       <.table(
         <.thead(

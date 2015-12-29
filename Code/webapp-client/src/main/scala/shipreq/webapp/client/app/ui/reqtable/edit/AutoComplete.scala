@@ -1,24 +1,21 @@
-package shipreq.webapp.client.app.ui.reqtable
-package edit
+package shipreq.webapp.client.app.ui.reqtable.edit
 
 import scala.annotation.tailrec
 import scalacss.ScalaCssReact._
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.jquery.{TextComplete => TC}
 import scalajs.js.{UndefOr, undefined}
 import scalaz.{\/-, -\/, \/}
-import scalaz.std.string.stringInstance
-import scalaz.syntax.equal._
 import shapeless.syntax.singleton._
-import shipreq.base.util.{MTrie, univEqOps}
+import shipreq.base.util._
 import shipreq.base.util.MTrie.Ops
-import shipreq.base.util.{NonEmptyVector, Util}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.lib.{FilterDead, Plain, Contextualise}
-import TC.{Query, Strategy, StrategyA, Strategies}
+import shipreq.webapp.client.lib.ui.feature.AutoCompleteFeature.{Strategies, autoLiftSingleStrategy}
+import TC.{Query, Strategy}
 
 object AutoComplete {
 
@@ -60,7 +57,7 @@ object AutoComplete {
 
   private val hashtagContext = Context.literal(Grammar.hashRefKey.prefix, "")
 
-  def hashtag(legal: Stream[HashRefKey]): Contextualise => Strategy = {
+  def hashtag(legal: Stream[HashRefKey]): Contextualise => Strategies = {
     import Grammar.{hashRefKey => G}
     val mainRegex = s"(|${G.firstChar.one}${G.allChars.*})$$"
     val searchFn  = TC.caseInsensitiveContains(legal.map(_.value).sorted)
@@ -69,21 +66,24 @@ object AutoComplete {
 
   def hashtag(issues: Stream[CustomIssueType],
               tags  : Stream[ApplicableTag],
-              fd    : FilterDead): Contextualise => Strategy =
+              fd    : FilterDead): Contextualise => Strategies =
     hashtag(
       fd(issues)(_.live).map(_.key) append
       fd(tags  )(_.live).map(_.key))
 
-  def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategy =
-    hashtag(
-      if (issues) p.config.customIssueTypes.values.toStream else Stream.empty,
-      if (tags)   p.config.atags                            else Stream.empty,
-      fd)
+  def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategies =
+    if (issues || tags)
+      hashtag(
+        if (issues) p.config.customIssueTypes.values.toStream else Stream.empty,
+        if (tags)   p.config.atags                            else Stream.empty,
+        fd)
+    else
+      _ => Vector.empty
 
-  def issue(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategy =
+  def issue(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategies =
     hashtag(legal, Stream.empty, fd)
 
-  def tag(legal: Stream[ApplicableTag], fd: FilterDead): Contextualise => Strategy =
+  def tag(legal: Stream[ApplicableTag], fd: FilterDead): Contextualise => Strategies =
     hashtag(Stream.empty, legal, fd)
 
   // ===================================================================================================================
@@ -96,21 +96,21 @@ object AutoComplete {
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
     legal.filter(_.live(p.config.customReqTypes) :: Live)
-      .map(req => new ReqItem(req, p.config.reqType(req.pubid.reqTypeId), pt reqTitle req))
+      .map(req => new ReqItem(req.id, req.pubid, p.config.reqType(req.pubid.reqTypeId), pt reqTitle req))
       .sortBy(_.sortKey)
   }
 
-  def req(textSearch: TextSearch, legal: Stream[ReqItem], Contextualise: Contextualise): StrategyA[ReqItem] = {
+  def req(textSearch: TextSearch, legal: Stream[ReqItem], Contextualise: Contextualise): Strategies = {
     val searchTitles =
       textSearch.ignoreCaseNoWhitespace
-        .filterReqsIds(legal.map(_.req.id).toSet)
+        .filterReqsIds(legal.map(_.reqId).toSet)
         .titlesOnly
 
     val searchFn: TC.Query[ReqItem] = { term =>
       val titles = searchTitles.searchAll(term).take(10).map(_.id).toSet
       val np     = normaliseReqPubid(term)
       // TODO TextComplete should use multiple result tiers. Titles shouldn't be searched when there are matching pubids
-      legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.req.id))
+      legal.filter(i => i.pubidStrNorm.contains(np) || titles.contains(i.reqId))
     }
 
     def li(i: ReqItem): ReactElement =
@@ -124,11 +124,14 @@ object AutoComplete {
       .template((i, _) => React.renderToStaticMarkup(li(i)))
   }
 
-  final class ReqItem(val req: Req, val reqType: ReqType, val title: String) {
-    val pubidStr     = PlainText.pubid(reqType, req.pubid.pos)
+  case class ReqItem(reqId: ReqId, pubid: Pubid, reqType: ReqType, title: String) {
+    val pubidStr     = PlainText.pubid(reqType, pubid.pos)
     val pubidStrNorm = normaliseReqPubid(pubidStr)
-    val sortKey      = (reqType.mnemonic.value, req.pubid.pos.value)
+    val sortKey      = (reqType.mnemonic.value, pubid.pos.value)
   }
+
+  implicit def univEqReqItem: UnivEq[ReqItem] =
+    UnivEq.derive
 
   @inline def normaliseReqPubid(s: String): String =
     Grammar.pubidSeqFormat.normEach(s)
@@ -172,10 +175,10 @@ object AutoComplete {
 
           // Find suggestions
           val t = NonEmptyVector.maybe(path, trie)(trie.dropPath)
-          var r = t.toStream.filter(_._2.existsV(_.isActive)).map(_._1.value)
+          var r = t.iterator.filter(_._2.existsV(_.isActive)).map(_._1.value)
           for (l <- lead)
             r = r.filter(_ startsWith l)
-          r.sorted.map((path, _))
+          r.toStream.sorted.map((path, _))
         }
 
         val searchFn = TC.ignorePerfectMatch(searchFn0)(_ ==* _._2)
@@ -215,7 +218,7 @@ object AutoComplete {
         reflinkContext.strategy(mainRegex, searchFn)(identity, "")(contextualise)
       }
 
-      Strategies(
+      Vector(
         completeFromStart(trie),
         completeFromMid(trie))
     }
@@ -225,7 +228,7 @@ object AutoComplete {
      *
      * Matches whole paths, wraps in reflink syntax.
      */
-    def ref(project: Project, pt: PlainText.ForProject): Strategy = {
+    def ref(project: Project, pt: PlainText.ForProject): Strategies = {
       val mainRegex = s"($sep?$node($sep$node)*$sep?)"
 
       type A = (String, ActiveGroup \/ ActiveReq)
@@ -294,7 +297,7 @@ object AutoComplete {
 
   private def htmllike = Stream("math")
 
-  def math: Strategy =
+  def math: Strategies =
     Strategy.pattern("""(^|\s)<([a-z]+)$""", index = 2)
     .search(term => htmllike.filter(_ startsWith term))
     .replace2(tag => (s"$$1<$tag>", s"</$tag>"))

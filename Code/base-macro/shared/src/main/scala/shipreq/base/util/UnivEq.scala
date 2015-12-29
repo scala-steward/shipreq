@@ -31,6 +31,7 @@ abstract class UnivEqImplicits {
   @inline implicit def univEqSet    [A: UnivEq]           : UnivEq[Set[A]]          = univEqForce
   @inline implicit def univEqList   [A: UnivEq]           : UnivEq[List[A]]         = univEqForce
   @inline implicit def univEqListSet[A: UnivEq]           : UnivEq[ListSet[A]]      = univEqForce
+  @inline implicit def univEqStream [A: UnivEq]           : UnivEq[Stream[A]]       = univEqForce
   @inline implicit def univEqVector [A: UnivEq]           : UnivEq[Vector[A]]       = univEqForce
   @inline implicit def univEqMap    [K: UnivEq, V: UnivEq]: UnivEq[Map[K, V]]       = univEqForce
   @inline implicit def univEqDisj   [A: UnivEq, B: UnivEq]: UnivEq[A \/ B]          = univEqForce

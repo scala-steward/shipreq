@@ -30,7 +30,7 @@ sealed trait ReqType {
     oldMnemonics + mnemonic
 }
 
-object ReqType {
+object ReqType extends ReqTypeEquality {
   final case class Mnemonic(value: String) extends TaggedString
 
   def name(customReqTypes: CustomReqTypeIMap): ReqTypeId => String =
@@ -98,6 +98,10 @@ object CustomReqType {
 }
 
 // =====================================================================================================================
+
+sealed trait ReqTypeEquality {
+  final implicit def univEq: UnivEq[ReqType] = UnivEq.derive
+}
 
 object ReqTypeId {
   implicit object IdOrder extends Order[ReqTypeId] with UnivEq[ReqTypeId] {

@@ -1,179 +1,137 @@
-package shipreq.webapp.client.app.ui.reqtable
-package edit
+package shipreq.webapp.client.app.ui.reqtable.edit
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.jquery.TextComplete
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.jquery.{TextComplete => TC}
+import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom
 import scalacss.ScalaCssReact._
-import org.scalajs.dom.raw.HTMLTextAreaElement
-import scalajs.js
+import shipreq.base.util.univEqOps
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.Validity
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
-import shipreq.webapp.client.app.ui.{VUCA, RemoteDataEditor, ProjectWidgets}
-import shipreq.webapp.client.app.ui.Style.{reqtable => *}
-import shipreq.webapp.client.lib.{TCB, HideDead, Contextualise}
-import shipreq.webapp.client.lib.ui.{KeyHandlers, UI}
+import shipreq.webapp.client.app.ui.ProjectWidgets
+import shipreq.webapp.client.app.ui.Style.{reqtable => *} // TODO Not anymore
+import shipreq.webapp.client.data.DataReusability._
+import shipreq.webapp.client.lib.ui.feature._
+import shipreq.webapp.client.lib.{Contextualise, HideDead}
 import Text.Equality._
-import UpdateContentCmd._
+
+sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, final val text: TextType) {
+  private def supportsPTM     = text match { case _: Atom.PlainTextMarkup => true; case _ => false }
+  private def supportsReqRefs = text match { case _: Atom.ReqRef          => true; case _ => false }
+  private def supportsTags    = text match { case _: Atom.TagRef          => true; case _ => false }
+  private def supportsIssues  = text match { case _: Atom.Issue           => true; case _ => false }
+
+  def mkAutoComplete(p: Project, pt: PlainText.ForProject, ts: TextSearch): AutoCompleteFeature.ForChild = {
+    var ac = Vector.empty[TextComplete.Strategy]
+
+    ac ++= AutoComplete.hashtag(p, HideDead, issues = supportsIssues, tags = supportsTags)(Contextualise)
+
+    if (supportsReqRefs) {
+      ac ++= AutoComplete.reqCode.ref(p, pt)
+      ac ++= AutoComplete.req(ts, AutoComplete.reqItems(p, pt), Contextualise)
+    }
+
+    if (supportsPTM)
+      ac ++= AutoComplete.math
+
+    ac
+  }
+
+  /** Extra properties to apply to the tag. */
+  type Extra = Option[text.OptionalText] ~=> TagMod
+
+  val noExtra: Extra =
+    ReusableFn(_ => EmptyTag)
+
+  case class Props(project       : Project,
+                   plainText     : PlainText.ForProject,
+                   textSearch    : TextSearch,
+                   projectWidgets: ProjectWidgets,
+                   edit          : ReusableVar[String],
+                   preview       : PreviewFeature.ForChild,
+                   preEditValue  : Option[text.OptionalText],
+                   extra         : Extra) {
+
+    val richText    = text.parse(project)(edit.value)
+    val parseResult = Validators.genericRichText(plainText, richText)
+    val validated   = EditValidationFeature(parseResult)
+
+    def render = Component(this)
+  }
+
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
+
+  private val editorRef = Ref[dom.html.TextArea]("i")
+
+  // This is an editor - you can't edit Dead stuff. Assume all content is Live.
+  @inline def hardcodedLive = Live
+
+  val liveCorrect: EndoFn[String] =
+    if (text.singleLine)
+      RichTextEditor.correctSingleLineText
+    else
+      identity
+
+  class Backend($: BackendScope[Props, Unit]) {
+    private val pxProject    = Px.bs($).propsA(_.project)
+    private val pxPlainText  = Px.bs($).propsA(_.plainText)
+    private val pxTextSearch = Px.bs($).propsA(_.textSearch)
+
+    val pxAutoComplete =
+      Px.apply3(pxProject, pxPlainText, pxTextSearch)(mkAutoComplete)
+
+    val updateState: ReactEventTA => Callback =
+      e => $.props >>= (p =>
+        p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit)
+
+    def render(p: Props) = {
+      def editor =
+        <.textarea(
+          *.cellEditor(p.validated.validity),
+          p.extra(p.validated.validated),
+          ^.ref       := editorRef,
+          ^.value     := p.edit.value,
+          ^.onBlur   --> p.preview.onBlur,
+          ^.onFocus  --> p.preview.onFocus,
+          ^.onChange ==> updateState)
+
+      def preview =
+        <.div(
+          ^.ref := "p",
+          "Preview",
+          <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, p.richText)))
+
+      <.div(
+        editor,
+        p.validated.renderFailure,
+        p.preview.preview(p.preEditValue.forall(p.richText !=* _))(preview))
+    }
+  }
+
+  val Component =
+    ReactComponentB[Props]("RichTextEditor:" + name)
+      .renderBackend[Backend]
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
+      .build
+}
+
+// ===================================================================================================================
 
 object RichTextEditor {
-
-  type AutoComplete = ReusableVal[TC.Strategies]
-
-  private val correctSingleLineText: EndoFn[String] = {
+  val correctSingleLineText: EndoFn[String] = {
     val r = "[\\r\\n]+".r
     r.replaceAllIn(_, " ")
   }
 
-  private val textEditorRef = Ref[HTMLTextAreaElement]("i")
+  object GenericReqTitle extends RichTextEditor("GRT", Text.GenericReqTitle)
 
-  // This is an editor - you can't edit Dead stuff. Assume all content is Live.
-  @inline private def hardcodedLive = Live
+  object ReqCodeGroupTitle extends RichTextEditor("RCGT", Text.ReqCodeGroupTitle)
 
-  // ===================================================================================================================
-  sealed abstract class Base[TextType <: Text.Generic](name: String, final val t: TextType) {
+  object CustomTextField extends RichTextEditor("CTF", Text.CustomTextField)
 
-    def supportsPTM     = t match { case _: Atom.PlainTextMarkup => true; case _ => false }
-    def supportsReqRefs = t match { case _: Atom.ReqRef          => true; case _ => false }
-    def supportsTags    = t match { case _: Atom.TagRef          => true; case _ => false }
-    def supportsIssues  = t match { case _: Atom.Issue           => true; case _ => false }
-
-    def mkAutoComplete(project: Px[Project], projectText: Px[PlainText.ForProject], textSearch: Px[TextSearch]): Px[AutoComplete] = {
-      @inline def $ = AutoComplete
-
-      for {
-        p <- project
-        t <- projectText
-        s <- textSearch
-      } yield ReusableVal.byRef {
-        var ac: TC.Strategies = new js.Array
-
-        if (supportsIssues || supportsTags)
-          ac.push($.hashtag(p, HideDead, issues = supportsIssues, tags = supportsTags)(Contextualise))
-
-        if (supportsReqRefs)
-          ac.push(
-            $.reqCode.ref(p, t),
-            $.req(s, $.reqItems(p, t), Contextualise))
-
-        if (supportsPTM)
-          ac push $.math
-
-        ac
-      }
-    }
-
-    def prepare(project       : Px[Project],
-                projectText   : Px[PlainText.ForProject],
-                projectWidgets: Px[ProjectWidgets],
-                textSearch    : Px[TextSearch]): VUCA[String, t.OptionalText] => Props = {
-
-      val autoComplete = mkAutoComplete(project, projectText, textSearch)
-
-      Props(_, project.value(), projectText.value(), projectWidgets.value(), autoComplete.value())
-    }
-
-    def selfManaged(initial       : t.OptionalText,
-                    project       : Px[Project],
-                    projectText   : Px[PlainText.ForProject],
-                    projectWidgets: Px[ProjectWidgets],
-                    textSearch    : Px[TextSearch],
-                    commitFn      : t.OptionalText => RemoteDataEditor.OnCommit): InitSelfManagedA[String] = {
-
-      def init     = projectText.value().format(hardcodedLive, initial)
-      val props    = prepare(project, projectText, projectWidgets, textSearch)
-      val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignoreIfEqual(initial)
-
-      (init, (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
-    case class Props(vuca          : VUCA[String, t.OptionalText],
-                     project       : Project,
-                     projectText   : PlainText.ForProject,
-                     projectWidgets: ProjectWidgets,
-                     autoComplete  : AutoComplete)  {
-
-      val parseResult = {
-        val txt = t.parse(project)(vuca.value)
-        Validators.genericRichText(projectText, txt).disjunction
-      }
-
-      def render = component(this)
-    }
-
-    val component =
-      ReactComponentB[Props](name)
-        .renderBackend[Backend]
-        .configure(UI.installTextCompleteP(textEditorRef, _.autoComplete, _.vuca.update))
-        .build
-
-    val correctOnChange: EndoFn[String] =
-      if (t.singleLine) correctSingleLineText else identity
-
-    class Backend($: BackendScope[Props, Unit]) {
-
-      val updateState: ReactEventI => Callback =
-        e => $.props >>= (_.vuca.update(correctOnChange(e.target.value)))
-
-      def render(p: Props): ReactElement = {
-        val parseResult = p.parseResult
-
-        val keyHandlers =
-          KeyHandlers.commitAndAbortD(p.vuca.abort, parseResult, p.vuca.commit, t.singleLine)
-
-        val editor =
-          <.textarea(
-            *.cellEditor(Validity(parseResult)),
-            keyHandlers,
-            ^.ref       := textEditorRef,
-            ^.value     := p.vuca.value,
-            ^.onChange ==> updateState)
-
-        parseResult.fold(
-          e => <.div(editor, <.div(cellErrorMsgStyle, e.toText)),
-          v => <.div(editor, "Preview", <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, v))))
-      }
-    }
-  }
-
-  sealed abstract class Base2[TextType <: Text.Generic](name: String, _t: TextType) extends Base(name, _t) {
-
-    type SubjectId
-    def mkUpdateContentCmd: (SubjectId, t.OptionalText) => UpdateContentCmd
-
-    def edit(subjectId     : SubjectId,
-             initial       : t.OptionalText,
-             project       : Px[Project],
-             projectText   : Px[PlainText.ForProject],
-             projectWidgets: Px[ProjectWidgets],
-             textSearch    : Px[TextSearch],
-             commitFn      : UpdateContentOnCommit): InitSelfManagedA[String] = {
-      val onCommit = commitFn.cmap[t.OptionalText](mkUpdateContentCmd(subjectId, _))
-      selfManaged(initial, project, projectText, projectWidgets, textSearch, onCommit)
-    }
-  }
-
-  // ===================================================================================================================
-
-  object GenericReqTitle extends Base2("GenericReqDesc editor", Text.GenericReqTitle) {
-    override type SubjectId = GenericReqId
-    override def mkUpdateContentCmd = SetGenericReqTitle
-  }
-
-  object ReqCodeGroupTitle extends Base2("ReqCodeGroupTitle editor", Text.ReqCodeGroupTitle) {
-    override type SubjectId = ReqCodeId
-    override def mkUpdateContentCmd = SetReqCodeGroupTitle
-  }
-
-  class CustomTextField(fid: CustomField.Text.Id) extends Base2("CustomTextField editor", Text.CustomTextField) {
-    override type SubjectId = ReqId
-    override def mkUpdateContentCmd = SetCustomTextField(_, fid, _)
-  }
-
-  object DeletionReason extends Base("DeletionReason editor", Text.DeletionReason)
+  object DeletionReason extends RichTextEditor("DR", Text.DeletionReason)
 }

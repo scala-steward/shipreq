@@ -68,11 +68,18 @@ object Grammar {
     )
 
   /**
-   * Describes how to pre-process (for parsing) text representing a sequence of values.
+   * Transformations between a sequence of strings and a single string.
    */
-  final case class SeqFormat(normAll: EndoFn[String], sep: Pattern, normEach: EndoFn[String], ignore: String => Boolean) {
-    def apply(input: String): Stream[String] =
-      (input |> normAll |> sep.split).toStream map normEach filterNot ignore
+  final case class SeqFormat(normAll : EndoFn[String],
+                             sep     : Pattern,
+                             normEach: EndoFn[String],
+                             ignore  : String => Boolean,
+                             merge   : TraversableOnce[String] => String) {
+    def split(input: String): Iterator[String] =
+      (input |> normAll |> sep.split).iterator map normEach filterNot ignore
+
+    def stream(input: String): Stream[String] =
+      split(input).toStream
   }
 
   // ===================================================================================================================
@@ -87,7 +94,9 @@ object Grammar {
     val caseInsensitiveParsePost = (_: String).toUpperCase
   }
 
-  val pubidSeqFormat = SeqFormat(_.trim, "[ ,]+".r.pattern, _.replace("-", "") |> reqTypeMnemonic.caseInsensitiveParsePost, _.isEmpty)
+  val pubidSeqFormat = SeqFormat(
+    _.trim, "[ ,]+".r.pattern, _.replace("-", "") |> reqTypeMnemonic.caseInsensitiveParsePost, _.isEmpty,
+    _ mkString " ")
 
   // TODO hashrefkey & mnemonic are both case-insensitive but char ranges are defined differently
 
@@ -99,7 +108,7 @@ object Grammar {
     def firstChar = FirstChar.azAZ09
     val allChars  = new CharWhitelist("_=-", '.', 'A' to 'Z', 'a' to 'z', '0' to '9')("may only consist of letters, numbers, and these symbols: . _ = -")
     val prefix    = "#"
-    val seqFormat = SeqFormat(_.trim, "[# ,]+".r.pattern, "^# *".r.replaceFirstIn(_, ""), _.isEmpty)
+    val seqFormat = SeqFormat(_.trim, "[# ,]+".r.pattern, "^# *".r.replaceFirstIn(_, ""), _.isEmpty, _ mkString " ")
   }
 
   /** [[shipreq.webapp.base.data.FieldRefKey]] */
@@ -124,11 +133,13 @@ object Grammar {
     /** Max number of nodes in [[shipreq.webapp.base.data.ReqCode.Value]] */
     def maxNodes = 20
 
-    /** Max number of codes per [[shipreq.webapp.base.data.ReqCode.Target]] */
+    /** Max number of codes per ReqCode target */
     def maxCodes = 20
 
     /** For parsing a single value into nodes */
-    val nodeSeqFormat = SeqFormat(whitespace.replaceAllIn(_, ""), quoteCh(nodeSeparator).r.pattern, identity, _ => false)
+    val nodeSeqFormat = SeqFormat(
+      whitespace.replaceAllIn(_, ""), quoteCh(nodeSeparator).r.pattern, identity, _ => false,
+      _ mkString nodeSeparator.toString)
   }
 
   val issueDescSurround = surrounds("{", "}", " ", " ")

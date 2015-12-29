@@ -1,77 +1,106 @@
 package shipreq.webapp.client.app.ui.reqtable.edit
 
-import japgolly.scalajs.react.extra.{ReusableVal, Px}
-import scalaz.{\/-, -\/}
-import shipreq.base.util.{SetDiff, Util}
-import shipreq.webapp.base.UiText
+import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react._, vdom.prefix_<^._
+import shipreq.webapp.base.validation.Validator
+import shipreq.webapp.client.lib.ui.feature._
+import shipreq.base.util.{UnivEq, Util}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.UpdateContentCmd
-import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
+import shipreq.webapp.base.text.Grammar
+import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.ui.TextEditor
-import TextSeqEditor._
 import Validators.{reqCode => V}
-import UpdateContentCmd.{PatchReqCodes, SetReqCodeGroupCode}
+
+sealed abstract class ReqCodeEditor[Data: Reusability] {
+
+  val textEditor: TextEditor
+
+  val validator: Validator[V.VS, String, _, Data]
+
+  def liveCorrect(t: String): String
+
+  def dataToSet(d: Option[Data]): Set[ReqCode.Value]
+
+  /** Extra properties to apply to the tag. */
+  type Extra = Option[Data] ~=> TagMod
+
+  case class Props(edit        : ReusableVar[String],
+                   initialValue: Option[Data],
+                   trie        : ReqCode.Trie,
+                   extra       : Extra) {
+
+    val parseResult =
+      validator.correctAndValidate(V.VS(trie, dataToSet(initialValue)), edit.value)
+
+    def render = Component(this)
+  }
+
+  implicit lazy val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
+
+  private val editorRef = Ref[textEditor.Dom]("i")
+
+  final class Backend($: BackendScope[Props, Unit]) {
+    private val pxTrie = Px.bs($).propsA(_.trie)
+
+    val pxAutoComplete = pxTrie.map(t =>
+      AutoComplete.reqCode.prefixes(t))
+
+    def render(p: Props) = {
+      val validated = EditValidationFeature(p.parseResult)
+
+      <.div(
+        textEditor.tag(
+          ^.ref        := editorRef,
+          ^.value      := p.edit.value,
+          ^.onChange  ==> ((e: ReactEventI) => p.edit.set(liveCorrect(e.target.value))),
+          p.extra(validated.validated)),
+        validated.renderFailure)
+    }
+  }
+
+  @inline private implicit def impTextEditor = textEditor.asImplicit
+
+  // lazy else there'll be a FieldNotInitialised error via .configure → impTextEditor → textEditor
+  lazy val Component =
+    ReactComponentB[Props]("ReqCodeEditor")
+      .renderBackend[Backend]
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
+      .build
+}
 
 object ReqCodeEditor {
 
-  type A = ReqCode.Value
+  // ===================================================================================================================
 
-  def mkAutoComplete(validationState: Px[V.VS]): Px[AutoComplete] =
-    validationState.map(vs => ReusableVal.byRef(
-      AutoComplete.reqCode.prefixes(vs.trie)))
-
-  def mkParser(validationState: Px[V.VS]): Parser[A] = str => {
-    val vs = validationState.value()
-    V.code.correctAndValidate(vs, str)
+  /**
+    * Editor for a single ReqCode (as is the case in ReqCodeGroups).
+    */
+  object Single extends ReqCodeEditor[ReqCode.Value] {
+    override val textEditor                          = TextEditor.Input
+    override val validator                           = V.code
+    override def liveCorrect(txt: String)            = V.code.liveCorrect(txt)
+    override def dataToSet(d: Option[ReqCode.Value]) = d.toSet
   }
 
   // ===================================================================================================================
-  object ForGroup {
-    val editor = new TextSeqEditor[A, A]("ReqCode editor", Stream(_), TextEditor.Input)
 
-    @inline def liveCorrect(t: String) = V.code.liveCorrect(t)
+  /**
+    * Editor for multiple ReqCodes.
+    */
+  object Multiple extends ReqCodeEditor[Set[ReqCode.Value]] {
 
-    def prepare(initial: Option[A], trie: Px[ReqCode.Trie]): VUCA[String, A] => editor.Props = {
-      val validationState = trie.map(V.VS(_, initial.toSet))
-      val autoComplete    = mkAutoComplete(validationState)
-      val parser          = mkParser(validationState)
+    override val textEditor = TextEditor.TextArea
 
-      val validate: Vector[A] => ParseResult[A] =
-        _.headOption match {
-          case None    => -\/(Some(UiText.FieldNames.reqCode + " cannot be blank.")) // english
-          case Some(c) => \/-(c)
-        }
+    val seqFmt = Grammar.SeqFormat(_.trim, "\\s*[\n\r]\\s*".r.pattern, identity, _.isEmpty, _ mkString "\n")
 
-      editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle)
-    }
+    override val validator =
+      Validator.seqText(seqFmt)(V.code.correctAndValidate _ curried)
+        .map(_.toSet)
+        .andThen(V.codeSet.liftS)
 
-    def selfManaged(initial : Option[A],
-                    trie    : Px[ReqCode.Trie],
-                    commitFn: A => RemoteDataEditor.OnCommit): InitSelfManagedA[String] = {
-
-      def init     = initial.fold("")(PlainText.reqCode)
-      val props    = prepare(initial, trie)
-      val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignoreIfEqualO(initial)
-
-      (init, (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
-    }
-
-    def edit(subjectId: ReqCodeId,
-             initial  : A,
-             trie     : Px[ReqCode.Trie],
-             commitFn : UpdateContentOnCommit) =
-      selfManaged(Some(initial), trie, commitFn.cmap[A](SetReqCodeGroupCode(subjectId, _)))
-  }
-
-  // ===================================================================================================================
-  object ForReqs {
-    val lineSplitPat = "\\s*[\n\r]\\s*".r.pattern
-    val lineSplit = (s: String) => lineSplitPat.split(s.trim).toStream.filter(_.nonEmpty)
-
-    val editor = new TextSeqEditor[A, SetDiff[A]]("ReqCode editor", lineSplit, TextEditor.TextArea)
-
-    def liveCorrect(txt: String): String =
+    override def liveCorrect(txt: String): String =
       if (txt.trim.isEmpty)
         ""
       else {
@@ -79,27 +108,7 @@ object ReqCodeEditor {
         Util.fixBeforeAfter(txt, r)(_ endsWith "\n", _ + "\n")
       }
 
-    def prepare(initial: Set[A], trie: Px[ReqCode.Trie]): VUCA[String, SetDiff[A]] => editor.Props = {
-      val validationState = trie.map(V.VS(_, initial))
-      val autoComplete    = mkAutoComplete(validationState)
-      val parser          = mkParser(validationState)
-
-      val validate: Vector[A] => ParseResult[SetDiff[A]] =
-        as => V.codeSet.correctAndValidateU(as.toSet).map(SetDiff.compare(initial, _))
-
-      editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle)
-    }
-
-    def edit(subjectId: ReqId,
-             initial  : Set[A],
-             trie     : Px[ReqCode.Trie],
-             commitFn : UpdateContentOnCommit): InitSelfManagedA[String] = {
-
-      def init     = initial.toVector.map(PlainText.reqCode).sorted mkString "\n"
-      val props    = prepare(initial, trie)
-      val onCommit = commitFn.setDiff[A](PatchReqCodes(subjectId, _))
-
-      (init, (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
-    }
+    override def dataToSet(d: Option[Set[ReqCode.Value]]) =
+      d getOrElse UnivEq.emptySet
   }
 }

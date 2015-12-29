@@ -1,93 +1,102 @@
-package shipreq.webapp.client.app.ui.reqtable
-package edit
+package shipreq.webapp.client.app.ui.reqtable.edit
 
-import japgolly.scalajs.react.extra.{ReusableVal, Px}
-import scalaz.\/-
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom
+import shipreq.base.util.IMap
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.SetDiff
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.UpdateContentCmd
-import shipreq.webapp.base.text.Grammar
-import shipreq.webapp.client.app.ui.{RemoteDataEditor, TextSeqEditor, VUCA}
-import shipreq.webapp.client.lib.ui.TextEditor
-import shipreq.webapp.client.lib.{Plain, HideDead}
-import TextSeqEditor._
-import UpdateContentCmd.PatchReqTags
+import shipreq.webapp.base.text.Grammar.{hashRefKey => G}
+import shipreq.webapp.base.validation._
+import shipreq.webapp.client.data.DataReusability._
+import shipreq.webapp.client.lib.ui.feature._
+import shipreq.webapp.client.lib.{HideDead, Plain}
 
 object TagEditor {
-  type Lookup = Map[String, ApplicableTag]
 
-  type TagDiff = SetDiff[ApplicableTagId]
+  /**
+   * Lookup of tags by their names.
+   * Required for validation.
+   */
+  type Lookup = IMap[String, ApplicableTag]
 
-  val editor = new TextSeqEditor[ApplicableTagId, TagDiff](
-    "TagEditor", Grammar.hashRefKey.seqFormat.apply, TextEditor.Input)
+  object Lookup {
+    def empty: Lookup =
+      IMap.empty(_.key.value)
 
-  def lookupForNoCol(p: Project): Lookup =
-    lookupG(p, _.tags.notUsedInColumns)
+    def apply(tags: TraversableOnce[ApplicableTag]): Lookup =
+      empty ++ tags.toIterator.filter(_.live :: Live)
 
-  def lookupForCol(p: Project, f: CustomField.Tag.Id): Lookup =
-    lookupG(p, _.tags inColumn f)
+    def all(p: Project): Lookup =
+      apply(p.config.liveTagColumnDistribution.tags.all)
 
-  def lookupG(p: Project, f: TagColumnDistribution.TagIds => Set[ApplicableTag]): Lookup =
-    f(p.config.liveTagColumnDistribution)
-      .toStream
-      .filter(_.live :: Live)
-      .map(_.mapStrengthL(_.key.value))
-      .toMap
+    def forTagField(f: CustomField.Tag.Id)(p: Project): Lookup =
+      apply(p.config.liveTagColumnDistribution.tags inColumn f)
 
-  def prepare(initial: Set[ApplicableTagId],
-              project: Project,
-              lookup : Px[Lookup]): (VUCA[String, TagDiff] => editor.Props, String) = {
-
-    val (initialValues, initialTextValue) = {
-      val lm  = lookup.value()
-      val ls  = lm.values.toStream.map(_.id).toSet
-      val ids = initial & ls
-
-      val text =
-        ids.toVector
-          .map(a => project.config.atag(a).key.value)
-          .sorted
-          .mkString(" ")
-
-      (ids, text)
-    }
-
-    val autoComplete: Px[AutoComplete] =
-      lookup.map(l => ReusableVal.byRef(
-        AutoComplete.tag(l.values.toStream, HideDead)(Plain)
-      ))
-
-    val parser: Parser[ApplicableTagId] = s => {
-      val l = lookup.value()
-      l.get(s) match {
-        case Some(t) => \/-(t.id)
-        case None    => leftNone
-      }
-    }
-
-    val validate: Vector[ApplicableTagId] => ParseResult[TagDiff] =
-      nvs => \/-(SetDiff.compare(initialValues, nvs.toSet))
-
-    (editor.Props(_, parser, validate, autoComplete.value(), cellStyle, cellErrorMsgStyle), initialTextValue)
+    def notUsedInTagFields(p: Project): Lookup =
+      apply(p.config.liveTagColumnDistribution.tags.notUsedInColumns)
   }
 
-  def selfManaged(initial : Set[ApplicableTagId],
-                  project : Project,
-                  lookup  : Px[Lookup],
-                  commitFn: TagDiff => RemoteDataEditor.OnCommit): InitSelfManagedA[String] = {
-
-    val (props, initialTextValue) = prepare(initial, project, lookup)
-
-    val onCommit = RemoteDataEditor.CommitFilter(commitFn).ignore(_.isEmpty)
-
-    (initialTextValue, (s, u, a, commit) => props(VUCA(s, u, v => commit(onCommit(v)), a)).render)
+  def initialValues(initial: Set[ApplicableTagId], pc: ProjectConfig, l: Lookup): (Set[ApplicableTagId], String) = {
+    val ls = l.valuesIterator.map(_.id).toSet
+    val ids = initial & ls
+    val text =
+      ids.toVector
+        .map(a => pc.atag(a).key.value)
+        .sorted |>
+        G.seqFormat.merge
+    (ids, text)
   }
 
-  def edit(subjectId: ReqId,
-           initial  : Set[ApplicableTagId],
-           project  : Project,
-           lookup   : Px[Lookup],
-           commitFn : UpdateContentOnCommit): InitSelfManagedA[String] =
-    selfManaged(initial, project, lookup, commitFn.cmap[TagDiff](PatchReqTags(subjectId, _)))
+  /** Extra properties to apply to the tag. Input is parsed tags, if valid. */
+  type Extra = Option[Stream[ApplicableTag]] ~=> TagMod
+
+  case class Props(edit  : ReusableVar[String],
+                   lookup: Lookup,
+                   extra : Extra) {
+
+    val parseResult =
+      validator.correctAndValidate(lookup, edit.value)
+
+    def render = Component(this)
+  }
+
+  implicit val reusabilityLookup: Reusability[Lookup] =
+    Reusability.byRef[Lookup] || Reusability.byUnivEq(_.underlyingMap)
+
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.caseClass
+
+  private val editorRef = Ref[dom.html.Input]("i")
+
+  val validator =
+    Validator.seqText(G.seqFormat)((l: Lookup) =>
+      i => ValidationResult.option(l get i, VFailure looseMsg s"Invalid tag: $i"))
+
+  final class Backend($: BackendScope[Props, Unit]) {
+    private val pxLookup = Px.bs($).propsA(_.lookup)
+
+    val pxAutoComplete = pxLookup.map(l =>
+      AutoComplete.tag(l.values.toStream, HideDead)(Plain))
+
+    def render(p: Props) = {
+      val validated = EditValidationFeature(p.parseResult)
+
+      <.div(
+        <.input.text(
+          p.extra(validated.validated),
+          ^.onChange  ==> ((e: ReactEventI) => p.edit.set(e.target.value)),
+          ^.ref        := editorRef,
+          ^.value      := p.edit.value),
+        validated.renderFailure)
+    }
+  }
+
+  val Component =
+    ReactComponentB[Props]("TagEditor")
+      .renderBackend[Backend]
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoCompleteFeature.installBP(editorRef, _.pxAutoComplete.value(), _.edit.set))
+      .build
 }

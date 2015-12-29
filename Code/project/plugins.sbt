@@ -15,6 +15,9 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.5")
 // Builds Taskman dist
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
+// Code coverage (JVM projects only)
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.3.3")
+
 // Benchmarking
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.2")
 

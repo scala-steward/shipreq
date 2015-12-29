@@ -108,7 +108,7 @@ object AppSiteMap {
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
       SessionStats.onLogin(S.session, Oshiro.loggedInUser.get)
       Full(redirectHomeResp)
-      Full(RedirectResponse("/project/oLctx/"))
+      Full(RedirectResponse("/project/oLctx/table"))
     })
 
     def apiLogin = Menu.i("login.api") / "login.api" >> EarlyResponse(() => for {

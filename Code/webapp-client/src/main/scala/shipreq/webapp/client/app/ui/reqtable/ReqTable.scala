@@ -16,14 +16,14 @@ import shipreq.webapp.client.app.ui.{Modal, ProjectWidgets, Selection}
 import shipreq.webapp.client.app.ui.Style.{reqtable => *}
 import shipreq.webapp.client.data.DataReusability._
 import shipreq.webapp.client.lib.FilterDead
+import shipreq.webapp.client.lib.ui.feature._
 import shipreq.webapp.client.protocol.ClientProtocol
-import edit.ColumnEditors
 
 object ReqTable {
 
   val Component =
     ReactComponentB[Props]("ReqTable")
-      .initialState_P(initialState)
+      .initialState_P(State.init)
       .renderBackend[Backend]
       .configure(ChangeListener.update[State](c => _.recvChanges(c)).install(_.cd))
       .componentWillReceiveProps(i => i.$.backend.willReceiveProps(i.$.props, i.nextProps))
@@ -38,34 +38,20 @@ object ReqTable {
     def component = Component(this)
   }
 
-  def initialState(p: Props): State = {
-    val proj = p.cd.project
-    var s = State(proj,
-      ViewSettings.default(p.fd),
-      FilterEditor.initialState,
-      Selection.empty,
-      CreationInterface.initState,
-      Cell.emptyTableState,
-      Modal.none)
-    p.filterSpec.foreach(f => s = s setFilterSpec f)
-    s
-  }
-
   @Lenses
   case class State(project     : Project,
                    viewSettings: ViewSettings,
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   cellStates  : Cell.TableState,
+                   editStates  : EditState.Table,
+                   asyncStates : AsyncState.TableState,
+                   previewState: Preview.State,
                    modal       : Modal.State) {
 
     def recvChanges(changes: Changes): State =
       copy(project = changes.p2) // TODO This obviously affects other things
       // TODO A custom field removal/addition should affect ViewSettings
-
-    def updateCellLoc(loc: Cell.Loc, state: Cell.State): State =
-      copy(cellStates = cellStates.set(loc, state))
 
     def filterFailure(s: FilterEditor.State): State =
       copy(filter = s)
@@ -86,6 +72,21 @@ object ReqTable {
 
   object State {
     val sortCriteria = viewSettings ^|-> ViewSettings.order
+
+    def init(p: Props): State = {
+      val proj = p.cd.project
+      var s = State(proj,
+        ViewSettings      .default(p.fd),
+        FilterEditor      .initialState,
+        Selection         .empty,
+        CreationInterface .initState,
+        EditState         .empty,
+        AsyncState        .initState,
+        PreviewFeature    .initState,
+        Modal             .none)
+      p.filterSpec.foreach(f => s = s setFilterSpec f)
+      s
+    }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -129,12 +130,9 @@ object ReqTable {
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
-    val wholeRowsWithState: Px.ThunkM[Set[Row.SourceId]] =
-      Px.bs($).stateM(_.cellStates.all.iterator
-        .filter(_._2 match {
-          case _: Cell.RowState.Cells | Cell.RowState.Empty => false
-          case _: Cell.RowState.WholeRow => true
-        })
+    val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
+      Px.bs($).stateM(_.asyncStates.iterator
+        .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
 
@@ -142,7 +140,7 @@ object ReqTable {
       for {
         rs <- rows
         s  <- selection
-        wr <- wholeRowsWithState
+        wr <- rowsWithAsyncWholeRowStatuses
       } yield
         s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
@@ -151,12 +149,6 @@ object ReqTable {
         vs  <- viewSettings
         nr  <- colName
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
-
-    val cellSetLocState: Cell.SetLocState =
-      ReusableFn(loc => (s, cb) => $.modState(_.updateCellLoc(loc, s), cb))
-
-    val cellModifyFn: Cell.ModifyFn =
-      ReusableFn(f => $.modState(State.cellStates modify f))
 
     private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: Props => RemoteFn.InstanceFor[F]): CallServer[I] =
       (i, sio, fio) => $.props >>= (p =>
@@ -168,10 +160,8 @@ object ReqTable {
     val createIO: CallServer[CreateContentCmd] =
       callServer(_.createContentFn)
 
-    val saveIO: CallServer[UpdateContentCmd] =
+    val updateIO: CallServer[UpdateContentCmd] =
       callServer(_.updateContentFn)
-
-    val colEditors = new ColumnEditors(project, plainText, widgets, textSearch, cellSetLocState, saveIO)
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {
       import FilterEditor._
@@ -183,24 +173,32 @@ object ReqTable {
     val filterEditor: Px[ReusableVal[ReactElement]] =
       filterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
 
-    val creationInterface = new CreationInterface(setCreation, project, plainText, widgets, textSearch)
+    val asyncFeature = AsyncState.Feature($)(State.asyncStates)
+
+    val previewFeature = new PreviewFeature($, State.previewState)
+
+    val cellEditors: CellEditors =
+      new CellEditorsImpl[State]($, State.editStates, asyncFeature, previewFeature, project, plainText, widgets,
+        textSearch, updateIO)
+
+    val creationInterface = new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(s: State): ReactElement = {
+      Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
-      Px.refresh(project, viewSettings, filterState, selection, wholeRowsWithState)
 
       val cfg = s.project.config
 
-      val vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
+      def vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
 
-      val creationProps = CreationInterface.Props(createIO, s.creation)
+      def creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
 
-      val tableProps = Table.Props(
-        project, rows, colName, colRnds, colEditors, s.cellStates, visibleSelection, modViewSettings)
+      def tableProps = Table.Props(
+        project, rows, colName, colRnds, cellEditors, s.editStates,s.asyncStates, visibleSelection, modViewSettings)
 
-      val selCtrlProps = SelectionCtrls.Props(
-        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, saveIO, cellModifyFn)
+      def selCtrlProps = SelectionCtrls.Props(
+        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, updateIO, asyncFeature)
 
       def mainScreen =
         <.div(
