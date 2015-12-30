@@ -56,12 +56,12 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.2.11")
+    private val mm = MultiModule.scala("org.json4s", "3.3.0")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
   object SLF4J {
-    private val mm = MultiModule.java("org.slf4j", "1.7.12")
+    private val mm = MultiModule.java("org.slf4j", "1.7.13")
     val api = mm("slf4j-api")
     val jcl = mm("jcl-over-slf4j")
   }
@@ -112,16 +112,16 @@ object Dependencies {
                     jvmOnly("org.joda"                    % "joda-convert"          % "1.2")
   val guava       = jvmOnly("com.google.guava"            % "guava"                 % "18.0") ++
                     jvmOnly("com.google.code.findbugs"    % "jsr305"                % "2.0.3") // cos Scala whinges if annotations not found
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4-1205-jdbc42")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1207")
   val slick       = jvmOnly("com.typesafe.slick"         %% "slick"                 % "2.1.0")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.4.1")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.4.3")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.3")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.7.1") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.6.1") // why again?
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.4")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
-  val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.29.0")
+  val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.30.0")
   val servlet     = jvmOnly("org.eclipse.jetty.orbit"     % "javax.servlet"         % "3.0.0.v201112011016" artifacts Artifact("javax.servlet", "jar", "jar"))
   val mockito     = jvmOnly("org.mockito"                 % "mockito-core"          % "1.9.5")
   val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "2.2.5")
