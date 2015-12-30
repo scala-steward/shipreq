@@ -5,6 +5,7 @@ import japgolly.scalajs.react.extra.Reusability
 import monocle._
 import scalaz.Equal
 import scalaz.std.option.optionEqual
+import shipreq.webapp.client.util.ReactCollapse
 import PreviewFeature._
 
 /**
@@ -24,7 +25,7 @@ import PreviewFeature._
  * =====================
  *
  * Request a `PreviewFeature.ForChild` in the component's props.
- * Use `showPreview_?` to see whether a preview should be rendered or not.
+ * Use `show_?` to see whether a preview should be rendered or not.
  * Wire up all the `onXxxx` callbacks.
  *
  * Usage: Child (composite) / Sandwich-Meat
@@ -62,7 +63,7 @@ final class PreviewFeature[S, K]($: CompState.Access[S], lens: Lens[S, State[K]]
       else
         s)
 
-  def showPreview_?(state: State[K], isDirty: => Boolean): Boolean =
+  def show_?(state: State[K], isDirty: => Boolean): Boolean =
     state.exists(_.changedSinceFocus || isDirty)
 
   def state(s: S): State[K] =
@@ -74,13 +75,13 @@ final class PreviewFeature[S, K]($: CompState.Access[S], lens: Lens[S, State[K]]
   override def forChild(k: K, s: State[K]): ForChild = {
     val self = this
     new ForChild {
-      override val underlyingFeature                  = Some(self)
-      override val focusData                          = s.filter(hasKey(k))
-      override def showPreview_?(isDirty: => Boolean) = self.showPreview_?(focusData, isDirty)
-      override def onFocus                            = self onFocus k
-      override def onBlur                             = self onBlur k
-      override def onEdit                             = self onEdit k
-      override def toString                           = focusData.toString
+      override val underlyingFeature           = Some(self)
+      override val focusData                   = s.filter(hasKey(k))
+      override def show_?(isDirty: => Boolean) = self.show_?(focusData, isDirty)
+      override def onFocus                     = self onFocus k
+      override def onBlur                      = self onBlur k
+      override def onEdit                      = self onEdit k
+      override def toString                    = focusData.toString
     }
   }
 }
@@ -101,13 +102,17 @@ object PreviewFeature {
   trait ForChild {
     def underlyingFeature: Option[PreviewFeature[_, _]]
     val focusData: Option[FocusData[Any]]
-    def showPreview_?(isDirty: => Boolean): Boolean
+
+    def show_?(isDirty: => Boolean): Boolean
     def onFocus: Callback
     def onBlur: Callback
     def onEdit: Callback
 
-    final def preview[A](isDirty: => Boolean)(a: => A): Option[A] =
-      if (showPreview_?(isDirty)) Some(a) else None
+    final def showOption[A](isDirty: => Boolean)(a: => A): Option[A] =
+      if (show_?(isDirty)) Some(a) else None
+
+    final def reactCollapse[A](isDirty: => Boolean): ReactCollapse =
+      ReactCollapse(show_?(isDirty))
   }
 
   private val equalUnderlyingFeature: Equal[Option[PreviewFeature[_, _]]] =
@@ -125,21 +130,21 @@ object PreviewFeature {
     Reusability.byRefOrEqual
 
   object AlwaysShow extends ForChild {
-    override def underlyingFeature                  = None
-    override val focusData                          = Some(FocusData((), true))
-    override def showPreview_?(isDirty: => Boolean) = true
-    override def onFocus                            = Callback.empty
-    override def onBlur                             = Callback.empty
-    override def onEdit                             = Callback.empty
+    override def underlyingFeature           = None
+    override val focusData                   = Some(FocusData((), true))
+    override def show_?(isDirty: => Boolean) = true
+    override def onFocus                     = Callback.empty
+    override def onBlur                      = Callback.empty
+    override def onEdit                      = Callback.empty
   }
 
   object NeverShow extends ForChild {
-    override def underlyingFeature                  = None
-    override val focusData                          = None
-    override def showPreview_?(isDirty: => Boolean) = false
-    override def onFocus                            = Callback.empty
-    override def onBlur                             = Callback.empty
-    override def onEdit                             = Callback.empty
+    override def underlyingFeature           = None
+    override val focusData                   = None
+    override def show_?(isDirty: => Boolean) = false
+    override def onFocus                     = Callback.empty
+    override def onBlur                      = Callback.empty
+    override def onEdit                      = Callback.empty
   }
 
   @inline def FixKey[K] = new FixKey[K]

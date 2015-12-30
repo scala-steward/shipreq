@@ -99,15 +99,16 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
           ^.onChange ==> updateState)
 
       def preview =
-        <.div(
-          ^.ref := "p",
-          "Preview",
-          <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, p.richText)))
+        p.preview.reactCollapse(p.preEditValue.forall(p.richText !=* _))(
+          <.div(
+            ^.ref := "p",
+            "Preview",
+            <.div(*.textEditPreview, p.projectWidgets.format(hardcodedLive, p.richText))))
 
       <.div(
         editor,
         p.validated.renderFailure,
-        p.preview.preview(p.preEditValue.forall(p.richText !=* _))(preview))
+        preview)
     }
   }
 

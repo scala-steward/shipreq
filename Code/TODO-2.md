@@ -1,8 +1,6 @@
 * Reorganise all UI packages include the shit in .lib.ui
   * Reorg Style too.
 
-* Add React Collapse and use in previews.
-
 * Ensure custom-text fields trimmed after parsing.
 
 * Cancel text-complete popup on blur.

@@ -7,6 +7,12 @@ object Memo {
   @inline def apply[A: UnivEq, B](f: A => B): A => B =
     platform memo f
 
+  def bool[A](f: Boolean => A): Boolean => A = {
+    val t = f(true)
+    val z = f(false)
+    b => if (b) t else z
+  }
+
   @inline def int[A](f: Int => A): Int => A =
     platform memoInt f
 
