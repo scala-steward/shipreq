@@ -1,8 +1,8 @@
 package shipreq.webapp.client.app.ui.reqtable
 
 import monocle.Optional
-import monocle.function.index
-import monocle.std.mapIndex
+import monocle.function.Index.index
+import monocle.std.map.mapIndex
 import scala.annotation.tailrec
 import scalaz.std.option.optionInstance
 import shipreq.base.util.ScalaExt._

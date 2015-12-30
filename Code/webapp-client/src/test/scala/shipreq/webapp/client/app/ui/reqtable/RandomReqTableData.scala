@@ -9,6 +9,7 @@ import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
 import shipreq.webapp.client.lib.{ShowDead, FilterDead}
+import RandomData.NevToNonEmptySeq
 
 object RandomReqTableData {
 
@@ -36,10 +37,10 @@ object RandomReqTableData {
   }
 
   def sortMethodI: Gen[SortMethod.IgnoreBlanks] =
-    RandomData.chooseV(SortMethod.ignoreBlanks)
+    Gen.chooseNE(SortMethod.ignoreBlanks)
 
   def sortMethodB: Gen[SortMethod.ConsiderBlanks] =
-    RandomData.chooseV(SortMethod.considerBlanks)
+    Gen.chooseNE(SortMethod.considerBlanks)
 
   def columnC: Gen[Column.SortConclusive] =
     Gen pure Column.Pubid
@@ -55,7 +56,7 @@ object RandomReqTableData {
     NonEmptyVector force (Column.builtInValues.whole: Vector[Column]).filterT[Column.SortInconclusive].toVector
 
   val builtInColumnIsG: Gen[Column.SortInconclusive] =
-    RandomData chooseV builtInColumnIs
+    Gen.chooseNE(builtInColumnIs)
 
   case class ColumnIGen(legalCustomFieldColumns: Vector[Column.CustomField]) {
     val legalCustomFieldColumnNEV = NonEmptyVector option legalCustomFieldColumns
@@ -64,7 +65,7 @@ object RandomReqTableData {
       builtInColumnIs ++ legalCustomFieldColumns
 
     def columnI: Gen[Column.SortInconclusive] =
-      RandomData chooseV legalColumnIs
+      Gen.chooseNE(legalColumnIs)
 
     def colIs: Gen[Vector[Column.SortInconclusive]] =
       Gen.subset(legalColumnIs.whole).shuffle
@@ -77,7 +78,7 @@ object RandomReqTableData {
     Gen.apply2(Column.CustomField)(RandomData.customFieldId, RandomData.live)
 
   def sortCriI(colI: Column.SortInconclusive): Gen[SortCriterion.Inconclusive] =
-    RandomData.chooseV(SortCriterion possibilitiesI colI)
+    Gen.chooseNE(SortCriterion possibilitiesI colI)
 
   def sortCriIs(colIs: Vector[Column.SortInconclusive]): Gen[Vector[SortCriterion.Inconclusive]] =
     Gen.sequence(colIs map sortCriI)

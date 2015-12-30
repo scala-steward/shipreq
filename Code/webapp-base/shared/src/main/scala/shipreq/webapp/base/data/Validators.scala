@@ -1,6 +1,7 @@
 package shipreq.webapp.base.data
 
-import scalaz.{NonEmptyList, Equal, Traverse}
+import scalaz.{Equal, Traverse}
+import scalaz.old.NonEmptyList
 import scalaz.std.string.stringInstance
 import scalaz.std.stream._
 import scalaz.syntax.traverse._

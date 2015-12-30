@@ -1,7 +1,7 @@
 package shipreq.webapp.server.lib
 
 import scala.xml.{Text, NodeSeq}
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.util.ListFlashVar
 
 object NoticeFlash {

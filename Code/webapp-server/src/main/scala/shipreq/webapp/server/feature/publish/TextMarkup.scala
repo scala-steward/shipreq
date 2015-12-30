@@ -2,7 +2,8 @@ package shipreq.webapp.server.feature.publish
 
 import scala.annotation.tailrec
 import scala.util.matching.Regex
-import scalaz.{\/, -\/, \/-, NonEmptyList => NEL}
+import scalaz.{\/, -\/, \/-}
+import scalaz.old.{NonEmptyList => NEL}
 import NEL.nel
 import shipreq.webapp.server.feature.uc.text.FreeTextTerm
 import shipreq.webapp.server.feature.uc.text.FreeTextTerms._

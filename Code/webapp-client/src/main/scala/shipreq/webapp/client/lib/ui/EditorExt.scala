@@ -1,7 +1,7 @@
 package shipreq.webapp.client.lib.ui
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
-import scalaz.{Applicative, Bind, ~>}
+import scalaz.{Monad, ~>}
 import shipreq.webapp.base.validation._
 
 abstract class EditorExt {
@@ -24,14 +24,14 @@ object EditorExt extends EditorExt {
       e.modCallbacksA(a =>
         _.pmodB{ case OnEditFinished(b) => v.ci(v.correct(f(a), b).value) })
 
-    def applyOnEditFinishedK[K](f: K => ReactST[M, S, Unit])(g: A => K)(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
+    def applyOnEditFinishedK[K](f: K => ReactST[M, S, Unit])(g: A => K)(implicit M: Monad[M]): Editor[A,B,M,S,C,D,V] =
       e.paddSTA(a => {
         case OnEditFinished(_) => f(g(a))
       })
 
     def applyRowUpdate[K, P](savedStore: SavedRowStore[S, K, P, B])
                             (k: A => K)
-                            (implicit A: Applicative[M], B: Bind[M]): Editor[A, B, M, S, C, D, V] =
+                            (implicit M: Monad[M]): Editor[A, B, M, S, C, D, V] =
       e.modCallbacksA(a =>
         h => h.paddST {
           case OnChange(v)       => savedStore.setIST(k(a), v)
@@ -40,14 +40,14 @@ object EditorExt extends EditorExt {
 
     def applyRowUpdateAndRevert[K, P, I](savedStores: NewAndSavedStores[S, K, P, I])
                                         (k: A => Option[K])
-                                        (implicit A: Applicative[M], B: Bind[M],
+                                        (implicit M: Monad[M],
                                          wv: B <:< FieldSet[P, I]#FieldValue,
                                          wf: C <:< FieldSet[P, I]#Field): Editor[A,B,M,S,C,D,V] =
       applyRowUpdateAndRevert(savedStores.s, savedStores.n)(k)
 
     def applyRowUpdateAndRevert[K, P, I](savedStore: SavedRowStore[S, K, P, I], newStore: NewRowStore[S, I])
                                         (k: A => Option[K])
-                                        (implicit A: Applicative[M], B: Bind[M],
+                                        (implicit M: Monad[M],
                                          wv: B <:< FieldSet[P, I]#FieldValue,
                                          wf: C <:< FieldSet[P, I]#Field): Editor[A,B,M,S,C,D,V] =
       e.modCallbacksA(a =>
@@ -66,7 +66,7 @@ object EditorExt extends EditorExt {
         }
       )
 
-    def editableByRowStatus(c: CompState.Access[S])(implicit ev: Callback =:= D, M: M ~> CallbackTo): RowStatus => Option[e.Editable] = {
+    def editableByRowStatus(c: CompState.Access[S])(implicit ev: Callback =:= D, M: M ~> CallbackTo, N: Monad[M]): RowStatus => Option[e.Editable] = {
       val canedit = e.editable(c runState _.st)
       rs => rs match {
         case RowStatus.Sync | RowStatus.Failed(_) => canedit

@@ -1,6 +1,7 @@
 package shipreq.webapp.base.validation
 
-import scalaz.{Cord, Monoid, NonEmptyList}
+import scalaz.{Cord, Monoid}
+import scalaz.old.NonEmptyList
 import scalaz.std.list.listInstance
 import scalaz.syntax.foldable._
 import VFailure.ErrorMsg

@@ -21,7 +21,8 @@ import net.liftweb.mockweb.MockWeb
 import net.liftweb.util.StringHelpers
 import net.liftweb.util.Helpers.stringToSuper
 import shipreq.taskman.api.{EmailAddr, UserId}
-import scalaz.{Lens, NonEmptyList, Value}
+import scalaz.{Lens, Value}
+import scalaz.old.NonEmptyList
 import scala.annotation.tailrec
 import scala.util.Random
 

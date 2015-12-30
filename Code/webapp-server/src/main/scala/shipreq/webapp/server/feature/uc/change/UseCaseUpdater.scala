@@ -2,7 +2,7 @@ package shipreq.webapp.server.feature.uc
 package change
 
 import scala.collection.mutable.ListBuffer
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.util.AppliedLens
 import field._

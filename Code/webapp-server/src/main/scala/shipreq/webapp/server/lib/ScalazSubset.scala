@@ -1,10 +1,11 @@
 package shipreq.webapp.server.lib
 
-import scalaz.{NonEmptyListFunctions, IdInstances}
-import scalaz.std.{StringInstances, OptionInstances, TupleInstances, NodeSeqInstances, MapInstances, ListInstances, FunctionInstances}
+import scalaz.IdInstances
+import scalaz.old.std._
+import scalaz.std.{StringInstances, OptionInstances, TupleInstances, MapInstances, ListInstances, FunctionInstances}
 import scalaz.syntax.{ToShowOps, ToMonadOps, ToMonadPlusOps, ToFunctorOps, ToFoldableOps, ToBifunctorOps, ToMonoidOps, ToSemigroupOps}
 
-final object ScalazSubset
+object ScalazSubset
 
   extends IdInstances
 
@@ -24,5 +25,3 @@ final object ScalazSubset
           with MapInstances
           with NodeSeqInstances
           with TupleInstances
-
-          with NonEmptyListFunctions

@@ -2,7 +2,7 @@ package shipreq.taskman.server.business
 
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.base.util.{Util, ErrorOr, Error}
 import shipreq.base.util.ScalaExt.StringBuilderExt
 import shipreq.taskman.api.EmailAddr

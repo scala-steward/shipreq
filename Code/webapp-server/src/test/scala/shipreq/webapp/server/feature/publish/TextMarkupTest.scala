@@ -1,6 +1,7 @@
 package shipreq.webapp.server.feature.publish
 
-import scalaz._, Scalaz._
+import scalaz.{NonEmptyList => _, _}, Scalaz._
+import scalaz.old.NonEmptyList
 import org.scalatest.{Matchers, FunSpec}
 import org.scalatest.prop.PropertyChecks
 import shipreq.webapp.server.feature.Inspection.{listShow => _, _}

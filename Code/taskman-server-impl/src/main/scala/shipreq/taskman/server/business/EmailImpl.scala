@@ -3,8 +3,9 @@ package shipreq.taskman.server.business
 import java.util.Properties
 import javax.mail._
 import javax.mail.internet.{MimeMessage, InternetAddress}
-import scalaz.{Traverse, NonEmptyList}
+import scalaz.Traverse
 import scalaz.effect.IO
+import scalaz.old.NonEmptyList
 import scalaz.std.list._
 import scalaz.syntax.bind._
 import scalaz.syntax.traverse._

@@ -1,7 +1,7 @@
 package shipreq.taskman.server.business
 
 import shipreq.taskman.api.EmailAddr
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 
 object MailingList {
 
@@ -12,7 +12,7 @@ object MailingList {
 
   sealed abstract class AccountStatus(val remoteValue: String)
   object AccountStatus {
-    
+
     /** User has never had a ShipReq account. */
     case object Never extends AccountStatus("Never")
 

@@ -8,7 +8,8 @@ import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{Text, NodeSeq}
-import scalaz.{Memo, Name, Need, NonEmptyList}
+import scalaz.{Memo, Name, Need}
+import scalaz.old.NonEmptyList
 
 import shipreq.webapp.base.AppConsts
 import AppConfig.BaseUrl

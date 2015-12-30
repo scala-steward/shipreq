@@ -1,6 +1,6 @@
 package shipreq.webapp.server.feature
 
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import scala.xml.{Attribute, Elem, NodeSeq, Null, Text}
 
 import shipreq.webapp.server.app.{AppSiteMap, RequestVars}

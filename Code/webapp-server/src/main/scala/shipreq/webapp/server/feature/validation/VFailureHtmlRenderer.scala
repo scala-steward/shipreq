@@ -1,7 +1,7 @@
 package shipreq.webapp.server.feature.validation
 
 import scala.xml.{NodeSeq, Text}
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.lib.ScalazSubset._
 import shipreq.webapp.base.validation.GenericVFailureRenderer
 import shipreq.webapp.base.validation.VFailure.ErrorMsg
@@ -9,7 +9,7 @@ import shipreq.webapp.base.validation.VFailure.ErrorMsg
 object VFailureHtmlRenderer extends GenericVFailureRenderer {
   override type I = NodeSeq
   override type O = NodeSeq
-  override def iMonoid = scalaz.std.nodeseq.nodeSeqInstance
+  override def iMonoid = scalaz.old.std.nodeseq.nodeSeqInstance
   override protected def finalise(i: I) = i
 
   override protected def renderTopLevelN(is: List[I]) =

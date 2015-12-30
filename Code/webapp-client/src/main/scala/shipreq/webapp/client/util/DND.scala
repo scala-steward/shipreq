@@ -13,7 +13,7 @@ import shipreq.base.util.Util
  * 4. Prepare a DND success callback `move(from: A, to: A): Callback`
  * 5. Render draggable children using DND.Parent.cProps2
  */
-object DND {
+object DND { // TODO Remove? DragToReorder makes this redundant?
 
   def moveE[A](from: A, to: A)(as: Vector[A])(implicit e: Equal[A]): Vector[A] =
     move(from, to, as)(e.equal)
@@ -103,7 +103,7 @@ object DND {
 
     implicit def changeFilter[A: Equal] = ChangeFilter.equal[PState[A]]
 
-    def eventHandler[M[_]: Applicative, A](moveFn: (A, A) => M[Unit]): DragEvent[A] => ReactST[M, PState[A], Unit] = {
+    def eventHandler[M[_]: Monad, A](moveFn: (A, A) => M[Unit]): DragEvent[A] => ReactST[M, PState[A], Unit] = {
       val ST = ReactS.FixT[M, PState[A]]
       val nop = Applicative[M].point(())
       (event: DragEvent[A]) => event match {

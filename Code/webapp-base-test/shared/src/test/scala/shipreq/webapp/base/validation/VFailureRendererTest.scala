@@ -1,7 +1,7 @@
 package shipreq.webapp.base.validation
 
 import utest._
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import scalaz.syntax.semigroup._
 import VFailure.semigroup
 
@@ -14,7 +14,7 @@ object VFailureRendererTest extends TestSuite {
     val multiLoose = singleLoose |+| VFailure.looseMsg("It's too hot.")
     val multiTypes = singleLoose |+| singleField
     val multiTypes4 = multiLoose |+| multiField
-  
+
     "Rendering to text" -{
       "Single field error" -{
         assert(singleField.toText == "Car is too big.")

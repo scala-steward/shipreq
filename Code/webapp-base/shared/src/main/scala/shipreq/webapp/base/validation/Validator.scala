@@ -1,7 +1,8 @@
 package shipreq.webapp.base.validation
 
-import scalaz.{Validation => _, _}
+import scalaz.{Validation => _, NonEmptyList => _, _}
 import scalaz.Isomorphism.<=>
+import scalaz.old.NonEmptyList
 import scalaz.std.stream._
 import scalaz.syntax.functor._
 import scalaz.syntax.traverse._

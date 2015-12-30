@@ -31,7 +31,7 @@ final case class CallbackH[B, M[_], S, C](event: CallbackEvent[B], st: ReactST[M
   def pmodB(pf: PartialFunction[CallbackEvent[B], B]): Self =
     pmod(pf)(b => copy(event = this.event.map(_ => b)))
 
-  def paddST(pf: PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Bind[M]): CallbackH[B, M, S, C] =
+  def paddST(pf: PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Monad[M]): CallbackH[B, M, S, C] =
     pmod(pf)(t => copy(st = this.st >> t))
 
   private[this] def pmod[X](f: PartialFunction[CallbackEvent[B], X])(g: X => Self): Self =
@@ -118,13 +118,13 @@ final case class Editor[A, B, M[_], S, C, D, V](render: EditorI[A, B, M, S, C, D
   def pmodB(pf: PartialFunction[CallbackEvent[B], B]): Editor[A,B,M,S,C,D,V] =
     modCallbacks(_.pmodB(pf))
 
-  def paddST(pf: PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
+  def paddST(pf: PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Monad[M]): Editor[A,B,M,S,C,D,V] =
     modCallbacks(_.paddST(pf))
 
-  def paddSTA(pf: A => PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Bind[M]): Editor[A,B,M,S,C,D,V] =
+  def paddSTA(pf: A => PartialFunction[CallbackEvent[B], ReactST[M, S, Unit]])(implicit M: Monad[M]): Editor[A,B,M,S,C,D,V] =
     modCallbacksA(a => _.paddST(pf(a)))
 
-  def zoomU[T](implicit M: Functor[M], ev: S === Unit): Editor[A,B,M,T,C,D,V] =
+  def zoomU[T](implicit M: Monad[M], ev: S === Unit): Editor[A,B,M,T,C,D,V] =
     mapCallbacks(_.mapST(_.zoomU[T]))
 
 //  def compose[M, N, O>:C, P<:D, Q](t: Editor[M,N,O,P,Q]): Editor[(A,M), B\/N, O, P, (V,Q)] =

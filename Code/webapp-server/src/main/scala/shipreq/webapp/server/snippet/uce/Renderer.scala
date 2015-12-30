@@ -2,7 +2,8 @@ package shipreq.webapp.server
 package snippet.uce
 
 import scala.xml.{Text, NodeSeq}
-import scalaz.{Memo, NonEmptyList}
+import scalaz.Memo
+import scalaz.old.NonEmptyList
 import net.liftweb.common.Logger
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import net.liftweb.http.js.jquery.JqJE

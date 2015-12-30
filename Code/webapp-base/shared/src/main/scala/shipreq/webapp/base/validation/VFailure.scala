@@ -1,6 +1,7 @@
 package shipreq.webapp.base.validation
 
-import scalaz.{Monoid, Semigroup, NonEmptyList}
+import scalaz.{Monoid, Semigroup}
+import scalaz.old.NonEmptyList
 import scalaz.std.map.mapMonoid
 import VFailure._
 

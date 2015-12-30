@@ -2,7 +2,7 @@ package shipreq.webapp.server.feature.validation
 
 import org.scalatest.{Matchers, FunSpec}
 import scala.xml.Text
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import scalaz.syntax.semigroup._
 import shipreq.webapp.base.validation._
 import VFailure.semigroup

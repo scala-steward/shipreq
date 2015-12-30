@@ -1,6 +1,6 @@
 package shipreq.webapp.server.feature.uc.change
 
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.base.validation.{InputCorrected, ValidationResult, VFailure}
 
 object ChangeResult {

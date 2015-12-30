@@ -1,7 +1,8 @@
 package shipreq.webapp.client.lib.ui
 
 import monocle.Lens
-import monocle.function._
+import monocle.function.Field1.first
+import monocle.function.Field2.second
 import monocle.std.tuple2._
 import shipreq.base.util.UnivEq
 

@@ -17,7 +17,7 @@ object Dependencies {
   }
 
   object Scalaz {
-    private val mm = MultiModule.jvmAndJsFork("org.scalaz", "7.1.3")("com.github.japgolly.fork.scalaz")
+    private val mm = MultiModule.jvmAndJsFork("org.scalaz", "7.2.0")("com.github.japgolly.fork.scalaz")
     val core       = mm("scalaz-core")
     val effect     = mm("scalaz-effect") ++ core
     val concurrent = mm("scalaz-concurrent") ++ effect
@@ -26,13 +26,13 @@ object Dependencies {
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJsFork("com.github.julien-truffaut", "1.1.1")("com.github.japgolly.fork.monocle")
+    private val mm = MultiModule.jvmAndJsFork("com.github.julien-truffaut", "1.2.0")("com.github.japgolly.fork.monocle")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
 
   object Nyaya {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.6.0")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.6.1")
     val util = mm("nyaya-util") ++ Scalaz.core
     val prop = mm("nyaya-prop") ++ Scalaz.core
     val gen  = mm("nyaya-gen")  ++ Scalaz.core
@@ -40,17 +40,17 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.10.2")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.10.3")
     val core    = mm("core")
     val test    = mm("test")
-    val scalaz  = mm("ext-scalaz71") ++ Scalaz.effect
+    val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect
     val monocle = mm("ext-monocle") ++ Monocle.core
     val extra   = mm("extra")
     val most    = core ++ scalaz ++ monocle ++ extra
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.3.1")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.3.2")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
@@ -86,7 +86,7 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "2.4.17")
+    private val mm = MultiModule.scala("com.github.japgolly.fork.specs2", "2.4.17-scalaz72")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
@@ -96,7 +96,7 @@ object Dependencies {
     val runner = mm("jetty-runner")
   }
 
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark" % "0.2.0")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark" % "0.2.2")
 
   val parboiled = jvmAndJsFork("org.parboiled", "parboiled", "2.1.0")("com.github.japgolly.fork.parboiled")
 
@@ -133,6 +133,6 @@ object Dependencies {
     ExclusionRule(name = "selenium-iphone-driver"),
     ExclusionRule(name = "selenium-safari-driver")))
 
-  val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   def useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 }

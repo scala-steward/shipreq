@@ -3,8 +3,9 @@ package shipreq.webapp.server.util
 import java.util.concurrent.atomic.AtomicInteger
 import net.liftweb.http.{TransientRequestVar, SessionVar}
 import org.joda.time.{Period, DateTime}
+import scalaz.Semigroup
+import scalaz.old.NonEmptyList
 import scalaz.syntax.semigroup._
-import scalaz.{NonEmptyList, Semigroup}
 import shipreq.webapp.server.app.AppConfig.FlashVarTTL
 import shipreq.webapp.server.lib.Misc
 import FlashVar._

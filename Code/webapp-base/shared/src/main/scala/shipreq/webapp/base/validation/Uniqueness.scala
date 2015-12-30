@@ -1,6 +1,7 @@
 package shipreq.webapp.base.validation
 
-import scalaz.{Equal, NonEmptyList}
+import scalaz.Equal
+import scalaz.old.NonEmptyList
 import scalaz.syntax.equal._
 
 object Uniqueness {

@@ -1,6 +1,7 @@
 package shipreq.taskman.server.business
 
-import scalaz.{NonEmptyList, -\/, \/-}
+import scalaz.{-\/, \/-}
+import scalaz.old.NonEmptyList
 import scalaz.effect.IO
 import scalaz.syntax.bind._
 import shipreq.base.util.{ErrorOr, Error}

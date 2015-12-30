@@ -1,6 +1,6 @@
 package shipreq.webapp.server.feature.uc.field
 
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.db.{FieldKeyRec, FieldKeyType}
 import shipreq.webapp.server.feature.uc.change._
 import shipreq.webapp.server.feature.uc.UcParsingCtx

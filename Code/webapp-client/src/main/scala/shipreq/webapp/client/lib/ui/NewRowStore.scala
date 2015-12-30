@@ -4,7 +4,7 @@ import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.macros.GenLens
 import monocle.std.option.some
-import scalaz.Applicative
+import scalaz.Monad
 
 object NewRowStore {
   final case class Row[I](status: RowStatus, i: I)
@@ -52,12 +52,12 @@ final class NewRowStore[S, I](_ss: Lens[S, NewRowStore.SS[I]], rowL: NewRowStore
   def remove                 : S => S                 = _ss.set(None)
   def setStatus(r: RowStatus): S => S                 = _status.set(r)
 
-  def setStatusST[M[_]: Applicative]: RowStatus => ReactST[M, S, Unit] =
+  def setStatusST[M[_]: Monad]: RowStatus => ReactST[M, S, Unit] =
     rs => ReactS.modT(setStatus(rs))
 
   def setField[X](fv: FieldSet[X, I]#FieldValue): S => S =
     (_i ^|-> fv.f.ilens).set(fv.v)
 
-  def setFieldST[M[_]: Applicative, X](fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] =
+  def setFieldST[M[_]: Monad, X](fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] =
     ReactS modT setField(fv)
 }

@@ -3,14 +3,16 @@ package shipreq.webapp.base
 import nyaya.gen._
 import nyaya.util._
 import monocle._
-import monocle.function.{first, second, third}
-import monocle.std.{some => atSome}
+import monocle.function.Field1.first
+import monocle.function.Field2.second
+import monocle.function.Field3.third
+import monocle.std.option.{some => atSome}
 import monocle.std.tuple2._
 import monocle.std.tuple3._
 import scala.annotation.tailrec
 import scala.collection.GenTraversable
 import scala.collection.immutable.ListSet
-import scalaz.{NonEmptyList, State, StateT, Need}
+import scalaz.{State, StateT, Need}
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
 import scalaz.std.set._
@@ -35,6 +37,9 @@ import TestOptics.{customReqTypesLive => _, _}
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
 object RandomData {
+
+  implicit def NevToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptyVector[A], A](_.whole)
+  implicit def NesToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptySet   [A], A](_.whole.toVector)
 
   type StateG[S, A] = StateT[Gen, S, A]
   implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
@@ -83,18 +88,6 @@ object RandomData {
   def charPred(p: org.parboiled2.CharPredicate): Gen[Char] =
     //Gen.choose_!(_charPredAllChars filter p.apply)
     Gen.chooseArray_!((_charPredAllChars filter p.apply).toArray)
-
-  def chooseV[A](as: NonEmptyVector[A]): Gen[A] =
-    Gen.chooseIndexed_!(as.whole)
-
-  def oneofS[A](as: NonEmptySet[A]): Gen[A] =
-    chooseV(as.toNEV)
-
-  def chooseGenV[A](as: NonEmptyVector[Gen[A]]): Gen[A] =
-    chooseV(as).flatten
-
-  def frequencyV[A](xs: NonEmptyVector[Gen.Freq[A]]): Gen[A] =
-    Gen.frequencyL(NonEmptyList.nel(xs.head, xs.tail.toList))
 
   def grammarChars(c: Grammar.Chars): Gen[Char] =
     Gen.chooseChar(c.ch1, c.chn, c.rs: _*)
@@ -175,7 +168,7 @@ object RandomData {
     grammarStr1(Grammar.hashRefKey)(_.firstChar, _.allChars, _.length) map HashRefKey
 
   val deletionAction =
-    chooseV(DeletionAction.values)
+    Gen.chooseNE(DeletionAction.values)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -205,7 +198,7 @@ object RandomData {
     id map CustomReqTypeId
 
   lazy val staticReqType: Gen[StaticReqType] =
-    chooseV(StaticReqType.values)
+    Gen.chooseNE(StaticReqType.values)
 
   lazy val reqTypeId: Gen[ReqTypeId] =
     Gen.chooseGen(staticReqType, customReqTypeId)
@@ -315,7 +308,7 @@ object RandomData {
   // Fields
 
   lazy val staticField: Gen[StaticField] =
-    chooseV(StaticField.values)
+    Gen.chooseNE(StaticField.values)
 
   def applicableReqTypes(r: Set[CustomReqTypeId]): Gen[ApplicableReqTypes] = {
     val all = StaticReqType.values.whole ++ r
@@ -339,7 +332,7 @@ object RandomData {
     grammarStr1(Grammar.fieldRefKey)(_.firstChar, _.allChars, _.length) map FieldRefKey
 
   def customFieldType =
-    chooseV(CustomFieldType.values)
+    Gen.chooseNE(CustomFieldType.values)
 
   def customFieldText(art: Gen[ApplicableReqTypes]): Gen[CustomField.Text] =
     Gen.apply6(CustomField.Text.apply)(customFieldTextId, shortText1, fieldRefKey, mandatory, art, live)
@@ -478,7 +471,7 @@ object RandomData {
       lazy val lvls: Vector[Need[G]] =
         (0 to DepthIncrease.length)
           .toVector
-          .map(i => Need[G](frequencyV(
+          .map(i => Need[G](Gen.frequencyNE(
             multiLine(t, i)(Name(lvls(i + 1).value)) ++ plus
         )))
 
@@ -638,7 +631,7 @@ object RandomData {
       @inline implicit def tt: t.type = t
       val x = singleLineGens(t)
       val gs = x ++ x ++ reqRefs(r, c) ++ a.map(tagRef(_)) ++ i.map(issue(_, r, c))
-      chooseGenV(gs)
+      Gen.chooseGenNE(gs)
     }
 
     def reqCodeGroupTitleAtom(r: Option[Gen[ReqId]],
@@ -647,7 +640,7 @@ object RandomData {
       @inline implicit def t: ReqCodeGroupTitle.type = ReqCodeGroupTitle
       val x = singleLineGens(t)
       val gs = x ++ x ++ reqRefs(r, c) ++ i.map(issue(_, r, c))
-      chooseGenV(gs)
+      Gen.chooseGenNE(gs)
     }
 
     def genericReqTitleAtom   = reqTitle(GenericReqTitle) _
@@ -655,7 +648,7 @@ object RandomData {
     def inlineIssueDescAtom(r: Option[Gen[ReqId]], c: Option[Gen[ReqCodeId]]): Gen[InlineIssueDesc.Atom] = {
       @inline implicit def t: InlineIssueDesc.type = InlineIssueDesc
       val gs = singleLineGens(t) ++ reqRefs(r, c)
-      chooseGenV(gs)
+      Gen.chooseGenNE(gs)
     }
 
     def customTextFieldAtom(r: Option[Gen[ReqId]],
@@ -705,7 +698,7 @@ object RandomData {
 
   def sAllocPubidC(possibleReqTypeIds: NonEmptyVector[CustomReqTypeId])(reqId: ReqIdC): StateG[PubidRegister, PubidC] =
     StateT(register =>
-      chooseV(possibleReqTypeIds).map(reqTypeId =>
+      Gen.chooseNE(possibleReqTypeIds).map(reqTypeId =>
         register.allocC(reqTypeId)(reqId)))
 
   def sGenericReqId(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, ReqIdC] =
@@ -1311,7 +1304,7 @@ object RandomData {
             ++ gi.map(customIssue)
             ++ ogr.map(implies)
             ++ ogr.map(impliedBy))
-        chooseGenV(gens)
+        Gen.chooseGenNE(gens)
       }
 
       private def expr(gen: Gen[FilterAst], depth: Int): Gen[FilterAst] =
@@ -1392,7 +1385,7 @@ object RandomData {
 
       def valueFor(a: gd.Attr): Gen[gd.Value]
 
-      val attr = oneofS(gd.attrs)
+      val attr = Gen.chooseNE(gd.attrs)
 
       lazy val values: Gen[gd.Values] =
         attr.set
@@ -1495,7 +1488,7 @@ object RandomData {
       staticField map AddStaticField
 
     val projectTemplate: Gen[ProjectTemplate] =
-      chooseV(ProjectTemplate.values)
+      Gen.chooseNE(ProjectTemplate.values)
 
     val applyTemplate: Gen[ApplyTemplate] =
       projectTemplate map ApplyTemplate
@@ -1647,17 +1640,17 @@ object RandomData {
       }
 
     val activeEvent: Gen[ActiveEvent] =
-      chooseGenV(activeEventGens)
+      Gen.chooseGenNE(activeEventGens)
 
     val event: Gen[Event] = {
       val gens = valuesForAdt[Event, NonEmptyVector[Gen[Event]]] {
         case _: ActiveEvent => activeEventGens
       }
-      chooseGenV(gens flatMap identity)
+      Gen.chooseGenNE(gens flatMap identity)
     }
 
     val hashScheme: Gen[HashScheme] =
-      chooseV(HashScheme.all)
+      Gen.chooseNE(HashScheme.all)
 
     val hash: Gen[Int] = Gen.int
 
@@ -1665,7 +1658,7 @@ object RandomData {
       Gen pure LogicVer.Current
 
     val hashScope: Gen[HashScope] =
-      chooseV(HashScope.all)
+      Gen.chooseNE(HashScope.all)
 
     val hashRec: Gen[HashRec] =
       Gen.lift4(hashScope, logicVer, hashScheme, hash.option)(HashRec(_, _, _)(_))

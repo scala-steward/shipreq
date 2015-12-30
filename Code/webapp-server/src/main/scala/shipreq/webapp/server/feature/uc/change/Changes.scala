@@ -1,7 +1,7 @@
 package shipreq.webapp.server.feature.uc
 package change
 
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.lib.Types._
 import field.{StepField, TextField}
 import step.{StepTree, StepNode}

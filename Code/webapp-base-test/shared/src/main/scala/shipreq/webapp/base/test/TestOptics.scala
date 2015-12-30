@@ -1,7 +1,7 @@
 package shipreq.webapp.base.test
 
 import monocle._
-import monocle.std.{some => atSome}
+import monocle.std.option.{some => atSome}
 import shipreq.base.util.IMap
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text.ReqCodeGroupTitle

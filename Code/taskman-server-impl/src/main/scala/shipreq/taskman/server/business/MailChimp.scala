@@ -5,7 +5,7 @@ import java.net.URL
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import scalaz.syntax.bind._
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.effect.IoUtils.IoExt

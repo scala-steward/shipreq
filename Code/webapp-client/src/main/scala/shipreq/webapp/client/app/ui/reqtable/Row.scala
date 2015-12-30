@@ -3,8 +3,8 @@ package shipreq.webapp.client.app.ui.reqtable
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import monocle.{Lens, Optional}
-import monocle.function.index
-import monocle.std.mapIndex
+import monocle.function.Index.index
+import monocle.std.map.mapIndex
 import monocle.macros.Lenses
 import scala.scalajs.js
 import scalaz.{Equal, Semigroup, Monoid}

@@ -1,7 +1,8 @@
 package shipreq.webapp.server.feature.uc.text
 
 import scala.collection.immutable.TreeSet
-import scalaz.{NonEmptyList, Cord}
+import scalaz.Cord
+import scalaz.old.NonEmptyList
 import shipreq.webapp.base.validation.InputCorrected
 import shipreq.webapp.server.db.{FieldKeyType, FieldKeyRec}
 import shipreq.webapp.server.feature.validation.Validators

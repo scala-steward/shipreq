@@ -4,7 +4,8 @@ import net.liftweb.common.Full
 import net.liftweb.http.S
 import net.liftweb.json._
 import scala.xml.{Text, NodeSeq}
-import scalaz.{MonadPlus, NonEmptyList}
+import scalaz.MonadPlus
+import scalaz.old.NonEmptyList
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.webapp.server.db.BasicUseCaseInfo
 import shipreq.webapp.server.lib.ScalazSubset._

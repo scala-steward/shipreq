@@ -1,6 +1,6 @@
 package shipreq.webapp.server.feature.uc.change
 
-import scalaz.NonEmptyList
+import scalaz.old.NonEmptyList
 import shipreq.webapp.server.feature.uc.UcParsingCtx
 import shipreq.webapp.server.lib.ScalazSubset._
 

@@ -4,7 +4,7 @@ import japgolly.scalajs.react.ScalazReact._
 import monocle._
 import monocle.macros.GenLens
 import shipreq.base.util.{UnivEq, IMap}
-import scalaz.Applicative
+import scalaz.Monad
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.DataIdAux
 
@@ -77,21 +77,21 @@ final class SavedRowStore[S, K: UnivEq, P, I](_ss: Lens[S, SavedRowStore.SS[K, P
   def setI      (k: K, i: I)        : S => S           = _i(k).set(i)
   def setStatus (k: K, r: RowStatus): S => S           = _status(k).set(r)
 
-  def setIST[M[_] : Applicative](k: K, i: I): ReactST[M, S, Unit] =
+  def setIST[M[_] : Monad](k: K, i: I): ReactST[M, S, Unit] =
     ReactS modT setI(k, i)
 
-  def setStatusST[M[_]: Applicative](k: K): RowStatus => ReactST[M, S, Unit] =
+  def setStatusST[M[_]: Monad](k: K): RowStatus => ReactST[M, S, Unit] =
     rs => ReactS.modT(setStatus(k, rs))
 
   def setField[X](k: K, fv: FieldSet[X, I]#FieldValue): S => S =
     (_i(k) ^|-> fv.f.ilens).set(fv.v)
 
-  def setFieldST[M[_]: Applicative, X](k: K, fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] =
+  def setFieldST[M[_]: Monad, X](k: K, fv: FieldSet[X, I]#FieldValue): ReactST[M, S, Unit] =
     ReactS modT setField(k, fv)
 
   def revertField(k: K, f: FieldSet[P, I]#Field): S => S =
     s => setField(k, f * f.pv(_p(k) get s))(s)
 
-  def revertFieldST[M[_]: Applicative](k: K, f: FieldSet[P, I]#Field): ReactST[M, S, Unit] =
+  def revertFieldST[M[_]: Monad](k: K, f: FieldSet[P, I]#Field): ReactST[M, S, Unit] =
     ReactS modT revertField(k, f)
 }
