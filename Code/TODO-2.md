@@ -1,6 +1,3 @@
-* Reorganise all UI packages include the shit in .lib.ui
-  * Reorg Style too.
-
 * Ensure custom-text fields trimmed after parsing.
 
 * Cancel text-complete popup on blur.
