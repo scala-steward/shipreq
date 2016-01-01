@@ -81,6 +81,11 @@ object ScalaExt extends Platform.ScalaExt {
       if (as.hasNext) Some(as.next()) else None
   }
 
+  implicit class IteratorExtO[A](private val as: Iterator[Option[A]]) extends AnyVal {
+    def filterDefined: Iterator[A] =
+      as.filter(_.isDefined).map(_.get)
+  }
+
   implicit class IterableExt[A](private val as: Iterable[A]) extends AnyVal {
     def filterT[T <: A](implicit t: ClassTag[T]): Stream[T] = // TODO deprecate?
       as.toStream.flatMap(t.unapply(_).toStream)
