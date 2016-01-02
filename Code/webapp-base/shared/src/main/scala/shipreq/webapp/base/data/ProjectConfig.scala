@@ -63,10 +63,13 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def customIssueType(id: CustomIssueTypeId): CustomIssueType =
     customIssueTypes.need(id)
 
-  lazy val customTagFields =
+  lazy val customImpFields: Stream[CustomField.Implication] =
+    fields.customFields.values.filterT[CustomField.Implication]
+
+  lazy val customTagFields: Stream[CustomField.Tag] =
     fields.customFields.values.filterT[CustomField.Tag]
 
-  lazy val customTextFields =
+  lazy val customTextFields: Stream[CustomField.Text] =
     fields.customFields.values.filterT[CustomField.Text]
 
   lazy val liveCustomTextFields =

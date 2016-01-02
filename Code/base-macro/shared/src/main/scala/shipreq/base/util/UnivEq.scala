@@ -113,6 +113,8 @@ object UnivEq extends UnivEqImplicits {
   @inline def emptyMutableSet[A: UnivEq] = collection.mutable.Set.empty[A]
   @inline def setBuilder     [A: UnivEq] = Set.newBuilder[A]
 
+  @inline def toSet[A: UnivEq](as: TraversableOnce[A]): Set[A] = as.toSet
+
   // ===================================================================================================================
 
   import scala.reflect.macros.blackbox.Context

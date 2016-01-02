@@ -2,8 +2,10 @@ package shipreq.webapp.base.data
 
 import monocle._
 import monocle.macros.Lenses
+import scala.collection.immutable.ListSet
 import scalaz.Equal
 import shipreq.base.util._
+import ScalaExt._
 import TaggedTypes.{TaggedString, TaggedInt}
 import UnivEq.Implicits._
 
@@ -311,6 +313,12 @@ case class FieldSet(customFields: FieldSet.CustomFields,
       case f : StaticField   => f
       case id: CustomFieldId => customFields need id
     }
+
+  def staticFieldIterator: Iterator[StaticField] =
+    order.filterTI[StaticField]
+
+  def staticFieldSet: ListSet[StaticField] =
+    staticFieldIterator.to
 }
 
 object FieldSet {

@@ -43,4 +43,9 @@ object SetDiff {
 
   def compareFn[A: UnivEq](before: Set[A]): Set[A] => SetDiff[A] =
     compare(before, _)
+
+  def xor[A: UnivEq](current: Set[A], xor: Set[A]): SetDiff[A] = {
+    val (del, add) = xor.partition(current.contains)
+    SetDiff(del, add)
+  }
 }
