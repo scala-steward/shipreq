@@ -263,9 +263,8 @@ object DataProp {
         val allPass = dr.reqApplication.values.forall(_.forall(_ forall testIdFn))
 
         if (!allPass) {
-          val errors = dr.reqApplication.streamKV
-            .filter(_._2.isDefined)
-            .map(_.map2(_.get))
+          val errors = dr.reqApplication.streamKV.iterator
+            .filterDefined_2
             .filterNot(x => testIdFn(x._2))
             .map(x => s"${x._1} → ${x._2}")
             .toVector

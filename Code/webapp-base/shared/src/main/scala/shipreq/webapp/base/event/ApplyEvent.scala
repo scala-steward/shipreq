@@ -3,6 +3,7 @@ package shipreq.webapp.base.event
 import nyaya.prop.LogicPropExt
 import scala.annotation.tailrec
 import scalaz.{-\/, \/-, \/}
+import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Valid, UnivEq}
 import shipreq.webapp.base.data.{Project, DataProp}
 import shipreq.webapp.base.hash.HashRec
@@ -82,12 +83,8 @@ final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with 
       else {
         val failures = recs.iterator
           .map(r => (r, r validateF p))
-          .filter(_._2.isDefined)
-          .map { t =>
-            val r = t._1
-            val f = t._2.get
-            s"$r failed: ${f.msg}"
-          }
+          .filterDefined_2
+          .map { case (r, f) => s"$r failed: ${f.msg}" }
           .toVector
           .sorted
         Some(s"Hash Mismatch. ${failures.size} mismatches:${failures.map("\n  - " + _) mkString ""}")
