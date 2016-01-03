@@ -6,14 +6,11 @@ import shipreq.base.test.BaseUtilGen._
 import shipreq.base.test.IncCounter
 import shipreq.base.util._
 import shipreq.webapp.base.RandomData
-import shipreq.webapp.base.NyayaTemp._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.Event.NESD
 import shipreq.webapp.base.hash._
 import shipreq.webapp.base.test.WebappBaseGen._
 import shipreq.webapp.base.text.Text
-import shipreq.webapp.base.util.GenericData
-import MTrie.Ops
 import RandomData.{fieldRefKey, hashRefKey, implicationRequired, mandatory, mutexChildren}
 import RandomData.{reqCode, reqTypeMnemonic, TextGen, TextGenExt, unicodeString1}
 import ScalaExt._
@@ -41,7 +38,7 @@ then apply and see if it worked. If not, repeat (so BindRec).
 
  */
 
-class Blah(p: Project) {
+class GenSuccEvent(p: Project) {
 
   private val cfg = p.config
 
@@ -52,13 +49,6 @@ class Blah(p: Project) {
 
   val (staticFieldsToDel, staticFieldsToAdd) =
     StaticField.values.whole partition cfg.fields.staticFieldSet.contains
-
-  // Same as Gen.tryGenChoose but Gen is lazy | TODO Add to Nyaya
-  private def tryGenChoose[A](as: TraversableOnce[A]): Option[Gen[A]] =
-    if (as.isEmpty)
-      None
-    else
-      Some(Gen.lazily(Gen.chooseIndexed_!(as.toIndexedSeq)))
 
   val nextReqId: Gen[Int] =
     IncCounter genInt p.idCeilings.req
@@ -100,13 +90,13 @@ class Blah(p: Project) {
     Gen.choose_!(p.config.fields.order)
 
   lazy val existingTagId: Option[Gen[TagId]] =
-    Gen.tryGenChoose(p.config.tags.keysIterator.toVector)
+    Gen.tryGenChoose(p.config.tags.keysIterator)
 
   lazy val existingApplicableTagId: Option[Gen[ApplicableTagId]] =
-    Gen.tryGenChoose(p.config.tags.keysIterator.filterT[ApplicableTagId].toVector)
+    Gen.tryGenChoose(p.config.tags.keysIterator.filterT[ApplicableTagId])
 
   lazy val existingTagGroupId: Option[Gen[TagGroupId]] =
-    Gen.tryGenChoose(p.config.tags.keysIterator.filterT[TagGroupId].toVector)
+    Gen.tryGenChoose(p.config.tags.keysIterator.filterT[TagGroupId])
 
   def tagChildren: Gen[TagInTree.Children] =
     existingTagId match {
@@ -124,37 +114,34 @@ class Blah(p: Project) {
     Gen.chooseNE(StaticReqType.values.map(_.reqTypeId) ++ cfg.customReqTypes.keySet)
 
   lazy val existingCustomReqTypeId: Option[Gen[CustomReqTypeId]] =
-    Gen.tryGenChoose(cfg.customReqTypes.keySet.toVector)
+    Gen.tryGenChoose(cfg.customReqTypes.keySet)
 
   lazy val applicableReqTypes: Gen[Field.ApplicableReqTypes] =
     RandomData.applicableReqTypes(cfg.customReqTypes.keySet)
 
   lazy val existingReqId: Option[Gen[ReqId]] =
-    Gen.tryGenChoose(p.reqs.reqs.keysIterator.toVector)
+    Gen.tryGenChoose(p.reqs.reqs.keysIterator)
 
   lazy val existingLiveReqId: Option[Gen[ReqId]] =
-    Gen.tryGenChoose(p.reqs.reqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id).toVector)
+    Gen.tryGenChoose(p.reqs.reqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id))
 
   lazy val existingGenericReqId: Option[Gen[GenericReqId]] =
-    Gen.tryGenChoose(p.reqs.genericReqs.keysIterator.toVector)
+    Gen.tryGenChoose(p.reqs.genericReqs.keySet)
 
   lazy val existingReqCodeId: Option[Gen[ReqCodeId]] =
     Gen.tryGenChoose(p.reqCodes.idList)
 
   lazy val existingLiveReqCodeId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose {
-      val activeIds = p.reqCodes.idSet -- p.reqCodes.inactiveIdsByReqId.allValues
-      activeIds.toVector
-    }
+    Gen.tryGenChoose(p.reqCodes.idSet -- p.reqCodes.inactiveIdsByReqId.allValues)
 
   lazy val existingDeadReqCodeId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose(p.reqCodes.inactiveIdsByReqId.allValues.toVector)
+    Gen.tryGenChoose(p.reqCodes.inactiveIdsByReqId.allValues)
 
   lazy val existingCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
-    Gen.tryGenChoose(cfg.customIssueTypes.keySet.toVector)
+    Gen.tryGenChoose(cfg.customIssueTypes.keySet)
 
   lazy val existingCustomFieldId: Option[Gen[CustomFieldId]] =
-    Gen.tryGenChoose(cfg.fields.customFields.keySet.toVector)
+    Gen.tryGenChoose(cfg.fields.customFields.keySet)
 
   lazy val existingCustomFieldImpId: Option[Gen[CustomField.Implication.Id]] =
     Gen.tryGenChoose(cfg.customImpFields.map(_.id))
@@ -275,7 +262,7 @@ class Blah(p: Project) {
   // -------------------------------------------------------------------------------------------------------------------
 
   def addStaticField: Option[Gen[AddStaticField]] =
-    tryGenChoose(staticFieldsToAdd).map(_ map AddStaticField)
+    Gen.tryGenChoose(staticFieldsToAdd).map(_ map AddStaticField)
 
   def applyTemplate: Option[Gen[ApplyTemplate]] =
     if (p eq Project.empty)
@@ -325,17 +312,17 @@ class Blah(p: Project) {
       DeleteCustomReqType(id, deletionAction(cfg.customReqTypes.need(id).live))))
 
   def deleteReqCodeGroups: Option[Gen[DeleteReqCodeGroups]] =
-    tryGenChoose(p.reqCodes.groups.iterator.map(_.id).toIndexedSeq)
+    Gen.tryGenChooseLazily(p.reqCodes.groups.iterator.map(_.id))
       .map(_.nes map DeleteReqCodeGroups)
 
   def deleteReqs: Option[Gen[DeleteReqs]] =
-    existingLiveReqId.map{reqId =>
+    existingLiveReqId.map { reqId =>
       val codes = existingLiveReqCodeId.setE
       Gen.apply3(DeleteReqs)(reqId.nes, codes, deletionReason)
     }
 
   def deleteStaticField: Option[Gen[DeleteStaticField]] =
-    tryGenChoose(staticFieldsToDel).map(_ map DeleteStaticField)
+    Gen.tryGenChoose(staticFieldsToDel).map(_ map DeleteStaticField)
 
   def deleteTag: Option[Gen[DeleteTag]] =
     existingTagId.map(g =>

@@ -39,11 +39,6 @@ import WebappBaseGen._
 
 object RandomData {
 
-  type StateG[S, A] = StateT[Gen, S, A]
-  implicit def gliftS[S, A](g: Gen[A]): StateG[S, A] = StateT(s => g.map(a => (s,a)))
-
-  def stateGen[S, A](g: S => Gen[A]): StateG[S, A] = StateT(s => g(s).map(a => (s,a)))
-
   def genmodL[A, B](l: Lens[A, B])(g: B => Gen[B])(a: A): Gen[A] =
     g(l get a) map (l.set(_)(a))
 
@@ -694,29 +689,29 @@ object RandomData {
   lazy val reqId: Gen[ReqId] =
     Gen.chooseGen(genericReqId)
 
-  def sAllocPubidC(possibleReqTypeIds: NonEmptyVector[CustomReqTypeId])(reqId: ReqIdC): StateG[PubidRegister, PubidC] =
+  def sAllocPubidC(possibleReqTypeIds: NonEmptyVector[CustomReqTypeId])(reqId: ReqIdC): StateGen[PubidRegister, PubidC] =
     StateT(register =>
       Gen.chooseNE(possibleReqTypeIds).map(reqTypeId =>
         register.allocC(reqTypeId)(reqId)))
 
-  def sGenericReqId(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, ReqIdC] =
+  def sGenericReqId(pubidS: ReqIdC => StateGen[PubidRegister, PubidC]): StateGen[PubidRegister, ReqIdC] =
     for {
-      id <- genericReqId |> gliftS[PubidRegister, GenericReqId]
+      id <- genericReqId.toStateGen[PubidRegister]
       _  <- pubidS(id)
     } yield id
 
-  def sGenericReq(pubidS: ReqIdC => StateG[PubidRegister, PubidC]): StateG[PubidRegister, GenericReq] =
+  def sGenericReq(pubidS: ReqIdC => StateGen[PubidRegister, PubidC]): StateGen[PubidRegister, GenericReq] =
     for {
-      id     ← genericReqId |> gliftS[PubidRegister, GenericReqId]
+      id     ← genericReqId.toStateGen[PubidRegister]
       pubid  ← pubidS(id)
       desc   = Vector.empty
-      l      ← live
+      l      ← live.toStateGen
     } yield
       GenericReq(id, pubid, desc, l)
 
-  def pubidRegisterAnd[A, B](reqCount: Int, inita: A, genb: StateG[PubidRegister, B])(f: (A, B) => A): Gen[(PubidRegister, A)] = {
-    val init = StateT.stateT[Gen, PubidRegister, A](inita)
-    val prog = Stream.fill(reqCount)(genb).foldLeft(init)((sn, ga) =>
+  def pubidRegisterAnd[A, B](reqCount: Int, inita: A, genb: StateGen[PubidRegister, B])(f: (A, B) => A): Gen[(PubidRegister, A)] = {
+    val init = StateGen.ret[PubidRegister, A](inita)
+    val prog = Iterator.fill(reqCount)(genb).foldLeft(init)((sn, ga) =>
       for {
         b <- sn
         a <- ga
