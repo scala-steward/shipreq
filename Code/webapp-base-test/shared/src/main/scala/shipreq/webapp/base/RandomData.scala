@@ -896,7 +896,7 @@ object RandomData {
       grammarStr1(Grammar.reqCode)(_.firstChar, _.allChars, _.nodeLength) map Node.applyFn
 
     val value: Gen[Value] =
-      node.nev
+      node.nev(1 to Grammar.reqCode.maxNodes)
 
     val id =
       RandomData.id map ReqCodeId

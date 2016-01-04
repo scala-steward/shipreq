@@ -16,11 +16,17 @@ object BaseUtilGen {
   class BaseUtilGen_GenExt[A](private val _g: Gen.Run[A]) extends AnyVal {
     private implicit def g = Gen(_g)
 
-    def nev(implicit ss: SizeSpec): Gen[NonEmptyVector[A]] =
-      for {t <- g.vector(ss); h <- g} yield NonEmptyVector(h, t)
+    def nev(implicit ss: SizeSpec): Gen[NonEmptyVector[A]] = {
+      val single = g map NonEmptyVector.one
+      g.vector(ss).flatMap(vs =>
+        NonEmptyVector.maybe(vs, single)(Gen.pure))
+    }
 
-    def nes(implicit ss: SizeSpec, ev: UnivEq[A]): Gen[NonEmptySet[A]] =
-      for {t <- g.set(ss); h <- g} yield NonEmptySet(h, t)
+    def nes(implicit ss: SizeSpec, ev: UnivEq[A]): Gen[NonEmptySet[A]] = {
+      val single = g map (NonEmptySet one _)
+      g.set(ss).flatMap(vs =>
+        NonEmptySet.maybe(vs, single)(Gen.pure))
+    }
   }
 
   implicit class BaseUtilGen_OptionGenExt[A](private val o: Option[Gen[A]]) extends AnyVal {
