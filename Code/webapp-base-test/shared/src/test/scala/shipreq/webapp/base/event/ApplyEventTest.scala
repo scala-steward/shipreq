@@ -8,6 +8,34 @@ import shipreq.base.test.BaseTestUtil._
 
 object ApplyEventTest extends TestSuite {
 
+  /*
+//  case class State(reqCodes: Int, events: Vector[Event])
+
+  case class State(reqCodes: Int)
+
+  object RandomEventStream extends StateGen.Fix[State] {
+
+    val initialState = State(0, Vector.empty)
+
+    // different scopes
+    // different hashScheme
+    // different logicVer
+
+    def blah(s: State): Gen[State] = {
+      val rcn = s.reqCodes + 1
+      val rcv = NonEmptyVector one ReqCode.Node(rcn.toString)
+      val e = CreateReqCodeGroup(ReqCodeId(rcn), ReqCodeGroupGD.Code(rcv))
+      val s2 = s.copy(reqCodes = rcn, events = s.events :+ e)
+      Gen pure s2
+    }
+
+    //    genS()
+
+
+  }
+*/
+
+
   override def tests = TestSuite {
     'applyVerified {
 
@@ -37,6 +65,11 @@ object ApplyEventTest extends TestSuite {
           case -\/(e) => e
         }
       }
+    }
+    'stuff {
+      val (s,v) = RandomEventStream.withEventStats()(100).samples().next()
+      println(s.report)
+      ()
     }
   }
 }

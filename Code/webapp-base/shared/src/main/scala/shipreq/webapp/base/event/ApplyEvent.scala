@@ -8,8 +8,11 @@ import shipreq.base.util.{Valid, UnivEq}
 import shipreq.webapp.base.data.{Project, DataProp}
 import shipreq.webapp.base.hash.HashRec
 import ApplyEventLib._, SE.SE
+import ApplyEvent.{Events, Result}
 
 object ApplyEvent {
+  type Result = String \/ Project
+  type Events = Iterable[Event]
 
   /**
    * Applies trusted events (i.e. events that have been verified previously and usually stored in the DB already).
@@ -41,8 +44,6 @@ object ApplyEvent {
 }
 
 final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with ApplyContentEvent {
-  type Result = String \/ Project
-  type Events = Iterable[Event]
 
   def apply(events: Events)(p: Project): Result =
     applyAllSafe(events) exec p

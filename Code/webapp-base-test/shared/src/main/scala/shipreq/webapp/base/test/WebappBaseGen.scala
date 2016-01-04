@@ -1,7 +1,7 @@
 package shipreq.webapp.base.test
 
 import nyaya.gen._
-import shipreq.base.util.NonEmptyVector
+import shipreq.base.util.{NonEmptySet, NonEmptyVector}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.webapp.base.util.GenericData
@@ -20,9 +20,14 @@ object WebappBaseGen {
         .flatMap(as => Gen sequence as.iterator.map(valueFor).toVector)
         .map(_.foldLeft(gd.emptyValues)(_ + _))
 
-    val nonEmptyValues: Gen[gd.NonEmptyValues] =
-      attr.nes
-        .flatMap(as => Gen sequence as.iterator.map(valueFor).toVector)
+    lazy val nonEmptyValues: Gen[gd.NonEmptyValues] =
+      attr.nes.flatMap(forValues)
+
+    lazy val allValues: Gen[gd.NonEmptyValues] =
+      forValues(gd.attrs)
+
+    def forValues(as: NonEmptySet[gd.Attr]): Gen[gd.NonEmptyValues] =
+      Gen.sequence(as.iterator.map(valueFor).toVector)
         .map(vs => gd.nev(vs.head, vs.tail: _*))
   }
 
@@ -37,20 +42,33 @@ object WebappBaseGen {
         .filterDefined_2
         .toMap
 
-    val attrNE: Option[Gen[gd.Attr]] =
-      NonEmptyVector.option(gens.keySet.toVector) map (Gen chooseNE _)
+    val genableAttrs: Option[NonEmptySet[gd.Attr]] =
+      NonEmptySet.option(gens.keySet)
 
-    lazy val values: Gen[gd.Values] =
+    val attrNE: Option[Gen[gd.Attr]] =
+      genableAttrs.map(Gen chooseNE _)
+
+    def values(implicit ss: SizeSpec): Gen[gd.Values] =
       attrNE.fold(Gen pure gd.emptyValues)(_
         .set
         .flatMap(as => Gen sequence as.iterator.map(gens).toVector)
         .map(_.foldLeft(gd.emptyValues)(_ + _)))
 
-    val nonEmptyValues: Option[Gen[gd.NonEmptyValues]] =
-      attrNE.map(_
-        .nes
-        .flatMap(as => Gen sequence as.iterator.map(gens).toVector)
-        .map(vs => gd.nev(vs.head, vs.tail: _*)))
+    lazy val nonEmptyValues: Option[Gen[gd.NonEmptyValues]] =
+      attrNE.map(_.nes.flatMap(forValues))
+
+    lazy val allPossibleValues: Option[Gen[gd.NonEmptyValues]] =
+      genableAttrs.map(forValues)
+
+    lazy val allValues: Option[Gen[gd.NonEmptyValues]] =
+      if (gens.keySet.size == gd.attrs.size)
+        allPossibleValues
+      else
+        None
+
+    def forValues(as: NonEmptySet[gd.Attr]): Gen[gd.NonEmptyValues] =
+      Gen.sequence(as.iterator.map(gens).toVector)
+        .map(vs => gd.nev(vs.head, vs.tail: _*))
   }
 
 }

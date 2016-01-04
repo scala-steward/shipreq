@@ -16,6 +16,104 @@ import RandomData.{reqCode, reqTypeMnemonic, TextGen, TextGenExt, unicodeString1
 import ScalaExt._
 import UtilMacros._
 
+import scalaz.{-\/, BindRec}
+
+object EventStats {
+
+  val (allNames, name) =
+    valuesForAdtF[Event, String] {
+      case _: AddStaticField        => "AddStaticField"
+      case _: ApplyTemplate         => "ApplyTemplate"
+      case _: CreateApplicableTag   => "CreateApplicableTag"
+      case _: CreateCustomImpField  => "CreateCustomImpField"
+      case _: CreateCustomIssueType => "CreateCustomIssueType"
+      case _: CreateCustomReqType   => "CreateCustomReqType"
+      case _: CreateCustomTagField  => "CreateCustomTagField"
+      case _: CreateCustomTextField => "CreateCustomTextField"
+      case _: CreateGenericReq      => "CreateGenericReq"
+      case _: CreateReqCodeGroup    => "CreateReqCodeGroup"
+      case _: CreateTagGroup        => "CreateTagGroup"
+      case _: DeleteCustomField     => "DeleteCustomField"
+      case _: DeleteCustomIssueType => "DeleteCustomIssueType"
+      case _: DeleteCustomReqType   => "DeleteCustomReqType"
+      case _: DeleteReqCodeGroups   => "DeleteReqCodeGroups"
+      case _: DeleteReqs            => "DeleteReqs"
+      case _: DeleteStaticField     => "DeleteStaticField"
+      case _: DeleteTag             => "DeleteTag"
+      case _: PatchImplicationSrc   => "PatchImplicationSrc"
+      case _: PatchImplicationTgt   => "PatchImplicationTgt"
+      case _: PatchReqCodes         => "PatchReqCodes"
+      case _: PatchReqTags          => "PatchReqTags"
+      case _: RepositionField       => "RepositionField"
+      case _: RestoreContent        => "RestoreContent"
+      case _: SetCustomTextField    => "SetCustomTextField"
+      case _: SetGenericReqTitle    => "SetGenericReqTitle"
+      case _: SetGenericReqType     => "SetGenericReqType"
+      case _: UpdateApplicableTag   => "UpdateApplicableTag"
+      case _: UpdateCustomImpField  => "UpdateCustomImpField"
+      case _: UpdateCustomIssueType => "UpdateCustomIssueType"
+      case _: UpdateCustomReqType   => "UpdateCustomReqType"
+      case _: UpdateCustomTagField  => "UpdateCustomTagField"
+      case _: UpdateCustomTextField => "UpdateCustomTextField"
+      case _: UpdateReqCodeGroup    => "UpdateReqCodeGroup"
+      case _: UpdateTagGroup        => "UpdateTagGroup"
+    }
+    .map1(_.sorted)
+
+  val allNamesList = allNames.whole.toList
+
+  private val maxNameLen = allNames.iterator.map(_.length).max
+
+  private[EventStats] val reportLineFmt = s"| %-${maxNameLen}s | %7s | %3s |"
+  private[EventStats] val reportLineHdr = reportLineFmt.format("EVENT", "GOOD", "BAD")
+  private[EventStats] val reportLineSep = s"+-${"-" * maxNameLen}-+-${"-"*7}-+-${"-"*3}-+"
+
+  val empty = EventStats(Nil, Nil)
+}
+case class EventStats(ok: List[String], ko: List[String]) {
+  import EventStats._
+
+  def add(e: Event, r: ApplyEvent.Result): EventStats = {
+    val n = name(e)
+    r.fold(err => {
+//        if (!err.contains("\n"))
+//        if (n.contains("Patch"))
+//          println(s"[Event Application Failure] $err\n$e\n")
+        copy(ko = n :: ko)
+      }, (_: Project) => copy(ok = n :: ok))
+  }
+
+  private def lookup(ss: List[String]): String => String =
+    ss.foldLeft(Map.empty[String, Int])((m, s) => m.updated(s, 1 + m.getOrElse(s, 0)))
+      .mapValuesNow(_.toString)
+      .withDefaultValue("")
+      .apply
+
+  def report: String = {
+    val mOK = lookup(ok)
+    val mKO = lookup(ko)
+    val content = allNamesList.map(s => reportLineFmt.format(s, mOK(s), mKO(s)))
+
+    val (cOK, cKO) = (ok, ko).mapEach(_.size)
+    val c = cOK + cKO
+    def per(i: Int) = (i.toDouble / c.toDouble * 100).toInt.toString + "%"
+    val total = reportLineFmt.format("Σ", cOK.toString, cKO.toString)
+    val totalP = reportLineFmt.format("Σ%", per(cOK), per(cKO))
+
+    val (dOK, dKO) = (ok, ko).mapEach(_.toSet.size)
+    def distPer(i: Int) = (i.toDouble / allNames.length.toDouble * 100).toInt.toString + "%"
+    val dist = reportLineFmt.format("Event type coverage", distPer(dOK), per(dKO))
+
+    ( reportLineSep :: reportLineHdr ::
+      reportLineSep :: content :::
+      reportLineSep :: total :: totalP :: dist ::
+      reportLineSep :: Nil
+    ) mkString "\n"
+  }
+
+}
+
+
 /**
   * Generates a random event stream that can be successfully applied.
   *
@@ -24,10 +122,39 @@ import UtilMacros._
   */
 object RandomEventStream {
 
-  def nextEvent(p: Project): Gen[Event] = {
-    ???
+  def applicableEventS[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[(S, Project), Event] =
+    StateGen(sp =>
+      GenSuccEvent(sp._2).applicableEventS(sp._1)(observe))
+
+  def addVerifiedEventS[S](succ: StateGen[(S, Project), Event]): StateGen[((S, Project), VerifiedEvents), VerifiedEvent] =
+    StateGen { case orig @ (sp1, vs) =>
+      succ(sp1).map { case (sp2, e2) =>
+        val hrs = HashRec.changes(sp1._2, sp2._2)
+        val v2 = VerifiedEvent(e2, hrs)
+        ((sp2, vs :+ v2), v2)
+      }
+    }
+
+  def eventStreamS[S](gen: StateGen[((S, Project), VerifiedEvents), VerifiedEvent])(implicit ss: SizeSpec): StateGen[((S, Project), VerifiedEvents), Unit] = {
+    val SSS = scalaz.StateT.stateTMonadState[((S, Project), VerifiedEvents), Gen]
+    import SSS.monadSyntax._
+    // TODO Speed up replicateM_ (?)
+    StateGen(spv => ss.gen.flatMap(n => gen.replicateM_(n)(spv)))
   }
 
+  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: (S, Event, ApplyEvent.Result) => S)(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
+    eventStreamS(addVerifiedEventS(applicableEventS(observe)))(ss)((s0, p0), Vector.empty)
+      .map { case (((s, _), vs), ()) => (s, vs) }
+
+  def withEventStats(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[(EventStats, VerifiedEvents)] =
+    genEventStreamS(EventStats.empty, p)(_.add(_, _))
+
+  // TODO Terrible
+  def plain(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[VerifiedEvents] =
+    genEventStreamS(())((_, _, _) => ()).map(_._2)
+
+//  def eventStreamS[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[(S, Project), Event] =
+//  scalaz.StateT.stateTBindRec[S, Gen]
 }
 
 /*
@@ -38,7 +165,11 @@ then apply and see if it worked. If not, repeat (so BindRec).
 
  */
 
+object GenSuccEvent {
+  @inline def apply(p: Project) = new GenSuccEvent(p)
+}
 class GenSuccEvent(p: Project) {
+  private implicit val gss: SizeSpec = 0 to 3
 
   private val cfg = p.config
 
@@ -48,7 +179,8 @@ class GenSuccEvent(p: Project) {
     if (l :: Live) Delete else Restore
 
   val (staticFieldsToDel, staticFieldsToAdd) =
-    StaticField.values.whole partition cfg.fields.staticFieldSet.contains
+    StaticField.values.whole.partition(cfg.fields.staticFieldSet.contains)
+      .map1(_.filter(_.deletable :: Deletable))
 
   val nextReqId: Gen[Int] =
     IncCounter genInt p.idCeilings.req
@@ -89,32 +221,32 @@ class GenSuccEvent(p: Project) {
   lazy val existingFieldId: Gen[FieldId] =
     Gen.choose_!(p.config.fields.order)
 
-  lazy val existingTagId: Option[Gen[TagId]] =
-    Gen.tryGenChoose(p.config.tags.keysIterator)
+  lazy val liveTagId: Option[Gen[TagId]] =
+    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).map(_.id))
+
+  def liveTagGroupId: Option[Gen[TagGroupId]] =
+    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).filterT[TagGroup].map(_.id))
+
+  lazy val liveApplicableTagId: Option[Gen[ApplicableTagId]] =
+    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).filterT[ApplicableTag].map(_.id))
 
   lazy val existingApplicableTagId: Option[Gen[ApplicableTagId]] =
     Gen.tryGenChoose(p.config.tags.keysIterator.filterT[ApplicableTagId])
 
-  lazy val existingTagGroupId: Option[Gen[TagGroupId]] =
-    Gen.tryGenChoose(p.config.tags.keysIterator.filterT[TagGroupId])
-
   def tagChildren: Gen[TagInTree.Children] =
-    existingTagId match {
-      case Some(g) => g.vector(0 to 3)
+    liveTagId match {
+      case Some(g) => g.set.map(_.toVector)
       case None    => Gen pure Vector.empty
     }
 
   def tagParents: Gen[TagInTree.Parents] =
-    existingTagId match {
-      case Some(g) => g.option.mapBy(g)(0 to 3)
+    liveTagId match {
+      case Some(g) => g.option.mapBy(g)
       case None    => Gen pure Map.empty
     }
 
-  lazy val existingReqTypeId: Gen[ReqTypeId] =
-    Gen.chooseNE(StaticReqType.values.map(_.reqTypeId) ++ cfg.customReqTypes.keySet)
-
-  lazy val existingCustomReqTypeId: Option[Gen[CustomReqTypeId]] =
-    Gen.tryGenChoose(cfg.customReqTypes.keySet)
+  lazy val liveCustomReqTypeId: Option[Gen[CustomReqTypeId]] =
+    Gen.tryGenChoose(cfg.customReqTypes.valuesIterator.filter(_.live :: Live).map(_.id))
 
   lazy val applicableReqTypes: Gen[Field.ApplicableReqTypes] =
     RandomData.applicableReqTypes(cfg.customReqTypes.keySet)
@@ -122,35 +254,41 @@ class GenSuccEvent(p: Project) {
   lazy val existingReqId: Option[Gen[ReqId]] =
     Gen.tryGenChoose(p.reqs.reqs.keysIterator)
 
-  lazy val existingLiveReqId: Option[Gen[ReqId]] =
-    Gen.tryGenChoose(p.reqs.reqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id))
+  lazy val liveReqIds: Vector[ReqId] =
+    p.reqs.reqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id).toVector
 
-  lazy val existingGenericReqId: Option[Gen[GenericReqId]] =
-    Gen.tryGenChoose(p.reqs.genericReqs.keySet)
+  lazy val liveReqId: Option[Gen[ReqId]] =
+    Gen.tryGenChoose(liveReqIds)
+
+  lazy val liveGenericReqId: Option[Gen[GenericReqId]] =
+    Gen.tryGenChoose(p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id))
 
   lazy val existingReqCodeId: Option[Gen[ReqCodeId]] =
     Gen.tryGenChoose(p.reqCodes.idList)
 
-  lazy val existingLiveReqCodeId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose(p.reqCodes.idSet -- p.reqCodes.inactiveIdsByReqId.allValues)
+  lazy val liveReqCodeGroupId: Option[Gen[ReqCodeId]] =
+    Gen.tryGenChoose(p.reqCodes.groups.iterator.filter(_.live :: Live).map(_.id).toVector)
 
-  lazy val existingDeadReqCodeId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose(p.reqCodes.inactiveIdsByReqId.allValues)
+  lazy val deadReqCodeGroupId: Option[Gen[ReqCodeId]] =
+    Gen.tryGenChoose(p.reqCodes.groups.iterator.filter(_.live :: Dead).map(_.id).toVector)
 
   lazy val existingCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
     Gen.tryGenChoose(cfg.customIssueTypes.keySet)
 
-  lazy val existingCustomFieldId: Option[Gen[CustomFieldId]] =
-    Gen.tryGenChoose(cfg.fields.customFields.keySet)
+  lazy val liveCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
+    Gen.tryGenChoose(cfg.customIssueTypes.valuesIterator.filter(_.live :: Live).map(_.id))
 
-  lazy val existingCustomFieldImpId: Option[Gen[CustomField.Implication.Id]] =
-    Gen.tryGenChoose(cfg.customImpFields.map(_.id))
+  def liveCustomFieldId: Option[Gen[CustomFieldId]] =
+    Gen.tryGenChoose(cfg.fields.customFields.valuesIterator.filter(_.live(cfg) :: Live).map(_.id))
 
-  lazy val existingCustomFieldTagId: Option[Gen[CustomField.Tag.Id]] =
-    Gen.tryGenChoose(cfg.customTagFields.map(_.id))
+  def liveCustomFieldImpId: Option[Gen[CustomField.Implication.Id]] =
+    Gen.tryGenChoose(cfg.customImpFields.filter(_.live(cfg) :: Live).map(_.id))
 
-  lazy val existingCustomFieldTextId: Option[Gen[CustomField.Text.Id]] =
-    Gen.tryGenChoose(cfg.customTextFields.map(_.id))
+  def liveCustomFieldTagId: Option[Gen[CustomField.Tag.Id]] =
+    Gen.tryGenChoose(cfg.customTagFields.filter(_.live(cfg) :: Live).map(_.id))
+
+  lazy val liveCustomFieldTextId: Option[Gen[CustomField.Text.Id]] =
+    Gen.tryGenChoose(cfg.customTextFields.filter(_.live(cfg) :: Live).map(_.id))
 
   lazy val customTextFieldText =
     TextGen.customTextFieldAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId).text
@@ -203,29 +341,40 @@ class GenSuccEvent(p: Project) {
   object customTagFieldGD extends GenericDataOptionGen(CustomTagFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case TagId     => existingTagId map (_ map TagId    .apply)
+      case TagId     => liveTagId map (_ map TagId    .apply)
       case Mandatory => mandatory            map Mandatory.apply
       case ReqTypes  => applicableReqTypes   map ReqTypes .apply
     }
   }
 
-  object customImpFieldGD extends GenericDataGen(CustomImpFieldGD) {
+  object customImpFieldGD extends GenericDataOptionGen(CustomImpFieldGD) {
     import gd._
+
+    private def reqTypesUsedInFields: Set[ReqTypeId] =
+      cfg.customImpFields.map(_.reqTypeId).toSet
+
+    private def liveReqTypes: Iterator[ReqTypeId] =
+      StaticReqType.values.iterator.map(_.reqTypeId) ++
+      cfg.customReqTypes.valuesIterator.filter(_.live :: Live).map(_.id)
+
+    private def reqTypeId: Option[Gen[ReqTypeId]] =
+      Gen.tryGenChoose(liveReqTypes.filterNot(reqTypesUsedInFields.contains))
+
     override def valueFor(a: Attr) = a match {
-      case ReqTypeId => existingReqTypeId  map ReqTypeId.apply
-      case Mandatory => mandatory          map Mandatory.apply
-      case ReqTypes  => applicableReqTypes map ReqTypes .apply
+      case ReqTypeId => reqTypeId          map (_ map ReqTypeId.apply)
+      case Mandatory => mandatory                 map Mandatory.apply
+      case ReqTypes  => applicableReqTypes        map ReqTypes .apply
     }
   }
 
   object createGenericReqGD extends GenericDataOptionGen(CreateGenericReqGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Title    => genericReqTitle1                     map Title   .apply
-      case ReqCodes => newReqCodeIdAndValue          .nes   map ReqCodes.apply
-      case Tags     => existingApplicableTagId map (_.nes   map Tags    .apply)
-      case ImpSrcs  => existingReqId           map (_.nes   map ImpSrcs .apply)
-      case ImpTgts  => existingReqId           map (_.nes   map ImpTgts .apply)
+      case Title    => genericReqTitle1                map Title   .apply
+      case ReqCodes => newReqCodeIdAndValue       .nes map ReqCodes.apply
+      case Tags     => liveApplicableTagId  map (_.nes map Tags    .apply)
+      case ImpSrcs  => liveReqId            map (_.nes map ImpSrcs .apply)
+      case ImpTgts  => liveReqId            map (_.nes map ImpTgts .apply)
     }
   }
 
@@ -266,79 +415,82 @@ class GenSuccEvent(p: Project) {
 
   def applyTemplate: Option[Gen[ApplyTemplate]] =
     if (p eq Project.empty)
-      None
-    else
       Some(RandomData.events.applyTemplate)
+    else
+      None
 
   def createApplicableTag: Gen[CreateApplicableTag] =
-    Gen.apply2(CreateApplicableTag)(nextApplicableTagId, applicableTagGD.nonEmptyValues)
+    Gen.apply2(CreateApplicableTag)(nextApplicableTagId, applicableTagGD.allValues)
 
-  def createCustomImpField: Gen[CreateCustomImpField] =
-    Gen.apply2(CreateCustomImpField)(nextCustomFieldImplicationId, customImpFieldGD.nonEmptyValues)
+  def createCustomImpField: Option[Gen[CreateCustomImpField]] =
+    customImpFieldGD.allValues.map(vs =>
+      Gen.apply2(CreateCustomImpField)(nextCustomFieldImplicationId, vs))
 
   def createCustomIssueType: Gen[CreateCustomIssueType] =
-    Gen.apply2(CreateCustomIssueType)(nextCustomIssueTypeId, customIssueTypeGD.nonEmptyValues)
+    Gen.apply2(CreateCustomIssueType)(nextCustomIssueTypeId, customIssueTypeGD.allValues)
 
   def createCustomReqType: Gen[CreateCustomReqType] =
-    Gen.apply2(CreateCustomReqType)(nextCustomReqTypeId, customReqTypeGD.nonEmptyValues)
+    Gen.apply2(CreateCustomReqType)(nextCustomReqTypeId, customReqTypeGD.allValues)
 
   def createCustomTagField: Option[Gen[CreateCustomTagField]] =
-    customTagFieldGD.nonEmptyValues.map(vs =>
+    customTagFieldGD.allValues.map(vs =>
       Gen.apply2(CreateCustomTagField)(nextCustomFieldTagId, vs))
 
   def createCustomTextField: Gen[CreateCustomTextField] =
-    Gen.apply2(CreateCustomTextField)(nextCustomFieldTextId, customTextFieldGD.nonEmptyValues)
+    Gen.apply2(CreateCustomTextField)(nextCustomFieldTextId, customTextFieldGD.allValues)
 
   def createGenericReq: Option[Gen[CreateGenericReq]] =
-    existingCustomReqTypeId.map(reqTypeId =>
-      Gen.apply3(CreateGenericReq)(nextGenericReqId, reqTypeId, createGenericReqGD.values))
+    for {
+      reqTypeId <- liveCustomReqTypeId
+      //vs        <- createGenericReqGD.allPossibleValues
+    } yield
+      Gen.apply3(CreateGenericReq)(nextGenericReqId, reqTypeId, createGenericReqGD.values)
 
   def createReqCodeGroup: Gen[CreateReqCodeGroup] =
-    Gen.apply2(CreateReqCodeGroup)(nextReqCodeId, reqCodeGroupGD.nonEmptyValues)
+    Gen.apply2(CreateReqCodeGroup)(nextReqCodeId, reqCodeGroupGD.allValues)
 
   def createTagGroup: Gen[CreateTagGroup] =
-    Gen.apply2(CreateTagGroup)(nextTagGroupId, tagGroupGD.nonEmptyValues)
+    Gen.apply2(CreateTagGroup)(nextTagGroupId, tagGroupGD.allValues)
 
   def deleteCustomField: Option[Gen[DeleteCustomField]] =
-    existingCustomFieldId.map(_.map(id =>
+    liveCustomFieldId.map(_.map(id =>
       DeleteCustomField(id, deletionAction(cfg.fields.customFields.need(id) live cfg))))
 
   def deleteCustomIssueType: Option[Gen[DeleteCustomIssueType]] =
-    existingCustomIssueTypeId.map(_.map(id =>
+    liveCustomIssueTypeId.map(_.map(id =>
       DeleteCustomIssueType(id, deletionAction(cfg.customIssueTypes.need(id).live))))
 
   def deleteCustomReqType: Option[Gen[DeleteCustomReqType]] =
-    existingCustomReqTypeId.map(_.map(id =>
+    liveCustomReqTypeId.map(_.map(id =>
       DeleteCustomReqType(id, deletionAction(cfg.customReqTypes.need(id).live))))
 
   def deleteReqCodeGroups: Option[Gen[DeleteReqCodeGroups]] =
-    Gen.tryGenChooseLazily(p.reqCodes.groups.iterator.map(_.id))
-      .map(_.nes map DeleteReqCodeGroups)
+    liveReqCodeGroupId.map(_.nes map DeleteReqCodeGroups)
 
   def deleteReqs: Option[Gen[DeleteReqs]] =
-    existingLiveReqId.map { reqId =>
-      val codes = existingLiveReqCodeId.setE
-      Gen.apply3(DeleteReqs)(reqId.nes, codes, deletionReason)
-    }
+    liveReqId.map(reqId =>
+      Gen.apply3(DeleteReqs)(reqId.nes, liveReqCodeGroupId.setE, deletionReason))
 
   def deleteStaticField: Option[Gen[DeleteStaticField]] =
     Gen.tryGenChoose(staticFieldsToDel).map(_ map DeleteStaticField)
 
   def deleteTag: Option[Gen[DeleteTag]] =
-    existingTagId.map(g =>
+    liveTagId.map(g =>
       g.map(id =>
         DeleteTag(id, deletionAction(cfg.tags.get(id).fold[Live](Live)(_.tag.live)))))
 
   private def patchImplications[A](cmd: (ReqId, NESD[ReqId]) => A, fwd: Boolean): Option[Gen[A]] =
-    existingReqId.map(gReqId =>
-      for {
-        id <- gReqId
-        ids <- gReqId.set1
-      } yield {
-        val sd = SetDiff.xor(p.implications.dir(fwd)(id), ids)
-        cmd(id, NonEmpty force sd)
+    if (liveReqIds.length < 2)
+      None
+    else
+      liveReqId.map { gReqId =>
+        gReqId.flatMap { id =>
+          Gen.choose_!(liveReqIds.filter(_ !=* id)).set1.map { ids =>
+            val sd = SetDiff.xor(p.implications.dir(fwd)(id), ids)
+            cmd(id, NonEmpty force sd)
+          }
+        }
       }
-    )
 
   def patchImplicationSrc: Option[Gen[PatchImplicationSrc]] =
     patchImplications(PatchImplicationSrc, false)
@@ -347,17 +499,17 @@ class GenSuccEvent(p: Project) {
     patchImplications(PatchImplicationTgt, true)
 
   def patchReqCodes: Option[Gen[PatchReqCodes]] =
-    existingLiveReqId.map(gReqId =>
+    liveReqId.map(gReqId =>
       for {
         reqId          ← gReqId
         inactiveValues = p.reqCodes.inactiveIdsByReqId(reqId)
-        restore        ← Gen.tryGenChoose(inactiveValues.toVector).setE
-        existingValues = p.reqCodes.activeReqCodesByReqId(reqId)
-        existingIds    = existingValues.map(p.reqCodes(_).activeId.get)
-        gExistingSet   = Gen.tryGenChoose(existingIds.toVector).setE
-        remove         ← gExistingSet
-        renameIds      ← Gen.tryGenChoose(remove.toVector).setE
-        addIds         ← nextReqCodeId.list
+        restore        ← Gen.tryGenChoose(inactiveValues.toVector).setE(0 to 2)
+        activeValues   = p.reqCodes.activeReqCodesByReqId(reqId)
+        activeIds      = activeValues.map(p.reqCodes(_).activeId.get)
+        remove         ← Gen.tryGenChoose(activeIds.toVector).setE(0 to 2)
+        renameIds      ← Gen.tryGenChoose(remove.toVector).setE(0 to 2)
+        addMin         = if (remove.nonEmpty || restore.nonEmpty) 0 else 1
+        addIds         ← nextReqCodeId.list(addMin to 2)
         add            ← Gen sequence (addIds ++ renameIds).map(id => reqCode.value.strengthR(Set.empty[ReqCodeId] + id))
       } yield
         PatchReqCodes(reqId, remove, restore, Multimap(add.toMap))
@@ -365,11 +517,11 @@ class GenSuccEvent(p: Project) {
 
   def patchReqTags: Option[Gen[PatchReqTags]] =
     for {
-      gId  <- existingLiveReqId
+      gId  <- liveReqId
       gTag <- existingApplicableTagId
     } yield for {
       id   <- gId
-      tags <- gTag.nes
+      tags <- gTag.nes(1 to 5, implicitly)
     } yield {
       val sd = SetDiff.xor(p.reqTags(id), tags.whole)
       PatchReqTags(id, NonEmpty force sd)
@@ -383,76 +535,101 @@ class GenSuccEvent(p: Project) {
       p.reqs.reqs.valuesIterator.filter {
         case g: GenericReq => (g.liveExplicitly :: Dead) && (g.copy(liveExplicitly = Live).live(cfg.customReqTypes) :: Live)
       }.map(_.id).toVector)
-    if (restorableReqIds.isEmpty && existingDeadReqCodeId.isEmpty)
+    if (restorableReqIds.isEmpty && deadReqCodeGroupId.isEmpty)
       None
     else Some {
       val idSet = restorableReqIds.setE
-      val codeSet = existingDeadReqCodeId.setE
+      val codeSet = deadReqCodeGroupId.setE
       Gen.apply2(RestoreContent)(idSet, codeSet).flatMap(cmd =>
-        if (cmd.reqs.nonEmpty || cmd.reqCodes.nonEmpty)
+        if (cmd.reqs.nonEmpty || cmd.reqCodeGroups.nonEmpty)
           Gen pure cmd
         else if (restorableReqIds.isDefined)
           restorableReqIds.get.nes.map(ids => RestoreContent(ids.whole, Set.empty))
         else
-          existingDeadReqCodeId.get.nes.map(ids => RestoreContent(Set.empty, ids.whole))
+          deadReqCodeGroupId.get.nes.map(ids => RestoreContent(Set.empty, ids.whole))
       )
     }
   }
 
   def setCustomTextField: Option[Gen[SetCustomTextField]] =
     for {
-      id  <- existingReqId
-      fid <- existingCustomFieldTextId
+      id  <- liveReqId
+      fid <- liveCustomFieldTextId
     } yield
       Gen.apply3(SetCustomTextField)(id, fid, customTextFieldText)
 
   def setGenericReqTitle: Option[Gen[SetGenericReqTitle]] =
-    existingGenericReqId.map(id =>
+    liveGenericReqId.map(id =>
       Gen.apply2(SetGenericReqTitle)(id, genericReqTitle))
 
   def setGenericReqType: Option[Gen[SetGenericReqType]] =
     for {
-      gId <- existingGenericReqId
-      gRT <- existingCustomReqTypeId
+      gId <- liveGenericReqId
+      gRT <- liveCustomReqTypeId
     } yield
       Gen.apply2(SetGenericReqType)(gId, gRT)
 
   def updateApplicableTag: Option[Gen[UpdateApplicableTag]] =
-    existingApplicableTagId.map(id =>
-      Gen.apply2(UpdateApplicableTag)(id, applicableTagGD.nonEmptyValues))
+    liveApplicableTagId.map(gId =>
+      for {
+        id <- gId
+        vs <- applicableTagGD.nonEmptyValues
+      } yield {
+        import ApplicableTagGD._
+        UpdateApplicableTag(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
+          case ValueForParents(v) => ValueForParents(v - id)
+          case ValueForChildren(v) => ValueForChildren(v.filterNot(_ ==* id))
+          case v => v
+        }))
+      }
+    )
 
   def updateCustomImpField: Option[Gen[UpdateCustomImpField]] =
-    existingCustomFieldImpId.map(id =>
-      Gen.apply2(UpdateCustomImpField)(id, customImpFieldGD.nonEmptyValues))
+    for {
+      id <- liveCustomFieldImpId
+      vs <- customImpFieldGD.nonEmptyValues
+    } yield
+      Gen.apply2(UpdateCustomImpField)(id, vs)
 
   def updateCustomIssueType: Option[Gen[UpdateCustomIssueType]] =
-    existingCustomIssueTypeId.map(id =>
+    liveCustomIssueTypeId.map(id =>
       Gen.apply2(UpdateCustomIssueType)(id, customIssueTypeGD.nonEmptyValues))
 
   def updateCustomReqType: Option[Gen[UpdateCustomReqType]] =
-    existingCustomReqTypeId.map(id =>
+    liveCustomReqTypeId.map(id =>
       Gen.apply2(UpdateCustomReqType)(id, customReqTypeGD.nonEmptyValues))
 
   def updateCustomTagField: Option[Gen[UpdateCustomTagField]] =
     for {
-      id <- existingCustomFieldTagId
+      id <- liveCustomFieldTagId
       vs <- customTagFieldGD.nonEmptyValues
     } yield
       Gen.apply2(UpdateCustomTagField)(id, vs)
 
   def updateCustomTextField: Option[Gen[UpdateCustomTextField]] =
-    existingCustomFieldTextId.map(id =>
+    liveCustomFieldTextId.map(id =>
       Gen.apply2(UpdateCustomTextField)(id, customTextFieldGD.nonEmptyValues))
 
   def updateReqCodeGroup: Option[Gen[UpdateReqCodeGroup]] =
-    existingReqCodeId.map(id =>
+    liveReqCodeGroupId.map(id =>
       Gen.apply2(UpdateReqCodeGroup)(id, reqCodeGroupGD.nonEmptyValues))
 
   def updateTagGroup: Option[Gen[UpdateTagGroup]] =
-    existingTagGroupId.map(id =>
-      Gen.apply2(UpdateTagGroup)(id, tagGroupGD.nonEmptyValues))
+    liveTagGroupId.map(gId =>
+      for {
+        id <- gId
+        vs <- tagGroupGD.nonEmptyValues
+      } yield {
+        import TagGroupGD._
+        UpdateTagGroup(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
+          case ValueForParents(v) => ValueForParents(v - id)
+          case ValueForChildren(v) => ValueForChildren(v.filterNot(_ ==* id))
+          case v => v
+        }))
+      }
+    )
 
-  def eventGens: NonEmptyVector[Option[Gen[Event]]] =
+  val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
     valuesForAdt[Event, Option[Gen[Event]]] {
       case _: AddStaticField        => addStaticField
       case _: ApplyTemplate         => applyTemplate
@@ -490,4 +667,29 @@ class GenSuccEvent(p: Project) {
       case _: UpdateReqCodeGroup    => updateReqCodeGroup
       case _: UpdateTagGroup        => updateTagGroup
     }
+
+  val eventGens: NonEmptyVector[Gen[Event]] =
+    NonEmptyVector force possibleEventGens.iterator.filterDefined.toVector
+
+  val eventGen: Gen[Event] =
+    Gen chooseGenNE eventGens
+
+//  def applyEventSG[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[S, (Event, Project)] =
+//    StateGen.tailrec[S, (Event, Project)](s =>
+//      eventGen.map { e =>
+//        val r = ApplyEvent.untrusted.apply1(e)(p)
+//        val s2 = observe(s, e, r)
+//        r.bimap(_ => s2, p2 => (s2, (e, p2)))
+//      }
+//    )
+
+  def applicableEventS[S](init: S)(observe: (S, Event, ApplyEvent.Result) => S): Gen[((S, Project), Event)] =
+    BindRec[Gen].tailrecM((s: S) =>
+      eventGen.map { e =>
+        var r = ApplyEvent.untrusted.apply1(e)(p)
+        r foreach { p2 => if (HashRec.changes(p, p2).isEmpty) r = -\/("No change") }
+        val s2 = observe(s, e, r)
+        r.bimap(_ => s2, p2 => ((s2, p2), e))
+      }
+    )(init)
 }

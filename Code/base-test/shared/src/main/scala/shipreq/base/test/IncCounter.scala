@@ -4,6 +4,8 @@ import nyaya.gen.Gen
 
 /**
  * Mutable counters that incrementally larger values on each call.
+ *
+ * NOT thread-safe.
  */
 object IncCounter {
 
