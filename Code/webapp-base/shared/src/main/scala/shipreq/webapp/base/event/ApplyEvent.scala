@@ -4,7 +4,7 @@ import nyaya.prop.LogicPropExt
 import scala.annotation.tailrec
 import scalaz.{-\/, \/-, \/}
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Valid, UnivEq}
+import shipreq.base.util.{NonEmptyVector, Valid, UnivEq}
 import shipreq.webapp.base.data.{Project, DataProp}
 import shipreq.webapp.base.hash.HashRec
 import ApplyEventLib._, SE.SE
@@ -26,6 +26,13 @@ object ApplyEvent {
 
   case class LogicVer(value: Char) extends AnyVal
   object LogicVer {
+
+    // When this first changes.
+    //   1) Update BinCodecEvents & make it stop using ConstPickler.
+    //   2) Update RandomData.
+    val all: NonEmptyVector[LogicVer] =
+      NonEmptyVector one LogicVer('1')
+
     /**
      * When logic changes in a way that breaks backwards-compatibility this value must be changed to a new value.
      *
@@ -33,11 +40,7 @@ object ApplyEvent {
      * events created previously. Application logic can use this value to identify and ignore data integrity checks where
      * discrepancy is expected and desired.
      */
-    final val Current = LogicVer('1')
-    // When this ↑ first changes.
-    //   1) Update HashRec.merge to handle it.
-    //   2) Update BinCodecEvents & make it stop using ConstPickler.
-    //   3) Update RandomData.
+    val Current: LogicVer = all.last
 
     implicit def equality: UnivEq[LogicVer] = UnivEq.derive
   }

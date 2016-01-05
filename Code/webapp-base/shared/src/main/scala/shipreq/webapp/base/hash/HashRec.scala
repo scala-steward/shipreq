@@ -53,12 +53,13 @@ object HashRec {
   implicit def equality: UnivEq[HashRec] = UnivEq.derive
   implicit def collectionEquality: UnivEq[Collection] = UnivEq.univEqListSet
 
-  private val defaultHashScopes = HashScope.defaultSet.whole
+  val defaultHashScopes = HashScope.defaultSet.whole
 
   def changes(p1: Project, p2: Project): HashRec.Collection =
-    changes(defaultHashScopes, LogicVer.Current, HashScheme.latest, p1, p2)
+    __changes(defaultHashScopes, LogicVer.Current, HashScheme.latest, p1, p2)
 
-  private def changes(scopes: TraversableOnce[HashScope], lv: LogicVer, scheme: HashScheme, p1: Project, p2: Project): HashRec.Collection = {
+  /** Public for testing */
+  def __changes(scopes: TraversableOnce[HashScope], lv: LogicVer, scheme: HashScheme, p1: Project, p2: Project): HashRec.Collection = {
     var r = emptyCollection
     val d = scheme.value
     for (s <- scopes) {

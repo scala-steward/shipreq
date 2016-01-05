@@ -19,7 +19,7 @@ final case class HashSchemeId(value: Char) extends AnyVal
  * - Update `HashSchemeTest`. Rename `latest` to `vₙ` and add a new `latest` test with values that consider the
  *   newly-added data structure changes.
  */
-final case class HashScheme private[HashScheme](value: DataHasher, id: HashSchemeId) {
+final case class HashScheme private[hash](value: DataHasher, id: HashSchemeId) {
   override val hashCode = value.##
   override def equals(o: Any): Boolean =
     o match {

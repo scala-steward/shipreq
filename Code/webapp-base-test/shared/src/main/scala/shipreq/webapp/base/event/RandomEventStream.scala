@@ -2,6 +2,7 @@ package shipreq.webapp.base.event
 
 import nyaya.gen._
 import nyaya.util.Multimap
+import scalaz.{-\/, BindRec}
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.test.IncCounter
 import shipreq.base.util._
@@ -15,8 +16,7 @@ import RandomData.{fieldRefKey, hashRefKey, implicationRequired, mandatory, mute
 import RandomData.{reqCode, reqTypeMnemonic, TextGen, TextGenExt, unicodeString1}
 import ScalaExt._
 import UtilMacros._
-
-import scalaz.{-\/, BindRec}
+import GenSuccEvent.ObserveFn
 
 object EventStats {
 
@@ -69,6 +69,10 @@ object EventStats {
   private[EventStats] val reportLineSep = s"+-${"-" * maxNameLen}-+-${"-"*7}-+-${"-"*3}-+"
 
   val empty = EventStats(Nil, Nil)
+
+  val observeFn: ObserveFn[EventStats] =
+    _.add(_, _)
+
 }
 case class EventStats(ok: List[String], ko: List[String]) {
   import EventStats._
@@ -110,7 +114,6 @@ case class EventStats(ok: List[String], ko: List[String]) {
       reportLineSep :: Nil
     ) mkString "\n"
   }
-
 }
 
 
@@ -122,7 +125,7 @@ case class EventStats(ok: List[String], ko: List[String]) {
   */
 object RandomEventStream {
 
-  def applicableEventS[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[(S, Project), Event] =
+  def applicableEventS[S](observe: ObserveFn[S]): StateGen[(S, Project), Event] =
     StateGen(sp =>
       GenSuccEvent(sp._2).applicableEventS(sp._1)(observe))
 
@@ -142,31 +145,24 @@ object RandomEventStream {
     StateGen(spv => ss.gen.flatMap(n => gen.replicateM_(n)(spv)))
   }
 
-  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: (S, Event, ApplyEvent.Result) => S)(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
+  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: ObserveFn[S])(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
     eventStreamS(addVerifiedEventS(applicableEventS(observe)))(ss)((s0, p0), Vector.empty)
       .map { case (((s, _), vs), ()) => (s, vs) }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   def withEventStats(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[(EventStats, VerifiedEvents)] =
-    genEventStreamS(EventStats.empty, p)(_.add(_, _))
+    genEventStreamS(EventStats.empty, p)(EventStats.observeFn)
 
   // TODO Terrible
-  def plain(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[VerifiedEvents] =
-    genEventStreamS(())((_, _, _) => ()).map(_._2)
-
-//  def eventStreamS[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[(S, Project), Event] =
-//  scalaz.StateT.stateTBindRec[S, Gen]
+//  def plain(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[VerifiedEvents] =
+//    genEventStreamS(())((_, _, _) => ()).map(_._2)
 }
-
-/*
-Don't repeat logic (which can be very complicated) to determine whether an event is applicable.
-
-Generate best-guesses using simple invariants (mostly around IDs),
-then apply and see if it worked. If not, repeat (so BindRec).
-
- */
 
 object GenSuccEvent {
   @inline def apply(p: Project) = new GenSuccEvent(p)
+
+  type ObserveFn[S] = (S, Event, ApplyEvent.Result) => S
 }
 class GenSuccEvent(p: Project) {
   private implicit val gss: SizeSpec = 0 to 3
@@ -341,7 +337,7 @@ class GenSuccEvent(p: Project) {
   object customTagFieldGD extends GenericDataOptionGen(CustomTagFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case TagId     => liveTagId map (_ map TagId    .apply)
+      case TagId     => liveTagId     map (_ map TagId    .apply)
       case Mandatory => mandatory            map Mandatory.apply
       case ReqTypes  => applicableReqTypes   map ReqTypes .apply
     }
@@ -674,7 +670,7 @@ class GenSuccEvent(p: Project) {
   val eventGen: Gen[Event] =
     Gen chooseGenNE eventGens
 
-//  def applyEventSG[S](observe: (S, Event, ApplyEvent.Result) => S): StateGen[S, (Event, Project)] =
+//  def applyEventSG[S](observe: ObserveFn[S]): StateGen[S, (Event, Project)] =
 //    StateGen.tailrec[S, (Event, Project)](s =>
 //      eventGen.map { e =>
 //        val r = ApplyEvent.untrusted.apply1(e)(p)
@@ -683,7 +679,7 @@ class GenSuccEvent(p: Project) {
 //      }
 //    )
 
-  def applicableEventS[S](init: S)(observe: (S, Event, ApplyEvent.Result) => S): Gen[((S, Project), Event)] =
+  def applicableEventS[S](init: S)(observe: ObserveFn[S]): Gen[((S, Project), Event)] =
     BindRec[Gen].tailrecM((s: S) =>
       eventGen.map { e =>
         var r = ApplyEvent.untrusted.apply1(e)(p)
