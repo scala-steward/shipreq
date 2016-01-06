@@ -182,7 +182,7 @@ object SelectionCtrls {
     }
 
     def restoreIO(cmd: UpdateContentCmd.RestoreContent): Callback = {
-      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.reqCodes.iterator)
+      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.reqCodeGroups.iterator)
       callRemoteAndUpdateRows(cmd, locs.toList)
     }
 

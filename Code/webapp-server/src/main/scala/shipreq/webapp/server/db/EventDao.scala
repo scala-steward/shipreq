@@ -529,7 +529,7 @@ object EventDbCodecs {
   implicit val dbCodecPatchReqCodes        : DbCodec[PatchReqCodes]         = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
   implicit val dbCodecPatchReqTags         : DbCodec[PatchReqTags]          = dbCodec2
   implicit val dbCodecRepositionField      : DbCodec[RepositionField]       = dbCodec2
-  implicit val dbCodecRestoreContent       : DbCodec[RestoreContent]        = dbCodecJust('reqs_? -> "r", 'reqCodes_? -> "c")
+  implicit val dbCodecRestoreContent       : DbCodec[RestoreContent]        = dbCodecJust('reqs_? -> "r", 'reqCodeGroups_? -> "c")
   implicit val dbCodecSetCustomTextField   : DbCodec[SetCustomTextField]    = dbCodecIdAnd('fid -> "f", 'value -> "t")
   implicit val dbCodecSetGenericReqTitle   : DbCodec[SetGenericReqTitle]    = dbCodec2
   implicit val dbCodecSetGenericReqType    : DbCodec[SetGenericReqType]     = dbCodec2
