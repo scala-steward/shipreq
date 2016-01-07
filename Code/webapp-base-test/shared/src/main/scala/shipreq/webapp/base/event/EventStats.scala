@@ -52,32 +52,45 @@ object EventStats {
 
   private val maxNameLen = allNames.iterator.map(_.length).max
 
-  private[EventStats] val reportLineFmt = s"| %-${maxNameLen}s | %7s | %3s |"
+  private[EventStats] val reportLineFmt = s"| %-${maxNameLen}s | %7s | %4s |"
   private[EventStats] val reportLineHdr = reportLineFmt.format("EVENT", "GOOD", "BAD")
-  private[EventStats] val reportLineSep = s"+-${"-" * maxNameLen}-+-${"-"*7}-+-${"-"*3}-+"
+  private[EventStats] val reportLineSep = s"+-${"-" * maxNameLen}-+-${"-"*7}-+-${"-"*4}-+"
 
-  val empty = EventStats(Nil, Nil)
+  val empty = new EventStats(Map.empty, Map.empty)
 
   val observeFn: ObserveFn[EventStats] =
     _.add(_, _)
 }
 
-case class EventStats(ok: List[String], ko: List[String]) {
+class EventStats(val ok: Map[String, Int], val ko: Map[String, Int]) {
   import EventStats._
+
+  type M = Map[String, Int]
+
+  private def inc(m: M, s: String, i: Int = 1): M =
+    m.updated(s, m.get(s).fold(i)(_ + i))
+
+  private def append(big: M, small: M): M =
+    small.foldLeft(big)((q, e) => inc(q, e._1, e._2))
 
   def add(e: Event, r: ApplyEvent.Result): EventStats = {
     val n = name(e)
     r.fold(err => {
 //        if (!err.contains("\n"))
-//        if (n.contains("Patch"))
-//          println(s"[Event Application Failure] $err\n$e\n")
-        copy(ko = n :: ko)
-      }, (_: Project) => copy(ok = n :: ok))
+        if (n.contains("Reposi"))
+          println(s"[Event Application Failure] $err\n$e\n")
+        new EventStats(ok = ok, ko = inc(ko, n))
+      }, (_: Project) =>
+        new EventStats(ok = inc(ok, n), ko = ko))
   }
 
-  private def lookup(ss: List[String]): String => String =
-    ss.foldLeft(Map.empty[String, Int])((m, s) => m.updated(s, 1 + m.getOrElse(s, 0)))
-      .mapValuesNow(_.toString)
+  def +(smaller: EventStats): EventStats =
+    new EventStats(
+      ok = append(ok, smaller.ok),
+      ko = append(ko, smaller.ko))
+
+  private def lookup(m: M): String => String =
+    m.mapValuesNow(_.toString)
       .withDefaultValue("")
       .apply
 
@@ -86,15 +99,15 @@ case class EventStats(ok: List[String], ko: List[String]) {
     val mKO = lookup(ko)
     val content = allNamesList.map(s => reportLineFmt.format(s, mOK(s), mKO(s)))
 
-    val (cOK, cKO) = (ok, ko).mapEach(_.size)
+    val (cOK, cKO) = (ok, ko).mapEach(_.valuesIterator.sum)
     val c = cOK + cKO
     def per(i: Int) = (i.toDouble / c.toDouble * 100).toInt.toString + "%"
     val total = reportLineFmt.format("Σ", cOK.toString, cKO.toString)
     val totalP = reportLineFmt.format("Σ%", per(cOK), per(cKO))
 
-    val (dOK, dKO) = (ok, ko).mapEach(_.toSet.size)
+    val (dOK, dKO) = (ok, ko).mapEach(_.keys.size)
     def distPer(i: Int) = (i.toDouble / allNames.length.toDouble * 100).toInt.toString + "%"
-    val dist = reportLineFmt.format("Event type coverage", distPer(dOK), per(dKO))
+    val dist = reportLineFmt.format("Distribution", distPer(dOK), per(dKO))
 
     ( reportLineSep :: reportLineHdr ::
       reportLineSep :: content :::

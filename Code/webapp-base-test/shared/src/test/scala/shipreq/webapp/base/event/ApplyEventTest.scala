@@ -42,9 +42,12 @@ object ApplyEventTest extends TestSuite {
     val (p2, ve) = verifyEvent(p1, e1)
   }
 
-  def sim(): Unit = {
+  def simulateStream(): Unit = {
     val genLogicVerSeq   = Gen.orderedSeq(LogicVers  .whole, 0, dropElems = true, emptyResult = false)
     val genHashSchemeSeq = Gen.orderedSeq(hashSchemes.whole, 0, dropElems = true, emptyResult = false)
+
+    var totalStats = EventStats.empty
+    val totalStatsLock = new AnyRef
 
     val gen: Gen[VerifiedEvents] =
       Gen { ctx =>
@@ -78,7 +81,11 @@ object ApplyEventTest extends TestSuite {
           p = p2
         }
 
+        // Now the generation begins...
+
         while (lvs.nonEmpty || hss.nonEmpty) {
+          // TODO should also wipe some hashrecs to demonstrate manual intervention
+
           if (ctx.nextBit())
             addEvent()
           else {
@@ -93,7 +100,9 @@ object ApplyEventTest extends TestSuite {
         if (ves.isEmpty)
           addEvent()
 
-        // TODO Merge and show stats
+        totalStatsLock.synchronized {
+          totalStats += stats
+        }
 
         ves
       }
@@ -145,9 +154,11 @@ object ApplyEventTest extends TestSuite {
 
     val prop = (mkProp(ApplyEvent.untrusted) & mkProp(ApplyEvent.trusted)).rename("Verified event application")
 
-    gen.mustSatisfy(prop)(defaultPropSettings)
+    gen.mustSatisfy(prop) //(defaultPropSettings.setSampleSize(10000))
 
-    // TODO should also wipe some hashrecs to demonstrate manual intervention
+    totalStatsLock.synchronized {
+      println(totalStats.report)
+    }
   }
 
   override def tests = TestSuite {
@@ -174,7 +185,7 @@ object ApplyEventTest extends TestSuite {
         assertApplicationFailure(vef, Project.empty)
       }
 
-      'sim - sim()
+      'prop - simulateStream()
     }
   }
 }
