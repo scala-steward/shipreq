@@ -48,7 +48,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
 
       val matchingCases = fromFn.filter(adt <:< _._1.fold(_.tpe, identity))
       if (matchingCases.size != 1)
-        fail(s"Found ${matchingCases.size} cases for ${adt}.")
+        fail(s"Found ${matchingCases.size} cases for $adt.")
 
       val fromCase = matchingCases.head
       val toValue = fromCase._2 match {
@@ -84,7 +84,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
   def debugAdtValues[T: c.WeakTypeTag]: c.Expr[NonEmptyVector[T]] = implAdtValues(true)
   def implAdtValues[T: c.WeakTypeTag](debug: Boolean): c.Expr[NonEmptyVector[T]] = {
     val T     = weakTypeOf[T]
-    val types = findConcreteTypesNE(T, LeavesOnly)
+    val types = deterministicOrderC(findConcreteTypesNE(T, LeavesOnly))
 
     val values = types.iterator.map { cs =>
       if (cs.isModuleClass)
@@ -106,7 +106,7 @@ class UtilMacroImpls(val c: blackbox.Context) extends MacroUtils {
     val V       = weakTypeOf[V]
     val valueFn = readMacroArg_tToTree(f)
     val values  = valueFn.map(_._2)
-    val types   = findConcreteAdtTypesNE(T, LeavesOnly).toVector
+    val types   = deterministicOrderT(findConcreteAdtTypesNE(T, LeavesOnly))
     val unseen  = types.filterNot(t => valueFn.exists(t <:< _._1.fold(_.tpe, identity)))
 
     if (unseen.nonEmpty)

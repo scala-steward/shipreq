@@ -76,6 +76,10 @@ object ApplyEventTest extends TestSuite {
           if (lv !=* LogicVer.Current)
             hr = hr.map(r => HashRec(r.scope, r.logicVer, r.scheme)(r.hash.map(_ ^ 0xffff0000)))
 
+          // Simulate hashes being cleared manually in the DB
+          if (ctx.nextBit() && ctx.nextBit() && ctx.nextBit() && ctx.nextBit())
+            hr = hr.map(r => HashRec(r.scope, r.logicVer, r.scheme)(None))
+
           ves :+= VerifiedEvent(e, hr)
           stats = s2
           p = p2

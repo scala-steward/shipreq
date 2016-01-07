@@ -74,6 +74,7 @@ final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with 
     if (ves.isEmpty)
       \/-(p)
     else {
+      // debug(ves, p)
       val events          = ves.map(_.event)(collection.breakOut): List[Event]
       val initialHashRecs = HashRec(p)
       val finalHashRecs   = ves.iterator.map(_.hashRecs).foldLeft(initialHashRecs)(HashRec.merge)
@@ -120,6 +121,38 @@ final class ApplyEvent(implicit val trust: Trust) extends ApplyConfigEvent with 
 
     go(0, p, HashRec(p))
   }
+
+  /*
+  private def debug(ves: Iterable[VerifiedEvent], p0: Project): Unit = {
+    println("=" * 120)
+
+    def printHashRecs(hrs: TraversableOnce[HashRec]): Unit = {
+      for (r <- hrs) println("  - " + r)
+      println()
+    }
+
+    def printProjectHashes(p: Project): Unit = {
+      println("Hashes:")
+      printHashRecs(HashRec(p))
+    }
+
+    val it = ves.iterator
+
+    @tailrec
+    def go(p: Project): Unit =
+      if (it.hasNext) {
+        val ve = it.next()
+        println("Applying event: " + ve.event)
+        printHashRecs(ve.hashRecs)
+        apply1(ve.event)(p) match {
+          case \/-(p2) => printProjectHashes(p2); go(p2)
+          case -\/(e) => println(e)
+        }
+      }
+
+    go(p0)
+  }
+  */
 
   private def safely(apply: SE[Unit]): SE[Unit] =
     (apply >> validateDataProps) attempt onError

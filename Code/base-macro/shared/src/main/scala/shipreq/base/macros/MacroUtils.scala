@@ -403,4 +403,10 @@ abstract class MacroUtils {
     val T = weakTypeOf[T]
     c.Expr[T => T](q"(t: $T) => t")
   }
+
+  def deterministicOrderT(ts: TraversableOnce[Type]): Vector[Type] =
+    ts.toVector.sortBy(_.typeSymbol.fullName)
+
+  def deterministicOrderC(ts: TraversableOnce[ClassSymbol]): Vector[ClassSymbol] =
+    ts.toVector.sortBy(_.fullName)
 }
