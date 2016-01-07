@@ -118,9 +118,6 @@ class ApplicableEventGen(p: Project) {
   val nextTagGroupId: Gen[TagGroupId] =
     nextTagId map TagGroupId
 
-  lazy val existingFieldId: Gen[FieldId] =
-    Gen.choose_!(p.config.fields.order)
-
   lazy val liveTagId: Option[Gen[TagId]] =
     Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).map(_.id))
 
@@ -428,7 +425,18 @@ class ApplicableEventGen(p: Project) {
     }
 
   def repositionField: Gen[RepositionField] =
-    Gen.apply2(RepositionField)(existingFieldId, existingFieldId.option)
+    Gen.lazily {
+      val order = p.config.fields.order
+      // if (order.length < 2) // We always have at least 2 because of static fields
+      val anyField = Gen.choose_!(order)
+      for {
+        id     ← anyField
+        curPos = RelPos.get(order, id)
+        tmp    = order.filterNot(f => (f ==* id) || curPos.exists(f ==* _)).map(_.some)
+        tmp2   = if (curPos.isEmpty) tmp else tmp :+ None
+        pos    ← Gen.choose_!(tmp2)
+      } yield RepositionField(id, pos)
+    }
 
   def restoreContent: Option[Gen[RestoreContent]] = {
     val restorableReqIds = Gen.tryGenChoose[ReqId](
