@@ -94,7 +94,7 @@ object ApplyEventTest extends TestSuite {
           }
         }
 
-        for (_ <- 0 until ctx.nextInt3())
+        for (_ <- 0 until ctx.nextInt4())
           addEvent()
 
         if (ves.isEmpty)
