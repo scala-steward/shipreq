@@ -126,6 +126,6 @@ case class Requirements(genericReqs: GenericReqIMap, pubids: PubidRegister) {
     pubids(id) mustExistElse s"Req for $id not found."
 
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
-    UnivEq.emptyMultimap[ReqTypeId, Vector, Req]
-      .addPairs(reqs.vstream(_.mapStrengthL(_.reqTypeId)): _*)
+    reqs.valuesIterator.foldLeft(UnivEq.emptyMultimap[ReqTypeId, Vector, Req])((q, r) =>
+      q.add(r.reqTypeId, r))
 }

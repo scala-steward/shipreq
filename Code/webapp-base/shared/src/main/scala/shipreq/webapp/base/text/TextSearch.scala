@@ -224,7 +224,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
 
   private def index(norm: Normaliser): Index = {
 
-    val indexValuesR: TraversableOnce[IndexEntryR] = {
+    def indexValuesR: Iterator[IndexEntryR] = {
       def each(r: Req): IndexEntryR = {
         val title      = norm(plainText reqTitle r)
         val textFields = Need(norm(
@@ -233,10 +233,10 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
         ))
         IndexEntryR(r, title, textFields)
       }
-      project.reqs.reqs vstream each
+      project.reqs.reqs.valuesIterator map each
     }
 
-    val indexValuesG: TraversableOnce[IndexEntryG] = {
+    def indexValuesG: Iterator[IndexEntryG] = {
       def each(g: ReqCodeGroup): IndexEntryG = {
         val title = norm(plainText reqCodeGroupTitle g)
         IndexEntryG(g, title)

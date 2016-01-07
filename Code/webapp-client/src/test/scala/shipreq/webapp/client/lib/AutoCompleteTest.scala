@@ -132,8 +132,8 @@ object AutoCompleteTest extends TestSuite {
 
   lazy val cIssuesC = editor(AutoComplete.issue(project.config.customIssueTypes.values.toStream, HideDead)(Contextualise))
 
-  lazy val cTagsC = editor(AutoComplete.tag(project.config.atags, HideDead)(Contextualise))
-  lazy val cTagsP = editor(AutoComplete.tag(project.config.atags, HideDead)(Plain))
+  lazy val cTagsC = editor(AutoComplete.tag(project.config.atagIterator.toStream, HideDead)(Contextualise))
+  lazy val cTagsP = editor(AutoComplete.tag(project.config.atagIterator.toStream, HideDead)(Plain))
 
   // ReqCode data - uses SampleProject2
 

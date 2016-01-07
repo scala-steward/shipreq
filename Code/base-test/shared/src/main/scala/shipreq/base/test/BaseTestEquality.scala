@@ -9,7 +9,7 @@ trait BaseTestEquality
      with scalaz.std.VectorInstances
      with scalaz.std.StreamInstances
 {
-  import nyaya.util._
+  import nyaya.util.{NonEmptyList => _, _}
   import scala.collection.immutable.ListSet
   import shipreq.base.util.UnivEq
   import scalaz._

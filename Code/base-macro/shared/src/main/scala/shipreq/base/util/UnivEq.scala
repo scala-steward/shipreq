@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import nyaya.util._
+import nyaya.util.{NonEmptyList => _, _}
 import scala.collection.immutable.ListSet
 import scalaz._
 import scalaz.std.anyVal.intInstance

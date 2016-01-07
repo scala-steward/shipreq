@@ -75,7 +75,7 @@ object AutoComplete {
     if (issues || tags)
       hashtag(
         if (issues) p.config.customIssueTypes.values.toStream else Stream.empty,
-        if (tags)   p.config.atags                            else Stream.empty,
+        if (tags)   p.config.atagIterator.toStream            else Stream.empty,
         fd)
     else
       _ => Vector.empty

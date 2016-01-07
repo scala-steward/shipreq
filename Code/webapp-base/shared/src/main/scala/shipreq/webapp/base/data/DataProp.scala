@@ -51,11 +51,6 @@ object DataProp {
     case ISubset.Not(v)  => v.whole
   }
 
-  private implicit class MapStreamingExt[K, V](val m: Map[K, V]) extends AnyVal {
-    @inline def vstream[A](f: V => A): Stream[A] = m.values.toStream.map(f)
-    @inline def vstreamf[A](f: V => Stream[A]): Stream[A] = m.values.toStream.flatMap(f)
-  }
-
   // -------------------------------------------------------------------------------------------------------------------
   object customIssueTypes {
     type T = CustomIssueTypeIMap
@@ -157,16 +152,16 @@ object DataProp {
       id[TagId].forall((_: T).keysIterator)
 
     def uniqueNames =
-      Prop.distinct("name", (_: T).vstream(_.tag.name))
+      Prop.distinctI("name", (_: T).valuesIterator.map(_.tag.name))
 
     def uniqueSiblings =
-      Prop.distinctC[Vector, TagId]("siblings").forall((_: T).vstream(_.children))
+      Prop.distinctC[Vector, TagId]("siblings").forall((_: T).valuesIterator.map(_.children))
 
     def noCycles =
       Tag.CycleDetectors.tagTree.noCycleProp("structure")
 
     def noDeadLinks =
-      Prop.whitelist[T]("ids refer to available tags")(_.keySet, _.vstreamf(_.children.toStream))
+      Prop.whitelist[T]("ids refer to available tags")(_.keySet, _.valuesIterator.flatMap(_.children))
 
     def tagTree =
       (ids ∧ uniqueNames ∧ uniqueSiblings ∧ noCycles ∧ noDeadLinks) rename "TagTree"
@@ -189,7 +184,7 @@ object DataProp {
           r => t.pubids(r.pubid)))
 
     def pubidsResolveToReqs =
-      Prop.whitelist[T]("Pubid register")(_.reqs.keySet, _.pubids.value.m.vstreamf(_.toStream))
+      Prop.whitelist[T]("Pubid register")(_.reqs.keySet, _.pubids.value.valueIterator)
 
 
     def pubidReqTypeAssociations = {
@@ -263,7 +258,7 @@ object DataProp {
         val allPass = dr.reqApplication.values.forall(_.forall(_ forall testIdFn))
 
         if (!allPass) {
-          val errors = dr.reqApplication.streamKV.iterator
+          val errors = dr.reqApplication.kvIterator
             .filterDefined_2
             .filterNot(x => testIdFn(x._2))
             .map(x => s"${x._1} → ${x._2}")
@@ -383,9 +378,9 @@ object DataProp {
     ) rename "constituents"
 
     def uniqueHashRefKeys =
-      Prop.distinct[P, String]("HashRefKey", p => (
-          p.customIssueTypes.values.toStream.map(_.key) append
-          p.tags.vstreamf(_.tag.keyO.toStream)
+      Prop.distinctI[P, String]("HashRefKey", p => (
+          p.customIssueTypes.valuesIterator.map(_.key) ++
+          p.tags.valuesIterator.map(_.tag.keyO).filterDefined
         ).map(_.value.toLowerCase))
 
     def validRefs = {
@@ -450,7 +445,7 @@ object DataProp {
         p.config.reqTypes.map(_.reqTypeId)(collection.breakOut),
         p.config.tags.keySet)
 
-      def whitelist[A](refs: TR => Set[A])(name: String, test: P => Traversable[A]) =
+      def whitelist[A](refs: TR => Set[A])(name: String, test: P => TraversableOnce[A]) =
         // Two steps here results in better failure messages
         Prop.whitelist[(P, Set[A])](name + " resolve")(_._2, _._1 |> test)
           .contramap[TR](t => t put2 refs(t))
@@ -466,9 +461,9 @@ object DataProp {
       ∧ validReqIds    ("ReqCode ReqIds (active)",    _.reqCodes.activeReqCodesByReqId.keys)
       ∧ validReqIds    ("ReqCode ReqIds (inactive)",  _.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids", _.reqText.keys)
-      ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.vstreamf(_.keys.toStream))
+      ∧ validReqIds    ("ReqData.text.*.reqIds",      _.reqText.valuesIterator.flatMap(_.keysIterator))
       ∧ validReqIds    ("ReqData.config.tags keys",   _.reqTags.keys)
-      ∧ validTagIds    ("ReqData.config.tags values", _.reqTags.allValues)
+      ∧ validTagIds    ("ReqData.config.tags values", _.reqTags.valueIterator)
       ∧ validReqIds    ("ReqData.implications",       _.implications.members)
       ∧ validReqIds    ("Atoms: ReqRefs",             _.atomScan.reqRefs)
       ∧ validReqCodeIds("Atoms: CodeRefs",            _.atomScan.codeRefs)

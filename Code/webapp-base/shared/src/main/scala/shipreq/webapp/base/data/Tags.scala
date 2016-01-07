@@ -95,8 +95,10 @@ object Tag {
 
     val tagTree =
       CycleDetector[TagTree, TagId](
-        _.keys.toStream,
-        CycleDetector.Directed.check[TagTree, TagId, Int](_.get(_).fold(Stream.empty[TagId])(_.children.toStream), _.value))
+        _.keysIterator,
+        CycleDetector.Directed.check[TagTree, TagId, Int](
+          _.get(_).fold[Iterator[TagId]](Iterator.empty)(_.children.iterator),
+          _.value))
   }
 
   implicit def equalityTG: UnivEq[TagGroup]      = UnivEq.derive

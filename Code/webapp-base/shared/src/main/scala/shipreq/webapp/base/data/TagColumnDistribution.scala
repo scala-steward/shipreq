@@ -26,11 +26,8 @@ object TagColumnDistribution {
     // transitive closure at O(V²) space and O(V²+VE) time.
     private[this] implicit val tagTree = p.tags
 
-    lazy val allStream =
-      tagTree.vstream(_.tag.id).filterT[ApplicableTagId]
-
     override lazy val all =
-      allStream.toSet
+      tagTree.valuesIterator.map(_.tag.id).filterT[ApplicableTagId].toSet
 
     override val inColumn =
       Memo { (fid: CustomField.Tag.Id) =>
@@ -45,7 +42,7 @@ object TagColumnDistribution {
     }
 
     override lazy val notUsedInColumns =
-      allStream.filterNot(usedInColumns.contains).toSet
+      all.filterNot(usedInColumns.contains)
 
     lazy val tags: TagColumnDistribution[Set[ApplicableTag]] =
       map(_ map p.atag)

@@ -210,8 +210,8 @@ object Sorter {
     def normalisedText(f: PlainText.ForProject => String) =
       stringNormalise(f(plainText))
 
-    def ordermap[A](name: String, as: Stream[A]): Map[A, Int] =
-      as.zipWithIndex.toMap
+    def ordermap[A](name: String, as: TraversableOnce[A]): Map[A, Int] =
+      as.toIterator.zipWithIndex.toMap
 
     val applicability = Applicability(p)
 
@@ -220,10 +220,13 @@ object Sorter {
 
     lazy val tagByNameOrder: TagOrder =
       ordermap("tag",
-        p.config.tags.vstream(_.tag)
+        p.config.tags.valuesIterator
+          .map(_.tag)
           .filterT[ApplicableTag]
           .map(_.tmap2(_.key.value |> stringNormalise, _.id))
+          .toVector
           .sortBy(_._1)
+          .iterator
           .map(_._2)
       )
 

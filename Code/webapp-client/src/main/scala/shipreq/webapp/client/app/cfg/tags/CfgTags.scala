@@ -102,10 +102,10 @@ private[tags] object MainTable {
     val tgs = Seq.newBuilder[TagGroup]
     val ats = Seq.newBuilder[ApplicableTag]
     val tagtree = p.clientData.project.config.tags
-    tagtree.vstream(_.tag).foreach {
+    tagtree.values.foreach(_.tag match {
       case t: TagGroup      => tgs += t
       case t: ApplicableTag => ats += t
-    }
+    })
     State(p.filterDead,
       tg_state  = tg_stores.initState(_.initStateS(tgs.result(), _.id)),
       at_state  = at_stores.initState(_.initStateS(ats.result(), _.id)),

@@ -54,13 +54,13 @@ object ShowSize {
     def addChildren(ns: (String, Int)*): Node =
       copy(children = ns.foldLeft(children)((q, t) => q :+ Node(t._1, t._2)))
 
-    def countChildren[A](as: Iterable[A])(f: A => String): Node = {
+    def countChildren[A](as: TraversableOnce[A])(f: A => String): Node = {
       val m = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
-      as.foreach{a =>
+      as.foreach { a =>
         val k = f(a)
         m.update(k, m(k) + 1)
       }
-      val n = m.toStream.map(t => Node(t._1, t._2)).sortBy(_.name)
+      val n = m.iterator.map(t => Node(t._1, t._2)).toVector.sortBy(_.name)
       copy(children = children ++ n)
     }
 
@@ -74,7 +74,7 @@ object ShowSize {
 
     def showTree: String =
       // asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => s"${n.name}  ${n.size}")
-      asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => String.format(">%6d  %s", n.size: java.lang.Integer, n.name))
+      asciiTree(this :: Nil)(_.children.filter(_.size != 0), n => ">%6d  %s".format(n.size, n.name))
   }
 
   object Node {
@@ -165,14 +165,14 @@ object ShowSize {
     ShowSize.lift(r => Node("Text", r.values.toStream.flatMap(_.values.toStream).size))
 
   implicit def reqDataTags: ShowSize[ReqData.Tags] =
-    ShowSize.lift(r => Node("Tags", r.vstream(_.size).sum))
+    ShowSize.lift(r => Node("Tags", r.valuesIterator.map(_.size).sum))
 
   implicit def implications: ShowSize[Implications] =
-    ShowSize.lift(r => Node("Implications", r.forwards.vstream(_.size).sum))
+    ShowSize.lift(r => Node("Implications", r.forwards.valuesIterator.map(_.size).sum))
 
   implicit def tagTree: ShowSize[TagTree] =
     ShowSize.lift(tt =>
-      Node("Tags", tt.size).countChildren(tt.vstream(_.tag)) {
+      Node("Tags", tt.size).countChildren(tt.valuesIterator.map(_.tag)) {
         case _: TagGroup      => "TagGroup"
         case _: ApplicableTag => "ApplicableTag"
       })

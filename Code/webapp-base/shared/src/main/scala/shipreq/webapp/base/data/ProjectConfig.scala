@@ -41,11 +41,11 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
       case t: TagGroup      => mustNotHappen(s"$t is not an ApplicableTag.")
     }
 
-  def atags: Stream[ApplicableTag] =
-    tags.vstream(_.tag).filterT[ApplicableTag]
+  def atagIterator: Iterator[ApplicableTag] =
+    tags.valuesIterator.map(_.tag).filterT[ApplicableTag]
 
   lazy val deadATagIds: Set[ApplicableTagId] =
-    atags.filter(_.live :: Dead).map(_.id).toSet
+    atagIterator.filter(_.live :: Dead).map(_.id).toSet
 
   def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): D = {
     val f = fields.customFields.need(id)
@@ -112,9 +112,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     TagColumnDistribution(this, _.live(this) :: Live)
 
   /** Keys are lowercase */
-  lazy val hashRefLookupM: Map[String, HashRefTarget] = (
-    atags.map(t => (t.key.value.toLowerCase, -\/(t))) append
-      customIssueTypes.vstream(t => (t.key.value.toLowerCase, \/-(t)))
+  lazy val hashRefLookupM: Map[String, HashRefTarget] =
+    ( atagIterator                   .map(t => (t.key.value.toLowerCase, -\/(t))) ++
+      customIssueTypes.valuesIterator.map(t => (t.key.value.toLowerCase, \/-(t)))
     ).toMap
 
   def hashRefLookup(key: String): Option[HashRefTarget] =

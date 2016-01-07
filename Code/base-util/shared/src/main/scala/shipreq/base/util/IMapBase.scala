@@ -42,12 +42,14 @@ abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]
   final protected def __add(to: M, v: VI): M = _add(to, _gkey(v), v)
 
   @inline final def underlyingMap  = m
-  @inline final def keys           = m.keys
-  @inline final def values         = m.values
-  @inline final def keySet         = m.keySet
   @inline final def size           = m.size
-  @inline final def keysIterator   = m.keysIterator
-  @inline final def valuesIterator = m.valuesIterator
+
+  @inline final def iterator      : Iterator[(K, VO)] = m.iterator
+  @inline final def keys          : Iterable[K]       = m.keys
+  @inline final def keysIterator  : Iterator[K]       = m.keysIterator
+  @inline final def keySet        : Set[K]            = m.keySet
+  @inline final def values        : Iterable[VO]      = m.values
+  @inline final def valuesIterator: Iterator[VO]      = m.valuesIterator
 
   final def containsK(k: K): Boolean = m.contains(k)
   final def containsV(v: VI): Boolean = containsK(_gkey(v))
@@ -71,12 +73,6 @@ abstract class IMapBaseV[K: UnivEq, VI, VO, This_ <: IMapBaseV[K, VI, VO, This_]
 
   final def ++(vs: GenTraversableOnce[VI]) =
     setmap(vs.foldLeft(m)(__add))
-
-  final def vstream[A](f: VO => A): Stream[A] =
-    values.toStream.map(f)
-
-  final def vstreamf[A](f: VO => Stream[A]): Stream[A] =
-    values.toStream.flatMap(f)
 
   @elidable(elidable.ASSERTION)
   final def assertValidKeys(m: M): Unit =

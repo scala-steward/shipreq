@@ -814,7 +814,7 @@ object RandomData {
 //  }
 
   def updateRequirementText(gt: Gen[Text.GenericReqTitle.OptionalText])(data: GenericReqIMap): Gen[GenericReqIMap] = {
-    val streamOfGens = data.vstream {
+    val streamOfGens = data.valuesIterator.map {
         case v: GenericReq => gt.map(t => v.copy(title = t))
       }
     val genStream = Gen.sequence(streamOfGens)
@@ -1047,7 +1047,7 @@ object RandomData {
     val reqIdSet       = reqIds.toSet
     val activeCodeIds  = reqCodes1.trie.allValues.flatMap(_.activeId.toStream)
     val activeCodeIdG  = Gen tryGenChoose activeCodeIds
-    val atagIds        = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+    val atagIds        = cfg.tags.valuesIterator.map(_.tag).filterT[ApplicableTag].map(_.id).toSet
     val atagIdG        = Gen.tryGenChoose(atagIds.toSeq)
     val textColIds     = cfg.fields.customFields.values.filterT[CustomField.Text].map(_.id).toSet
     val rcgTitleText   = TextGen.reqCodeGroupTitleAtom(reqIdG, activeCodeIdG, cissueIdG).text
@@ -1064,7 +1064,7 @@ object RandomData {
   lazy val project: Gen[Project] =
     for {
       cfg             ← projectConfig
-      atagIds         = cfg.tags.vstream(_.tag).filterT[ApplicableTag].map(_.id).toSet
+      atagIds         = cfg.tags.valuesIterator.map(_.tag).filterT[ApplicableTag].map(_.id).toSet
       reqCount        ← Gen.chooseSize
       reqsWithoutText ← reqsWithoutText(reqCount, cfg)
       reqIds          = reqsWithoutText.reqs.keys
@@ -1333,7 +1333,7 @@ object RandomData {
       def forProject(p: Project): Gen[FilterAst] = {
         val gr: Option[Gen[ReqId]]             = Gen tryGenChoose p.reqs.reqs.keys.toSeq
         val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.config.reqTypes.map(_.reqTypeId)
-        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.atags.map(_.id)
+        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.atagIterator.map(_.id)
         val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.config.customIssueTypes.keys.toSeq
         filterAst(flat(gr, gy, gt, gi))
       }
@@ -1532,7 +1532,7 @@ object RandomData {
       for {
         id      ← reqId
         add     ← codes.mapBy(reqCode.value).map(Multimap(_)) // TODO Could have same ID with different codes
-        addIds  = add.allValues.toSet
+        addIds  = add.valueIterator.toSet
         remove  ← codes.map(_ -- addIds)
         restore ← codes.map(_ -- addIds -- remove)
       } yield PatchReqCodes(id, remove, restore, add)

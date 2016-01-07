@@ -52,7 +52,7 @@ private[issues] object CustomIssueTypes {
   private def validatorState(k: Option[CustomIssueTypeId], cd: CallbackTo[ClientData]): S => V.S = {
     val tags: Px[HashRefKeyVS.Data[TagId]] =
       Px.cbA(cd.map(_.project.config.tags))
-        .map(_.vstream(_.tag).map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
+        .map(_.valuesIterator.map(t => t.tag.keyO.map(k => (t.tag.id.some, k))).filterDefined.toStream)
         .map((None, _))
     s => {
       val is: HashRefKeyVS.Data[CustomIssueTypeId] =
