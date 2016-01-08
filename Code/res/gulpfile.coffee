@@ -82,6 +82,7 @@ devProdJs 'ws:project', 'project.js', (f) ->
     cfg_bower + 'jquery/dist/jquery.min.js'
     f(cfg_bower + 'react/react', '-with-addons')
     f(cfg_bower + 'react/react-dom')
+    f(cfg_bower + 'react/react-dom-server')
     f(cfg_bower + 'jquery-textcomplete/dist/jquery.textcomplete')
     cfg_bower + 'react-motion/build/react-motion.js'
     cfg_bower + 'react-height/react-height.js'
@@ -114,6 +115,7 @@ gulp.task 'wc:testjs', ->
         cfg_bower + 'jquery-textcomplete/dist/jquery.textcomplete.min.js'
         cfg_bower + 'react/react-with-addons.js'
         cfg_bower + 'react/react-dom.min.js'
+        cfg_bower + 'react/react-dom-server.min.js'
       ]
     .pipe concat 'test.js'
     .pipe uglify()

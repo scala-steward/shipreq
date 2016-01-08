@@ -121,7 +121,7 @@ object AutoComplete {
       ))
 
     reflinkContext.strategy(s"(\\S+?)", searchFn)(_.pubidStr, " ")(Contextualise)
-      .template((i, _) => React.renderToStaticMarkup(li(i)))
+      .template((i, _) => ReactDOMServer.renderToStaticMarkup(li(i)))
   }
 
   case class ReqItem(reqId: ReqId, pubid: Pubid, reqType: ReqType, title: String) {
@@ -287,7 +287,7 @@ object AutoComplete {
       }
 
       reflinkContext.strategy(mainRegex, searchFn)(_._1, " ")(Contextualise)
-        .template((i, _) => React.renderToStaticMarkup(li(i)))
+        .template((i, _) => ReactDOMServer.renderToStaticMarkup(li(i)))
     }
 
   }
