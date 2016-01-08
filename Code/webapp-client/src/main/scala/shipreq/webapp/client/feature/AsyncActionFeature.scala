@@ -154,7 +154,7 @@ object AsyncActionFeature {
         rs.rowStatus.isDefined || rs.cols.get(c).isDefined
       }
 
-      override def wrapAsync(r: R, call: AsyncCall[F]): Callback = {
+      override def wholeRowAsync(r: R, call: AsyncCall[F]): Callback = {
         val l = lensR(r) ^|-> rowState_rowStatus
         genericWrapAsync[F]($ modState l.set(_), call)
       }
@@ -169,7 +169,7 @@ object AsyncActionFeature {
     }
 
     trait FeatureAnon[R, C, F] {
-      def wrapAsync(r: R, call: AsyncCall[F]): Callback
+      def wholeRowAsync(r: R, call: AsyncCall[F]): Callback
       def setRowStatuses(rs: Iterable[R], value: => Option[Status[F]]): Callback
 
       final def setRowStatus(r: R, value: => Option[Status[F]]): Callback =
