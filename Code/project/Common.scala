@@ -98,7 +98,7 @@ object Common {
 
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
-    .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*) // Dependency graph
+    .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
     .settings(
       clearScreenTask             := { println("\033[2J\033[;H") },
       organization                := "com.beardedlogic.shipreq",
