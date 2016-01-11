@@ -118,6 +118,12 @@ class ApplicableEventGen(p: Project) {
   val nextTagGroupId: Gen[TagGroupId] =
     nextTagId map TagGroupId
 
+  val nextUseCaseId: Gen[UseCaseId] =
+    nextReqId map UseCaseId
+
+  val nextUseCaseStepId: Gen[UseCaseStepId] =
+    IncCounter genInt p.idCeilings.useCaseStep map UseCaseStepId
+
   lazy val liveTagId: Option[Gen[TagId]] =
     Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).map(_.id))
 
@@ -160,6 +166,15 @@ class ApplicableEventGen(p: Project) {
   lazy val liveGenericReqId: Option[Gen[GenericReqId]] =
     Gen.tryGenChoose(p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id))
 
+  def liveUseCaseIterator: Iterator[UseCase] =
+    p.reqs.useCases.imap.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live)
+
+  lazy val liveUseCase: Option[Gen[UseCase]] =
+    Gen.tryGenChoose(liveUseCaseIterator)
+
+  lazy val liveUseCaseId: Option[Gen[UseCaseId]] =
+    liveUseCase.map(_.map(_.id))
+
   lazy val existingReqCodeId: Option[Gen[ReqCodeId]] =
     Gen.tryGenChoose(p.reqCodes.idList)
 
@@ -187,26 +202,38 @@ class ApplicableEventGen(p: Project) {
   lazy val liveCustomFieldTextId: Option[Gen[CustomField.Text.Id]] =
     Gen.tryGenChoose(cfg.customTextFields.filter(_.live(cfg) :: Live).map(_.id))
 
-  lazy val customTextFieldText =
+  def customTextFieldText =
     TextGen.customTextFieldAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId).text
 
   lazy val newReqCodeIdAndValue =
     Gen.apply2(ReqCode.IdAndValue)(nextReqCodeId, reqCode.value)
 
-  lazy val reqCodeGroupTitle =
+  def reqCodeGroupTitle =
     TextGen.reqCodeGroupTitleAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId).text
 
   private lazy val genericReqTitleAtom =
     TextGen.genericReqTitleAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId)
 
-  lazy val genericReqTitle =
+  def genericReqTitle =
     genericReqTitleAtom.text
 
-  lazy val genericReqTitle1 =
+  def genericReqTitle1 =
     genericReqTitleAtom.text1(Text.GenericReqTitle)
 
-  lazy val deletionReason =
+  def deletionReason =
     TextGen.deletionReasonAtom(existingReqId, existingReqCodeId, existingApplicableTagId).text
+
+  lazy val useCaseTitleAtom =
+    TextGen.useCaseTitleAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId)
+
+  def useCaseTitle =
+    useCaseTitleAtom.text
+
+  def useCaseTitle1 =
+    useCaseTitleAtom.text1(Text.UseCaseTitle)
+
+  def useCaseStepTitle =
+    TextGen.useCaseStepAtom(existingReqId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId).text
 
   object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
     import gd._
@@ -305,10 +332,56 @@ class ApplicableEventGen(p: Project) {
     }
   }
 
+  object createUseCaseGD extends GenericDataOptionGen(CreateUseCaseGD) {
+    import gd._
+    override def valueFor(a: Attr) = a match {
+      case Title    => useCaseTitle1                   map Title   .apply
+      case ReqCodes => newReqCodeIdAndValue       .nes map ReqCodes.apply
+      case Tags     => liveApplicableTagId  map (_.nes map Tags    .apply)
+      case ImpSrcs  => liveReqId            map (_.nes map ImpSrcs .apply)
+      case ImpTgts  => liveReqId            map (_.nes map ImpTgts .apply)
+    }
+  }
+
+  def useCaseStepGD(uc: UseCase, step: UseCaseStep): Gen[UseCaseStepGD.NonEmptyValues] = {
+    import UseCaseStepGD._
+
+    lazy val gSteps =
+      Gen.choose_!(uc.stepIterator.map(_.id)).set
+
+    def gFlow(fwd: Boolean) =
+      gSteps.map(ss => NonEmpty(SetDiff.xor(p.reqs.useCases.stepFlow.dir(true)(step.id), ss)))
+
+    Gen { c =>
+      var vs = emptyValues
+
+      if (c.nextBit()) {
+        if (c.nextBit()) gFlow(true ).run(c).foreach(vs += FlowOut(_))
+        if (c.nextBit()) gFlow(false).run(c).foreach(vs += FlowIn (_))
+      }
+
+      if (vs.isEmpty || c.nextBit())
+        vs += Title(useCaseStepTitle run c)
+
+      NonEmpty force vs
+    }
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   def addStaticField: Option[Gen[AddStaticField]] =
     Gen.tryGenChoose(staticFieldsToAdd).map(_ map AddStaticField)
+
+  def addUseCaseStep: Option[Gen[AddUseCaseStep]] =
+    liveUseCase.map(genUC =>
+      for {
+        id    ← nextUseCaseStepId
+        uc    ← genUC
+        field ← Gen choose_! StaticField.useCaseStepTrees.whole.filter(_.useCaseStepTree.get(uc).nonEmpty)
+        tree  = field.useCaseStepTree.get(uc)
+        loc   ← tree.genParentLocation
+      } yield AddUseCaseStep(id, uc.id, field, loc)
+    )
 
   def applyTemplate: Option[Gen[ApplyTemplate]] =
     if (p eq Project.empty)
@@ -349,6 +422,9 @@ class ApplicableEventGen(p: Project) {
   def createTagGroup: Gen[CreateTagGroup] =
     Gen.apply2(CreateTagGroup)(nextTagGroupId, tagGroupGD.allValues)
 
+  def createUseCase: Gen[CreateUseCase] =
+    Gen.apply3(CreateUseCase)(nextUseCaseId, nextUseCaseStepId, createUseCaseGD.values)
+
   def deleteCustomField: Option[Gen[DeleteCustomField]] =
     liveCustomFieldId.map(_.map(id =>
       DeleteCustomField(id, deletionAction(cfg.fields.customFields.need(id) live cfg))))
@@ -375,6 +451,13 @@ class ApplicableEventGen(p: Project) {
     liveTagId.map(g =>
       g.map(id =>
         DeleteTag(id, deletionAction(cfg.tags.get(id).fold[Live](Live)(_.tag.live)))))
+
+  def deleteUseCaseStep: Option[Gen[DeleteUseCaseStep]] = {
+    val ids = liveUseCaseIterator.flatMap(uc =>
+      uc.stepsE.tree.valueIterator.map(_.id) ++
+      uc.stepsNA.tree.valueIterator.map(_.id).filter(_ !=* uc.stepsNA.tree.children.head.value.id))
+    Gen.tryGenChooseLazily(ids).map(_ map DeleteUseCaseStep)
+  }
 
   private def patchImplications[A](cmd: (ReqId, NESD[ReqId]) => A, fwd: Boolean): Option[Gen[A]] =
     if (liveReqIds.length < 2)
@@ -442,6 +525,7 @@ class ApplicableEventGen(p: Project) {
     val restorableReqIds = Gen.tryGenChoose[ReqId](
       p.reqs.reqs.valuesIterator.filter {
         case g: GenericReq => (g.liveExplicitly :: Dead) && (g.copy(liveExplicitly = Live).live(cfg.customReqTypes) :: Live)
+        case u: UseCase    => (u.liveExplicitly :: Dead) && (u.copy(liveExplicitly = Live).live(cfg.customReqTypes) :: Live)
       }.map(_.id).toVector)
     if (restorableReqIds.isEmpty && deadReqCodeGroupId.isEmpty)
       None
@@ -476,6 +560,24 @@ class ApplicableEventGen(p: Project) {
       gRT <- liveCustomReqTypeId
     } yield
       Gen.apply2(SetGenericReqType)(gId, gRT)
+
+  def setUseCaseTitle: Option[Gen[SetUseCaseTitle]] =
+    liveUseCaseId.map(id =>
+      Gen.apply2(SetUseCaseTitle)(id, useCaseTitle))
+
+  def shiftUseCaseStepLeft: Option[Gen[ShiftUseCaseStepLeft]] = {
+    val ids = liveUseCaseIterator.flatMap(uc =>
+      uc.stepsNA.tree.shiftLeftIterator((_, s) => s.id) ++
+      uc.stepsE .tree.shiftLeftIterator((_, s) => s.id))
+    Gen.tryGenChooseLazily(ids).map(_ map ShiftUseCaseStepLeft)
+  }
+
+  def shiftUseCaseStepRight: Option[Gen[ShiftUseCaseStepRight]] = {
+    val ids = liveUseCaseIterator.flatMap(uc =>
+      uc.stepsNA.tree.shiftRightIterator((_, s) => s.id) ++
+      uc.stepsE .tree.shiftRightIterator((_, s) => s.id))
+    Gen.tryGenChooseLazily(ids).map(_ map ShiftUseCaseStepRight)
+  }
 
   def updateApplicableTag: Option[Gen[UpdateApplicableTag]] =
     liveApplicableTagId.map(gId =>
@@ -537,9 +639,19 @@ class ApplicableEventGen(p: Project) {
       }
     )
 
+  def updateUseCaseStep: Option[Gen[UpdateUseCaseStep]] =
+    liveUseCase.map(genUseCase =>
+      for {
+        uc   <- genUseCase
+        step <- Gen choose_! uc.stepIterator
+        vs   <- useCaseStepGD(uc, step)
+      } yield UpdateUseCaseStep(step.id, vs)
+    )
+
   val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
     valuesForAdt[Event, Option[Gen[Event]]] {
       case _: AddStaticField        => addStaticField
+      case _: AddUseCaseStep        => addUseCaseStep
       case _: ApplyTemplate         => applyTemplate
       case _: CreateApplicableTag   => createApplicableTag
       case _: CreateCustomImpField  => createCustomImpField
@@ -550,6 +662,7 @@ class ApplicableEventGen(p: Project) {
       case _: CreateGenericReq      => createGenericReq
       case _: CreateReqCodeGroup    => createReqCodeGroup
       case _: CreateTagGroup        => createTagGroup
+      case _: CreateUseCase         => createUseCase
       case _: DeleteCustomField     => deleteCustomField
       case _: DeleteCustomIssueType => deleteCustomIssueType
       case _: DeleteCustomReqType   => deleteCustomReqType
@@ -557,6 +670,7 @@ class ApplicableEventGen(p: Project) {
       case _: DeleteReqs            => deleteReqs
       case _: DeleteStaticField     => deleteStaticField
       case _: DeleteTag             => deleteTag
+      case _: DeleteUseCaseStep     => deleteUseCaseStep
       case _: PatchImplicationSrc   => patchImplicationSrc
       case _: PatchImplicationTgt   => patchImplicationTgt
       case _: PatchReqCodes         => patchReqCodes
@@ -566,6 +680,9 @@ class ApplicableEventGen(p: Project) {
       case _: SetCustomTextField    => setCustomTextField
       case _: SetGenericReqTitle    => setGenericReqTitle
       case _: SetGenericReqType     => setGenericReqType
+      case _: SetUseCaseTitle       => setUseCaseTitle
+      case _: ShiftUseCaseStepLeft  => shiftUseCaseStepLeft
+      case _: ShiftUseCaseStepRight => shiftUseCaseStepRight
       case _: UpdateApplicableTag   => updateApplicableTag
       case _: UpdateCustomImpField  => updateCustomImpField
       case _: UpdateCustomIssueType => updateCustomIssueType
@@ -574,6 +691,7 @@ class ApplicableEventGen(p: Project) {
       case _: UpdateCustomTextField => updateCustomTextField
       case _: UpdateReqCodeGroup    => updateReqCodeGroup
       case _: UpdateTagGroup        => updateTagGroup
+      case _: UpdateUseCaseStep     => updateUseCaseStep
     }
 
   val eventGens: NonEmptyVector[Gen[Event]] =

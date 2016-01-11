@@ -165,6 +165,9 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       )
     }
 
+  def shiftLeftIterator[B](f: (Location, A) => B): Iterator[B] =
+    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1)).map(f.tupled)
+
   def canShiftRight(at: Location): Boolean =
     at.last > 0
 
@@ -186,6 +189,9 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
         }
       )
     }
+
+  def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
+    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1)).map(f.tupled)
 
   def prettyPrintIndented(fmt: A => String = (_: A).toString,
                           indent: String = "  "): String =

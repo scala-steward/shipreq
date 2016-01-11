@@ -171,4 +171,12 @@ object BaseUtilGen {
 
   def genVectorTreeParLoc(implicit ss: SizeSpec): Gen[VectorTree.ParentLocation] =
     Gen.int.vector(ss)
+
+  implicit class VectorTreeGenExt[A](private val tree: VectorTree[A]) extends AnyVal {
+    def genLocation: Option[Gen[VectorTree.Location]] =
+      Gen tryGenChoose tree.locIterator
+
+    def genParentLocation: Gen[VectorTree.ParentLocation] =
+      Gen chooseNE NonEmptyVector[VectorTree.ParentLocation](Vector.empty, tree.locIterator.map(_.whole).toVector)
+  }
 }
