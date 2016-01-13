@@ -183,9 +183,11 @@ object LogicPropTest extends TestSuite {
       E.either(s"$name make separate blank/non-blank blocks", separateBlanks(expectBlanksFirst, as)(isBlank))(f.tupled)
     }
 
-    def E_sorted[A: Ordering: Equal](name: String, as: Iterable[A], dirChange: Dir): EvalL = {
-      val ass = as.toStream
-      E.equal(name + " are sorted", ass, dirChange(ass.sorted)(_.reverse))
+    def E_sorted[A <: AnyRef](name: String, as: TraversableOnce[A], dirChange: Dir)(implicit ord: Ordering[A]): EvalL = {
+      val actual = as.toVector
+      val expect = dirChange(actual.sorted)(_.reverse)
+      implicit val eq = Equal.equal[A]((a, b) => (a eq b) || (a == b) || ord.equiv(a, b)) // use of ord is slow - avoid
+      E.equal(name + " are sorted", actual, expect)
     }
 
     type IndivSortCB = (ConsiderBlanks, BlankPlacement, Dir) => EvalL
@@ -213,12 +215,12 @@ object LogicPropTest extends TestSuite {
     }
 
     def sortByTitle: IndivSortCB = (sm, bp, dir) => {
+      val name       = s"Title ($sm)"
       val sorted     = sortBy(SC.InconclusiveCB(C.Title, sm))
       val data       = sorted.map {
         case r: ReqRow          => r.req.title
         case r: ReqCodeGroupRow => r.group.title
       }
-      val name       = s"Desc ($sm)"
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
     }
 
