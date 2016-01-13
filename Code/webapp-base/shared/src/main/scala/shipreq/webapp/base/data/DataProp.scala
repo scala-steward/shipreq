@@ -298,7 +298,7 @@ object DataProp {
     def idsInStepFlow =
       Prop.whitelist[T]("StepFlow ids")(
         _.stepIndex.keySet,
-        _.stepFlow.memberIterator.toList)
+        _.stepFlow.memberIterator)
 
     val all = stepIds ∧ stepIndex ∧ stepTrees ∧ idsInStepFlow
   }
