@@ -1,6 +1,7 @@
 package shipreq.webapp.client.app.cfg.issues
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react.extra.ReusableVar
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.app.ProjectSpaMain
 import shipreq.webapp.client.app.state.ClientData
@@ -14,7 +15,7 @@ object CfgIssues {
                    b         : ReqTypeImplicationMod.Instance,
                    c         : FieldMandatorinessMod.Instance,
                    cd        : ClientData,
-                   filterDead: FilterDead,
+                   filterDead: ReusableVar[FilterDead],
                    routerCtl : ProjectSpaMain.RouterCtl) {
     @inline def component = Component(this)
   }

@@ -1,7 +1,9 @@
 package shipreq.webapp.client.app
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.prefix_<^._, MonocleReact._
+import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.{RouterCtl => RouterCtl_, _}
+import monocle.macros.Lenses
 import org.scalajs.dom
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
@@ -15,12 +17,13 @@ import shipreq.webapp.client.protocol.ClientProtocol
 
 object ProjectSpaMain {
 
-  def main(r: ProjectSPA): Callback = {
+  def main(remotes: ProjectSPA): Callback = {
     val cp = ClientProtocol.Default
-    ClientData.init(cp, r.projectInit, clientData => Callback {
+    ClientData.init(cp, remotes.projectInit, cd => Callback {
       Style.addToDocument()
+      val main    = new ProjectSpaMain(remotes, cp, cd)
       val baseUrl = determineBaseUrl(dom.window.location.href)
-      val router = Router(baseUrl, routerConfig(r, cp, clientData))
+      val router  = Router(baseUrl, main.routerConfig)
       router() render dom.document.getElementById("tgt")
     })
   }
@@ -64,40 +67,6 @@ object ProjectSpaMain {
   val pages = NonEmptyVector[Page](
     Index, ReqTable, CfgFields, CfgIssues, CfgReqTypes, CfgTags)
 
-  def routerConfig(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) =
-    RouterConfigDsl[Page].buildConfig { dsl =>
-
-      def reqTable = {
-        val s = reqTableNextState()
-        reqtable.ReqTable.Props(cd, cp, r.createContent, r.updateContent, s.fd, s.fs).component
-      }
-
-      def cfgIssues(ctl: RouterCtl) =
-        cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, cd, HideDead, ctl).component
-
-      def cfgReqTypes(ctl: RouterCtl) =
-        cfg.reqtypes.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, HideDead, ctl).component
-
-      def cfgTags =
-        cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, HideDead).component
-
-      def cfgFields =
-        cfg.fields.CfgFields.Props(cp, r.fieldCrud, cd, HideDead).component
-
-      import dsl._
-
-      ( staticRoute(root,            Index      ) ~> renderR(IndexComponent(_))
-      | staticRoute("/table",        ReqTable   ) ~> render(reqTable)
-      | staticRoute("/cfg/fields",   CfgFields  ) ~> render(cfgFields)
-      | staticRoute("/cfg/issues",   CfgIssues  ) ~> renderR(cfgIssues)
-      | staticRoute("/cfg/reqtypes", CfgReqTypes) ~> renderR(cfgReqTypes)
-      | staticRoute("/cfg/tags",     CfgTags    ) ~> render(cfgTags)
-      | trimSlashes
-      ).notFound(redirectToPage(Index)(Redirect.Replace))
-        .renderWith(layout)
-        .verify(Index, pages.whole: _*)
-    }
-
   def determineBaseUrl(url: String) = {
     val pat = "^([^/#?]+//[^/#?]+/[^/#?]+/[^/#?]+)(?:[/#?].*|$)".r.pattern
     val m = pat.matcher(url)
@@ -113,17 +82,73 @@ object ProjectSpaMain {
         pages.whole.map(p =>
           <.li(ctl.link(p)(p.toString))))
     ).build
+}
 
-  def layout(ctl: RouterCtl, res: Resolution[Page]): ReactElement =
-    res.page match {
-      case Index => res.render()
-      case _ =>
+
+// =====================================================================================================================
+import ProjectSpaMain._
+
+final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
+
+  def routerConfig =
+    RouterConfigDsl[Page].buildConfig { dsl =>
+      import dsl._
+
+      def staticPage(route: StaticDsl.Route[Unit], page: Page) =
+        staticRoute(route, page) ~> renderR(r => Component(Props(page, r)))
+
+      ( staticPage(root,            Index      )
+      | staticPage("/table",        ReqTable   )
+      | staticPage("/cfg/fields",   CfgFields  )
+      | staticPage("/cfg/issues",   CfgIssues  )
+      | staticPage("/cfg/reqtypes", CfgReqTypes)
+      | staticPage("/cfg/tags",     CfgTags    )
+      | trimSlashes
+      ).notFound(redirectToPage(Index)(Redirect.Replace))
+        .verify(Index, pages.whole: _*)
+    }
+
+  case class Props(page: Page, routerCtl: RouterCtl)
+
+  @Lenses
+  case class State(filterDead: FilterDead)
+
+  def initState = State(HideDead)
+
+  class Backend($: BackendScope[Props, State]) {
+    val setFilterDead = ReusableFn($ zoomL State.filterDead).setState
+
+    def render(p: Props, s: State): ReactElement = {
+      def ctl = p.routerCtl
+      def fd = ReusableVar(s.filterDead)(setFilterDead)
+
+      def layout(content: ReactElement) =
         <.div(
           <.div(
             ^.textAlign.right,
             ^.paddingRight := "0.6ex",
             ^.marginTop := "-14px",
             ctl.link(Index)("← Back")),
-          res.render())
+          content)
+
+      def reqTable = {
+        val s = reqTableNextState()
+        reqtable.ReqTable.Props(cd, cp, r.createContent, r.updateContent, s.fd, s.fs).component
+      }
+
+      p.page match {
+        case Index       => IndexComponent(p.routerCtl)
+        case CfgFields   => layout(cfg.fields.CfgFields.Props(cp, r.fieldCrud, cd, fd).component)
+        case CfgIssues   => layout(cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, cd, fd, ctl).component)
+        case CfgReqTypes => layout(cfg.reqtypes.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, fd, ctl).component)
+        case CfgTags     => layout(cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, fd).component)
+        case ReqTable    => layout(reqTable)
+      }
     }
+  }
+
+  val Component = ReactComponentB[Props]("")
+    .initialState(initState)
+    .renderBackend[Backend]
+    .build
 }

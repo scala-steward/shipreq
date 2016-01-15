@@ -14,7 +14,7 @@ import shipreq.webapp.base.protocol.{TagCrud, RemoteFn}, TagCrud._
 import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.app.state.ClientData
-import shipreq.webapp.client.data.HideDead
+import shipreq.webapp.client.data.{FilterDead, HideDead}
 import shipreq.webapp.client.test._
 import DataImplicits._
 import MMTree.{Relations, ApplyRelations}
@@ -39,9 +39,10 @@ object CfgTagsTest extends TestSuite {
 
   val remote = RemoteFn.Instance("x", TagCrud.Fn)
   class Tester {
+    lazy val filterDead = TestVar[FilterDead](HideDead)
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol
-    lazy val props      = new CfgTags.Props(cp, remote, clientData, HideDead)
+    lazy val props      = new CfgTags.Props(cp, remote, clientData, filterDead.reusableVar)
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
   }
