@@ -1,6 +1,6 @@
 package shipreq.webapp.client.app.state
 
-import japgolly.scalajs.react.Callback
+import japgolly.scalajs.react.{CallbackTo, Callback}
 import japgolly.scalajs.react.extra.{Reusability, Broadcaster}
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.Project
@@ -14,19 +14,23 @@ final class ClientData(init: Project) extends Broadcaster[Changes] {
 
   private[this] var _p = init
 
-  @inline def project = _p
+  def project(): Project =
+    _p
 
-  def applyEvents(ves: VerifiedEvents): Callback = {
-    val p1 = _p
-    ApplyEvent.trusted.applyVerified(ves)(p1) match {
-      case \/-(p2) =>
-        Callback(_p = p2) >>
-        broadcast(Changes(ves, p1, p2))
-      case -\/(err) =>
-        // TODO Do more when VerifiedEvent application fails
-        Logger(_ error s"Update failed. $err")
-    }
-  }
+  @inline def projectCB: CallbackTo[Project] =
+    CallbackTo(project())
+
+  def applyEvents(ves: VerifiedEvents): Callback =
+    projectCB >>= (p1 =>
+      ApplyEvent.trusted.applyVerified(ves)(p1) match {
+        case \/-(p2) =>
+          Callback(_p = p2) >>
+          broadcast(Changes(ves, p1, p2))
+        case -\/(err) =>
+          // TODO Do more when VerifiedEvent application fails
+          Logger(_ error s"Update failed. $err")
+      }
+    )
 
   def applyEventsS(ves: VerifiedEvents): TCB.Success =
     TCB.Success(applyEvents(ves))

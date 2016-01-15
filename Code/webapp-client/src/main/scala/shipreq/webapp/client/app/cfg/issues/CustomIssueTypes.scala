@@ -47,11 +47,11 @@ private[issues] object CustomIssueTypes {
   private def initialState(p: Props): S =
     State(
       newRowStore.initState,
-      savedRowStore.initStateIM(p.clientData.project.config.customIssueTypes))
+      savedRowStore.initStateIM(p.clientData.project().config.customIssueTypes))
 
   private def validatorState(k: Option[CustomIssueTypeId], cd: CallbackTo[ClientData]): S => V.S = {
     val tags: Px[HashRefKeyVS.Data[TagId]] =
-      Px.cbA(cd.map(_.project.config.tags))
+      Px.cbA(cd.map(_.project().config.tags))
         .map(_.valuesIterator.map(t => t.tag.keyO.map(k => (t.tag.id.some, k))).filterDefined.toStream)
         .map((None, _))
     s => {
@@ -62,7 +62,7 @@ private[issues] object CustomIssueTypes {
   }
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
-    val project    = Px.bs($).propsM(_.clientData.project)
+    val project    = Px.bs($).propsM(_.clientData.project())
     val filterDead = Px.bs($).propsM(_.filterDead.value)
     val routerCtl  = Px.bs($).propsM(_.routerCtl)
 

@@ -58,7 +58,7 @@ object ReqTable {
     val sortCriteria = viewSettings ^|-> ViewSettings.order
 
     def init(cd: ClientData, fd: FilterDead, filterSpec: Option[FilterSpec]): State = {
-      val proj = cd.project
+      val proj = cd.project()
       var s = State(proj,
         ViewSettings      .default(fd),
         FilterEditor      .initialState,

@@ -100,7 +100,7 @@ private[fields] object MainTable {
     val textFields = Seq.newBuilder[CustomField.Text]
     val implFields = Seq.newBuilder[CustomField.Implication]
     val tagFields  = Seq.newBuilder[CustomField.Tag]
-    val fs         = p.clientData.project.config.fields
+    val fs         = p.clientData.project().config.fields
     fs.customFields.values.foreach {
       case f: CustomField.Text        => textFields += f
       case f: CustomField.Implication => implFields += f
@@ -163,7 +163,7 @@ private[fields] object MainTable {
   // ===================================================================================================================
   final class Backend(val $: BackendScope[Props, S]) extends OnUnmount {
 
-    val projectPx = Px.bs($).propsA(_.clientData.project)
+    val projectPx = Px.bs($).propsA(_.clientData.project())
     val projectBackend = projectPx.map(new ProjectBackend(this, _))
     val protocol = Px.bs($).propsA.map(p => ProtocolBackend(p.cp, p.remote, p.clientData))
 
@@ -186,7 +186,6 @@ private[fields] object MainTable {
       FieldNames.fieldRefKey,
       FieldNames.mandatory,
       FieldNames.applicableReqTypes))
-
   }
 
   // ===================================================================================================================

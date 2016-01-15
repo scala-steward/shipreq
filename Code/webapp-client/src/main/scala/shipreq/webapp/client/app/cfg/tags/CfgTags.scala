@@ -100,7 +100,7 @@ private[tags] object MainTable {
   def initialState(p: Props): S = {
     val tgs = Seq.newBuilder[TagGroup]
     val ats = Seq.newBuilder[ApplicableTag]
-    val tagtree = p.clientData.project.config.tags
+    val tagtree = p.clientData.project().config.tags
     tagtree.values.foreach(_.tag match {
       case t: TagGroup      => tgs += t
       case t: ApplicableTag => ats += t
@@ -181,7 +181,7 @@ private[tags] object MainTable {
       (k, s.tagStream.map(t => t.keyO.map(k => (t.id.some, k))).filter(_.isDefined).map(_.get))
 
     val is: HashRefKeyVS.Data[CustomIssueTypeId] = // TODO cacheable
-      (None, cd.project.config.customIssueTypes.values.toStream
+      (None, cd.project().config.customIssueTypes.values.toStream
         .map(i => (i.id.some, i.key)))
 
     (s.tagStream, HashRefKeyVS(ts, is))

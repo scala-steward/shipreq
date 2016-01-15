@@ -49,11 +49,11 @@ object CfgReqTypes {
   private def initialState(p: Props): S =
     State(
       newRowStore.initState,
-      savedRowStore.initStateIM(p.clientData.project.config.customReqTypes))
+      savedRowStore.initStateIM(p.clientData.project().config.customReqTypes))
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
-    val project    = Px.bs($).propsM(_.clientData.project)
+    val project    = Px.bs($).propsM(_.clientData.project())
     val filterDead = Px.bs($).propsM(_.filterDead.value)
     val routerCtl  = Px.bs($).propsM(_.routerCtl)
 
