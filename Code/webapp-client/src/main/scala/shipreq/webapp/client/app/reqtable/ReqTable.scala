@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.reqtable
 
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
+import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.{\/-, -\/}
@@ -20,23 +21,6 @@ import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.widgets.ProjectWidgets
 
 object ReqTable {
-
-  val Component =
-    ReactComponentB[Props]("ReqTable")
-      .initialState_P(State.init)
-      .renderBackend[Backend]
-      .configure(ChangeListener.update[State](c => _.recvChanges(c)).install(_.cd))
-      .componentWillReceiveProps(i => i.$.backend.willReceiveProps(i.$.props, i.nextProps))
-      .build
-
-  case class Props(cd             : ClientData,
-                   cp             : ClientProtocol,
-                   createContentFn: CreateContentFn.Instance,
-                   updateContentFn: UpdateContentFn.Instance,
-                   fd             : FilterDead,
-                   filterSpec     : Option[FilterSpec]) {
-    def component = Component(this)
-  }
 
   @Lenses
   case class State(project     : Project,
@@ -73,10 +57,10 @@ object ReqTable {
   object State {
     val sortCriteria = viewSettings ^|-> ViewSettings.order
 
-    def init(p: Props): State = {
-      val proj = p.cd.project
+    def init(cd: ClientData, fd: FilterDead, filterSpec: Option[FilterSpec]): State = {
+      val proj = cd.project
       var s = State(proj,
-        ViewSettings      .default(p.fd),
+        ViewSettings      .default(fd),
         FilterEditor      .initialState,
         Selection         .empty,
         CreationInterface .initState,
@@ -84,40 +68,71 @@ object ReqTable {
         AsyncState        .initState,
         PreviewFeature    .initState,
         Modal             .none)
-      p.filterSpec.foreach(f => s = s setFilterSpec f)
+      filterSpec.foreach(f => s = s setFilterSpec f)
       s
     }
+  }
+}
+
+import ReqTable._
+
+class ReqTable(cd             : ClientData,
+               cp             : ClientProtocol,
+               createContentFn: CreateContentFn.Instance,
+               updateContentFn: UpdateContentFn.Instance,
+               state_$        : CompState.Access[State]) {
+
+  val Component =
+    ReactComponentB[Props]("ReqTable")
+      .renderBackend[Backend]
+      .configure(Listenable.install(_ => cd, Function const ((c: Changes) => state_$.modState(_ recvChanges c))))
+      .componentWillReceiveProps(i => i.$.backend.willReceiveProps(i.$.props, i.nextProps))
+      .build
+
+  case class Props(fd        : FilterDead,
+                   filterSpec: Option[FilterSpec],
+                   state     : State) {
+    def component = Component(this)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final class Backend($: BackendScope[Props, State]) extends OnUnmount {
+  final class Backend($: BackendScope[Props, Unit]) extends OnUnmount {
 
     val ST = ReactS.FixCB[State]
 
     def willReceiveProps(oldProps: Props, nextProps: Props): Callback = {
-      val updateFD =
-        if (oldProps.fd ==* nextProps.fd) ST.nop else
-          ST.modT(State.viewSettings.modify(_ setFilterDead nextProps.fd))
+      var plan = List.empty[ST.T[Unit]]
 
-      val updateFS =
-        nextProps.filterSpec.fold(ST.nop)(fs =>
-          ST.modT(_ setFilterSpec fs))
+      if (oldProps.fd !=* nextProps.fd)
+        plan ::= ST.modT(State.viewSettings.modify(_ setFilterDead nextProps.fd))
 
-      $.runState(updateFD >> updateFS)
+      nextProps.filterSpec.foreach(fs =>
+        plan ::= ST.modT(_ setFilterSpec fs))
+
+      Callback.ifTrue(plan.nonEmpty, state_$.runState(plan.reduce(_ >> _)))
     }
 
-    val setViewSettings = ReusableFn($ zoomL State.viewSettings).setState
-    val modViewSettings = ReusableFn($ zoomL State.viewSettings).modState
-    val setSortCriteria = ReusableFn($ zoomL State.sortCriteria).setState
-    val setSelection    = ReusableFn($ zoomL State.selection   ).setState
-    val setModal        = ReusableFn($ zoomL State.modal       ).setState
-    val setCreation     = $ zoomL State.creation
+    private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
+      ReusableFn(a => state_$.modState(f(a)))
 
-    val project      = Px.bs($).stateM(_.project)
-    val viewSettings = Px.bs($).stateM(_.viewSettings)
-    val filterState  = Px.bs($).stateM(_.filter)
-    val selection    = Px.bs($).stateM(_.selection)
+    private def reusableSetState[A](l: Lens[State, A]): A ~=> Callback =
+      reusableStateFn(l.set)
+
+    private def reusableModState[A](l: Lens[State, A]): (A => A) ~=> Callback =
+      reusableStateFn(l.modify)
+
+    val setViewSettings = reusableSetState(State.viewSettings)
+    val modViewSettings = reusableModState(State.viewSettings)
+    val setSortCriteria = reusableSetState(State.sortCriteria)
+    val setSelection    = reusableSetState(State.selection)
+    val setModal        = reusableSetState(State.modal)
+    val setCreation     = state_$ zoomL State.creation
+
+    val project      = Px.bs($).propsM(_.state.project)
+    val viewSettings = Px.bs($).propsM(_.state.viewSettings)
+    val filterState  = Px.bs($).propsM(_.state.filter)
+    val selection    = Px.bs($).propsM(_.state.selection)
 
     val vsVar      = viewSettings map (ReusableVar(_)(setViewSettings))
     val vsCols     = viewSettings map (_.columns)
@@ -131,7 +146,7 @@ object ReqTable {
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
-      Px.bs($).stateM(_.asyncStates.iterator
+      Px.bs($).propsM(_.state.asyncStates.iterator
         .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
@@ -150,41 +165,43 @@ object ReqTable {
         nr  <- colName
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
 
-    private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: Props => RemoteFn.InstanceFor[F]): CallServer[I] =
-      (i, sio, fio) => $.props >>= (p =>
-        p.cp.call(remoteFn(p))(
+    private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: RemoteFn.InstanceFor[F]): CallServer[I] =
+      (i, sio, fio) =>
+        cp.call(remoteFn)(
           i,
-          s => p.cd.applyEventsS(s) >> sio,
-          f => p.cp.consumeGenericFailure(f) >> fio(p.cp.genericFailureToText(f))))
+          s => cd.applyEventsS(s) >> sio,
+          f => cp.consumeGenericFailure(f) >> fio(cp.genericFailureToText(f)))
 
     val createIO: CallServer[CreateContentCmd] =
-      callServer(_.createContentFn)
+      callServer(createContentFn)
 
     val updateIO: CallServer[UpdateContentCmd] =
-      callServer(_.updateContentFn)
+      callServer(updateContentFn)
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {
       import FilterEditor._
-      val onFailure: OnFailure = ReusableFn(s => $.modState(_ filterFailure s))
-      val onSuccess: OnSuccess = ReusableFn(i => $.modState(_.filterSuccess(i._1, i._2)))
+      val onFailure: OnFailure = ReusableFn(s => state_$.modState(_ filterFailure s))
+      val onSuccess: OnSuccess = ReusableFn(i => state_$.modState(_.filterSuccess(i._1, i._2)))
       s => FilterEditor.Props(project.value(), onFailure, onSuccess, s)
     }
 
     val filterEditor: Px[ReusableVal[ReactElement]] =
       filterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
 
-    val asyncFeature = AsyncState.Feature($)(State.asyncStates)
+    val asyncFeature = AsyncState.Feature(state_$)(State.asyncStates)
 
-    val previewFeature = new PreviewFeature($, State.previewState)
+    val previewFeature = new PreviewFeature(state_$, State.previewState)
 
     val cellEditors: CellEditors =
-      new CellEditorsImpl[State]($, State.editStates, asyncFeature, previewFeature, project, plainText, widgets,
+      new CellEditorsImpl[State](state_$, State.editStates, asyncFeature, previewFeature, project, plainText, widgets,
         textSearch, updateIO)
 
-    val creationInterface = new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
+    val creationInterface =
+      new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
-    def render(s: State): ReactElement = {
+    def render(p: Props): ReactElement = {
+      val s = p.state
       Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
 

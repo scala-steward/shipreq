@@ -31,7 +31,7 @@ object Usage {
           else {
             def showReqTable(e: ReactEvent) =
               ReqTableNextState(fd, Some(filterSpec(d))).set >>
-                rc.setEH(ReqTable)(e)
+                rc.setEH(Page.ReqTable)(e)
             <.a(^.href := "#", ^.onClick ==> showReqTable, desc)
           }
         }
