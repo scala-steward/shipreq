@@ -40,7 +40,7 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.10.3")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.10.4")
     val core    = mm("core")
     val test    = mm("test")
     val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect

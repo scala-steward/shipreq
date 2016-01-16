@@ -13,7 +13,6 @@ import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.Validators.{reqType => V}
 import shipreq.webapp.base.filter.FilterSpec
 import shipreq.webapp.base.protocol.CustomReqTypeCrud
-import shipreq.webapp.client.app.ProjectSpaMain
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.app.cfg.shared._
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
@@ -29,7 +28,7 @@ object CfgReqTypes {
                    remote    : CustomReqTypeCrud.Instance,
                    clientData: ClientData,
                    filterDead: ReusableVar[FilterDead],
-                   routerCtl : ProjectSpaMain.RouterCtl) {
+                   usageShow : Usage.Show) {
     def component = Component(this)
   }
   implicit val reusability = Reusability.caseClass[Props]
@@ -55,7 +54,7 @@ object CfgReqTypes {
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
     val project    = Px.bs($).propsM(_.clientData.project())
     val filterDead = Px.bs($).propsM(_.filterDead.value)
-    val routerCtl  = Px.bs($).propsM(_.routerCtl)
+    val usageShow  = Px.bs($).propsM(_.usageShow)
 
     val crudIO = Px.bs($).propsA.map(p => CrudActionIO(CustomReqType, CustomReqTypeCrud)(p.cp, p.remote, p.clientData))
     val supp = TypicalSupp(storesAndState)(crudIO.value(), $)
@@ -76,7 +75,7 @@ object CfgReqTypes {
     val usageFn = Usage((_: ReqType).reqTypeId)(
       _.reqTypeCount,
       FilterSpec ReqType _.mnemonic,
-      project, filterDead, routerCtl)
+      project, filterDead, usageShow)
 
     val cfgTable = {
       def rowRenderer =
@@ -128,7 +127,7 @@ object CfgReqTypes {
       cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead set fd))
 
     def render: ReactElement = {
-      Px.refresh(project, filterDead, routerCtl)
+      Px.refresh(project, filterDead, usageShow)
       outer(table())
     }
   }

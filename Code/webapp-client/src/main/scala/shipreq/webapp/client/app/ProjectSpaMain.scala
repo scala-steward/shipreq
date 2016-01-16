@@ -9,8 +9,8 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.filter.FilterSpec
 import shipreq.webapp.base.protocol.ProjectSPA
+import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.{FilterDead, HideDead}
 import shipreq.webapp.client.protocol.ClientProtocol
@@ -26,27 +26,6 @@ object ProjectSpaMain {
       val router  = Router(baseUrl, main.routerConfig)
       router() render dom.document.getElementById("tgt")
     })
-  }
-
-  /**
-   * This is used so that "Usage" columns in config screens (within this SPA) can have links that initialise the
-   * ReqTable to a given state.
-   *
-   * It is cleared after a single use.
-   *
-   * Being a global variable, this is a shithouse solution and will be replaced eventually.
-   */
-  case class ReqTableNextState(fd: FilterDead, fs: Option[FilterSpec]) {
-    def set: Callback =
-      Callback(_reqTableNextState = Some(this))
-  }
-
-  private var _reqTableNextState: Option[ReqTableNextState] = None
-
-  private def reqTableNextState(): ReqTableNextState = {
-    val s = _reqTableNextState getOrElse ReqTableNextState(HideDead, None)
-    _reqTableNextState = None
-    s
   }
 
   // ===================================================================================================================
@@ -126,8 +105,13 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
 
     val reqTable = new reqtable.ReqTable(cd, cp, r.createContent, r.updateContent, $ zoomL State.reqTable)
 
+    val usageShow =
+      Usage.Show((fd, fs) =>
+        $.props.runNow().routerCtl
+          .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
+          .link(Page.ReqTable))
+
     def render(p: Props, s: State): ReactElement = {
-      def ctl = p.routerCtl
       def fd = ReusableVar(s.filterDead)(setFilterDead)
 
       def layout(content: ReactElement) =
@@ -136,21 +120,16 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
             ^.textAlign.right,
             ^.paddingRight := "0.6ex",
             ^.marginTop := "-14px",
-            ctl.link(Page.Index)("← Back")),
+            p.routerCtl.link(Page.Index)("← Back")),
           content)
-
-      def renderReqTable = {
-        val ns = reqTableNextState()
-        reqTable.Props(ns.fd, ns.fs, s.reqTable).component
-      }
 
       p.page match {
         case Page.Index       => IndexComponent(p.routerCtl)
         case Page.CfgFields   => layout(cfg.fields.CfgFields.Props(cp, r.fieldCrud, cd, fd).component)
-        case Page.CfgIssues   => layout(cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, cd, fd, ctl).component)
-        case Page.CfgReqTypes => layout(cfg.reqtypes.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, fd, ctl).component)
+        case Page.CfgIssues   => layout(cfg.issues.CfgIssues.Props(cp, r.issueTypeCrud, r.reqTypeImpMod, r.fieldMandMod, cd, fd, usageShow).component)
+        case Page.CfgReqTypes => layout(cfg.reqtypes.CfgReqTypes.Props(cp, r.reqTypeCrud, cd, fd, usageShow).component)
         case Page.CfgTags     => layout(cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, fd).component)
-        case Page.ReqTable    => layout(renderReqTable)
+        case Page.ReqTable    => layout(reqTable.Component(s.reqTable))
       }
     }
   }

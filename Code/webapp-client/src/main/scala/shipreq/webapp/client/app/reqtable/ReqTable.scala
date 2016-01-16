@@ -52,6 +52,12 @@ object ReqTable {
         case -\/(err) => filterFailure(FilterEditor.State(txt, Some(err)))
       }
     }
+
+    def setFilterDead(fd: FilterDead): State =
+      if (viewSettings.filterDead ==* fd)
+        this
+      else
+        State.viewSettings.modify(_ setFilterDead fd)(this)
   }
 
   object State {
@@ -86,32 +92,13 @@ class ReqTable(cd             : ClientData,
     ReactComponentB[Props]("ReqTable")
       .renderBackend[Backend]
       .configure(Listenable.install(_ => cd, Function const ((c: Changes) => state_$.modState(_ recvChanges c))))
-      .componentWillReceiveProps(i => i.$.backend.willReceiveProps(i.$.props, i.nextProps))
       .build
 
-  case class Props(fd        : FilterDead,
-                   filterSpec: Option[FilterSpec],
-                   state     : State) {
-    def component = Component(this)
-  }
+  type Props = State
 
   // -------------------------------------------------------------------------------------------------------------------
 
   final class Backend($: BackendScope[Props, Unit]) extends OnUnmount {
-
-    val ST = ReactS.FixCB[State]
-
-    def willReceiveProps(oldProps: Props, nextProps: Props): Callback = {
-      var plan = List.empty[ST.T[Unit]]
-
-      if (oldProps.fd !=* nextProps.fd)
-        plan ::= ST.modT(State.viewSettings.modify(_ setFilterDead nextProps.fd))
-
-      nextProps.filterSpec.foreach(fs =>
-        plan ::= ST.modT(_ setFilterSpec fs))
-
-      Callback.ifTrue(plan.nonEmpty, state_$.runState(plan.reduce(_ >> _)))
-    }
 
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
       ReusableFn(a => state_$.modState(f(a)))
@@ -129,10 +116,10 @@ class ReqTable(cd             : ClientData,
     val setModal        = reusableSetState(State.modal)
     val setCreation     = state_$ zoomL State.creation
 
-    val project      = Px.bs($).propsM(_.state.project)
-    val viewSettings = Px.bs($).propsM(_.state.viewSettings)
-    val filterState  = Px.bs($).propsM(_.state.filter)
-    val selection    = Px.bs($).propsM(_.state.selection)
+    val project      = Px.bs($).propsM(_.project)
+    val viewSettings = Px.bs($).propsM(_.viewSettings)
+    val filterState  = Px.bs($).propsM(_.filter)
+    val selection    = Px.bs($).propsM(_.selection)
 
     val vsVar      = viewSettings map (ReusableVar(_)(setViewSettings))
     val vsCols     = viewSettings map (_.columns)
@@ -146,7 +133,7 @@ class ReqTable(cd             : ClientData,
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
-      Px.bs($).propsM(_.state.asyncStates.iterator
+      Px.bs($).propsM(_.asyncStates.iterator
         .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
@@ -201,7 +188,7 @@ class ReqTable(cd             : ClientData,
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(p: Props): ReactElement = {
-      val s = p.state
+      val s: State = p
       Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
 

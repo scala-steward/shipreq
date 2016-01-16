@@ -27,7 +27,7 @@ private[issues] object CustomIssueTypes {
                    remote    : CustomIssueTypeCrud.Instance,
                    clientData: ClientData,
                    filterDead: ReusableVar[FilterDead],
-                   routerCtl : ProjectSpaMain.RouterCtl) {
+                   usageShow : Usage.Show) {
     @inline def component = Component(this)
   }
   implicit val reusability = Reusability.caseClass[Props]
@@ -64,7 +64,7 @@ private[issues] object CustomIssueTypes {
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
     val project    = Px.bs($).propsM(_.clientData.project())
     val filterDead = Px.bs($).propsM(_.filterDead.value)
-    val routerCtl  = Px.bs($).propsM(_.routerCtl)
+    val usageShow  = Px.bs($).propsM(_.usageShow)
 
     val crudIO =
       Px.bs($).propsA.map(p =>
@@ -96,7 +96,7 @@ private[issues] object CustomIssueTypes {
     val usageFn = Usage((_: CustomIssueType).id)(
       _.atomScan.issueCounts,
       FilterSpec HashRef _.key,
-      project, filterDead, routerCtl)
+      project, filterDead, usageShow)
 
     val cfgTable = {
       def rowRenderer =
@@ -137,7 +137,7 @@ private[issues] object CustomIssueTypes {
       cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead set fd))
 
     def render: ReactElement = {
-      Px.refresh(project, filterDead, routerCtl)
+      Px.refresh(project, filterDead, usageShow)
       outer(table())
     }
   }
