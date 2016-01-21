@@ -21,10 +21,10 @@ object CfgFieldsTest extends TestSuite {
 
   val remote = RemoteFn.Instance("x", FieldCrud.Fn)
   class Tester {
-    lazy val filterDead = TestVar[FilterDead](HideDead)
+    lazy val filterDead = ReactTestVar[FilterDead](HideDead)
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol
-    lazy val props      = new CfgFields.Props(cp, remote, clientData, filterDead.reusableVar)
+    lazy val props      = new CfgFields.Props(cp, remote, clientData, filterDead.reusableVar())
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
 

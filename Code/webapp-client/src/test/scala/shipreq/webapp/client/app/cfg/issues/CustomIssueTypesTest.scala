@@ -15,11 +15,11 @@ import utest._
 object CustomIssueTypesTest extends TestSuite {
 
   override def tests = TestSuite {
-    val filterDead = TestVar[FilterDead](HideDead)
+    val filterDead = ReactTestVar[FilterDead](HideDead)
     val remote     = RemoteFn.Instance("x", CustomIssueTypeCrud)
     val clientData = new ClientData(SampleProject.project)
     val cp         = new TestClientProtocol
-    val props      = new CustomIssueTypes.Props(cp, remote, clientData, filterDead.reusableVar, Usage.Show((_, _) => <.a))
+    val props      = new CustomIssueTypes.Props(cp, remote, clientData, filterDead.reusableVar(), Usage.Show((_, _) => <.a))
     val re         = props.component
     val c          = ReactTestUtils.renderIntoDocument(re)
 

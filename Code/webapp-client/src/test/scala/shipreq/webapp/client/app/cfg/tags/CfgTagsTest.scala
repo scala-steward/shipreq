@@ -39,10 +39,10 @@ object CfgTagsTest extends TestSuite {
 
   val remote = RemoteFn.Instance("x", TagCrud.Fn)
   class Tester {
-    lazy val filterDead = TestVar[FilterDead](HideDead)
+    lazy val filterDead = ReactTestVar[FilterDead](HideDead)
     lazy val clientData = new ClientData(S.project)
     lazy val cp         = new TestClientProtocol
-    lazy val props      = new CfgTags.Props(cp, remote, clientData, filterDead.reusableVar)
+    lazy val props      = new CfgTags.Props(cp, remote, clientData, filterDead.reusableVar())
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
   }
@@ -57,7 +57,7 @@ object CfgTagsTest extends TestSuite {
                 Name("Blah"),
                 Parents(Map(1.TG -> priMed.some)),
                 Children(Vector(10.TG))))
-      val ves = verifyEvents(clientData.project)(e)
+      val ves = verifyEvents(clientData.project())(e)
       clientData.applyEvents(ves).runNow()
 
       assertEq(nameAsTextTree(c).mkString("\n"),
