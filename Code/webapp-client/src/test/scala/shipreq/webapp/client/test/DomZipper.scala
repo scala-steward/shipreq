@@ -1,118 +1,153 @@
 package shipreq.webapp.client.test
 
-import scalaz.Equal
+import org.scalajs.dom.{Element, Node, window}
 import org.scalajs.dom.html
-import scalajs.js.{UndefOr, undefined}
-import shipreq.webapp.base.test.WebappTestUtil._
-import Sizzle.{DOM, Result}
+import scala.reflect.ClassTag
+import scala.scalajs.js
+import DomZipper.{CssSelLookup, DOM, Layer, MofN, Sole}
 
 object DomZipper {
-  def apply(dom: Result): DomZipper =
-    apply(null, dom)
+  type DOM = Node
 
-  def apply(desc: String, dom: Result): DomZipper =
-    apply(desc, 1, dom, 0)
+  type CssSelLookup = (String, Node) => js.Array[Element]
 
-  def apply(expectedCount: Int, dom: Result, selectIndex: Int): DomZipper =
-    apply(null, expectedCount, dom, selectIndex)
+  case class Layer(name: String, sel: String, dom: DOM)
 
-  def apply(desc: String, expectedCount: Int, dom: Result, selectIndex: Int): DomZipper = {
-    utest.assert(selectIndex < expectedCount)
-    assertCount(Option(desc) getOrElse "DomZipper.apply", expectedCount, dom, undefined)
-    val n = dom(selectIndex)
-    new DomZipper(n)
+  def root(implicit $: CssSelLookup): DomZipper =
+    new DomZipper(Vector.empty[Layer] :+ Layer("window.document", "", window.document), $)
+
+  def apply(dom: DOM)(implicit $: CssSelLookup): DomZipper =
+    apply("<manual>", dom)
+
+  def apply(name: String, dom: DOM)(implicit $: CssSelLookup): DomZipper =
+    new DomZipper(Vector.empty[Layer] :+ Layer(name, "?", dom), $)
+
+  case class MofN(m: Int, n: Int) {
+    override def toString = s"$m of $n"
+    assert(n > 0, s"$this is invalid. $n must be > 0.")
+    assert(m > 0, s"$this is invalid. $m must be > 0.")
+    assert(m <= n, s"$this is invalid. $m must be ≤ $n.")
   }
 
-  def assertCount(desc: String, expectedCount: Int, dom: Result, root: UndefOr[DOM]): Unit = {
-    def showDom(inner: Boolean)(d: DOM) = {
-      val html = if (inner) d.innerHTML else d.outerHTML
-      "\n" + removeReactIds(html).take(160)
-    }
-    def detail =
-      if (dom.isEmpty)
-        root.fold("")(showDom(true))
-      else
-        dom.map(showDom(false))
-    assertEq(desc + detail, dom.length, expectedCount)
+  implicit class IntExt(private val i: Int) extends AnyVal {
+    def of(n: Int) = MofN(i, n)
   }
 
-  def first(desc: String, dom: Result): DomZipper = {
-    if (dom.isEmpty)
-      fail(desc + ": empty")
-    new DomZipper(dom.head)
-  }
-
-  def removeReactIds(html: String): String =
-    html.replaceAll(""" data-reactid=".*?"""", "")
-
-  implicit val equality: Equal[DomZipper] =
-    Equal.equal((a, b) => a.get isSameNode b.get)
+  val Sole = 1 of 1
 }
 
-class DomZipper(root: DOM) {
-  override def toString =
-    s"DomZipper(${DomZipper removeReactIds root.outerHTML take 160})"
+final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
+  assert(layers.nonEmpty)
 
-  def getAll(sel: String): Result =
-    Sizzle(sel, root)
+  val dom: DOM =
+    layers.last.dom
 
-  def getAll(expectedCount: Int, sel: String): Result = {
-    val r = Sizzle(sel, root)
-    DomZipper.assertCount(sel, expectedCount, r, root)
-    r
+  def to_![D <: DOM]: D =
+    dom.asInstanceOf[D]
+
+  def to[D <: DOM](implicit ct: ClassTag[D]): Option[D] =
+    ct.unapply(dom)
+
+  def outerHTML: String = to[html.Element].fold("")(_.outerHTML)
+  def innerHTML: String = to[html.Element].fold("")(_.innerHTML)
+  def innerText: String = dom.textContent
+
+  def down(sel: String): Either[String, DomZipper] =
+    down("…", sel)
+
+  def down(sel: String, which: MofN): Either[String, DomZipper] =
+    down("…", sel, which)
+
+  def down(name: String, sel: String): Either[String, DomZipper] =
+    down(name, sel, Sole)
+
+  def down(name: String, sel: String, which: MofN): Either[String, DomZipper] = {
+    val results = $(sel, dom)
+    if (results.length != which.n)
+      Left(failMsg(s"Expected ${which.n} results, got ${results.length}."))
+    else {
+      val nextLayer = Layer(name, sel, results(which.m - 1))
+      Right(addLayer(nextLayer))
+    }
   }
 
-  def option(sel: String): Option[DomZipper] = {
-    val r = Sizzle(sel, root)
-    if (r.isEmpty)
-      None
-    else
-      Some(DomZipper(sel, r))
-  }
+  private def addLayer(nextLayer: Layer) =
+    new DomZipper(layers :+ nextLayer, $)
 
-  def apply(cssSel: String): DomZipper =
-    apply(1, cssSel, 0)
+  def down_!(sel: String)                           : DomZipper = need_!(down(sel))
+  def down_!(sel: String, which: MofN)              : DomZipper = need_!(down(sel, which))
+  def down_!(name: String, sel: String)             : DomZipper = need_!(down(name, sel))
+  def down_!(name: String, sel: String, which: MofN): DomZipper = need_!(down(name, sel, which))
 
-  def apply(expectedCount: Int, cssSel: String, selectIndex: Int): DomZipper = {
-    utest.assert(selectIndex < expectedCount)
-    val n = getAll(expectedCount, cssSel)(selectIndex)
-    new DomZipper(n)
-  }
+  def describe: String =
+    s"Desc: ${layers.map(_.name) mkString " → "}\nPath: ${layers.map(_.sel) mkString " → "}\nHTML: $outerHTML"
 
-  def collect[A](sel: String, f: DOM => A): Vector[A] =
-    getAll(sel).foldLeft(Vector.empty[A])(_ :+ f(_))
+  private def failMsg(msg: String): String =
+    msg + "\n" + describe
 
-  def collectD[A](sel: String, f: DomZipper => A): Vector[A] =
-    collect(sel, d => f(new DomZipper(d)))
+  private def need_!(x: Either[String, DomZipper]): DomZipper =
+    x match {
+      case Right(d) => d
+      case Left(e) => sys error e
+    }
+
+  def collectDom[A](sel: String, f: DOM => A): Vector[A] =
+    $(sel, dom).foldLeft(Vector.empty[A])(_ :+ f(_))
+
+  def collect[A](sel: String, f: DomZipper => A): Vector[A] =
+    collectDom(sel, d => f(addLayer(Layer("collect", sel, d))))
 
   def collectInnerHTML[A](sel: String): Vector[String] =
     collect(sel, _.innerHTML)
 
   def collectInnerText[A](sel: String): Vector[String] =
-    collect(sel, _.textContent)
+    collectDom(sel, _.textContent)
 
-  def get: DOM =
-    root
+  def inputChecked: Option[Boolean] =
+    to[html.Input].map(_.checked)
 
-  def as[D <: DOM]: D =
-    root.asInstanceOf[D]
+  /** The currently selected option in a &lt;select&gt; dropdown. */
+  def selectedOption: Option[html.Option] =
+    to[html.Select].flatMap(s =>
+      if (s.selectedIndex >= 0)
+        Some(s.options(s.selectedIndex))
+      else
+        None
+    )
 
-  def outerHTML: String = root.outerHTML
-  def innerHTML: String = root.innerHTML
-  def innerText: String = root.textContent
-
-  def selectedOptionText: String = {
-    val s = as[html.Select]
-    s.options(s.selectedIndex).innerHTML
-  }
-
-  def inputChecked: Boolean =
-    as[html.Input].checked
-
-//    def collect2[A, B](selA: String, a: DOM => A)(selB: String, b: DOM => B): Vector[(A, B)] = {
-//      val as = collect(selA, a)
-//      val bs = collect(selB, b)
-//      assertEq(as.length, bs.length)
-//      as zip bs
-//    }
+  /** The text value of the currently selected option in a &lt;select&gt; dropdown. */
+  def selectedOptionText: Option[String] =
+    selectedOption.map(_.text)
 }
+
+//  def assertCount(desc: String, expectedCount: Int, dom: Result, root: UndefOr[DOM]): Unit = {
+//    def showDom(inner: Boolean)(d: DOM) = {
+//      val html = if (inner) d.innerHTML else d.outerHTML
+//      "\n" + removeReactIds(html).take(160)
+//    }
+//    def detail =
+//      if (dom.isEmpty)
+//        root.fold("")(showDom(true))
+//      else
+//        dom.map(showDom(false))
+//    assertEq(desc + detail, dom.length, expectedCount)
+//  }
+//
+//  def first(desc: String, dom: Result): DomZipper = {
+//    if (dom.isEmpty)
+//      fail(desc + ": empty")
+//    new DomZipper(dom.head)
+//  }
+//
+//  def removeReactIds(html: String): String =
+//    html.replaceAll(""" data-reactid=".*?"""", "")
+//
+//  implicit val equality: Equal[DomZipper] =
+//    Equal.equal((a, b) => a.get isSameNode b.get)
+//}
+//
+//  def getAll(expectedCount: Int, sel: String): Result = {
+//    val r = Sizzle(sel, root)
+//    DomZipper.assertCount(sel, expectedCount, r, root)
+//    r
+//  }

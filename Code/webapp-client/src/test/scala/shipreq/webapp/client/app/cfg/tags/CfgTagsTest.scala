@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.cfg.tags
 
 import japgolly.scalajs.react.{Callback, TopNode, ReactComponentM_}
 import japgolly.scalajs.react.test._
+import org.scalajs.dom.Element
 import org.scalajs.dom.raw.{HTMLElement, HTMLInputElement}
 import scala.annotation.tailrec
 import scalaz.std.AllInstances._
@@ -22,7 +23,7 @@ import TestUtil._
 
 object CfgTagsTest extends TestSuite {
 
-  @tailrec def nameCellToText(d: Sizzle.DOM, prefix: String): String =
+  @tailrec def nameCellToText(d: Element, prefix: String): String =
     d match {
       case _ if d.tagName == "INPUT"                       => prefix + d.asInstanceOf[HTMLInputElement].value
       case h: HTMLElement if h.className contains "indent" => nameCellToText(d.firstElementChild, prefix + "- ")
