@@ -4,6 +4,8 @@ rankdir=LR
 graphviz [label="Use graphviz or a replacement"]
 newroute [label="Add route for req detail"]
 detail_links [label="Make ReqTable link to detail page"]
+
+node [style=filled fillcolor="#33aa33"]
 singstate [label="Use single state for all ProjectSPA pages"]
 fixhack [label="Fix ProjectSPA/var/filter hack"]
 

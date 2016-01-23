@@ -41,12 +41,12 @@
 </g>
 <!-- singstate -->
 <g id="node4" class="node"><title>singstate</title>
-<ellipse fill="none" stroke="black" cx="155.986" cy="-49" rx="155.972" ry="18"/>
+<ellipse fill="#33aa33" stroke="black" cx="155.986" cy="-49" rx="155.972" ry="18"/>
 <text text-anchor="middle" x="155.986" y="-45.3" font-family="Times,serif" font-size="14.00">Use single state for all ProjectSPA pages</text>
 </g>
 <!-- fixhack -->
 <g id="node5" class="node"><title>fixhack</title>
-<ellipse fill="none" stroke="black" cx="467.562" cy="-18" rx="118.079" ry="18"/>
+<ellipse fill="#33aa33" stroke="black" cx="467.562" cy="-18" rx="118.079" ry="18"/>
 <text text-anchor="middle" x="467.562" y="-14.3" font-family="Times,serif" font-size="14.00">Fix ProjectSPA/var/filter hack</text>
 </g>
 <!-- singstate&#45;&gt;fixhack -->
