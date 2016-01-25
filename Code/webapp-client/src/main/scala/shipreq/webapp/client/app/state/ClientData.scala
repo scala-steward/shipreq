@@ -17,10 +17,6 @@ final class ClientData(init: Project) extends Broadcaster[Changes] {
   def project(): Project =
     _p
 
-  /** For use in unit-tests only */
-  def setProject(p: Project): Unit =
-    _p = p
-
   @inline def projectCB: CallbackTo[Project] =
     CallbackTo(project())
 

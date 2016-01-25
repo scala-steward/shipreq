@@ -10,6 +10,8 @@ class Dsl[R, O, S, E] {
   private type Name = Option[OS] => String
   private type ActionRun = ROS => Option[() => Either[E, O => S]]
 
+  type Action = teststate.Action[R, O, S, E]
+
   // ===================================================================================================================
 
   def action(name: String) = new A1(_ => name)

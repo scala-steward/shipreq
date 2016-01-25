@@ -31,204 +31,13 @@ import shipreq.webapp.client.test._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.widgets.Checkbox
 import UpdateContentCmd._
-import DomZipper.IntExt // TODO tmp
 import DomZipper.Implicits._
 import teststate._
-
-object ReqTableObs {
-  case class CellLoc(row: Int, col: Int)
-
-  val reportedRowCount = "^(\\d+) row.*".r
-  val reportedReqCount = ".*\\D(\\d+) reqs?.*".r
-  val reportedReqFormula = ".*\\d reqs? +\\((.+?)\\).*".r.pattern
-
-  val nonFormula = "[^0-9+-]+".r
-}
-
-/**
- * Data representation of a rendered ReqTable.
- *
- * Inspects actual DOM to derive values.
- */
-final class ReqTableObs(val $ : DomZipper) {
-  import ReqTableObs._
-
-  object viewSettings {
-    val $ = ReqTableObs.this.$.down("ViewSettings", ">table", 1 of 2)
-    def vsCol(i: Int) = $.down("column #" + i, "tbody tr").down(">td", i of 3)
-
-    object columns {
-      val entirety: Vector[(On, String)] =
-        vsCol(1).collect1("label", l =>
-          (On <~ l.down("input").to_![html.Input].checked, l.down(">span").innerHTML))
-
-      val allColumns: Vector[String] =
-        entirety.map(_._2)
-
-      val onColumns: Vector[String] =
-        entirety.filter(_._1 :: On).map(_._2)
-    }
-
-//    object sorting {
-//      val $ = vsCol(2)
-//
-//      private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
-//      private val readSortMethod: String => Option[SortMethod] = {
-//        case "Unused" => None
-//        case s => all.find(_.optionLabel == s).fold(sys error s"Unknown sort method: $s")(Some(_))
-//      }
-//
-//      private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
-//        s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
-//
-//      val inconclusive: Vector[(Option[SortMethod], String)] =
-//        $.down("ol").collect("li", li =>
-//          (li.down("select").selectedOptionText.get |> readSortMethod, li.down("select + span").innerHTML))
-//
-//      val conclusiveOrder: SortMethod.IgnoreBlanks =
-//        $.down("ol+div select", 1 of 2).selectedOptionText.get |> readSortMethodIB
-//
-//      val conclusiveColumnSelected: String =
-//        $.down("ol+div select", 2 of 2).selectedOptionText.get
-//
-//      val conclusiveColumns: Vector[String] =
-//        $.down("ol+div select", 2 of 2) collectInnerHTML "option"
-//
-//      val visibleColumns: Vector[String] =
-//        inconclusive.map(_._2) ++ conclusiveColumns
-//    }
-
-    object filter {
-      val $ = vsCol(3)
-      val input = $.down("textarea")
-    }
-
-    val filterDead: FilterDead =
-      Checkbox.filterDeadChecked <~ filter.$.down("label input").to_![html.Input].checked
-  }
-
-  object table {
-    val $ = ReqTableObs.this.$.down("ReqTable", ">table", 2 of 2)
-    val tbody = $.down("ReqTable", ">tbody")
-
-    val columns: Vector[String] =
-      $.down(">thead") collectInnerText1 "th"
-
-    val fieldColumns: Vector[String] =
-      columns.drop(1)
-
-    import ColumnRenderer.{Status, Normal, DeadRow}
-
-    private def cell(s: Status): String =
-      "td." + Style.reqtable.cell(s).className.value
-
-//    private def cell(s: Status, focus: Boolean): String =  {
-//      var r = "td." + Style.reqtable.cell(s).className.value
-//      if (focus)
-//        r += ":focus"
-//      else
-//        r += ":not(:focus)"
-//      r
-//    }
-
-    private def row(inner: String): String =
-      s">tr:has($inner)"
-
-//    private def byFocus(focus: Boolean, wrap: String => String): String =
-//      ColumnRenderer.statusDomain.toStream.map(s => wrap(cell(s, focus))).mkString(",")
-
-    private def byStatus(s: Status, wrap: String => String): String =
-      wrap(cell(s))
-
-    val allRows  = tbody getAll ">tr"
-    val deadRows = tbody getAll byStatus(DeadRow, row)
-    val liveRows = tbody getAll byStatus(Normal, row)
-//    val focusRow = tbody downO byFocus(true, row)
-//    val focus    = tbody downO byFocus(true, identity)
-//
-//    val inputsInFocusRow: Option[Int] =
-//      focusRow.map(_.getAll("input,select,textarea").length)
-//
-//    def ensureHasFocus(): Unit =
-//      focus getOrElse fail("No focus.")
-//
-//    private def findIndex(subj: String, in: Vector[String], err: => String): Int = {
-//      val i = in.indexOf(subj)
-//      if (i < 0) fail(s"$err\n$in")
-//      i
-//    }
-//
-//    def columnIndex(title: String): Int =
-//      findIndex(title, columns, s"Column '$title' not found.")
-//
-//    val pubidColumnIndex =
-//      columnIndex("ID")
-//
-//    val rowPubids: Vector[String] =
-//      tbody collectInnerText s">tr >td:nth-child(${pubidColumnIndex + 1})"
-//
-//    def rowIndexByPubid(pubid: String): Int =
-//      findIndex(pubid, rowPubids, s"Row with pubid [$pubid] not found.")
-//
-//    def cell(loc: CellLoc): DomZipper =
-//      cell(row = loc.row, col = loc.col)
-//
-//    def cell(row: Int, col: Int): DomZipper =
-//      tbody down s">tr:nth-child(${row + 1}) >td:nth-child(${col + 1})"
-//
-//    def cell(pubid: String, col: String): DomZipper =
-//      cell(cellLoc(pubid, col))
-//
-//    def cellLoc(pubid: String, col: String): CellLoc =
-//      CellLoc(row = rowIndexByPubid(pubid), columnIndex(col))
-//
-//    def entireContent =
-//      tbody.collect(">tr", _.collectInnerText(">td").mkString("│ ", " │ ", " │")).mkString("\n")
-  }
-
-  object stats {
-    val text = $.down("Stats", ">div", 2 of 4).innerText
-
-    val reportedRows: Int =
-      text match {
-        case reportedRowCount(n) => n.toInt
-        case u => fail(s"Unable to extract row count from [$u].")
-      }
-
-    val reportedReqs: Int =
-      text match {
-        case reportedReqCount(n) => n.toInt
-        case u => fail(s"Unable to extract req count from [$u].")
-      }
-
-    val reportedReqFormulaText: Option[String] = {
-      val m = reportedReqFormula.matcher(text)
-      if (m.matches) {
-        val f = m group 1
-        if (f == "0 deleted") None else Some(f)
-      } else
-        None
-    }
-
-    val reportedReqFormulaValue: Option[Int] =
-      reportedReqFormulaText.map{ t =>
-        val f = nonFormula.replaceAllIn(t, "")
-        val i = new Calculator(f).InputLine.run()
-        //println(s"$t  ==>  $f  ==  $i")
-        i
-      }
-  }
-
-  def selectableCols = viewSettings.columns.allColumns
-}
 
 // =====================================================================================================================
 
 object Stuff {
   val * = Dsl[Unit, ReqTableObs, Project, String]
-  type S = ReqTableObs
-
-  //import shipreq.webapp.client.app.reqtable.{ReqTableObs => Obs}
 
 //  // TODO Move following into Nyaya
 //
@@ -239,11 +48,11 @@ object Stuff {
 //  def propTry[A](name: => String, f: A => Any): Prop[A] =
 //    propTrySuccess(name).contramap(a => Try(f(a)))
 
-  val mandatoryColumns =
-    FilterDead.memo(fd =>
-      Column.mandatory.iterator
-        .filter(fd.filterFnA(_.live))
-        .map(Column.NameResolver.builtIn).toSet)
+  val mandatoryColumns = FilterDead.memo(fd =>
+    Column.mandatory.iterator
+      .filter(fd.filterFnA(_.live))
+      .map(Column.NameResolver.builtIn)
+      .toSet)
 
 //  def propO[O](name: String, f: String => Prop[S]) = {
 //    val p = f(name)
@@ -270,7 +79,7 @@ object Stuff {
 
       val deadColumns =
         **.assertExistence("dead custom field columns",
-          _.obs.viewSettings.filterDead :: ShowDead,
+          _.obs.filterDead :: ShowDead,
           i => customFieldNames(i.state, Dead))
 
       uniqueColumns & liveCustomFieldColumnsAlwaysAvailable & deadColumns
@@ -282,7 +91,7 @@ object Stuff {
     def tableColumns =
       *.focus("Table columns").collection(_.obs.table.fieldColumns)
         .assertEqualIgnoringOrder(_ + " contents",
-          i => mandatoryColumns(i.obs.viewSettings.filterDead) ++ i.obs.viewSettings.columns.onColumns)
+          i => mandatoryColumns(i.obs.filterDead) ++ i.obs.viewSettings.columns.onColumns)
 
     def tableContents = {
       val rowEitherDeadOrLive =
@@ -327,62 +136,32 @@ object ReqTableTest2 extends TestSuite {
 
   PrepareEnv()
 
-  val cd = new ClientData(SampleProject3.project)
-  val cp = new TestClientProtocol
+  import Stuff._
+
   val createRemote = RemoteFn.Instance("x", CreateContentFn)
   val updateRemote = RemoteFn.Instance("x", UpdateContentFn)
 
-  val stateVar = ReactTestVar(ReqTable.State.init(cd, HideDead, None))
+  def runTest(action: *.Action) = {
+    val cd = new ClientData(SampleProject3.project)
+    val cp = new TestClientProtocol
+    val stateVar = ReactTestVar(ReqTable.State.init(cd, HideDead, None))
+    val reqTable = new ReqTable(cd, cp, createRemote, updateRemote, stateVar.compStateAccess())
+    val c = ReactTestUtils renderIntoDocument reqTable.Component(stateVar.initialValue)
 
-  val reqTable = new ReqTable(cd, cp, createRemote, updateRemote, stateVar.compStateAccess())
-
-  def reset(): Unit = {
-    cp.reset()
-    stateVar.reset()
-    cd.setProject(stateVar.initialValue.project)
+    try {
+      val tt = new Test0(action, invariants).observe(_ => new ReqTableObs(DomZipper(c)))
+      val h = tt.run(stateVar.value().project, ())
+      if (h.failed) {
+        println()
+        println(formatHistory(h, Options.colored))
+        println()
+      }
+    } finally {
+      ReactDOM.unmountComponentAtNode(c.getDOMNode().parentNode)
+    }
   }
 
-  lazy val c = ReactTestUtils renderIntoDocument reqTable.Component(stateVar.initialValue)
-
-//  lazy val cTable = ReactTestUtils.findRenderedComponentWithType(c, Table.Component).asInstanceOf[Table.Component.Mounted]
-
-  import Stuff._
-
-  type S = Project
-  type O = ReqTableObs
-  type E = String
-
-//  import scala.util._
-//
-//  val TSinvariants = Invariant[O, S, E](_ => "Invariants", (o, s) =>
-//    /*
-//    Try(invariants.assert(PS(s, o))) match {
-//      case Success(_) => None
-//      case Failure(f) => Some(f.getMessage)
-//    }
-//    */
-//  {
-//    val e: Eval = invariants(PS(s, o))
-//    if (e.success) None else Some(e.failureTree)
-//
-//  }
-//  )
-
-  val t = new Test0[Unit, ReqTableObs, Project, String](Action.empty, invariants)
-    .observe(_ => new ReqTableObs(DomZipper(c)))
-
   override def tests = TestSuite {
-    'initialState {
-
-//      // TODO should be able to wrap up all first param list of run()
-//
-//      val r = DomZipper2(c.getDOMNode())
-//      r("> table")
-
-      val h = t.run(stateVar.value().project, ())
-      println()
-      println(formatHistory(h, Options.colored.alwaysShowChildren))
-      println()
-    }
+    'initialState - runTest(Action.empty)
   }
 }
