@@ -103,20 +103,19 @@ final class ReqTableObs(val $ : DomZipper) {
       val input = $.down("textarea")
     }
 
-    object filterDead {
-      val $ = filter.$.down("label input")
-
-      val value: FilterDead =
-        Checkbox.filterDeadChecked <~ $.to_![html.Input].checked
-    }
+    val filterDead: FilterDead =
+      Checkbox.filterDeadChecked <~ filter.$.down("label input").to_![html.Input].checked
   }
 
   object table {
     val $ = ReqTableObs.this.$.down("ReqTable", ">table", 2 of 2)
     val tbody = $.down("ReqTable", ">tbody")
 
-//    val columns: Vector[String] =
-//      $.down(">thead") collectInnerText "th"
+    val columns: Vector[String] =
+      $.down(">thead") collectInnerText1 "th"
+
+    val fieldColumns: Vector[String] =
+      columns.drop(1)
 
     import ColumnRenderer.{Status, Normal, DeadRow}
 
@@ -220,7 +219,7 @@ final class ReqTableObs(val $ : DomZipper) {
       }
   }
 
-  def availCols = viewSettings.columns.allColumns
+  def selectableCols = viewSettings.columns.allColumns
 }
 
 // =====================================================================================================================
@@ -240,7 +239,11 @@ object Stuff {
 //  def propTry[A](name: => String, f: A => Any): Prop[A] =
 //    propTrySuccess(name).contramap(a => Try(f(a)))
 
-  val builtInColumns = Column.builtInValues.map(Column.NameResolver.builtIn).toNES.whole
+  val mandatoryColumns =
+    FilterDead.memo(fd =>
+      Column.mandatory.iterator
+        .filter(fd.filterFnA(_.live))
+        .map(Column.NameResolver.builtIn).toSet)
 
 //  def propO[O](name: String, f: String => Prop[S]) = {
 //    val p = f(name)
@@ -249,14 +252,11 @@ object Stuff {
 
   val invariants = {
 
-    def availableColumns = {
-      val ** = *.focus("Available columns").collection(_.obs.availCols)
+    def selectableColumns = {
+      val ** = *.focus("Selectable columns").collection(_.obs.selectableCols)
 
       val uniqueColumns =
         **.assertDistinct
-
-      val builtInColumnsAlwaysAvailable =
-        **.assertContainsAll(_ + " contains all built-in.", _ => builtInColumns)
 
       def customFieldNames(project: Project, a: Live): Set[String] = {
         val cfname = CustomField.nameP(project)
@@ -270,17 +270,19 @@ object Stuff {
 
       val deadColumns =
         **.assertExistence("dead custom field columns",
-          _.obs.viewSettings.filterDead.value :: ShowDead,
+          _.obs.viewSettings.filterDead :: ShowDead,
           i => customFieldNames(i.state, Dead))
 
-      liveCustomFieldColumnsAlwaysAvailable & builtInColumnsAlwaysAvailable & deadColumns & uniqueColumns
+      uniqueColumns & liveCustomFieldColumnsAlwaysAvailable & deadColumns
     }
 
 //    def sortableColumns = equal("Sortable columns = selected VS columns")(
 //      _.viewSettings.sorting.visibleColumns.sorted, _.viewSettings.columns.onColumns.sorted)
-//
-//    def tableColumns = equal("Table columns = selected VS columns")(
-//      _.table.columns, _.viewSettings.columns.onColumns)
+
+    def tableColumns =
+      *.focus("Table columns").collection(_.obs.table.fieldColumns)
+        .assertEqualIgnoringOrder(_ + " contents",
+          i => mandatoryColumns(i.obs.viewSettings.filterDead) ++ i.obs.viewSettings.columns.onColumns)
 
     def tableContents = {
       val rowEitherDeadOrLive =
@@ -314,8 +316,8 @@ object Stuff {
     }
 
 //    "Invariants" rename_: (
-//      availableColumns & sortableColumns & tableColumns & tableContents & stats)
-    availableColumns & tableContents & stats
+//      selectableColumns & sortableColumns & tableColumns & tableContents & stats)
+    selectableColumns & tableColumns & tableContents & stats
   }
 }
 

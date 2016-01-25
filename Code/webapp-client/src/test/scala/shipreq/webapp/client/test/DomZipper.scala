@@ -126,7 +126,10 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
   def downE(name: String, sel: String, which: MofN): Either[String, DomZipper] = {
     val results = $(sel, dom)
     if (results.length != which.n)
-      Left(failMsg(s"Query failed: ${showNameSel(name, sel)}. Expected ${which.n} results, not ${results.length}."))
+      Left {
+        val q = Option(name).filter(_.nonEmpty).fold("Q")(_ + " q")
+        failMsg(s"${q}uery failed: [$sel]. Expected ${which.n} results, not ${results.length}.")
+      }
     else {
       val nextLayer = Layer(name, sel, results(which.m - 1))
       Right(addLayer(nextLayer))
