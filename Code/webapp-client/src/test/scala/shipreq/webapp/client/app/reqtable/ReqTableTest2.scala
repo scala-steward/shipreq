@@ -37,7 +37,7 @@ import teststate._
 // =====================================================================================================================
 
 object Stuff {
-  val * = Dsl[Unit, ReqTableObs, Project, String]
+  val * = Dsl.sync[Unit, ReqTableObs, Project, String]
 
 //  // TODO Move following into Nyaya
 //
@@ -65,7 +65,7 @@ object Stuff {
       val ** = *.focus("Selectable columns").collection(_.obs.selectableCols)
 
       val uniqueColumns =
-        **.assertDistinct
+        **.assert.distinct
 
       def customFieldNames(project: Project, a: Live): Set[String] = {
         val cfname = CustomField.nameP(project)
@@ -75,10 +75,10 @@ object Stuff {
       }
 
       val liveCustomFieldColumnsAlwaysAvailable =
-        **.assertContainsAll(_ + " contains all live custom field columns.", i => customFieldNames(i.state, Live))
+        **.assert.containsAll("live custom field columns", i => customFieldNames(i.state, Live))
 
       val deadColumns =
-        **.assertExistence("dead custom field columns",
+        **.assert.existenceOfAll("dead custom field columns",
           _.obs.filterDead :: ShowDead,
           i => customFieldNames(i.state, Dead))
 
@@ -90,14 +90,16 @@ object Stuff {
 
     def tableColumns =
       *.focus("Table columns").collection(_.obs.table.fieldColumns)
-        .assertEqualIgnoringOrder(_ + " contents",
+        .assert.equalIgnoringOrder(
           i => mandatoryColumns(i.obs.filterDead) ++ i.obs.viewSettings.columns.onColumns)
 
     def tableContents = {
-      val rowEitherDeadOrLive =
-        *.assertEqual(_ => "Rows are either dead or live.",
+      val rowEitherDeadOrLive = *.focus("")
+        .compare(
           _.obs.table.allRows.length,
-          t => t.obs.table.liveRows.length + t.obs.table.deadRows.length)
+          i => i.obs.table.liveRows.length + i.obs.table.deadRows.length)
+        .assert.equal
+        .rename("Rows are either dead or live.")
 
 //      val oneFocusMax = propTry[S]("Maximum one focus", _.table.focus)
 //
@@ -107,11 +109,13 @@ object Stuff {
 
     def stats = {
       val rowCount =
-        *.assertEqual(_ => "Reported row count matches rows in table.",
-          _.obs.table.allRows.length, _.obs.stats.reportedRows)
+        *.focus("")
+        .compare(_.obs.table.allRows.length, _.obs.stats.reportedRows)
+        .assert.equal
+        .rename("Reported row count matches rows in table.")
 
       val reqFormula =
-        *.point(_ => "Req formula.", os => {
+        *.point("Req formula.", os => {
           os.obs.stats.reportedReqFormulaValue.flatMap(fv =>
             if (fv == os.obs.stats.reportedReqs)
               None
@@ -137,12 +141,13 @@ object Stuff {
 
   def enterFilter(f: String) = {
     val e = ChangeEventData(f)
-    *.action(s"Enter filter: '$f'").act(e simulate _.obs.viewSettings.filter.input).noStateUpdate
+    *.action(s"Enter filter: '$f'").act(e simulate _.obs.viewSettings.filter.input)
+      .addCheck(*.focus("Filter").value(_.obs.viewSettings.filter.input.value).assert.equal(f).after)
   }
 
   val filterDeadToggle =
-    *.action("filterDeadToggle").act(Simulate change _.obs.viewSettings.filterDead.$).noStateUpdate
-      .addCheck(*.focus("FilterDead").value(_.obs.filterDead).assertChanges)
+    *.action("filterDeadToggle").act(Simulate change _.obs.viewSettings.filterDead.$)
+      .addCheck(*.focus("FilterDead").value(_.obs.filterDead).assert.changeOccurs)
 
   def setFilterDead(fd: FilterDead) =
     filterDeadToggle.unless(_.obs.filterDead == fd)
@@ -150,18 +155,18 @@ object Stuff {
   val filterDeadShowHide =
     setFilterDead(HideDead) >>
     filterDeadToggle.times(2).addCheck(
-      *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assertDoesntChange)
+      *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assert.not.changeOccurs)
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 
   def testFilter = (
     enterFilter("-MF")
       >> filterDeadToggle
-        .addCheck(tablePubids.before.assertEqualIgnoringOrder(_ + " (before)", _ => List("FR-1", "FR-2")))
-        .addCheck(tablePubids.after .assertEqualIgnoringOrder(_ + " (after)", _ => List("FR-1", "FR-2", "CO-1", "CO-2")))
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).before)
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2", "CO-1", "CO-2")).after)
       >> enterFilter("FR")
       >> filterDeadToggle
-        .addCheck(tablePubids.assertEqualIgnoringOrder(s => s, _ => List("FR-1", "FR-2")).beforeAndAfter)
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).beforeAndAfter)
   )
 }
 
@@ -179,20 +184,18 @@ object ReqTableTest2 extends TestSuite {
   def runTest(action: *.Action) = {
     val cd = new ClientData(SampleProject3.project)
     val cp = new TestClientProtocol
-    val stateVar = ReactTestVar(ReqTable.State.init(cd, HideDead, None))
-    val reqTable = new ReqTable(cd, cp, createRemote, updateRemote, stateVar.compStateAccess())
-    val c = ReactTestUtils renderIntoDocument reqTable.Component(stateVar.initialValue)
 
-    try {
-      val tt = new Test0(action, invariants).observe(_ => new ReqTableObs(DomZipper(c)))
-      val h = tt.run(stateVar.value().project, ())
-      if (h.failed) {
-        println()
-        println(formatHistory(h, Options.colored))
-        println()
-      }
-    } finally {
-      ReactDOM.unmountComponentAtNode(c.getDOMNode().parentNode)
+    val reqTable = new ReqTable(cd, cp, createRemote, updateRemote)
+    val Outer = StatefulParent[ReqTable.State] { ($, s) =>
+      reqTable.Component(ReqTable.Props($, s))
+    }
+    val initialState = ReqTable.State.init(cd, HideDead, None)
+
+    ReactTestUtils.withRenderedIntoDocument(Outer(initialState)) { c =>
+      def newObs = new ReqTableObs(DomZipper(c))
+      val tt = Test(action, invariants)(_ => newObs)
+      val h =  tt.run(initialState.project, ())
+      h.assert(History.Options.colored)
     }
   }
 

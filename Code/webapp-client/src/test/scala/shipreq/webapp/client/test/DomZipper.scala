@@ -4,7 +4,8 @@ import org.scalajs.dom.{Element, Node, window}
 import org.scalajs.dom.html
 import scala.reflect.ClassTag
 import scala.scalajs.js
-import DomZipper.{CssSelLookup, DOM, HndDown, Layer, MofN, Sole, showNameSel}
+import DomZipper.{CssSelLookup, DOM, HndDown, Layer, MofN, Sole}
+import DomZipper.Implicits.removeReactIds
 
 object DomZipper {
   type DOM = Node
@@ -110,9 +111,16 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
   def to[D <: DOM](implicit ct: ClassTag[D]): Option[D] =
     ct.unapply(dom)
 
-  def outerHTML: String = to[html.Element].fold("")(_.outerHTML)
-  def innerHTML: String = to[html.Element].fold("")(_.innerHTML)
+  def dynamicMethod[A](f: js.Dynamic => Any): Option[A] =
+    f(dom.asInstanceOf[js.Dynamic]).asInstanceOf[js.UndefOr[A]].toOption
+
+  def dynamicString(f: js.Dynamic => Any): String =
+    dynamicMethod(f) getOrElse "<undefined>"
+
+  def outerHTML: String = removeReactIds(dynamicString(_.outerHTML)) // TODO removeReactIds
+  def innerHTML: String = removeReactIds(dynamicString(_.innerHTML)) // TODO removeReactIds
   def innerText: String = dom.textContent
+  def value: String = dynamicString(_.value)
 
   def downE(sel: String): Either[String, DomZipper] =
     downE("", sel)

@@ -77,6 +77,7 @@ final class ReqTableObs(val $ : DomZipper) {
     object filter {
       val $ = vsCol(3)
       val input = $.down("textarea")
+      val value = input.value
     }
 
     object filterDead {

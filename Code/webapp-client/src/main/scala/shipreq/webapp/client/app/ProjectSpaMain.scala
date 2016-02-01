@@ -109,17 +109,20 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
           ReqDetail(ReqType.Mnemonic("A"), ReqTypePos(1)))
     }
 
+  import reqtable.ReqTable
+
   case class Props(page: Page, routerCtl: RouterCtl)
 
   @Lenses
-  case class State(filterDead: FilterDead, reqTable: reqtable.ReqTable.State)
+  case class State(filterDead: FilterDead, reqTable: ReqTable.State)
 
-  def initState = State(HideDead, reqtable.ReqTable.State.init(cd, HideDead, None))
+  def initState = State(HideDead, ReqTable.State.init(cd, HideDead, None))
 
   class Backend($: BackendScope[Props, State]) {
     val setFilterDead = ReusableFn($ zoomL State.filterDead).setState
 
-    val reqTable = new reqtable.ReqTable(cd, cp, r.createContent, r.updateContent, $ zoomL State.reqTable)
+    val reqTableState = $ zoomL State.reqTable
+    val reqTable = new ReqTable(cd, cp, r.createContent, r.updateContent)
 
     val usageShow =
       Usage.Show((fd, fs) =>
@@ -157,7 +160,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
           layout(cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, fd).component)
 
         case Page.ReqTable =>
-          layout(reqTable.Component(s.reqTable))
+          layout(reqTable.Component(ReqTable.Props(reqTableState, s.reqTable)))
 
         case Page.ReqDetail(rtm, pos) =>
           layout(reqdetail.ReqDetail.Props(rtm, pos, cd.project()).component)

@@ -78,6 +78,8 @@ object ReqTable {
       s
     }
   }
+
+  case class Props(state_$: CompState.Access[State], state: State)
 }
 
 import ReqTable._
@@ -85,20 +87,19 @@ import ReqTable._
 class ReqTable(cd             : ClientData,
                cp             : ClientProtocol,
                createContentFn: CreateContentFn.Instance,
-               updateContentFn: UpdateContentFn.Instance,
-               state_$        : CompState.Access[State]) {
+               updateContentFn: UpdateContentFn.Instance) {
 
   val Component =
     ReactComponentB[Props]("ReqTable")
       .renderBackend[Backend]
-      .configure(Listenable.install(_ => cd, Function const ((c: Changes) => state_$.modState(_ recvChanges c))))
+      .configure(Listenable.install(_ => cd, $ => ((c: Changes) => $.props.state_$.modState(_ recvChanges c))))
       .build
-
-  type Props = State
 
   // -------------------------------------------------------------------------------------------------------------------
 
   final class Backend($: BackendScope[Props, Unit]) extends OnUnmount {
+    // TODO Put a proper solution in place in scalajs-react for static properties
+    val state_$ = $.props.runNow().state_$
 
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
       ReusableFn(a => state_$.modState(f(a)))
@@ -116,10 +117,10 @@ class ReqTable(cd             : ClientData,
     val setModal        = reusableSetState(State.modal)
     val setCreation     = state_$ zoomL State.creation
 
-    val project      = Px.bs($).propsM(_.project)
-    val viewSettings = Px.bs($).propsM(_.viewSettings)
-    val filterState  = Px.bs($).propsM(_.filter)
-    val selection    = Px.bs($).propsM(_.selection)
+    val project      = Px.bs($).propsM(_.state.project)
+    val viewSettings = Px.bs($).propsM(_.state.viewSettings)
+    val filterState  = Px.bs($).propsM(_.state.filter)
+    val selection    = Px.bs($).propsM(_.state.selection)
 
     val vsVar      = viewSettings map (ReusableVar(_)(setViewSettings))
     val vsCols     = viewSettings map (_.columns)
@@ -133,7 +134,7 @@ class ReqTable(cd             : ClientData,
     val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
 
     val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
-      Px.bs($).propsM(_.asyncStates.iterator
+      Px.bs($).propsM(_.state.asyncStates.iterator
         .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
@@ -188,7 +189,7 @@ class ReqTable(cd             : ClientData,
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(p: Props): ReactElement = {
-      val s: State = p
+      val s: State = p.state
       Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
 
