@@ -5,6 +5,7 @@ import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import shipreq.webapp.base.UiText
+import shipreq.webapp.base.text.PlainText
 import scalacss.ScalaCssReact._
 import scalaz.{\/, -\/, \/-}
 import shipreq.base.util.NonEmptyVector
@@ -21,19 +22,18 @@ import DomUtil._
 
 object ReqDetail {
 
-  case class Props(rtm: ReqType.Mnemonic,
-                   pos: ReqTypePos,
-                   project: Project) {
+  case class Props(extPubid: ExternalPubid,
+                   project : Project) {
     def component = Component(this)
   }
 
   final class Backend($: BackendScope[Props, Unit]) {
 
     def render(p: Props): ReactElement =
-      p.project.findReq(p.rtm, p.pos) match {
+      p.project.findReq(p.extPubid) match {
         case \/-(req)                                 => renderDetail(p, req)
-        case -\/(PubidQueryError.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.rtm.value} not found.")
-        case -\/(PubidQueryError.InvalidPos(rt, len)) => renderNotFound(s"${p.rtm.value}-${p.pos.value} not found.")
+        case -\/(PubidQueryError.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.extPubid.mnemonic.value} not found.")
+        case -\/(PubidQueryError.InvalidPos(rt, len)) => renderNotFound(s"${PlainText pubid p.extPubid} not found.")
       }
 
     def renderNotFound(failureReason: String): ReactElement =

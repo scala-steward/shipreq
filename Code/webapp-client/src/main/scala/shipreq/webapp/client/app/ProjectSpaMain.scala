@@ -10,7 +10,7 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.data.{ReqTypePos, ReqType}
+import shipreq.webapp.base.data.{ExternalPubid, ReqType, ReqTypePos}
 import shipreq.webapp.base.protocol.ProjectSPA
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.client.app.cfg.shared.Usage
@@ -45,11 +45,11 @@ object ProjectSpaMain {
     case object CfgTags     extends Page
     case object ReqTable    extends Page
 
-    case class ReqDetail(rtm: ReqType.Mnemonic, pos: ReqTypePos) extends Page
+    case class ReqDetail(pubid: ExternalPubid) extends Page
 
     object ReqDetail {
       val stringPrism: Prism[String, ReqDetail] =
-        Grammar.pubid.stringPrism ^<-> GenIso.fields[ReqDetail].reverse
+        Grammar.pubid.stringPrism ^<-> GenIso.fields[ExternalPubid].reverse ^<-> GenIso.fields[ReqDetail].reverse
     }
   }
 
@@ -106,7 +106,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       ).notFound(redirectToPage(Index)(Redirect.Replace))
         .verify(
           Index, ReqTable, CfgFields, CfgIssues, CfgReqTypes, CfgTags,
-          ReqDetail(ReqType.Mnemonic("A"), ReqTypePos(1)))
+          ReqDetail(ExternalPubid(ReqType.Mnemonic("A"), ReqTypePos(1))))
     }
 
   import reqtable.ReqTable
@@ -119,13 +119,20 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
   def initState = State(HideDead, ReqTable.State.init(cd, HideDead, None))
 
   class Backend($: BackendScope[Props, State]) {
+
+    // This never changes
+    val routerCtl = $.props.runNow().routerCtl
+
     val setFilterDead = ReusableFn($ zoomL State.filterDead).setState
 
-    val reqTable = ReqTable(ReqTable.StaticProps(cd, cp, r.createContent, r.updateContent, $ zoomL State.reqTable))
+    val reqTable = ReqTable(ReqTable.StaticProps(
+      cd, cp, r.createContent, r.updateContent,
+      routerCtl.contramap(Page.ReqDetail.apply),
+      $ zoomL State.reqTable))
 
     val usageShow =
       Usage.Show((fd, fs) =>
-        $.props.runNow().routerCtl
+        routerCtl
           .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
           .link(Page.ReqTable))
 
@@ -138,13 +145,13 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
             ^.textAlign.right,
             ^.paddingRight := "0.6ex",
             ^.marginTop := "-14px",
-            p.routerCtl.link(Page.Index)("← Back")),
+            routerCtl.link(Page.Index)("← Back")),
           content)
 
       p.page match {
 
         case Page.Index =>
-          IndexComponent(p.routerCtl)
+          IndexComponent(routerCtl)
 
         case Page.CfgFields =>
           layout(cfg.fields.CfgFields.Props(cp, r.fieldCrud, cd, fd).component)
@@ -161,8 +168,8 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
         case Page.ReqTable =>
           layout(reqTable(s.reqTable))
 
-        case Page.ReqDetail(rtm, pos) =>
-          layout(reqdetail.ReqDetail.Props(rtm, pos, cd.project()).component)
+        case Page.ReqDetail(pubid) =>
+          layout(reqdetail.ReqDetail.Props(pubid, cd.project()).component)
       }
     }
   }

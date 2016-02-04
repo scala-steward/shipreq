@@ -3,6 +3,7 @@ package shipreq.webapp.client.app.reqtable
 import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.experimental.StaticPropComponent
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.extra.router.RouterCtl
 import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
@@ -31,6 +32,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                          cp             : ClientProtocol,
                          createContentFn: CreateContentFn.Instance,
                          updateContentFn: UpdateContentFn.Instance,
+                         reqDetailRC    : RouterCtl[ExternalPubid],
                          state_$        : CompState.Access[State])
 
   override type DynamicProps = State
@@ -97,6 +99,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
   final class Backend(SP: StaticProps, $: BackendScope) extends OnUnmount {
     import SP._
 
+    // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
       ReusableFn(a => state_$.modState(f(a)))
 
@@ -123,7 +126,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     val colName    = project map Column.NameResolver.byProject reuse
     val plainText  = project map PlainText.apply
     val textSearch = Px.apply2(project, plainText)(TextSearch.apply)
-    val widgets    = Px.apply2(project, plainText)(ProjectWidgets.apply)
+    val widgets    = Px.apply2(project, plainText)(ProjectWidgets(_, _, reqDetailRC))
     val colRnd     = Px.apply3(project, colName, widgets)(new ColumnRenderers(_, _, _))
     val colRnds    = Px.apply2(vsCols, colRnd)(_ map _.apply)
     val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)

@@ -111,7 +111,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     make(Function const <.span("∅"))
 
   private def pubid = make {
-    case r: GenericReqRow   => widgets.pubidColumnValue(r.req.pubid)
+    case r: GenericReqRow   => widgets.pubidDetailLink(r.req.pubid)
     case _: ReqCodeGroupRow => `N/A`
   }
 

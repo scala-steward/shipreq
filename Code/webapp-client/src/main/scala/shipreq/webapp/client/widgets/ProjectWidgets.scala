@@ -1,8 +1,9 @@
 package shipreq.webapp.client.widgets
 
-import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.prefix_<^._
+import scalacss.ScalaCssReact._
 import scalacss.StyleA
 import scalajs.js.{undefined, UndefOr}
 import shipreq.base.util._
@@ -19,8 +20,8 @@ import shipreq.webapp.client.lib.ClientUtil.{renderVector, sepComma, sepSpace}
 import ProjectWidgets.{apply => _, _}
 
 object ProjectWidgets {
-  def apply(project: Project, plainText: PlainText.ForProject) =
-    new ProjectWidgets(project, plainText)
+  def apply(project: Project, plainText: PlainText.ForProject, reqDetailRC: RouterCtl[ExternalPubid]) =
+    new ProjectWidgets(project, plainText, reqDetailRC)
 
   val deadValidity: Validity => Live => (Live, Validity) =
     Validity.memo(validityWhenDead =>
@@ -33,7 +34,9 @@ object ProjectWidgets {
   val invalidWhenDead = deadValidity(Invalid)
 }
 
-final class ProjectWidgets private(project: Project, plainText: PlainText.ForProject) extends ProjectText[ReactTag](project) {
+final class ProjectWidgets private(project    : Project,
+                                   plainText  : PlainText.ForProject,
+                                   reqDetailRC: RouterCtl[ExternalPubid]) extends ProjectText[ReactTag](project) {
 
   private implicit def surroundDisplay(s: G.Surrounds) = s.display
 
@@ -60,10 +63,13 @@ final class ProjectWidgets private(project: Project, plainText: PlainText.ForPro
       issueDescSurroundSuffix)
   }
 
-  val pubidColumnValue = memo[Pubid] { pubid =>
-    val txt = PlainText.pubid(project, pubid)
+  val pubidDetailLink = memo[Pubid] { pubid =>
+    val ep = pubid.external(project)
+    val txt = PlainText.pubid(ep)
     val req = project.reqs.reqByPubid(pubid)
-    <.span(*.pubidColumnValue(req live project.config.customReqTypes), txt)
+    reqDetailRC.link(ep)(
+      *.pubidColumnValue(req live project.config.customReqTypes),
+      txt)
   }
 
   /**

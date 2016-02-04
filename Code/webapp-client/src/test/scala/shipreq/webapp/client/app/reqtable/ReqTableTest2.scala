@@ -191,7 +191,8 @@ object ReqTableTest2 extends TestSuite {
   def runTest(action: *.Action) = {
     val cd = new ClientData(SampleProject3.project)
     val cp = new TestClientProtocol
-    val outer = StatefulParent.spc(ReqTable)(ReqTable.StaticProps(cd, cp, createRemote, updateRemote, _))
+    val outer = StatefulParent.spc(ReqTable)(
+      ReqTable.StaticProps(cd, cp, createRemote, updateRemote, MockRouterCtl(), _))
     val initialState = ReqTable.State.init(cd, HideDead, None)
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       def newObs = new ReqTableObs(DomZipper(c))

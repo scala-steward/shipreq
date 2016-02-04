@@ -111,6 +111,9 @@ final case class Project(config         : ProjectConfig,
       deadReqIds,
       f(implications))
 
+  def findReq(externalPubid: ExternalPubid): PubidQueryError \/ Req =
+    findReq(externalPubid.mnemonic, externalPubid.pos)
+
   def findReq(mnemonic: ReqType.Mnemonic, pos: ReqTypePos): PubidQueryError \/ Req =
     config.reqTypesByMnemonic.get(mnemonic) match {
       case None =>
