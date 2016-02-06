@@ -26,7 +26,7 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs(val $ : DomZipper) {
+final class ReqTableObs(val $ : DomZipper.Temp) {
   import ReqTableObs._
 
   object viewSettings {
@@ -36,7 +36,7 @@ final class ReqTableObs(val $ : DomZipper) {
     object columns {
       val entirety: Vector[(On, String)] =
         vsCol(1).collect1("label", l =>
-          (On <~ l.down("input").to_![html.Input].checked, l.down(">span").innerHTML))
+          (On <~ l.down("input").inputChecked.get, l.down(">span").innerHTML))
 
       val allColumns: Vector[String] =
         entirety.map(_._2)
@@ -82,7 +82,7 @@ final class ReqTableObs(val $ : DomZipper) {
 
     object filterDead {
       val checkbox = filter.$.down("input[type=checkbox]")
-      val value: FilterDead = Checkbox.filterDeadChecked <~ checkbox.to_![html.Input].checked
+      val value: FilterDead = Checkbox.filterDeadChecked <~ checkbox.inputChecked.get
     }
   }
 

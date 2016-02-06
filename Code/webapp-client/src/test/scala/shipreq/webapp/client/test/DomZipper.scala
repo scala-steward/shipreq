@@ -10,13 +10,18 @@ import DomZipper.Implicits.removeReactIds
 object DomZipper {
   type DOM = Node
 
+  type Temp = DomZipper[DOM] // TODO DELETE
+
   type CssSelLookup = (String, Node) => js.Array[Element]
 
-  trait DomLike[A] {
-    def apply(a: A): DOM
+  trait DomLike[-A] {
+    type D <: DOM
+    def apply(a: A): D
   }
-  def DomLike[A](f: A => DOM): DomLike[A] =
+  type DomLikeAux[-A, D2 <: DOM] = DomLike[A] {type D = D2}
+  def DomLike[A, D2 <: DOM](f: A => D2): DomLikeAux[A, D2] =
     new DomLike[A] {
+      override type D = D2
       override def apply(a: A) = f(a)
     }
 
@@ -39,7 +44,7 @@ object DomZipper {
       Sizzle(_, _)
 
     import japgolly.scalajs.react._
-    implicit def domFromReact[A <: CompScope.Mounted[TopNode]]: DomLike[A] =
+    implicit def domFromReact[D <: TopNode with DOM]: DomLikeAux[CompScope.Mounted[D], D] =
       DomLike(ReactDOM.findDOMNode)
 
     /*
@@ -58,7 +63,7 @@ object DomZipper {
       override def fail[A](e: String) = sys error removeReactIds(e)
     }
 
-    def removeReactIds(html: String): String =
+    def removeReactIds(html: String): String = // TODO Remove
       html.replaceAll(""" data-reactid=".*?"""", "")
   }
 
@@ -72,18 +77,18 @@ object DomZipper {
       case (None   , None   ) => "?"
     }
 
-  case class Layer(name: String, sel: String, dom: DOM) {
+  case class Layer[+D <: DOM](name: String, sel: String, dom: D) {
     def show = showNameSel(name, sel)
   }
 
-  def root(implicit $: CssSelLookup): DomZipper =
-    new DomZipper(Vector.empty[Layer] :+ Layer("window.document", "", window.document), $)
+  def root(implicit $: CssSelLookup): DomZipper[DOM] =
+    new DomZipper[DOM](Vector.empty, Layer("window.document", "", window.document), $)
 
-  def apply[A](tgt: A)(implicit domLike: DomLike[A], $: CssSelLookup): DomZipper =
+  def apply[A](tgt: A)(implicit domLike: DomLike[A], $: CssSelLookup): DomZipper[domLike.D] =
     apply("<manual>", tgt)
 
-  def apply[A](name: String, tgt: A)(implicit domLike: DomLike[A], $: CssSelLookup): DomZipper =
-    new DomZipper(Vector.empty[Layer] :+ Layer(name, "", domLike(tgt)), $)
+  def apply[A](name: String, tgt: A)(implicit domLike: DomLike[A], $: CssSelLookup): DomZipper[domLike.D] =
+    new DomZipper(Vector.empty, Layer(name, "", domLike(tgt)), $)
 
   case class MofN(m: Int, n: Int) {
     override def toString = s"$m of $n"
@@ -99,16 +104,21 @@ object DomZipper {
   val Sole = 1 of 1
 }
 
-final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
-  assert(layers.nonEmpty)
+final class DomZipper[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]], curLayer: Layer[D], $: CssSelLookup) {
 
-  val dom: DOM =
-    layers.last.dom
+  val dom: D =
+    curLayer.dom
 
-  def to_![D <: DOM]: D =
-    dom.asInstanceOf[D]
+  def as_![D2 <: DOM]: DomZipper[D2] =
+    this.asInstanceOf[DomZipper[D2]]
 
-  def to[D <: DOM](implicit ct: ClassTag[D]): Option[D] =
+  def as[D2 <: DOM](implicit ct: ClassTag[D2]): Option[DomZipper[D2]] =
+    getDom[D2].map(d2 => new DomZipper(prevLayers, curLayer.copy(dom = d2), $))
+
+  def getDom_![D2 <: DOM]: D2 =
+    dom.asInstanceOf[D2]
+
+  def getDom[D2 <: DOM](implicit ct: ClassTag[D2]): Option[D2] =
     ct.unapply(dom)
 
   def dynamicMethod[A](f: js.Dynamic => Any): Option[A] =
@@ -122,16 +132,16 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
   def innerText: String = dom.textContent
   def value: String = dynamicString(_.value)
 
-  def downE(sel: String): Either[String, DomZipper] =
+  def downE(sel: String): Either[String, DomZipper[DOM]] =
     downE("", sel)
 
-  def downE(sel: String, which: MofN): Either[String, DomZipper] =
+  def downE(sel: String, which: MofN): Either[String, DomZipper[DOM]] =
     downE("", sel, which)
 
-  def downE(name: String, sel: String): Either[String, DomZipper] =
+  def downE(name: String, sel: String): Either[String, DomZipper[DOM]] =
     downE(name, sel, Sole)
 
-  def downE(name: String, sel: String, which: MofN): Either[String, DomZipper] = {
+  def downE(name: String, sel: String, which: MofN): Either[String, DomZipper[DOM]] = {
     val results = $(sel, dom)
     if (results.length != which.n)
       Left {
@@ -144,26 +154,29 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
     }
   }
 
-  def downO(sel: String)                           : Option[DomZipper] = downE(sel)             .right.toOption
-  def downO(sel: String, which: MofN)              : Option[DomZipper] = downE(sel, which)      .right.toOption
-  def downO(name: String, sel: String)             : Option[DomZipper] = downE(name, sel)       .right.toOption
-  def downO(name: String, sel: String, which: MofN): Option[DomZipper] = downE(name, sel, which).right.toOption
+  def downO(sel: String)                           : Option[DomZipper[DOM]] = downE(sel)             .right.toOption
+  def downO(sel: String, which: MofN)              : Option[DomZipper[DOM]] = downE(sel, which)      .right.toOption
+  def downO(name: String, sel: String)             : Option[DomZipper[DOM]] = downE(name, sel)       .right.toOption
+  def downO(name: String, sel: String, which: MofN): Option[DomZipper[DOM]] = downE(name, sel, which).right.toOption
 
-  def down(sel: String)                           (implicit h: HndDown): h.Result[DomZipper] = h(downE(sel)             )
-  def down(sel: String, which: MofN)              (implicit h: HndDown): h.Result[DomZipper] = h(downE(sel, which)      )
-  def down(name: String, sel: String)             (implicit h: HndDown): h.Result[DomZipper] = h(downE(name, sel)       )
-  def down(name: String, sel: String, which: MofN)(implicit h: HndDown): h.Result[DomZipper] = h(downE(name, sel, which))
+  def down(sel: String)                           (implicit h: HndDown): h.Result[DomZipper[DOM]] = h(downE(sel)             )
+  def down(sel: String, which: MofN)              (implicit h: HndDown): h.Result[DomZipper[DOM]] = h(downE(sel, which)      )
+  def down(name: String, sel: String)             (implicit h: HndDown): h.Result[DomZipper[DOM]] = h(downE(name, sel)       )
+  def down(name: String, sel: String, which: MofN)(implicit h: HndDown): h.Result[DomZipper[DOM]] = h(downE(name, sel, which))
 
 //  def down_!(sel: String)                           (implicit e: HndDown): DomZipper = need_!(e)(down(sel))
 //  def down_!(sel: String, which: MofN)              (implicit e: HndDown): DomZipper = need_!(e)(down(sel, which))
 //  def down_!(name: String, sel: String)             (implicit e: HndDown): DomZipper = need_!(e)(down(name, sel))
 //  def down_!(name: String, sel: String, which: MofN)(implicit e: HndDown): DomZipper = need_!(e)(down(name, sel, which))
 
-  private def addLayer(nextLayer: Layer) =
-    new DomZipper(layers :+ nextLayer, $)
+  private def addLayer[D2 <: DOM](nextLayer: Layer[D2]) =
+    new DomZipper(prevLayers :+ curLayer, nextLayer, $)
+
+  def allLayers =
+    prevLayers :+ curLayer
 
   def describe: String =
-    s"DESC: ${layers.map(_.show) mkString " → "}\nHTML: $outerHTML"
+    s"DESC: ${allLayers.map(_.show) mkString " → "}\nHTML: $outerHTML"
 
   private def failMsg(msg: String): String =
     msg + "\n" + describe
@@ -176,7 +189,7 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
   def collectDom[A](sel: String, f: DOM => A): Vector[A] =
     getAll(sel).foldLeft(Vector.empty[A])(_ :+ f(_))
 
-  def collect[A](sel: String, f: DomZipper => A): Vector[A] =
+  def collect[A](sel: String, f: DomZipper[DOM] => A): Vector[A] =
     collectDom(sel, d => f(addLayer(Layer("collect", sel, d))))
 
   def collectInnerHTML[A](sel: String): Vector[String] =
@@ -196,7 +209,7 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
   def collectDom1[A](sel: String, f: DOM => A): Vector[A] =
     getAll1(sel).foldLeft(Vector.empty[A])(_ :+ f(_))
 
-  def collect1[A](sel: String, f: DomZipper => A): Vector[A] =
+  def collect1[A](sel: String, f: DomZipper[DOM] => A): Vector[A] =
     collectDom1(sel, d => f(addLayer(Layer("collect", sel, d))))
 
   def collectInnerHTML1[A](sel: String): Vector[String] =
@@ -207,12 +220,15 @@ final class DomZipper private[test](layers: Vector[Layer], $: CssSelLookup) {
 
   // ======= hmmmm… =======
 
+  // TODO Use dep types for return types.
+  // inputChecked
+
   def inputChecked: Option[Boolean] =
-    to[html.Input].map(_.checked)
+    getDom[html.Input].map(_.checked)
 
   /** The currently selected option in a &lt;select&gt; dropdown. */
   def selectedOption: Option[html.Option] =
-    to[html.Select].flatMap(s =>
+    getDom[html.Select].flatMap(s =>
       if (s.selectedIndex >= 0)
         Some(s.options(s.selectedIndex))
       else
