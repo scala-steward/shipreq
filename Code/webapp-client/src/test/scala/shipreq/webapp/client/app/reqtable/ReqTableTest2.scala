@@ -5,11 +5,14 @@ import nyaya.test._
 import nyaya.test.PropTestOps._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
+import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.test._
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom, dom.html
 import org.scalajs.dom.ext.{KeyCode, KeyValue}
+import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.data._
+import shipreq.webapp.client.widgets.high.ProjectWidgets
 import scalajs.js
 import scalaz.Equal
 import scalaz.std.option._
@@ -189,11 +192,21 @@ object ReqTableTest2 extends TestSuite {
   val updateRemote = RemoteFn.Instance("x", UpdateContentFn)
 
   def runTest(action: *.Action) = {
-    val cd = new ClientData(SampleProject3.project)
+    val reqDetailRC = MockRouterCtl[ExternalPubid]()
     val cp = new TestClientProtocol
+    val cd = new ClientData(SampleProject3.project)
+    import cd.pxProject
+
+    val pxPlainText      = pxProject map PlainText.apply
+    val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
+    val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
+
     val outer = StatefulParent.spc(ReqTable)(
-      ReqTable.StaticProps(cd, cp, createRemote, updateRemote, MockRouterCtl(), _))
+      ReqTable.StaticProps(cd, cp, createRemote, updateRemote, pxPlainText, pxTextSearch, pxProjectWidgets,
+        reqDetailRC, _))
+
     val initialState = ReqTable.State.init(cd, HideDead, None)
+
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       def newObs = new ReqTableObs(DomZipper(c))
       val tt = Test(action, invariants).observe(_ => newObs)

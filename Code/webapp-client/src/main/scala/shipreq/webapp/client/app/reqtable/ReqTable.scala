@@ -14,7 +14,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.client.app.state.{Changes, ChangeListener, ClientData}
+import shipreq.webapp.client.app.state.{Changes, ClientData}
 import shipreq.webapp.client.app.Style.{reqtable => *}
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.data.FilterDead
@@ -26,14 +26,17 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
   override protected def configureBackend = new Backend(_, _)
   override protected def configureRender  = _.renderBackend
   override protected def configure = _.configure(
-    Listenable.install(_.static.cd, $ => ((c: Changes) => $.props.static.state_$.modState(_ recvChanges c))))
+    Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ recvChanges c)))
 
-  case class StaticProps(cd             : ClientData,
-                         cp             : ClientProtocol,
-                         createContentFn: CreateContentFn.Instance,
-                         updateContentFn: UpdateContentFn.Instance,
-                         reqDetailRC    : RouterCtl[ExternalPubid],
-                         state_$        : CompState.Access[State])
+  case class StaticProps(cd              : ClientData,
+                         cp              : ClientProtocol,
+                         createContentFn : CreateContentFn.Instance,
+                         updateContentFn : UpdateContentFn.Instance,
+                         pxPlainText     : Px[PlainText.ForProject],
+                         pxTextSearch    : Px[TextSearch],
+                         pxProjectWidgets: Px[ProjectWidgets],
+                         reqDetailRC     : RouterCtl[ExternalPubid],
+                         state_$         : CompState.Access[State])
 
   override type DynamicProps = State
 
@@ -98,6 +101,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
   final class Backend(SP: StaticProps, $: BackendScope) extends OnUnmount {
     import SP._
+    import cd.pxProject
 
     // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
@@ -116,40 +120,36 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     val setModal        = reusableSetState(State.modal)
     val setCreation     = state_$ zoomL State.creation
 
-    val project      = Px.bsMP($).propsM(_.project)
-    val viewSettings = Px.bsMP($).propsM(_.viewSettings)
-    val filterState  = Px.bsMP($).propsM(_.filter)
-    val selection    = Px.bsMP($).propsM(_.selection)
+    val pxViewSettings = Px.bsMP($).propsM(_.viewSettings)
+    val pxFilterState  = Px.bsMP($).propsM(_.filter)
+    val pxSelection    = Px.bsMP($).propsM(_.selection)
 
-    val vsVar      = viewSettings map (ReusableVar(_)(setViewSettings))
-    val vsCols     = viewSettings map (_.columns)
-    val colName    = project map Column.NameResolver.byProject reuse
-    val plainText  = project map PlainText.apply
-    val textSearch = Px.apply2(project, plainText)(TextSearch.apply)
-    val widgets    = Px.apply2(project, plainText)(ProjectWidgets(_, _, reqDetailRC))
-    val colRnd     = Px.apply3(project, colName, widgets)(new ColumnRenderers(_, _, _))
-    val colRnds    = Px.apply2(vsCols, colRnd)(_ map _.apply)
-    val rows       = Px.apply4(viewSettings, project, plainText, textSearch)(Logic.rowsForTable).map(_.toVector)
-    val stats      = Px.apply3(viewSettings, project, rows)(Logic.stats)
+    val pxVsVar   = pxViewSettings map (ReusableVar(_)(setViewSettings))
+    val pxVsCols  = pxViewSettings map (_.columns)
+    val pxColName = pxProject map Column.NameResolver.byProject reuse
+    val pxColRnd  = Px.apply3(pxProject, pxColName, pxProjectWidgets)(new ColumnRenderers(_, _, _))
+    val pxColRnds = Px.apply2(pxVsCols, pxColRnd)(_ map _.apply)
+    val pxRows    = Px.apply4(pxViewSettings, pxProject, pxPlainText, pxTextSearch)(Logic.rowsForTable).map(_.toVector)
+    val pxStats   = Px.apply3(pxViewSettings, pxProject, pxRows)(Logic.stats)
 
-    val rowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
+    val pxRowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
       Px.bsMP($).propsM(_.asyncStates.iterator
         .filter(_._2.rowStatus.isDefined)
         .map(_._1)
         .toSet)
 
-    val visibleSelection =
+    val pxVisibleSelection =
       for {
-        rs <- rows
-        s  <- selection
-        wr <- rowsWithAsyncWholeRowStatuses
+        rs <- pxRows
+        s  <- pxSelection
+        wr <- pxRowsWithAsyncWholeRowStatuses
       } yield
         s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
-    val sortEditorProps =
+    val pxSortEditorProps =
       for {
-        vs  <- viewSettings
-        nr  <- colName
+        vs  <- pxViewSettings
+        nr  <- pxColName
       } yield SortEditor.Props(vs.order, setSortCriteria, nr)
 
     private def callServer[I, F <: (I =>|=> VerifiedEvents)](remoteFn: RemoteFn.InstanceFor[F]): CallServer[I] =
@@ -169,47 +169,49 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
       import FilterEditor._
       val onFailure: OnFailure = ReusableFn(s => state_$.modState(_ filterFailure s))
       val onSuccess: OnSuccess = ReusableFn(i => state_$.modState(_.filterSuccess(i._1, i._2)))
-      s => FilterEditor.Props(project.value(), onFailure, onSuccess, s)
+      s => FilterEditor.Props(pxProject.value(), onFailure, onSuccess, s)
     }
 
-    val filterEditor: Px[ReusableVal[ReactElement]] =
-      filterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
+    val pxFilterEditor: Px[ReusableVal[ReactElement]] =
+      pxFilterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
 
     val asyncFeature = AsyncState.Feature(state_$)(State.asyncStates)
 
     val previewFeature = new PreviewFeature(state_$, State.previewState)
 
     val cellEditors: CellEditors =
-      new CellEditorsImpl[State](state_$, State.editStates, asyncFeature, previewFeature, project, plainText, widgets,
-        textSearch, updateIO)
+      new CellEditorsImpl[State](state_$, State.editStates, asyncFeature, previewFeature, pxProject, pxPlainText,
+        pxProjectWidgets, pxTextSearch, updateIO)
 
     val creationInterface =
-      new CreationInterface(setCreation, previewFeature, project, plainText, widgets, textSearch)
+      new CreationInterface(setCreation, previewFeature, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(s: DynamicProps): ReactElement = {
-      Px.refresh(project, viewSettings, filterState, selection, rowsWithAsyncWholeRowStatuses)
+      Px.refresh(pxViewSettings, pxFilterState, pxSelection, pxRowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
 
       val cfg = s.project.config
 
-      def vsProps = ViewSettingsEditor.Props(colName, cfg, vsVar, filterEditor)
+      def vsProps = ViewSettingsEditor.Props(pxColName, cfg, pxVsVar, pxFilterEditor)
 
       def creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
 
       def tableProps = Table.Props(
-        project, rows, colName, colRnds, cellEditors, s.editStates,s.asyncStates, visibleSelection, modViewSettings)
+        pxProject, pxRows, pxColName, pxColRnds, cellEditors, s.editStates,s.asyncStates, pxVisibleSelection,
+        modViewSettings)
 
       def selCtrlProps = SelectionCtrls.Props(
-        visibleSelection, cfg, rows, setModal, project, widgets, plainText, textSearch, updateIO, asyncFeature)
+        pxVisibleSelection, cfg, pxRows, setModal, pxProject, pxProjectWidgets, pxPlainText, pxTextSearch, updateIO,
+        asyncFeature)
 
       def mainScreen =
         <.div(
           ViewSettingsEditor.Component(vsProps),
           creationInterface.Component(creationProps),
-          StatsSummary(stats),
+          StatsSummary(pxStats),
           SelectionCtrls.Component(selCtrlProps),
-          SortEditor.Component(sortEditorProps),
+          SortEditor.Component(pxSortEditorProps),
           Table.Component(tableProps))
 
       s.modal renderOrElse mainScreen

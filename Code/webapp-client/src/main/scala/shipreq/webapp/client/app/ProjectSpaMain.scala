@@ -8,15 +8,15 @@ import monocle.macros._
 import org.scalajs.dom
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
-
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.base.data.{ExternalPubid, ReqType, ReqTypePos}
 import shipreq.webapp.base.protocol.ProjectSPA
-import shipreq.webapp.base.text.Grammar
+import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.{FilterDead, HideDead}
 import shipreq.webapp.client.protocol.ClientProtocol
+import shipreq.webapp.client.widgets.high.ProjectWidgets
 
 object ProjectSpaMain {
 
@@ -119,15 +119,22 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
   def initState = State(HideDead, ReqTable.State.init(cd, HideDead, None))
 
   class Backend($: BackendScope[Props, State]) {
+    import cd.pxProject
 
     // This never changes
     val routerCtl = $.props.runNow().routerCtl
+    val reqDetailRC = routerCtl.contramap(Page.ReqDetail.apply)
 
     val setFilterDead = ReusableFn($ zoomL State.filterDead).setState
 
+    val pxPlainText      = pxProject map PlainText.apply
+    val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
+    val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
+
     val reqTable = ReqTable(ReqTable.StaticProps(
       cd, cp, r.createContent, r.updateContent,
-      routerCtl.contramap(Page.ReqDetail.apply),
+      pxPlainText, pxTextSearch, pxProjectWidgets,
+      reqDetailRC,
       $ zoomL State.reqTable))
 
     val usageShow =

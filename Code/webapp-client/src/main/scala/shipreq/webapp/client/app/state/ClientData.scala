@@ -1,21 +1,26 @@
 package shipreq.webapp.client.app.state
 
 import japgolly.scalajs.react.{CallbackTo, Callback}
-import japgolly.scalajs.react.extra.{Reusability, Broadcaster}
+import japgolly.scalajs.react.extra.{Px, Reusability, Broadcaster}
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{ApplyEvent, VerifiedEvents}
 import shipreq.webapp.base.protocol.ProjectInit
 import shipreq.webapp.client.data.TCB
+import shipreq.webapp.client.lib.DataReusability.reusabilityProject
 import shipreq.webapp.client.lib.Logger
 import shipreq.webapp.client.protocol.ClientProtocol
 
 final class ClientData(init: Project) extends Broadcaster[Changes] {
 
-  private[this] var _p = init
+  private[this] val pvar: Px.Var[Project] =
+    Px(init)
+
+  def pxProject: Px[Project] =
+    pvar
 
   def project(): Project =
-    _p
+    pvar.value()
 
   @inline def projectCB: CallbackTo[Project] =
     CallbackTo(project())
@@ -24,8 +29,7 @@ final class ClientData(init: Project) extends Broadcaster[Changes] {
     projectCB >>= (p1 =>
       ApplyEvent.trusted.applyVerified(ves)(p1) match {
         case \/-(p2) =>
-          Callback(_p = p2) >>
-          broadcast(Changes(ves, p1, p2))
+          Callback(pvar.set(p2)) >> broadcast(Changes(ves, p1, p2))
         case -\/(err) =>
           // TODO Do more when VerifiedEvent application fails
           Logger(_ error s"Update failed. $err")
