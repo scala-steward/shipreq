@@ -90,6 +90,9 @@ sealed trait Field {
 
   final def fieldId: FieldId =
     fold(s => s, _.id)
+
+  final def applicable(reqTypeId: ReqTypeId): Applicable =
+    Applicable <~ reqTypes.filter(reqTypeId)
 }
 
 object Field {
@@ -317,7 +320,7 @@ case class FieldSet(customFields: FieldSet.CustomFields,
     }
 
   def fieldsForReqType(reqTypeId: ReqTypeId): Vector[Field] =
-    fields.filter(_.reqTypes.filter(reqTypeId))
+    fields.filter(_.applicable(reqTypeId) :: Applicable)
 
   def staticFieldIterator: Iterator[StaticField] =
     order.filterTI[StaticField]

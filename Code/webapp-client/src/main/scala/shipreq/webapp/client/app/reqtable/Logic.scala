@@ -170,7 +170,7 @@ private[reqtable] object Logic {
         val applic   = ap(col)
         val expander = expanderC[V](vs, col)
         val dataFn   = f(colId)
-        val fn       = (r: Req) => expander(() => applic.choose(r, na = UnivEq.emptySet[V])(dataFn(r.id)))
+        val fn       = (r: Req) => expander(() => applic.choose(r, `n/a` = UnivEq.emptySet[V])(dataFn(r.id)))
         (colId, fn)
       }.toMap
 

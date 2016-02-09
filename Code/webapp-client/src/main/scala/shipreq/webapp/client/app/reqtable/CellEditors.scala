@@ -48,7 +48,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
 
   private def areEditPreConditionsSatisfied(row: Row, col: Column): Boolean =
     row.live match {
-      case Live => pxApplicability.value().apply(col).choose(row, na = false)(ok = true)
+      case Live => pxApplicability.value().apply(col).choose(row, `n/a` = false)(ok = true)
       case Dead => false
     }
 

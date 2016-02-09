@@ -4,7 +4,8 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import scala.scalajs.js
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig}
+import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field}
+import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.client.data.FilterDead
@@ -87,6 +88,19 @@ object Column {
 
   val filterDead: FilterDead => Column => Boolean =
     FilterDead.memo(_.filterFnA[Column](_.live))
+
+  def field(c: Column, p: ProjectConfig): Option[Field] =
+    c match {
+      case ReqType
+         | Pubid
+         | Code
+         | Title
+         | Tags
+         | ImplicationSrc
+         | ImplicationTgt
+         | DeletionReason     => None
+      case CustomField(id, _) => Some(p.customField(id))
+    }
 
   // -------------------------------------------------------------------------------------------------------------------
 
