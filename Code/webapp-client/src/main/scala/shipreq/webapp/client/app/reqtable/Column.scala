@@ -3,7 +3,7 @@ package shipreq.webapp.client.app.reqtable
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import scala.scalajs.js
-import shipreq.base.util.{NonEmptyVector, UnivEq}
+import shipreq.base.util._
 import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
@@ -100,6 +100,18 @@ object Column {
          | ImplicationTgt
          | DeletionReason     => None
       case CustomField(id, _) => Some(p.customField(id))
+    }
+
+  /**
+    * Direction of implications relative to row-subject.
+    *
+    * If forwards, the user edits what this subject implies (ie. subject → edit-specified).
+    * If backwards, then it's what implies this subject     (ie. subject ← edit-specified).
+    */
+  def implicationDirection(column: Column): Direction =
+    column match {
+      case Column.ImplicationTgt => Forwards
+      case _                     => Backwards
     }
 
   // -------------------------------------------------------------------------------------------------------------------

@@ -271,20 +271,20 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
       val rowId     = row.sourceId
       val lens      = editLens ^|-> EditState.atCell(rowId, col)
       val subjectId = row.req.id
-      val declFwd   = ImplicationEditor.isDeclFwd(col)
+      val dir       = Column.implicationDirection(col)
 
       val (initialValues, initialText) = ImplicationEditor.initialValueAndText(
         (subjectId, pubids).some, pxProject.value(), pxLookup.value())
 
       val pxValFn =
         pxProject.map(p =>
-          ImplicationEditor.validationFn(p, subjectId.some, initialValues, declFwd))
+          ImplicationEditor.validationFn(p, subjectId.some, initialValues, dir))
 
       val cmd: NESD[ReqId] => UpdateContentCmd =
-        if (declFwd)
-          PatchImplicationTgt(subjectId, _)
-        else
-          PatchImplicationSrc(subjectId, _)
+        dir match {
+          case Forwards  => PatchImplicationTgt(subjectId, _)
+          case Backwards => PatchImplicationSrc(subjectId, _)
+        }
 
       val extra: ImplicationEditor.Extra =
         ReusableFn(

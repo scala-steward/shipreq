@@ -204,7 +204,7 @@ class CreationInterface($               : CompState.Access[State],
 
     val pxImpValidationFn =
       pxProject.map(p =>
-        ImplicationEditor.validationFn(p, None, Set.empty, ImplicationEditor isDeclFwd Column.ImplicationSrc))
+        ImplicationEditor.validationFn(p, None, Set.empty, Column implicationDirection Column.ImplicationSrc))
 
     val pxTagLookup = pxProject map TagEditor.Lookup.all
 

@@ -6,11 +6,10 @@ import org.scalajs.dom
 import scalaz.{\/, \/-, -\/}
 import scalaz.syntax.either._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{SetDiff, UnivEq, univEqOps}
+import shipreq.base.util.{Direction, SetDiff, UnivEq, univEqOps}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar, PlainText, TextSearch}
 import shipreq.webapp.base.validation.{ValidationPartU, VFailure, ValidationResult, Validator}
-import shipreq.webapp.client.app.reqtable.Column
 import shipreq.webapp.client.data.Plain
 import shipreq.webapp.client.lib.AutoComplete
 import shipreq.webapp.client.lib.DataReusability._
@@ -64,16 +63,6 @@ object ImplicationEditor {
     (reqs.map(_.id).toSet, text)
   }
 
-  /**
-   * If true, the user edits what this subject implies (ie. subject → edit-specified).
-   * If false, then it's what implies this subject     (ie. subject ← edit-specified).
-   */
-  def isDeclFwd(column: Column): Boolean =
-    column match {
-      case Column.ImplicationTgt => true
-      case _                     => false
-    }
-
   /** Extra properties to apply to the tag. */
   type Extra = Option[SetDiff[ReqId]] ~=> TagMod
 
@@ -102,13 +91,13 @@ object ImplicationEditor {
         checkEach(l, s).leftMap(VFailure.looseMsg).validation)
   }
 
-  private def validator2(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], declFwd: Boolean) = {
+  private def validator2(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction) = {
     val validate: Set[ReqId] => ValidationResult[SetDiff[ReqId]] = in => {
       val newValues = subject.foldLeft(in)(_ - _) // Tolerate reflexivity
       val diff = SetDiff.compare(initialValues, newValues)
 
       val pi = p.implications
-      var is = pi.dir(declFwd)
+      var is = pi(dir)
       for (i <- subject)
         is = is.mod(i, diff.apply)
       val r =
@@ -121,10 +110,10 @@ object ImplicationEditor {
     ValidationPartU.lift(validate)
   }
 
-  def validationFn(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], declFwd: Boolean): ValidationFn =
+  def validationFn(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): ValidationFn =
     validator1
       .map(_.toSet)
-      .addValidation(validator2(p, subject, initialValues, declFwd).liftS)
+      .addValidation(validator2(p, subject, initialValues, dir).liftS)
 
   private val editorRef = Ref[dom.html.Input]("i")
 
