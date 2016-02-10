@@ -281,10 +281,7 @@ final class CellEditorsImpl[S]($               : CompState.Access[S],
           ImplicationEditor.validationFn(p, subjectId.some, initialValues, dir))
 
       val cmd: NESD[ReqId] => UpdateContentCmd =
-        dir match {
-          case Forwards  => PatchImplicationTgt(subjectId, _)
-          case Backwards => PatchImplicationSrc(subjectId, _)
-        }
+        PatchImplications(subjectId, dir, _)
 
       val extra: ImplicationEditor.Extra =
         ReusableFn(
