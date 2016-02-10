@@ -257,6 +257,9 @@ object CustomField {
       override def id(d: Implication) = d.id
       override val unapplyData: AnyRef => Option[Implication] = {case r: Implication => Some(r); case _ => None}
     }
+
+    // Implication fields always look backwards (i.e. refer to implication sources)
+    def dir = Backwards
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -312,6 +315,12 @@ object FieldId {
 @Lenses
 case class FieldSet(customFields: FieldSet.CustomFields,
                     order       : FieldSet.Order) {
+
+  def get(id: FieldId): Option[Field] =
+    id match {
+      case f : StaticField   => if (order contains f) Some(f) else None
+      case id: CustomFieldId => customFields get id
+    }
 
   lazy val fields: Vector[Field] =
     order map {

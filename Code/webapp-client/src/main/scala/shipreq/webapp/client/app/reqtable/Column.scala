@@ -110,8 +110,9 @@ object Column {
     */
   def implicationDirection(column: Column): Direction =
     column match {
-      case Column.ImplicationTgt => Forwards
-      case _                     => Backwards
+      case Column.CustomField(_, _) => data.CustomField.Implication.dir
+      case Column.ImplicationTgt    => Forwards
+      case _                        => Backwards
     }
 
   // -------------------------------------------------------------------------------------------------------------------

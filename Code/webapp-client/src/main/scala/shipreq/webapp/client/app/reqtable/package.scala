@@ -2,11 +2,7 @@ package shipreq.webapp.client.app
 
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import monocle.Lens
-import monocle.function.At.at
-import monocle.std.map.atMap
 import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.client.data.TCB
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.feature._
 
@@ -33,46 +29,12 @@ package object reqtable {
   implicit val reusabilityCs: Reusability[NonEmptyVector[Column]] =
     Reusability.byRef || reusabilityNonEmptyVector
 
+  implicit val reusabilityContentEditorFeature: Reusability[ContentEditorFeature.TwoD.Feature[Row, Column]] =
+    Reusability.byRef
+
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.shouldComponentUpdate[P, S, B, N]
     // Reusability.shouldComponentUpdateWithOverlay[P, S, B, N]
-
-  // -----------------------------------------------------------------------------------------------
-
-  object EditState {
-    type R     = Row.SourceId
-    type C     = Column
-    type Table = Map[R, AtRow]
-    type AtRow = Map[C, CellEditor]
-
-    def empty: Table =
-      UnivEq.emptyMap
-
-    def getRow(t: Table, r: R): AtRow =
-      t.getOrElse(r, UnivEq.emptyMap)
-
-    def atRow(r: R): Lens[Table, AtRow] =
-      Lens[Table, AtRow](
-        s => getRow(s, r))(
-        s => m => if (s.isEmpty) m - r else m.updated(r, s))
-
-    def atCell(r: R, c: C): Lens[Table, Option[CellEditor]] =
-      atRow(r) ^|-> at(c)
-  }
-
-  implicit def reusabilityCE: Reusability[CellEditor] =
-    Reusability.never // ∵ renderCB changes with state (i.e. the Pxs and reading of PreviewFeature state)
-
-  implicit def reusabilityCEs: Reusability[CellEditors] =
-    Reusability.byRef
-
-  implicit def reusabilityEditStateTable: Reusability[EditState.Table] =
-    // Contents are effectively mutable (see reusabilityCE comment)
-    Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
-
-  implicit def reusabilityEditStateAtRow: Reusability[EditState.AtRow] =
-    // Contents are effectively mutable (see reusabilityCE comment)
-    Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
 
   // -----------------------------------------------------------------------------------------------
 

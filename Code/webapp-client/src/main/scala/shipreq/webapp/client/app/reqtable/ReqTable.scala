@@ -43,7 +43,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   editStates  : EditState.Table,
+                   editStates  : ContentEditorFeature.TwoD.State[Row.SourceId, Column],
                    asyncStates : AsyncState.TableState,
                    previewState: Preview.State,
                    modal       : Modal.State) {
@@ -81,14 +81,14 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     def init(cd: ClientData, fd: FilterDead, filterSpec: Option[FilterSpec]): State = {
       val proj = cd.project()
       var s = State(proj,
-        ViewSettings      .default(fd),
-        FilterEditor      .initialState,
-        Selection         .empty,
-        CreationInterface .initState,
-        EditState         .empty,
-        AsyncState        .initState,
-        PreviewFeature    .initState,
-        Modal             .none)
+        ViewSettings             .default(fd),
+        FilterEditor             .initialState,
+        Selection                .empty,
+        CreationInterface        .initState,
+        ContentEditorFeature.TwoD.initState,
+        AsyncState               .initState,
+        PreviewFeature           .initState,
+        Modal                    .none)
       filterSpec.foreach(f => s = s setFilterSpec f)
       s
     }
@@ -169,9 +169,52 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
     val previewFeature = new PreviewFeature(state_$, State.previewState)
 
-    val cellEditors: CellEditors =
-      new CellEditorsImpl[State](state_$, State.editStates, asyncFeature, previewFeature, pxProject, pxPlainText,
-        pxProjectWidgets, pxTextSearch, updateIO)
+    val contentEditorFeature = {
+      import ContentEditorFeature._
+
+      val static = Static(
+        state_$, previewFeature, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch, updateIO)
+
+      val edit: Row => Column => Option[Editor[FocusId]] = row => col => {
+        @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
+        @inline def focusId = FocusId.AtCell(row.sourceId, col)
+
+        def imps(row: GenericReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
+          rowLens.getOption(row).map(pubids =>
+            Editor.ImplicationsAll(row.req, Column.implicationDirection(col), pubids))
+
+        row match {
+          case r: GenericReqRow => col match {
+            case Column.Code                                              => Editor.ReqCodesForReq(r.req)
+            case Column.Title                                             => Editor.GenericReqTitle(r.req, focusId)
+            case Column.Tags                                              => Editor.Tags(r.req, None)
+            case Column.ReqType                                           => Editor.ReqType(r.req)
+            case Column.ImplicationSrc                                    => imps(r, Row.implicationSrc)
+            case Column.ImplicationTgt                                    => imps(r, Row.implicationTgt)
+            case Column.CustomField(id: CustomField.Text       .Id, Live) => Editor.CustomTextField(r.req, id, focusId)
+            case Column.CustomField(id: CustomField.Tag        .Id, Live) => Editor.Tags(r.req, Some(id))
+            case Column.CustomField(id: CustomField.Implication.Id, Live) => Editor.ImplicationsCustomField(r.req, id)
+            case Column.Pubid
+               | Column.DeletionReason
+               | Column.CustomField(_, Dead)                              => None
+          }
+
+          case r: ReqCodeGroupRow => col match {
+            case Column.Code              => Editor.ReqCodeForReqCodeGroup(r.group, r.reqCode)
+            case Column.Title             => Editor.ReqCodeGroupTitle(r.group, focusId)
+            case Column.Pubid
+               | Column.ReqType
+               | Column.Tags
+               | Column.ImplicationSrc
+               | Column.ImplicationTgt
+               | Column.DeletionReason
+               | Column.CustomField(_, _) => None
+          }
+        }
+      }
+
+      TwoD.Feature.withKeyId(static, asyncFeature, (_: Row).sourceId)(State.editStates, edit)
+    }
 
     val creationInterface =
       new CreationInterface(setCreation, previewFeature, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch)
@@ -188,7 +231,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
       def creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
 
       def tableProps = Table.Props(
-        pxProject, pxRows, pxColName, pxColRnds, cellEditors, s.editStates,s.asyncStates, pxVisibleSelection,
+        pxProject, pxRows, pxColName, pxColRnds, contentEditorFeature, s.editStates, s.asyncStates, pxVisibleSelection,
         modViewSettings)
 
       def selCtrlProps = SelectionCtrls.Props(

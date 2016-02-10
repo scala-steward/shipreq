@@ -9,7 +9,7 @@ import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.Style.{reqtable => *}
-import shipreq.webapp.client.feature.AsyncActionFeature
+import shipreq.webapp.client.feature.{AsyncActionFeature, ContentEditorFeature}
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.widgets.DragToReorder
 import AsyncActionFeature.Table.RowState
@@ -25,8 +25,8 @@ object Table {
                    rows           : Rows,
                    colName        : Column.NameResolver,
                    colRenderers   : NonEmptyVector[ColumnRenderer],
-                   cellEditors    : CellEditors,
-                   editState      : EditState.Table,
+                   cellEditors    : ContentEditorFeature.TwoD.Feature[Row, Column],
+                   editState      : ContentEditorFeature.TwoD.State[Row.SourceId, Column],
                    asyncState     : AsyncState.TableState,
                    selection      : RowSelectionVisible,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
@@ -43,7 +43,7 @@ object Table {
   final class Backend($: BackendScope[Props, Unit]) {
 
     val startCellEdit = ReusableFn[Row, Column, Callback, Callback]((r, c, focus) =>
-      $.props >>= (_.cellEditors.startEdit(r, c, focus) getOrElse Callback.empty))
+      $.props >>= (_.cellEditors(r)(c).startEdit(focus) getOrElse Callback.empty))
 
     val reorderColumns = ReusableFn((cols: NonEmptyVector[Column]) =>
       $.props >>= (_.modViewSettings(_ setColumns cols)))
@@ -62,7 +62,7 @@ object Table {
       val renderRows =
         rows.indices.toReactNodeArray { i =>
           val row = rows(i)
-          val rs2 = EditState.getRow(p.editState, row.sourceId)
+          val rs2 = p.editState(row.sourceId)
           val as  = AsyncState.get(p.asyncState)(row.sourceId)
           val rp  = RowProps(row, crs, rs2, as, p.selection, startCellEdit(row))
           RowComponent.withKey(row.id.key)(rp)
@@ -152,7 +152,7 @@ object Table {
 
   case class RowProps(row        : Row,
                       crs        : NonEmptyVector[ColumnRenderer],
-                      editState  : EditState.AtRow,
+                      editState  : ContentEditorFeature.OneD.State[Column],
                       asyncState : AsyncState.RowState,
                       selection  : RowSelectionVisible,
                       startEdit  : Column ~=> StartEdit)
@@ -188,7 +188,7 @@ object Table {
       def colCells =
         p.crs.iterator.map { cr =>
           val col = cr.column
-          val cp = CellProps(row, cr, p.editState get col, cells get col, p startEdit col)
+          val cp = CellProps(row, cr, p editState col, cells get col, p startEdit col)
           CellComponent.withKey(col.key)(cp)
         }.toReactNodeArray
 
@@ -225,7 +225,7 @@ object Table {
 
   case class CellProps(row       : Row,
                        cr        : ColumnRenderer,
-                       cellEditor: Option[CellEditor],
+                       cellEditor: ContentEditorFeature.ZeroD.State,
                        asyncState: AsyncState.Single,
                        startEdit : StartEdit)
 
@@ -272,12 +272,11 @@ object Table {
       $.props >>= (_ startEdit focus)
 
     def render(p: CellProps) = {
-      val col = p.cr.column
       val (status, roView) = p.cr.render(p.row)
       // TODO roView should be non-strict or a fn
 
       def editView: Option[ReactElement] =
-        p.cellEditor.flatMap(_.render(p.row, col))
+        p.cellEditor.flatMap(_.render())
 
       cellBase(
         *.cell(status),
