@@ -43,7 +43,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   editStates  : ContentEditorFeature.TwoD.State[Row.SourceId, Column, Column],
+                   editStates  : ContentEditorFeature.TwoD.State.Simple[Row.SourceId, Column],
                    asyncStates : AsyncState.TableState,
                    previewState: Preview.State,
                    modal       : Modal.State) {
