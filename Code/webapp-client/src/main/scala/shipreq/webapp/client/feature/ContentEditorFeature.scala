@@ -473,9 +473,9 @@ object ContentEditorFeature {
       @elidable(elidable.FINE)
       override def toString = s"D1.State($values)"
 
-      @inline def isEmpty = values.isEmpty
+      override def isEmpty = values.isEmpty
 
-      def apply(key: B): D0.State =
+      override def apply(key: B): D0.State =
         values.get(p reverseGet key)
 
       def set(key: B, o: D0.State): State[A, B] = {
@@ -483,7 +483,7 @@ object ContentEditorFeature {
         new State(m, p)
       }
 
-      def mapK[C](q: Prism[B, C]): State[A, C] =
+      override def mapK[C](q: Prism[B, C]): State[A, C] =
         new State(values, p ^<-? q)
 
       def mergeInto(parent: State[A, A]): State[A, A] = {
@@ -498,11 +498,12 @@ object ContentEditorFeature {
       sealed abstract class ReadOnly[K] {
         def isEmpty: Boolean
         def apply(key: K): D0.State
+        def mapK[C](q: Prism[K, C]): ReadOnly[C]
       }
 
       implicit def reusabilityState1[K]: Reusability[ReadOnly[K]] =
-      // Contents are effectively mutable
-        Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
+        // Contents are effectively mutable
+        Reusability.whenTrue(_.isEmpty)
 
       private[ContentEditorFeature] def empty[A, B](p: Prism[A, B]): State[A, B] =
         new State(Map.empty, p)
@@ -520,7 +521,7 @@ object ContentEditorFeature {
         Lens((_: State[A, B])(b))(o => _.set(b, o))
     }
 
-    trait Feature[K] {
+    abstract class Feature[-K] {
       def apply(k: K): D0.Feature
     }
 
@@ -544,9 +545,9 @@ object ContentEditorFeature {
       @elidable(elidable.FINE)
       override def toString = s"D2.State($values)"
 
-      @inline def isEmpty = values.isEmpty
+      override def isEmpty = values.isEmpty
 
-      def apply(key: B2): D1.State[A1, B1] =
+      override def apply(key: B2): D1.State[A1, B1] =
         values.get(f2(key)) match {
           case Some(s) => s mapK p1
           case None    => D1.State.empty(p1)
@@ -557,10 +558,10 @@ object ContentEditorFeature {
         new State(m, f2, p1)
       }
 
-      def mapK2[C2](f: C2 => B2): State[A2, C2, A1, B1] =
+      override def mapK2[C2](f: C2 => B2): State[A2, C2, A1, B1] =
         new State(values, f2 compose f, p1)
 
-      def mapK1[C1](q: Prism[B1, C1]): State[A2, B2, A1, C1] =
+      override def mapK1[C1](q: Prism[B1, C1]): State[A2, B2, A1, C1] =
         new State(values, f2, p1 ^<-? q)
     }
 
@@ -574,17 +575,18 @@ object ContentEditorFeature {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1]
         def mapK2[K](f: K => K2): ReadOnly[K, K1]
+        def mapK1[K](q: Prism[K1, K]): ReadOnly[K2, K]
       }
 
       implicit def reusabilityState2[K2, K1]: Reusability[ReadOnly[K2, K1]] =
         // Contents are effectively mutable
-        Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
+        Reusability.whenTrue(_.isEmpty)
 
       def at[A2, B2, A1, B1](k: B2): Lens[State[A2, B2, A1, B1], D1.State[A1, B1]] =
         Lens((_: State[A2, B2, A1, B1])(k))(o => _.set(k, o))
     }
 
-    trait Feature[K2, K1] {
+    abstract class Feature[-K2, -K1] {
       def apply(k2: K2): D1.Feature[K1]
     }
 
