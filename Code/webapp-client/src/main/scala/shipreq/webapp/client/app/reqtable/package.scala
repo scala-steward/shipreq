@@ -29,7 +29,7 @@ package object reqtable {
   implicit val reusabilityCs: Reusability[NonEmptyVector[Column]] =
     Reusability.byRef || reusabilityNonEmptyVector
 
-  implicit val reusabilityContentEditorFeature: Reusability[ContentEditorFeature.TwoD.Feature[Row, Column]] =
+  implicit val reusabilityContentEditorFeature: Reusability[ContentEditorFeature.D2.Feature[Row, Column]] =
     Reusability.byRef
 
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =

@@ -3,6 +3,7 @@ package shipreq.webapp.client.feature
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import monocle._
+import scala.annotation.elidable
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
@@ -21,17 +22,17 @@ import shipreq.webapp.client.widgets.high.ProjectWidgets
  * =====
  *
  * - Choose your dimensions.
- *   [[ContentEditorFeature.OneD]] - Editor for a single req. (Usually, Key = req field)
- *   [[ContentEditorFeature.TwoD]] - Editor for a multiple reqs. (Usually, Key2 = req, Key1 = req field)
+ *   [[ContentEditorFeature.D1]] - Editor for a single req. (Usually, Key = req field)
+ *   [[ContentEditorFeature.D2]] - Editor for a multiple reqs. (Usually, Key2 = req, Key1 = req field)
  *
  * - Add `State.Simple` to your parent component's state.
  *
  * - Create an instance of `Feature` in the parent component's backend.
  *
- * - To render, apply keys from the state until you arrive at `ZeroD.State`, then call `.render()` if available.
+ * - To render, apply keys from the state until you arrive at `D0.State`, then call `.render()` if available.
  *   (Pass `State.ReadOnly` to child components if needed.)
  *
- * - To start editing, apply keys from the feature until you arrive at `ZeroD.Feature`, then call `.startEdit()`.
+ * - To start editing, apply keys from the feature until you arrive at `D0.Feature`, then call `.startEdit()`.
  *   (Pass the feature to child components if needed.)
  */
 object ContentEditorFeature {
@@ -77,10 +78,10 @@ object ContentEditorFeature {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  object ZeroD {
+  object D0 {
     type State = Option[EditorInstance]
 
-    trait Feature {
+    abstract class Feature {
       def startEdit(focus: => Callback): Option[Callback]
     }
 
@@ -466,22 +467,19 @@ object ContentEditorFeature {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  object OneD {
+  object D1 {
 
-    final class State[A, B](private[feature] val values: Map[A, EditorInstance], p: Prism[A, B]) extends State.ReadOnly[B] {
-      override def toString = s"OneD.State($values)"
+    final class State[A, B](val values: Map[A, EditorInstance], p: Prism[A, B]) extends State.ReadOnly[B] {
+      @elidable(elidable.FINE)
+      override def toString = s"D1.State($values)"
 
-      def isEmpty = values.isEmpty
+      @inline def isEmpty = values.isEmpty
 
-      def apply(key: B): ZeroD.State =
+      def apply(key: B): D0.State =
         values.get(p reverseGet key)
 
-      def set(key: B, o: ZeroD.State): State[A, B] = {
-        val k = p reverseGet key
-        val m = o match {
-          case None    => values - k
-          case Some(v) => values.updated(k, v)
-        }
+      def set(key: B, o: D0.State): State[A, B] = {
+        val m = Dimensions.set1(p)(values, key, o)
         new State(m, p)
       }
 
@@ -489,15 +487,7 @@ object ContentEditorFeature {
         new State(values, p ^<-? q)
 
       def mergeInto(parent: State[A, A]): State[A, A] = {
-
-        // Include everything from small
-        var m = values
-
-        // Include everything from big which isn't covered by small
-        for ((a, v) <- parent.values)
-          if (p.getOption(a).isEmpty)
-            m = m.updated(a, v)
-
+        val m = Dimensions.merge(p)(parent.values, values)
         new State(m, Prism.id[A])
       }
     }
@@ -507,7 +497,7 @@ object ContentEditorFeature {
 
       sealed abstract class ReadOnly[K] {
         def isEmpty: Boolean
-        def apply(key: K): ZeroD.State
+        def apply(key: K): D0.State
       }
 
       implicit def reusabilityState1[K]: Reusability[ReadOnly[K]] =
@@ -523,15 +513,15 @@ object ContentEditorFeature {
       def init[A: UnivEq]: State[A, A] =
         emptyA
 
-      @inline def at[K](k: K): Lens[State[K, K], ZeroD.State] =
+      @inline def at[K](k: K): Lens[State[K, K], D0.State] =
         atP[K, K](k)
 
-      def atP[A, B](b: B): Lens[State[A, B], ZeroD.State] =
+      def atP[A, B](b: B): Lens[State[A, B], D0.State] =
         Lens((_: State[A, B])(b))(o => _.set(b, o))
     }
 
     trait Feature[K] {
-      def apply(k: K): ZeroD.Feature
+      def apply(k: K): D0.Feature
     }
 
     def Feature[S, P, K](static: Static[S, P],
@@ -540,33 +530,31 @@ object ContentEditorFeature {
                          editor: K => Option[Editor[P]]): Feature[K] =
       new Feature[K] {
         override def apply(k: K) =
-          ZeroD.Feature(static, async(k))(lens ^|-> State.at(k), editor(k))
+          D0.Feature(static, async(k))(lens ^|-> State.at(k), editor(k))
       }
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  object TwoD {
+  object D2 {
 
-    final class State[A2, B2, A1, B1](private[feature] val values: Map[A2, OneD.State[A1, A1]],
+    final class State[A2, B2, A1, B1](val values: Map[A2, D1.State[A1, A1]],
                                       f2: B2 => A2,
                                       p1: Prism[A1, B1]) extends State.ReadOnly[B2, B1] {
-      override def toString = s"TwoD.State($values)"
+      @elidable(elidable.FINE)
+      override def toString = s"D2.State($values)"
 
       @inline def isEmpty = values.isEmpty
 
-      def apply(key: B2): OneD.State[A1, B1] =
+      def apply(key: B2): D1.State[A1, B1] =
         values.get(f2(key)) match {
           case Some(s) => s mapK p1
-          case None    => OneD.State.empty(p1)
+          case None    => D1.State.empty(p1)
         }
 
-      def set(k2: B2, v: OneD.State[A1, B1]): State[A2, B2, A1, B1] = {
-        val k      = f2(k2)
-        val oldSeg = values.getOrElse(k, OneD.State.emptyA[A1])
-        val newSeg = v.mergeInto(oldSeg)
-        val newVal = if (newSeg.isEmpty) values - k else values.updated(k, newSeg)
-        new State(newVal, f2, p1)
+      def set(k2: B2, v: D1.State[A1, B1]): State[A2, B2, A1, B1] = {
+        val m = Dimensions.set2(values)(f2(k2), v mergeInto _.getOrElse(D1.State.emptyA))(_.isEmpty)
+        new State(m, f2, p1)
       }
 
       def mapK2[C2](f: C2 => B2): State[A2, C2, A1, B1] =
@@ -579,9 +567,12 @@ object ContentEditorFeature {
     object State {
       type Simple[K2, K1] = State[K2, K2, K1, K1]
 
+      def init[K2: UnivEq, K1: UnivEq]: State[K2, K2, K1, K1] =
+        new State(UnivEq.emptyMap, identity[K2], Prism.id[K1])
+
       sealed abstract class ReadOnly[K2, K1] {
         def isEmpty: Boolean
-        def apply(key: K2): OneD.State.ReadOnly[K1]
+        def apply(key: K2): D1.State.ReadOnly[K1]
         def mapK2[K](f: K => K2): ReadOnly[K, K1]
       }
 
@@ -589,15 +580,12 @@ object ContentEditorFeature {
         // Contents are effectively mutable
         Reusability.fn((a, b) => a.isEmpty && b.isEmpty)
 
-      def init[K2: UnivEq, K1: UnivEq]: State[K2, K2, K1, K1] =
-        new State(UnivEq.emptyMap, identity[K2], Prism.id[K1])
-
-      def at[A2, B2, A1, B1](k: B2): Lens[State[A2, B2, A1, B1], OneD.State[A1, B1]] =
+      def at[A2, B2, A1, B1](k: B2): Lens[State[A2, B2, A1, B1], D1.State[A1, B1]] =
         Lens((_: State[A2, B2, A1, B1])(k))(o => _.set(k, o))
     }
 
     trait Feature[K2, K1] {
-      def apply(k2: K2): OneD.Feature[K1]
+      def apply(k2: K2): D1.Feature[K1]
     }
 
     object Feature {
@@ -615,7 +603,7 @@ object ContentEditorFeature {
         new Feature[K2, K1] {
           override def apply(k: K2) = {
             val i = id(k)
-            OneD.Feature(static, async(i))(lens ^|-> State.at(i), editor(k))
+            D1.Feature(static, async(i))(lens ^|-> State.at(i), editor(k))
           }
         }
     }

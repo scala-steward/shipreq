@@ -43,7 +43,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   editStates  : ContentEditorFeature.TwoD.State.Simple[Row.SourceId, Column],
+                   editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, Column],
                    asyncStates : AsyncState.TableState,
                    previewState: Preview.State,
                    modal       : Modal.State) {
@@ -85,7 +85,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
         FilterEditor.initialState,
         Selection.empty,
         CreationInterface.initState,
-        ContentEditorFeature.TwoD.State.init,
+        ContentEditorFeature.D2.State.init,
         AsyncState.initState,
         PreviewFeature.initState,
         Modal.none)
@@ -213,7 +213,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
         }
       }
 
-      TwoD.Feature.withKeyId(static, asyncFeature, (_: Row).sourceId)(State.editStates, edit)
+      D2.Feature.withKeyId(static, asyncFeature, (_: Row).sourceId)(State.editStates, edit)
     }
 
     val creationInterface =

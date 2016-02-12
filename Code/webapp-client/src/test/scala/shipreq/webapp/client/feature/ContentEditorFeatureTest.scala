@@ -46,7 +46,7 @@ object ContentEditorFeatureTest extends TestSuite {
   implicit def uniqEv1 = forceUnivEqOrderByToString[Keys1]
   implicit def uniqEv2 = forceUnivEqOrderByToString[Keys2]
   implicit def equalEI = Equal.equalRef[EditorInstance]
-  implicit def equalS1[A: Order, B: Equal] = Equal.equalBy((_: OneD.State[A, B]).values)
+  implicit def equalS1[A: Order, B: Equal] = Equal.equalBy((_: D1.State[A, B]).values)
 
   case class PK[A](p: Prism[KeysN, A], k1: A)(implicit val order: Order[A], val equal: Equal[A]) {
     override def toString = k1.toString
@@ -59,8 +59,8 @@ object ContentEditorFeatureTest extends TestSuite {
       override def render() = ???
     }
 
-  type S2 = TwoD.State.Simple[KeysN, KeysN]
-  type S1 = OneD.State.Simple[KeysN]
+  type S2 = D2.State.Simple[KeysN, KeysN]
+  type S1 = D1.State.Simple[KeysN]
 
   val genI  = Gen.chooseInt(3)
   val genS  = Gen.choose_!(('a' to 'c').map(_.toString))
@@ -74,7 +74,7 @@ object ContentEditorFeatureTest extends TestSuite {
   val genK  = Gen.chooseGen[PK[_]](genK1.map(PK(prism1, _)), genK2.map(PK(prism2, _)))
 
   object Test1 {
-    def set[A](pk: PK[A], v: => ZeroD.State)(i: S1) = {
+    def set[A](pk: PK[A], v: => D0.State)(i: S1) = {
       import pk._
       val on = i.set(kn, v)
       val o1 = i.mapK(p).set(k1, v)
@@ -99,7 +99,7 @@ object ContentEditorFeatureTest extends TestSuite {
   }
 
   object Test2 {
-    def set[A, B](a: PK[A], b: PK[B], v: => ZeroD.State)(i: S2) = {
+    def set[A, B](a: PK[A], b: PK[B], v: => D0.State)(i: S2) = {
       implicit val s1Equality = equalS1(uniqEvN, b.equal)
 
       val (xn, x1) = Test1.set(b, v)(i(a.kn))
@@ -147,7 +147,7 @@ object ContentEditorFeatureTest extends TestSuite {
   }
 
   override def tests = TestSuite {
-    var s: S2 = TwoD.State.init
+    var s: S2 = D2.State.init
     s.values assertEq Map.empty
     for (test <- Test2.genTest.samples().take(100)) {
       s = test(s)

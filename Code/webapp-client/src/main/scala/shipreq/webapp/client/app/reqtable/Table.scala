@@ -25,8 +25,8 @@ object Table {
                    rows           : Rows,
                    colName        : Column.NameResolver,
                    colRenderers   : NonEmptyVector[ColumnRenderer],
-                   cellEditors    : ContentEditorFeature.TwoD.Feature[Row, Column],
-                   editState      : ContentEditorFeature.TwoD.State.ReadOnly[Row.SourceId, Column],
+                   cellEditors    : ContentEditorFeature.D2.Feature[Row, Column],
+                   editState      : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
                    asyncState     : AsyncState.TableState,
                    selection      : RowSelectionVisible,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
@@ -152,7 +152,7 @@ object Table {
 
   case class RowProps(row        : Row,
                       crs        : NonEmptyVector[ColumnRenderer],
-                      editState  : ContentEditorFeature.OneD.State.ReadOnly[Column],
+                      editState  : ContentEditorFeature.D1.State.ReadOnly[Column],
                       asyncState : AsyncState.RowState,
                       selection  : RowSelectionVisible,
                       startEdit  : Column ~=> StartEdit)
@@ -225,7 +225,7 @@ object Table {
 
   case class CellProps(row       : Row,
                        cr        : ColumnRenderer,
-                       cellEditor: ContentEditorFeature.ZeroD.State,
+                       cellEditor: ContentEditorFeature.D0.State,
                        asyncState: AsyncState.Single,
                        startEdit : StartEdit)
 
