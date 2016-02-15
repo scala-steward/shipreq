@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import monocle.Lens
 import scala.annotation.elidable
+import scalaz.Equal
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
@@ -51,6 +52,38 @@ object ContentEditorFeature {
                           pxTextSearch    : Px[TextSearch],
                           saveIO          : ServerCall[UpdateContentCmd])
 
+  /**
+   * ADT representing all types of fields supported by the editor.
+   * Meant to be used as a key for some given content (e.g. for requirement FR-1).
+   */
+  sealed abstract class EditFieldKey
+  object EditFieldKey {
+    case object ReqType                       extends EditFieldKey
+    case object Code                          extends EditFieldKey
+    case object Title                         extends EditFieldKey
+    case object Tags                          extends EditFieldKey
+    case object ImplicationSrc                extends EditFieldKey
+    case object ImplicationTgt                extends EditFieldKey
+    case class CustomField(id: CustomFieldId) extends EditFieldKey
+
+    // DeletionReason is a bit odd in that it is append-only, not directly editable.
+    // case object DeletionReason extends EditFieldKey
+
+    @inline implicit def equality: UnivEq[EditFieldKey] =
+      UnivEq.deriveAuto
+
+    implicit val reusability: Reusability[EditFieldKey] =
+      Reusability.by_==
+  }
+
+  // TODO If editors are shared between screens then the PreviewFeature will need to be shared as well!
+
+  /**
+   * Representation of an editor.
+   * This is used like a command to create new editors.
+   *
+   * @tparam P Key used in [[PreviewFeature]].
+   */
   sealed trait Editor[+P]
   object Editor {
     case class ReqCodesForReq         (req: GenericReq)                                               extends Editor[Nothing]
@@ -525,14 +558,16 @@ object ContentEditorFeature {
       def apply(k: K): D0.Feature
     }
 
-    def Feature[S, P, K](static: Static[S, P],
-                         async : AsyncActionFeature.D1.Feature[K, String])
-                        (lens  : Lens[S, State[K, K]],
-                         editor: K => Option[Editor[P]]): Feature[K] =
-      new Feature[K] {
-        override def apply(k: K) =
-          D0.Feature(static, async(k))(lens ^|-> State.at(k), editor(k))
-      }
+    object Feature {
+      def apply[K](f: K => D0.Feature): Feature[K] =
+        new Feature[K] { override def apply(k: K) = f(k) }
+
+      def optional[K](f: K => Option[D0.Feature]): Feature[K] =
+        apply(f(_) getOrElse D0.Feature.nop)
+
+      def nop: Feature[Any] =
+        apply(_ => D0.Feature.nop)
+    }
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -591,23 +626,37 @@ object ContentEditorFeature {
     }
 
     object Feature {
-      def apply[S, P, K2, K1](static: Static[S, P],
-                              async : AsyncActionFeature.D2.Feature[K2, K1, String])
-                             (lens  : Lens[S, State[K2, K2, K1, K1]],
-                              editor: K2 => K1 => Option[Editor[P]]): Feature[K2, K1] =
-        withKeyId(static, async, identity[K2])(lens, editor)
+      def apply[K2, K1](f: K2 => D1.Feature[K1]): Feature[K2, K1] =
+        new Feature[K2, K1] { override def apply(k: K2) = f(k) }
 
-      def withKeyId[S, P, K2, K2Id, K1](static: Static[S, P],
-                                        async : AsyncActionFeature.D2.Feature[K2Id, K1, String],
-                                        id    : K2 => K2Id)
-                                       (lens  : Lens[S, State[K2Id, K2Id, K1, K1]],
-                                        editor: K2 => K1 => Option[Editor[P]]): Feature[K2, K1] =
-        new Feature[K2, K1] {
-          override def apply(k: K2) = {
-            val i = id(k)
-            D1.Feature(static, async(i))(lens ^|-> State.at(i), editor(k))
-          }
-        }
+      def optional[K2, K1](f: K2 => Option[D1.Feature[K1]]): Feature[K2, K1] =
+        apply(f(_) getOrElse D1.Feature.nop)
+
+      def nop: Feature[Any, Any] =
+        apply(_ => D1.Feature.nop)
+    }
+
+    implicit def reusabilityFeature[A, B]: Reusability[Feature[A, B]] =
+      Reusability.byRef
+
+    /**
+     * A means for a child to initialise itself when the state is in the parent in an unknown shape.
+     */
+    abstract class InitChild[S, K2, K1] {
+      type Parent
+      val parent    : CompState.Access[Parent]
+      val state     : CompState.Access[S]
+      val stateLens : Lens[Parent, S]
+      val editorLens: (K2, K1) => Option[Lens[Parent, D0.State]]
+
+      final def previewFeature[P: Equal](pl: Lens[S, PreviewFeature.State[P]]): PreviewFeature[Parent, P] =
+        new PreviewFeature(parent, stateLens ^|-> pl)
+
+      final def feature(f: (K2, K1, Lens[Parent, D0.State]) => D0.Feature): Feature[K2, K1] =
+        D2.Feature[K2, K1](k2 =>
+          D1.Feature.optional[K1](k1 =>
+            editorLens(k2, k1).map(el =>
+              f(k2, k1, el))))
     }
   }
 

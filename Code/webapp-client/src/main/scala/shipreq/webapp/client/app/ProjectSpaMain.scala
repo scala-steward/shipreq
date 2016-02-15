@@ -8,13 +8,14 @@ import monocle.macros._
 import org.scalajs.dom
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.{NonEmptyVector, UnivEq}
-import shipreq.webapp.base.data.{ExternalPubid, ReqType, ReqTypePos}
+import shipreq.base.util.{Intersection, UnivEq}
+import shipreq.webapp.base.data.{Dead, Live, ExternalPubid, ReqType, ReqTypePos}
 import shipreq.webapp.base.protocol.ProjectSPA
 import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.{FilterDead, HideDead}
+import shipreq.webapp.client.feature.{AsyncActionFeature, ContentEditorFeature}
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.widgets.high.ProjectWidgets
 
@@ -76,9 +77,8 @@ object ProjectSpaMain {
 
 
 // =====================================================================================================================
-import ProjectSpaMain._
-
 final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
+  import ProjectSpaMain._
 
   def routerConfig =
     RouterConfigDsl[Page].buildConfig { dsl =>
@@ -109,15 +109,23 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
           ReqDetail(ExternalPubid(ReqType.Mnemonic("A"), ReqTypePos(1))))
     }
 
-  import reqtable.ReqTable
+  import ContentEditorFeature.EditFieldKey
+  import reqtable.{Column, Row, EditFieldKeyToColumn, ReqTable}
   import reqdetail.ReqDetail
 
   case class Props(page: Page, routerCtl: RouterCtl)
 
   @Lenses
-  case class State(filterDead: FilterDead, reqTable: ReqTable.State)
+  case class State(editStates : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
+                   asyncStates: AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   filterDead : FilterDead,
+                   reqTable   : ReqTable.State)
 
-  def initState = State(HideDead, ReqTable.State.init(cd, HideDead, None))
+  def initState = State(
+    ContentEditorFeature.D2.State.init,
+    AsyncActionFeature.D2.State.init,
+    HideDead,
+    ReqTable.State.init(cd, HideDead, None))
 
   class Backend($: BackendScope[Props, State]) {
     import cd.pxProject
@@ -132,11 +140,29 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
     val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
 
+    val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
+      AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
+
+    def initReqTableEditor: ReqTable.InitEditor = {
+      import ContentEditorFeature._
+      new D2.InitChild[ReqTable.State, Row, Column] {
+        override type Parent    = State
+        override val parent     = $: CompState.Access[Parent]
+        override val stateLens  = State.reqTable
+        override val state      = parent zoomL stateLens
+        override val editorLens =
+          (r: Row, c: Column) =>
+            EditFieldKeyToColumn.reverse.getOption(c).map(efk =>
+              State.editStates ^|-> D2.State.at(r.sourceId) ^|-> D1.State.at(efk))
+      }
+    }
+
     val reqTable = ReqTable(ReqTable.StaticProps(
       cd, cp, r.createContent, r.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets,
-      reqDetailRC,
-      $ zoomL State.reqTable))
+      initReqTableEditor,
+      asyncFeature.mapK1(EditFieldKeyToColumn),
+      reqDetailRC))
 
     val reqDetail = ReqDetail(ReqDetail.StaticProps(
       cd, cp, r.updateContent,
@@ -178,7 +204,10 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
           layout(cfg.tags.CfgTags.Props(cp, r.tagCrud, cd, fd).component)
 
         case Page.ReqTable =>
-          layout(reqTable(s.reqTable))
+          layout(reqTable(ReqTable.DynamicProps(
+            s.editStates.mapK1(EditFieldKeyToColumn),
+            s.asyncStates.mapK1(EditFieldKeyToColumn),
+            s.reqTable)))
 
         case Page.ReqDetail(pubid) =>
           layout(reqDetail(ReqDetail.DynamicProps(pubid)))

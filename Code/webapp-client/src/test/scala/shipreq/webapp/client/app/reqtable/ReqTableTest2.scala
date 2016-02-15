@@ -7,12 +7,15 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.test._
+import monocle.macros.Lenses
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom, dom.html
 import org.scalajs.dom.ext.{KeyCode, KeyValue}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.widgets.high.ProjectWidgets
+import shipreq.webapp.client.feature._
+import ContentEditorFeature.EditFieldKey
 import scalajs.js
 import scalaz.Equal
 import scalaz.std.option._
@@ -28,7 +31,7 @@ import shipreq.webapp.base.protocol.{CreateContentFn, UpdateContentFn, UpdateCon
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.app.state.ClientData
-import shipreq.webapp.client.app.Style
+import shipreq.webapp.client.app.{ProjectSpaMain, Style}
 import shipreq.webapp.client.lib._
 import shipreq.webapp.client.test._
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
@@ -40,7 +43,7 @@ import teststate._
 // =====================================================================================================================
 
 object Stuff {
-  val * = Dsl.sync[ReactComponentM[_, ReqTable.State, _, TopNode], ReqTableObs, Project, String]
+  val * = Dsl.sync[ReactComponentM[_, ReqTableTest2.State, _, TopNode], ReqTableObs, Project, String]
 
 //  // TODO Move following into Nyaya
 //
@@ -143,7 +146,7 @@ object Stuff {
   implicit val showFilterDead = Show.byToString[FilterDead]
 
   def applyViewSettings(name: => String, f: ViewSettings => ViewSettings): *.Action =
-    *.action(name).act(_.ref.zoomL(ReqTable.State.viewSettings).modState(f))
+    *.action(name).act(_.ref.zoomL(ReqTableTest2.State.reqTable ^|-> ReqTable.State.viewSettings).modState(f))
 
   // TODO Would be better if this clicked on table column header
   val sortByPubid = applyViewSettings("sortByPubid", _.copy(order = SortCriteria.byPubidOnly))
@@ -188,8 +191,12 @@ object ReqTableTest2 extends TestSuite {
 
   import Stuff._
 
-  val createRemote = RemoteFn.Instance("x", CreateContentFn)
-  val updateRemote = RemoteFn.Instance("x", UpdateContentFn)
+  val remotes = MockRemotes.projectSPA
+
+  @Lenses
+  case class State(editStates : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
+                   asyncStates: AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   reqTable   : ReqTable.State)
 
   def runTest(action: *.Action) = {
     val reqDetailRC = MockRouterCtl[ExternalPubid]()
@@ -201,16 +208,47 @@ object ReqTableTest2 extends TestSuite {
     val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
     val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
 
-    val outer = StatefulParent.spc(ReqTable)(
-      ReqTable.StaticProps(cd, cp, createRemote, updateRemote, pxPlainText, pxTextSearch, pxProjectWidgets,
-        reqDetailRC, _))
+    val outer = StatefulParent.init{ ($: CompState.Access[State], s: State) =>
 
-    val initialState = ReqTable.State.init(cd, HideDead, None)
+      val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
+        AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
+
+      def initReqTableEditor: ReqTable.InitEditor = {
+        import ContentEditorFeature._
+        new D2.InitChild[ReqTable.State, Row, Column] {
+          override type Parent    = State
+          override val parent     = $: CompState.Access[Parent]
+          override val stateLens  = State.reqTable
+          override val state      = parent zoomL stateLens
+          override val editorLens =
+            (r: Row, c: Column) =>
+              EditFieldKeyToColumn.reverse.getOption(c).map(efk =>
+                State.editStates ^|-> D2.State.at(r.sourceId) ^|-> D1.State.at(efk))
+        }
+      }
+
+      ReqTable(ReqTable.StaticProps(
+        cd, cp, remotes.createContent, remotes.updateContent,
+        pxPlainText, pxTextSearch, pxProjectWidgets,
+        initReqTableEditor,
+        asyncFeature.mapK1(EditFieldKeyToColumn),
+        reqDetailRC))
+    }((reqTable, $, s) =>
+      reqTable(ReqTable.DynamicProps(
+        s.editStates.mapK1(EditFieldKeyToColumn),
+        s.asyncStates.mapK1(EditFieldKeyToColumn),
+        s.reqTable))
+    )
+
+    def initialState = State(
+      ContentEditorFeature.D2.State.init,
+      AsyncActionFeature.D2.State.init,
+      ReqTable.State.init(cd, HideDead, None))
 
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       def newObs = new ReqTableObs(DomZipper(c))
       val tt = Test(action, invariants).observe(_ => newObs)
-      val h =  tt.run(initialState.project, c)
+      val h =  tt.run(initialState.reqTable.project, c)
 //      println(h.format(History.Options.colored.alwaysShowChildren))
 //      println(h.format(History.Options.colored))
       h.assert(History.Options.colored)

@@ -7,7 +7,7 @@ import shipreq.base.util.Intersection
 object Dimensions {
 
   @elidable(elidable.ASSERTION)
-  private def warnDiscard(key: Any): Unit =
+  def warnDiscard(key: Any): Unit =
     console.warn(s"Discarding set($key, …) because key is outside intersection.")
 
   def set1[A, B, V](i: Intersection[A, B])(values: Map[A, V], key: B, o: Option[V]): Map[A, V] =

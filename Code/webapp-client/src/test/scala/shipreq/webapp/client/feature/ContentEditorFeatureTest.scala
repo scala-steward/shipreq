@@ -2,6 +2,7 @@ package shipreq.webapp.client.feature
 
 import monocle.Prism
 import shipreq.base.test.BaseTestUtil._
+import shipreq.base.util.Intersection
 import utest._
 import ContentEditorFeature._
 import scalaz.{Order, Equal}
@@ -77,7 +78,7 @@ object ContentEditorFeatureTest extends TestSuite {
     def set[A](pk: PK[A], v: => D0.State)(i: S1) = {
       import pk._
       val on = i.set(kn, v)
-      val o1 = i.mapK(p).set(k1, v)
+      val o1 = i.mapK(Intersection fromPrism p).set(k1, v)
       assertEq("[1] result", o1.values, on.values)
       assertEq("[1] o1 value", o1(k1), v)
       assertEq("[1] on value", on(kn), v)
@@ -103,12 +104,12 @@ object ContentEditorFeatureTest extends TestSuite {
       implicit val s1Equality = equalS1(uniqEvN, b.equal)
 
       val (xn, x1) = Test1.set(b, v)(i(a.kn))
-      val (yn, y1) = Test1.set(b, v)(i.mapK2(a.p.reverseGet)(a.k1))
+      val (yn, y1) = Test1.set(b, v)(i.mapK2(Intersection fromPrism a.p)(a.k1))
       assertEq(yn, xn)
       assertEq(y1, y1)
 
       val on = i.set(a.kn, xn)
-      val o2 = i.mapK2(a.p.reverseGet).mapK1(b.p).set(a.k1, x1)
+      val o2 = i.mapK2(Intersection fromPrism a.p).mapK1(Intersection fromPrism b.p).set(a.k1, x1)
       assertEq("[2] result", o2.values, on.values)
       assertEq("[2] o2 value", o2(a.k1), x1)
       assertEq("[2] on value", on(a.kn), xn)

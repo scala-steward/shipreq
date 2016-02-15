@@ -82,6 +82,12 @@ object AsyncActionFeature {
         override def wrapAsync(call: AsyncCall[F]) =
           genericWrapAsync[F]($ setState _, call)
       }
+
+    def nopFeature: Feature[Any] =
+      new Feature[Any] {
+        override def wrapAsync(call: AsyncCall[Any]) =
+          Callback.empty
+      }
   }
 
   // ===================================================================================================================
@@ -145,18 +151,37 @@ object AsyncActionFeature {
         Lens((_: State[A, B, F]).statusD1)(o => _.setD1(o))
     }
 
-    abstract class Feature[-K, -F] {
+    abstract class Feature[K, -F] {
       def apply(k: K): D0.Feature[F]
+      def mapK[C](j: Intersection[K, C]): Feature[C, F]
       def wrapAsyncD1(call: AsyncCall[F]): Callback
     }
 
-    def Feature[A, B, F]($: CompState.WriteAccess[State[A, B, F]]): Feature[B, F] =
-      new Feature[B, F] {
+    object Feature {
+      private final class Impl[S, A, B, -F]($: CompState.WriteAccess[State[S, A, F]],
+                                            i: Intersection[A, B]) extends Feature[B, F] {
         override def apply(b: B) =
-          D0.Feature($ zoomL State.at(b))
+          i.reverse.fold(b, a => D0.Feature($ zoomL State.at(a)))(D0.nopFeature)
+
+        override def mapK[C](j: Intersection[B, C]) =
+          new Impl($, i composeIntersection j)
 
         override def wrapAsyncD1(call: AsyncCall[F]) =
           genericWrapAsync[F]($.zoomL(State.atD1) setState _, call)
+      }
+
+      @inline def apply[S, A, F]($: CompState.WriteAccess[State[S, A, F]]): Feature[A, F] =
+        apply($, Intersection.id[A])
+
+      def apply[S, A, B, F]($: CompState.WriteAccess[State[S, A, F]], i: Intersection[A, B]): Feature[B, F] =
+        new Impl($, i)
+
+      def nop[K]: Feature[K, Any] =
+        new Feature[K, Any] {
+          override def apply(k: K)                       = D0.nopFeature
+          override def mapK[C](j: Intersection[K, C])    = nop
+          override def wrapAsyncD1(call: AsyncCall[Any]) = Callback.empty
+        }
       }
   }
 
@@ -220,26 +245,46 @@ object AsyncActionFeature {
         Lens((_: State[A2, B2, A1, B1, F])(k))(o => _.set(k, o))
     }
 
-    abstract class Feature[-K2, -K1, -F] {
+    abstract class Feature[K2, K1, -F] {
       def apply(k2: K2): D1.Feature[K1, F]
+      def mapK1[C](j: Intersection[K1, C]): Feature[K2, C, F]
+      def mapK2[C](j: Intersection[K2, C]): Feature[C, K1, F]
       def setD1s(ks: Iterable[K2], value: => D0.State[F]): Callback
 
       final def setD1(k: K2, value: => D0.State[F]): Callback =
         setD1s(k :: Nil, value)
     }
 
-    def Feature[A2, B2, A1, B1, F]($: CompState.WriteAccess[State[A2, B2, A1, B1, F]]): Feature[B2, B1, F] =
-      new Feature[B2, B1, F] {
+    object Feature {
+      private final class Impl[S2, A2, B2, S1, A1, B1, -F]($: CompState.WriteAccess[State[S2, A2, S1, A1, F]],
+                                                           i2: Intersection[A2, B2],
+                                                           i1: Intersection[A1, B1]) extends Feature[B2, B1, F] {
         override def apply(b: B2) =
-          D1.Feature($ zoomL State.at(b))
+          i2.reverse.fold(b, a => D1.Feature($ zoomL State.at(a), i1))(D1.Feature.nop)
+
+        override def mapK1[C](j: Intersection[B1, C]) =
+          new Impl($, i2, i1 composeIntersection j)
+
+        override def mapK2[C](j: Intersection[B2, C]) =
+          new Impl($, i2 composeIntersection j, i1)
 
         override def setD1s(ks: Iterable[B2], value: => D0.State[F]): Callback =
           Callback.ifTrue(ks.nonEmpty,
             $.modState { s =>
               val v = value
-              ks.foldLeft(s)(_.mod(_, _ setD1 v))
+              ks.foldLeft(s)((q, b) => i2.reverse.fold(b, q.mod(_, _ setD1 v)) {
+                Dimensions.warnDiscard(b)
+                q
+              })
             }
           )
       }
+
+      def apply[S2, A2, S1, A1, F]($: CompState.WriteAccess[State[S2, A2, S1, A1, F]]): Feature[A2, A1, F] =
+        new Impl($, Intersection.id[A2], Intersection.id[A1])
+
+      implicit def reusabilityFeature[A, B, C]: Reusability[Feature[A, B, C]] =
+        Reusability.byRef
+    }
   }
 }
