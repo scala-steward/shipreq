@@ -11,7 +11,7 @@ object Dimensions {
     console.warn(s"Discarding set($key, …) because key is outside intersection.")
 
   def set1[A, B, V](i: Intersection[A, B])(values: Map[A, V], key: B, o: Option[V]): Map[A, V] =
-    i.reverseFold(key, k => {
+    i.reverse.fold(key, k => {
       val m = o match {
         case Some(v) => values.updated(k, v)
         case None    => values - k
@@ -23,7 +23,7 @@ object Dimensions {
     }
 
   def set2[A, B, V](i: Intersection[A, B])(values: Map[A, V])(key: B, merge: Option[V] => V, isEmpty: V => Boolean): Map[A, V] =
-    i.reverseFold(key, k => {
+    i.reverse.fold(key, k => {
       val oldSeg = values.get(k)
       val newSeg = merge(oldSeg)
       if (isEmpty(newSeg))

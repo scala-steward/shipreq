@@ -476,7 +476,7 @@ object ContentEditorFeature {
       override def isEmpty = values.isEmpty
 
       override def apply(key: B): D0.State =
-        i.reverseFold(key, values.get)(None)
+        i.reverse.fold(key, values.get)(None)
 
       def set(key: B, o: D0.State): State[A, B] = {
         val m = Dimensions.set1(i)(values, key, o)
@@ -548,7 +548,7 @@ object ContentEditorFeature {
       override def isEmpty = values.isEmpty
 
       override def apply(key: B2): D1.State[A1, B1] =
-        i2.reverseFold(key, values.get)(None) match {
+        i2.reverse.fold(key, values.get)(None) match {
           case Some(s) => s mapK i1
           case None    => D1.State.empty(i1)
         }

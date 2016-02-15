@@ -97,7 +97,7 @@ object AsyncActionFeature {
         values.isEmpty && statusD1.isEmpty
 
       override def apply(key: B): D0.State[F] =
-        i.reverseFold(key, values.get)(D0.initState)
+        i.reverse.fold(key, values.get)(D0.initState)
 
       def set[FF >: F](key: B, o: D0.State[FF]): State[A, B, FF] = {
         val m = Dimensions.set1(i)(values, key, o)
@@ -175,7 +175,7 @@ object AsyncActionFeature {
         values.isEmpty && statusD2.isEmpty
 
       override def apply(key: B2): D1.State[A1, B1, F] =
-        i2.reverseFold(key, values.get)(None) match {
+        i2.reverse.fold(key, values.get)(None) match {
           case Some(s) => s mapK i1
           case None    => D1.State.empty(i1)
         }
