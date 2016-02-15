@@ -2,7 +2,7 @@ package shipreq.webapp.client.feature
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import monocle._
+import monocle.Lens
 import scala.annotation.elidable
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
@@ -469,26 +469,26 @@ object ContentEditorFeature {
 
   object D1 {
 
-    final class State[A, B](val values: Map[A, EditorInstance], p: Prism[A, B]) extends State.ReadOnly[B] {
+    final class State[A, B](val values: Map[A, EditorInstance], i: Intersection[A, B]) extends State.ReadOnly[B] {
       @elidable(elidable.FINE)
       override def toString = s"D1.State($values)"
 
       override def isEmpty = values.isEmpty
 
       override def apply(key: B): D0.State =
-        values.get(p reverseGet key)
+        i.reverseFold(key, values.get)(None)
 
       def set(key: B, o: D0.State): State[A, B] = {
-        val m = Dimensions.set1(p)(values, key, o)
-        new State(m, p)
+        val m = Dimensions.set1(i)(values, key, o)
+        new State(m, i)
       }
 
-      override def mapK[C](q: Prism[B, C]): State[A, C] =
-        new State(values, p ^<-? q)
+      override def mapK[C](j: Intersection[B, C]): State[A, C] =
+        new State(values, i composeIntersection j)
 
       def mergeInto(parent: State[A, A]): State[A, A] = {
-        val m = Dimensions.merge(p)(parent.values, values)
-        new State(m, Prism.id[A])
+        val m = Dimensions.merge(i.getOption)(parent.values, values)
+        new State(m, Intersection.id[A])
       }
     }
 
@@ -498,18 +498,18 @@ object ContentEditorFeature {
       sealed abstract class ReadOnly[K] {
         def isEmpty: Boolean
         def apply(key: K): D0.State
-        def mapK[C](q: Prism[K, C]): ReadOnly[C]
+        def mapK[C](j: Intersection[K, C]): ReadOnly[C]
       }
 
       implicit def reusabilityState1[K]: Reusability[ReadOnly[K]] =
         // Contents are effectively mutable
         Reusability.whenTrue(_.isEmpty)
 
-      private[ContentEditorFeature] def empty[A, B](p: Prism[A, B]): State[A, B] =
+      private[ContentEditorFeature] def empty[A, B](p: Intersection[A, B]): State[A, B] =
         new State(Map.empty, p)
 
       private[ContentEditorFeature] def emptyA[A]: State[A, A] =
-        empty(Prism.id[A])
+        empty(Intersection.id[A])
 
       def init[A: UnivEq]: State[A, A] =
         emptyA
@@ -540,42 +540,42 @@ object ContentEditorFeature {
   object D2 {
 
     final class State[A2, B2, A1, B1](val values: Map[A2, D1.State[A1, A1]],
-                                      f2: B2 => A2,
-                                      p1: Prism[A1, B1]) extends State.ReadOnly[B2, B1] {
+                                      i2: Intersection[A2, B2],
+                                      i1: Intersection[A1, B1]) extends State.ReadOnly[B2, B1] {
       @elidable(elidable.FINE)
       override def toString = s"D2.State($values)"
 
       override def isEmpty = values.isEmpty
 
       override def apply(key: B2): D1.State[A1, B1] =
-        values.get(f2(key)) match {
-          case Some(s) => s mapK p1
-          case None    => D1.State.empty(p1)
+        i2.reverseFold(key, values.get)(None) match {
+          case Some(s) => s mapK i1
+          case None    => D1.State.empty(i1)
         }
 
       def set(k2: B2, v: D1.State[A1, B1]): State[A2, B2, A1, B1] = {
-        val m = Dimensions.set2(values)(f2(k2), v mergeInto _.getOrElse(D1.State.emptyA))(_.isEmpty)
-        new State(m, f2, p1)
+        val m = Dimensions.set2(i2)(values)(k2, v mergeInto _.getOrElse(D1.State.emptyA), _.isEmpty)
+        new State(m, i2, i1)
       }
 
-      override def mapK2[C2](f: C2 => B2): State[A2, C2, A1, B1] =
-        new State(values, f2 compose f, p1)
+      override def mapK2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1] =
+        new State(values, i2 composeIntersection j, i1)
 
-      override def mapK1[C1](q: Prism[B1, C1]): State[A2, B2, A1, C1] =
-        new State(values, f2, p1 ^<-? q)
+      override def mapK1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1] =
+        new State(values, i2, i1 composeIntersection j)
     }
 
     object State {
       type Simple[K2, K1] = State[K2, K2, K1, K1]
 
       def init[K2: UnivEq, K1: UnivEq]: State[K2, K2, K1, K1] =
-        new State(UnivEq.emptyMap, identity[K2], Prism.id[K1])
+        new State(UnivEq.emptyMap, Intersection.id[K2], Intersection.id[K1])
 
       sealed abstract class ReadOnly[K2, K1] {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1]
-        def mapK2[K](f: K => K2): ReadOnly[K, K1]
-        def mapK1[K](q: Prism[K1, K]): ReadOnly[K2, K]
+        def mapK2[K](j: Intersection[K2, K]): ReadOnly[K, K1]
+        def mapK1[K](j: Intersection[K1, K]): ReadOnly[K2, K]
       }
 
       implicit def reusabilityState2[K2, K1]: Reusability[ReadOnly[K2, K1]] =

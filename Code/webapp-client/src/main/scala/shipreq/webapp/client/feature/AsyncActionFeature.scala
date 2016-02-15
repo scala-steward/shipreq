@@ -4,9 +4,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.MonocleReact._
-import monocle.{Lens, Prism}
+import monocle.Lens
 import scala.annotation.elidable
-import shipreq.base.util.UnivEq
+import shipreq.base.util.{Intersection, UnivEq}
 import shipreq.webapp.client.app.Assets
 import shipreq.webapp.client.data.TCB
 
@@ -89,7 +89,7 @@ object AsyncActionFeature {
   object D1 {
     final class State[A, B, +F](val statusD1: D0.State[F],
                                 val values: Map[A, Status[F]],
-                                p: Prism[A, B]) extends State.ReadOnly[B, F] {
+                                i: Intersection[A, B]) extends State.ReadOnly[B, F] {
       @elidable(elidable.FINE)
       override def toString = s"D1.State($statusD1, $values)"
 
@@ -97,22 +97,22 @@ object AsyncActionFeature {
         values.isEmpty && statusD1.isEmpty
 
       override def apply(key: B): D0.State[F] =
-        values.get(p reverseGet key)
+        i.reverseFold(key, values.get)(D0.initState)
 
       def set[FF >: F](key: B, o: D0.State[FF]): State[A, B, FF] = {
-        val m = Dimensions.set1(p)(values, key, o)
-        new State(statusD1, m, p)
+        val m = Dimensions.set1(i)(values, key, o)
+        new State(statusD1, m, i)
       }
 
       def setD1[FF >: F](o: D0.State[FF]): State[A, B, FF] =
-        new State(o, values, p)
+        new State(o, values, i)
 
-      override def mapK[C](q: Prism[B, C]): State[A, C, F] =
-        new State(statusD1, values, p ^<-? q)
+      override def mapK[C](j: Intersection[B, C]): State[A, C, F] =
+        new State(statusD1, values, i composeIntersection j)
 
       def mergeInto[FF >: F](parent: State[A, A, FF]): State[A, A, FF] = {
-        val m = Dimensions.merge(p)(parent.values, values)
-        new State(statusD1, m, Prism.id[A])
+        val m = Dimensions.merge(i.getOption)(parent.values, values)
+        new State(statusD1, m, Intersection.id[A])
       }
     }
 
@@ -123,17 +123,17 @@ object AsyncActionFeature {
         def isEmpty: Boolean
         def statusD1: D0.State[F]
         def apply(key: K): D0.State[F]
-        def mapK[C](q: Prism[K, C]): ReadOnly[C, F]
+        def mapK[C](q: Intersection[K, C]): ReadOnly[C, F]
       }
 
       implicit def reusabilityState1[K, F]: Reusability[ReadOnly[K, F]] =
         Reusability.byRef || Reusability.whenTrue(_.isEmpty)
 
-      private[AsyncActionFeature] def empty[A, B](p: Prism[A, B]): State[A, B, Nothing] =
+      private[AsyncActionFeature] def empty[A, B](p: Intersection[A, B]): State[A, B, Nothing] =
         new State(None, Map.empty, p)
 
       private[AsyncActionFeature] def emptyA[A]: State[A, A, Nothing] =
-        empty(Prism.id[A])
+        empty(Intersection.id[A])
 
       def init[A: UnivEq]: State[A, A, Nothing] =
         emptyA
@@ -166,8 +166,8 @@ object AsyncActionFeature {
 
     final class State[A2, B2, A1, B1, F](val statusD2: D0.State[F],
                                          val values: Map[A2, D1.State[A1, A1, F]],
-                                         p2: Prism[A2, B2],
-                                         p1: Prism[A1, B1]) extends State.ReadOnly[B2, B1, F] {
+                                         i2: Intersection[A2, B2],
+                                         i1: Intersection[A1, B1]) extends State.ReadOnly[B2, B1, F] {
       @elidable(elidable.FINE)
       override def toString = s"D2.State($statusD2, $values)"
 
@@ -175,41 +175,41 @@ object AsyncActionFeature {
         values.isEmpty && statusD2.isEmpty
 
       override def apply(key: B2): D1.State[A1, B1, F] =
-        values.get(p2 reverseGet key) match {
-          case Some(s) => s mapK p1
-          case None    => D1.State.empty(p1)
+        i2.reverseFold(key, values.get)(None) match {
+          case Some(s) => s mapK i1
+          case None    => D1.State.empty(i1)
         }
 
       def set(k: B2, v: D1.State[A1, B1, F]): State[A2, B2, A1, B1, F] = {
-        val m = Dimensions.set2(values)(p2.reverseGet(k), v mergeInto _.getOrElse(D1.State.emptyA))(_.isEmpty)
-        new State(statusD2, m, p2, p1)
+        val m = Dimensions.set2(i2)(values)(k, v mergeInto _.getOrElse(D1.State.emptyA), _.isEmpty)
+        new State(statusD2, m, i2, i1)
       }
 
       def mod(k: B2, f: D1.State[A1, B1, F] => D1.State[A1, B1, F]): State[A2, B2, A1, B1, F] =
         set(k, f(apply(k)))
 
-      override def mapK2[C2](q: Prism[B2, C2]): State[A2, C2, A1, B1, F] =
-        new State(statusD2, values, p2 ^<-? q, p1)
+      override def mapK2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1, F] =
+        new State(statusD2, values, i2 composeIntersection j, i1)
 
-      override def mapK1[C1](q: Prism[B1, C1]): State[A2, B2, A1, C1, F] =
-        new State(statusD2, values, p2, p1 ^<-? q)
+      override def mapK1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1, F] =
+        new State(statusD2, values, i2, i1 composeIntersection j)
 
       override def iterator: Iterator[(B2, D1.State[A1, B1, F])] =
-        Dimensions.iterator(p2, values)(_ mapK p1)
+        Dimensions.iterator(i2.getOption, values)(_ mapK i1)
     }
 
     object State {
       type Simple[K2, K1, F] = State[K2, K2, K1, K1, F]
 
       def init[K2: UnivEq, K1: UnivEq, F]: State[K2, K2, K1, K1, F] =
-        new State(None, UnivEq.emptyMap, Prism.id[K2], Prism.id[K1])
+        new State(None, UnivEq.emptyMap, Intersection.id[K2], Intersection.id[K1])
 
       sealed abstract class ReadOnly[K2, K1, +F] {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1, F]
         def statusD2: D0.State[F]
-        def mapK2[K](f: Prism[K2, K]): ReadOnly[K, K1, F]
-        def mapK1[K](q: Prism[K1, K]): ReadOnly[K2, K, F]
+        def mapK2[K](f: Intersection[K2, K]): ReadOnly[K, K1, F]
+        def mapK1[K](q: Intersection[K1, K]): ReadOnly[K2, K, F]
         def iterator: Iterator[(K2, D1.State.ReadOnly[K1, F])]
       }
 
