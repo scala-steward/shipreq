@@ -3,8 +3,10 @@ package shipreq.base.util
 import monocle._
 
 abstract class Intersection[A, B] {
+
+  def reverse: Intersection[B, A]
+
   val getOption: A => Option[B]
-  val reverse: Intersection[B, A]
 
   def get(a: A, default: => B): B =
     getOption(a).getOrElse(default)
@@ -17,6 +19,9 @@ abstract class Intersection[A, B] {
 
   final def toIso: Iso[Option[A], Option[B]] =
     Iso((_: Option[A]) flatMap getOption)(_ flatMap reverse.getOption)
+
+  final def toPrism: Prism[Option[A], B] =
+    Prism((_: Option[A]) flatMap getOption)(reverse.getOption)
 }
 
 object Intersection {
@@ -41,7 +46,7 @@ object Intersection {
         override val reverse =
           new Intersection[B, A] {
             override val getOption = g
-            override val reverse = ab
+            override def reverse = ab
           }
       }
     ab
