@@ -251,31 +251,26 @@ object Style extends StyleSheet.Inline {
     ))
 
     val cellEditorErrMsg = style(
-      color(c"#a00")
-    )
+      color(c"#a00"))
 
-    private val autoCompleteDesc =
-      styleS(color(c"#444"), fontStyle.italic, overflow.hidden, maxWidth(36 ex))
+    val autoCompleteItemTitle = style(
+      fontWeight.bold)
 
-    val reqAutoComplete = styleC {
-      val r = styleS(fontWeight.bold)
-      r.named('req) :*: autoCompleteDesc.named('desc)
-    }
+    val autoCompleteItemTitle2 = style(
+      paddingLeft(1 ex),
+      color(c"#333"))
 
-    val codeRefToReqAutoComplete = styleC {
-      val code  = styleS(fontWeight.bold)
-      val pubid = styleS(paddingLeft(1 ex), color(c"#333"))
-      code.named('code) :*: pubid.named('pubid) :*: autoCompleteDesc.named('desc)
-    }
-
-    def codeRefToGroupAutoComplete = reqAutoComplete
+    val autoCompleteItemDesc = style(
+      color(c"#444"),
+      fontStyle.italic,
+      overflow.hidden,
+      maxWidth(36 ex))
 
     val textEditPreview = style(
       padding(h = 0.8.ex, v = 0.2.em),
       border(solid, 1 px, c"#222"),
       minHeight(2 em),
-      backgroundColor(c"#efe")
-    )
+      backgroundColor(c"#efe"))
 
     object deleteRestore {
 

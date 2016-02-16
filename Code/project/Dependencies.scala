@@ -55,7 +55,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.3.2")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.4.0")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
