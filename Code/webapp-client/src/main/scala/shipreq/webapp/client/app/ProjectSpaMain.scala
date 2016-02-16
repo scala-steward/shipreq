@@ -15,7 +15,7 @@ import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.{FilterDead, HideDead}
-import shipreq.webapp.client.feature.{AsyncActionFeature, ContentEditorFeature}
+import shipreq.webapp.client.feature._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.widgets.high.ProjectWidgets
 
@@ -110,20 +110,22 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     }
 
   import ContentEditorFeature.EditFieldKey
-  import reqtable.{Column, Row, EditFieldKeyToColumn, ReqTable}
+  import reqtable.{Column, Row, EditFieldKeyToColumn, ReqTable, FocusId}
   import reqdetail.ReqDetail
 
   case class Props(page: Page, routerCtl: RouterCtl)
 
   @Lenses
-  case class State(editStates : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
-                   asyncStates: AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
-                   filterDead : FilterDead,
-                   reqTable   : ReqTable.State)
+  case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
+                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   previewState: PreviewFeature.State[FocusId],
+                   filterDead  : FilterDead,
+                   reqTable    : ReqTable.State)
 
   def initState = State(
     ContentEditorFeature.D2.State.init,
     AsyncActionFeature.D2.State.init,
+    PreviewFeature.initState,
     HideDead,
     ReqTable.State.init(cd, HideDead, None))
 
@@ -143,13 +145,16 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
       AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
 
+    val previewFeature = new PreviewFeature($, State.previewState)
+
     def initReqTableEditor: ReqTable.InitEditor = {
       import ContentEditorFeature._
-      new D2.InitChild[ReqTable.State, Row, Column] {
+      new D2.InitChild[ReqTable.State, Row, Column, FocusId] {
         override type Parent    = State
         override val parent     = $: CompState.Access[Parent]
         override val stateLens  = State.reqTable
         override val state      = parent zoomL stateLens
+        override val preview    = previewFeature
         override val editorLens =
           (r: Row, c: Column) =>
             EditFieldKeyToColumn.reverse.getOption(c).map(efk =>
@@ -207,6 +212,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
           layout(reqTable(ReqTable.DynamicProps(
             s.editStates.mapK1(EditFieldKeyToColumn),
             s.asyncStates.mapK1(EditFieldKeyToColumn),
+            s.previewState,
             s.reqTable)))
 
         case Page.ReqDetail(pubid) =>

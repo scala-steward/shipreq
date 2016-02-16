@@ -76,8 +76,6 @@ object ContentEditorFeature {
       Reusability.by_==
   }
 
-  // TODO If editors are shared between screens then the PreviewFeature will need to be shared as well!
-
   /**
    * Representation of an editor.
    * This is used like a command to create new editors.
@@ -642,17 +640,15 @@ object ContentEditorFeature {
     /**
      * A means for a child to initialise itself when the state is in the parent in an unknown shape.
      */
-    abstract class InitChild[S, K2, K1] {
+    abstract class InitChild[S, K2, K1, P] {
       type Parent
       val parent    : CompState.Access[Parent]
       val state     : CompState.Access[S]
       val stateLens : Lens[Parent, S]
       val editorLens: (K2, K1) => Option[Lens[Parent, D0.State]]
+      val preview   : PreviewFeature[Parent, P]
 
-      final def previewFeature[P: Equal](pl: Lens[S, PreviewFeature.State[P]]): PreviewFeature[Parent, P] =
-        new PreviewFeature(parent, stateLens ^|-> pl)
-
-      final def feature(f: (K2, K1, Lens[Parent, D0.State]) => D0.Feature): Feature[K2, K1] =
+      def feature(f: (K2, K1, Lens[Parent, D0.State]) => D0.Feature): Feature[K2, K1] =
         D2.Feature[K2, K1](k2 =>
           D1.Feature.optional[K1](k1 =>
             editorLens(k2, k1).map(el =>

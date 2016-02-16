@@ -194,9 +194,10 @@ object ReqTableTest2 extends TestSuite {
   val remotes = MockRemotes.projectSPA
 
   @Lenses
-  case class State(editStates : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
-                   asyncStates: AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
-                   reqTable   : ReqTable.State)
+  case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
+                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   previewState: PreviewFeature.State[FocusId],
+                   reqTable    : ReqTable.State)
 
   def runTest(action: *.Action) = {
     val reqDetailRC = MockRouterCtl[ExternalPubid]()
@@ -213,13 +214,16 @@ object ReqTableTest2 extends TestSuite {
       val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
         AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
 
+      val previewFeature = new PreviewFeature($, State.previewState)
+
       def initReqTableEditor: ReqTable.InitEditor = {
         import ContentEditorFeature._
-        new D2.InitChild[ReqTable.State, Row, Column] {
+        new D2.InitChild[ReqTable.State, Row, Column, FocusId] {
           override type Parent    = State
           override val parent     = $: CompState.Access[Parent]
           override val stateLens  = State.reqTable
           override val state      = parent zoomL stateLens
+          override val preview    = previewFeature
           override val editorLens =
             (r: Row, c: Column) =>
               EditFieldKeyToColumn.reverse.getOption(c).map(efk =>
@@ -237,12 +241,14 @@ object ReqTableTest2 extends TestSuite {
       reqTable(ReqTable.DynamicProps(
         s.editStates.mapK1(EditFieldKeyToColumn),
         s.asyncStates.mapK1(EditFieldKeyToColumn),
+        s.previewState,
         s.reqTable))
     )
 
     def initialState = State(
       ContentEditorFeature.D2.State.init,
       AsyncActionFeature.D2.State.init,
+      PreviewFeature.initState,
       ReqTable.State.init(cd, HideDead, None))
 
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>

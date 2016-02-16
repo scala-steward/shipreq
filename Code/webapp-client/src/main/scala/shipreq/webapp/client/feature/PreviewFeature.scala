@@ -38,6 +38,14 @@ import PreviewFeature._
 final class PreviewFeature[S, K]($: CompState.Access[S], lens: Lens[S, State[K]])(implicit EK: Equal[K])
   extends ForChildren[K] {
 
+  def mapK[A](p: Prism[K, A]): PreviewFeature[S, A] = {
+    val l = (Lens[S, State[A]]
+      (s => lens.get(s).flatMap(_ omap p.getOption))
+      (sa => lens.set(sa.map(_ map p.reverseGet))))
+    val e = EK.contramap(p.reverseGet)
+    new PreviewFeature($, l)(e)
+  }
+
   private val hasKey: K => FocusData[K] => Boolean =
     if (EK.equalIsNatural)
       k => _.key == k
@@ -93,9 +101,16 @@ object PreviewFeature {
   def initState: State[Nothing] =
     None
 
-  case class FocusData[+K](key: K, changedSinceFocus: Boolean)
+  case class FocusData[+K](key: K, changedSinceFocus: Boolean) {
+    def map[A](f: K => A): FocusData[A] =
+      FocusData(f(key), changedSinceFocus)
 
-  trait ForChildren[-K] {
+    def omap[A](f: K => Option[A]): Option[FocusData[A]] =
+      f(key).map(FocusData(_, changedSinceFocus))
+  }
+
+  trait ForChildren[K] {
+    def mapK[A](p: Prism[K, A]): ForChildren[A]
     def forChild(k: K, s: State[K]): ForChild
   }
 

@@ -25,7 +25,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
   override protected def configure = _.configure(
     Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ recvChanges c)))
 
-  type InitEditor = ContentEditorFeature.D2.InitChild[State, Row, Column]
+  type InitEditor = ContentEditorFeature.D2.InitChild[State, Row, Column, FocusId]
 
   case class StaticProps(cd              : ClientData,
                          cp              : ClientProtocol,
@@ -41,9 +41,10 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
       initEditor.state
   }
 
-  case class DynamicProps(editStates : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
-                          asyncStates: AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Column, String],
-                          state      : State)
+  case class DynamicProps(editStates  : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
+                          asyncStates : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Column, String],
+                          previewState: Preview.State,
+                          state       : State)
 
   @Lenses
   case class State(project     : Project,
@@ -51,7 +52,6 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                    filter      : FilterEditor.State,
                    selection   : RowSelection,
                    creation    : CreationInterface.State,
-                   previewState: Preview.State,
                    modal       : Modal.State) {
 
     def recvChanges(changes: Changes): State =
@@ -91,7 +91,6 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
         FilterEditor.initialState,
         Selection.empty,
         CreationInterface.initState,
-        PreviewFeature.initState,
         Modal.none)
       filterSpec.foreach(f => s = s setFilterSpec f)
       s
@@ -169,15 +168,11 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     val pxFilterEditor: Px[ReusableVal[ReactElement]] =
       pxFilterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
 
-    val previewFeature = new PreviewFeature[State, FocusId](state_$, State.previewState)
-
     val contentEditorFeature = {
       import ContentEditorFeature._
 
-      val previewFeature = initEditor.previewFeature(State.previewState)
-
       val static = Static(
-        initEditor.parent, previewFeature, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch, updateIO)
+        initEditor.parent, initEditor.preview, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch, updateIO)
 
       val edit: Row => Column => Option[Editor[FocusId]] = row => col => {
         @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
@@ -222,7 +217,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     }
 
     val creationInterface =
-      new CreationInterface(setCreation, previewFeature, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch)
+      new CreationInterface(setCreation, initEditor.preview, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
     def render(p: DynamicProps): ReactElement = {
@@ -234,7 +229,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
       def vsProps = ViewSettingsEditor.Props(pxColName, cfg, pxVsVar, pxFilterEditor)
 
-      def creationProps = CreationInterface.Props(createIO, s.creation, s.previewState)
+      def creationProps = CreationInterface.Props(createIO, s.creation, p.previewState)
 
       def tableProps = Table.Props(
         pxProject, pxRows, pxColName, pxColRnds, contentEditorFeature, p.editStates, p.asyncStates, pxVisibleSelection,
