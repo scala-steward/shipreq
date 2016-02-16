@@ -9,6 +9,7 @@ import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.client.data.FilterDead
+import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
 
 sealed trait Column {
   // Ensure correct attribute traits are mixed in
@@ -88,6 +89,27 @@ object Column {
 
   val filterDead: FilterDead => Column => Boolean =
     FilterDead.memo(_.filterFnA[Column](_.live))
+
+  val EditFieldKeyIntersection = Intersection[Column, EditFieldKey] {
+    case Column.ReqType               => Some(EditFieldKey.ReqType        )
+    case Column.Code                  => Some(EditFieldKey.Code           )
+    case Column.Title                 => Some(EditFieldKey.Title          )
+    case Column.Tags                  => Some(EditFieldKey.Tags           )
+    case Column.ImplicationSrc        => Some(EditFieldKey.ImplicationSrc )
+    case Column.ImplicationTgt        => Some(EditFieldKey.ImplicationTgt )
+    case Column.CustomField(id, Live) => Some(EditFieldKey.CustomField(id))
+    case Column.Pubid
+       | Column.DeletionReason
+       | Column.CustomField(_, Dead)  => None
+  } {
+    case EditFieldKey.ReqType         => Some(Column.ReqType              )
+    case EditFieldKey.Code            => Some(Column.Code                 )
+    case EditFieldKey.Title           => Some(Column.Title                )
+    case EditFieldKey.Tags            => Some(Column.Tags                 )
+    case EditFieldKey.ImplicationSrc  => Some(Column.ImplicationSrc       )
+    case EditFieldKey.ImplicationTgt  => Some(Column.ImplicationTgt       )
+    case EditFieldKey.CustomField(id) => Some(Column.CustomField(id, Live))
+  }
 
   def field(c: Column, p: ProjectConfig): Option[Field] =
     c match {

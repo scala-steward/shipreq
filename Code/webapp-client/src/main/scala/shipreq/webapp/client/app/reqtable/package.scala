@@ -1,12 +1,11 @@
 package shipreq.webapp.client.app
 
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import shipreq.base.util.{Intersection, NonEmptyVector, UnivEq}
-import shipreq.webapp.base.data.{Live, Dead}
-import shipreq.webapp.client.lib.DataReusability._
+import japgolly.scalajs.react.vdom.prefix_<^._
+import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.client.feature._
-import ContentEditorFeature.EditFieldKey
+import shipreq.webapp.client.lib.DataReusability._
 
 /**
  * Requirements Table.
@@ -34,29 +33,6 @@ package object reqtable {
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.shouldComponentUpdate[P, S, B, N]
     // Reusability.shouldComponentUpdateWithOverlay[P, S, B, N]
-
-  // -----------------------------------------------------------------------------------------------
-
-  val ColumnToEditFieldKey = Intersection[Column, EditFieldKey] {
-    case Column.ReqType               => Some(EditFieldKey.ReqType        )
-    case Column.Code                  => Some(EditFieldKey.Code           )
-    case Column.Title                 => Some(EditFieldKey.Title          )
-    case Column.Tags                  => Some(EditFieldKey.Tags           )
-    case Column.ImplicationSrc        => Some(EditFieldKey.ImplicationSrc )
-    case Column.ImplicationTgt        => Some(EditFieldKey.ImplicationTgt )
-    case Column.CustomField(id, Live) => Some(EditFieldKey.CustomField(id))
-    case Column.Pubid
-       | Column.DeletionReason
-       | Column.CustomField(_, Dead)  => None
-  } {
-    case EditFieldKey.ReqType         => Some(Column.ReqType              )
-    case EditFieldKey.Code            => Some(Column.Code                 )
-    case EditFieldKey.Title           => Some(Column.Title                )
-    case EditFieldKey.Tags            => Some(Column.Tags                 )
-    case EditFieldKey.ImplicationSrc  => Some(Column.ImplicationSrc       )
-    case EditFieldKey.ImplicationTgt  => Some(Column.ImplicationTgt       )
-    case EditFieldKey.CustomField(id) => Some(Column.CustomField(id, Live))
-  }
 
   // -----------------------------------------------------------------------------------------------
 

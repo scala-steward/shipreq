@@ -110,7 +110,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     }
 
   import ContentEditorFeature.EditFieldKey
-  import reqtable.{Column, Row, ColumnToEditFieldKey, ReqTable, FocusId}
+  import reqtable.{Column, Row, ReqTable, FocusId}
   import reqdetail.ReqDetail
 
   case class Props(page: Page, routerCtl: RouterCtl)
@@ -155,7 +155,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
         override val preview    = previewFeature
         override val editorLens =
           (r: Row, c: Column) =>
-            ColumnToEditFieldKey.getOption(c).map(efk =>
+            Column.EditFieldKeyIntersection.getOption(c).map(efk =>
               State.editStates ^|-> D2.State.at(r.sourceId) ^|-> D1.State.at(efk))
       }
     }
@@ -164,7 +164,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       cd, cp, r.createContent, r.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets,
       initReqTableEditor,
-      asyncFeature.mapK1(ColumnToEditFieldKey.reverse),
+      asyncFeature.mapK1(Column.EditFieldKeyIntersection.reverse),
       reqDetailRC,
       $ zoomL State.reqTable))
 
@@ -209,8 +209,8 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
 
         case Page.ReqTable =>
           layout(reqTable(ReqTable.DynamicProps(
-            s.editStates.mapK1(ColumnToEditFieldKey.reverse),
-            s.asyncStates.mapK1(ColumnToEditFieldKey.reverse),
+            s.editStates.mapK1(Column.EditFieldKeyIntersection.reverse),
+            s.asyncStates.mapK1(Column.EditFieldKeyIntersection.reverse),
             s.previewState,
             s.reqTable)))
 
