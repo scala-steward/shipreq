@@ -2,20 +2,29 @@ package shipreq.base.util
 
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import MutableArray.Map
 
 /**
   * Scala arrays don't support in-place modification.
   */
-final class MutableArray[A](val array: Array[A]) {
-  override def toString = array.mkString("MutableArray[", ", ", "]")
+final class MutableArray[A](val underlying: Array[Any]) {
+  override def toString = underlying.mkString("MutableArray[", ", ", "]")
 
-  @inline def length = array.length
-  @inline def isEmpty = array.isEmpty
-  @inline def nonEmpty = array.nonEmpty
+  @inline def length = underlying.length
+  @inline def isEmpty = underlying.isEmpty
+  @inline def nonEmpty = underlying.nonEmpty
 
-  @inline def map[B](f: A => B)(implicit m: Map[A, B]): MutableArray[B] =
-    m(this, f)
+  def array: Array[A] =
+    underlying.asInstanceOf[Array[A]]
+
+  def map[B](f: A => B): MutableArray[B] = {
+    val a = array
+    var i = length
+    while (i > 0) {
+      i -= 1
+      underlying(i) = f(a(i))
+    }
+    this.asInstanceOf[MutableArray[B]]
+  }
 
   def mapOut[B, That](f: A => B)(implicit cbf: CanBuildFrom[Nothing, B, That]): That = {
     val b = cbf()
@@ -42,7 +51,7 @@ object MutableArray {
     new MutableArray(as.toArray)
 
   def map[A, B: ClassTag](as: Vector[A])(f: A => B): MutableArray[B] = {
-    val array = new Array[B](as.length)
+    val array = new Array[Any](as.length)
     var i = 0
     as.foreach { a =>
       array(i) = f(a)
@@ -50,27 +59,4 @@ object MutableArray {
     }
     new MutableArray(array)
   }
-
-  // ===================================================================================================================
-
-  trait Map[A, B] {
-    def apply(ma: MutableArray[A], f: A => B): MutableArray[B]
-  }
-
-  private[this] val mapAnyRefInstance = new Map[AnyRef, AnyRef] {
-    override def apply(m: MutableArray[AnyRef], f: AnyRef => AnyRef): MutableArray[AnyRef] = {
-      val a = m.array
-      var i = a.length
-      println(s"$m - $i")
-      while (i > 0) {
-        println(i)
-        i -= 1
-        a(i) = f(a(i))
-      }
-      m
-    }
-  }
-
-  implicit def implicitMapAnyRef[A <: AnyRef, B <: AnyRef] =
-    mapAnyRefInstance.asInstanceOf[Map[A, B]]
 }
