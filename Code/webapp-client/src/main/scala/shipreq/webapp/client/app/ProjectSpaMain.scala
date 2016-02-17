@@ -234,6 +234,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
         case Page.ReqDetail(pubid) =>
           layout(reqDetail(ReqDetail.DynamicProps(
             pubid,
+            s.filterDead,
             id => {
               // TODO This crap shouldn't be recalculated each render
               val r = Row.GenericReqRowSourceId(id)

@@ -9,8 +9,9 @@ import scalaz.std.option.optionInstance
 import shipreq.base.util.MutableArray
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{PlainText, Text}
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.reqtable.{SortMethod => SM, SortCriterion => SC, Column => C}
+import shipreq.webapp.client.data.DataLogic
 import ColumnRenderer.SortableDeletionReason
 import SortMethod.{Asc, AscThenBlanks, BlanksThenAsc}
 
@@ -200,7 +201,7 @@ object Sorter {
   // ===================================================================================================================
   // Specific
 
-  type TagOrder = Map[ApplicableTagId, Int]
+  type TagOrder = DataLogic.TagOrder
 
   /**
    * Project data prepared in a way that various sorts will use.
@@ -210,29 +211,16 @@ object Sorter {
     def normalisedText(f: PlainText.ForProject => String) =
       stringNormalise(f(plainText))
 
-    def ordermap[A](name: String, as: TraversableOnce[A]): Map[A, Int] =
-      as.toIterator.zipWithIndex.toMap
-
     val applicability = Applicability(p)
 
     @inline def reqTypesToMnemonicOrder =
       p.config.reqTypeOrder
 
     lazy val tagByNameOrder: TagOrder =
-      ordermap("tag",
-        MutableArray(p.config.tags.valuesIterator.map(_.tag).filterT[ApplicableTag])
-          .sortBySchwartzian(_.key.value |> stringNormalise)
-          .map(_.id)
-          .iterator
-      )
+      DataLogic.tagOrderByName(p.config.tags)
 
     lazy val tagByPosOrder: TagOrder =
-      ordermap("tag",
-        FlatTag.flatten(p.config.tags)(_ => true, FlatTag.FilterPolicy.OmitNothing)
-          .iterator
-          .map(_.id)
-          .filterT[ApplicableTagId]
-      )
+      DataLogic.tagOrderByPos(p.config.tags)
   }
 
   def pubidNormaliser(setup: Setup): Pubid => (Int, Int) = {
@@ -243,8 +231,8 @@ object Sorter {
     }
   }
 
-  val stringNormalise: EndoFn[String] =
-    _.toLowerCase
+  @inline def stringNormalise: EndoFn[String] =
+    DataLogic.normaliseStringForSorting
 
   // ReqCodeGroups are only displayed when sorting by code.
   // ReqCodeGroups cannot have a blank code.

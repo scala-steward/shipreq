@@ -5,6 +5,7 @@ import japgolly.scalajs.react.experimental.StaticPropComponent
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.base.util.MutableArray
+import shipreq.webapp.client.data.{ShowDead, FilterDead, DataLogic}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.UiText
@@ -34,6 +35,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
                          pxProjectWidgets: Px[ProjectWidgets])
 
   case class DynamicProps(extPubid: ExternalPubid,
+                          filterDead: FilterDead,
                           reqState: GenericReqId => ReqState)
 
   case class ReqState(initEditor      : InitEditor,
@@ -70,6 +72,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       Row.head ++ fields.iterator.map(Row.fromField)
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     def renderDetail(p: DynamicProps, project: Project, req: GenericReq): ReactElement = {
       val pw = pxProjectWidgets.value()
       val s = p.reqState(req.id)
@@ -101,6 +104,21 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         initEditor.feature((cell, el) =>
           D0.Feature(static, s.asyncFeature(cell))(el, edit(cell)))
       }
+
+      // TODO ↓ needn't do all this each time
+      val live = req.live(project.config.customReqTypes)
+      val filterDead = live match {
+        case Live => p.filterDead
+        case Dead => ShowDead
+      }
+      val codeSet        = project.reqCodes.activeReqCodesByReqId(req.id)
+      val codes          = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
+      val tagDist        = DataLogic.tagFieldDist(project.config, filterDead, _ => true)
+      val tagLookup      = DataLogic.tagLookup(project, filterDead)
+      val generalTagSet  = DataLogic.generalTags(tagDist, tagLookup)(req.id)
+      val tagOrderByName = DataLogic.tagOrderByName(project.config.tags)
+      val tagOrderByPos  = DataLogic.tagOrderByPos(project.config.tags)
+      val generalTags    = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).to[Vector]
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
         def startEdit = editFeature(cell).startEdit(focus)
@@ -149,9 +167,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
               pw.customTextField(f.id)(req).fold(emptyRow)(w => w))
 
           case Row.Code =>
-            val codeSet = project.reqCodes.activeReqCodesByReqId(req.id)
-            val codes = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
-            // TODO ↑ needn't do each time
             renderAsyncEditorOrValue(
               Cell.Code,
               pw.flatReqCodes(codes))
@@ -161,10 +176,21 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
               Cell.ReqType,
               pw.reqTypeFull(req.reqTypeId)) // ---- Note for refactoring: reqTypeFull differs from how ReqTable does it
 
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          case Row.Tags =>
+            renderAsyncEditorOrValue(
+              Cell.Tags,
+              pw.tagList(generalTags))
+
+          case Row.CustomField(f: CustomField.Tag) =>
+            val tagSet = DataLogic.customFieldTags(tagDist, tagLookup, f.id)(req.id)
+            val tags = MutableArray(tagSet).sortBy(tagOrderByPos.apply).to[Vector]
+
+            renderAsyncEditorOrValue(
+              Cell.CustomField(f.id),
+              pw.tagList(tags))
+
 //          CustomField(Implication(_, _, _, _, _)), CustomField(Tag(_, _, _, _, _)), Implications, Tags
           case _ => "TODO"
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         }
 
       rows(project, req)
@@ -176,6 +202,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         renderRows,
         <.code(<.pre(req.toString)))
     }
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 
