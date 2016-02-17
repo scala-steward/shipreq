@@ -503,27 +503,15 @@ private[reqtable] object Logic {
   def sort(vs: ViewSettings, p: Project, pt: PlainText.ForProject)(rows: Vector[Row]): Stream[Row] = {
     import Sorter._
 
-    // Prepare sorters
     val sorter  = new FusedSorters(vs.order.init map inconclusive, vs.order.last |> conclusive)
     val setup   = new Setup(p, pt)
     val prepare = sorter.prepFn(setup)
     val rowMod  = Sorter.consolidateRowModFns(Sorter.sortUnspecified(vs) :: sorter.rowModFn :: Nil)
     val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
-    import sorter.{T => Datum}
 
-    // Prepare data
-    val data = new Array[Datum](rows.length)
-    var i = 0
-    rows.foreach { r =>
-      data(i) = prepare(rowEndo(r))
-      i = i + 1
-    }
-
-    // Sort
-    scala.util.Sorting.quickSort(data)(sorter.sortFn.toOrdering)
-
-    // Unpack results
-    data.toStream map sorter.row
+    MutableArray.map(rows)(r => prepare(rowEndo(r)))
+      .sort(sorter.sortFn.toOrdering)
+      .mapOut(sorter.row)
   }
 
   // ===================================================================================================================
