@@ -147,13 +147,20 @@ final class ProjectWidgets private(project    : Project,
     }
   }
 
-  val reqType = memo[ReqTypeId] { id =>
-    val rt = project.config.reqType(id)
-    <.span(
-      *.reqType(rt.live),
-      ^.title := rt.name,
-      rt.mnemonic.value)
-  }
+  val reqTypeFull: ReqTypeId => ReactElement =
+    id => {
+      val rt = project.config.reqType(id)
+      <.span(s"${rt.mnemonic.value}: ${rt.name}")
+    }
+
+  val reqTypeShort: ReqTypeId => ReactElement =
+    memo { id =>
+      val rt = project.config.reqType(id)
+      <.span(
+        *.reqTypeShort(rt.live),
+        ^.title := rt.name,
+        rt.mnemonic.value)
+    }
 
   private def tagWithoutStyle(c: Contextualise, t: ApplicableTag): ReactTag = {
     var desc = if (t.name.compareToIgnoreCase(t.key.value) == 0) "" else t.name

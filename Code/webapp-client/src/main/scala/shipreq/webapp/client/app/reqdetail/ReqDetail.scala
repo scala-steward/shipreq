@@ -156,8 +156,13 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
               Cell.Code,
               pw.flatReqCodes(codes))
 
+          case Row.ReqType =>
+            renderAsyncEditorOrValue(
+              Cell.ReqType,
+              pw.reqTypeFull(req.reqTypeId)) // ---- Note for refactoring: reqTypeFull differs from how ReqTable does it
+
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//          CustomField(Implication(_, _, _, _, _)), CustomField(Tag(_, _, _, _, _)), Implications, Tags, ReqType
+//          CustomField(Implication(_, _, _, _, _)), CustomField(Tag(_, _, _, _, _)), Implications, Tags
           case _ => "TODO"
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         }

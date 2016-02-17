@@ -47,7 +47,7 @@ object ColumnRenderer {
     override protected def reqTypeIsDead(pt: PT, rt: ReqType) =
       <.span(
         UiText.ColumnNames.reqType + " ",
-        pt.reqType(rt.reqTypeId),
+        pt.reqTypeShort(rt.reqTypeId),
         " is deleted.")
   }
 
@@ -116,7 +116,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   private def reqType = make {
-    case r: GenericReqRow   => widgets.reqType(r.req.reqTypeId)
+    case r: GenericReqRow   => widgets.reqTypeShort(r.req.reqTypeId)
     case _: ReqCodeGroupRow => `N/A`
   }
 

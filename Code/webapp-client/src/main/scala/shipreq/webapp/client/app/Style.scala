@@ -356,7 +356,7 @@ object Style extends StyleSheet.Inline {
       mixinIf(l :: Dead)(deadMaybeValid(v)))
     }
 
-    val reqType = styleF(D.live)(a => styleS(
+    val reqTypeShort = styleF(D.live)(a => styleS(
       hoverShowsInfo,
       mixinIf(a :: Dead)(deadAndNotError)))
 
