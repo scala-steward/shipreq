@@ -150,7 +150,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
           case Row.Code =>
             val codeSet = project.reqCodes.activeReqCodesByReqId(req.id)
-            val codes = MutableArray(codeSet).sortBy(PlainText.reqCode).to[List]
+            val codes = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
             // TODO ↑ needn't do each time
             renderAsyncEditorOrValue(
               Cell.Code,

@@ -4,7 +4,9 @@ import monocle.Optional
 import monocle.function.Index.index
 import monocle.std.map.mapIndex
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 import scalaz.std.option.optionInstance
+import shipreq.base.util.MutableArray
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{PlainText, Text}
@@ -113,9 +115,7 @@ object Sorter {
       SortFn(go).considerBlanks(_.isEmpty)(bp)
     }
 
-    def pair        : SortFn[(A, A)] = this &&& this
-    def strengthL[B]: SortFn[(B, A)] = contramap(_._2)
-    def strengthR[B]: SortFn[(A, B)] = contramap(_._1)
+    def pair: SortFn[(A, A)] = this &&& this
 
     def byBlankPlacement[B](f: SortFn[A] => BlankPlacement => SortFn[B]): BlankPlacement => SortFn[B] = {
       val bf = f(this)(BlanksFirst)
@@ -185,15 +185,15 @@ object Sorter {
   def tryModEndo[A, B](l: Optional[A, B])(mod: B => Option[B]): EndoFn[A] =
     a => l.modifyF[Option](mod)(a) getOrElse a
 
-  def typicalRowModFn[A, B](l: Optional[Row, Vector[A]], s: SortFn[B])(f: Setup => A => B): RowModFn =
+  def typicalRowModFn[A: ClassTag, B](l: Optional[Row, Vector[A]], s: SortFn[B])(f: Setup => A => B): RowModFn =
     Some((setup, dir) => {
       val n = f(setup)
-      val o = s.applyDir(dir).strengthR[A].toOrdering
+      val o = s.applyDir(dir).toOrdering
       def innerSort(i: Vector[A]): Option[Vector[A]] =
         if (i.isEmpty || i.tail.isEmpty)
           None
         else
-          i.map(_ mapStrengthL n).sorted(o).map(_._2).some
+          MutableArray(i).sortBySchwartzian(n)(o).to[Vector].some
       tryModEndo(l)(innerSort)
     })
 
@@ -220,20 +220,16 @@ object Sorter {
 
     lazy val tagByNameOrder: TagOrder =
       ordermap("tag",
-        p.config.tags.valuesIterator
-          .map(_.tag)
-          .filterT[ApplicableTag]
-          .map(_.tmap2(_.key.value |> stringNormalise, _.id))
-          .toVector
-          .sortBy(_._1)
+        MutableArray(p.config.tags.valuesIterator.map(_.tag).filterT[ApplicableTag])
+          .sortBySchwartzian(_.key.value |> stringNormalise)
+          .map(_.id)
           .iterator
-          .map(_._2)
       )
 
     lazy val tagByPosOrder: TagOrder =
       ordermap("tag",
         FlatTag.flatten(p.config.tags)(_ => true, FlatTag.FilterPolicy.OmitNothing)
-          .toStream
+          .iterator
           .map(_.id)
           .filterT[ApplicableTagId]
       )

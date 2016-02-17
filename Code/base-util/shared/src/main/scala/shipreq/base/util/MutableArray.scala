@@ -43,6 +43,9 @@ final class MutableArray[A](val underlying: Array[Any]) {
   }
 
   def sortBy[B](f: A => B)(implicit o: Ordering[B]): MutableArray[A] =
+    sort(Ordering by f)
+
+  def sortBySchwartzian[B](f: A => B)(implicit o: Ordering[B]): MutableArray[A] =
     map(_ mapStrengthL f)
       .sort(Ordering.by((_: (B, A))._1))
       .map(_._2)
