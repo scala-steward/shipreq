@@ -206,8 +206,8 @@ object Table {
     }
 
     p.asyncState.statusD1 match {
-      case None                                        => renderRowNormal
-      case Some(Locked)                                => renderRowLocked
+      case None                                       => renderRowNormal
+      case Some(Locked)                               => renderRowLocked
       case Some(s: AsyncActionFeature.Failed[String]) =>
         // Currently, whole-row state is only used when a row is being deleted/restored.
         // To save dev-time, if the RPC fails an alert popups asking to retry/cancel, thus this part of the code
@@ -215,7 +215,7 @@ object Table {
         dom.console.warn(s.failure)
         <.tr(
           td(^.colSpan := (p.crs.length + 1),
-            renderAsyncState(s)))
+            s.render))
     }
   }
 
@@ -283,7 +283,7 @@ object Table {
         ^.onKeyDown ==> onKeyDown,
         p.asyncState match {
           case None    => editView getOrElse[ReactElement] roView
-          case Some(s) => renderAsyncState(s): ReactElement
+          case Some(s) => s.render
         })
     }
   }

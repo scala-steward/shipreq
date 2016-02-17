@@ -2,7 +2,6 @@ package shipreq.webapp.client.app
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.client.feature._
 import shipreq.webapp.client.lib.DataReusability._
@@ -33,17 +32,6 @@ package object reqtable {
   @inline def shouldComponentUpdate[P: Reusability, S: Reusability, B, N <: TopNode] =
     shipreq.webapp.client.app.shouldComponentUpdate[P, S, B, N]
     // Reusability.shouldComponentUpdateWithOverlay[P, S, B, N]
-
-  // -----------------------------------------------------------------------------------------------
-
-  def renderAsyncState(s: AsyncActionFeature.Status[String]): ReactTag =
-    s match {
-      case AsyncActionFeature.Locked =>
-        AsyncActionFeature.renderLocked
-
-      case f: AsyncActionFeature.Failed[String] =>
-        <.div(f.failure, f.retryButton, f.resumeEditButton)
-    }
 
   // -----------------------------------------------------------------------------------------------
 

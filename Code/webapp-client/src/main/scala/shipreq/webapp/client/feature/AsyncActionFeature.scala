@@ -27,16 +27,24 @@ object AsyncActionFeature {
   /**
     * @tparam F The type of async failure.
     */
-  sealed trait Status[+F]
+  sealed abstract class Status[+F]
 
   case object Locked extends Status[Nothing]
 
-  case class Failed[F](failure: F, retry: Callback, resumeEdit: Callback) extends Status[F] {
+  final case class Failed[F](failure: F, retry: Callback, resumeEdit: Callback) extends Status[F] {
     def retryButton =
       <.button("Retry", ^.onClick --> retry)
 
     def resumeEditButton =
       <.button("Abort", ^.onClick --> resumeEdit)
+  }
+
+  @inline implicit class AAFStringStatusOps(private val s: Status[String]) extends AnyVal {
+    def render: ReactElement =
+      s match {
+        case Locked            => renderLocked
+        case f: Failed[String] => <.div(f.failure, f.retryButton, f.resumeEditButton)
+      }
   }
 
   implicit def reusabilityStatus[F]: Reusability[Status[F]] =
