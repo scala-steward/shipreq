@@ -2,13 +2,13 @@ package shipreq.webapp.client.app.reqtable
 
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
-import scala.scalajs.js
 import shipreq.base.util._
 import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.client.data.FilterDead
+import shipreq.webapp.client.lib.KeyGen
 import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
 
 sealed trait Column {
@@ -19,7 +19,7 @@ sealed trait Column {
   def live: Live
 
   /** A value that can be passed to React to quickly identify columns. */
-  val key: js.Any
+  val key: String
 }
 object Column {
 
@@ -29,13 +29,8 @@ object Column {
   sealed trait SortInconclusive extends Column   { final protected def __sortConcl = ??? }
   sealed trait SortConclusive   extends NoBlanks { final protected def __sortConcl = ??? }
 
-  private val nextBuiltInKey: () => js.Any = {
-    var i = 0
-    () => { i += 1; i }
-  }
-
   sealed trait BuiltIn extends Column {
-    override final val key = nextBuiltInKey()
+    override final val key = KeyGen.global.next()
   }
   sealed trait BuiltInLive extends BuiltIn {
     override final def live = Live
@@ -59,7 +54,7 @@ object Column {
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
   case class CustomField(id: data.CustomFieldId, live: Live) extends SortInconclusive with HasBlanks {
-    override val key: js.Any = -id.value
+    override val key = "f" + id.value
   }
 
   // -------------------------------------------------------------------------------------------------------------------
