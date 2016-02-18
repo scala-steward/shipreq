@@ -52,7 +52,25 @@ object Row {
 
 // =====================================================================================================================
 
-sealed abstract class Cell
+sealed abstract class Cell {
+  import Cell._
+
+  /**
+   * Direction of implications relative to row-subject.
+   *
+   * If forwards, the user edits what this subject implies (ie. subject → edit-specified).
+   * If backwards, then it's what implies this subject     (ie. subject ← edit-specified).
+   *
+   * Note: Copy of reqtable.Column.implicationDirection
+   */
+  final def implicationDirection: Direction =
+    this match {
+      case CustomField(_) => data.CustomField.Implication.dir
+      case ImplicationTgt => Forwards
+      case _              => Backwards
+    }
+
+}
 
 object Cell {
   case object ReqType                       extends Cell
@@ -68,21 +86,6 @@ object Cell {
 
   implicit val reusability: Reusability[Cell] =
     Reusability.byEqual
-
-  /**
-   * Direction of implications relative to row-subject.
-   *
-   * If forwards, the user edits what this subject implies (ie. subject → edit-specified).
-   * If backwards, then it's what implies this subject     (ie. subject ← edit-specified).
-   *
-   * Note: Copy of reqtable.Column.implicationDirection
-   */
-  def implicationDirection(cell: Cell): Direction =
-    cell match {
-      case CustomField(_) => data.CustomField.Implication.dir
-      case ImplicationTgt => Forwards
-      case _              => Backwards
-    }
 
   val EditFieldKeyIntersection = Intersection[Cell, EditFieldKey] {
     case Cell.ReqType         => Some(EditFieldKey.ReqType        )

@@ -261,7 +261,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
                 }
               }
 
-              ReqDetail.ReqState(
+              ReqDetail.ReqProps(
                 initEditor,
                 asyncFeature(r).mapK(Cell.EditFieldKeyIntersection.reverse),
                 s.editStates(r).mapK(Cell.EditFieldKeyIntersection.reverse),
