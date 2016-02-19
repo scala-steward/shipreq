@@ -312,6 +312,9 @@ object Style extends StyleSheet.Inline {
       fontSize(220 %%),
       display.flex)
 
+    val headerId = style(
+      whiteSpace.pre)
+
     val headerTitle = style(
       marginLeft(1 ex),
       flexGrow(1))

@@ -201,6 +201,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         <.div(
           *.header,
           <.div(
+            *.headerId,
             pubidText + ": "),
           <.div(
             *.headerTitle,
