@@ -1,43 +1,24 @@
 package shipreq.webapp.client.app.reqtable
 
-import nyaya.prop._
-import nyaya.test._
-import nyaya.test.PropTestOps._
-import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Px
+import japgolly.scalajs.react.test.ReactTestUtils.Simulate
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
-import org.parboiled2.Parser.DeliveryScheme.Throw
-import org.scalajs.dom, dom.html
-import org.scalajs.dom.ext.{KeyCode, KeyValue}
-import shipreq.webapp.base.text.{TextSearch, PlainText}
-import shipreq.webapp.client.data._
-import shipreq.webapp.client.widgets.high.ProjectWidgets
-import shipreq.webapp.client.feature._
-import ContentEditorFeature.EditFieldKey
-import scalajs.js
-import scalaz.Equal
-import scalaz.std.option._
-import scalaz.syntax.equal._
-import utest._
-import ReactTestUtils.Simulate
+import shipreq.base.util.UnivEq.{apply => _, force => _}
 import shipreq.base.util._
-import shipreq.base.util.Debug._
-import shipreq.base.util.ScalaExt._
-import shipreq.base.util.UnivEq.{apply => _, force => _, _}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.{CreateContentFn, UpdateContentFn, UpdateContentCmd, RemoteFn}
 import shipreq.webapp.base.test._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.client.app.{ProjectSpaMain, Style}
-import shipreq.webapp.client.lib._
+import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.client.data._
+import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
+import shipreq.webapp.client.feature._
+import shipreq.webapp.client.test.DomZipper.Implicits._
 import shipreq.webapp.client.test._
-import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
-import shipreq.webapp.client.widgets.Checkbox
-import UpdateContentCmd._
-import DomZipper.Implicits._
+import shipreq.webapp.client.widgets.high.ProjectWidgets
 import teststate._
+import utest._
 
 // =====================================================================================================================
 

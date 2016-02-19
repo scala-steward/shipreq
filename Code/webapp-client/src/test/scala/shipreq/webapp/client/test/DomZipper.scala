@@ -83,6 +83,10 @@ object DomZipper {
 
     def removeReactIds(html: String): String = // TODO Remove
       html.replaceAll(""" data-reactid=".*?"""", "")
+
+    implicit class IntExt(private val i: Int) extends AnyVal {
+      def of(n: Int) = MofN(i, n)
+    }
   }
 
   // ===================================================================================================================
@@ -115,11 +119,7 @@ object DomZipper {
     assert(m <= n, s"$this is invalid. $m must be ≤ $n.")
   }
 
-  implicit class IntExt(private val i: Int) extends AnyVal {
-    def of(n: Int) = MofN(i, n)
-  }
-
-  val Sole = 1 of 1
+  val Sole = MofN(1, 1)
 }
 
 final class DomZipper[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]], curLayer: Layer[D], $: CssSelLookup) {

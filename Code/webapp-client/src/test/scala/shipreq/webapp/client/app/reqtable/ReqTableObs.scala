@@ -8,7 +8,6 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.test._
 import shipreq.webapp.client.widgets.Checkbox
-import DomZipper.IntExt // TODO tmp
 import DomZipper.Implicits._
 
 object ReqTableObs {
