@@ -42,8 +42,8 @@ import teststate._
 
 // =====================================================================================================================
 
-object Stuff {
-  val * = Dsl.sync[ReactComponentM[_, ReqTableTest2.State, _, TopNode], ReqTableObs, Project, String]
+object ReqTableTestDsl {
+  val * = Dsl.sync[CompState.AccessD[ReqTable.State], ReqTableObs, Project, String]
 
 //  // TODO Move following into Nyaya
 //
@@ -146,7 +146,7 @@ object Stuff {
   implicit val showFilterDead = Show.byToString[FilterDead]
 
   def applyViewSettings(name: => String, f: ViewSettings => ViewSettings): *.Action =
-    *.action(name).act(_.ref.zoomL(ReqTableTest2.State.reqTable ^|-> ReqTable.State.viewSettings).modState(f))
+    *.action(name).act(_.ref.modState(ReqTable.State.viewSettings modify f))
 
   // TODO Would be better if this clicked on table column header
   val sortByPubid = applyViewSettings("sortByPubid", _.copy(order = SortCriteria.byPubidOnly))
@@ -170,26 +170,14 @@ object Stuff {
       *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assert.not.changeOccurs)
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
-
-  def testFilter = (
-    sortByPubid
-      >> enterFilter("-MF")
-      >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).before)
-        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2", "CO-1", "CO-2")).after)
-      >> enterFilter("FR")
-      >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).beforeAndAfter)
-  )
 }
 
-// ===================================================================================================================
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-object ReqTableTest2 extends TestSuite {
+object ReqTableTest extends TestSuite {
+  import ReqTableTestDsl._
 
   PrepareEnv()
-
-  import Stuff._
 
   val remotes = MockRemotes.projectSPA
 
@@ -254,7 +242,7 @@ object ReqTableTest2 extends TestSuite {
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       def newObs = new ReqTableObs(DomZipper(c))
       val tt = Test(action, invariants).observe(_ => newObs)
-      val h =  tt.run(initialState.reqTable.project, c)
+      val h =  tt.run(initialState.reqTable.project, c.zoomL(State.reqTable))
 //      println(h.format(History.Options.colored.alwaysShowChildren))
 //      println(h.format(History.Options.colored))
       h.assert(History.Options.colored)
@@ -263,6 +251,17 @@ object ReqTableTest2 extends TestSuite {
 
   override def tests = TestSuite {
     'initialState - runTest(Action.empty)
-    'filter - runTest(testFilter)
+    'filter       - runTest(testFilter)
   }
+
+  def testFilter = (
+    sortByPubid
+      >> enterFilter("-MF")
+      >> filterDeadToggle
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).before)
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2", "CO-1", "CO-2")).after)
+      >> enterFilter("FR")
+      >> filterDeadToggle
+        .addCheck(tablePubids.assert.equalIgnoringOrder(_ => List("FR-1", "FR-2")).beforeAndAfter)
+  )
 }
