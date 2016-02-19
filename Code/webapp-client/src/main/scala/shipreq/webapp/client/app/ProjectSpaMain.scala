@@ -198,13 +198,13 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     def render(p: Props, s: State): ReactElement = {
       def fd = ReusableVar(s.filterDead)(setFilterDead)
 
-      def layout(content: ReactElement) =
+      def layout(content: ReactElement, backPage: Page = Page.Index) =
         <.div(
           <.div(
             ^.textAlign.right,
             ^.paddingRight := "0.6ex",
             ^.marginTop := "-14px",
-            routerCtl.link(Page.Index)("← Back")),
+            routerCtl.link(backPage)("← Back")),
           content)
 
       p.page match {
@@ -266,7 +266,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
                 asyncFeature(r).mapK(Cell.EditFieldKeyIntersection.reverse),
                 s.editStates(r).mapK(Cell.EditFieldKeyIntersection.reverse),
                 s.asyncStates(r).mapK(Cell.EditFieldKeyIntersection.reverse))
-            })))
+            })), Page.ReqTable)
       }
     }
   }
