@@ -9,13 +9,14 @@ import org.scalajs.dom
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Intersection, UnivEq, univEqOps}
-import shipreq.webapp.base.data.{ExternalPubid, ReqType, ReqTypePos}
+import shipreq.webapp.base.data.{GenericReqId, ExternalPubid, ReqType, ReqTypePos}
 import shipreq.webapp.base.protocol.ProjectSPA
 import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.{FilterDead, HideDead}
 import shipreq.webapp.client.feature._
+import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.widgets.high.ProjectWidgets
 
@@ -185,6 +186,48 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       reqDetailRC,
       $ zoomL State.reqTable))
 
+    val pxReqDetailId = Px(None: Option[GenericReqId])
+
+    val pxReqDetailReqProps: Px[Option[State => ReqDetail.ReqProps]] =
+      pxReqDetailId.map(_.map { id =>
+        val r = Row.GenericReqRowSourceId(id)
+
+        val focusIdToCell = Intersection[FocusId, Cell] {
+          case FocusId.Content(rs, f) =>
+            if (r ==* rs)
+              Cell.EditFieldKeyIntersection.reverse.getOption(f)
+            else
+              None
+          case FocusId.ReqTableCI(_) => None
+        }(c => Cell.EditFieldKeyIntersection.getOptionMap(c, FocusId.Content(r, _)))
+
+        import ContentEditorFeature._
+        val initEditor =
+          new D1.InitChild[Cell, Cell] {
+            override type Parent    = State
+            override val parent     = $: CompState.Access[Parent]
+            override val preview    = previewFeature.mapK(focusIdToCell)
+            override val editorLens =
+              (c: Cell) =>
+                Cell.EditFieldKeyIntersection.getOption(c).map(efk =>
+                  State.editStates ^|-> D2.State.at(r) ^|-> D1.State.at(efk))
+          }
+
+        val asyncF1 = asyncFeature(r).mapK(Cell.EditFieldKeyIntersection.reverse)
+
+        (s: State) =>
+          ReqDetail.ReqProps(
+            initEditor,
+            asyncF1,
+            s.editStates(r).mapK(Cell.EditFieldKeyIntersection.reverse),
+            s.asyncStates(r).mapK(Cell.EditFieldKeyIntersection.reverse))
+      })
+
+    def reqDetailReqPropsFn(s: State) = (id: GenericReqId) => {
+      pxReqDetailId.set(Some(id))
+      pxReqDetailReqProps.value().get(s)
+    }
+
     val reqDetail = ReqDetail(ReqDetail.StaticProps(
       cd, cp, r.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets))
@@ -232,41 +275,11 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
             s.reqTable)))
 
         case Page.ReqDetail(pubid) =>
-          layout(reqDetail(ReqDetail.DynamicProps(
+          val props = ReqDetail.DynamicProps(
             pubid,
             s.filterDead,
-            id => {
-              // TODO This crap shouldn't be recalculated each render
-              val r = Row.GenericReqRowSourceId(id)
-
-              val focusIdToCell = Intersection[FocusId, Cell] {
-                case FocusId.Content(rs, f) =>
-                  if (r ==* rs)
-                    Cell.EditFieldKeyIntersection.reverse.getOption(f)
-                  else
-                    None
-                case FocusId.ReqTableCI(_) => None
-              }(c => Cell.EditFieldKeyIntersection.getOptionMap(c, FocusId.Content(r, _)))
-
-              val initEditor = {
-                import ContentEditorFeature._
-                new D1.InitChild[Cell, Cell] {
-                  override type Parent    = State
-                  override val parent     = $: CompState.Access[Parent]
-                  override val preview    = previewFeature.mapK(focusIdToCell)
-                  override val editorLens =
-                    (c: Cell) =>
-                      Cell.EditFieldKeyIntersection.getOption(c).map(efk =>
-                        State.editStates ^|-> D2.State.at(r) ^|-> D1.State.at(efk))
-                }
-              }
-
-              ReqDetail.ReqProps(
-                initEditor,
-                asyncFeature(r).mapK(Cell.EditFieldKeyIntersection.reverse),
-                s.editStates(r).mapK(Cell.EditFieldKeyIntersection.reverse),
-                s.asyncStates(r).mapK(Cell.EditFieldKeyIntersection.reverse))
-            })), Page.ReqTable)
+            reqDetailReqPropsFn(s))
+          layout(reqDetail(props), Page.ReqTable)
       }
     }
   }

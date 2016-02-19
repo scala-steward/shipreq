@@ -45,6 +45,8 @@ object DataReusability {
 
   implicit val reusabilityExternalPubid: Reusability[ExternalPubid] = Reusability.byRefOrUnivEq
 
+  implicit val reusabilityGenericReqId: Reusability[GenericReqId] = Reusability.byUnivEq
+
   implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[Vector[A]] = Reusability.byRefOrUnivEq
 
   def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =
