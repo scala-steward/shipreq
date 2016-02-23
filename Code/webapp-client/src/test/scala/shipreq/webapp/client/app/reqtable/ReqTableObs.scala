@@ -2,8 +2,10 @@ package shipreq.webapp.client.app.reqtable
 
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom.html
-import shipreq.webapp.client.data._
+import shipreq.base.util.ScalaExt._
+import shipreq.base.util.{UnivEq, univEqOps}
 import shipreq.base.util.UnivEq.{apply => _, force => _, _}
+import shipreq.webapp.client.data._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.test._
@@ -28,50 +30,36 @@ object ReqTableObs {
 final class ReqTableObs($ : DomZipper.Temp) {
   import ReqTableObs._
 
+  def findOne[A: UnivEq, B](a: A, bs: Iterable[B])(f: B => A): B =
+    bs.iterator.filter(f(_) ==* a).toList match {
+      case b :: Nil => b
+      case x => sys error s"Expected to find one result for '$a' but found: $x. Available are: ${bs.iterator.map(f).mkString(", ")}."
+    }
+
   object viewSettings {
     val $ = ReqTableObs.this.$.down("ViewSettings", ">table", 1 of 2)
     def vsCol(i: Int) = $.down("column #" + i, "tbody tr").down(">td", i of 3)
 
     object columns {
-      val entirety: Vector[(On, String)] =
-        vsCol(1).collect1("label", l =>
-          (On <~ l.down("input").inputChecked, l.down(">span").innerHTML))
+
+      case class ColumnDom(outer: DomZipper[html.Label]) {
+        val checkbox = outer.down("input").as[html.Input]
+        val on       = On <~ checkbox.inputChecked
+        val name     = outer.down(">span").innerHTML
+      }
+
+      val entirety: Vector[ColumnDom] =
+        vsCol(1).collect1("label", l => ColumnDom(l.as[html.Label]))
+
+      def column(name: String): ColumnDom =
+        findOne(name, entirety)(_.name)
 
       val allColumns: Vector[String] =
-        entirety.map(_._2)
+        entirety.map(_.name)
 
       val onColumns: Vector[String] =
-        entirety.filter(_._1 :: On).map(_._2)
+        entirety.filter(_.on :: On).map(_.name)
     }
-
-//    object sorting {
-//      val $ = vsCol(2)
-//
-//      private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
-//      private val readSortMethod: String => Option[SortMethod] = {
-//        case "Unused" => None
-//        case s => all.find(_.optionLabel == s).fold(sys error s"Unknown sort method: $s")(Some(_))
-//      }
-//
-//      private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
-//        s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
-//
-//      val inconclusive: Vector[(Option[SortMethod], String)] =
-//        $.down("ol").collect("li", li =>
-//          (li.down("select").selectedOptionText.get |> readSortMethod, li.down("select + span").innerHTML))
-//
-//      val conclusiveOrder: SortMethod.IgnoreBlanks =
-//        $.down("ol+div select", 1 of 2).selectedOptionText.get |> readSortMethodIB
-//
-//      val conclusiveColumnSelected: String =
-//        $.down("ol+div select", 2 of 2).selectedOptionText.get
-//
-//      val conclusiveColumns: Vector[String] =
-//        $.down("ol+div select", 2 of 2) collectInnerHTML "option"
-//
-//      val visibleColumns: Vector[String] =
-//        inconclusive.map(_._2) ++ conclusiveColumns
-//    }
 
     object filter {
       val $ = vsCol(3)
@@ -85,15 +73,69 @@ final class ReqTableObs($ : DomZipper.Temp) {
     }
   }
 
+  object sorting {
+//    private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
+//    private val readSortMethod: String => Option[SortMethod] = {
+//      case "Unused" => None
+//      case s => all.find(_.optionLabel == s).fold(sys error s"Unknown sort method: $s")(Some(_))
+//    }
+//
+//    private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
+//      s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
+
+    val $: DomZipper.Temp = ReqTableObs.this.$.down("Sort row", ">div:contains('Sort')")
+
+    //    val criteriaDom = $.collect1("tr", tr => (
+    //      tr.down("td", 2 of 2).innerText,
+    //      tr.down("td", 1 of 2).down("*[title]").domAs[html.Element].title))
+
+    case class CriteriaDom(nameDom: html.Element, orderDom: html.Element) {
+      val name = nameDom.textContent
+    }
+
+    val criteriaDom = $.collect1("tr", tr => CriteriaDom(
+      tr.down("td", 2 of 2).domAs[html.Element],
+      tr.down("td", 1 of 2).down("*[title]").domAs[html.Element]))
+
+    val names: Vector[String] =
+      criteriaDom.map(_.name)
+
+//      val inconclusive: Vector[(String, SortMethod)] =
+//        $.down("ol").collect("li", li =>
+//          (li.down("select").selectedOptionText.get |> readSortMethod, li.down("select + span").innerHTML))
+
+//      val conclusiveOrder: SortMethod.IgnoreBlanks =
+//        $.down("ol+div select", 1 of 2).selectedOptionText.get |> readSortMethodIB
+//
+//      val conclusiveColumnSelected: String =
+//        $.down("ol+div select", 2 of 2).selectedOptionText.get
+//
+//      val conclusiveColumns: Vector[String] =
+//        $.down("ol+div select", 2 of 2) collectInnerHTML "option"
+//
+//      val visibleColumns: Vector[String] =
+//        inconclusive.map(_._2) ++ conclusiveColumns
+  }
+
   object table {
     val $ = ReqTableObs.this.$.down("ReqTable", ">table", 2 of 2)
     val tbody = $.down("ReqTable", ">tbody")
 
+    case class ColumnDom(headerCell: html.TableCell) {
+      val name = headerCell.textContent
+    }
+
+    val columnDoms: Vector[ColumnDom] =
+      $.down(">thead").collect1("th", d => ColumnDom(d.domAs[html.TableCell]))
+
     val columns: Vector[String] =
-      $.down(">thead") collectInnerText1 "th"
+      columnDoms map (_.name)
 
     val fieldColumns: Vector[String] =
       columns.drop(1)
+
+    def column(name: String): ColumnDom =
+      findOne(name, columnDoms)(_.name)
 
     import ColumnRenderer.{Status, Normal, DeadRow}
 
@@ -163,6 +205,8 @@ final class ReqTableObs($ : DomZipper.Temp) {
 //    def entireContent =
 //      tbody.collect(">tr", _.collectInnerText(">td").mkString("│ ", " │ ", " │")).mkString("\n")
   }
+
+  // ===================================================================================================================
 
   object stats {
     val text = $.down("Stats", ">div", 2 of 4).innerText

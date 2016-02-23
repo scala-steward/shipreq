@@ -8,6 +8,7 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import shipreq.base.util.UnivEq.{apply => _, force => _}
 import shipreq.base.util._
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{PlainText, TextSearch}
@@ -40,10 +41,8 @@ object ReqTableTestDsl {
       .map(Column.NameResolver.builtIn)
       .toSet)
 
-//  def propO[O](name: String, f: String => Prop[S]) = {
-//    val p = f(name)
-//    *.point(_ => name, i => {val r = p(i.obs); if (r.success) None else Some(r.failureTree)})
-//  }
+  def visibleColumns(obs: ReqTableObs): Set[String] =
+    mandatoryColumns(obs.filterDead) ++ obs.viewSettings.columns.onColumns
 
   val invariants = {
 
@@ -71,13 +70,15 @@ object ReqTableTestDsl {
       uniqueColumns & liveCustomFieldColumnsAlwaysAvailable & deadColumns
     }
 
-//    def sortableColumns = equal("Sortable columns = selected VS columns")(
-//      _.viewSettings.sorting.visibleColumns.sorted, _.viewSettings.columns.onColumns.sorted)
+    def sortColumns = {
+      val names = *.focus("Sort criteria").collection(_.obs.sorting.names)
+      names.assert.distinct &
+      names.assert.containsOnly("visible columns", i => visibleColumns(i.obs))
+    }
 
     def tableColumns =
       *.focus("Table columns").collection(_.obs.table.fieldColumns)
-        .assert.equalIgnoringOrder(
-          i => mandatoryColumns(i.obs.filterDead) ++ i.obs.viewSettings.columns.onColumns)
+        .assert.equalIgnoringOrder(i => visibleColumns(i.obs))
 
     def tableContents = {
       val rowEitherDeadOrLive = *.focus("")
@@ -114,9 +115,7 @@ object ReqTableTestDsl {
       rowCount & reqFormula
     }
 
-//    "Invariants" rename_: (
-//      selectableColumns & sortableColumns & tableColumns & tableContents & stats)
-    selectableColumns & tableColumns & tableContents & stats
+    selectableColumns & sortColumns & tableColumns & tableContents & stats
   }
 
   // ===================================================================================================================
@@ -128,8 +127,16 @@ object ReqTableTestDsl {
   def applyViewSettings(name: => String, f: ViewSettings => ViewSettings): *.Action =
     *.action(name).act(_.ref.modState(ReqTable.State.viewSettings modify f))
 
-  // TODO Would be better if this clicked on table column header
-  val sortByPubid = applyViewSettings("sortByPubid", _.copy(order = SortCriteria.byPubidOnly))
+  def showHideColumn(columnName: String): *.Action =
+    *.action("Show/hide " + columnName)
+      .act(Simulation.change run _.obs.viewSettings.columns.column(columnName).checkbox)
+
+  def sortBy(columnName: String): *.Action =
+    *.action("Sort by " + columnName)
+      .act(Simulation.click run _.obs.table.column(columnName).headerCell)
+
+  val sortByPubid =
+    sortBy(UiText.ColumnNames.pubid)
 
   def enterFilter(f: String) = {
     val e = ChangeEventData(f)

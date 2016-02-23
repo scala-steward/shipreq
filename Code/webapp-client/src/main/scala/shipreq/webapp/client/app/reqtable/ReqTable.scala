@@ -22,8 +22,10 @@ import shipreq.webapp.client.widgets.high.ProjectWidgets
 object ReqTable extends StaticPropComponent.Template("ReqTable") {
   override protected def configureBackend = new Backend(_, _)
   override protected def configureRender  = _.renderBackend
-  override protected def configure = _.configure(
-    Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ recvChanges c)))
+  override protected def configure = _
+    .componentWillMount(_.backend.syncProjectState)
+    .configure(
+      Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ updateProject c.p2)))
 
   type InitEditor = ContentEditorFeature.D2.InitChild[Row, Column, FocusId]
 
@@ -52,9 +54,16 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
                    creation    : CreationInterface.State,
                    modal       : Modal.State) {
 
-    def recvChanges(changes: Changes): State =
-      copy(project = changes.p2) // TODO This obviously affects other things
-      // TODO A custom field removal/addition should affect ViewSettings
+    def updateProject(p2: Project): State = {
+      val legal = Column.all(p2.config, viewSettings.filterDead).whole.toSet
+      State(
+        p2,
+        viewSettings.filterColumns(legal.contains),
+        filter,
+        selection,
+        creation,
+        modal)
+    }
 
     def filterFailure(s: FilterEditor.State): State =
       copy(filter = s)
@@ -100,6 +109,16 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
   final class Backend(SP: StaticProps, $: BackendScope) extends OnUnmount {
     import SP._
     import cd.pxProject
+
+    def syncProjectState: Callback =
+      $.props.map(_.state) flatMap { state =>
+        val p1 = state.project
+        val p2 = pxProject.value()
+        if (p1 ne p2)
+          state_$.setState(state updateProject p2)
+        else
+          Callback.empty
+      }
 
     // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =

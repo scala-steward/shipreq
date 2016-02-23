@@ -82,6 +82,9 @@ object Column {
   def all(c: ProjectConfig): NonEmptyVector[Column] =
     c.fields.customFields.values.toVector.map(f => CustomField(f.id, f live c)) ++: builtInValues
 
+  def all(c: ProjectConfig, fd: FilterDead): NonEmptyVector[Column] =
+    NonEmptyVector.force(all(c).whole filter filterDead(fd))
+
   val filterDead: FilterDead => Column => Boolean =
     FilterDead.memo(_.filterFnA[Column](_.live))
 

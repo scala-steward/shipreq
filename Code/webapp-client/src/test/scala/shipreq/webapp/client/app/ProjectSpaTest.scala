@@ -11,7 +11,7 @@ import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{Delete, DeleteCustomField, Event}
 import shipreq.webapp.base.test.SampleProject.Values.priField
 import shipreq.webapp.base.test._
-import shipreq.webapp.client.app.reqtable.{ReqTableObs, ReqTableTestDsl}
+import shipreq.webapp.client.app.reqtable.{ReqTableObs, ReqTableTestDsl => RT}
 import shipreq.webapp.client.test._
 import DomZipper.Implicits._
 import ProjectSpaMain.{Page, Props, State}
@@ -53,8 +53,8 @@ object ProjectSpaDsl {
       .updateStateO(s => o => s.copy(project = o.project))
       .act(_.ref.cd.applyTestEvents(e: _*))
 
-  val testReqTable: *.Action =
-    Test(ReqTableTestDsl.*.emptyAction, ReqTableTestDsl.invariants)
+  def testReqTable(action: RT.*.Action = Action.empty): *.Action =
+    Test(action, RT.invariants)
       .pmapO[Obs](_.reqTable)
       .cmapS[TestState](TestState.project.get, (a, b) => TestState.project.set(b)(a)) // TODO Add Monocle support
       .cmapRef[Ref](_.tester.component zoomL State.reqTable)
@@ -88,11 +88,11 @@ object ProjectSpaTest extends TestSuite {
   }
 
   def reqTableAfterLocalConfigUpdate: *.Action = (
-    testReqTable
+    testReqTable(RT.showHideColumn("Priority") >> RT.sortBy("Priority"))
       >> setPage(Page.CfgFields)
       >> applyEvents("Delete Priority field", DeleteCustomField(priField, Delete))
       >> setPage(Page.ReqTable)
-      >> testReqTable
+      >> testReqTable()
   )
 
   override def tests = TestSuite {
