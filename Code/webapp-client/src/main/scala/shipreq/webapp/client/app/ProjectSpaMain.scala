@@ -19,6 +19,7 @@ import shipreq.webapp.client.feature._
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.protocol.ClientProtocol
 import shipreq.webapp.client.widgets.high.ProjectWidgets
+import ContentEditorFeature.EditFieldKey
 
 object ProjectSpaMain {
 
@@ -74,6 +75,34 @@ object ProjectSpaMain {
           <.li(ctl.link(p)(p.toString))))
     }
     .build
+
+  // ===================================================================================================================
+  // Component stuff (TODO Refactor)
+  import reqtable.{Column, Row, ReqTable}
+
+  sealed trait FocusId
+  object FocusId {
+    case class Content(row: Row.SourceId, f: EditFieldKey) extends FocusId
+    case class ReqTableCI(value: reqtable.FocusId.InCI) extends FocusId
+    implicit def equality: UnivEq[FocusId] = UnivEq.deriveAuto
+
+    val toReqTable = Intersection[FocusId, reqtable.FocusId] {
+      case Content(r, f) => Column.EditFieldKeyIntersection.reverse.getOptionMap(f, reqtable.FocusId.AtCell(r, _))
+      case ReqTableCI(a) => Some(a)
+    } {
+      case reqtable.FocusId.AtCell(r, c) => Column.EditFieldKeyIntersection.getOptionMap(c, Content(r, _))
+      case a: reqtable.FocusId.InCI      => Some(ReqTableCI(a))
+    }
+  }
+
+  case class Props(page: Page, routerCtl: RouterCtl)
+
+  @Lenses
+  case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
+                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   previewState: PreviewFeature.State[FocusId],
+                   filterDead  : FilterDead,
+                   reqTable    : ReqTable.State)
 }
 
 
@@ -111,33 +140,8 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     }
 
   // ===================================================================================================================
-  import ContentEditorFeature.EditFieldKey
   import reqtable.{Column, Row, ReqTable}
   import reqdetail.{ReqDetail, Cell}
-
-  sealed trait FocusId
-  object FocusId {
-    case class Content(row: Row.SourceId, f: EditFieldKey) extends FocusId
-    case class ReqTableCI(value: reqtable.FocusId.InCI) extends FocusId
-    implicit def equality: UnivEq[FocusId] = UnivEq.deriveAuto
-
-    val toReqTable = Intersection[FocusId, reqtable.FocusId] {
-      case Content(r, f) => Column.EditFieldKeyIntersection.reverse.getOptionMap(f, reqtable.FocusId.AtCell(r, _))
-      case ReqTableCI(a) => Some(a)
-    } {
-      case reqtable.FocusId.AtCell(r, c) => Column.EditFieldKeyIntersection.getOptionMap(c, Content(r, _))
-      case a: reqtable.FocusId.InCI      => Some(ReqTableCI(a))
-    }
-  }
-
-  case class Props(page: Page, routerCtl: RouterCtl)
-
-  @Lenses
-  case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
-                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
-                   previewState: PreviewFeature.State[FocusId],
-                   filterDead  : FilterDead,
-                   reqTable    : ReqTable.State)
 
   def initState = State(
     ContentEditorFeature.D2.State.init,

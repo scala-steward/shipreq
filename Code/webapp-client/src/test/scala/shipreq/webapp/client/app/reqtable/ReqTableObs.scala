@@ -25,7 +25,7 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs(val $ : DomZipper.Temp) {
+final class ReqTableObs($ : DomZipper.Temp) {
   import ReqTableObs._
 
   object viewSettings {
