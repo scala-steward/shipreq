@@ -1,10 +1,6 @@
 package shipreq.webapp.client
 
-package object test {
-
-  import shipreq.webapp.client.test.DomZipper.DOM
-  type DomZipperAt[+D <: DOM] = shipreq.webapp.client.test.DomZipper.Instance[D]
-  type DomZipper              = DomZipperAt[DOM]
+package object test extends shipreq.webapp.client.test.TempHackWhileInShipreq {
 
   object PrepareEnv {
     def apply(): Unit = ()
