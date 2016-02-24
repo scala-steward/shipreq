@@ -143,10 +143,6 @@ final class ProjectWidgets private(project    : Project,
       reqRefFormat(Contextualise, Invalid)
   }
 
-  // A pubid as shown in the Id column of the ReqTable
-  val pubidColumnValue =
-    PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None)
-
   @inline def reqRefInValidText =
     PubidFormat.invalidWhenDeadWithCtx
 

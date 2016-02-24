@@ -53,6 +53,24 @@ object Style extends StyleSheet.Inline {
 
   private val hoverShowsInfo = hasTitle(cursor.help)
 
+  private def hasError = errorRedOnRed
+
+  private val deadMixin = mixin(
+    textDecoration := ^.lineThrough)
+
+  private def deadMaybeValid(v: Validity) = v match {
+    case Valid   => deadAndNotError
+    case Invalid => deadAndError
+  }
+
+  private val deadAndNotError = mixin(
+    deadMixin,
+    color(c"#999"))
+
+  private val deadAndError = mixin(
+    deadMixin,
+    hasError)
+
   // ===================================================================================================================
   // Config screens
   object cfg {
@@ -65,6 +83,11 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object reqtable {
     import shipreq.webapp.client.app.reqtable.{Column, ColumnRenderer}
+
+    val pubidColumnValue = styleF(D.live)(a => styleS(
+      display.inline,
+      whiteSpace.nowrap,
+      mixinIf(a :: Dead)(deadAndNotError)))
 
     val viewSettingsHeader = style(
       backgroundColor(c"#ffe"))
@@ -356,34 +379,11 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object widgets {
 
-    private def hasError = errorRedOnRed
-
     private val refColour = color(c"#2363A1")
-
-    private val deadMixin = mixin(
-      textDecoration := ^.lineThrough)
-
-    private def deadMaybeValid(v: Validity) = v match {
-      case Valid   => deadAndNotError
-      case Invalid => deadAndError
-    }
-
-    private val deadAndNotError = mixin(
-      deadMixin,
-      color(c"#999"))
-
-    private val deadAndError = mixin(
-      deadMixin,
-      hasError)
 
     val blankLine = style(display.block, height(1 em))
 
     val ul = style(paddingLeft(2.4 ex))
-
-    val pubidColumnValue = styleF(D.live)(a => styleS(
-      display.inline,
-      whiteSpace.nowrap,
-      mixinIf(a :: Dead)(deadAndNotError)))
 
     private def tagBase(live: Live) = mixin(
       display.inlineBlock,

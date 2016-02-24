@@ -110,8 +110,11 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   private def placeholder =
     make(Function const <.span("∅"))
 
+  private val pubidColumnValue =
+    widgets.PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None)
+
   private def pubid = make {
-    case r: GenericReqRow   => widgets.pubidColumnValue(r.req)
+    case r: GenericReqRow   => pubidColumnValue(r.req)
     case _: ReqCodeGroupRow => `N/A`
   }
 
