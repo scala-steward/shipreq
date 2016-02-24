@@ -185,45 +185,6 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
   private def failMsg(msg: String): String =
     msg + "\n" + describe
 
-  // ======= hmmmm… =======
-
-  def getAll(sel: String) =
-    $(sel, dom)
-
-  def collectDom[A](sel: String, f: DOM => A): Vector[A] =
-    getAll(sel).foldLeft(Vector.empty[A])(_ :+ f(_))
-
-  def collect[A](sel: String, f: DomZipperAt[DOM] => A): Vector[A] =
-    collectDom(sel, d => f(addLayer(Layer("collect", sel, d))))
-
-  def collectInnerHTML[A](sel: String): Vector[String] =
-    collect(sel, _.innerHTML)
-
-  def collectInnerText[A](sel: String): Vector[String] =
-    collectDom(sel, _.textContent)
-
-  // ======= hmmmm… =======
-
-  def getAll1(sel: String) = {
-    val x = getAll(sel)
-    assert(x.nonEmpty, s"No matches found for $sel") // TODO nooo.....
-    x
-  }
-
-  def collectDom1[A](sel: String, f: DOM => A): Vector[A] =
-    getAll1(sel).foldLeft(Vector.empty[A])(_ :+ f(_))
-
-  def collect1[A](sel: String, f: DomZipperAt[DOM] => A): Vector[A] =
-    collectDom1(sel, d => f(addLayer(Layer("collect", sel, d))))
-
-  def collectInnerHTML1[A](sel: String): Vector[String] =
-    collect1(sel, _.innerHTML)
-
-  def collectInnerText1[A](sel: String): Vector[String] =
-    collectDom1(sel, _.textContent)
-
-  // ======= hmmmm… =======
-
   def inputChecked(implicit h: HandleError): h.Result[Boolean] =
     h.map(domAs[html.Input])(_.checked)
 
@@ -239,6 +200,34 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
   /** The text value of the currently selected option in a &lt;select&gt; dropdown. */
   def selectedOptionText(implicit h: HandleError): h.Result[Option[String]] =
     h.map(selectedOption)(_.map(_.text))
+
+  def collect(sel: String, requireMatch: Boolean) = new Collector[Element](sel, requireMatch)
+  def collect0(sel: String) = collect(sel, false)
+  def collect1(sel: String) = collect(sel, true)
+
+  final class Collector[E <: Element](sel: String, requireMatch: Boolean) {
+    def as[EE <: E] = this.asInstanceOf[Collector[EE]]
+
+    def get()(implicit h: HandleError): h.Result[Vector[E]] = {
+      val v = $(sel, dom).toVector.asInstanceOf[Vector[E]] // Should be better
+      if (requireMatch && v.isEmpty)
+        h.fail(s"No matches found for: $sel")
+      else
+        h.pass(v)
+    }
+
+    def mapDom[A](f: E => A)(implicit h: HandleError): h.Result[Vector[A]] =
+      h.map(get())(_ map f)
+
+    def map[A](f: DomZipperAt[E] => A)(implicit h: HandleError): h.Result[Vector[A]] =
+      mapDom(d => f(addLayer(Layer("collect", sel, d))))
+
+    def innerHTML[A]()(implicit h: HandleError): h.Result[Vector[String]] =
+      map(_.innerHTML)
+
+    def innerText[A]()(implicit h: HandleError): h.Result[Vector[String]] =
+      map(_.innerText)
+  }
 }
 
 //  def assertCount(desc: String, expectedCount: Int, dom: Result, root: UndefOr[DOM]): Unit = {
