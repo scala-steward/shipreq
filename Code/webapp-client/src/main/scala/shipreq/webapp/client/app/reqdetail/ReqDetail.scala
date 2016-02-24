@@ -235,7 +235,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       def renderImpCell(cell: Cell, pubids: => Vector[Pubid]) =
         renderAsyncEditorOrValue(
           cell,
-          pw.pubidRefList(Plain, Valid)(pubids))
+          pw.implicationList(pubids))
 
       // TODO Much much overlap with Table.CellProps
       // TODO Test that this applies applicability

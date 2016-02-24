@@ -111,7 +111,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     make(Function const <.span("∅"))
 
   private def pubid = make {
-    case r: GenericReqRow   => widgets.pubidDetailLink(r.req.pubid)
+    case r: GenericReqRow   => widgets.pubidColumnValue(r.req)
     case _: ReqCodeGroupRow => `N/A`
   }
 
@@ -132,7 +132,7 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
   }
 
   private def imps(lens: Optional[Row, Vector[Pubid]]) = make {
-    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.pubidRefList(Plain, Valid))
+    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.implicationList)
     case _: ReqCodeGroupRow => `N/A`
   }
 

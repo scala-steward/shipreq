@@ -293,7 +293,7 @@ object Style extends StyleSheet.Inline {
         style(marginRight(0.5 ex))
 
       val impliedByItem = styleF(D.live)(l => styleS(
-        hoverShowsInfo,
+        // hoverShowsInfo, // It's a link to ReqDetail now
         mixinIf(l :: Live)(color(c"#111")),
         mixinIf(l :: Dead)(
           //textDecoration := ^.lineThrough,
@@ -414,9 +414,9 @@ object Style extends StyleSheet.Inline {
       padding.horizontal(0.7 ex))
 
     val reqRef = styleF(D.`live * validity`){ case (l, v) => styleS(
+      // hoverShowsInfo, // It's a link to ReqDetail now
       mixinIf(l :: Live)(refColour),
-      mixinIf(l :: Dead)(deadMaybeValid(v)),
-      hoverShowsInfo
+      mixinIf(l :: Dead)(deadMaybeValid(v))
     )}
 
     def reqCodeGroupRef = reqRef

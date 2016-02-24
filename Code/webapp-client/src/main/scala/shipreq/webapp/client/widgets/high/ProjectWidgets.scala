@@ -63,61 +63,95 @@ final class ProjectWidgets private(project    : Project,
       issueDescSurroundSuffix)
   }
 
-  val pubidDetailLink = memo[Pubid] { pubid =>
-    val ep = pubid.external(project)
-    val txt = PlainText.pubid(ep)
-    val req = project.reqs.reqByPubid(pubid)
-    reqDetailRC.link(ep)(
-      *.pubidColumnValue(req live project.config.customReqTypes),
-      txt)
-  }
+  final class PubidFormat private[PubidFormat](ctx    : Contextualise,
+                                               styleFn: Live => TagMod,
+                                               titleFn: PubidFormat.TitleFn,
+                                               liveFn : PubidFormat.LiveFn) {
 
-  /**
-   * A reference to a requirement.
-   *
-   * "Basic" because it isn't memoised, and isn't meant to be used directly.
-   */
-  def reqRefBasic(req: Req, modifyPubidText: EndoFn[String], style: Req => TagMod): ReactElement = {
-    val rt  = project.config.reqType(req.pubid.reqTypeId)
-    <.span(
-      style(req),
-      ^.title := plainText.reqTitle(req),
-      modifyPubidText(PlainText.pubid(rt, req.pubid.pos)))
-  }
-
-  def reqRefBasicById(id: ReqId, modifyPubidText: EndoFn[String], style: Req => TagMod): ReactElement =
-    reqRefBasic(project.reqs req id, modifyPubidText, style)
-
-  private val _reqRef2: Contextualise => Validity => ReqId => ReactElement =
-    Contextualise.memo { c =>
-      val f: EndoFn[String] = c match {
-        case Contextualise => G.reflinkSurround
-        case Plain         => identity
-      }
-      Validity.memo { v2 =>
-        val g = deadValidity(v2)
-        val style: Req => TagMod = req => *.reqRef(g(req live project.config.customReqTypes))
-        memo(reqRefBasicById(_, f, style))
+    private val label: ExternalPubid => String = {
+      val txt = PlainText.pubid(_: ExternalPubid)
+      ctx match {
+        case Contextualise => G.reflinkSurround compose txt
+        case Plain         => txt
       }
     }
 
-  def reqRef(c: Contextualise, validityWhenDead: Validity): ReqId => ReactElement =
-    _reqRef2(c)(validityWhenDead)
+    private val styleMemo = Live.memo(styleFn)
 
-  private val reqRefInText = reqRef(Contextualise, Invalid)
+    type Out = ReactElement
 
-  def reqRefList(c: Contextualise, validityWhenDead: Validity)(reqs: Vector[ReqId]): ReactElement = {
-    val f = reqRef(c, validityWhenDead)
-    renderVector(reqs, sepComma)(f)
+    private val memo: ReqId => Out =
+      Memo { reqId =>
+        val req   = project.reqs.req(reqId)
+        val ep    = req.pubid.external(project)
+        val txt   = label(ep)
+        val live  = liveFn(req)
+
+        reqDetailRC.link(ep)(
+          styleMemo(live),
+          ^.title := titleFn(req),
+          txt)
+      }
+
+    def apply(id: ReqId): Out =
+      memo(id)
+
+    def apply(req: Req): Out =
+      memo(req.id)
+
+    def apply(pubid: Pubid): Out =
+      apply(project.reqs.reqIdByPubid(pubid))
+
+    private val sep: TagMod =
+      ctx match {
+        case Contextualise => sepSpace
+        case Plain         => sepComma
+      }
+
+    def pubids(v: Vector[Pubid]): ReactTag =
+      renderVector(v, sep)(apply)
+
+    def reqs(v: Vector[Req]): ReactTag =
+      renderVector(v, sep)(apply)
   }
 
-  def pubidRef(c: Contextualise, validityWhenDead: Validity): Pubid => ReactElement = {
-    val f = reqRef(c, validityWhenDead)
-    pubid => f(project.reqs.reqIdByPubid(pubid))
+  object PubidFormat {
+    type LiveFn  = Req => Live
+    type TitleFn = Req => Option[String]
+
+    private val defaultLiveFn: LiveFn =
+      _.live(project.config.customReqTypes)
+
+    private val defaultTitleFn: TitleFn =
+      r => Some(plainText.reqTitle(r))
+
+    def apply(ctx    : Contextualise,
+              styleFn: Live => TagMod,
+              titleFn: TitleFn = defaultTitleFn,
+              liveFn : LiveFn  = defaultLiveFn) =
+      new PubidFormat(ctx, styleFn, titleFn, liveFn)
+
+    private def reqRefFormat(ctx: Contextualise, validityWhenDead: Validity) = {
+      val f = deadValidity(validityWhenDead)
+      apply(ctx, l => *.reqRef(f(l)))
+    }
+
+    val validWhenDead =
+      reqRefFormat(Plain, Valid)
+
+    val invalidWhenDeadWithCtx =
+      reqRefFormat(Contextualise, Invalid)
   }
 
-  def pubidRefList(c: Contextualise, validityWhenDead: Validity)(ids: Vector[Pubid]): ReactElement =
-    renderVector(ids, sepComma)(pubidRef(c, validityWhenDead))
+  // A pubid as shown in the Id column of the ReqTable
+  val pubidColumnValue =
+    PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None)
+
+  @inline def reqRefInValidText =
+    PubidFormat.invalidWhenDeadWithCtx
+
+  def implicationList(ids: Vector[Pubid]): ReactElement =
+    PubidFormat.validWhenDead.pubids(ids)
 
   /** Contextualised */
   val codeRef = memo[ReqCodeId] { id =>
@@ -143,7 +177,7 @@ final class ProjectWidgets private(project    : Project,
       case ActiveCodeToGroup   (c, g) => toGroup(c, g)
       case DeadGroup           (c, g) => toGroup(c, g)
       case ReqWithAltCode      (c, r) => toRef(c, r)
-      case ReqWithoutActiveCode(_, r) => reqRefInText(r)
+      case ReqWithoutActiveCode(_, r) => reqRefInValidText(r)
     }
   }
 
@@ -215,7 +249,7 @@ final class ProjectWidgets private(project    : Project,
       case a: PlainTextMarkup # EmailAddress  => <.a(^.href := "mailto:" ~ a.value, a.value)
       case a: PlainTextMarkup # MathTeX       => katex(a)
       case a: ListMarkup      # UnorderedList => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
-      case a: ReqRef          # ReqRef        => reqRefInText(a.value)
+      case a: ReqRef          # ReqRef        => reqRefInValidText(a.value)
       case a: ReqRef          # CodeRef       => codeRef(a.value)
       case a: Issue           # Issue         => issueO(live, a.typ, a.desc)
     }
