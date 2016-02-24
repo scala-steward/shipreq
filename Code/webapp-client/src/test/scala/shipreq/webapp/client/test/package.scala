@@ -2,7 +2,9 @@ package shipreq.webapp.client
 
 package object test {
 
-  @inline final def $ = Sizzle
+  import shipreq.webapp.client.test.DomZipper.DOM
+  type DomZipperAt[+D <: DOM] = shipreq.webapp.client.test.DomZipper.Instance[D]
+  type DomZipper              = DomZipperAt[DOM]
 
   object PrepareEnv {
     def apply(): Unit = ()

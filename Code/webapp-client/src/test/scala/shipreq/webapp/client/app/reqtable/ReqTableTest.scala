@@ -121,7 +121,7 @@ object ReqTableTestDsl {
   // ===================================================================================================================
 
   implicit def equalFromUnivEq[A: UnivEq] = teststate.Equal.byUnivEq[A]
-  implicit def autoGetDomFromZipper(d: DomZipper.Temp): ReactOrDomNode = d.dom.domAsHtml
+  implicit def autoGetDomFromZipper(d: DomZipper): ReactOrDomNode = d.dom.domAsHtml
   implicit val showFilterDead = Show.byToString[FilterDead]
 
   def applyViewSettings(name: => String, f: ViewSettings => ViewSettings): *.Action =

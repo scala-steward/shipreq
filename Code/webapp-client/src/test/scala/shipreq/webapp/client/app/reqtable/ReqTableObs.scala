@@ -27,7 +27,7 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs($ : DomZipper.Temp) {
+final class ReqTableObs($ : DomZipper) {
   import ReqTableObs._
 
   def findOne[A: UnivEq, B](a: A, bs: Iterable[B])(f: B => A): B =
@@ -42,7 +42,7 @@ final class ReqTableObs($ : DomZipper.Temp) {
 
     object columns {
 
-      case class ColumnDom(outer: DomZipper[html.Label]) {
+      case class ColumnDom(outer: DomZipperAt[html.Label]) {
         val checkbox = outer.down("input").as[html.Input]
         val on       = On <~ checkbox.inputChecked
         val name     = outer.down(">span").innerHTML
@@ -83,7 +83,7 @@ final class ReqTableObs($ : DomZipper.Temp) {
 //    private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
 //      s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
 
-    val $: DomZipper.Temp = ReqTableObs.this.$.down("Sort row", ">div:contains('Sort')")
+    val $: DomZipper = ReqTableObs.this.$.down("Sort row", ">div:contains('Sort')")
 
     //    val criteriaDom = $.collect1("tr", tr => (
     //      tr.down("td", 2 of 2).innerText,

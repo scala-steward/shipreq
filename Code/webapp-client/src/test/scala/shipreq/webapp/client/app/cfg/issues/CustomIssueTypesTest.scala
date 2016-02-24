@@ -22,7 +22,7 @@ object CustomIssueTypesTest extends TestSuite {
     val re         = props.component
     val c          = ReactTestUtils.renderIntoDocument(re)
 
-    def errors           = $(".errorMsg", c)
+    def errors           = Sizzle(".errorMsg", c)
     def assertNoErrors() = assertEq("Error tag count", 0, errors.length)
     def assertError()    = assertEq("Error tag count", 1, errors.length)
 
