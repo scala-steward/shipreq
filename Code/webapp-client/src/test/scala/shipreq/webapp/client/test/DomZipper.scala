@@ -130,6 +130,8 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
   val dom: D =
     curLayer.dom
 
+    @inline def asHtml(implicit h: HandleError) = as[html.Element]
+
   def as[D2 <: DOM](implicit h: HandleError, ct: ClassTag[D2]): h.Result[DomZipperAt[D2]] =
     h.map(domAs[D2])(d =>
       new DomZipperAt(prevLayers, curLayer.copy(dom = d), $))

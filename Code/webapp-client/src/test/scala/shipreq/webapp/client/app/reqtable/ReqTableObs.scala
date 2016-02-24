@@ -94,8 +94,8 @@ final class ReqTableObs($ : DomZipper) {
     }
 
     val criteriaDom = $.collect1("tr", tr => CriteriaDom(
-      tr.down("td", 2 of 2).domAs[html.Element],
-      tr.down("td", 1 of 2).down("*[title]").domAs[html.Element]))
+      tr.down("td", 2 of 2).asHtml.dom,
+      tr.down("td", 1 of 2).down("*[title]").asHtml.dom))
 
     val names: Vector[String] =
       criteriaDom.map(_.name)
