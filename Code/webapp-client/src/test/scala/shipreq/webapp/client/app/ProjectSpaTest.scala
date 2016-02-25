@@ -40,6 +40,9 @@ object ProjectSpaDsl {
 
   val * = Dsl.sync[Ref, Obs, TestState, String]
 
+  val invariants: *.Check =
+    Check.empty
+
   def setPage(p: Page): *.Action =
     *.action(s"Set page to $p")
       .updateState(_.copy(page = p))
@@ -54,14 +57,12 @@ object ProjectSpaDsl {
       .act(_.ref.cd.applyTestEvents(e: _*))
 
   def testReqTable(action: RT.*.Action = Action.empty): *.Action =
-    Test(action, RT.invariants)
+    liftReqTableTests(RT(action)).asAction("Test ReqTable")
+
+  def liftReqTableTests(tc: RT.*.TestContent): *.TestContent =
+    tc.cmapR[Ref](_.tester.component zoomL State.reqTable)
       .pmapO[Obs](_.reqTable)
       .cmapS[TestState](TestState.project.get, (a, b) => TestState.project.set(b)(a)) // TODO Add Monocle support
-      .cmapRef[Ref](_.tester.component zoomL State.reqTable)
-      .asAction("Inspect ReqTable")
-
-  val invariants: *.Check =
-    Check.empty
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
