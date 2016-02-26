@@ -9,7 +9,7 @@ import org.scalajs.dom
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Intersection, UnivEq, univEqOps}
-import shipreq.webapp.base.data.{GenericReqId, ExternalPubid, ReqType, ReqTypePos}
+import shipreq.webapp.base.data.{ReqId, ExternalPubid, ReqType, ReqTypePos}
 import shipreq.webapp.base.protocol.ProjectSPA
 import shipreq.webapp.base.text.{TextSearch, PlainText, Grammar}
 import shipreq.webapp.client.app.cfg.shared.Usage
@@ -190,11 +190,11 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       reqDetailRC,
       $ zoomL State.reqTable))
 
-    val pxReqDetailId = Px(None: Option[GenericReqId])
+    val pxReqDetailId = Px(None: Option[ReqId])
 
     val pxReqDetailReqProps: Px[Option[State => ReqDetail.ReqProps]] =
       pxReqDetailId.map(_.map { id =>
-        val r = Row.GenericReqRowSourceId(id)
+        val r = Row.ReqRowSourceId(id)
 
         val focusIdToCell = Intersection[FocusId, Cell] {
           case FocusId.Content(rs, f) =>
@@ -227,7 +227,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
             s.asyncStates(r).mapK(Cell.EditFieldKeyIntersection.reverse))
       })
 
-    def reqDetailReqPropsFn(s: State) = (id: GenericReqId) => {
+    def reqDetailReqPropsFn(s: State) = (id: ReqId) => {
       pxReqDetailId.set(Some(id))
       pxReqDetailReqProps.value().get(s)
     }

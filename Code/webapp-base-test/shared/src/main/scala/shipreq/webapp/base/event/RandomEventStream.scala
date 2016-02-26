@@ -349,15 +349,15 @@ class ApplicableEventGen(p: Project) {
     lazy val gSteps =
       Gen.choose_!(uc.stepIterator.map(_.id)).set
 
-    def gFlow(fwd: Boolean) =
-      gSteps.map(ss => NonEmpty(SetDiff.xor(p.reqs.useCases.stepFlow.dir(true)(step.id), ss)))
+    def gFlow(dir: Direction) =
+      gSteps.map(ss => NonEmpty(SetDiff.xor(p.reqs.useCases.stepFlow(dir)(step.id), ss)))
 
     Gen { c =>
       var vs = emptyValues
 
       if (c.nextBit()) {
-        if (c.nextBit()) gFlow(true ).run(c).foreach(vs += FlowOut(_))
-        if (c.nextBit()) gFlow(false).run(c).foreach(vs += FlowIn (_))
+        if (c.nextBit()) gFlow(Forwards ).run(c).foreach(vs += FlowOut(_))
+        if (c.nextBit()) gFlow(Backwards).run(c).foreach(vs += FlowIn (_))
       }
 
       if (vs.isEmpty || c.nextBit())

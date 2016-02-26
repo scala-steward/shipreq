@@ -36,7 +36,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
   case class DynamicProps(extPubid  : ExternalPubid,
                           filterDead: FilterDead,
-                          reqProps  : GenericReqId => ReqProps)
+                          reqProps  : ReqId => ReqProps)
 
   case class ReqProps(initEditor  : InitEditor,
                       asyncFeature: AsyncActionFeature  .D1.Feature[Cell, String],
@@ -139,7 +139,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
       val edit: Cell => Option[Editor[Cell]] = cell =>
         Some(cell match {
-          case Cell.Title                                        => Editor.GenericReqTitle(req, cell)
+          case Cell.Title                                        => Editor.ReqTitle(req, cell)
           case Cell.Code                                         => Editor.ReqCodesForReq(req)
           case Cell.ImplicationSrc
              | Cell.ImplicationTgt                               => generalImps(cell)

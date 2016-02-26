@@ -195,24 +195,30 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
         @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
         @inline def focusId = FocusId.AtCell(row.sourceId, col)
 
-        def imps(row: GenericReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
+        def imps(row: ReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
           rowLens.getOption(row).map(pubids =>
             Editor.ImplicationsAll(row.req, Column.implicationDirection(col), pubids))
 
         row match {
-          case r: GenericReqRow => col match {
+          case r: ReqRow => col match {
             case Column.Code                                              => Editor.ReqCodesForReq(r.req)
-            case Column.Title                                             => Editor.GenericReqTitle(r.req, focusId)
+            case Column.Title                                             => Editor.ReqTitle(r.req, focusId)
             case Column.Tags                                              => Editor.Tags(r.req, None)
-            case Column.ReqType                                           => Editor.ReqType(r.req)
             case Column.ImplicationSrc                                    => imps(r, Row.implicationSrc)
             case Column.ImplicationTgt                                    => imps(r, Row.implicationTgt)
             case Column.CustomField(id: CustomField.Text       .Id, Live) => Editor.CustomTextField(r.req, id, focusId)
             case Column.CustomField(id: CustomField.Tag        .Id, Live) => Editor.Tags(r.req, Some(id))
             case Column.CustomField(id: CustomField.Implication.Id, Live) => Editor.ImplicationsCustomField(r.req, id)
+
+            case Column.ReqType =>
+              r.req match {
+                case gr: GenericReq => Editor.ReqType(gr)
+                case _: UseCase     => None
+              }
+
             case Column.Pubid
                | Column.DeletionReason
-               | Column.CustomField(_, Dead)                              => None
+               | Column.CustomField(_, Dead) => None
           }
 
           case r: ReqCodeGroupRow => col match {
