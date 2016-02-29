@@ -178,7 +178,7 @@ object DND { // TODO Remove? DragToReorder makes this redundant?
 
     def outerAttrs[A](p: CProps[A], a: A, state: CState): TagMod = (
       ^.classSet("dragging" -> state, "dragover" -> p.dragover)
-        + (^.onDragEnter ==> preventDefault)
+        + (^.onDragEnter ==> ((_: ReactEvent).preventDefaultCB))
         + (^.onDragOver  ==> dragOver(a, p, state))
         + (^.onDragLeave --> p.eventHandler(DragEvent.Leave))
         + (^.onDrop      ==> drop(p))
