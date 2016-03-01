@@ -57,17 +57,18 @@ object UseCaseStepTreeTest extends TestSuite {
       }
     }
 
-    def step(f: UCF, loc: VectorTree.Location, id: UseCaseStepId, tree: UseCaseSteps.Tree): EvalL =
-      ( compare(f.canDelete(loc), DeleteUseCaseStep(id))
-      & compare(f.canShiftLeft(loc), ShiftUseCaseStepLeft(id))
-      & compare(f.canShiftRight(loc, tree), ShiftUseCaseStepRight(id))
-      & compare(f.canAdd(loc), AddUseCaseStep(nextStepId, uc.id, f, loc.whole))
-      ).rename(s"${f.name} / $id / ${loc.whole mkString "."}")
+    def step(f: UCF, l: VectorTree.Location, id: UseCaseStepId, mdt: VectorTree[Int]): EvalL =
+      ( compare(f.canDelete(l),          DeleteUseCaseStep(id))
+      & compare(f.canShiftLeft(l),       ShiftUseCaseStepLeft(id))
+      & compare(f.canShiftRight(l, mdt), ShiftUseCaseStepRight(id))
+      & compare(f.canAdd(l),             AddUseCaseStep(nextStepId, uc.id, f, l.whole))
+      ).rename(s"${f.name} / $id / ${l.whole mkString "."}")
 
     def tree(f: UCF) = {
       val tree = f.useCaseStepTree.get(uc)
+      val mdt  = tree.maxDepthTree
       val data = tree.locAndValueIterator((l, s) => (l, s.id)).toList
-      Eval.forall((), data)(x => step(f, x._1, x._2, tree)).rename(f.name)
+      Eval.forall((), data)(x => step(f, x._1, x._2, mdt)).rename(f.name)
     }
 
     def all =

@@ -180,8 +180,8 @@ object StaticField {
     @inline final def canShiftLeft(loc: VectorTree.Location): Permission =
       VectorTree.canShiftLeft(loc)
 
-    final def canShiftRight(loc: VectorTree.Location, tree: VectorTree[Any]): Permission =
-      VectorTree.canShiftRight(loc) && tree.at(loc).exists(_.dims.maxDepth + loc.length < maxDepth)
+    final def canShiftRight(loc: VectorTree.Location, maxDepthTree: VectorTree[Int]): Permission =
+      VectorTree.canShiftRight(loc) && maxDepthTree.getAtLocation(loc).exists(_ + loc.length < maxDepth)
 
     def canDelete(loc: VectorTree.Location): Permission
 
