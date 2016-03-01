@@ -125,6 +125,11 @@ object ContentEditorFeature {
       Reusability.never // ∵ Editor is effectively mutable
   }
 
+  @inline implicit class CEFState0Ops(private val s: D0.State) extends AnyVal {
+    def renderOr[A](a: => A)(implicit ev: ReactElement => A): A =
+      s.flatMap(_.render()).fold(a)(ev)
+  }
+
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object D0 {

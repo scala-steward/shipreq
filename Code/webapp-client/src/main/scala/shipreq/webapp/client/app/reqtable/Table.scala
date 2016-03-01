@@ -274,17 +274,11 @@ object Table {
       val (status, roView) = p.cr.render(p.row)
       // TODO roView should be non-strict or a fn
 
-      def editView: Option[ReactElement] =
-        p.cellEditor.flatMap(_.render())
-
       cellBase(
         *.cell(status),
         ^.onDblClick --> startEdit,
         ^.onKeyDown ==> onKeyDown,
-        p.asyncState match {
-          case None    => editView getOrElse[ReactElement] roView
-          case Some(s) => s.render
-        })
+        p.asyncState renderOr (p.cellEditor renderOr roView))
     }
   }
 
