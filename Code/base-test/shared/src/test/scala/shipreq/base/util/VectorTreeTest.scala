@@ -62,15 +62,15 @@ object VectorTreeTest extends TestSuite {
       })
 
   def canShift: PV = {
-    def x(name: String, can: VTI => Location => Boolean, proof: VTI => Location => Option[VTI]): PV =
+    def x(name: String, can: Location => Permission, proof: VTI => Location => Option[VTI]): PV =
       Prop.atom("canShift" + name, t =>
         t.locIterator
-          .find(l => can(t)(l) ≠ proof(t)(l).isDefined)
+          .find(l => (can(l) :: Allow) ≠ proof(t)(l).isDefined)
           .map("Discrepancy at " + _))
 
     "CanShift" rename_: (
-      x("Left" , _.canShiftLeft , _.shiftLeft ) ∧
-      x("Right", _.canShiftRight, _.shiftRight) )
+      x("Left" , VectorTree.canShiftLeft , _.shiftLeft ) ∧
+      x("Right", VectorTree.canShiftRight, _.shiftRight) )
   }
 
   def props: PV =

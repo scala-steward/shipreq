@@ -135,9 +135,6 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
         None
     }
 
-  def canShiftLeft(at: Location): Boolean =
-    at.length >= 2
-
   /**
     * Decreases the indent/level of a node.
     *
@@ -166,10 +163,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     }
 
   def shiftLeftIterator[B](f: (Location, A) => B): Iterator[B] =
-    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1)).map(f.tupled)
-
-  def canShiftRight(at: Location): Boolean =
-    at.last > 0
+    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1) :: Allow).map(f.tupled)
 
   /**
     * Increases the indent/level of a node.
@@ -191,7 +185,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     }
 
   def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
-    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1)).map(f.tupled)
+    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) :: Allow).map(f.tupled)
 
   def prettyPrintIndented(fmt: A => String = (_: A).toString,
                           indent: String = "  "): String =
@@ -252,6 +246,9 @@ object VectorTree extends VectorTreeLowPri {
   def Location(head: Int, tail: Int*): Location =
     NonEmptyVector.varargs(head, tail: _*)
 
+  val root: Location =
+    NonEmptyVector one 0
+
   @inline implicit class LocationOps(private val loc: Location) extends AnyVal {
     @inline def parent: ParentLocation =
       loc.init
@@ -268,6 +265,12 @@ object VectorTree extends VectorTreeLowPri {
 
   def single[A](value: A): VectorTree[A] =
     VectorTree(Vector1(leaf(value)))
+
+  def canShiftLeft(at: Location): Permission =
+    Allow <~ (at.length >= 2)
+
+  def canShiftRight(at: Location): Permission =
+    Allow <~ (at.last > 0)
 
   // ===================================================================================================================
 

@@ -137,6 +137,8 @@ object StaticField {
 
   @inline final private[this] def T = StaticFieldType
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   sealed abstract class UseCaseStepTree(_name     : String,
                                         _fieldType: StaticFieldType,
                                         _reqTypes : Field.ApplicableReqTypes,
@@ -174,6 +176,18 @@ object StaticField {
       * Maximum number of levels (inclusive) where the root (no steps) is 0.
       */
     final def maxDepth = stepLabelsPerLevel.length
+
+    @inline final def canShiftLeft(loc: VectorTree.Location): Permission =
+      VectorTree.canShiftLeft(loc)
+
+    final def canShiftRight(loc: VectorTree.Location, tree: VectorTree[Any]): Permission =
+      VectorTree.canShiftRight(loc) && tree.at(loc).exists(_.dims.maxDepth + loc.length < maxDepth)
+
+    def canDelete(loc: VectorTree.Location): Permission
+
+    final def canAdd(loc: VectorTree.Location): Permission =
+      // TODO Add a real implementation and make tests generate tree at maxLength
+      Allow
   }
 
   // UC-8.0.1.a.i.1
@@ -181,6 +195,8 @@ object StaticField {
   // ______|↑_↑_↑_↑
   private val sharedUseCaseStepLabels: Vector[IndexLabel] =
     Vector(NumericFrom1, Alpha, Roman, NumericFrom1)
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object NormalAltStepTree extends UseCaseStepTree(
       "Normal and Alternate Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
@@ -197,7 +213,12 @@ object StaticField {
     // ____|↑_+_+_+_+
     override val stepLabelsPerLevel =
       NumericFrom0 +: sharedUseCaseStepLabels
+
+    override def canDelete(loc: VectorTree.Location) =
+      Deny <~ (loc ==* VectorTree.root)
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object ExceptionStepTree extends UseCaseStepTree(
       "Exception Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
@@ -214,7 +235,12 @@ object StaticField {
     // ______|+_+_+_+
     override val stepLabelsPerLevel =
       sharedUseCaseStepLabels
+
+    override def canDelete(loc: VectorTree.Location) =
+      Allow
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object StepGraph extends StaticField(
     "Step Graph", T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)

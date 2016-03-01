@@ -70,9 +70,19 @@ object IsoBool {
       pos <~ ((this :: pos) && (that :: pos))
     }
 
+    final def &&(that: => Boolean): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) && that)
+    }
+
     final def |(that: => B): B = {
       val pos = companion.positive
       pos <~ ((this :: pos) || (that :: pos))
+    }
+
+    final def ||(that: => Boolean): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) || that)
     }
   }
 }

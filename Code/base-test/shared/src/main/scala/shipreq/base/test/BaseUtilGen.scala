@@ -73,6 +73,14 @@ object BaseUtilGen {
     }
   }
 
+  def counter(start: Int = 1): Gen[Int] = {
+    var i = start - 1
+    Gen { _ =>
+      i += 1
+      i
+    }
+  }
+
   // ===================================================================================================================
 
   def genISubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] =
