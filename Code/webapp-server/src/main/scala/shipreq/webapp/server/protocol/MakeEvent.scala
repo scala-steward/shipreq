@@ -371,6 +371,19 @@ object MakeEvent { // TODO Move
           Failed("No content specified.")
         else
           RestoreContent(reqs, reqCodes)
+
+      case UpdateContentCmd.AddUseCaseStep(ucId, f, at) =>
+        val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
+        AddUseCaseStep(stepId, ucId, f, at)
+
+      case UpdateContentCmd.DeleteUseCaseStep(id) =>
+        DeleteUseCaseStep(id)
+
+      case UpdateContentCmd.ShiftUseCaseStepLeft(id) =>
+        ShiftUseCaseStepLeft(id)
+
+      case UpdateContentCmd.ShiftUseCaseStepRight(id) =>
+        ShiftUseCaseStepRight(id)
     }
 
 }
