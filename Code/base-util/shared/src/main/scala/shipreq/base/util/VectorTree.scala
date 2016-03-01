@@ -120,7 +120,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     insertAfterN(at, leaf(value))
 
   def insertAfterN[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
-    modifyChildrenA[B](at.init) { c =>
+    modifyChildrenA[B](at.parent) { c =>
       val i = at.last
       if (c isIndexValid i) {
         val f = c(i)
@@ -179,7 +179,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.3.4.b    --> 1.3.4.a.ii
     */
   def shiftRight(at: Location): Option[VectorTree[A]] =
-    modifyChildrenA(at.init) { ps =>
+    modifyChildrenA(at.parent) { ps =>
       val ic = at.last
       val ip = ic - 1
       ps.getFlatMap(ip)(p =>
@@ -251,6 +251,11 @@ object VectorTree extends VectorTreeLowPri {
 
   def Location(head: Int, tail: Int*): Location =
     NonEmptyVector.varargs(head, tail: _*)
+
+  @inline implicit class LocationOps(private val loc: Location) extends AnyVal {
+    @inline def parent: ParentLocation =
+      loc.init
+  }
 
   @inline def noChildren: Children[Nothing] =
     Vector.empty

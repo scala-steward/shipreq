@@ -51,6 +51,12 @@ object IsoBool {
       val n = f(negative)
       b => if (b :: positive) p else n
     }
+
+    final def forall(f: B => Boolean): Boolean =
+      f(positive) && f(negative)
+
+    final def exists(f: B => Boolean): Boolean =
+      f(positive) || f(negative)
   }
 
   /**

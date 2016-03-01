@@ -283,7 +283,27 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
             renderImpCell(Cell.CustomField(f.id), data.customImps(f))
 
           case Row.UseCaseSteps(f) =>
-            "TODO!"
+            val uc = data.req match {
+              case x: UseCase => x
+              case x => sys error s"Not a use case: $x"
+            }
+            // TODO UseCaseSteps isn't needed it seems
+            val tree = f.useCaseStepTree.get(uc)
+            val rows =
+              tree.locAndValueIterator((loc, step) => UseCaseStepEditor.Props(
+                             uc.pubid.pos, // pos       : ReqTypePos,
+                             loc, // loc       : VectorTree.Location,
+                             step, // step      : UseCaseStep,
+                             data.project.reqs.useCases.stepFlow, // flow      : UseCases.StepFlow,
+                             ReusableFn(_.toString), // stepLabel : UseCaseStepId ~=> String,
+                             f, // field     : StaticField.UseCaseStepTree,
+                             pw, // widgets   : ProjectWidgets,
+                             None, // editState : ContentEditorFeature.D0.State,
+                             None, // asyncState: AsyncActionFeature.D0.State[String],
+                             Callback.empty, // startEdit : Callback,
+                             _ => Callback.empty) // update    : UpdateContentCmd.ForUseCaseStep => Callback
+              .render)
+            rows.toReactNodeArray
         }
 
       <.div(

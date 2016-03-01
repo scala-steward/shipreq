@@ -2,7 +2,8 @@ package shipreq.webapp.client.lib
 
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
-import shipreq.base.util.{NonEmptySet, NonEmptyVector, UnivEq}
+import shipreq.base.util.TaggedTypes.TaggedInt
+import shipreq.base.util.{VectorTree, NonEmptySet, NonEmptyVector, UnivEq}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.text.{Atom, TextSearch, PlainText}
@@ -45,7 +46,8 @@ object DataReusability {
 
   implicit val reusabilityExternalPubid: Reusability[ExternalPubid] = Reusability.byRefOrUnivEq
 
-  implicit val reusabilityReqId: Reusability[ReqId] = Reusability.byUnivEq
+  private[this] val taggedIntReuse = Reusability.byUnivEq[TaggedInt]
+  implicit def reusabilityTaggedInt[T <: TaggedInt]: Reusability[T] = taggedIntReuse.narrow
 
   implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[Vector[A]] = Reusability.byRefOrUnivEq
 
@@ -58,4 +60,11 @@ object DataReusability {
   implicit def reusabilityRemote[Fn <: RemoteFn.Instance] = Reusability.by((_: Fn).key)
 
   //implicit def reusabilityValidation[S, I, C, V]: Reusability[Validator[S, I, C, V]] = Reusability.byRef
+
+  implicit val reusabilityVectorTreeLoc: Reusability[VectorTree.Location] = Reusability.byRefOrUnivEq
+
+  implicit val reusabilityUseCaseStep: Reusability[UseCaseStep] = Reusability.byRefOrUnivEq
+
+  implicit val reusabilityUseCaseStepField: Reusability[StaticField.UseCaseStepTree] = Reusability.byUnivEq
+
 }
