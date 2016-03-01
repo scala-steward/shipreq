@@ -187,6 +187,26 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
     locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) :: Allow).map(f.tupled)
 
+  def maxDepthTree: VectorTree[Int] = {
+    val leaf: Node[Int] =
+      VectorTree.leaf(0)
+
+    def go(p: Parent[A]): Node[Int] =
+      if (p.children.isEmpty)
+        leaf
+      else {
+        var m = 0
+        val c2 = p.children.map { n =>
+          val n2 = go(n)
+          m = m max n2.value
+          n2
+        }
+        Node(m + 1, c2)
+      }
+
+    VectorTree(children map go)
+  }
+
   def prettyPrintIndented(fmt: A => String = (_: A).toString,
                           indent: String = "  "): String =
     Util.quickSB(sb =>

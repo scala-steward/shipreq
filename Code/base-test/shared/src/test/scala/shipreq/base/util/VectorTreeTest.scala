@@ -73,8 +73,23 @@ object VectorTreeTest extends TestSuite {
       x("Right", VectorTree.canShiftRight, _.shiftRight) )
   }
 
-  def props: PV =
-    (valueIterator ∧ nodeValueIterator ∧ locAndValueIterator ∧ dims ∧ canShift) rename "VectorTree props"
+  case class MaxDepthTreeTest(src: VTI, mdt: VTI, loc: Location)
+
+  def maxDepthTree: PV = {
+    val testNode =
+      Prop.equal[MaxDepthTreeTest]("MaxDepthTree node")(
+        i => i.mdt.getAtLocation(i.loc),
+        i => i.src.at(i.loc).map(_.dims.maxDepth))
+
+    Prop.evaln("MaxDepthTree", src => {
+      val mdt = src.maxDepthTree
+      val locs = src.locIterator.toList
+      Eval.forall(src, locs)(loc => testNode(MaxDepthTreeTest(src, mdt, loc)).liftL)
+    })
+  }
+
+  def props: PV = "VectorTree props" rename_: (
+    valueIterator ∧ nodeValueIterator ∧ locAndValueIterator ∧ dims ∧ canShift ∧ maxDepthTree)
 
   // ===================================================================================================================
 
