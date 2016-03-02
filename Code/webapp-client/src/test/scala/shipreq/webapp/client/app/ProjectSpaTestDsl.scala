@@ -67,12 +67,14 @@ object ProjectSpaTestDsl {
     liftReqTableTests(RT(action)).asAction("Test ReqTable")
 
   def liftReqTableTests(tc: RT.*.TestContent): *.TestContent =
-    tc.cmapR[Ref](_.tester.component zoomL State.reqTable)
+    tc.addInvariants(RT.invariants)
+      .cmapR[Ref](_.tester.component zoomL State.reqTable)
       .pmapO[Obs](_.reqTable)
       .cmapS[TestState](TestState.project.get, (a, b) => TestState.project.set(b)(a)) // TODO Add Monocle support
 
   def liftReqDetailTests(tc: RD.*.TestContent): *.TestContent =
-    tc.cmapR[Ref](_ => ())
+    tc // TODO .addInvariants(RD.invariants)
+      .cmapR[Ref](_ => ())
       .pmapO[Obs](_.reqDetail)
       .cmapS[TestState](
         s => RD.TestState(s.project, s.expectedError),
