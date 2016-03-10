@@ -9,8 +9,8 @@ import shipreq.base.util._
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.base.protocol.{ProjectSPA => SpaFns, _}
+import shipreq.webapp.base.server._
 import shipreq.webapp.server.app.DI
 import shipreq.webapp.server.db.EventDao.EventSeq
 import shipreq.webapp.server.lib.Types.ProjectId
@@ -20,33 +20,6 @@ import shipreq.webapp.server.protocol._
 object ProjectSPA extends DI with HasLogger {
 
   case class State(project: Project, seq: EventSeq)
-
-  sealed trait Result
-  case class  Updated(project: Project, ae: ActiveEvent, ve: VerifiedEvent) extends Result
-  case class  Failed(reason: String)                                        extends Result
-  case object NoChange                                                      extends Result
-
-  private def applyEvent(e: ActiveEvent, state: State): Result = {
-    val p1 = state.project
-    ApplyEvent.untrusted.apply1(e)(p1) match {
-      case \/-(p2) =>
-        val hrs = HashRec.changes(p1, p2)
-        if (hrs.isEmpty)
-          NoChange
-        else {
-          val ve = VerifiedEvent(e, hrs)
-          Updated(p2, e, ve)
-        }
-      case -\/(err) => Failed(err)
-    }
-  }
-
-  def applyMakeEventResult(r: MakeEvent.Result, state: State): Result =
-    r match {
-      case MakeEvent.MadeEvent(e) => applyEvent(e, state)
-      case MakeEvent.NoChange     => NoChange
-      case MakeEvent.Failed(e)    => Failed(e)
-    }
 
   def loadProjectEvents(projectId: ProjectId): (String, Vector[EventSeq]) \/ State = {
     val es = daoProvider.withTransaction(_.findAllEvents(projectId))
@@ -88,17 +61,14 @@ class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
   private def updateProject(f: Project => MakeEvent.Result): GenericFailure \/ VerifiedEvents = {
 //    Thread.sleep(2000)
 //    sys error "NO!"
-    applyMakeEventResult(f(state.project), state) match {
-      case u: Updated  =>
-        applyNewEvent(u).map(_ => Vector1(u.ve))
-      case NoChange =>
-        noChangeResponse
-      case Failed(err) =>
-        -\/(GenericFailure(err))
+    ApplyNewEvent(f(state.project), state.project) match {
+      case u: ApplyNewEvent.Updated  => applyNewEvent(u).map(_ => Vector1(u.ve))
+      case ApplyNewEvent.NoChange    => noChangeResponse
+      case ApplyNewEvent.Failed(err) => -\/(GenericFailure(err))
     }
   }
 
-  private def applyNewEvent(u: Updated): GenericFailure \/ Unit = {
+  private def applyNewEvent(u: ApplyNewEvent.Updated): GenericFailure \/ Unit = {
     val seq = state.seq.succ
     val s1 = state
     try {

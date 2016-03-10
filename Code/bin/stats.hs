@@ -108,7 +108,8 @@ gatherAllStats = do dirs <- dirsIn "."
 deps = M.fromList [
          ("webapp-server",         ["webapp-base-test", "base-db", "taskman-api"]) ,
          ("webapp-client",         ["webapp-base-test", "base-util"]) ,
-         ("webapp-base-test",      ["webapp-base"]) ,
+         ("webapp-base-test",      ["webapp-base-server"]) ,
+         ("webapp-base-server",    ["webapp-base"]),
          ("webapp-base",           ["webapp-macro", "base-util"]) ,
          ("webapp-macro",          ["base-util"]) ,
          ("taskman",               ["taskman-api", "taskman-server"]) ,
@@ -255,4 +256,3 @@ main = do putStrLn "Analysing..."
             ]
           putStrLn "\n"
           putStrLn $ topLevelModuleStatReport gs
-

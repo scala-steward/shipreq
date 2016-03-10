@@ -1,4 +1,4 @@
-package shipreq.webapp.server.protocol
+package shipreq.webapp.base.server
 
 import nyaya.util.Multimap
 import scalaz.\/
@@ -16,7 +16,7 @@ import UnivEq.Implicits._
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.
  */
-object MakeEvent { // TODO Move
+object MakeEvent {
 
   sealed trait Result
   case class  MadeEvent(e: ActiveEvent) extends Result
