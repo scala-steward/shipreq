@@ -370,13 +370,17 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         var first = temp.defaultFirst.nonEmpty
         val x = temp.tree.subtreeLocAndValueIterator(temp.filter, (loc, step) => {
 
+          val fullStepLabel = temp.field.stepLabel(pos, loc, mnemonicPrefix = false)
+
           def header = {
-            val full = temp.field.stepLabel(pos, loc, mnemonicPrefix = false)
-            val short = if (loc.length == 1) full else temp.field.stepLabelsPerLevel(loc.length - 1).label(loc.last)
+            val short = if (loc.length == 1)
+                fullStepLabel
+              else
+                temp.field.stepLabelsPerLevel(loc.length - 1).label(loc.last)
             <.div(
               *.header(loc.length - 1),
               stepLabel,
-              ^.title := full,
+              ^.title := fullStepLabel,
               short + ".")
           }
 
@@ -413,6 +417,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           }
 
           <.div(*.container,
+            ^.key := fullStepLabel,
             header,
             body,
             ctrls)
@@ -427,7 +432,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           def cmd = UpdateContentCmd.AddUseCaseStep(uc.id, temp.field, Vector.empty)
           val cb = runAction(cmd)
           val ctrls = Controls.addTailStep(cb).render
-          x push <.div(*.container, ctrls)
+          x push <.div(*.container, ^.key := "TS", ctrls)
         }
 
         x
