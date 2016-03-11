@@ -211,6 +211,14 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     VectorTree(children map go)
   }
 
+  def lastLoc: Option[Location] = {
+    val i = children.length - 1
+    if (i == -1)
+      None
+    else
+      Some(children(i).lastLoc(NonEmptyVector one i))
+  }
+
   def prettyPrintIndented(fmt: A => String = (_: A).toString,
                           indent: String = "  "): String =
     Util.quickSB(sb =>
@@ -295,6 +303,15 @@ object VectorTree extends VectorTreeLowPri {
 
   def canShiftRight(at: Location): Permission =
     Allow <~ (at.last > 0)
+
+  @tailrec
+  def lastLoc(n: Parent[Any], loc: Location): Location = {
+    val i = n.children.length - 1
+    if (i == -1)
+      loc
+    else
+      lastLoc(n.children(i), loc :+ i)
+  }
 
   // ===================================================================================================================
 
@@ -436,6 +453,9 @@ object VectorTree extends VectorTreeLowPri {
 
     def locAndValueIterator[B](currentLocation: Location, f: (Location, A) => B): Iterator[B] =
       Iterator.single(f(currentLocation, value)) ++ childrenIterator(currentLocation.whole, f)
+
+    def lastLoc(loc: Location): Location =
+      VectorTree.lastLoc(this, loc)
   }
 
   // ===================================================================================================================
