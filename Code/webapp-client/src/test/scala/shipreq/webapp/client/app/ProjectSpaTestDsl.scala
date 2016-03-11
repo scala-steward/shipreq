@@ -90,9 +90,8 @@ object ProjectSpaTestDsl {
     ComponentTester(spa.Component)(Props(init.page, rc)) { tester =>
       val tt  = Test(action, invariants).observe(_.observe())
       val h   = tt.run(init, Ref(cd, tester))
-       println(h.format(History.Options.colored.alwaysShowChildren))
-      h.assert(History.Options.colored)
-      // println(h.format(History.Options.colored))
+      h.assert(History.Options.colored.alwaysShowChildren)
+      println(h.format(History.Options.colored.alwaysShowChildren))
     }
   }
 

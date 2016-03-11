@@ -1,5 +1,6 @@
 package shipreq.webapp.client.app.reqdetail
 
+import japgolly.scalajs.react.test.ReactTestUtils.Simulate
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{UnivEq, univEqOps}
 import shipreq.webapp.base.data._
@@ -58,4 +59,10 @@ object ReqDetailTestDsl {
       case Mode.UC    => invariantsUC
       case Mode.Error => invariantsWhenBad
     })
+
+  def addTailStepAC: *.Action1 =
+    *.action("Add AC tail step").noStateUpdate.act(Simulate click _.obs.uc.tailStepRowAC.add)
+
+  def addTailStepEC: *.Action1 =
+    *.action("Add EC tail step").noStateUpdate.act(Simulate click _.obs.uc.tailStepRowEC.add)
 }

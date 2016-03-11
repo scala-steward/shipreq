@@ -1,10 +1,12 @@
 package shipreq.webapp.client.app.reqdetail
 
+import org.scalajs.dom.html
 import shipreq.webapp.base.UiText
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.test._
 import DomZipper.Implicits._
 import ReqDetailTestDsl.Mode
+import ReqDetailObs.NAE
 
 object ReqDetailObs {
 
@@ -46,9 +48,27 @@ final class ReqDetailObs($: DomZipper) {
 
     val treeCells = ReqDetailObs.TreeNames.map(fields)
 
-    val treeStepTitles = treeCells.map(_.collect0(s"*[data-step-label]").asHtml.mapDom(_.title))
+    val treeStepTitles: NAE[Vector[String]] =
+      treeCells.map(_.collect0(s"*[data-step-label]").asHtml.mapDom(_.title))
 
-    val stepTitles: Vector[String] = treeStepTitles.reduce(_ ++ _)
+    val stepTitles: Vector[String] =
+      treeStepTitles.reduce(_ ++ _)
+
+    val stepRows: NAE[Vector[StepRow]] =
+      treeCells.map(_.collect1(">div").map(StepRow))
+
+    case class StepRow($: DomZipper) {
+      private def ctrl(label: String): html.Button =
+        $.down(s"button:contains('$label')").domAs[html.Button]
+
+      lazy val del   = ctrl("-")
+      lazy val left  = ctrl("«")
+      lazy val right = ctrl("»")
+      lazy val add   = ctrl("+")
+    }
+
+    def tailStepRowAC = stepRows.alt.last
+    def tailStepRowEC = stepRows.exception.last
   }
 
   val mode: Mode =

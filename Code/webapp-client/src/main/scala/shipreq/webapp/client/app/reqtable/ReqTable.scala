@@ -22,10 +22,6 @@ import shipreq.webapp.client.widgets.high.ProjectWidgets
 object ReqTable extends StaticPropComponent.Template("ReqTable") {
   override protected def configureBackend = new Backend(_, _)
   override protected def configureRender  = _.renderBackend
-  override protected def configure = _
-    .componentWillMount(_.backend.syncProjectState)
-    .configure(
-      Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ updateProject c.p2)))
 
   type InitEditor = ContentEditorFeature.D2.InitChild[Row, Column, FocusId]
 
@@ -109,16 +105,6 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
   final class Backend(SP: StaticProps, $: BackendScope) extends OnUnmount {
     import SP._
     import cd.pxProject
-
-    def syncProjectState: Callback =
-      $.props.map(_.state) flatMap { state =>
-        val p1 = state.project
-        val p2 = pxProject.value()
-        if (p1 ne p2)
-          state_$.setState(state updateProject p2)
-        else
-          Callback.empty
-      }
 
     // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =

@@ -11,6 +11,7 @@ import shipreq.webapp.client.test._
 import teststate.Exports._
 import utest._
 import DomZipper.Implicits._
+import ReactTestUtils.Simulate
 
 object ReqDetailTest extends TestSuite {
   import ReqDetailTestDsl._
@@ -43,9 +44,11 @@ object ReqDetailTest extends TestSuite {
 
     'gr - test("FR-1")()
 
-    'uc - test("UC-1")(*.emptyTest
-      addInvariants allSteps.assert.equalConst("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
-    )
+    'uc - test("UC-1")(Test(
+      addTailStepEC
+        .addCheck(allSteps.assert.equalConst("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1").before)
+        .addCheck(allSteps.assert.equalConst("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1").after)
+      ))
 
 //    val u = ReqDetail.Props("EMMEFF", 5, project).component
 //    val m = ReactTestUtils.renderIntoDocument(u)
