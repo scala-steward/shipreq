@@ -102,10 +102,10 @@ object ReqTableTest extends TestSuite {
     sortByPubid
       >> enterFilter("-MF")
       >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrderConst("FR-1", "FR-2").before)
-        .addCheck(tablePubids.assert.equalIgnoringOrderConst("FR-1", "FR-2", "CO-1", "CO-2").after)
+        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2").before)
+        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "CO-1", "CO-2").after)
       >> enterFilter("FR")
       >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrderConst("FR-1", "FR-2").beforeAndAfter)
+        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2").beforeAndAfter)
   )
 }

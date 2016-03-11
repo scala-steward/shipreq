@@ -69,7 +69,7 @@ object ReqTableTestDsl {
 
     def tableColumns =
       *.focus("Table columns").collection(_.obs.table.fieldColumns)
-        .assert.equalIgnoringOrder(i => visibleColumns(i.obs))
+        .assert.equalIgnoringOrderBy(i => visibleColumns(i.obs))
 
     def tableContents = {
       val rowEitherDeadOrLive = *.focus("")
