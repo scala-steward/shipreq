@@ -168,6 +168,12 @@ object Common {
       scalacOptions += "-language:experimental.macros",
       libraryDependencies ++= Dependencies.Scala.macroDef(JVM))
 
+  def jvmSettings: Project => Project =
+    identity
+//    _.settings(
+//      scalacOptions       ++= Seq("-Ybackend:GenBCode", "-Ydelambdafy:method"),
+//      libraryDependencies  += Dependencies.Scala.java8compat)
+
   def jsSettings(t: JsTestType) = (p: Project) =>
     p.settings(
       scalaJSUseRhino   in Global   := false,

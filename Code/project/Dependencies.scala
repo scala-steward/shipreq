@@ -14,6 +14,8 @@ object Dependencies {
     val p        = mm("scalap")
     val all      = compiler ++ library ++ reflect ++ p
     val macroDef = reflect ++ library ++ (compiler % "provided")
+
+    val java8compat = "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0"
   }
 
   object Scalaz {

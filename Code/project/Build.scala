@@ -34,6 +34,7 @@ object ShipReq extends Build {
   lazy val baseMacro =
     crossProject("base-macro")
       .configureBoth(Common.macroModuleSettings)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(Scalaz.core ++ Nyaya.util)
 
@@ -42,6 +43,7 @@ object ShipReq extends Build {
   lazy val baseUtil =
     crossProject("base-util")
       .configureBoth(Common.settings)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseMacro)
       .depsForBoth(
@@ -54,7 +56,7 @@ object ShipReq extends Build {
 
   lazy val baseDb =
     project("base-db")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         postgresql ++ slick ++ hikariCP ++ flyway ++ logback ++
         providedScope(jodaTime))
@@ -65,6 +67,7 @@ object ShipReq extends Build {
   lazy val baseTest =
     crossProject("base-test")
       .configureBoth(Common.testModuleSettings)
+      .configureJvm(Common.jvmSettings)
       .dependsOn(baseUtil)
       .depsForBoth(
         providedScope(Nyaya.gen) ++
@@ -88,7 +91,7 @@ object ShipReq extends Build {
 
   lazy val taskmanApiLogic =
     project("taskman-api-logic")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         Scalaz.core ++ Scalaz.effect ++
         testScope(Specs2.combo ++ scalaCheck ++ Scala.reflect)
@@ -97,7 +100,7 @@ object ShipReq extends Build {
 
   lazy val taskmanApiImpl =
     project("taskman-api-impl")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         Json4s.jackson ++
         testScope(Specs2.combo ++ scalaCheck ++ Scala.reflect))
@@ -108,13 +111,13 @@ object ShipReq extends Build {
 
   lazy val taskmanApi =
     project("taskman-api")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .aggregate(taskmanApiLogic, taskmanApiImpl)
       .dependsOn(taskmanApiLogic, taskmanApiImpl)
 
   lazy val taskmanServerLogic =
     project("taskman-server-logic")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         jodaTime ++ logback ++ testScope(Specs2.combo))
       .dependsOn(taskmanApiLogic)
@@ -124,7 +127,7 @@ object ShipReq extends Build {
 
   lazy val taskmanServerSchema =
     project("taskman-server-schema")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .dependsOn(baseDb)
 
   lazy val taskmanServerImpl = {
@@ -139,7 +142,7 @@ object ShipReq extends Build {
       """.stripMargin
 
     project("taskman-server-impl")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
         testScope(Akka.testkit ++ Specs2.combo)
@@ -155,7 +158,7 @@ object ShipReq extends Build {
 
   lazy val taskmanServer =
     project("taskman-server")
-      .configure(Common.settings)
+      .configure(Common.settings, Common.jvmSettings)
       .aggregate(taskmanServerLogic, taskmanServerImpl, taskmanServerSchema)
       .dependsOn(taskmanServerLogic, taskmanServerImpl, taskmanServerSchema)
 
@@ -195,6 +198,7 @@ object ShipReq extends Build {
         Common.macroModuleSettings,
         useMacroParadise,
         webappCmdAliases)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(baseUtil)
       .depsForBoth(
@@ -208,6 +212,7 @@ object ShipReq extends Build {
   lazy val webappBase =
     crossProject("webapp-base")
       .configureBoth(webappSettings)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(
         μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
@@ -222,6 +227,7 @@ object ShipReq extends Build {
   lazy val webappBaseServer =
     crossProject("webapp-base-server")
       .configureBoth(webappSettings)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(testScope(μTest ++ Nyaya.test))
       .dependsOn(webappBase)
@@ -231,6 +237,7 @@ object ShipReq extends Build {
   lazy val webappBaseTest =
     crossProject("webapp-base-test")
       .configureBoth(Common.testModuleSettings, webappCmdAliases)
+      .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(μTest ++ Nyaya.test)
       .dependsOn(baseTest, webappBase, webappBaseServer)
@@ -391,6 +398,7 @@ object ShipReq extends Build {
           (LibJetty.servletApi % "test,provided"))
         .configure(
           webappSettings,
+          Common.jvmSettings,
           Common.generateBuildPropFile(),
           clientJsSettings,
           warSettings,
@@ -432,6 +440,7 @@ object ShipReq extends Build {
       import pl.project13.scala.sbt.SbtJmh
       _.enablePlugins(SbtJmh)
         .dependsOn(webappServer)
+        .configure(Common.jvmSettings)
     }
 
     def jsSettings: Project => Project = {
