@@ -1,0 +1,76 @@
+package shipreq.webapp.base.test
+
+import shipreq.base.util.ScalaExt._
+import shipreq.base.util.VectorTree
+import shipreq.base.util.VectorTree.{Location => Loc}
+import shipreq.webapp.base.data._, DataImplicits._
+import shipreq.webapp.base.text._
+import shipreq.webapp.base.test.ProjectDsl._
+import shipreq.webapp.base.test.UnsafeTypes._
+import SampleProject.Values._
+import UseCases.StepFlow
+
+object SampleProject4 {
+
+  lazy val project = {
+
+    val p   = SampleProject3.project
+    var pr  = p.reqs.pubids
+    var ucs = emptyDataMap(UseCase)
+    var sf  = StepFlow.emptyUniDir
+    var ic  = p.idCeilings
+    var rt  = p.reqText
+
+    def addUseCase(id   : Int                            = -1,
+                   title: Text.UseCaseTitle.OptionalText = Vector.empty,
+                   ncac : UseCaseSteps.Tree              = rootOnlyStepTree(),
+                   ec   : UseCaseSteps.Tree              = VectorTree.empty,
+                   live : Live                           = Live): UseCaseId = {
+
+      val ucId = UseCaseId(if (id > 0) id else (ic.req + 1))
+      ic = ic.copy(req = ic.req max ucId.value)
+
+      val pos = pr.allocUC(ucId).consume1(pr = _).pos
+
+      val uc = UseCase(ucId, pos, title, UseCaseSteps(ncac), UseCaseSteps(ec), live)
+      ucs += uc
+
+      ucId
+    }
+
+    def newStep(id: Int = -1,
+                title: Text.UseCaseStep.OptionalText = ∅): UseCaseStep = {
+      val i = UseCaseStepId(if (id > 0) id else (ic.useCaseStep + 1))
+      ic = ic.copy(useCaseStep = ic.useCaseStep max i.value)
+      UseCaseStep(i, title)
+    }
+
+    def rootOnlyStepTree(): UseCaseSteps.Tree =
+      VectorTree.empty append newStep()
+
+    val ncac =
+      VectorTree.empty
+        .append(                newStep(10)                         )     // UC-n.0
+        .insertAfter(Loc(0)   , newStep(11, title = "Get food")     ).get // UC-n.0.1
+        .insertAfter(Loc(0, 0), newStep(12, title = "Put in mouth") ).get // UC-n.0.2
+        .insertAfter(Loc(0, 1), newStep(13, title = "Still hungry?")).get // UC-n.0.3
+        .append(                newStep(14, title = "Have no food") )     // UC-n.1
+        .insertAfter(Loc(1)   , newStep(15, title = "Steal food")   ).get // UC-n.1.1
+    val uc1 = addUseCase(title = "Eat food", ncac = ncac)
+    // println(ncac.map(_.title.mkString(",")))
+
+    rt = ReqData.textAt(descField, uc1).set("This UC is about eating.")(rt)
+
+    sf = sf.addPairs(13 -> 11, 15 -> 12)
+
+    val p2 = p.copy(
+      reqs       = Requirements(p.reqs.genericReqs, UseCases.Stateless(ucs, StepFlow BiDir sf).withState, pr),
+      reqText    = rt,
+      idCeilings = ic)
+    DataProp.project.allIncludingConfig assert p2
+    p2
+  }
+
+  lazy val plainText  = PlainText(project)
+  lazy val textSearch = TextSearch(project, plainText)
+}

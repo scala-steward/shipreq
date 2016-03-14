@@ -1,26 +1,29 @@
 package shipreq.webapp.base.event
 
+import monocle.Lens
 import nyaya.util.Multimap
 import scala.annotation.tailrec
-import scalaz.syntax.equal._
+import scalaz.std.option.optionInstance
 import shipreq.base.util._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.{Validators => V, _}
 import shipreq.webapp.base.text.{Grammar, Text}
-import ApplyEventLib._, SE.SE
+import ApplyEventLib._
 import DataImplicits._
 import MTrie.Ops
+import SE.{SE, monadSE}
 
 trait ApplyContentEvent {
   this: ApplyEvent =>
 
-  object ReqEvents {
-
-    private val imap = IMapStore(Project.genericReqs)
+  object ContentCommon {
+    val grIMap = IMapStore(Project.genericReqs)
+    val ucIMap = IMapStore(Project.useCaseIMap)
 
     private val grLiveExplicitly = LiveAccessor(GenericReq.liveExplicitly)(_.id.toString)
+    private val ucLiveExplicitly = LiveAccessor(UseCase.liveExplicitly)(_.id.toString)
 
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.req)
+    val updateReqIdCeiling = updateIdCeilingFn(IdCeilings.req)
 
     def ensureLiveReqId(reqId: ReqId): SE[Unit] =
       whenUntrusted(
@@ -37,60 +40,22 @@ trait ApplyContentEvent {
     def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
       SE.feed(p => ensureLive(cf live p.config)(show(cf)))
 
-    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
-      ensureLive(rt.live)(show(rt))
-
-    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
-      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
-
-    def needReq(reqId: ReqId): SE[Req] =
+    def needReq[T <: ReqTypeId](reqId: ReqIdT[T]): SE[ReqT[T]] =
       reqId match {
-        case id: GenericReqId => imap.need(id)
+        case id: GenericReqId => grIMap.need(id)
+        case id: UseCaseId    => ucIMap.need(id)
       }
-
-    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
-      CustomReqTypeEvents.imap need id
-
-    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
-      needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
-
-    val createGeneric: CreateGenericReq => SE[Unit] = {
-      val ^ = CreateGenericReqGD
-
-      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
-        SE.foldMapRun(vs.values) {
-          case ^.ValueForTitle   (v) => SE.nop // Handled below
-          case ^.ValueForTags    (v) => Project.reqTags.modify(_.addvs(id, v.whole))
-          case ^.ValueForImpTgts (v) => Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
-          case ^.ValueForImpSrcs (v) => Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
-          case ^.ValueForReqCodes(v) => ReqCodeLogic.addAllToReq(v.whole, id, addToActive = true)
-      }
-
-      @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
-        Vector.empty
-
-      e => for {
-        rt      ← needLiveCustomReqType(e.rt)
-        reqData ← SE.get(_.reqs)
-        id      = e.id
-        title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
-        pp      = reqData.pubids.allocC(rt.id)(id)
-        req     = GenericReq(id, pp._2, title, Live)
-        reqs    ← imap.create(req)
-        _       ← Project.pubidRegister set pp._1
-        _       ← foreachValue(id, e.vs)
-        _       ← updateIdCeiling(id)
-      } yield ()
-    }
 
     private def deleteReq(id: ReqId): SE[Unit] =
       id match {
-        case g: GenericReqId => imap.update(g, grLiveExplicitly.makeDead)
+        case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeDead)
+        case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeDead)
       }
 
     private def restoreReq(id: ReqId): SE[Unit] =
       id match {
-        case g: GenericReqId => imap.update(g, grLiveExplicitly.makeLive)
+        case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeLive)
+        case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeLive)
       }
 
     /** Ignores reqcodes */
@@ -149,42 +114,299 @@ trait ApplyContentEvent {
 
     def applyPatchImplicationTgt(e: PatchImplicationTgt): SE[Unit] =
       ensureLiveReqId(e.id) >>
-      Project.implicationsSrcToTgt.modify(_.mod(e.id, e.patch.value.apply))
+      Project.implicationsSrcToTgt.modify(e.patch.value.applyToMultimapValues(_)(e.id))
 
-    def applyPatchImplicationSrc(e: PatchImplicationSrc): SE[Unit] = {
-      val t = e.id
-      val d = e.patch.value
-      ensureLiveReqId(e.id) >> Project.implicationsSrcToTgt.modify { mm0 =>
-        var mm = mm0
-        d.removed.foreach(id => mm = mm.del(id, t))
-        d.added  .foreach(id => mm = mm.add(id, t))
-        mm
-      }
-    }
-
-    def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
-      for {
-        r <- imap.need(e.id)
-        _ <- ensureLiveReq(r)
-        _ <- ensureLiveCustomReqTypeId(e.value)
-        _ <- Project.reqs.modify { reqs =>
-               val pp = reqs.pubids.allocC(e.value)(e.id)
-               val r2 = r.copy(pubid = pp._2)
-               Requirements(reqs.genericReqs + r2, pp._1)
-             }
-      } yield ()
-
-    def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
+    def applyPatchImplicationSrc(e: PatchImplicationSrc): SE[Unit] =
       ensureLiveReqId(e.id) >>
-        imap.updateF(e.id, _.copy(title = e.value))
+      Project.implicationsSrcToTgt.modify(e.patch.value.applyToMultimapKeys(_)(e.id))
 
     def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
       ensureLiveReqId(e.id) >>
       ensureLiveTextFieldId(e.fid) >>
       (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
+
+    def applyRestoreContent(e: RestoreContent): SE[Unit] =
+      for {
+        _  <- ContentCommon.restore(e.reqs)
+        t1 <- ReqCodeLogic.getTrie
+        t2 <- ReqCodeLogic.restoreBelongingToReqsT(t1, e.reqs)
+        t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.reqCodeGroups)
+        _  <- Project.reqCodeTrie set t3
+      } yield ()
+
+    def setReqCodes(id: ReqId, v: NonEmptySet[ReqCode.IdAndValue]): SE[Unit] =
+      ReqCodeLogic.addAllToReq(v.whole, id, addToActive = true)
+
+    def setReqTags(id: ReqId, v: NonEmptySet[ApplicableTagId]): SE[Unit] =
+      Project.reqTags.modify(_.addvs(id, v.whole))
+
+    def setReqImpSrcs(id: ReqId, v: NonEmptySet[ReqId]): SE[Unit] =
+      Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
+
+    def setReqImpTgts(id: ReqId, v: NonEmptySet[ReqId]): SE[Unit] =
+      Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
   }
 
   // ===================================================================================================================
+
+  object GenericReqEvents {
+    import ContentCommon.{ucIMap => _, _}
+
+    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
+      ensureLive(rt.live)(show(rt))
+
+    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
+      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
+
+    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      CustomReqTypeEvents.imap need id
+
+    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+      needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
+
+    val applyCreateGenericReq: CreateGenericReq => SE[Unit] = {
+      val ^ = CreateGenericReqGD
+
+      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
+        SE.foldMapRun(vs.values) {
+          case ^.ValueForTitle   (v) => SE.nop // Handled below
+          case ^.ValueForTags    (v) => setReqTags   (id, v)
+          case ^.ValueForImpTgts (v) => setReqImpTgts(id, v)
+          case ^.ValueForImpSrcs (v) => setReqImpSrcs(id, v)
+          case ^.ValueForReqCodes(v) => setReqCodes  (id, v)
+      }
+
+      @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
+        Vector.empty
+
+      e => for {
+        rt      ← needLiveCustomReqType(e.rt)
+        reqData ← SE.get(_.reqs)
+        id      = e.id
+        title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
+        pp      = reqData.pubids.allocC(rt.id)(id)
+        req     = GenericReq(id, pp._2, title, Live)
+        _       ← grIMap.create(req)
+        _       ← Project.pubidRegister set pp._1
+        _       ← foreachValue(id, e.vs)
+        _       ← updateReqIdCeiling(id)
+      } yield ()
+    }
+
+    def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
+      for {
+        r <- grIMap.need(e.id)
+        _ <- ensureLiveReq(r)
+        _ <- ensureLiveCustomReqTypeId(e.value)
+        _ <- Project.reqs.modify { reqs =>
+               val pp = reqs.pubids.allocC(e.value)(e.id)
+               val r2 = r.copy(pubid = pp._2)
+               Requirements(reqs.genericReqs + r2, reqs.useCases, pp._1)
+             }
+      } yield ()
+
+    def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+        grIMap.updateF(e.id, _.copy(title = e.value))
+  }
+
+  // ===================================================================================================================
+
+  object UseCaseEvents {
+    import ContentCommon.{grIMap => _, _}
+    import StaticField.{UseCaseStepTree => StepField, NormalAltStepTree => NCAC}
+
+    val StepFlowUni: Lens[Project, UseCases.StepFlow.UniDir] =
+      Project.useCases ^|-> UseCases.stepFlow ^<-> UseCases.StepFlow.biToUni
+
+    @inline def ensureStepExists(id: UseCaseStepId): SE[Unit] =
+      ensureStepExistence(id, true)
+
+    @inline def ensureStepDoesntExist(id: UseCaseStepId): SE[Unit] =
+      ensureStepExistence(id, false)
+
+    def ensureStepExistence(id: UseCaseStepId, expectToExist: Boolean): SE[Unit] =
+      whenUntrusted(SE.test(
+        _.reqs.useCases.stepIndex.contains(id) ==* expectToExist,
+        show(id) + (if (expectToExist) " not found." else " already exists.")))
+
+    def ensureStepsExist(_ids: => Traversable[UseCaseStepId]): SE[Unit] =
+      whenUntrusted(SE.testO { p =>
+        val si = p.reqs.useCases.stepIndex
+        val ids = _ids
+        if (ids forall si.contains)
+          None
+        else {
+          val bad = ids.toSet -- si.keySet
+          Some(bad.toList.map(_.value).sorted.mkString("Step(s) not found: {", ",","}."))
+        }
+      })
+
+    def applySetUseCaseTitle(e: SetUseCaseTitle): SE[Unit] =
+      ensureLiveReqId(e.id) >>
+        ucIMap.updateF(e.id, _.copy(title = e.value))
+
+    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField): SE[Unit] =
+      postAddStep(ucId, stepId, field,
+        (r, ucs) => r.copy(useCases = ucs),
+        (ic, i) => ic.copy(useCaseStep = i))
+
+    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField,
+                    updReqs: (Requirements, UseCases) => Requirements,
+                    updStepIdCeil: (IdCeilings, Int) => IdCeilings): SE[Unit] =
+      SE.mod { p =>
+        // Update step index
+        val ptr = UseCases.StepTreeKey(ucId, field)
+        val si2 = p.reqs.useCases.stepIndex.updated(stepId, ptr)
+        val ucs2 = p.reqs.useCases.copy(stepIndex = si2)
+
+        // Update reqs
+        val reqs2 = updReqs(p.reqs, ucs2)
+
+        // Update ID ceilings
+        val ic2 = updStepIdCeil(p.idCeilings, p.idCeilings.useCaseStep max stepId)
+
+        p.copy(reqs = reqs2, idCeilings = ic2)
+      }
+
+    val applyCreateUseCase: CreateUseCase => SE[Unit] = {
+      val ^ = CreateUseCaseGD
+
+      def foreachValue(id: UseCaseId, vs: ^.Values): SE[Unit] =
+        SE.foldMapRun(vs.values) {
+          case ^.ValueForTitle   (v) => SE.nop // Handled below
+          case ^.ValueForTags    (v) => setReqTags   (id, v)
+          case ^.ValueForImpTgts (v) => setReqImpTgts(id, v)
+          case ^.ValueForImpSrcs (v) => setReqImpSrcs(id, v)
+          case ^.ValueForReqCodes(v) => setReqCodes  (id, v)
+      }
+
+      def postAdd(pr: PubidRegister, ucId: UseCaseId, stepId: UseCaseStepId): SE[Unit] =
+        postAddStep(ucId, stepId, NCAC,
+          (r, ucs) => r.copy(useCases = ucs, pubids = pr),
+          (ic, i) => ic.copy(useCaseStep = i, req = ic.req max ucId))
+
+      e => for {
+        _       <- ensureStepDoesntExist(e.stepId)
+        id      = e.id
+        title   = ^.Title.get(e.vs).fold(Text.UseCaseTitle.empty)(_.value.whole)
+        pp      ← SE get (_.reqs.pubids allocUC id)
+        uc      = UseCase.empty(id, pp._2.pos, title, e.stepId)
+        _       ← ucIMap.create(uc)
+        _       ← postAdd(pp._1, id, e.stepId)
+        _       ← foreachValue(id, e.vs)
+      } yield ()
+    }
+
+    def applyAddUseCaseStep(e: AddUseCaseStep): SE[Unit] = {
+      val step = UseCaseStep(e.id, Text.UseCaseStep.empty)
+      val tree = e.field.useCaseStepTree
+
+      def insert(loc: VectorTree.Location, uc: UseCase): SE[Unit] =
+        tree.modifyF(_.insertAfter(loc, step))(uc) match {
+          case Some(uc2) => ucIMap addOrUpdate uc2
+          case None =>
+            val locStr = e.field.stepLabel(uc.pos, loc, false)
+            SE fail s"${show(step.id)} cannot be added to ${show(uc.id)} at location: $locStr"
+        }
+
+      def append(uc: UseCase): SE[Unit] =
+        ucIMap addOrUpdate tree.modify(_ append step)(uc)
+
+      for {
+        _  ← ensureStepDoesntExist(step.id)
+        uc ← ucIMap.need(e.ucId)
+        _  ← ensureLiveReq(uc)
+        _  ← NonEmptyVector.maybe(e.at, append(uc))(insert(_, uc))
+        _  ← postAddStep(e.ucId, e.id, e.field)
+      } yield ()
+    }
+
+    def needStepIndex(id: UseCaseStepId): SE[UseCases.StepTreeKey] =
+      SE.get(_.reqs.useCases.stepIndex.get(id)) >>= (optionGet(_, s"${show(id)} not found."))
+
+    def modStep(id: UseCaseStepId)(mod: (UseCaseSteps.Tree, StepField, VectorTree.Location) => SE[UseCaseSteps.Tree]): SE[Unit] =
+      needStepIndex(id) >>= { idx =>
+        val ucId = idx.useCaseId
+        val f    = idx.field
+        // It's fast to use locWhere below to find the step location rather than using some lazy index because
+        // 1) The index would need to be recalculated every time a step in the tree is changed
+        //    (meaning the index is only used once before being discarded).
+        // 2) locWhere will stop when it finds the step. An index scans the whole tree.
+        ucIMap.update(ucId, uc =>
+          ensureLiveReq(uc) >>
+            optionGet(f.useCaseSteps.get(uc).tree.locWhere(_.id ==* id), s"${show(id)} not found.") >>= (loc =>
+            f.useCaseStepTree.modifyF[SE](mod(_, f, loc))(uc)))
+      }
+
+    def applyShiftUseCaseStepLeft(e: ShiftUseCaseStepLeft): SE[Unit] =
+      modStep(e.id)((t, _, l) =>
+        optionGet(t shiftLeft l, s"${show(e.id)} cannot be shifted left."))
+
+    def applyShiftUseCaseStepRight(e: ShiftUseCaseStepRight): SE[Unit] =
+      modStep(e.id)((t, _, l) =>
+        optionGet(t shiftRight l, s"${show(e.id)} cannot be shifted right."))
+
+    private def badStepIndex(id: UseCaseStepId) =
+      s"${show(id)} at index location."
+
+    val applyUpdateUseCaseStep: UpdateUseCaseStep => SE[Unit] = {
+      val ^ = UseCaseStepGD
+      val GD = GenericDataApp[UseCaseStep](^)
+
+      val noFlow = SetDiff.empty[UseCaseStepId]
+
+      def getFlow(values: UseCaseStepGD.Values, a: UseCaseStepGD.Attr {type Data = NonEmpty[SetDiff[UseCaseStepId]]}): SetDiff[UseCaseStepId] =
+        a.get(values).fold(noFlow)(_.value)
+
+      def updateFlow(id: UseCaseStepId, flow_← : SetDiff[UseCaseStepId], flow_→ : SetDiff[UseCaseStepId]): SE[Unit] =
+        if (flow_←.isEmpty && flow_→.isEmpty)
+          SE.nop
+        else
+          ensureStepsExist(flow_→.allValues ++ flow_←.allValues) >>
+          StepFlowUni.modify { f0 =>
+            var f = f0
+            f = flow_→.applyToMultimapValues(f)(id)
+            f = flow_←.applyToMultimapKeys(f)(id)
+            f
+          }
+
+      def updateTitle(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText): SE[Unit] =
+        modStep(id)((t, _, l) =>
+          optionGet(t.modifyValue(l)(_.copy(title = title)), badStepIndex(id)))
+
+      e => {
+        val gd       = e.vs.value
+        def updFlow  = updateFlow(e.id, getFlow(gd, ^.FlowIn), getFlow(gd, ^.FlowOut))
+        def updTitle = ^.Title.get(gd).fold(SE.nop)(v => updateTitle(e.id, v.value))
+
+        ensureStepExists(e.id) >> updFlow >> updTitle
+      }
+    }
+
+    def isRoot(loc: VectorTree.Location): Boolean =
+      loc.head ==* 0 && loc.tail.isEmpty
+
+    private def postDelete(deleted: VectorTree.Node[UseCaseStep]): Project => Project =
+      Project.useCases.modify { ucs =>
+        val ids = deleted.valueIterator.map(_.id).toSet
+        val si2 = ucs.stepIndex -- ids
+        val sf2 = ucs.stepFlow.modify(_.delks(ids).delvs(ids))
+        ucs.copy(stepIndex = si2, stepFlow = sf2)
+      }
+
+    def applyDeleteUseCaseStep(e: DeleteUseCaseStep): SE[Unit] =
+      modStep(e.id)((t1, f, l) =>
+        for {
+          _ <- whenUntrusted(SE.test(!(f ==* NCAC && isRoot(l)), "Root step cannot be deleted."))
+          g <- optionGet(t1.removeNodeO(l), badStepIndex(e.id))
+          _ ← postDelete(g._2)
+        } yield g._1
+      )
+  }
+
+  // ===================================================================================================================
+
   /**
    * Why the hell is all this req-code changing logic so complicated?
    *
@@ -607,17 +829,4 @@ trait ApplyContentEvent {
     def applyDelete(e: DeleteReqCodeGroups): SE[Unit] =
       getTrie >>= (inactivateGroupsByIdT(_, e.ids.whole, true)) >>= Project.reqCodeTrie.set
   }
-
-  // =====================================================================================================================
-  // Content: Shared
-
-  def applyRestoreContent(e: RestoreContent): SE[Unit] =
-    for {
-      _  <- ReqEvents.restore(e.reqs)
-      t1 <- ReqCodeLogic.getTrie
-      t2 <- ReqCodeLogic.restoreBelongingToReqsT(t1, e.reqs)
-      t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.reqCodeGroups)
-      _  <- Project.reqCodeTrie set t3
-    } yield ()
-
 }

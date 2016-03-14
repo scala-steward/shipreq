@@ -211,13 +211,20 @@ object ShipReq extends Build {
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(
         μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
-        testScope(μTest) // TODO Move tests into this
-      )
+        testScope(μTest)) // TODO Move tests into this
       .configureBoth(
         useMacroParadise,
-        dontInline // crashes scalac 2.11.7
-      )
+        dontInline) // crashes scalac 2.11.7
       .dependsOn(baseUtil, webappMacro)
+
+  lazy val webappBaseServerJvm = webappBaseServer.jvm
+  lazy val webappBaseServerJs  = webappBaseServer.js
+  lazy val webappBaseServer =
+    crossProject("webapp-base-server")
+      .configureBoth(webappSettings)
+      .configureJs(Common.jsSettings(NoDom))
+      .depsForBoth(testScope(μTest ++ Nyaya.test))
+      .dependsOn(webappBase)
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
@@ -225,10 +232,8 @@ object ShipReq extends Build {
     crossProject("webapp-base-test")
       .configureBoth(Common.testModuleSettings, webappCmdAliases)
       .configureJs(Common.jsSettings(NoDom))
-      .depsForBoth(
-        μTest ++ Nyaya.test
-      )
-      .dependsOn(baseTest, webappBase)
+      .depsForBoth(μTest ++ Nyaya.test)
+      .dependsOn(baseTest, webappBase, webappBaseServer)
 
   // -------------------------------------------------------------------------------------------------------------------
   object WebappClient {
@@ -271,6 +276,7 @@ object ShipReq extends Build {
           webappSettings,
           useMacroParadise,
           testSettings,
+          // IntegrationTesting.testWithBrowser(),
           dontInline, // crashes 2.11.7 / 0.6.4
           debugOrRelease(identity, prodJsSettings)
         )
@@ -376,14 +382,13 @@ object ShipReq extends Build {
     def createProject =
       project("webapp-server")
         .enablePlugins(JettyPlugin, WarPlugin)
-        .dependsOn(baseDb, taskmanApi, webappBaseJvm)
+        .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm)
         .deps(
           Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++ guava ++
           testScope(μTest ++ scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
           depScope("it")(selenium) ++
           (LibJetty.webapp % "test") ++
-          (LibJetty.servletApi % "test,provided")
-        )
+          (LibJetty.servletApi % "test,provided"))
         .configure(
           webappSettings,
           Common.generateBuildPropFile(),
@@ -391,15 +396,13 @@ object ShipReq extends Build {
           warSettings,
           testSettings,
           integrationTestSettings,
-          dontInline // crashes scalac 2.11.7
-        )
+          dontInline) // crashes scalac 2.11.7
         .settings(
           addCommandAlias("livejs", "~;clear;jsp"),
           containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()),
           javaOptions in Jetty += "-Xmx1g",
           initialCommands += consoleCmds,
-          fullClasspath in console in Compile += file("src/main/webapp") // So templates can be loaded from console
-        )
+          fullClasspath in console in Compile += file("src/main/webapp")) // So templates can be loaded from console
   }
 
   lazy val webappServer = WebappServer.createProject

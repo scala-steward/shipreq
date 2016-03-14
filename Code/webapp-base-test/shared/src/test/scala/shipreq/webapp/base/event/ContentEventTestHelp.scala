@@ -1,0 +1,257 @@
+package shipreq.webapp.base.event
+
+import nyaya.util.Multimap
+import shipreq.base.util._
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.UnsafeTypes._
+import shipreq.webapp.base.test.WebappTestUtil._
+import ApplyEventTestFns._
+import shipreq.webapp.base.text.{Text => T}
+
+case class DetachedGenericReq(req      : GenericReq,
+                              tags     : Set[ApplicableTagId],
+                              impliedBy: Set[ReqId],
+                              implies  : Set[ReqId],
+                              reqCodes : Set[ReqCode.Value])
+
+object DetachedGenericReq {
+  implicit def equality: UnivEq[DetachedGenericReq] = UnivEq.derive
+
+  def extract(p: Project, id: GenericReqId): Option[DetachedGenericReq] =
+    p.reqs.genericReqs.get(id).map { r =>
+      val tags      = p.reqTags(id)
+      val impliedBy = p.implications.backwards(id)
+      val implies   = p.implications.forwards(id)
+      val reqCodes  = p.reqCodes.activeReqCodesByReqId(id)
+      DetachedGenericReq(r, tags, impliedBy, implies, reqCodes)
+    }
+}
+
+case class DetachedUseCase(req      : UseCase,
+                           tags     : Set[ApplicableTagId],
+                           impliedBy: Set[ReqId],
+                           implies  : Set[ReqId],
+                           reqCodes : Set[ReqCode.Value])
+
+object DetachedUseCase {
+  implicit def equality: UnivEq[DetachedUseCase] = UnivEq.derive
+
+  def extract(p: Project, id: UseCaseId): Option[DetachedUseCase] =
+    p.reqs.useCases.imap.get(id).map { r =>
+      val tags      = p.reqTags(id)
+      val impliedBy = p.implications.backwards(id)
+      val implies   = p.implications.forwards(id)
+      val reqCodes  = p.reqCodes.activeReqCodesByReqId(id)
+      DetachedUseCase(r, tags, impliedBy, implies, reqCodes)
+    }
+}
+
+// =====================================================================================================================
+
+object ContentEventTestHelp {
+
+  implicit class ProjectEventTestExt(private val p: Project) extends AnyVal {
+    def needUC(id: UseCaseId): UseCase =
+      p.reqs.useCases.imap need id
+  }
+
+  def createRCG(id: ReqCodeId, code: ReqCode.Value, title: T.ReqCodeGroupTitle.OptionalText = ∅) = {
+    import ReqCodeGroupGD._
+    CreateReqCodeGroup(id, nev(Code(code), Title(title)))
+  }
+
+  def updateRCGCode(id: ReqCodeId, code: ReqCode.Value) = {
+    import ReqCodeGroupGD._
+    UpdateReqCodeGroup(id, nev(Code(code)))
+  }
+
+  def delRCG(id: ReqCodeId): DeleteReqCodeGroups =
+    DeleteReqCodeGroups(NonEmptySet(id))
+
+  def restoreRCG(id: ReqCodeId): RestoreContent =
+    RestoreContent(∅, Set(id))
+
+  def createGR(id     : GenericReqId,
+               rt     : CustomReqTypeId                = mf,
+               codes  : Set[ReqCode.IdAndValue]        = ∅,
+               title  : T.GenericReqTitle.OptionalText = ∅,
+               impSrcs: Set[ReqId]                     = ∅,
+               impTgts: Set[ReqId]                     = ∅) = {
+    import CreateGenericReqGD._
+    var vs = emptyValues
+    NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
+    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
+    CreateGenericReq(id, rt, vs)
+  }
+
+  def createUC(id     : UseCaseId,
+               stepId : UseCaseStepId,
+               codes  : Set[ReqCode.IdAndValue]     = ∅,
+               title  : T.UseCaseTitle.OptionalText = ∅,
+               impSrcs: Set[ReqId]                  = ∅,
+               impTgts: Set[ReqId]                  = ∅) = {
+    import CreateUseCaseGD._
+    var vs = emptyValues
+    NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
+    NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
+    CreateUseCase(id, stepId, vs)
+  }
+
+  def delGR(id: GenericReqId): DeleteReqs =
+    DeleteReqs(NonEmptySet(id), ∅, ∅)
+
+  def delUC(id: UseCaseId): DeleteReqs =
+    DeleteReqs(NonEmptySet(id), ∅, ∅)
+
+  def restoreGR(id: GenericReqId): RestoreContent =
+    RestoreContent(Set(id), ∅)
+
+  def restoreUC(id: UseCaseId): RestoreContent =
+    RestoreContent(Set(id), ∅)
+
+  val patchRcAdd0 = Multimap.empty[ReqCode.Value, Set, ReqCodeId]
+
+  def patchReqCodes(id     : ReqId,
+                    remove : Set[ReqCodeId]                          = Set.empty,
+                    restore: Set[ReqCodeId]                          = Set.empty,
+                    add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
+    PatchReqCodes(id, remove = remove, restore = restore, add)
+
+  case class PatchReqCodeB(id: ReqId) extends AnyVal {
+    def apply(remove : Set[ReqCodeId]                          = Set.empty,
+              restore: Set[ReqCodeId]                          = Set.empty,
+              add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
+      PatchReqCodes(id, remove = remove, restore = restore, add)
+  }
+
+  // ===================================================================================================================
+
+  def assertSoleReqCode(p: Project, code: ReqCode.Value): ReqCode.Data = {
+    val v = p.reqCodes.trie.flatStream.toVector
+    assertEq("Trie size", v.size, 1)
+    assertEq("Sole req code", v.head._1, code)
+    v.head._2
+  }
+
+  def assertGR(p: Project, id: GenericReqId)(req      : GenericReq,
+                                             tags     : Set[ApplicableTagId] = UnivEq.emptySet,
+                                             impliedBy: Set[ReqId]           = UnivEq.emptySet,
+                                             implies  : Set[ReqId]           = UnivEq.emptySet,
+                                             reqCodes : Set[ReqCode.Value]   = UnivEq.emptySet): Unit =
+    assertEq(
+      s"assertGR(${id.value})",
+      DetachedGenericReq.extract(p, id),
+      Some(DetachedGenericReq(req, tags, impliedBy, implies, reqCodes)))
+
+  def assertUC(p: Project, id: UseCaseId)(uc         : UseCase,
+                                          tags       : Set[ApplicableTagId] = UnivEq.emptySet,
+                                          impliedBy  : Set[ReqId]           = UnivEq.emptySet,
+                                          implies    : Set[ReqId]           = UnivEq.emptySet,
+                                          reqCodes   : Set[ReqCode.Value]   = UnivEq.emptySet,
+                                          ignoreSteps: Boolean              = false): Unit = {
+    var d = DetachedUseCase.extract(p, id)
+    var e = DetachedUseCase(uc, tags, impliedBy, implies, reqCodes)
+
+    if (ignoreSteps) {
+      def f(x: DetachedUseCase): DetachedUseCase =
+        x.copy(req = x.req.copy(stepsNA = UseCaseSteps.empty, stepsE = UseCaseSteps.empty))
+      d = d map f
+      e = f(e)
+    }
+
+    assertEq(s"assertUC(${id.value})", d, Some(e))
+  }
+
+  def assertUcSteps(s: UseCaseSteps.Tree, keys: String*): Unit =
+    assertUcStepsO(None, s, keys: _*)
+
+  def assertUcSteps(name: => String, s: UseCaseSteps.Tree, keys: String*): Unit =
+    assertUcStepsO(Some(name), s, keys: _*)
+
+  def assertUcStepsO(name: => Option[String], s: UseCaseSteps.Tree, keys: String*): Unit =
+    assertSetO(name,
+      s.locIterator.map(_.map(_.toString).mkString(".")).toSet,
+      keys.toSet)
+
+  def assertAllUcSteps(uc: UseCase)(nc: String*)(e: String*): Unit = {
+    def prefix = "UC-" + uc.pos.value + " "
+    assertUcSteps(prefix + "NC/AC", uc.stepsNA.tree, nc: _*)
+    assertUcSteps(prefix + "EC"   , uc.stepsE .tree, e: _*)
+  }
+
+  def assertBadIdsRejected(f: Int => ActiveEvent)(implicit ie: InitialEvents): Unit =
+    badIds.foreach(i => assertFail("id")(f(i)))
+
+  // ===================================================================================================================
+
+  private val badIds = List(0, -1)
+
+  val mf: CustomReqTypeId = 100
+  val fr: CustomReqTypeId = 101
+  val (createMF, createFR) = {
+    import CustomReqTypeGD._
+    ( CreateCustomReqType(mf, nev(Mnemonic("MF"), Name("MajFea"), Imp(false)))
+    , CreateCustomReqType(fr, nev(Mnemonic("FR"), Name("FunReq"), Imp(false)))
+    )
+  }
+
+  val at1: ApplicableTagId = 11
+  val at2: ApplicableTagId = 12
+  val (createAT1, createAT2) = {
+    import ApplicableTagGD._
+    ( CreateApplicableTag(at1, nev(Name("AT #1"), Desc(None), Key("at-one")))
+    , CreateApplicableTag(at2, nev(Name("AT #2"), Desc(None), Key("at-two")))
+    )
+  }
+
+  val tg1: TagGroupId = 20
+  val createTG1 = {
+    import TagGroupGD._
+    CreateTagGroup(tg1, nev(Name("TG #1"), Desc(None), MutexChildren(false)))
+  }
+
+  val createIssueType1 = {
+    import CustomIssueTypeGD._
+    CreateCustomIssueType(1, nev(Key("TBD"), Desc(None)))
+  }
+  val issueType1 = createIssueType1.id
+
+  val createCTF1 = {
+    import CustomTextFieldGD._
+    CreateCustomTextField(80, nev(Name("asdf"), Key("qwer"), Mandatory(true), ReqTypes(allReqTypes)))
+  }
+  val cf1 = createCTF1.id
+
+  val testHelpInit = InitialEvents(createIssueType1, createMF, createFR, createAT1, createAT2, createTG1, createCTF1)
+
+  val emptyGR1   = createGR(1)
+  val impliedGR2 = createGR(2, impSrcs = Set(emptyGR1.id))
+  val emptyGR3   = createGR(3)
+  val delGR1     = delGR(1)
+  val restoreGR1 = restoreGR(1)
+
+  val emptyUC1   = createUC(1.UC, 1)
+  val impliedUC2 = createUC(2.UC, 2, impSrcs = Set(emptyUC1.id))
+  val emptyUC3   = createUC(3.UC, 3)
+  val delUC1     = delUC(1.UC)
+  val restoreUC1 = restoreUC(1.UC)
+
+  val RCG1_code   = "abc.def": ReqCode.Value
+  val createRCG1  = createRCG(1, RCG1_code, "hehe")
+  val delRCG1     = delRCG(1)
+  val restoreRCG1 = restoreRCG(1)
+
+  val RCG2_code   = "abc.x.why": ReqCode.Value
+  val createRCG2  = createRCG(2, RCG2_code, "OMG #2")
+  val delRCG2     = delRCG(2)
+  val restoreRCG2 = restoreRCG(2)
+
+  val RCG3_code   = "abc.zed": ReqCode.Value
+  val createRCG3  = createRCG(3, RCG3_code, "group 3 mate")
+  val delRCG3     = delRCG(3)
+  val restoreRCG3 = restoreRCG(3)
+}

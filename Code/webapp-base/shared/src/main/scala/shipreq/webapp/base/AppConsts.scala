@@ -1,6 +1,8 @@
 package shipreq.webapp.base
 
+import shipreq.base.util.IndexLabel
 import shipreq.webapp.base.util.EnvMacros
+import IndexLabel._
 
 object AppConsts {
 
@@ -26,4 +28,9 @@ object AppConsts {
 
   /** Limit the length of seemingly-unbound inputs. Prevents a malicious user creating 1GB rows. */
   final val largeTextMaxLength = 20000
+
+  /**
+   * Maximum number of children per parent (inclusive).
+   */
+  final val useCaseStepsMaxLength = 99
 }

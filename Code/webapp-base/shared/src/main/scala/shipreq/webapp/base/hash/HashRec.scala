@@ -128,11 +128,14 @@ object HashRec {
       case WholeProject    => Set(Config, Content)
       case Config          => Set(CfgIssueTypes, CfgReqTypes, CfgFields, CfgTags)
       case Content         => Set(Reqs, ReqCodes, TextFieldData, TagData, ImplicationData, DeletionReasons)
+      case Reqs            => Set(GenericReqs, UseCases, PubidRegister)
       case CfgIssueTypes
          | CfgReqTypes
          | CfgFields
          | CfgTags
-         | Reqs
+         | GenericReqs
+         | UseCases
+         | PubidRegister
          | ReqCodes
          | TextFieldData
          | TagData

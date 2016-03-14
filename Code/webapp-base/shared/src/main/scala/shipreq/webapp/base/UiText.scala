@@ -47,6 +47,9 @@ object UiText {
     def reqType             = "Type"
     def tags                = "Tags"
     def implications        = "Implications"
+    def useCaseStepTreeN    = "Normal Course"
+    def useCaseStepTreeA    = "Alternative Courses"
+    def useCaseStepTreeE    = "Exceptions"
   }
 
   object Cfg {
@@ -57,6 +60,7 @@ object UiText {
 
   def reqCodeGroup = "Code Group"
   def reqCodeGroups = "Code Groups"
+  def useCase = "Use Case"
 
   def buttonCommitChange = "OK"
   def buttonAbortChange = "Cancel"

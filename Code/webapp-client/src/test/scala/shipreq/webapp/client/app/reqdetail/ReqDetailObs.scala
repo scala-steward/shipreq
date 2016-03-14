@@ -1,8 +1,30 @@
 package shipreq.webapp.client.app.reqdetail
 
-import scala.util.{Failure, Success, Try}
+import org.scalajs.dom.html
+import shipreq.webapp.base.UiText
+import shipreq.base.util.univEqOps
+import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.test._
 import DomZipper.Implicits._
+import ReqDetailTestDsl.Mode
+import ReqDetailObs.NAE
+
+object ReqDetailObs {
+
+  case class NAE[A](normal: A, alt: A, exception: A) {
+    def map[B](f: A => B): NAE[B] =
+      NAE(f(normal), f(alt), f(exception))
+
+    def reduce[B](f: (A, A) => A): A =
+      f(f(normal, alt), exception)
+
+    def get[B](f: A => Option[B]): Option[B] =
+      f(normal) orElse f(alt) orElse f(exception)
+  }
+
+  import UiText.FieldNames._
+  val TreeNames = NAE(useCaseStepTreeN, useCaseStepTreeA, useCaseStepTreeE)
+}
 
 final class ReqDetailObs($: DomZipper) {
 
@@ -12,12 +34,64 @@ final class ReqDetailObs($: DomZipper) {
     val reason = errorRoot.get.innerText
   }
 
-  object ok {
+  object generic {
+    val headerRow = $.down(">div")
+
+    val pubid = headerRow.down(">div", 1 of 2).innerText.replace(":", "").trim
+
     val table = $.down(">table")
+
+    val fields =
+      table.down(">tbody").collect1(">tr")
+        .map(z => z.down(">th").innerText -> z.down(">td"))
+        .toMap
   }
 
-  val isOk: Boolean =
-    errorRoot.isEmpty
+  object uc {
+    import generic._
+
+    val treeCells = ReqDetailObs.TreeNames.map(fields)
+
+    val stepRows: NAE[Vector[StepRow]] =
+      treeCells.map(_.collect1(">div").map(StepRow))
+
+    case class StepRow($: DomZipper) {
+      private def ctrl(label: String, label2: String = null): html.Button = {
+        val ls  = label :: Option(label2).toList
+        val sel = ls.map(l => s"button:contains('$l')") mkString ","
+        $.down(sel).domAs[html.Button]
+      }
+
+      val title: Option[String] =
+        $.collect0(s"*[data-step-label]").asHtml.mapDom(_.title).headOption
+
+      lazy val del   = ctrl("-")
+      lazy val left  = ctrl("«", "↓")
+      lazy val right = ctrl("»", "↑")
+      lazy val add   = ctrl("+")
+    }
+
+    def row(label: String): StepRow =
+      stepRows.get(_.find(_.title.exists(_ ==* label))) getOrElse sys.error("Step row not found: " + label)
+
+    val treeStepTitles: NAE[Vector[String]] =
+      stepRows.map(_.flatMap(_.title.toVector))
+
+    val stepTitles: Vector[String] =
+      treeStepTitles.reduce(_ ++ _)
+
+    def tailStepRowAC = stepRows.alt.last
+    def tailStepRowEC = stepRows.exception.last
+  }
+
+  val mode: Mode =
+    if (errorRoot.isDefined)
+      Mode.Error
+    else if (generic.pubid.startsWith("UC-"))
+      Mode.UC
+    else
+      Mode.GR
+
 //    (Try(ok), Try(error)) match {
 //      case (Success(_), Failure(_)) => true
 //      case (Failure(_), Success(_)) => false

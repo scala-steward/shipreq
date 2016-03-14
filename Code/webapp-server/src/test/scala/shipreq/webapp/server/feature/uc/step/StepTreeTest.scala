@@ -2,12 +2,13 @@ package shipreq.webapp.server
 package feature.uc.step
 
 import org.scalatest.WordSpec
+import shipreq.webapp.base.data.StaticField.NormalAltStepTree.{stepLabelsPerLevel => Labelers}
 import lib.Types._
 import TreeOps._
 import test._
 import NodeUtils._
 import TreeDSL._
-import StepLabels.LabelMakers
+
 
 class StepTreeTest extends WordSpec with TestHelpers {
 
@@ -141,8 +142,8 @@ class StepTreeTest extends WordSpec with TestHelpers {
 
   "incrementPosition()" should {
     val test = (lvl: Int, before: String, after: String) => {
-      val beforeIndex = LabelMakers(lvl)(before)
-      val afterIndex = LabelMakers(lvl)(after)
+      val beforeIndex = Labelers(lvl).parseTmp(before)
+      val afterIndex  = Labelers(lvl).parseTmp(after)
       val B = new StepNodeWithText("blah", lvl, beforeIndex, null)
       val A = new StepNodeWithText("blah", lvl, afterIndex, null)
       B.incrementPosition should be(A)

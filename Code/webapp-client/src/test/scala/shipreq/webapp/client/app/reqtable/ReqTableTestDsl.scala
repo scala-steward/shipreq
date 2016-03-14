@@ -9,12 +9,12 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.test._
-import teststate._
+import teststate.Exports._
 
 object ReqTableTestDsl {
   val * = Dsl.sync[CompState.AccessD[ReqTable.State], ReqTableObs, Project, String]
 
-  def apply(action: *.Action = Action.empty): *.TestContent =
+  def apply(action: *.Action = emptyAction): *.TestContent =
     Test(action, invariants)
 
 //  // TODO Move following into Nyaya
@@ -69,7 +69,7 @@ object ReqTableTestDsl {
 
     def tableColumns =
       *.focus("Table columns").collection(_.obs.table.fieldColumns)
-        .assert.equalIgnoringOrder(i => visibleColumns(i.obs))
+        .assert.equalIgnoringOrderBy(i => visibleColumns(i.obs))
 
     def tableContents = {
       val rowEitherDeadOrLive = *.focus("")
@@ -111,7 +111,7 @@ object ReqTableTestDsl {
 
   // ===================================================================================================================
 
-  implicit def equalFromUnivEq[A: UnivEq] = teststate.Equal.byUnivEq[A]
+  implicit def equalFromUnivEq[A: UnivEq] = Equal.by_==[A]
   implicit def autoGetDomFromZipper(d: DomZipper): ReactOrDomNode = d.dom.domAsHtml
   implicit val showFilterDead = Show.byToString[FilterDead]
 

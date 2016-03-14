@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
+import monocle.Lens
 import monocle.macros.Lenses
-import scala.collection.GenTraversable
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.{IMap, UnivEq}
 
@@ -12,25 +12,35 @@ import shipreq.base.util.{IMap, UnivEq}
  */
 @Lenses
 case class IdCeilings(
-  customIssueType : Int,
-  customReqType   : Int,
-  customField     : Int,
-  tag             : Int,
-  req             : Int,
-  reqCode         : Int)
+    customIssueType : Int,
+    customReqType   : Int,
+    customField     : Int,
+    tag             : Int,
+    req             : Int,
+    useCaseStep     : Int,
+    reqCode         : Int) {
+
+  def update(lens: Lens[IdCeilings, Int], n: Int): IdCeilings = {
+    val i = lens.get(this)
+    if (n > i)
+      lens.set(n)(this)
+    else
+      this
+  }
+}
 
 object IdCeilings {
   implicit def equality: UnivEq[IdCeilings] = UnivEq.derive
 
   def init(z: Int): IdCeilings =
-    IdCeilings(z, z, z, z, z, z)
+    IdCeilings(z, z, z, z, z, z, z)
 
   def zero = init(0)
 
-  def maxOf(ts: GenTraversable[TaggedInt]): Int =
+  def maxOf(ts: TraversableOnce[TaggedInt]): Int =
     maxOfF(ts)(_.value)
 
-  def maxOfF[F](ts: GenTraversable[F])(f: F => Int): Int =
+  def maxOfF[F](ts: TraversableOnce[F])(f: F => Int): Int =
     ts.foldLeft(0)(_ max f(_))
 
   /**
@@ -40,13 +50,14 @@ object IdCeilings {
    * 2) Verifying that a new calculation never results in a higher number.
    */
   def calculate(p: Project): IdCeilings = {
-    def imapKeys[K <: TaggedInt](m: IMap[K, _]) = maxOf(m.keys)
+    def imapKeys[K <: TaggedInt](m: IMap[K, _]) = maxOf(m.keysIterator)
     IdCeilings(
       customIssueType = imapKeys(p.config.customIssueTypes),
       customReqType   = imapKeys(p.config.customReqTypes),
       customField     = imapKeys(p.config.fields.customFields),
       tag             = imapKeys(p.config.tags),
-      req             = imapKeys(p.reqs.genericReqs),
+      req             = imapKeys(p.reqs.genericReqs) max imapKeys(p.reqs.useCases.imap),
+      useCaseStep     = maxOfF(p.reqs.useCases.stepIterator)(_.id.value),
       reqCode         = maxOf(p.reqCodes.idList))
   }
 

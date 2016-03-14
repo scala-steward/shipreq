@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
+import monocle.Iso
 import nyaya.util.{Multimap, MultiValues}
 import scalaz.{\/, -\/, \/-, \&/}
 import scalaz.Isomorphism.<=>
@@ -9,6 +10,11 @@ import BoopickleMacros._
 
 object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
   import shipreq.webapp.base.data.DataIdAux
+
+  @inline implicit class PicklerExt[A](private val p: Pickler[A]) extends AnyVal {
+    def imap[B](iso: Iso[A, B]): Pickler[B] =
+      p.xmap(iso.get)(iso.reverseGet)
+  }
 
   def pickleLazily[A](f: => Pickler[A]): Pickler[A] = {
     lazy val p = f
@@ -84,6 +90,20 @@ object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
     implicit lazy val node  : Pickler[Node  [K, V]] = pickleADT
     implicit lazy val trie  : Pickler[Trie  [K, V]] = pickleLazily(pickleMap)
     trie
+  }
+
+  implicit def pickleVectorTree[A: Pickler]: Pickler[VectorTree[A]] = {
+    import VectorTree._
+    object N extends Pickler[Node[A]] {
+      val ch = iterablePickler[Node[A], Vector](this, implicitly)
+      override def pickle(node: Node[A])(implicit state: PickleState): Unit = {
+        state.pickle(node.value)
+        state.pickle(node.children)(ch)
+      }
+      override def unpickle(implicit state: UnpickleState): Node[A] =
+        Node.apply(state.unpickle[A], state.unpickle(ch))
+    }
+    N.ch.xmap(VectorTree.apply)(_.children)
   }
 
   implicit def pickleXor[A: Pickler, B: Pickler]: Pickler[A \/ B] = {

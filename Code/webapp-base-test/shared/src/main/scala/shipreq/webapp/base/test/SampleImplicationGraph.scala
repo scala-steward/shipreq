@@ -34,20 +34,20 @@ object SampleImplicationGraph {
     def t(i: GenericReqId, rt: CustomReqTypeId, tgts: ReqId*) = GReq(id = i, reqType = rt, impTgts = tgts.toSet)
     import SampleProject.Values._
 
-    ( t(mf1, mf, 31)
-    + t(mf2, mf, 32)
-    + t(mf3, mf, 14, 34)
-    + t(mf4, mf, 36)
+    ( t(mf1, mf, fr1)
+    + t(mf2, mf, fr2)
+    + t(mf3, mf, mf4, fr4)
+    + t(mf4, mf, fr6)
     + t(mf5, mf)
 
-    + t(br1, br, 12, 22)
-    + t(br2, br, 13)
+    + t(br1, br, mf2, br2)
+    + t(br2, br, mf3)
 
-    + t(fr1, fr, 32)
-    + t(fr2, fr, 33)
+    + t(fr1, fr, fr2)
+    + t(fr2, fr, fr3)
     + t(fr3, fr)
-    + t(fr4, fr, 35)
-    + t(fr5, fr, 15)
+    + t(fr4, fr, fr5)
+    + t(fr5, fr, mf5)
     + t(fr6, fr)
     )
   }

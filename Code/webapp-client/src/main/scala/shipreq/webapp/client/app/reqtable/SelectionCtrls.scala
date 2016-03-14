@@ -69,15 +69,21 @@ object SelectionCtrls {
         if (remaining contains id) {
           remaining -= id
           row match {
-            case r: GenericReqRow =>
+
+            case ReqRow(r, Live, _, _, _) =>
+              delReqs += r
+
+            case ReqRow(gr: GenericReq, Dead, _, _, _) =>
               import GenericReq.ImplicitLiveStatus._
-              r.live match {
-                case Live => delReqs += r.req
-                case Dead => r.req.implicitLiveStatus(p.cfg.customReqTypes) match {
-                  case NoImpact      => resReqs += r.req
-                  case ReqTypeIsDead => ()
-                }
+              gr.implicitLiveStatus(p.cfg.customReqTypes) match {
+                case NoImpact      => resReqs += gr
+                case ReqTypeIsDead => ()
               }
+
+            case ReqRow(uc: UseCase, Dead, _, _, _) =>
+              uc.liveUC // Will give a compiler-error reminder if removed in place of a implicitLiveStatus() like GR
+              resReqs += uc
+
             case r: ReqCodeGroupRow =>
               r.live match {
                 case Live => delGroups += r.group
@@ -94,9 +100,7 @@ object SelectionCtrls {
   }
 
   def locsOfReqs(ids: Iterator[ReqId]): Iterator[Row.SourceId] =
-    ids.map {
-      case i: GenericReqId => Row.GenericReqRowSourceId(i)
-    }
+    ids.map(Row.ReqRowSourceId)
 
   def locsOfGroups(ids: Iterator[ReqCodeId]): Iterator[Row.SourceId] =
     ids.map(Row.ReqCodeGroupRowSourceId)

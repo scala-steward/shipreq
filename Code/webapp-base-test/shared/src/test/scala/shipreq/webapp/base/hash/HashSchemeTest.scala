@@ -2,8 +2,8 @@ package shipreq.webapp.base.hash
 
 import utest._
 import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test.SampleProject3
+import shipreq.webapp.base.test._
+import WebappTestUtil._
 
 /**
  * These tests ensure the stability of [[HashScheme]]s.
@@ -16,10 +16,11 @@ import shipreq.webapp.base.test.SampleProject3
  */
 object HashSchemeTest extends TestSuite {
 
-  val Vector(hV1, hL) = HashScheme.all.whole
+  lazy val Vector(hL) = HashScheme.all.whole
 
   val P0 = Project.empty
   lazy val P3 = SampleProject3.project
+  lazy val P4 = SampleProject4.project
 
   def hashes(h: HashScheme, p: Project): Map[HashScope, Int] =
     HashScope.all.whole.map(s => s -> HashScope.hash(s, h.value, p)).toMap
@@ -36,8 +37,8 @@ object HashSchemeTest extends TestSuite {
       .mkString(", ")
 
   def assertHashes(h: HashScheme, p: Project, ts: (HashScope, Int)*): Unit = {
-    def nameH = if (h eq hL) "latest" else if (h eq hV1) "v1" else h.toString
-    def nameP = if (p eq P0) "P0" else if (p eq P3) "P3" else p.toString
+    def nameH = if (h eq hL) "latest" else h.toString
+    def nameP = if (p eq P0) "P0" else if (p eq P3) "P3" else if (p eq P4) "P4" else p.toString
     def name = s"$nameH : $nameP"
     var a = makeSet(hashes(h, p))
     var e = makeSet(ts.toMap)
@@ -52,69 +53,61 @@ object HashSchemeTest extends TestSuite {
     def ~[A](a: A) = (a, i)
   }
 
-  // TODO Scopes have the same hash when empty - fix that!
-  // Eg 0x47de4849 used by 3, 0xa0139eb8 used by 4
-
   override def tests = TestSuite {
-    'v1 {
-      val h = hV1
-      assertHashes(h, P0,
-        0xed4fcf48 ~ WholeProject,    // Don't change
-        0x3515b7ad ~ Config,          // Don't change
-        0x47de4849 ~ CfgIssueTypes,   // Don't change
-        0x47de4849 ~ CfgReqTypes,     // Don't change
-        0xbd8a78f7 ~ CfgFields,       // Don't change
-        0x47de4849 ~ CfgTags,         // Don't change
-        0x4f22e39f ~ Content,         // Don't change
-        0x57815d25 ~ Reqs,            // Don't change
-        0xa0139eb8 ~ ReqCodes,        // Don't change
-        0xa0139eb8 ~ TextFieldData,   // Don't change
-        0xa0139eb8 ~ TagData,         // Don't change
-        0xa0139eb8 ~ ImplicationData) // Don't change
-      assertHashes(h, P3,
-        0x6a210433 ~ WholeProject,    // Don't change
-        0x05c14baf ~ Config,          // Don't change
-        0x67a3e1b9 ~ CfgIssueTypes,   // Don't change
-        0x4b71a1ac ~ CfgReqTypes,     // Don't change
-        0x3e1ac0cb ~ CfgFields,       // Don't change
-        0x5a1d6a0a ~ CfgTags,         // Don't change
-        0xc7754cfb ~ Content,         // Don't change
-        0x45f6c01d ~ Reqs,            // Don't change
-        0xdcbd2f53 ~ ReqCodes,        // Don't change
-        0xa0139eb8 ~ TextFieldData,   // Don't change
-        0x314932cc ~ TagData,         // Don't change
-        0xb31f8764 ~ ImplicationData) // Don't change
-    }
     'latest - {
-      val h = hL
-      assertHashes(h, P0,
-        0xa36e703b ~ WholeProject,
-        0x3515b7ad ~ Config,
-        0x47de4849 ~ CfgIssueTypes,
-        0x47de4849 ~ CfgReqTypes,
+      'P0 - assertHashes(hL, P0,
         0xbd8a78f7 ~ CfgFields,
-        0x47de4849 ~ CfgTags,
-        0x4406988a ~ Content,
-        0x57815d25 ~ Reqs,
-        0xa0139eb8 ~ ReqCodes,
-        0xa0139eb8 ~ TextFieldData,
-        0xa0139eb8 ~ TagData,
-        0xa0139eb8 ~ ImplicationData,
-        0x35ed6368 ~ DeletionReasons)
-      assertHashes(h, P3,
-        0x9959ef1c ~ WholeProject,
-        0x05c14baf ~ Config,
-        0x67a3e1b9 ~ CfgIssueTypes,
-        0x4b71a1ac ~ CfgReqTypes,
+        0x8929e247 ~ CfgIssueTypes,
+        0x53a65700 ~ CfgReqTypes,
+        0xfff75860 ~ CfgTags,
+        0x16519109 ~ Config,
+        0xc72a3dda ~ Content,
+        0x35ed6368 ~ DeletionReasons,
+        0xf71674f7 ~ GenericReqs,
+        0x7934b838 ~ ImplicationData,
+        0x724ff13d ~ PubidRegister,
+        0x7548501d ~ ReqCodes,
+        0xf8efb0b3 ~ Reqs,
+        0x46a5c86e ~ TagData,
+        0xc32727ce ~ TextFieldData,
+        0x43b92d0f ~ UseCases,
+        0x12795e1a ~ WholeProject)
+
+      'P3 - assertHashes(hL, P3,
         0x3e1ac0cb ~ CfgFields,
-        0x5a1d6a0a ~ CfgTags,
-        0x16b5e7c8 ~ Content,
-        0x45f6c01d ~ Reqs,
-        0x8dd89349 ~ ReqCodes,
-        0xa0139eb8 ~ TextFieldData, // TODO same as empty - P3 doesn't use
-        0x314932cc ~ TagData,
-        0xb31f8764 ~ ImplicationData,
-        0x17af358b ~ DeletionReasons)
+        0x25b0e4e6 ~ CfgIssueTypes,
+        0x36b43113 ~ CfgReqTypes,
+        0x7e949e3c ~ CfgTags,
+        0x7801ef17 ~ Config,
+        0xc199bfe3 ~ Content,
+        0x17af358b ~ DeletionReasons,
+        0x8090fed8 ~ GenericReqs,
+        0x34c6056e ~ ImplicationData,
+        0x084cb8cc ~ PubidRegister,
+        0x6f1d8f9b ~ ReqCodes,
+        0x5ac4920c ~ Reqs,
+        0x174ee061 ~ TagData,
+        0xc32727ce ~ TextFieldData, // Note: same as empty, P3 doesn't use
+        0x43b92d0f ~ UseCases,      // Note: same as empty, P3 doesn't use
+        0x8ba09927 ~ WholeProject)
+
+      'P4 - assertHashes(hL, P4,
+        0x3e1ac0cb ~ CfgFields,
+        0x25b0e4e6 ~ CfgIssueTypes,
+        0x36b43113 ~ CfgReqTypes,
+        0x7e949e3c ~ CfgTags,
+        0x7801ef17 ~ Config,
+        0x7b08fe4b ~ Content,
+        0x17af358b ~ DeletionReasons,
+        0x8090fed8 ~ GenericReqs,
+        0x34c6056e ~ ImplicationData,
+        0x719d13b1 ~ PubidRegister,
+        0x6f1d8f9b ~ ReqCodes,
+        0xced74d4f ~ Reqs,
+        0x174ee061 ~ TagData,
+        0xcef27507 ~ TextFieldData,
+        0x08f463b3 ~ UseCases,
+        0x84b0a450 ~ WholeProject)
     }
   }
 }

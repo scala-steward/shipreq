@@ -130,6 +130,8 @@ object RichTextEditor {
 
   object GenericReqTitle extends RichTextEditor("GRT", Text.GenericReqTitle)
 
+  object UseCaseTitle extends RichTextEditor("UCT", Text.UseCaseTitle)
+
   object ReqCodeGroupTitle extends RichTextEditor("RCGT", Text.ReqCodeGroupTitle)
 
   object CustomTextField extends RichTextEditor("CTF", Text.CustomTextField)

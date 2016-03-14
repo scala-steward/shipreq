@@ -1,4 +1,4 @@
-package shipreq.webapp.server.protocol
+package shipreq.webapp.base.server
 
 import scalaz.{\/-, -\/}
 import utest._

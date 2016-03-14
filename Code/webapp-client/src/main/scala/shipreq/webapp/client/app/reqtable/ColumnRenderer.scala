@@ -114,46 +114,46 @@ class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets
     widgets.PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None)
 
   private def pubid = make {
-    case r: GenericReqRow   => pubidColumnValue(r.req)
+    case r: ReqRow          => pubidColumnValue(r.req)
     case _: ReqCodeGroupRow => `N/A`
   }
 
   private def reqType = make {
-    case r: GenericReqRow   => widgets.reqTypeShort(r.req.reqTypeId)
+    case r: ReqRow          => widgets.reqTypeShort(r.req.reqTypeId)
     case _: ReqCodeGroupRow => `N/A`
   }
 
   private def code = make {
-    case GenericReqRow(_, _, exp, _, _) => widgets.reqCodes(exp.reqCodeTree, exp.reqCodes)
+    case ReqRow(_, _, exp, _, _)        => widgets.reqCodes(exp.reqCodeTree, exp.reqCodes)
     case ReqCodeGroupRow(_, _, Some(t)) => widgets.reqCodeTreeItem(t)
     case ReqCodeGroupRow(_, c, None)    => widgets.flatReqCode(c)
   }
 
   private def title = make {
-    case r: GenericReqRow         => widgets.reqTitle(r.req)
-    case ReqCodeGroupRow(g, _, _) => widgets.reqCodeGroupTitle(g)
+    case r: ReqRow          => widgets.reqTitle(r.req)
+    case r: ReqCodeGroupRow => widgets.reqCodeGroupTitle(r.group)
   }
 
   private def imps(lens: Optional[Row, Vector[Pubid]]) = make {
-    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.implicationList)
+    case r: ReqRow          => maybeEmpty(lens, r)(widgets.implicationList)
     case _: ReqCodeGroupRow => `N/A`
   }
 
   private def tags(lens: Optional[Row, Vector[ApplicableTagId]]) = make {
-    case r: GenericReqRow   => maybeEmpty(lens, r)(widgets.tagList)
+    case r: ReqRow          => maybeEmpty(lens, r)(widgets.tagList)
     case _: ReqCodeGroupRow => `N/A`
   }
 
   private def cfText(id: CustomField.Text.Id) = {
     val f = widgets.customTextField(id)
     make {
-      case r: GenericReqRow   => f(r.req).fold(empty)(w => w)
+      case r: ReqRow          => f(r.req).fold(empty)(w => w)
       case _: ReqCodeGroupRow => `N/A`
     }
   }
 
   private def deletionReason = make {
-    case r: GenericReqRow   => RenderDeletionReason.req(project, widgets, r.req)
+    case r: ReqRow          => RenderDeletionReason.req(project, widgets, r.req)
     case _: ReqCodeGroupRow => RenderDeletionReason.reqCodeGroup
   }
 }

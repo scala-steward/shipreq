@@ -78,10 +78,22 @@ object ScalaExt extends Platform.ScalaExt {
       as.flatMap(t.unapply(_).iterator)
 
     def nextOption(): Option[A] =
-      if (as.hasNext) Some(as.next()) else None
+      if (as.hasNext)
+        Some(as.next())
+      else
+        None
   }
 
   implicit class IteratorExtO[A](private val as: Iterator[Option[A]]) extends AnyVal {
+    def nextOptionO: Option[A] =
+      if (as.hasNext)
+        as.next()
+      else
+        None
+
+    def firstDefined: Option[A] =
+      as.filter(_.isDefined).nextOptionO
+
     def filterDefined: Iterator[A] =
       as.filter(_.isDefined).map(_.get)
   }

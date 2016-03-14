@@ -2,55 +2,10 @@ package shipreq.webapp.client.app.reqdetail
 
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
-import shipreq.webapp.client.lib.KeyGen
 import shipreq.base.util._
 import shipreq.webapp.base.data
-import shipreq.webapp.base.data.{CustomFieldId, Field}
+import shipreq.webapp.base.data.CustomFieldId
 import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
-
-sealed abstract class Row { /*(cell1: Cell, cellN: Cell*) {
-  val cells: List[Cell] =
-    cell1 :: cellN.toList
-*/
-
-  /** A value that can be passed to React to quickly identify columns. */
-  val key: String
-}
-
-object Row {
-  sealed abstract class AutoKey extends Row {
-    override val key = KeyGen.global.next()
-  }
-
-  case object ReqType                       extends AutoKey
-  case object Code                          extends AutoKey
-  case object Tags                          extends AutoKey
-  case object Implications                  extends AutoKey
-  case class CustomField(f: data.CustomField) extends Row {
-    override val key: String = "f" + f.id.value
-  }
-
-  @inline implicit def equality: UnivEq[Row] =
-    UnivEq.deriveAuto
-
-  implicit val reusability: Reusability[Row] =
-    Reusability.byEqual
-
-  val head: Vector[Row] =
-    Vector(
-      ReqType     ,
-      Code        ,
-      Tags        ,
-      Implications)
-
-  import data.StaticField._
-  val fromField: Field => Row = {
-    case f: data.CustomField => CustomField(f)
-    case ExceptionStepTree | NormalAltStepTree | StepGraph => ??? // TODO
-  }
-}
-
-// =====================================================================================================================
 
 sealed abstract class Cell {
   import Cell._
@@ -69,7 +24,6 @@ sealed abstract class Cell {
       case ImplicationTgt => Forwards
       case _              => Backwards
     }
-
 }
 
 object Cell {

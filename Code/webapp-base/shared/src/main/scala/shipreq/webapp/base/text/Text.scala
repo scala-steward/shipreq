@@ -79,7 +79,7 @@ object Text {
         NonEmptyVector(Literal("Ask "), EmailAddress("bob@gmail.com"), Literal(" about "), MathTeX("e=mc^2")))
   }
 
-
+  // Doesn't extend ReqTitle because Tags are prohibited in RCGs.
   object ReqCodeGroupTitle extends Base
       with A.SingleLine
       with A.Issue
@@ -90,7 +90,7 @@ object Text {
         with P.Issue
         with P.ReqRef {
       def hashToken = rule(hashRef ~ issueRef)
-      val token = () => rule(hashToken | reqRef | singleLine)
+      override val token = () => rule(hashToken | reqRef | singleLine)
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project)(_).inline))
     }
   }
@@ -151,4 +151,23 @@ object Text {
     }
   }
 
+
+  object UseCaseTitle extends ReqTitle
+
+  object UseCaseStep extends Base
+      with A.SingleLine
+      with A.Issue
+      with A.ReqRef
+      with A.TagRef {
+    override def parserI(p: Project)(i: ParserInput) = new Parser(p, i)
+    final class Parser(val project: Project, val input: ParserInput) extends P.TopBase(this)
+        with P.SingleLine
+        with P.Issue
+        with P.ReqRef
+        with P.TagRef {
+      def hashToken = rule(hashRef ~ (tagRef | issueRef))
+      override val token = () => rule(hashToken | reqRef | singleLine)
+      override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project)(_).inline))
+    }
+  }
 }

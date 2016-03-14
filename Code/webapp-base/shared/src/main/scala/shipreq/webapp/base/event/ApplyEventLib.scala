@@ -120,6 +120,8 @@ private[event] object ApplyEventLib {
   def show(v: ReqType         ): String = s"ReqType [${v.mnemonic.value}]"
   def show(v: ReqTypeId       ): String = v.foldId(r => show(r: ReqType), show)
   def show(v: CustomReqTypeId ): String = s"ReqType #${v.value}"
+  def show(v: UseCaseId       ): String = s"Use case #${v.value}"
+  def show(v: UseCaseStepId   ): String = s"Use case step #${v.value}"
 
   def set1[A](a: A): Set[A] =
     Set.empty[A] + a
@@ -214,16 +216,8 @@ private[event] object ApplyEventLib {
         else
           ret(RelPos.set(as, a, pos))
 
-  def updateIdCeilingFn(lens: Lens[IdCeilings, Int]): Int => SE[Unit] = {
-    val l = Project.idCeilings ^|-> lens
-    n => mod { p =>
-      val i = l.get(p)
-      if (n > i)
-        l.set(n)(p)
-      else
-        p
-    }
-  }
+  def updateIdCeilingFn(lens: Lens[IdCeilings, Int]): Int => SE[Unit] =
+    x => mod(Project.idCeilings.modify(_.update(lens, x)))
 
   def imapNeed[K, V](imap: IMap[K, V])(k: K): SE[V] =
     SE.retOption(imap get k, s"$k not found.")

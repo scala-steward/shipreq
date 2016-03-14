@@ -1,4 +1,4 @@
-package shipreq.webapp.server.protocol
+package shipreq.webapp.base.server
 
 import nyaya.util.Multimap
 import scalaz.\/
@@ -16,7 +16,7 @@ import UnivEq.Implicits._
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.
  */
-object MakeEvent { // TODO Move
+object MakeEvent {
 
   sealed trait Result
   case class  MadeEvent(e: ActiveEvent) extends Result
@@ -279,14 +279,30 @@ object MakeEvent { // TODO Move
         }
         val id = GenericReqId(project.idCeilings.req + 1)
         CreateGenericReq(id, i.rt, vs)
+
+      case i: CreateContentCmd.CreateUseCase =>
+        var vs = CreateUseCaseGD.emptyValues
+        for (v <- NonEmptyVector.option(i.title)) vs += CreateUseCaseGD.Title(v)
+        for (v <- NonEmptySet.option(i.tags))     vs += CreateUseCaseGD.Tags(v)
+        for (v <- NonEmptySet.option(i.impSrcs))  vs += CreateUseCaseGD.ImpSrcs(v)
+        for (cs <- NonEmptySet.option(i.reqCodes)) {
+          // If a code is in use, ApplyEvent will catch it
+          val v = cs.map(c => ReqCode.IdAndValue(nextCodeId(), c))
+          vs += CreateUseCaseGD.ReqCodes(v)
+        }
+        val id = UseCaseId(project.idCeilings.req + 1)
+        val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
+        CreateUseCase(id, stepId, vs)
     }
   }
 
-  def updateContent(cmd: UpdateContentCmd, project: Project): Result = {
-
+  def updateContent(cmd: UpdateContentCmd, project: Project): Result =
     cmd match {
       case UpdateContentCmd.SetGenericReqTitle(id, v) =>
         SetGenericReqTitle(id, v)
+
+      case UpdateContentCmd.SetUseCaseTitle(id, v) =>
+        SetUseCaseTitle(id, v)
 
       case UpdateContentCmd.PatchReqTags(id, v) =>
         eventIfNonEmpty(v)(PatchReqTags(id, _))
@@ -355,7 +371,19 @@ object MakeEvent { // TODO Move
           Failed("No content specified.")
         else
           RestoreContent(reqs, reqCodes)
+
+      case UpdateContentCmd.AddUseCaseStep(ucId, f, at) =>
+        val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
+        AddUseCaseStep(stepId, ucId, f, at)
+
+      case UpdateContentCmd.DeleteUseCaseStep(id) =>
+        DeleteUseCaseStep(id)
+
+      case UpdateContentCmd.ShiftUseCaseStepLeft(id) =>
+        ShiftUseCaseStepLeft(id)
+
+      case UpdateContentCmd.ShiftUseCaseStepRight(id) =>
+        ShiftUseCaseStepRight(id)
     }
-  }
 
 }

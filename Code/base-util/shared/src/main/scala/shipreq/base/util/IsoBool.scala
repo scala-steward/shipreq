@@ -41,7 +41,7 @@ object IsoBool {
    * Mix into the companion object for the type.
    */
   trait Object[B <: IsoBool[B]] {
-    implicit final def equality = UnivEq.force[B]
+    implicit final def equality: UnivEq[B] = UnivEq.force
 
     def positive: B with IsoBool[B]
     def negative: B with IsoBool[B]
@@ -51,6 +51,12 @@ object IsoBool {
       val n = f(negative)
       b => if (b :: positive) p else n
     }
+
+    final def forall(f: B => Boolean): Boolean =
+      f(positive) && f(negative)
+
+    final def exists(f: B => Boolean): Boolean =
+      f(positive) || f(negative)
   }
 
   /**
@@ -59,14 +65,24 @@ object IsoBool {
   trait WithBoolOps[B <: IsoBool[B]] extends IsoBool[B] {
     this: B =>
 
-    final def &&(that: => B): B = {
+    final def &(that: => B): B = {
       val pos = companion.positive
       pos <~ ((this :: pos) && (that :: pos))
     }
 
-    final def ||(that: => B): B = {
+    final def &&(that: => Boolean): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) && that)
+    }
+
+    final def |(that: => B): B = {
       val pos = companion.positive
       pos <~ ((this :: pos) || (that :: pos))
+    }
+
+    final def ||(that: => Boolean): B = {
+      val pos = companion.positive
+      pos <~ ((this :: pos) || that)
     }
   }
 }

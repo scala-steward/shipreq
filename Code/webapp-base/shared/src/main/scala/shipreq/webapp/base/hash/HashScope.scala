@@ -14,6 +14,9 @@ object HashScope {
   case object     CfgTags         extends HashScope
   case object   Content           extends HashScope
   case object     Reqs            extends HashScope
+  case object       GenericReqs   extends HashScope
+  case object       UseCases      extends HashScope
+  case object       PubidRegister extends HashScope
   case object     ReqCodes        extends HashScope
   case object     TextFieldData   extends HashScope
   case object     TagData         extends HashScope
@@ -30,7 +33,9 @@ object HashScope {
     CfgReqTypes    ,
     CfgFields      ,
     CfgTags        ,
-    Reqs           ,
+    GenericReqs    ,
+    UseCases       ,
+    PubidRegister  ,
     ReqCodes       ,
     TextFieldData  ,
     TagData        ,
@@ -47,6 +52,9 @@ object HashScope {
       case CfgTags         => h.hashTagTree          hash p.config.tags
       case Content         => h.hashProjectContent   hash p
       case Reqs            => h.hashRequirements     hash p.reqs
+      case GenericReqs     => h.hashGenericReqs      hash p.reqs.genericReqs
+      case UseCases        => h.hashUseCases         hash p.reqs.useCases
+      case PubidRegister   => h.hashPubidRegister    hash p.reqs.pubids
       case ReqCodes        => h.hashReqCodes         hash p.reqCodes
       case TextFieldData   => h.hashReqDataText      hash p.reqText
       case TagData         => h.hashReqDataTags      hash p.reqTags

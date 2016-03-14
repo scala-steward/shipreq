@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-sealed abstract class Permission extends IsoBool[Permission] {
+sealed abstract class Permission extends IsoBool.WithBoolOps[Permission] {
   override final def companion = Permission
 
   final def option[A](a: => A): Option[A] =

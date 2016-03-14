@@ -1,0 +1,532 @@
+package shipreq.base.util
+
+import monocle._
+import nyaya.prop.Prop
+import scala.annotation.tailrec
+import scala.collection.AbstractIterator
+import scalaz.{Applicative, Equal}
+import scalaz.syntax.equal._
+import ScalaExt._
+import VectorTree._
+
+/**
+  * An ordered, rooted tree.
+  *
+  * {{{
+  * (root)
+  *   m in [0..n): (value m)
+  *     m' in [0..n'): (value m.m')
+  *       ...
+  * }}}
+  */
+final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
+
+  override def getValue = None
+
+//  override def toString = s"VectorTree($deepSize nodes)"
+
+  def isEmpty = children.isEmpty
+
+  @inline def nonEmpty = !isEmpty
+
+  def map[B](f: A => B): VectorTree[B] =
+    VectorTree(children map (_ map f))
+
+  def setChildren[B >: A](c: Children[B]): VectorTree[B] =
+    VectorTree(c)
+
+  private def _modify[B >: A, R](loc: ParentLocation)
+                                (mod: (Children[A], Int, Node[A]) => Option[Children[B]])
+                                (result: (Children[B], Node[A]) => R): Option[R] =
+    if (loc.isEmpty)
+      None
+    else {
+      val last = loc.length - 1
+      var old: Node[A] = null
+
+      @tailrec
+      def go[X](locInd: Int, ch: Children[A])(f: Children[B] => X): Option[X] = {
+        val i = loc(locInd)
+        if (ch isIndexValid i) {
+          val n = ch(i)
+          if (locInd == last) {
+            old = n
+            mod(ch, i, n) map f
+          } else
+            go(locInd + 1, n.children)(c2 => f(ch.updated(i, n.copy(children = c2))))
+        } else
+          None
+      }
+
+      go(0, children)(result(_, old))
+    }
+
+  /**
+   * @return `None` if nothing was changed.
+   */
+  def modifyChildren[B >: A](loc: ParentLocation)(f: Children[A] => Children[B]): Option[VectorTree[B]] =
+    modifyChildrenA[B](loc)(c => Some(f(c)))
+
+  /**
+   * The `A` suffix means abortable.
+   *
+   * @param f Return `None` to abort (not delete).
+   * @return `None` if nothing was changed.
+   */
+  def modifyChildrenA[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] =
+    _modify[B, VectorTree[B]](loc :+ 0)((c, i, n) => f(c))((c, _) => VectorTree(c))
+
+  def modifyNode[B >: A](loc: Location)(f: Node[A] => Node[B]): Option[VectorTree[B]] =
+    _modify[B, VectorTree[B]](loc.whole)((c, i, n) => Some(c.updated(i, f(n))))((c, _) => VectorTree(c))
+
+  def modifyValue[B >: A](loc: Location)(f: A => B): Option[VectorTree[B]] =
+    modifyNode[B](loc)(n => n.copy(value = f(n.value)))
+
+  def remove(loc: Location): Option[VectorTree[A]] =
+    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, _) => VectorTree(c))
+
+  /**
+   * The `O` suffix means "old", denoting that the old value is returned.
+   */
+  def removeNodeO(loc: Location): Option[(VectorTree[A], Node[A])] =
+    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, o) => (VectorTree(c), o))
+
+  def find(f: A => Boolean): Option[A] =
+    locAndValueIterator((l, a) => if (f(a)) Some(a) else None).firstDefined
+
+  def locWhere(f: A => Boolean): Option[Location] =
+    locAndValueIterator((l, a) => if (f(a)) Some(l) else None).firstDefined
+
+  def foreach[U](f: (Location, A) => U): Unit =
+    locAndValueIterator(f).foreach(_ => ())
+
+  def locIterator: Iterator[Location] =
+    locAndValueIterator((l, _) => l)
+
+  def locAndValueIterator[B](f: (Location, A) => B): Iterator[B] =
+    childrenIterator(Vector.empty, f)
+
+  def subtreeLocAndValueIterator[B](rootIndices: TraversableOnce[Int], f: (Location, A) => B): Iterator[B] =
+    rootIndices.toIterator.flatMap(i =>
+      children(i).locAndValueIterator(NonEmptyVector one i, f))
+
+  def append[B >: A](value: B): VectorTree[B] =
+    appendN(leaf(value))
+
+  def appendN[B >: A](n: Node[B]): VectorTree[B] =
+    VectorTree(children :+ n)
+
+  /**
+    * Inserts a node after an existing node in such a way that it would be at the level and position intuitively
+    * expected when viewing the [[VectorTree]] as a flat list.
+    */
+  def insertAfter[B >: A](at: Location, value: B): Option[VectorTree[B]] =
+    insertAfterN(at, leaf(value))
+
+  def insertAfterN[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
+    modifyChildrenA[B](at.parent) { c =>
+      val i = at.last
+      if (c isIndexValid i) {
+        val f = c(i)
+        if (at.tail.isEmpty || f.children.nonEmpty) {
+          // Add to found node's children
+          val h2 = f.copy(children = n +: f.children)
+          Some(c.updated(i, h2))
+        } else
+          // Add at the same level
+          c.insert(i + 1, n)
+      } else
+        None
+    }
+
+  /**
+    * Decreases the indent/level of a node.
+    *
+    * Examples:
+    * 1.0.2.a      --> 1.0.3
+    * 1.3.4.b.iii  --> 1.3.4.c
+    */
+  def shiftLeft(at: Location): Option[VectorTree[A]] =
+    if (at.length < 2)
+      None // Root level can't be decreased
+    else {
+      val w = at.whole
+      val ip = w(at.length - 2)
+      val ic = w(at.length - 1)
+      modifyChildrenA(w.dropRight(2))(ps =>
+        ps.getFlatMap(ip)(p =>
+          p.children.getFlatMap(ic) { c =>
+            val left  = p.children take ic
+            val right = p.children.drop(ic + 1)
+            val c2    = c.copy(children = c.children ++ right)
+            val patch = p.copy(children = left) :: c2 :: Nil
+            Some(ps.patch(ip, patch, 1))
+          }
+        )
+      )
+    }
+
+  def shiftLeftIterator[B](f: (Location, A) => B): Iterator[B] =
+    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1) :: Allow).map(f.tupled)
+
+  /**
+    * Increases the indent/level of a node.
+    *
+    * Examples:
+    * 1.0.2      --> 1.0.1.a
+    * 1.3.4.b    --> 1.3.4.a.ii
+    */
+  def shiftRight(at: Location): Option[VectorTree[A]] =
+    modifyChildrenA(at.parent) { ps =>
+      val ic = at.last
+      val ip = ic - 1
+      ps.getFlatMap(ip)(p =>
+        ps.getFlatMap(ic) { c =>
+          val p2 = p.copy(children = p.children :+ c)
+          Some(ps.patch(ip, p2 :: Nil, 2))
+        }
+      )
+    }
+
+  def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
+    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) :: Allow).map(f.tupled)
+
+  def maxDepthTree: VectorTree[Int] = {
+    val leaf: Node[Int] =
+      VectorTree.leaf(0)
+
+    def go(p: Parent[A]): Node[Int] =
+      if (p.children.isEmpty)
+        leaf
+      else {
+        var m = 0
+        val c2 = p.children.map { n =>
+          val n2 = go(n)
+          m = m max n2.value
+          n2
+        }
+        Node(m + 1, c2)
+      }
+
+    VectorTree(children map go)
+  }
+
+  def lastLoc: Option[Location] = {
+    val i = children.length - 1
+    if (i == -1)
+      None
+    else
+      Some(children(i).lastLoc(NonEmptyVector one i))
+  }
+
+  def prettyPrintIndented(fmt: A => String = (_: A).toString,
+                          indent: String = "  "): String =
+    Util.quickSB(sb =>
+      foreach { (loc, a) =>
+        if (sb.nonEmpty)
+          sb append '\n'
+        for (_ <- 1 until loc.length)
+          sb append indent
+        sb append fmt(a)
+      }
+    )
+
+  def prettyPrintLabeled(fmt: A => String = (_: A).toString,
+                         label: Int => IndexLabel = (_: Int) => IndexLabel.NumericFrom0,
+                         colSep: String = "       \t",
+                         indent: String = "  "): String =
+    Util.quickSB(sb =>
+      foreach { (loc, a) =>
+        if (sb.nonEmpty)
+          sb append '\n'
+        for ((ind, lvl) <- loc.iterator.zipWithIndex) {
+          sb append label(lvl).label(ind)
+          sb append '.'
+        }
+        sb append colSep
+        for (_ <- 1 until loc.length)
+          sb append indent
+        sb append fmt(a)
+      }
+    )
+}
+
+// =====================================================================================================================
+
+trait VectorTreeLowPri {
+  private def equalityForChildren[A](n: Equal[Node[A]]): Equal[Children[A]] =
+    Equal.equal((a, b) => a.corresponds(b)(n.equal))
+
+  implicit def equalityForNode[A: Equal]: Equal[Node[A]] = {
+    lazy val node: Equal[Node[A]] = Equal.equal((a, b) => (a.value ≟ b.value) && kids.equal(a.children, b.children))
+    lazy val kids: Equal[Children[A]] = equalityForChildren(node)
+    node
+  }
+
+  implicit def equalityForRoot[A: Equal]: Equal[VectorTree[A]] =
+    equalityForChildren(equalityForNode[A]).contramap(_.children)
+}
+
+object VectorTree extends VectorTreeLowPri {
+
+  type Children[+A] = Vector[Node[A]]
+
+  type Location = NonEmptyVector[Int]
+
+  type ParentLocation = Vector[Int]
+
+  def Location(head: Int, tail: Int*): Location =
+    NonEmptyVector.varargs(head, tail: _*)
+
+  val root: Location =
+    NonEmptyVector one 0
+
+  @inline implicit class LocationOps(private val loc: Location) extends AnyVal {
+    @inline def parent: ParentLocation =
+      loc.init
+  }
+
+  @inline def noChildren: Children[Nothing] =
+    Vector.empty
+
+  val empty: VectorTree[Nothing] =
+    VectorTree(noChildren)
+
+  def leaf[A](value: A): Node[A] =
+    Node(value, noChildren)
+
+  def single[A](value: A): VectorTree[A] =
+    VectorTree(Vector1(leaf(value)))
+
+  def canShiftLeft(at: Location): Permission =
+    Allow <~ (at.length >= 2)
+
+  def canShiftRight(at: Location): Permission =
+    Allow <~ (at.last > 0)
+
+  @tailrec
+  def lastLoc(n: Parent[Any], loc: Location): Location = {
+    val i = n.children.length - 1
+    if (i == -1)
+      loc
+    else
+      lastLoc(n.children(i), loc :+ i)
+  }
+
+  // ===================================================================================================================
+
+  sealed abstract class Parent[+A] {
+
+    val children: Children[A]
+
+    def getValue: Option[A]
+
+    final def at(loc: Location): Option[Node[A]] =
+      children.getOrNull(loc.head) match {
+        case null => None
+        case first =>
+          val it = loc.tail.iterator
+          @tailrec def go(cur: Node[A]): Option[Node[A]] =
+            if (it.hasNext)
+              cur.children.getOrNull(it.next()) match {
+                case null => None
+                case next => go(next)
+              }
+            else
+              Some(cur)
+          go(first)
+      }
+
+    final def getAtLocation(pos: Location): Option[A] = {
+      val it = pos.iterator
+      @tailrec
+      def go(cur: Parent[A]): Option[A] = {
+        val i = it.next()
+        if (i >= 0 && i < cur.children.length) {
+          val n = cur children i
+          if (it.hasNext)
+            go(n)
+          else
+            Some(n.value)
+        } else
+          None
+      }
+      go(this)
+    }
+
+    final def needAtLocation(pos: Location): A =
+      getAtLocation(pos) getOrElse sys.error(s"Node not found at position ${pos.whole mkString "."}.")
+
+    final def valueIterator: Iterator[A] =
+      new AbstractIterator[A] {
+        var queue: List[Children[A]] = Nil
+        var focus: Iterator[Node[A]] =
+          Parent.this match {
+            case _: VectorTree[A] => children.iterator
+            case n: Node[A]       => Iterator.single(n)
+          }
+
+        override def hasNext: Boolean =
+          focus.hasNext
+
+        override def next(): A = {
+          val n = focus.next()
+          if (n.children.nonEmpty)
+            queue ::= n.children
+          if (!focus.hasNext && queue.nonEmpty) {
+            focus = queue.head.iterator
+            queue = queue.tail
+          }
+          n.value
+        }
+      }
+
+    def deepSize: Int = {
+      var i = 0
+      valueIterator.foreach(_ => i += 1)
+      i
+    }
+
+    final def childrenIterator[B](parent: ParentLocation, f: (Location, A) => B): Iterator[B] =
+      new AbstractIterator[B] {
+        var index = 0
+        var queue = List.empty[Iterator[B]]
+
+        override def hasNext: Boolean =
+          queue.nonEmpty || index < children.length
+
+        override def next(): B =
+          queue match {
+            case Nil =>
+              val n = children(index)
+              val p = NonEmptyVector.end(parent, index)
+              val b = f(p, n.value)
+              index += 1
+              val i = n.childrenIterator(p.whole, f)
+              if (i.hasNext)
+                queue ::= i
+              b
+
+            case qh :: qt =>
+              val b = qh.next()
+              if (!qh.hasNext)
+                queue = qt
+              b
+          }
+      }
+
+    final def dims: Dims = {
+      var maxDepth = 0
+      var maxLength = 0
+
+      def go(depth: Int, p: Parent[A]): Unit =
+        if (p.children.isEmpty) {
+
+          if (depth > maxDepth)
+            maxDepth = depth
+
+        } else {
+          val l = p.children.length
+          if (l > maxLength)
+            maxLength = l
+
+          val d2 = depth + 1
+          p.children foreach (go(d2, _))
+        }
+
+      go(0, this)
+
+      Dims(maxLength, maxDepth)
+    }
+  }
+
+  // ===================================================================================================================
+
+  final case class Node[+A](value: A, children: Children[A]) extends Parent[A] {
+    override def getValue = Some(value)
+
+    def map[B](f: A => B): Node[B] =
+      Node(f(value), children map (_ map f))
+
+    def setChildren[B >: A](c: Children[B]): Node[B] =
+      Node(value, c)
+
+    def locAndValueIterator[B](currentLocation: Location, f: (Location, A) => B): Iterator[B] =
+      Iterator.single(f(currentLocation, value)) ++ childrenIterator(currentLocation.whole, f)
+
+    def lastLoc(loc: Location): Location =
+      VectorTree.lastLoc(this, loc)
+  }
+
+  // ===================================================================================================================
+
+  /**
+    * Dimensions of a [[VectorTree]].
+    *
+    * @param maxLength Largest number of children per parent.
+    * @param maxDepth Root is depth 0, root→children is depth 1, root→children→children is depth 2, etc.
+    */
+  case class Dims(maxLength: Int, maxDepth: Int) {
+    def +(d: Dims): Dims =
+      ++(d :: Nil)
+
+    def ++(ds: TraversableOnce[Dims]): Dims =
+      if (ds.isEmpty)
+        this
+      else {
+        var ml = maxLength
+        var md = maxDepth
+        for (d <- ds) {
+          if (d.maxLength > ml) ml = d.maxLength
+          if (d.maxDepth > md) md = d.maxDepth
+        }
+        Dims(ml, md)
+      }
+  }
+
+  implicit def dimsEquality: UnivEq[Dims] = UnivEq.derive
+
+  def maxDimsProp(maxLengthInclusive: Int, maxDepthInclusive: Int): Prop[VectorTree[Any]] = {
+    def checkDim(name: String, actual: Dims => Int, maxInc: Int) =
+      Prop.atom[Dims]("VectorTree max " + name, d => {
+        val a = actual(d)
+        if (a <= maxInc)
+          None
+        else
+          Some(s"$a exceeds limit of $maxInc.")
+      })
+
+    (checkDim("length", _.maxLength, maxLengthInclusive) ∧ checkDim("depth", _.maxDepth, maxDepthInclusive)).
+      contramap[VectorTree[Any]](_.dims).rename("VectorTree max dimensions")
+  }
+
+  // ===================================================================================================================
+
+  implicit def univEqForNode[A: UnivEq]: UnivEq[Node      [A]] = UnivEq.derive
+  implicit def univEqForRoot[A: UnivEq]: UnivEq[VectorTree[A]] = UnivEq.derive
+
+  def ptraversal[A, B]: PTraversal[VectorTree[A], VectorTree[B], A, B] =
+    new PTraversal[VectorTree[A], VectorTree[B], A, B] {
+      val ch = Optics.vectorPTraversal[Node[A], Node[B]] ^|->> nodePTraversal
+      override def modifyF[F[_]](f: A => F[B])(va: VectorTree[A])(implicit F: Applicative[F]): F[VectorTree[B]] = {
+        val fcb = ch.modifyF(f)(va.children)
+        F.map(fcb)(VectorTree.apply)
+      }
+    }
+
+  def traversal[A]: Traversal[VectorTree[A], A] =
+    ptraversal[A, A]
+
+  def nodePTraversal[A, B]: PTraversal[Node[A], Node[B], A, B] =
+    new PTraversal[Node[A], Node[B], A, B] {
+      val ch = Optics.vectorPTraversal[Node[A], Node[B]] ^|->> this
+      override def modifyF[F[_]](f: A => F[B])(na: Node[A])(implicit F: Applicative[F]): F[Node[B]] = {
+        val fb = f(na.value)
+        val fcb = ch.modifyF(f)(na.children)
+        F.apply2(fb, fcb)(Node.apply)
+      }
+    }
+
+  def nodeTraversal[A]: Traversal[Node[A], A] =
+    nodePTraversal[A, A]
+}

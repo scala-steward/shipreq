@@ -6,7 +6,7 @@ import scalacss.ScalaCssReact._
 import scalacss.{PseudoElement, Pseudo, StyleS}
 import shipreq.base.util._
 import shipreq.webapp.base.text.Grammar
-import shipreq.webapp.base.data.{Live, Dead}
+import shipreq.webapp.base.data.{StaticField, Live, Dead}
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.widgets._
 
@@ -27,6 +27,8 @@ object Style extends StyleSheet.Inline {
 
     val `live * on`       = live *** on
     val `live * validity` = live *** validity
+
+    val ucStepIndent = Domain.ofRange(0 until StaticField.useCaseStepTrees.iterator.map(_.maxDepth).max)
   }
 
   /** Drag'n'drop handle Ξ */
@@ -370,10 +372,47 @@ object Style extends StyleSheet.Inline {
     val generalImpsSide = style(
       border(^.dashed, 1 px),
       minHeight(1.59 em),
+      flexBasis := "0",
       flexGrow(1))
 
     val generalImpsMiddle = style(
       margin.horizontal(1 ex))
+
+    object useCaseStep {
+
+      val container = style(
+        display.flex,
+        justifyContent.flexEnd, // So that controls in tail-step rows appear on the right.
+        width(100 %%))
+
+      val header = styleF(D.ucStepIndent)(lvl =>
+        styleS(
+          paddingTop(4 px),
+          paddingRight(0.8 ex),
+          color(c"#444"),
+          lvl match {
+            case 0 => styleS(fontWeight.bold,    width(5 ex)) // 123.0
+            case 1 => styleS(paddingLeft( 4 ex), width(3 ex)) // 99.
+            case 2 => styleS(paddingLeft( 7 ex), width(3 ex)) // cv.
+            case 3 => styleS(paddingLeft(10 ex), width(4 ex)) // xviii.
+            case 4 => styleS(paddingLeft(14 ex), width(3 ex)) // 99.
+          }
+        )
+      )
+
+      val body = style(
+        flexGrow(1))
+
+      val ctrls = style(
+        width(116 px))
+
+      val ctrl = style(
+        addClassNames("btn", "btn-default", "btn-sm"),
+        fontSize(16 px),
+        lineHeight(16 px),
+        padding(4 px),
+        width(26 px))
+    }
   }
 
   // ===================================================================================================================
@@ -453,6 +492,7 @@ object Style extends StyleSheet.Inline {
     reqtable.table,
     reqtable.deleteRestore.impliedByItem(Live),
     reqdetail.mainTable,
+    reqdetail.useCaseStep.container,
     widgets.issue)
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
 //  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()

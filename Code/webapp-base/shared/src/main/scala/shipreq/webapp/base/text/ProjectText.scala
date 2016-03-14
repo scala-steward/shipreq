@@ -78,8 +78,12 @@ object ProjectText {
 
     final def reqCodeGroup = `n/a`
 
+    private def latestReason(pt: PT, id: ReqId): Out =
+      pt.latestDeletionReason(id) getOrElse noReasonGiven
+
     final def req(p: Project, pt: PT, req: Req): Out =
       req match {
+
         case r: GenericReq =>
           import GenericReq.ImplicitLiveStatus._
           r.liveExplicitly match { // explicit must be checked before implicit
@@ -88,7 +92,13 @@ object ProjectText {
                 case NoImpact      => `n/a` // req is live
                 case ReqTypeIsDead => reqTypeIsDead(pt, p.config.reqType(r.pubid.reqTypeId))
               }
-            case Dead => pt.latestDeletionReason(r.id) getOrElse noReasonGiven
+            case Dead => latestReason(pt, r.id)
+          }
+
+        case uc: UseCase =>
+          uc.liveUC match {
+            case Live => `n/a`
+            case Dead => latestReason(pt, uc.id)
           }
       }
   }
@@ -106,7 +116,8 @@ abstract class ProjectText[Out](project: Project) {
 
   val reqTitle: Req => Out =
     memoByReqId {
-      case r: GenericReq => format(r live cfg.customReqTypes, r.title)
+      case gr: GenericReq => format(gr live cfg.customReqTypes, gr.title)
+      case uc: UseCase    => format(uc.liveUC, uc.title)
     }
 
   val reqCodeGroupTitle: ReqCodeGroup => Out =
@@ -122,7 +133,7 @@ abstract class ProjectText[Out](project: Project) {
         case Some(m) =>
           val liveField = cfg.fields.customFields.need(fid).live(cfg)
           memoByReqId(r =>
-            m.get(r.id) map (format1(liveField && r.live(cfg.customReqTypes), _)))
+            m.get(r.id) map (format1(liveField & r.live(cfg.customReqTypes), _)))
         case None =>
           Function const None
       }

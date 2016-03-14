@@ -96,15 +96,21 @@ object ContentEditorFeature {
    */
   sealed trait Editor[+P]
   object Editor {
-    case class ReqCodesForReq         (req: GenericReq)                                               extends Editor[Nothing]
-    case class ReqCodeForReqCodeGroup (rcg: ReqCodeGroup, initialValue: ReqCode.Value)                extends Editor[Nothing]
-    case class ReqType                (req: GenericReq)                                               extends Editor[Nothing]
-    case class ImplicationsAll        (req: GenericReq, dir: Direction, initialValues: Vector[Pubid]) extends Editor[Nothing]
-    case class ImplicationsCustomField(req: GenericReq, fid: CustomField.Implication.Id)              extends Editor[Nothing]
-    case class Tags                   (req: GenericReq, fid: Option[CustomField.Tag.Id])              extends Editor[Nothing]
-    case class GenericReqTitle    [+P](req: GenericReq, focusId: P)                                   extends Editor[P]
-    case class ReqCodeGroupTitle  [+P](rcg: ReqCodeGroup, focusId: P)                                 extends Editor[P]
-    case class CustomTextField    [+P](req: GenericReq, fid: CustomField.Text.Id, focusId: P)         extends Editor[P]
+    case class ReqCodesForReq         (req: Req)                                               extends Editor[Nothing]
+    case class ReqCodeForReqCodeGroup (rcg: ReqCodeGroup, initialValue: ReqCode.Value)         extends Editor[Nothing]
+    case class ReqType                (req: GenericReq)                                        extends Editor[Nothing]
+    case class ImplicationsAll        (req: Req, dir: Direction, initialValues: Vector[Pubid]) extends Editor[Nothing]
+    case class ImplicationsCustomField(req: Req, fid: CustomField.Implication.Id)              extends Editor[Nothing]
+    case class Tags                   (req: Req, fid: Option[CustomField.Tag.Id])              extends Editor[Nothing]
+    case class ReqTitle           [+P](req: Req, focusId: P)                                   extends Editor[P]
+    case class ReqCodeGroupTitle  [+P](rcg: ReqCodeGroup, focusId: P)                          extends Editor[P]
+    case class CustomTextField    [+P](req: Req, fid: CustomField.Text.Id, focusId: P)         extends Editor[P]
+
+    def reqType(req: Req): Option[ReqType] =
+      req match {
+        case r: GenericReq => Some(ReqType(r))
+        case _: UseCase    => None
+      }
   }
 
   /**
@@ -117,6 +123,11 @@ object ContentEditorFeature {
   object EditorInstance {
     implicit def reusabilityEditor: Reusability[EditorInstance] =
       Reusability.never // ∵ Editor is effectively mutable
+  }
+
+  @inline implicit class CEFState0Ops(private val s: D0.State) extends AnyVal {
+    def renderOr[A](a: => A)(implicit ev: ReactElement => A): A =
+      s.flatMap(_.render()).fold(a)(ev)
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -185,7 +196,7 @@ object ContentEditorFeature {
           case Editor.ReqCodesForReq         (req)         => liveReq(req.id, None)
           case Editor.ReqType                (req)         => liveReq(req.id, None)
           case Editor.ImplicationsAll        (req, _, _)   => liveReq(req.id, None)
-          case Editor.GenericReqTitle        (req, _)      => liveReq(req.id, None)
+          case Editor.ReqTitle               (req, _)      => liveReq(req.id, None)
           case Editor.Tags                   (req, fid)    => liveReq(req.id, fid)
           case Editor.ImplicationsCustomField(req, fid)    => liveReq(req.id, fid.some)
           case Editor.CustomTextField        (req, fid, _) => liveReq(req.id, fid.some)
@@ -202,15 +213,16 @@ object ContentEditorFeature {
 
       private def startEditWithoutChecks: StartEditFn =
         editor match {
-          case Editor.ReqCodesForReq         (req)           => EditReqCodes.req(req)
-          case Editor.ReqCodeForReqCodeGroup (rcg, iv)       => EditReqCodes.group(rcg, iv)
-          case Editor.ReqType                (req)           => EditReqType(req)
-          case Editor.ImplicationsAll        (req, dir, ivs) => EditImplications.all(req, dir, ivs)
-          case Editor.ImplicationsCustomField(req, fid)      => EditImplications.customField(req, fid)
-          case Editor.Tags                   (req, fid)      => EditTags(req, fid)
-          case Editor.GenericReqTitle        (req, p)        => EditRichText.GenericReqTitle(req, p)
-          case Editor.ReqCodeGroupTitle      (rcg, p)        => EditRichText.ReqCodeGroupTitle(rcg, p)
-          case Editor.CustomTextField        (req, fid, p)   => EditRichText.CustomTextField(req, fid, p)
+          case Editor.ReqTitle               (gr: GenericReq, p) => EditRichText.GenericReqTitle(gr, p)
+          case Editor.ReqTitle               (uc: UseCase, p)    => EditRichText.UseCaseTitle(uc, p)
+          case Editor.Tags                   (req, fid)          => EditTags(req, fid)
+          case Editor.CustomTextField        (req, fid, p)       => EditRichText.CustomTextField(req, fid, p)
+          case Editor.ReqCodesForReq         (req)               => EditReqCodes.req(req)
+          case Editor.ReqCodeForReqCodeGroup (rcg, iv)           => EditReqCodes.group(rcg, iv)
+          case Editor.ReqCodeGroupTitle      (rcg, p)            => EditRichText.ReqCodeGroupTitle(rcg, p)
+          case Editor.ReqType                (req)               => EditReqType(req)
+          case Editor.ImplicationsAll        (req, dir, ivs)     => EditImplications.all(req, dir, ivs)
+          case Editor.ImplicationsCustomField(req, fid)          => EditImplications.customField(req, fid)
         }
 
       def startEditFn(instance: EditorInstance): StartEditFn =
@@ -282,7 +294,7 @@ object ContentEditorFeature {
 
         private def trie() = pxProject.value().reqCodes.trie
 
-        def req(req: GenericReq): StartEditFn = {
+        def req(req: Req): StartEditFn = {
           val id            = req.id
           val initialValues = pxProject.value().reqCodes.activeReqCodesByReqId(id)
           val initialText   = ReqCodeEditor.Multiple.seqFmt merge initialValues.toVector.map(PlainText.reqCode).sorted
@@ -366,17 +378,17 @@ object ContentEditorFeature {
 
         val pxLookupAll = Px.apply2(pxProject, pxPlainText)(ImplicationEditor.Lookup.all)
 
-        def all(req: GenericReq, dir: Direction, initialValues: Vector[Pubid]): StartEditFn =
+        def all(req: Req, dir: Direction, initialValues: Vector[Pubid]): StartEditFn =
           startEdit(req, dir, pxLookupAll, initialValues)
 
-        def customField(req: GenericReq, fid: CustomField.Implication.Id): StartEditFn = {
+        def customField(req: Req, fid: CustomField.Implication.Id): StartEditFn = {
           val dir = CustomField.Implication.dir
           val lookup = Px.apply2(pxProject, pxLookupAll)(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
           val pubids = ImplicationEditor.initialValueForCustomColumn(pxProject.value(), fid, req.id)
           startEdit(req, dir, lookup, pubids)
         }
 
-        private def startEdit(req: GenericReq, dir: Direction, pxLookup: Px[Lookup], pubids: Seq[Pubid]): StartEditFn = {
+        private def startEdit(req: Req, dir: Direction, pxLookup: Px[Lookup], pubids: Seq[Pubid]): StartEditFn = {
           val subjectId = req.id
 
           val (initialValues, initialText) = ImplicationEditor.initialValueAndText(
@@ -413,7 +425,7 @@ object ContentEditorFeature {
         import shipreq.webapp.client.widgets.high.TagEditor
         import TagEditor.Lookup
 
-        def apply(req: GenericReq, fid: Option[CustomField.Tag.Id]): StartEditFn = {
+        def apply(req: Req, fid: Option[CustomField.Tag.Id]): StartEditFn = {
           val id       = req.id
           val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
           val pxLookup = pxProject map lookupFn
@@ -488,6 +500,14 @@ object ContentEditorFeature {
               focusId)
         }
 
+        object UseCaseTitle extends Base(RichTextEditor.UseCaseTitle) {
+          def apply(uc: UseCase, focusId: P): StartEditFn =
+            startEdit(
+              UpdateContentCmd.SetUseCaseTitle(uc.id, _),
+              uc.title,
+              focusId)
+        }
+
         object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {
           def apply(rcg: ReqCodeGroup, focusId: P): StartEditFn =
             startEdit(
@@ -497,7 +517,7 @@ object ContentEditorFeature {
         }
 
         object CustomTextField extends Base(RichTextEditor.CustomTextField) {
-          def apply(req: GenericReq, fid: CustomField.Text.Id, focusId: P): StartEditFn =
+          def apply(req: Req, fid: CustomField.Text.Id, focusId: P): StartEditFn =
             startEdit(
               UpdateContentCmd.SetCustomTextField(req.id, fid, _),
               ReqData.textAt(fid, req.id).get(pxProject.value().reqText),

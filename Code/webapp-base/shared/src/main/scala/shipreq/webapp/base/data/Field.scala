@@ -1,12 +1,13 @@
 package shipreq.webapp.base.data
 
 import monocle._
-import monocle.macros.Lenses
+import monocle.macros.{Lenses, GenLens}
 import scala.collection.immutable.ListSet
 import scalaz.Equal
 import shipreq.base.util._
 import ScalaExt._
 import TaggedTypes.{TaggedString, TaggedInt}
+import IndexLabel._
 import UnivEq.Implicits._
 
 // =====================================================================================================================
@@ -136,11 +137,110 @@ object StaticField {
 
   @inline final private[this] def T = StaticFieldType
 
-  case object NormalAltStepTree extends StaticField(
-    "Normal and Alternate Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  case object ExceptionStepTree extends StaticField(
-    "Exception Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None)
+  sealed abstract class UseCaseStepTree(_name     : String,
+                                        _fieldType: StaticFieldType,
+                                        _reqTypes : Field.ApplicableReqTypes,
+                                        _mandatory: Mandatory,
+                                        _deletable: Deletable,
+                                        _keyO     : Option[FieldRefKey])
+      extends StaticField(_name, _fieldType, _reqTypes, _mandatory, _deletable, _keyO) {
+
+    val useCaseSteps: Lens[UseCase, UseCaseSteps]
+    val useCaseStepTree: Lens[UseCase, UseCaseSteps.Tree] // Has to be lazy to be implemented here. No.
+
+    final def stepLabel(ucNumber: ReqTypePos, loc: VectorTree.Location, mnemonicPrefix: Boolean): String =
+      Util.quickSB { sb =>
+        @inline def sep = '.'
+        if (mnemonicPrefix) {
+          sb append StaticReqType.UseCase.mnemonic.value
+          sb append '-'
+        }
+        sb append ucNumber.value
+        for (p <- stepLabelPrefix) {
+          sb append sep
+          sb append p
+        }
+        loc.foreachWithIndex { (index, level) =>
+          sb append sep
+          sb append stepLabelsPerLevel(level).label(index)
+        }
+      }
+
+    def stepLabelPrefix: Option[String]
+
+    val stepLabelsPerLevel: Vector[IndexLabel]
+
+    /**
+      * Maximum number of levels (inclusive) where the root (no steps) is 0.
+      */
+    final def maxDepth = stepLabelsPerLevel.length
+
+    @inline final def canShiftLeft(loc: VectorTree.Location): Permission =
+      VectorTree.canShiftLeft(loc)
+
+    final def canShiftRight(loc: VectorTree.Location, maxDepthTree: VectorTree[Int]): Permission =
+      VectorTree.canShiftRight(loc) && maxDepthTree.getAtLocation(loc).exists(_ + loc.length < maxDepth)
+
+    def canDelete(loc: VectorTree.Location): Permission
+
+    final def canAdd(loc: VectorTree.Location): Permission =
+      // TODO Add a real implementation and make tests generate tree at maxLength
+      Allow
+  }
+
+  // UC-8.0.1.a.i.1
+  // UC-8.E.1.a.i.1
+  // ______|↑_↑_↑_↑
+  private val sharedUseCaseStepLabels: Vector[IndexLabel] =
+    Vector(NumericFrom1, Alpha, Roman, NumericFrom1)
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object NormalAltStepTree extends UseCaseStepTree(
+      "Normal and Alternate Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
+
+    override val useCaseSteps = GenLens[UseCase](_.stepsNA)
+    override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
+
+    // UC-8.0.1.a.i.1
+    // ____|_________
+    override def stepLabelPrefix: Option[String] =
+      None
+
+    // UC-8.0.1.a.i.1
+    // ____|↑_+_+_+_+
+    override val stepLabelsPerLevel =
+      NumericFrom0 +: sharedUseCaseStepLabels
+
+    override def canDelete(loc: VectorTree.Location) =
+      Deny <~ (loc ==* VectorTree.root)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object ExceptionStepTree extends UseCaseStepTree(
+      "Exception Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
+
+    override val useCaseSteps = GenLens[UseCase](_.stepsE)
+    override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
+
+    // UC-8.E.1.a.i.1
+    // ____|↑|_______
+    override val stepLabelPrefix: Option[String] =
+      Some("E")
+
+    // UC-8.E.1.a.i.1
+    // ______|+_+_+_+
+    override val stepLabelsPerLevel =
+      sharedUseCaseStepLabels
+
+    override def canDelete(loc: VectorTree.Location) =
+      Allow
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object StepGraph extends StaticField(
     "Step Graph", T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
@@ -150,6 +250,9 @@ object StaticField {
   lazy val values: NonEmptyVector[StaticField] =
     UtilMacros.adtValuesManual[StaticField](NormalAltStepTree, ExceptionStepTree, StepGraph)
 
+  lazy val useCaseStepTrees: NonEmptyVector[UseCaseStepTree] =
+    UtilMacros.adtValuesManual[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)
+
   lazy val (deletable, notDeletable) =
     values.whole.partition(_.deletable :: Deletable)
 
@@ -157,6 +260,8 @@ object StaticField {
     values.toStream.map(_.name).toSet
 
   implicit def equality: UnivEq[StaticField] = UnivEq.derive
+
+  implicit def useCaseStepTreeEquality: UnivEq[UseCaseStepTree] = UnivEq.derive
 }
 
 sealed abstract class CustomFieldId extends TaggedInt with FieldId {
@@ -221,7 +326,7 @@ object CustomField {
       tags.need(tagId).tag.name
 
     override def live(cfg: ProjectConfig) =
-      liveExplicitly && cfg.live(tagId)
+      liveExplicitly & cfg.live(tagId)
   }
   object Tag {
     final case class Id(value: Int) extends CustomFieldId  {
@@ -247,7 +352,7 @@ object CustomField {
       ReqType.name(customReqTypes)(reqTypeId)
 
     override def live(cfg: ProjectConfig) =
-      liveExplicitly && cfg.live(reqTypeId)
+      liveExplicitly & cfg.live(reqTypeId)
   }
   object Implication {
     final case class Id(value: Int) extends CustomFieldId {

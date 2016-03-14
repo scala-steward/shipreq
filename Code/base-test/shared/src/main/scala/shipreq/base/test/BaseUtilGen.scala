@@ -4,6 +4,7 @@ import nyaya.gen._
 import nyaya.prop.CycleDetector
 import nyaya.util.Multimap
 import scala.annotation.tailrec
+import scala.collection.AbstractIterator
 import shipreq.base.util._
 import SizeSpec.DisableDefault._
 
@@ -27,12 +28,60 @@ object BaseUtilGen {
       g.set(ss).flatMap(vs =>
         NonEmptySet.maybe(vs, single)(Gen.pure))
     }
+
+    def unique_!(implicit ev: UnivEq[A]): Gen[A] =
+      liftIterator_!(uniqueIterator)
+
+    def uniqueIterator(implicit ev: UnivEq[A]): Gen[Iterator[A]] = {
+      val MaxTries = 1000
+      Gen { ctx =>
+        new AbstractIterator[A] {
+          val seen = UnivEq.emptyMutableSet[A]
+
+          @tailrec
+          def nextUnique(rem: Int): A = {
+            val a = g.run(ctx)
+            if (seen contains a) {
+              if (rem == 1)
+                sys.error(s"Failed to generate a unique value after $MaxTries tries. Last = $a")
+              else
+                nextUnique(rem - 1)
+            } else {
+              seen += a
+              a
+            }
+          }
+
+          override def hasNext = true
+          override def next() = nextUnique(MaxTries)
+        }
+      }
+    }
   }
 
   implicit class BaseUtilGen_OptionGenExt[A](private val o: Option[Gen[A]]) extends AnyVal {
     def setE(implicit ss: SizeSpec): Gen[Set[A]] =
       o.fold(Gen pure Set.empty[A])(_.set(ss))
   }
+
+  def liftIterator_![A](g: Gen[Iterator[A]]): Gen[A] = {
+    var it: Iterator[A] = null
+    Gen { ctx =>
+      if (it eq null)
+        it = g.run(ctx)
+      it.next()
+    }
+  }
+
+  def counter(start: Int = 1): Gen[Int] = {
+    var i = start - 1
+    Gen { _ =>
+      i += 1
+      i
+    }
+  }
+
+  // ===================================================================================================================
 
   def genISubset[A: UnivEq](g: Gen[NonEmptySet[A]]): Gen[ISubset[A]] =
     Gen.chooseGen(
@@ -88,6 +137,18 @@ object BaseUtilGen {
   def genDagBi[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(ga: Gen[A])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
     genDagUni(fix)(ga)(implicitly, ss).map(Digraph.BiDir(_))
 
+  def genDigraphUniO[A: UnivEq](og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    og.fold(Gen pure Digraph.emptyUniDir)(genDigraphUni(_)(implicitly, ss))
+
+  def genDigraphBiO[A: UnivEq](og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    og.fold(Gen pure Digraph.emptyBiDir)(genDigraphBi(_)(implicitly, ss))
+
+  def genDagUniO[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.UniDir[A]] =
+    og.fold(Gen pure Digraph.emptyUniDir)(genDagUni(fix)(_)(implicitly, ss))
+
+  def genDagBiO[A: UnivEq](fix: Digraph.FixAcyclic[A, _])(og: Option[Gen[A]])(implicit ss: SizeSpec): Gen[Digraph.BiDir[A]] =
+    og.fold(Gen pure Digraph.emptyBiDir)(genDagBi(fix)(_)(implicitly, ss))
+
   def preventCycles[A, B](cd: CycleDetector[Map[A, B], A])(m: Map[A, B]): Map[A, B] = {
     @tailrec
     def go(m: Map[A, B] /*, i: Int = 0*/): Map[A, B] =
@@ -101,5 +162,29 @@ object BaseUtilGen {
           go(m - b /*, i + 1*/)
       }
     go(m)
+  }
+
+  def genVectorTree[A](genValue: Gen[A], maxDepth: Int)(implicit ss: SizeSpec): Gen[VectorTree[A]] = {
+    import VectorTree._
+    def children(rem: Int): Gen[Children[A]] =
+      if (rem == 0)
+        Gen pure noChildren
+      else
+        Gen.lift2(genValue, children(rem - 1))(Node.apply).vector(ss)
+    children(maxDepth).map(VectorTree(_))
+  }
+
+  def genVectorTreeLoc(implicit ss: SizeSpec): Gen[VectorTree.Location] =
+    Gen.int.vector1(ss).map(NonEmptyVector.force)
+
+  def genVectorTreeParLoc(implicit ss: SizeSpec): Gen[VectorTree.ParentLocation] =
+    Gen.int.vector(ss)
+
+  implicit class VectorTreeGenExt[A](private val tree: VectorTree[A]) extends AnyVal {
+    def genLocation: Option[Gen[VectorTree.Location]] =
+      Gen tryGenChoose tree.locIterator
+
+    def genParentLocation: Gen[VectorTree.ParentLocation] =
+      Gen chooseNE NonEmptyVector[VectorTree.ParentLocation](Vector.empty, tree.locIterator.map(_.whole).toVector)
   }
 }

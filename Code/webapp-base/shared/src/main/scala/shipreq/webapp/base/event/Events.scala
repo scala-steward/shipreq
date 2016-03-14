@@ -6,7 +6,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.util._
 import Event.NESD
-import Text.{GenericReqTitle, CustomTextField, ReqCodeGroupTitle, DeletionReason}
+import Text.{UseCaseStep => StepTitle, _}
 import Text.Equality._
 import UnivEq.Implicits._
 
@@ -133,7 +133,7 @@ case class CreateCustomImpField(id: CustomField.Implication.Id, vs: CustomImpFie
 case class UpdateCustomImpField(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
 
 // =====================================================================================================================
-// Content: Requirements
+// Content: Generic requirements
 
 /**
  * This is only used in [[CreateGenericReq]].
@@ -149,7 +149,67 @@ object CreateGenericReqGD extends GenericData {
   val ImpTgts  = defAttr[NonEmptySet[ReqId]]
 }
 
-case class CreateGenericReq(id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
+case class CreateGenericReq  (id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
+case class SetGenericReqType (id: GenericReqId, value: CustomReqTypeId)                             extends ActiveEvent
+case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText)                extends ActiveEvent
+
+// =====================================================================================================================
+// Content: Use cases
+
+/**
+ * This is only used in [[CreateUseCase]].
+ * All fields are optional; any mandatory data is required in the [[CreateUseCase]] constructor directly. Thus,
+ * when a field is provided, its value must be non-empty (with emptiness representable by omitting the field).
+ */
+@CreateGenericData
+object CreateUseCaseGD extends GenericData {
+  val Title    = defAttr[UseCaseTitle.NonEmptyText]
+  val ReqCodes = defAttr[NonEmptySet[ReqCode.IdAndValue]]
+  val Tags     = defAttr[NonEmptySet[ApplicableTagId]]
+  val ImpSrcs  = defAttr[NonEmptySet[ReqId]]
+  val ImpTgts  = defAttr[NonEmptySet[ReqId]]
+}
+
+/**
+ * @param stepId Use cases have a mandatory root step. This guarantees the determinism of the root step ID.
+ */
+case class CreateUseCase(id: UseCaseId, stepId: UseCaseStepId, vs: CreateUseCaseGD.Values) extends ActiveEvent
+
+case class SetUseCaseTitle(id: UseCaseId, value: UseCaseTitle.OptionalText) extends ActiveEvent
+
+@CreateGenericData
+object UseCaseStepGD extends GenericData {
+  val Title   = defAttr[StepTitle.OptionalText]
+  val FlowIn  = defAttr[NESD[UseCaseStepId]]
+  val FlowOut = defAttr[NESD[UseCaseStepId]]
+}
+
+case class AddUseCaseStep(id   : UseCaseStepId,
+                          ucId : UseCaseId,
+                          field: StaticField.UseCaseStepTree,
+                          at   : VectorTree.ParentLocation) extends ActiveEvent
+
+case class UpdateUseCaseStep    (id: UseCaseStepId, vs: UseCaseStepGD.NonEmptyValues) extends ActiveEvent
+case class ShiftUseCaseStepLeft (id: UseCaseStepId)                                   extends ActiveEvent
+case class ShiftUseCaseStepRight(id: UseCaseStepId)                                   extends ActiveEvent
+case class DeleteUseCaseStep    (id: UseCaseStepId)                                   extends ActiveEvent
+
+// =====================================================================================================================
+// Content: ReqCode groups
+
+@CreateGenericData
+object ReqCodeGroupGD extends GenericData {
+  val Code  = defAttr[ReqCode.Value]
+  val Title = defAttr[ReqCodeGroupTitle.OptionalText]
+}
+
+case class CreateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
+case class UpdateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
+
+case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
+
+// =====================================================================================================================
+// Content: Shared
 
 /**
  * Updates a requirement's reqcodes.
@@ -172,30 +232,9 @@ case class PatchImplicationSrc (id: ReqId, patch: NESD[ReqId])           extends
 case class PatchImplicationTgt (id: ReqId, patch: NESD[ReqId])           extends ActiveEvent
 // TODO Better for PatchImplication to take a Direction?
 
-case class SetGenericReqType(id: GenericReqId, value: CustomReqTypeId) extends ActiveEvent
-
-case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText) extends ActiveEvent
-
 case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
 
 case class DeleteReqs(reqs: NonEmptySet[ReqId], reqCodeGroups: Set[ReqCodeId], reason: DeletionReason.OptionalText) extends ActiveEvent
 
-// =====================================================================================================================
-// Content: ReqCode groups
-
-@CreateGenericData
-object ReqCodeGroupGD extends GenericData {
-  val Code  = defAttr[ReqCode.Value]
-  val Title = defAttr[ReqCodeGroupTitle.OptionalText]
-}
-
-case class CreateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
-case class UpdateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
-
 // TODO Would it be better to have a ReqCodeGroupId which is a subtype of ReqCodeId?
-case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
-
-// =====================================================================================================================
-// Content: Shared
-
 case class RestoreContent(reqs: Set[ReqId], reqCodeGroups: Set[ReqCodeId]) extends ActiveEvent

@@ -26,7 +26,7 @@ object Applicability { // TODO Now that time has passed, this looks stupid, over
   implicit object SubjectRow extends Subject[Row] {
     override def apply(reqTypeFilter: ReqTypeId => Applicable)(row: Row): Applicable =
       row match {
-        case r: GenericReqRow   => SubjectReq(reqTypeFilter)(r.req)
+        case r: ReqRow          => SubjectReq(reqTypeFilter)(r.req)
         case _: ReqCodeGroupRow => Applicable
       }
   }

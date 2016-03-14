@@ -1,7 +1,6 @@
 package shipreq.webapp.client.app
 
 import japgolly.scalajs.react.test._
-import teststate._
 import utest._
 import shipreq.webapp.base.event.{Delete, DeleteCustomField}
 import shipreq.webapp.base.test._
@@ -9,6 +8,7 @@ import shipreq.webapp.client.app.reqtable.{ReqTableTestDsl => RT}
 import shipreq.webapp.client.test._
 import ProjectSpaMain.{Page, Props}
 import SampleProject.Values.priField
+import teststate.Exports._
 
 object ProjectSpaTest extends TestSuite {
   import ProjectSpaTestDsl._

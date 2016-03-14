@@ -1,0 +1,32 @@
+digraph G {
+
+// =================================================================================================
+// Inheritence
+edge [style=dashed arrowhead=empty color=red]
+
+UseCaseId -> ReqId -> ReqOrSubReqId
+UseCaseStepId -> SubReqId -> ReqOrSubReqId
+
+// =================================================================================================
+// Composition
+edge [style=normal dir=back arrowtail=dot color=blue]
+
+UseCase -> UseCaseId
+UseCase -> UseCaseSteps [label="N+A"]
+UseCase -> UseCaseSteps [label="E"]
+
+UseCaseStepsTree [label="UseCaseSteps.Tree\nVectorTree[UseCaseStep]"]
+UseCaseSteps -> UseCaseStepsTree -> UseCaseStep -> UseCaseStepId
+
+UseCaseIMap
+UseCasesStepIndex [label="UseCases.StepIndex\nMap[UseCaseStepId, StepTreeKey]"]
+UseCasesStepFlow [label="UseCases.StepFlow\nDigraph.BiDir[UseCaseStepId]"]
+UseCases -> UseCaseIMap,UseCasesStepIndex,UseCasesStepFlow
+UseCaseIMap -> UseCase,UseCaseId
+UseCasesStepIndex -> UseCaseStepId,StepTreeKey
+UseCasesStepFlow -> UseCaseStepId
+
+StepTreeKey [label="UseCases.StepTreeKey"]
+StepTreeKey -> UseCaseId
+
+}

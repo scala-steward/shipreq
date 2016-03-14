@@ -7,7 +7,7 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.11.7"
+    def version  = "2.11.8"
     val compiler = mm("scala-compiler")
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
@@ -55,7 +55,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.4.0")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.4.1-SNAPSHOT")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }

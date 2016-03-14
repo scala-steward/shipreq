@@ -22,10 +22,6 @@ import shipreq.webapp.client.widgets.high.ProjectWidgets
 object ReqTable extends StaticPropComponent.Template("ReqTable") {
   override protected def configureBackend = new Backend(_, _)
   override protected def configureRender  = _.renderBackend
-  override protected def configure = _
-    .componentWillMount(_.backend.syncProjectState)
-    .configure(
-      Listenable.install(_.static.cd, $ => (c: Changes) => $.props.static.state_$.modState(_ updateProject c.p2)))
 
   type InitEditor = ContentEditorFeature.D2.InitChild[Row, Column, FocusId]
 
@@ -110,16 +106,6 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     import SP._
     import cd.pxProject
 
-    def syncProjectState: Callback =
-      $.props.map(_.state) flatMap { state =>
-        val p1 = state.project
-        val p2 = pxProject.value()
-        if (p1 ne p2)
-          state_$.setState(state updateProject p2)
-        else
-          Callback.empty
-      }
-
     // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
       ReusableFn(a => state_$.modState(f(a)))
@@ -195,24 +181,25 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
         @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
         @inline def focusId = FocusId.AtCell(row.sourceId, col)
 
-        def imps(row: GenericReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
+        def imps(row: ReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
           rowLens.getOption(row).map(pubids =>
             Editor.ImplicationsAll(row.req, Column.implicationDirection(col), pubids))
 
         row match {
-          case r: GenericReqRow => col match {
+          case r: ReqRow => col match {
             case Column.Code                                              => Editor.ReqCodesForReq(r.req)
-            case Column.Title                                             => Editor.GenericReqTitle(r.req, focusId)
+            case Column.Title                                             => Editor.ReqTitle(r.req, focusId)
             case Column.Tags                                              => Editor.Tags(r.req, None)
-            case Column.ReqType                                           => Editor.ReqType(r.req)
             case Column.ImplicationSrc                                    => imps(r, Row.implicationSrc)
             case Column.ImplicationTgt                                    => imps(r, Row.implicationTgt)
             case Column.CustomField(id: CustomField.Text       .Id, Live) => Editor.CustomTextField(r.req, id, focusId)
             case Column.CustomField(id: CustomField.Tag        .Id, Live) => Editor.Tags(r.req, Some(id))
             case Column.CustomField(id: CustomField.Implication.Id, Live) => Editor.ImplicationsCustomField(r.req, id)
+            case Column.ReqType                                           => Editor.reqType(r.req)
+
             case Column.Pubid
                | Column.DeletionReason
-               | Column.CustomField(_, Dead)                              => None
+               | Column.CustomField(_, Dead) => None
           }
 
           case r: ReqCodeGroupRow => col match {

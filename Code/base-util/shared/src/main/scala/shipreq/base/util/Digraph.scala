@@ -36,6 +36,9 @@ object Digraph {
 
     def members: Set[A] =
       Digraph.members(forwards)
+
+    def modify[B: UnivEq](f: UniDir[A] => UniDir[B]): BiDir[B] =
+      BiDir(f(forwards))
   }
 
   // ===================================================================================================================

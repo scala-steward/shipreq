@@ -11,6 +11,7 @@ object EventStats {
   val (allNames, name) =
     valuesForAdtF[Event, String] {
       case _: AddStaticField        => "AddStaticField"
+      case _: AddUseCaseStep        => "AddUseCaseStep"
       case _: ApplyTemplate         => "ApplyTemplate"
       case _: CreateApplicableTag   => "CreateApplicableTag"
       case _: CreateCustomImpField  => "CreateCustomImpField"
@@ -21,6 +22,7 @@ object EventStats {
       case _: CreateGenericReq      => "CreateGenericReq"
       case _: CreateReqCodeGroup    => "CreateReqCodeGroup"
       case _: CreateTagGroup        => "CreateTagGroup"
+      case _: CreateUseCase         => "CreateUseCase"
       case _: DeleteCustomField     => "DeleteCustomField"
       case _: DeleteCustomIssueType => "DeleteCustomIssueType"
       case _: DeleteCustomReqType   => "DeleteCustomReqType"
@@ -28,6 +30,7 @@ object EventStats {
       case _: DeleteReqs            => "DeleteReqs"
       case _: DeleteStaticField     => "DeleteStaticField"
       case _: DeleteTag             => "DeleteTag"
+      case _: DeleteUseCaseStep     => "DeleteUseCaseStep"
       case _: PatchImplicationSrc   => "PatchImplicationSrc"
       case _: PatchImplicationTgt   => "PatchImplicationTgt"
       case _: PatchReqCodes         => "PatchReqCodes"
@@ -37,6 +40,9 @@ object EventStats {
       case _: SetCustomTextField    => "SetCustomTextField"
       case _: SetGenericReqTitle    => "SetGenericReqTitle"
       case _: SetGenericReqType     => "SetGenericReqType"
+      case _: SetUseCaseTitle       => "SetUseCaseTitle"
+      case _: ShiftUseCaseStepLeft  => "ShiftUseCaseStepLeft"
+      case _: ShiftUseCaseStepRight => "ShiftUseCaseStepRight"
       case _: UpdateApplicableTag   => "UpdateApplicableTag"
       case _: UpdateCustomImpField  => "UpdateCustomImpField"
       case _: UpdateCustomIssueType => "UpdateCustomIssueType"
@@ -45,6 +51,7 @@ object EventStats {
       case _: UpdateCustomTextField => "UpdateCustomTextField"
       case _: UpdateReqCodeGroup    => "UpdateReqCodeGroup"
       case _: UpdateTagGroup        => "UpdateTagGroup"
+      case _: UpdateUseCaseStep     => "UpdateUseCaseStep"
     }
     .map1(_.sorted)
 
