@@ -12,7 +12,6 @@ import scalaz.{Memo, Cord}
 
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.server.app.AppConfig
-import shipreq.webapp.server.feature.uc.field.{TextFieldDefinition, TextField, Field}
 import Types._
 import AppConfig._
 
@@ -90,9 +89,6 @@ trait Misc extends HasLogger {
 
   def filterCovar[T](list: List[_])(implicit m: ClassTag[T]): List[T] =
     list.filter(isCovar[T]).asInstanceOf[List[T]]
-
-  def findTextField(defn: TextFieldDefinition, fields: List[Field]): Option[TextField] =
-    fields.collectFirst {case t: TextField if t.defn == defn => t}
 
   def pluralise(singular: String, plural: String)(c: Long): String =
     if (c == 1)

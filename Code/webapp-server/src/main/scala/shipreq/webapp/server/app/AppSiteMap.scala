@@ -74,22 +74,6 @@ object AppSiteMap {
       }
   )
 
-  val UseCaseEditor: PM[UseCaseIdentId] = (
-    MenuWithIdParam(ExternalId.UseCase)("uce") / "usecase" / *
-    >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("uceditor")
-    >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.CurrentProject, Navbar.UseCaseDropdown) {
-        RequestVars.UseCaseId.setByParam(UseCaseEditor, "UseCaseEditor --> SoleUseCaseId")
-        RequestVars.Project.deriveFromUseCaseId()
-        RequestVars.ProjectId.deriveFromProject()
-      }
-  )
-
-  val DemoUseCaseEditor = pageWithStaticUrl("demo-uce", mkTitle("Demo"), "")(_ / "demo" / "editor"
-    >> UseTemplate("uceditor")
-    >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.StaticText("Use Case Editor Demo")){}
-  )
-
   val AdminStats = pageWithStaticUrl("admin.stats", mkTitle("Stats"), "")(_ / "sir" / "stats" >> AdminOnly >> Hidden)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -97,8 +81,7 @@ object AppSiteMap {
   val AllProdPages: List[ConvertableToMenu] = List(
     Home, About, TermsOfService, PrivacyPolicy, Land_BusinessCard
     , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
-    , Project, UseCaseEditor
-    , DemoUseCaseEditor
+    , Project
     , AdminStats
   ) ++ DiagnosticEndpoints.Endpoints
 
@@ -208,10 +191,8 @@ object AppSiteMap {
     f(Menu(name, linkText)) >> StaticTitle(title)
 
   private def projectName = RequestVars.Project.get.value.name
-  private def shareName = RequestVars.Share.get.value.name
 
   private def TitleFromProjectName[T] = DynamicTitle[T](mkTitle(projectName))
-  private def TitleFromShareName[T] = DynamicTitle[T](mkTitle(shareName))
 
   private def MenuWithIdParam[T <: ExteralisableId](eidGen: ExternalIdConverter[T])(name: String) =
     Menu.param[T](name, "", eidGen.parseB, eidGen.toExternal)

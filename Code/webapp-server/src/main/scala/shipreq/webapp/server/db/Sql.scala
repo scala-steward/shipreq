@@ -10,7 +10,6 @@ import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.base.event.{VerifiedEvent, ActiveEvent, Event}
 import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.server.lib.Types._
-import shipreq.webapp.server.feature.UcFilter
 import shipreq.webapp.server.security.PasswordAndSalt
 import StaticQuery.{query, queryNA, update, updateNA}
 import SqlHelpers._
@@ -105,9 +104,6 @@ private[db] object Sql {
 
   val FindProject = query[ProjectId, Project](s"SELECT ${project_*} FROM project WHERE id=? AND $projectIsLive")
 
-  val FindProjectByUc = query[UseCaseIdentId, Project](
-    s"SELECT ${project_*} FROM project WHERE id = (SELECT project_id FROM usecase u WHERE u.id=?) AND $projectIsLive")
-
   @Update val RenameProject = update[(String, ProjectId, UserId)](
     "UPDATE project SET name=? WHERE id=? AND usr_id=?")
 
@@ -147,133 +143,6 @@ private[db] object Sql {
 
   @Update val DeleteProjectSoft = update[(String, ProjectId)]("UPDATE project SET name=?, deleted_at=NOW() where id=?")
   @Delete val DeleteProjectHard = update[ProjectId](s"DELETE FROM project where id=? and $projectIsDead")
-
-  // ###################################################################################################################
-  // Use Case
-
-  private val ucrev_* = s"r.ident_id, u.number, u.project_id, r.rev, r.id, r.title, r.created_at"
-  //private val ucrevS_* = ucrev_*.replaceAll("((?:[a-z]+\\.)created_at)", "to_iso8601_str($1)")
-
-  @Insert val InsertUseCaseIdent = {
-    val NextUseCaseNumber = "(SELECT coalesce(max(number),0)+1 from usecase where project_id=?)"
-    query[(ProjectId, ProjectId), UseCaseIdent](
-      s"INSERT INTO usecase(project_id, number) VALUES(?, $NextUseCaseNumber) RETURNING id, number, project_id")
-  }
-
-  @Insert val InsertUseCaseIdentForceNum = query[(ProjectId, UseCaseNumber), UseCaseIdentId](
-    "INSERT INTO usecase(project_id,number) VALUES(?,?) RETURNING id")
-
-  @Insert val InsertUseCaseRev = query[(UseCaseIdentId, Short, String), (UseCaseRevId, DateTime)](
-    "INSERT INTO usecase_rev(ident_id, rev, title) VALUES(?,?,?) RETURNING id, created_at")
-
-  val SelectUseCaseRev = query[UseCaseRevId, UseCaseRev](
-    s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE u.id=r.ident_id AND r.id=?")
-
-  val SelectLatestUseCaseRevId = query[UseCaseIdentId, UseCaseRevId](
-    s"SELECT latest_rev_id FROM usecase WHERE id=?")
-
-  val SelectLatestUseCaseRev = query[UseCaseIdentId, UseCaseRev](
-    s"SELECT ${ucrev_*} FROM usecase u, usecase_rev r WHERE r.id=latest_rev_id AND u.id=?")
-
-  val SelectLatestUseCaseRevsByProject =
-    query[ProjectId, UseCaseRev](summariseUseCaseSql(ucrev_*))
-
-  val SelectLatestUseCaseRevsByIds =
-    query[(ProjectId, List[UseCaseIdentId]), UseCaseRev](summariseUseCaseSql(ucrev_*, Some("ident_id = ANY(?)")))
-
-  private def summariseUseCaseSql(select: String, where: Option[String] = None) = {
-    val w = where match {
-      case None       => ""
-      case Some(cond) => s" and ($cond)"
-    }
-    s"SELECT $select FROM usecase u, usecase_rev r WHERE r.id = latest_rev_id and project_id = ?$w ORDER BY number"
-  }
-
-  val SummariseUseCases = query[ProjectId, UseCaseSummary](
-    summariseUseCaseSql("ident_id, number, title, to_iso8601_str(created_at)"))
-
-  // ###################################################################################################################
-  // Text
-
-  private val textrev_* = "tr.ident_id, tr.rev, tr.id, tr.text"
-
-  @Insert val InsertTextIdent = query[(UseCaseIdentId, FieldKeyId), TextIdentId](
-    "INSERT INTO text(uc_id, fk_id) VALUES(?,?) RETURNING id")
-
-  @Insert val InsertTextRev = query[(TextIdentId, Short, NormalisedText), TextRevId](
-    "INSERT INTO text_rev(ident_id, rev, text) VALUES(?,?,?) RETURNING id")
-
-  // ###################################################################################################################
-  // uc_field
-
-  @Insert val LinkUcToText = update[(UseCaseRevId, TextRevId)](
-    "INSERT INTO uc_field(uc_rev_id, text_rev_id) VALUES(?,?)")
-
-  @Insert val LinkUcToStep = update[(UseCaseRevId, StepLabel, Option[TextRevId], Short, TextRevId)](
-    "INSERT INTO uc_field(uc_rev_id, label, parent_rev_id, index, text_rev_id) VALUES(?,?,?,?,?)")
-
-  @Insert val CopyUcFieldsBetweenRevs = update[(UseCaseRevId, UseCaseRevId)]("""
-    INSERT INTO uc_field
-    SELECT ?, label, parent_rev_id, index, text_rev_id
-      FROM uc_field where uc_rev_id = ? """.sql)
-
-  private def selectUcFieldSql(selectPrefix: String, cond: String) = s"""
-    SELECT ${selectPrefix}fk_id, label, parent_rev_id, index, ${textrev_*}
-      FROM uc_field f, text_rev tr, text t
-     WHERE text_rev_id = tr.id and tr.ident_id = t.id
-       AND $cond
-     ORDER BY index """.sql
-  // ORDER BY: Step loading RELIES on ORDER BY index
-
-  val SelectUcFields = query[UseCaseRevId, UcFieldTextWithFK](
-    selectUcFieldSql("","uc_rev_id = ?"))
-
-  val SelectUcFieldsInBulk = query[List[UseCaseRevId], (UseCaseRevId, UcFieldTextWithFK)](
-    selectUcFieldSql("uc_rev_id,", "uc_rev_id = ANY(?)"))
-
-  // ###################################################################################################################
-  // Fields
-
-  val SelectReusableFieldKeyId = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
-    "SELECT id FROM field_key WHERE type_id=? AND data IS NOT DISTINCT FROM ?")
-
-  @Insert val InsertFieldKey = query[(FieldKeyType, FieldKeyRecData), FieldKeyId](
-    "INSERT INTO field_key(type_id, data) VALUES(?,?) RETURNING id")
-
-  // ###################################################################################################################
-  // Shares
-
-  @Insert val InsertShare = query[(ProjectId, ShareUrlToken, PasswordAndSalt, String, Option[String], JsonStr[UcFilter]), ShareId](
-    "INSERT INTO share(project_id, url_token, password, password_salt, name, preface, uc_filter)"
-      + " VALUES(?,?,?,?,?,?,?) RETURNING id")
-
-  @Update val UpdateShare = update[(String, Option[String], JsonStr[UcFilter], ShareId)](
-    "UPDATE share SET name=?, preface=?, uc_filter=? WHERE id=?")
-
-  @Update val UpdateSharePassword = update[(PasswordAndSalt, ShareId)](
-    "UPDATE share SET password=?, password_salt=?, password_changed_at=NOW() WHERE id=?")
-
-  @Delete val DeleteShare = update[ShareId]("DELETE FROM share WHERE id=?")
-
-  @Insert val LogShareView = update[(ShareId, Option[String])]("INSERT INTO share_view_log(share_id,ip) VALUES(?,?)")
-
-  val share_* = "id, project_id, url_token, name, preface, uc_filter"
-
-  val SelectShare = query[ShareId, Share](
-    s"SELECT ${share_*} FROM share WHERE id=?")
-
-  val SelectShareAndPasswordByUrl = query[ShareUrlToken, (Share, PasswordAndSalt)](
-    s"SELECT ${share_*}, password, password_salt FROM share WHERE url_token=?")
-
-  val SelectShareAndProjectByUrl = query[ShareUrlToken, (Share, Project)](s"""
-    SELECT ${share_* inTable "s"}, ${project_* inTable "p"}
-    FROM share s, project p
-    WHERE url_token=? AND s.project_id = p.id AND $projectIsLive
-    """.sql)
-
-  val SummariseShares = query[ProjectId, ShareSummary](
-    "SELECT id, url_token, name, uc_filter, view_count, to_iso8601_str(last_viewed_at)" +
-      " FROM share WHERE project_id=? ORDER by name")
 
   // ###################################################################################################################
   // Events

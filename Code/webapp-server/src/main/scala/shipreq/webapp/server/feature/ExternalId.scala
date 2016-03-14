@@ -8,8 +8,6 @@ import shipreq.webapp.server.lib.Types._
 object ExternalId {
   // util.Random.shuffle(x.toList).mkString
   final val Project = new ExternalIdConverter[ProjectId]("F4XBvt0i2cnHQ6dIaAomLjPE3MOrsbxReq1W9pgZyzNY7SkGf5UlwJCTKuVD8h")
-  final val UseCase = new ExternalIdConverter[UseCaseIdentId]("0atxlQwnj7y3zFZNVBqJ42AcriYEeMu8SdU91HgfTsb6GhmWkX5KopCIRLvOPD")
-  final val TextRev = new ExternalIdConverter[TextRevId]("eBM0xKQuO2Zy43AnWGPmkbXN9HprwV7ItSi1CdETv6D5UYRscjJzhFgoLflqa8")
 }
 
 final class ExternalIdConverter[I <: ExteralisableId](val dictionaryStr: String)(implicit I: TaggedTypeCtor[I],  E: TaggedTypeCtor[I#E]) {

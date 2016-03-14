@@ -4,17 +4,10 @@ import org.scalatest.FunSpec
 import org.scalatest.Matchers
 import net.liftweb.util.Helpers._
 import scalaz.Cord
-import shipreq.webapp.server.feature.uc.field.{StepField, TextField}
-import shipreq.webapp.server.test.TestData
 
-class MiscTest extends FunSpec with Matchers with Misc with TestData {
+class MiscTest extends FunSpec with Matchers with Misc {
 
-  describe("filterCovar()") {
-    it("should filter with covariance") {
-      filterCovar[StepField](FL) shouldBe List(NCF, ECF)
-      filterCovar[TextField](FL) shouldBe List(TF1, TF2, TF3)
-    }
-  }
+  describe("filterCovar()") {} // TODO
 
   describe("#randomConfirmationToken") {
     it("should return different values each time") {

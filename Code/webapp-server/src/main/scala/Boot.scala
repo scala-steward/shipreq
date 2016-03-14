@@ -85,8 +85,6 @@ class Boot extends DI {
     import shipreq.webapp.server.snippet._
     DynModal
     Quotes
-    project.UseCaseCrudlConsts
-    uce.Renderer.Templates
   }
 
   def logImportantSettings(): Unit = {

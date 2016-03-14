@@ -21,7 +21,6 @@ object DB extends DbTemplate {
   override def wipe_!(): Unit = super.wipe_!()
 
   override protected def onInit(implicit s: Session) = {
-    FieldKeyType.init
   }
 
   object DaoProvider extends DaoProvider {

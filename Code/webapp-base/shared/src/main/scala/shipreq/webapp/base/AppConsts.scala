@@ -1,8 +1,6 @@
 package shipreq.webapp.base
 
-import shipreq.base.util.IndexLabel
 import shipreq.webapp.base.util.EnvMacros
-import IndexLabel._
 
 object AppConsts {
 

@@ -5,14 +5,9 @@ import org.postgresql.util.PSQLException
 import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.taskman.api.{UserId, EmailAddr}
-import shipreq.webapp.server.feature.uc.field.FieldDefinition
-import shipreq.webapp.server.feature.UcFilter
-import shipreq.webapp.server.lib.Locks.{UseCaseNumbers, SingleUseCase}
 import shipreq.webapp.server.lib.Misc.retry
-import shipreq.webapp.server.lib.ShareUrlTokenGen
 import shipreq.webapp.server.lib.Types._
 import shipreq.webapp.server.security.PasswordAndSalt
-import shipreq.webapp.server.util.Lock
 
 /**
  * Database interface.
@@ -151,116 +146,9 @@ sealed trait DaoS {
 
   def findProject(id: ProjectId): Option[Project] = FindProject(id).firstOption
 
-  def findProjectByUc(ucId: UseCaseIdentId): Option[Project] = FindProjectByUc(ucId).firstOption
-
   def summariseProjects(userId: UserId): List[ProjectSummary] = SummariseProjects(userId).list
 
   def deleteProjectSoft(id: ProjectId): Unit = DeleteProjectSoft(nextFuncName, id).execute
-
-  // ===================================================================================================================
-  // Use Case
-
-  def createUseCaseRev(ucIdent: UseCaseIdent, rev: Short, header: UseCaseHeader): UseCaseRev = {
-    val (id, createdAt) = InsertUseCaseRev(ucIdent, rev, header.title).first
-    UseCaseRev(ucIdent, rev, id, header, createdAt)
-  }
-
-  def findUseCaseRev(revId: UseCaseRevId): Option[UseCaseRev] = SelectUseCaseRev(revId).firstOption
-
-  def findUseCaseLatestRevId(ucId: UseCaseIdentId): Option[UseCaseRevId] = SelectLatestUseCaseRevId(ucId).firstOption
-
-  def findUseCaseLatestRev(ucId: UseCaseIdentId): Option[UseCaseRev] = SelectLatestUseCaseRev(ucId).firstOption
-
-  def findAllLatestUseCaseRevsByProject(pid: ProjectId): List[UseCaseRev] = SelectLatestUseCaseRevsByProject(pid).list
-
-  def findAllLatestUseCaseRevs(pid: ProjectId, ids: List[UseCaseIdentId]): List[UseCaseRev] =
-    if (ids.isEmpty)
-      List.empty
-    else
-      SelectLatestUseCaseRevsByIds(pid, ids).list
-
-  def summariseUseCases(projectId: ProjectId): List[UseCaseSummary] = SummariseUseCases(projectId).list
-
-  // ===================================================================================================================
-  // uc_field
-
-  def findAllUcFieldData(ucRevId: UseCaseRevId): List[UcFieldTextWithFK] =
-    SelectUcFields(ucRevId).list
-
-  def findAllUcFieldData(ids: List[UseCaseRevId]): List[(UseCaseRevId, UcFieldTextWithFK)] =
-    if (ids.isEmpty)
-      List.empty
-    else
-      SelectUcFieldsInBulk(ids).list
-
-  def linkUcToText(uc: UseCaseRevId, txt: TextRevId): Unit =
-    LinkUcToText(uc, txt).execute
-
-  def linkUcToStep(uc: UseCaseRevId, label: StepLabel, index: Short, parentId: Option[TextRevId], text: TextRev): UcFieldText = {
-    LinkUcToStep(uc, label, parentId, index, text.id).execute
-    UcFieldText(Some(label), parentId, index, text)
-  }
-
-  def linkUcToSameFieldsAsOtherUc(from: UseCaseRevId, to: UseCaseRevId): Unit = CopyUcFieldsBetweenRevs(to, from).execute
-
-  // ===================================================================================================================
-  // Text
-
-  def createTextIdent(ucId: UseCaseIdentId, fkId: FieldKeyId): TextIdentId =
-    InsertTextIdent(ucId, fkId).first
-
-  def createTextRev(identId: TextIdentId, rev: Short, text: NormalisedText): TextRev = {
-    val id = InsertTextRev(identId, rev, text).first
-    TextRev(identId, rev, id, text)
-  }
-
-  // ===================================================================================================================
-  // Fields
-
-  def createFieldKey(fkType: FieldKeyType, data: FieldKeyRecData): FieldKeyRec = {
-    val id = InsertFieldKey(fkType, data).first
-    FieldKeyRec(id, fkType, data)
-  }
-
-  // ===================================================================================================================
-  // Shares
-
-  def createShare(
-    projectId: ProjectId, ps: PasswordAndSalt,
-    name: String, preface: Option[String], ucFilterJson: JsonStr[UcFilter],
-    urlTokenFn: () => ShareUrlToken = ShareUrlTokenGen.fn)
-  : Share =
-    retry(12) { // Chance of error when 200,000 tokens in use = 0.0000002% ^ 12 (6E-105%)
-      inSafeTransaction {
-        val urlToken = urlTokenFn()
-        val id = InsertShare(projectId, urlToken, ps, name, preface, ucFilterJson).first
-        Share(id, projectId, urlToken, name, preface, ucFilterJson)
-      }
-    }
-
-  def updateShare(id: ShareId, name: String, preface: Option[String], ucFilterJson: JsonStr[UcFilter]): Unit =
-    UpdateShare(name, preface, ucFilterJson, id).execute
-
-  def updateSharePassword(id: ShareId, ps: PasswordAndSalt): Unit =
-    UpdateSharePassword(ps, id).execute
-
-  def deleteShare(id: ShareId): Unit =
-    DeleteShare(id).execute
-
-  def findShare(id: ShareId): Option[Share] =
-    SelectShare(id).firstOption
-
-  def findShareAndPassword(url: ShareUrlToken): Option[(Share, PasswordAndSalt)] =
-    SelectShareAndPasswordByUrl(url).firstOption
-
-  def findShareAndProject(url: ShareUrlToken): Option[(Share, Project)] =
-    SelectShareAndProjectByUrl(url).firstOption
-
-  def summariseShares(projectId: ProjectId): List[ShareSummary] =
-    SummariseShares(projectId).list
-
-  def logShareView(shareId: ShareId, ip: Option[String]): Unit =
-    LogShareView(shareId, ip).execute
 }
 
 // #####################################################################################################################
@@ -288,59 +176,6 @@ sealed trait DaoT extends DaoS with EventDao {
     } catch {
       case e: PSQLException if e.getMessage.contains("usr_username_key") => UsernameTaken
     }
-  }
-
-  /**
-   * Creates a new `usecase` row. If a `usecase_rev` row is not inserted before the end of the transaction, then the
-   * transaction will fail because `usecase.latest_rev_id` will be `NULL`.
-   */
-  def createUseCaseIdent(projectId: ProjectId): UseCaseIdent = InsertUseCaseIdent(projectId, projectId).first
-
-  /**
-   * Same as `#createUseCaseIdent` except uses a manually-provided UC number.
-   * This should only be used in tests.
-   */
-  def createUseCaseIdentWithForcedNumber(projectId: ProjectId, ucn: UseCaseNumber): UseCaseIdent = {
-    val id = InsertUseCaseIdentForceNum(projectId, ucn).first
-    UseCaseIdent(id, ucn, projectId)
-  }
-
-  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader, lock: Lock.Write[UseCaseNumbers]): UseCaseRev = {
-    val ident = createUseCaseIdent(projectId)
-    val rev = 1: Short
-    createUseCaseRev(ident, rev, header)
-  }
-
-  /**
-   * Updates the header of an existing use case (ie. just the contents of the `usecase` table ignoring its relations).
-   *
-   * When updating just the title of an Untitled rev #1 UC, the update is direct. In all other cases requiring an
-   * update, a new revision is created.
-   */
-  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader, lock: Lock.Write[SingleUseCase]): UseCaseHeaderUpdateResult = {
-    import UseCaseHeaderUpdateResult._
-
-    findUseCaseLatestRev(ucId) match {
-      case None => UseCaseNotFound
-      case Some(latest) =>
-        val h = modFn(latest.header)
-        if (h == latest.header)
-          AlreadyUpToDate(latest)
-        else {
-          val newRev = createUseCaseRev(latest.ident, latest.rev +! 1, h)
-          linkUcToSameFieldsAsOtherUc(latest, newRev)
-          DbSuccess(newRev)
-        }
-    }
-  }
-
-  def findOrCreateFieldKey(fkType: FieldKeyType, data: FieldKeyRecData): FieldKeyRec =
-    SelectReusableFieldKeyId(fkType, data).firstOption
-      .fold(createFieldKey(fkType, data))(FieldKeyRec(_, fkType, data))
-
-  def syncFieldList(fields: List[FieldDefinition]): FieldListRec = {
-    val fkRecs = fields.map(f => findOrCreateFieldKey(f.fieldKeyType, f.fieldKeyData))
-    FieldListRec(fkRecs)
   }
 }
 
@@ -373,13 +208,6 @@ object UserRegistrationResult {
   case class DbSuccess(userId: UserId) extends UserRegistrationResult
   case object NoMatchingConfToken extends UserRegistrationResult
   case object UsernameTaken extends UserRegistrationResult
-}
-
-sealed trait UseCaseHeaderUpdateResult
-object UseCaseHeaderUpdateResult {
-  case class DbSuccess(result: UseCaseRev) extends UseCaseHeaderUpdateResult
-  case class AlreadyUpToDate(result: UseCaseRev) extends UseCaseHeaderUpdateResult
-  case object UseCaseNotFound extends UseCaseHeaderUpdateResult
 }
 
 sealed trait CreateProjectResult

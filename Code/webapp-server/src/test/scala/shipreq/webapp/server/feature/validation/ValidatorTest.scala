@@ -117,22 +117,6 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
     ))
   }
 
-  test("UseCaseTitle validation") {
-    testV(V.usecase.title, Table(("Failure Frag", "Input")
-      , (None, "hello")
-      , (None, "hello >")
-      , (None, "hello -")
-      , (None, "hello --")
-      , (None, "hello (again)")
-      , (Some("blank"), "")
-      , (Some("square"), "hehe [")
-      , (Some("square"), "hehe ]")
-      , (Some("arrow"), "hehe <--")
-      , (Some("arrow"), "hehe ⬅")
-      , (Some("arrow"), "hehe ➡")
-    ))
-  }
-
   test("MandatoryShortText") {
     testCV(V.project.name, Table(("IN", "CORRECTED", "FAILURE")
       , ("", None, Some("blank"))
@@ -148,7 +132,7 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("LargeText") {
-    testCV(V.usecase.textFieldText, Table(("IN", "CORRECTED", "FAILURE")
+    testCV(GenericValidators.largeText("blah"), Table(("IN", "CORRECTED", "FAILURE")
       , ("", None, None)
       , ("  ", Some(""), None)
       , ("hello", None, None)
@@ -161,11 +145,12 @@ class ValidatorTest extends FunSuite with Matchers with PropertyChecks {
   }
 
   test("LargeTextO") {
-    V.share.preface.correctU("\n\n  ") shouldBe None
-    V.share.preface.correctAndValidateU("") shouldBe Success(None)
-    V.share.preface.correctAndValidateU("\n\nyo\n\nhehe\n\n") shouldBe Success(Some("yo\n\nhehe"))
-    V.share.preface.correctAndValidateU("x" * largeTextMaxLength).isSuccess shouldBe true
-    V.share.preface.correctAndValidateU("x" * (largeTextMaxLength + 1)).isSuccess shouldBe false
+    val v = GenericValidators.optionalLargeText("blah")
+    v.correctU("\n\n  ") shouldBe None
+    v.correctAndValidateU("") shouldBe Success(None)
+    v.correctAndValidateU("\n\nyo\n\nhehe\n\n") shouldBe Success(Some("yo\n\nhehe"))
+    v.correctAndValidateU("x" * largeTextMaxLength).isSuccess shouldBe true
+    v.correctAndValidateU("x" * (largeTextMaxLength + 1)).isSuccess shouldBe false
   }
 
   test("Landing page name") {

@@ -2,7 +2,6 @@ package shipreq.webapp.server.app
 
 import org.apache.commons.httpclient.{HttpMethodBase, HttpClient}
 import org.scalatest.FunSpec
-import shipreq.webapp.server.db.UseCaseHeader
 import shipreq.webapp.server.test.LiveTest
 import shipreq.webapp.server.test.fixture.UserFixture
 import AppSiteMap._
@@ -29,7 +28,6 @@ class PermissionTest extends FunSpec with LiveTest with UserFixture {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val pid = newProjectId(user1.id)
-  lazy val ucId = withNewTransaction(createUseCaseIdentAndRev1(pid, UseCaseHeader("Hello")))
 
   describe("/") {
     it("anon") {
@@ -53,23 +51,6 @@ class PermissionTest extends FunSpec with LiveTest with UserFixture {
     it("should allow owner") {
       val r = doLogin(user1).get(url) ! 200
       r.responseText should include(""" id="tgt"""")
-    }
-
-    it("should deny non-owner") {
-      doLogin(user2).get(url) shouldRedirect
-    }
-  }
-
-  describe("/usecase") {
-    lazy val url = UseCaseEditor.relativeUrl(ucId.identId)
-
-    it("should deny anon") {
-      loginShouldBeRequiredFor(url)
-    }
-
-    it("should allow owner") {
-      val r = doLogin(user1).get(url) ! 200
-      r.responseText should include("addTailStep")
     }
 
     it("should deny non-owner") {

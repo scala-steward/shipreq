@@ -5,7 +5,7 @@ import scalaz.{Name, Semigroup}
 import net.liftweb.common.Logger
 import net.liftweb.http.RequestVar
 import app.DI
-import db.{Share, UserDescriptor, Project}
+import db.{UserDescriptor, Project}
 import Permission._
 
 object Permission {
@@ -19,8 +19,7 @@ object Permission {
 
   final case class Ctx(
     user: Option[UserDescriptor],
-    project: Option[Project],
-    share: Option[Share])
+    project: Option[Project])
 
   sealed trait Pass
   private val SomePass = Some(new Pass{})
@@ -54,10 +53,9 @@ trait Permission {
 
   final def using(
     user: Option[UserDescriptor] = DI.SecurityProvider.vend.loggedInUser,
-    project: Option[Project] = None,
-    share: Option[Share] = None
+    project: Option[Project] = None
     ) =
-    new Checker(Ctx(user, project, share), this)
+    new Checker(Ctx(user, project), this)
 
   def warnOnFailure: Boolean
 }

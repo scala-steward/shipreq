@@ -12,13 +12,9 @@ import scalaz.Need
 
 import shipreq.taskman.api.UserId
 import app.{Defaults, DI}
-import db.{AdminDao, UseCaseHeader, DaoS, DaoT, DaoProvider, DB, UseCaseRev}
+import db.{AdminDao, DaoS, DaoT, DaoProvider, DB}
 import db.SqlHelpers._
 import lib.Types._
-import lib.Locks
-import feature.UcFilters
-import feature.uc.UseCase
-import feature.uc.persist.{UseCaseSaveCheckpoint, UseCasePersistence}
 import feature.validation.Validators
 import security.PasswordAndSalt
 
@@ -150,24 +146,15 @@ trait TestDatabaseHelpers extends TestHelpers2 {
 
   def countRowsIn(table: Table) = queryNA[Int](s"select count(*) from ${table.name}").first
 
+  // TODO @deprecated("Delete or redo, probably in a TestState-friendly way", "14/3/2016")
   sealed trait Table {def name: String; override def toString = name}
   object Tables {
-    object FieldKeyType extends Table {def name = "field_key_type"}
-    object FieldKey extends Table {def name = "field_key"}
     object Project extends Table {def name = "project"}
-    object Usecase extends Table {def name = "usecase"}
-    object UsecaseRev extends Table {def name = "usecase_rev"}
-    object Text extends Table {def name = "text"}
-    object TextRev extends Table {def name = "text_rev"}
-    object UcField extends Table {def name = "uc_field"}
     object Usr extends Table {def name = "usr"}
-    object Share extends Table {def name = "share"}
-    object ShareViewLog extends Table {def name = "share_view_log"}
     object UsrLoginLog extends Table {def name = "usr_login_log"}
     object Usrd extends Table {def name = "usrd"}
     object UsrhName extends Table {def name = "usrh_name"}
-    val All = List(FieldKeyType, FieldKey, Project, Usecase, UsecaseRev, Text, TextRev, UcField, Usr, Share,
-      ShareViewLog, UsrLoginLog, Usrd, UsrhName)
+    val All = List(Project, Usr, UsrLoginLog, Usrd, UsrhName)
   }
 
   def countAllTableRows = Tables.All.map(t => (t -> countRowsIn(t))).toMap
@@ -209,19 +196,10 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     tables.foreach { table =>
     // Dependents first
       table match {
-        case FieldKeyType => truncate(FieldKey)
-        case FieldKey     => truncate(Text)
-        case Usecase      => truncate(UsecaseRev)
-        case UsecaseRev   => updateNA("update usecase set latest_rev_id = NULL").execute; truncate(UcField)
-        case Text         => truncate(TextRev)
-        case TextRev      => truncate(UcField)
-        case Project      => truncate(Share, Usecase)
         case Usr          => truncate(Project, Usrd, UsrhName)
-        case UcField
-          | Share
+        case Project
           | Usrd | UsrhName
-          | UsrLoginLog
-          | ShareViewLog  => // No one keys to these tables
+          | UsrLoginLog => // No one keys to these tables
       }
       val tableName = table.name
       updateNA(s"delete from $tableName").execute
@@ -240,25 +218,11 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     script.execute(dbSupport.getJdbcTemplate)
   }
 
-  /**
-   * When a new UC is saved it gets given the number available UC number. Use this to correct the UC number after the
-   * fact.
-   *
-   * @param n The new UC number.
-   */
-  def forceUcNumber(cp: UseCaseSaveCheckpoint, n: Int): UseCaseSaveCheckpoint = {
-    val ucn = UseCaseNumber(n.toShort)
-    val uc_ = cp.uc.copy(number = ucn)
-    val rec_ = cp.rec.copy(ident = cp.rec.ident.copy(number = ucn))
-    updateNA(s"UPDATE usecase set number=${ucn.value} where id = ${rec_.ident.identId.value}").execute
-    cp.copy(uc = uc_, rec = rec_)
-  }
-
-  def randomUCTitle: String =
-    findSuitable(Validators.usecase.title.correctAndValidateU(randomStr))(_.isSuccess).getOrElse(???)
+  def randomProjectName: String =
+    findSuitable(Validators.project.name.correctAndValidateU(randomStr))(_.isSuccess).getOrElse(???)
 
   def newProjectId(userId: UserId = getOrCreateUserId): ProjectId =
-    dao.createProject(userId, randomUCTitle).gimme
+    dao.createProject(userId, randomProjectName).gimme
 
   def getOrCreateUserId(): UserId =
     queryNA[UserId]("select id from usr where username is not null").firstOption.getOrElse(newUserId)
@@ -269,26 +233,6 @@ trait TestDatabaseHelpers extends TestHelpers2 {
 
   def deleteUser(u: UserId): Unit =
     update[Long]("DELETE FROM usr WHERE id=?").apply(u).execute
-
-  def newShare(projectId: ProjectId = newProjectId()): ShareId =
-    dao.createShare(projectId, PasswordAndSalt.createWithRandomSalt(randomStr), randomStr, None, UcFilters.All.json).id
-
-  def saveUseCase(uc: UseCase, prev: Option[UseCaseSaveCheckpoint], projectId: ProjectId): Option[UseCaseSaveCheckpoint] = prev match {
-    case Some(cp) => UseCasePersistence.save(uc, cp, Locks.SingleUseCase.writeP(cp.rec, projectId), dao)
-    case None =>
-      val ucr = createUseCaseIdentAndRev1(projectId, uc.header)
-      val someCp = Some(loadUseCase(ucr, projectId))
-      saveUseCase(uc, someCp, projectId).orElse(someCp)
-  }
-
-  def loadUseCase(ucRev: UseCaseRev, projectId: ProjectId): UseCaseSaveCheckpoint =
-    Locks.UseCaseNumbers.readP(projectId)(UseCasePersistence.load(ucRev).run(dao, _))
-
-  def createUseCaseIdentAndRev1(projectId: ProjectId, header: UseCaseHeader): UseCaseRev =
-    Locks.UseCaseNumbers.write(projectId)(dao.createUseCaseIdentAndRev1(projectId, header, _))
-
-  def updateUseCaseHeader(ucId: UseCaseIdentId, modFn: UseCaseHeader => UseCaseHeader)(implicit projectId: ProjectId) =
-    Locks.SingleUseCase.write(ucId, projectId)(dao.updateUseCaseHeader(ucId, modFn, _))
 
   def debugSelect(sql: String): Unit = {
     val stmt = session.conn.createStatement()

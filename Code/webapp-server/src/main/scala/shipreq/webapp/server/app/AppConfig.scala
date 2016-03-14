@@ -32,15 +32,10 @@ object AppConfig {
   /** How long password-reset tokens are valid for after issuing. */
   final val PasswordResetTokenLifespan = need[TimeSpan]("token.lifespan.resetpw")
 
-  /** The amount of time that a user is allowed to view a share after authenticating, without re-authenticating. */
-  final val ShareViewAuthPeriod = need[Period]("share.auth_period")
-
   /** Maximum time a flash variable will be retained. (default) */
   final val FlashVarTTL = Period seconds 12
 
   final val QuoteCachePolicy = ExpireAfter(Period minutes 30)
-
-  final val DemoUseCaseMaxSteps = 50
 
   /**
    * Whether or not new registrations are allowed.

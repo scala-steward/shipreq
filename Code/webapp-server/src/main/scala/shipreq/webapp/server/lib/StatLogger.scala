@@ -7,10 +7,8 @@ import shipreq.taskman.api.UserId
 import shipreq.webapp.server.app.DI
 import shipreq.webapp.server.db.{UserDescriptor, DaoS}
 import shipreq.webapp.server.feature.SessionStats
-import shipreq.webapp.server.lib.Types.ShareId
 
 sealed trait StatLoggerCmd
-case class LogShareView(id: ShareId, ip: Option[String] = Misc.clientIp) extends StatLoggerCmd
 case class LogUserLogin(id: UserId, ip: Option[String] = Misc.clientIp) extends StatLoggerCmd
 
 trait StatLogger {
@@ -24,7 +22,6 @@ object StatLoggerImpl extends StatLogger with SpecializedLiftActor[StatLoggerCmd
     daoProvider.withSession(f)
 
   protected def messageHandler: PartialFunction[StatLoggerCmd, Unit] = {
-    case LogShareView(id, ip) => dao(_.logShareView(id, ip))
     case LogUserLogin(id, ip) => dao(_.logUserLogin(id, ip))
   }
 

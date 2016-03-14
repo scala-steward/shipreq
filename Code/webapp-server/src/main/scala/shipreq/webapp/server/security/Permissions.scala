@@ -4,7 +4,7 @@ package security
 import Permission.Ctx
 import app.AppConfig
 
-final object Permissions {
+object Permissions {
 
   val accessProject: Permission = new TypicalPermission {
     override def name = "accessProject"
@@ -16,19 +16,6 @@ final object Permissions {
       } yield
         cmp(p.owner, u.id, "project.owner == user.id")
   }
-
-  val editShare = accessProject & new TypicalPermission {
-    override def name = "editShare"
-    override def warnOnFailure = true
-    override def check(ctx: Ctx) =
-      for {
-        p <- ctx.project
-        s <- ctx.share
-      } yield
-        cmp(s.projectId, p.id, "share.projectId == project.id")
-  }
-
-  @inline def viewShare = editShare
 
   val userRegistration: Permission = new TypicalPermission {
     override def name = "userRegistration"

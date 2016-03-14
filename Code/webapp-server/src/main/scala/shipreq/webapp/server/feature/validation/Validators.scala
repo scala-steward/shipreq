@@ -8,7 +8,6 @@ import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation._
 import shipreq.webapp.server.lib.ScalazSubset._
 import shipreq.webapp.server.lib.Types._
-import shipreq.webapp.server.feature.uc.text.ParsingConfig.AnyValidArrowRegexStr
 import shipreq.webapp.server.security.PasswordAndSalt
 import Constraint.not
 import Constraints._
@@ -97,30 +96,6 @@ object Validators {
 
   object project {
     val name = mandatoryShortText("Project name")
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
-
-  object usecase {
-
-    val title = Validator(
-      CorrectionPartU.endo(singleLineWhitespace andThen niceSymbols),
-      ValidationPartU.forConstraint("Use case title",
-        nonEmpty
-          + shortTextLimit
-          + blacklistCharsS("[]⦋⦌［］")("cannot include square brackets.")
-          + not(containsR(AnyValidArrowRegexStr))("cannot include arrows.")
-      ))
-
-    val textFieldText = largeText("Text")
-    val stepFieldText = largeText("Text")
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
-
-  object share {
-    val name = mandatoryShortText("Share name")
-    val preface = optionalLargeText("Preface")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
