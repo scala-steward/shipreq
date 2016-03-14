@@ -1,6 +1,4 @@
-* Purge old UC stuff
-
-* Redo all webapp assets
+* Fix project index.
 
 UC Step Deletion
 ================
@@ -29,8 +27,13 @@ Req Table
 
 Graphs
 ======
-
 * UC step graph (single UC)
 * UC step graph (all UCs! …maybe)
 * Implication graph (single req on ReqDetail page)
+
+Finally
+=======
+* Redo all webapp assets
+* Re-test all old stuff
+* Make pretty.
 
