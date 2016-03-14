@@ -1,3 +1,42 @@
+/*
+var publishedUcs = {
+    renderAll: function() {
+        var data_dot_attr = 'dot'
+        $('tr.flowgraph').each(function(i,p){
+            var id = "fg-"+i
+            $(p).attrAdd('id', id)
+            var dot = $(p).find('[data-'+data_dot_attr+']').data(data_dot_attr)
+            var tgtSel = '#'+id+' td'
+            VizWorker.postMessage({tgt:tgtSel, dot:dot})
+        })
+    },
+    setup: function() {
+        if ($('.ucs-published').length != 0) {
+            setupViz()
+            publishedUcs.renderAll()
+        } else if ($('.preloadviz').length != 0)
+            setupViz();
+    }
+}
+
+function setupViz(callback) {
+    if (typeof(VizWorker) == 'undefined') {
+        VizWorker = new Worker('/assets/viz-worker.js')
+        VizWorker.onmessage = function(ev) {
+            var d = ev.data
+            $(d.tgt).html(d.svg)
+
+            if (callback !== undefined)
+                callback(d)
+        }
+    }
+}
+*/
+
+
+
+
+
 // =====================================================================================================================
 // Functional JS
 // http://dailyjs.com/2012/09/14/functional-programming/
@@ -129,21 +168,6 @@ function filterFocus(e) {
 
 // =====================================================================================================================
 
-function setupViz(callback) {
-    if (typeof(VizWorker) == 'undefined') {
-        VizWorker = new Worker('/assets/viz-worker.js')
-        VizWorker.onmessage = function(ev) {
-            var d = ev.data
-            $(d.tgt).html(d.svg)
-
-            if (callback !== undefined)
-                callback(d)
-        }
-    }
-}
-
-// =====================================================================================================================
-
 $(document).on('dynmodal', function (event, data) {
     var d = $(data)
         .appendTo("body")
@@ -270,49 +294,6 @@ function applyShowDateGen(name, e, showFn) {
     else console.warn(name + " failed on ", e)
 }
 
-/** @const */ var ucFilterForm = {
-    setup: function() {
-        // UC Filter form: Only show sub-content for selected option.
-        $('.ucfilter-group input.ucfilter').change(ucFilterForm.updateAll)
-    },
-    updateAll: function() {
-        $('.ucfilter-group div.ucfilter').eachE(ucFilterForm.update)
-    },
-    update: function(e) {
-        var sub = $(e).find('.sub')
-        if (sub) {
-            var open = sub.is(':visible')
-            var selected = $(e).find('input.ucfilter').is(':checked')
-            if (open != selected) {
-                sub.toggle("slide",{direction:'up'}, 200)
-            }
-        }
-    }
-}
-
-// =====================================================================================================================
-// Published UCs (share-view & read-own-ucs)
-
-/** @const */ var publishedUcs = {
-    renderAll: function() {
-        var data_dot_attr = 'dot'
-        $('tr.flowgraph').each(function(i,p){
-            var id = "fg-"+i
-            $(p).attrAdd('id', id)
-            var dot = $(p).find('[data-'+data_dot_attr+']').data(data_dot_attr)
-            var tgtSel = '#'+id+' td'
-            VizWorker.postMessage({tgt:tgtSel, dot:dot})
-        })
-    },
-    setup: function() {
-        if ($('.ucs-published').length != 0) {
-            setupViz()
-            publishedUcs.renderAll()
-        } else if ($('.preloadviz').length != 0)
-            setupViz();
-    }
-}
-
 // =====================================================================================================================
 
 $(document).ready(function(){
@@ -320,10 +301,6 @@ $(document).ready(function(){
     registerDomEnhancementsWithLiveQuery();
 
     GA.setupEventStats();
-    ucFilterForm.setup();
-    publishedUcs.setup();
-
-    $('#share-list .urltxt').click(function(){ $(this).select() });
 
     // When refs are hovered over, highlight the reference step.
     $('.ucs-published .steps tr')
