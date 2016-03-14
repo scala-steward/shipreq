@@ -14,7 +14,7 @@ import teststate.Exports._
 object ReqTableTestDsl {
   val * = Dsl.sync[CompState.AccessD[ReqTable.State], ReqTableObs, Project, String]
 
-  def apply(action: *.Action = Action.empty): *.TestContent =
+  def apply(action: *.Action = emptyAction): *.TestContent =
     Test(action, invariants)
 
 //  // TODO Move following into Nyaya

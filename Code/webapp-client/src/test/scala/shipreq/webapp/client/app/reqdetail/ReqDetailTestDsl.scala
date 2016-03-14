@@ -40,19 +40,19 @@ object ReqDetailTestDsl {
 
   val allSteps = *.focus("All steps").collection(_.obs.uc.stepTitles)
 
-  val invariantsWhenBad: *.Check =
+  val invariantsWhenBad: *.Invariant =
     *.emptyInvariant
 
-  val invariantsGR: *.Check =
+  val invariantsGR: *.Invariant =
     *.focus("Pubid").obsAndState(_.generic.pubid.some, _.pubidStr).assert.equal
 
-  val invariantsUC: *.Check = {
+  val invariantsUC: *.Invariant = {
     def stepsAreUnique = allSteps.assert.distinct
 
     invariantsGR & stepsAreUnique
   }
 
-  val invariants: *.Check =
+  val invariants: *.Invariant =
     *.focus("Mode").obsAndState(_.mode, _.mode).assert.equal &
     *.choose("Mode invariants", _.obs.mode match {
       case Mode.GR    => invariantsGR
@@ -60,21 +60,21 @@ object ReqDetailTestDsl {
       case Mode.Error => invariantsWhenBad
     })
 
-  def addTailStepAC: *.Action1 =
+  def addTailStepAC: *.Action =
     *.action("Add AC tail step").act(Simulate click _.obs.uc.tailStepRowAC.add)
 
-  def addTailStepEC: *.Action1 =
+  def addTailStepEC: *.Action =
     *.action("Add EC tail step").act(Simulate click _.obs.uc.tailStepRowEC.add)
 
-  def addStep(label: String): *.Action1 =
+  def addStep(label: String): *.Action =
     *.action("Add " + label).act(Simulate click _.obs.uc.row(label).add)
 
-  def delStep(label: String): *.Action1 =
+  def delStep(label: String): *.Action =
     *.action("Delete " + label).act(Simulate click _.obs.uc.row(label).del)
 
-  def shiftStepLeft(label: String): *.Action1 =
+  def shiftStepLeft(label: String): *.Action =
     *.action("ShiftLeft " + label).act(Simulate click _.obs.uc.row(label).left)
 
-  def shiftStepRight(label: String): *.Action1 =
+  def shiftStepRight(label: String): *.Action =
     *.action("ShiftRight " + label).act(Simulate click _.obs.uc.row(label).right)
 }

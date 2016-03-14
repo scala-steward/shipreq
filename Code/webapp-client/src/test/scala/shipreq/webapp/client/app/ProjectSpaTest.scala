@@ -8,6 +8,7 @@ import shipreq.webapp.client.app.reqtable.{ReqTableTestDsl => RT}
 import shipreq.webapp.client.test._
 import ProjectSpaMain.{Page, Props}
 import SampleProject.Values.priField
+import teststate.Exports._
 
 object ProjectSpaTest extends TestSuite {
   import ProjectSpaTestDsl._

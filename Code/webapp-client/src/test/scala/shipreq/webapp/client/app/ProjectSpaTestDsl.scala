@@ -44,26 +44,26 @@ object ProjectSpaTestDsl {
 
   val * = Dsl.sync[Ref, Obs, TestState, String]
 
-  val invariants: *.Check =
+  val invariants: *.Invariant =
     *.emptyInvariant
 
   def setPage(p: Page): *.Action =
     *.action(s"Set page to $p")
-      .updateState(_.copy(page = p))
       .act(_.ref.tester.modProps(_.copy(page = p)))
+      .updateState(_.copy(page = p))
 
   def setPageToReqDetail(ep: ExternalPubid, detailState: RD.State): *.Action =
-    setPage(Page.ReqDetail(ep)).modS(_.copy(detailState = detailState))
+    setPage(Page.ReqDetail(ep)).updateState(_.copy(detailState = detailState))
 
   def applyEvents(e: Event*): *.Action =
     applyEvents(e.mkString("Apply events: ", ", ", "."), e: _*)
 
   def applyEvents(name: => String, e: Event*): *.Action =
     *.action(name)
-      .updateStateO(s => o => s.copy(project = o.project))
       .act(_.ref.cd.applyTestEvents(e: _*))
+      .updateStateBy(i => i.state.copy(project = i.obs.project))
 
-  def testReqTable(action: RT.*.Action = Action.empty): *.Action =
+  def testReqTable(action: RT.*.Action = emptyAction): *.Action =
     liftReqTableTests(Test(action)).asAction("Test ReqTable")
 
   def liftReqTableTests(tc: RT.*.TestContent): *.TestContent =

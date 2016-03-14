@@ -94,7 +94,7 @@ object ReqTableTest extends TestSuite {
   }
 
   override def tests = TestSuite {
-    'initialState - runTest(Action.empty)
+    'initialState - runTest(emptyAction)
     'filter       - runTest(testFilter)
   }
 
