@@ -73,8 +73,6 @@ devProdJs 'ws:anon', 'anon.js', (f) ->
     cfg_bower + 'jquery-timeago/jquery.timeago.js'
     cfg_bower + 'jquery.livequery/dist/jquery.livequery.min.js'
     cfg_bower + 'jquery-rangyinputs/rangyinputs-jquery.js'
-    cfg_bower + 'mousetrap/mousetrap.min.js'
-    cfg_bower + 'mousetrap/plugins/global-bind/mousetrap-global-bind.min.js'
   ]
 
 devProdJs 'ws:project', 'project.js', (f) ->
