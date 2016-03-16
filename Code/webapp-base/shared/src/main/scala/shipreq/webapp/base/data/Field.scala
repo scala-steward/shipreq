@@ -433,9 +433,6 @@ case class FieldSet(customFields: FieldSet.CustomFields,
       case id: CustomFieldId => customFields need id
     }
 
-  def fieldsForReqType(reqTypeId: ReqTypeId): Vector[Field] =
-    fields.filter(_.applicable(reqTypeId) :: Applicable)
-
   def staticFieldIterator: Iterator[StaticField] =
     order.filterTI[StaticField]
 

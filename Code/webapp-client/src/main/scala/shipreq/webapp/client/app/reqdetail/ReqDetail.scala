@@ -56,8 +56,12 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       case Dead => ShowDead
     }
 
-    val fields = project.config.fields.fieldsForReqType(req.reqTypeId)
-    val rows = fields.foldLeft(Row head filterDead)(_ ++ Row.fromField(_))
+    val rows = {
+      val liveFilter = filterDead.filterFnA((_: Field) live project.config)
+      val fields = project.config.fields.fields.filter(f =>
+        f.applicable(req.reqTypeId) :: Applicable && liveFilter(f))
+      fields.foldLeft(Row head filterDead)(_ ++ Row.fromField(_))
+    }
 
     val pubidText = PlainText.pubid(project, req.pubid)
 

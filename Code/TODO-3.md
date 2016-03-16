@@ -4,8 +4,6 @@ Req Detail
 * Test:
   * dead not editable, live editable. (invariant)
   * del/restore.
-  * inapplicable fields hidden.
-  * dead fields hidden/shown.
 
 UC Step Deletion
 ================

@@ -3,16 +3,14 @@ package shipreq.webapp.client.app.reqdetail
 import japgolly.scalajs.react.test._
 import shipreq.base.util.univEqOps
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.SampleProject3._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.ProjectSpaMain.Page
 import shipreq.webapp.client.app.ProjectSpaTestDsl
+import shipreq.webapp.client.data.ShowDead
 import shipreq.webapp.client.test._
 import teststate.Exports._
 import utest._
-import DomZipper.Implicits._
-import ReactTestUtils.Simulate
 
 object ReqDetailTest extends TestSuite {
   import ReqDetailTestDsl._
@@ -20,8 +18,7 @@ object ReqDetailTest extends TestSuite {
   PrepareEnv()
 
   //action: *.Action = *.emptyAction
-  def runTest(ep: ExternalPubid, error: Boolean)(test: *.TestContent): Unit = {
-    val tc = test.addInvariants(invariants)
+  def runTest(ep: ExternalPubid, error: Boolean)(tc: *.TestContent): Unit = {
 
     import ProjectSpaTestDsl._
 
@@ -72,9 +69,31 @@ object ReqDetailTest extends TestSuite {
 
     'deadImplicitlyAndExplicitly - test("SI-2")(*.emptyTest addInvariants testLifeRowInnerText("Dead."))
 
-//    val u = ReqDetail.Props("EMMEFF", 5, project).component
-//    val m = ReactTestUtils.renderIntoDocument(u)
-//    ReqDetailObs(DomZipper(m))
+    'deadFields - test("UC-1")(Test(
+      filterDeadToggle
+        .addCheck(visibleFields.assert.existenceOf("Reporter")(_.obs.generic.filterDead :: ShowDead).beforeAndAfter)
+        .times(3)
+    ))
+
+    'inapplicableFields - {
+      def check(expectVisible: Boolean) =
+        visibleFields.assert(expectVisible).contains("Description")
+      def t(pubid: ExternalPubid, expectVisible: Boolean) =
+        test(pubid)(*.emptyTest addInvariants check(expectVisible))
+
+      'mf1 - t("MF-1", true)
+      'fr1 - t("FR-1", false)
+
+      /*
+      import ProjectSpaTestDsl._
+      ProjectSpaTestDsl.runTest(
+        setPageToReqDetail("FR-1", Some("FR-1"))
+          addCheck check(true).before.lift  // Applicable     to MF-1
+          addCheck check(false).after.lift, // Not-applicable to FR-1
+        page = Page.ReqDetail("MF-1"), rd = Some("MF-1"))
+      */
+    }
+
 
   }
 }

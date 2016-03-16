@@ -100,5 +100,8 @@ object ReqDetailTestDsl {
 
   val filterDeadToggle =
     *.action("Toggle FilterDead").act(Simulate change _.obs.generic.filterDeadInput)
-      .addCheck(filterDead.assert.changeOccurs)
+      .addCheck(filterDead.assert.changesTo(!_))
+
+  val visibleFields =
+    *.focus("Visible fields").collection(_.obs.generic.fields.keys)
 }
