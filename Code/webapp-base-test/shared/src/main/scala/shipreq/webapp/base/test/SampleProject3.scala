@@ -6,6 +6,14 @@ import shipreq.webapp.base.test.ProjectDsl._
 import shipreq.webapp.base.test.UnsafeTypes._
 import SampleProject.{project => project0, _}
 
+/**
+ * Builds on SampleProject #1 (not #2) to add:
+ *   - generic reqs (dead & live)
+ *   - req code groups
+ *   - dead req codes
+ *   - a bit of rich text.
+ *   - deletion reasons.
+ */
 object SampleProject3 {
 
   lazy val project = {
@@ -72,16 +80,16 @@ object SampleProject3 {
 
     + DeadReqCode("dead.ref", oldReqId = mfs(7))
     + DeadReqCode("dead.group")
-  )
+    )
 
-  val dr = DeletionReasons(
-    Vector("Who needs a use case edtior?!", "Bobsaidso.", "Bob said so."),
-    DeletionReasons.emptyReqApplication
-      .add(mfs(1), 0)
-      .add(cos(2), None)
-      .add(cos(2), 1)
-      .add(cos(2), 2)
-  )
+    val dr = DeletionReasons(
+      Vector("Who needs a use case edtior?!", "Bobsaidso.", "Bob said so."),
+      DeletionReasons.emptyReqApplication
+        .add(mfs(1), 0)
+        .add(cos(2), None)
+        .add(cos(2), 1)
+        .add(cos(2), 2)
+    )
 
     (contentByDsl ! project0).copy(deletionReasons = dr)
   }

@@ -5,15 +5,17 @@ import shipreq.base.util.VectorTree
 import shipreq.base.util.VectorTree.{Location => Loc}
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.text._
-import shipreq.webapp.base.test.ProjectDsl._
 import shipreq.webapp.base.test.UnsafeTypes._
 import SampleProject.Values._
 import UseCases.StepFlow
 
+/**
+ * Builds on SampleProject #3 to add:
+ *   - UC-1 with some steps.
+ */
 object SampleProject4 {
 
   lazy val project = {
-
     val p   = SampleProject3.project
     var pr  = p.reqs.pubids
     var ucs = emptyDataMap(UseCase)

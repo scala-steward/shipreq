@@ -6,6 +6,11 @@ import shipreq.webapp.base.test.ProjectDsl._
 import shipreq.webapp.base.test.UnsafeTypes._
 import SampleProject.{project => project0, _}
 
+/**
+ * Builds on SampleProject #1 to add some content with a tiny bit of rich text.
+ *
+ * Not extended by [[SampleProject3]].
+ */
 object SampleProject2 {
 
   lazy val project = {

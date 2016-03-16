@@ -5,6 +5,11 @@ import shipreq.base.util.{NonEmptyVector, ISubset}
 import shipreq.webapp.base.data._, DataImplicits._
 import UnsafeTypes._
 
+/**
+ * Sample project with:
+ *    - sample config
+ *    - no content
+ */
 object SampleProject {
 
   trait Values {
