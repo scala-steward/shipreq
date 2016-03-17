@@ -50,7 +50,7 @@ final class ReqDetailObs($: DomZipper) {
     val filterDeadLocked = filterDeadInput.disabled
 
     val fields: Map[String, DomZipper] =
-      table.down(">tbody").collect1(">tr")
+      table.down(">tbody").collect1n(">tr")
         .map(z => z.down(">th").innerText -> z.down(">td"))
         .toMap
 
@@ -73,7 +73,7 @@ final class ReqDetailObs($: DomZipper) {
     val treeCells = ReqDetailObs.TreeNames.map(fields)
 
     val stepRows: NAE[Vector[StepRow]] =
-      treeCells.map(_.collect1(">div").map(StepRow))
+      treeCells.map(_.collect1n(">div").map(StepRow))
 
     case class StepRow($: DomZipper) {
       private def ctrl(label: String, label2: String = null): html.Button = {
@@ -83,7 +83,7 @@ final class ReqDetailObs($: DomZipper) {
       }
 
       val title: Option[String] =
-        $.collect0(s"*[data-step-label]").asHtml.mapDom(_.title).headOption
+        $.collect01(s"*[data-step-label]").asHtml.mapDom(_.title)
 
       lazy val del   = ctrl("-")
       lazy val left  = ctrl("«", "↓")

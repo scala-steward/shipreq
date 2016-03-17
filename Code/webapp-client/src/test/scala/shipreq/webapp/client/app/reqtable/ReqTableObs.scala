@@ -49,7 +49,7 @@ final class ReqTableObs($ : DomZipper) {
       }
 
       val entirety: Vector[ColumnDom] =
-        vsCol(1).collect1("label").as[html.Label].map(ColumnDom)
+        vsCol(1).collect1n("label").as[html.Label].map(ColumnDom)
 
       def column(name: String): ColumnDom =
         findOne(name, entirety)(_.name)
@@ -93,7 +93,7 @@ final class ReqTableObs($ : DomZipper) {
       val name = nameDom.textContent
     }
 
-    val criteriaDom = $.collect1("tr").map(tr => CriteriaDom(
+    val criteriaDom = $.collect1n("tr").map(tr => CriteriaDom(
       tr.down("td", 2 of 2).asHtml.dom,
       tr.down("td", 1 of 2).down("*[title]").asHtml.dom))
 
@@ -126,7 +126,7 @@ final class ReqTableObs($ : DomZipper) {
     }
 
     val columnDoms: Vector[ColumnDom] =
-      $.down(">thead").collect1("th").as[html.TableCell].mapDom(ColumnDom)
+      $.down(">thead").collect1n("th").as[html.TableCell].mapDom(ColumnDom)
 
     val columns: Vector[String] =
       columnDoms map (_.name)
@@ -160,9 +160,9 @@ final class ReqTableObs($ : DomZipper) {
     private def byStatus(s: Status, wrap: String => String): String =
       wrap(cell(s))
 
-    val allRows  = tbody collect0 ">tr" get()
-    val deadRows = tbody collect0 byStatus(DeadRow, row) get()
-    val liveRows = tbody collect0 byStatus(Normal, row) get()
+    val allRows  = tbody collect0n ">tr" get()
+    val deadRows = tbody collect0n byStatus(DeadRow, row) get()
+    val liveRows = tbody collect0n byStatus(Normal, row) get()
 //    val focusRow = tbody downO byFocus(true, row)
 //    val focus    = tbody downO byFocus(true, identity)
 //
@@ -185,7 +185,7 @@ final class ReqTableObs($ : DomZipper) {
       columnIndex("ID")
 
     val rowPubids: Vector[String] =
-      tbody collect0 s">tr >td:nth-child(${pubidColumnIndex + 1})" innerText()
+      tbody collect0n s">tr >td:nth-child(${pubidColumnIndex + 1})" innerText()
 
     def rowIndexByPubid(pubid: String): Int =
       findIndex(pubid, rowPubids, s"Row with pubid [$pubid] not found.")

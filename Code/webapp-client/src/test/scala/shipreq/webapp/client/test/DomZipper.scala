@@ -9,7 +9,8 @@ import shipreq.webapp.client.test.Sizzle
 object DomZipper {
   type DOM = Node
 
-  type CssSelLookup = (String, Node) => js.Array[Element]
+  type CssSelLookupResult = js.Array[Element]
+  type CssSelLookup = (String, Node) => CssSelLookupResult
 
   trait DomLike[-A] {
     type D <: DOM
@@ -117,12 +118,78 @@ object DomZipper {
   }
 
   val Sole = MofN(1, 1)
+
+  // ===================================================================================================================
+
+  trait Container[C[_]] {
+    def apply(sel: String, es: CssSelLookupResult)(implicit h: HandleError): h.Result[C[Element]]
+    def map[A, B](c: C[A])(f: A => B): C[B]
+  }
+
+  object Container01 extends Container[Option] {
+    override def apply(sel: String, es: CssSelLookupResult)(implicit h: HandleError) =
+      es.length match {
+        case 0 => h pass None
+        case 1 => h pass Some(es.head)
+        case n => h fail s"$n matches found for: $sel"
+      }
+    override def map[A, B](c: Option[A])(f: A => B) =
+      c map f
+  }
+
+  object Container0N extends Container[Vector] {
+    override def apply(sel: String, es: CssSelLookupResult)(implicit h: HandleError) =
+      h pass es.toVector
+    override def map[A, B](c: Vector[A])(f: A => B) =
+      c map f
+  }
+
+  object Container1N extends Container[Vector] {
+    override def apply(sel: String, es: CssSelLookupResult)(implicit h: HandleError) =
+      if (es.isEmpty)
+        h fail s"No matches found for: $sel"
+      else
+        h pass es.toVector
+    override def map[A, B](c: Vector[A])(f: A => B) =
+      c map f
+  }
+
+  final class Collector[C[_], E <: Element](from: DomZipperAt[DOM], sel: String, cont: Container[C]) {
+    def as[EE <: E] =
+      this.asInstanceOf[Collector[C, EE]]
+
+    @inline def asHtml(implicit ev: html.Element <:< E) =
+      this.asInstanceOf[Collector[C, html.Element]]
+
+    def get()(implicit h: HandleError): h.Result[C[E]] = {
+      val e1: h.Result[C[Element]] = cont(sel, from.directSelect(sel))
+      val e2: h.Result[C[E]]       = e1.asInstanceOf[h.Result[C[E]]]
+      e2
+    }
+
+    def mapDom[A](f: E => A)(implicit h: HandleError): h.Result[C[A]] =
+      h.map(get())(cont.map(_)(f))
+
+    def map[A](f: DomZipperAt[E] => A)(implicit h: HandleError): h.Result[C[A]] =
+      mapDom(d => f(from.addLayer(Layer("collect", sel, d))))
+
+    def innerHTML[A]()(implicit h: HandleError): h.Result[C[String]] =
+      map(_.innerHTML)
+
+    def innerText[A]()(implicit h: HandleError): h.Result[C[String]] =
+      map(_.innerText)
+  }
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 import DomZipper._
 
-final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]], curLayer: Layer[D], $: CssSelLookup) {
+final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
+                                                 curLayer: Layer[D],
+                                                 $: CssSelLookup) {
+
+  def directSelect(sel: String): js.Array[Element] =
+    $(sel, dom)
 
   val dom: D =
     curLayer.dom
@@ -173,7 +240,7 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
     }
   }
 
-  private def addLayer[D2 <: DOM](nextLayer: Layer[D2]) =
+  private[test] def addLayer[D2 <: DOM](nextLayer: Layer[D2]) =
     new DomZipperAt(prevLayers :+ curLayer, nextLayer, $)
 
   def allLayers =
@@ -201,35 +268,9 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
   def selectedOptionText(implicit h: HandleError): h.Result[Option[String]] =
     h.map(selectedOption)(_.map(_.text))
 
-  def collect(sel: String, requireMatch: Boolean) = new Collector[Element](sel, requireMatch)
-  def collect0(sel: String) = collect(sel, false)
-  def collect1(sel: String) = collect(sel, true)
-
-  final class Collector[E <: Element](sel: String, requireMatch: Boolean) {
-    def as[EE <: E] = this.asInstanceOf[Collector[EE]]
-
-    @inline def asHtml(implicit ev: html.Element <:< E) = this.asInstanceOf[Collector[html.Element]]
-
-    def get()(implicit h: HandleError): h.Result[Vector[E]] = {
-      val v = $(sel, dom).toVector.asInstanceOf[Vector[E]] // Should be better
-      if (requireMatch && v.isEmpty)
-        h.fail(s"No matches found for: $sel")
-      else
-        h.pass(v)
-    }
-
-    def mapDom[A](f: E => A)(implicit h: HandleError): h.Result[Vector[A]] =
-      h.map(get())(_ map f)
-
-    def map[A](f: DomZipperAt[E] => A)(implicit h: HandleError): h.Result[Vector[A]] =
-      mapDom(d => f(addLayer(Layer("collect", sel, d))))
-
-    def innerHTML[A]()(implicit h: HandleError): h.Result[Vector[String]] =
-      map(_.innerHTML)
-
-    def innerText[A]()(implicit h: HandleError): h.Result[Vector[String]] =
-      map(_.innerText)
-  }
+  def collect01(sel: String) = new Collector[Option, Element](this, sel, Container01)
+  def collect0n(sel: String) = new Collector[Vector, Element](this, sel, Container0N)
+  def collect1n(sel: String) = new Collector[Vector, Element](this, sel, Container1N)
 }
 
 //  def assertCount(desc: String, expectedCount: Int, dom: Result, root: UndefOr[DOM]): Unit = {
