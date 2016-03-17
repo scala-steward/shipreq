@@ -107,10 +107,8 @@ final class ReqDetailObs($: DomZipper) {
   val mode: Mode =
     if (errorRoot.isDefined)
       Mode.Error
-    else if (generic.pubid.startsWith("UC-"))
-      Mode.UC
     else
-      Mode.GR
+      Mode.Details
 
 //    (Try(ok), Try(error)) match {
 //      case (Success(_), Failure(_)) => true

@@ -1,36 +1,35 @@
 package shipreq.webapp.client.app.reqdetail
 
 import japgolly.scalajs.react.test.ReactTestUtils.Simulate
-import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{UnivEq, univEqOps}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.data.{ShowDead, FilterDead}
+import shipreq.webapp.client.data.ShowDead
 import shipreq.webapp.client.test.TestState._
 
 object ReqDetailTestDsl {
 
   sealed abstract class Mode
   object Mode {
-    case object Error extends Mode
-    case object GR    extends Mode
-    case object UC    extends Mode
+    case object Error   extends Mode
+    case object Details extends Mode
+
     implicit def univEq: UnivEq[Mode] = UnivEq.derive
     implicit def equal : Equal [Mode] = Equal.by_==
     implicit def show  : Show  [Mode] = Show.byToString
   }
 
-  type State = Option[ExternalPubid]
-  case class TestState(project: Project, ep: State) {
+  def unspecifiedState: State =
+    State(ExternalPubid(ReqType.Mnemonic("UNSPECIFIED TEST STATE"), ReqTypePos(1)), Mode.Error)
 
-    val mode: Mode = ep match {
-      case None                                 => Mode.Error
-      case Some(p) if p.mnemonic.value ==* "UC" => Mode.UC
-      case Some(_)                              => Mode.GR
-    }
+  case class State(ep: ExternalPubid, mode: Mode)
 
-    val pubidStr = ep.map(PlainText.pubid)
+  case class TestState(project: Project, state: State) {
+    def ep = state.ep
+    def mode = state.mode
+
+    val pubidStr = PlainText pubid ep
 
     //lazy val req = ep.map(project.findReq(_).toOption.get)
   }
@@ -46,7 +45,7 @@ object ReqDetailTestDsl {
     *.emptyInvariant
 
   val invariantsGR: *.Invariant = {
-    val pubid = *.focus("Pubid").obsAndState(_.generic.pubid.some, _.pubidStr).assert.equal
+    val pubid = *.focus("Pubid").obsAndState(_.generic.pubid, _.pubidStr).assert.equal
 
     val delReasonField = *.focus("DeletedReasons visible")
       .value(_.obs.generic.fields contains UiText.FieldNames.deletionReason)
@@ -69,10 +68,13 @@ object ReqDetailTestDsl {
 
   val invariants: *.Invariant =
     *.focus("Mode").obsAndState(_.mode, _.mode).assert.equal &
-    *.chooseInvariant("Mode invariants", _.obs.mode match {
-      case Mode.GR    => invariantsGR
-      case Mode.UC    => invariantsUC
-      case Mode.Error => invariantsWhenBad
+    *.chooseInvariant("Mode invariants", i => i.state.mode match {
+      case Mode.Error   => invariantsWhenBad
+      case Mode.Details =>
+        if (i.state.pubidStr startsWith "UC-")
+          invariantsUC
+        else
+          invariantsGR
     })
 
   def addTailStepAC: *.Action =

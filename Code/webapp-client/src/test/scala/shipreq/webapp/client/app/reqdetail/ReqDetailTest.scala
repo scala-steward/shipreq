@@ -1,7 +1,5 @@
 package shipreq.webapp.client.app.reqdetail
 
-import japgolly.scalajs.react.test._
-import shipreq.base.util.univEqOps
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.PlainText
@@ -25,7 +23,7 @@ object ReqDetailTest extends TestSuite {
     ProjectSpaTestDsl.runTest(
       liftReqDetailTests(tc).asAction(s"Req Detail (${PlainText.pubid(ep)})"),
       page = Page.ReqDetail(ep),
-      rd = if (error) None else Some(ep))
+      rd = State(ep, if (error) Mode.Error else Mode.Details))
   }
 
   def testError(ep: ExternalPubid, error: String): Unit =

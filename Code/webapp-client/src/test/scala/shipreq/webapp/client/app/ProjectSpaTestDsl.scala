@@ -55,7 +55,7 @@ object ProjectSpaTestDsl {
     RD.*.transformer
       .mapR[Ref](_ => ())
       .pmapO[Obs](_.reqDetail)
-      .mapS[TestState](s => RD.TestState(s.project, s.detailState))((s, d) => s.copy(s.page, d.project, d.ep))
+      .mapS[TestState](s => RD.TestState(s.project, s.detailState))((s, d) => TestState(s.page, d.project, d.state))
 
   val invariantsRT = RT.invariants.lift
   val invariantsRD = RD.invariants.lift
@@ -77,8 +77,8 @@ object ProjectSpaTestDsl {
       .act(_.ref.tester.modProps(_.copy(page = p)))
       .updateState(_.copy(page = p))
 
-  def setPageToReqDetail(ep: ExternalPubid, detailState: RD.State): *.Action =
-    _setPage(Page.ReqDetail(ep)).updateState(_.copy(detailState = detailState))
+  def setPageToReqDetail(ep: ExternalPubid, mode: RD.Mode): *.Action =
+    _setPage(Page.ReqDetail(ep)).updateState(_.copy(detailState = RD.State(ep, mode)))
 
   def applyEvents(e: Event*): *.Action =
     applyEvents(e.mkString("Apply events: ", ", ", "."), e: _*)
@@ -97,7 +97,7 @@ object ProjectSpaTestDsl {
   def runTest(action: *.Action,
               project: Project  = SampleProject5.project,
               page   : Page     = Page.ReqTable,
-              rd     : RD.State = None)
+              rd     : RD.State = RD.unspecifiedState)
             : Unit = {
     val cd   = TestClientData(project)
     val cp   = MockServer(cd)

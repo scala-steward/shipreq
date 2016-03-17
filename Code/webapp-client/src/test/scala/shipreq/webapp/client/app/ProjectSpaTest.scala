@@ -26,7 +26,7 @@ object ProjectSpaTest extends TestSuite {
   )
 
   def `ReqTable filterDead after change on detail page`: *.Action =
-    ( setPageToReqDetail("FR-1", Some("FR-1"))
+    ( setPageToReqDetail("FR-1", RD.Mode.Details)
       >> testReqDetail(RD.filterDeadToggle)
       >> setPage(Page.ReqTable)
     )
