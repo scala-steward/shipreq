@@ -7,11 +7,9 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.data.{ShowDead, FilterDead}
-import teststate.Exports._
+import shipreq.webapp.client.test.TestState._
 
 object ReqDetailTestDsl {
-  implicit val showFilterDead = Show.byToString[FilterDead]
-  implicit val equalFilterDead = Equal.by_==[FilterDead]
 
   sealed abstract class Mode
   object Mode {

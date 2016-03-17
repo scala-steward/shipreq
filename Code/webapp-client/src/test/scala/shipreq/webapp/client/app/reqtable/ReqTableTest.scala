@@ -15,7 +15,7 @@ import shipreq.webapp.client.feature._
 import shipreq.webapp.client.test.DomZipper.Implicits._
 import shipreq.webapp.client.test._
 import shipreq.webapp.client.widgets.high.ProjectWidgets
-import teststate.Exports._
+import TestState._
 import utest._
 
 object ReqTableTest extends TestSuite {

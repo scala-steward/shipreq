@@ -9,7 +9,7 @@ import shipreq.webapp.client.app.ProjectSpaMain.Page
 import shipreq.webapp.client.app.ProjectSpaTestDsl
 import shipreq.webapp.client.data.ShowDead
 import shipreq.webapp.client.test._
-import teststate.Exports._
+import TestState._
 import utest._
 
 object ReqDetailTest extends TestSuite {

@@ -5,7 +5,6 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import scala.util.{Failure, Success, Try}
-import teststate.Exports._
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data.{ExternalPubid, Project}
 import shipreq.webapp.base.event.Event
@@ -15,6 +14,7 @@ import shipreq.webapp.client.app.reqtable.{ReqTableObs, ReqTableTestDsl => RT}
 import shipreq.webapp.client.test._
 import DomZipper.Implicits._
 import ProjectSpaMain.{Page, Props, State}
+import TestState._
 
 object ProjectSpaTestDsl {
 
