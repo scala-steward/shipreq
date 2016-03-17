@@ -101,11 +101,12 @@ object ReqTableTest extends TestSuite {
   def testFilter = (
     sortByPubid
       >> enterFilter("-MF")
+      +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
       >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2").before)
-        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "CO-1", "CO-2").after)
+      +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "CO-1", "CO-2")
       >> enterFilter("FR")
+      +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
       >> filterDeadToggle
-        .addCheck(tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2").beforeAndAfter)
+      +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
   )
 }

@@ -45,19 +45,18 @@ object ReqDetailTest extends TestSuite {
     'gr - test("FR-1")(*.emptyTest addInvariants testLifeRowInnerText("Alive.Kill"))
 
     'uc - test("UC-1")(Test(
-      addTailStepEC
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1").before)
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1").after)
-      >> delStep("1.1")
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1").after)
-      >> shiftStepLeft("1.0.3")
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.1", "1.E.1").after)
-      >> shiftStepRight("1.1")
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1").after)
-      >> addStep("1.E.1")
-        .addCheck(allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1", "1.E.1.a").after)
-      ))
-
+      allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
+        +> addTailStepEC
+        +> allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1")
+        >> delStep("1.1")
+        +> allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
+        >> shiftStepLeft("1.0.3")
+        +> allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.1", "1.E.1")
+        >> shiftStepRight("1.1")
+        +> allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
+        >> addStep("1.E.1")
+        +> allSteps.assert.equal("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1", "1.E.1.a")
+    ))
 
     // TODO emptyTest addInvariants = abuse
 
@@ -83,9 +82,9 @@ object ReqDetailTest extends TestSuite {
     }
 
     'deleteRestore - test("UC-1")(Test(
-      changeLife.updateState(stateMode set Mode.Delete).addCheck(life.assert.equal(Live).before)
-      >> deleteDelete                                  .addCheck(life.assert.equal(Dead).after)
-      >> changeLife                                    .addCheck(life.assert.equal(Live).after)
+      changeLife.updateState(stateMode set Mode.Delete) <+ life.assert.equal(Live)
+      >> deleteDelete                                   +> life.assert.equal(Dead)
+      >> changeLife                                     +> life.assert.equal(Live)
     ))
 
 
