@@ -1,6 +1,4 @@
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.7")
-
-resolvers += "Scala.js for 2.11.8" at "https://oss.sonatype.org/content/repositories/orgscala-js-1032/"
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.8")
 
 libraryDependencies += "org.scala-js" %% "scalajs-env-selenium" % "0.1.1"
 
