@@ -169,24 +169,27 @@ object Common {
       libraryDependencies ++= Dependencies.Scala.macroDef(JVM))
 
   def jvmSettings: Project => Project =
-    identity
+    _.configure(
+      InBrowserTesting.jvm)
 //    _.settings(
 //      scalacOptions       ++= Seq("-Ybackend:GenBCode", "-Ydelambdafy:method"),
 //      libraryDependencies  += Dependencies.Scala.java8compat)
 
-  def jsSettings(t: JsTestType) = (p: Project) =>
-    p.settings(
+  def jsSettings(t: JsTestType): Project => Project =
+    _.settings(
       scalaJSUseRhino   in Global   := false,
       scalaJSStage      in Global   := jsStage,
-      parallelExecution in testOnly := false
-    ).configure(jsTests(t))
+      parallelExecution in testOnly := false)
+    .configure(
+      jsTests(t),
+      InBrowserTesting.js)
 
   def jsStage = if (releaseMode) FullOptStage else FastOptStage
 
   private def jsTests(t: JsTestType): Project => Project =
     t match {
       case NoTests =>
-        _.settings(test :=())
+        _.settings(test := ())
       case NoDom =>
         _.settings(
           requiresDOM := false)

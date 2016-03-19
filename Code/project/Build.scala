@@ -68,6 +68,7 @@ object ShipReq extends Build {
     crossProject("base-test")
       .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
+      .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseUtil)
       .depsForBoth(
         providedScope(Nyaya.gen) ++
