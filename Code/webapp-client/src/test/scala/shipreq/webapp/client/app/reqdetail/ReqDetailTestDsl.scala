@@ -119,7 +119,7 @@ object ReqDetailTestDsl {
 
   val filterDeadToggle =
     *.action("Toggle FilterDead").act(Simulate change _.obs.generic.filterDeadInput)
-      .addCheck(filterDead.assert.changesTo(!_))
+      .addCheck(filterDead.assert.changeTo(!_))
 
   def setFilterDead(fd: FilterDead) =
     filterDeadToggle

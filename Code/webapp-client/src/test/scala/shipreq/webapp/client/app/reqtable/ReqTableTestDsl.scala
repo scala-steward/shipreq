@@ -137,7 +137,7 @@ object ReqTableTestDsl {
 
   val filterDeadToggle =
     *.action("filterDeadToggle").act(Simulate change _.obs.viewSettings.filterDead.checkbox)
-      .addCheck(filterDead.assert.changeOccurs)
+      .addCheck(filterDead.assert.change)
 
   def setFilterDead(fd: FilterDead) =
     filterDeadToggle.unless(_.obs.filterDead == fd).rename(s"setFilterDead($fd)")
@@ -145,7 +145,7 @@ object ReqTableTestDsl {
   val filterDeadShowHide =
     setFilterDead(HideDead) >>
     filterDeadToggle.times(2).addCheck(
-      *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assert.not.changeOccurs)
+      *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assert.noChange)
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 }

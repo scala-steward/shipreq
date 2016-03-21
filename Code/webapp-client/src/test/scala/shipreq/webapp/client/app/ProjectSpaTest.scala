@@ -30,7 +30,7 @@ object ProjectSpaTest extends TestSuite {
       >> testReqDetail(RD.filterDeadToggle)
       >> setPage(Page.ReqTable)
     )
-    .addCheck(RT.filterDead.assert.changeOccurs.lift)
+    .addCheck(RT.filterDead.assert.change.lift)
     .times(3)
 
   override def tests = TestSuite {
