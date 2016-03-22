@@ -9,8 +9,9 @@ import shipreq.webapp.base.server._
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.TCB
 import shipreq.webapp.client.protocol.ClientProtocol
+import TestClientProtocol.Req
 
-class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callback) extends ClientProtocol {
+class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callback) extends TestClientProtocol {
 
   type Attempt = PartialFunction[(RemoteFn, Any, Project), MakeEvent.Result]
 
@@ -33,15 +34,13 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
     attemptI(FieldMandatorinessMod)(MakeEvent.fieldMandatorinessMod)
 
 
-  override def call(i: RemoteFn.Instance)(input  : i.fn.Input,
-                                          success: i.fn.Output => TCB.Success,
-                                          failure: ClientProtocol.Failed[i.fn.Failure] => TCB.Failure): Callback =
+  override def autoResponse(r: Req): Callback =
     project >>= { p1 =>
       // ah the hacks
-      def successVE = success.asInstanceOf[VerifiedEvents => TCB.Success]
+      def successVE = r.success.asInstanceOf[VerifiedEvents => TCB.Success]
 
-      val r = handler((i.fn, input, p1))
-      ApplyNewEvent(r, p1) match {
+      val h = handler((r.r.fn, r.input, p1))
+      ApplyNewEvent(h, p1) match {
 
         case ApplyNewEvent.Updated(p2, ae, ve) =>
           update(Vector.empty :+ ve) >> successVE(Vector.empty :+ ve).cb
@@ -50,7 +49,7 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
           Callback.empty >> successVE(Vector.empty).cb
 
         case ApplyNewEvent.Failed(e) =>
-          failure(\/-(e.asInstanceOf[i.fn.Failure])).cb
+          r.failure(\/-(e.asInstanceOf[r.r.fn.Failure])).cb
       }
     }
 }

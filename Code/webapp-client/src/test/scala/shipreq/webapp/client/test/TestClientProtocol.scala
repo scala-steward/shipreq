@@ -24,22 +24,31 @@ object TestClientProtocol {
 import TestClientProtocol.Req
 
 class TestClientProtocol extends ClientProtocol {
+
   var reqs = Vector.empty[Req]
 
   def reset(): Unit =
     reqs = Vector.empty
+
+  var autoRespond = true
+
+  def autoResponse(r: Req): Callback =
+    Callback.empty
 
   def call(i: RemoteFn.Instance)(_input  : i.fn.Input,
                                  _success: i.fn.Output => TCB.Success,
                                  _failure: Failed[i.fn.Failure] => TCB.Failure): Callback = {
     //println(s"RPC: ${_r.d}(${_r.n}) ← ${_i}")
     Callback {
-      reqs :+= new Req {
+      val r = new Req {
         override val r: i.type = i
         override val input   = _input
         override val success = _success
         override val failure = _failure
       }
+      reqs :+= r
+      if (autoRespond)
+        autoResponse(r).runNow()
     }
   }
 
