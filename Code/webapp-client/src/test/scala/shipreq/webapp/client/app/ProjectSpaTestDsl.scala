@@ -94,7 +94,7 @@ object ProjectSpaTestDsl {
   def testReqTable(action: RT.*.Action): *.Action = liftReqTableTests(Test(action)).asAction("Test ReqTable")
   def testReqDetail(action: RD.*.Action): *.Action = liftReqDetailTests(Test(action)).asAction("Test ReqDetail")
 
-  def runTest(action: *.Action,
+  def runTest(action : *.Action,
               project: Project  = SampleProject5.project,
               page   : Page     = Page.ReqTable,
               rd     : RD.State = RD.unspecifiedState)
@@ -107,11 +107,10 @@ object ProjectSpaTestDsl {
 
     ComponentTester(spa.Component)(Props(init.page, rc)) { tester =>
       val tt  = Test(action, invariants).observe(_.observe())
-      val h   = tt.run(init, Ref(cd, tester))
-      if (h.failed)
+      val r   = tt.run(init, Ref(cd, tester))
+      if (r.failed)
         println(s"${"="*120}\n${removeReactIds(tester.component.getDOMNode().outerHTML)}\n")
-      h.assert(History.Options.colored.alwaysShowChildren)
-      // println(h.format(History.Options.colored.alwaysShowChildren))
+      r.assert()
     }
   }
 

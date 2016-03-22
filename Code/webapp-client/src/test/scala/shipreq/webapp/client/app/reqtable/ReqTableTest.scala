@@ -90,11 +90,9 @@ object ReqTableTest extends TestSuite {
 
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       def newObs = new ReqTableObs(DomZipper(c))
-      val tt = Test(action, invariants).observe(_ => newObs)
-      val h =  tt.run(initialState.reqTable.project, c.zoomL(State.reqTable))
-//      println(h.format(History.Options.colored.alwaysShowChildren))
-//      println(h.format(History.Options.colored))
-      h.assert(History.Options.colored)
+      val t = Test(action, invariants).observe(_ => newObs)
+      val r = t.run(initialState.reqTable.project, c.zoomL(State.reqTable))
+      r.assert()
     }
   }
 
