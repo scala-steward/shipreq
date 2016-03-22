@@ -18,6 +18,16 @@ object TestClientProtocol {
 
     def force(r2: RemoteFn.Instance) =
       this.asInstanceOf[Req {val r: r2.type}]
+
+    var _pendingResponse = true
+    def responsePending = _pendingResponse
+    def responded = !responsePending
+
+    def markResponded(): Unit =
+      if (responsePending)
+        _pendingResponse = false
+      else
+        sys error "Request has already been responded to."
   }
 }
 
@@ -48,7 +58,7 @@ class TestClientProtocol extends ClientProtocol {
       }
       reqs :+= r
       if (autoRespond)
-        autoResponse(r).runNow()
+        autoRespondToLast()
     }
   }
 
@@ -60,8 +70,17 @@ class TestClientProtocol extends ClientProtocol {
   def respondToLast(r: RemoteFn.Instance)(o: r.fn.Output): Unit =
     last.force(r).success(o).runNow()
 
-  def failLast(): Unit =
-    last.failure(-\/(new Throwable("dummy error"))).runNow()
+  def autoRespondToLast(): Unit = {
+    val r = last
+    r.markResponded()
+    autoResponse(r).runNow()
+  }
+
+  def failLast(): Unit = {
+    val r = last
+    r.markResponded()
+    r.failure(-\/(new Throwable("Dummy error from TestClientProtocol.failLast()"))).runNow()
+  }
 
   def lastTwo(r: RemoteFn.Instance) = {
     val Vector(a, b) = reqs.takeRight(2).map(_.force(r))

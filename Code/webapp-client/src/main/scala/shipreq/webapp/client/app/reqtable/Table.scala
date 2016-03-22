@@ -252,7 +252,8 @@ object Table {
      * which we react.
      */
     def doesEventTargetCell(e: ReactEventH): Boolean =
-      e.target == e.currentTarget || e.target.tabIndex < 0
+      e.target == e.currentTarget ||
+        (try e.target.tabIndex < 0 catch { case _: Throwable => false }) // .tabIndex is undefined from tests
 
     def onKeyDown(e: ReactKeyboardEventH): Callback =
       CallbackOption.require(doesEventTargetCell(e)) >> (

@@ -27,8 +27,10 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs($ : DomZipper) {
+final class ReqTableObs(cp: TestClientProtocol, $ : DomZipper) {
   import ReqTableObs._
+
+  val svrReqs = cp.reqs
 
   def findOne[A: UnivEq, B](a: A, bs: Iterable[B])(f: B => A): B =
     bs.iterator.filter(f(_) ==* a).toList match {

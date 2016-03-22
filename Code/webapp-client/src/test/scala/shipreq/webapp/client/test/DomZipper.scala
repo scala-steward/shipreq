@@ -221,6 +221,9 @@ final class DomZipperAt[+D <: DOM] private[test](prevLayers: Vector[Layer[DOM]],
     h.map(domAs[D2])(d =>
       new DomZipperAt(prevLayers, curLayer.copy(dom = d), $))
 
+  def forceDomAs[D2 <: DOM] =
+    dom.asInstanceOf[D2]
+
   def domAs[D2 <: DOM](implicit h: HandleError, ct: ClassTag[D2]): h.Result[D2] =
     ct.unapply(dom) match {
       case Some(d) => h pass d

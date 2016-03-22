@@ -231,8 +231,8 @@ object ContentEditorFeature {
           case Editor.ImplicationsCustomField(req, fid)          => EditImplications.customField(req, fid)
         }
 
-      def startEditFn(instance: EditorInstance): StartEditFn =
-        lens set instance.some
+      def startEditFn(instance: => EditorInstance): StartEditFn =
+        lens modify (_ orElse instance.some)
 
       private def rvarToCellEditor[A: Reusability, B <: EditorInstance](f: ReusableVar[A] => B): A => B = {
         lazy val update: A ~=> Callback =

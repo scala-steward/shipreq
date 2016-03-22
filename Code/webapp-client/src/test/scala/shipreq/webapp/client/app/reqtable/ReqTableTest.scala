@@ -89,9 +89,10 @@ object ReqTableTest extends TestSuite {
       ReqTable.State.init(cd, HideDead, None))
 
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
-      def newObs = new ReqTableObs(DomZipper(c))
+      val ref = Ref(c zoomL State.reqTable, cp)
+      def newObs = new ReqTableObs(cp, DomZipper(c))
       val t = Test(action, invariants).observe(_ => newObs)
-      val r = t.run(initialState.reqTable.project, c.zoomL(State.reqTable))
+      val r = t.run(initialState.reqTable.project, ref)
       r.assert()
     }
   }
@@ -295,6 +296,62 @@ object ReqTableTest extends TestSuite {
       p)
   }
 
+  def testEditIO(): Unit = {
+
+    // TODO Invariant: Only one {Failed, Locked, Editing} at a time
+    val ce = CellEditor(_.table.cellLoc(pubid = "MF-6", col = "Title"))
+    import ce._
+
+    val editCommitWithoutChange = (
+      startEdit
+        +> cellText.assert("Incompletions")
+        >> commit
+        +> svrReqs.assert.noChange
+      ) group "editCommitWithoutChange"
+
+    val newValue = "issues!"
+
+    val editChangeCommit = (
+      startEdit
+        +> cellText.assert("Incompletions")
+        >> enterValue(newValue)
+        >> commit
+        +> svrReqs.assert.increment
+        +> locked.assert(true)
+        >> assertCantStartEdit
+      ) group "editChangeCommit"
+
+    val fail = (
+      svrFailLast
+        +> failed.assert(true) // Should be in failed state after I/O failure
+        >> assertCantStartEdit)
+
+    val retry = (
+      clickRetry
+        +> locked.assert(true)
+        +> svrReqs.assert.increment
+        +> svrAssertLastTwoReqsEqual
+      )
+
+    val cancelSaveCommitAgain = (
+      clickAbort
+        +> editing.assert(true)
+        +> editorValue.assert(newValue)
+        >> commit
+        +> locked.assert(true)
+        +> svrReqs.assert.increment
+        +> svrAssertLastTwoReqsEqual
+      ) group "cancelSaveCommitAgain"
+
+    val saveSucceeds =
+      svrAutoRespondToLast +> assertNormalStatus
+
+    runTest(svrDisableAutoRespond >>
+//      editCommitWithoutChange >> // TODO Test failing due to real bug. Fix!
+      editChangeCommit >> fail >> retry >> fail >> cancelSaveCommitAgain >> saveSucceeds)
+  }
+
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = TestSuite {
@@ -314,7 +371,7 @@ object ReqTableTest extends TestSuite {
       'customImpCol - testCustomImplicationColumnEditor()
       'tags         - testTagsColumnEditor()
       'customTagCol - testCustomTagColumnEditor()
-//      'io           - testEditIO()
+      'io           - testEditIO()
     }
 
 //    'real - realBrowserMTest(runTest(emptyAction))

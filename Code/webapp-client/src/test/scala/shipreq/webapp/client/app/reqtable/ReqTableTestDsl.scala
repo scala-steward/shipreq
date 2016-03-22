@@ -3,11 +3,13 @@ package shipreq.webapp.client.app.reqtable
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.test.ReactTestUtils.Simulate
 import japgolly.scalajs.react.test._
+import org.scalajs.dom.ext.{KeyCode, KeyValue}
 import org.scalajs.dom.html
 import shipreq.base.util.UnivEq.{apply => _, force => _}
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.test._
@@ -15,7 +17,10 @@ import DomZipper.Implicits._
 import TestState._
 
 object ReqTableTestDsl {
-  val * = Dsl.sync[CompState.AccessD[ReqTable.State], ReqTableObs, Project, String]
+
+  case class Ref($: CompState.AccessD[ReqTable.State], svr: MockServer)
+
+  val * = Dsl.sync[Ref, ReqTableObs, Project, String]
 
   def apply(action: *.Action = emptyAction): *.TestContent =
     Test(action, invariants)
@@ -53,62 +58,57 @@ object ReqTableTestDsl {
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 
+  val svrReqs = *.focus("Server requests").value(_.obs.svrReqs.length)
+
+  val svrLastTwoReqs =
+    *.focus("Retry requests").compare(_.obs.svrReqs.last, _.obs.svrReqs.init.last)
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   val editorInvalidSel: String =
     "." + Style.reqtable.cellEditor(Invalid).className.value +
     ",." + Style.reqtable.cellEditorErrMsg.className.value
 
+  val ctrlEnter = KeyboardEventData(key = KeyValue.Enter, keyCode = KeyCode.Enter, ctrlKey = true)
+
+  val escape = KeyboardEventData(key = KeyValue.Escape, keyCode = KeyCode.Escape)
+
   final case class CellEditor(loc: ReqTableObs => ReqTableObs.CellLoc) {
 
     private implicit def ROStoOS(r: *.ROS) = r.os
 
-//    def cellText = *.focus("Cell innerText").value(cell(_).innerText)
-
-    private def editorCss       = DomZipper.EditableSel
-    private def retryButtonCss  = "button:contains(Retry)"
-    private def failOkButtonCss = "button:contains(OK)"
+    private def editorCss      = DomZipper.EditableSel
+    private def retryButtonCss = "button:contains(Retry)"
+    private def abortButtonCss = "button:contains(Abort)"
 
     val cell        = *.focus("Subject cell").value(s => s.obs.table.cell(loc(s.obs)))
-    val cellText    = cell.map(_.innerText) rename "Cell innerText"
-    val editing     = cell.map(_ exists editorCss) rename "Editing"
-//    val locked       = cell(s).collectInnerHTML("img").nonEmpty
-//    val failed       = cell(s).collectInnerHTML(retryButtonCss).nonEmpty
-    val editor      = cell.map(_.down(editorCss).domAs[html.Input])
-//    val editorClass = editor.map(_.className) rename "Editor class"
-    val editorValue = editor.map(_.value) rename "Editor value"
-//    val retryButton  = cell(s)(retryButtonCss).as[html.Button]
-//    val failOkButton = cell(s)(failOkButtonCss).as[html.Button]
+    val cellText    = cell.map(_.innerText)                               rename "Cell innerText"
+    val editing     = cell.map(_ exists editorCss)                        rename "Editing"
+    val locked      = cell.map(_ exists "img")                            rename "Locked"
+    val failed      = cell.map(_ exists retryButtonCss)                   rename "Async failure"
+    val retryButton = cell.map(_.down(retryButtonCss).domAs[html.Button]) rename "Retry button"
+    val abortButton = cell.map(_.down(abortButtonCss).domAs[html.Button]) rename "Abort button"
+    val editor      = cell.map(_.down(editorCss).forceDomAs[html.Input])  rename "Editor"
+    val editorValue = editor.map(_.value)                                 rename "Editor value"
 
     val editorValidity = *.focus("Editor validity").value(Invalid <~ cell.run(_).exists(editorInvalidSel))
-//
-//    implicit class CEActionExt[A](a: Action[A]) {
-//      def assertNowEditing      = a.focus(editing_?).assertBefore(false).assertAfter(true)
-//      def assertNowLocked       = a.focus(locked_?) .assertBefore(false).assertAfter(true)
-//      def assertNoLongerEditing = a.focus(editing_?).assertBefore(true).assertAfter(false)
-//      def assertNoLongerLocked  = a.focus(locked_?) .assertBefore(true).assertAfter(false)
-//
-//      def assertNoCellState = a
-//        .focus(editing_?).assertAfter(false)
-//        .focus(locked_?).assertAfter(false)
-//        .focus(failed_?).assertAfter(false)
-//    }
-//
-//    def printCell(): Unit =
-//      println(cell(*).outerHTML)
 
-//    def setup(p: Project) =
-//      (setProject(p) >> showAllColumns).group("Setup")
+    val assertNormalStatus =
+      editing.assert(false) & locked.assert(false) & failed.assert(false)
 
     val tryStartEdit =
-      *.action("Start editor").act(Simulate doubleClick cell.run(_).dom)
+      *.action("Start editor.").act(Simulate doubleClick cell.run(_).dom)
 
-    val startEdit =
-      tryStartEdit +> editing.assert(true)
+    val startEdit = (
+      tryStartEdit
+        +> svrReqs.assert.noChange
+        +> editing.assert(true))
 
-//    val assertEditDoesNothing =
-//      tryStartEdit.focus(editing_?).assertAfter (false)
-//
+    val assertCantStartEdit = (
+      tryStartEdit.rename("Attempt to start editor.")
+        +> svrReqs.assert.noChange
+        +> editing.assert(false))
+
   def enterValue(text: String, desc: String = "Enter value") =
     *.action(s"$desc: ${text.show}").act(ChangeEventData(text) simulate editor.run(_)) +>
       editorValue.assert(text)
@@ -116,14 +116,14 @@ object ReqTableTestDsl {
     def testValid  (text: String) = enterValue(text, "Enter valid value")   +> editorValidity.assert(Valid)
     def testInvalid(text: String) = enterValue(text, "Enter invalid value") +> editorValidity.assert(Invalid)
 
-//    val commit =
-//      Action.exec2("commit", editor)(ctrlEnter simulateKeyDown _).assertNoLongerEditing
-//
-//    val clickRetry =
-//      Action.exec2("clickRetry", retryButton)(Simulate click _)
-//
-//    val clickFailOk =
-//      Action.exec2("clickFailOk", failOkButton)(Simulate click _)
+    val commit =
+      *.action("Press ctrl-enter.").act(ctrlEnter simulateKeyDown editor.run(_)) +> editing.assert(false)
+
+    val clickRetry =
+      *.action("Click Retry.").act(Simulate click retryButton.run(_))
+
+    val clickAbort =
+      *.action("Click Abort.").act(Simulate click abortButton.run(_))
   }
 
 
@@ -212,10 +212,10 @@ object ReqTableTestDsl {
     applyViewSettings("ApplyViewSettings: " + vs, _ => vs)
 
   def applyViewSettings(name: => String, f: ReqTable.State => ViewSettings): *.Action =
-    *.action(name).act(_.ref.modState(s => s.copy(viewSettings = f(s))))
+    *.action(name).act(_.ref.$.modState(s => s.copy(viewSettings = f(s))))
 
   def setProject(p: Project): *.Action =
-    *.action("Set project.").act(_.ref.modState(_.updateProject(p))).updateState(_ => p)
+    *.action("Set project.").act(_.ref.$.modState(_.updateProject(p))).updateState(_ => p)
 
   val showAllColumns = applyViewSettings("Show all columns.", s => {
     val fd = ShowDead
@@ -261,4 +261,12 @@ object ReqTableTestDsl {
       *.focus("On-columns").value(_.obs.viewSettings.columns.onColumns).assert.noChange)
 
   val logTable = *.print(_.obs.table.entireContent)
+
+  val svrDisableAutoRespond = *.action("Disable auto-respond.").act(_.ref.svr.autoRespond = false)
+
+  val svrAutoRespondToLast = *.action("Server responds.").act(_.ref.svr.autoRespondToLast())
+
+  val svrFailLast = *.action("Fail last server request.").act(_.ref.svr.failLast())
+
+  val svrAssertLastTwoReqsEqual = svrLastTwoReqs.map(_.input)(Show.byToString).assert.equal(Equal.by_==, implicitly)
 }

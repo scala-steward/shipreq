@@ -76,7 +76,7 @@ abstract class BaseRunner(val args: Array[String],
          */
           thrown.getStackTrace
             .filterNot(BaseRunner.blacklist exists _.toString.contains)
-            .take(10)
+            .take(30)
         )
         addFailure(progressString + name + "" + msg)
         addTrace(

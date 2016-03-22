@@ -1,5 +1,5 @@
 package shipreq.webapp.client.app.reqtable
-
+/*
 import nyaya.prop._
 import nyaya.test._
 import nyaya.test.PropTestOps._
@@ -31,7 +31,7 @@ import shipreq.webapp.client.test.{TestClientProtocol, DomZipper, PrepareEnv}
 import shipreq.webapp.client.test.TestUtil.fakeKeyboardEvent
 import shipreq.webapp.client.widgets.Checkbox
 import UpdateContentCmd._
-/*
+
 object ReqTableScreen {
   case class CellLoc(row: Int, col: Int)
 
@@ -378,21 +378,6 @@ sealed trait ReqTableTest0 {
     Action(s"enterFilter($f)", e simulate _.viewSettings.filter.input.get)
   }
 
-  val filterDeadToggle =
-    Action("filterDeadToggle", Simulate change _.viewSettings.filterDead.$.get)
-      .focus(_.viewSettings.filterDead.value)
-      .assertChange
-
-  def setFilterDead(fd: FilterDead): Action[Unit] =
-    filterDeadToggle.unless(_.viewSettings.filterDead.value == fd)
-
-  val filterDeadShowHide =
-    setFilterDead(HideDead) >>
-    filterDeadToggle.times(2).focus(_.viewSettings.columns.onColumns).assertNoChange
-
-  def setProject(p: Project): Action[Unit] =
-    Action.exec(s"setProject($p)", c.setState(ReqTable.initialState(propsForProject(p))).runNow())
-
   val sortByPubid = applyViewSettings("sortByPubid",
     c.state.viewSettings.copy(order = SortCriteria.byPubidOnly))
 
@@ -441,16 +426,6 @@ sealed trait ReqTableTest0 {
   val printTableContent =
     Action.readonly(s => println("\n" + s.table.entireContent + "\n"))
 
-  val ctrlEnter = KeyboardEventData(key = KeyValue.Enter, keyCode = KeyCode.Enter, ctrlKey = true)
-
-  val escape = KeyboardEventData(key = KeyValue.Escape, keyCode = KeyCode.Escape)
-
-  def ioAssertReqsSent(expect: Int) = Action.assert(cp assertReqsSent expect)
-
-  val ioAssertLastTwoUpdateRequestsEqual = Action.assert(cp.assertLastTwoRequestsEqual(updateRemote))
-
-  val ioFailLast = Action.exec("failLast", cp.failLast())
-
   // ===================================================================================================================
   // Tests
 
@@ -489,45 +464,6 @@ sealed trait ReqTableTest0 {
     editAllColumns(Live).testAfter(_ > 0, "[Live Row] Cells should be in edit-mode").run()
   }
 
-  def testEditIO(): Unit = {
-    val ce = CellEditor(_.table.cellLoc(pubid = "MF-6", col = "Title"))
-    import ce._
-
-    val newValue = "issues!"
-
-    val editCommitWithoutChange =
-      startEdit.assertAfter("Incompletions") >> commit >> ioAssertReqsSent(0)
-
-    val editChangeCommit = (
-      startEdit.assertAfter("Incompletions")
-        >> enterValue(newValue)
-        >> commit.assertNowLocked
-        >> assertEditDoesNothing
-        >> ioAssertReqsSent(1)
-        >> Action.assert(assert(cp.last.input.toString contains newValue)))
-
-    val fail = (
-      ioFailLast.focus(failed_?).assertAfter(true, "Should be in failed state after I/O failure")
-        >> assertEditDoesNothing)
-
-    val retry = (
-      clickRetry.assertNowLocked
-        >> ioAssertReqsSent(2)
-        >> ioAssertLastTwoUpdateRequestsEqual)
-
-    val cancelSaveCommitAgain = (
-      clickFailOk.assertNowEditing
-        >> Action.nop.focus(editorValue).assertAfter(newValue)
-        >> commit.assertNowLocked
-        >> ioAssertReqsSent(3)
-        >> ioAssertLastTwoUpdateRequestsEqual)
-
-    val saveSucceeds = (
-      Action.exec("saveSucceeds", cp.respondToLast(updateRemote)(Vector.empty))
-        >> Action.nop.assertNoCellState)
-
-    run(editCommitWithoutChange >> editChangeCommit >> fail >> retry >> fail >> cancelSaveCommitAgain >> saveSucceeds)
-  }
 }
 
 object ReqTableTest extends TestSuite with ReqTableTest0 {
@@ -536,9 +472,6 @@ object ReqTableTest extends TestSuite with ReqTableTest0 {
       'toggle      - testDeadToggleInvariants()
 //      'notEditable - testDeadRowsNotEditable()
     }
-//    'editor {
-//      'io           - testEditIO()
-//    }
   }
 }
 */ // TODO ReqTableTests disabled
