@@ -1,26 +1,28 @@
 package shipreq.webapp.client.test
 
 import japgolly.scalajs.react._
-import shipreq.webapp.client.app.state.ClientData
 import scalaz.\/-
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.server._
+import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.TCB
 import shipreq.webapp.client.protocol.ClientProtocol
 
 class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callback) extends ClientProtocol {
 
-  private def attempt(r: RemoteFn)(f: (r.Input, Project) => MakeEvent.Result): PartialFunction[(RemoteFn, Any, Project), MakeEvent.Result] = {
+  type Attempt = PartialFunction[(RemoteFn, Any, Project), MakeEvent.Result]
+
+  private def attempt(r: RemoteFn)(f: (r.Input, Project) => MakeEvent.Result): Attempt = {
     case (fn, input, p) if r == fn =>
       f(input.asInstanceOf[r.Input], p)
   }
 
-  private def attemptI(r: RemoteFn)(f: r.Input => MakeEvent.Result) =
+  private def attemptI(r: RemoteFn)(f: r.Input => MakeEvent.Result): Attempt =
     attempt(r)((i, p) => f(i))
 
-  val handler =
+  val handler: Attempt =
     attempt (UpdateContentFn      )(MakeEvent.updateContent)         orElse
     attempt (CreateContentFn      )(MakeEvent.createContent)         orElse
     attempt (CustomReqTypeCrud    )(MakeEvent.customReqTypeCrud)     orElse
@@ -35,14 +37,17 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
                                           success: i.fn.Output => TCB.Success,
                                           failure: ClientProtocol.Failed[i.fn.Failure] => TCB.Failure): Callback =
     project >>= { p1 =>
+      // ah the hacks
+      def successVE = success.asInstanceOf[VerifiedEvents => TCB.Success]
+
       val r = handler((i.fn, input, p1))
       ApplyNewEvent(r, p1) match {
 
         case ApplyNewEvent.Updated(p2, ae, ve) =>
-          update(Vector.empty :+ ve)
+          update(Vector.empty :+ ve) >> successVE(Vector.empty :+ ve).cb
 
         case ApplyNewEvent.NoChange =>
-          Callback.empty
+          Callback.empty >> successVE(Vector.empty).cb
 
         case ApplyNewEvent.Failed(e) =>
           failure(\/-(e.asInstanceOf[i.fn.Failure])).cb
