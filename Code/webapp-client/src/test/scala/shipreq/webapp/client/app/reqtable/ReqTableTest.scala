@@ -34,11 +34,12 @@ object ReqTableTest extends TestSuite {
                    previewState: PreviewFeature.State[FocusId],
                    reqTable    : ReqTable.State)
 
-  def defaultProject = SampleProject3.project
+  def runTest(plan: *.Plan): Unit =
+    runTest(plan withInitialState SampleProject3.project)
 
-  def runTest(action: *.Action, project: Project = defaultProject): Unit = {
+  def runTest(plan: *.PlanWithInitialState): Unit = {
     val reqDetailRC = MockRouterCtl[ExternalPubid]()
-    val cd = TestClientData(project)
+    val cd = TestClientData(plan.initialState)
     val cp = MockServer(cd)
     import cd.pxProject
 
@@ -91,14 +92,11 @@ object ReqTableTest extends TestSuite {
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
       val ref = Ref(c zoomL State.reqTable, cp)
       def newObs = new ReqTableObs(cp, DomZipper(c))
-      val t = Plan(action, invariants).test(Observer watch newObs)
-      val r = t.run(initialState.reqTable.project, ref)
+      val t = plan.addInvariants(invariants).test(Observer watch newObs)
+      val r = t.run(ref)
       r.assert()
     }
   }
-
-//  def runTestInBrowser(action: *.Action, project: Project = defaultProject): Unit =
-//    JsEnv.realBrowserMTest(runTest(action, project))
 
   // TODO Move
   import nyaya.gen._
@@ -171,11 +169,11 @@ object ReqTableTest extends TestSuite {
 //    editAllColumns(Live).testAfter(_ > 0, "[Live Row] Cells should be in edit-mode").run()
 //  }
 
-  def testImplicationSrcColumnEditor() = {
+  def testImplicationSrcColumnEditor = {
     val ce = CellEditor(_.table.cellLoc(pubid = "FR-1", col = "Implied By"))
     import ce._
     // TODO What about an implication cycle with a dead link. Ok? Not ok? What about when when link is undeleted?
-    runTest(
+    Plan.action(
       showBuiltInColumnsSortedByPubid +> cellText.assert("MF-12, MF-19")
         >> startEdit +> editorValue.assert("MF-12") // Should remove dead
         >> testInvalid("MF-28").suffix(" (Dead target)")
@@ -187,10 +185,10 @@ object ReqTableTest extends TestSuite {
         >> testValid("MF-12 MF-14"))
   }
 
-  def testImplicationTgtColumnEditor() = {
+  def testImplicationTgtColumnEditor = {
     val ce = CellEditor(_.table.cellLoc(pubid = "MF-3", col = "Implies"))
     import ce._
-    runTest(
+    Plan.action(
       showAllColumns +> cellText.assert("FR-4, MF-4")
         >> startEdit +> editorValue.assert("FR-4 MF-4")
         >> testInvalid("BR-1").suffix(" (Causes cycle)") // because BR-1 → BR-2 → FR-3 → BR-1
@@ -198,8 +196,8 @@ object ReqTableTest extends TestSuite {
         >> testValid("MF-3") // reflexivity is tolerated but should be ignored on save
         >> testValid("FR-4 MF-4")
         >> testValid("MF-4 FR-6")
-        >> testValid("MF-2"),
-      SampleImplicationGraph.project)
+        >> testValid("MF-2")
+    ) withInitialState SampleImplicationGraph.project
   }
 
   def testCustomImplicationColumnEditor() = {
@@ -239,7 +237,7 @@ object ReqTableTest extends TestSuite {
     def mfs(sep: String, mfs: Int*): String =
       mfs.sorted.map("MF-" + _) mkString sep
 
-    runTest(
+    Plan.action(
       showAllColumns +> cellText.assert(mfs(", ", 1, 5, 2, 6, 7, 8, 9, 10, 13))
         >> startEdit +> editorValue.assert(mfs(" ", 5, 6)) // Should only show direct & live
         >> testInvalid("MF-4").suffix(" (Dead target)")
@@ -249,18 +247,18 @@ object ReqTableTest extends TestSuite {
         >> testValid("MF-5 MF-6")
         >> testValid("MF-5 MF-6 MF-1")
         >> testValid("MF-3")
-        >> testValid("MF-1"),
-      p)
+        >> testValid("MF-1")
+    ) withInitialState p
   }
 
-  def testTagsColumnEditor() = {
+  def testTagsColumnEditor = {
     val p = GReq(reqType = co, title = reqTitleTagRefs(v11, v13, v4x)).tag(wip, uat, v11, v1x, v3x) !
       SampleProject.project
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Tags"))
     import ce._
 
-    runTest(
+    Plan.action(
       showAllColumns +> cellText.assert("v1.3 v1.x v3.x v4.x") // wip & uat in Status col
         >> startEdit +> editorValue.assert("v1.1 v1.x") // Should only show direct & live
         >> testInvalid("v0.9").suffix(" (Dead target)")
@@ -270,18 +268,18 @@ object ReqTableTest extends TestSuite {
         >> testValid("v1.3") // declared in text too = ok
         >> testValid("v1.x")
         >> testValid("v1.x v1.0")
-        >> testValid("v1.1"),
-      p)
+        >> testValid("v1.1")
+    ) withInitialState p
   }
 
-  def testCustomTagColumnEditor() = {
+  def testCustomTagColumnEditor = {
     val p = GReq(reqType = co, title = reqTitleTagRefs(prod, uat3)).tag(wip, uat, v1x, v3x) !
       SampleProject.project
 
     val ce = CellEditor(_.table.cellLoc(pubid = "CO-1", col = "Status"))
     import ce._
 
-    runTest(
+    Plan.action(
       showAllColumns +> cellText.assert("wip uat uat3 prod")
         >> startEdit +> editorValue.assert("wip") // Should only show direct & live
         >> testInvalid("uat").suffix(" (Dead target)")
@@ -292,12 +290,11 @@ object ReqTableTest extends TestSuite {
         >> testValid("prod") // declared in text too = ok
         >> testValid("wip")
         >> testValid("wip defer")
-        >> testValid("defer"),
-      p)
+        >> testValid("defer")
+    ) withInitialState p
   }
 
-  def testEditIO(): Unit = {
-
+  def testEditorIO = {
     val ce = CellEditor(_.table.cellLoc(pubid = "MF-6", col = "Title"))
     import ce._
 
@@ -345,7 +342,8 @@ object ReqTableTest extends TestSuite {
     val saveSucceeds =
       svrAutoRespondToLast +> assertState(Normal)
 
-    runTest(svrDisableAutoRespond >>
+    Plan.action(
+      svrDisableAutoRespond >>
 //      editCommitWithoutChange >> // TODO Test failing due to real bug. Fix!
       editChangeCommit >> fail >> retry >> fail >> cancelSaveCommitAgain >> saveSucceeds)
   }
@@ -354,23 +352,23 @@ object ReqTableTest extends TestSuite {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = TestSuite {
-    'initialState - runTest(emptyAction)
+    'initialState - runTest(*.emptyPlan)
 
-    'filter       - runTest(testFilter)
+    'filter       - runTest(Plan action testFilter named "testFilter")
 
     'dead {
-      'cols        - runTest(testDeadColumns)
+      'cols        - runTest(Plan action testDeadColumns named "testDeadColumns")
       // 'toggle      - runTest(testDeadToggleInvariants) TODO Should dead col stay on but hidden when ShowDead→HideDead?
       // 'notEditable - testDeadRowsNotEditable()
     }
 
     'editor {
-      'impSrc       - testImplicationSrcColumnEditor()
-      'impTgt       - testImplicationTgtColumnEditor()
-      'customImpCol - testCustomImplicationColumnEditor()
-      'tags         - testTagsColumnEditor()
-      'customTagCol - testCustomTagColumnEditor()
-      'io           - testEditIO()
+      'impSrc       - runTest(testImplicationSrcColumnEditor    named "testImplicationSrcColumnEditor"   )
+      'impTgt       - runTest(testImplicationTgtColumnEditor    named "testImplicationTgtColumnEditor"   )
+      'customImpCol - runTest(testCustomImplicationColumnEditor named "testCustomImplicationColumnEditor")
+      'tags         - runTest(testTagsColumnEditor              named "testTagsColumnEditor"             )
+      'customTagCol - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
+      'io           - runTest(testEditorIO                      named "testEditorIO"                     )
     }
 
 //    'real - realBrowserMTest(runTest(emptyAction))
