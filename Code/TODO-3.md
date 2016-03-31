@@ -22,8 +22,7 @@ Graphs
 
 Req Table
 =========
-1. Re-enable old tests and test with selenium.
-2. Test & fix focus on edit start/end.
+1. Test & fix focus handling on edit start/end.
 
 Finally
 =======
