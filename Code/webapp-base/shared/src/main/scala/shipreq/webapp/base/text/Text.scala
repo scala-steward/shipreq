@@ -3,7 +3,7 @@ package shipreq.webapp.base.text
 import org.parboiled2._
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Atom => A, Parsers => P}
+import shipreq.webapp.base.text.{Atom => A, Parsers => P, MultiLine => ML}
 
 object Text {
 
@@ -22,12 +22,11 @@ object Text {
   sealed abstract class Base {
     this: A.Literal =>
 
-    val multiLine: Boolean
-    @inline final def singleLine = !multiLine
+    val lineCardinality: LineCardinality
 
     type Parser <: P.TopBase[this.type]
     def parserI(p: Project)(i: ParserInput): Parser
-    def parser (p: Project)(text: String)  : Parser = parserI(p)(P.preprocess(text, multiLine))
+    def parser (p: Project)(text: String)  : Parser = parserI(p)(P.preprocess(text, lineCardinality))
 
     final def parse(p: Project)(text: String): OptionalText =
       parser(p)(text).optionalText.run().get

@@ -9,7 +9,7 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
-import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.base.text._
 import shipreq.webapp.client.data.TCB
 import shipreq.webapp.client.lib.KeyHandlers
 import shipreq.webapp.client.protocol.ServerCall
@@ -249,15 +249,15 @@ object ContentEditorFeature {
       private def commit(cmd: UpdateContentCmd): Callback =
         async.wrapAsync((s, f) => saveIO(cmd, s >> abort, f))
 
-      private def commitK[A, B](singleLine: Boolean, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd): KeyHandlers =
+      private def commitK[A, B](lc: LineCardinality, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd): KeyHandlers =
         KeyHandlers.commit(v match {
           case ValidUpdate.Success(a) => Some(commit(cmd(a)))
           case ValidUpdate.Unchanged  => Some(abort)
           case ValidUpdate.Failure(_) => None
-        }, singleLine)
+        }, lc)
 
-      private def commitAbortK[A, B](singleLine: Boolean, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd) =
-        commitK(singleLine, v)(cmd) + KeyHandlers.abort(abort)
+      private def commitAbortK[A, B](lc: LineCardinality, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd) =
+        commitK(lc, v)(cmd) + KeyHandlers.abort(abort)
 
       /**
        * Instance of [[EditorInstance]] that ensures editing is allowed before rendering.
@@ -293,7 +293,7 @@ object ContentEditorFeature {
 
           val extra: ReqCodeEditor.Multiple.Extra =
             ReusableFn(
-              commitAbortK(false, _)(UpdateContentCmd.PatchReqCodes(id, _)))
+              commitAbortK(MultiLine, _)(UpdateContentCmd.PatchReqCodes(id, _)))
 
           rvarStrToStartEditFn(new StateMultiple(_, Some(initialValues), extra), initialText)
         }
@@ -311,7 +311,7 @@ object ContentEditorFeature {
 
           val extra: ReqCodeEditor.Single.Extra =
             ReusableFn(
-              commitAbortK(true, _)(UpdateContentCmd.SetReqCodeGroupCode(id, _)))
+              commitAbortK(SingleLine, _)(UpdateContentCmd.SetReqCodeGroupCode(id, _)))
 
           rvarStrToStartEditFn(new StateSingle(_, Some(initialValue), extra), initialText)
         }
@@ -394,7 +394,7 @@ object ContentEditorFeature {
 
           val extra: ImplicationEditor.Extra =
             ReusableFn(
-              commitAbortK(true, _)(cmd))
+              commitAbortK(SingleLine, _)(cmd))
 
           rvarStrToStartEditFn(new State(_, pxLookup, pxValFn, extra), initialText)
         }
@@ -426,7 +426,7 @@ object ContentEditorFeature {
 
           val extra: TagEditor.Extra =
             ReusableFn(
-              commitAbortK(true, _)(UpdateContentCmd.PatchReqTags(id, _)))
+              commitAbortK(SingleLine, _)(UpdateContentCmd.PatchReqTags(id, _)))
 
           rvarStrToStartEditFn(new State(Some(initialValues), _, pxLookup, extra), initialText)
         }
@@ -455,7 +455,7 @@ object ContentEditorFeature {
 
             val extra: editor.Extra =
               ReusableFn(
-                commitAbortK(T.singleLine, _)(cmd))
+                commitAbortK(T.lineCardinality, _)(cmd))
 
             val initialText: String =
               pxPlainText.value().format(editor.hardcodedLive, initialValue)

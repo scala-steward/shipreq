@@ -23,8 +23,8 @@ object ParsersTest extends TestSuite {
   def quoteStr(s: String): String =
     s"[${s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")}]"
 
-  def preprocessStr(s: String, multiLine: Boolean): String =
-    String valueOf Parsers.preprocess(s, multiLine)
+  def preprocessStr(s: String, lc: LineCardinality): String =
+    String valueOf Parsers.preprocess(s, lc)
 
   val counts = Atom.Type.values.toStream.map((_, new AtomicInteger)).toMap
   def count(as: Iterable[AnyAtom]): Unit =
@@ -114,11 +114,11 @@ object ParsersTest extends TestSuite {
     }
 
     def testStringML(in0: String) = {
-      val in1    = preprocessStr(in0, multiLine = true)
+      val in1    = preprocessStr(in0, MultiLine)
       val parser = Text.CustomTextField.parser(p)(in0) // in0, not in1, cos it should preprocess by itself
       val par1   = assertSuccess(parser, parser.optionalText.run())
       val in2    = txt2str(par1)
-      val in3    = preprocessStr(in2, multiLine = true)
+      val in3    = preprocessStr(in2, MultiLine)
       val par2   = Text.CustomTextField.parse(p)(in2)
 //      if (in2 startsWith "\n")
 //        println(
@@ -203,7 +203,7 @@ object ParsersTest extends TestSuite {
       def post(s: String) = ">" + s.replace('\n', '_') + "<"
       val g = Gen.chooseGen(Gen.alphaNumeric, Gen pure '\n').string(0 to 20)
       val p = Prop.equal[String]("trim")(
-        s => post(String.valueOf(Parsers.preprocess(s, true))),
+        s => post(String.valueOf(Parsers.preprocess(s, MultiLine))),
         s => post(s.trim))
       p mustBeSatisfiedBy g
     }
@@ -213,7 +213,7 @@ object ParsersTest extends TestSuite {
 
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
-        assertEq(quoteStr(preprocessStr(text, true)), parse(p)(text), e)
+        assertEq(quoteStr(preprocessStr(text, MultiLine)), parse(p)(text), e)
         val text2 = PlainText(p).format(Live, e)
         assertEq(text2, parse(p)(text2), e)
       }

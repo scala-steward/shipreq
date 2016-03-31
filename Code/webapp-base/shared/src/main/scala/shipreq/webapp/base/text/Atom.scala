@@ -3,6 +3,7 @@ package shipreq.webapp.base.text
 import monocle.Iso
 import shipreq.base.util.{NonEmptyVector, UnivEq}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.{text => T}
 
 object Atom {
 
@@ -90,11 +91,11 @@ object Atom {
   }
 
   trait SingleLine extends Literal with PlainTextMarkup {
-    val multiLine = false
+    val lineCardinality: LineCardinality = T.SingleLine
   }
 
   trait MultiLine extends SingleLine with NewLine with ListMarkup  {
-    override final val multiLine = true
+    override final val lineCardinality = T.MultiLine
   }
 
   // ===================================================================================================================

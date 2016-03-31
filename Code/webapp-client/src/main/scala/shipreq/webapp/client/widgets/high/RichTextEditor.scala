@@ -71,10 +71,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   @inline def hardcodedLive = Live
 
   val liveCorrect: EndoFn[String] =
-    if (text.singleLine)
-      RichTextEditor.correctSingleLineText
-    else
-      identity
+    text.lineCardinality match {
+      case SingleLine => RichTextEditor.correctSingleLineText
+      case MultiLine  => identity
+    }
 
   class Backend($: BackendScope[Props, Unit]) {
     private val pxProject    = Px.bs($).propsA(_.project)

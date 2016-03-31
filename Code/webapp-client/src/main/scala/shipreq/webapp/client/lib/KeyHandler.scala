@@ -6,6 +6,7 @@ import scala.runtime.AbstractFunction1
 import scalajs.js.{UndefOr, undefined}
 import scalaz.{Monoid, \/}
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
 
 final class KeyHandler(val run: ReactKeyboardEventH => Option[Callback]) extends AbstractFunction1[ReactKeyboardEventH, Callback] {
   override def apply(e: ReactKeyboardEventH): Callback =
@@ -97,17 +98,17 @@ object KeyHandlers {
    * - Enter either inserts a newline, or commits.
    * - Ctrl-enter commits.
    */
-  def commit(commit: => Option[Callback], singleLine: Boolean): KeyHandlers = {
+  def commit(commit: => Option[Callback], lc: LineCardinality): KeyHandlers = {
     val commitOnEnter = KeyHandler.byKey { case KeyValue.Enter => commit }
     val base = KeyHandlers(onKeyDown = commitOnEnter.filterModKeys(ctrl = true))
 
     // If enter unused, use for commit too
-    if (singleLine)
-      base + KeyHandlers(onKeyPress = commitOnEnter.filterModKeys())
-    else
-      base
+    lc match {
+      case SingleLine => base + KeyHandlers(onKeyPress = commitOnEnter.filterModKeys())
+      case MultiLine  => base
+    }
   }
 
-  def commitDisjunction[A](parsed: Any \/ A)(f: A => Callback, singleLine: Boolean): KeyHandlers =
-    commit(parsed.fold(_ => None, f(_).some), singleLine)
+  def commitDisjunction[A](parsed: Any \/ A)(f: A => Callback, lc: LineCardinality): KeyHandlers =
+    commit(parsed.fold(_ => None, f(_).some), lc)
 }

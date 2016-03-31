@@ -11,7 +11,8 @@ import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ParsingUtil
 
 object Parsers {
-  def preprocess(s: String, multiLine: Boolean): Array[Char] = {
+  def preprocess(s: String, lineCardinality: LineCardinality): Array[Char] = {
+    val multiLine = lineCardinality :: MultiLine
     val a = s.toCharArray
 
     // ----------------------------------------------------------------

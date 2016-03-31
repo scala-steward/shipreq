@@ -398,7 +398,7 @@ object RandomData {
 
   object TextGen {
     import scalaz.Name
-    import shipreq.webapp.base.text._
+    import shipreq.webapp.base.text.{MultiLine => _, SingleLine => _, _}
     import Atom._
     import Text.{ReqTitle => _, _}
 
