@@ -62,9 +62,9 @@ class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
 //    Thread.sleep(2000)
 //    sys error "NO!"
     ApplyNewEvent(f(state.project), state.project) match {
-      case u: ApplyNewEvent.Updated  => applyNewEvent(u).map(_ => Vector1(u.ve))
-      case ApplyNewEvent.NoChange    => noChangeResponse
-      case ApplyNewEvent.Failed(err) => -\/(GenericFailure(err))
+      case ValidUpdate.Success(u) => applyNewEvent(u).map(_ => Vector1(u.ve))
+      case ValidUpdate.Unchanged  => noChangeResponse
+      case ValidUpdate.Failure(e) => -\/(GenericFailure(e))
     }
   }
 

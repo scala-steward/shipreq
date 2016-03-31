@@ -2,13 +2,13 @@ package shipreq.webapp.client.test
 
 import japgolly.scalajs.react._
 import scalaz.\/-
+import shipreq.base.util.ValidUpdate._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.server._
 import shipreq.webapp.client.app.state.ClientData
 import shipreq.webapp.client.data.TCB
-import shipreq.webapp.client.protocol.ClientProtocol
 import TestClientProtocol.Req
 
 class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callback) extends TestClientProtocol {
@@ -42,13 +42,13 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
       val h = handler((r.r.fn, r.input, p1))
       ApplyNewEvent(h, p1) match {
 
-        case ApplyNewEvent.Updated(p2, ae, ve) =>
+        case Success(ApplyNewEvent.Updated(p2, ae, ve)) =>
           update(Vector.empty :+ ve) >> successVE(Vector.empty :+ ve).cb
 
-        case ApplyNewEvent.NoChange =>
+        case Unchanged =>
           Callback.empty >> successVE(Vector.empty).cb
 
-        case ApplyNewEvent.Failed(e) =>
+        case Failure(e) =>
           r.failure(\/-(e.asInstanceOf[r.r.fn.Failure])).cb
       }
     }

@@ -2,6 +2,7 @@ package shipreq.webapp.base.server
 
 import scalaz.{\/-, -\/}
 import utest._
+import shipreq.base.util.ValidUpdate._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol._
@@ -20,31 +21,31 @@ object MakeEventTest extends TestSuite {
 
     def assertMakeEvent[E <: ActiveEvent](f: (MakeEvent.type, Project) => Result, u: PartialFunction[ActiveEvent, E]): E =
       f(MakeEvent, p) match {
-        case MadeEvent(e) if u isDefinedAt e => u(e)
-        case MadeEvent(e)                    => fail(s"Doesn't meet expected criteria: $e")
-        case x                               => fail(s"MakeEvent failed: $x")
+        case Success(e) if u isDefinedAt e => u(e)
+        case Success(e)                    => fail(s"Doesn't meet expected criteria: $e")
+        case x                             => fail(s"MakeEvent failed: $x")
       }
 
     def assertMakeEventFails(f: (MakeEvent.type, Project) => Result): Unit =
       f(MakeEvent, p) match {
-        case Failed(_) => ()
-        case x         => fail(s"MakeEvent failure expected, got: $x")
+        case Failure(_) => ()
+        case x          => fail(s"MakeEvent failure expected, got: $x")
       }
 
     def assertFails(f: (MakeEvent.type, Project) => Result): Unit =
       f(MakeEvent, p) match {
-        case Failed(_) => ()
-        case MadeEvent(e) =>
+        case Failure(_) => ()
+        case Success(e) =>
           ApplyEvent.untrusted.apply1(e)(p) match {
             case -\/(_) => ()
             case \/-(_) => fail(s"Failure expected, instead created and applied: $e")
           }
-        case x         => fail(s"Failure expected, got: $x")
+        case x          => fail(s"Failure expected, got: $x")
       }
 
     def assertApplies[E <: ActiveEvent](e: E): E = {
       ApplyEvent.untrusted.apply1(e)(p) match {
-        case \/-(p2) => p = p2; e
+        case \/-(p2)  => p = p2; e
         case -\/(err) => fail(s"ApplyEvent failed.\nEvent: $e\nReason: $err")
       }
     }

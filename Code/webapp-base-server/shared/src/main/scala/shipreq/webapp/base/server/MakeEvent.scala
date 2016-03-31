@@ -12,31 +12,29 @@ import shipreq.webapp.base.util.GenericDataMacros._
 import DataImplicits._
 import ScalaExt._
 import UnivEq.Implicits._
+import ValidUpdate._
 
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.
  */
 object MakeEvent {
 
-  sealed trait Result
-  case class  MadeEvent(e: ActiveEvent) extends Result
-  case class  Failed(reason: String)    extends Result
-  case object NoChange                  extends Result
+  type Result = ValidUpdate[String, ActiveEvent]
 
   // ===================================================================================================================
 
   @inline private implicit class DisjExt[A](private val v: String \/ A) extends AnyVal {
     @inline def toMakeEventResult(f: A => Result): Result =
-      v.fold(Failed, f)
+      v.fold(Failure(_), f)
   }
 
   private def eventIfNonEmpty[A](a: A)(f: NonEmpty[A] => Result)(implicit proof: NonEmpty.ProofA[A]): Result =
     NonEmpty(a) match {
       case Some(b) => f(b)
-      case None    => NoChange
+      case None    => Unchanged
     }
 
-  @inline private implicit def autoMadeEvent(e: ActiveEvent) = MadeEvent(e)
+  @inline private implicit def autoSuccess(e: ActiveEvent) = Success(e)
 
   // ===================================================================================================================
 
@@ -89,7 +87,7 @@ object MakeEvent {
             val (mnemonic, name, imp) = vs
             val vs2 = gdUnequalValues(CustomReqTypeGD, cur, "")
             eventIfNonEmpty(vs2)(UpdateCustomReqType(id, _))
-          case f => Failed(s"$f must be a CustomReqType.")
+          case f => Failure(s"$f must be a CustomReqType.")
         }
 
       case CrudAction.Delete(id, da) =>
@@ -150,7 +148,7 @@ object MakeEvent {
          | CfgAction.UpdateValues(_: CustomField.Implication.Id, _: TextFieldValues)
          | CfgAction.UpdateValues(_: CustomField.Implication.Id, _: TagFieldValues)
          =>
-        Failed(s"Invalid id/value combination: $a")
+        Failure(s"Invalid id/value combination: $a")
     }
   }
 
@@ -175,7 +173,7 @@ object MakeEvent {
             import v._
             CreateTagGroup(id, gdAllValues(TagGroupGD, ""))
 
-          case None => Failed("Values required.")
+          case None => Failure("Values required.")
         }
 
       case CrudAction.Update(tagId, vs) =>
@@ -210,7 +208,7 @@ object MakeEvent {
                   case None =>
                     build
                   case Some(_: TagGroupValues) =>
-                    Failed("Cannot apply TagGroup values to an ApplicableTag.")
+                    Failure("Cannot apply TagGroup values to an ApplicableTag.")
                 }
 
               case cur: TagGroup =>
@@ -228,11 +226,11 @@ object MakeEvent {
                   case None =>
                     build
                   case Some(_: ApplicableTagValues) =>
-                    Failed("Cannot apply ApplicableTag values to an TagGroup.")
+                    Failure("Cannot apply ApplicableTag values to an TagGroup.")
                 }
 
             }
-          case None => Failed(s"$tagId not found.")
+          case None => Failure(s"$tagId not found.")
         }
 
       case CrudAction.Delete(id, da) =>
@@ -253,13 +251,13 @@ object MakeEvent {
     cmd match {
       case CreateContentCmd.CreateReqCodeGroup(code, title) =>
         def makeEvent(id: ReqCodeId) =
-          MadeEvent(CreateReqCodeGroup(id, gdAllValues(ReqCodeGroupGD, "")))
+          Success(CreateReqCodeGroup(id, gdAllValues(ReqCodeGroupGD, "")))
 
         project.reqCodes.get(code) match {
           case None => makeEvent(nextCodeId())
           case Some(d) =>
             if (d.isActive)
-              Failed("Code in use.")
+              Failure("Code in use.")
             else
               d.deadGroup match {
                 case Some(dg) => makeEvent(dg.id)
@@ -324,7 +322,7 @@ object MakeEvent {
           var r      : Option[Result]                          = None
 
           def fail(err: String): Unit =
-            r = Some(Failed(err))
+            r = Some(Failure(err))
 
           import ReqCode._
           for (c <- cs.value.removed)
@@ -339,7 +337,7 @@ object MakeEvent {
             for (c <- cs.value.added)
               project.reqCodes.get(c) match {
                 case Some(d) if d.isActive =>
-                  Failed(s"Code in use: ${PlainText reqCode c}.")
+                  Failure(s"Code in use: ${PlainText reqCode c}.")
 
                 case od => od.flatMap(_.reqInactive(reqId).ifNonEmpty(_.min)) match {
                   case None    => add = add.add(c, nextCodeId())
@@ -368,7 +366,7 @@ object MakeEvent {
 
       case UpdateContentCmd.RestoreContent(reqs, reqCodes) =>
         if (reqs.isEmpty && reqCodes.isEmpty)
-          Failed("No content specified.")
+          Failure("No content specified.")
         else
           RestoreContent(reqs, reqCodes)
 
