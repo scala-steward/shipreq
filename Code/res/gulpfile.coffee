@@ -111,7 +111,6 @@ gulp.task 'ws', ['ws:clean'], ->
 # create JS for unit tests
 gulp.task 'wc:testjs', ->
   nonRetardedSrc [
-        cfg_bower + 'sizzle/dist/sizzle.min.js'
         cfg_bower + 'jquery/dist/jquery.min.js'
         cfg_bower + 'jquery-textcomplete/dist/jquery.textcomplete.min.js'
         cfg_bower + 'react/react-with-addons.js'
@@ -121,7 +120,7 @@ gulp.task 'wc:testjs', ->
         cfg_bower + 'react-height/react-height.js'
         cfg_bower + 'react-collapse/build/react-collapse.min.js'
       ]
-    .pipe concat 'test.js'
+    .pipe concat 'shipreq-client-test.js'
     .pipe uglify()
     .pipe gulp.dest cfg_wc_root + 'src/test/resources'
 

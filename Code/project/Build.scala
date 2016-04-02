@@ -256,7 +256,7 @@ object ShipReq extends Build {
 
     def testSettings = (_: Project)
       .settings(
-        jsDependencies in Test += ProvidedJS / "test.js",
+        jsDependencies in Test += ProvidedJS / "shipreq-client-test.js",
         // emitSourceMaps in Compile := false, // I want speed
         scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) })
 
