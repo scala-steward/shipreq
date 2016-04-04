@@ -167,7 +167,9 @@ object UseCase {
 case class UseCaseStepId(value: Int) extends SubReqId
 
 @Lenses
-case class UseCaseStep(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText)
+case class UseCaseStep(id   : UseCaseStepId,
+                       title: Text.UseCaseStep.OptionalText,
+                       live : Live)
 
 object UseCaseStep {
   object IdAccess extends ObjDataId[UseCaseStep.type, UseCaseStep, UseCaseStepId] {
@@ -178,7 +180,7 @@ object UseCaseStep {
 }
 
 @Lenses
-case class UseCaseSteps(tree: UseCaseSteps.Tree) {
+case class UseCaseSteps(tree: UseCaseSteps.Tree) extends AnyVal {
 //  lazy val withCtx: UseCaseStepWithCtx.ByStep =
 //    UseCaseStepWithCtx.emptyByStep ++
 //      tree.locAndValueIterator(UseCaseStepWithCtx.apply)
@@ -192,7 +194,7 @@ object UseCaseSteps {
     UseCaseSteps(VectorTree.empty)
 
   def emptyRoot(id: UseCaseStepId): UseCaseSteps =
-    single(UseCaseStep(id, Text.UseCaseStep.empty))
+    single(UseCaseStep(id, Text.UseCaseStep.empty, Live))
 
   def single(s: UseCaseStep): UseCaseSteps =
     UseCaseSteps(VectorTree single s)

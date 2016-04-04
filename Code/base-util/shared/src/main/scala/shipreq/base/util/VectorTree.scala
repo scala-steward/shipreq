@@ -564,4 +564,7 @@ object VectorTree extends VectorTreeLowPri {
 
   def nodeTraversal[A]: Traversal[Node[A], A] =
     nodePTraversal[A, A]
+
+//  def nodeAt[A](loc: Location): Optional[VectorTree[A], Node[A]] =
+//    Optional[VectorTree[A], Node[A]](_.at(loc))(n => s => s.modifyNode(loc)(_ => n) getOrElse s)
 }

@@ -152,7 +152,10 @@ object RandomData {
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
   val live =
-    Gen.choose[Live](Live, Dead)
+    Gen.choose[Live](Live, Live, Live, Dead)
+
+//  val liveUsually =
+//    Gen.int.map(i => if ((i & 7) == 0) Dead else Live)
 
   val implicationRequired =
     Gen.choose[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
@@ -714,11 +717,12 @@ object RandomData {
         case StaticField.NormalAltStepTree =>
           // Root step is required
           Gen { ctx =>
-            val t = gt run ctx
+            var t = gt run ctx
             if (t.isEmpty)
-              VectorTree.single(g run ctx)
-            else
-              t
+              t = VectorTree.single(g run ctx)
+            if (t.children.head.value.live :: Dead)
+              t.modifyValueAt(VectorTree.root)(UseCaseStep.live set Live) foreach (t = _)
+            t
           }
         case _ => gt
       }
@@ -802,8 +806,14 @@ object RandomData {
         )
 
       val ucs: UseCaseIMap = {
-        val stepG  = useCaseStepId.unique_! map (UseCaseStep(_, Vector.empty))
-        def stepsG(f: StaticField.UseCaseStepTree) = useCaseSteps(stepG, f)(0 to 4)
+        def stepGL(l: Live) =
+          useCaseStepId.unique_!.map(UseCaseStep(_, Vector.empty, l))
+
+        val stepG = live flatMap stepGL
+
+        def stepsG(f: StaticField.UseCaseStepTree) =
+          useCaseSteps(stepG, f)(0 to 4)
+
         pr.value(StaticReqType.UseCase).iterator.zipWithIndex.foldLeft(emptyDataMap(UseCase)) { (m, x) =>
           val id = x._1.asInstanceOf[UseCaseId]
           val pos = ReqTypePos(x._2 + 1)
@@ -811,7 +821,9 @@ object RandomData {
             stepsNA <- stepsG(StaticField.NormalAltStepTree)
             stepsE  <- stepsG(StaticField.ExceptionStepTree)
             l       <- live
-          } yield UseCase(id, pos, Vector.empty, stepsNA, stepsE, l)
+          } yield
+            // Root existence guaranteed in useCaseSteps()
+            UseCase(id, pos, Vector.empty, stepsNA, stepsE, l)
           m + ucG.run(ctx)
         }
       }

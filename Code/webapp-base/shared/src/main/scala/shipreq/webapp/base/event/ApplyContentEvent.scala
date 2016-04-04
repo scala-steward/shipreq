@@ -300,7 +300,7 @@ trait ApplyContentEvent {
     }
 
     def applyAddUseCaseStep(e: AddUseCaseStep): SE[Unit] = {
-      val step = UseCaseStep(e.id, Text.UseCaseStep.empty)
+      val step = UseCaseStep(e.id, Text.UseCaseStep.empty, Live)
       val tree = e.field.useCaseStepTree
 
       def insert(loc: VectorTree.Location, uc: UseCase): SE[Unit] =

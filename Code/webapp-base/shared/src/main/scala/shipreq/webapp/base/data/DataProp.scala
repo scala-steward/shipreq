@@ -251,8 +251,8 @@ object DataProp {
     def stepTrees = {
       import StaticField.{NormalAltStepTree => N, ExceptionStepTree => E}
 
-      def rootStepExists =
-        Prop.test[UseCase]("Root step", _.stepsNA.tree.nonEmpty)
+      def rootStep =
+        Prop.test[UseCase]("Root step", _.stepsNA.tree.children.headOption.exists(_.value.live :: Live))
 
       def eachTree(f: StaticField.UseCaseStepTree) =
         VectorTree.maxDimsProp(
@@ -262,7 +262,7 @@ object DataProp {
       val treesInUseCase: Prop[UseCase] =
         eachTree(N).contramap[UseCase](_.stepsNA.tree).rename(N.name) ∧
         eachTree(E).contramap[UseCase](_.stepsE .tree).rename(E.name) ∧
-        rootStepExists
+        rootStep
 
       treesInUseCase.forall((_: T).imap.valuesIterator) rename "UC trees"
     }
