@@ -96,7 +96,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def find(f: A => Boolean): Option[A] =
     locAndValueIterator((l, a) => if (f(a)) Some(a) else None).firstDefined
 
-  def locWhere(f: A => Boolean): Option[Location] =
+  def findLoc(f: A => Boolean): Option[Location] =
     locAndValueIterator((l, a) => if (f(a)) Some(l) else None).firstDefined
 
   def foreach[U](f: (Location, A) => U): Unit =

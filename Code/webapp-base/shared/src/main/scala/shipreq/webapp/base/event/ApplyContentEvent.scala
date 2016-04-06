@@ -330,13 +330,13 @@ trait ApplyContentEvent {
       needStepIndex(id) >>= { idx =>
         val ucId = idx.useCaseId
         val f    = idx.field
-        // It's fast to use locWhere below to find the step location rather than using some lazy index because
+        // It's fast to use findLoc below to find the step location rather than using some lazy index because
         // 1) The index would need to be recalculated every time a step in the tree is changed
         //    (meaning the index is only used once before being discarded).
-        // 2) locWhere will stop when it finds the step. An index scans the whole tree.
+        // 2) findLoc will stop when it finds the step. An index scans the whole tree.
         ucIMap.update(ucId, uc =>
           ensureLiveReq(uc) >>
-            optionGet(f.useCaseSteps.get(uc).tree.locWhere(_.id ==* id), s"${show(id)} not found.") >>= (loc =>
+            optionGet(f.useCaseSteps.get(uc).tree.findLoc(_.id ==* id), s"${show(id)} not found.") >>= (loc =>
             f.useCaseStepTree.modifyF[SE](mod(_, f, loc))(uc)))
       }
 
