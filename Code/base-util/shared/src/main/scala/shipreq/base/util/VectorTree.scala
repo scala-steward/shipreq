@@ -36,9 +36,9 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def setChildren[B >: A](c: Children[B]): VectorTree[B] =
     VectorTree(c)
 
-  private def _modify[B >: A, R](loc: ParentLocation)
-                                (mod: (Children[A], Int, Node[A]) => Option[Children[B]])
-                                (result: (Children[B], Node[A]) => R): Option[R] =
+  private def _modifyAt[B >: A, R](loc: ParentLocation)
+                                  (mod: (Children[A], Int, Node[A]) => Option[Children[B]])
+                                  (result: (Children[B], Node[A]) => R): Option[R] =
     if (loc.isEmpty)
       None
     else {
@@ -65,8 +65,8 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   /**
    * @return `None` if nothing was changed.
    */
-  def modifyChildren[B >: A](loc: ParentLocation)(f: Children[A] => Children[B]): Option[VectorTree[B]] =
-    modifyChildrenA[B](loc)(c => Some(f(c)))
+  def modifyChildrenAt[B >: A](loc: ParentLocation)(f: Children[A] => Children[B]): Option[VectorTree[B]] =
+    modifyChildrenAtA[B](loc)(c => Some(f(c)))
 
   /**
    * The `A` suffix means abortable.
@@ -74,23 +74,23 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
    * @param f Return `None` to abort (not delete).
    * @return `None` if nothing was changed.
    */
-  def modifyChildrenA[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] =
-    _modify[B, VectorTree[B]](loc :+ 0)((c, i, n) => f(c))((c, _) => VectorTree(c))
+  def modifyChildrenAtA[B >: A](loc: ParentLocation)(f: Children[A] => Option[Children[B]]): Option[VectorTree[B]] =
+    _modifyAt[B, VectorTree[B]](loc :+ 0)((c, i, n) => f(c))((c, _) => VectorTree(c))
 
-  def modifyNode[B >: A](loc: Location)(f: Node[A] => Node[B]): Option[VectorTree[B]] =
-    _modify[B, VectorTree[B]](loc.whole)((c, i, n) => Some(c.updated(i, f(n))))((c, _) => VectorTree(c))
+  def modifyNodeAt[B >: A](loc: Location)(f: Node[A] => Node[B]): Option[VectorTree[B]] =
+    _modifyAt[B, VectorTree[B]](loc.whole)((c, i, n) => Some(c.updated(i, f(n))))((c, _) => VectorTree(c))
 
-  def modifyValue[B >: A](loc: Location)(f: A => B): Option[VectorTree[B]] =
-    modifyNode[B](loc)(n => n.copy(value = f(n.value)))
+  def modifyValueAt[B >: A](loc: Location)(f: A => B): Option[VectorTree[B]] =
+    modifyNodeAt[B](loc)(n => n.copy(value = f(n.value)))
 
   def remove(loc: Location): Option[VectorTree[A]] =
-    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, _) => VectorTree(c))
+    _modifyAt(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, _) => VectorTree(c))
 
   /**
    * The `O` suffix means "old", denoting that the old value is returned.
    */
   def removeNodeO(loc: Location): Option[(VectorTree[A], Node[A])] =
-    _modify(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, o) => (VectorTree(c), o))
+    _modifyAt(loc.whole)((c, i, _) => Some(c deleteOrNull i))((c, o) => (VectorTree(c), o))
 
   def find(f: A => Boolean): Option[A] =
     locAndValueIterator((l, a) => if (f(a)) Some(a) else None).firstDefined
@@ -125,7 +125,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     insertAfterN(at, leaf(value))
 
   def insertAfterN[B >: A](at: Location, n: Node[B]): Option[VectorTree[B]] =
-    modifyChildrenA[B](at.parent) { c =>
+    modifyChildrenAtA[B](at.parent) { c =>
       val i = at.last
       if (c isIndexValid i) {
         val f = c(i)
@@ -154,7 +154,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
       val w = at.whole
       val ip = w(at.length - 2)
       val ic = w(at.length - 1)
-      modifyChildrenA(w.dropRight(2))(ps =>
+      modifyChildrenAtA(w.dropRight(2))(ps =>
         ps.getFlatMap(ip)(p =>
           p.children.getFlatMap(ic) { c =>
             val left  = p.children take ic
@@ -178,7 +178,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.3.4.b    --> 1.3.4.a.ii
     */
   def shiftRight(at: Location): Option[VectorTree[A]] =
-    modifyChildrenA(at.parent) { ps =>
+    modifyChildrenAtA(at.parent) { ps =>
       val ic = at.last
       val ip = ic - 1
       ps.getFlatMap(ip)(p =>

@@ -374,7 +374,7 @@ trait ApplyContentEvent {
 
       def updateTitle(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText): SE[Unit] =
         modStep(id)((t, _, l) =>
-          optionGet(t.modifyValue(l)(_.copy(title = title)), badStepIndex(id)))
+          optionGet(t.modifyValueAt(l)(_.copy(title = title)), badStepIndex(id)))
 
       e => {
         val gd       = e.vs.value
