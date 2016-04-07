@@ -21,15 +21,18 @@ final class NonEmptyVector[+A](val head: A, val tail: Vector[A]) {
   def length: Int =
     tail.length + 1
 
-  def apply(i: Int): Option[A] =
+  def unsafeApply(i: Int): A =
     if (i == 0)
-      Some(head)
+      head
     else
-      try {
-        Some(tail(i - 1))
-      } catch {
-        case _: IndexOutOfBoundsException => None
-      }
+      tail(i - 1)
+
+  def apply(i: Int): Option[A] =
+    try {
+      Some(unsafeApply(i))
+    } catch {
+      case _: IndexOutOfBoundsException => None
+    }
 
   def init: Vector[A] =
     if (tail.isEmpty)
