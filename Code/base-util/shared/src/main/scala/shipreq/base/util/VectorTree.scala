@@ -93,11 +93,17 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   def removeNodeO(loc: Location): Option[(VectorTree[A], Node[A])] =
     _modifyAt(loc.asParentLoc)((c, i, _) => Some(c deleteOrNull i))((c, o) => (VectorTree(c), o))
 
-  def find(f: A => Boolean): Option[A] =
-    locAndValueIterator((l, a) => if (f(a)) Some(a) else None).firstDefined
+  def find[B](f: A => Boolean)(b: (Location, A) => B): Option[B] =
+    locAndValueIterator((l, a) => if (f(a)) Some(b(l, a)) else None).firstDefined
 
   def findLoc(f: A => Boolean): Option[Location] =
-    locAndValueIterator((l, a) => if (f(a)) Some(l) else None).firstDefined
+    find(f)((l, _) => l)
+
+  def findLocAndValue(f: A => Boolean): Option[(Location, A)] =
+    find(f)((l, a) => (l, a))
+
+  def findValue(f: A => Boolean): Option[A] =
+    find(f)((_, a) => a)
 
   def foreach[U](f: (Location, A) => U): Unit =
     locAndValueIterator(f).foreach(_ => ())

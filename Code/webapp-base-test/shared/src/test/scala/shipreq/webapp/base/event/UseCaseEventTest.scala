@@ -261,7 +261,7 @@ object UseCaseEventTest extends TestSuite {
       'title {
         'ok {
           val p = _assertPass(emptyUC1, addStepTo1, setStepTitle4)
-          assertEq(p.reqs.useCases.imap.need(1).stepsNA.tree.find(_.id.value ==* 4).get.title, someStepText)
+          assertEq(p.reqs.useCases.imap.need(1).stepsNA.tree.findValue(_.id.value ==* 4).get.title, someStepText)
         }
         'stepNotFound - assertFail("found")(setStepTitle4)
         'ucIsDead     - assertFail("dead")(emptyUC1, addStepTo1, delUC1, setStepTitle4)
