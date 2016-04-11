@@ -3,6 +3,7 @@ package shipreq.base.util
 import nyaya.gen._
 import nyaya.prop._
 import nyaya.test.PropTest._
+import scala.annotation.tailrec
 import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.BaseUtilGen._
@@ -117,8 +118,18 @@ object VectorTreeTest extends TestSuite {
 //        E.equal(s"$v @ $loc", Some(v), t.at(goodToOrigLoc(loc)).map(_.value))
 //      ).foldLeft(E.pass)(_ & _)
 
+    val filterEqualsRemove = {
+      @tailrec def go(vt: VTI): VTI =
+        vt.findLoc(_ <= 0) match {
+          case Some(l) => go(vt.remove(l).get)
+          case None    => vt
+        }
+      val removed = go(t)
+      E.equal("filtered = each removed", k, removed)
+    }
+
     E.equal("output size", m.size, t.locIterator.size) ∧ E.distinct("output", m.values) ∧
-      origToFiltered ∧ filteredToOrig
+      origToFiltered ∧ filteredToOrig ∧ filterEqualsRemove
   }
 
   def testFilterAndPartLocs(t: VectorTree[Int], m: Map[Location, Location]): Unit =
