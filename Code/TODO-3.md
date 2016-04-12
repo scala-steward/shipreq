@@ -1,13 +1,15 @@
-UC Step Deletion
-================
-1. Test references to steps going dead.
+UC Step Refs
+============
+1. Add text references to UC steps.
+2. Autocomplete for UC step refs.
+2. Test labels of refs to dead steps.
 
-Use Case Editor
-===============
+Use Case Step Flow
+==================
 1. Parse step-text + flow.
 2. Render step-text + flow.
 3. Edit step-text + flow.
-4. Autocomplete for UC steps.
+4. Autocomplete for UC step flow.
 
 Graphs
 ======
@@ -32,10 +34,9 @@ Finally
 
 SubReq implication
 ==================
-1. Add SubReq
-2. Need a SubReqId => SubReq lookup
-3. Change imps and req refs to use SubReqId
-4. Autocomplete for UC steps.
+1. Allow steps to imply other reqs.
+1. Allow reqs to imply UC steps (?).
+4. Autocomplete for above changes.
 
 Other (?)
 =========
