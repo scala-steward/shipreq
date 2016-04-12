@@ -720,8 +720,8 @@ object RandomData {
             var t = gt run ctx
             if (t.isEmpty)
               t = VectorTree.single(g run ctx)
-            if (t.children.head.value.live :: Dead)
-              t.modifyValueAt(VectorTree.root)(UseCaseStep.live set Live) foreach (t = _)
+            if (t.children.head.value.liveExplicitly :: Dead)
+              t.modifyValueAt(VectorTree.root)(UseCaseStep.liveExplicitly set Live) foreach (t = _)
             t
           }
         case _ => gt

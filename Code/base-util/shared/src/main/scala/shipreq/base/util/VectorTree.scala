@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import japgolly.univeq.UnivEq
+import japgolly.univeq._
 import monocle._
 import nyaya.prop.Prop
 import scala.annotation.tailrec
@@ -358,9 +358,14 @@ object VectorTree extends VectorTreeLowPri {
    * The value may be a normal [[Location]] that points to a tree node,
    * or it may include a -1 value to indicate that a node used to exist at a similar location but is now removed.
    */
-  final case class PartialLocation(value: Location) extends AnyVal {
-    def validity: Validity =
-      Invalid <~ value.exists(_ < 0)
+  final case class PartialLocation(value: Location, validity: Validity) {
+    assert(
+      value.whole.count(_ < 0) == (validity match {
+        case Invalid => 1
+        case Valid   => 0
+      }),
+      s"Incorrect validity in $this.")
+    assert(value.last >= 0, s"Last node must be valid: $this.")
 
     def total: Option[Location] =
       validity match {
@@ -370,6 +375,9 @@ object VectorTree extends VectorTreeLowPri {
   }
   object PartialLocation {
     implicit def univEq: UnivEq[PartialLocation] = UnivEq.derive
+
+    def detect(value: Location): PartialLocation =
+      apply(value, Invalid <~ value.exists(_ < 0))
   }
 
   sealed abstract class NodeFilter
@@ -556,7 +564,7 @@ object VectorTree extends VectorTreeLowPri {
 
           case NodeFilter.KeepNode =>
             val newLoc = gud.next()
-            set(curLoc, PartialLocation(newLoc))
+            set(curLoc, PartialLocation(newLoc, Valid))
             if (hasChildren)
               n._partLocs(f, set)(
                 cur = new IncLoc(curLoc),
@@ -564,7 +572,7 @@ object VectorTree extends VectorTreeLowPri {
                 gud = new IncLoc(newLoc))
 
           case NodeFilter.DiscardNodeAndChildren =>
-            val newLoc = PartialLocation(bad.next())
+            val newLoc = PartialLocation(bad.next(), Invalid)
             set(curLoc, newLoc)
             if (hasChildren)
               n._partLocs(alwaysDiscard, set)(
@@ -574,7 +582,7 @@ object VectorTree extends VectorTreeLowPri {
 
           case NodeFilter.KeepNodeAndChildren =>
             val newLoc = gud.next()
-            set(curLoc, PartialLocation(newLoc))
+            set(curLoc, PartialLocation(newLoc, Valid))
             if (hasChildren)
               n._partLocs(alwaysKeep, set)(
                 cur = new IncLoc(curLoc),

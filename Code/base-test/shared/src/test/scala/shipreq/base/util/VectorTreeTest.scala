@@ -171,7 +171,7 @@ object VectorTreeTest extends TestSuite {
       NonEmptyVector force str.split('.').iterator.map(_.toInt).toVector
 
     def xloc: PartialLocation =
-      PartialLocation(
+      PartialLocation.detect(
         NonEmptyVector force
           str.split('.').iterator.map(s => if (s == "X") -1 else s.toInt).toVector)
   }
