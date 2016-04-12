@@ -12,14 +12,14 @@ UseCaseStepId -> SubReqId -> ReqOrSubReqId
 
 // =================================================================================================
 // Composition
-node [textalign=left fontname=monospace]
+node [textalign=left fontname=monospace fontsize=12]
 edge [style=normal dir=back arrowtail=dot color=blue]
 
 
 UseCase           [label="UseCase\n\nid            : UseCaseId\lpos           : ReqTypePos\ltitle         : OptionalText\lstepsNA       : UseCaseSteps\lstepsE        : UseCaseSteps\lliveExplicitly: Live\l"]
 UseCases          [label="UseCases\n\nimap     : UseCaseIMap\lstepIndex: UseCases.StepIndex\lstepFlow : UseCases.StepFlow\l"]
-UseCaseStep       [label="UseCaseStep\n\nid   : UseCaseStepId\ltitle: OptionalText\l"]
-UseCaseSteps      [label="UseCaseSteps\n\ntree: UseCaseSteps.Tree"]
+UseCaseStep       [label="UseCaseStep\n\nid            : UseCaseStepId\ltitle         : OptionalText\lliveExplicitly: Live\l"]
+UseCaseSteps      [label="UseCaseSteps\n\ntree           : UseCaseSteps.Tree\l\nstepLocs       : BiMap[UseCaseStepId, Location]\lpartialLocs    : BiMap[Location, PartialLocation]\lstepPartialLocs: Iso[UseCaseStepId, PartialLocation]\l"]
 UseCaseIMap       [label="UseCaseIMap\n\nIMap[UseCaseId, UseCase]"]
 UseCaseStepsTree  [label="UseCaseSteps.Tree\n\nVectorTree[UseCaseStep]"]
 UseCasesStepIndex [label="UseCases.StepIndex\n\nMap[UseCaseStepId, StepTreeKey]"]
@@ -38,5 +38,10 @@ UseCasesStepIndex -> UseCaseStepId,StepTreeKey
 UseCasesStepFlow -> UseCaseStepId
 
 StepTreeKey -> UseCaseId
+
+
+edge [style=dashed dir=forward color="#555555" fontcolor="#444444" label=" refers to"]
+UseCaseSteps -> UseCaseStep
+StepTreeKey -> UseCaseSteps
 
 }
