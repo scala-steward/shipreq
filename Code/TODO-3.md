@@ -1,8 +1,8 @@
 UC Step Refs
 ============
-1. Add text references to UC steps.
+1. Parse UC step refs.
 2. Autocomplete for UC step refs.
-2. Test labels of refs to dead steps.
+2. Style UC step refs.
 
 Use Case Step Flow
 ==================

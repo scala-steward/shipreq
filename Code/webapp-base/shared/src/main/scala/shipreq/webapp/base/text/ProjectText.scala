@@ -24,7 +24,7 @@ object ProjectText {
      * In the context of a single, specific use case, references to its own steps needn't be prefixed with the UC's
      * pubid.
      */
-    case object UseCase extends Context
+    case class UseCase(id: UseCaseId) extends Context
   }
 
   // -------------------------------------------------------------------------------------------------------------------

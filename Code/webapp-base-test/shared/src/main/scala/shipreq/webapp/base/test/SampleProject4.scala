@@ -15,6 +15,11 @@ import UseCases.StepFlow
  */
 object SampleProject4 {
 
+  trait Values extends SampleProject.Values {
+    val uc1 = UseCaseId(1203)
+  }
+  object Values extends Values
+
   lazy val project = {
     val p   = SampleProject3.project
     var pr  = p.reqs.pubids
@@ -59,6 +64,7 @@ object SampleProject4 {
         .insertAfter(Loc(0, 1), newStep(13, title = "Still hungry?")).get // UC-n.0.3
         .append(                newStep(14, title = "Have no food") )     // UC-n.1
         .insertAfter(Loc(1)   , newStep(15, title = "Steal food")   ).get // UC-n.1.1
+
     val uc1 = addUseCase(title = "Eat food", ncac = ncac)
     // println(ncac.map(_.title.mkString(",")))
 

@@ -3,6 +3,7 @@ package shipreq.webapp.base.text
 import scala.annotation.tailrec
 import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.SafeStringOps._
+import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -79,6 +80,18 @@ object PlainText {
     override def withCtx(newCtx: ProjectText.Context): ForProject =
       new ForProject(p, newCtx)
 
+    def useCaseStepLabel(id: UseCaseStepId): String =
+      useCaseStepLabel(p.reqs.useCases.focusStep(id))
+
+    def useCaseStepLabel(focus: UseCaseStep.Focus): String = {
+      import focus._
+      val mne  = ctx match {
+        case ProjectText.Context.None       => true
+        case ProjectText.Context.UseCase(i) => i !=* uc.id
+      }
+      field.stepLabel(uc.pubid.pos, ploc, mnemonicPrefix = mne)
+    }
+
     private def codeRef(id: ReqCodeId): String = {
       import ProjectText.ReqCodeResolution._
       ProjectText.resolveReqCode(id, p.reqCodes) match {
@@ -95,6 +108,9 @@ object PlainText {
       val rt  = p.config.reqType(pid.reqTypeId)
       G.reflinkSurround(pubid(rt, pid.pos))
     }
+
+    private def useCaseStepRef(id: UseCaseStepId): String =
+      G.reflinkSurround(useCaseStepLabel(id))
 
     private def tagRef(id: ApplicableTagId): String = {
       val t = p.config.atag(id)
@@ -117,16 +133,17 @@ object PlainText {
             val nextAtoms = atoms.tail
             import Atom._
             val cur = atoms.head match {
-              case a: Literal         # Literal       => a.value
-              case a: NewLine         # BlankLine     => newline
-              case a: ReqRef          # ReqRef        => reqRef(a.value)
-              case a: ReqRef          # CodeRef       => codeRef(a.value)
-              case a: Issue           # Issue         => issue(a.typ, a.desc.asOption map (run(live, _)))
-              case a: PlainTextMarkup # WebAddress    => a.value
-              case a: PlainTextMarkup # EmailAddress  => a.value
-              case a: PlainTextMarkup # MathTeX       => G.mathTexSurround(a.value)
-              case a: TagRef          # TagRef        => tagRef(a.value)
-              case a: ListMarkup      # UnorderedList =>
+              case a: Literal         # Literal        => a.value
+              case a: NewLine         # BlankLine      => newline
+              case a: ReqRef          # ReqRef         => reqRef(a.value)
+              case a: ReqRef          # CodeRef        => codeRef(a.value)
+              case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
+              case a: Issue           # Issue          => issue(a.typ, a.desc.asOption map (run(live, _)))
+              case a: PlainTextMarkup # WebAddress     => a.value
+              case a: PlainTextMarkup # EmailAddress   => a.value
+              case a: PlainTextMarkup # MathTeX        => G.mathTexSurround(a.value)
+              case a: TagRef          # TagRef         => tagRef(a.value)
+              case a: ListMarkup      # UnorderedList  =>
                 val listNL = if (newline eq outOfListNewline) "\n  " else newline ~ "  "
                 val r = a.items.foldLeft("") { (q, li) =>
                   val pre = if (q.isEmpty && acc.isEmpty) bullet else q ~ newline ~ bullet

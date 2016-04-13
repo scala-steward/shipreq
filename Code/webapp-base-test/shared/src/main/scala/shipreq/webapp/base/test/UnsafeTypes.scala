@@ -5,9 +5,10 @@ import scala.collection.generic.CanBuildFrom
 import shipreq.base.util._
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Grammar, Text}
+import shipreq.webapp.base.text.{Grammar, Text, ProjectText}
 import Field.ApplicableReqTypes
 import ScalaExt._
+import VectorTree.{Location, PartialLocation, ParentLocation}
 
 case class MakeEmpty[+A](empty: A) extends AnyVal
 
@@ -166,6 +167,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def setLikePatchAdd(s: Set[ReqCode.IdAndValue]): Multimap[ReqCode.Value, Set, ReqCodeId] =
     Multimap(s.toList.map(iv => iv.value -> Set(iv.id)).toMap)
+
+  implicit def useCaseIdToProjectTextContext(id: UseCaseId): ProjectText.Context =
+    ProjectText.Context.UseCase(id)
 }
 
 object UnsafeTypes extends UnsafeTypesMedPriority {
@@ -178,6 +182,22 @@ object UnsafeTypes extends UnsafeTypesMedPriority {
     def CFImp  = CustomField.Implication.Id(a)
     def GR     = GenericReqId(a)
     def UC     = UseCaseId(a)
+  }
+
+  implicit class UnsafeStringExt(private val str: String) extends AnyVal {
+    private def ivec: Vector[Int] =
+      str.split('.').iterator.map(_.toInt).toVector
+
+    def ploc: ParentLocation =
+      ParentLocation fromVector ivec
+
+    def loc: Location =
+      NonEmptyVector force ivec
+
+    def xloc: PartialLocation =
+      PartialLocation.detect(
+        NonEmptyVector force
+          str.split('.').iterator.map(s => if (s == "X") -1 else s.toInt).toVector)
   }
 
   object AutoNES {

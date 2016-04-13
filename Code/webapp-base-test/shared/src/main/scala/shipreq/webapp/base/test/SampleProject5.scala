@@ -14,6 +14,9 @@ import UnsafeTypes._
  */
 object SampleProject5 {
 
+  type     Values = SampleProject4.Values
+  lazy val Values = SampleProject4.Values
+
   lazy val project = {
     val sis = (0 to 2).toVector.map(i => GenericReqId(i + 1300))
     ( GReq(reqType = si, id = sis(1), title = "Outsource to Johnno.").cftextS(descField, "Johnno gets shit done.")

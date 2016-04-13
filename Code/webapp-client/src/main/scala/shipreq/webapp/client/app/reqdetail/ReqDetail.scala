@@ -56,12 +56,12 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
    *
    * Cached by its inputs.
    */
-  class Data(sp: StaticProps,  val project: Project, val req: Req, upstreamFD: FilterDead) {
+  class Data(sp: StaticProps, val project: Project, val req: Req, upstreamFD: FilterDead) {
 
     val (pxPlainText, pxProjectWidgets) = {
       val textCtx: Option[ProjectText.Context] = req match {
-        case _: UseCase    => Some(ProjectText.Context.UseCase)
-        case _: GenericReq => None
+        case uc: UseCase    => Some(ProjectText.Context.UseCase(uc.id))
+        case _ : GenericReq => None
       }
       var t = sp.pxPlainTextNoCtx
       var w = sp.pxProjectWidgetsNoCtx
