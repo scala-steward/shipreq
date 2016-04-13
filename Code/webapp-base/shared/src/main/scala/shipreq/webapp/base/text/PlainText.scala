@@ -69,13 +69,17 @@ object PlainText {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  type ForProject = ProjectText[String]
-
   private final val bullet = "* "
 
-  def apply(p: Project): ForProject = {
+  @inline def apply(p: Project, ctx: ProjectText.Context): ForProject =
+    new ForProject(p, ctx)
 
-    def codeRef(id: ReqCodeId): String = {
+  final class ForProject(p: Project, ctx: ProjectText.Context) extends ProjectText[String](p, ctx) {
+
+    override def withCtx(newCtx: ProjectText.Context): ForProject =
+      new ForProject(p, newCtx)
+
+    private def codeRef(id: ReqCodeId): String = {
       import ProjectText.ReqCodeResolution._
       ProjectText.resolveReqCode(id, p.reqCodes) match {
         case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
@@ -86,25 +90,25 @@ object PlainText {
       }
     }
 
-    def reqRef(req: ReqId): String = {
+    private def reqRef(req: ReqId): String = {
       val pid = p.reqs.req(req).pubid
       val rt  = p.config.reqType(pid.reqTypeId)
       G.reflinkSurround(pubid(rt, pid.pos))
     }
 
-    def tagRef(id: ApplicableTagId): String = {
+    private def tagRef(id: ApplicableTagId): String = {
       val t = p.config.atag(id)
       hashtag(t.key)
     }
 
-    def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
+    private def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
       val it = p.config.customIssueType(id)
       desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
     }
 
-    val outOfListNewline = "\n\n"
+    private val outOfListNewline = "\n\n"
 
-    val format: ProjectText.FormatAtomFn[String] = {
+    override val format: ProjectText.FormatAtomFn[String] = {
       def nest(acc: String, newline: String, live: Live, atoms: Vector[AnyAtom]): String = {
         @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
           if (atoms.isEmpty)
@@ -139,6 +143,5 @@ object PlainText {
       run
     }
 
-    ProjectText(p, format)
   }
 }

@@ -37,7 +37,14 @@ object ProjectWidgets {
 
 final class ProjectWidgets private(project    : Project,
                                    plainText  : PlainText.ForProject,
-                                   reqDetailRC: RouterCtl[ExternalPubid]) extends ProjectText[ReactTag](project) {
+                                   reqDetailRC: RouterCtl[ExternalPubid])
+    extends ProjectText[ReactTag](project, plainText.ctx) {
+
+  override def withCtx(newCtx: ProjectText.Context): ProjectWidgets =
+    withPlainText(plainText withCtx newCtx)
+
+  def withPlainText(newPlainText: PlainText.ForProject): ProjectWidgets =
+    new ProjectWidgets(project, newPlainText, reqDetailRC)
 
   private implicit def surroundDisplay(s: G.Surrounds) = s.display
 

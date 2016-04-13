@@ -74,6 +74,6 @@ object SampleProject4 {
     p2
   }
 
-  lazy val plainText  = PlainText(project)
+  lazy val plainText  = PlainText(project, ProjectText.Context.None)
   lazy val textSearch = TextSearch(project, plainText)
 }
