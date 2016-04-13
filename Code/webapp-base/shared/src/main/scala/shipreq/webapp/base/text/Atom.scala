@@ -142,5 +142,6 @@ object Atom {
   trait ReqTitle extends SingleLine
     with Issue
     with ReqRef
+    with UseCaseStepRef
     with TagRef
 }
