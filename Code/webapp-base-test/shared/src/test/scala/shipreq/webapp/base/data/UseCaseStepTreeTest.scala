@@ -2,6 +2,7 @@ package shipreq.webapp.base.data
 
 import nyaya.gen._
 import nyaya.prop._
+import nyaya.util._
 import nyaya.test.PropTest._
 import scalaz.{-\/, \/-}
 import utest._
@@ -79,6 +80,6 @@ object UseCaseStepTreeTest extends TestSuite {
   val prop = Prop.eval[Project](new Tester(_).all)
 
   override def tests = TestSuite {
-    "UseCaseStepTree.canXxx" - genProject.mustSatisfy(prop) //(defaultPropSettings.setDebug)
+    "UseCaseStepTree.canXxx" - genProject.mustSatisfy(prop)(defaultPropSettings.setSampleSize(10 `JVM|JS` 3))
   }
 }

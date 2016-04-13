@@ -685,7 +685,7 @@ object RandomData {
     }
   }
 
-  val MaxTextAtoms: SizeSpec = 0 to (30 `JVM|JS` 8)
+  val MaxTextAtoms: SizeSpec = 0 to (15 `JVM|JS` 5)
 
   val MaxTextAtomsInProject: SizeSpec = 0 to (6 `JVM|JS` 2)
 
