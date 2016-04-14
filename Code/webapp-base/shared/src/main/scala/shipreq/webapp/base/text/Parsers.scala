@@ -241,7 +241,9 @@ object Parsers {
                   case None    => None
                 }
             } else
-              NonEmptyVector.option(q).map(PartialLocation(_, v))
+              NonEmptyVector.option(q)
+                .filter(_.last >= 0) // Last node must be valid
+                .map(PartialLocation(_, v))
 
           go(Vector.empty, Valid, 0)
         }

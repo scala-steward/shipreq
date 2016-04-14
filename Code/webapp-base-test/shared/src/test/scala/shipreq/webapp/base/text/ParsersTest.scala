@@ -228,6 +228,9 @@ object ParsersTest extends TestSuite {
       def test(text: String)(as: T.Atom*): Unit =
         testT(P, T.parse, text)(as: _*)
 
+      def testLit(text: String): Unit =
+        test(text)(T.Literal(text))
+
       'hashHashHash -
         test("#v1.x#v1.0#TBD#TBD{ whatever}#pri=high")(
           T.TagRef(21), T.TagRef(22), T.Issue(2, V.empty), T.Issue(2, Vector(I.Literal("whatever"))), T.TagRef(2))
@@ -281,6 +284,11 @@ object ParsersTest extends TestSuite {
         'deadN - testU(16, step16_label)
         'deadN - testU(20, step20_label)
         'deadE - testU(17, step17_label)
+
+        'endInX - testLit("[1.0.X]")
+        'negN1  - testLit("[1.-1]")
+        'negN2  - testLit("[1.0.-1]")
+        'negE1  - testLit("[1.E.-1]")
         // should also test some invalid combinations
       }
 

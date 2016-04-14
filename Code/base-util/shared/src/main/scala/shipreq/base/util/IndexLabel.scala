@@ -37,7 +37,7 @@ object IndexLabel {
    */
   object NumericFrom0 extends IndexLabel {
     override def label(index: Int)    = index.toString
-    override def parse(label: String) = ParseInt.unapply(label)
+    override def parse(label: String) = ParseInt.unapply(label).filter(_ >= 0)
 
     // TODO Remove labelTmp & parseTmp
     override def labelTmp(index: Int)    = label(index)
@@ -52,7 +52,7 @@ object IndexLabel {
    */
   object NumericFrom1 extends IndexLabel {
     override def label(index: Int)    = (index + 1).toString
-    override def parse(label: String) = ParseInt.unapply(label).map(_ - 1)
+    override def parse(label: String) = ParseInt.unapply(label).map(_ - 1).filter(_ >= 0)
   }
 
   /**
@@ -63,7 +63,7 @@ object IndexLabel {
    */
   object Roman extends IndexLabel {
     override def label(index: Int)    = RomanNumeral(index + 1).toLowerCase
-    override def parse(label: String) = RomanNumeral.parse(label).map(_ - 1)
+    override def parse(label: String) = RomanNumeral.parse(label).map(_ - 1).filter(_ >= 0)
   }
 
   /**
