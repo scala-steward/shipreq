@@ -16,6 +16,13 @@ object SampleProject4 {
 
   trait Values extends SampleProject3.Values {
     val uc1 = UseCaseId(1203)
+
+    val step10_label = "1.0"
+    val step11_label = "1.0.1"
+    val step12_label = "1.0.2"
+    val step13_label = "1.0.3"
+    val step14_label = "1.1"
+    val step15_label = "1.1.1"
   }
   object Values extends Values
   import SampleProject.Values._

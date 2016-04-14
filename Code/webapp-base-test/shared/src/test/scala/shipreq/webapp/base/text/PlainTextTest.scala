@@ -10,7 +10,7 @@ object PlainTextTest extends TestSuite {
 
   override def tests = TestSuite {
     'useCaseStepRefs {
-      val full = "[UC-1.0.X.1] and [UC-1.E.X.1] are dead. [UC-1.0.2] and [UC-1.1.1] are not."
+      val full = s"[UC-$step16_label] and [UC-$step17_label] are dead. [UC-$step19_label] and [UC-$step18_label] are not."
 
       'noCtx - assertEq(plainText              .reqTitleById(uc1), full)
       'uc1   - assertEq(plainText.withCtx(uc1 ).reqTitleById(uc1), full.replaceAll("UC-", ""))

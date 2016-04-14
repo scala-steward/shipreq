@@ -22,7 +22,7 @@ import Atom.AnyAtom
 object ParsersTest extends TestSuite {
 
   def quoteStr(s: String): String =
-    s"[${s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")}]"
+    s"⟪${s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")}⟫"
 
   def preprocessStr(s: String, lc: LineCardinality): String =
     String valueOf Parsers.preprocess(s, lc)
@@ -111,7 +111,7 @@ object ParsersTest extends TestSuite {
       count(src)
       val txt = txt2str(src)
       val parsed = Text.CustomTextField.parse(p)(txt)
-      cmp(s"[CustomTextField] toStr |> parse = id\n'''$txt'''", parsed, src)
+      cmp(s"[CustomTextField] toStr |> parse = id\n${quoteStr(txt)}", parsed, src)
     }
 
     def testStringML(in0: String) = {
@@ -200,6 +200,9 @@ object ParsersTest extends TestSuite {
     words.toSet
   }
 
+  val optBool: List[Option[Boolean]] =
+    None :: Some(true) :: Some(false) :: Nil
+
   override val tests = TestSuite {
     'preprocess {
       // This isn't a standard trim - see preprocess() for explanation
@@ -250,6 +253,37 @@ object ParsersTest extends TestSuite {
         'between - test("before\n* mid\nafter")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
       }
 
+      'useCaseStepRef {
+        def testU(id: UseCaseStepId, stepLabel: String): Unit = {
+          val expect = T.UseCaseStepRef(id)
+          for {
+            prefix   <- "" :: "UC-" :: "uc" :: " Uc - " :: Nil
+            suffix   <- "" :: " " :: Nil
+            dotNoise <- null :: " ." :: ". " :: "  .  " :: Nil
+            chCase   <- optBool
+            padZero  <- false :: true :: Nil
+          } {
+            var s = stepLabel
+            chCase match {
+              case Some(true)  => s = s.toLowerCase
+              case Some(false) => s = s.toUpperCase
+              case None        => ()
+            }
+            if (dotNoise ne null) s = s.replace(".", dotNoise)
+            if (padZero) s = s.replaceAll("(?=\\d+)", "0")
+            s = "[" + prefix + s + suffix + "]"
+            test(s)(expect)
+          }
+        }
+
+        'liveN - testU(19, step19_label)
+        'liveE - testU(18, step18_label)
+        'deadN - testU(16, step16_label)
+        'deadN - testU(20, step20_label)
+        'deadE - testU(17, step17_label)
+        // should also test some invalid combinations
+      }
+
       'altForms {
         'req - test("[fr1][fr 1][ fr - 2 ][Mf-1 ]")(T.ReqRef(frs(1)), T.ReqRef(frs(1)), T.ReqRef(frs(2)), T.ReqRef(mfs(1)))
         'tag - test("#wip#DEFER#V3.x")(T.TagRef(11), T.TagRef(12), T.TagRef(26))
@@ -273,7 +307,7 @@ object ParsersTest extends TestSuite {
     // Eg. Dead text can have CodeRefs to dead codes.
     // Parsing text only happens to live text, and it only looks at active codes.
     'big {
-//      tester.bugHunt(0, 10000)(Prop eval (_.all)) //(DefaultSettings.propSettings.setSampleSize(1000).setSeed(1).setGenSize(4).setDebug.setSingleThreaded)
+//      tester.bugHunt(0, 10000)(Prop.eval(_.all))(DefaultSettings.propSettings.setSampleSize(1000).setSeed(1).setGenSize(4).setDebug.setSingleThreaded)
       tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(20000).setDebug)
       println()
       val graphUnit = 1000 `JVM|JS` 10

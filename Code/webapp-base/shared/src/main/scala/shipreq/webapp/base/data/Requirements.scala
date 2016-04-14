@@ -235,6 +235,9 @@ case class UseCaseSteps(tree: UseCaseSteps.Tree) {
 
   lazy val stepPartialLocs: Iso[UseCaseStepId, PartialLocation] =
     stepLocs.iso_! ^<-> partialLocs.iso_!
+
+  lazy val partialLocSteps: Intersection[PartialLocation, UseCaseStepId] =
+    (stepLocs.intersection composeIntersection partialLocs.intersection).reverse
 }
 
 object UseCaseSteps {
@@ -355,6 +358,10 @@ case class Requirements(genericReqs: GenericReqIMap,
     IMap.empty[ReqId, Req](_.id) ++
       genericReqs.valuesIterator ++
       useCases.imap.valuesIterator
+
+
+  def getUseCaseByPos(pos: ReqTypePos): Option[UseCase] =
+    pubids.getUseCaseId(pos) flatMap useCases.imap.get
 
   def getReq[T <: ReqTypeId](id: ReqIdT[T]): Option[ReqT[T]] =
     id match {
