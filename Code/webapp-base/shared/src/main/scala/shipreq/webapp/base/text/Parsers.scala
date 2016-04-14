@@ -8,6 +8,7 @@ import shipreq.base.util.{NonEmptyVector, Validity, Valid, Invalid}
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.AppConsts
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ParsingUtil
@@ -227,7 +228,9 @@ object Parsers {
           @tailrec def go(q: Vector[Int], v: Validity, l: Int): Option[PartialLocation] =
             if (it.hasNext) {
               val node = it.next()
-              if (node == "X" || node == "x") // Tests will catch this not matching up with AppConsts
+
+              // Only match uppercase. Lowercase x is used in step labels & ambiguous.
+              if (node.length ==* 1 && node.charAt(0) ==* AppConsts.useCaseStepsDeadNode)
                 v match {
                   case Valid   => go(q :+ -1, Invalid, l)
                   case Invalid => None
@@ -239,6 +242,7 @@ object Parsers {
                 }
             } else
               NonEmptyVector.option(q).map(PartialLocation(_, v))
+
           go(Vector.empty, Valid, 0)
         }
 

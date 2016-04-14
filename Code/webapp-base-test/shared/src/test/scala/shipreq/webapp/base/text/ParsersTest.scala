@@ -265,7 +265,7 @@ object ParsersTest extends TestSuite {
           } {
             var s = stepLabel
             chCase match {
-              case Some(true)  => s = s.toLowerCase
+              case Some(true)  => s = s.toLowerCase.replace(".x.", ".X.")
               case Some(false) => s = s.toUpperCase
               case None        => ()
             }
