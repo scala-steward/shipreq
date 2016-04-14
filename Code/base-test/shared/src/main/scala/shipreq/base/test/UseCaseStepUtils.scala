@@ -101,13 +101,11 @@ object UseCaseStepUtils {
       // Create node
       val n: FakeStep =
         if (indent == 0) {
-          // val topLevelLabel(labelPrefix, labelSuffix) = label
           val n = FakeStep(idOverride getOrElse label, stepText)
           rootSteps += n
           n
         } else {
           val p = parents(indent - 1)
-          // val labelIndex = Labelers(indent).parseTmp(label)
           val n = FakeStep(idOverride getOrElse s"${p.id}.$label", stepText)
           children(p) += n
           n

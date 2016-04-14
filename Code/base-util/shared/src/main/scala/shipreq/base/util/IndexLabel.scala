@@ -21,10 +21,6 @@ trait IndexLabel {
    * @return Option(_ ≥ 0)
    */
   def parse(label: String): Option[Int]
-
-  // TODO Remove labelTmp & parseTmp
-  def labelTmp(index: Int)    = label(index - 1)
-  def parseTmp(label: String) = parse(label).map(_ + 1) getOrElse sys.error(s"Can't parse [$label]")
 }
 
 object IndexLabel {
@@ -38,10 +34,6 @@ object IndexLabel {
   object NumericFrom0 extends IndexLabel {
     override def label(index: Int)    = index.toString
     override def parse(label: String) = ParseInt.unapply(label).filter(_ >= 0)
-
-    // TODO Remove labelTmp & parseTmp
-    override def labelTmp(index: Int)    = label(index)
-    override def parseTmp(label: String) = parse(label) getOrElse sys.error(s"Can't parse [$label]")
   }
 
   /**
