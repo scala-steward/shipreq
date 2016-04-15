@@ -1,5 +1,12 @@
 digraph G {
 
+// A4 settings
+ratio="fill";
+size="8.3,11.7!";
+margin=0;
+node [fontsize=22]
+edge [fontsize=22]
+
 // =================================================================================================
 // Inheritence
 {
@@ -12,14 +19,14 @@ UseCaseStepId -> SubReqId -> ReqOrSubReqId
 
 // =================================================================================================
 // Composition
-node [textalign=left fontname=monospace fontsize=12]
-edge [style=normal dir=back arrowtail=dot color=blue]
+node [textalign=left fontname=Inconsolata fontsize=20]
+edge [dir=back arrowtail=dot color=blue]
 
 
 UseCase           [label="UseCase\n\nid            : UseCaseId\lpos           : ReqTypePos\ltitle         : OptionalText\lstepsNA       : UseCaseSteps\lstepsE        : UseCaseSteps\lliveExplicitly: Live\l"]
 UseCases          [label="UseCases\n\nimap     : UseCaseIMap\lstepIndex: UseCases.StepIndex\lstepFlow : UseCases.StepFlow\l"]
 UseCaseStep       [label="UseCaseStep\n\nid            : UseCaseStepId\ltitle         : OptionalText\lliveExplicitly: Live\l"]
-UseCaseSteps      [label="UseCaseSteps\n\ntree           : UseCaseSteps.Tree\l\nstepLocs       : BiMap[UseCaseStepId, Location]\lpartialLocs    : BiMap[Location, PartialLocation]\lstepPartialLocs: Iso[UseCaseStepId, PartialLocation]\l"]
+UseCaseSteps      [label="UseCaseSteps\n\ntree           : UseCaseSteps.Tree\l\nstepLocs       : BiMap[UseCaseStepId, Loc]\lpartialLocs    : BiMap[Loc, PartialLoc]\lstepPartialLocs: Iso[UseCaseStepId, PartialLoc]\lpartialLocSteps: Intersection[PartialLoc, UseCaseStepId]\l"]
 UseCaseIMap       [label="UseCaseIMap\n\nIMap[UseCaseId, UseCase]"]
 UseCaseStepsTree  [label="UseCaseSteps.Tree\n\nVectorTree[UseCaseStep]"]
 UseCasesStepIndex [label="UseCases.StepIndex\n\nMap[UseCaseStepId, StepTreeKey]"]
