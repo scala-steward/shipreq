@@ -3,7 +3,6 @@ package shipreq.webapp.base.text
 import nyaya.gen._
 import nyaya.prop._
 import nyaya.test.PropTest._
-
 import scalaz.std.list.listInstance
 import scalaz.{-\/, \/, \/-}
 import utest._
@@ -50,17 +49,6 @@ object UseCaseStepFlowTextTest extends TestSuite {
 
     val parsed = UseCaseStepFlowText.parse(input).toList
 
-//    val input2 = Util.quickSB { sb =>
-//      parsed foreach {
-//        case Elem.Text(t)          => sb append t
-//        case Elem.Arrow(Forwards)  => sb append "-->"
-//        case Elem.Arrow(Backwards) => sb append "<--"
-//        case Elem.Step(s)          => if (sb.last !=* ' ') sb append ' '; sb append s
-//      }
-//    }
-//
-//    val parsed2 = UseCaseStepFlowText.parse(input2).toList
-
     val inputWithoutFlow = flowRegex.replaceAllIn(input, "$1")
 
     val parsedWithoutFlow = UseCaseStepFlowText.parse(inputWithoutFlow).toList
@@ -83,9 +71,6 @@ object UseCaseStepFlowTextTest extends TestSuite {
           case (r@ \/-(_) , _           ) => r
         }).toOption)
 
-//    def reparse =
-//      E.equal("Reparse = id", parsed2, parsed)
-
     def nonFirstText =
       E.forall(parsed drop 1) {
         case Elem.Text(t) => E.test("Non-first text must start with NL.", t.headOption.exists(c => c ==* '\n' || c ==* '\r'))
@@ -104,9 +89,6 @@ object UseCaseStepFlowTextTest extends TestSuite {
 
     val all = (elems & noConsecutiveText & nonFirstText & sole & withoutFlow) rename "all"
   }
-
-//  val prop: Prop[String] =
-//    Prop.eval(new Tester(_).all)
 
   val genTester: Gen[Tester] =
     genInput.map(new Tester(_))

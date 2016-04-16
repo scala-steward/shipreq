@@ -12,55 +12,16 @@ import shipreq.webapp.base.util.ParsingUtil
  */
 object UseCaseStepFlowText {
 
-//  def parseText(text: String)
-  // split into lines, return
-
-  // [line1] [<--] [1.0.2] [1.] [-->] [1.0.2] [1.] [\n line2 \n line3] [-->] [what]
-
   sealed abstract class Elem[+T, +S]
   object Elem {
-    case class Text[+T](text: T)     extends Elem[T, Nothing]
-
     sealed abstract class Flow[+S] extends Elem[Nothing, S]
 
+    case class Text[+T](text: T)     extends Elem[T, Nothing]
     case class Step[+S](step: S)     extends Flow[S]
     case class Arrow(dir: Direction) extends Flow[Nothing]
 
-//    case class Flow[+S](dir: Direction, steps: List[S]) extends Elem[Nothing, S]
-
     implicit def univEq[T: UnivEq, S: UnivEq]: UnivEq[Elem[T, S]] = UnivEq.force
   }
-
-//  private val clauseRegex =
-//    s"^(.*?)${RegexUtil.PunctuationOrSymbol notAround "(<-{2,}|-{2,}>)"}(.*?)(?=[\r\n]|$$)".r
-//
-//  def parseText(text: String): Iterator[Elem[String, String]] =
-//    if (text.isEmpty)
-//      Iterator.empty
-//    else {
-//      val m = clauseRegex.pattern.matcher(text)
-//      if (m.matches()) {
-//
-//        val pre    = m.group(1) + m.group(2) // #2 is in .notAround
-//        val arrow  = m.group(3)
-//        val clause = m.group(4)
-//        val post   = if (m.hitEnd()) "" else text.substring(m.end())
-//
-//        var elems: List[Elem[String, String]] =
-//          Elem.Arrow(Backwards <~ arrow(0) == '<') ::
-//          RegexUtil.WhitespaceChars.split(clause).iterator.map(Elem.Step(_)).toList
-//
-//        if (pre.nonEmpty)
-//          elems ::= Elem.Text(pre)
-//
-//        elems.toIterator ++ parseText(post)
-//
-//      } else
-//        Iterator.single(Elem.Text(text))
-//    }
-
-  def parse(input: String): Seq[Elem[String, String]] =
-    new TextAndFlowParser(input).main.run()(Parser.DeliveryScheme.Throw)
 
   private final class TextAndFlowParser(val input: ParserInput) extends ParsingUtil {
     import ParsingUtil._
@@ -107,4 +68,8 @@ object UseCaseStepFlowText {
     def main: Rule1[ES] =
       rule(line.* ~ EOI ~> ((_: Seq[ES]).flatten))
   }
+
+  def parse(input: String): Seq[Elem[String, String]] =
+    new TextAndFlowParser(input).main.run()(Parser.DeliveryScheme.Throw)
+
 }
