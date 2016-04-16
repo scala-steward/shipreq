@@ -9,6 +9,9 @@ import shipreq.webapp.base.text.{Grammar => G}
 
 object ParsingUtil {
 
+  val PunctuationOrSymbol: CharPredicate =
+    CharSubset.PunctuationOrSymbol.charPredicate
+
   val Whitespace: CharPredicate =
     CharSubset.Whitespace.charPredicate
 
@@ -39,6 +42,9 @@ abstract class ParsingUtil extends Parser {
   /** End Of Line (consumes NL) */
   def EOL: Rule0 =
     rule(NL | EOI)
+
+  def lastCharIs(cp: CharPredicate): Rule0 =
+    rule(test(cursor != 0 && cp(lastChar)))
 
   /** int ≥ 1 */
   def int1n: Rule1[Int] =

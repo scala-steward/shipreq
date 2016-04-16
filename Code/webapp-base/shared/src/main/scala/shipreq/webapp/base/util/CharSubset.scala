@@ -77,7 +77,7 @@ final class CharSubset(_direct: List[Int], _ranges: List[Range]) {
     * Because JS doesn't support look-behind, the char prior to the middle is captured.
     */
   def regexNotAround(middleRegex: String): String =
-    s"(^|$regexCharNot)$middleRegex(?!$regexChar)"
+    s"(?:(^|$regexCharNot)(?:$middleRegex)(?!$regexChar))"
 
   /** Creates a function that replaces all occurrences of the middle, so long as a char in this range isn't on either
     * side.
