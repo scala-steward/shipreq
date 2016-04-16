@@ -21,9 +21,6 @@ import Atom.AnyAtom
 
 object ParsersTest extends TestSuite {
 
-  def quoteStr(s: String): String =
-    s"⟪${s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")}⟫"
-
   def preprocessStr(s: String, lc: LineCardinality): String =
     String valueOf Parsers.preprocess(s, lc)
 
@@ -111,7 +108,7 @@ object ParsersTest extends TestSuite {
       count(src)
       val txt = txt2str(src)
       val parsed = Text.CustomTextField.parse(p)(txt)
-      cmp(s"[CustomTextField] toStr |> parse = id\n${quoteStr(txt)}", parsed, src)
+      cmp(s"[CustomTextField] toStr |> parse = id\n${quoteStringForDisplay(txt)}", parsed, src)
     }
 
     def testStringML(in0: String) = {
@@ -220,7 +217,7 @@ object ParsersTest extends TestSuite {
 
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
-        assertEq(quoteStr(preprocessStr(text, MultiLine)), parse(p)(text), e)
+        assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
         val text2 = PlainText(p, ProjectText.Context.None).format(Live, e)
         assertEq(text2, parse(p)(text2), e)
       }

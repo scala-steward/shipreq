@@ -5,6 +5,7 @@ import scalaz.{Equal, Order}
 import scalaz.std.string.stringInstance
 import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.Util
 
 object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
 
@@ -157,5 +158,29 @@ trait BaseTestUtil extends scalaz.syntax.ToEqualOps {
     if (!actual.contains(expectFrag)) {
       val a = colourMultiline(actual, BOLD + CYAN)
       _fail(s"${BOLD}${MAGENTA}Expected [${GREEN}$expectFrag${MAGENTA}] in:$RESET\n$a")
+    }
+
+  def quoteStringForDisplay(s: String): String =
+    Util.quickSB { sb =>
+      sb append '⟪'
+      s foreach {
+        case '\b' => sb append '\\'; sb append 'b'
+        case '\f' => sb append '\\'; sb append 'f'
+        case '\n' => sb append '\\'; sb append 'n'
+        case '\r' => sb append '\\'; sb append 'r'
+        case '\t' => sb append '\\'; sb append 't'
+        case '\\' => sb append '\\'; sb append '\\'
+        case c    =>
+          val hex = Integer.toHexString(c.toInt)
+          sb append "\\u"
+          hex.length match {
+            case 1 => sb append "000"
+            case 2 => sb append "00"
+            case 3 => sb append '0'
+            case _ =>
+          }
+          sb append hex
+      }
+      sb append '⟫'
     }
 }
