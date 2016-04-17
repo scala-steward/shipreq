@@ -382,7 +382,7 @@ trait ApplyContentEvent {
           }
 
       def updateTitle(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText): SE[Unit] =
-        mapStep(id)(_.copy(title = title))
+        mapStep(id)(_.copy(titleExplicitly = title))
 
       e => {
         val gd       = e.vs.value

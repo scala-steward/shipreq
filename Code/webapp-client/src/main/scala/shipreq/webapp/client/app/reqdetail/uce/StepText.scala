@@ -16,8 +16,8 @@ import shipreq.webapp.client.lib.DataReusability._
 object StepText {
 
   case class Props(step      : UseCaseStep,
-                   live: Live,
-                   defaultTitle: Text.UseCaseTitle.OptionalText,
+                   live      : Live,
+                   title     : Text.AnyOptional,
                    flow      : UseCases.StepFlow,
                    widgets   : ProjectWidgets,
                    editState : ContentEditorFeature.D0.State,
@@ -42,12 +42,7 @@ object StepText {
       def body = {
         // TODO Missing flow in text --------------------------------------------------------------------------------
         def view: ReactNode = {
-          // TODO This logic is effective anywhere step titles are displayed.
-          // TODO Also affects parsing
-          if (p.step.title.isEmpty && p.defaultTitle.nonEmpty)
-            p.widgets.format(p.live, p.defaultTitle)
-          else
-            p.widgets.format(p.live, p.step.title)
+          p.widgets.format(p.live, p.title)
         }
         p.asyncState renderOr (p.editState renderOr view)
       }

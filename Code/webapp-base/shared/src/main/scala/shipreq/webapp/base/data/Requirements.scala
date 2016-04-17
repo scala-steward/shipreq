@@ -3,7 +3,7 @@ package shipreq.webapp.base.data
 import monocle.{Iso, Traversal}
 import monocle.macros.Lenses
 import nyaya.util.Multimap
-import scalaz.Equal
+import scalaz.{Equal, \/, -\/, \/-}
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
@@ -149,6 +149,9 @@ final case class UseCase(id            : UseCaseId,
   def rootStep: UseCaseStep =
     stepsNA.tree.children.head.value
 
+  val rootStepId: UseCaseStepId =
+    rootStep.id
+
   def stepIterator: Iterator[UseCaseStep] =
     stepsNA.tree.valueIterator ++ stepsE.tree.valueIterator
 
@@ -178,9 +181,24 @@ object UseCase {
 case class UseCaseStepId(value: Int) extends SubReqId
 
 @Lenses
-case class UseCaseStep(id            : UseCaseStepId,
-                       title         : Text.UseCaseStep.OptionalText,
-                       liveExplicitly: Live) {
+case class UseCaseStep(id             : UseCaseStepId,
+                       titleExplicitly: Text.UseCaseStep.OptionalText,
+                       liveExplicitly : Live) {
+
+  def usesUseCaseTitle(enclosingUC: UseCase): Boolean =
+    titleExplicitly.isEmpty && enclosingUC.rootStepId ==* id
+
+  def title(enclosingUC: UseCase): UseCaseStep.Title =
+    if (usesUseCaseTitle(enclosingUC))
+      -\/(enclosingUC.title)
+    else
+      \/-(titleExplicitly)
+
+  def titleA(enclosingUC: UseCase): Text.AnyOptional =
+    if (usesUseCaseTitle(enclosingUC))
+      enclosingUC.title
+    else
+      titleExplicitly
 
   def live(enclosingTree: UseCaseSteps): Live =
     live(enclosingTree.stepPartialLocs.get(id))
@@ -196,6 +214,8 @@ object UseCaseStep {
   }
   implicit def equality: UnivEq[UseCaseStep] = UnivEq.derive
 
+  type Title = Text.UseCaseTitle.OptionalText \/ Text.UseCaseStep.OptionalText
+
   /**
    * Focus on a particular [[UseCaseStep]] and provide related data.
    */
@@ -208,7 +228,9 @@ object UseCaseStep {
        lazy val loc       = ucSteps.stepLocs.forward(id)
        lazy val ploc      = ucSteps.stepPartialLocs.get(id)
        lazy val step      = ucSteps.tree.needAtLocation(loc)
-       lazy val live      = step.live(ucSteps)
+       lazy val live      = step.live(ploc)
+            def title     = step.title(uc)
+            def titleA    = step.titleA(uc)
   }
 }
 

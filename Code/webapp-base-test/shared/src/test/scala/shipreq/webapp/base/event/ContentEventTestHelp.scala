@@ -158,7 +158,7 @@ object ContentEventTestHelp {
 
     if (ignoreSteps) {
       def f(x: DetachedUseCase): DetachedUseCase =
-        x.copy(req = x.req.copy(stepsNA = UseCaseSteps.empty, stepsE = UseCaseSteps.empty))
+        x.copy(req = x.req.copy(stepsNA = UseCaseSteps.emptyRoot(0), stepsE = UseCaseSteps.empty))
       d = d map f
       e = f(e)
     }

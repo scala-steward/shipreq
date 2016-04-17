@@ -204,7 +204,7 @@ final class ProjectWidgets private(project    : Project,
     memo { id =>
       val focus = project.reqs.useCases.focusStep(id)
       val label = plainText.useCaseStepLabel(focus)
-      val title = plainText.format(focus.live, focus.step.title)
+      val title = plainText.format(focus.live, focus.titleA)
       val ld    = deadValidity(Invalid)(focus.live)
       <.span(
         *.useCaseStepRef(ld),

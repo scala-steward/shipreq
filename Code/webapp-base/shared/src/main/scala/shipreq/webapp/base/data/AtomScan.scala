@@ -83,7 +83,7 @@ object AtomScan {
 
       case uc: UseCase =>
         scan(uc.liveUC, reqId = uc.id)(uc.title)
-        scan(uc.liveUC, reqId = uc.id)(uc.stepIterator.flatMap(_.title))
+        scan(uc.liveUC, reqId = uc.id)(uc.stepIterator.flatMap(_.titleExplicitly))
     }
 
     // Parse custom-text-field text

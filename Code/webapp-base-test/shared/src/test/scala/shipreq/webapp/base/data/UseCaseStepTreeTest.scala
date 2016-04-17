@@ -27,13 +27,12 @@ object UseCaseStepTreeTest extends TestSuite {
   def genUseCaseSteps(f: UCF): Gen[UseCaseSteps] =
     RandomData.useCaseSteps(genUseCaseStep, f)(0 to 4)
 
-  val genUseCase: Gen[UseCase] = {
-    val base = UseCase(UseCaseId(1), ReqTypePos(1), Vector.empty, UseCaseSteps.empty, UseCaseSteps.empty, Live)
+  val genUseCase: Gen[UseCase] =
     for {
       na <- genUseCaseSteps(SF.NormalAltStepTree)
       e  <- genUseCaseSteps(SF.ExceptionStepTree)
-    } yield base.copy(stepsNA = na, stepsE = e)
-  }
+    } yield
+      UseCase(UseCaseId(1), ReqTypePos(1), Vector.empty, na, e, Live)
 
   val genProject: Gen[Project] =
     genUseCase.map { uc =>

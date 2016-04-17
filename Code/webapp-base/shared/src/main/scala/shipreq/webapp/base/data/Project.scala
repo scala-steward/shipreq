@@ -80,7 +80,7 @@ final case class Project(config         : ProjectConfig,
     ("ReqCodeGroups",     reqCodes.groups.iterator.map(_.title))                         ::
     ("GenericReq titles", reqs.genericReqs.valuesIterator.map(_.title))                  ::
     ("UseCase titles",    reqs.useCases.imap.valuesIterator.map(_.title))                ::
-    ("UseCase steps",     reqs.useCases.stepIterator.map(_.title))                       ::
+    ("UseCase steps",     reqs.useCases.stepIterator.map(_.titleExplicitly))             ::
     ("Text fields",       reqText.valuesIterator.flatMap(_.valuesIterator).map(_.whole)) ::
     Nil
 

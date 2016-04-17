@@ -130,19 +130,17 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
       private def stepTreeProps(field       : StaticField.UseCaseStepTree,
                                 filter      : UseCaseSteps.Tree => Range,
-                                defaultFirst: Text.UseCaseTitle.OptionalText,
                                 leftIsDownAt: VectorTree.Location => Boolean,
                                 rightIsUpAt : VectorTree.Location => Boolean,
                                 tailStep    : Boolean) = {
         val s = field.useCaseSteps.get(uc)
         val i = filter(s.tree)
-        Temp(field, s, i, defaultFirst, leftIsDownAt, rightIsUpAt, tailStep)
+        Temp(field, s, i, leftIsDownAt, rightIsUpAt, tailStep)
       }
 
       val stepsN = stepTreeProps(
         StaticField.NormalAltStepTree,
         _ => 0 to 0,
-        uc.title,
         _ => false, // l => l.length ==* 2 && l.tail.head !=* 0, ← Correct but bad UX
         _ => false,
         false)
@@ -150,7 +148,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       val stepsA = stepTreeProps(
         StaticField.NormalAltStepTree,
         1 until _.children.length,
-        Vector.empty,
         _ => false,
         _ ==* (NonEmptyVector one 1),
         true)
@@ -158,7 +155,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       val stepsE = stepTreeProps(
         StaticField.ExceptionStepTree,
         _.children.indices,
-        Vector.empty,
         _ => false,
         _ => false,
         true)
@@ -177,7 +173,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
   case class Temp(field       : StaticField.UseCaseStepTree,
                   steps       : UseCaseSteps,
                   filter      : Range,
-                  defaultFirst: Text.UseCaseTitle.OptionalText,
                   leftIsDownAt: VectorTree.Location => Boolean,
                   rightIsUpAt : VectorTree.Location => Boolean,
                   tailStep    : Boolean) {
@@ -448,8 +443,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
         val stepLabel = ReactAttr.devOnly("data-step-label") := 1
 
-        var first = temp.defaultFirst.nonEmpty
-
         val x = temp.steps.tree.subtreeLocAndValueIterator[ReactTag](temp.filter, (loc, step) => {
 
           val partialLoc = temp.steps.partialLocs.forward(loc)
@@ -492,17 +485,10 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
             def text = {
 
-              // TODO Not like this
-              val defaultTitle = if (first) {
-                first = false
-                temp.defaultFirst
-              } else
-                Vector.empty
-
               val p = StepText.Props(
                 step,
                 live,
-                defaultTitle,
+                step.titleA(uc),
                 flow,
                 pw,
                 None,           // TODO editState : ContentEditorFeature.D0.State,
