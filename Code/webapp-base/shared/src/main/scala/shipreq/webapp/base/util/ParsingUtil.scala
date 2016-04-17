@@ -43,6 +43,10 @@ abstract class ParsingUtil extends Parser {
   def EOL: Rule0 =
     rule(NL | EOI)
 
+  /** Single-Line WhiteSpace (one char) */
+  def SLWS: Rule0 =
+    rule(!EOL ~ Whitespace)
+
   def lastCharIs(cp: CharPredicate): Rule0 =
     rule(test(cursor != 0 && cp(lastChar)))
 

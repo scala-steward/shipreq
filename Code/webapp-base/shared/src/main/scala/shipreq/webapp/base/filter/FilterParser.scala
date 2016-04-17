@@ -58,7 +58,6 @@ object FilterParser {
 class FilterParser(val input: ParserInput) extends ParsingUtil {
   import FilterParser._
 
-  private def WS  = rule(oneOrMore(Whitespace))
   private def OWS = rule(zeroOrMore(Whitespace))
 
   /** Where this is present, whitespace is required between the current and (most) other FilterSpecs */

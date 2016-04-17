@@ -196,18 +196,21 @@ object Parsers {
     def tagRef = popPF[HashRefTarget, t.TagRef] { case -\/(tag) => t.TagRef(tag.id) }
   }
 
-  trait UseCaseStepRef extends Base {
-    override type T <: Atom.UseCaseStepRef
+  trait UseCaseStepLabel extends ParsingUtil {
 
-    import G.reflinkSurround.parsing.{prefix, suffix}
+    /** Optional whitespace */
+    def OWS: Rule0
 
-    def useCaseStepRef: Rule1[t.Atom] = rule(
-      prefix ~ OWS                                                // [
-        ~ ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).? // UC-
-        ~ reqTypePos ~ OWS                                        // 1
-        ~ ('.' ~ OWS ~ capture(CP.Alpha.+ | CP.Digit.+) ~ OWS).+  // .E.0.X.1.a.ii
-        ~ suffix                                                  // ]
-        ~> lookupStep ~ popOptional[UseCaseStepId] ~> t.UseCaseStepRef)
+    def reqs: Requirements
+
+    /** Expects no leading whitespace.
+      * Gobbles any trailing whitespace.
+      */
+    def useCaseStepLabel: Rule1[UseCaseStepId] = rule(
+        ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).?  // UC-
+        ~ reqTypePos ~ OWS                                       // 1
+        ~ ('.' ~ OWS ~ capture(CP.Alpha.+ | CP.Digit.+) ~ OWS).+ // .E.0.X.1.a.ii
+        ~> lookupStep ~ popOptional[UseCaseStepId])
 
     val lookupStep: (ReqTypePos, Seq[String]) => Option[UseCaseStepId] =
       (pos, nodes) => {
@@ -249,11 +252,22 @@ object Parsers {
         }
 
         for {
-          uc ← project.reqs.getUseCaseByPos(pos)
+          uc ← reqs.getUseCaseByPos(pos)
           pl ← parseNodes(f)
           id ← f.useCaseSteps.get(uc).partialLocSteps.getOption(pl)
         } yield id
       }
+  }
+
+  trait UseCaseStepRef extends Base with UseCaseStepLabel {
+    override type T <: Atom.UseCaseStepRef
+
+    import G.reflinkSurround.parsing.{prefix, suffix}
+
+    override def reqs = project.reqs
+
+    def useCaseStepRef: Rule1[t.Atom] =
+      rule(prefix ~ OWS ~ useCaseStepLabel ~ suffix ~> t.UseCaseStepRef)
   }
 
   trait Issue extends Base {
