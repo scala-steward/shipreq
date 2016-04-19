@@ -4,7 +4,7 @@ import japgolly.univeq.UnivEq
 import org.parboiled2._
 import scalaz.{Applicative, Functor, Monoid, \/, \/-, -\/}
 import shipreq.base.util.{Backwards, Direction, Forwards}
-import shipreq.webapp.base.data.{Project, Requirements, UseCaseStepId}
+import shipreq.webapp.base.data.{Requirements, UseCaseStepId}
 import shipreq.webapp.base.util.ParsingUtil
 
 /**
@@ -27,22 +27,6 @@ object UseCaseStepFlowText {
 
     final def mapS[F[_], TT >: T, SS](f: S => F[SS])(implicit F: Applicative[F]): F[Elem[TT, SS]] =
       bimap[F, TT, SS](F.point(_), f)
-
-    /*
-    final def mapT[F[_], TT, SS >: S](f: T => F[TT])(implicit F: Applicative[F]): F[Elem[TT, SS]] =
-      this match {
-        case Elem.Text(text) => F.map(f(text))(Elem.Text(_))
-        case s: Elem.Step[S] => F.point(s)
-        case a: Elem.Arrow   => F.point(a)
-      }
-
-    final def mapS[F[_], TT >: T, SS](f: S => F[SS])(implicit F: Applicative[F]): F[Elem[TT, SS]] =
-      this match {
-        case Elem.Step(step) => F.map(f(step))(Elem.Step(_))
-        case t: Elem.Text[T] => F.point(t)
-        case a: Elem.Arrow   => F.point(a)
-      }
-    */
   }
 
   object Elem {
