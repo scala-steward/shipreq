@@ -154,13 +154,6 @@ final case class UseCase(id            : UseCaseId,
 
   def stepIterator: Iterator[UseCaseStep] =
     stepsNA.tree.valueIterator ++ stepsE.tree.valueIterator
-
-//  def stepIteratorLive(liveFilter: Live): Iterator[UseCaseStep] =
-//    stepIteratorFiltered((_, l) => l :: liveFilter)
-
-  def stepIteratorFiltered(f: (UseCaseStep, Live) => Boolean): Iterator[UseCaseStep] =
-    stepsNA.tree.valueIterator.filter(s => f(s, s.live(stepsNA))) ++
-    stepsE .tree.valueIterator.filter(s => f(s, s.live(stepsE )))
 }
 
 object UseCase {
@@ -200,11 +193,16 @@ case class UseCaseStep(id             : UseCaseStepId,
     else
       titleExplicitly
 
-  def live(enclosingTree: UseCaseSteps): Live =
-    live(enclosingTree.stepPartialLocs.get(id))
+  @deprecated("Use UseCaseStep.live or UseCaseStep.Focus#live.", "")
+  def live = ()
 
-  def live(ploc: VectorTree.PartialLocation): Live =
-    Live whenValid ploc.validity
+  /** Doesn't take live-state of enclosing use-case into consideration. */
+  def liveIgnoringUC(enclosingTree: UseCaseSteps): Live =
+    liveIgnoringUC(enclosingTree.stepPartialLocs.get(id))
+
+  /** Doesn't take live-state of enclosing use-case into consideration. */
+  def liveIgnoringUC(ploc: VectorTree.PartialLocation): Live =
+    UseCaseStep.liveIgnoringUC(ploc)
 }
 
 object UseCaseStep {
@@ -215,6 +213,14 @@ object UseCaseStep {
   implicit def equality: UnivEq[UseCaseStep] = UnivEq.derive
 
   type Title = Text.UseCaseTitle.OptionalText \/ Text.UseCaseStep.OptionalText
+
+  /** Live-state of a step. */
+  def live(uc: UseCase, ploc: => VectorTree.PartialLocation): Live =
+    uc.liveUC & liveIgnoringUC(ploc)
+
+  /** Doesn't take live-state of enclosing use-case into consideration. */
+  def liveIgnoringUC(ploc: VectorTree.PartialLocation): Live =
+    Live.whenValid(ploc.validity)
 
   /**
    * Focus on a particular [[UseCaseStep]] and provide related data.
@@ -228,7 +234,7 @@ object UseCaseStep {
        lazy val loc       = ucSteps.stepLocs.forward(id)
        lazy val ploc      = ucSteps.stepPartialLocs.get(id)
        lazy val step      = ucSteps.tree.needAtLocation(loc)
-       lazy val live      = step.live(ploc)
+       lazy val live      = UseCaseStep.live(uc, ploc)
             def title     = step.title(uc)
             def titleA    = step.titleA(uc)
 
@@ -294,6 +300,8 @@ case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: 
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
 
+  // This might be a good candidate for caching...
+  // On the other hand, caching could end up being a waste of client memory for no noticeable gain...
   def focusStep(id: UseCaseStepId): UseCaseStep.Focus =
     new UseCaseStep.Focus(this, id)
 

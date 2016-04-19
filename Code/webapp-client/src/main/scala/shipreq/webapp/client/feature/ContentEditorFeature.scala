@@ -77,6 +77,7 @@ object ContentEditorFeature {
     case object ImplicationSrc                extends EditFieldKey
     case object ImplicationTgt                extends EditFieldKey
     case class CustomField(id: CustomFieldId) extends EditFieldKey
+    case class UseCaseStep(id: UseCaseStepId) extends EditFieldKey
 
     // DeletionReason is a bit odd in that it is append-only, not directly editable.
     // case object DeletionReason extends EditFieldKey
@@ -105,6 +106,7 @@ object ContentEditorFeature {
     case class ReqTitle           [+P](req: Req, focusId: P)                                   extends Editor[P]
     case class ReqCodeGroupTitle  [+P](rcg: ReqCodeGroup, focusId: P)                          extends Editor[P]
     case class CustomTextField    [+P](req: Req, fid: CustomField.Text.Id, focusId: P)         extends Editor[P]
+    case class UseCaseStep        [+P](id: UseCaseStepId, focusId: P)                          extends Editor[P]
 
     def reqType(req: Req): Option[ReqType] =
       req match {
@@ -198,6 +200,9 @@ object ContentEditorFeature {
             }
           )
 
+        def liveUseCaseStep(id: UseCaseStepId): Px[Permission] =
+          pxProject.map(Allow <~ _.reqs.useCases.focusStep(id).live :: Live)
+
         editor match {
           case Editor.ReqCodesForReq         (req)         => liveReq(req.id, None)
           case Editor.ReqType                (req)         => liveReq(req.id, None)
@@ -208,6 +213,7 @@ object ContentEditorFeature {
           case Editor.CustomTextField        (req, fid, _) => liveReq(req.id, fid.some)
           case Editor.ReqCodeForReqCodeGroup (rcg, _)      => liveRCG(rcg.id)
           case Editor.ReqCodeGroupTitle      (rcg, _)      => liveRCG(rcg.id)
+          case Editor.UseCaseStep            (id, _)       => liveUseCaseStep(id)
         }
       }
 
@@ -229,6 +235,7 @@ object ContentEditorFeature {
           case Editor.ReqType                (req)               => EditReqType(req)
           case Editor.ImplicationsAll        (req, dir, ivs)     => EditImplications.all(req, dir, ivs)
           case Editor.ImplicationsCustomField(req, fid)          => EditImplications.customField(req, fid)
+          case Editor.UseCaseStep            (id, p)             => EditUseCaseStep(id, p)
         }
 
       def startEditFn(instance: => EditorInstance): StartEditFn =

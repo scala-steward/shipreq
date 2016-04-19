@@ -417,7 +417,7 @@ trait ApplyContentEvent {
 
     private def setUseCaseStepLive(id: UseCaseStepId, life: Live): SE[Unit] =
       findStepModTree(id)((steps, _, loc, step) =>
-        ensureLiveIsNot(step.live(steps))(life, show(id)) >>
+        ensureLiveIsNot(step.liveIgnoringUC(steps))(life, show(id)) >>
           setStep(steps.tree, loc)(step.copy(liveExplicitly = life)))
   }
 

@@ -108,6 +108,7 @@ object Column {
     case EditFieldKey.ImplicationSrc  => Some(Column.ImplicationSrc       )
     case EditFieldKey.ImplicationTgt  => Some(Column.ImplicationTgt       )
     case EditFieldKey.CustomField(id) => Some(Column.CustomField(id, Live))
+    case EditFieldKey.UseCaseStep(_)  => None
   }
 
   def field(c: Column, p: ProjectConfig): Option[Field] =

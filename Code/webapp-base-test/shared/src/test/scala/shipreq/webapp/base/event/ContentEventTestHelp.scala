@@ -174,7 +174,7 @@ object ContentEventTestHelp {
 
   def assertUcStepsO(name: => Option[String], steps: UseCaseSteps, keys: String*): Unit =
     assertSetO(name,
-      steps.tree.filter(_.live(steps) match {
+      steps.tree.filter(_.liveIgnoringUC(steps) match {
         case Live => VectorTree.NodeFilter.KeepNode
         case Dead => VectorTree.NodeFilter.DiscardNodeAndChildren
       }).locIterator.map(_.map(_.toString).mkString(".")).toSet,

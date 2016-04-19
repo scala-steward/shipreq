@@ -11,6 +11,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.hash._
+import shipreq.webapp.base.test.DataTestExt._
 import shipreq.webapp.base.test.WebappBaseGen._
 import shipreq.webapp.base.text.Text
 import ApplicableEventGen.ObserveFn
@@ -167,7 +168,7 @@ class ApplicableEventGen(p: Project) {
     Gen.tryGenChoose(p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live).map(_.id))
 
   def liveUseCaseIterator: Iterator[UseCase] =
-    p.reqs.useCases.imap.valuesIterator.filter(_.live(cfg.customReqTypes) :: Live)
+    p.reqs.useCases.imap.valuesIterator.filter(_.liveUC :: Live)
 
   lazy val liveUseCase: Option[Gen[UseCase]] =
     Gen.tryGenChoose(liveUseCaseIterator)
@@ -455,17 +456,13 @@ class ApplicableEventGen(p: Project) {
       g.map(id =>
         DeleteTag(id, deletionAction(cfg.tags.get(id).fold[Live](Live)(_.tag.live)))))
 
-  private def deletableRestorableUseCaseSteps(liveFilter: Live) =
-    liveUseCaseIterator.flatMap(uc =>
-      uc.stepIteratorFiltered((s, l) => l :: liveFilter && s.id !=* uc.rootStep.id))
-
   def deleteUseCaseStep: Option[Gen[DeleteUseCaseStep]] = {
-    val ids = deletableRestorableUseCaseSteps(Live).map(_.id)
+    val ids = p.useCaseStepsDeletable.map(_.id)
     Gen.tryGenChooseLazily(ids).map(_ map DeleteUseCaseStep)
   }
 
   def restoreUseCaseStep: Option[Gen[RestoreUseCaseStep]] = {
-    val ids = deletableRestorableUseCaseSteps(Live).map(_.id)
+    val ids = p.useCaseStepsRestorable.map(_.id)
     Gen.tryGenChooseLazily(ids).map(_ map RestoreUseCaseStep)
   }
 

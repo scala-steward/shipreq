@@ -8,6 +8,7 @@ import scalaz.std.list.listInstance
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.DataTestExt._
 import utest._
 
 object EventPropTests extends TestSuite {
@@ -20,17 +21,8 @@ object EventPropTests extends TestSuite {
     // Ensure project is valid. Only need to do this once globally and here it is.
     p assertSatisfies DataProp.project.allIncludingConfig
 
-    def deletableSteps: Iterator[UseCaseStep] =
-      p.reqs.useCases.imap.valuesIterator
-        .filter(_.liveUC :: Live)
-        .flatMap { uc =>
-          val root = uc.rootStep.id
-          uc.stepIteratorFiltered((s, l) => s.id !=* root && l :: Live)
-        }
-
     val deletableStepProps =
-      E.forall(deletableSteps.toList) { step =>
-        val id = step.id
+      E.forall(p.useCaseStepsDeletable.map(_.id).toList) { id =>
         val a = DeleteUseCaseStep (id)
         val b = RestoreUseCaseStep(id)
         E.equal("DeleteUseCaseStep + RestoreUseCaseStep = id",

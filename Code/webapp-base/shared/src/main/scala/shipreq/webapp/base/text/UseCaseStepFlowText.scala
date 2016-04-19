@@ -139,7 +139,7 @@ object UseCaseStepFlowText {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  case class TextAndFlow[T, S](text: T, flow: Direction => S) {
+  case class TextAndFlow[+T, +S](text: T, flow: Direction => S) {
     def fold[A](f: T => A)(g: (A, S) => A): A =
       g(g(f(text), flow(Forwards)), flow(Backwards))
 

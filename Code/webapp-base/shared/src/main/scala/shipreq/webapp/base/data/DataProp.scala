@@ -252,9 +252,7 @@ object DataProp {
       import StaticField.{NormalAltStepTree => N, ExceptionStepTree => E}
 
       def rootStep =
-        Prop.test[UseCase]("Root step", uc =>
-          uc.stepsNA.tree.children.headOption.exists(r =>
-            r.value.live(uc.stepsNA) :: Live && r.value.liveExplicitly :: Live))
+        Prop.test[UseCase]("Root step", _.rootStep.liveExplicitly :: Live)
 
       def eachTree(f: StaticField.UseCaseStepTree) =
         VectorTree.maxDimsProp(

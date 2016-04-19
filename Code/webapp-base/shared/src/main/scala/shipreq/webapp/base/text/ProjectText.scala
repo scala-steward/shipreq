@@ -127,7 +127,7 @@ abstract class ProjectText[Out](project: Project, val ctx: ProjectText.Context) 
   val format1: (Live, Text.AnyNonEmpty) => Out =
     (l, nev) => format(l, nev.whole)
 
-  final type UseCaseStep[Flow] = UseCaseStepFlowText.TextAndFlow[Text.UseCaseStep.OptionalText, Flow]
+  final type UseCaseStep[Flow] = UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Flow]
 
   private def memoByReqId = Memo.by[Req, ReqId](_.id)
 

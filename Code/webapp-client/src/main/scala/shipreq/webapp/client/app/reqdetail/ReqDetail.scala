@@ -248,6 +248,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           case Cell.CustomField(fid: CustomField.Tag        .Id) => Editor.Tags(req, Some(fid))
           case Cell.CustomField(fid: CustomField.Text       .Id) => Editor.CustomTextField(req, fid, cell)
           case Cell.CustomField(fid: CustomField.Implication.Id) => Editor.ImplicationsCustomField(req, fid)
+          case Cell.UseCaseStep(id)                              => Editor.UseCaseStep(id, cell)
         }
 
       initEditor.feature((cell, el) =>
@@ -437,6 +438,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       def renderStepTree(temp: Temp) = {
         import shipreq.webapp.client.app.Style.reqdetail.{useCaseStep => *}
         import uce._
+        import UseCaseStepFlowText.TextAndFlow
         val uc = data.useCaseData.get.uc
         val pos = uc.pubid.pos
         val flow = data.project.reqs.useCases.stepFlow
@@ -450,7 +452,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
             val fullStepLabel = temp.field.stepLabel(pos, partialLoc, mnemonicPrefix = false)
 
-            val live = step.live(partialLoc)
+            val live = UseCaseStep.live(uc, partialLoc)
 
             def label: ReactTag =
               partialLoc.validity match {
@@ -483,19 +485,10 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
                       fullStepLabel.dropWhile(_ !=* AppConsts.useCaseStepsDeadNode) + "."))
               }
 
-            def text = {
-
-              val p = StepText.Props(
-                step,
-                live,
-                step.titleA(uc),
-                flow,
-                pw,
-                None,           // TODO editState : ContentEditorFeature.D0.State,
-                None,           // TODO asyncState: AsyncActionFeature.D0.State[String],
-                Callback.empty) // TODO startEdit : Callback) {
-              p.render
-            }
+            def text =
+              renderAsyncEditorOrValue(
+                Cell.UseCaseStep(step.id),
+                pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(step.id))))
 
             def ctrls = {
               import temp.{mdt, field => f}

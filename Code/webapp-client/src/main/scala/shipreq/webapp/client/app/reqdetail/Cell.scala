@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
-import shipreq.webapp.base.data.CustomFieldId
+import shipreq.webapp.base.data.{CustomFieldId, UseCaseStepId}
 import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
 
 sealed abstract class Cell {
@@ -35,6 +35,7 @@ object Cell {
   case object ImplicationSrc                extends Cell
   case object ImplicationTgt                extends Cell
   case class CustomField(id: CustomFieldId) extends Cell
+  case class UseCaseStep(id: UseCaseStepId) extends Cell
 
   @inline implicit def equality: UnivEq[Cell] =
     UnivEq.derive
@@ -50,6 +51,7 @@ object Cell {
     case Cell.ImplicationSrc  => Some(EditFieldKey.ImplicationSrc )
     case Cell.ImplicationTgt  => Some(EditFieldKey.ImplicationTgt )
     case Cell.CustomField(id) => Some(EditFieldKey.CustomField(id))
+    case Cell.UseCaseStep(id) => Some(EditFieldKey.UseCaseStep(id))
   } {
     case EditFieldKey.ReqType         => Some(Cell.ReqType        )
     case EditFieldKey.Code            => Some(Cell.Code           )
@@ -58,5 +60,6 @@ object Cell {
     case EditFieldKey.ImplicationSrc  => Some(Cell.ImplicationSrc )
     case EditFieldKey.ImplicationTgt  => Some(Cell.ImplicationTgt )
     case EditFieldKey.CustomField(id) => Some(Cell.CustomField(id))
+    case EditFieldKey.UseCaseStep(id) => Some(Cell.UseCaseStep(id))
   }
 }
