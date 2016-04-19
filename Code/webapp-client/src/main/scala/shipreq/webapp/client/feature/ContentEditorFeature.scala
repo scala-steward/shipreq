@@ -513,6 +513,55 @@ object ContentEditorFeature {
         }
       }
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      object EditUseCaseStep {
+        import shipreq.webapp.base.event.UseCaseStepGD
+        import shipreq.webapp.client.widgets.high.RichTextEditor.hardcodedLive
+        import shipreq.webapp.client.widgets.high.UseCaseStepEditor
+        import UseCaseStepFlowText.TextAndFlow
+
+        def apply(id: UseCaseStepId, focusId: P): StartEditFn = {
+
+          val extra: UseCaseStepEditor.Extra =
+            ReusableFn { i =>
+              var vs = UseCaseStepGD.emptyValues
+              for (v <- i.text          ) vs += UseCaseStepGD.Title  (v)
+              for (v <- i flow Forwards ) vs += UseCaseStepGD.FlowOut(v)
+              for (v <- i flow Backwards) vs += UseCaseStepGD.FlowIn (v)
+              val totalUpdate = ValidUpdate.nonEmpty(vs)
+
+              commitAbortK(Text.UseCaseStep.lineCardinality, totalUpdate)(
+                UpdateContentCmd.UpdateUseCaseStep(id, _))
+            }
+
+          val step = pxProject.value().reqs.useCases.focusStep(id)
+
+          val initialValue: UseCaseStepEditor.InitialValue =
+            TextAndFlow(step.step.titleExplicitly, step.flow)
+
+          val initialText: String =
+            pxPlainText.value().format(hardcodedLive, initialValue.text)
+
+          rvarStrToStartEditFn(new State(_, Some(initialValue), focusId, extra), initialText)
+        }
+
+        private class State(rvar   : ReusableVar[String],
+                            initial: Some[UseCaseStepEditor.InitialValue],
+                            focusId: P,
+                            extra  : UseCaseStepEditor.Extra) extends EditorInstanceImpl {
+
+          override val renderCB =
+            $.state.map { s =>
+              import Px.AutoValue._
+              val props = UseCaseStepEditor.Props(
+                pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
+                rvar, previewFeature.forChild(focusId, s), initial, extra)
+              Some(props.render: ReactElement)
+            }
+        }
+      }
+
     }
   }
 

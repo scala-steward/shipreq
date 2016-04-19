@@ -231,6 +231,9 @@ object UseCaseStep {
        lazy val live      = step.live(ploc)
             def title     = step.title(uc)
             def titleA    = step.titleA(uc)
+
+    def flow(d: Direction): Set[UseCaseStepId] =
+      useCases.stepFlow(d)(id)
   }
 }
 

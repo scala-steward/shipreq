@@ -28,7 +28,9 @@ import UseCaseStepFlowText.TextAndFlow
 
 object UseCaseStepEditor {
 
-  type Validated = TextAndFlow[ValidUpdateVR[OptionalText], ValidUpdateVR[Set[UseCaseStepId]]]
+  type InitialValue = TextAndFlow[OptionalText, Set[UseCaseStepId]]
+
+  type Validated = TextAndFlow[ValidUpdateVR[OptionalText], ValidUpdateVR[SetDiff.NE[UseCaseStepId]]]
 
   /** Extra properties to apply to the tag. */
   type Extra = Validated ~=> TagMod
@@ -39,7 +41,7 @@ object UseCaseStepEditor {
                    projectWidgets: ProjectWidgets,
                    edit          : ReusableVar[String],
                    preview       : PreviewFeature.ForChild,
-                   preEditValue  : Option[TextAndFlow[OptionalText, Set[UseCaseStepId]]],
+                   preEditValue  : Option[InitialValue],
                    extra         : Extra) {
 
     private val rawElems: Seq[UseCaseStepFlowText.Elem[String, String]] =
@@ -60,10 +62,10 @@ object UseCaseStepEditor {
           .sequenceU
           .map(_.toSet))
 
-    val editValResult: TextAndFlow[EV[OptionalText], EV[Set[UseCaseStepId]]] =
+    val editValResult: TextAndFlow[EV[OptionalText], EV[SetDiff.NE[UseCaseStepId]]] =
       valResult.composeF(preEditValue)(
         EditValidationFeature.compareOption(_)(_),
-        EditValidationFeature.compareOption(_)(_))
+        EditValidationFeature.compareSetOption(_)(_))
 
     val validated: Validated =
       editValResult.bimap(_.value, _.value)
@@ -115,7 +117,7 @@ object UseCaseStepEditor {
             "Preview",
             <.div(
               *.textEditPreview,
-              p.projectWidgets.useCaseStepE(p.parsed, hardcodedLive))))
+              p.projectWidgets.useCaseStepE(hardcodedLive, p.parsed))))
 
       <.div(
         editor,

@@ -3,6 +3,12 @@ package shipreq.base.util
 import ValidUpdate._
 
 sealed abstract class ValidUpdate[+E, +A] {
+  final def foreach(f: A => Unit): Unit =
+    this match {
+      case Success(a)             => f(a)
+      case Failure(_) | Unchanged => ()
+    }
+
   final def map[B](f: A => B): ValidUpdate[E, B] =
     flatMap(a => Success(f(a)))
 
@@ -107,6 +113,6 @@ object ValidUpdate {
     else
       Success(d)
 
-  def setDiffNE[A](d: SetDiff[A]): ValidUpdate[Nothing, SetDiff.NE[A]] =
-    setDiff(d).map(NonEmpty.force)
+  def nonEmpty[A, B](a: A)(implicit p: NonEmpty.Proof[A, B]): ValidUpdate[Nothing, B] =
+    option(p tryProve a)
 }

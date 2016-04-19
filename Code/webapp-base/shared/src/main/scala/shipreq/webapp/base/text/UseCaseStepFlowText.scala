@@ -57,6 +57,14 @@ object UseCaseStepFlowText {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  val AsciiArrows: Direction => String = {
+    case Forwards  => "-->"
+    case Backwards => "<--"
+  }
+
+  val DefaultArrowOrder: List[Direction] =
+    Backwards :: Forwards :: Nil
+
   /**
     * @return `Text` is never an empty string.
     *         `Text`s are never consecutive.

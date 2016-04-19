@@ -206,20 +206,11 @@ final class ProjectWidgets private(project    : Project,
         rt.mnemonic.value)
     }
 
-  val useCaseStepRef: UseCaseStepId => ReactElement =
-    memo { id =>
-      val focus = project.reqs.useCases.focusStep(id)
-      val label = plainText.useCaseStepLabel(focus)
-      val title = plainText.format(focus.live, focus.titleA)
-      val ld    = deadValidity(Invalid)(focus.live)
-      <.span(
-        *.useCaseStepRef(ld),
-        ^.title := title,
-        label)
-    }
+  def useCaseStepRef(id: UseCaseStepId): ReactTag =
+    useCaseStepLabelMemo(project.reqs.useCases.focusStep(id))
 
   /** eg. "1.p" instead of "1.0" */
-  def erroneousUseCaseStepRef(s: String): ReactElement =
+  def erroneousUseCaseStepRef(s: String): ReactTag =
   <.span(*.erroneousUseCaseStepRef, s)
 
   private def tagWithoutStyle(c: Contextualise, t: ApplicableTag): ReactTag = {
@@ -315,42 +306,50 @@ final class ProjectWidgets private(project    : Project,
         flatReqCodes(flat)
     )
 
-  type UseCaseStep[S] = UseCaseStepFlowText.TextAndFlow[Text.UseCaseStep.OptionalText, S]
+  override def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): ReactTag =
+    useCaseStepA(l, s)(useCaseFlowStepsOrdered)
 
-  def useCaseStep(i: UseCaseStep[Set[UseCaseStepId]], l: Live): ReactElement =
-    useCaseStepA(i, l)(
-      MutableArray(_)
-        .sortBySchwartzian(project.reqs.useCases.focusStep(_).ploc)
-        .mapOut(useCaseStepRef))
+  def useCaseStepE[C[x] <: Traversable[x]](l: Live, s: UseCaseStep[C[String \/ UseCaseStepId]]): ReactTag =
+    useCaseStepA(l, s)(
+      _.map(_.fold(erroneousUseCaseStepRef, useCaseFlowStepId))(collection.breakOut))
 
-  def useCaseStepE[C[x] <: Traversable[x]](i: UseCaseStep[C[String \/ UseCaseStepId]], l: Live): ReactElement =
-    useCaseStepA(i, l)(
-      _.map(_.fold(erroneousUseCaseStepRef, useCaseStepRef))(collection.breakOut))
+  private def useCaseStepA[C[x] <: TraversableOnce[x], A](l: Live, s: UseCaseStep[C[A]])
+                                                         (f: C[A] => Seq[ReactTag]): ReactTag = {
 
-  private def useCaseStepA[C[x] <: TraversableOnce[x], A](i: UseCaseStep[C[A]], l: Live)
-                                                         (f: C[A] => Seq[ReactElement]): ReactElement = {
-
-    val text = format(l, i.text)
+    val text = format(l, s.text)
 
     def stepFlow(dir: Direction): Option[ReactElement] = {
-      val ca = i flow dir
+      val ca = s flow dir
       if (ca.isEmpty)
         None
       else
         Some(stepFlowArrow(dir)(f(ca)))
     }
 
-    val fwd = stepFlow(Forwards)
-    val bck = stepFlow(Backwards)
+    val List(f1, f2) = UseCaseStepFlowText.DefaultArrowOrder.map(stepFlow)
 
-    if (fwd.isEmpty && bck.isEmpty)
+    if (f1.isEmpty && f2.isEmpty)
       text
     else
       <.table(
         <.tbody(
           <.tr(
             <.td(text),
-            <.td(bck, fwd))))
+            <.td(f1, f2))))
   }
+
+  private val useCaseStepLabelMemo: UseCaseStep.Focus => ReactTag =
+    Memo.by((_: UseCaseStep.Focus).id) { f =>
+      val label = plainText.useCaseStepLabel(f)
+      val title = plainText.format(f.live, f.titleA)
+      val ld = deadValidity(Invalid)(f.live)
+      <.span(
+        *.useCaseStepRef(ld),
+        ^.title := title,
+        label)
+    }
+
+  override protected def useCaseFlowStep(f: UseCaseStep.Focus): ReactTag =
+    useCaseStepLabelMemo(f)
 
 }

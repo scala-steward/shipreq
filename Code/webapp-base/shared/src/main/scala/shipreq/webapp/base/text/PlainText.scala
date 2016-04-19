@@ -1,7 +1,7 @@
 package shipreq.webapp.base.text
 
 import scala.annotation.tailrec
-import shipreq.base.util.NonEmptyVector
+import shipreq.base.util._
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -68,7 +68,7 @@ object PlainText {
   def pubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos): String =
     mnemonic.value ~ "-" ~ pos.value
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   private final val bullet = "* "
 
@@ -159,6 +159,28 @@ object PlainText {
       @inline def run(live: Live, atoms: Vector[AnyAtom]) = nest("", outOfListNewline, live, atoms)
       run
     }
+
+    override def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): String =
+      useCaseStepA(l, s, UseCaseStepFlowText.AsciiArrows)
+
+    def useCaseStepA(l: Live, s: UseCaseStep[Set[UseCaseStepId]], arrows: Direction => String): String =
+      Util.quickSB { sb =>
+        sb append format(l, s.text)
+        for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
+          val ids = s.flow(d)
+          if (ids.nonEmpty) {
+            if (sb.nonEmpty) sb append ' '
+            sb append arrows(d)
+            for (ref <- useCaseFlowStepsOrdered(ids)) {
+              sb append ' '
+              sb append ref
+            }
+          }
+        }
+      }
+
+    override protected def useCaseFlowStep(f: UseCaseStep.Focus): String =
+      useCaseStepLabel(f)
 
   }
 }

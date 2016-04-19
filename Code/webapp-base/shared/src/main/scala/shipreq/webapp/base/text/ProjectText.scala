@@ -1,6 +1,6 @@
 package shipreq.webapp.base.text
 
-import shipreq.base.util.{Memo, NonEmptySet, Util}
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.Must._
@@ -127,6 +127,8 @@ abstract class ProjectText[Out](project: Project, val ctx: ProjectText.Context) 
   val format1: (Live, Text.AnyNonEmpty) => Out =
     (l, nev) => format(l, nev.whole)
 
+  final type UseCaseStep[Flow] = UseCaseStepFlowText.TextAndFlow[Text.UseCaseStep.OptionalText, Flow]
+
   private def memoByReqId = Memo.by[Req, ReqId](_.id)
 
   val reqTitle: Req => Out =
@@ -157,4 +159,19 @@ abstract class ProjectText[Out](project: Project, val ctx: ProjectText.Context) 
   val latestDeletionReason: ReqId => Option[Out] =
     Memo(id =>
       project.deletionReasons.getLatest(id).map(format1(Dead, _)))
+
+  def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): Out
+
+  protected def useCaseFlowStep(f: UseCaseStep.Focus): Out
+
+  protected final def useCaseFlowStepId(id: UseCaseStepId): Out =
+    useCaseFlowStep(project.reqs.useCases.focusStep(id))
+
+  protected final def useCaseFlowStepsOrdered(ids: Set[UseCaseStepId]): Seq[Out] =
+    useCaseFlowStepsOrderedF(ids.iterator.map(project.reqs.useCases.focusStep))
+
+  protected final def useCaseFlowStepsOrderedF(fs: Iterator[UseCaseStep.Focus]): Seq[Out] =
+    MutableArray(fs)
+      .sortBy(_.ploc)
+      .mapOut(useCaseFlowStep)
 }

@@ -302,6 +302,9 @@ object MakeEvent {
       case UpdateContentCmd.SetUseCaseTitle(id, v) =>
         SetUseCaseTitle(id, v)
 
+      case UpdateContentCmd.UpdateUseCaseStep(id, vs) =>
+        UpdateUseCaseStep(id, vs)
+
       case UpdateContentCmd.PatchReqTags(id, v) =>
         PatchReqTags(id, v)
 
