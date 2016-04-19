@@ -334,8 +334,8 @@ final class ProjectWidgets private(project    : Project,
       <.table(
         <.tbody(
           <.tr(
-            <.td(text),
-            <.td(f1, f2))))
+            <.td(*.useCaseStepLayoutCell, text),
+            <.td(*.useCaseStepLayoutCell, f1, f2))))
   }
 
   private val useCaseStepLabelMemo: UseCaseStep.Focus => ReactTag =

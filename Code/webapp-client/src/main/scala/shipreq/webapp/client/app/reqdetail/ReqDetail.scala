@@ -443,7 +443,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         val pos = uc.pubid.pos
         val flow = data.project.reqs.useCases.stepFlow
 
-        val stepLabel = ReactAttr.devOnly("data-step-label") := 1
+        val stepLabelMarker = ReactAttr.devOnly("data-step-label") := 1
 
         val x = temp.steps.tree.subtreeLocAndValueIterator[ReactTag](temp.filter, (loc, step) => {
 
@@ -469,26 +469,32 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
                   <.div(
                     *.header(depth - 1),
-                    stepLabel,
+                    stepLabelMarker,
                     ^.title := fullStepLabel,
                     short + ".")
 
                 case Invalid =>
                   val badInd = partialLoc.value.whole.indexWhere(_ < 0)
 
+                  var label = fullStepLabel
+                  if (badInd != 0)
+                    label = label.dropWhile(_ !=* AppConsts.useCaseStepsDeadNode)
+                  label += "."
+
                   <.div(
                     *.header(badInd),
-                    stepLabel,
+                    stepLabelMarker,
                     ^.title := fullStepLabel,
                     <.span(
                       *.deadStepLabel,
-                      fullStepLabel.dropWhile(_ !=* AppConsts.useCaseStepsDeadNode) + "."))
+                      label))
               }
 
             def text =
-              renderAsyncEditorOrValue(
-                Cell.UseCaseStep(step.id),
-                pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(step.id))))
+              <.div(*.body,
+                renderAsyncEditorOrValue(
+                  Cell.UseCaseStep(step.id),
+                  pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(step.id)))))
 
             def ctrls = {
               import temp.{mdt, field => f}

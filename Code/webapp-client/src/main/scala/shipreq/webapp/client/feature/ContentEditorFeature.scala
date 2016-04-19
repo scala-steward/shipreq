@@ -542,13 +542,13 @@ object ContentEditorFeature {
                 UpdateContentCmd.UpdateUseCaseStep(id, _))
             }
 
-          val step = pxProject.value().reqs.useCases.focusStep(id)
+          val sf = pxProject.value().reqs.useCases.focusStep(id)
 
           val initialValue: UseCaseStepEditor.InitialValue =
-            TextAndFlow(step.step.titleExplicitly, step.flow)
+            TextAndFlow(sf.step.titleExplicitly, sf.flow)
 
           val initialText: String =
-            pxPlainText.value().format(hardcodedLive, initialValue.text)
+            pxPlainText.value().useCaseStep(hardcodedLive, initialValue)
 
           rvarStrToStartEditFn(new State(_, Some(initialValue), focusId, extra), initialText)
         }

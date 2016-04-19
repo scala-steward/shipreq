@@ -163,7 +163,7 @@ object PlainText {
     override def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): String =
       useCaseStepA(l, s, UseCaseStepFlowText.AsciiArrows)
 
-    def useCaseStepA(l: Live, s: UseCaseStep[Set[UseCaseStepId]], arrows: Direction => String): String =
+    private def useCaseStepA(l: Live, s: UseCaseStep[Set[UseCaseStepId]], arrows: Direction => String): String =
       Util.quickSB { sb =>
         sb append format(l, s.text)
         for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
