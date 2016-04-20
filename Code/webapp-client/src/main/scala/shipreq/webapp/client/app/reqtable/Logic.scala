@@ -105,11 +105,11 @@ private[reqtable] object Logic {
   private def impColValueExpander(vs: ViewSettings, p: Project, ap: Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
     customFieldExpander(vs, ap, impColValueFn(p, vs.filterDead))
 
-  private def tagColValueExpander(vs        : ViewSettings,
-                                  ap        : Applicability,
-                                  tagColDist: TagColumnDistribution.TagIds,
-                                  tagLookup : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
-    customFieldExpander(vs, ap, fid => DataLogic.customFieldTags(tagColDist, tagLookup, fid))
+  private def tagFieldValueExpander(vs          : ViewSettings,
+                                    ap          : Applicability,
+                                    tagFieldDist: TagFieldDistribution.TagIds,
+                                    tagLookup   : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
+    customFieldExpander(vs, ap, fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid))
 
   private def customFieldExpander[K <: CustomFieldId : ClassTag, V: UnivEq]
       (vs: ViewSettings, ap: Applicability, f: K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
@@ -166,9 +166,9 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // MultiValues
 
-  private def multiValuesFn(tagColDist: TagColumnDistribution.TagIds,
-                            tagLookup : TagLookup): ReqId => MultiValues = {
-    val tagValuesFn = DataLogic.generalTags(tagColDist, tagLookup)
+  private def multiValuesFn(tagFieldDist: TagFieldDistribution.TagIds,
+                            tagLookup   : TagLookup): ReqId => MultiValues = {
+    val tagValuesFn = DataLogic.generalTags(tagFieldDist, tagLookup)
     id => {
       val tags = tagValuesFn(id).toVector
       MultiValues(tags)
@@ -195,7 +195,7 @@ private[reqtable] object Logic {
     val filterDeadReq = vs.filterDead.filterFnA[Req](_ live p.config.customReqTypes)
     val filterDeadRCG = vs.filterDead.filterFnA[ReqCodeGroup](_.live)
     val filterDead    = Filter(filterDeadReq, filterDeadRCG)
-    val tagColDist    = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
+    val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p, vs.filterDead)
     val applicability = Applicability(p)
@@ -203,7 +203,7 @@ private[reqtable] object Logic {
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p, applicability)
-    val expandTagCols = tagColValueExpander(vs, applicability, tagColDist, tagLookup)
+    val expandTagCols = tagFieldValueExpander(vs, applicability, tagFieldDist, tagLookup)
 
     // The segregation of live/dead is because live reqs can have inactive reqcodes (leftovers of CodeRefs).
     // It would be erroneous to display inactive reqs for a live req.
@@ -216,7 +216,7 @@ private[reqtable] object Logic {
     }
 
     val pImplications = p.implications
-    val multiValuesFn = this.multiValuesFn(tagColDist, tagLookup)
+    val multiValuesFn = this.multiValuesFn(tagFieldDist, tagLookup)
 
     def pubid(reqId: ReqId): Option[Pubid] = {
       val req = p.reqs.req(reqId)

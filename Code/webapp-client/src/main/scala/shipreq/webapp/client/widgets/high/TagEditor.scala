@@ -30,13 +30,13 @@ object TagEditor {
       empty ++ tags.toIterator.filter(_.live :: Live)
 
     def all(p: Project): Lookup =
-      apply(p.config.liveTagColumnDistribution.tags.all)
+      apply(p.config.liveTagFieldDistribution.tags.all)
 
     def forTagField(f: CustomField.Tag.Id)(p: Project): Lookup =
-      apply(p.config.liveTagColumnDistribution.tags inColumn f)
+      apply(p.config.liveTagFieldDistribution.tags inField f)
 
     def notUsedInTagFields(p: Project): Lookup =
-      apply(p.config.liveTagColumnDistribution.tags.notUsedInColumns)
+      apply(p.config.liveTagFieldDistribution.tags.notUsedInFields)
   }
 
   def initialValues(initial: Set[ApplicableTagId], pc: ProjectConfig, l: Lookup): (Set[ApplicableTagId], String) = {

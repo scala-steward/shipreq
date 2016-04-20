@@ -15,10 +15,10 @@ object DataLogic {
   // 2. doesn't display tags allocated to visible, dead tag-columns.
   def tagFieldDist(pc           : ProjectConfig,
                    fd           : FilterDead,
-                   deadTagFilter: CustomField.Tag.Id => Boolean): TagColumnDistribution.TagIds =
+                   deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
     fd match {
-      case HideDead => pc.liveTagColumnDistribution
-      case ShowDead => pc.deadTagColumnDistribution(deadTagFilter)
+      case HideDead => pc.liveTagFieldDistribution
+      case ShowDead => pc.deadTagFieldDistribution(deadTagFilter)
     }
 
   /**
@@ -54,13 +54,13 @@ object DataLogic {
     }
   }
 
-  def generalTags(dist: TagColumnDistribution.TagIds, lookup: TagLookup): ReqId => Set[ApplicableTagId] = {
-    val tagsUsedInColumns = dist.usedInColumns
-    id => lookup(id).all &~ tagsUsedInColumns
+  def generalTags(dist: TagFieldDistribution.TagIds, lookup: TagLookup): ReqId => Set[ApplicableTagId] = {
+    val tagsUsedInFields = dist.usedInFields
+    id => lookup(id).all &~ tagsUsedInFields
   }
 
-  def customFieldTags(dist: TagColumnDistribution.TagIds, lookup: TagLookup, fid: CustomField.Tag.Id): ReqId => Set[ApplicableTagId] = {
-    val legal = dist inColumn fid
+  def customFieldTags(dist: TagFieldDistribution.TagIds, lookup: TagLookup, fid: CustomField.Tag.Id): ReqId => Set[ApplicableTagId] = {
+    val legal = dist inField fid
     id => lookup(id).all & legal
   }
 
