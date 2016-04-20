@@ -101,8 +101,12 @@ object VectorTreeTest extends TestSuite {
     val E = EvalOver(t)
     val k = t.filter(filterInt)
 
+    val origSize = t.locIterator.size
+
+    val allValid = m.iterator.filter(_._2.validity :: Valid).toList
+
     val origToFiltered =
-      E.forall(m.iterator.filter(_._2.validity :: Valid).toList) { case (l1, l2) =>
+      E.forall(allValid) { case (l1, l2) =>
         val orig = t.at(l1).map(_.value)
         E.test("Key exists in orig: " + l1, orig.isDefined) &
         E.equal(s"$l1 → $l2", k.at(l2.value).map(_.value), expect = orig)
@@ -129,13 +133,31 @@ object VectorTreeTest extends TestSuite {
       E.equal("filtered = each removed", k, removed)
     }
 
-    E.equal("output size", m.size, t.locIterator.size) ∧ E.distinct("output", m.values) ∧
-      origToFiltered ∧ filteredToOrig ∧ filterEqualsRemove
+    val lookupV: Location => Validity =
+      m(_).validity
+
+    val shiftRightV =
+      E.forall(allValid) { case (loc, ploc) =>
+        val can = VectorTree.canShiftRightV(loc, lookupV)
+        k.shiftRight(ploc.value) match {
+          case Some(k2) =>
+            val t2 = t.shiftRightV(loc, lookupV)
+            "ShiftRightV" rename_: (
+              E.equal("new tree size", t2.fold(-1)(_.locIterator.size), origSize)
+              & E.equal("new tree filtered", t2.map(_ filter filterInt), Some(k2))
+              & E.equal("canShiftRightV", can, Allow))
+          case None =>
+            E.equal("canShiftRightV", can, Deny)
+        }
+      }
+
+    val outputSize = E.equal("output size", m.size, origSize)
+
+    outputSize ∧ E.distinct("output", m.values) ∧ origToFiltered ∧ filteredToOrig ∧ filterEqualsRemove ∧ shiftRightV
   }
 
   def testFilterAndPartLocs(t: VectorTree[Int], m: Map[Location, PartialLocation]): Unit =
     () assertSatisfies Prop.eval(_ => testFilterAndPartLocsE(t, m))
-
 
   def props: PV = "VectorTree props" rename_: (
     valueIterator ∧ nodeValueIterator ∧ locAndValueIterator ∧ dims ∧ canShift ∧ maxDepthTree ∧ filterAndPartLocs)

@@ -184,17 +184,42 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     * 1.0.2      --> 1.0.1.a
     * 1.3.4.b    --> 1.3.4.a.ii
     */
-  def shiftRight(at: Location): Option[VectorTree[A]] =
-    modifyChildrenAtA(at.parent) { ps =>
-      val ic = at.last
-      val ip = ic - 1
-      ps.getFlatMap(ip)(p =>
-        ps.getFlatMap(ic) { c =>
+  def shiftRight(at: Location): Option[VectorTree[A]] = {
+    val from = at.last
+    _shiftRight(at.parent, from, from - 1)
+  }
+
+  def shiftRightV(at: Location, f: Location => Validity): Option[VectorTree[A]] = {
+    assert(f(at) :: Valid, s"Location $at is Invalid.")
+    val parent = at.parent
+    val from = at.last
+
+    // find live child of parent to become the new parent
+    (from - 1 to 0 by -1).iterator
+      .map(parent :+ _)
+      .filter(f(_) :: Valid)
+      .nextOption()
+      .flatMap(np => _shiftRight(parent, from, np.last))
+  }
+
+  private def _shiftRight(parent: ParentLocation, from: Int, to: Int): Option[VectorTree[A]] =
+    modifyChildrenAtA(parent)(ps =>
+      ps.getFlatMap(to)(p =>
+        ps.getFlatMap(from) { c =>
           val p2 = p.copy(children = p.children :+ c)
-          Some(ps.patch(ip, p2 :: Nil, 2))
+          val b = Vector.newBuilder[VectorTree.Node[A]]
+          var i = 0
+          for (p <- ps) {
+            if (i == to)
+              b += p2
+            else if (i != from)
+              b += p
+            i += 1
+          }
+          Some(b.result())
         }
       )
-    }
+    )
 
   def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
     locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) :: Allow).map(f.tupled)
@@ -421,6 +446,11 @@ object VectorTree extends VectorTreeLowPri {
 
   def canShiftRight(at: Location): Permission =
     Allow <~ (at.last > 0)
+
+  def canShiftRightV(at: Location, f: Location => Validity): Permission = {
+    val p = at.parent
+    Allow <~ (0 until at.last).exists(i => f(p :+ i) :: Valid)
+  }
 
   @tailrec
   def lastLoc(n: Parent[Any], loc: Location): Location = {
