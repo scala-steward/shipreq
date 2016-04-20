@@ -12,6 +12,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.data.TCB
+import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.lib.KeyHandlers
 import shipreq.webapp.client.protocol.ServerCall
 import shipreq.webapp.client.widgets.high.ProjectWidgets
@@ -86,7 +87,7 @@ object ContentEditorFeature {
       UnivEq.derive
 
     implicit val reusability: Reusability[EditFieldKey] =
-      Reusability.byEqual
+      Reusability.byUnivEq
   }
 
   /**
