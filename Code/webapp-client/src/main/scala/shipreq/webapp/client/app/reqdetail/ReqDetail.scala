@@ -128,17 +128,19 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
     final class UseCaseData(val uc: UseCase) {
 
-      private def stepTreeProps(field       : StaticField.UseCaseStepTree,
+      private def stepTreeProps(row         : Row.UseCaseSteps,
+                                field       : StaticField.UseCaseStepTree,
                                 filter      : UseCaseSteps.Tree => Range,
                                 leftIsDownAt: VectorTree.Location => Boolean,
                                 rightIsUpAt : VectorTree.Location => Boolean,
                                 tailStep    : Boolean) = {
         val s = field.useCaseSteps.get(uc)
         val i = filter(s.tree)
-        Temp(field, s, i, leftIsDownAt, rightIsUpAt, tailStep)
+        Temp(row, field, s, i, leftIsDownAt, rightIsUpAt, tailStep)
       }
 
       val stepsN = stepTreeProps(
+        Row.UseCaseStepsN,
         StaticField.NormalAltStepTree,
         _ => 0 to 0,
         _ => false, // l => l.length ==* 2 && l.tail.head !=* 0, ← Correct but bad UX
@@ -146,6 +148,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         false)
 
       val stepsA = stepTreeProps(
+        Row.UseCaseStepsA,
         StaticField.NormalAltStepTree,
         1 until _.children.length,
         _ => false,
@@ -153,6 +156,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         true)
 
       val stepsE = stepTreeProps(
+        Row.UseCaseStepsE,
         StaticField.ExceptionStepTree,
         _.children.indices,
         _ => false,
@@ -170,13 +174,22 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       filterDead.filterFnA(Live whenValid _.validity)
   }
 
-  case class Temp(field       : StaticField.UseCaseStepTree,
+  case class Temp(row         : Row.UseCaseSteps,
+                  field       : StaticField.UseCaseStepTree,
                   steps       : UseCaseSteps,
                   filter      : Range,
                   leftIsDownAt: VectorTree.Location => Boolean,
                   rightIsUpAt : VectorTree.Location => Boolean,
                   tailStep    : Boolean) {
     val mdt = steps.tree.maxDepthTree
+
+    import shipreq.webapp.client.app.reqdetail.uce.Controls.Props._
+
+    def shiftLeftAt(loc: VectorTree.Location): ShiftLeft =
+      if (leftIsDownAt(loc)) ShiftDown else ShiftLeft
+
+    def shiftRightAt(loc: VectorTree.Location): ShiftRight =
+      if (rightIsUpAt(loc)) ShiftUp else ShiftRight
   }
 
   // TODO Better performance if cells are (components + shouldComponentRender) or cached
@@ -208,9 +221,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
     val updateIO: ServerCall[UpdateContentCmd] =
       ServerCall.to(updateContentFn, cp, cd)
-
-    def runAction(cmd: UpdateContentCmd): Callback =
-      updateIO(cmd, TCB.Success.nop, f => TCB.Failure(Callback.alert(f))) // TODO use AsyncFeature
 
     def setModal(modal: Modal.State): Callback =
       $.props >>= (_.state set modal)
@@ -249,6 +259,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           case Cell.CustomField(fid: CustomField.Text       .Id) => Editor.CustomTextField(req, fid, cell)
           case Cell.CustomField(fid: CustomField.Implication.Id) => Editor.ImplicationsCustomField(req, fid)
           case Cell.UseCaseStep(id)                              => Editor.UseCaseStep(id, cell)
+          case Cell.UseCaseStepCtrls(_)
+             | Cell.AddUseCaseStep(_)
+             | Cell.AddUseCaseTailStep(_)                        => None
         }
 
       initEditor.feature((cell, el) =>
@@ -282,6 +295,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       val state       = props.reqProps(req.id)
       val fieldName   = pxFieldNameFn.value()
       val editFeature = createEditFeature(state.initEditor, state.asyncFeature, data)
+
+      def runAction(cell: Cell, cmd: UpdateContentCmd): Callback =
+        state.asyncFeature(cell).wrapAsync((s, f) => updateIO(cmd, s, f))
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
         def startEdit = editFeature(cell).startEdit(focus)
@@ -446,6 +462,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         val stepLabelMarker = ReactAttr.devOnly("data-step-label") := 1
 
         val x = temp.steps.tree.subtreeLocAndValueIterator[ReactTag](temp.filter, (loc, step) => {
+          val id = step.id
 
           val partialLoc = temp.steps.partialLocs.forward(loc)
           if (data.useCaseStepFilter(partialLoc)) {
@@ -493,26 +510,48 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
             def text =
               <.div(*.body,
                 renderAsyncEditorOrValue(
-                  Cell.UseCaseStep(step.id),
-                  pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(step.id)))))
+                  Cell.UseCaseStep(id),
+                  pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(id)))))
 
             def ctrls = {
               import temp.{mdt, field => f}
-              val onAction: Controls.OnAction = {
-                case Controls.Delete     => runAction(UpdateContentCmd.DeleteUseCaseStep    (step.id))
-                case Controls.ShiftLeft  => runAction(UpdateContentCmd.ShiftUseCaseStepLeft (step.id))
-                case Controls.ShiftRight => runAction(UpdateContentCmd.ShiftUseCaseStepRight(step.id))
-                case Controls.Add        => runAction(UpdateContentCmd.AddUseCaseStep(uc.id, f, loc.asParentLoc))
+              import Controls.Props
+              import UpdateContentCmd._
+
+              val props: Props = uc.liveUC match {
+                case Live =>
+
+                  val self = {
+                    val cell = Cell.UseCaseStepCtrls(id)
+                    def runCtrl(cmd: UpdateContentCmd) = runAction(cell, cmd)
+                    val p: Props.Self = live match {
+
+                      case Live =>
+                        Props.WhenLive(
+                          f.canDelete    (loc     ).option(runCtrl(DeleteUseCaseStep(id))),
+                          f.canShiftLeft (loc     ).option((temp.shiftLeftAt (loc), runCtrl(ShiftUseCaseStepLeft(id)))),
+                          f.canShiftRight(loc, mdt).option((temp.shiftRightAt(loc), runCtrl(ShiftUseCaseStepRight(id)))))
+
+                      case Dead =>
+                        Props.WhenDead(runCtrl(RestoreUseCaseStep(id)))
+                    }
+                    Some((p, state.async(cell)))
+                  }
+
+                  val add = f.canAdd(loc).option {
+                    val cell = Cell.AddUseCaseStep(id)
+                    val a    = state.async(cell)
+                    val cb   = runAction(cell, AddUseCaseStep(uc.id, f, loc.asParentLoc))
+                    (cb, a)
+                  }
+
+                  Props(self, add)
+
+                case Dead => // ← UseCase, not step
+                  Props.none
               }
 
-              val p = Controls.Props(delete     = f.canDelete(loc), // TODO this is actually restore/delete now
-                                     shiftLeft  = f.canShiftLeft(loc),
-                                     leftIsDown = temp leftIsDownAt loc,
-                                     shiftRight = f.canShiftRight(loc, mdt),
-                                     rightIsUp  = temp rightIsUpAt loc,
-                                     add        = f.canAdd(loc),
-                                     onAction   = onAction)
-              p.render
+              props.render
             }
 
             <.div(*.container,
@@ -527,9 +566,11 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           .toReactNodeArray
 
         if (temp.tailStep) {
-          def cmd = UpdateContentCmd.AddUseCaseStep(uc.id, temp.field, VectorTree.ParentLocation.Empty)
-          val cb = runAction(cmd)
-          val ctrls = Controls.addTailStep(cb).render
+          def cmd  = UpdateContentCmd.AddUseCaseStep(uc.id, temp.field, VectorTree.ParentLocation.Empty)
+          val cell = Cell.AddUseCaseTailStep(temp.row)
+          val cb   = runAction(cell, cmd)
+          val a    = state.async(cell)
+          val ctrls = Controls.Props.tailStep(cb, a).render
           x push <.div(*.container, ^.key := "TS", ctrls)
         }
 
@@ -548,10 +589,13 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         renderRows)
     }
 
+    def runActionNoAsync(cmd: UpdateContentCmd): Callback =
+      updateIO(cmd, TCB.Success.nop, f => TCB.Failure(Callback.alert(f)))
+
     def delete(id: ReqId): Callback =
       CallbackTo {
         def run(cmd: UpdateContentCmd): Callback =
-          runAction(cmd) >> clearModal
+          runActionNoAsync(cmd) >> clearModal
 
         import Px.AutoValue._
         val props1 = DeletionForm.initProps1(pxProject, NonEmptySet one id, Set.empty)
@@ -560,7 +604,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       } >>= setModal
 
     def restore(id: ReqId): Callback =
-      runAction(UpdateContentCmd.RestoreContent(Set(id), Set.empty))
+      runActionNoAsync(UpdateContentCmd.RestoreContent(Set(id), Set.empty))
 
   } // Backend
 }

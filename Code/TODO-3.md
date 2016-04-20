@@ -1,7 +1,5 @@
 Use Case Editor
 ===============
-1. Fix ctrls: delete/restore button.
-1. Fix ctrls: disable on async.
 1. Tests for steps in UCE.
 2. Clean up ReqDetail and uce package.
 

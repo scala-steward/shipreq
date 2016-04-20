@@ -5,8 +5,9 @@ import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import shipreq.base.util._
+import shipreq.webapp.base.UiText
 import shipreq.webapp.client.lib.DataReusability._
+import shipreq.webapp.client.feature.AsyncActionFeature
 
 /**
   * Draws the buttons to the right of each step:
@@ -14,85 +15,108 @@ import shipreq.webapp.client.lib.DataReusability._
   *     [-] [«] [»] [+]
   */
 object Controls {
-  sealed abstract class Action
-  case object Delete     extends Action
-  case object ShiftLeft  extends Action
-  case object ShiftRight extends Action
-  case object Add        extends Action
 
-  type OnAction = Action => Callback
+  private val tagBase    = <.button(*.ctrl)
+  private val tagBlank   = tagBase(^.visibility.hidden)
+  private val tagBlank3  = (tagBlank, tagBlank, tagBlank)
+  private val tagAdd     = tagBase("+")
+  private val tagDelete  = tagBase("-", ^.title := UiText.Life.delete)
+  private val tagRestore = tagBase("^", ^.title := UiText.Life.restore)
+  private val tagLeft    = tagBase("«")
+  private val tagRight   = tagBase("»")
+  private val tagDown    = tagBase("↓")
+  private val tagUp      = tagBase("↑")
+  private val disabled   = ^.disabled := true
 
-  final case class Props(delete    : Permission,
-                         shiftLeft : Permission,
-                         leftIsDown: Boolean,
-                         shiftRight: Permission,
-                         rightIsUp : Boolean,
-                         add       : Permission,
-                         onAction  : OnAction) {
+  type AsyncState = AsyncActionFeature.D0.State[Any]
+
+  sealed abstract class HasBase { def base: ReactTag }
+
+  object Props {
+    sealed abstract class ShiftLeft extends HasBase
+    case object ShiftLeft extends ShiftLeft { override def base = tagLeft }
+    case object ShiftDown extends ShiftLeft { override def base = tagDown }
+
+    sealed abstract class ShiftRight extends HasBase
+    case object ShiftRight extends ShiftRight { override def base = tagRight }
+    case object ShiftUp    extends ShiftRight { override def base = tagUp }
+
+    sealed abstract class Self
+
+    case class WhenLive(delete    : Option[Callback],
+                        shiftLeft : Option[(ShiftLeft, Callback)],
+                        shiftRight: Option[(ShiftRight, Callback)]) extends Self
+
+    case class WhenDead(restore: Callback) extends Self
+
+    def tailStep(cb: Callback, a: AsyncState): Props =
+      Props(None, Some((cb, a)))
+
+    val none: Props =
+      Props(None, None)
+  }
+
+  case class Props(self: Option[(Props.Self, AsyncState)],
+                   add : Option[(Callback, AsyncState)]) {
     @inline def render = Component(this)
   }
 
-  def addTailStep(cb: Callback): Props =
-    Props(Deny, Deny, false, Deny, false, add = Allow, onAction = {
-      case Add => cb
-      case _   => Callback.empty
-    })
-
-  implicit val reusabilityProps: Reusability[Props] =
-    Reusability.caseClassExcept('onAction)
-
-  private val tagBase = <.button(*.ctrl)
-  private val tagBlank = tagBase(^.visibility.hidden)
-  private val tagAdd   = tagBase("+")
-  private val tagDel   = tagBase("-")
-  private val tagLeft  = tagBase("«")
-  private val tagRight = tagBase("»")
-  private val tagDown  = tagBase("↓")
-  private val tagUp    = tagBase("↑")
+  // Probably not worth it for the small amount of DOM this generates.
+//  implicit val reusabilityProps: Reusability[Props] =
+//    Reusability.???
 
   final class Backend($: BackendScope[Props, Unit]) {
-    def onAction(a: Action): Callback =
-      $.props >>= (_ onAction a)
+    import Props._
 
-    def btn(a: Action, allow: Permission, ctrl: ReactTag) =
-      allow match {
-        case Allow => ctrl(^.onClick --> onAction(a))
-        case Deny  => tagBlank
+    def mkBtn(b: ReactTag, o: Option[(Callback, AsyncState)]): ReactTag =
+      o match {
+        case Some((cb, a)) => mkBtn(a, b, cb)
+        case None          => tagBlank
       }
 
-    def render(p: Props): ReactElement =
-      <.div(*.ctrls,
-        btn(Delete    , p.delete    , tagDel),
-        btn(ShiftLeft , p.shiftLeft , if (p.leftIsDown) tagDown else tagLeft),
-        btn(ShiftRight, p.shiftRight, if (p.rightIsUp) tagUp else tagRight),
-        btn(Add       , p.add       , tagAdd))
+    def mkBtn(a: AsyncState, b: ReactTag, o: Option[Callback]): ReactTag =
+      o match {
+        case Some(cb) => mkBtn(a, b, cb)
+        case None     => tagBlank
+      }
+
+    def mkBtn(a: AsyncState, o: Option[(HasBase, Callback)]): ReactTag =
+      o match {
+        case Some((h, cb)) => mkBtn(a, h.base, cb)
+        case None          => tagBlank
+      }
+
+    def mkBtn(a: AsyncState, b: ReactTag, cb: Callback): ReactTag = {
+      import AsyncActionFeature._
+      a match {
+        case None
+           | Some(_: Failed[Any]) => b(^.onClick --> cb)
+        case Some(Locked)         => b(disabled)
+      }
+    }
+
+    def render(p: Props): ReactElement = {
+      val (b1, b2, b3) = p.self match {
+
+        case None =>
+          tagBlank3
+
+        case Some((WhenDead(cb), a)) =>
+          (mkBtn(a, tagRestore, cb), tagBlank, tagBlank)
+
+        case Some((WhenLive(d, sl, sr), a)) =>
+          (mkBtn(a, tagDelete, d), mkBtn(a, sl), mkBtn(a, sr))
+      }
+
+      val b4 = mkBtn(tagAdd, p.add)
+
+      <.div(*.ctrls, b1, b2, b3, b4)
+    }
   }
 
-  val Component = ReactComponentB[Props]("Name")
+  val Component = ReactComponentB[Props]("StepCtrls")
     .renderBackend[Backend]
-    .configure(Reusability.shouldComponentUpdate)
+//    .configure(Reusability.shouldComponentUpdate)
     .build
-
-  /*
-  val Component = ReactComponentB[Props]("Name")
-    .renderP { ($, p) =>
-      def onAction(a: Action): Callback =
-        CallbackTo($.props) >>= (_ onAction a)
-
-      def btn(a: Action, allow: Permission, ctrl: ReactTag) =
-        allow match {
-          case Allow => ctrl(^.onClick --> onAction(a))
-          case Deny  => tagBlank
-        }
-
-      <.div(*.ctrls,
-        btn(Delete    , p.delete    , tagDel),
-        btn(ShiftLeft , p.shiftLeft , if (p.leftIsDown) tagDown else tagLeft),
-        btn(ShiftRight, p.shiftRight, tagRight),
-        btn(Add       , p.add       , tagAdd))
-    }
-    .configure(Reusability.shouldComponentUpdate)
-    .build
-  */
 }
 

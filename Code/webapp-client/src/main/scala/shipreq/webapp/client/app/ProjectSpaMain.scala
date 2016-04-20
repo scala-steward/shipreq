@@ -92,7 +92,7 @@ object ProjectSpaMain {
     case class ReqTableCI(value: reqtable.FocusId.InCI) extends FocusId
     implicit def equality: UnivEq[FocusId] = UnivEq.derive
 
-    val toReqTable = Intersection[FocusId, reqtable.FocusId] {
+    val ToReqTable = Intersection[FocusId, reqtable.FocusId] {
       case Content(r, f) => Column.EditFieldKeyIntersection.reverse.getOptionMap(f, reqtable.FocusId.AtCell(r, _))
       case ReqTableCI(a) => Some(a)
     } {
@@ -103,9 +103,86 @@ object ProjectSpaMain {
 
   case class Props(page: Page, routerCtl: RouterCtl)
 
+  sealed abstract class AsyncKey
+  object AsyncKey {
+    import shipreq.webapp.base.data.{CustomFieldId, UseCaseStepId, Live, Dead}
+    import shipreq.webapp.client.app.reqdetail.Row.UseCaseSteps
+
+    case object ReqType                              extends AsyncKey
+    case object Code                                 extends AsyncKey
+    case object Title                                extends AsyncKey
+    case object Tags                                 extends AsyncKey
+    case object ImplicationSrc                       extends AsyncKey
+    case object ImplicationTgt                       extends AsyncKey
+    case class CustomField       (id: CustomFieldId) extends AsyncKey
+    case class UseCaseStep       (id: UseCaseStepId) extends AsyncKey
+    case class UseCaseStepCtrls  (id: UseCaseStepId) extends AsyncKey
+    case class AddUseCaseStep    (id: UseCaseStepId) extends AsyncKey
+    case class AddUseCaseTailStep(s: UseCaseSteps)   extends AsyncKey
+
+    @inline implicit def equality: UnivEq[AsyncKey] =
+      UnivEq.derive
+
+    implicit val reusability: Reusability[AsyncKey] =
+      Reusability.byUnivEq
+
+    import shipreq.webapp.client.app.reqtable.Column
+    val ToReqTable = Intersection[AsyncKey, Column] {
+      case ReqType               => Some(Column.ReqType              )
+      case Code                  => Some(Column.Code                 )
+      case Title                 => Some(Column.Title                )
+      case Tags                  => Some(Column.Tags                 )
+      case ImplicationSrc        => Some(Column.ImplicationSrc       )
+      case ImplicationTgt        => Some(Column.ImplicationTgt       )
+      case CustomField(id)       => Some(Column.CustomField(id, Live))
+      case UseCaseStep       (_)
+         | UseCaseStepCtrls  (_)
+         | AddUseCaseStep    (_)
+         | AddUseCaseTailStep(_) => None
+    } {
+      case Column.ReqType               => Some(ReqType        )
+      case Column.Code                  => Some(Code           )
+      case Column.Title                 => Some(Title          )
+      case Column.Tags                  => Some(Tags           )
+      case Column.ImplicationSrc        => Some(ImplicationSrc )
+      case Column.ImplicationTgt        => Some(ImplicationTgt )
+      case Column.CustomField(id, Live) => Some(CustomField(id))
+      case Column.Pubid
+           | Column.DeletionReason
+           | Column.CustomField(_, Dead)  => None
+    }
+
+    import shipreq.webapp.client.app.reqdetail.Cell
+    val ToReqDetail = Intersection[AsyncKey, Cell] {
+      case ReqType               => Some(Cell.ReqType              )
+      case Code                  => Some(Cell.Code                 )
+      case Title                 => Some(Cell.Title                )
+      case Tags                  => Some(Cell.Tags                 )
+      case ImplicationSrc        => Some(Cell.ImplicationSrc       )
+      case ImplicationTgt        => Some(Cell.ImplicationTgt       )
+      case CustomField(id)       => Some(Cell.CustomField(id)      )
+      case UseCaseStep(id)       => Some(Cell.UseCaseStep(id)      )
+      case UseCaseStepCtrls(id)  => Some(Cell.UseCaseStepCtrls(id) )
+      case AddUseCaseStep(id)    => Some(Cell.AddUseCaseStep(id)   )
+      case AddUseCaseTailStep(s) => Some(Cell.AddUseCaseTailStep(s))
+    } {
+      case Cell.ReqType               => Some(ReqType              )
+      case Cell.Code                  => Some(Code                 )
+      case Cell.Title                 => Some(Title                )
+      case Cell.Tags                  => Some(Tags                 )
+      case Cell.ImplicationSrc        => Some(ImplicationSrc       )
+      case Cell.ImplicationTgt        => Some(ImplicationTgt       )
+      case Cell.CustomField(id)       => Some(CustomField(id)      )
+      case Cell.UseCaseStep(id)       => Some(UseCaseStep(id)      )
+      case Cell.UseCaseStepCtrls(id)  => Some(UseCaseStepCtrls(id) )
+      case Cell.AddUseCaseStep(id)    => Some(AddUseCaseStep(id)   )
+      case Cell.AddUseCaseTailStep(s) => Some(AddUseCaseTailStep(s))
+    }
+  }
+
   @Lenses
   case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
-                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, AsyncKey, String],
                    previewState: PreviewFeature.State[FocusId],
                    filterDead  : FilterDead,
                    reqTable    : ReqTable.State,
@@ -177,7 +254,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
     val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
 
-    val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
+    val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, AsyncKey, String] =
       AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
 
     val previewFeature = new PreviewFeature($, State.previewState)
@@ -187,7 +264,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       new D2.InitChild[Row, Column, reqtable.FocusId] {
         override type Parent    = State
         override val parent     = $: CompState.Access[Parent]
-        override val preview    = previewFeature.mapK(FocusId.toReqTable)
+        override val preview    = previewFeature.mapK(FocusId.ToReqTable)
         override val editorLens =
           (r: Row, c: Column) =>
             Column.EditFieldKeyIntersection.getOption(c).map(efk =>
@@ -199,7 +276,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
       cd, cp, r.createContent, r.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets,
       initReqTableEditor,
-      asyncFeature.mapK1(Column.EditFieldKeyIntersection.reverse),
+      asyncFeature.mapK1(AsyncKey.ToReqTable),
       reqDetailRC,
       $ zoomL State.reqTable))
 
@@ -230,14 +307,14 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
                   State.editStates ^|-> D2.State.at(r) ^|-> D1.State.at(efk))
           }
 
-        val asyncF1 = asyncFeature(r).mapK(Cell.EditFieldKeyIntersection.reverse)
+        val asyncF1 = asyncFeature(r).mapK(AsyncKey.ToReqDetail)
 
         (s: State) =>
           ReqDetail.ReqProps(
             initEditor,
             asyncF1,
             s.editStates(r).mapK(Cell.EditFieldKeyIntersection.reverse),
-            s.asyncStates(r).mapK(Cell.EditFieldKeyIntersection.reverse))
+            s.asyncStates(r).mapK(AsyncKey.ToReqDetail))
       })
 
     def reqDetailReqPropsFn(s: State) = (id: ReqId) => {
@@ -290,8 +367,8 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
         case Page.ReqTable =>
           layout(reqTable(ReqTable.DynamicProps(
             s.editStates.mapK1(Column.EditFieldKeyIntersection.reverse),
-            s.asyncStates.mapK1(Column.EditFieldKeyIntersection.reverse),
-            s.previewState.mapK(FocusId.toReqTable),
+            s.asyncStates.mapK1(AsyncKey.ToReqTable),
+            s.previewState.mapK(FocusId.ToReqTable),
             s.reqTable)))
 
         case Page.ReqDetail(pubid) =>

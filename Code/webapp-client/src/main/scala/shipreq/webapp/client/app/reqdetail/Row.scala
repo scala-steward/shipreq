@@ -5,6 +5,7 @@ import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{CustomField => CF, StaticField => SF, Field}
 import shipreq.webapp.client.data.{FilterDead, ShowDead}
+import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.lib.KeyGen
 
 sealed abstract class Row(_key: String) {
@@ -15,22 +16,27 @@ sealed abstract class Row(_key: String) {
 object Row {
   private def autoKey = KeyGen.global.next()
 
+  sealed abstract class UseCaseSteps(_key: String) extends Row(_key)
+
   case object Life              extends Row(autoKey)
   case object DeletionReason    extends Row(autoKey)
   case object ReqType           extends Row(autoKey)
   case object Code              extends Row(autoKey)
   case object Tags              extends Row(autoKey)
   case object Implications      extends Row(autoKey)
-  case object UseCaseStepsN     extends Row("n")
-  case object UseCaseStepsA     extends Row("a")
-  case object UseCaseStepsE     extends Row("e")
+  case object UseCaseStepsN     extends UseCaseSteps("n")
+  case object UseCaseStepsA     extends UseCaseSteps("a")
+  case object UseCaseStepsE     extends UseCaseSteps("e")
   case class CustomField(f: CF) extends Row("f" + f.id.value)
+
+  @inline implicit def univEqUseCaseSteps: UnivEq[UseCaseSteps] =
+    UnivEq.derive
 
   @inline implicit def equality: UnivEq[Row] =
     UnivEq.derive
 
   implicit val reusability: Reusability[Row] =
-    Reusability.byEqual
+    Reusability.byUnivEq
 
   def head(fd: FilterDead): Vector[Row] =
     if (fd :: ShowDead) headDead else headLive

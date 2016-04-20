@@ -28,14 +28,17 @@ sealed abstract class Cell {
 }
 
 object Cell {
-  case object ReqType                       extends Cell
-  case object Code                          extends Cell
-  case object Title                         extends Cell
-  case object Tags                          extends Cell
-  case object ImplicationSrc                extends Cell
-  case object ImplicationTgt                extends Cell
-  case class CustomField(id: CustomFieldId) extends Cell
-  case class UseCaseStep(id: UseCaseStepId) extends Cell
+  case object ReqType                                  extends Cell
+  case object Code                                     extends Cell
+  case object Title                                    extends Cell
+  case object Tags                                     extends Cell
+  case object ImplicationSrc                           extends Cell
+  case object ImplicationTgt                           extends Cell
+  case class CustomField       (id: CustomFieldId)     extends Cell
+  case class UseCaseStep       (id: UseCaseStepId)     extends Cell
+  case class UseCaseStepCtrls  (id: UseCaseStepId)     extends Cell
+  case class AddUseCaseStep    (id: UseCaseStepId)     extends Cell
+  case class AddUseCaseTailStep(row: Row.UseCaseSteps) extends Cell
 
   @inline implicit def equality: UnivEq[Cell] =
     UnivEq.derive
@@ -44,14 +47,17 @@ object Cell {
     Reusability.byEqual
 
   val EditFieldKeyIntersection = Intersection[Cell, EditFieldKey] {
-    case Cell.ReqType         => Some(EditFieldKey.ReqType        )
-    case Cell.Code            => Some(EditFieldKey.Code           )
-    case Cell.Title           => Some(EditFieldKey.Title          )
-    case Cell.Tags            => Some(EditFieldKey.Tags           )
-    case Cell.ImplicationSrc  => Some(EditFieldKey.ImplicationSrc )
-    case Cell.ImplicationTgt  => Some(EditFieldKey.ImplicationTgt )
-    case Cell.CustomField(id) => Some(EditFieldKey.CustomField(id))
-    case Cell.UseCaseStep(id) => Some(EditFieldKey.UseCaseStep(id))
+    case Cell.ReqType               => Some(EditFieldKey.ReqType        )
+    case Cell.Code                  => Some(EditFieldKey.Code           )
+    case Cell.Title                 => Some(EditFieldKey.Title          )
+    case Cell.Tags                  => Some(EditFieldKey.Tags           )
+    case Cell.ImplicationSrc        => Some(EditFieldKey.ImplicationSrc )
+    case Cell.ImplicationTgt        => Some(EditFieldKey.ImplicationTgt )
+    case Cell.CustomField(id)       => Some(EditFieldKey.CustomField(id))
+    case Cell.UseCaseStep(id)       => Some(EditFieldKey.UseCaseStep(id))
+    case Cell.UseCaseStepCtrls(_)
+       | Cell.AddUseCaseStep(_)
+       | Cell.AddUseCaseTailStep(_) => None
   } {
     case EditFieldKey.ReqType         => Some(Cell.ReqType        )
     case EditFieldKey.Code            => Some(Cell.Code           )
