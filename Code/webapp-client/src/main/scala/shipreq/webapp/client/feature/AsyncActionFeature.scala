@@ -71,7 +71,9 @@ object AsyncActionFeature {
       f => TCB Failure setStatus(Some(Failed(f, Callback byName doIt, clearStatus)))
 
     lazy val doIt: Callback =
-      call(onSuccess, onFailure) >> setStatus(Some(Locked))
+      // Switching this around breaks tests' MockServer's order of events.
+      // i.e. it will call onSuccess which clears the status, and then set it to locked.
+      setStatus(Some(Locked)) >> call(onSuccess, onFailure)
 
     doIt
   }
