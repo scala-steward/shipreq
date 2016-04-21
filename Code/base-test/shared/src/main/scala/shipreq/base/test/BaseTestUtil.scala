@@ -171,15 +171,19 @@ trait BaseTestUtil extends scalaz.syntax.ToEqualOps {
         case '\t' => sb append '\\'; sb append 't'
         case '\\' => sb append '\\'; sb append '\\'
         case c    =>
-          val hex = Integer.toHexString(c.toInt)
-          sb append "\\u"
-          hex.length match {
-            case 1 => sb append "000"
-            case 2 => sb append "00"
-            case 3 => sb append '0'
-            case _ =>
+          if (c >= ' ' && c <= '~')
+            sb append c
+          else {
+            val hex = Integer.toHexString(c.toInt)
+            sb append "\\u"
+            hex.length match {
+              case 1 => sb append "000"
+              case 2 => sb append "00"
+              case 3 => sb append '0'
+              case _ =>
+            }
+            sb append hex
           }
-          sb append hex
       }
       sb append '⟫'
     }
