@@ -67,6 +67,8 @@ object DataReusability {
 
   implicit val reusabilityVectorTreeLoc: Reusability[VectorTree.Location] = Reusability.byRefOrUnivEq
 
+  implicit val reusabilityVectorTreePLoc: Reusability[VectorTree.PartialLocation] = Reusability.byRefOrUnivEq
+
   implicit val reusabilityUseCaseStep: Reusability[UseCaseStep] = Reusability.byRefOrUnivEq
 
   implicit val reusabilityUseCaseStepField: Reusability[StaticField.UseCaseStepTree] = Reusability.byUnivEq

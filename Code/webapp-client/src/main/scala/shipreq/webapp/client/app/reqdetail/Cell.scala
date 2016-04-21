@@ -7,6 +7,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.data.{CustomFieldId, UseCaseStepId}
 import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
+import shipreq.webapp.client.lib.DataReusability._
 
 sealed abstract class Cell {
   import Cell._
@@ -40,11 +41,11 @@ object Cell {
   case class AddUseCaseStep    (id: UseCaseStepId)     extends Cell
   case class AddUseCaseTailStep(row: Row.UseCaseSteps) extends Cell
 
-  @inline implicit def equality: UnivEq[Cell] =
+  @inline implicit def univEq: UnivEq[Cell] =
     UnivEq.derive
 
   implicit val reusability: Reusability[Cell] =
-    Reusability.byEqual
+    Reusability.byUnivEq
 
   val EditFieldKeyIntersection = Intersection[Cell, EditFieldKey] {
     case Cell.ReqType               => Some(EditFieldKey.ReqType        )

@@ -56,7 +56,10 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
    *
    * Cached by its inputs.
    */
-  class Data(sp: StaticProps, val project: Project, val req: Req, upstreamFD: FilterDead) {
+  class Data(sp        : StaticProps,
+         val project   : Project,
+         val req       : Req,
+             upstreamFD: FilterDead) {
 
     val (pxPlainText, pxProjectWidgets) = {
       val textCtx: Option[ProjectText.Context] = req match {
@@ -182,6 +185,17 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     val updateIO: ServerCall[UpdateContentCmd] =
       ServerCall.to(updateContentFn, cp, cd)
 
+    def cellCmdIO(reqId: ReqId, cell: Cell, cmd: UpdateContentCmd): Callback =
+      $.props >>= (p =>
+        p.reqProps(reqId).asyncFeature(cell).wrapAsync((s, f) =>
+          updateIO(cmd, s, f)))
+
+    val runUseCaseStepCtrl = ReusableFn[ReqId, UseCaseStepId, UpdateContentCmd.ForUseCaseStep, Callback](
+      (reqId, id, cmd) => cellCmdIO(reqId, Cell.UseCaseStepCtrls(id), cmd))
+
+    val runAddUseCaseStep = ReusableFn[ReqId, Row.UseCaseSteps, UpdateContentCmd.AddUseCaseStep, Callback](
+      (reqId, row, cmd) => cellCmdIO(reqId, Cell.AddUseCaseTailStep(row), cmd))
+
     def setModal(modal: Modal.State): Callback =
       $.props >>= (_.state set modal)
 
@@ -247,17 +261,18 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
     def focus: Callback = Callback.empty // TODO
 
-    val stepLabelMarker = ReactAttr.devOnly("data-step-label") := 1
     val stepTextMarker = ReactAttr.devOnly("data-step-text") := 1
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     def renderDetail(props: DynamicProps, data: Data): ReactElement = {
       import data.{project, req, pubidText}
 
-      val pw          = data.pxProjectWidgets.value()
-      val state       = props.reqProps(req.id)
-      val fieldName   = pxFieldNameFn.value()
-      val editFeature = createEditFeature(state.initEditor, state.asyncFeature, data)
+      val pw                 = data.pxProjectWidgets.value()
+      val state              = props.reqProps(req.id)
+      val fieldName          = pxFieldNameFn.value()
+      val editFeature        = createEditFeature(state.initEditor, state.asyncFeature, data)
+      val runUseCaseStepCtrl = this.runUseCaseStepCtrl(req.id)
+      val runAddUseCaseStep  = this.runAddUseCaseStep(req.id)
 
       def runAction(cell: Cell, cmd: UpdateContentCmd): Callback =
         state.asyncFeature(cell).wrapAsync((s, f) => updateIO(cmd, s, f))
@@ -363,9 +378,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           case Row.CustomField(f: CustomField.Implication) =>
             renderImpCell(Cell.CustomField(f.id), data.customImps(f))
 
-          case Row.UseCaseStepsN => renderStepTree(data.useCaseData.get.stepsN)
-          case Row.UseCaseStepsA => renderStepTree(data.useCaseData.get.stepsA)
-          case Row.UseCaseStepsE => renderStepTree(data.useCaseData.get.stepsE)
+          case Row.UseCaseStepsN => val d = data.useCaseData.get; renderStepTree(d, d.stepsN)
+          case Row.UseCaseStepsA => val d = data.useCaseData.get; renderStepTree(d, d.stepsA)
+          case Row.UseCaseStepsE => val d = data.useCaseData.get; renderStepTree(d, d.stepsE)
 
           case Row.DeletionReason =>
             RenderDeletionReason.req(project, pw, req)
@@ -390,7 +405,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
         }
 
       // TODO Move
-      def renderStepTree(stepData: StepData) = {
+      def renderStepTree(ucData: data.UseCaseData, stepData: StepData) = {
         import shipreq.webapp.client.app.Style.reqdetail.{useCaseStep => *}
         import UseCaseStepFlowText.TextAndFlow
         import stepData.{steps, field, row}
@@ -409,42 +424,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
             val live = UseCaseStep.live(uc, partialLoc)
 
-            def label: ReactTag =
-              partialLoc.validity match {
-                case Valid =>
-                  val depth = partialLoc.value.length // ≥ 1
-
-                  val short = if (depth == 1)
-                    fullStepLabel
-                  else {
-                    // Last node asserted to be ≥ 0 in PartialLocation
-                    val i = partialLoc.value.last
-                    field.stepLabelsPerLevel(depth - 1).label(i)
-                  }
-
-                  <.div(
-                    *.header(depth - 1),
-                    stepLabelMarker,
-                    ^.title := fullStepLabel,
-                    short + ".")
-
-                case Invalid =>
-                  val badInd = partialLoc.value.whole.indexWhere(_ < 0)
-
-                  var label = fullStepLabel
-                  if (badInd != 0)
-                    label = label.dropWhile(_ !=* AppConsts.useCaseStepsDeadNode)
-                  label += "."
-
-                  <.div(
-                    *.header(badInd),
-                    stepLabelMarker,
-                    ^.title := fullStepLabel,
-                    <.span(
-                      *.deadStepLabel,
-                      label))
-              }
-
             def text =
               <.div(*.body,
                 stepTextMarker,
@@ -452,58 +431,25 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
                   Cell.UseCaseStep(id),
                   pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(id)))))
 
-            def ctrls = {
-              import UseCaseStepControls.Props
-              import UpdateContentCmd._
-
-              val props: Props = uc.liveUC match {
+            def ctrls =
+              uc.liveUC match {
                 case Live =>
+                  UseCaseStepRow.LiveControls.Props(
+                    uc.id, field, id, live, loc,
+                    field.canShiftRight(loc, steps.locValidity, stepData.mdt),
+                    state.async(Cell.UseCaseStepCtrls(id)),
+                    runUseCaseStepCtrl(id),
+                    state.async(Cell.AddUseCaseStep(id)),
+                    runAddUseCaseStep(row)
+                  ).render
 
-                  val self = {
-                    val cell = Cell.UseCaseStepCtrls(id)
-                    def runCtrl(cmd: UpdateContentCmd) = runAction(cell, cmd)
-                    val p: Props.Self = live match {
-
-                      case Live =>
-                        val delete = field
-                          .canDelete(loc)
-                          .option(runCtrl(DeleteUseCaseStep(id)))
-
-                        val shiftLeft = field
-                          .canShiftLeft(loc)
-                          .option((Props.ShiftLeft, runCtrl(ShiftUseCaseStepLeft(id))))
-
-                        val shiftRight = field
-                          .canShiftRight(loc, steps.locValidity, stepData.mdt)
-                          .option((Props.ShiftRight, runCtrl(ShiftUseCaseStepRight(id))))
-
-                        Props.WhenLive(delete, shiftLeft, shiftRight)
-
-                      case Dead =>
-                        Props.WhenDead(runCtrl(RestoreUseCaseStep(id)))
-                    }
-                    Some((p, state.async(cell)))
-                  }
-
-                  val add = field.canAdd(loc).option {
-                    val cell = Cell.AddUseCaseStep(id)
-                    val a    = state.async(cell)
-                    val cb   = runAction(cell, AddUseCaseStep(uc.id, field, loc.asParentLoc))
-                    (cb, a)
-                  }
-
-                  Props(self, add)
-
-                case Dead => // UseCase itself is dead
-                  Props.none
+                case Dead =>
+                  UseCaseStepControls.Props.none.render
               }
-
-              props.render
-            }
 
             <.div(*.container,
               ^.key := fullStepLabel,
-              label,
+              UseCaseStepRow.Label.Props(field, fullStepLabel, partialLoc).render,
               text,
               ctrls)
         } else

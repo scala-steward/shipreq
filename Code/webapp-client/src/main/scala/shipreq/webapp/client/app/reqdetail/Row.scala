@@ -51,7 +51,10 @@ object Row {
   @inline implicit def univEqUseCaseSteps: UnivEq[UseCaseSteps] =
     UnivEq.derive
 
-  @inline implicit def equality: UnivEq[Row] =
+  implicit val reusabilityUseCaseSteps: Reusability[UseCaseSteps] =
+    Reusability.byUnivEq
+
+  @inline implicit def univEq: UnivEq[Row] =
     UnivEq.derive
 
   implicit val reusability: Reusability[Row] =
