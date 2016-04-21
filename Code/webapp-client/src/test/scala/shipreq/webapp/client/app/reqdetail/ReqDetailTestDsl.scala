@@ -2,6 +2,7 @@ package shipreq.webapp.client.app.reqdetail
 
 import japgolly.scalajs.react.test.ReactTestUtils.Simulate
 import monocle.macros.Lenses
+import org.scalajs.dom.html
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
@@ -98,23 +99,29 @@ object ReqDetailTestDsl {
           invariantsGR
     })
 
+  private def clickEnabled(b: html.Button): Unit = {
+    val disabled = b.disabled.getOrElse(false)
+    assert(!disabled, "Button is disabled.")
+    Simulate click b
+  }
+
   def addTailStepAC: *.Action =
-    *.action("Add AC tail step")(Simulate click _.obs.uc.tailStepRowAC.add)
+    *.action("Add AC tail step")(i => clickEnabled(i.obs.uc.tailStepRowAC.add))
 
   def addTailStepEC: *.Action =
-    *.action("Add EC tail step")(Simulate click _.obs.uc.tailStepRowEC.add)
+    *.action("Add EC tail step")(i => clickEnabled(i.obs.uc.tailStepRowEC.add))
 
   def addStep(label: String): *.Action =
-    *.action("Add " + label)(Simulate click _.obs.uc.row(label).add)
+    *.action("Add " + label)(i => clickEnabled(i.obs.uc.row(label).add))
 
   def delStep(label: String): *.Action =
-    *.action("Delete " + label)(Simulate click _.obs.uc.row(label).del)
+    *.action("Delete " + label)(i => clickEnabled(i.obs.uc.row(label).del))
 
   def shiftStepLeft(label: String): *.Action =
-    *.action("ShiftLeft " + label)(Simulate click _.obs.uc.row(label).left)
+    *.action("ShiftLeft " + label)(i => clickEnabled(i.obs.uc.row(label).left))
 
   def shiftStepRight(label: String): *.Action =
-    *.action("ShiftRight " + label)(Simulate click _.obs.uc.row(label).right)
+    *.action("ShiftRight " + label)(i => clickEnabled(i.obs.uc.row(label).right))
 
   val filterDeadToggle =
     *.action("Toggle FilterDead")(Simulate change _.obs.generic.filterDeadInput)
@@ -133,16 +140,16 @@ object ReqDetailTestDsl {
       case None       => "Change life"
       case Some(Live) => UiText.Life.delete + " req"
       case Some(Dead) => UiText.Life.restore + " req"
-      }))(Simulate click _.obs.generic.lifeChangeButton.get)
+      }))(i => clickEnabled(i.obs.generic.lifeChangeButton.get))
 
   // Hit delete on the delete screen
   def deleteDelete =
-    *.action("Hit Delete")(Simulate click _.obs.deletionForm.get.deleteButton)
+    *.action("Hit Delete")(i => clickEnabled(i.obs.deletionForm.get.deleteButton))
       .updateState(stateMode set Mode.Details)
 
   // Hit cancel on the delete screen
   def deleteCancel =
-    *.action("Hit Cancel")(Simulate click _.obs.deletionForm.get.cancelButton)
+    *.action("Hit Cancel")(i => clickEnabled(i.obs.deletionForm.get.cancelButton))
       .updateState(stateMode set Mode.Details)
 
   val doubleClickTitle =
