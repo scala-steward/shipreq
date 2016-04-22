@@ -7,8 +7,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{\/, -\/, \/-}
 import shipreq.base.util._
-import shipreq.base.util.univeq._
-import shipreq.webapp.base.{AppConsts, UiText}
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.{UpdateContentCmd, UpdateContentFn}
 import shipreq.webapp.base.text._
@@ -129,17 +128,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       Memo(f =>
         sortPubids(customImpLookup(f)(req.id)))
 
-    final class UseCaseData(val uc: UseCase) {
-      private def stepTreeProps(row: Row.UseCaseSteps) = {
-        val steps = row.field.useCaseSteps.get(uc)
-        val range = row.treeFilter(steps.tree)
-        StepData(row, steps, range)
-      }
-      val stepsN = stepTreeProps(Row.UseCaseStepsN)
-      val stepsA = stepTreeProps(Row.UseCaseStepsA)
-      val stepsE = stepTreeProps(Row.UseCaseStepsE)
-    }
-
     val useCaseData: Option[UseCaseData] =
       req match {
         case uc: UseCase => Some(new UseCaseData(uc))
@@ -150,9 +138,15 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       filterDead.filterFnA(Live whenValid _.validity)
   }
 
-  case class StepData(row: Row.UseCaseSteps, steps: UseCaseSteps, filter: Range) {
-    @inline def field = row.field
-    val mdt = steps.tree.maxDepthTree
+  final class UseCaseData(val uc: UseCase) {
+    private def stepData(row: Row.UseCaseSteps) = {
+      val steps = row.field.useCaseSteps.get(uc)
+      val range = row.treeFilter(steps.tree)
+      UseCaseStepTree.StepData(row, steps, range)
+    }
+    val stepsN = stepData(Row.UseCaseStepsN)
+    val stepsA = stepData(Row.UseCaseStepsA)
+    val stepsE = stepData(Row.UseCaseStepsE)
   }
 
   // TODO Better performance if cells are (components + shouldComponentRender) or cached
@@ -185,16 +179,11 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     val updateIO: ServerCall[UpdateContentCmd] =
       ServerCall.to(updateContentFn, cp, cd)
 
-    def cellCmdIO(reqId: ReqId, cell: Cell, cmd: UpdateContentCmd): Callback =
-      $.props >>= (p =>
-        p.reqProps(reqId).asyncFeature(cell).wrapAsync((s, f) =>
-          updateIO(cmd, s, f)))
-
-    val runUseCaseStepCtrl = ReusableFn[ReqId, UseCaseStepId, UpdateContentCmd.ForUseCaseStep, Callback](
-      (reqId, id, cmd) => cellCmdIO(reqId, Cell.UseCaseStepCtrls(id), cmd))
-
-    val runAddUseCaseStep = ReusableFn[ReqId, Row.UseCaseSteps, UpdateContentCmd.AddUseCaseStep, Callback](
-      (reqId, row, cmd) => cellCmdIO(reqId, Cell.AddUseCaseTailStep(row), cmd))
+    val runCmd = ReusableFn[ReqId, Cell, UpdateContentCmd, Callback](
+      (reqId, cell, cmd) =>
+        $.props >>= (p =>
+          p.reqProps(reqId).asyncFeature(cell).wrapAsync((s, f) =>
+            updateIO(cmd, s, f))))
 
     def setModal(modal: Modal.State): Callback =
       $.props >>= (_.state set modal)
@@ -261,18 +250,15 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
     def focus: Callback = Callback.empty // TODO
 
-    val stepTextMarker = ReactAttr.devOnly("data-step-text") := 1
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     def renderDetail(props: DynamicProps, data: Data): ReactElement = {
       import data.{project, req, pubidText}
 
-      val pw                 = data.pxProjectWidgets.value()
-      val state              = props.reqProps(req.id)
-      val fieldName          = pxFieldNameFn.value()
-      val editFeature        = createEditFeature(state.initEditor, state.asyncFeature, data)
-      val runUseCaseStepCtrl = this.runUseCaseStepCtrl(req.id)
-      val runAddUseCaseStep  = this.runAddUseCaseStep(req.id)
+      val pw          = data.pxProjectWidgets.value()
+      val state       = props.reqProps(req.id)
+      val fieldName   = pxFieldNameFn.value()
+      val editFeature = createEditFeature(state.initEditor, state.asyncFeature, data)
+      val runCmd      = this.runCmd(req.id)
 
       def runAction(cell: Cell, cmd: UpdateContentCmd): Callback =
         state.asyncFeature(cell).wrapAsync((s, f) => updateIO(cmd, s, f))
@@ -404,70 +390,15 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
             }
         }
 
-      // TODO Move
-      def renderStepTree(ucData: data.UseCaseData, stepData: StepData) = {
-        import shipreq.webapp.client.app.Style.reqdetail.{useCaseStep => *}
-        import UseCaseStepFlowText.TextAndFlow
-        import stepData.{steps, field, row}
+      def renderStepTree(ucData: UseCaseData, stepData: UseCaseStepTree.StepData) = {
+        val renderBody: UseCaseStepTree.RenderBodyFn = (id, live, textAndFlow) =>
+          renderAsyncEditorOrValue(
+            Cell.UseCaseStep(id),
+            pw.useCaseStep(live, textAndFlow))
 
-        val uc = data.useCaseData.get.uc
-        val pos = uc.pubid.pos
-        val flow = data.project.reqs.useCases.stepFlow
-
-        val x = steps.tree.subtreeLocAndValueIterator[ReactTag](stepData.filter, (loc, step) => {
-          val id = step.id
-
-          val partialLoc = steps.partialLocs.forward(loc)
-          if (data.useCaseStepFilter(partialLoc)) {
-
-            val fullStepLabel = field.stepLabel(pos, partialLoc, mnemonicPrefix = false)
-
-            val live = UseCaseStep.live(uc, partialLoc)
-
-            def text =
-              <.div(*.body,
-                stepTextMarker,
-                renderAsyncEditorOrValue(
-                  Cell.UseCaseStep(id),
-                  pw.useCaseStep(live, TextAndFlow(step.titleA(uc), flow(_)(id)))))
-
-            def ctrls =
-              uc.liveUC match {
-                case Live =>
-                  UseCaseStepRow.LiveControls.Props(
-                    uc.id, field, id, live, loc,
-                    field.canShiftRight(loc, steps.locValidity, stepData.mdt),
-                    state.async(Cell.UseCaseStepCtrls(id)),
-                    runUseCaseStepCtrl(id),
-                    state.async(Cell.AddUseCaseStep(id)),
-                    runAddUseCaseStep(row)
-                  ).render
-
-                case Dead =>
-                  UseCaseStepControls.Props.none.render
-              }
-
-            <.div(*.container,
-              ^.key := fullStepLabel,
-              UseCaseStepRow.Label.Props(field, fullStepLabel, partialLoc).render,
-              text,
-              ctrls)
-        } else
-            null
-        })
-          .filter(_ ne null)
-          .toReactNodeArray
-
-        if (row.tailStep) {
-          def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
-          val cell  = Cell.AddUseCaseTailStep(row)
-          val cb    = runAction(cell, cmd)
-          val a     = state.async(cell)
-          val ctrls = UseCaseStepControls.Props.tailStep(cb, a).render
-          x push <.div(*.container, ^.key := "TS", ctrls)
-        }
-
-        x
+        UseCaseStepTree.Props(
+          ucData.uc, stepData, data.filterDead, project.reqs.useCases.stepFlow, renderBody, state.async, runCmd)
+          .render
       }
 
       def renderFilterDead: ReactNode =

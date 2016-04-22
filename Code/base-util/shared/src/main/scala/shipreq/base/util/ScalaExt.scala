@@ -83,6 +83,10 @@ object ScalaExt extends Platform.ScalaExt {
         Some(as.next())
       else
         None
+
+    def drain(): Unit =
+      while (as.hasNext)
+        as.next()
   }
 
   implicit class IteratorExtO[A](private val as: Iterator[Option[A]]) extends AnyVal {
