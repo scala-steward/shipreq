@@ -131,10 +131,6 @@ class CreationInterface($               : CompState.Access[State],
   private val _noExtra: Any ~=> TagMod =
     ReusableFn(_ => EmptyTag)
 
-  // TODO  If this works, it should be in scalajs-react
-  implicit def contravariantReusableFnInput[A, B, C <: A](f: A ~=> B): C ~=> B =
-    f.asInstanceOf[C ~=> B]
-
   // ===================================================================================================================
 
   object CreateReqCodeGroup {

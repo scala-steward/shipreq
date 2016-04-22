@@ -28,7 +28,7 @@ object Dependencies {
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJsFork("com.github.julien-truffaut", "1.2.0")("com.github.japgolly.fork.monocle", "-2")
+    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.2.1")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
@@ -56,7 +56,7 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.11.0")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.11.1")
     val core    = mm("core")
     val test    = mm("test")
     val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect
