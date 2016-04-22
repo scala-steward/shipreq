@@ -380,12 +380,6 @@ object ShipReq extends Build {
         parallelExecution            := false)
       ): _*)
 
-    lazy val IntegrationTest = config("it") extend Test
-    def integrationTestSettings = (_: Project)
-      .configs(IntegrationTest)
-      .settings(inConfig(IntegrationTest)(Defaults.testSettings): _*)
-      .settings(parallelExecution in IntegrationTest := false)
-
     def consoleCmds = """
         import scalaz._, shipreq.base.util._, shipreq.webapp._, db._, lib.Types._, feature.uc, uc._, uc.field._, uc.step._, uc.text._, FreeTextTerms._, util._
         def initlift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}
@@ -398,7 +392,6 @@ object ShipReq extends Build {
         .deps(
           Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++ guava ++
           testScope(μTest ++ scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
-          depScope("it")(selenium) ++
           (LibJetty.webapp % "test") ++
           (LibJetty.servletApi % "test,provided"))
         .configure(
@@ -408,7 +401,6 @@ object ShipReq extends Build {
           clientJsSettings,
           warSettings,
           testSettings,
-          integrationTestSettings,
           dontInline) // crashes scalac 2.11.7
         .settings(
           addCommandAlias("livejs", "~;clear;jsp"),

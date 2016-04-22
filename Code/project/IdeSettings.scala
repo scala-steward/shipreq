@@ -34,7 +34,7 @@ object IdeSettings {
 
     def common = "target" :: moduleTargets
     def root   = common ++ List(".idea", ".idea_modules", ".settings", "target", "log", ".bower")
-    def webapp = List("vendor", "node_modules", "src/it/scala", "src/main/webapp/assets/vendor")
+    def webapp = List("vendor", "node_modules", "src/main/webapp/assets/vendor")
   }
 
   private def prefix(p: String)(ss: List[String]): List[String] = ss.map(p + _)

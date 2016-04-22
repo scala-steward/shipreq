@@ -146,12 +146,6 @@ object Dependencies {
   val mockito     = jvmOnly("org.mockito"                 % "mockito-core"          % "1.9.5")
   val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "2.2.5")
   val scalaCheck  = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.11.3")
-  val selenium    = jvmOnly("org.seleniumhq.selenium"     % "selenium-java"         % "2.35.0" excludeAll(
-    ExclusionRule(name = "selenium-android-driver"),
-    ExclusionRule(name = "selenium-htmlunit-driver"),
-    ExclusionRule(name = "selenium-ie-driver"),
-    ExclusionRule(name = "selenium-iphone-driver"),
-    ExclusionRule(name = "selenium-safari-driver")))
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   def useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
