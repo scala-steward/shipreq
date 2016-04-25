@@ -257,8 +257,8 @@ object ShipReq {
         Common.jsSettings(NeedDom),
         webappSettings,
         useMacroParadise,
-        dontInline, // crashes 2.11.7 / 0.6.4
-        Common.jsFastDevSettings)
+        // Common.jsFastDevSettings,
+        dontInline) // crashes 2.11.7 / 0.6.4
       .settings(
         jsDependencies in Test += ProvidedJS / "shipreq-client-test.js")
 

@@ -25,7 +25,7 @@ object WebappServer {
         val webapp = (sourceDirectory in webappPrepare).value
         Seq(
           webapp / "dev/client.js",
-          webapp / "dev/client.js.map",
+          webapp / "dev/webapp-client-fastopt.js.map", // This exact filename is specified at end of client.js
           webapp / "a/client.js")
       },
 
@@ -36,8 +36,8 @@ object WebappServer {
         (scalaJSLinkedFile in Compile in webappClient).value match {
           case f: FileVirtualJSFile =>
             if (devMode) {
-              fileSync(f.file         , webapp / "dev/client.js"    , mandatory = true)
-              fileSync(f.sourceMapFile, webapp / "dev/client.js.map", mandatory = false)
+              fileSync(f.file         , webapp / "dev/client.js"                   , mandatory = true)
+              fileSync(f.sourceMapFile, webapp / "dev/webapp-client-fastopt.js.map", mandatory = false)
             } else {
               fileSync(f.file, webapp / "a/client.js", mandatory = true)
             }

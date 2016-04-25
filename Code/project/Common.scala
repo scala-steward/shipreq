@@ -182,8 +182,11 @@ object Common {
       parallelExecution in testOnly := false)
     .configure(
       jsTests(t),
-      debugOrRelease(identity, jsProdSettings),
+      debugOrRelease(jsDevSettings, jsProdSettings),
       InBrowserTesting.js)
+
+  private def jsDevSettings = (_: Project).settings(
+    emitSourceMaps := true)
 
   private def jsProdSettings = (_: Project).settings(
     emitSourceMaps := false,
@@ -200,8 +203,8 @@ object Common {
 
   // Compile-scope only
   def jsFastDevSettings = (_: Project).settings(
-    emitSourceMaps in Compile := false,
-    scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) })
+    scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) },
+    emitSourceMaps in Compile in fastOptJS := false)
 
   private def jsTests(t: JsTestType): Project => Project =
     t match {
@@ -214,9 +217,9 @@ object Common {
 //          jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
       case NeedDom =>
         _.settings(
-          requiresDOM            := true,
-          emitSourceMaps in Test := false, // PhantomJS doesn't use
-          jsEnv          in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
+          requiresDOM                         := true,
+          emitSourceMaps in fastOptJS in Test := false, // PhantomJS doesn't use
+          jsEnv                       in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
     }
 
   // ===================================================================================================================
