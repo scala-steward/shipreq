@@ -178,13 +178,18 @@ object Common {
 //      libraryDependencies  += Dependencies.Scala.java8compat)
 
   def jsSettings(t: JsTestType): Project => Project =
-    _.settings(
-      scalaJSUseRhino   in Global   := false,
-      parallelExecution in testOnly := false)
-    .configure(
+    _.configure(
       jsTests(t),
       debugOrRelease(jsDevSettings, jsProdSettings),
       InBrowserTesting.js)
+    .settings(
+      scalaJSUseRhino   in Global   := false,
+      parallelExecution in testOnly := false,
+      // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),
+      scalaJSSemantics in fullOptJS ~= (_
+        .withRuntimeClassName(_ => "")
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)
+        ))
 
   private def jsDevSettings = (_: Project).settings(
     emitSourceMaps := true)
@@ -193,13 +198,8 @@ object Common {
     emitSourceMaps := false,
     scalaJSStage := FullOptStage,
     scalaJSOptimizerOptions ~= (_
-      //.withPrettyPrintFullOptJS(true)
       .withBatchMode(true)
       .withCheckScalaJSIR(true)
-      ),
-    scalaJSSemantics ~= (_
-      .withRuntimeClassName(_ => "")
-      .withAsInstanceOfs(CheckedBehavior.Unchecked)
       ))
 
   // Compile-scope only
