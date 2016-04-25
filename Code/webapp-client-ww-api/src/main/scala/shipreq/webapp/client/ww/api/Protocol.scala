@@ -59,7 +59,7 @@ object Protocol {
           case m: Message[_] => handle(m.asInstanceOf[Message[M]])
           case _ =>
             if (developmentMode)
-              console.warn("Unexpected WebWorker response: ", e)
+              console.warn("Unexpected WebWorker message: ", e)
         }
   }
 }

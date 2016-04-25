@@ -6,21 +6,21 @@ import scala.util.Try
 import scalajs.js
 import Protocol._
 
-final class Client[Cmd <: AbstractCmd, Enc, R[_], W[_]](codec    : Codec[Enc, R, W],
-                                                        interface: Interface[Enc],
-                                                        onError  : OnError)
-                                                       (implicit writeCmd: W[Cmd]) {
+final class Client[Cmd[_], Enc, R[_], W[_]](codec    : Codec[Enc, R, W],
+                                            interface: Interface[Enc],
+                                            onError  : OnError)
+                                           (implicit writeCmd: W[Cmd[_]]) {
 
   private var i = 0
   private val callbacks = mutable.ListMap.empty[Int, Enc => Unit]
 
   interface.listen(receiveResult, onError)
 
-  def post(cmd: Cmd)(implicit rr: R[cmd.Result]): Future[cmd.Result] = {
+  def post[A](cmd: Cmd[A])(implicit readResult: R[A]): Future[A] = {
     i += 1
-    val p = Promise[cmd.Result]()
-    callbacks.update(i, e => p tryComplete Try(codec.decode[cmd.Result](e)))
-    interface.post(new Message(i, codec.encode[Cmd](cmd)))
+    val p = Promise[A]()
+    callbacks.update(i, e => p tryComplete Try(codec.decode[A](e)))
+    interface.post(new Message(i, codec.encode[Cmd[_]](cmd)))
     p.future
   }
 
@@ -36,7 +36,7 @@ object Client extends Settings {
   import org.scalajs.dom.webworkers.Worker
   import codec._
 
-  def apply[Cmd <: AbstractCmd : Writer](worker: Worker): Client[Cmd, Encoded, Reader, Writer] =
+  def apply[Cmd[_]](worker: Worker)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Encoded, Reader, Writer] =
     new Client(codec, new WebWorkerInterface(worker), onError)
 
   final class WebWorkerInterface(worker: Worker) extends Interface[Encoded] {
