@@ -1,6 +1,5 @@
 package shipreq.webapp.client.ww.api
 
-import scalajs.LinkingInfo.developmentMode
 import scalajs.js
 import scalajs.js.annotation._
 import org.scalajs.dom.console
@@ -54,12 +53,6 @@ object Protocol {
     import org.scalajs.dom.MessageEvent
 
     def onMessageFn[M](handle: Message[M] => Unit): js.Function1[MessageEvent, Unit] =
-      (e: MessageEvent) =>
-        e.data match {
-          case m: Message[_] => handle(m.asInstanceOf[Message[M]])
-          case _ =>
-            if (developmentMode)
-              console.warn("Unexpected WebWorker message: ", e)
-        }
+      (e: MessageEvent) => handle(e.data.asInstanceOf[Message[M]])
   }
 }

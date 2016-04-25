@@ -21,11 +21,14 @@ final class Server[Cmd[_], Encoded, R[_], W[_]](handler  : Handler[Cmd],
   interface.listen(receiveRequest, onError)
 
   private def receiveRequest(m: Message[Encoded]): Unit = {
-    trait R
-    val cmd    = codec.decode[Cmd[_]](m.cmd).asInstanceOf[Cmd[R]]
+    val cmd = codec.decode[Cmd[_]](m.cmd)
+    receiveRequestA(m.key, cmd)
+  }
+
+  private def receiveRequestA[A](key: Int, cmd: Cmd[A]): Unit = {
     val result = handler(cmd)
     val re     = codec.encode(result)(resultEnc(cmd))
-    val reply  = new Message(m.key, re)
+    val reply  = new Message(key, re)
     interface.post(reply)
   }
 }
