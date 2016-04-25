@@ -1,12 +1,10 @@
 import sbt._
 import Keys._
 import Common.Functions._
-import Common.Values.releaseMode
 import Dependencies._
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.cross.{CrossProject, CrossType}
 import ScalaJSPlugin.autoImport.{crossProject => _, _}
-import DependencyLib.JVM
 
 object ShipReq {
 
@@ -186,8 +184,8 @@ object ShipReq {
     addCommandAliases(
       "ctbc"-> ";clean ;tbc",                                              // Clean Test Base & Client
       "tbc" -> s";$WT/test:compile ;$WC/test:compile ;$WT/test ;$WC/test", // Test Base & Client
-      "js"  -> s";$WC/${WebappClient.jsCmd} ;$WS/linkClientJs",            // compile JavaScript
-      "jsp" -> s";$WC/${WebappClient.jsCmd} ;$WS/webappPrepare",           // compile JavaScript, auto deploy
+      "js"  -> s";$WC/fastOptJS ;$WS/copyClientJs",                        // compile JavaScript
+      "jsp" -> s";$WC/fastOptJS ;$WS/webappPrepare",                       // compile JavaScript, auto deploy
       "up"  -> s";$WS/jetty:stop  ;$WS/jetty:start",                       // webapp: UP
       "d"   -> s"$WS/jetty:stop",                                          // webapp: Down
       "wd"  -> ";up ;~js")                                                 // WebDev
@@ -245,58 +243,24 @@ object ShipReq {
       .depsForBoth(μTest ++ Nyaya.test)
       .dependsOn(baseTest, webappBase, webappBaseServer)
 
-  // -------------------------------------------------------------------------------------------------------------------
-  object WebappClient {
-    import org.scalajs.core.tools.sem._
-
-    def dir = "webapp-client"
-
-    def jsTask = if (releaseMode) fullOptJS   else fastOptJS
-    def jsCmd  = if (releaseMode) "fullOptJS" else "fastOptJS"
-
-    def testSettings = (_: Project)
+  lazy val webappClient =
+    project("webapp-client")
+      .enablePlugins(ScalaJSPlugin)
+      .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test->compile")
+      .depsForJs(
+        Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
+        μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
+        testScope(
+          TestState.nyaya ++ TestState.domZipperSizzle ++
+          React.test ++ μTest ++ Nyaya.test))
+      .configure(
+        Common.jsSettings(NeedDom),
+        webappSettings,
+        useMacroParadise,
+        dontInline, // crashes 2.11.7 / 0.6.4
+        Common.jsFastDevSettings)
       .settings(
-        jsDependencies in Test += ProvidedJS / "shipreq-client-test.js",
-        // emitSourceMaps in Compile := false, // I want speed
-        scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) })
-
-    def prodJsSettings = (_: Project).settings(
-      emitSourceMaps := false,
-      scalaJSOptimizerOptions ~= (_
-        //.withPrettyPrintFullOptJS(true)
-        .withBatchMode(true)
-        .withCheckScalaJSIR(true)
-        ),
-      scalaJSSemantics ~= (_
-        .withRuntimeClassName(_ => "")
-        .withAsInstanceOfs(CheckedBehavior.Unchecked)
-        ))
-
-    def createProject =
-      project(dir)
-        .enablePlugins(ScalaJSPlugin)
-        .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test->compile")
-        .depsForJs(
-          Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
-          μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
-          testScope(
-            TestState.nyaya ++ TestState.domZipperSizzle ++
-            React.test ++ μTest ++ Nyaya.test)
-        )
-        .configure(
-          Common.jsSettings(NeedDom),
-          webappSettings,
-          useMacroParadise,
-          testSettings,
-          // IntegrationTesting.testWithBrowser(),
-          dontInline, // crashes 2.11.7 / 0.6.4
-          debugOrRelease(identity, prodJsSettings)
-        )
-  }
-
-  lazy val webappClient = WebappClient.createProject
-
-  // -------------------------------------------------------------------------------------------------------------------
+        jsDependencies in Test += ProvidedJS / "shipreq-client-test.js")
 
   lazy val webappServer =
     project("webapp-server").configure(WebappServer.apply)
@@ -340,9 +304,7 @@ object ShipReq {
         .depsForJs(scalajsBenchmark)
         .configure(
           Common.jsSettings(NoTests),
-          useMacroParadise,
-          WebappClient.prodJsSettings
-        )
+          useMacroParadise)
         //.settings(
         //  // skip in packageJSDependencies := false,
         //  // scalaJSStage in Global := FullOptStage,

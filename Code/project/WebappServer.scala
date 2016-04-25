@@ -3,7 +3,7 @@ import Keys._
 import org.scalajs.core.tools.io.{IO => _, _}
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import Common.Functions._
-import Common.Values.releaseMode
+import Common.Values.{devMode, releaseMode}
 import Dependencies._
 import DependencyLib.JVM
 import ScalaJSPlugin.autoImport.{crossProject => _, _}
@@ -15,47 +15,41 @@ import JettyPlugin    .autoImport._
 import WebappPlugin   .autoImport._
 
 object WebappServer {
-  val linkClientJs = taskKey[Unit]("Creates symlinks to webapp client resources.")
-  val clientJsLinks = settingKey[ClientJsLinks]("Map of symlinks between client and server.")
 
-  class ClientJsLinks(sRoot: File, tRoot: File) {
-    private val s = sRoot / "scala-2.11"
-    private val w = tRoot / "src/main/webapp"
-    private def sPrefix = WebappClient.dir + "-"
-    private def tName = "client.js"
-    private val devMap = {
-      val t = w / "dev"
-      val js = s"${sPrefix}fastopt.js"
-      val sourceMap = js + ".map"
-      Map(
-        s/js -> t/tName,
-        s/sourceMap -> t/sourceMap) // Can't rename the sourcemap without changing it at the end of the JS
-    }
-    private val releaseMap =
-      Map(s/s"${sPrefix}opt.js" -> w/"a"/tName)
+  lazy val copyClientJs = taskKey[Unit]("Copies required webapp client resources.")
 
-    def links     = if (releaseMode) releaseMap else devMap
-    def cleanable = (devMap.values.iterator ++ releaseMap.values).map(_.asFile).toSet[File]
-  }
+  def clientJsSettings: Project => Project =
+    _.settings(
 
-  lazy val jsBuildTask =
-    WebappClient.jsTask in Compile in webappClient
+      cleanFiles ++= {
+        val webapp = (sourceDirectory in webappPrepare).value
+        Seq(
+          webapp / "dev/client.js",
+          webapp / "dev/client.js.map",
+          webapp / "a/client.js")
+      },
 
-  def clientJsSettings = (_: Project).settings(
-    clientJsLinks := new ClientJsLinks((target in webappClient).value, baseDirectory.value),
-    cleanFiles ++= clientJsLinks.value.cleanable.toSeq,
-    { val k = Keys.`package`; k <<= k.dependsOn(linkClientJs) },
-    { val k = webappPrepare ; k <<= k.dependsOn(linkClientJs) },
-    // { val k = start in Jetty; k <<= k.dependsOn(linkClientJs) },
-    // { val k = test in Test;   k <<= k.dependsOn(linkClientJs) },
-    linkClientJs := {
-      jsBuildTask.value // Ensure client JS is built
-      val log = streams.value.log
-      for ((s, t) <- clientJsLinks.value.links) {
-        log.info(s"Copying $s → $t")
-        IO.copyFile(s, t)
-      }
-    })
+      copyClientJs := {
+        implicit val log = streams.value.log
+        val webapp = (sourceDirectory in webappPrepare).value
+
+        (scalaJSLinkedFile in Compile in webappClient).value match {
+          case f: FileVirtualJSFile =>
+            if (devMode) {
+              fileSync(f.file         , webapp / "dev/client.js"    , mandatory = true)
+              fileSync(f.sourceMapFile, webapp / "dev/client.js.map", mandatory = false)
+            } else {
+              fileSync(f.file, webapp / "a/client.js", mandatory = true)
+            }
+
+          case other =>
+            sys.error("Unsupported virtual file type: " + other)
+        }
+      },
+
+      { val k = Keys.`package`; k <<= k.dependsOn(copyClientJs) },
+      { val k = webappPrepare ; k <<= k.dependsOn(copyClientJs) }
+    )
 
   def warSettings = {
     var dirHitList = Set("_scalate")
@@ -89,7 +83,7 @@ object WebappServer {
       fork                         := true,
       javaOptions                  += "-Drun.mode=test",
       unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp", // So templates load
-      parallelExecution            := false)
+      parallelExecution            := false) // TODO erm... why?
     ): _*)
 
   def consoleCmds = """

@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import java.nio.file.{Files, Path}
 import scala.concurrent.duration._
+import org.scalajs.core.tools.sem._
 import org.scalajs.sbtplugin.cross.CrossProject
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import com.timushev.sbt.updates.UpdatesKeys._
@@ -178,13 +179,29 @@ object Common {
   def jsSettings(t: JsTestType): Project => Project =
     _.settings(
       scalaJSUseRhino   in Global   := false,
-      scalaJSStage      in Global   := jsStage,
       parallelExecution in testOnly := false)
     .configure(
       jsTests(t),
+      debugOrRelease(identity, jsProdSettings),
       InBrowserTesting.js)
 
-  def jsStage = if (releaseMode) FullOptStage else FastOptStage
+  private def jsProdSettings = (_: Project).settings(
+    emitSourceMaps := false,
+    scalaJSStage := FullOptStage,
+    scalaJSOptimizerOptions ~= (_
+      //.withPrettyPrintFullOptJS(true)
+      .withBatchMode(true)
+      .withCheckScalaJSIR(true)
+      ),
+    scalaJSSemantics ~= (_
+      .withRuntimeClassName(_ => "")
+      .withAsInstanceOfs(CheckedBehavior.Unchecked)
+      ))
+
+  // Compile-scope only
+  def jsFastDevSettings = (_: Project).settings(
+    emitSourceMaps in Compile := false,
+    scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) })
 
   private def jsTests(t: JsTestType): Project => Project =
     t match {
@@ -211,6 +228,8 @@ object Common {
       if (r) println("[mode] \033[1;31mRelease Mode.\033[0m")
       r
     }
+
+    def devMode: Boolean = !releaseMode
 
     lazy val snapshotSuffix: String =
       if (releaseMode) "" else "-SNAPSHOT"
@@ -240,8 +259,8 @@ object Common {
     def dontInline: Project => Project =
       _.settings(scalacOptions in Compile ~= removeValues("-optimise", "-Yinline"))
 
-    def ln_s(src: File, tgt: File, log: Logger): Unit = ln_s(src.toPath, tgt.toPath, log)
-    def ln_s(src: Path, tgt: Path, log: Logger): Unit = {
+    def ln_s(src: File, tgt: File)(implicit log: Logger): Unit = ln_s(src.toPath, tgt.toPath)(log)
+    def ln_s(src: Path, tgt: Path)(implicit log: Logger): Unit = {
       if (Files.isSymbolicLink(tgt) && Files.readSymbolicLink(tgt).equals(src))
         log.debug(s"Symlink up-to-date: $tgt")
       else {
@@ -251,12 +270,23 @@ object Common {
       }
     }
 
-    def ln(src: File, tgt: File, log: Logger): Unit = ln(src.toPath, tgt.toPath, log)
-    def ln(src: Path, tgt: Path, log: Logger): Unit = {
+    def ln(src: File, tgt: File)(implicit log: Logger): Unit = ln(src.toPath, tgt.toPath)(log)
+    def ln(src: Path, tgt: Path)(implicit log: Logger): Unit = {
       log.info(s"Creating hard link $tgt -> $src")
       Files.deleteIfExists(tgt)
       Files.createLink(tgt, src)
     }
+
+    def fileSync(from: File, to: File, mandatory: Boolean)(implicit log: Logger): Unit =
+      if (from.exists()) {
+        log.info(s"Copying $from → $to")
+        IO.copyFile(from, to, preserveLastModified = true)
+      } else if (mandatory)
+        sys.error("File not found: " + from.absolutePath)
+      else if (to.exists()) {
+        log.info(s"Deleting $to")
+        IO.delete(to)
+      }
 
     def addCommandAliases(m: (String, String)*) = {
       val s = m.map(p => addCommandAlias(p._1, p._2)).reduce(_ ++ _)
