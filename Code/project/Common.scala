@@ -130,6 +130,7 @@ object Common {
         "WB"  -> "project webapp-base-jvm",
         "WT"  -> "project webapp-base-test-jvm",
         "WC"  -> "project webapp-client",
+        "WCW" -> "project webapp-client-ww",
         "WS"  -> "project webapp-server",
         "BM"  -> "project benchmark-jvm",
         "BMJ" -> "project benchmark-js",

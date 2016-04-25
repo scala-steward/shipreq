@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>webapp-client-ww playground</title>
+</head>
+<body>
+
+<script>
+
+var w = new Worker("/tmp/shipreq.sbt/webapp-client-ww/target/scala-2.11/webapp-client-ww-fastopt.js");
+
+w.onmessage = function(e) {
+  console.log('Message received from worker', e.data);
+}
+
+w.postMessage("hehe")
+
+</script>
+
+</body>
+</html>
