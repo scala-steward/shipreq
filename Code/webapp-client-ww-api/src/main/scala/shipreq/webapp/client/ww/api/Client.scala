@@ -1,5 +1,7 @@
 package shipreq.webapp.client.ww.api
 
+import org.scalajs.dom.window.navigator
+import scalajs.LinkingInfo.productionMode
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -41,7 +43,8 @@ object Client extends Settings {
 
   final class WebWorkerInterface(worker: Worker) extends Interface[Encoded] {
     override def listen(hnd: Message[Encoded] => Unit, onError: OnError): Unit = {
-      worker.onerror = (e: ErrorEvent) => onError(e.message)
+      if (productionMode || !navigator.userAgent.contains("Phantom"))
+        worker.onerror = (e: ErrorEvent) => onError(e.message)
       worker.onmessage = Interface.onMessageFn(hnd)
         .asInstanceOf[js.Function1[js.Any, Unit]] // TODO Remove after scala-dom-js upgrade
     }
