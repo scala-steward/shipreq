@@ -270,7 +270,7 @@ private[fields] object MainTable {
 
         def staticInvoke(f: StaticField): Callback =
           Callback.byName(
-            protocol.value().updateOrderIO(f, None)(TCB.Success.nop, TCB.Failure.nop)) // TODO no failure handling
+            protocol.value().deleteIO(f, Restore)(TCB.Success.nop, TCB.Failure.nop)) // TODO no failure handling
 
         def customInvoke(t: CustomFieldType): Callback =
           Callback.byName($ modState storesForType(t).n.enableEdit)
