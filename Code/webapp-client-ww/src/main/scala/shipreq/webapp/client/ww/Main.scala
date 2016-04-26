@@ -26,7 +26,7 @@ object Main {
     import Cmd._
     override def apply[R](cmd: Cmd[R]): R =
       cmd match {
-        case GraphUseCaseStepFlow(ucId, useCases) => Graphs.useCaseStepFlow(ucId, useCases)
+        case GraphUseCaseStepFlow(ucId, useCases) => Graphs.useCaseStepFlow(ucId, useCases).toSVG
       }
   }
 }
