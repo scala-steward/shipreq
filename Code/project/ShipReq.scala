@@ -247,25 +247,23 @@ object ShipReq {
       .enablePlugins(ScalaJSPlugin)
       .dependsOn(webappBaseJs)
       .depsForJs(
-        Scalaz.core ++ Monocle.macros ++ boopickle ++ scalajsDom ++
-        testScope(μTest ++ Nyaya.test))
+        boopickle ++ scalajsDom ++
+        testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
         dontInline) // probably crashes, try with Scala 2.12
 
   lazy val webappClientWw =
     project("webapp-client-ww")
       .enablePlugins(ScalaJSPlugin)
-      .dependsOn(baseUtilJs, webappClientWwApi, webappBaseTestJs % "test->compile")
+      .dependsOn(webappClientWwApi, webappBaseTestJs % "test->compile")
       .depsForJs(
-        Scalaz.core ++ Monocle.macros ++ boopickle ++ scalajsDom ++
-        testScope(μTest ++ Nyaya.test))
+        boopickle ++ scalajsDom ++
+        testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
         dontInline) // probably crashes, try with Scala 2.12
     .settings(
       scalaJSOutputWrapper := ("", "Main().main();"))
