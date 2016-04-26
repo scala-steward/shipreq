@@ -61,10 +61,13 @@ class ProjectSPA(projectId: ProjectId) extends SingleOpStatefulSnippet {
   private def updateProject(f: Project => MakeEvent.Result): GenericFailure \/ VerifiedEvents = {
 //    Thread.sleep(2000)
 //    sys error "NO!"
-    ApplyNewEvent(f(state.project), state.project) match {
+    val event = f(state.project)
+    ApplyNewEvent(event, state.project) match {
       case ValidUpdate.Success(u) => applyNewEvent(u).map(_ => Vector1(u.ve))
       case ValidUpdate.Unchanged  => noChangeResponse
-      case ValidUpdate.Failure(e) => -\/(GenericFailure(e))
+      case ValidUpdate.Failure(e) =>
+        System.err.println(s"Error: $event failed with $e.")
+        -\/(GenericFailure(e))
     }
   }
 

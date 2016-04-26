@@ -1,6 +1,5 @@
 package shipreq.webapp.client.app.reqdetail
 
-import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{CustomField => CF, StaticField => SF, Field, UseCaseSteps}
@@ -18,25 +17,25 @@ object Row {
 
   sealed abstract class UseCaseSteps(_key: String) extends Row(_key) {
     def field     : SF.UseCaseStepTree
-    val treeFilter: UseCaseSteps.Tree => Range
+    def treeFilter: UseCaseSteps.Tree => Range
     def tailStep  : Boolean
   }
 
   case object UseCaseStepsN extends UseCaseSteps("n") {
     override def field      = SF.NormalAltStepTree
-    override val treeFilter = Function.const(0 to 0) _
+    override def treeFilter = SF.NormalAltStepTree.treeFilterN
     override def tailStep   = false
   }
 
   case object UseCaseStepsA extends UseCaseSteps("a") {
     override def field      = SF.NormalAltStepTree
-    override val treeFilter = 1 until (_: UseCaseSteps.Tree).children.length
+    override def treeFilter = SF.NormalAltStepTree.treeFilterA
     override def tailStep   = true
   }
 
   case object UseCaseStepsE extends UseCaseSteps("e") {
-    override def field = SF.ExceptionStepTree
-    override val treeFilter = (_: UseCaseSteps.Tree).children.indices
+    override def field      = SF.ExceptionStepTree
+    override def treeFilter = SF.ExceptionStepTree.treeFilter
     override def tailStep   = true
   }
 
@@ -46,6 +45,7 @@ object Row {
   case object Code              extends Row(autoKey)
   case object Tags              extends Row(autoKey)
   case object Implications      extends Row(autoKey)
+  case object StepGraph         extends Row("f")
   case class CustomField(f: CF) extends Row("f" + f.id.value)
 
   @inline implicit def univEqUseCaseSteps: UnivEq[UseCaseSteps] =
@@ -79,6 +79,6 @@ object Row {
     case f: CF                => CustomField(f) :: Nil
     case SF.NormalAltStepTree => UseCaseStepsN :: UseCaseStepsA :: Nil
     case SF.ExceptionStepTree => UseCaseStepsE :: Nil
-    case SF.StepGraph         => Nil // TODO ======================================
+    case SF.StepGraph         => StepGraph :: Nil
   }
 }

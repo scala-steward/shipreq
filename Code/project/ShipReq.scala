@@ -170,14 +170,13 @@ object ShipReq {
       .aggregate(
         webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm,
         webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs ,
-        webappClient,
+        webappClientWwApi, webappClientWw, webappClient,
         webappServer)
 
   lazy val webappSettings =
     Common.settings.andThen(_.configure(webappCmdAliases))
 
   lazy val webappCmdAliases = {
-    def WB = "webapp-base"
     def WT = "webapp-base-test"
     def WC = "webapp-client"
     def WS = "webapp-server"
@@ -243,10 +242,36 @@ object ShipReq {
       .depsForBoth(μTest ++ Nyaya.test)
       .dependsOn(baseTest, webappBase, webappBaseServer)
 
+  lazy val webappClientWwApi =
+    project("webapp-client-ww-api")
+      .enablePlugins(ScalaJSPlugin)
+      .dependsOn(webappBaseJs)
+      .depsForJs(
+        boopickle ++ scalajsDom ++
+        testScope(μTest))
+      .configure(
+        Common.jsSettings(NeedDom),
+        webappSettings,
+        dontInline) // probably crashes, try with Scala 2.12
+
+  lazy val webappClientWw =
+    project("webapp-client-ww")
+      .enablePlugins(ScalaJSPlugin)
+      .dependsOn(webappClientWwApi, webappBaseTestJs % "test->compile")
+      .depsForJs(
+        boopickle ++ scalajsDom ++
+        testScope(μTest))
+      .configure(
+        Common.jsSettings(NeedDom),
+        webappSettings,
+        dontInline) // probably crashes, try with Scala 2.12
+    .settings(
+      scalaJSOutputWrapper := ("", "Main().main();"))
+
   lazy val webappClient =
     project("webapp-client")
       .enablePlugins(ScalaJSPlugin)
-      .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test->compile")
+      .dependsOn(baseUtilJs, webappBaseJs, webappClientWwApi, webappBaseTestJs % "test->compile")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
         μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
