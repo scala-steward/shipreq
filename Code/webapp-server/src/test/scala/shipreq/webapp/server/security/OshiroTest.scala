@@ -22,11 +22,11 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
 
   describe("Authentication") {
     it("should allow users by username") {
-      login(user1.username, user1.password)
+      login(user1.username.value, user1.password)
     }
 
     it("should allow users by email address") {
-      login(user1.email, user1.password)
+      login(user1.email.value, user1.password)
     }
 
     it("should deny when username/email doesnt exist") {
@@ -34,11 +34,11 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
     }
 
     it("should deny when password is incorrect") {
-      intercept[IncorrectCredentialsException](login(user1.username, user2.password))
+      intercept[IncorrectCredentialsException](login(user1.username.value, user2.password))
     }
 
     it("should deny when user hasnt completed registration") {
-      intercept[UnknownAccountException](login(userWithCurrentToken.email, ""))
+      intercept[UnknownAccountException](login(userWithCurrentToken.email.value, ""))
     }
   }
 
@@ -49,7 +49,7 @@ class OshiroTest extends FunSpec with TestDatabaseSupport with BeforeAndAfterAll
     }
 
     it("should return user details when logged in") {
-      login(user1.username, user1.password)
+      login(user1.username.value, user1.password)
       Oshiro.loggedInUser should be(Some(user1.toUserDescriptor))
     }
   }

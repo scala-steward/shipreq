@@ -99,11 +99,11 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     }
 
     it("when a pending, valid token exists -- should resend email") {
-      testSuccess(userWithCurrentToken.email, 0, false)
+      testSuccess(userWithCurrentToken.email.value, 0, false)
     }
 
     it("when a pending, expired token exists -- should create a new token and email") {
-      testSuccess(userWithExpiredToken.email, 0, true)
+      testSuccess(userWithExpiredToken.email.value, 0, true)
     }
 
     it("when a email is valid and new -- should create a user, token and send email") {
@@ -111,7 +111,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     }
 
     it("when a email belongs to registered account -- should email with link to reset password") {
-      val (r, tt) = test(user1.email, 0)
+      val (r, tt) = test(user1.email.value, 0)
       r.assertJsAlert(None)
       SubmittedOneTask(ReRegistrationAttemptedT) test tt
     }
@@ -204,7 +204,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
 
     it("should reject a taken username") {
       val t = tester
-      t username_= user2.username
+      t username_= user2.username.value
       t.onSubmitF
       try {assertUnconfirmed()}
       catch {case e: PSQLException if e.getMessage.contains("transaction is aborted") =>}
@@ -223,7 +223,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
         reg.confirmedAt.get.after(1.minute.ago) should be(true)
         reg.confirmationToken should be(None)
 
-        val (user, pwd) = dao.findUserDescAndCredentials(userWithCurrentToken.email).get
+        val (user, pwd) = dao.findUserDescAndCredentials(userWithCurrentToken.email.value).get
         user.username.value shouldEqual "crazy50"
         pwd.hashedPassword.value should not be("abcd5678")
       }

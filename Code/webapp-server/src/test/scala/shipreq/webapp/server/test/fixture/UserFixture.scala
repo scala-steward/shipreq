@@ -47,7 +47,7 @@ trait UserFixture {
     // Insert mock users (registered)
     val i1 = Q.query[(String, String, String, String, Option[String]), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at, roles) VALUES(?,?,?,?,NOW(),NOW(),NOW(),?) RETURNING id")
     for (u <- users) {
-      val id = UserId(i1(u.username, u.email, u.hashedPassword, u.salt, UserDescriptor.roleStr(u.roles)).first)
+      val id = UserId(i1(u.username.value, u.email.value, u.hashedPassword.value, u.salt, UserDescriptor.roleStr(u.roles)).first)
       u._id = Some(id)
       Shim.InsertUsrd(id, u.name, u.newsletter).execute
     }
@@ -65,10 +65,10 @@ trait UserFixture {
 
   def insert(user: PendingTestUser)(implicit db: Session): Unit =
     Q.update[(String, String, Timestamp)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,?)").
-      apply(user.email, user.token, user.tokenCreatedAt).execute
+      apply(user.email.value, user.token, user.tokenCreatedAt).execute
 
-  def deleteUser(u: TestUser)(implicit db: Session): Unit = { deleteUser(u.id); u._id = None }
-  def deleteUser(u: PendingTestUser)(implicit db: Session): Unit = deleteUserByEmail(u.email)
+  def deleteUser(u: TestUser)(implicit db: Session): Unit = { deleteUser(u.id.value); u._id = None }
+  def deleteUser(u: PendingTestUser)(implicit db: Session): Unit = deleteUserByEmail(u.email.value)
 
   def deleteUser(id: Long)(implicit db: Session): Unit = {
     Q.update[Long]("DELETE FROM usrh_name WHERE usr_id = ?").apply(id).execute
@@ -80,5 +80,5 @@ trait UserFixture {
     id foreach deleteUser
   }
 
-  def login(user: TestUser): Unit = login(user.username, user.password)
+  def login(user: TestUser): Unit = login(user.username.value, user.password)
 }

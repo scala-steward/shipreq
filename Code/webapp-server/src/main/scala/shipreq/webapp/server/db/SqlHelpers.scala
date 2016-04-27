@@ -27,7 +27,7 @@ object SqlHelpers {
 
   implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
     def apply(v: PasswordAndSalt, pp: PositionedParameters) {
-      pp.setString(v.hashedPassword)
+      pp.setString(v.hashedPassword.value)
       pp.setString(v.salt)
     }
   }

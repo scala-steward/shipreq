@@ -233,7 +233,7 @@ trait TestDatabaseHelpers extends TestHelpers2 {
     .apply(randomStr,randomStr).first
 
   def deleteUser(u: UserId): Unit =
-    update[Long]("DELETE FROM usr WHERE id=?").apply(u).execute
+    update[Long]("DELETE FROM usr WHERE id=?").apply(u.value).execute
 
   def debugSelect(sql: String): Unit = {
     val stmt = session.conn.createStatement()

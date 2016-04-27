@@ -84,7 +84,7 @@ object DiagnosticEndpoints extends DI {
           }
         )
       }
-    DbTestResult(ab, ab - b, b, dbClock.toIso8601)
+    DbTestResult(ab, ab - b, b, dbClock.toIso8601.value)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ object DiagnosticEndpoints extends DI {
         val token = nextFuncName
         val msg = SendDiagEmail(EmailAddr(emailAddress), token, s"Token: $token\nIssued: ${Misc.currentTimeAsIso8601Str.value}")
         val (time, msgId) = calcTime(taskman1(_ submitMsg msg))
-        Full(jsonResponse(EmailSendResult(msgId, time, token)))
+        Full(jsonResponse(EmailSendResult(msgId.value, time, token)))
       }
       case _ => Full(BadResponse())
     })
@@ -115,7 +115,7 @@ object DiagnosticEndpoints extends DI {
           case Full(l) =>
             val id = MsgId(l)
             taskman1(_ run QueryMsgStatus(id)) match {
-              case Some(status) => Full(jsonResponse(MsgStatusResult(id, status.toString, status.isArchived)))
+              case Some(status) => Full(jsonResponse(MsgStatusResult(id.value, status.toString, status.isArchived)))
               case None         => Full(NotFoundResponse("Msg not found."))
             }
           case _ => Full(BadResponse())

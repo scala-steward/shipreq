@@ -156,7 +156,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
         case DbSuccess(id) =>
           log.info(s"Registered new user: $username")
           taskman1(_ submitMsg Msg.RegistrationCompleted(id))
-          SecurityUtils.getSubject.login(new UsernamePasswordToken(username, password))
+          SecurityUtils.getSubject.login(new UsernamePasswordToken(username.value, password))
           JqExpr("#regComplete,#register2") ~> JqToggle
       }
     })

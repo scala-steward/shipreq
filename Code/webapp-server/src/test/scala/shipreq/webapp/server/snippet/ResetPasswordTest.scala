@@ -2,10 +2,10 @@ package shipreq.webapp.server.snippet
 
 import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
-import org.mockito.Mockito.{when, verify}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.FunSpec
-import shipreq.taskman.api.UserId
-import shipreq.webapp.server.db.{ResetPasswordInfo, UserRegistrationInfo, DaoT}
+import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.server.db.{DaoT, ResetPasswordInfo, UserRegistrationInfo}
 import shipreq.webapp.server.test.T2._
 import shipreq.webapp.server.test.{MockDaoProvider, TestHelpers}
 import shipreq.webapp.server.util.NonEmptyTemplate
@@ -21,7 +21,7 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
   describe("ResetPassword1.perform") {
 
     def findUserReturns(r: Option[(UserRegistrationInfo, ResetPasswordInfo)]): DbSetup = new DbSetup {
-      override def setup(d: DaoT) = when(d.findUserRegAndResetPwInfo(any)) thenReturn r
+      override def setup(d: DaoT) = when(d.findUserRegAndResetPwInfo(EmailAddr(any))) thenReturn r
     }
     def registeredUser = UserRegistrationInfo(UserId(5), None, None, Some(DateTime.now))
     def existingToken(token: String, age: TimeSpan) = ResetPasswordInfo(Some(token), Some(age.ago))
@@ -53,7 +53,7 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
       inMockSession {
         val (r, tt) = withTestTaskman {
           MockDaoProvider(dao => {
-            when(dao.performInstallNewResetPasswordToken(any, any)) thenReturn "TOKEN"
+            when(dao.performInstallNewResetPasswordToken(UserId(any), any)) thenReturn "TOKEN"
             dbSetup setup dao
           }).install {
             val r = ResetPassword1.perform(Validators.email.correctAndValidateU(emailInput))

@@ -44,8 +44,8 @@ object ShiroSnippets {
    */
   object LoggedInUser extends DispatchSnippet {
     override def dispatch = {
-      case "username" => userAttribute(_.username)
-      case "email" => userAttribute(_.email)
+      case "username" => userAttribute(_.username.value)
+      case "email" => userAttribute(_.email.value)
     }
     def userAttribute(fn: UserDescriptor => String) =
       (_: NodeSeq) => Text(loggedInUser.fold("?")(fn))

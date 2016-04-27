@@ -87,13 +87,13 @@ sealed trait DaoS {
 
   def findUserDescAndCredentials(usernameOrEmail: String): Option[(UserDescriptor, PasswordAndSalt)] =
     if (usernameOrEmail.indexOf('@') == -1)
-      findUserDescAndCredentials(Username(usernameOrEmail))
+      findUserDescAndCredentialsU(Username(usernameOrEmail))
     else
-      findUserDescAndCredentials(EmailAddr(usernameOrEmail))
+      findUserDescAndCredentialsE(EmailAddr(usernameOrEmail))
 
-  def findUserDescAndCredentials(username: Username) = GetUserDescCredByUsername(username).firstOption
+  def findUserDescAndCredentialsU(username: Username) = GetUserDescCredByUsername(username).firstOption
 
-  def findUserDescAndCredentials(email: EmailAddr) = GetUserDescCredByEmail(email).firstOption
+  def findUserDescAndCredentialsE(email: EmailAddr) = GetUserDescCredByEmail(email).firstOption
 
   def findUserRegistrationInfo(email: EmailAddr) = GetUserRegInfo(email).firstOption
 

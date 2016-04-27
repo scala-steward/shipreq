@@ -16,18 +16,14 @@ object Types {
   // String tags
 
   /** Marks a string as being an ISO-8601 representation of a datetime. */
-  final case class ISO8601(value: String) extends TaggedString
-  implicit object ISO8601 extends TaggedTypeCtor[ISO8601]
+  final case class ISO8601(value: String) extends AnyVal
 
   /** Marks a password as being hashed. */
-  final case class HashedStr(value: String) extends TaggedString
-  implicit object HashedStr extends TaggedTypeCtor[HashedStr]
+  final case class HashedStr(value: String) extends AnyVal
 
-  final case class ShareUrlToken(value: String) extends TaggedString
-  implicit object ShareUrlToken extends TaggedTypeCtor[ShareUrlToken]
+  final case class ShareUrlToken(value: String) extends AnyVal
 
-  final case class Username(value: String) extends TaggedString
-  implicit object Username extends TaggedTypeCtor[Username]
+  final case class Username(value: String) extends AnyVal
 
   // -------------------------------------------------------------------------------------------------------------------
   // Long tags
@@ -42,9 +38,6 @@ object Types {
   sealed trait ExteralisableId extends TaggedLong {
     type E <: TaggedString
   }
-
-//  final case class X(value: Long) extends ExteralisableId
-//  implicit object X extends TaggedTypeCtor[X]
 
   /** Marks a Long value as corresponding to `project.id`. */
   final case class ProjectIdE(value: String) extends TaggedString

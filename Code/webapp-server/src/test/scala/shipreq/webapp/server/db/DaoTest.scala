@@ -138,7 +138,7 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 
     it("reset password fns") {
       val u = newUserId()
-      val username = queryNA[String](s"select username from usr where id=${u: Long}").first
+      val username = queryNA[String](s"select username from usr where id=${u.value: Long}").first
       val token = dao.performInstallNewResetPasswordToken(u, () => s"token.$u")
 
       val date = dao.findResetPasswordTokenIssuedDate(token).get

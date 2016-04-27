@@ -13,7 +13,6 @@ import shipreq.base.util.{JPropertiesValueReader, ErrorOr}
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.log.HasLogger
 import shipreq.base.util.ExternalValueReader._
-import shipreq.base.util.TaggedTypes._
 import shipreq.taskman.api.EmailAddr
 import shipreq.taskman.server.Deterministic
 import Bop.SendEmail
@@ -44,7 +43,7 @@ object EmailImpl extends HasLogger {
 
   def parse1(ea: EmailAddr): ErrorOr[Address] =
     ErrorOr.catchAndTag(Deterministic) {
-      val as = InternetAddress.parse(ea)
+      val as = InternetAddress.parse(ea.value)
       if (as.size == 1)
         ErrorOr(as.head)
       else

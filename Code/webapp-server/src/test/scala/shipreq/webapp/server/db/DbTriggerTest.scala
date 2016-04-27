@@ -4,13 +4,15 @@ import org.scalatest.FunSpec
 import shipreq.webapp.server.lib.Types.ProjectId
 import scala.slick.jdbc.StaticQuery.{queryNA, updateNA, update => updateQ, query => queryQ}
 import org.postgresql.util.PSQLException
+import shipreq.taskman.api.UserId
 import shipreq.webapp.server.db.SqlHelpers._
 import shipreq.webapp.server.test.TestDatabaseSupport
 
 class DbTriggerTest extends FunSpec with TestDatabaseSupport {
 
   describe(Tables.UsrLoginLog.name) {
-    def loginCount(userId: Long): Long = queryNA[Long](s"SELECT login_count FROM usr WHERE id = $userId").first
+    def loginCount(userId: UserId): Long =
+      queryNA[Long](s"SELECT login_count FROM usr WHERE id = ${userId.value}").first
 
     it("should update agg view stats by trigger") {
       val a, b = newUserId()
@@ -40,17 +42,17 @@ class DbTriggerTest extends FunSpec with TestDatabaseSupport {
     it("should record name changes") {
       val u = newUserId()
       val (a,b,c) = ("Alice","Bob","Yay")
-      insert(u, a, true)
-      nameHistory(u) shouldBe Nil
-      List(b,b,b,c).foreach(update(u, _, true))
-      nameHistory(u) shouldBe List(a, b)
+      insert(u.value, a, true)
+      nameHistory(u.value) shouldBe Nil
+      List(b,b,b,c).foreach(update(u.value, _, true))
+      nameHistory(u.value) shouldBe List(a, b)
     }
 
     it("should updates without altercation by triggers") {
       val u = newUserId()
-      insert(u, "A", true)
-      update(u, "B", false)
-      read(u) shouldBe ("B", false)
+      insert(u.value, "A", true)
+      update(u.value, "B", false)
+      read(u.value) shouldBe ("B", false)
     }
   }
 }

@@ -1,7 +1,6 @@
 package shipreq.webapp.base
 
 import scalaz.{Validation, \/}
-import shipreq.base.util.TaggedTypes.{TaggedType, TaggedTypeCtor}
 import shipreq.base.util.ValidUpdate
 
 package object validation {
@@ -20,11 +19,10 @@ package object validation {
       if (cond) Validation.success(a) else Validation.failure(f)
   }
 
-  final case class InputCorrected[A](value: A) extends TaggedType {
-    override type U = A
-    def map[B](f: A => B) = InputCorrected[B](f(value))
+  final case class InputCorrected[A](value: A) extends AnyVal {
+    def map[B](f: A => B): InputCorrected[B] =
+      InputCorrected(f(value))
   }
-  implicit def InputCorrectedCtor[R] = TaggedTypeCtor[InputCorrected[R]](InputCorrected[R])
 
   type CorrectionPartU[I, C] = CorrectionPart[Unit, I, C]
   type ValidationPartU[C, V] = ValidationPart[Unit, C, V]

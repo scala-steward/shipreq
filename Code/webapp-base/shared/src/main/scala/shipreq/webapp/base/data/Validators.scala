@@ -130,7 +130,7 @@ object Validators {
       genericName.addValidation(nameStatic)
 
     private def nameStatic =
-      ValidationPartU.test[String](n => !StaticField.names.contains(n),
+      ValidationPartU.test[String](n => !StaticField.names.contains(n.value),
         VFailure.forField(FieldNames.name, NonEmptyList("can not be used for user-defined fields.")))
 
     private def nameUniqueness =
