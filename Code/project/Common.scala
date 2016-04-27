@@ -50,9 +50,7 @@ object Common {
 
   val debugSettings: Project => Project =
     _.settings(
-      scalacOptions ++= Seq("-Xcheckinit"),
-      cleanKeepFiles ++= Seq("resolution-cache", "streams").map(target.value / _) // stop those constant dep updates
-    )
+      scalacOptions ++= Seq("-Xcheckinit"))
 
   val optimisationSettings: Project => Project =
     nonTestCompilerFlags(
