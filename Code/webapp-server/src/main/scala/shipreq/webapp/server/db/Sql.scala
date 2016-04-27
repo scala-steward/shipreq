@@ -107,40 +107,6 @@ private[db] object Sql {
   @Update val RenameProject = update[(String, ProjectId, UserId)](
     "UPDATE project SET name=? WHERE id=? AND usr_id=?")
 
-  val SummariseProjects = query[UserId, ProjectSummary]( s"""
-    with projects as (
-      select id, name from project where usr_id = ? and $projectIsLive
-    ), ucs as (
-      select p.id
-        ,count(1) uc_count
-        ,to_iso8601_str(max(r.created_at)) uc_last_updated_at
-      from projects p
-      inner join usecase     u on u.project_id = p.id
-      inner join usecase_rev r on r.id = u.latest_rev_id
-      group by p.id
-    ), shares as (
-      select p.id
-        ,count(1) sh_count
-        ,sum(s.view_count) sh_views
-        ,to_iso8601_str(max(s.last_viewed_at)) sh_last_viewed_at
-      from projects p, share s
-      where p.id = s.project_id
-      group by p.id
-    )
-    select
-      p.id
-      ,p.name
-      ,uc_count
-      ,uc_last_updated_at
-      ,sh_count
-      ,sh_views
-      ,sh_last_viewed_at
-    from projects p
-    left join ucs    u on u.id = p.id
-    left join shares s on s.id = p.id
-    order by p.name
-    """.sql)
-
   @Update val DeleteProjectSoft = update[(String, ProjectId)]("UPDATE project SET name=?, deleted_at=NOW() where id=?")
   @Delete val DeleteProjectHard = update[ProjectId](s"DELETE FROM project where id=? and $projectIsDead")
 

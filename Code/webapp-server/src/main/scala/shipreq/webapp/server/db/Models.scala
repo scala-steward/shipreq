@@ -42,12 +42,3 @@ case class UsrCount(registered: Long, total: Long) {
 
 case class Project(id: ProjectId, name: String, owner: UserId)
 
-case class ProjectSummary(
-  id: ProjectId,
-  name: String,
-  ucCount: Long,
-  ucUpdatedAt: Option[ISO8601],
-  shareCount: Long,
-  shareViews: Long,
-  shareLastViewedAt: Option[ISO8601])
-

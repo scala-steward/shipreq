@@ -19,7 +19,6 @@ object SqlHelpers {
 
   implicit val GR_PasswordAndSalt      = GetResult(r => PasswordAndSalt.restore(r.<<, r.<<))
   implicit val GR_Project              = GetResult(r => Project(r.<<, r.<<, r.<<))
-  implicit val GR_ProjectSummary       = GetResult(r => ProjectSummary(r.<<, r.<<, r.<<, r.<<, r.<<, r.<<, r.<<))
   implicit val GR_ResetPasswordInfo    = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
   implicit val GR_UserDescriptor       = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))

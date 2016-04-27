@@ -146,8 +146,6 @@ sealed trait DaoS {
 
   def findProject(id: ProjectId): Option[Project] = FindProject(id).firstOption
 
-  def summariseProjects(userId: UserId): List[ProjectSummary] = SummariseProjects(userId).list
-
   def deleteProjectSoft(id: ProjectId): Unit = DeleteProjectSoft(nextFuncName, id).execute
 }
 

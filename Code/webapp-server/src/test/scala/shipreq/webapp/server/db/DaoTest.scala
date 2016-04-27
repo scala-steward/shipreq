@@ -89,27 +89,6 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       }
     }
 
-    describe("summariseProjects") {
-
-      def summariseWithNoise(userId: UserId) = {
-        newProjectId(newUserId()) // Give some other user a project
-        dao.summariseProjects(userId)
-      }
-
-      it("should return [] when user has no projects") {
-        summariseWithNoise(newUserId()) shouldBe empty
-      }
-
-      it("should return a summary for each project the user has") {
-        val u = newUserId()
-        val p1 = dao.createProject(u, "Bereft").gimme
-        val s1 = ProjectSummary(p1, "Bereft", 0, None, 0, 0, None)
-        summariseWithNoise(u) ==== List(s1)
-        val p2 = dao.createProject(u, "Apple").gimme
-        dao.summariseProjects(u) ==== List(ProjectSummary(p2, "Apple", 0, None, 0, 0, None), s1)
-      }
-    }
-
     def afterDeletion: (UserId, ProjectId, ProjectId) = {
       val (uid, p1) = newUserAndProject("wow")
       assertTableDiffs()(dao deleteProjectSoft p1)
@@ -128,7 +107,6 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
     it("soft deletion should hide the project from view") {
       val (u, p, _) = afterDeletion
       dao.findProject(p) shouldBe None
-      dao.summariseProjects(u).map(_.id) should not contain(p)
     }
   }
 
