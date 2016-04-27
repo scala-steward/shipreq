@@ -37,7 +37,7 @@ object Graphs {
   /**
    * Creates a graph of the flow of steps in a given UseCase.
    *
-   * TODO Currently only graphs intra-usecase flow. Flow to or from other UseCases is currently ignored.
+   * Currently only graphs intra-usecase flow. Flow to or from other UseCases is currently ignored.
    */
   def useCaseStepFlow(id: UseCaseId, useCases: UseCases): DOT = {
     import StaticField.{NormalAltStepTree => NA, ExceptionStepTree => E, UseCaseStepTree => F}
