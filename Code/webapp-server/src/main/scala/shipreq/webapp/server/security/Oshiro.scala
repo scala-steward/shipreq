@@ -1,11 +1,10 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.config.IniSecurityManagerFactory
 import org.apache.shiro.crypto.SecureRandomNumberGenerator
-import db.UserDescriptor
-import app.AppConfig
+import shipreq.webapp.server.app.AppConfig
+import shipreq.webapp.server.data.UserDescriptor
 
 /**
  * Apache城との橋になる「お城」。

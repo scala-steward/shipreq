@@ -1,30 +1,31 @@
 package shipreq.webapp.server.lib
 
-import net.liftweb.common.{ParamFailure, Failure => FailBox, Full, Box, Empty}
-import net.liftweb.http.js.{JsCmd, JsExp}
+import net.liftweb.common.{Box, Empty, Full, ParamFailure, Failure => FailBox}
+import net.liftweb.http._
 import net.liftweb.http.js.JsCmds.Noop
-import net.liftweb.http.{S, NotFoundResponse, RedirectResponse, StatefulSnippet, ResponseShortcutException, LiftResponse}
+import net.liftweb.http.js.{JsCmd, JsExp}
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import net.liftweb.sitemap.Menu
 import net.liftweb.util.Props
 import scala.slick.jdbc.JdbcBackend.Session
-import scala.xml.{Elem, Text, NodeSeq, UnprefixedAttribute}
+import scala.xml.{Elem, NodeSeq, Text, UnprefixedAttribute}
 import scalaz.Monoid
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.base.util.TaggedTypes.{JsonStr, TaggedString}
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.UserId
-import shipreq.webapp.server.app.{DI, AppSiteMap}
-import shipreq.webapp.server.db.{DaoS, UserDescriptor}
+import shipreq.webapp.base.validation.{VFailure, ValidationResult}
+import shipreq.webapp.server.app.AppSiteMap.Implicits._
+import shipreq.webapp.server.app.{AppSiteMap, DI}
+import shipreq.webapp.server.data.UserDescriptor
+import shipreq.webapp.server.db.DaoS
 import shipreq.webapp.server.feature.validation.VFailureHtmlRenderer
-import shipreq.webapp.base.validation.{ValidationResult, VFailure}
-import shipreq.webapp.server.snippet.{AlertTypeSuccess, AlertTypeError, Notices}
+import shipreq.webapp.server.lib.ScalazSubset._
+import shipreq.webapp.server.lib.Types._
+import shipreq.webapp.server.snippet.{AlertTypeError, AlertTypeSuccess, Notices}
+import shipreq.webapp.server.util.ErrorMessages
 import shipreq.webapp.server.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.server.util.JsExt._
-import shipreq.webapp.server.util.ErrorMessages
-import AppSiteMap.Implicits._
-import ScalazSubset._
-import Types._
 
 object SnippetHelpers extends StaticSnippetHelpers {
   final case class NoticeContainerExp(value: String) extends TaggedString
@@ -53,7 +54,7 @@ object SnippetHelpers extends StaticSnippetHelpers {
   final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer + NodeSeqJsonSerializer
 }
 
-import SnippetHelpers.{ErrorAlertId, NoticeContainerExp}
+import shipreq.webapp.server.lib.SnippetHelpers.{ErrorAlertId, NoticeContainerExp}
 
 // =====================================================================================================================
 
@@ -169,7 +170,7 @@ trait StaticSnippetHelpers extends HasLogger {
  * @since 11/06/2013
  */
 trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with HasLogger {
-  import SnippetHelpers.{DefaultNoticesContainerExp, DefaultAjaxErrorId, DefaultJsonFormat}
+  import SnippetHelpers.{DefaultAjaxErrorId, DefaultJsonFormat, DefaultNoticesContainerExp}
 
   protected implicit def noticesContainerExp = DefaultNoticesContainerExp
   protected implicit def errorAlertId = DefaultAjaxErrorId

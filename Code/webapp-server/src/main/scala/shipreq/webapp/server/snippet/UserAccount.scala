@@ -4,10 +4,9 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import shipreq.taskman.api.Msg.UserUpdated
 import shipreq.webapp.server.app.AppSiteMap
-import shipreq.webapp.server.db.UserDetail
+import shipreq.webapp.server.data.UserDetail
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.lib.{FormVar, SnippetHelpers}
-import shipreq.webapp.server.lib.Types._
 import shipreq.webapp.server.security.PasswordAndSalt
 import shipreq.webapp.server.util.HtmlTransformExt._
 
@@ -25,7 +24,7 @@ class UserAccount extends SnippetHelpers {
   import UserAccount.form
 
   val usr = currentUser_!
-  val (supp, usrd) = daoProvider.withSession(_ findUserSuppAndDetail usr) getOrElse redirectTo(AppSiteMap.Logout)
+  val (supp, usrd) = daoProvider.withSession(_ findUserSuppAndDetail usr.id) getOrElse redirectTo(AppSiteMap.Logout)
   var vars: form.Var = (usrd.name, usrd.newsletter)
 
   def render = (
@@ -38,15 +37,15 @@ class UserAccount extends SnippetHelpers {
   )
 
   def onPasswordChange(newPassword: PasswordAndSalt): JsCmd = {
-    daoProvider.withSession(_.updateUserPassword(usr, newPassword))
+    daoProvider.withSession(_.updateUserPassword(usr.id, newPassword))
     jsShowNotice("Updated Account Password.")
   }
 
   def onUserPrefUpdate(): JsCmd =
     ifValid(form.validate(vars))(d => {
       daoProvider.withTransaction(dao => {
-        dao.updateUserDetails(usr, d)
-        taskmanD(dao, _ submitMsg UserUpdated(usr))
+        dao.updateUserDetails(usr.id, d)
+        taskmanD(dao, _ submitMsg UserUpdated(usr.id))
       })
       jsShowNotice("Updated user details.", "usrdupd")
     })

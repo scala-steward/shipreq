@@ -7,13 +7,14 @@ import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
 import org.joda.time.DateTime
 import shipreq.base.util.ScalaExt._
-import shipreq.taskman.api.{UserId, EmailAddr, Msg}
+import shipreq.taskman.api.{EmailAddr, Msg, UserId}
 import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.server.app.{AppConfig, AppSiteMap}
-import shipreq.webapp.server.lib.{FormVar, SnippetHelpers, SingleOpStatefulSnippet}
-import shipreq.webapp.server.db.{DaoT, UserRegistrationInfo, UserRegistrationResult}
+import shipreq.webapp.server.data.UserRegistrationInfo
+import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
+import shipreq.webapp.server.db.{DaoT, UserRegistrationResult}
 import shipreq.webapp.server.feature.validation.Validators
-import shipreq.webapp.server.security.{Permissions, PasswordAndSalt}
+import shipreq.webapp.server.security.{PasswordAndSalt, Permissions}
 import shipreq.webapp.server.util.JsExt._
 import shipreq.webapp.server.util.HtmlTransformExt.ajaxSubmitOnClick
 import AppSiteMap.Implicits._

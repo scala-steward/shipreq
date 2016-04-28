@@ -1,7 +1,6 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
-import db.UserDescriptor
+import shipreq.webapp.server.data.UserDescriptor
 
 /**
  * Interface that provides the app with security features.

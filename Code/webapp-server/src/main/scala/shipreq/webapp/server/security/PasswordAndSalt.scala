@@ -1,11 +1,13 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
 import org.apache.shiro.util.ByteSource
 import org.apache.shiro.codec.Base64
 import org.apache.shiro.crypto.hash.SimpleHash
 import Oshiro._
-import lib.Types._
+
+/** Marks a password as being hashed. */
+final case class HashedStr(value: String) extends AnyVal
+
 
 /**
  * A hashed password and the salt used to generate the hash.

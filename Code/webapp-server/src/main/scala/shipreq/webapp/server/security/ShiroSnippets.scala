@@ -1,11 +1,10 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
-import net.liftweb.http.{LiftRules, DispatchSnippet}
+import net.liftweb.http.{DispatchSnippet, LiftRules}
 import org.apache.shiro.SecurityUtils.{getSubject => subject}
-import scala.xml.{Text, NodeSeq}
+import scala.xml.{NodeSeq, Text}
+import shipreq.webapp.server.data.UserDescriptor
 import Oshiro.loggedInUser
-import db.UserDescriptor
 
 object ShiroSnippets {
 

@@ -5,7 +5,8 @@ import org.joda.time.DateTime
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.FunSpec
 import shipreq.taskman.api.{EmailAddr, UserId}
-import shipreq.webapp.server.db.{DaoT, ResetPasswordInfo, UserRegistrationInfo}
+import shipreq.webapp.server.data.UserRegistrationInfo
+import shipreq.webapp.server.db.{DaoT, ResetPasswordInfo}
 import shipreq.webapp.server.test.T2._
 import shipreq.webapp.server.test.{MockDaoProvider, TestHelpers}
 import shipreq.webapp.server.util.NonEmptyTemplate

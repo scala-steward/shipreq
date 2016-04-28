@@ -5,19 +5,19 @@ import net.liftweb.http.S
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
-
-import shipreq.taskman.api.{UserId, EmailAddr, Msg}
+import shipreq.taskman.api.{EmailAddr, Msg, UserId}
 import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.server.app.AppConfig.PasswordResetTokenLifespan
-import shipreq.webapp.server.db.{DaoT, UserRegistrationInfo, ResetPasswordInfo}
-import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
+import shipreq.webapp.server.app.AppSiteMap
+import shipreq.webapp.server.app.AppSiteMap.Implicits._
+import shipreq.webapp.server.data.UserRegistrationInfo
+import shipreq.webapp.server.db.{DaoT, ResetPasswordInfo}
 import shipreq.webapp.server.feature.validation.Validators
+import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
+import shipreq.webapp.server.security.PasswordAndSalt
+import shipreq.webapp.server.snippet.ResetPassword._
 import shipreq.webapp.server.util.HtmlTransformExt.ajaxSubmitOnClick
 import shipreq.webapp.server.util.JsExt._
-import shipreq.webapp.server.app.AppSiteMap
-import shipreq.webapp.server.security.PasswordAndSalt
-import AppSiteMap.Implicits._
-import ResetPassword._
 
 object ResetPassword {
   def isTokenExpired(dateIssued: DateTime): Boolean = PasswordResetTokenLifespan.ago.isAfter(dateIssued)

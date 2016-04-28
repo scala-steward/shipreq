@@ -2,9 +2,9 @@ package shipreq.webapp.server.feature
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-import net.liftweb.common.{Logger, Full, Box}
-import net.liftweb.http.{Req, LiftSession}
-import shipreq.webapp.server.db.UserDescriptor
+import net.liftweb.common.{Box, Full, Logger}
+import net.liftweb.http.{LiftSession, Req}
+import shipreq.webapp.server.data.UserDescriptor
 
 /**
  * Collects stats about sessions and logins.

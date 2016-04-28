@@ -1,12 +1,10 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
 import scalaz.{Name, Semigroup}
 import net.liftweb.common.Logger
 import net.liftweb.http.RequestVar
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.app.DI
-import shipreq.webapp.server.db.UserDescriptor
 import Permission._
 
 object Permission {

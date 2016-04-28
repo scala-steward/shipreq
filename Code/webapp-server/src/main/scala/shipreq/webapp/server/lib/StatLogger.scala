@@ -5,7 +5,8 @@ import net.liftweb.common.Box
 import net.liftweb.http.LiftSession
 import shipreq.taskman.api.UserId
 import shipreq.webapp.server.app.DI
-import shipreq.webapp.server.db.{UserDescriptor, DaoS}
+import shipreq.webapp.server.data.UserDescriptor
+import shipreq.webapp.server.db.DaoS
 import shipreq.webapp.server.feature.SessionStats
 
 sealed trait StatLoggerCmd

@@ -1,17 +1,16 @@
 package shipreq.webapp.server.feature.validation
 
-import scalaz.{Success, Failure}
+import scalaz.{Failure, Success}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
 import shipreq.webapp.base.AppConsts
 import shipreq.webapp.base.util.TextMod._
+import shipreq.webapp.base.validation.Constraints._
+import shipreq.webapp.base.validation.GenericValidators._
 import shipreq.webapp.base.validation._
+import shipreq.webapp.server.data.Username
 import shipreq.webapp.server.lib.ScalazSubset._
-import shipreq.webapp.server.lib.Types._
 import shipreq.webapp.server.security.PasswordAndSalt
-import Constraint.not
-import Constraints._
-import GenericValidators._
 
 object Validators {
 
