@@ -1,73 +1,76 @@
 package shipreq.webapp.server.feature
 
 import net.liftweb.common.{Full, Empty, Box}
-import shipreq.base.util.TaggedTypes.TaggedTypeCtor
 import shipreq.webapp.server.util.BaseX
 import shipreq.webapp.server.lib.Types._
 
+case class ExternalId[I](value: String) extends AnyVal
+
 object ExternalId {
   // util.Random.shuffle(x.toList).mkString
-  final val Project = new ExternalIdConverter[ProjectId]("F4XBvt0i2cnHQ6dIaAomLjPE3MOrsbxReq1W9pgZyzNY7SkGf5UlwJCTKuVD8h")
-}
+  final val Project = new Converter[ProjectId](_.value, ProjectId.apply)("F4XBvt0i2cnHQ6dIaAomLjPE3MOrsbxReq1W9pgZyzNY7SkGf5UlwJCTKuVD8h")
 
-final class ExternalIdConverter[I <: ExteralisableId](val dictionaryStr: String)(implicit I: TaggedTypeCtor[I],  E: TaggedTypeCtor[I#E]) {
-  type E = I#E
+  final class Converter[I](il: I => Long, li: Long => I)(val dictionaryStr: String) {
+    import Internal._
 
-  import ExternalIdFns._
+    type E = ExternalId[I]
 
-  private[this] val base62 = new BaseX(dictionaryStr, 4)
-  require(base62.base.longValue == 62)
+    private[this] val base62 = new BaseX(dictionaryStr, 4)
+    require(base62.base.longValue == 62)
 
-  @inline def apply(internal: I): E = toExternal(internal)
+    @inline def apply(internal: I): E =
+      toExternal(internal)
 
-  def toExternal(internal: I): E = {
-    var (a, b) = splitLong(internal.value)
-    b = xorness(b)
-    b = shuffleBitsObfuscate(b)
-    val x = joinInts(a, b)
-    E(base62 encode x)
+    def toExternal(internal: I): E = {
+      var (a, b) = splitLong(il(internal))
+      b = xorness(b)
+      b = shuffleBitsObfuscate(b)
+      val x = joinInts(a, b)
+      ExternalId(base62 encode x)
+    }
+
+    private def parse(external: String): I = {
+      val y = base62.decode(external)
+      var (a, b) = splitLong(y)
+      b = shuffleBitsRestore(b)
+      b = xorness(b)
+      li(joinInts(a, b))
+    }
+
+    def isValidExternalId(str: String): Boolean =
+      ExternalIdRegex.matcher(str).matches
+
+    def parseO(ext: String)     : Option[I] = if (isValidExternalId(ext)) Some(parse(ext)) else None
+    def parseB(ext: String)     : Box[I]    = if (isValidExternalId(ext)) Full(parse(ext)) else Empty
+    def parseB(str: Box[String]): Box[I]    = str.flatMap(parseB)
   }
 
-  private def parse(external: String): I = {
-    val y = base62.decode(external)
-    var (a, b) = splitLong(y)
-    b = shuffleBitsRestore(b)
-    b = xorness(b)
-    I(joinInts(a, b))
-  }
+  private object Internal {
+    val ExternalIdRegex = "^[a-zA-Z0-9]{4,11}$".r.pattern
 
-  def isValidExternalId(str: String): Boolean = ExternalIdRegex.matcher(str).matches
+    @inline def splitLong(x: Long): (Int, Int) = ((x >>> 32).toInt, x.toInt & 0xffffffff)
+    @inline def joinInts(a: Int, b: Int): Long = (a.toLong << 32L) | (b & 0xffffffffL)
+    @inline def xorness(b: Int) = b ^ ((b & 0x7e7) << 12)
 
-  def parseO(external: String): Option[I] = if (isValidExternalId(external)) Some(parse(external)) else None
-  def parseB(external: String): Box[I] = if (isValidExternalId(external)) Full(parse(external)) else Empty
-  def parseB(str: Box[String]): Box[I] = str.flatMap(parseB)
-}
+    // -----------------------------------------------------------------------------------------------------------------
+    // http://stackoverflow.com/questions/8554286/obfuscating-an-id
 
-private[feature] object ExternalIdFns {
-  val ExternalIdRegex = "^[a-zA-Z0-9]{4,11}$".r.pattern
+    final val mask1 = 0x00550055
+    final val mask2 = 0x0000cccc
+    final val bits1 = 7
+    final val bits2 = 14
 
-  @inline def splitLong(x: Long): (Int, Int) = ((x >>> 32).toInt, (x.toInt & 0xffffffff))
-  @inline def joinInts(a: Int, b: Int): Long = (a.toLong << 32L) | (b & 0xffffffffL)
-  @inline def xorness(b: Int) = b ^ ((b & 0x7e7) << 12)
-
-  // -------------------------------------------------------------------------------------------------------------------
-  // http://stackoverflow.com/questions/8554286/obfuscating-an-id
-
-  val mask1 = 0x00550055
-  val mask2 = 0x0000cccc
-  val bits1 = 7
-  val bits2 = 14
-
-  @inline def shuffleBitsObfuscate(x: Int): Int = {
-    var t = (x ^ (x >> bits1)) & mask1
-    val u = x ^ t ^ (t << bits1)
-    t = (u ^ (u >> bits2)) & mask2
-    u ^ t ^ (t << bits2)
-  }
-  @inline def shuffleBitsRestore(y: Int): Int = {
-    var t = (y ^ (y >> bits2)) & mask2
-    val u = y ^ t ^ (t << bits2)
-    t = (u ^ (u >> bits1)) & mask1
-    u ^ t ^ (t << bits1)
+    @inline def shuffleBitsObfuscate(x: Int): Int = {
+      var t = (x ^ (x >> bits1)) & mask1
+      val u = x ^ t ^ (t << bits1)
+      t = (u ^ (u >> bits2)) & mask2
+      u ^ t ^ (t << bits2)
+    }
+    @inline def shuffleBitsRestore(y: Int): Int = {
+      var t = (y ^ (y >> bits2)) & mask2
+      val u = y ^ t ^ (t << bits2)
+      t = (u ^ (u >> bits1)) & mask1
+      u ^ t ^ (t << bits1)
+    }
   }
 }

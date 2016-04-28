@@ -15,7 +15,7 @@ import shipreq.webapp.base.AppConsts
 import AppConfig.BaseUrl
 import lib.Misc
 import lib.Types._
-import feature.{SessionStats, DiagnosticEndpoints, ExternalId, ExternalIdConverter, Navbar, NavbarElem}
+import feature.{SessionStats, DiagnosticEndpoints, ExternalId, Navbar, NavbarElem}
 import security.{Permissions, Permission, Oshiro}
 import Permission.RequestVarPermExt
 
@@ -194,8 +194,8 @@ object AppSiteMap {
 
   private def TitleFromProjectName[T] = DynamicTitle[T](mkTitle(projectName))
 
-  private def MenuWithIdParam[T <: ExteralisableId](eidGen: ExternalIdConverter[T])(name: String) =
-    Menu.param[T](name, "", eidGen.parseB, eidGen.toExternal)
+  private def MenuWithIdParam[Id <: AnyRef](c: ExternalId.Converter[Id])(name: String) =
+    Menu.param[Id](name, "", c.parseB, c.toExternal(_).value)
 
   private def splitPath(path: String): List[String] =
     path.split("/").toList

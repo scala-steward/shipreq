@@ -5,7 +5,6 @@ import shipreq.taskman.api.UserId
 import scalaz.Monoid
 import shipreq.base.util.TaggedTypes._
 import shipreq.webapp.server.db._
-import shipreq.webapp.server.feature.ExternalId
 
 /**
  * @since 30/05/2013
@@ -33,24 +32,11 @@ object Types {
   @inline final implicit def UserToId2(a: UserRegistrationInfo): UserId = a.id
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Externalisable ID tags
-
-  sealed trait ExteralisableId extends TaggedLong {
-    type E <: TaggedString
-  }
 
   /** Marks a Long value as corresponding to `project.id`. */
-  final case class ProjectIdE(value: String) extends TaggedString
-  final case class ProjectId(value: Long) extends ExteralisableId {
-    override type E = ProjectIdE
-  }
-  implicit object ProjectId extends TaggedTypeCtor[ProjectId]
-  implicit object ProjectIdE extends TaggedTypeCtor[ProjectIdE]
-  @inline final implicit def p2pid(p: Project): ProjectId = p.id
+  final case class ProjectId(value: Long) extends TaggedLong
 
-  object AutoExternaliseIds {
-    implicit def aei_P(id: ProjectId): ProjectIdE = ExternalId.Project(id)
-  }
+  @inline final implicit def p2pid(p: Project): ProjectId = p.id
 
   // ===================================================================================================================
   // Type class instances
