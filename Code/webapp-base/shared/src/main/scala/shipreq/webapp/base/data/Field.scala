@@ -7,7 +7,7 @@ import scalaz.Equal
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import TaggedTypes.{TaggedInt, TaggedString}
 import IndexLabel._
 
@@ -167,7 +167,7 @@ object StaticField {
         loc.value.foreach { index =>
           sb append sep
           if (index < 0)
-            sb append AppConsts.useCaseStepsDeadNode
+            sb append WebappConfig.useCaseStepsDeadNode
           else {
             sb append stepLabelsPerLevel(level).label(index)
             level += 1

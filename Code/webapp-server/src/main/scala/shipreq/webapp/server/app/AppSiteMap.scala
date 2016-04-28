@@ -11,8 +11,8 @@ import scala.xml.{Text, NodeSeq}
 import scalaz.{Memo, Name, Need}
 import scalaz.old.NonEmptyList
 
-import shipreq.webapp.base.AppConsts
-import AppConfig.BaseUrl
+import shipreq.webapp.base.WebappConfig
+import ServerConfig.BaseUrl
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.lib.Misc
 import shipreq.webapp.server.feature.{SessionStats, DiagnosticEndpoints, Navbar, NavbarElem}
@@ -170,11 +170,11 @@ object AppSiteMap {
     Full(redirectHomeResp)
   }
 
-  @inline final def defaultTitle = AppConsts.appName
+  @inline final def defaultTitle = WebappConfig.appName
 
   @inline final def mkTitle(title: String): String = title match {
     case "" => defaultTitle
-    case _  => s"$title | ${AppConsts.appName}"
+    case _  => s"$title | ${WebappConfig.appName}"
   }
 
   private def StaticTitle[T](title: String) = {

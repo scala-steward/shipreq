@@ -13,7 +13,7 @@ import security.Oshiro
 import test.TestDatabaseSupport
 import test.fixture.UserFixture
 import util.NonEmptyTemplate
-import app.AppConfig
+import app.ServerConfig
 import Register._
 import shipreq.webapp.server.test.T2._
 import shipreq.taskman.api.Msg.RegistrationRequested
@@ -43,15 +43,15 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
 
   describe("Register1.render") {
     def test(config: Boolean, allowed: Boolean): Unit = inMockSession {
-      val orig = AppConfig.AllowRegister
+      val orig = ServerConfig.AllowRegister
       try {
-        AppConfig.AllowRegister = () => config
+        ServerConfig.AllowRegister = () => config
         val x = Register1.render(reg1html)
         val h = x.toString
         h.contains("register1Form") shouldBe allowed
         h.contains("registrationDisabled") shouldBe (!allowed)
       } finally {
-        AppConfig.AllowRegister = orig
+        ServerConfig.AllowRegister = orig
       }
     }
 

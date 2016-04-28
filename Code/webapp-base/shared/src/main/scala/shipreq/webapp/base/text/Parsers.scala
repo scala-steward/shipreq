@@ -8,7 +8,7 @@ import shipreq.base.util.{NonEmptyVector, Validity, Valid, Invalid}
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ParsingUtil
@@ -233,7 +233,7 @@ object Parsers {
               val node = it.next()
 
               // Only match uppercase. Lowercase x is used in step labels & ambiguous.
-              if (node.length ==* 1 && node.charAt(0) ==* AppConsts.useCaseStepsDeadNode)
+              if (node.length ==* 1 && node.charAt(0) ==* WebappConfig.useCaseStepsDeadNode)
                 v match {
                   case Valid   => go(q :+ -1, Invalid, l)
                   case Invalid => None

@@ -3,7 +3,7 @@ package shipreq.webapp.server.snippet
 import shipreq.webapp.server.app.AppSiteMap
 import shipreq.webapp.server.app.AppSiteMap.Implicits._
 import shipreq.webapp.server.lib.{Misc, SnippetHelpers}
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.sitemap.{Loc, SiteMap}
 import scala.xml.{Elem, Node, NodeSeq, Null, Text, UnprefixedAttribute}
@@ -21,7 +21,7 @@ object Link extends DispatchSnippet with SnippetHelpers {
   }
 
   val appLink =
-    staticHtml(<a href={AppSiteMap.Home.absoluteUrl}>{AppConsts.appName}</a>)
+    staticHtml(<a href={AppSiteMap.Home.absoluteUrl}>{WebappConfig.appName}</a>)
 
   private def generatePageLink(loc: Loc[_]): R = {
     val linkText = loc.linkText openOr Text(loc.name)

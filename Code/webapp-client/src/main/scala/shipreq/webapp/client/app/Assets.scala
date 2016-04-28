@@ -1,7 +1,7 @@
 package shipreq.webapp.client.app
 
 import japgolly.scalajs.react.vdom.prefix_<^._
-import shipreq.webapp.base.AppConsts.assetPath
+import shipreq.webapp.base.WebappConfig.assetPath
 
 object Assets {
   val sortSvgAsc   = <.img(^.src := s"$assetPath/sort-asc.svg", ^.alt := "Asc")

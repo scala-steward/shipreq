@@ -3,13 +3,13 @@ package shipreq.webapp.client.app
 import japgolly.scalajs.react.Callback
 import org.scalajs.dom.webworkers.Worker
 import scala.concurrent.ExecutionContext.Implicits.global
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.client.ww.api._
 import Client.codec.Reader
 
 object WebWorkerClient {
 
-  val worker = new Worker(AppConsts.assetPath_/ + "ww.js")
+  val worker = new Worker(WebappConfig.assetPath_/ + "ww.js")
 
   val client = Client[Cmd](worker)
 

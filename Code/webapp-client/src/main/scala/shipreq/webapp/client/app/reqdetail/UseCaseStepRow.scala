@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.client.app.Style.reqdetail.{useCaseStep => *}
@@ -50,7 +50,7 @@ object UseCaseStepRow {
           val badInd = p.partialLoc.value.whole.indexWhere(_ < 0)
           var label = p.fullLabel
           if (badInd !=* 0)
-            label = label.dropWhile(_ !=* AppConsts.useCaseStepsDeadNode)
+            label = label.dropWhile(_ !=* WebappConfig.useCaseStepsDeadNode)
           label += "."
 
           baseTag(

@@ -3,8 +3,8 @@ package shipreq.webapp.server.snippet
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
-import shipreq.webapp.base.AppConsts
-import shipreq.webapp.server.app.AppConfig
+import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.server.app.ServerConfig
 import shipreq.webapp.server.lib.Misc
 
 object Prop extends DispatchSnippet {
@@ -16,9 +16,9 @@ object Prop extends DispatchSnippet {
     n match {
 
       case "appName" =>
-        "*" #> AppConsts.appName
+        "*" #> WebappConfig.appName
 
       case "supportEmailLink" =>
-        "a [href]" #> ("mailto:" + AppConfig.SupportEmailAddress)
+        "a [href]" #> ("mailto:" + ServerConfig.SupportEmailAddress)
     }
 }

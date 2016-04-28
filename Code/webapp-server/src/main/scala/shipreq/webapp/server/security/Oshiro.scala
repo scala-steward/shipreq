@@ -3,7 +3,7 @@ package shipreq.webapp.server.security
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.config.IniSecurityManagerFactory
 import org.apache.shiro.crypto.SecureRandomNumberGenerator
-import shipreq.webapp.server.app.AppConfig
+import shipreq.webapp.server.app.ServerConfig
 import shipreq.webapp.server.data.UserDescriptor
 
 /**
@@ -40,5 +40,5 @@ object Oshiro extends SecurityProvider {
 
   def isAuthenticated: Boolean = subject.isAuthenticated
 
-  override def enforceHumanSpeed() = Thread.sleep(AppConfig.AttackFrustrationDelayMs)
+  override def enforceHumanSpeed() = Thread.sleep(ServerConfig.AttackFrustrationDelayMs)
 }

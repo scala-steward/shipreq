@@ -6,7 +6,7 @@ import org.joda.time.{Period, DateTime}
 import scalaz.Semigroup
 import scalaz.old.NonEmptyList
 import scalaz.syntax.semigroup._
-import shipreq.webapp.server.app.AppConfig.FlashVarTTL
+import shipreq.webapp.server.app.ServerConfig.FlashVarTTL
 import shipreq.webapp.server.lib.Misc
 import FlashVar._
 

@@ -3,7 +3,7 @@ package shipreq.webapp.server.feature.validation
 import scalaz.{Failure, Success}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation.Constraints._
 import shipreq.webapp.base.validation.GenericValidators._
@@ -17,7 +17,7 @@ object Validators {
   val email_ = Validator(
     CorrectionPartU.endo(noWhitespace),
     ValidationPartU.forConstraint("Email address",
-      maximumLength(AppConsts.emailMaxLength)
+      maximumLength(WebappConfig.emailMaxLength)
         + matchesR("^_+@_+?\\._+$".replace("_", "[^&<>]").r)("is invalid.") // loose validation
     ))
 
@@ -25,7 +25,7 @@ object Validators {
 
   val password = Validator(
     CorrectionPartU.nop[String],
-    ValidationPartU.forConstraint("Password", lengthInRange(AppConsts.passwordLength) + containsAlphaAndNumber))
+    ValidationPartU.forConstraint("Password", lengthInRange(WebappConfig.passwordLength) + containsAlphaAndNumber))
 
   val passwords = Validator(
     CorrectionPartU.liftE[(String, String)](_ umap password.correctU),
@@ -78,7 +78,7 @@ object Validators {
     val username_ = Validator(
       CorrectionPartU.endo(noWhitespace andThen lowerCase),
       ValidationPartU.forConstraint("Username",
-        lengthInRange(AppConsts.usernameLength)
+        lengthInRange(WebappConfig.usernameLength)
           + whitelistCharsR("a-z0-9_")("can only contain letters, numbers and underscores.")
           + startsWithR("[a-z]")("must start with a letter.")
           + endsWithR("[a-z0-9]")("must end with a letter or a number.")

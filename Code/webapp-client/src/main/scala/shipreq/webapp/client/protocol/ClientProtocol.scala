@@ -51,9 +51,9 @@ object ClientProtocol {
     import scala.scalajs.js
     import scala.scalajs.js.typedarray._
     import scala.scalajs.js.typedarray.TypedArrayBufferOps._
-    import shipreq.webapp.base.AppConsts
+    import shipreq.webapp.base.WebappConfig
 
-    val ajaxPath = "/" + AppConsts.ajaxPath + "/"
+    val ajaxPath = "/" + WebappConfig.ajaxPath + "/"
     val timeoutMs = 120 * 1000
 
     def base64ToBinary(base64: String): ByteBuffer = {

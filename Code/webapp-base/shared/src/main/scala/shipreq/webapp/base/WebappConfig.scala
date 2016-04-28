@@ -2,7 +2,7 @@ package shipreq.webapp.base
 
 import shipreq.webapp.base.util.EnvMacros
 
-object AppConsts {
+object WebappConfig {
 
   val appName = "ShipReq"
 
@@ -27,9 +27,7 @@ object AppConsts {
   /** Limit the length of seemingly-unbound inputs. Prevents a malicious user creating 1GB rows. */
   final val largeTextMaxLength = 20000
 
-  /**
-   * Maximum number of children per parent (inclusive).
-   */
+  /** Maximum number of children per parent (inclusive). */
   final val useCaseStepsMaxLength = 99
 
   /** The X in 1.0.X.3 shown when steps are dead. */

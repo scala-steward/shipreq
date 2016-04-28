@@ -2,7 +2,7 @@ package shipreq.webapp.server
 package security
 
 import Permission.Ctx
-import app.AppConfig
+import app.ServerConfig
 
 object Permissions {
 
@@ -21,7 +21,7 @@ object Permissions {
     override def name = "userRegistration"
     override def warnOnFailure = false
     override def check(ctx: Ctx) =
-      if (AppConfig.AllowRegister())
+      if (ServerConfig.AllowRegister())
         True
       else if (ctx.user.exists(_ hasRole Roles.Admin.name))
         True

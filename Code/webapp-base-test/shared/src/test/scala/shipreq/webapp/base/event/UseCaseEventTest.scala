@@ -1,6 +1,6 @@
 package shipreq.webapp.base.event
 
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import utest._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -46,7 +46,7 @@ object UseCaseEventTest extends TestSuite {
 
   def addStepTo1 = AddUseCaseStep(4, 1, NCAC, ∅)
 
-  def maxLenRange = 0 to AppConsts.useCaseStepsMaxLength
+  def maxLenRange = 0 to WebappConfig.useCaseStepsMaxLength
 
   def testSteps(es: ActiveEvent*)(nc: String*)(e: String*): Unit = {
     var es2 = es.toList

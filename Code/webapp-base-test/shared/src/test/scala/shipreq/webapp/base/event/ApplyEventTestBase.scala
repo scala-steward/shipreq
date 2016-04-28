@@ -2,7 +2,7 @@ package shipreq.webapp.base.event
 
 import scalaz.{-\/, \/-}
 import utest._
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
 import ApplyEventTestFns._
@@ -10,7 +10,7 @@ import DeletionAction._
 
 object ApplyEventTestFns {
 
-  val tooLongStr = "a" * (AppConsts.largeTextMaxLength + 1)
+  val tooLongStr = "a" * (WebappConfig.largeTextMaxLength + 1)
 
   val apply = ApplyEvent.untrusted
 

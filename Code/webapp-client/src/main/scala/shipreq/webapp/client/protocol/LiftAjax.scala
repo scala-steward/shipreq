@@ -12,7 +12,7 @@ object LiftAjax extends js.Object {
                        respType: String = null): Boolean = js.native
 
   /**
-   * @param ajaxPath Get from AppConsts and surround with slashes.
+   * @param ajaxPath Get from WebappConfig and surround with slashes.
    * @param version A counter declared by liftAjax.js which starts at 0 and increases for each call.
    * @return The AJAX URL.
    */

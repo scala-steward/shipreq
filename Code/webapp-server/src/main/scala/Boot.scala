@@ -5,7 +5,7 @@ import net.liftweb.http.{LiftRules, LiftSession, S}
 import net.liftweb.http.provider.HTTPParam
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.Test
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.server.app.{ExceptionHandler, DI, Defaults, AppSiteMap}
 import shipreq.webapp.server.db.DB
 import shipreq.webapp.server.feature.SessionStats
@@ -46,7 +46,7 @@ class Boot extends DI {
     LiftRules.funcNameGenerator = S.generateFuncName _
 
     // Customise URL paths for built-in resources & AJAX requests
-    LiftRules.ajaxPath = AppConsts.ajaxPath
+    LiftRules.ajaxPath = WebappConfig.ajaxPath
     LiftRules.ajaxScriptName = () => "A.js"
     LiftRules.cometPath = "C"
     LiftRules.cometScriptName = () => "C.js"
@@ -88,7 +88,7 @@ class Boot extends DI {
   }
 
   def logImportantSettings(): Unit = {
-    import shipreq.webapp.server.app.AppConfig._
+    import shipreq.webapp.server.app.ServerConfig._
     logger.info(s"Signup allowed: ${AllowRegister()}")
   }
 }

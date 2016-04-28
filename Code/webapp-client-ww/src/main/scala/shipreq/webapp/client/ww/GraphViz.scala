@@ -2,13 +2,13 @@ package shipreq.webapp.client.ww
 
 import org.scalajs.dom.webworkers.DedicatedWorkerGlobalScope
 import scala.scalajs.js
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.client.ww.api.SVG
 
 object GraphViz {
   type Fn = js.Function2[String, String, String]
 
-  def JsUrl = AppConsts.assetPath_/ + "viz.js"
+  def JsUrl = WebappConfig.assetPath_/ + "viz.js"
 
   lazy val instance: Fn = {
     DedicatedWorkerGlobalScope.self importScripts js.Array(JsUrl)

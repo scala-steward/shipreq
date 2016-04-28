@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.{EmailAddr, Msg, UserId}
 import shipreq.webapp.base.validation.ValidationResult
-import shipreq.webapp.server.app.{AppConfig, AppSiteMap}
+import shipreq.webapp.server.app.{ServerConfig, AppSiteMap}
 import shipreq.webapp.server.data.UserRegistrationInfo
 import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.server.db.{DaoT, UserRegistrationResult}
@@ -22,7 +22,7 @@ import Msg.{ReRegistrationAttempted, RegistrationRequested}
 import Register._
 
 object Register {
-  def isTokenExpired(dateIssued: DateTime): Boolean = AppConfig.TokenLifespan.ago.isAfter(dateIssued)
+  def isTokenExpired(dateIssued: DateTime): Boolean = ServerConfig.TokenLifespan.ago.isAfter(dateIssued)
 }
 
 // =====================================================================================================================

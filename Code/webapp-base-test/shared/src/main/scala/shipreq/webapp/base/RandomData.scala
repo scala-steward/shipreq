@@ -128,9 +128,9 @@ object RandomData {
   val id =
     Gen.chooseInt(1, 2048)
 
-  val shortText1        = unicodeChar.string(1 to AppConsts.shortTextMaxLength)
-  val shortText         = unicodeChar.string(0 to AppConsts.shortTextMaxLength)
-  val optionalLargeText = unicodeChar.string(1 to AppConsts.largeTextMaxLength).option
+  val shortText1        = unicodeChar.string(1 to WebappConfig.shortTextMaxLength)
+  val shortText         = unicodeChar.string(0 to WebappConfig.shortTextMaxLength)
+  val optionalLargeText = unicodeChar.string(1 to WebappConfig.largeTextMaxLength).option
 
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {

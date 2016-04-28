@@ -12,7 +12,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.{Text, PlainText, Grammar}
 import shipreq.webapp.base.validation._
-import shipreq.webapp.base.AppConsts
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.UiText.FieldNames
 import Constraints._
@@ -26,12 +26,12 @@ object Validators {
 
 //  val genericRichText =
 //    ValidationPart.test[PlainText.ForProject, Text.AnyOptional](
-//      { case (pt, InputCorrected(txt)) => pt.format(txt).length <= AppConsts.largeTextMaxLength },
+//      { case (pt, InputCorrected(txt)) => pt.format(txt).length <= WebappConfig.largeTextMaxLength },
 //      VFailure.looseMsg("Text too large.")) // english
 
   def genericRichText(pt: PlainText.ForProject, txt: Text.AnyOptional): ValidationResult[txt.type] =
     ValidationResult.test[txt.type](
-      pt.format(Live, txt).length <= AppConsts.largeTextMaxLength,
+      pt.format(Live, txt).length <= WebappConfig.largeTextMaxLength,
       txt, VFailure.looseMsg("Text too large.")) // english
 
   // ===================================================================================================================

@@ -1,7 +1,7 @@
 package shipreq.webapp.server.snippet
 
 import net.liftweb.http.DispatchSnippet
-import shipreq.webapp.base.AppConsts.assetPath_/
+import shipreq.webapp.base.WebappConfig.assetPath_/
 import shipreq.webapp.server.lib.SnippetHelpers
 
 /**

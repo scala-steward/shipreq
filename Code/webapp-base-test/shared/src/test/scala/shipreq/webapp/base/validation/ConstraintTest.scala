@@ -1,7 +1,7 @@
 package shipreq.webapp.base.validation
 
 import utest._
-import shipreq.webapp.base.AppConsts._
+import shipreq.webapp.base.WebappConfig._
 import Constraint.{not => NOT}
 import Constraints._
 

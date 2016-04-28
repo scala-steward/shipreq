@@ -8,8 +8,8 @@ import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.impl.TaskmanApi
 import shipreq.taskman.api.{MsgId, Msg, ApiOp}
 import shipreq.taskman.api.Msg.WebappErrorOccurred
-import shipreq.webapp.base.AppConsts
-import shipreq.webapp.server.app.{DI, AppConfig}
+import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.server.app.{DI, ServerConfig}
 import shipreq.webapp.server.security.Oshiro
 import ApiOp._
 
@@ -19,7 +19,7 @@ object Taskman {
   import SM.Implicits._
 
   def updateCfg: List[ApiOp[Unit]] = List(
-    CfgPut(K.appName,  AppConsts.appName),
+    CfgPut(K.appName,  WebappConfig.appName),
     CfgPut(K.homeUrl,  SM.Home.absoluteUrl),
     CfgPut(K.loginUrl, SM.Login.absoluteUrl)
   )
@@ -29,7 +29,7 @@ object Taskman {
 }
 
 object TaskmanImpl extends TaskmanInterface with HasLogger {
-  val ctx = TaskmanApi.Context(Some(AppConfig.TaskmanSchema))
+  val ctx = TaskmanApi.Context(Some(ServerConfig.TaskmanSchema))
 
   override def run[A](op: ApiOp[A])(s: Session): A =
     new TaskmanApi(ctx, SingleConnDatabase(s)).apply(op).unsafePerformIO()
