@@ -2,7 +2,8 @@ package shipreq.webapp.server.lib
 
 import net.liftweb.common.Logger
 import scala.util.Random
-import Types._
+
+final case class ShareUrlToken(value: String) extends AnyVal
 
 /**
  * Generates a random string to be used as a ShareUrlToken.

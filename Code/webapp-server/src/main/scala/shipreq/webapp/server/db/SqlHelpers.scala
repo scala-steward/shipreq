@@ -14,7 +14,6 @@ object SqlHelpers {
   implicit val dbCodecHashedStr     = DBC.WithOption.caseClass[HashedStr]
   implicit val dbCodecISO8601       = DBC.WithOption.caseClass[ISO8601]
   implicit val dbCodecProjectId     = DBC.WithOption.caseClass[ProjectId]
-  implicit val dbCodecShareUrlToken = DBC.WithOption.caseClass[ShareUrlToken]
   implicit val dbCodecUserId        = DBC.WithOption.caseClass[UserId]
   implicit val dbCodecUsername      = DBC.WithOption.caseClass[Username]
 
