@@ -4,11 +4,10 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field}
+import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field, FilterDead}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
-import shipreq.webapp.client.data.FilterDead
 import shipreq.webapp.client.lib.KeyGen
 import shipreq.webapp.client.feature.ContentEditorFeature.EditFieldKey
 

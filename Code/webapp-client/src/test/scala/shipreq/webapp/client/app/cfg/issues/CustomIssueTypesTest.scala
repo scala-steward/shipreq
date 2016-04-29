@@ -4,10 +4,11 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
+import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.base.protocol.{CustomIssueTypeCrud, RemoteFn}
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.client.app.cfg.shared.Usage
-import shipreq.webapp.client.data.{FilterDead, HideDead}
+import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._
 import utest._

@@ -25,7 +25,7 @@ import shipreq.webapp.base.protocol.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.app.cfg.shared._
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
-import shipreq.webapp.client.data.{FilterDead, TCB, Disabled, On}
+import shipreq.webapp.client.data.{TCB, Disabled, On}
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.lib.{DND, CrudActionIO}
 import shipreq.webapp.client.protocol.ClientProtocol

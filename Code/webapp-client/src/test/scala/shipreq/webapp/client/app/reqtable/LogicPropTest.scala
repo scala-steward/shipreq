@@ -13,7 +13,6 @@ import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Atom, PlainText, Text, TextSearch, ProjectText}
 import shipreq.webapp.client.app.reqtable.{SortCriterion => SC, Column => C}
-import shipreq.webapp.client.data.{FilterDead, ShowDead, HideDead}
 import shipreq.webapp.client.test.ClientTestSettings._
 import SortMethod._
 import Sorter._

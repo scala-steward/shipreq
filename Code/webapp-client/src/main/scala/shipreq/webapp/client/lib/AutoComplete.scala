@@ -14,7 +14,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar, GrammarSpec, PlainText, Text, TextSearch}
 import shipreq.webapp.client.app.Style.{reqtable => *}
 import shipreq.webapp.client.jsfacade.{TextComplete => TC}
-import shipreq.webapp.client.data.{HideDead, FilterDead, Plain, Contextualise}
+import shipreq.webapp.client.data.{Contextualise, Plain}
 import shipreq.webapp.client.feature.AutoCompleteFeature
 import AutoCompleteFeature.{Strategies, autoLiftSingleStrategy}
 import TC.{Query, Strategy}

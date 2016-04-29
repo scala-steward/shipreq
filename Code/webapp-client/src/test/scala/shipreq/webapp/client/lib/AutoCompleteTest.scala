@@ -12,7 +12,7 @@ import shipreq.base.util.MTrie.Ops
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._, WebappTestUtil._
 import shipreq.webapp.base.text.{PlainText, ProjectText}
-import shipreq.webapp.client.data.{HideDead, Plain, Contextualise}
+import shipreq.webapp.client.data.{Plain, Contextualise}
 import shipreq.webapp.client.feature.AutoCompleteFeature
 import shipreq.webapp.client.test.{PrepareEnv, Sizzle}
 import SampleProject3._

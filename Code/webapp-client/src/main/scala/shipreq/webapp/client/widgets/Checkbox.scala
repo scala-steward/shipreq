@@ -3,8 +3,9 @@ package shipreq.webapp.client.widgets
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
 import shipreq.base.util.IsoBool
+import shipreq.webapp.base.data.{FilterDead, ShowDead}
 import shipreq.webapp.base.UiText
-import shipreq.webapp.client.data.{ShowDead, FilterDead, On}
+import shipreq.webapp.client.data.On
 
 object Checkbox {
 

@@ -1,18 +1,15 @@
-package shipreq.webapp.client.data
+package shipreq.webapp.base.data
 
-import japgolly.scalajs.react.ScalazReact._
-import japgolly.scalajs.react.extra.Reusability
-import scala.collection.GenTraversableLike
+import scala.collection.TraversableLike
 import shipreq.base.util.IsoBool
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{LDStats, LDStat, Live}
 
 sealed trait FilterDead extends IsoBool[FilterDead] {
   override final def companion = FilterDead
 
   val filter: Option[Live => Boolean]
 
-  final def apply[A, C[x] <: GenTraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
+  final def apply[A, C[x] <: TraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
     filter.fold(as)(g => as.filter(g compose f))
 
   final def filterFn: Live => Boolean =
@@ -32,7 +29,6 @@ sealed trait FilterDead extends IsoBool[FilterDead] {
 object FilterDead extends IsoBool.Object[FilterDead] {
   override def positive = HideDead
   override def negative = ShowDead
-  implicit val reusability = Reusability.byEqual[FilterDead]
 }
 
 case object HideDead extends FilterDead {

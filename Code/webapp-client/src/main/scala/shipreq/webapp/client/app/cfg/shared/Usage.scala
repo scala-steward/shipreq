@@ -4,9 +4,8 @@ import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.vdom.ReactTagOf
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom.html
-import shipreq.webapp.base.data.{LDStats, Project}
+import shipreq.webapp.base.data.{FilterDead, LDStats, Project}
 import shipreq.webapp.base.filter.FilterSpec
-import shipreq.webapp.client.data.FilterDead
 
 object Usage {
   type View = ReactElement

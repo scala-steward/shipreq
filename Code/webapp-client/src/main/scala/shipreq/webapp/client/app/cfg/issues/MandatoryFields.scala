@@ -7,7 +7,7 @@ import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.protocol.FieldMandatorinessMod
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.app.cfg.shared._
-import shipreq.webapp.client.data.{On, HideDead}
+import shipreq.webapp.client.data.On
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.protocol.ClientProtocol
 

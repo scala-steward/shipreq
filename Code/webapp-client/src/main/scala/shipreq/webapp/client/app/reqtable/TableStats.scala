@@ -4,7 +4,7 @@ import nyaya.prop._
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.SafeStringOps._
 import shipreq.webapp.base.UiText.EnglishIntExt
-import shipreq.webapp.client.data.{HideDead, FilterDead, ShowDead}
+import shipreq.webapp.base.data.{HideDead, FilterDead, ShowDead}
 
 object TableStats {
 

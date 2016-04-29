@@ -16,7 +16,7 @@ import shipreq.webapp.base.protocol.CustomReqTypeCrud
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.app.cfg.shared._
 import shipreq.webapp.client.app.state.{ClientData, ChangeListener}
-import shipreq.webapp.client.data.{FilterDead, On}
+import shipreq.webapp.client.data.On
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.lib.CrudActionIO
 import shipreq.webapp.client.protocol.ClientProtocol

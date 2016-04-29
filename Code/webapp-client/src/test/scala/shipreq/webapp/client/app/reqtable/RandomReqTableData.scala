@@ -9,7 +9,6 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
-import shipreq.webapp.client.data.{ShowDead, FilterDead}
 
 object RandomReqTableData {
 

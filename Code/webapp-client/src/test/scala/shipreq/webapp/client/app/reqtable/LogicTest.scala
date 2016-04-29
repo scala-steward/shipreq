@@ -14,7 +14,6 @@ import shipreq.webapp.base.text.{TextSearch, PlainText, Text, ProjectText}
 import shipreq.webapp.base.test._, WebappTestUtil._
 import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.app.reqtable.{SortCriterion => SC, Column => C}
-import shipreq.webapp.client.data.{FilterDead, ShowDead, HideDead}
 import SortMethod._
 
 object LogicTestUtil {

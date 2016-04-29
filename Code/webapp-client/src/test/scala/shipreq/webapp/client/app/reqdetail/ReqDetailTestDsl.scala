@@ -9,7 +9,6 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.data.{FilterDead, HideDead, ShowDead}
 import shipreq.webapp.client.test.TestState._
 
 object ReqDetailTestDsl {

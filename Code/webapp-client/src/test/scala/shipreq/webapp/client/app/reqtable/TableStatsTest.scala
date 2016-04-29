@@ -2,8 +2,8 @@ package shipreq.webapp.client.app.reqtable
 
 import utest._
 import scalaz.std.string._
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.client.data._
 
 object TableStatsTest extends TestSuite {
 

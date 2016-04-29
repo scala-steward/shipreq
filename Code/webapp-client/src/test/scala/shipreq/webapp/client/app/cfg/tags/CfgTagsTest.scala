@@ -14,7 +14,7 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol.{TagCrud, RemoteFn}, TagCrud._
 import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.client.data.{FilterDead, HideDead}
+import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.test._
 import DataImplicits._
 import MMTree.{Relations, ApplyRelations}

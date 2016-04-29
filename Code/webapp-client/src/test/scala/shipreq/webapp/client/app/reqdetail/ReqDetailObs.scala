@@ -5,8 +5,7 @@ import scala.util.Try
 import shipreq.webapp.base.UiText
 import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.data.{Dead, Live}
-import shipreq.webapp.client.data.{ShowDead, FilterDead}
+import shipreq.webapp.base.data.{Dead, Live, ShowDead, FilterDead}
 import shipreq.webapp.client.widgets.high.DeletionFormObs
 import shipreq.webapp.client.test._
 import ReqDetailTestDsl.Mode

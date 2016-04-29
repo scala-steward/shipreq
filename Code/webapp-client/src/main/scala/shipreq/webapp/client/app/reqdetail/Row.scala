@@ -2,8 +2,8 @@ package shipreq.webapp.client.app.reqdetail
 
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{CustomField => CF, StaticField => SF, Field, UseCaseSteps}
-import shipreq.webapp.client.data.{FilterDead, ShowDead}
+import shipreq.webapp.base.data.{CustomField => CF, StaticField => SF}
+import shipreq.webapp.base.data.{Field, UseCaseSteps, FilterDead, ShowDead}
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.lib.KeyGen
 

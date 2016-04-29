@@ -15,7 +15,6 @@ import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.app.state.{Changes, ClientData}
 import shipreq.webapp.client.app.Style.{reqtable => *}
-import shipreq.webapp.client.data.FilterDead
 import shipreq.webapp.client.feature._
 import shipreq.webapp.client.protocol.{ClientProtocol, ServerCall}
 import shipreq.webapp.client.widgets.high.ProjectWidgets

@@ -2,10 +2,10 @@ package shipreq.webapp.client.app.cfg.issues
 
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra.ReusableVar
+import shipreq.webapp.base.data.FilterDead
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.app.cfg.shared.Usage
 import shipreq.webapp.client.app.state.ClientData
-import shipreq.webapp.client.data.FilterDead
 import shipreq.webapp.client.protocol.ClientProtocol
 
 object CfgIssues {

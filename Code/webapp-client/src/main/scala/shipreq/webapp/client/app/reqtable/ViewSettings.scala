@@ -5,8 +5,8 @@ import japgolly.scalajs.react.extra.Reusability
 import monocle.macros.Lenses
 import shipreq.base.util.NonEmptyVector
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.FilterAst
-import shipreq.webapp.client.data._
 
 @Lenses
 case class ViewSettings(columns    : NonEmptyVector[Column],
