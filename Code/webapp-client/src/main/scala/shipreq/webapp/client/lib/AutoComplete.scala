@@ -292,7 +292,7 @@ object AutoComplete {
             <.div(
               <.div(
                 <.span(*.autoCompleteItemTitle, code),
-                <.span(*.autoCompleteItemTitle2, s"(${PlainText.pubid(project, a.reqId)})"),
+                <.span(*.autoCompleteItemTitle2, s"(${PlainText.pubidByReqId(a.reqId, project)})"),
               <.div(*.autoCompleteItemDesc, pt.reqTitleById(a.reqId))))
           case -\/(a) =>
             <.div(

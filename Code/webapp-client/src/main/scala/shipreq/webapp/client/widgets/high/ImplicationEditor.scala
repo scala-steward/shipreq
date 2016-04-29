@@ -58,7 +58,7 @@ object ImplicationEditor {
     }
 
     val text =
-      reqs.map(r => PlainText.pubid(p, r.pubid))
+      reqs.map(r => PlainText.pubid(r.pubid, p))
         .sorted |>
         Grammar.pubid.seqFormat.merge
 

@@ -50,13 +50,19 @@ object PlainText {
   def hashtag(key: HashRefKey): String =
     G.hashRefKey.prefix ~ key.value
 
-  def pubid(p: Project, id: ReqId): String = {
-    val pid = p.reqs.req(id).pubid
-    pubid(p, pid)
+  def pubidByReqId(id: ReqId, p: Project): String =
+    pubidByReqId(id, p.reqs, p.config.customReqTypes)
+
+  def pubidByReqId(id: ReqId, reqs: Requirements, customReqTypes: CustomReqTypeIMap): String = {
+    val pid = reqs.req(id).pubid
+    pubid(pid, customReqTypes)
   }
 
-  def pubid(p: Project, pid: Pubid): String = {
-    val rt = p.config.reqType(pid.reqTypeId)
+  def pubid(pid: Pubid, p: Project): String =
+    pubid(pid, p.config.customReqTypes)
+
+  def pubid(pid: Pubid, customReqTypes: CustomReqTypeIMap): String = {
+    val rt = pid.reqTypeId.foldId(identity, customReqTypes.need)
     pubid(rt, pid.pos)
   }
 

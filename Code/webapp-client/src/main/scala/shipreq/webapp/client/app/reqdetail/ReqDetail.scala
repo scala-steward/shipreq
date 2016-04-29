@@ -89,7 +89,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       fields.foldLeft(Row head filterDead)(_ ++ Row.fromField(_))
     }
 
-    val pubidText = PlainText.pubid(project, req.pubid)
+    val pubidText = PlainText.pubid(req.pubid, project)
 
     val codeSet = project.reqCodes.activeReqCodesByReqId(req.id)
     val codes  = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]

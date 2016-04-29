@@ -341,7 +341,7 @@ object DeletionForm {
         val reqTitle =
           <.span(
             *.reqDesc,
-            PlainText.pubid(project, req.pubid) + ": ",
+            PlainText.pubid(req.pubid, project) + ": ",
             widgets reqTitle req)
 
         val impBy =
