@@ -44,13 +44,15 @@ object Grammar {
       _ mkString " ")
   }
 
-  // TODO hashrefkey & mnemonic are both case-insensitive but char ranges are defined differently
-
   /**
    * [[shipreq.webapp.base.data.HashRefKey]]
    *
    * DD-18: Hashtag-like refkeys (groupings, incmp) must match this format: [A-Za-z0-9][A-Za-z0-9_-=.]*
    * Must not contain: []{}<>#
+   *
+   * The case used at creation/update is retain but in all other regards, this is case-insensitive.
+   * For example: if #Hello exists, User can enter #HELLO in text and it will be replaced with #Hello; User cannot
+   * create another tag called #hello but they can rename #Hello to #hello.
    */
   object hashRefKey {
     val length    = Length(1 to 20)
