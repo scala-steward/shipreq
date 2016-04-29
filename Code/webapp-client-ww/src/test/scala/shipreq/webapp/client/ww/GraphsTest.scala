@@ -2,7 +2,7 @@ package shipreq.webapp.client.ww
 
 import utest._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.test.SampleProject6
+import shipreq.webapp.base.test._
 import GraphViz.DOT
 
 object GraphsTest extends TestSuite {
@@ -14,13 +14,14 @@ object GraphsTest extends TestSuite {
 
   def assertDOT(actual: DOT, expect: DOT): Unit = {
     val a = normaliseDOT(actual)
-    val e = normaliseDOT(DOT(expect.content.trim.replaceAll("\n *", "")))
+    val e = normaliseDOT(DOT(expect.content.trim.replaceAll("\\s*//[^\r\n]+", "").replaceAll("\n *", "")))
     assertMultiline(a, e)
   }
 
   // TODO Test Graphs.useCaseStepFlow with more complicated flow
 
   override def tests = TestSuite {
+
     'stepFlow {
       import SampleProject6._, Values._
       val actual = Graphs.useCaseStepFlow(uc1, project.reqs.useCases)
@@ -58,6 +59,55 @@ object GraphsTest extends TestSuite {
           |
           |15->12;
           |13->11;
+          |
+          |}
+        """.stripMargin)
+      assertDOT(actual, expect)
+    }
+
+    'implicationFocused {
+      import SampleImplicationGraph._
+      val actual = Graphs.implicationFocused(mf3, project.implications, project.reqs, project.config.customReqTypes)
+      val expect = DOT(
+        """
+          |digraph G{rankdir=LR;
+          |
+          |// Palette: http://paletton.com/#uid=30m0u0kcsAE3HVh7UMch6tklvom
+          |
+          |node[style=filled color="#333333"]
+          |
+          |F[style=bold fillcolor="#cccccc" label="MF-3"]
+          |
+          |// Indirect parents
+          |node[fillcolor="#FFEDE2"]
+          |21[label="BR-1"]
+          |
+          |// Direct parents
+          |node[fillcolor="#FFC19C"]
+          |22[label="BR-2"]
+          |
+          |// Direct children
+          |{node[fillcolor="#7692B7" fontcolor=white]
+          |14[label="MF-4"]
+          |34[label="FR-4"]
+          |}
+          |
+          |// Indirect children
+          |node[fillcolor="#D6E1EF"]
+          |36[label="FR-6"]
+          |35[label="FR-5"]
+          |15[label="MF-5"]
+          |
+          |edge[color="#FFC19C"]
+          |21->22;
+          |edge[color="#C27040"]
+          |22->F;
+          |edge[color="#31537F"]
+          |F->14,34;
+          |edge[color="#7692B7"]
+          |14->36;
+          |34->35;
+          |35->15;
           |
           |}
         """.stripMargin)
