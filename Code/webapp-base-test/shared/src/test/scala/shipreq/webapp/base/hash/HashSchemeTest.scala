@@ -56,11 +56,11 @@ object HashSchemeTest extends TestSuite {
   override def tests = TestSuite {
     'latest - {
       'P0 - assertHashes(hL, P0,
-        0xbd8a78f7 ~ CfgFields,
+        0x19f80db3 ~ CfgFields,
         0x8929e247 ~ CfgIssueTypes,
         0x53a65700 ~ CfgReqTypes,
         0xfff75860 ~ CfgTags,
-        0x16519109 ~ Config,
+        0xecdbe4e6 ~ Config,
         0xc72a3dda ~ Content,
         0x35ed6368 ~ DeletionReasons,
         0xf71674f7 ~ GenericReqs,
@@ -71,7 +71,7 @@ object HashSchemeTest extends TestSuite {
         0x46a5c86e ~ TagData,
         0xc32727ce ~ TextFieldData,
         0x43b92d0f ~ UseCases,
-        0x12795e1a ~ WholeProject)
+        0x3b2e94e1 ~ WholeProject)
 
       'P3 - assertHashes(hL, P3,
         0x3e1ac0cb ~ CfgFields,

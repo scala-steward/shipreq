@@ -28,13 +28,13 @@ object CustomFieldEventTest extends TestSuite {
     'reposition {
       var es = Vector[Event]()
       def o = _assertPass(es: _*).config.fields.order
-      assertEq(o, Vector(NormalAltStepTree, ExceptionStepTree, StepGraph, t1, t2))
+      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, ExceptionStepTree, StepGraph, t1, t2))
 
       es :+= RepositionField(t1, Some(ExceptionStepTree))
-      assertEq(o, Vector(NormalAltStepTree, t1, ExceptionStepTree, StepGraph, t2))
+      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, t1, ExceptionStepTree, StepGraph, t2))
 
       es :+= RepositionField(ExceptionStepTree, None)
-      assertEq(o, Vector(NormalAltStepTree, t1, StepGraph, t2, ExceptionStepTree))
+      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, t1, StepGraph, t2, ExceptionStepTree))
     }
 
     'addStaticField {

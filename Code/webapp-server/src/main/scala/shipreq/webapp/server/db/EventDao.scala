@@ -195,6 +195,7 @@ object EventDbCodecs {
     case StaticField.NormalAltStepTree => "n"
     case StaticField.ExceptionStepTree => "e"
     case StaticField.StepGraph         => "g"
+    case StaticField.ImplicationGraph  => "I"
   }
 
   implicit val pickleFieldIdPosition: ReadWriter[RelPos[FieldId]] =
@@ -543,10 +544,12 @@ object EventDbCodecs {
         case StaticField.NormalAltStepTree => -1
         case StaticField.ExceptionStepTree => -2
         case StaticField.StepGraph         => -3
+        case StaticField.ImplicationGraph  => -4
       }, _.intValue match {
         case -1 => StaticField.NormalAltStepTree
         case -2 => StaticField.ExceptionStepTree
         case -3 => StaticField.StepGraph
+        case -4 => StaticField.ImplicationGraph
       })
 
   implicit val idTypeFieldId: DbCodec.PolyId[FieldId] =

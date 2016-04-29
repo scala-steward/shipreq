@@ -19,8 +19,9 @@ sealed abstract class StaticFieldType(name: String) extends FieldType(name)
 sealed abstract class CustomFieldType(name: String) extends FieldType(name)
 
 object StaticFieldType {
-  case object StepTree  extends StaticFieldType("Step Tree")
-  case object StepGraph extends StaticFieldType("Step Graph")
+  case object StepTree         extends StaticFieldType("Step Tree")
+  case object StepGraph        extends StaticFieldType("Step Graph")
+  case object ImplicationGraph extends StaticFieldType("Implication Graph")
 
   val values: NonEmptyVector[StaticFieldType] =
     UtilMacros.adtValues[StaticFieldType]
@@ -257,12 +258,19 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object StepGraph extends StaticField(
-    "Step Graph", T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
+    T.StepGraph.name, T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
+
+  case object ImplicationGraph extends StaticField(
+    T.ImplicationGraph.name, T.ImplicationGraph, ISubset.All(), Mandatory.Not, Deletable, None)
 
   // Non lazy causes utest to crash
   // ORDER MATTERS as this is the default order of fields use in new projects
   lazy val values: NonEmptyVector[StaticField] =
-    UtilMacros.adtValuesManual[StaticField](NormalAltStepTree, ExceptionStepTree, StepGraph)
+    UtilMacros.adtValuesManual[StaticField](
+      ImplicationGraph,
+      NormalAltStepTree,
+      ExceptionStepTree,
+      StepGraph)
 
   lazy val useCaseStepTrees: NonEmptyVector[UseCaseStepTree] =
     UtilMacros.adtValuesManual[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)

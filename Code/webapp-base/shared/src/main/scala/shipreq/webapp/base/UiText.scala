@@ -1,6 +1,6 @@
 package shipreq.webapp.base
 
-import shipreq.webapp.base.data.StaticFieldType
+import shipreq.webapp.base.data.{StaticField, StaticFieldType}
 
 object UiText {
 
@@ -49,9 +49,10 @@ object UiText {
     def reqType              = "Type"
     def tags                 = "Tags"
     def implications         = "Implications"
+    def implicationGraph     = StaticFieldType.ImplicationGraph.name
     def useCaseStepTreeN     = "Normal Course"
     def useCaseStepTreeA     = "Alternative Courses"
-    def useCaseStepTreeE     = "Exceptions"
+    def useCaseStepTreeE     = StaticField.ExceptionStepTree.name
     def useCaseStepFlowGraph = StaticFieldType.StepGraph.name
     def deletionReason       = "Deletion Reason"
   }

@@ -20,7 +20,7 @@ import shipreq.webapp.client.feature._
 import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.protocol.{ClientProtocol, ServerCall}
 import shipreq.webapp.client.widgets.Checkbox
-import shipreq.webapp.client.widgets.high.{DeletionForm, ProjectWidgets, UseCaseStepFlowGraph}
+import shipreq.webapp.client.widgets.high.{DeletionForm, ImplicationGraph, ProjectWidgets, UseCaseStepFlowGraph}
 
 object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
   override protected def configureBackend = new Backend(_, _)
@@ -296,17 +296,18 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
       def renderRowTitle(row: Row): ReactNode =
         row match {
-          case Row.CustomField(f) => fieldName(f)
-          case Row.Code           => UiText.FieldNames.reqCodes
-          case Row.ReqType        => UiText.FieldNames.reqType
-          case Row.Tags           => UiText.FieldNames.tags
-          case Row.Implications   => UiText.FieldNames.implications
-          case Row.UseCaseStepsN  => UiText.FieldNames.useCaseStepTreeN
-          case Row.UseCaseStepsA  => UiText.FieldNames.useCaseStepTreeA
-          case Row.UseCaseStepsE  => UiText.FieldNames.useCaseStepTreeE
-          case Row.DeletionReason => UiText.FieldNames.deletionReason
-          case Row.StepGraph      => UiText.FieldNames.useCaseStepFlowGraph
-          case Row.Life           => UiText.Life.field
+          case Row.CustomField(f)   => fieldName(f)
+          case Row.Code             => UiText.FieldNames.reqCodes
+          case Row.ReqType          => UiText.FieldNames.reqType
+          case Row.Tags             => UiText.FieldNames.tags
+          case Row.Implications     => UiText.FieldNames.implications
+          case Row.ImplicationGraph => UiText.FieldNames.implicationGraph
+          case Row.UseCaseStepsN    => UiText.FieldNames.useCaseStepTreeN
+          case Row.UseCaseStepsA    => UiText.FieldNames.useCaseStepTreeA
+          case Row.UseCaseStepsE    => UiText.FieldNames.useCaseStepTreeE
+          case Row.DeletionReason   => UiText.FieldNames.deletionReason
+          case Row.StepGraph        => UiText.FieldNames.useCaseStepFlowGraph
+          case Row.Life             => UiText.Life.field
         }
 
       def renderImpCell(cell: Cell, pubids: => Vector[Pubid]) =
@@ -359,6 +360,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
               <.div(
                 *.generalImpsSide,
                 one(Cell.ImplicationTgt)))
+
+          case Row.ImplicationGraph =>
+            ImplicationGraph.Props.fromProject(req.id, project, webWorker).render
 
           case Row.CustomField(f: CustomField.Implication) =>
             renderImpCell(Cell.CustomField(f.id), data.customImps(f))

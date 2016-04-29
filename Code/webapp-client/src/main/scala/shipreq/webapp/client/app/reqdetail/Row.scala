@@ -45,6 +45,7 @@ object Row {
   case object Code              extends Row(autoKey)
   case object Tags              extends Row(autoKey)
   case object Implications      extends Row(autoKey)
+  case object ImplicationGraph  extends Row(autoKey)
   case object StepGraph         extends Row("f")
   case class CustomField(f: CF) extends Row("f" + f.id.value)
 
@@ -80,5 +81,6 @@ object Row {
     case SF.NormalAltStepTree => UseCaseStepsN :: UseCaseStepsA :: Nil
     case SF.ExceptionStepTree => UseCaseStepsE :: Nil
     case SF.StepGraph         => StepGraph :: Nil
+    case SF.ImplicationGraph  => ImplicationGraph :: Nil
   }
 }

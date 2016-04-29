@@ -507,6 +507,7 @@ object ShowSrcDataImp {
       case StaticField.NormalAltStepTree => s append "StaticField.NormalAltStepTree"
       case StaticField.ExceptionStepTree => s append "StaticField.ExceptionStepTree"
       case StaticField.StepGraph         => s append "StaticField.StepGraph"
+      case StaticField.ImplicationGraph  => s append "StaticField.ImplicationGraph"
     })
 
   implicit val fieldId: ShowSrc[FieldId] =
