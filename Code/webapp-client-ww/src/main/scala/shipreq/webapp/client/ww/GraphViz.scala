@@ -15,8 +15,13 @@ object GraphViz {
     js.Dynamic.global.Viz.asInstanceOf[Fn]
   }
 
-  def apply(dot: DOT): SVG =
-    SVG(instance(dot.content, "svg"))
+  private val titlesAndComments = "(?:<title>[^<>]*?</title>|<!--[^\u0000]*?-->)".r
+
+  def apply(dot: DOT): SVG = {
+    var svg = instance(dot.content, "svg")
+    svg = titlesAndComments.replaceAllIn(svg, "")
+    SVG(svg)
+  }
 
   case class DOT(content: String) extends AnyVal {
     @inline def toSVG: SVG =
