@@ -1,7 +1,9 @@
 package shipreq.webapp.base.data
 
 import nyaya.util.Multimap
+import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.univeq._
+import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
 
 /**
@@ -34,9 +36,34 @@ object PubidT {
 /**
  * A [[Pubid]] as seen from outside of a project, or from the user's perspective.
  */
-final case class ExternalPubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos)
+final case class ExternalPubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos) {
+  import ExternalPubid.LookupFailure
+
+  def lookup(p: Project): LookupFailure \/ Req =
+    lookup(p.config.reqTypes, p.reqs)
+
+  def lookup(reqTypes: ReqTypes, reqs: Requirements): LookupFailure \/ Req =
+    reqTypes.allByMnemonic.get(mnemonic) match {
+      case None =>
+        -\/(LookupFailure.InvalidReqType)
+      case Some(rt) =>
+        val i = pos.value - 1
+        val register = reqs.pubids.value(rt.reqTypeId)
+        if (register.isIndexValid(i))
+          \/-(reqs req register(i))
+        else
+          -\/(LookupFailure.InvalidPos(rt, register.length))
+    }
+}
+
 object ExternalPubid {
   implicit def equality: UnivEq[ExternalPubid] = UnivEq.derive
+
+  sealed abstract class LookupFailure
+  object LookupFailure {
+    case object InvalidReqType extends LookupFailure
+    case class InvalidPos(reqType: ReqType, maxLegalPos: Int) extends LookupFailure
+  }
 }
 
 /**

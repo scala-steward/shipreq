@@ -21,6 +21,7 @@ import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.protocol.{ClientProtocol, ServerCall}
 import shipreq.webapp.client.widgets.Checkbox
 import shipreq.webapp.client.widgets.high.{DeletionForm, ImplicationGraph, ProjectWidgets, UseCaseStepFlowGraph}
+import ExternalPubid.LookupFailure
 
 object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
   override protected def configureBackend = new Backend(_, _)
@@ -161,13 +162,13 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     val pxExtPubid    = Px.bsMP($).propsM(_.extPubid)
     val pxUpstreamFD  = Px.bsMP($).propsM(_.filterDead.value)
 
-    val pxData: Px[PubidQueryError \/ Data] =
+    val pxData: Px[LookupFailure \/ Data] =
       for {
         p <- pxProject
         e <- pxExtPubid
         f <- pxUpstreamFD
       } yield
-        p.findReq(e).map(new Data(SP, p, _, f))
+        e.lookup(p).map(new Data(SP, p, _, f))
 
     val filterDeadCheckbox =
       Checkbox.filterDead(v => $.props.flatMap(_.filterDead set v))
@@ -243,9 +244,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       p.state.value renderOrElse {
         Px.refresh(pxExtPubid, pxUpstreamFD)
         pxData.value() match {
-          case \/-(data)                                => renderDetail(p, data)
-          case -\/(PubidQueryError.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.extPubid.mnemonic.value} not found.")
-          case -\/(PubidQueryError.InvalidPos(rt, len)) => renderNotFound(s"${PlainText pubid p.extPubid} not found.")
+          case \/-(data)                              => renderDetail(p, data)
+          case -\/(LookupFailure.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.extPubid.mnemonic.value} not found.")
+          case -\/(LookupFailure.InvalidPos(rt, len)) => renderNotFound(s"${PlainText pubid p.extPubid} not found.")
         }
       }
 

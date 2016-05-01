@@ -39,12 +39,6 @@ object Project {
       IdCeilings.zero)
 }
 
-sealed abstract class PubidQueryError
-object PubidQueryError {
-  case object InvalidReqType extends PubidQueryError
-  case class InvalidPos(reqType: ReqType, maxLegalPos: Int) extends PubidQueryError
-}
-
 @Lenses
 final case class Project(config         : ProjectConfig,
                          reqs           : Requirements,
@@ -113,20 +107,4 @@ final case class Project(config         : ProjectConfig,
 
   private def implicationTransitiveClosure(dir: Direction): TransitiveClosure[ReqId] =
     implications.transitiveClosure(dir, reqs.reqs.keys, TransitiveClosure.Filter terminalSet deadReqIds)
-
-  def findReq(externalPubid: ExternalPubid): PubidQueryError \/ Req =
-    findReq(externalPubid.mnemonic, externalPubid.pos)
-
-  def findReq(mnemonic: ReqType.Mnemonic, pos: ReqTypePos): PubidQueryError \/ Req =
-    config.reqTypes.allByMnemonic.get(mnemonic) match {
-      case None =>
-        -\/(PubidQueryError.InvalidReqType)
-      case Some(rt) =>
-        val i = pos.value - 1
-        val register = reqs.pubids.value(rt.reqTypeId)
-        if (register.isIndexValid(i))
-          \/-(reqs req register(i))
-        else
-          -\/(PubidQueryError.InvalidPos(rt, register.length))
-    }
 }
