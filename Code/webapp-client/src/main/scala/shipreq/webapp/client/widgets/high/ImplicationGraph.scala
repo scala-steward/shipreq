@@ -2,38 +2,67 @@ package shipreq.webapp.client.widgets.high
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.extra.router.RouterCtl
+import org.scalajs.dom._
+import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.app.WebWorkerClient
 import shipreq.webapp.client.lib.DataReusability._
+import shipreq.webapp.client.lib.DomUtil._
 import shipreq.webapp.client.widgets.GraphComponent._
 import shipreq.webapp.client.ww.api.Cmd
 
 object ImplicationGraph {
 
-  final case class Props(focus     : ReqId,
-                         filterDead: FilterDead,
-                         imps      : Implications.BiDir,
-                         reqs      : Requirements,
-                         reqTypes  : ReqTypes,
-                         webWorker : WebWorkerClient) extends HasWebWorker {
+  final case class Props(focus      : ReqId,
+                         filterDead : FilterDead,
+                         imps       : Implications.BiDir,
+                         reqs       : Requirements,
+                         reqTypes   : ReqTypes,
+                         plainText  : PlainText.ForProject,
+                         reqDetailRC: RouterCtl[ExternalPubid],
+                         webWorker  : WebWorkerClient) extends HasWebWorker {
     @inline def render = Component(this)
-  }
-
-  object Props {
-    def fromProject(focus: ReqId, filterDead: FilterDead, p: Project, w: WebWorkerClient): Props =
-      Props(focus, filterDead, p.implications, p.reqs, p.config.reqTypes, w)
   }
 
   implicit val reusabilityProps: Reusability[Props] = {
     implicit def a: Reusability[Implications.BiDir] = Reusability.byRef
     implicit def b: Reusability[Requirements      ] = Reusability.byRef
-    implicit def c: Reusability[ReqTypes          ] = Reusability.byRef
+    implicit def c: Reusability[ReqTypes          ] = Reusability.byRefOrUnivEq
     Reusability.caseClass
   }
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {
     override def cmd(p: Props) =
       Cmd.GraphReqImplications(p.focus, p.filterDead, p.imps, p.reqs, p.reqTypes)
+
+    override def enrich(p: Props): Callback =
+      Callback {
+        val root = $.getDOMNode()
+        val nodes = root.querySelectorAll("g.node")
+        for (node <- nodes.iterator.map(_.domCast[svg.G])) {
+          val pubid = node.querySelector("text").textContent
+          for {
+            ep  <- ExternalPubid.parse(pubid)
+            req <- ep.lookup(p.reqTypes, p.reqs)
+          }
+            if (req.id ==* p.focus) {
+              // Enrich focus node
+              node.style.cursor = "default"
+
+            } else {
+              // Set title
+              val titleEl = document.createElementNS(SvgNS, "title")
+              titleEl.textContent = p.plainText.reqTitleById(req.id)
+              node.appendChild(titleEl)
+
+              // Make link
+              node.onclick = p.reqDetailRC.set(ep).toJsFn1
+              node.style.cursor = "pointer"
+            }
+        }
+      }
   }
 
   val Component = ReactComponentB[Props]("ImplicationGraph")

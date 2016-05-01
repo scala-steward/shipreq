@@ -30,6 +30,12 @@ object GraphComponent {
     def refresh(p: Props): Callback =
       p.webWorker.postCB(cmd(p))(svg => $.setState(Some(svg)))
 
+    def onRender(p: Props, s: State): Callback =
+      Callback.when(s.isDefined)(enrich(p))
+
+    def enrich(p: Props): Callback =
+      Callback.empty
+
     def render(s: State): ReactElement =
       s match {
         case Some(svg) => <.div(^.dangerouslySetInnerHtml(svg.content))
@@ -46,4 +52,6 @@ object GraphComponent {
       .configure(Reusability.shouldComponentUpdate)
       .componentWillMount($ => $.backend.refresh($.props))
       .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.$.backend.refresh(i.nextProps)))
+      .componentDidMount($ => $.backend.onRender($.props, $.state))
+      .componentDidUpdate(i => i.$.backend.onRender(i.currentProps, i.currentState))
 }

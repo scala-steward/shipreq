@@ -1,10 +1,13 @@
 package shipreq.webapp.base.data
 
+import monocle.macros.GenIso
+import monocle.{Iso, Prism}
 import nyaya.util.Multimap
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes._
+import shipreq.webapp.base.text.Grammar
 
 /**
  * A position (ordinal) in a req-type's ordered list of requirements.
@@ -58,6 +61,15 @@ final case class ExternalPubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos) {
 
 object ExternalPubid {
   implicit def equality: UnivEq[ExternalPubid] = UnivEq.derive
+
+  val TupleIso: Iso[(ReqType.Mnemonic, ReqTypePos), ExternalPubid] =
+    GenIso.fields[ExternalPubid].reverse
+
+  val StringPrism: Prism[String, ExternalPubid] =
+    Grammar.pubid.stringPrism ^<-> TupleIso
+
+  def parse(s: String): Option[ExternalPubid] =
+    StringPrism.getOption(s)
 
   sealed abstract class LookupFailure
   object LookupFailure {

@@ -56,7 +56,7 @@ object ProjectSpaMain {
 
     object ReqDetail {
       val stringPrism: Prism[String, ReqDetail] =
-        Grammar.pubid.stringPrism ^<-> GenIso.fields[ExternalPubid].reverse ^<-> GenIso.fields[ReqDetail].reverse
+        ExternalPubid.StringPrism ^<-> GenIso.fields[ReqDetail].reverse
     }
   }
 
@@ -322,7 +322,7 @@ final class ProjectSpaMain(r: ProjectSPA, cp: ClientProtocol, cd: ClientData) {
     }
 
     val reqDetail = ReqDetail(ReqDetail.StaticProps(
-      cd, cp, WebWorkerClient.Instance, r.updateContent,
+      cd, cp, reqDetailRC, WebWorkerClient.Instance, r.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =

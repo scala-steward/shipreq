@@ -9,11 +9,18 @@ import shipreq.base.util.ScalaExt._
 
 object DomUtil {
 
+  val SvgNS = "http://www.w3.org/2000/svg"
+
 //  @inline implicit class PatchNode(private val n: Node) extends AnyVal {
 //  }
 
 //  @inline implicit class PatchHtmlElement(private val e: html.Element) extends AnyVal {
 //  }
+
+  @inline implicit class NodeListExt(private val n: NodeList) extends AnyVal {
+    def iterator: Iterator[Node] =
+      (0 until n.length).iterator.map(n.apply)
+  }
 
   @inline implicit class DOMStringListExt(private val d: DOMStringList) extends AnyVal {
     def exists(f: String => Boolean): Boolean = {

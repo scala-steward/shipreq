@@ -3,6 +3,7 @@ package shipreq.webapp.client.app.reqdetail
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.experimental.StaticPropComponent
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
@@ -31,6 +32,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
   case class StaticProps(cd                   : ClientData,
                          cp                   : ClientProtocol,
+                         reqDetailRC          : RouterCtl[ExternalPubid],
                          webWorker            : WebWorkerClient,
                          updateContentFn      : UpdateContentFn.Instance,
                          pxPlainTextNoCtx     : Px[PlainText.ForProject],
@@ -363,7 +365,13 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
                 one(Cell.ImplicationTgt)))
 
           case Row.ImplicationGraph =>
-            ImplicationGraph.Props.fromProject(req.id, data.filterDead, project, webWorker).render
+            ImplicationGraph.Props(
+              req.id, data.filterDead,
+              project.implications, project.reqs, project.config.reqTypes,
+              data.pxPlainText.value(),
+              reqDetailRC,
+              webWorker
+            ).render
 
           case Row.CustomField(f: CustomField.Implication) =>
             renderImpCell(Cell.CustomField(f.id), data.customImps(f))
