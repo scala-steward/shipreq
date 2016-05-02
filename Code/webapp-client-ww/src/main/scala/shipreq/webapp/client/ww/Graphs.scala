@@ -353,6 +353,8 @@ object Graphs {
         fd(reqs.reqs.valuesIterator)(_.live(reqTypes))
           .foldLeft(UnivEq.emptyMultimap[ReqTypeId, List, ReqId])((q, r) => q.add(r.reqTypeId, r.id))
 
+      val impReqResult = DataLogic.requiringImplication(reqTypes, imps, reqsByReqType.apply)
+
       val colourFn =
         DistinctColours("ffffff", reqsByReqType.keyCount, "ffffff")
 
@@ -373,6 +375,20 @@ object Graphs {
           }
         }
 
+      def allFlow(graph: Implications.UniDir): Unit =
+        for ((fromId, toIds) <- graph.iterator) {
+          val fromLive = live(fromId)
+          fd match {
+            case HideDead =>
+              if (fd.filterFn(fromLive))
+                flow(fromId, fromLive, filterIdSet(toIds), Live)
+            case ShowDead =>
+              val (l, d) = toIds.partition(live(_) :: Live)
+              flow(fromId, fromLive, l, Live)
+              flow(fromId, fromLive, d, Dead)
+          }
+        }
+
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       rankdirTB()
@@ -388,19 +404,18 @@ object Graphs {
         declare(reqIds)
       }
 
-      // Flow
-      for ((fromId, toIds) <- imps.forwards.iterator) {
-        val fromLive = live(fromId)
-        fd match {
-          case HideDead =>
-            if (fd.filterFn(fromLive))
-              flow(fromId, fromLive, filterIdSet(toIds), Live)
-          case ShowDead =>
-            val (l, d) = toIds.partition(live(_) :: Live)
-            flow(fromId, fromLive, l, Live)
-            flow(fromId, fromLive, d, Dead)
+      // Implication required
+      if (impReqResult.badIds.nonEmpty)
+        attrGroup("edge[color=\"#dd0000\"]") {
+          sb append "R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label=<<B>?</B>>]R"
+          arrow()
+          intercalate(impReqResult.badIds, sb append ',')(sb append _.value)
+          eol()
+          allFlow(impReqResult.badImpGraph.forwards)
         }
-      }
+
+      // Flow
+      allFlow(impReqResult.goodImpGraph.forwards)
     }
 
 }

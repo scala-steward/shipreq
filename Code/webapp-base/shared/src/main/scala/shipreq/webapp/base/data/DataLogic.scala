@@ -1,7 +1,10 @@
 package shipreq.webapp.base.data
 
-import shipreq.base.util.{MutableArray, Memo, Util}
+import scala.annotation.tailrec
+import shipreq.base.util.{Memo, MutableArray, Util}
+import shipreq.base.util.Digraph.BiDir
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.univeq._
 import DataImplicits._
 
 object DataLogic {
@@ -98,6 +101,54 @@ object DataLogic {
           .toList
       id => srcs.iterator.filter(_._2 contains id).map(_._1).toSet
     }
+
+  case class ImpRequiredResult(goodImpGraph: Implications.BiDir,
+                               badIds      : Set[ReqId],
+                               badImpGraph : Implications.BiDir)
+
+  def requiringImplication(reqTypes: ReqTypes,
+                           imps    : Implications.BiDir,
+                           reqs    : ReqTypeId => TraversableOnce[ReqId]): ImpRequiredResult = {
+
+    val reqTypesRequiringImp: Vector[ReqType] =
+      reqTypes.all.whole.filter(_.imp :: ImplicationRequired)
+
+    @tailrec
+    def go(maybeGood: Set[ReqId],
+           goodImps : Implications.UniDir,
+           bad      : Set[ReqId],
+           badImps  : Implications.UniDir): (Implications.UniDir, Set[ReqId], Implications.UniDir) = {
+
+      val (b, g) = maybeGood.partition(goodImps(_).isEmpty)
+      if (b.isEmpty)
+        (goodImps, bad, badImps)
+      else {
+        val bad2      = bad ++ b
+        var badImps2  = badImps
+        var goodImps2 = Implications.emptyUniDir
+        for ((k, vs) <- goodImps.iterator)
+          if (bad2.contains(k))
+            badImps2 = badImps2.addvs(k, vs)
+          else {
+            val (bvs, gvs) = vs.partition(bad2.contains)
+            badImps2  = badImps2.addvs(k, bvs)
+            goodImps2 = goodImps2.setvs(k, gvs)
+          }
+        go(g, goodImps2, bad2, badImps2)
+      }
+    }
+
+    val r = go(
+      reqTypesRequiringImp.iterator.flatMap(rt => reqs(rt.reqTypeId)).toSet,
+      imps.backwards,
+      UnivEq.emptySet,
+      Implications.emptyUniDir)
+
+    if (r._2.isEmpty)
+      ImpRequiredResult(imps, r._2, Implications.emptyBiDir)
+    else
+      ImpRequiredResult(BiDir(r._1.reverse), r._2, BiDir(r._3.reverse))
+  }
 
   // ===================================================================================================================
   // Misc

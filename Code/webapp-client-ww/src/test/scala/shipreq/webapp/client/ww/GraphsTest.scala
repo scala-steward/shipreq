@@ -10,14 +10,19 @@ import WebappTestUtil._
 
 object GraphsTest extends TestSuite {
 
-  val _normalise = "([\\]{;])".r
+  val _normalise = "([\\]{};])".r
 
   def normaliseDOT(d: DOT): String =
     _normalise.replaceAllIn(d.content, "$1\n")
 
   def assertDOT(actual: DOT, expect: DOT): Unit = {
+    val expect2 = expect.content
+      .trim
+      .replaceAll("\\s*//[^\r\n]+", "")
+      .replaceAll("\n *", "")
+      .replaceAll("(?:GenericReqId|UseCaseId)\\((\\d+)\\)", "$1")
+    val e = normaliseDOT(DOT(expect2))
     val a = normaliseDOT(actual)
-    val e = normaliseDOT(DOT(expect.content.trim.replaceAll("\\s*//[^\r\n]+", "").replaceAll("\n *", "")))
     assertMultiline(a, e)
   }
 
@@ -205,9 +210,9 @@ object GraphsTest extends TestSuite {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     'implicationAll {
+      import SampleImplicationGraph._
+
       'basic {
-        import SampleImplicationGraph.project
-        import SampleImplicationGraph.IdsAsInts._
         val actual = Graphs.implicationAll(HideDead, project)
         val expect = DOT(
           s"""
@@ -250,7 +255,6 @@ object GraphsTest extends TestSuite {
       }
 
       'showDead {
-        import SampleImplicationGraph.IdsAsInts._
         val actual = Graphs.implicationAll(ShowDead, SIG_deadMF4)
         val expect = DOT(
           s"""
@@ -294,7 +298,6 @@ object GraphsTest extends TestSuite {
       }
 
       'hideDead {
-        import SampleImplicationGraph.IdsAsInts._
         val actual = Graphs.implicationAll(HideDead, SIG_deadMF4)
         val expect = DOT(
           s"""
@@ -326,6 +329,80 @@ object GraphsTest extends TestSuite {
             |$fr4->$fr5;
             |$br2->$mf3;
             |$mf2->$fr2;
+            |$fr5->$mf5;
+            |$fr1->$fr2;
+            |$mf1->$fr1;
+            |}
+          """.stripMargin)
+        assertDOT(actual, expect)
+      }
+
+      'impRequired {
+        import UnsafeTypes._, AutoNES._
+        import SampleProject.Values._
+        val GD = CreateGenericReqGD
+
+        // br3
+        // fr7 → fr8
+        //     ↘
+        //       fr9 -> br2
+        // br1 ↗
+        val br3: GenericReqId = 23
+        val fr7: GenericReqId = 37
+        val fr8: GenericReqId = 38
+        val fr9: GenericReqId = 39
+        val p = applyEventsSuccessfully(project,
+          CreateGenericReq(br3, br, GD.emptyValues),
+          CreateGenericReq(fr7, fr, GD.emptyValues),
+          CreateGenericReq(fr8, fr, GD.emptyValues + GD.ImpSrcs(fr7)),
+          CreateGenericReq(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)))
+
+        // TODO also confirm dead fr with no imp doesn't stem from R
+
+        val actual = Graphs.implicationAll(HideDead, p)
+        val expect = DOT(
+          s"""
+            |digraph G{rankdir=TB;
+            |node[style=filled color="#333333"]
+            |edge[color="#333333"]
+            |
+            |node[fillcolor="#B7D058"]
+            |$br3[label="BR-3"]
+            |$br2[label="BR-2"]
+            |$br1[label="BR-1"]
+            |
+            |node[fillcolor="#D5A8C9"]
+            |$fr6[label="FR-6"]
+            |$fr1[label="FR-1"]
+            |$fr5[label="FR-5"]
+            |$fr9[label="FR-9"]
+            |$fr4[label="FR-4"]
+            |$fr2[label="FR-2"]
+            |$fr3[label="FR-3"]
+            |$fr8[label="FR-8"]
+            |$fr7[label="FR-7"]
+            |
+            |node[fillcolor="#93D5BA"]
+            |$mf5[label="MF-5"]
+            |$mf1[label="MF-1"]
+            |$mf2[label="MF-2"]
+            |$mf3[label="MF-3"]
+            |$mf4[label="MF-4"]
+            |
+            |{edge[color="#dd0000"]
+            |R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label=<<B>?</B>>]
+            |R->$fr7,$fr8;
+            |$fr7->$fr8,$fr9;
+            |}
+            |
+            |$mf4->$fr6;
+            |$br1->$br2,$mf2,$fr9;
+            |$mf3->$mf4,$fr4;
+            |$fr2->$fr3;
+            |$fr4->$fr5;
+            |$br2->$mf3;
+            |$mf2->$fr2;
+            |$fr9->$br2;
             |$fr5->$mf5;
             |$fr1->$fr2;
             |$mf1->$fr1;
