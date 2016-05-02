@@ -53,6 +53,7 @@ gulp.task 'ws:vendor', ->
       cfg_bower + 'KaTeX/dist/**/*'
       '!**/*.md'
       cfg_bower + 'zeroclipboard/ZeroClipboard.swf'
+      'vendor/**/*'
     ]
     .pipe gulp.dest cfg_ws_dev
     .pipe gulp.dest cfg_ws_prod
@@ -102,8 +103,11 @@ gulp.task 'ws:images', ->
     .pipe gulp.dest cfg_ws_dev
     .pipe gulp.dest cfg_ws_prod
 
+gulp.task 'ws:js', [], ->
+  gulp.start ['ws:anon', 'ws:project']
+
 gulp.task 'ws', ['ws:clean'], ->
-  gulp.start ['ws:vendor', 'ws:anon', 'ws:project', 'ws:css', 'ws:images']
+  gulp.start ['ws:vendor', 'ws:js', 'ws:css', 'ws:images']
 
 # ======================================================================================================================
 # webapp-client
