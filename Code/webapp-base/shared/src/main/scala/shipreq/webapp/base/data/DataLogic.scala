@@ -108,7 +108,7 @@ object DataLogic {
 
   def requiringImplication(reqTypes: ReqTypes,
                            imps    : Implications.BiDir,
-                           reqs    : ReqTypeId => TraversableOnce[ReqId]): ImpRequiredResult = {
+                           liveReqs: ReqTypeId => TraversableOnce[ReqId]): ImpRequiredResult = {
 
     val reqTypesRequiringImp: Vector[ReqType] =
       reqTypes.all.whole.filter(_.imp :: ImplicationRequired)
@@ -139,7 +139,7 @@ object DataLogic {
     }
 
     val r = go(
-      reqTypesRequiringImp.iterator.flatMap(rt => reqs(rt.reqTypeId)).toSet,
+      reqTypesRequiringImp.iterator.flatMap(rt => liveReqs(rt.reqTypeId)).toSet,
       imps.backwards,
       UnivEq.emptySet,
       Implications.emptyUniDir)

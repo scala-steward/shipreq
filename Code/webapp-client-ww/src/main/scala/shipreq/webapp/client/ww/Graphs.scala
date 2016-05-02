@@ -371,7 +371,9 @@ object Graphs {
         (x2, y)
       }
 
-      val impReqResult = DataLogic.requiringImplication(reqTypes, imps, reqsByReqType.apply)
+      val impReqResult = DataLogic.requiringImplication(reqTypes, imps,
+        // Filter Live *regardless* of FilterDead here ↘
+        id => reqsByReqType(id).iterator.filter(live(_) :: Live))
 
       val colourFn =
         DistinctColours("ffffff", reqTypesWithReqs.size, "ffffff")

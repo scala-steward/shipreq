@@ -351,15 +351,18 @@ object GraphsTest extends TestSuite {
         val fr7: GenericReqId = 37
         val fr8: GenericReqId = 38
         val fr9: GenericReqId = 39
+        val fr10: GenericReqId = 40
         val p = applyEventsSuccessfully(project,
           CreateGenericReq(br3, br, GD.emptyValues),
           CreateGenericReq(fr7, fr, GD.emptyValues),
           CreateGenericReq(fr8, fr, GD.emptyValues + GD.ImpSrcs(fr7)),
-          CreateGenericReq(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)))
+          CreateGenericReq(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)),
+          CreateGenericReq(fr10, fr, GD.emptyValues),
+          deleteReqs(fr10))
 
         // TODO also confirm dead fr with no imp doesn't stem from R
 
-        val actual = Graphs.implicationAll(HideDead, p)
+        val actual = Graphs.implicationAll(ShowDead, p)
         val expect = DOT(
           s"""
             |digraph G{rankdir=TB;
@@ -373,6 +376,7 @@ object GraphsTest extends TestSuite {
             |
             |node[fillcolor="#D5A8C9"]
             |$fr6[label="FR-6"]
+            |$fr10[label="FR-10"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
             |$fr1[label="FR-1"]
             |$fr5[label="FR-5"]
             |$fr9[label="FR-9"]
