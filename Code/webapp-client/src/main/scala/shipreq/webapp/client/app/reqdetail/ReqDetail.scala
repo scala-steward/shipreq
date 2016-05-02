@@ -86,7 +86,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     }
 
     val rows = {
-      val liveFilter = filterDead.filterFnA((_: Field) live project.config)
+      val liveFilter = filterDead.filterFnBy((_: Field) live project.config)
       val fields = project.config.fields.fields.filter(f =>
         f.applicable(req.reqTypeId) :: Applicable && liveFilter(f))
       fields.foldLeft(Row head filterDead)(_ ++ Row.fromField(_))
@@ -139,7 +139,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       }
 
     val useCaseStepFilter: VectorTree.PartialLocation => Boolean =
-      filterDead.filterFnA(Live whenValid _.validity)
+      filterDead.filterFnBy(Live whenValid _.validity)
   }
 
   final class UseCaseData(val uc: UseCase) {

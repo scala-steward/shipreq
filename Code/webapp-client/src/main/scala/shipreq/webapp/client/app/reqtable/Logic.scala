@@ -191,8 +191,8 @@ private[reqtable] object Logic {
     //
     // * The Tags column is not expanded. Only custom tag columns are.
 
-    val filterDeadReq = vs.filterDead.filterFnA[Req](_ live p.config.reqTypes)
-    val filterDeadRCG = vs.filterDead.filterFnA[ReqCodeGroup](_.live)
+    val filterDeadReq = vs.filterDead.filterFnBy[Req](_ live p.config.reqTypes)
+    val filterDeadRCG = vs.filterDead.filterFnBy[ReqCodeGroup](_.live)
     val filterDead    = Filter(filterDeadReq, filterDeadRCG)
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)

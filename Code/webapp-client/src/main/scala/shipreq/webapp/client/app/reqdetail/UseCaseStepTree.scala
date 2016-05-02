@@ -43,7 +43,7 @@ object UseCaseStepTree {
   private val tailStepBase = <.div(*.container, ^.key := "TS")
 
   private val stepFilterM: FilterDead => VectorTree.PartialLocation => Boolean =
-    FilterDead.memo(_.filterFnA(Live whenValid _.validity))
+    FilterDead.memo(_.filterFnBy(Live whenValid _.validity))
 
   private def render(p: Props): ReactElement = {
     import p._

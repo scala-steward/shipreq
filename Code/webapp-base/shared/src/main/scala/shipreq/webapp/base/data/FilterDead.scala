@@ -4,22 +4,20 @@ import scala.collection.TraversableLike
 import shipreq.base.util.IsoBool
 import shipreq.base.util.univeq._
 
-sealed abstract class FilterDead(val filter: Option[Live => Boolean]) extends IsoBool[FilterDead] {
+sealed abstract class FilterDead(val filterFn: Option[Live => Boolean]) extends IsoBool[FilterDead] {
   override final def companion = FilterDead
 
-  // TODO Rename FilterDead methods
-
   final def apply[A, C[x] <: TraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =
-    filter.fold(as)(g => as.filter(g compose f))
+    filterFn.fold(as)(g => as.filter(g compose f))
 
   final def apply[A](as: Iterator[A])(f: => (A => Live)): Iterator[A] =
-    filter.fold(as)(g => as.filter(g compose f))
+    filterFn.fold(as)(g => as.filter(g compose f))
 
-  final val filterFn: Live => Boolean =
-    filter.getOrElse(_ => true)
+  final val filter: Live => Boolean =
+    filterFn.getOrElse(_ => true)
 
-  final def filterFnA[A](f: A => Live): A => Boolean =
-    filter.fold((_: A) => true)(_ compose f)
+  final def filterFnBy[A](f: A => Live): A => Boolean =
+    filterFn.fold((_: A) => true)(_ compose f)
 
   def ldStatAccessor[A]: LDStat[A] => A
 

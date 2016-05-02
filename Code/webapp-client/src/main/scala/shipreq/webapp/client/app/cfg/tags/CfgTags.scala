@@ -235,7 +235,7 @@ private[tags] object MainTable {
 
     def rows(fd: FilterDead, s: State): TagMod = {
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
-      val flatTree  = FlatTag.flatten(s.tagTree)(fd.filterFnA[Tag](_.live), FilterPolicy.OmitAnythingWithBadParent)
+      val flatTree  = FlatTag.flatten(s.tagTree)(fd.filterFnBy[Tag](_.live), FilterPolicy.OmitAnythingWithBadParent)
       val results   = JsArray.apply[ReactNode]()
       @inline def append(r: ReactNode): Unit = results push r
 

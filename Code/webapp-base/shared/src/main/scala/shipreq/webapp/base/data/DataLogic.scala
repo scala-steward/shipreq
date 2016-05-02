@@ -89,7 +89,7 @@ object DataLogic {
   // Implications
 
   def impValueFilter(pc: ProjectConfig, fd: FilterDead): Req => Boolean =
-    fd.filterFnA((_: Req).live(pc.reqTypes))
+    fd.filterFnBy((_: Req).live(pc.reqTypes))
 
   def customFieldImps(p: Project, filter: Req => Boolean): CustomField.Implication => ReqId => Set[Pubid] =
     f => {

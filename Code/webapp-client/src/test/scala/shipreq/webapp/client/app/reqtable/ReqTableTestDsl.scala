@@ -44,7 +44,7 @@ object ReqTableTestDsl {
 
   val mandatoryColumns = FilterDead.memo(fd =>
     Column.mandatory.iterator
-      .filter(fd.filterFnA(_.live))
+      .filter(fd.filterFnBy(_.live))
       .map(Column.NameResolver.builtIn)
       .toSet)
 

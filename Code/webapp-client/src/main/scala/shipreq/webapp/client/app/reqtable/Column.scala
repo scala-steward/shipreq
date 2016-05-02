@@ -86,7 +86,7 @@ object Column {
     NonEmptyVector.force(all(c).whole filter filterDead(fd))
 
   val filterDead: FilterDead => Column => Boolean =
-    FilterDead.memo(_.filterFnA[Column](_.live))
+    FilterDead.memo(_.filterFnBy[Column](_.live))
 
   val EditFieldKeyIntersection = Intersection[Column, EditFieldKey] {
     case Column.ReqType               => Some(EditFieldKey.ReqType        )

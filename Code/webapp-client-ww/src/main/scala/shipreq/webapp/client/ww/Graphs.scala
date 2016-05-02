@@ -393,7 +393,7 @@ object Graphs {
           val fromLive = live(fromId)
           fd match {
             case HideDead =>
-              if (fd.filterFn(fromLive))
+              if (fd.filter(fromLive))
                 flow(fromId, fromLive, filterIdSet(toIds), Live)
             case ShowDead =>
               val (l, d) = toIds.partition(live(_) :: Live)
