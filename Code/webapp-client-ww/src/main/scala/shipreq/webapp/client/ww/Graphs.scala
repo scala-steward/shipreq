@@ -356,6 +356,23 @@ object Graphs {
       val colourFn =
         DistinctColours("ffffff", reqsByReqType.keyCount, "ffffff")
 
+      def nodeData =
+        MutableArray(reqsByReqType.iterator)
+          .sortBy(x => reqTypes.order(x._1))
+          .iterator
+          .zipWithIndex
+
+      def flow(fromId: ReqId, fromLive: Live, toIds: TraversableOnce[ReqId], toLive: Live): Unit =
+        if (toIds.nonEmpty) {
+          sb append fromId.value
+          arrow()
+          intercalate(toIds, sb append ',')(sb append _.value)
+          fromLive & toLive match {
+            case Live => eol()
+            case Dead => deadLink()
+          }
+        }
+
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       rankdirTB()
@@ -363,8 +380,8 @@ object Graphs {
       sb append """edge[color="#333333"]"""
 
       // Declare nodes
-      for (((reqType, reqIds), colourGroup) <- reqsByReqType.iterator.zipWithIndex) {
-        val color = colourFn(colourGroup)
+      for (((reqType, reqIds), col) <- nodeData) {
+        val color = colourFn(col)
         sb append """node[fillcolor="#"""
         sb append color
         sb append """"]"""
@@ -372,16 +389,16 @@ object Graphs {
       }
 
       // Flow
-      for ((fromId, toIds0) <- imps.forwards.iterator) {
+      for ((fromId, toIds) <- imps.forwards.iterator) {
         val fromLive = live(fromId)
-        if (fd.filterFn(fromLive)) {
-          val toIds = filterIdSet(toIds0)
-          if (toIds.nonEmpty) {
-            sb append fromId.value
-            arrow()
-            intercalate(toIds, sb append ',')(sb append _.value)
-            eol()
-          }
+        fd match {
+          case HideDead =>
+            if (fd.filterFn(fromLive))
+              flow(fromId, fromLive, filterIdSet(toIds), Live)
+          case ShowDead =>
+            val (l, d) = toIds.partition(live(_) :: Live)
+            flow(fromId, fromLive, l, Live)
+            flow(fromId, fromLive, d, Dead)
         }
       }
     }

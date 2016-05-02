@@ -24,6 +24,9 @@ object GraphsTest extends TestSuite {
   def deleteReqs(id: ReqId*) =
     DeleteReqs(NonEmptySet force id.toSet, Set.empty, Vector.empty)
 
+  lazy val SIG_deadMF4: Project =
+    applyEventsSuccessfully(SampleImplicationGraph.project, deleteReqs(SampleImplicationGraph.mf4))
+
   override def tests = TestSuite {
 
     'stepFlow {
@@ -118,8 +121,7 @@ object GraphsTest extends TestSuite {
 
       'hideDead {
         import SampleImplicationGraph._
-        val p2 = applyEventsSuccessfully(project, deleteReqs(mf4))
-        val actual = Graphs.implicationFocused(mf3, HideDead, p2)
+        val actual = Graphs.implicationFocused(mf3, HideDead, SIG_deadMF4)
         val expect = DOT(
           """
             |digraph G{rankdir=LR;
@@ -158,8 +160,7 @@ object GraphsTest extends TestSuite {
 
       'showDead {
         import SampleImplicationGraph._
-        val p2 = applyEventsSuccessfully(project, deleteReqs(mf4))
-        val actual = Graphs.implicationFocused(mf3, ShowDead, p2)
+        val actual = Graphs.implicationFocused(mf3, ShowDead, SIG_deadMF4)
         val expect = DOT(
           """
             |digraph G{rankdir=LR;
@@ -215,17 +216,10 @@ object GraphsTest extends TestSuite {
             |edge[color="#333333"]
             |
             |node[fillcolor="#B7D058"]
-            |$mf5[label="MF-5"]
-            |$mf1[label="MF-1"]
-            |$mf2[label="MF-2"]
-            |$mf3[label="MF-3"]
-            |$mf4[label="MF-4"]
-            |
-            |node[fillcolor="#D5A8C9"]
             |$br2[label="BR-2"]
             |$br1[label="BR-1"]
             |
-            |node[fillcolor="#93D5BA"]
+            |node[fillcolor="#D5A8C9"]
             |$fr6[label="FR-6"]
             |$fr1[label="FR-1"]
             |$fr5[label="FR-5"]
@@ -233,9 +227,101 @@ object GraphsTest extends TestSuite {
             |$fr2[label="FR-2"]
             |$fr3[label="FR-3"]
             |
+            |node[fillcolor="#93D5BA"]
+            |$mf5[label="MF-5"]
+            |$mf1[label="MF-1"]
+            |$mf2[label="MF-2"]
+            |$mf3[label="MF-3"]
+            |$mf4[label="MF-4"]
+            |
             |$mf4->$fr6;
             |$br1->$mf2,$br2;
             |$mf3->$mf4,$fr4;
+            |$fr2->$fr3;
+            |$fr4->$fr5;
+            |$br2->$mf3;
+            |$mf2->$fr2;
+            |$fr5->$mf5;
+            |$fr1->$fr2;
+            |$mf1->$fr1;
+            |}
+          """.stripMargin)
+        assertDOT(actual, expect)
+      }
+
+      'showDead {
+        import SampleImplicationGraph.IdsAsInts._
+        val actual = Graphs.implicationAll(ShowDead, SIG_deadMF4)
+        val expect = DOT(
+          s"""
+            |digraph G{rankdir=TB;
+            |node[style=filled color="#333333"]
+            |edge[color="#333333"]
+            |
+            |node[fillcolor="#B7D058"]
+            |$br2[label="BR-2"]
+            |$br1[label="BR-1"]
+            |
+            |node[fillcolor="#D5A8C9"]
+            |$fr6[label="FR-6"]
+            |$fr1[label="FR-1"]
+            |$fr5[label="FR-5"]
+            |$fr4[label="FR-4"]
+            |$fr2[label="FR-2"]
+            |$fr3[label="FR-3"]
+            |
+            |node[fillcolor="#93D5BA"]
+            |$mf5[label="MF-5"]
+            |$mf1[label="MF-1"]
+            |$mf2[label="MF-2"]
+            |$mf3[label="MF-3"]
+            |$mf4[label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
+            |
+            |$mf4->$fr6[color="#bbbbbb" style=dashed]
+            |$br1->$mf2,$br2;
+            |$mf3->$fr4;
+            |$mf3->$mf4[color="#bbbbbb" style=dashed]
+            |$fr2->$fr3;
+            |$fr4->$fr5;
+            |$br2->$mf3;
+            |$mf2->$fr2;
+            |$fr5->$mf5;
+            |$fr1->$fr2;
+            |$mf1->$fr1;
+            |}
+          """.stripMargin)
+        assertDOT(actual, expect)
+      }
+
+      'hideDead {
+        import SampleImplicationGraph.IdsAsInts._
+        val actual = Graphs.implicationAll(HideDead, SIG_deadMF4)
+        val expect = DOT(
+          s"""
+            |digraph G{rankdir=TB;
+            |node[style=filled color="#333333"]
+            |edge[color="#333333"]
+            |
+            |node[fillcolor="#B7D058"]
+            |$br2[label="BR-2"]
+            |$br1[label="BR-1"]
+            |
+            |node[fillcolor="#D5A8C9"]
+            |$fr6[label="FR-6"]
+            |$fr1[label="FR-1"]
+            |$fr5[label="FR-5"]
+            |$fr4[label="FR-4"]
+            |$fr2[label="FR-2"]
+            |$fr3[label="FR-3"]
+            |
+            |node[fillcolor="#93D5BA"]
+            |$mf5[label="MF-5"]
+            |$mf1[label="MF-1"]
+            |$mf2[label="MF-2"]
+            |$mf3[label="MF-3"]
+            |
+            |$br1->$mf2,$br2;
+            |$mf3->$fr4;
             |$fr2->$fr3;
             |$fr4->$fr5;
             |$br2->$mf3;
