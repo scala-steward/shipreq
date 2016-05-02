@@ -349,20 +349,37 @@ object Graphs {
       val impHelpers = new ImpHelpers(fd, reqs, reqTypes)
       import impHelpers._
 
-      val reqsByReqType =
-        fd(reqs.reqs.valuesIterator)(_.live(reqTypes))
-          .foldLeft(UnivEq.emptyMultimap[ReqTypeId, List, ReqId])((q, r) => q.add(r.reqTypeId, r.id))
+      val (reqTypesWithReqs: Map[ReqTypeId, Int], reqsByReqType) = {
+        var x = UnivEq.emptySet[ReqTypeId]
+        var y = UnivEq.emptyMultimap[ReqTypeId, List, ReqId]
+        for (req <- reqs.reqIterator) {
+          val rt = req.reqTypeId
+
+          // Add to reqTypesWithReqs regardless of live status so that colours don't change when user toggles the
+          // FilterDead setting. Colours jumping around it's a needless cognitive burden when you're trying to analyse
+          // the graph.
+          if (!x.contains(rt))
+            x += rt
+
+          if (fd :: ShowDead || req.live(reqTypes) :: Live)
+            y = y.add(rt, req.id)
+        }
+
+        // Deterministic (and stable until config changes) order of colours
+        val x2 = MutableArray(x).sortBy(reqTypes.order).iterator.zipWithIndex.toMap
+
+        (x2, y)
+      }
 
       val impReqResult = DataLogic.requiringImplication(reqTypes, imps, reqsByReqType.apply)
 
       val colourFn =
-        DistinctColours("ffffff", reqsByReqType.keyCount, "ffffff")
+        DistinctColours("ffffff", reqTypesWithReqs.size, "ffffff")
 
       def nodeData =
         MutableArray(reqsByReqType.iterator)
           .sortBy(x => reqTypes.order(x._1))
           .iterator
-          .zipWithIndex
 
       def flow(fromId: ReqId, fromLive: Live, toIds: TraversableOnce[ReqId], toLive: Live): Unit =
         if (toIds.nonEmpty) {
@@ -396,8 +413,8 @@ object Graphs {
       sb append """edge[color="#333333"]"""
 
       // Declare nodes
-      for (((reqType, reqIds), col) <- nodeData) {
-        val color = colourFn(col)
+      for ((reqType, reqIds) <- nodeData) {
+        val color = colourFn(reqTypesWithReqs(reqType))
         sb append """node[fillcolor="#"""
         sb append color
         sb append """"]"""
