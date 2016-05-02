@@ -2,6 +2,7 @@ package shipreq.webapp.client.ww
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util._
@@ -74,6 +75,9 @@ object Graphs {
 
   def eol()(implicit sb: StringBuilder): Unit =
     sb append ';'
+
+  def rankdirLR()(implicit sb: StringBuilder): Unit = sb append "rankdir=LR;"
+  def rankdirTB()(implicit sb: StringBuilder): Unit = sb append "rankdir=TB;"
 
   private type Content = () => Unit
 
@@ -185,7 +189,8 @@ object Graphs {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      sb append "rankdir=LR;ranksep=0.28;"
+      rankdirLR()
+      sb append "ranksep=0.28;"
 
       startNode()
       endNode()
@@ -222,40 +227,47 @@ object Graphs {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  def implicationFocused(focus: ReqId, fd: FilterDead, p: Project): DOT =
-    implicationFocused(focus, fd, p.implications, p.reqs, p.config.reqTypes)
-
-  def implicationFocused(focus: ReqId, fd: FilterDead,
-                         imps: Implications.BiDir, reqs: Requirements, reqTypes: ReqTypes): DOT = {
-    val Focus = "F"
-
+  private final class ImpHelpers(fd: FilterDead, reqs: Requirements, reqTypes: ReqTypes)(implicit sb: StringBuilder) {
     val live: ReqId => Live =
       Memo(reqs.req(_).live(reqTypes))
 
-    val focusLive = live(focus)
-
-    val filter: Set[ReqId] => Set[ReqId] =
-      fd match {
-        case ShowDead => identity
-        case HideDead => _.filter(live(_) :: Live)
-      }
+    val filterIdSet: Set[ReqId] => Set[ReqId] =
+      fd(_)(live)
 
     val pubid: ReqId => String =
       PlainText.pubidByReqId(_, reqs, reqTypes)
 
+    def declare(ids: TraversableOnce[ReqId]): Unit =
+      for (id <- ids) {
+        sb append id.value
+        labelAttr(pubid(id))
+        if (live(id) :: Dead)
+          sb append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
+      }
+
+    def deadLink()(implicit sb: StringBuilder): Unit =
+      sb append """[color="#bbbbbb" style=dashed]"""
+  }
+
+  private def implicationNodeStyle()(implicit sb: StringBuilder): Unit =
+    sb append """node[style=filled color="#333333"]"""
+
+  def implicationFocused(focus: ReqId, fd: FilterDead, p: Project): DOT =
+    implicationFocused(focus, fd, p.implications, p.reqs, p.config.reqTypes)
+
+  def implicationFocused(focus: ReqId, fd: FilterDead,
+                         imps: Implications.BiDir, reqs: Requirements, reqTypes: ReqTypes): DOT =
     digraph { implicit sb =>
 
-      def declare(ids: TraversableOnce[ReqId]): Unit =
-        for (id <- ids) {
-          sb append id.value
-          labelAttr(pubid(id))
-          if (live(id) :: Dead)
-            sb append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
-        }
+      val impHelpers = new ImpHelpers(fd, reqs, reqTypes)
+      import impHelpers._
+
+      val Focus = "F"
+      val focusLive = live(focus)
 
       def traverse(dir: Direction) = {
         val graph    = imps(dir)
-        val direct   = filter(graph(focus))
+        val direct   = filterIdSet(graph(focus))
         val indirect = DeclAndFlow(List.newBuilder[ReqId], List.newBuilder[Content])
 
         def flow(from: String, fromLive: Live, to: ReqId, unconstrain: Boolean): Content =
@@ -263,7 +275,7 @@ object Graphs {
             flowS(from, dir, to.value.toString)
 
             if (fromLive :: Dead || live(to) :: Dead)
-              sb append """[color="#bbbbbb" style=dashed]"""
+              deadLink()
 
             if (unconstrain)
               sb append "[constraint=0]"
@@ -282,11 +294,11 @@ object Graphs {
               if (seen.contains(fromId))
                 go(queue2, queueNext, seen)
               else {
-                val toIds = filter(graph(fromId))
 
                 if (!direct.contains(fromId))
                   indirect.decl += fromId
 
+                val toIds = filterIdSet(graph(fromId))
                 for (toId <- toIds)
                   indirect.flow += flow(fromId.value.toString, live(fromId), toId, direct contains toId)
 
@@ -306,7 +318,8 @@ object Graphs {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      sb append """rankdir=LR;node[style=filled color="#333333"]"""
+      rankdirLR()
+      implicationNodeStyle()
 
       // Focus
       sb append Focus
@@ -324,5 +337,53 @@ object Graphs {
       sb append """edge[color="#31537F"]"""; forwards .direct  .flow.foreach(_())
       sb append """edge[color="#7692B7"]"""; forwards .indirect.flow.foreach(_())
     }
-  }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  def implicationAll(fd: FilterDead, p: Project): DOT =
+    implicationAll(fd, p.implications, p.reqs, p.config.reqTypes)
+
+  def implicationAll(fd: FilterDead,
+                     imps: Implications.BiDir, reqs: Requirements, reqTypes: ReqTypes): DOT =
+    digraph { implicit sb =>
+      val impHelpers = new ImpHelpers(fd, reqs, reqTypes)
+      import impHelpers._
+
+      val reqsByReqType =
+        fd(reqs.reqs.valuesIterator)(_.live(reqTypes))
+          .foldLeft(UnivEq.emptyMultimap[ReqTypeId, List, ReqId])((q, r) => q.add(r.reqTypeId, r.id))
+
+      val colourFn =
+        DistinctColours("ffffff", reqsByReqType.keyCount, "ffffff")
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      rankdirTB()
+      implicationNodeStyle()
+      sb append """edge[color="#333333"]"""
+
+      // Declare nodes
+      for (((reqType, reqIds), colourGroup) <- reqsByReqType.iterator.zipWithIndex) {
+        val color = colourFn(colourGroup)
+        sb append """node[fillcolor="#"""
+        sb append color
+        sb append """"]"""
+        declare(reqIds)
+      }
+
+      // Flow
+      for ((fromId, toIds0) <- imps.forwards.iterator) {
+        val fromLive = live(fromId)
+        if (fd.filterFn(fromLive)) {
+          val toIds = filterIdSet(toIds0)
+          if (toIds.nonEmpty) {
+            sb append fromId.value
+            arrow()
+            intercalate(toIds, sb append ',')(sb append _.value)
+            eol()
+          }
+        }
+      }
+    }
+
 }

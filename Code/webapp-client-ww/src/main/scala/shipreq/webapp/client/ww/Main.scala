@@ -27,6 +27,7 @@ object Main {
     override def apply[R](cmd: Cmd[R]): R =
       cmd match {
         case GraphUseCaseStepFlow(a, b)          => Graphs.useCaseStepFlow(a, b).toSVG
+        case GraphAllImplications(a, b, c, d)    => Graphs.implicationAll(a, b, c, d).toSVG
         case GraphReqImplications(a, b, c, d, e) => Graphs.implicationFocused(a, b, c, d, e).toSVG
       }
   }

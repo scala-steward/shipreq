@@ -366,7 +366,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
 
           case Row.ImplicationGraph =>
             ImplicationGraph.Props(
-              req.id, data.filterDead,
+              Some(req.id), data.filterDead,
               project.implications, project.reqs, project.config.reqTypes,
               data.pxPlainText.value(),
               reqDetailRC,

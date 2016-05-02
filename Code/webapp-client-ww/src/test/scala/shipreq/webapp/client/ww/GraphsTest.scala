@@ -70,6 +70,8 @@ object GraphsTest extends TestSuite {
       assertDOT(actual, expect)
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     'implicationFocused {
       'basic {
         import SampleImplicationGraph._
@@ -197,7 +199,55 @@ object GraphsTest extends TestSuite {
           """.stripMargin)
         assertDOT(actual, expect)
       }
-
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    'implicationAll {
+      'basic {
+        import SampleImplicationGraph.project
+        import SampleImplicationGraph.IdsAsInts._
+        val actual = Graphs.implicationAll(HideDead, project)
+        val expect = DOT(
+          s"""
+            |digraph G{rankdir=TB;
+            |node[style=filled color="#333333"]
+            |edge[color="#333333"]
+            |
+            |node[fillcolor="#B7D058"]
+            |$mf5[label="MF-5"]
+            |$mf1[label="MF-1"]
+            |$mf2[label="MF-2"]
+            |$mf3[label="MF-3"]
+            |$mf4[label="MF-4"]
+            |
+            |node[fillcolor="#D5A8C9"]
+            |$br2[label="BR-2"]
+            |$br1[label="BR-1"]
+            |
+            |node[fillcolor="#93D5BA"]
+            |$fr6[label="FR-6"]
+            |$fr1[label="FR-1"]
+            |$fr5[label="FR-5"]
+            |$fr4[label="FR-4"]
+            |$fr2[label="FR-2"]
+            |$fr3[label="FR-3"]
+            |
+            |$mf4->$fr6;
+            |$br1->$mf2,$br2;
+            |$mf3->$mf4,$fr4;
+            |$fr2->$fr3;
+            |$fr4->$fr5;
+            |$br2->$mf3;
+            |$mf2->$fr2;
+            |$fr5->$mf5;
+            |$fr1->$fr2;
+            |$mf1->$fr1;
+            |}
+          """.stripMargin)
+        assertDOT(actual, expect)
+      }
+    }
+
   }
 }

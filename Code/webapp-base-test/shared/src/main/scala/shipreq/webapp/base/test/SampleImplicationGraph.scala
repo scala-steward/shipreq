@@ -30,6 +30,24 @@ object SampleImplicationGraph {
   val fr5: GenericReqId = 35
   val fr6: GenericReqId = 36
 
+  object IdsAsInts {
+    val mf1: Int = SampleImplicationGraph.mf1.value
+    val mf2: Int = SampleImplicationGraph.mf2.value
+    val mf3: Int = SampleImplicationGraph.mf3.value
+    val mf4: Int = SampleImplicationGraph.mf4.value
+    val mf5: Int = SampleImplicationGraph.mf5.value
+
+    val br1: Int = SampleImplicationGraph.br1.value
+    val br2: Int = SampleImplicationGraph.br2.value
+
+    val fr1: Int = SampleImplicationGraph.fr1.value
+    val fr2: Int = SampleImplicationGraph.fr2.value
+    val fr3: Int = SampleImplicationGraph.fr3.value
+    val fr4: Int = SampleImplicationGraph.fr4.value
+    val fr5: Int = SampleImplicationGraph.fr5.value
+    val fr6: Int = SampleImplicationGraph.fr6.value
+  }
+
   lazy val projectDsl = {
     def t(i: GenericReqId, rt: CustomReqTypeId, tgts: ReqId*) = GReq(id = i, reqType = rt, impTgts = tgts.toSet)
     import SampleProject.Values._

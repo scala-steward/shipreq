@@ -123,6 +123,12 @@ object ScalaExt extends Platform.ScalaExt {
     def get(index: Int): Option[A] =
       getFlatMap(index)(Some(_))
 
+    def getOrElse(index: Int, default: => A): A =
+      if (isIndexValid(index))
+        as(index)
+      else
+        default
+
     def getFlatMap[B](index: Int)(f: A => Option[B]): Option[B] =
       if (isIndexValid(index))
         f(as(index))

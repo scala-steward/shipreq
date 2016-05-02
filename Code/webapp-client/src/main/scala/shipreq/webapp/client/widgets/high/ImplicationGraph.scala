@@ -15,7 +15,7 @@ import shipreq.webapp.client.ww.api.Cmd
 
 object ImplicationGraph {
 
-  final case class Props(focus      : ReqId,
+  final case class Props(focus      : Option[ReqId],
                          filterDead : FilterDead,
                          imps       : Implications.BiDir,
                          reqs       : Requirements,
@@ -35,7 +35,11 @@ object ImplicationGraph {
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {
     override def cmd(p: Props) =
-      Cmd.GraphReqImplications(p.focus, p.filterDead, p.imps, p.reqs, p.reqTypes)
+      p.focus match {
+        case Some(f) => Cmd.GraphReqImplications(f, p.filterDead, p.imps, p.reqs, p.reqTypes)
+        case None    => Cmd.GraphAllImplications(p.filterDead, p.imps, p.reqs, p.reqTypes)
+      }
+
 
     override def enrich(p: Props): Callback =
       Callback {
@@ -47,7 +51,7 @@ object ImplicationGraph {
             ep  <- ExternalPubid.parse(pubid)
             req <- ep.lookup(p.reqTypes, p.reqs)
           }
-            if (req.id ==* p.focus) {
+            if (p.focus.exists(_ ==* req.id)) {
               // Enrich focus node
               node.style.cursor = "default"
 
