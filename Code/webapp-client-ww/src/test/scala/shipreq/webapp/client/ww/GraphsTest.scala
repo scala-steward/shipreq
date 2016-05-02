@@ -390,7 +390,7 @@ object GraphsTest extends TestSuite {
             |$mf4[label="MF-4"]
             |
             |{edge[color="#dd0000"]
-            |R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label=<<B>?</B>>]
+            |R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label="?"]
             |R->$fr7,$fr8;
             |$fr7->$fr8,$fr9;
             |}

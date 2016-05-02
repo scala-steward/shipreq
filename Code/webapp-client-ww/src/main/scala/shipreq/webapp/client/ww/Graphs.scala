@@ -407,7 +407,7 @@ object Graphs {
       // Implication required
       if (impReqResult.badIds.nonEmpty)
         attrGroup("edge[color=\"#dd0000\"]") {
-          sb append "R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label=<<B>?</B>>]R"
+          sb append "R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label=\"?\"]R"
           arrow()
           intercalate(impReqResult.badIds, sb append ',')(sb append _.value)
           eol()
