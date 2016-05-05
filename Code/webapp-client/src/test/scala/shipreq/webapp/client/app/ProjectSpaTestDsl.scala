@@ -27,7 +27,7 @@ object ProjectSpaTestDsl {
 
   case class Ref(cd: TestClientData, svr: MockServer, tester: ComponentTester[Props, State, _, TopNode]) {
     def observe(): Obs = {
-      def inner = reactDomZipper(tester.component)(">*", 2 of 2).asHtml
+      def inner = tester.component.htmlDomZipper.apply(">*", 2 of 2)
       new Obs(
         cd.project(),
         Try(new ReqTableObs(svr, inner)),
@@ -59,42 +59,42 @@ object ProjectSpaTestDsl {
   val invariantsRT = RT.invariants.lift
   val invariantsRD = RD.invariants.lift
 
-  val invariants: *.Invariant =
+  val invariants: *.Invariants =
     *.chooseInvariant("Page invariants")(_.state.page match {
       case Page.ReqTable     => invariantsRT
       case Page.ReqDetail(_) => invariantsRD
       case _                 => *.emptyInvariant
     })
 
-  def setPage(p: Page): *.Action = p match {
+  def setPage(p: Page): *.Actions = p match {
     case Page.ReqDetail(_) => sys error "Use setPageToReqDetail instead."
     case _                 => _setPage(p)
   }
 
-  private def _setPage(p: Page): *.Action =
+  private def _setPage(p: Page): *.Actions =
     *.action(s"Set page to $p")(_.ref.tester.modProps(_.copy(page = p)))
       .updateState(_.copy(page = p))
 
-  def setPageToReqDetail(ep: ExternalPubid, mode: RD.Mode): *.Action =
+  def setPageToReqDetail(ep: ExternalPubid, mode: RD.Mode): *.Actions =
     _setPage(Page.ReqDetail(ep)).updateState(_.copy(detailState = RD.State(ep, mode)))
 
-  def applyEvents(e: Event*): *.Action =
+  def applyEvents(e: Event*): *.Actions =
     applyEvents(e.mkString("Apply events: ", ", ", "."), e: _*)
 
-  def applyEvents(name: => String, e: Event*): *.Action =
+  def applyEvents(name: => String, e: Event*): *.Actions =
     *.action(name)(_.ref.cd.applyTestEvents(e: _*))
       .updateStateBy(i => i.state.copy(project = i.obs.project))
 
   def liftReqTableTests (p: RT.*.Plan): *.Plan = p.lift
   def liftReqDetailTests(p: RD.*.Plan): *.Plan = p.lift
 
-  def testReqTable(action: RT.*.Action): *.Action =
+  def testReqTable(action: RT.*.Actions): *.Actions =
     liftReqTableTests(Plan.action(action)).asAction("Test ReqTable")
 
-  def testReqDetail(action: RD.*.Action): *.Action =
+  def testReqDetail(action: RD.*.Actions): *.Actions =
     liftReqDetailTests(Plan.action(action)).asAction("Test ReqDetail")
 
-  def runTest(action : *.Action,
+  def runTest(action : *.Actions,
               project: Project  = SampleProject5.project,
               page   : Page     = Page.ReqTable,
               rd     : RD.State = RD.unspecifiedState)
@@ -109,7 +109,7 @@ object ProjectSpaTestDsl {
       val tt  = Plan(action, invariants).test(Observer(_.observe()))
       val r   = tt.run(init, Ref(cd, svr, tester))
       if (r.failed)
-        println(s"${"="*120}\n${scrubReactHtml(tester.component.getDOMNode().outerHTML)}\n")
+        println(s"${"="*120}\n${htmlScrub run tester.component.getDOMNode().outerHTML}\n")
       r.assert()
     }
   }

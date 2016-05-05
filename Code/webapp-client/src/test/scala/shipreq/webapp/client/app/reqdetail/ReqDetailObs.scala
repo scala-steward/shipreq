@@ -7,7 +7,7 @@ import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.{Dead, Live, ShowDead, FilterDead}
 import shipreq.webapp.client.widgets.high.DeletionFormObs
-import shipreq.webapp.client.test._
+import shipreq.webapp.client.test.TestState._
 import ReqDetailTestDsl.Mode
 import ReqDetailObs.NAE
 
@@ -90,9 +90,9 @@ final class ReqDetailObs($: HtmlDomZipper) {
       }
 
       val label: Option[String] =
-        $.collect01(s"*[data-step-label]").asHtml.mapDoms(_.title)
+        $.collect01("*[data-step-label]").asHtml.mapDoms(_.title)
 
-      lazy val textContainer = $(s"*[data-step-text]").asHtml
+      lazy val textContainer = $("*[data-step-text]").asHtml
 
       lazy val text = textContainer.innerText
 

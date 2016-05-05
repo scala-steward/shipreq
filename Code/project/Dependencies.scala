@@ -42,11 +42,14 @@ object Dependencies {
   }
 
   object TestState {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.testate", "2.0.0-SNAPSHOT")
+    val Ver = "2.0.0"
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.test-state", Ver)
+    private val js = MultiModule.js("com.github.japgolly.test-state", Ver)
     val core            = mm("core")
-    val scalaz          = mm("scalaz") ++ core ++ Scalaz.core
-    val nyaya           = mm("nyaya") ++ scalaz ++ Nyaya.gen ++ Nyaya.test
-    val domZipperSizzle = mm("dom-zipper-sizzle")
+    val scalaz          = mm("ext-scalaz") ++ core ++ Scalaz.core
+    val nyaya           = mm("ext-nyaya") ++ scalaz ++ Nyaya.gen ++ Nyaya.test
+    val scalajsReact    = js("ext-scalajs-react")
+    val domZipperSizzle = js("dom-zipper-sizzle")
   }
 
   object UnivEq {

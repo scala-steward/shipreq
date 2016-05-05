@@ -16,6 +16,7 @@ import shipreq.webapp.client.lib.DataReusability._
 import shipreq.webapp.client.test.TestUtil._
 import shipreq.webapp.client.test._
 import MainTable.State
+import TestState.htmlScrub
 
 object CfgFieldsTest extends TestSuite {
   PrepareEnv()
@@ -83,6 +84,6 @@ object CfgFieldsTest extends TestSuite {
     cp.respondToLast(remote)(
       verifyEvents(clientData.project)(DeleteCustomField(666.CFText, Delete)))
 
-    assertEq(scrubReactHtml(html), scrubReactHtml(initialView))
+    assertEq(htmlScrub run html, htmlScrub run initialView)
   }
 }

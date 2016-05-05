@@ -18,7 +18,7 @@ import shipreq.webapp.client.feature._
 import shipreq.webapp.client.test._
 import shipreq.webapp.client.widgets.high.ProjectWidgets
 import utest._
-import TestState.{scalazEqualFromTestate => _, _}
+import TestState.{scalazEqualFromTestState => _, _}
 import SampleProject.Values._
 
 object ReqTableTest extends TestSuite {
@@ -90,7 +90,7 @@ object ReqTableTest extends TestSuite {
       ReqTable.State.init(cd, HideDead, None))
 
     ReactTestUtils.withRenderedIntoDocument(outer(initialState)) { c =>
-      def observe() = new ReqTableObs(cp, reactDomZipper(c).asHtml)
+      def observe() = new ReqTableObs(cp, c.htmlDomZipper)
       val ref       = Ref(c zoomL State.reqTable, cp)
       val test      = plan.addInvariants(invariants).test(Observer watch observe())
       val result    = test.run(ref)

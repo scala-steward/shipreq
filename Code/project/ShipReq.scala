@@ -278,7 +278,7 @@ object ShipReq {
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
         μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
         testScope(
-          TestState.nyaya ++ TestState.domZipperSizzle ++
+          TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
           React.test ++ μTest ++ Nyaya.test))
       .configure(
         Common.jsSettings(NeedDom),

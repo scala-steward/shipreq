@@ -19,14 +19,14 @@ object ProjectSpaTest extends TestSuite {
 
   PrepareEnv()
 
-  def `ReqTable columns after local config change`: *.Action = (
+  def `ReqTable columns after local config change`: *.Actions = (
     testReqTable(RT.showHideColumn("Priority") >> RT.sortBy("Priority"))
       >> setPage(Page.CfgFields)
       >> applyEvents("Delete Priority field", DeleteCustomField(priField, Delete))
       >> setPage(Page.ReqTable)
   )
 
-  def `ReqTable filterDead after change on detail page`: *.Action =
+  def `ReqTable filterDead after change on detail page`: *.Actions =
     ( setPageToReqDetail("FR-1", RD.Mode.Details)
       >> testReqDetail(RD.filterDeadToggle)
       >> setPage(Page.ReqTable)

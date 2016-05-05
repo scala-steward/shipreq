@@ -1,7 +1,7 @@
 package shipreq.webapp.client.widgets.high
 
 import org.scalajs.dom.html
-import shipreq.webapp.client.test._
+import shipreq.webapp.client.test.TestState._
 
 object DeletionFormObs {
 

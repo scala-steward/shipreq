@@ -12,7 +12,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.test._
-import testate.domzipper.DomZipper.EditableSel
+import teststate.domzipper.DomZipper.EditableSel
 import TestState._
 
 object ReqTableTestDsl {
@@ -21,7 +21,7 @@ object ReqTableTestDsl {
 
   val * = Dsl[Ref, ReqTableObs, Project]
 
-  def apply(action: *.Action = *.emptyAction): *.Plan =
+  def apply(action: *.Actions = *.emptyAction): *.Plan =
     Plan(action, invariants)
 
 //  // TODO Move following into Nyaya
@@ -234,19 +234,19 @@ object ReqTableTestDsl {
 
   implicit def autoGetDomFromZipper(d: DomZipper): ReactOrDomNode = d.dom.domAsHtml
 
-  def applyViewSettings(vs: ViewSettings): *.Action =
+  def applyViewSettings(vs: ViewSettings): *.Actions =
     applyViewSettings("ApplyViewSettings: " + vs, _ => vs)
 
-  def applyViewSettings(name: => String, f: ReqTable.State => ViewSettings): *.Action =
+  def applyViewSettings(name: => String, f: ReqTable.State => ViewSettings): *.Actions =
     *.action(name)(_.ref.$.modState(s => s.copy(viewSettings = f(s))))
 
-  def setProject(p: Project): *.Action =
+  def setProject(p: Project): *.Actions =
     *.action("Set project.")(_.ref.$.modState(_.updateProject(p))).updateState(_ => p)
 
-  def showAllColumns: *.Action =
+  def showAllColumns: *.Actions =
     showAllColumns(ShowDead)
 
-  def showAllColumns(fd: FilterDead): *.Action =
+  def showAllColumns(fd: FilterDead): *.Actions =
     applyViewSettings("Show all columns.", s => {
       val vs = s.viewSettings
       val cs = selectVisibleColumns(_ => true, s.project.config, fd)
@@ -260,11 +260,11 @@ object ReqTableTestDsl {
     ViewSettings(cs, SortCriteria.byPubidOnly, None, fd)
   })
 
-  def showHideColumn(columnName: String): *.Action =
+  def showHideColumn(columnName: String): *.Actions =
     *.action("Show/hide " + columnName)(
       Simulation.change run _.obs.viewSettings.columns.column(columnName).checkbox)
 
-  def sortBy(columnName: String): *.Action =
+  def sortBy(columnName: String): *.Actions =
     *.action("Sort by " + columnName)(
       Simulation.click run _.obs.table.column(columnName).headerCell)
 

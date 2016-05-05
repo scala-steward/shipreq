@@ -60,10 +60,10 @@ object ReqDetailTestDsl {
   val editorCount =
     *.focus("Editor count").value(_.obs.editables.length)
 
-  val invariantsWhenBad: *.Invariant =
+  val invariantsWhenBad: *.Invariants =
     *.emptyInvariant
 
-  val invariantsGR: *.Invariant = {
+  val invariantsGR: *.Invariants = {
     val pubid = *.focus("Pubid").obsAndState(_.generic.pubid, _.pubidStr).assert.equal
 
     val delReasonField = *.focus("DeletedReasons visible")
@@ -82,13 +82,13 @@ object ReqDetailTestDsl {
     pubid & delReasonField & filterDeadLocked & whenDead
   }
 
-  val invariantsUC: *.Invariant = {
+  val invariantsUC: *.Invariants = {
     val stepsAreUnique = allSteps.assert.distinct
 
     invariantsGR & stepsAreUnique
   }
 
-  val invariants: *.Invariant =
+  val invariants: *.Invariants =
     *.focus("Mode").obsAndState(_.mode, _.mode).assert.equal &
     *.chooseInvariant("Mode invariants")(i => i.state.mode match {
       case Mode.Error   => invariantsWhenBad
@@ -106,34 +106,34 @@ object ReqDetailTestDsl {
     Simulate click b
   }
 
-  def addTailStepAC: *.Action =
+  def addTailStepAC: *.Actions =
     *.action("Add AC tail step")(i => clickEnabled(i.obs.uc.tailStepRowAC.add))
 
-  def addTailStepEC: *.Action =
+  def addTailStepEC: *.Actions =
     *.action("Add EC tail step")(i => clickEnabled(i.obs.uc.tailStepRowEC.add))
 
-  def addStep(label: String): *.Action =
+  def addStep(label: String): *.Actions =
     *.action("Add " + label)(i => clickEnabled(i.obs.uc.row(label).add))
 
-  def delStep(label: String): *.Action =
+  def delStep(label: String): *.Actions =
     *.action("Delete " + label)(i => clickEnabled(i.obs.uc.row(label).del))
 
-  def restoreStep(label: String): *.Action =
+  def restoreStep(label: String): *.Actions =
     *.action("Restore " + label)(i => clickEnabled(i.obs.uc.row(label).rest))
 
-  def shiftStepLeft(label: String): *.Action =
+  def shiftStepLeft(label: String): *.Actions =
     *.action("ShiftLeft " + label)(i => clickEnabled(i.obs.uc.row(label).left))
 
-  def shiftStepRight(label: String): *.Action =
+  def shiftStepRight(label: String): *.Actions =
     *.action("ShiftRight " + label)(i => clickEnabled(i.obs.uc.row(label).right))
 
   def stepText(label: String) =
     *.focus(label + " text").value(_.obs.uc.row(label).text)
 
-  def doubleClickStepText(label: String): *.Action =
+  def doubleClickStepText(label: String): *.Actions =
     *.action(s"Double-click $label text")(Simulate doubleClick _.obs.uc.row(label).textContainer.dom)
 
-  def editStepText(label: String, newValue: String): *.Action =
+  def editStepText(label: String, newValue: String): *.Actions =
     (doubleClickStepText(label)
       +> editorCount.assert.increment
       >> setStepTextEditValue(label, newValue)
@@ -141,11 +141,11 @@ object ReqDetailTestDsl {
       +> editorCount.assert.decrement
     ).group(s"Edit $label text to ${quoteStringForDisplay(newValue)}")
 
-  def setStepTextEditValue(label: String, newValue: String): *.Action =
+  def setStepTextEditValue(label: String, newValue: String): *.Actions =
     *.action(s"Set $label text to ${quoteStringForDisplay(newValue)}")(
       ChangeEventData(newValue) simulate _.obs.uc.row(label).textEditor)
 
-  def commitStepTextEdit(label: String): *.Action =
+  def commitStepTextEdit(label: String): *.Actions =
     *.action("Commit $label text edit")(CtrlEnter simulateKeyDown _.obs.uc.row(label).textEditor)
 
   val filterDeadToggle =

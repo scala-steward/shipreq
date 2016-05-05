@@ -8,6 +8,7 @@ import shipreq.webapp.client.app.Style
 import shipreq.webapp.client.data._
 import shipreq.webapp.client.test._
 import shipreq.webapp.client.widgets.Checkbox
+import TestState._
 
 object ReqTableObs {
   case class CellLoc(row: Int, col: Int)

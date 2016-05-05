@@ -1,10 +1,6 @@
 package shipreq.webapp.client
 
-import testate.domzipper.{DomZipper => DZ}
-import testate.typeclass.Display
-
-package object test
-  extends testate.domzipper.sizzle.Exports {
+package object test {
 
   object PrepareEnv {
     def apply(): Unit = ()
@@ -17,21 +13,6 @@ package object test
     console.error = console.info
   }
 
-  // TODO Hmmmm
-  implicit def displayDomZipper[D <: DZ.Base, N <: DZ.NextBase, Out[_]]: Display[DZ[D, N, Out]] =
-    Display(_.describeLoc)
-
-  import japgolly.scalajs.react._
-  import japgolly.scalajs.react.test._
-
-  // TODO Move into DomZipper (?)
-  val _htmlCommentRegex = "<!--.*?-->".r
-
-  // TODO Move into scalajs-react (?)
-  val scrubReactHtml: String => String =
-    s => ReactTestUtils removeReactDataAttr _htmlCommentRegex.replaceAllIn(s, "")
-
-  def reactDomZipper[D <: TopNode](c: CompScope.Mounted[D]): DomZipperAt[D] =
-    DomZipper("React component", c.getDOMNode()) // TODO Can't we use .displayName?
-      .scrubHtml(scrubReactHtml)
+  type Sizzle = teststate.domzipper.sizzle.Sizzle.type
+  val Sizzle = teststate.domzipper.sizzle.Sizzle
 }

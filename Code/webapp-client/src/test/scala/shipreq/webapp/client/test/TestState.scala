@@ -5,10 +5,12 @@ import japgolly.scalajs.react.test.KeyboardEventData
 import shipreq.base.util.DebugImplicits
 
 object TestState
-  extends testate.Exports
-     with testate.TestateScalaz
-     with testate.TestateNyaya
-     with DebugImplicits {
+ extends teststate.Exports
+    with teststate.domzipper.sizzle.Exports
+    with teststate.ExtNyaya
+    with teststate.ExtScalaJsReact
+    with teststate.ExtScalaz
+    with DebugImplicits {
 
   implicit val displayTestReq: Display[TestClientProtocol.Req] =
     Display(i => s"${i.r.fn}: ${i.input}")
