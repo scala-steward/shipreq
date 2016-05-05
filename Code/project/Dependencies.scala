@@ -80,7 +80,7 @@ object Dependencies {
   }
 
   object SLF4J {
-    private val mm = MultiModule.java("org.slf4j", "1.7.13")
+    private val mm = MultiModule.java("org.slf4j", "1.7.21")
     val api = mm("slf4j-api")
     val jcl = mm("jcl-over-slf4j")
   }
@@ -133,11 +133,11 @@ object Dependencies {
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.4")
   val jodaTime    = jvmOnly("joda-time"                   % "joda-time"             % "2.3") ++
                     jvmOnly("org.joda"                    % "joda-convert"          % "1.2")
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1207")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1208")
   val slick       = jvmOnly("com.typesafe.slick"         %% "slick"                 % "2.1.0")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.4.3")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.4.6")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.3")
+  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.7")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.7.1") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.6.1") // why again?
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.4")
