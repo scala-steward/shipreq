@@ -130,7 +130,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     val pxVsVar   = pxViewSettings map (ReusableVar(_)(setViewSettings))
     val pxVsCols  = pxViewSettings map (_.columns)
     val pxColName = pxProject map Column.NameResolver.byProject reuse
-    val pxColRnd  = Px.apply3(pxProject, pxColName, pxProjectWidgets)(new ColumnRenderers(_, _, _))
+    val pxColRnd  = Px.apply2(pxProject, pxProjectWidgets)(new ColumnRenderers(_, _))
     val pxColRnds = Px.apply2(pxVsCols, pxColRnd)(_ map _.apply)
     val pxRows    = Px.apply4(pxViewSettings, pxProject, pxPlainText, pxTextSearch)(Logic.rowsForTable).map(_.toVector)
     val pxStats   = Px.apply3(pxViewSettings, pxProject, pxRows)(Logic.stats)

@@ -60,7 +60,7 @@ object ColumnRenderer {
   }
 }
 
-class ColumnRenderers(project: Project, columnName: Column.NameResolver, widgets: ProjectWidgets) {
+class ColumnRenderers(project: Project, widgets: ProjectWidgets) {
   @inline private implicit def naobjtoel(n: `N/A`.type) = n.element
 
   def apply(c: Column): ColumnRenderer = {
