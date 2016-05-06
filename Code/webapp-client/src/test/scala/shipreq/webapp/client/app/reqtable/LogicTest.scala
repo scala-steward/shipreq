@@ -437,9 +437,9 @@ object LogicTest extends TestSuite {
       GReq(reqType = co).cftextS(descField, "CO.desc.NO!").cftextS(notesField, "CO.note.ok") +
       GReq(reqType = br).cftextS(descField, "BR.desc.NO!").cftextS(notesField, "BR.note.NO!") !! PA
     val pt = pcache(p).pt
-    val ap = Applicability(p)
+    val ap = Column.applicability(p.config)
     def fmt(c: CustomField.Text.Id) =
-      ap(c).wrap(rowToCustomText(pt, c))(z)
+      ap(c).fn(rowToCustomText(pt, c))(z)
     def expect(zcount: Int, suffix: String)(prefixes: String*) = {
       val es = prefixes.map(_ + suffix).sorted
       allSortsCB(zcount, es mkString sep, es.reverse mkString sep)

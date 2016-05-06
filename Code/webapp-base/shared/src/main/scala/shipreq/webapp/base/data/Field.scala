@@ -94,8 +94,8 @@ sealed trait Field {
   final def fieldId: FieldId =
     fold(s => s, _.id)
 
-  final def applicable(reqTypeId: ReqTypeId): Applicable =
-    Applicable <~ reqTypes.filter(reqTypeId)
+  final val applicable: ReqTypeId => Applicable =
+    Applicable <~ reqTypes.filter(_)
 }
 
 object Field {

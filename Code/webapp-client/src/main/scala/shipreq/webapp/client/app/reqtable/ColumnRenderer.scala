@@ -84,7 +84,7 @@ class ColumnRenderers(project: Project, widgets: ProjectWidgets) {
     cr(c)
   }
 
-  private val applicability = Applicability(project)
+  private val applicability = Column.applicability(project.config)
 
   private def make(render: Row => ReactElement): Column => ColumnRenderer = {
     val render2: Row => (Status, ReactElement) =
@@ -98,7 +98,7 @@ class ColumnRenderers(project: Project, widgets: ProjectWidgets) {
         }
       }
     c => {
-      val render3 = applicability(c).wrap(render2)(`N/A`.pair)
+      val render3 = applicability(c).fn(render2)(`N/A`.pair)
       new ColumnRenderer(c, render3)
     }
   }

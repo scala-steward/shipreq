@@ -101,17 +101,21 @@ private[reqtable] object Logic {
     fid => lookup(p.config.customField(fid))
   }
 
-  private def impColValueExpander(vs: ViewSettings, p: Project, ap: Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
+  private def impColValueExpander(vs: ViewSettings,
+                                  p : Project,
+                                  ap: Column => Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
     customFieldExpander(vs, ap, impColValueFn(p, vs.filterDead))
 
   private def tagFieldValueExpander(vs          : ViewSettings,
-                                    ap          : Applicability,
+                                    ap          : Column => Applicability,
                                     tagFieldDist: TagFieldDistribution.TagIds,
                                     tagLookup   : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
     customFieldExpander(vs, ap, fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid))
 
   private def customFieldExpander[K <: CustomFieldId : ClassTag, V: UnivEq]
-      (vs: ViewSettings, ap: Applicability, f: K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
+      (vs: ViewSettings,
+       ap: Column => Applicability,
+       f : K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
 
     val cols = vs.columns.whole.collect { case c@ Column.CustomField(id: K, _) => (id, c) }
 
@@ -121,7 +125,11 @@ private[reqtable] object Logic {
         val applic   = ap(col)
         val expander = expanderC[V](vs, col)
         val dataFn   = f(colId)
-        val fn       = (r: Req) => expander(() => applic.choose(r, `n/a` = UnivEq.emptySet[V])(dataFn(r.id)))
+        val fn       = (r: Req) => expander(() =>
+          applic(r) match {
+            case Applicable    => dataFn(r.id)
+            case NotApplicable => UnivEq.emptySet[V]
+          })
         (colId, fn)
       }.toMap
 
@@ -197,7 +205,7 @@ private[reqtable] object Logic {
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p, vs.filterDead)
-    val applicability = Applicability(p)
+    val applicability = Column.applicability(p.config)
     val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
     val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)

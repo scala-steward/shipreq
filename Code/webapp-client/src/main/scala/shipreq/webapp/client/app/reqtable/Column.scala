@@ -4,7 +4,7 @@ import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import shipreq.base.util._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{Dead, Live, Project, ProjectConfig, Field, FilterDead}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.UiText.ColumnNames
@@ -122,6 +122,11 @@ object Column {
          | DeletionReason     => None
       case CustomField(id, _) => Some(p.customField(id))
     }
+
+  def applicability(p: ProjectConfig): Column => Applicability =
+    Memo(
+      Applicability.fn(
+        field(_, p).map(_.applicable), Applicable))
 
   /**
    * Direction of implications relative to row-subject.
