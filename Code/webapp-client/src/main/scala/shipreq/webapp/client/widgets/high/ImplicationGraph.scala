@@ -58,7 +58,7 @@ object ImplicationGraph {
             } else {
               // Set title
               val titleEl = document.createElementNS(SvgNS, "title")
-              titleEl.textContent = p.plainText.reqTitleById(req.id)
+              titleEl.textContent = p.plainText.reqTitle(req)
               node.appendChild(titleEl)
 
               // Make link
