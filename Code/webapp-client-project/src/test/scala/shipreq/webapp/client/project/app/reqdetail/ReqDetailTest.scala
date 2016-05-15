@@ -1,0 +1,118 @@
+package shipreq.webapp.client.project.app.reqdetail
+
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.UnsafeTypes._
+import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.client.project.app.ProjectSpaMain.Page
+import shipreq.webapp.client.project.app.ProjectSpaTestDsl
+import shipreq.webapp.client.project.test._
+import TestState._
+import utest._
+
+object ReqDetailTest extends TestSuite {
+  import ReqDetailTestDsl._
+
+  PrepareEnv()
+
+  def runTest(ep: ExternalPubid, error: Boolean)(p: *.Plan): Unit = {
+
+    import ProjectSpaTestDsl._
+
+    ProjectSpaTestDsl.runTest(
+      liftReqDetailTests(p).asAction(s"Req Detail (${PlainText.pubid(ep)})"),
+      page = Page.ReqDetail(ep),
+      rd = State(ep, if (error) Mode.Error else Mode.Details))
+  }
+
+  def testError(ep: ExternalPubid, error: String): Unit =
+    runTest(ep, true)(Plan invariants checkErrorReason(error))
+
+  def test(ep: ExternalPubid)(test: *.Plan = *.emptyPlan): Unit = {
+    runTest(ep, false)(test)
+  }
+
+  // yeah i'm being lazy
+  def testLifeRowInnerText(expect: String) =
+    *.focus("Life row").value(_.obs.generic.lifeRow.innerText).assert(expect)
+
+  val reporterFieldExistence =
+    visibleFields.assert.existenceOf("Reporter")(_.obs.generic.filterDead :: ShowDead)
+
+  override def tests = TestSuite {
+
+    'badReqType - testError("QL-1", "Type QL not found.")
+    'badReq     - testError("FR-9", "FR-9 not found.")
+
+    'gr - test("FR-1")(Plan invariants testLifeRowInnerText("Alive.Kill"))
+
+    'uc {
+      'tree - test("UC-1")(Plan.action( allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
+          +> addTailStepEC           +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1")
+          >> delStep("1.1")          +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
+          >> shiftStepLeft("1.0.3")  +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.1", "1.E.1")
+          >> shiftStepRight("1.1")   +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
+          >> addStep("1.E.1")        +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1", "1.E.1.a")
+          >> filterDeadToggle        +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.X.0", "1.X.0.1", "1.E.1", "1.E.1.a")
+          >> filterDeadToggle
+          // These two test shiftRightV, not just shiftRight
+          >> delStep("1.0.2")        +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.E.1", "1.E.1.a")
+          >> shiftStepRight("1.0.2") +> allSteps.assert("1.0", "1.0.1", "1.0.1.a", "1.E.1", "1.E.1.a")
+          // Test restore
+          >> filterDeadToggle        +> allSteps.assert("1.0", "1.0.1", "1.0.1.a", "1.0.X.1", "1.X.0", "1.X.0.1", "1.E.1", "1.E.1.a")
+          >> restoreStep("1.X.0")    +> allSteps.assert("1.0", "1.0.1", "1.0.1.a", "1.0.X.1", "1.1", "1.1.1", "1.E.1", "1.E.1.a")
+      ))
+
+      'text - test("UC-1")(Plan.action(
+             stepText("1.1").assert("Have no food")
+          +> stepText("1.0.2").assert("Put in mouth←1.1.1")
+          +> stepText("1.1.1").assert("Steal food→1.0.2")
+
+          +> editStepText("1.1", "No food? --> 1.0.2 <-- 1.1.1 ")
+          +> stepText("1.1").assert("No food?←1.1.1→1.0.2")
+          +> stepText("1.0.2").assert("Put in mouth←1.11.1.1")
+          +> stepText("1.1.1").assert("Steal food→1.0.21.1")
+
+          >> editStepText("1.1", "No food? <--1.0.2-->1.1.1")
+          +> stepText("1.1").assert("No food?←1.0.2→1.1.1")
+          +> stepText("1.0.2").assert("Put in mouth←1.1.1→1.1")
+          +> stepText("1.1.1").assert("Steal food←1.1→1.0.2")
+      ))
+    }
+
+    'deadExplicitly - test("MF-19")(Plan invariants testLifeRowInnerText("Dead.Resurrect"))
+
+    'deadImplicitly - test("SI-1")(Plan invariants testLifeRowInnerText("Dead."))
+
+    'deadImplicitlyAndExplicitly - test("SI-2")(Plan invariants testLifeRowInnerText("Dead."))
+
+    'deadFields - test("UC-1")(Plan.action(
+      filterDeadToggle
+        .addCheck(reporterFieldExistence.beforeAndAfter)
+        .times(3)
+    ))
+
+    'inapplicableFields - {
+      def check(expectVisible: Boolean) =
+        visibleFields.assertB(expectVisible).contains("Description")
+      def t(pubid: ExternalPubid, expectVisible: Boolean) =
+        test(pubid)(Plan invariants check(expectVisible))
+      'mf1 - t("MF-1", true)
+      'fr1 - t("FR-1", false)
+    }
+
+    'deleteRestore - test("UC-1")(Plan.action(
+      changeLife.updateState(stateMode set Mode.Delete) <+ life.assert(Live)
+      >> deleteDelete                                   +> life.assert(Dead)
+      >> changeLife                                     +> life.assert(Live)
+    ))
+
+    'editors - test("UC-1")(Plan(
+      doubleClickTitle                     +> editorCount.assert.beforeAndAfter(0, 1) <+ filterDead.assert(HideDead)
+      >> doubleClickFieldValue("Notes")    +> editorCount.assert(2)
+      >> showDead                          +> editorCount.assert(2)
+      >> doubleClickFieldValue("Reporter") +> editorCount.assert(2) // dead field
+      >> hideDead                          +> editorCount.assert(2)
+    , reporterFieldExistence))
+
+  }
+}

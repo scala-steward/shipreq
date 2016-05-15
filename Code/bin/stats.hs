@@ -105,9 +105,11 @@ gatherAllStats = do dirs <- dirsIn "."
 
 deps = M.fromList [
          ("webapp-server",         ["webapp-base-test", "base-db", "taskman-api"]) ,
+         ("webapp-client-base",    ["webapp-base-test", "base-util"]) ,
+         ("webapp-client-home",    ["webapp-client-base"]) ,
          ("webapp-client-ww-api",  ["webapp-base"]) ,
          ("webapp-client-ww",      ["webapp-base-test", "webapp-client-ww-api"]) ,
-         ("webapp-client",         ["webapp-base-test", "base-util", "webapp-client-ww-api"]) ,
+         ("webapp-client-project", ["webapp-client-base", "webapp-client-ww-api"]) ,
          ("webapp-base-test",      ["webapp-base-server"]) ,
          ("webapp-base-server",    ["webapp-base"]),
          ("webapp-base",           ["webapp-macro", "base-util"]) ,
@@ -123,7 +125,12 @@ deps = M.fromList [
          ("base-db",               ["base-util"]) ,
          ("base-util",             ["base-macro"]) ]
 
-topLevelModules = ["taskman", "webapp-client", "webapp-client-ww", "webapp-server"]
+topLevelModules = [
+  "taskman",
+  "webapp-client-home",
+  "webapp-client-project",
+  "webapp-client-ww",
+  "webapp-server"]
 
 tdeps :: String -> [String]
 tdeps d = sort $ tdeps' [] [d]
@@ -208,15 +215,13 @@ logicAndImpl gs = let l = modulesWithSuffix' "-logic" gs
 
 logicAndImplWithTotal gs = a ++ [consolidateGroups a] where a = logicAndImpl gs
 
-topLevelModuleStatReportS = "--------------------------------\n"
-topLevelModuleStatReportH = "Module            Files      LoC\n"++topLevelModuleStatReportS
-fmtTopLevelModuleStat (m,s) = printf "%-16s  %5d  %7d\n" m (files s) (loc s)
+topLevelModuleStatReportS = "-------------------------------------\n"
+topLevelModuleStatReportH = "Module                 Files      LoC\n"++topLevelModuleStatReportS
+fmtTopLevelModuleStat (m,s) = printf "%-21s  %5d  %7d\n" m (files s) (loc s)
 topLevelModuleStatReport gs =
   topLevelModuleStatReportH ++ concatMap fmtTopLevelModuleStat (topLevelModuleStats gs) ++ topLevelModuleStatReportS
 
 ------------------------------------------------------------------------------------------------------------------------
-
-sampleData = [GroupD {gname = "base", modstats = [("base-db",(Stat {files = 6, loc = 330},Stat {files = 0, loc = 0})),("base-test",(Stat {files = 0, loc = 0},Stat {files = 3, loc = 167})),("base-util",(Stat {files = 9, loc = 529},Stat {files = 2, loc = 231})),("base-util-sjs",(Stat {files = 13, loc = 859},Stat {files = 1, loc = 14}))]},GroupD {gname = "taskman", modstats = [("taskman-api-impl",(Stat {files = 3, loc = 102},Stat {files = 4, loc = 75})),("taskman-api-logic",(Stat {files = 6, loc = 148},Stat {files = 2, loc = 109})),("taskman-server-impl",(Stat {files = 16, loc = 1144},Stat {files = 6, loc = 443})),("taskman-server-logic",(Stat {files = 13, loc = 816},Stat {files = 6, loc = 517}))]},GroupD {gname = "webapp", modstats = [("webapp-base",(Stat {files = 38, loc = 2912},Stat {files = 0, loc = 0})),("webapp-base-test",(Stat {files = 0, loc = 0},Stat {files = 11, loc = 1178})),("webapp-client",(Stat {files = 65, loc = 3983},Stat {files = 15, loc = 828})),("webapp-server",(Stat {files = 131, loc = 8577},Stat {files = 69, loc = 8152}))]}]
 
 customiseDetailedView  :: [GroupD] -> [GroupD]
 customiseDetailedView' :: GroupD -> GroupD

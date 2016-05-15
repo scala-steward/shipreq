@@ -29,7 +29,9 @@ object WebappServer {
             webapp / s"dev/$sourceMap-fastopt.js.map",
             webapp / s"a/$name.js")
 
-        sjs("client", "webapp-client") ++ sjs("ww", "webapp-client-ww")
+        sjs("client-home"   , "webapp-client-home") ++
+        sjs("client-project", "webapp-client-project") ++
+        sjs("ww"            , "webapp-client-ww")
       },
 
       copyClientJs := {
@@ -50,8 +52,9 @@ object WebappServer {
               sys.error("Unsupported virtual file type: " + other)
           }
 
-        syncSJS((scalaJSLinkedFile in Compile in webappClient).value, "client")
-        syncSJS((scalaJSLinkedFile in Compile in webappClientWw).value, "ww")
+        syncSJS((scalaJSLinkedFile in Compile in webappClientHome   ).value, "client-home")
+        syncSJS((scalaJSLinkedFile in Compile in webappClientProject).value, "client-project")
+        syncSJS((scalaJSLinkedFile in Compile in webappClientWw     ).value, "ww")
       },
 
       { val k = Keys.`package`; k <<= k.dependsOn(copyClientJs) },
