@@ -32,7 +32,7 @@ val webappBaseTestJvm   = ShipReq.webappBaseTestJvm
 val webappBaseTestJs    = ShipReq.webappBaseTestJs
 val webappClientWwApi   = ShipReq.webappClientWwApi
 val webappClientWw      = ShipReq.webappClientWw
-val webappClient        = ShipReq.webappClient
+val webappClientProject = ShipReq.webappClientProject
 val webappServer        = ShipReq.webappServer
 
 val utils               = ShipReq.utils

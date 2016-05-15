@@ -9,7 +9,7 @@ rename    = require 'gulp-rename'
 uglify    = require 'gulp-uglify'
 
 cfg_bower        = 'bower_components/'
-cfg_wc_root      = '../webapp-client/'
+cfg_wc_root      = '../webapp-client-project/'
 cfg_ws_root      = '../webapp-server/'
 cfg_ws_webapp    = cfg_ws_root + 'src/main/webapp/'
 cfg_ws_dev       = cfg_ws_webapp + 'dev/'

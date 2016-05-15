@@ -173,7 +173,7 @@ object ShipReq {
       .aggregate(
         webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm,
         webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs ,
-        webappClientWwApi, webappClientWw, webappClient,
+        webappClientWwApi, webappClientWw, webappClientProject,
         webappServer)
 
   lazy val webappSettings =
@@ -181,7 +181,7 @@ object ShipReq {
 
   lazy val webappCmdAliases = {
     def WT = "webapp-base-test"
-    def WC = "webapp-client"
+    def WC = "webapp-client-project"
     def WS = "webapp-server"
     addCommandAliases(
       "ctbc"-> ";clean ;tbc",                                              // Clean Test Base & Client
@@ -270,8 +270,8 @@ object ShipReq {
     .settings(
       scalaJSOutputWrapper := ("", "Main().main();"))
 
-  lazy val webappClient =
-    project("webapp-client")
+  lazy val webappClientProject =
+    project("webapp-client-project")
       .enablePlugins(ScalaJSPlugin)
       .dependsOn(baseUtilJs, webappBaseJs, webappClientWwApi, webappBaseTestJs % "test->compile")
       .depsForJs(
@@ -327,7 +327,7 @@ object ShipReq {
       val outputJs = "shipreq-benchmark.js"
 
       _.enablePlugins(ScalaJSPlugin)
-        .dependsOn(webappClient)
+        .dependsOn(webappClientProject)
         .depsForJs(scalajsBenchmark)
         .configure(
           Common.jsSettings(NoTests),

@@ -127,7 +127,7 @@ object Common {
         "TSL" -> "project taskman-server-logic",
         "WB"  -> "project webapp-base-jvm",
         "WT"  -> "project webapp-base-test-jvm",
-        "WC"  -> "project webapp-client",
+        "WCP" -> "project webapp-client-project",
         "WCW" -> "project webapp-client-ww",
         "WS"  -> "project webapp-server",
         "BM"  -> "project benchmark-jvm",
