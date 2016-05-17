@@ -1,0 +1,50 @@
+!!! 5
+%html
+  %head
+    -# %meta(http-equiv="refresh" content="1")
+    %title SHIPREQ UI PROTOTYPE: ReqTable page
+    %script{src: "node_modules/jquery/dist/jquery.min.js"}
+    %link{href:  "semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    %script{src: "semantic/dist/semantic.min.js"}
+    :css
+      body {padding:1rem}
+
+  %body
+
+    .ui.menu.borderless
+      .item
+        -# Projects
+        .ui.breadcrumb
+          %a.section Projects
+          %i.divider.icon.right.angle
+          %a.section CardBoard
+          .ui.dropdown.inline
+            &nbsp;
+            %i.icon.dropdown
+            .menu
+              .item.active CardBoard
+              .item ShipReq
+          %i.divider.icon.right.angle
+          .section // .active
+            .ui.dropdown.inline
+              ReqTable
+              &nbsp;
+              %i.icon.dropdown
+              .menu
+                .header Content
+                .item Implication Graph
+                .item.active ReqTable
+                .header Settings
+                .item Fields
+                .item Req Types
+                .item Tags
+
+      .item.ui.right.dropdown.simple
+        @japgolly
+        -# %i.dropdown.icon
+        .menu
+          .item Account
+          .item Logout
+
+  :javascript
+    $('.ui.dropdown').dropdown();
