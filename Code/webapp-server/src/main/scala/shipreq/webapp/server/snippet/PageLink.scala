@@ -1,17 +1,18 @@
 package shipreq.webapp.server.snippet
 
-import shipreq.webapp.server.app.AppSiteMap
-import shipreq.webapp.server.app.AppSiteMap.Implicits._
-import shipreq.webapp.server.lib.{Misc, SnippetHelpers}
-import shipreq.webapp.base.WebappConfig
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.sitemap.{Loc, SiteMap}
-import scala.xml.{Elem, Node, NodeSeq, Null, Text, UnprefixedAttribute}
+import scala.xml._
+import shipreq.base.util.Memo
+import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.server.app.AppSiteMap
+import shipreq.webapp.server.app.AppSiteMap.Implicits._
+import shipreq.webapp.server.lib.SnippetHelpers
 
 /**
  * Creates a link to a page. Throws an error is the page is not found.
  */
-object Link extends DispatchSnippet with SnippetHelpers {
+object PageLink extends DispatchSnippet with SnippetHelpers {
 
   private type R = NodeSeq => NodeSeq
 
@@ -35,7 +36,7 @@ object Link extends DispatchSnippet with SnippetHelpers {
   }
 
   private val pageLinkMemo =
-    Misc.newMemo[Loc[_], R](Equiv.reference)(generatePageLink)
+    Memo.byRef[Loc[_], R](generatePageLink)
 
   def toPage(name: String) = {
     val loc = SiteMap.findLoc(name) openOrThrowException s"No page found in sitemap called '$name'"

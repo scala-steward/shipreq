@@ -98,7 +98,7 @@ class ResetPasswordTest extends FunSpec with TestHelpers {
   }
 
   describe("ResetPassword2.render") {
-    lazy val template = NonEmptyTemplate.load("resetpw2").get
+    lazy val template = NonEmptyTemplate.load("public/resetpw2").get
 
     def findToken(r: Option[DateTime]): DbSetup =
       new DbSetup {override def setup(d: DaoT) = when(d.findResetPasswordTokenIssuedDate(any)) thenReturn r}

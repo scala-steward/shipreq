@@ -21,10 +21,11 @@ object Assets extends DispatchSnippet with SnippetHelpers {
   override def dispatch = {
     case "favicon"     => favicon
     case "anon"        => anon
-    case "project"     => project
+    case "homeSPA"     => homeSPA
+    case "projectSPA"  => projectSPA
     case "katex"       => katex
     case "sir"         => sir
-    case "shipreq-png" => shipreqPng
+    case "shipreq-png" => shipreqPng // TODO landing page pic
   }
 
   val favicon = staticHtml(
@@ -41,8 +42,12 @@ object Assets extends DispatchSnippet with SnippetHelpers {
     js ("anon.js"),
     css("app.css")))
 
-  val project = staticHtml(Seq(
-    css("app.css"),
+  val homeSPA = staticHtml(Seq(
+    js("project.js"), // TODO Rename. More like member-deps
+    js("client-home.js")) ++
+    katex(null))
+
+  val projectSPA = staticHtml(Seq(
     js("project.js"),
     js("client-project.js")) ++
     katex(null))

@@ -1,24 +1,21 @@
-package shipreq.webapp.server
-package app
+package shipreq.webapp.server.app
 
 import net.liftweb.common._
-import net.liftweb.http.{RequestVar, S, Templates, RedirectResponse, LiftResponse, PlainTextResponse}
+import net.liftweb.http._
 import net.liftweb.sitemap.Loc._
 import net.liftweb.sitemap._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
-import scala.xml.{Text, NodeSeq}
-import scalaz.{Memo, Name, Need}
-import scalaz.old.NonEmptyList
-
+import scala.xml.{NodeSeq, Text}
+import scalaz.{Name, Need}
+import shipreq.base.util.Memo
 import shipreq.webapp.base.WebappConfig
-import ServerConfig.BaseUrl
+import shipreq.webapp.server.ServerConfig.BaseUrl
 import shipreq.webapp.server.data._
-import shipreq.webapp.server.lib.Misc
-import shipreq.webapp.server.feature.{SessionStats, DiagnosticEndpoints, Navbar, NavbarElem}
-import shipreq.webapp.server.security.{Permissions, Permission, Oshiro}
+import shipreq.webapp.server.feature.{DiagnosticEndpoints, SessionStats}
+import shipreq.webapp.server.security.Permission.RequestVarPermExt
+import shipreq.webapp.server.security.{Oshiro, Permission, Permissions}
 import shipreq.webapp.server.util.ExternalId
-import Permission.RequestVarPermExt
 
 object AppSiteMap {
   type PM[T] = Menu.ParamMenuable[T]
@@ -29,65 +26,82 @@ object AppSiteMap {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
-  private val landingPageTemplate = "landing_page"
+  private val landingPageTemplate = "public/landing_page"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Menu.i(NAME_AND_TITLE) / PATH_FOR_URL_AND_TEMPLATE
   // Menu(Loc(NAME, PATH_FOR_URL_AND_TEMPLATE, TITLE))
   // Menu.param[PARAM_TYPE(S)](NAME, TITLE, URL_TO_PARAM, PARAM_TO_URL) / PATH_FOR_URL_AND_TEMPLATE
 
-  val Home = pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
-    >> UseEitherTemplate(Oshiro.isAuthenticated, "loggedin/index")(landingPageTemplate)
-  )
+  val Home =
+    pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
+      >> UseEitherTemplate(Oshiro.isAuthenticated, "members/index")(landingPageTemplate))
 
-  val Land_BusinessCard = pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
+  val LandingPageViaBusinessCard =
+    pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
 
-  val About = pageWithStaticUrl("about", "About")(_ / "about")
-  val TermsOfService = pageWithStaticUrl("terms", mkTitle("Terms of Service"), "Terms")(_ / "terms")
-  val PrivacyPolicy = pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy")
+  val About =
+    pageWithStaticUrl("about", "About")(_ / "about" >> UseTemplate("public/about"))
 
-  val Login = pageWithStaticUrl("login", "Login")(_ / "login")
-  val Logout = pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(logout))
+  val TermsOfService =
+    pageWithStaticUrl("tos", mkTitle("Terms of Service"), "Terms")(_ / "tos" >> UseTemplate("public/tos"))
 
-  val Register1 = pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register")
-  val Register2 = (
-    Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
-    >> StaticTitle(mkTitle("Register"))
-    >> Hidden >> UseTemplate("register2")
-  )
+  val PrivacyPolicy =
+    pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy" >> UseTemplate("public/privacy"))
+
+  val Login =
+    pageWithStaticUrl("login", "Login")(_ / "login" >> UseTemplate("public/login"))
+
+  val Logout =
+    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(logout))
+
+  val Register1 =
+    pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register" >> UseTemplate("public/register1"))
+
+  val Register2 =
+    (Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
+      >> StaticTitle(mkTitle("Register"))
+      >> UseTemplate("public/register2")
+      >> Hidden)
 
   private def ResetPasswordTitle = mkTitle("Password Reset")
-  val ResetPassword1 = pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw")
-  val ResetPassword2 = (
-    Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
+
+  val ResetPassword1 =
+    pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw"
+      >> UseTemplate("public/resetpw1"))
+
+  val ResetPassword2 =
+    (Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
       >> StaticTitle(ResetPasswordTitle)
-      >> Hidden >> UseTemplate("resetpw2")
-    )
+      >> UseTemplate("public/resetpw2")
+      >> Hidden)
 
-  val Project: PM[ProjectId] = (
-    MenuWithIdParam(ProjectId.Extern)("project_spa") / "project" / * / **
-    >> TitleFromProjectName
-    >> AuthenticationRequired >> ProjectPermissionRequired
-    >> UseTemplate("loggedin/project_spa")
-    >> SetNavbarAndPerformEffects(Navbar.Home, Navbar.CurrentProject) {
-        RequestVars.ProjectId.setByParam(Project, "Project --> ProjectId")
-        RequestVars.Project.deriveFromProjectId()
-      }
-  )
+  val Project: PM[ProjectId] =
+    (MenuWithIdParam(ProjectId.Extern)("project") / "project" / * / **
+      >> TitleFromProjectName
+      >> AuthenticationRequired >> ProjectPermissionRequired
+      >> UseTemplate("members/project")
+      >> PerformEffects {
+           RequestVars.ProjectId.setByParam(Project, "Project --> ProjectId")
+           RequestVars.Project.deriveFromProjectId()
+         })
 
-  val AdminStats = pageWithStaticUrl("admin.stats", mkTitle("Stats"), "")(_ / "sir" / "stats" >> AdminOnly >> Hidden)
+  val AdminStats =
+    pageWithStaticUrl("admin.stats", mkTitle("Stats"), "")(_ / "sir" / "stats" >> AdminOnly >> Hidden)
 
   // -------------------------------------------------------------------------------------------------------------------
 
   val AllProdPages: List[ConvertableToMenu] = List(
-    Home, About, TermsOfService, PrivacyPolicy, Land_BusinessCard
-    , Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2
-    , Project
-    , AdminStats
+    Home,
+    About, TermsOfService, PrivacyPolicy, LandingPageViaBusinessCard,
+    Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2,
+    Project,
+    AdminStats
   ) ++ DiagnosticEndpoints.Endpoints
 
   val sitemap = {
-    import org.apache.shiro.authc.UsernamePasswordToken, org.apache.shiro.SecurityUtils.getSubject
+    import org.apache.shiro.SecurityUtils.getSubject
+    import org.apache.shiro.authc.UsernamePasswordToken
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
@@ -104,13 +118,15 @@ object AppSiteMap {
       PlainTextResponse("OK")
     })
 
-    val additionalPages: List[ConvertableToMenu] = Props.mode match {
-      case Development => List(autoLogin)
-      case TestMode    => List(apiLogin)
-      case _           => List.empty
-    }
+    val additionalPages: List[ConvertableToMenu] =
+      Props.mode match {
+        case Development => List(autoLogin)
+        case TestMode    => List(apiLogin)
+        case _           => List.empty
+      }
 
     val pages = AllProdPages ++ additionalPages
+
     SiteMap(pages: _*)
   }
 
@@ -118,9 +134,10 @@ object AppSiteMap {
 
   object Implicits {
 
-    private def newUrlMemo: Memo[Loc[_], String] = Misc.newMemo(Equiv.reference)
+    private def newUrlMemo(f: Loc[_] => String): Loc[_] => String =
+      Memo.byRef(f)
 
-    private val relUrlMemo = newUrlMemo(loc => {
+    private val relUrlMemo = newUrlMemo { loc =>
       val s = loc.calcDefaultHref
       if (s.endsWith("/index"))
         if (s.length == 6)
@@ -129,14 +146,14 @@ object AppSiteMap {
           s.substring(0, s.length - 6)
       else
         s
-    })
+    }
 
-    private val absUrlMemo = newUrlMemo(loc => {
-      loc.relativeUrl match {
+    private val absUrlMemo = newUrlMemo(
+      _.relativeUrl match {
         case "/" => BaseUrl
         case s   => BaseUrl + s
       }
-    })
+    )
 
     implicit class LocExt(val loc: Loc[_]) extends AnyVal {
       def relativeUrl: String = relUrlMemo(loc)
@@ -224,16 +241,6 @@ object AppSiteMap {
 
   private def AdminOnly =
     Test(_ => Permissions.admin.using().isPass)
-
-  private def buildNavbar(h: NavbarElem, t: NavbarElem*) = {
-    val elems = NonEmptyList(h, t: _*)
-    Navbar(elems.reverse)
-  }
-
-  private def SetNavbarAndPerformEffects(h: NavbarElem, t: NavbarElem*)(f: => Unit) = {
-    val navbar = buildNavbar(h, t: _*)
-    PerformEffects {f; RequestVars.Navbar.set(navbar)}
-  }
 
   private def PerformEffects(f: => Unit) = Test(_ => {f; true})
 

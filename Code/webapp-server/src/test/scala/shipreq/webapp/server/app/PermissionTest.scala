@@ -23,21 +23,24 @@ class PermissionTest extends FunSpec with LiveTest with UserFixture {
     post("/login.api", "user" -> user.username.value, "pass" -> user.password) !@ "Failed to log in"
 
   def loginShouldBeRequiredFor(url: String) =
-    get(url) shouldRedirectTo(Login.relativeUrl)
+    get(url) shouldRedirectTo Login.relativeUrl
 
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val pid = newProjectId(user1.id)
 
   describe("/") {
+    val member = "client-home.js"
+    val anon   = "/login"
+
     it("anon") {
       val r = get("/") ! 200
-      r.responseText should (include("/login") and not include ("#project-hub"))
+      r.responseText should (include(anon) and not include(member))
     }
 
     it("auth") {
       val r = doLogin(user1).get("/") ! 200
-      r.responseText should (include("project-hub") and not include ("/login"))
+      r.responseText should (include(member) and not include(anon))
     }
   }
 

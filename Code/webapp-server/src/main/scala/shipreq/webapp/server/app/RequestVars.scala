@@ -6,14 +6,11 @@ import net.liftweb.http.RequestVar
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.db.DaoS
 import shipreq.webapp.server.lib.SnippetHelpers._
-import shipreq.webapp.server.feature.Navbar
 
 object RequestVars extends Logger with DI {
 
   // -------------------------------------------------------------------------------------------------------------------
   // Manually set
-
-  object Navbar extends RequestVar[Navbar](fail("Navbar"))
 
   object ProjectId extends RequestVar[Name[ProjectId]](fail("ProjectId")) {
     def deriveFromProject(): Unit = ProjectId.set(Need(Project.get.value.id))

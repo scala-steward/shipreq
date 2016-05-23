@@ -23,7 +23,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     initUserFixture(session)
   }
 
-  lazy val reg1html = NonEmptyTemplate.load("register").get
+  lazy val reg1html = NonEmptyTemplate.load("public/register1").get
 
   def assertSingleError(substring: String) {
     S.errors.size should be(1)
@@ -179,7 +179,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     def testFailure(mutate: Reg2Tester => Any) {
       val t = tester
       mutate(t)
-      val js = t.onSubmitF
+      val js = t.onSubmitF()
       assertUnconfirmed()
       js.assertJsAlert(Some(""))
     }
@@ -203,7 +203,7 @@ class RegisterSnippetTest extends FunSpec with TestDatabaseSupport with UserFixt
     it("should reject a taken username") {
       val t = tester
       t username_= user2.username.value
-      t.onSubmitF
+      t.onSubmitF()
       try {assertUnconfirmed()}
       catch {case e: PSQLException if e.getMessage.contains("transaction is aborted") =>}
     }

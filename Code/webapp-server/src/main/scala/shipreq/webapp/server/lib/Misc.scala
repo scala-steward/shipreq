@@ -1,13 +1,10 @@
 package shipreq.webapp.server.lib
 
 import net.liftweb.http.S
-import org.joda.time.{DateTime, DateTimeUtils, Period}
 import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, DateTimeUtils, Period}
 import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
-import scala.util.hashing.Hashing
 import scala.util.Random
-import scalaz.Memo
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.data.ISO8601
@@ -56,7 +53,7 @@ trait Misc extends HasLogger {
 
   @tailrec
   final def retry[T](n: Int, firstError: Option[Throwable] = None)(fn: => T): T = {
-    import scala.util.{Try, Success, Failure}
+    import scala.util.{Failure, Success, Try}
     Try { fn } match {
       case Success(result)      => result
       case Failure(e) if n > 0  => retry(n - 1, firstError orElse Some(e))(fn)
@@ -65,7 +62,4 @@ trait Misc extends HasLogger {
         throw e
     }
   }
-
-  def newMemo[K, V](eqFn: Equiv[K] = Equiv.universal[K], hashFn: Hashing[K] = Hashing.default[K]): Memo[K, V] =
-    Memo.mutableMapMemo(new TrieMap[K, V](hashFn, eqFn))
 }
