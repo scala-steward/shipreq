@@ -8,7 +8,7 @@ function dir {
 
 clear
 cd "$(dirname "$(readlink -e "$0")")" || exit 1
-node_modules/.bin/gulp "$@"
+./gulp "$@"
 
 dir ../webapp-server/src/main/webapp/dev
 dir ../webapp-server/src/main/webapp/a
