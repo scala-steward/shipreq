@@ -10,8 +10,8 @@ import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.server.ServerConfig.PasswordResetTokenLifespan
 import shipreq.webapp.server.app.AppSiteMap
 import shipreq.webapp.server.app.AppSiteMap.Implicits._
-import shipreq.webapp.server.data.UserRegistrationInfo
-import shipreq.webapp.server.db.{DaoT, ResetPasswordInfo}
+import shipreq.webapp.server.data.{ResetPasswordInfo, UserRegistrationInfo}
+import shipreq.webapp.server.db.DaoT
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.server.security.PasswordAndSalt

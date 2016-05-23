@@ -88,25 +88,25 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
       }
     }
 
-    def afterDeletion: (UserId, ProjectId, ProjectId) = {
-      val (uid, p1) = newUserAndProject("wow")
-      assertTableDiffs()(dao deleteProjectSoft p1)
-      val p2 = dao.createProject(uid, "wow").gimme
-      assertTableDiffs()(dao deleteProjectSoft p2)
-      (uid, p1, p2)
-    }
-
-    it("deletion should be soft and hard") {
-      val (_, p1, p2) = afterDeletion
-      val a = new AsyncDao
-      assertTableDiffs(Tables.Project -> -1)(a deleteProject p1)
-      assertTableDiffs(Tables.Project -> -1)(a deleteProject p2)
-    }
-
-    it("soft deletion should hide the project from view") {
-      val (u, p, _) = afterDeletion
-      dao.findProject(p) shouldBe None
-    }
+//    def afterDeletion: (UserId, ProjectId, ProjectId) = {
+//      val (uid, p1) = newUserAndProject("wow")
+//      assertTableDiffs()(dao deleteProjectSoft p1)
+//      val p2 = dao.createProject(uid, "wow").gimme
+//      assertTableDiffs()(dao deleteProjectSoft p2)
+//      (uid, p1, p2)
+//    }
+//
+//    it("deletion should be soft and hard") {
+//      val (_, p1, p2) = afterDeletion
+//      val a = new AsyncDao
+//      assertTableDiffs(Tables.Project -> -1)(a deleteProject p1)
+//      assertTableDiffs(Tables.Project -> -1)(a deleteProject p2)
+//    }
+//
+//    it("soft deletion should hide the project from view") {
+//      val (u, p, _) = afterDeletion
+//      dao.findProject(p) shouldBe None
+//    }
   }
 
   // ===================================================================================================================

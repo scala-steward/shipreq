@@ -208,9 +208,8 @@ object AppSiteMap {
   private def pageWithStaticUrl(name: String, title: String, linkText: String)(f: Menu.PreMenu => Menu.Menuable): Menu.Menuable =
     f(Menu(name, linkText)) >> StaticTitle(title)
 
-  private def projectName = RequestVars.Project.get.value.name
-
-  private def TitleFromProjectName[T] = DynamicTitle[T](mkTitle(projectName))
+  private def TitleFromProjectName[T] =
+    DynamicTitle[T](mkTitle(RequestVars.Project.get.value.name))
 
   private def MenuWithIdParam[Id <: AnyRef](scheme: ExternalId.Scheme[Id])(name: String) =
     Menu.param[Id](name, "", scheme.parseB, scheme.toExternal(_).value)

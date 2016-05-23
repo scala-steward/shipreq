@@ -1,9 +1,10 @@
 package shipreq.webapp.server.db
 
 import net.liftweb.util.Helpers.nextFuncName
+import org.joda.time.DateTime
 import org.postgresql.util.PSQLException
 import scala.slick.jdbc.JdbcBackend.Session
-import shipreq.taskman.api.{UserId, EmailAddr}
+import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.lib.Misc.retry
 import shipreq.webapp.server.security.PasswordAndSalt
@@ -63,8 +64,6 @@ sealed trait DaoS {
     }
   }
 
-  // TODO: Use EmailAddr instead of String
-
   // ===================================================================================================================
   // User
 
@@ -90,33 +89,43 @@ sealed trait DaoS {
     else
       findUserDescAndCredentialsE(EmailAddr(usernameOrEmail))
 
-  def findUserDescAndCredentialsU(username: Username) = GetUserDescCredByUsername(username).firstOption
+  def findUserDescAndCredentialsU(username: Username): Option[(UserDescriptor, PasswordAndSalt)] =
+    GetUserDescCredByUsername(username).firstOption
 
-  def findUserDescAndCredentialsE(email: EmailAddr) = GetUserDescCredByEmail(email).firstOption
+  def findUserDescAndCredentialsE(email: EmailAddr): Option[(UserDescriptor, PasswordAndSalt)] =
+    GetUserDescCredByEmail(email).firstOption
 
-  def findUserRegistrationInfo(email: EmailAddr) = GetUserRegInfo(email).firstOption
+  def findUserRegistrationInfo(email: EmailAddr): Option[UserRegistrationInfo] =
+    GetUserRegInfo(email).firstOption
 
-  def findUserRegAndResetPwInfo(email: EmailAddr) = GetUserRegAndResetPwInfo(email).firstOption
+  def findUserRegAndResetPwInfo(email: EmailAddr): Option[(UserRegistrationInfo, ResetPasswordInfo)] =
+    GetUserRegAndResetPwInfo(email).firstOption
 
-  def findUserConfirmationTokenIssuedDate(token: String) = GetConfirmationTokenIssuedDate(token).firstOption
+  def findUserConfirmationTokenIssuedDate(token: String): Option[DateTime] =
+    GetConfirmationTokenIssuedDate(token).firstOption
 
-  def findUserSuppAndDetail(id: UserId) = GetUserSuppAndDetail(id).firstOption
+//  def findUserSuppAndDetail(id: UserId) = GetUserSuppAndDetail(id).firstOption
 
-  def logUserLogin(id: UserId, ip: Option[String]): Unit = LogUserLogin(id, ip).execute
+  def logUserLogin(id: UserId, ip: Option[String]): Unit =
+    LogUserLogin(id, ip).execute
 
-  def updateUserDetails(id: UserId, d: UserDetail): Unit =
-    UpdateUserDetails(d.name, d.newsletter, id).execute
+//  def updateUserDetails(id: UserId, d: UserDetail): Unit =
+//    UpdateUserDetails(d.name, d.newsletter, id).execute
 
-  def updateUserPassword(id: UserId, ps: PasswordAndSalt): Unit = UpdateUserPassword(ps, id).execute
+  def updateUserPassword(id: UserId, ps: PasswordAndSalt): Unit =
+    UpdateUserPassword(ps, id).execute
 
   def performInstallNewResetPasswordToken(u: UserId, tokenFn: () => String): String =
     tokenAttempt(tokenFn)(token => InstallNewResetPasswordToken(token, u).execute)
 
-  def performReuseResetPasswordToken(u: UserId): Unit = ReuseResetPasswordToken(u).execute
+  def performReuseResetPasswordToken(u: UserId): Unit =
+    ReuseResetPasswordToken(u).execute
 
-  def findResetPasswordTokenIssuedDate(token: String) = GetResetPasswordTokenIssuedDate(token).firstOption
+  def findResetPasswordTokenIssuedDate(token: String): Option[DateTime] =
+    GetResetPasswordTokenIssuedDate(token).firstOption
 
-  def performPasswordReset(ps: PasswordAndSalt, token: String) = ResetPassword(ps, token).execute
+  def performPasswordReset(ps: PasswordAndSalt, token: String): Unit =
+    ResetPassword(ps, token).execute
 
   // ===================================================================================================================
   // Project
@@ -143,9 +152,11 @@ sealed trait DaoS {
     })(NameAlreadyInUse)
   }
 
-  def findProject(id: ProjectId): Option[Project] = FindProject(id).firstOption
+  def findProject(id: ProjectId): Option[Project] =
+    FindProject(id).firstOption
 
-  def deleteProjectSoft(id: ProjectId): Unit = DeleteProjectSoft(nextFuncName, id).execute
+//  def deleteProjectSoft(id: ProjectId): Unit =
+//    DeleteProjectSoft(nextFuncName, id).execute
 }
 
 // #####################################################################################################################
@@ -185,16 +196,26 @@ sealed class AdminDao(_session: Session) extends DaoS {
   import AdminSql._
   implicit val session = _session
 
-  def diagSelectNow() = DiagSelectNow.first
+  def diagSelectNow(): DateTime =
+    DiagSelectNow.first
 
-  def statsCountUsers: UsrCount = {
+  def statsCountUsers(): UsrCount = {
     val (a, b) = StatsCountUsers.first
     UsrCount(a, b)
   }
 
-  def statsTableSizes: List[(String, Long)] = StatsSizesByTypes("r").list
-  def statsIndexSizes: List[(String, Long)] = StatsSizesByTypes("i").list
-  def statsDatabaseSize: Long = StatsDatabaseSize(DB.DatabaseName.replaceFirst("^.*/", "")).first
+  def statsTableSizes(): List[(String, Long)] =
+    StatsSizesByTypes("r").list
+
+  def statsIndexSizes(): List[(String, Long)] =
+    StatsSizesByTypes("i").list
+
+  def statsDatabaseSize(): Long =
+    StatsDatabaseSize(DB.DatabaseName.replaceFirst("^.*/", "")).first
+}
+
+case class UsrCount(registered: Long, total: Long) {
+  def pending = total - registered
 }
 
 // #####################################################################################################################

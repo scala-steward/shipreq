@@ -18,10 +18,6 @@ import EventSqlHelpers._
  */
 private[db] object Sql {
 
-  private[this] case class Insert() extends scala.annotation.StaticAnnotation
-  private[this] case class Update() extends scala.annotation.StaticAnnotation
-  private[this] case class Delete() extends scala.annotation.StaticAnnotation
-
   // ###################################################################################################################
   // User
 
@@ -44,16 +40,16 @@ private[db] object Sql {
   val GetConfirmationTokenIssuedDate = query[String, DateTime](
     "SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
-  @Update val UpdateConfirmationToken = update[(String, UserId)](
+  val UpdateConfirmationToken = update[(String, UserId)](
     "UPDATE usr SET confirmation_token = ?, confirmation_sent_at = NOW() WHERE id=?")
 
-  @Insert val LogUserLogin = update[(UserId, Option[String])](
+  val LogUserLogin = update[(UserId, Option[String])](
     "INSERT INTO usr_login_log(usr_id,ip) VALUES(?,?)")
 
-  @Insert val InsertUserPlaceholder = update[(EmailAddr, String)](
+  val InsertUserPlaceholder = update[(EmailAddr, String)](
     "INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")
 
-  @Update val RegisterUser = query[(Username, PasswordAndSalt, String, String), UserId]( """
+  val RegisterUser = query[(Username, PasswordAndSalt, String, String), UserId]( """
     UPDATE usr SET username = ?
       ,password = ?, password_salt = ?, password_changed_at = NOW()
       ,confirmation_token = NULL, confirmed_at = NOW()
@@ -61,30 +57,30 @@ private[db] object Sql {
     WHERE confirmation_token = ?
     RETURNING id""".sql)
 
-  @Insert val InsertUsrd = update[(UserId, String, Boolean)](
+  val InsertUsrd = update[(UserId, String, Boolean)](
     "INSERT INTO usrd VALUES(?,?,?)")
 
-  private val usrSuppColumns = "password, password_salt, confirmed_at"
-  private val usrdColumns = "name, newsletter"
-  val GetUserSuppAndDetail = query[UserId, (UserSupplementalInfo, UserDetail)](
-    s"SELECT $usrSuppColumns, $usrdColumns FROM usr, usrd WHERE id=? and id=usr_id")
+//  private val usrSuppColumns = "password, password_salt, confirmed_at"
+//  private val usrdColumns = "name, newsletter"
+//  val GetUserSuppAndDetail = query[UserId, (UserSupplementalInfo, UserDetail)](
+//    s"SELECT $usrSuppColumns, $usrdColumns FROM usr, usrd WHERE id=? and id=usr_id")
 
-  @Update val UpdateUserDetails = update[(String, Boolean, UserId)](
-    "update usrd set name=?, newsletter=? where usr_id=?")
+//  val UpdateUserDetails = update[(String, Boolean, UserId)](
+//    "update usrd set name=?, newsletter=? where usr_id=?")
 
-  @Update val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
+  val UpdateUserPassword = update[(PasswordAndSalt, UserId)](
     "UPDATE usr SET password = ?, password_salt = ?, password_changed_at = NOW() WHERE id=?")
 
-  @Update val InstallNewResetPasswordToken = update[(String, UserId)](
+  val InstallNewResetPasswordToken = update[(String, UserId)](
     "UPDATE usr SET reset_password_token = ?, reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
-  @Update val ReuseResetPasswordToken = update[UserId](
+  val ReuseResetPasswordToken = update[UserId](
     "UPDATE usr SET reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
   val GetResetPasswordTokenIssuedDate = query[String, DateTime](
     "SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
 
-  @Update val ResetPassword = update[(PasswordAndSalt, String)]("""
+  val ResetPassword = update[(PasswordAndSalt, String)]("""
     UPDATE usr SET
       password = ?, password_salt = ?, password_changed_at = NOW(),
       reset_password_token = NULL
@@ -93,20 +89,20 @@ private[db] object Sql {
   // ###################################################################################################################
   // Project
 
-  @Insert val CreateProject = query[(UserId, String), ProjectId](
+  val CreateProject = query[(UserId, String), ProjectId](
     "INSERT INTO project(usr_id, name) VALUES(?,?) RETURNING id")
 
   private val project_* = s"id,name,usr_id"
-  private val projectIsDead = "deleted_at IS NOT NULL"
+//  private val projectIsDead = "deleted_at IS NOT NULL"
   private val projectIsLive = "deleted_at IS NULL"
 
   val FindProject = query[ProjectId, Project](s"SELECT ${project_*} FROM project WHERE id=? AND $projectIsLive")
 
-  @Update val RenameProject = update[(String, ProjectId, UserId)](
+  val RenameProject = update[(String, ProjectId, UserId)](
     "UPDATE project SET name=? WHERE id=? AND usr_id=?")
 
-  @Update val DeleteProjectSoft = update[(String, ProjectId)]("UPDATE project SET name=?, deleted_at=NOW() where id=?")
-  @Delete val DeleteProjectHard = update[ProjectId](s"DELETE FROM project where id=? and $projectIsDead")
+//  val DeleteProjectSoft = update[(String, ProjectId)]("UPDATE project SET name=?, deleted_at=NOW() where id=?")
+//  @Delete val DeleteProjectHard = update[ProjectId](s"DELETE FROM project where id=? and $projectIsDead")
 
   // ###################################################################################################################
   // Events
@@ -120,10 +116,10 @@ private[db] object Sql {
   private final val eventHR_? = "?,?,?,?"
 
   // select coalesce(max(seq)+1,1) from event where project_id=?
-  @Insert val InsertEvent = update[(ProjectId, EventSeq, ActiveEvent)](
+  val InsertEvent = update[(ProjectId, EventSeq, ActiveEvent)](
     s"INSERT INTO event(project_id,seq,$eventE) VALUES(?,?,${eventE_?})")
 
-  @Insert val InsertEventHashRecs = update[(ProjectId, EventSeq, HashRec)](
+  val InsertEventHashRecs = update[(ProjectId, EventSeq, HashRec)](
     s"INSERT INTO event_hash(project_id,seq,$eventHR) VALUES(?,?,${eventHR_?})")
 
   val SelectAllEvents = query[ProjectId, (EventSeq, Event)](

@@ -8,7 +8,7 @@ import AsyncDb._
 
 object AsyncDb {
   sealed trait Cmd
-  case class DeleteProject(id: ProjectId) extends Cmd
+//  case class DeleteProject(id: ProjectId) extends Cmd
 }
 
 trait AsyncDb {
@@ -21,7 +21,8 @@ object AsyncDbImpl extends AsyncDb with SpecializedLiftActor[Cmd] with DI {
     daoProvider.withRawSession(implicit s => f(new AsyncDao))
 
   protected def messageHandler: PartialFunction[Cmd, Unit] = {
-    case DeleteProject(id) => dba(_ deleteProject id)
+//    case DeleteProject(id) => dba(_ deleteProject id)
+    case _ => ???
   }
 }
 
@@ -29,6 +30,6 @@ private[db] class AsyncDao(implicit val session: Session) {
   import Sql._
 
   // Deletion automatically cascades to shares and use cases. See FKs in child tables.
-  def deleteProject(id: ProjectId): Unit =
-    DeleteProjectHard(id).execute
+//  def deleteProject(id: ProjectId): Unit =
+//    DeleteProjectHard(id).execute
 }

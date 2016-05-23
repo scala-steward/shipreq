@@ -1,17 +1,18 @@
 package shipreq.webapp.server.snippet.sir
 
-import shipreq.webapp.server.feature.SessionStats
-import shipreq.webapp.server.lib.{Misc, SnippetHelpers}
-import shipreq.webapp.server.util.{ExpireAfter, CacheFn}
 import java.util.ResourceBundle
 import net.liftweb.http.LiftRules
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
-import org.joda.time.{DateTime, Period}
+import org.joda.time.{DateTime, DateTimeUtils, Period}
 import scala.collection.JavaConversions._
 import scala.sys.process._
 import scala.util.Properties
 import scala.xml.{NodeSeq, Text}
+import shipreq.webapp.server.feature.SessionStats
+import shipreq.webapp.server.lib.Misc.DateTimeExt
+import shipreq.webapp.server.lib.SnippetHelpers
+import shipreq.webapp.server.util.{CacheFn, ExpireAfter}
 
 object Stats extends SnippetHelpers {
 
@@ -56,7 +57,7 @@ object Stats extends SnippetHelpers {
 
   def renderFn = {
     val stats = allStats
-    val evalTime = Misc.currentTimeAsIso8601Str.value
+    val evalTime = DateTime.now().toStringIso8601
     (
       "time [datetime]" #> evalTime andThen
       "section" #> stats.map{ case (section,subStats) =>
@@ -70,7 +71,7 @@ object Stats extends SnippetHelpers {
   }
 
   def allStats: List[(String, List[(String, StatValue)])] = daoProvider.withAdminDao(dao => {
-    val userCount = dao.statsCountUsers
+    val userCount = dao.statsCountUsers()
     List(
       "System & Environment" -> List(
           "build.version"      -> Str(Build.Version)
@@ -92,9 +93,9 @@ object Stats extends SnippetHelpers {
       "Database" -> List[(String, StatValue)](
         "Users"                        -> Number(userCount.registered)
         , "Users pending registration" -> Number(userCount.pending)
-        , "Table Sizes"                -> E(table(dao.statsTableSizes)(Str(_))(NumberF(_)))
-        , "Index Sizes"                -> E(table(dao.statsIndexSizes)(Str(_))(NumberF(_)))
-        , "Database Size"              -> E(Number(dao.statsDatabaseSize))
+        , "Table Sizes"                -> E(table(dao.statsTableSizes())(Str(_))(NumberF(_)))
+        , "Index Sizes"                -> E(table(dao.statsIndexSizes())(Str(_))(NumberF(_)))
+        , "Database Size"              -> E(Number(dao.statsDatabaseSize()))
       )
     )
   })

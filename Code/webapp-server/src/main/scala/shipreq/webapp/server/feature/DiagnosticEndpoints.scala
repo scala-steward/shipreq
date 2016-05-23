@@ -9,6 +9,7 @@ import net.liftweb.sitemap._
 import net.liftweb.util.Helpers.nextFuncName
 import net.liftweb.util.Props
 import net.liftweb.util.TimeHelpers.calcTime
+import org.joda.time.DateTime
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorOr
 import shipreq.taskman.api.ApiOp.QueryMsgStatus
@@ -63,11 +64,11 @@ object DiagnosticEndpoints extends DI {
   // -------------------------------------------------------------------------------------------------------------------
   // DB connectivity
 
-  val DbTestJson = endpoint("db") >> EarlyResponse(() => Full(jsonResponse(dbTest)))
+  val DbTestJson = endpoint("db") >> EarlyResponse(() => Full(jsonResponse(dbTest())))
 
   val DbTestCsv = endpoint("db.csv") >> EarlyResponse(() => {
     val reps = S.param("reps").map(_.toInt).openOr(10)
-    val csv = Stream.continually(dbTest.toCsv).take(reps).mkString
+    val csv = Stream.continually(dbTest().toCsv).take(reps).mkString
     Full(textResponse(csv, "text/csv"))
   })
 
@@ -84,7 +85,7 @@ object DiagnosticEndpoints extends DI {
           }
         )
       }
-    DbTestResult(ab, ab - b, b, dbClock.toIso8601.value)
+    DbTestResult(ab, ab - b, b, dbClock.toStringIso8601)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -96,7 +97,7 @@ object DiagnosticEndpoints extends DI {
     S.param("to") match {
       case Full(emailAddress) => {
         val token = nextFuncName
-        val msg = SendDiagEmail(EmailAddr(emailAddress), token, s"Token: $token\nIssued: ${Misc.currentTimeAsIso8601Str.value}")
+        val msg = SendDiagEmail(EmailAddr(emailAddress), token, s"Token: $token\nIssued: ${DateTime.now().toStringIso8601}")
         val (time, msgId) = calcTime(taskman1(_ submitMsg msg))
         Full(jsonResponse(EmailSendResult(msgId.value, time, token)))
       }

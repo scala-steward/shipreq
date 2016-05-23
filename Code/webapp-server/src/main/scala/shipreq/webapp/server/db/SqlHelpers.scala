@@ -11,7 +11,6 @@ object SqlHelpers {
 
   implicit val dbCodecEmailAddr     = DBC.WithOption.caseClass[EmailAddr]
   implicit val dbCodecHashedStr     = DBC.WithOption.caseClass[HashedStr]
-  implicit val dbCodecISO8601       = DBC.WithOption.caseClass[ISO8601]
   implicit val dbCodecProjectId     = DBC.WithOption.caseClass[ProjectId]
   implicit val dbCodecUserId        = DBC.WithOption.caseClass[UserId]
   implicit val dbCodecUsername      = DBC.WithOption.caseClass[Username]
@@ -21,7 +20,7 @@ object SqlHelpers {
   implicit val GR_ResetPasswordInfo    = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
   implicit val GR_UserDescriptor       = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
-  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
+//  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
   implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
     def apply(v: PasswordAndSalt, pp: PositionedParameters) {
@@ -30,13 +29,13 @@ object SqlHelpers {
     }
   }
 
-  implicit val GR_UserDetail = GetResult(r => UserDetail(r.<<, r.<<))
-  implicit object SP_UserDetail extends SetParameter[UserDetail] {
-    def apply(d: UserDetail, pp: PositionedParameters) {
-      pp setString d.name
-      pp setBoolean d.newsletter
-    }
-  }
+//  implicit val GR_UserDetail = GetResult(r => UserDetail(r.<<, r.<<))
+//  implicit object SP_UserDetail extends SetParameter[UserDetail] {
+//    def apply(d: UserDetail, pp: PositionedParameters) {
+//      pp setString d.name
+//      pp setBoolean d.newsletter
+//    }
+//  }
 
   def userRoles(r: PositionedResult): Set[String] =
     r.nextStringOption() match {
