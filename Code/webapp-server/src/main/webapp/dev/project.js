@@ -22394,7 +22394,7 @@ return jQuery;
 		exports["ReactMotion"] = factory(require("react"));
 	else
 		root["ReactMotion"] = factory(root["React"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_1__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_9__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -22445,57 +22445,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	exports.__esModule = true;
 	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	function _interopRequire(obj) { return obj && obj.__esModule ? obj['default'] : obj; }
 	
-	var _react = __webpack_require__(1);
+	var _Motion = __webpack_require__(1);
 	
-	var _react2 = _interopRequireDefault(_react);
+	exports.Motion = _interopRequire(_Motion);
 	
-	var _components2 = __webpack_require__(2);
+	var _StaggeredMotion = __webpack_require__(10);
 	
-	var _components3 = _interopRequireDefault(_components2);
+	exports.StaggeredMotion = _interopRequire(_StaggeredMotion);
 	
-	var _reorderKeys = __webpack_require__(17);
+	var _TransitionMotion = __webpack_require__(11);
 	
-	var _reorderKeys2 = _interopRequireDefault(_reorderKeys);
+	exports.TransitionMotion = _interopRequire(_TransitionMotion);
 	
-	var _components = _components3['default'](_react2['default']);
+	var _spring = __webpack_require__(13);
 	
-	var Spring = _components.Spring;
-	var TransitionSpring = _components.TransitionSpring;
-	var Motion = _components.Motion;
-	var StaggeredMotion = _components.StaggeredMotion;
-	var TransitionMotion = _components.TransitionMotion;
-	exports.Spring = Spring;
-	exports.TransitionSpring = TransitionSpring;
-	exports.Motion = Motion;
-	exports.StaggeredMotion = StaggeredMotion;
-	exports.TransitionMotion = TransitionMotion;
+	exports.spring = _interopRequire(_spring);
 	
-	var _spring2 = __webpack_require__(13);
+	var _presets = __webpack_require__(14);
 	
-	var _spring3 = _interopRequireDefault(_spring2);
+	exports.presets = _interopRequire(_presets);
 	
-	exports.spring = _spring3['default'];
+	// deprecated, dummy warning function
 	
-	var _presets2 = __webpack_require__(14);
+	var _reorderKeys = __webpack_require__(15);
 	
-	var _presets3 = _interopRequireDefault(_presets2);
-	
-	exports.presets = _presets3['default'];
-	var utils = {
-	  reorderKeys: _reorderKeys2['default']
-	};
-	exports.utils = utils;
+	exports.reorderKeys = _interopRequire(_reorderKeys);
 
 /***/ },
 /* 1 */
-/***/ function(module, exports) {
-
-	module.exports = __WEBPACK_EXTERNAL_MODULE_1__;
-
-/***/ },
-/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22504,451 +22483,262 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 	
-	exports['default'] = components;
-	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _noVelocity = __webpack_require__(3);
+	var _mapToZero = __webpack_require__(2);
 	
-	var _noVelocity2 = _interopRequireDefault(_noVelocity);
+	var _mapToZero2 = _interopRequireDefault(_mapToZero);
 	
-	var _hasReachedStyle = __webpack_require__(4);
-	
-	var _hasReachedStyle2 = _interopRequireDefault(_hasReachedStyle);
-	
-	var _mergeDiff = __webpack_require__(5);
-	
-	var _mergeDiff2 = _interopRequireDefault(_mergeDiff);
-	
-	var _animationLoop = __webpack_require__(6);
-	
-	var _animationLoop2 = _interopRequireDefault(_animationLoop);
-	
-	var _zero = __webpack_require__(10);
-	
-	var _zero2 = _interopRequireDefault(_zero);
-	
-	var _updateTree = __webpack_require__(11);
-	
-	var _deprecatedSprings2 = __webpack_require__(15);
-	
-	var _deprecatedSprings3 = _interopRequireDefault(_deprecatedSprings2);
-	
-	var _stripStyle = __webpack_require__(16);
+	var _stripStyle = __webpack_require__(3);
 	
 	var _stripStyle2 = _interopRequireDefault(_stripStyle);
 	
-	var startAnimation = _animationLoop2['default']();
+	var _stepper3 = __webpack_require__(4);
 	
-	function mapObject(f, obj) {
+	var _stepper4 = _interopRequireDefault(_stepper3);
+	
+	var _performanceNow = __webpack_require__(5);
+	
+	var _performanceNow2 = _interopRequireDefault(_performanceNow);
+	
+	var _raf = __webpack_require__(7);
+	
+	var _raf2 = _interopRequireDefault(_raf);
+	
+	var _shouldStopAnimation = __webpack_require__(8);
+	
+	var _shouldStopAnimation2 = _interopRequireDefault(_shouldStopAnimation);
+	
+	var _react = __webpack_require__(9);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var msPerFrame = 1000 / 60;
+	
+	var Motion = _react2['default'].createClass({
+	  displayName: 'Motion',
+	
+	  propTypes: {
+	    // TOOD: warn against putting a config in here
+	    defaultStyle: _react.PropTypes.objectOf(_react.PropTypes.number),
+	    style: _react.PropTypes.objectOf(_react.PropTypes.oneOfType([_react.PropTypes.number, _react.PropTypes.object])).isRequired,
+	    children: _react.PropTypes.func.isRequired,
+	    onRest: _react.PropTypes.func
+	  },
+	
+	  getInitialState: function getInitialState() {
+	    var _props = this.props;
+	    var defaultStyle = _props.defaultStyle;
+	    var style = _props.style;
+	
+	    var currentStyle = defaultStyle || _stripStyle2['default'](style);
+	    var currentVelocity = _mapToZero2['default'](currentStyle);
+	    return {
+	      currentStyle: currentStyle,
+	      currentVelocity: currentVelocity,
+	      lastIdealStyle: currentStyle,
+	      lastIdealVelocity: currentVelocity
+	    };
+	  },
+	
+	  wasAnimating: false,
+	  animationID: null,
+	  prevTime: 0,
+	  accumulatedTime: 0,
+	  // it's possible that currentStyle's value is stale: if props is immediately
+	  // changed from 0 to 400 to spring(0) again, the async currentStyle is still
+	  // at 0 (didn't have time to tick and interpolate even once). If we naively
+	  // compare currentStyle with destVal it'll be 0 === 0 (no animation, stop).
+	  // In reality currentStyle should be 400
+	  unreadPropStyle: null,
+	  // after checking for unreadPropStyle != null, we manually go set the
+	  // non-interpolating values (those that are a number, without a spring
+	  // config)
+	  clearUnreadPropStyle: function clearUnreadPropStyle(destStyle) {
+	    var dirty = false;
+	    var _state = this.state;
+	    var currentStyle = _state.currentStyle;
+	    var currentVelocity = _state.currentVelocity;
+	    var lastIdealStyle = _state.lastIdealStyle;
+	    var lastIdealVelocity = _state.lastIdealVelocity;
+	
+	    for (var key in destStyle) {
+	      if (!destStyle.hasOwnProperty(key)) {
+	        continue;
+	      }
+	
+	      var styleValue = destStyle[key];
+	      if (typeof styleValue === 'number') {
+	        if (!dirty) {
+	          dirty = true;
+	          currentStyle = _extends({}, currentStyle);
+	          currentVelocity = _extends({}, currentVelocity);
+	          lastIdealStyle = _extends({}, lastIdealStyle);
+	          lastIdealVelocity = _extends({}, lastIdealVelocity);
+	        }
+	
+	        currentStyle[key] = styleValue;
+	        currentVelocity[key] = 0;
+	        lastIdealStyle[key] = styleValue;
+	        lastIdealVelocity[key] = 0;
+	      }
+	    }
+	
+	    if (dirty) {
+	      this.setState({ currentStyle: currentStyle, currentVelocity: currentVelocity, lastIdealStyle: lastIdealStyle, lastIdealVelocity: lastIdealVelocity });
+	    }
+	  },
+	
+	  startAnimationIfNecessary: function startAnimationIfNecessary() {
+	    var _this = this;
+	
+	    // TODO: when config is {a: 10} and dest is {a: 10} do we raf once and
+	    // call cb? No, otherwise accidental parent rerender causes cb trigger
+	    this.animationID = _raf2['default'](function () {
+	      // check if we need to animate in the first place
+	      var propsStyle = _this.props.style;
+	      if (_shouldStopAnimation2['default'](_this.state.currentStyle, propsStyle, _this.state.currentVelocity)) {
+	        if (_this.wasAnimating && _this.props.onRest) {
+	          _this.props.onRest();
+	        }
+	
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.wasAnimating = false;
+	        _this.accumulatedTime = 0;
+	        return;
+	      }
+	
+	      _this.wasAnimating = true;
+	
+	      var currentTime = _performanceNow2['default']();
+	      var timeDelta = currentTime - _this.prevTime;
+	      _this.prevTime = currentTime;
+	      _this.accumulatedTime = _this.accumulatedTime + timeDelta;
+	      // more than 10 frames? prolly switched browser tab. Restart
+	      if (_this.accumulatedTime > msPerFrame * 10) {
+	        _this.accumulatedTime = 0;
+	      }
+	
+	      if (_this.accumulatedTime === 0) {
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.startAnimationIfNecessary();
+	        return;
+	      }
+	
+	      var currentFrameCompletion = (_this.accumulatedTime - Math.floor(_this.accumulatedTime / msPerFrame) * msPerFrame) / msPerFrame;
+	      var framesToCatchUp = Math.floor(_this.accumulatedTime / msPerFrame);
+	
+	      var newLastIdealStyle = {};
+	      var newLastIdealVelocity = {};
+	      var newCurrentStyle = {};
+	      var newCurrentVelocity = {};
+	
+	      for (var key in propsStyle) {
+	        if (!propsStyle.hasOwnProperty(key)) {
+	          continue;
+	        }
+	
+	        var styleValue = propsStyle[key];
+	        if (typeof styleValue === 'number') {
+	          newCurrentStyle[key] = styleValue;
+	          newCurrentVelocity[key] = 0;
+	          newLastIdealStyle[key] = styleValue;
+	          newLastIdealVelocity[key] = 0;
+	        } else {
+	          var newLastIdealStyleValue = _this.state.lastIdealStyle[key];
+	          var newLastIdealVelocityValue = _this.state.lastIdealVelocity[key];
+	          for (var i = 0; i < framesToCatchUp; i++) {
+	            var _stepper = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	            newLastIdealStyleValue = _stepper[0];
+	            newLastIdealVelocityValue = _stepper[1];
+	          }
+	
+	          var _stepper2 = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	          var nextIdealX = _stepper2[0];
+	          var nextIdealV = _stepper2[1];
+	
+	          newCurrentStyle[key] = newLastIdealStyleValue + (nextIdealX - newLastIdealStyleValue) * currentFrameCompletion;
+	          newCurrentVelocity[key] = newLastIdealVelocityValue + (nextIdealV - newLastIdealVelocityValue) * currentFrameCompletion;
+	          newLastIdealStyle[key] = newLastIdealStyleValue;
+	          newLastIdealVelocity[key] = newLastIdealVelocityValue;
+	        }
+	      }
+	
+	      _this.animationID = null;
+	      // the amount we're looped over above
+	      _this.accumulatedTime -= framesToCatchUp * msPerFrame;
+	
+	      _this.setState({
+	        currentStyle: newCurrentStyle,
+	        currentVelocity: newCurrentVelocity,
+	        lastIdealStyle: newLastIdealStyle,
+	        lastIdealVelocity: newLastIdealVelocity
+	      });
+	
+	      _this.unreadPropStyle = null;
+	
+	      _this.startAnimationIfNecessary();
+	    });
+	  },
+	
+	  componentDidMount: function componentDidMount() {
+	    this.prevTime = _performanceNow2['default']();
+	    this.startAnimationIfNecessary();
+	  },
+	
+	  componentWillReceiveProps: function componentWillReceiveProps(props) {
+	    if (this.unreadPropStyle != null) {
+	      // previous props haven't had the chance to be set yet; set them here
+	      this.clearUnreadPropStyle(this.unreadPropStyle);
+	    }
+	
+	    this.unreadPropStyle = props.style;
+	    if (this.animationID == null) {
+	      this.prevTime = _performanceNow2['default']();
+	      this.startAnimationIfNecessary();
+	    }
+	  },
+	
+	  componentWillUnmount: function componentWillUnmount() {
+	    if (this.animationID != null) {
+	      _raf2['default'].cancel(this.animationID);
+	      this.animationID = null;
+	    }
+	  },
+	
+	  render: function render() {
+	    var renderedChildren = this.props.children(this.state.currentStyle);
+	    return renderedChildren && _react2['default'].Children.only(renderedChildren);
+	  }
+	});
+	
+	exports['default'] = Motion;
+	module.exports = exports['default'];
+
+/***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	
+	
+	// currently used to initiate the velocity style object to 0
+	'use strict';
+	
+	exports.__esModule = true;
+	exports['default'] = mapToZero;
+	
+	function mapToZero(obj) {
 	  var ret = {};
 	  for (var key in obj) {
-	    if (!obj.hasOwnProperty(key)) {
-	      continue;
+	    if (obj.hasOwnProperty(key)) {
+	      ret[key] = 0;
 	    }
-	    ret[key] = f(obj[key], key);
 	  }
 	  return ret;
-	}
-	
-	function everyObj(f, obj) {
-	  for (var key in obj) {
-	    if (!obj.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    if (!f(obj[key], key)) {
-	      return false;
-	    }
-	  }
-	  return true;
-	}
-	
-	function components(React) {
-	  var PropTypes = React.PropTypes;
-	
-	  var Motion = React.createClass({
-	    displayName: 'Motion',
-	
-	    propTypes: {
-	      // TOOD: warn against putting a config in here
-	      defaultValue: function defaultValue(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('Spring\'s `defaultValue` has been changed to `defaultStyle`. ' + 'Its format received a few (easy to update!) changes as well.');
-	        }
-	      },
-	      endValue: function endValue(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('Spring\'s `endValue` has been changed to `style`. Its format ' + 'received a few (easy to update!) changes as well.');
-	        }
-	      },
-	      defaultStyle: PropTypes.object,
-	      style: PropTypes.object.isRequired,
-	      children: PropTypes.func.isRequired
-	    },
-	
-	    getInitialState: function getInitialState() {
-	      var _props = this.props;
-	      var defaultStyle = _props.defaultStyle;
-	      var style = _props.style;
-	
-	      var currentStyle = defaultStyle || style;
-	      return {
-	        currentStyle: currentStyle,
-	        currentVelocity: mapObject(_zero2['default'], currentStyle)
-	      };
-	    },
-	
-	    componentDidMount: function componentDidMount() {
-	      this.startAnimating();
-	    },
-	
-	    componentWillReceiveProps: function componentWillReceiveProps() {
-	      this.startAnimating();
-	    },
-	
-	    animationStep: function animationStep(timestep, state) {
-	      var currentStyle = state.currentStyle;
-	      var currentVelocity = state.currentVelocity;
-	      var style = this.props.style;
-	
-	      var newCurrentStyle = _updateTree.updateCurrentStyle(timestep, currentStyle, currentVelocity, style);
-	      var newCurrentVelocity = _updateTree.updateCurrentVelocity(timestep, currentStyle, currentVelocity, style);
-	
-	      // TOOD: this isn't necessary anymore. It was used only against endValue func
-	      if (_noVelocity2['default'](currentVelocity, newCurrentStyle) && _noVelocity2['default'](newCurrentVelocity, newCurrentStyle)) {
-	        // check explanation in `Motion.animationRender`
-	        this.stopAnimation(); // Nasty side effects....
-	      }
-	
-	      return {
-	        currentStyle: newCurrentStyle,
-	        currentVelocity: newCurrentVelocity
-	      };
-	    },
-	
-	    stopAnimation: null,
-	
-	    // used in animationRender
-	    hasUnmounted: false,
-	
-	    componentWillUnmount: function componentWillUnmount() {
-	      this.stopAnimation();
-	      this.hasUnmounted = true;
-	    },
-	
-	    startAnimating: function startAnimating() {
-	      // Is smart enough to not start it twice
-	      this.stopAnimation = startAnimation(this.state, this.animationStep, this.animationRender);
-	    },
-	
-	    animationRender: function animationRender(alpha, nextState, prevState) {
-	      // `this.hasUnmounted` might be true in the following condition:
-	      // user does some checks in `style` and calls an owner handler
-	      // owner sets state in the callback, triggering a re-render
-	      // unmounts Motion
-	      if (!this.hasUnmounted) {
-	        this.setState({
-	          currentStyle: _updateTree.interpolateValue(alpha, nextState.currentStyle, prevState.currentStyle),
-	          currentVelocity: nextState.currentVelocity
-	        });
-	      }
-	    },
-	
-	    render: function render() {
-	      var strippedStyle = _stripStyle2['default'](this.state.currentStyle);
-	      var renderedChildren = this.props.children(strippedStyle);
-	      return renderedChildren && React.Children.only(renderedChildren);
-	    }
-	  });
-	
-	  var StaggeredMotion = React.createClass({
-	    displayName: 'StaggeredMotion',
-	
-	    propTypes: {
-	      defaultStyle: function defaultStyle(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('You forgot the "s" for `StaggeredMotion`\'s `defaultStyles`.');
-	        }
-	      },
-	      style: function style(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('You forgot the "s" for `StaggeredMotion`\'s `styles`.');
-	        }
-	      },
-	      // TOOD: warn against putting configs in here
-	      defaultStyles: PropTypes.arrayOf(PropTypes.object),
-	      styles: PropTypes.func.isRequired,
-	      children: PropTypes.func.isRequired
-	    },
-	
-	    getInitialState: function getInitialState() {
-	      var _props2 = this.props;
-	      var styles = _props2.styles;
-	      var defaultStyles = _props2.defaultStyles;
-	
-	      var currentStyles = defaultStyles ? defaultStyles : styles();
-	      return {
-	        currentStyles: currentStyles,
-	        currentVelocities: currentStyles.map(function (s) {
-	          return mapObject(_zero2['default'], s);
-	        })
-	      };
-	    },
-	
-	    componentDidMount: function componentDidMount() {
-	      this.startAnimating();
-	    },
-	
-	    componentWillReceiveProps: function componentWillReceiveProps() {
-	      this.startAnimating();
-	    },
-	
-	    animationStep: function animationStep(timestep, state) {
-	      var currentStyles = state.currentStyles;
-	      var currentVelocities = state.currentVelocities;
-	
-	      var styles = this.props.styles(currentStyles.map(_stripStyle2['default']));
-	
-	      var newCurrentStyles = currentStyles.map(function (currentStyle, i) {
-	        return _updateTree.updateCurrentStyle(timestep, currentStyle, currentVelocities[i], styles[i]);
-	      });
-	      var newCurrentVelocities = currentStyles.map(function (currentStyle, i) {
-	        return _updateTree.updateCurrentVelocity(timestep, currentStyle, currentVelocities[i], styles[i]);
-	      });
-	
-	      // TODO: is this right?
-	      if (currentVelocities.every(function (v, k) {
-	        return _noVelocity2['default'](v, currentStyles[k]);
-	      }) && newCurrentVelocities.every(function (v, k) {
-	        return _noVelocity2['default'](v, newCurrentStyles[k]);
-	      })) {
-	        this.stopAnimation();
-	      }
-	
-	      return {
-	        currentStyles: newCurrentStyles,
-	        currentVelocities: newCurrentVelocities
-	      };
-	    },
-	
-	    stopAnimation: null,
-	
-	    // used in animationRender
-	    hasUnmounted: false,
-	
-	    componentWillUnmount: function componentWillUnmount() {
-	      this.stopAnimation();
-	      this.hasUnmounted = true;
-	    },
-	
-	    startAnimating: function startAnimating() {
-	      this.stopAnimation = startAnimation(this.state, this.animationStep, this.animationRender);
-	    },
-	
-	    animationRender: function animationRender(alpha, nextState, prevState) {
-	      // See comment in Motion.
-	      if (!this.hasUnmounted) {
-	        var currentStyles = nextState.currentStyles.map(function (style, i) {
-	          return _updateTree.interpolateValue(alpha, style, prevState.currentStyles[i]);
-	        });
-	        this.setState({
-	          currentStyles: currentStyles,
-	          currentVelocities: nextState.currentVelocities
-	        });
-	      }
-	    },
-	
-	    render: function render() {
-	      var strippedStyle = this.state.currentStyles.map(_stripStyle2['default']);
-	      var renderedChildren = this.props.children(strippedStyle);
-	      return renderedChildren && React.Children.only(renderedChildren);
-	    }
-	  });
-	
-	  var TransitionMotion = React.createClass({
-	    displayName: 'TransitionMotion',
-	
-	    propTypes: {
-	      defaultValue: function defaultValue(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('TransitionSpring\'s `defaultValue` has been changed to ' + '`defaultStyles`. Its format received a few (easy to update!) ' + 'changes as well.');
-	        }
-	      },
-	      endValue: function endValue(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('TransitionSpring\'s `endValue` has been changed to `styles`. ' + 'Its format received a few (easy to update!) changes as well.');
-	        }
-	      },
-	      defaultStyle: function defaultStyle(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('You forgot the "s" for `TransitionMotion`\'s `defaultStyles`.');
-	        }
-	      },
-	      style: function style(prop, propName) {
-	        if (prop[propName]) {
-	          return new Error('You forgot the "s" for `TransitionMotion`\'s `styles`.');
-	        }
-	      },
-	      // TOOD: warn against putting configs in here
-	      defaultStyles: PropTypes.objectOf(PropTypes.any),
-	      styles: PropTypes.oneOfType([PropTypes.func, PropTypes.objectOf(PropTypes.any.isRequired)]).isRequired,
-	      willLeave: PropTypes.oneOfType([PropTypes.func]),
-	      // TOOD: warn against putting configs in here
-	      willEnter: PropTypes.oneOfType([PropTypes.func]),
-	      children: PropTypes.func.isRequired
-	    },
-	
-	    getDefaultProps: function getDefaultProps() {
-	      return {
-	        willEnter: function willEnter(key, value) {
-	          return value;
-	        },
-	        willLeave: function willLeave() {
-	          return null;
-	        }
-	      };
-	    },
-	
-	    getInitialState: function getInitialState() {
-	      var _props3 = this.props;
-	      var styles = _props3.styles;
-	      var defaultStyles = _props3.defaultStyles;
-	
-	      var currentStyles = undefined;
-	      if (defaultStyles == null) {
-	        if (typeof styles === 'function') {
-	          currentStyles = styles();
-	        } else {
-	          currentStyles = styles;
-	        }
-	      } else {
-	        currentStyles = defaultStyles;
-	      }
-	      return {
-	        currentStyles: currentStyles,
-	        currentVelocities: mapObject(function (s) {
-	          return mapObject(_zero2['default'], s);
-	        }, currentStyles)
-	      };
-	    },
-	
-	    componentDidMount: function componentDidMount() {
-	      this.startAnimating();
-	    },
-	
-	    componentWillReceiveProps: function componentWillReceiveProps() {
-	      this.startAnimating();
-	    },
-	
-	    animationStep: function animationStep(timestep, state) {
-	      var currentStyles = state.currentStyles;
-	      var currentVelocities = state.currentVelocities;
-	      var _props4 = this.props;
-	      var styles = _props4.styles;
-	      var willEnter = _props4.willEnter;
-	      var willLeave = _props4.willLeave;
-	
-	      if (typeof styles === 'function') {
-	        styles = styles(currentStyles);
-	      }
-	
-	      // TODO: huh?
-	      var mergedStyles = styles; // set mergedStyles to styles as the default
-	      var hasNewKey = false;
-	
-	      mergedStyles = _mergeDiff2['default'](currentStyles, styles,
-	      // TODO: stop allocating like crazy in this whole code path
-	      function (key) {
-	        var res = willLeave(key, currentStyles[key], styles, currentStyles, currentVelocities);
-	        if (res == null) {
-	          // For legacy reason. We won't allow returning null soon
-	          // TODO: remove, after next release
-	          return null;
-	        }
-	
-	        if (_noVelocity2['default'](currentVelocities[key], currentStyles[key]) && _hasReachedStyle2['default'](currentStyles[key], res)) {
-	          return null;
-	        }
-	        return res;
-	      });
-	
-	      Object.keys(mergedStyles).filter(function (key) {
-	        return !currentStyles.hasOwnProperty(key);
-	      }).forEach(function (key) {
-	        var _extends2, _extends3;
-	
-	        hasNewKey = true;
-	        var enterStyle = willEnter(key, mergedStyles[key], styles, currentStyles, currentVelocities);
-	
-	        // We can mutate this here because mergeDiff returns a new Obj
-	        mergedStyles[key] = enterStyle;
-	
-	        currentStyles = _extends({}, currentStyles, (_extends2 = {}, _extends2[key] = enterStyle, _extends2));
-	        currentVelocities = _extends({}, currentVelocities, (_extends3 = {}, _extends3[key] = mapObject(_zero2['default'], enterStyle), _extends3));
-	      });
-	
-	      var newCurrentStyles = mapObject(function (mergedStyle, key) {
-	        return _updateTree.updateCurrentStyle(timestep, currentStyles[key], currentVelocities[key], mergedStyle);
-	      }, mergedStyles);
-	      var newCurrentVelocities = mapObject(function (mergedStyle, key) {
-	        return _updateTree.updateCurrentVelocity(timestep, currentStyles[key], currentVelocities[key], mergedStyle);
-	      }, mergedStyles);
-	
-	      if (!hasNewKey && everyObj(function (v, k) {
-	        return _noVelocity2['default'](v, currentStyles[k]);
-	      }, currentVelocities) && everyObj(function (v, k) {
-	        return _noVelocity2['default'](v, newCurrentStyles[k]);
-	      }, newCurrentVelocities)) {
-	        // check explanation in `Motion.animationRender`
-	        this.stopAnimation(); // Nasty side effects....
-	      }
-	
-	      return {
-	        currentStyles: newCurrentStyles,
-	        currentVelocities: newCurrentVelocities
-	      };
-	    },
-	
-	    stopAnimation: null,
-	
-	    // used in animationRender
-	    hasUnmounted: false,
-	
-	    componentWillUnmount: function componentWillUnmount() {
-	      this.stopAnimation();
-	      this.hasUnmounted = true;
-	    },
-	
-	    startAnimating: function startAnimating() {
-	      this.stopAnimation = startAnimation(this.state, this.animationStep, this.animationRender);
-	    },
-	
-	    animationRender: function animationRender(alpha, nextState, prevState) {
-	      // See comment in Motion.
-	      if (!this.hasUnmounted) {
-	        var currentStyles = mapObject(function (style, key) {
-	          return _updateTree.interpolateValue(alpha, style, prevState.currentStyles[key]);
-	        }, nextState.currentStyles);
-	        this.setState({
-	          currentStyles: currentStyles,
-	          currentVelocities: nextState.currentVelocities
-	        });
-	      }
-	    },
-	
-	    render: function render() {
-	      var strippedStyle = mapObject(_stripStyle2['default'], this.state.currentStyles);
-	      var renderedChildren = this.props.children(strippedStyle);
-	      return renderedChildren && React.Children.only(renderedChildren);
-	    }
-	  });
-	
-	  var _deprecatedSprings = _deprecatedSprings3['default'](React);
-	
-	  var Spring = _deprecatedSprings.Spring;
-	  var TransitionSpring = _deprecatedSprings.TransitionSpring;
-	
-	  return { Spring: Spring, TransitionSpring: TransitionSpring, Motion: Motion, StaggeredMotion: StaggeredMotion, TransitionMotion: TransitionMotion };
 	}
 	
 	module.exports = exports['default'];
@@ -22958,24 +22748,23 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	
-	// currentStyle keeps the info about whether a prop is configured as a spring
-	// or if it's just a random prop that happens to be present on the style
+	// turn {x: {val: 1, stiffness: 1, damping: 2}, y: 2} generated by
+	// `{x: spring(1, {stiffness: 1, damping: 2}), y: 2}` into {x: 1, y: 2}
 	
 	'use strict';
 	
 	exports.__esModule = true;
-	exports['default'] = noVelocity;
+	exports['default'] = stripStyle;
 	
-	function noVelocity(currentVelocity, currentStyle) {
-	  for (var key in currentVelocity) {
-	    if (!currentVelocity.hasOwnProperty(key)) {
+	function stripStyle(style) {
+	  var ret = {};
+	  for (var key in style) {
+	    if (!style.hasOwnProperty(key)) {
 	      continue;
 	    }
-	    if (currentStyle[key] != null && currentStyle[key].config && currentVelocity[key] !== 0) {
-	      return false;
-	    }
+	    ret[key] = typeof style[key] === 'number' ? style[key] : style[key].val;
 	  }
-	  return true;
+	  return ret;
 	}
 	
 	module.exports = exports['default'];
@@ -22984,302 +22773,52 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports) {
 
-	'use strict';
+	
+	
+	// stepper is used a lot. Saves allocation to return the same array wrapper.
+	// This is fine and danger-free against mutations because the callsite
+	// immediately destructures it and gets the numbers inside without passing the
+	"use strict";
 	
 	exports.__esModule = true;
-	exports['default'] = hasReachedStyle;
+	exports["default"] = stepper;
 	
-	function hasReachedStyle(currentStyle, style) {
-	  for (var key in style) {
-	    if (!style.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    var currentValue = currentStyle[key];
-	    var destValue = style[key];
-	    if (destValue == null || !destValue.config) {
-	      // not a spring config
-	      continue;
-	    }
-	    if (currentValue.config && currentValue.val !== destValue.val) {
-	      return false;
-	    }
-	    if (!currentValue.config && currentValue !== destValue.val) {
-	      return false;
-	    }
+	var reusedTuple = [];
+	
+	function stepper(secondPerFrame, x, v, destX, k, b, precision) {
+	  // Spring stiffness, in kg / s^2
+	
+	  // for animations, destX is really spring length (spring at rest). initial
+	  // position is considered as the stretched/compressed position of a spring
+	  var Fspring = -k * (x - destX);
+	
+	  // Damping, in kg / s
+	  var Fdamper = -b * v;
+	
+	  // usually we put mass here, but for animation purposes, specifying mass is a
+	  // bit redundant. you could simply adjust k and b accordingly
+	  // let a = (Fspring + Fdamper) / mass;
+	  var a = Fspring + Fdamper;
+	
+	  var newV = v + a * secondPerFrame;
+	  var newX = x + newV * secondPerFrame;
+	
+	  if (Math.abs(newV) < precision && Math.abs(newX - destX) < precision) {
+	    reusedTuple[0] = destX;
+	    reusedTuple[1] = 0;
+	    return reusedTuple;
 	  }
 	
-	  return true;
+	  reusedTuple[0] = newX;
+	  reusedTuple[1] = newV;
+	  return reusedTuple;
 	}
 	
-	module.exports = exports['default'];
+	module.exports = exports["default"];
+	// array reference around.
 
 /***/ },
 /* 5 */
-/***/ function(module, exports) {
-
-	
-	
-	// this function is allocation-less thanks to babel, which transforms the tail
-	// calls into loops
-	'use strict';
-	
-	exports.__esModule = true;
-	exports['default'] = mergeDiff;
-	function mergeDiffArr(_x, _x2, _x3, _x4, _x5, _x6, _x7) {
-	  var _again = true;
-	
-	  _function: while (_again) {
-	    var arrA = _x,
-	        arrB = _x2,
-	        collB = _x3,
-	        indexA = _x4,
-	        indexB = _x5,
-	        onRemove = _x6,
-	        accum = _x7;
-	    endA = endB = keyA = keyB = fill = fill = undefined;
-	    _again = false;
-	
-	    var endA = indexA === arrA.length;
-	    var endB = indexB === arrB.length;
-	    var keyA = arrA[indexA];
-	    var keyB = arrB[indexB];
-	    if (endA && endB) {
-	      // returning null here, otherwise lint complains that we're not expecting
-	      // a return value in subsequent calls. We know what we're doing.
-	      return null;
-	    }
-	
-	    if (endA) {
-	      accum[keyB] = collB[keyB];
-	      _x = arrA;
-	      _x2 = arrB;
-	      _x3 = collB;
-	      _x4 = indexA;
-	      _x5 = indexB + 1;
-	      _x6 = onRemove;
-	      _x7 = accum;
-	      _again = true;
-	      continue _function;
-	    }
-	
-	    if (endB) {
-	      var fill = onRemove(keyA);
-	      if (fill != null) {
-	        accum[keyA] = fill;
-	      }
-	      _x = arrA;
-	      _x2 = arrB;
-	      _x3 = collB;
-	      _x4 = indexA + 1;
-	      _x5 = indexB;
-	      _x6 = onRemove;
-	      _x7 = accum;
-	      _again = true;
-	      continue _function;
-	    }
-	
-	    if (keyA === keyB) {
-	      accum[keyA] = collB[keyA];
-	      _x = arrA;
-	      _x2 = arrB;
-	      _x3 = collB;
-	      _x4 = indexA + 1;
-	      _x5 = indexB + 1;
-	      _x6 = onRemove;
-	      _x7 = accum;
-	      _again = true;
-	      continue _function;
-	    }
-	
-	    if (!collB.hasOwnProperty(keyA)) {
-	      var fill = onRemove(keyA);
-	      if (fill != null) {
-	        accum[keyA] = fill;
-	      }
-	      _x = arrA;
-	      _x2 = arrB;
-	      _x3 = collB;
-	      _x4 = indexA + 1;
-	      _x5 = indexB;
-	      _x6 = onRemove;
-	      _x7 = accum;
-	      _again = true;
-	      continue _function;
-	    }
-	
-	    _x = arrA;
-	    _x2 = arrB;
-	    _x3 = collB;
-	    _x4 = indexA + 1;
-	    _x5 = indexB;
-	    _x6 = onRemove;
-	    _x7 = accum;
-	    _again = true;
-	    continue _function;
-	  }
-	}
-	
-	function mergeDiff(a, b, onRemove) {
-	  var ret = {};
-	  // if anyone can make this work without allocating the arrays here, we'll
-	  // give you a medal
-	  mergeDiffArr(Object.keys(a), Object.keys(b), b, 0, 0, onRemove, ret);
-	  return ret;
-	}
-	
-	module.exports = exports['default'];
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	exports.__esModule = true;
-	exports['default'] = configAnimation;
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-	
-	var _performanceNow = __webpack_require__(7);
-	
-	var _performanceNow2 = _interopRequireDefault(_performanceNow);
-	
-	var _raf = __webpack_require__(9);
-	
-	var _raf2 = _interopRequireDefault(_raf);
-	
-	function configAnimation() {
-	  var config = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-	  var _config$timeStep = config.timeStep;
-	  var timeStep = _config$timeStep === undefined ? 1 / 60 * 1000 : _config$timeStep;
-	  var _config$timeScale = config.timeScale;
-	  var timeScale = _config$timeScale === undefined ? 1 : _config$timeScale;
-	  var _config$maxSteps = config.maxSteps;
-	  var maxSteps = _config$maxSteps === undefined ? 10 : _config$maxSteps;
-	  var _config$raf = config.raf;
-	  var raf = _config$raf === undefined ? _raf2['default'] : _config$raf;
-	  var _config$now = config.now;
-	  var now = _config$now === undefined ? _performanceNow2['default'] : _config$now;
-	
-	  var animRunning = [];
-	  var running = false;
-	  var prevTime = 0;
-	  var accumulatedTime = 0;
-	
-	  function loop() {
-	    var currentTime = now();
-	    var frameTime = currentTime - prevTime; // delta
-	
-	    prevTime = currentTime;
-	    accumulatedTime += frameTime * timeScale;
-	
-	    if (accumulatedTime > timeStep * maxSteps) {
-	      accumulatedTime = 0;
-	    }
-	
-	    var frameNumber = Math.ceil(accumulatedTime / timeStep);
-	    for (var i = 0; i < animRunning.length; i++) {
-	      var _animRunning$i = animRunning[i];
-	      var active = _animRunning$i.active;
-	      var animationStep = _animRunning$i.animationStep;
-	      var prevPrevState = _animRunning$i.prevState;
-	      var prevNextState = animRunning[i].nextState;
-	
-	      if (!active) {
-	        continue;
-	      }
-	
-	      // Seems like because the TS sets destVals as enterVals for the first
-	      // tick, we might render that value twice. We render it once, currValue is
-	      // enterVal and destVal is enterVal. The next tick is faster than 16ms,
-	      // so accumulatedTime (which would be about -16ms from the previous tick)
-	      // is negative (-16ms + any number less than 16ms < 0). So we just render
-	      // part ways towards the nextState, but that's enterVal still. We render
-	      // say 75% between currValue (=== enterVal) and destValue (=== enterVal).
-	      // So we render the same value a second time.
-	      // The solution below is to recalculate the destination state even when
-	      // you're moving partially towards it.
-	      if (accumulatedTime <= 0) {
-	        animRunning[i].nextState = animationStep(timeStep / 1000, prevPrevState);
-	      } else {
-	        for (var j = 0; j < frameNumber; j++) {
-	          animRunning[i].nextState = animationStep(timeStep / 1000, prevNextState);
-	          var _ref = [prevNextState, animRunning[i].nextState];
-	          animRunning[i].prevState = _ref[0];
-	          prevNextState = _ref[1];
-	        }
-	      }
-	    }
-	
-	    accumulatedTime = accumulatedTime - frameNumber * timeStep;
-	
-	    // Render and filter in one iteration.
-	    var alpha = 1 + accumulatedTime / timeStep;
-	    for (var i = 0; i < animRunning.length; i++) {
-	      var _animRunning$i2 = animRunning[i];
-	      var animationRender = _animRunning$i2.animationRender;
-	      var nextState = _animRunning$i2.nextState;
-	      var prevState = _animRunning$i2.prevState;
-	
-	      // Might mutate animRunning........
-	      animationRender(alpha, nextState, prevState);
-	    }
-	
-	    animRunning = animRunning.filter(function (_ref2) {
-	      var active = _ref2.active;
-	      return active;
-	    });
-	
-	    if (animRunning.length === 0) {
-	      running = false;
-	    } else {
-	      raf(loop);
-	    }
-	  }
-	
-	  function start() {
-	    if (!running) {
-	      running = true;
-	      prevTime = now();
-	      accumulatedTime = 0;
-	      raf(loop);
-	    }
-	  }
-	
-	  return function startAnimation(state, animationStep, animationRender) {
-	    for (var i = 0; i < animRunning.length; i++) {
-	      var val = animRunning[i];
-	      if (val.animationStep === animationStep) {
-	        val.active = true;
-	        val.prevState = state;
-	        start();
-	        return val.stop;
-	      }
-	    }
-	
-	    var newAnim = {
-	      animationStep: animationStep,
-	      animationRender: animationRender,
-	      prevState: state,
-	      nextState: state,
-	      active: true
-	    };
-	
-	    newAnim.stop = function () {
-	      return newAnim.active = false;
-	    };
-	    animRunning.push(newAnim);
-	
-	    start();
-	
-	    return newAnim.stop;
-	  };
-	}
-	
-	module.exports = exports['default'];
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Generated by CoffeeScript 1.7.1
@@ -23315,10 +22854,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    loadTime = new Date().getTime();
 	  }
 	}).call(undefined);
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ },
-/* 8 */
+/* 6 */
 /***/ function(module, exports) {
 
 	// shim for using process in browser
@@ -23420,21 +22959,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 9 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
 	
-	var now = __webpack_require__(7),
-	    global = typeof window === 'undefined' ? {} : window,
+	var now = __webpack_require__(5),
+	    root = typeof window === 'undefined' ? global : window,
 	    vendors = ['moz', 'webkit'],
 	    suffix = 'AnimationFrame',
-	    raf = global['request' + suffix],
-	    caf = global['cancel' + suffix] || global['cancelRequest' + suffix];
+	    raf = root['request' + suffix],
+	    caf = root['cancel' + suffix] || root['cancelRequest' + suffix];
 	
-	for (var i = 0; i < vendors.length && !raf; i++) {
-	  raf = global[vendors[i] + 'Request' + suffix];
-	  caf = global[vendors[i] + 'Cancel' + suffix] || global[vendors[i] + 'CancelRequest' + suffix];
+	for (var i = 0; !raf && i < vendors.length; i++) {
+	  raf = root[vendors[i] + 'Request' + suffix];
+	  caf = root[vendors[i] + 'Cancel' + suffix] || root[vendors[i] + 'CancelRequest' + suffix];
 	}
 	
 	// Some versions of FF have rAF but not cAF
@@ -23489,162 +23028,931 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // Wrap in a new function to prevent
 	  // `cancel` potentially being assigned
 	  // to the native rAF function
-	  return raf.call(global, fn);
+	  return raf.call(root, fn);
 	};
 	module.exports.cancel = function () {
-	  caf.apply(global, arguments);
+	  caf.apply(root, arguments);
 	};
+	module.exports.polyfill = function () {
+	  root.requestAnimationFrame = raf;
+	  root.cancelAnimationFrame = caf;
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 10 */
+/* 8 */
 /***/ function(module, exports) {
 
 	
-	// used by the tree-walking updates and springs. Avoids some allocations
-	"use strict";
+	
+	// usage assumption: currentStyle values have already been rendered but it says
+	// nothing of whether currentStyle is stale (see unreadPropStyle)
+	'use strict';
 	
 	exports.__esModule = true;
-	exports["default"] = zero;
+	exports['default'] = shouldStopAnimation;
 	
-	function zero() {
-	  return 0;
+	function shouldStopAnimation(currentStyle, style, currentVelocity) {
+	  for (var key in style) {
+	    if (!style.hasOwnProperty(key)) {
+	      continue;
+	    }
+	
+	    if (currentVelocity[key] !== 0) {
+	      return false;
+	    }
+	
+	    var styleValue = typeof style[key] === 'number' ? style[key] : style[key].val;
+	    // stepper will have already taken care of rounding precision errors, so
+	    // won't have such thing as 0.9999 !=== 1
+	    if (currentStyle[key] !== styleValue) {
+	      return false;
+	    }
+	  }
+	
+	  return true;
 	}
 	
-	module.exports = exports["default"];
+	module.exports = exports['default'];
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	module.exports = __WEBPACK_EXTERNAL_MODULE_9__;
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _mapToZero = __webpack_require__(2);
+	
+	var _mapToZero2 = _interopRequireDefault(_mapToZero);
+	
+	var _stripStyle = __webpack_require__(3);
+	
+	var _stripStyle2 = _interopRequireDefault(_stripStyle);
+	
+	var _stepper3 = __webpack_require__(4);
+	
+	var _stepper4 = _interopRequireDefault(_stepper3);
+	
+	var _performanceNow = __webpack_require__(5);
+	
+	var _performanceNow2 = _interopRequireDefault(_performanceNow);
+	
+	var _raf = __webpack_require__(7);
+	
+	var _raf2 = _interopRequireDefault(_raf);
+	
+	var _shouldStopAnimation = __webpack_require__(8);
+	
+	var _shouldStopAnimation2 = _interopRequireDefault(_shouldStopAnimation);
+	
+	var _react = __webpack_require__(9);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var msPerFrame = 1000 / 60;
+	
+	function shouldStopAnimationAll(currentStyles, styles, currentVelocities) {
+	  for (var i = 0; i < currentStyles.length; i++) {
+	    if (!_shouldStopAnimation2['default'](currentStyles[i], styles[i], currentVelocities[i])) {
+	      return false;
+	    }
+	  }
+	  return true;
+	}
+	
+	var StaggeredMotion = _react2['default'].createClass({
+	  displayName: 'StaggeredMotion',
+	
+	  propTypes: {
+	    // TOOD: warn against putting a config in here
+	    defaultStyles: _react.PropTypes.arrayOf(_react.PropTypes.objectOf(_react.PropTypes.number)),
+	    styles: _react.PropTypes.func.isRequired,
+	    children: _react.PropTypes.func.isRequired
+	  },
+	
+	  getInitialState: function getInitialState() {
+	    var _props = this.props;
+	    var defaultStyles = _props.defaultStyles;
+	    var styles = _props.styles;
+	
+	    var currentStyles = defaultStyles || styles().map(_stripStyle2['default']);
+	    var currentVelocities = currentStyles.map(function (currentStyle) {
+	      return _mapToZero2['default'](currentStyle);
+	    });
+	    return {
+	      currentStyles: currentStyles,
+	      currentVelocities: currentVelocities,
+	      lastIdealStyles: currentStyles,
+	      lastIdealVelocities: currentVelocities
+	    };
+	  },
+	
+	  animationID: null,
+	  prevTime: 0,
+	  accumulatedTime: 0,
+	  // it's possible that currentStyle's value is stale: if props is immediately
+	  // changed from 0 to 400 to spring(0) again, the async currentStyle is still
+	  // at 0 (didn't have time to tick and interpolate even once). If we naively
+	  // compare currentStyle with destVal it'll be 0 === 0 (no animation, stop).
+	  // In reality currentStyle should be 400
+	  unreadPropStyles: null,
+	  // after checking for unreadPropStyles != null, we manually go set the
+	  // non-interpolating values (those that are a number, without a spring
+	  // config)
+	  clearUnreadPropStyle: function clearUnreadPropStyle(unreadPropStyles) {
+	    var _state = this.state;
+	    var currentStyles = _state.currentStyles;
+	    var currentVelocities = _state.currentVelocities;
+	    var lastIdealStyles = _state.lastIdealStyles;
+	    var lastIdealVelocities = _state.lastIdealVelocities;
+	
+	    var someDirty = false;
+	    for (var i = 0; i < unreadPropStyles.length; i++) {
+	      var unreadPropStyle = unreadPropStyles[i];
+	      var dirty = false;
+	
+	      for (var key in unreadPropStyle) {
+	        if (!unreadPropStyle.hasOwnProperty(key)) {
+	          continue;
+	        }
+	
+	        var styleValue = unreadPropStyle[key];
+	        if (typeof styleValue === 'number') {
+	          if (!dirty) {
+	            dirty = true;
+	            someDirty = true;
+	            currentStyles[i] = _extends({}, currentStyles[i]);
+	            currentVelocities[i] = _extends({}, currentVelocities[i]);
+	            lastIdealStyles[i] = _extends({}, lastIdealStyles[i]);
+	            lastIdealVelocities[i] = _extends({}, lastIdealVelocities[i]);
+	          }
+	          currentStyles[i][key] = styleValue;
+	          currentVelocities[i][key] = 0;
+	          lastIdealStyles[i][key] = styleValue;
+	          lastIdealVelocities[i][key] = 0;
+	        }
+	      }
+	    }
+	
+	    if (someDirty) {
+	      this.setState({ currentStyles: currentStyles, currentVelocities: currentVelocities, lastIdealStyles: lastIdealStyles, lastIdealVelocities: lastIdealVelocities });
+	    }
+	  },
+	
+	  startAnimationIfNecessary: function startAnimationIfNecessary() {
+	    var _this = this;
+	
+	    // TODO: when config is {a: 10} and dest is {a: 10} do we raf once and
+	    // call cb? No, otherwise accidental parent rerender causes cb trigger
+	    this.animationID = _raf2['default'](function () {
+	      var destStyles = _this.props.styles(_this.state.lastIdealStyles);
+	
+	      // check if we need to animate in the first place
+	      if (shouldStopAnimationAll(_this.state.currentStyles, destStyles, _this.state.currentVelocities)) {
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.accumulatedTime = 0;
+	        return;
+	      }
+	
+	      var currentTime = _performanceNow2['default']();
+	      var timeDelta = currentTime - _this.prevTime;
+	      _this.prevTime = currentTime;
+	      _this.accumulatedTime = _this.accumulatedTime + timeDelta;
+	      // more than 10 frames? prolly switched browser tab. Restart
+	      if (_this.accumulatedTime > msPerFrame * 10) {
+	        _this.accumulatedTime = 0;
+	      }
+	
+	      if (_this.accumulatedTime === 0) {
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.startAnimationIfNecessary();
+	        return;
+	      }
+	
+	      var currentFrameCompletion = (_this.accumulatedTime - Math.floor(_this.accumulatedTime / msPerFrame) * msPerFrame) / msPerFrame;
+	      var framesToCatchUp = Math.floor(_this.accumulatedTime / msPerFrame);
+	
+	      var newLastIdealStyles = [];
+	      var newLastIdealVelocities = [];
+	      var newCurrentStyles = [];
+	      var newCurrentVelocities = [];
+	
+	      for (var i = 0; i < destStyles.length; i++) {
+	        var destStyle = destStyles[i];
+	        var newCurrentStyle = {};
+	        var newCurrentVelocity = {};
+	        var newLastIdealStyle = {};
+	        var newLastIdealVelocity = {};
+	
+	        for (var key in destStyle) {
+	          if (!destStyle.hasOwnProperty(key)) {
+	            continue;
+	          }
+	
+	          var styleValue = destStyle[key];
+	          if (typeof styleValue === 'number') {
+	            newCurrentStyle[key] = styleValue;
+	            newCurrentVelocity[key] = 0;
+	            newLastIdealStyle[key] = styleValue;
+	            newLastIdealVelocity[key] = 0;
+	          } else {
+	            var newLastIdealStyleValue = _this.state.lastIdealStyles[i][key];
+	            var newLastIdealVelocityValue = _this.state.lastIdealVelocities[i][key];
+	            for (var j = 0; j < framesToCatchUp; j++) {
+	              var _stepper = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	              newLastIdealStyleValue = _stepper[0];
+	              newLastIdealVelocityValue = _stepper[1];
+	            }
+	
+	            var _stepper2 = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	            var nextIdealX = _stepper2[0];
+	            var nextIdealV = _stepper2[1];
+	
+	            newCurrentStyle[key] = newLastIdealStyleValue + (nextIdealX - newLastIdealStyleValue) * currentFrameCompletion;
+	            newCurrentVelocity[key] = newLastIdealVelocityValue + (nextIdealV - newLastIdealVelocityValue) * currentFrameCompletion;
+	            newLastIdealStyle[key] = newLastIdealStyleValue;
+	            newLastIdealVelocity[key] = newLastIdealVelocityValue;
+	          }
+	        }
+	
+	        newCurrentStyles[i] = newCurrentStyle;
+	        newCurrentVelocities[i] = newCurrentVelocity;
+	        newLastIdealStyles[i] = newLastIdealStyle;
+	        newLastIdealVelocities[i] = newLastIdealVelocity;
+	      }
+	
+	      _this.animationID = null;
+	      // the amount we're looped over above
+	      _this.accumulatedTime -= framesToCatchUp * msPerFrame;
+	
+	      _this.setState({
+	        currentStyles: newCurrentStyles,
+	        currentVelocities: newCurrentVelocities,
+	        lastIdealStyles: newLastIdealStyles,
+	        lastIdealVelocities: newLastIdealVelocities
+	      });
+	
+	      _this.unreadPropStyles = null;
+	
+	      _this.startAnimationIfNecessary();
+	    });
+	  },
+	
+	  componentDidMount: function componentDidMount() {
+	    this.prevTime = _performanceNow2['default']();
+	    this.startAnimationIfNecessary();
+	  },
+	
+	  componentWillReceiveProps: function componentWillReceiveProps(props) {
+	    if (this.unreadPropStyles != null) {
+	      // previous props haven't had the chance to be set yet; set them here
+	      this.clearUnreadPropStyle(this.unreadPropStyles);
+	    }
+	
+	    this.unreadPropStyles = props.styles(this.state.lastIdealStyles);
+	    if (this.animationID == null) {
+	      this.prevTime = _performanceNow2['default']();
+	      this.startAnimationIfNecessary();
+	    }
+	  },
+	
+	  componentWillUnmount: function componentWillUnmount() {
+	    if (this.animationID != null) {
+	      _raf2['default'].cancel(this.animationID);
+	      this.animationID = null;
+	    }
+	  },
+	
+	  render: function render() {
+	    var renderedChildren = this.props.children(this.state.currentStyles);
+	    return renderedChildren && _react2['default'].Children.only(renderedChildren);
+	  }
+	});
+	
+	exports['default'] = StaggeredMotion;
+	module.exports = exports['default'];
 
 /***/ },
 /* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
-	
-	// TODO: refactor common logic with updateCurrValue and updateCurrVelocity
 	'use strict';
 	
 	exports.__esModule = true;
-	exports.interpolateValue = interpolateValue;
-	exports.updateCurrentStyle = updateCurrentStyle;
-	exports.updateCurrentVelocity = updateCurrentVelocity;
+	
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _stepper = __webpack_require__(12);
+	var _mapToZero = __webpack_require__(2);
 	
-	var _stepper2 = _interopRequireDefault(_stepper);
+	var _mapToZero2 = _interopRequireDefault(_mapToZero);
 	
-	var _spring = __webpack_require__(13);
+	var _stripStyle = __webpack_require__(3);
 	
-	var _spring2 = _interopRequireDefault(_spring);
+	var _stripStyle2 = _interopRequireDefault(_stripStyle);
 	
-	function interpolateValue(alpha, nextStyle, prevStyle) {
-	  // might be used by a TransitionMotion, where prevStyle might not exist anymore
-	  if (!prevStyle) {
-	    return nextStyle;
+	var _stepper3 = __webpack_require__(4);
+	
+	var _stepper4 = _interopRequireDefault(_stepper3);
+	
+	var _mergeDiff = __webpack_require__(12);
+	
+	var _mergeDiff2 = _interopRequireDefault(_mergeDiff);
+	
+	var _performanceNow = __webpack_require__(5);
+	
+	var _performanceNow2 = _interopRequireDefault(_performanceNow);
+	
+	var _raf = __webpack_require__(7);
+	
+	var _raf2 = _interopRequireDefault(_raf);
+	
+	var _shouldStopAnimation = __webpack_require__(8);
+	
+	var _shouldStopAnimation2 = _interopRequireDefault(_shouldStopAnimation);
+	
+	var _react = __webpack_require__(9);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var msPerFrame = 1000 / 60;
+	
+	// the children function & (potential) styles function asks as param an
+	// Array<TransitionPlainStyle>, where each TransitionPlainStyle is of the format
+	// {key: string, data?: any, style: PlainStyle}. However, the way we keep
+	// internal states doesn't contain such a data structure (check the state and
+	// TransitionMotionState). So when children function and others ask for such
+	// data we need to generate them on the fly by combining mergedPropsStyles and
+	// currentStyles/lastIdealStyles
+	function rehydrateStyles(mergedPropsStyles, unreadPropStyles, plainStyles) {
+	  if (unreadPropStyles == null) {
+	    // $FlowFixMe
+	    return mergedPropsStyles.map(function (mergedPropsStyle, i) {
+	      return {
+	        key: mergedPropsStyle.key,
+	        data: mergedPropsStyle.data,
+	        style: plainStyles[i]
+	      };
+	    });
 	  }
-	
-	  var ret = {};
-	  for (var key in nextStyle) {
-	    if (!nextStyle.hasOwnProperty(key)) {
-	      continue;
+	  return mergedPropsStyles.map(function (mergedPropsStyle, i) {
+	    // $FlowFixMe
+	    for (var j = 0; j < unreadPropStyles.length; j++) {
+	      // $FlowFixMe
+	      if (unreadPropStyles[j].key === mergedPropsStyle.key) {
+	        return {
+	          // $FlowFixMe
+	          key: unreadPropStyles[j].key,
+	          data: unreadPropStyles[j].data,
+	          style: plainStyles[i]
+	        };
+	      }
 	    }
-	
-	    if (nextStyle[key] == null || !nextStyle[key].config) {
-	      ret[key] = nextStyle[key];
-	      // not a spring config, not something we want to interpolate
-	      continue;
-	    }
-	    var prevValue = prevStyle[key].config ? prevStyle[key].val : prevStyle[key];
-	    ret[key] = _spring2['default'](nextStyle[key].val * alpha + prevValue * (1 - alpha), nextStyle[key].config);
-	  }
-	
-	  return ret;
+	    // $FlowFixMe
+	    return { key: mergedPropsStyle.key, data: mergedPropsStyle.data, style: plainStyles[i] };
+	  });
 	}
 	
-	// TODO: refactor common logic with updateCurrentVelocity
-	
-	function updateCurrentStyle(frameRate, currentStyle, currentVelocity, style) {
-	  var ret = {};
-	  for (var key in style) {
-	    if (!style.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    if (style[key] == null || !style[key].config) {
-	      ret[key] = style[key];
-	      // not a spring config, not something we want to interpolate
-	      continue;
-	    }
-	    var _style$key$config = style[key].config;
-	    var k = _style$key$config[0];
-	    var b = _style$key$config[1];
-	
-	    var val = _stepper2['default'](frameRate,
-	    // might have been a non-springed prop that just became one
-	    currentStyle[key].val == null ? currentStyle[key] : currentStyle[key].val, currentVelocity[key], style[key].val, k, b)[0];
-	    ret[key] = _spring2['default'](val, style[key].config);
+	function shouldStopAnimationAll(currentStyles, destStyles, currentVelocities, mergedPropsStyles) {
+	  if (mergedPropsStyles.length !== destStyles.length) {
+	    return false;
 	  }
-	  return ret;
+	
+	  for (var i = 0; i < mergedPropsStyles.length; i++) {
+	    if (mergedPropsStyles[i].key !== destStyles[i].key) {
+	      return false;
+	    }
+	  }
+	
+	  // we have the invariant that mergedPropsStyles and
+	  // currentStyles/currentVelocities/last* are synced in terms of cells, see
+	  // mergeAndSync comment for more info
+	  for (var i = 0; i < mergedPropsStyles.length; i++) {
+	    if (!_shouldStopAnimation2['default'](currentStyles[i], destStyles[i].style, currentVelocities[i])) {
+	      return false;
+	    }
+	  }
+	
+	  return true;
 	}
 	
-	function updateCurrentVelocity(frameRate, currentStyle, currentVelocity, style) {
-	  var ret = {};
-	  for (var key in style) {
-	    if (!style.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    if (style[key] == null || !style[key].config) {
-	      // not a spring config, not something we want to interpolate
-	      ret[key] = 0;
-	      continue;
-	    }
-	    var _style$key$config2 = style[key].config;
-	    var k = _style$key$config2[0];
-	    var b = _style$key$config2[1];
+	// core key merging logic
 	
-	    var val = _stepper2['default'](frameRate,
-	    // might have been a non-springed prop that just became one
-	    currentStyle[key].val == null ? currentStyle[key] : currentStyle[key].val, currentVelocity[key], style[key].val, k, b)[1];
-	    ret[key] = val;
+	// things to do: say previously merged style is {a, b}, dest style (prop) is {b,
+	// c}, previous current (interpolating) style is {a, b}
+	// **invariant**: current[i] corresponds to merged[i] in terms of key
+	
+	// steps:
+	// turn merged style into {a?, b, c}
+	//    add c, value of c is destStyles.c
+	//    maybe remove a, aka call willLeave(a), then merged is either {b, c} or {a, b, c}
+	// turn current (interpolating) style from {a, b} into {a?, b, c}
+	//    maybe remove a
+	//    certainly add c, value of c is willEnter(c)
+	// loop over merged and construct new current
+	// dest doesn't change, that's owner's
+	function mergeAndSync(willEnter, willLeave, oldMergedPropsStyles, destStyles, oldCurrentStyles, oldCurrentVelocities, oldLastIdealStyles, oldLastIdealVelocities) {
+	  var newMergedPropsStyles = _mergeDiff2['default'](oldMergedPropsStyles, destStyles, function (oldIndex, oldMergedPropsStyle) {
+	    var leavingStyle = willLeave(oldMergedPropsStyle);
+	    if (leavingStyle == null) {
+	      return null;
+	    }
+	    if (_shouldStopAnimation2['default'](oldCurrentStyles[oldIndex], leavingStyle, oldCurrentVelocities[oldIndex])) {
+	      return null;
+	    }
+	    return { key: oldMergedPropsStyle.key, data: oldMergedPropsStyle.data, style: leavingStyle };
+	  });
+	
+	  var newCurrentStyles = [];
+	  var newCurrentVelocities = [];
+	  var newLastIdealStyles = [];
+	  var newLastIdealVelocities = [];
+	  for (var i = 0; i < newMergedPropsStyles.length; i++) {
+	    var newMergedPropsStyleCell = newMergedPropsStyles[i];
+	    var foundOldIndex = null;
+	    for (var j = 0; j < oldMergedPropsStyles.length; j++) {
+	      if (oldMergedPropsStyles[j].key === newMergedPropsStyleCell.key) {
+	        foundOldIndex = j;
+	        break;
+	      }
+	    }
+	    // TODO: key search code
+	    if (foundOldIndex == null) {
+	      var plainStyle = willEnter(newMergedPropsStyleCell);
+	      newCurrentStyles[i] = plainStyle;
+	      newLastIdealStyles[i] = plainStyle;
+	
+	      // $FlowFixMe
+	      var velocity = _mapToZero2['default'](newMergedPropsStyleCell.style);
+	      newCurrentVelocities[i] = velocity;
+	      newLastIdealVelocities[i] = velocity;
+	    } else {
+	      newCurrentStyles[i] = oldCurrentStyles[foundOldIndex];
+	      newLastIdealStyles[i] = oldLastIdealStyles[foundOldIndex];
+	      newCurrentVelocities[i] = oldCurrentVelocities[foundOldIndex];
+	      newLastIdealVelocities[i] = oldLastIdealVelocities[foundOldIndex];
+	    }
 	  }
-	  return ret;
+	
+	  return [newMergedPropsStyles, newCurrentStyles, newCurrentVelocities, newLastIdealStyles, newLastIdealVelocities];
 	}
+	
+	var TransitionMotion = _react2['default'].createClass({
+	  displayName: 'TransitionMotion',
+	
+	  propTypes: {
+	    defaultStyles: _react.PropTypes.arrayOf(_react.PropTypes.shape({
+	      key: _react.PropTypes.string.isRequired,
+	      data: _react.PropTypes.any,
+	      style: _react.PropTypes.objectOf(_react.PropTypes.number).isRequired
+	    })),
+	    styles: _react.PropTypes.oneOfType([_react.PropTypes.func, _react.PropTypes.arrayOf(_react.PropTypes.shape({
+	      key: _react.PropTypes.string.isRequired,
+	      data: _react.PropTypes.any,
+	      style: _react.PropTypes.objectOf(_react.PropTypes.oneOfType([_react.PropTypes.number, _react.PropTypes.object])).isRequired
+	    }))]).isRequired,
+	    children: _react.PropTypes.func.isRequired,
+	    willLeave: _react.PropTypes.func,
+	    willEnter: _react.PropTypes.func
+	  },
+	
+	  getDefaultProps: function getDefaultProps() {
+	    return {
+	      willEnter: function willEnter(styleThatEntered) {
+	        return _stripStyle2['default'](styleThatEntered.style);
+	      },
+	      // recall: returning null makes the current unmounting TransitionStyle
+	      // disappear immediately
+	      willLeave: function willLeave() {
+	        return null;
+	      }
+	    };
+	  },
+	
+	  getInitialState: function getInitialState() {
+	    var _props = this.props;
+	    var defaultStyles = _props.defaultStyles;
+	    var styles = _props.styles;
+	    var willEnter = _props.willEnter;
+	    var willLeave = _props.willLeave;
+	
+	    var destStyles = typeof styles === 'function' ? styles(defaultStyles) : styles;
+	
+	    // this is special. for the first time around, we don't have a comparison
+	    // between last (no last) and current merged props. we'll compute last so:
+	    // say default is {a, b} and styles (dest style) is {b, c}, we'll
+	    // fabricate last as {a, b}
+	    var oldMergedPropsStyles = undefined;
+	    if (defaultStyles == null) {
+	      oldMergedPropsStyles = destStyles;
+	    } else {
+	      // $FlowFixMe
+	      oldMergedPropsStyles = defaultStyles.map(function (defaultStyleCell) {
+	        // TODO: key search code
+	        for (var i = 0; i < destStyles.length; i++) {
+	          if (destStyles[i].key === defaultStyleCell.key) {
+	            return destStyles[i];
+	          }
+	        }
+	        return defaultStyleCell;
+	      });
+	    }
+	    var oldCurrentStyles = defaultStyles == null ? destStyles.map(function (s) {
+	      return _stripStyle2['default'](s.style);
+	    }) : defaultStyles.map(function (s) {
+	      return _stripStyle2['default'](s.style);
+	    });
+	    var oldCurrentVelocities = defaultStyles == null ? destStyles.map(function (s) {
+	      return _mapToZero2['default'](s.style);
+	    }) : defaultStyles.map(function (s) {
+	      return _mapToZero2['default'](s.style);
+	    });
+	
+	    var _mergeAndSync = mergeAndSync(
+	    // $FlowFixMe
+	    willEnter,
+	    // $FlowFixMe
+	    willLeave, oldMergedPropsStyles, destStyles, oldCurrentStyles, oldCurrentVelocities, oldCurrentStyles, // oldLastIdealStyles really
+	    oldCurrentVelocities);
+	
+	    var mergedPropsStyles = _mergeAndSync[0];
+	    var currentStyles = _mergeAndSync[1];
+	    var currentVelocities = _mergeAndSync[2];
+	    var lastIdealStyles = _mergeAndSync[3];
+	    var lastIdealVelocities = _mergeAndSync[4];
+	    // oldLastIdealVelocities really
+	
+	    return {
+	      currentStyles: currentStyles,
+	      currentVelocities: currentVelocities,
+	      lastIdealStyles: lastIdealStyles,
+	      lastIdealVelocities: lastIdealVelocities,
+	      mergedPropsStyles: mergedPropsStyles
+	    };
+	  },
+	
+	  animationID: null,
+	  prevTime: 0,
+	  accumulatedTime: 0,
+	  // it's possible that currentStyle's value is stale: if props is immediately
+	  // changed from 0 to 400 to spring(0) again, the async currentStyle is still
+	  // at 0 (didn't have time to tick and interpolate even once). If we naively
+	  // compare currentStyle with destVal it'll be 0 === 0 (no animation, stop).
+	  // In reality currentStyle should be 400
+	  unreadPropStyles: null,
+	  // after checking for unreadPropStyles != null, we manually go set the
+	  // non-interpolating values (those that are a number, without a spring
+	  // config)
+	  clearUnreadPropStyle: function clearUnreadPropStyle(unreadPropStyles) {
+	    var _mergeAndSync2 = mergeAndSync(
+	    // $FlowFixMe
+	    this.props.willEnter,
+	    // $FlowFixMe
+	    this.props.willLeave, this.state.mergedPropsStyles, unreadPropStyles, this.state.currentStyles, this.state.currentVelocities, this.state.lastIdealStyles, this.state.lastIdealVelocities);
+	
+	    var mergedPropsStyles = _mergeAndSync2[0];
+	    var currentStyles = _mergeAndSync2[1];
+	    var currentVelocities = _mergeAndSync2[2];
+	    var lastIdealStyles = _mergeAndSync2[3];
+	    var lastIdealVelocities = _mergeAndSync2[4];
+	
+	    for (var i = 0; i < unreadPropStyles.length; i++) {
+	      var unreadPropStyle = unreadPropStyles[i].style;
+	      var dirty = false;
+	
+	      for (var key in unreadPropStyle) {
+	        if (!unreadPropStyle.hasOwnProperty(key)) {
+	          continue;
+	        }
+	
+	        var styleValue = unreadPropStyle[key];
+	        if (typeof styleValue === 'number') {
+	          if (!dirty) {
+	            dirty = true;
+	            currentStyles[i] = _extends({}, currentStyles[i]);
+	            currentVelocities[i] = _extends({}, currentVelocities[i]);
+	            lastIdealStyles[i] = _extends({}, lastIdealStyles[i]);
+	            lastIdealVelocities[i] = _extends({}, lastIdealVelocities[i]);
+	            mergedPropsStyles[i] = {
+	              key: mergedPropsStyles[i].key,
+	              data: mergedPropsStyles[i].data,
+	              style: _extends({}, mergedPropsStyles[i].style)
+	            };
+	          }
+	          currentStyles[i][key] = styleValue;
+	          currentVelocities[i][key] = 0;
+	          lastIdealStyles[i][key] = styleValue;
+	          lastIdealVelocities[i][key] = 0;
+	          mergedPropsStyles[i].style[key] = styleValue;
+	        }
+	      }
+	    }
+	
+	    // unlike the other 2 components, we can't detect staleness and optionally
+	    // opt out of setState here. each style object's data might contain new
+	    // stuff we're not/cannot compare
+	    this.setState({
+	      currentStyles: currentStyles,
+	      currentVelocities: currentVelocities,
+	      mergedPropsStyles: mergedPropsStyles,
+	      lastIdealStyles: lastIdealStyles,
+	      lastIdealVelocities: lastIdealVelocities
+	    });
+	  },
+	
+	  startAnimationIfNecessary: function startAnimationIfNecessary() {
+	    var _this = this;
+	
+	    // TODO: when config is {a: 10} and dest is {a: 10} do we raf once and
+	    // call cb? No, otherwise accidental parent rerender causes cb trigger
+	    this.animationID = _raf2['default'](function () {
+	      var propStyles = _this.props.styles;
+	      var destStyles = typeof propStyles === 'function' ? propStyles(rehydrateStyles(_this.state.mergedPropsStyles, _this.unreadPropStyles, _this.state.lastIdealStyles)) : propStyles;
+	
+	      // check if we need to animate in the first place
+	      if (shouldStopAnimationAll(_this.state.currentStyles, destStyles, _this.state.currentVelocities, _this.state.mergedPropsStyles)) {
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.accumulatedTime = 0;
+	        return;
+	      }
+	
+	      var currentTime = _performanceNow2['default']();
+	      var timeDelta = currentTime - _this.prevTime;
+	      _this.prevTime = currentTime;
+	      _this.accumulatedTime = _this.accumulatedTime + timeDelta;
+	      // more than 10 frames? prolly switched browser tab. Restart
+	      if (_this.accumulatedTime > msPerFrame * 10) {
+	        _this.accumulatedTime = 0;
+	      }
+	
+	      if (_this.accumulatedTime === 0) {
+	        // no need to cancel animationID here; shouldn't have any in flight
+	        _this.animationID = null;
+	        _this.startAnimationIfNecessary();
+	        return;
+	      }
+	
+	      var currentFrameCompletion = (_this.accumulatedTime - Math.floor(_this.accumulatedTime / msPerFrame) * msPerFrame) / msPerFrame;
+	      var framesToCatchUp = Math.floor(_this.accumulatedTime / msPerFrame);
+	
+	      var _mergeAndSync3 = mergeAndSync(
+	      // $FlowFixMe
+	      _this.props.willEnter,
+	      // $FlowFixMe
+	      _this.props.willLeave, _this.state.mergedPropsStyles, destStyles, _this.state.currentStyles, _this.state.currentVelocities, _this.state.lastIdealStyles, _this.state.lastIdealVelocities);
+	
+	      var newMergedPropsStyles = _mergeAndSync3[0];
+	      var newCurrentStyles = _mergeAndSync3[1];
+	      var newCurrentVelocities = _mergeAndSync3[2];
+	      var newLastIdealStyles = _mergeAndSync3[3];
+	      var newLastIdealVelocities = _mergeAndSync3[4];
+	
+	      for (var i = 0; i < newMergedPropsStyles.length; i++) {
+	        var newMergedPropsStyle = newMergedPropsStyles[i].style;
+	        var newCurrentStyle = {};
+	        var newCurrentVelocity = {};
+	        var newLastIdealStyle = {};
+	        var newLastIdealVelocity = {};
+	
+	        for (var key in newMergedPropsStyle) {
+	          if (!newMergedPropsStyle.hasOwnProperty(key)) {
+	            continue;
+	          }
+	
+	          var styleValue = newMergedPropsStyle[key];
+	          if (typeof styleValue === 'number') {
+	            newCurrentStyle[key] = styleValue;
+	            newCurrentVelocity[key] = 0;
+	            newLastIdealStyle[key] = styleValue;
+	            newLastIdealVelocity[key] = 0;
+	          } else {
+	            var newLastIdealStyleValue = newLastIdealStyles[i][key];
+	            var newLastIdealVelocityValue = newLastIdealVelocities[i][key];
+	            for (var j = 0; j < framesToCatchUp; j++) {
+	              var _stepper = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	              newLastIdealStyleValue = _stepper[0];
+	              newLastIdealVelocityValue = _stepper[1];
+	            }
+	
+	            var _stepper2 = _stepper4['default'](msPerFrame / 1000, newLastIdealStyleValue, newLastIdealVelocityValue, styleValue.val, styleValue.stiffness, styleValue.damping, styleValue.precision);
+	
+	            var nextIdealX = _stepper2[0];
+	            var nextIdealV = _stepper2[1];
+	
+	            newCurrentStyle[key] = newLastIdealStyleValue + (nextIdealX - newLastIdealStyleValue) * currentFrameCompletion;
+	            newCurrentVelocity[key] = newLastIdealVelocityValue + (nextIdealV - newLastIdealVelocityValue) * currentFrameCompletion;
+	            newLastIdealStyle[key] = newLastIdealStyleValue;
+	            newLastIdealVelocity[key] = newLastIdealVelocityValue;
+	          }
+	        }
+	
+	        newLastIdealStyles[i] = newLastIdealStyle;
+	        newLastIdealVelocities[i] = newLastIdealVelocity;
+	        newCurrentStyles[i] = newCurrentStyle;
+	        newCurrentVelocities[i] = newCurrentVelocity;
+	      }
+	
+	      _this.animationID = null;
+	      // the amount we're looped over above
+	      _this.accumulatedTime -= framesToCatchUp * msPerFrame;
+	
+	      _this.setState({
+	        currentStyles: newCurrentStyles,
+	        currentVelocities: newCurrentVelocities,
+	        lastIdealStyles: newLastIdealStyles,
+	        lastIdealVelocities: newLastIdealVelocities,
+	        mergedPropsStyles: newMergedPropsStyles
+	      });
+	
+	      _this.unreadPropStyles = null;
+	
+	      _this.startAnimationIfNecessary();
+	    });
+	  },
+	
+	  componentDidMount: function componentDidMount() {
+	    this.prevTime = _performanceNow2['default']();
+	    this.startAnimationIfNecessary();
+	  },
+	
+	  componentWillReceiveProps: function componentWillReceiveProps(props) {
+	    if (this.unreadPropStyles) {
+	      // previous props haven't had the chance to be set yet; set them here
+	      this.clearUnreadPropStyle(this.unreadPropStyles);
+	    }
+	
+	    if (typeof props.styles === 'function') {
+	      // $FlowFixMe
+	      this.unreadPropStyles = props.styles(rehydrateStyles(this.state.mergedPropsStyles, this.unreadPropStyles, this.state.lastIdealStyles));
+	    } else {
+	      this.unreadPropStyles = props.styles;
+	    }
+	
+	    if (this.animationID == null) {
+	      this.prevTime = _performanceNow2['default']();
+	      this.startAnimationIfNecessary();
+	    }
+	  },
+	
+	  componentWillUnmount: function componentWillUnmount() {
+	    if (this.animationID != null) {
+	      _raf2['default'].cancel(this.animationID);
+	      this.animationID = null;
+	    }
+	  },
+	
+	  render: function render() {
+	    var hydratedStyles = rehydrateStyles(this.state.mergedPropsStyles, this.unreadPropStyles, this.state.currentStyles);
+	    var renderedChildren = this.props.children(hydratedStyles);
+	    return renderedChildren && _react2['default'].Children.only(renderedChildren);
+	  }
+	});
+	
+	exports['default'] = TransitionMotion;
+	module.exports = exports['default'];
+
+	// list of styles, each containing interpolating values. Part of what's passed
+	// to children function. Notice that this is
+	// Array<ActualInterpolatingStyleObject>, without the wrapper that is {key: ...,
+	// data: ... style: ActualInterpolatingStyleObject}. Only mergedPropsStyles
+	// contains the key & data info (so that we only have a single source of truth
+	// for these, and to save space). Check the comment for `rehydrateStyles` to
+	// see how we regenerate the entirety of what's passed to children function
+
+	// the array that keeps track of currently rendered stuff! Including stuff
+	// that you've unmounted but that's still animating. This is where it lives
 
 /***/ },
 /* 12 */
 /***/ function(module, exports) {
 
-	"use strict";
+	
+	
+	// core keys merging algorithm. If previous render's keys are [a, b], and the
+	// next render's [c, b, d], what's the final merged keys and ordering?
+	
+	// - c and a must both be before b
+	// - b before d
+	// - ordering between a and c ambiguous
+	
+	// this reduces to merging two partially ordered lists (e.g. lists where not
+	// every item has a definite ordering, like comparing a and c above). For the
+	// ambiguous ordering we deterministically choose to place the next render's
+	// item after the previous'; so c after a
+	
+	// this is called a topological sorting. Except the existing algorithms don't
+	// work well with js bc of the amount of allocation, and isn't optimized for our
+	// current use-case bc the runtime is linear in terms of edges (see wiki for
+	// meaning), which is huge when two lists have many common elements
+	'use strict';
 	
 	exports.__esModule = true;
-	exports["default"] = stepper;
+	exports['default'] = mergeDiff;
 	
-	var errorMargin = 0.0001;
+	function mergeDiff(prev, next, onRemove) {
+	  // bookkeeping for easier access of a key's index below. This is 2 allocations +
+	  // potentially triggering chrome hash map mode for objs (so it might be faster
 	
-	function stepper(frameRate, x, v, destX, k, b) {
-	  // Spring stiffness, in kg / s^2
-	
-	  // for animations, destX is really spring length (spring at rest). initial
-	  // position is considered as the stretched/compressed position of a spring
-	  var Fspring = -k * (x - destX);
-	
-	  // Damping, in kg / s
-	  var Fdamper = -b * v;
-	
-	  // usually we put mass here, but for animation purposes, specifying mass is a
-	  // bit redundant. you could simply adjust k and b accordingly
-	  // let a = (Fspring + Fdamper) / mass;
-	  var a = Fspring + Fdamper;
-	
-	  var newV = v + a * frameRate;
-	  var newX = x + newV * frameRate;
-	
-	  if (Math.abs(newV - v) < errorMargin && Math.abs(newX - x) < errorMargin) {
-	    return [destX, 0];
+	  var prevKeyIndex = {};
+	  for (var i = 0; i < prev.length; i++) {
+	    prevKeyIndex[prev[i].key] = i;
+	  }
+	  var nextKeyIndex = {};
+	  for (var i = 0; i < next.length; i++) {
+	    nextKeyIndex[next[i].key] = i;
 	  }
 	
-	  return [newX, newV];
+	  // first, an overly elaborate way of merging prev and next, eliminating
+	  // duplicates (in terms of keys). If there's dupe, keep the item in next).
+	  // This way of writing it saves allocations
+	  var ret = [];
+	  for (var i = 0; i < next.length; i++) {
+	    ret[i] = next[i];
+	  }
+	  for (var i = 0; i < prev.length; i++) {
+	    if (!nextKeyIndex.hasOwnProperty(prev[i].key)) {
+	      // this is called my TM's `mergeAndSync`, which calls willLeave. We don't
+	      // merge in keys that the user desires to kill
+	      var fill = onRemove(i, prev[i]);
+	      if (fill != null) {
+	        ret.push(fill);
+	      }
+	    }
+	  }
+	
+	  // now all the items all present. Core sorting logic to have the right order
+	  return ret.sort(function (a, b) {
+	    var nextOrderA = nextKeyIndex[a.key];
+	    var nextOrderB = nextKeyIndex[b.key];
+	    var prevOrderA = prevKeyIndex[a.key];
+	    var prevOrderB = prevKeyIndex[b.key];
+	
+	    if (nextOrderA != null && nextOrderB != null) {
+	      // both keys in next
+	      return nextKeyIndex[a.key] - nextKeyIndex[b.key];
+	    } else if (prevOrderA != null && prevOrderB != null) {
+	      // both keys in prev
+	      return prevKeyIndex[a.key] - prevKeyIndex[b.key];
+	    } else if (nextOrderA != null) {
+	      // key a in next, key b in prev
+	
+	      // how to determine the order between a and b? We find a "pivot" (term
+	      // abuse), a key present in both prev and next, that is sandwiched between
+	      // a and b. In the context of our above example, if we're comparing a and
+	      // d, b's (the only) pivot
+	      for (var i = 0; i < next.length; i++) {
+	        var pivot = next[i].key;
+	        if (!prevKeyIndex.hasOwnProperty(pivot)) {
+	          continue;
+	        }
+	
+	        if (nextOrderA < nextKeyIndex[pivot] && prevOrderB > prevKeyIndex[pivot]) {
+	          return -1;
+	        } else if (nextOrderA > nextKeyIndex[pivot] && prevOrderB < prevKeyIndex[pivot]) {
+	          return 1;
+	        }
+	      }
+	      // pluggable. default to: next bigger than prev
+	      return 1;
+	    }
+	    // prevOrderA, nextOrderB
+	    for (var i = 0; i < next.length; i++) {
+	      var pivot = next[i].key;
+	      if (!prevKeyIndex.hasOwnProperty(pivot)) {
+	        continue;
+	      }
+	      if (nextOrderB < nextKeyIndex[pivot] && prevOrderA > prevKeyIndex[pivot]) {
+	        return 1;
+	      } else if (nextOrderB > nextKeyIndex[pivot] && prevOrderA < prevKeyIndex[pivot]) {
+	        return -1;
+	      }
+	    }
+	    // pluggable. default to: next bigger than prev
+	    return -1;
+	  });
 	}
 	
-	module.exports = exports["default"];
+	module.exports = exports['default'];
+	// to loop through and find a key's index each time), but I no longer care
 
 /***/ },
 /* 13 */
@@ -23653,6 +23961,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	'use strict';
 	
 	exports.__esModule = true;
+	
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+	
 	exports['default'] = spring;
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -23661,10 +23972,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _presets2 = _interopRequireDefault(_presets);
 	
-	function spring(val) {
-	  var config = arguments.length <= 1 || arguments[1] === undefined ? _presets2['default'].noWobble : arguments[1];
+	var defaultConfig = _extends({}, _presets2['default'].noWobble, {
+	  precision: 0.01
+	});
 	
-	  return { val: val, config: config };
+	function spring(val, config) {
+	  return _extends({}, defaultConfig, config, { val: val });
 	}
 	
 	module.exports = exports['default'];
@@ -23673,16 +23986,14 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 14 */
 /***/ function(module, exports) {
 
-	
-	// [stiffness, damping]
 	"use strict";
 	
 	exports.__esModule = true;
 	exports["default"] = {
-	  noWobble: [170, 26], // the default
-	  gentle: [120, 14],
-	  wobbly: [180, 12],
-	  stiff: [210, 20]
+	  noWobble: { stiffness: 170, damping: 26 }, // the default, if nothing provided
+	  gentle: { stiffness: 120, damping: 14 },
+	  wobbly: { stiffness: 180, damping: 12 },
+	  stiff: { stiffness: 210, damping: 20 }
 	};
 	module.exports = exports["default"];
 
@@ -23693,100 +24004,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
 	
 	exports.__esModule = true;
-	exports['default'] = deprecatedSprings;
-	var hasWarnedForSpring = {};
-	var hasWarnedForTransitionSpring = {};
+	exports['default'] = reorderKeys;
 	
-	function deprecatedSprings(React) {
-	  var Spring = React.createClass({
-	    displayName: 'Spring',
+	var hasWarned = false;
 	
-	    componentWillMount: function componentWillMount() {
-	      if (process.env.NODE_ENV === 'development') {
-	        var ownerName = this._reactInternalInstance._currentElement._owner && this._reactInternalInstance._currentElement._owner.getName();
-	        if (!hasWarnedForSpring[ownerName]) {
-	          hasWarnedForSpring[ownerName] = true;
-	          console.error('Spring (used in %srender) has now been renamed to Motion. ' + 'Please see the release note for the upgrade path. Thank you!', ownerName ? ownerName + '\'s ' : 'React.');
-	        }
-	      }
-	    },
-	
-	    render: function render() {
-	      return null;
+	function reorderKeys() {
+	  if (process.env.NODE_ENV === 'development') {
+	    if (!hasWarned) {
+	      hasWarned = true;
+	      console.error('`reorderKeys` has been removed, since it is no longer needed for TransitionMotion\'s new styles array API.');
 	    }
-	  });
-	
-	  var TransitionSpring = React.createClass({
-	    displayName: 'TransitionSpring',
-	
-	    componentWillMount: function componentWillMount() {
-	      if (process.env.NODE_ENV === 'development') {
-	        var ownerName = this._reactInternalInstance._currentElement._owner && this._reactInternalInstance._currentElement._owner.getName();
-	        if (!hasWarnedForTransitionSpring[ownerName]) {
-	          hasWarnedForTransitionSpring[ownerName] = true;
-	          console.error('TransitionSpring (used in %srender) has now been renamed to ' + 'TransitionMotion. Please see the release note for the upgrade ' + 'path. Thank you!', ownerName ? ownerName + '\'s ' : 'React.');
-	        }
-	      }
-	    },
-	
-	    render: function render() {
-	      return null;
-	    }
-	  });
-	
-	  return { Spring: Spring, TransitionSpring: TransitionSpring };
+	  }
 	}
 	
 	module.exports = exports['default'];
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	
-	// turn {x: {val: 1, config: [1, 2]}, y: 2} generated by
-	// `{x: spring(1, [1, 2]), y: 2}` into {x: 1, y: 2}
-	
-	'use strict';
-	
-	exports.__esModule = true;
-	exports['default'] = stripStyle;
-	
-	function stripStyle(style) {
-	  var ret = {};
-	  for (var key in style) {
-	    if (!style.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    ret[key] = style[key] == null || style[key].val == null ? style[key] : style[key].val;
-	  }
-	  return ret;
-	}
-	
-	module.exports = exports['default'];
-
-/***/ },
-/* 17 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	exports.__esModule = true;
-	exports["default"] = reorderKeys;
-	
-	function reorderKeys(obj, f) {
-	  var newKeys = f(Object.keys(obj));
-	  var ret = {};
-	  for (var i = 0; i < newKeys.length; i++) {
-	    var key = newKeys[i];
-	    ret[key] = obj[key];
-	  }
-	
-	  return ret;
-	}
-	
-	module.exports = exports["default"];
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ }
 /******/ ])
@@ -24241,11 +24473,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    fixedHeight: _react2.default.PropTypes.number,
 	    style: _react2.default.PropTypes.object, // eslint-disable-line react/forbid-prop-types
 	    springConfig: _react2.default.PropTypes.objectOf(_react2.default.PropTypes.number),
-	    keepCollapsedContent: _react2.default.PropTypes.bool
+	    keepCollapsedContent: _react2.default.PropTypes.bool,
+	    onHeightReady: _react2.default.PropTypes.func
 	  },
 	
 	  getDefaultProps: function getDefaultProps() {
-	    return { fixedHeight: -1, style: {}, keepCollapsedContent: false };
+	    return {
+	      fixedHeight: -1,
+	      style: {},
+	      keepCollapsedContent: false,
+	      onHeightReady: function onHeightReady() {} // eslint-disable-line no-empty-function
+	    };
 	  },
 	  getInitialState: function getInitialState() {
 	    return { height: -1, isOpenedChanged: false };
@@ -24263,16 +24501,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	  shouldComponentUpdate: _ReactComponentWithPureRenderMixin.shouldComponentUpdate,
 	
-	  onHeightReady: function onHeightReady(height) {
-	    if (this.renderStatic && this.props.isOpened) {
-	      this.height = stringHeight(height);
+	  componentDidUpdate: function componentDidUpdate(_ref2) {
+	    var isOpened = _ref2.isOpened;
+	
+	    if (isOpened !== this.props.isOpened) {
+	      var report = this.props.isOpened ? this.state.height : 0;
+	
+	      this.props.onHeightReady(report);
 	    }
-	    this.setState({ height: height });
 	  },
-	  getMotionHeight: function getMotionHeight(height) {
+	  onHeightReady: function onHeightReady(height) {
 	    var _props = this.props;
 	    var isOpened = _props.isOpened;
-	    var springConfig = _props.springConfig;
+	    var keepCollapsedContent = _props.keepCollapsedContent;
+	
+	
+	    if (this.renderStatic && isOpened) {
+	      this.height = stringHeight(height);
+	    }
+	    if (keepCollapsedContent) {
+	      this.setState({ height: height });
+	    } else {
+	      this.setState({ height: isOpened || !this.renderStatic ? height : 0 });
+	    }
+	
+	    var reportHeight = this.props.isOpened ? height : 0;
+	
+	    if (this.state.height !== reportHeight) {
+	      this.props.onHeightReady(reportHeight);
+	    }
+	  },
+	  getMotionHeight: function getMotionHeight(height) {
+	    var _props2 = this.props;
+	    var isOpened = _props2.isOpened;
+	    var springConfig = _props2.springConfig;
 	    var isOpenedChanged = this.state.isOpenedChanged;
 	
 	
@@ -24290,15 +24552,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  renderFixed: function renderFixed() {
 	    var _this = this;
 	
-	    var _props2 = this.props;
-	    var isOpened = _props2.isOpened;
-	    var style = _props2.style;
-	    var children = _props2.children;
-	    var fixedHeight = _props2.fixedHeight;
-	    var _ = _props2.springConfig;
-	    var keepCollapsedContent = _props2.keepCollapsedContent;
+	    var _props3 = this.props;
+	    var isOpened = _props3.isOpened;
+	    var style = _props3.style;
+	    var children = _props3.children;
+	    var fixedHeight = _props3.fixedHeight;
+	    var _ = _props3.springConfig;
+	    var keepCollapsedContent = _props3.keepCollapsedContent;
 	
-	    var props = _objectWithoutProperties(_props2, ['isOpened', 'style', 'children', 'fixedHeight', 'springConfig', 'keepCollapsedContent']);
+	    var props = _objectWithoutProperties(_props3, ['isOpened', 'style', 'children', 'fixedHeight', 'springConfig', 'keepCollapsedContent']);
 	
 	    if (this.renderStatic) {
 	      this.renderStatic = false;
@@ -24320,8 +24582,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      {
 	        defaultStyle: { height: isOpened ? 0 : fixedHeight },
 	        style: { height: this.getMotionHeight(fixedHeight) } },
-	      function (_ref2) {
-	        var height = _ref2.height;
+	      function (_ref3) {
+	        var height = _ref3.height;
 	
 	        _this.height = stringHeight(height);
 	
@@ -24344,15 +24606,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  render: function render() {
 	    var _this2 = this;
 	
-	    var _props3 = this.props;
-	    var isOpened = _props3.isOpened;
-	    var style = _props3.style;
-	    var children = _props3.children;
-	    var fixedHeight = _props3.fixedHeight;
-	    var _ = _props3.springConfig;
-	    var keepCollapsedContent = _props3.keepCollapsedContent;
+	    var _props4 = this.props;
+	    var isOpened = _props4.isOpened;
+	    var style = _props4.style;
+	    var children = _props4.children;
+	    var fixedHeight = _props4.fixedHeight;
+	    var _ = _props4.springConfig;
+	    var keepCollapsedContent = _props4.keepCollapsedContent;
 	
-	    var props = _objectWithoutProperties(_props3, ['isOpened', 'style', 'children', 'fixedHeight', 'springConfig', 'keepCollapsedContent']);
+	    var props = _objectWithoutProperties(_props4, ['isOpened', 'style', 'children', 'fixedHeight', 'springConfig', 'keepCollapsedContent']);
 	
 	    if (fixedHeight > -1) {
 	      return this.renderFixed();
@@ -24375,7 +24637,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    );
 	
 	    if (renderStatic) {
-	      var newStyle = { overflow: 'hidden', height: isOpened ? 'auto' : 0 };
+	      var newStyle = isOpened ? { height: 'auto' } : { overflow: 'hidden', height: 0 };
 	
 	      if (!isOpened && height > -1) {
 	        if (!keepCollapsedContent) {
@@ -24398,7 +24660,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return _react2.default.createElement(
 	      _reactMotion.Motion,
 	      {
-	        defaultStyle: { height: isOpened ? 0 : Math.max(0, height) },
+	        defaultStyle: { height: Math.max(0, height) },
 	        style: { height: this.getMotionHeight(height) } },
 	      function (st) {
 	        _this2.height = stringHeight(st.height);
