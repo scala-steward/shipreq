@@ -1,5 +1,8 @@
 package shipreq.base.db
 
+import java.sql.{PreparedStatement, Timestamp}
+import java.time.Instant
+import java.util.{Calendar, TimeZone}
 import org.postgresql.util.PGobject
 import scala.slick.jdbc.{GetResult, PositionedParameters, PositionedResult, SetParameter}
 import shipreq.base.util.TaggedTypes._
@@ -32,6 +35,12 @@ object SqlHelpers {
   }
 
   implicit class PositionedParametersExt(private val pp: PositionedParameters) extends AnyVal {
+    def setManual(f: (PreparedStatement, Int) => Unit): Unit = {
+      val i = pp.pos + 1
+      f(pp.ps, i)
+      pp.pos = i
+    }
+
     def setPgChar(c: Char): Unit =
       pp.setObject(pgChar(c), java.sql.Types.OTHER)
   }
@@ -55,6 +64,31 @@ object SqlHelpers {
   implicit val dbCodecInt    = DbCodec.WithOption.summon[Int]
   implicit val dbCodecShort  = DbCodec.WithOption.summon[Short]
   implicit val dbCodecString = DbCodec.WithOption.summon[String]
+
+  private val UTC =
+    Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
+  implicit val dbCodecInstant: DbCodec.WithOption[Instant] = {
+    implicit val get = GetResult[Instant] { r =>
+      r.skip
+      val i = r.rs.getTimestamp(r.currentPos, UTC).toInstant
+      i
+    }
+
+    implicit val getO = GetResult[Option[Instant]] { r =>
+      r.skip
+      val t = r.rs.getTimestamp(r.currentPos, UTC)
+      if (r.rs.wasNull()) None else Some(t.toInstant)
+    }
+
+    implicit val set = SetParameter[Instant]((i, p) =>
+      p.setManual(_.setTimestamp(_, Timestamp from i, UTC)))
+
+    implicit val setO = SetParameter[Option[Instant]]((o, p) =>
+      p.setManual(_.setTimestamp(_, o.fold[Timestamp](null)(Timestamp.from), UTC)))
+
+    DbCodec.WithOption.summon[Instant]
+  }
 
   def SP_TaggedLongL[T <: TaggedType](implicit ev: T#U =:= Long): SetParameter[List[T]] =
     new SetParameter[List[T]] {

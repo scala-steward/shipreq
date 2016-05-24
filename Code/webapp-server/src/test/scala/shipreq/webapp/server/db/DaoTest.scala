@@ -1,7 +1,9 @@
 package shipreq.webapp.server.db
 
+import java.time.{Duration, Instant, LocalDateTime, ZoneOffset}
 import org.scalatest.FunSpec
-import slick.jdbc.StaticQuery.{queryNA, updateNA}
+import slick.jdbc.StaticQuery.{queryNA, update, updateNA}
+import shipreq.base.db.SqlHelpers._
 import shipreq.taskman.api.UserId
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.security.PasswordAndSalt
@@ -107,6 +109,58 @@ class DaoTest extends FunSpec with TestDatabaseSupport {
 //      val (u, p, _) = afterDeletion
 //      dao.findProject(p) shouldBe None
 //    }
+  }
+
+  // ===================================================================================================================
+
+  describe("Instant") {
+    def assertApproxEqual(a: Instant, e: Instant): Unit =
+      Duration.between(a, e).abs.minusSeconds(2).isNegative shouldBe true
+
+    it("should read") {
+      val (dbNow, i) = queryNA[(Instant, Int)](s"select now(), 2").first
+      i shouldBe 2
+      assertApproxEqual(dbNow, Instant.now())
+    }
+
+    it("should read Some") {
+      val (dbNow, i) = queryNA[(Option[Instant], Int)](s"select now(), 3").first
+      i shouldBe 3
+      dbNow.isDefined shouldBe true
+      assertApproxEqual(dbNow.get, Instant.now())
+    }
+
+    it("should read None") {
+      val (dbNow, i) = queryNA[(Option[Instant], Int)](s"select null :: timestamptz, 5").first
+      i shouldBe 5
+      dbNow.isDefined shouldBe false
+    }
+
+    it("should write") {
+      val u = newUserId()
+      val l = LocalDateTime.of(1984, 5, 2, 18, 30, 8)
+      val i = l.toInstant(ZoneOffset.of("+11:00"))
+      val r = "yay"
+      update[(Instant, String, Long)]("UPDATE usr SET confirmed_at=?, roles=? WHERE id=?").apply((i, r, u.value)).execute
+      val s = queryNA[String](s"select to_iso8601_str(confirmed_at) from usr where id=${u.value: Long}").first
+      s shouldBe "1984-05-02T07:30:08Z"
+      val (ar, ai) = queryNA[(String, Instant)](s"select roles, confirmed_at from usr where id=${u.value: Long}").first
+      ai shouldBe i
+      ar shouldBe r
+    }
+
+    it("should write Option") {
+      val u = newUserId()
+      val l = LocalDateTime.of(1990, 9, 7, 20, 20, 4)
+      val i = l.toInstant(ZoneOffset.of("+15:00"))
+      update[(Option[Instant], Option[Instant], Long)]("UPDATE usr SET reset_password_sent_at=?, confirmed_at=? WHERE id=?")
+        .apply((None, Some(i), u.value)).execute
+      val s1 = queryNA[Option[String]](s"select to_iso8601_str(confirmed_at) from usr where id=${u.value: Long}").first
+      s1 shouldBe Some("1990-09-07T05:20:04Z")
+      val s2 = queryNA[Option[String]](s"select to_iso8601_str(reset_password_sent_at) from usr where id=${u.value: Long}").first
+      s2 shouldBe None
+
+    }
   }
 
   // ===================================================================================================================
