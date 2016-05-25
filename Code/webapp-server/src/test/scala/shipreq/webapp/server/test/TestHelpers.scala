@@ -18,6 +18,7 @@ import scala.annotation.tailrec
 import scala.util.Random
 import shipreq.base.util._
 import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.base.data._
 import shipreq.webapp.server.db._
 import shipreq.webapp.server.security.SecurityProvider
 import shipreq.webapp.server.app.DI

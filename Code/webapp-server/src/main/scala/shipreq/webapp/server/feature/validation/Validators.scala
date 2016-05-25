@@ -4,11 +4,11 @@ import scalaz.{Failure, Success}
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.EmailAddr
 import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.util.TextMod._
 import shipreq.webapp.base.validation.Constraints._
 import shipreq.webapp.base.validation.GenericValidators._
 import shipreq.webapp.base.validation._
-import shipreq.webapp.server.data.Username
 import shipreq.webapp.server.lib.ScalazSubset._
 import shipreq.webapp.server.security.PasswordAndSalt
 

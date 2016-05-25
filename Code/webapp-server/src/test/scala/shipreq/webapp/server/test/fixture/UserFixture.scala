@@ -6,6 +6,7 @@ import org.joda.time.DateTime
 import scala.slick.jdbc.JdbcBackend.Session
 import scala.slick.jdbc.{StaticQuery => Q}
 import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.base.data._
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.db.Shim
 import shipreq.webapp.server.security.{PasswordAndSalt, Roles}

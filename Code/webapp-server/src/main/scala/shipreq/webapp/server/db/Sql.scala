@@ -5,6 +5,7 @@ import scala.slick.jdbc.StaticQuery
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.db.JodaTimeSqlHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ActiveEvent, Event}
 import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.server.data._

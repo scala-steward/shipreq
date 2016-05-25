@@ -4,6 +4,7 @@ import scala.slick.jdbc.{GetResult, PositionedParameters, PositionedResult, SetP
 import shipreq.base.db.SqlHelpers.{DbCodec => DBC, _}
 import shipreq.base.db.JodaTimeSqlHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.base.data._
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.security.{HashedStr, PasswordAndSalt}
 
@@ -19,7 +20,6 @@ object SqlHelpers {
   implicit val GR_ResetPasswordInfo    = GetResult(r => ResetPasswordInfo(r.<<, r.<<))
   implicit val GR_UserDescriptor       = GetResult(r => UserDescriptor(r.<<, r.<<, r.<<, userRoles(r)))
   implicit val GR_UserRegistrationInfo = GetResult(r => UserRegistrationInfo(r.<<, r.<<, r.<<, r.<<))
-//  implicit val GR_UserSupplementalInfo = GetResult(r => UserSupplementalInfo(r.<<, r.<<))
 
   implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
     def apply(v: PasswordAndSalt, pp: PositionedParameters) {

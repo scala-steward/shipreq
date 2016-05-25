@@ -2,7 +2,8 @@ package shipreq.webapp.server.security
 
 import org.scalatest.{FunSpec, Matchers}
 import shipreq.taskman.api.{EmailAddr, UserId}
-import shipreq.webapp.server.data.{UserDescriptor, Username}
+import shipreq.webapp.base.data._
+import shipreq.webapp.server.data._
 
 class PermissionsTest extends FunSpec with Matchers {
   implicit def autoUsername(a: String) = Username(a)

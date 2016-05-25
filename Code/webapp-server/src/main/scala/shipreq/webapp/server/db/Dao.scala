@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 import org.postgresql.util.PSQLException
 import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.taskman.api.{EmailAddr, UserId}
+import shipreq.webapp.base.data._
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.lib.Misc.retry
 import shipreq.webapp.server.security.PasswordAndSalt

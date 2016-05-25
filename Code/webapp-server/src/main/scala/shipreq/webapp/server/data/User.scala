@@ -2,8 +2,7 @@ package shipreq.webapp.server.data
 
 import org.joda.time.DateTime
 import shipreq.taskman.api.{EmailAddr, UserId}
-
-case class Username(value: String) extends AnyVal
+import shipreq.webapp.base.data.Username
 
 case class UserDescriptor(id      : UserId,
                           username: Username,
