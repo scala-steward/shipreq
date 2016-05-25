@@ -183,6 +183,7 @@ object Common {
     _.configure(
       jsTests(t),
       debugOrRelease(jsDevSettings, jsProdSettings),
+      Dependencies.useJavaTimeJS,
       InBrowserTesting.js)
     .settings(
       scalaJSUseRhino   in Global   := false,

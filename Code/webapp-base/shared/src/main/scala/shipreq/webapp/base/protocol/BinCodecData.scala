@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
+import java.time.Instant
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.AtomTC
@@ -8,7 +9,11 @@ import DataImplicits._
 import BinCodecGeneric._
 import BoopickleMacros._
 
+// Objects like BinCodecData prevent DCE. TODO: Fix and reduce output JS size.
 object BinCodecData {
+
+  implicit val pickleInstant: Pickler[Instant] =
+    xmap(Instant.ofEpochMilli)(_.toEpochMilli)
 
   implicit val pickleVectorTreeLoc: Pickler[VectorTree.Location] = pickleNEV
 
@@ -38,6 +43,13 @@ object BinCodecData {
   implicit val pickleHashRefKey               = pickleTaggedS(HashRefKey                )
   implicit val pickleFieldRefKey              = pickleTaggedS(FieldRefKey               )
   implicit val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic          )
+
+  implicit val pickleUsername: Pickler[Username] = pickleCaseClass
+
+  implicit def pickleExternalId[T]: Pickler[ExternalId[T]] = pickleCaseClass
+
+  implicit val pickleProjectCatalogueItem: Pickler[ProjectCatalogue.Item] = pickleCaseClass
+  implicit val pickleProjectCatalogue    : Pickler[ProjectCatalogue     ] = pickleCaseClass
 
   implicit val pickleReqId        : Pickler[ReqId        ] = pickleADT
   implicit val pickleSubReqId     : Pickler[SubReqId     ] = pickleADT

@@ -156,6 +156,9 @@ sealed trait DaoS {
   def findProjectOwner(id: ProjectId): Option[UserId] =
     FindProjectOwner(id).firstOption
 
+  def getProjectCatalogue(usrId: UserId): ProjectCatalogue =
+    ProjectCatalogue(GetProjectCatalogue(usrId).list)
+
 //  def deleteProjectSoft(id: ProjectId): Unit =
 //    DeleteProjectSoft(nextFuncName, id).execute
 }

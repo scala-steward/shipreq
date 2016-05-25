@@ -42,6 +42,7 @@ object ClientFn {
     Base64.getEncoder.encodeToString(a)
   }
 
+  val HomeSpa    = new ClientFn(ClientFnDecl.HomeSpa)
   val ProjectSpa = new ClientFn(ClientFnDecl.ProjectSpa)
 
 }

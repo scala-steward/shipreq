@@ -1,7 +1,6 @@
 package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
-import BinCodecRemoteFns._
 
 /**
  * Declaration of an exposed client-side function.
@@ -20,4 +19,7 @@ object ClientFnDecl {
 
   final val ProjectSpaName = "P_p"
   val ProjectSpa = ClientFnDecl[ProjectSpa](ProjectSpaName)
+
+  final val HomeSpaName = "H_h"
+  val HomeSpa = ClientFnDecl[InitDataForHomeSpa](HomeSpaName)
 }

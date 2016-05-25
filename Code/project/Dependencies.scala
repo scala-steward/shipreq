@@ -153,7 +153,7 @@ object Dependencies {
 
   import sbt.Keys._
   def useLocalJar(filename: String) =
-    (_: Project).settings(unmanagedJars in Compile += baseDirectory.value / ".." / "lib" / filename)
+    (_: Project).settings(unmanagedJars in Compile += file("lib").getAbsoluteFile / filename)
 
   val useJavaTimeJS = useLocalJar("scalajs-java-time_sjs0.6_2.11-0.1.1-SNAPSHOT.jar")
 }

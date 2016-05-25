@@ -21,7 +21,7 @@ object Assets extends DispatchSnippet with SnippetHelpers {
   override def dispatch = {
     case "favicon"      => Favicon
     case "public"       => Public
-    case "homeSPA"      => HomeSPA
+    case "homeSpa"      => HomeSpa
     case "projectSpa"   => ProjectSpa
     case "katex"        => Katex
     case "sir"          => Sir
@@ -40,7 +40,7 @@ object Assets extends DispatchSnippet with SnippetHelpers {
 
   val Public = staticHtml(Seq(PublicDepsJs, css("public.css")))
 
-  val HomeSPA = staticHtml(Seq(MemberDepsJs, js("client-home.js")) ++ Katex(null))
+  val HomeSpa = staticHtml(Seq(MemberDepsJs, js("client-home.js")))
 
   val ProjectSpa = staticHtml(Seq(MemberDepsJs, js("client-project.js")) ++ Katex(null))
 

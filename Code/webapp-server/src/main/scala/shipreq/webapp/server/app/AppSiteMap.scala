@@ -35,7 +35,7 @@ object AppSiteMap {
 
   val Home =
     pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
-      >> UseEitherTemplate(Oshiro.isAuthenticated, "members/index")(landingPageTemplate))
+      >> UseEitherTemplate(Oshiro.isAuthenticated, "members/home")(landingPageTemplate))
 
   val LandingPageViaBusinessCard =
     pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))

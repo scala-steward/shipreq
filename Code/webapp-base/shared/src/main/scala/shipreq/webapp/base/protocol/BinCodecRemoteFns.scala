@@ -18,6 +18,4 @@ object BinCodecRemoteFns {
   implicit val pickleTagCrud         = pickleRemoteFn(TagCrud.Fn)
   implicit val pickleCreateContentFn = pickleRemoteFn(CreateContentFn)
   implicit val pickleUpdateContentFn = pickleRemoteFn(UpdateContentFn)
-
-  implicit val pickleProjectSpa      = pickleCaseClass[ProjectSpa]
 }

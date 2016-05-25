@@ -99,6 +99,40 @@ private[db] object Sql {
 
   val FindProjectOwner = query[ProjectId, UserId](s"SELECT usr_id FROM project WHERE id=? AND $projectIsLive")
 
+  val GetProjectCatalogue = {
+    import shipreq.webapp.base.event._
+
+    val reqCreationEvents = List[ActiveEvent](
+      CreateGenericReq(null, null, null),
+      CreateUseCase(null, null, null))
+
+    val reqCreationTypeIds: List[Short] =
+      reqCreationEvents.map(EventDbCodecs.eventCodecRegistry.writer(_)._1)
+
+    val reqCreationCriteria: String =
+      reqCreationTypeIds
+        .map(id => s"WHEN $id THEN 1")
+        .mkString(" ")
+
+    query[UserId, ProjectCatalogue.Item](
+      s"""
+        WITH
+          ps AS (SELECT id, name, created_at from project where usr_id=?),
+          es AS (
+            SELECT
+              project_id,
+              count(*) events,
+              count(CASE type_id $reqCreationCriteria ELSE NULL END) reqs,
+              max(event.created_at) last_updated_at
+            FROM event
+            WHERE project_id IN (select id FROM ps)
+            GROUP BY project_id)
+        SELECT ps.id, ps.name, COALESCE(es.events, 0), COALESCE(es.reqs, 0), ps.created_at, es.last_updated_at
+        FROM ps
+        LEFT JOIN es ON id=project_id
+      """.sql)
+  }
+
   val RenameProject = update[(String, ProjectId, UserId)](
     "UPDATE project SET name=? WHERE id=? AND usr_id=?")
 

@@ -23,3 +23,12 @@ case class ProjectSpa(projectInit:   ProjectInit          .Instance,
                       tagCrud:       TagCrud.Fn           .Instance,
                       createContent: CreateContentFn      .Instance,
                       updateContent: UpdateContentFn      .Instance)
+
+object ProjectSpa {
+  import boopickle._
+  import BoopickleMacros._
+  import BinCodecRemoteFns._
+
+  implicit val pickleProjectSpa = pickleCaseClass[ProjectSpa]
+}
+
