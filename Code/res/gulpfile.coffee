@@ -48,7 +48,7 @@ gulp.task 'ws:clean', ->
   dirs = [cfg_ws_dev, cfg_ws_prod]
   del (d + '**/*' for d in dirs), force: true
 
-gulp.task 'ws:vendor', ->
+gulp.task 'ws:vendor:1', ->
   nonRetardedSrc [
       cfg_npm + 'katex/dist/**/*'
       '!**/*.md'
@@ -58,6 +58,14 @@ gulp.task 'ws:vendor', ->
     ]
     .pipe gulp.dest cfg_ws_dev
     .pipe gulp.dest cfg_ws_prod
+
+gulp.task 'ws:vendor:2', ->
+  nonRetardedSrc ['semantic/dist/themes/default/assets/fonts/**/*']
+    .pipe gulp.dest cfg_ws_dev + '/themes/default/assets/fonts'
+    .pipe gulp.dest cfg_ws_prod + '/themes/default/assets/fonts'
+
+gulp.task 'ws:vendor', [], ->
+  gulp.start ['ws:vendor:1', 'ws:vendor:2']
 
 devProdJs 'ws:public', 'public-deps.js', (f) ->
   [
