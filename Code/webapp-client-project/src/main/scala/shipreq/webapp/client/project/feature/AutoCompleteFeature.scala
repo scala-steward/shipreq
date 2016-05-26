@@ -6,7 +6,7 @@ import org.scalajs.dom.html
 import scala.scalajs.js
 import shipreq.base.util.ScalaExt.EndoFn
 import shipreq.base.util.Vector1
-import shipreq.webapp.client.project.jsfacade.TextComplete
+import shipreq.webapp.client.base.jsfacade.TextComplete
 import shipreq.webapp.client.project.lib.TextEditor
 
 /**

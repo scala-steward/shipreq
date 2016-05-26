@@ -6,7 +6,7 @@ import monocle.Lens
 import scalaz.Equal
 import scalaz.std.option.optionEqual
 import shipreq.base.util.Intersection
-import shipreq.webapp.client.project.jsfacade.ReactCollapse
+import shipreq.webapp.client.base.jsfacade.ReactCollapse
 import PreviewFeature._
 
 /**

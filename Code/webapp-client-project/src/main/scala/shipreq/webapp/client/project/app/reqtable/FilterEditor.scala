@@ -11,8 +11,8 @@ import shipreq.base.util.Valid
 import shipreq.webapp.base.data.{Project, ShowDead}
 import shipreq.webapp.base.filter._
 import shipreq.webapp.client.base.data.Contextualise
+import shipreq.webapp.client.base.jsfacade.{TextComplete => TC}
 import shipreq.webapp.client.project.app.Style.reqtable.{filterEditor => *}
-import shipreq.webapp.client.project.jsfacade.{TextComplete => TC}
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.feature.AutoCompleteFeature
