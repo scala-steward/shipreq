@@ -1,12 +1,13 @@
 import sbt.{project => _, _}
 import Keys._
 import org.scalajs.core.tools.io.{IO => _, _}
-import org.scalajs.sbtplugin.ScalaJSPlugin
+import org.scalajs.sbtplugin.{ScalaJSPlugin, ScalaJSPluginInternal, Stage}
 import Common.Functions._
 import Common.Values.{devMode, releaseMode}
 import Dependencies._
 import DependencyLib.JVM
 import ScalaJSPlugin.autoImport.{crossProject => _, _}
+import ScalaJSPluginInternal.stageKeys
 import ShipReqBuild._
 
 /** The user-facing app.
@@ -31,6 +32,11 @@ object WebappBuild {
         webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm,
         webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs ,
         webappClient, webappServer)
+      .settings(
+        jsSizesFast := jsSizesTask(Stage.FastOpt).value,
+        jsSizesFull := jsSizesTask(Stage.FullOpt).value)
+      .configure(
+        addCommandAliases("jsSizes" -> ";jsSizesFast;jsSizesFull"))
 
   lazy val webappClient =
     project("webapp-client")
@@ -175,5 +181,23 @@ object WebappBuild {
 
   lazy val webappServer =
     project("webapp-server").configure(WebappServerBuild.apply)
+
+  // ===================================================================================================================
+
+  val jsSizesFast = TaskKey[Unit]("jsSizesFast", "Print JS sizes (using fastOptJS).")
+  val jsSizesFull = TaskKey[Unit]("jsSizesFull", "Print JS sizes (using fullOptJS).")
+
+  def jsSizesTask(stage: Stage) = Def.task[Unit] {
+    def report(name: String, f: sbt.Attributed[sbt.File]): Unit =
+      printf("%,12d - %s\n", f.data.length, name)
+    val header = s"JS $stage Sizes"
+    println()
+    println(header)
+    println("=" * header.length)
+    report((moduleName in webappClientHome   ).value, (stageKeys(stage) in Compile in webappClientHome   ).value)
+    report((moduleName in webappClientProject).value, (stageKeys(stage) in Compile in webappClientProject).value)
+    report((moduleName in webappClientWw     ).value, (stageKeys(stage) in Compile in webappClientWw     ).value)
+    println()
+  }
 
 }
