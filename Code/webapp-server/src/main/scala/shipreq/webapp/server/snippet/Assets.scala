@@ -24,6 +24,7 @@ object Assets extends DispatchSnippet with SnippetHelpers {
     case "homeSpa"      => HomeSpa
     case "projectSpa"   => ProjectSpa
     case "katex"        => Katex
+    case "semantic"     => Semantic
     case "sir"          => Sir
     case "shipreq-huge" => ShipreqHuge
   }
@@ -40,9 +41,11 @@ object Assets extends DispatchSnippet with SnippetHelpers {
 
   val Public = staticHtml(Seq(PublicDepsJs, css("public.css")))
 
-  val HomeSpa = staticHtml(Seq(MemberDepsJs, js("client-home.js")))
+  val HomeSpa = staticHtml(Seq(MemberDepsJs, js("client-home.js")) ++ Semantic(null))
 
   val ProjectSpa = staticHtml(Seq(MemberDepsJs, js("client-project.js")) ++ Katex(null))
+
+  lazy val Semantic = staticHtml(Seq(js("semantic.min.js"), css("semantic.min.css")))
 
   val Sir = staticHtml(Seq(css("sir.css")))
 }
