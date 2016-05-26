@@ -9,53 +9,52 @@ import DataImplicits._
 import BinCodecGeneric._
 import BoopickleMacros._
 
-// Objects like BinCodecData prevent DCE. TODO: Fix and reduce output JS size.
 object BinCodecData {
 
-  implicit val pickleInstant: Pickler[Instant] =
+  implicit lazy val pickleInstant: Pickler[Instant] =
     xmap(Instant.ofEpochMilli)(_.toEpochMilli)
 
-  implicit val pickleVectorTreeLoc: Pickler[VectorTree.Location] = pickleNEV
+  implicit lazy val pickleVectorTreeLoc: Pickler[VectorTree.Location] = pickleNEV
 
-  implicit val pickleVectorTreeParentLoc: Pickler[VectorTree.ParentLocation] =
+  implicit lazy val pickleVectorTreeParentLoc: Pickler[VectorTree.ParentLocation] =
     implicitly[Pickler[Vector[Int]]].imap(VectorTree.ParentLocation.isoVector)
 
-  implicit val pickleLive         : Pickler[Live               ] = pickleBool(Live)
-  implicit val pickleDirection    : Pickler[Direction          ] = pickleBool(Forwards)
-  implicit val pickleImplRequired : Pickler[ImplicationRequired] = pickleBool(ImplicationRequired)
-  implicit val pickleMandatory    : Pickler[Mandatory          ] = pickleBool(Mandatory)
-  implicit val pickleDeletable    : Pickler[Deletable          ] = pickleBool(Deletable)
-  implicit val pickleMutexChildren: Pickler[MutexChildren      ] = pickleBool(MutexChildren)
-  implicit val pickleFilterDead   : Pickler[FilterDead         ] = pickleBool(ShowDead)
+  implicit lazy val pickleLive         : Pickler[Live               ] = pickleBool(Live)
+  implicit lazy val pickleDirection    : Pickler[Direction          ] = pickleBool(Forwards)
+  implicit lazy val pickleImplRequired : Pickler[ImplicationRequired] = pickleBool(ImplicationRequired)
+  implicit lazy val pickleMandatory    : Pickler[Mandatory          ] = pickleBool(Mandatory)
+  implicit lazy val pickleDeletable    : Pickler[Deletable          ] = pickleBool(Deletable)
+  implicit lazy val pickleMutexChildren: Pickler[MutexChildren      ] = pickleBool(MutexChildren)
+  implicit lazy val pickleFilterDead   : Pickler[FilterDead         ] = pickleBool(ShowDead)
 
-  implicit val pickleUseCaseId                = pickleTaggedI(UseCaseId                 ).reuseByUnivEq
-  implicit val pickleUseCaseStepId            = pickleTaggedI(UseCaseStepId             ).reuseByUnivEq
-  implicit val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
-  implicit val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
-  implicit val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
-  implicit val pickleCustomIssueTypeId        = pickleTaggedI(CustomIssueTypeId         ).reuseByUnivEq
-  implicit val pickleApplicableTagId          = pickleTaggedI(ApplicableTagId           ).reuseByUnivEq
-  implicit val pickleTagGroupId               = pickleTaggedI(TagGroupId                ).reuseByUnivEq
-  implicit val pickleCustomFieldTagId         = pickleTaggedI(CustomField.Tag.Id        ).reuseByUnivEq
-  implicit val pickleCustomFieldTextId        = pickleTaggedI(CustomField.Text.Id       ).reuseByUnivEq
-  implicit val pickleCustomFieldImplicationId = pickleTaggedI(CustomField.Implication.Id).reuseByUnivEq
-  implicit val pickleReqTypePos               = pickleTaggedI(ReqTypePos                )
-  implicit val pickleHashRefKey               = pickleTaggedS(HashRefKey                )
-  implicit val pickleFieldRefKey              = pickleTaggedS(FieldRefKey               )
-  implicit val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic          )
+  implicit lazy val pickleUseCaseId                = pickleTaggedI(UseCaseId                 ).reuseByUnivEq
+  implicit lazy val pickleUseCaseStepId            = pickleTaggedI(UseCaseStepId             ).reuseByUnivEq
+  implicit lazy val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
+  implicit lazy val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
+  implicit lazy val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
+  implicit lazy val pickleCustomIssueTypeId        = pickleTaggedI(CustomIssueTypeId         ).reuseByUnivEq
+  implicit lazy val pickleApplicableTagId          = pickleTaggedI(ApplicableTagId           ).reuseByUnivEq
+  implicit lazy val pickleTagGroupId               = pickleTaggedI(TagGroupId                ).reuseByUnivEq
+  implicit lazy val pickleCustomFieldTagId         = pickleTaggedI(CustomField.Tag.Id        ).reuseByUnivEq
+  implicit lazy val pickleCustomFieldTextId        = pickleTaggedI(CustomField.Text.Id       ).reuseByUnivEq
+  implicit lazy val pickleCustomFieldImplicationId = pickleTaggedI(CustomField.Implication.Id).reuseByUnivEq
+  implicit lazy val pickleReqTypePos               = pickleTaggedI(ReqTypePos                )
+  implicit lazy val pickleHashRefKey               = pickleTaggedS(HashRefKey                )
+  implicit lazy val pickleFieldRefKey              = pickleTaggedS(FieldRefKey               )
+  implicit lazy val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic          )
 
-  implicit val pickleUsername: Pickler[Username] = pickleCaseClass
+  implicit lazy val pickleUsername: Pickler[Username] = pickleCaseClass
 
   implicit def pickleExternalId[T]: Pickler[ExternalId[T]] = pickleCaseClass
 
-  implicit val pickleProjectCatalogueItem: Pickler[ProjectCatalogue.Item] = pickleCaseClass
-  implicit val pickleProjectCatalogue    : Pickler[ProjectCatalogue     ] = pickleCaseClass
+  implicit lazy val pickleProjectCatalogueItem: Pickler[ProjectCatalogue.Item] = pickleCaseClass
+  implicit lazy val pickleProjectCatalogue    : Pickler[ProjectCatalogue     ] = pickleCaseClass
 
-  implicit val pickleReqId        : Pickler[ReqId        ] = pickleADT
-  implicit val pickleSubReqId     : Pickler[SubReqId     ] = pickleADT
-  implicit val pickleReqOrSubReqId: Pickler[ReqOrSubReqId] = pickleADT
+  implicit lazy val pickleReqId        : Pickler[ReqId        ] = pickleADT
+  implicit lazy val pickleSubReqId     : Pickler[SubReqId     ] = pickleADT
+  implicit lazy val pickleReqOrSubReqId: Pickler[ReqOrSubReqId] = pickleADT
 
-  implicit val pickleImplications: Pickler[Implications] = pickleCaseClass
+  implicit lazy val pickleImplications: Pickler[Implications] = pickleCaseClass
 
   object AtomPicklers extends AtomTC[Pickler] {
     import shipreq.webapp.base.text._
@@ -100,79 +99,79 @@ object BinCodecData {
 
   import AtomPicklers.instances._
 
-  implicit val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
-  implicit val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses
-  implicit val pickleLiveReqCodeGroup  : Pickler[LiveReqCodeGroup   ] = pickleCaseClass
-  implicit val pickleDeadReqCodeGroup  : Pickler[DeadReqCodeGroup   ] = pickleCaseClass
-  implicit val pickleReqCodeGroup      : Pickler[ReqCodeGroup       ] = pickleADT
-  implicit val pickleReqCodeInactive   : Pickler[ReqCode.Inactive   ] = pickleCaseClass
-  implicit val pickleReqCodeActiveGroup: Pickler[ReqCode.ActiveGroup] = pickleCaseClass
-  implicit val pickleReqCodeActiveReq  : Pickler[ReqCode.ActiveReq  ] = pickleCaseClass
-  implicit val pickleReqCodeData       : Pickler[ReqCode.Data       ] = pickleADT
-  implicit val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue ] = pickleCaseClass
-  implicit val pickleReqCodeTrie       : Pickler[ReqCode.Trie       ] = pickleTrie
-  implicit val pickleReqCodes          : Pickler[ReqCodes           ] = pickleCaseClass
+  implicit lazy val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
+  implicit lazy val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses
+  implicit lazy val pickleLiveReqCodeGroup  : Pickler[LiveReqCodeGroup   ] = pickleCaseClass
+  implicit lazy val pickleDeadReqCodeGroup  : Pickler[DeadReqCodeGroup   ] = pickleCaseClass
+  implicit lazy val pickleReqCodeGroup      : Pickler[ReqCodeGroup       ] = pickleADT
+  implicit lazy val pickleReqCodeInactive   : Pickler[ReqCode.Inactive   ] = pickleCaseClass
+  implicit lazy val pickleReqCodeActiveGroup: Pickler[ReqCode.ActiveGroup] = pickleCaseClass
+  implicit lazy val pickleReqCodeActiveReq  : Pickler[ReqCode.ActiveReq  ] = pickleCaseClass
+  implicit lazy val pickleReqCodeData       : Pickler[ReqCode.Data       ] = pickleADT
+  implicit lazy val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue ] = pickleCaseClass
+  implicit lazy val pickleReqCodeTrie       : Pickler[ReqCode.Trie       ] = pickleTrie
+  implicit lazy val pickleReqCodes          : Pickler[ReqCodes           ] = pickleCaseClass
 
-  implicit val pickleStaticReqTypeUC: Pickler[StaticReqType.UseCase.type] = pickleObject
-  implicit val pickleStaticReqType  : Pickler[StaticReqType             ] = pickleADT
-  implicit val pickleReqTypeId      : Pickler[ReqTypeId                 ] = pickleADT
+  implicit lazy val pickleStaticReqTypeUC: Pickler[StaticReqType.UseCase.type] = pickleObject
+  implicit lazy val pickleStaticReqType  : Pickler[StaticReqType             ] = pickleADT
+  implicit lazy val pickleReqTypeId      : Pickler[ReqTypeId                 ] = pickleADT
 
-  implicit val picklePubidRegister         : Pickler[PubidRegister    ] = pickleCaseClass
-  implicit val picklePubid                 : Pickler[Pubid            ] = pickleCaseClass
-  implicit def picklePubidT[T <: ReqTypeId]: Pickler[PubidT[T]        ] = picklePubid.asInstanceOf[Pickler[PubidT[T]]]
-  implicit val pickleGenericReq            : Pickler[GenericReq       ] = pickleCaseClass
-  implicit val pickleUseCaseStep           : Pickler[UseCaseStep      ] = pickleCaseClass
-  implicit val pickleUseCaseSteps          : Pickler[UseCaseSteps     ] = pickleCaseClass
-  implicit val pickleUseCase               : Pickler[UseCase          ] = pickleCaseClass
-  implicit val pickleReq                   : Pickler[Req              ] = pickleADT
-  implicit val pickleGenericReqsById       : Pickler[GenericReqIMap   ] = pickleIMapD
-  implicit val pickleUseCasesById          : Pickler[UseCaseIMap      ] = pickleIMapD
-  implicit val pickleUseCasesStepFlow      : Pickler[UseCases.StepFlow] = pickleCaseClass
-  implicit val pickleUseCases              : Pickler[UseCases         ] = pickleCaseClass[UseCases.Stateless] imap UseCases.statelessIso
-  implicit val pickleRequirements          : Pickler[Requirements     ] = pickleCaseClass
+  implicit lazy val picklePubidRegister         : Pickler[PubidRegister    ] = pickleCaseClass
+  implicit lazy val picklePubid                 : Pickler[Pubid            ] = pickleCaseClass
+  implicit      def picklePubidT[T <: ReqTypeId]: Pickler[PubidT[T]        ] = picklePubid.asInstanceOf[Pickler[PubidT[T]]]
+  implicit lazy val pickleGenericReq            : Pickler[GenericReq       ] = pickleCaseClass
+  implicit lazy val pickleUseCaseStep           : Pickler[UseCaseStep      ] = pickleCaseClass
+  implicit lazy val pickleUseCaseSteps          : Pickler[UseCaseSteps     ] = pickleCaseClass
+  implicit lazy val pickleUseCase               : Pickler[UseCase          ] = pickleCaseClass
+  implicit lazy val pickleReq                   : Pickler[Req              ] = pickleADT
+  implicit lazy val pickleGenericReqsById       : Pickler[GenericReqIMap   ] = pickleIMapD
+  implicit lazy val pickleUseCasesById          : Pickler[UseCaseIMap      ] = pickleIMapD
+  implicit lazy val pickleUseCasesStepFlow      : Pickler[UseCases.StepFlow] = pickleCaseClass
+  implicit lazy val pickleUseCases              : Pickler[UseCases         ] = pickleCaseClass[UseCases.Stateless] imap UseCases.statelessIso
+  implicit lazy val pickleRequirements          : Pickler[Requirements     ] = pickleCaseClass
 
-  implicit val pickleCustomIssueType : Pickler[CustomIssueType    ] = pickleCaseClass
-  implicit val pickleCustomIssueTypes: Pickler[CustomIssueTypeIMap] = pickleIMapD
-  implicit val pickleCustomReqType   : Pickler[CustomReqType      ] = pickleCaseClass
-  implicit val pickleCustomReqTypes  : Pickler[ReqTypes.Custom    ] = pickleIMapD
-  implicit val pickleReqTypes        : Pickler[ReqTypes           ] = pickleCaseClass
+  implicit lazy val pickleCustomIssueType : Pickler[CustomIssueType    ] = pickleCaseClass
+  implicit lazy val pickleCustomIssueTypes: Pickler[CustomIssueTypeIMap] = pickleIMapD
+  implicit lazy val pickleCustomReqType   : Pickler[CustomReqType      ] = pickleCaseClass
+  implicit lazy val pickleCustomReqTypes  : Pickler[ReqTypes.Custom    ] = pickleIMapD
+  implicit lazy val pickleReqTypes        : Pickler[ReqTypes           ] = pickleCaseClass
 
-  implicit val pickleTagId        : Pickler[TagId        ] = pickleADT
-  implicit val pickleApplicableTag: Pickler[ApplicableTag] = pickleCaseClass
-  implicit val pickleTagGroup     : Pickler[TagGroup     ] = pickleCaseClass
-  implicit val pickleTag          : Pickler[Tag          ] = pickleADT
-  implicit val pickleTagInTree    : Pickler[TagInTree    ] = pickleCaseClass
-  implicit val pickleTagTree      : Pickler[TagTree      ] = pickleIMap(TagTree.empty)
+  implicit lazy val pickleTagId        : Pickler[TagId        ] = pickleADT
+  implicit lazy val pickleApplicableTag: Pickler[ApplicableTag] = pickleCaseClass
+  implicit lazy val pickleTagGroup     : Pickler[TagGroup     ] = pickleCaseClass
+  implicit lazy val pickleTag          : Pickler[Tag          ] = pickleADT
+  implicit lazy val pickleTagInTree    : Pickler[TagInTree    ] = pickleCaseClass
+  implicit lazy val pickleTagTree      : Pickler[TagTree      ] = pickleIMap(TagTree.empty)
 
-  implicit val pickleApplReqTypes     : Pickler[Field.ApplicableReqTypes             ] = pickleISubset
-  implicit val pickleCustomFieldTypeIM: Pickler[CustomFieldType.Implication.type     ] = pickleObject
-  implicit val pickleCustomFieldTypeTA: Pickler[CustomFieldType.Tag.type             ] = pickleObject
-  implicit val pickleCustomFieldTypeTX: Pickler[CustomFieldType.Text.type            ] = pickleObject
-  implicit val pickleStaticFieldTypeST: Pickler[StaticFieldType.StepTree.type        ] = pickleObject
-  implicit val pickleStaticFieldTypeSG: Pickler[StaticFieldType.StepGraph.type       ] = pickleObject
-  implicit val pickleStaticFieldTypeIG: Pickler[StaticFieldType.ImplicationGraph.type] = pickleObject
-  implicit val pickleCustomFieldType  : Pickler[CustomFieldType                      ] = pickleADT
-  implicit val pickleStaticFieldType  : Pickler[StaticFieldType                      ] = pickleADT
-  implicit val pickleFieldType        : Pickler[FieldType                            ] = pickleADT
-  implicit val pickleCustomFieldIM    : Pickler[CustomField.Implication              ] = pickleCaseClass
-  implicit val pickleCustomFieldTA    : Pickler[CustomField.Tag                      ] = pickleCaseClass
-  implicit val pickleCustomFieldTX    : Pickler[CustomField.Text                     ] = pickleCaseClass
-  implicit val pickleStaticFieldNS    : Pickler[StaticField.NormalAltStepTree.type   ] = pickleObject
-  implicit val pickleStaticFieldES    : Pickler[StaticField.ExceptionStepTree.type   ] = pickleObject
-  implicit val pickleStaticFieldUCST  : Pickler[StaticField.UseCaseStepTree          ] = pickleADT
-  implicit val pickleStaticFieldSG    : Pickler[StaticField.StepGraph.type           ] = pickleObject
-  implicit val pickleStaticFieldIG    : Pickler[StaticField.ImplicationGraph.type    ] = pickleObject
-  implicit val pickleStaticField      : Pickler[StaticField                          ] = pickleADT
-  implicit val pickleCustomFieldId    : Pickler[CustomFieldId                        ] = pickleADT
-  implicit val pickleCustomField      : Pickler[CustomField                          ] = pickleADT
-  implicit val pickleFieldId          : Pickler[FieldId                              ] = pickleADT
-  implicit val pickleCustomFields     : Pickler[FieldSet.CustomFields                ] = pickleIMap(FieldSet.emptyCustomFields)
-  implicit val pickleFieldSet         : Pickler[FieldSet                             ] = pickleCaseClass
+  implicit lazy val pickleApplReqTypes     : Pickler[Field.ApplicableReqTypes             ] = pickleISubset
+  implicit lazy val pickleCustomFieldTypeIM: Pickler[CustomFieldType.Implication.type     ] = pickleObject
+  implicit lazy val pickleCustomFieldTypeTA: Pickler[CustomFieldType.Tag.type             ] = pickleObject
+  implicit lazy val pickleCustomFieldTypeTX: Pickler[CustomFieldType.Text.type            ] = pickleObject
+  implicit lazy val pickleStaticFieldTypeST: Pickler[StaticFieldType.StepTree.type        ] = pickleObject
+  implicit lazy val pickleStaticFieldTypeSG: Pickler[StaticFieldType.StepGraph.type       ] = pickleObject
+  implicit lazy val pickleStaticFieldTypeIG: Pickler[StaticFieldType.ImplicationGraph.type] = pickleObject
+  implicit lazy val pickleCustomFieldType  : Pickler[CustomFieldType                      ] = pickleADT
+  implicit lazy val pickleStaticFieldType  : Pickler[StaticFieldType                      ] = pickleADT
+  implicit lazy val pickleFieldType        : Pickler[FieldType                            ] = pickleADT
+  implicit lazy val pickleCustomFieldIM    : Pickler[CustomField.Implication              ] = pickleCaseClass
+  implicit lazy val pickleCustomFieldTA    : Pickler[CustomField.Tag                      ] = pickleCaseClass
+  implicit lazy val pickleCustomFieldTX    : Pickler[CustomField.Text                     ] = pickleCaseClass
+  implicit lazy val pickleStaticFieldNS    : Pickler[StaticField.NormalAltStepTree.type   ] = pickleObject
+  implicit lazy val pickleStaticFieldES    : Pickler[StaticField.ExceptionStepTree.type   ] = pickleObject
+  implicit lazy val pickleStaticFieldUCST  : Pickler[StaticField.UseCaseStepTree          ] = pickleADT
+  implicit lazy val pickleStaticFieldSG    : Pickler[StaticField.StepGraph.type           ] = pickleObject
+  implicit lazy val pickleStaticFieldIG    : Pickler[StaticField.ImplicationGraph.type    ] = pickleObject
+  implicit lazy val pickleStaticField      : Pickler[StaticField                          ] = pickleADT
+  implicit lazy val pickleCustomFieldId    : Pickler[CustomFieldId                        ] = pickleADT
+  implicit lazy val pickleCustomField      : Pickler[CustomField                          ] = pickleADT
+  implicit lazy val pickleFieldId          : Pickler[FieldId                              ] = pickleADT
+  implicit lazy val pickleCustomFields     : Pickler[FieldSet.CustomFields                ] = pickleIMap(FieldSet.emptyCustomFields)
+  implicit lazy val pickleFieldSet         : Pickler[FieldSet                             ] = pickleCaseClass
 
-  implicit val pickleDeletionReasonIdO = optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq
-  implicit val pickleDeletionReasons   = pickleCaseClass[DeletionReasons]
+  implicit lazy val pickleDeletionReasonIdO = optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq
+  implicit lazy val pickleDeletionReasons   = pickleCaseClass[DeletionReasons]
 
-  implicit val pickleIdCeilings   : Pickler[IdCeilings   ] = pickleCaseClass
-  implicit val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass
-  implicit val pickleProject      : Pickler[Project      ] = pickleCaseClass
+  implicit lazy val pickleIdCeilings   : Pickler[IdCeilings   ] = pickleCaseClass
+  implicit lazy val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass
+  implicit lazy val pickleProject      : Pickler[Project      ] = pickleCaseClass
 }
