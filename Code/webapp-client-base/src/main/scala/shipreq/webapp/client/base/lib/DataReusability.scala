@@ -2,6 +2,7 @@ package shipreq.webapp.client.base.lib
 
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra._
+import java.time.Instant
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.base.util.univeq._
@@ -10,6 +11,7 @@ import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.text.{Atom, PlainText, TextSearch}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text.UseCaseStepFlowText.TextAndFlow
+import shipreq.webapp.client.base.jsfacade.MomentJs
 
 object DataReusability extends DataReusability {
 
@@ -31,6 +33,12 @@ object DataReusability extends DataReusability {
 
 abstract class DataReusability {
   import DataReusability._
+
+  implicit def reusabilityInstant: Reusability[Instant] =
+    Reusability.by(_.toEpochMilli)
+
+  implicit def reusabilityMomentJs: Reusability[MomentJs] =
+    Reusability.by(_.toEpochMilli)
 
   @inline implicit def toReusabilityObjExt(r: Reusability.type): ReusabilityObjExt =
     new ReusabilityObjExt(r)

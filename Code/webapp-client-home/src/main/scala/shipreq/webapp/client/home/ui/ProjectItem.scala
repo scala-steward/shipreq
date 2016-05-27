@@ -2,10 +2,14 @@ package shipreq.webapp.client.home.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import scalacss.ScalaCssReact._
+import shipreq.webapp.base.URLs
 import shipreq.webapp.base.UiText.EnglishStringExt
 import shipreq.webapp.base.data.ProjectCatalogue
 import shipreq.webapp.client.base.jsfacade.MomentJs
+import shipreq.webapp.client.base.ui.TimeAgo
 import shipreq.webapp.client.base.ui.semantic.{Icon, Size, Statistic, StatisticGroup}
+import Styles.base.{projectItems => *}
 
 object ProjectItem {
 
@@ -18,33 +22,27 @@ object ProjectItem {
 
   def render(p: Props): ReactElement = {
 
-    val m = MomentJs.fromInstant(p.lastUpdatedOrCreatedAt)
-    println(s"AHH: ${m.formatIso8601} = ${m.formatHuman} = ${m.ago()}")
+    val header =
+      <.h1(*.itemHeader,
+        <.a(^.href := URLs.pageProject(p.id), p.name))
 
-    /*
-            %a.item{href: "project-index.haml.html"}
-          .content.middle.aligned
-            .header
-              CardBoard
-            .meta
-              Updated&nbsp;
-              %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 4 months ago.
-              .ui.statistics.tiny.right.floated
+    val meta =
+      <.div(*.itemMeta,
+        "Updated ",
+        TimeAgo.Component(MomentJs fromInstant p.lastUpdatedOrCreatedAt),
+        ".")
 
-     */
-
-    <.div(
-      <.pre(p.toString),
-
+    val stats =
       StatisticGroup.Props(
         statGroupStyle,
         stat(Icon.Write, p.eventCount, "change") ::
         stat(Icon.Cubes, p.reqCount, "req") :: Nil
       ).render
 
-    )
+    <.div(*.item,
+      <.div(*.itemLeft, header, meta),
+      <.div(stats))
   }
 
   val Component = FunctionalComponent(render)
-
 }

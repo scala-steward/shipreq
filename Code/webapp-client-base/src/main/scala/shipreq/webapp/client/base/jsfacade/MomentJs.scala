@@ -6,10 +6,13 @@ import scalajs.js
 
 @js.native
 trait Moment extends js.Object {
-  val isValid: Boolean = js.native
-  def format(): String = js.native
-  def format(fmt: String): String = js.native
-  def fromNow(): String = js.native
+  val isValid            : Boolean = js.native
+  def format()           : String  = js.native
+  def format(fmt: String): String  = js.native
+  def fromNow()          : String  = js.native
+  def unix()             : Double  = js.native
+  @JSName("valueOf")
+  def valueOfL()         : Double  = js.native
 }
 
 @JSName("moment")
@@ -23,10 +26,15 @@ object Moment extends js.Any {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 case class MomentJs(js: Moment) {
-  @inline def formatIso8601: String = js.format()
-  @inline def formatHuman  : String = js.format("llll")
-  @inline def fromNow()    : String = js.fromNow()
-  @inline def ago()        : String = js.fromNow()
+  @inline def formatIso8601 : String  = js.format()
+  @inline def formatHuman   : String  = js.format("llll")
+  @inline def fromNow()     : String  = js.fromNow()
+  @inline def ago()         : String  = js.fromNow()
+  @inline def toEpochMilliD : Double  = js.valueOfL()
+  @inline def toEpochMilli  : Long    = toEpochMilliD.toLong
+  @inline def toEpochSecondD: Double  = js.unix().toLong
+  @inline def toEpochSecond : Long    = toEpochSecondD.toLong
+  @inline def toInstant     : Instant = Instant.ofEpochMilli(toEpochMilli)
 }
 
 object MomentJs {

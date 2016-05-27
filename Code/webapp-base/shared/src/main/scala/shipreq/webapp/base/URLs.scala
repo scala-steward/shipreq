@@ -1,5 +1,6 @@
 package shipreq.webapp.base
 
+import shipreq.webapp.base.data.Project
 import WebappConfig.assetPath_/
 
 object URLs {
@@ -9,4 +10,7 @@ object URLs {
   lazy val SvgShipreqCircleDark = assetPath_/ + "shipreq-circle-dark.svg"
 
   lazy val PageLogout = "/logout"
+
+  def pageProject(id: Project.XId): String =
+    "/project/" + id.value
 }
