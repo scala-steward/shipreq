@@ -18,7 +18,7 @@ object UiText {
 
   @inline implicit class EnglishIntExt(private val self: Int) extends AnyVal {
     def unitsOf(name: String, pluralised: String = null): String =
-      name.pluralise(self, pluralised)
+      self + " " + name.pluralise(self, pluralised)
   }
 
   object ColumnNames {
