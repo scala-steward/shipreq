@@ -13,7 +13,6 @@ import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.Validators.{field => V}
-import shipreq.webapp.base.event.{DeletionAction, Delete, Restore}
 import shipreq.webapp.base.protocol.FieldCrud
 import shipreq.webapp.base.UiText, UiText.FieldNames
 import shipreq.webapp.client.base.data._
@@ -208,7 +207,10 @@ private[fields] object MainTable {
       call(CfgAction.UpdateOrder(i, p))
 
     def deleteIO(i: FieldId, a: DeletionAction) =
-      call(CfgAction.Delete(i, a))
+      call(a match {
+        case Delete  => CfgAction.Delete(i)
+        case Restore => CfgAction.Restore(i)
+      })
 
     // TODO staticDeletion doesn't handle failure (or lock row)
     val staticDeletion = new Deletion[StaticField](

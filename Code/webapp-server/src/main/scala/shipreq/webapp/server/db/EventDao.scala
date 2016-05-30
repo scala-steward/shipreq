@@ -118,6 +118,7 @@ object EventDbCodecs {
         o.value.foreach(kv => kv._1 match {
           case "-" => del = rws.read(kv._2)
           case "+" => add = rws.read(kv._2)
+          case _   => () // Be forgiving. Allows this to be squashed with other data.
         })
         SetDiff(removed = del, add)
     })
@@ -182,6 +183,11 @@ object EventDbCodecs {
 
   implicit val pickleReqCodeIdNES: ReadWriter[NonEmptySet[ReqCodeId]] =
     pickleReqCodeId.nesNice
+
+  implicit val pickleDirection: ReadWriter[Direction] = pickleAdtOS {
+    case Forwards  => "f"
+    case Backwards => "b"
+  }
 
   implicit val pickleUseCaseStepTreeField: ReadWriter[StaticField.UseCaseStepTree] = pickleAdtOS {
     case StaticField.NormalAltStepTree => "n"
@@ -377,11 +383,6 @@ object EventDbCodecs {
   implicit val pickleApplicableTagIdNES: ReadWriter[NonEmptySet[ApplicableTagId]] =
     pickleApplicableTagId.nesNice
 
-  implicit val pickleDeletionAction: ReadWriter[DeletionAction] = pickleAdtOS {
-    case Delete  => "d"
-    case Restore => "r"
-  }
-
   /**
    * Serialises into an object of {"codeₙ":idₙ}.
    *
@@ -454,24 +455,24 @@ object EventDbCodecs {
   implicit val pickleCreateGenericReqGD = {
     implicit val x = pickleReqCodeIdAndValueNES
     // Using "T" for reqtype
-    gdMPickler(CreateGenericReqGD, false) {
-      case CreateGenericReqGD.Title    => "t"
-      case CreateGenericReqGD.ReqCodes => "c"
-      case CreateGenericReqGD.Tags     => "#"
-      case CreateGenericReqGD.ImpSrcs  => ">"
-      case CreateGenericReqGD.ImpTgts  => "<"
+    gdMPickler(GenericReqGD, false) {
+      case GenericReqGD.Title    => "t"
+      case GenericReqGD.ReqCodes => "c"
+      case GenericReqGD.Tags     => "#"
+      case GenericReqGD.ImpSrcs  => ">"
+      case GenericReqGD.ImpTgts  => "<"
     }
   } values
 
   implicit val pickleCreateUseCaseGD = {
     implicit val x = pickleReqCodeIdAndValueNES
     // Using "s" for stepId
-    gdMPickler(CreateUseCaseGD, false) {
-      case CreateUseCaseGD.Title    => "t"
-      case CreateUseCaseGD.ReqCodes => "c"
-      case CreateUseCaseGD.Tags     => "#"
-      case CreateUseCaseGD.ImpSrcs  => ">"
-      case CreateUseCaseGD.ImpTgts  => "<"
+    gdMPickler(UseCaseGD, false) {
+      case UseCaseGD.Title    => "t"
+      case UseCaseGD.ReqCodes => "c"
+      case UseCaseGD.Tags     => "#"
+      case UseCaseGD.ImpSrcs  => ">"
+      case UseCaseGD.ImpTgts  => "<"
     }
   } values
 
@@ -564,49 +565,52 @@ object EventDbCodecs {
         case b   => idTypeCustomFieldId make b
       })
 
-  implicit val dbCodecAddUseCaseStep       : DbCodec[AddUseCaseStep       ] = dbCodecIdAnd('ucId -> "u", 'field -> "f", 'at_? -> "@")
-  implicit val dbCodecAddStaticField       : DbCodec[AddStaticField       ] = dbCodecIdOnly
-  implicit val dbCodecApplyTemplate        : DbCodec[ApplyTemplate        ] = dbCodecDataOnly
-  implicit val dbCodecCreateApplicableTag  : DbCodec[CreateApplicableTag  ] = dbCodec2
-  implicit val dbCodecCreateCustomImpField : DbCodec[CreateCustomImpField ] = dbCodec2
-  implicit val dbCodecCreateCustomIssueType: DbCodec[CreateCustomIssueType] = dbCodec2
-  implicit val dbCodecCreateCustomReqType  : DbCodec[CreateCustomReqType  ] = dbCodec2
-  implicit val dbCodecCreateCustomTagField : DbCodec[CreateCustomTagField ] = dbCodec2
-  implicit val dbCodecCreateCustomTextField: DbCodec[CreateCustomTextField] = dbCodec2
-  implicit val dbCodecCreateGenericReq     : DbCodec[CreateGenericReq     ] = dbCodecIdGdAnd('vs, 'rt -> "T")
-  implicit val dbCodecCreateReqCodeGroup   : DbCodec[CreateReqCodeGroup   ] = dbCodec2
-  implicit val dbCodecCreateTagGroup       : DbCodec[CreateTagGroup       ] = dbCodec2
-  implicit val dbCodecCreateUseCase        : DbCodec[CreateUseCase        ] = dbCodecIdGdAnd('vs, 'stepId -> "s")
-  implicit val dbCodecDeleteCustomField    : DbCodec[DeleteCustomField    ] = dbCodec2
-  implicit val dbCodecDeleteCustomIssueType: DbCodec[DeleteCustomIssueType] = dbCodec2
-  implicit val dbCodecDeleteCustomReqType  : DbCodec[DeleteCustomReqType  ] = dbCodec2
-  implicit val dbCodecDeleteReqCodeGroups  : DbCodec[DeleteReqCodeGroups  ] = dbCodecDataOnly
-  implicit val dbCodecDeleteReqs           : DbCodec[DeleteReqs           ] = dbCodecJust('reqs -> "r", 'reqCodeGroups_? -> "g", 'reason_? -> "j")
-  implicit val dbCodecDeleteStaticField    : DbCodec[DeleteStaticField    ] = dbCodecIdOnly
-  implicit val dbCodecDeleteTagGroup       : DbCodec[DeleteTag            ] = dbCodec2
-  implicit val dbCodecDeleteUseCaseStep    : DbCodec[DeleteUseCaseStep    ] = dbCodecIdOnly
-  implicit val dbCodecPatchImplicationSrc  : DbCodec[PatchImplicationSrc  ] = dbCodec2
-  implicit val dbCodecPatchImplicationTgt  : DbCodec[PatchImplicationTgt  ] = dbCodec2
-  implicit val dbCodecPatchReqCodes        : DbCodec[PatchReqCodes        ] = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
-  implicit val dbCodecPatchReqTags         : DbCodec[PatchReqTags         ] = dbCodec2
-  implicit val dbCodecRepositionField      : DbCodec[RepositionField      ] = dbCodec2
-  implicit val dbCodecRestoreContent       : DbCodec[RestoreContent       ] = dbCodecJust('reqs_? -> "r", 'reqCodeGroups_? -> "c")
-  implicit val dbCodecRestoreUseCaseStep   : DbCodec[RestoreUseCaseStep   ] = dbCodecIdOnly
-  implicit val dbCodecSetCustomTextField   : DbCodec[SetCustomTextField   ] = dbCodecIdAnd('fid -> "f", 'value -> "t")
-  implicit val dbCodecSetGenericReqTitle   : DbCodec[SetGenericReqTitle   ] = dbCodec2
-  implicit val dbCodecSetGenericReqType    : DbCodec[SetGenericReqType    ] = dbCodec2
-  implicit val dbCodecSetUseCaseTitle      : DbCodec[SetUseCaseTitle      ] = dbCodec2
-  implicit val dbCodecShiftUseCaseStepLeft : DbCodec[ShiftUseCaseStepLeft ] = dbCodecIdOnly
-  implicit val dbCodecShiftUseCaseStepRight: DbCodec[ShiftUseCaseStepRight] = dbCodecIdOnly
-  implicit val dbCodecUpdateApplicableTag  : DbCodec[UpdateApplicableTag  ] = dbCodec2
-  implicit val dbCodecUpdateCustomImpField : DbCodec[UpdateCustomImpField ] = dbCodec2
-  implicit val dbCodecUpdateCustomIssueType: DbCodec[UpdateCustomIssueType] = dbCodec2
-  implicit val dbCodecUpdateCustomReqType  : DbCodec[UpdateCustomReqType  ] = dbCodec2
-  implicit val dbCodecUpdateCustomTagField : DbCodec[UpdateCustomTagField ] = dbCodec2
-  implicit val dbCodecUpdateCustomTextField: DbCodec[UpdateCustomTextField] = dbCodec2
-  implicit val dbCodecUpdateReqCodeGroup   : DbCodec[UpdateReqCodeGroup   ] = dbCodec2
-  implicit val dbCodecUpdateTagGroup       : DbCodec[UpdateTagGroup       ] = dbCodec2
-  implicit val dbCodecUpdateUseCaseStep    : DbCodec[UpdateUseCaseStep    ] = dbCodec2
+  implicit val dbCodecApplicableTagCreate   : DbCodec[ApplicableTagCreate   ] = dbCodec2
+  implicit val dbCodecApplicableTagUpdate   : DbCodec[ApplicableTagUpdate   ] = dbCodec2
+  implicit val dbCodecContentRestore        : DbCodec[ContentRestore        ] = dbCodecJust('reqs_? -> "r", 'reqCodeGroups_? -> "c")
+  implicit val dbCodecCustomIssueTypeCreate : DbCodec[CustomIssueTypeCreate ] = dbCodec2
+  implicit val dbCodecCustomIssueTypeDelete : DbCodec[CustomIssueTypeDelete ] = dbCodecIdOnly
+  implicit val dbCodecCustomIssueTypeRestore: DbCodec[CustomIssueTypeRestore] = dbCodecIdOnly
+  implicit val dbCodecCustomIssueTypeUpdate : DbCodec[CustomIssueTypeUpdate ] = dbCodec2
+  implicit val dbCodecCustomReqTypeCreate   : DbCodec[CustomReqTypeCreate   ] = dbCodec2
+  implicit val dbCodecCustomReqTypeDelete   : DbCodec[CustomReqTypeDelete   ] = dbCodecIdOnly
+  implicit val dbCodecCustomReqTypeRestore  : DbCodec[CustomReqTypeRestore  ] = dbCodecIdOnly
+  implicit val dbCodecCustomReqTypeUpdate   : DbCodec[CustomReqTypeUpdate   ] = dbCodec2
+  implicit val dbCodecFieldCustomDelete     : DbCodec[FieldCustomDelete     ] = dbCodecIdOnly
+  implicit val dbCodecFieldCustomImpCreate  : DbCodec[FieldCustomImpCreate  ] = dbCodec2
+  implicit val dbCodecFieldCustomImpUpdate  : DbCodec[FieldCustomImpUpdate  ] = dbCodec2
+  implicit val dbCodecFieldCustomRestore    : DbCodec[FieldCustomRestore    ] = dbCodecIdOnly
+  implicit val dbCodecFieldCustomTagCreate  : DbCodec[FieldCustomTagCreate  ] = dbCodec2
+  implicit val dbCodecFieldCustomTagUpdate  : DbCodec[FieldCustomTagUpdate  ] = dbCodec2
+  implicit val dbCodecFieldCustomTextCreate : DbCodec[FieldCustomTextCreate ] = dbCodec2
+  implicit val dbCodecFieldCustomTextUpdate : DbCodec[FieldCustomTextUpdate ] = dbCodec2
+  implicit val dbCodecFieldReposition       : DbCodec[FieldReposition       ] = dbCodec2
+  implicit val dbCodecFieldStaticAdd        : DbCodec[FieldStaticAdd        ] = dbCodecIdOnly
+  implicit val dbCodecFieldStaticRemove     : DbCodec[FieldStaticRemove     ] = dbCodecIdOnly
+  implicit val dbCodecGenericReqCreate      : DbCodec[GenericReqCreate      ] = dbCodecIdGdAnd('vs, 'rt -> "T")
+  implicit val dbCodecGenericReqTitleSet    : DbCodec[GenericReqTitleSet    ] = dbCodec2
+  implicit val dbCodecGenericReqTypeSet     : DbCodec[GenericReqTypeSet     ] = dbCodec2
+  implicit val dbCodecProjectTemplateApply  : DbCodec[ProjectTemplateApply  ] = dbCodecDataOnly
+  implicit val dbCodecReqCodeGroupCreate    : DbCodec[ReqCodeGroupCreate    ] = dbCodec2
+  implicit val dbCodecReqCodeGroupsDelete   : DbCodec[ReqCodeGroupsDelete   ] = dbCodecDataOnly
+  implicit val dbCodecReqCodeGroupUpdate    : DbCodec[ReqCodeGroupUpdate    ] = dbCodec2
+  implicit val dbCodecReqCodesPatch         : DbCodec[ReqCodesPatch         ] = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
+  implicit val dbCodecReqFieldCustomTextSet : DbCodec[ReqFieldCustomTextSet ] = dbCodecIdAnd('fid -> "f", 'value -> "t")
+  implicit val dbCodecReqImplicationsPatch  : DbCodec[ReqImplicationsPatch  ] = dbCodecIdAnd('dir -> "d", 'patch -> "")
+  implicit val dbCodecReqsDelete            : DbCodec[ReqsDelete            ] = dbCodecJust('reqs -> "r", 'reqCodeGroups_? -> "g", 'reason_? -> "j")
+  implicit val dbCodecReqTagsPatch          : DbCodec[ReqTagsPatch          ] = dbCodec2
+  implicit val dbCodecTagDelete             : DbCodec[TagDelete             ] = dbCodecIdOnly
+  implicit val dbCodecTagGroupCreate        : DbCodec[TagGroupCreate        ] = dbCodec2
+  implicit val dbCodecTagGroupUpdate        : DbCodec[TagGroupUpdate        ] = dbCodec2
+  implicit val dbCodecTagRestore            : DbCodec[TagRestore            ] = dbCodecIdOnly
+  implicit val dbCodecUseCaseCreate         : DbCodec[UseCaseCreate         ] = dbCodecIdGdAnd('vs, 'stepId -> "s")
+  implicit val dbCodecUseCaseStepCreate     : DbCodec[UseCaseStepCreate     ] = dbCodecIdAnd('ucId -> "u", 'field -> "f", 'at_? -> "@")
+  implicit val dbCodecUseCaseStepDelete     : DbCodec[UseCaseStepDelete     ] = dbCodecIdOnly
+  implicit val dbCodecUseCaseStepRestore    : DbCodec[UseCaseStepRestore    ] = dbCodecIdOnly
+  implicit val dbCodecUseCaseStepShiftLeft  : DbCodec[UseCaseStepShiftLeft  ] = dbCodecIdOnly
+  implicit val dbCodecUseCaseStepShiftRight : DbCodec[UseCaseStepShiftRight ] = dbCodecIdOnly
+  implicit val dbCodecUseCaseStepUpdate     : DbCodec[UseCaseStepUpdate     ] = dbCodec2
+  implicit val dbCodecUseCaseTitleSet       : DbCodec[UseCaseTitleSet       ] = dbCodec2
 
   /**
    * Assigns each event a `type_id`.
@@ -615,62 +619,75 @@ object EventDbCodecs {
    * efficient BooPickle int encoding.
    */
   val eventCodecRegistry = DbCodec.registry[Event, ActiveEvent] {
-    // Content
 
-    case _: DeleteReqs            => 200
-    case _: PatchImplicationSrc   => 201
-    case _: PatchImplicationTgt   => 202
-    case _: PatchReqCodes         => 203
-    case _: PatchReqTags          => 204
-    case _: SetCustomTextField    => 205
-    case _: RestoreContent        => 206 // TODO Redo event DB ids
+    // =======================
+    // Content: Shared & codes
+    // =======================
 
-    case _: CreateGenericReq      => 230
-    case _: SetGenericReqTitle    => 231
-    case _: SetGenericReqType     => 232
+    case _: ReqsDelete             => 10
+    case _: ContentRestore         => 11
 
-    case _: CreateReqCodeGroup    => 240
-    case _: UpdateReqCodeGroup    => 241
-    case _: DeleteReqCodeGroups   => 242
+    case _: ReqCodesPatch          => 20
+    case _: ReqFieldCustomTextSet  => 21
+    case _: ReqImplicationsPatch   => 22
+    case _: ReqTagsPatch           => 23
 
-    case _: CreateUseCase         => 250
-    case _: SetUseCaseTitle       => 251
-    case _: AddUseCaseStep        => 252
-    case _: DeleteUseCaseStep     => 253
-    case _: ShiftUseCaseStepLeft  => 254
-    case _: ShiftUseCaseStepRight => 255
-    case _: UpdateUseCaseStep     => 256
-    case _: RestoreUseCaseStep    => 257
+    case _: ReqCodeGroupCreate     => 90
+    case _: ReqCodeGroupUpdate     => 91
+    case _: ReqCodeGroupsDelete    => 92
 
+    // =============
+    // Content: Reqs
+    // =============
+
+    case _: GenericReqCreate       => 100
+    case _: GenericReqTitleSet     => 101
+    case _: GenericReqTypeSet      => 102
+
+    case _: UseCaseCreate          => 200
+    case _: UseCaseTitleSet        => 201
+
+    case _: UseCaseStepCreate      => 230
+    case _: UseCaseStepUpdate      => 231
+    case _: UseCaseStepShiftLeft   => 232
+    case _: UseCaseStepShiftRight  => 233
+    case _: UseCaseStepDelete      => 234
+    case _: UseCaseStepRestore     => 235
+
+    // ======
     // Config
+    // ======
 
-    case _: ApplyTemplate         =>   0
+    case _: ProjectTemplateApply   => 1000
 
-    case _: CreateCustomReqType   =>  10
-    case _: UpdateCustomReqType   =>  11
-    case _: DeleteCustomReqType   =>  12
+    case _: CustomReqTypeCreate    => 1010
+    case _: CustomReqTypeUpdate    => 1011
+    case _: CustomReqTypeDelete    => 1012
+    case _: CustomReqTypeRestore   => 1013
 
-    case _: CreateCustomIssueType =>  20
-    case _: UpdateCustomIssueType =>  21
-    case _: DeleteCustomIssueType =>  22
+    case _: TagGroupCreate         => 1020
+    case _: TagGroupUpdate         => 1021
+    case _: ApplicableTagCreate    => 1024
+    case _: ApplicableTagUpdate    => 1025
+    case _: TagDelete              => 1028
+    case _: TagRestore             => 1029
 
-    case _: DeleteTag             =>  30
-    case _: CreateApplicableTag   =>  31
-    case _: UpdateApplicableTag   =>  32
-    case _: CreateTagGroup        =>  33
-    case _: UpdateTagGroup        =>  34
+    case _: CustomIssueTypeCreate  => 1030
+    case _: CustomIssueTypeUpdate  => 1031
+    case _: CustomIssueTypeDelete  => 1032
+    case _: CustomIssueTypeRestore => 1033
 
-    case _: AddStaticField        =>  40
-    case _: DeleteStaticField     =>  41
-    case _: RepositionField       =>  42
-
-    case _: DeleteCustomField     =>  50
-    case _: CreateCustomTextField =>  51
-    case _: UpdateCustomTextField =>  52
-    case _: CreateCustomTagField  =>  53
-    case _: UpdateCustomTagField  =>  54
-    case _: CreateCustomImpField  =>  55
-    case _: UpdateCustomImpField  =>  56
+    case _: FieldReposition        => 1100
+    case _: FieldStaticAdd         => 1110
+    case _: FieldStaticRemove      => 1111
+    case _: FieldCustomDelete      => 1120
+    case _: FieldCustomRestore     => 1121
+    case _: FieldCustomImpCreate   => 1130
+    case _: FieldCustomImpUpdate   => 1131
+    case _: FieldCustomTagCreate   => 1132
+    case _: FieldCustomTagUpdate   => 1133
+    case _: FieldCustomTextCreate  => 1134
+    case _: FieldCustomTextUpdate  => 1135
   }
 }
 

@@ -6,7 +6,6 @@ import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
 import ApplyEventTestFns._
-import DeletionAction._
 
 object ApplyEventTestFns {
 
@@ -69,19 +68,19 @@ object ApplyEventTestFns {
     var delReasons       = 0
 
     es foreach {
-      case _: CreateGenericReq      => genericReqs += 1
-      case _: CreateUseCase         => useCases += 1
-      case _: CreateCustomIssueType => customIssueTypes += 1
-      case _: CreateCustomReqType   => customReqTypes += 1
-      case _: CreateCustomTextField
-         | _: CreateCustomTagField
-         | _: CreateCustomImpField  => customFields += 1
-      case _: CreateTagGroup
-         | _: CreateApplicableTag   => tags += 1
-      case _: CreateReqCodeGroup    => activeRCGs += 1
-      case e: DeleteReqCodeGroups   => activeRCGs -= e.ids.size
+      case _: GenericReqCreate      => genericReqs += 1
+      case _: UseCaseCreate         => useCases += 1
+      case _: CustomIssueTypeCreate => customIssueTypes += 1
+      case _: CustomReqTypeCreate   => customReqTypes += 1
+      case _: FieldCustomTextCreate
+         | _: FieldCustomTagCreate
+         | _: FieldCustomImpCreate  => customFields += 1
+      case _: TagGroupCreate
+         | _: ApplicableTagCreate   => tags += 1
+      case _: ReqCodeGroupCreate    => activeRCGs += 1
+      case e: ReqCodeGroupsDelete   => activeRCGs -= e.ids.size
 
-      case ApplyTemplate(t) => t match {
+      case ProjectTemplateApply(t) => t match {
         case ProjectTemplate.Default =>
           customReqTypes   +=  9
           customIssueTypes +=  3
@@ -89,43 +88,46 @@ object ApplyEventTestFns {
           customFields     +=  5
       }
 
-      case d: DeleteReqs =>
+      case d: ReqsDelete =>
         if (d.reason.nonEmpty)
           delReasons += 1
         activeRCGs -= d.reqCodeGroups.size
 
-      case r: RestoreContent =>
+      case r: ContentRestore =>
         activeRCGs += r.reqCodeGroups.size
 
-      case _: AddStaticField
-         | _: AddUseCaseStep
-         | _: DeleteCustomField
-         | _: DeleteCustomIssueType
-         | _: DeleteCustomReqType
-         | _: DeleteStaticField
-         | _: DeleteTag
-         | _: DeleteUseCaseStep
-         | _: PatchImplicationSrc
-         | _: PatchImplicationTgt
-         | _: PatchReqCodes
-         | _: PatchReqTags
-         | _: RepositionField
-         | _: RestoreUseCaseStep
-         | _: SetCustomTextField
-         | _: SetGenericReqTitle
-         | _: SetGenericReqType
-         | _: SetUseCaseTitle
-         | _: ShiftUseCaseStepLeft
-         | _: ShiftUseCaseStepRight
-         | _: UpdateApplicableTag
-         | _: UpdateCustomImpField
-         | _: UpdateCustomIssueType
-         | _: UpdateCustomReqType
-         | _: UpdateCustomTagField
-         | _: UpdateCustomTextField
-         | _: UpdateReqCodeGroup
-         | _: UpdateTagGroup
-         | _: UpdateUseCaseStep => ()
+      case _: ApplicableTagUpdate
+         | _: CustomIssueTypeDelete
+         | _: CustomIssueTypeRestore
+         | _: CustomIssueTypeUpdate
+         | _: CustomReqTypeDelete
+         | _: CustomReqTypeRestore
+         | _: CustomReqTypeUpdate
+         | _: FieldCustomDelete
+         | _: FieldCustomImpUpdate
+         | _: FieldCustomRestore
+         | _: FieldCustomTagUpdate
+         | _: FieldCustomTextUpdate
+         | _: FieldReposition
+         | _: FieldStaticAdd
+         | _: FieldStaticRemove
+         | _: GenericReqTitleSet
+         | _: GenericReqTypeSet
+         | _: ReqCodeGroupUpdate
+         | _: ReqCodesPatch
+         | _: ReqFieldCustomTextSet
+         | _: ReqImplicationsPatch
+         | _: ReqTagsPatch
+         | _: TagDelete
+         | _: TagGroupUpdate
+         | _: TagRestore
+         | _: UseCaseStepCreate
+         | _: UseCaseStepDelete
+         | _: UseCaseStepRestore
+         | _: UseCaseStepShiftLeft
+         | _: UseCaseStepShiftRight
+         | _: UseCaseTitleSet
+         | _: UseCaseStepUpdate => ()
     }
 
     val cfg = p.config

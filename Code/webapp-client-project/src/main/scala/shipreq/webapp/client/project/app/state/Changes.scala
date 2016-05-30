@@ -16,51 +16,54 @@ case class Changes(ves: VerifiedEvents, p1: Project, p2: Project) {
 
   for (ve <- ves)
     ve.event match {
-      case e: CreateCustomIssueType => _customIssueTypes += e.id
-      case e: UpdateCustomIssueType => _customIssueTypes += e.id
-      case e: DeleteCustomIssueType => _customIssueTypes += e.id
-      case e: CreateCustomReqType   => _customReqTypes += e.id
-      case e: UpdateCustomReqType   => _customReqTypes += e.id
-      case e: DeleteCustomReqType   => _customReqTypes += e.id // Affects GenericReq.live & ReqCodes
-      case _: CreateApplicableTag
-         | _: UpdateApplicableTag
-         | _: CreateTagGroup
-         | _: UpdateTagGroup
-         | _: DeleteTag             => _tagsChanged = true
-      case e: CreateCustomTextField => _customFieldTypes += e.id
-      case e: UpdateCustomTextField => _customFieldTypes += e.id
-      case e: CreateCustomTagField  => _customFieldTypes += e.id
-      case e: UpdateCustomTagField  => _customFieldTypes += e.id
-      case e: CreateCustomImpField  => _customFieldTypes += e.id
-      case e: UpdateCustomImpField  => _customFieldTypes += e.id
-      case e: DeleteCustomField     => _customFieldTypes += e.id
-      case e: DeleteStaticField     => _staticFields = true
-      case e: AddStaticField        => _staticFields = true
+      case e: CustomIssueTypeCreate  => _customIssueTypes += e.id
+      case e: CustomIssueTypeDelete  => _customIssueTypes += e.id
+      case e: CustomIssueTypeRestore => _customIssueTypes += e.id
+      case e: CustomIssueTypeUpdate  => _customIssueTypes += e.id
+      case e: CustomReqTypeCreate    => _customReqTypes += e.id
+      case e: CustomReqTypeDelete    => _customReqTypes += e.id // Affects GenericReq.live & ReqCodes
+      case e: CustomReqTypeRestore   => _customReqTypes += e.id // Affects GenericReq.live & ReqCodes
+      case e: CustomReqTypeUpdate    => _customReqTypes += e.id
+      case _: ApplicableTagCreate
+         | _: ApplicableTagUpdate
+         | _: TagGroupCreate
+         | _: TagGroupUpdate
+         | _: TagDelete
+         | _: TagRestore             => _tagsChanged = true
+      case e: FieldCustomDelete      => _customFieldTypes += e.id
+      case e: FieldCustomImpCreate   => _customFieldTypes += e.id
+      case e: FieldCustomImpUpdate   => _customFieldTypes += e.id
+      case e: FieldCustomRestore     => _customFieldTypes += e.id
+      case e: FieldCustomTagCreate   => _customFieldTypes += e.id
+      case e: FieldCustomTagUpdate   => _customFieldTypes += e.id
+      case e: FieldCustomTextCreate  => _customFieldTypes += e.id
+      case e: FieldCustomTextUpdate  => _customFieldTypes += e.id
+      case e: FieldStaticAdd         => _staticFields = true
+      case e: FieldStaticRemove      => _staticFields = true
 
-      case _: AddUseCaseStep
-         | _: CreateGenericReq
-         | _: CreateReqCodeGroup
-         | _: CreateUseCase
-         | _: DeleteReqCodeGroups
-         | _: DeleteReqs
-         | _: DeleteUseCaseStep
-         | _: PatchImplicationSrc
-         | _: PatchImplicationTgt
-         | _: PatchReqCodes
-         | _: PatchReqTags
-         | _: RepositionField
-         | _: RestoreContent
-         | _: RestoreUseCaseStep
-         | _: SetCustomTextField
-         | _: SetGenericReqTitle
-         | _: SetGenericReqType
-         | _: SetUseCaseTitle
-         | _: ShiftUseCaseStepLeft
-         | _: ShiftUseCaseStepRight
-         | _: UpdateReqCodeGroup
-         | _: UpdateUseCaseStep
+      case _: ContentRestore
+         | _: FieldReposition
+         | _: GenericReqCreate
+         | _: GenericReqTitleSet
+         | _: GenericReqTypeSet
+         | _: ReqCodeGroupCreate
+         | _: ReqCodeGroupsDelete
+         | _: ReqCodeGroupUpdate
+         | _: ReqCodesPatch
+         | _: ReqFieldCustomTextSet
+         | _: ReqImplicationsPatch
+         | _: ReqsDelete
+         | _: ReqTagsPatch
+         | _: UseCaseCreate
+         | _: UseCaseStepCreate
+         | _: UseCaseStepDelete
+         | _: UseCaseStepRestore
+         | _: UseCaseStepShiftLeft
+         | _: UseCaseStepShiftRight
+         | _: UseCaseStepUpdate
+         | _: UseCaseTitleSet
 
-         | _: ApplyTemplate         => () // Always event #0 only - ignore
+         | _: ProjectTemplateApply => () // Always event #0 only - ignore
     }
 
   private def changed[A: Equal](f: Project => A): Boolean =

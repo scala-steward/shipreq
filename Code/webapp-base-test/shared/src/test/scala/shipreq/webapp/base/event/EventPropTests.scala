@@ -23,8 +23,8 @@ object EventPropTests extends TestSuite {
 
     val deletableStepProps =
       E.forall(p.useCaseStepsDeletable.map(_.id).toList) { id =>
-        val a = DeleteUseCaseStep (id)
-        val b = RestoreUseCaseStep(id)
+        val a = UseCaseStepDelete (id)
+        val b = UseCaseStepRestore(id)
         E.equal("DeleteUseCaseStep + RestoreUseCaseStep = id",
           actual = AE.apply1(a)(p).flatMap(AE.apply1(b)),
           expect = \/-(p))

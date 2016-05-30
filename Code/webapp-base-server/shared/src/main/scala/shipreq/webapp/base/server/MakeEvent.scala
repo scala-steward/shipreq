@@ -40,15 +40,15 @@ object MakeEvent {
 
   def reqTypeImplicationMod(input: ReqTypeImplicationMod.Input): Result = {
     val (id, imp) = input
-    UpdateCustomReqType(id, CustomReqTypeGD.Imp(imp))
+    CustomReqTypeUpdate(id, CustomReqTypeGD.Imp(imp))
   }
 
   def fieldMandatorinessMod(input: FieldMandatorinessMod.Input): Result = {
     val m = input._2
     input._1 match {
-      case id: CustomField.Text       .Id => UpdateCustomTextField(id, CustomTextFieldGD.Mandatory(m))
-      case id: CustomField.Tag        .Id => UpdateCustomTagField (id, CustomTagFieldGD .Mandatory(m))
-      case id: CustomField.Implication.Id => UpdateCustomImpField (id, CustomImpFieldGD .Mandatory(m))
+      case id: CustomField.Text       .Id => FieldCustomTextUpdate(id, CustomTextFieldGD.Mandatory(m))
+      case id: CustomField.Tag        .Id => FieldCustomTagUpdate (id, CustomTagFieldGD .Mandatory(m))
+      case id: CustomField.Implication.Id => FieldCustomImpUpdate (id, CustomImpFieldGD .Mandatory(m))
     }
   }
 
@@ -59,17 +59,20 @@ object MakeEvent {
         val id = CustomIssueTypeId(project.idCeilings.customIssueType + 1)
         val (key, desc) = vs
         val values = gdAllValues(CustomIssueTypeGD , "")
-        CreateCustomIssueType(id, values)
+        CustomIssueTypeCreate(id, values)
 
       case CrudAction.Update(id, vs) =>
         project.config.customIssueTypes.attempt(id) toMakeEventResult { cur =>
           val (key, desc) = vs
           val vs2 = gdUnequalValues(CustomIssueTypeGD, cur, "")
-          eventIfNonEmpty(vs2)(UpdateCustomIssueType(id, _))
+          eventIfNonEmpty(vs2)(CustomIssueTypeUpdate(id, _))
         }
 
-      case CrudAction.Delete(id, da) =>
-        DeleteCustomIssueType(id, da)
+      case CrudAction.Delete(id) =>
+        CustomIssueTypeDelete(id)
+
+      case CrudAction.Restore(id) =>
+        CustomIssueTypeRestore(id)
     }
 
   def customReqTypeCrud(a: CustomReqTypeCrud.Action, project: Project): Result =
@@ -79,19 +82,22 @@ object MakeEvent {
         val id = CustomReqTypeId(project.idCeilings.customReqType + 1)
         val (mnemonic, name, imp) = vs
         val values = gdAllValues(CustomReqTypeGD , "")
-        CreateCustomReqType(id, values)
+        CustomReqTypeCreate(id, values)
 
       case CrudAction.Update(id, vs) =>
         project.config.reqTypes.need(id) match {
           case cur: CustomReqType =>
             val (mnemonic, name, imp) = vs
             val vs2 = gdUnequalValues(CustomReqTypeGD, cur, "")
-            eventIfNonEmpty(vs2)(UpdateCustomReqType(id, _))
+            eventIfNonEmpty(vs2)(CustomReqTypeUpdate(id, _))
           case f => Failure(s"$f must be a CustomReqType.")
         }
 
-      case CrudAction.Delete(id, da) =>
-        DeleteCustomReqType(id, da)
+      case CrudAction.Delete(id) =>
+        CustomReqTypeDelete(id)
+
+      case CrudAction.Restore(id) =>
+        CustomReqTypeRestore(id)
     }
 
   def fieldCrud(a: FieldCrud.Fn.Input, project: Project): Result = {
@@ -100,46 +106,49 @@ object MakeEvent {
     a match {
 
       case CfgAction.UpdateOrder(id, pos) =>
-        RepositionField(id, pos)
+        FieldReposition(id, pos)
 
       case CfgAction.Create(vs: TextFieldValues) =>
         val id = CustomField.Text.Id(nextId)
-        CreateCustomTextField(id, gdAllValues(CustomTextFieldGD, "vs"))
+        FieldCustomTextCreate(id, gdAllValues(CustomTextFieldGD, "vs"))
 
       case CfgAction.Create(vs: TagFieldValues) =>
         val id = CustomField.Tag.Id(nextId)
-        CreateCustomTagField(id, gdAllValues(CustomTagFieldGD, "vs"))
+        FieldCustomTagCreate(id, gdAllValues(CustomTagFieldGD, "vs"))
 
       case CfgAction.Create(vs: ImplicationFieldValues) =>
         val id = CustomField.Implication.Id(nextId)
-        CreateCustomImpField(id, gdAllValues(CustomImpFieldGD, "vs"))
+        FieldCustomImpCreate(id, gdAllValues(CustomImpFieldGD, "vs"))
 
       case CfgAction.UpdateValues(id: CustomField.Text.Id, vs: TextFieldValues) =>
         project.config.customFieldAttempt(id) toMakeEventResult { cur =>
           val vs2 = gdUnequalValues(CustomTextFieldGD, cur, "vs")
-          eventIfNonEmpty(vs2)(UpdateCustomTextField(id, _))
+          eventIfNonEmpty(vs2)(FieldCustomTextUpdate(id, _))
         }
 
       case CfgAction.UpdateValues(id: CustomField.Tag.Id, vs: TagFieldValues) =>
         project.config.customFieldAttempt(id) toMakeEventResult { cur =>
           val vs2 = gdUnequalValues(CustomTagFieldGD, cur, "vs")
-          eventIfNonEmpty(vs2)(UpdateCustomTagField(id, _))
+          eventIfNonEmpty(vs2)(FieldCustomTagUpdate(id, _))
         }
 
       case CfgAction.UpdateValues(id: CustomField.Implication.Id, vs: ImplicationFieldValues) =>
         project.config.customFieldAttempt(id) toMakeEventResult { cur =>
           val vs2 = gdUnequalValues(CustomImpFieldGD, cur, "vs")
-          eventIfNonEmpty(vs2)(UpdateCustomImpField(id, _))
+          eventIfNonEmpty(vs2)(FieldCustomImpUpdate(id, _))
         }
 
-      case CfgAction.Delete(f: StaticField, Restore) =>
-        AddStaticField(f)
+      case CfgAction.Delete(f: StaticField) =>
+        FieldStaticRemove(f)
 
-      case CfgAction.Delete(f: StaticField, Delete) =>
-        DeleteStaticField(f)
+      case CfgAction.Restore(f: StaticField) =>
+        FieldStaticAdd(f)
 
-      case CfgAction.Delete(id: CustomFieldId, da) =>
-        DeleteCustomField(id, da)
+      case CfgAction.Delete(id: CustomFieldId) =>
+        FieldCustomDelete(id)
+
+      case CfgAction.Restore(id: CustomFieldId) =>
+        FieldCustomRestore(id)
 
       case CfgAction.UpdateValues(_: CustomField.Text.Id,        _: TagFieldValues)
          | CfgAction.UpdateValues(_: CustomField.Text.Id,        _: ImplicationFieldValues)
@@ -166,12 +175,12 @@ object MakeEvent {
           case Some(v: ApplicableTagValues) =>
             val id = ApplicableTagId(nextId)
             import v._
-            CreateApplicableTag(id, gdAllValues(ApplicableTagGD, ""))
+            ApplicableTagCreate(id, gdAllValues(ApplicableTagGD, ""))
 
           case Some(v: TagGroupValues) =>
             val id = TagGroupId(nextId)
             import v._
-            CreateTagGroup(id, gdAllValues(TagGroupGD, ""))
+            TagGroupCreate(id, gdAllValues(TagGroupGD, ""))
 
           case None => Failure("Values required.")
         }
@@ -196,7 +205,7 @@ object MakeEvent {
               case cur: ApplicableTag =>
                 import ApplicableTagGD._
                 var us = emptyValues
-                def build = eventIfNonEmpty(us)(UpdateApplicableTag(cur.id, _))
+                def build = eventIfNonEmpty(us)(ApplicableTagUpdate(cur.id, _))
                 children.foreach(c => us += Children(c))
                 parents .foreach(p => us += Parents (p))
                 vs.a match {
@@ -214,7 +223,7 @@ object MakeEvent {
               case cur: TagGroup =>
                 import TagGroupGD._
                 var us = emptyValues
-                def build = eventIfNonEmpty(us)(UpdateTagGroup(cur.id, _))
+                def build = eventIfNonEmpty(us)(TagGroupUpdate(cur.id, _))
                 children.foreach(c => us += Children(c))
                 parents .foreach(p => us += Parents (p))
                 vs.a match {
@@ -233,8 +242,11 @@ object MakeEvent {
           case None => Failure(s"$tagId not found.")
         }
 
-      case CrudAction.Delete(id, da) =>
-        DeleteTag(id, da)
+      case CrudAction.Delete(id) =>
+        TagDelete(id)
+
+      case CrudAction.Restore(id) =>
+        TagRestore(id)
     }
   }
 
@@ -251,7 +263,7 @@ object MakeEvent {
     cmd match {
       case CreateContentCmd.CreateReqCodeGroup(code, title) =>
         def makeEvent(id: ReqCodeId) =
-          Success(CreateReqCodeGroup(id, gdAllValues(ReqCodeGroupGD, "")))
+          Success(ReqCodeGroupCreate(id, gdAllValues(ReqCodeGroupGD, "")))
 
         project.reqCodes.get(code) match {
           case None => makeEvent(nextCodeId())
@@ -266,56 +278,53 @@ object MakeEvent {
         }
 
       case i: CreateContentCmd.CreateGenericReq =>
-        var vs = CreateGenericReqGD.emptyValues
-        for (v <- NonEmptyVector.option(i.title)) vs += CreateGenericReqGD.Title(v)
-        for (v <- NonEmptySet.option(i.tags))     vs += CreateGenericReqGD.Tags(v)
-        for (v <- NonEmptySet.option(i.impSrcs))  vs += CreateGenericReqGD.ImpSrcs(v)
+        var vs = GenericReqGD.emptyValues
+        for (v <- NonEmptyVector.option(i.title)) vs += GenericReqGD.Title(v)
+        for (v <- NonEmptySet.option(i.tags))     vs += GenericReqGD.Tags(v)
+        for (v <- NonEmptySet.option(i.impSrcs))  vs += GenericReqGD.ImpSrcs(v)
         for (cs <- NonEmptySet.option(i.reqCodes)) {
           // If a code is in use, ApplyEvent will catch it
           val v = cs.map(c => ReqCode.IdAndValue(nextCodeId(), c))
-          vs += CreateGenericReqGD.ReqCodes(v)
+          vs += GenericReqGD.ReqCodes(v)
         }
         val id = GenericReqId(project.idCeilings.req + 1)
-        CreateGenericReq(id, i.rt, vs)
+        GenericReqCreate(id, i.rt, vs)
 
       case i: CreateContentCmd.CreateUseCase =>
-        var vs = CreateUseCaseGD.emptyValues
-        for (v <- NonEmptyVector.option(i.title)) vs += CreateUseCaseGD.Title(v)
-        for (v <- NonEmptySet.option(i.tags))     vs += CreateUseCaseGD.Tags(v)
-        for (v <- NonEmptySet.option(i.impSrcs))  vs += CreateUseCaseGD.ImpSrcs(v)
+        var vs = UseCaseGD.emptyValues
+        for (v <- NonEmptyVector.option(i.title)) vs += UseCaseGD.Title(v)
+        for (v <- NonEmptySet.option(i.tags))     vs += UseCaseGD.Tags(v)
+        for (v <- NonEmptySet.option(i.impSrcs))  vs += UseCaseGD.ImpSrcs(v)
         for (cs <- NonEmptySet.option(i.reqCodes)) {
           // If a code is in use, ApplyEvent will catch it
           val v = cs.map(c => ReqCode.IdAndValue(nextCodeId(), c))
-          vs += CreateUseCaseGD.ReqCodes(v)
+          vs += UseCaseGD.ReqCodes(v)
         }
         val id = UseCaseId(project.idCeilings.req + 1)
         val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
-        CreateUseCase(id, stepId, vs)
+        UseCaseCreate(id, stepId, vs)
     }
   }
 
   def updateContent(cmd: UpdateContentCmd, project: Project): Result =
     cmd match {
       case UpdateContentCmd.SetGenericReqTitle(id, v) =>
-        SetGenericReqTitle(id, v)
+        GenericReqTitleSet(id, v)
 
       case UpdateContentCmd.SetUseCaseTitle(id, v) =>
-        SetUseCaseTitle(id, v)
+        UseCaseTitleSet(id, v)
 
       case UpdateContentCmd.UpdateUseCaseStep(id, vs) =>
-        UpdateUseCaseStep(id, vs)
+        UseCaseStepUpdate(id, vs)
 
       case UpdateContentCmd.PatchReqTags(id, v) =>
-        PatchReqTags(id, v)
+        ReqTagsPatch(id, v)
 
       case UpdateContentCmd.SetCustomTextField(id, f, v) =>
-        SetCustomTextField(id, f, v)
+        ReqFieldCustomTextSet(id, f, v)
 
-      case UpdateContentCmd.PatchImplications(id, Backwards, v) =>
-        PatchImplicationSrc(id, v)
-
-      case UpdateContentCmd.PatchImplications(id, Forwards, v) =>
-        PatchImplicationTgt(id, v)
+      case UpdateContentCmd.PatchImplications(id, dir, v) =>
+        ReqImplicationsPatch(id, dir, v)
 
       case UpdateContentCmd.PatchReqCodes(reqId, cs) => {
         var remove : Set[ReqCodeId]                          = UnivEq.emptySet
@@ -348,45 +357,45 @@ object MakeEvent {
             }
         }
 
-        r getOrElse PatchReqCodes(reqId, remove, restore, add)
+        r getOrElse ReqCodesPatch(reqId, remove, restore, add)
       }
 
       case UpdateContentCmd.SetGenericReqType(id, v) =>
-        SetGenericReqType(id, v)
+        GenericReqTypeSet(id, v)
 
       case UpdateContentCmd.SetReqCodeGroupTitle(id, v) =>
-        UpdateReqCodeGroup(id, ReqCodeGroupGD.Title(v))
+        ReqCodeGroupUpdate(id, ReqCodeGroupGD.Title(v))
 
       case UpdateContentCmd.SetReqCodeGroupCode(id, v) =>
-        UpdateReqCodeGroup(id, ReqCodeGroupGD.Code(v))
+        ReqCodeGroupUpdate(id, ReqCodeGroupGD.Code(v))
 
       case UpdateContentCmd.DeleteReqs(reqs, reqCodeGroups, reason) =>
-        DeleteReqs(reqs, reqCodeGroups, reason)
+        ReqsDelete(reqs, reqCodeGroups, reason)
 
       case UpdateContentCmd.DeleteReqCodeGroups(ids) =>
-        DeleteReqCodeGroups(ids)
+        ReqCodeGroupsDelete(ids)
 
       case UpdateContentCmd.RestoreContent(reqs, reqCodes) =>
         if (reqs.isEmpty && reqCodes.isEmpty)
           Failure("No content specified.")
         else
-          RestoreContent(reqs, reqCodes)
+          ContentRestore(reqs, reqCodes)
 
       case UpdateContentCmd.AddUseCaseStep(ucId, f, at) =>
         val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
-        AddUseCaseStep(stepId, ucId, f, at)
+        UseCaseStepCreate(stepId, ucId, f, at)
 
       case UpdateContentCmd.DeleteUseCaseStep(id) =>
-        DeleteUseCaseStep(id)
+        UseCaseStepDelete(id)
 
       case UpdateContentCmd.RestoreUseCaseStep(id) =>
-        RestoreUseCaseStep(id)
+        UseCaseStepRestore(id)
 
       case UpdateContentCmd.ShiftUseCaseStepLeft(id) =>
-        ShiftUseCaseStepLeft(id)
+        UseCaseStepShiftLeft(id)
 
       case UpdateContentCmd.ShiftUseCaseStepRight(id) =>
-        ShiftUseCaseStepRight(id)
+        UseCaseStepShiftRight(id)
     }
 
 }

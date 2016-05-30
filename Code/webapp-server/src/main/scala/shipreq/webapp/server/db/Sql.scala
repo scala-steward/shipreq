@@ -103,8 +103,8 @@ private[db] object Sql {
     import shipreq.webapp.base.event._
 
     val reqCreationEvents = List[ActiveEvent](
-      CreateGenericReq(null, null, null),
-      CreateUseCase(null, null, null))
+      GenericReqCreate(null, null, null),
+      UseCaseCreate(null, null, null))
 
     val reqCreationTypeIds: List[Short] =
       reqCreationEvents.map(EventDbCodecs.eventCodecRegistry.writer(_)._1)

@@ -11,12 +11,12 @@ import AutoNES._
 import ContentEventTestHelp._
 
 object GenericReqEventTest extends TestSuite {
-  import CreateGenericReqGD._
+  import GenericReqGD._
 
   val someTitleGR: GRT.OptionalText =
     Vector(GRT.Literal("Look at "), GRT.WebAddress("https://google.com"))
 
-  val setTitleGR1 = SetGenericReqTitle(1, someTitleGR)
+  val setTitleGR1 = GenericReqTitleSet(1, someTitleGR)
 
   implicit val init = testHelpInit
 
@@ -42,14 +42,14 @@ object GenericReqEventTest extends TestSuite {
 
       'impSrc {
         val v = NonEmptySet[ReqId](emptyGR1.id)
-        val p = _assertPass(emptyGR1, CreateGenericReq(5, mf, nev(ImpSrcs(v))))
+        val p = _assertPass(emptyGR1, GenericReqCreate(5, mf, nev(ImpSrcs(v))))
         assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live), impliedBy = v.whole)
         assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), implies = Set(5))
       }
 
       'impTgt {
         val v = NonEmptySet[ReqId](emptyGR1.id)
-        val p = _assertPass(emptyGR1, CreateGenericReq(5, mf, nev(ImpTgts(v))))
+        val p = _assertPass(emptyGR1, GenericReqCreate(5, mf, nev(ImpTgts(v))))
         assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live), implies = v.whole)
         assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), impliedBy = Set(5))
       }
@@ -65,7 +65,7 @@ object GenericReqEventTest extends TestSuite {
       'idInUseByGR     - assertFail("exists")(emptyGR1, emptyGR1)
       'idInUseByUC     - assertFail("unique req id")(createUC(emptyGR1.id.value.UC, 1), emptyGR1)
       'reqTypeNotFound - assertFail("found")(emptyGR1.copy(rt = 666))
-      'reqTypeDead     - assertFail("dead")(DeleteCustomReqType(mf, Delete), emptyGR1)
+      'reqTypeDead     - assertFail("dead")(CustomReqTypeDelete(mf), emptyGR1)
       'tagNotFound     - assertFail("tag")(emptyGR1.copy(vs = nev(Tags(6.AT))))
       'tagIsGroup      - assertFail("tag")(emptyGR1.copy(vs = nev(Tags(tg1.value.AT))))
       // tagIsDead - allow it
@@ -73,7 +73,7 @@ object GenericReqEventTest extends TestSuite {
       'impTgtNotFound     - assertFail("")(emptyGR1.copy(vs = nev(ImpTgts(123))))
       'impSrcSelf         - assertFail("")(emptyGR1.copy(vs = nev(ImpSrcs(1))))
       'impTgtSelf         - assertFail("")(emptyGR1.copy(vs = nev(ImpTgts(1))))
-      'impCycle           - assertFail("")(emptyGR1, impliedGR2, CreateGenericReq(3, mf, nev(ImpSrcs(2), ImpTgts(1))))
+      'impCycle           - assertFail("")(emptyGR1, impliedGR2, GenericReqCreate(3, mf, nev(ImpSrcs(2), ImpTgts(1))))
       'codeBad            - assertFail("")(emptyGR1.copy(vs = nev(ReqCodes(8 -> "!"))))
       'codeBadCaps        - assertFail("")(emptyGR1.copy(vs = nev(ReqCodes(8 -> "NO"))))
       'codeIdInUseByGR    - assertFail("")(createGR(1, codes = Set(5 -> "a"))      , createGR(2, codes = Set(5 -> "b")))
@@ -86,12 +86,12 @@ object GenericReqEventTest extends TestSuite {
 
     'delete {
       implicit val init = ContentEventTest.init.add(createRCG1, emptyGR1, createGR(5), createRCG2)
-      'reqNotFound   - assertFail("not found")(DeleteReqs(9, 2, ∅))
-      'groupNotFound - assertFail("not found")(DeleteReqs(1, 9, ∅))
-      'reqDead       - assertFail("dead")(delGR(5), DeleteReqs(5, 2, ∅))
-      'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, DeleteReqs(5, 2, ∅))
+      'reqNotFound   - assertFail("not found")(ReqsDelete(9, 2, ∅))
+      'groupNotFound - assertFail("not found")(ReqsDelete(1, 9, ∅))
+      'reqDead       - assertFail("dead")(delGR(5), ReqsDelete(5, 2, ∅))
+      'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, ReqsDelete(5, 2, ∅))
       'ok {
-        val p = _assertPass(DeleteReqs(5, 2, ∅))
+        val p = _assertPass(ReqsDelete(5, 2, ∅))
         assertEq("RC#1", p.reqCodes(RCG1_code).isActive, true)
         assertEq("RC#2", p.reqCodes(RCG2_code).isActive, false)
         assertEq("GR #1", p.reqs.genericReqs.need(1).liveExplicitly, Live)
@@ -117,15 +117,15 @@ object GenericReqEventTest extends TestSuite {
           assertEq(d.genericReqs.size, 2)
           assertEq(d.genericReqs.get(1).get.pubid, expect)
         }
-        test(SetGenericReqType(1, fr))(PubidT(fr, 1))
-        test(SetGenericReqType(1, mf))(PubidT(mf, 2))
-        test(SetGenericReqType(1, fr))(PubidT(fr, 1))
-        test(SetGenericReqType(1, mf))(PubidT(mf, 2))
+        test(GenericReqTypeSet(1, fr))(PubidT(fr, 1))
+        test(GenericReqTypeSet(1, mf))(PubidT(mf, 2))
+        test(GenericReqTypeSet(1, fr))(PubidT(fr, 1))
+        test(GenericReqTypeSet(1, mf))(PubidT(mf, 2))
       }
-      'reqNotFound     - assertFail("found")(SetGenericReqType(1, fr))
-      'reqIsDead       - assertFail("dead")(emptyGR1, delGR1, SetGenericReqType(1, fr))
-      'reqTypeNotFound - assertFail("found")(emptyGR1, SetGenericReqType(1, 321))
-      'reqTypeIsDead   - assertFail("dead")(emptyGR1, DeleteCustomReqType(fr, Delete), SetGenericReqType(1, fr))
+      'reqNotFound     - assertFail("found")(GenericReqTypeSet(1, fr))
+      'reqIsDead       - assertFail("dead")(emptyGR1, delGR1, GenericReqTypeSet(1, fr))
+      'reqTypeNotFound - assertFail("found")(emptyGR1, GenericReqTypeSet(1, 321))
+      'reqTypeIsDead   - assertFail("dead")(emptyGR1, CustomReqTypeDelete(fr), GenericReqTypeSet(1, fr))
     }
 
     'setGenericReqTitle {

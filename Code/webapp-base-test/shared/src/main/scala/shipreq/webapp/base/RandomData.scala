@@ -26,7 +26,6 @@ import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util.Debug._
 import shipreq.webapp.base.data._, ReqType.Mnemonic, Field.ApplicableReqTypes
 import shipreq.webapp.base.event.ApplyEvent.LogicVer
-import shipreq.webapp.base.event.DeletionAction
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Text, Grammar, GrammarSpec}
 import shipreq.webapp.base.util.GenericData
@@ -159,8 +158,8 @@ object RandomData {
   val hashRefKey: Gen[HashRefKey] =
     grammarStr1(Grammar.hashRefKey)(_.firstChar, _.tailChars, _.length) map HashRefKey
 
-  val deletionAction =
-    Gen.chooseNE(DeletionAction.values)
+  val dir =
+    Gen.choose[Direction](Forwards, Backwards)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -1195,7 +1194,8 @@ object RandomData {
       val create      : Gen[Create]       = fieldValues map Create
       val updateValues: Gen[UpdateValues] = Gen.apply2(UpdateValues)(customFieldId, fieldValues)
       val updateOrder : Gen[UpdateOrder]  = Gen.apply2(UpdateOrder)(fieldId, fieldPosition)
-      val delete      : Gen[Delete]       = Gen.apply2(Delete)(fieldId, deletionAction)
+      val delete      : Gen[Delete]       = fieldId map Delete
+      val restore     : Gen[Restore]      = fieldId map Restore
       val any         : Gen[CfgAction]    = Gen.chooseGen(create, updateValues, updateOrder, delete)
     }
 
@@ -1237,10 +1237,11 @@ object RandomData {
         remoteFn(UpdateContentFn))
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
-      lazy val create = vG.map(CrudAction.Create[I, V])
-      lazy val update = Gen.apply2(CrudAction.Update[I, V])(idG, vG)
-      lazy val delete = Gen.apply2(CrudAction.Delete[I, V])(idG, deletionAction)
-      lazy val any    = Gen.chooseGen[CrudAction[I, V]](create, update, delete)
+      lazy val create  = vG.map(CrudAction.Create[I, V])
+      lazy val update  = Gen.apply2(CrudAction.Update[I, V])(idG, vG)
+      lazy val delete  = idG map CrudAction.Delete[I, V]
+      lazy val restore = idG map CrudAction.Restore[I, V]
+      lazy val any     = Gen.chooseGen[CrudAction[I, V]](create, update, delete, restore)
     }
 
     val customIssueTypeCrud = new CrudActionGens(CustomIssueTypeCrud)(
@@ -1519,7 +1520,7 @@ object RandomData {
       }
     }
 
-    object createGenericReqGD extends GenericDataGen(CreateGenericReqGD) {
+    object genericReqGD extends GenericDataGen(GenericReqGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Title    => genericReqTitle1      map Title   .apply
@@ -1530,7 +1531,7 @@ object RandomData {
       }
     }
 
-    object createUseCaseGD extends GenericDataGen(CreateUseCaseGD) {
+    object useCaseGD extends GenericDataGen(UseCaseGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Title    => useCaseTitle1         map Title   .apply
@@ -1580,82 +1581,91 @@ object RandomData {
       }
     }
 
-    val addUseCaseStep: Gen[AddUseCaseStep] =
-      Gen.apply4(AddUseCaseStep)(useCaseStepId, useCaseId, useCaseStepTreeField, genVectorTreeParLoc)
+    val genUseCaseStepCreate: Gen[UseCaseStepCreate] =
+      Gen.apply4(UseCaseStepCreate)(useCaseStepId, useCaseId, useCaseStepTreeField, genVectorTreeParLoc)
 
-    val addStaticField: Gen[AddStaticField] =
-      staticField map AddStaticField
+    val genFieldStaticAdd: Gen[FieldStaticAdd] =
+      staticField map FieldStaticAdd
 
-    val projectTemplate: Gen[ProjectTemplate] =
+    val genProjectTemplate: Gen[ProjectTemplate] =
       Gen.chooseNE(ProjectTemplate.values)
 
-    val applyTemplate: Gen[ApplyTemplate] =
-      projectTemplate map ApplyTemplate
+    val genProjectTemplateApply: Gen[ProjectTemplateApply] =
+      genProjectTemplate map ProjectTemplateApply
 
-    val createApplicableTag: Gen[CreateApplicableTag] =
-      Gen.apply2(CreateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
+    val genApplicableTagCreate: Gen[ApplicableTagCreate] =
+      Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)
 
-    val createCustomImpField: Gen[CreateCustomImpField] =
-      Gen.apply2(CreateCustomImpField)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
+    val genFieldCustomImpCreate: Gen[FieldCustomImpCreate] =
+      Gen.apply2(FieldCustomImpCreate)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
 
-    val createCustomIssueType: Gen[CreateCustomIssueType] =
-      Gen.apply2(CreateCustomIssueType)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
+    val genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
+      Gen.apply2(CustomIssueTypeCreate)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
 
-    val createCustomReqType: Gen[CreateCustomReqType] =
-      Gen.apply2(CreateCustomReqType)(customReqTypeId, customReqTypeGD.nonEmptyValues)
+    val genCustomReqTypeCreate: Gen[CustomReqTypeCreate] =
+      Gen.apply2(CustomReqTypeCreate)(customReqTypeId, customReqTypeGD.nonEmptyValues)
 
-    val createCustomTagField: Gen[CreateCustomTagField] =
-      Gen.apply2(CreateCustomTagField)(customFieldTagId, customTagFieldGD.nonEmptyValues)
+    val genFieldCustomTagCreate: Gen[FieldCustomTagCreate] =
+      Gen.apply2(FieldCustomTagCreate)(customFieldTagId, customTagFieldGD.nonEmptyValues)
 
-    val createCustomTextField: Gen[CreateCustomTextField] =
-      Gen.apply2(CreateCustomTextField)(customFieldTextId, customTextFieldGD.nonEmptyValues)
+    val genFieldCustomTextCreate: Gen[FieldCustomTextCreate] =
+      Gen.apply2(FieldCustomTextCreate)(customFieldTextId, customTextFieldGD.nonEmptyValues)
 
-    val createGenericReq: Gen[CreateGenericReq] =
-      Gen.apply3(CreateGenericReq)(genericReqId, customReqTypeId, createGenericReqGD.values)
+    val genGenericReqCreate: Gen[GenericReqCreate] =
+      Gen.apply3(GenericReqCreate)(genericReqId, customReqTypeId, genericReqGD.values)
 
-    val createReqCodeGroup: Gen[CreateReqCodeGroup] =
-      Gen.apply2(CreateReqCodeGroup)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+    val genReqCodeGroupCreate: Gen[ReqCodeGroupCreate] =
+      Gen.apply2(ReqCodeGroupCreate)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
 
-    val createTagGroup: Gen[CreateTagGroup] =
-      Gen.apply2(CreateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
+    val genTagGroupCreate: Gen[TagGroupCreate] =
+      Gen.apply2(TagGroupCreate)(tagGroupId, tagGroupGD.nonEmptyValues)
 
-    val createUseCase: Gen[CreateUseCase] =
-      Gen.apply3(CreateUseCase)(useCaseId, useCaseStepId, createUseCaseGD.values)
+    val genUseCaseCreate: Gen[UseCaseCreate] =
+      Gen.apply3(UseCaseCreate)(useCaseId, useCaseStepId, useCaseGD.values)
 
-    val deleteCustomField: Gen[DeleteCustomField] =
-      Gen.apply2(DeleteCustomField)(customFieldId, deletionAction)
+    val genFieldCustomDelete: Gen[FieldCustomDelete] =
+      customFieldId map FieldCustomDelete
 
-    val deleteCustomIssueType: Gen[DeleteCustomIssueType] =
-      Gen.apply2(DeleteCustomIssueType)(customIssueTypeId, deletionAction)
+    val genFieldCustomRestore: Gen[FieldCustomRestore] =
+      customFieldId map FieldCustomRestore
 
-    val deleteCustomReqType: Gen[DeleteCustomReqType] =
-      Gen.apply2(DeleteCustomReqType)(customReqTypeId, deletionAction)
+    val genCustomIssueTypeDelete: Gen[CustomIssueTypeDelete] =
+      customIssueTypeId map CustomIssueTypeDelete
 
-    val deleteReqCodeGroups: Gen[DeleteReqCodeGroups] =
-      reqCode.id.nes map DeleteReqCodeGroups
+    val genCustomIssueTypeRestore: Gen[CustomIssueTypeRestore] =
+      customIssueTypeId map CustomIssueTypeRestore
 
-    val deleteReqs: Gen[DeleteReqs] =
-      Gen.apply3(DeleteReqs)(reqId.nes, reqCode.id.set, deletionReason)
+    val genCustomReqTypeDelete: Gen[CustomReqTypeDelete] =
+      customReqTypeId map CustomReqTypeDelete
 
-    val deleteStaticField: Gen[DeleteStaticField] =
-      staticField map DeleteStaticField
+    val genCustomReqTypeRestore: Gen[CustomReqTypeRestore] =
+      customReqTypeId map CustomReqTypeRestore
 
-    val deleteTag: Gen[DeleteTag] =
-      Gen.apply2(DeleteTag)(tagId, deletionAction)
+    val genReqCodeGroupsDelete: Gen[ReqCodeGroupsDelete] =
+      reqCode.id.nes map ReqCodeGroupsDelete
 
-    val deleteUseCaseStep: Gen[DeleteUseCaseStep] =
-      useCaseStepId map DeleteUseCaseStep
+    val genReqsDelete: Gen[ReqsDelete] =
+      Gen.apply3(ReqsDelete)(reqId.nes, reqCode.id.set, deletionReason)
 
-    val restoreUseCaseStep: Gen[RestoreUseCaseStep] =
-      useCaseStepId map RestoreUseCaseStep
+    val genFieldStaticRemove: Gen[FieldStaticRemove] =
+      staticField map FieldStaticRemove
 
-    val patchImplicationSrc: Gen[PatchImplicationSrc] =
-      Gen.apply2(PatchImplicationSrc)(reqId, genNonEmptySetDiff(reqId))
+    val genTagDelete: Gen[TagDelete] =
+      tagId map TagDelete
 
-    val patchImplicationTgt: Gen[PatchImplicationTgt] =
-      Gen.apply2(PatchImplicationTgt)(reqId, genNonEmptySetDiff(reqId))
+    val genTagRestore: Gen[TagRestore] =
+      tagId map TagRestore
 
-    val patchReqCodes: Gen[PatchReqCodes] = {
+    val genUseCaseStepDelete: Gen[UseCaseStepDelete] =
+      useCaseStepId map UseCaseStepDelete
+
+    val genUseCaseStepRestore: Gen[UseCaseStepRestore] =
+      useCaseStepId map UseCaseStepRestore
+
+    val genReqImplicationsPatch: Gen[ReqImplicationsPatch] =
+      Gen.apply3(ReqImplicationsPatch)(reqId, dir, genNonEmptySetDiff(reqId))
+
+    val genReqCodesPatch: Gen[ReqCodesPatch] = {
       val codes = reqCode.id.set
       for {
         id      ← reqId
@@ -1663,108 +1673,111 @@ object RandomData {
         addIds  = add.valueIterator.toSet
         remove  ← codes.map(_ -- addIds)
         restore ← codes.map(_ -- addIds -- remove)
-      } yield PatchReqCodes(id, remove, restore, add)
+      } yield ReqCodesPatch(id, remove, restore, add)
     }
 
-    val patchReqTags: Gen[PatchReqTags] =
-      Gen.apply2(PatchReqTags)(reqId, genNonEmptySetDiff(applicableTagId))
+    val genReqTagsPatch: Gen[ReqTagsPatch] =
+      Gen.apply2(ReqTagsPatch)(reqId, genNonEmptySetDiff(applicableTagId))
 
-    val repositionField: Gen[RepositionField] =
-      Gen.apply2(RepositionField)(fieldId, fieldId.option)
+    val genFieldReposition: Gen[FieldReposition] =
+      Gen.apply2(FieldReposition)(fieldId, fieldId.option)
 
-    val restoreContent: Gen[RestoreContent] =
-      Gen.apply2(RestoreContent)(reqId.set, reqCode.id.set)
+    val genContentRestore: Gen[ContentRestore] =
+      Gen.apply2(ContentRestore)(reqId.set, reqCode.id.set)
 
-    val setCustomTextField: Gen[SetCustomTextField] =
-      Gen.apply3(SetCustomTextField)(reqId, customFieldTextId, customTextField)
+    val genReqFieldCustomTextSet: Gen[ReqFieldCustomTextSet] =
+      Gen.apply3(ReqFieldCustomTextSet)(reqId, customFieldTextId, customTextField)
 
-    val setGenericReqTitle: Gen[SetGenericReqTitle] =
-      Gen.apply2(SetGenericReqTitle)(genericReqId, genericReqTitle)
+    val genGenericReqTitleSet: Gen[GenericReqTitleSet] =
+      Gen.apply2(GenericReqTitleSet)(genericReqId, genericReqTitle)
 
-    val setGenericReqType: Gen[SetGenericReqType] =
-      Gen.apply2(SetGenericReqType)(genericReqId, customReqTypeId)
+    val genGenericReqTypeSet: Gen[GenericReqTypeSet] =
+      Gen.apply2(GenericReqTypeSet)(genericReqId, customReqTypeId)
 
-    val setUseCaseTitle: Gen[SetUseCaseTitle] =
-      Gen.apply2(SetUseCaseTitle)(useCaseId, useCaseTitle)
+    val genUseCaseTitleSet: Gen[UseCaseTitleSet] =
+      Gen.apply2(UseCaseTitleSet)(useCaseId, useCaseTitle)
 
-    val shiftUseCaseStepLeft: Gen[ShiftUseCaseStepLeft] =
-      useCaseStepId map ShiftUseCaseStepLeft
+    val genUseCaseStepShiftLeft: Gen[UseCaseStepShiftLeft] =
+      useCaseStepId map UseCaseStepShiftLeft
 
-    val shiftUseCaseStepRight: Gen[ShiftUseCaseStepRight] =
-      useCaseStepId map ShiftUseCaseStepRight
+    val genUseCaseStepShiftRight: Gen[UseCaseStepShiftRight] =
+      useCaseStepId map UseCaseStepShiftRight
 
-    val updateApplicableTag: Gen[UpdateApplicableTag] =
-      Gen.apply2(UpdateApplicableTag)(applicableTagId, applicableTagGD.nonEmptyValues)
+    val genApplicableTagUpdate: Gen[ApplicableTagUpdate] =
+      Gen.apply2(ApplicableTagUpdate)(applicableTagId, applicableTagGD.nonEmptyValues)
 
-    val updateCustomImpField: Gen[UpdateCustomImpField] =
-      Gen.apply2(UpdateCustomImpField)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
+    val genFieldCustomImpUpdate: Gen[FieldCustomImpUpdate] =
+      Gen.apply2(FieldCustomImpUpdate)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
 
-    val updateCustomIssueType: Gen[UpdateCustomIssueType] =
-      Gen.apply2(UpdateCustomIssueType)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
+    val genCustomIssueTypeUpdate: Gen[CustomIssueTypeUpdate] =
+      Gen.apply2(CustomIssueTypeUpdate)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
 
-    val updateCustomReqType: Gen[UpdateCustomReqType] =
-      Gen.apply2(UpdateCustomReqType)(customReqTypeId, customReqTypeGD.nonEmptyValues)
+    val genCustomReqTypeUpdate: Gen[CustomReqTypeUpdate] =
+      Gen.apply2(CustomReqTypeUpdate)(customReqTypeId, customReqTypeGD.nonEmptyValues)
 
-    val updateCustomTagField: Gen[UpdateCustomTagField] =
-      Gen.apply2(UpdateCustomTagField)(customFieldTagId, customTagFieldGD.nonEmptyValues)
+    val genFieldCustomTagUpdate: Gen[FieldCustomTagUpdate] =
+      Gen.apply2(FieldCustomTagUpdate)(customFieldTagId, customTagFieldGD.nonEmptyValues)
 
-    val updateCustomTextField: Gen[UpdateCustomTextField] =
-      Gen.apply2(UpdateCustomTextField)(customFieldTextId, customTextFieldGD.nonEmptyValues)
+    val genFieldCustomTextUpdate: Gen[FieldCustomTextUpdate] =
+      Gen.apply2(FieldCustomTextUpdate)(customFieldTextId, customTextFieldGD.nonEmptyValues)
 
-    val updateReqCodeGroup: Gen[UpdateReqCodeGroup] =
-      Gen.apply2(UpdateReqCodeGroup)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+    val genReqCodeGroupUpdate: Gen[ReqCodeGroupUpdate] =
+      Gen.apply2(ReqCodeGroupUpdate)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
 
-    val updateTagGroup: Gen[UpdateTagGroup] =
-      Gen.apply2(UpdateTagGroup)(tagGroupId, tagGroupGD.nonEmptyValues)
+    val genTagGroupUpdate: Gen[TagGroupUpdate] =
+      Gen.apply2(TagGroupUpdate)(tagGroupId, tagGroupGD.nonEmptyValues)
 
-    val updateUseCaseStep: Gen[UpdateUseCaseStep] =
-      Gen.apply2(UpdateUseCaseStep)(useCaseStepId, useCaseStepGD.nonEmptyValues)
+    val genUseCaseStepUpdate: Gen[UseCaseStepUpdate] =
+      Gen.apply2(UseCaseStepUpdate)(useCaseStepId, useCaseStepGD.nonEmptyValues)
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
-        case _: AddStaticField        => addStaticField
-        case _: AddUseCaseStep        => addUseCaseStep
-        case _: ApplyTemplate         => applyTemplate
-        case _: CreateApplicableTag   => createApplicableTag
-        case _: CreateCustomImpField  => createCustomImpField
-        case _: CreateCustomIssueType => createCustomIssueType
-        case _: CreateCustomReqType   => createCustomReqType
-        case _: CreateCustomTagField  => createCustomTagField
-        case _: CreateCustomTextField => createCustomTextField
-        case _: CreateGenericReq      => createGenericReq
-        case _: CreateReqCodeGroup    => createReqCodeGroup
-        case _: CreateTagGroup        => createTagGroup
-        case _: CreateUseCase         => createUseCase
-        case _: DeleteCustomField     => deleteCustomField
-        case _: DeleteCustomIssueType => deleteCustomIssueType
-        case _: DeleteCustomReqType   => deleteCustomReqType
-        case _: DeleteReqCodeGroups   => deleteReqCodeGroups
-        case _: DeleteReqs            => deleteReqs
-        case _: DeleteStaticField     => deleteStaticField
-        case _: DeleteTag             => deleteTag
-        case _: DeleteUseCaseStep     => deleteUseCaseStep
-        case _: PatchImplicationSrc   => patchImplicationSrc
-        case _: PatchImplicationTgt   => patchImplicationTgt
-        case _: PatchReqCodes         => patchReqCodes
-        case _: PatchReqTags          => patchReqTags
-        case _: RepositionField       => repositionField
-        case _: RestoreContent        => restoreContent
-        case _: RestoreUseCaseStep    => restoreUseCaseStep
-        case _: SetCustomTextField    => setCustomTextField
-        case _: SetGenericReqTitle    => setGenericReqTitle
-        case _: SetGenericReqType     => setGenericReqType
-        case _: SetUseCaseTitle       => setUseCaseTitle
-        case _: ShiftUseCaseStepLeft  => shiftUseCaseStepLeft
-        case _: ShiftUseCaseStepRight => shiftUseCaseStepRight
-        case _: UpdateApplicableTag   => updateApplicableTag
-        case _: UpdateCustomImpField  => updateCustomImpField
-        case _: UpdateCustomIssueType => updateCustomIssueType
-        case _: UpdateCustomReqType   => updateCustomReqType
-        case _: UpdateCustomTagField  => updateCustomTagField
-        case _: UpdateCustomTextField => updateCustomTextField
-        case _: UpdateReqCodeGroup    => updateReqCodeGroup
-        case _: UpdateTagGroup        => updateTagGroup
-        case _: UpdateUseCaseStep     => updateUseCaseStep
+        case _: ApplicableTagCreate    => genApplicableTagCreate
+        case _: ApplicableTagUpdate    => genApplicableTagUpdate
+        case _: ContentRestore         => genContentRestore
+        case _: CustomIssueTypeCreate  => genCustomIssueTypeCreate
+        case _: CustomIssueTypeDelete  => genCustomIssueTypeDelete
+        case _: CustomIssueTypeRestore => genCustomIssueTypeRestore
+        case _: CustomIssueTypeUpdate  => genCustomIssueTypeUpdate
+        case _: CustomReqTypeCreate    => genCustomReqTypeCreate
+        case _: CustomReqTypeDelete    => genCustomReqTypeDelete
+        case _: CustomReqTypeRestore   => genCustomReqTypeRestore
+        case _: CustomReqTypeUpdate    => genCustomReqTypeUpdate
+        case _: FieldCustomDelete      => genFieldCustomDelete
+        case _: FieldCustomImpCreate   => genFieldCustomImpCreate
+        case _: FieldCustomImpUpdate   => genFieldCustomImpUpdate
+        case _: FieldCustomRestore     => genFieldCustomRestore
+        case _: FieldCustomTagCreate   => genFieldCustomTagCreate
+        case _: FieldCustomTagUpdate   => genFieldCustomTagUpdate
+        case _: FieldCustomTextCreate  => genFieldCustomTextCreate
+        case _: FieldCustomTextUpdate  => genFieldCustomTextUpdate
+        case _: FieldReposition        => genFieldReposition
+        case _: FieldStaticAdd         => genFieldStaticAdd
+        case _: FieldStaticRemove      => genFieldStaticRemove
+        case _: GenericReqCreate       => genGenericReqCreate
+        case _: GenericReqTitleSet     => genGenericReqTitleSet
+        case _: GenericReqTypeSet      => genGenericReqTypeSet
+        case _: ProjectTemplateApply   => genProjectTemplateApply
+        case _: ReqCodeGroupCreate     => genReqCodeGroupCreate
+        case _: ReqCodeGroupsDelete    => genReqCodeGroupsDelete
+        case _: ReqCodeGroupUpdate     => genReqCodeGroupUpdate
+        case _: ReqCodesPatch          => genReqCodesPatch
+        case _: ReqFieldCustomTextSet  => genReqFieldCustomTextSet
+        case _: ReqImplicationsPatch   => genReqImplicationsPatch
+        case _: ReqsDelete             => genReqsDelete
+        case _: ReqTagsPatch           => genReqTagsPatch
+        case _: TagDelete              => genTagDelete
+        case _: TagGroupCreate         => genTagGroupCreate
+        case _: TagGroupUpdate         => genTagGroupUpdate
+        case _: TagRestore             => genTagRestore
+        case _: UseCaseCreate          => genUseCaseCreate
+        case _: UseCaseStepCreate      => genUseCaseStepCreate
+        case _: UseCaseStepDelete      => genUseCaseStepDelete
+        case _: UseCaseStepRestore     => genUseCaseStepRestore
+        case _: UseCaseStepShiftLeft   => genUseCaseStepShiftLeft
+        case _: UseCaseStepShiftRight  => genUseCaseStepShiftRight
+        case _: UseCaseStepUpdate      => genUseCaseStepUpdate
+        case _: UseCaseTitleSet        => genUseCaseTitleSet
       }
 
     val activeEvent: Gen[ActiveEvent] =

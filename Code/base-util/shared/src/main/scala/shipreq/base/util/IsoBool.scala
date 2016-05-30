@@ -53,6 +53,12 @@ object IsoBool {
       b => if (b :: positive) p else n
     }
 
+    final def memoLazy[A](f: B => A): B => A = {
+      lazy val p = f(positive)
+      lazy val n = f(negative)
+      b => if (b :: positive) p else n
+    }
+
     final def fold[A](a: A)(f: (A, B) => A): A =
       f(f(a, positive), negative)
 

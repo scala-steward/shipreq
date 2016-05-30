@@ -19,7 +19,6 @@ import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.cfg.shared._
 import shipreq.webapp.client.project.app.state.{ClientData, ChangeListener}
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.CrudActionIO
 import shipreq.webapp.client.project.widgets.Widgets
 
 object CfgReqTypes {

@@ -1,9 +1,12 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.Pickler
+import boopickle._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
-import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._
+import shipreq.webapp.base.event.VerifiedEvents
+import BoopickleMacros._
+import BinCodecGeneric._
+import BinCodecData._
+import BinCodecEvents._
 
 trait CrudFn extends RemoteFn {
   type Id
@@ -18,9 +21,10 @@ trait CrudFn extends RemoteFn {
   final override implicit val pickleResponse: Pickler[Response] = pickleXor(pickleFailure, pickleOutput)
 
   final type Action = CrudAction[Id, V]
-  @inline final def create(v: V)                     : Action = CrudAction.Create[Id, V](v)
-  @inline final def update(id: Id, v: V)             : Action = CrudAction.Update[Id, V](id, v)
-  @inline final def delete(id: Id, a: DeletionAction): Action = CrudAction.Delete[Id, V](id, a)
+  @inline final def create (v: V)        : Action = CrudAction.Create [Id, V](v)
+  @inline final def update (id: Id, v: V): Action = CrudAction.Update [Id, V](id, v)
+  @inline final def delete (id: Id)      : Action = CrudAction.Delete [Id, V](id)
+  @inline final def restore(id: Id)      : Action = CrudAction.Restore[Id, V](id)
 }
 
 object CrudFn {
@@ -37,16 +41,18 @@ object CrudFn {
 
 sealed trait CrudAction[Id, V]
 object CrudAction {
-  final case class Create[Id, V](newValues: V)                   extends CrudAction[Id, V]
-  final case class Update[Id, V](id: Id, newValues: V)           extends CrudAction[Id, V]
-  final case class Delete[Id, V](id: Id, action: DeletionAction) extends CrudAction[Id, V]
+  final case class Create [Id, V](newValues: V)         extends CrudAction[Id, V]
+  final case class Update [Id, V](id: Id, newValues: V) extends CrudAction[Id, V]
+  final case class Delete [Id, V](id: Id)               extends CrudAction[Id, V]
+  final case class Restore[Id, V](id: Id)               extends CrudAction[Id, V]
 
   @inline implicit def equality[I: UnivEq, V: UnivEq]: UnivEq[CrudAction[I, V]] = UnivEq.derive
 
   def pickleCrudAction[I, V](implicit PI: Pickler[I], PV: Pickler[V]): Pickler[CrudAction[I, V]] = {
-    implicit val create: Pickler[Create[I, V]] = pickleCaseClass
-    implicit val update: Pickler[Update[I, V]] = pickleCaseClass
-    implicit val delete: Pickler[Delete[I, V]] = pickleCaseClass
+    implicit val create : Pickler[Create [I, V]] = pickleCaseClass
+    implicit val update : Pickler[Update [I, V]] = pickleCaseClass
+    implicit val delete : Pickler[Delete [I, V]] = pickleCaseClass
+    implicit val restore: Pickler[Restore[I, V]] = pickleCaseClass
     pickleADT
   }
 }

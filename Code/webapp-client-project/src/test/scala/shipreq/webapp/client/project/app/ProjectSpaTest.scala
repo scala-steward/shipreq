@@ -4,7 +4,7 @@ import japgolly.scalajs.react.test._
 import utest._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{ShowDead, HideDead}
-import shipreq.webapp.base.event.{Delete, DeleteCustomField}
+import shipreq.webapp.base.event.FieldCustomDelete
 import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.app.reqtable.{ReqTableTestDsl => RT}
 import shipreq.webapp.client.project.app.reqdetail.{ReqDetailTestDsl => RD}
@@ -22,7 +22,7 @@ object ProjectSpaTest extends TestSuite {
   def `ReqTable columns after local config change`: *.Actions = (
     testReqTable(RT.showHideColumn("Priority") >> RT.sortBy("Priority"))
       >> setPage(Page.CfgFields)
-      >> applyEvents("Delete Priority field", DeleteCustomField(priField, Delete))
+      >> applyEvents("Delete Priority field", FieldCustomDelete(priField))
       >> setPage(Page.ReqTable)
   )
 

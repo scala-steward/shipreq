@@ -605,8 +605,8 @@ object LogicTest extends TestSuite {
       ).defaultReqType(dd) ! PA
 
     private val p = applyEventsSuccessfully(p0,
-      E.DeleteCustomField(priField, E.Delete),
-      E.DeleteCustomField(statusField, E.Delete))
+      E.FieldCustomDelete(priField),
+      E.FieldCustomDelete(statusField))
 
     private val Z = ""
     private val L = ":defer"

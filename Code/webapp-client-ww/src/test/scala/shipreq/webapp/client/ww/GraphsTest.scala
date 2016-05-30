@@ -27,7 +27,7 @@ object GraphsTest extends TestSuite {
   }
 
   def deleteReqs(id: ReqId*) =
-    DeleteReqs(NonEmptySet force id.toSet, Set.empty, Vector.empty)
+    ReqsDelete(NonEmptySet force id.toSet, Set.empty, Vector.empty)
 
   lazy val SIG_deadMF4: Project =
     applyEventsSuccessfully(SampleImplicationGraph.project, deleteReqs(SampleImplicationGraph.mf4))
@@ -340,7 +340,7 @@ object GraphsTest extends TestSuite {
       'impRequired {
         import UnsafeTypes._, AutoNES._
         import SampleProject.Values._
-        val GD = CreateGenericReqGD
+        val GD = GenericReqGD
 
         // br3
         // fr7 → fr8
@@ -353,11 +353,11 @@ object GraphsTest extends TestSuite {
         val fr9: GenericReqId = 39
         val fr10: GenericReqId = 40
         val p = applyEventsSuccessfully(project,
-          CreateGenericReq(br3, br, GD.emptyValues),
-          CreateGenericReq(fr7, fr, GD.emptyValues),
-          CreateGenericReq(fr8, fr, GD.emptyValues + GD.ImpSrcs(fr7)),
-          CreateGenericReq(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)),
-          CreateGenericReq(fr10, fr, GD.emptyValues),
+          GenericReqCreate(br3, br, GD.emptyValues),
+          GenericReqCreate(fr7, fr, GD.emptyValues),
+          GenericReqCreate(fr8, fr, GD.emptyValues + GD.ImpSrcs(fr7)),
+          GenericReqCreate(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)),
+          GenericReqCreate(fr10, fr, GD.emptyValues),
           deleteReqs(fr10))
 
         // TODO also confirm dead fr with no imp doesn't stem from R

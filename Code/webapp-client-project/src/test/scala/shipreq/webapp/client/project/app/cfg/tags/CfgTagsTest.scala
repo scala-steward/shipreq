@@ -53,7 +53,7 @@ object CfgTagsTest extends TestSuite {
 
     'recvUpdates {
       import ApplicableTagGD._
-      val e = UpdateApplicableTag(v10, nev(
+      val e = ApplicableTagUpdate(v10, nev(
                 Name("Blah"),
                 Parents(Map(1.TG -> priMed.some)),
                 Children(Vector(10.TG))))

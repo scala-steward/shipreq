@@ -3,13 +3,12 @@ package shipreq.webapp.client.project.app.cfg.shared
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.ScalazReact._
 import scalaz.{Need, Name}
-import shipreq.webapp.base.event.{VerifiedEvents, DeletionAction}
+import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.base.data.TCB
 import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.project.app.state.ClientData
-import shipreq.webapp.client.project.lib.CrudActionIO
 
 object Persistence {
 

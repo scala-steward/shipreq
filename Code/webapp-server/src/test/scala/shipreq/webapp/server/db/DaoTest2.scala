@@ -92,14 +92,14 @@ object DaoTest2 extends TestSuite {
       // 2) Ensure each Event's format never changes once established.
       'data {
 
-        'addStaticField {
-          testRW(AddStaticField(StaticField.ExceptionStepTree), 40, -2, 's', null)
-          testRW(AddStaticField(StaticField.NormalAltStepTree), 40, -1, 's', null)
-          testRW(AddStaticField(StaticField.StepGraph        ), 40, -3, 's', null)
+        'FieldStaticAdd {
+          testRW(FieldStaticAdd(StaticField.ExceptionStepTree), 1110, -2, 's', null)
+          testRW(FieldStaticAdd(StaticField.NormalAltStepTree), 1110, -1, 's', null)
+          testRW(FieldStaticAdd(StaticField.StepGraph        ), 1110, -3, 's', null)
         }
 
-        'applyTemplate {
-          testRW(ApplyTemplate(ProjectTemplate.Default), 0, null, ' ', """1""")
+        'ProjectTemplateApply {
+          testRW(ProjectTemplateApply(ProjectTemplate.Default), 1000, null, ' ', """1""")
         }
 
         //'createApplicableTag    - demo(RandomData.events.createApplicableTag   )
@@ -114,19 +114,19 @@ object DaoTest2 extends TestSuite {
 
         //'createCustomTextField  - demo(RandomData.events.createCustomTextField )
 
-        'createGenericReq {
-          import CreateGenericReqGD._
-          testRW(CreateGenericReq(123, 449099973, Tags(NonEmptySet(ApplicableTagId(166426196)))),
-            230, 123, 'g', """{"T":449099973,"#":166426196}""")
+        'GenericReqCreate {
+          import GenericReqGD._
+          testRW(GenericReqCreate(123, 449099973, Tags(NonEmptySet(ApplicableTagId(166426196)))),
+            100, 123, 'g', """{"T":449099973,"#":166426196}""")
 
-          testRW(CreateGenericReq(123, 1469773577, ImpTgts(NonEmptySet(GenericReqId(2074289209)))),
-            230, 123, 'g', """{"T":1469773577,"<":2074289209}""")
+          testRW(GenericReqCreate(123, 1469773577, ImpTgts(NonEmptySet(GenericReqId(2074289209)))),
+            100, 123, 'g', """{"T":1469773577,"<":2074289209}""")
 
-          testRW(CreateGenericReq(123, 1469773577, ImpSrcs(NonEmptySet(GenericReqId(2074289209)))),
-            230, 123, 'g', """{"T":1469773577,">":2074289209}""")
+          testRW(GenericReqCreate(123, 1469773577, ImpSrcs(NonEmptySet(GenericReqId(2074289209)))),
+            100, 123, 'g', """{"T":1469773577,">":2074289209}""")
 
-          testRW(CreateGenericReq(123, 1469773577, ReqCodes(ReqCode.IdAndValue(7, "yay"))),
-            230, 123, 'g', """{"T":1469773577,"c":{"yay":7}}""")
+          testRW(GenericReqCreate(123, 1469773577, ReqCodes(ReqCode.IdAndValue(7, "yay"))),
+            100, 123, 'g', """{"T":1469773577,"c":{"yay":7}}""")
         }
 
         //'createReqCodeGroup     - demo(RandomData.events.createReqCodeGroup    )
@@ -147,53 +147,42 @@ object DaoTest2 extends TestSuite {
 
         //'deleteTag              - demo(RandomData.events.deleteTag             )
 
-        'patchImplicationSrc {
-          testRW(PatchImplicationSrc(1234, nesd[ReqId](34, 45)(67, 89)),
-            201, 1234, 'g', """{"-":[34,45],"+":[67,89]}""")
+        'ReqImplicationsPatch {
+          testRW(ReqImplicationsPatch(1234, Forwards, nesd[ReqId](34, 45)(67, 89)),
+            22, 1234, 'g', """{"d":"f","-":[34,45],"+":[67,89]}""")
 
-          testRW(PatchImplicationSrc(1234, nesd[ReqId]()(2128131835)),
-            201, 1234, 'g', """{"+":2128131835}""")
+          testRW(ReqImplicationsPatch(1234, Backwards, nesd[ReqId]()(2128131835)),
+            22, 1234, 'g', """{"d":"b","+":2128131835}""")
 
-          testRW(PatchImplicationSrc(1234, nesd[ReqId](1086529477)()),
-            201, 1234, 'g', """{"-":1086529477}""")
+          testRW(ReqImplicationsPatch(1234, Forwards, nesd[ReqId](1086529477)()),
+            22, 1234, 'g', """{"d":"f","-":1086529477}""")
         }
 
-        'patchImplicationTgt {
-          testRW(PatchImplicationTgt(1234, nesd[ReqId](34, 45)(67, 89)),
-            202, 1234, 'g', """{"-":[34,45],"+":[67,89]}""")
-
-          testRW(PatchImplicationTgt(1234, nesd[ReqId]()(2128131835)),
-            202, 1234, 'g', """{"+":2128131835}""")
-
-          testRW(PatchImplicationTgt(1234, nesd[ReqId](1086529477)()),
-            202, 1234, 'g', """{"-":1086529477}""")
-        }
-
-        'patchReqCodes {
+        'ReqCodesPatch {
           val mm = UnivEq.emptySetMultimap[ReqCode.Value, ReqCodeId]
-          testRW(PatchReqCodes(666, Set(3), Set(1095731751, 1055755379), mm),
-            203, 666, 'g', """{"-":3,"^":[1095731751,1055755379]}""")
+          testRW(ReqCodesPatch(666, Set(3), Set(1095731751, 1055755379), mm),
+            20, 666, 'g', """{"-":3,"^":[1095731751,1055755379]}""")
 
-          testRW(PatchReqCodes(667, Set(), Set(), mm.add("lnls", 1168583026).addvs("m", Set(976426332, 522011847))),
-            203, 667, 'g', """{"+":{"m":[522011847,976426332],"lnls":1168583026}}""")
+          testRW(ReqCodesPatch(667, Set(), Set(), mm.add("lnls", 1168583026).addvs("m", Set(976426332, 522011847))),
+            20, 667, 'g', """{"+":{"m":[522011847,976426332],"lnls":1168583026}}""")
         }
 
-        'patchReqTags {
-          testRW(PatchReqTags(1234, nesd[ApplicableTagId](34, 45)(67, 89)),
-            204, 1234, 'g', """{"-":[34,45],"+":[67,89]}""")
+        'ReqTagsPatch {
+          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId](34, 45)(67, 89)),
+            23, 1234, 'g', """{"-":[34,45],"+":[67,89]}""")
 
-          testRW(PatchReqTags(1234, nesd[ApplicableTagId]()(2128131835)),
-            204, 1234, 'g', """{"+":2128131835}""")
+          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId]()(2128131835)),
+            23, 1234, 'g', """{"+":2128131835}""")
 
-          testRW(PatchReqTags(1234, nesd[ApplicableTagId](1086529477)()),
-            204, 1234, 'g', """{"-":1086529477}""")
+          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId](1086529477)()),
+            23, 1234, 'g', """{"-":1086529477}""")
         }
 
         //'repositionField        - demo(RandomData.events.repositionField       )
 
-        'setCustomTextField {
-          testRW(SetCustomTextField(2345, CustomField.Text.Id(123), Text.CustomTextField.demo(9, 8, 5, 7, 6)),
-          205, 2345, 'g',
+        'ReqFieldCustomTextSet {
+          testRW(ReqFieldCustomTextSet(2345, CustomField.Text.Id(123), Text.CustomTextField.demo(9, 8, 5, 7, 6)),
+          21, 2345, 'g',
             """
               │{"f":123,"t":[
               │"Atom demonstration.",

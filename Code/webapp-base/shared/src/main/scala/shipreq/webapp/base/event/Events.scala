@@ -14,6 +14,19 @@ import Text.Equality._
 // Add vs Create.
 // Instead of VerbNoun it would be probably be better to have NounVerb.
 
+/*
+Style Guide
+===========
+
+Event names are in the form <noun> <verb>.
+Create/Add: Use Create when a new id is consumed, use Add otherwise.
+Update/Patch: Use Update when replacement values are provided in full, use Patch when diffs are provided.
+Delete and Restore are separate events.
+Prefer combination: Create/Delete/Restore
+Prefer combination: Add/Remove
+
+ */
+
 /**
  * A change to a [[Project]].
  *
@@ -36,7 +49,7 @@ sealed trait ActiveEvent extends Event
 /**
  * Currently only applies to empty projects. Application fails if there is overlap.
  */
-case class ApplyTemplate(t: ProjectTemplate) extends ActiveEvent
+final case class ProjectTemplateApply(template: ProjectTemplate) extends ActiveEvent
 
 // =====================================================================================================================
 // Config: Custom issue types
@@ -47,9 +60,10 @@ object CustomIssueTypeGD extends GenericData {
   val Desc = defAttr[Option[String]]
 }
 
-case class CreateCustomIssueType(id: CustomIssueTypeId, vs: CustomIssueTypeGD.NonEmptyValues) extends ActiveEvent
-case class UpdateCustomIssueType(id: CustomIssueTypeId, vs: CustomIssueTypeGD.NonEmptyValues) extends ActiveEvent
-case class DeleteCustomIssueType(id: CustomIssueTypeId, da: DeletionAction)                   extends ActiveEvent
+final case class CustomIssueTypeCreate (id: CustomIssueTypeId, vs: CustomIssueTypeGD.NonEmptyValues) extends ActiveEvent
+final case class CustomIssueTypeUpdate (id: CustomIssueTypeId, vs: CustomIssueTypeGD.NonEmptyValues) extends ActiveEvent
+final case class CustomIssueTypeDelete (id: CustomIssueTypeId)                                       extends ActiveEvent
+final case class CustomIssueTypeRestore(id: CustomIssueTypeId)                                       extends ActiveEvent
 
 // =====================================================================================================================
 // Config: Custom req types
@@ -61,15 +75,17 @@ object CustomReqTypeGD extends GenericData {
   val Imp      = defAttr[ImplicationRequired]
 }
 
-case class CreateCustomReqType(id: CustomReqTypeId, vs: CustomReqTypeGD.NonEmptyValues) extends ActiveEvent
-case class UpdateCustomReqType(id: CustomReqTypeId, vs: CustomReqTypeGD.NonEmptyValues) extends ActiveEvent
-case class DeleteCustomReqType(id: CustomReqTypeId, da: DeletionAction)                 extends ActiveEvent
+final case class CustomReqTypeCreate (id: CustomReqTypeId, vs: CustomReqTypeGD.NonEmptyValues) extends ActiveEvent
+final case class CustomReqTypeUpdate (id: CustomReqTypeId, vs: CustomReqTypeGD.NonEmptyValues) extends ActiveEvent
+final case class CustomReqTypeDelete (id: CustomReqTypeId)                                     extends ActiveEvent
+final case class CustomReqTypeRestore(id: CustomReqTypeId)                                     extends ActiveEvent
 
 // =====================================================================================================================
 // Config: Tags
 
 // TODO Should there be a RepositionTag event?
-case class DeleteTag(id: TagId, da: DeletionAction) extends ActiveEvent
+final case class TagDelete (id: TagId) extends ActiveEvent
+final case class TagRestore(id: TagId) extends ActiveEvent
 
 @CreateGenericData
 object TagGroupGD extends GenericData {
@@ -80,8 +96,8 @@ object TagGroupGD extends GenericData {
   val Children      = defAttr[TagInTree.Children]
 }
 
-case class CreateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-case class UpdateTagGroup(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
+final case class TagGroupCreate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
+final case class TagGroupUpdate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
 
 @CreateGenericData
 object ApplicableTagGD extends GenericData {
@@ -92,18 +108,19 @@ object ApplicableTagGD extends GenericData {
   val Children = defAttr[TagInTree.Children]
 }
 
-case class CreateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-case class UpdateApplicableTag(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+final case class ApplicableTagCreate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+final case class ApplicableTagUpdate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
 
 // =====================================================================================================================
 // Config: Fields
 
-case class RepositionField(id: FieldId, newPos: RelPos[FieldId]) extends ActiveEvent
+final case class FieldReposition(id: FieldId, newPos: RelPos[FieldId]) extends ActiveEvent
 
-case class AddStaticField(f: StaticField) extends ActiveEvent
-case class DeleteStaticField(f: StaticField) extends ActiveEvent
+final case class FieldStaticAdd   (f: StaticField) extends ActiveEvent
+final case class FieldStaticRemove(f: StaticField) extends ActiveEvent
 
-case class DeleteCustomField(id: CustomFieldId, da: DeletionAction) extends ActiveEvent
+final case class FieldCustomDelete (id: CustomFieldId) extends ActiveEvent
+final case class FieldCustomRestore(id: CustomFieldId) extends ActiveEvent
 
 @CreateGenericData
 object CustomTextFieldGD extends GenericData {
@@ -112,8 +129,8 @@ object CustomTextFieldGD extends GenericData {
   val Mandatory = defAttr[Mandatory]
   val ReqTypes  = defAttr[Field.ApplicableReqTypes]
 }
-case class CreateCustomTextField(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
-case class UpdateCustomTextField(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomTextCreate(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomTextUpdate(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
 
 @CreateGenericData
 object CustomTagFieldGD extends GenericData {
@@ -121,8 +138,8 @@ object CustomTagFieldGD extends GenericData {
   val Mandatory = defAttr[Mandatory]
   val ReqTypes  = defAttr[Field.ApplicableReqTypes]
 }
-case class CreateCustomTagField(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
-case class UpdateCustomTagField(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomTagCreate(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomTagUpdate(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
 
 @CreateGenericData
 object CustomImpFieldGD extends GenericData {
@@ -130,19 +147,19 @@ object CustomImpFieldGD extends GenericData {
   val Mandatory = defAttr[Mandatory]
   val ReqTypes  = defAttr[Field.ApplicableReqTypes]
 }
-case class CreateCustomImpField(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
-case class UpdateCustomImpField(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomImpCreate(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
+final case class FieldCustomImpUpdate(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
 
 // =====================================================================================================================
 // Content: Generic requirements
 
 /**
- * This is only used in [[CreateGenericReq]].
- * All fields are optional; any mandatory data is required in the [[CreateGenericReq]] constructor directly. Thus,
+ * This is only used in [[GenericReqCreate]].
+ * All fields are optional; any mandatory data is required in the [[GenericReqCreate]] constructor directly. Thus,
  * when a field is provided, its value must be non-empty (with emptiness representable by omitting the field).
  */
 @CreateGenericData
-object CreateGenericReqGD extends GenericData {
+object GenericReqGD extends GenericData {
   val Title    = defAttr[GenericReqTitle.NonEmptyText]
   val ReqCodes = defAttr[NonEmptySet[ReqCode.IdAndValue]]
   val Tags     = defAttr[NonEmptySet[ApplicableTagId]]
@@ -150,20 +167,20 @@ object CreateGenericReqGD extends GenericData {
   val ImpTgts  = defAttr[NonEmptySet[ReqId]]
 }
 
-case class CreateGenericReq  (id: GenericReqId, rt: CustomReqTypeId, vs: CreateGenericReqGD.Values) extends ActiveEvent
-case class SetGenericReqType (id: GenericReqId, value: CustomReqTypeId)                             extends ActiveEvent
-case class SetGenericReqTitle(id: GenericReqId, value: GenericReqTitle.OptionalText)                extends ActiveEvent
+final case class GenericReqCreate  (id: GenericReqId, rt: CustomReqTypeId, vs: GenericReqGD.Values) extends ActiveEvent
+final case class GenericReqTypeSet (id: GenericReqId, value: CustomReqTypeId)                       extends ActiveEvent
+final case class GenericReqTitleSet(id: GenericReqId, value: GenericReqTitle.OptionalText)          extends ActiveEvent
 
 // =====================================================================================================================
 // Content: Use cases
 
 /**
- * This is only used in [[CreateUseCase]].
- * All fields are optional; any mandatory data is required in the [[CreateUseCase]] constructor directly. Thus,
+ * This is only used in [[UseCaseCreate]].
+ * All fields are optional; any mandatory data is required in the [[UseCaseCreate]] constructor directly. Thus,
  * when a field is provided, its value must be non-empty (with emptiness representable by omitting the field).
  */
 @CreateGenericData
-object CreateUseCaseGD extends GenericData {
+object UseCaseGD extends GenericData {
   val Title    = defAttr[UseCaseTitle.NonEmptyText]
   val ReqCodes = defAttr[NonEmptySet[ReqCode.IdAndValue]]
   val Tags     = defAttr[NonEmptySet[ApplicableTagId]]
@@ -174,9 +191,9 @@ object CreateUseCaseGD extends GenericData {
 /**
  * @param stepId Use cases have a mandatory root step. This guarantees the determinism of the root step ID.
  */
-case class CreateUseCase(id: UseCaseId, stepId: UseCaseStepId, vs: CreateUseCaseGD.Values) extends ActiveEvent
+final case class UseCaseCreate(id: UseCaseId, stepId: UseCaseStepId, vs: UseCaseGD.Values) extends ActiveEvent
 
-case class SetUseCaseTitle(id: UseCaseId, value: UseCaseTitle.OptionalText) extends ActiveEvent
+final case class UseCaseTitleSet(id: UseCaseId, value: UseCaseTitle.OptionalText) extends ActiveEvent
 
 @CreateGenericData
 object UseCaseStepGD extends GenericData {
@@ -185,16 +202,16 @@ object UseCaseStepGD extends GenericData {
   val FlowOut = defAttr[SetDiff.NE[UseCaseStepId]]
 }
 
-case class AddUseCaseStep(id   : UseCaseStepId,
-                          ucId : UseCaseId,
-                          field: StaticField.UseCaseStepTree,
-                          at   : VectorTree.ParentLocation) extends ActiveEvent
+final case class UseCaseStepCreate(id   : UseCaseStepId,
+                                   ucId : UseCaseId,
+                                   field: StaticField.UseCaseStepTree,
+                                   at   : VectorTree.ParentLocation) extends ActiveEvent
 
-case class UpdateUseCaseStep    (id: UseCaseStepId, vs: UseCaseStepGD.NonEmptyValues) extends ActiveEvent
-case class ShiftUseCaseStepLeft (id: UseCaseStepId)                                   extends ActiveEvent
-case class ShiftUseCaseStepRight(id: UseCaseStepId)                                   extends ActiveEvent
-case class DeleteUseCaseStep    (id: UseCaseStepId)                                   extends ActiveEvent
-case class RestoreUseCaseStep   (id: UseCaseStepId)                                   extends ActiveEvent
+final case class UseCaseStepUpdate    (id: UseCaseStepId, vs: UseCaseStepGD.NonEmptyValues) extends ActiveEvent
+final case class UseCaseStepShiftLeft (id: UseCaseStepId)                                   extends ActiveEvent
+final case class UseCaseStepShiftRight(id: UseCaseStepId)                                   extends ActiveEvent
+final case class UseCaseStepDelete    (id: UseCaseStepId)                                   extends ActiveEvent
+final case class UseCaseStepRestore   (id: UseCaseStepId)                                   extends ActiveEvent
 
 // =====================================================================================================================
 // Content: ReqCode groups
@@ -205,10 +222,10 @@ object ReqCodeGroupGD extends GenericData {
   val Title = defAttr[ReqCodeGroupTitle.OptionalText]
 }
 
-case class CreateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
-case class UpdateReqCodeGroup(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
+final case class ReqCodeGroupCreate(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
+final case class ReqCodeGroupUpdate(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
 
-case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
+final case class ReqCodeGroupsDelete(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
 
 // =====================================================================================================================
 // Content: Shared
@@ -224,19 +241,26 @@ case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
  * @param add Codes to add. A code can have multiple IDs (see [[ApplyEvent.ReqCodeLogic]] for details) in which case,
  *            only one becomes active and the rest go into `reqInactive`.
  */
-case class PatchReqCodes(id     : ReqId,
-                         remove : Set[ReqCodeId],
-                         restore: Set[ReqCodeId],
-                         add    : Multimap[ReqCode.Value, Set, ReqCodeId]) extends ActiveEvent
+final case class ReqCodesPatch(id     : ReqId,
+                               remove : Set[ReqCodeId],
+                               restore: Set[ReqCodeId],
+                               add    : Multimap[ReqCode.Value, Set, ReqCodeId]) extends ActiveEvent
 
-case class PatchReqTags        (id: ReqId, patch: SetDiff.NE[ApplicableTagId]) extends ActiveEvent
-case class PatchImplicationSrc (id: ReqId, patch: SetDiff.NE[ReqId])           extends ActiveEvent
-case class PatchImplicationTgt (id: ReqId, patch: SetDiff.NE[ReqId])           extends ActiveEvent
-// TODO Better for PatchImplication to take a Direction?
+final case class ReqTagsPatch(id   : ReqId,
+                              patch: SetDiff.NE[ApplicableTagId]) extends ActiveEvent
 
-case class SetCustomTextField(id: ReqId, fid: CustomField.Text.Id, value: CustomTextField.OptionalText) extends ActiveEvent
+final case class ReqImplicationsPatch(id   : ReqId,
+                                      dir  : Direction,
+                                      patch: SetDiff.NE[ReqId]) extends ActiveEvent
 
-case class DeleteReqs(reqs: NonEmptySet[ReqId], reqCodeGroups: Set[ReqCodeId], reason: DeletionReason.OptionalText) extends ActiveEvent
+final case class ReqFieldCustomTextSet(id   : ReqId,
+                                       fid  : CustomField.Text.Id,
+                                       value: CustomTextField.OptionalText) extends ActiveEvent
+
+final case class ReqsDelete(reqs         : NonEmptySet[ReqId],
+                            reqCodeGroups: Set[ReqCodeId],
+                            reason       : DeletionReason.OptionalText) extends ActiveEvent
 
 // TODO Would it be better to have a ReqCodeGroupId which is a subtype of ReqCodeId?
-case class RestoreContent(reqs: Set[ReqId], reqCodeGroups: Set[ReqCodeId]) extends ActiveEvent
+final case class ContentRestore(reqs         : Set[ReqId],
+                                reqCodeGroups: Set[ReqCodeId]) extends ActiveEvent

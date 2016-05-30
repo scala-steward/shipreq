@@ -15,7 +15,6 @@ import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.project.app.cfg.shared._
 import shipreq.webapp.client.project.app.state.{ClientData, ChangeListener}
-import shipreq.webapp.client.project.lib.CrudActionIO
 import shipreq.webapp.client.project.lib.DataReusability._
 import DataImplicits._
 

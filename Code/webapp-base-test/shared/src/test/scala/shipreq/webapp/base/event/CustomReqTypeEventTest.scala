@@ -13,12 +13,12 @@ import NoInitialEvents._
 
 trait CustomReqTypeEvents {
   val mfName = "Major Feature"
-  type CE = CreateCustomReqType
-  val c1  = CreateCustomReqType(1, nev(Mnemonic("MF"), Name(mfName), Imp(ImplicationRequired)))
-  val c2  = CreateCustomReqType(2, nev(Mnemonic("FR"), Name("Functional Req"), Imp(ImplicationRequired.Not)))
-  val u1  = UpdateCustomReqType(1, nev(Mnemonic("M")))
-  val sd1 = DeleteCustomReqType(1, Delete)
-  val r1  = DeleteCustomReqType(1, Restore)
+  type CE = CustomReqTypeCreate
+  val c1  = CustomReqTypeCreate(1, nev(Mnemonic("MF"), Name(mfName), Imp(ImplicationRequired)))
+  val c2  = CustomReqTypeCreate(2, nev(Mnemonic("FR"), Name("Functional Req"), Imp(ImplicationRequired.Not)))
+  val u1  = CustomReqTypeUpdate(1, nev(Mnemonic("M")))
+  val sd1 = CustomReqTypeDelete(1)
+  val r1  = CustomReqTypeRestore(1)
 }
 
 object CustomReqTypeEventSharedTests extends SharedTests with CustomReqTypeEvents {
@@ -28,7 +28,7 @@ object CustomReqTypeEventSharedTests extends SharedTests with CustomReqTypeEvent
 
 object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
 
-  implicit class CreateCustomReqTypeExt(private val a: CreateCustomReqType) extends AnyVal {
+  implicit class CustomReqTypeCreateExt(private val a: CustomReqTypeCreate) extends AnyVal {
     def mod(f: Values => Values) =
       a.copy(vs = NonEmpty.force(f(a.vs.value)))
   }
@@ -50,16 +50,16 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
         assertEq(r, CustomReqType(1, "M", Set("MF"), mfName, ImplicationRequired, Live))
 
-        es :+= UpdateCustomReqType(1, nev(Mnemonic("X"), Name("xxx")))
+        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("X"), Name("xxx")))
         assertEq(r, CustomReqType(1, "X", Set("MF", "M"), "xxx", ImplicationRequired, Live))
 
-        es :+= UpdateCustomReqType(1, nev(Mnemonic("MF"), Imp(ImplicationRequired.Not)))
+        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Imp(ImplicationRequired.Not)))
         assertEq(r ,CustomReqType(1, "MF", Set("M", "X"), "xxx", ImplicationRequired.Not, Live))
       }
-      'badName  - assertFail("blank")   (c1, UpdateCustomReqType(1, nev(Name(""))))
-      'badMne   - assertFail("Mnemonic")(c1, UpdateCustomReqType(1, nev(Mnemonic("?"))))
-      'dupName  - assertFail("unique")  (c1, c2, UpdateCustomReqType(2, nev(Name(mfName))))
-      'dupMne   - assertFail("unique")  (c1, c2, UpdateCustomReqType(2, nev(Mnemonic("MF"))))
+      'badName  - assertFail("blank")   (c1, CustomReqTypeUpdate(1, nev(Name(""))))
+      'badMne   - assertFail("Mnemonic")(c1, CustomReqTypeUpdate(1, nev(Mnemonic("?"))))
+      'dupName  - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Name(mfName))))
+      'dupMne   - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Mnemonic("MF"))))
     }
 
     'delete {
@@ -91,7 +91,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
             assertEq(s"$name - RC.active?", t.p.reqCodes(rc.value).isActive, grLiveImp :: Live)
           }
         t.justApply(c1)
-        test(Live)(CreateGenericReq(reqId, c1.id, CreateGenericReqGD.ReqCodes(rc)))
+        test(Live)(GenericReqCreate(reqId, c1.id, GenericReqGD.ReqCodes(rc)))
         test(Dead)(sd1)
         test(Live)(r1)
       }

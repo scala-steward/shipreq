@@ -37,7 +37,7 @@ object ApplyEventTest extends TestSuite {
 
   object Data1 {
     val p1 = Project.empty
-    val e1 = DeleteStaticField(StaticField.StepGraph)
+    val e1 = FieldStaticRemove(StaticField.StepGraph)
     val (p2, ve) = verifyEvent(p1, e1)
   }
 
@@ -183,7 +183,7 @@ object ApplyEventTest extends TestSuite {
 
       'checkUnspecifiedScopes {
         import Data1._
-        val (_, ve) = verifyEvent(Project.empty, ApplyTemplate(ProjectTemplate.Default))
+        val (_, ve) = verifyEvent(Project.empty, ProjectTemplateApply(ProjectTemplate.Default))
         val vef = ve.copy(hashRecs = ve.hashRecs.drop(1))
         assertApplicationFailure(vef, Project.empty)
       }

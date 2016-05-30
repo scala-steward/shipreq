@@ -57,19 +57,19 @@ object ContentEventTestHelp {
 
   def createRCG(id: ReqCodeId, code: ReqCode.Value, title: T.ReqCodeGroupTitle.OptionalText = ∅) = {
     import ReqCodeGroupGD._
-    CreateReqCodeGroup(id, nev(Code(code), Title(title)))
+    ReqCodeGroupCreate(id, nev(Code(code), Title(title)))
   }
 
   def updateRCGCode(id: ReqCodeId, code: ReqCode.Value) = {
     import ReqCodeGroupGD._
-    UpdateReqCodeGroup(id, nev(Code(code)))
+    ReqCodeGroupUpdate(id, nev(Code(code)))
   }
 
-  def delRCG(id: ReqCodeId): DeleteReqCodeGroups =
-    DeleteReqCodeGroups(NonEmptySet(id))
+  def delRCG(id: ReqCodeId): ReqCodeGroupsDelete =
+    ReqCodeGroupsDelete(NonEmptySet(id))
 
-  def restoreRCG(id: ReqCodeId): RestoreContent =
-    RestoreContent(∅, Set(id))
+  def restoreRCG(id: ReqCodeId): ContentRestore =
+    ContentRestore(∅, Set(id))
 
   def createGR(id     : GenericReqId,
                rt     : CustomReqTypeId                = mf,
@@ -77,13 +77,13 @@ object ContentEventTestHelp {
                title  : T.GenericReqTitle.OptionalText = ∅,
                impSrcs: Set[ReqId]                     = ∅,
                impTgts: Set[ReqId]                     = ∅) = {
-    import CreateGenericReqGD._
+    import GenericReqGD._
     var vs = emptyValues
     NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
     NonEmptyVector.maybe(title,   ())(vs += Title   (_))
     NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
     NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
-    CreateGenericReq(id, rt, vs)
+    GenericReqCreate(id, rt, vs)
   }
 
   def createUC(id     : UseCaseId,
@@ -92,26 +92,26 @@ object ContentEventTestHelp {
                title  : T.UseCaseTitle.OptionalText = ∅,
                impSrcs: Set[ReqId]                  = ∅,
                impTgts: Set[ReqId]                  = ∅) = {
-    import CreateUseCaseGD._
+    import UseCaseGD._
     var vs = emptyValues
     NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
     NonEmptyVector.maybe(title,   ())(vs += Title   (_))
     NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
     NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
-    CreateUseCase(id, stepId, vs)
+    UseCaseCreate(id, stepId, vs)
   }
 
-  def delGR(id: GenericReqId): DeleteReqs =
-    DeleteReqs(NonEmptySet(id), ∅, ∅)
+  def delGR(id: GenericReqId): ReqsDelete =
+    ReqsDelete(NonEmptySet(id), ∅, ∅)
 
-  def delUC(id: UseCaseId): DeleteReqs =
-    DeleteReqs(NonEmptySet(id), ∅, ∅)
+  def delUC(id: UseCaseId): ReqsDelete =
+    ReqsDelete(NonEmptySet(id), ∅, ∅)
 
-  def restoreGR(id: GenericReqId): RestoreContent =
-    RestoreContent(Set(id), ∅)
+  def restoreGR(id: GenericReqId): ContentRestore =
+    ContentRestore(Set(id), ∅)
 
-  def restoreUC(id: UseCaseId): RestoreContent =
-    RestoreContent(Set(id), ∅)
+  def restoreUC(id: UseCaseId): ContentRestore =
+    ContentRestore(Set(id), ∅)
 
   val patchRcAdd0 = Multimap.empty[ReqCode.Value, Set, ReqCodeId]
 
@@ -119,13 +119,13 @@ object ContentEventTestHelp {
                     remove : Set[ReqCodeId]                          = Set.empty,
                     restore: Set[ReqCodeId]                          = Set.empty,
                     add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
-    PatchReqCodes(id, remove = remove, restore = restore, add)
+    ReqCodesPatch(id, remove = remove, restore = restore, add)
 
   case class PatchReqCodeB(id: ReqId) extends AnyVal {
     def apply(remove : Set[ReqCodeId]                          = Set.empty,
               restore: Set[ReqCodeId]                          = Set.empty,
               add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
-      PatchReqCodes(id, remove = remove, restore = restore, add)
+      ReqCodesPatch(id, remove = remove, restore = restore, add)
   }
 
   // ===================================================================================================================
@@ -197,8 +197,8 @@ object ContentEventTestHelp {
   val fr: CustomReqTypeId = 101
   val (createMF, createFR) = {
     import CustomReqTypeGD._
-    ( CreateCustomReqType(mf, nev(Mnemonic("MF"), Name("MajFea"), Imp(false)))
-    , CreateCustomReqType(fr, nev(Mnemonic("FR"), Name("FunReq"), Imp(false)))
+    ( CustomReqTypeCreate(mf, nev(Mnemonic("MF"), Name("MajFea"), Imp(false)))
+    , CustomReqTypeCreate(fr, nev(Mnemonic("FR"), Name("FunReq"), Imp(false)))
     )
   }
 
@@ -206,26 +206,26 @@ object ContentEventTestHelp {
   val at2: ApplicableTagId = 12
   val (createAT1, createAT2) = {
     import ApplicableTagGD._
-    ( CreateApplicableTag(at1, nev(Name("AT #1"), Desc(None), Key("at-one")))
-    , CreateApplicableTag(at2, nev(Name("AT #2"), Desc(None), Key("at-two")))
+    ( ApplicableTagCreate(at1, nev(Name("AT #1"), Desc(None), Key("at-one")))
+    , ApplicableTagCreate(at2, nev(Name("AT #2"), Desc(None), Key("at-two")))
     )
   }
 
   val tg1: TagGroupId = 20
   val createTG1 = {
     import TagGroupGD._
-    CreateTagGroup(tg1, nev(Name("TG #1"), Desc(None), MutexChildren(false)))
+    TagGroupCreate(tg1, nev(Name("TG #1"), Desc(None), MutexChildren(false)))
   }
 
   val createIssueType1 = {
     import CustomIssueTypeGD._
-    CreateCustomIssueType(1, nev(Key("TBD"), Desc(None)))
+    CustomIssueTypeCreate(1, nev(Key("TBD"), Desc(None)))
   }
   val issueType1 = createIssueType1.id
 
   val createCTF1 = {
     import CustomTextFieldGD._
-    CreateCustomTextField(80, nev(Name("asdf"), Key("qwer"), Mandatory(true), ReqTypes(allReqTypes)))
+    FieldCustomTextCreate(80, nev(Name("asdf"), Key("qwer"), Mandatory(true), ReqTypes(allReqTypes)))
   }
   val cf1 = createCTF1.id
 

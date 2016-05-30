@@ -7,16 +7,15 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import ApplyEventTestFns._
 import CustomIssueTypeGD._
-import DeletionAction._
 import NoInitialEvents._
 
 trait CustomIssueTypeEvents {
-  type CE = CreateCustomIssueType
-  val c1  = CreateCustomIssueType(1, nev(Key("TBD"), Desc(None)))
-  val c2  = CreateCustomIssueType(2, nev(Key("PEND"), Desc(Some("pending"))))
-  val u1  = UpdateCustomIssueType(1, nev(Key("TD")))
-  val sd1 = DeleteCustomIssueType(1, Delete)
-  val r1  = DeleteCustomIssueType(1, Restore)
+  type CE = CustomIssueTypeCreate
+  val c1  = CustomIssueTypeCreate(1, nev(Key("TBD"), Desc(None)))
+  val c2  = CustomIssueTypeCreate(2, nev(Key("PEND"), Desc(Some("pending"))))
+  val u1  = CustomIssueTypeUpdate(1, nev(Key("TD")))
+  val sd1 = CustomIssueTypeDelete(1)
+  val r1  = CustomIssueTypeRestore(1)
 }
 
 object CustomIssueTypeEventSharedTests extends SharedTests with CustomIssueTypeEvents {
@@ -26,7 +25,7 @@ object CustomIssueTypeEventSharedTests extends SharedTests with CustomIssueTypeE
 
 object CustomIssueTypeEventTest extends TestSuite with CustomIssueTypeEvents {
 
-  implicit class CreateCustomIssueTypeExt(private val a: CreateCustomIssueType) extends AnyVal {
+  implicit class CustomIssueTypeCreateExt(private val a: CustomIssueTypeCreate) extends AnyVal {
     def mod(f: Values => Values) =
       a.copy(vs = NonEmpty.force(f(a.vs.value)))
   }
@@ -46,13 +45,13 @@ object CustomIssueTypeEventTest extends TestSuite with CustomIssueTypeEvents {
         def r = _assertPass(es: _*).config.customIssueTypes.get(1).get
         assertEq(r, CustomIssueType(1, "TD", None, Live))
 
-        es :+= UpdateCustomIssueType(1, nev(Key("X"), Desc("xxx")))
+        es :+= CustomIssueTypeUpdate(1, nev(Key("X"), Desc("xxx")))
         assertEq(r, CustomIssueType(1, "X", Some("xxx"), Live))
       }
 
-      'badKey  - assertFail("Key")   (c1, UpdateCustomIssueType(1, nev(Key("?"))))
-      'badDesc - assertFail("Desc")  (c1, UpdateCustomIssueType(1, nev(Desc(tooLongStr))))
-      'dupKey  - assertFail("unique")(c1, c2, UpdateCustomIssueType(2, nev(Key("TBD"))))
+      'badKey  - assertFail("Key")   (c1, CustomIssueTypeUpdate(1, nev(Key("?"))))
+      'badDesc - assertFail("Desc")  (c1, CustomIssueTypeUpdate(1, nev(Desc(tooLongStr))))
+      'dupKey  - assertFail("unique")(c1, c2, CustomIssueTypeUpdate(2, nev(Key("TBD"))))
     }
   }
 }

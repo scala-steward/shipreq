@@ -23,7 +23,7 @@ trait ApplyConfigEvent {
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.customIssueType)
 
-    def applyCreate(e: CreateCustomIssueType): SE[Unit] =
+    def applyCreate(e: CustomIssueTypeCreate): SE[Unit] =
       for {
         k <- GD.need(^.Key )(e.vs) >>= validateKey
         d <- GD.need(^.Desc)(e.vs) >>= validateDesc
@@ -39,11 +39,14 @@ trait ApplyConfigEvent {
       case v: ^.ValueForDesc => updateDesc(v.value)
     }
 
-    def applyUpdate(e: UpdateCustomIssueType): SE[Unit] =
+    def applyUpdate(e: CustomIssueTypeUpdate): SE[Unit] =
       imap.updateLive(e.id, updateValues(e.vs))
 
-    def applyDelete(e: DeleteCustomIssueType): SE[Unit] =
-      imap.deleteOrRestore(e.id, e.da)
+    def applyDelete(e: CustomIssueTypeDelete): SE[Unit] =
+      imap.setLive(e.id, Dead)
+
+    def applyRestore(e: CustomIssueTypeRestore): SE[Unit] =
+      imap.setLive(e.id, Live)
   }
 
   // ===================================================================================================================
@@ -57,7 +60,7 @@ trait ApplyConfigEvent {
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.customReqType)
 
-    def applyCreate(e: CreateCustomReqType): SE[Unit] =
+    def applyCreate(e: CustomReqTypeCreate): SE[Unit] =
       for {
         n <- GD.need(^.Name)    (e.vs) >>= validateName
         m <- GD.need(^.Mnemonic)(e.vs) >>= validateMnemonic
@@ -76,17 +79,17 @@ trait ApplyConfigEvent {
       case v: ^.ValueForMnemonic => updateMnemonic(v.value)
     }
 
-    def applyUpdate(e: UpdateCustomReqType): SE[Unit] =
+    def applyUpdate(e: CustomReqTypeUpdate): SE[Unit] =
       imap.updateLive(e.id, updateValues(e.vs))
 
-    def applyDelete(e: DeleteCustomReqType): SE[Unit] = {
-      val cascade: Set[ReqId] => SE[Unit] =
-        e.da match {
-          case Delete  => ReqCodeLogic.inactivateBelongingToReqs
-          case Restore => ReqCodeLogic.restoreBelongingToReqs
-        }
-      imap.deleteOrRestore(e.id, e.da) >> reqsToCascadeReqTypeLiveChange(e.id) >>= cascade
-    }
+    def applyDelete(e: CustomReqTypeDelete): SE[Unit] =
+      deleteOrRestore(e.id, Dead, ReqCodeLogic.inactivateBelongingToReqs)
+
+    def applyRestore(e: CustomReqTypeRestore): SE[Unit] =
+      deleteOrRestore(e.id, Live, ReqCodeLogic.restoreBelongingToReqs)
+
+    private def deleteOrRestore(id: CustomReqTypeId, newState: Live, cascade: Set[ReqId] => SE[Unit]): SE[Unit] =
+      imap.setLive(id, newState) >> reqsToCascadeReqTypeLiveChange(id) >>= cascade
 
     private def reqsToCascadeReqTypeLiveChange(id: CustomReqTypeId): SE[Set[ReqId]] =
       SE.get(_.reqs.genericReqs
@@ -127,8 +130,11 @@ trait ApplyConfigEvent {
       parents.fold(SE.nop)(p => lensMod(Project.tags)(updateParents(_, tit.id, p))) >>
       updateIdCeiling(tit.id)
 
-    def applyDelete(e: DeleteTag): SE[Unit] =
-      setLife(e.id, e.da.targetState)
+    def applyDelete(e: TagDelete): SE[Unit] =
+      setLife(e.id, Dead)
+
+    def applyRestore(e: TagRestore): SE[Unit] =
+      setLife(e.id, Live)
 
     private def setLife(rootId: TagId, newLife: Live): SE[Unit] = {
       def modifySubject(id: TagId, tt: TagTree): TagTree =
@@ -207,7 +213,7 @@ trait ApplyConfigEvent {
   object ApplicableTagEvents extends TagEvents[ApplicableTag, ApplicableTagGD.type](ApplicableTagGD) {
     import TagEvents._
 
-    def applyCreate(e: CreateApplicableTag): SE[Unit] = {
+    def applyCreate(e: ApplicableTagCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         n   ← GD.need(^.Name) >>= validateName
@@ -225,7 +231,7 @@ trait ApplyConfigEvent {
     val updateDesc = validateDesc >>=@ ApplicableTag.desc
     val updateKey  = validateKey  >>=@ ApplicableTag.key
 
-    def applyUpdate(e: UpdateApplicableTag): SE[Unit] =
+    def applyUpdate(e: ApplicableTagUpdate): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
           case v: ^.ValueForName     => vars apply updateName(v.value)
@@ -241,7 +247,7 @@ trait ApplyConfigEvent {
   object TagGroupEvents extends TagEvents[TagGroup, TagGroupGD.type](TagGroupGD) {
     import TagEvents._
 
-    def applyCreate(e: CreateTagGroup): SE[Unit] = {
+    def applyCreate(e: TagGroupCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         n   ← GD.need(^.Name) >>= validateName
@@ -259,7 +265,7 @@ trait ApplyConfigEvent {
     val updateDesc          = validateDesc >>=@ TagGroup.desc
     val updateMutexChildren = fieldUpdateFn(TagGroup.mutexChildren)
 
-    def applyUpdate(e: UpdateTagGroup): SE[Unit] =
+    def applyUpdate(e: TagGroupUpdate): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
           case v: ^.ValueForName          => vars apply updateName(v.value)
@@ -303,14 +309,14 @@ trait ApplyConfigEvent {
 
     private val repositionField = repositionFn[FieldId]
 
-    def applyReposition(e: RepositionField): SE[Unit] =
+    def applyReposition(e: FieldReposition): SE[Unit] =
       lensMod(fieldOrderL)(repositionField(e.id, e.newPos))
 
     private val removeFromOrder = removeFromVector[FieldId]
 
     private val addSF = appendNewToVector[FieldId]
 
-    def applyAddStaticField(e: AddStaticField): SE[Unit] =
+    def applyStaticAdd(e: FieldStaticAdd): SE[Unit] =
       lensMod(fieldOrderL)(addSF(e.f))
 
     def ensureDeletableSF(sf: StaticField): SE[Unit] =
@@ -318,16 +324,22 @@ trait ApplyConfigEvent {
         sf.deletable :: Deletable,
         s"Static field $sf cannot be deleted.")
 
-    def applyDeleteSF(e: DeleteStaticField): SE[Unit] =
+    def applyStaticRemove(e: FieldStaticRemove): SE[Unit] =
       ensureDeletableSF(e.f) >>
         lensMod(fieldOrderL)(removeFromOrder(e.f))
 
-    def applyDeleteCF(e: DeleteCustomField): SE[Unit] =
+    def applyCustomDelete(e: FieldCustomDelete): SE[Unit] =
+      deleteOrRestoreCF(e.id, Dead)
+
+    def applyCustomRestore(e: FieldCustomRestore): SE[Unit] =
+      deleteOrRestoreCF(e.id, Live)
+
+    private def deleteOrRestoreCF(id: CustomFieldId, targetState: Live): SE[Unit] =
       for {
         p  ← SE.get
         m  = customFieldsL get p
-        f1 ← imapNeed(m)(e.id)
-        f2 ← toggleLiveCheckBeforeAfter(f1, e.da.targetState)(_ live p.config, CustomField.liveExplicitly.set, show(f1))
+        f1 ← imapNeed(m)(id)
+        f2 ← toggleLiveCheckBeforeAfter(f1, targetState)(_ live p.config, CustomField.liveExplicitly.set, show(f1))
         _  ← customFieldsL set (m + f2)
       } yield ()
   }
@@ -339,7 +351,7 @@ trait ApplyConfigEvent {
     val ^ = CustomTextFieldGD
     val GD = GenericDataApp[CustomField.Text](^)
 
-    def applyCreate(e: CreateCustomTextField): SE[Unit] = {
+    def applyCreate(e: FieldCustomTextCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         n <- GD.need(^.Name) >>= validateName
@@ -362,7 +374,7 @@ trait ApplyConfigEvent {
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyUpdate(e: UpdateCustomTextField): SE[Unit] =
+    def applyUpdate(e: FieldCustomTextUpdate): SE[Unit] =
       update(e.id, updateValues(e.vs))
   }
 
@@ -373,7 +385,7 @@ trait ApplyConfigEvent {
     val ^ = CustomTagFieldGD
     val GD = GenericDataApp[CustomField.Tag](^)
 
-    def applyCreate(e: CreateCustomTagField): SE[Unit] = {
+    def applyCreate(e: FieldCustomTagCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         t <- GD.need(^.TagId)
@@ -394,7 +406,7 @@ trait ApplyConfigEvent {
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyUpdate(e: UpdateCustomTagField): SE[Unit] =
+    def applyUpdate(e: FieldCustomTagUpdate): SE[Unit] =
       update(e.id, updateValues(e.vs))
   }
 
@@ -405,7 +417,7 @@ trait ApplyConfigEvent {
     val ^ = CustomImpFieldGD
     val GD = GenericDataApp[CustomField.Implication](^)
 
-    def applyCreate(e: CreateCustomImpField): SE[Unit] = {
+    def applyCreate(e: FieldCustomImpCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         t <- GD.need(^.ReqTypeId)
@@ -426,7 +438,7 @@ trait ApplyConfigEvent {
       case v: ^.ValueForReqTypes  => updateReqTypes (v.value)
     }
 
-    def applyUpdate(e: UpdateCustomImpField): SE[Unit] =
+    def applyUpdate(e: FieldCustomImpUpdate): SE[Unit] =
       update(e.id, updateValues(e.vs))
   }
 }

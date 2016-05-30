@@ -60,10 +60,10 @@ object UseCaseStepTreeTest extends TestSuite {
     }
 
     def step(f: UCF, l: Location, v: Location => Validity, mdt: VectorTree[Int], id: UseCaseStepId): EvalL =
-      ( compare(f.canDelete(l),             DeleteUseCaseStep(id))
-      & compare(f.canShiftLeft(l),          ShiftUseCaseStepLeft(id))
-      & compare(f.canShiftRight(l, v, mdt), ShiftUseCaseStepRight(id))
-      & compare(f.canAdd(l),                AddUseCaseStep(nextStepId, uc.id, f, l.asParentLoc))
+      ( compare(f.canDelete(l),             UseCaseStepDelete(id))
+      & compare(f.canShiftLeft(l),          UseCaseStepShiftLeft(id))
+      & compare(f.canShiftRight(l, v, mdt), UseCaseStepShiftRight(id))
+      & compare(f.canAdd(l),                UseCaseStepCreate(nextStepId, uc.id, f, l.asParentLoc))
       ).rename(s"${f.name} / $id / ${l.whole mkString "."}")
 
     def tree(f: UCF) = {

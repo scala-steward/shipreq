@@ -5,7 +5,6 @@ import japgolly.scalajs.react.extra._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.webapp.base.data.{Live, Dead, DataIdAux, FilterDead}
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.event.{Delete, Restore}
 import shipreq.webapp.client.project.widgets.Checkbox
 
 // TODO So many c.state.runNow()s in CfgTable

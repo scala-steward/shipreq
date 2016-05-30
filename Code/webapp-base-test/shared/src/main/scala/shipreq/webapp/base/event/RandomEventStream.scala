@@ -76,8 +76,8 @@ class ApplicableEventGen(p: Project) {
 
   private implicit def autoGenToOptionGen[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
-  private def deletionAction(l: Live): DeletionAction =
-    if (l :: Live) Delete else Restore
+  def tryGenChooseLiveDead[A](f: Live => TraversableOnce[A]): Live => Option[Gen[A]] =
+    Live.memoLazy(l => Gen.tryGenChoose(f(l)))
 
   val (staticFieldsToDel, staticFieldsToAdd) =
     StaticField.values.whole.partition(cfg.fields.staticFieldSet.contains)
@@ -125,32 +125,32 @@ class ApplicableEventGen(p: Project) {
   val nextUseCaseStepId: Gen[UseCaseStepId] =
     IncCounter genInt p.idCeilings.useCaseStep map UseCaseStepId
 
-  lazy val liveTagId: Option[Gen[TagId]] =
-    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).map(_.id))
+  val tagId: Live => Option[Gen[TagId]] =
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filter(_.live :: l).map(_.id))
 
-  def liveTagGroupId: Option[Gen[TagGroupId]] =
-    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).filterT[TagGroup].map(_.id))
+  val tagGroupId: Live => Option[Gen[TagGroupId]] =
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterT[TagGroup].filter(_.live :: l).map(_.id))
 
-  lazy val liveApplicableTagId: Option[Gen[ApplicableTagId]] =
-    Gen.tryGenChoose(p.config.tags.valuesIterator.map(_.tag).filter(_.live :: Live).filterT[ApplicableTag].map(_.id))
+  val applicableTagId: Live => Option[Gen[ApplicableTagId]] =
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterT[ApplicableTag].filter(_.live :: l).map(_.id))
 
   lazy val existingApplicableTagId: Option[Gen[ApplicableTagId]] =
     Gen.tryGenChoose(p.config.tags.keysIterator.filterT[ApplicableTagId])
 
   def tagChildren: Gen[TagInTree.Children] =
-    liveTagId match {
+    tagId(Live) match {
       case Some(g) => g.set.map(_.toVector)
       case None    => Gen pure Vector.empty
     }
 
   def tagParents: Gen[TagInTree.Parents] =
-    liveTagId match {
+    tagId(Live) match {
       case Some(g) => g.option.mapBy(g)
       case None    => Gen pure Map.empty
     }
 
-  lazy val liveCustomReqTypeId: Option[Gen[CustomReqTypeId]] =
-    Gen.tryGenChoose(cfg.reqTypes.custom.valuesIterator.filter(_.live :: Live).map(_.id))
+  val customReqTypeId: Live => Option[Gen[CustomReqTypeId]] =
+    tryGenChooseLiveDead(l => cfg.reqTypes.custom.valuesIterator.filter(_.live :: l).map(_.id))
 
   lazy val applicableReqTypes: Gen[Field.ApplicableReqTypes] =
     RandomData.applicableReqTypes(cfg.reqTypes.custom.keySet)
@@ -164,8 +164,8 @@ class ApplicableEventGen(p: Project) {
   lazy val liveReqId: Option[Gen[ReqId]] =
     Gen.tryGenChoose(liveReqIds)
 
-  lazy val liveGenericReqId: Option[Gen[GenericReqId]] =
-    Gen.tryGenChoose(p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.reqTypes) :: Live).map(_.id))
+  val genericReqId: Live => Option[Gen[GenericReqId]] =
+    tryGenChooseLiveDead(l => p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.reqTypes) :: l).map(_.id))
 
   def liveUseCaseIterator: Iterator[UseCase] =
     p.reqs.useCases.imap.valuesIterator.filter(_.liveUC :: Live)
@@ -182,29 +182,26 @@ class ApplicableEventGen(p: Project) {
   lazy val existingReqCodeId: Option[Gen[ReqCodeId]] =
     Gen.tryGenChoose(p.reqCodes.idList)
 
-  lazy val liveReqCodeGroupId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose(p.reqCodes.groups.iterator.filter(_.live :: Live).map(_.id).toVector)
-
-  lazy val deadReqCodeGroupId: Option[Gen[ReqCodeId]] =
-    Gen.tryGenChoose(p.reqCodes.groups.iterator.filter(_.live :: Dead).map(_.id).toVector)
+  val reqCodeGroupId: Live => Option[Gen[ReqCodeId]] =
+    tryGenChooseLiveDead(l => p.reqCodes.groups.iterator.filter(_.live :: l).map(_.id).toVector)
 
   lazy val existingCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
     Gen.tryGenChoose(cfg.customIssueTypes.keySet)
 
-  lazy val liveCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
-    Gen.tryGenChoose(cfg.customIssueTypes.valuesIterator.filter(_.live :: Live).map(_.id))
+  val customIssueTypeId: Live => Option[Gen[CustomIssueTypeId]] =
+    tryGenChooseLiveDead(l => cfg.customIssueTypes.valuesIterator.filter(_.live :: l).map(_.id))
 
-  def liveCustomFieldId: Option[Gen[CustomFieldId]] =
-    Gen.tryGenChoose(cfg.fields.customFields.valuesIterator.filter(_.live(cfg) :: Live).map(_.id))
+  val customFieldId: Live => Option[Gen[CustomFieldId]] =
+    tryGenChooseLiveDead(l => cfg.fields.customFields.valuesIterator.filter(_.live(cfg) :: l).map(_.id))
 
-  def liveCustomFieldImpId: Option[Gen[CustomField.Implication.Id]] =
-    Gen.tryGenChoose(cfg.customImpFields.filter(_.live(cfg) :: Live).map(_.id))
+  val customFieldImpId: Live => Option[Gen[CustomField.Implication.Id]] =
+    tryGenChooseLiveDead(l => cfg.customImpFields.filter(_.live(cfg) :: l).map(_.id))
 
-  def liveCustomFieldTagId: Option[Gen[CustomField.Tag.Id]] =
-    Gen.tryGenChoose(cfg.customTagFields.filter(_.live(cfg) :: Live).map(_.id))
+  val customFieldTagId: Live => Option[Gen[CustomField.Tag.Id]] =
+    tryGenChooseLiveDead(l => cfg.customTagFields.filter(_.live(cfg) :: l).map(_.id))
 
-  lazy val liveCustomFieldTextId: Option[Gen[CustomField.Text.Id]] =
-    Gen.tryGenChoose(cfg.customTextFields.filter(_.live(cfg) :: Live).map(_.id))
+  val customFieldTextId: Live => Option[Gen[CustomField.Text.Id]] =
+    tryGenChooseLiveDead(l => cfg.customTextFields.filter(_.live(cfg) :: l).map(_.id))
 
   def customTextFieldText =
     TextGen.customTextFieldAtom(existingReqId, existingUseCaseStepId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId).text
@@ -269,7 +266,7 @@ class ApplicableEventGen(p: Project) {
   object customTagFieldGD extends GenericDataOptionGen(CustomTagFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case TagId     => liveTagId     map (_ map TagId    .apply)
+      case TagId     => tagId(Live)   map (_ map TagId    .apply)
       case Mandatory => mandatory            map Mandatory.apply
       case ReqTypes  => applicableReqTypes   map ReqTypes .apply
     }
@@ -295,14 +292,14 @@ class ApplicableEventGen(p: Project) {
     }
   }
 
-  object createGenericReqGD extends GenericDataOptionGen(CreateGenericReqGD) {
+  object createGenericReqGD extends GenericDataOptionGen(GenericReqGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Title    => genericReqTitle1                map Title   .apply
-      case ReqCodes => newReqCodeIdAndValue       .nes map ReqCodes.apply
-      case Tags     => liveApplicableTagId  map (_.nes map Tags    .apply)
-      case ImpSrcs  => liveReqId            map (_.nes map ImpSrcs .apply)
-      case ImpTgts  => liveReqId            map (_.nes map ImpTgts .apply)
+      case Title    => genericReqTitle1                 map Title   .apply
+      case ReqCodes => newReqCodeIdAndValue        .nes map ReqCodes.apply
+      case Tags     => applicableTagId(Live) map (_.nes map Tags    .apply)
+      case ImpSrcs  => liveReqId             map (_.nes map ImpSrcs .apply)
+      case ImpTgts  => liveReqId             map (_.nes map ImpTgts .apply)
     }
   }
 
@@ -336,14 +333,14 @@ class ApplicableEventGen(p: Project) {
     }
   }
 
-  object createUseCaseGD extends GenericDataOptionGen(CreateUseCaseGD) {
+  object createUseCaseGD extends GenericDataOptionGen(UseCaseGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Title    => useCaseTitle1                   map Title   .apply
-      case ReqCodes => newReqCodeIdAndValue       .nes map ReqCodes.apply
-      case Tags     => liveApplicableTagId  map (_.nes map Tags    .apply)
-      case ImpSrcs  => liveReqId            map (_.nes map ImpSrcs .apply)
-      case ImpTgts  => liveReqId            map (_.nes map ImpTgts .apply)
+      case Title    => useCaseTitle1                    map Title   .apply
+      case ReqCodes => newReqCodeIdAndValue        .nes map ReqCodes.apply
+      case Tags     => applicableTagId(Live) map (_.nes map Tags    .apply)
+      case ImpSrcs  => liveReqId             map (_.nes map ImpSrcs .apply)
+      case ImpTgts  => liveReqId             map (_.nes map ImpTgts .apply)
     }
   }
 
@@ -373,10 +370,10 @@ class ApplicableEventGen(p: Project) {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  def addStaticField: Option[Gen[AddStaticField]] =
-    Gen.tryGenChoose(staticFieldsToAdd).map(_ map AddStaticField)
+  def genFieldStaticAdd: Option[Gen[FieldStaticAdd]] =
+    Gen.tryGenChoose(staticFieldsToAdd).map(_ map FieldStaticAdd)
 
-  def addUseCaseStep: Option[Gen[AddUseCaseStep]] =
+  def genUseCaseStepCreate: Option[Gen[UseCaseStepCreate]] =
     liveUseCase.map(genUC =>
       for {
         id    ← nextUseCaseStepId
@@ -384,108 +381,111 @@ class ApplicableEventGen(p: Project) {
         field ← Gen choose_! StaticField.useCaseStepTrees.whole.filter(_.useCaseStepTree.get(uc).nonEmpty)
         tree  = field.useCaseStepTree.get(uc)
         loc   ← tree.genParentLocation
-      } yield AddUseCaseStep(id, uc.id, field, loc)
+      } yield UseCaseStepCreate(id, uc.id, field, loc)
     )
 
-  def applyTemplate: Option[Gen[ApplyTemplate]] =
+  def genProjectTemplateApply: Option[Gen[ProjectTemplateApply]] =
     if (p eq Project.empty)
-      Some(RandomData.events.applyTemplate)
+      Some(RandomData.events.genProjectTemplateApply)
     else
       None
 
-  def createApplicableTag: Gen[CreateApplicableTag] =
-    Gen.apply2(CreateApplicableTag)(nextApplicableTagId, applicableTagGD.allValues)
+  def genApplicableTagCreate: Gen[ApplicableTagCreate] =
+    Gen.apply2(ApplicableTagCreate)(nextApplicableTagId, applicableTagGD.allValues)
 
-  def createCustomImpField: Option[Gen[CreateCustomImpField]] =
+  def genFieldCustomImpCreate: Option[Gen[FieldCustomImpCreate]] =
     customImpFieldGD.allValues.map(vs =>
-      Gen.apply2(CreateCustomImpField)(nextCustomFieldImplicationId, vs))
+      Gen.apply2(FieldCustomImpCreate)(nextCustomFieldImplicationId, vs))
 
-  def createCustomIssueType: Gen[CreateCustomIssueType] =
-    Gen.apply2(CreateCustomIssueType)(nextCustomIssueTypeId, customIssueTypeGD.allValues)
+  def genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
+    Gen.apply2(CustomIssueTypeCreate)(nextCustomIssueTypeId, customIssueTypeGD.allValues)
 
-  def createCustomReqType: Gen[CreateCustomReqType] =
-    Gen.apply2(CreateCustomReqType)(nextCustomReqTypeId, customReqTypeGD.allValues)
+  def genCustomReqTypeCreate: Gen[CustomReqTypeCreate] =
+    Gen.apply2(CustomReqTypeCreate)(nextCustomReqTypeId, customReqTypeGD.allValues)
 
-  def createCustomTagField: Option[Gen[CreateCustomTagField]] =
+  def genFieldCustomTagCreate: Option[Gen[FieldCustomTagCreate]] =
     customTagFieldGD.allValues.map(vs =>
-      Gen.apply2(CreateCustomTagField)(nextCustomFieldTagId, vs))
+      Gen.apply2(FieldCustomTagCreate)(nextCustomFieldTagId, vs))
 
-  def createCustomTextField: Gen[CreateCustomTextField] =
-    Gen.apply2(CreateCustomTextField)(nextCustomFieldTextId, customTextFieldGD.allValues)
+  def genFieldCustomTextCreate: Gen[FieldCustomTextCreate] =
+    Gen.apply2(FieldCustomTextCreate)(nextCustomFieldTextId, customTextFieldGD.allValues)
 
-  def createGenericReq: Option[Gen[CreateGenericReq]] =
+  def genGenericReqCreate: Option[Gen[GenericReqCreate]] =
     for {
-      reqTypeId <- liveCustomReqTypeId
+      reqTypeId <- customReqTypeId(Live)
       //vs        <- createGenericReqGD.allPossibleValues
     } yield
-      Gen.apply3(CreateGenericReq)(nextGenericReqId, reqTypeId, createGenericReqGD.values)
+      Gen.apply3(GenericReqCreate)(nextGenericReqId, reqTypeId, createGenericReqGD.values)
 
-  def createReqCodeGroup: Gen[CreateReqCodeGroup] =
-    Gen.apply2(CreateReqCodeGroup)(nextReqCodeId, reqCodeGroupGD.allValues)
+  def genReqCodeGroupCreate: Gen[ReqCodeGroupCreate] =
+    Gen.apply2(ReqCodeGroupCreate)(nextReqCodeId, reqCodeGroupGD.allValues)
 
-  def createTagGroup: Gen[CreateTagGroup] =
-    Gen.apply2(CreateTagGroup)(nextTagGroupId, tagGroupGD.allValues)
+  def genTagGroupCreate: Gen[TagGroupCreate] =
+    Gen.apply2(TagGroupCreate)(nextTagGroupId, tagGroupGD.allValues)
 
-  def createUseCase: Gen[CreateUseCase] =
-    Gen.apply3(CreateUseCase)(nextUseCaseId, nextUseCaseStepId, createUseCaseGD.values)
+  def genUseCaseCreate: Gen[UseCaseCreate] =
+    Gen.apply3(UseCaseCreate)(nextUseCaseId, nextUseCaseStepId, createUseCaseGD.values)
 
-  def deleteCustomField: Option[Gen[DeleteCustomField]] =
-    liveCustomFieldId.map(_.map(id =>
-      DeleteCustomField(id, deletionAction(cfg.fields.customFields.need(id) live cfg))))
+  def genFieldCustomDelete: Option[Gen[FieldCustomDelete]] =
+    customFieldId(Live).map(_ map FieldCustomDelete)
 
-  def deleteCustomIssueType: Option[Gen[DeleteCustomIssueType]] =
-    liveCustomIssueTypeId.map(_.map(id =>
-      DeleteCustomIssueType(id, deletionAction(cfg.customIssueTypes.need(id).live))))
+  def genFieldCustomRestore: Option[Gen[FieldCustomRestore]] =
+    customFieldId(Dead).map(_ map FieldCustomRestore)
 
-  def deleteCustomReqType: Option[Gen[DeleteCustomReqType]] =
-    liveCustomReqTypeId.map(_.map(id =>
-      DeleteCustomReqType(id, deletionAction(cfg.reqTypes.need(id).live))))
+  def genCustomIssueTypeDelete: Option[Gen[CustomIssueTypeDelete]] =
+    customIssueTypeId(Live).map(_ map CustomIssueTypeDelete)
 
-  def deleteReqCodeGroups: Option[Gen[DeleteReqCodeGroups]] =
-    liveReqCodeGroupId.map(_.nes map DeleteReqCodeGroups)
+  def genCustomReqTypeDelete: Option[Gen[CustomReqTypeDelete]] =
+    customReqTypeId(Live).map(_ map CustomReqTypeDelete)
 
-  def deleteReqs: Option[Gen[DeleteReqs]] =
+  def genReqCodeGroupsDelete: Option[Gen[ReqCodeGroupsDelete]] =
+    reqCodeGroupId(Live).map(_.nes map ReqCodeGroupsDelete)
+
+  def genCustomIssueTypeRestore: Option[Gen[CustomIssueTypeRestore]] =
+    customIssueTypeId(Dead).map(_ map CustomIssueTypeRestore)
+
+  def genCustomReqTypeRestore: Option[Gen[CustomReqTypeRestore]] =
+    customReqTypeId(Dead).map(_ map CustomReqTypeRestore)
+
+  def genReqsDelete: Option[Gen[ReqsDelete]] =
     liveReqId.map(reqId =>
-      Gen.apply3(DeleteReqs)(reqId.nes, liveReqCodeGroupId.setE, deletionReason))
+      Gen.apply3(ReqsDelete)(reqId.nes, reqCodeGroupId(Live).setE, deletionReason))
 
-  def deleteStaticField: Option[Gen[DeleteStaticField]] =
-    Gen.tryGenChoose(staticFieldsToDel).map(_ map DeleteStaticField)
+  def genFieldStaticRemove: Option[Gen[FieldStaticRemove]] =
+    Gen.tryGenChoose(staticFieldsToDel).map(_ map FieldStaticRemove)
 
-  def deleteTag: Option[Gen[DeleteTag]] =
-    liveTagId.map(g =>
-      g.map(id =>
-        DeleteTag(id, deletionAction(cfg.tags.get(id).fold[Live](Live)(_.tag.live)))))
+  def genTagDelete: Option[Gen[TagDelete]] =
+    tagId(Live).map(_ map TagDelete)
 
-  def deleteUseCaseStep: Option[Gen[DeleteUseCaseStep]] = {
+  def genTagRestore: Option[Gen[TagRestore]] =
+    tagId(Dead).map(_ map TagRestore)
+
+  def genUseCaseStepDelete: Option[Gen[UseCaseStepDelete]] = {
     val ids = p.useCaseStepsDeletable.map(_.id)
-    Gen.tryGenChooseLazily(ids).map(_ map DeleteUseCaseStep)
+    Gen.tryGenChooseLazily(ids).map(_ map UseCaseStepDelete)
   }
 
-  def restoreUseCaseStep: Option[Gen[RestoreUseCaseStep]] = {
+  def genUseCaseStepRestore: Option[Gen[UseCaseStepRestore]] = {
     val ids = p.useCaseStepsRestorable.map(_.id)
-    Gen.tryGenChooseLazily(ids).map(_ map RestoreUseCaseStep)
+    Gen.tryGenChooseLazily(ids).map(_ map UseCaseStepRestore)
   }
 
-  private def patchImplications[A](cmd: (ReqId, SetDiff.NE[ReqId]) => A, dir: Direction): Option[Gen[A]] =
+  def genReqImplicationsPatch: Option[Gen[ReqImplicationsPatch]] =
     if (liveReqIds.length < 2)
       None
     else
       liveReqId.map { gReqId =>
-        gReqId.flatMap { id =>
-          Gen.choose_!(liveReqIds.filter(_ !=* id)).set1.map { ids =>
-            val sd = SetDiff.xor(p.implications(dir)(id), ids)
-            cmd(id, NonEmpty force sd)
+        RandomData.dir.flatMap { dir =>
+          gReqId.flatMap { id =>
+            Gen.choose_!(liveReqIds.filter(_ !=* id)).set1.map { ids =>
+              val sd = SetDiff.xor(p.implications(dir)(id), ids)
+              ReqImplicationsPatch(id, dir, NonEmpty force sd)
+            }
           }
         }
       }
 
-  def patchImplicationSrc: Option[Gen[PatchImplicationSrc]] =
-    patchImplications(PatchImplicationSrc, Backwards)
-
-  def patchImplicationTgt: Option[Gen[PatchImplicationTgt]] =
-    patchImplications(PatchImplicationTgt, Forwards)
-
-  def patchReqCodes: Option[Gen[PatchReqCodes]] =
+  def genReqCodesPatch: Option[Gen[ReqCodesPatch]] =
     liveReqId.map(gReqId =>
       for {
         reqId          ← gReqId
@@ -499,10 +499,10 @@ class ApplicableEventGen(p: Project) {
         addIds         ← nextReqCodeId.list(addMin to 2)
         add            ← Gen sequence (addIds ++ renameIds).map(id => reqCode.value.strengthR(Set.empty[ReqCodeId] + id))
       } yield
-        PatchReqCodes(reqId, remove, restore, Multimap(add.toMap))
+        ReqCodesPatch(reqId, remove, restore, Multimap(add.toMap))
     )
 
-  def patchReqTags: Option[Gen[PatchReqTags]] =
+  def genReqTagsPatch: Option[Gen[ReqTagsPatch]] =
     for {
       gId  <- liveReqId
       gTag <- existingApplicableTagId
@@ -511,10 +511,10 @@ class ApplicableEventGen(p: Project) {
       tags <- gTag.nes(1 to 5, implicitly)
     } yield {
       val sd = SetDiff.xor(p.reqTags(id), tags.whole)
-      PatchReqTags(id, NonEmpty force sd)
+      ReqTagsPatch(id, NonEmpty force sd)
     }
 
-  def repositionField: Gen[RepositionField] =
+  def genFieldReposition: Gen[FieldReposition] =
     Gen.lazily {
       val order = p.config.fields.order
       // if (order.length < 2) // We always have at least 2 because of static fields
@@ -525,75 +525,75 @@ class ApplicableEventGen(p: Project) {
         tmp    = order.filterNot(f => (f ==* id) || curPos.exists(f ==* _)).map(_.some)
         tmp2   = if (curPos.isEmpty) tmp else tmp :+ None
         pos    ← Gen.choose_!(tmp2)
-      } yield RepositionField(id, pos)
+      } yield FieldReposition(id, pos)
     }
 
-  def restoreContent: Option[Gen[RestoreContent]] = {
+  def genContentRestore: Option[Gen[ContentRestore]] = {
     val restorableReqIds = Gen.tryGenChoose[ReqId](
       p.reqs.reqIterator.filter {
         case g: GenericReq => (g.liveExplicitly :: Dead) && (g.copy(liveExplicitly = Live).live(cfg.reqTypes) :: Live)
         case u: UseCase    => (u.liveExplicitly :: Dead) && (u.copy(liveExplicitly = Live).live(cfg.reqTypes) :: Live)
       }.map(_.id).toVector)
-    if (restorableReqIds.isEmpty && deadReqCodeGroupId.isEmpty)
+    if (restorableReqIds.isEmpty && reqCodeGroupId(Dead).isEmpty)
       None
     else Some {
       val idSet = restorableReqIds.setE
-      val codeSet = deadReqCodeGroupId.setE
-      Gen.apply2(RestoreContent)(idSet, codeSet).flatMap(cmd =>
+      val codeSet = reqCodeGroupId(Dead).setE
+      Gen.apply2(ContentRestore)(idSet, codeSet).flatMap(cmd =>
         if (cmd.reqs.nonEmpty || cmd.reqCodeGroups.nonEmpty)
           Gen pure cmd
         else if (restorableReqIds.isDefined)
-          restorableReqIds.get.nes.map(ids => RestoreContent(ids.whole, Set.empty))
+          restorableReqIds.get.nes.map(ids => ContentRestore(ids.whole, Set.empty))
         else
-          deadReqCodeGroupId.get.nes.map(ids => RestoreContent(Set.empty, ids.whole))
+          reqCodeGroupId(Dead).get.nes.map(ids => ContentRestore(Set.empty, ids.whole))
       )
     }
   }
 
-  def setCustomTextField: Option[Gen[SetCustomTextField]] =
+  def genReqFieldCustomTextSet: Option[Gen[ReqFieldCustomTextSet]] =
     for {
       id  <- liveReqId
-      fid <- liveCustomFieldTextId
+      fid <- customFieldTextId(Live)
     } yield
-      Gen.apply3(SetCustomTextField)(id, fid, customTextFieldText)
+      Gen.apply3(ReqFieldCustomTextSet)(id, fid, customTextFieldText)
 
-  def setGenericReqTitle: Option[Gen[SetGenericReqTitle]] =
-    liveGenericReqId.map(id =>
-      Gen.apply2(SetGenericReqTitle)(id, genericReqTitle))
+  def genGenericReqTitleSet: Option[Gen[GenericReqTitleSet]] =
+    genericReqId(Live).map(id =>
+      Gen.apply2(GenericReqTitleSet)(id, genericReqTitle))
 
-  def setGenericReqType: Option[Gen[SetGenericReqType]] =
+  def genGenericReqTypeSet: Option[Gen[GenericReqTypeSet]] =
     for {
-      gId <- liveGenericReqId
-      gRT <- liveCustomReqTypeId
+      gId <- genericReqId(Live)
+      gRT <- customReqTypeId(Live)
     } yield
-      Gen.apply2(SetGenericReqType)(gId, gRT)
+      Gen.apply2(GenericReqTypeSet)(gId, gRT)
 
-  def setUseCaseTitle: Option[Gen[SetUseCaseTitle]] =
+  def genUseCaseTitleSet: Option[Gen[UseCaseTitleSet]] =
     liveUseCaseId.map(id =>
-      Gen.apply2(SetUseCaseTitle)(id, useCaseTitle))
+      Gen.apply2(UseCaseTitleSet)(id, useCaseTitle))
 
-  def shiftUseCaseStepLeft: Option[Gen[ShiftUseCaseStepLeft]] = {
+  def genUseCaseStepShiftLeft: Option[Gen[UseCaseStepShiftLeft]] = {
     val ids = liveUseCaseIterator.flatMap(uc =>
       uc.stepsNA.tree.shiftLeftIterator((_, s) => s.id) ++
       uc.stepsE .tree.shiftLeftIterator((_, s) => s.id))
-    Gen.tryGenChooseLazily(ids).map(_ map ShiftUseCaseStepLeft)
+    Gen.tryGenChooseLazily(ids).map(_ map UseCaseStepShiftLeft)
   }
 
-  def shiftUseCaseStepRight: Option[Gen[ShiftUseCaseStepRight]] = {
+  def genUseCaseStepShiftRight: Option[Gen[UseCaseStepShiftRight]] = {
     val ids = liveUseCaseIterator.flatMap(uc =>
       uc.stepsNA.tree.shiftRightIterator((_, s) => s.id) ++
       uc.stepsE .tree.shiftRightIterator((_, s) => s.id))
-    Gen.tryGenChooseLazily(ids).map(_ map ShiftUseCaseStepRight)
+    Gen.tryGenChooseLazily(ids).map(_ map UseCaseStepShiftRight)
   }
 
-  def updateApplicableTag: Option[Gen[UpdateApplicableTag]] =
-    liveApplicableTagId.map(gId =>
+  def genApplicableTagUpdate: Option[Gen[ApplicableTagUpdate]] =
+    applicableTagId(Live).map(gId =>
       for {
         id <- gId
         vs <- applicableTagGD.nonEmptyValues
       } yield {
         import ApplicableTagGD._
-        UpdateApplicableTag(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
+        ApplicableTagUpdate(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
           case ValueForParents(v) => ValueForParents(v - id)
           case ValueForChildren(v) => ValueForChildren(v.filterNot(_ ==* id))
           case v => v
@@ -601,44 +601,44 @@ class ApplicableEventGen(p: Project) {
       }
     )
 
-  def updateCustomImpField: Option[Gen[UpdateCustomImpField]] =
+  def genFieldCustomImpUpdate: Option[Gen[FieldCustomImpUpdate]] =
     for {
-      id <- liveCustomFieldImpId
+      id <- customFieldImpId(Live)
       vs <- customImpFieldGD.nonEmptyValues
     } yield
-      Gen.apply2(UpdateCustomImpField)(id, vs)
+      Gen.apply2(FieldCustomImpUpdate)(id, vs)
 
-  def updateCustomIssueType: Option[Gen[UpdateCustomIssueType]] =
-    liveCustomIssueTypeId.map(id =>
-      Gen.apply2(UpdateCustomIssueType)(id, customIssueTypeGD.nonEmptyValues))
+  def genCustomIssueTypeUpdate: Option[Gen[CustomIssueTypeUpdate]] =
+    customIssueTypeId(Live).map(id =>
+      Gen.apply2(CustomIssueTypeUpdate)(id, customIssueTypeGD.nonEmptyValues))
 
-  def updateCustomReqType: Option[Gen[UpdateCustomReqType]] =
-    liveCustomReqTypeId.map(id =>
-      Gen.apply2(UpdateCustomReqType)(id, customReqTypeGD.nonEmptyValues))
+  def genCustomReqTypeUpdate: Option[Gen[CustomReqTypeUpdate]] =
+    customReqTypeId(Live).map(id =>
+      Gen.apply2(CustomReqTypeUpdate)(id, customReqTypeGD.nonEmptyValues))
 
-  def updateCustomTagField: Option[Gen[UpdateCustomTagField]] =
+  def genFieldCustomTagUpdate: Option[Gen[FieldCustomTagUpdate]] =
     for {
-      id <- liveCustomFieldTagId
+      id <- customFieldTagId(Live)
       vs <- customTagFieldGD.nonEmptyValues
     } yield
-      Gen.apply2(UpdateCustomTagField)(id, vs)
+      Gen.apply2(FieldCustomTagUpdate)(id, vs)
 
-  def updateCustomTextField: Option[Gen[UpdateCustomTextField]] =
-    liveCustomFieldTextId.map(id =>
-      Gen.apply2(UpdateCustomTextField)(id, customTextFieldGD.nonEmptyValues))
+  def genFieldCustomTextUpdate: Option[Gen[FieldCustomTextUpdate]] =
+    customFieldTextId(Live) .map(id =>
+      Gen.apply2(FieldCustomTextUpdate)(id, customTextFieldGD.nonEmptyValues))
 
-  def updateReqCodeGroup: Option[Gen[UpdateReqCodeGroup]] =
-    liveReqCodeGroupId.map(id =>
-      Gen.apply2(UpdateReqCodeGroup)(id, reqCodeGroupGD.nonEmptyValues))
+  def genReqCodeGroupUpdate: Option[Gen[ReqCodeGroupUpdate]] =
+    reqCodeGroupId(Live).map(id =>
+      Gen.apply2(ReqCodeGroupUpdate)(id, reqCodeGroupGD.nonEmptyValues))
 
-  def updateTagGroup: Option[Gen[UpdateTagGroup]] =
-    liveTagGroupId.map(gId =>
+  def genTagGroupUpdate: Option[Gen[TagGroupUpdate]] =
+    tagGroupId(Live).map(gId =>
       for {
         id <- gId
         vs <- tagGroupGD.nonEmptyValues
       } yield {
         import TagGroupGD._
-        UpdateTagGroup(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
+        TagGroupUpdate(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
           case ValueForParents(v) => ValueForParents(v - id)
           case ValueForChildren(v) => ValueForChildren(v.filterNot(_ ==* id))
           case v => v
@@ -646,60 +646,63 @@ class ApplicableEventGen(p: Project) {
       }
     )
 
-  def updateUseCaseStep: Option[Gen[UpdateUseCaseStep]] =
+  def genUseCaseStepUpdate: Option[Gen[UseCaseStepUpdate]] =
     liveUseCase.map(genUseCase =>
       for {
         uc   <- genUseCase
         step <- Gen choose_! uc.stepIterator
         vs   <- useCaseStepGD(uc, step)
-      } yield UpdateUseCaseStep(step.id, vs)
+      } yield UseCaseStepUpdate(step.id, vs)
     )
 
   val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
     valuesForAdt[Event, Option[Gen[Event]]] {
-      case _: AddStaticField        => addStaticField
-      case _: AddUseCaseStep        => addUseCaseStep
-      case _: ApplyTemplate         => applyTemplate
-      case _: CreateApplicableTag   => createApplicableTag
-      case _: CreateCustomImpField  => createCustomImpField
-      case _: CreateCustomIssueType => createCustomIssueType
-      case _: CreateCustomReqType   => createCustomReqType
-      case _: CreateCustomTagField  => createCustomTagField
-      case _: CreateCustomTextField => createCustomTextField
-      case _: CreateGenericReq      => createGenericReq
-      case _: CreateReqCodeGroup    => createReqCodeGroup
-      case _: CreateTagGroup        => createTagGroup
-      case _: CreateUseCase         => createUseCase
-      case _: DeleteCustomField     => deleteCustomField
-      case _: DeleteCustomIssueType => deleteCustomIssueType
-      case _: DeleteCustomReqType   => deleteCustomReqType
-      case _: DeleteReqCodeGroups   => deleteReqCodeGroups
-      case _: DeleteReqs            => deleteReqs
-      case _: DeleteStaticField     => deleteStaticField
-      case _: DeleteTag             => deleteTag
-      case _: DeleteUseCaseStep     => deleteUseCaseStep
-      case _: PatchImplicationSrc   => patchImplicationSrc
-      case _: PatchImplicationTgt   => patchImplicationTgt
-      case _: PatchReqCodes         => patchReqCodes
-      case _: PatchReqTags          => patchReqTags
-      case _: RepositionField       => repositionField
-      case _: RestoreContent        => restoreContent
-      case _: RestoreUseCaseStep    => restoreUseCaseStep
-      case _: SetCustomTextField    => setCustomTextField
-      case _: SetGenericReqTitle    => setGenericReqTitle
-      case _: SetGenericReqType     => setGenericReqType
-      case _: SetUseCaseTitle       => setUseCaseTitle
-      case _: ShiftUseCaseStepLeft  => shiftUseCaseStepLeft
-      case _: ShiftUseCaseStepRight => shiftUseCaseStepRight
-      case _: UpdateApplicableTag   => updateApplicableTag
-      case _: UpdateCustomImpField  => updateCustomImpField
-      case _: UpdateCustomIssueType => updateCustomIssueType
-      case _: UpdateCustomReqType   => updateCustomReqType
-      case _: UpdateCustomTagField  => updateCustomTagField
-      case _: UpdateCustomTextField => updateCustomTextField
-      case _: UpdateReqCodeGroup    => updateReqCodeGroup
-      case _: UpdateTagGroup        => updateTagGroup
-      case _: UpdateUseCaseStep     => updateUseCaseStep
+      case _: ApplicableTagCreate    => genApplicableTagCreate
+      case _: ApplicableTagUpdate    => genApplicableTagUpdate
+      case _: ContentRestore         => genContentRestore
+      case _: CustomIssueTypeCreate  => genCustomIssueTypeCreate
+      case _: CustomIssueTypeDelete  => genCustomIssueTypeDelete
+      case _: CustomIssueTypeRestore => genCustomIssueTypeRestore
+      case _: CustomIssueTypeUpdate  => genCustomIssueTypeUpdate
+      case _: CustomReqTypeCreate    => genCustomReqTypeCreate
+      case _: CustomReqTypeDelete    => genCustomReqTypeDelete
+      case _: CustomReqTypeRestore   => genCustomReqTypeRestore
+      case _: CustomReqTypeUpdate    => genCustomReqTypeUpdate
+      case _: FieldCustomDelete      => genFieldCustomDelete
+      case _: FieldCustomImpCreate   => genFieldCustomImpCreate
+      case _: FieldCustomImpUpdate   => genFieldCustomImpUpdate
+      case _: FieldCustomRestore     => genFieldCustomRestore
+      case _: FieldCustomTagCreate   => genFieldCustomTagCreate
+      case _: FieldCustomTagUpdate   => genFieldCustomTagUpdate
+      case _: FieldCustomTextCreate  => genFieldCustomTextCreate
+      case _: FieldCustomTextUpdate  => genFieldCustomTextUpdate
+      case _: FieldReposition        => genFieldReposition
+      case _: FieldStaticAdd         => genFieldStaticAdd
+      case _: FieldStaticRemove      => genFieldStaticRemove
+      case _: GenericReqCreate       => genGenericReqCreate
+      case _: GenericReqTitleSet     => genGenericReqTitleSet
+      case _: GenericReqTypeSet      => genGenericReqTypeSet
+      case _: ProjectTemplateApply   => genProjectTemplateApply
+      case _: ReqCodeGroupCreate     => genReqCodeGroupCreate
+      case _: ReqCodeGroupsDelete    => genReqCodeGroupsDelete
+      case _: ReqCodeGroupUpdate     => genReqCodeGroupUpdate
+      case _: ReqCodesPatch          => genReqCodesPatch
+      case _: ReqFieldCustomTextSet  => genReqFieldCustomTextSet
+      case _: ReqImplicationsPatch   => genReqImplicationsPatch
+      case _: ReqsDelete             => genReqsDelete
+      case _: ReqTagsPatch           => genReqTagsPatch
+      case _: TagDelete              => genTagDelete
+      case _: TagGroupCreate         => genTagGroupCreate
+      case _: TagGroupUpdate         => genTagGroupUpdate
+      case _: TagRestore             => genTagRestore
+      case _: UseCaseCreate          => genUseCaseCreate
+      case _: UseCaseStepCreate      => genUseCaseStepCreate
+      case _: UseCaseStepDelete      => genUseCaseStepDelete
+      case _: UseCaseStepRestore     => genUseCaseStepRestore
+      case _: UseCaseStepShiftLeft   => genUseCaseStepShiftLeft
+      case _: UseCaseStepShiftRight  => genUseCaseStepShiftRight
+      case _: UseCaseStepUpdate      => genUseCaseStepUpdate
+      case _: UseCaseTitleSet        => genUseCaseTitleSet
     }
 
   val eventGens: NonEmptyVector[Gen[Event]] =

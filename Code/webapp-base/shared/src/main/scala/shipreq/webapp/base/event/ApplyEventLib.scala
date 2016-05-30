@@ -309,10 +309,7 @@ private[event] object ApplyEventLib {
       update(id, d =>
         ensureLive(liveLens get d)(id.toString) >> updateFn(d))
 
-    def deleteOrRestore(id: Id, da: DeletionAction): SE[Unit] =
-      setLive(id, da.targetState)
-
-    private def setLive(id: Id, newValue: Live): SE[Unit] =
+    def setLive(id: Id, newValue: Live): SE[Unit] =
       update(id, d =>
         ensureLiveIsNot(liveLens get d)(newValue, id.toString) |>> liveLens.set(newValue)(d))
   }

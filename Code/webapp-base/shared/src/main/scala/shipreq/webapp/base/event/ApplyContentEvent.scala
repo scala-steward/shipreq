@@ -63,7 +63,7 @@ trait ApplyContentEvent {
     def restore(reqIds: Iterable[ReqId]): SE[Unit] =
       SE.foldMapRun(reqIds)(restoreReq) // TODO Use one Project get/put
 
-    def applyDelete(e: DeleteReqs): SE[Unit] = {
+    def applyDelete(e: ReqsDelete): SE[Unit] = {
       val reqIds = e.reqs.whole
       for {
         _  <- SE.foldMapRun(reqIds)(deleteReq) // TODO Use one Project get/put
@@ -108,25 +108,26 @@ trait ApplyContentEvent {
         }
       ))
 
-    def applyPatchTags(e: PatchReqTags): SE[Unit] =
+    def applyReqTagsPatch(e: ReqTagsPatch): SE[Unit] =
       ensureLiveReqId(e.id) >>
       validateTags(e.patch.value.allValues) >>
       Project.reqTags.modify(_.mod(e.id, e.patch.value.apply))
 
-    def applyPatchImplicationTgt(e: PatchImplicationTgt): SE[Unit] =
+    def applyReqImplicationsPatch(e: ReqImplicationsPatch): SE[Unit] =
       ensureLiveReqId(e.id) >>
-      Project.implicationsSrcToTgt.modify(e.patch.value.applyToMultimapValues(_)(e.id))
+        Project.implicationsSrcToTgt.modify(is =>
+          e.dir match {
+            case Forwards  => e.patch.value.applyToMultimapValues(is)(e.id)
+            case Backwards => e.patch.value.applyToMultimapKeys  (is)(e.id)
+          }
+        )
 
-    def applyPatchImplicationSrc(e: PatchImplicationSrc): SE[Unit] =
-      ensureLiveReqId(e.id) >>
-      Project.implicationsSrcToTgt.modify(e.patch.value.applyToMultimapKeys(_)(e.id))
-
-    def applySetCustomTextField(e: SetCustomTextField): SE[Unit] =
+    def applyReqFieldCustomTextSet(e: ReqFieldCustomTextSet): SE[Unit] =
       ensureLiveReqId(e.id) >>
       ensureLiveTextFieldId(e.fid) >>
       (Project.reqText ^|-> ReqData.textAt(e.fid, e.id)).set(e.value)
 
-    def applyRestoreContent(e: RestoreContent): SE[Unit] =
+    def applyRestoreContent(e: ContentRestore): SE[Unit] =
       for {
         _  <- ContentCommon.restore(e.reqs)
         t1 <- ReqCodeLogic.getTrie
@@ -165,8 +166,8 @@ trait ApplyContentEvent {
     def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
       needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
 
-    val applyCreateGenericReq: CreateGenericReq => SE[Unit] = {
-      val ^ = CreateGenericReqGD
+    val applyGenericReqCreate: GenericReqCreate => SE[Unit] = {
+      val ^ = GenericReqGD
 
       def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
         SE.foldMapRun(vs.values) {
@@ -194,7 +195,7 @@ trait ApplyContentEvent {
       } yield ()
     }
 
-    def applySetGenericReqType(e: SetGenericReqType): SE[Unit] =
+    def applyGenericReqTypeSet(e: GenericReqTypeSet): SE[Unit] =
       for {
         r <- grIMap.need(e.id)
         _ <- ensureLiveReq(r)
@@ -206,7 +207,7 @@ trait ApplyContentEvent {
              }
       } yield ()
 
-    def applySetGenericReqTitle(e: SetGenericReqTitle): SE[Unit] =
+    def applyGenericReqTitleSet(e: GenericReqTitleSet): SE[Unit] =
       ensureLiveReqId(e.id) >>
         grIMap.updateF(e.id, _.copy(title = e.value))
   }
@@ -244,7 +245,7 @@ trait ApplyContentEvent {
         }
       })
 
-    def applySetUseCaseTitle(e: SetUseCaseTitle): SE[Unit] =
+    def applyTitleSet(e: UseCaseTitleSet): SE[Unit] =
       ensureLiveReqId(e.id) >>
         ucIMap.updateF(e.id, _.copy(title = e.value))
 
@@ -271,8 +272,8 @@ trait ApplyContentEvent {
         p.copy(reqs = reqs2, idCeilings = ic2)
       }
 
-    val applyCreateUseCase: CreateUseCase => SE[Unit] = {
-      val ^ = CreateUseCaseGD
+    val applyCreate: UseCaseCreate => SE[Unit] = {
+      val ^ = UseCaseGD
 
       def foreachValue(id: UseCaseId, vs: ^.Values): SE[Unit] =
         SE.foldMapRun(vs.values) {
@@ -300,7 +301,7 @@ trait ApplyContentEvent {
       } yield ()
     }
 
-    def applyAddUseCaseStep(e: AddUseCaseStep): SE[Unit] = {
+    def applyStepCreate(e: UseCaseStepCreate): SE[Unit] = {
       val step = UseCaseStep(e.id, Text.UseCaseStep.empty, Live)
       val tree = e.field.useCaseStepTree
 
@@ -349,18 +350,18 @@ trait ApplyContentEvent {
     private def setStep(t: UseCaseSteps.Tree, loc: Location)(s: UseCaseStep): SE[UseCaseSteps.Tree] =
       optionGet(t.modifyValueAt(loc)(_ => s), badStepIndex(s.id, loc))
 
-    def applyShiftUseCaseStepLeft(e: ShiftUseCaseStepLeft): SE[Unit] =
+    def applyStepShiftLeft(e: UseCaseStepShiftLeft): SE[Unit] =
       findStepModTree(e.id)((s, _, l, _) =>
         optionGet(s.tree shiftLeft l, s"${show(e.id)} cannot be shifted left."))
 
-    def applyShiftUseCaseStepRight(e: ShiftUseCaseStepRight): SE[Unit] =
+    def applyStepShiftRight(e: UseCaseStepShiftRight): SE[Unit] =
       findStepModTree(e.id)((s, _, l, _) =>
         optionGet(s.tree.shiftRightV(l, s.locValidity), s"${show(e.id)} cannot be shifted right."))
 
     private def badStepIndex(id: UseCaseStepId, loc: Location) =
       s"${show(id)} expected at ${showLoc(loc)}."
 
-    val applyUpdateUseCaseStep: UpdateUseCaseStep => SE[Unit] = {
+    val applyStepUpdate: UseCaseStepUpdate => SE[Unit] = {
       val ^ = UseCaseStepGD
       val GD = GenericDataApp[UseCaseStep](^)
 
@@ -401,7 +402,7 @@ trait ApplyContentEvent {
 //        ucs.copy(stepIndex = si2, stepFlow = sf2)
 //      }
 
-    def applyDeleteUseCaseStep(e: DeleteUseCaseStep): SE[Unit] =
+    def applyStepDelete(e: UseCaseStepDelete): SE[Unit] =
       setUseCaseStepLive(e.id, Dead)
 //      mapStep(e.id)((tree, field, loc) =>
 //        for {
@@ -412,7 +413,7 @@ trait ApplyContentEvent {
 //        } yield g._1
 //      )
 
-    def applyRestoreUseCaseStep(e: RestoreUseCaseStep): SE[Unit] =
+    def applyStepRestore(e: UseCaseStepRestore): SE[Unit] =
       setUseCaseStepLive(e.id, Live)
 
     private def setUseCaseStepLive(id: UseCaseStepId, life: Live): SE[Unit] =
@@ -784,7 +785,7 @@ trait ApplyContentEvent {
       r.result()
     }
 
-    def applyPatchReqCodes(e: PatchReqCodes): SE[Unit] =
+    def applyReqCodesPatch(e: ReqCodesPatch): SE[Unit] =
       for {
         p    ← SE.get
         refd = p.atomScan.codeRefs
@@ -804,7 +805,7 @@ trait ApplyContentEvent {
     val ^ = ReqCodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
-    def applyCreate(e: CreateReqCodeGroup): SE[Unit] = {
+    def applyCreate(e: ReqCodeGroupCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         c ← GD.need(^.Code)
@@ -836,13 +837,13 @@ trait ApplyContentEvent {
         _  ← Project.reqCodeTrie set t2
       } yield ()
 
-    def applyUpdate(e: UpdateReqCodeGroup): SE[Unit] =
+    def applyUpdate(e: ReqCodeGroupUpdate): SE[Unit] =
       SE.foldMapRun(e.vs.values) {
         case ^.ValueForTitle(t) => modifyGroup(e.id, _.copy(title = t))
         case ^.ValueForCode (v) => updateGroupCode(e.id, v)
       }
 
-    def applyDelete(e: DeleteReqCodeGroups): SE[Unit] =
+    def applyDelete(e: ReqCodeGroupsDelete): SE[Unit] =
       getTrie >>= (inactivateGroupsByIdT(_, e.ids.whole, true)) >>= Project.reqCodeTrie.set
   }
 }

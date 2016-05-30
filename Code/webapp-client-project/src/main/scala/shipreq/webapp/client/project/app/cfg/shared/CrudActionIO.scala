@@ -1,8 +1,7 @@
-package shipreq.webapp.client.project.lib
+package shipreq.webapp.client.project.app.cfg.shared
 
 import japgolly.scalajs.react.Callback
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.DeletionAction
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.base.data.TCB
@@ -39,7 +38,7 @@ final class CrudActionIO[D, I, U, RD <: CrudFn.Aux[I, U]](cp        : ClientProt
     crudIO(s, f, CrudAction.Update(data.id, u))
 
   def deleteIO(id: I, a: DeletionAction, s: TCB.Success, f: TCB.Failure): Callback =
-    crudIO(s, f, CrudAction.Delete(id, a))
+    crudIO(s, f, a.crudAction(id))
 
   def _deleteIO: (I, DeletionAction) => (TCB.Success, TCB.Failure) => Callback =
     (id, a) => (s, f) => deleteIO(id, a, s, f)

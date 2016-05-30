@@ -52,14 +52,14 @@ object ProjectTemplate {
     def reqType(mnemonicStr: String, name: String, imp: ImplicationRequired) = {
       val mnemonic = ReqType.Mnemonic(mnemonicStr)
       val id = reqTypeId.next
-      add(CreateCustomReqType(id, gdAllValues(CustomReqTypeGD, "")))
+      add(CustomReqTypeCreate(id, gdAllValues(CustomReqTypeGD, "")))
       id
     }
 
     val issueTypeId = new IdCounter(CustomIssueTypeId)
     def issueType(keyStr: String, desc: Option[String]): Unit = {
       val key = HashRefKey(keyStr)
-      add(CreateCustomIssueType(issueTypeId.next, gdAllValues(CustomIssueTypeGD, "")))
+      add(CustomIssueTypeCreate(issueTypeId.next, gdAllValues(CustomIssueTypeGD, "")))
     }
 
     val tagId = new IdCounter(identity)
@@ -69,7 +69,7 @@ object ProjectTemplate {
                  parents      : TagInTree.Parents  = Map.empty,
                  children     : TagInTree.Children = Vector.empty) = {
       val id = TagGroupId(tagId.next)
-      add(CreateTagGroup(id, gdAllValues(TagGroupGD, "")))
+      add(TagGroupCreate(id, gdAllValues(TagGroupGD, "")))
       id
     }
     def applicableTag(name    : String,
@@ -78,7 +78,7 @@ object ProjectTemplate {
                       parents : TagInTree.Parents  = Map.empty,
                       children: TagInTree.Children = Vector.empty) = {
       val id = ApplicableTagId(tagId.next)
-      add(CreateApplicableTag(id, gdAllValues(ApplicableTagGD, "")))
+      add(ApplicableTagCreate(id, gdAllValues(ApplicableTagGD, "")))
       id
     }
 
@@ -86,15 +86,15 @@ object ProjectTemplate {
     val customFieldId = new IdCounter(identity)
     def customTextField(name: String, key: FieldRefKey, mandatory: Mandatory, reqTypes: ApplicableReqTypes): Unit = {
       val id = CustomField.Text.Id(customFieldId.next)
-      add(CreateCustomTextField(id, gdAllValues(CustomTextFieldGD, "")))
+      add(FieldCustomTextCreate(id, gdAllValues(CustomTextFieldGD, "")))
     }
     def customTagField(tagId: TagId, mandatory: Mandatory, reqTypes: ApplicableReqTypes): Unit = {
       val id = CustomField.Tag.Id(customFieldId.next)
-      add(CreateCustomTagField(id, gdAllValues(CustomTagFieldGD, "")))
+      add(FieldCustomTagCreate(id, gdAllValues(CustomTagFieldGD, "")))
     }
     def customImpField(reqTypeId: ReqTypeId, mandatory: Mandatory, reqTypes: ApplicableReqTypes): Unit = {
       val id = CustomField.Implication.Id(customFieldId.next)
-      add(CreateCustomImpField(id, gdAllValues(CustomImpFieldGD, "")))
+      add(FieldCustomImpCreate(id, gdAllValues(CustomImpFieldGD, "")))
     }
   }
 

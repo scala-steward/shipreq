@@ -22,7 +22,7 @@ import AutoNES._
  * - pertain to ReqCodes.
  */
 object ContentEventTest extends TestSuite {
-  import CreateGenericReqGD._
+  import GenericReqGD._
 
   val someCTF1: CTF.NonEmptyText =
     NonEmptyVector(CTF.Literal("hi!"), CTF.blankLine, CTF.Literal("bye."))
@@ -90,11 +90,11 @@ object ContentEventTest extends TestSuite {
       case (None,    None)    => sys.error("At least 1 ID required.")
     }
 
-  val createRefToCode3 = CreateGenericReq(500, mf, nev(
+  val createRefToCode3 = GenericReqCreate(500, mf, nev(
     Title(NonEmptyVector(GRT.Literal("Ref to #3: "), GRT.CodeRef(3)))))
 
   // As above but hides the ref in an IssueDesc
-  val createRefToCode3I = CreateGenericReq(500, mf, nev(
+  val createRefToCode3I = GenericReqCreate(500, mf, nev(
     Title(NonEmptyVector(GRT.Issue(issueType1, Vector(
       IID.Literal("Ref to #3: "), IID.CodeRef(3)))))))
 
@@ -128,13 +128,13 @@ object ContentEventTest extends TestSuite {
       'title {
         import ReqCodeGroupGD._
         val t = Vector(ReqCodeGroupTitle.Literal("hi there"))
-        val p = _assertPass(createRCG(1, "a"), UpdateReqCodeGroup(1, nev(Title(t))))
+        val p = _assertPass(createRCG(1, "a"), ReqCodeGroupUpdate(1, nev(Title(t))))
         assertEq(p.reqCodes.groups.head.title, t)
       }
 
       'code {
         import ReqCodeGroupGD._
-        val p = _assertPass(createRCG(1, "hehe.grr", "Ze Title"), UpdateReqCodeGroup(1, nev(Code("fine.then"))))
+        val p = _assertPass(createRCG(1, "hehe.grr", "Ze Title"), ReqCodeGroupUpdate(1, nev(Code("fine.then"))))
         val d = assertSoleReqCode(p, "fine.then")
         assertEq(d, ReqCode.ActiveGroup(LiveReqCodeGroup(1, "Ze Title"), ReqCode.emptyReqInactive))
       }
@@ -209,7 +209,7 @@ object ContentEventTest extends TestSuite {
         test(delRCG(3))("a.x: RG[#3]")
 
         // 1.7: Create RCᵣ
-        val createA = CreateGenericReq(reqA, mf, nev(ReqCodes(4 -> "a.x")))
+        val createA = GenericReqCreate(reqA, mf, nev(ReqCodes(4 -> "a.x")))
         test(createA)("a.x: AD[#4Req(#a)]", "a.x: RG[#3]")
 
         // 1.8: Rename RCᵣ
@@ -224,7 +224,7 @@ object ContentEventTest extends TestSuite {
         import tester.test
 
         // 2.1: Create RCᵣ ref
-        val createA = CreateGenericReq(reqA, mf, nev(
+        val createA = GenericReqCreate(reqA, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Ref to self: "), GRT.CodeRef(1))),
           ReqCodes(1 -> "a.b.c")))
         test(createA)("a.b.c: AD[#1Req(#a)]")
@@ -298,7 +298,7 @@ object ContentEventTest extends TestSuite {
         test(updateRCGCode(9, "ggg"))(delA_state + "ggg: AD[#9Grp]")
 
         // 2.21: Create RCᵣ #b
-        test(CreateGenericReq(98, mf, nev(ReqCodes(10 -> "aaa"))))(
+        test(GenericReqCreate(98, mf, nev(ReqCodes(10 -> "aaa"))))(
           delA_state, "ggg: AD[#9Grp]", "aaa: AD[#10Req(#b)]")
 
         // 2.22: Rename RCᵣ #b
@@ -320,7 +320,7 @@ object ContentEventTest extends TestSuite {
           "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
         // 3a.2: Create refs to it
-        val refs = CreateGenericReq(500, mf, nev(
+        val refs = GenericReqCreate(500, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
         test(refs)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
@@ -361,7 +361,7 @@ object ContentEventTest extends TestSuite {
           "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
         // 3b.2: Create refs to it
-        val refs = CreateGenericReq(500, mf, nev(
+        val refs = GenericReqCreate(500, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
         test(refs)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]")
 
@@ -391,7 +391,7 @@ object ContentEventTest extends TestSuite {
           "one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]", "other: AD[#2Req(#a)]")
 
         // 4.2: Create refs to some of it
-        val refsA = CreateGenericReq(500, mf, nev(
+        val refsA = GenericReqCreate(500, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #1 and #3: "), GRT.CodeRef(3), GRT.CodeRef(1)))))
         test(refsA)("one: AD[#1Req(#a)]", "three: AD[#3Req(#a)]", "other: AD[#2Req(#a)]")
 
@@ -415,7 +415,7 @@ object ContentEventTest extends TestSuite {
           "aaa: AD[#4Req(#b)]", "bbb: AD[#5Req(#b)]", "other: AD[#6Req(#b)]")
 
         // 4.8: Create refs to some of B
-        val refsB = CreateGenericReq(501, mf, nev(
+        val refsB = GenericReqCreate(501, mf, nev(
           Title(NonEmptyVector(GRT.Literal("Refs to #4 and #5: "), GRT.CodeRef(4), GRT.CodeRef(5)))))
         test(refsB)(
           "aaa: RR[#1Req(#a)]", "aaa: RR[#3Req(#a)]", "other: RR[#2Req(#a)]",
@@ -472,9 +472,9 @@ object ContentEventTest extends TestSuite {
     }
 
     'patchTags {
-      def patch(id: ReqId)(remove: ApplicableTagId*)(add: ApplicableTagId*): PatchReqTags =
+      def patch(id: ReqId)(remove: ApplicableTagId*)(add: ApplicableTagId*): ReqTagsPatch =
         NonEmpty(SetDiff(removed = remove.toSet, added = add.toSet))
-          .map(PatchReqTags(id, _))
+          .map(ReqTagsPatch(id, _))
           .getOrElse(sys error "Empty set diff")
 
       'ok {
@@ -507,18 +507,15 @@ object ContentEventTest extends TestSuite {
         NonEmpty(SetDiff(removed = remove.toSet, added = add.toSet)).getOrElse(sys error "Empty set diff")
       def testFailure(msgFrag: String)(subj: ReqId, events: Event*)(remove: ReqId*)(add: ReqId*): Unit = {
         val sd = setdiff(remove: _*)(add: _*)
-        assertFail(msgFrag)(events :+ PatchImplicationSrc(subj, sd): _*)
-        assertFail(msgFrag)(events :+ PatchImplicationTgt(subj, sd): _*)
+        assertFail(msgFrag)(events :+ ReqImplicationsPatch(subj, Backwards, sd): _*)
+        assertFail(msgFrag)(events :+ ReqImplicationsPatch(subj, Forwards, sd): _*)
       }
 
       'ok {
         var es = Vector[Event](emptyGR1, impliedGR2, emptyGR3)
-        def test(subj: ReqId, impTgts: Boolean)(remove: ReqId*)(add: ReqId*)(expect: (ReqId, Set[ReqId])*): Unit = {
+        def test(subj: ReqId, dir: Direction)(remove: ReqId*)(add: ReqId*)(expect: (ReqId, Set[ReqId])*): Unit = {
           val sd = setdiff(remove: _*)(add: _*)
-          es :+= (if (impTgts)
-            PatchImplicationTgt(subj, sd)
-          else
-            PatchImplicationSrc(subj, sd))
+          es :+= ReqImplicationsPatch(subj, dir, sd)
           val p = _assertPass(es: _*)
           val a = p.implications.forwards.m
           assertEq(a, expect.toMap)
@@ -527,12 +524,12 @@ object ContentEventTest extends TestSuite {
         implicit def is(t: (Int, Set[Int])): (ReqId, Set[ReqId]) = (t._1, t._2.map(i => i: ReqId))
 
         // Start: 1 → 2, 3
-        test(2, true )( )(3)(1 -> 2, 2 -> 3)
-        test(2, false)(1)( )(2 -> 3)
-        test(3, false)(2)(1)(1 -> 3)
-        test(2, false)( )(1)(1 -> Set(2, 3))
-        test(1, true )(3)( )(1 -> 2)
-        test(1, true )(2)(3)(1 -> 3)
+        test(2, Forwards )( )(3)(1 -> 2, 2 -> 3)
+        test(2, Backwards)(1)( )(2 -> 3)
+        test(3, Backwards)(2)(1)(1 -> 3)
+        test(2, Backwards)( )(1)(1 -> Set(2, 3))
+        test(1, Forwards )(3)( )(1 -> 2)
+        test(1, Forwards )(2)(3)(1 -> 3)
       }
 
       'reqNotFound - testFailure("found")(1, emptyGR3)()(3)
@@ -541,9 +538,9 @@ object ContentEventTest extends TestSuite {
       'impSelf     - testFailure("cycle")(1, emptyGR1)()(1)
 
       'impCycle {
-        val es = Vector(emptyGR1, impliedGR2, CreateGenericReq(3, mf, nev(ImpSrcs(2))))
-        assertFail("cycle")(es :+ PatchImplicationTgt(3, NonEmpty.force(SetDiff(Set.empty, Set(1)))): _*)
-        assertFail("cycle")(es :+ PatchImplicationSrc(1, NonEmpty.force(SetDiff(Set.empty, Set(3)))): _*)
+        val es = Vector(emptyGR1, impliedGR2, GenericReqCreate(3, mf, nev(ImpSrcs(2))))
+        assertFail("cycle")(es :+ ReqImplicationsPatch(3, Forwards, NonEmpty.force(SetDiff(Set.empty, Set(1)))): _*)
+        assertFail("cycle")(es :+ ReqImplicationsPatch(1, Backwards, NonEmpty.force(SetDiff(Set.empty, Set(3)))): _*)
       }
 
       // 'removeMissingTag = nop
@@ -551,7 +548,7 @@ object ContentEventTest extends TestSuite {
     }
 
     'setCustomTextField {
-      def e = SetCustomTextField(1, cf1, someCTF1)
+      def e = ReqFieldCustomTextSet(1, cf1, someCTF1)
       'add {
         val p = _assertPass(emptyGR1, e)
         val d = p.reqText
@@ -561,14 +558,14 @@ object ContentEventTest extends TestSuite {
         assertEq(m(1), someCTF1)
       }
       'remove {
-        val p = _assertPass(emptyGR1, e, SetCustomTextField(1, cf1, ∅))
+        val p = _assertPass(emptyGR1, e, ReqFieldCustomTextSet(1, cf1, ∅))
         val d = p.reqText
         assertEq(d.size, 0)
       }
       'reqNotFound   - assertFail("found")(e)
       'reqIsDead     - assertFail("dead") (emptyGR1, delGR1, e)
-      'fieldNotFound - assertFail("found")(emptyGR1, SetCustomTextField(1, 321, someCTF1))
-      'fieldDead     - assertFail("dead") (emptyGR1, DeleteCustomField(cf1, Delete), e)
+      'fieldNotFound - assertFail("found")(emptyGR1, ReqFieldCustomTextSet(1, 321, someCTF1))
+      'fieldDead     - assertFail("dead") (emptyGR1, FieldCustomDelete(cf1), e)
       // TODO test not applicable to target reqtype
     }
 
@@ -650,33 +647,33 @@ object ContentEventTest extends TestSuite {
 
         // Delete A,B,G1,G2 with reason
         val dr1 = "dr#1"
-        test(DeleteReqs(NonEmptySet(reqA, reqB), Set(1, 2), dr1))(dr1, dead)(dr1, dead)
+        test(ReqsDelete(NonEmptySet(reqA, reqB), Set(1, 2), dr1))(dr1, dead)(dr1, dead)
 
         // Restore B,G2
-        test(RestoreContent(Set(reqB), Set(2)))(dr1, dead)(live, live)
+        test(ContentRestore(Set(reqB), Set(2)))(dr1, dead)(live, live)
 
         // Delete B,G2 - no reason
-        test(DeleteReqs(NonEmptySet(reqB), Set(2), ∅))(dr1, dead)(none, dead)
+        test(ReqsDelete(NonEmptySet(reqB), Set(2), ∅))(dr1, dead)(none, dead)
 
         // Restore B,G2
-        test(RestoreContent(Set(reqB), Set(2)))(dr1, dead)(live, live)
+        test(ContentRestore(Set(reqB), Set(2)))(dr1, dead)(live, live)
 
         // Delete B,G2 - no reason
-        test(DeleteReqs(NonEmptySet(reqB), Set(2), ∅))(dr1, dead)(none, dead)
+        test(ReqsDelete(NonEmptySet(reqB), Set(2), ∅))(dr1, dead)(none, dead)
 
         // Restore B,G2
-        test(RestoreContent(Set(reqB), Set(2)))(dr1, dead)(live, live)
+        test(ContentRestore(Set(reqB), Set(2)))(dr1, dead)(live, live)
 
         // Delete B,G2 with reason
         val dr2 = "dr#2"
-        test(DeleteReqs(NonEmptySet(reqB), Set(2), dr2))(dr1, dead)(dr2, dead)
+        test(ReqsDelete(NonEmptySet(reqB), Set(2), dr2))(dr1, dead)(dr2, dead)
 
         // Restore A,B,G1,G2
-        test(RestoreContent(Set(reqA, reqB), Set(1, 2)))(live, live)(live, live)
+        test(ContentRestore(Set(reqA, reqB), Set(1, 2)))(live, live)(live, live)
 
         // Delete A,B with reason
         val dr3 = "dr#3"
-        test(DeleteReqs(NonEmptySet(reqA, reqB), ∅, dr3))(dr3, live)(dr3, live)
+        test(ReqsDelete(NonEmptySet(reqA, reqB), ∅, dr3))(dr3, live)(dr3, live)
       }
     }
 

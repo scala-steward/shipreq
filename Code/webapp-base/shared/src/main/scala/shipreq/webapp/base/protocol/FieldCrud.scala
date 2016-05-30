@@ -1,10 +1,13 @@
 package shipreq.webapp.base.protocol
 
+import boopickle._
 import shipreq.base.util.{RelPos => Pos}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.DeletionAction
-import boopickle._, BoopickleMacros._, BinCodecGeneric._, BinCodecData._, BinCodecEvents._
+import BoopickleMacros._
+import BinCodecGeneric._
+import BinCodecData._
+import BinCodecEvents._
 import Field.ApplicableReqTypes
 
 object FieldCrud {
@@ -45,7 +48,8 @@ object FieldCrud {
     final case class Create      (newValues: Values)                    extends CfgAction
     final case class UpdateValues(id: CustomFieldId, newValues: Values) extends CfgAction
     final case class UpdateOrder (id: FieldId, newPos: Position)        extends CfgAction
-    final case class Delete      (id: FieldId, action: DeletionAction)  extends CfgAction
+    final case class Delete      (id: FieldId)                          extends CfgAction
+    final case class Restore     (id: FieldId)                          extends CfgAction
 
     implicit def equality: UnivEq[CfgAction] = UnivEq.derive
 
@@ -54,6 +58,7 @@ object FieldCrud {
       implicit val pUpdateValues = pickleCaseClass[UpdateValues]
       implicit val pUpdateOrder  = pickleCaseClass[UpdateOrder]
       implicit val pDelete       = pickleCaseClass[Delete]
+      implicit val pRestore      = pickleCaseClass[Restore]
       pickleADT
     }
   }

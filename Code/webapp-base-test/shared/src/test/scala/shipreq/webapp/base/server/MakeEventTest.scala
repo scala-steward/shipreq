@@ -59,7 +59,7 @@ object MakeEventTest extends TestSuite {
     'CreateReqCodeGroup {
       import CreateContentCmd.{CreateReqCodeGroup => Cmd}
       def apply(cmd: Cmd) =
-        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: CreateReqCodeGroup => e}))
+        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: ReqCodeGroupCreate => e}))
 
       // Vacant code
       val cmd1 = Cmd("some.code", ∅)
@@ -80,7 +80,7 @@ object MakeEventTest extends TestSuite {
       assertEq(e3.id, ReqCodeId(3))
 
       // Should reuse ID on restore
-      assertApplies(DeleteReqCodeGroups(e1.id))
+      assertApplies(ReqCodeGroupsDelete(e1.id))
       val e1b = apply(cmd1)
       assertEq(e1b.id, e1.id)
     }
@@ -88,7 +88,7 @@ object MakeEventTest extends TestSuite {
     'CreateGenericReq {
       import CreateContentCmd.{CreateGenericReq => Cmd}
       def apply(cmd: Cmd) =
-        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: CreateGenericReq => e}))
+        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: GenericReqCreate => e}))
 
       // OK
       val cmd1 = Cmd(mf, ∅, Set("hello"), Set.empty, Set.empty)

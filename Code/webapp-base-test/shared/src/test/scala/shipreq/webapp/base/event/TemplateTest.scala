@@ -10,6 +10,6 @@ object TemplateTest extends TestSuite {
 
     // All templates must apply to a new project
     for (t <- ProjectTemplate.values)
-      assertPass(ApplyTemplate(t))
+      assertPass(ProjectTemplateApply(t))
   }
 }
