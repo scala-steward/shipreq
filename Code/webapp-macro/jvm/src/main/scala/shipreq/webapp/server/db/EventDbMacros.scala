@@ -259,7 +259,16 @@ class EventDbMacroImpls(val c: Context) extends MacroUtils with MPickleMacroUtil
           val kn = pn.decodedName.toString
           keyLookup.get(kn) match {
 
-            // Mandatory field
+            // Mandatory field (merge fields)
+            case Some(Literal(Constant(""))) =>
+              dataW :+= ((add: TT) => q"""
+                val o = $vw.write(e.$pn)
+                assert(o.isInstanceOf[Js.Obj], "Js.Obj expected: " + o)
+                if (o != null) o.asInstanceOf[Js.Obj].value.foreach(x => ${add(q"${TermName("x")}")})
+              """)
+              dataR :+= q"$vr read o"
+
+            // Mandatory field (under own field)
             case Some(key) =>
               dataW :+= ((_:TT) apply q"(($key, $vw write e.$pn))")
               dataR :+= q"$vr read m($key)"
