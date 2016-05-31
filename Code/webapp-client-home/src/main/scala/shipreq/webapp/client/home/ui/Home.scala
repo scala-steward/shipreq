@@ -66,7 +66,7 @@ object HomeContent {
       <.div(
         menu,
         <.main(Styles.homeContentContainer,
-          projectCreate,
+          <.div(Styles.createProjectContainer, projectCreate),
           projectList))
     }
   }

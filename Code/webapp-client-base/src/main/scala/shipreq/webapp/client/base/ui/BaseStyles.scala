@@ -8,13 +8,12 @@ class BaseStyles(implicit r: scalacss.mutable.Register) extends StyleSheet.Inlin
   val projectItems = new ProjectItems
   final class ProjectItems {
 
+    def vspace = 1 rem
+
     val item = style(
       display.flex,
-      padding(1 em, `0`),
-      &.not(_.firstChild)(
-        // .ui.divided.items>.item
-        borderTop(1 px, solid, rgba(34, 36, 38, .15))
-      ),
+      padding(vspace, `0`),
+      borderTop(1 px, solid, rgba(34, 36, 38, .15)), // .ui.divided.items>.item
       &.not(_.hover)(
         unsafeChild("a")(
           color(rgba(0, 0, 0, .85))))) // .ui.items>.item>.content>.header

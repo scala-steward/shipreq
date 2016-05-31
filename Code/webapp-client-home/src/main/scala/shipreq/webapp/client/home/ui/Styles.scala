@@ -9,7 +9,10 @@ object Styles extends StyleSheet.Inline {
   val base = new BaseStyles
 
   val homeContentContainer = style(
-    addClassNames("ui", "container"),
-    maxWidth(700 px).important,
+    maxWidth(700 px),
+    margin.horizontal(auto),
     marginTop(5 rem))
+
+  val createProjectContainer = style(
+    marginBottom(base.projectItems.vspace))
 }
