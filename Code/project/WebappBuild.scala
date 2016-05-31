@@ -34,9 +34,8 @@ object WebappBuild {
         webappClient, webappServer)
       .settings(
         jsSizesFast := jsSizesTask(Stage.FastOpt).value,
-        jsSizesFull := jsSizesTask(Stage.FullOpt).value)
-      .configure(
-        addCommandAliases("jsSizes" -> ";jsSizesFast;jsSizesFull"))
+        jsSizesFull := jsSizesTask(Stage.FullOpt).value,
+        addCommandAlias("jsSizes", ";jsSizesFast;jsSizesFull"))
 
   lazy val webappClient =
     project("webapp-client")
@@ -187,9 +186,24 @@ object WebappBuild {
   val jsSizesFast = TaskKey[Unit]("jsSizesFast", "Print JS sizes (using fastOptJS).")
   val jsSizesFull = TaskKey[Unit]("jsSizesFull", "Print JS sizes (using fullOptJS).")
 
+  def gzipLength(in: File): Long = {
+    import java.io._
+    import java.util.zip._
+    val bos = new ByteArrayOutputStream()
+    try {
+      val gzip = new GZIPOutputStream(bos) { this.`def`.setLevel(Deflater.BEST_COMPRESSION) }
+      try
+        IO.transfer(in, gzip)
+      finally
+        gzip.close()
+    } finally
+      bos.close()
+    bos.toByteArray.length
+  }
+
   def jsSizesTask(stage: Stage) = Def.task[Unit] {
-    def report(name: String, f: sbt.Attributed[sbt.File]): Unit =
-      printf("%,12d - %s\n", f.data.length, name)
+    def report(name: String, f: Attributed[File]): Unit =
+      printf("%,11d → %,9d - %s\n", f.data.length, gzipLength(f.data), name)
     val header = s"JS $stage Sizes"
     println()
     println(header)
