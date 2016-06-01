@@ -1,14 +1,15 @@
 package shipreq.webapp.base.test
 
+import java.time._
 import nyaya.util.Multimap
 import scala.collection.generic.CanBuildFrom
 import shipreq.base.util._
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Grammar, Text, ProjectText}
+import shipreq.webapp.base.text.{Grammar, ProjectText, Text}
 import Field.ApplicableReqTypes
 import ScalaExt._
-import VectorTree.{Location, PartialLocation, ParentLocation}
+import VectorTree.{Location, ParentLocation, PartialLocation}
 
 case class MakeEmpty[+A](empty: A) extends AnyVal
 
@@ -78,6 +79,8 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoTagGroupIdO       (i: Int): Option[TagGroupId]                 = Some(i)
   implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = Some(i)
   implicit def autoDeletionReasonIdO (i: Int): Option[DeletionReasonId]           = Some(i)
+
+  implicit def autoExternId[A](s: String): ExternalId[A] = ExternalId(s)
 
   implicit def autoUseCaseStepIdPair(p: (Int, Int)): (UseCaseStepId, UseCaseStepId) = p.mapEach(UseCaseStepId)
 

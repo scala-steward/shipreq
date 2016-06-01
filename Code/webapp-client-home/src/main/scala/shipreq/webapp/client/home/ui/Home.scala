@@ -1,37 +1,74 @@
 package shipreq.webapp.client.home.ui
 
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data.Validators
+import shipreq.webapp.base.data.{ProjectCatalogue, Username, Validators}
 import shipreq.webapp.base.protocol.InitDataForHomeSpa
+import shipreq.webapp.client.base.feature.AsyncActionFeature
+import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.base.ui.TextInputAndButton
 
 object Home {
-  type Props = InitDataForHomeSpa
+  case class Props(data: InitDataForHomeSpa, cp: ClientProtocol) {
+    @inline def render = Component(this)
+  }
 
-  type State = String
+  @Lenses
+  case class State(createProjectText: String,
+                   createProjectAAS : AsyncActionFeature.D0.State[String],
+                   projects         : ProjectCatalogue)
 
   final class Backend($: BackendScope[Props, State]) {
 
-    val updateState: String ~=> Callback =
-      ReusableFn($).setState
+    val setCreateProjectText: String ~=> Callback =
+      ReusableFn($ zoomL State.createProjectText).setState
+
+    val createProjectAAF =
+      AsyncActionFeature.D0.Feature[String]($ zoomL State.createProjectAAS)
+
+    def addProject(i: ProjectCatalogue.Item): Callback =
+      $.modState(State.projects.modify(p => ProjectCatalogue(p.items :+ i)))
+
+    val createProjectIO: String => Callback =
+      name =>
+        $.props >>= (p =>
+          createProjectAAF.wrapAsync((onSuccess, onFailure) =>
+            p.cp.call(p.data.createProject)(
+              name,
+              i => onSuccess >> setCreateProjectText("") >> addProject(i),
+              _ consumeAnd onFailure)))
 
     def render(p: Props, s: State): ReactElement =
-      HomeContent.Props(p, ReusableVar(s)(updateState)).render
+      HomeContent.Props(
+        p.data.username,
+        s.projects,
+        ReusableVar(s.createProjectText)(setCreateProjectText),
+        createProjectAAF,
+        s.createProjectAAS,
+        createProjectIO)
+        .render
   }
 
   val Component = ReactComponentB[Props]("Home")
-    .initialState("")
+    .initialState_P(p => State("", AsyncActionFeature.D0.initState, p.data.projects))
     .renderBackend[Backend]
     .build
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 object HomeContent {
 
-  final case class Props(data: InitDataForHomeSpa,
-                         createProjectText: ReusableVar[String]) {
+  final case class Props(username         : Username,
+                         projects         : ProjectCatalogue,
+                         createProjectText: ReusableVar[String],
+                         createProjectAF  : AsyncActionFeature.D0.Feature[String],
+                         createProjectAS  : AsyncActionFeature.D0.State[String],
+                         createProjectIO  : String => Callback) {
     @inline def render = Component(this)
   }
 
@@ -39,29 +76,28 @@ object HomeContent {
 
     def render(p: Props): ReactElement = {
 
-      val menu = TopMenu.Component(p.data.username)
+      val menu = TopMenu.Component(p.username)
 
       val projectCreate = {
-        val V = Validators.projectName
-        val corrected = V.correctedU(p.createProjectText.value)
-        val result =
-          if (corrected.value.isEmpty)
-            None
-          else
-            Some(
-              V.validateU(corrected).disjunction.bimap(
-                _.toText: TagMod,
-                n => Callback.alert(s"Creating project: $n")))
+        import TextInputAndButton.State
 
-        TextInputAndButton.Props(
-          p.createProjectText,
-          result,
-          placeholder = "New  project name...",
+        def state = State.validator(Validators.projectName)(
+          p.createProjectText.value,
+          _.nonEmpty,
+          p.createProjectIO)
+
+        TextInputAndButton.Props.asyncAware(
+          p.createProjectAS,
+          p.createProjectAF,
+          p.createProjectText.value,
+          p.createProjectText.set,
+          state,
+          placeholder = "New project name...",
           buttonLabel = "Create")
           .render
       }
 
-      val projectList = p.data.projects.items.sortBy(_.name).map(ProjectItem.Component(_))
+      val projectList = p.projects.items.sortBy(_.name).map(ProjectItem.Component(_))
 
       <.div(
         menu,

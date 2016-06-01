@@ -18,4 +18,5 @@ object BinCodecRemoteFns {
   implicit lazy val pickleTagCrud         = pickleRemoteFn(TagCrud.Fn)
   implicit lazy val pickleCreateContentFn = pickleRemoteFn(CreateContentFn)
   implicit lazy val pickleUpdateContentFn = pickleRemoteFn(UpdateContentFn)
+  implicit lazy val pickleCreateProjectFn = pickleRemoteFn(CreateProjectFn)
 }

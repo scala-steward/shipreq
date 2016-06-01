@@ -89,6 +89,12 @@ object AsyncActionFeature {
       None
 
     abstract class Feature[-F] {
+      def clearError(s: State[F]): Callback =
+        s match {
+          case Some(Failed(_, _, resumeEdit)) => resumeEdit
+          case _                              => Callback.empty
+        }
+
       def wrapAsync(call: AsyncCall[F]): Callback
     }
 

@@ -25,12 +25,12 @@ object Button {
     implicit def univEq: UnivEq[Type] = UnivEq.derive
   }
 
-  sealed abstract class State(c: ClassName) extends HasClass(c)
+  sealed abstract class State(c: ClassName, val disable: Boolean) extends HasClass(c)
   object State {
-    case object Default  extends State(NoClass)
-    case object Active   extends State("active")
-    case object Disabled extends State("disabled")
-    case object Loading  extends State("loading")
+    case object Default  extends State(NoClass, false)
+    case object Active   extends State("active", false)
+    case object Disabled extends State(NoClass, true)
+    case object Loading  extends State("loading", true)
     implicit def univEq: UnivEq[State] = UnivEq.derive
   }
 }
@@ -41,5 +41,10 @@ case class Button(attr  : Multiple[Attr] = Multiple.empty,
                   colour: Colour         = Colour.Default,
                   size  : Size           = Size.Default) {
 
-  val tag = <.button(^.cls := "ui button" <+ attr <+ `type` <+ state <+ colour <+ size)
+  val tag = {
+    var t = <.button(^.cls := "ui button" <+ attr <+ `type` <+ state <+ colour <+ size)
+    if (state.disable)
+      t = t(^.disabled := "disabled")
+    t
+  }
 }

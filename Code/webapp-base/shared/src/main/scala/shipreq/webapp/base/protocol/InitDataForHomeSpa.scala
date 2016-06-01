@@ -1,9 +1,14 @@
 package shipreq.webapp.base.protocol
 
 import shipreq.webapp.base.data._
+import BinCodecGeneric._
+import BinCodecData._
 
-case class InitDataForHomeSpa(username: Username,
-                              projects: ProjectCatalogue)
+object CreateProjectFn extends (String =>|=> ProjectCatalogue.Item)
+
+case class InitDataForHomeSpa(username     : Username,
+                              projects     : ProjectCatalogue,
+                              createProject: CreateProjectFn.Instance)
 
 object InitDataForHomeSpa {
   import boopickle._

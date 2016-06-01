@@ -4,6 +4,8 @@ import shipreq.webapp.base.protocol._
 
 object MockRemotes {
 
+  lazy val createProjectFn = RemoteFn.Instance("CreateProject", CreateProjectFn)
+
   lazy val projectSpa = InitDataForProjectSpa(
     RemoteFn.Instance("projectInit"  , ProjectInit          ),
     RemoteFn.Instance("issueTypeCrud", CustomIssueTypeCrud  ),

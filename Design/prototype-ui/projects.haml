@@ -31,21 +31,37 @@
             .item Logout
 
     .ui.container{style: "margin-top:4rem"}
-      %div
+
+      %div{style: "margin-bottom:1em"}
         .ui.action.input
           %input{type: "text", placeholder: "New project name..."}
-          %button.ui.button.primary.disabled Create
-      %div
+          %button.ui.button.primary.disabled{disabled: "disabled"} Create
+
+      %div{style: "margin-bottom:1em"}
+        .ui.action.input
+          %input{type: "text", placeholder: "New project name...", value: "Phaarrt", disabled: "disabled"}
+          %button.ui.button.primary.loading{disabled: "disabled"} Create
+
+      %div{style: "margin-bottom:1em"}
         .ui.action.input
           %input{type: "text", placeholder: "New project name...", value: "Phaarrt"}
           %button.ui.button.primary Create
-      %div
+
+      %div{style: "margin-bottom:1em"}
         %div
           .ui.action.input.error
             %input{type: "text", placeholder: "New project name...", value: "Cardboard"}
-            %button.ui.button.disabled.negative Create
+            %button.ui.button.negative{disabled: "disabled"} Create
         .ui.pointing.red.basic.label
           That name is taken.
+
+      %div{style: "margin-bottom:1em"}
+        %div
+          .ui.action.input.error
+            %input{type: "text", placeholder: "New project name...", value: "Cardboard"}
+            %button.ui.button.primary Create
+        .ui.pointing.red.basic.label
+          AJAX error.
 
       .ui.divider{style: "margin:2rem 0"}
 

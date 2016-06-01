@@ -10,7 +10,7 @@ object HomeSpa extends SnippetHelpers {
   def render = {
     val user = currentUser_!()
     val projects = daoProvider.withSession(_.getProjectCatalogue(user.id))
-    val data = InitDataForHomeSpa(user.username, projects)
+    val data = ??? //InitDataForHomeSpa(user.username, projects)
     "*" #> ClientFn.HomeSpa.runOnLoadHtml(data)
   }
 }

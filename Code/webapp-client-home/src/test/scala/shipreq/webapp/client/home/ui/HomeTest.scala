@@ -1,0 +1,137 @@
+package shipreq.webapp.client.home.ui
+
+import japgolly.scalajs.react.test.ReactTestUtils.Simulate
+import japgolly.scalajs.react.test._
+import java.time.Instant
+import java.time.temporal.ChronoUnit._
+import monocle.macros.Lenses
+import org.scalajs.dom.html
+import utest._
+import shipreq.webapp.base.data.{ProjectCatalogue, Username}
+import shipreq.webapp.base.protocol.InitDataForHomeSpa
+import shipreq.webapp.base.test.MockRemotes
+import shipreq.webapp.client.base.test.TestClientProtocol
+import shipreq.webapp.client.base.test.TestState._
+import shipreq.webapp.client.home.test.PrepareEnv
+
+final class HomeObs(cp: TestClientProtocol, $: HtmlDomZipper) {
+
+  val reqs = cp.reqs.length
+
+  val projectDoms = $.collect0n("." + Styles.base.projectItems.item.className.value)
+
+  val projectNames: Vector[String] =
+    projectDoms.mapZippers(_("h1").innerText)
+
+  object createProject {
+    private val cont = $("." + Styles.createProjectContainer.className.value)
+
+    val input  = cont("input").domAs[html.Input]
+    val button = cont("button").domAs[html.Button]
+    val error  = cont.collect01(".ui.pointing.label").doms.map(_.textContent)
+
+    val inputText      = input.value
+    val inputDisabled  = input.disabled.get
+    val buttonDisabled = button.disabled.get
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+object HomeTestDsl {
+  sealed abstract class CPState
+  object CPState {
+    case object Blank      extends CPState
+    case object Ready      extends CPState
+    case object InputError extends CPState
+    case object Locked     extends CPState
+    case object AsyncError extends CPState
+  }
+
+  @Lenses
+  case class State(cpText: String, cpState: CPState, projects: Vector[String], reqs: Int)
+
+  val clearCP = State.cpText.set("") compose State.cpState.set(CPState.Blank)
+
+  val * = Dsl[TestClientProtocol, HomeObs, State]
+
+  private def cpState(inputDisabled: Boolean, buttonDisabled: Boolean, hasError: Boolean) =
+    *.focus("CreateProject input disabled") .value(_.obs.createProject.inputDisabled  ).assert(inputDisabled) &
+    *.focus("CreateProject button disabled").value(_.obs.createProject.buttonDisabled ).assert(buttonDisabled) &
+    *.focus("CreateProject has error")      .value(_.obs.createProject.error.isDefined).assert(hasError)
+
+  val invariants: *.Invariants = (
+    *.focus("Project names").obsAndState(_.projectNames, _.projects).map(_.sorted).assert.equal &
+    *.focus("CreateProject text").obsAndState(_.createProject.inputText, _.cpText).assert.equal &
+    *.chooseInvariant("CreateProject state")(_.state.cpState match {
+      case CPState.Blank      => cpState(false, true , false)
+      case CPState.Ready      => cpState(false, false, false)
+      case CPState.InputError => cpState(false, true , true )
+      case CPState.Locked     => cpState(true , true , false)
+      case CPState.AsyncError => cpState(false, false, true )
+    }) &
+    *.focus("AJAX requests").obsAndState(_.reqs, _.reqs).assert.equal
+  )
+
+  def setCPText(text: String): *.Actions =
+    *.action(s"Set CreateProject text to [$text]")(ChangeEventData(text) simulate _.obs.createProject.input)
+      .updateState(_.copy(cpText = text))
+
+  def setCPText(text: String, newState: CPState): *.Actions =
+    setCPText(text).updateState(_.copy(cpState = newState))
+
+  val clickCreateProject =
+    *.action("Click CreateProject")(Simulate click _.obs.createProject.button)
+
+  val reqCreateProject =
+    clickCreateProject.updateState(State.reqs.modify(_ + 1) compose State.cpState.set(CPState.Locked))
+
+  val ajaxFailLast =
+    *.action("Simulate AJAX error")(_.ref.failLast())
+
+  def ajaxCreatedProject(p: ProjectCatalogue.Item) =
+    *.action("Simulate project-creation AJAX")(_.ref.respondToLast(MockRemotes.createProjectFn)(p))
+      .updateState(State.projects.modify(_ :+ p.name) compose clearCP)
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+object HomeTest extends TestSuite {
+  import HomeTestDsl._
+
+  PrepareEnv()
+
+  def run(pc: ProjectCatalogue)(plan: *.Plan): Report[String] = {
+    val cp = new TestClientProtocol(false)
+    val init = InitDataForHomeSpa(Username("thatguy"), pc, MockRemotes.createProjectFn)
+    val props = Home.Props(init, cp)
+    ReactTestUtils.withRenderedIntoDocument(props.render)(c =>
+      plan
+        .addInvariants(invariants)
+        .withInitialState(State("", CPState.Blank, pc.items.map(_.name)(collection.breakOut), 0))
+        .test(Observer(new HomeObs(_, c.htmlDomZipper)))
+        .run(cp)
+    )
+  }
+
+  object Data {
+    import shipreq.webapp.base.test.UnsafeTypes._
+    val now = Instant.now()
+    val piE = ProjectCatalogue.Item("abeF", "Empty", 0, 0, now.minus(18, DAYS), None)
+    val piO = ProjectCatalogue.Item("qwe3F", "Old", 1579, 340, now.minus(92, DAYS), Some(now.minus(7, MINUTES)))
+    val piN = ProjectCatalogue.Item("wenkj", "New", 0, 0, now, None)
+    val pc  = ProjectCatalogue(List(piE, piO))
+  }
+
+  override def tests = TestSuite {
+    'createProject - run(Data.pc)(Plan.action(
+      setCPText("    ")
+        >> setCPText("Oh and I see and I know, and suddenly I'm on my own, but it's now and it's no, at least it isn't tomorrow. " * 3, CPState.InputError)
+        >> setCPText("  ahhhh ness  ", CPState.Ready)
+        >> reqCreateProject >> ajaxFailLast.updateState(State.cpState set CPState.AsyncError)
+        >> reqCreateProject.rename("Retry") >> ajaxFailLast.updateState(State.cpState set CPState.AsyncError)
+        >> setCPText("  ahh ness  ", CPState.Ready) // AJAX failure ---[edit]---> Ready
+        >> reqCreateProject >> ajaxCreatedProject(Data.piN)
+    )).assert()
+  }
+}

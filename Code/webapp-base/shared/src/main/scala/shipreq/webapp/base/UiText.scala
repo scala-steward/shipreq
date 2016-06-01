@@ -62,7 +62,7 @@ object UiText {
   object Cfg {
     def startNewButton    = "Create"
     def abortNewButton    = "Cancel"
-    def retryFailedButton = "Retry"
+    def retryFailedButton = buttonRetry
   }
 
   object Life {
@@ -89,4 +89,6 @@ object UiText {
 
   def buttonCommitChange = "OK"
   def buttonAbortChange = "Cancel"
+
+  def buttonRetry = "Retry"
 }
