@@ -24,7 +24,7 @@ object ServerCall {
       cp.call(remoteFn)(
         input,
         s => cd.applyEventsS(s) >> onSuccess,
-        f => cp.consumeGenericFailure(f) >> onFailure(cp.genericFailureToText(f))))
+        _ consumeAnd onFailure))
 
   implicit def reusabilityServerCall[I]: Reusability[ServerCall[I]] =
     Reusability.fn((a, b) => a.fn eq b.fn)

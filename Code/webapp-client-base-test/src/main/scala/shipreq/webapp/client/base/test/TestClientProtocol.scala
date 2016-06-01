@@ -5,8 +5,7 @@ import scalaz.{-\/, Equal}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.client.base.data.TCB
-import shipreq.webapp.client.base.protocol.ClientProtocol
-import shipreq.webapp.client.base.protocol.ClientProtocol.Failed
+import shipreq.webapp.client.base.protocol.{ClientProtocol, RemoteFailure}
 import TestClientProtocol.Req
 
 object TestClientProtocol {
@@ -14,7 +13,7 @@ object TestClientProtocol {
     val r      : RemoteFn.Instance
     val input  : r.fn.Input
     val success: r.fn.Output => TCB.Success
-    val failure: Failed[r.fn.Failure] => TCB.Failure
+    val failure: RemoteFailure[r.fn.Failure] => TCB.Failure
 
     override def toString =
       s"Req($input)@${Integer.toHexString(##)}"
@@ -48,7 +47,7 @@ class TestClientProtocol extends ClientProtocol {
 
   def call(i: RemoteFn.Instance)(_input  : i.fn.Input,
                                  _success: i.fn.Output => TCB.Success,
-                                 _failure: Failed[i.fn.Failure] => TCB.Failure): Callback = {
+                                 _failure: RemoteFailure[i.fn.Failure] => TCB.Failure): Callback = {
     //println(s"RPC: ${_r.d}(${_r.n}) ← ${_i}")
     Callback {
       val r = new Req {
@@ -80,7 +79,7 @@ class TestClientProtocol extends ClientProtocol {
   def failLast(): Unit = {
     val r = last
     r.markResponded()
-    r.failure(-\/(new Throwable("Dummy error from TestClientProtocol.failLast()"))).runNow()
+    r.failure(RemoteFailure.exception(new Throwable("Dummy error from TestClientProtocol.failLast()"))).runNow()
   }
 
   def lastTwo(r: RemoteFn.Instance) = {

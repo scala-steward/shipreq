@@ -2,43 +2,17 @@ package shipreq.webapp.client.base.protocol
 
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.Reusability
-import scalaz.{-\/, \/-, \/}
-import shipreq.webapp.base.protocol.{GenericFailure, RemoteFn}
+import scalaz.{-\/, \/-}
+import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.client.base.data.TCB
-import shipreq.webapp.client.base.lib.Logger
-import ClientProtocol._
 
 trait ClientProtocol {
   def call(i: RemoteFn.Instance)(input  : i.fn.Input,
                                  success: i.fn.Output => TCB.Success,
-                                 failure: Failed[i.fn.Failure] => TCB.Failure): Callback
-
-  /**
-   * Generic means of handling and consuming generic (protocol/ajax) failure.
-   *
-   * Eventually this should be replaced with something better.
-   */
-  def consumeGenericFailure(f: Failed[GenericFailure]): TCB.Failure =
-    TCB.Failure(Logger(_.error(genericFailureToText(f))))
-
-  /**
-   * Generic means of handling and consuming generic (protocol/ajax) failure.
-   *
-   * Eventually this should be replaced with something better.
-   */
-  def genericFailureToText(f: Failed[GenericFailure]): String =
-    f match {
-      case -\/(t) => Option(t.getMessage) match {
-        case Some(m) => "AJAX error occurred: " + m
-        case None    => "AJAX error occurred."
-      }
-      case \/-(e) => "Remote error occurred: " + e.msg
-    }
+                                 failure: RemoteFailure[i.fn.Failure] => TCB.Failure): Callback
 }
 
 object ClientProtocol {
-  type Failed[O] = Throwable \/ O
-
   @inline implicit def reusability = Reusability.byRef[ClientProtocol]
 
   object Default extends ClientProtocol {
@@ -49,8 +23,8 @@ object ClientProtocol {
     import scala.concurrent.{Future, Promise}
     import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
     import scala.scalajs.js
-    import scala.scalajs.js.typedarray._
     import scala.scalajs.js.typedarray.TypedArrayBufferOps._
+    import scala.scalajs.js.typedarray._
     import shipreq.webapp.base.WebappConfig
 
     val ajaxPath = "/" + WebappConfig.ajaxPath + "/"
@@ -92,14 +66,14 @@ object ClientProtocol {
 
     override def call(i: RemoteFn.Instance)(input  : i.fn.Input,
                                             success: i.fn.Output => TCB.Success,
-                                            failure: Failed[i.fn.Failure] => TCB.Failure): Callback = Callback {
+                                            failure: RemoteFailure[i.fn.Failure] => TCB.Failure): Callback = Callback {
       import i.fn._
       val url = LiftAjax.addPageNameAndVersion(ajaxPath, js.undefined) + "?" + i.key
       val bin = PickleImpl.intoBytes(input)
       val res = postBinary(url, bin).map(UnpickleImpl(pickleResponse) fromBytes _)
-      res.onSuccess { case \/-(o) => success(o)     .runNow() }
-      res.onSuccess { case -\/(f) => failure(\/-(f)).runNow() }
-      res.onFailure { case t      => failure(-\/(t)).runNow() }
+      res.onSuccess { case \/-(o) => success(o)                        .runNow() }
+      res.onSuccess { case -\/(f) => failure(RemoteFailure lift f)     .runNow() }
+      res.onFailure { case t      => failure(RemoteFailure exception t).runNow() }
     }
   }
 }

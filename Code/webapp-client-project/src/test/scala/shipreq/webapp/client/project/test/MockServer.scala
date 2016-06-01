@@ -1,13 +1,13 @@
 package shipreq.webapp.client.project.test
 
 import japgolly.scalajs.react._
-import scalaz.\/-
 import shipreq.base.util.ValidUpdate._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.server._
 import shipreq.webapp.client.base.data.TCB
+import shipreq.webapp.client.base.protocol.RemoteFailure
 import shipreq.webapp.client.base.test._
 import shipreq.webapp.client.project.app.state.ClientData
 import TestClientProtocol.Req
@@ -50,7 +50,7 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
           Callback.empty >> successVE(Vector.empty).cb
 
         case Failure(e) =>
-          r.failure(\/-(e.asInstanceOf[r.r.fn.Failure])).cb
+          r.failure(RemoteFailure lift e.asInstanceOf[r.r.fn.Failure]).cb
       }
     }
 }

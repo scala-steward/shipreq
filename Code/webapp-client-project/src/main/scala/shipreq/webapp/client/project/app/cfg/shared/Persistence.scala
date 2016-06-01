@@ -87,7 +87,7 @@ object Persistence {
       val saveio = retryably[ReactST[CallbackTo, S, Unit]](retry => {
         val v = store.getI(id)(state)
         val f = Persistence.failureIO(retry)(realise, setStatus)
-        val io = cp.call(remoteFn)((id, v), cd.applyEventsS, cp.consumeGenericFailure(_) >> f)
+        val io = cp.call(remoteFn)((id, v), cd.applyEventsS, _.consume >> f)
         ReactS retM io
       })
       saveio >> setStatus(RowStatus.Locked)

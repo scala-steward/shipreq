@@ -28,7 +28,7 @@ final class CrudActionIO[D, I, U, RD <: CrudFn.Aux[I, U]](cp        : ClientProt
   private def crudIO(s: TCB.Success, f: TCB.Failure, a: CrudAction[I, U]): Callback = {
     cp.call(remote)(a,
       s << clientData.applyEvents(_),
-      cp.consumeGenericFailure(_) >> f)
+      _.consume >> f)
   }
 
   def createIO(values: U, s: TCB.Success, f: TCB.Failure): Callback =

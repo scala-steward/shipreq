@@ -52,5 +52,5 @@ object ClientData {
   def init(cp: ClientProtocol, remoteInit: ProjectInit.Instance, onSuccess: ClientData => Callback): Callback =
     cp.call(remoteInit)((),
       p => TCB.Success(onSuccess(new Impl(p))),
-      cp.consumeGenericFailure) // TODO handle failure properly
+      _.consume) // TODO handle failure properly
 }
