@@ -59,16 +59,15 @@
 
         /*overflow: scroll;*/
         resize: none;
-      }
 
-      .mid-edit {padding:1ex !important}
-      .mid-edit textarea:focus {border-width:2px !important; border-color:rgba(255, 166, 34, 1) !important}
-      .mid-edit textarea {
         padding:.3em .4em !important;
         background: #fff4e3 !important;
         xborder-color:#FFA622 !important;
         border-color:rgba(255, 166, 34, .5) !important;
-        }
+      }
+
+      .mid-edit {padding:1ex !important}
+      .mid-edit textarea:focus {border-width:2px !important; border-color:rgba(255, 166, 34, 1) !important}
       .preview-cont {margin:0.3ex 0 0 0 !important}
       .preview-header {padding-top: 0.3em !important; padding-bottom: 0.3em !important}
       .preview-body {
@@ -76,8 +75,8 @@
         background-color: rgba(0, 0, 0, 0)  !important;
         background-image: repeating-linear-gradient(-225deg, rgba(0, 0, 0, 0),
           rgba(0, 0, 0, 0)         5ex,
-          rgba(0, 181, 174, 0.06)  5ex,
-          rgba(0, 181, 174, 0.06) 10ex) !important;
+          rgba(33, 186, 67, 0.06)  5ex,
+          rgba(33, 186, 67, 0.06) 10ex) !important;
         background-origin: padding-box  !important;
       }
 
@@ -390,7 +389,7 @@
                 This, [fr3], is an item being edited.
               .ui.segments.preview-cont.raised
                 -# .ui.segment.preview-header.tertiary.inverted.teal
-                .ui.segment.preview-header.secondary.inverted.teal
+                .ui.segment.preview-header.inverted.green
                   Preview
                 .ui.segment.preview-body
                   = "This, "
@@ -401,6 +400,20 @@
             %td.inline-edit
             %td.inline-edit
               .ui.label.blue.is-tag bug
+          %tr
+            %td.selcol
+              %input{type: "checkbox"}
+            %td
+              %a{href:"#"} FR-4
+            %td.inline-edit
+              Ummm....?
+            %td.inline-edit
+              .ui.label.blue.is-tag must
+            %td
+              .texteditor{style:"border-style:dashed!important"}
+                %i.icon.spinner.loading
+                %span{style:"color:#999"} MF-3, MF-6
+            %td.inline-edit
 
   :javascript
     $('.ui.dropdown:not(.onhover)').dropdown();
