@@ -1,7 +1,6 @@
 package shipreq.webapp.server.snippet
 
 import net.liftweb.http.{ResponseShortcutException, S}
-import net.liftweb.util.Helpers.intToTimeSpanBuilder
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
 import org.postgresql.util.PSQLException
@@ -224,7 +223,7 @@ object RegisterSnippetTest extends TestSuite {
               val reg = uf.toDbUtil.dao.findUserRegistrationInfo(uf.userWithCurrentToken.email).get
               assertEq(reg.confirmationSentAt, Some(uf.userWithCurrentToken.tokenCreatedAt))
               assertEq(reg.confirmationToken, None)
-              assertEq(reg.confirmedAt.get.isAfter(1.minute.ago.toMillis), true)
+              assertEq(reg.confirmedAt.get.isAfter(1.minute.ago), true)
               assert(reg.confirmedAt.isDefined)
 
               val (user, pwd) = uf.toDbUtil.dao.findUserDescAndCredentials(uf.userWithCurrentToken.email.value).get

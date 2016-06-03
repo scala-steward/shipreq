@@ -1,6 +1,6 @@
 package shipreq.webapp.server.db
 
-import org.joda.time.DateTime
+import java.time.Instant
 import scala.slick.jdbc.StaticQuery
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.db.JodaTimeSqlHelpers._
@@ -38,7 +38,7 @@ private[db] object Sql {
   val GetUserRegAndResetPwInfo = query[EmailAddr, (UserRegistrationInfo, ResetPasswordInfo)](
     s"SELECT $UserRegistrationInfoCols, reset_password_token, reset_password_sent_at FROM usr WHERE email=?")
 
-  val GetConfirmationTokenIssuedDate = query[String, DateTime](
+  val GetConfirmationTokenIssuedDate = query[String, Instant](
     "SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
   val UpdateConfirmationToken = update[(String, UserId)](
@@ -78,7 +78,7 @@ private[db] object Sql {
   val ReuseResetPasswordToken = update[UserId](
     "UPDATE usr SET reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
-  val GetResetPasswordTokenIssuedDate = query[String, DateTime](
+  val GetResetPasswordTokenIssuedDate = query[String, Instant](
     "SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
 
   val ResetPassword = update[(PasswordAndSalt, String)]("""
@@ -180,7 +180,7 @@ private[db] object Sql {
 // Diagnostics & Stats
 private[db] object AdminSql {
 
-  val DiagSelectNow = queryNA[DateTime]("select now()")
+  val DiagSelectNow = queryNA[Instant]("select now()")
 
   val StatsCountUsers = queryNA[(Long, Long)]("select count(username), count(1) from usr")
 

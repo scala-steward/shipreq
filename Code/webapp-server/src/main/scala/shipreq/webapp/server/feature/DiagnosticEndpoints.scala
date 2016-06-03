@@ -1,23 +1,22 @@
 package shipreq.webapp.server.feature
 
 import java.lang.{Long => JLong}
+import java.time.{Duration, Instant}
 import net.liftweb.common._
-import net.liftweb.http.{BadResponse, InMemoryResponse, JsonResponse, MethodNotAllowedResponse, NotFoundResponse, S}
+import net.liftweb.http._
 import net.liftweb.json.Extraction
 import net.liftweb.sitemap.Loc._
 import net.liftweb.sitemap._
 import net.liftweb.util.Helpers.nextFuncName
 import net.liftweb.util.Props
-import net.liftweb.util.TimeHelpers.calcTime
-import org.joda.time.DateTime
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorOr
 import shipreq.taskman.api.ApiOp.QueryMsgStatus
 import shipreq.taskman.api.Msg.SendDiagEmail
 import shipreq.taskman.api.{EmailAddr, MsgId}
 import shipreq.webapp.server.app.DI
-import shipreq.webapp.server.lib.Misc.DateTimeExt
-import shipreq.webapp.server.lib.{Misc, SnippetHelpers}
+import shipreq.webapp.server.lib.Misc._
+import shipreq.webapp.server.lib.SnippetHelpers
 
 /**
  * Expose URLs for diagnostic functions and purposes.
@@ -31,6 +30,13 @@ object DiagnosticEndpoints extends DI {
 
   private def endpoint(name: String) =
     Menu.i(s"diag.$name") / "diag" / name >> Hidden >> Stateless
+
+  def calcTime[T](f: => T): (Long, T) = {
+    val start  = Instant.now()
+    val result = f
+    val end    = Instant.now()
+    (Duration.between(start, end).toMillis, result)
+  }
 
   def parseJLong(s: String): Box[JLong] =
     ErrorOr.safe(JLong parseLong s) match {
@@ -97,7 +103,7 @@ object DiagnosticEndpoints extends DI {
     S.param("to") match {
       case Full(emailAddress) => {
         val token = nextFuncName
-        val msg = SendDiagEmail(EmailAddr(emailAddress), token, s"Token: $token\nIssued: ${DateTime.now().toStringIso8601}")
+        val msg = SendDiagEmail(EmailAddr(emailAddress), token, s"Token: $token\nIssued: ${Instant.now().toStringIso8601}")
         val (time, msgId) = calcTime(taskman1(_ submitMsg msg))
         Full(jsonResponse(EmailSendResult(msgId.value, time, token)))
       }

@@ -1,6 +1,6 @@
 package shipreq.webapp.server.util
 
-import org.joda.time.{DateTimeUtils, Period}
+import java.time._
 import org.scalatest.{Matchers, FunSpec}
 
 class MicroCacheTest extends FunSpec with Matchers {
@@ -51,18 +51,15 @@ class MicroCacheTest extends FunSpec with Matchers {
 
   describe("ExpireAfter Policy") {
     it("should expire stuff after the given time limit") {
-      val ttl = Period.minutes(5)
-      val p = ExpireAfter(ttl)
+      val ttl = Duration.ofMinutes(5)
+      var now = Instant.now()
+      val p = ExpireAfter(ttl, () => now)
       val t = p.write(())
       p.expired(t) shouldBe false
-      try {
-        DateTimeUtils.setCurrentMillisOffset(ttl.minusSeconds(1).toStandardDuration.getMillis)
-        p.expired(t) shouldBe false
-        DateTimeUtils.setCurrentMillisOffset(ttl.plusSeconds(1).toStandardDuration.getMillis)
-        p.expired(t) shouldBe true
-      } finally {
-        DateTimeUtils.setCurrentMillisSystem()
-      }
+      now = now plusSeconds 299
+      p.expired(t) shouldBe false
+      now = now plusSeconds 2
+      p.expired(t) shouldBe true
     }
   }
 

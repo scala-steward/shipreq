@@ -1,7 +1,7 @@
 package shipreq.webapp.server.db
 
+import java.time.Instant
 import net.liftweb.util.Helpers.nextFuncName
-import org.joda.time.DateTime
 import org.postgresql.util.PSQLException
 import scala.slick.jdbc.JdbcBackend.Session
 import shipreq.taskman.api.{EmailAddr, UserId}
@@ -102,7 +102,7 @@ sealed trait DaoS {
   def findUserRegAndResetPwInfo(email: EmailAddr): Option[(UserRegistrationInfo, ResetPasswordInfo)] =
     GetUserRegAndResetPwInfo(email).firstOption
 
-  def findUserConfirmationTokenIssuedDate(token: String): Option[DateTime] =
+  def findUserConfirmationTokenIssuedDate(token: String): Option[Instant] =
     GetConfirmationTokenIssuedDate(token).firstOption
 
 //  def findUserSuppAndDetail(id: UserId) = GetUserSuppAndDetail(id).firstOption
@@ -122,7 +122,7 @@ sealed trait DaoS {
   def performReuseResetPasswordToken(u: UserId): Unit =
     ReuseResetPasswordToken(u).execute
 
-  def findResetPasswordTokenIssuedDate(token: String): Option[DateTime] =
+  def findResetPasswordTokenIssuedDate(token: String): Option[Instant] =
     GetResetPasswordTokenIssuedDate(token).firstOption
 
   def performPasswordReset(ps: PasswordAndSalt, token: String): Unit =
@@ -178,7 +178,7 @@ sealed class AdminDao(_session: Session) extends DaoS {
   import AdminSql._
   implicit val session = _session
 
-  def diagSelectNow(): DateTime =
+  def diagSelectNow(): Instant =
     DiagSelectNow.first
 
   def statsCountUsers(): UsrCount = {

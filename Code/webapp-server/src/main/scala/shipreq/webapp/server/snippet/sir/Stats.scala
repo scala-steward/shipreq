@@ -1,16 +1,16 @@
 package shipreq.webapp.server.snippet.sir
 
+import java.time._
+import java.time.format.DateTimeFormatter
 import java.util.ResourceBundle
 import net.liftweb.http.LiftRules
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
-import org.joda.time.{DateTime, DateTimeUtils, Period}
 import scala.collection.JavaConversions._
 import scala.sys.process._
 import scala.util.Properties
 import scala.xml.{NodeSeq, Text}
 import shipreq.webapp.server.feature.SessionStats
-import shipreq.webapp.server.lib.Misc.DateTimeExt
 import shipreq.webapp.server.lib.SnippetHelpers
 import shipreq.webapp.server.util.{CacheFn, ExpireAfter}
 
@@ -22,19 +22,19 @@ object Stats extends SnippetHelpers {
     val Version     = get("version")
     val Revision    = get("revision")
     val TimeStr     = get("time")
-    val Time        = new DateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(TimeStr))
+    val Time        = LocalDate.parse(TimeStr, DateTimeFormatter ofPattern "yyyy-MM-dd HH:mm:ss")
   }
 
   sealed trait StatValue
-  case class Number(value: Long) extends StatValue
-  case class NumberF(value: Long) extends StatValue
-  case class Str(value: String) extends StatValue
-  case class Error(msg: String) extends StatValue
-  case class TimePeriod(value: Period) extends StatValue
-  case object Unknown extends StatValue
-  case class Table(rows: List[(StatValue, StatValue)]) extends StatValue
+  case class Number    (value: Long)                        extends StatValue
+  case class NumberF   (value: Long)                        extends StatValue
+  case class Str       (value: String)                      extends StatValue
+  case class Error     (msg: String)                        extends StatValue
+  case class TimePeriod(value: Duration)                    extends StatValue
+  case class Table     (rows: List[(StatValue, StatValue)]) extends StatValue
+  case object Unknown                                       extends StatValue
 
-  def timePeriod(ms: Long) = TimePeriod(new Period(ms))
+  def timePeriod(ms: Long) = TimePeriod(Duration ofMillis ms)
   def table[K,V](rs: List[(K,V)])(fk: K => StatValue)(fv: V => StatValue): StatValue =
     Table(rs.map{case (k,v) => (fk(k), fv(v))})
   def E(f: => StatValue): StatValue =
@@ -50,14 +50,14 @@ object Stats extends SnippetHelpers {
     case Error(m)      => <span class="err">{m}</span>
   }
 
-  val cache = CacheFn(renderFn)(ExpireAfter(Period seconds 10))
+  val cache = CacheFn(renderFn)(ExpireAfter(Duration ofMinutes 10))
 
   def render(in: NodeSeq): NodeSeq =
     cache.value(in)
 
   def renderFn = {
     val stats = allStats
-    val evalTime = DateTime.now().toStringIso8601
+    val evalTime = Instant.now().toStringIso8601
     (
       "time [datetime]" #> evalTime andThen
       "section" #> stats.map{ case (section,subStats) =>

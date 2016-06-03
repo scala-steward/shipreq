@@ -1,7 +1,7 @@
 package shipreq.webapp.server.data
 
 import japgolly.univeq.UnivEq
-import org.joda.time.DateTime
+import java.time.Instant
 import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.base.data.Username
 
@@ -34,8 +34,8 @@ object UserDescriptor {
 
 case class UserRegistrationInfo(id                : UserId,
                                 confirmationToken : Option[String],
-                                confirmationSentAt: Option[DateTime],
-                                confirmedAt       : Option[DateTime])
+                                confirmationSentAt: Option[Instant],
+                                confirmedAt       : Option[Instant])
 
-case class ResetPasswordInfo(token: Option[String], sentAt: Option[DateTime])
+case class ResetPasswordInfo(token: Option[String], sentAt: Option[Instant])
 

@@ -1,14 +1,14 @@
 package shipreq.webapp.server.util
 
+import java.time._
 import java.util.concurrent.atomic.AtomicInteger
 import net.liftweb.http.{SessionVar, TransientRequestVar}
-import org.joda.time.{DateTime, Period}
 import scalaz.Semigroup
 import scalaz.old.NonEmptyList
 import scalaz.syntax.semigroup._
 import shipreq.webapp.server.ServerConfig.FlashVarTTL
 import shipreq.webapp.server.lib.Misc
-import FlashVar._
+import shipreq.webapp.server.util.FlashVar._
 
 object FlashVar {
   val globalFlashVarCount = new AtomicInteger(0)
@@ -24,11 +24,11 @@ object FlashVar {
  * @param ttl How long state can live in the session before being read.
  * @tparam T The type of state.
  */
-class FlashVar[T](val ttl: Period = FlashVarTTL) extends Misc {
+class FlashVar[T](val ttl: Duration = FlashVarTTL) extends Misc {
 
   private val uniqueId = "FlashVar-" + globalFlashVarCount.incrementAndGet
 
-  protected object session extends SessionVar[Option[(DateTime, T)]](None) {
+  protected object session extends SessionVar[Option[(Instant, T)]](None) {
     override def __nameSalt = uniqueId
   }
 
@@ -43,7 +43,7 @@ class FlashVar[T](val ttl: Period = FlashVarTTL) extends Misc {
           None
         case Some((timestamp, value)) =>
           session set None
-          if (timestamp > ttl) None else Some(value)
+          if (isExpired_?(timestamp, ttl)) None else Some(value)
       }
     }
 
@@ -54,14 +54,14 @@ class FlashVar[T](val ttl: Period = FlashVarTTL) extends Misc {
 
   def set(value: T): Unit = {
     ensureSessionMovedBeforeWrite
-    session.set(Some(DateTime.now, value))
+    session.set(Some(Instant.now(), value))
   }
 }
 
 /**
  * Flash variable of a type that can be composed.
  */
-class ComposableFlashVar[T: Semigroup](ttl: Period = FlashVarTTL) extends FlashVar[T](ttl) {
+class ComposableFlashVar[T: Semigroup](ttl: Duration = FlashVarTTL) extends FlashVar[T](ttl) {
   def add(value: T): Unit = {
     ensureSessionMovedBeforeWrite
     session.atomicUpdate(oldVal => {
@@ -69,7 +69,7 @@ class ComposableFlashVar[T: Semigroup](ttl: Period = FlashVarTTL) extends FlashV
         case None         => value
         case Some((_, a)) => a |+| value
       }
-      Some(DateTime.now, newVal)
+      Some(Instant.now(), newVal)
     })
   }
 }
@@ -77,6 +77,6 @@ class ComposableFlashVar[T: Semigroup](ttl: Period = FlashVarTTL) extends FlashV
 /**
  * Flash variable containing 1..n Ts.
  */
-class ListFlashVar[T](ttl: Period = FlashVarTTL) extends ComposableFlashVar[NonEmptyList[T]](ttl) {
+class ListFlashVar[T](ttl: Duration = FlashVarTTL) extends ComposableFlashVar[NonEmptyList[T]](ttl) {
   def add1(one: T) = add(NonEmptyList(one))
 }

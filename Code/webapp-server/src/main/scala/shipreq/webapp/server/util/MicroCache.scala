@@ -1,6 +1,6 @@
 package shipreq.webapp.server.util
 
-import org.joda.time.{DateTime, Period}
+import java.time._
 
 trait CachePolicy[-T] {
   /** Type of state this policy uses. */
@@ -12,12 +12,12 @@ trait CachePolicy[-T] {
 }
 
 /**
- * Values are cached for a maximum time period.
+ * Values are cached for a maximum time duration.
  */
-case class ExpireAfter(period: Period) extends CachePolicy[Any] {
-  override type S                     = DateTime
-  override def write(value: Any)      = DateTime.now.plus(period)
-  override def expired(expiryTime: S) = expiryTime.isBeforeNow
+case class ExpireAfter(duration: Duration, now: () => Instant = () => Instant.now()) extends CachePolicy[Any] {
+  override type S                     = Instant
+  override def write(value: Any)      = now() plus duration
+  override def expired(expiryTime: S) = now() isAfter expiryTime
 }
 
 /**
@@ -51,7 +51,7 @@ class CacheVar[T](val policy: CachePolicy[T]) {
     lock.synchronized {
       state match {
         case None                              => None
-        case Some((_, p)) if policy.expired(p) => {state = None; None}
+        case Some((_, p)) if policy.expired(p) => state = None; None
         case Some((v, _))                      => v
       }
     }

@@ -1,7 +1,6 @@
 package shipreq.webapp.server.snippet
 
-import net.liftweb.util.Helpers._
-import org.joda.time.DateTime
+import java.time._
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.FunSpec
 import shipreq.taskman.api.{EmailAddr, UserId}
@@ -10,6 +9,7 @@ import shipreq.webapp.server.db.DaoT
 import shipreq.webapp.server.feature.validation.Validators
 import shipreq.webapp.server.test.MockDaoProvider
 import shipreq.webapp.server.test.SnippetTestUtil._
+import shipreq.webapp.server.test.WebappServerTestUtil._
 
 class ResetPasswordTest extends FunSpec {
 
@@ -23,12 +23,12 @@ class ResetPasswordTest extends FunSpec {
     def findUserReturns(r: Option[(UserRegistrationInfo, ResetPasswordInfo)]): DbSetup = new DbSetup {
       override def setup(d: DaoT) = when(d.findUserRegAndResetPwInfo(EmailAddr(any))) thenReturn r
     }
-    def registeredUser = UserRegistrationInfo(UserId(5), None, None, Some(DateTime.now))
-    def existingToken(token: String, age: TimeSpan) = ResetPasswordInfo(Some(token), Some(age.ago))
+    def registeredUser = UserRegistrationInfo(UserId(5), None, None, Some(Instant.now()))
+    def existingToken(token: String, age: Duration) = ResetPasswordInfo(Some(token), Some(age.ago))
     def noResetPwToken = ResetPasswordInfo(None, None)
 
     val UserNotFound             = findUserReturns(None)
-    val UnactivatedUser          = findUserReturns(Some(UserRegistrationInfo(UserId(5), Some("X"), Some((1 minute).ago), None), noResetPwToken))
+    val UnactivatedUser          = findUserReturns(Some(UserRegistrationInfo(UserId(5), Some("X"), Some(1.minute.ago), None), noResetPwToken))
     val UserWithoutExistingToken = findUserReturns(Some(registeredUser, noResetPwToken))
     val UserWithExpiredToken     = findUserReturns(Some(registeredUser, existingToken("EXPIRED", expiredTime)))
     val UserWithValidToken       = findUserReturns(Some(registeredUser, existingToken("VALID", nonExpiredTime)))
@@ -99,7 +99,7 @@ class ResetPasswordTest extends FunSpec {
   describe("ResetPassword2.render") {
     lazy val template = requireTemplate("public/resetpw2")
 
-    def findToken(r: Option[DateTime]): DbSetup =
+    def findToken(r: Option[Instant]): DbSetup =
       new DbSetup {override def setup(d: DaoT) = when(d.findResetPasswordTokenIssuedDate(any)) thenReturn r}
 
     val TokenNotFound = findToken(None)

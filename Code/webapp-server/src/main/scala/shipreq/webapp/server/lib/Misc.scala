@@ -1,8 +1,8 @@
 package shipreq.webapp.server.lib
 
+import java.time.format.DateTimeFormatter
+import java.time.{Duration, Instant, ZoneOffset}
 import net.liftweb.http.S
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.{DateTime, DateTimeUtils, Period}
 import scala.annotation.tailrec
 import scala.util.Random
 import shipreq.base.util.log.HasLogger
@@ -12,26 +12,19 @@ object Misc extends Misc {
 
   val RNG = new Random()
 
-//  val Iso8601Format = ISODateTimeFormat.dateTime.withZoneUTC
-  val Iso8601Format = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZoneUTC
+  val Iso8601Format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
 
-  final class DateTimeExt(private val t: DateTime) extends AnyVal {
-    def >(timeToLive: Period): Boolean =
-      isExpired_?(t, timeToLive)
-
-    def <=(timeToLive: Period): Boolean =
-      ! >(timeToLive)
-
+  final class InstantExt(private val i: Instant) extends AnyVal {
     def toStringIso8601: String =
-      Iso8601Format.print(t)
+      Iso8601Format.format(i)
   }
 }
 
 trait Misc extends HasLogger {
   import Misc._
 
-  implicit def DateTimeExt(v: DateTime): DateTimeExt =
-    new DateTimeExt(v)
+  implicit def InstantExt(v: Instant): InstantExt =
+    new InstantExt(v)
 
   def clientIp(): Option[String] = (
     S.originalRequest.filter(_.request ne null).map(_.remoteAddr)
@@ -41,7 +34,7 @@ trait Misc extends HasLogger {
     // println("X-Forwarded-For: " + req.header("X-Forwarded-For"))
     )
 
-  def isExpired_?(startTime: DateTime, timeToLive: Period, now: Long = DateTimeUtils.currentTimeMillis): Boolean =
+  def isExpired_?(startTime: Instant, timeToLive: Duration, now: Instant = Instant.now()): Boolean =
     startTime plus timeToLive isBefore now
 
   def randomString(length: Int): String =

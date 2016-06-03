@@ -1,26 +1,27 @@
 package shipreq.webapp.server.snippet
 
 import java.sql.Connection
+import java.time.Instant
 import net.liftweb.http.S
 import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
-import org.joda.time.DateTime
 import shipreq.taskman.api.{EmailAddr, Msg, UserId}
 import shipreq.webapp.base.validation.ValidationResult
-import shipreq.webapp.server.ServerConfig.PasswordResetTokenLifespan
+import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.AppSiteMap
 import shipreq.webapp.server.app.AppSiteMap.Implicits._
 import shipreq.webapp.server.data.{ResetPasswordInfo, UserRegistrationInfo}
 import shipreq.webapp.server.db.DaoT
 import shipreq.webapp.server.feature.validation.Validators
-import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
+import shipreq.webapp.server.lib.{FormVar, Misc, SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.server.security.PasswordAndSalt
 import shipreq.webapp.server.snippet.ResetPassword._
 import shipreq.webapp.server.util.HtmlTransformExt.ajaxSubmitOnClick
 import shipreq.webapp.server.util.JsExt._
 
 object ResetPassword {
-  def isTokenExpired(dateIssued: DateTime): Boolean = PasswordResetTokenLifespan.ago.isAfter(dateIssued)
+  def isTokenExpired(dateIssued: Instant): Boolean =
+    Misc.isExpired_?(dateIssued, ServerConfig.PasswordResetTokenLifespan)
 }
 
 // =====================================================================================================================

@@ -1,29 +1,30 @@
 package shipreq.webapp.server.snippet
 
-import net.liftweb.http.js.JsCmd
+import java.time.Instant
 import net.liftweb.http.S
+import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
-import org.joda.time.DateTime
 import shipreq.base.util.ScalaExt._
+import shipreq.taskman.api.Msg.{ReRegistrationAttempted, RegistrationRequested}
 import shipreq.taskman.api.{EmailAddr, Msg, UserId}
 import shipreq.webapp.base.validation.ValidationResult
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.AppSiteMap
+import shipreq.webapp.server.app.AppSiteMap.Implicits._
 import shipreq.webapp.server.data.UserRegistrationInfo
-import shipreq.webapp.server.lib.{FormVar, SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.server.db.{DaoT, UserRegistrationResult}
 import shipreq.webapp.server.feature.validation.Validators
+import shipreq.webapp.server.lib.{FormVar, Misc, SingleOpStatefulSnippet, SnippetHelpers}
 import shipreq.webapp.server.security.{PasswordAndSalt, Permissions}
-import shipreq.webapp.server.util.JsExt._
+import shipreq.webapp.server.snippet.Register._
 import shipreq.webapp.server.util.HtmlTransformExt.ajaxSubmitOnClick
-import AppSiteMap.Implicits._
-import Msg.{ReRegistrationAttempted, RegistrationRequested}
-import Register._
+import shipreq.webapp.server.util.JsExt._
 
 object Register {
-  def isTokenExpired(dateIssued: DateTime): Boolean = ServerConfig.TokenLifespan.ago.isAfter(dateIssued)
+  def isTokenExpired(dateIssued: Instant): Boolean =
+    Misc.isExpired_?(dateIssued, ServerConfig.TokenLifespan)
 }
 
 // =====================================================================================================================

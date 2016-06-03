@@ -1,10 +1,9 @@
 package shipreq.webapp.server.test
 
-import java.sql.Timestamp
-import net.liftweb.util.Helpers._
-import org.joda.time.DateTime
+import java.time.Instant
 import scala.slick.jdbc.JdbcBackend.Session
 import scala.slick.jdbc.{StaticQuery => Q}
+import shipreq.base.db.SqlHelpers._
 import shipreq.base.util.ThreadLocalRes
 import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.base.data._
@@ -12,6 +11,7 @@ import shipreq.webapp.server.data._
 import shipreq.webapp.server.db.Shim
 import shipreq.webapp.server.security.{PasswordAndSalt, Roles}
 import shipreq.webapp.server.test.UserFixture._
+import WebappServerTestUtil._
 
 object UserFixture {
 
@@ -44,7 +44,7 @@ object UserFixture {
       WebappServerTestUtil.withLoggedIn(username.value, password)(a)
   }
 
-  case class PendingTestUser(email: EmailAddr, token: String, tokenCreatedAt: DateTime)
+  case class PendingTestUser(email: EmailAddr, token: String, tokenCreatedAt: Instant)
 }
 
 class UserFixture()(implicit val session: Session) {
@@ -52,7 +52,6 @@ class UserFixture()(implicit val session: Session) {
   def toDbUtil =
     DbUtil(session)
 
-  private implicit def timeSpanToTimestamp(t: DateTime): Timestamp = new Timestamp(t.getMillis)
   private implicit def autoUsername(a: String) = Username(a)
   private implicit def autoEmailAddr(a: String) = EmailAddr(a)
 
@@ -83,7 +82,7 @@ class UserFixture()(implicit val session: Session) {
   }
 
   def insert(user: PendingTestUser): Unit =
-    Q.update[(String, String, Timestamp)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,?)").
+    Q.update[(String, String, Instant)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,?)").
       apply(user.email.value, user.token, user.tokenCreatedAt).execute
 
   def deleteUser(u: TestUser): Unit = {
