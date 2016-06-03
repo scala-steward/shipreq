@@ -11,6 +11,9 @@
       .ui.menu.inverted .ui.breadcrumb a {color: #63c0ff}
       .ui.menu.inverted .ui.breadcrumb a:hover {color: #9bf3ff}
 
+      h1.ui.header {margin-bottom:0; margin-right:1em; color:#d00}
+      .inline-edit:hover {cursor:pointer; outline:dotted 2px #FFA622; background: #fff4e3 !important}
+
       h3.ui.header {margin-top: 2em; padding-bottom: 0.3em !important}
 
       .content.pic {text-align:center; padding-top:2.2em !important}
@@ -45,7 +48,7 @@
 
       %div{style: "display:flex"}
         %div{style: "flex-grow:1"}
-          %h1.ui.header.red{style: "margin-bottom:0"}
+          %h1.ui.header.inline-edit{title: "double-click to edit"}
             CardBoard
           .ui.meta{style: "margin: .5em 0; font-size: 1em; line-height: 1em; color: rgba(0,0,0,.6);"}
             Updated&nbsp;
