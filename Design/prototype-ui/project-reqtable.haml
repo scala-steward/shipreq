@@ -37,7 +37,24 @@
       .tagRef {color:#2185D0!important}
       .issueRef {color:#db2828!important}
 
-      .inline-edit:hover {cursor:pointer; outline:dotted 2px #FFA622; background: #fff4e3 !important}
+      .inline-edit:hover {
+        cursor:pointer;
+        outline:dotted 2px #FFA622;
+        background: #fff4e3 !important;
+        }
+      .can-focus:hover {
+      /*
+        xcursor:pointer;
+        xoutline:solid 1px #00b5ad;
+        outline:solid 1px #a333c8;
+      */
+      }
+      .has-focus {
+        xoutline:solid 2px #00b5ad;
+        outline:solid 2px #a333c8;
+        xoutline:solid 2px #6435c9;
+      }
+
       #reqtableX >tbody >tr:hover > td {background: rgba(0,15,30,.03)}
 
       .texteditor {
@@ -358,9 +375,9 @@
         %tbody
 
           %tr
-            %td.selcol
+            %td.selcol.can-focus
               %input{type: "checkbox"}
-            %td
+            %td.has-focus
               %a{href:"#"} FR-1
             %td.inline-edit
               = "Fix "
@@ -375,9 +392,9 @@
               .ui.label.blue.is-tag focus
 
           %tr
-            %td.selcol
+            %td.selcol.can-focus
               %input{type: "checkbox"}
-            %td
+            %td.can-focus
               %a{href:"#"} FR-2
             %td.inline-edit
               = "Do more stuff! "
@@ -392,9 +409,9 @@
             %td.inline-edit
 
           %tr
-            %td.selcol
+            %td.selcol.can-focus
               %input{type: "checkbox"}
-            %td
+            %td.can-focus
               %a{href:"#"} FR-3
             %td.mid-edit
               %textarea.texteditor{autofocus: "1"}
@@ -416,9 +433,9 @@
               .ui.label.blue.is-tag bug
 
           %tr
-            %td.selcol
+            %td.selcol.can-focus
               %input{type: "checkbox"}
-            %td
+            %td.can-focus
               %a{href:"#"} FR-4
             %td.inline-edit
               Ummm....?
@@ -430,9 +447,9 @@
             %td.inline-edit
 
           %tr
-            %td.selcol
+            %td.selcol.can-focus
               %input{type: "checkbox"}
-            %td
+            %td.can-focus
               %a{href:"#"} FR-5
             %td.mid-edit
               %textarea.texteditor
@@ -441,11 +458,82 @@
                 AJAX failure occurred.
             %td.inline-edit
               .ui.label.blue.is-tag must
-            %td.inline-edit
+            %td.mid-edit
+              -# %select.ui.selection.dropdown{multiple:"multiple"}
+                %option{value: "1"} MF-1: Use Case Editor
+                %option{value: "2"} MF-2: Anonymous Share
+                %option{value: "3"} MF-3: Export (Read UCs, PDF, DOC, MD, TXT, XLS)
+                %option{value: "4"} MF-4: Templates
+                %option{value: "5"} MF-5: Field Customisation
+                %option{value: "6"} MF-6: Incompletions
+                %option{value: "7"} MF-7: Organisation
+                %option{value: "8"} MF-8: History/Audit
+                %option{value: "9"} MF-9: Collaboration: authoring
+                %option{value: "10"} MF-10: Collaboration: stakeholders
+                %option{value: "11"} MF-11: Collaboration: change mgnt & approval
+                %option{value: "12"} MF-12: Low-level Requirements (CO, FR, BR, etc.)
+                %option{value: "13"} MF-13: Requirement Relationships
+                %option{value: "14"} MF-14: Text-generated Diagrams
+                %option{value: "15"} MF-15: Matrixes
+                %option{value: "16"} MF-16: CRUDL Matrix
+                %option{value: "17"} MF-17: Undo & Auto-save
+                %option{value: "18"} MF-18: Data dictionary
+                %option{value: "19"} MF-19: Glossary
+                %option{value: "20"} MF-20: Generic artifact storage (DOC, PDF, PNG, XLS)
+                %option{value: "21"} MF-21: Doc authoring (V&S, URD, SRS)
+                %option{value: "22"} MF-22: High-level Requirements
+                %option{value: "23"} MF-23: Import external requirements
+                %option{value: "24"} MF-24: Requirement Lint
+                %option{value: "25"} MF-25: Search
+                %option{value: "26"} MF-26: Mass text modification (replace)
+                %option{value: "27"} MF-27: External references
+                %option{value: "28"} MF-28: Entities
+              .ui.multiple.dropdown
+                %input(type="hidden" value="")
+                %i.icon.dropdown
+                %span.text Dropdown.<br>Rejected,<br>at least for now.
+                .menu
+                  .ui.icon.search.input
+                    %i.icon.search
+                    %input(type="text" placeholder="Filter...")
+                  .divider
+                  .scrolling.menu
+                    .item(data-value="1") MF-1: Use Case Editor
+                    .item(data-value="2") MF-2: Anonymous Share
+                    .item(data-value="3") MF-3: Export (Read UCs, PDF, DOC, MD, TXT, XLS)
+                    .item(data-value="4") MF-4: Templates
+                    .item(data-value="5") MF-5: Field Customisation
+                    .item(data-value="6") MF-6: Incompletions
+                    .item(data-value="7") MF-7: Organisation
+                    .item(data-value="8") MF-8: History/Audit
+                    .item(data-value="9") MF-9: Collaboration: authoring
+                    .item(data-value="10") MF-10: Collaboration: stakeholders
+                    .item(data-value="11") MF-11: Collaboration: change mgnt & approval
+                    .item(data-value="12") MF-12: Low-level Requirements (CO, FR, BR, etc.)
+                    .item(data-value="13") MF-13: Requirement Relationships
+                    .item(data-value="14") MF-14: Text-generated Diagrams
+                    .item(data-value="15") MF-15: Matrixes
+                    .item(data-value="16") MF-16: CRUDL Matrix
+                    .item(data-value="17") MF-17: Undo & Auto-save
+                    .item(data-value="18") MF-18: Data dictionary
+                    .item(data-value="19") MF-19: Glossary
+                    .item(data-value="20") MF-20: Generic artifact storage (DOC, PDF, PNG, XLS)
+                    .item(data-value="21") MF-21: Doc authoring (V&S, URD, SRS)
+                    .item(data-value="22") MF-22: High-level Requirements
+                    .item(data-value="23") MF-23: Import external requirements
+                    .item(data-value="24") MF-24: Requirement Lint
+                    .item(data-value="25") MF-25: Search
+                    .item(data-value="26") MF-26: Mass text modification (replace)
+                    .item(data-value="27") MF-27: External references
+                    .item(data-value="28") MF-28: Entities
             %td.inline-edit
               .ui.label.blue.is-tag bug
 
   :javascript
+    $('.ui.multiple.dropdown')
+      .find('.menu > .item > .ui.dropdown, .menu > .item.ui.dropdown, > .ui.dropdown:not(.simple), .inline.dropdown, .icon.buttons .button, .form .dropdown.selection')
+      .dropdown();
+
     $('.ui.dropdown:not(.onhover)').dropdown();
     $('.ui.dropdown.onhover').dropdown({on:"hover", delay: { show: 400 }});
     $('.ui.has-popup').popup({delay: { show: 400, hide: 0 }});
