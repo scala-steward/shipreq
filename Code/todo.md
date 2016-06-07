@@ -8,11 +8,8 @@
   * General
     * rich text editor help
     * req type selector
-  * ReqTable
-    * selected rows
   * Use Case detail
-    * Steps and buttons
-    * Dead steps?
+    * Dead steps
   * Deletion screen
   * Cfg Fields
   * Cfg Issues

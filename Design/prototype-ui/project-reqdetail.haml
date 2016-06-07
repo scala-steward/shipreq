@@ -110,6 +110,7 @@
 
       #detail {
         margin-top: 1.5rem;
+        margin-bottom: 1rem;
         border-radius: 0.28571429rem;
         box-shadow: none;
         border-collapse: separate;
@@ -135,6 +136,34 @@
       }
 
       #imps1 .impHalf {width:50%; text-align: center}
+
+      x.ucSteps .container * {outline:solid 1px rgba(255,0,0,.4)}
+      x.ucSteps .container > * {line-height:1rem}
+      .ucSteps .container {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+      }
+      .ucSteps .container:not(:first-child) { margin-top:0.2rem }
+      .ucSteps .h {box-sizing:content-box; color: #444;}
+      .ucSteps .body {flex-grow:1; padding-left:0.6ex}
+      .ucSteps .ctrls {width: 8.9rem; text-align:right}
+      .ucSteps .ctrls button:disabled {opacity:0.3!important}
+
+      .ucSteps .header-1 {
+        font-weight: bold;
+        width: 6ex;
+      }
+      .ucSteps .header-2 {
+        padding-left: 4ex;
+        width: 4ex;
+      }
+
+      .ucSteps .ctrls button {padding: 0.3rem !important}
+      .ucSteps .ctrls button i {font-size:1.2rem !important;}
+      .ucSteps .tailStep.ctrls {text-align:right; width:100%}
+      .ucSteps .tailStep.ctrls:not(:first-child) {margin-top:0.2rem}
+      .ucSteps button.ui.button.icon {margin:0}
 
   %body
 
@@ -254,7 +283,7 @@
                 .column.inline-edit asdfasdfsda
 
           %tr
-            %th Implication Graph
+            %th Implication<br>Graph
             %td
               -# No implications.
               <div><!--?xml version="1.0" encoding="UTF-8" standalone="no"?-->
@@ -317,6 +346,49 @@
               <path fill="none" stroke="#c27040" d="M158.961,-30.5244C172.175,-37.7318 188.971,-46.893 203.414,-54.7713"></path>
               <polygon fill="#c27040" stroke="#c27040" points="202.049,-58.0138 212.504,-59.7297 205.401,-51.8685 202.049,-58.0138"></polygon>
               </g> </g> </svg> </div>
+
+          %tr
+            %th Normal<br>Course
+            %td.ucSteps
+              .container
+                .h.header-1{title: "3.1"} 3.1.
+                .body.inline-edit Eat all the food and do the stuff.
+                .ctrls
+                  .ui.buttons
+                    %button.ui.button.icon(disabled=1) %i.icon.trash
+                    %button.ui.button.icon(disabled=1) %i.icon.angle.double.left
+                    %button.ui.button.icon(disabled=1) %i.icon.angle.double.right
+                    %button.ui.button.icon(title="Insert at 3.1.1") %i.icon.plus
+              .container
+                .h.header-2{title: "3.1.1"} 1.
+                .body.inline-edit Do blah and blah...?
+                .ctrls
+                  .ui.buttons
+                    %button.ui.button.icon(title="Delete 3.1.1") %i.icon.trash
+                    %button.ui.button.icon %i.icon.angle.double.left
+                    %button.ui.button.icon(disabled=1) %i.icon.angle.double.right
+                    %button.ui.button.icon(title="Insert at 3.1.2") %i.icon.plus
+              .container
+                .h.header-2{title: "3.1.2"} 2.
+                .body.inline-edit
+                .ctrls
+                  .ui.buttons
+                    %button.ui.button.icon(title="Delete 3.1.2") %i.icon.trash
+                    %button.ui.button.icon %i.icon.angle.double.left
+                    %button.ui.button.icon %i.icon.angle.double.right
+                    %button.ui.button.icon(title="Create 3.1.3") %i.icon.plus
+
+          %tr
+            %th Alternate<br>Courses
+            %td.ucSteps
+              .tailStep.ctrls
+                %button.ui.button.icon(title="Create 3.2") %i.icon.plus
+
+          %tr
+            %th Exception<br>Courses
+            %td.ucSteps
+              .tailStep.ctrls
+                %button.ui.button.icon(title="Create 3.E.1") %i.icon.plus
 
           %tr
             %th Detail
