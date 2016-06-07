@@ -1,6 +1,4 @@
 * Group req types in filter from ALL to ANY.
-* Fix GraphViz
-  * No exceptions crashes due to ;;
 * Say "no implications" in imp graph
 * Show dead IDs on ReqDetail screen.
 * Show dead IDs on ReqTable screen.

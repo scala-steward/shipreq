@@ -76,6 +76,13 @@ object Graphs {
   def eol()(implicit sb: StringBuilder): Unit =
     sb append ';'
 
+  def eolAfterChange(body: => Unit)(implicit sb: StringBuilder): Unit = {
+    val before = sb.length
+    body
+    if (before !=* sb.length)
+      eol()
+  }
+
   def rankdirLR()(implicit sb: StringBuilder): Unit = sb append "rankdir=LR;"
   def rankdirTB()(implicit sb: StringBuilder): Unit = sb append "rankdir=TB;"
 
@@ -217,8 +224,8 @@ object Graphs {
         sb append EndNode
       }
 
-      implicitFlow(stepsNA, NA, NA.treeFilterA); sb append ';'
-      implicitFlow(stepsE , E , E .treeFilter ); sb append ';'
+      eolAfterChange(implicitFlow(stepsNA, NA, NA.treeFilterA))
+      eolAfterChange(implicitFlow(stepsE , E , E .treeFilter ))
 
       explicitFlow(stepsNA.tree)
       explicitFlow(stepsE .tree)
