@@ -202,7 +202,7 @@ final class Main(r: InitDataForProjectSpa, cp: ClientProtocol, cd: ClientData) {
       import dsl._
       import Page._
 
-      val reqTablePath = "/table"
+      val reqTablePath = "#reqs"
 
       val dynPage = dynRenderR((page: Page, r) => Component(Props(page, r)))
 
@@ -214,11 +214,11 @@ final class Main(r: InitDataForProjectSpa, cp: ClientProtocol, cd: ClientData) {
 
       ( staticPage(root           , Index      )
       | staticPage(reqTablePath   , ReqTable   )
-      | staticPage("/imps"        , ImpGraph   )
-      | staticPage("/cfg/fields"  , CfgFields  )
-      | staticPage("/cfg/issues"  , CfgIssues  )
-      | staticPage("/cfg/reqtypes", CfgReqTypes)
-      | staticPage("/cfg/tags"    , CfgTags    )
+      | staticPage("#impgraph"    , ImpGraph   )
+      | staticPage("#cfg/fields"  , CfgFields  )
+      | staticPage("#cfg/issues"  , CfgIssues  )
+      | staticPage("#cfg/reqtypes", CfgReqTypes)
+      | staticPage("#cfg/tags"    , CfgTags    )
       | reqDetailRoute
       | trimSlashes
       ).notFound(redirectToPage(Index)(Redirect.Replace))

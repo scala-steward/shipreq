@@ -35,7 +35,7 @@ object AppSiteMap {
 
   val Home =
     pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
-      >> UseEitherTemplate(Oshiro.isAuthenticated, "members/home")(landingPageTemplate))
+      >> UseEitherTemplate(Oshiro.isAuthenticated(), "members/home")(landingPageTemplate))
 
   val LandingPageViaBusinessCard =
     pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
@@ -105,7 +105,7 @@ object AppSiteMap {
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
-      SessionStats.onLogin(S.session, Oshiro.loggedInUser.get)
+      SessionStats.onLogin(S.session, Oshiro.loggedInUser().get)
       Full(redirectHomeResp)
       // Full(RedirectResponse("/project/oLctx/table"))
     })
@@ -230,7 +230,7 @@ object AppSiteMap {
   }
 
   private def AuthenticationRequired =
-    If(() => Oshiro.isAuthenticated, () => RedirectResponse(Login.relativeUrl))
+    If(() => Oshiro.isAuthenticated(), () => RedirectResponse(Login.relativeUrl))
 
   private def PermissionRequired(checker: => Permission.Checker, failResp: LiftResponse = redirectHomeResp) =
     If(() => checker.isPass, () => failResp)

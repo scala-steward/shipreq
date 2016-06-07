@@ -2,7 +2,6 @@
 * Say "no implications" in imp graph
 * Show dead IDs on ReqDetail screen.
 * Show dead IDs on ReqTable screen.
-* Change project SPA URLs to use #
 
 * Determine UI for:
   * General
