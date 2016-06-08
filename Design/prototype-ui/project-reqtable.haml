@@ -119,6 +119,14 @@
         background-origin: padding-box  !important;
       }
 
+      .ui.dropdown.reqtype {
+        background: #fff4e3 !important;
+        border-color: rgba(255, 166, 34, .5) !important;
+      }
+
+      .reqtype .ui.buttons button:first-child:hover {color:#21BA45}
+      .reqtype .ui.buttons button:last-child:hover {color:#DB2828}
+
   %body
 
     .ui.menu.borderless.fixed.inverted
@@ -562,6 +570,33 @@
               %input{type: "checkbox"}
             %td.can-focus
               %a{href:"#"} FR-5
+            %td.inline-edit
+              This just tests the UI for a type change.
+            %td.mod-edit.reqtype
+              %select.ui.dropdown.reqtype
+                %option(value=1) BL: Business Rule
+                %option(value=2) BR: Business Requirement
+                %option(value=3) CO: Constraint
+                %option(value=4) MF: Major Feature
+                %option(value=5 selected=1) FR: Functional Requirement
+                %option(value=6) SI: Solution Idea
+                -# %option(value=5) UC: Use Case
+
+              %div(style="margin-top:0.6ex")
+                .ui.buttons
+                  %button.ui.button.icon.xpositive %i.icon.checkmark
+                  %button.ui.button.icon.xnegative %i.icon.remove
+                -# .ui.buttons
+                  %button.ui.button.positive Update
+                  %button.ui.button.negative Cancel
+            %td.inline-edit
+            %td.inline-edit
+
+          %tr
+            %td.selcol.can-focus
+              %input{type: "checkbox"}
+            %td.can-focus
+              %a{href:"#"} FR-6
             %td.mid-edit
               %textarea.texteditor
                 This, [fr5], is an item that experienced ajax failure.

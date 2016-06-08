@@ -6,7 +6,6 @@
 * Determine UI for:
   * General
     * rich text editor help
-    * req type selector
   * Deletion screen
   * Cfg Fields
   * Cfg Issues
