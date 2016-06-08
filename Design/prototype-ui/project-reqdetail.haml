@@ -34,6 +34,7 @@
       #reqtable a:hover {text-decoration: underline}
       #reqtable .selcol {width: 24px !important; text-align: center}
       .is-tag {padding: 4px 6px !important}
+      .is-tag.dead {text-decoration: line-through;}
       .tagRef {color:#2185D0!important}
       .issueRef {color:#db2828!important}
 
@@ -137,6 +138,9 @@
 
       #imps1 .impHalf {width:50%; text-align: center}
 
+      .deadThing {text-decoration:line-through; color:rgba(0,0,0,.2); display:inline}
+      .deadThing > span {color:rgba(0,0,0,.3)}
+
       x.ucSteps .container * {outline:solid 1px rgba(255,0,0,.4)}
       x.ucSteps .container > * {line-height:1rem}
       .ucSteps .container {
@@ -164,6 +168,11 @@
       .ucSteps .tailStep.ctrls {text-align:right; width:100%}
       .ucSteps .tailStep.ctrls:not(:first-child) {margin-top:0.2rem}
       .ucSteps button.ui.button.icon {margin:0}
+
+      .ucSteps .container:not(.dead) .ctrls button:first-child:hover {color:#DB2828}
+      .ucSteps .container.dead       .ctrls button:first-child:hover {color:#21BA45}
+      .ucSteps .ctrls button:nth-child(4):hover ,
+      .ucSteps .tailStep.ctrls button:hover {color:#21BA45}
 
   %body
 
@@ -219,11 +228,8 @@
             %span.tagRef focus
             = " and keyboard nav."
         %div(style="padding-left:1.5rem")
-          #omfg2.item{style: "padding-right:0 !important", onclick: '$("#omfg2 > *").toggle()'}
-            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
-              %i.icon.trash.outline.large.grey
-            %button.ui.button.icon.red.has-popup{data-content: "Showing deleted content.", style: "display:none"}
-              %i.icon.trash.outline.large.white
+          %button.ui.button.icon.red.has-popup{data-content: "Showing deleted content."}
+            %i.icon.trash.outline.large.white
 
       -# =============================================================================================
       -# %table#detail.ui.table.celled.compact.unstackable
@@ -233,6 +239,10 @@
           %tr
             %th Type
             %td.inline-edit FR: Functional Requirement
+
+          %tr
+            %th Past IDs
+            %td .deadThing %span CO-5
 
           %tr
             %th Live
@@ -252,6 +262,7 @@
           %tr
             %th Tags
             %td.inline-edit
+              .ui.label.grey.is-tag.dead backend
               .ui.label.blue.is-tag bug
               .ui.label.blue.is-tag focus
 
@@ -368,6 +379,15 @@
                     %button.ui.button.icon %i.icon.angle.double.left
                     %button.ui.button.icon(disabled=1) %i.icon.angle.double.right
                     %button.ui.button.icon(title="Insert at 3.1.2") %i.icon.plus
+              .container.dead
+                .h.header-2 .deadThing %span X.1.
+                .body .deadThing %span I am a dead step. Dead before my time! AVENGE ME!!
+                .ctrls
+                  .ui.buttons
+                    %button.ui.button.icon(title="Restore to 3.1.2") %i.icon.undo
+                    %button.ui.button.icon(disabled=1) %i.icon.angle.double.left
+                    %button.ui.button.icon(disabled=1) %i.icon.angle.double.right
+                    %button.ui.button.icon(disabled=1) %i.icon.plus
               .container
                 .h.header-2{title: "3.1.2"} 2.
                 .body.inline-edit
@@ -406,6 +426,8 @@
               %a(href="#" title="Create stuff") MF-2
               = ", "
               %a(href="#" title="Sell stuff") MF-3
+              = ", "
+              %a.deadThing(href="#" title="Do stuff to stuff") %span MF-8
               .
 
           %tr

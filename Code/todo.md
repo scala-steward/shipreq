@@ -7,8 +7,6 @@
   * General
     * rich text editor help
     * req type selector
-  * Use Case detail
-    * Dead steps
   * Deletion screen
   * Cfg Fields
   * Cfg Issues
