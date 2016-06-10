@@ -23,35 +23,35 @@
     "reset",       // Ensures consistent underlying styles across browsers.
     "site",        // Ensures consistent underlying styles across browsers.
     "button",      // Used all over the place.
-    //"container",
+    "container",   // Used in project's home (/project/ABC).
     //"divider",
     //"flag",
-    //"header",
+    "header",      // Used in (loaded) project menu (/project/ABC).
     "icon",        // Used all over the place.
     //"image",
     "input",       // Used all over the place.
     "label",       // Used to display error messages of <input>/<textarea>
     //"list",
-    //"loader",
+    "loader",      // Used when loading project (/project/ABC).
     //"rail",
     //"reveal",
-    //"segment",
+    "segment",     // Used when loading project (/project/ABC).
     //"step",
     "breadcrumb",  // Used in top-left of in all logged-in pages
     //"form",
     //"grid",
     "menu",        // Used at top of all logged-in pages
-    //"message",
+    "message",     // Used when project fails to load (/project/ABC).
     //"table",
     //"ad",
-    //"card",
+    "card",        // Used in (loaded) project menu (/project/ABC).
     //"comment",
     //"feed",
     //"item",
     "statistic",   // Used in projects index (/), and each project's home (/project/ABC)
     //"accordion",
     //"checkbox",
-    //"dimmer",
+    "dimmer",      // Used in [Req Lookup] card in project menu (/project/ABC).
     "dropdown",    // Used in top-right of all logged-in pages
     //"embed",
     //"modal",

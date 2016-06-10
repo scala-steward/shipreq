@@ -6,6 +6,8 @@
     %script{src: "node_modules/jquery/dist/jquery.min.js"}
     %link{href:  "semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
     %script{src: "semantic/dist/semantic.min.js"}
+    -# %link{href:  "../../Code/webapp-server/src/main/webapp/a/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    -# %script{src: "../../Code/webapp-server/src/main/webapp/a/semantic.min.js"}
     :css
       body {padding:1rem}
       .ui.menu.inverted .ui.breadcrumb a {color: #63c0ff}
@@ -149,9 +151,8 @@
             Loading...
 
       .ui.segment.basic(style="height:20rem")
-        .ui.active.dimmer.inverted
-          .ui.text.loader.large
-            Loading...
+        .ui.text.loader.large.active
+          Loading...
 
       -# .ui.icon.message
         %i.icon.notched.circle.loading
@@ -167,4 +168,4 @@
 
   :javascript
     $('.ui.dropdown').dropdown();
-    $('.omg-dimmable').dimmer({on: 'hover'});
+    // $('.omg-dimmable').dimmer({on: 'hover'});
