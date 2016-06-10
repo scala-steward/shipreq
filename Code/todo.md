@@ -2,6 +2,7 @@
 * Say "no implications" in imp graph
 
 * Determine UI for:
+  * ReqDetail load failure
   * Deletion screen
   * Cfg Fields
   * Cfg Issues
@@ -9,6 +10,7 @@
   * Cfg Tags
 
 * Implement UI & UX changes.
+* Implement titles.
 
 * Redo front pages
   * split name into first/last
