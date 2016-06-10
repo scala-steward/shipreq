@@ -12,8 +12,10 @@ import shipreq.webapp.base.test.{MockRemotes, SampleProject5}
 import shipreq.webapp.client.base.test._
 import shipreq.webapp.client.project.app.reqdetail.{ReqDetailObs, ReqDetailTestDsl => RD}
 import shipreq.webapp.client.project.app.reqtable.{ReqTableObs, ReqTableTestDsl => RT}
+import shipreq.webapp.client.project.app.root._
 import shipreq.webapp.client.project.test._
-import Main.{Page, Props, State}
+import LoadedRoot.Props
+import Routes.Page
 import TestState._
 
 object ProjectSpaTestDsl {
@@ -102,7 +104,7 @@ object ProjectSpaTestDsl {
             : Unit = {
     val cd   = TestClientData(project)
     val svr  = MockServer(cd)
-    val spa  = new Main(MockRemotes.projectSpa(project), svr, cd)
+    val spa  = new LoadedRoot(MockRemotes.projectSpa(project), svr, cd)
     val rc   = MockRouterCtl[Page]()
     val init = TestState(page, cd.project(), rd)
 
