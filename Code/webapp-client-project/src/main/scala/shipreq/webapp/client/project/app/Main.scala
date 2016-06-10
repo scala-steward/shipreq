@@ -27,11 +27,12 @@ import ContentEditorFeature.EditFieldKey
 @JSExport(ClientFnDecl.ProjectSpaName)
 object Main extends ClientFnImpl(ClientFnDecl.ProjectSpa) {
 
-  override def run(remotes: InitDataForProjectSpa): Unit = {
+  override def run(initData: InitDataForProjectSpa): Unit = {
+    println(initData.project)
     val cp = ClientProtocol.Default
-    ClientData.init(cp, remotes.projectInit, cd => Callback {
+    ClientData.init(cp, initData.projectInit, cd => Callback {
       Style.addToDocument()
-      val main    = new Main(remotes, cp, cd)
+      val main    = new Main(initData, cp, cd)
       val baseUrl = determineBaseUrl(dom.window.location.href)
       val router  = Router(baseUrl, main.routerConfig)
       router() render dom.document.getElementById("tgt")

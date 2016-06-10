@@ -98,7 +98,7 @@ private[db] object Sql {
   private def eventTypeId(e: ActiveEvent): Short =
     EventDbCodecs.eventCodecRegistry.writer(e)._1
 
-  val GetProjectCatalogue = {
+  private def projectCatalogueSql(projectCond: String) = {
     import shipreq.webapp.base.event._
 
     val reqCreationEvents = List[ActiveEvent](
@@ -111,44 +111,49 @@ private[db] object Sql {
     val projectNameSetId: Short =
       eventTypeId(ProjectNameSet(null))
 
-    query[UserId, ProjectCatalogue.Item](
-      s"""
-        WITH
-          ps AS (
-            SELECT id, created_at
-            FROM project
-            WHERE usr_id=?
-          ),
-          es AS (
-            SELECT
-              project_id,
-              count(*) events,
-              count(*) FILTER (WHERE type_id IN (${reqCreationTypeIds mkString ","})) reqs,
-              max(event.created_at) last_updated_at
-            FROM event
-            WHERE project_id IN (select id FROM ps) AND seq > 1
-            GROUP BY project_id
-          ),
-          ns AS (
-            SELECT DISTINCT ON (project_id)
-              project_id,
-              (e.data#>>'{}')::varchar "name"
-            FROM event e
-            WHERE project_id IN (select id FROM ps) AND type_id=$projectNameSetId
-            ORDER BY project_id, seq DESC
-          )
-        SELECT
-          ps.id,
-          ns.name,
-          COALESCE(es.events,0),
-          COALESCE(es.reqs,0),
-          ps.created_at,
-          es.last_updated_at
-        FROM ps
-        LEFT JOIN es ON id=es.project_id
-        LEFT JOIN ns ON id=ns.project_id
-      """.sql)
+    s"""
+      WITH
+        ps AS (
+          SELECT id, created_at
+          FROM project
+          $projectCond
+        ),
+        es AS (
+          SELECT
+            project_id,
+            count(*) events,
+            count(*) FILTER (WHERE type_id IN (${reqCreationTypeIds mkString ","})) reqs,
+            max(event.created_at) last_updated_at
+          FROM event
+          WHERE project_id IN (select id FROM ps) AND seq > 1
+          GROUP BY project_id
+        ),
+        ns AS (
+          SELECT DISTINCT ON (project_id)
+            project_id,
+            (e.data#>>'{}')::varchar "name"
+          FROM event e
+          WHERE project_id IN (select id FROM ps) AND type_id=$projectNameSetId
+          ORDER BY project_id, seq DESC
+        )
+      SELECT
+        ps.id,
+        ns.name,
+        COALESCE(es.events,0),
+        COALESCE(es.reqs,0),
+        ps.created_at,
+        es.last_updated_at
+      FROM ps
+      LEFT JOIN es ON id=es.project_id
+      LEFT JOIN ns ON id=ns.project_id
+    """.sql
   }
+
+  val GetProjectCatalogue =
+    query[UserId, ProjectCatalogue.Item](projectCatalogueSql("WHERE usr_id=?"))
+
+  val FindProjectCatalogueItem =
+    query[(UserId, ProjectId), ProjectCatalogue.Item](projectCatalogueSql("WHERE usr_id=? AND id=?"))
 
   // ###################################################################################################################
   // Events

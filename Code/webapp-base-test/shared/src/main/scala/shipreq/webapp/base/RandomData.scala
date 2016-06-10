@@ -1,5 +1,6 @@
 package shipreq.webapp.base
 
+import java.time.Instant
 import nyaya.gen._
 import nyaya.util._
 import monocle._
@@ -160,6 +161,9 @@ object RandomData {
 
   val dir =
     Gen.choose[Direction](Forwards, Backwards)
+
+  def externalId[A]: Gen[ExternalId[A]] =
+    Gen.alphaNumeric.string(4 to 12).map(ExternalId.apply[A])
 
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
@@ -1178,8 +1182,28 @@ object RandomData {
       p               ← genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps)
     } yield p
 
+  def projectXId: Gen[Project.XId] =
+    externalId
+
   def projectName: Gen[Project.Name] =
     shortText1
+
+  lazy val instantPast: Gen[Instant] = {
+    import scala.concurrent.duration._
+    val now = Instant.now()
+    Gen.chooseLong(0, (365 * 5).day.toSeconds).map(i => now.minusMillis(i.seconds.toMillis))
+  }
+
+  lazy val projectCatalogueItem: Gen[ProjectCatalogue.Item] =
+    for {
+      id            <- projectXId
+      name          <- projectName
+      eventCount    <- Gen.chooseInt(30000)
+      reqCount      <- Gen.chooseInt(eventCount min 2000)
+      createdAt     <- instantPast
+      lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
+    } yield
+      ProjectCatalogue.Item(id, name, eventCount, reqCount, createdAt, lastUpdatedAt)
 
   // ===================================================================================================================
   // Protocol
@@ -1239,17 +1263,19 @@ object RandomData {
     def remoteFn(f: RemoteFn) =
       remoteFnKey.map(RemoteFn.Instance(_, f))
 
-    val projectSpa =
-      Gen.apply9(InitDataForProjectSpa.apply)(
-        remoteFn(ProjectInit),
-        remoteFn(CustomIssueTypeCrud),
-        remoteFn(CustomReqTypeCrud),
-        remoteFn(ReqTypeImplicationMod),
-        remoteFn(FieldMandatorinessMod),
-        remoteFn(FieldCrud.Fn),
-        remoteFn(TagCrud.Fn),
-        remoteFn(CreateContentFn),
-        remoteFn(UpdateContentFn))
+    val projectSpa: Gen[InitDataForProjectSpa] =
+      for {
+        a <- projectCatalogueItem
+        b <- remoteFn(ProjectInit)
+        c <- remoteFn(CustomIssueTypeCrud)
+        d <- remoteFn(CustomReqTypeCrud)
+        e <- remoteFn(ReqTypeImplicationMod)
+        f <- remoteFn(FieldMandatorinessMod)
+        g <- remoteFn(FieldCrud.Fn)
+        h <- remoteFn(TagCrud.Fn)
+        i <- remoteFn(CreateContentFn)
+        j <- remoteFn(UpdateContentFn)
+      } yield InitDataForProjectSpa(a, b, c, d, e, f, g, h, i, j)
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       lazy val create  = vG.map(CrudAction.Create[I, V])

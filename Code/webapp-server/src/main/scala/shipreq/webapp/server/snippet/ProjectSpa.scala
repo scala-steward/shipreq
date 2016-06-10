@@ -23,8 +23,6 @@ object ProjectSpa {
 
   val Mutexes = KeyedMutexes[ProjectId](LockUsage.Default)
 
-  val RightUnit = \/-(())
-
   val NoChangeResponse = \/-(Vector.empty[VerifiedEvent])
 
   def loadErrorToString(p: ProjectId, e: LoadErrors): String = {
@@ -72,17 +70,25 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
   val mutex = Mutexes(projectId)
 
-  var state = daoProvider.withTransaction(loadProjectEvents_!(_, projectId))
+  val state: LazyVar[State] =
+    LazyVar(
+      mutex(
+        daoProvider.withTransaction(
+          loadProjectEvents_!(_, projectId))))
 
   private def updateProject(f: Project => MakeEvent.Result): GenericFailure \/ VerifiedEvents =
     mutex {
       // Thread.sleep(2000)
       // sys error "NO!"
-      val event = f(state.project)
-      ApplyNewEvent(event, state.project) match {
+      val curState = state.get()
+      val event = f(curState.project)
+      ApplyNewEvent(event, curState.project) match {
 
         case ValidUpdate.Success(u) =>
-          saveAndApplyNewEvent(u).map(_ => Vector1(u.ve))
+          saveAndApplyNewEvent(curState, u).map { s2 =>
+            state.set(s2)
+            Vector1(u.ve)
+          }
 
         case ValidUpdate.Unchanged  =>
           NoChangeResponse
@@ -93,13 +99,11 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
       }
     }
 
-  private def saveAndApplyNewEvent(u: ApplyNewEvent.Updated): GenericFailure \/ Unit = {
-    val seq = state.seq.succ
-    val s1 = state
+  private def saveAndApplyNewEvent(s1: State, u: ApplyNewEvent.Updated): GenericFailure \/ State = {
+    val seq = s1.seq.succ
     try {
       daoProvider.withTransaction(_.createEvent(projectId, seq, u.ae, u.ve.hashRecs))
-      state = State(u.project, seq)
-      RightUnit
+      \/-(State(u.project, seq))
     } catch {
       case t: Throwable =>
         val msg =
@@ -113,11 +117,11 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
     }
   }
 
-  val initData = {
+  def initData(project: ProjectCatalogue.Item) = {
     import ServerProtocol.remoteFn
 
     val projectInit = remoteFn(ProjectInit)(
-      _ => \/-(state.project))
+      _ => \/-(state.get().project))
 
     val customReqTypeCrud = remoteFn(CustomReqTypeCrud)(
       i => updateProject(MakeEvent.customReqTypeCrud(i, _)))
@@ -144,6 +148,7 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
       i => updateProject(MakeEvent.updateContent(i, _)))
 
     InitDataForProjectSpa (
+      project,
       projectInit,
       customIssueTypeCrud,
       customReqTypeCrud,
@@ -155,6 +160,13 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
       updateContent)
   }
 
-  override def render =
-    "*" #> ClientFn.ProjectSpa.runOnLoadHtml(initData)
+  override def render = {
+    val uid = currentUserId_!()
+    daoProvider.withSession(_.findProjectCatalogueItem(uid, projectId)) match {
+      case Some(p) =>
+        "*" #> ClientFn.ProjectSpa.runOnLoadHtml(initData(p))
+      case None =>
+        redirectHome
+    }
+  }
 }
