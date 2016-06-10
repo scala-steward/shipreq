@@ -66,8 +66,7 @@ object TextInputAndButton {
 //  implicit val reusabilityProps: Reusability[Props] =
 //    Reusability.caseClass
 
-  private val action         = <.div(^.cls := "ui action input")
-  private val errLabel       = <.div(^.cls := "ui pointing red basic label")
+  private val errLabel = Label.Style(Label.Type.BasicPointingUp, Colour.Red).div
 
   val buttonOk       = Button(`type` = Button.Type.Primary)
   val buttonDisabled = Button(`type` = Button.Type.Primary,  state = Button.State.Disabled)
@@ -90,28 +89,28 @@ object TextInputAndButton {
         case State.Blank =>
           <.div(
             <.div(
-              action(
+              Input.Action(
                 input,
                 buttonDisabled.tag(p.buttonLabel))))
 
         case State.Ready(commit) =>
           <.div(
             <.div(
-              action(
+              Input.Action(
                 input, // should redirect Enter to commit
                 buttonOk.tag(^.onClick --> commit, p.buttonLabel))))
 
         case State.InTransit =>
           <.div(
             <.div(
-              action(
+              Input.Action(
                 input(^.disabled := "disabled"),
                 buttonLoading.tag(p.buttonLabel))))
 
         case State.InputError(err) =>
           <.div(
             <.div(
-              action(^.cls := "error",
+              Input.ActionError(
                 input,
                 buttonError.tag(p.buttonLabel))),
             errLabel(err))
@@ -119,7 +118,7 @@ object TextInputAndButton {
         case State.AsyncError(err, retry) =>
           <.div(
             <.div(
-              action(^.cls := "error",
+              Input.ActionError(
                 input,
                 buttonOk.tag(^.onClick --> retry, UiText.buttonRetry))),
             errLabel(err))
