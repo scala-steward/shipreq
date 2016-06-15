@@ -117,7 +117,7 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
     }
   }
 
-  def initData(project: ProjectCatalogue.Item) = {
+  def initData(username: Username, project: ProjectCatalogue.Item) = {
     import ServerProtocol.remoteFn
 
     val projectInit = remoteFn(ProjectInit)(
@@ -147,7 +147,8 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
     val updateContent = remoteFn(UpdateContentFn)(
       i => updateProject(MakeEvent.updateContent(i, _)))
 
-    InitDataForProjectSpa (
+    InitDataForProjectSpa(
+      username,
       project,
       projectInit,
       customIssueTypeCrud,
@@ -161,10 +162,10 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
   }
 
   override def render = {
-    val uid = currentUserId_!()
-    daoProvider.withSession(_.findProjectCatalogueItem(uid, projectId)) match {
+    val user = currentUser_!()
+    daoProvider.withSession(_.findProjectCatalogueItem(user.id, projectId)) match {
       case Some(p) =>
-        "*" #> ClientFn.ProjectSpa.runOnLoadHtml(initData(p))
+        "*" #> ClientFn.ProjectSpa.runOnLoadHtml(initData(user.username, p))
       case None =>
         redirectHome
     }

@@ -2,26 +2,36 @@ package shipreq.webapp.base.test
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import shipreq.webapp.base.data.{ExternalId, Project, ProjectCatalogue}
+import shipreq.webapp.base.data.{ExternalId, Project, ProjectCatalogue, Username}
 import shipreq.webapp.base.protocol._
 
 object MockRemotes {
 
   lazy val createProjectFn = RemoteFn.Instance("CreateProject", CreateProjectFn)
 
-  def projectSpa(p: Project): InitDataForProjectSpa = {
+  def mockUsername = Username("testuser")
+
+  def projectSpa(p: Project): InitDataForProjectSpa =
+    projectSpa(p, mockUsername)
+
+  def projectSpa(p: Project, username: Username): InitDataForProjectSpa = {
     val now = Instant.now()
-    projectSpa(ProjectCatalogue.Item(
+    val pi = ProjectCatalogue.Item(
       ExternalId("test"),
       p.name,
       1000,
       p.reqs.size,
       now.minus(99, ChronoUnit.DAYS),
-      Some(now.minus(32, ChronoUnit.HOURS))))
+      Some(now.minus(32, ChronoUnit.HOURS)))
+    projectSpa(pi, username)
   }
 
   def projectSpa(p: ProjectCatalogue.Item): InitDataForProjectSpa =
+    projectSpa(p, mockUsername)
+
+  def projectSpa(p: ProjectCatalogue.Item, username: Username): InitDataForProjectSpa =
     InitDataForProjectSpa(
+      username,
       p,
       RemoteFn.Instance("projectInit"  , ProjectInit          ),
       RemoteFn.Instance("issueTypeCrud", CustomIssueTypeCrud  ),

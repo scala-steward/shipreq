@@ -165,6 +165,16 @@ object RandomData {
   def externalId[A]: Gen[ExternalId[A]] =
     Gen.alphaNumeric.string(4 to 12).map(ExternalId.apply[A])
 
+  lazy val username: Gen[Username] = {
+    val x = WebappConfig.usernameLength.min - 2
+    val y = WebappConfig.usernameLength.max - 2
+    for {
+      a <- Gen.lower
+      b <- Gen.chooseChar('_', 'a' to 'z', '0' to '9').string(x to y)
+      c <- Gen.chooseChar('a', 'b' to 'z', '0' to '9')
+    } yield Username(a + b + c)
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // Custom issue types
 
@@ -1265,6 +1275,7 @@ object RandomData {
 
     val projectSpa: Gen[InitDataForProjectSpa] =
       for {
+        u <- username
         a <- projectCatalogueItem
         b <- remoteFn(ProjectInit)
         c <- remoteFn(CustomIssueTypeCrud)
@@ -1275,7 +1286,7 @@ object RandomData {
         h <- remoteFn(TagCrud.Fn)
         i <- remoteFn(CreateContentFn)
         j <- remoteFn(UpdateContentFn)
-      } yield InitDataForProjectSpa(a, b, c, d, e, f, g, h, i, j)
+      } yield InitDataForProjectSpa(u, a, b, c, d, e, f, g, h, i, j)
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       lazy val create  = vG.map(CrudAction.Create[I, V])
