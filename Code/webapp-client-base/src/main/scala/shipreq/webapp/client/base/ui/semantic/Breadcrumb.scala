@@ -40,6 +40,10 @@ object Breadcrumb {
     case class Divider(content: TagMod) extends Item {
       override val cont = divider(content)
     }
+
+    case class DividerIcon(i: Icon, mod: TagMod = EmptyTag) extends Item {
+      override val cont = i.tag(^.cls := "divider", mod)
+    }
   }
 
   type Items = Seq[Item]

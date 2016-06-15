@@ -8,9 +8,11 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data.{ProjectCatalogue, Username, Validators}
 import shipreq.webapp.base.protocol.InitDataForHomeSpa
+import shipreq.webapp.client.base.ClientConfig
 import shipreq.webapp.client.base.feature.AsyncActionFeature
 import shipreq.webapp.client.base.protocol.ClientProtocol
-import shipreq.webapp.client.base.ui.TextInputAndButton
+import shipreq.webapp.client.base.ui.{BaseStyles, MemberNavBar, ProjectItem, TextInputAndButton}
+import shipreq.webapp.client.base.ui.semantic.Breadcrumb
 
 object Home {
   case class Props(data: InitDataForHomeSpa, cp: ClientProtocol) {
@@ -74,9 +76,12 @@ object HomeContent {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
+    val navBarLeft =
+      Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil
+
     def render(p: Props): ReactElement = {
 
-      val menu = TopMenu.Component(p.username)
+      val menu = MemberNavBar.Props(p.username, navBarLeft, Nil).render
 
       val projectCreate = {
         import TextInputAndButton.State
@@ -101,7 +106,7 @@ object HomeContent {
 
       <.div(
         menu,
-        <.main(Styles.homeContentContainer,
+        <.main(BaseStyles.maxWidthContainer,
           <.div(Styles.createProjectContainer, projectCreate),
           projectList))
     }

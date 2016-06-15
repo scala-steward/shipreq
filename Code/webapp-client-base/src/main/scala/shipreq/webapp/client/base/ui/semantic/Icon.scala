@@ -10,4 +10,5 @@ sealed abstract class Icon(c: ClassName) {
 object Icon {
   case object Cubes extends Icon("cubes")
   case object Write extends Icon("write")
+  case object RightAngle extends Icon("right angle")
 }

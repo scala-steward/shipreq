@@ -12,13 +12,14 @@ import shipreq.webapp.base.protocol.InitDataForHomeSpa
 import shipreq.webapp.base.test.MockRemotes
 import shipreq.webapp.client.base.test.TestClientProtocol
 import shipreq.webapp.client.base.test.TestState._
+import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.home.test.PrepareEnv
 
 final class HomeObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 
   val reqs = cp.reqs.length
 
-  val projectDoms = $.collect0n("." + Styles.base.projectItems.item.className.value)
+  val projectDoms = $.collect0n("." + BaseStyles.projectItems.item.className.value)
 
   val projectNames: Vector[String] =
     projectDoms.mapZippers(_("h1").innerText)

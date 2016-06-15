@@ -111,7 +111,7 @@ object SqlHelpers {
   private[this] val SqlComments = """\s+--[^\r\n]*""".r
   private[this] val LeadingWhitespace = """[\r\n]+\s*""".r
 
-  implicit class SqlStringExt(val s: String) extends AnyVal {
+  implicit class SqlStringExt(private val s: String) extends AnyVal {
     def sql = {
       var t = s
       t = SqlComments.replaceAllIn(t, "")
@@ -123,5 +123,11 @@ object SqlHelpers {
       val p = table + "."
       """(^|,)\s*""".r.replaceAllIn(s, _.group(0)+p)
     }
+
+    def unNull(default: String): String =
+      if (s eq null)
+        default
+      else
+        s
   }
 }

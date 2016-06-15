@@ -8,6 +8,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.server._
+import shipreq.webapp.gen.transform.ProjectSpaLoader
 import shipreq.webapp.server.data.ProjectId
 import shipreq.webapp.server.db.DaoT
 import shipreq.webapp.server.db.EventDao.EventSeq
@@ -165,7 +166,10 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
     val user = currentUser_!()
     daoProvider.withSession(_.findProjectCatalogueItem(user.id, projectId)) match {
       case Some(p) =>
-        "*" #> ClientFn.ProjectSpa.runOnLoadHtml(initData(user.username, p))
+        "*" #> (
+          ProjectSpaLoader.xml(user.username, p) :+
+            ClientFn.ProjectSpa.htmlToLoadJsAndRun(Assets.ProjectSpa)(initData(user.username, p)))
+
       case None =>
         redirectHome
     }

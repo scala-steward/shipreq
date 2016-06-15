@@ -1,8 +1,9 @@
 package shipreq.webapp.client.base.ui
 
+import japgolly.scalajs.react.vdom.prefix_<^.{^ => ^^, _}
 import scalacss.Defaults._
 
-class BaseStyles(implicit r: scalacss.mutable.Register) extends StyleSheet.Inline()(r) {
+object BaseStyles extends StyleSheet.Inline {
   import dsl._
 
   val projectItems = new ProjectItems
@@ -32,4 +33,23 @@ class BaseStyles(implicit r: scalacss.mutable.Register) extends StyleSheet.Inlin
       lineHeight(1 em),
       color(rgba(0, 0, 0, 0.6)))
   }
+
+  val navBarContainer =
+    inlineStyle(_.literal(
+      "marginBottom" -> "5rem"))
+
+  val breadcrumbDivider =
+    inlineStyle(_.literal(
+      "color"       -> "#ddd",
+      "marginLeft"  -> "0.8em",
+      "marginRight" -> "0.8em"))
+
+  val maxWidthContainer =
+    inlineStyle(_.literal(
+      "marginLeft"   -> "auto",
+      "marginRight"  -> "auto",
+      "paddingLeft"  -> "1em",
+      "paddingRight" -> "1em",
+      "maxWidth"     -> "calc(723px + 2em)",
+      "width"        -> "100%"))
 }

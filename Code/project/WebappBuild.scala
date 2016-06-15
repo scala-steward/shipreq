@@ -14,6 +14,7 @@ import ShipReqBuild._
   */
 object WebappBuild {
 
+  // TODO This is obsolete
   lazy val webappSettings =
     Common.settings.andThen(_.configure(webappCmdAliases))
 
@@ -29,8 +30,8 @@ object WebappBuild {
     project("webapp")
       .configure(webappSettings)
       .aggregate(
-        webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm,
-        webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs ,
+        webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm, webappGenJvm,
+        webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs , webappGenJs ,
         webappClient, webappServer)
       .settings(
         jsSizesFast := jsSizesTask(Stage.FastOpt).value,
@@ -188,6 +189,24 @@ object WebappBuild {
         dontInline) // crashes 2.11.7 / 0.6.4
       .settings(
         jsDependencies in Test += ProvidedJS / "shipreq-client-test.js")
+
+  lazy val webappGenJvm = webappGen.jvm
+  lazy val webappGenJs  = webappGen.js
+  lazy val webappGen =
+    crossProject("webapp-gen")
+      .configureBoth(Common.settings)
+      .configureJvm(Common.jvmSettings, _.dependsOn(webappBaseJvm)).depsForJvm(Lift.webkit)
+      .configureJs(
+        Common.jsSettings(NeedDom),
+        _.dependsOn(webappClientProject)
+          .settings(
+            // Ensure that the production asset paths are used, and there is no dev-only markup in generated html
+            // scalacOptions ++= Seq("-Xelide-below", "OFF"),
+            // scalaJSStage := FullOptStage,
+            // ↑ Doesn't work, needs to be applied to deps too. Will hack dev. Release-mode test will prove validity.
+            jsDependencies += ProvidedJS / "shipreq-gen-deps.js"))
+      .depsForBoth(testScope(μTest))
+      .dependsOn(webappBaseTest % "test->compile")
 
   lazy val webappServer =
     project("webapp-server").configure(WebappServerBuild.apply)

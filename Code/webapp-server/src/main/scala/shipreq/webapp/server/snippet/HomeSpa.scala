@@ -40,6 +40,6 @@ object HomeSpa extends SnippetHelpers {
     val data = InitDataForHomeSpa(
       user.username, projects, createProjectFn)
 
-    "*" #> ClientFn.HomeSpa.runOnLoadHtml(data)
+    "*" #> ClientFn.HomeSpa.htmlToRunOnLoad(data)
   }
 }

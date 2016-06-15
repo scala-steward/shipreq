@@ -1,7 +1,8 @@
 package shipreq.webapp.server.app
 
-import org.apache.commons.httpclient.{HttpMethodBase, HttpClient}
+import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
 import org.scalatest.FunSpec
+import shipreq.webapp.server.snippet.Assets
 import shipreq.webapp.server.test.LiveTest
 import shipreq.webapp.server.test.UserFixture
 import AppSiteMap._
@@ -34,7 +35,7 @@ class PermissionTest extends FunSpec with LiveTest {
   lazy val pid = uf.toDbUtil.newProjectId(user1.id)
 
   describe("/") {
-    val member = "client-home.js"
+    val member = Assets.KatexJS.path
     val anon   = "/login"
 
     it("anon") {

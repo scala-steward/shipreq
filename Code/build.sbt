@@ -37,6 +37,8 @@ val webappClientHome     = WebappBuild.webappClientHome
 val webappClientWwApi    = WebappBuild.webappClientWwApi
 val webappClientWw       = WebappBuild.webappClientWw
 val webappClientProject  = WebappBuild.webappClientProject
+val webappGenJvm         = WebappBuild.webappGenJvm
+val webappGenJs          = WebappBuild.webappGenJs
 val webappServer         = WebappBuild.webappServer
 
 val utils                = ShipReqBuild.utils

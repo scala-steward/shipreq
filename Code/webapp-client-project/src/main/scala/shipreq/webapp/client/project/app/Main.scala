@@ -8,6 +8,7 @@ import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.protocol.{ClientFnDecl, InitDataForProjectSpa}
 import shipreq.webapp.client.base.protocol.{ClientFnImpl, ClientProtocol}
+import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.root.{LoadedRoot, Routes}
 import shipreq.webapp.client.project.app.state.ClientData
 
@@ -24,9 +25,10 @@ object Main extends ClientFnImpl(ClientFnDecl.ProjectSpa) {
     println(initData.project)
 
     val cp = ClientProtocol.Default
+    BaseStyles.addToDocument()
+    Style.addToDocument()
 
     ClientData.init(cp, initData.projectInit, cd => Callback {
-      Style.addToDocument()
       val root    = new LoadedRoot(initData, cp, cd)
       val baseUrl = determineBaseUrl(dom.window.location.href)
       val router  = Router(baseUrl, Routes.routerConfig(root))

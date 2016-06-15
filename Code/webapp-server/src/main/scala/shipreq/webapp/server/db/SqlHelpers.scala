@@ -2,7 +2,6 @@ package shipreq.webapp.server.db
 
 import scala.slick.jdbc.{GetResult, PositionedParameters, PositionedResult, SetParameter}
 import shipreq.base.db.SqlHelpers.{DbCodec => DBC, _}
-import shipreq.base.db.JodaTimeSqlHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.webapp.base.data._
 import shipreq.webapp.server.data._
@@ -23,7 +22,7 @@ object SqlHelpers {
 
   implicit val GR_ProjectCatalogueItem =
     GetResult(r => ProjectCatalogue.Item(
-      ProjectId.Extern(r.<<), r.<<, r.<<, r.<<, r.<<, r.<<))
+      ProjectId.Extern(r.<<), r.nextString() unNull "", r.<<, r.<<, r.<<, r.<<))
 
   implicit object SP_PasswordAndSalt extends SetParameter[PasswordAndSalt] {
     def apply(v: PasswordAndSalt, pp: PositionedParameters) {

@@ -101,7 +101,7 @@ object WebappServerBuild {
 
   def apply = (_: Project)
     .enablePlugins(JettyPlugin, WarPlugin)
-    .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm)
+    .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
     .deps(
       Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
       testScope(μTest ++ scalaTest ++ scalaCheck ++ mockito ++ Lift.testkit ++ commonsIo ++ twitterEval) ++

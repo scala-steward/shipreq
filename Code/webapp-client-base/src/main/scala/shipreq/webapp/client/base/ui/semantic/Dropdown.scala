@@ -35,4 +35,6 @@ object Dropdown {
     }
   }
 
+  type Items = Seq[Item]
+
 }

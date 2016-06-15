@@ -53,7 +53,6 @@ gulp.task 'ws:vendor:1', ->
       cfg_npm + 'katex/dist/**/*'
       '!**/*.md'
       'semantic/dist/semantic.min.css'
-      'semantic/dist/semantic.min.js'
       'vendor/**/*'
     ]
     .pipe gulp.dest cfg_ws_dev
@@ -72,9 +71,15 @@ devProdJs 'ws:public', 'public-deps.js', (f) ->
     cfg_npm + 'jquery/dist/jquery.min.js'
   ]
 
-devProdJs 'ws:member', 'member-deps.js', (f) ->
+devProdJs 'ws:member:init', 'member-deps-init.js', (f) ->
   [
+    f(cfg_npm + 'loadjs/dist/loadjs')
       cfg_npm + 'jquery/dist/jquery.min.js'
+    f('semantic/dist/semantic')
+  ]
+
+devProdJs 'ws:member:next', 'member-deps-next.js', (f) ->
+  [
       cfg_npm + 'moment/min/moment.min.js'
     f(cfg_npm + 'react/dist/react', '-with-addons')
     f(cfg_npm + 'react-dom/dist/react-dom')
@@ -84,6 +89,9 @@ devProdJs 'ws:member', 'member-deps.js', (f) ->
       cfg_npm + 'react-height/build/react-height.js'
     f(cfg_npm + 'react-collapse/build/react-collapse')
   ]
+
+gulp.task 'ws:member', [], ->
+  gulp.start ['ws:member:init', 'ws:member:next']
 
 gulp.task 'ws:css', ->
   nonRetardedSrc cfg_ws_customCss + '*.less'
@@ -128,4 +136,15 @@ gulp.task 'wc:testjs', ->
 gulp.task 'wc', ['wc:testjs']
 
 # ======================================================================================================================
-gulp.task 'default', ['wc','ws']
+# webapp-gen
+
+gulp.task 'wg', ->
+  nonRetardedSrc [
+        cfg_npm + 'react/dist/react.js'
+        cfg_npm + 'react-dom/dist/react-dom-server.js'
+      ]
+    .pipe concat 'shipreq-gen-deps.js'
+    .pipe gulp.dest '../webapp-gen/js/src/main/resources'
+
+# ======================================================================================================================
+gulp.task 'default', ['wc','wg','ws']

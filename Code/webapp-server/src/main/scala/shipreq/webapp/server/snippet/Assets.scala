@@ -1,51 +1,109 @@
 package shipreq.webapp.server.snippet
 
 import net.liftweb.http.DispatchSnippet
+import scala.xml.NodeSeq
+import shipreq.base.util.NonEmptyVector
 import shipreq.webapp.base.WebappConfig.assetPath_/
-import shipreq.webapp.server.lib.SnippetHelpers
+import Asset._
+
+sealed trait Asset {
+  val tag: xml.Elem
+
+  val transformer: NodeSeq => NodeSeq =
+    _ => tag
+}
+
+object Asset {
+  final class JS(val path: String) extends Asset {
+    override val tag = <script type="text/javascript" src={path}></script>
+  }
+
+  final class CSS(val path: String) extends Asset {
+    override val tag = <link data-lift="head" type="text/css" rel="stylesheet" href={path}/>
+  }
+
+  final class Image(val path: String, val alt: String) extends Asset {
+    override val tag = <img src={path} alt={alt} />
+  }
+
+  final class Favicon(val path: String) extends Asset {
+    override val tag = <link href={path} type="image/x-icon" rel="icon"/>
+  }
+
+  def JS   (path: String)             : JS    = new JS   (assetPath_/ + path)
+  def CSS  (path: String)             : CSS   = new CSS  (assetPath_/ + path)
+  def Image(path: String, alt: String): Image = new Image(assetPath_/ + path, alt)
+
+  final class Bundle[+T <: Asset](val assets: NonEmptyVector[T]) {
+    val nodeSeq    : NodeSeq            = assets.whole.map(_.tag)
+    val transformer: NodeSeq => NodeSeq = _ => nodeSeq
+
+    def ++[TT >: T <: Asset](b: Bundle[TT]): Bundle[TT] =
+      new Bundle(assets ++ b.assets)
+  }
+
+  implicit def autoToBundle[T <: Asset](a: T): Bundle[T] =
+    new Bundle(NonEmptyVector one a)
+
+  /** Pages with huge JS appear to load slowly due to JS fetching, parsing and compiling.
+    * Performance perception can be greatly improved by deferring as much JS as possible until after the page has been
+    * rendered.
+    *
+    * @param init Assets to load immediately and synchronously on page load.
+    * @param next JS to load asynchronously after the page has loaded.
+    */
+  case class InitAndNext[I <: Asset](init: Bundle[I], next: Bundle[JS]) {
+    val all = init ++ next
+
+    val nextPathsArray: String =
+      next.assets.iterator.map("'" + _.path + "'").mkString("[", ",", "]")
+
+    def addNext(js: Bundle[JS]): InitAndNext[I] =
+      InitAndNext(init, next ++ js)
+  }
+}
+
+// =====================================================================================================================
 
 /**
   * Includes assets (JS, CSS, images, etc) into a page.
   */
-object Assets extends DispatchSnippet with SnippetHelpers {
-
-  private def js(path: String) =
-    <script type="text/javascript" src={assetPath_/ + path}></script>
-
-  private def css(path: String) =
-    <link data-lift="head" type="text/css" rel="stylesheet" href={assetPath_/ + path}/>
-
-  private def png(path: String, alt: String) =
-    staticHtml(<img src={assetPath_/ + path} alt={alt} />)
+object Assets extends DispatchSnippet {
 
   override def dispatch = {
-    case "favicon"      => Favicon
-    case "public"       => Public
-    case "homeSpa"      => HomeSpa
-    case "projectSpa"   => ProjectSpa
-    case "katex"        => Katex
-    case "semantic"     => Semantic
-    case "sir"          => Sir
-    case "shipreq-huge" => ShipreqHuge
+    case "favicon"      => Favicon        .transformer
+    case "public"       => Public         .transformer
+    case "homeSpa"      => HomeSpa        .transformer
+    case "projectSpa"   => ProjectSpa.init.transformer
+    case "sir"          => Sir            .transformer
+    case "shipreq-huge" => ShipreqHuge    .transformer
   }
 
-  val Favicon = staticHtml(<link href={assetPath_/ + "favicon.ico"} type="image/x-icon" rel="icon"/>)
+  // -----------
+  // - Generic -
+  // -----------
 
-  val ShipreqHuge = png("shipreq-huge.png", "ShipReq")
+  val Favicon = new Favicon(assetPath_/ + "favicon.ico")
 
-  val PublicDepsJs = js("public-deps.js")
+  val KatexJS  = JS ("katex.min.js")
+  val KatexCSS = CSS("katex.min.css")
+  val Katex    = KatexJS ++ KatexCSS
 
-  val MemberDepsJs = js("member-deps.js")
+  val ShipreqHuge = Image("shipreq-huge.png", "ShipReq")
 
-  val Katex = staticHtml(Seq(js("katex.min.js"), css("katex.min.css")))
+  val MemberDeps = InitAndNext(
+    JS("member-deps-init.js") ++ KatexCSS ++ CSS("semantic.min.css"),
+    JS("member-deps-next.js") ++ KatexJS)
 
-  val Public = staticHtml(Seq(PublicDepsJs, css("public.css")))
+  // ------------
+  // - Specific -
+  // ------------
 
-  val HomeSpa = staticHtml(Seq(MemberDepsJs, js("client-home.js")) ++ Semantic(null))
+  val Public = JS("public-deps.js") ++ CSS("public.css")
 
-  val ProjectSpa = staticHtml(Seq(MemberDepsJs, js("client-project.js")) ++ Katex(null))
+  val HomeSpa = MemberDeps.all ++ JS("client-home.js")
 
-  lazy val Semantic = staticHtml(Seq(js("semantic.min.js"), css("semantic.min.css")))
+  val ProjectSpa = MemberDeps addNext JS("client-project.js")
 
-  val Sir = staticHtml(Seq(css("sir.css")))
+  val Sir = CSS("sir.css")
 }

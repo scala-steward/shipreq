@@ -1,4 +1,4 @@
-package shipreq.webapp.client.home.ui
+package shipreq.webapp.client.base.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -7,10 +7,16 @@ import shipreq.webapp.base.URLs
 import shipreq.webapp.base.UiText.EnglishStringExt
 import shipreq.webapp.base.data.ProjectCatalogue
 import shipreq.webapp.client.base.jsfacade.MomentJs
-import shipreq.webapp.client.base.ui.TimeAgo
 import shipreq.webapp.client.base.ui.semantic.{Icon, Size, Statistic, StatisticGroup}
-import Styles.base.{projectItems => *}
+import BaseStyles.{projectItems => *}
 
+/** Project name and summary.
+  *
+  * +-----------------------------------------------+
+  * | Pacman                              2090  503 |
+  * | Updated 30 years ago.            CHANGES REQS |
+  * +-----------------------------------------------+
+  */
 object ProjectItem {
 
   type Props = ProjectCatalogue.Item
@@ -24,7 +30,7 @@ object ProjectItem {
 
     val header =
       <.h1(*.itemHeader,
-        <.a(^.href := URLs.pageProject(p.id), p.name))
+        <.a(^.href := URLs.PageProject(p.id), p.name))
 
     val meta =
       <.div(*.itemMeta,

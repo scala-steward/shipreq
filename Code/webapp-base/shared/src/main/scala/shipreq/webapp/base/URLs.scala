@@ -9,8 +9,10 @@ object URLs {
   lazy val SvgSpinner           = assetPath_/ + "loading-spin.svg"
   lazy val SvgShipreqCircleDark = assetPath_/ + "shipreq-circle-dark.svg"
 
-  lazy val PageLogout = "/logout"
+  def PageLogout = "/logout"
 
-  def pageProject(id: Project.XId): String =
+  def PageMemberHome = "/"
+
+  def PageProject(id: Project.XId): String =
     "/project/" + id.value
 }

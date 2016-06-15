@@ -63,7 +63,7 @@ object Menu {
       override val cont = a.addClass(item) <+ state
     }
 
-    case class DropdownSimple(content: TagMod, items: Seq[Dropdown.Item]) extends Item {
+    case class DropdownSimple(content: TagMod, items: Dropdown.Items) extends Item {
       override val cont = divItemDropdownSimple(content, divMenu(items.map(_.cont): _*))
     }
   }

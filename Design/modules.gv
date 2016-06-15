@@ -43,6 +43,7 @@ subgraph cluster_t {
     webappClientWwApi [label="webapp-client-ww-api\n(JS)"]
     webappClientWw [label="webapp-client-ww\n(JS)"]
     webappClientProject [label="webapp-client-project\n(JS)"]
+    webappGen [label="webapp-gen\n(Scala & JS)"]
     webappServer [label="webapp-server"]
 
     node[fillcolor=white color=blue]
@@ -97,7 +98,10 @@ webappClientWw -> webappClientWwApi
 webappClientWw -> webappClientBaseTest [color="#111111" style=dashed label="test"]
 webappClientProject -> webappClientBase,webappClientWwApi
 webappClientProject -> webappClientBaseTest [color="#111111" style=dashed label="test"]
-webappServer -> taskmanApi,webappBase,webappBaseServer
+webappGen -> webappBase
+webappGen -> webappClientProject [color="#111111" style=dashed label="run"]
+webappGen -> webappBaseTest [color="#111111" style=dashed label="test"]
+webappServer -> taskmanApi,webappBase,webappBaseServer,webappGen
 webappServer:e -> baseDb
 webappServer -> webappClientHome,webappClientProject,webappClientWw [style=dashed]
 

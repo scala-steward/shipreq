@@ -104,7 +104,8 @@ gatherAllStats = do dirs <- dirsIn "."
 -- Top-level module stats
 
 deps = M.fromList [
-         ("webapp-server",           ["webapp-base-test", "base-db", "taskman-api"]) ,
+         ("webapp-gen",              []) , -- I'm lazy
+         ("webapp-server",           ["webapp-gen", "webapp-base-test", "base-db", "taskman-api"]) ,
          ("webapp-client-base",      ["webapp-base-test", "base-util"]) ,
          ("webapp-client-base-test", ["webapp-base-test", "webapp-client-base"]) ,
          ("webapp-client-home",      ["webapp-client-base-test"]) ,
