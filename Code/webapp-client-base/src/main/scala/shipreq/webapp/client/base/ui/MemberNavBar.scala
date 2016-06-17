@@ -71,7 +71,6 @@ object MemberNavBar {
 
   val Divider =
     Breadcrumb.Item.DividerIcon(
-      Icon.RightAngle,
+      Icon.AngleRight,
       BaseStyles.breadcrumbDivider)
-
 }
