@@ -1,3 +1,13 @@
+* Index
+  * Breadcrumb link colours
+  * Project title + stats
+  * Project title editor
+  * Req lookup search
+  * Item subtitles
+* Stop using old layout / remove ← Back links
+* Impgraph error in ScalaCSS project
+
+
 * Group req types in filter from ALL to ANY.
 * Say "no implications" in imp graph
 
@@ -10,7 +20,6 @@
   * Cfg Tags
 
 * Implement UI & UX changes.
-* Implement titles.
 
 * Redo front pages
   * split name into first/last
