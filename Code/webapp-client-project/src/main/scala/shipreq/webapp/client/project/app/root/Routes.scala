@@ -63,6 +63,11 @@ object Routes {
       def reqDetailRoute =
         dynamicRouteCT(reqTablePath / remainingPath.pmapL(Page.ReqDetail.stringPrism)) ~> dynPage autoCorrect
 
+      def layout(rc: RouterCtl, res: Resolution[Page]) = {
+        import rootInstance.initData._
+        Layout.Props(username, project, rc, res).render
+      }
+
       ( staticPage(dsl.root       , Page.Index      )
       | staticPage(reqTablePath   , Page.ReqTable   )
       | staticPage("#impgraph"    , Page.ImpGraph   )
@@ -73,6 +78,7 @@ object Routes {
       | reqDetailRoute
       | trimSlashes
       ).notFound(redirectToPage(Page.Index)(Redirect.Replace))
+        .renderWith(layout)
         .verify(Page.sampleValues.head, Page.sampleValues.tail: _*)
     }
 }

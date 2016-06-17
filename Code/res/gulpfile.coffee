@@ -127,6 +127,7 @@ gulp.task 'wc:testjs', ->
         cfg_npm + 'react-motion/build/react-motion.js'
         cfg_npm + 'react-height/build/react-height.min.js'
         cfg_npm + 'react-collapse/build/react-collapse.min.js'
+        'semantic/dist/semantic.min.js'
       ]
     .pipe concat 'shipreq-client-test.js'
     .pipe uglify()

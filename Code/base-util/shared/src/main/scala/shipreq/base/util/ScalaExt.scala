@@ -87,6 +87,14 @@ object ScalaExt extends Platform.ScalaExt {
     def drain(): Unit =
       while (as.hasNext)
         as.next()
+
+    def intersperse(insert: A): Iterator[A] =
+      if (as.isEmpty)
+        as
+      else {
+        val h = as.next()
+        Iterator.single(h) ++ as.flatMap(insert :: _ :: Nil)
+      }
   }
 
   implicit class IteratorExtO[A](private val as: Iterator[Option[A]]) extends AnyVal {

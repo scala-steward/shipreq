@@ -21,9 +21,7 @@ object LoadingPage {
 
         MemberNavBar.Props(
           p.username,
-          MemberNavBar.MemberHome ::
-          MemberNavBar.Divider ::
-          Breadcrumb.Item.Div(p.project.name) :: Nil,
+          MemberNavBar.MemberHome :: Breadcrumb.Item.Div(p.project.name) :: Nil,
           Nil)
           .render,
 

@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
+import shipreq.webapp.client.base.ui.inlineStyle
 
 /** http://semantic-ui.com/collections/breadcrumb.html
   */
@@ -21,28 +22,51 @@ object Breadcrumb {
   }
 
   sealed abstract class Item {
-    val cont: ReactTag
+    val tag: ReactTag
   }
 
   object Item {
-    private val section    = "section"
-    private val divSection = divCls(section)
-    private val divider    = divCls("divider")
+    private val section      = "section"
+    private val divSection   = divCls(section)
+    private val divider      = divCls("divider")
+    private val dropdown     = divCls("ui dropdown inline")
+    private val dropdownMenu = divCls("menu")
+    private val nbsp         = <.span(inlineStyle(_.literal(width = "1ex", display = "inline-block")))
 
     case class Div(content: TagMod, state: ItemState = ItemState.Default) extends Item {
-      override val cont = divSection(content) <+ state
+      override val tag = divSection(content) <+ state
     }
 
     case class Link(a: ReactTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {
-      override val cont = a.addClass(section) <+ state
+      override val tag = a.addClass(section) <+ state
     }
 
     case class Divider(content: TagMod) extends Item {
-      override val cont = divider(content)
+      override val tag = divider(content)
     }
 
     case class DividerIcon(i: Icon, mod: TagMod = EmptyTag) extends Item {
-      override val cont = i.tag(^.cls := "divider", mod)
+      override val tag = i.tag(^.cls := "divider", mod)
+    }
+
+    case class DropDown(title: TagMod, items: Dropdown.Items) extends Item {
+      override val tag =
+        divSection(
+          dropdown(
+            title, nbsp, Icon.Dropdown.tag,
+            dropdownMenu(
+              items.map(_.tag))))
+    }
+
+    case class LinkAndDropdown(a: ReactTagOf[html.Anchor], items: Dropdown.Items) extends Item {
+      override val tag =
+        divSection(
+          a,
+          divSection(
+            dropdown(
+              nbsp, Icon.Dropdown.tag,
+              dropdownMenu(
+                items.map(_.tag)))))
     }
   }
 
@@ -53,7 +77,7 @@ object Breadcrumb {
   }
 
   private def render(p: Props) =
-    p.style.cont(p.items.map(_.cont): _*)
+    p.style.cont(p.items.map(_.tag): _*)
 
   val Component = FunctionalComponent(render)
 }

@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
+import scala.scalajs.js
 
 /** http://semantic-ui.com/collections/menu.html
   */
@@ -64,7 +65,7 @@ object Menu {
     }
 
     case class DropdownSimple(content: TagMod, items: Dropdown.Items) extends Item {
-      override val cont = divItemDropdownSimple(content, divMenu(items.map(_.cont): _*))
+      override val cont = divItemDropdownSimple(content, divMenu(items.map(_.tag): _*))
     }
   }
 
@@ -78,13 +79,31 @@ object Menu {
 
   private val divRightMenu = divCls("right menu")
 
-  private def render(p: Props) =
-    p.style.cont(
-      TagMod(p.leftItems.map(_.cont): _*),
-      if (p.rightItems.isEmpty)
-        EmptyTag
-      else
-        divRightMenu(p.rightItems.map(_.cont): _*))
+  // implicit val reusabilityProps: Reusability[Props] =
+  //   Reusability.caseClass
 
-  val Component = FunctionalComponent(render)
+  final class Backend($: BackendScope[Props, Unit]) {
+
+    val enableDropdowns: Callback =
+      Callback {
+        val opt = js.Dynamic.literal(action = "hide")
+        JQuery($.getDOMNode()).find(".ui.dropdown").dropdown(opt)
+      }
+
+    def render(p: Props) =
+      p.style.cont(
+        TagMod(p.leftItems.map(_.cont): _*),
+        if (p.rightItems.isEmpty)
+          EmptyTag
+        else
+          divRightMenu(p.rightItems.map(_.cont): _*))
+  }
+
+  val Component = ReactComponentB[Props]("Name")
+    .renderBackend[Backend]
+    .componentDidMount(_.backend.enableDropdowns)
+    .componentDidUpdate(_.$.backend.enableDropdowns)
+    // .configure(Reusability.shouldComponentUpdate) TODO
+    .build
+
 }

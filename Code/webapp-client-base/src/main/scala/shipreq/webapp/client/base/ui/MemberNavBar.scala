@@ -2,6 +2,7 @@ package shipreq.webapp.client.base.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.{URLs, WebappConfig}
 import shipreq.webapp.client.base.ClientConfig
@@ -18,6 +19,7 @@ object MemberNavBar {
   case class Props(username: Username,
                    left    : Breadcrumb.Items,
                    right   : Dropdown.Items) {
+    val leftWithDividers = left.iterator.intersperse(Divider).toList
     @inline def render = Component(this)
   }
 
@@ -37,28 +39,37 @@ object MemberNavBar {
     Dropdown.Item.Link(
       <.a(^.href := URLs.PageLogout, "Logout"))
 
-  private def render(p: Props): ReactElement = {
-    val leftBreadcrumb =
-      Menu.Item.Div(
-        Breadcrumb.Props(breadcrumbStyle, p.left).render)
+  // implicit val reusabilityProps: Reusability[Props] =
+  //   Reusability.caseClass
 
-    val rightDropdown =
-      Menu.Item.DropdownSimple(
-        p.username.with_@,
-        p.right :+ dropdownLogout)
+  final class Backend($: BackendScope[Props, Unit]) {
 
-    val menu = Menu.Props(
-      menuStyle,
-      itemLogo :: leftBreadcrumb :: Nil,
-      rightDropdown :: Nil)
+    def render(p: Props): ReactElement = {
+      val leftBreadcrumb =
+        Menu.Item.Div(
+          Breadcrumb.Props(breadcrumbStyle, p.leftWithDividers).render)
 
-    <.nav(
-      BaseStyles.navBarContainer,
-      menu.render)
+      val rightDropdown =
+        Menu.Item.DropdownSimple(
+          p.username.with_@,
+          p.right :+ dropdownLogout)
+
+      val menu = Menu.Props(
+        menuStyle,
+        itemLogo :: leftBreadcrumb :: Nil,
+        rightDropdown :: Nil)
+
+      <.nav(
+        BaseStyles.navBarContainer,
+        menu.render)
+    }
   }
 
-  val Component = FunctionalComponent(render)
-  // TODO shouldComponentUpdate
+  val Component = ReactComponentB[Props]("NavBar")
+    .renderBackend[Backend]
+    // .configure(Reusability.shouldComponentUpdate) TODO
+    .build
+
 
   // ===================================================================================================================
   //  Common items

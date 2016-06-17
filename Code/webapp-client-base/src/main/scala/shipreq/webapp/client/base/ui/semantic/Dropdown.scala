@@ -16,25 +16,32 @@ object Dropdown {
     case object Active   extends ItemState("active")
     case object Disabled extends ItemState("disabled")
     implicit def univEq: UnivEq[ItemState] = UnivEq.derive
+
+    def activeIf(b: Boolean): ItemState =
+      if (b) Active else Default
   }
 
   sealed abstract class Item {
-    val cont: ReactTag
+    val tag: ReactTag
   }
 
   object Item {
     private val item = "item"
     private val divItem = divCls(item)
+    private val divHeader = divCls("header")
+
+    case class Header(content: TagMod, state: ItemState = ItemState.Default) extends Item {
+      override val tag = divHeader(content) <+ state
+    }
 
     case class Div(content: TagMod, state: ItemState = ItemState.Default) extends Item {
-      override val cont = divItem(content) <+ state
+      override val tag = divItem(content) <+ state
     }
 
     case class Link(a: ReactTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {
-      override val cont = a.addClass(item) <+ state
+      override val tag = a.addClass(item) <+ state
     }
   }
 
   type Items = Seq[Item]
-
 }
