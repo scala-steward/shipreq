@@ -34,7 +34,8 @@
         "card",
         "statistic",
         "dimmer",
-        "dropdown"
+        "dropdown",
+        "transition"
     ],
     "version": "2.1.8"
 }

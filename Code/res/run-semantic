@@ -11,7 +11,7 @@ cd "$(dirname "$(readlink -e "$0")")" || exit 1
 
 ./json5 -c semantic.json5 && \
   cd semantic && ../gulp build && cd .. && \
-  echo && ./gulp ws:vendor
+  echo && ./gulp ws:vendor ws:member
 
 dir ../webapp-server/src/main/webapp/dev
 dir ../webapp-server/src/main/webapp/a

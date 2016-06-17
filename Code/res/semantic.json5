@@ -64,7 +64,7 @@
     //"sidebar",
     //"sticky",
     //"tab",
-    //"transition",
+    "transition",  // Required by dropdown
     //"api",
     //"form",
     //"state",
