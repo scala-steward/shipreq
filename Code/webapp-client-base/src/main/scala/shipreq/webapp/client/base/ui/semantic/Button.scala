@@ -36,13 +36,13 @@ object Button {
 }
 
 case class Button(attr  : Multiple[Attr] = Multiple.empty,
-                  `type`: Type           = Type.Default,
+                  tipe  : Type           = Type.Default,
                   state : State          = State.Default,
                   colour: Colour         = Colour.Default,
                   size  : Size           = Size.Default) {
 
   val tag = {
-    var t = <.button(^.cls := "ui button" <+ attr <+ `type` <+ state <+ colour <+ size)
+    var t = <.button(^.cls := "ui button" <+ attr <+ tipe <+ state <+ colour <+ size)
     if (state.disable)
       t = t(^.disabled := "disabled")
     t

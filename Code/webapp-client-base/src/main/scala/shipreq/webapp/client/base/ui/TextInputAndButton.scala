@@ -68,10 +68,10 @@ object TextInputAndButton {
 
   private val errLabel = Label.Style(Label.Type.BasicPointingUp, Colour.Red).div
 
-  val buttonOk       = Button(`type` = Button.Type.Primary)
-  val buttonDisabled = Button(`type` = Button.Type.Primary,  state = Button.State.Disabled)
-  val buttonError    = Button(`type` = Button.Type.Negative, state = Button.State.Disabled)
-  val buttonLoading  = Button(`type` = Button.Type.Primary,  state = Button.State.Loading)
+  val buttonOk       = Button(tipe = Button.Type.Primary)
+  val buttonDisabled = Button(tipe = Button.Type.Primary,  state = Button.State.Disabled)
+  val buttonError    = Button(tipe = Button.Type.Negative, state = Button.State.Disabled)
+  val buttonLoading  = Button(tipe = Button.Type.Primary,  state = Button.State.Loading)
 
   final class Backend($: BackendScope[Props, Unit]) {
 
