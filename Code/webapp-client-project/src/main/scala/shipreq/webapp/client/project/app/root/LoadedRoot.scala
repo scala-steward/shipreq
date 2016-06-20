@@ -4,7 +4,7 @@ import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import shipreq.base.util.Intersection
+import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
 import shipreq.webapp.base.protocol.InitDataForProjectSpa
@@ -119,7 +119,7 @@ final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, 
       pxPlainText, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
-      ReusableFn($.zoomL(State.reqDetail).setState(_))
+      ReusableFn($.zoomL(State.reqDetail) setState _)
 
     val usageShow =
       Usage.Show((fd, fs) =>
@@ -142,7 +142,11 @@ final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, 
       p.page match {
 
         case Page.Index =>
-          ProjectIndex.Component(routerCtl)
+          val rl = ReqLookupPrompt.Props(
+            ExternalVar(s.reqLookup)($.zoomL(State.reqLookup) setState _),
+            Allow <~ _.lookup(cd.project()).isRight,
+            e => routerCtl.set(Page.ReqDetail(e)))
+          ProjectIndex.Props(rl, routerCtl).render
 
         case Page.CfgFields =>
           layout(cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, fd).component)

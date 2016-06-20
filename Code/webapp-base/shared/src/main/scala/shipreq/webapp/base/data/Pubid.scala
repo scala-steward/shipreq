@@ -71,6 +71,9 @@ object ExternalPubid {
   def parse(s: String): Option[ExternalPubid] =
     StringPrism.getOption(s)
 
+  @inline def preprocessor =
+    Grammar.pubid.preprocessor
+
   sealed abstract class LookupFailure
   object LookupFailure {
     case object InvalidReqType extends LookupFailure

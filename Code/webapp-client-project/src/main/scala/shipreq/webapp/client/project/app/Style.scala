@@ -100,6 +100,9 @@ object Style extends StyleSheet.Inline {
 
     val cardIcon = style(
       fontSize(3 rem).important)
+
+    val reqLookupPromptHasError = style(
+      borderColor(red).important)
   }
 
   // ===================================================================================================================

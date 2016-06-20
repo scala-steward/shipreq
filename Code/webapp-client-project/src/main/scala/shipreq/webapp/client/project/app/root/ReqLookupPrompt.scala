@@ -1,0 +1,69 @@
+package shipreq.webapp.client.project.app.root
+
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.ExternalVar
+import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom.ext.KeyCode
+import scalacss.ScalaCssReact._
+import shipreq.base.util.{Allow, Permission}
+import shipreq.webapp.base.data.ExternalPubid
+import shipreq.webapp.client.project.app.Style
+
+/** The prompt under the Req Lookup card in which the user can enter a pubid to lookup.
+  */
+object ReqLookupPrompt {
+
+  sealed abstract class Resolution
+  object Resolution {
+    case object Blank                    extends Resolution
+    case class  Valid(ep: ExternalPubid) extends Resolution
+    case object Invalid                  extends Resolution
+  }
+
+  final case class Props(edit  : ExternalVar[String],
+                         filter: ExternalPubid => Permission,
+                         commit: ExternalPubid => Callback) {
+
+    val resolution: Resolution =
+      if (edit.value.isEmpty)
+        Resolution.Blank
+      else
+        ExternalPubid.parse(edit.value).filter(filter(_) :: Allow) match {
+          case Some(ep) => Resolution.Valid(ep)
+          case None     => Resolution.Invalid
+        }
+
+    @inline def render = Component(this)
+  }
+
+  final class Backend($: BackendScope[Props, Unit]) {
+
+    def updateText: ReactEventI => Callback =
+      _.extract(_.target.value)(t => $.props.flatMap(_.edit set ExternalPubid.preprocessor(t)))
+
+    def commitOnEnter(commit: Callback): ReactKeyboardEvent => Callback =
+      CallbackOption.keyCodeSwitch(_) {
+        case KeyCode.Enter => commit
+      }
+
+    val base = <.input.text(
+      ^.cls       := "prompt",
+      ^.size      := 10,
+      ^.onChange ==> updateText)
+
+    def render(p: Props): ReactElement = {
+      val state: TagMod =
+        p.resolution match {
+        case Resolution.Blank     => EmptyTag
+        case Resolution.Valid(ep) => ^.onKeyDown ==> commitOnEnter(p commit ep)
+        case Resolution.Invalid   => Style.index.reqLookupPromptHasError
+      }
+
+      base(^.value := p.edit.value, state)
+    }
+  }
+
+  val Component = ReactComponentB[Props]("ReqLookupPrompt")
+    .renderBackend[Backend]
+    .build
+}

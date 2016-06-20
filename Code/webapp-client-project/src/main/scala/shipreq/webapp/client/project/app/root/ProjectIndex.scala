@@ -98,7 +98,7 @@ object ProjectIndex {
         JQuery($.getDOMNode()).find("." + dimIt).dimmer(opt)
       }
 
-    def renderCard(cat: Category, item: Item, rc: RouterCtl): TagMod = {
+    def renderCard(p: Props, cat: Category, item: Item): TagMod = {
       val base = <.div(^.cls := "ui card " + (cat.cardColour.cls: String))
 
       val iconCont = <.div(^.cls := "content", *.cardIconCont)
@@ -114,7 +114,7 @@ object ProjectIndex {
         case i: Item.WithPage =>
           base(
             *.linkCard,
-            rc.setOnLinkClick(i.page),
+            p.rc.setOnLinkClick(i.page),
             iconCont(icon),
             contentTag)
 
@@ -126,29 +126,31 @@ object ProjectIndex {
                   <.div(^.cls := "center",
                     <.div(^.cls := "ui search",
                       <.div(^.cls := "ui icon input",
-                        <.input.text(^.cls := "prompt", ^.size := 10),
+                        p.reqLookup.render,
                         Icon.Search.tag))))),
               icon),
             contentTag)
       }
     }
 
-    def renderCategory(cat: Category, rc: RouterCtl): TagMod = {
+    def renderCategory(p: Props, cat: Category): TagMod = {
       val header = Header(headerStyle, cat.icon, cat.title)
 
       val cards = <.div(^.cls := "ui cards three", *.cardsCont,
-        cat.items.whole.map(renderCard(cat, _, rc)))
+        cat.items.whole.map(renderCard(p, cat, _)))
 
       header + cards
     }
 
-    def render(rc: RouterCtl): ReactElement =
+    def render(p: Props): ReactElement =
       <.main(
         BaseStyles.maxWidthContainer,
-        Category.All.foldLeft(EmptyTag)((q, c) => q + renderCategory(c, rc)))
+        Category.All.foldLeft(EmptyTag)((q, c) => q + renderCategory(p, c)))
   }
 
-  type Props = RouterCtl
+  case class Props(reqLookup: ReqLookupPrompt.Props, rc: RouterCtl) {
+    @inline def render = Component(this)
+  }
 
   val Component = ReactComponentB[Props]("ProjectIndex")
     .renderBackend[Backend]

@@ -107,7 +107,8 @@ object AsyncKey {
 }
 
 @Lenses
-case class State(editStates  : ContentEditorFeature.D2.State.Simple[reqtable.Row.SourceId, EditFieldKey],
+case class State(reqLookup   : String,
+                 editStates  : ContentEditorFeature.D2.State.Simple[reqtable.Row.SourceId, EditFieldKey],
                  asyncStates : AsyncActionFeature.D2.State.Simple[reqtable.Row.SourceId, AsyncKey, String],
                  previewState: PreviewFeature.State[FocusId],
                  filterDead  : FilterDead,
@@ -117,6 +118,7 @@ case class State(editStates  : ContentEditorFeature.D2.State.Simple[reqtable.Row
 object State {
   def init(cd: ClientData): State =
     State(
+      "",
       ContentEditorFeature.D2.State.init,
       AsyncActionFeature.D2.State.init,
       PreviewFeature.initState,

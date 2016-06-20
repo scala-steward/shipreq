@@ -5,6 +5,7 @@ import org.parboiled2.CharPredicate
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data.{ReqType, ReqTypePos}
 import shipreq.webapp.base.text.GrammarSpec._
+import shipreq.webapp.base.util.TextMod
 
 object Grammar {
 
@@ -42,6 +43,9 @@ object Grammar {
     val seqFormat = SeqFormat(
       _.trim, "[ ,]+".r.pattern, _.replace("-", "") |> reqTypeMnemonic.caseInsensitiveParsePost, _.isEmpty,
       _ mkString " ")
+
+    val preprocessor: String => String =
+      TextMod.noWhitespace(_).toUpperCase
   }
 
   /**
