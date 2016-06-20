@@ -230,7 +230,10 @@ object AppSiteMap {
   }
 
   private def AuthenticationRequired =
-    If(() => Oshiro.isAuthenticated(), () => RedirectResponse(Login.relativeUrl))
+    If(() => Oshiro.isAuthenticated(),
+      // The # here is to clear the hash fragment from logged-in pages.
+      // Means that /project/abcd#reqs/UC-1 is redirected to /login# instead of /login#reqs/UC-1
+      () => RedirectResponse(Login.relativeUrl + "#"))
 
   private def PermissionRequired(checker: => Permission.Checker, failResp: LiftResponse = redirectHomeResp) =
     If(() => checker.isPass, () => failResp)
