@@ -73,6 +73,10 @@ object Style extends StyleSheet.Inline {
     deadMixin,
     hasError)
 
+  val svgGraph = style(
+    unsafeChild("svg")(
+      maxWidth(100 %%)))
+
   // ===================================================================================================================
   object index {
 

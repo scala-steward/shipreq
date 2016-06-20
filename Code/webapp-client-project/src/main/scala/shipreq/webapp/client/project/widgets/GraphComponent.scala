@@ -2,7 +2,8 @@ package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._, vdom.prefix_<^._
 import japgolly.scalajs.react.extra._
-import shipreq.webapp.client.project.app.WebWorkerClient
+import scalacss.ScalaCssReact._
+import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.ww.api._
 
@@ -38,7 +39,7 @@ object GraphComponent {
 
     def render(s: State): ReactElement =
       s match {
-        case Some(svg) => <.div(^.dangerouslySetInnerHtml(svg.content))
+        case Some(svg) => <.div(Style.svgGraph, ^.dangerouslySetInnerHtml(svg.content))
         case None      => <.div
       }
   }
