@@ -94,7 +94,9 @@ object Style extends StyleSheet.Inline {
 
     val cardIconCont = style(
       textAlign.center,
-      paddingTop(2.4 em).important)
+      paddingTop(2.7 em).important,
+      height(6.8 em).important,
+      flexGrow(0).important)
 
     val cardIcon = style(
       fontSize(3 rem).important)

@@ -24,12 +24,12 @@ object ProjectIndex {
                                    subtitle: String) extends Item(title, icon, subtitle)
 
     case object ReqTable    extends WithPage("Req Table"        , Icon.Cubes         , Page.ReqTable   , "View and edit all reqs.")
-    case object ImpGraph    extends WithPage("Implication Graph", Icon.ShareAlternate, Page.ImpGraph   , "TODO")
-    case object CfgFields   extends WithPage("Fields"           , Icon.ListLayout    , Page.CfgFields  , "TODO")
-    case object CfgIssues   extends WithPage("Issues"           , Icon.WarningSign   , Page.CfgIssues  , "TODO")
-    case object CfgReqTypes extends WithPage("Req Types"        , Icon.Inbox         , Page.CfgReqTypes, "TODO")
-    case object CfgTags     extends WithPage("Tags"             , Icon.Tags          , Page.CfgTags    , "TODO")
-    case object ReqDetail   extends Item    ("Req Lookup"       , Icon.Cube          , "View and edit a single req.")
+    case object ReqDetail   extends Item    ("Req Lookup"       , Icon.Cube          ,                   "View and edit a single req.")
+    case object ImpGraph    extends WithPage("Implication Graph", Icon.ShareAlternate, Page.ImpGraph   , "View project-wide implication.")
+    case object CfgFields   extends WithPage("Fields"           , Icon.ListLayout    , Page.CfgFields  , "Configure fields that each type of req has.")
+    case object CfgIssues   extends WithPage("Issues"           , Icon.WarningSign   , Page.CfgIssues  , "Configure types and causes of issues.")
+    case object CfgReqTypes extends WithPage("Req Types"        , Icon.Inbox         , Page.CfgReqTypes, "Configure types of reqs.")
+    case object CfgTags     extends WithPage("Tags"             , Icon.Tags          , Page.CfgTags    , "Configure attributes for content and organisation.")
 
     implicit def univEq: UnivEq[Item] = UnivEq.derive
 
@@ -126,7 +126,7 @@ object ProjectIndex {
                   <.div(^.cls := "center",
                     <.div(^.cls := "ui search",
                       <.div(^.cls := "ui icon input",
-                        <.input.text(^.cls := "prompt", ^.size := 18),
+                        <.input.text(^.cls := "prompt", ^.size := 10),
                         Icon.Search.tag))))),
               icon),
             contentTag)
