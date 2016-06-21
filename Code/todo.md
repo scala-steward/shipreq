@@ -32,5 +32,3 @@
   * Compression and caching
   * New amazon accounts
 
-* Prop-test ProjectCatalogue SQL.
-

@@ -3,7 +3,9 @@ package shipreq.webapp.base.event
 import nyaya.gen._
 import nyaya.prop.LogicPropExt
 import nyaya.util.Multimap
-import scalaz.{-\/, BindRec}
+import scalaz.{-\/, \/-, BindRec}
+import scalaz.std.vector.vectorInstance
+import scalaz.syntax.traverse._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.test.IncCounter
 import shipreq.base.util._
@@ -27,6 +29,51 @@ import UtilMacros._
   * make sense as a consecutive stream.
   */
 object RandomEventStream {
+
+  type ProjectDepGen[A] = StateGen[Project, A]
+
+  def liftGE(eventGen: Gen[Event]): ProjectDepGen[VerifiedEvent] =
+    liftPGE(_ => eventGen)
+
+  def liftPGE(eventGen: Project => Gen[Event]): ProjectDepGen[VerifiedEvent] =
+    StateGen(p =>
+      eventGen(p).map(e =>
+        ApplyEvent.untrusted.apply1(e)(p) match {
+          case \/-(p2) =>
+            val hrs = HashRec.changes(p, p2)
+            if (hrs.isEmpty)
+              None
+            else
+              Some((p2, VerifiedEvent(e, hrs)))
+          case -\/(_) => None
+        }
+      ).optionGetLimit(40)
+    )
+
+  val InitialEventCount = 2
+
+  lazy val initialEvents: Gen[(Project, VerifiedEvents)] =
+    Vector(
+      liftGE(RandomData.events.genProjectTemplateApply),
+      liftPGE(ApplicableEventGen(_).genProjectNameSet)
+    )
+      .sequenceU
+      .run(Project.empty)
+
+  val verifiedEvent: ProjectDepGen[VerifiedEvent] =
+    StateGen(ApplicableEventGen(_).verifiedEvent)
+
+  def verifiedEvents(implicit ss: SizeSpec): ProjectDepGen[VerifiedEvents] =
+    StateGen(p =>
+      ss.gen.flatMap(size =>
+        Vector.fill(size)(verifiedEvent).sequenceU.run(p)))
+
+  def entireEventStream(implicit ss: SizeSpec): Gen[(Project, VerifiedEvents)] =
+    for {
+      (p1, e1) <- initialEvents
+      (p2, e2) <- verifiedEvents(ss).run(p1)
+    } yield (p2, e1 ++ e2)
+
 //  def applicableEventS[S](observe: ObserveFn[S]): StateGen[(S, Project), Event] =
 //    StateGen(sp =>
 //      ApplicableEventGen(sp._2).applicableEventS(sp._1)(observe))
@@ -50,8 +97,6 @@ object RandomEventStream {
 //  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: ObserveFn[S])(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
 //    eventStreamS(addVerifiedEventS(applicableEventS(observe)))(ss)((s0, p0), Vector.empty)
 //      .map { case (((s, _), vs), ()) => (s, vs) }
-//
-//  // -------------------------------------------------------------------------------------------------------------------
 //
 //  def withEventStats(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[(EventStats, VerifiedEvents)] =
 //    genEventStreamS(EventStats.empty, p)(EventStats.observeFn)
@@ -733,4 +778,7 @@ class ApplicableEventGen(p: Project) {
         r.bimap(_ => s2, p2 => ((s2, p2), e))
       }
     )(init)
+
+  def verifiedEvent: Gen[(Project, VerifiedEvent)] =
+    RandomEventStream.liftGE(eventGen).run(p)
 }
