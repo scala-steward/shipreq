@@ -100,7 +100,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 object RichTextEditor {
   val correctSingleLineText: EndoFn[String] = {
     val r = "[\\r\\n]+".r
-    r.replaceAllIn(_, " ")
+    r.replaceAllIn(_, "")
   }
 
   def liveCorrect(text: Text.Generic): EndoFn[String] =
