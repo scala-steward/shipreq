@@ -142,12 +142,12 @@ final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, 
       p.page match {
 
         case Page.Index =>
-          val rl = ReqLookupPrompt.Props(
+          val lookup = ReqLookupPrompt.Props(
             ExternalVar(s.reqLookup)($.zoomL(State.reqLookup) setState _),
             Allow <~ _.lookup(cd.project()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
-
-          ProjectIndex.Props(rl, cd.projectSummary(), routerCtl).render
+          val index = ProjectIndex.Props(lookup, routerCtl)
+          ProjectHome.Props(cd.projectSummary(), index).render
 
         case Page.CfgFields =>
           layout(cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, fd).component)
