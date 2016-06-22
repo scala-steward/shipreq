@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.state
 
-import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.{Broadcaster, Px, Reusability}
+import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.Instant
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.{Project, ProjectCatalogue}
@@ -67,10 +67,11 @@ object ClientData {
 
   def init(initSummary: ProjectCatalogue.Item,
            cp         : ClientProtocol,
-           remoteInit : ProjectInit.Instance,
-           onSuccess  : ClientData => Callback): Callback =
+           remoteInit : ProjectInit.Instance)(
+           onSuccess  : ClientData => Callback,
+           onFailure  : String => Callback): Callback =
 
     cp.call(remoteInit)((),
       p => TCB.Success(onSuccess(new Impl(p, initSummary))),
-      _.consume) // TODO handle failure properly
+      _.consumeAnd(e => TCB.Failure(onFailure(e))))
 }

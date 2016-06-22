@@ -9,7 +9,7 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.protocol.{ClientFnDecl, InitDataForProjectSpa}
 import shipreq.webapp.client.base.protocol.{ClientFnImpl, ClientProtocol}
 import shipreq.webapp.client.base.ui.BaseStyles
-import shipreq.webapp.client.project.app.root.{LoadedRoot, Routes}
+import shipreq.webapp.client.project.app.root.{LoadFailedPage, LoadedRoot, LoadingPage, Routes}
 import shipreq.webapp.client.project.app.state.ClientData
 
 @JSExport(ClientFnDecl.ProjectSpaName)
@@ -21,17 +21,31 @@ object Main extends ClientFnImpl(ClientFnDecl.ProjectSpa) {
     if (m.matches) BaseUrl(m group 1) else BaseUrl(url).endWith_/
   }
 
-  override def run(initData: InitDataForProjectSpa): Unit = {
+  override def run(i: InitDataForProjectSpa): Unit = {
 
     val cp = ClientProtocol.Default
     BaseStyles.addToDocument()
     Style.addToDocument()
 
-    ClientData.init(initData.project, cp, initData.projectInit, cd => Callback {
-      val root    = new LoadedRoot(initData, cp, cd)
-      val baseUrl = determineBaseUrl(dom.window.location.href)
-      val router  = Router(baseUrl, Routes.routerConfig(root))
-      router() render dom.document.getElementById("tgt")
-    }).runNow()
+    ClientData.init(i.project, cp, i.projectInit)(onSuccess, onFailure)
+      .runNow()
+
+    def domTarget() =
+      dom.document.getElementById("tgt")
+
+    def onSuccess(cd: ClientData): Callback =
+      Callback {
+        val root    = new LoadedRoot(i, cp, cd)
+        val baseUrl = determineBaseUrl(dom.window.location.href)
+        val router  = Router(baseUrl, Routes.routerConfig(root))
+        ReactDOM.render(router(), domTarget())
+      }
+
+    def onFailure(error: String): Callback =
+      Callback {
+        val lp = LoadingPage.Props(i.username, i.project)
+        val lf = LoadFailedPage.Props(lp, error)
+        ReactDOM.render(LoadFailedPage.Component(lf), domTarget())
+      }
   }
 }

@@ -13,32 +13,31 @@ object LoadingPage {
     @inline def render = Component(this)
   }
 
+  def layout(p: Props)(content: ReactElement): ReactElement =
+    <.div(
+
+      MemberNavBar.Props(
+        p.username,
+        MemberNavBar.MemberHome :: Breadcrumb.Item.Div(p.project.name) :: Nil,
+        Nil)
+        .render,
+
+      <.div(BaseStyles.maxWidthContainer,
+
+        // Nope. It uses BaseStyles which aren't loaded until JS loads meaning webapp-gen can't use this.
+        // ProjectItem.Component(p.project),
+
+        content))
+
   @UsesSemanticUiManually
-  final class Backend($: BackendScope[Props, Unit]) {
-
-    def render(p: Props): ReactElement =
+  def render(p: Props): ReactElement =
+    layout(p)(
       <.div(
+        ^.cls := "ui segment basic",
+        ^.height := "20rem",
+        <.div(
+          ^.cls := "ui text loader large active",
+          "Loading...")))
 
-        MemberNavBar.Props(
-          p.username,
-          MemberNavBar.MemberHome :: Breadcrumb.Item.Div(p.project.name) :: Nil,
-          Nil)
-          .render,
-
-        <.div(BaseStyles.maxWidthContainer,
-
-          // Nope. It uses BaseStyles which aren't loaded until JS loads meaning webapp-gen can't use this.
-          // ProjectItem.Component(p.project),
-
-          <.div(
-            ^.cls := "ui segment basic",
-            ^.height := "20rem",
-            <.div(
-              ^.cls := "ui text loader large active",
-              "Loading..."))))
-  }
-
-  val Component = ReactComponentB[Props]("LoadingPage")
-    .renderBackend[Backend]
-    .build
+  val Component = FunctionalComponent[Props](render)
 }

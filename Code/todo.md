@@ -3,7 +3,6 @@
   * Project title + stats
   * Project title editor
 * Stop using old layout / remove ← Back links
-* Handle project load failure
 
 * Group req types in filter from ALL to ANY.
 * Say "no implications" in imp graph
@@ -31,4 +30,8 @@
   * Security settings (TLS) and test
   * Compression and caching
   * New amazon accounts
+
+* Do more with errors.
+    ClientData.init
+    ClientData.applyEvents
 
