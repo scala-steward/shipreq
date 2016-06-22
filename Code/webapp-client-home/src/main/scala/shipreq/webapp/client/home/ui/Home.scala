@@ -11,7 +11,7 @@ import shipreq.webapp.base.protocol.InitDataForHomeSpa
 import shipreq.webapp.client.base.ClientConfig
 import shipreq.webapp.client.base.feature.AsyncActionFeature
 import shipreq.webapp.client.base.protocol.ClientProtocol
-import shipreq.webapp.client.base.ui.{BaseStyles, MemberNavBar, ProjectItem, TextInputAndButton}
+import shipreq.webapp.client.base.ui.{BaseStyles, MemberNavBar, PlainTextEditor, ProjectItem}
 import shipreq.webapp.client.base.ui.semantic.Breadcrumb
 
 object Home {
@@ -84,14 +84,14 @@ object HomeContent {
       val menu = MemberNavBar.Props(p.username, navBarLeft, Nil).render
 
       val projectCreate = {
-        import TextInputAndButton.State
+        import PlainTextEditor.State
 
         def state = State.validator(Validators.projectName)(
           p.createProjectText.value,
           _.nonEmpty,
           p.createProjectIO)
 
-        TextInputAndButton.Props.asyncAware(
+        PlainTextEditor.WithButton.Props.asyncAware(
           p.createProjectAS,
           p.createProjectAF,
           p.createProjectText.value,
