@@ -72,7 +72,10 @@ devProdJs 'ws:public', 'public-deps.js', (f) ->
 
 gulp.task 'ws:member:css', [], ->
   semantic = nonRetardedSrc ['semantic/dist/semantic.min.css']
-  custom   = nonRetardedSrc ['custom-css/textcomplete.css']
+  custom   = nonRetardedSrc [
+               'custom-css/textcomplete.css'
+               'custom-css/semantic-fixes.css'
+             ]
   name     = 'member.css'
   dev = eventStream.merge(semantic, custom)
     .pipe concat name

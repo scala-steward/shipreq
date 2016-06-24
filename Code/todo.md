@@ -1,9 +1,3 @@
-* Index
-  * Breadcrumb link colours
-  * Project title + stats
-  * Project title editor
-* Stop using old layout / remove ← Back links
-
 * Group req types in filter from ALL to ANY.
 * Say "no implications" in imp graph
 
