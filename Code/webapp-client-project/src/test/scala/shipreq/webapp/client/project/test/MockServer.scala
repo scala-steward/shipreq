@@ -32,8 +32,8 @@ class MockServer(project: CallbackTo[Project], update: VerifiedEvents => Callbac
     attempt (TagCrud.Fn           )(MakeEvent.tagCrud)               orElse
     attempt (FieldCrud.Fn         )(MakeEvent.fieldCrud)             orElse
     attemptI(ReqTypeImplicationMod)(MakeEvent.reqTypeImplicationMod) orElse
-    attemptI(FieldMandatorinessMod)(MakeEvent.fieldMandatorinessMod)
-
+    attemptI(FieldMandatorinessMod)(MakeEvent.fieldMandatorinessMod) orElse
+    attemptI(ProjectNameSetFn     )(MakeEvent.projectNameSetFn)
 
   override def autoResponse(r: Req): Callback =
     project >>= { p1 =>

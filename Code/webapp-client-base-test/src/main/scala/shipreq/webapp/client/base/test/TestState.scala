@@ -28,5 +28,6 @@ object TestState
   val End       = KeyboardEventData(key = KeyValue.End       , keyCode = KeyCode.End   )
   val Escape    = KeyboardEventData(key = KeyValue.Escape    , keyCode = KeyCode.Escape)
   val Enter     = KeyboardEventData(key = KeyValue.Enter     , keyCode = KeyCode.Enter )
+  val CtrlEnter = KeyboardEventData(key = KeyValue.Enter     , keyCode = KeyCode.Enter , ctrlKey = true)
   val F2        = KeyboardEventData(key = KeyValue.F2        , keyCode = KeyCode.F2    )
 }

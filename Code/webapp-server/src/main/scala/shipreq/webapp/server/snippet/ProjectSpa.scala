@@ -148,6 +148,9 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
     val updateContent = remoteFn(UpdateContentFn)(
       i => updateProject(MakeEvent.updateContent(i, _)))
 
+    val projectNameSet = remoteFn(ProjectNameSetFn)(
+      i => updateProject(_ => MakeEvent.projectNameSetFn(i)))
+
     InitDataForProjectSpa(
       username,
       project,
@@ -159,7 +162,8 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
       fieldCrud,
       tagCrud,
       createContent,
-      updateContent)
+      updateContent,
+      projectNameSet)
   }
 
   override def render = {

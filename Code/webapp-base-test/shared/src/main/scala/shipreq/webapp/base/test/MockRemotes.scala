@@ -33,13 +33,14 @@ object MockRemotes {
     InitDataForProjectSpa(
       username,
       p,
-      RemoteFn.Instance("projectInit"  , ProjectInit          ),
-      RemoteFn.Instance("issueTypeCrud", CustomIssueTypeCrud  ),
-      RemoteFn.Instance("reqTypeCrud"  , CustomReqTypeCrud    ),
-      RemoteFn.Instance("reqTypeImpMod", ReqTypeImplicationMod),
-      RemoteFn.Instance("fieldMandMod" , FieldMandatorinessMod),
-      RemoteFn.Instance("fieldCrud"    , FieldCrud.Fn         ),
-      RemoteFn.Instance("tagCrud"      , TagCrud.Fn           ),
-      RemoteFn.Instance("createContent", CreateContentFn      ),
-      RemoteFn.Instance("updateContent", UpdateContentFn      ))
+      RemoteFn.Instance("projectInit"   , ProjectInit          ),
+      RemoteFn.Instance("issueTypeCrud" , CustomIssueTypeCrud  ),
+      RemoteFn.Instance("reqTypeCrud"   , CustomReqTypeCrud    ),
+      RemoteFn.Instance("reqTypeImpMod" , ReqTypeImplicationMod),
+      RemoteFn.Instance("fieldMandMod"  , FieldMandatorinessMod),
+      RemoteFn.Instance("fieldCrud"     , FieldCrud.Fn         ),
+      RemoteFn.Instance("tagCrud"       , TagCrud.Fn           ),
+      RemoteFn.Instance("createContent" , CreateContentFn      ),
+      RemoteFn.Instance("updateContent" , UpdateContentFn      ),
+      RemoteFn.Instance("projectNameSet", ProjectNameSetFn     ))
 }

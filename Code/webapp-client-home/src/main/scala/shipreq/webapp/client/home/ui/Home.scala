@@ -79,6 +79,9 @@ object HomeContent {
     val navBarLeft =
       Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil
 
+    val inputMod: TagMod =
+      ^.placeholder := "New project name..."
+
     def render(p: Props): ReactElement = {
 
       val menu = MemberNavBar.Props(p.username, navBarLeft, Nil).render
@@ -88,21 +91,21 @@ object HomeContent {
 
         def state = State.validator(Validators.projectName)(
           p.createProjectText.value,
-          _.nonEmpty,
+          _.isEmpty,
           p.createProjectIO)
 
         PlainTextEditor.WithButton.Props.asyncAware(
-          p.createProjectAS,
-          p.createProjectAF,
           p.createProjectText.value,
           p.createProjectText.set,
+          p.createProjectAS,
+          p.createProjectAF,
           state,
-          placeholder = "New project name...",
-          buttonLabel = "Create")
+          buttonLabel = "Create",
+          inputMod = inputMod)
           .render
       }
 
-      val projectList = p.projects.items.sortBy(_.name).map(ProjectItem.Component(_))
+      val projectList = p.projects.items.sortBy(_.name).map(ProjectItem.AsLink.Component(_))
 
       <.div(
         menu,

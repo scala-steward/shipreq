@@ -6,6 +6,7 @@ import shipreq.base.util.Intersection
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.client.base.feature._
+import shipreq.webapp.client.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.{reqdetail, reqtable}
 import shipreq.webapp.client.project.feature.ContentEditorFeature.EditFieldKey
@@ -107,7 +108,8 @@ object AsyncKey {
 }
 
 @Lenses
-case class State(reqLookup   : String,
+case class State(projectName : ProjectItem.WithEditableName.State,
+                 reqLookup   : String,
                  editStates  : ContentEditorFeature.D2.State.Simple[reqtable.Row.SourceId, EditFieldKey],
                  asyncStates : AsyncActionFeature.D2.State.Simple[reqtable.Row.SourceId, AsyncKey, String],
                  previewState: PreviewFeature.State[FocusId],
@@ -118,6 +120,7 @@ case class State(reqLookup   : String,
 object State {
   def init(cd: ClientData): State =
     State(
+      ProjectItem.WithEditableName.State.init,
       "",
       ContentEditorFeature.D2.State.init,
       AsyncActionFeature.D2.State.init,

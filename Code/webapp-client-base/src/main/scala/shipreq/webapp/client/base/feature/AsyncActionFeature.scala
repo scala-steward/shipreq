@@ -98,17 +98,21 @@ object AsyncActionFeature {
       def wrapAsync(call: AsyncCall[F]): Callback
     }
 
-    def Feature[F]($: CompState.WriteAccess[State[F]]): Feature[F] =
-      new Feature[F] {
-        override def wrapAsync(call: AsyncCall[F]) =
-          genericWrapAsync[F]($ setState _, call)
-      }
+    object Feature {
+      def apply[F]($: CompState.WriteAccess[State[F]]): Feature[F] =
+        fn($ setState _)
 
-    def nopFeature: Feature[Any] =
-      new Feature[Any] {
+      def fn[F](set: Option[Status[F]] => Callback): Feature[F] =
+        new Feature[F] {
+          override def wrapAsync(call: AsyncCall[F]) =
+            genericWrapAsync[F](set, call)
+        }
+
+      object Nop extends Feature[Any] {
         override def wrapAsync(call: AsyncCall[Any]) =
           Callback.empty
       }
+    }
   }
 
   // ===================================================================================================================
@@ -182,7 +186,7 @@ object AsyncActionFeature {
       private final class Impl[S, A, B, -F]($: CompState.WriteAccess[State[S, A, F]],
                                             i: Intersection[A, B]) extends Feature[B, F] {
         override def apply(b: B) =
-          i.reverse.fold(b, a => D0.Feature($ zoomL State.at(a)))(D0.nopFeature)
+          i.reverse.fold(b, a => D0.Feature($ zoomL State.at(a)))(D0.Feature.Nop)
 
         override def mapK[C](j: Intersection[B, C]) =
           new Impl($, i composeIntersection j)
@@ -199,7 +203,7 @@ object AsyncActionFeature {
 
       def nop[K]: Feature[K, Any] =
         new Feature[K, Any] {
-          override def apply(k: K)                       = D0.nopFeature
+          override def apply(k: K)                       = D0.Feature.Nop
           override def mapK[C](j: Intersection[K, C])    = nop
           override def wrapAsyncD1(call: AsyncCall[Any]) = Callback.empty
         }

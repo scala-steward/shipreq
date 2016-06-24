@@ -12,7 +12,7 @@ import shipreq.webapp.base.test.{MockRemotes, SampleProject5}
 import shipreq.webapp.client.base.test._
 import shipreq.webapp.client.project.app.reqdetail.{ReqDetailObs, ReqDetailTestDsl => RD}
 import shipreq.webapp.client.project.app.reqtable.{ReqTableObs, ReqTableTestDsl => RT}
-import shipreq.webapp.client.project.app.root._
+import shipreq.webapp.client.project.app.root.{ProjectHomeTestDsl => PH, _}
 import shipreq.webapp.client.project.test._
 import LoadedRoot.Props
 import Routes.Page
@@ -30,15 +30,27 @@ object ProjectSpaTestDsl {
 
   case class Ref(cd: TestClientData, svr: MockServer, tester: ComponentTester[Props, State, _, TopNode]) {
     def observe(): Obs = {
-      def inner = tester.component.htmlDomZipper.apply(">*", 2 of 2)
+      val $ = tester.component.htmlDomZipper
+      def inner = $(">*", 2 of 2) // navBar & body
       new Obs(
         cd.project(),
+        new NavObs($("nav:contains('Logout')")),
+        Try(new ProjectHomeObs(inner)),
         Try(new ReqTableObs(svr, inner)),
         Try(new ReqDetailObs(inner)))
     }
   }
 
+  class NavObs(nav: HtmlDomZipper) {
+    val breadcrumbs = nav(".ui.breadcrumb").collect0n(".section")
+
+    val projectName: String =
+      breadcrumbs.doms(1).textContent
+  }
+
   case class Obs(project  : Project,
+                 nav      : NavObs,
+                 home     : Maybe[ProjectHomeObs],
                  reqTable : Maybe[ReqTableObs],
                  reqDetail: Maybe[ReqDetailObs])
 
@@ -46,6 +58,12 @@ object ProjectSpaTestDsl {
   case class TestState(page: Page, project: Project, detailState: RD.State)
 
   val * = Dsl[Ref, Obs, TestState]
+
+  implicit val transformPH =
+    PH.*.transformer
+      .mapR[Ref](_.svr)
+      .pmapO[Obs](_.home)
+      .mapS(TestState.project.get)((a, b) => TestState.project.set(b)(a)) // TODO Add Monocle support
 
   implicit val transformRT =
     RT.*.transformer
@@ -59,15 +77,21 @@ object ProjectSpaTestDsl {
       .pmapO[Obs](_.reqDetail)
       .mapS[TestState](s => RD.TestState(s.project, s.detailState))((s, d) => TestState(s.page, d.project, d.state))
 
-  val invariantsRT = RT.invariants.lift
-  val invariantsRD = RD.invariants.lift
+  private val invariantsPH = PH.invariants.lift
+  private val invariantsRT = RT.invariants.lift
+  private val invariantsRD = RD.invariants.lift
 
-  val invariants: *.Invariants =
+  private val pageInvariants: *.Invariants =
     *.chooseInvariant("Page invariants")(_.state.page match {
+      case Page.Index        => invariantsPH
       case Page.ReqTable     => invariantsRT
       case Page.ReqDetail(_) => invariantsRD
       case _                 => *.emptyInvariant
     })
+
+  private val invariants: *.Invariants =
+    pageInvariants &
+    *.focus("Project name in NavBar").obsAndState(_.nav.projectName, _.project.name).assert.equal
 
   def setPage(p: Page): *.Actions = p match {
     case Page.ReqDetail(_) => sys error "Use setPageToReqDetail instead."
@@ -88,8 +112,9 @@ object ProjectSpaTestDsl {
     *.action(name)(_.ref.cd.applyTestEvents(e: _*))
       .updateStateBy(i => i.state.copy(project = i.obs.project))
 
-  def liftReqTableTests (p: RT.*.Plan): *.Plan = p.lift
-  def liftReqDetailTests(p: RD.*.Plan): *.Plan = p.lift
+  def liftProjectHomeTests(p: PH.*.Plan): *.Plan = p.lift
+  def liftReqTableTests   (p: RT.*.Plan): *.Plan = p.lift
+  def liftReqDetailTests  (p: RD.*.Plan): *.Plan = p.lift
 
   def testReqTable(action: RT.*.Actions): *.Actions =
     liftReqTableTests(Plan.action(action)).asAction("Test ReqTable")

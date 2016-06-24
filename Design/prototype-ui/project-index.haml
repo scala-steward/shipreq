@@ -22,6 +22,30 @@
       .content.pic {text-align:center; padding-top:2.2em !important}
       .content.pic > i {font-size:3rem}
 
+      .edit-notes {
+        xtext-align:right;
+        font-size: 0.75rem;
+        line-height: 1em;
+        color: #a4a6a8;
+      }
+      .edit-notes:not(:first-child) {
+        margin-top: 0.4em;
+      }
+      .edit-notes:not(:last-child) {
+        margin-bottom: 0.4em;
+      }
+      .edit-notes a {
+        cursor:pointer;
+      }
+      .edit-notes a:not(:hover) {
+        color:inherit;
+        border-bottom: solid 1px #e0e2e4;
+      }
+      .edit-notes a:hover {
+        color:#525456;
+        text-decoration: underline;
+      }
+
   %body
 
     %nav(style="margin-bottom:5rem")
@@ -52,12 +76,20 @@
     .ui.container{style: "max-width: 723px! important"}
 
       %div{style: "display:flex"}
-        %div{style: "flex-grow:1"}
-          %h1.ui.header.inline-edit{title: "double-click to edit"}
-            CardBoard
-          .ui.meta{style: "margin: .5em 0; font-size: 1em; line-height: 1em; color: rgba(0,0,0,.6);"}
-            Updated&nbsp;
-            %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 4 months ago.
+        #pname{style: "flex-grow:1"}
+          %div
+            %h1.ui.header.inline-edit{title: "double-click to edit", ondblclick: '$("#pname > *").toggle()'}
+              CardBoard
+            .ui.meta{style: "margin: .5em 0; font-size: 1em; line-height: 1em; color: rgba(0,0,0,.6);"}
+              Updated&nbsp;
+              %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 4 months ago.
+          %div{style: "display:none"}
+            %div
+              .ui.input
+                %input{type: "text", value: "CardBoard", autofocus: 1, size: 50}
+              .edit-notes ctrl-enter to <a>save</a>, esc to <a onclick='$("#pname > *").toggle()'>cancel</a>.
+
+
         %div
           .ui.statistics.tiny
             .statistic

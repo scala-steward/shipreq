@@ -6,6 +6,8 @@ import BinCodecData._
 
 object ProjectInit extends (Unit =>|=> Project)
 
+object ProjectNameSetFn extends RemoteFn.ToVE[String]
+
 object CustomIssueTypeCrud extends CrudFn.CAux[CustomIssueTypeId, (HashRefKey, Option[String])]
 
 object CustomReqTypeCrud extends CrudFn.CAux[CustomReqTypeId, (ReqType.Mnemonic, String, ImplicationRequired)]
@@ -14,17 +16,18 @@ object FieldMandatorinessMod extends RemoteFn.ToVE[(CustomFieldId, Mandatory)]
 
 object ReqTypeImplicationMod extends RemoteFn.ToVE[(CustomReqTypeId, ImplicationRequired)]
 
-case class InitDataForProjectSpa(username     : Username,
-                                 project      : ProjectCatalogue.Item,
-                                 projectInit  : ProjectInit          .Instance,
-                                 issueTypeCrud: CustomIssueTypeCrud  .Instance,
-                                 reqTypeCrud  : CustomReqTypeCrud    .Instance,
-                                 reqTypeImpMod: ReqTypeImplicationMod.Instance,
-                                 fieldMandMod : FieldMandatorinessMod.Instance,
-                                 fieldCrud    : FieldCrud.Fn         .Instance,
-                                 tagCrud      : TagCrud.Fn           .Instance,
-                                 createContent: CreateContentFn      .Instance,
-                                 updateContent: UpdateContentFn      .Instance)
+case class InitDataForProjectSpa(username      : Username,
+                                 project       : ProjectCatalogue.Item,
+                                 projectInit   : ProjectInit          .Instance,
+                                 issueTypeCrud : CustomIssueTypeCrud  .Instance,
+                                 reqTypeCrud   : CustomReqTypeCrud    .Instance,
+                                 reqTypeImpMod : ReqTypeImplicationMod.Instance,
+                                 fieldMandMod  : FieldMandatorinessMod.Instance,
+                                 fieldCrud     : FieldCrud.Fn         .Instance,
+                                 tagCrud       : TagCrud.Fn           .Instance,
+                                 createContent : CreateContentFn      .Instance,
+                                 updateContent : UpdateContentFn      .Instance,
+                                 projectNameSet: ProjectNameSetFn     .Instance)
 
 object InitDataForProjectSpa {
   import boopickle._

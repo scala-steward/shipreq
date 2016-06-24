@@ -78,10 +78,17 @@ object Style extends StyleSheet.Inline {
       maxWidth(100 %%)))
 
   // ===================================================================================================================
-  object index {
+  object home {
 
-    val header = style(
-      marginTop(1.8 em).important,
+    val projectHeader = style(
+      paddingBottom(1 rem),
+      paddingTop(0.5 rem))
+
+    val cardHeader = style(
+      &.firstChild(
+        marginTop(`0`).important),
+      &.not(_.firstChild)(
+        marginTop(1.8 em).important),
       marginBottom(0.2 em).important,
       paddingTop(0.8 em).important,
       paddingBottom(0.3 em).important)
@@ -529,7 +536,7 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
 
   initInnerObjects(
-    index.header,
+    home.cardHeader,
     cfg.deadMnemonic,
     reqtable.sortEditor.dragArea,
     reqtable.sortCriteriaEditor.conclusiveColumnName,

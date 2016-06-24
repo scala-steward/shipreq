@@ -83,46 +83,49 @@
         %tr
           %td Blank
           %td(style="width:100%")
-            .ui.input
-              %input{type: "text", placeholder: "Project name"}
-            .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
+            %div
+              %div
+                .ui.input
+                  %input{type: "text", placeholder: "Project name"}
+                .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
 
         %tr
           %td Ready
           %td
-            .ui.input
-              %input{type: "text", value: "CardBoard", autofocus: 1}
-            .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
+            %div
+              %div
+                .ui.input
+                  %input{type: "text", value: "CardBoard", autofocus: 1}
+                .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
 
         %tr
           %td InTransit
           %td
-            .ui.input.loading.icon
-              %input{type: "text", value: "CardBoard", disabled: "disabled"}
-              %i.search.icon
+            %div
+              %div
+                .ui.input.loading.icon
+                  %input{type: "text", value: "CardBoard", disabled: "disabled"}
+                  %i.search.icon
 
         %tr
           %td InputError
           %td
             %div
-              -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
-              .ui.input.error
-                %input{type: "text", value: "CardBoard", autofocus: 1}
-              -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
-            .ui.pointing.red.basic.label
-              That's dumb. Choose something else.
-            -# %div
-              .ui.input.error
-                %input{type: "text", value: "CardBoard", autofocus: 1}
-                .ui.left.pointing.red.basic.label
-                  That's dumb. Choose something else.
+              %div
+                -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
+                .ui.input.error
+                  %input{type: "text", value: "CardBoard", autofocus: 1}
+                -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
+              .ui.pointing.red.basic.label
+                That's dumb. Choose something else.
 
         %tr
           %td AsyncError
           %td
             %div
-              .ui.input
-                %input{type: "text", value: "CardBoard", autofocus: 1}
-              -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
-            .ui.pointing.red.basic.label
-              AJAX error.
+              %div
+                .ui.input
+                  %input{type: "text", value: "CardBoard", autofocus: 1}
+                -# .edit-notes ctrl-enter to <a>save</a>, esc to <a>cancel</a>.
+              .ui.pointing.red.basic.label
+                AJAX error.

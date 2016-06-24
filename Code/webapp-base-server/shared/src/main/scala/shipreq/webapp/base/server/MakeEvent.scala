@@ -38,6 +38,9 @@ object MakeEvent {
 
   // ===================================================================================================================
 
+  def projectNameSetFn(name: ProjectNameSetFn.Input): Result =
+    ProjectNameSet(name)
+
   def reqTypeImplicationMod(input: ReqTypeImplicationMod.Input): Result = {
     val (id, imp) = input
     CustomReqTypeUpdate(id, CustomReqTypeGD.Imp(imp))

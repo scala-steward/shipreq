@@ -56,7 +56,7 @@ object ReqLookupPrompt {
         p.resolution match {
         case Resolution.Blank     => EmptyTag
         case Resolution.Valid(ep) => ^.onKeyDown ==> commitOnEnter(p commit ep)
-        case Resolution.Invalid   => Style.index.reqLookupPromptHasError
+        case Resolution.Invalid   => Style.home.reqLookupPromptHasError
       }
 
       base(^.value := p.edit.value, state)

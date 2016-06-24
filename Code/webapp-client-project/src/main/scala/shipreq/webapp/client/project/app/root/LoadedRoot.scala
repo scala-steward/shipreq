@@ -3,7 +3,6 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
 import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
@@ -11,8 +10,9 @@ import shipreq.webapp.base.protocol.InitDataForProjectSpa
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.client.base.feature._
 import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.client.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state._
-import shipreq.webapp.client.project.app.{cfg, reqdetail, reqtable, WebWorkerClient}
+import shipreq.webapp.client.project.app.{WebWorkerClient, cfg, reqdetail, reqtable}
 import shipreq.webapp.client.project.app.reqdetail.ReqDetail
 import shipreq.webapp.client.project.app.reqtable.ReqTable
 import shipreq.webapp.client.project.app.cfg.shared.Usage
@@ -26,7 +26,7 @@ object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
 }
 
-final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, cd: ClientData) {
+final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: ClientData) {
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import cd.pxProject
@@ -127,46 +127,63 @@ final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, 
           .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
           .link(Page.ReqTable))
 
+    val projectNameAAF =
+      AsyncActionFeature.D0.Feature.fn[String](s =>
+        $.modState(State.projectName.modify(
+          ProjectItem.WithEditableName.State setAsync s)))
+
+    val setProjectNameIO: String => Callback =
+      newName => {
+        def close = $.modState(State.projectName set None)
+        def save = projectNameAAF.wrapAsync((onSuccess, onFailure) =>
+          cp.call(initData.projectNameSet)(
+            newName,
+            cd.applyEventsS(_) >> onSuccess >> close,
+            _ consumeAnd onFailure))
+        cd.projectCB >>= (p => if (p.name ==* newName) close else save)
+      }
+
     def render(p: Props, s: State): ReactElement = {
       def fd = ReusableVar(s.filterDead)(setFilterDead)
 
-      def layout(content: ReactElement, backPage: Page = Page.Index) =
-        <.div(
-          <.div(
-            ^.textAlign.right,
-            ^.paddingRight := "0.6ex",
-            ^.marginTop := "-14px",
-            routerCtl.link(backPage)("← Back")),
-          content)
-
-      p.page match {
+      val content: ReactElement = p.page match {
 
         case Page.Index =>
           val lookup = ReqLookupPrompt.Props(
-            ExternalVar(s.reqLookup)($.zoomL(State.reqLookup) setState _),
+            ExternalVar(s.reqLookup)($.zoomL(State.reqLookup) setState _), // TODO Pending scalajs-react release
             Allow <~ _.lookup(cd.project()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
+
           val index = ProjectIndex.Props(lookup, routerCtl)
-          ProjectHome.Props(cd.projectSummary(), index).render
+
+          val pname = ProjectItem.WithEditableName.Props(
+            cd.projectSummary(),
+            ExternalVar(s.projectName)($.zoomL(State.projectName) setState _), // TODO Pending scalajs-react release
+            projectNameAAF,
+            setProjectNameIO)
+
+          ProjectHome.Props(pname, index).render
 
         case Page.CfgFields =>
-          layout(cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, fd).component)
+          cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, fd).component
 
         case Page.CfgIssues =>
-          layout(cfg.issues.CfgIssues.Props(cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, fd, usageShow).component)
+          cfg.issues.CfgIssues.Props(
+            cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, fd, usageShow)
+            .component
 
         case Page.CfgReqTypes =>
-          layout(cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, fd, usageShow).component)
+          cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, fd, usageShow).component
 
         case Page.CfgTags =>
-          layout(cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, fd).component)
+          cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, fd).component
 
         case Page.ReqTable =>
-          layout(reqTable(ReqTable.DynamicProps(
+          reqTable(ReqTable.DynamicProps(
             s.editStates.mapK1(reqtable.Column.EditFieldKeyIntersection.reverse),
             s.asyncStates.mapK1(AsyncKey.ToReqTable),
             s.previewState.mapK(FocusId.ToReqTable),
-            s.reqTable)))
+            s.reqTable))
 
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
@@ -174,18 +191,19 @@ final class LoadedRoot(val initData: InitDataForProjectSpa, cp: ClientProtocol, 
             fd,
             reqDetailReqPropsFn(s),
             ReusableVar(s.reqDetail)(reqDetailSetState))
-          layout(reqDetail(props), Page.ReqTable)
+          reqDetail(props)
 
         case Page.ImpGraph =>
           val p = cd.project()
-          val ig = ImplicationGraph.Props(
+          ImplicationGraph.Props(
             None, s.filterDead,
             p.implications, p.reqs, p.config.reqTypes,
             pxPlainText.value(),
             reqDetailRC,
-            ww)
-          layout(ig.render)
+            ww).render
       }
+
+      Layout.Props(initData.username, cd.projectSummary(), routerCtl, p.page, content).render
     }
 
     def onProjectChange(c: Changes): Callback =

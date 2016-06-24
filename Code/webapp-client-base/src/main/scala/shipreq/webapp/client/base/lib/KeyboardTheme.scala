@@ -1,9 +1,12 @@
 package shipreq.webapp.client.base.lib
 
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom.ext.KeyCode
+import scalacss.ScalaCssReact._
 import shipreq.webapp.base.text.LineCardinality
 import shipreq.webapp.client.base.lib.KeyHandler._
+import shipreq.webapp.client.base.ui.BaseStyles
 
 /**
   * Keyboard functionality consistent throughout the entire app.
@@ -32,4 +35,15 @@ object KeyboardTheme {
     commitCriterion.handle(Callback sequenceO commit) :: Nil
   }
 
+  def instructionsForCommitAbort(commit: Option[Callback],  abort: Callback): ReactTag = {
+    var save: ReactNode = "save"
+    for (c <- commit)
+      save = <.a(^.onClick --> c, save)
+
+    val cancel = <.a(^.onClick --> abort, "cancel")
+
+    <.div(BaseStyles.editorInstructions,
+      "ctrl-enter to ", save,
+      ", esc to ", cancel, ".")
+  }
 }

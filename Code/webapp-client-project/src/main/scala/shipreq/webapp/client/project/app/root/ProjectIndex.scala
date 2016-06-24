@@ -7,7 +7,7 @@ import scala.scalajs.js
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Intersection, NonEmptyVector}
 import shipreq.webapp.client.base.ui.semantic.{Colour, Dropdown, Header, Icon, JQuery, UsesSemanticUiManually}
-import shipreq.webapp.client.project.app.Style.{index => *}
+import shipreq.webapp.client.project.app.Style.{home => *}
 import Routes.{Page, RouterCtl}
 
 object ProjectIndex {
@@ -91,7 +91,7 @@ object ProjectIndex {
   @UsesSemanticUiManually
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val headerStyle = Header.Style(Header.Type.H3, Header.Attr.Dividing, other = *.header)
+    val headerStyle = Header.Style(Header.Type.H3, Header.Attr.Dividing, other = *.cardHeader)
 
     private val dimIt = "xd"
 

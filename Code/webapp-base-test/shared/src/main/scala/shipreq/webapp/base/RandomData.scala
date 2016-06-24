@@ -1286,7 +1286,8 @@ object RandomData {
         h <- remoteFn(TagCrud.Fn)
         i <- remoteFn(CreateContentFn)
         j <- remoteFn(UpdateContentFn)
-      } yield InitDataForProjectSpa(u, a, b, c, d, e, f, g, h, i, j)
+        k <- remoteFn(ProjectNameSetFn)
+      } yield InitDataForProjectSpa(u, a, b, c, d, e, f, g, h, i, j, k)
 
     class CrudActionGens[I, V](c: CrudFn.Aux[I, V])(idG: Gen[I], vG: Gen[V]) {
       lazy val create  = vG.map(CrudAction.Create[I, V])
