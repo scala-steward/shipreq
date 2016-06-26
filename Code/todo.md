@@ -2,15 +2,22 @@
 * Say "no implications" in imp graph
 
 * Determine UI for:
-  * ReqDetail load failure
   * Imp graph
+  * ReqDetail load failure
   * Deletion screen
   * Cfg Fields
   * Cfg Issues
   * Cfg ReqTypes
   * Cfg Tags
 
-* Implement UI & UX changes.
+* Implement UI for:
+  * Imp graph
+  * ReqDetail
+  * Deletion screen
+  * Cfg Fields
+  * Cfg Issues
+  * Cfg ReqTypes
+  * Cfg Tags
 
 * Redo front pages
   * split name into first/last
