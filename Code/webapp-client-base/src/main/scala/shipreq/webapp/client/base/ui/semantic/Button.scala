@@ -17,11 +17,12 @@ object Button {
 
   sealed abstract class Type(cls: ClassName) extends HasClass(cls)
   object Type {
-    case object Default  extends Type(NoClass)
-    case object Basic    extends Type("basic")
-    case object Primary  extends Type("primary")
-    case object Positive extends Type("positive")
-    case object Negative extends Type("negative")
+    case object Default   extends Type(NoClass)
+    case object Basic     extends Type("basic")
+    case object Primary   extends Type("primary")
+    case object Secondary extends Type("secondary")
+    case object Positive  extends Type("positive")
+    case object Negative  extends Type("negative")
     implicit def univEq: UnivEq[Type] = UnivEq.derive
   }
 
