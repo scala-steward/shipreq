@@ -18,7 +18,7 @@ object ImplicationGraphPage {
   }
 
   def render(p: Props) =
-    <.div(BaseStyles.fullWidthContainer,
+    <.div(BaseStyles.containerFull,
 
       <.div(*.filterDeadButton,
         FilterDeadButton.Component(ReusableVar(p.graph.filterDead)(p.setFilterDead))),

@@ -22,7 +22,7 @@ object LoadingPage {
         Nil)
         .render,
 
-      <.div(BaseStyles.maxWidthContainer,
+      <.div(BaseStyles.containerLarge,
 
         // Nope. It uses BaseStyles which aren't loaded until JS loads meaning webapp-gen can't use this.
         // ProjectItem.Component(p.project),

@@ -76,7 +76,7 @@ object BaseStyles extends StyleSheet.Inline {
         color(c"#525456"),
         textDecoration := "underline")))
 
-  val fullWidthContainer = style(
+  val containerFull = style(
     margin.horizontal(1 rem))
 
   val navBarContainer =
@@ -87,7 +87,7 @@ object BaseStyles extends StyleSheet.Inline {
     (^^.marginLeft  := "0.8em") +
     (^^.marginRight := "0.8em")
 
-  val maxWidthContainer =
+  val containerLarge =
     (^^.marginLeft   := "auto") +
     (^^.marginRight  := "auto") +
     (^^.paddingLeft  := "1em") +

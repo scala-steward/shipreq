@@ -109,7 +109,7 @@ object HomeContent {
 
       <.div(
         menu,
-        <.main(BaseStyles.maxWidthContainer,
+        <.main(BaseStyles.containerLarge,
           <.div(Styles.createProjectContainer, projectCreate),
           projectList))
     }

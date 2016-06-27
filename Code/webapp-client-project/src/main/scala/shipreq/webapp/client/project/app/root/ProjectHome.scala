@@ -16,7 +16,7 @@ object ProjectHome {
   final class Backend($: BackendScope[Props, Unit]) {
 
     def render(p: Props): ReactElement =
-      <.main(BaseStyles.maxWidthContainer,
+      <.main(BaseStyles.containerLarge,
         <.section(Style.home.projectHeader, p.item.render),
         ProjectIndex.Component(p.index))
   }
