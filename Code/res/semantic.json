@@ -35,6 +35,7 @@
         "statistic",
         "dimmer",
         "dropdown",
+        "popup",
         "search",
         "transition"
     ],

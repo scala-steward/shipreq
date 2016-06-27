@@ -56,7 +56,7 @@
     //"embed",
     //"modal",
     //"nag",
-    //"popup",
+    "popup",       // Used in FilterDead buttons
     //"progress",
     //"rating",
     "search",      // Used in ProjectIndex → ReqDetail card → search prompt
