@@ -76,8 +76,10 @@ object BaseStyles extends StyleSheet.Inline {
         color(c"#525456"),
         textDecoration := "underline")))
 
+  def pageMargin = 1 rem
+
   val containerFull = style(
-    margin.horizontal(1 rem))
+    margin.horizontal(pageMargin))
 
   val navBarContainer =
     ^^.marginBottom := "5rem"

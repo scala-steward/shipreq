@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.widgets
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import shipreq.webapp.base.data.{FilterDead, HideDead, ShowDead}
+import shipreq.webapp.base.data._
 import shipreq.webapp.client.base.ui.semantic._
 
 object FilterDeadButton {
@@ -34,4 +34,14 @@ object FilterDeadButton {
     .render_P(render)
     .configure(Reusability.shouldComponentUpdate)
     .build
+
+  val ForceShowDead: ReactElement =
+    renderButton(ShowDead)(^.disabled := true)
+
+  /** Say the user is viewing a dead req, then are already looking at dead content which is ShowDead. */
+  def whenLive(live: Live)(props: => Props): ReactElement =
+    live match {
+      case Live => Component(props)
+      case Dead => ForceShowDead
+    }
 }

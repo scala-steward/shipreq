@@ -15,6 +15,8 @@ import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.data._
 import shipreq.webapp.client.base.feature.AsyncActionFeature
 import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.client.base.ui.BaseStyles
+import shipreq.webapp.client.base.ui.semantic.Header
 import shipreq.webapp.client.project.app.reqtable.ColumnRenderer.RenderDeletionReason
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
@@ -22,7 +24,7 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.protocol.ServerCall
-import shipreq.webapp.client.project.widgets.Checkbox
+import shipreq.webapp.client.project.widgets.FilterDeadButton
 import shipreq.webapp.client.project.widgets.high.{DeletionForm, ImplicationGraph, ProjectWidgets, UseCaseStepFlowGraph}
 import ExternalPubid.LookupFailure
 
@@ -174,13 +176,8 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       } yield
         e.lookup(p).map(new Data(SP, p, _, f))
 
-    val filterDeadCheckbox =
-      Checkbox.filterDead(v => $.props.flatMap(_.filterDead set v))
-
-    val showDeadFakeCheckbox =
-      <.label(
-        <.input.checkbox(^.checked := true, ^.disabled := true),
-        UiText.Life.showDead)
+    val setFilterDead: FilterDead ~=> Callback =
+      ReusableFn(v => $.props.flatMap(_.filterDead set v))
 
     val updateIO: ServerCall[UpdateContentCmd] =
       ServerCall.to(updateContentFn, cp, cd)
@@ -245,18 +242,24 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     val emptyRow: ReactElement = <.span
 
     def render(p: DynamicProps): ReactElement =
-      p.state.value renderOrElse {
-        Px.refresh(pxExtPubid, pxUpstreamFD)
-        pxData.value() match {
-          case \/-(data)                              => renderDetail(p, data)
-          case -\/(LookupFailure.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.extPubid.mnemonic.value} not found.")
-          case -\/(LookupFailure.InvalidPos(rt, len)) => renderNotFound(s"${PlainText pubid p.extPubid} not found.")
-        }
-      }
+      <.main(
+        BaseStyles.containerFull,
+        p.state.value renderOrElse {
+          Px.refresh(pxExtPubid, pxUpstreamFD)
+          pxData.value() match {
+            case \/-(data)                              => renderDetail(p, data)
+            case -\/(LookupFailure.InvalidReqType)      => renderNotFound(s"${UiText.FieldNames.reqType} ${p.extPubid.mnemonic.value} not found.")
+            case -\/(LookupFailure.InvalidPos(rt, len)) => renderNotFound(s"${PlainText pubid p.extPubid} not found.")
+          }
+        })
 
     def focus: Callback = Callback.empty // TODO
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private val headerStyle =
+      Header.Style(Header.Type.H1, other = *.headerH1Margin)
+
     def renderDetail(props: DynamicProps, data: Data): ReactElement = {
       import data.{project, req, pubidText}
 
@@ -274,14 +277,17 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       }
 
       def renderHeader: ReactElement =
-        <.div(
-          *.header,
-          <.div(
-            *.headerId,
-            pubidText + ": "),
-          <.div(
-            *.headerTitle,
-              renderAsyncEditorOrValue(Cell.Title, pw.reqTitle(req))))
+        <.div(*.headerRow,
+
+          <.div(*.headerPubid,
+            Header(headerStyle, pubidText + ":")),
+
+          <.div(*.headerTitle,
+            renderAsyncEditorOrValue(Cell.Title,
+              Header(headerStyle, pw.reqTitle(req)))),
+
+          <.div(*.headerFilterDeadButton,
+            FilterDeadButton.whenLive(data.live)(ReusableVar(props.filterDead.value)(setFilterDead))))
 
       def renderRows =
         <.table(
@@ -419,15 +425,8 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           .render
       }
 
-      def renderFilterDead: ReactNode =
-        data.live match {
-          case Live => filterDeadCheckbox(props.filterDead.value)
-          case Dead => showDeadFakeCheckbox
-        }
-
       <.div(
         renderHeader,
-        renderFilterDead,
         renderRows)
     }
 

@@ -149,7 +149,7 @@ object ReqDetailTestDsl {
     *.action("Commit $label text edit")(Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor)
 
   val filterDeadToggle =
-    *.action("Toggle FilterDead")(Simulate change _.obs.generic.filterDeadInput)
+    *.action("Toggle FilterDead")(Simulate click _.obs.generic.filterDeadButton)
       .addCheck(filterDead.assert.changeTo(!_))
 
   def setFilterDead(fd: FilterDead) =

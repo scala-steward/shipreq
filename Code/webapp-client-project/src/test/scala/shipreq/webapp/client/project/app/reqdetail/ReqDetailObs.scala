@@ -38,19 +38,21 @@ final class ReqDetailObs($: HtmlDomZipper) {
   val deletionForm = DeletionFormObs.option($)
 
   object generic {
-    val headerRow = $(">div")
+    private val root = $(">*")
 
-    val pubid = headerRow(">*", 1 of 2).innerText.replace(":", "").trim
+    val headerRow = root(">div")
 
-    val titleDom = headerRow(">*", 2 of 2).asHtml.dom
+    val pubid = headerRow(">*", 1 of 3).innerText.replace(":", "").trim
 
-    val table = $(">table")
+    val titleDom = headerRow(">*", 2 of 3).asHtml.dom
 
-    val filterDeadInput = $(">label input").domAs[html.Input]
+    val filterDeadButton = headerRow(">*", 3 of 3)("button").domAs[html.Button]
 
-    val filterDead = ShowDead <~ filterDeadInput.checked
+    val filterDead = ShowDead <~ filterDeadButton.className.contains("red")
 
-    val filterDeadLocked = filterDeadInput.disabled getOrElse false
+    val filterDeadLocked = filterDeadButton.disabled getOrElse false
+
+    val table = root(">table")
 
     val fields: Map[String, HtmlDomZipperAt[html.TableCell]] =
       table(">tbody").collect1n(">tr")
@@ -118,7 +120,7 @@ final class ReqDetailObs($: HtmlDomZipper) {
   }
 
   val editables =
-    $.editables0n.doms.filterNot(_ == Try(generic.filterDeadInput).getOrElse(null))
+    $.editables0n.doms
 
   val mode: Mode =
     if (errorRoot.isDefined)

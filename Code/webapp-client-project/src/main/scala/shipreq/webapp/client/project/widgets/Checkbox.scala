@@ -22,6 +22,7 @@ object Checkbox {
       .build
   }
 
+  // TODO Deprecate Checkbox.filterDead
   def filterDeadChecked = ShowDead
 
   def filterDead(set: FilterDead => Callback) =

@@ -8,6 +8,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{StaticField, Live, Dead}
 import shipreq.webapp.client.base.data._
+import shipreq.webapp.client.base.ui.BaseStyles.pageMargin
 import shipreq.webapp.client.project.widgets._
 
 object Style extends StyleSheet.Inline {
@@ -384,16 +385,21 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object reqdetail {
 
-    val header = style(
-      fontSize(220 %%),
+    val headerRow = style(
       display.flex)
 
-    val headerId = style(
-      whiteSpace.pre)
+    val headerH1Margin = style(
+      margin(`0`).important)
+
+    val headerPubid = style(
+      paddingRight(0.4 rem))
 
     val headerTitle = style(
-      marginLeft(1 ex),
-      flexGrow(1))
+      flexGrow(1),
+      paddingLeft(0.4 rem))
+
+    val headerFilterDeadButton = style(
+      paddingLeft(pageMargin))
 
     val mainTable = style(
       width(100 %%),
