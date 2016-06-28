@@ -12,10 +12,10 @@
     "moment"              : "2.13.0",
     "react"               : "15.1.0",
     "react-dom"           : "15.1.0",
-    "react-collapse"      : "2.2.4",
+    "react-collapse"      : "2.3.0",
     "react-height"        : "2.1.0",
     "react-motion"        : "0.4.4",
-    "semantic-ui"         : "2.1.8"},
+    "semantic-ui"         : "2.2.0"},
 
   "devDependencies": {
     "coffee-script"    : "*",
