@@ -48,7 +48,7 @@ object ReqLookupPrompt {
 
     val base = <.input.text(
       ^.cls       := "prompt",
-      ^.size      := 10,
+      ^.size      := 12,
       ^.onChange ==> updateText)
 
     def render(p: Props): ReactElement = {

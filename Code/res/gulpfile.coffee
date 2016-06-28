@@ -2,7 +2,7 @@ gulp        = require 'gulp'
 concat      = require 'gulp-concat'
 debug       = require 'gulp-debug'
 del         = require 'del'
-eventStream = require 'event-stream'
+streamqueue = require 'streamqueue'
 expect      = require 'gulp-expect-file'
 imagemin    = require 'gulp-imagemin'
 less        = require 'gulp-less'
@@ -71,19 +71,20 @@ devProdJs 'ws:public', 'public-deps.js', (f) ->
   ]
 
 gulp.task 'ws:member:css', [], ->
-  semantic = nonRetardedSrc ['semantic/dist/semantic.min.css']
-  custom   = nonRetardedSrc [
+  semantic = -> nonRetardedSrc ['semantic/dist/semantic.min.css']
+  custom   = -> nonRetardedSrc [
                'custom-css/textcomplete.css'
                'custom-css/semantic-fixes.css'
              ]
-  name     = 'member.css'
-  dev = eventStream.merge(semantic, custom)
+  name = 'member.css'
+  # Note: semantic MUST come first else the font @import won't work.
+  dev = streamqueue({objectMode: true}, semantic(), custom())
     .pipe concat name
     .pipe gulp.dest cfg_ws_dev
-  prod = eventStream.merge(semantic, custom .pipe minifycss())
+  prod = streamqueue({objectMode: true}, semantic(), custom() .pipe minifycss())
     .pipe concat name
     .pipe gulp.dest cfg_ws_prod
-  eventStream.merge(dev, prod)
+  streamqueue({objectMode: true}, dev, prod)
 
 devProdJs 'ws:member:init', 'member-deps-init.js', (f) ->
   [

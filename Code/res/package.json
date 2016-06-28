@@ -15,12 +15,11 @@
     "react-collapse"      : "2.2.4",
     "react-height"        : "2.1.0",
     "react-motion"        : "0.4.4",
-    "semantic-ui"         : "2.2.0"},
+    "semantic-ui"         : "2.1.8"},
 
   "devDependencies": {
     "coffee-script"    : "*",
     "del"              : "*",
-    "event-stream"     : "*",
     "gulp-concat"      : "*",
     "gulp-debug"       : "*",
     "gulp-expect-file" : "*",
@@ -30,5 +29,6 @@
     "gulp-rename"      : "*",
     "gulp"             : "*",
     "gulp-uglify"      : "*",
+    "streamqueue"      : "*",
     "json5"            : "*"}
 }
