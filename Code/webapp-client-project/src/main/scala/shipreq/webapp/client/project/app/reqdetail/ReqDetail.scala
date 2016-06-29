@@ -15,7 +15,7 @@ import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.data._
 import shipreq.webapp.client.base.feature.AsyncActionFeature
 import shipreq.webapp.client.base.protocol.ClientProtocol
-import shipreq.webapp.client.base.ui.BaseStyles
+import shipreq.webapp.client.base.ui.{BaseStyles, EditTheme}
 import shipreq.webapp.client.base.ui.semantic.Header
 import shipreq.webapp.client.project.app.reqtable.ColumnRenderer.RenderDeletionReason
 import shipreq.webapp.client.project.app.state.ClientData
@@ -99,7 +99,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
     val pubidText = PlainText.pubid(req.pubid, project)
 
     val codeSet = project.reqCodes.activeReqCodesByReqId(req.id)
-    val codes  = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
+    val codes   = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
 
     val tagDist        = DataLogic.tagFieldDist(project.config, filterDead, _ => true)
     val tagLookup      = DataLogic.tagLookup(project, filterDead)
@@ -270,10 +270,9 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       val runCmd      = this.runCmd(req.id)
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
-        def startEdit = editFeature(cell).startEdit(focus)
-        TagMod(
-          ^.onDblClick -->? startEdit,
-          state.async(cell) renderOr (state.edit(cell) renderOr view))
+        def startEdit    = editFeature(cell).startEdit(focus)
+        def editableView = view + EditTheme.editableInline(startEdit)
+        state.async(cell) renderOr (state.edit(cell) renderOr editableView)
       }
 
       def renderHeader: ReactElement = {

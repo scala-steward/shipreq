@@ -88,4 +88,6 @@ object UiText {
   def buttonAbortChange = "Cancel"
 
   def buttonRetry = "Retry"
+
+  def doubleClickToEdit = "double-click to edit"
 }

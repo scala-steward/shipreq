@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.URLs
+import shipreq.webapp.base.{URLs, UiText}
 import shipreq.webapp.base.UiText.EnglishStringExt
 import shipreq.webapp.base.data.{ProjectCatalogue, Validators}
 import shipreq.webapp.client.base.feature.AsyncActionFeature
@@ -106,8 +106,7 @@ object ProjectItem {
 
       def renderView(p: Props): TagMod =
         <.h1(*.itemHeaderRW,
-          ^.onDblClick --> p.state.set(Some(EditState(p.item.name, None))),
-          ^.title := "double-click to edit",
+          EditTheme.editableInline(p.state set Some(EditState(p.item.name, None))),
           p.item.name
         ) + ProjectItem.renderMeta(p.item)
 

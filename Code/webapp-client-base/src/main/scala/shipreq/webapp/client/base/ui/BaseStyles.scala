@@ -6,6 +6,12 @@ import scalacss.Defaults._
 object BaseStyles extends StyleSheet.Inline {
   import dsl._
 
+  val inlineEdit = style(
+    &.hover(
+      cursor.pointer,
+      outline(dotted, 2 px, c"#FFA622"),
+      backgroundColor(c"#fff4e3").important))
+
   val projectItems = new ProjectItems
   final class ProjectItems {
 
@@ -35,16 +41,9 @@ object BaseStyles extends StyleSheet.Inline {
       addClassNames("ui", "header"),
       marginBottom(`0`).important)
 
-    private def inlineEdit = mixin(
-      &.hover(
-        cursor.pointer,
-        outline(dotted, 2 px, c"#FFA622"),
-        backgroundColor(c"#fff4e3").important))
-
     val itemHeaderRW = style(
       itemHeaderRO,
-      color(c"#d00").important,
-      inlineEdit)
+      color(c"#d00").important)
 
     val itemHeaderEditCont = style(
       width(100 %%))
