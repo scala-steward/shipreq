@@ -4,9 +4,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom.ext.KeyCode
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.text.LineCardinality
+import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
 import shipreq.webapp.client.base.lib.KeyHandler._
-import shipreq.webapp.client.base.ui.BaseStyles
+import shipreq.webapp.client.base.ui.BaseStyles.{editorInstructions => *}
 
 /**
   * Keyboard functionality consistent throughout the entire app.
@@ -38,15 +38,30 @@ object KeyboardTheme {
   def commitCO(commit: CallbackTo[Option[Callback]], lc: LineCardinality): KeyHandler =
     commitCriterion.handle(commit >>= (Callback sequenceO _))
 
-  def instructionsForCommitAbort(commit: Option[Callback],  abort: Callback): ReactTag = {
+  private val link   = <.a(*.link)
+  private val clause = <.span(*.clause)
+
+  def instructionsForCommitAbort(commit: Option[Callback],
+                                 abort : Callback,
+                                 lc    : LineCardinality): ReactTag = {
+    var tag = <.div(*.container)
+
+    def add(m: TagMod*): Unit =
+      tag = tag(clause(m: _*))
+
+    lc match {
+      case SingleLine => ()
+      case MultiLine  => add("enter for new line,")
+    }
+
     var save: ReactNode = "save"
     for (c <- commit)
-      save = <.a(^.onClick --> c, save)
+      save = link(^.onClick --> c, save)
+    add("ctrl-enter to ", save, ",")
 
-    val cancel = <.a(^.onClick --> abort, "cancel")
+    val cancel = link(^.onClick --> abort, "cancel")
+    add("esc to ", cancel, ".")
 
-    <.div(BaseStyles.editorInstructions,
-      "ctrl-enter to ", save,
-      ", esc to ", cancel, ".")
+    tag
   }
 }

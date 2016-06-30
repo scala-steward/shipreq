@@ -68,21 +68,21 @@ object PlainTextEditor {
 
       def render(p: Props): ReactElement = {
 
-        def input = base(p.inputMod, ^.value := p.text)
+        def input        = base(p.inputMod, ^.value := p.text)
+        def instructions = KeyboardTheme.instructionsForCommitAbort(p.status.getCommit, p.abort, SingleLine)
+
+        def renderWithError(err: TagMod) =
+          <.div(
+            <.div(
+              Input.Error(p.inputContMod, input)),
+            errorPointingUp(err))
 
         p.status match {
-
-          case EditorStatus.Ignore =>
+          case EditorStatus.Ignore | EditorStatus.Valid(_) =>
             <.div(
               <.div(
                 Input.Base(p.inputContMod, input),
-                KeyboardTheme.instructionsForCommitAbort(None, p.abort)))
-
-          case EditorStatus.Valid(commit) =>
-            <.div(
-              <.div(
-                Input.Base(p.inputContMod, input),
-                KeyboardTheme.instructionsForCommitAbort(Some(commit), p.abort)))
+                instructions))
 
           case EditorStatus.InTransit =>
             <.div(
@@ -90,16 +90,10 @@ object PlainTextEditor {
                 Input.loadingDisabled(p.text)(p.inputContMod)))
 
           case EditorStatus.Invalid(err) =>
-            <.div(
-              <.div(
-                Input.Error(p.inputContMod, input)),
-              errorPointingUp(err))
+            renderWithError(err)
 
           case EditorStatus.AsyncError(err, _) =>
-            <.div(
-              <.div(
-                Input.Error(p.inputContMod, input)),
-              errorPointingUp(err))
+            renderWithError(err)
         }
       }
     }

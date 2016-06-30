@@ -59,21 +59,32 @@ object BaseStyles extends StyleSheet.Inline {
   private def editorInstructionMarginV = 0.4 em
 
   // ctrl-enter to save, esc to cancel.
-  val editorInstructions = style(
-    fontSize(0.75 rem),
-    lineHeight(1 em),
-    color(c"#a4a6a8"),
-    &.not(_.firstChild)(marginTop(editorInstructionMarginV)),
-    &.not(_.lastChild)(marginBottom(editorInstructionMarginV)),
+  val editorInstructions = new EditorInstructions
+  class EditorInstructions {
 
-    unsafeChild("a")(
+    private def textColour = color(c"#a4a6a8")
+
+    val container = style(
+      fontSize(0.75 rem),
+      lineHeight(1 em),
+      textColour,
+      &.not(_.firstChild)(marginTop(editorInstructionMarginV)),
+      &.not(_.lastChild)(marginBottom(editorInstructionMarginV)))
+
+    val clause = style(
+      &.not(_.lastChild)(
+        marginRight(1.1 ex)))
+
+    val link = style(
       cursor.pointer,
       &.not(_.hover)(
-        color.inherit,
+        textColour.important, // important because of unsafeChild used in item's &.not(_.hover)(unsafeChild("a"))
         borderBottom(solid, 1 px, c"#e0e2e4")),
       &.hover(
-        color(c"#525456"),
-        textDecoration := "underline")))
+        color(c"#2185D0"),
+        // color(c"#525456"),
+        textDecoration := "underline"))
+  }
 
   def pageMargin = 1 rem
   def pageMarginStr = "1rem"
