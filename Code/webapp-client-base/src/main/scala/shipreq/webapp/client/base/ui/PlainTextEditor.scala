@@ -108,16 +108,16 @@ object PlainTextEditor {
             <.div(
               <.div(
                 Input.Base(p.inputContMod,
-                  input(abortKB.toReact)),
+                  input(abortKB)),
                 KeyboardTheme.instructionsForCommitAbort(None, p.abort)))
 
           case State.Ready(commit) =>
             val commitKB = KeyboardTheme.commitCriterion.handle(commit)
-            val keys = abortKB :: commitKB :: Nil
+            val keys = abortKB + commitKB
             <.div(
               <.div(
                 Input.Base(p.inputContMod,
-                  input(KeyHandler toReact keys)),
+                  input(keys)),
                 KeyboardTheme.instructionsForCommitAbort(Some(commit), p.abort)))
 
           case State.InTransit =>
@@ -129,14 +129,14 @@ object PlainTextEditor {
             <.div(
               <.div(
                 Input.Error(p.inputContMod,
-                  input(abortKB.toReact))),
+                  input(abortKB))),
               errorPointingUp(err))
 
           case State.AsyncError(err, retry) =>
             <.div(
               <.div(
                 Input.Error(p.inputContMod,
-                  input(abortKB.toReact))),
+                  input(abortKB))),
               errorPointingUp(err))
         }
       }

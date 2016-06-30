@@ -10,11 +10,23 @@ case class KeyHandler(criteria: Criteria, response: Response) {
   def asEventDefault: KeyHandler =
     KeyHandler(criteria, e => CallbackOption.asEventDefault(e, response(e)))
 
+  def toKeyHandlers: KeyHandlers =
+    KeyHandlers(this :: Nil)
+
   def toReact: TagMod =
-    KeyHandler.toReact(this :: Nil)
+    toKeyHandlers.toReact
+
+  def +(k: KeyHandler): KeyHandlers =
+    KeyHandlers(k :: this :: Nil)
 }
 
 object KeyHandler {
+
+  @inline implicit def autoToRect(k: KeyHandler): TagMod =
+    k.toReact
+
+//  @inline implicit def autoPluralise(k: KeyHandler): KeyHandlers =
+//    k.toKeyHandlers
 
   sealed abstract class EventType(val domKey: ReactAttr)
   object EventType {
@@ -79,8 +91,20 @@ object KeyHandler {
   }
 
   type Response = ReactKeyboardEvent => Callback
+}
 
-  def toReact(handlers: TraversableOnce[KeyHandler]): TagMod = {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
+
+  def +(k: KeyHandler): KeyHandlers =
+    KeyHandlers(k :: handlers)
+
+  def ++(ks: KeyHandlers): KeyHandlers =
+    // reverse_::: has most efficient concat implementation
+    KeyHandlers(ks.handlers reverse_::: handlers)
+
+  def toReact: TagMod = {
     var map = Map.empty[EventType, List[Response]]
 
     // Group by event type
@@ -102,4 +126,11 @@ object KeyHandler {
         q + (et.domKey ==> combinedResponse)
     }
   }
+}
+
+object KeyHandlers {
+
+  @inline implicit def autoToRect(k: KeyHandlers): TagMod =
+    k.toReact
+
 }
