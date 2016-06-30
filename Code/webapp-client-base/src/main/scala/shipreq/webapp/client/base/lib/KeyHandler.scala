@@ -73,7 +73,7 @@ object KeyHandler {
     def handle(response: Response): KeyHandler =
       KeyHandler(this, response)
 
-    def handle(cb: => Callback): KeyHandler =
+    def handle(cb: Callback): KeyHandler =
       handle(_ => cb)
   }
 

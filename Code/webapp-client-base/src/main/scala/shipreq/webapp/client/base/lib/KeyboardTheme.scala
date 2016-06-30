@@ -18,9 +18,7 @@ object KeyboardTheme {
 
   @inline def abortCriterion = Escape
 
-  // TODO Change `=> Callback` to just `Callback`, here & in KeyHandlers
-
-  def abort(abort: => Callback): KeyHandler =
+  def abort(abort: Callback): KeyHandler =
     abortCriterion.handle(abort)
 
   /** It used to be the case that in single-line editors, Enter would be used to commit with Ctrl-Enter also allowed
@@ -38,7 +36,7 @@ object KeyboardTheme {
   }
 
   def commitCO(commit: CallbackTo[Option[Callback]], lc: LineCardinality): KeyHandler =
-    commitCriterion.handle(commit >>= (Callback.sequenceO(_)))
+    commitCriterion.handle(commit >>= (Callback sequenceO _))
 
   def instructionsForCommitAbort(commit: Option[Callback],  abort: Callback): ReactTag = {
     var save: ReactNode = "save"
