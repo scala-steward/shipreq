@@ -70,7 +70,7 @@ sealed abstract class RichTextEditor2[TextType <: Text.Generic](name: String, fi
 
       val updateState: ReactEventTA => Callback =
         e => $.props >>= (p =>
-          p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit)
+          p.status.wrapEdit(p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit))
 
       TagMod(
         ^.autoFocus := true,
@@ -131,7 +131,7 @@ sealed abstract class RichTextEditor2[TextType <: Text.Generic](name: String, fi
             errorPointingUp(err),
             preview)
 
-        case EditorStatus.AsyncError(err, _) =>
+        case EditorStatus.AsyncError(err, _, _) =>
           <.div(
             editor(EmptyTag),
             errorPointingUp(err),
