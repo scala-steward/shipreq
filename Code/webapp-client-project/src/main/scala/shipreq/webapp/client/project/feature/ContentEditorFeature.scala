@@ -456,7 +456,6 @@ object ContentEditorFeature {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      /*
       object EditRichText {
         import shipreq.webapp.base.text._
         import shipreq.webapp.client.project.widgets.high.RichTextEditor
@@ -468,82 +467,8 @@ object ContentEditorFeature {
                         initialValue: T.OptionalText,
                         focusId     : P): StartEditFn = {
 
-            val extra: editor.Extra =
-              ReusableFn(
-                commitAbortK(T.lineCardinality, _)(cmd))
-
-            val initialText: String =
-              pxPlainText.value().format(RichTextEditor.hardcodedLive, initialValue)
-
-            rvarStrToStartEditFn(new State(_, Some(initialValue), focusId, extra), initialText)
-          }
-
-          private class State(rvar   : ReusableVar[String],
-                              initial: Some[T.OptionalText],
-                              focusId: P,
-                              extra  : editor.Extra) extends EditorInstanceImpl {
-
-            override val renderCB =
-              $.state.map { s =>
-                import Px.AutoValue._
-                val props = editor.Props(
-                  pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
-                  rvar, previewFeature.forChild(focusId, s), initial, extra)
-                Some(props.render: ReactElement)
-              }
-          }
-        }
-
-        object GenericReqTitle extends Base(RichTextEditor.GenericReqTitle) {
-          def apply(req: GenericReq, focusId: P): StartEditFn =
-            startEdit(
-              UpdateContentCmd.SetGenericReqTitle(req.id, _),
-              req.title,
-              focusId)
-        }
-
-        object UseCaseTitle extends Base(RichTextEditor.UseCaseTitle) {
-          def apply(uc: UseCase, focusId: P): StartEditFn =
-            startEdit(
-              UpdateContentCmd.SetUseCaseTitle(uc.id, _),
-              uc.title,
-              focusId)
-        }
-
-        object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {
-          def apply(rcg: ReqCodeGroup, focusId: P): StartEditFn =
-            startEdit(
-              UpdateContentCmd.SetReqCodeGroupTitle(rcg.id, _),
-              rcg.title,
-              focusId)
-        }
-
-        object CustomTextField extends Base(RichTextEditor.CustomTextField) {
-          def apply(req: Req, fid: CustomField.Text.Id, focusId: P): StartEditFn =
-            startEdit(
-              UpdateContentCmd.SetCustomTextField(req.id, fid, _),
-              ReqData.textAt(fid, req.id).get(pxProject.value().reqText),
-              focusId)
-        }
-      }
-*/
-
-      object EditRichText {
-        import shipreq.webapp.base.text._
-        import shipreq.webapp.client.project.widgets.high.{RichTextEditor2 => RichTextEditor}
-
-        abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) {
-          val T: editor.text.type = editor.text
-
-          def startEdit(cmd         : T.OptionalText => UpdateContentCmd,
-                        initialValue: T.OptionalText,
-                        focusId     : P): StartEditFn = {
-
             val commitFn: editor.Commit =
               ReusableFn(v => commit(cmd(v)))
-//            val extra: editor.Extra =
-//              ReusableFn(
-//                commitAbortK(T.lineCardinality, _)(cmd))
 
             val initialText: String =
               pxPlainText.value().format(RichTextEditor.hardcodedLive, initialValue)
@@ -551,23 +476,19 @@ object ContentEditorFeature {
             rvarStrToStartEditFn(new State(_, Some(initialValue), focusId, commitFn), initialText)
           }
 
-          private class State(rvar   : ReusableVar[String],
-                              initial: Some[T.OptionalText],
-                              focusId: P,
+          private class State(rvar    : ReusableVar[String],
+                              initial : Some[T.OptionalText],
+                              focusId : P,
                               commitFn: editor.Commit) extends EditorInstanceImpl {
 
             override val renderImpl: RenderImpl =
               as => $.state.map { s =>
-
                 import Px.AutoValue._
                 val props = editor.Props(
                   pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
                   rvar,
-                  EditorStatus.async(as, async),
-                  abort,
-                  commitFn,
+                  EditorStatus.async(as, async), abort, commitFn,
                   previewFeature.forChild(focusId, s), initial)
-
                 Some(props.render: ReactElement)
               }
           }
