@@ -486,19 +486,19 @@ object Style extends StyleSheet.Inline {
       val container = style(
         display.flex,
         justifyContent.flexEnd, // So that controls in tail-step rows appear on the right.
-        width(100 %%))
+        width(100 %%),
+        &.not(_.firstChild)(marginTop(0.2 rem)))
 
       val header = styleF(D.ucStepIndent)(lvl =>
         styleS(
-          paddingTop(4 px),
-          paddingRight(0.8 ex),
+          boxSizing.contentBox,
           color(c"#444"),
           lvl match {
-            case 0 => styleS(fontWeight.bold,    width(5 ex)) // 123.0
-            case 1 => styleS(paddingLeft( 4 ex), width(3 ex)) // 99.
-            case 2 => styleS(paddingLeft( 7 ex), width(3 ex)) // cv.
-            case 3 => styleS(paddingLeft(10 ex), width(4 ex)) // xviii.
-            case 4 => styleS(paddingLeft(14 ex), width(3 ex)) // 99.
+            case 0 => styleS(fontWeight.bold,    width(6 ex)) // 123.0
+            case 1 => styleS(paddingLeft( 4 ex), width(4 ex)) // 99.
+            case 2 => styleS(paddingLeft( 8 ex), width(4 ex)) // cv.
+            case 3 => styleS(paddingLeft(12 ex), width(4 ex)) // xviii.
+            case 4 => styleS(paddingLeft(16 ex), width(4 ex)) // 99.
           }
         )
       )
@@ -508,10 +508,12 @@ object Style extends StyleSheet.Inline {
         textDecoration := ^.lineThrough)
 
       val body = style(
-        flexGrow(1))
+        flexGrow(1),
+        paddingLeft(0.6 ex))
 
       val ctrls = style(
-        width(116 px))
+        width(8.9 rem),
+        textAlign.right)
 
       val ctrl = style(
         addClassNames("btn", "btn-default", "btn-sm"),
