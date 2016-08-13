@@ -468,18 +468,16 @@ object Style extends StyleSheet.Inline {
       mixinIf(live :: Dead)(backgroundColor(rgba(0, 0, 0, .04)))))
 
     val generalImpsCont = style(
-      display.flex,
-      alignItems.center,
       width(100 %%))
 
     val generalImpsSide = style(
-      border(^.dashed, 1 px),
-      minHeight(1.59 em),
-      flexBasis := "0",
-      flexGrow(1))
+      width(50 %%),
+      textAlign.center)
 
     val generalImpsMiddle = style(
-      margin.horizontal(1 ex))
+      fontWeight.bold,
+      padding(`0`, 1 ex),
+      whiteSpace.nowrap)
 
     object useCaseStep {
 

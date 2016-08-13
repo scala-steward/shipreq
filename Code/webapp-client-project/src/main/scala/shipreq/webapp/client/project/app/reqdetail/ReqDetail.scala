@@ -361,19 +361,16 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
               pw.tagList(data.customTags(f.id)))
 
           case Row.Implications =>
-            def one(cell: Cell) =
-              renderImpCell(cell, data.generalImps(cell.implicationDirection))
-            <.div(
-              *.generalImpsCont,
-              <.div(
-                *.generalImpsSide,
-                one(Cell.ImplicationSrc)),
-              <.div(
-                *.generalImpsMiddle,
-                s"→ $pubidText →"),
-              <.div(
-                *.generalImpsSide,
-                one(Cell.ImplicationTgt)))
+            def one(cell: Cell) = renderImpCell(cell, data.generalImps(cell.implicationDirection))
+            <.table(*.generalImpsCont,
+              <.tbody(
+                <.tr(
+                  <.td(*.generalImpsSide,
+                    one(Cell.ImplicationSrc)),
+                  <.td(*.generalImpsMiddle,
+                    s"→ $pubidText →"),
+                  <.td(*.generalImpsSide,
+                    one(Cell.ImplicationTgt)))))
 
           case Row.ImplicationGraph =>
             ImplicationGraph.Props(
