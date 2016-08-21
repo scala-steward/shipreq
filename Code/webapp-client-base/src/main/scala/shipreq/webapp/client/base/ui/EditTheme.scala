@@ -23,7 +23,6 @@ object EditTheme {
   def editableInline(startEdit: Option[Callback]): TagMod =
     startEdit.fold(EmptyTag)(editableInline(_))
 
-
   def autosizeTextarea(ref: String, validity: Validity, value: String, tagMod: TagMod): ReactElement =
     AutosizeTextarea.withRef(ref)(
       BaseStyles.textEditor(validity),

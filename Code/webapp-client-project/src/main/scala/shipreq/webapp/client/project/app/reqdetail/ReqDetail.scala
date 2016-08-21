@@ -253,8 +253,6 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
           }
         })
 
-    def focus: Callback = Callback.empty // TODO
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private val headerStyle: Live => Header.Style =
@@ -270,7 +268,7 @@ object ReqDetail extends StaticPropComponent.Template("ReqDetail") {
       val runCmd      = this.runCmd(req.id)
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
-        def startEdit    = editFeature(cell).startEdit(focus)
+        def startEdit    = editFeature(cell).startEdit
         def editableView = view + EditTheme.editableInline(startEdit)
         val async        = state.async(cell)
         val editor       = state.edit(cell)

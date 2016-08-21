@@ -141,8 +141,9 @@ object ContentEditorFeature {
   object D0 {
     type State = Option[EditorInstance]
 
-    abstract class Feature {
-      def startEdit(focus: => Callback): Option[Callback]
+    sealed abstract class Feature {
+      final def startEdit = startEditAnd(Callback.empty)
+      def startEditAnd(cb: => Callback): Option[Callback]
     }
 
     object Feature {
@@ -152,13 +153,12 @@ object ContentEditorFeature {
                       editor: Option[Editor[P]]): Feature =
         editor match {
           case Some(e) => new MainFeatureImpl(static, async, lens, e)
-          case None    => nop
+          case None    => Nop
         }
 
-      val nop: Feature =
-        new Feature {
-          override def startEdit(focus: => Callback) = None
-        }
+      object Nop extends Feature {
+        override def startEditAnd(cb: => Callback) = None
+      }
     }
 
     final private class MainFeatureImpl[S, P](static: Static[S, P],
@@ -221,9 +221,9 @@ object ContentEditorFeature {
         }
       }
 
-      override def startEdit(focus: => Callback): Option[Callback] =
+      override def startEditAnd(cb: => Callback): Option[Callback] =
         pxAllowEdit.value().option(
-          $.modState(startEditWithoutChecks, focus))
+          $.modState(startEditWithoutChecks, cb))
 
       private type StartEditFn = S => S
 
@@ -670,7 +670,7 @@ object ContentEditorFeature {
         Lens((_: State[A, B])(b))(o => _.set(b, o))
     }
 
-    abstract class Feature[-K] {
+    sealed abstract class Feature[-K] {
       def apply(k: K): D0.Feature
     }
 
@@ -679,10 +679,14 @@ object ContentEditorFeature {
         new Feature[K] { override def apply(k: K) = f(k) }
 
       def optional[K](f: K => Option[D0.Feature]): Feature[K] =
-        apply(f(_) getOrElse D0.Feature.nop)
+        apply(f(_) getOrElse D0.Feature.Nop)
 
-      def nop: Feature[Any] =
-        apply(_ => D0.Feature.nop)
+      object Nop extends Feature[Any] {
+        override def apply(k: Any) = D0.Feature.Nop
+      }
+
+      implicit def reusability[K]: Reusability[Feature[K]] =
+        Reusability.byRef
     }
 
     /**
@@ -752,7 +756,7 @@ object ContentEditorFeature {
         Lens((_: State[A2, B2, A1, B1])(k))(o => _.set(k, o))
     }
 
-    abstract class Feature[-K2, -K1] {
+    sealed abstract class Feature[-K2, -K1] {
       def apply(k2: K2): D1.Feature[K1]
     }
 
@@ -761,14 +765,15 @@ object ContentEditorFeature {
         new Feature[K2, K1] { override def apply(k: K2) = f(k) }
 
       def optional[K2, K1](f: K2 => Option[D1.Feature[K1]]): Feature[K2, K1] =
-        apply(f(_) getOrElse D1.Feature.nop)
+        apply(f(_) getOrElse D1.Feature.Nop)
 
-      def nop: Feature[Any, Any] =
-        apply(_ => D1.Feature.nop)
+      object Nop extends Feature[Any, Any] {
+        override def apply(k2: Any) = D1.Feature.Nop
+      }
+
+      implicit def reusability[A, B]: Reusability[Feature[A, B]] =
+        Reusability.byRef
     }
-
-    implicit def reusabilityFeature[A, B]: Reusability[Feature[A, B]] =
-      Reusability.byRef
 
     /**
      * A means for a child to initialise itself when the state is in the parent in an unknown shape.
