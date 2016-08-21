@@ -583,7 +583,7 @@ object Style extends StyleSheet.Inline {
 
     val reqCodeTreeIndent = style(reqCodeTreePre, color(c"#dadada"))
     val reqCodeTreeCode = style(reqCodeTreePre)
-    val reqCodeFlat = style(reqCodePre, display.block)
+    val reqCodeFlat = style(reqCodePre, display.block, overflowY.hidden)
 
     val useCaseStepLayoutCell = style(
       border.none.important)

@@ -307,36 +307,56 @@ object ContentEditorFeature {
           val initialValues = pxProject.value().reqCodes.activeReqCodesByReqId(id)
           val initialText   = ReqCodeEditor.Multiple.seqFmt merge initialValues.toVector.map(PlainText.reqCode).sorted
 
-          val extra: ReqCodeEditor.Multiple.Extra =
-            ReusableFn(
-              commitAbortK(MultiLine, _)(UpdateContentCmd.PatchReqCodes(id, _)))
+          val cmd: ReqCodeEditor.Multiple.Output => UpdateContentCmd =
+            UpdateContentCmd.PatchReqCodes(id, _)
 
-          rvarStrToStartEditFn(new StateMultiple(_, Some(initialValues), extra), initialText)
+          val abortCommit: ReqCodeEditor.Multiple.AbortCommit =
+            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+
+          rvarStrToStartEditFn(new StateMultiple(_, Some(initialValues), abortCommit), initialText)
         }
 
-        private class StateMultiple(rvar   : ReusableVar[String],
-                                    initial: Some[Set[ReqCode.Value]],
-                                    extra  : ReqCodeEditor.Multiple.Extra) extends EditorInstanceImpl {
-          def props = ReqCodeEditor.Multiple.Props(rvar, initial, trie(), extra)
-          override val renderImpl = renderDynamic(props.render)
+        private class StateMultiple(rvar       : ReusableVar[String],
+                                    initial    : Some[Set[ReqCode.Value]],
+                                    abortCommit: ReqCodeEditor.Multiple.AbortCommit) extends EditorInstanceImpl {
+          override val renderImpl: RenderImpl =
+            as => CallbackTo {
+              val props = ReqCodeEditor.Multiple.Props(
+                rvar,
+                initial,
+                trie(),
+                EditorStatus.async(as, async),
+                abortCommit)
+              Some(props.render: ReactElement)
+            }
         }
 
         def group(rcg: ReqCodeGroup, initialValue: ReqCode.Value): StartEditFn = {
           val id          = rcg.id
           val initialText = PlainText reqCode initialValue
 
-          val extra: ReqCodeEditor.Single.Extra =
-            ReusableFn(
-              commitAbortK(SingleLine, _)(UpdateContentCmd.SetReqCodeGroupCode(id, _)))
+          val cmd: ReqCodeEditor.Single.Output => UpdateContentCmd =
+            UpdateContentCmd.SetReqCodeGroupCode(id, _)
 
-          rvarStrToStartEditFn(new StateSingle(_, Some(initialValue), extra), initialText)
+          val abortCommit: ReqCodeEditor.Single.AbortCommit =
+            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+
+          rvarStrToStartEditFn(new StateSingle(_, Some(initialValue), abortCommit), initialText)
         }
 
-        private class StateSingle(rvar   : ReusableVar[String],
-                                  initial: Some[ReqCode.Value],
-                                  extra  : ReqCodeEditor.Single.Extra) extends EditorInstanceImpl {
-          def props = ReqCodeEditor.Single.Props(rvar, initial, trie(), extra)
-          override val renderImpl = renderDynamic(props.render)
+        private class StateSingle(rvar       : ReusableVar[String],
+                                  initial    : Some[ReqCode.Value],
+                                  abortCommit: ReqCodeEditor.Single.AbortCommit) extends EditorInstanceImpl {
+          override val renderImpl: RenderImpl =
+            as => CallbackTo {
+              val props = ReqCodeEditor.Single.Props(
+                rvar,
+                initial,
+                trie(),
+                EditorStatus.async(as, async),
+                abortCommit)
+              Some(props.render: ReactElement)
+            }
         }
       }
 

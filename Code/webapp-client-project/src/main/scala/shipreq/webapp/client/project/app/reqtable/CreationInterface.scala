@@ -152,7 +152,8 @@ class CreationInterface($               : CompState.Access[State],
           ReusableVar(state.reqCode)(setReqCode),
           None,
           pxProject.reqCodes.trie,
-          _noExtra)
+          None,
+          None)
 
       val propsTitle =
         RichTextEditor.ReqCodeGroupTitle.Props(
@@ -240,7 +241,8 @@ class CreationInterface($               : CompState.Access[State],
         ReusableVar(state.reqCodes)(setReqCodes),
         None,
         pxProject.reqCodes.trie,
-        _noExtra)
+        None,
+        None)
 
     def getPropsTags(state: CreateReqState) =
       TagEditor.Props(

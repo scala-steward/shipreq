@@ -165,7 +165,6 @@ object ImplicationEditor {
       editorRef($).get.getDOMNode()
 
     def render(p: Props) = {
-
       def editor(validity: Validity): ReactElement =
         EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
