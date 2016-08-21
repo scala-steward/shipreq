@@ -3,7 +3,6 @@ package shipreq.webapp.client.project.widgets.high
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom
 import scalacss.ScalaCssReact._
 import scalaz.\/
 import scalaz.syntax.traverse._
@@ -16,7 +15,6 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.validation.{VFailure, ValidUpdateVR, ValidationResult}
-import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.feature._
@@ -28,7 +26,7 @@ import UseCaseStepFlowText.TextAndFlow
 import shipreq.webapp.base.event.UseCaseStepGD
 import shipreq.webapp.client.base.feature.EditorStatus
 import shipreq.webapp.client.base.lib.KeyboardTheme
-import shipreq.webapp.client.base.ui.AutosizeTextarea
+import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
 
 object UseCaseStepEditor {
 
@@ -137,10 +135,7 @@ object UseCaseStepEditor {
 
     def render(p: Props) = {
       def editor(validity: Validity): ReactElement =
-        AutosizeTextarea.withRef(editorRef)(
-          *.textEditor(p.validity),
-          ^.value := p.edit.value,
-          textareaConst)
+        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -152,7 +147,10 @@ object UseCaseStepEditor {
       def richText =
         p.projectWidgets.useCaseStepE(hardcodedLive, p.parsed)
 
-      RichTextEditor.genericRender(p.status, editor, instructions, p.preview, p.showPreview, richText)
+      def preview =
+        RichTextEditor.renderPreview(p.preview, p.showPreview, richText)
+
+      EditTheme.renderEditor(p.status, editor, richText, instructions, preview)
     }
 
     def getTextarea() =

@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.{Invalid, Valid, Validity}
+import shipreq.base.util.Validity
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -12,9 +12,8 @@ import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.feature.EditorStatus
 import shipreq.webapp.client.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
-import shipreq.webapp.client.base.ui.AutosizeTextarea
-import shipreq.webapp.client.base.ui.semantic.Icon
-import shipreq.webapp.client.project.app.Style, Style.{widgets => *}
+import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
+import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -86,10 +85,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     def render(p: Props) = {
 
       def editor(validity: Validity): ReactElement =
-        AutosizeTextarea.withRef(editorRef)(
-          *.textEditor(p.validated.validity),
-          ^.value := p.edit.value,
-          textareaConst)
+        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -101,7 +97,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       def richText =
         p.projectWidgets.format(hardcodedLive, p.richText)
 
-      RichTextEditor.genericRender(p.status, editor, instructions, p.preview, p.showPreview, richText)
+      def preview =
+        RichTextEditor.renderPreview(p.preview, p.showPreview, richText)
+
+      EditTheme.renderEditor(p.status, editor, richText, instructions, preview)
     }
   }
 
@@ -136,43 +135,11 @@ object RichTextEditor {
     case MultiLine  => ^.rows := 3
   }
 
-  def genericRender(status        : EditorStatus,
-                    editor        : Validity => ReactElement,
-                    instructions  : => ReactTag,
-                    previewFeature: PreviewFeature.ForChild,
-                    showPreview   : Boolean,
-                    renderReadOnly: => ReactNode) = {
-    def preview =
-      previewFeature.reactCollapse(showPreview)(
-        <.div(*.richTextPreview, ^.ref := "p",
-          <.div(*.richTextPreviewHeader, "Preview"),
-          <.div(*.richTextPreviewBody, renderReadOnly)))
-
-    status match {
-      case EditorStatus.Ignore | EditorStatus.Valid(_) =>
-        <.div(
-          editor(Valid),
-          instructions,
-          preview)
-
-      case EditorStatus.Invalid(err) =>
-        <.div(
-          editor(Invalid), // TODO add error background
-          *.errorPointingUp(err),
-          preview)
-
-      case EditorStatus.AsyncError(err, _, _) =>
-        <.div(
-          editor(Valid),
-          *.errorPointingUp(err),
-          preview)
-
-      case EditorStatus.InTransit =>
-        <.div(*.textEditor(Style.EditorState.InTransit),
-          <.div(Icon.CircleNotched.loading.tag),
-          <.div(*.textEditorInTransitValue, renderReadOnly))
-    }
-  }
+  def renderPreview(pf: PreviewFeature.ForChild, show: => Boolean, view: => ReactNode): ReactNode =
+    pf.reactCollapse(show)(
+      <.div(*.richTextPreview, ^.ref := "p",
+        <.div(*.richTextPreviewHeader, "Preview"),
+        <.div(*.richTextPreviewBody, view)))
 
   // This is an editor - you can't edit Dead stuff. Assume all content is Live.
   @inline def hardcodedLive = Live

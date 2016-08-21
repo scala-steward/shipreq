@@ -1,10 +1,33 @@
 package shipreq.webapp.client.base.ui
 
 import japgolly.scalajs.react.vdom.prefix_<^.{^ => ^^, _}
+import japgolly.univeq._
 import scalacss.Defaults._
+import scalacss.{Pseudo, PseudoElement, StyleS}
+import shipreq.base.util.Validity
+import shipreq.webapp.client.base.ui.semantic.{Colour, Label}
 
 object BaseStyles extends StyleSheet.Inline {
   import dsl._
+
+  sealed abstract class EditorState extends Product with Serializable
+  object EditorState {
+    case object Valid     extends EditorState
+    case object Invalid   extends EditorState
+    case object InTransit extends EditorState
+
+    implicit def univEq: UnivEq[EditorState] = UnivEq.derive
+
+    implicit def fromValidity(v: Validity): EditorState =
+      v match {
+        case shipreq.base.util.Valid   => Valid
+        case shipreq.base.util.Invalid => Invalid
+      }
+
+    val domain =
+      // Domain.ofValues(UtilMacros.adtValues[EditorState].whole: _*)
+      Domain.ofValues(Valid, Invalid, InTransit)
+  }
 
   val inlineEdit = style(
     &.hover(
@@ -56,6 +79,70 @@ object BaseStyles extends StyleSheet.Inline {
       lineHeight(1 em),
       color(rgba(0, 0, 0, 0.6)))
   }
+
+  val textEditor = styleF(EditorState.domain) { state =>
+    styleS(
+      width(100 %%),
+      margin(`0`),
+      padding(.3 em,.4 em),
+      outlineStyle.none,
+      boxShadow := "0 0 0 0 rgba(0, 0, 0, 0) inset",
+      transition := "color .1s ease,border-color .1s ease",
+      fontSize(1 em),
+      lineHeight(1.2857),
+      // overflow: scroll - autosize avoids this
+      resize.none,
+      color(state match {
+        case EditorState.Valid
+           | EditorState.InTransit => rgba(0, 0, 0, .87)
+        case EditorState.Invalid   => c"#9F3A38"
+      }),
+      backgroundColor(state match {
+        case EditorState.Valid     => c"#fff4e3"
+        case EditorState.Invalid   => c"#FFF6F6"
+        case EditorState.InTransit => rgba(255,244,227,0.7)
+      }),
+      borderWidth(1 px),
+      borderStyle(state match {
+        case EditorState.Valid
+           | EditorState.Invalid   => solid
+        case EditorState.InTransit => dashed
+      }),
+      borderRadius(.28571429 rem),
+      borderColor(state match {
+        case EditorState.Valid
+           | EditorState.InTransit => rgba(255, 166, 34, .5)
+        case EditorState.Invalid   => c"#E0B4B4"
+      }),
+      mixinIf(state ==* EditorState.InTransit)(display.flex),
+      &.focus(
+        (state match {
+          case EditorState.Valid     => styleS(borderColor(rgb(255, 166, 34)), boxShadow := "0 0 1ex rgba(255,166,34,0.5)")
+          case EditorState.Invalid   => styleS(boxShadow := "0 0 1ex rgba(224,180,180,.5)")
+          case EditorState.InTransit => styleS()
+        }): StyleS
+      )
+    )
+  }
+
+  val textEditorInTransitValue = style(
+    flexGrow(1),
+    opacity(0.5))
+
+  val errorPointingUp = Label.Style(Label.Type.PointingUp, Colour.Red).div
+
+  val richTextPreview = style(
+    addClassNames("ui", "segments", "raised"))
+
+  val richTextPreviewHeader = style(
+    addClassNames("ui", "segment", "inverted", "green"),
+    paddingTop(0.3 em).important,
+    paddingBottom(0.3 em).important)
+
+  val richTextPreviewBody = style(
+    addClassNames("ui", "segment"),
+    (backgroundImage := "repeating-linear-gradient(-225deg,rgba(0,0,0,0),rgba(0,0,0,0)5ex,rgba(33,186,67,.07)5ex,rgba(33,186,67,.07)10ex)")
+      .important)
 
   private def editorInstructionMarginV = 0.4 em
 

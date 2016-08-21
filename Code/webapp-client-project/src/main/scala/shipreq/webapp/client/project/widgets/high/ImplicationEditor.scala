@@ -1,7 +1,8 @@
 package shipreq.webapp.client.project.widgets.high
 
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._
+import vdom.prefix_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
 import scalaz.syntax.either._
@@ -14,9 +15,10 @@ import shipreq.webapp.base.validation._
 import shipreq.webapp.client.base.data.Plain
 import shipreq.webapp.client.base.feature.EditorStatus
 import shipreq.webapp.client.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
-import shipreq.webapp.client.base.ui.AutosizeTextarea
+import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
 import shipreq.webapp.client.base.ui.semantic.Icon
-import shipreq.webapp.client.project.app.Style, Style.{widgets => *}
+import shipreq.webapp.client.project.app.Style
+import Style.{widgets => *}
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.feature.{AutoCompleteFeature, EditValidationFeature}
@@ -165,10 +167,7 @@ object ImplicationEditor {
     def render(p: Props) = {
 
       def editor(validity: Validity): ReactElement =
-        AutosizeTextarea.withRef(editorRef)(
-          *.textEditor(p.validated.validity),
-          ^.value := p.edit.value,
-          textareaConst)
+        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -177,36 +176,7 @@ object ImplicationEditor {
           p.abort,
           None)
 
-      genericRender(p.status, editor, instructions, p.edit.value)
-    }
-  }
-
-  // TODO Copied from RichTextEditor
-  def genericRender(status        : EditorStatus,
-                    editor        : Validity => ReactElement,
-                    instructions  : => ReactTag,
-                    renderReadOnly: => ReactNode) = {
-
-    status match {
-      case EditorStatus.Ignore | EditorStatus.Valid(_) =>
-        <.div(
-          editor(Valid),
-          instructions)
-
-      case EditorStatus.Invalid(err) =>
-        <.div(
-          editor(Invalid), // TODO add error background
-          *.errorPointingUp(err))
-
-      case EditorStatus.AsyncError(err, _, _) =>
-        <.div(
-          editor(Valid),
-          *.errorPointingUp(err))
-
-      case EditorStatus.InTransit =>
-        <.div(*.textEditor(Style.EditorState.InTransit),
-          <.div(Icon.CircleNotched.loading.tag),
-          <.div(*.textEditorInTransitValue, renderReadOnly))
+      EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }
   }
 
