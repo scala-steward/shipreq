@@ -192,9 +192,6 @@ object ImplicationEditor {
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,
-        AutoCompleteFeature.install(
-          _.backend.getTextarea(),
-          (p, b) => b.pxAutoComplete.value(),
-          (p, b) => p.edit.set))
+        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.set))
       .build
 }

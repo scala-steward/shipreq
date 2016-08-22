@@ -260,15 +260,8 @@ object ContentEditorFeature {
       private def commit(cmd: UpdateContentCmd): Callback =
         async.wrapAsync((s, f) => saveIO(cmd, s >> abort, f))
 
-      private def commitK[A, B](lc: LineCardinality, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd): KeyHandler =
-        KeyboardTheme.commitO(v match {
-          case ValidUpdate.Success(a) => Some(commit(cmd(a)))
-          case ValidUpdate.Unchanged  => Some(abort)
-          case ValidUpdate.Failure(_) => None
-        }, lc)
-
-      private def commitAbortK[A, B](lc: LineCardinality, v: ValidUpdate[Any, A])(cmd: A => UpdateContentCmd): KeyHandlers =
-        commitK(lc, v)(cmd) + KeyboardTheme.abort(abort)
+      private def makeAbortCommit[A](cmd: A => UpdateContentCmd): Some[AbortCommit[Callback, A ~=> Callback]] =
+        Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
 
       /**
        * Instance of [[EditorInstance]] that ensures editing is allowed before rendering.
@@ -307,11 +300,8 @@ object ContentEditorFeature {
           val initialValues = pxProject.value().reqCodes.activeReqCodesByReqId(id)
           val initialText   = ReqCodeEditor.Multiple.seqFmt merge initialValues.toVector.map(PlainText.reqCode).sorted
 
-          val cmd: ReqCodeEditor.Multiple.Output => UpdateContentCmd =
-            UpdateContentCmd.PatchReqCodes(id, _)
-
           val abortCommit: ReqCodeEditor.Multiple.AbortCommit =
-            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+            makeAbortCommit(UpdateContentCmd.PatchReqCodes(id, _))
 
           rvarStrToStartEditFn(new StateMultiple(_, Some(initialValues), abortCommit), initialText)
         }
@@ -335,11 +325,8 @@ object ContentEditorFeature {
           val id          = rcg.id
           val initialText = PlainText reqCode initialValue
 
-          val cmd: ReqCodeEditor.Single.Output => UpdateContentCmd =
-            UpdateContentCmd.SetReqCodeGroupCode(id, _)
-
           val abortCommit: ReqCodeEditor.Single.AbortCommit =
-            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+            makeAbortCommit(UpdateContentCmd.SetReqCodeGroupCode(id, _))
 
           rvarStrToStartEditFn(new StateSingle(_, Some(initialValue), abortCommit), initialText)
         }
@@ -425,11 +412,8 @@ object ContentEditorFeature {
             pxProject.map(p =>
               ImplicationEditor.validationFn(p, subjectId.some, initialValues, dir))
 
-          val cmd: ImplicationEditor.Output => UpdateContentCmd =
-            UpdateContentCmd.PatchImplications(subjectId, dir, _)
-
           val abortCommit: ImplicationEditor.AbortCommit =
-            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+            makeAbortCommit(UpdateContentCmd.PatchImplications(subjectId, dir, _))
 
           rvarStrToStartEditFn(new State(_, pxLookup, pxValFn, abortCommit), initialText)
         }
@@ -469,11 +453,8 @@ object ContentEditorFeature {
             TagEditor.initialValues(p.reqTags(id), p.config, pxLookup.value())
           }
 
-          val cmd: TagEditor.Output => UpdateContentCmd =
-            UpdateContentCmd.PatchReqTags(id, _)
-
           val abortCommit: TagEditor.AbortCommit =
-            Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+            makeAbortCommit(UpdateContentCmd.PatchReqTags(id, _))
 
           rvarStrToStartEditFn(new State(Some(initialValues), _, pxLookup, abortCommit), initialText)
         }
@@ -510,7 +491,7 @@ object ContentEditorFeature {
                         focusId     : P): StartEditFn = {
 
             val abortCommit: editor.AbortCommit =
-              Some(AbortCommit(abort, ReusableFn(v => commit(cmd(v)))))
+              makeAbortCommit(cmd)
 
             val initialText: String =
               pxPlainText.value().format(RichTextEditor.hardcodedLive, initialValue)
