@@ -88,27 +88,25 @@ object UseCaseStepRow {
 
     private def render(p: Props) = {
       import UpdateContentCmd._
-      import UseCaseStepControls.{Props => P}
+      import UseCaseStepControls.{ButtonDesc, CurStepButtons}
       import p._
 
-      val self = {
-        val self0: P.Self =
-          live match {
-            case Live =>
-              val d  = field.canDelete(loc).option(runCtrl(DeleteUseCaseStep(id)))
-              val sl = field.canShiftLeft(loc).option((P.ShiftLeft, runCtrl(ShiftUseCaseStepLeft(id))))
-              val sr = canShiftRight.option((P.ShiftRight, runCtrl(ShiftUseCaseStepRight(id))))
-              P.WhenLive(d, sl, sr)
+      val TODO = "Add proper hover text"
 
-            case Dead =>
-              P.WhenDead(runCtrl(RestoreUseCaseStep(id)))
-          }
-        Some((self0, ctrlsAsyncState))
-      }
+      val curStepButtons: CurStepButtons =
+        live match {
+          case Live =>
+            val d  = field.canDelete(loc)   .option(ButtonDesc(runCtrl(DeleteUseCaseStep    (id)), TODO))
+            val sl = field.canShiftLeft(loc).option(ButtonDesc(runCtrl(ShiftUseCaseStepLeft (id)), TODO))
+            val sr = canShiftRight          .option(ButtonDesc(runCtrl(ShiftUseCaseStepRight(id)), TODO))
+            CurStepButtons.WhenLive(delete = d, shiftLeft = sl, shiftRight = sr)
+          case Dead =>
+            CurStepButtons.WhenDead(ButtonDesc(runCtrl(RestoreUseCaseStep(id)), TODO))
+        }
 
-      val add = field.canAdd(loc).option((runAdd(AddUseCaseStep(ucId, field, loc.asParentLoc)), addAsyncState))
+      val addButton = field.canAdd(loc).option(ButtonDesc(runAdd(AddUseCaseStep(ucId, field, loc.asParentLoc)), TODO))
 
-      P(self, add).render
+      UseCaseStepControls.renderStep(curStepButtons, ctrlsAsyncState, addButton, addAsyncState)
     }
 
     val Component = ReactComponentB[Props]("UseCaseStep.LiveCtrls")

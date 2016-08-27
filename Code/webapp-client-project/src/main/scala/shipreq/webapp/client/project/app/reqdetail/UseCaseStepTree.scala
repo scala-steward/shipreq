@@ -79,7 +79,7 @@ object UseCaseStepTree {
               ).render
 
             case Dead =>
-              UseCaseStepControls.Props.none.render
+              UseCaseStepControls.renderStepWhenUseCaseDead
           }
 
         results.push(
@@ -95,8 +95,9 @@ object UseCaseStepTree {
       def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
       val cell  = Cell.AddUseCaseTailStep(row)
       val cb    = runCmd(cell)(cmd)
-      val a     = asyncState(cell)
-      val ctrls = UseCaseStepControls.Props.tailStep(cb, a).render
+      val as    = asyncState(cell)
+      val bd    = UseCaseStepControls.ButtonDesc(cb, "TODO - add hover text")
+      val ctrls = UseCaseStepControls.renderTailStep(bd, as)
       results push tailStepBase(ctrls)
     }
 

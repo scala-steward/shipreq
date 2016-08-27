@@ -471,12 +471,17 @@ object Style extends StyleSheet.Inline {
         width(8.9 rem),
         textAlign.right)
 
-      val ctrl = style(
-        addClassNames("btn", "btn-default", "btn-sm"),
-        fontSize(16 px),
-        lineHeight(16 px),
-        padding(4 px),
-        width(26 px))
+      private val ctrlButton = style(
+        unsafeChild("i")(fontSize(1.2 rem).important),
+        margin(`0`).important,
+        padding(0.3 rem).important,
+        &.disabled(opacity(0.3).important))
+
+      val ctrlButtonInsert     = style(ctrlButton, &.hover(color(c"#21BA45").important))
+      val ctrlButtonDelete     = style(ctrlButton, &.hover(color(c"#DB2828").important))
+      def ctrlButtonRestore    = ctrlButtonInsert
+      def ctrlButtonShiftLeft  = ctrlButton
+      def ctrlButtonShiftRight = ctrlButton
     }
   }
 

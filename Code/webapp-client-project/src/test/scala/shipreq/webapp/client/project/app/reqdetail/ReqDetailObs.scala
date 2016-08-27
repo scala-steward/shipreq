@@ -4,8 +4,9 @@ import org.scalajs.dom.html
 import scala.util.Try
 import shipreq.webapp.base.UiText
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{Dead, Live, ShowDead, FilterDead}
+import shipreq.webapp.base.data.{Dead, FilterDead, Live, ShowDead}
 import shipreq.webapp.client.base.test.TestState._
+import shipreq.webapp.client.base.ui.semantic.Icon
 import shipreq.webapp.client.project.widgets.high.DeletionFormObs
 import ReqDetailTestDsl.Mode
 import ReqDetailObs.NAE
@@ -84,9 +85,9 @@ final class ReqDetailObs($: HtmlDomZipper) {
       treeCells.map(_.collect1n(">div>div").mapZippers(StepRow))
 
     case class StepRow($: HtmlDomZipper) {
-      private def ctrl(label: String, label2: String = null): html.Button = {
-        val ls  = label :: Option(label2).toList
-        val sel = ls.map(l => s"button:contains('$l')") mkString ","
+      private def ctrl(icon: Icon, icon2: Icon = null): html.Button = {
+        val is  = (icon :: Option(icon2).toList).map(_.clsName.replace(' ', '.'))
+        val sel = is.map(i => s"button:has(i.icon.$i)") mkString ","
         $(sel).domAs[html.Button]
       }
 
@@ -99,11 +100,11 @@ final class ReqDetailObs($: HtmlDomZipper) {
 
       lazy val textEditor = textContainer("textarea").domAs[html.TextArea]
 
-      lazy val del   = ctrl("-")
-      lazy val rest  = ctrl("^")
-      lazy val left  = ctrl("«", "↓")
-      lazy val right = ctrl("»", "↑")
-      lazy val add   = ctrl("+")
+      lazy val del   = ctrl(UseCaseStepControls.IconDelete)
+      lazy val rest  = ctrl(UseCaseStepControls.IconRestore)
+      lazy val left  = ctrl(UseCaseStepControls.IconShiftLeft)
+      lazy val right = ctrl(UseCaseStepControls.IconShiftRight)
+      lazy val add   = ctrl(UseCaseStepControls.IconAdd)
     }
 
     def row(label: String): StepRow =
