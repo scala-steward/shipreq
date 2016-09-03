@@ -195,7 +195,7 @@ object StaticField {
 
     def canDelete(loc: VectorTree.Location): Permission
 
-    final def canAdd(loc: VectorTree.Location): Permission =
+    final def canInsertAfter(loc: VectorTree.Location): Permission =
       // TODO Add a real implementation and make tests generate tree at maxLength
       Allow
   }

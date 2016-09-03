@@ -73,6 +73,7 @@ object UseCaseStepRow {
     final case class Props(ucId           : UseCaseId,
                            field          : StaticField.UseCaseStepTree,
                            id             : UseCaseStepId,
+                           label          : String,
                            live           : Live,
                            loc            : VectorTree.Location,
                            canShiftRight  : Permission,
@@ -91,20 +92,24 @@ object UseCaseStepRow {
       import UseCaseStepControls.{ButtonDesc, CurStepButtons}
       import p._
 
-      val TODO = "Add proper hover text"
+      // TODO Hover text: Instead describing current state, describe what the future state will be if pressed.
+      // Eg. "Shift 3.4.a left" → "Shift 3.4.a left to become 3.5"
+      // Eg. "Insert after 3.4.a" → "Create 3.4.b"
 
       val curStepButtons: CurStepButtons =
         live match {
           case Live =>
-            val d  = field.canDelete(loc)   .option(ButtonDesc(runCtrl(DeleteUseCaseStep    (id)), TODO))
-            val sl = field.canShiftLeft(loc).option(ButtonDesc(runCtrl(ShiftUseCaseStepLeft (id)), TODO))
-            val sr = canShiftRight          .option(ButtonDesc(runCtrl(ShiftUseCaseStepRight(id)), TODO))
-            CurStepButtons.WhenLive(delete = d, shiftLeft = sl, shiftRight = sr)
+            CurStepButtons.WhenLive(
+              delete     = field.canDelete(loc).option(ButtonDesc(runCtrl(DeleteUseCaseStep(id)), "Delete " + label)),
+              shiftLeft  = field.canShiftLeft(loc).option(ButtonDesc(runCtrl(ShiftUseCaseStepLeft(id)), "Unindent " + label)),
+              shiftRight = canShiftRight.option(ButtonDesc(runCtrl(ShiftUseCaseStepRight(id)), "Indent " + label)))
           case Dead =>
-            CurStepButtons.WhenDead(ButtonDesc(runCtrl(RestoreUseCaseStep(id)), TODO))
+            CurStepButtons.WhenDead(
+              ButtonDesc(runCtrl(RestoreUseCaseStep(id)), "Restore " + label))
         }
 
-      val addButton = field.canAdd(loc).option(ButtonDesc(runAdd(AddUseCaseStep(ucId, field, loc.asParentLoc)), TODO))
+      val addButton = field.canInsertAfter(loc).option(
+        ButtonDesc(runAdd(AddUseCaseStep(ucId, field, loc.asParentLoc)), "Insert after " + label))
 
       UseCaseStepControls.renderStep(curStepButtons, ctrlsAsyncState, addButton, addAsyncState)
     }

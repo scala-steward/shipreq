@@ -72,7 +72,7 @@ object UseCaseStepTree {
               val cellCtrls = Cell.UseCaseStepCtrls(id)
               val cellAdd   = Cell.AddUseCaseStep(id)
               UseCaseStepRow.LiveControls.Props(
-                uc.id, field, id, live, loc,
+                uc.id, field, id, fullLabel, live, loc,
                 field.canShiftRight(loc, steps.locValidity, stepData.mdt),
                 asyncState(cellCtrls), runCmd(cellCtrls),
                 asyncState(cellAdd  ), runCmd(cellAdd  )
@@ -92,11 +92,14 @@ object UseCaseStepTree {
     }).drain()
 
     if (row.tailStep && uc.liveUC :: Live) {
+      val loc   = VectorTree.Location(steps.tree.children.count(_.value.liveExplicitly :: Live))
+      val ploc  = VectorTree.PartialLocation(loc, Valid)
+      val lbl   = field.stepLabel(pos, ploc, false)
       def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
       val cell  = Cell.AddUseCaseTailStep(row)
       val cb    = runCmd(cell)(cmd)
       val as    = asyncState(cell)
-      val bd    = UseCaseStepControls.ButtonDesc(cb, "TODO - add hover text")
+      val bd    = UseCaseStepControls.ButtonDesc(cb, "Create " + lbl)
       val ctrls = UseCaseStepControls.renderTailStep(bd, as)
       results push tailStepBase(ctrls)
     }
