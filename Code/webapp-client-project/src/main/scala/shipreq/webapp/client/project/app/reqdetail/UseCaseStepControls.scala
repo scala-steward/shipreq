@@ -54,21 +54,21 @@ object UseCaseStepControls {
                  insertButton  : Option[ButtonDesc],
                  insertAsync   : AsyncState): ReactElement = {
 
-    val tailButtons = mkButton(insertAsync, *.ctrlButtonInsert, IconAdd, insertButton) :: Nil
-
     val buttons = curStepButtons match {
 
       case b: CurStepButtons.WhenLive =>
-        mkButton(curStepAsync, *.ctrlButtonDelete, IconDelete, b.delete) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftLeft, IconShiftLeft, b.shiftLeft) ::
+        mkButton(curStepAsync, *.ctrlButtonDelete    , IconDelete,     b.delete) ::
+        mkButton(curStepAsync, *.ctrlButtonShiftLeft , IconShiftLeft,  b.shiftLeft) ::
         mkButton(curStepAsync, *.ctrlButtonShiftRight, IconShiftRight, b.shiftRight) ::
-        tailButtons
+        mkButton(insertAsync,  *.ctrlButtonInsert    , IconAdd,        insertButton) ::
+        Nil
 
       case CurStepButtons.WhenDead(r) =>
-        mkButton(curStepAsync, *.ctrlButtonRestore, IconRestore, Some(r)) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftLeft, IconShiftLeft, None) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftRight, IconShiftRight, None) ::
-        tailButtons
+        mkButton(curStepAsync, *.ctrlButtonRestore   , IconRestore,   Some(r)) ::
+        mkButton(curStepAsync, *.ctrlButtonShiftLeft , IconShiftLeft, None) ::
+        mkButton(curStepAsync, *.ctrlButtonShiftRight, IconShiftRight,None) ::
+        mkButton(insertAsync,  *.ctrlButtonInsert    , IconAdd,       None) ::
+        Nil
     }
 
     <.div(*.ctrls, Button.group(buttons: _*))
