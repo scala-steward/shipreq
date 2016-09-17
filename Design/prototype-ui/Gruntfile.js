@@ -9,7 +9,7 @@ module.exports = function(grunt) {
 
     haml: {
       all: {
-        files: [{expand: true, cwd: '', src: ['*.haml'], dest: '', ext: '.haml.html', flatten: false }],
+        files: [{expand: true, cwd: '', src: ['*.haml'], dest: 'render', ext: '.haml.html', flatten: false }],
       },
     },
 
