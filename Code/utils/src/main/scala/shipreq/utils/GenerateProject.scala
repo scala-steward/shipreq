@@ -97,7 +97,7 @@ object GenerateProject {
   // ===================================================================================================================
 
   def firstSample[A](gen: Gen[A], size: Int): A =
-    gen.samplesSized(size).next()
+    gen.samples(GenSize(size)).next()
 
   var autoSelect         = false
   var lastPromptResponse = '?'

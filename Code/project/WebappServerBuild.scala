@@ -58,8 +58,8 @@ object WebappServerBuild {
         syncSJS((scalaJSLinkedFile in Compile in webappClientWw     ).value, "ww")
       },
 
-      { val k = Keys.`package`; k <<= k.dependsOn(copyClientJs) },
-      { val k = webappPrepare ; k <<= k.dependsOn(copyClientJs) }
+      { val k = Keys.`package`; k := k.dependsOn(copyClientJs).value },
+      { val k = webappPrepare ; k := k.dependsOn(copyClientJs).value }
     )
 
   def warSettings = {

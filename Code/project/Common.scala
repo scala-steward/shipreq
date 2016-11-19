@@ -18,10 +18,11 @@ object Common {
   import Values._
 
   def generateBuildPropFile(filename: String = "build.properties", prefix: String = "build.") = (p: Project) => {
-    def createBuildProps(outDir: File, version: String) = {
+    def createBuildProps = Def.task {
+      val outDir: File = resourceManaged.in(Compile).value
       val outFile = outDir / filename
       val props = Map[String, String](
-        "version" -> version,
+        "version" -> version.value,
         "revision" -> gitRevision,
         "time" -> fmtTimeNow("yyyy-MM-dd HH:mm:ss")
       )
@@ -29,7 +30,7 @@ object Common {
       IO.write(outFile, contents)
       Seq(outFile)
     }
-    p.settings(resourceGenerators in Compile <+= (resourceManaged in Compile, version) map createBuildProps)
+    p.settings(resourceGenerators in Compile += createBuildProps.taskValue)
   }
 
   def targetJdk = "1.8"
@@ -187,7 +188,6 @@ object Common {
       Dependencies.useJavaTimeJS,
       InBrowserTesting.js)
     .settings(
-      scalaJSUseRhino   in Global   := false,
       parallelExecution in testOnly := false,
       // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),
       scalaJSSemantics in fullOptJS ~= (_

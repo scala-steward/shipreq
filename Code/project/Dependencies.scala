@@ -19,7 +19,7 @@ object Dependencies {
   }
 
   object Scalaz {
-    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.5")
+    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.7")
     val core       = mm("scalaz-core")
     val effect     = mm("scalaz-effect") ++ core
     val concurrent = mm("scalaz-concurrent") ++ effect
@@ -28,13 +28,13 @@ object Dependencies {
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.2.2")
+    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.3.2")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
 
   object Nyaya {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.7.2")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.8.1")
     val util = mm("nyaya-util") ++ Scalaz.core
     val prop = mm("nyaya-prop") ++ Scalaz.core
     val gen  = mm("nyaya-gen")  ++ Scalaz.core
@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   object TestState {
-    val Ver = "2.1.0"
+    val Ver = "2.1.1"
     private val mm = MultiModule.jvmAndJs("com.github.japgolly.test-state", Ver)
     private val js = MultiModule.js("com.github.japgolly.test-state", Ver)
     val core            = mm("core")
@@ -53,13 +53,13 @@ object Dependencies {
   }
 
   object UnivEq {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.1")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.2")
     val univeq = mm("univeq")
     val scalaz = mm("univeq-scalaz") ++ univeq ++ Scalaz.core
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.11.1")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "0.11.3")
     val core    = mm("core")
     val test    = mm("test")
     val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect
@@ -69,7 +69,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.0")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.1")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
@@ -121,7 +121,7 @@ object Dependencies {
 
   val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.1")
 //val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.1.0")
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.3")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.4")
 
   val boopickle = jvmAndJs("me.chrons",                        "boopickle", "1.1.0")
   val parboiled = jvmAndJs("org.parboiled",                    "parboiled", "2.1.3")

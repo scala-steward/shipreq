@@ -10,7 +10,7 @@ import shipreq.webapp.server.db.EventDao.EventSeq
 import shipreq.webapp.server.security.PasswordAndSalt
 import shipreq.webapp.server.snippet.ResetPassword
 import java.util.concurrent.atomic.AtomicInteger
-import nyaya.gen.Gen
+import nyaya.gen._
 import nyaya.prop._
 import nyaya.test._
 import nyaya.test.PropTestOps._
@@ -30,7 +30,7 @@ object DaoTest extends TestSuite {
   private val q3 = "\"\"\""
   def demo[E <: ActiveEvent](gen: Gen[E]) = {
     import EventDbCodecs.eventCodecRegistry
-    val es = gen.samplesSized(3).take(10)
+    val es = gen.samples(GenSize(3)).take(10)
     println("_"*120)
     for (e <- es) {
       val c = eventCodecRegistry.writer(e)

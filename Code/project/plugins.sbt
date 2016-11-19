@@ -1,4 +1,4 @@
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.12")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.13")
 libraryDependencies += "org.scala-js" %% "scalajs-env-selenium" % "0.1.3"
 
 // Web app support plugin for XSbt using Jetty Web Server
@@ -8,10 +8,10 @@ addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "2.0.4")
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
 // Code coverage (JVM projects only)
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.3.5")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
 
 // Benchmarking
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.2")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.17")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.2.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
