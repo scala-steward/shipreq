@@ -75,7 +75,7 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.3.0")
+    private val mm = MultiModule.scala("org.json4s", "3.5.0")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
@@ -130,20 +130,20 @@ object Dependencies {
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.3.1")
 
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
-  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.3.3")
-  val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.4")
+  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.5")
+  val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
   val jodaTime    = jvmOnly("joda-time"                   % "joda-time"             % "2.3") ++
                     jvmOnly("org.joda"                    % "joda-convert"          % "1.2")
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1209")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1212")
   val slick       = jvmOnly("com.typesafe.slick"         %% "slick"                 % "2.1.0")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.4.7")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.5.1")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.7")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.7.1") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.6.1") // why again?
-  val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.4")
+  val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.5")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
-  val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.36.0")
+  val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.38.0")
   val mockito     = jvmOnly("org.mockito"                 % "mockito-core"          % "1.10.19")
   val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "2.2.5")
   val scalaCheck  = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.11.3")
