@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, Instant}
 import org.specs2.matcher.Matcher
 import org.specs2.mutable.Specification
 import org.specs2.time.NoTimeConversions
@@ -31,7 +31,7 @@ class SopImplTest extends Specification with DatabaseTest with NoTimeConversions
       "INSERT INTO msgq(type, data, node, worker, updated_at, created_at, effective_from, priority, priority_base)" +
         s"VALUES(0, NULL, ?, ?, now()-?, now()-?, now()-?, 5,5) RETURNING id")
 
-    val getUpdatedAt = query[MsgId, OffsetDateTime]("select updated_at from msgq where id=?")
+    val getUpdatedAt = query[MsgId, Instant]("select updated_at from msgq where id=?")
 
     def timestampBeforeAfter(id: MsgId) = {
       val b = getUpdatedAt(id).first
@@ -201,7 +201,7 @@ class SopImplTest extends Specification with DatabaseTest with NoTimeConversions
     def insertAssignedToOwnNode() = insert(node = Some(n))
 
     def test(id: MsgId) =
-      () => dao.getMsgAssignWorker(n, w, MsgHeader(id, Priority(5), OffsetDateTime.now()))
+      () => dao.getMsgAssignWorker(n, w, MsgHeader(id, Priority(5), Instant.now()))
 
     "not assign if msg has been picked up by another node" in {
       test(insert(node = Some(NodeId(6789))))() must beNone

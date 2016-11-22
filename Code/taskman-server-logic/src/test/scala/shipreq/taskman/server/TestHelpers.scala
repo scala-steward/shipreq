@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import java.time.{Duration, Instant, OffsetDateTime, ZoneId}
+import java.time.{Duration, Instant, ZoneId}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary._
 import scalaz.Lens.lensg
@@ -33,8 +33,8 @@ object TestHelpers {
 
   final def endoMod[A](f: A => Unit) = Endo[A](a => {f(a); a})
 
-  val timeNow = OffsetDateTime.now()
-  val timePast = timeNow minusMinutes 10
+  val timeNow = Instant.now()
+  val timePast = timeNow minusSeconds 600
 
   val sampleEmailAddr = EmailAddr("test@hehe.com")
   val msg_rereg = ReRegistrationAttempted(sampleEmailAddr)
@@ -61,7 +61,7 @@ object TestHelpers {
     }
     object msgHeader {
       val priorityL = lensg[MsgHeader, Priority](m => p => m.copy(priority = p), _.priority)
-      val createdL = lensg[MsgHeader, OffsetDateTime](m => c => m.copy(created = c), _.created)
+      val createdL = lensg[MsgHeader, Instant](m => c => m.copy(created = c), _.created)
     }
     object failureCtx {
       val msgL = lensg[FailureCtx, MsgDetail](c => md => c.copy(m = md), _.m)
@@ -83,7 +83,7 @@ object TestHelpers {
   val crashOnSendEmail     = endoMod[MockBops](_.sendEmail << ErrorOr.error("CRASH!"))
   val crashOnReportFailure = endoMod[MockBops](_.supReportFailure << ErrorOr.error("CRASH!"))
 
-  val clockReal = IO(OffsetDateTime.now)
+  val clockReal = IO(Instant.now)
 
   val fpRetry: FailurePolicy =
     f => FailureResponse(UpdateMsgAbort(f.n, f.w, f.m), Nil)
@@ -103,15 +103,14 @@ object TestHelpers {
   implicit def arbitraryMsgId = arbMap[MsgId, Long](new MsgId(_))
   implicit def arbitraryPriority = arbMap[Priority, Short](new Priority(_))
 
-  implicit def arbitraryOffsetDateTime = Arbitrary[OffsetDateTime](
-    Gen.chooseNum(0L, 3000000000000L).map(l =>
-      OffsetDateTime.ofInstant(Instant.ofEpochSecond(l), ZoneId.systemDefault())))
+  implicit def arbitraryInstant = Arbitrary[Instant](
+    Gen.chooseNum(0L, 3000000000000L).map(Instant.ofEpochSecond))
 
   implicit def arbitraryMsgHeader: Arbitrary[MsgHeader] =
     Arbitrary(for {
       i <- arbitrary[MsgId]
       p <- arbitrary[Priority]
-      c <- arbitrary[OffsetDateTime]
+      c <- arbitrary[Instant]
     } yield
       MsgHeader(i,p,c))
 

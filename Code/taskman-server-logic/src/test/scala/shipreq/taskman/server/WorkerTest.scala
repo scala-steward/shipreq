@@ -1,9 +1,9 @@
 package shipreq.taskman.server
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Clock, Duration, Instant}
 import org.specs2.mutable.Specification
 import scala.reflect.ClassTag
-import scalaz.{\/-, \/, -\/, Need, Endo}
+import scalaz.{-\/, Endo, Need, \/, \/-}
 import scalaz.effect.IO
 import shipreq.base.util.effect.IOE
 import shipreq.base.util.ScalaExt.Tuple2Ext
@@ -25,8 +25,8 @@ class WorkerTest extends Specification {
   val wid = WorkerId(7)
   val tp = AssignmentTrustPeriod(Duration ofMinutes 3)
 
-  def everIncClock(d: Duration, start: OffsetDateTime = OffsetDateTime.now()): IO[OffsetDateTime] = {
-    var prev: Option[OffsetDateTime] = None
+  def everIncClock(d: Duration, start: Instant = Clock.systemUTC().instant()): IO[Instant] = {
+    var prev: Option[Instant] = None
     IO {
       val r = prev map (_ plus d) getOrElse start
       prev = Some(r)
@@ -97,7 +97,7 @@ class WorkerTest extends Specification {
   "Worker processing msgs asynchronously" >> {
 
     def blah(io: IOE[Unit]
-             , clock: IO[OffsetDateTime] = clockReal
+             , clock: IO[Instant] = clockReal
              , sopEndo: Endo[MockSops] = assignWorkerAllow
               ) = {
       val need = new AsyncScheduler[Need] { def apply[A](io: IO[A]) = IOE(Need(io.unsafePerformIO())) }

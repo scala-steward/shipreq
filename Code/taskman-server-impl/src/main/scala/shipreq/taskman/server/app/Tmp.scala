@@ -1,6 +1,6 @@
 package shipreq.taskman.server.app
 
-import java.time.OffsetDateTime
+import java.time.Instant
 import shipreq.taskman.api._
 import shipreq.base.util.TaggedTypes._
 import shipreq.taskman.server._
@@ -52,7 +52,7 @@ object Tmp extends MainTemplate {
       // val e = Sop.NotifySupportTaskmanError(DateTime.now, Error("Test from Tmp", new RuntimeException), None)
       // ctx.sopReifier(e).unsafePerformIO()
 
-      val now = OffsetDateTime.now()
+      val now = Instant.now()
       val m = MsgDetail(MsgHeader(MsgId(0), Priority.Medium, now), Msg.RegistrationCompleted(UserId(0)), 0)
       val f = Sop.NotifySupportWorkerFailed(now, m ,Error("Test from Tmp", new RuntimeException))
       ctx.sopReifier(f).unsafePerformIO()

@@ -1,13 +1,12 @@
 package shipreq.taskman.server.business
 
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneId, ZoneOffset}
 import scalaz.old.NonEmptyList
-import shipreq.base.util.{Util, ErrorOr, Error}
+import shipreq.base.util.{Error, ErrorOr, Util}
 import shipreq.base.util.ScalaExt.StringBuilderExt
 import shipreq.taskman.api.EmailAddr
 import shipreq.taskman.api.Msg.LandingPageHit
-import shipreq.taskman.server.{MsgHeader, MsgDetail}
+import shipreq.taskman.server.{MsgDetail, MsgHeader}
 import Email._
 
 object Email {
@@ -59,8 +58,6 @@ object Email {
   }
 
   final case class Content(subject: String, body: String)
-
-  val timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 }
 
 // =====================================================================================================================
@@ -90,14 +87,20 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
   def archive(c: => Content): Option[SendOp] =
     archiveEnv.map(Bop.SendEmail(_, c))
 
-  def workerFailureEmail(t: OffsetDateTime, m: MsgDetail, e: Error) = Content(
+  private def timeFieldsForSupport(i: Instant): String = {
+    val utc = i.atOffset(ZoneOffset.UTC)
+    val sydney = i.atZone(ZoneId of "Australia/Sydney")
+    s"TIME: $utc\n      $sydney"
+  }
+
+  def workerFailureEmail(t: Instant, m: MsgDetail, e: Error) = Content(
     s"Taskman worker failed on msg (${m.id.value}) ${m.msg.msgTypeStr}",
-    s"TIME: ${t format timeFormat}\n\nMSG: $m\n\nERROR: ${e.stackTraceStr}"
+    s"${timeFieldsForSupport(t)}\n\nMSG: $m\n\nERROR: ${e.stackTraceStr}"
   )
 
-  def taskmanErrorEmail(t: OffsetDateTime, e: Error, m: Option[MsgDetail]) = Content(
+  def taskmanErrorEmail(t: Instant, e: Error, m: Option[MsgDetail]) = Content(
     "Taskman infrastructure failed",
-    s"TIME: ${t format timeFormat}\n\nERROR: ${e.stackTraceStr}\n\nMSG: $m"
+    s"${timeFieldsForSupport(t)}\n\nERROR: ${e.stackTraceStr}\n\nMSG: $m"
   )
 
   // ---------------------------------------------------------------------------

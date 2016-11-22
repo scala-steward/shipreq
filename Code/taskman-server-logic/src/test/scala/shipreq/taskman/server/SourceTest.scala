@@ -1,6 +1,7 @@
 package shipreq.taskman.server
 
 import java.time.Duration
+import java.time.temporal.ChronoUnit
 import org.specs2.ScalaCheck
 import org.specs2.mutable._
 import scalaz.effect.IO
@@ -17,7 +18,7 @@ class SourceTest extends Specification with ScalaCheck {
   val source = new Source(Duration ofSeconds 1, 20)
 
   "poll when allowed" >> {
-    val (s, ms) = source.poll(None).run(timeNow minusDays 1).unsafePerformIO()
+    val (s, ms) = source.poll(None).run(timeNow.minus(1, ChronoUnit.DAYS)).unsafePerformIO()
     "Time should be updated"    in { s ==== timeNow }
     "Retrieves message headers" in { ms ==== mockMsgs }
   }

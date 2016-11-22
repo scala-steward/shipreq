@@ -1,6 +1,6 @@
 package shipreq.taskman
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, Instant}
 import scalaz.{\/-, ~>}
 import scalaz.effect.{MonadIO, IO}
 import shipreq.base.util.ErrorTag
@@ -13,7 +13,7 @@ package object server {
 
   case class WorkerId(value: Short) extends AnyVal
 
-  case class MsgHeader(id: MsgId, priority: Priority, created: OffsetDateTime) {
+  case class MsgHeader(id: MsgId, priority: Priority, created: Instant) {
     // override def toString = s"MsgHeader($id,$p,new DateTime(${created.getMillis}))\n"
     override def equals(other: Any): Boolean = other match {
       case MsgHeader(id2, _, _) if id.value == id2.value => true

@@ -1,7 +1,7 @@
 package shipreq.taskman.server
 
 import com.squareup.okhttp.OkHttpClient
-import java.time.{Clock, Duration, OffsetDateTime}
+import java.time.{Clock, Duration, Instant}
 import java.util.concurrent.{ExecutorService, TimeUnit}
 import java.util.Properties
 import scala.slick.jdbc.JdbcBackend.Database
@@ -165,7 +165,7 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
   implicit val sopReifier    = new SopImpl(db, new Worker.FailureHandler(emails, bopReifier))
   implicit val msgProcessor  = new BusinessLogic(bopReifier, emails, async.email, mailingListId)
   implicit val failurePolicy = Failure.failurePolicy
-  implicit val clock         = IO(OffsetDateTime.now(clockClock))
+  implicit val clock         = IO(clockClock.instant())
   implicit val nodeId        = sopReifier.getNextNodeId.unsafePerformIO()
 
   def logContent(): Unit = {
@@ -186,10 +186,10 @@ class TaskmanCtx(val db: Database, mailProps: Properties, evr: StringBasedValueR
 
   def shutdown(asyncWait: Option[Duration] = Some(Duration ofSeconds 20)): Unit = {
     for (p <- asyncWait) {
-      val until = OffsetDateTime.now().plus(p).getNano
+      val until = Instant.now().plus(p).getNano
       async.each(_.shutdown())
       async.each(e => {
-        val rem = until - OffsetDateTime.now().getNano
+        val rem = until - Instant.now().getNano
         if (rem > 0)
           e.awaitTermination(rem, TimeUnit.NANOSECONDS)
       })

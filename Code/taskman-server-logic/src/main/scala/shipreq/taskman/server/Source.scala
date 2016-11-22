@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, Instant}
 import shipreq.taskman.api.Priority
 import shipreq.taskman.server.Sop.GetMsgsAssignNode
 import scalaz.{StateT, State}
@@ -8,7 +8,7 @@ import scalaz.effect.IO
 import Source._
 
 object Source {
-  type S = OffsetDateTime
+  type S = Instant
   type ST[A] = State[S, A]
   type STIO[A] = StateT[IO, S, A]
   type QueueStatus = Option[(Priority, Int)]
@@ -16,7 +16,7 @@ object Source {
 
 final class Source(pollGap: Duration, batchSize: Int)(
   implicit node: NodeId,
-           clock: IO[OffsetDateTime],
+           clock: IO[Instant],
            trustPeriod: AssignmentTrustPeriod,
            sopReifier: SopReifier) {
 

@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, Instant}
 import shipreq.base.util.Error
 import shipreq.taskman.api.Priority
 
@@ -40,8 +40,8 @@ object Sop {
   case class UpdateMsgRetry(n: NodeId, w: WorkerId, m: MsgDetail, delay: Duration) extends FailedJobReaction
   case class UpdateMsgAbort(n: NodeId, w: WorkerId, m: MsgDetail) extends FailedJobReaction
 
-  case class NotifySupportWorkerFailed(t: OffsetDateTime, m: MsgDetail, e: Error) extends Sop[Unit]
-  case class NotifySupportTaskmanError(t: OffsetDateTime, e: Error, m: Option[MsgDetail]) extends Sop[Unit]
+  case class NotifySupportWorkerFailed(t: Instant, m: MsgDetail, e: Error) extends Sop[Unit]
+  case class NotifySupportTaskmanError(t: Instant, e: Error, m: Option[MsgDetail]) extends Sop[Unit]
 
   case object Nop extends Sop[Unit]
 }
