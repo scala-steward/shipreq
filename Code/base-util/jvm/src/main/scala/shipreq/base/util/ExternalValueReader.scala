@@ -11,8 +11,10 @@ import ErrorOr.Implicits.MonadExt
  *
  * External source value keys can be transformed implicitly using PropScope.
  */
+@deprecated("Use microlibs.config","")
 object ExternalValueReader {
 
+  @deprecated("Use microlibs.config","")
   case class Retriever[T](run: String => Option[ErrorOr[T]]) {
     def ?>>?(that: Retriever[T]): Retriever[T] =
       Retriever(k => this.run(k) orElse that.run(k))
@@ -30,60 +32,78 @@ object ExternalValueReader {
       })
   }
 
+  @deprecated("Use microlibs.config","")
   case class PropScope(run: String => String)
 
   val GlobalScope = PropScope(identity)
 
+  @deprecated("Use microlibs.config","")
   type ValTest[T] = T => Option[Error]
 
+  @deprecated("Use microlibs.config","")
   def scopeByPrefix(prefix: String) =
     PropScope(prefix + _)
 
+  @deprecated("Use microlibs.config","")
   def scopeByNS(ns1: String, ns: String*) =
     scopeByPrefix((ns1 +: ns).map(_.replaceFirst("\\.+$", "")).filter(_.nonEmpty).mkString("", ".", "."))
 
+  @deprecated("Use microlibs.config","")
   def getOE[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[ErrorOr[T]] =
     ErrorOr.catchAndAnnotateM(errorMsgWhenThrows(name))(
       r.run(s.run(name)))
 
+  @deprecated("Use microlibs.config","")
   def getO[T](name: String)(implicit s: PropScope, r: Retriever[T]): Option[T] =
     getOE(name) map ErrorOr.require_!
 
+  @deprecated("Use microlibs.config","")
   def get[T](name: String)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] =
     getOE(name) getOrElse ErrorOr.error(errorMsgWhenMissing(name))
 
+  @deprecated("Use microlibs.config","")
   def get[T](name: String, default: => T)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] =
     getOE(name) getOrElse ErrorOr(default)
 
+  @deprecated("Use microlibs.config","")
   def tryGet[T](name: String, moreNames: String*)(implicit s: PropScope, r: Retriever[T]): ErrorOr[T] = {
     val es = (name #:: moreNames.toStream).map(getOE(_))
     es.filter(_.isDefined).headOption.map(_.get) getOrElse get(name)
   }
 
+  @deprecated("Use microlibs.config","")
   def need[T](name: String)(implicit s: PropScope, r: Retriever[T]): T =
     ErrorOr require_! get(name)
 
+  @deprecated("Use microlibs.config","")
   def tryNeed[T](name: String, default: => T)(implicit s: PropScope, r: Retriever[T]): T =
     getO(name) getOrElse default
 
+  @deprecated("Use microlibs.config","")
   def tryUse[T](name: String)(f: T => Unit)(implicit s: PropScope, r: Retriever[T]): Unit =
     get(name) foreach f
 
+  @deprecated("Use microlibs.config","")
   def valTest[T](f: T => Boolean, errMsg: String): ValTest[T] =
     t => if (f(t)) None else Some(Error(errMsg))
 
+  @deprecated("Use microlibs.config","")
   def valTestNotError[T]: ValTest[ErrorOr[T]] =
     _.swap.toOption
 
+  @deprecated("Use microlibs.config","")
   def validate[T](name: String, f: String => T)(test: ValTest[T])(implicit s: PropScope): T =
     _test[T, T](name, f, test)(Some(_), _.throw_!())
 
+  @deprecated("Use microlibs.config","")
   def validateO[T](name: String, f: String => Option[T])(test: ValTest[T])(implicit s: PropScope): Option[T] =
     _test[T, Option[T]](name, f, test)(identity, _.throw_!())
 
+  @deprecated("Use microlibs.config","")
   def test[T](name: String, f: String => ErrorOr[T])(test: ValTest[T])(implicit s: PropScope): ErrorOr[T] =
     _test[T, ErrorOr[T]](name, f, test)(_.toOption, _.toErrorOr)
 
+  @deprecated("Use microlibs.config","")
   def testO[T](name: String, f: String => Option[ErrorOr[T]])(test: ValTest[T])(implicit s: PropScope): Option[ErrorOr[T]] =
     _test[T, Option[ErrorOr[T]]](name, f, test)(_.flatMap(_.toOption), e => Some(e.toErrorOr))
 
@@ -155,6 +175,7 @@ abstract class StringParsingBase(_retrieverS: Retriever[String]) {
 /**
  * Reads a bunch of differently-typed values by parsing strings.
  */
+@deprecated("Use microlibs.config","")
 class StringBasedValueReader(_retrieverS: Retriever[String]) extends StringParsingBase(_retrieverS) {
 
   implicit final def retrieverS = normalisedRS

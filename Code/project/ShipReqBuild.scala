@@ -50,7 +50,7 @@ object ShipReqBuild {
         Common.settings,
         Common.jvmSettings,
         Common.macroModuleSettings)
-      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ logback ++ Microlibs.macroUtils)
+      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ logback ++ Microlibs.config ++ Microlibs.macroUtils)
       .dependsOn(baseUtilJvm)
 
   lazy val baseTestJvm = baseTest.jvm

@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie.hikari.hikaritransactor._
 import doobie.imports._
 import doobie.japgolly.DoobieHack
-import java.sql.Connection
 import javax.sql.DataSource
 import scalaz.Scalaz._
 import scalaz._
@@ -78,7 +77,7 @@ object DbAccess {
   }
 
   def fromCfg(cfg: DbConfig): DbAccess = {
-    val ds = new HikariDataSource(cfg.hikariCfg)
+    val ds = new HikariDataSource(cfg.hikariConfig)
     val xa = AbstractTransactor.hikari(ds)
     val migrator = SchemaMigrator(ds, cfg.schema)
     DbAccess(cfg, ds, xa, migrator)
