@@ -16,7 +16,6 @@ import shipreq.taskman.server.business.MailingList.API.GetListId
 import shipreq.taskman.server.business._
 import ErrorOr.Implicits._
 
-// TODO config quite separate: db > taskman > emailTokens
 object TaskmanCtx {
 
   def apply(dbAccess: DbAccess, config: TaskmanConfig): TaskmanCtx =
@@ -66,7 +65,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   implicit val clock         = IO(clockClock.instant())
   implicit val nodeId        = sopReifier.getNextNodeId.unsafePerformIO()
 
-  def logContent(): Unit = {
+  def logConfig(): Unit = {
     log.info(config.report.report)
     log.info(emailTokensReport.report)
   }

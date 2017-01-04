@@ -1,6 +1,7 @@
 package shipreq.taskman.server.app
 
 import scalaz.effect.IO
+import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
 import shipreq.base.util.RunMode
 import shipreq.base.util.log.{HasLogger, LogCfg}
@@ -25,11 +26,15 @@ private[app] trait MainTemplate extends HasLogger {
     } yield a
 
   def withTaskmanCtx[A](f: TaskmanCtx => IO[A]): IO[A] =
-    withDatabase[A](db =>
-      for {
-        cfg <- IO(TaskmanConfig.config.run(runMode.configSources).getOrDie())
-        ctx <- IO(TaskmanCtx(db, cfg))
-        a <- f(ctx) ensuring ctx.shutdown
-      } yield a
-    )
+    for {
+      cfgV <- IO((DbConfig.config tuple TaskmanConfig.config).run(runMode.configSources).getOrDie())
+      (dbCfg, taskmanCfg) = cfgV
+      dbAccess = DbAccess.fromCfg(dbCfg)
+      a <- dbAccess.setupRunShutdown(
+        for {
+          ctx <- IO(TaskmanCtx(dbAccess, taskmanCfg))
+          a <- f(ctx) ensuring ctx.shutdown
+        } yield a
+      )
+    } yield a
 }

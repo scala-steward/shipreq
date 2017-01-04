@@ -21,7 +21,7 @@ object Server extends MainTemplate {
     ).unsafePerformIO()
 
   def run(ctx: TaskmanCtx, testConnections: Boolean = true)(f: System => Unit): Unit = {
-    ctx.logContent()
+    ctx.logConfig()
     if (testConnections) ctx.testConnections()
     val s = new System(ctx)
     s.manager.tell(ManagerActor.RegisterWorker, s.workers)
