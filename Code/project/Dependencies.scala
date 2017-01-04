@@ -34,12 +34,12 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.2")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.3")
     val adtMacros  = mm("adt-macros")
-    // val config     = mm("config")
+    val config     = mm("config")
     val macroUtils = mm("macro-utils")
     val nonempty   = mm("nonempty")
-    // val recursion  = mm("recursion")
+    val recursion  = mm("recursion")
     val scalazExt  = mm("scalaz-ext")
     val stdlibExt  = mm("stdlib-ext")
     val testUtil   = mm("test-util")
@@ -166,6 +166,9 @@ object Dependencies {
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
+
+  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+  val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
   import sbt.Keys._
   def useLocalJar(filename: String) =

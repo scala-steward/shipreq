@@ -1,10 +1,10 @@
 package shipreq.base.util.log
 
+import japgolly.microlibs.config.ConfigParser
+import java.util.Locale
 import org.slf4j.{LoggerFactory, Logger => slf4jLogger}
 import scalaz.Applicative
-import shipreq.base.util.{ErrorOr, Error}
-import shipreq.base.util.ExternalValueReader.Retriever
-import java.util.Locale
+import shipreq.base.util.Error
 
 object Logger {
   def forClass(c: Class[_]): Logger =
@@ -42,8 +42,8 @@ object LogLevel {
       case _       => None
     }
 
-  def evr(implicit rs: Retriever[String]): Retriever[LogLevel] =
-    rs.emap(s => ErrorOr.fromOptionS(LogLevel.read(s), s"Invalid log level: $s"))
+  implicit def configParserShipReqLogLevel(implicit p: ConfigParser[String]): ConfigParser[LogLevel] =
+    p.mapOption(read)
 }
 
 final class Logger(log: slf4jLogger) {

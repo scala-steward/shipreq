@@ -37,7 +37,7 @@ object ShipReqBuild {
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(
         UnivEq.scalaz ++ Scalaz.effect ++ Nyaya.prop ++ Monocle.core ++
-        Microlibs.adtMacros ++ Microlibs.nonempty ++ Microlibs.scalazExt ++ Microlibs.stdlibExt ++
+        Microlibs.adtMacros ++ Microlibs.config ++ Microlibs.nonempty ++ Microlibs.scalazExt ++ Microlibs.stdlibExt ++
         testScope(μTest ++ Nyaya.test))
       .depsForJvm(
         SLF4J.api ++
@@ -115,7 +115,6 @@ object ShipReqBuild {
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % "test")
       .configure(dontInline) // crashes scalac 2.11.2
-      //.dependsOn(baseUtilJvm) // Stupid IDEA auto-import needs this
 
   lazy val taskmanServerSchema =
     project("taskman-server-schema")
@@ -134,7 +133,7 @@ object ShipReqBuild {
       """.stripMargin
 
     project("taskman-server-impl")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.settings, Common.jvmSettings, Dependencies.useKindProjector)
       .deps(
         Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
         testScope(Akka.testkit ++ Specs2.combo)

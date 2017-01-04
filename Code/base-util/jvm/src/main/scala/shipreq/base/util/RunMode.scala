@@ -1,14 +1,20 @@
 package shipreq.base.util
 
-import java.util.{Properties, Locale}
-import scalaz.\/-
+import japgolly.microlibs.config._
+import java.util.Locale
 import scalaz.std.list.listInstance
 import scalaz.syntax.applicative._
-import shipreq.base.util.ExternalValueReader.Retriever
+import scalaz.Scalaz.Id
 
 sealed abstract class RunMode(val id: Int, val name: String, _altNames: String*) {
   override def toString = name
   val names: List[String] = (name :: _altNames.toList).distinct
+
+  def configSources: Sources[Id] = {
+    val files = RunMode.filenames(this)(_.mkString("", ".", ".props")) ::: "default.props" :: Nil
+    val sources = files.map(Source.propFileOnClasspath[Id](_, optional = true))
+    Source.environment[Id] > Sources.highToLowPri(sources: _*) > Source.system[Id]
+  }
 }
 
 object RunMode {
@@ -19,29 +25,27 @@ object RunMode {
   case object Pilot       extends RunMode(5, "Pilot")
   case object Profile     extends RunMode(6, "Profile")
 
-  val values = List(Development, Test, Staging, Production, Pilot, Profile)
+  val values: List[RunMode] =
+    List(Development, Test, Staging, Production, Pilot, Profile)
 
   private[this] val normaliseName: String => String =
     _ toLowerCase Locale.ENGLISH
 
   private[this] val nameToMode: Map[String, RunMode] =
-      values.toList
-        .flatMap(m => m.names.map(n => (normaliseName(n) -> m)))
+      values
+        .flatMap(m => m.names.map(n => normaliseName(n) -> m))
         .toMap
 
   def forName(n: String): Option[RunMode] =
     nameToMode.get(normaliseName(n))
 
-  def retriever(implicit r: Retriever[String]): Retriever[RunMode] =
-    new StringBasedValueReader(r).tryParseE[RunMode](s =>
-      forName(s) match {
-        case Some(m) => \/-(m)
-        case None    => ErrorOr.error(s"Unable to parse run mode: $s")
-      }
-    )
+  implicit val configParser: ConfigParser[RunMode] =
+    ConfigParser.Implicits.Defaults.parseString.mapOption(forName)
 
-  val retrieverFromSysProps: Retriever[RunMode] =
-    retriever(JPropertiesValueReader(Props.systemProps(new Properties)).retrieverS)
+  lazy val Current: RunMode =
+    Config.getOrUse("run.mode", detectFromStackTrace())
+      .run(Source.environment[Id] > Source.system[Id])
+      .getOrDie()
 
   def detectFromStackTrace(st: Array[StackTraceElement] = Thread.currentThread.getStackTrace): RunMode =
     if (doesStackTraceContainKnownTestRunner(st))
