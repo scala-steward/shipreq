@@ -15,36 +15,38 @@ Goals
 
 Concerns
 ========
-* config management
-  * suggestion: use env vars only, don't have runModes
-  * idea: config service
-* admin tasks / one-off app runs (requires solution to config)
+* admin tasks / one-off app runs (and implications around config)
 * docker image repo
 * jetty upgrade procedure
 
+Strategies
+==========
+* Config
+  * Use a single props file name. No more mode.host.blah.props.
+  * Non-test: remove from src/main/resources
+  * Test: put in src/test/resources
+  * Test: should reference docker-compose-test
+* Logging
+  * Non-test: to stdout
+  * Test: to file in /tmp
+
 Tasks
 =====
-* new config machinery (?)
-  * provinence per key
-  * warn unused keys
-  * error missing keys
-  * print all config on startup
-
 * Test env
   * Create docker compose setup for external resources
   * Update tests to use test-env
 
 * Taskman ⇒ Docker
   * Ensure enough build info in jar (and dockerfile)
-  * Restructure non-test config
-  * Log test to file, non-test to stdout
+  * Config
+  * Logging
   * Copy scripts and resources
   * Build docker
 
 * ShipReq ⇒ Docker
   * Ensure enough build info in jar (and dockerfile)
-  * Restructure non-test config
-  * Log test to file, non-test to stdout
+  * Config
+  * Logging
   * Copy scripts and resources
   * Port: `war-compress_static_resources`
   * Port: `war-force_https`
@@ -52,7 +54,7 @@ Tasks
 
 * Dev env
   * Create docker compose setup for external resources
-  * Configure run in SBT to use ↑
+  * Configure run in SBT to provide settings to use ↑
 
 * Local env
   * Create docker compose setup for everything
@@ -60,3 +62,4 @@ Tasks
 
 * Update release scripts in Code/bin/
 
+* Update all READMEs.
