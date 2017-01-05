@@ -63,7 +63,7 @@ object TaskmanBuild {
       """.stripMargin
 
     project("taskman-server-impl")
-      .configure(Common.settings, Common.jvmSettings, Dependencies.useKindProjector)
+      .configure(Common.settings, Common.jvmSettings)
       .deps(
         Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
         testScope(Akka.testkit ++ Specs2.combo)

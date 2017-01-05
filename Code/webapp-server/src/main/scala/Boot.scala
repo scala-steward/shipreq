@@ -1,13 +1,16 @@
 package bootstrap.liftweb
 
-import japgolly.microlibs.config.{Config, ConfigReport}
+import japgolly.microlibs.config.{Config, ConfigParser, ConfigReport}
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.univeq._
 import net.liftweb.common.Logger
 import net.liftweb.http.{LiftRules, LiftSession, S}
 import net.liftweb.util.Props
-import net.liftweb.util.Props.RunModes.Test
+import net.liftweb.util.Props.RunModes
 import scalaz.effect.IO
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
+import shipreq.base.util.{Props => ShipReqProps}
 import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.{AppSiteMap, DI, ExceptionHandler}
@@ -29,22 +32,34 @@ class Boot extends DI {
   lazy val logger = Logger(s"$packageRoot.Boot")
 
   def boot(): Unit = {
-    val cfg = readConfig()
-    logger.info(cfg.report.report)
-    initServerConfig(cfg.server)
+    val (appConfig, runMode) = readConfig()
+    setRunMode(runMode)
+    logger.info(appConfig.report.report)
+    initServerConfig(appConfig.server)
     initOshiro()
     configureLift()
     preloadTemplates()
-    initDatabase(cfg.db)
+    initDatabase(appConfig.db)
     initTaskman()
   }
 
-  def readConfig(): AppConfig = {
-    val runModeName = Props.mode.toString
-    val runMode = shipreq.base.util.RunMode.forName(runModeName) getOrElse sys.error(s"Unrecognised run mode: '$runModeName'")
-    val plan = (DbConfig.config |@| ServerConfig.config).tupled.withReport.map { case ((a, b), z) => AppConfig(a, b, z) }
-    val cfg = plan.run(runMode.configSources).getOrDie()
-    cfg
+  def readConfig(): (AppConfig, RunModes.Value) = {
+    import ConfigParser.Implicits.Defaults._
+
+    val cfgRunMode: Config[RunModes.Value] =
+      Config.need[String]("shipreq.lift.runMode")
+        .mapOption(i => RunModes.values.iterator.filter(_.toString.toLowerCase ==* i).nextOption())
+
+    val plan = (DbConfig.config |@| ServerConfig.config |@| cfgRunMode).tupled.withReport
+      .map { case ((a, b, r), z) => (AppConfig(a, b, z), r) }
+
+    plan.run(ShipReqProps.sources).unsafePerformIO().getOrDie()
+  }
+
+  def setRunMode(runMode: RunModes.Value): Unit = {
+    System.clearProperty("run.mode")
+    Props.autoDetectRunModeFn.set(() => runMode)
+    assert(Props.mode ==* runMode)
   }
 
   def configureLift(): Unit = {
@@ -99,8 +114,8 @@ class Boot extends DI {
   def initTaskman(): Unit = {
     DI.taskman = new TaskmanImpl(DI.dbAccess.io)
     Props.mode match {
-      case Test =>
-      case _    => taskman().runAll(Taskman.updateCfg).unsafePerformIO()
+      case RunModes.Test =>
+      case _             => taskman().runAll(Taskman.updateCfg).unsafePerformIO()
     }
   }
 

@@ -9,7 +9,7 @@ import shipreq.base.util._
 object TestDb extends TestDb
 
 trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnectionXA]] {
-  lazy val (dbCfg, dbCfgReport) = DbConfig.config.withReport.run(RunMode.Test.configSources).getOrDie()
+  lazy val (dbCfg, dbCfgReport) = DbConfig.config.withReport.run(Props.sources).unsafePerformIO().getOrDie()
   // println(dbCfgReport.reportUsed)
   lazy val dbAccess = DbAccess.fromCfgWithoutPool(dbCfg)
 

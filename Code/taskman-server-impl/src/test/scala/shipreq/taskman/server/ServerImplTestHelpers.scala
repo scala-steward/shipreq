@@ -1,11 +1,9 @@
 package shipreq.taskman.server
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import scalaz.Scalaz.Id
 import scalaz.effect.IO
-import scalaz.~>
 import shipreq.base.test.db.{SingleConnectionXA, TestDb}
-import shipreq.base.util.RunMode
+import shipreq.base.util.Props
 import shipreq.taskman.api.ApiOp
 import shipreq.taskman.server.ServerImplTestHelpers._
 
@@ -19,7 +17,7 @@ trait ServerImplTestHelpers {
     xa dbAccess TestDb.dbAccess,
     taskmanConfig,
     taskmanConfigReport,
-    cfgSrc.trans(λ[Id ~> IO](IO(_))))
+    cfgSrc)
 
   import ctx._
 
@@ -36,10 +34,10 @@ object ServerImplTestHelpers {
   val dbMutexR = Some(dbLockRW.readLock)
   val dbMutexW = Some(dbLockRW.writeLock)
 
-  private[server] def cfgSrc = RunMode.Test.configSources
+  private[server] def cfgSrc = Props.sources
 
   lazy val (taskmanConfig, taskmanConfigReport) =
-    TaskmanConfig.config.withReport.run(cfgSrc).getOrDie()
+    TaskmanConfig.config.withReport.run(cfgSrc).unsafePerformIO().getOrDie()
 
   def apply(_xa: SingleConnectionXA): ServerImplTestHelpers =
     new ServerImplTestHelpers {

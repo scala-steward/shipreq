@@ -1,0 +1,16 @@
+db.appname  = WEBAPP
+db.database = shipreq_test
+db.username = test
+db.password = sqt
+db.port     = 13032
+
+db.pool.maximumPoolSize = 8
+
+shipreq.attack_frustration_delay  = 120 ms
+shipreq.lift.runMode              = test
+shipreq.support.email             = contact@shipreq.com
+shipreq.taskman.schema            = taskman_test
+shipreq.token.length              = 49
+shipreq.token.lifespan.email_conf = 3 days
+shipreq.token.lifespan.resetpw    = 24 hours
+shipreq.url                       = http://localhost:8090

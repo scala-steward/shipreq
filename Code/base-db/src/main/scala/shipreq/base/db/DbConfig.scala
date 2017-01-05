@@ -56,7 +56,7 @@ object DbConfig {
           _.get("disableColumnSanitiser", _.setDisableColumnSanitiser),
           _.get("loginTimeout"          , _.setLoginTimeout),
           _.get("logLevel"              , p => (l: String) => p.setLogLevel(Level.valueOf(l.toUpperCase).toInt)),
-          _.get("portNumber"            , _.setPortNumber),
+          _.get("port"                  , _.setPortNumber),
           _.get("prepareThreshold"      , _.setPrepareThreshold),
           _.get("protocolVersion"       , _.setProtocolVersion),
           _.get("receiveBufferSize"     , _.setReceiveBufferSize),

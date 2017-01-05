@@ -3,22 +3,15 @@ package shipreq.taskman.server.app
 import scalaz.effect.IO
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
-import shipreq.base.util.RunMode
-import shipreq.base.util.log.{HasLogger, LogCfg}
+import shipreq.base.util.Props
+import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.{TaskmanConfig, TaskmanCtx}
 
 private[app] trait MainTemplate extends HasLogger {
 
-  lazy val runMode: RunMode = {
-    val runMode = RunMode.Current
-    LogCfg.Logback.init(runMode)
-    log.info.z(s"Run mode: $runMode")
-    runMode
-  }
-
   def withDatabase[A](f: DbAccess => IO[A]): IO[A] =
     for {
-      tmp <- IO(DbConfig.config.withReport.run(runMode.configSources).getOrDie())
+      tmp <- DbConfig.config.withReport.run(Props.sources).map(_.getOrDie)
       (cfg, report) = tmp
       _ <- IO.putStrLn(report.report)
       dbAccess = DbAccess.fromCfg(cfg)
@@ -27,7 +20,7 @@ private[app] trait MainTemplate extends HasLogger {
 
   def withTaskmanCtx[A](f: TaskmanCtx => IO[A]): IO[A] =
     for {
-      tmp <- IO((DbConfig.config tuple TaskmanConfig.config).withReport.run(runMode.configSources).getOrDie())
+      tmp <- (DbConfig.config tuple TaskmanConfig.config).withReport.run(Props.sources).map(_.getOrDie)
       ((dbCfg, taskmanCfg), report) = tmp
       dbAccess = DbAccess.fromCfg(dbCfg)
       a <- dbAccess.setupRunShutdown(

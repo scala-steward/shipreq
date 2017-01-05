@@ -9,9 +9,10 @@ object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
 
   private lazy val cfg = {
-    val cfg = boot.readConfig()
-    println("webapp-server test config:\n" + cfg.report.reportUsed)
-    cfg
+    val (appConfig, runMode) = boot.readConfig()
+    boot.setRunMode(runMode)
+    println("webapp-server test config:\n" + appConfig.report.reportUsed)
+    appConfig
   }
 
   private def once[A](a: => A): () => Unit = {
