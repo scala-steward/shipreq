@@ -13,8 +13,8 @@ private[app] trait MainTemplate extends HasLogger {
     for {
       tmp <- DbConfig.config.withReport.run(Props.sources).map(_.getOrDie)
       (cfg, report) = tmp
-      _ <- IO.putStrLn(report.report)
-      dbAccess = DbAccess.fromCfg(cfg)
+      _ <- IO(log.info(report.report))
+      dbAccess <- DbAccess.fromCfg(cfg)
       a <- dbAccess.setupRunShutdown(f(dbAccess))
     } yield a
 
@@ -22,10 +22,11 @@ private[app] trait MainTemplate extends HasLogger {
     for {
       tmp <- (DbConfig.config tuple TaskmanConfig.config).withReport.run(Props.sources).map(_.getOrDie)
       ((dbCfg, taskmanCfg), report) = tmp
-      dbAccess = DbAccess.fromCfg(dbCfg)
+      _ <- IO(log.info(report.report))
+      dbAccess <- DbAccess.fromCfg(dbCfg)
       a <- dbAccess.setupRunShutdown(
         for {
-          ctx <- IO(TaskmanCtx(dbAccess, taskmanCfg, report))
+          ctx <- IO(TaskmanCtx(dbAccess, taskmanCfg))
           a <- f(ctx) ensuring ctx.shutdown
         } yield a
       )

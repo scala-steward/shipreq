@@ -1,7 +1,7 @@
 package shipreq.taskman.server
 
 import com.squareup.okhttp.OkHttpClient
-import japgolly.microlibs.config.{ConfigReport, Sources => ConfigSources}
+import japgolly.microlibs.config.{Sources => ConfigSources}
 import java.time.{Clock, Duration, Instant}
 import java.util.concurrent.{ExecutorService, TimeUnit}
 import scalaz.-\/
@@ -18,14 +18,14 @@ import ErrorOr.Implicits._
 
 object TaskmanCtx {
 
-  def apply(dbAccess: DbAccess, config: TaskmanConfig, configReport: ConfigReport): TaskmanCtx =
-    apply(dbAccess, config, configReport, SopImpl.configSource(dbAccess))
+  def apply(dbAccess: DbAccess, config: TaskmanConfig): TaskmanCtx =
+    apply(dbAccess, config, SopImpl.configSource(dbAccess))
 
-  def apply(dbAccess: DbAccess, config: TaskmanConfig, configReport: ConfigReport, emailTokenSource: ConfigSources[IO]): TaskmanCtx =
-    new TaskmanCtx(dbAccess, config, configReport, emailTokenSource)
+  def apply(dbAccess: DbAccess, config: TaskmanConfig, emailTokenSource: ConfigSources[IO]): TaskmanCtx =
+    new TaskmanCtx(dbAccess, config, emailTokenSource)
 }
 
-final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, configReport: ConfigReport, emailTokenSource: ConfigSources[IO]) extends HasLogger {
+final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailTokenSource: ConfigSources[IO]) extends HasLogger {
 
   private object async {
     val (emailS, email) = Async.newPool("email", config.mail.concurrencyMax)
@@ -35,12 +35,14 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, config
   private def runPrerequisite_![A](io: IOE[A]): A =
     ErrorOr.require_!(io.unsafePerformIO())
 
-  private lazy val (emailTokens, emailTokensReport) =
+  private val (emailTokens, emailTokensReport) =
     TaskmanConfig.mailTokens
       .withReport
       .run(emailTokenSource)
       .unsafePerformIO()
       .getOrDie()
+
+  log.info(emailTokensReport.report)
 
   private def getMailChimpListId(name: String): IOE[MailingList.ListId] =
     mailchimp.run(GetListId(name)) >=> (ErrorOr.fromOptionS(_, s"Mailing list not found: $name"))
@@ -64,11 +66,6 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, config
   implicit val failurePolicy = Failure.failurePolicy
   implicit val clock         = IO(clockClock.instant())
   implicit val nodeId        = sopReifier.getNextNodeId.unsafePerformIO()
-
-  def logConfig(): Unit = {
-    log.info(configReport.report)
-    log.info(emailTokensReport.report)
-  }
 
   def testConnections(): Unit = {
     log debug "Testing connections..."

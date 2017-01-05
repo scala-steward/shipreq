@@ -100,7 +100,7 @@ class Boot extends DI {
     Oshiro.init()
 
   def initDatabase(dbConfig: DbConfig): Unit = {
-    val access = DbAccess.fromCfg(dbConfig)
+    val access = DbAccess.fromCfg(dbConfig).unsafePerformIO()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()
     access.migrator.migrate[IO].unsafePerformIO()

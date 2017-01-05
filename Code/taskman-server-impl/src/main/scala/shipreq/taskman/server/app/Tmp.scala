@@ -15,7 +15,6 @@ object Tmp extends MainTemplate {
 
   def main(args: Array[String]): Unit =
     withTaskmanCtx(ctx => IO {
-      ctx.logConfig()
       //ctx.testConnections()
 
       /*

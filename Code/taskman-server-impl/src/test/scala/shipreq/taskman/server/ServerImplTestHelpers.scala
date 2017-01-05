@@ -16,7 +16,6 @@ trait ServerImplTestHelpers {
   lazy val ctx = TaskmanCtx(
     xa dbAccess TestDb.dbAccess,
     taskmanConfig,
-    taskmanConfigReport,
     cfgSrc)
 
   import ctx._

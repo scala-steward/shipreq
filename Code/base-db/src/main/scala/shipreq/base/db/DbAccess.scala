@@ -76,12 +76,14 @@ object DbAccess {
       }
   }
 
-  def fromCfg(cfg: DbConfig): DbAccess = {
-    val ds = new HikariDataSource(cfg.hikariConfig)
-    val xa = AbstractTransactor.hikari(ds)
-    val migrator = SchemaMigrator(ds, cfg.schema)
-    DbAccess(cfg, ds, xa, migrator)
-  }
+  // This is in IO because HikariDataSource connects to the DB (and throws when unable) on construction.
+  def fromCfg(cfg: DbConfig): IO[DbAccess] =
+    IO {
+      val ds = new HikariDataSource(cfg.hikariConfig)
+      val xa = AbstractTransactor.hikari(ds)
+      val migrator = SchemaMigrator(ds, cfg.schema)
+      DbAccess(cfg, ds, xa, migrator)
+    }
 
   def fromCfgWithoutPool(cfg: DbConfig): DbAccess = {
     val ds = cfg.pgDataSource
