@@ -100,10 +100,11 @@ object Common {
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
     .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
-    .enablePlugins(com.typesafe.sbt.GitVersioning)
     .settings(
       organization                := "com.beardedlogic.shipreq",
       organizationName            := "Bearded Logic",
+      isSnapshot                  := devMode || git.gitUncommittedChanges.value,
+      version                     := git.gitHeadCommit.value.getOrElse("gitHeadCommit unavailable") + (if (isSnapshot.value) "-SNAPSHOT" else ""),
       shellPrompt in ThisBuild    := { (s: State) => Project.extract(s).currentRef.project + "> " },
       incOptions                  := incOptions.value.withNameHashing(true),
       incOptions                  := incOptions.value.withLogRecompileOnMacro(false),
@@ -118,6 +119,15 @@ object Common {
       minForcegcInterval          := 3.minutes,
       triggeredMessage            := Watched.clearWhenTriggered,
       target                      := redirectTargetDir(target.value)
+    )
+    .settings(
+      // TODO Temp hack due to bug in sbt-git
+      git.gitUncommittedChanges in ThisBuild :=
+        Process("git status --porcelain")
+          .lines
+          .map(_.split(" ").headOption)
+          .filter(_ != Some("??"))
+          .nonEmpty
     )
     .configure(
       addCommandAliases(
