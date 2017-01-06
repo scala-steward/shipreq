@@ -2,6 +2,7 @@ import sbt.{project => _, _}
 import Keys._
 import org.scalajs.core.tools.io.{IO => _, _}
 import org.scalajs.sbtplugin.{ScalaJSPlugin, ScalaJSPluginInternal, Stage}
+import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import Common.Functions._
 import Common.Values.{devMode, releaseMode}
 import Dependencies._
@@ -221,6 +222,8 @@ object WebappBuild {
 
     lazy val copyClientJs = taskKey[Unit]("Copies required webapp client resources.")
 
+    lazy val DockerDeps = config("dockerdeps")
+
     def clientJsSettings: Project => Project =
       _.settings(
 
@@ -302,11 +305,13 @@ object WebappBuild {
     def consoleCmds = "def initLift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}"
 
     def definition = (_: Project)
-      .enablePlugins(JettyPlugin, WarPlugin)
+      .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
       .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
+      .configs(DockerDeps)
       .deps(
         Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
         testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
+        (LibJetty.dist % DockerDeps) ++
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))
       .configure(
@@ -318,10 +323,63 @@ object WebappBuild {
         testSettings,
         dontInline) // crashes scalac 2.11.7
       .settings(
-        containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()),
+        containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version
         javaOptions in Jetty += "-Xmx1g",
         initialCommands += consoleCmds,
-        fullClasspath in console in Compile += file("src/main/webapp")) // So templates can be loaded from console
+        fullClasspath in console in Compile += file("src/main/webapp"), // So templates can be loaded from console
+
+        classpathTypes in DockerDeps += "tar.gz",
+        // TODO DRY
+        buildOptions in docker := BuildOptions(pullBaseImage = BuildOptions.Pull.Always),
+        imageNames in docker := {
+          var versions = Seq(version.value, "latest")
+          // if (!isSnapshot.value) versions :+= "latest"
+          versions.map(ver => ImageName(s"shipreq/webapp:$ver"))
+        },
+        dockerfile in docker := {
+          val jettyHome = "/jetty"
+          val base = "/shipreq"
+
+          // Prepare jetty-dist
+          val depFiles = Classpaths.managedJars(DockerDeps, (classpathTypes in DockerDeps).value, update.value).map(_.data)
+          assert(depFiles.size == 1)
+          val jettyDistTarGz = depFiles.head
+          val tmp = target.value / "docker-jetty"
+          val tmpDir = tmp.getAbsolutePath
+          val scriptContent =
+            s"""
+               |rm -rf "$tmpDir"
+               |  && mkdir "$tmpDir"
+               |  && cd "$tmpDir"
+               |  && tar xzf "$jettyDistTarGz" --strip-components=1
+               |  && rm -rv */*{jaas,jsp}[.-]* lib/apache-jsp demo-base
+             """.stripMargin.trim.replaceAll("\n\\s+", " ")
+          sys.process.Process(List("bash", "-c", scriptContent)).!!
+
+          new Dockerfile {
+            def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))
+
+            from("anapsix/alpine-java:8_server-jre_unlimited")
+
+            copy(tmp, s"$jettyHome/")
+            // Jetty's start script only waits 60sec for the server to start before giving up.
+            // On a micro EC2 instance this isn't enough time, so this increases the wait time.
+            runInBash("""sed -i 's/\(for T in \)\(1 2 3 .* 15\)\(\s+\d+\)*/\1\2 \2 \2 \2 \2/' """ + s"$jettyHome/bin/jetty.sh")
+
+            copy(sourceDirectory.value / "docker/shipreq", s"$base/")
+
+            env(
+              "JETTY_HOME" -> jettyHome,
+              "JETTY_BASE" -> base,
+              "VERSION" -> version.value,
+              "BUILD_MODE" -> (if (releaseMode) "release" else "dev"))
+            workDir(base)
+            expose(8080)
+            cmd("bin/jetty")
+          }
+        }
+
+    )
   }
 
   // ===================================================================================================================

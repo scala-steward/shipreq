@@ -130,9 +130,10 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.3.2.v20150730")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.0.v20161208")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
+    val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
 
     // Upgrade this in step with Jetty or else java.lang.SecurityExceptions will abound.
     // It's a transitive dependency of jetty-server
