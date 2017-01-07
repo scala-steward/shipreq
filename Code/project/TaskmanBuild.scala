@@ -63,15 +63,6 @@ object TaskmanBuild {
         |import org.json4s.JsonDSL._
       """.stripMargin
 
-    def printFileBatches(batches: List[List[File]]): Unit = {
-      val sep = "=" * 100
-      println(sep)
-      batches.foreach { files =>
-        files.iterator.map(_.getName).foreach(println)
-        println(sep)
-      }
-    }
-
     val serverClass = "shipreq.taskman.server.app.Server"
 
     project("taskman-server-impl")
@@ -112,7 +103,7 @@ object TaskmanBuild {
             .toList
             .sortBy(_._1)
             .map(_._2.sortBy(_.getName))
-          printFileBatches(jarTiers)
+          // printFileBatches(jarTiers)
 
           val classpath = PackagerKeys.scriptClasspath.value.map(lib + _).mkString(":")
 

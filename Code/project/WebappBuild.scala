@@ -90,6 +90,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(testScope(μTest ++ Nyaya.test))
       .dependsOn(webappBase)
+      .configureBoth(dontInline) // crashes scalac 2.11.8
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
@@ -267,17 +268,22 @@ object WebappBuild {
         { val k = webappPrepare ; k := k.dependsOn(copyClientJs).value }
       )
 
+    def testSettings = (_: Project)
+      .dependsOn(webappBaseTestJvm % "test->compile")
+      .settings(inConfig(Test)(Seq(
+        fork                         := true,
+        javaOptions                  += "-Drun.mode=test",
+        unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp", // So templates load
+        parallelExecution            := false) // Due to UserFixture+Oshiro and LiveTest
+      ): _*)
+
+    def consoleCmds = "def initLift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}"
+
     def warSettings = {
       var dirHitList = Set("_scalate")
       if (releaseMode)
         dirHitList += "dev"
-
       (_: Project).settings(
-
-        // Expand this the webapp-server module instead of building a jar
-        // At the minimum, scripts in Release/webapp expect to find WEB-INF/classes/build.properties
-        webappWebInfClasses := true,
-
         // Remove dirs from the WAR
         webappPostProcess := { webappDir =>
           def go(f: File): Unit = {
@@ -293,43 +299,15 @@ object WebappBuild {
         })
     }
 
-    def testSettings = (_: Project)
-      .dependsOn(webappBaseTestJvm % "test->compile")
-      .settings(inConfig(Test)(Seq(
-        fork                         := true,
-        javaOptions                  += "-Drun.mode=test",
-        unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp", // So templates load
-        parallelExecution            := false) // Due to UserFixture+Oshiro and LiveTest
-      ): _*)
-
-    def consoleCmds = "def initLift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}"
-
-    def definition = (_: Project)
-      .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
-      .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
+    // TODO DRY
+    def dockerSettings = (_: Project)
+      .enablePlugins(DockerPlugin)
       .configs(DockerDeps)
-      .deps(
-        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
-        testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
-        (LibJetty.dist % DockerDeps) ++
-        (LibJetty.webapp % "test") ++
-        (LibJetty.servletApi % "test,provided"))
-      .configure(
-        webappSettings,
-        Common.jvmSettings,
-        Common.generateBuildPropFile(),
-        clientJsSettings,
-        warSettings,
-        testSettings,
-        dontInline) // crashes scalac 2.11.7
+      .deps(LibJetty.dist % DockerDeps)
       .settings(
-        containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version
-        javaOptions in Jetty += "-Xmx1g",
-        initialCommands += consoleCmds,
-        fullClasspath in console in Compile += file("src/main/webapp"), // So templates can be loaded from console
-
+        cleanFiles += baseDirectory.value / "target",
         classpathTypes in DockerDeps += "tar.gz",
-        // TODO DRY
+        webappWebInfClasses := false,
         buildOptions in docker := BuildOptions(pullBaseImage = BuildOptions.Pull.Always),
         imageNames in docker := {
           var versions = Seq(version.value, "latest")
@@ -339,33 +317,90 @@ object WebappBuild {
         dockerfile in docker := {
           val jettyHome = "/jetty"
           val base = "/shipreq"
+          // val tmp = target.value / "docker"
+          val tmp = baseDirectory.value / "target/docker" // Docker requires this be under baseDirectory
+
+          def prepareClean(f: String): Unit =
+            sys.process.Process(List("bash", "-c",
+              s"""rm -rf "$f" && mkdir -p "$f"""")).!!
 
           // Prepare jetty-dist
           val depFiles = Classpaths.managedJars(DockerDeps, (classpathTypes in DockerDeps).value, update.value).map(_.data)
           assert(depFiles.size == 1)
           val jettyDistTarGz = depFiles.head
-          val tmp = target.value / "docker-jetty"
-          val tmpDir = tmp.getAbsolutePath
+          val tmpJetty = tmp / "jetty"
+          val tmpJettyDir = tmpJetty.getAbsolutePath
+          prepareClean(tmpJettyDir)
           val scriptContent =
             s"""
-               |rm -rf "$tmpDir"
-               |  && mkdir "$tmpDir"
-               |  && cd "$tmpDir"
+               |cd "$tmpJettyDir"
                |  && tar xzf "$jettyDistTarGz" --strip-components=1
                |  && rm -rv */*{jaas,jsp}[.-]* lib/apache-jsp demo-base
              """.stripMargin.trim.replaceAll("\n\\s+", " ")
           sys.process.Process(List("bash", "-c", scriptContent)).!!
+
+          var assetPathGoodAndBad = Vector("dev", "a")
+          assetPathGoodAndBad = assetPathGoodAndBad.map(_ + "/")
+          if (releaseMode) assetPathGoodAndBad = assetPathGoodAndBad.reverse
+          val assetPath = assetPathGoodAndBad.head
+          val tmpWar = tmp / "war"
+          val tmpWarDir = tmpWar.getAbsolutePath
+          prepareClean(tmpWarDir)
+          val japgolly = ".*(adt-macros|config_|macro-utils|nonempty|nyaya|scalaz-ext|stdlib-ext|univeq).*"
+          val webappJs = "^(webapp-.*|(ww|client-home|client-project)\\.js$)"
+          val warTiers =
+            webappPrepare.value
+              .filterNot(_._1.isDirectory)
+              .filterNot(_._2 startsWith assetPathGoodAndBad(1))
+              .groupBy(_._2 match {
+                case n if n.startsWith(assetPath) =>
+                  n.drop(assetPath.length) match {
+                    case n if n startsWith "viz.js"        => 10
+                    case _ if n contains   "/fonts/"       => 11
+                    case n if n startsWith "katex"         => 11
+                    case n if n startsWith "public"        => 60
+                    case n if n startsWith "member"        => 60
+                    case n if n matches    webappJs        => 98
+                    case _                                 => 80
+                  }
+                case n if n.startsWith("WEB-INF/lib/") =>
+                  n.drop("WEB-INF/lib/".length) match {
+                    case f if f startsWith "webapp-server" => 99
+                    case f if f startsWith "webapp-"       => 95
+                    case f if f startsWith "taskman"       => 83
+                    case f if f startsWith "base-"         => 82
+                    case f if f matches    japgolly        => 58
+                    case f if f startsWith "lift"          => 50
+                    case f if f matches    "^scalap?-.*"   => 0
+                    case _                                 => 55
+                  }
+                case _                                     => 80
+              })
+            .toList
+            .sortBy(_._1)
+            .map(_._2.sortBy(_._2))
+          // printFileBatches(warTiers.map(_.map(_._1)))
+          val warStages =
+            warTiers.zipWithIndex.map { case (batch, i) =>
+              val stage = tmpWar / s"lib-${i + 1}"
+              assert(stage.mkdir(), s"Failed to create $stage")
+              IO.copy(batch.map { case (f, n) => f -> stage / n }, preserveLastModified = true)
+              stage
+            }
+
+          // println(sys.process.Process(List("tree", tmp.getAbsolutePath)).!!)
 
           new Dockerfile {
             def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))
 
             from("anapsix/alpine-java:8_server-jre_unlimited")
 
-            copy(tmp, s"$jettyHome/")
+            copy(tmpJetty, s"$jettyHome/")
             // Jetty's start script only waits 60sec for the server to start before giving up.
             // On a micro EC2 instance this isn't enough time, so this increases the wait time.
             runInBash("""sed -i 's/\(for T in \)\(1 2 3 .* 15\)\(\s+\d+\)*/\1\2 \2 \2 \2 \2/' """ + s"$jettyHome/bin/jetty.sh")
 
+            warStages.foreach(copy(_, s"$base/webapps/ROOT/"))
             copy(sourceDirectory.value / "docker/shipreq", s"$base/")
 
             env(
@@ -373,13 +408,36 @@ object WebappBuild {
               "JETTY_BASE" -> base,
               "VERSION" -> version.value,
               "BUILD_MODE" -> (if (releaseMode) "release" else "dev"))
+
             workDir(base)
             expose(8080)
             cmd("bin/jetty")
           }
         }
+      )
 
-    )
+    def definition = (_: Project)
+      .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
+      .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
+      .deps(
+        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ scalate ++ commonsLang ++
+        testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
+        (LibJetty.webapp % "test") ++
+        (LibJetty.servletApi % "test,provided"))
+      .configure(
+        webappSettings,
+        Common.jvmSettings,
+        Common.generateBuildPropFile(),
+        clientJsSettings,
+        warSettings,
+        testSettings,
+        dockerSettings,
+        dontInline) // crashes scalac 2.11.7
+      .settings(
+        containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version
+        javaOptions in Jetty += "-Xmx1g",
+        initialCommands += consoleCmds,
+        fullClasspath in console in Compile += file("src/main/webapp")) // So templates can be loaded from console
   }
 
   // ===================================================================================================================

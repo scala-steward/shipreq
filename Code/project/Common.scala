@@ -304,6 +304,24 @@ object Common {
         IO.delete(to)
       }
 
+    def printFileBatches(batchesT: Traversable[Traversable[File]]): Unit = {
+      val sep = "=" * 100
+      println(sep)
+      val batches = batchesT.toVector
+      val sizes = batches.map(_.map(_.length()).foldLeft(0L)(_ + _)).toVector
+      (batches zip sizes).foreach { case (files, size) =>
+        files.foreach(println)
+        printf("= %,d bytes\n", size)
+        println(sep)
+      }
+      println("Sizes:")
+      sizes.foreach { size =>
+        printf("  %,12d bytes\n", size)
+      }
+      printf("Σ %,12d bytes\n", sizes.sum)
+      println(sep)
+    }
+
     def addCommandAliases(m: (String, String)*) = {
       val s = m.map(p => addCommandAlias(p._1, p._2)).reduce(_ ++ _)
       (_: Project).settings(s: _*)
