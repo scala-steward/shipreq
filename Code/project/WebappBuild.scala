@@ -445,7 +445,6 @@ object WebappBuild {
       .configure(
         webappSettings,
         Common.jvmSettings,
-        Common.generateBuildPropFile(),
         clientJsSettings,
         warSettings,
         testSettings,

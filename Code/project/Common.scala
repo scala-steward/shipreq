@@ -18,22 +18,6 @@ object Common {
   import Functions._
   import Values._
 
-  def generateBuildPropFile(filename: String = "build.properties", prefix: String = "build.") = (p: Project) => {
-    def createBuildProps = Def.task {
-      val outDir: File = resourceManaged.in(Compile).value
-      val outFile = outDir / filename
-      val props = Map[String, String](
-        "version" -> version.value,
-        "revision" -> git.gitHeadCommit.value.getOrElse("?"),
-        "time" -> fmtTimeNow("yyyy-MM-dd HH:mm:ss")
-      )
-      val contents = props.toList.map {case (k, v) => s"${prefix}$k=$v" }.mkString("\n")
-      IO.write(outFile, contents)
-      Seq(outFile)
-    }
-    p.settings(resourceGenerators in Compile += createBuildProps.taskValue)
-  }
-
   def targetJdk = "1.8"
 
   def scalacFlags = Seq(
