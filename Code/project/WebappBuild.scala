@@ -337,6 +337,7 @@ object WebappBuild {
             s"""
                |cd "$tmpJettyDir"
                |  && tar xzf "$jettyDistTarGz" --strip-components=1
+               |  && sed -i 's|"0/>|"0"/>|' etc/jetty-gzip.xml
                |  && rm -rv */*{jaas,jsp}[.-]* lib/apache-jsp demo-base
              """.stripMargin.trim.replaceAll("\n\\s+", " "))
 
@@ -414,6 +415,8 @@ object WebappBuild {
             from("anapsix/alpine-java:8_server-jre_unlimited")
 
             copy(tmpJetty, s"$jettyHome/")
+
+            // TODO Maybe not needed after use of quickstart
             // Jetty's start script only waits 60sec for the server to start before giving up.
             // On a micro EC2 instance this isn't enough time, so this increases the wait time.
             runInBash("""sed -i 's/\(for T in \)\(1 2 3 .* 15\)\(\s+\d+\)*/\1\2 \2 \2 \2 \2/' """ + s"$jettyHome/bin/jetty.sh")
@@ -421,14 +424,21 @@ object WebappBuild {
             warStages.foreach(copy(_, s"$warExplode/"))
             copy(sourceDirectory.value / "docker/shipreq", s"$base/")
 
+            workDir(base)
             env(
               "JETTY_HOME" -> jettyHome,
               "JETTY_BASE" -> base,
               "VERSION" -> version.value,
               "BUILD_MODE" -> (if (releaseMode) "release" else "dev"))
 
-            workDir(base)
-            expose(8080)
+            // Download required libs
+            runRaw(
+              """
+                |bin/jetty --approve-all-licenses --add-to-start=http,http2,webapp,gzip,resources,logging-logback 2>&1 &&
+                |bin/jetty --add-to-start=server,websocket 2>&1
+              """.stripMargin.trim.replaceAll("\n\\s*", " "))
+
+            expose(8080, 8443)
             cmd("bin/jetty")
           }
         }
