@@ -1,2 +1,10 @@
 #!/bin/bash
-exec java -jar $JETTY_HOME/start.jar "$@"
+
+declare -a args=()
+
+mode="$(printenv run.mode)"
+[ -n "$mode" ] && args+=("-Drun.mode=$mode")
+
+args+=("$@")
+
+exec java -jar $JETTY_HOME/start.jar "${args[@]}"

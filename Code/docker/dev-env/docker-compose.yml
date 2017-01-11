@@ -37,3 +37,4 @@ services:
       - db.database=shipreq_dev
       - db.username=dev
       - db.password=sqd
+      - run.mode=staging

@@ -34,8 +34,8 @@ class Boot extends DI {
 
   def boot(): Unit = {
     val (appConfig, runMode) = readConfig()
-    setRunMode(runMode)
     logger.info(appConfig.report.report)
+    runMode foreach setRunMode
     initServerConfig(appConfig.server)
     initOshiro()
     configureLift()
@@ -44,12 +44,14 @@ class Boot extends DI {
     initTaskman(appConfig.server)
   }
 
-  def readConfig(): (AppConfig, RunModes.Value) = {
+  def readConfig(): (AppConfig, Option[RunModes.Value]) = {
     import ConfigParser.Implicits.Defaults._
 
-    val cfgRunMode: Config[RunModes.Value] =
-      Config.need[String]("shipreq.lift.runMode")
-        .mapOption(i => RunModes.values.iterator.filter(_.toString.toLowerCase ==* i).nextOption())
+    val cfgRunMode: Config[Option[RunModes.Value]] =
+      Config.get[String]("shipreq.lift.runMode").mapOption {
+        case Some(i) => RunModes.values.iterator.filter(_.toString.toLowerCase ==* i).nextOption().map(Some(_))
+        case None    => Some(None)
+      }
 
     val plan = (DbConfig.config |@| ServerConfig.config |@| cfgRunMode).tupled.withReport
       .map { case ((a, b, r), z) => (AppConfig(a, b, z), r) }
