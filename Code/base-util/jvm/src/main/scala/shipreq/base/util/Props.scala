@@ -7,7 +7,7 @@ import scalaz.std.list.listInstance
 object Props {
 
   def fileSources: Sources[IO] =
-    Source.propFileOnClasspath[IO]("shipreq.props", optional = true)
+    Source.propFileOnClasspath[IO]("shipreq.properties", optional = true)
 
   def sources: Sources[IO] =
     Source.environment[IO] >
