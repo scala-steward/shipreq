@@ -29,7 +29,8 @@ services:
     links:
       - postgres
     ports:
-      - "14000:8080"
+      - "14080:8080"
+      - "14443:8443"
     volumes:
       - ./webapp:/shipreq/resources:ro
     environment:
@@ -38,4 +39,4 @@ services:
       - db.username=dev
       - db.password=sqd
       - run.mode=staging
-      - shipreq.url=http://localhost:14000
+      - shipreq.url=https://localhost:14443
