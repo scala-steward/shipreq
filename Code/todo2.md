@@ -2,8 +2,12 @@
 * Upgrade libs
 * Upgrade Scala
 
-* Dockerise
 * Add healthchecks
-* Fix logging
+* Send logs to service
 * Add proper metrics
+* Webapp docker
+  * integrate `war-force_https`
+  * HTTPS: Use real keystore
+  * use quickstart
+* Test env: Use different DBs for each module
 
