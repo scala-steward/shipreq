@@ -9,9 +9,10 @@ object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
 
   private lazy val cfg = {
-    val cfg = boot.readConfig()
-    println("webapp-server test config:\n" + cfg.report.reportUsed)
-    cfg
+    val (appConfig, runMode) = boot.readConfig()
+    runMode foreach boot.setRunMode
+    println("webapp-server test config:\n" + appConfig.report.reportUsed)
+    appConfig
   }
 
   private def once[A](a: => A): () => Unit = {
@@ -38,6 +39,8 @@ object PrepareEnv {
     boot.preloadTemplates()
   }
 
-  def db(): Unit =
+  def db(): Unit = {
+    TestDb.init()
     TestDb.useInLift()
+  }
 }

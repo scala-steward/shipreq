@@ -1,0 +1,5 @@
+Jetty initialisation:
+
+java -jar $JETTY_HOME/start.jar --approve-all-licenses --add-to-start=http,http2,webapp,gzip,resources,logging-logback
+java -jar $JETTY_HOME/start.jar --add-to-start=server,websocket
+

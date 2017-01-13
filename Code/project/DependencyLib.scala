@@ -73,6 +73,7 @@ object DependencyLib {
     def apply(d: AnyDialect): Seq[ModuleID] =
       ids.getOrElse(d, Seq.empty)
 
+    def %(revision: Configuration) = modAll(_ % revision)
     def %(revision: String) = modAll(_ % revision)
 
     def exclude(org: String, name: String) = modAll(_ exclude(org, name))

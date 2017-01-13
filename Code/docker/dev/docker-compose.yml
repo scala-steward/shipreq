@@ -1,0 +1,45 @@
+version: '2'
+services:
+
+  postgres:
+    image: postgres:9.6.1
+    container_name: shipreq_dev_postgres
+    ports:
+      - "14032:5432"
+    environment:
+      - POSTGRES_DB=shipreq_dev
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=sqd
+    logging:
+      driver: none
+
+  taskman:
+    image: shipreq/taskman
+    container_name: shipreq_dev_taskman
+    links:
+      - postgres
+    volumes:
+      - ./taskman:/taskman/conf:ro
+    environment:
+      - db.host=postgres
+      - db.database=shipreq_dev
+      - db.username=dev
+      - db.password=sqd
+
+  webapp:
+    image: shipreq/webapp
+    container_name: shipreq_dev_webapp
+    links:
+      - postgres
+    ports:
+      - "14080:8080"
+      - "14443:8443"
+    volumes:
+      - ./webapp:/shipreq/resources:ro
+    environment:
+      - db.host=postgres
+      - db.database=shipreq_dev
+      - db.username=dev
+      - db.password=sqd
+      - run.mode=staging
+      - shipreq.url=https://localhost:14443

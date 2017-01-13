@@ -48,6 +48,7 @@ object DbConfig {
         Config.need[String]("password") |@|
         Config.consumerFn[PGSimpleDataSource](
           _ => pgCurrentSchema,
+          _.getOrUse("host", _.setServerName)("localhost"),
           _.get("appname"               , _.setApplicationName),
           _.get("binaryTransfer"        , _.setBinaryTransfer),
           _.get("binaryTransferDisable" , _.setBinaryTransferDisable),
@@ -56,12 +57,11 @@ object DbConfig {
           _.get("disableColumnSanitiser", _.setDisableColumnSanitiser),
           _.get("loginTimeout"          , _.setLoginTimeout),
           _.get("logLevel"              , p => (l: String) => p.setLogLevel(Level.valueOf(l.toUpperCase).toInt)),
-          _.get("portNumber"            , _.setPortNumber),
+          _.get("port"                  , _.setPortNumber),
           _.get("prepareThreshold"      , _.setPrepareThreshold),
           _.get("protocolVersion"       , _.setProtocolVersion),
           _.get("receiveBufferSize"     , _.setReceiveBufferSize),
           _.get("sendBufferSize"        , _.setSendBufferSize),
-          _.get("serverName"            , _.setServerName),
           _.get("socketTimeout"         , _.setSocketTimeout),
           _.get("ssl"                   , _.setSsl),
           _.get("sslfactory"            , _.setSslfactory),

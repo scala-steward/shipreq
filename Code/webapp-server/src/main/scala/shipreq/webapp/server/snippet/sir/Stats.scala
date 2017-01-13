@@ -17,14 +17,10 @@ import shipreq.webapp.server.util.{CacheFn, ExpireAfter}
 
 object Stats extends SnippetHelpers {
 
-  // TODO Use sbt-buildinfo
+  // TODO Use env vars provided by docker
   object Build {
-    private val props = ResourceBundle.getBundle("build")
-    private def get(key: String) = props.getString("build." + key)
-    val Version     = get("version")
-    val Revision    = get("revision")
-    val TimeStr     = get("time")
-    val Time        = LocalDate.parse(TimeStr, DateTimeFormatter ofPattern "yyyy-MM-dd HH:mm:ss")
+    val Version     = "TODO"
+    val Revision    = "TODO"
   }
 
   sealed trait StatValue
@@ -84,7 +80,6 @@ object Stats extends SnippetHelpers {
         "System & Environment" -> List(
             "build.version"      -> Str(Build.Version)
           , "build.revision"     -> Str(Build.Revision)
-          , "build.time"         -> Str(Build.TimeStr)
           , "java.version"       -> Str(Properties.javaVersion)
           , "jvm.version"        -> Str(Properties.javaVmVersion)
           , "scala.version"      -> Str(Properties.versionNumberString)

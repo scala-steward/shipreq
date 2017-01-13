@@ -7,6 +7,7 @@ import org.scalajs.core.tools.sem._
 import org.scalajs.sbtplugin.cross.CrossProject
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import com.timushev.sbt.updates.UpdatesKeys._
+import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import DependencyLib.{Dep, HasJs, HasJvm, HasBoth, JVM, JS, ModDepScope}
 
 sealed trait JsTestType
@@ -17,22 +18,6 @@ case object NeedDom extends JsTestType
 object Common {
   import Functions._
   import Values._
-
-  def generateBuildPropFile(filename: String = "build.properties", prefix: String = "build.") = (p: Project) => {
-    def createBuildProps = Def.task {
-      val outDir: File = resourceManaged.in(Compile).value
-      val outFile = outDir / filename
-      val props = Map[String, String](
-        "version" -> version.value,
-        "revision" -> git.gitHeadCommit.value.getOrElse("?"),
-        "time" -> fmtTimeNow("yyyy-MM-dd HH:mm:ss")
-      )
-      val contents = props.toList.map {case (k, v) => s"${prefix}$k=$v" }.mkString("\n")
-      IO.write(outFile, contents)
-      Seq(outFile)
-    }
-    p.settings(resourceGenerators in Compile += createBuildProps.taskValue)
-  }
 
   def targetJdk = "1.8"
 
@@ -100,10 +85,11 @@ object Common {
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
     .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
-    .enablePlugins(com.typesafe.sbt.GitVersioning)
     .settings(
       organization                := "com.beardedlogic.shipreq",
       organizationName            := "Bearded Logic",
+      isSnapshot                  := devMode || git.gitUncommittedChanges.value,
+      version                     := git.gitHeadCommit.value.getOrElse("gitHeadCommit unavailable") + (if (isSnapshot.value) "-SNAPSHOT" else ""),
       shellPrompt in ThisBuild    := { (s: State) => Project.extract(s).currentRef.project + "> " },
       incOptions                  := incOptions.value.withNameHashing(true),
       incOptions                  := incOptions.value.withLogRecompileOnMacro(false),
@@ -118,6 +104,15 @@ object Common {
       minForcegcInterval          := 3.minutes,
       triggeredMessage            := Watched.clearWhenTriggered,
       target                      := redirectTargetDir(target.value)
+    )
+    .settings(
+      // TODO Temp hack due to bug in sbt-git
+      git.gitUncommittedChanges in ThisBuild :=
+        Process("git status --porcelain")
+          .lines
+          .map(_.split(" ").headOption)
+          .filter(_ != Some("??"))
+          .nonEmpty
     )
     .configure(
       addCommandAliases(
@@ -230,6 +225,23 @@ object Common {
           jsEnv                       in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
     }
 
+  def dockerBaseSettings(name: String): Project => Project =
+    _.settings(
+      buildOptions in docker := BuildOptions(pullBaseImage = BuildOptions.Pull.Always),
+      imageNames in docker := {
+        var versions = Seq(version.value, "latest")
+        if (!isSnapshot.value) versions :+= "latest-prod"
+        versions.map(ver => ImageName(s"shipreq/$name:$ver"))
+      }
+    )
+
+  def dockerBaseImage = "anapsix/alpine-java:8_server-jre_unlimited"
+
+  def dockerBaseEnv = Def.task(
+    List[(String, String)](
+      "VERSION" -> version.value,
+      "BUILD_MODE" -> (if (releaseMode) "release" else "dev")))
+
   // ===================================================================================================================
   object Values {
 
@@ -283,6 +295,9 @@ object Common {
       Files.createLink(tgt, src)
     }
 
+    def execInBash(cmd: String): Unit =
+      sys.process.Process(List("bash", "-c", cmd)).!!
+
     def fileSync(from: File, to: File, mandatory: Boolean)(implicit log: Logger): Unit =
       if (from.exists()) {
         log.info(s"Copying $from → $to")
@@ -293,6 +308,24 @@ object Common {
         log.info(s"Deleting $to")
         IO.delete(to)
       }
+
+    def printFileBatches(batchesT: Traversable[Traversable[File]]): Unit = {
+      val sep = "=" * 100
+      println(sep)
+      val batches = batchesT.toVector
+      val sizes = batches.map(_.map(_.length()).foldLeft(0L)(_ + _)).toVector
+      (batches zip sizes).foreach { case (files, size) =>
+        files.foreach(println)
+        printf("= %,d bytes\n", size)
+        println(sep)
+      }
+      println("Sizes:")
+      sizes.foreach { size =>
+        printf("  %,12d bytes\n", size)
+      }
+      printf("Σ %,12d bytes\n", sizes.sum)
+      println(sep)
+    }
 
     def addCommandAliases(m: (String, String)*) = {
       val s = m.map(p => addCommandAlias(p._1, p._2)).reduce(_ ++ _)

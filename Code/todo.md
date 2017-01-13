@@ -33,14 +33,24 @@ Integrate async into ContentEditorFeature rendering
   * impl UI
   * test
 
-* Deployment
-  * Upgrade to latest Jetty
-  * HTTP/2
-  * Security settings (TLS) and test
-  * Compression and caching
+* Devops & Deployment
+  * Webapp docker
+    * integrate `war-force_https`
+    * HTTPS: Use real keystore
+    * use quickstart
   * New amazon accounts
+  * Automate deployment
+  * Add healthchecks
+  * Send logs to service
+  * Add proper metrics
 
 * Do more with errors.
     ClientData.init
     ClientData.applyEvents
+
+* Tech
+  * Use μtest only
+  * Upgrade libs
+  * Upgrade Scala
+  * Test env: Use different DBs for each module
 
