@@ -2,6 +2,7 @@ import sbt.{project => _, _}
 import Keys._
 import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
 import com.typesafe.sbt.packager.{Keys => PackagerKeys}
+import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
 import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import Common.Functions._
 import Common.Values.{devMode, releaseMode}
@@ -65,6 +66,11 @@ object TaskmanBuild {
 
     val serverClass = "shipreq.taskman.server.app.Server"
 
+    val fixJarFilename = Def.setting((_: String) match {
+      case n if n contains "shipreq" => n.replace("-" + version.value, "")
+      case n => n
+    })
+
     project("taskman-server-impl")
       .enablePlugins(JavaAppPackaging, DockerPlugin)
       .configure(Common.settings, Common.jvmSettings)
@@ -77,6 +83,12 @@ object TaskmanBuild {
       .settings(
         initialCommands += consoleCmds,
         mainClass := Some(serverClass),
+
+        // Remove versions from package filenames for Docker layer reuse.
+        mappings in Universal :=
+          (mappings in Universal).value.map {
+            case (f, n) => (f, fixJarFilename.value(n))
+          },
 
         dockerfile in docker := {
           val root = "/taskman"
@@ -99,7 +111,9 @@ object TaskmanBuild {
             .map(_._2.sortBy(_.getName))
           // printFileBatches(jarTiers)
 
-          val classpath = PackagerKeys.scriptClasspath.value.map(lib + _).mkString(":")
+          val classpath = PackagerKeys.scriptClasspath.value
+            .map(n => fixJarFilename.value(lib + n))
+            .mkString(":")
 
           new Dockerfile {
             def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))

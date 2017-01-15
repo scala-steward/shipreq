@@ -286,12 +286,13 @@ object WebappBuild {
       .deps(LibJetty.dist % DockerDeps)
       .settings(
         cleanFiles += baseDirectory.value / "target",
-        classpathTypes in DockerDeps += "tar.gz",
+        classpathTypes in DockerDeps += "tar.gz", // for jetty-distribution
         webappWebInfClasses := false,
         dockerfile in docker := {
           val jettyHome = "/jetty"
           val base = "/shipreq"
           val tmp = baseDirectory.value / "target/docker" // Docker requires this be under baseDirectory
+          val wsjar = "webapp-server.jar"
 
           def prepareClean(f: String): Unit =
             execInBash(s"""rm -rf "$f" && mkdir -p "$f"""")
@@ -374,8 +375,8 @@ object WebappBuild {
 
               // Jetty's WebAppClassLoader doesn't seem to access resources in lib jars which prevents FlyWay from
               // finding the db migrations
-              if (batch.exists(_._2 matches ".*/webapp-server_.+jar$"))
-                execInBash(s"cd $stageDir/WEB-INF && mkdir classes && cd classes && unzip -l ../lib/webapp-server_* | sed 1,3d | head -n -2 | tr -s ' ' | cut -d' ' -f5- | grep -v '\\.class$$' | xargs unzip ../lib/webapp-server_*")
+              if (batch.exists(_._2 endsWith s"/$wsjar"))
+                execInBash(s"cd $stageDir/WEB-INF && mkdir classes && cd classes && unzip -l ../lib/$wsjar | sed 1,3d | head -n -2 | tr -s ' ' | cut -d' ' -f5- | grep -v '\\.class$$' | xargs unzip ../lib/$wsjar")
 
               stage
             }

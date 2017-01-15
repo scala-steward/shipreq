@@ -89,6 +89,21 @@ object Common {
     v
   }
 
+  def packageBinaryOnly = (_: Project)
+    .settings(
+      sources in (Compile, doc) := Nil,
+      publishArtifact in (Compile, packageDoc) := false,
+      publishArtifact in (Compile, packageSrc) := false,
+      publishArtifact in packageDoc := false,
+      publishArtifact in packageSrc := false)
+
+  def dockerLayerReuse = (_: Project)
+    .settings(
+      // Remove versions from filenames
+      artifactName in (Compile, packageBin) := ((_, _, a) => a.name + "." + a.extension),
+      // Remove versions from manifests
+      packageOptions in (Compile, packageBin) := Nil)
+
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
     .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
@@ -109,8 +124,7 @@ object Common {
       testFrameworks              += new TestFramework("utest.runner.Framework"),
       minForcegcInterval          := 3.minutes,
       triggeredMessage            := Watched.clearWhenTriggered,
-      target                      := redirectTargetDir(target.value)
-    )
+      target                      := redirectTargetDir(target.value))
     .settings(
       // TODO Temp hack due to bug in sbt-git
       git.gitUncommittedChanges in ThisBuild :=
@@ -121,6 +135,8 @@ object Common {
           .nonEmpty
     )
     .configure(
+      packageBinaryOnly,
+      dockerLayerReuse,
       addCommandAliases(
         "B"   -> "project base",
         "BU"  -> "project base-util-jvm",
