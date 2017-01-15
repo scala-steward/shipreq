@@ -82,17 +82,23 @@ object Common {
 
   def regexFilter(r: String) = new PatternFilter(r.r.pattern)
 
+  private def versionFn(gitSha: Option[String], snapshot: Boolean): String = {
+    var v = gitSha.getOrElse("UNKNOWN")
+    if (devMode) v += "-dev"
+    if (snapshot) v += "-SNAPSHOT"
+    v
+  }
+
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
     .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
     .settings(
       organization                := "com.beardedlogic.shipreq",
       organizationName            := "Bearded Logic",
-      isSnapshot                  := devMode || git.gitUncommittedChanges.value,
-      version                     := git.gitHeadCommit.value.getOrElse("gitHeadCommit unavailable") + (if (isSnapshot.value) "-SNAPSHOT" else ""),
-      shellPrompt in ThisBuild    := { (s: State) => Project.extract(s).currentRef.project + "> " },
-      incOptions                  := incOptions.value.withNameHashing(true),
-      incOptions                  := incOptions.value.withLogRecompileOnMacro(false),
+      isSnapshot                  := git.gitUncommittedChanges.value,
+      version                     := versionFn(git.gitHeadCommit.value, isSnapshot.value),
+      shellPrompt in ThisBuild    := ((s: State) => Project.extract(s).currentRef.project + "> "),
+      incOptions                  := incOptions.value.withNameHashing(true).withLogRecompileOnMacro(false),
       updateOptions               := updateOptions.value.withCachedResolution(true),
       aggregate in update         := true,
       scalaVersion                := Dependencies.Scala.version,
@@ -230,7 +236,7 @@ object Common {
       buildOptions in docker := BuildOptions(pullBaseImage = BuildOptions.Pull.Always),
       imageNames in docker := {
         var versions = Seq(version.value, "latest")
-        if (!isSnapshot.value) versions :+= "latest-prod"
+        if (!isSnapshot.value && releaseMode) versions :+= "latest-prod"
         versions.map(ver => ImageName(s"shipreq/$name:$ver"))
       }
     )
