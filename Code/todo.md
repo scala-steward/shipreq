@@ -49,8 +49,9 @@ Integrate async into ContentEditorFeature rendering
     ClientData.applyEvents
 
 * Tech
-  * Use μtest only
-  * Upgrade libs
-  * Upgrade Scala
+  * Remove specs2. Use scalatest/μtest.
+  * Remove ScalaCheck. Use Nyaya.
+  * Upgrade Scala to 2.12 (problems: ScalaCheck, Specs2, scalajs-java-time)
+  * Upgrade libs (boopickle, monocle)
   * Test env: Use different DBs for each module
 
