@@ -34,7 +34,7 @@ object TaskmanBuild {
       .dependsOn(taskmanApiLogic, baseDb)
       .dependsOn(taskmanServerSchema % "test")
       .dependsOn(baseTestJvm % "test")
-      //.dependsOn(baseUtilJvm) // Stupid IDEA auto-import needs this
+    .settings(fork in Test := true) // else modules using specs2 v3+ seem to interfere with each other
 
   lazy val taskmanApi =
     project("taskman-api")
@@ -130,6 +130,7 @@ object TaskmanBuild {
           }
         },
 
+        fork in Test := true, // else modules using specs2 v3+ seem to interfere with each other
         parallelExecution in Test := false)
       .configure(dontInline) // because Akka docs + crashes scalac 2.11.2
   }

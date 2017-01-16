@@ -3,7 +3,6 @@ package shipreq.taskman.server.akka
 import doobie.imports._
 import java.util.concurrent.{TimeUnit, CountDownLatch, Executors}
 import org.specs2.mutable.Specification
-import org.specs2.time.NoTimeConversions
 import scala.concurrent.duration._
 import scala.concurrent._
 import shipreq.base.test.specs2.db.DatabaseTest
@@ -15,7 +14,7 @@ import shipreq.taskman.server.ServerImplTestHelpers
 import shipreq.taskman.server.SopImpl.{Succeeded, FailAndAbort, ArchiveIntent}
 import shipreq.taskman.server.app.Server
 
-class AkkaTest extends Specification with DatabaseTest with NoTimeConversions with HasLogger with ServerImplTestHelpers {
+class AkkaTest extends Specification with DatabaseTest with HasLogger with ServerImplTestHelpers {
 
   override def mutex = dbMutexW
   override def wrapTestsInTransaction = false

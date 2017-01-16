@@ -5,7 +5,6 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import org.specs2.matcher.Matcher
 import org.specs2.mutable.Specification
-import org.specs2.time.NoTimeConversions
 import scala.util.Random
 import shipreq.base.db.SqlHelpers._
 import shipreq.base.test.specs2.db.DatabaseTest
@@ -16,7 +15,7 @@ import shipreq.taskman.api._
 import Msg.ReRegistrationAttempted
 import SopImpl.Sql._
 
-class SopImplTest extends Specification with DatabaseTest with NoTimeConversions {
+class SopImplTest extends Specification with DatabaseTest {
 
   def dao = SopImpl.Dao
   val n = NodeId(123)

@@ -3,7 +3,6 @@ package shipreq.taskman.server
 import doobie.imports._
 import org.specs2.matcher.ThrownExpectations
 import org.specs2.mutable.Specification
-import org.specs2.time.NoTimeConversions
 import shipreq.base.test.specs2.db.DatabaseTest
 import shipreq.base.util.JavaTimeHelpers._
 import shipreq.taskman.api.{EmailAddr, MsgStatus, MsgId}
@@ -11,7 +10,7 @@ import shipreq.taskman.api.Msg.ReRegistrationAttempted
 import shipreq.taskman.api.ApiOp.{QueryMsgStatus, SubmitMsg}
 import shipreq.taskman.server.Sop._
 
-class WorkflowTest extends Specification with DatabaseTest with NoTimeConversions with ThrownExpectations
+class WorkflowTest extends Specification with DatabaseTest with ThrownExpectations
     with ServerImplTestHelpers {
 
   override def mutex = dbMutexR

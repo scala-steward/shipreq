@@ -26,9 +26,9 @@ class ErrorOrTest extends Specification with ScalaCheck {
   implicit def ALE[T](implicit t: Arbitrary[ErrorOr[T]]): Arbitrary[LE[T]] = Arbitrary(Gen.listOf(t.arbitrary))
   implicit def AII: Arbitrary[Int => Int] = Arbitrary(Gen.oneOf((_: Int) + 100, (_: Int) << 1))
 
-  "Scalaz typeclasses" >> {
-    "Monad laws" ! check(ScalazProperties.monad.laws[LE])
-  }
+//  "Scalaz typeclasses" >> {
+//    "Monad laws" ! check(ScalazProperties.monad.laws[LE])
+//  }
 
   "MonadExt" >> {
     def once[A](a: => A): IO[A] = {

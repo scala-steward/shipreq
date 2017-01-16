@@ -125,7 +125,7 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("com.github.japgolly.fork.specs2", "2.4.17-scalaz72")
+    private val mm = MultiModule.scala("org.specs2", "3.8.6-20161219103851-1c1f07b")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
@@ -162,8 +162,8 @@ object Dependencies {
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.5")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.40.0")
-  val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "2.2.5")
-  val scalaCheck  = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.11.3")
+  val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "3.0.1")
+  val scalaCheck  = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.4")
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
