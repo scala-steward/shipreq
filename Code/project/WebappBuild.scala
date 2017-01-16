@@ -390,6 +390,8 @@ object WebappBuild {
 
             from(Common.dockerBaseImage)
 
+            env("JETTY_HOME" -> jettyHome, "JETTY_BASE" -> base)
+
             copy(tmpJetty, s"$jettyHome/")
 
             // TODO Maybe not needed after use of quickstart
@@ -398,14 +400,11 @@ object WebappBuild {
             runInBash("""sed -i 's/\(for T in \)\(1 2 3 .* 15\)\(\s+\d+\)*/\1\2 \2 \2 \2 \2/' """ + s"$jettyHome/bin/jetty.sh")
 
             warStages.foreach(copy(_, s"$warExplode/"))
+
             copy(sourceDirectory.value / "docker/shipreq", s"$base/")
 
-            workDir(base)
-            env(Common.dockerBaseEnv.value ++ List(
-              "JETTY_HOME" -> jettyHome,
-              "JETTY_BASE" -> base): _*)
-
             // Download required libs
+            workDir(base)
             runRaw(
               """
                 |bin/jetty --approve-all-licenses --add-to-start=http,http2,webapp,gzip,resources,logging-logback,deploy,client 2>&1 &&
@@ -413,6 +412,7 @@ object WebappBuild {
               """.stripMargin.trim.replaceAll("\n\\s*", " "))
 
             expose(8080, 8443)
+            env(Common.dockerBaseEnv.value: _*)
             cmd("bin/jetty")
           }
         }
