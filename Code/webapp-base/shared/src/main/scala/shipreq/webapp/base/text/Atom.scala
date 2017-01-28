@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import monocle.Iso
 import shipreq.base.util.univeq._
@@ -22,11 +23,7 @@ object Atom {
     case object TagRef         extends Type
     case object UnorderedList  extends Type
 
-    // AdtMacros.adtValues doesn't work here due to SI-7046.
-    val values = NonEmptyVector[Type](
-      Literal, WebAddress, EmailAddress, MathTeX,
-      ReqRef, CodeRef, UseCaseStepRef, TagRef, Issue,
-      BlankLine, UnorderedList)
+    val values = AdtMacros.adtValues[Type]
 
     val of: AnyAtom => Type = {
       case _: Literal         # Literal        => Literal

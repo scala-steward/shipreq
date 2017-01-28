@@ -25,12 +25,11 @@ object Common {
     "-unchecked",
     "-deprecation",
     "-target:jvm-" + targetJdk,
-    "-Ypatmat-exhaust-depth", "off",
-    //"-Ybackend:GenBCode",
-    //"-Ydelambdafy:method",
     // "-Xstrict-inference", // Don't infer known-unsound types
     // "-Yno-generic-signatures", // Stuffs up json4s
-    "-YclasspathImpl:flat", // https://github.com/scala/scala/pull/4176
+    "-Ypartial-unification",
+    "-Ypatmat-exhaust-depth", "off",
+    "-Ywarn-inaccessible",
     "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
 
   def scalacTestFlags = Seq("-language:reflectiveCalls")
@@ -41,14 +40,7 @@ object Common {
 
   val optimisationSettings: Project => Project =
     nonTestCompilerFlags(
-      // "-optimise", // incompatible with GenBCode
-      //"-Yopt:l:classpath", // new GenBCode optimiser
-      "-Yclosure-elim",
-      "-Yconst-opt",
-      "-Ydead-code",
-      "-Yinline",
-      "-Yinline-handlers",
-      // "-Yinline-warnings",
+      "-opt:l:classpath",
       "-Xelide-below", "OFF")
 
   def javacFlags = Seq("-target", targetJdk, "-source", targetJdk)
@@ -205,8 +197,8 @@ object Common {
     _.configure(
       jsTests(t),
       debugOrRelease(jsDevSettings, jsProdSettings),
-      Dependencies.useJavaTimeJS,
       InBrowserTesting.js)
+    .depsForJs(Dependencies.scalajsJavaTime)
     .settings(
       parallelExecution in testOnly := false,
       // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),

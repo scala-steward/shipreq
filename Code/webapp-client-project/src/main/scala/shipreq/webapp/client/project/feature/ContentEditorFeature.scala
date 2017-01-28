@@ -356,7 +356,7 @@ object ContentEditorFeature {
           val pxChoices = ReqTypeSelector.pxChoices(initial, pxCustomReqTypes)
 
           val abortCommit: ReqTypeSelector.AbortCommit =
-            makeAbortCommit[RT](t => UpdateContentCmd.SetGenericReqType(id, t.id)).x
+            makeAbortCommit[RT](t => UpdateContentCmd.SetGenericReqType(id, t.id)).value
 
           val is = new State(initial, initial, pxChoices, abortCommit)
           startEditFn(is)

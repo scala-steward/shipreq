@@ -6,7 +6,7 @@ import java.util.ResourceBundle
 import net.liftweb.http.LiftRules
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.sys.process._
 import scala.util.Properties
 import scala.xml.{NodeSeq, Text}
@@ -90,7 +90,7 @@ object Stats extends SnippetHelpers {
         "Sessions & Logins" -> List(
           "Active Sessions"      -> Number(SessionStats.activeSessionCount.get)
           , "Logged-In Sessions" -> Number(SessionStats.loggedInUsers.size)
-          , "Logged-In Users"    -> Number(SessionStats.loggedInUsers.values.toSet.size)
+          , "Logged-In Users"    -> Number(SessionStats.loggedInUsers.values.asScala.toSet.size)
           , "Session Timeout"    -> (LiftRules.sessionInactivityTimeout.vend.map(timePeriod) openOr Unknown)
         ),
         "Database" -> List[(String, StatValue)](

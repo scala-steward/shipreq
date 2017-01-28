@@ -1,6 +1,7 @@
 package shipreq.webapp.server.test
 
 import doobie.imports._
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
@@ -23,8 +24,7 @@ object DbTable {
 
   implicit def univEq: UnivEq[DbTable] = UnivEq.derive
 
-  //val All = AdtMacros.adtValues[DbTable]
-  val All = NonEmptySet[DbTable](Event, EventHash, Project, Usr, UsrLoginLog, Usrd, UsrhName)
+  val All = AdtMacros.adtValues[DbTable].toNES
 
   def find(name: String): Option[DbTable] =
     All.whole.find(_.name ==* name)

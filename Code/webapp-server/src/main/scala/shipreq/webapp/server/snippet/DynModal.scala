@@ -54,7 +54,7 @@ object DynModal extends StaticSnippetHelpers {
     run(ChangePasswordTemplate)(
       ".modal-title *" #> title
       & form.csssel(vars, vars = _)
-      & ":submit" #> ajaxSubmitOnClick(onSubmit)
+      & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
     )
   }
 
@@ -94,7 +94,7 @@ object DynModal extends StaticSnippetHelpers {
         & titleTransform
         & ".modal-body *" #> body
         & footerTransform
-      ) andThen ".btn-danger" #> ajaxOnClick(onSubmit)
+      ) andThen ".btn-danger" #> ajaxOnClick(() => onSubmit())
     )
   }
 

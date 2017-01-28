@@ -41,7 +41,7 @@ object ResetPassword1 extends SnippetHelpers {
       perform(form validate vars)
     }
 
-    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
   }
 
   def perform(v: ValidationResult[EmailAddr]): JsCmd =
@@ -117,7 +117,7 @@ class ResetPassword2(token: String) extends SingleOpStatefulSnippet {
 
   def render = {
     validateToken_!()
-    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
   }
 
   def onSubmit(): JsCmd =

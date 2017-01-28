@@ -87,7 +87,7 @@ final class Min2Vector[+A](val head: A, val tail: NonEmptyVector[A]) {
 
   // Reduce bullshit red in IntelliJ
   def traverseD[L, B](f: A => L \/ B): L \/ Min2Vector[B] =
-    Min2Vector.traverse1.traverseU(this)(f)
+    Min2Vector.traverse1.traverse(this)(f)
 
   def intercalate[B >: A](b: B): Min2Vector[B] =
     intercalateF(b)(a => a)

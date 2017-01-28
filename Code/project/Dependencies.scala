@@ -7,15 +7,13 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.11.8"
+    def version  = "2.12.1"
     val compiler = mm("scala-compiler")
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
     val p        = mm("scalap")
     val all      = compiler ++ library ++ reflect ++ p
     val macroDef = reflect ++ library ++ (compiler % "provided")
-
-    val java8compat = "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0"
   }
 
   object Scalaz {
@@ -143,11 +141,12 @@ object Dependencies {
   val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.1")
 //val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.1.0")
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.4")
+  val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.2.0")
 
   val boopickle = jvmAndJs("me.chrons",                        "boopickle", "1.2.5")
-  val parboiled = jvmAndJs("org.parboiled",                    "parboiled", "2.1.3")
+  val parboiled = jvmAndJs("org.parboiled",                    "parboiled", "2.1.4")
   val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.3.2")
-  val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-5")
+  val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.5")
 
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
@@ -171,9 +170,7 @@ object Dependencies {
   val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
-  import sbt.Keys._
-  def useLocalJar(filename: String) =
-    (_: Project).settings(unmanagedJars in Compile += file("lib").getAbsoluteFile / filename)
-
-  val useJavaTimeJS = useLocalJar("scalajs-java-time_sjs0.6_2.11-0.1.1-SNAPSHOT.jar")
+//  import sbt.Keys._
+//  def useLocalJar(filename: String) =
+//    (_: Project).settings(unmanagedJars in Compile += file("lib").getAbsoluteFile / filename)
 }

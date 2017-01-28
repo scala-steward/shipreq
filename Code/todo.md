@@ -51,7 +51,6 @@ Integrate async into ContentEditorFeature rendering
 * Tech
   * Remove specs2. Use scalatest/μtest.
   * Remove ScalaCheck. Use Nyaya.
-  * Upgrade Scala to 2.12 (problems: ScalaCheck, Specs2, scalajs-java-time)
   * Use fast boopickle codecs for webworkers: https://github.com/ochrons/boopickle#codecs
   * Test env: Use different DBs for each module
 

@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
@@ -70,7 +71,7 @@ object Column {
   @inline implicit def reusability: Reusability[Column]                     = Reusability.byEqual
 
   val builtInValues: NonEmptyVector[BuiltIn] =
-    NonEmptyVector(Pubid, Code, Title, ReqType, Tags, ImplicationSrc, ImplicationTgt, DeletionReason)
+    AdtMacros.adtValues[BuiltIn]
 
   val mandatory: Set[BuiltIn] =
     UnivEq.emptySet[BuiltIn] + Pubid + Title

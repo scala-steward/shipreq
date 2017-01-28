@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.root
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -67,8 +68,7 @@ object ProjectIndex {
 
     implicit def univEq: UnivEq[Category] = UnivEq.derive
 
-    //val All = AdtMacros.adtValuesManual[Category](
-    val All = NonEmptyVector[Category](
+    val All = AdtMacros.adtValuesManual[Category](
       Content, Configuration)
   }
 

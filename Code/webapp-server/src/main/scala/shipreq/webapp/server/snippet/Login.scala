@@ -28,10 +28,10 @@ class Login extends SingleOpStatefulSnippet {
   private var vars: form.Var = ("", "")
 
   def render =
-    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onLoginAttempt)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(() => onLoginAttempt())
 
   def onLoginAttempt(): JsCmd = {
-    securityProvider.enforceHumanSpeed()
+    securityProvider().enforceHumanSpeed()
     form.validate(vars) match {
       case Success(loginToken) =>
         loginToken.setRememberMe(false)
@@ -47,8 +47,8 @@ class Login extends SingleOpStatefulSnippet {
   }
 
   def onSuccessfulLogin(): Nothing = {
-    statLogger.updateSessionStatsOnLogin(S.session, currentUser_!())
-    statLogger ! LogUserLogin(currentUserId_!())
+    statLogger().updateSessionStatsOnLogin(S.session, currentUser_!())
+    statLogger() ! LogUserLogin(currentUserId_!())
     redirectHome()
   }
 }

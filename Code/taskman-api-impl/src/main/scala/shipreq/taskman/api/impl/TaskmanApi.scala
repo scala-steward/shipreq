@@ -22,6 +22,6 @@ class TaskmanApi(ctx: TaskmanApi.Context, db: Transactor[IO]) extends ApiOpReifi
     case SubmitMsg(m)       => dbio(ctx.dao.createMsg(m))
     case CfgPut(k, v)       => dbio(ctx.dao.cfgPut(k, v))
     case QueryMsgStatus(id) => dbio(ctx.dao.queryMsgStatus(id))
-    case SubmitMsgs(ms)     => dbio(ms.traverseU(m => ctx.dao.createMsg(m).map((m, _))))
+    case SubmitMsgs(ms)     => dbio(ms.traverse(m => ctx.dao.createMsg(m).map((m, _))))
   }
 }

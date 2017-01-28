@@ -51,7 +51,7 @@ object Register1 extends SnippetHelpers {
     if (Permissions.userRegistration.using().isPass)
       ( "#registrationDisabled" #> ""
       & form.csssel(vars, vars = _)
-      & ":submit" #> ajaxSubmitOnClick(onSubmit))
+      & ":submit" #> ajaxSubmitOnClick(() => onSubmit()))
     else
       "#register1Form" #> ""
   }
@@ -121,7 +121,7 @@ class Register2(token: String) extends SingleOpStatefulSnippet {
   def render = {
     securityProvider().enforceHumanSpeed()
     validateToken_!()
-    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(onSubmit)
+    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
   }
 
   def validateToken_!(): Unit =

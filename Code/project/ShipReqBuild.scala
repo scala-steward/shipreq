@@ -43,7 +43,7 @@ object ShipReqBuild {
       .depsForJvm(
         SLF4J.api ++
         providedScope(logback) ++
-        testScope(Specs2.combo ++ Scalaz.scalacheck))
+        testScope(Specs2.combo ++ Scalaz.scalacheck)).jvmSettings()
 
   lazy val baseDb =
     project("base-db")

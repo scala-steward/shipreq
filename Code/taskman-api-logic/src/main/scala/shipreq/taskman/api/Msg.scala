@@ -1,5 +1,6 @@
 package shipreq.taskman.api
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.Util
 
@@ -60,18 +61,7 @@ object MsgType {
   case object SyncToMailingList       extends MsgType(300, classOf[Msg.SyncToMailingList])
   case object WebappErrorOccurred     extends MsgType(500, classOf[Msg.WebappErrorOccurred])
 
-  val values = List[MsgType](
-    RegistrationRequested
-    , RegistrationCompleted
-    , ReRegistrationAttempted
-    , PasswordResetRequested
-    , UserUpdated
-    , LandingPageHit
-    , DummyMsg
-    , SendDiagEmail
-    , SyncToMailingList
-    , WebappErrorOccurred
-  )
+  val values = AdtMacros.adtValues[MsgType].whole.toList
 
   private[this] val byId: Map[Short, MsgType] = {
     val groups = values.groupBy(_.id)

@@ -1,5 +1,6 @@
 package shipreq.webapp.client.base.ui
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.scalajs.react.vdom.prefix_<^.{^ => ^^, _}
 import japgolly.univeq._
 import scalacss.Defaults._
@@ -24,8 +25,7 @@ object BaseStyles extends StyleSheet.Inline {
       }
 
     val domain =
-      // Domain.ofValues(AdtMacros.adtValues[EditorState].whole: _*)
-      Domain.ofValues(Valid, Invalid, InTransit)
+      Domain.ofValues(AdtMacros.adtValues[EditorState].whole: _*)
   }
 
   val editorBackgroundColor = c"#fff4e3"

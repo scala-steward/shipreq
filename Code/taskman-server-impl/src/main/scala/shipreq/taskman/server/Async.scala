@@ -15,11 +15,9 @@ object Async {
     val count = new AtomicInteger(0)
     val back = Executors.defaultThreadFactory
     override def newThread(r: Runnable): Thread = {
-      val r2 = new Runnable {
-        override def run(): Unit = {
-          SMDC.clear()
-          r.run()
-        }
+      val r2: Runnable = () => {
+        SMDC.clear()
+        r.run()
       }
       val t = back.newThread(r2)
       t setName s"async-$name-${count.incrementAndGet}"

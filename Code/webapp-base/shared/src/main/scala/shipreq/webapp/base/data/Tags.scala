@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import nyaya.prop.CycleDetector
 import monocle.Lens
@@ -67,7 +68,7 @@ object TagType {
 
   implicit def equality: UnivEq[TagType] = UnivEq.derive
 
-  val values = NonEmptyVector[TagType](Group, Applicable)
+  val values = AdtMacros.adtValues[TagType]
 }
 
 object Tag {

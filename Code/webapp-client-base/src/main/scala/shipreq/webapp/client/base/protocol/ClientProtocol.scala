@@ -2,6 +2,7 @@ package shipreq.webapp.client.base.protocol
 
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.Reusability
+import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.protocol.RemoteFn
 import shipreq.webapp.client.base.data.TCB
@@ -22,7 +23,6 @@ object ClientProtocol {
     import org.scalajs.dom.ext.AjaxException
     import scala.concurrent.{Future, Promise}
     import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
-    import scala.scalajs.js
     import scala.scalajs.js.typedarray.TypedArrayBufferOps._
     import scala.scalajs.js.typedarray._
     import shipreq.webapp.base.WebappConfig
@@ -71,9 +71,12 @@ object ClientProtocol {
       val url = LiftAjax.calcAjaxUrl(ajaxPath, null) + "?" + i.key
       val bin = PickleImpl.intoBytes(input)
       val res = postBinary(url, bin).map(UnpickleImpl(pickleResponse) fromBytes _)
-      res.onSuccess { case \/-(o) => success(o)                        .runNow() }
-      res.onSuccess { case -\/(f) => failure(RemoteFailure lift f)     .runNow() }
-      res.onFailure { case t      => failure(RemoteFailure exception t).runNow() }
+      res.onComplete {
+        case Success(\/-(o)) => success(o)                        .runNow()
+        case Success(-\/(f)) => failure(RemoteFailure lift f)     .runNow()
+        case Failure(t)      => failure(RemoteFailure exception t).runNow()
+      }
+      ()
     }
   }
 }

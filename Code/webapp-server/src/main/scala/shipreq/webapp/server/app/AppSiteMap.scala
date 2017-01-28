@@ -52,7 +52,7 @@ object AppSiteMap {
     pageWithStaticUrl("login", "Login")(_ / "login" >> UseTemplate("public/login"))
 
   val Logout =
-    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(logout))
+    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(() => logout()))
 
   val Register1 =
     pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register" >> UseTemplate("public/register1"))

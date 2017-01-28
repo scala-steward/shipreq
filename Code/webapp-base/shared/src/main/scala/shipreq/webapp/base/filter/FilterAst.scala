@@ -106,11 +106,11 @@ object FilterAst {
     }
 
     def byReqs(f: Reqs => FilterAst, reqs: S.Reqs): R =
-      reqs.traverseU(lookupReqs).map(sets =>
+      reqs.traverse(lookupReqs).map(sets =>
         f(sets.reduce(_ ++ _)))
 
     def composite(f: Min2Set[FilterAst] => FilterAst, specs: NonEmptyVector[FilterSpec]): R =
-      specs.traverseU(translate).map( v =>
+      specs.traverse(translate).map( v =>
         Min2Set.maybe1(v.toNES)(identity)(f))
 
     def translate(spec: FilterSpec): R =
