@@ -19,7 +19,7 @@ object Common {
   import Functions._
   import Values._
 
-  def targetJdk = "1.8"
+  def targetJdk = "1." + Dependencies.Java.major
 
   def scalacFlags = Seq(
     "-unchecked",
