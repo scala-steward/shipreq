@@ -80,22 +80,22 @@ object DbConfig {
     val hikariCfg: Config[HikariConfig] =
       Config.consumerFn[HikariConfig](
         _ => hikariSearchPath,
-        _.get("allowPoolSuspension"   , _.setAllowPoolSuspension),
-        _.get("catalog"               , _.setCatalog),
-        _.get("connectionInitSql"     , _.setConnectionInitSql),
-        _.get("connectionTestQuery"   , _.setConnectionTestQuery),
-        _.get("connectionTimeout"     , _.setConnectionTimeout),
-        _.get("idleTimeout"           , _.setIdleTimeout),
-        _.get("initializationFailFast", _.setInitializationFailFast),
-        _.get("isolateInternalQueries", _.setIsolateInternalQueries),
-        _.get("leakDetectionThreshold", _.setLeakDetectionThreshold),
-        _.get("maxLifetime"           , _.setMaxLifetime),
-        _.get("maximumPoolSize"       , _.setMaximumPoolSize),
-        _.get("minimumIdle"           , _.setMinimumIdle),
-        _.get("poolName"              , _.setPoolName),
-        _.get("registerMbeans"        , _.setRegisterMbeans),
-        _.get("transactionIsolation"  , _.setTransactionIsolation),
-        _.get("validationTimeout"     , _.setValidationTimeout))
+        _.get("allowPoolSuspension"      , _.setAllowPoolSuspension),
+        _.get("catalog"                  , _.setCatalog),
+        _.get("connectionInitSql"        , _.setConnectionInitSql),
+        _.get("connectionTestQuery"      , _.setConnectionTestQuery),
+        _.get("connectionTimeout"        , _.setConnectionTimeout),
+        _.get("idleTimeout"              , _.setIdleTimeout),
+        _.get("initializationFailTimeout", _.setInitializationFailTimeout),
+        _.get("isolateInternalQueries"   , _.setIsolateInternalQueries),
+        _.get("leakDetectionThreshold"   , _.setLeakDetectionThreshold),
+        _.get("maxLifetime"              , _.setMaxLifetime),
+        _.get("maximumPoolSize"          , _.setMaximumPoolSize),
+        _.get("minimumIdle"              , _.setMinimumIdle),
+        _.get("poolName"                 , _.setPoolName),
+        _.get("registerMbeans"           , _.setRegisterMbeans),
+        _.get("transactionIsolation"     , _.setTransactionIsolation),
+        _.get("validationTimeout"        , _.setValidationTimeout))
         .withPrefix("pool.")
         .map { fn =>
           val hcfg = new HikariConfig

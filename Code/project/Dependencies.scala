@@ -102,7 +102,7 @@ object Dependencies {
   }
 
   object Doobie {
-    private val mm = MultiModule.scala("org.tpolecat", "0.3.1-M3")
+    private val mm = MultiModule.scala("org.tpolecat", "0.4.1")
     val core     = mm("doobie-core")
     val postgres = mm("doobie-postgres")
     val hikari   = mm("doobie-hikari")
@@ -123,12 +123,12 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "3.8.6-20161219103851-1c1f07b")
+    private val mm = MultiModule.scala("org.specs2", "3.8.7")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.0.v20161208")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.1.v20170120")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
     val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
@@ -150,12 +150,12 @@ object Dependencies {
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.5")
 
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
-  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.5")
+  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "9.4.1212")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.5.1")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.6.0")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.8")
+  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.1.9")
   val scalate     = jvmOnly("org.scalatra.scalate"       %% "scalate-core"          % "1.8.0") ++
                     jvmOnly("org.scalatra.scalate"       %% "scalamd"               % "1.7.0") // why again?
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.5")
