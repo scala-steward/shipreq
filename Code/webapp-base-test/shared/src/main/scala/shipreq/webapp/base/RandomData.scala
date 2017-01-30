@@ -128,7 +128,7 @@ object RandomData {
       _.vector.flatMap(Gen.traverse(_)(f)))
 
   val id =
-    Gen.chooseInt(1, 2048)
+    Gen.chooseInt(1, 1024 * 64)
 
   val shortText1        = unicodeChar.string(1 to WebappConfig.shortTextMaxLength)
   val shortText         = unicodeChar.string(0 to WebappConfig.shortTextMaxLength)
