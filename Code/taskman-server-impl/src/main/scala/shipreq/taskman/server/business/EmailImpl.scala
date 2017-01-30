@@ -51,12 +51,8 @@ object EmailImpl extends HasLogger {
         case h :: t => \/-(NonEmptyList.nel(h, t))
       }
 
-    // TODO What's the difference between a ConfigParser and a Config ?
-    // Config has a key; ap only
-    // Parser has no key; monad
     def configEnvelopeFront(implicit p: ConfigParser[String]): Config[EnvelopeFront] =
-      (
-        Config.need[NonEmptyList[Addr]]("to") |@|
+      ( Config.need[NonEmptyList[Addr]]("to") |@|
         Config.getOrUse[List[Addr]]("cc", Nil) |@|
         Config.getOrUse[List[Addr]]("bcc", Nil)
       )(EnvelopeFront)
