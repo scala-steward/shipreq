@@ -48,7 +48,6 @@ object TaskmanBuild {
       .deps(logback ++ testScope(Specs2.combo))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % "test")
-      .configure(dontInline) // crashes scalac 2.11.2
 
   lazy val taskmanServerSchema =
     project("taskman-server-schema")
@@ -132,7 +131,7 @@ object TaskmanBuild {
 
         fork in Test := true, // else modules using specs2 v3+ seem to interfere with each other
         parallelExecution in Test := false)
-      .configure(dontInline) // because Akka docs + crashes scalac 2.11.2
+      .configure(dontInline) // because Akka docs
   }
 
   lazy val taskmanServer =

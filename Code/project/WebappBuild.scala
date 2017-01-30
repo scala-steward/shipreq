@@ -76,9 +76,7 @@ object WebappBuild {
       .depsForBoth(
         μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
         testScope(μTest)) // TODO Move tests into this
-      .configureBoth(
-        useMacroParadise,
-        dontInline) // crashes scalac 2.11.7
+      .configureBoth(useMacroParadise)
       .dependsOn(baseUtil, webappMacro)
 
   lazy val webappBaseServerJvm = webappBaseServer.jvm
@@ -90,7 +88,6 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(testScope(μTest ++ Nyaya.test))
       .dependsOn(webappBase)
-      .configureBoth(dontInline) // crashes scalac 2.11.8
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
@@ -112,9 +109,8 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
+        useMacroParadise)
         // Common.jsFastDevSettings,
-        dontInline) // probably crashes, try with Scala 2.12
 
   lazy val webappClientBaseTest =
     project("webapp-client-base-test")
@@ -126,9 +122,8 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
+        useMacroParadise)
         // Common.jsFastDevSettings,
-        dontInline)
 
   lazy val webappClientHome =
     project("webapp-client-home")
@@ -143,9 +138,8 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
+        useMacroParadise)
         // Common.jsFastDevSettings,
-        dontInline) // crashes 2.11.7 / 0.6.4
       .settings(
         jsDependencies in Test += ProvidedJS / "shipreq-client-test.js")
 
@@ -158,8 +152,7 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
-        dontInline) // probably crashes, try with Scala 2.12
+        webappSettings)
 
   lazy val webappClientWw =
     project("webapp-client-ww")
@@ -170,8 +163,7 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
-        dontInline) // probably crashes, try with Scala 2.12
+        webappSettings)
     .settings(
       scalaJSOutputWrapper := ("", "Main().main();"))
 
@@ -188,9 +180,8 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        useMacroParadise,
+        useMacroParadise)
         // Common.jsFastDevSettings,
-        dontInline) // crashes 2.11.7 / 0.6.4
       .settings(
         jsDependencies in Test += ProvidedJS / "shipreq-client-test.js")
 
@@ -431,8 +422,7 @@ object WebappBuild {
         Common.jvmSettings,
         clientJsSettings,
         testSettings,
-        dockerSettings,
-        dontInline) // crashes scalac 2.11.7
+        dockerSettings)
       .settings(
         containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version
         javaOptions in Jetty += "-Xmx1g",

@@ -277,14 +277,14 @@ object Common {
     def nonTestCompilerFlags(flags: String*): Project => Project =
       _.settings(
         scalacOptions in Compile ++= flags,
-        scalacOptions in Test ~= removeValues(flags: _*)
-      )
+        scalacOptions in Test --= flags)
 
-    def removeValues[T](values: T*): Seq[T] => Seq[T] =
-      _ filterNot values.contains
+    def dontOptimise: Project => Project =
+      _.settings(scalacOptions in Compile -= "-opt:l:classpath")
 
     def dontInline: Project => Project =
-      _.settings(scalacOptions in Compile ~= removeValues("-optimise", "-Yinline"))
+      debugOrRelease(identity, _
+        .configure(dontOptimise, nonTestCompilerFlags("-opt:l:method")))
 
     def ln_s(src: File, tgt: File)(implicit log: Logger): Unit = ln_s(src.toPath, tgt.toPath)(log)
     def ln_s(src: Path, tgt: Path)(implicit log: Logger): Unit = {

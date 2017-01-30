@@ -68,7 +68,7 @@ object ShipReqBuild {
         testScope(μTest ++ Nyaya.test))
       .configureBoth(_
         // TODO Delete after upgrade to 2.11 and switch from Manifest to TypeTag
-        .settings(scalacOptions in Compile ~= removeValues("-deprecation"))
+        .settings(scalacOptions in Compile -= "-deprecation")
         .settings(scalacOptions in Compile += "-nowarn"))
       .configureJvm(_
         .deps(providedScope(Specs2.combo))
