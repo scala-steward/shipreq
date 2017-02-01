@@ -41,7 +41,7 @@ object Common {
   val optimisationSettings: Project => Project =
     nonTestCompilerFlags(
       "-opt:l:classpath",
-      "-opt-warnings",
+      //"-opt-warnings:at-inline-failed",
       "-Xelide-below", "OFF")
 
   def javacFlags = Seq("-target", targetJdk, "-source", targetJdk)
