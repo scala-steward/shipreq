@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import japgolly.microlibs.nonempty.NonEmptySet
 import shipreq.base.util.univeq._
@@ -15,20 +15,20 @@ object ViewSettingsEditor {
 
   case class Props(columnName   : Column.NameResolver,
                    projectConfig: ProjectConfig,
-                   vs           : ReusableVar[ViewSettings],
-                   filter       : ReusableVal[ReactElement])
+                   vs           : StateSnapshot[ViewSettings],
+                   filter       : Reusable[VdomElement])
 
   implicit val propsReuse = Reusability.caseClass[Props]
 
   val Component =
-    ReactComponentB[Props]("ViewSettingsEditor")
+    ScalaComponent.build[Props]("ViewSettingsEditor")
       .renderBackend[Backend]
       .configure(shouldComponentUpdate)
       .build
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val toggleColumn = ReusableFn((c: Column) =>
+    val toggleColumn = Reusable.fn((c: Column) =>
       $.props >>= { p =>
         val vs = p.vs.value
         val newCols =
@@ -41,7 +41,7 @@ object ViewSettingsEditor {
       })
 
     val filterDeadEditor = Checkbox.filterDead(
-      ReusableFn.byName($.props.runNow().vs.mod).endoCall(_.setFilterDead))
+      Reusable.fn.byName($.props.runNow().vs.mod).endoCall(_.setFilterDead))
 
     val th = <.th(*.viewSettingsHeader)
 

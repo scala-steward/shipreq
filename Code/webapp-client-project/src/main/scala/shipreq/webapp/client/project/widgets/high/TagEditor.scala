@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.widgets.high
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Ref => _, _}
@@ -59,7 +59,7 @@ object TagEditor {
   type AbortCommit = Option[AbortCommit2[Callback, CommitFn]]
 
   case class Props(preEditValue: Option[Set[ApplicableTagId]],
-                   edit        : ReusableVar[String],
+                   edit        : StateSnapshot[String],
                    lookup      : Lookup,
                    asyncStatus : Option[EditorStatus.Async],
                    abortCommit : AbortCommit) {
@@ -92,7 +92,7 @@ object TagEditor {
       i => ValidationResult.option(l get i, VFailure looseMsg s"Invalid tag: $i"))
 
   final class Backend($: BackendScope[Props, Unit]) {
-    private val pxLookup = Px.bs($).propsA(_.lookup)
+    private val pxLookup = Px.props($).map(_.lookup).withReuse.autoRefresh
 
     val pxAutoComplete = pxLookup.map(l =>
       AutoComplete.tag(l.values.toStream, HideDead)(Plain))
@@ -104,7 +104,7 @@ object TagEditor {
         KeyboardTheme.abortCriterion.handle($.props.flatMap(_.abort)) +
         KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality)
 
-      val updateState: ReactEventTA => Callback =
+      val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.set(e.target.value.replace("\n", ""))))
 
@@ -117,11 +117,11 @@ object TagEditor {
     }
 
     def getTextarea() =
-      editorRef($).get.getDOMNode()
+      editorRef($).get.getDOMNode
 
     def render(p: Props) = {
 
-      def editor(validity: Validity): ReactElement =
+      def editor(validity: Validity): VdomElement =
         EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
       def instructions =
@@ -136,7 +136,7 @@ object TagEditor {
   }
 
   val Component =
-    ReactComponentB[Props]("TagEditor")
+    ScalaComponent.build[Props]("TagEditor")
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,

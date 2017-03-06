@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.reqtable
 
 import scalacss.Domain
 import scalacss.ScalaCssReact._
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
@@ -36,21 +36,21 @@ object Table {
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
   val Component =
-    ReactComponentB[Props]("Table")
+    ScalaComponent.build[Props]("Table")
       .renderBackend[Backend]
       .configure(shouldComponentUpdate)
       .build
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val reorderColumns = ReusableFn((cols: NonEmptyVector[Column]) =>
+    val reorderColumns = Reusable.fn((cols: NonEmptyVector[Column]) =>
       $.props >>= (_.modViewSettings(_ setColumns cols)))
 
-    val clickHeaderToSort = ReusableFn((col: Column) =>
+    val clickHeaderToSort = Reusable.fn((col: Column) =>
       $.props >>= (_.modViewSettings(
         ViewSettings.order.modify(_ want col))))
 
-    def render(p: Props): ReactElement = {
+    def render(p: Props): VdomElement = {
       val crs  = p.colRenderers
       val rows = p.rows
 
@@ -58,7 +58,7 @@ object Table {
         crs.map(_.column), p.colName, p.selection, reorderColumns, clickHeaderToSort)
 
       val renderRows =
-        rows.indices.toReactNodeArray { i =>
+        rows.indices.toVdomArray { i =>
           val row = rows(i)
           val es  = p.editState(row.sourceId)
           val as  = p.asyncState(row.sourceId)
@@ -84,17 +84,17 @@ object Table {
 
   implicit val headerPropReuse = Reusability.caseClass[HeaderProps]
 
-  val HeaderComponent = ReactComponentB[HeaderProps]("Header")
+  val HeaderComponent = ScalaComponent.build[HeaderProps]("Header")
     .renderBackend[HeaderBackend]
     .configure(shouldComponentUpdate)
     .build
 
   class HeaderBackend($: BackendScope[HeaderProps, Unit]) {
 
-    def selColKeyDown(e: ReactKeyboardEventH): Callback =
+    def selColKeyDown(e: ReactKeyboardEventFromHtml): Callback =
       focusKeyHandlers(e)
 
-    def dataColKeyDown(col: Column)(e: ReactKeyboardEventH): Callback =
+    def dataColKeyDown(col: Column)(e: ReactKeyboardEventFromHtml): Callback =
       focusKeyHandlers(e) | keyCodeSwitch(e) {
         case KeyCode.Space => $.props.flatMap(_ clickSort col)
       }
@@ -105,7 +105,7 @@ object Table {
           $.props.flatMap(_ reorder no)),
 
       content =>
-        $.props map[ReactElement] { p =>
+        $.props map[VdomElement] { p =>
           val name = p.colName
 
           val selectionCell =
@@ -155,18 +155,18 @@ object Table {
   implicit val rowPropReuse = Reusability.caseClass[RowProps]
 
   val RowComponent =
-    ReactComponentB[RowProps]("Row")
+    ScalaComponent.build[RowProps]("Row")
       .render_P(renderRow)
       .configure(shouldComponentUpdate)
       .build
 
-  def renderRow(p: RowProps): ReactTagOf[dom.html.TableRow] = {
+  def renderRow(p: RowProps): VdomTagOf[dom.html.TableRow] = {
     val row = p.row
 
     val rowStatus: CellStatus =
       if (row.live :: Dead) CellStatus.DeadRow else CellStatus.Normal
 
-    def selCellKeyDown(e: ReactKeyboardEventH): Callback =
+    def selCellKeyDown(e: ReactKeyboardEventFromHtml): Callback =
       focusKeyHandlers(e)
 
     val td = <.td(*.cell(rowStatus))
@@ -185,7 +185,7 @@ object Table {
           val col = cr.column
           val cp = CellProps(row, cr, p.cellEditors, p editState col, p asyncState col)
           CellComponent.withKey(col.key)(cp)
-        }.toReactNodeArray
+        }.toVdomArray
 
       <.tr(selCell, colCells)
     }
@@ -196,7 +196,7 @@ object Table {
           val col = cr.column
           val cp = CellProps(row, cr, ContentEditorFeature.D2.Feature.Nop, None, None)
           CellComponent.withKey(col.key)(cp)
-        }.toReactNodeArray
+        }.toVdomArray
 
       <.tr(td(renderLocked), colCells)
     }
@@ -239,7 +239,7 @@ object Table {
   implicit val cellPropReuse = Reusability.caseClass[CellProps]
 
   val CellComponent =
-    ReactComponentB[CellProps]("Cell")
+    ScalaComponent.build[CellProps]("Cell")
       .renderBackend[CellBackend]
       .configure(shouldComponentUpdate)
       .build
@@ -249,7 +249,7 @@ object Table {
   final class CellBackend($: BackendScope[CellProps, Unit]) {
     type N = dom.html.TableDataCell
 
-    def domNode = CallbackTo($.getDOMNode().asInstanceOf[N])
+    def domNode = CallbackTo($.getDOMNode.asInstanceOf[N])
 
     val startEdit: Callback =
       $.props.flatMap(_.startEdit getOrElse Callback.empty)
@@ -274,11 +274,11 @@ object Table {
      * Rather than force all cell children to stop propagation of events, we apply so logic here to filter the events to
      * which we react.
      */
-    def doesEventTargetCell(e: ReactEventH): Boolean =
+    def doesEventTargetCell(e: ReactEventFromHtml): Boolean =
       e.target == e.currentTarget ||
         (try e.target.tabIndex < 0 catch { case _: Throwable => false }) // .tabIndex is undefined from tests
 
-    def onKeyDown(e: ReactKeyboardEventH): Callback =
+    def onKeyDown(e: ReactKeyboardEventFromHtml): Callback =
       CallbackOption.require(doesEventTargetCell(e)) >> (
         focusKeyHandlers(e) | keyCodeSwitch(e) {
           case KeyCode.F2 => startEdit
@@ -323,7 +323,7 @@ object Table {
       f.focus()
     }
 
-  def focusKeyHandlers(e: ReactKeyboardEventH): CallbackOption[Unit] =
+  def focusKeyHandlers(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
     keyCodeSwitch(e) {
       case KeyCode.Up       => moveFocus(e.currentTarget, ↕ = Movement.Prev)
       case KeyCode.Down     => moveFocus(e.currentTarget, ↕ = Movement.Next)

@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.reqdetail
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import scalajs.js.{Array => JArray}
 import shipreq.base.util._
@@ -37,7 +37,7 @@ object UseCaseStepTree {
     @inline def render = Component(this)
   }
 
-  val Component = ReactComponentB[Props]("UseCaseStepTree")
+  val Component = ScalaComponent.build[Props]("UseCaseStepTree")
     .render_P(render)
     .build
 
@@ -47,14 +47,14 @@ object UseCaseStepTree {
   private val stepFilterM: FilterDead => VectorTree.PartialLocation => Boolean =
     FilterDead.memo(_.filterFnBy(Live whenValid _.validity))
 
-  private def render(p: Props): ReactElement = {
+  private def render(p: Props): VdomElement = {
     import p._
     import stepData._
 
     val pos        = uc.pubid.pos
     val stepFilter = stepFilterM(filterDead)
 
-    val results = new JArray[ReactNode]
+    val results = new JArray[VdomNode]
 
     steps.tree.subtreeLocAndValueIterator(treeFilter, (loc, step) => {
       val partialLoc = steps.partialLocs.forward(loc)

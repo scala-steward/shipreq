@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.lib
 
 import scalaz._
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import shipreq.base.util.Util
 
 /**
@@ -125,7 +125,7 @@ object DND { // TODO Remove? DragToReorder makes this redundant?
           case Possible(_, tgt) => E.equal(a, tgt)
           case _                => false
         },
-        $ _runStateF eventHandler(moveFn))
+        $ runStateFnF eventHandler(moveFn))
 
     def cProps2[M[_], A]($: CompState.Access[PState[A]], a: A, moveFn: (A, A) => Callback)(implicit E: Equal[A]): (A, Child.CProps[A]) =
       (a, cProps($, a, moveFn))
@@ -167,11 +167,11 @@ object DND { // TODO Remove? DragToReorder makes this redundant?
     def drop[A](p: CProps[A]): ReactDragEvent => Callback =
       _.preventDefaultCB >> p.eventHandler(DragEvent.Move)
 
-    def renderDragHandle[S, A](p: CProps[A], a: A, $: CompState.Access[CState]): ReactTag =
+    def renderDragHandle[S, A](p: CProps[A], a: A, $: CompState.Access[CState]): VdomTag =
       <.span(
         ^.className    := "draghandle",
         ^.draggable    := "true",
-        ^.onDragStart ==> $._runState(dragStart(a, p)),
+        ^.onDragStart ==> $.runStateFn(dragStart(a, p)),
         ^.onDragEnd   --> $.runState(dragEnd(p)),
         // onMouseDown={typeof window.isIE9 != 'undefined' && this.handleIE9DragHack}
         "\u2630")
@@ -184,16 +184,16 @@ object DND { // TODO Remove? DragToReorder makes this redundant?
         + (^.onDrop      ==> drop(p))
       )
 
-    def dndItemComponent[A](f: (TagMod, ReactTag, A) => ReactElement) =
-      ReactComponentB[(A, DND.Child.CProps[A])]("DndItem")
+    def dndItemComponent[A](f: (TagMod, VdomTag, A) => VdomElement) =
+      ScalaComponent.build[(A, DND.Child.CProps[A])]("DndItem")
         .initialState(DND.Child.initialState)
         .renderPS { ($, props, s) =>
           val (a, p) = props
           f(outerAttrs(p, a, s), renderDragHandle(p, a, $.accessCB), a)
         }.build
 
-    def dndItemComponentB[A, B](f: (TagMod, ReactTag, A, B) => ReactElement) =
-      ReactComponentB[(A, DND.Child.CProps[A], B)]("DndItem")
+    def dndItemComponentB[A, B](f: (TagMod, VdomTag, A, B) => VdomElement) =
+      ScalaComponent.build[(A, DND.Child.CProps[A], B)]("DndItem")
         .initialState(DND.Child.initialState)
         .renderPS { ($, props, s) =>
           val (a, p, b) = props

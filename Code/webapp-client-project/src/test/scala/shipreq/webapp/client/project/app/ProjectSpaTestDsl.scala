@@ -137,7 +137,7 @@ object ProjectSpaTestDsl {
       val tt  = Plan(action, invariants).test(Observer(_.observe()))
       val r   = tt.run(init, Ref(cd, svr, tester))
       if (r.failed)
-        println(s"${"="*120}\n${htmlScrub run tester.component.getDOMNode().outerHTML}\n")
+        println(s"${"="*120}\n${htmlScrub run tester.component.getDOMNode.outerHTML}\n")
       r.assert()
     }
   }

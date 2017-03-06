@@ -9,7 +9,7 @@ object ChangeListener {
 
   class Updater[S](val h: Changes => S => S) extends AnyVal {
     def install[P, B <: OnUnmount, N <: TopNode](cd: P => ClientData) =
-      Listenable.install[P, S, B, N, Changes](cd, $ => changes =>
+      Listenable.listen[P, S, B, N, Changes](cd, $ => changes =>
         $.modState(h(changes)))
   }
 
@@ -34,7 +34,7 @@ object ChangeListener {
 
   class Refresher(val refresh: Changes => Boolean) extends AnyVal {
     def install[P, S, B <: OnUnmount, N <: TopNode](cd: P => ClientData) =
-      Listenable.install[P, S, B, N, Changes](cd, $ => changes =>
+      Listenable.listen[P, S, B, N, Changes](cd, $ => changes =>
         if (refresh(changes))
           $.forceUpdate
         else

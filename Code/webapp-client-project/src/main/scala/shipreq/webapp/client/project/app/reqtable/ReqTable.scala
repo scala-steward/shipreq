@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, MonocleReact._
+import japgolly.scalajs.react._, vdom.html_<^._, MonocleReact._
 import japgolly.scalajs.react.experimental.StaticPropComponent
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -110,7 +110,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
     // TODO Move these to scalajs-react?
     private def reusableStateFn[A](f: A => State => State): A ~=> Callback =
-      ReusableFn(a => state_$.modState(f(a)))
+      Reusable.fn(a => state_$.modState(f(a)))
 
     private def reusableSetState[A](l: Lens[State, A]): A ~=> Callback =
       reusableStateFn(l.set)
@@ -123,13 +123,13 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
     val setSortCriteria = reusableSetState(State.sortCriteria)
     val setSelection    = reusableSetState(State.selection)
     val setModal        = reusableSetState(State.modal)
-    val setCreation     = state_$ zoomL State.creation
+    val setCreation     = state_$ zoomStateL State.creation
 
     val pxViewSettings = Px.bsMP($).propsM(_.state.viewSettings)
     val pxFilterState  = Px.bsMP($).propsM(_.state.filter)
     val pxSelection    = Px.bsMP($).propsM(_.state.selection)
 
-    val pxVsVar   = pxViewSettings map (ReusableVar(_)(setViewSettings))
+    val pxVsVar   = pxViewSettings map (StateSnapshot.withReuse(_)(setViewSettings))
     val pxVsCols  = pxViewSettings map (_.columns)
     val pxColName = pxProject map Column.NameResolver.byProject reuse
     val pxColRnd  = Px.apply2(pxProject, pxProjectWidgets)(new ColumnRenderers(_, _))
@@ -165,13 +165,13 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
     val filterProps: FilterEditor.State => FilterEditor.Props = {
       import FilterEditor._
-      val onFailure: OnFailure = ReusableFn(s => state_$.modState(_ filterFailure s))
-      val onSuccess: OnSuccess = ReusableFn(i => state_$.modState(_.filterSuccess(i._1, i._2)))
+      val onFailure: OnFailure = Reusable.fn(s => state_$.modState(_ filterFailure s))
+      val onSuccess: OnSuccess = Reusable.fn(i => state_$.modState(_.filterSuccess(i._1, i._2)))
       s => FilterEditor.Props(pxProject.value(), onFailure, onSuccess, s)
     }
 
-    val pxFilterEditor: Px[ReusableVal[ReactElement]] =
-      pxFilterState map filterProps map ReusableVal.renderComponent(FilterEditor.Component)
+    val pxFilterEditor: Px[Reusable[VdomElement]] =
+      pxFilterState map filterProps map Reusable.renderComponent(FilterEditor.Component)
 
     val contentEditorFeature = {
       import ContentEditorFeature._
@@ -226,7 +226,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
       new CreationInterface(setCreation, initEditor.preview, pxProject, pxPlainText, pxProjectWidgets, pxTextSearch)
 
     // -----------------------------------------------------------------------------------------------------------------
-    def render(p: DynamicProps): ReactElement = {
+    def render(p: DynamicProps): VdomElement = {
       Px.refresh(pxViewSettings, pxFilterState, pxSelection, pxRowsWithAsyncWholeRowStatuses)
       import Px.AutoValue._
       import p.{state => s}
@@ -260,7 +260,7 @@ object ReqTable extends StaticPropComponent.Template("ReqTable") {
 
   // ===================================================================================================================
 
-  val StatsSummary = ReactComponentB[TableStats]("Stats")
+  val StatsSummary = ScalaComponent.build[TableStats]("Stats")
     .render_P(stats =>
       <.div(
         *.statsSummary,

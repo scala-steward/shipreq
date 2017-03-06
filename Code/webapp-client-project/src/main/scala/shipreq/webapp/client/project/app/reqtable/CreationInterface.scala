@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._, MonocleReact._
+import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import shipreq.base.util.MutableArray
@@ -78,7 +78,7 @@ class CreationInterface($               : CompState.Access[State],
       NonEmptyVector(blank) ++ grs.array :+ uc :+ rcg
     }
 
-  val Component = ReactComponentB[Props]("Creation")
+  val Component = ScalaComponent.build[Props]("Creation")
     .render($ => render($.props))
     //    .configure(shouldComponentUpdate) TODO
     .build
@@ -87,7 +87,7 @@ class CreationInterface($               : CompState.Access[State],
     val s = p.state
 
     val select: SelType => Callback =
-      $ _setStateL State.selectedType
+      $ setStateFnL State.selectedType
 
     val selProps = SelectOne.Props[SelType](
       s.selectedType, types.value(), Some(select))
@@ -130,16 +130,16 @@ class CreationInterface($               : CompState.Access[State],
   }
 
   private val _noExtra: Any ~=> TagMod =
-    ReusableFn(_ => EmptyTag)
+    Reusable.fn(_ => EmptyVdom)
 
   // ===================================================================================================================
 
   object CreateReqCodeGroup {
 
-    val $$ = $ zoomL State.rcg
-    val setStatus  = $$ zoomL CreateReqCodeGroupState.status  setState (_: Status)
-    val setReqCode = ReusableFn($$ zoomL CreateReqCodeGroupState.reqCode setState (_: String))
-    val setTitle   = ReusableFn($$ zoomL CreateReqCodeGroupState.title   setState (_: String))
+    val $$ = $ zoomStateL State.rcg
+    val setStatus  = $$ zoomStateL CreateReqCodeGroupState.status  setState (_: Status)
+    val setReqCode = Reusable.fn($$ zoomStateL CreateReqCodeGroupState.reqCode setState (_: String))
+    val setTitle   = Reusable.fn($$ zoomStateL CreateReqCodeGroupState.title   setState (_: String))
 
     val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
 
@@ -150,7 +150,7 @@ class CreationInterface($               : CompState.Access[State],
 
       val propsReqCode =
         ReqCodeEditor.Single.Props(
-          ReusableVar(state.reqCode)(setReqCode),
+          StateSnapshot.withReuse(state.reqCode)(setReqCode),
           None,
           pxProject.reqCodes.trie,
           None,
@@ -162,7 +162,7 @@ class CreationInterface($               : CompState.Access[State],
           pxProjectText,
           pxTextSearch,
           pxProjectWidgets,
-          ReusableVar(state.title)(setTitle),
+          StateSnapshot.withReuse(state.title)(setTitle),
           None,
           None,
           previewFeature.forChild(titleFocus, p.previewState),
@@ -189,18 +189,18 @@ class CreationInterface($               : CompState.Access[State],
             <.td(ctrls(create, state.status, setStatus)))))
     }
 
-    val Component = ReactComponentB[Props]("CreateRCG").render_P(render).build
+    val Component = ScalaComponent.build[Props]("CreateRCG").render_P(render).build
   }
 
   // ===================================================================================================================
 
   object CreateReqShared {
-    val $$ = $ zoomL State.req
-    val setStatus   = $$ zoomL CreateReqState.status   setState (_: Status)
-    val setImp      = ReusableFn($$ zoomL CreateReqState.imp      setState (_: String))
-    val setReqCodes = ReusableFn($$ zoomL CreateReqState.reqCodes setState (_: String))
-    val setTitle    = ReusableFn($$ zoomL CreateReqState.title    setState (_: String))
-    val setTags     = ReusableFn($$ zoomL CreateReqState.tags     setState (_: String))
+    val $$ = $ zoomStateL State.req
+    val setStatus   = $$ zoomStateL CreateReqState.status   setState (_: Status)
+    val setImp      = Reusable.fn($$ zoomStateL CreateReqState.imp      setState (_: String))
+    val setReqCodes = Reusable.fn($$ zoomStateL CreateReqState.reqCodes setState (_: String))
+    val setTitle    = Reusable.fn($$ zoomStateL CreateReqState.title    setState (_: String))
+    val setTags     = Reusable.fn($$ zoomStateL CreateReqState.tags     setState (_: String))
 
     val pxImpLookup = Px.apply2(pxProject, pxProjectText)(ImplicationEditor.Lookup.all)
 
@@ -219,10 +219,10 @@ class CreationInterface($               : CompState.Access[State],
           <.th(UiText.ColumnNames.implicationSrc),
           <.th))
 
-    def renderReqForm(reqCodes: ReactElement,
-                      title   : ReactElement,
-                      tags    : ReactElement,
-                      imps    : ReactElement,
+    def renderReqForm(reqCodes: VdomElement,
+                      title   : VdomElement,
+                      tags    : VdomElement,
+                      imps    : VdomElement,
                       ctrls   : TagMod) = {
       <.table(
         reqFormHeader,
@@ -239,7 +239,7 @@ class CreationInterface($               : CompState.Access[State],
 
     def getPropsReqCodes(state: CreateReqState) =
       ReqCodeEditor.Multiple.Props(
-        ReusableVar(state.reqCodes)(setReqCodes),
+        StateSnapshot.withReuse(state.reqCodes)(setReqCodes),
         None,
         pxProject.reqCodes.trie,
         None,
@@ -248,14 +248,14 @@ class CreationInterface($               : CompState.Access[State],
     def getPropsTags(state: CreateReqState) =
       TagEditor.Props(
         None,
-        ReusableVar(state.tags)(setTags),
+        StateSnapshot.withReuse(state.tags)(setTags),
         pxTagLookup,
         None,
         None)
 
     def getPropsImps(state: CreateReqState) =
       ImplicationEditor.Props(
-        ReusableVar(state.imp)(setImp),
+        StateSnapshot.withReuse(state.imp)(setImp),
         pxImpLookup,
         pxImpValidationFn,
         None,
@@ -288,7 +288,7 @@ class CreationInterface($               : CompState.Access[State],
           pxProjectText,
           pxTextSearch,
           pxProjectWidgets,
-          ReusableVar(state.title)(setTitle),
+          StateSnapshot.withReuse(state.title)(setTitle),
           None,
           None,
           previewFeature.forChild(titleFocus, p.previewState),
@@ -314,7 +314,7 @@ class CreationInterface($               : CompState.Access[State],
         ctrls(create, state.status, setStatus))
     }
 
-    val Component = ReactComponentB[Props]("CreateGR").render_P(render).build
+    val Component = ScalaComponent.build[Props]("CreateGR").render_P(render).build
   }
 
   // ===================================================================================================================
@@ -341,7 +341,7 @@ class CreationInterface($               : CompState.Access[State],
           pxProjectText,
           pxTextSearch,
           pxProjectWidgets,
-          ReusableVar(state.title)(setTitle),
+          StateSnapshot.withReuse(state.title)(setTitle),
           None,
           None,
           previewFeature.forChild(titleFocus, p.previewState),
@@ -367,6 +367,6 @@ class CreationInterface($               : CompState.Access[State],
         ctrls(create, state.status, setStatus))
     }
 
-    val Component = ReactComponentB[Props]("CreateUC").render_P(render).build
+    val Component = ScalaComponent.build[Props]("CreateUC").render_P(render).build
   }
 }

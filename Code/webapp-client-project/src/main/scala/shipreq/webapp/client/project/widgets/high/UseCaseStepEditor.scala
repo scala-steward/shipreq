@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.widgets.high
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import scalaz.\/
 import scalaz.syntax.traverse._
@@ -42,7 +42,7 @@ object UseCaseStepEditor {
                    plainText     : PlainText.ForProject,
                    textSearch    : TextSearch,
                    projectWidgets: ProjectWidgets,
-                   edit          : ReusableVar[String],
+                   edit          : StateSnapshot[String],
                    asyncStatus   : Option[EditorStatus.Async],
                    abort         : Callback,
                    commit        : CommitFn,
@@ -108,9 +108,9 @@ object UseCaseStepEditor {
     RichTextEditor.liveCorrect(Text.UseCaseStep)
 
   final class Backend($: BackendScope[Props, Unit]) {
-    private val pxProject    = Px.bs($).propsA(_.project)
-    private val pxPlainText  = Px.bs($).propsA(_.plainText)
-    private val pxTextSearch = Px.bs($).propsA(_.textSearch)
+    private val pxProject    = Px.props($).map(_.project).withReuse.autoRefresh
+    private val pxPlainText  = Px.props($).map(_.plainText).withReuse.autoRefresh
+    private val pxTextSearch = Px.props($).map(_.textSearch).withReuse.autoRefresh
 
     val pxAutoComplete =
       Px.apply3(pxProject, pxPlainText, pxTextSearch)(AutoComplete.forRichText(Text.UseCaseStep))
@@ -120,7 +120,7 @@ object UseCaseStepEditor {
         KeyboardTheme.abortCriterion.handle($.props.flatMap(_.abort)) +
           KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality)
 
-      val updateState: ReactEventTA => Callback =
+      val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit))
 
@@ -134,7 +134,7 @@ object UseCaseStepEditor {
     }
 
     def render(p: Props) = {
-      def editor(validity: Validity): ReactElement =
+      def editor(validity: Validity): VdomElement =
         EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
 
       def instructions =
@@ -154,11 +154,11 @@ object UseCaseStepEditor {
     }
 
     def getTextarea() =
-      editorRef($).get.getDOMNode()
+      editorRef($).get.getDOMNode
   }
 
   val Component =
-    ReactComponentB[Props]("UseCaseStepEditor")
+    ScalaComponent.build[Props]("UseCaseStepEditor")
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,

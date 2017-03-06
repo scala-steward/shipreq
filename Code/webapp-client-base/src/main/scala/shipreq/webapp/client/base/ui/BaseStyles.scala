@@ -1,7 +1,7 @@
 package shipreq.webapp.client.base.ui
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.scalajs.react.vdom.prefix_<^.{^ => ^^, _}
+import japgolly.scalajs.react.vdom.html_<^.{^ => ^^, _}
 import japgolly.univeq._
 import scalacss.Defaults._
 import shipreq.base.util.Validity

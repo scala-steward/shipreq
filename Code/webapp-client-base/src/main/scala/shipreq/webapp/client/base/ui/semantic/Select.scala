@@ -1,7 +1,7 @@
 package shipreq.webapp.client.base.ui.semantic
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.HTMLSelectElement
 import scala.scalajs.js
 import shipreq.base.util.univeq._
@@ -18,7 +18,7 @@ object Select {
                selected: js.UndefOr[OptionKey] = js.undefined)(
                onChange: Option[A] => Callback) = {
 
-    val optionArray = new js.Array[ReactNode]
+    val optionArray = new js.Array[VdomNode]
     for (o <- options) {
       optionArray push <.option(
         ^.key := o.key,
@@ -26,7 +26,7 @@ object Select {
         o.title)
     }
 
-    def onChange2: SyntheticEvent[HTMLSelectElement] => Callback =
+    def onChange2: ReactEventFrom[HTMLSelectElement] => Callback =
       _.extract(_.target.value)(v =>
         options.find(_.key ==* v) match {
           case Some(o) => onChange(o)

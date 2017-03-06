@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 
 trait Modal {
-  def render: ReactElement
+  def render: VdomElement
 }
 
 object Modal {
@@ -14,7 +14,7 @@ object Modal {
   def none: State =
     None
 
-  def apply(re: ReactElement): Modal =
+  def apply(re: VdomElement): Modal =
     new Modal {
       override def render = re
     }
@@ -23,7 +23,7 @@ object Modal {
     Some(m)
 
   @inline implicit class OptionModalOps(private val o: State) extends AnyVal {
-    @inline def renderOrElse(default: => ReactElement): ReactElement =
+    @inline def renderOrElse(default: => VdomElement): VdomElement =
       o.fold(default)(_.render)
   }
 

@@ -39,6 +39,6 @@ class ReactCollapse(isOpened    : Boolean,
     o.asInstanceOf[P]
   }
 
-  def apply(children: ReactNode*): ReactComponentU_ =
+  def apply(children: VdomNode*): ReactComponentU_ =
     Factory(toJs, children: _*)
 }

@@ -58,7 +58,7 @@ object ReqTableTest extends TestSuite {
     val outer = WithExternalCompStateAccess.init { ($: CompState.Access[State], s: State) =>
 
       val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
-        AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
+        AsyncActionFeature.D2.Feature($ zoomStateL State.asyncStates)
 
       val previewFeature = new PreviewFeature($, State.previewState)
 
@@ -81,7 +81,7 @@ object ReqTableTest extends TestSuite {
         initReqTableEditor,
         asyncFeature.mapK1(Column.EditFieldKeyIntersection.reverse),
         reqDetailRC,
-        $ zoomL State.reqTable))
+        $ zoomStateL State.reqTable))
 
     }((reqTable, $, s) =>
       reqTable(ReqTable.DynamicProps(

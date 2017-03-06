@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.root
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import scala.scalajs.js
 import scalacss.ScalaCssReact._
@@ -99,7 +99,7 @@ object ProjectIndex {
     def enableDimmer: Callback =
       Callback {
         val opt = js.Dynamic.literal(on = "hover")
-        JQuery($.getDOMNode()).find("." + dimIt).dimmer(opt)
+        JQuery($.getDOMNode).find("." + dimIt).dimmer(opt)
       }
 
     def renderCard(p: Props, cat: Category, item: Item): TagMod = {
@@ -146,12 +146,12 @@ object ProjectIndex {
       header + cards
     }
 
-    def render(p: Props): ReactElement =
+    def render(p: Props): VdomElement =
       <.section(
-        Category.All.foldLeft(EmptyTag)((q, c) => q + renderCategory(p, c)))
+        Category.All.foldLeft(EmptyVdom)((q, c) => q + renderCategory(p, c)))
   }
 
-  val Component = ReactComponentB[Props]("Index")
+  val Component = ScalaComponent.build[Props]("Index")
     .renderBackend[Backend]
     .componentDidMount(_.backend.enableDimmer)
     .build

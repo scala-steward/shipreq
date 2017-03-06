@@ -36,7 +36,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val reqDetailRC = routerCtl.contramap(Page.ReqDetail.apply)
 
     val setFilterDead: FilterDead ~=> Callback =
-      ReusableFn(fd => $.modState(
+      Reusable.fn(fd => $.modState(
         State.filterDead.set(fd) compose
         State.reqTableVS.modify(_ setFilterDead fd)))
 
@@ -45,7 +45,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
 
     val asyncFeature: AsyncActionFeature.D2.Feature[reqtable.Row.SourceId, AsyncKey, String] =
-      AsyncActionFeature.D2.Feature($ zoomL State.asyncStates)
+      AsyncActionFeature.D2.Feature($ zoomStateL State.asyncStates)
 
     val previewFeature = new PreviewFeature($, State.previewState)
 
@@ -68,9 +68,9 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       initReqTableEditor,
       asyncFeature.mapK1(AsyncKey.ToReqTable),
       reqDetailRC,
-      $ zoomL State.reqTable))
+      $ zoomStateL State.reqTable))
 
-    val pxReqDetailId = Px(None: Option[ReqId])
+    val pxReqDetailId = Px(None: Option[ReqId]).withReuse.manualUpdate
 
     val pxReqDetailReqProps: Px[Option[State => ReqDetail.ReqProps]] =
       pxReqDetailId.map(_.map { id =>
@@ -119,7 +119,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       pxPlainText, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
-      ReusableFn($.zoomL(State.reqDetail) setState _)
+      Reusable.fn($.zoomStateL(State.reqDetail) setState _)
 
     val usageShow =
       Usage.Show((fd, fs) =>
@@ -143,14 +143,14 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
         cd.projectCB >>= (p => if (p.name ==* newName) close else save)
       }
 
-    def render(p: Props, s: State): ReactElement = {
-      def fd = ReusableVar(s.filterDead)(setFilterDead)
+    def render(p: Props, s: State): VdomElement = {
+      def fd = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
 
-      val content: ReactElement = p.page match {
+      val content: VdomElement = p.page match {
 
         case Page.Index =>
           val lookup = ReqLookupPrompt.Props(
-            ExternalVar(s.reqLookup)($.zoomL(State.reqLookup) setState _), // TODO Pending scalajs-react release
+            StateSnapshot(s.reqLookup)($.zoomStateL(State.reqLookup) setState _), // TODO Pending scalajs-react release
             Allow <~ _.lookup(cd.project()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
@@ -158,7 +158,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
 
           val pname = ProjectItem.WithEditableName.Props(
             cd.projectSummary(),
-            ExternalVar(s.projectName)($.zoomL(State.projectName) setState _), // TODO Pending scalajs-react release
+            StateSnapshot(s.projectName)($.zoomStateL(State.projectName) setState _), // TODO Pending scalajs-react release
             projectNameAAF,
             setProjectNameIO)
 
@@ -190,7 +190,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
             pubid,
             fd,
             reqDetailReqPropsFn(s),
-            ReusableVar(s.reqDetail)(reqDetailSetState))
+            StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState))
           reqDetail(props)
 
         case Page.ImpGraph =>
@@ -211,9 +211,9 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       $.modState(State.reqTable.modify(_ updateProject c.p2))
   }
 
-  val Component = ReactComponentB[Props]("LoadedRoot")
+  val Component = ScalaComponent.build[Props]("LoadedRoot")
     .initialState(State.init(cd))
     .renderBackend[Backend]
-    .configure(Listenable.install(_ => cd, _.backend.onProjectChange))
+    .configure(Listenable.listen(_ => cd, _.backend.onProjectChange))
     .build
 }

@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.cfg.fields
 
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.univeq.UnivEq
 import monocle.Lens
 import monocle.function.At.atMap
@@ -42,7 +42,7 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
   val preprocess: Stream[A] => Stream[A] =
     _.sortBy(lookup(_).mnemonic.value)
 
-  val renderValue: A => ReactNode = id => {
+  val renderValue: A => VdomNode = id => {
     val a = lookup(id)
     if (a.fold(_ => true, _.live :: Live))
       a.mnemonic.value

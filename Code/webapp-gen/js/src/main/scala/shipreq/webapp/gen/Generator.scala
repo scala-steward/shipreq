@@ -5,7 +5,7 @@ import scala.scalajs.LinkingInfo.productionMode
 
 case class Scala(content: String) extends AnyVal
 
-class Generator[Input](val name: String, val comp: Input => ReactElement, val data: MainAndTest[Input]) {
+class Generator[Input](val name: String, val comp: Input => VdomElement, val data: MainAndTest[Input]) {
 
   private implicit class HtmlOps(html: Html) {
     def toScala: Scala = {
@@ -52,7 +52,7 @@ class Generator[Input](val name: String, val comp: Input => ReactElement, val da
 }
 
 object Generator {
-  def apply[A](name: String, data: MainAndTest[A])(comp: A => ReactElement): Generator[A] =
+  def apply[A](name: String, data: MainAndTest[A])(comp: A => VdomElement): Generator[A] =
     new Generator(name, comp, data)
 
   val hack: Html => Html =

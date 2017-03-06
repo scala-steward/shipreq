@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.cfg.reqtypes
 
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import scala.language.reflectiveCalls
 import scalacss.ScalaCssReact._
@@ -26,7 +26,7 @@ object CfgReqTypes {
   case class Props(cp        : ClientProtocol,
                    remote    : CustomReqTypeCrud.Instance,
                    clientData: ClientData,
-                   filterDead: ReusableVar[FilterDead],
+                   filterDead: StateSnapshot[FilterDead],
                    usageShow : Usage.Show) {
     def component = Component(this)
   }
@@ -38,7 +38,7 @@ object CfgReqTypes {
   val changeListener = ChangeListener.store(savedRowStoreS)(_.customReqTypes, _.config.reqTypes.custom.get)
 
   val Component =
-    ReactComponentB[Props]("Cfg: Req Types")
+    ScalaComponent.build[Props]("Cfg: Req Types")
       .initialState_P(initialState)
       .renderBackend[Backend]
       .configure(changeListener.install(_.clientData))
@@ -51,11 +51,11 @@ object CfgReqTypes {
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
-    val project    = Px.bs($).propsM(_.clientData.project())
-    val filterDead = Px.bs($).propsM(_.filterDead.value)
-    val usageShow  = Px.bs($).propsM(_.usageShow)
+    val project    = Px.props($).map(_.clientData.project()).withReuse.manualRefresh
+    val filterDead = Px.props($).map(_.filterDead.value).withReuse.manualRefresh
+    val usageShow  = Px.props($).map(_.usageShow).withReuse.manualRefresh
 
-    val crudIO = Px.bs($).propsA.map(p => CrudActionIO(CustomReqType, CustomReqTypeCrud)(p.cp, p.remote, p.clientData))
+    val crudIO = Px.props($).withReuse.autoRefresh.map(p => CrudActionIO(CustomReqType, CustomReqTypeCrud)(p.cp, p.remote, p.clientData))
     val supp = TypicalSupp(storesAndState)(crudIO.value(), $)
 
     val onWhenImplicationRequired = On <=> ImplicationRequired
@@ -110,11 +110,11 @@ object CfgReqTypes {
         FieldNames.usage))
 
       val staticRows: cfgTable.RowStream = {
-        def rr(r: StaticReqType): ReactElement = {
+        def rr(r: StaticReqType): VdomElement = {
           val imp = checkbox(r.imp)(^.disabled := true)
           val usage = Some(usageFn(r))
           val norm: cfgTable.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp, usage)
-          cfgTable.row("static", RowStatus.Sync, norm, EmptyTag)(^.key := r.mnemonic.value)
+          cfgTable.row("static", RowStatus.Sync, norm, EmptyVdom)(^.key := r.mnemonic.value)
         }
         StaticReqType.values.toStream.map(r => r.mnemonic -> rr(r))
       }
@@ -125,7 +125,7 @@ object CfgReqTypes {
     val outer =
       cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead set fd))
 
-    def render: ReactElement = {
+    def render: VdomElement = {
       Px.refresh(project, filterDead, usageShow)
       outer(table())
     }

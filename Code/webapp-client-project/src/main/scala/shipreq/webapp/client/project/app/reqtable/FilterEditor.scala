@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import org.parboiled2.{ErrorFormatter, ParseError}
 import org.scalajs.dom.raw.HTMLTextAreaElement
@@ -37,7 +37,7 @@ object FilterEditor {
   private val textEditorRef = Ref[HTMLTextAreaElement]("i")
 
   val Component =
-    ReactComponentB[Props]("Filter")
+    ScalaComponent.build[Props]("Filter")
       .renderBackend[Backend]
       .configure(
         shouldComponentUpdate,
@@ -55,7 +55,7 @@ object FilterEditor {
       .replace("$1" + _ + " ")
 
   class Backend($: BackendScope[Props, Unit]) {
-    val project = Px.bs($).propsM(_.project)
+    val project = Px.props($).map(_.project).withReuse.manualRefresh
 
     val autoComplete: Px[AutoCompleteFeature.Strategies] =
       project.map { p =>
@@ -72,7 +72,7 @@ object FilterEditor {
 
     val inputCorrect = """\s*[\n\r]\s*""".r
 
-    val onChange: ReactEventTA => Callback =
+    val onChange: ReactEventFromTextArea => Callback =
       e => updateFilterText(inputCorrect.replaceAllIn(e.target.value, " "))
 
     def updateFilterText(text: String): Callback = {
@@ -103,7 +103,7 @@ object FilterEditor {
     val filterBase =
       <.textarea(^.ref := textEditorRef, ^.onChange ==> onChange)
 
-    def render(p: Props): ReactElement = {
+    def render(p: Props): VdomElement = {
       Px.refresh(project)
       val s = p.state
       <.div(

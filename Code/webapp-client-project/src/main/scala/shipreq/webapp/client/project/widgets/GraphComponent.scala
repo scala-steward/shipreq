@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
@@ -37,9 +37,9 @@ object GraphComponent {
     def enrich(p: Props): Callback =
       Callback.empty
 
-    def render(s: State): ReactElement =
+    def render(s: State): VdomElement =
       s match {
-        case Some(svg) => <.div(Style.svgGraph, ^.dangerouslySetInnerHtml(svg.content))
+        case Some(svg) => <.div(Style.svgGraph, ^.dangerouslySetInnerHtml := svg.content)
         case None      => <.div
       }
   }
@@ -49,10 +49,10 @@ object GraphComponent {
   }
 
   def graphConfig[P <: HasWebWorker : Reusability, B <: GraphBackend[P], N <: TopNode] =
-    (_: ReactComponentB[P, State, B, N])
+    (_: ScalaComponent.build[P, State, B, N])
       .configure(Reusability.shouldComponentUpdate)
       .componentWillMount($ => $.backend.refresh($.props))
-      .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.$.backend.refresh(i.nextProps)))
+      .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.backend.refresh(i.nextProps)))
       .componentDidMount($ => $.backend.onRender($.props, $.state))
-      .componentDidUpdate(i => i.$.backend.onRender(i.currentProps, i.currentState))
+      .componentDidUpdate(i => i.backend.onRender(i.currentProps, i.currentState))
 }

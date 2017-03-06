@@ -18,7 +18,7 @@ import shipreq.webapp.client.project.lib.TextEditor
 object AutoCompleteFeature {
 
   implicit val reusabilityStrategies: Reusability[Strategies] =
-    Reusability.fn((a, b) =>
+    Reusability((a, b) =>
       (a eq b) ||
       a.corresponds(b)(_ eq _))
 
@@ -54,7 +54,7 @@ object AutoCompleteFeature {
           getNode   : CompScope.DuringCallbackM[P, S, B, N] => E,
           strategies: (P, B) => ForChild,
           onUpdate  : (P, B) => String => Callback)
-         (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
+         (implicit te: TextEditor.OfType[E]): EndoFn[ScalaComponent.build[P, S, B, N]] =
     _.componentDidMount($ => Callback {
       val n = getNode($)
       te.focus(n)
@@ -81,20 +81,20 @@ object AutoCompleteFeature {
           getNode   : CompScope.DuringCallbackM[P, S, B, N] => E,
           strategies: P => ForChild,
           onUpdate  : P => String => Callback)
-        (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
+        (implicit te: TextEditor.OfType[E]): EndoFn[ScalaComponent.build[P, S, B, N]] =
     install(getNode, (p, _) => strategies(p), (p, _) => onUpdate(p))
 
   def installB[P, S, B, N <: TopNode, E <: html.Element](
           getNode   : CompScope.DuringCallbackM[P, S, B, N] => E,
           strategies: B => ForChild,
           onUpdate  : B => String => Callback)
-        (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
+        (implicit te: TextEditor.OfType[E]): EndoFn[ScalaComponent.build[P, S, B, N]] =
     install(getNode, (_, b) => strategies(b), (_, b) => onUpdate(b))
 
   def installBP[P, S, B, N <: TopNode, E <: html.Element](
           getNode   : CompScope.DuringCallbackM[P, S, B, N] => E,
           strategies: B => ForChild,
           onUpdate  : P => String => Callback)
-        (implicit te: TextEditor.OfType[E]): EndoFn[ReactComponentB[P, S, B, N]] =
+        (implicit te: TextEditor.OfType[E]): EndoFn[ScalaComponent.build[P, S, B, N]] =
     install(getNode, (_, b) => strategies(b), (p, _) => onUpdate(p))
 }

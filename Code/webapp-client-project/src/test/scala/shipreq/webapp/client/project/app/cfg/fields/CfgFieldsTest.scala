@@ -51,7 +51,7 @@ object CfgFieldsTest extends TestSuite {
     import t._
 
     selectNewText()
-    def html = c.getDOMNode().outerHTML
+    def html = c.getDOMNode.outerHTML
     val initialView = html
 
     // Create new text row

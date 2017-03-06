@@ -1,7 +1,7 @@
 package shipreq.webapp.client.base.ui
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
@@ -21,19 +21,19 @@ object EditTheme {
     editableInline + (^.onDblClick --> startEdit)
 
   def editableInline(startEdit: Option[Callback]): TagMod =
-    startEdit.fold(EmptyTag)(editableInline(_))
+    startEdit.fold(EmptyVdom)(editableInline(_))
 
-  def autosizeTextarea(ref: String, validity: Validity, value: String, tagMod: TagMod): ReactElement =
+  def autosizeTextarea(ref: String, validity: Validity, value: String, tagMod: TagMod): VdomElement =
     AutosizeTextarea.withRef(ref)(
       BaseStyles.textEditor(validity),
       ^.value := value,
       tagMod)
 
   def renderEditor(status      : EditorStatus,
-                   editor      : Validity => ReactElement,
-                   readOnlyView: => ReactNode,
+                   editor      : Validity => VdomElement,
+                   readOnlyView: => VdomNode,
                    instructions: => TagMod,
-                   preview     : => TagMod = EmptyTag): ReactTag = {
+                   preview     : => TagMod = EmptyVdom): VdomTag = {
 
     status match {
       case EditorStatus.Ignore | EditorStatus.Valid(_) =>

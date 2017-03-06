@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty._
-import japgolly.scalajs.react._, vdom.prefix_<^._, ScalazReact._
+import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import shipreq.base.util.{IMap, ISubset}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
@@ -10,7 +10,7 @@ import shipreq.webapp.client.base.lib.ClientUtil
 object ISubsetEditor {
 
   def Component[A: UnivEq](staticProps: StaticProps[A]) =
-    ReactComponentB[Mode[A]]("ISubsetEditor")
+    ScalaComponent.build[Mode[A]]("ISubsetEditor")
       .backend(new Backend(_, staticProps))
       .renderBackend
       .build
@@ -56,7 +56,7 @@ object ISubsetEditor {
 
   // -------------------------------------------------------------------------------------------------------------------
   final case class StaticProps[A](preprocess : Stream[A] => Stream[A],
-                                  renderValue: A => ReactNode,
+                                  renderValue: A => VdomNode,
                                   allValues  : TraversableOnce[A]) {
     val allValueStatic =
       preprocess(allValues.toStream).foldLeft(Vector.empty[ValueStatic[A]])((q, a) =>
@@ -65,7 +65,7 @@ object ISubsetEditor {
           <.input(^.`type` := "checkbox")))
   }
 
-  final case class ValueStatic[A](value: A, rendered: ReactTag, checkbox: ReactTag)
+  final case class ValueStatic[A](value: A, rendered: VdomTag, checkbox: VdomTag)
 
   // -------------------------------------------------------------------------------------------------------------------
   final class Backend[A: UnivEq]($: BackendScope[Mode[A], Unit], staticProps: StaticProps[A]) {
@@ -74,18 +74,18 @@ object ISubsetEditor {
     val radioGroupName =
       ClientUtil.uniqueStr.runNow()
 
-    def render(props: Mode[A]): ReactElement =
+    def render(props: Mode[A]): VdomElement =
       props match {
         case m: ViewMode[A] => renderViewMode(m)
         case m: EditMode[A] => renderEditMode(m)
       }
 
-    def renderViewMode(m: ViewMode[A]): ReactElement = {
+    def renderViewMode(m: ViewMode[A]): VdomElement = {
       def selection(prefix: String, i: NonEmptySet[A]): TagMod = {
         val as = preprocess(i.head #:: i.tail.toStream)
         val ns = as.map(renderValue)
-        val vs = ns.head #:: ns.tail.flatMap(v => Stream[ReactNode](", ", v))
-        (prefix + ": ") #:: vs #::: Stream[ReactNode](".")
+        val vs = ns.head #:: ns.tail.flatMap(v => Stream[VdomNode](", ", v))
+        (prefix + ": ") #:: vs #::: Stream[VdomNode](".")
       }
 
       val values: TagMod = m.value match {
@@ -105,7 +105,7 @@ object ISubsetEditor {
     val inputRadio =
       <.input(^.`type` := "radio", ^.name := radioGroupName)
 
-    def renderEditMode(mode: EditMode[A]): ReactElement = {
+    def renderEditMode(mode: EditMode[A]): VdomElement = {
       import mode.state
 
       val methodSelection =

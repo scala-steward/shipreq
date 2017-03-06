@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import scalacss.ScalaCssReact._
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import shipreq.base.util.Memo
 import shipreq.webapp.client.project.app.Assets
@@ -26,9 +26,9 @@ object SortEditor {
 
   implicit val reusability = Reusability.caseClass[Props]
 
-  val renderSortMethod = Memo[SortMethod, ReactElement] { m =>
+  val renderSortMethod = Memo[SortMethod, VdomElement] { m =>
     import Assets._
-    def pair(a: ReactTag, b: ReactTag) = <.div(a(*.sortMethodHalfTop), b(*.sortMethodHalfBottom))
+    def pair(a: VdomTag, b: VdomTag) = <.div(a(*.sortMethodHalfTop), b(*.sortMethodHalfBottom))
     val tag = m match {
       case SortMethod.Asc            => sortSvgAsc(*.sortMethodFull)
       case SortMethod.Desc           => sortSvgDesc(*.sortMethodFull)
@@ -57,7 +57,7 @@ object SortEditor {
         },
 
       content =>
-        $.props map[ReactElement] { p =>
+        $.props map[VdomElement] { p =>
           val nameResolver = p.nameResolver
           var conclusiveSeen = false
 
@@ -98,7 +98,7 @@ object SortEditor {
       dnd.Component(p.value.all.whole)
   }
 
-  val Component = ReactComponentB[Props]("SortEditor")
+  val Component = ScalaComponent.build[Props]("SortEditor")
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
     .build

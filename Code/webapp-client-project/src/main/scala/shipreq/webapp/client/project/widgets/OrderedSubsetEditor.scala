@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.scalajs.react._, vdom.prefix_<^._
+import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.univeq._
 import org.scalajs.dom
 import scalaz.Equal
@@ -19,10 +19,10 @@ import shipreq.webapp.client.project.lib.DND
  */
 object OrderedSubsetEditor {
 
-  case class Styles(row     : TagMod = EmptyTag,
-                    dragHnd : TagMod = EmptyTag,
-                    checkbox: TagMod = EmptyTag,
-                    label   : TagMod = EmptyTag)
+  case class Styles(row     : TagMod = EmptyVdom,
+                    dragHnd : TagMod = EmptyVdom,
+                    checkbox: TagMod = EmptyVdom,
+                    label   : TagMod = EmptyVdom)
 
   val noStyle = new Styles()
   val _noStyle = (_: Any, _: Any) => noStyle
@@ -62,7 +62,7 @@ final class OrderedSubsetEditor[A: Equal] {
                    styles   : (A, On) => Styles = _noStyle)
 
   val Component =
-    ReactComponentB[Props]("OrderedSubsetEditor")
+    ScalaComponent.build[Props]("OrderedSubsetEditor")
       .initialState(DND.Parent.initialState[A])
       .renderBackend[Backend]
       .domType[dom.html.OList]
@@ -91,14 +91,14 @@ final class OrderedSubsetEditor[A: Equal] {
             <.span(style.label, p.label(a))))
     })
 
-    def li(p: Props)(a: A, on: On): ReactElement =
+    def li(p: Props)(a: A, on: On): VdomElement =
       Row((a, DND.Parent.cProps($, a, moveIO(p)), (p, on)))
 
     def moveIO(p: Props)(from: A, to: A): Callback =
       p.update(move(p.state)(from, to))
 
     def render(p: Props) = {
-      val rows: Stream[ReactElement] =
+      val rows: Stream[VdomElement] =
         p.state.all.toStream
           .filter(p filter _._1)
           .map(t => li(p)(t._1, t._2))

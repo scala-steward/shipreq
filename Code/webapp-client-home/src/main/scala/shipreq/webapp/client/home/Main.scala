@@ -18,8 +18,8 @@ object Main extends ClientFnImpl(ClientFnDecl.HomeSpa) {
     BaseStyles.addToDocument()
     Styles.addToDocument()
 
-    ReactDOM.render(
-      Home.Props(i, ClientProtocol.Default).render,
+    
+      Home.Props(i, ClientProtocol.Default).render.renderIntoDOM(
       dom.document.getElementById("tgt"))
   }
 }

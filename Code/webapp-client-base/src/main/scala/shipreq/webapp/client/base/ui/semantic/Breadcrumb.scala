@@ -1,7 +1,7 @@
 package shipreq.webapp.client.base.ui.semantic
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
 
@@ -21,7 +21,7 @@ object Breadcrumb {
   }
 
   sealed abstract class Item {
-    val tag: ReactTag
+    val tag: VdomTag
   }
 
   object Item {
@@ -36,7 +36,7 @@ object Breadcrumb {
       override val tag = divSection(content) <+ state
     }
 
-    case class Link(a: ReactTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {
+    case class Link(a: VdomTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {
       override val tag = a.addClass(section) <+ state
     }
 
@@ -44,7 +44,7 @@ object Breadcrumb {
       override val tag = divider(content)
     }
 
-    case class DividerIcon(i: Icon, mod: TagMod = EmptyTag) extends Item {
+    case class DividerIcon(i: Icon, mod: TagMod = EmptyVdom) extends Item {
       override val tag = i.tag(^.cls := "divider", mod)
     }
 
@@ -57,7 +57,7 @@ object Breadcrumb {
               items.map(_.tag))))
     }
 
-    case class LinkAndDropdown(a: ReactTagOf[html.Anchor], items: Dropdown.Items) extends Item {
+    case class LinkAndDropdown(a: VdomTagOf[html.Anchor], items: Dropdown.Items) extends Item {
       override val tag =
         divSection(
           a,
@@ -78,6 +78,6 @@ object Breadcrumb {
   private def render(p: Props) =
     p.style.cont(p.items.map(_.tag): _*)
 
-  val Component = FunctionalComponent(render)
+  val Component = ScalaFnComponent(render)
 }
 

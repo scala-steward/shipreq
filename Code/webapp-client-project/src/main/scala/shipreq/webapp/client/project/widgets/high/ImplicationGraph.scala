@@ -43,7 +43,7 @@ object ImplicationGraph {
 
     override def enrich(p: Props): Callback =
       Callback {
-        val root = $.getDOMNode()
+        val root = $.getDOMNode
         val nodes = root.querySelectorAll("g.node")
         for (node <- nodes.iterator.map(_.domCast[svg.G])) {
           val pubid = node.querySelector("text").textContent
@@ -69,7 +69,7 @@ object ImplicationGraph {
       }
   }
 
-  val Component = ReactComponentB[Props]("ImplicationGraph")
+  val Component = ScalaComponent.build[Props]("ImplicationGraph")
     .graphState
     .renderBackend[Backend]
     .configure(graphConfig)
