@@ -23,11 +23,11 @@ object FilterDeadButton {
       btn.tag(popup)
     }
 
-  type Props = ReusableVar[FilterDead]
+  type Props = StateSnapshot[FilterDead]
 
   private def render(props: Props) = {
     val fd = props.value
-    renderButton(fd)(^.onClick --> props.set(!fd))
+    renderButton(fd)(^.onClick --> props.setState(!fd))
   }
 
   val Component = ScalaComponent.build[Props]("FilterDeadButton")

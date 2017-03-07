@@ -64,5 +64,5 @@ object Editors {
   def renderWithError[A,B,M[_],S,C,D](editor: Editor[A,B,M,S,C,D,VdomElement], err: Option[String]): Editor[A,B,M,S,C,D,VdomElement] =
     Editor(i => <.div(
       editor render i,
-      err.map(e => <.div(^.cls := "errorMsg", e))))
+      err.whenDefined(e => <.div(^.cls := "errorMsg", e))))
 }

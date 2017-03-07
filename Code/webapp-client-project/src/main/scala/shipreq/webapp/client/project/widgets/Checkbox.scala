@@ -28,7 +28,7 @@ object Checkbox {
   def filterDead(set: FilterDead => Callback) =
     Checkbox(filterDeadChecked)(set, _ => chk => <.label(chk, UiText.Life.showDead))
 
-  def filterDead_$($: CompState.Access[FilterDead]): () => VdomElement = {
+  def filterDead_$($: StateAccessPure[FilterDead]): () => VdomElement = {
     val component = filterDead($ setState _)
     () => component($.state.runNow())
   }

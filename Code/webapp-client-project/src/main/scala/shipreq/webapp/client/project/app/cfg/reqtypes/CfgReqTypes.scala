@@ -6,7 +6,7 @@ import scala.language.reflectiveCalls
 import scalacss.ScalaCssReact._
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
-
+import shipreq.base.util.MutableArray
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._, DataImplicits._
@@ -17,7 +17,7 @@ import shipreq.webapp.client.base.data.On
 import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.cfg.shared._
-import shipreq.webapp.client.project.app.state.{ClientData, ChangeListener}
+import shipreq.webapp.client.project.app.state.{ChangeListener, ClientData}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.Widgets
 
@@ -94,8 +94,8 @@ object CfgReqTypes {
                 if (oldMnemonics.isEmpty)
                   mnemonic
                 else
-                  Seq(mnemonic, <.div(Style.cfg.deadMnemonic, oldMnemonics.toStream.map(_.value).sorted.mkString(", ")))
-              Seq(mn, name, impReq, usage)
+                  TagMod(mnemonic, <.div(Style.cfg.deadMnemonic, MutableArray(oldMnemonics.iterator.map(_.value)).sort.mkString(", ")))
+              Seq(mn, name, impReq, usage.whenDefined)
           }
         }
 
@@ -123,7 +123,7 @@ object CfgReqTypes {
     }
 
     val outer =
-      cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead set fd))
+      cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead setState fd))
 
     def render: VdomElement = {
       Px.refresh(project, filterDead, usageShow)

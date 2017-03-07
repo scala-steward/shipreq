@@ -18,13 +18,13 @@ object EditTheme {
       ^.title := UiText.doubleClickToEdit)
 
   def editableInline(startEdit: Callback): TagMod =
-    editableInline + (^.onDblClick --> startEdit)
+    editableInline(^.onDblClick --> startEdit)
 
   def editableInline(startEdit: Option[Callback]): TagMod =
     startEdit.fold(EmptyVdom)(editableInline(_))
 
-  def autosizeTextarea(ref: String, validity: Validity, value: String, tagMod: TagMod): VdomElement =
-    AutosizeTextarea.withRef(ref)(
+  def autosizeTextareaProps(validity: Validity, value: String, tagMod: TagMod): TagMod =
+    TagMod(
       BaseStyles.textEditor(validity),
       ^.value := value,
       tagMod)

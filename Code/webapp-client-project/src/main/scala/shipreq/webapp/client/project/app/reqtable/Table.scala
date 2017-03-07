@@ -115,7 +115,7 @@ object Table {
               p.selection.total.checkboxAndOnClick)
 
           val cols =
-            content.items.map { i =>
+            content.items.toVdomArray { i =>
               val c = i.data
               val live = c match {
                 case Column.DeletionReason => Live // Don't render this title with strike-through
@@ -127,8 +127,7 @@ object Table {
                 ^.tabIndex   := -1,
                 ^.onKeyDown ==> dataColKeyDown(c),
                 ^.onClick   --> p.clickSort(c),
-                name(c)
-              )
+                name(c))
             }
 
           <.thead(
@@ -260,7 +259,7 @@ object Table {
     def renderAsyncEditorOrValue(p: CellProps, view: => TagMod): TagMod = {
       def view2: TagMod =
         p.startEdit match {
-          case Some(_) => view + editableInline
+          case Some(_) => TagMod(editableInline, view)
           case None    => view
         }
       p.editState.renderOr(p.asyncState)(view2)

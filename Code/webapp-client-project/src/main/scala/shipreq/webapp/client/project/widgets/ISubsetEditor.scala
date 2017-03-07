@@ -85,7 +85,7 @@ object ISubsetEditor {
         val as = preprocess(i.head #:: i.tail.toStream)
         val ns = as.map(renderValue)
         val vs = ns.head #:: ns.tail.flatMap(v => Stream[VdomNode](", ", v))
-        (prefix + ": ") #:: vs #::: Stream[VdomNode](".")
+        ((prefix + ": ") #:: vs #::: Stream[VdomNode](".")).toTagMod
       }
 
       val values: TagMod = m.value match {
@@ -95,15 +95,14 @@ object ISubsetEditor {
       }
 
       val editButton =
-        m.startEdit.map(cb =>
+        m.startEdit.whenDefined(cb =>
           <.button(^.onClick --> cb, "Edit"))
 
-      val all = editButton.fold[TagMod](values)(btn => Seq(values, btn))
-      <.div(all)
+      <.div(values, editButton)
     }
 
     val inputRadio =
-      <.input(^.`type` := "radio", ^.name := radioGroupName)
+      <.input.radio(^.name := radioGroupName)
 
     def renderEditMode(mode: EditMode[A]): VdomElement = {
       import mode.state
@@ -133,10 +132,10 @@ object ISubsetEditor {
               val u = state.values.ifelse(_ => selected, _ - a, _ + a)
               state.copy(values = u)
             } >>= mode.update
-          (^.checked := selected) + (^.onChange --> change)
+          TagMod(^.checked := selected, ^.onChange --> change)
         }
 
-        allValueStatic.map { p =>
+        allValueStatic.toTagMod { p =>
           val selected = state.values contains p.value
           <.label(
             ^.classSet1("isubsetV", "checked" -> selected),
@@ -157,8 +156,8 @@ object ISubsetEditor {
           ^.onClick --> mode.finishEdit(None))
 
       <.div(
-        <.div(methodSelection),
-        allowValueSelection ?= <.div(valueSelection),
+        <.div(methodSelection: _*),
+        <.div(valueSelection).when(allowValueSelection),
         <.div(saveButton, cancelButton))
     }
   }

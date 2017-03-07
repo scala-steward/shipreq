@@ -59,7 +59,7 @@ object ContentEditorFeature {
    * @tparam S The top-most state.
    * @tparam P Preview key.
    */
-  case class Static[S, P]($               : CompState.Access[S],
+  case class Static[S, P]($               : StateAccessPure[S],
                           previewFeature  : PreviewFeature[S, P],
                           pxProject       : Px[Project],
                           pxPlainText     : Px[PlainText.ForProject],
@@ -663,7 +663,7 @@ object ContentEditorFeature {
       */
     abstract class InitChild[K, P] {
       type Parent
-      val parent    : CompState.Access[Parent]
+      val parent    : StateAccessPure[Parent]
       val editorLens: K => Option[Lens[Parent, D0.State]]
       val preview   : PreviewFeature[Parent, P]
 
@@ -749,7 +749,7 @@ object ContentEditorFeature {
      */
     abstract class InitChild[K2, K1, P] {
       type Parent
-      val parent    : CompState.Access[Parent]
+      val parent    : StateAccessPure[Parent]
       val editorLens: (K2, K1) => Option[Lens[Parent, D0.State]]
       val preview   : PreviewFeature[Parent, P]
 

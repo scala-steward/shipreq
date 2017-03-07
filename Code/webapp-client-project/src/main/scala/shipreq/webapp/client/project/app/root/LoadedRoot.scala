@@ -3,6 +3,8 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.vdom.Implicits._
+import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
@@ -53,7 +55,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       import ContentEditorFeature._
       new D2.InitChild[reqtable.Row, reqtable.Column, reqtable.FocusId] {
         override type Parent    = State
-        override val parent     = $: CompState.Access[Parent]
+        override val parent     = $
         override val preview    = previewFeature.mapK(FocusId.ToReqTable)
         override val editorLens =
           (r: reqtable.Row, c: reqtable.Column) =>
@@ -70,7 +72,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       reqDetailRC,
       $ zoomStateL State.reqTable))
 
-    val pxReqDetailId = Px(None: Option[ReqId]).withReuse.manualUpdate
+    val pxReqDetailId = Px[Option[ReqId]](None).withReuse.manualUpdate
 
     val pxReqDetailReqProps: Px[Option[State => ReqDetail.ReqProps]] =
       pxReqDetailId.map(_.map { id =>
@@ -89,7 +91,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
         val initEditor =
           new D1.InitChild[reqdetail.Cell, reqdetail.Cell] {
             override type Parent    = State
-            override val parent     = $: CompState.Access[Parent]
+            override val parent     = $
             override val preview    = previewFeature.mapK(focusIdToCell)
             override val editorLens =
               (c: reqdetail.Cell) =>
@@ -119,7 +121,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       pxPlainText, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
-      Reusable.fn($.zoomStateL(State.reqDetail) setState _)
+      Reusable.fn.state($ zoomStateL State.reqDetail).set
 
     val usageShow =
       Usage.Show((fd, fs) =>
@@ -150,7 +152,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
 
         case Page.Index =>
           val lookup = ReqLookupPrompt.Props(
-            StateSnapshot(s.reqLookup)($.zoomStateL(State.reqLookup) setState _), // TODO Pending scalajs-react release
+            StateSnapshot.zoomL(State.reqLookup)(s).setStateVia($),
             Allow <~ _.lookup(cd.project()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
@@ -158,7 +160,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
 
           val pname = ProjectItem.WithEditableName.Props(
             cd.projectSummary(),
-            StateSnapshot(s.projectName)($.zoomStateL(State.projectName) setState _), // TODO Pending scalajs-react release
+            StateSnapshot.zoomL(State.projectName)(s).setStateVia($),
             projectNameAAF,
             setProjectNameIO)
 

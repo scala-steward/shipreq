@@ -2,6 +2,7 @@ package shipreq.webapp.client.project.lib
 package edit
 
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.internal.JsUtil
 import org.scalajs.dom.ext.KeyCode
 import scala.scalajs.js, js.Dynamic
 import org.scalajs.dom.document
@@ -50,7 +51,7 @@ object AutoCompleteTest extends TestSuite {
     val n = document.createElement("textarea").asInstanceOf[HTMLTextAreaElement]
     document.body.appendChild(n) // https://github.com/ariya/phantomjs/issues/12493
     val e = new Editor(n)
-    AutoCompleteFeature.lowLevelInstall(n, ac.toJsArray, e.setState).runNow()
+    AutoCompleteFeature.lowLevelInstall(n, JsUtil jsArrayFromTraversable ac, e.setState).runNow()
     e
   }
 

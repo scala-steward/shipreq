@@ -54,7 +54,7 @@ object Breadcrumb {
           dropdown(
             title, nbsp, Icon.Dropdown.tag,
             dropdownMenu(
-              items.map(_.tag))))
+              items.toTagMod(_.tag))))
     }
 
     case class LinkAndDropdown(a: VdomTagOf[html.Anchor], items: Dropdown.Items) extends Item {
@@ -65,7 +65,7 @@ object Breadcrumb {
             dropdown(
               nbsp, Icon.Dropdown.tag,
               dropdownMenu(
-                items.map(_.tag)))))
+                items.toTagMod(_.tag)))))
     }
   }
 

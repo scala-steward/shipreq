@@ -97,9 +97,9 @@ object ProjectIndex {
     private val dimIt = "xd"
 
     def enableDimmer: Callback =
-      Callback {
+      $.getDOMNode.map { node =>
         val opt = js.Dynamic.literal(on = "hover")
-        JQuery($.getDOMNode).find("." + dimIt).dimmer(opt)
+        JQuery(node).find("." + dimIt).dimmer(opt)
       }
 
     def renderCard(p: Props, cat: Category, item: Item): TagMod = {
@@ -141,14 +141,14 @@ object ProjectIndex {
       val header = Header(headerStyle, cat.icon, cat.title)
 
       val cards = <.div(^.cls := "ui cards three", *.cardsCont,
-        cat.items.whole.map(renderCard(p, cat, _)))
+        cat.items.whole.toTagMod(renderCard(p, cat, _)))
 
-      header + cards
+      TagMod(header, cards)
     }
 
     def render(p: Props): VdomElement =
       <.section(
-        Category.All.foldLeft(EmptyVdom)((q, c) => q + renderCategory(p, c)))
+        Category.All.whole.toTagMod(renderCategory(p, _)))
   }
 
   val Component = ScalaComponent.build[Props]("Index")

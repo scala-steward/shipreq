@@ -64,7 +64,7 @@ object EditorTest extends TestSuite {
     testSimpleEditor(e)(OnEditFinished(b), OnEditFinished(onEditFinished))
   }
 
-  def testUpdateRevert[P,B,N<:TopNode](c: ReactComponentM[P, NewAndSavedRowState, B, N]): Unit = {
+  def testUpdateRevert[P, B](c: ScalaComponent.MountedImpure[P, NewAndSavedRowState, B]): Unit = {
 //    val c = ReactTestUtils.renderIntoDocument(Component(props))
 
     def test(tgtCss: String, revertable: Boolean, teste: String => Unit, testn: => Unit): Unit = {

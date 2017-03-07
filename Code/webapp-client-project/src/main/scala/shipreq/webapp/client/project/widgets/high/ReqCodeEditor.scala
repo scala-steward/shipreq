@@ -1,8 +1,9 @@
 package shipreq.webapp.client.project.widgets.high
 
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react._, vdom.html_<^._
-import shipreq.base.util.{Ref => _, _}
+import japgolly.scalajs.react.extra._
+import org.scalajs.dom.html
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
@@ -52,16 +53,16 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
   implicit lazy val reusabilityProps: Reusability[Props] =
     Reusability.never // TODO Reusability.caseClass
 
-  private val editorRef = Ref.to(AutosizeTextarea.Component, "i")
-
   final class Backend($: BackendScope[Props, Unit]) {
     private val pxTrie = Px.props($).map(_.trie).withReuse.autoRefresh
 
     val pxAutoComplete = pxTrie.map(t =>
       AutoComplete.reqCode.prefixes(t))
 
-    def getTextarea() =
-      editorRef($).get.getDOMNode
+    private val editorRef = ScalaComponent.mutableRefTo(AutosizeTextarea.Component)
+
+    def getTextarea(): html.TextArea =
+      editorRef.value.getDOMNode.domCast
 
     val textareaConst: TagMod = {
       val keys =
@@ -70,7 +71,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
-          p.status.wrapEdit(p.edit.set(liveCorrect(e.target.value))))
+          p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value))))
 
       TagMod(
         ^.autoFocus := true,
@@ -81,7 +82,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
     def render(p: Props) = {
       def editor(validity: Validity): VdomElement =
-        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -102,7 +103,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,
-        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.set))
+        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.setState))
       .build
 }
 

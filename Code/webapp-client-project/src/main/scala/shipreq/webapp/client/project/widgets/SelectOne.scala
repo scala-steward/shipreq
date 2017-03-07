@@ -27,7 +27,6 @@ object SelectOne {
   def Component[A: Equal] =
     ScalaComponent.build[Props[A]]("SelectOne")
       .render_P(render(_))
-      .domType[HTMLSelectElement]
       .build
 
   def render[A](props: Props[A])(implicit E: Equal[A]): VdomTag = {
@@ -35,14 +34,13 @@ object SelectOne {
     val (options, selectedValue) = {
       var sel = -1
       var i = 0
-      var j = js.Array[VdomNode]()
+      val j = VdomArray.empty()
       props.choices.foreach { c =>
-        j.push(
-          <.option(
-            ^.value    := i,
-            ^.key      := i,
-            ^.disabled := (c.enabled :: Disabled),
-            c.label))
+        j += <.option(
+          ^.value := i,
+          ^.key := i,
+          ^.disabled := (c.enabled :: Disabled),
+          c.label)
         if (sel == -1 && E.equal(c.value, props.selected))
           sel = i
         i += 1

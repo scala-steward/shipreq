@@ -5,7 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import scalajs.js.{Array => JArray}
+import scalajs.js
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
@@ -54,7 +54,7 @@ object UseCaseStepTree {
     val pos        = uc.pubid.pos
     val stepFilter = stepFilterM(filterDead)
 
-    val results = new JArray[VdomNode]
+    val results = VdomArray.empty()
 
     steps.tree.subtreeLocAndValueIterator(treeFilter, (loc, step) => {
       val partialLoc = steps.partialLocs.forward(loc)
@@ -67,7 +67,7 @@ object UseCaseStepTree {
           stepBodyBase(
             renderBody(id, live, TextAndFlow(step.titleA(uc), flow(_)(id))))
 
-        def ctrls =
+        def ctrls: VdomElement =
           uc.liveUC match {
             case Live =>
               val cellCtrls = Cell.UseCaseStepCtrls(id)
@@ -83,12 +83,12 @@ object UseCaseStepTree {
               UseCaseStepControls.renderStepWhenUseCaseDead
           }
 
-        results.push(
+        results +=
           <.div(*.container,
             ^.key := fullLabel,
             UseCaseStepRow.Label.Props(field, fullLabel, partialLoc).render,
             text,
-            ctrls))
+            ctrls)
       }
     }).drain()
 
@@ -102,7 +102,7 @@ object UseCaseStepTree {
       val as    = asyncState(cell)
       val bd    = UseCaseStepControls.ButtonDesc(cb, "Create " + lbl)
       val ctrls = UseCaseStepControls.renderTailStep(bd, as)
-      results push tailStepBase(ctrls)
+      results  += tailStepBase(ctrls)
     }
 
     <.div(results)

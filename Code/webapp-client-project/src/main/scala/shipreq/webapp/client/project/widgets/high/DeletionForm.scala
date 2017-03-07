@@ -336,7 +336,7 @@ object DeletionForm {
 
         val sel = if (indent == 0) None else Some(selAll(req.id))
 
-        val td = <.td(*.row(live), sel.map(_.onClick))
+        val td = <.td(*.row(live), sel.whenDefined(_.onClick))
 
         val reqTitle =
           <.span(

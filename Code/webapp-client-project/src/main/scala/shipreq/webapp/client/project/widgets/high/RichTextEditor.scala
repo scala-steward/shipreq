@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.widgets.high
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Validity
 import shipreq.base.util.ScalaExt._
@@ -48,8 +49,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.never // TODO Reusability.caseClass
 
-  private val editorRef = Ref.to(AutosizeTextarea.Component, "i")
-
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(text)
 
@@ -68,7 +67,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
-          p.status.wrapEdit(p.edit.set(liveCorrect(e.target.value)) >> p.preview.onEdit))
+          p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value)) >> p.preview.onEdit))
 
       TagMod(
         ^.autoFocus := true,
@@ -79,13 +78,15 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         keys)
     }
 
-    def getTextarea() =
-      editorRef($).get.getDOMNode
+    val editorRef = ScalaComponent.mutableRefTo(AutosizeTextarea.Component)
+
+    def getTextarea(): html.TextArea =
+      editorRef.value.getDOMNode.domCast
 
     def render(p: Props) = {
 
       def editor(validity: Validity): VdomElement =
-        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -109,7 +110,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,
-        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.set))
+        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.setState))
       .build
 }
 
@@ -134,7 +135,7 @@ object RichTextEditor {
 
   def renderPreview(pf: PreviewFeature.ForChild, show: => Boolean, view: => VdomNode): VdomNode =
     pf.reactCollapse(show)(
-      <.div(*.richTextPreview, ^.ref := "p",
+      <.div(*.richTextPreview,
         <.div(*.richTextPreviewHeader, "Preview"),
         <.div(*.richTextPreviewBody, view)))
 

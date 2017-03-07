@@ -2,7 +2,6 @@ package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._, vdom.html_<^._
 import japgolly.univeq._
-import org.scalajs.dom
 import scalaz.Equal
 import scalaz.syntax.equal._
 import shipreq.webapp.client.base.data.{Off, On}
@@ -65,7 +64,6 @@ final class OrderedSubsetEditor[A: Equal] {
     ScalaComponent.build[Props]("OrderedSubsetEditor")
       .initialState(DND.Parent.initialState[A])
       .renderBackend[Backend]
-      .domType[dom.html.OList]
       .build
 
   final class Backend($: BackendScope[Props, DND.Parent.PState[A]]) {
@@ -98,10 +96,10 @@ final class OrderedSubsetEditor[A: Equal] {
       p.update(move(p.state)(from, to))
 
     def render(p: Props) = {
-      val rows: Stream[VdomElement] =
-        p.state.all.toStream
+      val rows =
+        p.state.all.iterator
           .filter(p filter _._1)
-          .map(t => li(p)(t._1, t._2))
+          .toVdomArray(t => li(p)(t._1, t._2))
 
       <.ol(^.cls := "ordsubset", rows)
     }

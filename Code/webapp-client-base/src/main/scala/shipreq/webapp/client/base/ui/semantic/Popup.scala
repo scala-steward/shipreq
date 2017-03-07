@@ -30,6 +30,6 @@ object Popup {
       tooltip := text
 
     def apply(text: String, position: Position): TagMod =
-      (tooltip := text) + position.toReact
+      TagMod(tooltip := text, position.toReact)
   }
 }

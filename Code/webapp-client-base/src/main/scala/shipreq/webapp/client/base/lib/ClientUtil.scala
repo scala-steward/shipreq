@@ -33,7 +33,8 @@ object ClientUtil {
 
   def renderVector[A, B](as: Vector[A], separator: TagMod)(renderEach: A => B)(implicit g: B => TagMod): VdomTag =
     <.span(
-      NonEmptyVector.option(as)
-        .map(_.intercalateF(separator)(g compose renderEach).whole))
+      NonEmptyVector.option(as).whenDefined(as =>
+        TagMod.fromTraversableOnce(
+          as.intercalateF(separator)(g compose renderEach).whole)))
 
 }

@@ -13,7 +13,7 @@ object ColumnsEditor {
   val checkboxList =
     new CheckboxList[Column](checkboxes =>
       <.div(
-        checkboxes map (<.div(_))))
+        checkboxes.toTagMod(<.div(_))))
 
   case class Props(on          : NonEmptySet[Column],
                    toggle      : Column ~=> Callback,
@@ -25,11 +25,11 @@ object ColumnsEditor {
 
   private def render(p: Props) = {
     val items =
-      p.all.toStream
+      p.all.iterator
         .filter(!Column.isMandatory(_))
         .map(c => CheckboxList.Item(c, p.columnNames(c), On <~ p.on.contains(c), Enabled))
-        .sortBy(_.label)
         .toVector
+        .sortBy(_.label)
 
     val p2 = CheckboxList.Props(items, p.toggle)
     checkboxList.Component(p2)

@@ -24,6 +24,8 @@ object GraphComponent {
 
   type State = Option[SVG]
 
+  def initialState: State = None
+
   abstract class GraphBackend[Props <: HasWebWorker]($: BackendScope[Props, State]) {
 
     def cmd(p: Props): Cmd[SVG]
@@ -44,13 +46,8 @@ object GraphComponent {
       }
   }
 
-  @inline implicit class ReactCompBExt[P](private val self: ReactComponentB.P[P]) extends AnyVal {
-    def graphState = self.initialState[State](None)
-  }
-
-  def graphConfig[P <: HasWebWorker : Reusability, B <: GraphBackend[P], N <: TopNode] =
-    (_: ScalaComponent.build[P, State, B, N])
-      .configure(Reusability.shouldComponentUpdate)
+  def graphConfig[P <: HasWebWorker : Reusability, C <: Children, B <: GraphBackend[P]]: ScalaComponentConfig[P, C, State, B] =
+    _.configure(Reusability.shouldComponentUpdate)
       .componentWillMount($ => $.backend.refresh($.props))
       .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.backend.refresh(i.nextProps)))
       .componentDidMount($ => $.backend.onRender($.props, $.state))

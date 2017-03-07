@@ -32,7 +32,7 @@ object CfgFields {
                          clientData: ClientData,
                          filterDead: StateSnapshot[FilterDead]) {
 
-    def component: ReactComponentU_ = MainTable.Component(this)
+    def component = MainTable.Component(this)
   }
 
   implicit val reusability = Reusability.caseClass[Props]
@@ -299,7 +299,7 @@ private[fields] object MainTable {
         abortNewButton($ modState abortNew)
     }
 
-    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead set v))
+    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead setState v))
 
     def render(fd: FilterDead, s: S) =
       <.div(
@@ -307,7 +307,7 @@ private[fields] object MainTable {
         filterDeadCheckbox(fd),
         <.table(
           headerRow,
-          <.tbody(renderNewField(s), renderFields(fd, s))))
+          <.tbody(renderNewField(s).whenDefined, renderFields(fd, s))))
 
     def renderNewField(s: S): Option[VdomElement] =
       customFieldRenderers.map(_ renderNewO s).flatMap(_.toStream).headOption
@@ -329,7 +329,7 @@ private[fields] object MainTable {
 
     val renderField: Field => VdomElement = {
       implicit val fieldEquivalence = Equal.equalBy((_: Field).fieldId)
-      f => DraggableFieldRow.set(key = f.fold[JsAny](_.name, _.id.value))(DND.Parent.cProps2(dndState, f, orderIO))
+      f => DraggableFieldRow.withKey(f.fold[Key](_.name, _.id.value))(DND.Parent.cProps2(dndState, f, orderIO))
     }
 
     val DraggableFieldRow = DND.Child.dndItemComponent[Field]((outerAttr, dragHandle, f) =>
@@ -347,7 +347,7 @@ private[fields] object MainTable {
         refkey     = renderKeyO(f.keyO),
         mandatory  = staticMandatoryCheckbox(f.mandatory),
         reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-        ctrls      = (f.deletable :: Deletable) ?= protocol.value().staticDeletion.button(f, Delete)
+        ctrls      = protocol.value().staticDeletion.button(f, Delete).when(f.deletable :: Deletable)
       )(f.fieldType)
 
     def renderKeyO(k: Option[FieldRefKey]): TagMod =
@@ -356,7 +356,7 @@ private[fields] object MainTable {
     def renderRow(rs: RowStatus)(dragHandle: UndefOr[VdomTag], name: TagMod, refkey: TagMod, mandatory: TagMod,
                                  reqtypes: TagMod, ctrls: => TagMod)(implicit ftype: FieldType): VdomTag =
       <.tr(^.cls := rowStatusRowClass(rs),
-        <.td(^.cls := "dndh", dragHandle),
+        <.td(^.cls := "dndh", dragHandle.whenDefined),
         <.td(^.cls := "name", name),
         <.td(ftype.name),
         <.td(^.cls := "key", refkey),

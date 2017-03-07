@@ -37,7 +37,7 @@ object CfgTags {
                    remote    : TagCrud.Fn.Instance,
                    clientData: ClientData,
                    filterDead: StateSnapshot[FilterDead]) {
-    def component: ReactComponentU_ = MainTable.Component(this)
+    def component = MainTable.Component(this)
   }
   implicit val reusability = Reusability.caseClass[Props]
 }
@@ -235,21 +235,20 @@ private[tags] object MainTable {
     def rows(fd: FilterDead, s: State): TagMod = {
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
       val flatTree  = FlatTag.flatten(s.tagTree)(fd.filterFnBy[Tag](_.live), FilterPolicy.OmitAnythingWithBadParent)
-      val results   = JsArray.apply[VdomNode]()
-      @inline def append(r: VdomNode): Unit = results push r
+      val results   = VdomArray.empty()
 
       // New row
-      tg_renderer.newRow(s) foreach append
-      at_renderer.newRow(s) foreach append
+      tg_renderer.newRow(s) foreach results.+=
+      at_renderer.newRow(s) foreach results.+=
 
       // Saved rows
       flatTree.foreach(row =>
-        append(renderers(row.id)(row.key, indentation(row.depth))))
+        results += renderers(row.id)(row.key, indentation(row.depth)))
 
       results
     }
 
-    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead set v))
+    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead setState v))
 
     def render(p: Props, s: State): VdomElement = {
       val fd = p.filterDead.value
@@ -311,7 +310,7 @@ private[tags] object MainTable {
           <.td(mutexChildren),
           <.td(^.cls := "desc", desc),
           <.td(
-            focus.map(_.component),
+            focus.whenDefined(_.component),
             rowStatusCtrls(rs, ctrls)))
       }
 

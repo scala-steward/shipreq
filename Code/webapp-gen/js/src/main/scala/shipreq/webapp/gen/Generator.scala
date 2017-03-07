@@ -1,6 +1,7 @@
 package shipreq.webapp.gen
 
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.VdomElement
 import scala.scalajs.LinkingInfo.productionMode
 
 case class Scala(content: String) extends AnyVal

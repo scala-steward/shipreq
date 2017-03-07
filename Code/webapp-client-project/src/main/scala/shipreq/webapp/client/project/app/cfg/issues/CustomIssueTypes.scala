@@ -110,7 +110,7 @@ private[issues] object CustomIssueTypes {
 
           override def render = {
             case (key, desc, usage) =>
-              Seq(key, desc, usage)
+              Seq(key, desc, usage.whenDefined)
         }
       }
 
@@ -132,7 +132,7 @@ private[issues] object CustomIssueTypes {
     }
 
     val outer =
-      cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead set fd))
+      cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead setState fd))
 
     def render: VdomElement = {
       Px.refresh(project, filterDead, usageShow)

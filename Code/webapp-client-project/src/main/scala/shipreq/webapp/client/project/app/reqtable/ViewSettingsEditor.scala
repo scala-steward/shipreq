@@ -4,9 +4,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import japgolly.microlibs.nonempty.NonEmptySet
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.ProjectConfig
+import shipreq.webapp.base.data.{FilterDead, ProjectConfig}
 import shipreq.webapp.client.project.app.Style.{reqtable => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.Checkbox
@@ -35,13 +34,13 @@ object ViewSettingsEditor {
           if (vs.isVisible(c))
             vs.columns.filterNot(_ ==* c) // Turn off
           else
-            Some(vs.columns :+ c)       // Turn on
+            Some(vs.columns :+ c)         // Turn on
         val newVS = vs setColumns newCols.getOrElse(vs.columns)
-        p.vs set newVS
+        p.vs setState newVS
       })
 
     val filterDeadEditor = Checkbox.filterDead(
-      Reusable.fn.byName($.props.runNow().vs.mod).endoCall(_.setFilterDead))
+      Reusable.fn((fd: FilterDead) => $.props.runNow().vs.modState(_ setFilterDead fd)))
 
     val th = <.th(*.viewSettingsHeader)
 
@@ -71,7 +70,7 @@ object ViewSettingsEditor {
             <.td(
               <.div(
                 filterDeadEditor(vs.filterDead),
-                p.filter))
+                p.filter.value))
       )))
     }
   }

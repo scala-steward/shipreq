@@ -103,7 +103,7 @@ final class ProjectWidgets private(project    : Project,
 
         reqDetailRC.link(ep)(
           styleMemo(live),
-          ^.title := titleFn(req),
+          ^.title :=? titleFn(req),
           txt)
       }
 
@@ -182,7 +182,7 @@ final class ProjectWidgets private(project    : Project,
     def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): VdomElement =
       <.span(
         style,
-        ^.title := title,
+        ^.title :=? title,
         G.reflinkSurround(PlainText reqCode c))
 
     ProjectText.resolveReqCode(id, project.reqCodes) match {
@@ -229,7 +229,7 @@ final class ProjectWidgets private(project    : Project,
       case Plain         => keyTxt
     }
     <.span(
-      desc.nonEmpty ?= (^.title := desc),
+      (^.title := desc).when(desc.nonEmpty),
       displayTxt)
   }
 
@@ -253,7 +253,7 @@ final class ProjectWidgets private(project    : Project,
 
   def katex(m: Atom.PlainTextMarkup#MathTeX) =
     try
-      <.span(*.math, ^.dangerouslySetInnerHtml := KaTeX renderToStringUnsafe m.value)
+      <.span(*.math, ^.dangerouslySetInnerHtml := KaTeX.renderToStringUnsafe(m.value))
     catch {
       case _: Throwable => <.span(*.mathFail, UiText.mathFailed)
     }
@@ -268,7 +268,7 @@ final class ProjectWidgets private(project    : Project,
       case a: PlainTextMarkup # WebAddress     => <.a(^.href := a.value, a.value)
       case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
       case a: PlainTextMarkup # MathTeX        => katex(a)
-      case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.map(row => <.li(row map atom: _*)))
+      case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
       case a: ReqRef          # ReqRef         => reqRefInValidText(a.value)
       case a: ReqRef          # CodeRef        => codeRef(a.value)
       case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
@@ -288,18 +288,18 @@ final class ProjectWidgets private(project    : Project,
     if (indentation.isDefined)
       code = G.reqCode.nodeSeparator ~ code
     <.div(
-      indentation map reqCodeTreeIdentation,
+      indentation.whenDefined(reqCodeTreeIdentation),
       <.pre(*.reqCodeTreeCode, code))
   }
 
   def reqCodeTree(items: Vector[ReqCodeTreeItem]): TagMod =
-    items map reqCodeTreeItem
+    items toTagMod reqCodeTreeItem
 
   def flatReqCode(c: ReqCode.Value): VdomElement =
     <.pre(*.reqCodeFlat, PlainText reqCode c)
 
   def flatReqCodes(reqCodes: TraversableOnce[ReqCode.Value]): TagMod =
-    reqCodes map flatReqCode
+    reqCodes toTagMod flatReqCode
 
   def reqCodes(tree: Vector[ReqCodeTreeItem], flat: Vector[ReqCode.Value]): VdomElement =
     <.div(
@@ -326,7 +326,7 @@ final class ProjectWidgets private(project    : Project,
       if (ca.isEmpty)
         None
       else
-        Some(stepFlowArrow(dir)(f(ca)))
+        Some(stepFlowArrow(dir)(f(ca): _*))
     }
 
     val List(f1, f2) = UseCaseStepFlowText.DefaultArrowOrder.map(stepFlow)
@@ -338,7 +338,7 @@ final class ProjectWidgets private(project    : Project,
         <.tbody(
           <.tr(
             <.td(*.useCaseStepLayoutCell, text),
-            <.td(*.useCaseStepLayoutCell, f1, f2))))
+            <.td(*.useCaseStepLayoutCell, f1.whenDefined, f2.whenDefined))))
   }
 
   private val useCaseStepLabelMemo: UseCaseStep.Focus => VdomTag =

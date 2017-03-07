@@ -60,7 +60,7 @@ object CreationInterface {
 // =====================================================================================================================
 import CreationInterface._
 
-class CreationInterface($               : CompState.Access[State],
+class CreationInterface($               : StateAccessPure[State],
                         previewFeature  : Preview.ForChildren,
                         pxProject       : Px[Project],
                         pxProjectText   : Px[PlainText.ForProject],
@@ -101,13 +101,13 @@ class CreationInterface($               : CompState.Access[State],
     <.div(
       "Create ",
       selectComponent(selProps),
-      s.selectedType map detail)
+      s.selectedType.whenDefined(detail))
   }
 
-  def ctrls(create: Option[Callback], status: Status, setStatus: Status => Callback): TagMod = {
-    val c: TagMod = createButton(create)
-    failureNotice(status, setStatus).fold(c)(c + _)
-  }
+  def ctrls(create: Option[Callback], status: Status, setStatus: Status => Callback): TagMod =
+    TagMod(
+      createButton(create),
+      failureNotice(status, setStatus).whenDefined)
 
   def createButton(create: Option[Callback]) =
     <.button(
@@ -136,10 +136,10 @@ class CreationInterface($               : CompState.Access[State],
 
   object CreateReqCodeGroup {
 
-    val $$ = $ zoomStateL State.rcg
-    val setStatus  = $$ zoomStateL CreateReqCodeGroupState.status  setState (_: Status)
-    val setReqCode = Reusable.fn($$ zoomStateL CreateReqCodeGroupState.reqCode setState (_: String))
-    val setTitle   = Reusable.fn($$ zoomStateL CreateReqCodeGroupState.title   setState (_: String))
+    val $$: StateAccessPure[CreateReqCodeGroupState] = $ zoomStateL State.rcg
+    val setStatus  = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.status ).set
+    val setReqCode = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.reqCode).set
+    val setTitle   = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.title  ).set
 
     val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
 
@@ -195,12 +195,12 @@ class CreationInterface($               : CompState.Access[State],
   // ===================================================================================================================
 
   object CreateReqShared {
-    val $$ = $ zoomStateL State.req
-    val setStatus   = $$ zoomStateL CreateReqState.status   setState (_: Status)
-    val setImp      = Reusable.fn($$ zoomStateL CreateReqState.imp      setState (_: String))
-    val setReqCodes = Reusable.fn($$ zoomStateL CreateReqState.reqCodes setState (_: String))
-    val setTitle    = Reusable.fn($$ zoomStateL CreateReqState.title    setState (_: String))
-    val setTags     = Reusable.fn($$ zoomStateL CreateReqState.tags     setState (_: String))
+    val $$: StateAccessPure[CreateReqState] = $ zoomStateL State.req
+    val setStatus   = Reusable.fn.state($$ zoomStateL CreateReqState.status  ).set
+    val setImp      = Reusable.fn.state($$ zoomStateL CreateReqState.imp     ).set
+    val setReqCodes = Reusable.fn.state($$ zoomStateL CreateReqState.reqCodes).set
+    val setTitle    = Reusable.fn.state($$ zoomStateL CreateReqState.title   ).set
+    val setTags     = Reusable.fn.state($$ zoomStateL CreateReqState.tags    ).set
 
     val pxImpLookup = Px.apply2(pxProject, pxProjectText)(ImplicationEditor.Lookup.all)
 

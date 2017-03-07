@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
-import org.scalajs.dom.raw.HTMLDivElement
 import scalaz.Equal
 import shipreq.webapp.client.base.data.{Disabled, Enabled}
 
@@ -10,7 +9,6 @@ object SelectInvoke {
   def Component[A: Equal](name: String) =
     ScalaComponent.build[Props[A]](name)
       .render_P(render(_))
-      .domType[HTMLDivElement]
       .build
 
   final case class Props[A](selection  : SelectOne.Props[A],

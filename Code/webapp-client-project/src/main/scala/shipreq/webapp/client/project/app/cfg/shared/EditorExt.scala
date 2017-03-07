@@ -5,7 +5,7 @@ import scalaz.{Monad, ~>}
 import shipreq.webapp.base.validation._
 
 abstract class EditorExt {
-  @inline implicit final def ___EditorExt_1    [A,B,M[_],S,C,D,V](e: Editor[A,B,M,S,C,D,V           ]): EditorExt.EditorExt_1    [A,B,M,S,C,D,V] = new EditorExt.EditorExt_1(e)
+  @inline implicit final def ___EditorExt_1    [A,B,M[_],S,C,D,V](e: Editor[A,B,M,S,C,D,V          ]): EditorExt.EditorExt_1    [A,B,M,S,C,D,V] = new EditorExt.EditorExt_1(e)
   @inline implicit final def ___EditorExt_Tag  [A,B,M[_],S,C,D  ](e: Editor[A,B,M,S,C,D,VdomElement]): EditorExt.EditorExt_Tag  [A,B,M,S,C,D  ] = new EditorExt.EditorExt_Tag(e)
   @inline implicit final def ___EditorExt_IITag[I  ,M[_],S,C,D  ](e: Editor[I,I,M,S,C,D,VdomElement]): EditorExt.EditorExt_IITag[I,  M,S,C,D  ] = new EditorExt.EditorExt_IITag(e)
 }
@@ -66,7 +66,7 @@ object EditorExt extends EditorExt {
         }
       )
 
-    def editableByRowStatus(c: CompState.Access[S])(implicit ev: Callback =:= D, M: M ~> CallbackTo, N: Monad[M]): RowStatus => Option[e.Editable] = {
+    def editableByRowStatus(c: StateAccessPure[S])(implicit ev: Callback =:= D, M: M ~> CallbackTo, N: Monad[M]): RowStatus => Option[e.Editable] = {
       val canedit = e.editable(c runState _.st)
       rs => rs match {
         case RowStatus.Sync | RowStatus.Failed(_) => canedit
@@ -85,7 +85,7 @@ object EditorExt extends EditorExt {
       Editor(i => <.label(f(i.data, e render i)))
 
     def labelSuffix(f: A => VdomNode): Editor[A,B,M,S,C,D,VdomElement] =
-      wrapInLabel((a, i) => Seq(i, f(a)))
+      wrapInLabel((a, i) => TagMod(i, f(a)))
 
     def applyInputValidationU(v: ValidatorU[A, _, _]): Editor[A,B,M,S,C,D,VdomElement] =
       renderOptionalError(i => v.correctAndValidateU(i).swap.toOption.map(_.toText))

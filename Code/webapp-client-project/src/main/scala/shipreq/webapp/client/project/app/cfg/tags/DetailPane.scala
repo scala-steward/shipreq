@@ -33,7 +33,7 @@ private[tags] object DetailPane {
   def renderRel(r: Rel, dragHandle: Option[VdomTag]): VdomTag =
     <.li(
       ^.key := r.id.value,
-      dragHandle,
+      dragHandle.whenDefined,
       r.name,
       <.button(
         ^.marginLeft := "2ex",
@@ -75,7 +75,7 @@ private[tags] object DetailPane {
       if (rels.isEmpty)
         <.div(noneMsg)
       else
-        container(rels map li)
+        container(rels.toTagMod(li))
 
     def addableRels(ar: AddRels, buttonLabel: String): TagMod =
       if (ar.rels.isEmpty)

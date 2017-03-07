@@ -23,7 +23,7 @@ object Modal {
         <.div(^.cls := "content", content))
 
     val component =
-      ScalaComponent.static("Modal", render)
+      ScalaComponent.buildStatic("Modal", render)
         .componentDidMount($ => Callback(JQuery($.getDOMNode).modal()))
         .build
 

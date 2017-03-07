@@ -1,7 +1,8 @@
 package shipreq.webapp.client.project.app.cfg
 
 import japgolly.scalajs.react.vdom.html_<^._
-import japgolly.scalajs.react.{CallbackTo, Callback, VdomElement}
+import japgolly.scalajs.react.{CallbackTo, Callback}
+import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.project.app.Assets
 

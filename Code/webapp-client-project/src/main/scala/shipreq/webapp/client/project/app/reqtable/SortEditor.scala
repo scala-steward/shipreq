@@ -61,7 +61,7 @@ object SortEditor {
           val nameResolver = p.nameResolver
           var conclusiveSeen = false
 
-          def renderItem(i:  DragToReorder.Item[SortCriterion]) = {
+          def renderItem(i:  DragToReorder.Item[SortCriterion]): VdomNode = {
             val col = i.data.column
             val conclusive = i.data.isConclusive
             val status =
@@ -90,7 +90,7 @@ object SortEditor {
             <.div(
               *.dragArea,
               content.rootMod,
-              content.items map renderItem)
+              content.items toVdomArray renderItem)
           )
       })
 

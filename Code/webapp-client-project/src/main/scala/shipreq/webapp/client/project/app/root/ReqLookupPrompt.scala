@@ -39,7 +39,7 @@ object ReqLookupPrompt {
   final class Backend($: BackendScope[Props, Unit]) {
 
     def updateText: ReactEventFromInput => Callback =
-      _.extract(_.target.value)(t => $.props.flatMap(_.edit set ExternalPubid.preprocessor(t)))
+      _.extract(_.target.value)(t => $.props.flatMap(_.edit setState ExternalPubid.preprocessor(t)))
 
     def commitOnEnter(commit: Callback): ReactKeyboardEvent => Callback =
       CallbackOption.keyCodeSwitch(_) {

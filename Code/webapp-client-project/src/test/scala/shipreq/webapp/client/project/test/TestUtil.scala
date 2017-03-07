@@ -56,7 +56,7 @@ object TestUtil extends WebappTestUtil with WebappTestEquality {
       sole().asInstanceOf[N]
   }
 
-  implicit def autodomnode(c: CompScope.Mounted[TopNode]) = c.getDOMNode
+  implicit def autodomnode(c: GenericComponent.MountedRaw) = ReactDOM.raw findDOMNode c.raw
 
   val nopJsFn: js.Function0[js.Any] = () => ((): js.Any)
 

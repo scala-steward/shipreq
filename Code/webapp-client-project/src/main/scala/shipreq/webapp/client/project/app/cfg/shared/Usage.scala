@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
 import japgolly.scalajs.react._, vdom.html_<^._
-import japgolly.scalajs.react.vdom.VdomTagOf
 import japgolly.scalajs.react.extra._
 import org.scalajs.dom.html
 import shipreq.webapp.base.data.{FilterDead, LDStats, Project}
@@ -12,7 +11,7 @@ object Usage {
   type Show = Reusable[(FilterDead, () => FilterSpec) => VdomTagOf[html.Anchor]]
 
   def Show(f: (FilterDead, () => FilterSpec) => VdomTagOf[html.Anchor]): Show =
-    Reusable(f)(Reusability.byRef)
+    Reusable.byRef(f)
 
   def apply[Id, Data](id          : Data => Id)
                      (stats       : Project => LDStats[Id, Int],

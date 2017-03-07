@@ -195,17 +195,17 @@ object BaseStyles extends StyleSheet.Inline {
   val navBarContainer =
     ^^.marginBottom := "5rem"
 
-  val breadcrumbDivider =
-    (^^.color       := "#ddd") +
-    (^^.marginLeft  := "0.8em") +
-    (^^.marginRight := "0.8em")
+  val breadcrumbDivider = TagMod(
+    ^^.color       := "#ddd",
+    ^^.marginLeft  := "0.8em",
+    ^^.marginRight := "0.8em")
 
-  val containerLarge =
-    (^^.marginLeft   := "auto") +
-    (^^.marginRight  := "auto") +
-    (^^.marginBottom := pageMarginStr) +
-    (^^.paddingLeft  := "1em") +
-    (^^.paddingRight := "1em") +
-    (^^.maxWidth     := "calc(723px + 2em)") +
-    (^^.width        := "100%")
+  val containerLarge = TagMod(
+    ^^.marginLeft   := "auto",
+    ^^.marginRight  := "auto",
+    ^^.marginBottom := pageMarginStr,
+    ^^.paddingLeft  := "1em",
+    ^^.paddingRight := "1em",
+    ^^.maxWidth     := "calc(723px + 2em)",
+    ^^.width        := "100%")
 }

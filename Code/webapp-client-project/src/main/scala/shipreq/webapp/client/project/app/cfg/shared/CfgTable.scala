@@ -2,8 +2,9 @@ package shipreq.webapp.client.project.app.cfg.shared
 
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
+import shipreq.base.util.MutableArray
 import shipreq.base.util.TaggedTypes.TaggedInt
-import shipreq.webapp.base.data.{Live, Dead, DataIdAux, FilterDead}
+import shipreq.webapp.base.data.{DataIdAux, Dead, FilterDead, Live}
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.client.project.widgets.Checkbox
 
@@ -24,7 +25,7 @@ object CfgTable {
                                    del         : () => Deletion[K],
                                    live        : P => Live,
                                    filterDeadCB: CallbackTo[FilterDead],
-                                   c           : CompState.Access[S])
+                                   c           : StateAccessPure[S])
                                   (implicit O  : Ordering[RowKey]): CfgTable[S, K, P, I, A, B, C, V, RowKey, N] =
         new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, live, filterDeadCB, c)
     }
@@ -36,7 +37,7 @@ object CfgTable {
                            rr: RowRenderer[P, V, N],
                            del: () => Deletion[K],
                            live: P => Live,
-                           c: CompState.Access[sas.S])
+                           c: StateAccessPure[sas.S])
                           (implicit I: DataIdAux[P, K], O: Ordering[RowKey])
       : CfgTable[sas.S, K, P, I, A, B, C, V, RowKey, N] = {
           def rowA(k: Option[K], i: I): editor.InputA = (sas.validatorInput(k)(c.state.runNow()), i)
@@ -48,7 +49,7 @@ object CfgTable {
     }
 
   def header(headers: List[String]): VdomElement =
-    <.thead(<.tr(headers.map(<.th(_)), <.th("Ctrls")))
+    <.thead(<.tr(headers.toTagMod(<.th(_)), <.th("Ctrls")))
 
   /**
    * @tparam P Persisted data. Data known to be saved.
@@ -73,7 +74,7 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor     
                                                                      deletion    : () => Deletion[K],
                                                                      live        : P => Live,
                                                                      filterDeadCB: CallbackTo[FilterDead],
-                                                                     c           : CompState.Access[S])
+                                                                     c           : StateAccessPure[S])
                                                                     (implicit I: DataIdAux[P, K], O: Ordering[RowKey]) {
   /** Row content prior to being rendered into DOM. */
   type RowContent = R
@@ -107,7 +108,7 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor     
     val c = rowStatusCtrls(rs, ctrls)
     <.tr(
       ^.cls := s"$classArg $cls2",
-      rr.render(content).map(<.td(_)),
+      rr.render(content).toTagMod(<.td(_)),
       <.td(c))
   }
 
@@ -147,7 +148,11 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor     
   }
 
   def allSortableRows(static: RowStream) =
-    (static #::: savedRows).sortBy(_._1).map(_._2).toVdomArray
+    MutableArray(static #::: savedRows)
+      .sortBy(_._1)
+      .map(_._2)
+      .array
+      .toVdomArray
 
   def table(header: VdomElement, static: RowStream): VdomElement =
     <.div(

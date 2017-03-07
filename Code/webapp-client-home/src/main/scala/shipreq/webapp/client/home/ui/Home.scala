@@ -94,7 +94,7 @@ object HomeContent {
 
         PlainTextEditor.WithButton.Props(
           p.createProjectText.value,
-          p.createProjectText.set,
+          p.createProjectText.setState,
           status,
           buttonLabel = "Create",
           inputMod = inputMod)
@@ -107,7 +107,7 @@ object HomeContent {
         menu,
         <.main(BaseStyles.containerLarge,
           <.div(Styles.createProjectContainer, projectCreate),
-          projectList))
+          projectList.toTagMod))
     }
   }
 

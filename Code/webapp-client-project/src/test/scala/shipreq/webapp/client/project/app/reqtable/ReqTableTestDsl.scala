@@ -17,7 +17,7 @@ import TestState._
 
 object ReqTableTestDsl {
 
-  case class Ref($: CompState.AccessD[ReqTable.State], svr: MockServer)
+  case class Ref($: StateAccessImpure[ReqTable.State], svr: MockServer)
 
   val * = Dsl[Ref, ReqTableObs, Project]
 

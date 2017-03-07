@@ -58,7 +58,7 @@ object ProjectItem {
           <.h1(*.itemHeaderRO,
             <.a(^.href := URLs.PageProject(p.id), p.name))
 
-        header + renderMeta(p)
+        TagMod(header, renderMeta(p))
       }
 
     val Component = ScalaFnComponent(render)
@@ -99,16 +99,17 @@ object ProjectItem {
         *.itemHeaderEditCont
 
       val abortFn: Callback =
-        $.props.flatMap(_.state set None)
+        $.props.flatMap(_.state setState None)
 
       val updateEditText: String => Callback =
-        s => $.props.flatMap(_.state.mod(State setEdit s))
+        s => $.props.flatMap(_.state.modState(State setEdit s))
 
       def renderView(p: Props): TagMod =
-        <.h1(*.itemHeaderRW,
-          EditTheme.editableInline(p.state set Some(EditState(p.item.name, None))),
-          p.item.name
-        ) + ProjectItem.renderMeta(p.item)
+        TagMod(
+          <.h1(*.itemHeaderRW,
+            EditTheme.editableInline(p.state setState Some(EditState(p.item.name, None))),
+            p.item.name),
+          ProjectItem.renderMeta(p.item))
 
       def renderEditor(p: Props, s: EditState): TagMod = {
         val status =

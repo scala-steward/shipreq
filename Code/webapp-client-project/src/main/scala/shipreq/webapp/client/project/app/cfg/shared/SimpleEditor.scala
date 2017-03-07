@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
-import japgolly.scalajs.react.{Callback, CallbackTo, VdomElement}
+import japgolly.scalajs.react.{Callback, CallbackTo}
+import japgolly.scalajs.react.vdom.VdomElement
 import japgolly.scalajs.react.ScalazReact._
 
 object SimpleEditor {

@@ -85,9 +85,9 @@ object Menu {
   final class Backend($: BackendScope[Props, Unit]) {
 
     val enableDropdowns: Callback =
-      Callback {
+      $.getDOMNode.map { node =>
         val opt = js.Dynamic.literal(action = "hide")
-        JQuery($.getDOMNode).find(".ui.dropdown").dropdown(opt)
+        JQuery(node).find(".ui.dropdown").dropdown(opt)
       }
 
     def render(p: Props) =

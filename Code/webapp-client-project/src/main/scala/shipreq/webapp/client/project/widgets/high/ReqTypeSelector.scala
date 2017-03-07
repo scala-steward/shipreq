@@ -54,7 +54,7 @@ object ReqTypeSelector {
           .sort
           .to[List]
 
-      val select = Select(options, key(p.edit.value))(p.edit set _.value)(*.dropdown)
+      val select = Select(options, key(p.edit.value))(p.edit setState _.value)(*.dropdown)
 
       val commitButton = Button(
         tipe = Button.Type.IconOnly(Icon.Checkmark),

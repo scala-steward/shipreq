@@ -18,13 +18,8 @@ object Select {
                selected: js.UndefOr[OptionKey] = js.undefined)(
                onChange: Option[A] => Callback) = {
 
-    val optionArray = new js.Array[VdomNode]
-    for (o <- options) {
-      optionArray push <.option(
-        ^.key := o.key,
-        ^.value := o.key,
-        o.title)
-    }
+    val optionArray =
+      options.toVdomArray(o => <.option(^.key := o.key, ^.value := o.key, o.title))
 
     def onChange2: ReactEventFrom[HTMLSelectElement] => Callback =
       _.extract(_.target.value)(v =>

@@ -3,9 +3,10 @@ package shipreq.webapp.client.project.widgets.high
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Ref => _, _}
+import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.SingleLine
 import shipreq.webapp.base.text.Grammar.{hashRefKey => G}
@@ -85,8 +86,6 @@ object TagEditor {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.never // TODO Reusability.caseClass
 
-  private val editorRef = Ref.to(AutosizeTextarea.Component, "i")
-
   val validator =
     Validator.seqText(G.seqFormat)((l: Lookup) =>
       i => ValidationResult.option(l get i, VFailure looseMsg s"Invalid tag: $i"))
@@ -106,7 +105,7 @@ object TagEditor {
 
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
-          p.status.wrapEdit(p.edit.set(e.target.value.replace("\n", ""))))
+          p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
 
       TagMod(
         ^.autoFocus := true,
@@ -116,13 +115,15 @@ object TagEditor {
         keys)
     }
 
-    def getTextarea() =
-      editorRef($).get.getDOMNode
+    val editorRef = ScalaComponent.mutableRefTo(AutosizeTextarea.Component)
+
+    def getTextarea(): html.TextArea =
+      editorRef.value.getDOMNode.domCast
 
     def render(p: Props) = {
 
       def editor(validity: Validity): VdomElement =
-        EditTheme.autosizeTextarea(editorRef, validity, p.edit.value, textareaConst)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
 
       def instructions =
         KeyboardTheme.instructionsForCommitAbort(
@@ -140,6 +141,6 @@ object TagEditor {
       .renderBackend[Backend]
       .configure(
         Reusability.shouldComponentUpdate,
-        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.set))
+        AutoCompleteFeature.installBP(_.backend.getTextarea(), _.pxAutoComplete.value(), _.edit.setState))
       .build
 }
