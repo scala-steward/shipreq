@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty._
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.annotation.tailrec
 import scala.collection.Traversable
@@ -449,7 +450,8 @@ private[reqtable] object Logic {
 
     MutableArray.map(rows)(r => prepare(rowEndo(r)))
       .sort(sorter.sortFn.toOrdering)
-      .mapOut(sorter.row)
+      .map(sorter.row)
+      .to[Stream]
   }
 
   // ===================================================================================================================

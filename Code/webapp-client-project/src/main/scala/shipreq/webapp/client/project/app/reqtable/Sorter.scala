@@ -1,12 +1,12 @@
 package shipreq.webapp.client.project.app.reqtable
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle.Optional
 import monocle.function.Index._
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scalaz.std.option.optionInstance
-import shipreq.base.util.MutableArray
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText

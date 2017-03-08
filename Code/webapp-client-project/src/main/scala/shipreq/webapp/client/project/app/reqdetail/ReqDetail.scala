@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.reqdetail
 
 import japgolly.microlibs.nonempty._
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl

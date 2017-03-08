@@ -1,8 +1,9 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.annotation.tailrec
-import shipreq.base.util.{Memo, MutableArray, Util}
+import shipreq.base.util.{Memo, Util}
 import shipreq.base.util.Digraph.BiDir
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._

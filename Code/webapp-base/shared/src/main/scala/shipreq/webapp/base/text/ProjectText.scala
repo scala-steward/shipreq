@@ -1,6 +1,7 @@
 package shipreq.webapp.base.text
 
 import japgolly.microlibs.nonempty.NonEmptySet
+import japgolly.microlibs.stdlib_ext.MutableArray
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -174,5 +175,6 @@ abstract class ProjectText[Out](project: Project, val ctx: ProjectText.Context) 
   protected final def useCaseFlowStepsOrderedF(fs: Iterator[UseCaseStep.Focus]): Seq[Out] =
     MutableArray(fs)
       .sortBy(_.ploc)
-      .mapOut(useCaseFlowStep)
+      .map(useCaseFlowStep)
+      .to[Seq]
 }

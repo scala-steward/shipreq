@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.widgets.high
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react._, vdom.html_<^._
 import org.scalajs.dom.html

@@ -1,12 +1,12 @@
 package shipreq.webapp.client.project.app.cfg.reqtypes
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import japgolly.scalajs.react.extra._
 import scala.language.reflectiveCalls
 import scalacss.ScalaCssReact._
 import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
-import shipreq.base.util.MutableArray
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._, DataImplicits._
