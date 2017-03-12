@@ -1,5 +1,4 @@
-import sbt._
-import Keys._
+import sbt._, Keys._
 import java.nio.file.{Files, Path}
 import scala.concurrent.duration._
 import com.typesafe.sbt.GitPlugin.autoImport._

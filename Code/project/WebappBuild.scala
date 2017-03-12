@@ -257,6 +257,7 @@ object WebappBuild {
       )
 
     def testSettings = (_: Project)
+      .configure(TestEnv.required)
       .dependsOn(webappBaseTestJvm % "test->compile")
       .settings(inConfig(Test)(Seq(
         fork                         := true,
