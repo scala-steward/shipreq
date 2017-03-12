@@ -3,8 +3,10 @@ package shipreq.webapp.base.filter
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import java.util.regex.Pattern
+import scala.annotation.tailrec
 import scalaz.{-\/, \/, \/-}
-import shipreq.base.util.Min2Set
+import shipreq.base.util.ScalaExt.EndoFn
+import shipreq.base.util.{Min2Set, Min2Vector}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
 
@@ -113,4 +115,38 @@ object ValidFilter {
     translate(f)
   }
   */
+
+  /** Reorders a filter so that the quickest tests are performed first. */
+  val orderFastestFirst: EndoFn[Min2Vector[ValidFilter]] = {
+
+    def reorder(eval: ValidFilter => Int, max: Int): EndoFn[Min2Vector[ValidFilter]] = {
+      // Oh the simplicity of single-threaded guarantees
+      val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[ValidFilter])
+      as => {
+        buckets.foreach(_.clear())
+        for (a <- as)
+          buckets(eval(a)) += a
+        val all = buckets.foldLeft(Vector.empty[ValidFilter])(_ ++ _)
+        Min2Vector force all
+      }
+    }
+
+    @tailrec def evalSpeed(a: ValidFilter): Int =
+      a match {
+        case _: Presence
+           | _: Lack
+           | _: ReqType
+           | _: Tag
+           | _: ImpliesAnyOf
+           | _: ImpliedByAnyOf => 0
+        case _: CustomIssue    => 2
+        case _: AllOf          => 2
+        case _: AnyOf          => 1
+        case _: Text           => 2
+        case _: TextPattern    => 3
+        case Not(e)            => evalSpeed(e)
+      }
+
+    reorder(evalSpeed, 3)
+  }
 }

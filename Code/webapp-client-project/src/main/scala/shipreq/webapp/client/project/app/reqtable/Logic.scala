@@ -317,38 +317,6 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-  private def filterOrderFn(max: Int)(eval: ValidFilter => Int): EndoFn[Min2Vector[ValidFilter]] = {
-    // Oh the simplicity of single-threaded guarantees
-    val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[ValidFilter])
-    as => {
-      buckets.foreach(_.clear())
-      for (a <- as)
-        buckets(eval(a)) += a
-      val all = buckets.foldLeft(Vector.empty[ValidFilter])(_ ++ _)
-      Min2Vector force all
-    }
-  }
-
-  private val filterFastestFirst = {
-    import ValidFilter._
-    @tailrec def evalSpeed(a: ValidFilter): Int =
-      a match {
-        case _: Presence
-           | _: Lack
-           | _: ReqType
-           | _: Tag
-           | _: ImpliesAnyOf
-           | _: ImpliedByAnyOf => 0
-        case _: CustomIssue    => 2
-        case _: AllOf          => 2
-        case _: AnyOf          => 1
-        case _: Text           => 2
-        case _: TextPattern    => 3
-        case Not(e)            => evalSpeed(e)
-      }
-    filterOrderFn(3)(evalSpeed)
-  }
-
   type Filter = FilterFn2[Req, ReqCodeGroup]
   @inline def Filter(a: Req => Boolean, b: ReqCodeGroup => Boolean): Filter = FilterFn2(a, b)
 
@@ -383,7 +351,7 @@ private[reqtable] object Logic {
     // - Implications in AnyOf can be merged "{implies:MF-1 implies:MF-2}" = "implies:MF-{1,2}"
 
     def interpretN(fs: Min2Set[ValidFilter], f: (F, F) => F): R =
-      filterFastestFirst(fs.toMin2Vector)
+      ValidFilter.orderFastestFirst(fs.toMin2Vector)
         .traverse(interpret)
         .map(_ reduce f)
 
