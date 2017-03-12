@@ -20,7 +20,7 @@ import shipreq.webapp.client.project.feature.AutoCompleteFeature
 object FilterEditor {
 
   type OnFailure = State ~=> Callback
-  type OnSuccess = (State, Option[FilterAst]) ~=> Callback
+  type OnSuccess = (State, Option[ValidFilter]) ~=> Callback
 
   case class Props(project  : Project,
                    onFailure: OnFailure,
@@ -49,7 +49,7 @@ object FilterEditor {
 
   private val acPresenceLackAttr: TC.Strategy =
     TC.Strategy.pattern("""\b((?:has|no):)([a-z]*)$""", index = 2)
-      .search(TC caseInsensitiveStartsWith FilterAst.Attr.values.toStream.map(_.name))
+      .search(TC caseInsensitiveStartsWith ValidFilter.Attr.values.toStream.map(_.name))
       .replace("$1" + _ + " ")
 
   class Backend($: BackendScope[Props, Unit]) {
@@ -80,7 +80,7 @@ object FilterEditor {
       def fail(error: String): Callback =
         $.props >>= (_ onFailure State(text, Some(error)))
 
-      def succeed(filter: Option[FilterAst]): Callback =
+      def succeed(filter: Option[ValidFilter]): Callback =
         $.props >>= (_.onSuccess(State(text, None), filter))
 
       if (text.trim.isEmpty)
@@ -92,10 +92,10 @@ object FilterEditor {
           case Failure(e: ParseError) => fail(parser.formatError(e, parseErrorFormatter))
           case Failure(e: Throwable)  => fail(e.getMessage)
           case Success(None)          => succeed(None)
-          case Success(Some(spec))    =>
-            FilterAst(project.value(), spec) match {
-              case \/-(ast) => succeed(Some(ast))
-              case -\/(err) => fail(err)
+          case Success(Some(pf))      =>
+            PotentialFilter.validator(project.value())(pf) match {
+              case \/-(f) => succeed(Some(f))
+              case -\/(e) => fail(e)
             }
         }
       }

@@ -10,7 +10,7 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.{event => E}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.text.{TextSearch, PlainText, Text, ProjectText}
 import shipreq.webapp.base.test._, WebappTestUtil._
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -67,7 +67,7 @@ object LogicTest extends TestSuite {
   import ProjectDsl._
   import UnsafeTypes._
   import SampleProject.Values._
-  import shipreq.webapp.base.filter.{FilterAst => F}, F.Attr._
+  import shipreq.webapp.base.filter.{ValidFilter => F}, F.Attr._
   import LogicTestUtil._
 
   private      def P3  = SampleProject3.project
@@ -77,7 +77,7 @@ object LogicTest extends TestSuite {
   private      val z   = "∅"
   private      val _z  = (_: Any) => z
   private type Rows    = Stream[Row]
-  private type Filter  = Option[FilterAst]
+  private type Filter  = Option[ValidFilter]
 
   private case class PCache(p: Project, pt: PlainText.ForProject, ts: TextSearch)
   private var _pcache: List[PCache] = Nil
@@ -89,7 +89,7 @@ object LogicTest extends TestSuite {
       c
     }
 
-  implicit def autoSomeFilter(f: FilterAst): Filter = Some(f)
+  implicit def autoSomeFilter(f: ValidFilter): Filter = Some(f)
   private def testFilter(p: Project, f: Filter)(live: String, dead: String): Unit = {
     val fmt = rowToPubid(p)
     val d = if (dead.isEmpty) live else sortPubidsInString(s"$live  $dead")

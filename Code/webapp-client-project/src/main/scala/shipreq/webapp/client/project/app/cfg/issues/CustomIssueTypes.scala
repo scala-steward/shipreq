@@ -9,7 +9,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.Validators.{customIssueType => V}
 import shipreq.webapp.base.data.Validators.shared.HashRefKeyVS
-import shipreq.webapp.base.filter.FilterSpec
+import shipreq.webapp.base.filter.PotentialFilter
 import shipreq.webapp.base.protocol.CustomIssueTypeCrud
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.UiText.FieldNames
@@ -93,7 +93,7 @@ private[issues] object CustomIssueTypes {
 
     val usageFn = Usage((_: CustomIssueType).id)(
       _.atomScan.issueCounts,
-      FilterSpec HashRef _.key,
+      PotentialFilter HashRef _.key,
       project, filterDead, usageShow)
 
     val cfgTable = {

@@ -1319,7 +1319,7 @@ object RandomData {
       for {
         q <- Gen.choose('\'', '"', '`')
         s <- unicodeString1
-      } yield FilterSpec.QuotedText(s.replace(q, '_'), q)
+      } yield PotentialFilter.QuotedText(s.replace(q, '_'), q)
 
     private val illegalSimpleTextStart = "/-#(){}'`\"".toCharArray.toSet
     private def fixSimpleText(s: String): String =
@@ -1341,14 +1341,14 @@ object RandomData {
 
     val simpleText =
       charPred(FilterParser.simpleTextChar).string1
-        .map(s => FilterSpec.SimpleText(fixSimpleText(s)))
+        .map(s => PotentialFilter.SimpleText(fixSimpleText(s)))
 
     val regex =
-      unicodeString1.map(s => FilterSpec.Regex(fixRegex(s)))
+      unicodeString1.map(s => PotentialFilter.Regex(fixRegex(s)))
 
     // -----------------------------------------------------------------------------------------------------------------
-    object spec {
-      import FilterSpec._
+    object potential {
+      import PotentialFilter._
 
       val wholeType =
         reqTypeMnemonic map WholeType
@@ -1372,28 +1372,28 @@ object RandomData {
       val presence   = attr map Presence
       val lack       = attr map Lack
 
-      val flat: Gen[FilterSpec] =
+      val flat: Gen[PotentialFilter] =
         Gen.chooseGen(quotedText, simpleText, regex, reqType, hashRef, implies, impliedBy, presence, lack)
 
-      val fixRoot: EndoFn[FilterSpec] = {
+      val fixRoot: EndoFn[PotentialFilter] = {
         case AllOf(n) if n.tail.isEmpty => n.head
         case s => s
       }
 
-      private def expr(depth: Int): Gen[FilterSpec] =
+      private def expr(depth: Int): Gen[PotentialFilter] =
         if (depth <= 1)
           flat
         else {
           val next   = expr(depth - 1)
           val clause = next.nev(0 to (8 `JVM|JS` 3))
 
-          val allOf: Gen[FilterSpec] =
+          val allOf: Gen[PotentialFilter] =
             clause.map(c => if (c.tail.isEmpty) c.head else AllOf(c))
 
-          val anyOf: Gen[FilterSpec] =
+          val anyOf: Gen[PotentialFilter] =
             clause map AnyOf
 
-          val not: Gen[FilterSpec] =
+          val not: Gen[PotentialFilter] =
             next map {
               case n: Not => n
               case e      => Not(e)
@@ -1407,8 +1407,8 @@ object RandomData {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    object ast {
-      import FilterAst.{Text => FText, _}
+    object valid {
+      import ValidFilter.{Text => FText, _}
 
       def reqs(id: Gen[ReqId]): Gen[Reqs] =
         id.set
@@ -1423,10 +1423,10 @@ object RandomData {
           quotedText.map(t => FText(t.text)))
 
       val textPattern: Gen[Option[TextPattern]] =
-        regex.map(r => FilterAst.textPattern(r.text).toOption)
+        regex.map(r => ValidFilter.textPattern(r.text).toOption)
 
-      val textPatternish: Gen[FilterAst] =
-        textPattern.flatMap(_.fold(text: Gen[FilterAst])(Gen.pure))
+      val textPatternish: Gen[ValidFilter] =
+        textPattern.flatMap(_.fold(text: Gen[ValidFilter])(Gen.pure))
 
       def reqType    (id: Gen[ReqTypeId])        : Gen[ReqType]        = id map ReqType
       def tag        (id: Gen[ApplicableTagId])  : Gen[Tag]            = id map Tag
@@ -1437,10 +1437,10 @@ object RandomData {
       def flat(gr: Option[Gen[ReqId]],
                gy: Option[Gen[ReqTypeId]],
                gt: Option[Gen[ApplicableTagId]],
-               gi: Option[Gen[CustomIssueTypeId]]): Gen[FilterAst] = {
+               gi: Option[Gen[CustomIssueTypeId]]): Gen[ValidFilter] = {
         val ogr = gr.map(reqs)
         val gens = (
-          NonEmptyVector[Gen[FilterAst]](text, textPatternish, presence, lack)
+          NonEmptyVector[Gen[ValidFilter]](text, textPatternish, presence, lack)
             ++ gy.map(reqType)
             ++ gt.map(tag)
             ++ gi.map(customIssue)
@@ -1449,20 +1449,20 @@ object RandomData {
         Gen.chooseGenNE(gens)
       }
 
-      private def expr(gen: Gen[FilterAst], depth: Int): Gen[FilterAst] =
+      private def expr(gen: Gen[ValidFilter], depth: Int): Gen[ValidFilter] =
         if (depth <= 1)
           gen
         else {
           val next   = expr(gen, depth - 1)
           val clause = next.nes(0 to (8 `JVM|JS` 3), implicitly)
 
-          val allOf: Gen[FilterAst] =
+          val allOf: Gen[ValidFilter] =
             clause.map(Min2Set.maybe1(_)(identity)(AllOf))
 
-          val anyOf: Gen[FilterAst] =
+          val anyOf: Gen[ValidFilter] =
             clause.map(Min2Set.maybe1(_)(identity)(AnyOf))
 
-          val not: Gen[FilterAst] =
+          val not: Gen[ValidFilter] =
             next map {
               case n: Not => n
               case e      => Not(e)
@@ -1471,10 +1471,10 @@ object RandomData {
           Gen.chooseGen(gen, allOf, anyOf, not)
         }
 
-      def filterAst(genFlat: Gen[FilterAst]) =
+      def filterAst(genFlat: Gen[ValidFilter]) =
         expr(genFlat, 4 `JVM|JS` 3)
 
-      def forProject(p: Project): Gen[FilterAst] = {
+      def forProject(p: Project): Gen[ValidFilter] = {
         val gr: Option[Gen[ReqId]]             = Gen tryGenChoose p.reqs.idIterator.toVector
         val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.config.reqTypes.all.whole.map(_.reqTypeId)
         val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.atagIterator.map(_.id)

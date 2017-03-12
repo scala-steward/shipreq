@@ -15,7 +15,7 @@ import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.text.Atom.AnyIssue
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -317,21 +317,21 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-  private def filterOrderFn(max: Int)(eval: FilterAst => Int): EndoFn[Min2Vector[FilterAst]] = {
+  private def filterOrderFn(max: Int)(eval: ValidFilter => Int): EndoFn[Min2Vector[ValidFilter]] = {
     // Oh the simplicity of single-threaded guarantees
-    val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[FilterAst])
+    val buckets = Array.fill(max + 1)(collection.mutable.ListBuffer.empty[ValidFilter])
     as => {
       buckets.foreach(_.clear())
       for (a <- as)
         buckets(eval(a)) += a
-      val all = buckets.foldLeft(Vector.empty[FilterAst])(_ ++ _)
+      val all = buckets.foldLeft(Vector.empty[ValidFilter])(_ ++ _)
       Min2Vector force all
     }
   }
 
   private val filterFastestFirst = {
-    import FilterAst._
-    @tailrec def evalSpeed(a: FilterAst): Int =
+    import ValidFilter._
+    @tailrec def evalSpeed(a: ValidFilter): Int =
       a match {
         case _: Presence
            | _: Lack
@@ -355,14 +355,14 @@ private[reqtable] object Logic {
   /**
    * @return None means filter everything out. Function const false. Fail-early to an empty set. No results.
    */
-  def filter(filterAst  : FilterAst,
+  def filter(vf         : ValidFilter,
              p          : Project,
              pt         : PlainText.ForProject,
              ts         : TextSearch,
              issueLookup: IssueLookup,
              tagLookup  : TagLookup): Option[Filter] = {
 
-    import FilterAst._, Attr.{AnyIssue, AnyTag}
+    import ValidFilter._, Attr.{AnyIssue, AnyTag}
     type F  = Filter
     type R  = Option[Filter]
     type FR = Req => Boolean
@@ -382,8 +382,8 @@ private[reqtable] object Logic {
     // - Remove duplicates
     // - Implications in AnyOf can be merged "{implies:MF-1 implies:MF-2}" = "implies:MF-{1,2}"
 
-    def interpretN(asts: Min2Set[FilterAst], f: (F, F) => F): R =
-      filterFastestFirst(asts.toMin2Vector)
+    def interpretN(fs: Min2Set[ValidFilter], f: (F, F) => F): R =
+      filterFastestFirst(fs.toMin2Vector)
         .traverse(interpret)
         .map(_ reduce f)
 
@@ -395,7 +395,7 @@ private[reqtable] object Logic {
         r => f(issueLookup.forReq(r.id)),
         g => f(issueLookup.forReqCode(g.id)))
 
-    def byImplication(reqs: FilterAst.Reqs, tc: TransitiveClosure[ReqId]): R = {
+    def byImplication(reqs: ValidFilter.Reqs, tc: TransitiveClosure[ReqId]): R = {
       val whitelist = reqs.foldLeft(Set.empty[ReqId])(_ ++ tc(_))
       if (whitelist.isEmpty)
         None
@@ -403,7 +403,7 @@ private[reqtable] object Logic {
         Filter(whitelist contains _.id, `n/a`)
     }
 
-    def interpret(subj: FilterAst): R =
+    def interpret(subj: ValidFilter): R =
       subj match {
         case ReqType(rt)          => Filter(_.reqTypeId ==* rt, `n/a`)
         case Tag(tag)             => byTag(_ contains tag)
@@ -433,7 +433,7 @@ private[reqtable] object Logic {
             g => m(pt reqCodeGroupTitle g))
       }
 
-    interpret(filterAst)
+    interpret(vf)
   }
 
   // ===================================================================================================================

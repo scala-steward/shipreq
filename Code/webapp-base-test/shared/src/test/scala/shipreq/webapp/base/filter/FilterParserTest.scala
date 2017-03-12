@@ -13,22 +13,22 @@ import shipreq.webapp.base.{RandomData => $}
 import shipreq.webapp.base.data.HashRefKey
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.test.WebappTestUtil._
-import FilterSpec._
+import PotentialFilter._
 
 object FilterParserTest extends TestSuite {
 
-  implicit def equality: UnivEq[FilterSpec] = UnivEq.force
+  implicit def equality: UnivEq[PotentialFilter] = UnivEq.force
 
-  implicit def autoSome(f: FilterSpec) = Option(f)
+  implicit def autoSome(f: PotentialFilter) = Option(f)
   implicit def autoMne(s: String) = Mnemonic(s)
   implicit def autoHRK(s: String) = HashRefKey(s)
   implicit def autoNev[A](a: A) = NonEmptyVector(a)
   implicit def NES[A: UnivEq](a: A, as: A*) = NonEmptySet(a, as.toSet)
 
-  def allOf(a: FilterSpec, b: FilterSpec*) = AllOf(NonEmptyVector(a, b: _*))
-  def anyOf(a: FilterSpec, b: FilterSpec*) = AnyOf(NonEmptyVector(a, b: _*))
+  def allOf(a: PotentialFilter, b: PotentialFilter*) = AllOf(NonEmptyVector(a, b: _*))
+  def anyOf(a: PotentialFilter, b: PotentialFilter*) = AnyOf(NonEmptyVector(a, b: _*))
 
-  val prism = monocle.Prism[String, Option[FilterSpec]](
+  val prism = monocle.Prism[String, Option[PotentialFilter]](
     new FilterParser(_).main.run().toOption)(_.fold("")(toText))
 
   val prismFromString =
@@ -41,14 +41,14 @@ object FilterParserTest extends TestSuite {
       }
     }
 
-  val prismFromSpec =
-    Prop.test[FilterSpec]("prismFromSpec", spec => {
-      val s = Some(spec)
+  val prismFromPF =
+    Prop.test[PotentialFilter]("prismFromSpec", pf => {
+      val s = Some(pf)
       test(prism reverseGet s, s)
       true
     })
 
-  def test(str: String, exp: Option[FilterSpec]): Unit = {
+  def test(str: String, exp: Option[PotentialFilter]): Unit = {
     val p = new FilterParser(str)
     p.main.run() match {
       case Success(a)             => assertEq(s"[$str]", a, exp)
@@ -69,7 +69,7 @@ object FilterParserTest extends TestSuite {
       import PropTest.defaultPropSettings
 //      implicit def settings = DefaultSettings.propSettings.setSampleSize(10000)
       'fromString - prismFromString.mustBeSatisfiedBy($.unicodeString)
-      'fromSpec   - prismFromSpec  .mustBeSatisfiedBy($.filter.spec.filterSpec)
+      'fromSpec   - prismFromPF    .mustBeSatisfiedBy($.filter.potential.filterSpec)
     }
 
     'empty {

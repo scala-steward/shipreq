@@ -6,12 +6,12 @@ import monocle.macros.Lenses
 import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.filter.ValidFilter
 
 @Lenses
 final case class ViewSettings(columns    : NonEmptyVector[Column],
                               order      : SortCriteria,
-                              filter     : Option[FilterAst],
+                              filter     : Option[ValidFilter],
                               filterDead : FilterDead) {
 
   def isVisible(c: Column): Boolean =

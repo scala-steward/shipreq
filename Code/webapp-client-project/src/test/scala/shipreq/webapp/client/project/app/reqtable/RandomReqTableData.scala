@@ -8,7 +8,7 @@ import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.FilterAst
+import shipreq.webapp.base.filter.ValidFilter
 
 object RandomReqTableData {
 
@@ -85,7 +85,7 @@ object RandomReqTableData {
   def sortCriteria(scIs: Vector[SortCriterion.Inconclusive]): Gen[SortCriteria] =
     sortCriteriaC.map(SortCriteria(scIs, _))
 
-  val noFilter: Gen[Option[FilterAst]] =
+  val noFilter: Gen[Option[ValidFilter]] =
     Gen pure None
 
   def viewSettings(p: Project, allowFilter: Boolean): Gen[ViewSettings] =
@@ -94,7 +94,7 @@ object RandomReqTableData {
       icols  = cs.iterator.filterSubType[Column.SortInconclusive].toVector
       scis   ← Gen.subset(icols).shuffle flatMap sortCriIs
       order  ← sortCriteria(scis)
-      filter ← if (allowFilter) RandomData.filter.ast.forProject(p).option else noFilter
+      filter ← if (allowFilter) RandomData.filter.valid.forProject(p).option else noFilter
       fd     ← filterDead
     } yield ViewSettings(cs, order, filter, fd)
 

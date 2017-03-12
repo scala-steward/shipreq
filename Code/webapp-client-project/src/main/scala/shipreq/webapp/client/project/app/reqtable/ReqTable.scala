@@ -9,7 +9,7 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import scalaz.{\/-, -\/}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.{FilterAst, FilterSpec}
+import shipreq.webapp.base.filter.{ValidFilter, PotentialFilter}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.text.{TextSearch, PlainText}
 import shipreq.webapp.client.base.feature.AsyncActionFeature
@@ -69,16 +69,16 @@ object ReqTable {
     def filterFailure(s: FilterEditor.State): State =
       copy(filter = s)
 
-    def filterSuccess(fs: (FilterEditor.State, Option[FilterAst])): State = {
+    def filterSuccess(fs: (FilterEditor.State, Option[ValidFilter])): State = {
       val vs = viewSettings.copy(filter = fs._2)
       copy(viewSettings = vs, filter = fs._1)
     }
 
-    def setFilterSpec(fs: FilterSpec): State = {
-      val txt = FilterSpec toText fs
-      FilterAst(project, fs) match {
-        case \/-(ast) => filterSuccess(FilterEditor.State(txt, None), Some(ast))
-        case -\/(err) => filterFailure(FilterEditor.State(txt, Some(err)))
+    def setFilterSpec(fs: PotentialFilter): State = {
+      val txt = PotentialFilter toText fs
+      PotentialFilter.validator(project)(fs) match {
+        case \/-(f) => filterSuccess(FilterEditor.State(txt, None), Some(f))
+        case -\/(e) => filterFailure(FilterEditor.State(txt, Some(e)))
       }
     }
 
@@ -92,7 +92,7 @@ object ReqTable {
   object State {
     val sortCriteria = viewSettings ^|-> ViewSettings.order
 
-    def init(cd: ClientData, fd: FilterDead, filterSpec: Option[FilterSpec]): State = {
+    def init(cd: ClientData, fd: FilterDead, filterSpec: Option[PotentialFilter]): State = {
       val proj = cd.project()
       var s = State(proj,
         ViewSettings.default(fd),

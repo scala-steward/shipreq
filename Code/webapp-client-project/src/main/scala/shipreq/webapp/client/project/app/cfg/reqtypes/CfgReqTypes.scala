@@ -11,7 +11,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._, DataImplicits._
 import shipreq.webapp.base.data.Validators.{reqType => V}
-import shipreq.webapp.base.filter.FilterSpec
+import shipreq.webapp.base.filter.PotentialFilter
 import shipreq.webapp.base.protocol.CustomReqTypeCrud
 import shipreq.webapp.client.base.data.On
 import shipreq.webapp.client.base.protocol.ClientProtocol
@@ -73,7 +73,7 @@ object CfgReqTypes {
 
     val usageFn = Usage((_: ReqType).reqTypeId)(
       _.reqTypeCount,
-      FilterSpec ReqType _.mnemonic,
+      PotentialFilter ReqType _.mnemonic,
       project, filterDead, usageShow)
 
     val cfgTable = {

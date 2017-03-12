@@ -6,7 +6,7 @@ import shipreq.webapp.base.data.HashRefKey
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.util.ParsingUtil
 import ParsingUtil._
-import FilterSpec._
+import PotentialFilter._
 
 object FilterParser {
 
@@ -39,15 +39,15 @@ object FilterParser {
       case Some(ns) => SomeOfType(rt, ns)
     }
 
-  private type ImpType = Reqs => FilterSpec
+  private type ImpType = Reqs => PotentialFilter
   private val mkImplies  : ImpType = Implies
   private val mkImpliedBy: ImpType = ImpliedBy
-  private val mkImplication: (ImpType, Reqs) => FilterSpec = _(_)
+  private val mkImplication: (ImpType, Reqs) => PotentialFilter = _(_)
 
-  private val mkClause: (FilterSpec, Seq[FilterSpec]) => NonEmptyVector[FilterSpec] =
+  private val mkClause: (PotentialFilter, Seq[PotentialFilter]) => NonEmptyVector[PotentialFilter] =
     (h, t) => NonEmptyVector(h, t: _*)
 
-  private val mkMain: Option[NonEmptyVector[FilterSpec]] => Option[FilterSpec] =
+  private val mkMain: Option[NonEmptyVector[PotentialFilter]] => Option[PotentialFilter] =
     _.map(nev =>
       if (nev.tail.isEmpty)
         nev.head
@@ -119,21 +119,21 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
     rule("no:" ~!~ attr ~> Lack)
 
   /** implies:MF or impliedBy:FR,CC-1 */
-  def implication: Rule1[FilterSpec] =
+  def implication: Rule1[PotentialFilter] =
     rule("implie" ~ (
       ('s' ~ push(mkImplies)) | ("dBy" ~ push(mkImpliedBy))
       ) ~ ':' ~!~ reqs ~ end ~> mkImplication)
 
-  def positive: Rule1[FilterSpec] =
+  def positive: Rule1[PotentialFilter] =
     rule(allOf | anyOf | quotedText | regex | hashRef | presence | lack | implication | reqType | simpleText)
 
-  def negative: Rule1[FilterSpec] =
+  def negative: Rule1[PotentialFilter] =
     rule('-' ~!~ (('-' ~!~ expr) | (expr ~> Not)))
 
-  def expr: Rule1[FilterSpec] =
+  def expr: Rule1[PotentialFilter] =
     rule(negative | positive)
 
-  def clause: Rule1[NonEmptyVector[FilterSpec]] =
+  def clause: Rule1[NonEmptyVector[PotentialFilter]] =
     rule(OWS ~ expr ~ zeroOrMore(OWS ~ expr) ~ OWS ~> mkClause)
 
   def allOf: Rule1[AllOf] =
@@ -142,6 +142,6 @@ class FilterParser(val input: ParserInput) extends ParsingUtil {
   def anyOf: Rule1[AnyOf] =
     rule('{' ~!~ clause ~ '}' ~> AnyOf)
 
-  def main: Rule1[Option[FilterSpec]] =
+  def main: Rule1[Option[PotentialFilter]] =
     rule(OWS ~ clause.? ~ EOI ~> mkMain)
 }
