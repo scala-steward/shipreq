@@ -23,7 +23,7 @@ const makeConfig = ({ mode, name }) => {
     },
 
     assets: {
-      images: { type: 'local', src: 'shipreq', files: '*.{svg,ico,png}', manifest: CamelCase },
+      images: { type: 'local', src: 'shipreq/assets', files: '*.{svg,ico,png}', manifest: CamelCase },
       publicCss: fromWebpack({ files: 'public.css' }),
       sirCss: fromWebpack({ files: 'sir.css' }),
       webappClientWw: [

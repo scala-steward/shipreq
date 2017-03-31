@@ -10,8 +10,8 @@ const extractLess = new ExtractTextPlugin({ filename: '[name].css' });
 const config = ({ mode }) => ({
 
   entry: {
-    public: './shipreq/public.less',
-    sir: './shipreq/sir.less',
+    public: './shipreq/styles/public.less',
+    sir: './shipreq/styles/sir.less',
     semantic: './shipreq/semantic-ui',
     member: [
       'expose-loader?React!react',
