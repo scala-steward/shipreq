@@ -65,6 +65,7 @@ object WebappBuild {
 
   object Frontend {
     val dist = s"../frontend/dist/${if (releaseMode) "prod" else "dev"}"
+    val local = s"$dist/local"
     val scala = s"$dist/scala"
     val serve = s"$dist/serve"
   }
@@ -200,11 +201,7 @@ object WebappBuild {
         Common.jsSettings(NeedDom),
         _.dependsOn(webappClientProject)
           .settings(
-            // Ensure that the production asset paths are used, and there is no dev-only markup in generated html
-            // scalacOptions ++= Seq("-Xelide-below", "OFF"),
-            // scalaJSStage := FullOptStage,
-            // ↑ Doesn't work, needs to be applied to deps too. Will hack dev. Release-mode test will prove validity.
-            jsDependencies += ProvidedJS / "shipreq-gen-deps.js"))
+            jsDependencies += ProvidedJS / "webapp-gen-deps.js"))
       .depsForBoth(testScope(μTest))
       .dependsOn(webappBaseTest % "test->compile")
 

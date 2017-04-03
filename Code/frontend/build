@@ -2,7 +2,7 @@
 cd "$(dirname "$(readlink -e "$0")")" || exit 1
 
 args="$@"
-[ $# -eq 0 ] && args=(dev prod)
+[ $# -eq 0 ] && args=(dev prod local)
 
 webpack="node_modules/.bin/webpack --progress --config"
 webtamp="node_modules/.bin/webtamp"
@@ -34,6 +34,14 @@ for mode in "${args[@]}"; do
       # Done
       echo
       du -sh $target2/serve
+      ;;
+
+    local)
+      target=dist/local
+      rm -rf $target
+      $webpack webpack/local.js || exit $?
+      echo
+      ls -l $target
       ;;
 
     *) echo What?
