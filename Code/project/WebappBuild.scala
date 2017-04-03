@@ -63,6 +63,8 @@ object WebappBuild {
       .configureJvm(_.dependsOn(baseDb))
       .depsForJvm(postgresql)
 
+  val frontendDistDir = s"../frontend/dist/${if (releaseMode) "prod" else "dev"}"
+
   lazy val webappBaseJvm = webappBase.jvm
   lazy val webappBaseJs  = webappBase.js
   lazy val webappBase =
@@ -73,8 +75,10 @@ object WebappBuild {
       .depsForBoth(
         μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
         testScope(μTest)) // TODO Move tests into this
-      .configureBoth(useMacroParadise)
       .dependsOn(baseUtil, webappMacro)
+      .configureBoth(useMacroParadise)
+      .settings(
+        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / frontendDistDir / "scala")
 
   lazy val webappBaseServerJvm = webappBaseServer.jvm
   lazy val webappBaseServerJs  = webappBaseServer.js
