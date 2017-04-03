@@ -14,27 +14,23 @@ import TaskmanBuild._
 object WebappBuild {
 
   object Frontend {
-    case class Settings(mode: String) {
-      val dist = s"../frontend/dist/$mode"
-      val local = s"$dist/local"
-      val scala = s"$dist/scala"
-      val serve = s"$dist/serve"
-    }
-    val dev = Settings("dev")
-    val prod = Settings("prod")
-    val current = if (releaseMode) prod else dev
+    val mode = if (releaseMode) "prod" else "dev"
+    val dist = s"../frontend/dist/$mode"
+    val local = s"$dist/local"
+    val scala = s"$dist/scala"
+    val serve = s"$dist/serve"
 
-    def syncOutputToManifest(name: String): Project => Project = {
-      def filename(s: Settings) = Def.setting {
-        val lines = IO.readLines(file(s"${baseDirectory.value}/${s.scala}/AssetManifest.scala"))
-        val List(line) = lines.filter(_.contains(s"webappClient${name}Js"))
-        val f = "(?<=\"/)(.+)\\.js(?=\")".r.findFirstIn(line).get
-        f
-      }
-      _.settings(
-        artifactPath in (Compile, fastOptJS) := (crossTarget in fastOptJS).value / filename(dev).value,
-        artifactPath in (Compile, fullOptJS) := (crossTarget in fullOptJS).value / filename(prod).value)
+    def manifestPath(name: String) = Def.setting {
+      val lines = IO.readLines(file(s"${baseDirectory.value}/$scala/AssetManifest.scala"))
+      val List(line) = lines.filter(_.contains(s" $name ="))
+      "(?<=\"/)(.+)(?=\")".r.findFirstIn(line).get
     }
+    def scalaJsPath(name: String) = Def.setting {
+      manifestPath(s"webappClient${name}Js").value
+    }
+    def scalaJsPathHome    = scalaJsPath("Home")
+    def scalaJsPathProject = scalaJsPath("Project")
+    def scalaJsPathWw      = scalaJsPath("Ww")
   }
 
   // TODO This is obsolete
@@ -100,7 +96,7 @@ object WebappBuild {
       .dependsOn(baseUtil, webappMacro)
       .configureBoth(useMacroParadise)
       .settings(
-        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.current.scala)
+        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
 
   lazy val webappBaseServerJvm = webappBaseServer.jvm
   lazy val webappBaseServerJs  = webappBaseServer.js
@@ -161,7 +157,6 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        Frontend.syncOutputToManifest("Home"),
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -187,8 +182,7 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
-        Frontend.syncOutputToManifest("Ww"))
+        webappSettings)
       .settings(
       scalaJSOutputWrapper := ("", "Main().main();"))
 
@@ -205,7 +199,6 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
-        Frontend.syncOutputToManifest("Project"),
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -234,51 +227,30 @@ object WebappBuild {
     import JettyPlugin    .autoImport._
     import WebappPlugin   .autoImport._
 
-    lazy val copyClientJs = taskKey[Unit]("Copies required webapp client resources.")
+//    lazy val copyClientJs = taskKey[Unit]("Copies required webapp client resources.")
 
     lazy val DockerDeps = config("dockerdeps")
 
-    def clientJsSettings: Project => Project =
+    def assetSettings: Project => Project =
       _.settings(
-
-        cleanFiles ++= {
-          val webapp = (sourceDirectory in webappPrepare).value
-          def sjs(name: String, sourceMap: String): Seq[File] =
-            Seq(
-              webapp / s"dev/$name.js",
-              webapp / s"dev/$sourceMap-fastopt.js.map",
-              webapp / s"a/$name.js")
-
-          sjs("client-home"   , "webapp-client-home") ++
-          sjs("client-project", "webapp-client-project") ++
-          sjs("ww"            , "webapp-client-ww")
-        },
-
-        copyClientJs := {
+        webappPostProcess := { (target: File) =>
           implicit val log = streams.value.log
-          val webapp = (sourceDirectory in webappPrepare).value
 
-          def syncSJS(jsf: VirtualJSFile, name: String): Unit =
+          // Copy Scala.JS output
+          def copyScalaJs(jsf: VirtualJSFile, to: String): Unit =
             jsf match {
               case f: FileVirtualJSFile =>
-                if (devMode) {
-                  fileSync(f.file         , webapp / s"dev/$name.js"                , mandatory = true)
-                  fileSync(f.sourceMapFile, webapp / "dev" / f.sourceMapFile.getName, mandatory = false)
-                  // This exact filename is specified at end of js ↑
-                } else {
-                  fileSync(f.file, webapp / s"a/$name.js", mandatory = true)
-                }
+                fileSync(f.file, target / to, mandatory = true)
               case other =>
                 sys.error("Unsupported virtual file type: " + other)
             }
+          copyScalaJs((scalaJSLinkedFile in Compile in webappClientHome   ).value, Frontend.scalaJsPathHome   .value)
+          copyScalaJs((scalaJSLinkedFile in Compile in webappClientProject).value, Frontend.scalaJsPathProject.value)
+          copyScalaJs((scalaJSLinkedFile in Compile in webappClientWw     ).value, Frontend.scalaJsPathWw     .value)
 
-          syncSJS((scalaJSLinkedFile in Compile in webappClientHome   ).value, "client-home")
-          syncSJS((scalaJSLinkedFile in Compile in webappClientProject).value, "client-project")
-          syncSJS((scalaJSLinkedFile in Compile in webappClientWw     ).value, "ww")
-        },
-
-        { val k = Keys.`package`; k := k.dependsOn(copyClientJs).value },
-        { val k = webappPrepare ; k := k.dependsOn(copyClientJs).value }
+          // Copy frontend assets
+          IO.copyDirectory(baseDirectory.value / Frontend.serve, target, overwrite = true)
+        }
       )
 
     def testSettings = (_: Project)
@@ -287,8 +259,8 @@ object WebappBuild {
       .settings(inConfig(Test)(Seq(
         fork                         := true,
         javaOptions                  += "-Drun.mode=test",
-        unmanagedResourceDirectories += baseDirectory.value / Frontend.current.serve, // So templates load
-        unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp", // Just in-case
+        unmanagedResourceDirectories += baseDirectory.value / Frontend.serve,
+        unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp",
         parallelExecution            := false) // Due to UserFixture+Oshiro and LiveTest
       ): _*)
 
@@ -340,44 +312,53 @@ object WebappBuild {
           IO.copyFile(srcSsl / "ssl-passwords.ini", tmpSsl / "start.d/ssl-passwords.ini", true)
 
           // Prepare exploded WAR
-          var assetPathGoodAndBad = Vector("dev", "a")
-          assetPathGoodAndBad = assetPathGoodAndBad.map(_ + "/")
-          if (releaseMode) assetPathGoodAndBad = assetPathGoodAndBad.reverse
-          val assetPath = assetPathGoodAndBad.head
           val tmpWar = prepareTmpDir("war")
-          val japgolly = ".*(adt-macros|config_|macro-utils|nonempty|nyaya|scalaz-ext|stdlib-ext|univeq).*"
-          val webappJs = "^(webapp-.*|(ww|client-home|client-project)\\.js$)"
-          val warTiers =
+          val warTiers = {
+            val scalaJsPathHome    = Frontend.scalaJsPathHome   .value
+            val scalaJsPathProject = Frontend.scalaJsPathProject.value
+            val scalaJsPathWw      = Frontend.scalaJsPathWw     .value
+            val vizJs              = Frontend.manifestPath("vizJs").value
+            val japgollyLib        = ".*(adt-macros|config_|macro-utils|nonempty|nyaya|scalaz-ext|stdlib-ext|univeq).*"
+            val images             = ".*\\.(?:ico|svg|png)$"
+            def withLibPart(path: String) = {
+              val x = "WEB-INF/lib/"
+              (path, Option(path).filter(_ startsWith x).map(_ drop x.length))
+            }
+            // for f in $(seq 19); do find /tmp/shipreq-release.sbt/webapp-server/target/docker/$f/bucket-* -type f |sort|xargs du -sch; echo; done
             webappPrepare.value
               .filterNot(_._1.isDirectory)
-              .filterNot(_._2 startsWith assetPathGoodAndBad(1))
-              .groupBy(_._2 match {
-                case n if n.startsWith(assetPath) =>
-                  n.drop(assetPath.length) match {
-                    case n if n startsWith "viz.js"        => (10, false)
-                    case _ if n contains   "/fonts/"       => (11, false)
-                    case n if n startsWith "katex"         => (11, false)
-                    case n if n startsWith "public"        => (60, false)
-                    case n if n startsWith "member"        => (60, false)
-                    case n if n matches    webappJs        => (98, false)
-                    case _                                 => (80, false)
-                  }
-                case n if n.startsWith("WEB-INF/lib/") =>
-                  n.drop("WEB-INF/lib/".length) match {
-                    case f if f startsWith "webapp-server" => (99, true)
-                    case f if f startsWith "webapp-"       => (95, true)
-                    case f if f startsWith "taskman"       => (83, true)
-                    case f if f startsWith "base-"         => (82, true)
-                    case f if f matches    japgolly        => (58, false)
-                    case f if f startsWith "lift"          => (50, false)
-                    case f if f matches    "^scalap?-.*"   => ( 0, false)
-                    case _                                 => (55, false)
-                  }
-                case _                                     => (80, false)
+              .groupBy(x => withLibPart(x._2) match {
+              //case (_, None)                                        => (97, false) // -
+                case (p, None)    if p endsWith   ".html"             => (96, false) // -
+                case (p, None)    if p ==          scalaJsPathProject => (88, false) // 3.3M ***
+                case (p, None)    if p ==          scalaJsPathHome    => (86, false) // 840K *
+                case (p, None)    if p ==          scalaJsPathWw      => (84, false) // 472K
+              //case (p, None)    if p endsWith   ".js"               => (83, false) // 808K *
+                case (_, Some(l)) if l startsWith "webapp-server"     => (76, true)  // 1.1M *
+                case (_, Some(l)) if l startsWith "webapp-"           => (74, true)  // 3.2M ***
+                case (_, Some(l)) if l startsWith "taskman"           => (66, true)  // 128K
+                case (_, Some(l)) if l startsWith "base-"             => (60, true)  // 924K *
+                case (_, Some(l)) if l matches     japgollyLib        => (54, false) // 896K *
+              //case (p, None)    if p endsWith   ".css"              => (35, false) // 392K
+              //case (p, None)    if p matches     images             => (33, false) // 136K
+              //case (_, Some(_))               /* 3rd party jars */  => (23, false) // 30M  ******************************
+                case (p, None)    if p startsWith "icons."            => (22, false) // 976K *
+                case (p, None)    if p startsWith "fonts/"            => (20, false) // 2.6M ***
+                case (_, Some(l)) if l startsWith "lift"              => (14, false) // 5.7M ******
+                case (_, Some(l)) if l matches    "^scalap?-.*"       => (12, false) // 19M  *******************
+                case (p, None)    if p ==          vizJs              => (10, false) // 1.6M **
+
+                // These general patterns need to come last (eg. *.js must be after vizJs)
+                case (p, None)    if p endsWith   ".js"               => (83, false) // 808K *
+                case (p, None)    if p endsWith   ".css"              => (35, false) // 392K
+                case (p, None)    if p matches     images             => (33, false) // 136K
+                case (_, Some(_))               /* 3rd party jars */  => (23, false) // 30M  ******************************
+                case (_, None)                                        => (97, false) // -
               })
             .toList
             .sortBy(_._1._1)
             .map { case ((bucket, fixJars), fs) => (bucket, fixJars, fs.sortBy(_._2)) }
+          }
           // printFileBatches(warTiers.map(_.map(_._1)))
 
           val comp = if (releaseMode) "pigz -k -11" else "pigz -k -9"
@@ -395,9 +376,7 @@ object WebappBuild {
                   "for f in  $(find -name '*.jar'); do unzip -l $f| cut -b31- | grep '/$' | xargs zip -dq $f META-INF/MANIFEST.MF; done")
 
               // Compress assets
-              val stagedAssets = stage / assetPath
-              if (stagedAssets.exists())
-                execInBash(s"cd ${stagedAssets.getAbsolutePath} && find -type f | egrep -v '\\.(gz|zip|eot|woff2?)$$' | parallel --no-notice $comp")
+              execInBash(s"cd ${stage.getAbsolutePath} && find -type f | egrep -v '\\.(gz|zip|jar|html|eot|woff2?)$$' | parallel --no-notice $comp")
 
               // Redirect HTTP to HTTPS
               val stagedWebXml = stage / webXml
@@ -463,7 +442,7 @@ object WebappBuild {
       .configure(
         webappSettings,
         Common.jvmSettings,
-        clientJsSettings,
+        assetSettings,
         testSettings,
         dockerSettings)
       .settings(
