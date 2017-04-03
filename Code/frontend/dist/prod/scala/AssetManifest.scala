@@ -21,5 +21,5 @@ object AssetManifest {
 
   def webappClientProjectJs = "/p.js";
 
-  def webappClientWwJs = "/ww.js";
+  def webappClientWwJs = "/w.js";
 }

@@ -17,9 +17,9 @@ object AssetManifest {
 
   def vizJs = "/viz-89ebc70c.js";
 
-  def webappClientHomeJs = "/h.js";
+  def webappClientHomeJs = "/shipreq-home.js";
 
-  def webappClientProjectJs = "/p.js";
+  def webappClientProjectJs = "/shipreq-project.js";
 
-  def webappClientWwJs = "/ww.js";
+  def webappClientWwJs = "/shipreq-ww.js";
 }

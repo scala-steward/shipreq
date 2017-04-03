@@ -10,7 +10,7 @@ const fixLinksInLiftTemplates = i =>
   /<head[ >]/.test(i.content()) ? t => t :
   tag => tag.replace(/^(<link )/, '$1data-lift="head" ');
 
-const makeConfig = ({ mode, name, htmlMinifyOptions }) => {
+const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
 
   const webpackOutput = `/tmp/shipreq.webpack.${mode}`;
   const fromWebpack = o => Object.assign({ type: 'local', src: webpackOutput }, o);
@@ -41,17 +41,17 @@ const makeConfig = ({ mode, name, htmlMinifyOptions }) => {
       sir: fromWebpack({ files: 'sir.css' }),
 
       webappClientWw: [
-        { type: 'external', path: '/ww.js', manifest: 'webappClientWwJs' },
+        { type: 'external', path: sjsPath('ww'), manifest: 'webappClientWwJs' },
         'vizJs',
       ],
 
       webappClientHome: [
-        { type: 'external', path: '/h.js', manifest: 'webappClientHomeJs' },
+        { type: 'external', path: sjsPath('home'), manifest: 'webappClientHomeJs' },
         'member',
       ],
 
       webappClientProject: [
-        { type: 'external', path: '/p.js', manifest: 'webappClientProjectJs' },
+        { type: 'external', path: sjsPath('project'), manifest: 'webappClientProjectJs' },
         'member',
       ],
     },

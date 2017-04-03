@@ -13,6 +13,30 @@ import TaskmanBuild._
   */
 object WebappBuild {
 
+  object Frontend {
+    case class Settings(mode: String) {
+      val dist = s"../frontend/dist/$mode"
+      val local = s"$dist/local"
+      val scala = s"$dist/scala"
+      val serve = s"$dist/serve"
+    }
+    val dev = Settings("dev")
+    val prod = Settings("prod")
+    val current = if (releaseMode) prod else dev
+
+    def syncOutputToManifest(name: String): Project => Project = {
+      def filename(s: Settings) = Def.setting {
+        val lines = IO.readLines(file(s"${baseDirectory.value}/${s.scala}/AssetManifest.scala"))
+        val List(line) = lines.filter(_.contains(s"webappClient${name}Js"))
+        val f = "(?<=\"/)(.+)\\.js(?=\")".r.findFirstIn(line).get
+        f
+      }
+      _.settings(
+        artifactPath in (Compile, fastOptJS) := (crossTarget in fastOptJS).value / filename(dev).value,
+        artifactPath in (Compile, fullOptJS) := (crossTarget in fullOptJS).value / filename(prod).value)
+    }
+  }
+
   // TODO This is obsolete
   lazy val webappSettings =
     Common.settings.andThen(_.configure(webappCmdAliases))
@@ -63,13 +87,6 @@ object WebappBuild {
       .configureJvm(_.dependsOn(baseDb))
       .depsForJvm(postgresql)
 
-  object Frontend {
-    val dist = s"../frontend/dist/${if (releaseMode) "prod" else "dev"}"
-    val local = s"$dist/local"
-    val scala = s"$dist/scala"
-    val serve = s"$dist/serve"
-  }
-
   lazy val webappBaseJvm = webappBase.jvm
   lazy val webappBaseJs  = webappBase.js
   lazy val webappBase =
@@ -83,7 +100,7 @@ object WebappBuild {
       .dependsOn(baseUtil, webappMacro)
       .configureBoth(useMacroParadise)
       .settings(
-        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
+        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.current.scala)
 
   lazy val webappBaseServerJvm = webappBaseServer.jvm
   lazy val webappBaseServerJs  = webappBaseServer.js
@@ -144,6 +161,7 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
+        Frontend.syncOutputToManifest("Home"),
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -169,8 +187,9 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings)
-    .settings(
+        webappSettings,
+        Frontend.syncOutputToManifest("Ww"))
+      .settings(
       scalaJSOutputWrapper := ("", "Main().main();"))
 
   lazy val webappClientProject =
@@ -186,6 +205,7 @@ object WebappBuild {
       .configure(
         Common.jsSettings(NeedDom),
         webappSettings,
+        Frontend.syncOutputToManifest("Project"),
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -267,7 +287,7 @@ object WebappBuild {
       .settings(inConfig(Test)(Seq(
         fork                         := true,
         javaOptions                  += "-Drun.mode=test",
-        unmanagedResourceDirectories += baseDirectory.value / Frontend.serve, // So templates load
+        unmanagedResourceDirectories += baseDirectory.value / Frontend.current.serve, // So templates load
         unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp", // Just in-case
         parallelExecution            := false) // Due to UserFixture+Oshiro and LiveTest
       ): _*)
