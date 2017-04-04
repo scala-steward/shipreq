@@ -27,7 +27,7 @@ object Dependencies {
   }
 
   object Scalaz {
-    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.9")
+    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.10")
     val core       = mm("scalaz-core")
     val effect     = mm("scalaz-effect") ++ core
     val concurrent = mm("scalaz-concurrent") ++ effect
@@ -95,12 +95,12 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.5.0")
+    private val mm = MultiModule.scala("org.json4s", "3.5.1")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
   object SLF4J {
-    private val mm = MultiModule.java("org.slf4j", "1.7.24")
+    private val mm = MultiModule.java("org.slf4j", "1.7.25")
     val api = mm("slf4j-api")
     val jcl = mm("jcl-over-slf4j")
   }
@@ -138,7 +138,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.2.v20170220")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.3.v20170317")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
     val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
@@ -165,7 +165,7 @@ object Dependencies {
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.0.0")
   val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.6.1")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.1")
+  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.5")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.42.0")
