@@ -9,7 +9,6 @@ Misc
   * Group req types in filter from ALL to ANY.
   * Say "no implications" in imp graph
   * ProjectSpaLoader has wrong path in dev
-  * Support running webapp from SBT with dev DB from Docker
 
 Integrate async into ContentEditorFeature rendering
   * Remove EditValidationFeature

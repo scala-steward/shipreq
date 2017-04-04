@@ -223,6 +223,7 @@ object WebappBuild {
 
   object Server {
     import com.earldouglas.xwp._
+    import ContainerPlugin.start
     import ContainerPlugin.autoImport._
     import JettyPlugin    .autoImport._
     import WebappPlugin   .autoImport._
@@ -254,7 +255,7 @@ object WebappBuild {
       )
 
     def testSettings = (_: Project)
-      .configure(TestEnv.required)
+      .configure(DockerEnv.test.required)
       .dependsOn(webappBaseTestJvm % "test->compile")
       .settings(inConfig(Test)(Seq(
         fork                         := true,
@@ -431,6 +432,23 @@ object WebappBuild {
         }
       )
 
+    def connectToDockerDevEnv: Project => Project =
+      _.configure(DockerEnv.dev.commands)
+        .settings(
+
+          containerArgs in Jetty ++=
+            "--classes" :: (baseDirectory.value / s"../docker/dev/webapp").absolutePath :: Nil,
+
+          javaOptions in Jetty ++=
+            "-Ddb.port=14032" ::
+            "-Drun.mode=development" ::
+              DockerEnv.javaOptionsFromDockerComposeEnv("webapp", baseDirectory.value / "../docker/dev/docker-compose.yml")
+                .filterNot(s => s.startsWith("-Ddb.host=") || s.startsWith("-Drun.mode=")),
+
+          start in Jetty :=
+            (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value
+        )
+
     def definition = (_: Project)
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
       .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
@@ -444,6 +462,7 @@ object WebappBuild {
         Common.jvmSettings,
         assetSettings,
         testSettings,
+        connectToDockerDevEnv,
         dockerSettings)
       .settings(
         containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version

@@ -26,7 +26,7 @@ object TaskmanBuild {
 
   lazy val taskmanApiImpl =
     project("taskman-api-impl")
-      .configure(Common.settings, Common.jvmSettings, TestEnv.required)
+      .configure(Common.settings, Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Json4s.jackson ++
         testScope(Specs2.combo ++ scalaCheck ++ Scala.reflect))
@@ -71,7 +71,7 @@ object TaskmanBuild {
 
     project("taskman-server-impl")
       .enablePlugins(JavaAppPackaging, DockerPlugin)
-      .configure(Common.settings, Common.jvmSettings, TestEnv.required)
+      .configure(Common.settings, Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
         testScope(Akka.testkit ++ Specs2.combo))
