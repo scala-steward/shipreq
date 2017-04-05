@@ -1,7 +1,6 @@
 Frontend
-  * Upgrade deps
   * Switch to semantic-react
-  * Find alternative for jquery-textcomplete
+  * Replace yuku-t/jquery-textcomplete with yuku-t/textcomplete
   * Remove jQuery
   * Improve load times, maybe defer stuff? Or maybe on-demand loading?
     * Katex.js can be loaded on demand. Only the CSS is required for rendering.
@@ -9,7 +8,6 @@ Frontend
 Misc
   * Group req types in filter from ALL to ANY.
   * Say "no implications" in imp graph
-  * ProjectSpaLoader has wrong path in dev
 
 Integrate async into ContentEditorFeature rendering
   * Remove EditValidationFeature

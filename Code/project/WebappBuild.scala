@@ -250,7 +250,9 @@ object WebappBuild {
           copyScalaJs((scalaJSLinkedFile in Compile in webappClientWw     ).value, Frontend.scalaJsPathWw     .value)
 
           // Copy frontend assets
-          IO.copyDirectory(baseDirectory.value / Frontend.serve, target, overwrite = true)
+          val assetSrc = baseDirectory.value / Frontend.serve
+          log.info(s"Copying ${assetSrc.getCanonicalPath} → ${target.absolutePath}")
+          IO.copyDirectory(assetSrc, target, overwrite = true)
         }
       )
 
