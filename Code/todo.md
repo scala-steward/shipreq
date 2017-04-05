@@ -3,7 +3,8 @@ Frontend
   * Switch to semantic-react
   * Find alternative for jquery-textcomplete
   * Remove jQuery
-  * Improve load times, maybe defer stuff like KaTeX? Or maybe on-demand loading?
+  * Improve load times, maybe defer stuff? Or maybe on-demand loading?
+    * Katex.js can be loaded on demand. Only the CSS is required for rendering.
 
 Misc
   * Group req types in filter from ALL to ANY.

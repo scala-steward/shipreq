@@ -80,7 +80,7 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
       },
 
       katex: [
-        { type: 'local', src: 'node_modules/katex/dist', files: '*.min.js' },
+        { type: 'local', src: 'node_modules/katex/dist', files: '*.min.{js,css}' },
         { type: 'local', src: 'node_modules/katex/dist', files: 'fonts/**/*', transitive: true },
       ],
 
