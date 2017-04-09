@@ -5,6 +5,7 @@ import scalaz.{-\/, \/-}
 import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.util.TextMod
 import Simple._
+import Simple.Implicits._
 
 object CommonValidation {
   private implicit def regexToPattern(regex: scala.util.matching.Regex): Pattern = regex.pattern

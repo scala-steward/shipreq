@@ -5,6 +5,7 @@ import scalaz.Equal
 import scalaz.syntax.equal._
 import shipreq.base.util.OptionalConflict
 import Simple._
+import Simple.Implicits._
 
 object Uniqueness {
 

@@ -2,7 +2,7 @@ package shipreq.webapp.base.vali2
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.nonempty.NonEmptyVector
-import Simple.SimpleExt_Validator
+import Simple.Implicits._
 
 object Composite {
 
