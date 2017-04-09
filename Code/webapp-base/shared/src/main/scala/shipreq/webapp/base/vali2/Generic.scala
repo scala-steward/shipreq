@@ -3,6 +3,7 @@ package shipreq.webapp.base.vali2
 import scalaz.Isomorphism.<=>
 import scalaz.{-\/, Applicative, Semigroup, Traverse, \/, \/-}
 import shipreq.base.util.{GenTuple, Identity}
+import shipreq.webapp.base.vali2.Simple.Invalidity
 
 object Generic {
 
@@ -121,6 +122,12 @@ object Generic {
     @inline def apply(a: A): Option[E] =
       invalidate(a)
 
+    def audit[AA <: A with AnyRef](a: AA): E \/ a.type =
+      invalidate(a) match {
+        case None => \/-[a.type](a)
+        case Some(e) => -\/(e)
+      }
+
     def contramap[B](f: B => A): Invalidator[E, B] =
       Invalidator(invalidate compose f)
 
@@ -213,6 +220,15 @@ object Generic {
     def id[A]: Auditor[Nothing, A, A] =
       Auditor(\/-(_))
 
+    def optionFn[E, A, B](f: A => Option[B])(invalidity: A => E): Auditor[E, A, B] =
+      apply(a => f(a) match {
+        case Some(b) => \/-(b)
+        case None => -\/(invalidity(a))
+      })
+
+    def option[E, A](invalidity: => E): Auditor[E, Option[A], A] =
+      optionFn[E, Option[A], A](Identity.apply)(_ => invalidity)
+
     def sequence[E, F[_], A](implicit T: Traverse[F], E: Semigroup[E]): Auditor[E, F[E \/ A], F[A]] =
       Auditor(i => T.sequence(i)(AccumuateErrors.applicativeInstance(E)))
 
@@ -294,8 +310,11 @@ object Generic {
     def mapValid[A](f: V => A): Validator[E, I, C, A] =
       mapAuditor(_.mapValid(f))
 
-    def appendInvalidator[EE >: E](i: Invalidator[EE, V]) =
+    def appendInvalidator[EE >: E](i: Invalidator[EE, V]): Validator[EE, I, C, V] =
       mapAuditor(_.appendInvalidator(i))
+
+    def andThenAuditor[EE >: E, A](a: Auditor[EE, V, A]): Validator[EE, I, C, A] =
+      mapAuditor(_.andThen(a))
 
     def andThen[EE >: E, C2, V2](next: Validator[EE, V, C2, V2])(implicit E: Semigroup[EE]): Validator[EE, I, C, V2] =
       mapAuditor(_.andThen(next.toAuditor[EE]))

@@ -15,8 +15,9 @@ import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.{Grammar, PlainText, Text}
 import shipreq.webapp.base.util.TextMod
-import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.vali2.{CommonValidation => V, _}
+import shipreq.webapp.base.UiText.FieldNames
+import shipreq.webapp.base.WebappConfig
 import Simple._
 import Simple.Implicits._
 import Uniqueness.Util._
@@ -29,10 +30,10 @@ object Validators2 {
   private val genericDesc: Composite.Stateless[String, Option[String], Option[String]] =
     V.optionalLargeText.named(FieldNames.desc)
 
-  //  def genericRichText(pt: PlainText.ForProject, txt: Text.AnyOptional): ValidationResult[txt.type] =
-  //    ValidationResult.test[txt.type](
-  //      pt.format(Live, txt).length <= WebappConfig.largeTextMaxLength,
-  //      txt, VFailure.looseMsg("Text too large.")) // english
+  def genericRichText(pt: PlainText.ForProject): Invalidator[Text.AnyOptional] =
+    Invalidator.test(
+      pt.format(Live, _).length <= WebappConfig.largeTextMaxLength,
+      Invalidity("Text too large.")) // english
 
   // TODO Make vals lazy
   lazy val projectName = V.mandatoryShortText.toValidator.named("Project name")

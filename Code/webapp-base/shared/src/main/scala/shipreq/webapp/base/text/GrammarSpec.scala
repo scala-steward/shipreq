@@ -4,11 +4,12 @@ import java.util.regex.Pattern
 import org.parboiled2.CharPredicate
 import scala.collection.immutable.NumericRange
 import scala.runtime.AbstractFunction1
+import scalaz.std.stream.streamInstance
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Util
 import shipreq.webapp.base.validation.{Constraints, Rules}
 import shipreq.webapp.base.vali2.CommonValidation
-import shipreq.webapp.base.vali2.Simple.{EndoValidator, Invalidity, Invalidator}
+import shipreq.webapp.base.vali2.Simple._
 
 /**
   * Various aids to facilitate building a grammar specification that can be used to enforcement code.
@@ -107,5 +108,11 @@ object GrammarSpec {
 
     def stream(input: String): Stream[String] =
       split(input).toStream
+
+    def corrector: Corrector[String, Stream[String]] =
+      Corrector.full(stream, merge)
+
+    def validator[V](elementAuditor: Auditor[String, V]): Validator[String, Stream[String], Stream[V]] =
+      corrector withAuditor elementAuditor.liftTraverse[Stream]
   }
 }
