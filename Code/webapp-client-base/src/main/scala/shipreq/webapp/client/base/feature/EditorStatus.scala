@@ -3,7 +3,7 @@ package shipreq.webapp.client.base.feature
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalaz.{-\/, \/, \/-}
-import shipreq.base.util.ValidUpdate
+import shipreq.base.util.PotentialChange
 import shipreq.webapp.base.validation.Simple._
 import EditorStatus._
 
@@ -88,15 +88,15 @@ object EditorStatus {
       case -\/(e) => Invalid(Invalidity.toText(e))
     }
 
-  def validUpdate[E, A](vu: ValidUpdate[E, A])(commit: A => Callback, unchanged: Callback)(implicit fmtErr: E => TagMod): Sync =
+  def potentialChange[E, A](vu: PotentialChange[E, A])(commit: A => Callback, unchanged: Callback)(implicit fmtErr: E => TagMod): Sync =
     vu match {
-      case ValidUpdate.Success(a) => Valid(commit(a))
-      case ValidUpdate.Unchanged  => Valid(unchanged)
-      case ValidUpdate.Failure(e) => Invalid(fmtErr(e))
+      case PotentialChange.Success(a) => Valid(commit(a))
+      case PotentialChange.Unchanged  => Valid(unchanged)
+      case PotentialChange.Failure(e) => Invalid(fmtErr(e))
     }
 
-  def validUpdateV[A](vu: ValidUpdate[Invalidity, A])(commit: A => Callback, unchanged: Callback): Sync =
-    validUpdate(vu)(commit, unchanged)(Invalidity.toText)
+  def validUpdateV[A](vu: PotentialChange[Invalidity, A])(commit: A => Callback, unchanged: Callback): Sync =
+    potentialChange(vu)(commit, unchanged)(Invalidity.toText)
 
   def async[A, I](as: AsyncActionFeature.D0.State[A],
                   af: AsyncActionFeature.D0.Feature[A])

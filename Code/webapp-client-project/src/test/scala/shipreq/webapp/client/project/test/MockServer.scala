@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.test
 
 import japgolly.scalajs.react._
-import shipreq.base.util.ValidUpdate._
+import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.protocol._

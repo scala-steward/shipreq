@@ -2,7 +2,7 @@ package shipreq.webapp.base.server
 
 import scalaz.{\/-, -\/}
 import utest._
-import shipreq.base.util.ValidUpdate._
+import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol._

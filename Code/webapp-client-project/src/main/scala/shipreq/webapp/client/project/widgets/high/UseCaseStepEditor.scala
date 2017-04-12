@@ -34,10 +34,10 @@ object UseCaseStepEditor {
   type InitialValue = TextAndFlow[OptionalText, Set[UseCaseStepId]]
 
   type Validated = TextAndFlow[
-    ValidUpdate[Invalidity, OptionalText],
-    ValidUpdate[Invalidity, SetDiff.NE[UseCaseStepId]]]
+    PotentialChange[Invalidity, OptionalText],
+    PotentialChange[Invalidity, SetDiff.NE[UseCaseStepId]]]
 
-  type ValidatedChanges = ValidUpdate[Invalidity, UseCaseStepGD.NonEmptyValues]
+  type ValidatedChanges = PotentialChange[Invalidity, UseCaseStepGD.NonEmptyValues]
 
   type CommitFn = UseCaseStepGD.NonEmptyValues ~=> Callback
 
@@ -85,9 +85,9 @@ object UseCaseStepEditor {
           for (v <- validated.text          ) vs += UseCaseStepGD.Title  (v)
           for (v <- validated flow Forwards ) vs += UseCaseStepGD.FlowOut(v)
           for (v <- validated flow Backwards) vs += UseCaseStepGD.FlowIn (v)
-          ValidUpdate.nonEmpty(vs)
+          PotentialChange.nonEmpty(vs)
         case Some(failure) =>
-          ValidUpdate.Failure(failure)
+          PotentialChange.Failure(failure)
       }
 
     val validity: Validity =

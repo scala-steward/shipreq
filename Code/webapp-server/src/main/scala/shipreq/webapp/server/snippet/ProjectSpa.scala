@@ -92,16 +92,16 @@ class ProjectSpa(projectId: ProjectId) extends SingleOpStatefulSnippet {
 
         ApplyNewEvent(event, curState.project) match {
 
-          case ValidUpdate.Success(u) =>
+          case PotentialChange.Success(u) =>
             saveAndApplyNewEvent(curState, u) flatMap {
               case \/-(s2) => state.set(s2).map(_ => \/-(Vector1(u.ve)))
               case e@ -\/(_) => IO(e)
             }
 
-          case ValidUpdate.Unchanged =>
+          case PotentialChange.Unchanged =>
             NoChangeResponse
 
-          case ValidUpdate.Failure(e) =>
+          case PotentialChange.Failure(e) =>
             IO {
               System.err.println(s"Error: $event failed with $e.")
               -\/(GenericFailure(e))

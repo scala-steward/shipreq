@@ -1,17 +1,17 @@
 package shipreq.webapp.base.server
 
 import scalaz.{-\/, \/-}
-import shipreq.base.util.ValidUpdate
+import shipreq.base.util.PotentialChange
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.hash.HashRec
-import ValidUpdate._
+import PotentialChange._
 
 object ApplyNewEvent {
 
   case class Updated(project: Project, ae: ActiveEvent, ve: VerifiedEvent)
 
-  type Result = ValidUpdate[String, Updated]
+  type Result = PotentialChange[String, Updated]
 
   def apply(e: ActiveEvent, p1: Project): Result =
     ApplyEvent.untrusted.apply1(e)(p1) match {

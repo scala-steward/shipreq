@@ -1,29 +1,29 @@
 package shipreq.base.util
 
 import japgolly.microlibs.nonempty.NonEmpty
-import ValidUpdate._
+import PotentialChange._
 
-sealed abstract class ValidUpdate[+E, +A] {
+sealed abstract class PotentialChange[+E, +A] {
   final def foreach(f: A => Unit): Unit =
     this match {
       case Success(a)             => f(a)
       case Failure(_) | Unchanged => ()
     }
 
-  final def map[B](f: A => B): ValidUpdate[E, B] =
+  final def map[B](f: A => B): PotentialChange[E, B] =
     flatMap(a => Success(f(a)))
 
-  final def flatMap[B, EE >: E](f: A => ValidUpdate[EE, B]): ValidUpdate[EE, B] =
+  final def flatMap[B, EE >: E](f: A => PotentialChange[EE, B]): PotentialChange[EE, B] =
     this match {
       case Success(a)   => f(a)
       case x@Failure(_) => x
       case Unchanged    => Unchanged
     }
 
-  final def mapFailure[F](f: E => F): ValidUpdate[F, A] =
+  final def mapFailure[F](f: E => F): PotentialChange[F, A] =
     flatMapFailure(e => Failure(f(e)))
 
-  final def flatMapFailure[F, AA >: A](f: E => ValidUpdate[F, AA]): ValidUpdate[F, AA] =
+  final def flatMapFailure[F, AA >: A](f: E => PotentialChange[F, AA]): PotentialChange[F, AA] =
     this match {
       case x@Success(_) => x
       case Failure(e)   => f(e)
@@ -61,16 +61,16 @@ sealed abstract class ValidUpdate[+E, +A] {
   final def validity: Validity =
     Invalid <~ isFailure
 
-  final def compare(f: A => Permission): ValidUpdate[E, A] =
+  final def compare(f: A => Permission): PotentialChange[E, A] =
     this match {
       case Success(a) if f(a) :: Deny => Unchanged
       case _                          => this
     }
 
-  final def ignore(f: A => Boolean): ValidUpdate[E, A] =
+  final def ignore(f: A => Boolean): PotentialChange[E, A] =
     compare(Deny <~ f(_))
 
-  final def filter(f: A => Boolean): ValidUpdate[E, A] =
+  final def filter(f: A => Boolean): PotentialChange[E, A] =
     compare(Allow <~ f(_))
 
   final def toOption: Option[A] =
@@ -80,25 +80,25 @@ sealed abstract class ValidUpdate[+E, +A] {
     }
 }
 
-object ValidUpdate {
+object PotentialChange {
 
-  sealed abstract class NonFailure[+A] extends ValidUpdate[Nothing, A]
+  sealed abstract class NonFailure[+A] extends PotentialChange[Nothing, A]
 
   case class Success[+A](update: A) extends NonFailure[A]
 
   case object Unchanged extends NonFailure[Nothing]
 
-  case class Failure[+E](failure: E) extends ValidUpdate[E, Nothing]
+  case class Failure[+E](failure: E) extends PotentialChange[E, Nothing]
 
   import scalaz.{\/, \/-, -\/, Validation}
 
-  def fromDisjunction[E, A](d: E \/ A): ValidUpdate[E, A] =
+  def fromDisjunction[E, A](d: E \/ A): PotentialChange[E, A] =
     d match {
       case \/-(a) => Success(a)
       case -\/(e) => Failure(e)
     }
 
-  def fromValidation[E, A](v: Validation[E, A]): ValidUpdate[E, A] =
+  def fromValidation[E, A](v: Validation[E, A]): PotentialChange[E, A] =
     v match {
       case scalaz.Success(a) => Success(a)
       case scalaz.Failure(e) => Failure(e)

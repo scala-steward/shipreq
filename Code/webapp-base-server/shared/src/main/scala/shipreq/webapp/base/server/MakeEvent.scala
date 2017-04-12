@@ -13,14 +13,14 @@ import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.util.GenericDataMacros._
 import DataImplicits._
 import ScalaExt._
-import ValidUpdate._
+import PotentialChange._
 
 /**
  * Translates [[RemoteFn]] inputs into [[ActiveEvent]]s.
  */
 object MakeEvent {
 
-  type Result = ValidUpdate[String, ActiveEvent]
+  type Result = PotentialChange[String, ActiveEvent]
 
   // ===================================================================================================================
 
