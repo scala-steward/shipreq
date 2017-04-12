@@ -28,7 +28,7 @@ import shipreq.base.util.UnivEq
   * ============
   * - Committing the edit value.
   * - Comparing the edit value with the pre-edit value.
-  * - Validation (use the [[EditValidationFeature]] for that).
+  * - Validation (use the [[PotentialChange]] for that).
   */
 object LocalEditorFeature {
 

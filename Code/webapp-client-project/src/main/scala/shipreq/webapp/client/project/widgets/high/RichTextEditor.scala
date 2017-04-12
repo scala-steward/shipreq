@@ -5,7 +5,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
-import shipreq.base.util.Validity
+import shipreq.base.util.{PotentialChange, Validity}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -37,11 +37,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     val richText    = text.parse(project)(edit.value)
     val parseResult = DataValidators.genericRichText(plainText).audit(richText)
-    val validated   = EditValidationFeature.compareOption(parseResult)(preEditValue)
+    val validated   = PotentialChange.fromDisjunction(parseResult).ignoreOption(preEditValue)
     def abort       = abortCommit.fold(Callback.empty)(_.abort)
     def commit      = (t: text.OptionalText) => abortCommit.fold(Callback.empty)(_ commit t)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)
-    def showPreview = validated.value.isChanged
+    def showPreview = validated.isChanged
 
     def render = Component(this)
   }

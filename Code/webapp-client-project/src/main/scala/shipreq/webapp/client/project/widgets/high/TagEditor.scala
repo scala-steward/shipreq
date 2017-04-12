@@ -76,7 +76,7 @@ object TagEditor {
     val parseResultSet: Invalidity \/ Set[ApplicableTagId] =
       parseResult.map(_.map(_.id)(collection.breakOut))
 
-    val validated = EditValidationFeature.compareSetOption(parseResultSet)(preEditValue)
+    val validated = PotentialChange.fromDisjunction(parseResultSet).setDiffOption(preEditValue)
     def abort     = abortCommit.fold(Callback.empty)(_.abort)
     def commit    = (r: Output) => abortCommit.fold(Callback.empty)(_ commit r)
     val status    = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)

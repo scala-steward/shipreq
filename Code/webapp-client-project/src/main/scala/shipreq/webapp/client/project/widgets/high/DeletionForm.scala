@@ -439,7 +439,7 @@ object DeletionForm {
         for {
           reqs          ← NonEmptySet.option(s.selectedReqs.selected)
           reqCodeGroups = s.selectedGroups.selected
-          dr            ← reasonTextProps.validated.value.toOption
+          dr            ← reasonTextProps.validated.toOption
         } yield
         p perform DeleteReqs(reqs, reqCodeGroups, dr)
 

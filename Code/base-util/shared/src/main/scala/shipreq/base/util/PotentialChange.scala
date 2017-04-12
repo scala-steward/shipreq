@@ -1,6 +1,8 @@
 package shipreq.base.util
 
 import japgolly.microlibs.nonempty.NonEmpty
+import japgolly.univeq.UnivEq
+import scalaz.Equal
 import PotentialChange._
 
 sealed abstract class PotentialChange[+E, +A] {
@@ -67,11 +69,26 @@ sealed abstract class PotentialChange[+E, +A] {
       case _                          => this
     }
 
+  final def filter(f: A => Boolean): PotentialChange[E, A] =
+    compare(Allow <~ f(_))
+
   final def ignore(f: A => Boolean): PotentialChange[E, A] =
     compare(Deny <~ f(_))
 
-  final def filter(f: A => Boolean): PotentialChange[E, A] =
-    compare(Allow <~ f(_))
+  final def ignoreValue[AA >: A](a: => AA)(implicit e: Equal[AA]): PotentialChange[E, A] =
+    ignore(e.equal(a, _))
+
+  final def ignoreOption[AA >: A](o: => Option[AA])(implicit e: Equal[AA]): PotentialChange[E, A] =
+    ignore(a => o.fold(false)(e.equal(a, _)))
+
+  final def ignoreEmpty[AA >: A, B](implicit p: NonEmpty.Proof[AA, B]): PotentialChange[E, B] =
+    flatMap(PotentialChange.nonEmpty[AA, B](_)(p))
+
+  final def setDiff[B](prev: Set[B])(implicit ev: A <:< Set[B], univEq: UnivEq[B]): PotentialChange[E, SetDiff.NE[B]] =
+    flatMap(a => PotentialChange.fromOption(NonEmpty(SetDiff.compare(prev, ev(a)))))
+
+  final def setDiffOption[B](prev: Option[Set[B]])(implicit ev: A <:< Set[B], univEq: UnivEq[B]): PotentialChange[E, SetDiff.NE[B]] =
+    flatMap(a => PotentialChange.fromOption(NonEmpty(SetDiff.compareOption(prev, ev(a)))))
 
   final def toOption: Option[A] =
     this match {
@@ -90,7 +107,7 @@ object PotentialChange {
 
   case class Failure[+E](failure: E) extends PotentialChange[E, Nothing]
 
-  import scalaz.{\/, \/-, -\/, Validation}
+  import scalaz.{\/, \/-, -\/}
 
   def fromDisjunction[E, A](d: E \/ A): PotentialChange[E, A] =
     d match {
@@ -98,24 +115,12 @@ object PotentialChange {
       case -\/(e) => Failure(e)
     }
 
-  def fromValidation[E, A](v: Validation[E, A]): PotentialChange[E, A] =
-    v match {
-      case scalaz.Success(a) => Success(a)
-      case scalaz.Failure(e) => Failure(e)
-    }
-
-  def option[A](o: Option[A]): NonFailure[A] =
+  def fromOption[A](o: Option[A]): NonFailure[A] =
     o match {
       case Some(a) => Success(a)
       case None    => Unchanged
     }
 
-  def setDiff[A](d: SetDiff[A]): NonFailure[SetDiff[A]] =
-    if (d.isEmpty)
-      Unchanged
-    else
-      Success(d)
-
   def nonEmpty[A, B](a: A)(implicit p: NonEmpty.Proof[A, B]): NonFailure[B] =
-    option(p tryProve a)
+    fromOption(p tryProve a)
 }

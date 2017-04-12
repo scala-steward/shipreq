@@ -29,7 +29,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
   def dataToSet(d: Option[In]): Set[ReqCode.Value]
 
-  val validate: Invalidity \/ In => Option[In] => EditValidationFeature.Result[Out]
+  val validate: (Invalidity \/ In, Option[In]) => PotentialChange[Invalidity, Out]
 
   val lineCardinality: LineCardinality
 
@@ -43,7 +43,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
                    abortCommit : AbortCommit) {
 
     val parseResult = validator(V.State(trie, dataToSet(initialValue)))(edit.value)
-    val validated   = validate(parseResult)(initialValue)
+    val validated   = validate(parseResult, initialValue)
     def abort       = abortCommit.fold(Callback.empty)(_.abort)
     def commit      = (r: Out) => abortCommit.fold(Callback.empty)(_ commit r)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)
@@ -120,7 +120,7 @@ object ReqCodeEditor {
     override val validator                           = V.code.unnamedFn
     override def liveCorrect(txt: String)            = V.code.stateless.corrector.live(txt)
     override def dataToSet(d: Option[ReqCode.Value]) = d.toSet
-    override val validate                            = EditValidationFeature.compareOption[ReqCode.Value] _
+    override val validate                            = PotentialChange.fromDisjunction(_).ignoreOption(_)
     override val lineCardinality                     = SingleLine
   }
 
@@ -149,7 +149,7 @@ object ReqCodeEditor {
     override def dataToSet(d: Option[Set[ReqCode.Value]]) =
       d getOrElse UnivEq.emptySet
 
-    override val validate = EditValidationFeature.compareSetOption[ReqCode.Value] _
+    override val validate = PotentialChange.fromDisjunction(_).setDiffOption(_)
 
     override val lineCardinality = MultiLine
   }

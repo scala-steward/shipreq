@@ -20,7 +20,7 @@ import shipreq.webapp.client.base.lib.{KeyboardTheme, AbortCommit => AbortCommit
 import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.feature.{AutoCompleteFeature, EditValidationFeature}
+import shipreq.webapp.client.project.feature.AutoCompleteFeature
 import AutoComplete.ReqItem
 import DataImplicits._
 
@@ -83,7 +83,7 @@ object ImplicationEditor {
                    textSearch    : TextSearch) {
 
     val parseResult = validationFn(lookup)(edit.value)
-    val validated   = EditValidationFeature.setDiff(parseResult)
+    val validated   = PotentialChange.fromDisjunction(parseResult).ignoreEmpty
     def abort       = abortCommit.fold(Callback.empty)(_.abort)
     def commit      = (r: Output) => abortCommit.fold(Callback.empty)(_ commit r)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)

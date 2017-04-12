@@ -23,7 +23,6 @@ import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.feature._
-import EditValidationFeature.{Result => EV}
 import RichTextEditor.hardcodedLive
 import Text.Equality._
 import Text.UseCaseStep.{OptionalText, lineCardinality}
@@ -70,13 +69,10 @@ object UseCaseStepEditor {
           .sequence[Invalidity \/ ?, UseCaseStepId](implicitly, Invalidity.applicative)
           .map(_.toSet))
 
-    val editValResult: TextAndFlow[EV[OptionalText], EV[SetDiff.NE[UseCaseStepId]]] =
-      valResult.composeF(preEditValue)(
-        EditValidationFeature.compareOption(_)(_),
-        EditValidationFeature.compareSetOption(_)(_))
-
     val validated: Validated =
-      editValResult.bimap(_.value, _.value)
+      valResult.composeF(preEditValue)(
+        PotentialChange.fromDisjunction(_).ignoreOption(_),
+        PotentialChange.fromDisjunction(_).setDiffOption(_))
 
     val validatedChanges: ValidatedChanges =
       validated.fold(_.getFailure)(_ orElse _.getFailure) match {
