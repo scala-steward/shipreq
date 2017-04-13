@@ -70,7 +70,6 @@ object ProjectItem {
 
     final case class Props(item           : ProjectCatalogue.Item,
                            state          : StateSnapshot[State],
-                           asyncFeature   : AsyncActionFeature.D0.Feature[String],
                            renameProjectIO: String => Callback) {
       @inline def render = Component(this)
     }
@@ -113,7 +112,7 @@ object ProjectItem {
 
       def renderEditor(p: Props, s: EditState): TagMod = {
         val status =
-          EditorStatus.async(s.async, p.asyncFeature) getOrElse
+          EditorStatus.async(s.async) getOrElse
             EditorStatus.validate(DataValidators.projectName.unnamed)(s.edit, p.renameProjectIO)
 
         PlainTextEditor.TempBasic.Props(

@@ -259,7 +259,7 @@ object ContentEditorFeature {
         $.modState(lens set None)
 
       private def commit(cmd: UpdateContentCmd): Callback =
-        async.wrapAsync((s, f) => saveIO(cmd, s >> abort, f))
+        async((s, f) => saveIO(cmd, s >> abort, f))
 
       private def makeAbortCommit[A](cmd: A => UpdateContentCmd): Some[AbortCommit[Callback, A ~=> Callback]] =
         Some(AbortCommit(abort, Reusable.fn(v => commit(cmd(v)))))
@@ -313,7 +313,7 @@ object ContentEditorFeature {
               rvar,
               initial,
               trie(),
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abortCommit)
               .render)
         }
@@ -336,7 +336,7 @@ object ContentEditorFeature {
               rvar,
               initial,
               trie(),
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abortCommit)
               .render)
         }
@@ -374,7 +374,7 @@ object ContentEditorFeature {
               initialValue,
               evar,
               pxChoices.value(),
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abortCommit)
               .render)
         }
@@ -423,7 +423,7 @@ object ContentEditorFeature {
               rvar,
               lookup.value(),
               valFn.value(),
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abortCommit,
               pxTextSearch.value())
               .render)
@@ -461,7 +461,7 @@ object ContentEditorFeature {
               initialValues,
               rvar,
               lookup.value(),
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abortCommit)
               .render)
         }
@@ -499,7 +499,7 @@ object ContentEditorFeature {
               editor.Props(
                 pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
                 rvar,
-                EditorStatus.async(as, async), abortCommit,
+                EditorStatus.async(as), abortCommit,
                 previewFeature.forChild(focusId, s), initial)
                 .render
             })
@@ -572,7 +572,7 @@ object ContentEditorFeature {
             UseCaseStepEditor.Props(
               pxProject, pxPlainText, pxTextSearch, pxProjectWidgets,
               rvar,
-              EditorStatus.async(as, async),
+              EditorStatus.async(as),
               abort, commit,
               previewFeature.forChild(focusId, s), initial)
               .render

@@ -137,7 +137,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val setProjectNameIO: String => Callback =
       newName => {
         def close = $.modState(State.projectName set None)
-        def save = projectNameAAF.wrapAsync((onSuccess, onFailure) =>
+        def save = projectNameAAF((onSuccess, onFailure) =>
           cp.call(initData.projectNameSet)(
             newName,
             cd.applyEventsS(_) >> onSuccess >> close,
@@ -161,7 +161,6 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           val pname = ProjectItem.WithEditableName.Props(
             cd.projectSummary(),
             StateSnapshot.zoomL(State.projectName)(s).setStateVia($),
-            projectNameAAF,
             setProjectNameIO)
 
           ProjectHome.Props(pname, index).render

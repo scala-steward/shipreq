@@ -38,7 +38,7 @@ object Home {
     val createProjectIO: String => Callback =
       name =>
         $.props >>= (p =>
-          createProjectAAF.wrapAsync((onSuccess, onFailure) =>
+          createProjectAAF((onSuccess, onFailure) =>
             p.cp.call(p.data.createProject)(
               name,
               i => onSuccess >> setCreateProjectText("") >> addProject(i),
@@ -49,7 +49,6 @@ object Home {
         p.data.username,
         s.projects,
         StateSnapshot.withReuse(s.createProjectText)(setCreateProjectText),
-        createProjectAAF,
         s.createProjectAAS,
         createProjectIO)
         .render
@@ -68,7 +67,6 @@ object HomeContent {
   final case class Props(username         : Username,
                          projects         : ProjectCatalogue,
                          createProjectText: StateSnapshot[String],
-                         createProjectAF  : AsyncActionFeature.D0.Feature[String],
                          createProjectAS  : AsyncActionFeature.D0.State[String],
                          createProjectIO  : String => Callback) {
     @inline def render = Component(this)
@@ -88,7 +86,7 @@ object HomeContent {
 
       val projectCreate = {
         val status =
-          EditorStatus.async(p.createProjectAS, p.createProjectAF) getOrElse
+          EditorStatus.async(p.createProjectAS) getOrElse
             EditorStatus.ignoreOrValidate(DataValidators.projectName.unnamed)(
               p.createProjectText.value, _.isEmpty, p.createProjectIO)
 

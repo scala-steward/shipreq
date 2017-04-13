@@ -11,7 +11,6 @@ Misc
 
 Integrate async into ContentEditorFeature rendering
   * Redo ReqTable rowlocking async
-  * Remove rendering from AAF
 
 * ReqTable
   * No content.

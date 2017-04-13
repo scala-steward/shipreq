@@ -190,7 +190,7 @@ object ReqDetail {
     val runCmd = Reusable.fn[ReqId, Cell, UpdateContentCmd, Callback](
       (reqId, cell, cmd) =>
         $.props >>= (p =>
-          p.reqProps(reqId).asyncFeature(cell).wrapAsync((s, f) =>
+          p.reqProps(reqId).asyncFeature(cell)((s, f) =>
             updateIO(cmd, s, f))))
 
     def setModal(modal: Modal.State): Callback =

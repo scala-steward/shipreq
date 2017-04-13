@@ -17,11 +17,13 @@ import shipreq.webapp.client.project.app.Style.{reqtable => *}
 import shipreq.webapp.client.project.feature.ContentEditorFeature
 import shipreq.webapp.client.project.lib._
 import shipreq.webapp.client.project.widgets.DragToReorder
-import AsyncActionFeature.{Locked, renderLocked}
 import DataReusability._
 import DomUtil._
 
 object Table {
+
+  def renderLocked = <.div(^.cls := "locked", "LOCKED")
+
 
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
@@ -202,7 +204,7 @@ object Table {
 
     p.asyncState.statusD1 match {
       case None                                       => renderRowNormal
-      case Some(Locked)                               => renderRowLocked
+      case Some(AsyncActionFeature.Locked)            => renderRowLocked
       case Some(s: AsyncActionFeature.Failed[String]) =>
         // Currently, whole-row state is only used when a row is being deleted/restored.
         // To save dev-time, if the RPC fails an alert popups asking to retry/cancel, thus this part of the code
@@ -210,7 +212,10 @@ object Table {
         dom.console.warn(s.failure)
         <.tr(
           td(^.colSpan := (p.crs.length + 1),
-            s.render))
+            <.div(
+              s.failure,
+              <.button("Retry", ^.onClick --> s.retry),
+              <.button("Abort", ^.onClick --> s.resumeEdit))))
     }
   }
 

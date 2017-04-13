@@ -2,7 +2,6 @@ package shipreq.webapp.client.base.feature
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusability
-import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.MonocleReact._
 import monocle.Lens
 import scala.annotation.elidable
@@ -13,16 +12,17 @@ import shipreq.webapp.client.base.data.TCB
 /**
   * Provides the following functionality around async actions:
   *
-  * - Status: Locked meaning the async action is in progress.
-  * - Status: Failed meaning the async action failed.
-  * - Status: None.
-  * - When the async action fails, retry functionality.
-  * - When the async action fails, cancel functionality.
-  * - A UI when locked.
-  * - Logic to wrap around async actions to handle state management.
+  * - A status to use between initiation and successful completion of an async action. Statuses are:
+  *   - Locked: the async action is in progress, awaiting a response (or timeout).
+  *   - Failed: the async action failed.
+  * - When an async action has failed, this provides:
+  *   - Retry functionality.
+  *   - Cancel/abort functionality.
+  *
+  * This is a lower-level building block. You'll usually lift this into an [[EditorStatus]].
   */
 object AsyncActionFeature {
-  // TODO Names in this file are terrible: wrapAsync{,D1}; statusD[12]; setD1{,s}
+  // TODO Names in this file are terrible: apply{,D1}; statusD[12]; setD1{,s}
 
   /**
     * @tparam F The type of async failure.
@@ -31,33 +31,15 @@ object AsyncActionFeature {
 
   case object Locked extends Status[Nothing]
 
-  final case class Failed[F](failure: F, retry: Callback, resumeEdit: Callback) extends Status[F] {
-    def retryButton =
-      <.button("Retry", ^.onClick --> retry)
-
-    def resumeEditButton =
-      <.button("Abort", ^.onClick --> resumeEdit)
-  }
-
-  @inline implicit class AAFStringStatusOps(private val s: Status[String]) extends AnyVal {
-    def render: VdomElement =
-      s match {
-        case Locked            => renderLocked
-        case f: Failed[String] => <.div(f.failure, f.retryButton, f.resumeEditButton)
-      }
-  }
-
-  @inline implicit class AAFState0Ops(private val s: D0.State[String]) extends AnyVal {
-    def renderOr[A](a: => A)(implicit ev: VdomElement => A): A =
-      s.fold(a)(x => ev(x.render))
-  }
+  final case class Failed[F](failure: F, retry: Callback, resumeEdit: Callback) extends Status[F]
 
   implicit def reusabilityStatus[F]: Reusability[Status[F]] =
     Reusability.byRef
 
-  def renderLocked =
-    <.div(^.cls := "locked", "LOCKED") // TODO Remove all render stuff from AsyncActionFeature
-
+  /** Provides two callbacks for you to use in your async logic:
+    * one for you to call on async success
+    * one for you to call on async failure
+    */
   type AsyncCall[+F] = (TCB.Success, F => TCB.Failure) => Callback
 
   private def genericWrapAsync[F](setStatus: Option[Status[F]] => Callback, call: AsyncCall[F]): Callback = {
@@ -88,30 +70,17 @@ object AsyncActionFeature {
     def initState: State[Nothing] =
       None
 
-    abstract class Feature[-F] {
-      def clearError(s: State[F]): Callback =
-        s match {
-          case Some(Failed(_, _, resumeEdit)) => resumeEdit
-          case _                              => Callback.empty
-        }
-
-      def wrapAsync(call: AsyncCall[F]): Callback
-    }
+    type Feature[-F] = AsyncCall[F] => Callback
 
     object Feature {
       def apply[F]($: StateAccessPure[State[F]]): Feature[F] =
         fn($.setState(_))
 
       def fn[F](set: Option[Status[F]] => Callback): Feature[F] =
-        new Feature[F] {
-          override def wrapAsync(call: AsyncCall[F]) =
-            genericWrapAsync[F](set, call)
-        }
+        genericWrapAsync[F](set, _)
 
-      object Nop extends Feature[Any] {
-        override def wrapAsync(call: AsyncCall[Any]) =
-          Callback.empty
-      }
+      def Nop: Feature[Any] =
+        _ => Callback.empty
     }
   }
 
@@ -179,7 +148,7 @@ object AsyncActionFeature {
     abstract class Feature[K, -F] {
       def apply(k: K): D0.Feature[F]
       def mapK[C](j: Intersection[K, C]): Feature[C, F]
-      def wrapAsyncD1(call: AsyncCall[F]): Callback
+      def applyD1(call: AsyncCall[F]): Callback
     }
 
     object Feature {
@@ -191,7 +160,7 @@ object AsyncActionFeature {
         override def mapK[C](j: Intersection[B, C]) =
           new Impl($, i composeIntersection j)
 
-        override def wrapAsyncD1(call: AsyncCall[F]) =
+        override def applyD1(call: AsyncCall[F]) =
           genericWrapAsync[F]($.zoomStateL(State.atD1) setState _, call)
       }
 
@@ -203,9 +172,9 @@ object AsyncActionFeature {
 
       def nop[K]: Feature[K, Any] =
         new Feature[K, Any] {
-          override def apply(k: K)                       = D0.Feature.Nop
-          override def mapK[C](j: Intersection[K, C])    = nop
-          override def wrapAsyncD1(call: AsyncCall[Any]) = Callback.empty
+          override def apply(k: K)                    = D0.Feature.Nop
+          override def mapK[C](j: Intersection[K, C]) = nop
+          override def applyD1(call: AsyncCall[Any])  = Callback.empty
         }
       }
   }
