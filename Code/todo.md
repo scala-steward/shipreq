@@ -12,6 +12,12 @@ Misc
 Integrate async into ContentEditorFeature rendering
   * Redo ReqTable rowlocking async
 
+* Tags
+  * (?) Add new column type: all tags (as opposed to non-field tags)
+  * We have implications fields and implication columns.
+    We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
+    Or is there similar deficiency in imps cols too?
+
 * ReqTable
   * No content.
   * All dead.
@@ -38,6 +44,18 @@ Integrate async into ContentEditorFeature rendering
   * impl UI
   * test
 
+* Data design
+  * Extract string table so that project structure can be cached separately from project textual content?
+  * Store text changes as patches instead full replacements?
+    * Lose the ability to quickly grep from DB.
+    * Less storage/transport cost.
+    * More CPU required to build a project from events.
+  * Will [saved views] be stored in projects' event streams?
+    * Consider impact on existing event stuff.
+    * What about user-space views (as opposed to project-wide/shared views)?
+      * Should they even be supported?
+      * Where/how should they be stored?
+
 * Devops & Deployment
   * New amazon accounts
   * Automate deployment
@@ -55,4 +73,3 @@ Integrate async into ContentEditorFeature rendering
   * Use fast boopickle codecs for webworkers: https://github.com/ochrons/boopickle#codecs
   * Test env: Use different DBs for each module
   * Remove unused styles
-
