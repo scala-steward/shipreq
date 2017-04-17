@@ -39,10 +39,10 @@ import PreviewFeature._
 final class PreviewFeature[S, K]($: StateAccessPure[S], lens: Lens[S, State[K]])(implicit EK: Equal[K])
   extends ForChildren[K] {
 
-  def mapK[A](p: Intersection[K, A]): PreviewFeature[S, A] = {
+  def mapKey[A](p: Intersection[K, A]): PreviewFeature[S, A] = {
     val l = (Lens[S, State[A]]
-      (s => lens.get(s).mapK(p))
-      (sa => lens.set(sa.mapK(p.reverse))))
+      (s => lens.get(s).mapKey(p))
+      (sa => lens.set(sa.mapKey(p.reverse))))
     val e: Equal[A] = optionEqual[K].contramap(p.reverse.getOption)
     new PreviewFeature($, l)(e)
   }
@@ -100,7 +100,7 @@ object PreviewFeature {
   type State[+K] = Option[FocusData[K]]
 
   @inline implicit class PFStateOps[K](private val s: State[K]) extends AnyVal {
-    def mapK[A](i: Intersection[K, A]): State[A] =
+    def mapKey[A](i: Intersection[K, A]): State[A] =
       s.flatMap(_ omap i.getOption)
   }
 
@@ -113,7 +113,7 @@ object PreviewFeature {
   }
 
   trait ForChildren[K] {
-    def mapK[A](p: Intersection[K, A]): ForChildren[A]
+    def mapKey[A](p: Intersection[K, A]): ForChildren[A]
     def forChild(k: K, s: State[K]): ForChild
   }
 

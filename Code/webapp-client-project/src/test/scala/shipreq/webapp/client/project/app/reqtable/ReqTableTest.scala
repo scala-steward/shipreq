@@ -88,7 +88,7 @@ object ReqTableTest extends TestSuite {
         cd, cp, remotes.createContent, remotes.updateContent,
         pxPlainText, pxTextSearch, pxProjectWidgets,
         initReqTableEditor,
-        asyncFeature.mapK1(Column.EditFieldKeyIntersection.reverse),
+        asyncFeature.mapKey1(Column.EditFieldKeyIntersection.reverse),
         reqDetailRC,
         $ zoomStateL State.reqTable))
     }
@@ -96,8 +96,8 @@ object ReqTableTest extends TestSuite {
     def dynamicProps() = {
       val s = stateVar.value()
       ReqTable.DynamicProps(
-        s.editStates.mapK1(Column.EditFieldKeyIntersection.reverse),
-        s.asyncStates.mapK1(Column.EditFieldKeyIntersection.reverse),
+        s.editStates.mapKey1(Column.EditFieldKeyIntersection.reverse),
+        s.asyncStates.mapKey1(Column.EditFieldKeyIntersection.reverse),
         s.previewState,
         s.reqTable)
     }

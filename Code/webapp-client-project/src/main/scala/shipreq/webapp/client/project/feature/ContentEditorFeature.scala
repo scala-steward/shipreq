@@ -609,7 +609,7 @@ object ContentEditorFeature {
         new State(m, i)
       }
 
-      override def mapK[C](j: Intersection[B, C]): State[A, C] =
+      override def mapKey[C](j: Intersection[B, C]): State[A, C] =
         new State(values, i composeIntersection j)
 
       def mergeInto(parent: State[A, A]): State[A, A] = {
@@ -624,7 +624,7 @@ object ContentEditorFeature {
       sealed abstract class ReadOnly[K] {
         def isEmpty: Boolean
         def apply(key: K): D0.State
-        def mapK[C](j: Intersection[K, C]): ReadOnly[C]
+        def mapKey[C](j: Intersection[K, C]): ReadOnly[C]
       }
 
       implicit def reusabilityState1[K]: Reusability[ReadOnly[K]] =
@@ -696,7 +696,7 @@ object ContentEditorFeature {
 
       override def apply(key: B2): D1.State[A1, B1] =
         i2.reverse.fold(key, values.get)(None) match {
-          case Some(s) => s mapK i1
+          case Some(s) => s mapKey i1
           case None    => D1.State.empty(i1)
         }
 
@@ -705,10 +705,10 @@ object ContentEditorFeature {
         new State(m, i2, i1)
       }
 
-      override def mapK2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1] =
+      override def mapKey2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1] =
         new State(values, i2 composeIntersection j, i1)
 
-      override def mapK1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1] =
+      override def mapKey1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1] =
         new State(values, i2, i1 composeIntersection j)
     }
 
@@ -721,8 +721,8 @@ object ContentEditorFeature {
       sealed abstract class ReadOnly[K2, K1] {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1]
-        def mapK2[K](j: Intersection[K2, K]): ReadOnly[K, K1]
-        def mapK1[K](j: Intersection[K1, K]): ReadOnly[K2, K]
+        def mapKey2[K](j: Intersection[K2, K]): ReadOnly[K, K1]
+        def mapKey1[K](j: Intersection[K1, K]): ReadOnly[K2, K]
       }
 
       implicit def reusabilityState2[K2, K1]: Reusability[ReadOnly[K2, K1]] =

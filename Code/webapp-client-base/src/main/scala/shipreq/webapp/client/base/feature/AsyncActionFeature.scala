@@ -107,7 +107,7 @@ object AsyncActionFeature {
       def setD1[FF >: F](o: D0.State[FF]): State[A, B, FF] =
         new State(o, values, i)
 
-      override def mapK[C](j: Intersection[B, C]): State[A, C, F] =
+      override def mapKey[C](j: Intersection[B, C]): State[A, C, F] =
         new State(statusD1, values, i composeIntersection j)
 
       def mergeInto[FF >: F](parent: State[A, A, FF]): State[A, A, FF] = {
@@ -123,7 +123,7 @@ object AsyncActionFeature {
         def isEmpty: Boolean
         def statusD1: D0.State[F]
         def apply(key: K): D0.State[F]
-        def mapK[C](q: Intersection[K, C]): ReadOnly[C, F]
+        def mapKey[C](q: Intersection[K, C]): ReadOnly[C, F]
       }
 
       implicit def reusabilityState1[K, F]: Reusability[ReadOnly[K, F]] =
@@ -147,7 +147,7 @@ object AsyncActionFeature {
 
     abstract class Feature[K, -F] {
       def apply(k: K): D0.Feature[F]
-      def mapK[C](j: Intersection[K, C]): Feature[C, F]
+      def mapKey[C](j: Intersection[K, C]): Feature[C, F]
       def applyD1(call: AsyncCall[F]): Callback
     }
 
@@ -157,7 +157,7 @@ object AsyncActionFeature {
         override def apply(b: B) =
           i.reverse.fold(b, a => D0.Feature($ zoomStateL State.at(a)))(D0.Feature.Nop)
 
-        override def mapK[C](j: Intersection[B, C]) =
+        override def mapKey[C](j: Intersection[B, C]) =
           new Impl($, i composeIntersection j)
 
         override def applyD1(call: AsyncCall[F]) =
@@ -172,9 +172,9 @@ object AsyncActionFeature {
 
       def nop[K]: Feature[K, Any] =
         new Feature[K, Any] {
-          override def apply(k: K)                    = D0.Feature.Nop
-          override def mapK[C](j: Intersection[K, C]) = nop
-          override def applyD1(call: AsyncCall[Any])  = Callback.empty
+          override def apply(k: K)                      = D0.Feature.Nop
+          override def mapKey[C](j: Intersection[K, C]) = nop
+          override def applyD1(call: AsyncCall[Any])    = Callback.empty
         }
       }
   }
@@ -195,7 +195,7 @@ object AsyncActionFeature {
 
       override def apply(key: B2): D1.State[A1, B1, F] =
         i2.reverse.fold(key, values.get)(None) match {
-          case Some(s) => s mapK i1
+          case Some(s) => s mapKey i1
           case None    => D1.State.empty(i1)
         }
 
@@ -207,14 +207,14 @@ object AsyncActionFeature {
       def mod(k: B2, f: D1.State[A1, B1, F] => D1.State[A1, B1, F]): State[A2, B2, A1, B1, F] =
         set(k, f(apply(k)))
 
-      override def mapK2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1, F] =
+      override def mapKey2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1, F] =
         new State(statusD2, values, i2 composeIntersection j, i1)
 
-      override def mapK1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1, F] =
+      override def mapKey1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1, F] =
         new State(statusD2, values, i2, i1 composeIntersection j)
 
       override def iterator: Iterator[(B2, D1.State[A1, B1, F])] =
-        Dimensions.iterator(i2.getOption, values)(_ mapK i1)
+        Dimensions.iterator(i2.getOption, values)(_ mapKey i1)
     }
 
     object State {
@@ -227,8 +227,8 @@ object AsyncActionFeature {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1, F]
         def statusD2: D0.State[F]
-        def mapK2[K](f: Intersection[K2, K]): ReadOnly[K, K1, F]
-        def mapK1[K](q: Intersection[K1, K]): ReadOnly[K2, K, F]
+        def mapKey2[K](f: Intersection[K2, K]): ReadOnly[K, K1, F]
+        def mapKey1[K](q: Intersection[K1, K]): ReadOnly[K2, K, F]
         def iterator: Iterator[(K2, D1.State.ReadOnly[K1, F])]
       }
 
@@ -241,8 +241,8 @@ object AsyncActionFeature {
 
     abstract class Feature[K2, K1, -F] {
       def apply(k2: K2): D1.Feature[K1, F]
-      def mapK1[C](j: Intersection[K1, C]): Feature[K2, C, F]
-      def mapK2[C](j: Intersection[K2, C]): Feature[C, K1, F]
+      def mapKey1[C](j: Intersection[K1, C]): Feature[K2, C, F]
+      def mapKey2[C](j: Intersection[K2, C]): Feature[C, K1, F]
       def setD1s(ks: Iterable[K2], value: => D0.State[F]): Callback
 
       final def setD1(k: K2, value: => D0.State[F]): Callback =
@@ -256,10 +256,10 @@ object AsyncActionFeature {
         override def apply(b: B2) =
           i2.reverse.fold(b, a => D1.Feature($ zoomStateL State.at(a), i1))(D1.Feature.nop)
 
-        override def mapK1[C](j: Intersection[B1, C]) =
+        override def mapKey1[C](j: Intersection[B1, C]) =
           new Impl($, i2, i1 composeIntersection j)
 
-        override def mapK2[C](j: Intersection[B2, C]) =
+        override def mapKey2[C](j: Intersection[B2, C]) =
           new Impl($, i2 composeIntersection j, i1)
 
         override def setD1s(ks: Iterable[B2], value: => D0.State[F]): Callback =

@@ -56,7 +56,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       new D2.InitChild[reqtable.Row, reqtable.Column, reqtable.FocusId] {
         override type Parent    = State
         override val parent     = $
-        override val preview    = previewFeature.mapK(FocusId.ToReqTable)
+        override val preview    = previewFeature.mapKey(FocusId.ToReqTable)
         override val editorLens =
           (r: reqtable.Row, c: reqtable.Column) =>
             reqtable.Column.EditFieldKeyIntersection.getOption(c).map(efk =>
@@ -68,7 +68,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       cd, cp, initData.createContent, initData.updateContent,
       pxPlainText, pxTextSearch, pxProjectWidgets,
       initReqTableEditor,
-      asyncFeature.mapK1(AsyncKey.ToReqTable),
+      asyncFeature.mapKey1(AsyncKey.ToReqTable),
       reqDetailRC,
       $ zoomStateL State.reqTable))
 
@@ -92,21 +92,21 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           new D1.InitChild[reqdetail.Cell, reqdetail.Cell] {
             override type Parent    = State
             override val parent     = $
-            override val preview    = previewFeature.mapK(focusIdToCell)
+            override val preview    = previewFeature.mapKey(focusIdToCell)
             override val editorLens =
               (c: reqdetail.Cell) =>
                 reqdetail.Cell.EditFieldKeyIntersection.getOption(c).map(efk =>
                   State.editStates ^|-> D2.State.at(r) ^|-> D1.State.at(efk))
           }
 
-        val asyncF1 = asyncFeature(r).mapK(AsyncKey.ToReqDetail)
+        val asyncF1 = asyncFeature(r).mapKey(AsyncKey.ToReqDetail)
 
         (s: State) =>
           ReqDetail.ReqProps(
             initEditor,
             asyncF1,
-            s.editStates(r).mapK(reqdetail.Cell.EditFieldKeyIntersection.reverse),
-            s.asyncStates(r).mapK(AsyncKey.ToReqDetail))
+            s.editStates(r).mapKey(reqdetail.Cell.EditFieldKeyIntersection.reverse),
+            s.asyncStates(r).mapKey(AsyncKey.ToReqDetail))
       })
 
     def reqDetailReqPropsFn(s: State) = (id: ReqId) => {
@@ -181,9 +181,9 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
 
         case Page.ReqTable =>
           reqTable(ReqTable.DynamicProps(
-            s.editStates.mapK1(reqtable.Column.EditFieldKeyIntersection.reverse),
-            s.asyncStates.mapK1(AsyncKey.ToReqTable),
-            s.previewState.mapK(FocusId.ToReqTable),
+            s.editStates.mapKey1(reqtable.Column.EditFieldKeyIntersection.reverse),
+            s.asyncStates.mapKey1(AsyncKey.ToReqTable),
+            s.previewState.mapKey(FocusId.ToReqTable),
             s.reqTable))
 
         case Page.ReqDetail(pubid) =>
