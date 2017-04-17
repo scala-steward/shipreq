@@ -12,9 +12,8 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
-import shipreq.webapp.client.base.data.TCB
 import shipreq.webapp.client.base.feature._
-import shipreq.webapp.client.base.lib.{AbortCommit, KeyHandler, KeyHandlers, KeyboardTheme}
+import shipreq.webapp.client.base.lib.AbortCommit
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.high.ProjectWidgets
@@ -29,7 +28,7 @@ import shipreq.webapp.client.project.widgets.high.ProjectWidgets
  *   [[ContentEditorFeature.D1]] - Editor for a single req. (Usually, Key = req field)
  *   [[ContentEditorFeature.D2]] - Editor for a multiple reqs. (Usually, Key2 = req, Key1 = req field)
  *
- * - Add `State.Simple` to your parent component's state.
+ * - Add `D{1,2}.State.Simple` to your parent component's state.
  *
  * - Create an instance of `Feature` in the parent component's backend.
  *
@@ -143,8 +142,17 @@ object ContentEditorFeature {
     type State = Option[EditorInstance]
 
     sealed abstract class Feature {
-      final def startEdit = startEditAnd(Callback.empty)
       def startEditAnd(cb: => Callback): Option[Callback]
+
+      /**
+        * Change the UI so that the user can edit a portion of data.
+        *
+        * @return `None` if the underlying data isn't allowed to be edited.
+        *         `None` if the editor is already active.
+        *         `Some[Callback]` otherwise that when invoked, will add an editor to state and UI.
+        */
+      final def startEdit: Option[Callback] =
+        startEditAnd(Callback.empty)
     }
 
     object Feature {
@@ -358,7 +366,7 @@ object ContentEditorFeature {
           val abortCommit: ReqTypeSelector.AbortCommit =
             makeAbortCommit[RT](t => UpdateContentCmd.SetGenericReqType(id, t.id)).value
 
-          val is = new State(initial, initial, pxChoices, abortCommit)
+          val is = State(initial, initial, pxChoices, abortCommit)
           startEditFn(is)
         }
 
