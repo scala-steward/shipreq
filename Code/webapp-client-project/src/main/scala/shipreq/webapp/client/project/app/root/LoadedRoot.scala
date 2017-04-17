@@ -69,6 +69,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       pxPlainText, pxTextSearch, pxProjectWidgets,
       initReqTableEditor,
       asyncFeature.mapKey1(AsyncKey.ToReqTable),
+      asyncFeature.mapKey1(AsyncKey.ToReqTable2),
       reqDetailRC,
       $ zoomStateL State.reqTable))
 
@@ -182,7 +183,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
         case Page.ReqTable =>
           reqTable(ReqTable.DynamicProps(
             s.editStates.mapKey1(reqtable.Column.EditFieldKeyIntersection.reverse),
-            s.asyncStates.mapKey1(AsyncKey.ToReqTable),
+            s.asyncStates.mapKey1(AsyncKey.ToReqTable2),
             s.previewState.mapKey(FocusId.ToReqTable),
             s.reqTable))
 

@@ -22,6 +22,7 @@ import shipreq.webapp.client.project.widgets.high.ProjectWidgets
 import utest._
 import TestState.{scalazEqualFromTestState => _, _}
 import SampleProject.Values._
+import shipreq.base.util.Intersection
 
 object ReqTableTest extends TestSuite {
   import ReqTableTestDsl._
@@ -89,6 +90,7 @@ object ReqTableTest extends TestSuite {
         pxPlainText, pxTextSearch, pxProjectWidgets,
         initReqTableEditor,
         asyncFeature.mapKey1(Column.EditFieldKeyIntersection.reverse),
+        asyncFeature.mapKey1(Column.EditFieldKeyIntersection.reverse <=> Intersection.toOption),
         reqDetailRC,
         $ zoomStateL State.reqTable))
     }
@@ -97,7 +99,7 @@ object ReqTableTest extends TestSuite {
       val s = stateVar.value()
       ReqTable.DynamicProps(
         s.editStates.mapKey1(Column.EditFieldKeyIntersection.reverse),
-        s.asyncStates.mapKey1(Column.EditFieldKeyIntersection.reverse),
+        s.asyncStates.mapKey1(Column.EditFieldKeyIntersection.reverse <=> Intersection.toOption),
         s.previewState,
         s.reqTable)
     }

@@ -33,7 +33,7 @@ object Table {
                    colRenderers   : NonEmptyVector[ColumnRenderer],
                    cellEditors    : ContentEditorFeature.D2.Feature[Row, Column],
                    editState      : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
-                   asyncState     : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Column, String],
+                   asyncState     : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Option[Column], String],
                    selection      : RowSelectionVisible,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
@@ -150,7 +150,7 @@ object Table {
                       crs        : NonEmptyVector[ColumnRenderer],
                       cellEditors: ContentEditorFeature.D2.Feature[Row, Column],
                       editState  : ContentEditorFeature.D1.State.ReadOnly[Column],
-                      asyncState : AsyncActionFeature.D1.State.ReadOnly[Column, String],
+                      asyncState : AsyncActionFeature.D1.State.ReadOnly[Option[Column], String],
                       selection  : RowSelectionVisible)
 
   implicit val rowPropReuse = Reusability.caseClass[RowProps]
@@ -184,7 +184,7 @@ object Table {
       def colCells =
         p.crs.iterator.map { cr =>
           val col = cr.column
-          val cp = CellProps(row, cr, p.cellEditors, p editState col, p asyncState col)
+          val cp = CellProps(row, cr, p.cellEditors, p editState col, p asyncState Some(col))
           CellComponent.withKey(col.key)(cp)
         }.toVdomArray
 
@@ -202,7 +202,7 @@ object Table {
       <.tr(td(renderLocked), colCells)
     }
 
-    p.asyncState.statusD1 match {
+    p.asyncState(None) match {
       case None                                       => renderRowNormal
       case Some(AsyncActionFeature.Locked)            => renderRowLocked
       case Some(s: AsyncActionFeature.Failed[String]) =>

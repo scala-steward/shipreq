@@ -39,11 +39,12 @@ object ReqTable {
                          pxProjectWidgets: Px[ProjectWidgets],
                          initEditor      : InitEditor,
                          asyncFeature    : AsyncActionFeature.D2.Feature[Row.SourceId, Column, String],
+                         asyncFeature2   : AsyncActionFeature.D2.Feature[Row.SourceId, Option[Column], String],
                          reqDetailRC     : RouterCtl[ExternalPubid],
                          state_$         : StateAccessPure[State])
 
   case class DynamicProps(editStates  : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
-                          asyncStates : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Column, String],
+                          asyncStates : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Option[Column], String],
                           previewState: Preview.State,
                           state       : State)
 
@@ -132,7 +133,7 @@ object ReqTable {
 
     val pxRowsWithAsyncWholeRowStatuses: Px.ThunkM[Set[Row.SourceId]] =
       Px.props($).map(_.asyncStates.iterator
-        .filter(_._2.statusD1.isDefined)
+        .filter(_._2(None).isDefined)
         .map(_._1)
         .toSet
       ).withReuse.manualRefresh
@@ -240,7 +241,7 @@ object ReqTable {
 
       def selCtrlProps = SelectionCtrls.Props(
         pxVisibleSelection, cfg, pxRows, setModal, pxProject, pxProjectWidgets, pxPlainText, pxTextSearch, updateIO,
-        asyncFeature)
+        asyncFeature2)
 
       def mainScreen =
         <.div(

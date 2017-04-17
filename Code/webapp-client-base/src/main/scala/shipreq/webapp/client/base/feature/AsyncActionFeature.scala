@@ -42,23 +42,6 @@ object AsyncActionFeature {
     */
   type AsyncCall[+F] = (TCB.Success, F => TCB.Failure) => Callback
 
-  private def genericWrapAsync[F](setStatus: Option[Status[F]] => Callback, call: AsyncCall[F]): Callback = {
-    val clearStatus = setStatus(None)
-
-    def onSuccess: TCB.Success =
-      TCB Success clearStatus
-
-    def onFailure: F => TCB.Failure =
-      f => TCB Failure setStatus(Some(Failed(f, Callback byName doIt, clearStatus)))
-
-    lazy val doIt: Callback =
-      // Switching this around breaks tests' MockServer's order of events.
-      // i.e. it will call onSuccess which clears the status, and then set it to locked.
-      setStatus(Some(Locked)) >> call(onSuccess, onFailure)
-
-    doIt
-  }
-
   // ===================================================================================================================
 
   /**
@@ -76,8 +59,23 @@ object AsyncActionFeature {
       def apply[F]($: StateAccessPure[State[F]]): Feature[F] =
         fn($.setState(_))
 
-      def fn[F](set: Option[Status[F]] => Callback): Feature[F] =
-        genericWrapAsync[F](set, _)
+      def fn[F](setStatus: Option[Status[F]] => Callback): Feature[F] =
+        call => {
+          val clearStatus = setStatus(None)
+
+          def onSuccess: TCB.Success =
+            TCB Success clearStatus
+
+          def onFailure: F => TCB.Failure =
+            f => TCB Failure setStatus(Some(Failed(f, Callback byName doIt, clearStatus)))
+
+          lazy val doIt: Callback =
+            // Switching this around breaks tests' MockServer's order of events.
+            // i.e. it will call onSuccess which clears the status, and then set it to locked.
+            setStatus(Some(Locked)) >> call(onSuccess, onFailure)
+
+          doIt
+        }
 
       def Nop: Feature[Any] =
         _ => Callback.empty
@@ -87,32 +85,33 @@ object AsyncActionFeature {
   // ===================================================================================================================
 
   object D1 {
-    final class State[A, B, +F](val statusD1: D0.State[F],
-                                val values: Map[A, Status[F]],
-                                i: Intersection[A, B]) extends State.ReadOnly[B, F] {
+
+    /** @tparam SK State key
+      * @tparam K  Practical/usage key
+      */
+    final class State[SK, K, +F](private[State] val values: Map[SK, Status[F]],
+                                 intr: Intersection[SK, K]) extends State.ReadOnly[K, F] {
+
       @elidable(elidable.FINE)
-      override def toString = s"D1.State($statusD1, $values)"
+      override def toString = s"D1.State($values)"
 
       override def isEmpty: Boolean =
-        values.isEmpty && statusD1.isEmpty
+        values.isEmpty
 
-      override def apply(key: B): D0.State[F] =
-        i.reverse.fold(key, values.get)(D0.initState)
+      override def apply(key: K): D0.State[F] =
+        intr.reverse.getOption(key).flatMap(values.get)
 
-      def set[FF >: F](key: B, o: D0.State[FF]): State[A, B, FF] = {
-        val m = Dimensions.set1(i)(values, key, o)
-        new State(statusD1, m, i)
+      def set[FF >: F](key: K, o: D0.State[FF]): State[SK, K, FF] = {
+        val m = Dimensions.set1(intr)(values, key, o)
+        new State(m, intr)
       }
 
-      def setD1[FF >: F](o: D0.State[FF]): State[A, B, FF] =
-        new State(o, values, i)
+      override def mapKey[C](j: Intersection[K, C]): State[SK, C, F] =
+        new State(values, intr <=> j)
 
-      override def mapKey[C](j: Intersection[B, C]): State[A, C, F] =
-        new State(statusD1, values, i <=> j)
-
-      def mergeInto[FF >: F](parent: State[A, A, FF]): State[A, A, FF] = {
-        val m = Dimensions.merge(i.getOption)(parent.values, values)
-        new State(statusD1, m, Intersection.id[A])
+      def mergeInto[FF >: F](parent: State[SK, SK, FF]): State[SK, SK, FF] = {
+        val m = Dimensions.merge(intr.getOption)(parent.values, values)
+        new State(m, Intersection.id[SK])
       }
     }
 
@@ -121,7 +120,6 @@ object AsyncActionFeature {
 
       sealed abstract class ReadOnly[K, +F] {
         def isEmpty: Boolean
-        def statusD1: D0.State[F]
         def apply(key: K): D0.State[F]
         def mapKey[C](q: Intersection[K, C]): ReadOnly[C, F]
       }
@@ -130,7 +128,7 @@ object AsyncActionFeature {
         Reusability.byRef || Reusability.when(_.isEmpty)
 
       private[AsyncActionFeature] def empty[A, B](p: Intersection[A, B]): State[A, B, Nothing] =
-        new State(None, Map.empty, p)
+        new State(Map.empty, p)
 
       private[AsyncActionFeature] def emptyA[A]: State[A, A, Nothing] =
         empty(Intersection.id[A])
@@ -140,28 +138,21 @@ object AsyncActionFeature {
 
       def at[A, B, F](b: B): Lens[State[A, B, F], D0.State[F]] =
         Lens((_: State[A, B, F])(b))(o => _.set(b, o))
-
-      def atD1[A, B, F]: Lens[State[A, B, F], D0.State[F]] =
-        Lens((_: State[A, B, F]).statusD1)(o => _.setD1(o))
     }
 
     abstract class Feature[K, -F] {
       def apply(k: K): D0.Feature[F]
       def mapKey[C](j: Intersection[K, C]): Feature[C, F]
-      def applyD1(call: AsyncCall[F]): Callback
     }
 
     object Feature {
       private final class Impl[S, A, B, -F]($: StateAccessPure[State[S, A, F]],
-                                            i: Intersection[A, B]) extends Feature[B, F] {
+                                            intr: Intersection[A, B]) extends Feature[B, F] {
         override def apply(b: B) =
-          i.reverse.fold(b, a => D0.Feature($ zoomStateL State.at(a)))(D0.Feature.Nop)
+          intr.reverse.fold(b, a => D0.Feature($ zoomStateL State.at(a)))(D0.Feature.Nop)
 
         override def mapKey[C](j: Intersection[B, C]) =
-          new Impl($, i <=> j)
-
-        override def applyD1(call: AsyncCall[F]) =
-          genericWrapAsync[F]($.zoomStateL(State.atD1) setState _, call)
+          new Impl($, intr <=> j)
       }
 
       @inline def apply[S, A, F]($: StateAccessPure[State[S, A, F]]): Feature[A, F] =
@@ -174,7 +165,6 @@ object AsyncActionFeature {
         new Feature[K, Any] {
           override def apply(k: K)                      = D0.Feature.Nop
           override def mapKey[C](j: Intersection[K, C]) = nop
-          override def applyD1(call: AsyncCall[Any])    = Callback.empty
         }
       }
   }
@@ -183,50 +173,53 @@ object AsyncActionFeature {
 
   object D2 {
 
-    final class State[A2, B2, A1, B1, F](val statusD2: D0.State[F],
-                                         val values: Map[A2, D1.State[A1, A1, F]],
-                                         i2: Intersection[A2, B2],
-                                         i1: Intersection[A1, B1]) extends State.ReadOnly[B2, B1, F] {
+    /** @tparam SK2 State key #2
+      * @tparam K2  Practical/usage key #2
+      * @tparam SK1 State key #1
+      * @tparam K1  Practical/usage key #1
+      */
+    final class State[SK2, K2, SK1, K1, F](values: Map[SK2, D1.State.Simple[SK1, F]],
+                                           intr2: Intersection[SK2, K2],
+                                           intr1: Intersection[SK1, K1]) extends State.ReadOnly[K2, K1, F] {
       @elidable(elidable.FINE)
-      override def toString = s"D2.State($statusD2, $values)"
+      override def toString = s"D2.State($values)"
 
       override def isEmpty: Boolean =
-        values.isEmpty && statusD2.isEmpty
+        values.isEmpty
 
-      override def apply(key: B2): D1.State[A1, B1, F] =
-        i2.reverse.fold(key, values.get)(None) match {
-          case Some(s) => s mapKey i1
-          case None    => D1.State.empty(i1)
+      override def apply(key: K2): D1.State[SK1, K1, F] =
+        intr2.reverse.fold(key, values.get)(None) match {
+          case Some(s) => s mapKey intr1
+          case None    => D1.State.empty(intr1)
         }
 
-      def set(k: B2, v: D1.State[A1, B1, F]): State[A2, B2, A1, B1, F] = {
-        val m = Dimensions.set2(i2)(values)(k, v mergeInto _.getOrElse(D1.State.emptyA), _.isEmpty)
-        new State(statusD2, m, i2, i1)
+      def set(k: K2, v: D1.State[SK1, K1, F]): State[SK2, K2, SK1, K1, F] = {
+        val m = Dimensions.set2(intr2)(values)(k, v mergeInto _.getOrElse(D1.State.emptyA), _.isEmpty)
+        new State(m, intr2, intr1)
       }
 
-      def mod(k: B2, f: D1.State[A1, B1, F] => D1.State[A1, B1, F]): State[A2, B2, A1, B1, F] =
+      def mod(k: K2, f: D1.State[SK1, K1, F] => D1.State[SK1, K1, F]): State[SK2, K2, SK1, K1, F] =
         set(k, f(apply(k)))
 
-      override def mapKey2[C2](j: Intersection[B2, C2]): State[A2, C2, A1, B1, F] =
-        new State(statusD2, values, i2 <=> j, i1)
+      override def mapKey2[C2](j: Intersection[K2, C2]): State[SK2, C2, SK1, K1, F] =
+        new State(values, intr2 <=> j, intr1)
 
-      override def mapKey1[C1](j: Intersection[B1, C1]): State[A2, B2, A1, C1, F] =
-        new State(statusD2, values, i2, i1 <=> j)
+      override def mapKey1[C1](j: Intersection[K1, C1]): State[SK2, K2, SK1, C1, F] =
+        new State(values, intr2, intr1 <=> j)
 
-      override def iterator: Iterator[(B2, D1.State[A1, B1, F])] =
-        Dimensions.iterator(i2.getOption, values)(_ mapKey i1)
+      override def iterator: Iterator[(K2, D1.State[SK1, K1, F])] =
+        Dimensions.iterator(intr2.getOption, values)(_ mapKey intr1)
     }
 
     object State {
       type Simple[K2, K1, F] = State[K2, K2, K1, K1, F]
 
       def init[K2: UnivEq, K1: UnivEq, F]: State[K2, K2, K1, K1, F] =
-        new State(None, UnivEq.emptyMap, Intersection.id[K2], Intersection.id[K1])
+        new State(UnivEq.emptyMap, Intersection.id[K2], Intersection.id[K1])
 
       sealed abstract class ReadOnly[K2, K1, +F] {
         def isEmpty: Boolean
         def apply(key: K2): D1.State.ReadOnly[K1, F]
-        def statusD2: D0.State[F]
         def mapKey2[K](f: Intersection[K2, K]): ReadOnly[K, K1, F]
         def mapKey1[K](q: Intersection[K1, K]): ReadOnly[K2, K, F]
         def iterator: Iterator[(K2, D1.State.ReadOnly[K1, F])]
@@ -243,33 +236,38 @@ object AsyncActionFeature {
       def apply(k2: K2): D1.Feature[K1, F]
       def mapKey1[C](j: Intersection[K1, C]): Feature[K2, C, F]
       def mapKey2[C](j: Intersection[K2, C]): Feature[C, K1, F]
-      def setD1s(ks: Iterable[K2], value: => D0.State[F]): Callback
-
-      final def setD1(k: K2, value: => D0.State[F]): Callback =
-        setD1s(k :: Nil, value)
+      def setBulk(k2s: Iterable[K2], k1: K1, value: => D0.State[F]): Callback
     }
 
     object Feature {
-      private final class Impl[S2, A2, B2, S1, A1, B1, -F]($: StateAccessPure[State[S2, A2, S1, A1, F]],
-                                                           i2: Intersection[A2, B2],
-                                                           i1: Intersection[A1, B1]) extends Feature[B2, B1, F] {
-        override def apply(b: B2) =
-          i2.reverse.fold(b, a => D1.Feature($ zoomStateL State.at(a), i1))(D1.Feature.nop)
+      private final class Impl[S2, T2, K2, S1, T1, K1, -F]($: StateAccessPure[State[S2, T2, S1, T1, F]],
+                                                           i2: Intersection[T2, K2],
+                                                           i1: Intersection[T1, K1]) extends Feature[K2, K1, F] {
+        override def apply(b: K2) =
+          i2.reverse.getOption(b) match {
+            case Some(a) => D1.Feature($ zoomStateL State.at(a), i1)
+            case None    => D1.Feature.nop
+          }
 
-        override def mapKey1[C](j: Intersection[B1, C]) =
+        override def mapKey1[C](j: Intersection[K1, C]) =
           new Impl($, i2, i1 <=> j)
 
-        override def mapKey2[C](j: Intersection[B2, C]) =
+        override def mapKey2[C](j: Intersection[K2, C]) =
           new Impl($, i2 <=> j, i1)
 
-        override def setD1s(ks: Iterable[B2], value: => D0.State[F]): Callback =
-          Callback.unless(ks.isEmpty)(
-            $.modState { s =>
-              val v = value
-              ks.foldLeft(s)((q, b) => i2.reverse.fold(b, q.mod(_, _ setD1 v)) {
-                Dimensions.warnDiscard(b)
-                q
-              })
+        override def setBulk(k2s: Iterable[K2], k1: K1, value: => D0.State[F]): Callback =
+          Callback.unless(k2s.isEmpty)(
+            i1.reverse.getOption(k1) match {
+              case Some(t1) =>
+                $.modState { s0 =>
+                  val v = value
+                  k2s.foldLeft(s0)((s, k2) => i2.reverse.getOption(k2) match {
+                    case Some(t2) => s.mod(t2, _.set(t1, value))
+                    case None     => Dimensions.warnDiscard(k2); s
+                  })
+                }
+              case None =>
+                Dimensions.warnDiscard(k1); Callback.empty
             }
           )
       }

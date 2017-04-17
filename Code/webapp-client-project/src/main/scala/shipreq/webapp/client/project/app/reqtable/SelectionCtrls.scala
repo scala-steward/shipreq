@@ -36,7 +36,7 @@ object SelectionCtrls {
                    projectText  : PlainText.ForProject,
                    textSearch   : TextSearch,
                    saveIO       : ServerCall[UpdateContentCmd],
-                   async        : AsyncActionFeature.D2.Feature[Row.SourceId, Column, String])
+                   async        : AsyncActionFeature.D2.Feature[Row.SourceId, Option[Column], String])
 
   // These two are only used in callbacks so are always reusable
   private implicit def reusabilityPlainText : Reusability[PlainText.ForProject]  = Reusability.always
@@ -191,10 +191,10 @@ object SelectionCtrls {
       val async = $.props.map(_.async).runNow()
 
       def lockRows: Callback =
-        async.setD1s(rows, Some(Locked))
+        async.setBulk(rows, None, Some(Locked))
 
       def unlockRows: Callback =
-        async.setD1s(rows, None)
+        async.setBulk(rows, None, None)
 
       def uncheckRows: Callback =
         $.props >>= { p =>

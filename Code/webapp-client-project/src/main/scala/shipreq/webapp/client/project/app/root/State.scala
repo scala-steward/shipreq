@@ -37,6 +37,8 @@ object AsyncKey {
   import reqdetail.Row.UseCaseSteps
   import shipreq.webapp.base.data.{CustomFieldId, Dead, Live, UseCaseStepId}
 
+  /** The req itself. Eg. if a req is being deleted then the entire req should be locked */
+  case object WholeReq                             extends AsyncKey
   case object ReqType                              extends AsyncKey
   case object Code                                 extends AsyncKey
   case object Title                                extends AsyncKey
@@ -63,7 +65,8 @@ object AsyncKey {
     case ImplicationSrc        => Some(reqtable.Column.ImplicationSrc       )
     case ImplicationTgt        => Some(reqtable.Column.ImplicationTgt       )
     case CustomField(id)       => Some(reqtable.Column.CustomField(id, Live))
-    case UseCaseStep       (_)
+    case WholeReq
+       | UseCaseStep       (_)
        | UseCaseStepCtrls  (_)
        | AddUseCaseStep    (_)
        | AddUseCaseTailStep(_) => None
@@ -80,6 +83,14 @@ object AsyncKey {
        | reqtable.Column.CustomField(_, Dead)  => None
   }
 
+  val ToReqTable2 = Intersection[AsyncKey, Option[reqtable.Column]] {
+    case WholeReq => Some(None)
+    case x        => ToReqTable.getOption(x).map(Some(_))
+  } {
+    case None    => Some(WholeReq)
+    case Some(x) => ToReqTable.reverse.getOption(x)
+  }
+
   val ToReqDetail = Intersection[AsyncKey, reqdetail.Cell] {
     case ReqType               => Some(reqdetail.Cell.ReqType              )
     case Code                  => Some(reqdetail.Cell.Code                 )
@@ -92,6 +103,7 @@ object AsyncKey {
     case UseCaseStepCtrls(id)  => Some(reqdetail.Cell.UseCaseStepCtrls(id) )
     case AddUseCaseStep(id)    => Some(reqdetail.Cell.AddUseCaseStep(id)   )
     case AddUseCaseTailStep(s) => Some(reqdetail.Cell.AddUseCaseTailStep(s))
+    case WholeReq              => None // TODO ReqDetail doesn't lock the whole requirement when deleting
   } {
     case reqdetail.Cell.ReqType               => Some(ReqType              )
     case reqdetail.Cell.Code                  => Some(Code                 )
