@@ -117,7 +117,9 @@ object ContentEditorFeature {
       }
   }
 
-  type AsyncState = AsyncActionFeature.D0.State[String]
+  type AsyncError = String
+
+  type AsyncState = AsyncActionFeature.D0.State[AsyncError]
 
   /**
     * This is effectively mutable because of the underlying usage of Pxs and reading of PreviewFeature state.
@@ -157,7 +159,7 @@ object ContentEditorFeature {
 
     object Feature {
       def apply[S, P](static: Static[S, P],
-                      async : AsyncActionFeature.D0.Feature[String])
+                      async : AsyncActionFeature.D0.Feature[AsyncError])
                      (lens  : Lens[S, State],
                       editor: Option[Editor[P]]): Feature =
         editor match {
@@ -171,7 +173,7 @@ object ContentEditorFeature {
     }
 
     final private class MainFeatureImpl[S, P](static: Static[S, P],
-                                              async : AsyncActionFeature.D0.Feature[String],
+                                              async : AsyncActionFeature.D0.Feature[AsyncError],
                                               lens  : Lens[S, State],
                                               editor: Editor[P]) extends Feature {
       import static._
@@ -595,7 +597,8 @@ object ContentEditorFeature {
 
   object D1 {
 
-    final class State[A, B](val values: Map[A, EditorInstance], i: Intersection[A, B]) extends State.ReadOnly[B] {
+    final class State[A, B](private[feature] val values: Map[A, EditorInstance],
+                            i: Intersection[A, B]) extends State.ReadOnly[B] {
       @elidable(elidable.FINE)
       override def toString = s"D1.State($values)"
 
@@ -686,7 +689,7 @@ object ContentEditorFeature {
 
   object D2 {
 
-    final class State[A2, B2, A1, B1](val values: Map[A2, D1.State[A1, A1]],
+    final class State[A2, B2, A1, B1](private[feature] val values: Map[A2, D1.State[A1, A1]],
                                       i2: Intersection[A2, B2],
                                       i1: Intersection[A1, B1]) extends State.ReadOnly[B2, B1] {
       @elidable(elidable.FINE)

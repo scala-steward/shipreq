@@ -59,20 +59,20 @@ object AsyncActionFeature {
       def apply[F]($: StateAccessPure[State[F]]): Feature[F] =
         fn($.setState(_))
 
-      def fn[F](setStatus: Option[Status[F]] => Callback): Feature[F] =
+      def fn[F](setState: State[F] => Callback): Feature[F] =
         call => {
-          val clearStatus = setStatus(None)
+          val clearStatus = setState(None)
 
           def onSuccess: TCB.Success =
             TCB Success clearStatus
 
           def onFailure: F => TCB.Failure =
-            f => TCB Failure setStatus(Some(Failed(f, Callback byName doIt, clearStatus)))
+            f => TCB Failure setState(Some(Failed(f, Callback byName doIt, clearStatus)))
 
           lazy val doIt: Callback =
             // Switching this around breaks tests' MockServer's order of events.
             // i.e. it will call onSuccess which clears the status, and then set it to locked.
-            setStatus(Some(Locked)) >> call(onSuccess, onFailure)
+            setState(Some(Locked)) >> call(onSuccess, onFailure)
 
           doIt
         }
