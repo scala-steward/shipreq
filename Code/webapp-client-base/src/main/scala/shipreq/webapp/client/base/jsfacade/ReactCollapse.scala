@@ -2,7 +2,7 @@ package shipreq.webapp.client.base.jsfacade
 
 import japgolly.scalajs.react._
 import scalajs.js
-import scalajs.js.annotation.JSName
+import scalajs.js.annotation.JSGlobal
 import shipreq.base.util.Memo
 
 /**
@@ -12,7 +12,7 @@ import shipreq.base.util.Memo
  */
 object ReactCollapse {
 
-  @JSName("ReactCollapse")
+  @JSGlobal("ReactCollapse")
   @js.native
   object RawComp extends js.Object
 

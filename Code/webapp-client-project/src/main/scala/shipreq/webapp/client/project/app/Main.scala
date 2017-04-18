@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.{BaseUrl, Router}
 import org.scalajs.dom
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.JSExportTopLevel
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.protocol.{ClientFnDecl, InitDataForProjectSpa}
@@ -12,7 +12,7 @@ import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.root.{LoadFailedPage, LoadedRoot, LoadingPage, Routes}
 import shipreq.webapp.client.project.app.state.ClientData
 
-@JSExport(ClientFnDecl.ProjectSpaName)
+@JSExportTopLevel(ClientFnDecl.ProjectSpaName)
 object Main extends ClientFnImpl(ClientFnDecl.ProjectSpa) {
 
   def determineBaseUrl(url: String) = {

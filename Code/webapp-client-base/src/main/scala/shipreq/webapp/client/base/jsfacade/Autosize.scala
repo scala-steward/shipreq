@@ -1,25 +1,27 @@
 package shipreq.webapp.client.base.jsfacade
 
 import org.scalajs.dom
-import scala.scalajs.js, js.|
+import scala.scalajs.js
+import scala.scalajs.js.|
+import scala.scalajs.js.annotation._
 
 /** Automatically adjusts textarea height to fit text.
   *
   * https://github.com/jackmoore/autosize
   */
-object Autosize {
+@JSGlobal("autosize")
+@js.native
+object Autosize extends js.Object {
 
   type Target  = dom.Element
   type Targets = Target | dom.NodeList
 
-  def init(targets: Targets): Unit =
-    js.Dynamic.global.autosize(targets.asInstanceOf[js.Any])
+  @JSName("apply")
+  def init(targets: Targets): Unit = js.native
 
-  def update(targets: Targets): Unit =
-    js.Dynamic.global.autosize.update(targets.asInstanceOf[js.Any])
+  def update(targets: Targets): Unit = js.native
 
-  def destroy(targets: Targets): Unit =
-    js.Dynamic.global.autosize.destroy(targets.asInstanceOf[js.Any])
+  def destroy(targets: Targets): Unit = js.native
 
   /*
   private def postEvent(target: Target, name: String): Unit = {

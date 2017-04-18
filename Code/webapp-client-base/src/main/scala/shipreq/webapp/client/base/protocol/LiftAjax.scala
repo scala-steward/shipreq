@@ -1,10 +1,11 @@
 package shipreq.webapp.client.base.protocol
 
 import scala.scalajs.js
-import scala.scalajs.js.{UndefOr, |}
-import scala.scalajs.js.annotation.JSName
+import scala.scalajs.js.|
+import scala.scalajs.js.annotation.JSGlobal
 
-@JSName("lift") @js.native
+@JSGlobal("lift")
+@js.native
 object LiftAjax extends js.Object {
 
   /**

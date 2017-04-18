@@ -1,6 +1,6 @@
 package shipreq.webapp.client.base.jsfacade
 
-import scalajs.js.annotation.JSName
+import scalajs.js.annotation._
 import scalajs.js
 
 /**
@@ -9,11 +9,11 @@ import scalajs.js
  * https://github.com/Khan/KaTeX
  * https://khan.github.io/KaTeX/
  */
-@JSName("katex")
+@JSGlobal("katex")
 @js.native
 object KaTeX extends js.Object {
 
-  //def render(math: String, element: Element): Unit = native
+  //def render(math: String, element: Element): Unit = js.native
 
   /**
    * @return `"""<span class="katex">...</span>"""`

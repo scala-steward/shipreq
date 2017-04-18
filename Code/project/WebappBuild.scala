@@ -184,7 +184,8 @@ object WebappBuild {
         Common.jsSettings(NeedDom),
         webappSettings)
       .settings(
-      scalaJSOutputWrapper := ("", "Main().main();"))
+        scalaJSUseMainModuleInitializer := true,
+        mainClass in Compile := Some("shipreq.webapp.client.ww.Main"))
 
   lazy val webappClientProject =
     project("webapp-client-project")

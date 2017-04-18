@@ -1,6 +1,7 @@
 package shipreq.webapp.gen.phantomjs
 
 import scala.scalajs.js
+import scala.scalajs.js.annotation.JSGlobal
 import scala.scalajs.js.|
 
 @js.native
@@ -13,6 +14,7 @@ trait WriteParams extends js.Object {
   var charset: String = js.native
 }
 
+@JSGlobal
 @js.native
 object FS extends js.Object {
 

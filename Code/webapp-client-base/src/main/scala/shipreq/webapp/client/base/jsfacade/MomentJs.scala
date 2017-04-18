@@ -1,7 +1,7 @@
 package shipreq.webapp.client.base.jsfacade
 
 import java.time.Instant
-import scala.scalajs.js.annotation.JSName
+import scala.scalajs.js.annotation._
 import scalajs.js
 
 @js.native
@@ -15,7 +15,7 @@ trait Moment extends js.Object {
   def valueOfL()         : Double  = js.native
 }
 
-@JSName("moment")
+@JSGlobal("moment")
 @js.native
 object Moment extends js.Any {
   def apply(): Moment = js.native

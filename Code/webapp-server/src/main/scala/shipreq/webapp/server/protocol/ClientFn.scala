@@ -41,7 +41,7 @@ final class ClientFn[I](decl: ClientFnDecl[I]) {
 //    }
 
   private val runCmdHead =
-    s"${decl.objectName}().${decl.methodName}('"
+    s"${decl.objectName}.${decl.methodName}('"
 
   private def run(i: I)(sb: StringBuilder): Unit = {
     sb append runCmdHead

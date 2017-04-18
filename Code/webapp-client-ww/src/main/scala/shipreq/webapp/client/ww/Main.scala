@@ -1,6 +1,5 @@
 package shipreq.webapp.client.ww
 
-import scalajs.js.annotation._
 import shipreq.webapp.client.ww.api._
 import Server.codec.Writer
 
@@ -9,10 +8,8 @@ import Server.codec.Writer
  *
  * @since 25/05/2016
  */
-@JSExport("Main")
 object Main {
 
-  @JSExport
   def main(): Unit = {
     Server(Handler)(ResultEncoder)
   }
