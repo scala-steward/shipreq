@@ -236,9 +236,9 @@ object ContentEditorFeature {
 
       override def startEditAnd(cb: => Callback): Option[Callback] =
         pxAllowEdit.value().option(
-          $.modState(startEditWithoutChecks, cb))
+          startEditWithoutChecks.flatMap($.modState(_, cb)))
 
-      private type StartEditFn = S => S
+      private type StartEditFn = CallbackTo[S => S]
 
       private def startEditWithoutChecks: StartEditFn =
         editor match {
@@ -255,17 +255,25 @@ object ContentEditorFeature {
           case Editor.UseCaseStep            (id, p)             => EditUseCaseStep(id, p)
         }
 
-      def startEditFn(instance: => EditorInstance): StartEditFn =
-        lens modify (_ orElse instance.some)
+      def startEditFn(instance: => CallbackTo[EditorInstance]): StartEditFn =
+        CallbackTo.liftTraverse((s: S) =>
+          if (lens.get(s).isDefined)
+            CallbackTo(s)
+          else
+            instance.map(ei => lens.set(Some(ei))(s))
+        ).id
 
-      private def startEditFnWithStateSnapshot[A: Reusability, B <: EditorInstance](f: StateSnapshot[A] => B): A => StartEditFn = {
-        lazy val update: A ~=> Callback =
-          Reusable.fn(a => $.modState(lens set f(StateSnapshot.withReuse(a)(update)).some))
-        a => startEditFn(f(StateSnapshot.withReuse(a)(update)))
-      }
-
-      private def startEditFnWithStringSnapshot[B <: EditorInstance](initial: String, f: StateSnapshot[String] => B): StartEditFn =
-        startEditFnWithStateSnapshot(f) apply initial
+      private def startEditFnWithStateSnapshot[A, B: Reusability, C <: EditorInstance](initialData: CallbackTo[A])
+                                                                                      (initialValue: A => B)
+                                                                                      (editor: A => StateSnapshot[B] => C): StartEditFn =
+        initialData.flatMap { a =>
+          val editorA = editor(a)
+          def newEditor: B => C =
+            b => editorA(StateSnapshot.withReuse(b)(update))
+          lazy val update: B ~=> Callback =
+            Reusable.fn(b => $.modState(lens set newEditor(b).some))
+          startEditFn(CallbackTo(newEditor(initialValue(a))))
+        }
 
       private def abort: Callback =
         $.modState(lens set None)
@@ -286,14 +294,12 @@ object ContentEditorFeature {
 
         protected val renderImpl: RenderImpl
 
-        protected def makeRenderImplWithState(f: (RenderInput, S) => VdomElement): RenderImpl =
-          as => $.state.map(s => Some(f(as, s)))
-
-        protected def makeRenderImpl(f: RenderInput => VdomElement): RenderImpl =
-          as => CallbackTo(Some(f(as)))
+        protected def makeRenderImpl[A](f: RenderInput => CallbackTo[A])(implicit ev: A => VdomElement): RenderImpl =
+          as => f(as).map(a => Some(ev(a)))
 
         final override def render(as: AsyncState) =
           // Looks like this could block async but not so. Can't go from edit → async → notAllowed.
+          // This use of .value() is safe because EditorInstance is never Reusable
           pxAllowEdit.value() match {
             case Allow => renderImpl(as).runNow()
             case Deny  => None
@@ -305,27 +311,34 @@ object ContentEditorFeature {
       object EditReqCodes {
         import shipreq.webapp.client.project.widgets.high.ReqCodeEditor
 
-        private def trie() = pxProject.value().reqCodes.trie
+        private def trieCB: CallbackTo[ReqCode.Trie] =
+          pxProject.toCallback.map(_.reqCodes.trie)
 
         def req(req: Req): StartEditFn = {
-          val id            = req.id
-          val initialValues = pxProject.value().reqCodes.activeReqCodesByReqId(id)
-          val initialText   = ReqCodeEditor.Multiple.seqFmt merge initialValues.toVector.map(PlainText.reqCode).sorted
+          val id = req.id
+
+          val initialValuesCB: CallbackTo[Set[ReqCode.Value]] =
+            pxProject.toCallback.map(_.reqCodes.activeReqCodesByReqId(id))
 
           val abortCommit: ReqCodeEditor.Multiple.AbortCommit =
             makeAbortCommit(UpdateContentCmd.PatchReqCodes(id, _))
 
-          startEditFnWithStringSnapshot(initialText, new StateMultiple(_, Some(initialValues), abortCommit))
+          startEditFnWithStateSnapshot(
+            initialValuesCB)(
+            ReqCodeEditor.Multiple.seqFmt merge _.toVector.map(PlainText.reqCode).sorted)(
+            initialValues => new StateMultiple(_, Some(initialValues), abortCommit))
         }
 
-        private class StateMultiple(rvar       : StateSnapshot[String],
+        private class StateMultiple(ss         : StateSnapshot[String],
                                     initial    : Some[Set[ReqCode.Value]],
                                     abortCommit: ReqCodeEditor.Multiple.AbortCommit) extends EditorInstanceImpl {
           override val renderImpl = makeRenderImpl(as =>
-            ReqCodeEditor.Multiple.Props(
-              rvar,
+            for {
+              trie <- trieCB
+            } yield ReqCodeEditor.Multiple.Props(
+              ss,
               initial,
-              trie(),
+              trie,
               EditorStatus.async(as),
               abortCommit)
               .render)
@@ -338,17 +351,22 @@ object ContentEditorFeature {
           val abortCommit: ReqCodeEditor.Single.AbortCommit =
             makeAbortCommit(UpdateContentCmd.SetReqCodeGroupCode(id, _))
 
-          startEditFnWithStringSnapshot(initialText, new StateSingle(_, Some(initialValue), abortCommit))
+          startEditFnWithStateSnapshot(
+            CallbackTo pure initialText)(
+            Identity.apply)(
+            _ => new StateSingle(_, Some(initialValue), abortCommit))
         }
 
-        private class StateSingle(rvar       : StateSnapshot[String],
+        private class StateSingle(ss         : StateSnapshot[String],
                                   initial    : Some[ReqCode.Value],
                                   abortCommit: ReqCodeEditor.Single.AbortCommit) extends EditorInstanceImpl {
           override val renderImpl = makeRenderImpl(as =>
-            ReqCodeEditor.Single.Props(
-              rvar,
+            for {
+              trie <- trieCB
+            } yield ReqCodeEditor.Single.Props(
+              ss,
               initial,
-              trie(),
+              trie,
               EditorStatus.async(as),
               abortCommit)
               .render)
@@ -364,15 +382,18 @@ object ContentEditorFeature {
         val pxCustomReqTypes = ReqTypeSelector.pxCustomReqTypes(pxProject)
 
         def apply(req: GenericReq): StartEditFn = {
-          val id        = req.id
-          val initial   = pxProject.value().config.reqTypes.custom.need(req.reqTypeId)
-          val pxChoices = ReqTypeSelector.pxChoices(initial, pxCustomReqTypes)
+          val id = req.id
 
           val abortCommit: ReqTypeSelector.AbortCommit =
             makeAbortCommit[RT](t => UpdateContentCmd.SetGenericReqType(id, t.id)).value
 
-          val is = State(initial, initial, pxChoices, abortCommit)
-          startEditFn(is)
+          val initialCB: CallbackTo[RT] =
+            pxProject.toCallback.map(_.config.reqTypes.custom.need(req.reqTypeId))
+
+          startEditFn(initialCB.map { initial =>
+            val pxChoices = ReqTypeSelector.pxChoices(initial, pxCustomReqTypes)
+            State(initial, initial, pxChoices, abortCommit)
+          })
         }
 
         private case class State(initialValue: RT,
@@ -380,13 +401,15 @@ object ContentEditorFeature {
                                  pxChoices   : Px[NonEmptySet[RT]],
                                  abortCommit : ReqTypeSelector.AbortCommit) extends EditorInstanceImpl {
 
-          def evar = StateSnapshot(editValue)(e => $.modState(lens set copy(editValue = e).some))
+          def ss = StateSnapshot(editValue)(e => $.modState(lens set copy(editValue = e).some))
 
           override val renderImpl = makeRenderImpl(as =>
-            ReqTypeSelector.Props(
+            for {
+              choices <- pxChoices.toCallback
+            } yield ReqTypeSelector.Props(
               initialValue,
-              evar,
-              pxChoices.value(),
+              ss,
+              choices,
               EditorStatus.async(as),
               abortCommit)
               .render)
@@ -402,43 +425,56 @@ object ContentEditorFeature {
         val pxLookupAll = Px.apply2(pxProject, pxPlainText)(ImplicationEditor.Lookup.all)
 
         def all(req: Req, dir: Direction, initialValues: Vector[Pubid]): StartEditFn =
-          startEdit(req, dir, pxLookupAll, initialValues)
+          startEdit(req, dir, pxLookupAll, Px.constByValue[Seq[Pubid]](initialValues))
 
         def customField(req: Req, fid: CustomField.Implication.Id): StartEditFn = {
           val dir = CustomField.Implication.dir
           val lookup = Px.apply2(pxProject, pxLookupAll)(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
-          val pubids = ImplicationEditor.initialValueForCustomColumn(pxProject.value(), fid, req.id)
+          val pubids = pxProject.map[Seq[Pubid]](p => ImplicationEditor.initialValueForCustomColumn(p, fid, req.id))
           startEdit(req, dir, lookup, pubids)
         }
 
-        private def startEdit(req: Req, dir: Direction, pxLookup: Px[Lookup], pubids: Seq[Pubid]): StartEditFn = {
+        private def startEdit(req: Req, dir: Direction, pxLookup: Px[Lookup], pxPubids: Px[Seq[Pubid]]): StartEditFn = {
           val subjectId = req.id
 
-          val (initialValues, initialText) = ImplicationEditor.initialValueAndText(
-            (subjectId, pubids).some, pxProject.value(), pxLookup.value())
+          val pxInit: Px[(Set[ReqId], String)] =
+            for {
+              project <- pxProject
+              lookup <- pxLookup
+              pubids <- pxPubids
+            } yield ImplicationEditor.initialValueAndText((subjectId, pubids).some, project, lookup)
 
-          val pxValFn =
-            pxProject.map(p =>
-              ImplicationEditor.validationFn(p, subjectId.some, initialValues, dir))
+          val pxValFn: Px[ValidationFn] =
+            for {
+              project <- pxProject
+              init <- pxInit
+            } yield ImplicationEditor.validationFn(project, subjectId.some, init._1, dir)
 
           val abortCommit: ImplicationEditor.AbortCommit =
             makeAbortCommit(UpdateContentCmd.PatchImplications(subjectId, dir, _))
 
-          startEditFnWithStringSnapshot(initialText, new State(_, pxLookup, pxValFn, abortCommit))
+          startEditFnWithStateSnapshot(
+            pxInit.toCallback)(
+            _._2)(
+            _ => new State(_, pxLookup, pxValFn, abortCommit))
         }
 
-        private class State(rvar       : StateSnapshot[String],
-                            lookup     : Px[Lookup],
-                            valFn      : Px[ValidationFn],
+        private class State(ss         : StateSnapshot[String],
+                            pxLookup   : Px[Lookup],
+                            pxValFn    : Px[ValidationFn],
                             abortCommit: ImplicationEditor.AbortCommit) extends EditorInstanceImpl {
           override val renderImpl = makeRenderImpl(as =>
-            ImplicationEditor.Props(
-              rvar,
-              lookup.value(),
-              valFn.value(),
+            for {
+              lookup     <- pxLookup.toCallback
+              valFn      <- pxValFn.toCallback
+              textSearch <- pxTextSearch.toCallback
+            } yield ImplicationEditor.Props(
+              ss,
+              lookup,
+              valFn,
               EditorStatus.async(as),
               abortCommit,
-              pxTextSearch.value())
+              textSearch)
               .render)
         }
       }
@@ -454,26 +490,32 @@ object ContentEditorFeature {
           val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
           val pxLookup = pxProject map lookupFn
 
-          val (initialValues, initialText) = {
-            val p = pxProject.value()
-            TagEditor.initialValues(p.reqTags(id), p.config, pxLookup.value())
-          }
+          val pxInit: Px[(Set[ApplicableTagId], String)] =
+            for {
+              project <- pxProject
+              lookup <- pxLookup
+            } yield TagEditor.initialValues(project.reqTags(id), project.config, lookup)
 
           val abortCommit: TagEditor.AbortCommit =
             makeAbortCommit(UpdateContentCmd.PatchReqTags(id, _))
 
-          startEditFnWithStringSnapshot(initialText, new State(Some(initialValues), _, pxLookup, abortCommit))
+          startEditFnWithStateSnapshot(
+            pxInit.toCallback)(
+            _._2)(
+            init => new State(_, Some(init._1), pxLookup, abortCommit))
         }
 
-        private class State(initialValues: Some[Set[ApplicableTagId]],
-                            rvar         : StateSnapshot[String],
-                            lookup       : Px[Lookup],
+        private class State(ss           : StateSnapshot[String],
+                            initialValues: Some[Set[ApplicableTagId]],
+                            pxLookup     : Px[Lookup],
                             abortCommit  : TagEditor.AbortCommit) extends EditorInstanceImpl {
           override val renderImpl = makeRenderImpl(as =>
-            TagEditor.Props(
+            for {
+              lookup <- pxLookup.toCallback
+            } yield TagEditor.Props(
               initialValues,
-              rvar,
-              lookup.value(),
+              ss,
+              lookup,
               EditorStatus.async(as),
               abortCommit)
               .render)
@@ -489,34 +531,49 @@ object ContentEditorFeature {
         abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) {
           val T: editor.text.type = editor.text
 
-          def startEdit(cmd         : T.OptionalText => UpdateContentCmd,
-                        initialValue: T.OptionalText,
-                        focusId     : P): StartEditFn = {
+          def startEdit(cmd           : T.OptionalText => UpdateContentCmd,
+                        initialValueCB: CallbackTo[T.OptionalText],
+                        focusId       : P): StartEditFn = {
 
             val abortCommit: editor.AbortCommit =
               makeAbortCommit(cmd)
 
-            val initialText: String =
-              pxPlainText.value().format(RichTextEditor.hardcodedLive, initialValue)
+            val initCB =
+              for {
+                initialValue <- initialValueCB
+                plainText    <- pxPlainText.toCallback
+              } yield {
+                val initialText = plainText.format(RichTextEditor.hardcodedLive, initialValue)
+                (initialValue, initialText)
+              }
 
-            startEditFnWithStringSnapshot(initialText, new State(_, Some(initialValue), focusId, abortCommit))
+            startEditFnWithStateSnapshot(
+              initCB)(
+              _._2)(
+              i => new State(_, Some(i._1), focusId, abortCommit))
           }
 
-          private class State(rvar       : StateSnapshot[String],
+          private class State(ss         : StateSnapshot[String],
                               initial    : Some[T.OptionalText],
                               focusId    : P,
                               abortCommit: editor.AbortCommit) extends EditorInstanceImpl {
 
-            override val renderImpl = makeRenderImplWithState((as, s) =>
-              editor.Props(
-                pxProject.value(),
-                pxPlainText.value(),
-                pxTextSearch.value(),
-                pxProjectWidgets.value(),
-                rvar,
+            override val renderImpl = makeRenderImpl(as =>
+              for {
+                state          <- $.state
+                project        <- pxProject.toCallback
+                plainText      <- pxPlainText.toCallback
+                textSearch     <- pxTextSearch.toCallback
+                projectWidgets <- pxProjectWidgets.toCallback
+              } yield editor.Props(
+                project,
+                plainText,
+                textSearch,
+                projectWidgets,
+                ss,
                 EditorStatus.async(as),
                 abortCommit,
-                previewFeature.forChild(focusId, s),
+                previewFeature.forChild(focusId, state),
                 initial)
                 .render)
           }
@@ -526,7 +583,7 @@ object ContentEditorFeature {
           def apply(req: GenericReq, focusId: P): StartEditFn =
             startEdit(
               UpdateContentCmd.SetGenericReqTitle(req.id, _),
-              req.title,
+              CallbackTo pure req.title,
               focusId)
         }
 
@@ -534,7 +591,7 @@ object ContentEditorFeature {
           def apply(uc: UseCase, focusId: P): StartEditFn =
             startEdit(
               UpdateContentCmd.SetUseCaseTitle(uc.id, _),
-              uc.title,
+              CallbackTo pure uc.title,
               focusId)
         }
 
@@ -542,7 +599,7 @@ object ContentEditorFeature {
           def apply(rcg: ReqCodeGroup, focusId: P): StartEditFn =
             startEdit(
               UpdateContentCmd.SetReqCodeGroupTitle(rcg.id, _),
-              rcg.title,
+              CallbackTo pure rcg.title,
               focusId)
         }
 
@@ -550,7 +607,7 @@ object ContentEditorFeature {
           def apply(req: Req, fid: CustomField.Text.Id, focusId: P): StartEditFn =
             startEdit(
               UpdateContentCmd.SetCustomTextField(req.id, fid, _),
-              ReqData.textAt(fid, req.id).get(pxProject.value().reqText),
+              pxProject.toCallback.map(p => ReqData.textAt(fid, req.id).get(p.reqText)),
               focusId)
         }
       }
@@ -567,33 +624,47 @@ object ContentEditorFeature {
           val commitFn: UseCaseStepEditor.CommitFn =
             Reusable.fn(v => commit(UpdateContentCmd.UpdateUseCaseStep(id, v)))
 
-          val sf = pxProject.value().reqs.useCases.focusStep(id)
+          val pxStepFocus: Px[UseCaseStep.Focus] =
+            pxProject.map(_.reqs.useCases.focusStep(id))
 
-          val initialValue: UseCaseStepEditor.InitialValue =
-            TextAndFlow(sf.step.titleExplicitly, sf.flow)
+          val pxInit: Px[(UseCaseStepEditor.InitialValue, String)] =
+            for {
+              stepFocus <- pxStepFocus
+              plainText <- pxPlainText
+            } yield {
+              val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, stepFocus.flow)
+              val initialText = plainText.useCaseStep(hardcodedLive, initialValue)
+              (initialValue, initialText)
+            }
 
-          val initialText: String =
-            pxPlainText.value().useCaseStep(hardcodedLive, initialValue)
-
-          startEditFnWithStringSnapshot(initialText, new State(_, Some(initialValue), focusId, commitFn))
+            startEditFnWithStateSnapshot(
+              pxInit.toCallback)(
+              _._2)(
+              i => new State(_, Some(i._1), focusId, commitFn))
         }
 
-        private class State(rvar   : StateSnapshot[String],
+        private class State(ss     : StateSnapshot[String],
                             initial: Some[UseCaseStepEditor.InitialValue],
                             focusId: P,
                             commit : UseCaseStepEditor.CommitFn) extends EditorInstanceImpl {
 
-          override val renderImpl = makeRenderImplWithState((as, s) =>
-            UseCaseStepEditor.Props(
-              pxProject.value(),
-              pxPlainText.value(),
-              pxTextSearch.value(),
-              pxProjectWidgets.value(),
-              rvar,
+          override val renderImpl = makeRenderImpl(as =>
+            for {
+              state          <- $.state
+              project        <- pxProject.toCallback
+              plainText      <- pxPlainText.toCallback
+              textSearch     <- pxTextSearch.toCallback
+              projectWidgets <- pxProjectWidgets.toCallback
+            } yield UseCaseStepEditor.Props(
+              project,
+              plainText,
+              textSearch,
+              projectWidgets,
+              ss,
               EditorStatus.async(as),
               abort,
               commit,
-              previewFeature.forChild(focusId, s),
+              previewFeature.forChild(focusId, state),
               initial)
               .render)
         }
