@@ -273,7 +273,7 @@ object ReqDetail {
       val runCmd      = this.runCmd(req.id)
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
-        def startEdit    = editFeature(cell).startEdit
+        def startEdit    = editFeature(cell).startEdit(project)
         def editableView = TagMod(EditTheme.editableInline(startEdit), view)
         val async        = state.async(cell)
         val editor       = state.edit(cell)

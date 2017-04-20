@@ -64,7 +64,7 @@ object Table {
           val row = rows(i)
           val es  = p.editState(row.sourceId)
           val as  = p.asyncState(row.sourceId)
-          val rp  = RowProps(row, crs, p.cellEditors, es, as, p.selection)
+          val rp  = RowProps(p.project, row, crs, p.cellEditors, es, as, p.selection)
           RowComponent.withKey(row.id.key)(rp)
         }
 
@@ -146,7 +146,8 @@ object Table {
   // ===================================================================================================================
   // Rows
 
-  case class RowProps(row        : Row,
+  case class RowProps(project    : Project,
+                      row        : Row,
                       crs        : NonEmptyVector[ColumnRenderer],
                       cellEditors: ContentEditorFeature.D2.Feature[Row, Column],
                       editState  : ContentEditorFeature.D1.State.ReadOnly[Column],
@@ -184,7 +185,7 @@ object Table {
       def colCells =
         p.crs.iterator.map { cr =>
           val col = cr.column
-          val cp = CellProps(row, cr, p.cellEditors, p editState col, p asyncState Some(col))
+          val cp = CellProps(p.project, row, cr, p.cellEditors, p editState col, p asyncState Some(col))
           CellComponent.withKey(col.key)(cp)
         }.toVdomArray
 
@@ -195,7 +196,7 @@ object Table {
       def colCells =
         p.crs.iterator.map { cr =>
           val col = cr.column
-          val cp = CellProps(row, cr, ContentEditorFeature.D2.Feature.Nop, None, None)
+          val cp = CellProps(p.project, row, cr, ContentEditorFeature.D2.Feature.Nop, None, None)
           CellComponent.withKey(col.key)(cp)
         }.toVdomArray
 
@@ -231,13 +232,14 @@ object Table {
     val domain = Domain.ofValues[CellStatus](Normal, DeadRow, `N/A`)
   }
 
-  case class CellProps(row        : Row,
+  case class CellProps(project    : Project,
+                       row        : Row,
                        cr         : ColumnRenderer,
                        cellEditors: ContentEditorFeature.D2.Feature[Row, Column],
                        editState  : ContentEditorFeature.D0.State,
                        asyncState : AsyncActionFeature.D0.State[String]) {
     def column = cr.column
-    def startEdit: Option[Callback] = cellEditors(row)(column).startEdit
+    def startEdit: Option[Callback] = cellEditors(row)(column).startEdit(project)
   }
 
   implicit val cellPropReuse = Reusability.never[CellProps] // TODO caseClass[CellProps]
