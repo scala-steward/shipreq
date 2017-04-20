@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
 import shipreq.base.util.{IMap, ISubset}
 import shipreq.base.util.ScalaExt._
@@ -55,14 +56,14 @@ object ISubsetEditor {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  final case class StaticProps[A](preprocess : Stream[A] => Stream[A],
+  final case class StaticProps[A](preprocess : TraversableOnce[A] => TraversableOnce[A],
                                   renderValue: A => VdomNode,
                                   allValues  : TraversableOnce[A]) {
-    val allValueStatic =
-      preprocess(allValues.toStream).foldLeft(Vector.empty[ValueStatic[A]])((q, a) =>
+    val allValueStatic: Vector[ValueStatic[A]] =
+      preprocess(allValues).foldLeft(Vector.empty[ValueStatic[A]])((q, a) =>
         q :+ ValueStatic(a,
           <.span(renderValue(a)),
-          <.input(^.`type` := "checkbox")))
+          <.input.checkbox))
   }
 
   final case class ValueStatic[A](value: A, rendered: VdomTag, checkbox: VdomTag)
@@ -81,12 +82,11 @@ object ISubsetEditor {
       }
 
     def renderViewMode(m: ViewMode[A]): VdomElement = {
-      def selection(prefix: String, i: NonEmptySet[A]): TagMod = {
-        val as = preprocess(i.head #:: i.tail.toStream)
-        val ns = as.map(renderValue)
-        val vs = ns.head #:: ns.tail.flatMap(v => Stream[VdomNode](", ", v))
-        ((prefix + ": ") #:: vs #::: Stream[VdomNode](".")).toTagMod
-      }
+      def selection(prefix: String, i: NonEmptySet[A]): TagMod =
+        TagMod(
+          prefix + ": ",
+          preprocess(i.whole).toIterator.map(renderValue).intersperse(", ").toTagMod,
+          ".")
 
       val values: TagMod = m.value match {
         case ISubset.All()    => "All."

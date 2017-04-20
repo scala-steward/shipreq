@@ -54,7 +54,7 @@ object AutoCompleteFeature {
           getNode   : ScalaComponent.MountedImpure[P, S, B] => E,
           strategies: (P, B) => ForChild,
           onUpdate  : (P, B) => String => Callback)
-         (implicit te: TextEditor.OfType[E]): ScalaComponentConfig[P, C, S, B] =
+         (implicit te: TextEditor.OfType[E]): ScalaComponent.Config[P, C, S, B] =
     _.componentDidMount($ => Callback {
       val n = getNode($.mountedImpure)
       te.focus(n)
@@ -84,20 +84,20 @@ object AutoCompleteFeature {
           getNode   : ScalaComponent.MountedImpure[P, S, B] => E,
           strategies: P => ForChild,
           onUpdate  : P => String => Callback)
-        (implicit te: TextEditor.OfType[E]): ScalaComponentConfig[P, C, S, B] =
+        (implicit te: TextEditor.OfType[E]): ScalaComponent.Config[P, C, S, B] =
     install(getNode, (p, _) => strategies(p), (p, _) => onUpdate(p))
 
   def installB[P, C <: Children, S, B, E <: html.Element](
           getNode   : ScalaComponent.MountedImpure[P, S, B] => E,
           strategies: B => ForChild,
           onUpdate  : B => String => Callback)
-        (implicit te: TextEditor.OfType[E]): ScalaComponentConfig[P, C, S, B] =
+        (implicit te: TextEditor.OfType[E]): ScalaComponent.Config[P, C, S, B] =
     install(getNode, (_, b) => strategies(b), (_, b) => onUpdate(b))
 
   def installBP[P, C <: Children, S, B, E <: html.Element](
           getNode   : ScalaComponent.MountedImpure[P, S, B] => E,
           strategies: B => ForChild,
           onUpdate  : P => String => Callback)
-        (implicit te: TextEditor.OfType[E]): ScalaComponentConfig[P, C, S, B] =
+        (implicit te: TextEditor.OfType[E]): ScalaComponent.Config[P, C, S, B] =
     install(getNode, (_, b) => strategies(b), (p, _) => onUpdate(p))
 }

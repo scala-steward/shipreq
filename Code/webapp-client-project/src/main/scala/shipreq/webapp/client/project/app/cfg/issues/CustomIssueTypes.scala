@@ -36,7 +36,7 @@ private[issues] object CustomIssueTypes {
 
   val Component =
     ScalaComponent.builder[Props]("Cfg: User-Defined Issue Types")
-      .initialState_P(initialState)
+      .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(changeListener.install(_.clientData))
       .build

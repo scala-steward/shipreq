@@ -136,7 +136,7 @@ private[fields] object MainTable {
 
   val Component =
     ScalaComponent.builder[Props]("Cfg: Fields")
-      .initialState_P(initialState)
+      .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(
         customFieldChangeListener.install(_.clientData),

@@ -34,7 +34,7 @@ object AutoCompleteTest extends TestSuite {
 
   def editor(ac: AutoCompleteFeature.Strategies) = {
     //    ScalaComponent.builder[String]("AutoComplete test")
-    //      .initialState_P(s => s)
+    //      .initialStateFromProps(s => s)
     //      .render { $ =>
     //        def change = (e: ReactEventFromInput) => $.setState(e.target.value)
     //        <.textarea(^.value := $.state, ^.onChange ~~> change)

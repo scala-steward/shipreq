@@ -46,7 +46,7 @@ object GraphComponent {
       }
   }
 
-  def graphConfig[P <: HasWebWorker : Reusability, C <: Children, B <: GraphBackend[P]]: ScalaComponentConfig[P, C, State, B] =
+  def graphConfig[P <: HasWebWorker : Reusability, C <: Children, B <: GraphBackend[P]]: ScalaComponent.Config[P, C, State, B] =
     _.configure(Reusability.shouldComponentUpdate)
       .componentWillMount($ => $.backend.refresh($.props))
       .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.backend.refresh(i.nextProps)))

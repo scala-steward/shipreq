@@ -153,7 +153,7 @@ private[tags] object MainTable {
 
   val Component =
     ScalaComponent.builder[Props]("Cfg: Tags")
-      .initialState_P(initialState)
+      .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(changeListener.install(_.clientData))
       .build

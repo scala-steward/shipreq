@@ -1,6 +1,8 @@
 package shipreq.webapp.client.project.app.cfg.fields
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.scalajs.react._
+import vdom.html_<^._
 import japgolly.univeq.UnivEq
 import monocle.Lens
 import monocle.function.At.atMap
@@ -39,8 +41,8 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
 
   def lookup(id: A) = reqtypemap.get(id).get
 
-  val preprocess: Stream[A] => Stream[A] =
-    _.sortBy(lookup(_).mnemonic.value)
+  val preprocess: TraversableOnce[A] => TraversableOnce[A] =
+    i => MutableArray(i).sortBy(lookup(_).mnemonic.value).iterator
 
   val renderValue: A => VdomNode = id => {
     val a = lookup(id)

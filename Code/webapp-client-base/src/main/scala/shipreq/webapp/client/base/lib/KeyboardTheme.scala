@@ -37,7 +37,7 @@ object KeyboardTheme {
   }
 
   def commitCO(commit: CallbackTo[Option[Callback]], lc: LineCardinality): KeyHandler =
-    commitCriterion.handle(commit >>= (Callback sequenceO _))
+    commitCriterion.handle(commit >>= (Callback sequenceOption _))
 
   private val link   = <.a(*.link)
   private val clause = <.span(*.clause)

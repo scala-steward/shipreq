@@ -39,7 +39,7 @@ object CfgReqTypes {
 
   val Component =
     ScalaComponent.builder[Props]("Cfg: Req Types")
-      .initialState_P(initialState)
+      .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(changeListener.install(_.clientData))
       .build
