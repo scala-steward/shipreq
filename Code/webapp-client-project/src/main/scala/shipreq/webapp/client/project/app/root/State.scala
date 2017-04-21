@@ -50,6 +50,11 @@ object AsyncKey {
   case class AddUseCaseStep    (id: UseCaseStepId) extends AsyncKey
   case class AddUseCaseTailStep(s: UseCaseSteps)   extends AsyncKey
 
+  object Implications {
+    private val memo = Direction.memo(new Implications(_))
+    def apply(d: Direction): Implications = memo(d)
+  }
+
   @inline implicit def equality: UnivEq[AsyncKey] =
     UnivEq.derive
 

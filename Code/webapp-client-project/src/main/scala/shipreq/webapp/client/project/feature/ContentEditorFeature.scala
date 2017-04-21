@@ -80,6 +80,11 @@ object ContentEditorFeature {
     case class CustomField(id: CustomFieldId) extends EditFieldKey
     case class UseCaseStep(id: UseCaseStepId) extends EditFieldKey
 
+    object Implications {
+      private val memo = Direction.memo(new Implications(_))
+      def apply(d: Direction): Implications = memo(d)
+    }
+
     // DeletionReason is a bit odd in that it is append-only, not directly editable.
     // case object DeletionReason extends EditFieldKey
 

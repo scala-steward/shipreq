@@ -21,6 +21,11 @@ object Cell {
   case class AddUseCaseStep    (id: UseCaseStepId)     extends Cell
   case class AddUseCaseTailStep(row: Row.UseCaseSteps) extends Cell
 
+  object Implications {
+    private val memo = Direction.memo(new Implications(_))
+    def apply(d: Direction): Implications = memo(d)
+  }
+
   @inline implicit def univEq: UnivEq[Cell] =
     UnivEq.derive
 

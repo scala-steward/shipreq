@@ -61,6 +61,11 @@ object Column {
 
   // -------------------------------------------------------------------------------------------------------------------
 
+  object Implications {
+    private val memo = Direction.memo(new Implications(_))
+    def apply(d: Direction): Implications = memo(d)
+  }
+
   @inline implicit def equalityCF : UnivEq[CustomField]                     = UnivEq.derive
   @inline implicit def equalityIHB: UnivEq[SortInconclusive with HasBlanks] = UnivEq.force
   @inline implicit def equalityINB: UnivEq[SortInconclusive with NoBlanks]  = UnivEq.force
