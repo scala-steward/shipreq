@@ -119,28 +119,25 @@ object ContentEditorFeature {
     def allowEditFn(editor: Editor[Any]): Project => Permission = {
       def liveReq(id: ReqId, ofid: Option[FieldId]): Project => Permission =
         p => {
-          val r = p.reqs.need(id)
+          val r: Req =
+            p.reqs.need(id)
 
-          def isLive = r.live(p.config.reqTypes) :: Live
+          def live: Live =
+            r.live(p.config.reqTypes)
 
-          def isFieldApplicable =
-            (ofid match {
-              case None =>
-                Applicable // No field specified
+          def fieldApplicable: Applicable =
+            ofid match {
+              case None => Applicable // No field specified
               case Some(fid) =>
                 p.config.fields.get(fid) match {
-
                   // Check field
-                  case Some(f) =>
-                    f.applicable(r.reqTypeId) & (Applicable <~ f.live(p.config) :: Live)
-
+                  case Some(f) => f.applicable(r.reqTypeId) & (Applicable <~ f.live(p.config) :: Live)
                   // Field has been removed
-                  case None =>
-                    NotApplicable
+                  case None => NotApplicable
                 }
-            }) :: Applicable
+            }
 
-          Allow <~ (isLive && isFieldApplicable)
+          Allow <~ (live :: Live && fieldApplicable :: Applicable)
         }
 
       def liveRCG(id: ReqCodeId): Project => Permission =
@@ -174,7 +171,7 @@ object ContentEditorFeature {
   type AsyncState = AsyncActionFeature.D0.State[AsyncError]
 
   /**
-    * This is effectively mutable because of the underlying usage of Pxs and reading of PreviewFeature state.
+    * This is not safe for reusability because the implementation calls both `Px#value()` and `CallbackTo#runNow()`.
     */
   trait EditorInstance {
     def render(as: AsyncState): Option[VdomElement]
@@ -182,7 +179,7 @@ object ContentEditorFeature {
 
   object EditorInstance {
     implicit def reusabilityEditor: Reusability[EditorInstance] =
-      Reusability.never // ∵ Editor is effectively mutable
+      Reusability.never // ∵ Editor is not safe for reusability
   }
 
   @inline implicit class CEFState0Ops(private val s: D0.State) extends AnyVal {
