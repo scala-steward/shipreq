@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.root
 
 import japgolly.scalajs.react.extra._
 import monocle.macros._
-import shipreq.base.util.Intersection
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.client.base.feature._
@@ -43,8 +43,7 @@ object AsyncKey {
   case object Code                                 extends AsyncKey
   case object Title                                extends AsyncKey
   case object Tags                                 extends AsyncKey
-  case object ImplicationSrc                       extends AsyncKey
-  case object ImplicationTgt                       extends AsyncKey
+  case class Implications      (dir: Direction)    extends AsyncKey
   case class CustomField       (id: CustomFieldId) extends AsyncKey
   case class UseCaseStep       (id: UseCaseStepId) extends AsyncKey
   case class UseCaseStepCtrls  (id: UseCaseStepId) extends AsyncKey
@@ -58,25 +57,23 @@ object AsyncKey {
     Reusability.byUnivEq
 
   val ToReqTable = Intersection[AsyncKey, reqtable.Column] {
-    case ReqType               => Some(reqtable.Column.ReqType              )
-    case Code                  => Some(reqtable.Column.Code                 )
-    case Title                 => Some(reqtable.Column.Title                )
-    case Tags                  => Some(reqtable.Column.Tags                 )
-    case ImplicationSrc        => Some(reqtable.Column.ImplicationSrc       )
-    case ImplicationTgt        => Some(reqtable.Column.ImplicationTgt       )
-    case CustomField(id)       => Some(reqtable.Column.CustomField(id, Live))
+    case ReqType           => Some(reqtable.Column.ReqType)
+    case Code              => Some(reqtable.Column.Code)
+    case Title             => Some(reqtable.Column.Title)
+    case Tags              => Some(reqtable.Column.Tags)
+    case Implications(dir) => Some(reqtable.Column.Implications(dir))
+    case CustomField(id)   => Some(reqtable.Column.CustomField(id, Live))
     case WholeReq
        | UseCaseStep       (_)
        | UseCaseStepCtrls  (_)
        | AddUseCaseStep    (_)
        | AddUseCaseTailStep(_) => None
   } {
-    case reqtable.Column.ReqType               => Some(ReqType        )
-    case reqtable.Column.Code                  => Some(Code           )
-    case reqtable.Column.Title                 => Some(Title          )
-    case reqtable.Column.Tags                  => Some(Tags           )
-    case reqtable.Column.ImplicationSrc        => Some(ImplicationSrc )
-    case reqtable.Column.ImplicationTgt        => Some(ImplicationTgt )
+    case reqtable.Column.ReqType               => Some(ReqType)
+    case reqtable.Column.Code                  => Some(Code)
+    case reqtable.Column.Title                 => Some(Title)
+    case reqtable.Column.Tags                  => Some(Tags)
+    case reqtable.Column.Implications(dir)     => Some(Implications(dir))
     case reqtable.Column.CustomField(id, Live) => Some(CustomField(id))
     case reqtable.Column.Pubid
        | reqtable.Column.DeletionReason
@@ -92,29 +89,27 @@ object AsyncKey {
   }
 
   val ToReqDetail = Intersection[AsyncKey, reqdetail.Cell] {
-    case ReqType               => Some(reqdetail.Cell.ReqType              )
-    case Code                  => Some(reqdetail.Cell.Code                 )
-    case Title                 => Some(reqdetail.Cell.Title                )
-    case Tags                  => Some(reqdetail.Cell.Tags                 )
-    case ImplicationSrc        => Some(reqdetail.Cell.ImplicationSrc       )
-    case ImplicationTgt        => Some(reqdetail.Cell.ImplicationTgt       )
-    case CustomField(id)       => Some(reqdetail.Cell.CustomField(id)      )
-    case UseCaseStep(id)       => Some(reqdetail.Cell.UseCaseStep(id)      )
-    case UseCaseStepCtrls(id)  => Some(reqdetail.Cell.UseCaseStepCtrls(id) )
-    case AddUseCaseStep(id)    => Some(reqdetail.Cell.AddUseCaseStep(id)   )
+    case ReqType               => Some(reqdetail.Cell.ReqType)
+    case Code                  => Some(reqdetail.Cell.Code)
+    case Title                 => Some(reqdetail.Cell.Title)
+    case Tags                  => Some(reqdetail.Cell.Tags)
+    case Implications(dir)     => Some(reqdetail.Cell.Implications(dir))
+    case CustomField(id)       => Some(reqdetail.Cell.CustomField(id))
+    case UseCaseStep(id)       => Some(reqdetail.Cell.UseCaseStep(id))
+    case UseCaseStepCtrls(id)  => Some(reqdetail.Cell.UseCaseStepCtrls(id))
+    case AddUseCaseStep(id)    => Some(reqdetail.Cell.AddUseCaseStep(id))
     case AddUseCaseTailStep(s) => Some(reqdetail.Cell.AddUseCaseTailStep(s))
     case WholeReq              => None // TODO ReqDetail doesn't lock the whole requirement when deleting
   } {
-    case reqdetail.Cell.ReqType               => Some(ReqType              )
-    case reqdetail.Cell.Code                  => Some(Code                 )
-    case reqdetail.Cell.Title                 => Some(Title                )
-    case reqdetail.Cell.Tags                  => Some(Tags                 )
-    case reqdetail.Cell.ImplicationSrc        => Some(ImplicationSrc       )
-    case reqdetail.Cell.ImplicationTgt        => Some(ImplicationTgt       )
-    case reqdetail.Cell.CustomField(id)       => Some(CustomField(id)      )
-    case reqdetail.Cell.UseCaseStep(id)       => Some(UseCaseStep(id)      )
-    case reqdetail.Cell.UseCaseStepCtrls(id)  => Some(UseCaseStepCtrls(id) )
-    case reqdetail.Cell.AddUseCaseStep(id)    => Some(AddUseCaseStep(id)   )
+    case reqdetail.Cell.ReqType               => Some(ReqType)
+    case reqdetail.Cell.Code                  => Some(Code)
+    case reqdetail.Cell.Title                 => Some(Title)
+    case reqdetail.Cell.Tags                  => Some(Tags)
+    case reqdetail.Cell.Implications(dir)     => Some(Implications(dir))
+    case reqdetail.Cell.CustomField(id)       => Some(CustomField(id))
+    case reqdetail.Cell.UseCaseStep(id)       => Some(UseCaseStep(id))
+    case reqdetail.Cell.UseCaseStepCtrls(id)  => Some(UseCaseStepCtrls(id))
+    case reqdetail.Cell.AddUseCaseStep(id)    => Some(AddUseCaseStep(id))
     case reqdetail.Cell.AddUseCaseTailStep(s) => Some(AddUseCaseTailStep(s))
   }
 }

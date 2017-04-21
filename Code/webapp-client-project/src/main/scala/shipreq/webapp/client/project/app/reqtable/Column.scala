@@ -43,14 +43,14 @@ object Column {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  case object Pubid          extends BuiltInLive with SortConclusive
-  case object Code           extends BuiltInLive with SortInconclusive with HasBlanks
-  case object Title          extends BuiltInLive with SortInconclusive with HasBlanks
-  case object ReqType        extends BuiltInLive with SortInconclusive with NoBlanks
-  case object Tags           extends BuiltInLive with SortInconclusive with HasBlanks
-  case object ImplicationSrc extends BuiltInLive with SortInconclusive with HasBlanks
-  case object ImplicationTgt extends BuiltInLive with SortInconclusive with HasBlanks
-  case object DeletionReason extends BuiltInDead with SortInconclusive with HasBlanks
+  // NOTE: Keep .builtInValues in sync
+  case object Pubid                       extends BuiltInLive with SortConclusive
+  case object Code                        extends BuiltInLive with SortInconclusive with HasBlanks
+  case object Title                       extends BuiltInLive with SortInconclusive with HasBlanks
+  case object ReqType                     extends BuiltInLive with SortInconclusive with NoBlanks
+  case object Tags                        extends BuiltInLive with SortInconclusive with HasBlanks
+  case class Implications(dir: Direction) extends BuiltInLive with SortInconclusive with HasBlanks
+  case object DeletionReason              extends BuiltInDead with SortInconclusive with HasBlanks
 
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
@@ -71,7 +71,15 @@ object Column {
   @inline implicit def reusability: Reusability[Column]                     = Reusability.byEqual
 
   val builtInValues: NonEmptyVector[BuiltIn] =
-    AdtMacros.adtValues[BuiltIn]
+    // TODO Add adtValuesExcept
+    NonEmptyVector(
+      Pubid,
+      Code,
+      Title,
+      ReqType,
+      Tags,
+      Implications(Forwards), Implications(Backwards),
+      DeletionReason)
 
   val mandatory: Set[BuiltIn] =
     UnivEq.emptySet[BuiltIn] + Pubid + Title
@@ -91,25 +99,23 @@ object Column {
     FilterDead.memo(_.filterFnBy[Column](_.live))
 
   val EditFieldKeyIntersection = Intersection[Column, EditFieldKey] {
-    case Column.ReqType               => Some(EditFieldKey.ReqType        )
-    case Column.Code                  => Some(EditFieldKey.Code           )
-    case Column.Title                 => Some(EditFieldKey.Title          )
-    case Column.Tags                  => Some(EditFieldKey.Tags           )
-    case Column.ImplicationSrc        => Some(EditFieldKey.ImplicationSrc )
-    case Column.ImplicationTgt        => Some(EditFieldKey.ImplicationTgt )
+    case Column.ReqType               => Some(EditFieldKey.ReqType)
+    case Column.Code                  => Some(EditFieldKey.Code)
+    case Column.Title                 => Some(EditFieldKey.Title)
+    case Column.Tags                  => Some(EditFieldKey.Tags)
+    case Column.Implications(dir)     => Some(EditFieldKey.Implications(dir))
     case Column.CustomField(id, Live) => Some(EditFieldKey.CustomField(id))
     case Column.Pubid
        | Column.DeletionReason
        | Column.CustomField(_, Dead)  => None
   } {
-    case EditFieldKey.ReqType         => Some(Column.ReqType              )
-    case EditFieldKey.Code            => Some(Column.Code                 )
-    case EditFieldKey.Title           => Some(Column.Title                )
-    case EditFieldKey.Tags            => Some(Column.Tags                 )
-    case EditFieldKey.ImplicationSrc  => Some(Column.ImplicationSrc       )
-    case EditFieldKey.ImplicationTgt  => Some(Column.ImplicationTgt       )
-    case EditFieldKey.CustomField(id) => Some(Column.CustomField(id, Live))
-    case EditFieldKey.UseCaseStep(_)  => None
+    case EditFieldKey.ReqType           => Some(Column.ReqType)
+    case EditFieldKey.Code              => Some(Column.Code)
+    case EditFieldKey.Title             => Some(Column.Title)
+    case EditFieldKey.Tags              => Some(Column.Tags)
+    case EditFieldKey.Implications(dir) => Some(Column.Implications(dir))
+    case EditFieldKey.CustomField(id)   => Some(Column.CustomField(id, Live))
+    case EditFieldKey.UseCaseStep(_)    => None
   }
 
   def field(c: Column, p: ProjectConfig): Option[Field] =
@@ -119,8 +125,7 @@ object Column {
          | Code
          | Title
          | Tags
-         | ImplicationSrc
-         | ImplicationTgt
+         | Implications(_)
          | DeletionReason     => None
       case CustomField(id, _) => Some(p.customField(id))
     }
@@ -129,21 +134,6 @@ object Column {
     Memo(
       Applicability.fn(
         field(_, p).map(_.applicable), Applicable))
-
-  /**
-   * Direction of implications relative to row-subject.
-   *
-   * If forwards, the user edits what this subject implies (ie. subject → edit-specified).
-   * If backwards, then it's what implies this subject     (ie. subject ← edit-specified).
-   *
-   * Note: Copy of reqdetail.Cell.implicationDirection
-   */
-  def implicationDirection(column: Column): Direction =
-    column match {
-      case Column.CustomField(_, _) => data.CustomField.Implication.dir
-      case Column.ImplicationTgt    => Forwards
-      case _                        => Backwards
-    }
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -168,14 +158,13 @@ object Column {
           customFieldName(cf)))
 
     val builtIn: BuiltIn => String = {
-      case ReqType        => ColumnNames.reqType
-      case Pubid          => ColumnNames.pubid
-      case Code           => ColumnNames.code
-      case Title          => ColumnNames.title
-      case Tags           => ColumnNames.tags
-      case ImplicationSrc => ColumnNames.implicationSrc
-      case ImplicationTgt => ColumnNames.implicationTgt
-      case DeletionReason => ColumnNames.deletionReason
+      case ReqType           => ColumnNames.reqType
+      case Pubid             => ColumnNames.pubid
+      case Code              => ColumnNames.code
+      case Title             => ColumnNames.title
+      case Tags              => ColumnNames.tags
+      case Implications(dir) => ColumnNames.implications(dir)
+      case DeletionReason    => ColumnNames.deletionReason
     }
 
     implicit val reusability: Reusability[NameResolver] = {

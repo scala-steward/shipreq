@@ -153,21 +153,20 @@ private[reqtable] object Logic {
     go(src.keys.toVector, Map.empty, Vector.empty)
   }
 
-  private def expansions(impSrcs: Expanded[Pubid],
-                         impTgts: Expanded[Pubid],
+  private def expansions(imps   : Direction => Expanded[Pubid],
                          codes  : Expanded[ReqCode.Value],
                          cfImps : Map[CustomField.Implication.Id, Expanded[Pubid]],
                          cfTags : Map[CustomField.Tag.Id,         Expanded[ApplicableTagId]]): NonEmptyVector[Expansion] =
     if (   isEmptyExp(codes)
-        && isEmptyExp(impSrcs)
-        && isEmptyExp(impTgts)
+        && isEmptyExp(imps(Backwards))
+        && isEmptyExp(imps(Forwards))
         && cfImps.values.forall(isEmptyExp)
         && cfTags.values.forall(isEmptyExp))
       emptyExpansions
     else
       for {
-        a <- impSrcs
-        b <- impTgts
+        a <- imps(Backwards)
+        b <- imps(Forwards)
         c <- codes
         d <- expandMapValues(cfImps)
         e <- expandMapValues(cfTags)
@@ -209,8 +208,7 @@ private[reqtable] object Logic {
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p, vs.filterDead)
     val applicability = Column.applicability(p.config)
-    val expandImpSrcs = expanderC[Pubid](vs, Column.ImplicationSrc)
-    val expandImpTgts = expanderC[Pubid](vs, Column.ImplicationTgt)
+    val expandImps    = Direction.memo(dir => expanderC[Pubid](vs, Column.Implications(dir)))
     val expandCodes   = expanderC[ReqCode.Value](vs, Column.Code)
     val expandImpCols = impColValueExpander(vs, p, applicability)
     val expandTagCols = tagFieldValueExpander(vs, applicability, tagFieldDist, tagLookup)
@@ -274,12 +272,11 @@ private[reqtable] object Logic {
           val live = r live p.config.reqTypes
 
           // Expansion
-          val impSrcs = expandImpSrcs(() => pImplications.backwards(id) |> pubids)
-          val impTgts = expandImpTgts(() => pImplications.forwards(id) |> pubids)
+          val imps    = Direction.memo(dir => expandImps(dir)(() => pImplications(dir)(id) |> pubids))
           val codes   = expandCodes  (() => reqCodesByReq(live)(id))
           val cfImps  = expandImpCols(r)
           val cfTags  = expandTagCols(r)
-          val exps    = expansions(impSrcs, impTgts, codes, cfImps, cfTags)
+          val exps    = expansions(imps, codes, cfImps, cfTags)
 
           // Build
           val mv = multiValuesFn(id)

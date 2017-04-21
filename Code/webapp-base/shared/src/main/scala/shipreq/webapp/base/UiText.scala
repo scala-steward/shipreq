@@ -1,5 +1,6 @@
 package shipreq.webapp.base
 
+import shipreq.base.util.{Backwards, Direction, Forwards}
 import shipreq.webapp.base.data.{Dead, Live, StaticField, StaticFieldType}
 
 object UiText {
@@ -27,9 +28,12 @@ object UiText {
     def code           = FieldNames.reqCode
     def title          = "Title"
     def tags           = FieldNames.tags
-    def implicationSrc = "Implied By"
-    def implicationTgt = "Implies"
     def deletionReason = FieldNames.deletionReason
+
+    val implications: Direction => String = {
+      case Backwards => "Implied By"
+      case Forwards => "Implies"
+    }
   }
 
   object FieldNames {

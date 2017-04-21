@@ -76,8 +76,7 @@ object ContentEditorFeature {
     case object Code                          extends EditFieldKey
     case object Title                         extends EditFieldKey
     case object Tags                          extends EditFieldKey
-    case object ImplicationSrc                extends EditFieldKey
-    case object ImplicationTgt                extends EditFieldKey
+    case class Implications(dir: Direction)   extends EditFieldKey
     case class CustomField(id: CustomFieldId) extends EditFieldKey
     case class UseCaseStep(id: UseCaseStepId) extends EditFieldKey
 

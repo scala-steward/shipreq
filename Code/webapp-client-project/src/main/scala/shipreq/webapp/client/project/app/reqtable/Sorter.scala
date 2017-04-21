@@ -330,8 +330,7 @@ object Sorter {
     case C.Title                            => titleSorter
     case C.Code                             => reqCodeSorter
     case C.Tags                             => tagSorter(Row.tags, _.tagByNameOrder)
-    case C.ImplicationSrc                   => pubidVectorSorter(Row.implicationSrc)
-    case C.ImplicationTgt                   => pubidVectorSorter(Row.implicationTgt)
+    case C.Implications(dir)                => pubidVectorSorter(Row.implications(dir))
     case C.DeletionReason                   => deletionReasonSorter
   }
 

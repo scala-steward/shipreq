@@ -212,18 +212,12 @@ object ReqDetail {
         pxProject, data.pxPlainText, data.pxProjectWidgets, pxTextSearch,
         updateIO)
 
-      def generalImps(cell: Cell) = {
-        val dir = cell.implicationDirection
-        Editor.ImplicationsAll(req, dir, data.generalImps(dir))
-      }
-
       @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
       def edit(cell: Cell): Option[Editor[Cell]] =
         cell match {
           case Cell.Title                                        => Editor.ReqTitle(req, cell)
           case Cell.Code                                         => Editor.ReqCodesForReq(req)
-          case Cell.ImplicationSrc
-             | Cell.ImplicationTgt                               => generalImps(cell)
+          case Cell.Implications(dir)                            => Editor.ImplicationsAll(req, dir, data.generalImps(dir))
           case Cell.ReqType                                      => Editor.reqType(req)
           case Cell.Tags                                         => Editor.Tags(req, None)
           case Cell.CustomField(fid: CustomField.Tag        .Id) => Editor.Tags(req, Some(fid))
@@ -365,16 +359,16 @@ object ReqDetail {
               pw.tagList(data.customTags(f.id)))
 
           case Row.Implications =>
-            def one(cell: Cell) = renderImpCell(cell, data.generalImps(cell.implicationDirection))
+            def one(dir: Direction) = renderImpCell(Cell.Implications(dir), data.generalImps(dir))
             <.table(*.generalImpsCont,
               <.tbody(
                 <.tr(
                   <.td(*.generalImpsSide,
-                    one(Cell.ImplicationSrc)),
+                    one(Backwards)),
                   <.td(*.generalImpsMiddle,
                     s"→ $pubidText →"),
                   <.td(*.generalImpsSide,
-                    one(Cell.ImplicationTgt)))))
+                    one(Forwards)))))
 
           case Row.ImplicationGraph =>
             ImplicationGraph.Props(

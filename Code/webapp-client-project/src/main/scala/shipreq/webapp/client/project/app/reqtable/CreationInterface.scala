@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._, MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
+import shipreq.base.util.Backwards
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
@@ -204,9 +205,8 @@ class CreationInterface($               : StateAccessPure[State],
 
     val pxImpLookup = Px.apply2(pxProject, pxProjectText)(ImplicationEditor.Lookup.all)
 
-    val pxImpValidationFn =
-      pxProject.map(p =>
-        ImplicationEditor.validationFn(p, None, Set.empty, Column implicationDirection Column.ImplicationSrc))
+    private def impDir = Backwards
+    val pxImpValidationFn = pxProject.map(p => ImplicationEditor.validationFn(p, None, Set.empty, impDir))
 
     val pxTagLookup = pxProject map TagEditor.Lookup.all
 
@@ -216,7 +216,7 @@ class CreationInterface($               : StateAccessPure[State],
           <.th(UiText.ColumnNames.title),
           <.th(UiText.ColumnNames.code),
           <.th(UiText.ColumnNames.tags),
-          <.th(UiText.ColumnNames.implicationSrc),
+          <.th(UiText.ColumnNames.implications(impDir)),
           <.th))
 
     def renderReqForm(reqCodes: VdomElement,

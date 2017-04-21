@@ -7,10 +7,10 @@ import monocle.{Lens, Optional}
 import monocle.function.Index._
 import monocle.macros.Lenses
 import scala.scalajs.js
-import scalaz.{Equal, Semigroup, Monoid}
+import scalaz.{Equal, Monoid, Semigroup}
 import scalaz.std.map._
 import scalaz.syntax.semigroup._
-import shipreq.base.util.Vector1
+import shipreq.base.util.{Backwards, Direction, Forwards, Vector1}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -218,16 +218,21 @@ object Row {
     case r: ReqCodeGroupRow => r.reqCodeTreeItem.toVector
   }(nv => {
     case ReqRow(r, l, e, m, i) => ReqRow(r, l, e.copyReqCodeTree(nv), m, i)
-    case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCodeTreeItem = Some(nv.head))
-    case r: ReqCodeGroupRow if nv.length == 0 => r.copy(reqCodeTreeItem = None)
-    case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
+    case r: ReqCodeGroupRow => nv.length match {
+      case 1 => r.copy(reqCodeTreeItem = Some(nv.head))
+      case 0 => r.copy(reqCodeTreeItem = None)
+      case _ => assert(false, s"Can't apply $nv to $r") ;r
+    }
   })
 
   type OV[A]     = Optional[Row, Vector[A]]
   type OMV[K, V] = Optional[Row, Map[K, Vector[V]]]
 
-  val implicationSrc: OV[Pubid]                                = Row.expansion   ^|-> Expansion.implicationSrc
-  val implicationTgt: OV[Pubid]                                = Row.expansion   ^|-> Expansion.implicationTgt
+  val implications: Direction => OV[Pubid] = Direction.memo {
+    case Backwards => Row.expansion ^|-> Expansion.implicationSrc
+    case Forwards  => Row.expansion ^|-> Expansion.implicationTgt
+  }
+
   val cfImps        : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
   val cfTags        : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
   val tags          : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.tags

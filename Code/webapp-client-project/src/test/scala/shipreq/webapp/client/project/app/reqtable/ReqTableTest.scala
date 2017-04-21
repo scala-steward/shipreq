@@ -7,6 +7,7 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import nyaya.test.PropTest._
 import shipreq.base.test.JsEnv
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
@@ -22,7 +23,6 @@ import shipreq.webapp.client.project.widgets.high.ProjectWidgets
 import utest._
 import TestState.{scalazEqualFromTestState => _, _}
 import SampleProject.Values._
-import shipreq.base.util.Intersection
 
 object ReqTableTest extends TestSuite {
   import ReqTableTestDsl._
@@ -393,8 +393,8 @@ object ReqTableTest extends TestSuite {
         // RCG code
         'title    - runTest(testNopEdits("MF-6", ColumnNames.title))
         'textCol  - runTest(testNopEdits("MF-1", "Description"))
-        'impSrc   - runTest(testNopEdits("MF-1", ColumnNames.implicationSrc))
-        'impTgt   - runTest(testNopEdits("MF-1", ColumnNames.implicationTgt))
+        'impSrc   - runTest(testNopEdits("MF-1", ColumnNames.implications(Backwards)))
+        'impTgt   - runTest(testNopEdits("MF-1", ColumnNames.implications(Forwards)))
         'impCol   - runTest(testNopEdits("MF-1", "Major Feature"))
         'tags     - runTest(testNopEdits("MF-1", ColumnNames.tags))
         'tagCol   - runTest(testNopEdits("MF-1", "Status"))

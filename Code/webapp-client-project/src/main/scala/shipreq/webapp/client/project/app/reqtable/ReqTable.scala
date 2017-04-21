@@ -7,11 +7,12 @@ import japgolly.univeq._
 import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import scalaz.{\/-, -\/}
+import scalaz.{-\/, \/-}
+import shipreq.base.util.Direction
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.{ValidFilter, PotentialFilter}
+import shipreq.webapp.base.filter.{PotentialFilter, ValidFilter}
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.text.{TextSearch, PlainText}
+import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.base.feature.AsyncActionFeature
 import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.project.app.state.{Changes, ClientData}
@@ -181,22 +182,20 @@ object ReqTable {
         @inline implicit def autoSome[P](e: Editor[P]): Option[Editor[P]] = Some(e)
         @inline def focusId = FocusId.AtCell(row.sourceId, col)
 
-        def imps(row: ReqRow, rowLens: monocle.Optional[Row, Vector[Pubid]]) =
-          rowLens.getOption(row).map(pubids =>
-            Editor.ImplicationsAll(row.req, Column.implicationDirection(col), pubids))
+        def imps(row: ReqRow, dir: Direction) =
+          Row.implications(dir).getOption(row).map(pubids =>
+            Editor.ImplicationsAll(row.req, dir, pubids))
 
         row match {
           case r: ReqRow => col match {
             case Column.Code                                              => Editor.ReqCodesForReq(r.req)
             case Column.Title                                             => Editor.ReqTitle(r.req, focusId)
             case Column.Tags                                              => Editor.Tags(r.req, None)
-            case Column.ImplicationSrc                                    => imps(r, Row.implicationSrc)
-            case Column.ImplicationTgt                                    => imps(r, Row.implicationTgt)
+            case Column.Implications(dir)                                 => imps(r, dir)
             case Column.CustomField(id: CustomField.Text       .Id, Live) => Editor.CustomTextField(r.req, id, focusId)
             case Column.CustomField(id: CustomField.Tag        .Id, Live) => Editor.Tags(r.req, Some(id))
             case Column.CustomField(id: CustomField.Implication.Id, Live) => Editor.ImplicationsCustomField(r.req, id)
             case Column.ReqType                                           => Editor.reqType(r.req)
-
             case Column.Pubid
                | Column.DeletionReason
                | Column.CustomField(_, Dead) => None
@@ -208,8 +207,7 @@ object ReqTable {
             case Column.Pubid
                | Column.ReqType
                | Column.Tags
-               | Column.ImplicationSrc
-               | Column.ImplicationTgt
+               | Column.Implications(_)
                | Column.DeletionReason
                | Column.CustomField(_, _) => None
           }

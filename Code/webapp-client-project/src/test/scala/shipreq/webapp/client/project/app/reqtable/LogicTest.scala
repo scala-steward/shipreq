@@ -197,10 +197,10 @@ object LogicTest extends TestSuite {
   }
 
   private def rowToSrcImpTxt(p: Project): Row => String =
-    rowToImpTxt(p, Row.implicationSrc, ">")
+    rowToImpTxt(p, Row.implications(Backwards), ">")
 
   private def rowToTgtImpTxt(p: Project): Row => String =
-    rowToImpTxt(p, Row.implicationTgt, "<")
+    rowToImpTxt(p, Row.implications(Forwards), "<")
 
   private def rowToCustomImpTxt(p: Project, id: CustomField.Implication.Id): Row => String =
     rowToImpTxt(p, Row.cfImp(id), ">")
@@ -325,7 +325,7 @@ object LogicTest extends TestSuite {
     def t(_id: GenericReqId, ids: ReqId*) = GReq(id = _id, reqType = fr).impSrc(ids: _*)
     //      FR-1   FR-2      DD-1                            FR-3         FR-4      FR-5
     val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = dd) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! PA
-    testCB(p, C.ImplicationSrc, None, ShowDead, rowToSrcImpTxt(p))(allSortsCB(1,
+    testCB(p, C.Implications(Backwards), None, ShowDead, rowToSrcImpTxt(p))(allSortsCB(1,
       asc  = "DD-1>FR-3  DD-1>FR-4  FR-1>DD-1  FR-1>FR-2  FR-1>FR-3  FR-2>DD-1  FR-4>FR-5",
       desc = "FR-4>FR-5  FR-2,FR-1>DD-1  FR-1>FR-2  FR-1,DD-1>FR-3  DD-1>FR-4"))
   }
@@ -334,7 +334,7 @@ object LogicTest extends TestSuite {
     def t(_id: GenericReqId, ids: ReqId*) = GReq(id = _id, reqType = fr).impTgt(ids: _*)
     //      FR-1   FR-2      DD-1                            FR-3         FR-4      FR-5
     val p = t(1) + t(2, 1) + t(3, 1, 2).copy(reqType = dd) + t(4, 1, 3) + t(5, 3) + t(6, 5) ! PA
-    testCB(p, C.ImplicationTgt, None, ShowDead, rowToTgtImpTxt(p))(allSortsCB(1,
+    testCB(p, C.Implications(Forwards), None, ShowDead, rowToTgtImpTxt(p))(allSortsCB(1,
       asc  = "DD-1<FR-3  DD-1<FR-4  FR-1<DD-1  FR-1<FR-2  FR-1<FR-3  FR-2<DD-1  FR-4<FR-5",
       desc = "FR-4<FR-5  FR-2,FR-1<DD-1  FR-1<FR-2  FR-1,DD-1<FR-3  DD-1<FR-4"))
   }
@@ -479,7 +479,7 @@ object LogicTest extends TestSuite {
 
   def testFilterDeadImpsSrc(): Unit = {
     val p   = (GReq(id = 1) + GReq(id = 2, live = Dead) + GReq(id = 3).impSrc(1,2)).defaultReqType(br) ! PD
-    val c   = C.ImplicationSrc
+    val c   = C.Implications(Backwards)
     val fmt = rowToSrcImpTxt(p)
     testUnsorted(p, c, None, ShowDead, fmt)(s"$z  $z  BR-1,BR-2>BR-3")
     testUnsorted(p, c, None, HideDead, fmt)(s"$z  BR-1>BR-3")
@@ -487,7 +487,7 @@ object LogicTest extends TestSuite {
 
   def testFilterDeadImpsTgt(): Unit = {
     val p = (GReq(id = 1) + GReq(id = 2, live = Dead) + GReq(id = 3).impTgt(1,2)).defaultReqType(br) ! PD
-    val c   = C.ImplicationTgt
+    val c   = C.Implications(Forwards)
     val fmt = rowToTgtImpTxt(p)
     testUnsorted(p, c, None, ShowDead, fmt)(s"$z  $z  BR-1,BR-2<BR-3")
     testUnsorted(p, c, None, HideDead, fmt)(s"$z  BR-1<BR-3")

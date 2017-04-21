@@ -76,14 +76,13 @@ class ColumnRenderers(project: Project, pw: ProjectWidgets) {
   private val cr: Column => ColumnRenderer =
     Memo { c =>
       val cr = c match {
-        case Column.Pubid          => pubid
-        case Column.ReqType        => reqType
-        case Column.Code           => code
-        case Column.Title          => title
-        case Column.Tags           => tags(Row.tags)
-        case Column.ImplicationSrc => imps(Row.implicationSrc) //("… ⇒")
-        case Column.ImplicationTgt => imps(Row.implicationTgt) //("⇒ …")
-        case Column.DeletionReason => deletionReason
+        case Column.Pubid             => pubid
+        case Column.ReqType           => reqType
+        case Column.Code              => code
+        case Column.Title             => title
+        case Column.Tags              => tags(Row.tags)
+        case Column.Implications(dir) => imps(Row.implications(dir))
+        case Column.DeletionReason    => deletionReason
         case Column.CustomField(f, _) =>
           f match {
             case id: CustomField.Text       .Id => cfText(id)
