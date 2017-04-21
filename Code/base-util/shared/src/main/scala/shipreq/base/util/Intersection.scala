@@ -2,6 +2,31 @@ package shipreq.base.util
 
 import monocle._
 
+/**
+  * +--------+     +--------+     +--------+
+  * |        |     |        |     |        |
+  * |   A1   +-----+   B1   +-----+   C1   |
+  * |        |     |        |     |        |
+  * |   A2   +-----+   B2   |     |        |
+  * |        |     |        |     |        |
+  * |   A3   |     |        |     |   C3   |
+  * |        |     |        |     |        |
+  * |   A4   |     |        |     |        |
+  * |        |     |        |     |        |
+  * |        |     |   B5   +-----+   C5   |
+  * |        |     |        |     |        |
+  * |        |     |   B6   |     |        |
+  * |        |     |        |     |        |
+  * |        |     |        |     |   C7   |
+  * |        |     |        |     |        |
+  * +--------+     +--------+     +--------+
+  *
+  * |<- Intersection[A,B] ->|
+  *
+  *                |<- Intersection[B,C] ->|
+  *
+  * |<-------- Intersection[A, C] -------->|
+  */
 abstract class Intersection[A, B] {
 
   def reverse: Intersection[B, A]
