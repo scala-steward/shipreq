@@ -288,7 +288,7 @@ private[fields] object MainTable {
               Some($ setStateFnL State.newFieldTypeSel)
             ),
             onInvoke, UiText.Cfg.startNewButton,
-            Disabled <~ customFieldStores.exists(_.n.editing(s))))
+            Disabled when customFieldStores.exists(_.n.editing(s))))
       }
 
       val abortNew: S => S =

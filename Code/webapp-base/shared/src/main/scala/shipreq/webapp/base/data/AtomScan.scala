@@ -91,7 +91,7 @@ object AtomScan {
     val liveTextFields      = p.config.liveCustomTextFields.map(_.id).toSet
     for {
       (tf, textByReqId) ← customTextFieldText
-      live              = Live <~ (liveTextFields contains tf)
+      live              = Live when (liveTextFields contains tf)
       (id, txt)         ← textByReqId
     } {
       scan(live, reqId = id)(txt.whole)

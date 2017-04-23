@@ -102,9 +102,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   def min2set[A: UnivEq](a: A, b: A, t: A*): Min2Set[A] =
     Min2Set(NonEmptySet(a, t.toSet + b)).fold(nes => sys.error(s"Not make a Min2Set from $nes"), a => a)
 
-  implicit def boolToMutexChildren(b: Boolean) = MutexChildren <~ b
-  implicit def boolToMandatory(b: Boolean) = Mandatory <~ b
-  implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired <~ b
+  implicit def boolToMutexChildren(b: Boolean) = MutexChildren when b
+  implicit def boolToMandatory(b: Boolean) = Mandatory when b
+  implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired when b
 
   def ∅[A](implicit e: MakeEmpty[A]): A = e.empty
 

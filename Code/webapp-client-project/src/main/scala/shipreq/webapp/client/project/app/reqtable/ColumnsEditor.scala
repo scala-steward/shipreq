@@ -27,7 +27,7 @@ object ColumnsEditor {
     val items =
       p.all.iterator
         .filter(!Column.isMandatory(_))
-        .map(c => CheckboxList.Item(c, p.columnNames(c), On <~ p.on.contains(c), Enabled))
+        .map(c => CheckboxList.Item(c, p.columnNames(c), On when p.on.contains(c), Enabled))
         .toVector
         .sortBy(_.label)
 

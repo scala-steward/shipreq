@@ -11,7 +11,7 @@ object Validity extends IsoBool.Object[Validity] {
   override def negative = Invalid
 
   def apply(d: Any \/ Any): Validity =
-    Valid <~ d.isRight
+    Valid when d.isRight
 }
 
 case object Valid extends Validity

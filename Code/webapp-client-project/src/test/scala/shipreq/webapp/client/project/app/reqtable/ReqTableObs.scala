@@ -47,7 +47,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 
       case class ColumnDom(outer: HtmlDomZipperAt[html.Label]) {
         val checkbox = outer("input").domAs[html.Input]
-        val on       = On <~ checkbox.checked
+        val on       = On when checkbox.checked
         val name     = outer.innerText
       }
 
@@ -72,7 +72,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 
     object filterDead {
       val checkbox = filter.$("input[type=checkbox]").domAs[html.Input]
-      val value: FilterDead = Checkbox.filterDeadChecked <~ checkbox.checked
+      val value: FilterDead = Checkbox.filterDeadChecked when checkbox.checked
     }
   }
 

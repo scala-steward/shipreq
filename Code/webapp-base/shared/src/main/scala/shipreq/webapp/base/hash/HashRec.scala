@@ -26,7 +26,7 @@ case class HashRec(scope   : HashScope,
     HashScope.hash(scope, scheme.value, p)
 
   def validate(p: Project): Validity =
-    Valid <~ validateF(p).isEmpty
+    Valid when validateF(p).isEmpty
 
   def validateF(p: Project): Option[ValidationFailure] =
     if (logicVer.isCurrent)

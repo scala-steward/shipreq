@@ -103,7 +103,7 @@ object FilterEditor {
       val s = p.state
       <.div(
         filterBase(
-          *.editor(Valid <~ s.error.isEmpty),
+          *.editor(Valid when s.error.isEmpty),
           ^.value := s.text),
         s.error.whenDefined(err =>
           <.div(*.errorMsg, err)))

@@ -61,7 +61,7 @@ sealed abstract class PotentialChange[+E, +A] {
 
   /** [[Unchanged]] is considered valid. */
   final def validity: Validity =
-    Invalid <~ isFailure
+    Invalid when isFailure
 
   final def compare(f: A => Permission): PotentialChange[E, A] =
     this match {
@@ -70,10 +70,10 @@ sealed abstract class PotentialChange[+E, +A] {
     }
 
   final def filter(f: A => Boolean): PotentialChange[E, A] =
-    compare(Allow <~ f(_))
+    compare(Allow.fnToThisWhen(f))
 
   final def ignore(f: A => Boolean): PotentialChange[E, A] =
-    compare(Deny <~ f(_))
+    compare(Deny.fnToThisWhen(f))
 
   final def ignoreValue[AA >: A](a: => AA)(implicit e: Equal[AA]): PotentialChange[E, A] =
     ignore(e.equal(a, _))

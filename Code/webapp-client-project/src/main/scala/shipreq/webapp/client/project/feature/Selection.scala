@@ -105,7 +105,7 @@ object Selection {
 
   final class OneUI[A](a: A, selected: Set[A], override val updateFn: UpdateFn[A]) extends UI[A, On, VdomTag] {
     override val get =
-      On <~ selected.contains(a)
+      On when selected.contains(a)
 
     override def set(newState: On) =
       newState match {

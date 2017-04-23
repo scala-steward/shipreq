@@ -92,7 +92,7 @@ object ReqTableTestDsl {
     private val _editing = cell.map(_ exists editorCss)      rename "Editing"
     private val _locked  = cell.map(_ exists ".loading")     rename "Locked"
 
-    val editorValidity = *.focus("Editor validity").value(Invalid <~ cell.run(_).exists(editorInvalidSel))
+    val editorValidity = *.focus("Editor validity").value(Invalid when cell.run(_).exists(editorInvalidSel))
 
     def assertState(s: CellState) = {
       var e,l = false

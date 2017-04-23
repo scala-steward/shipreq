@@ -48,7 +48,7 @@ object Editors {
         case Some(cb) =>
           @inline def cbh(event: CallbackEvent[On], st: ST = nopST) = cb(callbackH(event, st))
           def handleChange: ReactEventFromInput => Callback = e => {
-            val b = On <~ e.target.checked
+            val b = On when e.target.checked
             cbh(OnChange(b)) >> cbh(OnEditFinished(b))
           }
           base(^.onChange ==> handleChange)

@@ -10,7 +10,7 @@ sealed abstract class Live extends IsoBool.WithBoolOps[Live] {
 case object Live extends Live with IsoBool.Object[Live] {
   override def positive = this
   override def negative = Dead
-  val whenValid = when(Valid)
+  val whenValid: Validity => Live = fnToThisWhen(Valid)
 }
 case object Dead extends Live
 

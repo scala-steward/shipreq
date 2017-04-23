@@ -20,19 +20,25 @@ trait IsoBool[B <: IsoBool[B]] extends (Boolean <=> B) with Product with Seriali
     else
       companion.positive
 
-  final val :: : B => Boolean = _ == this
-  final val <~ : Boolean => B = if (_) this else !this
+  @inline final def ::(b: B): Boolean =
+    b == this
+
+  @inline final def when(cond: Boolean): B =
+    if (cond) this else !this
 
   final override def from = ::
-  final override def to   = <~
+  final override def to   = when
 
-  final def when[A](b: Boolean <=> A): A => B =
-    a => this <~ (b from a)
+  final def fnToThisWhen[A](b: A => Boolean): A => B =
+    a => when(b(a))
+
+  final def fnToThisWhen[A](b: Boolean <=> A): A => B =
+    fnToThisWhen(b.from)
 
   final def <=>[A <: IsoBool[A]](A: IsoBool[A]): B <=> A =
     new (B <=> A) {
-      override val from: A => B = IsoBool.this when A
-      override val to  : B => A = A when IsoBool.this
+      override val from: A => B = IsoBool.this fnToThisWhen A
+      override val to  : B => A = A fnToThisWhen IsoBool.this
     }
 }
 
@@ -80,22 +86,22 @@ object IsoBool {
 
     final def &(that: => B): B = {
       val pos = companion.positive
-      pos <~ ((this :: pos) && (that :: pos))
+      pos when ((this :: pos) && (that :: pos))
     }
 
     final def &&(that: => Boolean): B = {
       val pos = companion.positive
-      pos <~ ((this :: pos) && that)
+      pos when ((this :: pos) && that)
     }
 
     final def |(that: => B): B = {
       val pos = companion.positive
-      pos <~ ((this :: pos) || (that :: pos))
+      pos when ((this :: pos) || (that :: pos))
     }
 
     final def ||(that: => Boolean): B = {
       val pos = companion.positive
-      pos <~ ((this :: pos) || that)
+      pos when ((this :: pos) || that)
     }
   }
 }

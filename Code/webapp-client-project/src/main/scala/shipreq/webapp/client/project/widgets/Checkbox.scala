@@ -11,7 +11,7 @@ object Checkbox {
 
   def apply[A <: IsoBool[A]](bool: IsoBool[A])(set: A => Callback, decor: A => VdomTag => VdomElement) = {
     implicit val reusability = Reusability.by(bool.from)
-    val on = On when bool
+    val on = On fnToThisWhen bool
 
     ScalaComponent.builder[A]("Checkbox")
       .render_P { a =>

@@ -154,7 +154,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
         case Page.Index =>
           val lookup = ReqLookupPrompt.Props(
             StateSnapshot.zoomL(State.reqLookup)(s).setStateVia($),
-            Allow <~ _.lookup(cd.project()).isRight,
+            Allow when _.lookup(cd.project()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
           val index = ProjectIndex.Props(lookup, routerCtl)

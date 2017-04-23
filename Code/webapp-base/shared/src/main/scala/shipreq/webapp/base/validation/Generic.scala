@@ -215,7 +215,7 @@ object Generic {
       audit(c)
 
     def validity(c: C): Validity =
-      Valid <~ apply(c).isRight
+      Valid when apply(c).isRight
 
     def contramap[A](f: A => C): Auditor[E, A, V] =
       Auditor(audit compose f)
@@ -362,7 +362,7 @@ object Generic {
       auditor(corrector(i))
 
     def validity(i: I): Validity =
-      Valid <~ apply(i).isRight
+      Valid when apply(i).isRight
 
     def mapCorrector[A](f: Corrector[I, C] => Corrector[A, C]): Validator[E, A, C, V] =
       Validator(f(corrector), auditor)

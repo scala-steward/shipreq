@@ -419,7 +419,7 @@ object VectorTree extends VectorTreeLowPri {
       }
 
     def detect(value: Location): PartialLocation =
-      apply(value, Invalid <~ value.exists(_ < 0))
+      apply(value, Invalid when value.exists(_ < 0))
   }
 
   sealed abstract class NodeFilter
@@ -446,17 +446,17 @@ object VectorTree extends VectorTreeLowPri {
     VectorTree(Vector1(leaf(value)))
 
   def canShiftLeft(at: Location): Permission =
-    Allow <~ (at.length >= 2)
+    Allow when (at.length >= 2)
 
   @inline def canShiftLeftV(at: Location, f: Location => Validity): Permission =
     canShiftLeft(at)
 
   def canShiftRight(at: Location): Permission =
-    Allow <~ (at.last > 0)
+    Allow when (at.last > 0)
 
   def canShiftRightV(at: Location, f: Location => Validity): Permission = {
     val p = at.parent
-    Allow <~ (0 until at.last).exists(i => f(p :+ i) :: Valid)
+    Allow when (0 until at.last).exists(i => f(p :+ i) :: Valid)
   }
 
   @tailrec

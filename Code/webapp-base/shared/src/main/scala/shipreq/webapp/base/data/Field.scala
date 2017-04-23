@@ -99,7 +99,7 @@ sealed trait Field {
     fold(s => s, _.id)
 
   final val applicable: ReqTypeId => Applicable =
-    Applicable <~ reqTypes.filter(_)
+    Applicable fnToThisWhen reqTypes.filter
 }
 
 object Field {
@@ -229,7 +229,7 @@ object StaticField {
       NumericFrom0 +: sharedUseCaseStepLabels
 
     override def canDelete(loc: VectorTree.Location) =
-      Deny <~ (loc ==* VectorTree.root)
+      Deny when (loc ==* VectorTree.root)
 
     val treeFilterN: UseCaseSteps.Tree => Range = Function.const(0 to 0)
     val treeFilterA: UseCaseSteps.Tree => Range = 1 until _.children.length

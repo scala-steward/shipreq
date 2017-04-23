@@ -135,7 +135,7 @@ object DeletionForm {
 
     // Copy-paste with Backend#render
     def liveGivenState(r: Req): Live =
-      (Dead <~ select.contains(r.id)) & r.live(p.config.reqTypes)
+      (Dead when select.contains(r.id)) & r.live(p.config.reqTypes)
 
     // Decide which implied reqs to recommend cascading deletion
     // (I'm sure there's a smarter way but this will do)
@@ -325,7 +325,7 @@ object DeletionForm {
 
       // Copy-paste with initProps()
       def liveGivenState(r: Req): Live =
-        (Dead <~ s.selectedReqs.selected.contains(r.id)) & r.live(customReqTypes)
+        (Dead when s.selectedReqs.selected.contains(r.id)) & r.live(customReqTypes)
 
       val renderImpliedByItem =
         widgets.PubidFormat(Plain, *.impliedByItem(_), liveFn = liveGivenState)
@@ -367,10 +367,10 @@ object DeletionForm {
       val selAll = s.selectedGroups.updateBy(setRcgSel).legal(visibleRCGs)
 
       val reqLive: ReqId => Live =
-        Dead <~ s.selectedReqs.selected.contains(_)
+        Dead when s.selectedReqs.selected.contains(_)
 
       val groupLive: ReqCodeId => Live =
-        Dead <~ s.selectedGroups.selected.contains(_)
+        Dead when s.selectedGroups.selected.contains(_)
 
       def groupRow(r: GroupRow): TagMod = {
         val liveCodes: Vector[String] = {
@@ -384,7 +384,7 @@ object DeletionForm {
 
         def subCodes: TagMod =
           TagMod(
-            *.subCodeCount(Live <~ liveCodes.nonEmpty),
+            *.subCodeCount(Live when liveCodes.nonEmpty),
             liveCodes.length,
           ^.title := liveCodes.mkString("\n"))
 
