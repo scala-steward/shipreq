@@ -17,7 +17,7 @@ object SelectInvoke {
                             enabled    : Enabled)
 
   def render[A: Equal](p: Props[A]): VdomTag = {
-    val disabled = p.enabled :: Disabled
+    val disabled = p.enabled is Disabled
 
     val select = {
       // Propagate disabledness

@@ -47,7 +47,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag]
 
   lazy val deadATagIds: Set[ApplicableTagId] =
-    atagIterator.filter(_.live :: Dead).map(_.id).toSet
+    atagIterator.filter(_.live is Dead).map(_.id).toSet
 
   def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): D = {
     val f = fields.customFields.need(id)
@@ -75,10 +75,10 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     fields.customFields.valuesIterator.filterSubType[CustomField.Text].toList
 
   lazy val liveCustomTextFields =
-    customTextFields.filter(_.live(this) :: Live)
+    customTextFields.filter(_.live(this) is Live)
 
   lazy val liveTagFieldDistribution =
-    TagFieldDistribution(this, _.live(this) :: Live)
+    TagFieldDistribution(this, _.live(this) is Live)
 
   def deadTagFieldDistribution(deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
     TagFieldDistribution(this, f => f.live(this) match {

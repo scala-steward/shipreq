@@ -94,7 +94,7 @@ final class ApplyEvent(implicit val trust: Trust)
 
   private def validateHashRecs(recs: HashRec.Collection): SE[Unit] =
     SE.testO(p =>
-      if (recs.forall(_.validate(p) :: Valid))
+      if (recs.forall(_.validate(p) is Valid))
         None
       else {
         val failures = recs.iterator

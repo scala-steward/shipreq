@@ -86,16 +86,16 @@ object ReqDetailTestDsl {
 
     val delReasonField = *.focus("DeletedReasons visible")
       .value(_.obs.generic.fields contains UiText.FieldNames.deletionReason)
-      .assert.equalBy(_.obs.generic.filterDead :: ShowDead)
+      .assert.equalBy(_.obs.generic.filterDead is ShowDead)
 
     val filterDeadLocked =
-      *.focus("FilterDead locked").value(_.obs.generic.filterDeadLocked).assert.equalBy(_.obs.generic.live :: Dead)
+      *.focus("FilterDead locked").value(_.obs.generic.filterDeadLocked).assert.equalBy(_.obs.generic.live is Dead)
 
     val whenDead =
       ( filterDead.assert(ShowDead)
       & editorCount.assert(0)
       )
-      .when(_.obs.generic.live :: Dead)
+      .when(_.obs.generic.live is Dead)
 
     pubid & delReasonField & filterDeadLocked & whenDead
   }
@@ -189,7 +189,7 @@ object ReqDetailTestDsl {
   def setFilterDead(fd: FilterDead) =
     filterDeadToggle
       .rename(fd.toString)
-      .unless(_.obs.generic.filterDead :: fd)
+      .unless(_.obs.generic.filterDead is fd)
 
   def hideDead = setFilterDead(HideDead)
   def showDead = setFilterDead(ShowDead)

@@ -113,7 +113,7 @@ object DataLogic {
                            reqs    : Requirements): ImpRequiredResult = {
 
     val reqTypesRequiringImp: Vector[ReqType] =
-      reqTypes.all.whole.filter(_.imp :: ImplicationRequired)
+      reqTypes.all.whole.filter(_.imp is ImplicationRequired)
 
     @tailrec
     def go(maybeGood: Set[ReqId],
@@ -144,7 +144,7 @@ object DataLogic {
       reqTypesRequiringImp.iterator.flatMap(rt =>
         reqs.reqsByType(rt.reqTypeId)
           .iterator
-          .filter(_.live(reqTypes) :: Live)
+          .filter(_.live(reqTypes) is Live)
           .map(_.id))
         .toSet
 

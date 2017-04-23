@@ -58,7 +58,7 @@ private[issues] object ReqTypeImplication {
     type Rows = Stream[(Mnemonic, VdomElement)]
 
     def customRows(s: S): Rows =
-      rowStore.getAll(s).filter(_.p.live :: Live).map(r => {
+      rowStore.getAll(s).filter(_.p.live is Live).map(r => {
         val re: VdomElement =
           <.tr(^.key := r.p.id.value,
             <.td(

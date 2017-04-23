@@ -265,7 +265,7 @@ private[fields] object MainTable {
                                                 .filter(TagInTree.filterLive)
                                                 .exists(t => !s.tagFieldTagIds.contains(t.id))
           case CustomFieldType.Implication => project.config.reqTypes.all.whole
-                                                .filter(_.live :: Live)
+                                                .filter(_.live is Live)
                                                 .exists(r => !s.implFieldReqTypeIds.contains(r.reqTypeId))
         }
         for (t <- CustomFieldType.values.whole if allowNewCustomFieldType(t))
@@ -346,7 +346,7 @@ private[fields] object MainTable {
         refkey     = renderKeyO(f.keyO),
         mandatory  = staticMandatoryCheckbox(f.mandatory),
         reqtypes   = appReqTypesEditor.renderReadOnly(f.reqTypes),
-        ctrls      = protocol.value().staticDeletion.button(f, Delete).when(f.deletable :: Deletable)
+        ctrls      = protocol.value().staticDeletion.button(f, Delete).when(f.deletable is Deletable)
       )(f.fieldType)
 
     def renderKeyO(k: Option[FieldRefKey]): TagMod =

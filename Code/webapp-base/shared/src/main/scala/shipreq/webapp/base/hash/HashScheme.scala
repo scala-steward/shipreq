@@ -43,7 +43,7 @@ object HashScheme {
     def make(d: DataHasher)(scopeValidity: HashScope => Validity): HashScheme = {
       i += 1
       val id = HashSchemeId(i.toChar)
-      val invalidScopes = HashScope.all.iterator.filter(scopeValidity(_) :: Invalid).toSet
+      val invalidScopes = HashScope.all.iterator.filter(scopeValidity(_) is Invalid).toSet
       HashScheme(d, id, invalidScopes)
     }
 

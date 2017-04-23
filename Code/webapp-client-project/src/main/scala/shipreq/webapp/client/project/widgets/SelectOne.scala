@@ -39,7 +39,7 @@ object SelectOne {
         j += <.option(
           ^.value := i,
           ^.key := i,
-          ^.disabled := (c.enabled :: Disabled),
+          ^.disabled := (c.enabled is Disabled),
           c.label)
         if (sel == -1 && E.equal(c.value, props.selected))
           sel = i

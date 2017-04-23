@@ -254,7 +254,7 @@ object DataProp {
       import StaticField.{NormalAltStepTree => N, ExceptionStepTree => E}
 
       def rootStep =
-        Prop.test[UseCase]("Root step", _.rootStep.liveExplicitly :: Live)
+        Prop.test[UseCase]("Root step", _.rootStep.liveExplicitly is Live)
 
       def eachTree(f: StaticField.UseCaseStepTree) =
         VectorTree.maxDimsProp(
@@ -531,7 +531,7 @@ object DataProp {
 
     def liveReqCodeRequiresLiveTarget =
       Prop.whitelist[Project]("Live ReqCode requires Live Target")(
-        p => p.reqs.reqIterator.filter(_.live(p.config.reqTypes) :: Live).map(_.id).toSet,
+        p => p.reqs.reqIterator.filter(_.live(p.config.reqTypes) is Live).map(_.id).toSet,
         _.reqCodes.activeReqCodesByReqId.keySet)
 
     def validRefs = {

@@ -61,7 +61,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
         entirety.map(_.name)
 
       val onColumns: Vector[String] =
-        entirety.filter(_.on :: On).map(_.name)
+        entirety.filter(_.on is On).map(_.name)
     }
 
     object filter {

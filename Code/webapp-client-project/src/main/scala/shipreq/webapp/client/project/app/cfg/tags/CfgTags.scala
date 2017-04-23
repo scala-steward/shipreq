@@ -144,7 +144,7 @@ private[tags] object MainTable {
         case t: ApplicableTag => at_storesS.s.set(i, t)
       }
       val f2 = f1 compose State.tree.modify(MMTree.ApplyRelations.trustedApply1(_, i, d.rels))
-      val f3 = f2 compose maybeCloseDetailPane(p => (d.tag.live :: Dead) && (p.id ==* d.tag.id))
+      val f3 = f2 compose maybeCloseDetailPane(p => (d.tag.live is Dead) && (p.id ==* d.tag.id))
       f3(s)
     })
 
@@ -469,7 +469,7 @@ private[tags] object MainTable {
                 mod: Id => Relations => Relations, relAlreadyExists: (Relations, Id) => Boolean): AddRels = {
       val filter = addRelFilter(s, subj, mod, relAlreadyExists)
       val rels = FlatTag.flatten(s.tagTree)(filter, FilterPolicy.OmitNothing)
-        .filter(_.tag.live :: Live)
+        .filter(_.tag.live is Live)
         .map(row => AddRel(row,
             if (row.status ==* FlatTag.Status.Good) row.id.some else None))
       AddRels(rels, selUpdate,

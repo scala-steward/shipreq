@@ -135,13 +135,13 @@ object ContentEditorFeature {
               case Some(fid) =>
                 p.config.fields.get(fid) match {
                   // Check field
-                  case Some(f) => f.applicable(r.reqTypeId) & (Applicable when f.live(p.config) :: Live)
+                  case Some(f) => f.applicable(r.reqTypeId) & (Applicable when f.live(p.config).is(Live))
                   // Field has been removed
                   case None => NotApplicable
                 }
             }
 
-          Allow when (live :: Live && fieldApplicable :: Applicable)
+          Allow.when(live.is(Live) && fieldApplicable.is(Applicable))
         }
 
       def liveRCG(id: ReqCodeId): Project => Permission =
@@ -153,7 +153,7 @@ object ContentEditorFeature {
         }
 
       def liveUseCaseStep(id: UseCaseStepId): Project => Permission =
-        Allow when _.reqs.useCases.focusStep(id).live :: Live
+        Allow when _.reqs.useCases.focusStep(id).live.is(Live)
 
       editor match {
         case Editor.ReqCodesForReq         (req)         => liveReq(req.id, None)

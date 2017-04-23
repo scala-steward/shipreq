@@ -41,8 +41,8 @@ object DeletionForm {
     @inline def id = group.id
 
     def liveSubs(r: ReqId => Live, g: ReqCodeId => Live): Iterator[String] =
-      subReqs  .iterator.filter(t => r(t._1) :: Live).map(_._2) ++
-      subGroups.iterator.filter(t => g(t._1) :: Live).map(_._2)
+      subReqs  .iterator.filter(t => r(t._1) is Live).map(_._2) ++
+      subGroups.iterator.filter(t => g(t._1) is Live).map(_._2)
   }
 
   type DeletableReqs   = Vector[ReqRow]
@@ -94,7 +94,7 @@ object DeletionForm {
       java.util.Arrays.sort(a, reqOrder)
 
     val reqFilter: Req => Boolean =
-      _.live(p.config.reqTypes) :: Live
+      _.live(p.config.reqTypes) is Live
 
     def lookupAll(reqIds: TraversableOnce[ReqId]): Array[Req] = {
       val a = reqIds.toIterator.map(p.reqs.need).filter(reqFilter).toArray
@@ -144,7 +144,7 @@ object DeletionForm {
       changed = false
       for (t <- cascadePending if t.pending) {
         t.pending = false
-        if (t.imp.forall(liveGivenState(_) :: Dead)) {
+        if (t.imp.forall(liveGivenState(_) is Dead)) {
           changed = true
           select += t.req.id
         }

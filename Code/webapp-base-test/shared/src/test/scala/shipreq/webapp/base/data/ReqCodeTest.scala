@@ -26,7 +26,7 @@ object ReqCodeTest extends TestSuite {
 
       def testFail(vs: V.State, i: String): Unit = {
         val r = V.code(vs).validity(i)
-        assert(r :: Invalid)
+        assert(r is Invalid)
       }
 
       def testPass(vs: V.State, i: String): Unit =

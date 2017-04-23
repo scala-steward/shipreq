@@ -926,7 +926,7 @@ object LogicTest extends TestSuite {
 
     def grp(expectVisible: Boolean, live: Live, title: String, code: String) = {
       if (expectVisible) expect += code
-      if (live :: Live) RCGroup(code, title = title) else DeadReqCode(code, title = title)
+      if (live is Live) RCGroup(code, title = title) else DeadReqCode(code, title = title)
     }
 
     def req(expectVisible: Boolean, live: Live, title: String, code: String) = {

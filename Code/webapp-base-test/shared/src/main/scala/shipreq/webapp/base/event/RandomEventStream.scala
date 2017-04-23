@@ -128,7 +128,7 @@ class ApplicableEventGen(p: Project) {
 
   val (staticFieldsToDel, staticFieldsToAdd) =
     StaticField.values.whole.partition(cfg.fields.staticFieldSet.contains)
-      .map1(_.filter(_.deletable :: Deletable))
+      .map1(_.filter(_.deletable is Deletable))
 
   val nextReqId: Gen[Int] =
     IncCounter genInt p.idCeilings.req
@@ -173,13 +173,13 @@ class ApplicableEventGen(p: Project) {
     IncCounter genInt p.idCeilings.useCaseStep map UseCaseStepId
 
   val tagId: Live => Option[Gen[TagId]] =
-    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filter(_.live :: l).map(_.id))
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filter(_.live is l).map(_.id))
 
   val tagGroupId: Live => Option[Gen[TagGroupId]] =
-    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterSubType[TagGroup].filter(_.live :: l).map(_.id))
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterSubType[TagGroup].filter(_.live is l).map(_.id))
 
   val applicableTagId: Live => Option[Gen[ApplicableTagId]] =
-    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag].filter(_.live :: l).map(_.id))
+    tryGenChooseLiveDead(l => p.config.tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag].filter(_.live is l).map(_.id))
 
   lazy val existingApplicableTagId: Option[Gen[ApplicableTagId]] =
     Gen.tryGenChoose(p.config.tags.keysIterator.filterSubType[ApplicableTagId])
@@ -197,7 +197,7 @@ class ApplicableEventGen(p: Project) {
     }
 
   val customReqTypeId: Live => Option[Gen[CustomReqTypeId]] =
-    tryGenChooseLiveDead(l => cfg.reqTypes.custom.valuesIterator.filter(_.live :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.reqTypes.custom.valuesIterator.filter(_.live is l).map(_.id))
 
   lazy val applicableReqTypes: Gen[Field.ApplicableReqTypes] =
     RandomData.applicableReqTypes(cfg.reqTypes.custom.keySet)
@@ -206,16 +206,16 @@ class ApplicableEventGen(p: Project) {
     Gen.tryGenChoose(p.reqs.idIterator)
 
   lazy val liveReqIds: Vector[ReqId] =
-    p.reqs.reqIterator.filter(_.live(cfg.reqTypes) :: Live).map(_.id).toVector
+    p.reqs.reqIterator.filter(_.live(cfg.reqTypes) is Live).map(_.id).toVector
 
   lazy val liveReqId: Option[Gen[ReqId]] =
     Gen.tryGenChoose(liveReqIds)
 
   val genericReqId: Live => Option[Gen[GenericReqId]] =
-    tryGenChooseLiveDead(l => p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.reqTypes) :: l).map(_.id))
+    tryGenChooseLiveDead(l => p.reqs.genericReqs.valuesIterator.filter(_.live(cfg.reqTypes) is l).map(_.id))
 
   def liveUseCaseIterator: Iterator[UseCase] =
-    p.reqs.useCases.imap.valuesIterator.filter(_.liveUC :: Live)
+    p.reqs.useCases.imap.valuesIterator.filter(_.liveUC is Live)
 
   lazy val liveUseCase: Option[Gen[UseCase]] =
     Gen.tryGenChoose(liveUseCaseIterator)
@@ -230,25 +230,25 @@ class ApplicableEventGen(p: Project) {
     Gen.tryGenChoose(p.reqCodes.idList)
 
   val reqCodeGroupId: Live => Option[Gen[ReqCodeId]] =
-    tryGenChooseLiveDead(l => p.reqCodes.groups.iterator.filter(_.live :: l).map(_.id).toVector)
+    tryGenChooseLiveDead(l => p.reqCodes.groups.iterator.filter(_.live is l).map(_.id).toVector)
 
   lazy val existingCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
     Gen.tryGenChoose(cfg.customIssueTypes.keySet)
 
   val customIssueTypeId: Live => Option[Gen[CustomIssueTypeId]] =
-    tryGenChooseLiveDead(l => cfg.customIssueTypes.valuesIterator.filter(_.live :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.customIssueTypes.valuesIterator.filter(_.live is l).map(_.id))
 
   val customFieldId: Live => Option[Gen[CustomFieldId]] =
-    tryGenChooseLiveDead(l => cfg.fields.customFields.valuesIterator.filter(_.live(cfg) :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.fields.customFields.valuesIterator.filter(_.live(cfg) is l).map(_.id))
 
   val customFieldImpId: Live => Option[Gen[CustomField.Implication.Id]] =
-    tryGenChooseLiveDead(l => cfg.customImpFields.filter(_.live(cfg) :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.customImpFields.filter(_.live(cfg) is l).map(_.id))
 
   val customFieldTagId: Live => Option[Gen[CustomField.Tag.Id]] =
-    tryGenChooseLiveDead(l => cfg.customTagFields.filter(_.live(cfg) :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.customTagFields.filter(_.live(cfg) is l).map(_.id))
 
   val customFieldTextId: Live => Option[Gen[CustomField.Text.Id]] =
-    tryGenChooseLiveDead(l => cfg.customTextFields.filter(_.live(cfg) :: l).map(_.id))
+    tryGenChooseLiveDead(l => cfg.customTextFields.filter(_.live(cfg) is l).map(_.id))
 
   def customTextFieldText =
     TextGen.customTextFieldAtom(existingReqId, existingUseCaseStepId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId).text
@@ -327,7 +327,7 @@ class ApplicableEventGen(p: Project) {
 
     private def liveReqTypes: Iterator[ReqTypeId] =
       StaticReqType.values.iterator.map(_.reqTypeId) ++
-      cfg.reqTypes.custom.valuesIterator.filter(_.live :: Live).map(_.id)
+      cfg.reqTypes.custom.valuesIterator.filter(_.live is Live).map(_.id)
 
     private def reqTypeId: Option[Gen[ReqTypeId]] =
       Gen.tryGenChoose(liveReqTypes.filterNot(reqTypesUsedInFields.contains))
@@ -578,8 +578,8 @@ class ApplicableEventGen(p: Project) {
   def genContentRestore: Option[Gen[ContentRestore]] = {
     val restorableReqIds = Gen.tryGenChoose[ReqId](
       p.reqs.reqIterator.filter {
-        case g: GenericReq => (g.liveExplicitly :: Dead) && (g.copy(liveExplicitly = Live).live(cfg.reqTypes) :: Live)
-        case u: UseCase    => (u.liveExplicitly :: Dead) && (u.copy(liveExplicitly = Live).live(cfg.reqTypes) :: Live)
+        case g: GenericReq => (g.liveExplicitly is Dead) && (g.copy(liveExplicitly = Live).live(cfg.reqTypes) is Live)
+        case u: UseCase    => (u.liveExplicitly is Dead) && (u.copy(liveExplicitly = Live).live(cfg.reqTypes) is Live)
       }.map(_.id).toVector)
     if (restorableReqIds.isEmpty && reqCodeGroupId(Dead).isEmpty)
       None

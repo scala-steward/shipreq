@@ -30,7 +30,7 @@ object LogicPropTest extends TestSuite {
 
     val expectVisible: ReqId => Boolean =
       if (vs.filterDead == HideDead)
-        id => p.reqs.need(id).live(p.config.reqTypes) :: Live
+        id => p.reqs.need(id).live(p.config.reqTypes) is Live
       else
         _ => true
 
@@ -49,7 +49,7 @@ object LogicPropTest extends TestSuite {
       p.reqCodes.activeReqCodesByReqId.values.foreach(b ++= _)
       if (vs.viewReqCodeGroups)
         p.reqCodes.groups.foreach(g =>
-          if ((g.live :: Live) || (vs.filterDead :: ShowDead))
+          if ((g.live is Live) || (vs.filterDead is ShowDead))
             b += p.reqCodes.reqCode(g.id))
       b.result()
     }

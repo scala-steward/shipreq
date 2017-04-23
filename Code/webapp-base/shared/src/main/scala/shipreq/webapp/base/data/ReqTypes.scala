@@ -110,7 +110,7 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
     i.foldId[ReqType](identity, custom.need)
 
   val liveCustomReqTypes: Vector[CustomReqType] =
-    custom.valuesIterator.filter(_.live :: Live).toVector
+    custom.valuesIterator.filter(_.live is Live).toVector
 
   val all: NonEmptyVector[ReqType] =
     StaticReqType.values ++ custom.valuesIterator

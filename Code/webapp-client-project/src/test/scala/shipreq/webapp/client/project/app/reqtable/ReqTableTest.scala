@@ -148,7 +148,7 @@ object ReqTableTest extends TestSuite {
         val cn = Column.NameResolver.byProject(i.state)
         Column.all(i.state.config, ShowDead)
           .iterator
-          .filter(_.live :: Dead)
+          .filter(_.live is Dead)
           .map { c =>
             val n = cn(c)
             val ce = cellEditor("MF-1", n)

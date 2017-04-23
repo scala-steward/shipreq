@@ -88,7 +88,7 @@ object Tag {
   })
 
   val filterLive: Tag => Boolean =
-    _.live :: Live
+    _.live is Live
 
   object CycleDetectors {
     val multimap =
@@ -180,7 +180,7 @@ object TagInTree {
   implicit def equality: UnivEq[TagInTree] = UnivEq.derive
 
   val filterLive: TagInTree => Boolean =
-    _.tag.live :: Live
+    _.tag.live is Live
 
   val tag      = GenLens[TagInTree](_.tag)
   val children = GenLens[TagInTree](_.children)

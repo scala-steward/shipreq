@@ -246,7 +246,7 @@ final class ProjectWidgets private(project    : Project,
       memo[ApplicableTagId] { id =>
         val tag = project.config.atag(id)
         val liveTag = tag.live
-        val valid = Invalid.when(liveText :: Live && liveTag :: Dead)
+        val valid = Invalid.when(liveText.is(Live) && liveTag.is(Dead))
         tagWithoutStyle(Contextualise, tag)(*.tagInText(liveTag, valid))
       }
     }

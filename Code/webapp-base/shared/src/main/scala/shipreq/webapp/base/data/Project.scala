@@ -66,7 +66,7 @@ final case class Project(name           : Project.Name,
     //ShowSize(this).showTree
 
   lazy val deadReqIds: Set[ReqId] =
-    reqs.reqIterator.filter(_.live(config.reqTypes) :: Dead).map(_.id).toSet
+    reqs.reqIterator.filter(_.live(config.reqTypes) is Dead).map(_.id).toSet
 
   lazy val deadReqCount: Int =
     deadReqIds.size

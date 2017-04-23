@@ -16,8 +16,8 @@ object TableStatsTest extends TestSuite {
     TableStats(fd,
       liveVisibleReqs  = liveVisibleReqs ,
       liveFilteredReqs = liveFilteredReqs,
-      deadVisibleReqs  = if (fd :: HideDead) 0 else deadVisibleReqs,
-      deadFilteredReqs = deadFilteredReqs + (if (fd :: ShowDead) 0 else deadVisibleReqs),
+      deadVisibleReqs  = if (fd is HideDead) 0 else deadVisibleReqs,
+      deadFilteredReqs = deadFilteredReqs + (if (fd is ShowDead) 0 else deadVisibleReqs),
       expandedReqs     = reappearances   ,
       expansionRows    = reappearances*2 ,
       codeGroups       = codeGroups      )

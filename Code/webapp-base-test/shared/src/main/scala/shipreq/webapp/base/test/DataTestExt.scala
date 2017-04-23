@@ -9,12 +9,12 @@ object DataTestExt {
 
     def useCaseStepsDeletableRestorable(liveFilter: Live): Iterator[UseCaseStep.Focus] =
       p.reqs.useCases.imap.valuesIterator
-        .filter(_.liveUC :: Live)
+        .filter(_.liveUC is Live)
         .flatMap { uc =>
           val root = uc.rootStep.id
           uc.stepIterator
             .map(s => p.reqs.useCases.focusStep(s.id))
-            .filter(f => f.live :: liveFilter && f.id !=* root)
+            .filter(f => f.live is liveFilter && f.id !=* root)
         }
 
     def useCaseStepsDeletable = useCaseStepsDeletableRestorable(Live)

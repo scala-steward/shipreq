@@ -29,7 +29,7 @@ object HashTestUtil {
   def fakeHashSchemeV(xor: Int, id: Char, scopeValidity: HashScope => Validity): HashScheme = {
     val invalidScopes = Option(scopeValidity) match {
       case None    => HashScheme.latest.invalidScopes
-      case Some(f) => HashScope.all.iterator.filter(f(_) :: Invalid).toSet
+      case Some(f) => HashScope.all.iterator.filter(f(_) is Invalid).toSet
     }
     val hasher = new DataHasherCurrent(new XorAlgorithm(MurmurHash3, xor))
     HashScheme(hasher, HashSchemeId(id), invalidScopes)

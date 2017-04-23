@@ -93,7 +93,7 @@ trait ApplyConfigEvent {
     private def reqsToCascadeReqTypeLiveChange(id: CustomReqTypeId): SE[Set[ReqId]] =
       SE.get(_.reqs.genericReqs
         .values.toStream
-        .filter(r => r.reqTypeId ==* id && r.liveExplicitly :: Live)
+        .filter(r => r.reqTypeId ==* id && r.liveExplicitly ==* Live)
         .map(_.id: ReqId)
         .toSet)
   }
@@ -320,7 +320,7 @@ trait ApplyConfigEvent {
 
     def ensureDeletableSF(sf: StaticField): SE[Unit] =
       SE.test(
-        sf.deletable :: Deletable,
+        sf.deletable is Deletable,
         s"Static field $sf cannot be deleted.")
 
     def applyStaticRemove(e: FieldStaticRemove): SE[Unit] =

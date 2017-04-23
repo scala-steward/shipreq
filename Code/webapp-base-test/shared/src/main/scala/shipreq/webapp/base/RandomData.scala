@@ -758,7 +758,7 @@ object RandomData {
             var t = gt run ctx
             if (t.isEmpty)
               t = VectorTree.single(g run ctx)
-            if (t.children.head.value.liveExplicitly :: Dead)
+            if (t.children.head.value.liveExplicitly is Dead)
               t.modifyValueAt(VectorTree.root)(UseCaseStep.liveExplicitly set Live) foreach (t = _)
             t
           }
@@ -1189,7 +1189,7 @@ object RandomData {
       reqsWithoutText ← reqsWithoutText(cfg, reqCount, ucCount)
       reqIdSet        = reqsWithoutText.idIterator.toSet
       reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
-      liveReqIds      = reqsWithoutText.reqIterator.filter(_.live(cfg.reqTypes) :: Live).map(_.id)
+      liveReqIds      = reqsWithoutText.reqIterator.filter(_.live(cfg.reqTypes) is Live).map(_.id)
       liveReqIdG      = Gen tryGenChoose liveReqIds.toIndexedSeq
       reqCodeDataG    = reqCode.data(liveReqIdG, reqIdG)(0 to (3 `JVM|JS` 2))
       reqCodes        ← reqCodes(reqCode.trie(reqCodeDataG, 2 `JVM|JS` 2))
@@ -1339,7 +1339,7 @@ object RandomData {
         "_"
       else if (s.headOption exists illegalSimpleTextStart.contains)
         "!" + s
-      else if (DataValidators.reqType.mnemonic.stateless.validity(s) :: Valid)
+      else if (DataValidators.reqType.mnemonic.stateless.validity(s) is Valid)
         s + "?"
       else
         s

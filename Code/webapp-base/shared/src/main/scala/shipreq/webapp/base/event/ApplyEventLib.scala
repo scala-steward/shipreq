@@ -43,7 +43,7 @@ private[event] object ApplyEventLib {
   }
 
   @inline def whenUntrusted[A](a: => A)(implicit trust: Trust, alt: TrustedAlt[A]): A =
-    if (trust :: Trusted) alt.trusted else a
+    if (trust is Trusted) alt.trusted else a
 
   implicit def resultFromValidationResult[A](r: Composite.Invalidity \/ A): SE[A] =
     r match {
@@ -82,10 +82,10 @@ private[event] object ApplyEventLib {
     ensureLiveIs(actual)(!expectNot, name)
 
   def ensureLive(l: Live)(name: => String)(implicit trust: Trust): SE[Unit] =
-    whenUntrusted(test(l :: Live, s"$name is dead."))
+    whenUntrusted(test(l is Live, s"$name is dead."))
 
   def ensureDead(l: Live)(name: => String)(implicit trust: Trust): SE[Unit] =
-    whenUntrusted(test(l :: Dead, s"$name is live."))
+    whenUntrusted(test(l is Dead, s"$name is live."))
 
   def ensureTagIsLive(id: TagId)(implicit trust: Trust): SE[Unit] =
     whenUntrusted(
@@ -175,7 +175,7 @@ private[event] object ApplyEventLib {
     narrowCC[A, B](a, s"${cc.runtimeClass.getSimpleName} ∌ $a")
 
   def narrowCC[A, B <: A](a: A, failure: => Error)(implicit cc: ClassTag[B], trust: Trust): SE[B] =
-    if (trust :: Untrusted)
+    if (trust is Untrusted)
       cc.unapply(a) match {
         case Some(b) => ret(b)
         case None    => fail(failure)
@@ -185,7 +185,7 @@ private[event] object ApplyEventLib {
 
   def appendNewToVector[A: UnivEq](implicit trust: Trust): A => Vector[A] => SE[Vector[A]] = {
     def doit(a: A, as: Vector[A]): Vector[A] = as :+ a
-    if (trust :: Trusted)
+    if (trust is Trusted)
       a => as => ret(doit(a, as))
     else
       a => as =>
@@ -197,7 +197,7 @@ private[event] object ApplyEventLib {
 
   def removeFromVector[A: UnivEq](implicit trust: Trust): A => Vector[A] => SE[Vector[A]] = {
     def doit(a: A, as: Vector[A]): Vector[A] = as.filterNot(_ ==* a)
-    if (trust :: Trusted)
+    if (trust is Trusted)
       a => as => ret(doit(a, as))
     else
       a => as => {
@@ -210,7 +210,7 @@ private[event] object ApplyEventLib {
   }
 
   def repositionFn[A: UnivEq](implicit trust: Trust): (A, Option[A]) => Vector[A] => SE[Vector[A]] =
-    if (trust :: Trusted)
+    if (trust is Trusted)
       (a, pos) => as => ret(RelPos.set(as, a, pos))
     else
       (a, pos) => as =>
@@ -227,7 +227,7 @@ private[event] object ApplyEventLib {
 
   def imapCreate[K, V](imap: IMap[K, V])(v: V)(implicit trust: Trust): SE[IMap[K, V]] = {
     val updated = imap + v
-    if (trust :: Trusted)
+    if (trust is Trusted)
       ret(updated)
     else
       SE.test(!imap.containsV(v), s"$v already exists.") |>> updated

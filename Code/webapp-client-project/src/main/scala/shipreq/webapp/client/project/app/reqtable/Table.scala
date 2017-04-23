@@ -166,7 +166,7 @@ object Table {
     val row = p.row
 
     val rowStatus: CellStatus =
-      if (row.live :: Dead) CellStatus.DeadRow else CellStatus.Normal
+      if (row.live is Dead) CellStatus.DeadRow else CellStatus.Normal
 
     def selCellKeyDown(e: ReactKeyboardEventFromHtml): Callback =
       focusKeyHandlers(e)

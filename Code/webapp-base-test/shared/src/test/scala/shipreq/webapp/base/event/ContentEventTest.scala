@@ -622,7 +622,7 @@ object ContentEventTest extends TestSuite {
 
             def req(id: GenericReqId): R =
               p.reqs.genericReqs.need(id) match {
-                case r if r.live(p.config.reqTypes) :: Live => live
+                case r if r.live(p.config.reqTypes) is Live => live
                 case _                                      => fmt(p.deletionReasons getLatest id)
               }
 

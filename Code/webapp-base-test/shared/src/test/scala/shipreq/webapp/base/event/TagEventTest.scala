@@ -84,7 +84,7 @@ abstract class SharedTagEventTests extends TestSuite {
           val t = _assertPass(es: _*).config.tags
           val List(a, b) = ttget(t, 1, 2)
           assertEq((a, b) mapEach getChildren, (Vector(2), Vector.empty))
-          def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
+          def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
           assertEq(f(a, "A") + f(b, "B"), ab)
         }
 
@@ -107,7 +107,7 @@ abstract class SharedTagEventTests extends TestSuite {
           val t = _assertPass(es: _*).config.tags
           val List(a, b, c) = ttget(t, 1, 2, 3)
           assertEq((a, c, b) mapEach getChildren, (Vector(2), Vector(2), Vector.empty))
-          def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
+          def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
           assertEq("[" + f(a, "A") + f(c, "C") + "]" + f(b, "B"), acb)
         }
 
@@ -129,7 +129,7 @@ abstract class SharedTagEventTests extends TestSuite {
           val t = _assertPass(es: _*).config.tags
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, d, b, c) mapEach getChildren, (Vector(2), Vector(2), Vector(3), Vector.empty))
-          def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
+          def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
           assertEq("[" + f(a, "A") + f(d, "D") + "]" + f(b, "B") + f(b, "C"), state)
         }
         test(cD,  "[AD]BC")
@@ -148,7 +148,7 @@ abstract class SharedTagEventTests extends TestSuite {
           val t = _assertPass(es: _*).config.tags
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, b, c, d) mapEach getChildren, (Vector(2), Vector(3), Vector.empty, Vector(3)))
-          def f(d: TagInTree, s: String) = if (d.tag.live :: Live) s else "-"
+          def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
           assertEq("{" + f(a, "A") + f(b, "B") + "," + f(d, "D") + "}" + f(c, "C"), state)
         }
         test(cD,  "{AB,D}C")

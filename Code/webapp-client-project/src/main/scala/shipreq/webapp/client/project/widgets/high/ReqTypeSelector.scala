@@ -85,6 +85,6 @@ object ReqTypeSelector {
 
   def pxChoices(initial: RT, pxCustomReqTypes: Px[Set[RT]]): Px[NonEmptySet[RT]] =
     pxCustomReqTypes
-      .map(_.filter(_.live :: Live))
+      .map(_.filter(_.live is Live))
       .map(NonEmptySet(initial, _))
 }

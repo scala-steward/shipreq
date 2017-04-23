@@ -28,7 +28,7 @@ object ReqLookupPrompt {
       if (edit.value.isEmpty)
         Resolution.Blank
       else
-        ExternalPubid.parse(edit.value).filter(filter(_) :: Allow) match {
+        ExternalPubid.parse(edit.value).filter(filter(_) is Allow) match {
           case Some(ep) => Resolution.Valid(ep)
           case None     => Resolution.Invalid
         }

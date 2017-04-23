@@ -63,7 +63,7 @@ object Row {
     Reusability.byUnivEq
 
   def head(fd: FilterDead): Vector[Row] =
-    if (fd :: ShowDead) headDead else headLive
+    if (fd is ShowDead) headDead else headLive
 
   private def headLive: Vector[Row] =
     headDead.filter {

@@ -280,7 +280,7 @@ object StaticField {
     AdtMacros.adtValuesManual[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)
 
   lazy val (deletable, notDeletable) =
-    values.whole.partition(_.deletable :: Deletable)
+    values.whole.partition(_.deletable is Deletable)
 
   lazy val names: Set[String] =
     values.toStream.map(_.name).toSet
@@ -305,7 +305,7 @@ sealed abstract class CustomField(override final val fieldType: CustomFieldType)
    * If [[liveExplicitly]] was [[Live]], would the final live value be [[Live]] too.
    */
   final def recoverable(cfg: ProjectConfig): Boolean =
-    CustomField.liveExplicitly.set(Live)(this).live(cfg) :: Live
+    CustomField.liveExplicitly.set(Live)(this).live(cfg) is Live
 
   override final def fold[A](s: StaticField => A, c: CustomField => A): A = c(this)
 }

@@ -179,7 +179,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     shiftLeft(at)
 
   def shiftLeftIterator[B](f: (Location, A) => B): Iterator[B] =
-    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1) :: Allow).map(f.tupled)
+    locAndValueIterator((_, _)).filter(p => canShiftLeft(p._1) is Allow).map(f.tupled)
 
   /**
     * Increases the indent/level of a node.
@@ -194,14 +194,14 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
   }
 
   def shiftRightV(at: Location, f: Location => Validity): Option[VectorTree[A]] = {
-    assert(f(at) :: Valid, s"Location $at is Invalid.")
+    assert(f(at) is Valid, s"Location $at is Invalid.")
     val parent = at.parent
     val from = at.last
 
     // find live child of parent to become the new parent
     (from - 1 to 0 by -1).iterator
       .map(parent :+ _)
-      .filter(f(_) :: Valid)
+      .filter(f(_) is Valid)
       .nextOption()
       .flatMap(np => _shiftRight(parent, from, np.last))
   }
@@ -226,7 +226,7 @@ final case class VectorTree[+A](children: Children[A]) extends Parent[A] {
     )
 
   def shiftRightIterator[B](f: (Location, A) => B): Iterator[B] =
-    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) :: Allow).map(f.tupled)
+    locAndValueIterator((_, _)).filter(p => canShiftRight(p._1) is Allow).map(f.tupled)
 
   lazy val maxDepthTree: VectorTree[Int] = {
     val leaf: Node[Int] =
@@ -456,7 +456,7 @@ object VectorTree extends VectorTreeLowPri {
 
   def canShiftRightV(at: Location, f: Location => Validity): Permission = {
     val p = at.parent
-    Allow when (0 until at.last).exists(i => f(p :+ i) :: Valid)
+    Allow when (0 until at.last).exists(i => f(p :+ i) is Valid)
   }
 
   @tailrec

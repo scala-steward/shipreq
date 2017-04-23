@@ -117,7 +117,7 @@ object AutoComplete {
     reqItems(p, pt, p.reqs.reqIterator.toStream)
 
   def reqItems(p: Project, pt: PlainText.ForProject, legal: Stream[Req]): Stream[ReqItem] = {
-    legal.filter(_.live(p.config.reqTypes) :: Live)
+    legal.filter(_.live(p.config.reqTypes) is Live)
       .map(req => new ReqItem(req.id, req.pubid, p.config.reqTypes.need(req.pubid.reqTypeId), pt reqTitle req))
       .sortBy(_.sortKey)
   }

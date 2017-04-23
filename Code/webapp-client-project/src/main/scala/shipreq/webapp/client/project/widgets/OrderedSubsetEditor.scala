@@ -32,7 +32,7 @@ final class OrderedSubsetEditor[A: Equal] {
 
   case class State(all: Vector[(A, On)]) {
     val on: Vector[A] =
-      all.filter(_._2 :: On).map(_._1)
+      all.filter(_._2 is On).map(_._1)
 
     def toggle(a: A): State =
       State(all.map {

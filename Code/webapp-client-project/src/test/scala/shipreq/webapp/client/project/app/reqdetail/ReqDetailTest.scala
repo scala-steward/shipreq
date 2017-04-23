@@ -37,7 +37,7 @@ object ReqDetailTest extends TestSuite {
     *.focus("Life row").value(_.obs.generic.lifeRow.innerText).assert(expect)
 
   val reporterFieldExistence =
-    visibleFields.assert.existenceOf("Reporter")(_.obs.generic.filterDead :: ShowDead)
+    visibleFields.assert.existenceOf("Reporter")(_.obs.generic.filterDead is ShowDead)
 
   val liveCanDelete  = UiText.Life.live + "." + UiText.Life.delete
   val deadCanRestore = UiText.Life.dead + "." + UiText.Life.restore

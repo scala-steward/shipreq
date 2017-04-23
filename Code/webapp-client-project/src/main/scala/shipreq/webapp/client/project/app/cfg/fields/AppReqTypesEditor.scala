@@ -46,7 +46,7 @@ class AppReqTypesEditor(customReqTypes: TraversableOnce[CustomReqType]) {
 
   val renderValue: A => VdomNode = id => {
     val a = lookup(id)
-    if (a.fold(_ => true, _.live :: Live))
+    if (a.fold(_ => true, _.live is Live))
       a.mnemonic.value
     else
       <.span(Style.cfg.deadMnemonic, a.mnemonic.value)

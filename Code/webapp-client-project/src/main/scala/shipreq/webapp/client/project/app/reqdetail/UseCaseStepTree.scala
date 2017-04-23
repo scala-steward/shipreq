@@ -92,8 +92,8 @@ object UseCaseStepTree {
       }
     }).drain()
 
-    if (row.tailStep && uc.liveUC :: Live) {
-      val loc   = VectorTree.Location(steps.tree.children.count(_.value.liveExplicitly :: Live))
+    if (row.tailStep && uc.liveUC.is(Live)) {
+      val loc   = VectorTree.Location(steps.tree.children.count(_.value.liveExplicitly is Live))
       val ploc  = VectorTree.PartialLocation(loc, Valid)
       val lbl   = field.stepLabel(pos, ploc, false)
       def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)

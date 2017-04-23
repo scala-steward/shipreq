@@ -124,7 +124,7 @@ object TagCrudTest extends TestSuite {
         .mkString("\n")
 
       def test(p: FilterPolicy, expect: String): Unit = {
-        val a = flatten(sampleTagTree_f)(_.live :: Live, p)
+        val a = flatten(sampleTagTree_f)(_.live is Live, p)
         val aa = show(a)
         assertEq(p.toString, aa, expect.trim)
       }

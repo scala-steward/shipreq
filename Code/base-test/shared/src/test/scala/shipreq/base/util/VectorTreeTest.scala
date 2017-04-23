@@ -68,7 +68,7 @@ object VectorTreeTest extends TestSuite {
     def x(name: String, can: Location => Permission, proof: VTI => Location => Option[VTI]): PV =
       Prop.atom("canShift" + name, t =>
         t.locIterator
-          .find(l => (can(l) :: Allow) ≠ proof(t)(l).isDefined)
+          .find(l => (can(l) is Allow) ≠ proof(t)(l).isDefined)
           .map("Discrepancy at " + _))
 
     "CanShift" rename_: (
@@ -104,7 +104,7 @@ object VectorTreeTest extends TestSuite {
 
     val origSize = t.locIterator.size
 
-    val allValid = m.iterator.filter(_._2.validity :: Valid).toList
+    val allValid = m.iterator.filter(_._2.validity is Valid).toList
 
     val origToFiltered =
       E.forall(allValid) { case (l1, l2) =>

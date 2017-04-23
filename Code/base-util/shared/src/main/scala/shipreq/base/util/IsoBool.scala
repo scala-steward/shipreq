@@ -20,17 +20,17 @@ trait IsoBool[B <: IsoBool[B]] extends (Boolean <=> B) with Product with Seriali
     else
       companion.positive
 
-  @inline final def ::(b: B): Boolean =
+  @inline final def is(b: B): Boolean =
     b == this
 
   @inline final def when(cond: Boolean): B =
     if (cond) this else !this
 
-  final override def from = ::
-  final override def to   = when
+  final override val from = is(_)
+  final override val to   = when(_)
 
-  final def fnToThisWhen[A](b: A => Boolean): A => B =
-    a => when(b(a))
+  final def fnToThisWhen[A](f: A => Boolean): A => B =
+    to compose f
 
   final def fnToThisWhen[A](b: Boolean <=> A): A => B =
     fnToThisWhen(b.from)
@@ -56,13 +56,13 @@ object IsoBool {
     final def memo[A](f: B => A): B => A = {
       val p = f(positive)
       val n = f(negative)
-      b => if (b :: positive) p else n
+      b => if (b is positive) p else n
     }
 
     final def memoLazy[A](f: B => A): B => A = {
       lazy val p = f(positive)
       lazy val n = f(negative)
-      b => if (b :: positive) p else n
+      b => if (b is positive) p else n
     }
 
     final def fold[A](a: A)(f: (A, B) => A): A =
@@ -86,22 +86,22 @@ object IsoBool {
 
     final def &(that: => B): B = {
       val pos = companion.positive
-      pos when ((this :: pos) && (that :: pos))
+      pos when ((this is pos) && (that is pos))
     }
 
     final def &&(that: => Boolean): B = {
       val pos = companion.positive
-      pos when ((this :: pos) && that)
+      pos when ((this is pos) && that)
     }
 
     final def |(that: => B): B = {
       val pos = companion.positive
-      pos when ((this :: pos) || (that :: pos))
+      pos when ((this is pos) || (that is pos))
     }
 
     final def ||(that: => Boolean): B = {
       val pos = companion.positive
-      pos when ((this :: pos) || that)
+      pos when ((this is pos) || that)
     }
   }
 }

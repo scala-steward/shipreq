@@ -33,7 +33,7 @@ object TagEditor {
       IMap.empty(_.key.value)
 
     def apply(tags: TraversableOnce[ApplicableTag]): Lookup =
-      empty ++ tags.toIterator.filter(_.live :: Live)
+      empty ++ tags.toIterator.filter(_.live is Live)
 
     def all(p: Project): Lookup =
       apply(p.config.liveTagFieldDistribution.tags.all)

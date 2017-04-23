@@ -51,7 +51,7 @@ object Style extends StyleSheet.Inline {
     hasErrorBackground)
 
   private def deadColumnLabel(live: Live) =
-    mixinIf(live :: Dead)(textDecoration := ^.lineThrough)
+    mixinIf(live is Dead)(textDecoration := ^.lineThrough)
 
   private val hasTitle = Pseudo.Custom("[title]", PseudoType.Element)
 
@@ -142,7 +142,7 @@ object Style extends StyleSheet.Inline {
     val pubidColumnValue = styleF(D.live)(a => styleS(
       display.inline,
       whiteSpace.nowrap,
-      mixinIf(a :: Dead)(deadAndNotError)))
+      mixinIf(a is Dead)(deadAndNotError)))
 
     val viewSettingsHeader = style(
       backgroundColor(c"#ffe"))
@@ -164,7 +164,7 @@ object Style extends StyleSheet.Inline {
 
       val inconclusiveColumnName = styleF(D.`live * on`) { case (live, on) => styleS(
         marginLeft(1 ex),
-        mixinIf(on :: Off)(color(c"#999")),
+        mixinIf(on is Off)(color(c"#999")),
         deadColumnLabel(live)
       )}
 
@@ -189,7 +189,7 @@ object Style extends StyleSheet.Inline {
         marginTop(1.6 em),
         width(100 %%),
         height(3 em),
-        mixinIf(v :: Invalid)(hasErrorBackground)
+        mixinIf(v is Invalid)(hasErrorBackground)
       ))
 
       def errorMsg = hasErrorColor
@@ -338,7 +338,7 @@ object Style extends StyleSheet.Inline {
         fontWeight.bold)
 
       val row = styleF(D.live)(live => styleS(
-        mixinIf(live :: Dead)(backgroundColor(c"#fee"), color(c"#a00"))
+        mixinIf(live is Dead)(backgroundColor(c"#fee"), color(c"#a00"))
       ))
 
       val indent: Int => TagMod =
@@ -352,8 +352,8 @@ object Style extends StyleSheet.Inline {
 
       val impliedByItem = styleF(D.live)(l => styleS(
         // hoverShowsInfo, // It's a link to ReqDetail now
-        mixinIf(l :: Live)(color(c"#111")),
-        mixinIf(l :: Dead)(
+        mixinIf(l is Live)(color(c"#111")),
+        mixinIf(l is Dead)(
           //textDecoration := ^.lineThrough,
           color(c"#daa"))
       ))
@@ -378,7 +378,7 @@ object Style extends StyleSheet.Inline {
 
     val headerText = styleF(D.live)(live => styleS(
       margin(`0`).important,
-      mixinIf(live :: Dead)(
+      mixinIf(live is Dead)(
         textDecoration := "line-through",
         opacity(0.4))))
 
@@ -422,7 +422,7 @@ object Style extends StyleSheet.Inline {
     val detailTableValue = styleF(D.live)(live => styleS(
       detailTableCell,
       width(100 %%),
-      mixinIf(live :: Dead)(backgroundColor(rgba(0, 0, 0, .04)))))
+      mixinIf(live is Dead)(backgroundColor(rgba(0, 0, 0, .04)))))
 
     val generalImpsCont = style(
       width(100 %%))
@@ -508,7 +508,7 @@ object Style extends StyleSheet.Inline {
 
     private def tagBase(live: Live) = mixin(
       padding(4 px, 6 px).important,
-      mixinIf(live :: Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
+      mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
       hoverShowsInfo)
 
     private def tagLabelColour(live: Live) = live match {
@@ -522,13 +522,13 @@ object Style extends StyleSheet.Inline {
 
     val tagInText = styleF(D.`live * validity`){ case (l, v) => styleS(
       tagBase(l),
-      mixinIf(l :: Live)(refColour),
-      mixinIf(l :: Dead)(deadMaybeValid(v)))
+      mixinIf(l is Live)(refColour),
+      mixinIf(l is Dead)(deadMaybeValid(v)))
     }
 
     val reqTypeShort = styleF(D.live)(a => styleS(
       hoverShowsInfo,
-      mixinIf(a :: Dead)(deadAndNotError)))
+      mixinIf(a is Dead)(deadAndNotError)))
 
     val issue = style(hasError)
 
@@ -541,8 +541,8 @@ object Style extends StyleSheet.Inline {
 
     val reqRef = styleF(D.`live * validity`){ case (l, v) => styleS(
       // hoverShowsInfo, // It's a link to ReqDetail now
-      mixinIf(l :: Live)(refColour),
-      mixinIf(l :: Dead)(deadMaybeValid(v))
+      mixinIf(l is Live)(refColour),
+      mixinIf(l is Dead)(deadMaybeValid(v))
     )}
 
     def reqCodeGroupRef = reqRef

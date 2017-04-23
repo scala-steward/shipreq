@@ -179,7 +179,7 @@ object Graphs {
       def initSubtreeNodes(steps: UseCaseSteps, field: F, tf: UseCaseSteps.Tree => Range): Iterator[(PartialLocation, Content)] = {
         steps.tree.subtreeLocAndValueIterator[(PartialLocation, Content)](tf(steps.tree), (loc, step) => {
           val ploc = steps.partialLocs.forward(loc)
-          if (ploc.validity :: Valid) {
+          if (ploc.validity is Valid) {
             val label = field.stepLabel(uc.pos, ploc, mnemonicPrefix = false)
             val node = step.id.value.toString
             register(step.id, node)
@@ -309,7 +309,7 @@ object Graphs {
       for (id <- ids) {
         node(id)
         labelAttr(pubid(id))
-        if (live(id) :: Dead)
+        if (live(id) is Dead)
           sb append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
       }
 
@@ -342,7 +342,7 @@ object Graphs {
           () => {
             flowS(from, dir, nodeName(to))
 
-            if (fromLive :: Dead || live(to) :: Dead)
+            if (fromLive.is(Dead) || live(to).is(Dead))
               deadLink()
 
             if (unconstrain)
@@ -429,9 +429,9 @@ object Graphs {
 
       val reqsByReqType = {
         var x = reqs.reqsByType
-        if (fd :: HideDead)
+        if (fd is HideDead)
           for (rt <- x.keys)
-            x = x.mod(rt, _.filter(_.live(reqTypes) :: Live))
+            x = x.mod(rt, _.filter(_.live(reqTypes) is Live))
         x
       }
 
@@ -462,7 +462,7 @@ object Graphs {
               if (fd.filter(fromLive))
                 flow(fromId, fromLive, filterIdSet(toIds), Live)
             case ShowDead =>
-              val (l, d) = toIds.partition(live(_) :: Live)
+              val (l, d) = toIds.partition(live(_) is Live)
               flow(fromId, fromLive, l, Live)
               flow(fromId, fromLive, d, Dead)
           }

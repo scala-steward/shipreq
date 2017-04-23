@@ -76,7 +76,7 @@ object SelectionCtrls {
               delReqs += r
 
             case ReqRow(r, Dead, _, _, _) =>
-              if (r.allowLiveChange(p.cfg.reqTypes) :: Allow)
+              if (r.allowLiveChange(p.cfg.reqTypes) is Allow)
                 resReqs += r
 
             case r: ReqCodeGroupRow =>

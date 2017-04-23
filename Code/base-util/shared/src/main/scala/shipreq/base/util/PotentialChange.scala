@@ -65,7 +65,7 @@ sealed abstract class PotentialChange[+E, +A] {
 
   final def compare(f: A => Permission): PotentialChange[E, A] =
     this match {
-      case Success(a) if f(a) :: Deny => Unchanged
+      case Success(a) if f(a) is Deny => Unchanged
       case _                          => this
     }
 

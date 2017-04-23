@@ -8,7 +8,7 @@ object Widgets {
   val checkbox: On => VdomTag =
     On.memo(on =>
       <.input.checkbox(
-        ^.checked := (on :: On)))
+        ^.checked := (on is On)))
 
   val checkboxAlwaysOn =
     checkbox(On)(^.readOnly := true, ^.disabled := true)
