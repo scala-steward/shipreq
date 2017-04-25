@@ -1,6 +1,26 @@
 Guidelines for effective React usage
 ====================================
 
+## Misc
+
+Don't embed the types of external state in child components, even as abstract type params.
+This is especially relevent when using optics.
+
+For example:
+
+```scala
+// Don't
+case class Props[S](s: StateAccessPure[S], l: Lens[S, MyState])
+
+// Do
+case class Props(s: StateAccessPure[MyState])
+```
+
+This applies when creating Features as well.
+Children should only ask for, and declare what they need.
+It's up to the parents to modify what they have in order to fit the child's requirements.
+
+
 ## Px, Reusability, cache invalidation
 
 This gets a bit difficult which is justified because as they say:
@@ -94,26 +114,35 @@ It sounds stupid and tedious but:
    only end up with huge, obscure lambdas and you'll keep finding with each new usage that it doesn't work and you
    need to modify it all.
 
-I've found that a very useful strategy
+### Structure
 
-Feature
-- Stateless - *asks* for state to be provided by the caller when required
-- Logic
-- Sometimes has (pure) access to feature state.
-  - eg. R/W access with `StateAccessPure[S]`
-  - eg. R access with `CallbackTo[S]`
-  - eg. W access with `S => Callback`
-- Usage style #1
-  - Created by components directly as needed
-  - Not reusable
-- Usage style #2
-  - Created once, passed down to children components
-  - Reusable by reference
-  - All logic must be pure (e.g. `.setState` is fine as long as you return a `Callback`; calling `.runNow()` on a `Callback` on the other hand is impure and a big no-no with reusability)
+* State
+  * A stateful component (preferably the top-most) must add it to its state
+
+* Props
+  * Data passed from stateful component to components that use the feature
+  * Is solely, or contains an instance of the state
+  * May contain addition data to be sourced from other external state
+  * May contain derivative calculations
+
+* Feature and/or Props
+  * Stateless - *asks* for Props to be provided by the caller when required
+  * Logic / DSL
+  * Sometimes has (pure) access to feature state.
+    * eg. R/W access with `StateAccessPure[S]`
+    * eg. R access with `CallbackTo[S]`
+    * eg. W access with `S => Callback`
+
+Why not have Feature instead of just putting all the logic into Props?
+* there might not be a 1:1 correspondence between Feature and Props
+* Props might have Reusability where as Feature might not (really?)
 
 
-State
-- An immutable value
-- Reusable by contents
+### Reusability
 
-Dimensions
+To have reusability throughout the feature,
+only the Props need have Reusability (although in practice that nearly always implies that State have Reusability too).
+That's all there is too it.
+
+When there are large blobs of typically non reusable stuff,
+TODO static, Reusable{#,.}ap
