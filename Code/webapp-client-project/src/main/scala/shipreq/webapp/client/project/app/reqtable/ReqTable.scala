@@ -39,13 +39,13 @@ object ReqTable {
                          pxTextSearch    : Px[TextSearch],
                          pxProjectWidgets: Px[ProjectWidgets],
                          initEditor      : InitEditor,
-                         asyncFeature    : AsyncActionFeature.D2.Feature[Row.SourceId, Column, String],
-                         asyncFeature2   : AsyncActionFeature.D2.Feature[Row.SourceId, Option[Column], String],
+                         asyncFeature    : AsyncActionFeature.Feature.D2[Row.SourceId, Column, String],
+                         asyncFeature2   : AsyncActionFeature.Feature.D2[Row.SourceId, Option[Column], String],
                          reqDetailRC     : RouterCtl[ExternalPubid],
                          state_$         : StateAccessPure[State])
 
   case class DynamicProps(editStates  : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
-                          asyncStates : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Option[Column], String],
+                          asyncStates : AsyncActionFeature.ReadOnly.D2[Row.SourceId, Option[Column], String],
                           preview     : PreviewFeature.Props.Composite[FocusId],
                           state       : State)
 

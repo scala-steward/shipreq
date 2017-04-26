@@ -172,7 +172,7 @@ object ContentEditorFeature {
 
   type AsyncError = String
 
-  type AsyncState = AsyncActionFeature.D0.State[AsyncError]
+  type AsyncState = AsyncActionFeature.ReadOnly.D0[AsyncError]
 
   /**
     * This is not safe for reusability because the implementation calls both `Px#value()` and `CallbackTo#runNow()`.
@@ -209,7 +209,7 @@ object ContentEditorFeature {
 
     object Feature {
       def apply[S, P](static: Static[S, P],
-                      async : AsyncActionFeature.D0.Feature[AsyncError])
+                      async : AsyncActionFeature.Feature.D0[AsyncError])
                      (lens  : Lens[S, State],
                       editor: Option[Editor[P]]): Feature =
         editor match {
@@ -223,7 +223,7 @@ object ContentEditorFeature {
     }
 
     final private class MainFeatureImpl[S, P](static: Static[S, P],
-                                              async : AsyncActionFeature.D0.Feature[AsyncError],
+                                              async : AsyncActionFeature.Feature.D0[AsyncError],
                                               lens  : Lens[S, State],
                                               editor: Editor[P]) extends Feature {
       import static._

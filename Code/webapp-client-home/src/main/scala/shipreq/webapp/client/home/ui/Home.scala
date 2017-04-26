@@ -21,7 +21,7 @@ object Home {
 
   @Lenses
   final case class State(createProjectText: String,
-                         createProjectAAS : AsyncActionFeature.D0.State[String],
+                         createProjectAAS : AsyncActionFeature.ReadOnly.D0[String],
                          projects         : ProjectCatalogue)
 
   final class Backend($: BackendScope[Props, State]) {
@@ -29,8 +29,8 @@ object Home {
     val setCreateProjectText: String ~=> Callback =
       Reusable.fn.state($ zoomStateL State.createProjectText).set
 
-    val createProjectAAF =
-      AsyncActionFeature.D0.Feature[String]($ zoomStateL State.createProjectAAS)
+    val createProjectAAF: AsyncActionFeature.Feature.D0[String] =
+      AsyncActionFeature.Feature.D0.init($ zoomStateL State.createProjectAAS)
 
     def addProject(i: ProjectCatalogue.Item): Callback =
       $.modState(State.projects.modify(p => ProjectCatalogue(p.items :+ i)))
@@ -55,7 +55,7 @@ object Home {
   }
 
   val Component = ScalaComponent.builder[Props]("Home")
-    .initialStateFromProps(p => State("", AsyncActionFeature.D0.initState, p.data.projects))
+    .initialStateFromProps(p => State("", AsyncActionFeature.State.initD0, p.data.projects))
     .renderBackend[Backend]
     .build
 }
@@ -67,7 +67,7 @@ object HomeContent {
   final case class Props(username         : Username,
                          projects         : ProjectCatalogue,
                          createProjectText: StateSnapshot[String],
-                         createProjectAS  : AsyncActionFeature.D0.State[String],
+                         createProjectAS  : AsyncActionFeature.ReadOnly.D0[String],
                          createProjectIO  : String => Callback) {
     @inline def render = Component(this)
   }

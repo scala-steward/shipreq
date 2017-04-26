@@ -78,9 +78,9 @@ object UseCaseStepRow {
                            live           : Live,
                            loc            : VectorTree.Location,
                            canShiftRight  : Permission,
-                           ctrlsAsyncState: AsyncActionFeature.D0.State[Any],
+                           ctrlsAsyncState: UseCaseStepControls.AsyncState,
                            runCtrl        : UpdateContentCmd.ForUseCaseStep ~=> Callback,
-                           addAsyncState  : AsyncActionFeature.D0.State[Any],
+                           addAsyncState  : UseCaseStepControls.AsyncState,
                            runAdd         : UpdateContentCmd.AddUseCaseStep ~=> Callback) {
       @inline def render = Component(this)
     }

@@ -21,6 +21,7 @@ import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.test._
 import shipreq.webapp.client.project.widgets.high.ProjectWidgets
 import utest._
+import AsyncActionFeature.Implicits._
 import TestState.{scalazEqualFromTestState => _, _}
 import SampleProject.Values._
 
@@ -33,7 +34,7 @@ object ReqTableTest extends TestSuite {
 
   @Lenses
   case class State(editStates  : ContentEditorFeature.D2.State.Simple[Row.SourceId, EditFieldKey],
-                   asyncStates : AsyncActionFeature.D2.State.Simple[Row.SourceId, EditFieldKey, String],
+                   asyncStates : AsyncActionFeature.State.D2[Row.SourceId, EditFieldKey, String],
                    previewState: PreviewFeature.State[FocusId],
                    reqTable    : ReqTable.State)
 
@@ -58,7 +59,7 @@ object ReqTableTest extends TestSuite {
 
     def initialState = State(
       ContentEditorFeature.D2.State.init,
-      AsyncActionFeature.D2.State.init,
+      AsyncActionFeature.State.initD2,
       PreviewFeature.State.init,
       ReqTable.State.init(cd, HideDead, None))
 
@@ -71,8 +72,8 @@ object ReqTableTest extends TestSuite {
 
     val reqTableComponent = {
 
-      val asyncFeature: AsyncActionFeature.D2.Feature[Row.SourceId, EditFieldKey, String] =
-        AsyncActionFeature.D2.Feature($ zoomStateL State.asyncStates)
+      val asyncFeature: AsyncActionFeature.Feature.D2[Row.SourceId, EditFieldKey, String] =
+        AsyncActionFeature.Feature.D2.init($ zoomStateL State.asyncStates)
 
       def initReqTableEditor: ReqTable.InitEditor = {
         import ContentEditorFeature._
@@ -101,7 +102,7 @@ object ReqTableTest extends TestSuite {
       val s = stateVar.value()
       ReqTable.DynamicProps(
         s.editStates.mapKey1(Column.EditFieldKeyIntersection.reverse),
-        s.asyncStates.mapKey1(Column.EditFieldKeyIntersection.reverse <=> Intersection.toOption),
+        s.asyncStates.toReadOnly.mapKey1(Column.EditFieldKeyIntersection.reverse <=> Intersection.toOption),
         previewFeature toProps s.previewState,
         s.reqTable)
     }

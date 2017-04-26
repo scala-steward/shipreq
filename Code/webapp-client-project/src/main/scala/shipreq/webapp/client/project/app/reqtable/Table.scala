@@ -33,7 +33,7 @@ object Table {
                    colRenderers   : NonEmptyVector[ColumnRenderer],
                    cellEditors    : ContentEditorFeature.D2.Feature[Row, Column],
                    editState      : ContentEditorFeature.D2.State.ReadOnly[Row.SourceId, Column],
-                   asyncState     : AsyncActionFeature.D2.State.ReadOnly[Row.SourceId, Option[Column], String],
+                   asyncState     : AsyncActionFeature.ReadOnly.D2[Row.SourceId, Option[Column], String],
                    selection      : RowSelectionVisible,
                    modViewSettings: EndoFn[ViewSettings] ~=> Callback)
 
@@ -151,7 +151,7 @@ object Table {
                       crs        : NonEmptyVector[ColumnRenderer],
                       cellEditors: ContentEditorFeature.D2.Feature[Row, Column],
                       editState  : ContentEditorFeature.D1.State.ReadOnly[Column],
-                      asyncState : AsyncActionFeature.D1.State.ReadOnly[Option[Column], String],
+                      asyncState : AsyncActionFeature.ReadOnly.D1[Option[Column], String],
                       selection  : RowSelectionVisible)
 
   implicit val rowPropReuse = Reusability.never[RowProps] // TODO .caseClass[RowProps]
@@ -203,10 +203,11 @@ object Table {
       <.tr(td(renderLocked), colCells)
     }
 
+    import AsyncActionFeature.Status
     p.asyncState(None) match {
-      case None                                       => renderRowNormal
-      case Some(AsyncActionFeature.Locked)            => renderRowLocked
-      case Some(s: AsyncActionFeature.Failed[String]) =>
+      case None                           => renderRowNormal
+      case Some(Status.Locked)            => renderRowLocked
+      case Some(s: Status.Failed[String]) =>
         // Currently, whole-row state is only used when a row is being deleted/restored.
         // To save dev-time, if the RPC fails an alert popups asking to retry/cancel, thus this part of the code
         // should only execute when the row is locked. Whole-row editing + failure won't occur.
@@ -216,7 +217,7 @@ object Table {
             <.div(
               s.failure,
               <.button("Retry", ^.onClick --> s.retry),
-              <.button("Abort", ^.onClick --> s.resumeEdit))))
+              <.button("Abort", ^.onClick --> s.cancel))))
     }
   }
 
@@ -237,7 +238,7 @@ object Table {
                        cr         : ColumnRenderer,
                        cellEditors: ContentEditorFeature.D2.Feature[Row, Column],
                        editState  : ContentEditorFeature.D0.State,
-                       asyncState : AsyncActionFeature.D0.State[String]) {
+                       asyncState : AsyncActionFeature.ReadOnly.D0[String]) {
     def column = cr.column
     def startEdit: Option[Callback] = cellEditors(row)(column).startEdit(project)
   }

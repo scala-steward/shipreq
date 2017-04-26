@@ -54,9 +54,8 @@ object ReqDetail {
                           state     : StateSnapshot[State])
 
   case class ReqProps(initEditor  : InitEditor,
-                      asyncFeature: AsyncActionFeature  .D1.Feature[Cell, String],
                       edit        : ContentEditorFeature.D1.State.ReadOnly[Cell],
-                      async       : AsyncActionFeature  .D1.State.ReadOnly[Cell, String])
+                      async       : AsyncActionFeature.Props.D1[Cell, String])
 
   type State = Modal.State
 
@@ -190,7 +189,7 @@ object ReqDetail {
     val runCmd = Reusable.fn[ReqId, Cell, UpdateContentCmd, Callback](
       (reqId, cell, cmd) =>
         $.props >>= (p =>
-          p.reqProps(reqId).asyncFeature(cell)((s, f) =>
+          p.reqProps(reqId).async.feature(cell)((s, f) =>
             updateIO(cmd, s, f))))
 
     def setModal(modal: Modal.State): Callback =
@@ -202,7 +201,7 @@ object ReqDetail {
     type EditFeature = ContentEditorFeature.D1.Feature[Cell]
 
     def createEditFeature(initEditor  : InitEditor,
-                          asyncFeature: AsyncActionFeature.D1.Feature[Cell, String],
+                          asyncFeature: AsyncActionFeature.Feature.D1[Cell, String],
                           data        : Data): EditFeature = {
       import ContentEditorFeature._
       import data.req
@@ -261,17 +260,17 @@ object ReqDetail {
       import data.{project, req, pubidText}
 
       val pw          = data.pxProjectWidgets.value()
-      val state       = props.reqProps(req.id)
+      val reqProps    = props.reqProps(req.id)
       val fieldName   = pxFieldNameFn.value()
-      val editFeature = createEditFeature(state.initEditor, state.asyncFeature, data)
+      val editFeature = createEditFeature(reqProps.initEditor, reqProps.async.feature, data)
       val runCmd      = this.runCmd(req.id)
 
       def renderAsyncEditorOrValue(cell: Cell, view: => TagMod): TagMod = {
         def startEdit    = editFeature(cell).startEdit(project)
         def editableView = TagMod(EditTheme.editableInline(startEdit), view)
-        val async        = state.async(cell)
-        val editor       = state.edit(cell)
-        editor.renderOr(async)(editableView)
+        val async        = reqProps.async(cell)
+        val editor       = reqProps.edit(cell)
+        editor.renderOr(async.state)(editableView)
       }
 
       def renderHeader: VdomElement = {
@@ -419,7 +418,13 @@ object ReqDetail {
             pw.useCaseStep(live, textAndFlow))
 
         UseCaseStepTree.Props(
-          ucData.uc, stepData, data.filterDead, project.reqs.useCases.stepFlow, renderBody, state.async, runCmd)
+          ucData.uc,
+          stepData,
+          data.filterDead,
+          project.reqs.useCases.stepFlow,
+          renderBody,
+          reqProps.async.state,
+          runCmd)
           .render
       }
 

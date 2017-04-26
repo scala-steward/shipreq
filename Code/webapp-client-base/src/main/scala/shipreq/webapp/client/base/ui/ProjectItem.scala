@@ -78,7 +78,7 @@ object ProjectItem {
     //   Reusability.caseClass
 
     @Lenses
-    case class EditState(edit: String, async: AsyncActionFeature.D0.State[String])
+    case class EditState(edit: String, async: AsyncActionFeature.State.D0[String])
 
     type State = Option[EditState]
     object State {
