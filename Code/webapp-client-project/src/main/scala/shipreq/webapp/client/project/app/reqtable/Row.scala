@@ -4,9 +4,7 @@ import japgolly.scalajs.react.Key
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import monocle.{Lens, Optional}
-import monocle.function.Index._
 import monocle.macros.Lenses
-import scala.scalajs.js
 import scalaz.{Equal, Monoid, Semigroup}
 import scalaz.std.map._
 import scalaz.syntax.semigroup._
@@ -14,6 +12,7 @@ import shipreq.base.util.{Backwards, Direction, Forwards, Vector1}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ReqCodeTreeItem
+import shipreq.webapp.client.base.lib.DataReusability._
 
 /**
  * Replacement values for a requirement at a specific row.
@@ -164,7 +163,7 @@ object Row {
   implicit def idEqualityR  : UnivEq[ReqRowId]          = UnivEq.derive
   implicit def idEqualityG  : UnivEq[ReqCodeGroupRowId] = UnivEq.derive
   implicit def idEquality   : UnivEq[Id]                = UnivEq.derive
-  implicit val idReusability: Reusability[Id]           = Reusability.byEqual
+  implicit val idReusability: Reusability[Id]           = Reusability.byUnivEq
 
   // ===================================================================================================================
 
@@ -178,14 +177,14 @@ object Row {
   implicit def sourceIdEqualityR  : UnivEq[ReqRowSourceId]          = UnivEq.derive
   implicit def sourceIdEqualityG  : UnivEq[ReqCodeGroupRowSourceId] = UnivEq.derive
   implicit def sourceIdEquality   : UnivEq[SourceId]                = UnivEq.derive
-  implicit val sourceIdReusability: Reusability[SourceId]           = Reusability.byEqual
+  implicit val sourceIdReusability: Reusability[SourceId]           = Reusability.byUnivEq
 
   // ===================================================================================================================
 
   implicit def rowEqualityR  : UnivEq[ReqRow]            = UnivEq.derive
   implicit def rowEqualityG  : UnivEq[ReqCodeGroupRow]   = UnivEq.derive
   implicit def rowEquality   : UnivEq[Row]               = UnivEq.derive
-  implicit val rowReusability: Reusability[Row]          = Reusability.byRefOrEqual
+  implicit val rowReusability: Reusability[Row]          = Reusability.byRefOrUnivEq
 
   val expansion = Optional[Row, Expansion] {
     case r: ReqRow          => Some(r.exp)
