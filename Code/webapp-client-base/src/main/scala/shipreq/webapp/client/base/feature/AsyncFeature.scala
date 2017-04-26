@@ -319,5 +319,9 @@ object AsyncFeature {
       def mapKey1[J](i: Intersection[K1, J]): D2[K2, J, F] =
         D2(feature.mapKey1(i), state.mapKey1(i))
     }
+
+    implicit def reusabilityD0[F]        : Reusability[D0[F]]         = Reusability.caseClass
+    implicit def reusabilityD1[K, F]     : Reusability[D1[K, F]]      = Reusability.caseClass
+    implicit def reusabilityD2[K2, K1, F]: Reusability[D2[K2, K1, F]] = Reusability.caseClass
   }
 }
