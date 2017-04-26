@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import monocle._
+import scalaz.{-\/, \/, \/-}
 
 /**
   * +--------+     +--------+     +--------+
@@ -63,6 +64,22 @@ abstract class Intersection[A, B] {
 
   def strengthR[R]: Intersection[(A, R), (B, R)] = {
     def lift[X, Y](f: X => Option[Y]): ((X, R)) => Option[(Y, R)] = xr => f(xr._1).map((_, xr._2))
+    Intersection(lift(getOption))(lift(reverse.getOption))
+  }
+
+  def choiceL[L]: Intersection[L \/ A, L \/ B] = {
+    def lift[X, Y](f: X => Option[Y]): L \/ X => Option[L \/ Y] = {
+      case l@ -\/(_) => Some(l)
+      case \/-(_) => None
+    }
+    Intersection(lift(getOption))(lift(reverse.getOption))
+  }
+
+  def choiceR[R]: Intersection[A \/ R, B \/ R] = {
+    def lift[X, Y](f: X => Option[Y]): X \/ R => Option[Y \/ R] = {
+      case r@ \/-(_) => Some(r)
+      case -\/(_) => None
+    }
     Intersection(lift(getOption))(lift(reverse.getOption))
   }
 }
