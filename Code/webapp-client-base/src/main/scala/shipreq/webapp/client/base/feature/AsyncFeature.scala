@@ -4,9 +4,11 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.MonocleReact._
+import japgolly.univeq.UnivEq
 import scala.reflect.ClassTag
 import shipreq.base.util.{Intersection, Optics}
 import shipreq.webapp.client.base.data.TCB
+import shipreq.webapp.client.base.lib.DataReusability._
 
 /** Provides the following functionality around async actions:
   *
@@ -92,13 +94,13 @@ object AsyncFeature {
 
   /** This is only to be used when creating the top-most State object */
   object State {
-    type D0[+F] = Option[Status[F]]
-    type D1[K, +F] = Map[K, Status[F]]
+    type D0[+F]         = Option[Status[F]]
+    type D1[K, +F]      = Map[K, Status[F]]
     type D2[K2, K1, +F] = Map[K2, D1[K1, F]]
 
-    def initD0: D0[Nothing] = None
-    def initD1[K]: D1[K, Nothing] = Map.empty
-    def initD2[K2, K1]: D2[K2, K1, Nothing] = Map.empty
+    def initD0                        : D0[Nothing]         = None
+    def initD1[K: UnivEq]             : D1[K, Nothing]      = UnivEq.emptyMap
+    def initD2[K2: UnivEq, K1: UnivEq]: D2[K2, K1, Nothing] = UnivEq.emptyMap
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -219,10 +221,12 @@ object AsyncFeature {
         def mapKey[J](j: Intersection[K, J]): D1[J, F]
       }
 
-      def apply[SK: Reusability: ClassTag, K, F]($: Reusable[StateAccessPure[State.D1[SK, F]]],
-                                                 i: Intersection[SK, K]): D1[K, F] =
+      def apply[SK: UnivEq : ClassTag, K, F]($: Reusable[StateAccessPure[State.D1[SK, F]]],
+                                             i: Intersection[SK, K]): D1[K, F] =
         // Doesn't factor Intersection into reusability because they're coherent
         $.map(_ => new Interface[K, F] {
+          implicit val reusabilityK = Reusability.byUnivEq[SK]
+
           override def apply(k: K): D0[F] =
             i.reverse.fold[D0[F]](k,
               sk => D0(Reusable.ap($, Reusable.implicitly(sk))(($, sk) =>
@@ -252,11 +256,13 @@ object AsyncFeature {
         def setBulk(k2s: Iterable[K2], k1: K1, value: => State.D0[F]): Callback
       }
 
-      def apply[SK2: Reusability : ClassTag, SK1: Reusability : ClassTag, K2, K1, F]($: Reusable[StateAccessPure[State.D2[SK2, SK1, F]]],
-                                                                                     i2: Intersection[SK2, K2],
-                                                                                     i1: Intersection[SK1, K1]): D2[K2, K1, F] =
+      def apply[SK2: UnivEq : ClassTag, SK1: UnivEq : ClassTag, K2, K1, F]($: Reusable[StateAccessPure[State.D2[SK2, SK1, F]]],
+                                                                           i2: Intersection[SK2, K2],
+                                                                           i1: Intersection[SK1, K1]): D2[K2, K1, F] =
         // Doesn't factor Intersections into reusability because they're coherent
         $.map(_ => new Interface[K2, K1, F] {
+          implicit val reusabilityK2 = Reusability.byUnivEq[SK2]
+
           def lensAt(sk2: SK2) = Optics.innerMap[SK2, SK1, Status[F]](sk2)
 
           override def apply(k: K2): D1[K1, F] =
@@ -289,7 +295,7 @@ object AsyncFeature {
 
         })
 
-      def init[K2: Reusability : ClassTag, K1: Reusability : ClassTag, F]($: StateAccessPure[State.D2[K2, K1, F]]): D2[K2, K1, F] =
+      def init[K2: UnivEq : ClassTag, K1: UnivEq : ClassTag, F]($: StateAccessPure[State.D2[K2, K1, F]]): D2[K2, K1, F] =
         apply(Reusable.byRef($), Intersection.id, Intersection.id)
     }
 
