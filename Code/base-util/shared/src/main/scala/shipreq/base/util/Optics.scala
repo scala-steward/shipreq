@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle._
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
@@ -67,4 +68,13 @@ object Optics {
         case Some(v) => m.updated(k, v)
         case None    => m - k
       })
+
+  def mapValue[K, V](k: K): Lens[Map[K, V], Option[V]] =
+    Lens[Map[K, V], Option[V]](_.get(k))(ov => _.setValueOption(k, ov))
+
+  def mapValueEmpty[K, V](k: K, empty: V)(isEmpty: V => Boolean): Lens[Map[K, V], V] =
+    Lens[Map[K, V], V](_.getOrElse(k, empty))(v => if (isEmpty(v)) _ - k else _.updated(k, v))
+
+  def innerMap[A, B, C](a: A): Lens[Map[A, Map[B, C]], Map[B, C]] =
+    mapValueEmpty[A, Map[B, C]](a, Map.empty)(_.isEmpty)
 }
