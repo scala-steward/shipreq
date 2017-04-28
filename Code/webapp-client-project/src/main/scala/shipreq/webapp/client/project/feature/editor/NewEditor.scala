@@ -17,87 +17,65 @@ import shipreq.webapp.client.project.feature.PreviewFeature
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.high.ProjectWidgets
-import EditorFeature.{AsyncError, AsyncState, Editor, State}
+import EditorFeature.{AsyncError, AsyncState, Editor, State, PreviewId}
 
-/** A command to start a new editor.
-  *
-  * @tparam P Id used in [[shipreq.webapp.client.project.feature.PreviewFeature]].
-  */
-sealed abstract class NewEditorCmd[+P]
+/** A command to start a new editor. */
+sealed abstract class NewEditorCmd
 object NewEditorCmd {
-  case class CustomTextField[+P](id: ReqId, field: CustomField.Text.Id, focusId: P)         extends NewEditorCmd[P]
-  case class ReqCode            (id: ReqCodeId)                                             extends NewEditorCmd[Nothing]
-  case class ReqCodes           (id: ReqId)                                                 extends NewEditorCmd[Nothing]
-  case class ReqType            (id: GenericReqId)                                          extends NewEditorCmd[Nothing]
-  case class Implications       (id: ReqId, scope: CustomField.Implication.Id \/ Direction) extends NewEditorCmd[Nothing]
-  case class Tags               (id: ReqId, field: Option[CustomField.Tag.Id])              extends NewEditorCmd[Nothing]
-  case class Title          [+P](id: ReqCodeId \/ ReqId, focusId: P)                        extends NewEditorCmd[P]
-  case class UseCaseStep    [+P](id: UseCaseStepId, focusId: P)                             extends NewEditorCmd[P]
+  case class CustomTextField(id: ReqId, field: CustomField.Text.Id, pid: PreviewId)     extends NewEditorCmd
+  case class ReqCode        (id: ReqCodeId)                                             extends NewEditorCmd
+  case class ReqCodes       (id: ReqId)                                                 extends NewEditorCmd
+  case class ReqType        (id: GenericReqId)                                          extends NewEditorCmd
+  case class Implications   (id: ReqId, scope: CustomField.Implication.Id \/ Direction) extends NewEditorCmd
+  case class Tags           (id: ReqId, field: Option[CustomField.Tag.Id])              extends NewEditorCmd
+  case class Title          (id: ReqCodeId \/ ReqId, pid: PreviewId)                    extends NewEditorCmd
+  case class UseCaseStep    (id: UseCaseStepId, pid: PreviewId)                         extends NewEditorCmd
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-/** For a specific type of Row and associated Cell, provides a function (∀P) that
+/** For a specific type of Row and associated Cell, provides a function that
   * requests a value specific to the Row/Cell combination,
   * and (if legal), returns a command to create a new editor.
   */
 sealed trait MakeNewEditorCmd[R <: RowKey, C <: R#CellKeyConstraint] {
-  type Input[P]
-  def apply[P](row: R, cell: C): Input[P] => Option[NewEditorCmd[P]]
-  // def apply[P](row: R, cell: C): Option[Input[P] => NewEditorCmd[P]]
+  def apply(row: R, cell: C): Option[NewEditorCmd]
 }
 
 object MakeNewEditorCmd {
-  type Nullary [R <: RowKey, C <: R#CellKeyConstraint] = MakeNewEditorCmd[R, C] { type Input[P] = Unit }
-  type HasFocus[R <: RowKey, C <: R#CellKeyConstraint] = MakeNewEditorCmd[R, C] { type Input[P] = P }
-
-  private trait Poly {
-    def fn[A]: A => NewEditorCmd[A]
-  }
-
-  private def hasFocus[R <: RowKey, C <: R#CellKeyConstraint](f: (R, C) => Poly): HasFocus[R, C] =
+  private def apply[R <: RowKey, C <: R#CellKeyConstraint](f: (R, C) => Option[NewEditorCmd]): MakeNewEditorCmd[R, C] =
     new MakeNewEditorCmd[R, C] {
-      override type Input[P] = P
-      override def apply[P](row: R, cell: C) = f(row, cell).fn[P].andThen(Some(_))
+      override def apply(row: R, cell: C) = f(row, cell)
     }
 
-  private def nullary[R <: RowKey, C <: R#CellKeyConstraint](f: (R, C) => Option[NewEditorCmd[Nothing]]): Nullary[R, C] =
-    new MakeNewEditorCmd[R, C] {
-      override type Input[P] = Unit
-      override def apply[P](row: R, cell: C) = _ => f(row, cell)
-    }
+  @inline private implicit def autoSome(a: NewEditorCmd): Option[NewEditorCmd] = Some(a)
 
-  @inline private implicit def autoSome(a: NewEditorCmd[Nothing]): Option[NewEditorCmd[Nothing]] = Some(a)
-
-  implicit val reqCodes = nullary [RowKey.Req, CellKey.Code.type      ]((r, _) => NewEditorCmd.ReqCodes(r.id))
-  implicit val reqTitle = hasFocus[RowKey.Req, CellKey.Title.type     ]((r, _) => new Poly { def fn[P] = NewEditorCmd.Title(\/-(r.id), _) })
-  implicit val reqText  = hasFocus[RowKey.Req, CellKey.CustomTextField]((r, c) => new Poly { def fn[P] = NewEditorCmd.CustomTextField(r.id, c.field, _) })
-  implicit val reqImp   = nullary [RowKey.Req, CellKey.Implications   ]((r, c) => NewEditorCmd.Implications(r.id, c.scope))
-  implicit val reqTags  = nullary [RowKey.Req, CellKey.Tags           ]((r, c) => NewEditorCmd.Tags(r.id, c.field))
-  implicit val reqType  = nullary [RowKey.Req, CellKey.ReqType.type   ]((r, _) =>
+  implicit val reqCodes = apply[RowKey.Req, CellKey.Code.type      ]((r, _) => NewEditorCmd.ReqCodes(r.id))
+  implicit val reqTitle = apply[RowKey.Req, CellKey.Title.type     ]((r, c) => NewEditorCmd.Title(\/-(r.id), PreviewId(r, c)))
+  implicit val reqText  = apply[RowKey.Req, CellKey.CustomTextField]((r, c) => NewEditorCmd.CustomTextField(r.id, c.field, PreviewId(r, c)))
+  implicit val reqImp   = apply[RowKey.Req, CellKey.Implications   ]((r, c) => NewEditorCmd.Implications(r.id, c.scope))
+  implicit val reqTags  = apply[RowKey.Req, CellKey.Tags           ]((r, c) => NewEditorCmd.Tags(r.id, c.field))
+  implicit val reqType  = apply[RowKey.Req, CellKey.ReqType.type   ]((r, _) =>
     r.id match {
       case i: GenericReqId => Some(NewEditorCmd.ReqType(i))
       case _: UseCaseId    => None
     })
 
-  implicit val rcgCode  = nullary [RowKey.ReqCodeGroup, CellKey.Code.type ]((r, _) => NewEditorCmd.ReqCode(r.id))
-  implicit val rcgTitle = hasFocus[RowKey.ReqCodeGroup, CellKey.Title.type]((r, _) => new Poly { def fn[P] = NewEditorCmd.Title(-\/(r.id), _) })
+  implicit val rcgCode  = apply[RowKey.ReqCodeGroup, CellKey.Code.type ]((r, _) => NewEditorCmd.ReqCode(r.id))
+  implicit val rcgTitle = apply[RowKey.ReqCodeGroup, CellKey.Title.type]((r, c) => NewEditorCmd.Title(-\/(r.id), PreviewId(r, c)))
 
-  implicit val useCaseSteps = hasFocus[RowKey.UseCaseSteps.type, CellKey.UseCaseStep](
-    (_, c) => new Poly { def fn[P] = NewEditorCmd.UseCaseStep(c.id, _) })
+  implicit val useCaseSteps = apply[RowKey.UseCaseSteps.type, CellKey.UseCaseStep](
+    (r, c) => NewEditorCmd.UseCaseStep(c.id, PreviewId(r, c)))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-/**
- * @tparam P Preview feature ID.
- */
-final case class Static[P](previewFeature  : PreviewFeature.Feature.Composite[P],
-                           pxProject       : Px[Project],
-                           pxPlainText     : Px[PlainText.ForProject],
-                           pxProjectWidgets: Px[ProjectWidgets],
-                           pxTextSearch    : Px[TextSearch],
-                           saveIO          : ServerCall[UpdateContentCmd])
+final case class Static(previewFeature  : PreviewFeature.Feature.Composite[PreviewId],
+                        pxProject       : Px[Project],
+                        pxPlainText     : Px[PlainText.ForProject],
+                        pxProjectWidgets: Px[ProjectWidgets],
+                        pxTextSearch    : Px[TextSearch],
+                        saveIO          : ServerCall[UpdateContentCmd])
 
 /** Provides an implementation to really start a new editor.
   *
@@ -105,13 +83,13 @@ final case class Static[P](previewFeature  : PreviewFeature.Feature.Composite[P]
   *
   * Meant for internal use only.
   */
-private[editor] final class StartNewEditor[P](static      : Static[P],
-                                              $           : StateAccessPure[State.ForCell],
-                                              asyncFeature: AsyncFeature.Feature.D0[AsyncError],
-                                              newEditorCmd: NewEditorCmd[P]) {
+private[editor] final class StartNewEditor(static      : Static,
+                                           $           : StateAccessPure[State.ForCell],
+                                           asyncFeature: AsyncFeature.Feature.D0[AsyncError],
+                                           newEditorCmd: NewEditorCmd) {
   import static._
 
-  def apply(cb: Callback): Callback =
+  def create(cb: Callback): Callback =
     startFnForCmd.get.flatMap($.setState(_, cb))
 
   private type StartFn = CallbackOption[Editor]
@@ -396,9 +374,9 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
     abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) {
       val T: editor.text.type = editor.text
 
-      protected def start(cmd: T.OptionalText => UpdateContentCmd,
+      protected def start(cmd           : T.OptionalText => UpdateContentCmd,
                           initialValueCB: CallbackOption[T.OptionalText],
-                          focusId: P): StartFn = {
+                          pid           : PreviewId): StartFn = {
 
         val abortCommit: editor.AbortCommit =
           makeAbortCommit(cmd)
@@ -413,12 +391,12 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
           }
 
         startWithStateSnapshot(initCB)(_._2)(
-          i => new State(_, Some(i._1), focusId, abortCommit))
+          i => new State(_, Some(i._1), pid, abortCommit))
       }
 
       private class State(ss         : StateSnapshot[String],
                           initial    : Some[T.OptionalText],
-                          focusId    : P,
+                          pid        : PreviewId,
                           abortCommit: editor.AbortCommit) extends EditorImpl {
 
         override val renderImpl = makeRenderImpl(as =>
@@ -436,42 +414,42 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
             ss,
             EditorStatus.async(as),
             abortCommit,
-            previewFeature(focusId, previewState),
+            previewFeature(pid, previewState),
             initial)
             .render)
       }
     }
 
     object GenericReqTitle extends Base(RichTextEditor.GenericReqTitle) {
-      def apply(id: GenericReqId, focusId: P): StartFn =
+      def apply(id: GenericReqId, pid: PreviewId): StartFn =
         start(
           UpdateContentCmd.SetGenericReqTitle(id, _),
           getGenericReq(id).map(_.title),
-          focusId)
+          pid)
     }
 
     object UseCaseTitle extends Base(RichTextEditor.UseCaseTitle) {
-      def apply(id: UseCaseId, focusId: P): StartFn =
+      def apply(id: UseCaseId, pid: PreviewId): StartFn =
         start(
           UpdateContentCmd.SetUseCaseTitle(id, _),
           getUseCase(id).map(_.title),
-          focusId)
+          pid)
     }
 
     object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {
-      def apply(id: ReqCodeId, focusId: P): StartFn =
+      def apply(id: ReqCodeId, pid: PreviewId): StartFn =
         start(
           UpdateContentCmd.SetReqCodeGroupTitle(id, _),
           getReqCodeGroup(id).map(_.title).widen,
-          focusId)
+          pid)
     }
 
     object CustomTextField extends Base(RichTextEditor.CustomTextField) {
-      def apply(id: ReqId, fid: CustomField.Text.Id, focusId: P): StartFn =
+      def apply(id: ReqId, fid: CustomField.Text.Id, pid: PreviewId): StartFn =
         start(
           UpdateContentCmd.SetCustomTextField(id, fid, _),
           pxProject.toCallback.map(p => ReqData.textAt(fid, id).get(p.reqText)).toCBO,
-          focusId)
+          pid)
     }
   }
 
@@ -481,7 +459,7 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
     import shipreq.webapp.client.project.widgets.high.UseCaseStepEditor
     import UseCaseStepFlowText.TextAndFlow
 
-    def apply(id: UseCaseStepId, focusId: P): StartFn = {
+    def apply(id: UseCaseStepId, pid: PreviewId): StartFn = {
 
       val commitFn: UseCaseStepEditor.CommitFn =
         Reusable.fn(v => commit(UpdateContentCmd.UpdateUseCaseStep(id, v)))
@@ -500,12 +478,12 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
         }
 
         startWithStateSnapshot(pxInit.toCallback.toCBO)(_._2)(
-          i => new State(_, Some(i._1), focusId, commitFn))
+          i => new State(_, Some(i._1), pid, commitFn))
     }
 
     private class State(ss     : StateSnapshot[String],
                         initial: Some[UseCaseStepEditor.InitialValue],
-                        focusId: P,
+                        pid    : PreviewId,
                         commit : UseCaseStepEditor.CommitFn) extends EditorImpl {
 
       override val renderImpl = makeRenderImpl(as =>
@@ -524,7 +502,7 @@ private[editor] final class StartNewEditor[P](static      : Static[P],
           EditorStatus.async(as),
           abort,
           commit,
-          previewFeature(focusId, previewState),
+          previewFeature(pid, previewState),
           initial)
           .render)
     }
