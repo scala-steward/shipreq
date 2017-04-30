@@ -52,13 +52,13 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val asyncFeature: AsyncFeature.Feature.D2[EditorFeature.RowKey, AsyncKey, String] =
       AsyncFeature.Feature.D2.init($ zoomStateL State.async)
 
-    val previewFeature: PreviewFeature.Feature.Composite[FocusId] =
+    val previewFeature: PreviewFeature.Feature.Composite[PreviewId] =
       PreviewFeature.Feature.Composite.init($ zoomStateL State.preview)
 
     val editorFeature: EditorFeature.Write.ForProject =
       EditorFeature.Write.ForProject(
         EditorFeature.Static(
-          previewFeature.mapId(FocusId.ToEditor),
+          previewFeature.mapId(PreviewId.ToEditor),
           pxProject,
           pxPlainText,
           pxProjectWidgets,
@@ -177,7 +177,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
             ReqTable.DynamicProps(
               editorProps,
               asyncState.mapKey2(reqtable.Row.SourceIdToEditorRow.reverse).mapKey1(AsyncKey.ToReqTable2),
-              previewProps.mapId(FocusId.ToReqTable),
+              previewProps.mapId(PreviewId.ToReqTable),
               s.reqTable))
 
         case Page.ReqDetail(pubid) =>

@@ -32,7 +32,7 @@ object CreationInterface {
 
   case class Props(createIO: ServerCall[CreateContentCmd],
                    state   : State,
-                   preview : PreviewFeature.Props.Composite[FocusId])
+                   preview : PreviewFeature.Props.Composite[PreviewId])
 
   @Lenses
   case class State(selectedType: SelType,
@@ -142,7 +142,7 @@ class CreationInterface($               : StateAccessPure[State],
     val setReqCode = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.reqCode).set
     val setTitle   = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.title  ).set
 
-    val titleFocus = FocusId.InCI(ReqCodeGroupType, Column.Title)
+    val titleFocus = PreviewId.InCI(ReqCodeGroupType, Column.Title)
 
     def render(p: Props) = {
       import Px.AutoValue._
@@ -270,7 +270,7 @@ class CreationInterface($               : StateAccessPure[State],
 
     type Props = (CreationInterface.Props, CustomReqTypeId)
 
-    val titleFocus = FocusId.InCI(GenericReqType(CustomReqTypeId(-1)), Column.Title)
+    val titleFocus = PreviewId.InCI(GenericReqType(CustomReqTypeId(-1)), Column.Title)
 
     def render(pp: Props) = {
       import Px.AutoValue._
@@ -324,7 +324,7 @@ class CreationInterface($               : StateAccessPure[State],
 
     type Props = CreationInterface.Props
 
-    val titleFocus = FocusId.InCI(UseCaseType, Column.Title)
+    val titleFocus = PreviewId.InCI(UseCaseType, Column.Title)
 
     def render(p: Props) = {
       import Px.AutoValue._

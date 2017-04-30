@@ -40,7 +40,7 @@ object ReqTable {
 
   case class DynamicProps(editor      : EditorFeature.Props.ForProject,
                           asyncStates : AsyncFeature.ReadOnly.D2[Row.SourceId, Option[Column], String],
-                          preview     : PreviewFeature.Props.Composite[FocusId],
+                          preview     : PreviewFeature.Props.Composite[PreviewId],
                           state       : State)
 
   @Lenses

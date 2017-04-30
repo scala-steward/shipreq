@@ -15,28 +15,30 @@ import shipreq.webapp.client.project.lib.DataReusability._
 import reqdetail.ReqDetail
 import reqtable.ReqTable
 
-sealed trait FocusId // TODO Rename all of this to PreviewId
-object FocusId {
+sealed trait PreviewId
+object PreviewId {
 
-  case class Editor(id: EditorFeature.PreviewId) extends FocusId
-  case class ReqTableCI(value: reqtable.FocusId.InCI) extends FocusId
+  case class Editor(id: EditorFeature.PreviewId) extends PreviewId
+  case class ReqTableCI(value: reqtable.PreviewId.InCI) extends PreviewId
 
-  implicit def equality: UnivEq[FocusId] = UnivEq.derive
-  implicit val reusability: Reusability[FocusId] = Reusability.byUnivEq
+  implicit def equality: UnivEq[PreviewId] = UnivEq.derive
+  implicit val reusability: Reusability[PreviewId] = Reusability.byUnivEq
 
-  val ToReqTable = Intersection[FocusId, reqtable.FocusId] {
-    case Editor(e)     => Some(reqtable.FocusId.InEditor(e))
+  val ToReqTable = Intersection[PreviewId, reqtable.PreviewId] {
+    case Editor(e)     => Some(reqtable.PreviewId.InEditor(e))
     case ReqTableCI(a) => Some(a)
   } {
-    case reqtable.FocusId.InEditor(e) => Some(Editor(e))
-    case a: reqtable.FocusId.InCI     => Some(ReqTableCI(a))
+    case reqtable.PreviewId.InEditor(e) => Some(Editor(e))
+    case a: reqtable.PreviewId.InCI     => Some(ReqTableCI(a))
   }
 
-  val ToEditor = Intersection[FocusId, EditorFeature.PreviewId] {
+  val ToEditor = Intersection[PreviewId, EditorFeature.PreviewId] {
     case Editor(e)     => Some(e)
     case ReqTableCI(_) => None
   }(e => Some(Editor(e)))
 }
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 sealed abstract class AsyncKey
 object AsyncKey {
@@ -108,12 +110,14 @@ object AsyncKey {
   }
 }
 
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
 @Lenses
 case class State(projectName : ProjectItem.WithEditableName.State,
                  reqLookup   : String,
                  editors     : EditorFeature.State.ForProject,
                  async       : AsyncFeature.State.D2[EditorFeature.RowKey, AsyncKey, EditorFeature.AsyncError],
-                 preview     : PreviewFeature.State[FocusId],
+                 preview     : PreviewFeature.State[PreviewId],
                  filterDead  : FilterDead,
                  reqTable    : ReqTable.State,
                  reqDetail   : ReqDetail.State)

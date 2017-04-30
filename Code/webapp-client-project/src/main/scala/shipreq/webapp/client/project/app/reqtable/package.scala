@@ -30,12 +30,12 @@ package object reqtable {
 
   // -----------------------------------------------------------------------------------------------
 
-  sealed trait FocusId
-  object FocusId {
-    case class InEditor(id: EditorFeature.PreviewId) extends FocusId
-    case class InCI(typ: CreationInterface.Type, col: Column) extends FocusId
+  sealed trait PreviewId
+  object PreviewId {
+    case class InEditor(id: EditorFeature.PreviewId) extends PreviewId
+    case class InCI(typ: CreationInterface.Type, col: Column) extends PreviewId
     implicit def equalityCI: UnivEq[InCI] = UnivEq.derive
-    implicit def equality: UnivEq[FocusId] = UnivEq.derive
-    implicit def reusability: Reusability[FocusId] = Reusability.byUnivEq
+    implicit def equality: UnivEq[PreviewId] = UnivEq.derive
+    implicit def reusability: Reusability[PreviewId] = Reusability.byUnivEq
   }
 }

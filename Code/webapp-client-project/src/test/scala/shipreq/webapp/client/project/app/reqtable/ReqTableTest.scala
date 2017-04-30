@@ -34,13 +34,13 @@ object ReqTableTest extends TestSuite {
   @Lenses
   case class State(editors : EditorFeature.State.ForProject,
                    async   : AsyncFeature.State.D2[Row.SourceId, Option[Column], String],
-                   preview : PreviewFeature.State[FocusId],
+                   preview : PreviewFeature.State[PreviewId],
                    reqTable: ReqTable.State)
 
-  val FocusIdToEditor = Intersection[FocusId, EditorFeature.PreviewId] {
-    case FocusId.InEditor(e) => Some(e)
-    case FocusId.InCI(_, _) => None
-  }(e => Some(FocusId.InEditor(e)))
+  val PreviewIdToEditor = Intersection[PreviewId, EditorFeature.PreviewId] {
+    case PreviewId.InEditor(e) => Some(e)
+    case PreviewId.InCI(_, _) => None
+  }(e => Some(PreviewId.InEditor(e)))
 
   def runTest(plan: *.Plan): Unit =
     runTest(plan, false)
@@ -84,7 +84,7 @@ object ReqTableTest extends TestSuite {
     val editorFeature: EditorFeature.Write.ForProject =
       EditorFeature.Write.ForProject(
         EditorFeature.Static(
-          previewFeature.mapId(FocusIdToEditor),
+          previewFeature.mapId(PreviewIdToEditor),
           pxProject,
           pxPlainText,
           pxProjectWidgets,
