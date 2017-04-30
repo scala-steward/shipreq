@@ -9,7 +9,7 @@ import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{NodeSeq, Text}
 import scalaz.{Name, Need}
 import shipreq.base.util.Memo
-import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.base.{URLs, WebappConfig}
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.feature.{DiagnosticEndpoints, SessionStats}
 import shipreq.webapp.server.security.Permission.RequestVarPermExt
@@ -33,7 +33,7 @@ object AppSiteMap {
   // Menu.param[PARAM_TYPE(S)](NAME, TITLE, URL_TO_PARAM, PARAM_TO_URL) / PATH_FOR_URL_AND_TEMPLATE
 
   val Home =
-    pageWithStaticUrl("home", defaultTitle, "Home")(_ / "index"
+    pageWithStaticUrl("home", defaultTitle, "Home")(_ / URLs.ForLift.memberHome
       >> UseEitherTemplate(Oshiro.isAuthenticated(), "members/home")(landingPageTemplate))
 
   val LandingPageViaBusinessCard =
@@ -52,7 +52,7 @@ object AppSiteMap {
     pageWithStaticUrl("login", "Login")(_ / "login" >> UseTemplate("public/login"))
 
   val Logout =
-    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / "logout" >> EarlyResponse(() => logout()))
+    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / URLs.ForLift.logout >> EarlyResponse(() => logout()))
 
   val Register1 =
     pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register" >> UseTemplate("public/register1"))
@@ -76,7 +76,7 @@ object AppSiteMap {
       >> Hidden)
 
   val Project: PM[ProjectId] =
-    (MenuWithIdParam(ProjectId.Extern)("project") / "project" / * / **
+    (MenuWithIdParam(ProjectId.Extern)("project") / URLs.ForLift.project / * / **
       >> StaticTitle(mkTitle("Project"))
       >> AuthenticationRequired >> ProjectPermissionRequired
       >> UseTemplate("members/project")

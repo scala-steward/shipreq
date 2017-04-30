@@ -37,7 +37,7 @@ object MemberNavBar {
 
   private val dropdownLogout =
     Dropdown.Item.Link(
-      <.a(^.href := URLs.PageLogout, "Logout"))
+      <.a(^.href := URLs.logout, "Logout"))
 
   // implicit val reusabilityProps: Reusability[Props] =
   //   Reusability.caseClass
@@ -77,7 +77,7 @@ object MemberNavBar {
   val MemberHome =
     Breadcrumb.Item.Link(
       <.a(
-        ^.href := URLs.PageMemberHome,
+        ^.href := URLs.memberHome,
         ClientConfig.BreadcrumbNameMemberHome))
 
   val Divider =
