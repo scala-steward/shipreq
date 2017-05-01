@@ -299,7 +299,7 @@ object ReqDetail {
           case Row.Code =>
             renderEditor(
               reqEditor(EditorFeature.CellKey.Code),
-              pw.flatReqCodes(data.codes))
+              pw.reqCodes(data.codes))
 
           case Row.ReqType =>
             renderEditor(

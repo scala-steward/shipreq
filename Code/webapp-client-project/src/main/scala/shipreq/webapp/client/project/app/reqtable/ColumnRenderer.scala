@@ -125,9 +125,9 @@ class ColumnRenderers(project: Project, pw: ProjectWidgets) {
   }
 
   private def code = make {
-    case ReqRow(_, _, exp, _, _)        => Render(pw.reqCodes(exp.reqCodeTree, exp.reqCodes))
+    case ReqRow(_, _, exp, _, _)        => Render(if (exp.reqCodeTree.nonEmpty) pw.reqCodeTree(exp.reqCodeTree) else pw.reqCodes(exp.reqCodes))
     case ReqCodeGroupRow(_, _, Some(t)) => Render(pw.reqCodeTreeItem(t))
-    case ReqCodeGroupRow(_, c, None)    => Render(pw.flatReqCode(c))
+    case ReqCodeGroupRow(_, c, None)    => Render(pw.reqCode(c))
   }
 
   private def title = make {

@@ -221,22 +221,14 @@ final class ProjectWidgets private(project    : Project,
       <.pre(*.reqCodeTreeCode, code))
   }
 
-  def reqCodeTree(items: Vector[ReqCodeTreeItem]): TagMod =
-    items toTagMod reqCodeTreeItem
+  def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
+    <.div(items toTagMod reqCodeTreeItem)
 
-  def flatReqCode(c: ReqCode.Value): VdomElement =
+  def reqCode(c: ReqCode.Value): VdomTag =
     <.pre(*.reqCodeFlat, PlainText reqCode c)
 
-  def flatReqCodes(reqCodes: TraversableOnce[ReqCode.Value]): TagMod =
-    reqCodes toTagMod flatReqCode
-
-  def reqCodes(tree: Vector[ReqCodeTreeItem], flat: Vector[ReqCode.Value]): VdomElement =
-    <.div(
-      if (tree.nonEmpty)
-        reqCodeTree(tree)
-      else
-        flatReqCodes(flat)
-    )
+  def reqCodes(reqCodes: TraversableOnce[ReqCode.Value]): VdomTag =
+    <.div(reqCodes toTagMod reqCode)
 
   override def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): VdomTag =
     useCaseStepA(l, s)(useCaseFlowStepsOrdered)

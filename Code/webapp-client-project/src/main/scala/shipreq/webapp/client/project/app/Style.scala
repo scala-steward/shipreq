@@ -559,7 +559,7 @@ object Style extends StyleSheet.Inline {
       background := ^.unset,
       border.none,
       fontSize(12 px),
-      lineHeight(1 em),
+      lineHeight(1.2 em),
       wordBreak.keepAll,
       wordWrap.normal,
       whiteSpace.pre
