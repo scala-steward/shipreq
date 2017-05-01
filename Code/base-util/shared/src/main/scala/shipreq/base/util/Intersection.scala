@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import monocle._
+import scala.annotation.elidable
 import scalaz.{-\/, \/, \/-}
 
 /**
@@ -39,6 +40,18 @@ abstract class Intersection[A, B] {
 
   def fold[C](a: A, f: B => C)(default: => C): C =
     getOption(a).fold(default)(f)
+
+  @inline def foldFlip[C](a: A, default: => C)(f: B => C): C =
+    fold(a, f)(default)
+
+  def foldWarn[C](a: A, f: B => C)(default: => C): C =
+    getOption(a).fold({
+      Intersection.warnDiscard(a)
+      default
+    })(f)
+
+  @inline def foldWarnFlip[C](a: A, default: => C)(f: B => C): C =
+    foldWarn(a, f)(default)
 
   def getOptionMap[C](a: A, f: B => C): Option[C] =
     getOption(a).map(f)
@@ -134,4 +147,8 @@ object Intersection {
 
   def toOption[A]: Intersection[A, Option[A]] =
     apply[A, Option[A]](a => Some(Some(a)))(Identity.apply)
+
+  @elidable(elidable.ASSERTION)
+  def warnDiscard(key: Any): Unit =
+    System.err.println(s"$key is outside intersection.")
 }

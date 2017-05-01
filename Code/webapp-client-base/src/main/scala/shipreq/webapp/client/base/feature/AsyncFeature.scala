@@ -266,10 +266,9 @@ object AsyncFeature {
           def lensAt(sk2: SK2) = Optics.innerMap[SK2, SK1, Status[F]](sk2)
 
           override def apply(k: K2): D1[K1, F] =
-            i2.reverse.fold[D1[K1, F]](k,
-              sk => D1(Reusable.ap($, Reusable.implicitly(sk))(($, sk) =>
-                $.zoomStateL(lensAt(sk))), i1)
-            )(D1.doNothing)
+            i2.reverse.foldFlip[D1[K1, F]](k, D1.doNothing)(sk =>
+              D1(Reusable.ap($, Reusable.implicitly(sk))(($, sk) =>
+                $.zoomStateL(lensAt(sk))), i1))
 
           override def mapKey2[J](i: Intersection[K2, J]): D2[J, K1, F] =
             D2($, i2 <=> i, i1)
@@ -279,19 +278,12 @@ object AsyncFeature {
 
           override def setBulk(k2s: Iterable[K2], k1: K1, value: => State.D0[F]): Callback =
             Callback.unless(k2s.isEmpty)(
-              i1.reverse.getOption(k1) match {
-                case Some(sk1) =>
-                  $.modState { initialState =>
-                    val setValue = value.toMapEntrySetFn[SK1]
-                    k2s.foldLeft(initialState)((s, k2) => i2.reverse.getOption(k2) match {
-                      case Some(sk2) => lensAt(sk2).modify(setValue(_, sk1))(s)
-                      case None      => Dimensions.warnDiscard(k2); s
-                    })
-                  }
-                case None =>
-                  Dimensions.warnDiscard(k1); Callback.empty
-              }
-            )
+              i1.reverse.foldWarnFlip(k1, Callback.empty)(sk1 =>
+                $.modState { initialState =>
+                  val setValue = value.toMapEntrySetFn[SK1]
+                  k2s.foldLeft(initialState)((s, k2) =>
+                    i2.reverse.foldWarnFlip(k2, s)(sk2 =>
+                      lensAt(sk2).modify(setValue(_, sk1))(s) ))}))
 
         })
 
