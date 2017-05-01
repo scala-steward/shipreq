@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.reqdetail
 
 import japgolly.microlibs.nonempty._
-import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -24,8 +23,7 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.protocol.ServerCall
-import shipreq.webapp.client.project.widgets.{FilterDeadButton, LifeButton}
-import shipreq.webapp.client.project.widgets.{DeletionForm, ImplicationGraph, ProjectWidgets, UseCaseStepFlowGraph}
+import shipreq.webapp.client.project.widgets._
 import ExternalPubid.LookupFailure
 
 object ReqDetail {
@@ -99,43 +97,8 @@ object ReqDetail {
 
     val pubidText = PlainText.pubid(req.pubid, project)
 
-    val codeSet = project.reqCodes.activeReqCodesByReqId(req.id)
-    val codes   = MutableArray(codeSet).sortBySchwartzian(PlainText.reqCode).to[List]
-
-    val tagDist        = DataLogic.tagFieldDist(project.config, filterDead, _ => true)
-    val tagLookup      = DataLogic.tagLookup(project, filterDead)
-    val generalTagSet  = DataLogic.generalTags(tagDist, tagLookup)(req.id)
-    val tagOrderByName = DataLogic.tagOrderByName(project.config.tags)
-    val tagOrderByPos  = DataLogic.tagOrderByPos(project.config.tags)
-    val generalTags    = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).to[Vector]
-
-    val customTags: CustomField.Tag.Id => Vector[ApplicableTagId] =
-      Memo { fid =>
-        def tagSet = DataLogic.customFieldTags(tagDist, tagLookup, fid)(req.id)
-        MutableArray(tagSet).sortBy(tagOrderByPos.apply).to[Vector]
-      }
-
-    val pubidSortKeyFn  = DataLogic.pubidSortKeyFn(project.config)
-    val impFilter       = DataLogic.impValueFilter(project.config, filterDead)
-    val customImpLookup = DataLogic.customFieldImps(project, impFilter)
-
-    private def sortPubids(pubids: TraversableOnce[Pubid]): Vector[Pubid] =
-      MutableArray(pubids)
-        .sortBySchwartzian(pubidSortKeyFn)
-        .to[Vector]
-
-    val generalImps: Direction => Vector[Pubid] =
-      Direction.memo(dir =>
-        sortPubids(
-          project.implications(dir)(req.id)
-            .iterator
-            .map(project.reqs.need)
-            .filter(impFilter)
-            .map(_.pubid)))
-
-    val customImps: CustomField.Implication.Id => Vector[Pubid] =
-      Memo(fid =>
-        sortPubids(customImpLookup(fid)(req.id)))
+    val viewData: ViewReq.Data =
+      ViewReq.Data.fromProject(req.id, project, filterDead)
 
     val useCaseData: Option[UseCaseData] =
       req match {
@@ -227,6 +190,10 @@ object ReqDetail {
       val reqEditor = reqProps.editor
       val fieldName = pxFieldNameFn.value()
       val runCmd    = this.runCmd(req.id)
+      val view      = data.viewData(pw)
+
+      def renderEditable(key: EditorFeature.CellKey.ForReq): TagMod =
+        renderEditor(reqEditor(key), view.editable(key))
 
       def renderEditor(editor: EditorFeature.ReadWrite.ForCell, view: => TagMod): TagMod =
         editor.renderOr(TagMod(EditTheme.editableInline(editor.startEdit), view))
@@ -242,7 +209,7 @@ object ReqDetail {
           <.div(*.headerTitle,
             renderEditor(
               reqEditor(EditorFeature.CellKey.Title),
-              Header(hstyle, pw.reqTitle(req)))),
+              Header(hstyle, view.title))),
 
           <.div(*.headerFilterDeadButton,
             FilterDeadButton.whenLive(data.live)(StateSnapshot.withReuse(props.filterDead.value)(setFilterDead))))
@@ -278,54 +245,32 @@ object ReqDetail {
           case Row.Life             => UiText.Life.field
         }
 
-      def renderImpCell(scope: CustomField.Implication.Id \/ Direction, pubids: => Vector[Pubid]) =
-        renderEditor(
-          reqEditor(EditorFeature.CellKey.Implications(scope)),
-          pw.implicationList(pubids))
-
-      // TODO Much much overlap with Table.CellProps
       // TODO Test that this applies applicability
       def renderRowData(row: Row): TagMod = {
         var liveStyle = data.live
 
+        import EditorFeature.CellKey
         val content: TagMod = row match {
 
-          case Row.CustomField(id: CustomField.Text.Id) =>
-            renderEditor(
-              reqEditor(EditorFeature.CellKey.CustomTextField(id)),
-              pw.customTextField(id)(req).fold(emptyRow)(w => w))
-
-          case Row.Code =>
-            renderEditor(
-              reqEditor(EditorFeature.CellKey.Code),
-              pw.reqCodes(data.codes))
+          case Row.CustomField(id: CustomField.Text.Id)        => renderEditable(CellKey.CustomTextField(id))
+          case Row.CustomField(id: CustomField.Tag.Id)         => renderEditable(CellKey.Tags(Some(id)))
+          case Row.CustomField(id: CustomField.Implication.Id) => renderEditable(CellKey.Implications(-\/(id)))
+          case Row.Code                                        => renderEditable(CellKey.Code)
+          case Row.Tags                                        => renderEditable(CellKey.Tags(None))
+          case Row.DeletionReason                              => view.deletionReason
+          case Row.PastPubids                                  => view.pastPubids
 
           case Row.ReqType =>
-            renderEditor(
-              reqEditor(EditorFeature.CellKey.ReqType),
-              pw.reqTypeFull(req.reqTypeId)) // ---- Note for refactoring: reqTypeFull differs from how ReqTable does it
-
-          case Row.Tags =>
-            renderEditor(
-              reqEditor(EditorFeature.CellKey.Tags(None)),
-              pw.tagList(data.generalTags))
-
-          case Row.CustomField(id: CustomField.Tag.Id) =>
-            renderEditor(
-              reqEditor(EditorFeature.CellKey.Tags(Some(id))),
-              pw.tagList(data.customTags(id)))
+            renderEditor(reqEditor(CellKey.ReqType), view.reqTypeFull) // default in view.editable is short
 
           case Row.Implications =>
-            def one(dir: Direction) = renderImpCell(\/-(dir), data.generalImps(dir))
+            def one(dir: Direction) = renderEditable(CellKey.Implications(\/-(dir)))
             <.table(*.generalImpsCont,
               <.tbody(
                 <.tr(
-                  <.td(*.generalImpsSide,
-                    one(Backwards)),
-                  <.td(*.generalImpsMiddle,
-                    s"→ $pubidText →"),
-                  <.td(*.generalImpsSide,
-                    one(Forwards)))))
+                  <.td(*.generalImpsSide, one(Backwards)),
+                  <.td(*.generalImpsMiddle, s"→ $pubidText →"),
+                  <.td(*.generalImpsSide, one(Forwards)))))
 
           case Row.ImplicationGraph =>
             ImplicationGraph.Props(
@@ -336,9 +281,6 @@ object ReqDetail {
               webWorker
             ).render
 
-          case Row.CustomField(id: CustomField.Implication.Id) =>
-            renderImpCell(-\/(id), data.customImps(id))
-
           case Row.UseCaseStepsN => val d = data.useCaseData.get; renderStepTree(d, d.stepsN)
           case Row.UseCaseStepsA => val d = data.useCaseData.get; renderStepTree(d, d.stepsA)
           case Row.UseCaseStepsE => val d = data.useCaseData.get; renderStepTree(d, d.stepsE)
@@ -346,9 +288,6 @@ object ReqDetail {
           case Row.StepGraph =>
             val ucId = data.useCaseData.get.uc.id
             UseCaseStepFlowGraph.Props(ucId, project.reqs.useCases, webWorker).render
-
-          case Row.DeletionReason =>
-            ProjectWidgets.DeletionReason.forReq(req)(project.config.reqTypes, pw) getOrElse emptyRow
 
           case Row.Life =>
             liveStyle = Live // When req is dead, user can still Restore it, thus this cell shouldn't appear dead
@@ -360,10 +299,6 @@ object ReqDetail {
                   req.allowLiveChange(project.config.reqTypes) option restore(req.id))
             }
 
-          case Row.PastPubids =>
-            val idS = req.pastPubids(project.reqs.pubids)
-            val idV = MutableArray(idS).sortBySchwartzian(DataLogic.pubidSortKeyFn(project.config)).to[Vector]
-            pw pastPubids idV
         }
 
         content(*.detailTableValue(liveStyle))
