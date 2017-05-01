@@ -349,7 +349,7 @@ object ReqDetail {
             UseCaseStepFlowGraph.Props(ucId, project.reqs.useCases, webWorker).render
 
           case Row.DeletionReason =>
-            RenderDeletionReason.req(project, pw, req)
+            RenderDeletionReason.forReq(req)(project.config.reqTypes, pw)
 
           case Row.Life =>
             liveStyle = Live // When req is dead, user can still Restore it, thus this cell shouldn't appear dead

@@ -89,31 +89,31 @@ object ProjectText {
 
     protected def `n/a`: Out
     protected def noReasonGiven: Out
-    protected def reqTypeIsDead(pt: PT, rt: ReqType): Out
+    protected def reqTypeIsDead(rt: ReqType)(pt: PT): Out
 
-    final def reqCodeGroup = `n/a`
+    final def forReqCodeGroup = `n/a`
 
-    private def latestReason(pt: PT, id: ReqId): Out =
+    private def latestReason(id: ReqId)(pt: PT): Out =
       pt.latestDeletionReason(id) getOrElse noReasonGiven
 
-    final def req(p: Project, pt: PT, req: Req): Out =
+    final def forReq(req: Req)(reqTypes: ReqTypes, pt: PT): Out =
       req match {
 
         case r: GenericReq =>
           import GenericReq.ImplicitLiveStatus._
           r.liveExplicitly match { // explicit must be checked before implicit
             case Live =>
-              r.implicitLiveStatus(p.config.reqTypes) match {
+              r.implicitLiveStatus(reqTypes) match {
                 case NoImpact      => `n/a` // req is live
-                case ReqTypeIsDead => reqTypeIsDead(pt, p.config.reqTypes.need(r.pubid.reqTypeId))
+                case ReqTypeIsDead => reqTypeIsDead(reqTypes.need(r.pubid.reqTypeId))(pt)
               }
-            case Dead => latestReason(pt, r.id)
+            case Dead => latestReason(r.id)(pt)
           }
 
         case uc: UseCase =>
           uc.liveUC match {
             case Live => `n/a`
-            case Dead => latestReason(pt, uc.id)
+            case Dead => latestReason(uc.id)(pt)
           }
       }
   }

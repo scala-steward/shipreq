@@ -53,7 +53,7 @@ object ColumnRenderer {
     override protected def noReasonGiven =
       emptyTag
 
-    override protected def reqTypeIsDead(pt: PT, rt: ReqType) =
+    override protected def reqTypeIsDead(rt: ReqType)(pt: PT) =
       <.span(
         UiText.ColumnNames.reqType + " ",
         pt.reqTypeShort(rt.reqTypeId),
@@ -64,7 +64,7 @@ object ColumnRenderer {
     override type PT = ProjectText[String]
     override protected def `n/a` = ""
     override protected def noReasonGiven = ""
-    override protected def reqTypeIsDead(pt: PT, rt: ReqType) =
+    override protected def reqTypeIsDead(rt: ReqType)(pt: PT) =
       UiText.ColumnNames.reqType + " " + rt.mnemonic.value + " is deleted."
   }
 }
@@ -154,7 +154,7 @@ class ColumnRenderers(project: Project, pw: ProjectWidgets) {
   }
 
   private def deletionReason = make {
-    case r: ReqRow          => Render(RenderDeletionReason.req(project, pw, r.req))
-    case _: ReqCodeGroupRow => Render(RenderDeletionReason.reqCodeGroup)
+    case r: ReqRow          => Render(RenderDeletionReason.forReq(r.req)(project.config.reqTypes, pw))
+    case _: ReqCodeGroupRow => Render(RenderDeletionReason.forReqCodeGroup)
   }
 }
