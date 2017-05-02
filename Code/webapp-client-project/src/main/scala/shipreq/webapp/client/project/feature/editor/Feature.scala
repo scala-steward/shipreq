@@ -26,7 +26,7 @@ object Feature {
   }
 
   /** Id used for [[shipreq.webapp.client.project.feature.PreviewFeature]] */
-  final case class PreviewId(row: RowKey, cell: CellKey)
+  final case class PreviewId(row: RowKey, cell: FieldKey)
   object PreviewId {
     implicit def equality: UnivEq[PreviewId] = UnivEq.derive
   }
@@ -35,7 +35,7 @@ object Feature {
 
   object State {
     type ForCell    = Option[Editor]
-    type ForRow     = Map[CellKey, Editor]
+    type ForRow     = Map[FieldKey, Editor]
     type ForProject = Map[RowKey, ForRow]
 
     def initForProject: ForProject =
@@ -65,18 +65,18 @@ object Feature {
 
     final case class ForRow[R <: RowKey, E <: Editability.ForRow[R]](editor     : State.ForRow,
                                                                      editability: E,
-                                                                     async      : AsyncFeature.Read.D1[CellKey, AsyncError]) {
-      def apply(c: R#CellKeyConstraint): ForCell =
-        ForCell(editor.get(c), editability(c), async(c))
+                                                                     async      : AsyncFeature.Read.D1[FieldKey, AsyncError]) {
+      def apply(f: R#FieldKey): ForCell =
+        ForCell(editor.get(f), editability(f), async(f))
     }
 
     type ForReq          = ForRow[RowKey.Req              , Editability.ForReq]
     type ForReqCodeGroup = ForRow[RowKey.ReqCodeGroup     , Editability.ForReqCodeGroup]
     type ForUseCaseSteps = ForRow[RowKey.UseCaseSteps.type, Editability.ForUseCaseSteps]
 
-    final case class ForProject(state: State.ForProject,
+    final case class ForProject(state      : State.ForProject,
                                 editability: Editability.ForProject,
-                                async: AsyncFeature.Read.D2[RowKey, CellKey, AsyncError]) {
+                                async      : AsyncFeature.Read.D2[RowKey, FieldKey, AsyncError]) {
 
        private def forRow[R <: RowKey, E <: Editability.ForRow[R]](r: R, e: E): ForRow[R, E] =
          ForRow(state.getOrElse(r, UnivEq.emptyMap), e, async(r))
@@ -120,8 +120,8 @@ object Feature {
     type ForRow[R <: RowKey] = Reusable[ForRowInterface[R]]
 
     sealed trait ForRowInterface[R <: RowKey] {
-      val async: AsyncFeature.Write.D1[CellKey, AsyncError]
-      def apply(cell: R#CellKeyConstraint): ForCell
+      val async: AsyncFeature.Write.D1[FieldKey, AsyncError]
+      def apply(field: R#FieldKey): ForCell
     }
 
     type ForReq          = ForRow[RowKey.Req]
@@ -131,10 +131,10 @@ object Feature {
     /** Create only one instance; reusability is byRef */
     final case class ForProject(static      : Static,
                                 stateAccess : StateAccessPure[State.ForProject],
-                                async       : AsyncFeature.Write.D2[RowKey, CellKey, AsyncError]) {
+                                async       : AsyncFeature.Write.D2[RowKey, FieldKey, AsyncError]) {
 
       private val reusabilityThisRow: Reusability[(ForProject, RowKey)] = implicitly
-      private val reusabilityThisRowCell: Reusability[(ForProject, RowKey, CellKey)] = implicitly
+      private val reusabilityThisRowCell: Reusability[(ForProject, RowKey, FieldKey)] = implicitly
 
       private def forRow[R <: RowKey](row: R): ForRow[R] = {
         val rowAccess = stateAccess zoomStateL Optics.innerMap(row)
@@ -144,19 +144,19 @@ object Feature {
           override val async =
             ForProject.this.async(row)
 
-          override def apply(cell: R#CellKeyConstraint): ForCell =
-            rowCmds(cell) match {
+          override def apply(field: R#FieldKey): ForCell =
+            rowCmds(field) match {
 
               case Some(newEditorCmd) =>
-                val asyncCell = async(cell)
+                val asyncCell = async(field)
                 def fn: Callback => Option[Callback] =
                   cb => Some(new StartNewEditor(
                     static,
-                    rowAccess zoomStateL Optics.mapValue(cell),
+                    rowAccess zoomStateL Optics.mapValue(field),
                     asyncCell,
                     newEditorCmd)
                     .create(cb))
-                val reuseKey = Reusable.explicitly((ForProject.this, row: RowKey, cell: CellKey))(reusabilityThisRowCell)
+                val reuseKey = Reusable.explicitly((ForProject.this, row: RowKey, field: FieldKey))(reusabilityThisRowCell)
                 ForCell(reuseKey.map(_ => fn), asyncCell)
 
               case None =>
@@ -222,11 +222,11 @@ object Feature {
       def asyncFeature = write.async
       def asyncState = read.async
 
-      def apply(cell: R#CellKeyConstraint): ForCell =
-        ForCell(read(cell), write.apply(cell))
+      def apply(field: R#FieldKey): ForCell =
+        ForCell(read(field), write.apply(field))
 
-      def apply(cell: Option[R#CellKeyConstraint]): ForCell =
-        cell.fold(ForCell.doNothing)(apply(_))
+      def apply(field: Option[R#FieldKey]): ForCell =
+        field.fold(ForCell.doNothing)(apply(_))
     }
 
     type ForReq          = ForRow[RowKey.Req              , Read.ForReq]

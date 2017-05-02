@@ -38,16 +38,16 @@ object NewEditorCmd {
     * requests a value specific to the Row/Cell combination,
     * and (if legal), returns a command to create a new editor.
     */
-  val make: RowKey => CellKey => Option[NewEditorCmd] = {
+  val make: RowKey => FieldKey => Option[NewEditorCmd] = {
 
     case r: RowKey.Req => {
-      case cc: CellKey.ForReq => cc match {
-        case c@ CellKey.Code            => NewEditorCmd.ReqCodes(r.id)
-        case c@ CellKey.Title           => NewEditorCmd.Title(\/-(r.id), PreviewId(r, c))
-        case c: CellKey.CustomTextField => NewEditorCmd.CustomTextField(r.id, c.field, PreviewId(r, c))
-        case c: CellKey.Implications    => NewEditorCmd.Implications(r.id, c.scope)
-        case c: CellKey.Tags            => NewEditorCmd.Tags(r.id, c.field)
-        case c@ CellKey.ReqType         => r.id match {
+      case cc: FieldKey.ForReq => cc match {
+        case c@ FieldKey.Code            => NewEditorCmd.ReqCodes(r.id)
+        case c@ FieldKey.Title           => NewEditorCmd.Title(\/-(r.id), PreviewId(r, c))
+        case c: FieldKey.CustomTextField => NewEditorCmd.CustomTextField(r.id, c.field, PreviewId(r, c))
+        case c: FieldKey.Implications    => NewEditorCmd.Implications(r.id, c.scope)
+        case c: FieldKey.Tags            => NewEditorCmd.Tags(r.id, c.field)
+        case c@ FieldKey.ReqType         => r.id match {
           case i: GenericReqId => Some(NewEditorCmd.ReqType(i))
           case _: UseCaseId    => None
         }
@@ -56,15 +56,15 @@ object NewEditorCmd {
     }
 
     case r: RowKey.ReqCodeGroup => {
-      case cc: CellKey.ForReqCodeGroup => cc match {
-        case c@ CellKey.Code  => NewEditorCmd.ReqCode(r.id)
-        case c@ CellKey.Title => NewEditorCmd.Title(-\/(r.id), PreviewId(r, c))
+      case cc: FieldKey.ForReqCodeGroup => cc match {
+        case c@ FieldKey.Code  => NewEditorCmd.ReqCode(r.id)
+        case c@ FieldKey.Title => NewEditorCmd.Title(-\/(r.id), PreviewId(r, c))
       }
       case _ => None
     }
 
     case r@ RowKey.UseCaseSteps => {
-      case c: CellKey.UseCaseStep => NewEditorCmd.UseCaseStep(c.id, PreviewId(r, c))
+      case c: FieldKey.UseCaseStep => NewEditorCmd.UseCaseStep(c.id, PreviewId(r, c))
       case _ => None
     }
   }

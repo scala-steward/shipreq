@@ -104,27 +104,27 @@ object Column {
   val filterDead: FilterDead => Column => Boolean =
     FilterDead.memo(_.filterFnBy[Column](_.live))
 
-  val editorCellIntersection = Intersection[Column, EditorFeature.CellKey] {
-    case Column.ReqType                                             => Some(EditorFeature.CellKey.ReqType)
-    case Column.Code                                                => Some(EditorFeature.CellKey.Code)
-    case Column.Title                                               => Some(EditorFeature.CellKey.Title)
-    case Column.Tags                                                => Some(EditorFeature.CellKey.Tags(None))
-    case Column.Implications(dir)                                   => Some(EditorFeature.CellKey.Implications(\/-(dir)))
-    case Column.CustomField(id: data.CustomField.Implication.Id, _) => Some(EditorFeature.CellKey.Implications(-\/(id)))
-    case Column.CustomField(id: data.CustomField.Tag        .Id, _) => Some(EditorFeature.CellKey.Tags(Some(id)))
-    case Column.CustomField(id: data.CustomField.Text       .Id, _) => Some(EditorFeature.CellKey.CustomTextField(id))
+  val editorFieldIntersection = Intersection[Column, EditorFeature.FieldKey] {
+    case Column.ReqType                                             => Some(EditorFeature.FieldKey.ReqType)
+    case Column.Code                                                => Some(EditorFeature.FieldKey.Code)
+    case Column.Title                                               => Some(EditorFeature.FieldKey.Title)
+    case Column.Tags                                                => Some(EditorFeature.FieldKey.Tags(None))
+    case Column.Implications(dir)                                   => Some(EditorFeature.FieldKey.Implications(\/-(dir)))
+    case Column.CustomField(id: data.CustomField.Implication.Id, _) => Some(EditorFeature.FieldKey.Implications(-\/(id)))
+    case Column.CustomField(id: data.CustomField.Tag        .Id, _) => Some(EditorFeature.FieldKey.Tags(Some(id)))
+    case Column.CustomField(id: data.CustomField.Text       .Id, _) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
        | Column.DeletionReason                                      => None
   } {
-    case EditorFeature.CellKey.ReqType                => Some(Column.ReqType)
-    case EditorFeature.CellKey.Code                   => Some(Column.Code)
-    case EditorFeature.CellKey.Title                  => Some(Column.Title)
-    case EditorFeature.CellKey.Tags(None)             => Some(Column.Tags)
-    case EditorFeature.CellKey.Implications(\/-(dir)) => Some(Column.Implications(dir))
-    case EditorFeature.CellKey.Implications(-\/(id))  => Some(Column.CustomField(id, Live)) // TODO Column shouldn't store Live
-    case EditorFeature.CellKey.Tags(Some(id))         => Some(Column.CustomField(id, Live))
-    case EditorFeature.CellKey.CustomTextField(id)    => Some(Column.CustomField(id, Live))
-    case EditorFeature.CellKey.UseCaseStep(_)         => None
+    case EditorFeature.FieldKey.ReqType                => Some(Column.ReqType)
+    case EditorFeature.FieldKey.Code                   => Some(Column.Code)
+    case EditorFeature.FieldKey.Title                  => Some(Column.Title)
+    case EditorFeature.FieldKey.Tags(None)             => Some(Column.Tags)
+    case EditorFeature.FieldKey.Implications(\/-(dir)) => Some(Column.Implications(dir))
+    case EditorFeature.FieldKey.Implications(-\/(id))  => Some(Column.CustomField(id, Live)) // TODO Column shouldn't store Live
+    case EditorFeature.FieldKey.Tags(Some(id))         => Some(Column.CustomField(id, Live))
+    case EditorFeature.FieldKey.CustomTextField(id)    => Some(Column.CustomField(id, Live))
+    case EditorFeature.FieldKey.UseCaseStep(_)         => None
   }
 
   def field(c: Column, p: ProjectConfig): Option[Field] =

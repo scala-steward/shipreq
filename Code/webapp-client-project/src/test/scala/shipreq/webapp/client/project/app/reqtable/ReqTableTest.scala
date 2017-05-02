@@ -79,7 +79,7 @@ object ReqTableTest extends TestSuite {
     val asyncFeature: AsyncFeature.Write.D2[Row.SourceId, Option[Column], String] =
       AsyncFeature.Write.D2.init($ zoomStateL State.async)
 
-    val optionColumnToEditorCell = Intersection.toOption[Column].reverse <=> Column.editorCellIntersection
+    val optionColumnToEditorCell = Intersection.toOption[Column].reverse <=> Column.editorFieldIntersection
 
     val editorFeature: EditorFeature.Write.ForProject =
       EditorFeature.Write.ForProject(

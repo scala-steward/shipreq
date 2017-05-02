@@ -29,7 +29,7 @@ object Editability {
     Reusability.caseClass
 
   sealed abstract class ForRow[R <: RowKey] {
-    def apply(cellKey: R#CellKeyConstraint): Permission
+    def apply(field: R#FieldKey): Permission
   }
 
   final case class ForReqs(cfg: ProjectConfig, reqs: Requirements) {
@@ -47,7 +47,7 @@ object Editability {
 
   final case class ForReq(whenReqIsLive: Option[(ReqTypeId, ProjectConfig)]) extends ForRow[RowKey.Req] {
 
-    def apply(k: CellKey.ForReq): Permission =
+    def apply(k: FieldKey.ForReq): Permission =
       whenReqIsLive match {
         case Some((reqTypeId, cfg)) =>
 
@@ -58,14 +58,14 @@ object Editability {
             }
 
           k match {
-            case CellKey.Code
-               | CellKey.Title
-               | CellKey.Tags(None)
-               | CellKey.Implications   (\/-(_: Direction)) => Allow
-            case CellKey.CustomTextField(fid)               => forField(fid)
-            case CellKey.Implications   (-\/(fid))          => forField(fid)
-            case CellKey.Tags           (Some(fid))         => forField(fid)
-            case CellKey.ReqType =>
+            case FieldKey.Code
+               | FieldKey.Title
+               | FieldKey.Tags(None)
+               | FieldKey.Implications   (\/-(_: Direction)) => Allow
+            case FieldKey.CustomTextField(fid)               => forField(fid)
+            case FieldKey.Implications   (-\/(fid))          => forField(fid)
+            case FieldKey.Tags           (Some(fid))         => forField(fid)
+            case FieldKey.ReqType =>
               reqTypeId match {
                 case _: CustomReqTypeId => Allow
                 case StaticReqType.UseCase => Deny
@@ -94,10 +94,10 @@ object Editability {
     Reusability.caseClass
 
   final case class ForReqCodeGroup(permission: Permission) extends ForRow[RowKey.ReqCodeGroup] {
-    def apply(k: CellKey.ForReqCodeGroup): Permission =
+    def apply(k: FieldKey.ForReqCodeGroup): Permission =
       k match {
-        case CellKey.Code
-           | CellKey.Title => permission
+        case FieldKey.Code
+           | FieldKey.Title => permission
       }
   }
 
@@ -105,7 +105,7 @@ object Editability {
     Reusability.caseClass
 
   final case class ForUseCaseSteps(useCases: UseCases) extends ForRow[RowKey.UseCaseSteps.type] {
-    def apply(k: CellKey.UseCaseStep): Permission =
+    def apply(k: FieldKey.UseCaseStep): Permission =
       Allow when useCases.focusStep(k.id).live.is(Live)
   }
 

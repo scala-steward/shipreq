@@ -51,13 +51,13 @@ final case class ViewReq(data: Data, pw: ProjectWidgets, fmtReqTypeShort: Boolea
   def title: VdomElement =
     pw.reqTitle(data.req)
 
-  val editable: EditorFeature.CellKey.ForReq => VdomElement = {
-    case EditorFeature.CellKey.CustomTextField(field) => text(field)
-    case EditorFeature.CellKey.Tags           (field) => tags(field)
-    case EditorFeature.CellKey.Implications   (scope) => imps(scope)
-    case EditorFeature.CellKey.Code                   => codes
-    case EditorFeature.CellKey.Title                  => title
-    case EditorFeature.CellKey.ReqType                => reqType
+  val editable: EditorFeature.FieldKey.ForReq => VdomElement = {
+    case EditorFeature.FieldKey.CustomTextField(field) => text(field)
+    case EditorFeature.FieldKey.Tags           (field) => tags(field)
+    case EditorFeature.FieldKey.Implications   (scope) => imps(scope)
+    case EditorFeature.FieldKey.Code                   => codes
+    case EditorFeature.FieldKey.Title                  => title
+    case EditorFeature.FieldKey.ReqType                => reqType
   }
 }
 

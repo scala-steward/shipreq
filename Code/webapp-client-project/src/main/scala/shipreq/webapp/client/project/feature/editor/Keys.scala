@@ -8,23 +8,23 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.client.project.lib.DataReusability._
 
 sealed abstract class RowKey {
-  type CellKeyConstraint <: CellKey
+  type FieldKey <: shipreq.webapp.client.project.feature.editor.FieldKey
 }
 object RowKey {
-  type Aux[C] = RowKey { type CellKeyConstraint = C }
+  type Aux[C] = RowKey { type FieldKey = C }
 
   import shipreq.webapp.base.data
 
   final case class Req(id: data.ReqId) extends RowKey {
-    override type CellKeyConstraint = CellKey.ForReq
+    override type FieldKey = FieldKey.ForReq
   }
 
   final case class ReqCodeGroup(id: data.ReqCodeId) extends RowKey {
-    override type CellKeyConstraint = CellKey.ForReqCodeGroup
+    override type FieldKey = FieldKey.ForReqCodeGroup
   }
 
   case object UseCaseSteps extends RowKey {
-    override type CellKeyConstraint = CellKey.UseCaseStep
+    override type FieldKey = FieldKey.UseCaseStep
   }
 
   @inline implicit def equality: UnivEq[RowKey] =
@@ -39,10 +39,10 @@ object RowKey {
  * ADT representing all types of fields supported by the editor.
  * Meant to be used as a key for some given content (e.g. for requirement FR-1).
  */
-sealed trait CellKey
-object CellKey {
-  sealed trait ForReq          extends CellKey
-  sealed trait ForReqCodeGroup extends CellKey
+sealed trait FieldKey
+object FieldKey {
+  sealed trait ForReq          extends FieldKey
+  sealed trait ForReqCodeGroup extends FieldKey
 
   case object ReqType                                                         extends ForReq
   case object Code                                                            extends ForReq with ForReqCodeGroup
@@ -50,24 +50,24 @@ object CellKey {
   case class  CustomTextField(field: CustomField.Text.Id)                     extends ForReq
   case class  Tags           (field: Option[CustomField.Tag.Id])              extends ForReq
   case class  Implications   (scope: CustomField.Implication.Id \/ Direction) extends ForReq
-  case class  UseCaseStep    (id: UseCaseStepId)                              extends CellKey
+  case class  UseCaseStep    (id: UseCaseStepId)                              extends FieldKey
 
   // DeletionReason is a bit odd in that it is append-only, not directly editable.
   // case object DeletionReason extends CellKey
 
-  @inline implicit def equality: UnivEq[CellKey] =
+  @inline implicit def equality: UnivEq[FieldKey] =
     UnivEq.derive
 
-  implicit val reusability: Reusability[CellKey] =
+  implicit val reusability: Reusability[FieldKey] =
     Reusability.byUnivEq
 
-  val filterForReq: Option[CellKey] => Option[ForReq] =
+  val filterForReq: Option[FieldKey] => Option[ForReq] =
     _.filter {
       case _: ForReq => true
       case _         => false
     }.asInstanceOf[Option[ForReq]]
 
-  val filterForReqCodeGroup: Option[CellKey] => Option[ForReqCodeGroup] =
+  val filterForReqCodeGroup: Option[FieldKey] => Option[ForReqCodeGroup] =
     _.filter {
       case _: ForReqCodeGroup => true
       case _                  => false

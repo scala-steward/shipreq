@@ -192,7 +192,7 @@ object ReqDetail {
       val runCmd    = this.runCmd(req.id)
       val view      = data.viewData(pw).copy(fmtReqTypeShort = false)
 
-      def renderEditable(key: EditorFeature.CellKey.ForReq): TagMod =
+      def renderEditable(key: EditorFeature.FieldKey.ForReq): TagMod =
         renderEditor(reqEditor(key), view.editable(key))
 
       def renderEditor(editor: EditorFeature.ReadWrite.ForCell, view: => TagMod): TagMod =
@@ -208,7 +208,7 @@ object ReqDetail {
 
           <.div(*.headerTitle,
             renderEditor(
-              reqEditor(EditorFeature.CellKey.Title),
+              reqEditor(EditorFeature.FieldKey.Title),
               Header(hstyle, view.title))),
 
           <.div(*.headerFilterDeadButton,
@@ -249,20 +249,20 @@ object ReqDetail {
       def renderRowData(row: Row): TagMod = {
         var liveStyle = data.live
 
-        import EditorFeature.CellKey
+        import EditorFeature.FieldKey
         val content: TagMod = row match {
 
-          case Row.CustomField(id: CustomField.Text.Id)        => renderEditable(CellKey.CustomTextField(id))
-          case Row.CustomField(id: CustomField.Tag.Id)         => renderEditable(CellKey.Tags(Some(id)))
-          case Row.CustomField(id: CustomField.Implication.Id) => renderEditable(CellKey.Implications(-\/(id)))
-          case Row.Code                                        => renderEditable(CellKey.Code)
-          case Row.ReqType                                     => renderEditable(CellKey.ReqType)
-          case Row.Tags                                        => renderEditable(CellKey.Tags(None))
+          case Row.CustomField(id: CustomField.Text.Id)        => renderEditable(FieldKey.CustomTextField(id))
+          case Row.CustomField(id: CustomField.Tag.Id)         => renderEditable(FieldKey.Tags(Some(id)))
+          case Row.CustomField(id: CustomField.Implication.Id) => renderEditable(FieldKey.Implications(-\/(id)))
+          case Row.Code                                        => renderEditable(FieldKey.Code)
+          case Row.ReqType                                     => renderEditable(FieldKey.ReqType)
+          case Row.Tags                                        => renderEditable(FieldKey.Tags(None))
           case Row.DeletionReason                              => view.deletionReason
           case Row.PastPubids                                  => view.pastPubids
 
           case Row.Implications =>
-            def one(dir: Direction) = renderEditable(CellKey.Implications(\/-(dir)))
+            def one(dir: Direction) = renderEditable(FieldKey.Implications(\/-(dir)))
             <.table(*.generalImpsCont,
               <.tbody(
                 <.tr(
@@ -305,7 +305,7 @@ object ReqDetail {
       def renderStepTree(ucData: UseCaseData, stepData: UseCaseStepTree.StepData) = {
         val renderBody: UseCaseStepTree.RenderBodyFn = (id, live, textAndFlow) =>
           renderEditor(
-            props.editorUCS(EditorFeature.CellKey.UseCaseStep(id)),
+            props.editorUCS(EditorFeature.FieldKey.UseCaseStep(id)),
             pw.useCaseStep(live, textAndFlow))
 
         UseCaseStepTree.Props(

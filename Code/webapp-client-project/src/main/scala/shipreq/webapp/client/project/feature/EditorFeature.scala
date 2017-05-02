@@ -39,8 +39,8 @@ object EditorFeature {
   type RowKey = editor.RowKey
   val  RowKey = editor.RowKey
 
-  type CellKey = editor.CellKey
-  val  CellKey = editor.CellKey
+  type FieldKey = editor.FieldKey
+  val  FieldKey = editor.FieldKey
 
   type Editor = editor.Feature.Editor
   val  Editor = editor.Feature.Editor

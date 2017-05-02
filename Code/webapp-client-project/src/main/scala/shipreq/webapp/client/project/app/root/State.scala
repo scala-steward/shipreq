@@ -2,7 +2,6 @@ package shipreq.webapp.client.project.app.root
 
 import japgolly.scalajs.react.extra._
 import monocle.macros._
-import scalaz.\/-
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead}
@@ -47,7 +46,7 @@ object AsyncKey {
 
   /** The req itself. Eg. if a req is being deleted then the entire req should be locked */
   case object WholeReq                             extends AsyncKey
-  case class Editor(cell: EditorFeature.CellKey)   extends AsyncKey
+  case class Editor(field: EditorFeature.FieldKey) extends AsyncKey
   case class UseCaseStepCtrls  (id: UseCaseStepId) extends AsyncKey
   case class AddUseCaseStep    (id: UseCaseStepId) extends AsyncKey
   case class AddUseCaseTailStep(s: UseCaseSteps)   extends AsyncKey
@@ -58,7 +57,7 @@ object AsyncKey {
   implicit val reusability: Reusability[AsyncKey] =
     Reusability.byUnivEq
 
-  val ToEditor = Intersection[AsyncKey, EditorFeature.CellKey] {
+  val ToEditor = Intersection[AsyncKey, EditorFeature.FieldKey] {
     case Editor(key)           => Some(key)
     case WholeReq
        | UseCaseStepCtrls  (_)
@@ -67,12 +66,12 @@ object AsyncKey {
   }(e => Some(Editor(e)))
 
   val ToReqTable = Intersection[AsyncKey, reqtable.Column] {
-    case Editor(key)           => reqtable.Column.editorCellIntersection.reverse.getOption(key)
+    case Editor(key)           => reqtable.Column.editorFieldIntersection.reverse.getOption(key)
     case WholeReq
        | UseCaseStepCtrls  (_)
        | AddUseCaseStep    (_)
        | AddUseCaseTailStep(_) => None
-  }(reqtable.Column.editorCellIntersection.getOption(_).map(Editor))
+  }(reqtable.Column.editorFieldIntersection.getOption(_).map(Editor))
 
   val ToReqTable2 = Intersection[AsyncKey, Option[reqtable.Column]] {
     case WholeReq => Some(None)
@@ -84,26 +83,26 @@ object AsyncKey {
 
   val ToReqDetail = Intersection[AsyncKey, reqdetail.Cell] {
     case Editor(e) => e match {
-      case EditorFeature.CellKey.ReqType                => Some(reqdetail.Cell.ReqType               )
-      case EditorFeature.CellKey.Code                   => Some(reqdetail.Cell.Code                  )
-      case EditorFeature.CellKey.Title                  => Some(reqdetail.Cell.Title                 )
-      case EditorFeature.CellKey.CustomTextField(field) => Some(reqdetail.Cell.CustomTextField(field))
-      case EditorFeature.CellKey.Tags           (field) => Some(reqdetail.Cell.Tags           (field))
-      case EditorFeature.CellKey.Implications   (scope) => Some(reqdetail.Cell.Implications   (scope))
-      case EditorFeature.CellKey.UseCaseStep    (id)    => Some(reqdetail.Cell.UseCaseStep    (id)   )
+      case EditorFeature.FieldKey.ReqType                => Some(reqdetail.Cell.ReqType               )
+      case EditorFeature.FieldKey.Code                   => Some(reqdetail.Cell.Code                  )
+      case EditorFeature.FieldKey.Title                  => Some(reqdetail.Cell.Title                 )
+      case EditorFeature.FieldKey.CustomTextField(field) => Some(reqdetail.Cell.CustomTextField(field))
+      case EditorFeature.FieldKey.Tags           (field) => Some(reqdetail.Cell.Tags           (field))
+      case EditorFeature.FieldKey.Implications   (scope) => Some(reqdetail.Cell.Implications   (scope))
+      case EditorFeature.FieldKey.UseCaseStep    (id)    => Some(reqdetail.Cell.UseCaseStep    (id)   )
     }
     case UseCaseStepCtrls  (id) => Some(reqdetail.Cell.UseCaseStepCtrls  (id))
     case AddUseCaseStep    (id) => Some(reqdetail.Cell.AddUseCaseStep    (id))
     case AddUseCaseTailStep(s)  => Some(reqdetail.Cell.AddUseCaseTailStep(s) )
     case WholeReq               => None // TODO ReqDetail doesn't lock the whole requirement when deleting
   } {
-    case reqdetail.Cell.ReqType                => Some(Editor(EditorFeature.CellKey.ReqType               ))
-    case reqdetail.Cell.Code                   => Some(Editor(EditorFeature.CellKey.Code                  ))
-    case reqdetail.Cell.Title                  => Some(Editor(EditorFeature.CellKey.Title                 ))
-    case reqdetail.Cell.CustomTextField(field) => Some(Editor(EditorFeature.CellKey.CustomTextField(field)))
-    case reqdetail.Cell.Tags           (field) => Some(Editor(EditorFeature.CellKey.Tags           (field)))
-    case reqdetail.Cell.Implications   (scope) => Some(Editor(EditorFeature.CellKey.Implications   (scope)))
-    case reqdetail.Cell.UseCaseStep    (id)    => Some(Editor(EditorFeature.CellKey.UseCaseStep    (id)   ))
+    case reqdetail.Cell.ReqType                => Some(Editor(EditorFeature.FieldKey.ReqType               ))
+    case reqdetail.Cell.Code                   => Some(Editor(EditorFeature.FieldKey.Code                  ))
+    case reqdetail.Cell.Title                  => Some(Editor(EditorFeature.FieldKey.Title                 ))
+    case reqdetail.Cell.CustomTextField(field) => Some(Editor(EditorFeature.FieldKey.CustomTextField(field)))
+    case reqdetail.Cell.Tags           (field) => Some(Editor(EditorFeature.FieldKey.Tags           (field)))
+    case reqdetail.Cell.Implications   (scope) => Some(Editor(EditorFeature.FieldKey.Implications   (scope)))
+    case reqdetail.Cell.UseCaseStep    (id)    => Some(Editor(EditorFeature.FieldKey.UseCaseStep    (id)   ))
     case reqdetail.Cell.UseCaseStepCtrls  (id) => Some(UseCaseStepCtrls  (id))
     case reqdetail.Cell.AddUseCaseStep    (id) => Some(AddUseCaseStep    (id))
     case reqdetail.Cell.AddUseCaseTailStep(s)  => Some(AddUseCaseTailStep(s) )

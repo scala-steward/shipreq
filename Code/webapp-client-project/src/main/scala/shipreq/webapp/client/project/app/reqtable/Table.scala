@@ -186,7 +186,7 @@ object Table {
         def colCells =
           p.crs.iterator.map { cr =>
             val col = cr.column
-            val cell = EditorFeature.CellKey.filterForReq(Column.editorCellIntersection.getOption(col))
+            val cell = EditorFeature.FieldKey.filterForReq(Column.editorFieldIntersection.getOption(col))
             val cp = CellProps(row, cr, p.editor(cell))
             CellComponent.withKey(col.key)(cp)
           }.toVdomArray
@@ -258,7 +258,7 @@ object Table {
         def colCells =
           p.crs.iterator.map { cr =>
             val col = cr.column
-            val cell = EditorFeature.CellKey.filterForReqCodeGroup(Column.editorCellIntersection.getOption(col))
+            val cell = EditorFeature.FieldKey.filterForReqCodeGroup(Column.editorFieldIntersection.getOption(col))
             val cp = CellProps(row, cr, p.editor(cell))
             CellComponent.withKey(col.key)(cp)
           }.toVdomArray
