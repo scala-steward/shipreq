@@ -32,8 +32,8 @@ final case class ViewSettings(columns    : NonEmptyVector[Column],
   def filterColumns(f: Column => Boolean): ViewSettings =
     tryFilterColumns(f) getOrElse ViewSettings.default(filterDead)
 
-  def setFilterDead(fd: FilterDead): ViewSettings =
-    copy(filterDead = fd).filterColumns(Column filterDead fd)
+//  def setFilterDead(fd: FilterDead): ViewSettings =
+//    copy(filterDead = fd).filterColumns(Column filterDead fd)
 
   def setColumns(newCols0: NonEmptyVector[Column]): ViewSettings = {
     // Ensure mandatory columns are present

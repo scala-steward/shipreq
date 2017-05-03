@@ -119,7 +119,7 @@ private[reqtable2] object Logic {
        ap: Column => Applicability,
        f : K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
 
-    val cols = vs.columns.whole.collect { case c@ Column.CustomField(id: K, _) => (id, c) }
+    val cols = vs.columns.whole.collect { case c@ Column.CustomField(id: K) => (id, c) }
 
     val expandersPerCol = cols.map { ct =>
         val colId    = ct._1
@@ -209,7 +209,7 @@ private[reqtable2] object Logic {
     val filterDeadReq = vs.filterDead.filterFnBy[Req](_ live p.config.reqTypes)
     val filterDeadRCG = vs.filterDead.filterFnBy[ReqCodeGroup](_.live)
     val filterDead    = Filters(filterDeadReq, filterDeadRCG)
-    val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
+    val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_))
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)
     val issueLookup   = this.issueLookup(p, vs.filterDead)
     val applicability = Column.applicability(p.config)
