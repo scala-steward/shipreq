@@ -135,6 +135,40 @@ object Style extends StyleSheet.Inline {
   }
 
   // ===================================================================================================================
+  object reqtable2 {
+
+    object table {
+
+      private val headerBase = style(
+        padding(4.px).important)
+
+      private val bodyBase = style(
+        padding(4.px).important,
+        verticalAlign.top.important)
+
+      val header = styleF(D.live *** D.dragStatus) { case (live, status) => styleS(
+        headerBase,
+        deadColumnLabel(live),
+        cursor.pointer, // Because click affects sorting
+        (status match {
+          case DragToReorder.Normal => mixin()
+          case DragToReorder.DragSource | DragToReorder.Tombstone => mixin(
+            opacity(.4),
+            border(2 px, dashed, c"#779"))
+        }): StyleS
+      )}
+
+      private val selectionColumnCell = styleS(
+        width(24.px).important,
+        textAlign.center)
+
+      val selectionColumnHeader = style(selectionColumnCell, headerBase)
+      val selectionColumnBody   = style(selectionColumnCell, bodyBase)
+    }
+
+  }
+
+  // ===================================================================================================================
   object reqtable {
     import shipreq.webapp.client.project.app.reqtable.Column
     import shipreq.webapp.client.project.app.reqtable.Table.CellStatus
@@ -631,6 +665,7 @@ object Style extends StyleSheet.Inline {
     reqtable.filterEditor.errorMsg,
     reqtable.table,
     reqtable.deleteRestore.impliedByItem(Live),
+    reqtable2.table.selectionColumnHeader,
     reqdetail.detailTable,
     reqdetail.useCaseStep.container,
     widgets.issue,

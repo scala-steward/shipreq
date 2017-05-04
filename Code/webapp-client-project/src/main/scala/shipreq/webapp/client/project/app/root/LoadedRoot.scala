@@ -16,7 +16,7 @@ import shipreq.webapp.client.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.app._
 import shipreq.webapp.client.project.app.reqdetail.ReqDetail
-import shipreq.webapp.client.project.app.reqtable.ReqTable
+import shipreq.webapp.client.project.app.reqtable2.ReqTablePage
 import shipreq.webapp.client.project.app.cfg.shared.Usage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -40,9 +40,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val reqDetailRC = routerCtl.contramap(Page.ReqDetail.apply)
 
     val setFilterDead: FilterDead ~=> Callback =
-      Reusable.fn(fd => $.modState(
-        State.filterDead.set(fd) compose
-        State.reqTableVS.modify(_ setFilterDead fd)))
+      Reusable.fn.state($ zoomStateL State.filterDead).set
 
     val pxPlainText      = pxProject.map(PlainText(_, ProjectText.Context.None))
     val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
@@ -67,12 +65,12 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
         $ zoomStateL State.editors,
         asyncW.mapKey1(AsyncKey.ToEditor))
 
-    val reqTable = ReqTable(ReqTable.StaticProps(
-      cd, cp, initData.createContent, initData.updateContent,
-      pxPlainText, pxTextSearch, pxProjectWidgets,
-      asyncW.mapKey2(reqtable.Row.SourceIdToEditorRow.reverse).mapKey1(AsyncKey.ToReqTable2),
-      reqDetailRC,
-      $ zoomStateL State.reqTable))
+    val reqTable = ReqTablePage(
+      ReqTablePage.StaticProps(
+        $ zoomStateL State.reqTable,
+        cd,
+        pxPlainText, pxTextSearch, pxProjectWidgets,
+        reqDetailRC))
 
     val pxReqDetailId = Px[Option[ReqId]](None).withReuse.manualUpdate
 
@@ -112,7 +110,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val usageShow =
       Usage.Show((fd, fs) =>
         routerCtl
-          .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
+          // TODO .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
           .link(Page.ReqTable))
 
     lazy val projectNameAF =
@@ -173,11 +171,15 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, fd).component
 
         case Page.ReqTable =>
+          val rowAsync = asyncW
+            .toReadWrite(asyncState)
+            .mapKey2(reqtable2.Row.SourceIdToEditorRow.reverse)
+            .withKey1(AsyncKey.WholeReq)
           reqTable(
-            ReqTable.DynamicProps(
+            ReqTablePage.Props(
               editorRW,
-              asyncState.mapKey2(reqtable.Row.SourceIdToEditorRow.reverse).mapKey1(AsyncKey.ToReqTable2),
-              previewRW.mapId(PreviewId.ToReqTable),
+              rowAsync,
+              s.filterDead,
               s.reqTable))
 
         case Page.ReqDetail(pubid) =>
@@ -203,8 +205,9 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       Layout.Props(initData.username, cd.projectSummary(), routerCtl, p.page, content).render
     }
 
-    def onProjectChange(c: Changes): Callback =
-      $.modState(State.reqTable.modify(_ updateProject c.p2))
+    def onProjectChange(c: Changes): Callback = // TODO I don't like this
+      Callback.empty
+//      $.modState(State.reqTable.modify(_ updateProject c.p2))
   }
 
   val Component = ScalaComponent.builder[Props]("LoadedRoot")

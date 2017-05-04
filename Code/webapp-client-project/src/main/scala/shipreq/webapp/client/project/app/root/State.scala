@@ -8,32 +8,27 @@ import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.client.base.feature._
 import shipreq.webapp.client.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state.ClientData
-import shipreq.webapp.client.project.app.{reqdetail, reqtable}
+import shipreq.webapp.client.project.app.{reqdetail, reqtable2}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import reqdetail.ReqDetail
-import reqtable.ReqTable
 
 sealed trait PreviewId
 object PreviewId {
 
   case class Editor(id: EditorFeature.PreviewId) extends PreviewId
-  case class ReqTableCI(value: reqtable.PreviewId.InCI) extends PreviewId
 
   implicit def equality: UnivEq[PreviewId] = UnivEq.derive
   implicit val reusability: Reusability[PreviewId] = Reusability.byUnivEq
 
-  val ToReqTable = Intersection[PreviewId, reqtable.PreviewId] {
-    case Editor(e)     => Some(reqtable.PreviewId.InEditor(e))
-    case ReqTableCI(a) => Some(a)
+  val ToReqTable = Intersection[PreviewId, reqtable2.PreviewId] {
+    case Editor(e) => Some(reqtable2.PreviewId.InEditor(e))
   } {
-    case reqtable.PreviewId.InEditor(e) => Some(Editor(e))
-    case a: reqtable.PreviewId.InCI     => Some(ReqTableCI(a))
+    case reqtable2.PreviewId.InEditor(e) => Some(Editor(e))
   }
 
   val ToEditor = Intersection[PreviewId, EditorFeature.PreviewId] {
-    case Editor(e)     => Some(e)
-    case ReqTableCI(_) => None
+    case Editor(e) => Some(e)
   }(e => Some(Editor(e)))
 }
 
@@ -65,21 +60,13 @@ object AsyncKey {
        | AddUseCaseTailStep(_) => None
   }(e => Some(Editor(e)))
 
-  val ToReqTable = Intersection[AsyncKey, reqtable.Column] {
-    case Editor(key)           => reqtable.Column.editorFieldIntersection.reverse.getOption(key)
+  val ToReqTable = Intersection[AsyncKey, reqtable2.Column] {
+    case Editor(key)           => reqtable2.Column.editorFieldIntersection.reverse.getOption(key)
     case WholeReq
        | UseCaseStepCtrls  (_)
        | AddUseCaseStep    (_)
        | AddUseCaseTailStep(_) => None
-  }(reqtable.Column.editorFieldIntersection.getOption(_).map(Editor))
-
-  val ToReqTable2 = Intersection[AsyncKey, Option[reqtable.Column]] {
-    case WholeReq => Some(None)
-    case x        => ToReqTable.getOption(x).map(Some(_))
-  } {
-    case None    => Some(WholeReq)
-    case Some(x) => ToReqTable.reverse.getOption(x)
-  }
+  }(reqtable2.Column.editorFieldIntersection.getOption(_).map(Editor))
 
   val ToReqDetail = Intersection[AsyncKey, reqdetail.Cell] {
     case Editor(e) => e match {
@@ -118,7 +105,7 @@ case class State(projectName : ProjectItem.WithEditableName.State,
                  async       : AsyncFeature.State.D2[EditorFeature.RowKey, AsyncKey, EditorFeature.AsyncError],
                  preview     : PreviewFeature.State[PreviewId],
                  filterDead  : FilterDead,
-                 reqTable    : ReqTable.State,
+                 reqTable    : reqtable2.ReqTablePage.State,
                  reqDetail   : ReqDetail.State)
 
 object State {
@@ -130,8 +117,8 @@ object State {
       AsyncFeature.State.initD2,
       PreviewFeature.State.init,
       HideDead,
-      ReqTable.State.init(cd, HideDead, None),
+      reqtable2.ReqTablePage.State.init,
       ReqDetail.initState)
 
-  val reqTableVS = State.reqTable ^|-> ReqTable.State.viewSettings
+  val reqTableSettings = State.reqTable ^|-> reqtable2.ReqTablePage.State.tableSettings
 }

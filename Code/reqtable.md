@@ -18,3 +18,9 @@
   * Delete/restore buttons.
   * Restore reusability on ReqTable and editors
   * Redo ReqTable rowlocking async
+
+* Newer TODOs:
+  * LoadedRoot: Sync ReqTable state on Project change
+  * LoadedRoot: Sync ReqTable state on FilterDead change
+  * Fix 'Usage' links in config tables
+
