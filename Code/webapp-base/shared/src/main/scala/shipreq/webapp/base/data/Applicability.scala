@@ -6,7 +6,8 @@ import shipreq.base.util.{Applicable, Memo}
 /**
   * @see [[ProjectConfig.applicability]] for a starting point
   */
-final case class Applicability[-Field, -Data](byField: Field => Data => Applicable) extends AnyVal {
+final case class Applicability[-Field, -Data](byField: Field => Data => Applicable) {
+  // Doesn't extend AnyVal because it causes boxing/unboxing in Reusability
 
   /** Not all fields are applicable to all types of requirements.
     *

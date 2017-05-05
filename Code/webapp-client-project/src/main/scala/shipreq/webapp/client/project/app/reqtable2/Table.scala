@@ -7,6 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import scalacss.ScalaCssReact._
+import shipreq.base.util.{Applicable, NotApplicable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.base.data.Plain
 import shipreq.webapp.client.base.feature.AsyncFeature
@@ -19,8 +20,6 @@ import shipreq.webapp.client.project.lib.DataReusability._
 
 object Table {
 
-  // TODO Applicability - apply before editor/view
-
   object Whole {
 
     final case class Props(rows       : Vector[Row],
@@ -28,7 +27,7 @@ object Table {
                            selection  : RowSelectionVisible,
                            editor     : EditorFeature.ReadWrite.ForProject,
                            rowAsync   : AsyncFeature.Read.D1[Row.SourceId, String],
-                           reqTypes   : ReqTypes,
+                           config     : ProjectConfig,
                            pw         : ProjectWidgets,
                            modSettings: ModFn[TableSettings]) {
       @inline def render = Component(this)
@@ -40,10 +39,17 @@ object Table {
     final class Backend($: BackendScope[Props, Unit]) {
 
       val pxProjectWidgets = Px.props($).map(_.pw).withReuse.manualRefresh
-      val pxPubidFmt = pxProjectWidgets.map(_.PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None))
+      val pxProjectConfig  = Px.props($).map(_.config).withReuse.manualRefresh
+
+      val pxPubidFmt: Px[ProjectWidgets#PubidFormat] =
+        pxProjectWidgets.map(_.PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None))
+
+      val pxApplicability: Px[Applicability[Column, Row]] =
+        pxProjectConfig.map(cfg => Row.applicability(cfg.applicability))
 
       def render(p: Props): VdomElement = {
         pxProjectWidgets.refresh()
+        pxProjectConfig.refresh()
 
         val header =
           Header.Component(
@@ -54,12 +60,13 @@ object Table {
               p.modSettings.map(f => c => f(TableSettings.order.modify(_ want c.column)))))
 
         val reqViewInputs: ReqRow.ViewInput =
-          (p.reqTypes, p.pw, pxPubidFmt.value())
+          (p.config.reqTypes, p.pw, pxPubidFmt.value())
 
         val renderRows: VdomArray =
           p.rows.toVdomArray { genericRow =>
             val rowAsync = p.rowAsync(genericRow.sourceId)
             val selection = p.selection(genericRow.sourceId)
+            val applicability = pxApplicability.value()
 
             genericRow match {
               case row: Row.ForReq =>
@@ -68,6 +75,7 @@ object Table {
                   reqViewInputs,
                   p.editor.forReq(row.req.id),
                   p.cols,
+                  applicability,
                   rowAsync,
                   selection,
                 ).render
@@ -78,6 +86,7 @@ object Table {
                   p.pw,
                   p.editor.forReqCodeGroup(row.reqCodeId),
                   p.cols,
+                  applicability,
                   rowAsync,
                   selection,
                 ).render
@@ -188,12 +197,13 @@ object Table {
     final type ViewInput = _ViewInput
     final type RowEditor = EditorFeature.ReadWrite.ForRow[RowEditField, RowEditRead]
 
-    case class Props(row      : RowData,
-                     viewInput: ViewInput,
-                     editor   : RowEditor,
-                     cols     : NonEmptyVector[ColumnPlus],
-                     rowAsync : AsyncFeature.Read.D0[String],
-                     selection: Selection.OneUI[Row.SourceId]) {
+    case class Props(row          : RowData,
+                     viewInput    : ViewInput,
+                     editor       : RowEditor,
+                     cols         : NonEmptyVector[ColumnPlus],
+                     applicability: Applicability[Column, Row],
+                     rowAsync     : AsyncFeature.Read.D0[String],
+                     selection    : Selection.OneUI[Row.SourceId]) {
       @inline def render = Component.withKey(row.id.key)(this)
     }
 
@@ -216,7 +226,14 @@ object Table {
 
       val td = <.td //(*.cell(rowStatus))
 
-      val mkView = viewMaker(row, p.viewInput)
+      val mkViewWhenApplicable: Column => Reusable[TagMod] =
+        viewMaker(row, p.viewInput)
+
+      def mkProps(c: Column, ok: Reusable[TagMod] => Cell.Props): Cell.Props =
+        p.applicability(row, c) match {
+          case Applicable    => ok(mkViewWhenApplicable(c))
+          case NotApplicable => Cell.Props.NA
+        }
 
       def renderNormal = {
         val sel = p.selection
@@ -230,9 +247,8 @@ object Table {
         def colCells =
           p.cols.whole.toVdomArray { colPlus =>
             val col = colPlus.column
-            val editor = p.editor.apply(editFieldFilter(col.editorField))
-            val view = mkView(col)
-            val cp = Cell.Props(editor, view)
+            def editor = p.editor.apply(editFieldFilter(col.editorField))
+            val cp = mkProps(col, Cell.Props(editor, _))
             Cell.Component.withKey(col.key)(cp)
           }
 
@@ -243,9 +259,8 @@ object Table {
         def colCells =
           p.cols.whole.toVdomArray { colPlus =>
             val col = colPlus.column
-            val editor = EditorFeature.ReadWrite.ForCell.doNothing
-            val view = mkView(col)
-            val cp = Cell.Props(editor, view)
+            def editor = EditorFeature.ReadWrite.ForCell.doNothing
+            val cp = mkProps(col, Cell.Props(editor, _))
             Cell.Component.withKey(col.key)(cp)
           }
 
@@ -331,9 +346,6 @@ object Table {
 
     override protected def reusabilityRowEditor = implicitly
 
-    private val reusableNA: Reusable[TagMod] =
-      Reusable.byRef(`N/A`)
-
     override protected def viewMaker(row: RowData, vi: ViewInput): Column => Reusable[TagMod] = {
       val pw = vi
 
@@ -363,11 +375,14 @@ object Table {
 
   private object Cell {
 
-    final case class Props(editor: EditorFeature.ReadWrite.ForCell,
-                           view  : Reusable[TagMod])
+    final case class Props(editor: EditorFeature.ReadWrite.ForCell, view: Reusable[TagMod])
 
-    implicit val reusabilityProps: Reusability[Props] =
-      Reusability.caseClass
+    object Props {
+      implicit val reusability: Reusability[Props] =
+        Reusability.caseClass
+
+      val NA = Props(EditorFeature.ReadWrite.ForCell.doNothing, reusableNA)
+    }
 
     val cellBase = <.td(^.tabIndex := -1)
 
@@ -411,8 +426,14 @@ object Table {
 
   // Shared
 
+  private implicit val reusabilityApplicability: Reusability[Applicability[Column, Row]] =
+    Reusability.byRef
+
   private val `N/A`: VdomTag =
     <.span(*.`N/A`, "–")
+
+  private val reusableNA: Reusable[TagMod] =
+    Reusable.byRef(`N/A`)
 
   private def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
     Callback {

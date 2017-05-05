@@ -124,7 +124,7 @@ object ReqTablePage {
         pxRowSelectionVisible.value(),
         p.editor,
         p.rowAsync.read,
-        pxProject.value().config.reqTypes,
+        pxProject.value().config,
         pxProjectWidgets.value(),
         modSettings,
       ).render
