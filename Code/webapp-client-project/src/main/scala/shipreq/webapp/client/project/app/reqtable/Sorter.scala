@@ -210,7 +210,7 @@ object Sorter {
     def normalisedText(f: PlainText.ForProject => String) =
       stringNormalise(f(plainText))
 
-    val applicability = Column.applicability(p.config)
+    //val applicability = Column.applicability(p.config)
 
     @inline def reqTypesToMnemonicOrder =
       p.config.reqTypes.order
@@ -287,7 +287,7 @@ object Sorter {
       Sorter[String](
         prep = setup => {
           val g = f(setup)
-          setup.applicability(c).fn((row: Row) => setup.normalisedText(g(_)(row)))("")
+          ??? //setup.applicability(c).fn((row: Row) => setup.normalisedText(g(_)(row)))("")
         },
         sort = SortFn.string(bp)
       ))

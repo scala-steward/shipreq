@@ -76,12 +76,13 @@ class ColumnRenderers(project: Project, pw: ProjectWidgets) {
   def apply(c: Column): ColumnRenderer =
     cr(c)
 
-  private val applicability = Column.applicability(project.config)
+  private val applicability = ??? //Column.applicability(project.config)
 
   private def make(render: Row => View): Column => ColumnRenderer =
     c => {
-      val render2 = applicability(c).fn(render)(`N/A`)
-      new ColumnRenderer(c, render2)
+//      val render2 = applicability(c).fn(render)(`N/A`)
+//      new ColumnRenderer(c, render2)
+      ???
     }
 
   private def maybeEmpty[A](lens: Optional[Row, Vector[A]], r: Row)(f: Vector[A] => VdomElement): View =

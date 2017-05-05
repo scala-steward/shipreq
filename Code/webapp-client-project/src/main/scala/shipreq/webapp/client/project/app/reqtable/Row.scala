@@ -126,13 +126,13 @@ case class ReqCodeGroupRow(group: ReqCodeGroup, reqCode: ReqCode.Value, reqCodeT
 
 object Row {
 
-  implicit object SubjectRow extends Applicability.Subject[Row] {
-    override def applicable(row: Row, f: ReqTypeId => Applicable) =
-      row match {
-        case r: ReqRow          => Applicability.SubjectReq.applicable(r.req, f)
-        case _: ReqCodeGroupRow => NotApplicable
-      }
-  }
+//  implicit object SubjectRow extends Applicability.Subject[Row] {
+//    override def applicable(row: Row, f: ReqTypeId => Applicable) =
+//      row match {
+//        case r: ReqRow          => Applicability.SubjectReq.applicable(r.req, f)
+//        case _: ReqCodeGroupRow => NotApplicable
+//      }
+//  }
 
   // ===================================================================================================================
 

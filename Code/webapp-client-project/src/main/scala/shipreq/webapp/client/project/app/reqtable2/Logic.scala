@@ -106,18 +106,18 @@ private[reqtable2] object Logic {
   private def impColValueExpander(ts: TableSettings,
                                   fd: FilterDead,
                                   p : Project,
-                                  ap: Column => Applicability): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
+                                  ap: Applicability[Column, ReqTypeId]): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
     customFieldExpander(ts, ap, impColValueFn(p, fd))
 
   private def tagFieldValueExpander(ts          : TableSettings,
-                                    ap          : Column => Applicability,
+                                    ap          : Applicability[Column, ReqTypeId],
                                     tagFieldDist: TagFieldDistribution.TagIds,
                                     tagLookup   : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
     customFieldExpander(ts, ap, fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid))
 
   private def customFieldExpander[K <: CustomFieldId : ClassTag, V: UnivEq]
       (vs: TableSettings,
-       ap: Column => Applicability,
+       ap: Applicability[Column, ReqTypeId],
        f : K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
 
     val cols = vs.columns.whole.collect { case c@ Column.CustomField(id: K) => (id, c) }
@@ -125,11 +125,10 @@ private[reqtable2] object Logic {
     val expandersPerCol = cols.map { ct =>
         val colId    = ct._1
         val col      = ct._2
-        val applic   = ap(col)
         val expander = expanderC[V](vs, col)
         val dataFn   = f(colId)
         val fn       = (r: Req) => expander(() =>
-          applic(r) match {
+          ap(r.reqTypeId, col) match {
             case Applicable    => dataFn(r.id)
             case NotApplicable => UnivEq.emptySet[V]
           })
@@ -217,7 +216,7 @@ private[reqtable2] object Logic {
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, fd, s isVisible Column.CustomField(_))
     val tagLookup     = DataLogic.tagLookup(p, fd)
     val issueLookup   = this.issueLookup(p, fd)
-    val applicability = Column.applicability(p.config)
+    val applicability = Column.applicabilityForReq(p.config.applicability)
     val expandImps    = Direction.memo(dir => expanderC[Pubid](s, Column.Implications(dir)))
     val expandCodes   = expanderC[ReqCode.Value](s, Column.Code)
     val expandImpCols = impColValueExpander(s, fd, p, applicability)

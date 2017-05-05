@@ -351,10 +351,10 @@ object Table {
            | _: Column.Implications
            | Column.ReqType
            | Column.Tags
-           | Column.Pubid             => reusableNA
+           | Column.Pubid
+           | Column.DeletionReason    => reusableNA
         case c@ Column.Title          => ret(c, pw.reqCodeGroupTitle(row.group))
         case c@ Column.Code           => ret(c, renderCodes)
-        case c@ Column.DeletionReason => ProjectWidgets.DeletionReason.forReqCodeGroup.fold(reusableNA)(ret(c, _))
       }
     }
   }

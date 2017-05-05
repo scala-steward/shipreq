@@ -112,20 +112,27 @@ object Column {
     case EditorFeature.FieldKey.UseCaseStep(_)         => None
   }
 
-  def field(c: Column, p: ProjectConfig): Option[Field] =
-    c match {
+  def applicabilityForReq[Data](a: Applicability[FieldId, Data]): Applicability[Column, Data] =
+    Applicability {
       case ReqType
          | Pubid
          | Code
          | Title
          | Tags
-         | Implications(_)
-         | DeletionReason  => None
-      case CustomField(id) => Some(p.customField(id))
+         | DeletionReason
+         | _: Implications => Applicable.always
+      case CustomField(id) => a.byField(id)
     }
 
-  def applicability(p: ProjectConfig): Column => Applicability =
-    Memo(
-      Applicability.fn(
-        field(_, p).map(_.applicable), Applicable))
+  val applicabilityForReqCodeGroup: Applicability[Column, Any] =
+    Applicability {
+      case Code
+         | Title           => Applicable.always
+      case ReqType
+         | Pubid
+         | Tags
+         | DeletionReason
+         | _: CustomField
+         | _: Implications => Applicable.never
+    }
 }

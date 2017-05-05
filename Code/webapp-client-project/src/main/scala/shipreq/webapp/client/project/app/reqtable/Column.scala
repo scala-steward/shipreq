@@ -139,10 +139,10 @@ object Column {
       case CustomField(id, _) => Some(p.customField(id))
     }
 
-  def applicability(p: ProjectConfig): Column => Applicability =
-    Memo(
-      Applicability.fn(
-        field(_, p).map(_.applicable), Applicable))
+//  def applicability(p: ProjectConfig): Column => Applicability =
+//    Memo(
+//      Applicability.fn(
+//        field(_, p).map(_.applicable), Applicable))
 
   // -------------------------------------------------------------------------------------------------------------------
 

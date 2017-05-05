@@ -195,13 +195,11 @@ object Row {
 
   // ===================================================================================================================
 
-  implicit object SubjectRow extends Applicability.Subject[Row] {
-    override def applicable(row: Row, f: ReqTypeId => Applicable) =
-      row match {
-        case r: ForReq          => Applicability.SubjectReq.applicable(r.req, f)
-        case _: ForReqCodeGroup => NotApplicable
-      }
-  }
+  def applicability(a: Applicability.Default): Applicability[Column, Row] =
+    Column.applicabilityForReq(a).mapDataFn[Column, Row]((col, forReq) => {
+      case r: Row.ForReq          => forReq(r.req.reqTypeId)
+      case r: Row.ForReqCodeGroup => Column.applicabilityForReqCodeGroup((), col)
+    }).memoiseByField
 
   val expansion = Optional[Row, Expansion] {
     case r: ForReq          => Some(r.exp)

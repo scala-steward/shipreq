@@ -10,8 +10,9 @@ import scalaz.std.option.optionInstance
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.client.project.app.reqtable2.{SortMethod => SM, SortCriterion => SC, Column => C}
+import shipreq.webapp.client.project.app.reqtable2.{Column => C, SortCriterion => SC, SortMethod => SM}
 import SortMethod.{Asc, AscThenBlanks, BlanksThenAsc}
+import shipreq.base.util.{Applicable, NotApplicable}
 
 trait Sorter {
   type T
@@ -209,7 +210,8 @@ object Sorter {
     def normalisedText(f: PlainText.ForProject => String) =
       stringNormalise(f(plainText))
 
-    val applicability = Column.applicability(p.config)
+    val applicability: Applicability[Column, Row] =
+      Row.applicability(p.config.applicability)
 
     @inline def reqTypesToMnemonicOrder =
       p.config.reqTypes.order
@@ -286,7 +288,11 @@ object Sorter {
       Sorter[String](
         prep = setup => {
           val g = f(setup)
-          setup.applicability(c).fn((row: Row) => setup.normalisedText(g(_)(row)))("")
+          val rowApplicability = setup.applicability.byField(c)
+          (row: Row) => rowApplicability(row) match {
+            case Applicable    => setup.normalisedText(g(_)(row))
+            case NotApplicable => ""
+          }
         },
         sort = SortFn.string(bp)
       ))
