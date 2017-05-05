@@ -51,23 +51,23 @@ object Editability {
       whenReqIsLive match {
         case Some((reqTypeId, cfg)) =>
 
-          def forField(fid: CustomFieldId): Permission =
+          def forCustomField(fid: CustomFieldId): Permission =
             cfg.fields.get(fid) match {
-              case Some(f) => Allow when f.applicable(reqTypeId).is(Applicable) && f.live(cfg).is(Live)
-              case None => Deny // Field has been removed
+              case Some(f) => Allow when cfg.applicability(reqTypeId, fid).is(Applicable) && f.live(cfg).is(Live)
+              case None    => Deny // Field has been removed
             }
 
           k match {
             case FieldKey.Code
                | FieldKey.Title
                | FieldKey.Tags(None)
-               | FieldKey.Implications   (\/-(_: Direction)) => Allow
-            case FieldKey.CustomTextField(fid)               => forField(fid)
-            case FieldKey.Implications   (-\/(fid))          => forField(fid)
-            case FieldKey.Tags           (Some(fid))         => forField(fid)
+               | FieldKey.Implications   (\/-(_))    => Allow
+            case FieldKey.Implications   (-\/(fid))  => forCustomField(fid)
+            case FieldKey.CustomTextField(fid)       => forCustomField(fid)
+            case FieldKey.Tags           (Some(fid)) => forCustomField(fid)
             case FieldKey.ReqType =>
               reqTypeId match {
-                case _: CustomReqTypeId => Allow
+                case _: CustomReqTypeId    => Allow
                 case StaticReqType.UseCase => Deny
               }
           }
