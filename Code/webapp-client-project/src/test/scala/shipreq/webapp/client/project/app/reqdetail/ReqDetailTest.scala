@@ -1,5 +1,5 @@
 package shipreq.webapp.client.project.app.reqdetail
-
+/*
 import utest._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.UnsafeTypes._
@@ -128,3 +128,4 @@ object ReqDetailTest extends TestSuite {
 
   }
 }
+*/

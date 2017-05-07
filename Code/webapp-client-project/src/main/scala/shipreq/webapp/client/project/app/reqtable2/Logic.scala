@@ -415,7 +415,7 @@ private[reqtable2] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject)(rows: Vector[Row]): Stream[Row] = {
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject)(rows: Vector[Row]): Vector[Row] = {
     import Sorter._
 
     val sorter  = new FusedSorters(ts.order.init map inconclusive, ts.order.last |> conclusive)
@@ -427,15 +427,15 @@ private[reqtable2] object Logic {
     MutableArray.map(rows)(r => prepare(rowEndo(r)))
       .sort(sorter.sortFn.toOrdering)
       .map(sorter.row)
-      .to[Stream]
+      .to[Vector]
   }
 
   // ===================================================================================================================
   // Post-processing
 
-  def mergeAdjacent[A](input: Stream[A])(m: (A, A) => Option[A]): Stream[A] = {
-    @tailrec def go(seen: Stream[A], last: A, queue: Stream[A]): Stream[A] = {
-      @inline def res = seen append (last #:: Stream.empty)
+  def mergeAdjacent[A](input: Vector[A])(m: (A, A) => Option[A]): Vector[A] = {
+    @tailrec def go(seen: Vector[A], last: A, queue: Vector[A]): Vector[A] = {
+      @inline def res = seen :+ last
       if (queue.isEmpty)
         res
       else {
@@ -451,11 +451,11 @@ private[reqtable2] object Logic {
     if (input.isEmpty)
       input
     else {
-      go(Stream.empty, input.head, input.tail)
+      go(Vector.empty, input.head, input.tail)
     }
   }
 
-  def consolidateAdjacentDups(rows: Stream[Row]): Stream[Row] =
+  def consolidateAdjacentDups(rows: Vector[Row]): Vector[Row] =
     mergeAdjacent(rows)((x, y) =>
       (x, y) match {
         case (a: Row.ForReq, b: Row.ForReq) =>
@@ -532,8 +532,8 @@ private[reqtable2] object Logic {
     go(Vector.empty, cur)(prevI.indent, prevV)
   }
 
-  val addReqCodeTreeToRows: EndoFn[Stream[Row]] = rows =>
-    mkReqCodeTree[Row, Vector, Stream, Row](
+  val addReqCodeTreeToRows: EndoFn[Vector[Row]] = rows =>
+    mkReqCodeTree[Row, Vector, Vector, Row](
       rows,
       Row.reqCodes.get,
       (row, items) => Row.reqCodeTree.set(items)(row))
@@ -582,8 +582,8 @@ private[reqtable2] object Logic {
   }
 
   // ===================================================================================================================
-  def rowsForTable(p: Project, s: TableSettings, fd: FilterDead, pt: PlainText.ForProject, ts: TextSearch): Stream[Row] = {
-    def maybe(cond: Boolean, f: EndoFn[Stream[Row]]): EndoFn[Stream[Row]] = if (cond) f else identity
+  def rowsForTable(p: Project, s: TableSettings, fd: FilterDead, pt: PlainText.ForProject, ts: TextSearch): Vector[Row] = {
+    def maybe(cond: Boolean, f: EndoFn[Vector[Row]]): EndoFn[Vector[Row]] = if (cond) f else identity
 
     gather(p, s, fd, pt, ts) |>
       sort(p, s, pt) |>

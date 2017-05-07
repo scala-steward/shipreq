@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.reqtable
+package shipreq.webapp.client.project.app.reqtable2
 /*
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom.{document, html}
@@ -145,10 +145,10 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
     import Table.CellStatus
 
     private def cell(s: CellStatus): String =
-      "td." + Style.reqtable.cell(s).className.value
+      "td." + Style.reqtable2.cell(s).className.value
 
 //    private def cell(s: Status, focus: Boolean): String =  {
-//      var r = "td." + Style.reqtable.cell(s).className.value
+//      var r = "td." + Style.reqtable2.cell(s).className.value
 //      if (focus)
 //        r += ":focus"
 //      else

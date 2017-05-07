@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.reqtable
+package shipreq.webapp.client.project.app.reqtable2
 /*
 import japgolly.microlibs.nonempty._
 import japgolly.scalajs.react._

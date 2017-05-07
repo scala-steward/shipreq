@@ -1,5 +1,5 @@
 package shipreq.webapp.client.project.app
-
+/*
 import japgolly.scalajs.react.test._
 import utest._
 import shipreq.base.util.univeq._
@@ -42,3 +42,4 @@ object ProjectSpaTest extends TestSuite {
     'reqTableFilterDeadSync - runTest(`ReqTable filterDead after change on detail page`)
   }
 }
+*/

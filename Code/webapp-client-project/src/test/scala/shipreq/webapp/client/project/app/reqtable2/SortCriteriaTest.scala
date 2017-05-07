@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.reqtable
+package shipreq.webapp.client.project.app.reqtable2
 /*
 import nyaya.prop._
 import nyaya.test._

@@ -95,7 +95,7 @@ object ReqTablePage {
         fd <- pxFilterDead
         pt <- pxPlainText
         ts <- pxTextSearch
-      } yield Logic.rowsForTable(p, s, fd, pt, ts).toVector
+      } yield Logic.rowsForTable(p, s, fd, pt, ts)
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
       pxProps(_.rowAsync.read.keySet)
