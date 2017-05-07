@@ -197,11 +197,12 @@ private[reqtable2] object Logic {
    * Performs expansion.
    * Does not perform any sorting.
    */
-  def gather(p : Project,
-             s : TableSettings,
-             fd: FilterDead,
-             pt: PlainText.ForProject,
-             ts: TextSearch): Vector[Row] = {
+  def gather[C[_]](p : Project,
+                   s : TableSettings,
+                   fd: FilterDead,
+                   pt: PlainText.ForProject,
+                   ts: TextSearch)
+                  (implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] = {
 
     // NOTES:
     //
@@ -268,8 +269,8 @@ private[reqtable2] object Logic {
     val restoreFilteredRCGs = s.viewReqCodeGroups && filterExprUsed
 
     // Create rows
-    fullFilter.fold(Vector.empty[Row]) { filter =>
-      var output           = Vector.empty[Row]
+    val output = cbf()
+    fullFilter.foreach { filter =>
       val restorableRCGs   = DataLog.list[Row.ForReqCodeGroup].disableUnless(restoreFilteredRCGs)
       val codesSeen        = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
       val seeExpandedCodes = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
@@ -290,7 +291,7 @@ private[reqtable2] object Logic {
           // Build
           val mv = multiValuesFn(id)
           exps.foreachWithIndex((exp, i) =>
-            output :+= Row.ForReq(r, live, exp, mv, i))
+            output += Row.ForReq(r, live, exp, mv, i))
 
           seeExpandedCodes(codes)
         }
@@ -302,7 +303,7 @@ private[reqtable2] object Logic {
           val row = Row.ForReqCodeGroup(g, code, None)
           if (filter fb g) {
             codesSeen.add(row.reqCode)
-            output :+= row
+            output += row
           } else
             if (filterDeadRCG(g))
               restorableRCGs.add(row)
@@ -313,11 +314,10 @@ private[reqtable2] object Logic {
         val visTrie = codesSeen.get()
         for (row <- restorableRCGs.get())
           if (visTrie.dropPath(row.reqCode).nonEmpty)
-            output :+= row
+            output += row
       }
-
-      output
     }
+    output.result()
   }
 
   // ===================================================================================================================
@@ -415,7 +415,7 @@ private[reqtable2] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject)(rows: Vector[Row]): Vector[Row] = {
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject)(rows: Iterable[Row]): MutableArray[Row] = {
     import Sorter._
 
     val sorter  = new FusedSorters(ts.order.init map inconclusive, ts.order.last |> conclusive)
@@ -427,35 +427,33 @@ private[reqtable2] object Logic {
     MutableArray.map(rows)(r => prepare(rowEndo(r)))
       .sort(sorter.sortFn.toOrdering)
       .map(sorter.row)
-      .to[Vector]
   }
 
   // ===================================================================================================================
   // Post-processing
 
-  def mergeAdjacent[A](input: Vector[A])(m: (A, A) => Option[A]): Vector[A] = {
-    @tailrec def go(seen: Vector[A], last: A, queue: Vector[A]): Vector[A] = {
-      @inline def res = seen :+ last
-      if (queue.isEmpty)
-        res
-      else {
-        val h = queue.head
-        val t = queue.tail
-        m(last, h) match {
-          case None    => go(res, h, t)
-          case Some(a) => go(seen, a, t)
+  def mergeAdjacent[A, C[_]](input: Iterator[A])(merge: (A, A) => Option[A])
+                            (implicit cbf: CanBuildFrom[Nothing, A, C[A]]): C[A] = {
+
+    val results = cbf()
+    if (input.hasNext) {
+      @tailrec def go(prev: A): Unit = {
+        if (input.isEmpty)
+          results += prev
+        else {
+          val next = input.next()
+          merge(prev, next) match {
+            case None         => results += prev; go(next)
+            case Some(merged) => go(merged)
+          }
         }
       }
+      go(input.next())
     }
-
-    if (input.isEmpty)
-      input
-    else {
-      go(Vector.empty, input.head, input.tail)
-    }
+    results.result()
   }
 
-  def consolidateAdjacentDups(rows: Vector[Row]): Vector[Row] =
+  def consolidateAdjacentDups[C[_]](rows: Iterator[Row])(implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] =
     mergeAdjacent(rows)((x, y) =>
       (x, y) match {
         case (a: Row.ForReq, b: Row.ForReq) =>
@@ -583,11 +581,10 @@ private[reqtable2] object Logic {
 
   // ===================================================================================================================
   def rowsForTable(p: Project, s: TableSettings, fd: FilterDead, pt: PlainText.ForProject, ts: TextSearch): Vector[Row] = {
-    def maybe(cond: Boolean, f: EndoFn[Vector[Row]]): EndoFn[Vector[Row]] = if (cond) f else identity
-
-    gather(p, s, fd, pt, ts) |>
-      sort(p, s, pt) |>
-      consolidateAdjacentDups |>
-      maybe(s.viewReqCodesAsTree, addReqCodeTreeToRows)
+    def r1: Array       [Row] = gather(p, s, fd, pt, ts)
+    def r2: MutableArray[Row] = sort(p, s, pt)(r1)
+    val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator)
+    val r4: Vector      [Row] = if (s.viewReqCodesAsTree) addReqCodeTreeToRows(r3) else r3
+    r4
   }
 }

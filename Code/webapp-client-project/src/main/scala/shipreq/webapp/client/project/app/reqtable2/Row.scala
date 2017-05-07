@@ -248,4 +248,10 @@ object Row {
   val cfImps: OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
   val cfTags: OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
   val tags  : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.tags
+
+  private def mmLens[K, V](k: K): Lens[Map[K, Vector[V]], Vector[V]] =
+    Lens[Map[K, Vector[V]], Vector[V]](_.getOrElse(k, Vector.empty))(vs => _.updated(k, vs))
+
+  def cfImp(id: CustomField.Implication.Id): OV[Pubid]           = cfImps ^|-> mmLens(id)
+  def cfTag(id: CustomField.Tag        .Id): OV[ApplicableTagId] = cfTags ^|-> mmLens(id)
 }
