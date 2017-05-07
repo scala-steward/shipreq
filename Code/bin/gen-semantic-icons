@@ -4,7 +4,7 @@ cd "$(dirname "$(readlink -e "$0")")/.." || exit 1
 # To camel-case
 x='s/^([^!]*)[ _-]([a-z])/$1\u$2/g;'
 
-cat res/semantic/src/themes/default/elements/icon.overrides \
+cat frontend/semantic/src/themes/default/elements/icon.overrides \
   | grep -e 'i\.icon\.[^ ]*:\(before\|after\)' \
   | perl -pe 's/:.+//; s/i\.icon\.//; s/\./ /g' \
   | sort -u \
