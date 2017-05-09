@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.reqtable2
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.scalajs.react.ScalazReact._
 import japgolly.scalajs.react.extra.Reusability
 import scalaz.{-\/, \/-}
@@ -135,4 +135,7 @@ object Column {
          | _: CustomField
          | _: Implications => Applicable.never
     }
+
+  def all(c: ProjectConfig): NonEmptySet[Column] =
+    builtInValues.toNES[Column] ++ c.fields.customFields.valuesIterator.map(f => CustomField(f.id))
 }

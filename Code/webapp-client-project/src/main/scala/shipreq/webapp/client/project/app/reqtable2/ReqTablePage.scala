@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable2
 
-import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -15,6 +15,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.{PotentialFilter, ValidFilter}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.client.base.data.On
 import shipreq.webapp.client.base.feature.AsyncFeature
 import shipreq.webapp.client.base.lib.DataReusability._
 import shipreq.webapp.client.base.protocol.ClientProtocol
@@ -86,7 +87,7 @@ object ReqTablePage {
     val pxFilterDead   : Px[FilterDead            ] = pxProps(_.filterDead)
     val pxTableSettings: Px[TableSettings         ] = pxProps(_.state.tableSettings)
     val pxSelection    : Px[RowSelection          ] = pxProps(_.state.selection)
-    val pxColumns      : Px[NonEmptyVector[Column]] = pxProps(_.state.tableSettings.columns)
+    val pxActiveColumns: Px[NonEmptyVector[Column]] = pxProps(_.state.tableSettings.columns)
 
     val pxRows: Px[Vector[Row]] =
       for {
@@ -108,19 +109,33 @@ object ReqTablePage {
       } yield
         s.updateBy(setSelection).legal(rs.iterator.map(_.sourceId).toSet &~ wr)
 
-    val pxColumnsPlus: Px[NonEmptyVector[ColumnPlus]] =
+    val pxActiveColumnsPlus: Px[NonEmptyVector[ColumnPlus]] =
       (for {
         p  <- pxProject
-        cs <- pxColumns
+        cs <- pxActiveColumns
       } yield ColumnPlus.forceNEV(ColumnPlus.byProject(p))(cs))
         .withReuse
+
+    val pxAvailableColumnsPlus: Px[NonEmptySet[ColumnPlus]] =
+      (for {
+        p  <- pxProject
+        fd <- pxFilterDead
+      } yield ColumnPlus.all(p, fd))
+        .withReuse
+
+    val pxColumnSelector: Px[VdomElement] =
+      for {
+        sel <- pxActiveColumns
+        all <- pxAvailableColumnsPlus
+      } yield
+        ColumnSelector.Props(sel, all, modSettings.map(m => u => m(_.setColumns(u)))).render
 
     def render(p: Props): VdomElement = {
       Px.refresh(manualRefresh: _*)
 
       val table = Table.Whole.Props(
         pxRows.value(),
-        pxColumnsPlus.value(),
+        pxActiveColumnsPlus.value(),
         pxRowSelectionVisible.value(),
         p.editor,
         p.rowAsync.read,
@@ -130,6 +145,7 @@ object ReqTablePage {
       ).render
 
       <.main(BaseStyles.containerFull,
+        pxColumnSelector.value(),
         table)
     }
   }

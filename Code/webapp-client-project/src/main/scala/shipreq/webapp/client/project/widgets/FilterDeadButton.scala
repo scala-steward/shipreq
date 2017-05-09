@@ -18,7 +18,7 @@ object FilterDeadButton {
 
       val icon  = Icon.TrashOutline.withSize(Size.Large).withColour(iconColour)
       val btn   = Button(tipe = Button.Type.IconOnly(icon), colour = btnColour)
-      val popup = Popup.Css(tipText, Popup.Css.Position.LeftCenter)
+      val popup = Popup.Css(tipText, Popup.Position.LeftCenter)
 
       btn.tag(popup)
     }

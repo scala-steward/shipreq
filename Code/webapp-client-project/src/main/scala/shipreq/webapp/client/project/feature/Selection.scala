@@ -1,10 +1,12 @@
 package shipreq.webapp.client.project.feature
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.components.TriStateCheckbox
 import japgolly.univeq.UnivEq
 import monocle.Iso
+import org.scalajs.dom.html
 import shipreq.webapp.client.base.data.{Off, On}
 import shipreq.webapp.client.project.widgets.Widgets
 import Selection._
@@ -118,7 +120,7 @@ object Selection {
     override def toggle =
       set(!get)
 
-    override def checkbox =
+    override def checkbox: VdomTagOf[html.Input] =
       Widgets.checkbox(get)(^.onChange --> toggleFn)
 
     override def checkboxAndOnClick: TagMod =

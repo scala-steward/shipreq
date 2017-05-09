@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable2
 
-import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.scalajs.react.extra.Reusability
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.UiText.ColumnNames
@@ -13,7 +13,10 @@ import shipreq.webapp.client.base.lib.DataReusability._
   *             isn't a dead column, but is [[Dead]] here because it's only applicable to dead rows and only makes
   *             sense being rendered when [[FilterDead]] is [[ShowDead]].
   */
-final case class ColumnPlus(column: Column, live: Live, name: String)
+final case class ColumnPlus(column: Column, live: Live, name: String) {
+//  def allowWhenFD(fd: FilterDead): Boolean =
+//    ColumnPlus.filterDead(fd)(this)
+}
 
 object ColumnPlus {
 
@@ -43,4 +46,16 @@ object ColumnPlus {
     */
   def forceNEV(f: Column => Option[ColumnPlus])(cs: NonEmptyVector[Column]): NonEmptyVector[ColumnPlus] =
     NonEmptyVector force cs.whole.flatMap(f(_).toList)
+
+  def forceNES(f: Column => Option[ColumnPlus])(cs: NonEmptySet[Column]): NonEmptySet[ColumnPlus] =
+    NonEmptySet force cs.whole.flatMap(f(_).toList)
+
+  def all(p: Project): NonEmptySet[ColumnPlus] =
+    forceNES(byProject(p))(Column.all(p.config))
+
+  def all(p: Project, fd: FilterDead): NonEmptySet[ColumnPlus] =
+    NonEmptySet.force(all(p).whole filter filterDead(fd))
+
+  val filterDead: FilterDead => ColumnPlus => Boolean =
+    FilterDead.memo(_.filterFnBy[ColumnPlus](_.live))
 }

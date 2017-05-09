@@ -99,11 +99,11 @@ abstract class DataReusability {
   implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[Vector[A]] =
     Reusability.byRefOrUnivEq
 
-  def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =
-    Reusability.by(_.whole)
+  implicit def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =
+    Reusability.byRef || Reusability.by(_.whole)
 
-  def reusabilityNonEmptySet[A: Reusability]: Reusability[NonEmptySet[A]] =
-    Reusability.by(_.whole)
+  implicit def reusabilityNonEmptySet[A: Reusability]: Reusability[NonEmptySet[A]] =
+    Reusability.byRef || Reusability.by(_.whole)
 
   implicit def reusabilityRemote[Fn <: RemoteFn.Instance] =
     Reusability.by((_: Fn).key)

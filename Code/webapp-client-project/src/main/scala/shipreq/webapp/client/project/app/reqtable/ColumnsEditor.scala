@@ -12,8 +12,7 @@ object ColumnsEditor {
 
   val checkboxList =
     new CheckboxList[Column](checkboxes =>
-      <.div(
-        checkboxes.toTagMod(<.div(_))))
+      ???)
 
   case class Props(on          : NonEmptySet[Column],
                    toggle      : Column ~=> Callback,
@@ -24,15 +23,15 @@ object ColumnsEditor {
   implicit val reusabilityProps = Reusability.caseClass[Props]
 
   private def render(p: Props) = {
-    val items =
-      p.all.iterator
-        .filter(!Column.isMandatory(_))
-        .map(c => CheckboxList.Item(c, p.columnNames(c), On when p.on.contains(c), Enabled))
-        .toVector
-        .sortBy(_.label)
-
-    val p2 = CheckboxList.Props(items, p.toggle)
-    checkboxList.Component(p2)
+//    val items =
+//      p.all.iterator
+//        .filter(!Column.isMandatory(_))
+//        .map(c => CheckboxList.Item(c, p.columnNames(c), On when p.on.contains(c), Enabled))
+//        .toVector
+//        .sortBy(_.label)
+//
+//    val p2 = CheckboxList.Props(items, p.toggle)
+    checkboxList.Component(???)
   }
 
   val Component = ScalaComponent.builder[Props]("ColumnsEditor")

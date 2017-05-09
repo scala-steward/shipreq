@@ -1,7 +1,9 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty._
-import japgolly.scalajs.react._, vdom.html_<^._, MonocleReact._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scala.annotation.tailrec
@@ -13,7 +15,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
 import shipreq.webapp.base.text.{PlainText, TextSearch}
-import shipreq.webapp.client.base.data.Plain
+import shipreq.webapp.client.base.data.{On, Plain}
 import shipreq.webapp.client.project.app.Style.reqtable.{deleteRestore => *}
 import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature.{PreviewFeature, Selection}
@@ -352,7 +354,7 @@ object DeletionForm {
               renderImpliedByItem.reqs(impliedBy))
 
         <.tr(
-          td(<.span(*.indent(indent)), sel.fold(Widgets.checkboxAlwaysOn)(_.checkbox), reqTitle),
+          td(<.span(*.indent(indent)), sel.fold(Widgets.checkboxReadOnly(On))(_.checkbox), reqTitle),
           td(impBy))
       }
 
