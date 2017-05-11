@@ -20,7 +20,7 @@ import shipreq.webapp.client.base.lib.DataReusability._
 import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.state.{Changes, ClientData}
-import shipreq.webapp.client.project.app.Style.{reqtable2 => *}
+import shipreq.webapp.client.project.app.Style.reqtable2.{page => *}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -186,9 +186,11 @@ object ReqTablePage {
 
       <.main(BaseStyles.containerFull,
         pxPageSummary.value(),
-        pxSortCriteriaEditor.value(),
-        filterEditor,
-        pxColumnSelector.value(),
+        <.div(*.viewCtrls,
+          pxSortCriteriaEditor.value(),
+          <.div(*.flexGap),
+          filterEditor,
+          pxColumnSelector.value()),
         table)
     }
   }

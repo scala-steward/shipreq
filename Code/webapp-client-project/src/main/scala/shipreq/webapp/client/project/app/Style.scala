@@ -139,6 +139,17 @@ object Style extends StyleSheet.Inline {
 
     // nearly everything here is !important because of stupid Semantic UI
 
+    object page {
+
+      val viewCtrls = style(
+        display.flex,
+        alignContent.center,
+        marginTop(2.em),
+        unsafeChild("> *:not(:first-child)")(marginLeft(1 ex)))
+
+      val flexGap = style(flexGrow(1))
+    }
+
     object table {
 
       private val headerBase = style(
@@ -210,9 +221,11 @@ object Style extends StyleSheet.Inline {
           marginLeft(2 ex),
           borderRadius(4.px),
           cursor.pointer, // Because click changes sort direction
+          // inlineFlex required below to keep the entire row at the right height
+          // inlineBlock adds extra height and causes height differences between filter section & column button
           (status match {
-            case DragToReorder.Normal     => mixin(display.inlineBlock)
-            case DragToReorder.DragSource => mixin(display.inlineBlock, opacity(.4), border(2 px, dashed, c"#000"))
+            case DragToReorder.Normal     => mixin(display.inlineFlex)
+            case DragToReorder.DragSource => mixin(display.inlineFlex, opacity(.4), border(2 px, dashed, c"#000"))
             case DragToReorder.Tombstone  => mixin(display.none)
           }): StyleS
         ))
@@ -759,6 +772,7 @@ object Style extends StyleSheet.Inline {
     deletionForm.impliedByItem(Live),
     reqtable2.filterEditor.input(Valid),
     reqtable2.sortEditor.dragArea,
+    reqtable2.page.viewCtrls,
     reqtable2.table.selectionColumnHeader,
     reqdetail.detailTable,
     reqdetail.useCaseStep.container,
