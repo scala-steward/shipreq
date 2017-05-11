@@ -132,7 +132,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       }
 
     def render(p: Props, s: State): VdomElement = {
-      def fd = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
+      def filterDeadSnapshot = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
 
       lazy val asyncState = s.async.toRead
       def editorR = EditorFeature.Read.ForProject(s.editors, pxEditability.value(), asyncState.mapKey1(AsyncKey.ToEditor))
@@ -157,18 +157,18 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           ProjectHome.Props(pname, index).render
 
         case Page.CfgFields =>
-          cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, fd).component
+          cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, filterDeadSnapshot).component
 
         case Page.CfgIssues =>
           cfg.issues.CfgIssues.Props(
-            cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, fd, usageShow)
+            cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, filterDeadSnapshot, usageShow)
             .component
 
         case Page.CfgReqTypes =>
-          cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, fd, usageShow).component
+          cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, filterDeadSnapshot, usageShow).component
 
         case Page.CfgTags =>
-          cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, fd).component
+          cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, filterDeadSnapshot).component
 
         case Page.ReqTable =>
           val rowAsync = asyncW
@@ -179,13 +179,13 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
             ReqTablePage.Props(
               editorRW,
               rowAsync,
-              s.filterDead,
+              filterDeadSnapshot,
               s.reqTable))
 
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
             pubid,
-            fd,
+            filterDeadSnapshot,
             reqDetailReqPropsFn(s),
             editorRW.forUseCaseSteps,
             StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState))

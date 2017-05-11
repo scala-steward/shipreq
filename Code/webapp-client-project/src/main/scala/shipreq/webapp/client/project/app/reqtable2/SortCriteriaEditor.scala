@@ -78,7 +78,7 @@ object SortCriteriaEditor {
             ^.onClick --> rotateSortMethod(col),
             <.tbody(
               <.tr(*.criterionBorder,
-                <.td(*.name(conclusive), p.allColumns(col).name),
+                <.td(*.name(conclusive), p.allColumns(col).fold("")(_.name)),
                 <.td(*.sortMethod, renderSortMethod(i.data.method)))))
         }
 

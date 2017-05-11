@@ -10,7 +10,6 @@ import japgolly.univeq._
 import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.protocol._
@@ -31,6 +30,8 @@ object ReqTablePage {
     ScalaComponent.builder[Props]("ReqTablePage")
       .backend(new Backend(staticProps, _))
       .renderBackend
+      .componentWillMount(_.backend.syncState)
+      .componentWillReceiveProps($ => $.backend.onPropsChange($.currentProps, $.nextProps))
       .build
 
   final case class StaticProps(stateAccess     : StateAccessPure[State],
@@ -45,7 +46,7 @@ object ReqTablePage {
 
   final case class Props(editor    : EditorFeature.ReadWrite.ForProject,
                          rowAsync  : AsyncFeature.ReadWrite.D1[Row.SourceId, String],
-                         filterDead: FilterDead,
+                         filterDead: StateSnapshot[FilterDead],
                          state     : State)
 
   object Props {
@@ -92,7 +93,7 @@ object ReqTablePage {
       px
     }
 
-    val pxFilterDead   : Px[FilterDead            ] = pxProps(_.filterDead)
+    val pxFilterDead                                = pxProps(_.filterDead.value)
     val pxTableSettings: Px[TableSettings         ] = pxProps(_.state.tableSettings)
     val pxSelection    : Px[RowSelection          ] = pxProps(_.state.selection)
     val pxActiveColumns: Px[NonEmptyVector[Column]] = pxProps(_.state.tableSettings.columns)
@@ -185,6 +186,7 @@ object ReqTablePage {
       ).render
 
       <.main(BaseStyles.containerFull,
+        ViewsMenu.Component(p.filterDead),
         pxPageSummary.value(),
         <.div(*.viewCtrls,
           pxSortCriteriaEditor.value(),
@@ -193,5 +195,19 @@ object ReqTablePage {
           pxColumnSelector.value()),
         table)
     }
+
+    def onPropsChange(prev: Props, next: Props): Callback =
+      if (prev.filterDead.value ==* next.filterDead.value)
+        Callback.empty
+      else
+        syncState
+
+    /** Synchronises the State of this page with external Props that affect it. */
+    val syncState: Callback =
+      stateAccess.modState { s =>
+        pxFilterDead.refresh()
+        State.tableSettings.modify(_.filterColumns(pxColumnPlusAll.value().containsColumn))(s)
+      }
   }
+
 }

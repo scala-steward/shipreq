@@ -52,12 +52,16 @@ object ColumnPlus {
   val filterDead: FilterDead => ColumnPlus => Boolean =
     FilterDead.memo(_.filterFnBy[ColumnPlus](_.live))
 
+  /** All columns legally-displayable according to the FilterDead setting */
   final case class All(columns: NonEmptySet[ColumnPlus]) {
     private val map: Map[Column, ColumnPlus] =
       columns.iterator.map(c => (c.column, c)).toMap
 
-    def apply(c: Column): ColumnPlus =
-      map(c)
+    def apply(c: Column): Option[ColumnPlus] =
+      map.get(c)
+
+    val containsColumn: Column => Boolean =
+      map.contains
   }
 
   object All {
