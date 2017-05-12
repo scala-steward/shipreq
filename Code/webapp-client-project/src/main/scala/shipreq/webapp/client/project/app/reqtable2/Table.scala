@@ -94,6 +94,7 @@ object Table {
           }
 
         semantic.Table.celledCompactUnstackable(
+          *.table,
           header,
           <.tbody(renderRows))
       }

@@ -141,13 +141,24 @@ object Style extends StyleSheet.Inline {
 
     object page {
 
+      private def vgap = 1.25 em
+
       val viewCtrls = style(
         display.flex,
         alignContent.center,
-        marginTop(2.em),
+        margin(v = vgap, h = `0`),
         unsafeChild("> *:not(:first-child)")(marginLeft(1 ex)))
 
+      def actionCtrls = viewCtrls
+
+      val summary = style(
+        flexGrow(1),
+        textAlign.right)
+
       val flexGap = style(flexGrow(1))
+
+      val filterDeadButtonContainer = style(
+        paddingRight(`0`).important)
     }
 
     object creation {
@@ -158,6 +169,9 @@ object Style extends StyleSheet.Inline {
     }
 
     object table {
+
+      val table = style(
+        margin(`0`).important)
 
       private val headerBase = style(
         padding(4.px).important)

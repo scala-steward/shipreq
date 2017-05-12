@@ -9,6 +9,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.univeq._
 import monocle.Lens
 import monocle.macros.Lenses
+import org.scalajs.dom.document
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Allow
 import shipreq.webapp.base.data._
@@ -32,6 +33,7 @@ object ReqTablePage {
       .backend(new Backend(staticProps, _))
       .renderBackend
       .componentWillMount(_.backend.syncState)
+      .componentDidMount(_.backend.unfocus)
       .componentWillReceiveProps($ => $.backend.onPropsChange($.currentProps, $.nextProps))
       .build
 
@@ -180,7 +182,7 @@ object ReqTablePage {
       val newButton = NewButton.Props(
         p.state.newButton,
         pxProject.value().config.reqTypes,
-        Allow,
+        Allow when p.state.tableSettings.viewReqCodeGroups,
         Some(newButtonUpdate),
       ).render
 
@@ -202,14 +204,19 @@ object ReqTablePage {
       ).render
 
       <.main(BaseStyles.containerFull,
+
         ViewsMenu.Component(p.filterDead),
-        newButton,
-        pxPageSummary.value(),
+
+        <.div(*.actionCtrls,
+          newButton,
+          <.div(*.summary, pxPageSummary.value())),
+
         <.div(*.viewCtrls,
           pxSortCriteriaEditor.value(),
           <.div(*.flexGap),
           filterEditor,
           pxColumnSelector.value()),
+
         table)
     }
 
@@ -225,6 +232,11 @@ object ReqTablePage {
         pxFilterDead.refresh()
         State.tableSettings.modify(_.filterColumns(pxColumnPlusAll.value().containsColumn))(s)
       }
+
+    // Prevent browser auto-focusing the first <input> it sees on page load
+    def unfocus = Callback {
+      document.activeElement.domToHtml.foreach(_.blur())
+    }
   }
 
 }

@@ -2,6 +2,8 @@ package shipreq.webapp.client.project.app.reqtable2
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
+import scalacss.ScalaCssReact._
+import shipreq.webapp.client.project.app.Style.reqtable2.{page => *}
 import shipreq.webapp.client.base.ui.semantic.{Menu, SemExtAny}
 import shipreq.webapp.client.project.widgets.FilterDeadButton
 
@@ -27,12 +29,16 @@ object ViewsMenu {
         ^.color := "#888",
         ^.onClick --> Callback.alert("This feature isn't implemented yet."))) :: Nil
 
-  private def render(p: Props): VdomElement =
+  private def render(p: Props): VdomElement = {
+    val filterDeadButton = Menu.Item.Div(
+      TagMod(*.filterDeadButtonContainer, FilterDeadButton.Component(p)))
+
     Menu.Props(
       style,
       leftItems,
-      Menu.Item.Div(FilterDeadButton.Component(p)) :: Nil)
+      filterDeadButton :: Nil)
       .render
+  }
 
   val Component = ScalaComponent.builder[Props]("ViewsMenu")
     .render_P(render)
