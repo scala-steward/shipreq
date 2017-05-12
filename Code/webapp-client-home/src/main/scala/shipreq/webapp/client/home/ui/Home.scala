@@ -74,15 +74,15 @@ object HomeContent {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val navBarLeft =
-      Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil
+    val navBarLeft: MemberNavBar.LeftProps =
+      Reusable.byRef(Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil)
 
     val inputMod: TagMod =
       ^.placeholder := "New project name..."
 
     def render(p: Props): VdomElement = {
 
-      val menu = MemberNavBar.Props(p.username, navBarLeft, Nil).render
+      val menu = MemberNavBar.Props(p.username, navBarLeft).render
 
       val projectCreate = {
         val status =
