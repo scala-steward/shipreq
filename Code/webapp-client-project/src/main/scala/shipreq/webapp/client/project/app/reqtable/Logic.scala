@@ -202,7 +202,7 @@ private[reqtable] object Logic {
     // * The Tags column is not expanded. Only custom tag columns are.
 
     val filterDeadReq = vs.filterDead.filterFnBy[Req](_ live p.config.reqTypes)
-    val filterDeadRCG = vs.filterDead.filterFnBy[ReqCodeGroup](_.live)
+    val filterDeadRCG = vs.filterDead.filterFnBy[CodeGroup](_.live)
     val filterDead    = Filters(filterDeadReq, filterDeadRCG)
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, vs.filterDead, vs isVisible Column.CustomField(_, Dead))
     val tagLookup     = DataLogic.tagLookup(p, vs.filterDead)
@@ -255,13 +255,13 @@ private[reqtable] object Logic {
     /** Was a filter expression used (i.e. a filter that isn't FilterDead) */
     def filterExprUsed = opOpFilter.exists(_.isDefined)
 
-    /** When a filter expression is present, we still want to show relevant ReqCodeGroups of visible rows. */
-    val restoreFilteredRCGs = vs.viewReqCodeGroups && filterExprUsed
+    /** When a filter expression is present, we still want to show relevant CodeGroups of visible rows. */
+    val restoreFilteredRCGs = vs.viewCodeGroups && filterExprUsed
 
     // Create rows
     fullFilter.fold(Vector.empty[Row]) { filter =>
       var output           = Vector.empty[Row]
-      val restorableRCGs   = DataLog.list[ReqCodeGroupRow].disableUnless(restoreFilteredRCGs)
+      val restorableRCGs   = DataLog.list[CodeGroupRow].disableUnless(restoreFilteredRCGs)
       val codesSeen        = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
       val seeExpandedCodes = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
 
@@ -286,11 +286,11 @@ private[reqtable] object Logic {
           seeExpandedCodes(codes)
         }
 
-      // Add ReqCodeGroups
-      if (vs.viewReqCodeGroups)
+      // Add CodeGroups
+      if (vs.viewCodeGroups)
         for (g <- p.reqCodes.groups) {
           val code = p.reqCodes reqCode g.id
-          val row = ReqCodeGroupRow(g, code, None)
+          val row = CodeGroupRow(g, code, None)
           if (filter fb g) {
             codesSeen.add(row.reqCode)
             output :+= row
@@ -299,7 +299,7 @@ private[reqtable] object Logic {
               restorableRCGs.add(row)
         }
 
-      // Add back filtered out ReqCodeGroups
+      // Add back filtered out CodeGroups
       if (restoreFilteredRCGs) {
         val visTrie = codesSeen.get()
         for (row <- restorableRCGs.get())
@@ -314,11 +314,11 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-  type Filters = FilterFn.Pair[Req, ReqCodeGroup]
+  type Filters = FilterFn.Pair[Req, CodeGroup]
 
   @inline def Filters(req         : Req          => Boolean = FilterFn.`n/a`,
-                      reqCodeGroup: ReqCodeGroup => Boolean = FilterFn.`n/a`): Filters =
-    FilterFn.Pair(req, reqCodeGroup)
+                      codeGroup: CodeGroup => Boolean = FilterFn.`n/a`): Filters =
+    FilterFn.Pair(req, codeGroup)
 
   /**
    * @return None means filter everything out. Function const false. Fail-early to an empty set. No results.
@@ -334,7 +334,7 @@ private[reqtable] object Logic {
     type F  = Filters
     type R  = Option[Filters]
     type FR = Req => Boolean
-    type FG = ReqCodeGroup => Boolean
+    type FG = CodeGroup => Boolean
     @inline implicit def autoSomeFilter(f: Filters): R = Some(f)
 
     // Possible optimisations:
@@ -397,7 +397,7 @@ private[reqtable] object Logic {
               def custom = p.config.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r) exists m)
               title || custom
             },
-            g => m(pt reqCodeGroupTitle g))
+            g => m(pt codeGroupTitle g))
       }
 
     interpret(vf)
@@ -454,9 +454,9 @@ private[reqtable] object Logic {
             Some(ReqRow(a.req, a.live, a.exp |+| b.exp, a.mv |+| b.mv, a.instanceId)) // TODO resort
           else
             None
-        case (_: ReqRow,          _: ReqCodeGroupRow)
-           | (_: ReqCodeGroupRow, _: ReqRow)
-           | (_: ReqCodeGroupRow, _: ReqCodeGroupRow) => None
+        case (_: ReqRow,          _: CodeGroupRow)
+           | (_: CodeGroupRow, _: ReqRow)
+           | (_: CodeGroupRow, _: CodeGroupRow) => None
       }
     )
 
@@ -538,7 +538,7 @@ private[reqtable] object Logic {
     var _liveVisibleReqs = 0
     var _deadVisibleReqs = 0
     rows foreach {
-      case _: ReqCodeGroupRow =>
+      case _: CodeGroupRow =>
         _codeGroups += 1
       case r: ReqRow =>
         val id = r.req.id

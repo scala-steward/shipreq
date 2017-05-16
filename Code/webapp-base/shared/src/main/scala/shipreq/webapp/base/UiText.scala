@@ -85,8 +85,8 @@ object UiText {
     def showDead = "Show deleted content."
   }
 
-  def reqCodeGroup = "Code Group"
-  def reqCodeGroups = "Code Groups"
+  def codeGroup = "Code Group"
+  def codeGroups = "Code Groups"
   def useCase = "Use Case"
 
   def buttonCommitChange = "OK"

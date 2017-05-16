@@ -47,9 +47,9 @@ case class Changes(ves: VerifiedEvents, p1: Project, p2: Project) {
          | _: GenericReqTitleSet
          | _: GenericReqTypeSet
          | _: ProjectNameSet
-         | _: ReqCodeGroupCreate
-         | _: ReqCodeGroupsDelete
-         | _: ReqCodeGroupUpdate
+         | _: CodeGroupCreate
+         | _: CodeGroupsDelete
+         | _: CodeGroupUpdate
          | _: ReqCodesPatch
          | _: ReqFieldCustomTextSet
          | _: ReqImplicationsPatch

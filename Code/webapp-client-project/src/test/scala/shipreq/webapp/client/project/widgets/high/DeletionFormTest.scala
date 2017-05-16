@@ -65,7 +65,7 @@ object DeletionFormTestData {
     }
 
     def visible = {
-      _expectDeletableRCGs += GroupRow(LiveReqCodeGroup(id, x.title), codeStr, ∅, ∅)
+      _expectDeletableRCGs += GroupRow(LiveCodeGroup(id, x.title), codeStr, ∅, ∅)
       x
     }
 

@@ -229,17 +229,17 @@ object Sorter {
   @inline def stringNormalise: EndoFn[String] =
     DataLogic.normaliseStringForSorting
 
-  // ReqCodeGroups are only displayed when sorting by code.
-  // ReqCodeGroups cannot have a blank code.
-  // Therefore, ReqCodeGroups cannot affect the conclusivity of a Pubid sort.
+  // CodeGroups are only displayed when sorting by code.
+  // CodeGroups cannot have a blank code.
+  // Therefore, CodeGroups cannot affect the conclusivity of a Pubid sort.
   val pubidSorter = Sorter[(Int, Int)](
     prep =
       setup => {
         val n = pubidNormaliser(setup)
         val `n/a` = (-1, -1)
         ;{
-          case r: Row.ForReq          => n(r.req.pubid)
-          case r: Row.ForReqCodeGroup => `n/a`
+          case r: Row.ForReq       => n(r.req.pubid)
+          case r: Row.ForCodeGroup => `n/a`
         }
       },
     sort = SortFn.intPair
@@ -259,8 +259,8 @@ object Sorter {
 
   val reqTypeSorter = Sorter[Int](
     prep = setup => {
-      case r: Row.ForReq          => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)
-      case r: Row.ForReqCodeGroup => -1
+      case r: Row.ForReq       => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)
+      case r: Row.ForCodeGroup => -1
     },
     sort = SortFn.int
   )
@@ -302,20 +302,20 @@ object Sorter {
 
   def customTextFieldSorter(id: CustomField.Text.Id, c: Column): SorterForSMCB =
     textSorter(c, p => {
-      case r: Row.ForReq          => p.customTextField(id)(r.req) getOrElse ""
-      case r: Row.ForReqCodeGroup => ""
+      case r: Row.ForReq       => p.customTextField(id)(r.req) getOrElse ""
+      case r: Row.ForCodeGroup => ""
     })
 
   val titleSorter: SorterForSMCB =
     textSorter(C.Title, p => {
-      case r: Row.ForReq          => p.reqTitle(r.req)
-      case r: Row.ForReqCodeGroup => p.reqCodeGroupTitle(r.group)
+      case r: Row.ForReq       => p.reqTitle(r.req)
+      case r: Row.ForCodeGroup => p.codeGroupTitle(r.group)
     })
 
   def deletionReasonSorter: SorterForSMCB =
     textSorterS(C.DeletionReason, s => pt => {
-      case r: Row.ForReq          => PlainText.DeletionReason.forReq(r.req)(s.p.config.reqTypes, pt) getOrElse ""
-      case _: Row.ForReqCodeGroup => PlainText.DeletionReason.forReqCodeGroup getOrElse ""
+      case r: Row.ForReq       => PlainText.DeletionReason.forReq(r.req)(s.p.config.reqTypes, pt) getOrElse ""
+      case _: Row.ForCodeGroup => PlainText.DeletionReason.forCodeGroup getOrElse ""
     })
 
   // ===================================================================================================================

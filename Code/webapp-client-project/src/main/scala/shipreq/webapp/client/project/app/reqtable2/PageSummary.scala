@@ -21,7 +21,7 @@ object PageSummary {
     Reusability.byRef || Reusability.caseClass
 
   private val iconReqs   = Icon.Cubes        .tag(^.title := "requirements")
-  private val iconRCGs   = Icon.FolderOutline.tag(^.title := UiText.reqCodeGroups.toLowerCase)
+  private val iconRCGs   = Icon.FolderOutline.tag(^.title := UiText.codeGroups.toLowerCase)
   private val iconDelete = Icon.TrashOutline .tag(^.title := "deleted")
   private val iconFilter = Icon.Filter       .tag(^.title := "excluded by the filter")
   private val iconReapp  = Icon.Copy         .tag(^.title := "reappearances due to sorting")

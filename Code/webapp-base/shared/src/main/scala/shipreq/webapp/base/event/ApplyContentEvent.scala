@@ -71,7 +71,7 @@ trait ApplyContentEvent {
         _  <- SE.foldMapRun(reqIds)(deleteReq) // TODO Use one Project get/put
         t1 <- ReqCodeLogic.getTrie
         t2 <- ReqCodeLogic.inactivateBelongingToReqsT(t1, reqIds)
-        t3 <- ReqCodeLogic.inactivateGroupsByIdT(t2, e.reqCodeGroups, remember = true)
+        t3 <- ReqCodeLogic.inactivateGroupsByIdT(t2, e.codeGroups, remember = true)
         _  <- Project.reqCodeTrie set t3
         _  <- Project.deletionReasons modify (addDeletionReason(_, e.reason, e.reqs))
       } yield ()
@@ -134,7 +134,7 @@ trait ApplyContentEvent {
         _  <- ContentCommon.restore(e.reqs)
         t1 <- ReqCodeLogic.getTrie
         t2 <- ReqCodeLogic.restoreBelongingToReqsT(t1, e.reqs)
-        t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.reqCodeGroups)
+        t3 <- ReqCodeLogic.restoreGroupsByIdT(t2, e.codeGroups)
         _  <- Project.reqCodeTrie set t3
       } yield ()
 
@@ -480,7 +480,7 @@ trait ApplyContentEvent {
     def needActiveGroup(d: Data, v: Value): SE[ActiveGroup] =
       narrowCC[Data, ActiveGroup](d, s"${show(v)} is not an ActiveGroup.")
 
-    def needDeadGroup(d: Data, v: Value): SE[DeadReqCodeGroup] =
+    def needDeadGroup(d: Data, v: Value): SE[DeadCodeGroup] =
       optionGet(d.deadGroup, s"Expected to find dead group at ${show(v)}.")
 
     def needCode(id: ReqCodeId): SE[Value] =
@@ -503,8 +503,8 @@ trait ApplyContentEvent {
       }
     }
 
-    private def awakenGroup(g: DeadReqCodeGroup) = LiveReqCodeGroup(g.id, g.title)
-    private def killGroup  (g: LiveReqCodeGroup) = DeadReqCodeGroup(g.id, g.title)
+    private def awakenGroup(g: DeadCodeGroup) = LiveCodeGroup(g.id, g.title)
+    private def killGroup  (g: LiveCodeGroup) = DeadCodeGroup(g.id, g.title)
 
     sealed trait Adder[A] {
       def reqCodeId(a: A): ReqCodeId
@@ -540,8 +540,8 @@ trait ApplyContentEvent {
         }
     }
 
-    /** Command to add an active ReqCodeGroup. */
-    case class AddGroup(code: Value, codeValidated: Validated, g: LiveReqCodeGroup)
+    /** Command to add an active CodeGroup. */
+    case class AddGroup(code: Value, codeValidated: Validated, g: LiveCodeGroup)
 
     implicit object GroupAdder extends Adder[AddGroup] {
       override def reqCodeId(a: AddGroup) = a.g.id
@@ -801,18 +801,18 @@ trait ApplyContentEvent {
   }
 
   // ===================================================================================================================
-  object ReqCodeGroupEvents {
+  object CodeGroupEvents {
     import ReqCodeLogic._
 
-    val ^ = ReqCodeGroupGD
+    val ^ = CodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
-    def applyCreate(e: ReqCodeGroupCreate): SE[Unit] = {
+    def applyCreate(e: CodeGroupCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
         c ← GD.need(^.Code)
         t = GD.want(^.Title)(Vector.empty)
-        g = LiveReqCodeGroup(e.id, t)
+        g = LiveCodeGroup(e.id, t)
         _ ← addOne(AddGroup(c, Unvalidated, g))
       } yield ()
     }
@@ -828,7 +828,7 @@ trait ApplyContentEvent {
         _  ← Project.reqCodeTrie set t3
       } yield ()
 
-    private def modifyGroup(id: ReqCodeId, f: LiveReqCodeGroup => LiveReqCodeGroup): SE[Unit] =
+    private def modifyGroup(id: ReqCodeId, f: LiveCodeGroup => LiveCodeGroup): SE[Unit] =
       for {
         t  ← getTrie
         v  ← needCode(id)
@@ -839,13 +839,13 @@ trait ApplyContentEvent {
         _  ← Project.reqCodeTrie set t2
       } yield ()
 
-    def applyUpdate(e: ReqCodeGroupUpdate): SE[Unit] =
+    def applyUpdate(e: CodeGroupUpdate): SE[Unit] =
       SE.foldMapRun(e.vs.values) {
         case ^.ValueForTitle(t) => modifyGroup(e.id, _.copy(title = t))
         case ^.ValueForCode (v) => updateGroupCode(e.id, v)
       }
 
-    def applyDelete(e: ReqCodeGroupsDelete): SE[Unit] =
+    def applyDelete(e: CodeGroupsDelete): SE[Unit] =
       getTrie >>= (inactivateGroupsByIdT(_, e.ids.whole, true)) >>= Project.reqCodeTrie.set
   }
 }

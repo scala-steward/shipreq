@@ -19,8 +19,8 @@ object RowKey {
     override type FieldKey = FieldKey.ForReq
   }
 
-  final case class ReqCodeGroup(id: data.ReqCodeId) extends RowKey {
-    override type FieldKey = FieldKey.ForReqCodeGroup
+  final case class CodeGroup(id: data.ReqCodeId) extends RowKey {
+    override type FieldKey = FieldKey.ForCodeGroup
   }
 
   case object UseCaseSteps extends RowKey {
@@ -41,12 +41,12 @@ object RowKey {
  */
 sealed trait FieldKey
 object FieldKey {
-  sealed trait ForReq          extends FieldKey
-  sealed trait ForReqCodeGroup extends FieldKey
+  sealed trait ForReq       extends FieldKey
+  sealed trait ForCodeGroup extends FieldKey
 
   case object ReqType                                                         extends ForReq
-  case object Code                                                            extends ForReq with ForReqCodeGroup
-  case object Title                                                           extends ForReq with ForReqCodeGroup
+  case object Code                                                            extends ForReq with ForCodeGroup
+  case object Title                                                           extends ForReq with ForCodeGroup
   case class  CustomTextField(field: CustomField.Text.Id)                     extends ForReq
   case class  Tags           (field: Option[CustomField.Tag.Id])              extends ForReq
   case class  Implications   (scope: CustomField.Implication.Id \/ Direction) extends ForReq
@@ -67,9 +67,9 @@ object FieldKey {
       case _         => false
     }.asInstanceOf[Option[ForReq]]
 
-  val filterForReqCodeGroup: Option[FieldKey] => Option[ForReqCodeGroup] =
+  val filterForCodeGroup: Option[FieldKey] => Option[ForCodeGroup] =
     _.filter {
-      case _: ForReqCodeGroup => true
-      case _                  => false
-    }.asInstanceOf[Option[ForReqCodeGroup]]
+      case _: ForCodeGroup => true
+      case _               => false
+    }.asInstanceOf[Option[ForCodeGroup]]
 }

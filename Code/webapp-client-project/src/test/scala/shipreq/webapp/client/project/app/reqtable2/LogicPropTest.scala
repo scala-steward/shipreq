@@ -47,7 +47,7 @@ object LogicPropTest extends TestSuite {
     val expectedVisibleReqCodes = {
       val b = Set.newBuilder[ReqCode.Value]
       p.reqCodes.activeReqCodesByReqId.values.foreach(b ++= _)
-      if (vs.viewReqCodeGroups)
+      if (vs.viewCodeGroups)
         p.reqCodes.groups.foreach(g =>
           if ((g.live is Live) || (vs.filterDead is ShowDead))
             b += p.reqCodes.reqCode(g.id))
@@ -200,7 +200,7 @@ object LogicPropTest extends TestSuite {
       val na     = ("", -1)
       val pubids = sorted.map {
         case r: ReqRow          => pubidExtract(p)(r.req.pubid)
-        case r: ReqCodeGroupRow => na
+        case r: CodeGroupRow => na
       }
       E_sorted("Pubids", pubids, dir)
     }
@@ -220,7 +220,7 @@ object LogicPropTest extends TestSuite {
       val sorted     = sortBy(SC.InconclusiveCB(C.Title, sm))
       val data       = sorted.map {
         case r: ReqRow          => r.req.title
-        case r: ReqCodeGroupRow => r.group.title
+        case r: CodeGroupRow => r.group.title
       }
       E_bnbBlocks(name, bp, data)(_.isEmpty, (_, nb) => E_sorted(name, nb, dir))
     }

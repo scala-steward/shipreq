@@ -38,7 +38,7 @@ object NewButton {
           .toList
 
       if (allowRCG is Allow)
-        unsorted ::= DropdownItem(None, UiText.reqCodeGroup, Choice.ReqCodeGroup, "rcg")
+        unsorted ::= DropdownItem(None, UiText.codeGroup, Choice.CodeGroup, "rcg")
 
       unsorted.sortBy(i => (i.mnemonic.fold("a")(_.value), i.name))
     }
@@ -48,7 +48,7 @@ object NewButton {
   sealed abstract class Choice
   object Choice {
     case class Req(id: ReqTypeId) extends Choice
-    case object ReqCodeGroup extends Choice
+    case object CodeGroup extends Choice
     implicit def univEq: UnivEq[Choice] = UnivEq.derive
     implicit def reusability: Reusability[Choice] = Reusability.byUnivEq
   }

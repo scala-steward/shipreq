@@ -58,8 +58,8 @@ final case class TableSettings(columns: NonEmptyVector[Column],
     order.init.headOption.exists(s =>
       s.column ==* Column.Code)
 
-  // Doesn't make sense showing ReqCodeGroups below everything they represent.
-  val viewReqCodeGroups: Boolean =
+  // Doesn't make sense showing CodeGroups below everything they represent.
+  val viewCodeGroups: Boolean =
     order.init.headOption.exists(s =>
       (s.column ==* Column.Code) && s.method.ascending)
 }

@@ -124,7 +124,7 @@ object Column {
       case CustomField(id) => a.byField(id)
     }
 
-  val applicabilityForReqCodeGroup: Applicability[Column, Any] =
+  val applicabilityForCodeGroup: Applicability[Column, Any] =
     Applicability {
       case Code
          | Title           => Applicable.always

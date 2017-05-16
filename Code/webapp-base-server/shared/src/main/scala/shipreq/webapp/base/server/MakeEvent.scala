@@ -265,9 +265,9 @@ object MakeEvent {
   def createContent(cmd: CreateContentCmd, project: Project): Result = {
     val nextCodeId = reqCodeIdCounter(project)
     cmd match {
-      case CreateContentCmd.CreateReqCodeGroup(code, title) =>
+      case CreateContentCmd.CreateCodeGroup(code, title) =>
         def makeEvent(id: ReqCodeId) =
-          Success(ReqCodeGroupCreate(id, gdAllValues(ReqCodeGroupGD, "")))
+          Success(CodeGroupCreate(id, gdAllValues(CodeGroupGD, "")))
 
         project.reqCodes.get(code) match {
           case None => makeEvent(nextCodeId())
@@ -367,17 +367,17 @@ object MakeEvent {
       case UpdateContentCmd.SetGenericReqType(id, v) =>
         GenericReqTypeSet(id, v)
 
-      case UpdateContentCmd.SetReqCodeGroupTitle(id, v) =>
-        ReqCodeGroupUpdate(id, ReqCodeGroupGD.Title(v))
+      case UpdateContentCmd.SetCodeGroupTitle(id, v) =>
+        CodeGroupUpdate(id, CodeGroupGD.Title(v))
 
-      case UpdateContentCmd.SetReqCodeGroupCode(id, v) =>
-        ReqCodeGroupUpdate(id, ReqCodeGroupGD.Code(v))
+      case UpdateContentCmd.SetCodeGroupCode(id, v) =>
+        CodeGroupUpdate(id, CodeGroupGD.Code(v))
 
-      case UpdateContentCmd.DeleteReqs(reqs, reqCodeGroups, reason) =>
-        ReqsDelete(reqs, reqCodeGroups, reason)
+      case UpdateContentCmd.DeleteReqs(reqs, codeGroups, reason) =>
+        ReqsDelete(reqs, codeGroups, reason)
 
-      case UpdateContentCmd.DeleteReqCodeGroups(ids) =>
-        ReqCodeGroupsDelete(ids)
+      case UpdateContentCmd.DeleteCodeGroups(ids) =>
+        CodeGroupsDelete(ids)
 
       case UpdateContentCmd.RestoreContent(reqs, reqCodes) =>
         if (reqs.isEmpty && reqCodes.isEmpty)

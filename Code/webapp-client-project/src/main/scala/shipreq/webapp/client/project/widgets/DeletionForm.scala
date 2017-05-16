@@ -35,7 +35,7 @@ object DeletionForm {
 
   final case class ReqRow(req: Req, indent: Int, impliedBy: Vector[Req])
 
-  final case class GroupRow(group    : LiveReqCodeGroup,
+  final case class GroupRow(group    : LiveCodeGroup,
                             codeStr  : String,
                             subReqs  : Set[(ReqId, String)],
                             subGroups: Set[(ReqCodeId, String)]) {
@@ -241,7 +241,7 @@ object DeletionForm {
 
     // Done. Build results.
 
-    def makeRcgRow(c: Code, g: LiveReqCodeGroup): GroupRow = {
+    def makeRcgRow(c: Code, g: LiveCodeGroup): GroupRow = {
       var subReqs = Set.newBuilder[(ReqId, String)]
       var subGrps = Set.newBuilder[(ReqCodeId, String)]
       def subCodeStr(c2: Code) = "." + PlainText.reqCode(c2)
@@ -392,7 +392,7 @@ object DeletionForm {
         <.tr(
           td(sel.checkbox),
           td(r.codeStr),
-          td(widgets reqCodeGroupTitle r.group),
+          td(widgets codeGroupTitle r.group),
           td(subCodes))
       }
 
@@ -426,7 +426,7 @@ object DeletionForm {
           EmptyVdom
         else
           <.section(
-            <.div(*.section, UiText.reqCodeGroups + " to delete"),
+            <.div(*.section, UiText.codeGroups + " to delete"),
             renderGroups(p, s))
 
       val reasonTextProps = reasonEditorProps(p, s)
@@ -438,11 +438,11 @@ object DeletionForm {
 
       val commit: Option[Callback] =
         for {
-          reqs          ← NonEmptySet.option(s.selectedReqs.selected)
-          reqCodeGroups = s.selectedGroups.selected
-          dr            ← reasonTextProps.validated.toOption
+          reqs       ← NonEmptySet.option(s.selectedReqs.selected)
+          codeGroups = s.selectedGroups.selected
+          dr         ← reasonTextProps.validated.toOption
         } yield
-        p perform DeleteReqs(reqs, reqCodeGroups, dr)
+        p perform DeleteReqs(reqs, codeGroups, dr)
 
       def deleteButton =
         <.button(

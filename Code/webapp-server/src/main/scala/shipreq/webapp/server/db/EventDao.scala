@@ -477,9 +477,9 @@ object EventDbCodecs {
     }
   } values
 
-  implicit val pickleReqCodeGroupGD = gdMPickler(ReqCodeGroupGD, true) {
-    case ReqCodeGroupGD.Code  => "c"
-    case ReqCodeGroupGD.Title => "t"
+  implicit val pickleCodeGroupGD = gdMPickler(CodeGroupGD, true) {
+    case CodeGroupGD.Code  => "c"
+    case CodeGroupGD.Title => "t"
   } nev
 
   implicit val pickleUseCaseStepGD = gdMPickler(UseCaseStepGD, true) {
@@ -568,7 +568,7 @@ object EventDbCodecs {
 
   implicit val dbCodecApplicableTagCreate   : DbCodec[ApplicableTagCreate   ] = dbCodec2
   implicit val dbCodecApplicableTagUpdate   : DbCodec[ApplicableTagUpdate   ] = dbCodec2
-  implicit val dbCodecContentRestore        : DbCodec[ContentRestore        ] = dbCodecJust('reqs_? -> "r", 'reqCodeGroups_? -> "c")
+  implicit val dbCodecContentRestore        : DbCodec[ContentRestore        ] = dbCodecJust('reqs_? -> "r", 'codeGroups_? -> "c")
   implicit val dbCodecCustomIssueTypeCreate : DbCodec[CustomIssueTypeCreate ] = dbCodec2
   implicit val dbCodecCustomIssueTypeDelete : DbCodec[CustomIssueTypeDelete ] = dbCodecIdOnly
   implicit val dbCodecCustomIssueTypeRestore: DbCodec[CustomIssueTypeRestore] = dbCodecIdOnly
@@ -593,13 +593,13 @@ object EventDbCodecs {
   implicit val dbCodecGenericReqTypeSet     : DbCodec[GenericReqTypeSet     ] = dbCodec2
   implicit val dbCodecProjectNameSet        : DbCodec[ProjectNameSet        ] = dbCodecDataOnly
   implicit val dbCodecProjectTemplateApply  : DbCodec[ProjectTemplateApply  ] = dbCodecDataOnly
-  implicit val dbCodecReqCodeGroupCreate    : DbCodec[ReqCodeGroupCreate    ] = dbCodec2
-  implicit val dbCodecReqCodeGroupsDelete   : DbCodec[ReqCodeGroupsDelete   ] = dbCodecDataOnly
-  implicit val dbCodecReqCodeGroupUpdate    : DbCodec[ReqCodeGroupUpdate    ] = dbCodec2
+  implicit val dbCodecCodeGroupCreate       : DbCodec[CodeGroupCreate       ] = dbCodec2
+  implicit val dbCodecCodeGroupsDelete      : DbCodec[CodeGroupsDelete      ] = dbCodecDataOnly
+  implicit val dbCodecCodeGroupUpdate       : DbCodec[CodeGroupUpdate       ] = dbCodec2
   implicit val dbCodecReqCodesPatch         : DbCodec[ReqCodesPatch         ] = dbCodecIdAnd('remove_? -> "-", 'add_? -> "+", 'restore_? -> "^")
   implicit val dbCodecReqFieldCustomTextSet : DbCodec[ReqFieldCustomTextSet ] = dbCodecIdAnd('fid -> "f", 'value -> "t")
   implicit val dbCodecReqImplicationsPatch  : DbCodec[ReqImplicationsPatch  ] = dbCodecIdAnd('dir -> "d", 'patch -> "")
-  implicit val dbCodecReqsDelete            : DbCodec[ReqsDelete            ] = dbCodecJust('reqs -> "r", 'reqCodeGroups_? -> "g", 'reason_? -> "j")
+  implicit val dbCodecReqsDelete            : DbCodec[ReqsDelete            ] = dbCodecJust('reqs -> "r", 'codeGroups_? -> "g", 'reason_? -> "j")
   implicit val dbCodecReqTagsPatch          : DbCodec[ReqTagsPatch          ] = dbCodec2
   implicit val dbCodecTagDelete             : DbCodec[TagDelete             ] = dbCodecIdOnly
   implicit val dbCodecTagGroupCreate        : DbCodec[TagGroupCreate        ] = dbCodec2
@@ -634,9 +634,9 @@ object EventDbCodecs {
     case _: ReqImplicationsPatch   => 22
     case _: ReqTagsPatch           => 23
 
-    case _: ReqCodeGroupCreate     => 90
-    case _: ReqCodeGroupUpdate     => 91
-    case _: ReqCodeGroupsDelete    => 92
+    case _: CodeGroupCreate        => 90
+    case _: CodeGroupUpdate        => 91
+    case _: CodeGroupsDelete       => 92
 
     // =============
     // Content: Reqs

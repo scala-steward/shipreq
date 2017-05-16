@@ -213,7 +213,7 @@ private[reqtable2] object Logic {
     // * The Tags column is not expanded. Only custom tag columns are.
 
     val filterDeadReq = fd.filterFnBy[Req](_ live p.config.reqTypes)
-    val filterDeadRCG = fd.filterFnBy[ReqCodeGroup](_.live)
+    val filterDeadRCG = fd.filterFnBy[CodeGroup](_.live)
     val filterDead    = Filters(filterDeadReq, filterDeadRCG)
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, fd, s isVisible Column.CustomField(_))
     val tagLookup     = DataLogic.tagLookup(p, fd)
@@ -266,13 +266,13 @@ private[reqtable2] object Logic {
     /** Was a filter expression used (i.e. a filter that isn't FilterDead) */
     def filterExprUsed = opOpFilter.exists(_.isDefined)
 
-    /** When a filter expression is present, we still want to show relevant ReqCodeGroups of visible rows. */
-    val restoreFilteredRCGs = s.viewReqCodeGroups && filterExprUsed
+    /** When a filter expression is present, we still want to show relevant CodeGroups of visible rows. */
+    val restoreFilteredRCGs = s.viewCodeGroups && filterExprUsed
 
     // Create rows
     val output = cbf()
     fullFilter.foreach { filter =>
-      val restorableRCGs   = DataLog.list[Row.ForReqCodeGroup].disableUnless(restoreFilteredRCGs)
+      val restorableRCGs   = DataLog.list[Row.ForCodeGroup].disableUnless(restoreFilteredRCGs)
       val codesSeen        = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
       val seeExpandedCodes = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
 
@@ -297,11 +297,11 @@ private[reqtable2] object Logic {
           seeExpandedCodes(codes)
         }
 
-      // Add ReqCodeGroups
-      if (s.viewReqCodeGroups)
+      // Add CodeGroups
+      if (s.viewCodeGroups)
         for (g <- p.reqCodes.groups) {
           val code = p.reqCodes reqCode g.id
-          val row = Row.ForReqCodeGroup(g, code, None)
+          val row = Row.ForCodeGroup(g, code, None)
           if (filter fb g) {
             codesSeen.add(row.reqCode)
             output += row
@@ -310,7 +310,7 @@ private[reqtable2] object Logic {
               restorableRCGs.add(row)
         }
 
-      // Add back filtered out ReqCodeGroups
+      // Add back filtered out CodeGroups
       if (restoreFilteredRCGs) {
         val visTrie = codesSeen.get()
         for (row <- restorableRCGs.get())
@@ -324,11 +324,11 @@ private[reqtable2] object Logic {
   // ===================================================================================================================
   //  Filtering
 
-  type Filters = FilterFn.Pair[Req, ReqCodeGroup]
+  type Filters = FilterFn.Pair[Req, CodeGroup]
 
-  @inline def Filters(req         : Req          => Boolean = FilterFn.`n/a`,
-                      reqCodeGroup: ReqCodeGroup => Boolean = FilterFn.`n/a`): Filters =
-    FilterFn.Pair(req, reqCodeGroup)
+  @inline def Filters(req      : Req       => Boolean = FilterFn.`n/a`,
+                      codeGroup: CodeGroup => Boolean = FilterFn.`n/a`): Filters =
+    FilterFn.Pair(req, codeGroup)
 
   /**
    * @return None means filter everything out. Function const false. Fail-early to an empty set. No results.
@@ -344,7 +344,7 @@ private[reqtable2] object Logic {
     type F  = Filters
     type R  = Option[Filters]
     type FR = Req => Boolean
-    type FG = ReqCodeGroup => Boolean
+    type FG = CodeGroup => Boolean
     @inline implicit def autoSomeFilter(f: Filters): R = Some(f)
 
     // Possible optimisations:
@@ -407,7 +407,7 @@ private[reqtable2] object Logic {
               def custom = p.config.liveCustomTextFields.exists(f => pt.customTextField(f.id)(r) exists m)
               title || custom
             },
-            g => m(pt reqCodeGroupTitle g))
+            g => m(pt codeGroupTitle g))
       }
 
     interpret(vf)
@@ -457,14 +457,10 @@ private[reqtable2] object Logic {
   def consolidateAdjacentDups[C[_]](rows: Iterator[Row])(implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] =
     mergeAdjacent(rows)((x, y) =>
       (x, y) match {
-        case (a: Row.ForReq, b: Row.ForReq) =>
-          if (a.req.id ==* b.req.id)
-            Some(Row.ForReq(a.req, a.live, a.exp |+| b.exp, a.mv |+| b.mv, a.instanceId)) // TODO resort
-          else
-            None
-        case (_: Row.ForReq,          _: Row.ForReqCodeGroup)
-           | (_: Row.ForReqCodeGroup, _: Row.ForReq)
-           | (_: Row.ForReqCodeGroup, _: Row.ForReqCodeGroup) => None
+        case (a: Row.ForReq, b: Row.ForReq) if a.req.id ==* b.req.id =>
+          Some(Row.ForReq(a.req, a.live, a.exp |+| b.exp, a.mv |+| b.mv, a.instanceId)) // TODO resort
+        case _ =>
+          None
       }
     )
 
@@ -551,7 +547,7 @@ private[reqtable2] object Logic {
         rowsByReq = rowsByReq.updated(id, c + 1)
         if (c == 0)
           uniqueReqsInTable.add(r.live, 1)
-      case _: Row.ForReqCodeGroup =>
+      case _: Row.ForCodeGroup =>
         codeGroups += 1
     }
 

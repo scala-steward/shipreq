@@ -229,7 +229,7 @@ class ApplicableEventGen(p: Project) {
   lazy val existingReqCodeId: Option[Gen[ReqCodeId]] =
     Gen.tryGenChoose(p.reqCodes.idList)
 
-  val reqCodeGroupId: Live => Option[Gen[ReqCodeId]] =
+  val codeGroupId: Live => Option[Gen[ReqCodeId]] =
     tryGenChooseLiveDead(l => p.reqCodes.groups.iterator.filter(_.live is l).map(_.id).toVector)
 
   lazy val existingCustomIssueTypeId: Option[Gen[CustomIssueTypeId]] =
@@ -256,8 +256,8 @@ class ApplicableEventGen(p: Project) {
   lazy val newReqCodeIdAndValue =
     Gen.apply2(ReqCode.IdAndValue)(nextReqCodeId, reqCode.value)
 
-  def reqCodeGroupTitle =
-    TextGen.reqCodeGroupTitleAtom(existingReqId, existingUseCaseStepId, existingReqCodeId, existingCustomIssueTypeId).text
+  def codeGroupTitle =
+    TextGen.codeGroupTitleAtom(existingReqId, existingUseCaseStepId, existingReqCodeId, existingCustomIssueTypeId).text
 
   private lazy val genericReqTitleAtom =
     TextGen.genericReqTitleAtom(existingReqId, existingUseCaseStepId, existingReqCodeId, existingCustomIssueTypeId, existingApplicableTagId)
@@ -350,11 +350,11 @@ class ApplicableEventGen(p: Project) {
     }
   }
 
-  object reqCodeGroupGD extends GenericDataGen(ReqCodeGroupGD) {
+  object codeGroupGD extends GenericDataGen(CodeGroupGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
       case Code  => reqCode.value     map Code .apply
-      case Title => reqCodeGroupTitle map Title.apply
+      case Title => codeGroupTitle map Title.apply
     }
   }
 
@@ -464,8 +464,8 @@ class ApplicableEventGen(p: Project) {
     } yield
       Gen.apply3(GenericReqCreate)(nextGenericReqId, reqTypeId, createGenericReqGD.values)
 
-  def genReqCodeGroupCreate: Gen[ReqCodeGroupCreate] =
-    Gen.apply2(ReqCodeGroupCreate)(nextReqCodeId, reqCodeGroupGD.allValues)
+  def genCodeGroupCreate: Gen[CodeGroupCreate] =
+    Gen.apply2(CodeGroupCreate)(nextReqCodeId, codeGroupGD.allValues)
 
   def genTagGroupCreate: Gen[TagGroupCreate] =
     Gen.apply2(TagGroupCreate)(nextTagGroupId, tagGroupGD.allValues)
@@ -485,8 +485,8 @@ class ApplicableEventGen(p: Project) {
   def genCustomReqTypeDelete: Option[Gen[CustomReqTypeDelete]] =
     customReqTypeId(Live).map(_ map CustomReqTypeDelete)
 
-  def genReqCodeGroupsDelete: Option[Gen[ReqCodeGroupsDelete]] =
-    reqCodeGroupId(Live).map(_.nes map ReqCodeGroupsDelete)
+  def genCodeGroupsDelete: Option[Gen[CodeGroupsDelete]] =
+    codeGroupId(Live).map(_.nes map CodeGroupsDelete)
 
   def genCustomIssueTypeRestore: Option[Gen[CustomIssueTypeRestore]] =
     customIssueTypeId(Dead).map(_ map CustomIssueTypeRestore)
@@ -496,7 +496,7 @@ class ApplicableEventGen(p: Project) {
 
   def genReqsDelete: Option[Gen[ReqsDelete]] =
     liveReqId.map(reqId =>
-      Gen.apply3(ReqsDelete)(reqId.nes, reqCodeGroupId(Live).setE, deletionReason))
+      Gen.apply3(ReqsDelete)(reqId.nes, codeGroupId(Live).setE, deletionReason))
 
   def genFieldStaticRemove: Option[Gen[FieldStaticRemove]] =
     Gen.tryGenChoose(staticFieldsToDel).map(_ map FieldStaticRemove)
@@ -581,18 +581,18 @@ class ApplicableEventGen(p: Project) {
         case g: GenericReq => (g.liveExplicitly is Dead) && (g.copy(liveExplicitly = Live).live(cfg.reqTypes) is Live)
         case u: UseCase    => (u.liveExplicitly is Dead) && (u.copy(liveExplicitly = Live).live(cfg.reqTypes) is Live)
       }.map(_.id).toVector)
-    if (restorableReqIds.isEmpty && reqCodeGroupId(Dead).isEmpty)
+    if (restorableReqIds.isEmpty && codeGroupId(Dead).isEmpty)
       None
     else Some {
       val idSet = restorableReqIds.setE
-      val codeSet = reqCodeGroupId(Dead).setE
+      val codeSet = codeGroupId(Dead).setE
       Gen.apply2(ContentRestore)(idSet, codeSet).flatMap(cmd =>
-        if (cmd.reqs.nonEmpty || cmd.reqCodeGroups.nonEmpty)
+        if (cmd.reqs.nonEmpty || cmd.codeGroups.nonEmpty)
           Gen pure cmd
         else if (restorableReqIds.isDefined)
           restorableReqIds.get.nes.map(ids => ContentRestore(ids.whole, Set.empty))
         else
-          reqCodeGroupId(Dead).get.nes.map(ids => ContentRestore(Set.empty, ids.whole))
+          codeGroupId(Dead).get.nes.map(ids => ContentRestore(Set.empty, ids.whole))
       )
     }
   }
@@ -674,9 +674,9 @@ class ApplicableEventGen(p: Project) {
     customFieldTextId(Live) .map(id =>
       Gen.apply2(FieldCustomTextUpdate)(id, customTextFieldGD.nonEmptyValues))
 
-  def genReqCodeGroupUpdate: Option[Gen[ReqCodeGroupUpdate]] =
-    reqCodeGroupId(Live).map(id =>
-      Gen.apply2(ReqCodeGroupUpdate)(id, reqCodeGroupGD.nonEmptyValues))
+  def genCodeGroupUpdate: Option[Gen[CodeGroupUpdate]] =
+    codeGroupId(Live).map(id =>
+      Gen.apply2(CodeGroupUpdate)(id, codeGroupGD.nonEmptyValues))
 
   def genTagGroupUpdate: Option[Gen[TagGroupUpdate]] =
     tagGroupId(Live).map(gId =>
@@ -734,9 +734,9 @@ class ApplicableEventGen(p: Project) {
       case _: GenericReqTypeSet      => genGenericReqTypeSet
       case _: ProjectNameSet         => genProjectNameSet
       case _: ProjectTemplateApply   => genProjectTemplateApply
-      case _: ReqCodeGroupCreate     => genReqCodeGroupCreate
-      case _: ReqCodeGroupsDelete    => genReqCodeGroupsDelete
-      case _: ReqCodeGroupUpdate     => genReqCodeGroupUpdate
+      case _: CodeGroupCreate        => genCodeGroupCreate
+      case _: CodeGroupsDelete       => genCodeGroupsDelete
+      case _: CodeGroupUpdate        => genCodeGroupUpdate
       case _: ReqCodesPatch          => genReqCodesPatch
       case _: ReqFieldCustomTextSet  => genReqFieldCustomTextSet
       case _: ReqImplicationsPatch   => genReqImplicationsPatch

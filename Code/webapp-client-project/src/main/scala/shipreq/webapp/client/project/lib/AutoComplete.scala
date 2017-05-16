@@ -298,7 +298,7 @@ object AutoComplete {
           case -\/(a) =>
             <.div(
               <.div(*.itemTitle, code),
-              <.div(*.itemDesc, pt.reqCodeGroupTitle(a.group)))
+              <.div(*.itemDesc, pt.codeGroupTitle(a.group)))
         }
       }
 

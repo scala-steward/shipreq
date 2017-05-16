@@ -182,7 +182,7 @@ object ReqTablePage {
       val newButton = NewButton.Props(
         p.state.newButton,
         pxProject.value().config.reqTypes,
-        Allow when p.state.tableSettings.viewReqCodeGroups,
+        Allow when p.state.tableSettings.viewCodeGroups,
         Some(newButtonUpdate),
       ).render
 

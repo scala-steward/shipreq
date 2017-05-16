@@ -80,11 +80,11 @@ object Table {
                   selection,
                 ).render
 
-              case row: Row.ForReqCodeGroup =>
-                ReqCodeGroupRow.Props(
+              case row: Row.ForCodeGroup =>
+                CodeGroupRow.Props(
                   row,
                   p.pw,
-                  p.editor.forReqCodeGroup(row.reqCodeId),
+                  p.editor.forCodeGroup(row.reqCodeId),
                   p.cols,
                   applicability,
                   rowAsync,
@@ -339,11 +339,11 @@ object Table {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private object ReqCodeGroupRow extends RowTemplate[Row.ForReqCodeGroup, ProjectWidgets]("ReqCodeGroupRow") {
-    override type RowEditField = EditorFeature.RowKey.ReqCodeGroup
-    override type RowEditRead  = EditorFeature.Read.ForReqCodeGroup
+  private object CodeGroupRow extends RowTemplate[Row.ForCodeGroup, ProjectWidgets]("CodeGroupRow") {
+    override type RowEditField = EditorFeature.RowKey.CodeGroup
+    override type RowEditRead  = EditorFeature.Read.ForCodeGroup
 
-    override protected val editFieldFilter = EditorFeature.FieldKey.filterForReqCodeGroup
+    override protected val editFieldFilter = EditorFeature.FieldKey.filterForCodeGroup
 
     override protected def reusabilityRowEditor = implicitly
 
@@ -355,8 +355,8 @@ object Table {
 
       def renderCodes: TagMod =
         row match {
-          case Row.ForReqCodeGroup(_, _, Some(t)) => pw.reqCodeTreeItem(t)
-          case Row.ForReqCodeGroup(_, c, None)    => pw.reqCode(c)
+          case Row.ForCodeGroup(_, _, Some(t)) => pw.reqCodeTreeItem(t)
+          case Row.ForCodeGroup(_, c, None)    => pw.reqCode(c)
         }
 
       {
@@ -366,7 +366,7 @@ object Table {
            | Column.Tags
            | Column.Pubid
            | Column.DeletionReason    => reusableNA
-        case c@ Column.Title          => ret(c, pw.reqCodeGroupTitle(row.group))
+        case c@ Column.Title          => ret(c, pw.codeGroupTitle(row.group))
         case c@ Column.Code           => ret(c, renderCodes)
       }
     }

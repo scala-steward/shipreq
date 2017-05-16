@@ -295,7 +295,7 @@ object DbTest extends TestSuite {
             100, 123, 'g', """{"T":1469773577,"c":{"yay":7}}""")
         }
 
-        //'createReqCodeGroup     - demo(RandomData.events.createReqCodeGroup    )
+        //'createCodeGroup     - demo(RandomData.events.createCodeGroup    )
 
         //'createTagGroup         - demo(RandomData.events.createTagGroup        )
 
@@ -305,7 +305,7 @@ object DbTest extends TestSuite {
 
         //'deleteCustomReqType    - demo(RandomData.events.deleteCustomReqType   )
 
-        //'deleteReqCodeGroup     - demo(RandomData.events.deleteReqCodeGroup    )
+        //'deleteCodeGroup     - demo(RandomData.events.deleteCodeGroup    )
 
         //'deleteReq              - demo(RandomData.events.deleteReq             )
 
@@ -388,7 +388,7 @@ object DbTest extends TestSuite {
 
         //'updateCustomTextField  - demo(RandomData.events.updateCustomTextField )
 
-        //'updateReqCodeGroup     - demo(RandomData.events.updateReqCodeGroup    )
+        //'updateCodeGroup     - demo(RandomData.events.updateCodeGroup    )
 
         //'updateTagGroup         - demo(RandomData.events.updateTagGroup        )
 

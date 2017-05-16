@@ -110,9 +110,9 @@ object ReqCode {
   def emptyReqInactive: ReqInactive = UnivEq.emptySetMultimap
 
   /**
-   * A [[ReqCodeGroup]] previously assigned to a ReqCode, since deleted.
+   * A [[CodeGroup]] previously assigned to a ReqCode, since deleted.
    */
-  type DeadGroup = Option[DeadReqCodeGroup]
+  type DeadGroup = Option[DeadCodeGroup]
 
   /**
    * Data stored at each node in the ReqCode trie.
@@ -162,7 +162,7 @@ object ReqCode {
   }
 
   @Lenses
-  final case class ActiveGroup(group: LiveReqCodeGroup, reqInactive: ReqInactive) extends Data {
+  final case class ActiveGroup(group: LiveCodeGroup, reqInactive: ReqInactive) extends Data {
     @inline  def id        = group.id
     override def nonEmpty  = true
     override def isActive  = true
@@ -194,9 +194,9 @@ object ReqCode {
  *
  * Previously called "Semantic Header Row" or "SHR" in the requirements.
  */
-sealed abstract class ReqCodeGroup {
+sealed abstract class CodeGroup {
   val id: ReqCodeId
-  val title: Text.ReqCodeGroupTitle.OptionalText
+  val title: Text.CodeGroupTitle.OptionalText
   def live: Live
 
   final def isEmpty : Boolean = title.isEmpty
@@ -204,19 +204,19 @@ sealed abstract class ReqCodeGroup {
 }
 
 @Lenses
-final case class LiveReqCodeGroup(id: ReqCodeId, title: Text.ReqCodeGroupTitle.OptionalText) extends ReqCodeGroup {
+final case class LiveCodeGroup(id: ReqCodeId, title: Text.CodeGroupTitle.OptionalText) extends CodeGroup {
   override def live = Live
 }
 
 @Lenses
-final case class DeadReqCodeGroup(id: ReqCodeId, title: Text.ReqCodeGroupTitle.OptionalText) extends ReqCodeGroup {
+final case class DeadCodeGroup(id: ReqCodeId, title: Text.CodeGroupTitle.OptionalText) extends CodeGroup {
   override def live = Dead
 }
 
-object ReqCodeGroup {
-  implicit def equalLive: UnivEq[LiveReqCodeGroup] = UnivEq.derive
-  implicit def equalDead: UnivEq[DeadReqCodeGroup] = UnivEq.derive
-  implicit def equalBase: UnivEq[ReqCodeGroup]     = UnivEq.derive
+object CodeGroup {
+  implicit def equalLive: UnivEq[LiveCodeGroup] = UnivEq.derive
+  implicit def equalDead: UnivEq[DeadCodeGroup] = UnivEq.derive
+  implicit def equalBase: UnivEq[CodeGroup]     = UnivEq.derive
 }
 
 /**
@@ -246,7 +246,7 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   private class Scan {
     private val _idList         = List.newBuilder[ReqCodeId]
     private val _idSet          = Set.newBuilder[ReqCodeId]
-    private val _groups         = List.newBuilder[ReqCodeGroup]
+    private val _groups         = List.newBuilder[CodeGroup]
     private val _reqCodesById   = Map.newBuilder[ReqCodeId, Value]
     var _activeReqCodesByReqId: Multimap[ReqId, Set, Value] = UnivEq.emptySetMultimap
     var _inactiveIdsByReqId: Multimap[ReqId, Set, ReqCodeId] = UnivEq.emptySetMultimap
@@ -279,7 +279,7 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   }
 
   /** All groups, dead and live. */
-  def groups: List[ReqCodeGroup] =
+  def groups: List[CodeGroup] =
     scan.groups
 
   def reqCodesById: Map[ReqCodeId, Value] =

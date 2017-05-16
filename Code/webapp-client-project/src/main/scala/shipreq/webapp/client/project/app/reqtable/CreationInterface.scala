@@ -23,7 +23,7 @@ object CreationInterface {
   sealed trait Type
   case class GenericReqType(rt: CustomReqTypeId) extends Type
   case object UseCaseType                        extends Type
-  case object ReqCodeGroupType                   extends Type
+  case object CodeGroupType                   extends Type
 
   implicit def typeEquality: UnivEq[Type] = UnivEq.force
 
@@ -36,7 +36,7 @@ object CreationInterface {
 
   @Lenses
   case class State(selectedType: SelType,
-                   rcg         : CreateReqCodeGroupState,
+                   rcg         : CreateCodeGroupState,
                    req         : CreateReqState)
 
   sealed trait Status
@@ -46,7 +46,7 @@ object CreationInterface {
   implicit def statusEquality: UnivEq[Status] = UnivEq.derive
 
   @Lenses
-  case class CreateReqCodeGroupState(status: Status, reqCode: String, title: String)
+  case class CreateCodeGroupState(status: Status, reqCode: String, title: String)
 
   @Lenses
   case class CreateReqState(status: Status, reqCodes: String, title: String, tags: String, imp: String)
@@ -55,7 +55,7 @@ object CreationInterface {
 
   def initState: State =
     State(None,
-      CreateReqCodeGroupState(Editing, "", ""),
+      CreateCodeGroupState(Editing, "", ""),
       CreateReqState(Editing, "", "", "", ""))
 }
 
@@ -71,7 +71,7 @@ class CreationInterface($               : StateAccessPure[State],
   val types: Px[Choices[SelType]] =
     pxProject.map { p =>
       val blank = Choice[SelType](None, "", Enabled)
-      val rcg   = Choice[SelType](Some(ReqCodeGroupType), UiText.reqCodeGroup, Enabled)
+      val rcg   = Choice[SelType](Some(CodeGroupType), UiText.codeGroup, Enabled)
       val uc    = Choice[SelType](Some(UseCaseType), UiText.useCase, Enabled)
       val grs   = MutableArray(p.config.reqTypes.liveCustomReqTypes)
                     .map(rt => Choice[SelType](Some(GenericReqType(rt.id)), rt.fullName, Enabled))
@@ -96,7 +96,7 @@ class CreationInterface($               : StateAccessPure[State],
     val detail: Type => TagMod = {
       case GenericReqType(rt) => CreateGenericReq.Component((p, rt))
       case UseCaseType        => CreateUseCase.Component(p)
-      case ReqCodeGroupType   => CreateReqCodeGroup.Component(p)
+      case CodeGroupType   => CreateCodeGroup.Component(p)
     }
 
     <.div(
@@ -135,14 +135,14 @@ class CreationInterface($               : StateAccessPure[State],
 
   // ===================================================================================================================
 
-  object CreateReqCodeGroup {
+  object CreateCodeGroup {
 
-    val $$: StateAccessPure[CreateReqCodeGroupState] = $ zoomStateL State.rcg
-    val setStatus  = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.status ).set
-    val setReqCode = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.reqCode).set
-    val setTitle   = Reusable.fn.state($$ zoomStateL CreateReqCodeGroupState.title  ).set
+    val $$: StateAccessPure[CreateCodeGroupState] = $ zoomStateL State.rcg
+    val setStatus  = Reusable.fn.state($$ zoomStateL CreateCodeGroupState.status ).set
+    val setReqCode = Reusable.fn.state($$ zoomStateL CreateCodeGroupState.reqCode).set
+    val setTitle   = Reusable.fn.state($$ zoomStateL CreateCodeGroupState.title  ).set
 
-    val titleFocus = PreviewId.InCI(ReqCodeGroupType, Column.Title)
+    val titleFocus = PreviewId.InCI(CodeGroupType, Column.Title)
 
     def render(p: Props) = {
       import Px.AutoValue._
@@ -158,7 +158,7 @@ class CreationInterface($               : StateAccessPure[State],
           None)
 
       val propsTitle =
-        RichTextEditor.ReqCodeGroupTitle.Props(
+        RichTextEditor.CodeGroupTitle.Props(
           pxProject,
           pxProjectText,
           pxTextSearch,
@@ -175,7 +175,7 @@ class CreationInterface($               : StateAccessPure[State],
           title <- propsTitle.parseResult.toOption
           if state.status !=* Locked
         } yield
-          ajax(p, setStatus, CreateContentCmd.CreateReqCodeGroup(code, title))
+          ajax(p, setStatus, CreateContentCmd.CreateCodeGroup(code, title))
 
       <.table(
         <.thead(

@@ -77,8 +77,8 @@ object ApplyEventTestFns {
          | _: FieldCustomImpCreate  => customFields += 1
       case _: TagGroupCreate
          | _: ApplicableTagCreate   => tags += 1
-      case _: ReqCodeGroupCreate    => activeRCGs += 1
-      case e: ReqCodeGroupsDelete   => activeRCGs -= e.ids.size
+      case _: CodeGroupCreate    => activeRCGs += 1
+      case e: CodeGroupsDelete   => activeRCGs -= e.ids.size
 
       case ProjectTemplateApply(t) => t match {
         case ProjectTemplate.Default =>
@@ -91,10 +91,10 @@ object ApplyEventTestFns {
       case d: ReqsDelete =>
         if (d.reason.nonEmpty)
           delReasons += 1
-        activeRCGs -= d.reqCodeGroups.size
+        activeRCGs -= d.codeGroups.size
 
       case r: ContentRestore =>
-        activeRCGs += r.reqCodeGroups.size
+        activeRCGs += r.codeGroups.size
 
       case _: ApplicableTagUpdate
          | _: CustomIssueTypeDelete
@@ -114,7 +114,7 @@ object ApplyEventTestFns {
          | _: GenericReqTitleSet
          | _: GenericReqTypeSet
          | _: ProjectNameSet
-         | _: ReqCodeGroupUpdate
+         | _: CodeGroupUpdate
          | _: ReqCodesPatch
          | _: ReqFieldCustomTextSet
          | _: ReqImplicationsPatch
@@ -139,7 +139,7 @@ object ApplyEventTestFns {
     assertEq("Σ Generic Reqs", genericReqs, p.reqs.genericReqs.size)
     assertEq("Σ Use Cases", useCases, p.reqs.useCases.imap.size)
     assertEq("Σ Reqs", genericReqs + useCases, p.reqs.size)
-    assertEq("Σ ReqCodeGroups (active)", activeRCGs, p.reqCodes.groups.count(_.live is Live))
+    assertEq("Σ CodeGroups (active)", activeRCGs, p.reqCodes.groups.count(_.live is Live))
     assertEq("Σ DeletionReasons", delReasons, p.deletionReasons.reasons.size)
     validateIdCeilings(p)
   }

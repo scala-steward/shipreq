@@ -21,7 +21,7 @@ object Editability {
 
   final case class ForProject(cfg: ProjectConfig, reqs: Requirements, reqCodes: ReqCodes) {
     val forReqs = ForReqs(cfg, reqs)
-    val forReqCodeGroups = ForReqCodeGroups(reqCodes)
+    val forCodeGroups = ForCodeGroups(reqCodes)
     val forUseCaseSteps = ForUseCaseSteps(reqs.useCases)
   }
 
@@ -78,9 +78,9 @@ object Editability {
   implicit val reusabilityForReq: Reusability[ForReq] =
     Reusability.caseClass
 
-  final case class ForReqCodeGroups(reqCodes: ReqCodes) extends AnyVal {
-    def apply(id: ReqCodeId): ForReqCodeGroup =
-      ForReqCodeGroup(
+  final case class ForCodeGroups(reqCodes: ReqCodes) extends AnyVal {
+    def apply(id: ReqCodeId): ForCodeGroup =
+      ForCodeGroup(
         reqCodes.getById(id) match {
           case Some(_: ReqCode.ActiveGroup) => Allow
           case Some(_: ReqCode.ActiveReq)
@@ -90,18 +90,18 @@ object Editability {
       )
   }
 
-  implicit val reusabilityForReqCodeGroups: Reusability[ForReqCodeGroups] =
+  implicit val reusabilityForCodeGroups: Reusability[ForCodeGroups] =
     Reusability.caseClass
 
-  final case class ForReqCodeGroup(permission: Permission) extends ForRow[RowKey.ReqCodeGroup] {
-    def apply(k: FieldKey.ForReqCodeGroup): Permission =
+  final case class ForCodeGroup(permission: Permission) extends ForRow[RowKey.CodeGroup] {
+    def apply(k: FieldKey.ForCodeGroup): Permission =
       k match {
         case FieldKey.Code
            | FieldKey.Title => permission
       }
   }
 
-  implicit val reusabilityForReqCodeGroup: Reusability[ForReqCodeGroup] =
+  implicit val reusabilityForCodeGroup: Reusability[ForCodeGroup] =
     Reusability.caseClass
 
   final case class ForUseCaseSteps(useCases: UseCases) extends ForRow[RowKey.UseCaseSteps.type] {

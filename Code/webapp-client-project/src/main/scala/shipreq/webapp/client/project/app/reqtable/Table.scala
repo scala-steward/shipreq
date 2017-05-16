@@ -67,9 +67,9 @@ object Table {
               import ForRowReq._
               val rp = RowProps(row, crs, p.editor.forReq(row.req.id), p.asyncState(row.sourceId), p.selection)
               RowComponent.withKey(row.id.key)(rp)
-            case row: ReqCodeGroupRow =>
-              import ForRowReqCodeGroup._
-              val rp = RowProps(row, crs, p.editor.forReqCodeGroup(row.reqCodeId), p.selection)
+            case row: CodeGroupRow =>
+              import ForRowCodeGroup._
+              val rp = RowProps(row, crs, p.editor.forCodeGroup(row.reqCodeId), p.selection)
               RowComponent.withKey(row.id.key)(rp)
           }
         }
@@ -225,10 +225,10 @@ object Table {
     }
   }
   // TODO Copy-paste
-  object ForRowReqCodeGroup {
-    case class RowProps(row        : ReqCodeGroupRow,
+  object ForRowCodeGroup {
+    case class RowProps(row        : CodeGroupRow,
                         crs        : NonEmptyVector[ColumnRenderer],
-                        editor     : EditorFeature.ReadWrite.ForReqCodeGroup,
+                        editor     : EditorFeature.ReadWrite.ForCodeGroup,
                         selection  : RowSelectionVisible)
 
     val RowComponent =
@@ -259,7 +259,7 @@ object Table {
         def colCells =
           p.crs.iterator.map { cr =>
             val col = cr.column
-            val cell = EditorFeature.FieldKey.filterForReqCodeGroup(Column.editorFieldIntersection.getOption(col))
+            val cell = EditorFeature.FieldKey.filterForCodeGroup(Column.editorFieldIntersection.getOption(col))
             val cp = CellProps(row, cr, p.editor(cell))
             CellComponent.withKey(col.key)(cp)
           }.toVdomArray

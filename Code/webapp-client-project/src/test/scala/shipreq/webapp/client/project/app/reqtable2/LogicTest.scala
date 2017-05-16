@@ -23,15 +23,15 @@ object LogicTestUtil {
   def codesInRow(r: Row): Vector[ReqCode.Value] =
   // Don't use optics here
     r match {
-      case r: Row.ForReq          => r.exp.reqCodes
-      case r: Row.ForReqCodeGroup => Vector1(r.reqCode)
+      case r: Row.ForReq       => r.exp.reqCodes
+      case r: Row.ForCodeGroup => Vector1(r.reqCode)
     }
 
   def tagsInRow(r: Row): Vector[ApplicableTagId] =
   // Don't use optics here
     r match {
-      case r: Row.ForReq          => r.mv.tags
-      case r: Row.ForReqCodeGroup => Vector.empty
+      case r: Row.ForReq       => r.mv.tags
+      case r: Row.ForCodeGroup => Vector.empty
     }
 
   def pubidExtract(p: Project)(pid: Pubid): (String, Int) =
@@ -158,18 +158,18 @@ object LogicTest extends TestSuite {
   private def allSortsIB[A](asc: A, desc: A): Seq[(IgnoreBlanks, A)] =
     (Asc  -> asc) :: (Desc -> desc) :: Nil
 
-  private def rowToStr(f: Row.ForReq => String, g: Row.ForReqCodeGroup => String): Row => String =
+  private def rowToStr(f: Row.ForReq => String, g: Row.ForCodeGroup => String): Row => String =
     rowToStr(f, g, identity)
 
-  private def rowToStr(f: Row.ForReq => String, g: Row.ForReqCodeGroup => String, h: String => String): Row => String = {
+  private def rowToStr(f: Row.ForReq => String, g: Row.ForCodeGroup => String, h: String => String): Row => String = {
     case r: Row.ForReq          => h(f(r))
-    case r: Row.ForReqCodeGroup => h(g(r))
+    case r: Row.ForCodeGroup => h(g(r))
   }
 
   private def rowToAsToStr[A](f: Row.ForReq => Vector[A])(h: A => String): Row => String =
     rowToAsToStr(f, _ => Vector.empty)(h)
 
-  private def rowToAsToStr[A](f: Row.ForReq => Vector[A], g: Row.ForReqCodeGroup => Vector[A])(h: A => String): Row => String = {
+  private def rowToAsToStr[A](f: Row.ForReq => Vector[A], g: Row.ForCodeGroup => Vector[A])(h: A => String): Row => String = {
     val i = (_: Vector[A]).ifelse(_.isEmpty, _z, _ map h mkString ",")
     rowToStr(i compose f, i compose g)
   }
@@ -324,7 +324,7 @@ object LogicTest extends TestSuite {
   def testTitle(): Unit = {
     val p       = GReq() + GReq("AT") + GReq("and") + GReq("haha") + GReq("F") !! PA
     val pt      = pcache(p).pt
-    val fmtRows = rowToStr(_.req |> pt.reqTitle, _.group |> pt.reqCodeGroupTitle, _.apif(_.isEmpty, _z))
+    val fmtRows = rowToStr(_.req |> pt.reqTitle, _.group |> pt.codeGroupTitle, _.apif(_.isEmpty, _z))
     testCB(p, C.Title, None, ShowDead, fmtRows)(allSortsCB(1,
       asc  = "and  AT  F  haha",
       desc = "haha  F  AT  and"))
@@ -984,7 +984,7 @@ object LogicTest extends TestSuite {
   /**
    * When a filter is active, only RCGs with visible children should be shown.
    */
-  def testReqCodeGroupWhenFilteredAndHideDead(): Unit = {
+  def testCodeGroupWhenFilteredAndHideDead(): Unit = {
     val t = new RCGFilterTester
     import t._
     val p = (
@@ -1011,7 +1011,7 @@ object LogicTest extends TestSuite {
   /**
    * When a filter is active, only RCGs with visible children should be shown.
    */
-  def testReqCodeGroupWhenFilteredAndShowDead(): Unit = {
+  def testCodeGroupWhenFilteredAndShowDead(): Unit = {
     val t = new RCGFilterTester
     import t._
     val p = (
@@ -1101,9 +1101,9 @@ object LogicTest extends TestSuite {
       'anyOf          - testFilterAny()
       'not            - testFilterNot()
     }
-    'reqCodeGroupsWithFilter {
-      'hideDead - testReqCodeGroupWhenFilteredAndHideDead()
-      'showDead - testReqCodeGroupWhenFilteredAndShowDead()
+    'codeGroupsWithFilter {
+      'hideDead - testCodeGroupWhenFilteredAndHideDead()
+      'showDead - testCodeGroupWhenFilteredAndShowDead()
     }
     'reqCodeTree - testReqCodeTree()
   }

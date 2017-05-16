@@ -690,7 +690,7 @@ object Style extends StyleSheet.Inline {
       mixinIf(l is Dead)(deadMaybeValid(v))
     )}
 
-    def reqCodeGroupRef = reqRef
+    def codeGroupRef = reqRef
 
     def useCaseStepRef = reqRef
 

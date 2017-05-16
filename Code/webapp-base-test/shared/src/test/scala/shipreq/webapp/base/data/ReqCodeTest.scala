@@ -14,8 +14,8 @@ object ReqCodeTest extends TestSuite {
   val sampleCodeTrie = Trie.empty
       .put("aa",     ActiveReq(1, 100, None, emptyReqInactive))
       .put("aa.b.c", ActiveReq(2, 100, None, emptyReqInactive))
-      .put("aa.b.d", ActiveGroup(LiveReqCodeGroup(3, ∅), emptyReqInactive))
-      .put("aa.b.e", Inactive(Some(DeadReqCodeGroup(1, "ah")), emptyReqInactive))
+      .put("aa.b.d", ActiveGroup(LiveCodeGroup(3, ∅), emptyReqInactive))
+      .put("aa.b.e", Inactive(Some(DeadCodeGroup(1, "ah")), emptyReqInactive))
 
   val vs0 = V.State(sampleCodeTrie, Set.empty)
   val vs2 = V.State(sampleCodeTrie, Set("aa.b.c"))

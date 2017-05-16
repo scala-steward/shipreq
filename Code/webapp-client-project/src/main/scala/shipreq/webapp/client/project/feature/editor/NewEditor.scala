@@ -55,8 +55,8 @@ object NewEditorCmd {
       case _ => None
     }
 
-    case r: RowKey.ReqCodeGroup => {
-      case cc: FieldKey.ForReqCodeGroup => cc match {
+    case r: RowKey.CodeGroup => {
+      case cc: FieldKey.ForCodeGroup => cc match {
         case c@ FieldKey.Code  => NewEditorCmd.ReqCode(r.id)
         case c@ FieldKey.Title => NewEditorCmd.Title(-\/(r.id), PreviewId(r, c))
       }
@@ -108,7 +108,7 @@ private[editor] final class StartNewEditor(static      : Static,
       case NewEditorCmd.CustomTextField(id, field            , p) => EditRichText.CustomTextField(id, field, p)
       case NewEditorCmd.Title          (\/-(id: GenericReqId), p) => EditRichText.GenericReqTitle(id, p)
       case NewEditorCmd.Title          (\/-(id: UseCaseId)   , p) => EditRichText.UseCaseTitle(id, p)
-      case NewEditorCmd.Title          (-\/(id)              , p) => EditRichText.ReqCodeGroupTitle(id, p)
+      case NewEditorCmd.Title          (-\/(id)              , p) => EditRichText.CodeGroupTitle(id, p)
       case NewEditorCmd.UseCaseStep    (id                   , p) => EditUseCaseStep(id, p)
     }
 
@@ -137,7 +137,7 @@ private[editor] final class StartNewEditor(static      : Static,
   private def getUseCase(id: UseCaseId): CallbackOption[UseCase] =
     pxProject.toCallback.map(_.reqs.useCases.imap.get(id)).asCBO
 
-  private def getReqCodeGroup(id: ReqCodeId): CallbackOption[LiveReqCodeGroup] =
+  private def getCodeGroup(id: ReqCodeId): CallbackOption[LiveCodeGroup] =
     pxProject.toCallback.map(_.reqCodes.getById(id).flatMap {
       case d: ReqCode.ActiveGroup => d.group.some
       case _: ReqCode.ActiveReq
@@ -205,7 +205,7 @@ private[editor] final class StartNewEditor(static      : Static,
         pxProject.toCallback.map(_.reqCodes.reqCode(id)).toCBO
 
       val abortCommit: ReqCodeEditor.Single.AbortCommit =
-        makeAbortCommit(UpdateContentCmd.SetReqCodeGroupCode(id, _))
+        makeAbortCommit(UpdateContentCmd.SetCodeGroupCode(id, _))
 
       startWithStateSnapshot(initialValueCB)(PlainText.reqCode)(
         i => new StateSingle(_, Some(i), abortCommit))
@@ -439,11 +439,11 @@ private[editor] final class StartNewEditor(static      : Static,
           pid)
     }
 
-    object ReqCodeGroupTitle extends Base(RichTextEditor.ReqCodeGroupTitle) {
+    object CodeGroupTitle extends Base(RichTextEditor.CodeGroupTitle) {
       def apply(id: ReqCodeId, pid: PreviewId): StartFn =
         start(
-          UpdateContentCmd.SetReqCodeGroupTitle(id, _),
-          getReqCodeGroup(id).map(_.title).widen,
+          UpdateContentCmd.SetCodeGroupTitle(id, _),
+          getCodeGroup(id).map(_.title).widen,
           pid)
     }
 

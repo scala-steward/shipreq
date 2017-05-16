@@ -102,9 +102,9 @@ object BinCodecData {
 
   implicit lazy val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
   implicit lazy val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses
-  implicit lazy val pickleLiveReqCodeGroup  : Pickler[LiveReqCodeGroup   ] = pickleCaseClass
-  implicit lazy val pickleDeadReqCodeGroup  : Pickler[DeadReqCodeGroup   ] = pickleCaseClass
-  implicit lazy val pickleReqCodeGroup      : Pickler[ReqCodeGroup       ] = pickleADT
+  implicit lazy val pickleLiveCodeGroup     : Pickler[LiveCodeGroup      ] = pickleCaseClass
+  implicit lazy val pickleDeadCodeGroup     : Pickler[DeadCodeGroup      ] = pickleCaseClass
+  implicit lazy val pickleCodeGroup         : Pickler[CodeGroup          ] = pickleADT
   implicit lazy val pickleReqCodeInactive   : Pickler[ReqCode.Inactive   ] = pickleCaseClass
   implicit lazy val pickleReqCodeActiveGroup: Pickler[ReqCode.ActiveGroup] = pickleCaseClass
   implicit lazy val pickleReqCodeActiveReq  : Pickler[ReqCode.ActiveReq  ] = pickleCaseClass

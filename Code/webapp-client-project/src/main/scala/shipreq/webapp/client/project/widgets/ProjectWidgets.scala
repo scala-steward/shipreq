@@ -119,8 +119,8 @@ final class ProjectWidgets private(project    : Project,
         ref(c, *.reqRef(req live project.config.reqTypes), plainText reqTitle req)
       }
 
-      def toGroup(c: ReqCode.Value, g: ReqCodeGroup): VdomElement =
-        ref(c, *.reqCodeGroupRef(g.live), plainText.reqCodeGroupTitle(g))
+      def toGroup(c: ReqCode.Value, g: CodeGroup): VdomElement =
+        ref(c, *.codeGroupRef(g.live), plainText.codeGroupTitle(g))
 
       def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): VdomElement =
         <.span(

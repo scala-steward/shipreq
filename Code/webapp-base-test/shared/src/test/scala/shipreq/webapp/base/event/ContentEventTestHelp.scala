@@ -56,18 +56,18 @@ object ContentEventTestHelp {
       p.reqs.useCases.imap need id
   }
 
-  def createRCG(id: ReqCodeId, code: ReqCode.Value, title: T.ReqCodeGroupTitle.OptionalText = ∅) = {
-    import ReqCodeGroupGD._
-    ReqCodeGroupCreate(id, nev(Code(code), Title(title)))
+  def createRCG(id: ReqCodeId, code: ReqCode.Value, title: T.CodeGroupTitle.OptionalText = ∅) = {
+    import CodeGroupGD._
+    CodeGroupCreate(id, nev(Code(code), Title(title)))
   }
 
   def updateRCGCode(id: ReqCodeId, code: ReqCode.Value) = {
-    import ReqCodeGroupGD._
-    ReqCodeGroupUpdate(id, nev(Code(code)))
+    import CodeGroupGD._
+    CodeGroupUpdate(id, nev(Code(code)))
   }
 
-  def delRCG(id: ReqCodeId): ReqCodeGroupsDelete =
-    ReqCodeGroupsDelete(NonEmptySet(id))
+  def delRCG(id: ReqCodeId): CodeGroupsDelete =
+    CodeGroupsDelete(NonEmptySet(id))
 
   def restoreRCG(id: ReqCodeId): ContentRestore =
     ContentRestore(∅, Set(id))

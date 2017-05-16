@@ -107,7 +107,7 @@ object Text {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   // Doesn't extend ReqTitle because Tags are prohibited in RCGs.
-  object ReqCodeGroupTitle extends Base
+  object CodeGroupTitle extends Base
       with A.SingleLine
       with A.Issue
       with A.ReqRef

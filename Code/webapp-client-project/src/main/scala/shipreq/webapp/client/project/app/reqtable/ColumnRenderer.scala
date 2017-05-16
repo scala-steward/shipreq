@@ -98,46 +98,46 @@ class ColumnRenderers(project: Project, pw: ProjectWidgets) {
 
   private def pubid = make {
     case r: ReqRow          => Render(pubidColumnValue(r.req))
-    case _: ReqCodeGroupRow => `N/A`
+    case _: CodeGroupRow => `N/A`
   }
 
   private def reqType = make {
     case r: ReqRow          => Render(pw.reqTypeShort(r.req.reqTypeId))
-    case _: ReqCodeGroupRow => `N/A`
+    case _: CodeGroupRow => `N/A`
   }
 
   private def code = make {
     case ReqRow(_, _, exp, _, _)        => Render(if (exp.reqCodeTree.nonEmpty) pw.reqCodeTree(exp.reqCodeTree) else pw.reqCodes(exp.reqCodes))
-    case ReqCodeGroupRow(_, _, Some(t)) => Render(pw.reqCodeTreeItem(t))
-    case ReqCodeGroupRow(_, c, None)    => Render(pw.reqCode(c))
+    case CodeGroupRow(_, _, Some(t)) => Render(pw.reqCodeTreeItem(t))
+    case CodeGroupRow(_, c, None)    => Render(pw.reqCode(c))
   }
 
   private def title = make {
     case r: ReqRow          => Render(pw.reqTitle(r.req))
-    case r: ReqCodeGroupRow => Render(pw.reqCodeGroupTitle(r.group))
+    case r: CodeGroupRow => Render(pw.codeGroupTitle(r.group))
   }
 
   private def imps(lens: Optional[Row, Vector[Pubid]]) = make {
     case r: ReqRow          => maybeEmpty(lens, r)(pw.implicationList)
-    case _: ReqCodeGroupRow => `N/A`
+    case _: CodeGroupRow => `N/A`
   }
 
   private def tags(lens: Optional[Row, Vector[ApplicableTagId]]) = make {
     case r: ReqRow          => maybeEmpty(lens, r)(pw.tagList)
-    case _: ReqCodeGroupRow => `N/A`
+    case _: CodeGroupRow => `N/A`
   }
 
   private def cfText(id: CustomField.Text.Id) = {
     val f = pw.customTextField(id)
     make {
       case r: ReqRow          => Render(f(r.req).fold(empty)(w => w))
-      case _: ReqCodeGroupRow => `N/A`
+      case _: CodeGroupRow => `N/A`
     }
   }
 
   private def deletionReason = make {
     case r: ReqRow          => RenderDeletionReason.forReq(r.req)(project.config.reqTypes, pw).fold[View](`N/A`)(Render(_))
-    case _: ReqCodeGroupRow => RenderDeletionReason.forReqCodeGroup.fold[View](`N/A`)(Render(_))
+    case _: CodeGroupRow => RenderDeletionReason.forCodeGroup.fold[View](`N/A`)(Render(_))
   }
 }
 */

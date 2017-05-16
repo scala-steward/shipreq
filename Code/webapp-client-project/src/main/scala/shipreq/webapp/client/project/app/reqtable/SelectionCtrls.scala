@@ -45,7 +45,7 @@ object SelectionCtrls {
 
   implicit def reuseProps: Reusability[Props] = Reusability.caseClass
 
-  private case class SelSubset(reqs: Vector[Req], groups: Vector[ReqCodeGroup]) {
+  private case class SelSubset(reqs: Vector[Req], groups: Vector[CodeGroup]) {
     def total = reqs.length + groups.length
   }
 
@@ -63,9 +63,9 @@ object SelectionCtrls {
 
     else {
       var delReqs   = Vector.newBuilder[Req]
-      var delGroups = Vector.newBuilder[ReqCodeGroup]
+      var delGroups = Vector.newBuilder[CodeGroup]
       var resReqs   = Vector.newBuilder[Req]
-      var resGroups = Vector.newBuilder[ReqCodeGroup]
+      var resGroups = Vector.newBuilder[CodeGroup]
 
       p.rows foreach { row =>
         val id = row.sourceId
@@ -80,7 +80,7 @@ object SelectionCtrls {
               if (r.allowLiveChange(p.cfg.reqTypes) is Allow)
                 resReqs += r
 
-            case r: ReqCodeGroupRow =>
+            case r: CodeGroupRow =>
               r.live match {
                 case Live => delGroups += r.group
                 case Dead => resGroups += r.group
@@ -99,7 +99,7 @@ object SelectionCtrls {
     ids.map(Row.ReqRowSourceId)
 
   def locsOfGroups(ids: Iterator[ReqCodeId]): Iterator[Row.SourceId] =
-    ids.map(Row.ReqCodeGroupRowSourceId)
+    ids.map(Row.CodeGroupRowSourceId)
 
   class Backend($: BackendScope[Props, Unit]) {
 
@@ -167,13 +167,13 @@ object SelectionCtrls {
     val cancel = $.props.flatMap(_ setModal Modal.none)
 
     def deleteGroupsIO(groups: NonEmptySet[ReqCodeId]): Callback = {
-      val cmd = UpdateContentCmd.DeleteReqCodeGroups(groups)
+      val cmd = UpdateContentCmd.DeleteCodeGroups(groups)
       val locs = locsOfGroups(cmd.ids.iterator).toList
       callRemoteAndUpdateRows(cmd, locs)
     }
 
     def deleteReqsIO(cmd: UpdateContentCmd.DeleteReqs): Callback = {
-      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.reqCodeGroups.iterator)
+      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.codeGroups.iterator)
       callRemoteAndUpdateRows(cmd, locs.toList)
     }
 
@@ -184,7 +184,7 @@ object SelectionCtrls {
     }
 
     def restoreIO(cmd: UpdateContentCmd.RestoreContent): Callback = {
-      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.reqCodeGroups.iterator)
+      val locs = locsOfReqs(cmd.reqs.iterator) ++ locsOfGroups(cmd.codeGroups.iterator)
       callRemoteAndUpdateRows(cmd, locs.toList)
     }
 

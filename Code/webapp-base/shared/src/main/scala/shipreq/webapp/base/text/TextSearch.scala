@@ -173,7 +173,7 @@ object TextSearch {
 
   // Indexes
 
-  case class IndexEntryG(group: ReqCodeGroup, title: Normalised)
+  case class IndexEntryG(group: CodeGroup, title: Normalised)
   case class IndexEntryR(req: Req, title: Normalised, textFields: Need[Normalised])
 
   final class Index private[TextSearch](norm    : Normaliser,
@@ -239,8 +239,8 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject) {
     }
 
     def indexValuesG: Iterator[IndexEntryG] = {
-      def each(g: ReqCodeGroup): IndexEntryG = {
-        val title = norm(plainText reqCodeGroupTitle g)
+      def each(g: CodeGroup): IndexEntryG = {
+        val title = norm(plainText codeGroupTitle g)
         IndexEntryG(g, title)
       }
       project.reqCodes.groups.iterator map each

@@ -72,7 +72,7 @@ object Feature {
     }
 
     type ForReq          = ForRow[RowKey.Req              , Editability.ForReq]
-    type ForReqCodeGroup = ForRow[RowKey.ReqCodeGroup     , Editability.ForReqCodeGroup]
+    type ForCodeGroup    = ForRow[RowKey.CodeGroup        , Editability.ForCodeGroup]
     type ForUseCaseSteps = ForRow[RowKey.UseCaseSteps.type, Editability.ForUseCaseSteps]
 
     final case class ForProject(state      : State.ForProject,
@@ -85,8 +85,8 @@ object Feature {
        def forReq(id: ReqId): ForReq =
          forRow(RowKey.Req(id), editability.forReqs(id))
 
-       def forReqCodeGroup(id: ReqCodeId): ForReqCodeGroup =
-         forRow(RowKey.ReqCodeGroup(id), editability.forReqCodeGroups(id))
+       def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+         forRow(RowKey.CodeGroup(id), editability.forCodeGroups(id))
 
        lazy val forUseCaseSteps: ForUseCaseSteps =
          forRow(RowKey.UseCaseSteps, editability.forUseCaseSteps)
@@ -94,7 +94,7 @@ object Feature {
 
     implicit val reusabilityForCell        : Reusability[ForCell        ] = Reusability.caseClass
     implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.caseClass
-    implicit val reusabilityForReqCodeGroup: Reusability[ForReqCodeGroup] = Reusability.caseClass
+    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.caseClass
     implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.caseClass
     implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.caseClass
   }
@@ -126,7 +126,7 @@ object Feature {
     }
 
     type ForReq          = ForRow[RowKey.Req]
-    type ForReqCodeGroup = ForRow[RowKey.ReqCodeGroup]
+    type ForCodeGroup    = ForRow[RowKey.CodeGroup]
     type ForUseCaseSteps = ForRow[RowKey.UseCaseSteps.type]
 
     /** Create only one instance; reusability is byRef */
@@ -173,8 +173,8 @@ object Feature {
        def forReq(id: ReqId): ForReq =
          forRow(RowKey.Req(id))
 
-       def forReqCodeGroup(id: ReqCodeId): ForReqCodeGroup =
-         forRow(RowKey.ReqCodeGroup(id))
+       def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+         forRow(RowKey.CodeGroup(id))
 
        lazy val forUseCaseSteps: ForUseCaseSteps =
          forRow(RowKey.UseCaseSteps)
@@ -234,7 +234,7 @@ object Feature {
     }
 
     type ForReq          = ForRow[RowKey.Req              , Read.ForReq]
-    type ForReqCodeGroup = ForRow[RowKey.ReqCodeGroup     , Read.ForReqCodeGroup]
+    type ForCodeGroup    = ForRow[RowKey.CodeGroup        , Read.ForCodeGroup]
     type ForUseCaseSteps = ForRow[RowKey.UseCaseSteps.type, Read.ForUseCaseSteps]
 
     final case class ForProject(read: Read.ForProject, write: Write.ForProject) {
@@ -242,8 +242,8 @@ object Feature {
       def forReq(id: ReqId): ForReq =
         ForRow(read.forReq(id), write.forReq(id))
 
-      def forReqCodeGroup(id: ReqCodeId): ForReqCodeGroup =
-        ForRow(read.forReqCodeGroup(id), write.forReqCodeGroup(id))
+      def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+        ForRow(read.forCodeGroup(id), write.forCodeGroup(id))
 
       lazy val forUseCaseSteps: ForUseCaseSteps =
         ForRow(read.forUseCaseSteps, write.forUseCaseSteps)
@@ -254,7 +254,7 @@ object Feature {
 
     implicit val reusabilityForCell        : Reusability[ForCell        ] = Reusability.caseClass
     implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.caseClass
-    implicit val reusabilityForReqCodeGroup: Reusability[ForReqCodeGroup] = Reusability.caseClass
+    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.caseClass
     implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.caseClass
     implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.caseClass
   }
